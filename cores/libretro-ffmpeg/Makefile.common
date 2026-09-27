@@ -20,7 +20,7 @@ INCFLAGS           += -I$(BASE_DIR) -I$(CORE_DIR) -I$(LIBRETRO_COMM_DIR)/include
 
 LIBRETRO_SOURCE    += $(CORE_DIR)/ffmpeg_core.c \
 		      $(LIBRETRO_COMM_DIR)/rthreads/tpool.c \
-		      $(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
+		      $(LIBRETRO_COMM_DIR)/queues/retro_spsc.c \
 		      $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
 
 ifeq ($(LIBRETRO_SWITCH), 1)
@@ -154,6 +154,7 @@ GL_SOURCE += $(LIBRETRO_COMM_DIR)/glsym/rglgen.c
 # Required for libretro-common/features_cpu.c
 ifeq ($(platform), unix)
 	SOURCES_C += $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	SOURCES_C += $(LIBRETRO_COMM_DIR)/string/rstrtod.c \
                  $(LIBRETRO_COMM_DIR)/string/stdstring.c \
                  $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
                  $(LIBRETRO_COMM_DIR)/file/file_path.c \

@@ -140,7 +140,8 @@ check_platform()
 # $4 = function in lib [checked only if non-empty]
 # $5 = extralibs [checked only if non-empty]
 # $6 = headers [checked only if non-empty]
-# $7 = include directory [checked only if non-empty]
+# $7 = include directories ['dir' or 'dir dir1 dir2', each must exist,
+#      checked only if non-empty]
 # $8 = critical error message [checked only if non-empty]
 check_lib()
 {	add_opt "$2"
@@ -175,16 +176,21 @@ check_lib()
 	printf %s\\n "$answer"
 
 	if [ "$answer" = 'yes' ] && [ "$include" ]; then
-		answer='no'
-		for dir in $(printf %s "$INCLUDES"); do
-			[ "$answer" = 'yes' ] && break
-			printf %s "Checking existence of /$dir/$include ... "
-			if [ -d "/$dir/$include" ]; then
-				eval "${2}_CFLAGS=\"-I/$dir/$include\""
-				answer='yes'
-			fi
-			printf %s\\n "$answer"
+		incflags=''
+		for inc in $(printf %s "$include"); do
+			answer='no'
+			for dir in $(printf %s "$INCLUDES"); do
+				[ "$answer" = 'yes' ] && break
+				printf %s "Checking existence of /$dir/$inc ... "
+				if [ -d "/$dir/$inc" ]; then
+					incflags="${incflags:+$incflags }-I/$dir/$inc"
+					answer='yes'
+				fi
+				printf %s\\n "$answer"
+			done
+			[ "$answer" = 'yes' ] || break
 		done
+		[ "$answer" = 'yes' ] && eval "${2}_CFLAGS=\"$incflags\""
 	fi
 
 	eval "HAVE_$2=\"$answer\""
@@ -227,6 +233,13 @@ check_pkgconf()
 		eval "HAVE_$1=no"
 		eval "${1#HAVE_}_VERSION=0.0"
 		printf %s\\n "$MSG $pkg$ECHOBUF ... no"
+		# A package asked for by name is an error without pkg-config
+		# too, unless something that can still find it follows: a
+		# library check, or a check_nopkg probe.
+		if [ "${5:-}" != 'true' ] && [ "${6:-}" != 'nopkg' ] && \
+		   [ "$(eval "printf %s \"\$USER_$1\"")" = 'yes' ]; then
+			die 1 "Forced to build with package $pkg, but pkg-config was not found. Exiting ..."
+		fi
 		return 0
 	}
 
@@ -366,13 +379,125 @@ check_switch()
 # $1 = language
 # $2 = HAVE_$2
 # $3 = lib
-# $4 = include directory [checked only if non-empty]
+# $4 = include directories [see check_lib, checked only if non-empty]
 # $5 = package
 # $6 = version [checked only if non-empty]
 # $7 = critical error message [checked only if non-empty]
 # $8 = force check_lib when true [checked only if non-empty]
+# check_nopkg: finds a package that has no pkg-config to describe it.
+# Only acts when pkg-config is absent, the package was not disabled, and
+# nothing found it already. The include directories are looked for
+# under every include directory configure knows and under the library
+# directories too, where some packages keep a generated header; an
+# absolute one is taken as it is. The probe program must build and
+# link against them and the libraries for the package to count, and it
+# then gets the CFLAGS and LIBS pkg-config would have given it.
+#
+# $1 = language ('' for C, 'cxx' for C++)
+# $2 = NAME, as for check_pkgconf
+# $3 = libraries to link, e.g. '-ldbus-1'
+# $4 = include directories, e.g. 'dbus-1.0 dbus-1.0/include'; an entry
+#      starting with '-' is a flag and is passed through as it is
+# $5 = probe program
+# $6 = extra compiler flags for the probe only (optional)
+check_nopkg()
+{	[ "$PKG_CONF_PATH" = 'none' ] || return 0
+	[ "$(eval "printf %s \"\$TMP_$2\"")" = 'no' ] && return 0
+	[ "$(eval "printf %s \"\$HAVE_$2\"")" = 'yes' ] && return 0
+
+	check_compiler "$1" ''
+	nopkg_flags=''
+	nopkg_triplet="$("$CC" -print-multiarch 2>/dev/null || :)"
+	nopkg_dirs="$INCLUDES${nopkg_triplet:+ usr/lib/$nopkg_triplet} usr/lib64 usr/lib usr/local/lib64 usr/local/lib"
+	answer='yes'
+
+	for nopkg_inc in $(printf %s "$4"); do
+		case "$nopkg_inc" in
+			-* )
+				nopkg_flags="${nopkg_flags:+$nopkg_flags }$nopkg_inc"
+				continue
+			;;
+			/* )
+				if [ -d "$nopkg_inc" ]; then
+					nopkg_flags="${nopkg_flags:+$nopkg_flags }-I$nopkg_inc"
+					continue
+				fi
+			;;
+			* )
+				nopkg_found=''
+				for nopkg_dir in $(printf %s "$nopkg_dirs"); do
+					if [ -d "/$nopkg_dir/$nopkg_inc" ]; then
+						nopkg_found="-I/$nopkg_dir/$nopkg_inc"
+						break
+					fi
+				done
+				if [ "$nopkg_found" ]; then
+					nopkg_flags="${nopkg_flags:+$nopkg_flags }$nopkg_found"
+					continue
+				fi
+			;;
+		esac
+		answer='no'
+		break
+	done
+
+	printf %s "Checking for $2 without pkg-config ... "
+	if [ "$answer" = 'yes' ]; then
+		printf %s\\n "$5" > "$TEMP_CODE"
+		answer='no'
+		$(printf %s "$COMPILER") -o "$TEMP_EXE" "$TEMP_CODE" \
+			$(printf %s "$BUILD_DIRS ${6:-} $nopkg_flags $FLAGS $LDFLAGS $3") \
+			>>config.log 2>&1 && answer='yes'
+		rm -f -- "$TEMP_CODE" "$TEMP_EXE"
+	fi
+	printf %s\\n "$answer"
+
+	if [ "$answer" = 'yes' ]; then
+		eval "HAVE_$2=yes"
+		eval "${2}_CFLAGS=\"$nopkg_flags\""
+		eval "${2}_LIBS=\"$3\""
+		PKG_CONF_USED="$PKG_CONF_USED $2"
+	elif [ "$(eval "printf %s \"\$USER_$2\"")" = 'yes' ]; then
+		die 1 "Forced to build with $2, but it cannot be found without pkg-config. Exiting ..."
+	fi
+	return 0
+}
+
+# nopkg_version_ge: true when dotted version $1 is at least $2.
+nopkg_version_ge()
+{	printf '%s\n%s\n' "$1" "$2" | awk -F. '
+		NR == 1 { for (i = 1; i <= 4; i++) a[i] = $i + 0 }
+		NR == 2 { for (i = 1; i <= 4; i++) b[i] = $i + 0 }
+		END {
+			for (i = 1; i <= 4; i++) {
+				if (a[i] > b[i]) exit 0
+				if (a[i] < b[i]) exit 1
+			}
+			exit 0
+		}'
+}
+
+# nopkg_qmake: prints the qmake of Qt major version $1, if there is one;
+# it answers for its own headers and libraries without pkg-config.
+nopkg_qmake()
+{	for nopkg_q in "qmake$1" "qmake-qt$1" qmake; do
+		nopkg_q="$(exists "${CROSS_COMPILE:-}$nopkg_q" || :)"
+		[ "$nopkg_q" ] || continue
+		case "$("$nopkg_q" -query QT_VERSION 2>/dev/null)" in
+			"$1".* ) printf %s\\n "$nopkg_q"; return 0 ;;
+		esac
+	done
+	return 1
+}
+
 check_val()
-{	check_pkgconf "$2" "$5" "${6:-}" "${7:-}" "${8:-}"
+{	# Without pkg-config the library check below always runs, and it is
+	# what decides a package forced by name.
+	if [ "$PKG_CONF_PATH" = "none" ]; then
+		check_pkgconf "$2" "$5" "${6:-}" "${7:-}" true
+	else
+		check_pkgconf "$2" "$5" "${6:-}" "${7:-}" "${8:-}"
+	fi
 	[ "$PKG_CONF_PATH" = "none" ] || [ "${8:-}" = true ] || return 0
 	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
 	oldval="$(eval "printf %s \"\$TMP_$2\"")"

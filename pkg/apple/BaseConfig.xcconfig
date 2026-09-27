@@ -24,11 +24,9 @@ OTHER_CFLAGS = $(inherited) -DHAVE_CHEATS
 OTHER_CFLAGS = $(inherited) -DHAVE_CHEEVOS
 OTHER_CFLAGS = $(inherited) -DHAVE_CHEEVOS_RVZ
 OTHER_CFLAGS = $(inherited) -DHAVE_CLOUDSYNC
-OTHER_CFLAGS = $(inherited) -DHAVE_COCOA_METAL
 OTHER_CFLAGS = $(inherited) -DHAVE_COMMAND
 OTHER_CFLAGS = $(inherited) -DHAVE_CONFIGFILE
 OTHER_CFLAGS = $(inherited) -DHAVE_COREAUDIO
-OTHER_CFLAGS = $(inherited) -DHAVE_COREAUDIO3
 OTHER_CFLAGS = $(inherited) -DHAVE_CORELOCATION
 OTHER_CFLAGS = $(inherited) -DHAVE_CORETEXT
 OTHER_CFLAGS = $(inherited) -DHAVE_DR_FLAC
@@ -123,6 +121,7 @@ OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_AVF
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_COREMIDI
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_DISCORD
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_DYLIB
+OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_COCOA
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_GETOPT_LONG
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_HID
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_IOHIDMANAGER
@@ -130,7 +129,7 @@ OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_MATERIALUI
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_OPENGL_CORE
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_PRESENCE
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_STDIN_CMD
-OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DOSX
+OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DTARGET_OS_OSX=1
 
 OTHER_CFLAGS_IOS_TVOS_SHARE = $(inherited) -DGLES_SILENCE_DEPRECATION
 OTHER_CFLAGS_IOS_TVOS_SHARE = $(inherited) -DHAVE_BTSTACK
@@ -143,7 +142,6 @@ OTHER_CFLAGS_IOS_TVOS_SHARE = $(inherited) -DHAVE_MINIUPNPC
 OTHER_CFLAGS_IOS_TVOS_SHARE = $(inherited) -DHAVE_ONLINE_UPDATER
 OTHER_CFLAGS_IOS_TVOS_SHARE = $(inherited) -DHAVE_OPENGLES
 OTHER_CFLAGS_IOS_TVOS_SHARE = $(inherited) -DHAVE_OPENGLES3
-OTHER_CFLAGS_IOS_TVOS_SHARE = $(inherited) -DIOS
 OTHER_CFLAGS_IOS_TVOS_SHARE = $(inherited) -DPACKAGE_VERSION=\"$(MARKETING_VERSION)\"
 OTHER_CFLAGS_IOS_TVOS_SHARE = $(inherited) -DRARCH_MOBILE
 
@@ -175,6 +173,9 @@ LD_RUNPATH_SEARCH_PATHS[sdk=macosx*][config=Debug] = $(inherited) /opt/homebrew/
 // (debug symbols still go to dSYM files)
 STRIP_STYLE[config=Release] = debugging
 
+// actool's device-thinned compile flattens the layered tvOS icon wrong (black when unfocused)
+ENABLE_ONLY_ACTIVE_RESOURCES[sdk=appletvos*] = NO
+
 SRCBASE  = $(SRCROOT)/../..
 DEPS_DIR = $(SRCBASE)/deps
 
@@ -184,7 +185,6 @@ HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/SPIRV-Cross
 HEADER_SEARCH_PATHS = $(inherited) $(GLSLANG_BUILTIN_HEADER_SEARCH_PATHS)
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/rcheevos/include
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/stb
-HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/zstd/lib
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/libnfs/include
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/libnfs/include/nfsc
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/libnfs

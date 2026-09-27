@@ -65,6 +65,14 @@ struct filter_data
    unsigned threads;
    struct softfilter_thread_data *workers;
    unsigned in_fmt;
+   /* Rows in the whole frame, for clamping the 5x5 neighbourhood at
+    * its top and bottom whichever slice a worker has. */
+   unsigned frame_height;
+   /* One YUV key per source pixel, RGBtoYUV of its RGB565 value,
+    * filled once a frame before the workers run so the edge decisions
+    * compare two loaded keys instead of looking both pixels up again. */
+   uint16_t *keys;
+   size_t    keys_cap;
    uint16_t RGBtoYUV[65536];
    uint16_t tbl_5_to_8[32];
    uint16_t tbl_6_to_8[64];
@@ -85,6 +93,9 @@ static unsigned twoxbr_generic_threads(void *data)
    struct filter_data *filt = (struct filter_data*)data;
    return filt->threads;
 }
+
+#define XRGB8888_TO_RGB565(p) \
+   ((((p) >> 8) & 0xf800) | (((p) >> 5) & 0x07e0) | (((p) >> 3) & 0x001f))
 
 #define RED_MASK565   0xF800
 #define GREEN_MASK565 0x07E0
@@ -233,10 +244,14 @@ static void *twoxbr_generic_create(const struct softfilter_config *config,
       return NULL;
    filt->workers = (struct softfilter_thread_data*)
       calloc(threads, sizeof(struct softfilter_thread_data));
-   filt->threads = 1;
-   filt->in_fmt  = in_fmt;
-   if (!filt->workers)
+   filt->threads  = threads;
+   filt->in_fmt   = in_fmt;
+   filt->keys_cap = (size_t)max_width * max_height;
+   filt->keys     = (uint16_t*)malloc(filt->keys_cap * sizeof(*filt->keys));
+   if (!filt->workers || !filt->keys)
    {
+      free(filt->keys);
+      free(filt->workers);
       free(filt);
       return NULL;
    }
@@ -261,6 +276,7 @@ static void twoxbr_generic_destroy(void *data)
    if (!filt)
       return;
 
+   free(filt->keys);
    free(filt->workers);
    free(filt);
 }
@@ -399,57 +415,20 @@ static void twoxbr_generic_destroy(void *data)
 #define DIA_8888_2X(N3, PIXEL)\
              ALPHA_BLEND_128_W(E[N3], PIXEL); \
 
+/* Every comparison names two of the 5x5 neighbours; K_<name> is that
+ * neighbour's precomputed YUV key. */
 #define df(Z, A, B)\
-        abs(Z->RGBtoYUV[A] - Z->RGBtoYUV[B])\
+        abs((int)K_##A - (int)K_##B)\
 
 #define eq(Z, A, B)\
         (df(Z, A, B) < 155)\
 
-float df8(uint32_t A, uint32_t B,
-      uint32_t pg_red_mask, uint32_t pg_green_mask, uint32_t pg_blue_mask)
-{
-   uint32_t r, g, b;
-   uint32_t y, u, v;
-
-#ifdef MSB_FIRST
-   r = abs((int)(((A & pg_red_mask  )>>24) - ((B & pg_red_mask  )>> 24)));
-   g = abs((int)(((A & pg_green_mask  )>>16) - ((B & pg_green_mask  )>> 16)));
-   b = abs((int)(((A & pg_blue_mask  )>>8 ) - ((B & pg_blue_mask  )>> 8 )));
-#else
-   b = abs((int)(((A & pg_blue_mask  )>>16) - ((B & pg_blue_mask  )>> 16)));
-   g = abs((int)(((A & pg_green_mask)>>8  ) - ((B & pg_green_mask )>>  8)));
-   r = abs((int)(((A & pg_red_mask        ) -  (B & pg_red_mask         ))));
-#endif
-
-   y = fabs(0.299*r + 0.587*g + 0.114*b);
-   u = fabs(-0.169*r - 0.331*g + 0.500*b);
-   v = fabs(0.500*r - 0.419*g - 0.081*b);
-
-   return 48*y + 7*u + 6*v;
-}
-
-int eq8(uint32_t A, uint32_t B,
-      uint32_t pg_red_mask, uint32_t pg_green_mask, uint32_t pg_blue_mask)
-{
-    uint32_t r, g, b;
-    uint32_t y, u, v;
-
-#ifdef MSB_FIRST
-   r = abs((int)(((A & pg_red_mask  )>>24) - ((B & pg_red_mask  )>> 24)));
-   g = abs((int)(((A & pg_green_mask  )>>16) - ((B & pg_green_mask  )>> 16)));
-   b = abs((int)(((A & pg_blue_mask  )>>8 ) - ((B & pg_blue_mask  )>> 8 )));
-#else
-   b = abs((int)(((A & pg_blue_mask  )>>16) - ((B & pg_blue_mask  )>> 16)));
-   g = abs((int)(((A & pg_green_mask)>>8  ) - ((B & pg_green_mask )>>  8)));
-   r = abs((int)(((A & pg_red_mask        ) -  (B & pg_red_mask         ))));
-#endif
-
-    y = fabs(0.299*r + 0.587*g + 0.114*b);
-    u = fabs(-0.169*r - 0.331*g + 0.500*b);
-    v = fabs(0.500*r - 0.419*g - 0.081*b);
-
-    return ((48 >= y) && (7 >= u) && (6 >= v)) ? 1 : 0;
-}
+/* The XRGB8888 path makes its edge decisions at RGB565 precision,
+ * through the same YUV keys as the RGB565 path; the blending itself
+ * stays at full 8-bit precision.  The masks are the RGB565 path's
+ * arguments and are not needed here. */
+#define df8(A, B, rm, gm, bm) abs((int)K_##A - (int)K_##B)
+#define eq8(A, B, rm, gm, bm) (df8(A, B, rm, gm, bm) < 155)
 
 #define FILTRO_RGB565(Z, PE, _PI, PH, PF, PG, PC, PD, PB, PA, G5, C4, G0, D0, C1, B1, F4, I4, H5, I5, A0, A1, N0, N1, N2, N3, pg_red_mask, pg_green_mask, pg_blue_mask) \
      ex   = (PE!=PH && PE!=PF); \
@@ -531,7 +510,6 @@ int eq8(uint32_t A, uint32_t B,
          out[1] = E[1]; \
          out[dst_stride] = E[2]; \
          out[dst_stride + 1] = E[3]; \
-         ++in; \
          out += 2
 #endif
 
@@ -539,7 +517,7 @@ static void twoxbr_generic_xrgb8888(void *data, unsigned width, unsigned height,
       int first, int last, uint32_t *src,
       unsigned src_stride, uint32_t *dst, unsigned dst_stride)
 {
-   unsigned nextline, finish;
+   unsigned x, y;
    uint32_t pg_red_mask      = RED_MASK8888;
    uint32_t pg_green_mask    = GREEN_MASK8888;
    uint32_t pg_blue_mask     = BLUE_MASK8888;
@@ -547,40 +525,52 @@ static void twoxbr_generic_xrgb8888(void *data, unsigned width, unsigned height,
    uint32_t pg_alpha_mask    = ALPHA_MASK8888;
    struct filter_data *filt = (struct filter_data*)data;
 
-   (void)filt;
+   (void)last;
 
-   nextline = (last) ? 0 : src_stride;
-
-   for (; height; height--)
+   for (y = 0; y < height; y++)
    {
-      uint32_t *in  = (uint32_t*)src;
-      uint32_t *out = (uint32_t*)dst;
+      /* The 5x5 neighbourhood, clamped to the frame: rows above and
+       * below the edge repeat the edge row, as columns do at the sides. */
+      unsigned abs_y   = (unsigned)first + y;
+      int up1          = abs_y >= 1 ? -1 : 0;
+      int up2          = abs_y >= 2 ? -2 : up1;
+      int dn1          = abs_y + 1 < filt->frame_height ? 1 : 0;
+      int dn2          = abs_y + 2 < filt->frame_height ? 2 : dn1;
+      const uint32_t *rm1 = src + up1 * (int)src_stride;
+      const uint32_t *r0  = src;
+      const uint32_t *rp1 = src + dn1 * (int)src_stride;
+      const uint16_t *k0 = filt->keys + (size_t)abs_y * width;
+      const uint16_t *km2 = k0 + up2 * (int)width;
+      const uint16_t *km1 = k0 + up1 * (int)width;
+      const uint16_t *kp1 = k0 + dn1 * (int)width;
+      const uint16_t *kp2 = k0 + dn2 * (int)width;
+      uint32_t *out       = dst;
 
-      for (finish = width; finish; finish -= 1)
+      for (x = 0; x < width; x++)
       {
          uint32_t E[4];
          uint32_t ex, e, i, ke, ki, ex2, ex3, px;
-         uint32_t A1 = *(in - nextline - nextline - 1);
-         uint32_t B1 = *(in - nextline - nextline);
-         uint32_t C1 = *(in - nextline - nextline + 1);
-         uint32_t A0 = *(in - nextline - 2);
-         uint32_t PA = *(in - nextline - 1);
-         uint32_t PB = *(in - nextline);
-         uint32_t PC = *(in - nextline + 1);
-         uint32_t C4 = *(in - nextline + 2);
-         uint32_t D0 = *(in - 2);
-         uint32_t PD = *(in - 1);
-         uint32_t PE = *(in);
-         uint32_t PF = *(in + 1);
-         uint32_t F4 = *(in + 2);
-         uint32_t G0 = *(in + nextline - 2);
-         uint32_t PG = *(in + nextline - 1);
-         uint32_t PH = *(in + nextline);
-         uint32_t _PI = *(in + nextline + 1);
-         uint32_t I4 = *(in + nextline + 2);
-         uint32_t G5 = *(in + nextline + nextline - 1);
-         uint32_t H5 = *(in + nextline + nextline);
-         uint32_t I5 = *(in + nextline + nextline + 1);
+         unsigned xm1   = x ? x - 1 : 0;
+         unsigned xm2   = x > 1 ? x - 2 : xm1;
+         unsigned xp1   = x + 1 < width ? x + 1 : x;
+         unsigned xp2   = x + 2 < width ? x + 2 : xp1;
+         uint32_t PA = rm1[xm1];
+         uint32_t PB = rm1[x];
+         uint32_t PC = rm1[xp1];
+         uint32_t PD = r0[xm1];
+         uint32_t PE = r0[x];
+         uint32_t PF = r0[xp1];
+         uint32_t PG = rp1[xm1];
+         uint32_t PH = rp1[x];
+         uint32_t _PI = rp1[xp1];
+         uint16_t K_A1 = km2[xm1], K_B1 = km2[x],   K_C1 = km2[xp1];
+         uint16_t K_A0 = km1[xm2], K_PA = km1[xm1], K_PB = km1[x];
+         uint16_t K_PC = km1[xp1], K_C4 = km1[xp2];
+         uint16_t K_D0 = k0[xm2],  K_PD = k0[xm1],  K_PE = k0[x];
+         uint16_t K_PF = k0[xp1],  K_F4 = k0[xp2];
+         uint16_t K_G0 = kp1[xm2], K_PG = kp1[xm1], K_PH = kp1[x];
+         uint16_t K__PI = kp1[xp1], K_I4 = kp1[xp2];
+         uint16_t K_G5 = kp2[xm1], K_H5 = kp2[x],   K_I5 = kp2[xp1];
 
          /*
           * Map of the pixels:          A1 B1 C1
@@ -602,44 +592,59 @@ static void twoxbr_generic_rgb565(void *data, unsigned width, unsigned height,
       int first, int last, uint16_t *src,
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
-   unsigned finish;
+   unsigned x, y;
    struct filter_data *filt = (struct filter_data*)data;
    uint16_t pg_red_mask     = RED_MASK565;
    uint16_t pg_green_mask   = GREEN_MASK565;
    uint16_t pg_blue_mask    = BLUE_MASK565;
    uint16_t pg_lbmask       = PG_LBMASK565;
-   unsigned nextline        = (last) ? 0 : src_stride;
 
-   for (; height; height--)
+   (void)last;
+
+   for (y = 0; y < height; y++)
    {
-      uint16_t *in  = (uint16_t*)src;
-      uint16_t *out = (uint16_t*)dst;
+      /* The 5x5 neighbourhood, clamped to the frame: rows above and
+       * below the edge repeat the edge row, as columns do at the sides. */
+      unsigned abs_y   = (unsigned)first + y;
+      int up1          = abs_y >= 1 ? -1 : 0;
+      int up2          = abs_y >= 2 ? -2 : up1;
+      int dn1          = abs_y + 1 < filt->frame_height ? 1 : 0;
+      int dn2          = abs_y + 2 < filt->frame_height ? 2 : dn1;
+      const uint16_t *rm1 = src + up1 * (int)src_stride;
+      const uint16_t *r0  = src;
+      const uint16_t *rp1 = src + dn1 * (int)src_stride;
+      const uint16_t *k0 = filt->keys + (size_t)abs_y * width;
+      const uint16_t *km2 = k0 + up2 * (int)width;
+      const uint16_t *km1 = k0 + up1 * (int)width;
+      const uint16_t *kp1 = k0 + dn1 * (int)width;
+      const uint16_t *kp2 = k0 + dn2 * (int)width;
+      uint16_t *out       = dst;
 
-      for (finish = width; finish; finish -= 1)
+      for (x = 0; x < width; x++)
       {
          uint16_t E[4];
          uint16_t ex, e, i, ke, ki, ex2, ex3, px;
-         uint16_t A1 = *(in - nextline - nextline - 1);
-         uint16_t B1 = *(in - nextline - nextline);
-         uint16_t C1 = *(in - nextline - nextline + 1);
-         uint16_t A0 = *(in - nextline - 2);
-         uint16_t PA = *(in - nextline - 1);
-         uint16_t PB = *(in - nextline);
-         uint16_t PC = *(in - nextline + 1);
-         uint16_t C4 = *(in - nextline + 2);
-         uint16_t D0 = *(in - 2);
-         uint16_t PD = *(in - 1);
-         uint16_t PE = *(in);
-         uint16_t PF = *(in + 1);
-         uint16_t F4 = *(in + 2);
-         uint16_t G0 = *(in + nextline - 2);
-         uint16_t PG = *(in + nextline - 1);
-         uint16_t PH = *(in + nextline);
-         uint16_t _PI = *(in + nextline + 1);
-         uint16_t I4 = *(in + nextline + 2);
-         uint16_t G5 = *(in + nextline + nextline - 1);
-         uint16_t H5 = *(in + nextline + nextline);
-         uint16_t I5 = *(in + nextline + nextline + 1);
+         unsigned xm1   = x ? x - 1 : 0;
+         unsigned xm2   = x > 1 ? x - 2 : xm1;
+         unsigned xp1   = x + 1 < width ? x + 1 : x;
+         unsigned xp2   = x + 2 < width ? x + 2 : xp1;
+         uint16_t PA = rm1[xm1];
+         uint16_t PB = rm1[x];
+         uint16_t PC = rm1[xp1];
+         uint16_t PD = r0[xm1];
+         uint16_t PE = r0[x];
+         uint16_t PF = r0[xp1];
+         uint16_t PG = rp1[xm1];
+         uint16_t PH = rp1[x];
+         uint16_t _PI = rp1[xp1];
+         uint16_t K_A1 = km2[xm1], K_B1 = km2[x],   K_C1 = km2[xp1];
+         uint16_t K_A0 = km1[xm2], K_PA = km1[xm1], K_PB = km1[x];
+         uint16_t K_PC = km1[xp1], K_C4 = km1[xp2];
+         uint16_t K_D0 = k0[xm2],  K_PD = k0[xm1],  K_PE = k0[x];
+         uint16_t K_PF = k0[xp1],  K_F4 = k0[xp2];
+         uint16_t K_G0 = kp1[xm2], K_PG = kp1[xm1], K_PH = kp1[x];
+         uint16_t K__PI = kp1[xp1], K_I4 = kp1[xp2];
+         uint16_t K_G5 = kp2[xm1], K_H5 = kp2[x],   K_I5 = kp2[xp1];
 
          /*
           * Map of the pixels:          A1 B1 C1
@@ -698,6 +703,36 @@ static void twoxbr_generic_packets(void *data,
    unsigned i;
    struct filter_data *filt = (struct filter_data*)data;
 
+   filt->frame_height = height;
+
+   /* The frame's YUV keys, one table lookup per source pixel. */
+   if ((size_t)width * height > filt->keys_cap)
+   {
+      uint16_t *keys = (uint16_t*)realloc(filt->keys,
+            (size_t)width * height * sizeof(*keys));
+      if (keys)
+      {
+         filt->keys     = keys;
+         filt->keys_cap = (size_t)width * height;
+      }
+   }
+   if ((size_t)width * height <= filt->keys_cap)
+   {
+      unsigned x, y;
+      uint16_t *k = filt->keys;
+      for (y = 0; y < height; y++)
+      {
+         const uint8_t *row = (const uint8_t*)input + y * input_stride;
+         if (filt->in_fmt == SOFTFILTER_FMT_RGB565)
+            for (x = 0; x < width; x++)
+               *k++ = filt->RGBtoYUV[((const uint16_t*)row)[x]];
+         else
+            for (x = 0; x < width; x++)
+               *k++ = filt->RGBtoYUV[XRGB8888_TO_RGB565(
+                     ((const uint32_t*)row)[x])];
+      }
+   }
+
    for (i = 0; i < filt->threads; i++)
    {
       struct softfilter_thread_data *thr =
@@ -748,6 +783,10 @@ const struct softfilter_implementation *softfilter_get_implementation(
    (void)simd;
    return &twoxbr_generic;
 }
+
+#undef XRGB8888_TO_RGB565
+#undef df8
+#undef eq8
 
 #ifdef RARCH_INTERNAL
 #undef softfilter_get_implementation

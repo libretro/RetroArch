@@ -2,6 +2,8 @@
  *
  * A pure demuxer: it parses the EBML/Matroska container and hands out the
  * elementary-stream packets, without decoding.  See rwebm.h for the API.
+ * The decoding glue lives next door: rwebm_audio.c (audio track to PCM)
+ * and rwebm_video.c (video track to images).
  *
  * Scope: WebM restricts Matroska to VP8/VP9 video and Vorbis/Opus audio,
  * SimpleBlock/BlockGroup lacing, and a Segment/Cluster/Block layout.  The
@@ -1083,6 +1085,9 @@ void rwebm_set_avail(rwebm_t *webm, size_t avail)
    e = webm->data + avail;
    if (e > webm->segment_end)
       e = webm->segment_end;
-   if (e > webm->avail_end)   /* monotonic: bytes never un-arrive */
-      webm->avail_end = e;
+   /* An exact store, not a raise: see rmp4_set_avail.  A windowed
+    * caller's bound follows its feed frontier down as well as up -
+    * after a loop's rewind the old high-water bound would admit walks
+    * onto pages the window decommitted. */
+   webm->avail_end = e;
 }

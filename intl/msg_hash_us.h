@@ -1230,6 +1230,70 @@ MSG_HASH(
    "Disc Information"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY,
+   "Keyboard %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_LOAD_ENTRY,
+   "Load %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_START_ENTRY,
+   "Start %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TITLE,
+   "Title: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_SYSTEM,
+   "System: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_SERIAL,
+   "Serial#: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_VERSION,
+   "Version: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_RELEASE_DATE,
+   "Release Date: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_GENUINE,
+   "Genuine Disc: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACKS,
+   "Number of tracks: %d"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK,
+   "Track %d:"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_MODE,
+   " - Mode: %s"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
+   "Audio"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_DATA_MODE,
+   "Mode %d"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_SIZE,
+   " - Size: %.1f MB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_LENGTH,
+   " - Length: %02d:%02d.%02d"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_DISC_INFORMATION,
    "View information about inserted media discs."
    )
@@ -1248,6 +1312,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    "View information specific to the device."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION,
+   "Display Information"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISPLAY_INFORMATION,
+   "View the display server, output, mode and physical size of the display in use."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_INFORMATION,
+   "EDID"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISPLAY_EDID_INFORMATION,
+   "View the EDID the display in use reports: identity, capabilities, supported timings and extension blocks."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
@@ -1460,6 +1540,10 @@ MSG_HASH(
    "CPU Cores"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CPU_THREADS,
+   "threads"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
    "JIT Available"
    )
@@ -1484,6 +1568,10 @@ MSG_HASH(
    "Video Context Driver"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
+   "Pacing"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
    "Display Width (mm)"
    )
@@ -1494,6 +1582,158 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
    "Display DPI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_SERVER,
+   "Display Server"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
+   "Output"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_RESOLUTION,
+   "Resolution"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_REFRESH_RATE,
+   "Refresh Rate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION,
+   "Orientation"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SOURCE,
+   "Read"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION,
+   "EDID Version"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_MANUFACTURER,
+   "Manufacturer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PRODUCT,
+   "Product Code"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SERIAL,
+   "Serial Number"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DATE,
+   "Manufactured"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_NAME,
+   "Monitor Name"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TEXT,
+   "Text"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_INPUT,
+   "Video Input"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SCREEN_SIZE,
+   "Screen Size"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_GAMMA,
+   "Gamma"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_FEATURES,
+   "Features"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHROMATICITY,
+   "Chromaticity"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_GAMUT,
+   "Colour Gamut"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RANGE_LIMITS,
+   "Range Limits"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_ESTABLISHED_TIMINGS,
+   "Established Timing"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_STANDARD_TIMINGS,
+   "Standard Timing"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DETAILED_TIMING,
+   "Detailed Timing"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PREFERRED,
+   "preferred"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_EXTENSION,
+   "Extension Block"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_FLAGS,
+   "CTA Capabilities"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_VIDEO,
+   "CTA Video Formats"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_AUDIO,
+   "CTA Audio Formats"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_HDMI,
+   "HDMI"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_HDR,
+   "HDR Static Metadata"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_COLORIMETRY,
+   "Colorimetry"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DID_SECTIONS,
+   "DisplayID Sections"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM,
+   "Checksum"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK,
+   "OK"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_BAD,
+   "Bad"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TRUNCATED,
+   "Only part of the EDID could be read"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE,
+   "A built-in laptop or all-in-one panel carries no EDID. An external display connected over DDC does."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   "Raw"
    )
 
 /* Main Menu > Information > Database Manager > Information */
@@ -3219,6 +3459,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_MIDI_DRIVER,
    "MIDI driver to use. (Restart required)"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_UI_COMPANION_DRIVER,
+   "Companion UI"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_UI_COMPANION_DRIVER,
+   "Desktop companion UI driver to use when the Desktop Menu is enabled. (Restart required)"
+   )
 
 /* Settings > Video */
 
@@ -3518,11 +3766,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   "Improves performance at the cost of latency and more video stuttering. Use only if full speed cannot be obtained otherwise."
+   "Run the core and the video driver on separate threads, so the display keeps its cadence when the core stutters and the core overlaps with the shader chain and present. With 'Threaded Video Display Pacing' the core starts as late as the next refresh allows, matching the latency of Frame Delay. Cores that render on the GPU run threaded with the Vulkan, Direct3D 11, Direct3D 12 and gl drivers; with other drivers they run unthreaded whatever this is set to."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
-   "Use threaded video driver. Using this might improve performance at the possible cost of latency and more video stuttering."
+   "Run the video driver on a thread of its own. The display keeps its cadence when the core stutters, and the core runs its next frame while the last one goes through the shader chain and present. With 'Threaded Video Display Pacing' the core starts as late as the next refresh allows, which keeps latency at what Frame Delay gives."
    )
 /* GENERATED REGION: black frame insertion group (see settings_def_black_frame_insertion.h). */
 #define SETTINGS_DEF_STRINGS_PASS
@@ -4485,6 +4733,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #include "../settings/settings_def_crt_switchres.h"
+#include "../settings/settings_def_video_sdl_display_server.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_BOOL_H
@@ -5871,6 +6120,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
 MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
@@ -5887,6 +6139,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT
+#undef S_UINT_AT_EX
 #undef S_UINT_NS
 #undef S_INT
 #undef S_INT_NS
@@ -6942,7 +7195,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
-   "video_hdr_mode"
+   "HDR Mode"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
@@ -6966,7 +7219,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
-   "video_swapchain_bit_depth"
+   "Output Bit Depth"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH,
@@ -7373,6 +7626,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #include "../settings/settings_def_video_adaptive_vsync.h"
+#include "../settings/settings_def_video_gl_direct_spirv.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT
@@ -7388,7 +7642,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
-   "Synchronize video presentation to scanline position. Reduces latency at the cost of a higher risk of tearing. VSync must be disabled."
+   "Synchronize video presentation to scanline position prediction based on core time. Requirements: VSync off, Frame Delay off, display Hz near 1x core FPS and GPU at max clocks."
    )
 /* GENERATED REGION: frame delay group (see settings_def_frame_delay.h). */
 #define SETTINGS_DEF_STRINGS_PASS
@@ -8762,6 +9016,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    "Maximum audio latency in milliseconds. The driver aims to keep actual latency at 50% of this value. Might not be honored if the audio driver can't provide given latency."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY_FLOOR,
+   "Minimum Audio Latency (ms)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_AUDIO_LATENCY_FLOOR,
+   "The lowest audio latency RetroArch will ask a driver for. Eight milliseconds by default, which is what it was fixed at for a long time: a setting of zero used to reach the drivers and they handled it inconsistently. Drivers that talk to the device directly - WASAPI in exclusive mode, ASIO, WDM-KS - can often negotiate a shorter period than that, so lowering this lets them. A driver that cannot go lower will not; it keeps its own hardware floor either way."
    )
 
 #ifdef HAVE_MICROPHONE
@@ -10727,6 +10989,26 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef S_UINT_AT_EX_H
 #undef S_UINT_AT_EX_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
+#ifdef ANDROID
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
+   "Use System Keyboard"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
+   "Use the Android system keyboard for menu text entry instead of the built-in on-screen keyboard. Enables clipboard paste and password managers. Requires a touchscreen or an input method that can be navigated with a gamepad."
+   )
+#endif
+#ifdef HAVE_SDL3
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SDL3_SYSTEM_KEYBOARD,
+   "Use System Keyboard"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_SDL3_SYSTEM_KEYBOARD,
+   "Use the device's screen keyboard for menu text entry instead of the built-in on-screen keyboard. Only applies when the system provides a screen keyboard. Requires a touchscreen or an input method that can be navigated with a gamepad."
+   )
+#endif
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    "OFF"
@@ -11293,6 +11575,9 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
 MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
@@ -11366,6 +11651,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef S_BOOL_H
 #undef S_BOOL_NS_H
 #undef S_UINT
+#undef S_UINT_AT_EX
 #undef S_UINT_NS
 #undef S_UINT_H
 #undef S_UINT_NS_H
@@ -11655,7 +11941,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   "Loads and applies the next shader preset file in the root of the 'Video Shaders' directory."
+   "Loads and applies the next shader preset in the folder of the current preset. After the last one, moves on to the next folder at the same level. With 'Remember Last Used Shader Directory' off, cycles the presets in the root of the 'Video Shaders' directory instead, if it holds any."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
@@ -11663,7 +11949,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
-   "Loads and applies the previous shader preset file in the root of the 'Video Shaders' directory."
+   "Loads and applies the previous shader preset in the folder of the current preset. Before the first one, moves back to the previous folder at the same level. With 'Remember Last Used Shader Directory' off, cycles the presets in the root of the 'Video Shaders' directory instead, if it holds any."
    )
 
 MSG_HASH(
@@ -13029,6 +13315,21 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef S_FLOAT
 #undef S_FLOAT_NS
 #undef SETTINGS_DEF_STRINGS_PASS
+/* Settings > User Interface > File Browser > File Extension Display */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   "Always"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_DUPLICATES_ONLY,
+   "Duplicates Only"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
+   "Never"
+   )
+
 /* GENERATED REGION: builtin multimedia group (see settings_def_multimedia.h). */
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
@@ -14660,6 +14961,50 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY,
    "Overlay"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUTO,
+   "Auto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_ALWAYS,
+   "Always"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NO_EXTENSION,
+   "no ext"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MIN_ABBREV,
+   "Min."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_MAX_ABBREV,
+   "Max."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_CONSOLE,
+   "Console"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_HANDHELD,
+   "Handheld"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_AUDIO_LATENCY,
+   "Audio Latency"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_DEVICE_PERIOD,
+   "Device Period"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_CLIENT_BUFFER,
+   "Client Buffer"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SEC_KRB_OR_NTLM,
+   "KRB if available, NTLM if not"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
@@ -19416,7 +19761,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef SETTINGS_DEF_STRINGS_PASS
 MSG_HASH(
    MENU_ENUM_LABEL_AI_SERVICE_BACKEND,
-   "ai_service_backend"
+   "AI Service Backend"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_BACKEND,
@@ -19873,7 +20218,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
-   "cheevos_appearance_padding_h"
+   "Manual Horizontal Padding"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_H,
@@ -19885,7 +20230,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
-   "cheevos_appearance_padding_v"
+   "Manual Vertical Padding"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_V,
@@ -25297,11 +25642,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
-   "Parent Directory"
+   "<Parent Directory>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_PARENT_DIRECTORY,
    "Go back to the parent directory."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
+   "<Use This Directory>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_HELP_USE_THIS_DIRECTORY,
+   "Select this to set this as the directory."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
+   "<Content Directory>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
+   "<Default>"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
+   "<None>"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
@@ -25318,6 +25683,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SELECT_FILE,
    "Select File"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED,
+   "Relaxed"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED,
+   "Forced"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_NORMAL,
@@ -25364,7 +25737,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ARABIC,
-   "Arabic - العربية (Restart required)"
+   "Arabic - العربية"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_ASTURIAN,
@@ -25396,11 +25769,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_CHINESE_SIMPLIFIED,
-   "Chinese (Simplified) - 简体中文 (Restart required)"
+   "Chinese (Simplified) - 简体中文"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_CHINESE_TRADITIONAL,
-   "Chinese (Traditional) - 繁體中文 (Restart required)"
+   "Chinese (Traditional) - 繁體中文"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_CROATIAN,
@@ -25508,7 +25881,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_KOREAN,
-   "Korean - 한국어 (Restart required)"
+   "Korean - 한국어"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_LATIN,
@@ -25540,7 +25913,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_PERSIAN,
-   "Persian - فارسی (Restart required)"
+   "Persian - فارسی"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_POLISH,
@@ -25596,7 +25969,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_THAI,
-   "Thai - ภาษาไทย (Restart required)"
+   "Thai - ภาษาไทย"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_LANG_TURKISH,
@@ -25669,6 +26042,18 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE,
    "Average"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_REQUIRED,
+   "Required (Recommended)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_OPTIONAL,
+   "Optional (Warn Only)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_DISABLED,
+   "Disabled (Insecure)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
@@ -25745,26 +26130,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE,
    "No Source"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
-   "<Use This Directory>"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_USE_THIS_DIRECTORY,
-   "Select this to set this as the directory."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DIRECTORY_CONTENT,
-   "<Content Directory>"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DIRECTORY_DEFAULT,
-   "<Default>"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DIRECTORY_NONE,
-   "<None>"
    )
 MSG_HASH( /* FIXME Unused? */
    MENU_ENUM_LABEL_VALUE_RETROKEYBOARD,
@@ -30246,6 +30611,58 @@ MSG_HASH(
    "Remember window geometry:"
    )
 MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
+   "Restore the desktop menu window to the position and size it had when RetroArch last quit."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
+   "Open the content browser on the tab that was selected when RetroArch last quit."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THEME,
+   "Colour theme of the desktop menu: follow the system, use the built-in dark theme, or load a custom stylesheet."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
+   "List hidden files and folders in the file browser."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
+   "Colour used to highlight the selected row, as #rrggbb."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
+   "When a core is already loaded, offer it first when starting content."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST,
+   "Playlist to show when the desktop menu opens. Leave empty for the first one."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
+   "Memory kept for decoded thumbnails, in megabytes. Larger values scroll big playlists more smoothly."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT,
+   "Largest edge, in pixels, an image dropped onto a thumbnail is scaled down to before saving. 0 keeps the original size."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_CUSTOM_THEME,
+   "Stylesheet file used when the theme is set to Custom."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   "Most entries the All Playlists view shows in list mode. 0 shows every entry."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   "Most entries the All Playlists view shows in grid mode. 0 shows every entry."
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SCAN_FINISH_CONFIRM,
+   "Show a message when a content scan finishes."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
    "Remember last content browser tab:"
    )
@@ -30624,10 +31041,6 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    "Update failed."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
-   "Contributors"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
@@ -31428,6 +31841,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_AUDIO_MUTED,
    "Audio muted."
+   )
+MSG_HASH(
+   MSG_AUDIO_ASIO_NOT_RUNNING,
+   "ASIO is not the running audio driver yet. Restart RetroArch to open its control panel."
+   )
+MSG_HASH(
+   MSG_CRT_SWITCH_EDID_WRITTEN,
+   "EDID written to %s. See the log for how to load it."
+   )
+MSG_HASH(
+   MSG_CRT_SWITCH_EDID_FAILED,
+   "Could not write an EDID for the selected CRT preset."
    )
 MSG_HASH(
    MSG_AUDIO_UNMUTED,
@@ -32718,6 +33143,14 @@ MSG_HASH(
    "RetroAchievements: Logged in as \"%s\"."
    )
 MSG_HASH(
+   MSG_CHEEVOS_HARDCORE_MODE,
+   "Hardcore"
+   )
+MSG_HASH(
+   MSG_CHEEVOS_CASUAL_MODE,
+   "Casual"
+   )
+MSG_HASH(
    MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
    "You must pause or disable Achievements Hardcore Mode to load states."
    )
@@ -32828,6 +33261,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_NORMAL,
    "Normal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT_STEREO,
+   "Stereo"
+   )
+MSG_HASH(
+   MSG_COMPRESSION_CODEC_DEFLATE,
+   "Deflate"
+   )
+MSG_HASH(
+   MSG_COMPRESSION_CODEC_ZSTD,
+   "Zstandard"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_HIGHER,
@@ -36137,15 +36582,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
-   "Name of the network share to access."
+   "Name of the network share to access. Leave empty to list every share the server exports and pick one while browsing."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
-   "SMB Sub directory (optional)"
+   "SMB Sub directory"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
-   "Sub directory path on the share."
+   "Sub directory path on the share. Optional."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
@@ -36153,7 +36598,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
-   "Username for authentication."
+   "Username for authentication. This is optional when guest access is enabled on the server. Windows 10 and above: guest access is disabled by default, so a username is required here."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
@@ -36161,7 +36606,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
-   "Password for authentication."
+   "Password for authentication. This is optional when guest access is enabled on the server. Windows 10 and above: guest access is disabled by default, so a password is required here."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
@@ -36169,7 +36614,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
-   "Workgroup or domain name."
+   "Workgroup or domain name. Optional in some setups."
    )
 /* GENERATED REGION: SMB client authentication group (see settings_def_smb_client_auth.h). */
 #define SETTINGS_DEF_STRINGS_PASS
@@ -37475,7 +37920,192 @@ MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #undef S_UINT_AT_EX_H
 #undef S_UINT_AT_EX_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
-/* GENERATED REGION: Direct3D 11 GPU index setting (see settings_def_gpu_index_d3d11.h). */
+/* GENERATED REGION: Direct3D 11 GPU index setting (see settings_def_gpu_index_d3d10.h). */
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_P_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH(f, T, n, d, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION(T, n, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_NS(T, n, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_BOOL_LV(f, T, TV, n, d, sd, df, c, us, sub) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_LV_NS(f, T, TV, n, d, sd, df, c, us)
+#define S_FLOAT_LV(f, T, TV, n, d, rnd, sd, df, c, us, sub) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_LV_NS(f, T, TV, n, d, rnd, sd, df, c, us)
+#define S_STRING_LV(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_LV_NS(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us)
+#define S_ACTION_LV(T, TV, n, sd, ok, rp, c, us, sub) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_LV_NS(T, TV, n, sd, ok, rp, c, us)
+#define S_INT_AT(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_AT_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#include "../settings/settings_def_gpu_index_d3d10.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_BOOL_H
+#undef S_BOOL_NS_H
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_UINT_H
+#undef S_UINT_NS_H
+#undef S_INT
+#undef S_INT_NS
+#undef S_INT_H
+#undef S_INT_NS_H
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_FLOAT_H
+#undef S_FLOAT_NS_H
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_STRING_H
+#undef S_STRING_NS_H
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_DIR_H
+#undef S_DIR_NS_H
+#undef S_STRING_P
+#undef S_STRING_P_NS
+#undef S_STRING_P_H
+#undef S_STRING_P_NS_H
+#undef S_PATH
+#undef S_PATH_NS
+#undef S_PATH_H
+#undef S_PATH_NS_H
+#undef S_PATH_DS
+#undef S_PATH_DS_NS
+#undef S_PATH_DS_H
+#undef S_PATH_DS_NS_H
+#undef S_ACTION
+#undef S_ACTION_NS
+#undef S_ACTION_H
+#undef S_ACTION_NS_H
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_BOOL_EX_H
+#undef S_BOOL_EX_NS_H
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_UINT_EX_H
+#undef S_UINT_EX_NS_H
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_INT_EX_H
+#undef S_INT_EX_NS_H
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_FLOAT_EX_H
+#undef S_FLOAT_EX_NS_H
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
+#undef S_ACTION_EX_H
+#undef S_ACTION_EX_NS_H
+#undef S_BOOL_LV
+#undef S_BOOL_LV_NS
+#undef S_BOOL_LV_H
+#undef S_BOOL_LV_NS_H
+#undef S_FLOAT_LV
+#undef S_FLOAT_LV_NS
+#undef S_FLOAT_LV_H
+#undef S_FLOAT_LV_NS_H
+#undef S_STRING_LV
+#undef S_STRING_LV_NS
+#undef S_STRING_LV_H
+#undef S_STRING_LV_NS_H
+#undef S_ACTION_LV
+#undef S_ACTION_LV_NS
+#undef S_ACTION_LV_H
+#undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+/* GENERATED REGION: Direct3D 12 GPU index setting (see settings_def_gpu_index_d3d11.h). */
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
@@ -37660,7 +38290,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef S_UINT_AT_EX_H
 #undef S_UINT_AT_EX_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
-/* GENERATED REGION: Direct3D 12 GPU index setting (see settings_def_gpu_index_d3d12.h). */
+/* GENERATED REGION: OpenGL GPU index setting (see settings_def_gpu_index_d3d12.h). */
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
@@ -37845,7 +38475,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef S_UINT_AT_EX_H
 #undef S_UINT_AT_EX_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
-/* GENERATED REGION: OpenGL GPU index setting (see settings_def_gpu_index_gl.h). */
+/* GENERATED REGION: Vulkan GPU index setting (see settings_def_gpu_index_metal.h). */
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
@@ -37944,192 +38574,7 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
 MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
-#include "../settings/settings_def_gpu_index_gl.h"
-#undef S_BOOL
-#undef S_BOOL_NS
-#undef S_BOOL_H
-#undef S_BOOL_NS_H
-#undef S_UINT
-#undef S_UINT_NS
-#undef S_UINT_H
-#undef S_UINT_NS_H
-#undef S_INT
-#undef S_INT_NS
-#undef S_INT_H
-#undef S_INT_NS_H
-#undef S_FLOAT
-#undef S_FLOAT_NS
-#undef S_FLOAT_H
-#undef S_FLOAT_NS_H
-#undef S_STRING
-#undef S_STRING_NS
-#undef S_STRING_H
-#undef S_STRING_NS_H
-#undef S_DIR
-#undef S_DIR_NS
-#undef S_DIR_H
-#undef S_DIR_NS_H
-#undef S_STRING_P
-#undef S_STRING_P_NS
-#undef S_STRING_P_H
-#undef S_STRING_P_NS_H
-#undef S_PATH
-#undef S_PATH_NS
-#undef S_PATH_H
-#undef S_PATH_NS_H
-#undef S_PATH_DS
-#undef S_PATH_DS_NS
-#undef S_PATH_DS_H
-#undef S_PATH_DS_NS_H
-#undef S_ACTION
-#undef S_ACTION_NS
-#undef S_ACTION_H
-#undef S_ACTION_NS_H
-#undef S_BOOL_EX
-#undef S_BOOL_EX_NS
-#undef S_BOOL_EX_H
-#undef S_BOOL_EX_NS_H
-#undef S_UINT_EX
-#undef S_UINT_EX_NS
-#undef S_UINT_EX_H
-#undef S_UINT_EX_NS_H
-#undef S_INT_EX
-#undef S_INT_EX_NS
-#undef S_INT_EX_H
-#undef S_INT_EX_NS_H
-#undef S_FLOAT_EX
-#undef S_FLOAT_EX_NS
-#undef S_FLOAT_EX_H
-#undef S_FLOAT_EX_NS_H
-#undef S_ACTION_EX
-#undef S_ACTION_EX_NS
-#undef S_ACTION_EX_H
-#undef S_ACTION_EX_NS_H
-#undef S_BOOL_LV
-#undef S_BOOL_LV_NS
-#undef S_BOOL_LV_H
-#undef S_BOOL_LV_NS_H
-#undef S_FLOAT_LV
-#undef S_FLOAT_LV_NS
-#undef S_FLOAT_LV_H
-#undef S_FLOAT_LV_NS_H
-#undef S_STRING_LV
-#undef S_STRING_LV_NS
-#undef S_STRING_LV_H
-#undef S_STRING_LV_NS_H
-#undef S_ACTION_LV
-#undef S_ACTION_LV_NS
-#undef S_ACTION_LV_H
-#undef S_ACTION_LV_NS_H
-#undef S_INT_AT
-#undef S_INT_AT_NS
-#undef S_INT_AT_H
-#undef S_INT_AT_NS_H
-#undef S_UINT_AT_EX
-#undef S_UINT_AT_EX_NS
-#undef S_UINT_AT_EX_H
-#undef S_UINT_AT_EX_NS_H
-#undef SETTINGS_DEF_STRINGS_PASS
-/* GENERATED REGION: Vulkan GPU index setting (see settings_def_gpu_index_vulkan.h). */
-#define SETTINGS_DEF_STRINGS_PASS
-#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
-#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
-#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
-#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
-#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
-#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
-#define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_STRING_P_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
-#define S_PATH(f, T, n, d, sd, c, vals, rp, ui, us, sub) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
-#define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
-#define S_ACTION(T, n, us, sub) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_ACTION_NS(T, n, us) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
-#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
-#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
-#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
-#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
-#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
-#define S_BOOL_LV(f, T, TV, n, d, sd, df, c, us, sub) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_BOOL_LV_NS(f, T, TV, n, d, sd, df, c, us)
-#define S_FLOAT_LV(f, T, TV, n, d, rnd, sd, df, c, us, sub) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_FLOAT_LV_NS(f, T, TV, n, d, rnd, sd, df, c, us)
-#define S_STRING_LV(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_STRING_LV_NS(f, T, TV, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us)
-#define S_ACTION_LV(T, TV, n, sd, ok, rp, c, us, sub) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_ACTION_LV_NS(T, TV, n, sd, ok, rp, c, us)
-#define S_INT_AT(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_INT_AT_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
-#define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
-MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
-#define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
-MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
-#include "../settings/settings_def_gpu_index_vulkan.h"
+#include "../settings/settings_def_gpu_index_metal.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_BOOL_H

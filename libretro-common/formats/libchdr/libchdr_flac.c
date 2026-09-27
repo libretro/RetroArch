@@ -122,7 +122,7 @@ int flac_decoder_reset(flac_decoder* decoder, uint32_t sample_rate, uint8_t num_
 int flac_decoder_decode_interleaved(flac_decoder* decoder, int16_t *samples, uint32_t num_samples, int swap_endian)
 {
 #define	BUFFER	2352	/* bytes per CD audio sector */
-	int16_t buffer[BUFFER];
+	int16_t *buffer = decoder->sector_buf;
 	uint32_t buf_samples = BUFFER / channels(decoder);
 
 	/* configure the uncompressed buffer */

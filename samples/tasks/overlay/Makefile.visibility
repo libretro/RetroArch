@@ -1,0 +1,40 @@
+TARGET := overlay_visibility_bounds_test
+
+# The units under test are the shipping input/input_overlay_alpha.c
+# (which images the overlay LED driver hides) and
+# led/drivers/led_overlay.c in front of it, both built from the tree.
+# The LED driver's two frontend entry points live in input_driver.c,
+# which needs the whole input driver to link, so the test supplies
+# them to watch what the driver reports.
+REPO_ROOT         := ../../..
+LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
+
+SOURCES := overlay_visibility_bounds_test.c \
+           $(REPO_ROOT)/input/input_overlay_alpha.c \
+           $(REPO_ROOT)/led/drivers/led_overlay.c
+
+OBJS := $(SOURCES:.c=.o)
+
+CFLAGS += -DHAVE_OVERLAY -Wall -pedantic -std=c89 -Wno-long-long -g -O1 -fno-omit-frame-pointer \
+          -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT) -I$(REPO_ROOT)/deps
+
+ifneq ($(SANITIZER),)
+   CFLAGS  := -fsanitize=$(SANITIZER) $(CFLAGS)
+   LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
+
+all: $(TARGET)
+
+%.o: %.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(TARGET): $(OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+check: $(TARGET)
+	./$(TARGET)
+
+clean:
+	rm -f $(TARGET) $(OBJS)
+
+.PHONY: all check clean

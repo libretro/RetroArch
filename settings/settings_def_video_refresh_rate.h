@@ -15,7 +15,7 @@ S_FLOAT(video_refresh_rate, VIDEO_REFRESH_RATE,
       "video_refresh_rate",
       DEFAULT_REFRESH_RATE, "%.3f Hz", SD_FLAG_ALLOW_INPUT | SD_FLAG_LAKKA_ADVANCED, SDESC_FLG_HAS_RANGE | SDESC_FLG_ENFORCE_MIN, CMD_EVENT_NONE, 0, 0, 0.001, NULL, NULL,
       "Vertical Refresh Rate",
-      "Vertical refresh rate of your screen. Used to calculate a suitable audio input rate. This will be ignored if 'Threaded Video' is enabled.")
+      "Vertical refresh rate of your screen. Used to calculate a suitable audio input rate, and as the display period Threaded Video paces on where the driver cannot report one.")
 /* config key "video_refresh_rate" differs from the label string; the
  * configuration.c row stays literal for this setting. */
 #ifndef SETTINGS_DEF_CONFIG_PASS

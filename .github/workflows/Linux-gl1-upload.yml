@@ -1,0 +1,104 @@
+name: CI Linux gl1 upload
+
+# Runs the gl1 video driver under Xvfb with a test core and checks the
+# screen against the frame the core drew, pixel for pixel, down each of
+# the driver's upload paths: frames taken straight from the core's
+# buffer, the no-GL_EXT_bgra swizzle, native RGB565, the GL 1.1 CPU
+# expansion, and texture storage respecified across frame size changes.
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'gfx/drivers/gl1.c'
+      - 'libretro-common/gfx/scaler/pixconv.c'
+      - 'libretro-common/include/gfx/scaler/pixconv.h'
+      - 'samples/gfx/gl1_upload/**'
+      - '.github/workflows/Linux-gl1-upload.yml'
+  pull_request:
+    paths:
+      - 'gfx/drivers/gl1.c'
+      - 'libretro-common/gfx/scaler/pixconv.c'
+      - 'libretro-common/include/gfx/scaler/pixconv.h'
+      - 'samples/gfx/gl1_upload/**'
+      - '.github/workflows/Linux-gl1-upload.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  gl1-upload:
+    name: Run retroarch on gl1 under Xvfb and check the frame
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: |
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            build-essential zlib1g-dev ccache python3 \
+            xvfb libgl1-mesa-dri \
+            libx11-dev libx11-xcb-dev libxcb1-dev libxext-dev \
+            libxxf86vm-dev libxrandr-dev libxinerama-dev \
+            libgl-dev libegl-dev
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 500M
+          ccache -z
+
+      - name: Build RetroArch (X11 + OpenGL, the rest off)
+        shell: bash
+        run: |
+          set -eu
+          ./configure --disable-qt --disable-wayland --disable-sdl \
+                      --disable-sdl2 --disable-ffmpeg --disable-vulkan \
+                      --disable-pulse --disable-discord \
+                      --disable-networking --disable-cheevos \
+                      --disable-glslang --disable-slang \
+                      --disable-spirv_cross --disable-xmb \
+                      --disable-materialui --disable-ozone \
+                      --disable-7zip --disable-flac \
+                      --disable-audiomixer --disable-translate \
+                      --disable-accessibility --disable-crtswitchres \
+                      --disable-langextra --disable-libretrodb \
+                      --disable-video_filter --disable-dsp_filter
+          grep -q '^HAVE_OPENGL1 = 1' config.mk
+          make -j$(nproc)
+          ccache -s
+
+      - name: Run gl1_upload_test
+        shell: bash
+        run: |
+          set -eu
+          make -C samples/gfx/gl1_upload
+          timeout 600 python3 samples/gfx/gl1_upload/gl1_upload_test.py ./retroarch

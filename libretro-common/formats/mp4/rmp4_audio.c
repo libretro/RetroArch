@@ -43,6 +43,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <encodings/crc32.h>
 #include <formats/rmp4.h>
 #include <formats/rmp4_audio.h>
 
@@ -177,16 +178,20 @@ static int rmp4_audio_decode_aac(rmp4_t *m, const rmp4_track *t,
 
    a->channels = raac_channels(d);
    *rate       = raac_sample_rate(d);
-   /* the track's edit list trims the encoder delay; media units are
-    * sample counts for audio */
+   /* the track's edit list trims the encoder delay in media-timescale
+    * units, i.e. core-rate samples; the trim is consumed in output
+    * frames, which double under SBR, so convert by the rate ratio */
    skip        = (size_t)t->media_skip;
+   if (t->sample_rate && *rate != t->sample_rate)
+      skip = (size_t)((t->media_skip * *rate
+            + t->sample_rate / 2) / t->sample_rate);
 
    while (rmp4_read_packet(m, &pkt) == 1)
    {
       int produced;
       if (pkt.track != track_idx)
          continue;
-      if (!rmp4_pcm_reserve(a, 1024))
+      if (!rmp4_pcm_reserve(a, raac_frame_len(d)))
          break;
       if (a->elem == sizeof(float))
          produced = raac_decode_f32(d, pkt.data, pkt.size,
@@ -223,24 +228,6 @@ static int rmp4_audio_decode_aac(rmp4_t *m, const rmp4_track *t,
 /* ==================================================================== */
 
 #ifdef HAVE_RVORBIS
-static uint32_t rmp4_ogg_crc_table[256];
-static int      rmp4_ogg_crc_ready = 0;
-
-static void rmp4_ogg_crc_init(void)
-{
-   unsigned i, j;
-   if (rmp4_ogg_crc_ready)
-      return;
-   for (i = 0; i < 256; i++)
-   {
-      uint32_t r = (uint32_t)i << 24;
-      for (j = 0; j < 8; j++)
-         r = (r << 1) ^ ((r & 0x80000000u) ? 0x04c11db7u : 0);
-      rmp4_ogg_crc_table[i] = r;
-   }
-   rmp4_ogg_crc_ready = 1;
-}
-
 typedef struct
 {
    uint8_t *data;
@@ -304,8 +291,7 @@ static int rmp4_ogg_page(rmp4_ogg *g, const uint8_t *pkt, size_t len,
    g->size += head + len;
    g->seq++;
 
-   for (k = 0; k < head + len; k++)
-      crc = (crc << 8) ^ rmp4_ogg_crc_table[(uint8_t)(crc >> 24) ^ p[k]];
+   crc = encoding_crc32_ogg(crc, p, head + len);
    for (k = 0; k < 4; k++)
       p[22 + k] = (uint8_t)(crc >> (8 * k));
    return 1;
@@ -364,7 +350,6 @@ static int rmp4_audio_decode_vorbis(rmp4_t *m, const rmp4_track *t,
          hdr, hdr_len))
       return 0;
 
-   rmp4_ogg_crc_init();
    memset(&g, 0, sizeof(g));
    g.serial = 0x52415741;   /* arbitrary but fixed */
 
@@ -474,8 +459,10 @@ static int rmp4_audio_decode_any(const void *buf, size_t len,
     * below returns a non-1 value at the first sample past the wall,
     * which every codec loop already treats as "stop and keep what was
     * decoded". */
+   /* Prefix semantics suffice here: the audio preview grows its
+    * window by probing, so the precise need-range stays unused. */
    if (!(m = rmp4_open_memory_avail((const uint8_t*)buf, len, avail,
-         need_more)))
+         need_more, NULL, NULL)))
       return 0;
 
    for (i = 0; i < rmp4_num_tracks(m); i++)

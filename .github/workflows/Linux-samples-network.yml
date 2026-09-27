@@ -1,0 +1,274 @@
+name: CI Linux samples/network
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  samples-network:
+    name: Build and run samples/network
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: |
+          pkgs="build-essential libmbedtls-dev"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 500M
+          ccache -z
+
+      - name: Build and run webdav_options_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/network/webdav_options
+        run: |
+          set -eu
+          # Includes network/cloud_sync/webdav.c and drives the OPTIONS
+          # capability probe as shipped over real-world header sets. The
+          # probe has to separate a WebDAV server from a plain HTTP
+          # server that answers OPTIONS, and the target it probes is a
+          # collection, on which PUT is not defined (RFC 4918 9.7.1) -
+          # so PUT's absence from Allow must not fail it. The previous
+          # probe did exactly that, rejecting mod_dav and Koofr
+          # (libretro/RetroArch#19486) while accepting a plain nginx
+          # that happened to list PUT. Covers the DAV header, Allow-only
+          # WebDAV methods, HTTP/2 lowercase field names, plain HTTP
+          # with and without PUT, empty and NULL header lists, and
+          # whole-token matching (PROPFINDX must not match PROPFIND).
+          make clean all SANITIZER=address,undefined
+          test -x webdav_options_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./webdav_options_test
+          echo "[pass] webdav_options_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./webdav_options_test
+          echo "[pass] webdav_options_test (TSan)"
+
+      - name: Build and run webdav_reauth_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/network/webdav_reauth
+        run: |
+          set -eu
+          # Includes network/cloud_sync/webdav.c and plays the server
+          # for every request type the driver sends (OPTIONS, GET, PUT,
+          # DELETE, MOVE, MKCOL). A server that keeps answering 401 with
+          # a Digest challenge - a wrong password - must get one retry
+          # and then a reported failure; the driver used to retry every
+          # challenge, so a mistyped password looped the first request
+          # of a sync forever. A single stale-nonce challenge must still
+          # be retried and succeed. A retried PUT must send the file:
+          # it used to re-read it from the end the first attempt left
+          # it at and upload uninitialised memory in place of the save.
+          make clean all SANITIZER=address,undefined
+          test -x webdav_reauth_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./webdav_reauth_test
+          echo "[pass] webdav_reauth_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./webdav_reauth_test
+          echo "[pass] webdav_reauth_test (TSan)"
+
+      - name: Build and run webdav_backup_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/network/webdav_backup
+        run: |
+          set -eu
+          # Includes network/cloud_sync/webdav.c and plays the server,
+          # request by request. With destructive sync off, an upload
+          # must COPY the server's file to deleted/<path>-<time> before
+          # the PUT replaces it - it used to overwrite it in place, so
+          # the setting protected against deletes but not overwrites.
+          # Covers the order (backup first, into an existing deleted/
+          # collection, named as a delete names it), 404 as "nothing to
+          # back up", a failed backup stopping the upload, destructive
+          # sync and the server manifest skipping the backup, and COPY
+          # and PUT each getting their own Digest retry.
+          make clean all SANITIZER=address,undefined
+          test -x webdav_backup_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./webdav_backup_test
+          echo "[pass] webdav_backup_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./webdav_backup_test
+          echo "[pass] webdav_backup_test (TSan)"
+
+      - name: Build and run s3_backup_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/network/s3_backup
+        run: |
+          set -eu
+          # Includes network/cloud_sync/s3.c and plays the server,
+          # request by request. The S3 driver never read the
+          # destructive sync setting: deletes removed objects for good
+          # and uploads overwrote them. With it off, both must first
+          # CopyObject the object to deleted/<path>-<time>. Covers the
+          # copy source for virtual-hosted and path-style endpoints,
+          # x-amz-copy-source being signed, 404 as "nothing to keep", a
+          # failed copy (including a 200 with an <Error> body) stopping
+          # the delete or upload, and destructive sync and the server
+          # manifest skipping the copy.
+          make clean all SANITIZER=address,undefined
+          test -x s3_backup_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./s3_backup_test
+          echo "[pass] s3_backup_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./s3_backup_test
+          echo "[pass] s3_backup_test (TSan)"
+
+      - name: Build and run smb_backup_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/network/smb_backup
+        run: |
+          set -eu
+          # Includes network/cloud_sync/smb.c and runs it against an
+          # in-memory libsmb2 share (fake_smb.c), checking what the
+          # share holds after each upload. The driver used to truncate
+          # the server file and then write, so a write failing part way
+          # left a truncated save; and with destructive sync off it
+          # overwrote the file without keeping the old copy a delete
+          # keeps. Uploads now go through <path>.rauploading and the
+          # replaced file is kept as <path>-<time> (non-destructive).
+          # Covers a failed write, backup and final rename each leaving
+          # the old file intact with no temporary file left, no backup
+          # for destructive sync, a new file or the manifest, an empty
+          # upload and the configured subdirectory.
+          make clean all SANITIZER=address,undefined
+          test -x smb_backup_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./smb_backup_test
+          echo "[pass] smb_backup_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./smb_backup_test
+          echo "[pass] smb_backup_test (TSan)"
+
+      - name: Build and run gdrive_backup_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/network/gdrive_backup
+        run: |
+          set -eu
+          # Includes network/cloud_sync/google_drive.c and plays the
+          # Drive API, request by request. With destructive sync off, a
+          # delete kept the old file (renamed <name>-<time>) but an
+          # upload replaced its content outright. An upload to an
+          # existing file must now files.copy it to that name in the
+          # same folder before the PATCH. Covers the order and the copy
+          # request, a failed copy stopping the upload, a 401 on the
+          # copy and on the PATCH each refreshing the token once (the
+          # PATCH retry repeating only the PATCH, not the backup), and
+          # destructive sync, a new file and the manifest skipping it.
+          make clean all SANITIZER=address,undefined
+          test -x gdrive_backup_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./gdrive_backup_test
+          echo "[pass] gdrive_backup_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./gdrive_backup_test
+          echo "[pass] gdrive_backup_test (TSan)"
+
+      - name: Build and run cheevos_login_test (bear ASan+UBSan, bear TSan, mbed ASan+UBSan)
+        shell: bash
+        working-directory: samples/network/cheevos_login
+        run: |
+          set -eu
+          # Regression guard for the RetroAchievements login transport
+          # (libretro/RetroArch#19562, #19457): drives net_http with the
+          # exact login shape cheevos_client.c produces, against a local
+          # mock server that validates every request byte-for-byte, over
+          # plain HTTP and over TLS with the real SSL backend linked in.
+          # Covers: login on a fresh TLS connection, trust-store loading
+          # from a realistic messy CA bundle (BearSSL), keep-alive pool
+          # reuse, one-shot replay of a request on a pooled connection
+          # the server closed while idle, and no replay once response
+          # bytes have been seen.
+          make clean all SANITIZER=address,undefined
+          test -x cheevos_login_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \
+             make check
+          echo "[pass] cheevos_login_test (BearSSL, ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 180 make check
+          echo "[pass] cheevos_login_test (BearSSL, TSan)"
+          make clean all SSL_BACKEND=mbed SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \
+             make check SSL_BACKEND=mbed
+          echo "[pass] cheevos_login_test (mbedTLS, ASan)"
+          # The runner's libmbedtls-dev is 2.28, which has no TLS 1.3,
+          # so the leg above cannot see either TLS 1.3 failure.  Mbed
+          # TLS 3.6.0 is the one release that shows both: it fails
+          # every handshake unless psa_crypto_init() was called, and it
+          # reports session tickets from mbedtls_ssl_read().  Library
+          # only, ~20 s to build.  A download that still fails after
+          # the retries skips the leg rather than failing the job.
+          mbed_ver=3.6.0
+          mbed_sha=3ecf94fcfdaacafb757786a01b7538a61750ebd85c4b024f56ff8ba1490fcd38
+          mbed_tar="$RUNNER_TEMP/mbedtls-$mbed_ver.tar.bz2"
+          if curl -fsSL --retry 3 --retry-delay 5 --max-time 120 -o "$mbed_tar" \
+             "https://github.com/Mbed-TLS/mbedtls/releases/download/v$mbed_ver/mbedtls-$mbed_ver.tar.bz2"; then
+             echo "$mbed_sha  $mbed_tar" | sha256sum -c -
+             tar -xjf "$mbed_tar" -C "$RUNNER_TEMP"
+             make -C "$RUNNER_TEMP/mbedtls-$mbed_ver" -j"$(nproc)" lib >/dev/null
+             make clean all SSL_BACKEND=mbed SANITIZER=address,undefined \
+                MBEDTLS_DIR="$RUNNER_TEMP/mbedtls-$mbed_ver"
+             ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+                UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \
+                make check SSL_BACKEND=mbed
+             echo "[pass] cheevos_login_test (mbedTLS $mbed_ver TLS 1.3, ASan)"
+          else
+             echo "::warning::Mbed TLS $mbed_ver download failed; TLS 1.3 leg skipped"
+          fi

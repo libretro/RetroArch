@@ -25,19 +25,13 @@
 #define _GNU_SOURCE
 #endif
 
-#ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
-
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
 
-#ifdef HAVE_UNISTD_H
+#ifdef _WIN32
+#include <direct.h>
+#else
 #include <unistd.h>
 #endif
 
@@ -48,9 +42,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#ifdef HAVE_TIME_H
+/* time() below needs this on every platform; the declaration used
+ * to arrive transitively through the old md5.h pulling netinet/in.h. */
 #include <time.h>
-#endif
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>

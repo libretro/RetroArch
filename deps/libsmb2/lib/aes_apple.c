@@ -30,7 +30,7 @@
 void AES128_ECB_encrypt_apple(const uint8_t *input, const uint8_t *key, uint8_t *output) {
     CCCryptorRef cryptor = NULL;
 
-    // Create an AES ECB encryption context
+    /* Create an AES ECB encryption context */
     CCCryptorStatus status = CCCryptorCreate(
         kCCEncrypt,         
         kCCAlgorithmAES,     
@@ -41,8 +41,8 @@ void AES128_ECB_encrypt_apple(const uint8_t *input, const uint8_t *key, uint8_t 
         &cryptor           
     );
 
-    // If creation was not successful then the encryption will fail, but there is no way to communicate this to caller. 
-    // The result will be that the signature doesn't match as this method is used to calculate signatures.
+    /* If creation was not successful then the encryption will fail, but there is no way to communicate this to caller. */
+    /* The result will be that the signature doesn't match as this method is used to calculate signatures. */
     if (status != kCCSuccess) {
         return;
     }
@@ -50,7 +50,7 @@ void AES128_ECB_encrypt_apple(const uint8_t *input, const uint8_t *key, uint8_t 
     size_t dataOutMoved = 0;
     size_t dataOutAvailable = AES128_BLOCK_SIZE;
 
-    // Perform the encryption
+    /* Perform the encryption */
     status = CCCryptorUpdate(
         cryptor,          
         input,           
@@ -60,7 +60,7 @@ void AES128_ECB_encrypt_apple(const uint8_t *input, const uint8_t *key, uint8_t 
         &dataOutMoved   
     );
 
-    // Clean up
+    /* Clean up */
     CCCryptorRelease(cryptor);
 }
 

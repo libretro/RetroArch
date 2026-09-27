@@ -28,6 +28,7 @@
 #include <lists/file_list.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
+#include <string/rstrtod.h>
 #include <lists/string_list.h>
 #include <streams/file_stream.h>
 #include <audio/audio_resampler.h>
@@ -45,6 +46,9 @@
 #include "menu_input.h"
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "menu_shader.h"
+#endif
+#ifdef HAVE_OZONE
+#include "drivers/ozone_color_themes.h"
 #endif
 
 #if defined(HAVE_STEAM) && defined(HAVE_MIST)
@@ -87,6 +91,9 @@
 #include "../configuration.h"
 #include "../msg_hash.h"
 #include "../defaults.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #include "../driver.h"
 #include "../paths.h"
 #include "../dynamic.h"
@@ -100,6 +107,13 @@
 #include "../bluetooth/bluetooth_driver.h"
 #endif
 #include "../midi_driver.h"
+#ifdef ANDROID
+/* Defined in frontend/drivers/platform_unix.c; declared here rather
+ * than via platform_unix.h, whose JNI includes host-side tooling
+ * cannot preprocess. */
+void android_app_set_window_settings(bool notch_write_over,
+      bool auto_mouse_grab);
+#endif
 #include "../location_driver.h"
 #include "../network/cloud_sync_driver.h"
 #include "../record/record_driver.h"
@@ -115,18 +129,26 @@
 #endif
 #include "../retroarch.h"
 #include "../gfx/video_display_server.h"
+#ifdef HAVE_MODELINE
+#include "../gfx/video_crt_switch.h"
+#endif
 #ifdef HAVE_CHEATS
 #include "../cheat_manager.h"
 #endif
 #include "../verbosity.h"
 #include "../playlist.h"
 #include "../manual_content_scan.h"
+#include "../input/input_osk.h"
 #include "../input/input_remapping.h"
 
 #include "../tasks/tasks_internal.h"
 
 #ifdef HAVE_NETWORKING
 #include "../network/netplay/netplay.h"
+#ifdef HAVE_SSL
+#include <net/net_socket_ssl.h>
+#include "../network/tls_config.h"
+#endif
 #ifdef HAVE_WIFI
 #include "../network/wifi_driver.h"
 #endif
@@ -267,6 +289,15 @@ void win32_menubar_rebuild(void);
 { \
    (*a)[b->index - 1].flags |= c; \
    setting_add_special_callbacks(a, b, c); \
+}
+
+/* Mark the row just appended as one half of a packed word. Reads and
+ * writes of it then go through setting_uint_get / setting_uint_set
+ * and the signed pair rather than value.target directly. */
+#define SETTINGS_DATA_LIST_CURRENT_SET_PACKED_HALF(a, b, c) \
+{ \
+   if (c) \
+      (*a)[b->index - 1].free_flags |= (c); \
 }
 
 #define SETTINGS_LIST_APPEND(a, b) ((a && *a && b) ? ((((b)->index == (b)->size)) ? SETTINGS_LIST_APPEND_internal(a, b) : true) : false)
@@ -447,45 +478,47 @@ static int setting_set_with_string_representation(rarch_setting_t* setting,
       case ST_INT:
          {
             char *ptr;
-            uint32_t flags                 = setting->flags;
-            *setting->value.target.integer = (int)strtol(value, &ptr, 10);
+            uint32_t flags = setting->flags;
+            int      v     = (int)strtol(value, &ptr, 10);
             if (flags & SD_FLAG_HAS_RANGE)
             {
                float min   = setting->min;
                float max   = setting->max;
-               if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.integer < min)
-                  *setting->value.target.integer = min;
-               if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.integer > max)
+               if (flags & SD_FLAG_ENFORCE_MINRANGE && v < min)
+                  v = min;
+               if (flags & SD_FLAG_ENFORCE_MAXRANGE && v > max)
                {
                   settings_t *settings = config_get_ptr();
                   if (settings && settings->bools.menu_navigation_wraparound_enable)
-                     *setting->value.target.integer = min;
+                     v = min;
                   else
-                     *setting->value.target.integer = max;
+                     v = max;
                }
             }
+            setting_int_set(setting, v);
          }
          break;
       case ST_UINT:
          {
-            char *ptr;
+            char     *ptr;
             uint32_t flags = setting->flags;
-            *setting->value.target.unsigned_integer = (unsigned int)strtoul(value, &ptr, 0);
+            unsigned v     = (unsigned int)strtoul(value, &ptr, 0);
             if (flags & SD_FLAG_HAS_RANGE)
             {
                float min   = setting->min;
                float max   = setting->max;
-               if (flags & SD_FLAG_ENFORCE_MINRANGE && *setting->value.target.unsigned_integer < min)
-                  *setting->value.target.unsigned_integer = min;
-               if (flags & SD_FLAG_ENFORCE_MAXRANGE && *setting->value.target.unsigned_integer > max)
+               if (flags & SD_FLAG_ENFORCE_MINRANGE && v < min)
+                  v = min;
+               if (flags & SD_FLAG_ENFORCE_MAXRANGE && v > max)
                {
                   settings_t *settings = config_get_ptr();
                   if (settings && settings->bools.menu_navigation_wraparound_enable)
-                     *setting->value.target.unsigned_integer = min;
+                     v = min;
                   else
-                     *setting->value.target.unsigned_integer = max;
+                     v = max;
                }
             }
+            setting_uint_set(setting, v);
          }
          break;
       case ST_SIZE:
@@ -516,8 +549,7 @@ static int setting_set_with_string_representation(rarch_setting_t* setting,
          {
             char *ptr;
             uint32_t flags = setting->flags;
-            /* strtof() is C99/POSIX. Just use the more portable kind. */
-            *setting->value.target.fraction = (float)strtod(value, &ptr);
+            *setting->value.target.fraction = rstrtof(value, &ptr);
             if (flags & SD_FLAG_HAS_RANGE)
             {
                float min   = setting->min;
@@ -544,9 +576,9 @@ static int setting_set_with_string_representation(rarch_setting_t* setting,
             strlcpy(setting->value.target.string, value, setting->size);
          break;
       case ST_BOOL:
-         if (memcmp(value, "true", 5) == 0)
+         if (string_is_equal(value, "true"))
             *setting->value.target.boolean = true;
-         else if (memcmp(value, "false", 6) == 0)
+         else if (string_is_equal(value, "false"))
             *setting->value.target.boolean = false;
          break;
       default:
@@ -624,7 +656,7 @@ static void menu_input_st_float_cb(void *userdata, const char *str)
    if (str && *str)
    {
       char *end = NULL;
-      (void)strtod(str, &end);
+      (void)rstrtod(str, &end);
       if (end != str && *end == '\0')
       {
          struct menu_state *menu_st  = menu_state_get_ptr();
@@ -670,6 +702,7 @@ static int setting_generic_action_ok_linefeed(
 {
    menu_input_ctx_line_t line;
    input_keyboard_line_complete_t cb = NULL;
+   enum menu_input_dialog_kb_text_type text_type = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
 
    if (!setting)
       return -1;
@@ -681,9 +714,14 @@ static int setting_generic_action_ok_linefeed(
       case ST_SIZE:
       case ST_UINT:
          cb = menu_input_st_uint_cb;
+         /* menu_input_st_uint_cb() parses with strtoul(base 0), which
+          * accepts a '0x' prefix; a numeric keypad cannot type one. */
          break;
       case ST_INT:
+         /* menu_input_st_int_cb() takes digits only - already rejects
+          * a leading sign - so a numeric keypad loses nothing. */
          cb = menu_input_st_int_cb;
+         text_type = MENU_INPUT_DIALOG_KB_TYPE_NUMBER;
          break;
       case ST_FLOAT:
          cb = menu_input_st_float_cb;
@@ -691,6 +729,8 @@ static int setting_generic_action_ok_linefeed(
       case ST_STRING:
       case ST_STRING_OPTIONS:
          cb = menu_input_st_string_cb;
+         if (setting->ui_type == ST_UI_TYPE_PASSWORD_LINE_EDIT)
+            text_type = MENU_INPUT_DIALOG_KB_TYPE_PASSWORD;
          break;
       default:
          break;
@@ -700,6 +740,7 @@ static int setting_generic_action_ok_linefeed(
    line.label_setting = setting->name;
    line.type          = 0;
    line.idx           = 0;
+   line.text_type     = text_type;
    line.cb            = cb;
 
    if (!menu_input_dialog_start(&line))
@@ -775,22 +816,25 @@ static int setting_int_action_right_default(
    if (!setting)
       return -1;
 
-   *setting->value.target.integer =
-      *setting->value.target.integer + setting->step;
-
-   if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE)
    {
-      float max = setting->max;
-      if (*setting->value.target.integer > max)
-      {
-         settings_t *settings = config_get_ptr();
-         float          min   = setting->min;
+      int v = (int)(setting_int_get(setting) + setting->step);
 
-         if (settings && settings->bools.menu_navigation_wraparound_enable)
-            *setting->value.target.integer = min;
-         else
-            *setting->value.target.integer = max;
+      if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE)
+      {
+         float max = setting->max;
+         if (v > max)
+         {
+            settings_t *settings = config_get_ptr();
+            float          min   = setting->min;
+
+            if (settings
+                  && settings->bools.menu_navigation_wraparound_enable)
+               v = (int)min;
+            else
+               v = (int)max;
+         }
       }
+      setting_int_set(setting, v);
    }
 
    return 0;
@@ -812,18 +856,19 @@ static int setting_bind_action_start(rarch_setting_t *setting)
    keybind->joyaxis = AXIS_NONE;
 
    /* Clear old mapping bit */
-   input_keyboard_mapping_bits(0, keybind->key);
+   input_keyboard_mapping_bits(0, RETRO_KEYBIND_KEY(keybind));
 
    if (setting->index_offset)
       def_binds     = (struct retro_keybind*)retro_keybinds_rest;
 
    bind_type        = setting->bind_type;
 
-   keybind->key     = def_binds[bind_type - MENU_SETTINGS_BIND_BEGIN].key;
+   RETRO_KEYBIND_SET_KEY(keybind,
+         RETRO_KEYBIND_KEY(&def_binds[bind_type - MENU_SETTINGS_BIND_BEGIN]));
    keybind->mbutton = def_binds[bind_type - MENU_SETTINGS_BIND_BEGIN].mbutton;
 
    /* Store new mapping bit */
-   input_keyboard_mapping_bits(1, keybind->key);
+   input_keyboard_mapping_bits(1, RETRO_KEYBIND_KEY(keybind));
 
    return 0;
 }
@@ -842,8 +887,7 @@ static size_t setting_get_string_representation_uint(rarch_setting_t *setting,
       char *s, size_t len)
 {
    if (setting)
-      return snprintf(s, len, "%u",
-            *setting->value.target.unsigned_integer);
+      return snprintf(s, len, "%u", setting_uint_get(setting));
    return 0;
 }
 
@@ -913,28 +957,32 @@ static int setting_uint_action_left_default(
 
    step = recalc_step_based_on_length_of_action(setting);
 
-   if (step > *setting->value.target.unsigned_integer)
-      overflowed = true;
-   else
-      *setting->value.target.unsigned_integer =
-         *setting->value.target.unsigned_integer - step;
-
-   if (setting->flags & SD_FLAG_ENFORCE_MINRANGE)
    {
-      float min = setting->min;
-      if (overflowed || *setting->value.target.unsigned_integer < min)
-      {
-         settings_t *settings = config_get_ptr();
+      unsigned v = setting_uint_get(setting);
 
-         if (settings &&
-             settings->bools.menu_navigation_wraparound_enable)
+      if (step > v)
+         overflowed = true;
+      else
+         v = (unsigned)(v - step);
+
+      if (setting->flags & SD_FLAG_ENFORCE_MINRANGE)
+      {
+         float min = setting->min;
+         if (overflowed || v < min)
          {
-            float max = setting->max;
-            *setting->value.target.unsigned_integer = max;
+            settings_t *settings = config_get_ptr();
+
+            if (settings &&
+                settings->bools.menu_navigation_wraparound_enable)
+            {
+               float max = setting->max;
+               v = (unsigned)max;
+            }
+            else
+               v = (unsigned)min;
          }
-         else
-            *setting->value.target.unsigned_integer = min;
       }
+      setting_uint_set(setting, v);
    }
 
    return 0;
@@ -948,25 +996,27 @@ static int setting_uint_action_right_default(
    if (!setting)
       return -1;
 
-   step                                    =
-      recalc_step_based_on_length_of_action(setting);
+   step = recalc_step_based_on_length_of_action(setting);
 
-   *setting->value.target.unsigned_integer =
-      *setting->value.target.unsigned_integer + step;
-
-   if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE)
    {
-      float max = setting->max;
-      if (*setting->value.target.unsigned_integer > max)
-      {
-         settings_t *settings = config_get_ptr();
-         float           min  = setting->min;
+      unsigned v = (unsigned)(setting_uint_get(setting) + step);
 
-         if (settings && settings->bools.menu_navigation_wraparound_enable)
-            *setting->value.target.unsigned_integer = min;
-         else
-            *setting->value.target.unsigned_integer = max;
+      if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE)
+      {
+         float max = setting->max;
+         if (v > max)
+         {
+            settings_t *settings = config_get_ptr();
+            float           min  = setting->min;
+
+            if (settings
+                  && settings->bools.menu_navigation_wraparound_enable)
+               v = (unsigned)min;
+            else
+               v = (unsigned)max;
+         }
       }
+      setting_uint_set(setting, v);
    }
 
    return 0;
@@ -1111,6 +1161,21 @@ void setting_generic_handle_change(rarch_setting_t *setting)
       command_event(setting->cmd_trigger_idx, NULL);
 }
 
+/* The peak setting, with the display's own value beside it where its
+ * context learned one (a sink's EDID, a compositor's description). */
+static size_t setting_get_string_representation_video_hdr_max_nits(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   unsigned display;
+   size_t _len;
+   if (!setting)
+      return 0;
+   _len = snprintf(s, len, "%.0f", *setting->value.target.fraction);
+   if ((display = video_driver_get_display_peak_nits()) && _len < len)
+      _len += snprintf(s + _len, len - _len, " (display: %u)", display);
+   return _len;
+}
+
 static size_t setting_get_string_representation_int_gpu_index(
       rarch_setting_t *setting,
       char *s, size_t len)
@@ -1119,15 +1184,16 @@ static size_t setting_get_string_representation_int_gpu_index(
    if (setting)
    {
       struct string_list *list = video_driver_get_gpu_api_devices(video_context_driver_get_api());
-      _len = snprintf(s, len, "%d", *setting->value.target.integer);
+      int index                = *setting->value.target.integer;
+      _len = snprintf(s, len, "%d", index);
       if (      list
-            && (*setting->value.target.integer >= 0)
-            && (*setting->value.target.integer < (int)list->size)
-            && list->elems[*setting->value.target.integer].data
-            && *list->elems[*setting->value.target.integer].data)
+            && (index >= 0)
+            && (index < (int)list->size)
+            && list->elems[index].data
+            && *list->elems[index].data)
       {
-         _len += strlcpy(s + _len, " - ", len - _len);
-         _len += strlcpy(s + _len, list->elems[*setting->value.target.integer].data, len - _len);
+         _len += strlcpy_lit(s + _len, " - ", len - _len);
+         _len += strlcpy(s + _len, list->elems[index].data, len - _len);
       }
    }
    return _len;
@@ -1137,7 +1203,7 @@ static size_t setting_get_string_representation_int(
       rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
-      return snprintf(s, len, "%d", *setting->value.target.integer);
+      return snprintf(s, len, "%d", setting_int_get(setting));
    return 0;
 }
 
@@ -1164,6 +1230,11 @@ static int setting_fraction_action_left_default(
          else
             *setting->value.target.fraction = min;
       }
+      /* Within half a step of the minimum is the minimum: the steps
+       * that led here were each a float subtraction, and what lands
+       * a few ulps under 0 prints as -0.000 and is stored as such. */
+      else if (*setting->value.target.fraction < min + half_step)
+         *setting->value.target.fraction = min;
    }
 
    return 0;
@@ -1180,8 +1251,9 @@ static int setting_fraction_action_right_default(
 
    if (setting->flags & SD_FLAG_ENFORCE_MAXRANGE)
    {
-      float max = setting->max;
-      if (*setting->value.target.fraction > max)
+      float max       = setting->max;
+      float half_step = setting->step * 0.5f;
+      if (*setting->value.target.fraction > max + half_step)
       {
          settings_t *settings = config_get_ptr();
          float          min   = setting->min;
@@ -1191,6 +1263,10 @@ static int setting_fraction_action_right_default(
          else
             *setting->value.target.fraction = max;
       }
+      /* The mirror of the left action: within half a step of the
+       * maximum is the maximum. */
+      else if (*setting->value.target.fraction > max - half_step)
+         *setting->value.target.fraction = max;
    }
 
    return 0;
@@ -1213,10 +1289,11 @@ static void setting_reset_setting(rarch_setting_t* setting)
          *setting->value.target.boolean          = setting->default_value.boolean;
          break;
       case ST_INT:
-         *setting->value.target.integer          = setting->default_value.integer;
+         setting_int_set(setting, setting->default_value.integer);
          break;
       case ST_UINT:
-         *setting->value.target.unsigned_integer = setting->default_value.unsigned_integer;
+         setting_uint_set(setting,
+               setting->default_value.unsigned_integer);
          break;
       case ST_SIZE:
          *setting->value.target.sizet            = setting->default_value.sizet;
@@ -1319,7 +1396,7 @@ static size_t setting_get_string_representation_st_path(rarch_setting_t *setting
       const char *path = setting->value.target.string;
       if ((setting->type == ST_DIR) && (config_get_ptr()->bools.menu_show_full_paths))
          return strlcpy(s, path, len);
-#if IOS
+#if TARGET_OS_IPHONE
       return fill_pathname_abbreviate_special(s,
             path_basename(path), len);
 #else
@@ -1601,8 +1678,11 @@ static rarch_setting_t setting_uint_setting(const char* name,
 
    result.size                      = sizeof(unsigned int);
 
-   result.name                      = dont_use_enum_idx ? strdup(name) : name;
-   result.short_description         = dont_use_enum_idx ? strdup(short_description) : short_description;
+   /* Callers that build a runtime name hand over their own copies
+    * and tag the entry with SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT, so
+    * the strings are owned here as given; the rest are literals. */
+   result.name                      = name;
+   result.short_description         = short_description;
    result.values                    = NULL;
 
    result.index                     = 0;
@@ -1800,22 +1880,25 @@ static int setting_int_action_left_default(
    if (!setting)
       return -1;
 
-   *setting->value.target.integer = *setting->value.target.integer - setting->step;
-
-   if (setting->flags & SD_FLAG_ENFORCE_MINRANGE)
    {
-      float min = setting->min;
-      if (*setting->value.target.integer < min)
-      {
-         settings_t *settings = config_get_ptr();
-         float           max  = setting->max;
+      int v = (int)(setting_int_get(setting) - setting->step);
 
-         if (   settings
-             && settings->bools.menu_navigation_wraparound_enable)
-            *setting->value.target.integer = max;
-         else
-            *setting->value.target.integer = min;
+      if (setting->flags & SD_FLAG_ENFORCE_MINRANGE)
+      {
+         float min = setting->min;
+         if (v < min)
+         {
+            settings_t *settings = config_get_ptr();
+            float           max  = setting->max;
+
+            if (   settings
+                && settings->bools.menu_navigation_wraparound_enable)
+               v = (int)max;
+            else
+               v = (int)min;
+         }
       }
+      setting_int_set(setting, v);
    }
 
    return 0;
@@ -1870,8 +1953,11 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
 
    result.size                      = size;
 
-   result.name                      = dont_use_enum_idx ? strdup(name) : name;
-   result.short_description         = dont_use_enum_idx ? strdup(short_description) : short_description;
+   /* Callers that build a runtime name hand over their own copies
+    * and tag the entry with SD_FREE_FLAG_NAME | SD_FREE_FLAG_SHORT, so
+    * the strings are owned here as given; the rest are literals. */
+   result.name                      = name;
+   result.short_description         = short_description;
    result.values                    = NULL;
 
    result.index                     = 0;
@@ -2771,7 +2857,8 @@ static int setting_action_ok_bind_defaults(
    for ( i  = MENU_SETTINGS_BIND_BEGIN;
          i <= MENU_SETTINGS_BIND_LAST; i++, target++)
    {
-      target->key     = def_binds[i - MENU_SETTINGS_BIND_BEGIN].key;
+      RETRO_KEYBIND_SET_KEY(target,
+            RETRO_KEYBIND_KEY(&def_binds[i - MENU_SETTINGS_BIND_BEGIN]));
       target->joykey  = NO_BTN;
       target->joyaxis = AXIS_NONE;
       target->mbutton = NO_BTN;
@@ -2835,6 +2922,17 @@ static int setting_action_ok_uint_special(
          enum_idx, /* we will pass the enumeration index of the string as a path */
          NULL, NULL, 0, idx, 0,
          ACTION_OK_DL_DROPDOWN_BOX_LIST_SPECIAL);
+   return 0;
+}
+
+static int setting_action_ok_crt_switch_resolution_super(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   if (!setting)
+      return -1;
+   generic_action_ok_displaylist_push(
+         NULL, NULL, NULL, 0, idx, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_CRT_SUPER_RESOLUTION);
    return 0;
 }
 
@@ -3005,6 +3103,7 @@ static int setting_action_ok_color_rgb(rarch_setting_t *setting, size_t idx,
    line.label_setting = setting->name;
    line.type          = 0;
    line.idx           = 0;
+   line.text_type     = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    line.cb            = setting_action_ok_color_rgb_cb;
 
    if (!menu_input_dialog_start(&line))
@@ -3086,7 +3185,7 @@ static int setting_string_action_start_audio_device(rarch_setting_t *setting)
    if (!setting)
       return -1;
 
-   strlcpy(setting->value.target.string, "", setting->size);
+   strlcpy_lit(setting->value.target.string, "", setting->size);
 
    command_event(CMD_EVENT_AUDIO_REINIT, NULL);
    return 0;
@@ -3125,7 +3224,7 @@ static int setting_string_action_start_microphone_device(rarch_setting_t *settin
    if (!setting)
       return -1;
 
-   strlcpy(setting->value.target.string, "", setting->size);
+   strlcpy_lit(setting->value.target.string, "", setting->size);
 
    command_event(CMD_EVENT_MICROPHONE_REINIT, NULL);
    return 0;
@@ -3355,7 +3454,7 @@ static size_t setting_get_string_representation_state_slot(
    if (!setting)
       return 0;
    if (*setting->value.target.integer == -1)
-      return strlcpy(s, "Auto", len);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTO), len);
    return snprintf(s, len, "%d", *setting->value.target.integer);
 }
 
@@ -3391,9 +3490,9 @@ static size_t setting_get_string_representation_password(
    {
       if (   setting->value.target.string
           && setting->value.target.string[0] != '\0')
-         return strlcpy(s, "********", len);
+         return strlcpy_lit(s, "********", len);
       if (config_get_ptr()->arrays.cheevos_token[0])
-         return strlcpy(s, "********", len);
+         return strlcpy_lit(s, "********", len);
       *setting->value.target.string = '\0';
    }
    return 0;
@@ -3411,11 +3510,11 @@ static size_t setting_get_string_representation_uint_keyboard_gamepad_mapping_ty
          case 0:
             return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
          case 1:
-            return strlcpy(s, "iPega PG-9017", len);
+            return strlcpy_lit(s, "iPega PG-9017", len);
          case 2:
-            return strlcpy(s, "8-bitty", len);
+            return strlcpy_lit(s, "8-bitty", len);
          case 3:
-            return strlcpy(s, "SNES30 8bitdo", len);
+            return strlcpy_lit(s, "SNES30 8bitdo", len);
       }
    }
    return 0;
@@ -3699,19 +3798,14 @@ static size_t setting_get_string_representation_uint_menu_thumbnails(
       default:
       case 0:
          return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
-         break;
       case 1:
          return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS), len);
-         break;
       case 2:
          return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS), len);
-         break;
       case 3:
          return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS), len);
-         break;
       case 4:
          return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS), len);
-         break;
    }
 }
 
@@ -3886,11 +3980,11 @@ static size_t setting_get_string_representation_uint_menu_timedate_date_separato
       switch (*setting->value.target.unsigned_integer)
       {
          case MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN:
-            return strlcpy(s, "'-'", len);
+            return strlcpy_lit(s, "'-'", len);
          case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-            return strlcpy(s, "'/'", len);
+            return strlcpy_lit(s, "'/'", len);
          case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-            return strlcpy(s, "'.'", len);
+            return strlcpy_lit(s, "'.'", len);
       }
    }
    return 0;
@@ -4456,9 +4550,9 @@ static size_t setting_get_string_representation_uint_menu_xmb_animation_move_up_
       switch (*setting->value.target.unsigned_integer)
       {
          case 0:
-            return strlcpy(s, "Easing Out Quad", len);
+            return strlcpy_lit(s, "Easing Out Quad", len);
          case 1:
-            return strlcpy(s, "Easing Out Expo", len);
+            return strlcpy_lit(s, "Easing Out Expo", len);
          case 2:
             return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
       }
@@ -4474,13 +4568,13 @@ static size_t setting_get_string_representation_uint_menu_xmb_animation_opening_
       switch (*setting->value.target.unsigned_integer)
       {
          case 0:
-            return strlcpy(s, "Easing Out Quad", len);
+            return strlcpy_lit(s, "Easing Out Quad", len);
          case 1:
-            return strlcpy(s, "Easing Out Circ", len);
+            return strlcpy_lit(s, "Easing Out Circ", len);
          case 2:
-            return strlcpy(s, "Easing Out Expo", len);
+            return strlcpy_lit(s, "Easing Out Expo", len);
          case 3:
-            return strlcpy(s, "Easing Out Bounce", len);
+            return strlcpy_lit(s, "Easing Out Bounce", len);
       }
    }
    return 0;
@@ -4494,11 +4588,11 @@ static size_t setting_get_string_representation_uint_menu_xmb_animation_horizont
       switch (*setting->value.target.unsigned_integer)
       {
          case 0:
-            return strlcpy(s, "Easing Out Quad", len);
+            return strlcpy_lit(s, "Easing Out Quad", len);
          case 1:
-            return strlcpy(s, "Easing In Sine", len);
+            return strlcpy_lit(s, "Easing In Sine", len);
          case 2:
-            return strlcpy(s, "Easing Out Bounce", len);
+            return strlcpy_lit(s, "Easing Out Bounce", len);
       }
    }
    return 0;
@@ -4562,11 +4656,11 @@ static size_t setting_get_string_representation_uint_xmb_layout(
       switch (*setting->value.target.unsigned_integer)
       {
          case 0:
-            return strlcpy(s, "Auto", len);
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTO), len);
          case 1:
-            return strlcpy(s, "Console", len);
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_CONSOLE), len);
          case 2:
-            return strlcpy(s, "Handheld", len);
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_HANDHELD), len);
       }
    }
    return 0;
@@ -4999,75 +5093,98 @@ static size_t setting_get_string_representation_uint_materialui_landscape_layout
 #endif
 
 #ifdef HAVE_OZONE
-static size_t setting_get_string_representation_uint_ozone_menu_color_theme(
+#define OZONE_COLOR_THEME_ROW(ident, theme, label) { ident, label },
+static const struct ozone_color_theme_option
+{
+   const char *value;
+   enum msg_hash_enums label;
+} ozone_color_theme_options[] = {
+   OZONE_COLOR_THEME_LIST(OZONE_COLOR_THEME_ROW)
+};
+#undef OZONE_COLOR_THEME_ROW
+
+/* Position of a theme identifier in the list; ARRAY_SIZE() when it
+ * is not one of them (an old out-of-range number, a hand edit). */
+static size_t ozone_color_theme_index(const char *value)
+{
+   size_t i;
+   for (i = 0; i < ARRAY_SIZE(ozone_color_theme_options); i++)
+      if (string_is_equal(value, ozone_color_theme_options[i].value))
+         return i;
+   return ARRAY_SIZE(ozone_color_theme_options);
+}
+
+/* The '|'-separated values string ST_STRING_OPTIONS wants, built
+ * from the same list so it cannot drift from it. */
+static const char *ozone_color_theme_values(void)
+{
+   static char values[512];
+   if (!*values)
+   {
+      size_t i;
+      for (i = 0; i < ARRAY_SIZE(ozone_color_theme_options); i++)
+      {
+         if (i)
+            strlcat(values, "|", sizeof(values));
+         strlcat(values, ozone_color_theme_options[i].value, sizeof(values));
+      }
+   }
+   return values;
+}
+
+static int setting_string_action_ozone_menu_color_theme(
+      rarch_setting_t *setting, bool right)
+{
+   size_t size = ARRAY_SIZE(ozone_color_theme_options);
+   size_t i;
+   /* The setting dispatcher always passes wraparound as false, so
+    * read the user's preference here, as the uint handlers do. */
+   bool wraparound = config_get_ptr()->bools.menu_navigation_wraparound_enable;
+
+   if (!setting)
+      return -1;
+
+   i = ozone_color_theme_index(setting->value.target.string);
+
+   /* A value that is not in the list renders as the default theme;
+    * step from there rather than leaving left/right dead. */
+   if (i >= size)
+      i = ozone_color_theme_index(DEFAULT_OZONE_COLOR_THEME);
+   if (i >= size)
+      i = 0;
+
+   if (wraparound || (right ? i < size - 1 : i > 0))
+      i = right ? (i + 1) % size : (i + size - 1) % size;
+
+   strlcpy(setting->value.target.string,
+         ozone_color_theme_options[i].value, setting->size);
+   return 0;
+}
+
+static int setting_string_action_left_ozone_menu_color_theme(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   return setting_string_action_ozone_menu_color_theme(setting, false);
+}
+
+static int setting_string_action_right_ozone_menu_color_theme(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   return setting_string_action_ozone_menu_color_theme(setting, true);
+}
+
+static size_t setting_get_string_representation_ozone_menu_color_theme(
       rarch_setting_t *setting, char *s, size_t len)
 {
    if (setting)
    {
-      switch (*setting->value.target.unsigned_integer)
-      {
-         case OZONE_COLOR_THEME_BASIC_BLACK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK), len);
-         case OZONE_COLOR_THEME_NORD:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_NORD), len);
-         case OZONE_COLOR_THEME_GRUVBOX_DARK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK), len);
-         case OZONE_COLOR_THEME_BOYSENBERRY:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BOYSENBERRY), len);
-         case OZONE_COLOR_THEME_HACKING_THE_KERNEL:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_HACKING_THE_KERNEL), len);
-         case OZONE_COLOR_THEME_TWILIGHT_ZONE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_TWILIGHT_ZONE), len);
-         case OZONE_COLOR_THEME_DRACULA:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_DRACULA), len);
-         case OZONE_COLOR_THEME_SELENIUM:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SELENIUM), len);
-         case OZONE_COLOR_THEME_SOLARIZED_DARK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK), len);
-         case OZONE_COLOR_THEME_SOLARIZED_LIGHT:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT), len);
-         case OZONE_COLOR_THEME_GRAY_DARK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK), len);
-         case OZONE_COLOR_THEME_GRAY_LIGHT:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT), len);
-         case OZONE_COLOR_THEME_PURPLE_RAIN:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_PURPLE_RAIN), len);
-         case OZONE_COLOR_THEME_BASIC_WHITE:
-         default:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE), len);
-         case OZONE_COLOR_THEME_EVERGARDEN:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_EVERGARDEN), len);
-      }
+      size_t i = ozone_color_theme_index(setting->value.target.string);
+      /* Unknown values render as the default theme: show that */
+      if (i >= ARRAY_SIZE(ozone_color_theme_options))
+         i = ozone_color_theme_index(DEFAULT_OZONE_COLOR_THEME);
+      if (i < ARRAY_SIZE(ozone_color_theme_options))
+         return strlcpy(s,
+               msg_hash_to_str(ozone_color_theme_options[i].label), len);
    }
    return 0;
 }
@@ -5218,16 +5335,26 @@ static size_t setting_get_string_representation_uint_video_autoswitch_refresh_ra
 static size_t setting_get_string_representation_uint_video_monitor_index(
       rarch_setting_t *setting, char *s, size_t len)
 {
+   video_output_info_t outputs[8];
+   int n;
    if (setting && *setting->value.target.unsigned_integer)
-      return snprintf(s, len, "%u",
-            *setting->value.target.unsigned_integer);
-   return strlcpy(s, "0 (Auto)", len);
+   {
+      unsigned idx = *setting->value.target.unsigned_integer;
+      /* The display server names the head this index lands on */
+      n = video_display_server_list_outputs(outputs, 8);
+      if (n > 0 && idx >= 1 && (int)idx <= n && outputs[idx - 1].name[0])
+         return snprintf(s, len, "%u (%s %ux%u)", idx, outputs[idx - 1].name,
+               VIDEO_SCALE_W(outputs[idx - 1].dims), VIDEO_SCALE_H(outputs[idx - 1].dims));
+      return snprintf(s, len, "%u", idx);
+   }
+   return strlcpy_lit(s, "0 (Auto)", len);
 }
 
 static size_t setting_get_string_representation_uint_custom_vp_width(
       rarch_setting_t *setting, char *s, size_t len)
 {
    size_t _len;
+   unsigned v;
    struct retro_game_geometry  *geom    = NULL;
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
@@ -5235,15 +5362,16 @@ static size_t setting_get_string_representation_uint_custom_vp_width(
    if (!setting || !av_info)
       return 0;
    geom    = (struct retro_game_geometry*)&av_info->geometry;
-   _len    = snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
+   v       = setting_uint_get(setting);
+   _len    = snprintf(s, len, "%u", v);
    if (!geom->base_width || !geom->base_height)
       return _len;
-   if (!(rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_width == 0))
+   if (!(rotation % 2) && (v % geom->base_width == 0))
       _len += snprintf(s + _len, len - _len, " (%ux)",
-            *setting->value.target.unsigned_integer / geom->base_width);
-   else if ((rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_height == 0))
+            v / geom->base_width);
+   else if ((rotation % 2) && (v % geom->base_height == 0))
       _len += snprintf(s + _len, len - _len, " (%ux)",
-            *setting->value.target.unsigned_integer / geom->base_height);
+            v / geom->base_height);
    return _len;
 }
 
@@ -5251,6 +5379,7 @@ static size_t setting_get_string_representation_uint_custom_vp_height(
       rarch_setting_t *setting, char *s, size_t len)
 {
    size_t _len;
+   unsigned v;
    struct retro_game_geometry  *geom    = NULL;
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
@@ -5258,15 +5387,16 @@ static size_t setting_get_string_representation_uint_custom_vp_height(
    if (!setting || !av_info)
       return 0;
    geom    = (struct retro_game_geometry*)&av_info->geometry;
-   _len    = snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
+   v       = setting_uint_get(setting);
+   _len    = snprintf(s, len, "%u", v);
    if (!geom->base_width || !geom->base_height)
       return _len;
-   if (!(rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_height == 0))
+   if (!(rotation % 2) && (v % geom->base_height == 0))
       _len += snprintf(s + _len, len - _len, " (%ux)",
-            *setting->value.target.unsigned_integer / geom->base_height);
-   else  if ((rotation % 2) && (*setting->value.target.unsigned_integer % geom->base_width == 0))
+            v / geom->base_height);
+   else  if ((rotation % 2) && (v % geom->base_width == 0))
       _len += snprintf(s + _len, len - _len, " (%ux)",
-            *setting->value.target.unsigned_integer / geom->base_width);
+            v / geom->base_width);
    return _len;
 }
 
@@ -5274,12 +5404,36 @@ static size_t setting_get_string_representation_uint_custom_vp_height(
 static int setting_action_asio_control_panel(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   audio_asio_open_control_panel();
+   if (!audio_asio_open_control_panel())
+   {
+      const char *_msg = msg_hash_to_str(MSG_AUDIO_ASIO_NOT_RUNNING);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+   }
    return 0;
 }
 #endif
 
+#ifdef HAVE_ASIO
+/* The pair as the device numbers it for people - 1-2, 3-4 - with the
+ * device's own names for the two when the driver is up to be asked. */
+static size_t setting_get_string_representation_uint_audio_asio_output_channel(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   unsigned left;
+   char lname[32], rname[32];
+   if (!setting)
+      return 0;
+   left = *setting->value.target.unsigned_integer;
+   if (     audio_asio_output_channel_name(left, lname, sizeof(lname))
+         && audio_asio_output_channel_name(left + 1, rname, sizeof(rname)))
+      return snprintf(s, len, "%u-%u (%s / %s)", left + 1, left + 2, lname, rname);
+   return snprintf(s, len, "%u-%u", left + 1, left + 2);
+}
+#endif
+
 #ifdef HAVE_WASAPI
+
 static size_t setting_get_string_representation_uint_audio_wasapi_sh_buffer_length(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -5291,23 +5445,23 @@ static size_t setting_get_string_representation_uint_audio_wasapi_sh_buffer_leng
    switch (*setting->value.target.integer)
    {
       case WASAPI_SH_BUFFER_AUDIO_LATENCY:
-         /* TODO/FIXME - localize */
-         _len += strlcpy(s + _len, "Audio Latency", len - _len);
+         _len += strlcpy(s + _len,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_AUDIO_LATENCY), len - _len);
          break;
       case WASAPI_SH_BUFFER_DEVICE_PERIOD:
-         /* TODO/FIXME - localize */
-         _len += strlcpy(s + _len, "Device Period", len - _len);
+         _len += strlcpy(s + _len,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_DEVICE_PERIOD), len - _len);
          break;
       case WASAPI_SH_BUFFER_CLIENT_BUFFER:
-         /* TODO/FIXME - localize */
-         _len += strlcpy(s + _len, "Client Buffer", len - _len);
+         _len += strlcpy(s + _len,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_CLIENT_BUFFER), len - _len);
          break;
       default:
          _len += snprintf(s + _len, len - _len, "%.1f ms",
                (float)*setting->value.target.integer * 1000 / settings->uints.audio_output_sample_rate);
          break;
    }
-   _len += strlcpy(s + _len, ")", len - _len);
+   _len += strlcpy_lit(s + _len, ")", len - _len);
    return _len;
 }
 
@@ -5322,7 +5476,7 @@ static size_t setting_get_string_representation_uint_microphone_wasapi_sh_buffer
       return snprintf(s, len, "%u (%.1f ms)",
             *setting->value.target.integer,
             (float)*setting->value.target.integer * 1000 / settings->uints.audio_output_sample_rate);
-   return strlcpy(s, "Auto", len);
+   return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTO), len);
 }
 #endif
 #endif
@@ -5345,9 +5499,9 @@ static size_t setting_get_string_representation_crt_switch_resolution_super(
    if (!setting)
       return 0;
    if (*setting->value.target.unsigned_integer == 0)
-      return strlcpy(s, "NATIVE", len);
+      return strlcpy_lit(s, "NATIVE", len);
    else if (*setting->value.target.unsigned_integer == 1)
-      return strlcpy(s, "DYNAMIC", len);
+      return strlcpy_lit(s, "DYNAMIC", len);
    return snprintf(s, len, "%d", *setting->value.target.unsigned_integer);
 }
 
@@ -5548,6 +5702,33 @@ static size_t setting_get_string_representation_uint_playlist_inline_core_displa
             return strlcpy(s,
                   msg_hash_to_str(
                      MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER),
+                  len);
+      }
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_uint_menu_file_browser_extension_display(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS),
+                  len);
+         case MENU_FILE_BROWSER_EXTENSION_DISPLAY_DUPLICATES_ONLY:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_DUPLICATES_ONLY),
+                  len);
+         case MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER),
                   len);
       }
    }
@@ -6148,13 +6329,14 @@ static int setting_uint_action_left_custom_vp_width(
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
    settings_t                 *settings = config_get_ptr();
-   video_viewport_t            *custom  = &settings->video_vp_custom;
+   video_viewport_settings_t   *custom  = &settings->video_vp_custom;
+   unsigned width                 = VIDEO_SCALE_W(custom->dims);
 
    if (!settings || !av_info)
       return -1;
 
-   if (custom->width <= setting->min)
-      custom->width = setting->min;
+   if (width <= setting->min)
+      width = setting->min;
    else if (settings->bools.video_scale_integer)
    {
       struct retro_game_geometry *geom = (struct retro_game_geometry*)
@@ -6162,26 +6344,28 @@ static int setting_uint_action_left_custom_vp_width(
       unsigned int rotation = retroarch_get_rotation();
       if (rotation % 2)
       {
-         if (custom->width > geom->base_height)
-            custom->width -= geom->base_height;
+         if (width > geom->base_height)
+            width -= geom->base_height;
 
-         if (custom->width < geom->base_height)
-            custom->width  = geom->base_height;
+         if (width < geom->base_height)
+            width  = geom->base_height;
       }
       else
       {
-         if (custom->width > geom->base_width)
-            custom->width -= geom->base_width;
+         if (width > geom->base_width)
+            width -= geom->base_width;
 
-         if (custom->width < geom->base_width)
-            custom->width  = geom->base_width;
+         if (width < geom->base_width)
+            width  = geom->base_width;
       }
    }
    else
-      custom->width -= 1;
+      width -= 1;
 
    /* aspectratio_lut[ASPECT_RATIO_CUSTOM].value
     * is updated in general_write_handler() */
+
+   VIDEO_SCALE_PUT_W(custom->dims, width);
 
    return 0;
 }
@@ -6192,13 +6376,14 @@ static int setting_uint_action_left_custom_vp_height(
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
    settings_t                 *settings = config_get_ptr();
-   video_viewport_t            *custom  = &settings->video_vp_custom;
+   video_viewport_settings_t   *custom  = &settings->video_vp_custom;
+   unsigned height                = VIDEO_SCALE_H(custom->dims);
 
    if (!settings || !av_info)
       return -1;
 
-   if (custom->height <= setting->min)
-      custom->height = setting->min;
+   if (height <= setting->min)
+      height = setting->min;
    else if (settings->bools.video_scale_integer)
    {
       struct retro_game_geometry *geom =
@@ -6206,26 +6391,28 @@ static int setting_uint_action_left_custom_vp_height(
       unsigned int rotation = retroarch_get_rotation();
       if (rotation % 2)
       {
-         if (custom->height > geom->base_width)
-            custom->height -= geom->base_width;
+         if (height > geom->base_width)
+            height -= geom->base_width;
 
-         if (custom->height < geom->base_width)
-            custom->height  = geom->base_width;
+         if (height < geom->base_width)
+            height  = geom->base_width;
       }
       else
       {
-         if (custom->height > geom->base_height)
-            custom->height -= geom->base_height;
+         if (height > geom->base_height)
+            height -= geom->base_height;
 
-         if (custom->height < geom->base_height)
-            custom->height  = geom->base_height;
+         if (height < geom->base_height)
+            height  = geom->base_height;
       }
    }
    else
-      custom->height -= 1;
+      height -= 1;
 
    /* aspectratio_lut[ASPECT_RATIO_CUSTOM].value
     * is updated in general_write_handler() */
+
+   VIDEO_SCALE_PUT_H(custom->dims, height);
 
    return 0;
 }
@@ -6253,7 +6440,7 @@ static int setting_string_action_left_audio_device(
       audio_device_index = (int)(ptr->size - 1);
 
    if (audio_device_index < 0)
-      strlcpy(setting->value.target.string,
+      strlcpy_lit(setting->value.target.string,
             "", setting->size);
    else
       strlcpy(setting->value.target.string,
@@ -6286,7 +6473,7 @@ static int setting_string_action_left_microphone_device(
       mic_device_index = (int)(ptr->size - 1);
 
    if (mic_device_index < 0)
-      strlcpy(setting->value.target.string,
+      strlcpy_lit(setting->value.target.string,
             "", setting->size);
    else
       strlcpy(setting->value.target.string,
@@ -6491,28 +6678,31 @@ static int setting_uint_action_right_custom_vp_width(
    settings_t                 *settings = config_get_ptr();
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
-   video_viewport_t            *custom  = &settings->video_vp_custom;
+   video_viewport_settings_t   *custom  = &settings->video_vp_custom;
+   unsigned width                 = VIDEO_SCALE_W(custom->dims);
 
    if (!settings || !av_info)
       return -1;
 
-   if (custom->width >= setting->max)
-      custom->width = setting->max;
+   if (width >= setting->max)
+      width = setting->max;
    else if (settings->bools.video_scale_integer)
    {
       struct retro_game_geometry *geom = (struct retro_game_geometry*)
          &av_info->geometry;
       unsigned int rotation = retroarch_get_rotation();
       if (rotation % 2)
-         custom->width += geom->base_height;
+         width += geom->base_height;
       else
-         custom->width += geom->base_width;
+         width += geom->base_width;
    }
    else
-      custom->width += 1;
+      width += 1;
 
    /* aspectratio_lut[ASPECT_RATIO_CUSTOM].value
     * is updated in general_write_handler() */
+
+   VIDEO_SCALE_PUT_W(custom->dims, width);
 
    return 0;
 }
@@ -6523,28 +6713,31 @@ static int setting_uint_action_right_custom_vp_height(
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
    settings_t                 *settings = config_get_ptr();
-   video_viewport_t            *custom  = &settings->video_vp_custom;
+   video_viewport_settings_t   *custom  = &settings->video_vp_custom;
+   unsigned height                = VIDEO_SCALE_H(custom->dims);
 
    if (!av_info)
       return -1;
 
-   if (custom->height >= setting->max)
-      custom->height = setting->max;
+   if (height >= setting->max)
+      height = setting->max;
    else if (settings->bools.video_scale_integer)
    {
       struct retro_game_geometry *geom = (struct retro_game_geometry*)
          &av_info->geometry;
       unsigned int rotation = retroarch_get_rotation();
       if (rotation % 2)
-         custom->height += geom->base_width;
+         height += geom->base_width;
       else
-         custom->height += geom->base_height;
+         height += geom->base_height;
    }
    else
-      custom->height += 1;
+      height += 1;
 
    /* aspectratio_lut[ASPECT_RATIO_CUSTOM].value
     * is updated in general_write_handler() */
+
+   VIDEO_SCALE_PUT_H(custom->dims, height);
 
    return 0;
 }
@@ -6571,7 +6764,7 @@ static int setting_string_action_right_audio_device(
       audio_device_index = -1;
 
    if (audio_device_index < 0)
-      strlcpy(setting->value.target.string,
+      strlcpy_lit(setting->value.target.string,
             "", setting->size);
    else
       strlcpy(setting->value.target.string,
@@ -6603,7 +6796,7 @@ static int setting_string_action_right_microphone_device(
       mic_device_index = -1;
 
    if (mic_device_index < 0)
-      strlcpy(setting->value.target.string,
+      strlcpy_lit(setting->value.target.string,
             "", setting->size);
    else
       strlcpy(setting->value.target.string,
@@ -6880,6 +7073,18 @@ static size_t setting_get_string_representation_video_swap_interval(rarch_settin
    return snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
 }
 
+#ifdef HAVE_VIDEO_FILTER
+static size_t setting_get_string_representation_uint_video_filter_threads(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (!setting)
+      return 0;
+   if (*setting->value.target.unsigned_integer == 0)
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTO), len);
+   return snprintf(s, len, "%u", *setting->value.target.unsigned_integer);
+}
+#endif
+
 static size_t setting_get_string_representation_black_frame_insertion(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -6971,6 +7176,26 @@ static size_t setting_get_string_representation_video_frame_delay(
    return _len;
 }
 
+static size_t setting_get_string_representation_uint_video_fse_negotiation(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_FSE_RELAXED:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED),
+                  len);
+         case VIDEO_FSE_FORCED:
+            return strlcpy(s,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED),
+                  len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_video_rotation(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -7043,13 +7268,69 @@ static size_t setting_get_string_representation_uint_crt_switch_resolutions(
          case CRT_SWITCH_NONE:
             return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
          case CRT_SWITCH_15KHZ:
-            return strlcpy(s, "15 KHz", len);
+            return strlcpy_lit(s, "15 KHz", len);
          case CRT_SWITCH_31KHZ:
-            return strlcpy(s, "31 KHz, Standard", len);
+            return strlcpy_lit(s, "31 KHz, Standard", len);
          case CRT_SWITCH_32_120:
-            return strlcpy(s, "31 KHz, 120Hz", len);
+            return strlcpy_lit(s, "31 KHz, 120Hz", len);
          case CRT_SWITCH_INI:
-            return strlcpy(s, "INI", len);
+            return strlcpy_lit(s, "Custom (switchres.ini)", len);
+         case CRT_SWITCH_EDID:
+            return strlcpy_lit(s, "Match Display (EDID)", len);
+         case CRT_SWITCH_LCD:
+            return strlcpy_lit(s, "Match Refresh Only", len);
+      }
+   }
+   return 0;
+}
+
+#ifdef HAVE_MODELINE
+static int setting_action_crt_switch_write_edid(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   char path[PATH_MAX_LENGTH];
+   char msg[PATH_MAX_LENGTH + 64];
+   size_t _len;
+   if (crt_switch_write_edid(path, sizeof(path)))
+      _len = snprintf(msg, sizeof(msg),
+            msg_hash_to_str(MSG_CRT_SWITCH_EDID_WRITTEN), path);
+   else
+      _len = strlcpy(msg, msg_hash_to_str(MSG_CRT_SWITCH_EDID_FAILED), sizeof(msg));
+   runloop_msg_queue_push(msg, _len, 1, 240, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   return 0;
+}
+#endif
+
+static size_t setting_get_string_representation_uint_video_sdl_display_server(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_SDL_DISPLAY_SERVER_OFF:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
+         case VIDEO_SDL_DISPLAY_SERVER_AUTO:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUTO), len);
+         case VIDEO_SDL_DISPLAY_SERVER_ALWAYS:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ALWAYS), len);
+      }
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_uint_save_compression_codec(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 1:
+            return strlcpy(s, msg_hash_to_str(MSG_COMPRESSION_CODEC_ZSTD), len);
+         default:
+            return strlcpy(s, msg_hash_to_str(MSG_COMPRESSION_CODEC_DEFLATE), len);
       }
    }
    return 0;
@@ -7080,6 +7361,23 @@ static size_t setting_get_string_representation_uint_audio_resampler_quality(
          case RESAMPLER_QUALITY_NORMAL:
             return strlcpy(s, msg_hash_to_str(MSG_RESAMPLER_QUALITY_NORMAL),
                   len);
+      }
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_uint_audio_output_layout(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 1:  return strlcpy(s, "4.0", len);
+         case 2:  return strlcpy(s, "5.1", len);
+         case 3:  return strlcpy(s, "5.1 Surround", len);
+         case 4:  return strlcpy(s, "7.1", len);
+         default: return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT_STEREO), len);
       }
    }
    return 0;
@@ -7238,6 +7536,27 @@ static size_t setting_get_string_representation_uint_replay_checkpoint_interval(
 #endif
 
 #if defined(HAVE_NETWORKING)
+#if defined(HAVE_SSL)
+static size_t setting_get_string_representation_tls_verify_mode(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case TLS_VERIFY_OPTIONAL:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_OPTIONAL), len);
+         case TLS_VERIFY_DISABLED:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_DISABLED), len);
+         case TLS_VERIFY_REQUIRED:
+         default:
+            return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_REQUIRED), len);
+      }
+   }
+   return 0;
+}
+#endif
+
 static size_t setting_get_string_representation_netplay_mitm_server(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -7376,7 +7695,7 @@ static size_t setting_get_string_representation_retropad_bind(
          const struct retro_keybind *keyptr =
                &input_config_binds[0][retro_id];
 
-         return strlcpy(s, msg_hash_to_str(keyptr->enum_idx), len);
+         return strlcpy(s, msg_hash_to_str(RETRO_KEYBIND_ENUM_IDX(keyptr)), len);
       }
    }
    return 0;
@@ -7589,7 +7908,7 @@ static size_t setting_get_string_representation_uint_quit_on_close_content(
          case QUIT_ON_CLOSE_CONTENT_ENABLED:
             return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON), len);
          case QUIT_ON_CLOSE_CONTENT_CLI:
-            return strlcpy(s, "CLI", len);
+            return strlcpy_lit(s, "CLI", len);
       }
    }
    return 0;
@@ -7603,18 +7922,18 @@ static size_t setting_get_string_representation_uint_video_scale_integer_axis(
       switch (*setting->value.target.unsigned_integer)
       {
          case VIDEO_SCALE_INTEGER_AXIS_Y_X:
-            return strlcpy(s, "Y + X", len);
+            return strlcpy_lit(s, "Y + X", len);
          case VIDEO_SCALE_INTEGER_AXIS_Y_XHALF:
-            return strlcpy(s, "Y + X.5", len);
+            return strlcpy_lit(s, "Y + X.5", len);
          case VIDEO_SCALE_INTEGER_AXIS_YHALF_XHALF:
-            return strlcpy(s, "Y.5 + X.5", len);
+            return strlcpy_lit(s, "Y.5 + X.5", len);
          case VIDEO_SCALE_INTEGER_AXIS_X:
-            return strlcpy(s, "X", len);
+            return strlcpy_lit(s, "X", len);
          case VIDEO_SCALE_INTEGER_AXIS_XHALF:
-            return strlcpy(s, "X.5", len);
+            return strlcpy_lit(s, "X.5", len);
          case VIDEO_SCALE_INTEGER_AXIS_Y:
          default:
-            return strlcpy(s, "Y", len);
+            return strlcpy_lit(s, "Y", len);
       }
    }
    return 0;
@@ -8311,7 +8630,8 @@ static int setting_action_start_custom_vp_width(rarch_setting_t *setting)
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
    settings_t                 *settings = config_get_ptr();
-   video_viewport_t            *custom  = &settings->video_vp_custom;
+   video_viewport_settings_t   *custom  = &settings->video_vp_custom;
+   unsigned width                 = VIDEO_SCALE_W(custom->dims);
 
    if (!settings || !av_info)
       return -1;
@@ -8324,17 +8644,19 @@ static int setting_action_start_custom_vp_width(rarch_setting_t *setting)
          &av_info->geometry;
       unsigned int rotation = retroarch_get_rotation();
       if (rotation % 2)
-         custom->width = ((custom->width + geom->base_height - 1) /
+         width = ((width + geom->base_height - 1) /
                geom->base_height) * geom->base_height;
       else
-         custom->width = ((custom->width + geom->base_width - 1) /
+         width = ((width + geom->base_width - 1) /
                geom->base_width) * geom->base_width;
    }
    else
-      custom->width = vp.full_width - custom->x;
+      width = VIDEO_SCALE_W(vp.full_dims) - VIDEO_POS_X(custom->pos);
 
    /* aspectratio_lut[ASPECT_RATIO_CUSTOM].value
     * is updated in general_write_handler() */
+
+   VIDEO_SCALE_PUT_W(custom->dims, width);
 
    return 0;
 }
@@ -8345,7 +8667,8 @@ static int setting_action_start_custom_vp_height(rarch_setting_t *setting)
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
    settings_t                 *settings = config_get_ptr();
-   video_viewport_t            *custom  = &settings->video_vp_custom;
+   video_viewport_settings_t   *custom  = &settings->video_vp_custom;
+   unsigned height                = VIDEO_SCALE_H(custom->dims);
    bool video_scale_integer             = settings->bools.video_scale_integer;
 
    if (!av_info)
@@ -8359,17 +8682,19 @@ static int setting_action_start_custom_vp_height(rarch_setting_t *setting)
          &av_info->geometry;
       unsigned int rotation = retroarch_get_rotation();
       if (rotation % 2)
-         custom->height = ((custom->height + geom->base_width - 1) /
+         height = ((height + geom->base_width - 1) /
                geom->base_width) * geom->base_width;
       else
-         custom->height = ((custom->height + geom->base_height - 1) /
+         height = ((height + geom->base_height - 1) /
                geom->base_height) * geom->base_height;
    }
    else
-      custom->height = vp.full_height - custom->y;
+      height = VIDEO_SCALE_H(vp.full_dims) - VIDEO_POS_Y(custom->pos);
 
    /* aspectratio_lut[ASPECT_RATIO_CUSTOM].value
     * is updated in general_write_handler() */
+
+   VIDEO_SCALE_PUT_H(custom->dims, height);
 
    return 0;
 }
@@ -8623,11 +8948,11 @@ static size_t setting_get_string_representation_smb_auth(
    switch (val)
    {
       case RETRO_SMB2_SEC_NTLMSSP: /* SMB2_SEC_NTLMSSP */
-         return strlcpy(s, "NTLMSSP", len);
+         return strlcpy_lit(s, "NTLMSSP", len);
       case RETRO_SMB2_SEC_KRB5: /* SMB2_SEC_KRB5 */
-         return strlcpy(s, "Kerberos", len);
+         return strlcpy_lit(s, "Kerberos", len);
       default:
-         return strlcpy(s, "KRB if available, NTLM if not", len);
+         return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SEC_KRB_OR_NTLM), len);
    }
 }
 
@@ -8871,7 +9196,16 @@ static void write_handler_logging_verbosity(rarch_setting_t *setting)
 
    rarch_cmd                    = write_handler_get_cmd(setting);
 
-   if (!verbosity_is_enabled())
+   /* The framework has already written the bound flag when this
+    * runs, so the freshly written value names the transition the
+    * person asked for. Reading verbosity_is_enabled() here - the
+    * same memory, post-write - took every transition backwards: the
+    * flag snapped back on each press and the log file churned in
+    * the opposite direction of the display. verbosity_enable() and
+    * verbosity_disable() re-assert the flag idempotently and carry
+    * the console attach/detach side effect the direct write skips,
+    * which is what keeps verbosity_get_ptr()'s binding honest. */
+   if (*setting->value.target.boolean)
    {
       settings_t *settings = config_get_ptr();
       rarch_log_file_init(
@@ -8895,6 +9229,7 @@ static void general_write_handler(rarch_setting_t *setting)
 {
    enum event_command rarch_cmd = CMD_EVENT_NONE;
    settings_t *settings         = config_get_ptr();
+   unsigned vp_w, vp_h;
 
    if (!setting)
       return;
@@ -8914,6 +9249,13 @@ static void general_write_handler(rarch_setting_t *setting)
          else
             task_queue_unset_threaded();
          break;
+#if defined(HAVE_NETWORKING) && defined(HAVE_SSL)
+      case MENU_ENUM_LABEL_TLS_VERIFY_MODE:
+         /* Push the new policy to the active SSL backend so it takes
+          * effect on the next HTTPS connection without a restart. */
+         ssl_socket_set_verify_mode(*setting->value.target.unsigned_integer);
+         break;
+#endif
 #ifndef HAVE_LAKKA
       case MENU_ENUM_LABEL_GAMEMODE_ENABLE:
          if (frontend_driver_has_gamemode())
@@ -8940,21 +9282,47 @@ static void general_write_handler(rarch_setting_t *setting)
      case MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR:
          core_set_poll_type(*setting->value.target.integer);
          break;
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && defined(HAVE_MENU)
+      case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
+      case MENU_ENUM_LABEL_VIDEO_FONT_SIZE:
+         /* The OSD font is rebuilt where it stands: the font_data_t
+          * keeps its address, so nothing holding one has to be told,
+          * and the generation bump recomputes the derived metrics on
+          * the next frame.
+          *
+          * Widget fonts are left to gfx_widgets_iterate(), which
+          * watches the same path and re-runs its layout with the
+          * driver up. Size does not reach them at all - it applies to
+          * the statistics display once widgets are in use.
+          *
+          * The fallback covers the drivers that keep a private font
+          * and need a reinit for the change to land. */
+         if (!font_driver_reinit_osd(settings->paths.path_font,
+                  settings->floats.video_font_size))
+            command_event(CMD_EVENT_REINIT, NULL);
+         break;
       case MENU_ENUM_LABEL_USER_LANGUAGE:
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && defined(HAVE_MENU)
          /* The native Win32 menubar bakes translated strings at
           * menu-creation time (popup headers in particular have no
           * resource ID and so are not walked by win32_localize_menu
           * afterwards). Rebuild the whole menubar so every string -
           * including popup headers - reflects the new language. */
          win32_menubar_rebuild();
-         break;
 #endif
+         /* Arabic and Persian, Chinese and Korean each want a
+          * different face. Rebuild the fonts that follow the language
+          * where they stand: each font_data_t keeps its address, so
+          * nothing holding one has to be told, and the generation bump
+          * makes the derived metrics recompute on the next frame.
+          * A context reset would do it too, at the cost of tearing
+          * down video, audio and input to change a typeface. */
+         font_driver_reload_fonts();
+         break;
       case MENU_ENUM_LABEL_VIDEO_SCALE_INTEGER:
          {
             video_driver_state_t *video_st       = video_state_get_ptr();
             struct retro_system_av_info *av_info = &video_st->av_info;
-            struct video_viewport *custom_vp     = &settings->video_vp_custom;
+            video_viewport_settings_t *custom_vp     = &settings->video_vp_custom;
 
             if (*setting->value.target.boolean)
             {
@@ -8963,15 +9331,15 @@ static void general_write_handler(rarch_setting_t *setting)
                unsigned base_height             = 0;
                struct retro_game_geometry *geom = (struct retro_game_geometry*)&av_info->geometry;
 
-               custom_vp->x         = 0;
-               custom_vp->y         = 0;
+               custom_vp->pos       = 0;
 
                {
-                  unsigned cache_w  = 0;
-                  unsigned cache_h  = 0;
-                  video_driver_cached_frame_info(&cache_w, &cache_h, NULL, NULL);
-                  base_width        = (geom->base_width)  ? geom->base_width  : cache_w;
-                  base_height       = (geom->base_height) ? geom->base_height : cache_h;
+                  unsigned cache_dims = 0;
+                  video_driver_cached_frame_info(&cache_dims, NULL, NULL);
+                  base_width        = (geom->base_width)
+                     ? geom->base_width  : VIDEO_SCALE_W(cache_dims);
+                  base_height       = (geom->base_height)
+                     ? geom->base_height : VIDEO_SCALE_H(cache_dims);
                }
 
                if (base_width <= 4 || base_height <= 4)
@@ -8980,18 +9348,29 @@ static void general_write_handler(rarch_setting_t *setting)
                   base_height       = (rotation % 2) ? 320 : 240;
                }
 
+               vp_w = VIDEO_SCALE_W(custom_vp->dims);
+               vp_h = VIDEO_SCALE_H(custom_vp->dims);
+
                if (rotation % 2)
                {
-                  custom_vp->width  = ((custom_vp->width  + base_height - 1) / base_height)  * base_height;
-                  custom_vp->height = ((custom_vp->height + base_width - 1)  / base_width)   * base_width;
+                  custom_vp->dims   = VIDEO_SCALE_PACK(
+                        ((vp_w + base_height - 1) / base_height)
+                              * base_height,
+                        ((vp_h + base_width - 1) / base_width)
+                              * base_width);
                }
                else
                {
-                  custom_vp->width  = ((custom_vp->width  + base_width - 1)  / base_width)  * base_width;
-                  custom_vp->height = ((custom_vp->height + base_height - 1) / base_height) * base_height;
+                  custom_vp->dims   = VIDEO_SCALE_PACK(
+                        ((vp_w + base_width - 1) / base_width)
+                              * base_width,
+                        ((vp_h + base_height - 1) / base_height)
+                              * base_height);
                }
 
-               aspectratio_lut[ASPECT_RATIO_CUSTOM].value = (float)custom_vp->width / custom_vp->height;
+               aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+                     (float)VIDEO_SCALE_W(custom_vp->dims)
+                           / VIDEO_SCALE_H(custom_vp->dims);
             }
          }
          break;
@@ -9333,6 +9712,14 @@ static void general_write_handler(rarch_setting_t *setting)
                   log_dir);
          }
          break;
+#ifdef HAVE_VIDEO_FILTER
+      case MENU_ENUM_LABEL_VIDEO_FILTER_THREADS:
+         /* Rebuild a running filter on the new worker count; with no
+          * filter loaded the value is picked up at the next load. */
+         if (video_state_get_ptr()->state_filter)
+            command_event(CMD_EVENT_VIDEO_FILTER_INIT, NULL);
+         break;
+#endif
       case MENU_ENUM_LABEL_VIDEO_SMOOTH:
       case MENU_ENUM_LABEL_VIDEO_CTX_SCALING:
 #if defined(DINGUX)
@@ -9349,7 +9736,7 @@ static void general_write_handler(rarch_setting_t *setting)
             rarch_system_info_t *sys_info        = &runloop_state_get_ptr()->system;
             video_driver_state_t *video_st       = video_state_get_ptr();
             struct retro_system_av_info *av_info = &video_st->av_info;
-            video_viewport_t *custom_vp          = &settings->video_vp_custom;
+            video_viewport_settings_t *custom_vp          = &settings->video_vp_custom;
 
             if (sys_info)
             {
@@ -9363,15 +9750,15 @@ static void general_write_handler(rarch_setting_t *setting)
                       sys_info->rotation) % 4);
 
                /* Update Custom Aspect Ratio values */
-               custom_vp->x         = 0;
-               custom_vp->y         = 0;
+               custom_vp->pos       = 0;
 
                {
-                  unsigned cache_w  = 0;
-                  unsigned cache_h  = 0;
-                  video_driver_cached_frame_info(&cache_w, &cache_h, NULL, NULL);
-                  base_width        = (geom->base_width)  ? geom->base_width  : cache_w;
-                  base_height       = (geom->base_height) ? geom->base_height : cache_h;
+                  unsigned cache_dims = 0;
+                  video_driver_cached_frame_info(&cache_dims, NULL, NULL);
+                  base_width        = (geom->base_width)
+                     ? geom->base_width  : VIDEO_SCALE_W(cache_dims);
+                  base_height       = (geom->base_height)
+                     ? geom->base_height : VIDEO_SCALE_H(cache_dims);
                }
 
                if (base_width <= 4 || base_height <= 4)
@@ -9382,18 +9769,27 @@ static void general_write_handler(rarch_setting_t *setting)
 
                /* Round down when rotation is "horizontal", round up when rotation is "vertical"
                   to avoid expanding viewport each time user rotates */
+               vp_w = VIDEO_SCALE_W(custom_vp->dims);
+               vp_h = VIDEO_SCALE_H(custom_vp->dims);
+
                if (rotation % 2)
                {
-                  custom_vp->width  = MAX(1, (custom_vp->width  / base_height)) * base_height;
-                  custom_vp->height = MAX(1, (custom_vp->height / base_width )) * base_width;
+                  custom_vp->dims   = VIDEO_SCALE_PACK(
+                        MAX(1, (vp_w / base_height)) * base_height,
+                        MAX(1, (vp_h / base_width)) * base_width);
                }
                else
                {
-                  custom_vp->width  = ((custom_vp->width  + base_width  - 1) / base_width)  * base_width;
-                  custom_vp->height = ((custom_vp->height + base_height - 1) / base_height) * base_height;
+                  custom_vp->dims   = VIDEO_SCALE_PACK(
+                        ((vp_w + base_width - 1) / base_width)
+                              * base_width,
+                        ((vp_h + base_height - 1) / base_height)
+                              * base_height);
                }
 
-               aspectratio_lut[ASPECT_RATIO_CUSTOM].value = (float)custom_vp->width / custom_vp->height;
+               aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+                     (float)VIDEO_SCALE_W(custom_vp->dims)
+                           / VIDEO_SCALE_H(custom_vp->dims);
 
                /* Update Aspect Ratio (only useful for 1:1 PAR) */
                command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
@@ -9425,6 +9821,9 @@ static void general_write_handler(rarch_setting_t *setting)
 #ifdef HAVE_WASAPI
       case MENU_ENUM_LABEL_AUDIO_WASAPI_EXCLUSIVE_MODE:
       case MENU_ENUM_LABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH:
+#endif
+#ifdef HAVE_ASIO
+      case MENU_ENUM_LABEL_AUDIO_ASIO_OUTPUT_CHANNEL:
 #endif
          rarch_cmd = CMD_EVENT_AUDIO_REINIT;
          break;
@@ -9523,6 +9922,14 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE:
          frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
          break;
+#ifdef ANDROID
+      case MENU_ENUM_LABEL_VIDEO_NOTCH_WRITE_OVER:
+      case MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB:
+         android_app_set_window_settings(
+               settings->bools.video_notch_write_over_enable,
+               settings->bools.input_auto_mouse_grab);
+         break;
+#endif
       case MENU_ENUM_LABEL_REWIND_BUFFER_SIZE_STEP:
          {
             rarch_setting_t *buffer_size_setting = menu_setting_find_enum(MENU_ENUM_LABEL_REWIND_BUFFER_SIZE);
@@ -9747,12 +10154,15 @@ static void general_write_handler(rarch_setting_t *setting)
             /* Whenever custom viewport dimensions are
              * changed, ASPECT_RATIO_CUSTOM must be
              * recalculated */
-            video_viewport_t *custom_vp = &settings->video_vp_custom;
+            video_viewport_settings_t *custom_vp = &settings->video_vp_custom;
             float default_aspect        = aspectratio_lut[ASPECT_RATIO_CORE].value;
 
             aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-                  (custom_vp && custom_vp->width && custom_vp->height) ?
-                     ((float)custom_vp->width / (float)custom_vp->height) :
+                  (   custom_vp
+                   && VIDEO_SCALE_W(custom_vp->dims)
+                   && VIDEO_SCALE_H(custom_vp->dims))
+                     ? ((float)VIDEO_SCALE_W(custom_vp->dims)
+                           / (float)VIDEO_SCALE_H(custom_vp->dims)) :
                            default_aspect;
          }
          break;
@@ -10303,6 +10713,14 @@ enum setting_desc_class
 };
 
 /* setting_desc_t.desc_flags */
+/* The top two bits of setting_desc_t.value_offset: the row edits one
+ * half of the packed word at that offset rather than a whole value.
+ * HI is a width or an x, LO a height or a y -- the halves of
+ * VIDEO_SCALE_PACK and VIDEO_POS_PACK. */
+#define SDESC_OFF_HALF_HI      0x40000000u
+#define SDESC_OFF_HALF_LO      0x80000000u
+#define SDESC_OFF_MASK         0x3fffffffu
+
 #define SDESC_FLG_HAS_RANGE    (1 << 0)
 #define SDESC_FLG_ENFORCE_MIN  (1 << 1)
 #define SDESC_FLG_ENFORCE_MAX  (1 << 2)
@@ -10319,7 +10737,11 @@ enum setting_desc_class
 
 typedef struct setting_desc
 {
-   uint32_t                    value_offset;   /* offsetof into settings_t */
+   /* offsetof into settings_t, plus a SDESC_OFF_HALF_* tag in the
+    * top two bits where the row edits one half of a packed word
+    * rather than a value of its own. settings_t is nowhere near 2^30
+    * bytes, so those bits are free. */
+   uint32_t                    value_offset;
    uint32_t                    flags;          /* SD_FLAG_*               */
    enum msg_hash_enums         name_enum;
    enum msg_hash_enums         short_enum;
@@ -10593,7 +11015,12 @@ static void settings_list_add_desc(
    for (i = 0; i < count; i++)
    {
       const setting_desc_t *d = &desc[i];
-      void *target            = (void*)((uint8_t*)settings + d->value_offset);
+      uint32_t offs           = d->value_offset & SDESC_OFF_MASK;
+      uint8_t  packed_half    =
+              (d->value_offset & SDESC_OFF_HALF_HI) ? SD_FREE_FLAG_PACKED_HI
+            : (d->value_offset & SDESC_OFF_HALF_LO) ? SD_FREE_FLAG_PACKED_LO
+            : 0;
+      void *target            = (void*)((uint8_t*)settings + offs);
       int32_t eff_def_i       = (d->desc_flags & SDESC_FLG_DEF_FUNC)
                                  && d->def_resolver
                               ? d->def_resolver() : d->def_i;
@@ -10637,6 +11064,8 @@ static void settings_list_add_desc(
                   general_read_handler);
             if (d->flags != SD_FLAG_NONE)
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, d->flags);
+            SETTINGS_DATA_LIST_CURRENT_SET_PACKED_HALF(list, list_info,
+                  packed_half);
             break;
          case SDESC_UINT:
             CONFIG_UINT(
@@ -10652,6 +11081,8 @@ static void settings_list_add_desc(
                   general_read_handler);
             if (d->flags != SD_FLAG_NONE)
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, d->flags);
+            SETTINGS_DATA_LIST_CURRENT_SET_PACKED_HALF(list, list_info,
+                  packed_half);
             break;
          case SDESC_FLOAT:
             CONFIG_FLOAT(
@@ -10672,7 +11103,7 @@ static void settings_list_add_desc(
          case SDESC_STRING:
             CONFIG_STRING(
                   list, list_info,
-                  (char*)settings + d->value_offset,
+                  (char*)settings + (d->value_offset & SDESC_OFF_MASK),
                   (size_t)d->def_i,
                   d->name_enum,
                   d->short_enum,
@@ -10688,7 +11119,7 @@ static void settings_list_add_desc(
          case SDESC_PATH:
             CONFIG_PATH(
                   list, list_info,
-                  (char*)settings + d->value_offset,
+                  (char*)settings + (d->value_offset & SDESC_OFF_MASK),
                   (size_t)d->def_i,
                   d->name_enum,
                   d->short_enum,
@@ -10706,7 +11137,7 @@ static void settings_list_add_desc(
          case SDESC_DIR:
             CONFIG_DIR(
                   list, list_info,
-                  (char*)settings + d->value_offset,
+                  (char*)settings + (d->value_offset & SDESC_OFF_MASK),
                   (size_t)d->def_i,
                   d->name_enum,
                   d->short_enum,
@@ -11316,7 +11747,7 @@ static const setting_desc_t mm_desc_6[] = {
 #include "../settings/settings_def_menu_main_actions_6.h"
 };
 
-#if !defined(IOS) && !defined(HAVE_LAKKA)
+#if !TARGET_OS_IPHONE && !defined(HAVE_LAKKA)
 static const setting_desc_t mm_desc_7[] = {
 /* GENERATED: rows come from settings_def_menu_main_actions_10.h in order. */
 #include "../settings/settings_def_menu_main_actions_10.h"
@@ -11328,7 +11759,7 @@ static const setting_desc_t mm_desc_8[] = {
 #include "../settings/settings_def_menu_main_lists_2.h"
 };
 
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
 #ifdef HAVE_LAKKA
 static const setting_desc_t quit_lakka_desc[] = {
 /* GENERATED: rows come from settings_def_quit_restart.h in order. */
@@ -11337,7 +11768,7 @@ static const setting_desc_t quit_lakka_desc[] = {
 #endif
 #endif
 
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
 #if !defined(HAVE_LAKKA)
 static const setting_desc_t mm_desc_9[] = {
 /* GENERATED: rows come from settings_def_menu_main_actions_7.h in order. */
@@ -11462,7 +11893,7 @@ static const setting_desc_t metal_argbuf_desc[] = {
 };
 #endif
 
-#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
+#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (TARGET_OS_IPHONE && TARGET_OS_TV)
 static const setting_desc_t vid_desc_0[] = {
 /* GENERATED: rows come from settings_def_video_suspend_screensaver.h in order. */
 #include "../settings/settings_def_video_suspend_screensaver.h"
@@ -11490,29 +11921,36 @@ static const setting_desc_t vid_desc_3[] = {
 
 #ifdef HAVE_D3D10
 static const setting_desc_t vid_desc_4[] = {
-/* GENERATED: rows come from settings_def_gpu_index_d3d11.h in order. */
-#include "../settings/settings_def_gpu_index_d3d11.h"
+/* GENERATED: rows come from settings_def_gpu_index_d3d10.h in order. */
+#include "../settings/settings_def_gpu_index_d3d10.h"
 };
 #endif
 
 #ifdef HAVE_D3D11
 static const setting_desc_t vid_desc_5[] = {
-/* GENERATED: rows come from settings_def_gpu_index_d3d12.h in order. */
-#include "../settings/settings_def_gpu_index_d3d12.h"
+/* GENERATED: rows come from settings_def_gpu_index_d3d11.h in order. */
+#include "../settings/settings_def_gpu_index_d3d11.h"
 };
 #endif
 
 #ifdef HAVE_D3D12
 static const setting_desc_t vid_desc_6[] = {
-/* GENERATED: rows come from settings_def_gpu_index_gl.h in order. */
-#include "../settings/settings_def_gpu_index_gl.h"
+/* GENERATED: rows come from settings_def_gpu_index_d3d12.h in order. */
+#include "../settings/settings_def_gpu_index_d3d12.h"
 };
 #endif
 
 #ifdef HAVE_METAL
 static const setting_desc_t vid_desc_7[] = {
-/* GENERATED: rows come from settings_def_gpu_index_vulkan.h in order. */
-#include "../settings/settings_def_gpu_index_vulkan.h"
+/* GENERATED: rows come from settings_def_gpu_index_metal.h in order. */
+#include "../settings/settings_def_gpu_index_metal.h"
+};
+#endif
+
+#ifdef HAVE_EGL
+static const setting_desc_t vid_desc_gl_gpu[] = {
+/* GENERATED: rows come from settings_def_gpu_index_egl_gl.h in order. */
+#include "../settings/settings_def_gpu_index_egl_gl.h"
 };
 #endif
 
@@ -11611,14 +12049,14 @@ static const setting_desc_t vid_desc_15[] = {
 };
 #endif
 
-#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
+#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3) && !defined(WEBOS)
 static const setting_desc_t vid_desc_16[] = {
 /* GENERATED: rows come from settings_def_video_window_save_position.h in order. */
 #include "../settings/settings_def_video_window_save_position.h"
 };
 #endif
 
-#if !((defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)))
+#if !((defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) || (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3) && !defined(WEBOS))
 static const setting_desc_t vid_desc_17[] = {
 /* GENERATED: rows come from settings_def_video_window_custom_size.h in order. */
 #include "../settings/settings_def_video_window_custom_size.h"
@@ -11710,6 +12148,13 @@ static const setting_desc_t avsync_desc[] = {
 #include "../settings/settings_def_video_adaptive_vsync.h"
 };
 
+#if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG)
+static const setting_desc_t glspirv_desc[] = {
+/* GENERATED: rows come from settings_def_video_gl_direct_spirv.h in order. */
+#include "../settings/settings_def_video_gl_direct_spirv.h"
+};
+#endif
+
 static const setting_desc_t fdelay_desc[] = {
 /* GENERATED: rows come from settings_def_frame_delay.h in order. */
 #include "../settings/settings_def_frame_delay.h"
@@ -11745,6 +12190,11 @@ static const setting_desc_t video_filter_desc[] = {
 static const setting_desc_t crt_switchres_desc_0[] = {
 /* GENERATED: rows come from settings_def_crt_switchres.h in order. */
 #include "../settings/settings_def_crt_switchres.h"
+};
+
+static const setting_desc_t video_sdl_display_server_desc[] = {
+/* GENERATED: rows come from settings_def_video_sdl_display_server.h in order. */
+#include "../settings/settings_def_video_sdl_display_server.h"
 };
 
 static const setting_desc_t menu_sounds_desc_0[] = {
@@ -12315,7 +12765,7 @@ static const setting_desc_t menu_quit_lakka_desc[] = {
 };
 #endif
 
-#if !defined(HAVE_LAKKA) && !defined(IOS)
+#if !defined(HAVE_LAKKA) && !TARGET_OS_IPHONE
 static const setting_desc_t menu_desc_25[] = {
 /* GENERATED: rows come from settings_def_quit_visibility.h in order. */
 #include "../settings/settings_def_quit_visibility.h"
@@ -12330,7 +12780,7 @@ static const setting_desc_t menu_desc_26[] = {
 #endif
 
 #if !(defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2))
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
 static const setting_desc_t menu_desc_27[] = {
 /* GENERATED: rows come from settings_def_menu_restart_view.h in order. */
 #include "../settings/settings_def_menu_restart_view.h"
@@ -12752,7 +13202,7 @@ static const setting_desc_t user_accounts_desc_0_s0[] = {
 #endif
 
 #ifdef HAVE_NETWORKING
-#if !IOS
+#if !TARGET_OS_IPHONE
 static const setting_desc_t user_accounts_desc_0_s1[] = {
 /* GENERATED: rows come from settings_def_accounts_streaming.h in order. */
 #include "../settings/settings_def_accounts_streaming.h"
@@ -12941,7 +13391,7 @@ static void settings_build_main_menu(
 
             ADD_DESC(mm_desc_6);
 
-#if !defined(IOS) && !defined(HAVE_LAKKA)
+#if !TARGET_OS_IPHONE && !defined(HAVE_LAKKA)
       if (frontend_driver_has_fork())
       {
             ADD_DESC(mm_desc_7);
@@ -12949,7 +13399,7 @@ static void settings_build_main_menu(
 #endif
 
             ADD_DESC(mm_desc_8);
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
       /* Apple rejects iOS apps that let you forcibly quit them. */
 #ifdef HAVE_LAKKA
             ADD_DESC(quit_lakka_desc);
@@ -13012,9 +13462,9 @@ static void settings_build_drivers(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
          unsigned i, j = 0;
-         struct string_options_entry string_options_entries[14] = {{0}};
+         struct string_options_entry string_options_entries[15] = {{0}};
 
          START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS), parent_group);
          MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_DRIVER_SETTINGS);
@@ -13158,6 +13608,17 @@ static void settings_build_drivers(
 
          j++;
 
+#ifdef HAVE_COMPANION_WIMP
+         string_options_entries[j].target          = settings->arrays.ui_companion_driver;
+         string_options_entries[j].len             = sizeof(settings->arrays.ui_companion_driver);
+         string_options_entries[j].name_enum_idx   = MENU_ENUM_LABEL_UI_COMPANION_DRIVER;
+         string_options_entries[j].SHORT_enum_idx  = MENU_ENUM_LABEL_VALUE_UI_COMPANION_DRIVER;
+         string_options_entries[j].default_value   = config_get_default_ui_companion();
+         string_options_entries[j].values          = config_get_ui_companion_driver_options();
+
+         j++;
+#endif
+
          for (i = 0; i < j; i++)
          {
             CONFIG_STRING_OPTIONS(
@@ -13200,7 +13661,7 @@ static void settings_build_drivers(
          }
 
          GROUP_END();
-       
+
    }
 }
 
@@ -13215,7 +13676,7 @@ static void settings_build_core(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
          unsigned i, listing = 0;
 #ifndef HAVE_DYNAMIC
          struct bool_entry bool_entries[11];
@@ -13341,7 +13802,7 @@ static void settings_build_core(
          }
 
          GROUP_END();
-       
+
    }
 }
 
@@ -13356,7 +13817,7 @@ static void settings_build_configuration(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
          uint8_t i, listing = 0;
          struct bool_entry bool_entries[10];
          START_GROUP(list, list_info, &group_info,
@@ -13469,7 +13930,7 @@ static void settings_build_configuration(
             ADD_DESC(configuration_desc_0);
 
          GROUP_END();
-       
+
    }
 }
 
@@ -13484,7 +13945,7 @@ static void settings_build_logging(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
          bool *tmp_b = NULL;
          START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS), parent_group);
          parent_group = MENU_ENUM_LABEL_LOGGING_SETTINGS_STR;
@@ -13539,7 +14000,7 @@ ADD_DESC(logging_desc_0);
                general_write_handler,
                general_read_handler,
                SD_FLAG_ADVANCED);
-       
+
       GROUP_END();
    }
 }
@@ -13555,7 +14016,7 @@ static void settings_build_saving(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
          uint8_t i, listing = 0;
          struct bool_entry bool_entries[12];
 
@@ -13681,7 +14142,7 @@ static void settings_build_saving(
             ADD_DESC(saving2_desc_0);
 
          GROUP_END();
-       
+
 
    }
 }
@@ -14289,7 +14750,7 @@ static void settings_build_video(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                parent_group);
@@ -14299,7 +14760,7 @@ static void settings_build_video(
 
          START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
+#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (TARGET_OS_IPHONE && TARGET_OS_TV)
             ADD_DESC(vid_desc_0);
 #endif
          END_SUB_GROUP(list, list_info, parent_group);
@@ -14357,6 +14818,19 @@ static void settings_build_video(
          if (string_is_equal(video_driver_get_ident(), "metal"))
          {
             ADD_DESC(vid_desc_7);
+         }
+#endif
+
+#ifdef HAVE_EGL
+         /* Only where the context publishes EGL's devices: GLX and
+          * contexts without device enumeration have none to choose */
+         if (     (   string_is_equal(video_driver_get_ident(), "gl")
+                   || string_is_equal(video_driver_get_ident(), "glcore")
+                   || string_is_equal(video_driver_get_ident(), "gl1"))
+               && video_driver_get_gpu_api_devices(
+                     video_context_driver_get_api()))
+         {
+            ADD_DESC(vid_desc_gl_gpu);
          }
 #endif
 
@@ -14482,7 +14956,8 @@ static void settings_build_video(
             ADD_DESC(vid_desc_15);
 #endif
 #if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||  \
-    (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
+    (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) ||     \
+    defined(HAVE_SDL3) && !defined(WEBOS)
             ADD_DESC(vid_desc_16);
 #else
             ADD_DESC(vid_desc_17);
@@ -14509,6 +14984,8 @@ static void settings_build_video(
 #endif
 
                   ADD_DESC(rot_desc);
+
+                  ADD_DESC(video_sdl_display_server_desc);
 
          END_SUB_GROUP(list, list_info, parent_group);
 
@@ -14599,6 +15076,15 @@ static void settings_build_video(
          if (video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC))
             ADD_DESC(avsync_desc);
 
+#if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG)
+         /* GL_ARB_gl_spirv is an OpenGL (Core) driver feature; the entry
+          * would be inert under any other video driver. */
+         if (string_is_equal(settings->arrays.video_driver, "glcore"))
+         {
+            ADD_DESC(glspirv_desc);
+         }
+#endif
+
          ADD_DESC(fdelay_desc);
 
          /* Unlike all other shader-related menu entries
@@ -14654,7 +15140,7 @@ static void settings_build_video(
                   ADD_DESC(video_filter_desc);
 
          GROUP_END();
-       
+
    }
 }
 
@@ -14765,13 +15251,18 @@ ADD_DESC(audio_skew_desc);
 
             ADD_DESC(audio_dsp_desc);
 
+            /* Built whatever driver is running or configured. The
+             * settings list is built once per session, and the audio
+             * output page gates each driver's items on the configured
+             * driver when it lists them; building only the running
+             * driver's rows here left the other driver's items out of
+             * the table for the whole session, so switching driver in
+             * the menu could never show them. */
 #ifdef HAVE_WASAPI
-      if (string_is_equal(audio_driver_get_ident(), "wasapi"))
             ADD_DESC(audio_wasapi_desc);
 #endif
 
 #ifdef HAVE_ASIO
-      if (string_is_equal(audio_driver_get_ident(), "asio"))
             ADD_DESC(audio_asio_desc);
 #endif
 
@@ -14826,8 +15317,9 @@ static void settings_build_microphone(
 
             ADD_DESC(mic_misc_desc);
 
+            /* As above: built whatever driver is configured, and gated
+             * by the microphone page when it lists them. */
 #ifdef HAVE_WASAPI
-      if (string_is_equal(settings->arrays.microphone_driver, "wasapi"))
             ADD_DESC(mic_wasapi_desc);
 #endif
 
@@ -14847,7 +15339,7 @@ static void settings_build_input(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
 
          START_GROUP(list, list_info, &group_info,
                MENU_ENUM_LABEL_INPUT_SETTINGS_BEGIN_STR,
@@ -14907,6 +15399,49 @@ static void settings_build_input(
             SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_android_physical_keyboard)
             (*list)[list_info->index - 1].default_value.string      = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
          }
+      }
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_android_system_keyboard,
+                  MENU_ENUM_LABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
+                  MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
+                  DEFAULT_INPUT_ANDROID_SYSTEM_KEYBOARD,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
+#endif
+#ifdef HAVE_SDL3
+      {
+         /* Only meaningful when SDL3 is driving input and the device
+          * actually has a screen keyboard to offer, the same way the
+          * Android entries above are gated on the active input driver.
+          * A gl+udev desktop build compiled with SDL3 support should
+          * not show a toggle that does nothing. */
+         input_driver_state_t *st      = input_state_get_ptr();
+         input_driver_t *current_input = st->current_driver;
+         if (     current_input
+               && string_is_equal(current_input->ident, "sdl3")
+               && input_osk_native_available())
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_sdl3_system_keyboard,
+                  MENU_ENUM_LABEL_INPUT_SDL3_SYSTEM_KEYBOARD,
+                  MENU_ENUM_LABEL_VALUE_INPUT_SDL3_SYSTEM_KEYBOARD,
+                  DEFAULT_INPUT_SDL3_SYSTEM_KEYBOARD,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
       }
 #endif
 
@@ -14984,7 +15519,7 @@ static void settings_build_input(
          }
 
          GROUP_END();
-       
+
    }
 }
 
@@ -15083,7 +15618,7 @@ static void settings_build_input_hotkey(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
          unsigned i;
          START_GROUP(list, list_info, &group_info,
                MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS_BEGIN_STR,
@@ -15098,7 +15633,7 @@ static void settings_build_input_hotkey(
          {
             if (!input_config_bind_map_get_meta(i))
                continue;
-#ifndef HAVE_QT
+#ifndef HAVE_COMPANION_WIMP
             if (i == RARCH_UI_COMPANION_TOGGLE)
                continue;
 #endif
@@ -15117,7 +15652,7 @@ static void settings_build_input_hotkey(
          }
 
          GROUP_END();
-       
+
    }
 }
 
@@ -15221,7 +15756,8 @@ static void settings_build_onscreen_notifications(
             ADD_DESC(widget_fs_desc);
       /* The fullscreen variant is an LV row and the LV float grammar
        * has no range or handler slots yet; until it grows them, the
-       * customization stays here. The windowed row carries its own. */
+       * customization stays here. The console/mobile row and the
+       * windowed row carry their own. */
       SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
       menu_settings_list_current_add_range(list, list_info, 0.2, 5.0, 0.01, true, true);
 #endif
@@ -15516,14 +16052,14 @@ static void settings_build_menu(
 
 #ifdef HAVE_LAKKA
             ADD_DESC(menu_quit_lakka_desc);
-#elif !defined(IOS)
+#elif !TARGET_OS_IPHONE
             ADD_DESC(menu_desc_25);
 #endif
 
 #if defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2)
             ADD_DESC(menu_desc_26);
 #else
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
          if (frontend_driver_has_fork())
             ADD_DESC(menu_desc_27);
 #endif
@@ -15548,6 +16084,21 @@ static void settings_build_menu(
       if (string_is_equal(settings->arrays.menu_driver, "ozone"))
       {
             ADD_DESC(menu_desc_31);
+            {
+               /* The descriptor rows have no string-options kind:
+                * find the color theme row by its enum, not by its
+                * position in settings_def_ozone_sidebar.h. */
+               int k = list_info->index - (int)ARRAY_SIZE(menu_desc_31);
+               for (k = (k < 0) ? 0 : k; k < list_info->index; k++)
+               {
+                  if ((*list)[k].enum_idx == MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME)
+                  {
+                     (*list)[k].type   = ST_STRING_OPTIONS;
+                     (*list)[k].values = ozone_color_theme_values();
+                     break;
+                  }
+               }
+            }
 
             ADD_DESC(menu2_desc_5);
 
@@ -15948,14 +16499,13 @@ static void settings_build_playlist(
        * sub group. */
                      ADD_DESC(pl_desc_1);
 
-      /* Playlist entry index display and content specific history icon
-       * are currently supported only by Ozone & XMB */
+#if defined(HAVE_OZONE) || defined(HAVE_XMB)
       if (   string_is_equal(settings->arrays.menu_driver, "xmb")
           || string_is_equal(settings->arrays.menu_driver, "ozone"))
       {
                         ADD_DESC(pl_desc_2);
       }
-
+#endif
                      ADD_DESC(pl_desc_3);
 
 #if defined(HAVE_OZONE) || defined(HAVE_XMB)
@@ -16480,7 +17030,7 @@ static void settings_build_lakka_services(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
 #if defined(HAVE_LAKKA)
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES),
@@ -16596,7 +17146,7 @@ static void settings_build_lakka_services(
 
          GROUP_END();
 #endif
-       
+
    }
 }
 
@@ -16612,7 +17162,7 @@ static void settings_build_lakka_switch_options(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS),
                parent_group);
@@ -16671,7 +17221,7 @@ static void settings_build_lakka_switch_options(
                SD_FLAG_NONE);
          SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], bluetooth_ertm_disable_toggle_change_handler)
          GROUP_END();
-       
+
    }
 }
 #endif
@@ -16746,7 +17296,7 @@ static void settings_build_user_accounts(
             ADD_DESC(user_accounts_desc_0_s0);
 #endif
 #ifdef HAVE_NETWORKING
-#if !IOS
+#if !TARGET_OS_IPHONE
             ADD_DESC(user_accounts_desc_0_s1);
 #endif
 #endif
@@ -17229,9 +17779,6 @@ static void settings_build_manual_content_scan(
       GROUP_END();
    }
 }
-
-#ifdef HAVE_MIST
-#endif
 
 #ifdef HAVE_SMBCLIENT
 static void settings_build_smbclient(
@@ -17740,16 +18287,16 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #endif
    { mm_desc_5, (uint16_t)ARRAY_SIZE(mm_desc_5) },
    { mm_desc_6, (uint16_t)ARRAY_SIZE(mm_desc_6) },
-#if !defined(IOS) && !defined(HAVE_LAKKA)
+#if !TARGET_OS_IPHONE && !defined(HAVE_LAKKA)
    { mm_desc_7, (uint16_t)ARRAY_SIZE(mm_desc_7) },
 #endif
    { mm_desc_8, (uint16_t)ARRAY_SIZE(mm_desc_8) },
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
 #ifdef HAVE_LAKKA
    { quit_lakka_desc, (uint16_t)ARRAY_SIZE(quit_lakka_desc) },
 #endif
 #endif
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
 #ifndef HAVE_LAKKA
    { mm_desc_9, (uint16_t)ARRAY_SIZE(mm_desc_9) },
 #endif
@@ -17787,7 +18334,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #if defined(__APPLE__) && defined(HAVE_VULKAN)
    { metal_argbuf_desc, (uint16_t)ARRAY_SIZE(metal_argbuf_desc) },
 #endif
-#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (defined(IOS) && TARGET_OS_TV)
+#if (!defined(RARCH_CONSOLE) && !defined(RARCH_MOBILE)) || (TARGET_OS_IPHONE && TARGET_OS_TV)
    { vid_desc_0, (uint16_t)ARRAY_SIZE(vid_desc_0) },
 #endif
    { vid_desc_1, (uint16_t)ARRAY_SIZE(vid_desc_1) },
@@ -17808,6 +18355,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #endif
 #ifdef HAVE_METAL
    { vid_desc_7, (uint16_t)ARRAY_SIZE(vid_desc_7) },
+#endif
+#ifdef HAVE_EGL
+   { vid_desc_gl_gpu, (uint16_t)ARRAY_SIZE(vid_desc_gl_gpu) },
 #endif
 #ifdef WIIU
    { vid_desc_8, (uint16_t)ARRAY_SIZE(vid_desc_8) },
@@ -17836,10 +18386,10 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    { vid_desc_15, (uint16_t)ARRAY_SIZE(vid_desc_15) },
 #endif
-#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||   (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH))
+#if (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||   (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3)
    { vid_desc_16, (uint16_t)ARRAY_SIZE(vid_desc_16) },
 #endif
-#if !((defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||   (defined(HAVE_COCOA_METAL) && !defined(HAVE_COCOATOUCH)))
+#if !((defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)) ||   (defined(HAVE_COCOA) && !defined(HAVE_COCOATOUCH)) || defined(HAVE_SDL3))
    { vid_desc_17, (uint16_t)ARRAY_SIZE(vid_desc_17) },
 #endif
    { video2_desc_0, (uint16_t)ARRAY_SIZE(video2_desc_0) },
@@ -17859,6 +18409,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { vid_ctx_desc, (uint16_t)ARRAY_SIZE(vid_ctx_desc) },
 #endif
    { rot_desc, (uint16_t)ARRAY_SIZE(rot_desc) },
+   { video_sdl_display_server_desc, (uint16_t)ARRAY_SIZE(video_sdl_display_server_desc) },
    { vid_desc_18, (uint16_t)ARRAY_SIZE(vid_desc_18) },
    { hdr_desc, (uint16_t)ARRAY_SIZE(hdr_desc) },
    { vid_desc_19, (uint16_t)ARRAY_SIZE(vid_desc_19) },
@@ -17866,6 +18417,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { vid_desc_20, (uint16_t)ARRAY_SIZE(vid_desc_20) },
    { sync_desc, (uint16_t)ARRAY_SIZE(sync_desc) },
    { avsync_desc, (uint16_t)ARRAY_SIZE(avsync_desc) },
+#if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG)
+   { glspirv_desc, (uint16_t)ARRAY_SIZE(glspirv_desc) },
+#endif
    { fdelay_desc, (uint16_t)ARRAY_SIZE(fdelay_desc) },
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    { sdelay_desc, (uint16_t)ARRAY_SIZE(sdelay_desc) },
@@ -18058,14 +18612,14 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #ifdef HAVE_LAKKA
    { menu_quit_lakka_desc, (uint16_t)ARRAY_SIZE(menu_quit_lakka_desc) },
 #endif
-#if !defined(HAVE_LAKKA) && !defined(IOS)
+#if !defined(HAVE_LAKKA) && !TARGET_OS_IPHONE
    { menu_desc_25, (uint16_t)ARRAY_SIZE(menu_desc_25) },
 #endif
 #if defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2)
    { menu_desc_26, (uint16_t)ARRAY_SIZE(menu_desc_26) },
 #endif
 #if !(defined(HAVE_LAKKA) || defined(HAVE_ODROIDGO2))
-#if !defined(IOS)
+#if !TARGET_OS_IPHONE
    { menu_desc_27, (uint16_t)ARRAY_SIZE(menu_desc_27) },
 #endif
 #endif
@@ -18224,7 +18778,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { user_accounts_desc_0_s0, (uint16_t)ARRAY_SIZE(user_accounts_desc_0_s0) },
 #endif
 #ifdef HAVE_NETWORKING
-#if !IOS
+#if !TARGET_OS_IPHONE
    { user_accounts_desc_0_s1, (uint16_t)ARRAY_SIZE(user_accounts_desc_0_s1) },
 #endif
 #endif

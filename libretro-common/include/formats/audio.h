@@ -74,14 +74,34 @@ enum audio_type_enum
    AUDIO_TYPE_MP3,
    AUDIO_TYPE_MOD,  /* tracker module: MOD / S3M / XM (rmodtracker) */
    AUDIO_TYPE_OPUS, /* Opus (ropus); demuxed, Ogg (.opus) or WebM (.weba) */
-   AUDIO_TYPE_AAC   /* AAC-LC (raac); demuxed path, an ADTS buffer
+   AUDIO_TYPE_AAC,  /* AAC-LC (raac); demuxed path, an ADTS buffer
                     * (.aac), or a whole MP4/M4A buffer when rmp4 is
                     * built in                                          */
+   AUDIO_TYPE_LPCM, /* linear PCM (rlpcm); the samples themselves, from
+                     * a .lpcm or .pcm buffer. The shape comes from a
+                     * DVD or Blu-ray header the buffer opens with, or
+                     * from a caller that filled the format in before
+                     * starting - raw samples say nothing about
+                     * themselves                                      */
+   AUDIO_TYPE_AC3   /* AC-3 or E-AC-3 (rac3); a buffer of syncframes
+                    * (.ac3, .eac3, .ec3). Up
+                    * to 5.1, handed over in the WAV shape for its
+                    * channel count (the mixer folds by count): a
+                    * lone surround becomes a phantom pair, and the
+                    * LFE is kept only in 5.1                           */
 };
+
+/* The linear-PCM format an AUDIO_TYPE_LPCM handle will use, for a
+ * caller that knows the shape of raw samples - a track ripped from a
+ * disc, a core's own buffer - to fill in before starting. NULL for
+ * any other type. A buffer that opens with a DVD or Blu-ray header
+ * needs none of this: leave the format zeroed and the header is
+ * read. */
+void *audio_transfer_lpcm_format(void *data);
 
 /* Guess the codec from a file-name/extension (counterpart of
  * image_texture_get_type). Returns AUDIO_TYPE_NONE if unrecognised.
- * Covers WAV, FLAC, Ogg Vorbis, MP3 and the tracker modules only:
+ * Covers WAV, FLAC, Ogg Vorbis, MP3, AC-3 and the tracker modules only:
  * .opus, .aac, .m4a, .weba, .mka, .mkv and .oga have no extension
  * mapping, and .ogg names a container rather than a codec - Vorbis,
  * Opus and FLAC all travel in one - so those types come from the
@@ -200,7 +220,12 @@ bool  audio_transfer_info(void *data, enum audio_type_enum type,
  * into 'out', stores the number of frames actually produced in *frames_out
  * (may be NULL), and returns AUDIO_PROCESS_NEXT while data remains,
  * AUDIO_PROCESS_END at end of stream (frames produced 0), or
- * AUDIO_PROCESS_ERROR. s16 is exact for the integer codecs (FLAC, and
+ * AUDIO_PROCESS_ERROR.  NEXT with zero frames produced means starved,
+ * not finished: a windowed source stopped at its resident bound
+ * (audio_transfer_set_avail) and the same call succeeds once the
+ * feeder has raised it - the caller must not treat the empty read as
+ * the stream ending, or a looping voice rewinds mid-file whenever its
+ * feeder runs a tick behind.  s16 is exact for the integer codecs (FLAC, and
  * WAV other than its float form); f32 is
  * the native path for the float mixer.  Producing fewer frames than asked
  * is not end of stream, and END is not latched: a demuxed packet set that

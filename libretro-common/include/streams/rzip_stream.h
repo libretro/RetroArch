@@ -82,6 +82,22 @@ typedef struct rzipstream rzipstream_t;
  *   or uncompressed data
  * Returns NULL if arguments are invalid, file
  * is invalid or an IO error occurs */
+/* The codec an RZIP file is written with. Version 1 of the container
+ * holds deflate chunks, version 2 Zstandard frames; a reader takes
+ * either where its codec is compiled in. */
+enum rzip_codec
+{
+   RZIP_CODEC_DEFLATE = 0,
+   RZIP_CODEC_ZSTD
+};
+
+/* The codec every writer opened after this uses: Zstandard by default
+ * where it is compiled in, deflate otherwise. Asking for a codec the
+ * build lacks leaves deflate. */
+void rzipstream_set_write_codec(enum rzip_codec codec);
+enum rzip_codec rzipstream_get_write_codec(void);
+bool rzipstream_codec_available(enum rzip_codec codec);
+
 rzipstream_t* rzipstream_open(const char *path, unsigned mode);
 
 /* File Read */
@@ -114,6 +130,35 @@ char* rzipstream_gets(rzipstream_t *stream, char *s, size_t len);
  * - Allocated 'buf' size is equal to 'len'.
  * Returns false in the event of an error */
 bool rzipstream_read_file(const char *path, void **buf, int64_t *len);
+
+/* Size of the buffer rzipstream_matches_buf() decompresses through.
+ *
+ * Exposed so a test can aim at the real chunk boundary rather than a
+ * remembered one.  Sized like its filestream counterpart, by the
+ * smallest thread stacks in the tree (8 KiB on PSP and GX) rather
+ * than by the decompressor - see FILESTREAM_MATCHES_BUF_WINDOW. */
+#define RZIPSTREAM_MATCHES_BUF_CHUNK 1024
+
+/* Does the file at 'path' hold exactly 'len' bytes equal to 'data'?
+ *
+ * The rzip counterpart of filestream_matches_buf(), for callers
+ * deciding whether a write is needed at all.  Settles a size
+ * mismatch from the header before decompressing anything, compares
+ * a chunk at a time, stops at the first difference, and allocates
+ * nothing - where answering this with rzipstream_read_file() meant
+ * decompressing the whole file into a fresh buffer to compare and
+ * free it.
+ *
+ * 'data' may be NULL only when 'len' is 0. A missing or unreadable
+ * file returns false rather than an error: the caller's next step is
+ * the same either way.
+ *
+ * Note one deliberate difference from filestream_matches_buf(): a
+ * zero-byte file never matches here, not even against zero bytes.
+ * It has no rzip header, so it cannot be opened and there is nothing
+ * to compare - and false is the useful answer, since writing then
+ * replaces it with a valid file. */
+bool rzipstream_matches_buf(const char *path, const void *data, size_t len);
 
 /* File Write */
 

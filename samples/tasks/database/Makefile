@@ -91,6 +91,7 @@ SOURCES_C := \
 	$(CORE_DIR)/samples/tasks/database/main.c \
 	$(LIBRETRO_COMM_DIR)/memory/mem_stats.c \
 	$(CORE_DIR)/tasks/task_database.c \
+	$(CORE_DIR)/tasks/task_nbio_slice.c \
 	$(CORE_DIR)/tasks/task_database_cue.c \
 	$(CORE_DIR)/database_info.c \
 	$(CORE_DIR)/core_info.c \
@@ -98,7 +99,7 @@ SOURCES_C := \
 	$(CORE_DIR)/playlist.c \
 	$(CORE_DIR)/manual_content_scan.c \
 	$(CORE_DIR)/verbosity.c \
-	$(LIBRETRO_COMM_DIR)/formats/m3u/m3u_file.c \
+	$(LIBRETRO_COMM_DIR)/formats/m3u/rm3u.c \
 	$(LIBRETRO_COMM_DIR)/formats/logiqx_dat/logiqx_dat.c \
 	$(CORE_DIR)/libretro-db/bintree.c \
 	$(CORE_DIR)/libretro-db/libretrodb.c \
@@ -107,6 +108,7 @@ SOURCES_C := \
 	$(CORE_DIR)/libretro-db/rmsgpack_dom.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file.c \
 	$(LIBRETRO_COMM_DIR)/file/config_file.c \
+	$(LIBRETRO_COMM_DIR)/file/config_file_io.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/file/retro_dirent.c \
@@ -128,6 +130,7 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \
 	$(LIBRETRO_COMM_DIR)/streams/rzip_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
@@ -174,6 +177,23 @@ CXXFLAGS  += $(DEFINES)
 
 OBJECTS    = $(SOURCES_C:.c=.o)
 
+# The index pairing test links the same objects but its own entry
+# point, so the scanner's main() is swapped out for it.
+SCAN_TEST         := database_scan_test
+SCAN_TEST_MAIN    := $(CORE_DIR)/samples/tasks/database/database_scan_test.o
+SCAN_TEST_OBJECTS  = $(filter-out $(CORE_DIR)/samples/tasks/database/main.o,$(OBJECTS)) \
+	$(SCAN_TEST_MAIN)
+
+INDEX_TEST        := database_index_test
+INDEX_TEST_MAIN   := $(CORE_DIR)/samples/tasks/database/database_index_test.o
+INDEX_TEST_OBJECTS = $(filter-out $(CORE_DIR)/samples/tasks/database/main.o,$(OBJECTS)) \
+	$(INDEX_TEST_MAIN)
+
+BEGIN_TEST        := scan_begin_budget_test
+BEGIN_TEST_MAIN   := $(CORE_DIR)/samples/tasks/database/scan_begin_budget_test.o
+BEGIN_TEST_OBJECTS = $(filter-out $(CORE_DIR)/samples/tasks/database/main.o,$(OBJECTS)) \
+	$(BEGIN_TEST_MAIN)
+
 OBJOUT   = -o
 LINKOUT  = -o
 
@@ -189,9 +209,24 @@ else
 	LD = $(CC)
 endif
 
-all: $(TARGET)$(EXE_EXT)
+all: $(TARGET)$(EXE_EXT) $(BEGIN_TEST)$(EXE_EXT)
 $(TARGET)$(EXE_EXT): $(OBJECTS)
 	$(LD)  $(LINKOUT)$@ $(SHARED) $(OBJECTS) $(LDFLAGS) $(LIBS)
+
+$(INDEX_TEST)$(EXE_EXT): $(INDEX_TEST_OBJECTS)
+	$(LD)  $(LINKOUT)$@ $(SHARED) $(INDEX_TEST_OBJECTS) $(LDFLAGS) $(LIBS)
+
+# Builds its own databases, so it needs nothing but a writable dir.
+$(SCAN_TEST)$(EXE_EXT): $(SCAN_TEST_OBJECTS)
+	$(LD)  $(LINKOUT)$@ $(SHARED) $(SCAN_TEST_OBJECTS) $(LDFLAGS) $(LIBS)
+
+$(BEGIN_TEST)$(EXE_EXT): $(BEGIN_TEST_OBJECTS)
+	$(LD)  $(LINKOUT)$@ $(SHARED) $(BEGIN_TEST_OBJECTS) $(LDFLAGS) $(LIBS)
+
+check: $(INDEX_TEST)$(EXE_EXT) $(SCAN_TEST)$(EXE_EXT) $(BEGIN_TEST)$(EXE_EXT)
+	./$(INDEX_TEST)$(EXE_EXT)
+	./$(SCAN_TEST)$(EXE_EXT)
+	./$(BEGIN_TEST)$(EXE_EXT)
 
 %.o: %.c
 	$(CC) $(INCFLAGS) $(CFLAGS) -c $(OBJOUT)$@ $<
@@ -200,4 +235,8 @@ $(TARGET)$(EXE_EXT): $(OBJECTS)
 	$(CXX) $(INCFLAGS) $(CXXFLAGS) -c $(OBJOUT)$@ $<
 
 clean:
-	rm -f $(OBJECTS)
+	rm -f $(OBJECTS) $(INDEX_TEST_MAIN) $(SCAN_TEST_MAIN) $(BEGIN_TEST_MAIN) \
+	      $(TARGET)$(EXE_EXT) $(INDEX_TEST)$(EXE_EXT) $(SCAN_TEST)$(EXE_EXT) \
+	      $(BEGIN_TEST)$(EXE_EXT)
+
+.PHONY: all check clean

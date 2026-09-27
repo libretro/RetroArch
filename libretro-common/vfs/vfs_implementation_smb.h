@@ -14,6 +14,8 @@ extern "C" {
 #define RETRO_SMB2_SEC_UNDEFINED 0
 #define RETRO_SMB2_SEC_NTLMSSP 1
 #define RETRO_SMB2_SEC_KRB5 2
+#define RETRO_SMB2_DEFAULT_MAX_CLIENTS 4
+#define RETRO_SMB2_DEFAULT_CLIENT_TIMEOUT 5
 
 struct smb_settings {
    const char *server_address;
@@ -29,15 +31,23 @@ struct smb_settings {
 
 typedef struct smb_settings smb_settings_t;
 
+#define RETRO_SMB_DIRENT_FILE 0
+#define RETRO_SMB_DIRENT_DIR  1
+
 struct smbc_dirent {
    char name[256];
-   int  type;     /* file vs directory */
+   int  type;     /* RETRO_SMB_DIRENT_* */
    int64_t size;  /* file size */
 };
 
+/* 'dir' is NULL and 'shares' is populated when the handle enumerates the
+ * shares exported by the server rather than a directory inside one. */
 typedef struct {
    struct smb2_context *ctx;
    struct smb2dir *dir;
+   char **shares;
+   unsigned share_count;
+   unsigned share_index;
 } smb_dir_handle;
 
 bool smb_init_cfg(const struct smb_settings *new_cfg);

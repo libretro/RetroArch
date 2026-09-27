@@ -33,10 +33,24 @@
 
 RETRO_BEGIN_DECLS
 
+/* Entries pulled from Java per readdirBatch() call. Each batch costs two
+ * JNI calls regardless of size, so this only has to be large enough that
+ * the per-batch cost disappears; the names are copied into native memory
+ * immediately, so a larger value mostly just holds more of them at once. */
+#define RETRO_VFS_SAF_DIRENT_BATCH 256
+
 typedef struct libretro_vfs_implementation_saf_dir
 {
    jobject directory_object;
-   jstring dirent_name_object;
+
+   /* Current batch, copied out of Java so that walking it costs nothing.
+    * @batch_name[i] is owned by this struct and freed on refill/close. */
+   char   *batch_name[RETRO_VFS_SAF_DIRENT_BATCH];
+   bool    batch_is_dir[RETRO_VFS_SAF_DIRENT_BATCH];
+   int     batch_count;
+   int     batch_pos;
+   bool    exhausted;
+
    const char *dirent_name;
    bool dirent_is_dir;
 } libretro_vfs_implementation_saf_dir;

@@ -180,6 +180,49 @@ void rflac_set_out_f32(rflac_t *f, float *out, size_t out_frames);
 int rflac_process(rflac_t *f, size_t *read, size_t *wrote);
 
 /**
+ * rflac_span_taken:
+ *
+ * How many bytes of the span given to the last rflac_set_in() the
+ * decoder absorbed. This is not what @read reports: @read is what the
+ * decode logically consumed, which lags what the bitreader has pulled
+ * in by whatever sits in its cache, and that difference is what tells
+ * a CD FLAC hunk's audio from the subchannel packed after it.
+ *
+ * A caller feeding a sliding window must advance by this instead.
+ * Anything the bitreader has pulled is gone from the span whether its
+ * bits have been used or not, and the cache survives across calls, so
+ * presenting those bytes again has them read twice.
+ *
+ * Returns: bytes of the last span consumed or carried.
+ */
+size_t rflac_span_taken(const rflac_t *f);
+
+/**
+ * rflac_min_input:
+ *
+ * The smallest input window that can always make progress, valid once
+ * the header is parsed. A frame must be presented whole to be decoded,
+ * so a caller feeding less than the longest one the stream may contain
+ * can stall with a frame it can never complete; sizing the window to
+ * this makes that impossible.
+ *
+ * Returns: bytes, or 0 before the header is known.
+ */
+size_t rflac_min_input(const rflac_t *f);
+
+/**
+ * rflac_set_eof:
+ *
+ * States that no further input will be supplied, so the decoder may
+ * finish the frame it holds instead of waiting for bytes that are not
+ * coming. A stream's last frame is shorter than the format's maximum,
+ * so without this the tail of every file is held back indefinitely.
+ *
+ * Safe to call before the last input rather than after it.
+ */
+void rflac_set_eof(rflac_t *f);
+
+/**
  * rflac_format:
  *
  * Returns: the geometry, or NULL before a header has been parsed. Always
@@ -242,9 +285,13 @@ uint64_t rflac_tell(const rflac_t *f);
 /**
  * rflac_reset:
  *
- * Discards decoder state but keeps the geometry, so a stream can be
- * played again from the start without reparsing a header. Any input
- * span is dropped.
+ * Rewinds the decoder to the start of the stream. Any input span,
+ * carried bytes and decode position are dropped, and rflac_tell()
+ * reports 0 again. A decoder made by rflac_new_raw() is rewound in
+ * place; one made by rflac_new() re-parses the header from the input
+ * the caller presents next, which must be the same stream from its
+ * first byte, and until that parse rflac_format() reports nothing.
+ * The geometry that comes back is unchanged.
  */
 void rflac_reset(rflac_t *f);
 

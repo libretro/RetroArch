@@ -14,6 +14,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include <encodings/crc32.h>
 
@@ -128,7 +129,10 @@ static bool patch_stream_put(patch_stream_t *ps, size_t at,
 {
    if (!patch_stream_reserve(ps, at + len))
       return false;
-   memcpy(ps->out + at, data, len);
+   /* reserve() is a no-op for a zero-byte request, so out can still be
+    * NULL here; NULL + 0 and memcpy(NULL, ..., 0) are both undefined. */
+   if (len)
+      memcpy(ps->out + at, data, len);
    if (at + len > ps->out_len)
       ps->out_len = at + len;
    return true;
@@ -139,33 +143,62 @@ static bool patch_stream_fill(patch_stream_t *ps, size_t at,
 {
    if (!patch_stream_reserve(ps, at + len))
       return false;
-   memset(ps->out + at, val, len);
+   if (len)
+      memset(ps->out + at, val, len);
    if (at + len > ps->out_len)
       ps->out_len = at + len;
    return true;
 }
 
+/* BPS and UPS both end with a CRC-32 of the patch's own bytes in the
+ * last four, little endian.  It depends on nothing but the patch, which
+ * open() already has whole, so it is settled here - before the declared
+ * target length, which the patch alone chooses, becomes an allocation.
+ * A 20-byte file can otherwise name a 4 GiB target and get it reserved
+ * and walked before anything is verified.  finish() still checks the
+ * trailer in full; this is a gate in front of the allocator. */
+static bool patch_stream_self_checksum_ok(const uint8_t *patch,
+      size_t patch_len)
+{
+   uint32_t want = 0;
+   unsigned i;
+
+   if (patch_len < 4)
+      return false;
+   for (i = 0; i < 4; i++)
+      want |= (uint32_t)patch[patch_len - 4 + i] << (i * 8);
+   return encoding_crc32(0, patch, patch_len - 4) == want;
+}
+
 /* Variable-length integer, as used by both UPS and BPS. */
-static uint64_t patch_stream_decode(patch_stream_t *ps)
+static bool patch_stream_decode(patch_stream_t *ps, uint64_t *out)
 {
    uint64_t val   = 0;
    uint64_t shift = 1;
 
    for (;;)
    {
-      uint8_t x = (ps->p_off < ps->patch_len) ? ps->patch[ps->p_off] : 0;
+      uint8_t x;
 
-      if (ps->p_off < ps->patch_len)
-         ps->p_off++;
+      if (ps->p_off >= ps->patch_len)
+         return false;
+      x = ps->patch[ps->p_off++];
 
+      if ((uint64_t)(x & 0x7f) > (UINT64_MAX - val) / shift)
+         return false;
       val += (x & 0x7f) * shift;
       if (x & 0x80)
-         break;
+      {
+         *out = val;
+         return true;
+      }
+      if (shift > UINT64_MAX >> 7)
+         return false;
       shift <<= 7;
+      if (val > UINT64_MAX - shift)
+         return false;
       val   += shift;
    }
-
-   return val;
 }
 
 /* --------------------------------------------------------------------
@@ -251,7 +284,11 @@ patch_stream_t *patch_stream_ips_open(const uint8_t *patch, size_t patch_len,
 
       if (len)
       {
-         if (off > patch_len - len)
+         /* off <= patch_len here, so the remaining-bytes form is safe;
+          * "off > patch_len - len" is not, because a record length
+          * larger than the whole patch wraps the subtraction and lets
+          * the record through. */
+         if (len > patch_len - off)
             break;
          recs[n].addr    = addr;
          recs[n].len     = len;
@@ -402,8 +439,12 @@ patch_stream_t *patch_stream_ups_open(const uint8_t *patch, size_t patch_len,
       size_t src_len)
 {
    patch_stream_t *ps;
+   uint64_t declared_src;
+   uint64_t declared_tgt;
 
-   if (patch_len < 18 || memcmp(patch, "UPS1", 4))
+   if (     patch_len < 18
+         || memcmp(patch, "UPS1", 4)
+         || !patch_stream_self_checksum_ok(patch, patch_len))
       return NULL;
 
    if (!(ps = (patch_stream_t*)calloc(1, sizeof(*ps))))
@@ -418,9 +459,17 @@ patch_stream_t *patch_stream_ups_open(const uint8_t *patch, size_t patch_len,
    /* The caller's src_len stays authoritative for decoding, exactly as
     * in the whole-buffer applier, but the declared lengths are part of
     * what the trailer is checked against. */
-   ps->ups_declared_src_len = (uint32_t)patch_stream_decode(ps);
-   ps->tgt_len              = (size_t)patch_stream_decode(ps);
-   ps->ups_declared_tgt_len = (uint32_t)ps->tgt_len;
+   if (   !patch_stream_decode(ps, &declared_src)
+       || !patch_stream_decode(ps, &declared_tgt)
+       || declared_src > UINT32_MAX
+       || declared_tgt > UINT32_MAX)
+   {
+      patch_stream_free(ps);
+      return NULL;
+   }
+   ps->ups_declared_src_len = (uint32_t)declared_src;
+   ps->tgt_len              = (size_t)declared_tgt;
+   ps->ups_declared_tgt_len = (uint32_t)declared_tgt;
 
    ps->carry_cap = 65536;
    if (     !(ps->carry = (uint8_t*)malloc(ps->carry_cap))
@@ -474,9 +523,15 @@ static void patch_stream_ups_run(patch_stream_t *ps)
       size_t   save_p = ps->p_off;
       size_t   save_s = ps->s_off;
       size_t   save_t = ps->t_off;
-      uint64_t skip   = patch_stream_decode(ps);
+      uint64_t skip;
 
-      while (skip--)
+      if (!patch_stream_decode(ps, &skip))
+      {
+         ps->failed = 1;
+         return;
+      }
+
+      while (skip)
       {
          if (ps->s_off < ps->src_len && !patch_stream_ups_src_ready(ps))
          {
@@ -485,7 +540,23 @@ static void patch_stream_ups_run(patch_stream_t *ps)
             ps->t_off = save_t;
             return;
          }
+
+         /* Once both cursors are past their buffers the body of this
+          * walk reads nothing and writes nothing - patch_stream_ups_src
+          * returns 0 without touching the carry and
+          * patch_stream_ups_out drops the byte - so it is pure cursor
+          * arithmetic whose result no later step can observe, and the
+          * remaining iterations can be dropped.  Rejecting the skip
+          * outright is not an option: the whole-buffer applier lets a
+          * run overshoot the target and this reader has to match it.
+          * Without the fold, a skip varint is bounded only by the
+          * decoder, and a well-formed one encoding 2^60 walks for
+          * hours - a 27-byte UPS file hangs content loading. */
+         if (ps->s_off >= ps->src_len && ps->t_off >= ps->tgt_len)
+            break;
+
          patch_stream_ups_out(ps, patch_stream_ups_src(ps));
+         skip--;
       }
 
       for (;;)
@@ -644,7 +715,9 @@ patch_stream_t *patch_stream_bps_open(const uint8_t *patch, size_t patch_len,
    uint64_t        decl_tgt;
    uint64_t        markup;
 
-   if (patch_len < 19 || memcmp(patch, "BPS1", 4))
+   if (     patch_len < 19
+         || memcmp(patch, "BPS1", 4)
+         || !patch_stream_self_checksum_ok(patch, patch_len))
       return NULL;
 
    if (!(ps = (patch_stream_t*)calloc(1, sizeof(*ps))))
@@ -656,9 +729,13 @@ patch_stream_t *patch_stream_bps_open(const uint8_t *patch, size_t patch_len,
    ps->src_len   = src_len;
    ps->p_off     = 4;
 
-   decl_src = patch_stream_decode(ps);
-   decl_tgt = patch_stream_decode(ps);
-   markup   = patch_stream_decode(ps);
+   if (   !patch_stream_decode(ps, &decl_src)
+       || !patch_stream_decode(ps, &decl_tgt)
+       || !patch_stream_decode(ps, &markup))
+   {
+      patch_stream_free(ps);
+      return NULL;
+   }
 
    if (     markup   > patch_len - ps->p_off
          || decl_src > src_len
@@ -688,9 +765,16 @@ static void patch_stream_bps_run(patch_stream_t *ps)
       size_t   save_o = ps->t_off;
       size_t   save_s = ps->s_off;
       size_t   save_t = ps->bt_off;
-      uint64_t len    = patch_stream_decode(ps);
-      unsigned mode   = (unsigned)(len & 3);
+      uint64_t len;
+      unsigned mode;
       uint64_t k;
+
+      if (!patch_stream_decode(ps, &len))
+      {
+         ps->failed = 1;
+         return;
+      }
+      mode = (unsigned)(len & 3);
 
       len = (len >> 2) + 1;
 
@@ -742,20 +826,55 @@ static void patch_stream_bps_run(patch_stream_t *ps)
 
          default: /* SourceCopy / TargetCopy */
          {
-            int64_t  raw = (int64_t)patch_stream_decode(ps);
-            int      neg = (int)(raw & 1);
-            int64_t  off;
+            uint64_t decoded;
+            uint64_t distance;
+            int      neg;
 
-            raw >>= 1;
-            off   = neg ? -raw : raw;
+            if (!patch_stream_decode(ps, &decoded))
+            {
+               ps->failed = 1;
+               return;
+            }
+
+            /* Sign-magnitude in the varint, so it stays unsigned -
+             * see the matching note in tasks/task_patch.c.  Going
+             * through int64_t here was correct up to a magnitude of
+             * 2^62, but (int64_t)(uint64) above INT64_MAX and the
+             * right shift of the negative result it produces are both
+             * implementation-defined, and a patch can encode that. */
+            neg      = (int)(decoded & 1);
+            distance = decoded >> 1;
+
+            if (distance > (uint64_t)(size_t)-1)
+            {
+               ps->failed = 1;
+               return;
+            }
 
             if (mode == 2)
             {
-               int64_t so = (int64_t)ps->s_off + off;
+               size_t so = ps->s_off;
 
-               if (     so < 0
-                     || (uint64_t)so > (uint64_t)ps->src_len
-                     || len > (uint64_t)ps->src_len - (uint64_t)so)
+               if (neg)
+               {
+                  if (distance > (uint64_t)so)
+                  {
+                     ps->failed = 1;
+                     return;
+                  }
+                  so -= (size_t)distance;
+               }
+               else
+               {
+                  if (distance > (uint64_t)(ps->src_len - so))
+                  {
+                     ps->failed = 1;
+                     return;
+                  }
+                  so += (size_t)distance;
+               }
+
+               if (len > (uint64_t)(ps->src_len - so))
                {
                   ps->failed = 1;
                   return;
@@ -768,7 +887,7 @@ static void patch_stream_bps_run(patch_stream_t *ps)
                   ps->bt_off = save_t;
                   return;
                }
-               ps->s_off = (size_t)so;
+               ps->s_off = so;
                for (k = 0; k < len; k++)
                {
                   uint8_t v = ps->src_buf[ps->s_off++];
@@ -779,16 +898,33 @@ static void patch_stream_bps_run(patch_stream_t *ps)
             }
             else
             {
-               int64_t to = (int64_t)ps->bt_off + off;
+               size_t to = ps->bt_off;
 
-               if (     to < 0
-                     || (uint64_t)to > (uint64_t)ps->tgt_len
-                     || len > (uint64_t)ps->tgt_len - (uint64_t)to)
+               if (neg)
+               {
+                  if (distance > (uint64_t)to)
+                  {
+                     ps->failed = 1;
+                     return;
+                  }
+                  to -= (size_t)distance;
+               }
+               else
+               {
+                  if (distance > (uint64_t)(ps->tgt_len - to))
+                  {
+                     ps->failed = 1;
+                     return;
+                  }
+                  to += (size_t)distance;
+               }
+
+               if (len > (uint64_t)(ps->tgt_len - to))
                {
                   ps->failed = 1;
                   return;
                }
-               ps->bt_off = (size_t)to;
+               ps->bt_off = to;
                for (k = 0; k < len; k++)
                {
                   uint8_t v = ps->out[ps->bt_off++];

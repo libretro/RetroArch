@@ -134,7 +134,7 @@
 		9210C2F124B3A19100E6FE7C /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		9210C2F424B3A32D00E6FE7C /* griffin_cpp.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = griffin_cpp.cpp; path = ../../griffin/griffin_cpp.cpp; sourceTree = "<group>"; };
 		9210C2F524B3A32D00E6FE7C /* griffin_glslang.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = griffin_glslang.cpp; path = ../../griffin/griffin_glslang.cpp; sourceTree = "<group>"; };
-		9210C2FB24B4CB4900E6FE7C /* Shaders.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; name = Shaders.metal; path = ../../gfx/common/metal/Shaders.metal; sourceTree = "<group>"; };
+		9210C2FB24B4CB4900E6FE7C /* Shaders.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; name = Shaders.metal; path = ../../gfx/drivers/metal_shaders/Shaders.metal; sourceTree = "<group>"; };
 		9222F1FE2314BA7C0097C0FD /* assets.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = assets.zip; sourceTree = "<group>"; };
 		9222F2082315DAD50097C0FD /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
 		9222F20A2315DD3D0097C0FD /* retroarch_logo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = retroarch_logo.png; sourceTree = "<group>"; };
@@ -162,8 +162,6 @@
 		92B9EB6A24E0518700E6CFB2 /* fopen_utf8.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fopen_utf8.h; sourceTree = "<group>"; };
 		92B9EB6B24E0518700E6CFB2 /* intrinsics.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = intrinsics.h; sourceTree = "<group>"; };
 		92B9EB6C24E0518700E6CFB2 /* posix_string.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = posix_string.h; sourceTree = "<group>"; };
-		92B9EB6E24E0518700E6CFB2 /* zlib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = zlib.h; sourceTree = "<group>"; };
-		92B9EB6F24E0518700E6CFB2 /* zconf.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = zconf.h; sourceTree = "<group>"; };
 		92B9EB7024E0518700E6CFB2 /* getopt.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = getopt.h; sourceTree = "<group>"; };
 		92B9EB7124E0518700E6CFB2 /* fnmatch.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fnmatch.h; sourceTree = "<group>"; };
 		92B9EB7224E0518700E6CFB2 /* msvc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = msvc.h; sourceTree = "<group>"; };
@@ -178,7 +176,7 @@
 		92B9EB7F24E0518700E6CFB2 /* net_http.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_http.h; sourceTree = "<group>"; };
 		92B9EB8024E0518700E6CFB2 /* net_http_parse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = net_http_parse.h; sourceTree = "<group>"; };
 		92B9EB8124E0518700E6CFB2 /* retro_timers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_timers.h; sourceTree = "<group>"; };
-		92B9EB8324E0518700E6CFB2 /* m3u_file.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = m3u_file.h; sourceTree = "<group>"; };
+		92B9EB8324E0518700E6CFB2 /* rm3u.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rm3u.h; sourceTree = "<group>"; };
 		92B9EB8424E0518700E6CFB2 /* rjson.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rjson.h; sourceTree = "<group>"; };
 		92B9EB8524E0518700E6CFB2 /* rxml.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = rxml.h; sourceTree = "<group>"; };
 		92B9EB8624E0518700E6CFB2 /* cdfs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cdfs.h; sourceTree = "<group>"; };
@@ -576,8 +574,6 @@
 		92B9EB6D24E0518700E6CFB2 /* zlib */ = {
 			isa = PBXGroup;
 			children = (
-				92B9EB6E24E0518700E6CFB2 /* zlib.h */,
-				92B9EB6F24E0518700E6CFB2 /* zconf.h */,
 			);
 			path = zlib;
 			sourceTree = "<group>";
@@ -614,7 +610,7 @@
 		92B9EB8224E0518700E6CFB2 /* formats */ = {
 			isa = PBXGroup;
 			children = (
-				92B9EB8324E0518700E6CFB2 /* m3u_file.h */,
+				92B9EB8324E0518700E6CFB2 /* rm3u.h */,
 				92B9EB8424E0518700E6CFB2 /* rjson.h */,
 				92B9EB8524E0518700E6CFB2 /* rxml.h */,
 				92B9EB8624E0518700E6CFB2 /* cdfs.h */,
@@ -1400,7 +1396,6 @@
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
 					"-DHAVE_KEYMAPPER",
-					"-DHAVE_COCOA_METAL",
 					"-DHAVE_METAL",
 					"-DHAVE_SLANG",
 					"-DHAVE_SPIRV_CROSS",
@@ -1585,7 +1580,6 @@
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
 					"-DHAVE_KEYMAPPER",
-					"-DHAVE_COCOA_METAL",
 					"-DHAVE_METAL",
 					"-DHAVE_SLANG",
 					"-DHAVE_SPIRV_CROSS",
@@ -1733,7 +1727,6 @@
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
 					"-DHAVE_KEYMAPPER",
-					"-DHAVE_COCOA_METAL",
 					"-DHAVE_METAL",
 					"-DHAVE_SLANG",
 					"-DHAVE_SPIRV_CROSS",
@@ -1876,7 +1869,6 @@
 					"-D_LZMA_UINT32_IS_ULONG",
 					"-DHAVE_MFI",
 					"-DHAVE_KEYMAPPER",
-					"-DHAVE_COCOA_METAL",
 					"-DHAVE_METAL",
 					"-DHAVE_SLANG",
 					"-DHAVE_SPIRV_CROSS",

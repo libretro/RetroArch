@@ -64,7 +64,7 @@ void menu_screensaver_iterate(
       menu_screensaver_t *screensaver,
       gfx_display_t *p_disp, gfx_animation_t *p_anim,
       enum menu_screensaver_effect effect, float effect_speed,
-      uint32_t particle_tint, unsigned width, unsigned height,
+      uint32_t particle_tint, unsigned dims,
       const char *dir_assets);
 
 /* Draws screensaver

@@ -65,6 +65,7 @@ static const struct
    char s_e5aeacf9[22];
    char s_24976a5b[20];
    char s_5209cc72[29];
+   char s_e2eedfe1[9];
    char s_14ec7b7e[11];
    char s_00614813[9];
    char s_8584f1d6[15];
@@ -163,11 +164,13 @@ static const struct
    char s_15f24ff4[7];
    char s_ec7e8026[12];
    char s_5d29b870[17];
+   char s_6996339b[6];
    char s_08e9410c[17];
    char s_d95824aa[14];
    char s_639f529e[20];
    char s_4927597c[17];
    char s_77b74366[16];
+   char s_ddf679b9[9];
    char s_10342503[8];
    char s_d31f6d88[11];
    char s_f03e9c42[17];
@@ -553,6 +556,7 @@ static const struct
    char s_cd916c68[17];
    char s_8fe41f79[18];
    char s_43ac80a0[10];
+   char s_aa628249[12];
    char s_ebe994b4[12];
    char s_da093426[16];
    char s_d9b00fbd[21];
@@ -733,7 +737,6 @@ static const struct
    char s_92cf524f[28];
    char s_79b8ce4a[61];
    char s_a1a8257e[101];
-   char s_d5231783[97];
    char s_a68d6d11[52];
    char s_74022c02[84];
    char s_8abad013[70];
@@ -917,7 +920,6 @@ static const struct
    char s_67d549fd[32];
    char s_3aaf6bf1[123];
    char s_7e96b5ce[36];
-   char s_3547866d[120];
    char s_8010a29e[87];
    char s_81120e85[86];
    char s_47ae341f[83];
@@ -1040,6 +1042,7 @@ static const struct
    "Mode Eksklusif WASAPI",
    "Format Apung WASAPI",
    "Panjang Dapar Bersama WASAPI",
+   "Otomatis",
    "Konfirmasi",
    "Berhenti",
    "Gulir ke Bawah",
@@ -1138,11 +1141,13 @@ static const struct
    "Dijeda",
    "Sedang Main",
    "Informasi Cakram",
+   "Suara",
    "Muat Cakram Baru",
    "Indeks Cakram",
    "Pengendalian Cakram",
    "Keluarkan Cakram",
    "Sisipkan Cakram",
+   "Keluaran",
    "Unduhan",
    "Unduh Core",
    "Pengunduh Konten",
@@ -1528,6 +1533,7 @@ static const struct
    "Lebar Layar (mm)",
    "Pengenal Frontend",
    "Versi Git",
+   "Kadar Gerak",
    "Sumber daya",
    "Versi RetroArch",
    "Driver Konteks Video",
@@ -1719,7 +1725,6 @@ static const struct
    "Berkeluaran lokal, sinyal beresolusi rendah untuk layar CRT.",
    "Beralih ke modeline resolusi tinggi untuk menampilkan menu resolusi tinggi jika belum memuat kon"
    "ten.",
-   "Hanya untuk tampilan CRT. Mencoba memakai resolusi tepat dari core/p'mainan dan laju penyegaran.",
    "Mengganti ke resolusi lokal atau super ultra lebar.",
    "Gunakan laju penyegaran kustom yang ditentukan dalam berkas konfigurasi jika perlu.",
    "Atur opsi ini jika gambar tidak dapat ditampilkan memusat semestinya.",
@@ -1929,8 +1934,6 @@ static const struct
    "Menunda muat-langsung 'shader' (dalam milidetik). Dapat mengatasi 'glitch' grafis saat menggunak"
    "an aplikasi 'screen grab'.",
    "Ubah pengaturan sinkronisasi video.",
-   "Meningkatkan kinerja tapi akan banyak latensi dan video patah-patah. Gunakan hanya jika tidak da"
-   "pat berkecepatan penuh.",
    "Tinggi viewport kustom yang digunakan jika Rasio Aspek diatur ke 'Rasio Aspek Kustom'.",
    "Lebar viewport kustom yang digunakan jika Rasio Aspek diatur ke 'Rasio Aspek Kustom'.",
    "Sinkronkan video keluaran kartu grafis ke laju penyegaran layar. Direkomendasikan.",
@@ -2007,7 +2010,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_id_blob_check[
-      (sizeof(msg_hash_id_blob) == (26917u
+      (sizeof(msg_hash_id_blob) == (26736u
 #ifdef HAVE_MIST
        + 10u
 #endif
@@ -2169,6 +2172,7 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
@@ -2267,11 +2271,13 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -2657,6 +2663,7 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
@@ -2837,7 +2844,6 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
@@ -3021,7 +3027,6 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,

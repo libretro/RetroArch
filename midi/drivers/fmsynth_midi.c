@@ -41,6 +41,11 @@
 #include <boolean.h>
 #include <lists/string_list.h>
 
+#include "../../verbosity.h"
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
+
 #include "../midi_driver.h"
 #include "fmsynth_patches.h"
 
@@ -157,6 +162,15 @@ typedef struct
    uint8_t  velocity;     /* note-on velocity 1..127                        */
 } fmsynth_voice_t;
 
+/* Deep enough for a busy frame of note traffic at any frame rate a core
+ * runs at; a whole GM reset with 16 channels of controllers is 100-odd
+ * messages. */
+#define FMSYNTH_EVENT_QUEUE  256
+/* Longest message applied verbatim. Channel messages are three bytes;
+ * anything longer is system/sysex, which fmsynth_handle_message()
+ * ignores past the status byte. */
+#define FMSYNTH_EVENT_MAX    8
+
 typedef struct
 {
    fmsynth_voice_t voices[FMSYNTH_MAX_VOICES];
@@ -191,6 +205,36 @@ typedef struct
    float    dc_r;                            /* high-pass pole (rate-scaled) */
    float    dc_x[2];                         /* previous input  per channel  */
    float    dc_y[2];                         /* previous output per channel  */
+
+#ifdef HAVE_THREADS
+   /* Events wait here between the thread that writes them and the one
+    * that renders.
+    *
+    * fmsynth_midi_write() used to apply a message straight into the
+    * voice table, from whichever thread the core calls it on - the
+    * frame. fmsynth_render() walks that same table, and once the
+    * threaded audio pipeline became the default it walks it on the
+    * audio thread. ThreadSanitizer reported twenty-four races between
+    * the two: every voice field, the channel state, the allocator.
+    *
+    * So writes queue and the renderer applies them, at the top of the
+    * block it is about to synthesise. The lock is held only for the
+    * copy in and the copy out, never across the synthesis, so a core
+    * writing a note never waits for a render. Applying at a block
+    * boundary is not a change in behaviour anyone can hear: the
+    * renderer already produced a whole block per call, so a message
+    * arriving mid-block took effect at the next one either way.
+    *
+    * A full queue drops the oldest message rather than the newest: a
+    * dropped note-off leaves a voice stuck until its envelope ends,
+    * while a dropped note-on is silence nobody notices. */
+   slock_t *event_lock;
+   uint8_t  event_buf[FMSYNTH_EVENT_QUEUE][FMSYNTH_EVENT_MAX];
+   uint8_t  event_len[FMSYNTH_EVENT_QUEUE];
+   unsigned event_head;
+   unsigned event_count;
+   unsigned event_dropped;
+#endif
 } fmsynth_t;
 
 /* ---- shared sine table (read-only after init) -------------------------- */
@@ -617,6 +661,40 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
    size_t   n;
    int      any = 0;
 
+#ifdef HAVE_THREADS
+   /* Apply what has arrived since the last block, then synthesise. The
+    * queue is copied out under the lock and the messages applied
+    * outside it, so a writer is never held for longer than the copy. */
+   if (fm && fm->event_lock)
+   {
+      uint8_t  batch[FMSYNTH_EVENT_QUEUE][FMSYNTH_EVENT_MAX];
+      uint8_t  batch_len[FMSYNTH_EVENT_QUEUE];
+      unsigned batch_count = 0;
+      unsigned dropped;
+
+      slock_lock(fm->event_lock);
+      while (fm->event_count)
+      {
+         memcpy(batch[batch_count], fm->event_buf[fm->event_head],
+               FMSYNTH_EVENT_MAX);
+         batch_len[batch_count] = fm->event_len[fm->event_head];
+         batch_count++;
+         fm->event_head = (fm->event_head + 1) % FMSYNTH_EVENT_QUEUE;
+         fm->event_count--;
+      }
+      dropped           = fm->event_dropped;
+      fm->event_dropped = 0;
+      slock_unlock(fm->event_lock);
+
+      for (i = 0; i < batch_count; i++)
+         fmsynth_handle_message(fm, batch[i], batch_len[i]);
+
+      if (dropped)
+         RARCH_WARN("[FM Synth] Dropped %u MIDI message(s): the event"
+               " queue filled between render blocks.\n", dropped);
+   }
+#endif
+
    if (!fm || !out)
       return false;
 
@@ -954,6 +1032,12 @@ static void *fmsynth_midi_init(const char *input, const char *output)
    if (!fm)
       return NULL;
 
+#ifdef HAVE_THREADS
+   /* Without it, write() applies messages directly, which is correct on
+    * a build where the renderer runs on the caller's thread. */
+   fm->event_lock = slock_new();
+#endif
+
    fmsynth_init_sine();
 
    /* ADSR + rate defaults (44.1k until audio_driver.c supplies the real
@@ -979,6 +1063,16 @@ static void *fmsynth_midi_init(const char *input, const char *output)
 
 static void fmsynth_midi_free(void *p)
 {
+#ifdef HAVE_THREADS
+   {
+      fmsynth_t *fm_lock = (fmsynth_t*)p;
+      if (fm_lock && fm_lock->event_lock)
+      {
+         slock_free(fm_lock->event_lock);
+         fm_lock->event_lock = NULL;
+      }
+   }
+#endif
    if (p)
       free(p);
 }
@@ -1010,6 +1104,33 @@ static bool fmsynth_midi_write(void *p, const midi_event_t *event)
    fmsynth_t *fm = (fmsynth_t*)p;
    if (!fm || !event || !event->data)
       return false;
+
+#ifdef HAVE_THREADS
+   if (fm->event_lock)
+   {
+      size_t   len = event->data_size;
+      unsigned slot;
+
+      if (len > FMSYNTH_EVENT_MAX)
+         len = FMSYNTH_EVENT_MAX;
+
+      slock_lock(fm->event_lock);
+      if (fm->event_count == FMSYNTH_EVENT_QUEUE)
+      {
+         /* Full: drop the oldest, for the reason on the struct. */
+         fm->event_head = (fm->event_head + 1) % FMSYNTH_EVENT_QUEUE;
+         fm->event_count--;
+         fm->event_dropped++;
+      }
+      slot = (fm->event_head + fm->event_count) % FMSYNTH_EVENT_QUEUE;
+      memcpy(fm->event_buf[slot], event->data, len);
+      fm->event_len[slot] = (uint8_t)len;
+      fm->event_count++;
+      slock_unlock(fm->event_lock);
+      return true;
+   }
+#endif
+
    fmsynth_handle_message(fm, event->data, event->data_size);
    return true;
 }

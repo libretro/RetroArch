@@ -38,6 +38,8 @@ static const struct
    char s_76fae911[44];
    char s_56581215[45];
    char s_6b45243b[15];
+   char s_43585d45[20];
+   char s_43585d53[20];
    char s_ea6df2a1[120];
    char s_bfb33e98[77];
    char s_87603f77[20];
@@ -201,7 +203,6 @@ static const struct
    char s_ae87ea53[307];
    char s_9834febe[444];
    char s_93805cc8[484];
-   char s_b495662b[147];
    char s_9953f4e2[206];
    char s_de76d2dc[34];
    char s_79e212bd[7];
@@ -250,13 +251,13 @@ static const struct
    char s_35a1323d[14];
    char s_f72667c9[10];
    char s_adce4374[20];
+   char s_5984f4f9[6];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[59];
 #endif
    char s_4e447c6c[48];
    char s_d9a51d02[17];
    char s_12e77e8f[12];
-   char s_af6007a1[17];
    char s_da068369[7];
    char s_daead8a5[4];
    char s_48c208ee[14];
@@ -291,6 +292,7 @@ static const struct
    char s_e5aeacf9[26];
    char s_24976a5b[21];
    char s_5209cc72[40];
+   char s_e2eedfe1[9];
    char s_e66b1cb9[46];
    char s_1bf49fce[55];
    char s_11e34db0[59];
@@ -610,11 +612,15 @@ static const struct
    char s_15f24ff4[11];
    char s_ec7e8026[14];
    char s_5d29b870[13];
+   char s_6996339b[4];
    char s_08e9410c[17];
    char s_d95824aa[19];
    char s_639f529e[15];
    char s_4927597c[14];
    char s_77b74366[10];
+   char s_690efede[6];
+   char s_ab49119c[14];
+   char s_ddf679b9[10];
    char s_3b7e9d77[12];
    char s_10342503[14];
    char s_d31f6d88[21];
@@ -1061,6 +1067,8 @@ static const struct
    char s_8d3a8b68[6];
    char s_68d27147[11];
    char s_f02f73fc[28];
+   char s_e5b971a0[6];
+   char s_17615fcf[5];
    char s_3a0a3fef[20];
    char s_1e09db79[11];
    char s_0d2d8eef[11];
@@ -1154,9 +1162,7 @@ static const struct
    char s_b201bb70[27];
    char s_b66840e9[19];
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    char s_f0db2883[25];
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -1392,7 +1398,6 @@ static const struct
    char s_012938fb[30];
    char s_a747cdc9[57];
    char s_2f169651[18];
-   char s_73674a86[10];
    char s_705eee28[35];
    char s_62af62ac[36];
    char s_97379d00[23];
@@ -1515,7 +1520,6 @@ static const struct
    char s_74b77b4a[22];
    char s_7534cfc9[9];
    char s_36259b63[20];
-   char s_37368130[16];
    char s_d51f54a2[15];
    char s_b35f573c[8];
    char s_1cad7751[10];
@@ -1920,6 +1924,7 @@ static const struct
    char s_519cd5f8[18];
    char s_43ac80a0[14];
    char s_6959ce80[16];
+   char s_aa628249[12];
    char s_ebe994b4[16];
    char s_1c62c301[11];
    char s_a8bb35b6[13];
@@ -2479,7 +2484,6 @@ static const struct
    char s_79b8ce4a[86];
    char s_a1a8257e[130];
    char s_282f7955[116];
-   char s_d5231783[114];
    char s_a68d6d11[74];
    char s_74022c02[86];
    char s_8abad013[86];
@@ -2610,8 +2614,6 @@ static const struct
    char s_d9153542[38];
    char s_8e48ec69[48];
    char s_cd43c108[87];
-   char s_cd46e260[114];
-   char s_cd482ffe[111];
    char s_49336383[47];
    char s_e92351d4[109];
    char s_8e22cdce[54];
@@ -3314,13 +3316,11 @@ static const struct
    char s_261210b3[74];
    char s_3a4b246c[112];
    char s_2ceab671[161];
-   char s_977f8e82[118];
    char s_3c679f0a[305];
    char s_5b059407[155];
    char s_36033606[231];
    char s_2e69508b[329];
    char s_7e96b5ce[43];
-   char s_3547866d[121];
    char s_c2314d30[222];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[152];
@@ -3432,6 +3432,7 @@ static const struct
    char s_ec5751c3[40];
    char s_af4b70f4[51];
    char s_d9afe3b5[41];
+   char s_70ecb843[12];
    char s_312fd783[59];
    char s_96df643a[98];
    char s_150b4ebe[97];
@@ -3928,6 +3929,8 @@ static const struct
    "Sonraki Hileyi \303\207al\304\261\305\237t\304\261r De\304\237er < Bellek",
    "Sonraki Hileyi \303\207al\304\261\305\237t\304\261r De\304\237er != Bellek",
    "De\304\237ere Ayarla",
+   "El \304\260le Yatay Dolgu",
+   "El \304\260le Dikey Dolgu",
    "RetroAchievements sunucusuna eri\305\237ilemiyor. Ba\305\237ar\304\261l\304\261 oluncaya veya uy"
    "gulama kapat\304\261l\304\261ncaya kadar yeniden denenecek.",
    "Bekleyen t\303\274m istekler RetroAchievements sunucusuyla ba\305\237ar\304\261yla e\305\237itle"
@@ -4421,9 +4424,6 @@ static const struct
    "kullan\304\261lmaz. Takas Aral\304\261\304\237\304\261 > 1, BFI, Kare Gecikmesi veya Tam \304"
    "\260\303\247erik Kare H\304\261z\304\261na E\305\237itle ile birle\305\237tirmeyin. Sistem VRR a"
    "\303\247\304\261k b\304\261rakmak bu ayarda sorun \303\247\304\261karmaz.",
-   "Zorlu video s\303\274r\303\274c\303\274s\303\274n\303\274 kullan\304\261n. Bunu kullanmak, olas"
-   "\304\261 gecikme s\303\274resi ve daha fazla video kekemeli\304\237i pahas\304\261na performans"
-   "\304\261 art\304\261rabilir.",
    "Tam \304\260\303\247erik Kare H\304\261z\304\261na E\305\237itleyin. Bu se\303\247enek, h\304"
    "\261zl\304\261 ileri sarmaya izin verirken x1 h\304\261z\304\261n\304\261 zorlamaya e\305\237de"
    "\304\237erdir. \303\207ekirdek istenen yenileme h\304\261z\304\261ndan sapma yok, ses Dinamik H"
@@ -4475,6 +4475,7 @@ static const struct
    "Konu\305\237ma Kipi",
    "Hedef Dil",
    "\303\207eviri Servisi URL",
+   "Daima",
 #ifndef HAVE_DYNAMIC
    "Her \303\207al\304\261\305\237t\304\261rmada \304\260\303\247erik \303\207ekirde\304\237ini Yeni"
    "den Y\303\274kle",
@@ -4482,7 +4483,6 @@ static const struct
    "Android ba\304\237lant\304\261 kesilmesi ge\303\247ici \303\247\303\266z\303\274m\303\274",
    "Uygulama Simgesi",
    "\304\260\303\247erikler",
-   "Kareleri Engelle",
    "Ayg\304\261t",
    "Ses",
    "DSP Eklentisi",
@@ -4517,6 +4517,7 @@ static const struct
    "WASAPI Ayr\304\261cal\304\261kl\304\261 Kip",
    "WASAPI Float Bi\303\247imi",
    "WASAPI Payla\305\237\304\261lan Arabellek Uzunlu\304\237u",
+   "Otomatik",
    "\303\226zelle\305\237tirilmi\305\237 Dosyalar\304\261 Otomatik Y\303\274kle",
    "Yeniden E\305\237le\305\237me Dosyalar\304\261n\304\261 Otomatik Olarak Y\303\274kle",
    "G\303\266lgelendirici Haz\304\261r Ayarlar\304\261n\304\261 Otomatik Olarak Y\303\274kle",
@@ -4837,11 +4838,15 @@ static const struct
    "Durduruldu",
    "Oynat\304\261l\304\261yor",
    "Disk Bilgisi",
+   "Ses",
    "Yeni Disk Y\303\274kle",
    "Mevcut Disk Dizini",
    "Disk Kontrol\303\274",
    "Diski \303\207\304\261kar",
    "Diski Tak",
+   "Tamam",
+   "\304\260\305\237lenmemi\305\237",
+   "\303\207\304\261k\304\261\305\237",
    "Varsay\304\261lan",
    "\304\260ndirilenler",
    "Bir \303\207ekirdek \304\260ndir",
@@ -5293,6 +5298,8 @@ static const struct
    "Men\303\274",
    "Kiosk Kipi",
    "Men\303\274 Kare H\304\261z\304\261 S\304\261n\304\261r\304\261",
+   "Daima",
+   "Asla",
    "Dosya Taray\304\261c\304\261s\304\261",
    "Saydaml\304\261k",
    "Parlakl\304\261k",
@@ -5388,9 +5395,7 @@ static const struct
    "Ba\305\237l\304\261k Pay\304\261 Yatay Ofset",
    "Dikey Solma Etkeni",
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    "Mikrofon Kare Engeliyici",
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -5629,7 +5634,6 @@ static const struct
    "K\303\274\303\247\303\274k Resim \303\226l\303\247ek Etkeni",
    "Oynatma Listesi Adlar\304\261n\304\261 Kes (Yeniden ba\305\237lat\304\261lmal\304\261)",
    "PAL60 Kipi Kullan",
-   "Ana Dizin",
    "Men\303\274 Etkinken \304\260\303\247eri\304\237i Duraklat",
    "Etkin De\304\237ilken \304\260\303\247eri\304\237i Duraklat",
    "Performans Saya\303\247lar\304\261",
@@ -5756,7 +5760,6 @@ static const struct
    "&\303\207ekirde\304\237i \303\207\304\261kart",
    "&Yard\304\261m",
    "RetroArch Hakk\304\261nda",
-   "Kat\304\261l\304\261mc\304\261lar",
    "Dok\303\274mantasyon",
    "Temizle",
    "&Ara\303\247lar",
@@ -6177,6 +6180,7 @@ static const struct
    "\304\260\305\237letim sistemi",
    "Git S\303\274r\303\274m\303\274",
    "Lakka S\303\274r\303\274m\303\274",
+   "\304\260lerleyi\305\237",
    "G\303\274\303\247 Kayna\304\237\304\261",
    "\305\236arj oldu",
    "\305\236arj oluyor",
@@ -6894,9 +6898,6 @@ static const struct
    "G\303\266r\303\274nt\303\274 boyutunu de\304\237i\305\237tirmek i\303\247in yatay ayarlar\304"
    "\261 d\303\274zenlemek \303\274zere bu se\303\247enekler aras\304\261nda ge\303\247i\305\237 yap"
    "\304\261n.",
-   "Sadece CRT ekranlar i\303\247in. Tam \303\247ekirdek/oyun \303\247\303\266z\303\274n\303\274rl"
-   "\303\274\304\237\303\274n\303\274 ve yenileme h\304\261z\304\261n\304\261 kullanmaya \303\247al"
-   "\304\261\305\237\304\261r.",
    "Do\304\237al ve ultrageni\305\237 s\303\274per \303\247\303\266z\303\274n\303\274rl\303\274kler "
    "aras\304\261nda ge\303\247i\305\237 yap\304\261n.",
    "Gerekirse, yap\304\261land\304\261rma dosyas\304\261nda belirtilen \303\266zel bir yenileme h"
@@ -7122,10 +7123,6 @@ static const struct
    "Mevcut i\303\247eri\304\237in bir g\303\266r\303\274nt\303\274s\303\274n\303\274 yakalar.",
    "Tu\305\237a bas\304\261l\304\261 tutuldu\304\237u s\303\274rece se\303\247ili olan g\303\266lgel"
    "endiriciyi a\303\247\304\261k/kapal\304\261 tutar.",
-   "'Video G\303\266lgelendirici' dizininin k\303\266k\303\274ndeki sonraki g\303\266lgelendirici ha"
-   "z\304\261r ayar dosyas\304\261n\304\261 y\303\274kler ve uygular.",
-   "\303\226nceki g\303\266lgelendirici \303\266n ayar dosyas\304\261n\304\261 'Video G\303\266lgele"
-   "ndiriciler' dizininin k\303\266k\303\274ne y\303\274kler ve uygular.",
    "Se\303\247ili olan g\303\266lgelendiriciyi a\303\247ar/kapat\304\261r.",
    "Bas\304\261l\304\261 tutuldu\304\237unda a\304\237\304\261r \303\247ekim sa\304\237lar. Anahtar "
    "b\304\261rak\304\261ld\304\261\304\237\304\261nda i\303\247erik normal h\304\261zda \303\247al"
@@ -8447,9 +8444,6 @@ static const struct
    "Y\303\274klenen orijinal \303\266n ayara bir ba\304\237lant\304\261 i\303\247eren ve yaln\304"
    "\261zca yapt\304\261\304\237\304\261n\304\261z parametre de\304\237i\305\237ikliklerini i\303"
    "\247eren bir g\303\266lgelendirici \303\266n ayar\304\261n\304\261 kaydeder.",
-   "G\303\266lgelendirici \303\266n ayarlar\304\261n\304\261 ve ge\303\247i\305\237lerini y\303\274k"
-   "lerken son kullan\304\261lan dizindeki dosya taray\304\261c\304\261s\304\261n\304\261 a\303\247"
-   "\304\261n.",
    "UYARI: H\304\261zl\304\261 titreme baz\304\261 ekranlarda g\303\266r\303\274nt\303\274n\303\274n"
    " kal\304\261c\304\261 olmas\304\261na neden olabilir. Kullan\304\261m riski size aittir // Ekran"
    "\304\261 dikey olarak b\303\266lerek ve ekran\304\261n her bir b\303\266l\303\274m\303\274n\303"
@@ -8470,8 +8464,6 @@ static const struct
    "re h\304\261z\304\261 sa\304\237lar. 60 Hz ekranda 30 fps i\303\247erik veya 120 Hz ekranda 60 f"
    "ps i\303\247erik.",
    "Video e\305\237itleme ayarlar\304\261n\304\261 de\304\237i\305\237tirin.",
-   "Gecikme ve daha fazla video tak\304\261lma pahas\304\261na performans\304\261 art\304\261r\304"
-   "\261r. Yaln\304\261zca tam h\304\261z elde edemiyorsan\304\261z kullan\304\261n.",
    "Metal arg\303\274man arabelleklerini kullanarak performans\304\261 art\304\261rmay\304\261 deney"
    "in. Baz\304\261 \303\247ekirdekler buna ihtiya\303\247 duyabilir. Bu \303\266zellikle eski donan"
    "\304\261m veya i\305\237letim sistemi s\303\274r\303\274mlerinde baz\304\261 g\303\266lgelendiri"
@@ -8628,6 +8620,7 @@ static const struct
    "Bu oyunun herhangi bir ba\305\237ar\304\261m\304\261 yok.",
    "RetroAchievements oyun y\303\274klemesi ba\305\237ar\304\261s\304\261z: %s",
    "RetroAchievements: Oyun tan\304\261mlanamad\304\261.",
+   "Zorlay\304\261c\304\261",
    "Ba\305\237ar\304\261mlar Zorlu Mod, sunucu taraf\304\261ndan de\304\237i\305\237tirildi.",
    "Bir durum kayd\304\261 y\303\274klendi. Ba\305\237ar\304\261lar mevcut oturum i\303\247in Zorlu "
    "Kip devre d\304\261\305\237\304\261 b\304\261rak\304\261ld\304\261.",
@@ -9183,7 +9176,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (171014u
+      (sizeof(msg_hash_tr_blob) == (170370u
 #ifdef ANDROID
        + 340u
 #endif
@@ -9266,9 +9259,7 @@ typedef char msg_hash_tr_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
        + 25u
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -9587,6 +9578,8 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
@@ -9745,7 +9738,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_MIXER_STREAM,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
@@ -9794,13 +9786,13 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
@@ -9835,6 +9827,7 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
@@ -10154,11 +10147,15 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
@@ -10605,6 +10602,8 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
@@ -10698,9 +10697,7 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -10936,7 +10933,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
@@ -11059,7 +11055,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
@@ -11463,6 +11458,7 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -12022,7 +12018,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
@@ -12153,8 +12148,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
@@ -12857,13 +12850,11 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -12975,6 +12966,7 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
    (uint32_t)MSG_CHEEVOS_GAME_LOAD_FAILED,
    (uint32_t)MSG_CHEEVOS_GAME_NOT_IDENTIFIED,
+   (uint32_t)MSG_CHEEVOS_HARDCORE_MODE,
    (uint32_t)MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
    (uint32_t)MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
    (uint32_t)MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,

@@ -20,10 +20,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <retro_posix_source.h>
+
 #include <stdlib.h>
 #include <file/file_path.h>
 
 #include <file/config_file_userdata.h>
+#include <string/rstrtod.h>
 
 int config_userdata_get_float(void *userdata, const char *key_str,
       float *value, float default_value)
@@ -123,7 +126,7 @@ int config_userdata_get_float_array(void *userdata, const char *key_str,
             tok++;
          if (!*tok)
             break;
-         arr[count++] = (float)strtod(tok, &end);
+         arr[count++] = (float)rstrtod(tok, &end);
          tok = end;
       }
 

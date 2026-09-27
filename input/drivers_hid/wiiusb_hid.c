@@ -19,6 +19,8 @@
 #include <malloc.h>
 
 #include <gccore.h>
+#include <ogc/machine/processor.h>
+#include <retro_atomic.h>
 #include <rthreads/rthreads.h>
 
 #include "../input_defines.h"
@@ -40,10 +42,29 @@ typedef struct wiiusb_hid
    struct wiiusb_adapter *adapters_head;
 
    sthread_t *poll_thread;
-   volatile bool poll_thread_quit;
+   /* Set by the thread tearing the driver down, read by the poll
+    * thread's loop. An atomic and not a volatile bool: volatile orders
+    * nothing between two threads. */
+   retro_atomic_int_t poll_thread_quit;
+
+   /* Wakes the poll thread: a read completed, a device arrived or left,
+    * a control message was queued, or it is time to stop. It used to
+    * come up every 10 ms instead, which also held every report back by
+    * up to that long. The signallers include IOS callbacks, which libogc
+    * runs in interrupt context, so this is a bare LWP thread queue and
+    * a pending flag rather than a mutex and condition - the pattern
+    * libogc's own synchronous IPC uses. */
+   lwpq_t wake_queue;
+   volatile u32 wake_pending;
+   bool wake_queue_inited;
 
    /* helps on knowing if a new device has been inserted */
-   bool device_detected;
+   /* Raised by wiiusb_hid_change_cb, which libogc runs in interrupt
+    * context, and cleared by the poll thread. volatile rather than an
+    * atomic for the same reason the rest of this file's interrupt-shared
+    * state is: the writer is not a thread. It was a plain bool, which
+    * left the poll thread free to keep it in a register. */
+   volatile bool device_detected;
    /* helps on detecting that a device has just been removed */
    bool removal_cb;
 
@@ -71,9 +92,39 @@ struct wiiusb_adapter
    uint32_t send_control_size;
 };
 
+/* How many times a failed control write is retried before the
+ * message is dropped.  These used to loop until success; a pad that
+ * had been unplugged mid-message never succeeds, and the poll
+ * thread - the one thread that reads every pad and honours
+ * poll_thread_quit - was stuck in here for good. */
+#define WIIUSB_SC_RETRIES 3
+
+/* Callable from any thread and from interrupt context. */
+static void wiiusb_hid_wake(wiiusb_hid_t *hid)
+{
+   if (!hid || !hid->wake_queue_inited)
+      return;
+   hid->wake_pending = 1;
+   LWP_ThreadSignal(hid->wake_queue);
+}
+
+/* The poll thread's wait. With interrupts off, a signal cannot land
+ * between the check and the sleep; the sleep switches away with them
+ * off and they come back on in the next thread, as libogc does. */
+static void wiiusb_hid_wait(wiiusb_hid_t *hid)
+{
+   u32 level;
+   _CPU_ISR_Disable(level);
+   if (!hid->wake_pending)
+      LWP_ThreadSleep(hid->wake_queue);
+   hid->wake_pending = 0;
+   _CPU_ISR_Restore(level);
+}
+
 static void wiiusb_hid_process_control_message(struct wiiusb_adapter* adapter)
 {
-   int32_t r;
+   int32_t r      = 0;
+   unsigned tries = WIIUSB_SC_RETRIES;
    switch (adapter->send_control_type)
    {
       case WIIUSB_SC_INTMSG:
@@ -82,7 +133,7 @@ static void wiiusb_hid_process_control_message(struct wiiusb_adapter* adapter)
             r = USB_WriteIntrMsg(adapter->handle,
                adapter->endpoint_out, adapter->send_control_size,
                adapter->send_control_buffer);
-         } while (r < 0);
+         } while (r < 0 && --tries);
          break;
       case WIIUSB_SC_CTRLMSG:
          do
@@ -90,7 +141,7 @@ static void wiiusb_hid_process_control_message(struct wiiusb_adapter* adapter)
             r = USB_WriteCtrlMsg(adapter->handle, USB_REQTYPE_INTERFACE_SET,
                USB_REQ_SETREPORT, (USB_REPTYPE_FEATURE<<8) | 0xf4, 0x0,
                adapter->send_control_size, adapter->send_control_buffer);
-         } while (r < 0);
+         } while (r < 0 && --tries);
          break;
       case WIIUSB_SC_CTRLMSG2:
          do
@@ -98,11 +149,14 @@ static void wiiusb_hid_process_control_message(struct wiiusb_adapter* adapter)
             r = USB_WriteCtrlMsg(adapter->handle, USB_REQTYPE_INTERFACE_SET,
                   USB_REQ_SETREPORT, (USB_REPTYPE_OUTPUT<<8) | 0x01, 0x0,
                   adapter->send_control_size, adapter->send_control_buffer);
-         } while (r < 0);
+         } while (r < 0 && --tries);
          break;
       /*default:  any other case we do nothing */
    }
-   /* Reset the control type */
+   if (r < 0)
+      RARCH_WARN("[wiiusb] Control message to slot %d dropped after %d failed writes.\n",
+            adapter->slot, WIIUSB_SC_RETRIES);
+   /* Reset the control type: the mailbox is free for the next message. */
    adapter->send_control_type = WIIUSB_SC_NONE;
 }
 
@@ -116,7 +170,10 @@ static int32_t wiiusb_hid_read_cb(int32_t size, void *data)
             adapter->slot, adapter->data, size);
 
   if (adapter)
+  {
       adapter->busy = false;
+      wiiusb_hid_wake(hid);
+  }
 
   return size;
 }
@@ -129,16 +186,28 @@ static void wiiusb_hid_device_send_control(void *data,
    if (!adapter || !s || !adapter->send_control_buffer)
       return;
 
+   /* One message at a time.  The buffer is a single mailbox the poll
+    * thread sends from, and a blocking USB write in progress there is
+    * exactly when this thread gets to run (LWP switches on the
+    * block); writing the next message into it under the transfer
+    * handed the device a torn one.  The type is cleared when the
+    * send is done; until then the new message is dropped, which for
+    * rumble and LED updates means the next one wins. */
+   if (adapter->send_control_type != WIIUSB_SC_NONE)
+      return;
+
    /* first byte contains the type of control to use
-    * which can be NONE, INT_MSG, CTRL_MSG, CTRL_MSG2 */
+    * which can be NONE, INT_MSG, CTRL_MSG, CTRL_MSG2; the payload is
+    * what follows, and the mailbox is 128 bytes. */
+   if (len < 1 || len - 1 > 128)
+      return;
    control_type               = s[0];
-   /* decrement size by one as we are getting rid of first byte */
    adapter->send_control_size = len - 1;
-   /* increase the buffer address so we access the actual data */
    s++;
    memcpy(adapter->send_control_buffer, s, adapter->send_control_size);
-   /* Activate it so it can be processed in the adapter thread */
+   /* Publish last: the poll thread sends once it sees a type set. */
    adapter->send_control_type = control_type;
+   wiiusb_hid_wake(adapter->hid);
 }
 
 static void wiiusb_hid_device_add_autodetect(unsigned idx,
@@ -416,7 +485,7 @@ static void wiiusb_hid_poll_thread(void *data)
    if (!hid)
       return;
 
-   while (!hid->poll_thread_quit)
+   while (!retro_atomic_load_acquire_int(&hid->poll_thread_quit))
    {
 
       /* first check for new devices */
@@ -445,8 +514,9 @@ static void wiiusb_hid_poll_thread(void *data)
                adapter->data, wiiusb_hid_read_cb, adapter);
       }
 
-      /* Wait 10 milliseconds to process again */
-      usleep(10000);
+      /* Until a read completes, a device changes, a control message
+       * is queued, or free() asks to stop. */
+      wiiusb_hid_wait(hid);
    }
 }
 
@@ -460,7 +530,10 @@ static int wiiusb_hid_change_cb(int result, void *usrdata)
    /* As it's not coming from the removal callback
       then we detected a new device being inserted */
   if (!hid->removal_cb)
+  {
     hid->device_detected = true;
+    wiiusb_hid_wake(hid);
+  }
   else
     hid->removal_cb      = false;
 
@@ -580,10 +653,13 @@ static void wiiusb_hid_free(const void *data)
    if (!hid)
       return;
 
-   hid->poll_thread_quit = true;
+   retro_atomic_store_release_int(&hid->poll_thread_quit, 1);
+   wiiusb_hid_wake(hid);
 
    if (hid->poll_thread)
       sthread_join(hid->poll_thread);
+   if (hid->wake_queue_inited)
+      LWP_CloseQueue(hid->wake_queue);
 
    hid->manual_removal   = TRUE;
 
@@ -607,6 +683,9 @@ static void *wiiusb_hid_init(void)
    if (!hid)
       goto error;
 
+   /* Before the first goto error: free() stores through it. */
+   retro_atomic_int_init(&hid->poll_thread_quit, 0);
+
    connections = pad_connection_init(MAX_USERS);
 
    if (!connections)
@@ -617,10 +696,13 @@ static void *wiiusb_hid_init(void)
    hid->adapters_head    = NULL;
    hid->removal_cb       = FALSE;
    hid->manual_removal   = FALSE;
-   hid->poll_thread_quit = FALSE;
    /* we set it initially to TRUE so we force
     * to add the already connected pads */
    hid->device_detected  = TRUE;
+
+   if (LWP_InitQueue(&hid->wake_queue) < 0)
+      goto error;
+   hid->wake_queue_inited = true;
 
    hid->poll_thread      = sthread_create(wiiusb_hid_poll_thread, hid);
 

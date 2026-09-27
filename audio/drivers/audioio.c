@@ -20,6 +20,7 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <string.h>
 
 #include <sys/audioio.h>
 
@@ -27,20 +28,32 @@
 #include "../../config.h"
 #endif
 
+#include <compat/strl.h>
+#include <lists/string_list.h>
+
+#include <retro_miscellaneous.h>
 #include "../audio_driver.h"
+#include "../audio_device_label.h"
 #include "../../verbosity.h"
 
 #define DEFAULT_DEV "/dev/audio"
 
 static void *audioio_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames, unsigned *new_out_rate)
+       unsigned *new_out_rate)
 {
    struct audio_info info;
-   const char *audiodev  = device ? device : DEFAULT_DEV;
+   char audiodev[PATH_MAX_LENGTH];
    int              *fd  = (int*)calloc(1, sizeof(int));
 
    if (!fd)
       return NULL;
+
+   /* The device may be a list entry, "/dev/audio0 (name)": the path
+    * is what is opened. */
+   if (device)
+      audio_device_label_path(audiodev, sizeof(audiodev), device);
+   else
+      strlcpy(audiodev, DEFAULT_DEV, sizeof(audiodev));
 
    AUDIO_INITINFO(&info);
 
@@ -178,18 +191,103 @@ static size_t audioio_buffer_size(void *data)
    int *fd = (int*)data;
 
    if (ioctl(*fd, AUDIO_GETINFO, &info) < 0)
-      return false;
+      return 0;
 
    return info.play.buffer_size;
 }
 
+#ifdef AUDIO_GETBUFINFO
+/* audio(4)'s play.seek is the count of bytes pending, so what the
+ * device will take is its buffer less what is still queued in it.
+ *
+ * AUDIO_GETBUFINFO is NetBSD's, and so is seek: the Solaris
+ * audio_prinfo carries buffer_size and samples and no seek, which is
+ * why this is not offered there. Reporting the whole buffer instead -
+ * which is what happened before - reads to rate control as a device
+ * that never drains, and it answers a device that is always empty
+ * with its full upward correction, for as long as it is on. The
+ * interface asks for nothing rather than a constant, and nothing is
+ * what the other branch gives. */
 static size_t audioio_write_avail(void *data)
 {
-   return audioio_buffer_size(data);
+   struct audio_info info;
+   int *fd = (int*)data;
+
+   if (ioctl(*fd, AUDIO_GETBUFINFO, &info) < 0)
+      return 0;
+   if (info.play.seek >= info.play.buffer_size)
+      return 0;
+   return info.play.buffer_size - info.play.seek;
+}
+#endif
+
+/* The device is opened with AUDIO_ENCODING_SLINEAR at 16 bits; the
+ * audio(4) encodings are integer PCM, mu-law and A-law, none float. */
+static bool audioio_use_float(void *data) { return false; }
+
+/* The nodes an audioio kernel offers: /dev/audio and /dev/audio0..15,
+ * as oss.c walks /dev/dsp*. AUDIO_GETDEV names the hardware behind a
+ * node on every audioio kernel, so the label carries it. A node that
+ * cannot be opened for output is not offered; a busy one is, since it
+ * exists and may be free later. Needs no driver instance, which is
+ * what the menu has when init failed and the user needs to pick
+ * another device. */
+static void *audioio_device_list_new(void *data)
+{
+   int i;
+   union string_list_elem_attr attr;
+   struct string_list *sl = string_list_new();
+
+   (void)data;
+   attr.i = 0;
+   if (!sl)
+      return NULL;
+
+   for (i = -1; i < 16; i++)
+   {
+      char path[32];
+      char label[160];
+      int fd;
+
+      if (i < 0)
+         strlcpy(path, DEFAULT_DEV, sizeof(path));
+      else
+         snprintf(path, sizeof(path), "/dev/audio%d", i);
+
+      fd = open(path, O_WRONLY | O_NONBLOCK);
+      if (fd < 0 && errno != EBUSY)
+         continue;
+
+      strlcpy(label, path, sizeof(label));
+      if (fd >= 0)
+      {
+         audio_device_t dev;
+         if (ioctl(fd, AUDIO_GETDEV, &dev) == 0 && dev.name[0])
+         {
+            size_t _len = strlcat(label, " (", sizeof(label));
+            _len       += strlcpy(label + _len, dev.name, sizeof(label) - _len);
+            strlcpy(label + _len, ")", sizeof(label) - _len);
+         }
+         close(fd);
+      }
+      string_list_append(sl, label, attr);
+   }
+
+   if (!sl->size)
+   {
+      string_list_free(sl);
+      return NULL;
+   }
+   return sl;
 }
 
-/* TODO/FIXME - implement? */
-static bool audioio_use_float(void *data) { return false; }
+static void audioio_device_list_free(void *data, void *array_list_data)
+{
+   struct string_list *sl = (struct string_list*)array_list_data;
+   (void)data;
+   if (sl)
+      string_list_free(sl);
+}
 
 audio_driver_t audio_audioio = {
    audioio_init,
@@ -201,9 +299,13 @@ audio_driver_t audio_audioio = {
    audioio_free,
    audioio_use_float,
    "audioio",
-   NULL,
-   NULL,
+   audioio_device_list_new,
+   audioio_device_list_free,
+#ifdef AUDIO_GETBUFINFO
    audioio_write_avail,
+#else
+   NULL, /* write_avail - no way to measure the fill here */
+#endif
    audioio_buffer_size,
    NULL /* write_raw */
 };

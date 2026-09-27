@@ -37,6 +37,7 @@ RETRO_BEGIN_DECLS
 
 #define PATH_REQUIRED_VFS_VERSION 3
 #define STAT64_REQUIRED_VFS_VERSION 4
+#define METADATA_REQUIRED_VFS_VERSION 5
 
 void path_vfs_init(const struct retro_vfs_interface_info* vfs_info);
 
@@ -474,14 +475,19 @@ size_t fill_pathname_join(char *s, const char *dir,
 /**
  * fill_pathname_join_special:
  * @s                  : output path
- * @dir                : directory. Cannot be identical to @s
+ * @dir                : directory
  * @path               : path
  * @len                : size of output path
  *
+ * Macro alias of fill_pathname_join(); the two are identical.
+ * Kept for source compatibility with existing callers in
+ * RetroArch and downstream cores. Each argument expands exactly
+ * once, so arguments with side effects are safe. The distinct
+ * identifier fill_pathname_join_special_ext() is unaffected.
  *
- * Specialized version of fill_pathname_join.
- * Unlike fill_pathname_join(),
- * @dir and @s CANNOT be identical.
+ * @dir and @s may be identical (the join is then performed in
+ * place); buffers that overlap without being identical are
+ * undefined.
  *
  * Joins a directory (@dir) and path (@path) together.
  * Makes sure not to get two consecutive slashes
@@ -492,8 +498,8 @@ size_t fill_pathname_join(char *s, const char *dir,
  *
  * @return Length of the string copied into @s
  **/
-size_t fill_pathname_join_special(char *s,
-      const char *dir, const char *path, size_t len);
+#define fill_pathname_join_special(s, dir, path, len) \
+   fill_pathname_join((s), (dir), (path), (len))
 
 size_t fill_pathname_join_special_ext(char *s,
       const char *dir,  const char *path,
@@ -677,6 +683,61 @@ bool path_is_character_special(const char *path);
 int path_stat(const char *path);
 
 bool path_is_valid(const char *path);
+
+/**
+ * path_set_private:
+ * @path               : file
+ *
+ * Restricts @path to the owning user (0600 on POSIX). Use for files
+ * that hold secrets. A no-op that returns true on platforms where
+ * the location is already private or has no permission model.
+ *
+ * @return true if the permissions are restricted (or nothing needed
+ * doing), false if the platform supports it and it failed.
+ **/
+bool path_set_private(const char *path);
+
+/**
+ * path_is_readonly:
+ * @path               : path
+ *
+ * Whether the current user cannot write to @path. Reads the
+ * RETRO_VFS_STAT_IS_READONLY flag, which frontends older than
+ * VFS API v5 never set, so the answer there is always false.
+ *
+ * @return true if @path exists and is read-only.
+ **/
+bool path_is_readonly(const char *path);
+
+/**
+ * path_set_readonly:
+ * @path               : path
+ * @readonly           : true to make read-only, false to make writable
+ *
+ * POSIX: toggles the write bits. Windows: FILE_ATTRIBUTE_READONLY.
+ *
+ * @return true on success, false if unsupported on this platform,
+ * the file system, or the negotiated VFS version (< 5).
+ **/
+bool path_set_readonly(const char *path, bool readonly);
+
+/**
+ * path_get_mtime:
+ * @path               : path
+ * @mtime              : receives seconds since 1970-01-01T00:00:00Z
+ *
+ * @return true on success, false if unavailable.
+ **/
+bool path_get_mtime(const char *path, int64_t *mtime);
+
+/**
+ * path_set_mtime:
+ * @path               : path
+ * @mtime              : seconds since 1970-01-01T00:00:00Z
+ *
+ * @return true on success, false if unsupported or it failed.
+ **/
+bool path_set_mtime(const char *path, int64_t mtime);
 
 int64_t path_get_size(const char *path);
 

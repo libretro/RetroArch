@@ -1,0 +1,27 @@
+# Lock acquisitions allowed inside each function's own block, as
+# tools/lock_acquire_budget.sh counts them off the release objects.
+# Measured with gcc -O3 on x86-64. A count here is a ceiling, not a
+# target: the ones that are not zero are the passes that genuinely have
+# something to coordinate.
+#
+# function                       allowed
+video_thread_presenter_stats     0
+video_thread_latency_stats       0
+video_thread_pacing_stats        0
+video_thread_swap_count          0
+thread_get_refresh_rate          0
+# The write that keeps read_vp following the viewport it reports, so
+# CMD_READ_VIEWPORT's compare stays truthful. Skipped on the polls
+# where the viewport has not changed, which is all of them but a
+# resize.
+video_thread_viewport_info       1
+# The handoff's own region, the ring wait, and the menu-texture drain.
+video_thread_frame               3
+# Park on a stop, the stop's own region, the idle park, and teardown.
+audio_thread_loop                5
+# Taken once it has something to retire; returns on two atomic loads
+# before any of them on a frame with nothing in flight.
+retro_task_threaded_gather       5
+video_driver_frame               0
+audio_driver_sample_batch        0
+runloop_iterate                  0

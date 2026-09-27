@@ -3,7 +3,6 @@ DEPS_DIR       := $(ROOT_DIR)/deps
 DEBUG          = 0
 HAVE_LOGGER       = 0
 HAVE_FILE_LOGGER     = 0
-HAVE_CC_RESAMPLER    = 1
 WHOLE_ARCHIVE_LINK      = 0
 BIG_STACK            = 1
 PC_DEVELOPMENT_IP_ADDRESS  = 255.255.255.255
@@ -117,7 +116,6 @@ else ifeq ($(platform), ps3-cobra)
 else ifeq ($(libogc_platform), 1)
    EXTERNAL_LIBOGC   ?= 0
    HAVE_OGG_OGC      ?= 0
-   GX_PTHREAD_LEGACY ?= 1
    CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
    CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
    LD = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
@@ -156,10 +154,6 @@ else ifeq ($(libogc_platform), 1)
 
    endif
 
-   ifeq ($(GX_PTHREAD_LEGACY), 1)
-      CFLAGS   += -DGX_PTHREAD_LEGACY
-      CXXFLAGS += -DGX_PTHREAD_LEGACY
-   endif
 
    ifeq ($(platform), ngc)
       MACHDEP := -DHW_DOL -mogc
@@ -222,6 +216,7 @@ else ifeq ($(libogc_platform), 1)
    HAVE_RMODTRACKER                := 1
    HAVE_OVERLAY             := 1
    HAVE_7ZIP                := 1
+   HAVE_RZSTD               := 1
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
    HAVE_CHEATS              := 1
@@ -332,8 +327,7 @@ else ifeq ($(platform), vita)
       libretro-common/audio/conversion/s16_to_float_neon.o \
       libretro-common/audio/conversion/float_to_s16_neon.o \
       memory/neon/memcpy-neon.o \
-      libretro-common/audio/resampler/drivers/sinc_resampler_neon.o \
-      audio/drivers_resampler/cc_resampler_neon.o
+      libretro-common/audio/resampler/drivers/sinc_resampler_neon.o
 
    LIBDIRS += -L.
    LDFLAGS +=  -Wl,-q
@@ -356,7 +350,6 @@ else ifeq ($(platform), vita)
    HAVE_OVERLAY             := 1
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    RARCH_CONSOLE             = 1
@@ -379,7 +372,6 @@ else ifeq ($(platform), windows_msvc6_x86)
    HAVE_OVERLAY             := 1
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    HAVE_COMMAND             := 1
@@ -399,7 +391,11 @@ else ifeq ($(platform), windows_msvc6_x86)
    CXX = cl.exe
    LD = link.exe
 
-   PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0351 -D__STDC_CONSTANT_MACROS -D_MBCS
+   # _WIN32_WINDOWS says this build runs on 9x, which is what selects
+   # libretro-common's ANSI Win32 path.  It used to fall out of the low
+   # _WIN32_WINNT below, but that is the NT scale and NT is
+   # Unicode-native; the two are independent minimums and both apply.
+   PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0351 -D_WIN32_WINDOWS=0x0400 -D__STDC_CONSTANT_MACROS -D_MBCS
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
 
    VCDIR ?= $(shell reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\DevStudio\6.0\Products\Microsoft Visual C++" -v "ProductDir" | grep -io '[A-Z]:\\.*')
@@ -427,7 +423,6 @@ else ifeq ($(platform), windows_msvc2003_x86)
    HAVE_OVERLAY             := 1
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    HAVE_COMMAND             := 1
@@ -448,7 +443,9 @@ else ifeq ($(platform), windows_msvc2003_x86)
    CXX = cl.exe
    LD = link.exe
 
-   PLATCFLAGS += -D_WIN32 -DWINVER=0x0400 -D_WIN32_WINNT=0x0400 -D__STDC_CONSTANT_MACROS -D_MBCS -D_VC80_UPGRADE=0x0710
+   # See the msvc6 target: _WIN32_WINDOWS is the 9x minimum, _WIN32_WINNT
+   # the NT one.
+   PLATCFLAGS += -D_WIN32 -DWINVER=0x0400 -D_WIN32_WINNT=0x0400 -D_WIN32_WINDOWS=0x0400 -D__STDC_CONSTANT_MACROS -D_MBCS -D_VC80_UPGRADE=0x0710
    PLATCFLAGS += -DHAVE_GFX_WIDGETS
    LDFLAGS += shell32.lib user32.lib gdi32.lib comdlg32.lib winmm.lib ole32.lib
 
@@ -484,7 +481,6 @@ else ifeq ($(platform), windows_msvc2005_x86)
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
    HAVE_OZONE               := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    HAVE_COMMAND             := 1
@@ -512,7 +508,11 @@ else ifeq ($(platform), windows_msvc2005_x86)
    CXX = cl.exe
    LD = link.exe
 
-   PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0410 -D__STDC_CONSTANT_MACROS -D_MBCS
+   # 0x0410 is Windows 98 - a _WIN32_WINDOWS value.  On the NT scale it
+   # reads as "NT 4.1", a version that does not exist; every SDK gate it
+   # passes is an NT 4.0 gate, so moving it to the macro it was always
+   # meant for changes no API exposure and states the actual target.
+   PLATCFLAGS += -D_WIN32 -D_WIN32_WINNT=0x0400 -D_WIN32_WINDOWS=0x0410 -D__STDC_CONSTANT_MACROS -D_MBCS
    PLATCFLAGS += -DHAVE_OPENGL -DHAVE_OPENGL1 -DHAVE_GLSL -DHAVE_OZONE -DHAVE_GFX_WIDGETS -DHAVE_CC_RESAMPLER
    PLATCFLAGS += -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES 
    PLATCFLAGS += -DHAVE_UPDATE_CORE_INFO 
@@ -569,7 +569,6 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
    HAVE_OZONE               := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    HAVE_COMMAND             := 1
@@ -665,7 +664,6 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
    HAVE_OVERLAY             := 1
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    HAVE_COMMAND             := 1
@@ -753,7 +751,6 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
    HAVE_OVERLAY             := 1
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    HAVE_COMMAND             := 1
@@ -841,7 +838,6 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
    HAVE_OVERLAY             := 1
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    HAVE_COMMAND             := 1
@@ -944,7 +940,6 @@ else ifeq (qnx,$(platform))
    HAVE_OVERLAY             := 1
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    HAVE_COMMAND             := 1
@@ -966,7 +961,7 @@ else ifeq (qnx,$(platform))
       LDFLAGS += -g
    endif
 
-   PLATCFLAGS += -DHAVE_SHADERPIPELINE -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_OZONE -DHAVE_CC_RESAMPLER -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_GL_SYNC -DHAVE_GLSLANG -DHAVE_BUILTINGLSLANG -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_RUNAHEAD -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_SPIRV_CROSS -DHAVE_STB_FONT -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES 
+   PLATCFLAGS += -DHAVE_SHADERPIPELINE -DHAVE_OPENGL -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_OZONE -DHAVE_CC_RESAMPLER -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_GL_SYNC -DHAVE_GLSLANG -DHAVE_BUILTINGLSLANG -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_RUNAHEAD -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_SPIRV_CROSS -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES 
    PLATCFLAGS += -DHAVE_UPDATE_CORE_INFO
    PLATCFLAGS += -DHAVE_XMB -DRARCH_INTERNAL -DWANT_GLSLANG -DHAVE_XCB -DHAVE_EGL -DHAVE_BB10 -DHAVE_GLSL -DHAVE_AL -DHAVE_BSV_MOVIE -DRARCH_MOBILE
    EXT_TARGET := $(TARGET_NAME)
@@ -992,7 +987,6 @@ else ifneq (,$(findstring unix,$(platform)))
    HAVE_OVERLAY             := 1
    HAVE_MATERIALUI          := 1
    HAVE_XMB                 := 1
-   HAVE_STB_FONT            := 1
    HAVE_THREADS             := 1
    HAVE_LIBRETRODB          := 1
    HAVE_COMMAND             := 1
@@ -1007,13 +1001,13 @@ else ifneq (,$(findstring unix,$(platform)))
    HAVE_CHEATS              := 1
    HAVE_CORE_INFO_CACHE     := 1
 
-   PLATCFLAGS += -D__MMX__ -D__SSE__ -DHAVE_OPENGL -DHAVE_OPENGL1 -DHAVE_GLSL -DHAVE_SHADERPIPELINE -DHAVE_OZONE -DHAVE_CC_RESAMPLER -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_GL_SYNC -DHAVE_SLANG -DHAVE_GLSLANG -DHAVE_BUILTINGLSLANG -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_RUNAHEAD -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_SPIRV_CROSS -DHAVE_STB_FONT -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES 
+   PLATCFLAGS += -D__MMX__ -D__SSE__ -DHAVE_OPENGL -DHAVE_OPENGL1 -DHAVE_GLSL -DHAVE_SHADERPIPELINE -DHAVE_OZONE -DHAVE_CC_RESAMPLER -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_GL_SYNC -DHAVE_SLANG -DHAVE_GLSLANG -DHAVE_BUILTINGLSLANG -DHAVE_IMAGEVIEWER -DHAVE_LANGEXTRA -DHAVE_RUNAHEAD -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_SPIRV_CROSS -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES 
    PLATCFLAGS += -DHAVE_UPDATE_CORE_INFO
    PLATCFLAGS += -DHAVE_VULKAN -DHAVE_XMB -DRARCH_INTERNAL -DWANT_GLSLANG -DHAVE_X11 -DHAVE_XCB -DHAVE_UDEV -DHAVE_BSV_MOVIE -DHAVE_PULSE
    EXT_TARGET := $(TARGET_NAME)
    EXT_INTER_TARGET := $(TARGET_NAME)
    INCLUDE += -Ilibretro-common/include -Igfx/include -Ideps -Ideps/rcheevos/include -Ideps/SPIRV-Cross -Ideps/glslang -I.
-   LIBS += -ldl -lm -lpthread -lGL -ludev -lpulse -lX11 -lX11-xcb -lXxf86vm
+   LIBS += -ldl -lm -lpthread -lGL -ludev -lpulse -lX11 -lX11-xcb -lxcb -lXxf86vm
 endif
 
 ifneq (,$(findstring msvc,$(platform)))
@@ -1114,6 +1108,9 @@ endif
 ifeq ($(HAVE_7ZIP), 1)
    CFLAGS      += -DHAVE_7ZIP
 endif
+ifeq ($(HAVE_RZSTD), 1)
+   CFLAGS      += -DHAVE_RZSTD
+endif
 
 ifeq ($(HAVE_SCREENSHOTS), 1)
 	CFLAGS      += -DHAVE_SCREENSHOTS
@@ -1129,6 +1126,11 @@ endif
 
 ifeq ($(HAVE_RWAV), 1)
    CFLAGS      += -DHAVE_RWAV
+endif
+
+# AC-3 (rac3) and IEC 61937: no dependencies, on wherever the mixer is.
+ifeq ($(HAVE_AUDIOMIXER), 1)
+   CFLAGS      += -DHAVE_RAC3
 endif
 
 ifeq ($(HAVE_OVERLAY), 1)
@@ -1171,10 +1173,6 @@ endif
 
 ifeq ($(HAVE_XMB), 1)
    CFLAGS += -DHAVE_XMB
-endif
-
-ifeq ($(HAVE_STB_FONT), 1)
-   CFLAGS += -DHAVE_STB_FONT
 endif
 
 ifeq ($(HAVE_LANGEXTRA), 1)

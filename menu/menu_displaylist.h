@@ -60,6 +60,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_DROPDOWN_LIST,
    DISPLAYLIST_DROPDOWN_LIST_SPECIAL,
    DISPLAYLIST_DROPDOWN_LIST_RESOLUTION,
+   DISPLAYLIST_DROPDOWN_LIST_CRT_SUPER_RESOLUTION,
    DISPLAYLIST_DROPDOWN_LIST_AUDIO_DEVICE,
    DISPLAYLIST_DROPDOWN_LIST_MIDI_DEVICE,
 #ifdef HAVE_MICROPHONE
@@ -170,7 +171,9 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_OSK_OVERLAYS,
    DISPLAYLIST_NETWORK_INFO,
    DISPLAYLIST_SYSTEM_INFO,
-   DISPLAYLIST_ACHIEVEMENT_PAUSE_MENU,
+   DISPLAYLIST_DISPLAY_INFO,
+   DISPLAYLIST_DISPLAY_EDID_INFO,
+   DISPLAYLIST_ACHIEVEMENT_SUBMENU_LIST,
    DISPLAYLIST_ACHIEVEMENT_LIST,
    DISPLAYLIST_USER_BINDS_LIST,
    DISPLAYLIST_ACCOUNTS_LIST,
@@ -291,7 +294,6 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_ARCHIVE_ACTION_DETECT_CORE,
    DISPLAYLIST_CORE_CONTENT,
    DISPLAYLIST_CORE_CONTENT_DIRS,
-   DISPLAYLIST_CORE_CONTENT_DIRS_SUBDIR,
    DISPLAYLIST_CORE_SYSTEM_FILES,
 #if defined(HAVE_LIBNX)
    DISPLAYLIST_SWITCH_CPU_PROFILE,
@@ -396,6 +398,12 @@ unsigned menu_displaylist_contentless_cores(file_list_t *list,
       enum menu_contentless_cores_display_type core_display_type);
 
 enum filebrowser_enums filebrowser_get_type(void);
+
+#ifdef HAVE_SMBCLIENT
+/* Writes smb://<server>[/<share>][/<subdir>] into 's', returning false when
+ * the client is disabled or no server is configured. */
+bool menu_displaylist_build_smb_root(char *s, size_t len);
+#endif
 
 void filebrowser_clear_type(void);
 

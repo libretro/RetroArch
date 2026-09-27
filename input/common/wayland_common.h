@@ -49,6 +49,9 @@
 #include "../../gfx/common/wayland/presentation-time.h"
 #include "../../gfx/common/wayland/single-pixel-buffer-v1.h"
 #include "../../gfx/common/wayland/tearing-control-v1.h"
+#include "../../gfx/common/wayland_color.h"
+
+struct string_list;
 #include "../../gfx/common/wayland/viewporter.h"
 #include "../../gfx/common/wayland/xdg-decoration-unstable-v1.h"
 #include "../../gfx/common/wayland/xdg-shell.h"
@@ -99,10 +102,8 @@ typedef struct output_info
    struct wl_output *output;
    int refresh_rate;
    uint32_t global_id;
-   unsigned width;
-   unsigned height;
-   unsigned physical_width;
-   unsigned physical_height;
+   /* The mode the output is running, packed. */
+   unsigned dims;
    unsigned scale;
    char *make;
    char *model;
@@ -182,11 +183,14 @@ typedef struct gfx_ctx_wayland_data
    struct wp_fractional_scale_v1 *fractional_scale;
    struct xdg_wm_base *xdg_shell;
    struct xdg_toplevel *xdg_toplevel;
-   struct xdg_toplevel_icon_v1 *xdg_toplevel_icon;
    struct xdg_toplevel_icon_manager_v1 *xdg_toplevel_icon_manager;
    struct xdg_toplevel_tag_manager_v1 *xdg_toplevel_tag_manager;
    struct wp_tearing_control_manager_v1 *tearing_control_manager;
    struct wp_tearing_control_v1 *tearing_control;
+   /* The compositor's colour management, for an HDR GL surface */
+   wl_color_t color;
+   /* The GPUs the GL GPU index chooses from, as published to the menu */
+   struct string_list *gl_gpu_list;
    struct wl_keyboard *wl_keyboard;
    struct wl_pointer  *wl_pointer;
    struct zwp_relative_pointer_v1 *wl_relative_pointer;
@@ -211,7 +215,6 @@ typedef struct gfx_ctx_wayland_data
 #ifdef HAVE_LIBDECOR_H
    struct libdecor *libdecor_context;
    struct libdecor_frame *libdecor_frame;
-   struct xdg_toplevel_icon_v1 *libdecor_icon;
 #ifdef HAVE_DYLIB
    dylib_t libdecor;
 #define RA_WAYLAND_SYM(rc,fn,params) rc (*fn) params;
@@ -257,12 +260,12 @@ typedef struct gfx_ctx_wayland_data
    uint64_t refresh_interval;
    touch_pos_t active_touch_positions[MAX_TOUCHES]; /* int32_t alignment */
    clockid_t present_clock_id;
-   unsigned width;
-   unsigned height;
-   unsigned buffer_width;
-   unsigned buffer_height;
-   unsigned floating_width;
-   unsigned floating_height;
+   /* The surface's size, the buffer behind it, and the size to go
+    * back to when the compositor lets the window float again, each
+    * packed. */
+   unsigned dims;
+   unsigned buffer_dims;
+   unsigned floating_dims;
    unsigned last_buffer_scale;
    unsigned pending_buffer_scale;
    unsigned buffer_scale;
@@ -286,8 +289,9 @@ typedef struct gfx_ctx_wayland_data
     * xdg_surface.configure marks it current (xdg-shell latching). */
    struct
    {
-      int32_t width;
-      int32_t height;
+      /* The size asked for, packed; a zero axis leaves the choice
+       * to us. */
+      unsigned dims;
       bool fullscreen;
       bool maximized;
       bool resizing;
@@ -299,6 +303,10 @@ typedef struct gfx_ctx_wayland_data
    bool activated;
    bool reported_display_size;
    bool swap_complete;
+   /* The in-flight frame callback. A webOS surface outlives its
+    * context, so teardown has to cancel this one or the compositor
+    * delivers done into freed memory. */
+   struct wl_callback *frame_cb;
 } gfx_ctx_wayland_data_t;
 
 typedef struct wl_present_feedback

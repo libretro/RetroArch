@@ -75,11 +75,16 @@
 #endif
 
 #include <ctype.h>
+#include <stdio.h>    /* perror(), snprintf() */
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <time.h>
 #include <errno.h>
+
+#ifdef __MACH__
+#include <mach/mach_time.h> /* rsnd_get_time_usec() */
+#endif
 
 #include <compat/strl.h>
 #include <retro_endianness.h>
@@ -345,10 +350,10 @@ static int rsnd_send_header_info(rsound_t *rd)
 
    /* Here we embed in the rest of the WAV header for it to be somewhat valid */
 
-   strlcpy(header, "RIFF", sizeof(header));
+   strlcpy_lit(header, "RIFF", sizeof(header));
    SET32(header, 4, 0);
-   strlcpy(header+8, "WAVE", sizeof(header));
-   strlcpy(header+12, "fmt ", sizeof(header));
+   strlcpy_lit(header+8, "WAVE", sizeof(header));
+   strlcpy_lit(header+12, "fmt ", sizeof(header));
 
    temp32 = 16;
    LSB32(temp32);
@@ -394,7 +399,7 @@ static int rsnd_send_header_info(rsound_t *rd)
    LSB16(temp_bits);
    SET16(header, FRAMESIZE, temp_bits);
 
-   strlcpy(header + 36, "data", sizeof(header));
+   strlcpy_lit(header + 36, "data", sizeof(header));
 
    /* Do not care about cksize here (impossible to know beforehand).
     * It is used by the server for format. */
@@ -720,19 +725,34 @@ static int64_t rsnd_get_time_usec(void)
    return sysGetSystemTime();
 #elif defined(GEKKO)
    return ticks_to_microsecs(gettime());
-#elif defined(__MACH__) /* OSX doesn't have clock_gettime ... */
-   clock_serv_t cclock;
-   mach_timespec_t mts;
-   host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
-   clock_get_time(cclock, &mts);
-   mach_port_deallocate(mach_task_self(), cclock);
-   return mts.tv_sec * INT64_C(1000000) + (mts.tv_nsec + 500) / 1000;
+#elif defined(__MACH__)
+   /* mach_absolute_time() is the Darwin equivalent of CLOCK_MONOTONIC used
+    * by the POSIX branch below: it needs no port at all, and it exists on
+    * every OS version RetroArch targets.
+    *
+    * The previous code called host_get_clock_service(mach_host_self(), ...)
+    * per call, which leaked a send right on the host port (mach_host_self()
+    * was never deallocated) and allocated then freed a port name in the task
+    * IPC space on every tick. It also read CALENDAR_CLOCK - wall time - even
+    * though the only consumer, rsnd_drain(), takes a delta against
+    * rd->start_time to estimate how much the server has consumed. A clock
+    * step from NTP or a user change corrupted that estimate; the monotonic
+    * clock used everywhere else does not have that failure mode. */
+   {
+      static mach_timebase_info_data_t tb;
+      if (!tb.denom)
+         mach_timebase_info(&tb);
+      /* Nanoseconds first, then to microseconds, so the numer/denom scaling
+       * does not lose resolution on timebases where numer != denom. */
+      return (int64_t)((mach_absolute_time() * tb.numer / tb.denom + 500)
+            / 1000);
+   }
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID)
    struct timespec tv;
    if (clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;
    return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
    return emscripten_get_now() * 1000;
 #else
 #error "Your platform does not have a timer function implemented in rsnd_get_time_usec(). Cannot continue."
@@ -1255,9 +1275,7 @@ static void rsnd_cb_thread(void *thread_data)
          size_t  will_read = read_size < chunk_size - has_read
             ? read_size : chunk_size - has_read;
 
-         rsd_callback_lock(rd);
          cb_ret = rd->audio_callback(buffer + has_read, will_read, rd->cb_data);
-         rsd_callback_unlock(rd);
 
          if (cb_ret < 0)
          {
@@ -1587,7 +1605,6 @@ int rsd_init(rsound_t** rsound)
 
    (*rsound)->thread.mutex      = slock_new();
    (*rsound)->thread.cond_mutex = slock_new();
-   (*rsound)->cb_lock           = slock_new();
    (*rsound)->thread.cond       = scond_new();
 
    /* Assumes default of S16_LE samples. */
@@ -1649,9 +1666,6 @@ void rsd_set_callback(rsound_t *rsound, rsd_audio_callback_t audio_cb,
    rsound->cb_data        = userdata;
 }
 
-void rsd_callback_lock(rsound_t *rsound) { slock_lock(rsound->cb_lock); }
-void rsd_callback_unlock(rsound_t *rsound) { slock_unlock(rsound->cb_lock); }
-
 int rsd_free(rsound_t *rsound)
 {
    if (rsound->fifo_buffer)
@@ -1663,7 +1677,6 @@ int rsd_free(rsound_t *rsound)
 
    slock_free(rsound->thread.mutex);
    slock_free(rsound->thread.cond_mutex);
-   slock_free(rsound->cb_lock);
    scond_free(rsound->thread.cond);
 
    free(rsound);

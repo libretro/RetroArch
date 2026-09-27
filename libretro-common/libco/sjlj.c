@@ -12,6 +12,8 @@
  */
 
 #define LIBCO_C
+#include <retro_posix_source.h>
+
 #include <libco.h>
 #include <stdlib.h>
 #include <signal.h>

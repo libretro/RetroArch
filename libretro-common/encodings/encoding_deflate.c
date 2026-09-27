@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include <retro_inline.h>
+#include <compat/intrinsics.h>
 /* Byte-order source of truth for the word-compare first-difference logic
  * in rd_longest_match().  Do NOT sniff platform macros locally: newlib
  * and bionic define _BIG_ENDIAN as a byte-order *constant* on every
@@ -35,6 +36,7 @@
  * single-TU griffin builds, tripping the LSB_FIRST/MSB_FIRST
  * consistency check in retro_endianness.h). */
 #include <retro_endianness.h>
+#include <encodings/crc32.h>
 #include <encodings/deflate.h>
 
 /* ---------------- adler32 (RFC 1950), shared by both halves --------------
@@ -274,10 +276,39 @@ uint32_t rd_probe_adler32(uint32_t adler, const uint8_t *buf, size_t len)
  * Non-blocking, resumable: suspends when input is exhausted or output is
  * full and resumes on the next call, in the style of image_transfer. */
 
+/* Container selection, following zlib's window_bits convention:
+ *   < 0        raw deflate, no header or checksum
+ *   0 .. 15    zlib wrapper (2-byte header + adler32)
+ *   16 .. 31   gzip wrapper (RFC 1952 header + crc32/isize)
+ *   32 .. 47   auto-detect zlib or gzip from the first byte
+ * The last two are what callers porting from zlib pass as 31 and 47. */
+enum
+{
+   RINF_WRAP_RAW = 0,
+   RINF_WRAP_ZLIB,
+   RINF_WRAP_GZIP,
+   RINF_WRAP_AUTO
+};
+
+static int rinf_wrap_from_bits(int window_bits)
+{
+   if (window_bits < 0)   return RINF_WRAP_RAW;
+   if (window_bits <= 15) return RINF_WRAP_ZLIB;
+   if (window_bits <= 31) return RINF_WRAP_GZIP;
+   return RINF_WRAP_AUTO;
+}
+
 /* Decoder state-machine phases. */
 enum rinf_phase
 {
+   RINF_HDR_SNIFF = -1, /* auto-detect: peek one byte, pick zlib or gzip   */
    RINF_ZHEADER = 0, /* consume 2-byte zlib header (wrapped mode)          */
+   RINF_GZHEADER,    /* consume the 10-byte gzip fixed header              */
+   RINF_GZ_EXTRA,    /* FEXTRA: XLEN then that many bytes                  */
+   RINF_GZ_NAME,     /* FNAME: NUL-terminated                              */
+   RINF_GZ_COMMENT,  /* FCOMMENT: NUL-terminated                           */
+   RINF_GZ_HCRC,     /* FHCRC: 2 bytes over the header, skipped            */
+   RINF_GZCRC,       /* consume/verify crc32 + isize trailer               */
    RINF_BLOCK_HDR,   /* read BFINAL + BTYPE                                */
    RINF_STORED_LEN,  /* stored block: read LEN/NLEN                        */
    RINF_STORED_DATA, /* stored block: copy literal bytes                  */
@@ -287,10 +318,36 @@ enum rinf_phase
    RINF_DONE
 };
 
+static int rinf_end_phase(int wrap)
+{
+   if (wrap == RINF_WRAP_ZLIB) return RINF_ADLER;
+   if (wrap == RINF_WRAP_GZIP) return RINF_GZCRC;
+   return RINF_DONE;
+}
+
+static int rinf_start_phase(int wrap)
+{
+   switch (wrap)
+   {
+      case RINF_WRAP_ZLIB: return RINF_ZHEADER;
+      case RINF_WRAP_GZIP: return RINF_GZHEADER;
+      case RINF_WRAP_AUTO: return RINF_HDR_SNIFF;
+      default:             break;
+   }
+   return RINF_BLOCK_HDR;
+}
+
+
 /* A canonical-huffman decode table.  We use a two-level scheme: a direct
  * lookup on the low FAST_BITS bits, and for codes longer than FAST_BITS a
  * small linear/step search via the canonical first-code arrays. */
-#define RINF_FAST_BITS 9
+/* 11 bits: the dynamic litlen tables photographic PNG streams build
+ * put most of their code mass at 8-11 bits, which a 9-bit table sent
+ * to the canonical slow path.  The tables are per-stream heap state,
+ * so the growth (4 KB -> 16 KB of packed entries per table) costs
+ * nothing per decode; the splat loop in rinf_build touches each
+ * table entry once per dynamic block, which is noise. */
+#define RINF_FAST_BITS 11
 #define RINF_MAX_BITS  15
 
 struct rinf_huff
@@ -299,6 +356,17 @@ struct rinf_huff
     * (bit-reversed reading order) equal b and len<=FAST_BITS; len==0 means
     * "not a complete code, use the slow path". */
    uint16_t fast[1 << RINF_FAST_BITS];
+   /* Packed fast entries for the litlen/dist tables, consumed only by
+    * the fast inner loop.  One lookup yields everything a symbol needs:
+    * bits 0-3 code length (0 = long code, take the fast[]/slow path),
+    * bits 4-8 extra-bit count, bit 9 literal, bit 10 end-of-block, bit
+    * 11 invalid symbol (litlen 286/287, dist 30/31 - real codes a
+    * hostile dynamic header can define, which must fail exactly as the
+    * scalar lane fails them), bits 16-31 base value (the literal byte,
+    * the length base or the distance base).  Code length and extra
+    * bits are consumed with one fused shift.  Left all-zero for the
+    * code-length table, which the fast loop never touches. */
+   uint32_t pfast[1 << RINF_FAST_BITS];
    /* Canonical decode for the slow path. */
    uint16_t firstcode[RINF_MAX_BITS + 1];  /* first canonical code of len  */
    int      firstsym[RINF_MAX_BITS + 1];   /* symbol index of that code    */
@@ -332,7 +400,15 @@ struct rinflate
    uint32_t       whave;   /* how many bytes are valid in the ring       */
    uint32_t       wnext;   /* next write position in the ring            */
 
-   int            wrapped; /* zlib wrapper present?                      */
+   /* Container: RINF_WRAP_RAW / RINF_WRAP_ZLIB / RINF_WRAP_GZIP.  Kept as
+    * `wrapped' meaning "has a checksummed wrapper" wherever the value
+    * only decides trailer-or-not. */
+   int            wrap;
+   int            wrapped; /* wrap != RINF_WRAP_RAW                      */
+   int            stop_at_block; /* report each block boundary            */
+   int            block_ready;   /* boundary reached, not yet reported    */
+   int            first_block_reported;
+   int            skip_bits;     /* bits to discard at stream start       */
    int            bfinal;  /* current block is the last                  */
    int            btype;
 
@@ -373,6 +449,13 @@ struct rinflate
    uint32_t       adler;      /* running adler32 of the output           */
    uint32_t       adler_read; /* trailer value read so far               */
    int            adler_have;
+
+   /* gzip container (RINF_WRAP_GZIP) */
+   uint32_t       crc;        /* running crc32 of the output             */
+   uint32_t       total_out;  /* mod 2^32, for the ISIZE check           */
+   uint32_t       gz_flg;     /* FLG byte from the header                */
+   uint32_t       gz_count;   /* bytes still to skip in the current field*/
+   int            gz_step;    /* sub-step within a header field          */
 
    int            error;
 };
@@ -525,6 +608,82 @@ static int rinf_decode(struct rinflate *s, struct rinf_huff *h)
    return -2;
 }
 
+
+/* length/distance base + extra-bit tables */
+static const uint16_t rinf_len_base[29] = {
+   3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,
+   67,83,99,115,131,163,195,227,258 };
+static const uint8_t rinf_len_extra[29] = {
+   0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0 };
+static const uint16_t rinf_dist_base[30] = {
+   1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,
+   1025,1537,2049,3073,4097,6145,8193,12289,16385,24577 };
+static const uint8_t rinf_dist_extra[30] = {
+   0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13 };
+
+/* order of code-length code lengths (RFC 1951 3.2.7) */
+static const uint8_t rinf_clc_order[19] = {
+   16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15 };
+
+/* Populate pfast[] from a freshly built fast[]; layout in the struct
+ * note.  Two variants because the litlen and distance base tables
+ * differ. */
+#define RINF_PF_LIT  (1u << 9)
+#define RINF_PF_EOB  (1u << 10)
+#define RINF_PF_BAD  (1u << 11)
+
+static void rinf_pack_len(struct rinf_huff *h)
+{
+   int j;
+   for (j = 0; j < (1 << RINF_FAST_BITS); j++)
+   {
+      uint16_t f = h->fast[j];
+      uint32_t e = 0;
+      if (f)
+      {
+         int sym = f >> 4;
+         int len = f & 15;
+         if (sym < 256)
+            e = (uint32_t)len | RINF_PF_LIT | ((uint32_t)sym << 16);
+         else if (sym == 256)
+            e = (uint32_t)len | RINF_PF_EOB;
+         else if (sym - 257 < 29)
+            /* Bits [4:8] hold the code-plus-extra TOTAL, not the extra
+             * count: the critical-path shift that advances to the next
+             * code then uses the field directly, and the extra count
+             * for the value mask falls off the path as total - len. */
+            e = (uint32_t)len
+              | ((uint32_t)(len + rinf_len_extra[sym - 257]) << 4)
+              | ((uint32_t)rinf_len_base[sym - 257] << 16);
+         else
+            e = (uint32_t)len | RINF_PF_BAD;
+      }
+      h->pfast[j] = e;
+   }
+}
+
+static void rinf_pack_dist(struct rinf_huff *h)
+{
+   int j;
+   for (j = 0; j < (1 << RINF_FAST_BITS); j++)
+   {
+      uint16_t f = h->fast[j];
+      uint32_t e = 0;
+      if (f)
+      {
+         int sym = f >> 4;
+         int len = f & 15;
+         if (sym < 30)
+            e = (uint32_t)len
+              | ((uint32_t)(len + rinf_dist_extra[sym]) << 4)
+              | ((uint32_t)rinf_dist_base[sym] << 16);
+         else
+            e = (uint32_t)len | RINF_PF_BAD;
+      }
+      h->pfast[j] = e;
+   }
+}
+
 /* fixed huffman tables (RFC 1951 3.2.6) */
 /* The fixed tables are the same two tables every time - RFC 1951 states
  * their code lengths outright - so a stream that emits a run of fixed
@@ -555,25 +714,11 @@ static void rinf_fixed_tables(struct rinflate *s)
       dd[i] = 5;
    rinf_build(&s->lencode, ll, 288);
    rinf_build(&s->distcode, dd, 30);
+   rinf_pack_len(&s->lencode);
+   rinf_pack_dist(&s->distcode);
    s->have_tables  = 1;
    s->fixed_loaded = 1;
 }
-
-/* length/distance base + extra-bit tables */
-static const uint16_t rinf_len_base[29] = {
-   3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,
-   67,83,99,115,131,163,195,227,258 };
-static const uint8_t rinf_len_extra[29] = {
-   0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0 };
-static const uint16_t rinf_dist_base[30] = {
-   1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,
-   1025,1537,2049,3073,4097,6145,8193,12289,16385,24577 };
-static const uint8_t rinf_dist_extra[30] = {
-   0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13 };
-
-/* order of code-length code lengths (RFC 1951 3.2.7) */
-static const uint8_t rinf_clc_order[19] = {
-   16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15 };
 
 /* emit a byte to the output + window, updating adler */
 static int rinf_emit(struct rinflate *s, uint8_t b)
@@ -625,13 +770,13 @@ static void rinf_window_commit(struct rinflate *s)
       if (first > n)
          first = n;
       memcpy(s->window + s->wnext, src, first);
-      s->wnext += first;
+      s->wnext += (uint32_t)first;
       if (s->wnext == 32768)
          s->wnext = 0;
       if (first < n)
       {
          memcpy(s->window, src + first, n - first);
-         s->wnext = n - first;
+         s->wnext = (uint32_t)(n - first);
       }
    }
    s->whave += (uint32_t)n;
@@ -643,13 +788,96 @@ void *rinflate_new(int window_bits)
    struct rinflate *s = (struct rinflate*)calloc(1, sizeof(*s));
    if (!s)
       return NULL;
-   s->wrapped = (window_bits >= 0);
-   s->phase   = s->wrapped ? RINF_ZHEADER : RINF_BLOCK_HDR;
+   s->wrap    = rinf_wrap_from_bits(window_bits);
+   s->wrapped = (s->wrap != RINF_WRAP_RAW);
+   s->crc     = encoding_crc32(0, NULL, 0);
+   s->phase   = rinf_start_phase(s->wrap);
    s->adler   = 1;
    return s;
 }
 
 void rinflate_free(void *data) { free(data); }
+
+void rinflate_reset(void *data, int window_bits)
+{
+   struct rinflate *s = (struct rinflate*)data;
+   if (!s)
+      return;
+
+   /* Restore the state rinflate_new hands back, without re-zeroing the
+    * 32 KiB back-reference window or the ~9 KiB of huffman tables.
+    *
+    * The window is safe to leave dirty because whave is cleared here:
+    * a back-reference is only resolved out of the ring after a bounds
+    * check against out_pos + whave, so with whave 0 no stale byte is
+    * reachable, exactly as for a fresh instance whose window happens
+    * to be zeroed. The tables are safe because have_tables and
+    * fixed_loaded are cleared, so any stream must rebuild them before
+    * a symbol is decoded, and rinf_build clears each table's fast
+    * lookup as it goes.
+    *
+    * Everything else is set to the same value calloc would have
+    * produced. Fields are listed rather than memset in bulk so that
+    * adding one to the struct without touching this function is a
+    * compile-time-visible omission rather than a silent stale value. */
+   s->wrap             = rinf_wrap_from_bits(window_bits);
+   s->wrapped          = (s->wrap != RINF_WRAP_RAW);
+   s->phase            = rinf_start_phase(s->wrap);
+   s->crc              = encoding_crc32(0, NULL, 0);
+   s->total_out        = 0;
+   s->gz_flg           = 0;
+   s->gz_count         = 0;
+   s->gz_step          = 0;
+
+   s->in               = NULL;
+   s->in_size          = 0;
+   s->in_pos           = 0;
+   s->out              = NULL;
+   s->out_size         = 0;
+   s->out_pos          = 0;
+
+   s->bitbuf           = 0;
+   s->bitcnt           = 0;
+
+   s->whave            = 0;
+   s->wnext            = 0;
+
+   s->bfinal           = 0;
+   s->btype            = 0;
+   s->block_ready      = 0;
+   s->skip_bits        = 0;
+   s->stored_len       = 0;
+
+   s->fixed_loaded     = 0;
+   s->have_tables      = 0;
+
+   s->hlit             = 0;
+   s->hdist            = 0;
+   s->hclen            = 0;
+   memset(s->cl_lengths, 0, sizeof(s->cl_lengths));
+   memset(s->lengths,    0, sizeof(s->lengths));
+   s->lengths_have     = 0;
+   s->clcodes_read     = 0;
+   s->clcode_built     = 0;
+   s->cl_pending_sym   = 0;
+
+   s->copy_len         = 0;
+   s->copy_dist        = 0;
+   s->copy_active      = 0;
+
+   s->ld_step          = 0;
+   s->ld_lensym        = 0;
+   s->ld_length        = 0;
+   s->ld_distsym       = 0;
+   s->pending_lit      = 0;
+   s->have_pending_lit = 0;
+
+   s->adler            = 1;
+   s->adler_read       = 0;
+   s->adler_have       = 0;
+
+   s->error            = 0;
+}
 
 void rinflate_set_in(void *data, const uint8_t *in, size_t size)
 {
@@ -662,6 +890,54 @@ void rinflate_set_out(void *data, uint8_t *out, size_t size)
    s->out = out; s->out_size = size; s->out_pos = 0;
 }
 
+/* Prime the back-reference window with the tail of @dict, for resuming
+ * raw-deflate decode mid-stream (indexed random access into gzip
+ * members: the index stores the 32KB of plaintext preceding each entry
+ * point, and decode restarts at a block boundary with that history).
+ * Matches zlib inflateSetDictionary() semantics for the raw case: only
+ * the last 32768 bytes matter, and the call replaces any history. */
+void rinflate_set_dictionary(void *data, const uint8_t *dict, size_t len)
+{
+   struct rinflate *s = (struct rinflate *)data;
+   if (!s || !dict)
+      return;
+   if (len > 32768)
+   {
+      dict += len - 32768;
+      len   = 32768;
+   }
+   memcpy(s->window, dict, len);
+   s->whave = (uint32_t)len;
+   s->wnext = (uint32_t)(len & 32767);
+}
+
+/* zran-style indexed access primitives: report deflate block
+ * boundaries, tell the exact input bit position, and start a resumed
+ * stream part-way into its first byte. Together with
+ * rinflate_set_dictionary these are the whole toolkit an index
+ * builder/extractor needs. */
+void rinflate_set_stop_at_block(void *data, int stop)
+{
+   struct rinflate *s = (struct rinflate *)data;
+   if (s)
+      s->stop_at_block = stop;
+}
+
+uint64_t rinflate_tell_bits(const void *data)
+{
+   const struct rinflate *s = (const struct rinflate *)data;
+   if (!s)
+      return 0;
+   return (uint64_t)s->in_pos * 8 - (uint64_t)s->bitcnt;
+}
+
+void rinflate_set_start_bit(void *data, int bits)
+{
+   struct rinflate *s = (struct rinflate *)data;
+   if (s)
+      s->skip_bits = bits & 7;
+}
+
 int rinflate_process(void *data, size_t *read, size_t *wrote)
 {
    struct rinflate *s = (struct rinflate*)data;
@@ -670,10 +946,136 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
    size_t fold_start = s->out_pos;   /* adler fold cursor (wrapped mode)   */
    int status = RDEFLATE_PROCESS_NEXT;
 
+   if (s->skip_bits)
+   {
+      if (!rinf_need(s, s->skip_bits))
+         goto suspend;
+      rinf_getbits(s, s->skip_bits);
+      s->skip_bits = 0;
+   }
+
    for (;;)
    {
       switch (s->phase)
       {
+         case RINF_HDR_SNIFF:
+            /* zlib's 47 means "work it out from the stream".  A gzip
+             * member always starts 1f 8b; a zlib header never can,
+             * because its low nibble must be 8 and 0x1f gives 15. */
+            if (!rinf_need(s, 8)) goto suspend;
+            s->wrap  = ((s->bitbuf & 0xff) == 0x1f)
+                     ? RINF_WRAP_GZIP : RINF_WRAP_ZLIB;
+            s->phase = rinf_start_phase(s->wrap);
+            break;
+
+         case RINF_GZHEADER:
+            /* ID1 ID2 CM FLG MTIME[4] XFL OS */
+            if (!rinf_need(s, 16)) goto suspend;
+            {
+               uint32_t id1 = rinf_getbits(s, 8);
+               uint32_t id2 = rinf_getbits(s, 8);
+               if (id1 != 0x1f || id2 != 0x8b) { s->error = 1; goto error; }
+            }
+            if (!rinf_need(s, 16)) goto suspend;
+            {
+               uint32_t cm = rinf_getbits(s, 8);
+               s->gz_flg   = rinf_getbits(s, 8);
+               if (cm != 8)              { s->error = 1; goto error; }
+               /* bits 5-7 are reserved and must be zero */
+               if (s->gz_flg & 0xe0)     { s->error = 1; goto error; }
+            }
+            {
+               int i;
+               for (i = 0; i < 6; i++)   /* MTIME[4], XFL, OS */
+               {
+                  if (!rinf_need(s, 8)) goto suspend;
+                  rinf_getbits(s, 8);
+               }
+            }
+            s->gz_step  = 0;
+            s->gz_count = 0;
+            s->phase    = RINF_GZ_EXTRA;
+            break;
+
+         case RINF_GZ_EXTRA:
+            if (!(s->gz_flg & 0x04)) { s->phase = RINF_GZ_NAME; break; }
+            if (s->gz_step == 0)
+            {
+               if (!rinf_need(s, 16)) goto suspend;
+               s->gz_count = rinf_getbits(s, 8);
+               s->gz_count |= rinf_getbits(s, 8) << 8;  /* XLEN, LE */
+               s->gz_step  = 1;
+            }
+            while (s->gz_count)
+            {
+               if (!rinf_need(s, 8)) goto suspend;
+               rinf_getbits(s, 8);
+               s->gz_count--;
+            }
+            s->gz_step = 0;
+            s->phase   = RINF_GZ_NAME;
+            break;
+
+         case RINF_GZ_NAME:
+            if (!(s->gz_flg & 0x08)) { s->phase = RINF_GZ_COMMENT; break; }
+            for (;;)
+            {
+               if (!rinf_need(s, 8)) goto suspend;
+               if (rinf_getbits(s, 8) == 0) break;
+            }
+            s->phase = RINF_GZ_COMMENT;
+            break;
+
+         case RINF_GZ_COMMENT:
+            if (!(s->gz_flg & 0x10)) { s->phase = RINF_GZ_HCRC; break; }
+            for (;;)
+            {
+               if (!rinf_need(s, 8)) goto suspend;
+               if (rinf_getbits(s, 8) == 0) break;
+            }
+            s->phase = RINF_GZ_HCRC;
+            break;
+
+         case RINF_GZ_HCRC:
+            /* Header crc16, if present.  Consumed, not verified: a
+             * mismatch here says nothing the crc32 over the data will
+             * not say more reliably a moment later. */
+            if (s->gz_flg & 0x02)
+            {
+               if (!rinf_need(s, 16)) goto suspend;
+               rinf_getbits(s, 8);
+               rinf_getbits(s, 8);
+            }
+            s->phase = RINF_BLOCK_HDR;
+            break;
+
+         case RINF_GZCRC:
+            /* fold any output produced in this call before comparing */
+            if (s->out_pos > fold_start)
+            {
+               s->crc = encoding_crc32(s->crc,
+                     s->out + fold_start, s->out_pos - fold_start);
+               s->total_out += (uint32_t)(s->out_pos - fold_start);
+               fold_start = s->out_pos;
+            }
+            /* align to byte, then CRC32 and ISIZE, both little-endian */
+            s->bitbuf >>= (s->bitcnt & 7);
+            s->bitcnt  -= (s->bitcnt & 7);
+            while (s->adler_have < 8)
+            {
+               if (!rinf_need(s, 8)) goto suspend;
+               s->adler_read |= rinf_getbits(s, 8) << ((s->adler_have & 3) * 8);
+               s->adler_have++;
+               if (s->adler_have == 4)
+               {
+                  if (s->adler_read != s->crc) { s->error = 1; goto error; }
+                  s->adler_read = 0;
+               }
+            }
+            if (s->adler_read != s->total_out) { s->error = 1; goto error; }
+            s->phase = RINF_DONE;
+            break;
+
          case RINF_ZHEADER:
             if (!rinf_need(s, 16)) goto suspend;
             {
@@ -688,6 +1090,18 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
             break;
 
          case RINF_BLOCK_HDR:
+            if (s->stop_at_block && !s->first_block_reported)
+            {
+               s->first_block_reported = 1;
+               status = RDEFLATE_PROCESS_BLOCK;
+               goto done;
+            }
+            if (s->block_ready)
+            {
+               s->block_ready = 0;
+               status = RDEFLATE_PROCESS_BLOCK;
+               goto done;
+            }
             if (!rinf_need(s, 3)) goto suspend;
             s->bfinal = rinf_getbits(s, 1);
             s->btype  = rinf_getbits(s, 2);
@@ -772,8 +1186,10 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                }
                s->stored_len--;
             }
-            s->phase = s->bfinal ? (s->wrapped ? RINF_ADLER : RINF_DONE)
+            s->phase = s->bfinal ? rinf_end_phase(s->wrap)
                                  : RINF_BLOCK_HDR;
+            if (!s->bfinal && s->stop_at_block)
+               s->block_ready = 1;
             break;
 
          case RINF_DYN_TABLE:
@@ -857,12 +1273,15 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                { s->error = 1; goto error; }
             if (!rinf_build(&s->distcode, s->lengths + s->hlit, s->hdist))
                { s->error = 1; goto error; }
+            rinf_pack_len(&s->lencode);
+            rinf_pack_dist(&s->distcode);
             s->have_tables = 1;
             s->copy_active = 0;
             s->phase = RINF_BLOCK_DATA;
             break;
 
          case RINF_BLOCK_DATA:
+fast_again:
             if (s->have_pending_lit)
             {
                if (!rinf_emit(s, s->pending_lit)) goto suspend;
@@ -892,14 +1311,35 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                size_t   out_pos      = s->out_pos;
                const uint8_t *in     = s->in;
                uint8_t       *out    = s->out;
-               const uint16_t *lfast = s->lencode.fast;
-               const uint16_t *dfast = s->distcode.fast;
+               const uint32_t *plen  = s->lencode.pfast;
+               const uint32_t *pdist = s->distcode.pfast;
                int      done_fast    = 0;
 
-               while (in_pos + 8 <= s->in_size
-                     && out_pos + 258 + 1 <= s->out_size)
+               /* The output guard reserves the longest match plus the
+                * copy over-run pad: the inlined copies below write in
+                * whole 8- or 16-byte steps and may run up to 15 bytes
+                * past the match end.  Those bytes lie beyond out_pos,
+                * so they are scratch - either rewritten by later output
+                * or beyond the produced length entirely.  The margin in
+                * the careful path's hand-back check must stay equal to
+                * this one: a larger value there would re-enter a loop
+                * whose own guard immediately fails, bouncing control
+                * between the two paths without progress. */
                {
-                  int sym;
+               /* Preload carrier: at the end of a match copy the next
+                * code's low table-index bits are already final - the
+                * refill only ORs into bits at or above bitcnt - so the
+                * next litlen entry can be fetched before the copy's
+                * stores retire, hiding the table load under them.  The
+                * entry is only trusted when at least 15 bits were
+                * buffered at preload time (a full code's worth), which
+                * mirrors the literal chain's own reuse condition. */
+               uint32_t e_pre    = 0;
+               int      have_pre = 0;
+               while (in_pos + 8 <= s->in_size
+                     && out_pos + 258 + 16 <= s->out_size)
+               {
+                  uint32_t e;
                   /* Refill only when the buffer cannot already cover a
                    * whole length/distance group - litlen (15) + length
                    * extra (5) + distance (15) + distance extra (13) = 48
@@ -942,73 +1382,146 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                      in_pos += (size_t)nb_;
                      bitcnt += nb_ * 8;
                   }
+                  if (have_pre)
                   {
-                     uint16_t f = lfast[bitbuf & ((1 << RINF_FAST_BITS) - 1)];
-                     if (f)
-                     {
-                        int l   = f & 15;
-                        bitbuf >>= l;
-                        bitcnt  -= l;
-                        sym      = f >> 4;
-                     }
-                     else
-                     {
-                        /* Long code: hand back to the shared decoder. */
-                        s->bitbuf = bitbuf;
-                        s->bitcnt = bitcnt;
-                        s->in_pos = in_pos;
-                        sym       = rinf_decode(s, &s->lencode);
-                        bitbuf    = s->bitbuf;
-                        bitcnt    = s->bitcnt;
-                        in_pos    = s->in_pos;
-                        if (sym < -1)
-                        {
-                           s->out_pos = out_pos;
-                           goto error;
-                        }
-                        if (sym == -1)
-                           break;
-                     }
+                     e        = e_pre;
+                     have_pre = 0;
                   }
-                  if (sym < 256)
+                  else
+                     e = plen[bitbuf & ((1 << RINF_FAST_BITS) - 1)];
+                  /* Literal chain: after one refill the buffer holds at
+                   * least 48 bits, and every packed literal costs at
+                   * most 15, so several literals can be emitted before
+                   * the next refill.  bitcnt >= 15 before each lookup
+                   * guarantees the entry's code length is covered; the
+                   * output side is covered by the loop guard's 258+16
+                   * reserve, which no chain can outrun (a literal code
+                   * is at least one bit, so at most 47 emissions). */
+                  while (e & RINF_PF_LIT)
                   {
-                     out[out_pos++] = (uint8_t)sym;
+                     bitbuf >>= (e & 15);
+                     bitcnt  -= (int)(e & 15);
+                     out[out_pos++] = (uint8_t)(e >> 16);
+                     if (bitcnt < 15)
+                        break;
+                     e = plen[bitbuf & ((1 << RINF_FAST_BITS) - 1)];
+                  }
+                  if (e & RINF_PF_LIT)
+                     continue;      /* broke for a refill; guards re-run */
+                  /* A non-literal group needs up to 48 buffered bits
+                   * (15 + 5 + 15 + 13); a chain can leave fewer.  Retry
+                   * through the loop head, which refills. */
+                  if (bitcnt < 48 && e)
                      continue;
-                  }
-                  if (sym == 256)
+                  if (!e)
                   {
-                     s->phase = s->bfinal
-                        ? (s->wrapped ? RINF_ADLER : RINF_DONE)
-                        : RINF_BLOCK_HDR;
-                     done_fast = 1;
-                     break;
-                  }
-                  {
-                     int li = sym - 257, dsym, ei;
-                     uint32_t length, dist;
-                     if (li >= 29)
+                     /* Long code: hand back to the shared decoder. */
+                     int sym;
+                     s->bitbuf = bitbuf;
+                     s->bitcnt = bitcnt;
+                     s->in_pos = in_pos;
+                     sym       = rinf_decode(s, &s->lencode);
+                     bitbuf    = s->bitbuf;
+                     bitcnt    = s->bitcnt;
+                     in_pos    = s->in_pos;
+                     if (sym < -1)
+                     {
+                        s->out_pos = out_pos;
+                        goto error;
+                     }
+                     if (sym == -1)
+                        break;
+                     if (sym < 256)
+                     {
+                        out[out_pos++] = (uint8_t)sym;
+                        continue;
+                     }
+                     if (sym == 256)
+                     {
+                        s->phase = s->bfinal
+                           ? rinf_end_phase(s->wrap)
+                           : RINF_BLOCK_HDR;
+                        if (!s->bfinal && s->stop_at_block)
+                           s->block_ready = 1;
+                        done_fast = 1;
+                        break;
+                     }
+                     if (sym - 257 >= 29)
                      {
                         s->error   = 1;
                         s->out_pos = out_pos;
                         goto error;
                      }
-                     ei     = rinf_len_extra[li];
-                     length = rinf_len_base[li];
-                     if (ei)
+                     /* Re-enter the packed flow with a synthesised
+                      * entry; the code bits are already consumed, so its
+                      * code length is zero and the packed total in bits
+                      * [4:8] degenerates to the extra count - the same
+                      * encoding either way. */
+                     e = ((uint32_t)rinf_len_extra[sym - 257] << 4)
+                       | ((uint32_t)rinf_len_base[sym - 257] << 16);
+                     if (bitcnt < 33)
                      {
-                        length += (uint32_t)(bitbuf & ((1u << ei) - 1));
-                        bitbuf >>= ei;
-                        bitcnt  -= ei;
+                        /* Not enough buffered bits for the extra-bits
+                         * and distance group without a refill the loop
+                         * guard may no longer permit; park the decoded
+                         * symbol in the careful path's resume state and
+                         * let it finish this one group. */
+                        s->ld_lensym = sym - 257;
+                        s->ld_step   = 1;
+                        break;
+                     }
+                  }
+                  if (e & RINF_PF_EOB)
+                  {
+                     bitbuf >>= (e & 15);
+                     bitcnt  -= (int)(e & 15);
+                     s->phase = s->bfinal
+                        ? rinf_end_phase(s->wrap)
+                        : RINF_BLOCK_HDR;
+                     if (!s->bfinal && s->stop_at_block)
+                        s->block_ready = 1;
+                     done_fast = 1;
+                     break;
+                  }
+                  if (e & RINF_PF_BAD)
+                  {
+                     s->error   = 1;
+                     s->out_pos = out_pos;
+                     goto error;
+                  }
+                  {
+                     int dsym, ei;
+                     uint32_t length, dist;
+                     {
+                        int l  = (int)(e & 15);
+                        int t  = (int)((e >> 4) & 31);
+                        length = (e >> 16)
+                              + (uint32_t)((bitbuf >> l)
+                                    & (((uint64_t)1 << (t - l)) - 1));
+                        bitbuf >>= t;
+                        bitcnt  -= t;
                      }
                      {
-                        uint16_t fd = dfast[bitbuf
+                        uint32_t d = pdist[bitbuf
                            & ((1 << RINF_FAST_BITS) - 1)];
-                        if (fd)
+                        if (d & RINF_PF_BAD)
                         {
-                           int dl   = fd & 15;
-                           bitbuf >>= dl;
-                           bitcnt  -= dl;
-                           dsym     = fd >> 4;
+                           s->error   = 1;
+                           s->out_pos = out_pos;
+                           goto error;
+                        }
+                        if (d)
+                        {
+                           /* Length consumed at most 20 bits of the 48
+                            * the head guaranteed, so the full distance
+                            * group (15 + 13) is always covered here. */
+                           int dl  = (int)(d & 15);
+                           int dt  = (int)((d >> 4) & 31);
+                           dist    = (d >> 16)
+                                 + (uint32_t)((bitbuf >> dl)
+                                       & (((uint64_t)1 << (dt - dl)) - 1));
+                           bitbuf >>= dt;
+                           bitcnt  -= dt;
                         }
                         else
                         {
@@ -1022,25 +1535,39 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                            if (dsym < 0)
                            {
                               if (dsym == -1)
+                              {
+                                 /* Bits ran short mid-group; park the
+                                  * assembled length for the careful
+                                  * path to finish. */
+                                 s->ld_length = length;
+                                 s->ld_step   = 2;
                                  break;
+                              }
                               s->out_pos = out_pos;
                               goto error;
                            }
+                           if (dsym >= 30)
+                           {
+                              s->error   = 1;
+                              s->out_pos = out_pos;
+                              goto error;
+                           }
+                           ei   = rinf_dist_extra[dsym];
+                           dist = rinf_dist_base[dsym];
+                           if (ei)
+                           {
+                              if (bitcnt < ei)
+                              {
+                                 s->ld_length  = length;
+                                 s->ld_distsym = dsym;
+                                 s->ld_step    = 3;
+                                 break;
+                              }
+                              dist  += (uint32_t)(bitbuf & ((1u << ei) - 1));
+                              bitbuf >>= ei;
+                              bitcnt  -= ei;
+                           }
                         }
-                     }
-                     if (dsym >= 30)
-                     {
-                        s->error   = 1;
-                        s->out_pos = out_pos;
-                        goto error;
-                     }
-                     ei   = rinf_dist_extra[dsym];
-                     dist = rinf_dist_base[dsym];
-                     if (ei)
-                     {
-                        dist  += (uint32_t)(bitbuf & ((1u << ei) - 1));
-                        bitbuf >>= ei;
-                        bitcnt  -= ei;
                      }
                      if (dist > out_pos + s->whave)
                      {
@@ -1050,29 +1577,93 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                      }
                      if (dist <= out_pos)
                      {
+                        /* All copies below run in whole 8-byte steps
+                         * (constant-size memcpy compiles to one move,
+                         * not a call) and may write up to 7 bytes past
+                         * the match end - covered by the loop guard's
+                         * pad.  Short distances replicate the pattern:
+                         * 1/2/4 broadcast into a 64-bit word; 3/5/6/7
+                         * prime 16 bytes serially, after which 8-byte
+                         * chunks at distance dist*(16/dist) >= 9 both
+                         * preserve the period and never load a byte
+                         * stored in the same step. */
                         uint8_t       *dst  = out + out_pos;
                         const uint8_t *srcp = dst - dist;
-                        if (dist >= length)
-                           memcpy(dst, srcp, length);
-                        else if (dist == 1) /* run of a single byte */
-                           memset(dst, srcp[0], length);
-                        else
+                        uint8_t       *dend = dst + length;
+                        if (dist >= 16)
                         {
-                           /* overlapping run: grow the copied region by
-                            * doubling so we memcpy progressively larger
-                            * blocks instead of one byte at a time */
-                           uint32_t cdone = dist;
-                           memcpy(dst, srcp, dist);
-                           while (cdone < length)
+                           do
                            {
-                              uint32_t chunk = cdone;
-                              if (chunk > length - cdone)
-                                 chunk = length - cdone;
-                              memcpy(dst + cdone, dst, chunk);
-                              cdone += chunk;
+                              memcpy(dst, srcp, 16);
+                              dst  += 16;
+                              srcp += 16;
+                           } while (dst < dend);
+                        }
+                        else if (dist >= 8)
+                        {
+                           do
+                           {
+                              memcpy(dst, srcp, 8);
+                              dst  += 8;
+                              srcp += 8;
+                           } while (dst < dend);
+                        }
+                        else if (dist == 1)
+                        {
+                           uint64_t pat = (uint64_t)srcp[0]
+                                 * 0x0101010101010101ull;
+                           do
+                           {
+                              memcpy(dst,     &pat, 8);
+                              memcpy(dst + 8, &pat, 8);
+                              dst += 16;
+                           } while (dst < dend);
+                        }
+                        else if (dist == 2 || dist == 4)
+                        {
+                           uint64_t pat;
+                           if (dist == 2)
+                           {
+                              uint16_t w;
+                              memcpy(&w, srcp, 2);
+                              pat = (uint64_t)w * 0x0001000100010001ull;
+                           }
+                           else
+                           {
+                              uint32_t w;
+                              memcpy(&w, srcp, 4);
+                              pat = (uint64_t)w | ((uint64_t)w << 32);
+                           }
+                           do
+                           {
+                              memcpy(dst,     &pat, 8);
+                              memcpy(dst + 8, &pat, 8);
+                              dst += 16;
+                           } while (dst < dend);
+                        }
+                        else /* dist 3, 5, 6, 7 */
+                        {
+                           size_t k;
+                           size_t prime = length < 16 ? (size_t)length : 16;
+                           for (k = 0; k < prime; k++)
+                              dst[k] = srcp[k];
+                           if (length > 16)
+                           {
+                              uint32_t D        = dist * (16 / dist);
+                              uint8_t *p        = dst + 16;
+                              const uint8_t *q  = p - D;
+                              do
+                              {
+                                 memcpy(p, q, 8);
+                                 p += 8;
+                                 q += 8;
+                              } while (p < dend);
                            }
                         }
                         out_pos += length;
+                        e_pre    = plen[bitbuf
+                              & ((1 << RINF_FAST_BITS) - 1)];
+                        have_pre = (bitcnt >= 15);
                      }
                      else
                      {
@@ -1083,6 +1674,7 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                         break;
                      }
                   }
+               }
                }
 
                s->bitbuf  = bitbuf;
@@ -1095,6 +1687,23 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
 
             for (;;)
             {
+               /* The careful path exists for boundary states - a copy
+                * or a length/distance group straddling a slice edge, a
+                * long Huffman code, tight margins.  Once the boundary
+                * state is resolved and the margins are comfortable
+                * again, hand control straight back to the fast loop:
+                * without this, one straddling match at a slice edge
+                * left the whole next slice on the symbol-at-a-time
+                * path (the fast block only ran on entry to the phase),
+                * which was most of them, since a 32 KB output slice
+                * almost always fills mid-match.  The first iteration
+                * after a fast-loop exit fails these margin checks by
+                * construction, so this cannot spin. */
+               if (   !s->copy_active && s->ld_step == 0
+                   && !s->have_pending_lit
+                   && s->in_pos + 8 <= s->in_size
+                   && s->out_pos + 258 + 16 <= s->out_size)
+                  goto fast_again;
                /* finish any pending back-reference copy first */
                if (s->copy_active)
                {
@@ -1156,8 +1765,10 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                   if (sym == 256)
                   {
                      s->phase = s->bfinal
-                        ? (s->wrapped ? RINF_ADLER : RINF_DONE)
+                        ? rinf_end_phase(s->wrap)
                         : RINF_BLOCK_HDR;
+                     if (!s->bfinal && s->stop_at_block)
+                        s->block_ready = 1;
                      break;
                   }
                   s->ld_lensym = sym - 257;
@@ -1228,9 +1839,18 @@ suspend:
    status = RDEFLATE_PROCESS_NEXT;
 done:
    rinf_window_commit(s);
-   if (s->wrapped && s->out_pos > fold_start)
-      s->adler = rd_adler32_update(s->adler,
-            s->out + fold_start, s->out_pos - fold_start);
+   if (s->out_pos > fold_start)
+   {
+      if (s->wrap == RINF_WRAP_ZLIB)
+         s->adler = rd_adler32_update(s->adler,
+               s->out + fold_start, s->out_pos - fold_start);
+      else if (s->wrap == RINF_WRAP_GZIP)
+      {
+         s->crc = encoding_crc32(s->crc,
+               s->out + fold_start, s->out_pos - fold_start);
+         s->total_out += (uint32_t)(s->out_pos - fold_start);
+      }
+   }
    if (read)  *read  = s->in_pos  - in_start;
    if (wrote) *wrote = s->out_pos - out_start;
    return status;
@@ -1283,7 +1903,9 @@ struct rd_sym
 struct rdeflate
 {
    int      level;
-   int      wrapped;
+   int      wrap;      /* RINF_WRAP_RAW / _ZLIB / _GZIP                 */
+   int      wrapped;   /* wrap != RINF_WRAP_RAW                         */
+   int      use_crc_hash; /* settled once at construction; see rd_hash */
    int      good, lazy, nice, chain;  /* match-finder tuning per level     */
 
    /* input history: a linear buffer holding the sliding window + lookahead.
@@ -1327,6 +1949,8 @@ struct rdeflate
    size_t   in_pos;
 
    uint32_t adler;
+   uint32_t crc;       /* gzip: running crc32 of the input              */
+   uint32_t total_in;  /* gzip: mod 2^32, for ISIZE                     */
    int      final_in;    /* caller signalled end of input                  */
    int      done;
    int      error;
@@ -1359,6 +1983,21 @@ struct rdeflate
    uint8_t  dyn_rle[288 + 30];    /* RLE'd (lit+dist) code lengths           */
    uint8_t  dyn_rle_extra[288 + 30];
    int      dyn_rle_n;
+
+   /* Huffman length-generation scratch.  These were locals in
+    * rd_gen_lengths(), which made that a 12768-byte frame - the
+    * two-queue tree needs 2*288 nodes of weight, left, right and
+    * depth, on top of the 288-entry sort arrays.  A frame that size
+    * does not belong on a stack whatever the target: it sits under
+    * whatever called it, and the state struct here is calloc'd once
+    * per stream, so the arrays cost nothing extra to keep. */
+   int      gl_idx[288];
+   uint32_t gl_fr[288];
+   int      gl_lc[288];
+   uint32_t gl_wt[2 * 288];
+   int      gl_left[2 * 288];
+   int      gl_right[2 * 288];
+   int      gl_depth[2 * 288];
 };
 
 /* ------- bit writer (LSB-first) -------
@@ -1443,45 +2082,56 @@ static const uint16_t rd_dist_base[30] = {
 static const uint8_t rd_dist_extra[30] = {
    0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13 };
 
-/* O(1) symbol lookups via precomputed tables (built at first use). */
-static uint8_t  rd_length_code[259];      /* len 0..258 -> length symbol   */
-static uint8_t  rd_dist_code_lo[256];     /* dist 1..256 -> dist symbol     */
-static uint8_t  rd_dist_code_hi[256];     /* (dist-1)>>7 for 257..32768     */
-static int      rd_code_tables_ready = 0;
-
-static void rd_init_code_tables(void)
-{
-   int i, code, dist, len;
-   if (rd_code_tables_ready)
-      return;
-   /* length codes */
-   code = 0;
-   for (len = 3; len <= 258; len++)
-   {
-      while (code < 28 && len >= rd_len_base[code + 1])
-         code++;
-      rd_length_code[len] = (uint8_t)code;
-   }
-   rd_length_code[0] = 0; rd_length_code[1] = 0; rd_length_code[2] = 0;
-   /* distance codes: low half (1..256) direct */
-   code = 0;
-   for (dist = 1; dist <= 256; dist++)
-   {
-      while (code < 29 && dist >= rd_dist_base[code + 1])
-         code++;
-      rd_dist_code_lo[dist - 1] = (uint8_t)code;
-   }
-   /* distance codes: high half indexed by (dist-1)>>7 for 257..32768 */
-   code = 0;
-   for (i = 0; i < 256; i++)
-   {
-      dist = (i << 7) + 1;   /* representative distance for this bucket     */
-      while (code < 29 && dist >= rd_dist_base[code + 1])
-         code++;
-      rd_dist_code_hi[i] = (uint8_t)code;
-   }
-   rd_code_tables_ready = 1;
-}
+/* O(1) symbol lookups.  These used to be built at first use behind a
+ * non-atomic flag, which is a data race when two streams are
+ * constructed concurrently: the flag could be seen before the entries
+ * on a weakly-ordered machine, and concurrent writers storing
+ * identical values are a race even where it happens to be benign.
+ * The tables are 771 bytes and derived mechanically from rd_len_base
+ * and rd_dist_base, so they are baked as const data generated by the
+ * same builder loops; const data has no initialiser to race on. */
+static const uint8_t rd_length_code[259] = {  /* len 0..258 -> length symbol */
+  0,0,0,0,1,2,3,4,5,6,7,8,8,9,9,10,10,11,11,12,
+  12,12,12,13,13,13,13,14,14,14,14,15,15,15,15,16,16,16,16,16,
+  16,16,16,17,17,17,17,17,17,17,17,18,18,18,18,18,18,18,18,19,
+  19,19,19,19,19,19,19,20,20,20,20,20,20,20,20,20,20,20,20,20,
+  20,20,20,21,21,21,21,21,21,21,21,21,21,21,21,21,21,21,21,22,
+  22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,23,23,23,23,23,
+  23,23,23,23,23,23,23,23,23,23,23,24,24,24,24,24,24,24,24,24,
+  24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,
+  24,24,24,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,
+  25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,26,26,26,26,26,
+  26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,
+  26,26,26,26,26,26,26,27,27,27,27,27,27,27,27,27,27,27,27,27,
+  27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,28 };
+static const uint8_t rd_dist_code_lo[256] = { /* dist 1..256 -> dist symbol */
+  0,1,2,3,4,4,5,5,6,6,6,6,7,7,7,7,8,8,8,8,
+  8,8,8,8,9,9,9,9,9,9,9,9,10,10,10,10,10,10,10,10,
+  10,10,10,10,10,10,10,10,11,11,11,11,11,11,11,11,11,11,11,11,
+  11,11,11,11,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,
+  12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,13,13,13,13,
+  13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,
+  13,13,13,13,13,13,13,13,14,14,14,14,14,14,14,14,14,14,14,14,
+  14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,
+  14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,
+  14,14,14,14,14,14,14,14,14,14,14,14,15,15,15,15,15,15,15,15,
+  15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,
+  15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,
+  15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15 };
+static const uint8_t rd_dist_code_hi[256] = { /* (dist-1)>>7 for 257..32768 */
+  0,14,16,17,18,18,19,19,20,20,20,20,21,21,21,21,22,22,22,22,
+  22,22,22,22,23,23,23,23,23,23,23,23,24,24,24,24,24,24,24,24,
+  24,24,24,24,24,24,24,24,25,25,25,25,25,25,25,25,25,25,25,25,
+  25,25,25,25,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,
+  26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,27,27,27,27,
+  27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,
+  27,27,27,27,27,27,27,27,28,28,28,28,28,28,28,28,28,28,28,28,
+  28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,
+  28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,
+  28,28,28,28,28,28,28,28,28,28,28,28,29,29,29,29,29,29,29,29,
+  29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,
+  29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,
+  29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29 };
 
 static int rd_len_sym(uint32_t len)
 {
@@ -1556,33 +2206,108 @@ static void rd_fixed_lit_lengths(uint8_t *ll)
 /* ------- match finder (hash chains + lazy) ------- */
 #define RD_HASH_SHIFT ((RD_HASH_BITS + RD_MIN_MATCH - 1) / RD_MIN_MATCH)
 /* Hardware CRC32 hash where available: it spreads 3-byte keys across the
- * table far more evenly than the multiplicative hash, which shortens the
- * per-bucket chains the match finder has to walk.  Falls back to the
- * multiplicative hash on targets without a CRC32 instruction. */
+ * table far more evenly than the shift-xor hash, which shortens the
+ * per-bucket chains the match finder has to walk.  On a stock x86-64
+ * build no flag enables __SSE4_2__, so the choice is made at run time
+ * per stream (see rdeflate_new); the branch is on cold state and the
+ * benefit is chain quality rather than hash latency, so nothing is
+ * lost to the dispatch.  Falls back to the shift-xor hash on targets
+ * without a usable CRC32 instruction. */
 #if defined(__SSE4_2__)
 #include <nmmintrin.h>
-#define RD_HAVE_CRC32_HASH 1
-static uint32_t rd_hash(const uint8_t *p)
+#define RD_CRC32_HASH_DIRECT 1
+#elif defined(__ARM_FEATURE_CRC32)
+#include <arm_acle.h>
+#define RD_CRC32_HASH_DIRECT 1
+#elif defined(__x86_64__) || defined(__i386__) \
+   || defined(_M_X64)     || defined(_M_IX86)
+/* Being on x86 is necessary but not sufficient: the toolchain also has
+ * to be able to build the intrinsic.  Same predicate shape as the
+ * carry-less multiply path in encoding_crc32.c, and for the same
+ * reason: Clang reports itself as GCC 4.2 forever, so a bare version
+ * comparison would reject every Clang build.  MSVC gained
+ * nmmintrin.h in Visual Studio 2008 (_MSC_VER 1500); older MSVC
+ * takes the shift-xor hash. */
+#  if defined(_MSC_VER)
+#    if _MSC_VER >= 1500
+#      define RD_CRC32_HASH_RUNTIME 1
+#    endif
+#  elif defined(__has_attribute) && defined(__has_include)
+#    if __has_attribute(target) && __has_include(<nmmintrin.h>)
+#      define RD_CRC32_HASH_RUNTIME 1
+#    endif
+#  elif !defined(__clang__) && defined(__GNUC__) \
+   && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9))
+#    define RD_CRC32_HASH_RUNTIME 1
+#  endif
+#endif
+
+/* Clang moved the SSE4.2 CRC32 intrinsics out of the smmintrin.h /
+ * nmmintrin.h chain and into their own crc32intrin.h, which the umbrella
+ * headers pull in only when __CRC32__ (or __SSE4_2__) is already defined
+ * at the point of inclusion.  Neither is, in a translation unit that
+ * reaches the instruction through __attribute__((target("sse4.2")))
+ * rather than through a global -msse4.2 - so __has_include(<nmmintrin.h>)
+ * answered yes above, the declaration never arrived, and the build broke
+ * on _mm_crc32_u32 with clang telling us which header it wanted.  x86
+ * only: the ARM path below reaches its intrinsic through arm_acle.h.
+ *
+ * crc32intrin.h carries the target attribute on the intrinsics
+ * themselves, so including it directly is safe whether or not the TU is
+ * built for SSE4.2, and harmless on toolchains that never split it out. */
+#if (defined(RD_CRC32_HASH_DIRECT) || defined(RD_CRC32_HASH_RUNTIME)) \
+   && (defined(__x86_64__) || defined(__i386__) \
+    || defined(_M_X64)     || defined(_M_IX86))
+#  if defined(__has_include)
+#    if __has_include(<crc32intrin.h>)
+#      include <crc32intrin.h>
+#    endif
+#  endif
+#endif
+
+#if defined(RD_CRC32_HASH_RUNTIME)
+#include <nmmintrin.h>
+#include <features/features_cpu.h>
+#if defined(_MSC_VER)
+#define RD_TARGET_CRC32
+#else
+#define RD_TARGET_CRC32 __attribute__((target("sse4.2")))
+#endif
+static RD_TARGET_CRC32 uint32_t rd_hash_crc(const uint8_t *p)
 {
    uint32_t k = (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16);
    return _mm_crc32_u32(0, k) & RD_HASH_MASK;
 }
-#elif defined(__ARM_FEATURE_CRC32)
-#include <arm_acle.h>
-#define RD_HAVE_CRC32_HASH 1
-static uint32_t rd_hash(const uint8_t *p)
-{
-   uint32_t k = (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16);
-   return __crc32w(0, k) & RD_HASH_MASK;
-}
-#else
-static uint32_t rd_hash(const uint8_t *p)
+#endif
+
+#if !defined(RD_CRC32_HASH_DIRECT)
+static uint32_t rd_hash_soft(const uint8_t *p)
 {
    return (uint32_t)(((p[0] << (2*RD_HASH_SHIFT)) ^
                       (p[1] <<   RD_HASH_SHIFT)  ^
                        p[2]) & RD_HASH_MASK);
 }
 #endif
+
+static uint32_t rd_hash(struct rdeflate *s, const uint8_t *p)
+{
+#if defined(__SSE4_2__)
+   uint32_t k = (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16);
+   (void)s;
+   return _mm_crc32_u32(0, k) & RD_HASH_MASK;
+#elif defined(__ARM_FEATURE_CRC32)
+   uint32_t k = (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16);
+   (void)s;
+   return __crc32w(0, k) & RD_HASH_MASK;
+#elif defined(RD_CRC32_HASH_RUNTIME)
+   if (s->use_crc_hash)
+      return rd_hash_crc(p);
+   return rd_hash_soft(p);
+#else
+   (void)s;
+   return rd_hash_soft(p);
+#endif
+}
 
 /* Insert position `pos` into its hash chain; return the previous head
  * as a position, or -1 if the chain was empty.
@@ -1596,27 +2321,12 @@ static uint32_t rd_hash(const uint8_t *p)
  * uses. */
 static int32_t rd_insert(struct rdeflate *s, uint32_t pos)
 {
-   uint32_t h    = rd_hash(s->win + pos);
+   uint32_t h    = rd_hash(s, s->win + pos);
    int32_t  prev = s->head[h];
    s->prev[pos & RD_WMASK] = prev;
    s->head[h] = (int32_t)pos + 1;
    return prev - 1;
 }
-
-/* __builtin_clzll / __builtin_ctzll need GCC >= 3.4 (where the
- * clz/ctz builtin family was introduced) or Clang (which has had
- * them from the start). Anything older takes the portable
- * bit-loop fallback. Pre-definable so unusual toolchains (or
- * tests) can force either path. */
-#ifndef RD_HAS_BIT_BUILTINS
-#if defined(__clang__) || \
-    (defined(__GNUC__) && (__GNUC__ > 3 || \
-    (__GNUC__ == 3 && defined(__GNUC_MINOR__) && __GNUC_MINOR__ >= 4)))
-#define RD_HAS_BIT_BUILTINS 1
-#else
-#define RD_HAS_BIT_BUILTINS 0
-#endif
-#endif
 
 static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,
       uint32_t max_len, uint32_t best_start, uint32_t *dist_out)
@@ -1687,31 +2397,11 @@ static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,
 #if RETRO_IS_BIG_ENDIAN
                   /* first differing byte is the 
                    * most-significant nonzero byte */
-#if RD_HAS_BIT_BUILTINS
-                  l += (uint32_t)(__builtin_clzll(x) >> 3);
-#else
-                  int n = 0;
-                  while (!(x & ((uint64_t)1 << 63)))
-                  {
-                     x <<= 1;
-                     n++;
-                  }
-                  l += (uint32_t)(n >> 3);
-#endif
+                  l += compat_clz_u64(x) >> 3;
 #else
                   /* first differing byte is the least-significant 
                    * nonzero byte */
-#if RD_HAS_BIT_BUILTINS
-                  l += (uint32_t)(__builtin_ctzll(x) >> 3);
-#else
-                  int n = 0;
-                  while (!(x & 1))
-                  {
-                     x >>= 1;
-                     n++;
-                  }
-                  l += (uint32_t)(n >> 3);
-#endif
+                  l += compat_ctz_u64(x) >> 3;
 #endif
                   goto have_len;
                }
@@ -2123,12 +2813,13 @@ static int rd_emit_block_stored(struct rdeflate *s)
  * always yielding a complete (Kraft-exact) code.  Builds a Huffman tree by
  * repeated lowest-weight sibling merges, reads off depths, then repairs any
  * over-long codes with a Kraft-sum redistribution. */
-static void rd_gen_lengths(const uint32_t *freq, int n, int max_bits,
+static void rd_gen_lengths(struct rdeflate *s,
+      const uint32_t *freq, int n, int max_bits,
       uint8_t *lengths_out)
 {
-   int      idx[288];
-   uint32_t fr[288];
-   int      lc[288];
+   int      *idx = s->gl_idx;
+   uint32_t *fr  = s->gl_fr;
+   int      *lc  = s->gl_lc;
    int      m = 0;
    int      i;
 
@@ -2179,10 +2870,10 @@ static void rd_gen_lengths(const uint32_t *freq, int n, int max_bits,
     * once assigns every depth without the per-leaf parent-chain
     * walk the old code did. */
    {
-      uint32_t wt[2 * 288];
-      int      left[2 * 288];
-      int      right[2 * 288];
-      int      depth[2 * 288];
+      uint32_t *wt    = s->gl_wt;
+      int      *left  = s->gl_left;
+      int      *right = s->gl_right;
+      int      *depth = s->gl_depth;
       int      lq = 0;   /* front of the leaf queue                   */
       int      iq = 288; /* front of the internal queue (base 288)    */
       int      node_used;
@@ -2353,8 +3044,8 @@ static uint32_t rd_build_dynamic(struct rdeflate *s)
    /* the end-of-block symbol (256) always occurs once */
    s->freq_lit[256]++;
 
-   rd_gen_lengths(s->freq_lit, 286, 15, s->dyn_lit_len);
-   rd_gen_lengths(s->freq_dist, 30, 15, s->dyn_dist_len);
+   rd_gen_lengths(s, s->freq_lit, 286, 15, s->dyn_lit_len);
+   rd_gen_lengths(s, s->freq_dist, 30, 15, s->dyn_dist_len);
 
    /* hlit: number of lit/len codes (257..286); hdist: dist codes (1..30) */
    maxlit = 285;
@@ -2372,7 +3063,7 @@ static uint32_t rd_build_dynamic(struct rdeflate *s)
    rd_codes_from_lengths(s->dyn_dist_len, 30, s->dyn_dist_code);
 
    rd_rle_lengths(s, cl_freq);
-   rd_gen_lengths(cl_freq, 19, 7, s->dyn_cl_len);
+   rd_gen_lengths(s, cl_freq, 19, 7, s->dyn_cl_len);
    rd_codes_from_lengths(s->dyn_cl_len, 19, s->dyn_cl_code);
 
    /* hclen: number of CL code lengths present (in clc_order), min 4 */
@@ -2513,10 +3204,20 @@ void *rdeflate_new(int level, int window_bits)
    if (!s)
       return NULL;
    s->level   = level;
-   s->wrapped = (window_bits >= 0);
+   /* Same window_bits convention as the decoder: >= 16 selects gzip.
+    * Auto-detect has no meaning when writing, so it is treated as gzip -
+    * the container a caller passing 47 to zlib would have got. */
+   s->wrap    = rinf_wrap_from_bits(window_bits);
+   if (s->wrap == RINF_WRAP_AUTO)
+      s->wrap = RINF_WRAP_GZIP;
+   s->wrapped = (s->wrap != RINF_WRAP_RAW);
+   s->crc     = encoding_crc32(0, NULL, 0);
+   s->total_in = 0;
    s->adler   = 1;
-   rd_init_code_tables();
    rd_set_level(s);
+#if defined(RD_CRC32_HASH_RUNTIME)
+   s->use_crc_hash = (cpu_features_get() & RETRO_SIMD_SSE42) ? 1 : 0;
+#endif
    /* head[]/prev[] need no initialisation: calloc's zeroes already
     * mean "empty chain" (see rd_insert). */
    return s;
@@ -2568,8 +3269,21 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
    size_t in_start    = s->in_pos;
    size_t out_start   = s->out_pos;
 
-   /* 0) zlib wrapper header (CMF/FLG) once, at stream start */
-   if (s->wrapped && !s->header_done)
+   /* 0) container header once, at stream start */
+   if (s->wrap == RINF_WRAP_GZIP && !s->header_done)
+   {
+      /* RFC 1952: ID1 ID2 CM FLG MTIME[4] XFL OS.  No optional fields,
+       * no mtime (0 means "not available"), OS 255 "unknown" - the same
+       * minimal header zlib emits when it is not given a gz_header. */
+      static const uint8_t gz_hdr[10] =
+         { 0x1f, 0x8b, 0x08, 0x00, 0, 0, 0, 0, 0x00, 0xff };
+      if (s->out_pos + sizeof(gz_hdr) > s->out_size)
+         goto suspend;
+      memcpy(s->out + s->out_pos, gz_hdr, sizeof(gz_hdr));
+      s->out_pos    += sizeof(gz_hdr);
+      s->header_done = 1;
+   }
+   if (s->wrap == RINF_WRAP_ZLIB && !s->header_done)
    {
       /* CM=8 (deflate), CINFO=7 (32K window) -> CMF=0x78; FLG chosen so that
        * (CMF*256+FLG) % 31 == 0 and no preset dict. 0x78 0x9C is the common
@@ -2589,8 +3303,13 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
       if (s->win_len + n > sizeof(s->win))
          n = sizeof(s->win) - s->win_len;   
       memcpy(s->win + s->win_len, s->in + s->in_pos, n);
-      if (s->wrapped)
+      if (s->wrap == RINF_WRAP_ZLIB)
          s->adler = rd_adler32_update(s->adler, s->in + s->in_pos, n);
+      else if (s->wrap == RINF_WRAP_GZIP)
+      {
+         s->crc      = encoding_crc32(s->crc, s->in + s->in_pos, n);
+         s->total_in += (uint32_t)n;
+      }
       s->win_len += (uint32_t)n;
       s->in_pos  += n;
    }
@@ -2652,8 +3371,13 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
             if (s->win_len + n > sizeof(s->win))
                n = sizeof(s->win) - s->win_len;
             memcpy(s->win + s->win_len, s->in + s->in_pos, n);
-            if (s->wrapped)
+            if (s->wrap == RINF_WRAP_ZLIB)
                s->adler = rd_adler32_update(s->adler, s->in + s->in_pos, n);
+            else if (s->wrap == RINF_WRAP_GZIP)
+            {
+               s->crc      = encoding_crc32(s->crc, s->in + s->in_pos, n);
+               s->total_in += (uint32_t)n;
+            }
             s->win_len += (uint32_t)n;
             s->in_pos  += n;
          }
@@ -2695,7 +3419,7 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
    }
    if (s->emit_phase == 11)
    {
-      if (s->wrapped)
+      if (s->wrap == RINF_WRAP_ZLIB)
       {
          while (s->trailer_cursor < 4)
          {
@@ -2703,6 +3427,19 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
             if (s->out_pos >= s->out_size)
                goto suspend;
             s->out[s->out_pos++] = (uint8_t)byte;
+            s->trailer_cursor++;
+         }
+      }
+      else if (s->wrap == RINF_WRAP_GZIP)
+      {
+         /* crc32 then ISIZE, both little-endian, unlike zlib's adler */
+         while (s->trailer_cursor < 8)
+         {
+            const uint32_t v = (s->trailer_cursor < 4) ? s->crc : s->total_in;
+            const int      i = s->trailer_cursor & 3;
+            if (s->out_pos >= s->out_size)
+               goto suspend;
+            s->out[s->out_pos++] = (uint8_t)((v >> (8 * i)) & 0xff);
             s->trailer_cursor++;
          }
       }

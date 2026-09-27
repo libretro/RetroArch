@@ -42,6 +42,7 @@ typedef struct db_info_handle
    database_info_list_t *db_list;
    char *path;
    char *query;   /* NULL = unfiltered */
+   unsigned generation;   /* stale-completion guard */
 } db_info_handle_t;
 
 static database_info_list_t *db_info_cache_list = NULL;
@@ -52,13 +53,22 @@ static char *db_info_cache_query                = NULL;
  * threaded queue has a window where the worker has finished (task
  * no longer in the running list) but the callback has not yet
  * executed. A find-based in-progress check reports false there,
- * which lets a displaylist rebuild push a duplicate scan - and,
- * worse, lets menu_dbinfo_wait_for_task() return during teardown
- * before the callback has run, so the callback then repopulates
- * the cache after menu deinit freed it. The flag transitions
- * strictly on the main thread (push / callback), so no such
- * window exists. */
+ * which lets a displaylist rebuild push a duplicate scan. The flag
+ * transitions strictly on the main thread (push / callback), so no
+ * such window exists. (Teardown no longer depends on this flag at
+ * all: it abandons the scan outright - see
+ * menu_dbinfo_cancel_task.) */
 static bool  db_info_task_pending               = false;
+
+/* Bumped whenever an in-flight scan is abandoned (menu teardown).
+ * A completion carrying an older generation hands nothing to the
+ * cache: the menu it was scanning for is gone.  This is what lets
+ * teardown abandon the task rather than block the main thread until
+ * the scan finishes - the hazard the pending flag above describes
+ * (a callback repopulating the cache after deinit freed it) is
+ * closed by the generation, not by waiting. */
+static unsigned db_info_generation;
+static retro_task_t *db_info_task;
 
 static bool db_info_key_equal(const char *a, const char *b)
 {
@@ -173,10 +183,24 @@ static void cb_task_database_info(
    if (!task)
       return;
 
-   /* The pipeline is free again in every case below. */
-   db_info_task_pending = false;
+   /* The pipeline is free again - but only if this callback belongs
+    * to the scan currently occupying it.  A stale completion
+    * arriving after teardown pushed a newer scan must not clear the
+    * newer scan's pending flag, which would let a second concurrent
+    * scan start and fight over the single cache slot. */
+   if (db_info_task == task)
+   {
+      db_info_task         = NULL;
+      db_info_task_pending = false;
+   }
 
    if (!(db = (db_info_handle_t*)task->state))
+      return;
+
+   /* A scan that outlived the menu it was for: hand nothing over.
+    * The result stays on the handle and the task's own cleanup
+    * frees it. */
+   if (db->generation != db_info_generation)
       return;
 
    /* Hand the result (which may be NULL on scan failure - cached
@@ -208,9 +232,25 @@ bool menu_dbinfo_load_in_progress(void *data)
    return db_info_task_pending;
 }
 
-void menu_dbinfo_wait_for_task(void)
+/* Abandon any in-flight database info scan.
+ *
+ * Replaces waiting for it: the handler builds its result into the
+ * task's own handle and touches no menu state, so nothing needs the
+ * worker to have stopped before the cache is freed.  The generation
+ * bump makes a completion already in flight hand nothing over. */
+void menu_dbinfo_cancel_task(void)
 {
-   task_queue_wait(menu_dbinfo_load_in_progress, NULL);
+   db_info_generation++;
+
+   if (db_info_task)
+   {
+      task_set_flags(db_info_task, RETRO_TASK_FLG_CANCELLED, true);
+      db_info_task = NULL;
+   }
+
+   /* The pipeline is free again: a later request must be able to
+    * push a fresh scan. */
+   db_info_task_pending = false;
 }
 
 bool task_push_dbinfo_load(const char *path, const char *query)
@@ -232,9 +272,10 @@ bool task_push_dbinfo_load(const char *path, const char *query)
    if (db_info_task_pending)
       goto error;
 
-   db->db_list = NULL;
-   db->path    = strdup(path);
-   db->query   = (query && *query) ? strdup(query) : NULL;
+   db->db_list    = NULL;
+   db->path       = strdup(path);
+   db->query      = (query && *query) ? strdup(query) : NULL;
+   db->generation = db_info_generation;
 
    /* Silent task: no title, no notifications */
    task->handler  = task_database_info_handler;
@@ -246,6 +287,7 @@ bool task_push_dbinfo_load(const char *path, const char *query)
    task->flags   |= RETRO_TASK_FLG_MUTE;
 
    db_info_task_pending = true;
+   db_info_task         = task;
    task_queue_push(task);
 
    return true;

@@ -1,0 +1,38 @@
+# Regression test for the duplicate-download suppression key in
+# tasks/task_http.c and tasks/task_http_emscripten.c.  Pure logic with
+# behavioural copies of both key shapes, so it builds and runs
+# natively.
+#
+# NAME_MAX_LENGTH defaults to 256; override to cover the small-path
+# platforms:
+#
+#   make -f Makefile.dedup check
+#   make -f Makefile.dedup check SANITIZER=address
+#   make -f Makefile.dedup check CFLAGS_EXTRA=-DNAME_MAX_LENGTH=128
+
+TARGET  := http_url_dedup_test
+SOURCES := http_url_dedup_test.c
+OBJS    := $(SOURCES:.c=.o)
+
+CFLAGS  += -Wall -std=gnu99 -g -O0 $(CFLAGS_EXTRA)
+
+ifneq ($(SANITIZER),)
+   CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
+   LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
+
+all: $(TARGET)
+
+%.o: %.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(TARGET): $(OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+check: $(TARGET)
+	./$(TARGET)
+
+clean:
+	rm -f $(TARGET) $(OBJS)
+
+.PHONY: all check clean

@@ -14,12 +14,14 @@ S_FLOAT(video_aspect_ratio, VIDEO_ASPECT_RATIO,
       DEFAULT_ASPECT_RATIO, "%.2f", SD_FLAG_NONE, SDESC_FLG_HAS_RANGE | SDESC_FLG_ENFORCE_MIN, CMD_EVENT_VIDEO_SET_ASPECT_RATIO, 0.1, 16.0, 0.01, NULL, NULL,
       "Config Aspect Ratio",
       "Floating point value for video aspect ratio (width / height).")
-S_INT_AT(offsetof(settings_t, video_vp_custom.x), VIDEO_VIEWPORT_CUSTOM_X,
+S_INT_AT(offsetof(settings_t, video_vp_custom.pos)
+      | SDESC_OFF_HALF_HI, VIDEO_VIEWPORT_CUSTOM_X,
       "video_viewport_custom_x",
       0, SD_FLAG_ALLOW_INPUT, SDESC_RANGE_MINMAX, CMD_EVENT_VIDEO_APPLY_STATE_CHANGES, -9999, 9999, 1, -9999, NULL, NULL,
       "Custom Aspect Ratio (X Position)",
       "Custom viewport offset used for defining the X-axis position of the viewport.")
-S_INT_AT(offsetof(settings_t, video_vp_custom.y), VIDEO_VIEWPORT_CUSTOM_Y,
+S_INT_AT(offsetof(settings_t, video_vp_custom.pos)
+      | SDESC_OFF_HALF_LO, VIDEO_VIEWPORT_CUSTOM_Y,
       "video_viewport_custom_y",
       0, SD_FLAG_ALLOW_INPUT, SDESC_RANGE_MINMAX, CMD_EVENT_VIDEO_APPLY_STATE_CHANGES, -9999, 9999, 1, -9999, NULL, NULL,
       "Custom Aspect Ratio (Y Position)",

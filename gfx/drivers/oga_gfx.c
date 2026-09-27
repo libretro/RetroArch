@@ -18,14 +18,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <errno.h>
 
 #include <fcntl.h>
+#include <unistd.h>
+#include <sys/mman.h>
 #include <rga/RgaApi.h>
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 #include <drm/drm_fourcc.h>
 
 #include <libretro.h>
+
+#include <compat/strl.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -38,6 +43,7 @@
 #include "frontend/frontend_driver.h"
 
 #include "../font_driver.h"
+#include "../video_driver.h"
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
@@ -317,14 +323,18 @@ static void oga_free(void *data)
    if (!vid)
       return;
 
-   if (vid->font)
-   {
+   if (vid->font_driver && vid->font)
       vid->font_driver->free(vid->font);
-      vid->font_driver = NULL;
-   }
+   vid->font_driver = NULL;
+   vid->font        = NULL;
 
    for (i = 0; i < NUM_PAGES; ++i)
       oga_destroy_framebuf(vid->pages[i]);
+
+   /* frame_surface->map is handed to the core through
+    * oga_get_current_software_framebuffer, so the cached frame can
+    * point straight into it. Retire before tearing it down. */
+   video_driver_cached_frame_retire();
 
    oga_destroy_surface(vid->frame_surface);
    oga_destroy_surface(vid->msg_surface);
@@ -345,8 +355,6 @@ static void *oga_init(const video_info_t *video,
    video_driver_state_t *video_st       = video_state_get_ptr();
    struct retro_system_av_info *av_info = &video_st->av_info;
    struct retro_game_geometry  *geom    = &av_info->geometry;
-   int aw                               = ALIGN(geom->base_width, 32);
-   int ah                               = ALIGN(geom->base_height, 32);
 
    frontend_driver_install_signal_handler();
 
@@ -398,11 +406,25 @@ static void *oga_init(const video_info_t *video,
    vid->msg_surface   = oga_create_surface(vid->fd, vid->drm_width, vid->drm_height, RK_FORMAT_BGRA_8888);
    vid->last_msg[0]   = 0;
 
-   /* bitmap only for now */
    if (settings->bools.video_font_enable)
    {
-      vid->font_driver = &bitmap_font_renderer;
-      vid->font        = vid->font_driver->init("", settings->floats.video_font_size);
+      /* Through font_renderer_create_default(), as every other driver
+       * does: it resolves the path, reads the file and picks a
+       * backend.  Reaching for &stb_font_renderer and calling its
+       * init() by hand meant this driver had to track that function's
+       * signature, and it stopped doing so - the call passed three
+       * arguments to a five-argument prototype and had not compiled
+       * for some time.  A NULL path still ends at stb's built-in
+       * glyphs when no font file is configured or found, which is the
+       * behaviour that was wanted here. */
+      if (!font_renderer_create_default(&vid->font_driver, &vid->font,
+               *settings->paths.path_font ? settings->paths.path_font : NULL,
+               (unsigned)settings->floats.video_font_size,
+               FONT_ATLAS_FORMAT_A8))
+      {
+         vid->font_driver = NULL;
+         vid->font        = NULL;
+      }
    }
 
    for (i = 0; i < NUM_PAGES; ++i)
@@ -542,10 +564,12 @@ static void oga_calc_bounds(oga_rect_t* r, int dw, int dh, int sw, int sh, float
    }
 }
 
-static bool oga_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count,
+static bool oga_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    oga_video_t *vid            = (oga_video_t*)data;
    oga_framebuf_t* page        = vid->pages[vid->cur_page];
    oga_surface_t *page_surface = page->surface;
@@ -593,14 +617,26 @@ static bool oga_frame(void *data, const void *frame, unsigned width,
       unsigned int blend = video_info->runloop_is_paused ? 0x800105 : 0;
       oga_rect_t r;
 
+      /* The surface holds the geometry declared at init. A core is
+       * free to hand over more than it declared, so take what fits:
+       * the rows the surface has, and the bytes one of its rows
+       * holds. Both the copy below and the blit that follows read and
+       * write this allocation. */
+      if (width  > (unsigned)vid->frame_surface->width)
+         width  = (unsigned)vid->frame_surface->width;
+      if (height > (unsigned)vid->frame_surface->height)
+         height = (unsigned)vid->frame_surface->height;
+
       if (src != dst)
       {
-         int dst_pitch = vid->frame_surface->pitch;
-         int yy = height;
+         int    dst_pitch = vid->frame_surface->pitch;
+         size_t row       = (pitch < (unsigned)dst_pitch)
+            ? (size_t)pitch : (size_t)dst_pitch;
+         int    yy        = (int)height;
 
          while (yy > 0)
          {
-             memcpy(dst, src, pitch);
+             memcpy(dst, src, row);
              src += pitch;
              dst += dst_pitch;
              --yy;
@@ -628,7 +664,7 @@ static bool oga_frame(void *data, const void *frame, unsigned width,
 }
 
 static void oga_set_texture_frame(void *data, const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    oga_video_t *vid             = (oga_video_t*)data;
    unsigned i, j;
@@ -637,22 +673,22 @@ static void oga_set_texture_frame(void *data, const void *frame, bool rgb32,
     * We have to go on a pixel format conversion adventure
     * for now, until we can convince RGUI to output
     * in an 8888 format. */
-   unsigned int src_pitch        = width * 2;
-   unsigned int dst_pitch        = width * 4;
+   unsigned int src_pitch        = VIDEO_SCALE_W(dims) * 2;
+   unsigned int dst_pitch        = VIDEO_SCALE_W(dims) * 4;
    char *frame_output;
 
-   if (     vid->menu_surface->width  != (int)width
-         || vid->menu_surface->height != (int)height)
+   if (     vid->menu_surface->width  != (int)VIDEO_SCALE_W(dims)
+         || vid->menu_surface->height != (int)VIDEO_SCALE_H(dims))
    {
       oga_destroy_surface(vid->menu_surface);
-      vid->menu_surface = oga_create_surface(vid->fd, width, height,
+      vid->menu_surface = oga_create_surface(vid->fd, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
             RK_FORMAT_BGRA_8888);
    }
 
    /* The output pixel array with the converted pixels. */
    frame_output = (char*)vid->menu_surface->map;
 
-   for (i = 0; i < height; i++)
+   for (i = 0; i < VIDEO_SCALE_H(dims); i++)
    {
       const uint16_t *src_row = (const uint16_t*)frame + (src_pitch / 2 * i);
       uint32_t *dst_row       = (uint32_t*)(void*)
@@ -690,9 +726,9 @@ static void oga_viewport_info(void *data, struct video_viewport *vp)
    if (unlikely(!vid))
       return;
 
-   vp->x = vp->y = 0;
-   vp->width = vp->full_width = vid->mode.vdisplay;
-   vp->height = vp->full_height = vid->mode.hdisplay;
+   vp->pos = VIDEO_POS_PACK(0, 0);
+   vp->dims  = vp->full_dims  = VIDEO_SCALE_PACK(vid->mode.vdisplay,
+         vid->mode.hdisplay);
 }
 
 static bool oga_set_shader(void *data, enum rarch_shader_type type, const char *path)
@@ -729,7 +765,15 @@ static void oga_set_rotation(void *data, unsigned rotation)
 static bool oga_get_current_software_framebuffer(void *data, struct retro_framebuffer *framebuffer)
 {
    oga_video_t *vid = (oga_video_t*)data;
-   if (!vid)
+   if (!vid || !vid->frame_surface)
+      return false;
+
+   /* The surface is allocated once, to the geometry the core declared
+    * at init. A core that asks for more than that -- after raising its
+    * geometry, say -- gets nothing rather than a buffer it would
+    * render past the end of. */
+   if (     (int)framebuffer->width  > vid->frame_surface->width
+         || (int)framebuffer->height > vid->frame_surface->height)
       return false;
 
    framebuffer->format = vid->frame_surface->rk_format == RK_FORMAT_BGRA_8888 ?
@@ -789,7 +833,6 @@ video_driver_t video_oga = {
    oga_set_rotation,
    oga_viewport_info,
    NULL, /* read_viewport */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL, /* get_overlay_interface */
 #endif

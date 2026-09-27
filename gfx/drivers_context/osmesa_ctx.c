@@ -30,6 +30,8 @@
 #include <GL/osmesa.h>
 
 #include "../../configuration.h"
+#include "../../input/input_driver.h"
+#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 #if (OSMESA_MAJOR_VERSION * 1000 + OSMESA_MINOR_VERSION) >= 11002
@@ -62,7 +64,7 @@ typedef struct gfx_osmesa_ctx_data
 
 static void osmesa_fifo_open(gfx_ctx_osmesa_data_t *osmesa)
 {
-   struct sockaddr_un saun, fsaun;
+   struct sockaddr_un saun;
 
    osmesa->socket = socket(AF_UNIX, SOCK_STREAM, 0);
    osmesa->client = -1;
@@ -79,8 +81,8 @@ static void osmesa_fifo_open(gfx_ctx_osmesa_data_t *osmesa)
 
    unlink(OSMESA_FIFO_PATH);
 
-   if (bind(osmesa->socket,
-            &saun, sizeof(saun.sun_family) + sizeof(saun.sun_path)) < 0)
+   if (bind(osmesa->socket, (struct sockaddr*)&saun,
+            sizeof(saun.sun_family) + sizeof(saun.sun_path)) < 0)
    {
       perror("[osmesa] bind()");
       close(osmesa->socket);
@@ -236,9 +238,11 @@ static bool osmesa_ctx_bind_api(void *data,
 static void osmesa_ctx_swap_interval(void *data, int interval) { }
 
 static bool osmesa_ctx_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
    uint8_t               *screen = osmesa->screen;
    bool             size_changed = (width * height) != (osmesa->width * osmesa->height);
@@ -272,24 +276,21 @@ static bool osmesa_ctx_set_video_mode(void *data,
 }
 
 static void osmesa_ctx_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
 
    if (!osmesa)
       return;
 
-   *width  = osmesa->width;
-   *height = osmesa->height;
+   *dims = VIDEO_SCALE_PACK(osmesa->width, osmesa->height);
 }
 
 static void osmesa_ctx_check_window(void *data, bool *quit,
-      bool *resize,unsigned *width,
-      unsigned *height)
+      bool *resize,unsigned *dims)
 {
    gfx_ctx_osmesa_data_t *osmesa = (gfx_ctx_osmesa_data_t*)data;
-   *width                        = osmesa->width;
-   *height                       = osmesa->height;
+   *dims                        = VIDEO_SCALE_PACK(osmesa->width, osmesa->height);
    *resize                       = false;
    *quit                         = false;
 }

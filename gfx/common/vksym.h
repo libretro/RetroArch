@@ -47,7 +47,7 @@
 #define VK_USE_PLATFORM_XLIB_KHR
 #endif
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
 #define VK_USE_PLATFORM_METAL_EXT
 #endif
 

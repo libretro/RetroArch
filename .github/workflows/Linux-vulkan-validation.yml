@@ -1,0 +1,440 @@
+name: CI Vulkan/GL/D3D11 [idle waits + driver harness]
+
+# Two checks on the Vulkan driver, both born from the same bug: a
+# vkQueuePresentKHR under queue_lock waiting for GPU work that a
+# hardware core could only submit through lock_queue (parallel-GS /
+# Granite stopped the frontend that way). Every vkQueueWaitIdle and
+# vkDeviceWaitIdle in the driver had the same shape - a whole-queue
+# drain, under the lock the core needs, on shader change, overlay
+# load, font free and swapchain resize - and all of them were replaced
+# by waits on the driver's own fences.
+#
+# 1. Idle-wait check: tools/vulkan_idle_wait_check.py fails on any
+#    vkQueueWaitIdle/vkDeviceWaitIdle in the Vulkan code that is not
+#    on tools/vulkan_idle_wait_allow.list, and on a stale entry.
+#
+# 2. Validation harness: the threaded-video harness (real frontend,
+#    real driver, only main() replaced) run on the Vulkan driver over
+#    lavapipe under Xvfb, with the tree built VULKAN_DEBUG=1 so
+#    VK_LAYER_KHRONOS_validation is loaded. The lanes exercise driver
+#    reinit under the wrapper, geometry changes, async texture loads,
+#    font marshalling, present repeat and resize; the layer turns a
+#    texture destroyed while a frame still samples it, a barrier
+#    inside a render pass, or an object leaked at device teardown into
+#    a logged error, and the check-vulkan target fails on any. Those
+#    three were the pre-existing findings the lane produced on its
+#    first run.
+#
+# 3. TSan harness: the same lanes on the same driver, built with
+#    -fsanitize=thread. The null-driver TSan job never runs driver
+#    code on the video thread, so a plain field shared between the
+#    frame thread and a driver's frame (the shader chains'
+#    FrameTimeDelta was one) only shows up here. The layer and the
+#    ICD are not instrumented and are suppressed; frontend races fail.
+#    An address,undefined build of the same runs beside it, and the
+#    context-only vulkan_validation sample runs on its own.
+#
+# 5. D3D11 harness: the same lanes on the d3d11 driver, on a Windows
+#    runner through MSYS2's MinGW64 build of the tree (no Qt, so main
+#    stays in retroarch.o for the harness to replace) and the software
+#    adapter the runner exposes (Microsoft Basic Render Driver, which
+#    is WARP). The first real-driver coverage the Windows drivers get.
+#
+# 4. GL harness: the same lanes on the gl and glcore drivers over
+#    llvmpipe (LIBGL_ALWAYS_SOFTWARE=1), release and TSan. A GL
+#    context is owned by one thread at a time, so anything the
+#    frontend does against the driver from the wrong thread is an X
+#    BadAccess here rather than a corruption elsewhere; the first run
+#    caught the OSD font rebuild doing exactly that.
+#
+# 6. Teardown-order check: tools/vulkan_teardown_order_check.py holds
+#    the order the driver retires a frame's objects in - command
+#    pools, then descriptor pools, then the pipelines that own the set
+#    layout - and the rule that destroying a descriptor pool is what
+#    frees its sets. The other order is legal Vulkan and the
+#    validation layer passes it, so the harness lanes above cannot see
+#    it; a driver that walks its own back references as a pool is
+#    destroyed faults inside vkDestroyDescriptorPool at exit, which is
+#    what MoltenVK did.
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  vulkan-idle-waits:
+    name: Vulkan idle-wait allowlist
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Checker self-test
+        shell: bash
+        run: |
+          set -eu
+          python3 tools/vulkan_idle_wait_check.py --selftest
+
+      - name: Tree check
+        shell: bash
+        run: |
+          set -eu
+          python3 tools/vulkan_idle_wait_check.py
+
+  vulkan-teardown-order:
+    name: Vulkan teardown order
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Checker self-test
+        shell: bash
+        run: |
+          set -eu
+          python3 tools/vulkan_teardown_order_check.py --selftest
+
+      - name: Tree check
+        shell: bash
+        run: |
+          set -eu
+          python3 tools/vulkan_teardown_order_check.py
+
+  vulkan-validation-harness:
+    name: Threaded-video harness on Vulkan (lavapipe, validation layer)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 8
+        run: |
+          pkgs="build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev"
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure
+        # Non-Qt, as the harness requires (with Qt, main() lives in
+        # ui_qt.o). Everything else at its default so the Vulkan driver
+        # is built with every path a release build has.
+        run: |
+          ./configure --disable-qt
+          grep -q '^HAVE_VULKAN = 1' config.mk
+
+      - name: Build with VULKAN_DEBUG=1
+        # VULKAN_DEBUG enables VK_LAYER_KHRONOS_validation and the
+        # debug messenger that reports through RARCH_ERR. It is a
+        # tree-wide define: vulkan_context_t carries a member under it,
+        # so every TU that includes vulkan_common.h must see it.
+        # GFX_INSTRUMENT counts what the image and surface paths do -
+        # uploads, in-place updates, allocating posts, copies - so the
+        # harness lanes below can hold the budgets the paths are
+        # written to and print what a run cost. This is the one leg
+        # that carries it: under a sanitizer the timings mean nothing,
+        # and the counters change no behaviour.
+        run: |
+          make -j$(getconf _NPROCESSORS_ONLN) VULKAN_DEBUG=1 GFX_INSTRUMENT=1
+          test -x retroarch
+
+      - name: Run the harness on Vulkan under the validation layer
+        shell: bash
+        run: |
+          set -eu
+          Xvfb :99 -screen 0 640x480x24 &
+          for i in $(seq 1 15); do
+            if DISPLAY=:99 xdpyinfo >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          export DISPLAY=:99
+          export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json
+          # The harness build reuses the tree's own compile and link
+          # lines, so it has to name the same build: VK_DEBUG=1. Its
+          # surface and overlay-page lanes run the driver's real
+          # in-place texture update and its borrowed-texture overlay
+          # page here, under the validation layer, and with the tree
+          # built GFX_INSTRUMENT=1 they print their baselines and hold
+          # the budgets: one texture per streaming surface, no
+          # allocation per post, no copy, a 4K submit that stays a
+          # descriptor hand-off.
+          SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=2 make -C samples/gfx/threaded_video check-vulkan
+          make -C samples/gfx/threaded_video clean
+
+  vulkan-validation-sample:
+    name: vulkan_validation sample (lavapipe, validation layer)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 8
+        run: |
+          pkgs="build-essential libx11-dev libx11-xcb-dev libxcb1-dev xvfb x11-utils libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools"
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Build and run
+        shell: bash
+        run: |
+          set -eu
+          # The context-only sample: vulkan_common.c against the real
+          # loader, brought up and torn down under the validation
+          # layer, and every memory type it advertises selected. It
+          # exits 77 with no display or no device, and that is a pass.
+          Xvfb :99 -screen 0 640x480x24 &
+          for i in $(seq 1 15); do
+            if DISPLAY=:99 xdpyinfo >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          export DISPLAY=:99
+          make -C samples/gfx/vulkan_validation
+          rc=0
+          DISPLAY=:99 VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json \
+            samples/gfx/vulkan_validation/vulkan_validation_test || rc=$?
+          make -C samples/gfx/vulkan_validation clean
+          if [ "$rc" = 77 ]; then echo "skipped: no device"; exit 0; fi
+          exit $rc
+
+  vulkan-asan-harness:
+    name: Threaded-video harness on Vulkan under ASan+UBSan (lavapipe)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 8
+        run: |
+          pkgs="build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev"
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure
+        run: |
+          ./configure --disable-qt
+          grep -q '^HAVE_VULKAN = 1' config.mk
+
+      - name: Build with DEBUG=1, VULKAN_DEBUG=1 and -fsanitize=address,undefined
+        run: |
+          make -j$(getconf _NPROCESSORS_ONLN) SANITIZER=address,undefined DEBUG=1 VULKAN_DEBUG=1
+          test -x retroarch
+
+      - name: Run the harness on Vulkan under ASan+UBSan
+        shell: bash
+        run: |
+          set -eu
+          Xvfb :99 -screen 0 640x480x24 &
+          for i in $(seq 1 15); do
+            if DISPLAY=:99 xdpyinfo >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          export DISPLAY=:99
+          export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json
+          SAN=address VK_DEBUG=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
+          make -C samples/gfx/threaded_video clean
+
+  vulkan-tsan-harness:
+    name: Threaded-video harness on Vulkan under TSan (lavapipe)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 8
+        run: |
+          pkgs="build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev"
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure
+        run: |
+          ./configure --disable-qt
+          grep -q '^HAVE_VULKAN = 1' config.mk
+
+      - name: Build with DEBUG=1, VULKAN_DEBUG=1 and -fsanitize=thread
+        run: |
+          make -j$(getconf _NPROCESSORS_ONLN) SANITIZER=thread DEBUG=1 VULKAN_DEBUG=1
+          test -x retroarch
+
+      - name: Run the harness on Vulkan under TSan
+        shell: bash
+        run: |
+          set -eu
+          Xvfb :99 -screen 0 640x480x24 &
+          for i in $(seq 1 15); do
+            if DISPLAY=:99 xdpyinfo >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          export DISPLAY=:99
+          export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json
+          SAN=thread VK_DEBUG=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
+          make -C samples/gfx/threaded_video clean
+
+  gl-harness:
+    name: Threaded-video harness on ${{ matrix.driver }} (llvmpipe, ${{ matrix.san }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        driver: [gl, glcore]
+        san: [none, address, thread]
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 8
+        run: |
+          pkgs="build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libgl-dev libglx-dev libegl-dev libgles-dev libgl1-mesa-dri libglx-mesa0 mesa-utils libasound2-dev"
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure
+        run: |
+          ./configure --disable-qt
+          grep -q '^HAVE_OPENGL = 1' config.mk
+          grep -q '^HAVE_OPENGL_CORE = 1' config.mk
+
+      - name: Build
+        run: |
+          case "${{ matrix.san }}" in
+            thread)  make -j$(getconf _NPROCESSORS_ONLN) SANITIZER=thread DEBUG=1 ;;
+            address) make -j$(getconf _NPROCESSORS_ONLN) SANITIZER=address,undefined DEBUG=1 ;;
+            *)       make -j$(getconf _NPROCESSORS_ONLN) ;;
+          esac
+          test -x retroarch
+
+      - name: Run the harness on ${{ matrix.driver }}
+        shell: bash
+        run: |
+          set -eu
+          Xvfb :99 -screen 0 640x480x24 &
+          for i in $(seq 1 15); do
+            if DISPLAY=:99 xdpyinfo >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          export DISPLAY=:99
+          export LIBGL_ALWAYS_SOFTWARE=1
+          SAN=${{ matrix.san }} DRIVER=${{ matrix.driver }} CYCLES=1 \
+            make -C samples/gfx/threaded_video check-driver
+          make -C samples/gfx/threaded_video clean
+
+  d3d-harness:
+    name: Threaded-video harness on ${{ matrix.driver }} (WARP, MSYS2 MinGW64)
+    runs-on: windows-latest
+    timeout-minutes: 90
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # d3d12 runs the same lanes on the other explicit-API backend:
+        # its in-place texture update is fence-tagged against the frame
+        # that last copied from the upload buffer, which only a running
+        # driver exercises.
+        driver: [d3d11, d3d12]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: >-
+            base-devel
+            git
+          pacboy: >-
+            cc:p
+            gdb:p
+
+      - name: Configure and build RetroArch (no Qt)
+        shell: msys2 {0}
+        run: |
+          set -eu
+          ./configure --disable-qt
+          grep -q '^HAVE_D3D11 = 1' config.mk
+          grep -q '^HAVE_D3D12 = 1' config.mk
+          make -j"$(nproc)"
+          test -x retroarch.exe
+
+      - name: Run the harness on ${{ matrix.driver }}
+        shell: msys2 {0}
+        run: |
+          set -eu
+          samples/gfx/threaded_video/build.sh
+          SAN=none DRIVER=${{ matrix.driver }} CYCLES=1 GDB=1 make -C samples/gfx/threaded_video check-driver
+          make -C samples/gfx/threaded_video clean

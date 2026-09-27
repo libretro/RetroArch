@@ -32,45 +32,43 @@ NOTE:   String length must be evenly divisible by 16byte (str_len % 16 == 0)
 #include "config.h"
 #endif
 
-#ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
 
 #include "compat.h"
 
-#include <string.h> // CBC mode, for memset
+#include <string.h> /* CBC mode, for memset */
 #include "aes_reference.h"
 
 
 /*****************************************************************************/
 /* Defines:                                                                  */
 /*****************************************************************************/
-// The number of columns comprising a state in AES. This is a constant in AES. Value=4
+/* The number of columns comprising a state in AES. This is a constant in AES. Value=4 */
 #define Nb 4
-// The number of 32 bit words in a key.
+/* The number of 32 bit words in a key. */
 #define Nk 4
-// Key length in bytes [128 bit]
+/* Key length in bytes [128 bit] */
 #define KEYLEN 16
-// The number of rounds in AES Cipher.
+/* The number of rounds in AES Cipher. */
 #define Nr 10
 
-// jcallan@github points out that declaring Multiply as a function
-// reduces code size considerably with the Keil ARM compiler.
-// See this link for more information: https://github.com/kokke/tiny-AES128-C/pull/3
+/* jcallan@github points out that declaring Multiply as a function */
+/* reduces code size considerably with the Keil ARM compiler. */
+/* See this link for more information: https://github.com/kokke/tiny-AES128-C/pull/3 */
 #ifndef MULTIPLY_AS_A_FUNCTION
   #define MULTIPLY_AS_A_FUNCTION 0
 #endif
 
 
-// state - array holding the intermediate results during decryption.
+/* state - array holding the intermediate results during decryption. */
 typedef uint8_t smb2_state_t[4][4];
 
 
-// The lookup-tables are marked const so they can be placed in read-only storage instead of RAM
-// The numbers below can be computed dynamically trading ROM for RAM -
-// This can be useful in (embedded) bootloader applications, where ROM is often limited.
+/* The lookup-tables are marked const so they can be placed in read-only storage instead of RAM */
+/* The numbers below can be computed dynamically trading ROM for RAM - */
+/* This can be useful in (embedded) bootloader applications, where ROM is often limited. */
 static const uint8_t smb2_sbox[256] =   {
-  //0     1    2      3     4    5     6     7      8    9     A      B    C     D     E     F
+  /*0     1    2      3     4    5     6     7      8    9     A      B    C     D     E     F */
   0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
   0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
   0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15,
@@ -107,9 +105,9 @@ static const uint8_t smb2_rsbox[256] =
   0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d };
 
 
-// The round constant word array, smb2_Rcon[i], contains the values given by
-// x to th e power (i-1) being powers of x (x is denoted as {02}) in the field GF(2^8)
-// Note that i starts at 1, not 0).
+/* The round constant word array, smb2_Rcon[i], contains the values given by */
+/* x to th e power (i-1) being powers of x (x is denoted as {02}) in the field GF(2^8) */
+/* Note that i starts at 1, not 0). */
 static const uint8_t smb2_Rcon[255] = {
   0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a,
   0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39,
@@ -142,13 +140,13 @@ static uint8_t smb2_getSBoxInvert(uint8_t num)
   return smb2_rsbox[num];
 }
 
-// This function produces Nb(Nr+1) round keys. The round keys are used in each round to decrypt the states.
+/* This function produces Nb(Nr+1) round keys. The round keys are used in each round to decrypt the states. */
 static void smb2_KeyExpansion(const uint8_t* Key, uint8_t* roundKey)
 {
   uint32_t i, j, k;
-  uint8_t tempa[4]; // Used for the column/row operations
+  uint8_t tempa[4]; /* Used for the column/row operations */
 
-  // The first round key is the key itself.
+  /* The first round key is the key itself. */
   for(i = 0; i < Nk; ++i)
   {
     roundKey[(i * 4) + 0] = Key[(i * 4) + 0];
@@ -157,7 +155,7 @@ static void smb2_KeyExpansion(const uint8_t* Key, uint8_t* roundKey)
     roundKey[(i * 4) + 3] = Key[(i * 4) + 3];
   }
 
-  // All other round keys are found from the previous round keys.
+  /* All other round keys are found from the previous round keys. */
   for(; (i < (Nb * (Nr + 1))); ++i)
   {
     for(j = 0; j < 4; ++j)
@@ -166,10 +164,10 @@ static void smb2_KeyExpansion(const uint8_t* Key, uint8_t* roundKey)
     }
     if (i % Nk == 0)
     {
-      // This function rotates the 4 bytes in a word to the left once.
-      // [a0,a1,a2,a3] becomes [a1,a2,a3,a0]
+      /* This function rotates the 4 bytes in a word to the left once. */
+      /* [a0,a1,a2,a3] becomes [a1,a2,a3,a0] */
 
-      // Function RotWord()
+      /* Function RotWord() */
       {
         k = tempa[0];
         tempa[0] = tempa[1];
@@ -178,10 +176,10 @@ static void smb2_KeyExpansion(const uint8_t* Key, uint8_t* roundKey)
         tempa[3] = k;
       }
 
-      // SubWord() is a function that takes a four-byte input word and
-      // applies the S-box to each of the four bytes to produce an output word.
+      /* SubWord() is a function that takes a four-byte input word and */
+      /* applies the S-box to each of the four bytes to produce an output word. */
 
-      // Function Subword()
+      /* Function Subword() */
       {
         tempa[0] = smb2_getSBoxValue(tempa[0]);
         tempa[1] = smb2_getSBoxValue(tempa[1]);
@@ -193,7 +191,7 @@ static void smb2_KeyExpansion(const uint8_t* Key, uint8_t* roundKey)
     }
     else if (Nk > 6 && i % Nk == 4)
     {
-      // Function Subword()
+      /* Function Subword() */
       {
         tempa[0] = smb2_getSBoxValue(tempa[0]);
         tempa[1] = smb2_getSBoxValue(tempa[1]);
@@ -208,8 +206,8 @@ static void smb2_KeyExpansion(const uint8_t* Key, uint8_t* roundKey)
   }
 }
 
-// This function adds the round key to state.
-// The round key is added to the state by an XOR function.
+/* This function adds the round key to state. */
+/* The round key is added to the state by an XOR function. */
 static void smb2_AddRoundKey(uint8_t* roundKey, smb2_state_t* state, uint8_t round)
 {
   uint8_t i,j;
@@ -222,8 +220,8 @@ static void smb2_AddRoundKey(uint8_t* roundKey, smb2_state_t* state, uint8_t rou
   }
 }
 
-// The smb2_SubBytes Function Substitutes the values in the
-// state matrix with values in an S-box.
+/* The smb2_SubBytes Function Substitutes the values in the */
+/* state matrix with values in an S-box. */
 static void smb2_SubBytes(smb2_state_t* state)
 {
   uint8_t i, j;
@@ -236,21 +234,21 @@ static void smb2_SubBytes(smb2_state_t* state)
   }
 }
 
-// The smb2_ShiftRows() function shifts the rows in the state to the left.
-// Each row is shifted with different offset.
-// Offset = Row number. So the first row is not shifted.
+/* The smb2_ShiftRows() function shifts the rows in the state to the left. */
+/* Each row is shifted with different offset. */
+/* Offset = Row number. So the first row is not shifted. */
 static void smb2_ShiftRows(smb2_state_t* state)
 {
   uint8_t temp;
 
-  // Rotate first row 1 columns to left
+  /* Rotate first row 1 columns to left */
   temp           = (*state)[0][1];
   (*state)[0][1] = (*state)[1][1];
   (*state)[1][1] = (*state)[2][1];
   (*state)[2][1] = (*state)[3][1];
   (*state)[3][1] = temp;
 
-  // Rotate second row 2 columns to left
+  /* Rotate second row 2 columns to left */
   temp           = (*state)[0][2];
   (*state)[0][2] = (*state)[2][2];
   (*state)[2][2] = temp;
@@ -259,7 +257,7 @@ static void smb2_ShiftRows(smb2_state_t* state)
   (*state)[1][2] = (*state)[3][2];
   (*state)[3][2] = temp;
 
-  // Rotate third row 3 columns to left
+  /* Rotate third row 3 columns to left */
   temp       = (*state)[0][3];
   (*state)[0][3] = (*state)[3][3];
   (*state)[3][3] = (*state)[2][3];
@@ -272,7 +270,7 @@ static uint8_t smb2_xtime(uint8_t x)
   return ((x<<1) ^ (((x>>7) & 1) * 0x1b));
 }
 
-// smb2_MixColumns function mixes the columns of the state matrix
+/* smb2_MixColumns function mixes the columns of the state matrix */
 static void smb2_MixColumns(smb2_state_t* state)
 {
   uint8_t i;
@@ -288,7 +286,7 @@ static void smb2_MixColumns(smb2_state_t* state)
   }
 }
 
-// smb2_Multiply is used to multiply numbers in the field GF(2^8)
+/* smb2_Multiply is used to multiply numbers in the field GF(2^8) */
 #if MULTIPLY_AS_A_FUNCTION
 static uint8_t smb2_Multiply(uint8_t x, uint8_t y)
 {
@@ -308,9 +306,9 @@ static uint8_t smb2_Multiply(uint8_t x, uint8_t y)
 
 #endif
 
-// smb2_MixColumns function mixes the columns of the state matrix.
-// The method used to multiply may be difficult to understand for the inexperienced.
-// Please use the references to gain more information.
+/* smb2_MixColumns function mixes the columns of the state matrix. */
+/* The method used to multiply may be difficult to understand for the inexperienced. */
+/* Please use the references to gain more information. */
 static void smb2_InvMixColumns(smb2_state_t* state)
 {
   int i;
@@ -330,8 +328,8 @@ static void smb2_InvMixColumns(smb2_state_t* state)
 }
 
 
-// The smb2_SubBytes Function Substitutes the values in the
-// state matrix with values in an S-box.
+/* The smb2_SubBytes Function Substitutes the values in the */
+/* state matrix with values in an S-box. */
 static void smb2_InvSubBytes(smb2_state_t* state)
 {
   uint8_t i,j;
@@ -348,14 +346,14 @@ static void smb2_InvShiftRows(smb2_state_t* state)
 {
   uint8_t temp;
 
-  // Rotate first row 1 columns to right
+  /* Rotate first row 1 columns to right */
   temp=(*state)[3][1];
   (*state)[3][1]=(*state)[2][1];
   (*state)[2][1]=(*state)[1][1];
   (*state)[1][1]=(*state)[0][1];
   (*state)[0][1]=temp;
 
-  // Rotate second row 2 columns to right
+  /* Rotate second row 2 columns to right */
   temp=(*state)[0][2];
   (*state)[0][2]=(*state)[2][2];
   (*state)[2][2]=temp;
@@ -364,7 +362,7 @@ static void smb2_InvShiftRows(smb2_state_t* state)
   (*state)[1][2]=(*state)[3][2];
   (*state)[3][2]=temp;
 
-  // Rotate third row 3 columns to right
+  /* Rotate third row 3 columns to right */
   temp=(*state)[0][3];
   (*state)[0][3]=(*state)[1][3];
   (*state)[1][3]=(*state)[2][3];
@@ -373,17 +371,17 @@ static void smb2_InvShiftRows(smb2_state_t* state)
 }
 
 
-// smb2_Cipher is the main function that encrypts the PlainText.
+/* smb2_Cipher is the main function that encrypts the PlainText. */
 static void smb2_Cipher(uint8_t* roundKey, smb2_state_t* state)
 {
   uint8_t round = 0;
 
-  // Add the First round key to the state before starting the rounds.
+  /* Add the First round key to the state before starting the rounds. */
   smb2_AddRoundKey(roundKey, state, 0);
 
-  // There will be Nr rounds.
-  // The first Nr-1 rounds are identical.
-  // These Nr-1 rounds are executed in the loop below.
+  /* There will be Nr rounds. */
+  /* The first Nr-1 rounds are identical. */
+  /* These Nr-1 rounds are executed in the loop below. */
   for(round = 1; round < Nr; ++round)
   {
     smb2_SubBytes(state);
@@ -392,8 +390,8 @@ static void smb2_Cipher(uint8_t* roundKey, smb2_state_t* state)
     smb2_AddRoundKey(roundKey, state, round);
   }
 
-  // The last round is given below.
-  // The smb2_MixColumns function is not here in the last round.
+  /* The last round is given below. */
+  /* The smb2_MixColumns function is not here in the last round. */
   smb2_SubBytes(state);
   smb2_ShiftRows(state);
   smb2_AddRoundKey(roundKey, state, Nr);
@@ -403,12 +401,12 @@ static void smb2_InvCipher(uint8_t* roundKey, smb2_state_t* state)
 {
   uint8_t round=0;
 
-  // Add the First round key to the state before starting the rounds.
+  /* Add the First round key to the state before starting the rounds. */
   smb2_AddRoundKey(roundKey, state, Nr);
 
-  // There will be Nr rounds.
-  // The first Nr-1 rounds are identical.
-  // These Nr-1 rounds are executed in the loop below.
+  /* There will be Nr rounds. */
+  /* The first Nr-1 rounds are identical. */
+  /* These Nr-1 rounds are executed in the loop below. */
   for(round=Nr-1;round>0;round--)
   {
     smb2_InvShiftRows(state);
@@ -417,8 +415,8 @@ static void smb2_InvCipher(uint8_t* roundKey, smb2_state_t* state)
     smb2_InvMixColumns(state);
   }
 
-  // The last round is given below.
-  // The smb2_MixColumns function is not here in the last round.
+  /* The last round is given below. */
+  /* The smb2_MixColumns function is not here in the last round. */
   smb2_InvShiftRows(state);
   smb2_InvSubBytes(state);
   smb2_AddRoundKey(roundKey, state, 0);
@@ -443,34 +441,34 @@ static void BlockCopy(uint8_t* output, uint8_t* input)
 
 void AES128_ECB_encrypt_reference(uint8_t* input, const uint8_t* key, uint8_t* output)
 {
-  // The array that stores the round keys.
+  /* The array that stores the round keys. */
   uint8_t roundKey[176];
 
-  // Copy input to output, and work in-memory on output
+  /* Copy input to output, and work in-memory on output */
   BlockCopy(output, input);
 
   smb2_KeyExpansion(key, roundKey);
 
-  // The next function call encrypts the PlainText with the Key using AES algorithm.
+  /* The next function call encrypts the PlainText with the Key using AES algorithm. */
   smb2_Cipher(roundKey, (smb2_state_t*)output);
 }
 
 void AES128_ECB_decrypt_reference(uint8_t* input, const uint8_t* key, uint8_t *output)
 {
-  // The array that stores the round keys.
+  /* The array that stores the round keys. */
   uint8_t roundKey[176];
 
-  // Copy input to output, and work in-memory on output
+  /* Copy input to output, and work in-memory on output */
   BlockCopy(output, input);
 
-  // The smb2_KeyExpansion routine must be called before encryption.
+  /* The smb2_KeyExpansion routine must be called before encryption. */
   smb2_KeyExpansion(key, roundKey);
 
   smb2_InvCipher(roundKey, (smb2_state_t*)output);
 }
 
 
-#endif // #if defined(ECB) && ECB
+#endif /* #if defined(ECB) && ECB */
 
 
 
@@ -495,10 +493,10 @@ void AES128_CBC_encrypt_buffer_reference(uint8_t* output, uint8_t* input, uint32
 
   BlockCopy(output, input);
 
-  // The array that stores the round keys.
+  /* The array that stores the round keys. */
   uint8_t roundKey[176];
 
-  // Skip the key expansion if key is passed as 0
+  /* Skip the key expansion if key is passed as 0 */
   if(0 != key)
   {
     smb2_KeyExpansion(key, roundKey);
@@ -529,10 +527,10 @@ void AES128_CBC_decrypt_buffer_reference(uint8_t* output, uint8_t* input, uint32
 
   BlockCopy(output, input);
 
-  // The array that stores the round keys.
+  /* The array that stores the round keys. */
   uint8_t roundKey[176];
 
-  // Skip the key expansion if key is passed as 0
+  /* Skip the key expansion if key is passed as 0 */
   if(0 != key)
   {
     smb2_KeyExpansion(key, roundKey);
@@ -557,4 +555,4 @@ void AES128_CBC_decrypt_buffer_reference(uint8_t* output, uint8_t* input, uint32
 }
 
 
-#endif // #if defined(CBC) && CBC
+#endif /* #if defined(CBC) && CBC */

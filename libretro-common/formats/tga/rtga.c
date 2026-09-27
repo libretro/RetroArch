@@ -78,6 +78,18 @@ struct rtga
    int RLE_count, RLE_repeat, read_next;
    unsigned char raw_data[4];
    uint32_t pal32[256];          /* indexed, non-RLE: entry -> pixel */
+   /* Partial-buffer decode (rtga_set_avail).  s.img_buffer_end is the
+    * cursor's hard stop and is set to the resident frontier rather
+    * than the file's end, so every existing bounds check in the
+    * decode doubles as the wall; true_end remembers where the file
+    * actually ends so a stop at the wall can be told apart from a
+    * stop at EOF.  avail_set stays false for a caller that never
+    * calls set_avail, and then true_end == the end passed to
+    * process() and nothing below changes behaviour. */
+   uint8_t *true_end;
+   size_t   avail_req;           /* frontier asked for, clamped at IDLE */
+   bool     avail_set;
+   bool     need_more;           /* last slice stopped at the wall */
 };
 
 static INLINE uint8_t rtga_get8(rtga_context *s)
@@ -216,7 +228,15 @@ static void rtga_indexed_pixels(rtga_t *tga, int npix)
 
    for (; i < last; ++i)
    {
-      int dst_row = inverted ? (height - 1 - cur_row) : cur_row;
+      int dst_row;
+      /* One index per pixel, and past the frontier rtga_get8 hands
+       * back zeros - which are a valid palette entry, so the wall has
+       * to be checked rather than detected after the fact. */
+      if (     tga->avail_set
+            && s->img_buffer_end < tga->true_end
+            && s->img_buffer >= s->img_buffer_end)
+         break;
+      dst_row = inverted ? (height - 1 - cur_row) : cur_row;
       output[(size_t)dst_row * (size_t)width + (size_t)cur_col] =
          p32[rtga_get8(s)];
       if (++cur_col >= width)
@@ -528,6 +548,21 @@ static void rtga_fast_rows(rtga_t *tga, int nrows)
     * opaque black for 24-bit.  Under inversion the unwritten rows are
     * the low ones rather than the high ones, but either way they are
     * contiguous. */
+   /* ...unless the shortfall is the resident frontier rather than
+    * the file's end.  Then the rows are not missing, they have not
+    * arrived: padding them would bake zeros into the surface and
+    * declaring the image finished would lose the rest of it.  Leave
+    * 'row' where the loop stopped, so the caller sees no progress,
+    * waits for more bytes and resumes here. */
+   if (     row < last
+         && tga->avail_set
+         && tga->s.img_buffer_end < tga->true_end)
+   {
+      tga->row          = row;
+      tga->s.img_buffer = ctx.img_buffer;
+      return;
+   }
+
    if (row < last)
    {
       size_t   n    = (size_t)(tga_height - row) * (size_t)tga_width;
@@ -594,6 +629,19 @@ static void rtga_generic_pixels(rtga_t *tga, int npix)
          int dst_row;
          uint32_t pixel;
          unsigned char b, g, r, a;
+
+         /* Stop at the resident frontier rather than reading the
+          * zeros rtga_get8 hands back past it.  One pixel needs at
+          * most a packet header plus four component bytes, so five
+          * resident bytes is the conservative bound that covers RLE,
+          * indexed and truecolour alike; stalling up to four bytes
+          * early costs a slice, decoding one byte late corrupts the
+          * surface.  At the true end of the file this does not fire
+          * and short input behaves exactly as it always did. */
+         if (     tga->avail_set
+               && s->img_buffer_end < tga->true_end
+               && s->img_buffer_end - s->img_buffer < 5)
+            break;
 
          /* RLE handling */
          if (tga_is_RLE)
@@ -702,6 +750,91 @@ static void rtga_proc_reset(rtga_t *rtga)
    rtga->phase   = RTGA_PHASE_IDLE;
 }
 
+/* Smallest prefix that rtga_begin can parse: the 18-byte header plus
+ * the id field and colour map it may skip past.  Anything shorter and
+ * begin would read past the wall. */
+#define RTGA_MIN_HEADER 18
+
+/* A slice that produced nothing while the file still has bytes to
+ * come has not failed - it is waiting.  The test is progress, not
+ * cursor position: the loops stop on whole units (a row, a pixel, an
+ * RLE packet), so a stall typically leaves the cursor short of the
+ * wall with a partial unit's worth of bytes unread, and "cursor ==
+ * wall" would miss it.  At EOF the same no-progress condition is a
+ * genuinely truncated file and the decode ends as it always did. */
+static bool rtga_stalled(rtga_t *tga, int before_row, int before_pixel)
+{
+   if (     !tga->avail_set
+         ||  tga->s.img_buffer_end >= tga->true_end
+         ||  tga->row     != before_row
+         ||  tga->pixel_i != before_pixel)
+   {
+      tga->need_more = false;
+      return false;
+   }
+   tga->need_more = true;
+   return true;
+}
+
+bool rtga_header_ready(const uint8_t *data, size_t len)
+{
+   size_t need;
+   if (!data || len < RTGA_MIN_HEADER)
+      return false;
+   /* TGA has no magic, so the check is that the header describes
+    * something this decoder handles and that everything begin() reads
+    * before the pixels - the id field and the colour map, both sized
+    * by the header - is already here.  A file whose type byte is not
+    * one of the supported ones is declined, and the caller loads it
+    * whole exactly as before. */
+   switch (data[2])
+   {
+      case 1:  /* indexed          */
+      case 2:  /* truecolour       */
+      case 3:  /* grayscale        */
+      case 9:  /* RLE indexed      */
+      case 10: /* RLE truecolour   */
+      case 11: /* RLE grayscale    */
+         break;
+      default:
+         return false;
+   }
+   if (!(data[12] | (data[13] << 8)) || !(data[14] | (data[15] << 8)))
+      return false;   /* zero width or height */
+   need  = RTGA_MIN_HEADER + data[0];
+   need += (size_t)(data[5] | (data[6] << 8))
+         * (size_t)((data[7] + 7) / 8);
+   return len >= need;
+}
+
+void rtga_set_avail(rtga_t *rtga, size_t avail)
+{
+   if (!rtga)
+      return;
+   rtga->avail_set = true;
+   /* Recorded, not resolved: a caller may raise the frontier before
+    * the first process() call, when the buffer length is not yet
+    * known.  task_image does exactly that with (size_t)-1 when a
+    * small file finishes reading before any decode has run, and
+    * buff_data + that wraps the pointer. */
+   if (avail > rtga->avail_req)
+      rtga->avail_req = avail;
+   if (rtga->true_end && rtga->buff_data)
+   {
+      uint8_t *wall = (rtga->avail_req
+            > (size_t)(rtga->true_end - rtga->buff_data))
+                    ? rtga->true_end
+                    : rtga->buff_data + rtga->avail_req;
+      if (wall > rtga->s.img_buffer_end)
+         rtga->s.img_buffer_end = wall;
+   }
+}
+
+bool rtga_need_more(rtga_t *rtga)
+{
+   return rtga && rtga->need_more;
+}
+
 int rtga_process_image(rtga_t *rtga, void **buf_data,
       size_t size, unsigned *width, unsigned *height,
       bool supports_rgba)
@@ -725,8 +858,38 @@ int rtga_process_image(rtga_t *rtga, void **buf_data,
 
       rtga->s.img_buffer          = rtga->buff_data;
       rtga->s.img_buffer_original = rtga->buff_data;
-      rtga->s.img_buffer_end      = rtga->buff_data + (int)size;
+      rtga->true_end              = rtga->buff_data + (int)size;
+      rtga->s.img_buffer_end      = !rtga->avail_set ? rtga->true_end
+                                  : ((rtga->avail_req >= size)
+                                     ? rtga->true_end
+                                     : rtga->buff_data + rtga->avail_req);
+      /* The header, the colour map and the first pixel must be
+       * resident before anything can be parsed at all; below that
+       * the caller has to come back with more. */
+      if (rtga->avail_set)
+      {
+         ptrdiff_t have = rtga->s.img_buffer_end - rtga->buff_data;
+         ptrdiff_t need = RTGA_MIN_HEADER;
 
+         if (have < need)
+         {
+            rtga->need_more = true;
+            return IMAGE_PROCESS_WAIT;
+         }
+         /* The header is resident, so the id field and colour map it
+          * describes can be sized: begin() skips the first and reads
+          * the second, and neither may be answered with the zeros
+          * rtga_get8 returns past the frontier. */
+         need += rtga->buff_data[0];                       /* id field   */
+         need += (ptrdiff_t)(rtga->buff_data[5]
+               | (rtga->buff_data[6] << 8))                /* map length */
+               * (ptrdiff_t)((rtga->buff_data[7] + 7) / 8);/* entry size */
+         if (have < need && need <= (ptrdiff_t)size)
+         {
+            rtga->need_more = true;
+            return IMAGE_PROCESS_WAIT;
+         }
+      }
       if (!rtga_begin(rtga, supports_rgba))
       {
          rtga_proc_reset(rtga);
@@ -742,20 +905,28 @@ int rtga_process_image(rtga_t *rtga, void **buf_data,
 
    if (rtga->phase == RTGA_PHASE_FAST)
    {
+      int before;
       int rows = (rtga->width > 0)
                ? (RTGA_TEXELS_PER_CALL / rtga->width) : rtga->height;
       if (rows < 1)
          rows = 1;
+      before = rtga->row;
       rtga_fast_rows(rtga, rows);
+      if (rtga_stalled(rtga, before, rtga->pixel_i))
+         return IMAGE_PROCESS_WAIT;
       if (rtga->row < rtga->height)
          return IMAGE_PROCESS_NEXT;
    }
    else
    {
+      int before = rtga->pixel_i;
+
       if (rtga->phase == RTGA_PHASE_INDEXED)
          rtga_indexed_pixels(rtga, RTGA_TEXELS_PER_CALL);
       else
          rtga_generic_pixels(rtga, RTGA_TEXELS_PER_CALL);
+      if (rtga_stalled(rtga, rtga->row, before))
+         return IMAGE_PROCESS_WAIT;
       if (rtga->pixel_i < rtga->pixel_count)
          return IMAGE_PROCESS_NEXT;
    }

@@ -105,13 +105,12 @@ static INLINE bool vg_query_extension(const char *ext)
 static void *vg_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-   unsigned win_width, win_height;
+   unsigned out_dims               = 0;
+   unsigned win_dims;
    VGfloat clearColor[4]           = {0, 0, 0, 1};
    int interval                    = 0;
-   unsigned mode_width             = 0;
-   unsigned mode_height            = 0;
-   unsigned temp_width             = 0;
-   unsigned temp_height            = 0;
+   unsigned mode_dims             = 0;
+   unsigned temp_dims             = 0;
    void *ctx_data                  = NULL;
    settings_t        *settings     = config_get_ptr();
    const char *path_font           = settings->paths.path_font;
@@ -137,15 +136,15 @@ static void *vg_init(const video_info_t *video,
 
    if (vg->ctx_driver->get_video_size)
       vg->ctx_driver->get_video_size(vg->ctx_data,
-               &mode_width, &mode_height);
+               &mode_dims);
 
-   temp_width  = mode_width;
-   temp_height = mode_height;
+   temp_dims  = mode_dims;
 
-   RARCH_LOG("[VG] Detecting screen resolution: %ux%u.\n", temp_width, temp_height);
+   RARCH_LOG("[VG] Detecting screen resolution: %ux%u.\n",
+         VIDEO_SCALE_W(temp_dims), VIDEO_SCALE_H(temp_dims));
 
-   if (temp_width != 0 && temp_height != 0)
-      video_driver_set_output_size(temp_width, temp_height);
+   if (VIDEO_SCALE_W(temp_dims) != 0 && VIDEO_SCALE_H(temp_dims) != 0)
+      video_driver_set_output_dims(temp_dims);
 
    interval = video->vsync ? 1 : 0;
 
@@ -159,50 +158,43 @@ static void *vg_init(const video_info_t *video,
    vg->mTexType    = video->rgb32 ? VG_sXRGB_8888 : VG_sRGB_565;
    vg->keep_aspect = video->force_aspect;
 
-   win_width  = video->width;
-   win_height = video->height;
+   win_dims   = video->dims;
 
-   if (video->fullscreen && (win_width == 0) && (win_height == 0))
-   {
-      video_driver_get_output_size(&temp_width, &temp_height);
-
-      win_width  = temp_width;
-      win_height = temp_height;
-   }
+   /* Neither axis set is the whole word clear */
+   if (video->fullscreen && (win_dims == 0))
+      win_dims = video_driver_get_output_dims();
 
    if (     !vg->ctx_driver->set_video_mode
-         || !vg->ctx_driver->set_video_mode(vg->ctx_data,
-            win_width, win_height, video->fullscreen))
+         || !vg->ctx_driver->set_video_mode(vg->ctx_data, win_dims,
+            video->fullscreen))
       goto error;
 
-   temp_width        = 0;
-   temp_height       = 0;
-   mode_width        = 0;
-   mode_height       = 0;
+   temp_dims        = 0;
+   mode_dims        = 0;
 
    if (vg->ctx_driver->get_video_size)
       vg->ctx_driver->get_video_size(vg->ctx_data,
-               &mode_width, &mode_height);
+               &mode_dims);
 
-   temp_width        = mode_width;
-   temp_height       = mode_height;
+   temp_dims        = mode_dims;
 
    vg->should_resize = true;
 
-   if (temp_width != 0 && temp_height != 0)
+   if (VIDEO_SCALE_W(temp_dims) != 0 && VIDEO_SCALE_H(temp_dims) != 0)
    {
       RARCH_LOG("[VG] Verified window resolution %ux%u.\n",
-            temp_width, temp_height);
-      video_driver_set_output_size(temp_width, temp_height);
+            VIDEO_SCALE_W(temp_dims), VIDEO_SCALE_H(temp_dims));
+      video_driver_set_output_dims(temp_dims);
    }
    else
-      video_driver_get_output_size(&temp_width, &temp_height);
+      temp_dims = video_driver_get_output_dims();
 
-   vg->mScreenAspect = (float)temp_width / temp_height;
+   vg->mScreenAspect = (float)VIDEO_SCALE_W(temp_dims)
+      / VIDEO_SCALE_H(temp_dims);
 
    if (vg->ctx_driver->translate_aspect)
       vg->mScreenAspect = vg->ctx_driver->translate_aspect(
-            vg->ctx_data, temp_width, temp_height);
+            vg->ctx_data, VIDEO_SCALE_W(temp_dims), VIDEO_SCALE_H(temp_dims));
 
    vgSetfv(VG_CLEAR_COLOR, 4, clearColor);
 
@@ -228,7 +220,7 @@ static void *vg_init(const video_info_t *video,
          && font_renderer_create_default(
             &vg->font_driver, &vg->mFontRenderer,
             *path_font ? path_font : NULL,
-            video_font_size))
+            video_font_size, FONT_ATLAS_FORMAT_A8))
    {
       vg->mFont            = vgCreateFont(0);
 
@@ -312,8 +304,7 @@ static void vg_calculate_quad(vg_t *vg,
 {
    video_viewport_t vp;
 
-   vp.full_width   = vp_width;
-   vp.full_height  = vp_height;
+   vp.full_dims    = VIDEO_SCALE_PACK(vp_width, vp_height);
 
    /* Calculate device_aspect for mScreenAspect (used elsewhere) */
    vg->mScreenAspect = (float)vp_width / vp_height;
@@ -323,10 +314,10 @@ static void vg_calculate_quad(vg_t *vg,
    /* OpenVG uses a bottom-left origin coordinate system */
    video_driver_update_viewport(&vp, false, vg->keep_aspect, false);
 
-   vg->x1 = vp.x;
-   vg->y1 = vp.y;
-   vg->x2 = vp.width;
-   vg->y2 = vp.height;
+   vg->x1 = VIDEO_POS_X(vp.pos);
+   vg->y1 = VIDEO_POS_Y(vp.pos);
+   vg->x2 = VIDEO_SCALE_W(vp.dims);
+   vg->y2 = VIDEO_SCALE_H(vp.dims);
 
    vg->scissor[0] = vg->x1;
    vg->scissor[1] = vg->y1;
@@ -373,13 +364,15 @@ static void vg_copy_frame(void *data, const void *frame,
 }
 
 static bool vg_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height,
+      unsigned dims,
       uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    vg_t                           *vg = (vg_t*)data;
-   unsigned width                     = video_info->width;
-   unsigned height                    = video_info->height;
+   unsigned width                     = VIDEO_SCALE_W(video_info->dims);
+   unsigned height                    = VIDEO_SCALE_H(video_info->dims);
 #ifdef HAVE_MENU
    bool menu_is_alive                 = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
@@ -432,15 +425,15 @@ static bool vg_alive(void *data)
 {
    bool quit            = false;
    bool resize          = false;
-   unsigned temp_width  = 0;
-   unsigned temp_height = 0;
+   unsigned temp_dims  = VIDEO_SCALE_PACK(0,
+         0);
    vg_t            *vg  = (vg_t*)data;
 
    vg->ctx_driver->check_window(vg->ctx_data,
-            &quit, &resize, &temp_width, &temp_height);
+            &quit, &resize, &temp_dims);
 
-   if (temp_width != 0 && temp_height != 0)
-      video_driver_set_output_size(temp_width, temp_height);
+   if (VIDEO_SCALE_W(temp_dims) != 0 && VIDEO_SCALE_H(temp_dims) != 0)
+      video_driver_set_output_dims(temp_dims);
 
    return !quit;
 }
@@ -490,7 +483,6 @@ video_driver_t video_vg = {
    NULL, /* set_rotation */
    NULL, /* viewport_info */
    NULL, /* read_viewport */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL, /* get_overlay_interface */
 #endif

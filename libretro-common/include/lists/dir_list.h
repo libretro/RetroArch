@@ -64,6 +64,72 @@ bool dir_list_append(struct string_list *list, const char *dir, const char *ext,
 struct string_list *dir_list_new(const char *dir, const char *ext,
       bool include_dirs, bool include_hidden, bool include_compressed, bool recursive);
 
+/* Resumable directory walk.
+ *
+ * Produces, incrementally, exactly the listing dir_list_new() builds
+ * in one blocking call: same entries, same filters, same order,
+ * including the post-order append of directories when @include_dirs
+ * is set and the silent skip of unreadable subdirectories.  It exists
+ * so a task handler can spread a large recursive walk across gathers
+ * under a time budget instead of freezing the frame that starts it -
+ * and it is the only walk: entries land in the caller's list as they
+ * are read, nothing is enumerated twice.  See dir_list_iter_step()
+ * for the yielding contract. */
+typedef struct dir_list_iter dir_list_iter_t;
+
+/**
+ * dir_list_iter_new:
+ * @dir                : directory path.
+ * @ext                : allowed extensions of file directory entries to include.
+ * @include_dirs       : include directories as part of the finished directory listing?
+ * @include_hidden     : include hidden files and directories as part of the finished directory listing?
+ * @include_compressed : include compressed files, even when not part of ext.
+ * @recursive          : list directory contents recursively
+ * @list               : the string list entries are appended to.  Borrowed:
+ *                       the caller keeps ownership and must keep it alive
+ *                       until the iterator is freed.
+ *
+ * Begin a resumable directory walk equivalent to
+ * dir_list_append(list, dir, ...).
+ *
+ * @return iterator on success, NULL if @dir cannot be opened (the
+ * same condition under which dir_list_new() returns NULL) or on
+ * allocation failure.  Has to be freed with dir_list_iter_free().
+ **/
+dir_list_iter_t *dir_list_iter_new(const char *dir, const char *ext,
+      bool include_dirs, bool include_hidden, bool include_compressed,
+      bool recursive, struct string_list *list);
+
+/**
+ * dir_list_iter_step:
+ * @iter          : iterator from dir_list_iter_new().
+ * @within_budget : optional; consulted between entries, return false
+ *                  to make the step yield.  NULL runs to completion.
+ * @userdata      : passed to @within_budget.
+ *
+ * Advance the walk, appending entries to the list given at creation.
+ * At least one entry is always processed per call (the floor: a queue
+ * whose budget is already spent still makes progress), after which
+ * @within_budget is consulted before each further entry.
+ *
+ * @return 1 when the walk has completed (the list now equals what
+ * dir_list_new() would have produced, pre-sort), 0 when yielding with
+ * work remaining, -1 on allocation failure (the walk is abandoned;
+ * free the iterator).
+ **/
+int dir_list_iter_step(dir_list_iter_t *iter,
+      bool (*within_budget)(void *userdata), void *userdata);
+
+/**
+ * dir_list_iter_free:
+ * @iter : iterator, may be NULL.
+ *
+ * Release the iterator, closing any directory handles still open.
+ * Safe to call at any point of the walk; the entries already appended
+ * to the caller's list remain valid.
+ **/
+void dir_list_iter_free(dir_list_iter_t *iter);
+
 /**
  * dir_list_initialize:
  *
@@ -75,6 +141,24 @@ bool dir_list_initialize(struct string_list *list,
       const char *ext, bool include_dirs,
       bool include_hidden, bool include_compressed,
       bool recursive);
+
+/* The comparator type dir_list orders listings with (qsort
+ * signature over struct string_list_elem). */
+typedef int (*dir_list_sort_cmp_t)(const void *a, const void *b);
+
+/**
+ * dir_list_sort_cmp:
+ * @dir_first  : sort directories before files?
+ * @ignore_ext : ignore file extensions when comparing?
+ *
+ * The exact comparator dir_list_sort() / dir_list_sort_ignore_ext()
+ * use, for callers that need the same ordering through a different
+ * sorting strategy (e.g. an incremental sort under a time budget).
+ * Two listings sorted with the same comparator agree everywhere
+ * except among entries that compare equal, whose relative order was
+ * never specified (qsort is not stable).
+ **/
+dir_list_sort_cmp_t dir_list_sort_cmp(bool dir_first, bool ignore_ext);
 
 /**
  * dir_list_sort:

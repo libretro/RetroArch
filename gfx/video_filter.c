@@ -24,6 +24,12 @@
 #include <features/features_cpu.h>
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
+#include <retro_atomic.h>
+
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
@@ -54,54 +60,72 @@ struct rarch_softfilter
    struct rarch_soft_plug *plugs;
    unsigned num_plugs;
 
-   unsigned max_width, max_height;
+   unsigned max_dims;
    enum retro_pixel_format pix_fmt, out_pix_fmt;
 
    struct softfilter_work_packet *packets;
    unsigned threads;
 
 #ifdef HAVE_THREADS
+   /* Workers notify this once the last of them is done, so the join
+    * below waits on one object rather than on each worker in turn and
+    * a worker that finishes early is not held behind a slower one. */
+   retro_eventcount_t join_ec;
+   /* Packets handed out for this frame and not yet finished. Set to
+    * the thread count before any worker is woken. */
+   retro_atomic_int_t outstanding;
    struct filter_thread_data *thread_data;
 #endif
 };
 
 #ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
 
 struct filter_thread_data
 {
+   retro_eventcount_t wake_ec;
    sthread_t *thread;
    const struct softfilter_work_packet *packet;
-   scond_t *cond;
-   slock_t *lock;
    void *userdata;
-   bool die;
-   bool done;
+   struct rarch_softfilter *filt;
+   /* A packet is waiting: published by the fan-out with a release
+    * store, which carries the packet pointer above with it. */
+   retro_atomic_int_t go;
+   retro_atomic_int_t die;
 };
 
 static void filter_thread_loop(void *data)
 {
    struct filter_thread_data *thr = (struct filter_thread_data*)data;
+   struct rarch_softfilter *filt  = thr->filt;
 
    for (;;)
    {
-      bool die;
-      slock_lock(thr->lock);
-      while (thr->done && !thr->die)
-         scond_wait(thr->cond, thr->lock);
-      die = thr->die;
-      slock_unlock(thr->lock);
+      int key = retro_eventcount_prepare_wait(&thr->wake_ec);
 
-      if (die)
+      /* Tested inside the wait window, so a fan-out that publishes
+       * between the test and the park still releases this worker. */
+      if (     retro_atomic_load_acquire_int(&thr->go)
+            || retro_atomic_load_acquire_int(&thr->die))
+         retro_eventcount_cancel_wait(&thr->wake_ec);
+      else
+         retro_eventcount_commit_wait(&thr->wake_ec, key);
+
+      if (retro_atomic_load_acquire_int(&thr->die))
          break;
+
+      /* commit_wait may return early and spuriously */
+      if (!retro_atomic_load_acquire_int(&thr->go))
+         continue;
 
       if (thr->packet && thr->packet->work)
          thr->packet->work(thr->userdata, thr->packet->thread_data);
 
-      slock_lock(thr->lock);
-      thr->done = true;
-      scond_signal(thr->cond);
-      slock_unlock(thr->lock);
+      retro_atomic_store_release_int(&thr->go, 0);
+
+      /* Only the worker that takes the count to zero wakes the join,
+       * so a frame costs one notify rather than one per thread. */
+      if (retro_atomic_fetch_sub_int(&filt->outstanding, 1) == 1)
+         retro_eventcount_notify(&filt->join_ec);
    }
 }
 #endif
@@ -130,9 +154,85 @@ static const struct softfilter_config softfilter_config = {
    config_userdata_free,
 };
 
+/* RARCH_SOFTFILTER_THREADS_AUTO: how many workers a filter gets when
+ * the user has not said.
+ *
+ * The old answer, one per logical CPU, is wrong twice over: the pool
+ * competes with the emulation, video, audio and task threads for the
+ * cores those need, and the light filters get slower as workers are
+ * added (EPX at 256x224 was ~26% slower on eight workers than one).
+ * A filter is on the frame's critical path - every worker has to
+ * finish before the frame can present - so fewer, unhindered workers
+ * beat many contended ones.
+ *
+ * Budget: physical cores the process may use, minus the reserved
+ * frame-critical threads, minus one for the GPU driver and the OS
+ * once there is room to spare, capped at RARCH_SOFTFILTER_AUTO_MAX
+ * and never below one. Then a per-filter ceiling by workload: the
+ * light filters run best alone, the medium ones stop gaining at four,
+ * only the heavy ones (NTSC, NTSC/CRT, 2xBR) use the whole budget. A
+ * plugin this table does not know counts as heavy. */
+static unsigned softfilter_auto_reserved = 1;
+
+void rarch_softfilter_set_auto_reserved(unsigned reserved_cores)
+{
+   softfilter_auto_reserved = reserved_cores;
+}
+
+static unsigned softfilter_workload_cap(const char *short_ident)
+{
+   /* Measured on the repository benchmark: 4 vs 8 workers. */
+   static const char *light[]  = { "epx", "lq2x", "crop_borders", "darken", NULL };
+   static const char *medium[] = { "2xsai", "super2xsai", "supereagle", "phosphor2x", NULL };
+   unsigned i;
+   if (short_ident)
+   {
+      for (i = 0; light[i]; i++)
+         if (string_is_equal(short_ident, light[i]))
+            return 1;
+      for (i = 0; medium[i]; i++)
+         if (string_is_equal(short_ident, medium[i]))
+            return 4;
+   }
+   return RARCH_SOFTFILTER_AUTO_MAX;
+}
+
+unsigned rarch_softfilter_auto_budget(unsigned cores, unsigned reserved,
+      const char *short_ident)
+{
+   unsigned cap = softfilter_workload_cap(short_ident);
+   unsigned budget;
+   if (cores <= reserved)
+      return 1;
+   budget = cores - reserved;
+   /* Headroom for the GPU driver and the OS, once there is any. */
+   if (budget > 2)
+      budget--;
+   if (budget > RARCH_SOFTFILTER_AUTO_MAX)
+      budget = RARCH_SOFTFILTER_AUTO_MAX;
+   if (budget > cap)
+      budget = cap;
+   return budget < 1 ? 1 : budget;
+}
+
+unsigned rarch_softfilter_auto_threads(const char *short_ident)
+{
+   unsigned cores = 0;
+   unsigned fast  = 0, slow = 0;
+
+#ifdef HAVE_THREADS
+   if (sthread_get_core_topology(&fast, &slow))
+      cores = fast + slow;
+#endif
+   if (!cores)
+      cores = cpu_features_get_core_amount_physical();
+   return rarch_softfilter_auto_budget(cores, softfilter_auto_reserved,
+         short_ident);
+}
+
 static bool create_softfilter_graph(rarch_softfilter_t *filt,
       enum retro_pixel_format in_pixel_format,
-      unsigned max_width, unsigned max_height,
+      unsigned max_dims,
       softfilter_simd_mask_t cpu_features,
       unsigned threads)
 {
@@ -140,7 +240,7 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
    struct config_file_userdata userdata;
    char key[64], name[64];
    name[0] = '\0';
-   strlcpy(key, "filter", sizeof(key));
+   strlcpy_lit(key, "filter", sizeof(key));
 
    if (!config_get_array(filt->conf, key, name, sizeof(name)))
    {
@@ -201,14 +301,14 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
       return false;
    }
 
-   filt->max_width = max_width;
-   filt->max_height = max_height;
+   filt->max_dims  = max_dims;
 
    filt->impl_data = filt->impl->create(
-         &softfilter_config, input_fmt, input_fmt, max_width, max_height,
+         &softfilter_config, input_fmt, input_fmt,
+         VIDEO_SCALE_W(max_dims), VIDEO_SCALE_H(max_dims),
          threads != RARCH_SOFTFILTER_THREADS_AUTO ? threads :
-         cpu_features_get_core_amount(), cpu_features,
-         &userdata);
+         rarch_softfilter_auto_threads(filt->impl->short_ident),
+         cpu_features, &userdata);
    if (!filt->impl_data)
    {
       RARCH_ERR("[SoftFilter] Failed to create softfilter state.\n");
@@ -241,16 +341,19 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
          calloc(threads, sizeof(*filt->thread_data))))
          return false;
 
+      retro_atomic_store_release_int(&filt->outstanding, 0);
+
+      if (!retro_eventcount_init(&filt->join_ec))
+         return false;
+
       for (i = 0; i < threads; i++)
       {
          filt->thread_data[i].userdata = filt->impl_data;
-         filt->thread_data[i].done     = true;
+         filt->thread_data[i].filt     = filt;
+         retro_atomic_store_release_int(&filt->thread_data[i].go,  0);
+         retro_atomic_store_release_int(&filt->thread_data[i].die, 0);
 
-         filt->thread_data[i].lock     = slock_new();
-         if (!filt->thread_data[i].lock)
-            return false;
-         filt->thread_data[i].cond     = scond_new();
-         if (!filt->thread_data[i].cond)
+         if (!retro_eventcount_init(&filt->thread_data[i].wake_ec))
             return false;
          filt->thread_data[i].thread   = sthread_create(
                filter_thread_loop, &filt->thread_data[i]);
@@ -417,7 +520,7 @@ static bool append_softfilter_plugs(rarch_softfilter_t *filt,
 rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
       unsigned threads,
       enum retro_pixel_format in_pixel_format,
-      unsigned max_width, unsigned max_height)
+      unsigned max_dims)
 {
    softfilter_simd_mask_t cpu_features = (softfilter_simd_mask_t)cpu_features_get();
 #ifdef HAVE_DYLIB
@@ -459,7 +562,7 @@ rarch_softfilter_t *rarch_softfilter_new(const char *filter_config,
    plugs = NULL;
 
    if (!create_softfilter_graph(filt, in_pixel_format,
-            max_width, max_height, cpu_features, threads))
+            max_dims, cpu_features, threads))
    {
       RARCH_ERR("[SoftFilter] Failed to create softfilter graph...\n");
       goto error;
@@ -483,6 +586,35 @@ void rarch_softfilter_free(rarch_softfilter_t *filt)
    if (!filt)
       return;
 
+#ifdef HAVE_THREADS
+   /* The pool goes down first: workers call into the plugin's work
+    * functions with impl_data and read the packet array, so both
+    * must outlive the last worker. The old order freed the packets,
+    * destroyed impl_data and closed the plugin dylibs before the
+    * join - workers are idle whenever free is reached today (process
+    * waits for every worker before returning, and create's error
+    * path frees before any packet is dispatched), so the order was
+    * latent rather than crashing, but it inverted the ownership it
+    * relies on. thread_data can be NULL with threads still counted
+    * when its allocation was what failed during create; that path
+    * walked the NULL array. */
+   if (filt->threads > 1 && filt->thread_data)
+   {
+      for (i = 0; i < filt->threads; i++)
+      {
+         if (filt->thread_data[i].thread)
+         {
+            retro_atomic_store_release_int(&filt->thread_data[i].die, 1);
+            retro_eventcount_notify(&filt->thread_data[i].wake_ec);
+            sthread_join(filt->thread_data[i].thread);
+         }
+         retro_eventcount_free(&filt->thread_data[i].wake_ec);
+      }
+      retro_eventcount_free(&filt->join_ec);
+      free(filt->thread_data);
+   }
+#endif
+
    free(filt->packets);
    if (filt->impl && filt->impl_data)
       filt->impl->destroy(filt->impl_data);
@@ -493,27 +625,11 @@ void rarch_softfilter_free(rarch_softfilter_t *filt)
       if (filt->plugs[i].lib)
          dylib_close(filt->plugs[i].lib);
    }
+#endif
+   /* Allocated by append_softfilter_plugs in the builtin build too;
+    * freeing it only under HAVE_DYLIB leaked one plug table per
+    * filter lifecycle on static builds. */
    free(filt->plugs);
-#endif
-
-#ifdef HAVE_THREADS
-   if (filt->threads > 1)
-   {
-      for (i = 0; i < filt->threads; i++)
-      {
-         if (!filt->thread_data[i].thread)
-            continue;
-         slock_lock(filt->thread_data[i].lock);
-         filt->thread_data[i].die = true;
-         scond_signal(filt->thread_data[i].cond);
-         slock_unlock(filt->thread_data[i].lock);
-         sthread_join(filt->thread_data[i].thread);
-         slock_free(filt->thread_data[i].lock);
-         scond_free(filt->thread_data[i].cond);
-      }
-      free(filt->thread_data);
-   }
-#endif
 
    if (filt->conf)
       config_file_free(filt->conf);
@@ -522,19 +638,25 @@ void rarch_softfilter_free(rarch_softfilter_t *filt)
 }
 
 void rarch_softfilter_get_max_output_size(rarch_softfilter_t *filt,
-      unsigned *width, unsigned *height)
+      unsigned *out_dims)
 {
-   rarch_softfilter_get_output_size(filt, width, height,
-         filt->max_width, filt->max_height);
+   rarch_softfilter_get_output_size(filt, out_dims, filt->max_dims);
 }
 
+/* The plugin ABI hands the axes back through two pointers and leaves
+ * them alone when a filter offers no query_output_size, so *out_dims
+ * seeds them and takes the answer. */
 void rarch_softfilter_get_output_size(rarch_softfilter_t *filt,
-      unsigned *out_width, unsigned *out_height,
-      unsigned width, unsigned height)
+      unsigned *out_dims, unsigned in_dims)
 {
+   unsigned out_width  = VIDEO_SCALE_W(*out_dims);
+   unsigned out_height = VIDEO_SCALE_H(*out_dims);
+
    if (filt && filt->impl && filt->impl->query_output_size)
-      filt->impl->query_output_size(filt->impl_data, out_width,
-            out_height, width, height);
+      filt->impl->query_output_size(filt->impl_data, &out_width,
+            &out_height, VIDEO_SCALE_W(in_dims), VIDEO_SCALE_H(in_dims));
+
+   *out_dims = VIDEO_SCALE_PACK(out_width, out_height);
 }
 
 enum retro_pixel_format rarch_softfilter_get_output_format(
@@ -545,8 +667,7 @@ enum retro_pixel_format rarch_softfilter_get_output_format(
 
 void rarch_softfilter_process(rarch_softfilter_t *filt,
       void *output, size_t output_stride,
-      const void *input, unsigned width, unsigned height,
-      size_t input_stride)
+      const void *input, unsigned in_dims, size_t input_stride)
 {
    unsigned i;
 
@@ -555,28 +676,35 @@ void rarch_softfilter_process(rarch_softfilter_t *filt,
 
    if (filt->impl && filt->impl->get_work_packets)
       filt->impl->get_work_packets(filt->impl_data, filt->packets,
-            output, output_stride, input, width, height, input_stride);
+            output, output_stride, input,
+            VIDEO_SCALE_W(in_dims), VIDEO_SCALE_H(in_dims), input_stride);
 
 #ifdef HAVE_THREADS
    if (filt->threads > 1)
    {
+      /* The count is armed before any worker is woken, so a worker
+       * that finishes while the rest are still being handed their
+       * packets decrements a count that already covers all of them. */
+      retro_atomic_store_release_int(&filt->outstanding,
+            (int)filt->threads);
+
       /* Fire off workers */
       for (i = 0; i < filt->threads; i++)
       {
          filt->thread_data[i].packet = &filt->packets[i];
-         slock_lock(filt->thread_data[i].lock);
-         filt->thread_data[i].done = false;
-         scond_signal(filt->thread_data[i].cond);
-         slock_unlock(filt->thread_data[i].lock);
+         retro_atomic_store_release_int(&filt->thread_data[i].go, 1);
+         retro_eventcount_notify(&filt->thread_data[i].wake_ec);
       }
 
-      /* Wait for workers */
-      for (i = 0; i < filt->threads; i++)
+      /* Wait for workers, in whatever order they finish */
+      while (retro_atomic_load_acquire_int(&filt->outstanding) > 0)
       {
-         slock_lock(filt->thread_data[i].lock);
-         while (!filt->thread_data[i].done)
-            scond_wait(filt->thread_data[i].cond, filt->thread_data[i].lock);
-         slock_unlock(filt->thread_data[i].lock);
+         int key = retro_eventcount_prepare_wait(&filt->join_ec);
+
+         if (retro_atomic_load_acquire_int(&filt->outstanding) > 0)
+            retro_eventcount_commit_wait(&filt->join_ec, key);
+         else
+            retro_eventcount_cancel_wait(&filt->join_ec);
       }
       return;
    }

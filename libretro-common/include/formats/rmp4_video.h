@@ -93,8 +93,10 @@ rmp4_video_stream_t *rmp4_video_stream_open(const uint8_t *buf,
 /* Open against a partially-read buffer: 'avail' leading bytes are
  * valid (raise later with the stream set_avail).  On NULL, *need_more
  * distinguishes "feed more bytes and retry" from malformed data. */
+/* need_lo/need_hi: see rmp4_open_memory_avail. */
 rmp4_video_stream_t *rmp4_video_stream_open_avail(const uint8_t *buf,
-      size_t len, size_t avail, int *need_more);
+      size_t len, size_t avail, int *need_more,
+      size_t *need_lo, size_t *need_hi);
 
 void rmp4_video_stream_close(rmp4_video_stream_t *stream);
 
@@ -125,6 +127,35 @@ const uint32_t *rmp4_video_stream_next(rmp4_video_stream_t *stream,
  * the default order. */
 void rmp4_video_stream_set_argb(rmp4_video_stream_t *stream, int argb);
 
+/* Blit decoded frames into @out - width * height words, the caller's,
+ * which then comes back from rmp4_video_stream_next and _render -
+ * instead of the stream's own frame, so a caller uploading from its
+ * own buffer needs no copy out of the stream. NULL restores the
+ * stream's frame. Takes effect from the next rendered frame; @out must
+ * stay valid until the next call that renders has returned. */
+/* While @behind is set, pictures nothing references are consumed
+ * without being decoded and their presentation slots pass, so the
+ * stream catches up with a caller that has fallen behind its clock;
+ * what is shown is decoded exactly as before. Clear it once caught
+ * up. */
+void rmp4_video_stream_set_catchup(rmp4_video_stream_t *stream, int behind);
+
+/* The stream's H.264 decoder, for a bench to ask about, or NULL. */
+void *rmp4_video_stream_h264(rmp4_video_stream_t *stream);
+void *rmp4_video_stream_h265(rmp4_video_stream_t *stream);
+
+void rmp4_video_stream_set_output(rmp4_video_stream_t *stream,
+      uint32_t *out);
+
+/* Convert decoded frames in @bands row bands on @pool (an rthreads
+ * tpool_t of at least bands - 1 threads; the calling thread takes one
+ * band and joins the rest), and decode a VP9 frame's tile columns on
+ * the same threads (rvp9_set_tile_pool). NULL or bands <= 1 keeps
+ * everything on the calling thread. The pool is the caller's and must
+ * outlive every decode call made while it is set. */
+void rmp4_video_stream_set_blit_pool(rmp4_video_stream_t *stream,
+      void *pool, unsigned bands);
+
 /* Advance past the next displayed frame without colour-converting it:
  * the picture stays inside the decoder and no work is spent on its
  * pixels.  Returns 1 when a frame was consumed (its display duration
@@ -152,6 +183,8 @@ void rmp4_video_stream_set_avail(rmp4_video_stream_t *stream,
 /* Bounded-memory streaming support (see rmp4_media_floor/consumed). */
 size_t rmp4_video_stream_media_floor(rmp4_video_stream_t *s);
 size_t rmp4_video_stream_consumed(rmp4_video_stream_t *s);
+/* Container duration in nanoseconds (mvhd), 0 when absent. */
+int64_t rmp4_video_stream_duration_ns(rmp4_video_stream_t *s);
 
 void rmp4_video_stream_rewind(rmp4_video_stream_t *stream);
 

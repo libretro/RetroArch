@@ -17,6 +17,7 @@
 
 /* We are targeting XRandR 1.2 here. */
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <compat/strl.h>
@@ -24,6 +25,7 @@
 
 #include <sys/types.h>
 #include <unistd.h>
+#include <poll.h>
 #include <X11/Xlib.h>
 
 #ifdef HAVE_CONFIG_H
@@ -38,42 +40,77 @@
 
 #include "../video_display_server.h"
 #include "../common/x11_common.h"
+#ifdef HAVE_XINERAMA
+#include "../common/xinerama_common.h"
+#endif
 #include "../../retroarch.h"
-#include "../video_crt_switch.h" /* Needed to set aspect for low resolution in Linux */
+#include "../../verbosity.h"
+#include "edid_sysfs.h"
+#ifdef HAVE_XRANDR
+#include "../common/mutter_displayconfig.h"
+#endif
 
 enum dispserv_x11_flags
 {
-   DISPSERV_X11_FLAG_USING_GLOBAL_DPY  = (1 << 0),
-   DISPSERV_X11_FLAG_CRT_EN            = (1 << 1),
    DISPSERV_X11_FLAG_DECORATIONS       = (1 << 2)
 };
+
+#ifdef HAVE_XRANDR
+/* XRandR modeline application state. One output is managed; its
+ * desktop mode and crtc placement are kept so close() can put the
+ * desktop back. sp_desktop_crtc mirrors every crtc's position at open
+ * time for screen restore and reordering. */
+typedef struct
+{
+   Display *dpy;
+   XRRCrtcInfo *desktop_crtc;   /* one per crtc, from open */
+   Window root;
+   XRRModeInfo desktop_mode;
+   XRRCrtcInfo last_crtc;
+   int desktop_output;          /* index into resources->outputs, -1 none */
+   int screen;
+   int crtc_flags;              /* MODELINE_ROTATED when the desktop is */
+   int ncrtc;
+   unsigned min_width, max_width, min_height, max_height;
+   unsigned xerrors;
+   unsigned xerrors_flag;
+   Rotation desktop_rotation;
+   bool enable_screen_reordering;
+   bool enable_screen_compositing;
+   bool keep_changes;
+   bool opened;
+} x11_modeline_t;
+#endif
 
 typedef struct
 {
 #ifdef HAVE_XRANDR
-   XRRModeInfo crt_rrmode;
+   x11_modeline_t ml;
 #endif
-   int crt_name_id;
-   int monitor_index;
    unsigned opacity;
    uint8_t flags;
-   char crt_name[16];
-   char new_mode[256];
-   char old_mode[256];
-   char orig_output[256];
 } dispserv_x11_t;
+
+#ifdef HAVE_XRANDR
+static void x11_display_server_modeline_close(void *data);
+#endif
+
+/* See x11_common.h. */
+retro_atomic_int_t g_x11_randr_state    = RETRO_ATOMIC_INT_INITIALIZER(0);
+retro_atomic_int_t g_x11_refresh_serial = RETRO_ATOMIC_INT_INITIALIZER(0);
+retro_atomic_int_t g_x11_refresh_bits   =
+   RETRO_ATOMIC_INT_INITIALIZER(X11_REFRESH_NONE);
 
 #ifdef HAVE_XRANDR
 static Display* x11_display_server_open_display(dispserv_x11_t *dispserv)
 {
+   /* Asked from the runloop and the video thread at once, so this
+    * writes nothing: g_x11_dpy is what close leaves open. */
    Display *dpy        = g_x11_dpy;
    if (!dispserv)
       return NULL;
    if (dpy)
-   {
-      dispserv->flags |= DISPSERV_X11_FLAG_USING_GLOBAL_DPY;
       return dpy;
-   }
    /* SDL might use X11 but doesn't use g_x11_dpy, so open it manually */
    return XOpenDisplay(0);
 }
@@ -83,244 +120,10 @@ static void x11_display_server_close_display(dispserv_x11_t *dispserv,
 {
    if (     !dpy
          || !dispserv
-         || (dispserv->flags & DISPSERV_X11_FLAG_USING_GLOBAL_DPY)
          || dpy == g_x11_dpy)
       return;
 
    XCloseDisplay(dpy);
-}
-
-static bool x11_display_server_set_resolution(void *data,
-      unsigned width, unsigned height, int int_hz, float hz,
-      int center, int monitor_index, int xoffset, int padjust)
-{
-   size_t _len;
-   int m, screen;
-   Window window;
-   XRRScreenResources
-      *resources            = NULL;
-   XRRScreenResources  *res = NULL;
-   Display *dpy             = NULL;
-   int i                    = 0;
-   int hfp                  = 0;
-   int hsp                  = 0;
-   int hbp                  = 0;
-   int vfp                  = 0;
-   int vsp                  = 0;
-   int vbp                  = 0;
-   int hmax                 = 0;
-   int vmax                 = 0;
-   int x_offset             = center;
-   int pdefault             = 8;
-   int pwidth               = 0;
-   float roundw             = 0.0f;
-   float pixel_clock        = 0;
-   int crt_mode_flag        = 0;
-   bool crt_exists          = false;
-   XRRModeInfo *swmode      = NULL;
-   dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
-
-   dispserv->monitor_index  = monitor_index;
-   dispserv->flags         |= DISPSERV_X11_FLAG_CRT_EN;
-   dispserv->crt_name_id   += 1;
-   _len  = strlcpy(dispserv->crt_name, "CRT", sizeof(dispserv->crt_name));
-   _len += snprintf(dispserv->crt_name + _len,
-         sizeof(dispserv->crt_name) - _len,
-         "%d", dispserv->crt_name_id);
-
-   strlcpy(dispserv->old_mode, dispserv->new_mode,
-         sizeof(dispserv->old_mode));
-
-   dpy                      = XOpenDisplay(0);
-   screen                   = DefaultScreen(dpy);
-   window                   = RootWindow(dpy, screen);
-
-   /* set core refresh from hz */
-   video_monitor_set_refresh_rate(hz);
-
-   /* following code is the mode line generator */
-   if (width < 700)
-   {
-      hfp      = (width * 1.033)+(padjust*2);
-      hbp      = (width * 1.225)+(padjust*2);
-   }
-   else
-   {
-      hfp      = ((width * 1.033) + (width / 112))+(padjust*4);
-      hbp      = ((width * 1.225) + (width /58))+(padjust*4);
-      xoffset  = xoffset*2;
-   }
-
-   hsp         = (width * 1.117) - (xoffset*4);
-   hmax        = hbp;
-
-   if (height < 241)
-      vmax     = 261;
-   if (height < 241 && hz > 56 && hz < 58)
-      vmax     = 280;
-   if (height < 241 && hz < 55)
-      vmax     = 313;
-   if (height > 250 && height < 260 && hz > 54)
-      vmax     = 296;
-   if (height > 250 && height < 260 && hz > 52 && hz < 54)
-      vmax     = 285;
-   if (height > 250 && height < 260 && hz < 52)
-      vmax     = 313;
-   if (height > 260 && height < 300)
-      vmax     = 318;
-   if (height > 400 && hz > 56)
-      vmax     = 533;
-   if (height > 520 && hz < 57)
-      vmax     = 580;
-   if (height > 300 && hz < 56)
-      vmax        = 615;
-   if (height > 500 && hz < 56)
-      vmax        = 624;
-   if (height > 300)
-      pdefault    = pdefault * 2;
-
-   vfp            = height + ((vmax - height) / 2) - pdefault;
-
-   if (height < 300)
-      vsp         = vfp + 3; /* needs to be 3 for progressive */
-   if (height > 300)
-      vsp         = vfp + 6; /* needs to be 6 for interlaced */
-
-   vbp            = vmax;
-
-   if (height < 300)
-      pixel_clock = (hmax * vmax * hz) ;
-   if (height > 300)
-      pixel_clock = (hmax * vmax * hz) / 2;
-   /* above code is the modeline generator */
-
-   /* Create interlaced new mode from modline variables */
-   if (height < 300)
-      crt_mode_flag = 10;
-
-   /* Create interlaced new mode from modline variables */
-   if (height > 300)
-      crt_mode_flag = 26;
-   strlcpy(dispserv->old_mode, dispserv->new_mode, sizeof(dispserv->old_mode));
-   /* variable for new mode */
-   strlcpy(dispserv->new_mode, dispserv->crt_name, sizeof(dispserv->new_mode));
-
-   /* Need to run loops for DVI0 - DVI-2 and VGA0 - VGA-2 outputs to
-    * add and delete modes */
-
-   dispserv->crt_rrmode.name          = dispserv->new_mode;
-   dispserv->crt_rrmode.nameLength    = _len;
-   dispserv->crt_rrmode.dotClock      = pixel_clock;
-   dispserv->crt_rrmode.width         = width;
-   dispserv->crt_rrmode.hSyncStart    = hfp;
-   dispserv->crt_rrmode.hSyncEnd      = hsp;
-   dispserv->crt_rrmode.hTotal        = hmax;
-   dispserv->crt_rrmode.height        = height;
-   dispserv->crt_rrmode.vSyncStart    = vfp;
-   dispserv->crt_rrmode.vSyncEnd      = vsp;
-   dispserv->crt_rrmode.vTotal        = vbp;
-   dispserv->crt_rrmode.modeFlags     = crt_mode_flag; /* 10 for -hsync -vsync. 26 for -hsync -vsync interlaced */
-   dispserv->crt_rrmode.hSkew         = 0;
-
-   res                                = XRRGetScreenResources(dpy, window);
-   XSync(dpy, False);
-
-   resources = XRRGetScreenResourcesCurrent(dpy, window);
-
-   for (m = 0; m < resources->nmode; m++)
-   {
-      if (string_is_equal(resources->modes[m].name, dispserv->new_mode))
-      {
-         crt_exists = true;
-         break;
-      }
-   }
-
-   XRRFreeScreenResources(resources);
-
-   if (!crt_exists)
-      XRRCreateMode(dpy, window, &dispserv->crt_rrmode);
-
-   resources = XRRGetScreenResourcesCurrent(dpy, window);
-
-   for (m = 0; m < resources->nmode; m++)
-   {
-      if (string_is_equal(resources->modes[m].name, dispserv->new_mode))
-      {
-         swmode = &resources->modes[m];
-         break;
-      }
-   }
-
-   if (dispserv->monitor_index == 20)
-   {
-      for (i = 0; i < res->noutput; i++)
-      {
-         XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res, res->outputs[i]);
-
-         if (outputs->connection == RR_Connected)
-         {
-            XRRCrtcInfo *crtc = NULL;
-
-            XRRAddOutputMode(dpy, res->outputs[i], swmode->id);
-            XSync(dpy, False);
-            strlcpy(dispserv->orig_output, outputs->name,
-                  sizeof(dispserv->orig_output));
-            crtc         = XRRGetCrtcInfo(dpy, resources, outputs->crtc);
-            crtc->mode   = swmode->id;
-            crtc->width  = swmode->width;
-            crtc->height = swmode->height;
-            XRRSetCrtcConfig(dpy, res,res->crtcs[i], CurrentTime,
-                  0, 0, None, RR_Rotate_0, NULL, 0);
-            XSync(dpy, False);
-            XRRSetScreenSize(dpy, window, width, height, (int) ((25.4 * width) / 96.0), (int) ((25.4 * height) / 96.0));
-            XSync(dpy, False);
-            XRRSetCrtcConfig(dpy, res, res->crtcs[i], CurrentTime,
-                  crtc->x, crtc->y, crtc->mode, crtc->rotation,
-                  crtc->outputs, crtc->noutput);
-            XSync(dpy, False);
-
-
-            XRRFreeCrtcInfo(crtc);
-
-         }
-
-         XRRFreeOutputInfo(outputs);
-      }
-   }
-   else
-   {
-      XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res, res->outputs[monitor_index]);
-
-      if (outputs->connection == RR_Connected)
-      {
-         XRRCrtcInfo *crtc = NULL;
-
-         XRRAddOutputMode(dpy, res->outputs[monitor_index], swmode->id);
-         XSync(dpy, False);
-         strlcpy(dispserv->orig_output, outputs->name,
-               sizeof(dispserv->orig_output));
-         crtc         = XRRGetCrtcInfo(dpy, resources, outputs->crtc);
-         crtc->mode   = swmode->id;
-         crtc->width  = swmode->width;
-         crtc->height = swmode->height;
-         XRRSetCrtcConfig(dpy, res,res->crtcs[monitor_index], CurrentTime,
-               0, 0, None, RR_Rotate_0, NULL, 0);
-         XSync(dpy, False);
-         XRRSetScreenSize(dpy, window, width, height, (int) ((25.4 * width) / 96.0), (int) ((25.4 * height) / 96.0));
-         XSync(dpy, False);
-         XRRSetCrtcConfig(dpy, res, res->crtcs[monitor_index], CurrentTime,
-               crtc->x, crtc->y, crtc->mode, crtc->rotation,
-               crtc->outputs, crtc->noutput);
-         XSync(dpy, False);
-
-         XRRFreeCrtcInfo(crtc);
-      }
-      XRRFreeOutputInfo(outputs);
-   }
-   XRRFreeScreenResources(resources);
-   XCloseDisplay(dpy);
-   return true;
 }
 
 static void x11_display_server_set_screen_orientation(void *data,
@@ -337,9 +140,22 @@ static void x11_display_server_set_screen_orientation(void *data,
 
    screen = XRRGetScreenResources(dpy, DefaultRootWindow(dpy));
 
+   if (!screen)
+   {
+      XUngrabServer(dpy);
+      if (config)
+         XRRFreeScreenConfigInfo(config);
+      XCloseDisplay(dpy);
+      return;
+   }
+
    for (i = 0; i < screen->noutput; i++)
    {
       XRROutputInfo *info = XRRGetOutputInfo(dpy, screen, screen->outputs[i]);
+
+      /* See x11_display_server_get_screen_orientation(). */
+      if (!info)
+         continue;
 
       if (info->connection != RR_Connected)
       {
@@ -349,8 +165,11 @@ static void x11_display_server_set_screen_orientation(void *data,
 
       for (j = 0; j < info->ncrtc; j++)
       {
-         XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, screen, screen->crtcs[j]);
+         XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, screen, info->crtcs[j]);
          Rotation new_rotation = RR_Rotate_0;
+
+         if (!crtc)
+            continue;
 
          if (crtc->width == 0 || crtc->height == 0)
          {
@@ -379,7 +198,7 @@ static void x11_display_server_set_screen_orientation(void *data,
                break;
          }
 
-         XRRSetCrtcConfig(dpy, screen, screen->crtcs[j], CurrentTime,
+         XRRSetCrtcConfig(dpy, screen, info->crtcs[j], CurrentTime,
                0, 0, None, RR_Rotate_0, NULL, 0);
 
          if ((crtc->rotation & RR_Rotate_0 || crtc->rotation & RR_Rotate_180) && (rotation == ORIENTATION_VERTICAL || rotation == ORIENTATION_FLIPPED_ROTATED))
@@ -399,7 +218,7 @@ static void x11_display_server_set_screen_orientation(void *data,
 
          XRRSetScreenSize(dpy, DefaultRootWindow(dpy), crtc->width, crtc->height, (25.4 * crtc->width) / dpi, (25.4 * crtc->height) / dpi);
 
-         XRRSetCrtcConfig(dpy, screen, screen->crtcs[j], CurrentTime, crtc->x, crtc->y, crtc->mode, crtc->rotation, crtc->outputs, crtc->noutput);
+         XRRSetCrtcConfig(dpy, screen, info->crtcs[j], CurrentTime, crtc->x, crtc->y, crtc->mode, crtc->rotation, crtc->outputs, crtc->noutput);
 
          XRRFreeCrtcInfo(crtc);
       }
@@ -411,8 +230,10 @@ static void x11_display_server_set_screen_orientation(void *data,
 
    XUngrabServer(dpy);
    XSync(dpy, False);
-   XRRFreeScreenConfigInfo(config);
+   if (config)
+      XRRFreeScreenConfigInfo(config);
    XCloseDisplay(dpy);
+   x11_refresh_invalidate();
 }
 
 static enum rotation x11_display_server_get_screen_orientation(void *data)
@@ -422,14 +243,31 @@ static enum rotation x11_display_server_get_screen_orientation(void *data)
    enum rotation     rotation     = ORIENTATION_NORMAL;
    dispserv_x11_t *dispserv       = (dispserv_x11_t*)data;
    Display               *dpy     = x11_display_server_open_display(dispserv);
-   XRRScreenResources *screen     = XRRGetScreenResources(dpy, DefaultRootWindow(dpy));
-   if (!screen)
-     return ORIENTATION_NORMAL;
+   XRRScreenResources *screen     = NULL;
+
+   /* x11_display_server_open_display() returns NULL when there is no
+    * global display and XOpenDisplay() fails; DefaultRootWindow()
+    * dereferences its argument. */
+   if (!dpy)
+      return ORIENTATION_NORMAL;
+
+   if (!(screen = XRRGetScreenResources(dpy, DefaultRootWindow(dpy))))
+   {
+      x11_display_server_close_display(dispserv, dpy);
+      return ORIENTATION_NORMAL;
+   }
+
    config                         = XRRGetScreenInfo(dpy, DefaultRootWindow(dpy));
 
    for (i = 0; i < screen->noutput; i++)
    {
       XRROutputInfo *info = XRRGetOutputInfo(dpy, screen, screen->outputs[i]);
+
+      /* XRRGetOutputInfo() returns NULL for an output the server
+       * cannot describe, which is the normal case under Xvfb and any
+       * other server with RandR present but no configured output. */
+      if (!info)
+         continue;
 
       if (info->connection != RR_Connected)
       {
@@ -437,9 +275,15 @@ static enum rotation x11_display_server_get_screen_orientation(void *data)
          continue;
       }
 
+      /* The crtcs to walk are this output's, not the screen's: ncrtc
+       * bounds info->crtcs, and there is no guarantee the screen has
+       * that many. */
       for (j = 0; j < info->ncrtc; j++)
       {
-         XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, screen, screen->crtcs[j]);
+         XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, screen, info->crtcs[j]);
+
+         if (!crtc)
+            continue;
 
          if (crtc->width == 0 || crtc->height == 0)
          {
@@ -471,13 +315,1489 @@ static enum rotation x11_display_server_get_screen_orientation(void *data)
    }
 
    XRRFreeScreenResources(screen);
-   XRRFreeScreenConfigInfo(config);
+   /* XRRGetScreenInfo() can fail; the free is not NULL-tolerant. */
+   if (config)
+      XRRFreeScreenConfigInfo(config);
 
    x11_display_server_close_display(dispserv, dpy);
 
    return rotation;
 }
 #endif
+
+#ifdef HAVE_XRANDR
+/* Set-timing flags */
+#define XRANDR_DISABLE_CRTC_RELOCATION  0x00000001
+#define XRANDR_ENABLE_SCREEN_REORDERING 0x00000002
+
+/* Per-crtc work flags, carried in XRRCrtcInfo.timestamp while a set
+ * is in progress */
+#define XRANDR_SETMODE_IS_DESKTOP          0x00000001
+#define XRANDR_SETMODE_RESTORE_DESKTOP     0x00000002
+#define XRANDR_SETMODE_UPDATE_DESKTOP_CRTC 0x00000010
+#define XRANDR_SETMODE_UPDATE_OTHER_CRTC   0x00000020
+#define XRANDR_SETMODE_UPDATE_REORDERING   0x00000040
+#define XRANDR_SETMODE_INFO_MASK           0x0000000F
+#define XRANDR_SETMODE_UPDATE_MASK         0x000000F0
+
+/* Super resolution placement, vertical stacking, reserved height */
+#define XRANDR_REORDERING_MAXIMUM_HEIGHT 1024
+
+/* Xlib's error handler is process-global; the backend is a single
+ * instance, so the errors land here. */
+static x11_modeline_t *x11_ml_current = NULL;
+static int (*x11_ml_old_error_handler)(Display *, XErrorEvent *) = NULL;
+
+static int x11_ml_error_handler(Display *dpy, XErrorEvent *err)
+{
+   if (x11_ml_current)
+      x11_ml_current->xerrors |= x11_ml_current->xerrors_flag;
+   if (x11_ml_old_error_handler)
+      x11_ml_old_error_handler(dpy, err);
+   RARCH_ERR("[XRandR] Error code %d flags %02x\n", err->error_code,
+         x11_ml_current ? x11_ml_current->xerrors : 0);
+   return 0;
+}
+
+static void x11_ml_trap(x11_modeline_t *ml, unsigned flag)
+{
+   XSync(ml->dpy, False);
+   ml->xerrors_flag         = flag;
+   x11_ml_current           = ml;
+   x11_ml_old_error_handler = XSetErrorHandler(x11_ml_error_handler);
+}
+
+static void x11_ml_untrap(x11_modeline_t *ml)
+{
+   XSync(ml->dpy, False);
+   XSetErrorHandler(x11_ml_old_error_handler);
+   x11_ml_current = NULL;
+}
+
+static bool x11_ml_find_mode(x11_modeline_t *ml, uint64_t xid,
+      XRRModeInfo *out)
+{
+   int m;
+   bool found = false;
+   XRRScreenResources *resources = XRRGetScreenResourcesCurrent(ml->dpy, ml->root);
+   if (!resources)
+      return false;
+   for (m = 0; m < resources->nmode; m++)
+   {
+      if (xid == resources->modes[m].id)
+      {
+         *out  = resources->modes[m];
+         found = true;
+         break;
+      }
+   }
+   XRRFreeScreenResources(resources);
+   return found;
+}
+
+static bool x11_ml_find_mode_by_name(x11_modeline_t *ml, const char *name,
+      XRRModeInfo *out)
+{
+   int m;
+   bool found = false;
+   XRRScreenResources *resources = XRRGetScreenResourcesCurrent(ml->dpy, ml->root);
+   if (!resources)
+      return false;
+   for (m = 0; m < resources->nmode; m++)
+   {
+      if (strcmp(resources->modes[m].name, name) == 0)
+      {
+         *out  = resources->modes[m];
+         found = true;
+         break;
+      }
+   }
+   XRRFreeScreenResources(resources);
+   return found;
+}
+
+/* Switch the managed output to pxmode, relocating the other crtcs
+ * and resizing the framebuffer as needed. flags selects crtc
+ * relocation and the one-time desktop reordering pass. */
+static bool x11_ml_set_timing(x11_modeline_t *ml,
+      const video_modeline_t *mode, int flags)
+{
+   int c;
+   XRRModeInfo xmode;
+   XRRModeInfo *pxmode;
+   XRRScreenResources *resources;
+   XRROutputInfo *output_info;
+   XRRCrtcInfo *crtc_info;
+   XRRCrtcInfo *global_crtc;
+   XRRCrtcInfo *original_crtc;
+   unsigned width, height, reordering_last_y;
+   bool ok;
+
+   if (ml->desktop_output == -1)
+   {
+      RARCH_ERR("[XRandR] No screen detected\n");
+      return false;
+   }
+
+   if (mode->type & MODELINE_DESKTOP)
+      pxmode = &ml->desktop_mode;
+   else
+   {
+      if (!x11_ml_find_mode(ml, mode->platform_data, &xmode))
+      {
+         RARCH_ERR("[XRandR] Mode not found\n");
+         return false;
+      }
+      pxmode = &xmode;
+   }
+
+   resources   = XRRGetScreenResourcesCurrent(ml->dpy, ml->root);
+   if (!resources)
+      return false;
+   output_info = XRRGetOutputInfo(ml->dpy, resources,
+         resources->outputs[ml->desktop_output]);
+   if (!output_info)
+   {
+      XRRFreeScreenResources(resources);
+      return false;
+   }
+   crtc_info   = XRRGetCrtcInfo(ml->dpy, resources, output_info->crtc);
+   if (!crtc_info)
+   {
+      XRRFreeOutputInfo(output_info);
+      XRRFreeScreenResources(resources);
+      return false;
+   }
+
+   if (flags & XRANDR_DISABLE_CRTC_RELOCATION)
+      RARCH_DBG("[XRandR] Crtc relocation disabled\n");
+
+   if (flags & XRANDR_ENABLE_SCREEN_REORDERING)
+      RARCH_DBG("[XRandR] Global desktop screen preparation\n");
+   else if (ml->last_crtc.mode == crtc_info->mode
+         && ml->last_crtc.x == crtc_info->x && ml->last_crtc.y == crtc_info->y
+         && pxmode->id == crtc_info->mode)
+      RARCH_DBG("[XRandR] Requested mode is already active [%04lx] %ux%u+%d+%d\n",
+            crtc_info->mode, crtc_info->width, crtc_info->height,
+            crtc_info->x, crtc_info->y);
+   else if (ml->last_crtc.mode != crtc_info->mode)
+   {
+      RARCH_DBG("[XRandR] Unexpected active modeline (last:[%04lx] now:[%04lx] %ux%u+%d+%d want:[%04lx])\n",
+            ml->last_crtc.mode, crtc_info->mode, crtc_info->width,
+            crtc_info->height, crtc_info->x, crtc_info->y, pxmode->id);
+      *crtc_info = ml->last_crtc;
+   }
+
+   global_crtc   = (XRRCrtcInfo*)calloc(resources->ncrtc, sizeof(XRRCrtcInfo));
+   original_crtc = (XRRCrtcInfo*)calloc(resources->ncrtc, sizeof(XRRCrtcInfo));
+   if (!global_crtc || !original_crtc)
+   {
+      free(global_crtc);
+      free(original_crtc);
+      XRRFreeCrtcInfo(crtc_info);
+      XRRFreeOutputInfo(output_info);
+      XRRFreeScreenResources(resources);
+      return false;
+   }
+
+   /* Keep the window manager out while crtcs are shuffled */
+   XGrabServer(ml->dpy);
+
+   width             = ml->min_width;
+   height            = ml->min_height;
+   reordering_last_y = 0;
+   ml->xerrors       = 0;
+
+   /* Compute the new placement of every crtc */
+   for (c = 0; c < resources->ncrtc; c++)
+   {
+      XRRCrtcInfo *info = XRRGetCrtcInfo(ml->dpy, resources, resources->crtcs[c]);
+      XRRCrtcInfo *crtc_info0 = &original_crtc[c];
+      XRRCrtcInfo *crtc_info1 = &global_crtc[c];
+      if (!info)
+         continue;
+      *crtc_info0 = *info;
+      *crtc_info1 = *info;
+      XRRFreeCrtcInfo(info);
+
+      crtc_info1->timestamp = 0;
+
+      if (output_info->crtc == 0 || crtc_info0->mode == 0)
+         continue;
+
+      if (flags & XRANDR_ENABLE_SCREEN_REORDERING)
+      {
+         /* Stack every crtc vertically */
+         crtc_info1->x = 0;
+         crtc_info1->y = reordering_last_y;
+         if (crtc_info1->height > XRANDR_REORDERING_MAXIMUM_HEIGHT)
+            reordering_last_y += crtc_info1->height;
+         else
+            reordering_last_y += XRANDR_REORDERING_MAXIMUM_HEIGHT;
+         crtc_info1->timestamp |= XRANDR_SETMODE_UPDATE_REORDERING;
+      }
+      else if (resources->crtcs[c] == output_info->crtc)
+      {
+         crtc_info1->timestamp |= XRANDR_SETMODE_IS_DESKTOP;
+         crtc_info1->mode   = pxmode->id;
+         crtc_info1->width  = pxmode->width;
+         crtc_info1->height = pxmode->height;
+         if (mode->type & MODELINE_DESKTOP)
+         {
+            if (!ml->enable_screen_compositing && ml->desktop_crtc
+                  && (crtc_info1->x != ml->desktop_crtc[c].x
+                     || crtc_info1->y != ml->desktop_crtc[c].y))
+            {
+               crtc_info1->x = ml->desktop_crtc[c].x;
+               crtc_info1->y = ml->desktop_crtc[c].y;
+               crtc_info1->timestamp |= XRANDR_SETMODE_RESTORE_DESKTOP;
+            }
+         }
+         else
+         {
+            crtc_info1->x = crtc_info->x;
+            crtc_info1->y = crtc_info->y;
+         }
+         if (crtc_info0->mode != crtc_info1->mode
+               || crtc_info0->width != crtc_info1->width
+               || crtc_info0->height != crtc_info1->height
+               || crtc_info0->x != crtc_info1->x
+               || crtc_info0->y != crtc_info1->y)
+            crtc_info1->timestamp |= XRANDR_SETMODE_UPDATE_DESKTOP_CRTC;
+      }
+      else if ((mode->type & MODELINE_DESKTOP) && ml->enable_screen_reordering
+            && ml->desktop_crtc
+            && (crtc_info1->x != ml->desktop_crtc[c].x
+               || crtc_info1->y != ml->desktop_crtc[c].y))
+      {
+         crtc_info1->x = ml->desktop_crtc[c].x;
+         crtc_info1->y = ml->desktop_crtc[c].y;
+         crtc_info1->timestamp |= (XRANDR_SETMODE_RESTORE_DESKTOP
+               | XRANDR_SETMODE_UPDATE_REORDERING);
+      }
+   }
+
+   for (c = 0; c < resources->ncrtc; c++)
+   {
+      XRRCrtcInfo *crtc_info0 = &original_crtc[c];
+      XRRCrtcInfo *crtc_info1 = &global_crtc[c];
+
+      if (output_info->crtc == 0 || crtc_info0->mode == 0)
+         continue;
+
+      if ((flags & XRANDR_DISABLE_CRTC_RELOCATION) == 0
+            && (crtc_info1->timestamp & XRANDR_SETMODE_IS_DESKTOP) == 0)
+      {
+         /* Neighbours move with the new width and height */
+         if (crtc_info1->x >= crtc_info->x + (int)crtc_info->width)
+         {
+            crtc_info1->x += pxmode->width - crtc_info->width;
+            crtc_info1->timestamp |= XRANDR_SETMODE_UPDATE_OTHER_CRTC;
+         }
+         if (crtc_info1->y >= crtc_info->y + (int)crtc_info->height)
+         {
+            crtc_info1->y += pxmode->height - crtc_info->height;
+            crtc_info1->timestamp |= XRANDR_SETMODE_UPDATE_OTHER_CRTC;
+         }
+      }
+
+      /* Framebuffer size from the crtc placement */
+      if (crtc_info1->x + crtc_info1->width > width)
+         width = crtc_info1->x + crtc_info1->width;
+      if (crtc_info1->y + crtc_info1->height > height)
+         height = crtc_info1->y + crtc_info1->height;
+      if (width > ml->max_width)
+      {
+         RARCH_ERR("[XRandR] Width is above allowed maximum (%u > %u)\n",
+               width, ml->max_width);
+         width = ml->max_width;
+      }
+      if (height > ml->max_height)
+      {
+         RARCH_ERR("[XRandR] Height is above allowed maximum (%u > %u)\n",
+               height, ml->max_height);
+         height = ml->max_height;
+      }
+
+      if (crtc_info1->timestamp & XRANDR_SETMODE_UPDATE_MASK)
+         RARCH_DBG("[XRandR] crtc %d%s [%04lx] %ux%u+%d+%d --> [%04lx] %ux%u+%d+%d flags [%02lx]\n",
+               c, (crtc_info1->timestamp & 1) ? "*" : " ",
+               crtc_info0->mode, crtc_info0->width, crtc_info0->height,
+               crtc_info0->x, crtc_info0->y,
+               crtc_info1->mode, crtc_info1->width, crtc_info1->height,
+               crtc_info1->x, crtc_info1->y, crtc_info1->timestamp);
+   }
+
+   /* Disable every crtc that changes */
+   for (c = 0; c < resources->ncrtc; c++)
+   {
+      if (global_crtc[c].timestamp & XRANDR_SETMODE_UPDATE_MASK)
+      {
+         if (XRRSetCrtcConfig(ml->dpy, resources, resources->crtcs[c],
+                  CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0)
+               != RRSetConfigSuccess)
+         {
+            RARCH_ERR("[XRandR] Error disabling crtc %d\n", c);
+            ml->xerrors_flag = 0x01;
+            ml->xerrors     |= ml->xerrors_flag;
+         }
+      }
+   }
+
+   /* Framebuffer size for the new placement */
+   if (ml->xerrors == 0)
+   {
+      RARCH_DBG("[XRandR] Setting screen size to %u x %u\n", width, height);
+      x11_ml_trap(ml, 0x02);
+      XRRSetScreenSize(ml->dpy, ml->root, width, height,
+            (int)((25.4 * width) / 96.0), (int)((25.4 * height) / 96.0));
+      x11_ml_untrap(ml);
+      if (ml->xerrors & ml->xerrors_flag)
+         RARCH_ERR("[XRandR] Error in XRRSetScreenSize\n");
+   }
+
+   /* Re-enable with the new mode and placement */
+   for (c = 0; c < resources->ncrtc; c++)
+   {
+      XRRCrtcInfo *crtc_info1 = &global_crtc[c];
+      if (crtc_info1->timestamp & XRANDR_SETMODE_UPDATE_MASK)
+      {
+         if (crtc_info1->timestamp & XRANDR_SETMODE_IS_DESKTOP)
+         {
+            GC gc = XCreateGC(ml->dpy, ml->root, 0, 0);
+            XFillRectangle(ml->dpy, ml->root, gc, crtc_info1->x, crtc_info1->y,
+                  crtc_info1->width, crtc_info1->height);
+            XFreeGC(ml->dpy, gc);
+         }
+         x11_ml_trap(ml, 0x14);
+         XRRSetCrtcConfig(ml->dpy, resources, resources->crtcs[c], CurrentTime,
+               crtc_info1->x, crtc_info1->y, crtc_info1->mode,
+               crtc_info1->rotation, crtc_info1->outputs, crtc_info1->noutput);
+         x11_ml_untrap(ml);
+         if (ml->xerrors & 0x10)
+         {
+            RARCH_ERR("[XRandR] Error in XRRSetCrtcConfig crtc %d set modeline %04lx\n",
+                  c, crtc_info1->mode);
+            ml->xerrors &= 0xEF;
+         }
+      }
+   }
+
+   free(original_crtc);
+   free(global_crtc);
+
+   XUngrabServer(ml->dpy);
+   /* The pump sees the change too, a frame later; the next read must
+    * not answer from the mode this replaced. */
+   x11_refresh_invalidate();
+
+   if (ml->xerrors & ml->xerrors_flag)
+      RARCH_ERR("[XRandR] Error in XRRSetCrtcConfig\n");
+
+   /* Read the managed crtc back to settle */
+   XRRFreeCrtcInfo(crtc_info);
+   crtc_info = XRRGetCrtcInfo(ml->dpy, resources, output_info->crtc);
+   ok        = crtc_info && crtc_info->mode != 0;
+   if (!ok)
+      RARCH_ERR("[XRandR] Switching resolution failed, no modeline is set\n");
+   else
+      ml->last_crtc = *crtc_info;
+
+   if (crtc_info)
+      XRRFreeCrtcInfo(crtc_info);
+   XRRFreeOutputInfo(output_info);
+   XRRFreeScreenResources(resources);
+
+   return (ml->xerrors == 0 && ok);
+}
+
+static int x11_display_server_modeline_list_outputs(void *data,
+      video_output_info_t *out, int max)
+{
+   int o;
+   int n = 0;
+   dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
+   Display *dpy             = x11_display_server_open_display(dispserv);
+   XRRScreenResources *resources;
+   Window root;
+
+   if (!dpy)
+      return -1;
+   root      = RootWindow(dpy, DefaultScreen(dpy));
+   resources = XRRGetScreenResourcesCurrent(dpy, root);
+   if (!resources)
+   {
+      x11_display_server_close_display(dispserv, dpy);
+      return -1;
+   }
+
+   for (o = 0; o < resources->noutput && n < max; o++)
+   {
+      XRRCrtcInfo *crtc;
+      XRROutputInfo *info = XRRGetOutputInfo(dpy, resources, resources->outputs[o]);
+      if (!info)
+         continue;
+      if (info->connection == RR_Connected && info->crtc)
+      {
+         memset(&out[n], 0, sizeof(out[n]));
+         out[n].id = o;
+         strlcpy(out[n].name, info->name, sizeof(out[n].name));
+         crtc = XRRGetCrtcInfo(dpy, resources, info->crtc);
+         if (crtc)
+         {
+            out[n].x      = crtc->x;
+            out[n].y      = crtc->y;
+            out[n].dims = VIDEO_SCALE_PACK(crtc->width, crtc->height);
+            XRRFreeCrtcInfo(crtc);
+         }
+         out[n].primary = (n == 0);
+         n++;
+      }
+      XRRFreeOutputInfo(info);
+   }
+   XRRFreeScreenResources(resources);
+   x11_display_server_close_display(dispserv, dpy);
+   return n;
+}
+
+/* The head a request is for, as a root-relative point: the centre of
+ * the RetroArch window when the screen is "auto", the centre of the
+ * Xinerama screen the window was placed on when the screen is an
+ * index (the context driver maps video_monitor_index to Xinerama
+ * screen index-1, so the same mapping here lands the timing on the
+ * head the window sits on). false when neither is known, in which
+ * case the caller falls back to the output count. */
+static bool x11_ml_target_point(Display *dpy, int screen_pos, int *px, int *py)
+{
+#ifdef HAVE_XINERAMA
+   if (screen_pos >= 0)
+   {
+      int x, y;
+      unsigned w, h;
+      if (xinerama_get_coord(dpy, screen_pos, &x, &y, &w, &h))
+      {
+         *px = x + (int)w / 2;
+         *py = y + (int)h / 2;
+         return true;
+      }
+   }
+#endif
+   if (screen_pos < 0 && g_x11_win)
+   {
+      XWindowAttributes attr;
+      Window child;
+      int rx = 0, ry = 0;
+      if (XGetWindowAttributes(dpy, g_x11_win, &attr)
+            && XTranslateCoordinates(dpy, g_x11_win, attr.root, 0, 0, &rx, &ry, &child))
+      {
+         *px = rx + attr.width / 2;
+         *py = ry + attr.height / 2;
+         return true;
+      }
+   }
+   return false;
+}
+
+static bool x11_display_server_modeline_open(void *data,
+      const video_modeline_disp_t *ds)
+{
+   int screen, major_version, minor_version;
+   int screen_pos = -1;
+   int target_x = 0, target_y = 0;
+   bool have_target;
+   bool detected  = false;
+   dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
+   x11_modeline_t *ml       = &dispserv->ml;
+
+   if (ml->opened)
+      return true;
+
+   memset(ml, 0, sizeof(*ml));
+   ml->desktop_output            = -1;
+   ml->enable_screen_reordering  = ds->screen_reordering;
+   ml->enable_screen_compositing = !ds->screen_reordering && ds->screen_compositing;
+   ml->keep_changes              = ds->keep_changes;
+
+   ml->dpy = x11_display_server_open_display(dispserv);
+   if (!ml->dpy)
+   {
+      RARCH_ERR("[XRandR] Failed to connect to the X server\n");
+      return false;
+   }
+
+   XRRQueryVersion(ml->dpy, &major_version, &minor_version);
+   RARCH_DBG("[XRandR] Version %d.%d\n", major_version, minor_version);
+   if (major_version < 1 || (major_version == 1 && minor_version < 2))
+   {
+      RARCH_ERR("[XRandR] Xrandr version 1.2 or above is required\n");
+      x11_display_server_close_display(dispserv, ml->dpy);
+      ml->dpy = NULL;
+      return false;
+   }
+
+   /* Screen selection: "auto", "screenN", "N" or an output name */
+   if (strlen(ds->screen) == 7 && !strncmp(ds->screen, "screen", 6)
+         && ds->screen[6] >= '0' && ds->screen[6] <= '9')
+      screen_pos = ds->screen[6] - '0';
+   else if (strlen(ds->screen) == 1 && ds->screen[0] >= '0' && ds->screen[0] <= '9')
+      screen_pos = ds->screen[0] - '0';
+
+   if (ScreenCount(ml->dpy) > 1)
+      RARCH_WARN("[XRandR] Screen count is %d, unpredictable behavior to be expected\n",
+            ScreenCount(ml->dpy));
+
+   have_target = x11_ml_target_point(ml->dpy, screen_pos, &target_x, &target_y);
+
+   for (screen = 0; !detected && screen < ScreenCount(ml->dpy); screen++)
+   {
+      int o, c;
+      int output_position       = 0;
+      Rotation current_rotation = 0;
+      XRRScreenConfiguration *sc;
+      XRRScreenResources *resources;
+
+      RARCH_DBG("[XRandR] Check screen number %d\n", screen);
+      ml->screen = screen;
+      ml->root   = RootWindow(ml->dpy, screen);
+      resources  = XRRGetScreenResourcesCurrent(ml->dpy, ml->root);
+      if (!resources)
+         continue;
+
+      /* Every crtc's placement, for restore and reordering */
+      free(ml->desktop_crtc);
+      ml->desktop_crtc = (XRRCrtcInfo*)calloc(resources->ncrtc, sizeof(XRRCrtcInfo));
+      ml->ncrtc        = resources->ncrtc;
+      if (ml->desktop_crtc)
+      {
+         for (c = 0; c < resources->ncrtc; c++)
+         {
+            XRRCrtcInfo *info = XRRGetCrtcInfo(ml->dpy, resources, resources->crtcs[c]);
+            if (!info)
+               continue;
+            ml->desktop_crtc[c] = *info;
+            XRRFreeCrtcInfo(info);
+         }
+      }
+
+      sc = XRRGetScreenInfo(ml->dpy, ml->root);
+      if (sc)
+      {
+         XRRConfigCurrentConfiguration(sc, &ml->desktop_rotation);
+         XRRFreeScreenConfigInfo(sc);
+      }
+
+      for (o = 0; o < resources->noutput; o++)
+      {
+         XRROutputInfo *output_info = XRRGetOutputInfo(ml->dpy, resources, resources->outputs[o]);
+         if (!output_info)
+         {
+            RARCH_ERR("[XRandR] Could not get output 0x%x information\n",
+                  (unsigned)resources->outputs[o]);
+            continue;
+         }
+
+         if (ml->desktop_output == -1 && output_info->connection == RR_Connected
+               && output_info->crtc)
+         {
+            bool take = false;
+            if (!strcmp(ds->screen, output_info->name))
+               take = true;
+            else if (have_target)
+            {
+               /* The head under the target point */
+               XRRCrtcInfo *ci = XRRGetCrtcInfo(ml->dpy, resources, output_info->crtc);
+               if (ci)
+               {
+                  take = target_x >= ci->x && target_x < ci->x + (int)ci->width
+                     && target_y >= ci->y && target_y < ci->y + (int)ci->height;
+                  XRRFreeCrtcInfo(ci);
+               }
+            }
+            else if (!strcmp(ds->screen, "auto") || output_position == screen_pos)
+               take = true;
+
+            if (take)
+            {
+               int m;
+               int min_width, max_width, min_height, max_height;
+               XRRCrtcInfo *crtc_info;
+
+               ml->desktop_output = o;
+
+               XRRGetScreenSizeRange(ml->dpy, ml->root, &min_width, &min_height,
+                     &max_width, &max_height);
+               ml->min_width  = min_width;
+               ml->max_width  = max_width;
+               ml->min_height = min_height;
+               ml->max_height = max_height;
+
+               crtc_info = XRRGetCrtcInfo(ml->dpy, resources, output_info->crtc);
+               if (crtc_info)
+               {
+                  current_rotation = crtc_info->rotation;
+                  for (m = 0; m < resources->nmode && ml->desktop_mode.id == 0; m++)
+                  {
+                     if (crtc_info->mode == resources->modes[m].id)
+                     {
+                        ml->desktop_mode = resources->modes[m];
+                        ml->last_crtc    = *crtc_info;
+                     }
+                  }
+                  XRRFreeCrtcInfo(crtc_info);
+               }
+
+               if (current_rotation & 0xe)
+               {
+                  ml->crtc_flags = MODELINE_ROTATED;
+                  RARCH_DBG("[XRandR] Desktop rotation is %s\n",
+                        (current_rotation & 0x2) ? "left"
+                        : ((current_rotation & 0x8) ? "right" : "inverted"));
+               }
+            }
+            output_position++;
+         }
+         RARCH_DBG("[XRandR] Check output connector '%s' active %d crtc %d %s\n",
+               output_info->name, output_info->connection == RR_Connected ? 1 : 0,
+               output_info->crtc ? 1 : 0, ml->desktop_output == o
+               ? (have_target ? "[SELECTED: under the window]" : "[SELECTED]") : "");
+         XRRFreeOutputInfo(output_info);
+      }
+      XRRFreeScreenResources(resources);
+
+      detected = ml->desktop_output != -1;
+      if (!detected && have_target)
+      {
+         /* Nothing under the point: the count rule on the same screen */
+         have_target = false;
+         screen--;
+      }
+   }
+
+   if (!detected)
+   {
+      RARCH_ERR("[XRandR] No screen detected\n");
+      x11_display_server_close_display(dispserv, ml->dpy);
+      ml->dpy = NULL;
+      free(ml->desktop_crtc);
+      ml->desktop_crtc = NULL;
+      return false;
+   }
+
+   if (ml->enable_screen_reordering)
+   {
+      video_modeline_t mode;
+      memset(&mode, 0, sizeof(mode));
+      mode.type = MODELINE_DESKTOP;
+      x11_ml_set_timing(ml, &mode, XRANDR_ENABLE_SCREEN_REORDERING);
+   }
+
+   ml->opened = true;
+   return true;
+}
+
+static void x11_display_server_modeline_close(void *data)
+{
+   dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
+   x11_modeline_t *ml       = &dispserv->ml;
+   video_modeline_t mode;
+
+   if (!ml->opened)
+      return;
+
+   /* Desktop timing back, unless the user asked to keep changes */
+   if (!ml->keep_changes && ml->desktop_output != -1)
+   {
+      memset(&mode, 0, sizeof(mode));
+      mode.type = MODELINE_DESKTOP;
+      x11_ml_set_timing(ml, &mode, ml->enable_screen_compositing
+            ? 0 : XRANDR_DISABLE_CRTC_RELOCATION);
+   }
+
+   /* Default background back */
+   XClearWindow(ml->dpy, ml->root);
+   XSync(ml->dpy, False);
+
+   free(ml->desktop_crtc);
+   ml->desktop_crtc = NULL;
+   x11_display_server_close_display(dispserv, ml->dpy);
+   ml->dpy    = NULL;
+   ml->opened = false;
+}
+
+static unsigned x11_display_server_modeline_caps(void *data)
+{
+   return MODELINE_CAPS_ADD;
+}
+
+static int x11_display_server_modeline_enum(void *data,
+      video_modeline_t *modes, int max)
+{
+   int i, m;
+   int n = 0;
+   dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
+   x11_modeline_t *ml       = &dispserv->ml;
+   XRRScreenResources *resources;
+   XRROutputInfo *output_info;
+
+   if (!ml->opened || ml->desktop_output == -1)
+      return -1;
+
+   resources = XRRGetScreenResourcesCurrent(ml->dpy, ml->root);
+   if (!resources)
+      return -1;
+   output_info = XRRGetOutputInfo(ml->dpy, resources, resources->outputs[ml->desktop_output]);
+   if (!output_info)
+   {
+      XRRFreeScreenResources(resources);
+      return -1;
+   }
+
+   for (i = 0; i < output_info->nmode && n < max; i++)
+   {
+      for (m = 0; m < resources->nmode; m++)
+      {
+         XRRModeInfo *pxmode    = &resources->modes[m];
+         video_modeline_t *mode = &modes[n];
+         if (pxmode->id != output_info->modes[i])
+            continue;
+
+         memset(mode, 0, sizeof(*mode));
+         mode->platform_data = pxmode->id;
+         mode->pclock     = pxmode->dotClock;
+         mode->hactive    = pxmode->width;
+         mode->hbegin     = pxmode->hSyncStart;
+         mode->hend       = pxmode->hSyncEnd;
+         mode->htotal     = pxmode->hTotal;
+         mode->vactive    = pxmode->height;
+         mode->vbegin     = pxmode->vSyncStart;
+         mode->vend       = pxmode->vSyncEnd;
+         mode->vtotal     = pxmode->vTotal;
+         mode->interlace  = (pxmode->modeFlags & RR_Interlace) ? 1 : 0;
+         mode->doublescan = (pxmode->modeFlags & RR_DoubleScan) ? 1 : 0;
+         mode->hsync      = (pxmode->modeFlags & RR_HSyncPositive) ? 1 : 0;
+         mode->vsync      = (pxmode->modeFlags & RR_VSyncPositive) ? 1 : 0;
+         /* Whole hertz for the line rate, the label the list uses. A
+          * virtual or headless server lists its mode with the timing
+          * left at zero; the mode is real, its rate is unknown, and
+          * dividing by the totals is what crashed. Left at zero. */
+         if (mode->htotal && mode->vtotal)
+         {
+            mode->hfreq   = (double)(mode->pclock / (uint64_t)mode->htotal);
+            mode->vfreq   = mode->hfreq / mode->vtotal * (mode->interlace ? 2 : 1);
+            mode->refresh = (int)mode->vfreq;
+         }
+         mode->dims       = VIDEO_SCALE_PACK(pxmode->width, pxmode->height);
+         mode->type      |= ml->crtc_flags;
+         mode->type      |= MODELINE_TIMING_XRANDR;
+         if (strncmp(pxmode->name, "SR-", 3) == 0 || strncmp(pxmode->name, "RA-", 3) == 0)
+            RARCH_DBG("[XRandR] Leftover generated modeline %s detected\n", pxmode->name);
+         if (ml->desktop_mode.id == pxmode->id)
+            mode->type |= MODELINE_DESKTOP;
+         RARCH_DBG("[XRandR] Mode %04lx %dx%d refresh %.6f listed\n",
+               pxmode->id, pxmode->width, pxmode->height, mode->vfreq);
+         n++;
+         break;
+      }
+   }
+
+   XRRFreeOutputInfo(output_info);
+   XRRFreeScreenResources(resources);
+   return n;
+}
+
+static bool x11_display_server_modeline_delete(void *data,
+      video_modeline_t *mode)
+{
+   int m;
+   int total_xerrors = 0;
+   dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
+   x11_modeline_t *ml       = &dispserv->ml;
+   XRRScreenResources *resources;
+
+   if (!ml->opened || ml->desktop_output == -1)
+   {
+      RARCH_ERR("[XRandR] No screen detected\n");
+      return false;
+   }
+   if (!mode)
+      return false;
+
+   resources = XRRGetScreenResourcesCurrent(ml->dpy, ml->root);
+   if (!resources)
+      return false;
+
+   for (m = 0; m < resources->nmode && mode->platform_data != 0; m++)
+   {
+      XRROutputInfo *output_info;
+      XRRCrtcInfo *crtc_info;
+
+      if (mode->platform_data != resources->modes[m].id)
+         continue;
+
+      output_info = XRRGetOutputInfo(ml->dpy, resources, resources->outputs[ml->desktop_output]);
+      crtc_info   = output_info ? XRRGetCrtcInfo(ml->dpy, resources, output_info->crtc) : NULL;
+      if (crtc_info && resources->modes[m].id == crtc_info->mode)
+      {
+         video_modeline_t desktop_mode;
+         RARCH_DBG("[XRandR] Modeline [%04lx] is active, restoring desktop mode first\n",
+               resources->modes[m].id);
+         memset(&desktop_mode, 0, sizeof(desktop_mode));
+         desktop_mode.type |= MODELINE_DESKTOP;
+         if (!x11_ml_set_timing(ml, &desktop_mode, 0))
+         {
+            RARCH_ERR("[XRandR] Could not restore desktop mode\n");
+            XRRFreeCrtcInfo(crtc_info);
+            XRRFreeOutputInfo(output_info);
+            XRRFreeScreenResources(resources);
+            return false;
+         }
+      }
+      if (crtc_info)
+         XRRFreeCrtcInfo(crtc_info);
+      if (output_info)
+         XRRFreeOutputInfo(output_info);
+
+      RARCH_DBG("[XRandR] Remove mode %s\n", resources->modes[m].name);
+      ml->xerrors = 0;
+      x11_ml_trap(ml, 0x01);
+      XRRDeleteOutputMode(ml->dpy, resources->outputs[ml->desktop_output],
+            resources->modes[m].id);
+      XSync(ml->dpy, False);
+      if (ml->xerrors & ml->xerrors_flag)
+      {
+         RARCH_ERR("[XRandR] Error in XRRDeleteOutputMode\n");
+         total_xerrors++;
+      }
+      ml->xerrors_flag = 0x02;
+      XRRDestroyMode(ml->dpy, resources->modes[m].id);
+      x11_ml_untrap(ml);
+      if (ml->xerrors & ml->xerrors_flag)
+      {
+         RARCH_ERR("[XRandR] Error in XRRDestroyMode\n");
+         total_xerrors++;
+      }
+      mode->platform_data = 0;
+   }
+
+   XRRFreeScreenResources(resources);
+   return total_xerrors == 0;
+}
+
+static bool x11_display_server_modeline_add(void *data,
+      video_modeline_t *mode)
+{
+   char name[48];
+   XRRModeInfo xmode;
+   XRRModeInfo found;
+   RRMode gmid;
+   XRRScreenResources *resources;
+   dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
+   x11_modeline_t *ml       = &dispserv->ml;
+
+   if (!mode)
+      return false;
+   if (!ml->opened || ml->desktop_output == -1)
+   {
+      RARCH_ERR("[XRandR] No screen detected\n");
+      return false;
+   }
+
+   if (x11_ml_find_mode(ml, mode->platform_data, &found))
+   {
+      RARCH_DBG("[XRandR] Mode already exists\n");
+      return true;
+   }
+
+   snprintf(name, sizeof(name), "RA-%dx%d@%.02f%s", mode->hactive,
+         mode->vactive, mode->vfreq, mode->interlace ? "i" : "");
+
+   if (x11_ml_find_mode_by_name(ml, name, &found))
+   {
+      RARCH_DBG("[XRandR] Mode already exists (duplicate request)\n");
+      mode->platform_data = found.id;
+      return true;
+   }
+
+   RARCH_DBG("[XRandR] Create mode %s\n", name);
+
+   memset(&xmode, 0, sizeof(xmode));
+   xmode.name       = name;
+   xmode.nameLength = strlen(name);
+   xmode.dotClock   = mode->pclock;
+   xmode.width      = mode->hactive;
+   xmode.hSyncStart = mode->hbegin;
+   xmode.hSyncEnd   = mode->hend;
+   xmode.hTotal     = mode->htotal;
+   xmode.height     = mode->vactive;
+   xmode.vSyncStart = mode->vbegin;
+   xmode.vSyncEnd   = mode->vend;
+   xmode.vTotal     = mode->vtotal;
+   xmode.modeFlags  = (mode->interlace ? RR_Interlace : 0)
+      | (mode->doublescan ? RR_DoubleScan : 0)
+      | (mode->hsync ? RR_HSyncPositive : RR_HSyncNegative)
+      | (mode->vsync ? RR_VSyncPositive : RR_VSyncNegative);
+   xmode.hSkew      = 0;
+   mode->type      |= MODELINE_TIMING_XRANDR;
+
+   ml->xerrors = 0;
+   x11_ml_trap(ml, 0x01);
+   gmid = XRRCreateMode(ml->dpy, ml->root, &xmode);
+   x11_ml_untrap(ml);
+   if (ml->xerrors & ml->xerrors_flag)
+   {
+      RARCH_ERR("[XRandR] Error in XRRCreateMode\n");
+      return false;
+   }
+   mode->platform_data = gmid;
+
+   resources = XRRGetScreenResourcesCurrent(ml->dpy, ml->root);
+   if (!resources)
+      return false;
+   x11_ml_trap(ml, 0x02);
+   XRRAddOutputMode(ml->dpy, resources->outputs[ml->desktop_output],
+         (RRMode)mode->platform_data);
+   x11_ml_untrap(ml);
+   XRRFreeScreenResources(resources);
+
+   if (ml->xerrors & ml->xerrors_flag)
+   {
+      RARCH_ERR("[XRandR] Error in XRRAddOutputMode\n");
+      if (mode->platform_data)
+      {
+         RARCH_ERR("[XRandR] Remove mode [%04llx]\n",
+               (unsigned long long)mode->platform_data);
+         XRRDestroyMode(ml->dpy, (RRMode)mode->platform_data);
+         mode->platform_data = 0;
+      }
+   }
+   else
+      RARCH_DBG("[XRandR] Mode %04llx %dx%d refresh %.6f added\n",
+            (unsigned long long)mode->platform_data, mode->hactive,
+            mode->vactive, mode->vfreq);
+
+   return ml->xerrors == 0;
+}
+
+static bool x11_display_server_modeline_update(void *data,
+      video_modeline_t *mode)
+{
+   if (!mode)
+      return false;
+   if (!x11_display_server_modeline_delete(data, mode))
+   {
+      RARCH_ERR("[XRandR] Delete operation not successful\n");
+      return false;
+   }
+   if (!x11_display_server_modeline_add(data, mode))
+   {
+      RARCH_ERR("[XRandR] Add operation not successful\n");
+      return false;
+   }
+   return true;
+}
+
+static bool x11_display_server_modeline_set(void *data,
+      video_modeline_t *mode)
+{
+   dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
+   x11_modeline_t *ml       = &dispserv->ml;
+   if (!ml->opened || !mode)
+      return false;
+   return x11_ml_set_timing(ml, mode, ml->enable_screen_compositing
+         ? 0 : XRANDR_DISABLE_CRTC_RELOCATION);
+}
+
+static bool x11_display_server_modeline_flush(void *data)
+{
+   dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
+   if (dispserv->ml.dpy)
+      XSync(dispserv->ml.dpy, False);
+   return true;
+}
+
+/* Screen Resolution: the mode list of one head and a switch among
+ * them. The head is the one under the RetroArch window, or under the
+ * Xinerama screen video_monitor_index names, else the primary output,
+ * else the first lit one - the same rule modeline_open uses, so the
+ * list and the switch always talk about the same output. */
+
+static int x11_res_xerror = 0;
+
+static int x11_res_error_handler(Display *dpy, XErrorEvent *err)
+{
+   x11_res_xerror = err->error_code ? err->error_code : 1;
+   return 0;
+}
+
+static const XRRModeInfo *x11_res_find_mode(const XRRScreenResources *res,
+      RRMode id)
+{
+   int m;
+   for (m = 0; m < res->nmode; m++)
+      if (res->modes[m].id == id)
+         return &res->modes[m];
+   return NULL;
+}
+
+/* Field rate: a doublescan mode sends every line twice, an interlaced
+ * one scans half its lines per field. 0 when the server lists the mode
+ * without timings (a virtual output). */
+static float x11_res_mode_rate(const XRRModeInfo *mi)
+{
+   double v = (double)mi->vTotal;
+   if (!mi->hTotal || !mi->vTotal)
+      return 0.0f;
+   if (mi->modeFlags & RR_DoubleScan)
+      v *= 2.0;
+   if (mi->modeFlags & RR_Interlace)
+      v /= 2.0;
+   return (float)((double)mi->dotClock / ((double)mi->hTotal * v));
+}
+
+static bool x11_res_pick_output(Display *dpy, XRRScreenResources *res,
+      Window root, int monitor_index,
+      XRROutputInfo **out_oi, XRRCrtcInfo **out_ci)
+{
+   int o;
+   int tx = 0, ty = 0;
+   RROutput primary      = XRRGetOutputPrimary(dpy, root);
+   bool have_target      = x11_ml_target_point(dpy,
+         monitor_index > 0 ? monitor_index - 1 : -1, &tx, &ty);
+   XRROutputInfo *fb_oi  = NULL;
+   XRRCrtcInfo   *fb_ci  = NULL;
+   bool fb_primary       = false;
+
+   *out_oi = NULL;
+   *out_ci = NULL;
+
+   for (o = 0; o < res->noutput; o++)
+   {
+      XRRCrtcInfo *ci;
+      XRROutputInfo *oi = XRRGetOutputInfo(dpy, res, res->outputs[o]);
+      if (!oi)
+         continue;
+      if (     oi->connection != RR_Connected
+            || !oi->crtc
+            || !(ci = XRRGetCrtcInfo(dpy, res, oi->crtc)))
+      {
+         XRRFreeOutputInfo(oi);
+         continue;
+      }
+      if (!ci->mode)
+      {
+         XRRFreeCrtcInfo(ci);
+         XRRFreeOutputInfo(oi);
+         continue;
+      }
+
+      if (     have_target
+            && tx >= ci->x && tx < ci->x + (int)ci->width
+            && ty >= ci->y && ty < ci->y + (int)ci->height)
+      {
+         if (fb_ci)
+            XRRFreeCrtcInfo(fb_ci);
+         if (fb_oi)
+            XRRFreeOutputInfo(fb_oi);
+         *out_oi = oi;
+         *out_ci = ci;
+         return true;
+      }
+
+      /* Fallback: the primary output, else the first lit one */
+      if (!fb_oi || (!fb_primary && res->outputs[o] == primary))
+      {
+         if (fb_ci)
+            XRRFreeCrtcInfo(fb_ci);
+         if (fb_oi)
+            XRRFreeOutputInfo(fb_oi);
+         fb_oi      = oi;
+         fb_ci      = ci;
+         fb_primary = (res->outputs[o] == primary);
+         continue;
+      }
+
+      XRRFreeCrtcInfo(ci);
+      XRRFreeOutputInfo(oi);
+   }
+
+   *out_oi = fb_oi;
+   *out_ci = fb_ci;
+   return fb_oi != NULL;
+}
+
+/* Width, then height (the packed word orders that way), then rate */
+static int x11_res_list_qsort(const void *pa, const void *pb)
+{
+   const video_display_config_t *a = (const video_display_config_t*)pa;
+   const video_display_config_t *b = (const video_display_config_t*)pb;
+   if (a->dims != b->dims)
+      return a->dims < b->dims ? -1 : 1;
+   if (a->interlaced != b->interlaced)
+      return a->interlaced ? 1 : -1;
+   if (a->refreshrate_float != b->refreshrate_float)
+      return a->refreshrate_float < b->refreshrate_float ? -1 : 1;
+   return 0;
+}
+
+#ifdef RARCH_HAVE_MUTTER_DC
+/* XWayland lists every mode at the desktop's current rate and only
+ * scales a fullscreen window when "switched"; the real modes belong to
+ * the compositor. Under GNOME, Mutter's D-Bus interface has them.
+ *
+ * XWayland 23.1 and later advertise the XWAYLAND extension - the test
+ * xrandr makes too. Output names cannot be relied on: under a
+ * compositor that names its outputs (Mutter does) XWayland takes the
+ * connector's name, DP-1 or HDMI-1 like any X server; only older ones
+ * or unnamed outputs come out as XWAYLAND<n>, kept as the fallback. A
+ * real X server has neither, so on one nothing below talks to D-Bus. */
+static bool x11_res_is_xwayland(Display *dpy, const XRROutputInfo *oi)
+{
+   int opcode, event, error;
+   if (XQueryExtension(dpy, "XWAYLAND", &opcode, &event, &error))
+      return true;
+   return oi && oi->name && !strncmp(oi->name, "XWAYLAND", 8);
+}
+
+/* The Mutter head to ask about: the one under the RetroArch window
+ * (XWayland's root coordinates are Mutter's logical layout), else the
+ * monitor index, else the primary */
+static void x11_res_mutter_target(Display *dpy, int monitor_index,
+      mutter_dc_target_t *t)
+{
+   memset(t, 0, sizeof(*t));
+   t->monitor_index = monitor_index;
+   t->have_point    = x11_ml_target_point(dpy,
+         monitor_index > 0 ? monitor_index - 1 : -1, &t->x, &t->y);
+}
+#endif
+
+static void *x11_display_server_get_resolution_list(void *data,
+      unsigned *len)
+{
+   int i;
+   unsigned j, n                 = 0;
+   dispserv_x11_t *dispserv      = (dispserv_x11_t*)data;
+   Display *dpy                  = x11_display_server_open_display(dispserv);
+   XRRScreenResources *res       = NULL;
+   XRROutputInfo *oi             = NULL;
+   XRRCrtcInfo *ci               = NULL;
+   video_display_config_t *conf  = NULL;
+
+   *len = 0;
+   if (!dpy)
+      return NULL;
+
+   if (     (res = XRRGetScreenResourcesCurrent(dpy,
+               RootWindow(dpy, DefaultScreen(dpy))))
+         && x11_res_pick_output(dpy, res,
+               RootWindow(dpy, DefaultScreen(dpy)), 0, &oi, &ci))
+   {
+#ifdef RARCH_HAVE_MUTTER_DC
+      if (x11_res_is_xwayland(dpy, oi))
+      {
+         mutter_dc_target_t t;
+         x11_res_mutter_target(dpy, 0, &t);
+         /* Mutter's answer stands, list or none; without Mutter the
+          * XWayland list below is what there is */
+         if (mutter_displayconfig_get_resolution_list(&t, &conf, &n)
+               != MUTTER_DC_UNAVAILABLE)
+            goto done;
+      }
+#endif
+      if (oi->nmode > 0)
+         conf = (video_display_config_t*)calloc(oi->nmode, sizeof(*conf));
+   }
+
+   if (conf)
+   {
+      for (i = 0; i < oi->nmode; i++)
+      {
+         video_display_config_t e;
+         const XRRModeInfo *mi = x11_res_find_mode(res, oi->modes[i]);
+         bool dup              = false;
+         if (!mi || !mi->width || !mi->height)
+            continue;
+
+         memset(&e, 0, sizeof(e));
+         e.dims              = VIDEO_SCALE_PACK(mi->width, mi->height);
+         e.bpp               = 32;
+         e.refreshrate_float = x11_res_mode_rate(mi);
+         /* Rates are never negative; the cast floors without libm */
+         e.refreshrate       = (unsigned)(e.refreshrate_float + 0.001f);
+         e.interlaced        = (mi->modeFlags & RR_Interlace)  ? true : false;
+         e.dblscan           = (mi->modeFlags & RR_DoubleScan) ? true : false;
+         e.current           = (mi->id == ci->mode);
+
+         /* The same size and rate under two names (a config Modeline
+          * beside the EDID entry) is one choice in the menu */
+         for (j = 0; j < n; j++)
+         {
+            float d = conf[j].refreshrate_float - e.refreshrate_float;
+            if (     conf[j].dims       == e.dims
+                  && conf[j].interlaced == e.interlaced
+                  && conf[j].dblscan    == e.dblscan
+                  && d < 0.005f && d > -0.005f)
+            {
+               conf[j].current = conf[j].current || e.current;
+               dup             = true;
+               break;
+            }
+         }
+         if (!dup)
+            conf[n++] = e;
+      }
+
+      qsort(conf, n, sizeof(*conf), x11_res_list_qsort);
+      for (j = 0; j < n; j++)
+         conf[j].idx = j;
+   }
+
+#ifdef RARCH_HAVE_MUTTER_DC
+done:
+#endif
+   if (ci)
+      XRRFreeCrtcInfo(ci);
+   if (oi)
+      XRRFreeOutputInfo(oi);
+   if (res)
+      XRRFreeScreenResources(res);
+   x11_display_server_close_display(dispserv, dpy);
+
+   if (!n)
+   {
+      free(conf);
+      return NULL;
+   }
+   *len = n;
+   return conf;
+}
+
+/* Switch the head to the listed mode of that size nearest the rate
+ * asked for. A zero width or height keeps the current one, which is
+ * how a refresh-rate-only switch arrives. The framebuffer grows before
+ * the crtc takes a larger mode and shrinks to the lit area after, so
+ * every step is a configuration the server accepts; other heads stay
+ * where they are. */
+static bool x11_display_server_set_resolution(void *data,
+      unsigned dims, int int_hz, float hz, int center,
+      int monitor_index, int xoffset, int padjust)
+{
+   int i, c;
+   int (*old_handler)(Display*, XErrorEvent*);
+   Window root, groot;
+   int gx, gy;
+   unsigned cur_w = 0, cur_h = 0, gb, gd;
+   unsigned want_w, want_h, new_w, new_h;
+   unsigned bbox_w = 0, bbox_h = 0, grow_w, grow_h;
+   int min_w = 0, min_h = 0, max_w = 0, max_h = 0;
+   int mm_w, mm_h, px_w, px_h, screen;
+   float best_diff               = 0.0f;
+   Status st                     = RRSetConfigFailed;
+   bool ok                       = false;
+   bool grew                     = false;
+   const XRRModeInfo *cur_mi     = NULL;
+   const XRRModeInfo *best       = NULL;
+   dispserv_x11_t *dispserv      = (dispserv_x11_t*)data;
+   Display *dpy                  = x11_display_server_open_display(dispserv);
+   XRRScreenResources *res       = NULL;
+   XRROutputInfo *oi             = NULL;
+   XRRCrtcInfo *ci               = NULL;
+
+   if (!dpy)
+      return false;
+
+   screen = DefaultScreen(dpy);
+   root   = RootWindow(dpy, screen);
+   if (     !(res = XRRGetScreenResourcesCurrent(dpy, root))
+         || !x11_res_pick_output(dpy, res, root, monitor_index, &oi, &ci))
+      goto end;
+
+#ifdef RARCH_HAVE_MUTTER_DC
+   if (x11_res_is_xwayland(dpy, oi))
+   {
+      mutter_dc_target_t t;
+      enum mutter_dc_result r;
+      x11_res_mutter_target(dpy, monitor_index, &t);
+      r = mutter_displayconfig_set_resolution(&t, dims, int_hz, hz);
+      if (r != MUTTER_DC_UNAVAILABLE)
+      {
+         ok = (r == MUTTER_DC_OK);
+         /* XWayland follows the compositor a moment later; the kept
+          * rate must not outlive the mode it was read from */
+         x11_refresh_invalidate();
+         goto end;
+      }
+   }
+#endif
+
+   cur_mi = x11_res_find_mode(res, ci->mode);
+   want_w = VIDEO_SCALE_W(dims);
+   want_h = VIDEO_SCALE_H(dims);
+   if (!want_w)
+      want_w = cur_mi ? cur_mi->width  : ci->width;
+   if (!want_h)
+      want_h = cur_mi ? cur_mi->height : ci->height;
+   if (hz <= 0.0f && int_hz > 0)
+      hz = (float)int_hz;
+   if (hz <= 0.0f && cur_mi)
+      hz = x11_res_mode_rate(cur_mi);
+
+   /* Nearest rate within half a hertz, or the whole-hertz label the
+    * list showed; progressive over interlaced or doublescan, the
+    * current mode on a tie */
+   for (i = 0; i < oi->nmode; i++)
+   {
+      float rate, diff;
+      const XRRModeInfo *mi = x11_res_find_mode(res, oi->modes[i]);
+      if (!mi || mi->width != want_w || mi->height != want_h)
+         continue;
+      rate = x11_res_mode_rate(mi);
+      diff = rate - hz;
+      if (diff < 0.0f)
+         diff = -diff;
+      if (     diff >= 0.5f
+            && !(int_hz > 0 && (int)(rate + 0.001f) == int_hz))
+         continue;
+      if (mi->modeFlags & (RR_Interlace | RR_DoubleScan))
+         diff += 1000.0f;
+      if (     !best
+            || diff < best_diff
+            || (diff == best_diff && mi->id == ci->mode))
+      {
+         best      = mi;
+         best_diff = diff;
+      }
+   }
+
+   if (!best)
+   {
+      RARCH_WARN("[XRandR] No listed mode %ux%u at %.3f Hz.\n",
+            want_w, want_h, hz);
+      goto end;
+   }
+   if (best->id == ci->mode)
+   {
+      ok = true;
+      goto end;
+   }
+
+   /* Extent of the head on the new mode, and of every lit head */
+   if (ci->rotation & (RR_Rotate_90 | RR_Rotate_270))
+   {
+      new_w = best->height;
+      new_h = best->width;
+   }
+   else
+   {
+      new_w = best->width;
+      new_h = best->height;
+   }
+   for (c = 0; c < res->ncrtc; c++)
+   {
+      unsigned r, b;
+      if (res->crtcs[c] == oi->crtc)
+      {
+         r = (unsigned)(ci->x + (int)new_w);
+         b = (unsigned)(ci->y + (int)new_h);
+      }
+      else
+      {
+         XRRCrtcInfo *oc = XRRGetCrtcInfo(dpy, res, res->crtcs[c]);
+         if (!oc)
+            continue;
+         r = oc->mode ? (unsigned)(oc->x + (int)oc->width)  : 0;
+         b = oc->mode ? (unsigned)(oc->y + (int)oc->height) : 0;
+         XRRFreeCrtcInfo(oc);
+      }
+      if (r > bbox_w)
+         bbox_w = r;
+      if (b > bbox_h)
+         bbox_h = b;
+   }
+
+   XRRGetScreenSizeRange(dpy, root, &min_w, &min_h, &max_w, &max_h);
+   if ((int)bbox_w > max_w || (int)bbox_h > max_h)
+   {
+      RARCH_WARN("[XRandR] %ux%u exceeds the maximum screen size %dx%d.\n",
+            bbox_w, bbox_h, max_w, max_h);
+      goto end;
+   }
+   if ((int)bbox_w < min_w)
+      bbox_w = (unsigned)min_w;
+   if ((int)bbox_h < min_h)
+      bbox_h = (unsigned)min_h;
+
+   /* The root window is resized by the server, so its geometry is the
+    * framebuffer size now; DisplayWidth() is only as fresh as the last
+    * RandR event Xlib processed. The DPI is kept. */
+   if (!XGetGeometry(dpy, root, &groot, &gx, &gy, &cur_w, &cur_h, &gb, &gd))
+      goto end;
+   px_w   = DisplayWidth(dpy, screen);
+   px_h   = DisplayHeight(dpy, screen);
+   mm_w   = DisplayWidthMM(dpy, screen);
+   mm_h   = DisplayHeightMM(dpy, screen);
+   grow_w = cur_w > bbox_w ? cur_w : bbox_w;
+   grow_h = cur_h > bbox_h ? cur_h : bbox_h;
+
+   XSync(dpy, False);
+   x11_res_xerror = 0;
+   old_handler    = XSetErrorHandler(x11_res_error_handler);
+
+#define X11_RES_MM(px, cur_px, cur_mm) \
+   (((cur_px) > 0 && (cur_mm) > 0) \
+    ? (int)((double)(px) * (double)(cur_mm) / (double)(cur_px) + 0.5) \
+    : (int)((25.4 * (double)(px)) / 96.0))
+
+   if (grow_w != cur_w || grow_h != cur_h)
+   {
+      XRRSetScreenSize(dpy, root, (int)grow_w, (int)grow_h,
+            X11_RES_MM(grow_w, px_w, mm_w), X11_RES_MM(grow_h, px_h, mm_h));
+      XSync(dpy, False);
+      grew = (x11_res_xerror == 0);
+   }
+
+   if (x11_res_xerror == 0)
+   {
+      st = XRRSetCrtcConfig(dpy, res, oi->crtc, CurrentTime,
+            ci->x, ci->y, best->id, ci->rotation, ci->outputs, ci->noutput);
+      XSync(dpy, False);
+      ok = (st == RRSetConfigSuccess && x11_res_xerror == 0);
+   }
+
+   /* Shrink to the lit area, or back to where it was on failure */
+   if (ok && (grow_w != bbox_w || grow_h != bbox_h))
+      XRRSetScreenSize(dpy, root, (int)bbox_w, (int)bbox_h,
+            X11_RES_MM(bbox_w, px_w, mm_w), X11_RES_MM(bbox_h, px_h, mm_h));
+   else if (!ok && grew)
+      XRRSetScreenSize(dpy, root, (int)cur_w, (int)cur_h,
+            X11_RES_MM(cur_w, px_w, mm_w), X11_RES_MM(cur_h, px_h, mm_h));
+
+#undef X11_RES_MM
+
+   XSync(dpy, False);
+   XSetErrorHandler(old_handler);
+
+   /* The kept refresh rate belongs to the mode just replaced */
+   x11_refresh_invalidate();
+
+   if (ok)
+      RARCH_LOG("[XRandR] Output switched to %ux%u %.3f Hz.\n",
+            best->width, best->height, x11_res_mode_rate(best));
+   else
+      RARCH_ERR("[XRandR] Switching to %ux%u failed (status %d, X error %d).\n",
+            best->width, best->height, (int)st, x11_res_xerror);
+
+end:
+   if (ci)
+      XRRFreeCrtcInfo(ci);
+   if (oi)
+      XRRFreeOutputInfo(oi);
+   if (res)
+      XRRFreeScreenResources(res);
+   x11_display_server_close_display(dispserv, dpy);
+   return ok;
+}
+#endif /* HAVE_XRANDR */
 
 static void* x11_display_server_init(void)
 {
@@ -490,196 +1810,14 @@ static void* x11_display_server_init(void)
 
 static void x11_display_server_destroy(void *data)
 {
-#ifdef HAVE_XRANDR
-   int m, j, i;
-#endif
    dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
 
    if (!dispserv)
       return;
-
 #ifdef HAVE_XRANDR
-   if (dispserv->flags & DISPSERV_X11_FLAG_CRT_EN)
-   {
-      char dmode[25];
-      XRRModeInfo *swoldmode   = NULL;
-      XRRModeInfo *swdeskmode  = NULL;
-      XRRScreenResources
-         *resources            = NULL;
-      XRRScreenResources  *res = NULL;
-      Display *dpy             = XOpenDisplay(0);
-      int screen               = DefaultScreen(dpy);
-      Window window            = RootWindow(dpy, screen);
-      bool crt_exists          = false;
-
-      strlcpy(dmode, "d_mo", sizeof(dmode));
-
-      dispserv->crt_rrmode.name          = dmode;
-      dispserv->crt_rrmode.nameLength    = strlen(dispserv->crt_name);
-      dispserv->crt_rrmode.dotClock      = 13849698;
-      dispserv->crt_rrmode.width         = 700;
-      dispserv->crt_rrmode.hSyncStart    = 742;
-      dispserv->crt_rrmode.hSyncEnd      = 801;
-      dispserv->crt_rrmode.hTotal        = 867;
-      dispserv->crt_rrmode.height        = 480;
-      dispserv->crt_rrmode.vSyncStart    = 490;
-      dispserv->crt_rrmode.vSyncEnd      = 496;
-      dispserv->crt_rrmode.vTotal        = 533;
-      dispserv->crt_rrmode.modeFlags     = 26;
-      /* 10 for -hsync -vsync. ?? for -hsync -vsync interlaced */
-      dispserv->crt_rrmode.hSkew         = 0;
-
-      res                      = XRRGetScreenResources(dpy, window);
-      resources                = XRRGetScreenResourcesCurrent(dpy, window);
-      XSync(dpy, False);
-
-      resources = XRRGetScreenResourcesCurrent(dpy, window);
-
-      for (m = 0; m < resources->nmode; m++)
-      {
-         if (string_is_equal(resources->modes[m].name, dmode))
-         {
-            crt_exists = true;
-            break;
-         }
-      }
-
-      XRRFreeScreenResources(resources);
-
-
-      if (!crt_exists)
-         XRRCreateMode(dpy, window, &dispserv->crt_rrmode);
-
-      resources = XRRGetScreenResourcesCurrent(dpy, window);
-
-      for (m = 0; m < resources->nmode; m++)
-      {
-         if (string_is_equal(resources->modes[m].name, dmode))
-         {
-            swdeskmode = &resources->modes[m];
-            break;
-         }
-      }
-
-      if (dispserv->monitor_index == 20)
-      {
-         for (i = 0; i < res->noutput; i++)
-         {
-            XRROutputInfo *outputs =
-               XRRGetOutputInfo(dpy, res, res->outputs[i]);
-
-            if (outputs->connection == RR_Connected)
-            {
-               XRRCrtcInfo *crtc;
-
-               XRRAddOutputMode(dpy, res->outputs[i], swdeskmode->id);
-               XSync(dpy, False);
-               strlcpy(dispserv->orig_output, outputs->name,
-                     sizeof(dispserv->orig_output));
-               crtc         = XRRGetCrtcInfo(dpy, resources, outputs->crtc);
-               crtc->mode   = swdeskmode->id;
-               crtc->width  = swdeskmode->width;
-               crtc->height = swdeskmode->height;
-               XRRSetCrtcConfig(dpy, res,res->crtcs[i],
-                     CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0);
-               XSync(dpy, False);
-               XRRSetCrtcConfig(dpy, res, res->crtcs[i], CurrentTime,
-                     crtc->x, crtc->y, crtc->mode, crtc->rotation,
-                     crtc->outputs, crtc->noutput);
-               XSync(dpy, False);
-
-
-               XRRFreeCrtcInfo(crtc);
-            }
-            XRRFreeOutputInfo(outputs);
-         }
-
-         for (m = 0; m < resources->nmode; m++)
-         {
-            for (j = 0; j < res->noutput; j++)
-            {
-               for (i = 1 ; i <= dispserv->crt_name_id; i++ )
-               {
-                  XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res, res->outputs[j]);
-                  if (outputs->connection == RR_Connected)
-                  {
-                     snprintf(dispserv->old_mode, sizeof(dispserv->old_mode),
-                        "CRT%d", i);
-                     if (string_is_equal(resources->modes[m].name,
-                              dispserv->old_mode))
-                     {
-                        swoldmode = &resources->modes[m];
-                        XRRDeleteOutputMode(dpy, res->outputs[j], swoldmode->id);
-                        XRRDestroyMode(dpy, swoldmode->id);
-                        XSync(dpy, False);
-                     }
-                  }
-               }
-            }
-         }
-      }
-      else
-      {
-         XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res,
-               res->outputs[dispserv->monitor_index]);
-
-         if (outputs->connection == RR_Connected)
-         {
-            XRRCrtcInfo *crtc = NULL;
-            XRRAddOutputMode(dpy,
-                  res->outputs[dispserv->monitor_index], swdeskmode->id);
-            XSync(dpy, False);
-            strlcpy(dispserv->orig_output, outputs->name,
-                  sizeof(dispserv->orig_output));
-            crtc         = XRRGetCrtcInfo(dpy, resources, outputs->crtc);
-            crtc->mode   = swdeskmode->id;
-            crtc->width  = swdeskmode->width;
-            crtc->height = swdeskmode->height;
-            XRRSetCrtcConfig(dpy, res,
-                  res->crtcs[dispserv->monitor_index],
-                  CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0);
-            XSync(dpy, False);
-            XRRSetCrtcConfig(dpy, res,
-                  res->crtcs[dispserv->monitor_index],
-                  CurrentTime, crtc->x, crtc->y,
-                  crtc->mode, crtc->rotation,
-                  crtc->outputs, crtc->noutput);
-            XSync(dpy, False);
-
-            XRRFreeCrtcInfo(crtc);
-         }
-         XRRFreeOutputInfo(outputs);
-
-         for (m = 0; m < resources->nmode; m++)
-         {
-            for (i = 1 ; i <= dispserv->crt_name_id; i++ )
-            {
-               XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res, res->outputs[dispserv->monitor_index]);
-               if (outputs->connection == RR_Connected)
-               {
-                  snprintf(dispserv->old_mode, sizeof(dispserv->old_mode),
-                        "CRT%d", i);
-                  if (string_is_equal(resources->modes[m].name,
-                           dispserv->old_mode))
-                  {
-                     swoldmode = &resources->modes[m];
-                     XRRDeleteOutputMode(dpy, res->outputs[dispserv->monitor_index], swoldmode->id);
-                     XRRDestroyMode(dpy, swoldmode->id);
-                     XSync(dpy, False);
-                  }
-               }
-            }
-         }
-      }
-
-      XRRFreeScreenResources(resources);
-      XRRFreeScreenResources(res);
-      XCloseDisplay(dpy);
-   }
+   x11_display_server_modeline_close(dispserv);
 #endif
-
-   if (dispserv)
-      free(dispserv);
+   free(dispserv);
 }
 
 static bool x11_display_server_set_window_opacity(void *data, unsigned opacity)
@@ -767,24 +1905,19 @@ static uint32_t x11_display_server_get_flags(void *data)
    uint32_t             flags   = 0;
 
 #ifdef HAVE_XRANDR
-   BIT32_SET(flags, DISPSERV_CTX_CRT_SWITCHRES);
+   BIT32_SET(flags, DISPSERV_CTX_MODELINE);
 #endif
 
    return flags;
 }
 
 #ifdef HAVE_XRANDR
-static float x11_display_server_get_refresh_rate(void *data)
+/* The first connected output's current mode. */
+static float x11_display_server_read_refresh_rate(Display *dpy)
 {
-   float refresh_rate             = 0.0f;
-   dispserv_x11_t *dispserv       = (dispserv_x11_t*)data;
-   Display *dpy                   = x11_display_server_open_display(dispserv);
-   XRRScreenResources *screen     = NULL;
-
-   if (!dpy)
-      return 0.0f;
-
-   screen = XRRGetScreenResources(dpy, DefaultRootWindow(dpy));
+   float refresh_rate         = 0.0f;
+   XRRScreenResources *screen = XRRGetScreenResources(dpy,
+         DefaultRootWindow(dpy));
 
    if (screen)
    {
@@ -792,6 +1925,9 @@ static float x11_display_server_get_refresh_rate(void *data)
       for (i = 0; i < screen->noutput; i++)
       {
          XRROutputInfo *info = XRRGetOutputInfo(dpy, screen, screen->outputs[i]);
+
+         if (!info)
+            continue;
 
          if (info->connection == RR_Connected && info->crtc)
          {
@@ -825,12 +1961,91 @@ static float x11_display_server_get_refresh_rate(void *data)
       XRRFreeScreenResources(screen);
    }
 
-   x11_display_server_close_display(dispserv, dpy);
    return refresh_rate;
 }
 
+/* Once per process, on the connection the event pump drains: the
+ * RandR changes that drop the kept rate. RandR 1.2 is what the read
+ * above needs as well, and what the crtc and output masks need. */
+static void x11_display_server_watch_randr(Display *dpy)
+{
+   int event_base = 0;
+   int error_base = 0;
+   int major      = 0;
+   int minor      = 0;
+   int state      = X11_RANDR_UNAVAILABLE;
+
+   if (retro_atomic_load_acquire_int(&g_x11_randr_state))
+      return;
+
+   if (     XRRQueryExtension(dpy, &event_base, &error_base)
+         && XRRQueryVersion(dpy, &major, &minor)
+         && (major > 1 || (major == 1 && minor >= 2))
+         && event_base > 0
+         && event_base + RRNotify <= X11_RANDR_BASE_MASK)
+   {
+      XRRSelectInput(dpy, DefaultRootWindow(dpy),
+              RRScreenChangeNotifyMask
+            | RRCrtcChangeNotifyMask
+            | RROutputChangeNotifyMask);
+      state = event_base;
+   }
+
+   retro_atomic_cas_int(&g_x11_randr_state, 0, state);
+}
+
+/* Asked every frame by a core polling the throttle state and by the
+ * menu while it shows the rate. On g_x11_dpy, once the event pump
+ * drains it, the rate is read from the server once per display change
+ * and answered from memory in between. A reader that raced a change
+ * withdraws the rate it kept, so an old mode's rate never outlives the
+ * change that replaced it. */
+static float x11_display_server_get_refresh_rate(void *data)
+{
+   union { float f; int i; } rate;
+   int serial;
+   bool keep                = false;
+   dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
+   Display *dpy             = x11_display_server_open_display(dispserv);
+
+   if (!dpy)
+      return 0.0f;
+
+#ifdef RETRO_ATOMIC_HAS_CAS
+   if (dpy == g_x11_dpy)
+   {
+      x11_display_server_watch_randr(dpy);
+      keep = (retro_atomic_load_acquire_int(&g_x11_randr_state)
+            & X11_RANDR_PUMPED) != 0;
+   }
+   if (keep)
+   {
+      rate.i = retro_atomic_load_acquire_int(&g_x11_refresh_bits);
+      if (rate.i != X11_REFRESH_NONE)
+         return rate.f;
+   }
+#endif
+
+   serial = retro_atomic_load_acquire_int(&g_x11_refresh_serial);
+   rate.f = x11_display_server_read_refresh_rate(dpy);
+   x11_display_server_close_display(dispserv, dpy);
+
+#ifdef RETRO_ATOMIC_HAS_CAS
+   if (     keep
+         && rate.i != X11_REFRESH_NONE
+         && retro_atomic_cas_int(&g_x11_refresh_bits, X11_REFRESH_NONE, rate.i)
+         && retro_atomic_load_acquire_int(&g_x11_refresh_serial) != serial)
+      retro_atomic_cas_int(&g_x11_refresh_bits, rate.i, X11_REFRESH_NONE);
+#else
+   (void)serial;
+   (void)keep;
+#endif
+
+   return rate.f;
+}
+
 static void x11_display_server_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *s, size_t len)
+      unsigned *dims, char *s, size_t len)
 {
    dispserv_x11_t *dispserv       = (dispserv_x11_t*)data;
    Display *dpy                   = x11_display_server_open_display(dispserv);
@@ -854,10 +2069,8 @@ static void x11_display_server_get_video_output_size(void *data,
 
             if (crtc)
             {
-               if (width)
-                  *width  = crtc->width;
-               if (height)
-                  *height = crtc->height;
+               if (dims)
+                  *dims = VIDEO_SCALE_PACK(crtc->width, crtc->height);
                XRRFreeCrtcInfo(crtc);
             }
 
@@ -924,6 +2137,7 @@ static void x11_display_server_get_video_output_prev(void *data)
                               CurrentTime, crtc->x, crtc->y,
                               prev_mode, crtc->rotation,
                               crtc->outputs, crtc->noutput);
+                        x11_refresh_invalidate();
                         break;
                      }
                   }
@@ -995,6 +2209,7 @@ static void x11_display_server_get_video_output_next(void *data)
                               CurrentTime, crtc->x, crtc->y,
                               next_mode, crtc->rotation,
                               crtc->outputs, crtc->noutput);
+                        x11_refresh_invalidate();
                         break;
                      }
                   }
@@ -1019,15 +2234,14 @@ static void x11_display_server_get_video_output_next(void *data)
 
 #ifndef HAVE_XRANDR
 static void x11_display_server_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *s, size_t len)
+      unsigned *dims, char *s, size_t len)
 {
    Display *dpy = XOpenDisplay(NULL);
    if (!dpy)
       return;
-   if (width)
-      *width  = DisplayWidth(dpy, DefaultScreen(dpy));
-   if (height)
-      *height = DisplayHeight(dpy, DefaultScreen(dpy));
+   if (dims)
+      *dims = VIDEO_SCALE_PACK(DisplayWidth(dpy, DefaultScreen(dpy)),
+            DisplayHeight(dpy, DefaultScreen(dpy)));
    XCloseDisplay(dpy);
 }
 #endif
@@ -1075,6 +2289,120 @@ static bool x11_get_metrics(void *data,
    return true;
 }
 
+/* The EDID of the output under the RetroArch window, through the
+ * XRandR "EDID" output property; the property is only relayed when
+ * the DDX publishes it (modesetting, intel, amdgpu, nvidia all do),
+ * so the kernel's own sysfs copy stands in when it is absent or when
+ * RandR is not compiled in. */
+static int x11_display_server_get_edid(void *data, uint8_t *out, size_t max)
+{
+   int n = -1;
+#ifdef HAVE_XRANDR
+   dispserv_x11_t *dispserv = (dispserv_x11_t*)data;
+   Display *dpy;
+   Window root;
+   XRRScreenResources *resources;
+   Atom edid_atom;
+   int target_x = 0, target_y = 0;
+   bool have_target;
+   int o;
+
+   if (!out || max < 128)
+      return -1;
+   if (!(dpy = x11_display_server_open_display(dispserv)))
+      return edid_sysfs_read(NULL, out, max);
+
+   root        = RootWindow(dpy, DefaultScreen(dpy));
+   edid_atom   = XInternAtom(dpy, "EDID", True);
+   have_target = x11_ml_target_point(dpy, -1, &target_x, &target_y);
+   resources   = edid_atom != None
+      ? XRRGetScreenResourcesCurrent(dpy, root) : NULL;
+
+   /* Two passes over the outputs: the one under the window, else the
+    * first connected one with a crtc (a window off every head, or no
+    * window yet) */
+   for (o = 0; resources && n < 0 && o < resources->noutput * 2; o++)
+   {
+      int idx  = o % resources->noutput;
+      bool any = o >= resources->noutput;
+      XRROutputInfo *info = XRRGetOutputInfo(dpy, resources, resources->outputs[idx]);
+      bool take = false;
+      if (!info)
+         continue;
+      if (info->connection == RR_Connected && info->crtc)
+      {
+         if (any || !have_target)
+            take = true;
+         else
+         {
+            XRRCrtcInfo *ci = XRRGetCrtcInfo(dpy, resources, info->crtc);
+            if (ci)
+            {
+               take = target_x >= ci->x && target_x < ci->x + (int)ci->width
+                   && target_y >= ci->y && target_y < ci->y + (int)ci->height;
+               XRRFreeCrtcInfo(ci);
+            }
+         }
+      }
+      if (take)
+      {
+         Atom actual_type;
+         int actual_format = 0;
+         unsigned long nitems = 0, bytes_after = 0;
+         unsigned char *prop = NULL;
+         /* length is in 32-bit units: 1 KiB, eight blocks */
+         if (XRRGetOutputProperty(dpy, resources->outputs[idx], edid_atom,
+                  0, 256, False, False,
+                  AnyPropertyType, &actual_type, &actual_format,
+                  &nitems, &bytes_after, &prop) == Success && prop)
+         {
+            if (actual_format == 8 && nitems >= 128)
+            {
+               size_t len = (size_t)nitems;
+               if (len > max)
+                  len = max;
+               len -= len % 128;
+               memcpy(out, prop, len);
+               n = (int)len;
+            }
+            XFree(prop);
+         }
+      }
+      XRRFreeOutputInfo(info);
+      /* the head under the window has no EDID (a DDC-less CRT): do
+       * not fall through to another head's */
+      if (take && !any)
+         break;
+   }
+   if (resources)
+      XRRFreeScreenResources(resources);
+   x11_display_server_close_display(dispserv, dpy);
+#else
+   (void)data;
+#endif
+   if (n < 0)
+      n = edid_sysfs_read(NULL, out, max);
+   return n;
+}
+
+/* Readiness of the X connection socket: a plain poll() on the fd, no
+ * Xlib call, so it is safe against a threaded video context using
+ * the same Display. Events a dispatcher already drained were its to
+ * act on. */
+static bool x11_display_server_idle_wait(void *data, unsigned ms)
+{
+   struct pollfd pfd;
+   Display *dpy = g_x11_dpy;
+   (void)data;
+   if (!dpy)
+      return false;
+   pfd.fd      = ConnectionNumber(dpy);
+   pfd.events  = POLLIN;
+   pfd.revents = 0;
+   poll(&pfd, 1, (int)ms);
+   return true;
+}
+
 const video_display_server_t dispserv_x11 = {
    x11_display_server_init,
    x11_display_server_destroy,
@@ -1083,10 +2411,11 @@ const video_display_server_t dispserv_x11 = {
    x11_display_server_set_window_decorations,
 #ifdef HAVE_XRANDR
    x11_display_server_set_resolution,
+   x11_display_server_get_resolution_list,
 #else
    NULL, /* set_resolution */
-#endif
    NULL, /* get_resolution_list */
+#endif
    x11_display_server_get_output_options,
 #ifdef HAVE_XRANDR
    x11_display_server_set_screen_orientation,
@@ -1111,5 +2440,32 @@ const video_display_server_t dispserv_x11 = {
 #endif
    x11_get_metrics,
    x11_display_server_get_flags,
+   NULL, /* get_scanline */
+   NULL, /* wait_vblank */
+#ifdef HAVE_XRANDR
+   x11_display_server_modeline_list_outputs,
+   x11_display_server_modeline_open,
+   x11_display_server_modeline_close,
+   x11_display_server_modeline_caps,
+   x11_display_server_modeline_enum,
+   x11_display_server_modeline_add,
+   x11_display_server_modeline_update,
+   x11_display_server_modeline_delete,
+   x11_display_server_modeline_set,
+   x11_display_server_modeline_flush,
+#else
+   NULL, /* modeline_list_outputs */
+   NULL, /* modeline_open */
+   NULL, /* modeline_close */
+   NULL, /* modeline_caps */
+   NULL, /* modeline_enum */
+   NULL, /* modeline_add */
+   NULL, /* modeline_update */
+   NULL, /* modeline_delete */
+   NULL, /* modeline_set */
+   NULL, /* modeline_flush */
+#endif
+   x11_display_server_get_edid,
+   x11_display_server_idle_wait,
    "x11"
 };

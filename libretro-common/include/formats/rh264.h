@@ -1,13 +1,23 @@
 /* rh264 -- self-contained H.264 decoder for libretro-common.
  *
- * Decodes H.264 (AVC) I and P pictures: NAL/SPS/PPS/slice parsing, CAVLC and
- * CABAC residual decoding, 4x4 and 16x16 luma intra prediction and chroma
- * intra prediction, inter prediction (motion vector prediction, sub-pel
- * luma and chroma interpolation, a single reference picture), the inverse
- * 4x4 transform and Hadamard DC transforms, dequantisation (with correct
- * chroma-QP derivation), and the in-loop deblocking filter.  B pictures,
- * CABAC-coded P slices, multiple reference pictures and the higher profiles
- * are not present.
+ * Decodes H.264 (AVC) I, P and B pictures with either entropy coding
+ * (CAVLC and CABAC): NAL/SPS/PPS/slice parsing; 4x4, 8x8 and 16x16 luma
+ * and chroma intra prediction; inter prediction with quarter-pel motion
+ * compensation, multiple reference pictures (a DPB with sliding-window
+ * and MMCO marking and reference list modifications), weighted and
+ * implicit bi-prediction, and spatial and temporal direct modes; the
+ * 4x4 and 8x8 integer transforms with scaling matrices and the Hadamard
+ * DC transforms; dequantisation with correct chroma-QP derivation; the
+ * in-loop deblocking filter; and picture order count types 0, 1 and 2
+ * with display-order output.  Reconstruction is 8-bit 4:2:0 and 4:2:2,
+ * which covers the baseline, main and high profiles as commonly emitted.
+ *
+ * Out-of-scope streams are refused at the parameter-set or slice level
+ * rather than decoded wrongly: 4:4:4, monochrome, high bit depths and
+ * lossless transform bypass; SP/SI switching slices; FMO/ASO and
+ * redundant pictures; field-coded B and CABAC pictures and field-coded
+ * macroblock pairs (frame-coded MBAFF pairs decode; field pictures
+ * decode for CAVLC I/P).
  *
  * The CAVLC VLC tables are extracted verbatim from the encoder tables in
  * libopenh264 (verified prefix-free); no table is hand-transcribed.
@@ -60,6 +70,70 @@ int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len);
  * data, for end of stream. Returns 0 when a picture became available through
  * rh264_video_plane, -1 when nothing is pending. */
 int rh264_video_drain(rh264_video *v);
+
+/* Bits per sample of the decoded pictures (8..14).  Above 8 the planes
+ * hold uint16_t samples: rh264_video_plane still returns a byte
+ * pointer (cast it; the stride counts samples). */
+/* While @skip is set, a non-reference picture is consumed without
+ * being decoded: rh264_video_decode() returns 0 for it, as for any
+ * sample that yields no picture, and the stream moves on. Nothing
+ * predicts from such a picture, so what follows decodes unchanged.
+ * For a caller that has fallen behind its clock and would rather
+ * drop a frame than show every one late. */
+void rh264_video_set_skip_nonref(rh264_video *v, int skip);
+/* Whether the last decode call passed a picture over under that
+ * setting: it returned 0 as it does for a picture held back for
+ * reordering, but this one's presentation slot has gone. */
+int rh264_video_dropped(const rh264_video *v);
+
+/* For the decoder's own samples: how many times a reference read found
+ * the rows it needed not yet final. On a single thread that is zero
+ * by construction, and a sample asserts it; it is the count a
+ * threaded decoder would have waited on. */
+int rh264_video_ref_wait_misses(void);
+
+/* How many pictures the decoder keeps in rotation, 1 to 4. Each new
+ * picture takes the next context round; with one, the same every
+ * time. Today the pictures still decode one after the other, so this
+ * changes which memory a picture uses and nothing else - which is
+ * what lets a sample prove the per-picture state complete before the
+ * pictures decode concurrently. */
+void rh264_video_set_contexts(rh264_video *v, int n);
+
+/* Decode pictures concurrently on @pool (a tpool_t), up to @threads at
+ * a time: a picture's slices are handed to the pool when the next
+ * picture opens, and a picture reading from one still decoding waits
+ * for the rows it needs and no more. Output is the same, in the same
+ * order, later by the pictures in flight; rh264_video_drain() lands
+ * them all. NULL, or fewer than two, is the decoder on the calling
+ * thread. No effect without HAVE_THREADS. */
+void rh264_video_set_thread_pool(rh264_video *v, void *pool, int threads);
+
+/* Test knob: hold each row's publication for up to @max_yields thread
+ * yields, drawn at random, so that pictures reading from a picture in flight
+ * wait for their rows rather than nearly always finding them. Output
+ * must be byte-exact under it. 0 is off. Debug only. */
+void rh264_video_set_publish_delay(int max_yields);
+
+/* What the pipeline did, for a bench: pictures posted to the pool, the
+ * mean pictures in flight at a post (x100), posts that found the most
+ * possible in flight, joins that had to wait for a context, output
+ * pops that held a due picture for being incomplete, and pops that
+ * waited for one because the queue was full. */
+void rh264_video_stats(const rh264_video *v, int *posted, int *inflight_x100,
+      int *at_max, int *join_waits, int *pop_held, int *pop_waits);
+
+/* Reference reads that had to wait for rows since the last call, and
+ * the rows they were short by on average (x100): how often a picture
+ * in flight stalls on the one it predicts from, and how far behind it
+ * stands when it does. Process-wide; reading resets. */
+void rh264_video_row_wait_stats(int *waits, int *rows_short_x100);
+
+/* The most pictures the pool had decoding at one moment since the last
+ * call; reading resets. Process-wide. One means they never overlapped. */
+int rh264_video_jobs_at_once(void);
+
+int rh264_video_bit_depth(const rh264_video *v);
 
 /* Borrow a decoded plane (0=Y, 1=U, 2=V). Valid until the next decode call. */
 const uint8_t *rh264_video_plane(const rh264_video *v, int plane,

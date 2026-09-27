@@ -77,7 +77,7 @@ static void *lq2x_generic_create(const struct softfilter_config *config,
    }
    /* Apparently the code is not thread-safe,
     * so force single threaded operation... */
-   filt->threads = 1;
+   filt->threads = threads;
    filt->in_fmt  = in_fmt;
    return filt;
 }
@@ -111,8 +111,10 @@ static void lq2x_generic_rgb565(unsigned width, unsigned height,
 
    for (y = 0; y < height; y++)
    {
-      int prevline = (y == 0 ? 0 : src_stride);
-      int nextline = (y == height - 1 || last) ? 0 : src_stride;
+      /* The rows above and below come from the frame, repeating the
+       * edge row only at the frame's own top and bottom. */
+      int prevline = ((unsigned)first + y == 0) ? 0 : src_stride;
+      int nextline = (last && y == height - 1) ? 0 : src_stride;
 
       for (x = 0; x < width; x++)
       {
@@ -155,8 +157,10 @@ static void lq2x_generic_xrgb8888(unsigned width, unsigned height,
 
    for (y = 0; y < height; y++)
    {
-      int prevline = (y == 0 ? 0 : src_stride);
-      int nextline = (y == height - 1 || last) ? 0 : src_stride;
+      /* The rows above and below come from the frame, repeating the
+       * edge row only at the frame's own top and bottom. */
+      int prevline = ((unsigned)first + y == 0) ? 0 : src_stride;
+      int nextline = (last && y == height - 1) ? 0 : src_stride;
 
       for (x = 0; x < width; x++)
       {
@@ -169,10 +173,13 @@ static void lq2x_generic_xrgb8888(unsigned width, unsigned height,
 
          if (A != E && B != D)
          {
-            *out0++ = (A == B ? (C + A - ((C ^ A) & 0x0421)) >> 1 : c);
-            *out0++ = (A == D ? (C + A - ((C ^ A) & 0x0421)) >> 1 : c);
-            *out1++ = (E == B ? (C + E - ((C ^ E) & 0x0421)) >> 1 : c);
-            *out1++ = (E == D ? (C + E - ((C ^ E) & 0x0421)) >> 1 : c);
+            /* Per-channel average: each byte's lowest bit is cleared
+             * from the sum so no channel's odd bit shifts into the one
+             * below it. */
+            *out0++ = (A == B ? (C + A - ((C ^ A) & 0x01010101)) >> 1 : c);
+            *out0++ = (A == D ? (C + A - ((C ^ A) & 0x01010101)) >> 1 : c);
+            *out1++ = (E == B ? (C + E - ((C ^ E) & 0x01010101)) >> 1 : c);
+            *out1++ = (E == D ? (C + E - ((C ^ E) & 0x01010101)) >> 1 : c);
          }
          else
          {

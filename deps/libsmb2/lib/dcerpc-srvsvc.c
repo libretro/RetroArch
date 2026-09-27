@@ -23,21 +23,10 @@
 #define _GNU_SOURCE
 #endif
 
-#ifdef HAVE_STDINT_H
 #include <stdint.h>
-#endif
-
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
-
-#ifdef STDC_HEADERS
 #include <stddef.h>
-#endif
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -47,7 +36,9 @@
 #include <sys/stat.h>
 #endif
 
-#ifdef HAVE_UNISTD_H
+#ifdef _WIN32
+#include <direct.h>
+#else
 #include <unistd.h>
 #endif
 
@@ -251,14 +242,14 @@ srvsvc_SHARE_ENUM_UNION_coder(struct dcerpc_context *ctx, struct dcerpc_pdu *pdu
 
         switch (ctr->Level) {
         case 0:
-                if (dcerpc_ptr_coder(ctx, pdu, iov, offset, &ctr->Level0,
+                if (dcerpc_ptr_coder(ctx, pdu, iov, offset, &ctr->u.Level0,
                                      PTR_UNIQUE,
                                      srvsvc_SHARE_INFO_0_CONTAINER_coder)) {
                         return -1;
                 }
                 break;
         case 1:
-                if (dcerpc_ptr_coder(ctx, pdu, iov, offset, &ctr->Level1,
+                if (dcerpc_ptr_coder(ctx, pdu, iov, offset, &ctr->u.Level1,
                                      PTR_UNIQUE,
                                      srvsvc_SHARE_INFO_1_CONTAINER_coder)) {
                         return -1;

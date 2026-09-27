@@ -351,7 +351,18 @@ struct retro_hw_render_interface_vulkan
     * so that the frontend can reuse the older pointer.
     *
     * The image itself however, must not be touched by the core until
-    * wait_sync_index has been completed later. The frontend may perform
+    * wait_sync_index has been completed later - and that includes
+    * destroying it, or releasing the last reference that keeps it
+    * alive. The frontend reads the image on its own schedule: on a
+    * threaded video path that is a frame or more after set_image,
+    * under fast-forward many frames after, so an image whose lifetime
+    * is only "until the next set_image" is read after it is gone - a
+    * GPU page fault and a lost device. The core keeps every image it
+    * hands over until wait_sync_index for the sync index it was handed
+    * at has returned: one image per set bit of get_sync_index_mask
+    * suffices.
+    *
+    * The frontend may perform
     * layout transitions on the image, so even read-only access is not defined.
     * The exception to read-only rule is if GENERAL layout is used for the image.
     * In this case, the frontend is not allowed to perform any layout transitions,

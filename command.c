@@ -68,6 +68,10 @@
 #include "version.h"
 #include "version_git.h"
 #include "tasks/task_content.h"
+#include <compat/strl.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #define CMD_BUF_SIZE 4096
 
@@ -179,10 +183,15 @@ static void command_parse_msg(command_t *handle, char *buf)
 {
    char     *save  = NULL;
    const char *tok = strtok_r(buf, "\n", &save);
+   unsigned gen    = input_driver_command_generation();
 
    while (tok)
    {
       command_parse_sub_msg(handle, tok);
+      /* The command may have reinitialised the input driver, which
+       * owns and has now freed 'handle'. Nothing further may use it. */
+      if (input_driver_command_generation() != gen)
+         return;
       tok = strtok_r(NULL, "\n", &save);
    }
 }
@@ -221,6 +230,7 @@ static void network_command_free(command_t *handle)
 static void command_network_poll(command_t *handle)
 {
    ssize_t ret;
+   unsigned gen = input_driver_command_generation();
    char buf[2048];
    command_network_t *netcmd = (command_network_t*)handle->userptr;
 
@@ -239,10 +249,14 @@ static void command_network_poll(command_t *handle)
       buf[ret] = '\0';
 
       command_parse_msg(handle, buf);
+      /* See command_generation: the command may have freed this
+       * object. The remaining datagrams wait for the next poll. */
+      if (input_driver_command_generation() != gen)
+         return;
    }
 }
 
-command_t* command_network_new(uint16_t port)
+command_t* command_network_new(uint16_t port, const char *bind_address)
 {
    struct addrinfo     *res  = NULL;
    command_t            *cmd = NULL;
@@ -263,12 +277,21 @@ command_t* command_network_new(uint16_t port)
    if (!(netcmd = (command_network_t*)calloc(1, sizeof(command_network_t))))
       goto error;
 
-   fd = socket_init((void**)&res, port, NULL,
+   /* An empty bind address means every interface (NULL server ->
+    * AI_PASSIVE -> 0.0.0.0), which is what this interface has always
+    * done. Anyone on that network can then send LOAD_CORE or
+    * WRITE_CORE_RAM, so users who only drive RetroArch from the same
+    * machine can set network_cmd_bind_address = "127.0.0.1". */
+   if (bind_address && !*bind_address)
+      bind_address = NULL;
+
+   fd = socket_init((void**)&res, port, bind_address,
          SOCKET_TYPE_DATAGRAM, AF_INET);
 
-   RARCH_LOG("[NetCMD] %s %hu.\n",
+   RARCH_LOG("[NetCMD] %s %hu (%s).\n",
          msg_hash_to_str(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT),
-         (unsigned short)port);
+         (unsigned short)port,
+         bind_address ? bind_address : "all interfaces");
 
    if (fd < 0)
       goto error;
@@ -362,14 +385,25 @@ static void command_stdin_poll(command_t *handle)
       else
       {
          ptrdiff_t msg_len;
+         size_t    rest;
+         char     *msg;
          *last_newline++ = '\0';
          msg_len         = last_newline - stdincmd->stdin_buf;
+         rest            = stdincmd->stdin_buf_ptr - msg_len;
 
-         command_parse_msg(handle, stdincmd->stdin_buf);
-
-         memmove(stdincmd->stdin_buf, last_newline,
-               stdincmd->stdin_buf_ptr - msg_len);
-         stdincmd->stdin_buf_ptr -= msg_len;
+         /* A command can free this object from under us (see
+          * command_generation): take the message off the buffer, tidy the
+          * buffer, and only then run the message from a private copy,
+          * touching nothing of this object afterwards. */
+         msg = strdup(stdincmd->stdin_buf);
+         memmove(stdincmd->stdin_buf, last_newline, rest);
+         stdincmd->stdin_buf_ptr = rest;
+         if (msg)
+         {
+            command_parse_msg(handle, msg);
+            free(msg);
+         }
+         return;
       }
    }
 }
@@ -379,7 +413,7 @@ command_t* command_stdin_new(void)
    command_t *cmd;
    command_stdin_t *stdincmd;
 
-#if !(defined(_WIN32) || defined(EMSCRIPTEN))
+#if !(defined(_WIN32) || defined(__EMSCRIPTEN__))
 #ifdef HAVE_NETWORKING
    if (!socket_nonblock(STDIN_FILENO))
       return NULL;
@@ -409,7 +443,7 @@ command_t* command_stdin_new(void)
 }
 #endif
 
-#if defined(EMSCRIPTEN)
+#if defined(__EMSCRIPTEN__)
 #include "frontend/drivers/platform_emscripten.h"
 typedef struct
 {
@@ -514,7 +548,7 @@ bool command_get_config_param(command_t *cmd, const char* arg)
                   (long long)(movie->frame_counter));
       }
       else
-         strlcpy(value_dynamic, "0 0 0", sizeof(value_dynamic));
+         strlcpy_lit(value_dynamic, "0 0 0", sizeof(value_dynamic));
    }
    #endif
 #ifdef HAVE_MENU
@@ -537,7 +571,7 @@ bool command_get_config_param(command_t *cmd, const char* arg)
    }
 #endif
    /* TODO: query any string */
-   _len  = strlcpy(reply, "GET_CONFIG_PARAM ", sizeof(reply));
+   _len  = strlcpy_lit(reply, "GET_CONFIG_PARAM ", sizeof(reply));
    _len += strlcpy(reply + _len, arg, sizeof(reply)  - _len);
    reply[  _len] = ' ';
    reply[++_len] = '\0';
@@ -582,6 +616,7 @@ static void uds_command_free(command_t *handle)
 
 static void command_uds_poll(command_t *handle)
 {
+   unsigned gen = input_driver_command_generation();
    int i;
    int fd;
    ssize_t ret;
@@ -610,6 +645,9 @@ static void command_uds_poll(command_t *handle)
          udscmd->last_fd = fd;
 
          command_parse_msg(handle, buf);
+         /* See command_generation: this object may be gone now. */
+         if (input_driver_command_generation() != gen)
+            return;
       }
       else
       {
@@ -651,7 +689,7 @@ command_t* command_uds_new(void)
    /* use an abstract socket for simplicity */
    memset(&addr, 0, sizeof(addr));
    addr.sun_family = AF_UNIX;
-   strlcpy(&addr.sun_path[1], "retroarch/cmd", sizeof(addr.sun_path) - 1);
+   strlcpy_lit(&addr.sun_path[1], "retroarch/cmd", sizeof(addr.sun_path) - 1);
    if (   bind(fd, (struct sockaddr*)&addr, addrsz) < 0
        || listen(fd, MAX_USER_CONNECTIONS) < 0
        || !socket_nonblock(fd))
@@ -829,7 +867,7 @@ bool command_load_state_slot(command_t *cmd, const char *arg)
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
    bool savestates_enabled      = core_info_current_supports_savestate();
    bool ret                     = false;
-   _len  = strlcpy(reply, "LOAD_STATE_SLOT ", sizeof(reply));
+   _len  = strlcpy_lit(reply, "LOAD_STATE_SLOT ", sizeof(reply));
    _len += snprintf(reply + _len, sizeof(reply) - _len, "%d", slot);
    runloop_get_savestate_path(state_path, sizeof(state_path), slot);
    /* For LOADING, an existing state file outranks metadata and
@@ -859,7 +897,7 @@ bool command_save_state_slot(command_t* cmd, const char* arg)
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
    bool savestates_enabled      = core_info_current_supports_savestate();
    bool ret = false;
-   _len = strlcpy(reply, "SAVE_STATE_SLOT ", sizeof(reply));
+   _len = strlcpy_lit(reply, "SAVE_STATE_SLOT ", sizeof(reply));
    _len += snprintf(reply + _len, sizeof(reply) - _len, "%d", slot);
    if (savestates_enabled)
    {
@@ -901,7 +939,12 @@ bool command_play_replay_slot(command_t *cmd, const char *arg)
       if (ret)
       {
          input_driver_state_t *input_st = input_state_get_ptr();
-         task_queue_wait(NULL, NULL);
+         /* The reply carries the replay handle, which the movie
+          * task's callback installs, so this still waits - but only
+          * for that task.  A NULL condition means "until the queue
+          * is empty", which made a network command block on every
+          * unrelated scan or download in flight. */
+         task_queue_wait(movie_playback_start_in_progress, NULL);
          if (input_st->bsv_movie_state_next_handle)
             snprintf(reply, sizeof(reply) - 1, "PLAY_REPLAY_SLOT %lld", (long long)(input_st->bsv_movie_state_next_handle->identifier));
          else
@@ -923,28 +966,32 @@ bool command_seek_replay(command_t *cmd, const char *arg)
 {
 #ifdef HAVE_BSV_MOVIE
    char reply[32];
-   char *endptr;
+   char *endptr  = NULL;
    size_t _len;
    bool ret      = true;
-   int64_t frame = strtoll(arg, &endptr, 10);
+   int64_t frame = arg ? (int64_t)strtoll(arg, &endptr, 10) : 0;
    input_driver_state_t *input_st = input_state_get_ptr();
-   if (!endptr)
+   /* strtoll always writes a valid pointer, so the end pointer is
+    * never NULL - an empty or non-numeric argument shows up as no
+    * characters consumed. */
+   if (!arg || endptr == arg)
       ret = false;
    if (!(input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_PLAYBACK | BSV_FLAG_MOVIE_RECORDING)))
       ret = false;
 #ifdef HAVE_CHEEVOS
-   ret = !rcheevos_hardcore_active();
+   if (rcheevos_hardcore_active())
+      ret = false;
 #endif
    if (ret)
       ret = movie_seek_to_frame(input_st, frame);
    if (ret)
    {
-      _len = strlcpy(reply, "OK ", sizeof(reply));
+      _len = strlcpy_lit(reply, "OK ", sizeof(reply));
       _len += snprintf(reply+_len, sizeof(reply)-_len,
             "%" PRId64, input_st->bsv_movie_state.seek_target_frame);
    }
    else
-      _len = strlcpy(reply, "NO", sizeof(reply));
+      _len = strlcpy_lit(reply, "NO", sizeof(reply));
    reply[_len] = '\n';
    reply[++_len] = '\0';
    cmd->replier(cmd, reply, _len);
@@ -959,14 +1006,14 @@ bool command_save_savefiles(command_t *cmd, const char* arg)
 {
    char reply[4];
    bool ret;
-   size_t  _len  = strlcpy(reply, "OK", sizeof(reply));
+   size_t  _len  = strlcpy_lit(reply, "OK", sizeof(reply));
    reply[  _len] = '\n';
    reply[++_len] = '\0';
    /* In the future, this should probably send each saved file path
       to the replier. */
    ret = command_event(CMD_EVENT_SAVE_FILES, NULL);
    if (!ret)
-     strlcpy(reply, "NO", sizeof(reply));
+     strlcpy_lit(reply, "NO", sizeof(reply));
    cmd->replier(cmd, reply, _len);
    return ret;
 }
@@ -975,15 +1022,22 @@ bool command_load_savefiles(command_t *cmd, const char* arg)
 {
    char reply[4];
    bool ret;
-   size_t  _len  = strlcpy(reply, "OK", sizeof(reply));
+   size_t  _len  = strlcpy_lit(reply, "OK", sizeof(reply));
    reply[  _len] = '\n';
    reply[++_len] = '\0';
    ret = command_event(CMD_EVENT_LOAD_FILES, NULL);
    if (!ret)
-     strlcpy(reply, "NO", sizeof(reply));
+     strlcpy_lit(reply, "NO", sizeof(reply));
    cmd->replier(cmd, reply, _len);
    return ret;
 }
+
+/* Largest byte count READ_CORE_RAM / READ_CORE_MEMORY will serve. The
+ * reply carries 3 characters per byte and goes out as one UDP datagram,
+ * so anything much bigger could not be delivered anyway; the cap also
+ * keeps `nbytes * 3` far from wrapping in unsigned int, which a request
+ * of ~1431655766 bytes did, allocating a few bytes and writing 4 GiB. */
+#define COMMAND_READ_NBYTES_MAX 16384u
 
 #if defined(HAVE_CHEEVOS)
 bool command_read_ram(command_t *cmd, const char *arg)
@@ -996,14 +1050,22 @@ bool command_read_ram(command_t *cmd, const char *arg)
    if (end && *end == ' ')
       nbytes          = (unsigned int)strtoul(end + 1, NULL, 10);
 
-   if (end && *end == ' ' && nbytes > 0)
+   if (end && *end == ' ' && nbytes > 0 && nbytes <= COMMAND_READ_NBYTES_MAX)
    {
       size_t _len             = 0;
       char *reply_at          = NULL;
-      const uint8_t *data     = NULL;
+      unsigned int avail      = 0;
+      const uint8_t *data     = rcheevos_patch_address_avail(addr, &avail);
+      unsigned int alloc_size;
+      char *reply;
+
+      /* Never read past the end of the region the address lives in. */
+      if (data && nbytes > avail)
+         nbytes = avail;
+
       /* We allocate more than needed, saving 20 bytes is not really relevant */
-      unsigned int alloc_size = 40 + nbytes * 3;
-      char *reply             = (char*)malloc(alloc_size);
+      alloc_size = 40 + nbytes * 3;
+      reply      = (char*)malloc(alloc_size);
       
       if (!reply)
       {
@@ -1015,7 +1077,7 @@ bool command_read_ram(command_t *cmd, const char *arg)
       reply_at                = reply + snprintf(
             reply, alloc_size - 1, "READ_CORE_RAM" " %x", addr);
 
-      if ((data = rcheevos_patch_address(addr)))
+      if (data && nbytes > 0)
       {
          size_t i;
          for (i = 0; i < nbytes; i++)
@@ -1025,7 +1087,7 @@ bool command_read_ram(command_t *cmd, const char *arg)
       }
       else
       {
-         strlcpy(reply_at, " -1\n", sizeof(reply) - strlen(reply));
+         strlcpy_lit(reply_at, " -1\n", alloc_size - (size_t)(reply_at - reply));
          _len = reply_at + STRLEN_CONST(" -1\n") - reply;
       }
       cmd->replier(cmd, reply, _len);
@@ -1037,7 +1099,8 @@ bool command_read_ram(command_t *cmd, const char *arg)
 bool command_write_ram(command_t *cmd, const char *arg)
 {
    unsigned int addr    = (unsigned int)strtoul(arg, (char**)&arg, 16);
-   uint8_t *data        = (uint8_t *)rcheevos_patch_address(addr);
+   unsigned int avail   = 0;
+   uint8_t *data        = (uint8_t *)rcheevos_patch_address_avail(addr, &avail);
 
    if (!data)
       return false;
@@ -1048,11 +1111,17 @@ bool command_write_ram(command_t *cmd, const char *arg)
       rcheevos_pause_hardcore();
    }
 
-   while (*arg)
+   /* Stop at the end of the region: the payload length is whatever the
+    * sender put in the datagram. */
+   while (*arg && avail)
    {
       *data = strtoul(arg, (char**)&arg, 16);
       data++;
+      avail--;
    }
+   if (*arg)
+      RARCH_WARN("[Command] WRITE_CORE_RAM at %x reached the end of the "
+            "memory region; remainder of the payload ignored.\n", addr);
    return true;
 }
 #endif
@@ -1081,8 +1150,17 @@ bool command_load_core(command_t *cmd, const char* arg)
    if (!arg || !*arg)
       return false;
 
+#if TARGET_OS_IPHONE
+   {
+      char exp[PATH_MAX_LENGTH];
+      fill_pathname_expand_special(exp, arg, sizeof(exp));
+      return task_push_load_new_core(exp, NULL,
+            &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+   }
+#else
    return task_push_load_new_core(arg, NULL,
          &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+#endif
 }
 
 /* START_CORE
@@ -1128,8 +1206,17 @@ bool command_load_content(command_t *cmd, const char* arg)
    memcpy(core_path, arg, _len);
    core_path[_len] = '\0';
 
+#if TARGET_OS_IPHONE
+   {
+      char exp[PATH_MAX_LENGTH];
+      fill_pathname_expand_special(exp, sep + 1, sizeof(exp));
+      return task_push_load_content_with_new_core_from_companion_ui(
+            core_path, exp, NULL, NULL, NULL, &content_info, NULL, NULL);
+   }
+#else
    return task_push_load_content_with_new_core_from_companion_ui(
          core_path, sep + 1, NULL, NULL, NULL, &content_info, NULL, NULL);
+#endif
 }
 
 /* CLOSE_CONTENT
@@ -1277,17 +1364,17 @@ static uint8_t *command_memory_get_pointer(
       int for_write, char *s, size_t len)
 {
    if (!sys_info || sys_info->mmaps.num_descriptors == 0)
-      strlcpy(s, " -1 no memory map defined\n", len);
+      strlcpy_lit(s, " -1 no memory map defined\n", len);
    else
    {
       size_t offset;
       const rarch_memory_descriptor_t* desc = command_memory_get_descriptor(&sys_info->mmaps, address, &offset);
       if (!desc)
-         strlcpy(s, " -1 no descriptor for address\n", len);
+         strlcpy_lit(s, " -1 no descriptor for address\n", len);
       else if (!desc->core.ptr)
-         strlcpy(s, " -1 no data for descriptor\n", len);
+         strlcpy_lit(s, " -1 no data for descriptor\n", len);
       else if (for_write && (desc->core.flags & RETRO_MEMDESC_CONST))
-         strlcpy(s, " -1 descriptor data is readonly\n", len);
+         strlcpy_lit(s, " -1 descriptor data is readonly\n", len);
       else
       {
          *max_bytes = (unsigned int)(desc->core.len - offset);
@@ -1322,7 +1409,7 @@ bool command_get_status(command_t *cmd, const char* arg)
 
       if (!runloop_st)
       {
-         _len = strlcpy(reply, "GET_STATUS ERROR", sizeof(reply));
+         _len = strlcpy_lit(reply, "GET_STATUS ERROR", sizeof(reply));
          cmd->replier(cmd, reply, _len);
          return false;
       }
@@ -1364,7 +1451,7 @@ bool command_get_status(command_t *cmd, const char* arg)
       strlcpy_append(reply, sizeof(reply), &_len, "\n");
    }
    else
-      _len = strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
+      _len = strlcpy_lit(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
 
    cmd->replier(cmd, reply, _len);
    return true;
@@ -1390,7 +1477,7 @@ bool command_read_memory(command_t *cmd, const char *arg)
       if (!(end && *end == ' '))
          return false;
       nbytes          = (unsigned int)strtoul(end + 1, NULL, 10);
-      if (nbytes == 0)
+      if (nbytes == 0 || nbytes > COMMAND_READ_NBYTES_MAX)
          return false;
    }
 
@@ -1480,10 +1567,10 @@ void command_event_set_volume(
    configuration_set_float(settings, settings->floats.audio_volume, new_volume);
    _len             = strlcpy(msg, msg_hash_to_str(MSG_AUDIO_VOLUME),
          sizeof(msg));
-   _len            += strlcpy(msg + _len, ": ", sizeof(msg) - _len);
+   _len            += strlcpy_lit(msg + _len, ": ", sizeof(msg) - _len);
    _len            += snprintf(msg + _len, sizeof(msg) - _len, "%.1f",
          new_volume);
-   _len            += strlcpy(msg + _len, " dB", sizeof(msg) - _len);
+   _len            += strlcpy_lit(msg + _len, " dB", sizeof(msg) - _len);
 
 #if defined(HAVE_GFX_WIDGETS)
    if (widgets_active)
@@ -1518,10 +1605,10 @@ void command_event_set_mixer_volume(
    configuration_set_float(settings, settings->floats.audio_mixer_volume, new_volume);
    _len             = strlcpy(msg, msg_hash_to_str(MSG_AUDIO_VOLUME),
          sizeof(msg));
-   _len            += strlcpy(msg + _len, ": ", sizeof(msg) - _len);
+   _len            += strlcpy_lit(msg + _len, ": ", sizeof(msg) - _len);
    _len            += snprintf(msg + _len, sizeof(msg) - _len, "%.1f",
          new_volume);
-   _len            += strlcpy(msg + _len, " dB", sizeof(msg) - _len);
+   _len            += strlcpy_lit(msg + _len, " dB", sizeof(msg) - _len);
    runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -1602,7 +1689,7 @@ static size_t command_event_save_config(const char *config_path,
 #endif
    if (path_exists && config_save_file(config_path))
    {
-#if IOS
+#if TARGET_OS_IPHONE
       char tmp[PATH_MAX_LENGTH] = {0};
       fill_pathname_abbreviate_special(tmp, config_path, sizeof(tmp));
       _len = snprintf(s, len, "%s \"%s\".",
@@ -1699,7 +1786,7 @@ size_t command_event_save_auto_state(void)
       return 0;
    _len = strlcpy(savestate_name_auto, name_savestate,
          sizeof(savestate_name_auto));
-   _len += strlcpy(savestate_name_auto + _len, ".auto",
+   _len += strlcpy_lit(savestate_name_auto + _len, ".auto",
            sizeof(savestate_name_auto) - _len);
    if (content_auto_save_state((const char*)savestate_name_auto))
 	   RARCH_LOG("[State] %s \"%s\" %s.\n",
@@ -1809,7 +1896,7 @@ bool command_event_load_auto_state(void)
 
    _len = strlcpy(savestate_name_auto, name_savestate,
          sizeof(savestate_name_auto));
-   strlcpy(savestate_name_auto + _len, ".auto",
+   strlcpy_lit(savestate_name_auto + _len, ".auto",
          sizeof(savestate_name_auto) - _len);
 
    if (!path_is_valid(savestate_name_auto))
@@ -2102,7 +2189,7 @@ static void command_event_set_savestate_garbage_collect(settings_t *settings)
       /* Construct the save state thumbnail name
        * and delete that one as well. */
       i = strlen(state_to_delete);
-      strlcpy(state_to_delete + i,".png",STRLEN_CONST(".png")+1);
+      strlcpy_lit(state_to_delete + i,".png",STRLEN_CONST(".png")+1);
       filestream_delete(state_to_delete);
       RARCH_DBG("[State] Garbage collect, deleting \"%s\".\n",state_to_delete);
    }
@@ -2332,7 +2419,7 @@ bool command_event_save_core_config(
 
          if (i)
             __len += snprintf(tmp + __len, sizeof(tmp) - __len, "-%u", i);
-         strlcpy(tmp + __len, ".cfg", sizeof(tmp) - __len);
+         strlcpy_lit(tmp + __len, ".cfg", sizeof(tmp) - __len);
 
          if (!path_is_valid(tmp))
          {
@@ -2396,7 +2483,7 @@ void command_event_save_current_config(enum override_type type)
             if (path_is_empty(RARCH_PATH_CONFIG))
             {
                msg_cat = MESSAGE_QUEUE_CATEGORY_ERROR;
-               _len    = strlcpy(msg, "Config directory not set, cannot save configuration.", sizeof(msg));
+               _len    = strlcpy_lit(msg, "Config directory not set, cannot save configuration.", sizeof(msg));
             }
             else
             {
@@ -2689,22 +2776,22 @@ struct command_reinit_snapshot_ctx
 {
    void   **buf_p;       /* static cached_snapshot in the caller */
    size_t  *cap_p;       /* static cached_snapshot_cap in the caller */
-   unsigned w, h;
+   unsigned dims;
    size_t   p, size;
 };
 
 static void command_reinit_snapshot_cb(void *userdata,
       const void *data,
-      unsigned width, unsigned height, size_t pitch)
+      unsigned dims, size_t pitch)
 {
    struct command_reinit_snapshot_ctx *ctx
       = (struct command_reinit_snapshot_ctx*)userdata;
    size_t want;
 
-   if (!ctx || !data || !width || !height || !pitch)
+   if (!ctx || !data || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims) || !pitch)
       return;
 
-   want = pitch * height;
+   want = pitch * VIDEO_SCALE_H(dims);
    if (want > *ctx->cap_p)
    {
       void *tmp = realloc(*ctx->buf_p, want);
@@ -2717,8 +2804,7 @@ static void command_reinit_snapshot_cb(void *userdata,
       return;
 
    memcpy(*ctx->buf_p, data, want);
-   ctx->w    = width;
-   ctx->h    = height;
+   ctx->dims = dims;
    ctx->p    = pitch;
    ctx->size = want;
 }
@@ -2746,6 +2832,7 @@ void command_event_reinit(const int flags)
    const input_device_driver_t
       *sec_joypad                 = NULL;
 #endif
+
    /* Snapshot the last cached core frame before tearing the video
     * driver down.  video_driver_free() invalidates the cache as
     * part of the reinit cycle (the pointer was borrowed from the
@@ -2772,22 +2859,48 @@ void command_event_reinit(const int flags)
     * we don't even allocate. */
    static void  *cached_snapshot      = NULL;
    static size_t cached_snapshot_cap  = 0;
-   unsigned      cached_snapshot_w    = 0;
-   unsigned      cached_snapshot_h    = 0;
+   unsigned      cached_snapshot_dims = 0;
    size_t        cached_snapshot_p    = 0;
    size_t        cached_snapshot_size = 0;
+   /* A reinit while the video driver is down must not create a
+    * driver instance. It happens when content loads over running
+    * content: core deinit tears the drivers down, then unloading
+    * the old content's override fires CMD_EVENT_REINIT (the
+    * override changed video_fullscreen, and CORE_RUNNING is still
+    * set). An instance created here is replaced by
+    * retroarch_main_init's drivers_init without being freed - an
+    * orphaned window and device that widget fonts keep drawing
+    * into - while the next drivers_init applies the restored mode
+    * anyway. Guarded here, in the layer that owns reinit, so every
+    * caller is covered and call sites stay bare command_events.
+    *
+    * Nothing can be ungrabbed with the drivers down, but the grab
+    * flag is bookkeeping the win32 focus pump and the grab toggle
+    * read later, so leave it as the skipped reinit's game-focus
+    * reapply would have: released, unless exclusive fullscreen
+    * (which re-grabs on init), auto-grab or game focus keeps it.
+    * Everything below reuses this function's own locals. */
+   if (!video_st->data)
+   {
+      if (     !settings->bools.video_fullscreen
+            && !(video_driver_get_disp_flags() & VIDEO_FLAG_FORCE_FULLSCREEN)
+            && !settings->bools.input_auto_mouse_grab
+            && !input_st->game_focus_state.enabled)
+         input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
+      return;
+   }
+
+
 
    {
       struct command_reinit_snapshot_ctx ctx;
       ctx.buf_p = &cached_snapshot;
       ctx.cap_p = &cached_snapshot_cap;
-      ctx.w     = 0;
-      ctx.h     = 0;
+      ctx.dims  = 0;
       ctx.p     = 0;
       ctx.size  = 0;
       video_driver_cached_frame_read(&ctx, command_reinit_snapshot_cb);
-      cached_snapshot_w    = ctx.w;
-      cached_snapshot_h    = ctx.h;
+      cached_snapshot_dims = ctx.dims;
       cached_snapshot_p    = ctx.p;
       cached_snapshot_size = ctx.size;
    }
@@ -2805,10 +2918,10 @@ void command_event_reinit(const int flags)
     * a teardown hook would mean wiring command_event_reinit's
     * statics into retroarch_deinit_drivers; the size cap makes the
     * leak benign in practice, so we leave it. */
-   if (cached_snapshot_p && cached_snapshot_h)
+   if (cached_snapshot_p && VIDEO_SCALE_H(cached_snapshot_dims))
    {
       video_driver_cached_frame_publish(cached_snapshot,
-            cached_snapshot_w, cached_snapshot_h, cached_snapshot_p);
+            cached_snapshot_dims, cached_snapshot_p);
 
 #ifdef HAVE_MENU
       /* If the menu is alive across the reinit, the runloop's
@@ -2847,13 +2960,11 @@ void command_event_reinit(const int flags)
        * premature render). */
       if (menu_st->flags & MENU_ST_FLAG_ALIVE)
       {
+         unsigned output_size = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
          if (     menu_st->driver_ctx
                && menu_st->driver_ctx->render)
             menu_st->driver_ctx->render(
-                  menu_st->userdata,
-                  video_st->width,
-                  video_st->height,
-                  false);
+                  menu_st->userdata, output_size, false);
 
          if (     video_st->poke
                && video_st->poke->set_texture_enable)

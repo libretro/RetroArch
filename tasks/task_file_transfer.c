@@ -66,29 +66,34 @@ void task_window_progress_cb(retro_task_t *task)
  * file) without monopolising the tick. */
 #define NBIO_XFER_TICK_BYTES       (1024 * 1024)
 
-/* Full-file image types (PNG/JPEG/TGA/BMP) read under a time budget
- * instead: they need every byte before decoding, so there is nothing
- * to pace for - each tick reads as much as the storage delivers in a
- * few milliseconds, giving fast media the whole file in a tick or
- * two while slow media still never stalls a frame.  The video types
- * keep the byte budget: their stills complete on a small prefix and
- * a racing fill would just read past the point of use. */
-#define NBIO_XFER_TICK_USEC        4000
+/* Types that need the whole file before they finish read under a time
+ * budget instead of a byte one: there is no prefix to stop at, so
+ * each tick reads as much as the storage delivers in a few
+ * milliseconds, giving fast media the file in a tick or two while
+ * slow media still never stalls a frame.
+ *
+ * The byte budget above stays with the types whose decode completes
+ * on a prefix - the video stills, and WEBP, which does not decode
+ * against a growing buffer the way PNG and JPEG do but starts once
+ * rwebp_still_ready() says its still chunk is wholly resident.  For
+ * those a racing fill just reads past the point of use.  (PNG and
+ * JPEG are avail-aware and decode against the partial buffer, but
+ * they still need every byte to finish, so the time budget is theirs
+ * too - task_image.c's is_prefix grouping answers a different
+ * question from this one and the two are meant to differ.)
+ *
+ * The time budget's value itself lives with the window in
+ * task_nbio_slice.c (NBIO_XFER_TICK_USEC): the slice open/close
+ * calls below hand out exactly that allowance. */
 
-/* The budget is handed to the fill rather than checked around it, so
- * it is consulted between the fill's own reads.  This used to be a
- * do/while around iterate() with a 256 KiB byte budget standing in
- * for the time slice, which meant the deadline could only be noticed
- * every 256 KiB - once per whole chunk, however long that chunk took
- * to arrive. */
-static bool task_file_transfer_within_budget(void *ud, size_t avail,
-      size_t len)
-{
-   (void)avail;
-   (void)len;
-   return cpu_features_get_time_usec() - *(retro_time_t*)ud
-         < NBIO_XFER_TICK_USEC;
-}
+/* The shared per-frame I/O window itself (state + the three
+ * task_nbio_slice_* entry points) lives in task_nbio_slice.c: it is
+ * shared with other budgeted handlers (the manual content scanner's
+ * BEGIN spine), and a TU of its own keeps its dependencies to the
+ * clock and the task queue, so tests can link the real window
+ * without dragging the image/nbio spine in with it.  The design
+ * rationale - why a shared window rather than a per-task slice, why
+ * the floor - is documented there. */
 
 const uint8_t *nbio_xfer_ptr(nbio_handle_t *nbio, size_t *len)
 {
@@ -127,15 +132,21 @@ static int task_file_transfer_iterate_transfer(nbio_handle_t *nbio)
    if (nbio->is_finished)
       return 0;
 
-   if (     nbio->type == NBIO_TYPE_WEBM
-         || nbio->type == NBIO_TYPE_MP4
-         || nbio->type == NBIO_TYPE_WEBP)
-      data_transfer_iterate(nbio->xfer, NBIO_XFER_TICK_BYTES);
-   else
    {
-      retro_time_t t0 = cpu_features_get_time_usec();
-      data_transfer_iterate_while(nbio->xfer, 0,
-            task_file_transfer_within_budget, &t0);
+      nbio_budget_t b;
+      /* Both budgets go to the fill and whichever comes first stops
+       * it: the prefix types keep their byte cap so they do not race
+       * past the point of use, and every type is bounded by the
+       * tick's remaining time. */
+      size_t bytes = (     nbio->type == NBIO_TYPE_WEBM
+                        || nbio->type == NBIO_TYPE_MP4
+                        || nbio->type == NBIO_TYPE_WEBP)
+         ? (size_t)NBIO_XFER_TICK_BYTES : 0;
+
+      task_nbio_slice_open(&b);
+      data_transfer_iterate_while(nbio->xfer, bytes,
+            task_nbio_slice_within_budget, &b);
+      task_nbio_slice_close(&b);
    }
    if (data_transfer_complete(nbio->xfer)
          || data_transfer_failed(nbio->xfer)
@@ -173,34 +184,89 @@ void task_file_load_handler(retro_task_t *task)
             {
                /* Every path load travels the data_transfer prefix
                 * spine: filestream/VFS routing, 64-bit lengths, the
-                * hardware guard behind avail, honest short reads. */
-               if ((nbio->xfer = data_transfer_open_prefix(
-                           nbio->path, 0)))
+                * hardware guard behind avail, honest short reads.
+                *
+                * No commit_cap, for any type - including the prefix
+                * ones.  There was briefly a 256 MiB cap here for
+                * WEBM/MP4/WEBP, reasoned from "a still decodes at a
+                * few per cent of its file, so a fill still running
+                * at 256 MiB is pathology".  The premise is false: a
+                * non-faststart MP4 keeps its moov index at EOF, so
+                * the demuxer cannot even open - let alone decode a
+                * still - until the WHOLE file is resident.  That is
+                * not a malformed file; it is what most cameras and
+                * phones write.  Every such file past the cap filled
+                * to exactly the cap, settled capped(), and the
+                * handler cancelled: no still, no thumbnail, and no
+                * animation either, since the upload callback bails
+                * before its animation block when the task delivers
+                * nothing.  4K content was hit first purely by size.
+                *
+                * No constant fixes that - the legitimate worst-case
+                * need is the file length - and the per-tick pacing
+                * already bounds what any single frame can cost, so
+                * the cap protected nothing the budgets did not. */
+               /* The open is real I/O - a filestream_open, a size
+                * query, and on the pool-miss path fresh-page faults -
+                * and it ran outside the window: neither budgeted nor
+                * charged, so a queue of cold opens could silently
+                * blow the very slice the fills respect.  It cannot
+                * be interrupted mid-call, but it can be charged, so
+                * the fills that follow in the same period get that
+                * much less. */
                {
-                  size_t xlen = 0;
-                  data_transfer_ptr(nbio->xfer, &xlen);
-                  if (xlen <= NBIO_SMALL_FILE_THRESHOLD)
-                  {
-                     /* small file: finish in this tick */
-                     data_transfer_iterate(nbio->xfer, 0);
-                     if (!data_transfer_complete(nbio->xfer))
-                     {
-                        task_set_flags(task,
-                              RETRO_TASK_FLG_CANCELLED, true);
-                        break;
-                     }
-                     nbio->status = NBIO_STATUS_TRANSFER_PARSE;
-                     task_set_progress(task, 100);
-                     goto do_transfer_parse;
-                  }
-                  nbio->status = NBIO_STATUS_TRANSFER;
-                  return;
+                  nbio_budget_t b;
+                  task_nbio_slice_open(&b);
+                  nbio->xfer = data_transfer_open_prefix(nbio->path, 0);
+                  task_nbio_slice_close(&b);
                }
-               task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
+               if (nbio->xfer)
+               {
+                  nbio->status = NBIO_STATUS_TRANSFER;
+                  /* Fall through into the fill instead of returning
+                   * from a tick that read nothing - the same frame
+                   * the two jumps to do_transfer_parse save, at the
+                   * other end of the transfer.
+                   *
+                   * A file under NBIO_SMALL_FILE_THRESHOLD used to
+                   * get an unbudgeted iterate() here, finishing in
+                   * this tick however long that took.  That was the
+                   * one path with no bound at all: forty 512 KiB
+                   * loads cost 10.72 ms in a frame with the cache
+                   * warm and nothing whatever on cold storage.  It
+                   * takes the shared window like everything else
+                   * now, and still finishes in one tick whenever the
+                   * window has the room. */
+                  goto do_transfer;
+               }
             }
+            /* Outside the path check, not inside it.  A NULL path
+             * used to fall out of INIT having set no flag and
+             * changed no status, so the next tick re-entered INIT
+             * and did the same thing forever: a task that never
+             * finishes, never cancels, and never leaves the running
+             * queue - a permanent per-frame call under the regular
+             * task queue and a hot spin on the worker thread under
+             * the threaded one.
+             *
+             * Every producer currently guards its strdup, so this is
+             * closing the hole rather than fixing a live bug.  A
+             * state machine with no terminal for one of its inputs
+             * is the kind of thing that only stays unreachable until
+             * someone adds a caller. */
+            task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
             break;
 do_transfer_parse:
          case NBIO_STATUS_TRANSFER_PARSE:
+            /* Reaching parse means the whole file is in, so report it
+             * once here where both entries pass.  Only the small-file
+             * branch used to set 100, and the multi-tick path never
+             * did: it jumps straight from the completing fill to
+             * parse, skipping the progress update below, so a large
+             * local load's bar stopped at whatever the last partial
+             * tick had reported - 0 for a two-tick load - and then
+             * vanished. */
+            task_set_progress(task, 100);
             if (task_file_transfer_iterate_parse(nbio) == -1)
             {
                task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
@@ -208,6 +274,7 @@ do_transfer_parse:
             }
             nbio->status = NBIO_STATUS_TRANSFER_FINISHED;
             break;
+do_transfer:
          case NBIO_STATUS_TRANSFER:
             if (task_file_transfer_iterate_transfer(nbio) == -1)
             {
@@ -229,14 +296,29 @@ do_transfer_parse:
             {
                size_t done = 0, total = 0;
                nbio_xfer_progress(nbio, &done, &total);
-               if (total > 0)
+               /* Scale both sides down until the multiply cannot
+                * overflow, rather than switching to a signed division
+                * for the large case.  done can exceed INT_MAX - every
+                * file over 2 GB, and on a 32-bit target every file
+                * over ~43 MiB took that branch - and converting an
+                * out-of-range size_t to int is implementation-defined:
+                * on the usual two's-complement targets it lands
+                * negative and the percentage ran backwards.  The
+                * divisor there could also reach zero for a total under
+                * 100, which only the same unreachable magnitudes kept
+                * safe.
+                *
+                * done <= total always, so testing total is enough.
+                * The loop never runs on a 64-bit size_t, and where it
+                * does it costs a bit of precision on a value that is
+                * about to be squashed into 0-100 anyway. */
+               while (total > (((size_t)-1) / 100))
                {
-                  if (done < (((size_t)-1) / 100))
-                     task_set_progress(task, (int8_t)(done * 100 / total));
-                  else
-                     task_set_progress(task,
-                           (int8_t)MIN((signed)done / (total / 100), 100));
+                  done  >>= 1;
+                  total >>= 1;
                }
+               if (total > 0)
+                  task_set_progress(task, (int8_t)(done * 100 / total));
             }
             break;
          case NBIO_STATUS_TRANSFER_FINISHED:
@@ -259,6 +341,16 @@ do_transfer_parse:
          case NBIO_TYPE_OGG:
          case NBIO_TYPE_MOD:
          case NBIO_TYPE_WAV:
+         /* M4A and OPUS were missing from this list while being set
+          * by both mixer push paths, so they fell to default: the
+          * file was read, the task reported finished, and
+          * task_audio_mixer_load_handler - which is what builds the
+          * task's data and donates the transfer to the mixer - never
+          * ran.  The sound loaded and then silently did not play. */
+         case NBIO_TYPE_M4A:
+         case NBIO_TYPE_AC3:
+         case NBIO_TYPE_LPCM:
+         case NBIO_TYPE_OPUS:
 #ifdef HAVE_AUDIOMIXER
             if (!task_audio_mixer_load_handler(task))
                task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
@@ -266,7 +358,20 @@ do_transfer_parse:
             break;
          case NBIO_TYPE_NONE:
          default:
-            if (nbio->is_finished)
+            /* is_finished is the parse callback's signal that it is
+             * done with the buffer, and it is an undocumented
+             * obligation: a callback that returns 0 without setting
+             * it left the task parked in TRANSFER_FINISHED with
+             * nothing in either switch able to move it, which is the
+             * same never-terminating task the INIT path had.
+             *
+             * Reaching TRANSFER_FINISHED already means the callback
+             * returned success, so there is nothing left to do for a
+             * type with no decode handler of its own.  Keep the
+             * is_finished test as well: a callback may set it before
+             * the status advances. */
+            if (     nbio->is_finished
+                  || nbio->status == NBIO_STATUS_TRANSFER_FINISHED)
                task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
             break;
       }

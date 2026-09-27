@@ -16,6 +16,7 @@
  */
 
 #include <stdint.h>
+#include "../../apple_runtime.h"
 #include <stddef.h>
 #include <string.h>
 #include <unistd.h>
@@ -24,15 +25,11 @@
 #include <sys/utsname.h>
 
 #include <mach/mach.h>
-#ifdef HAVE_GCD
-#include <dispatch/dispatch.h>
-#include <defines/cocoa_defines.h>
-#include <retro_atomic.h>
-#endif
+#include <dlfcn.h>
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreFoundation/CFArray.h>
-#if !defined(OSX) || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
+#if !TARGET_OS_OSX || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
 #import <AVFoundation/AVFoundation.h>
 #endif
 
@@ -45,13 +42,13 @@
 #include <objc/message.h>
 #endif
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 #include <Carbon/Carbon.h>
 #include <IOKit/ps/IOPowerSources.h>
 #include <IOKit/ps/IOPSKeys.h>
 
 #include <sys/sysctl.h>
-#elif defined(IOS)
+#elif TARGET_OS_IPHONE
 #include <UIKit/UIDevice.h>
 #include <sys/sysctl.h>
 #endif
@@ -86,6 +83,10 @@
 #include "../../msg_hash.h"
 #include "../../ui/ui_companion_driver.h"
 #include "../../paths.h"
+#include <compat/strl.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 typedef enum
 {
@@ -127,63 +128,11 @@ typedef enum
    CFAllDomainsMask     = 0x0ffff  /* All domains: all of the above and future items */
 } CFDomainMask;
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 static int speak_pid                            = 0;
 #endif
 
 static char darwin_cpu_model_name[64] = {0};
-
-#ifdef HAVE_GCD
-/* Directory watching implementation using GCD dispatch sources */
-typedef struct darwin_watch_entry
-{
-   int fd;                    /* File descriptor opened with O_EVTONLY */
-   dispatch_source_t source;  /* GCD dispatch source for monitoring */
-   /* Per-entry semaphore signalled from the source's cancel
-    * handler.  Needed because dispatch_source_cancel is
-    * asynchronous: it flags the source for cancellation but
-    * any already-dispatched event handler invocation keeps
-    * running to completion on its target queue, which is the
-    * global concurrent queue here.  The event handler
-    * dereferences &watch_data->event_count, so we cannot free
-    * watch_data until we're sure no in-flight handler remains.
-    * The cancel handler fires once all handler invocations
-    * have drained, so waiting on this semaphore before free()
-    * is the standard safe-teardown pattern for dispatch
-    * sources. */
-   dispatch_semaphore_t cancel_sem;
-   char *path;                /* Watched file path */
-} darwin_watch_entry_t;
-
-typedef struct darwin_watch_data
-{
-   dispatch_queue_t queue;       /* Dispatch queue for event handlers */
-   darwin_watch_entry_t *watches; /* Array of watch entries */
-   size_t watch_count;           /* Number of active watches */
-   /* Monotonic event counter.  Setter (GCD event handler thread)
-    * increments via retro_atomic_fetch_add_int when the
-    * filesystem reports an event; reader (main thread, in
-    * frontend_darwin_check_for_path_changes) acquire-loads it
-    * and compares against last_seen below.
-    *
-    * The previous design used a binary flag set/cleared via
-    * OSAtomicCompareAndSwap32, but Apple deprecated OSAtomic.h
-    * in 10.12 (2016) in favour of <stdatomic.h>.  Replacing the
-    * flag with a counter is also strictly more flexible: the
-    * "did anything change?" semantic is preserved exactly
-    * (now != last_seen), and the count is available if a future
-    * caller wants to batch events.  retro_atomic.h provides the
-    * portable fetch_add / load_acquire primitives needed; no
-    * compare-exchange operation is necessary, because the
-    * monotonic counter never needs to be read-and-cleared
-    * atomically (last_seen is main-thread-only state). */
-   retro_atomic_int_t event_count;
-   /* Reader-side cursor.  Touched only by the main thread in
-    * frontend_darwin_check_for_path_changes; not atomic. */
-   int last_seen;
-   int flags;                    /* Event flags to monitor */
-} darwin_watch_data_t;
-#endif
 
 static void CFSearchPathForDirectoriesInDomains(
       char *s, size_t len)
@@ -219,11 +168,11 @@ void CFTemporaryDirectory(char *s, size_t len)
    CFStringGetCString(path, s, len, kCFStringEncodingUTF8);
 }
 
-#if defined(IOS)
+#if TARGET_OS_IPHONE
 void get_ios_version(int *major, int *minor);
 #endif
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 
 #define PMGMT_STRMATCH(a,b) (CFStringCompare(a, b, 0) == kCFCompareEqualTo)
 #define PMGMT_GETVAL(k,v)   CFDictionaryGetValueIfPresent(dict, CFSTR(k), (const void **) v)
@@ -336,11 +285,11 @@ static void darwin_check_power_source(
 
 static void frontend_darwin_get_name(char *s, size_t len)
 {
-#if defined(IOS)
+#if TARGET_OS_IPHONE
    struct utsname buffer;
    if (uname(&buffer) == 0)
       strlcpy(s, buffer.machine, len);
-#elif defined(OSX)
+#elif TARGET_OS_OSX
    size_t _len = 0;
    sysctlbyname("hw.model", NULL, &_len, NULL, 0);
     if (_len)
@@ -351,45 +300,73 @@ static void frontend_darwin_get_name(char *s, size_t len)
 static size_t frontend_darwin_get_os(char *s, size_t len, int *major, int *minor)
 {
    size_t _len;
-#if defined(IOS)
+#if TARGET_OS_IPHONE
    get_ios_version(major, minor);
 #if TARGET_OS_TV
-   _len = strlcpy(s, "tvOS", len);
+   _len = strlcpy_lit(s, "tvOS", len);
 #else
-   _len = strlcpy(s, "iOS", len);
+   _len = strlcpy_lit(s, "iOS", len);
 #endif
-#elif defined(OSX)
-#if MAC_OS_X_VERSION_MIN_REQUIRED >= 101300 /* MAC_OS_X_VERSION_10_13 */
-   NSOperatingSystemVersion version = NSProcessInfo.processInfo.operatingSystemVersion;
-   *major = (int)version.majorVersion;
-   *minor = (int)version.minorVersion;
-#else
-   /* MacOS 10.9 includes the [NSProcessInfo operatingSystemVersion] function, but it's not in the 10.9 SDK. So, call it via NSInvocation */
-   /* Credit: OpenJDK (https://github.com/openjdk/jdk/commit/d4c7db50) */
-   if ([[NSProcessInfo processInfo] respondsToSelector:@selector(operatingSystemVersion)])
+#elif TARGET_OS_OSX
+   /* The OS version cannot change while the process runs, so it is
+    * read once and kept; get_os() is called from the menu's system
+    * information list, which is rebuilt every time it is opened. */
+   static int cached_major = 0, cached_minor = 0;
+
+   if (!cached_major)
    {
-      typedef struct
+      NSProcessInfo *pi = [NSProcessInfo processInfo];
+      /* -operatingSystemVersion is 10.10. It returns a struct of three
+       * NSIntegers, which is returned in memory on x86_64 and in
+       * registers on arm64 - objc_msgSend against objc_msgSend_stret -
+       * so it is sent through NSInvocation, which gets that right on
+       * both without this file having to. Once per process, so the
+       * invocation costs nothing that matters.
+       * Credit for the shape: OpenJDK (openjdk/jdk d4c7db50). */
+      if ([pi respondsToSelector:@selector(operatingSystemVersion)])
       {
-         NSInteger majorVersion;
-         NSInteger minorVersion;
-         NSInteger patchVersion;
-      } NSMyOSVersion;
-      NSMyOSVersion version;
-      NSMethodSignature *sig = [[NSProcessInfo processInfo] methodSignatureForSelector:@selector(operatingSystemVersion)];
-      NSInvocation *invoke = [NSInvocation invocationWithMethodSignature:sig];
-      invoke.selector = @selector(operatingSystemVersion);
-      [invoke invokeWithTarget:[NSProcessInfo processInfo]];
-      [invoke getReturnValue:&version];
-      *major = (int)version.majorVersion;
-      *minor = (int)version.minorVersion;
+         typedef struct
+         {
+            NSInteger majorVersion;
+            NSInteger minorVersion;
+            NSInteger patchVersion;
+         } darwin_os_version_t;
+         darwin_os_version_t version = {0, 0, 0};
+         NSMethodSignature *sig      = [pi methodSignatureForSelector:
+               @selector(operatingSystemVersion)];
+         NSInvocation *invoke        = [NSInvocation invocationWithMethodSignature:sig];
+         invoke.selector             = @selector(operatingSystemVersion);
+         [invoke invokeWithTarget:pi];
+         [invoke getReturnValue:&version];
+         cached_major = (int)version.majorVersion;
+         cached_minor = (int)version.minorVersion;
+      }
+      else
+      {
+         /* Before 10.10 there is Gestalt, which is deprecated since
+          * 10.8 and gone from the newest SDKs' headers, so it is
+          * resolved rather than called - the selectors are the
+          * four-character codes 'sys1' and 'sys2'. A system old enough
+          * to need this has it. */
+         typedef int16_t (*darwin_gestalt_t)(uint32_t, int32_t*);
+         darwin_gestalt_t gestalt = (darwin_gestalt_t)dlsym(RTLD_DEFAULT, "Gestalt");
+         int32_t gmajor = 0, gminor = 0;
+         if (gestalt)
+         {
+            gestalt(0x73797331 /* 'sys1' */, &gmajor);
+            gestalt(0x73797332 /* 'sys2' */, &gminor);
+         }
+         cached_major = (int)gmajor;
+         cached_minor = (int)gminor;
+      }
+      /* Never zero again, or the probe repeats every call. */
+      if (!cached_major)
+         cached_major = -1;
    }
-   else
-   {
-      Gestalt(gestaltSystemVersionMinor, (SInt32*)minor);
-      Gestalt(gestaltSystemVersionMajor, (SInt32*)major);
-   }
-#endif
-   _len = strlcpy(s, "OSX", len);
+
+   *major = (cached_major > 0) ? cached_major : 0;
+   *minor = cached_minor;
+   _len = strlcpy_lit(s, "OSX", len);
 #endif
    return _len;
 }
@@ -416,7 +393,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    CFRelease(bundle_url);
    path_resolve_realpath(bundle_path_buf, sizeof(bundle_path_buf), true);
 
-#if defined(OSX)
+#if TARGET_OS_OSX
    fill_pathname_application_data(application_data, sizeof(application_data));
 
    BOOL portable; /* steam || RAPortableInstall || portable.txt */
@@ -470,9 +447,9 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_REMAP], g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps", sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
 #if defined(HAVE_UPDATE_CORES) || defined(HAVE_STEAM)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], application_data, "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-#elif defined(OSX) && defined(HAVE_APPLE_STORE)
+#elif TARGET_OS_OSX && defined(HAVE_APPLE_STORE)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "Contents/Frameworks", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
-#elif defined(IOS) && defined(HAVE_FRAMEWORKS)
+#elif TARGET_OS_IPHONE && defined(HAVE_FRAMEWORKS)
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "Frameworks", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
 #else
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE], bundle_path_buf, "modules", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE]));
@@ -563,7 +540,7 @@ static enum frontend_powerstate frontend_darwin_get_powerstate(
       int *seconds, int *percent)
 {
    enum frontend_powerstate ret = FRONTEND_POWERSTATE_NONE;
-#if defined(OSX)
+#if TARGET_OS_OSX
    CFIndex i, total;
    CFArrayRef list;
    bool have_ac, have_battery, charging;
@@ -639,7 +616,7 @@ static enum frontend_powerstate frontend_darwin_get_powerstate(
    return ret;
 }
 
-#ifndef OSX
+#if !TARGET_OS_OSX
 #ifndef CPU_ARCH_ABI64
 #define CPU_ARCH_ABI64          0x01000000
 #endif
@@ -651,7 +628,7 @@ static enum frontend_powerstate frontend_darwin_get_powerstate(
 
 static enum frontend_architecture frontend_darwin_get_arch(void)
 {
-#ifdef OSX
+#if TARGET_OS_OSX
     struct utsname buffer;
 
     if (uname(&buffer) != 0)
@@ -740,16 +717,31 @@ static const char* frontend_darwin_get_cpu_model_name(void)
 static enum retro_language frontend_darwin_get_user_language(void)
 {
    char s[128];
-   CFArrayRef langs = CFLocaleCopyPreferredLanguages();
-   CFStringRef langCode = CFArrayGetValueAtIndex(langs, 0);
+   CFArrayRef langs;
+   CFStringRef langCode;
+   /* CFLocaleCopyPreferredLanguages is 10.5; looked up at run time so
+    * one binary builds against, and runs on, 10.4 as well. */
+   CFArrayRef (*copy_langs)(void) = (CFArrayRef (*)(void))
+      dlsym(RTLD_DEFAULT, "CFLocaleCopyPreferredLanguages");
+   if (!copy_langs)
+      return RETRO_LANGUAGE_ENGLISH;
+   langs = copy_langs();
+   if (!langs || CFArrayGetCount(langs) < 1)
+   {
+      if (langs)
+         CFRelease(langs);
+      return RETRO_LANGUAGE_ENGLISH;
+   }
+   langCode = CFArrayGetValueAtIndex(langs, 0);
    CFStringGetCString(langCode, s, sizeof(s), kCFStringEncodingUTF8);
+   CFRelease(langs);
    /* iOS and OS X only support the language ID syntax consisting
     * of a language designator and optional region or script designator. */
    string_replace_all_chars(s, '-', '_');
    return retroarch_get_language_from_iso(s);
 }
 
-#if defined(OSX)
+#if TARGET_OS_OSX
 static char* accessibility_mac_language_code(const char* language)
 {
    if (string_is_equal(language,"en"))
@@ -882,285 +874,13 @@ static bool accessibility_speak_macos(int speed,
 
 #endif
 
-#ifdef HAVE_GCD
-/* Tear down the per-watcher darwin_watch_data_t: cancel every
- * dispatch source, close every file descriptor, free the copied
- * path strings, free the watches array, and free watch_data itself.
- *
- * Does NOT release watch_data->queue: that slot holds the handle
- * returned by dispatch_get_global_queue(), which is a process-wide
- * singleton that must never be released - dispatch_release on a
- * global queue is documented as undefined behaviour (on pre-10.8
- * SDKs where OS_OBJECT_USE_OBJC=0 it over-decrements the refcount;
- * on newer SDKs it's a no-op macro under ARC, so the bug has been
- * latent but real).  The earlier teardown code called
- * 'dispatch_release(watch_data->queue)' under !__has_feature(objc_arc);
- * that call has been removed here.
- *
- * Does NOT touch the path_change_data_t wrapper that points at
- * watch_data; that's the caller's responsibility. */
-static void darwin_watch_data_free(darwin_watch_data_t *watch_data)
-{
-   size_t i;
-
-   if (!watch_data)
-      return;
-
-   if (watch_data->watches)
-   {
-      for (i = 0; i < watch_data->watch_count; i++)
-      {
-         if (watch_data->watches[i].source)
-         {
-            /* Cancel the source, then wait for the cancel
-             * handler to fire.  dispatch_source_cancel is
-             * asynchronous - it only marks the source as
-             * cancelled.  Any already-dispatched event handler
-             * invocation (the one that increments
-             * &watch_data->event_count) keeps running to
-             * completion on the global concurrent queue.  The
-             * cancel handler is guaranteed to fire AFTER all
-             * pending event handler invocations have drained,
-             * so dispatch_semaphore_wait(cancel_sem, FOREVER)
-             * is the standard 'wait until source is fully
-             * quiesced' pattern.  Without this wait a racing
-             * event handler would NUL-deref or, worse, write
-             * into freed memory for event_count. */
-            dispatch_source_cancel(watch_data->watches[i].source);
-            if (watch_data->watches[i].cancel_sem)
-            {
-               dispatch_semaphore_wait(
-                     watch_data->watches[i].cancel_sem,
-                     DISPATCH_TIME_FOREVER);
-            }
-            RARCH_DISPATCH_RELEASE(watch_data->watches[i].source);
-            RARCH_DISPATCH_RELEASE(watch_data->watches[i].cancel_sem);
-         }
-         if (watch_data->watches[i].fd >= 0)
-            close(watch_data->watches[i].fd);
-         if (watch_data->watches[i].path)
-            free(watch_data->watches[i].path);
-      }
-      free(watch_data->watches);
-   }
-   free(watch_data);
-}
-
-static void frontend_darwin_watch_path_for_changes(
-      struct string_list *list, int flags,
-      path_change_data_t **change_data)
-{
-   darwin_watch_data_t *watch_data = NULL;
-
-   /* Cleanup mode - free existing watch data */
-   if (!list)
-   {
-      if (!change_data || !*change_data)
-         return;
-
-      darwin_watch_data_free(
-            (darwin_watch_data_t*)((*change_data)->data));
-      free(*change_data);
-      *change_data = NULL;
-      return;
-   }
-
-   /* Setup mode - create new watch data */
-   watch_data = (darwin_watch_data_t*)calloc(1, sizeof(*watch_data));
-   if (!watch_data)
-      return;
-
-   watch_data->queue = dispatch_get_global_queue(
-         DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
-   watch_data->watch_count = list->size;
-   watch_data->watches = (darwin_watch_entry_t*)calloc(
-         list->size, sizeof(darwin_watch_entry_t));
-   watch_data->flags = flags;
-   /* watch_data was calloc'd, so event_count and last_seen are
-    * already zero-bit; but plain assignment to a
-    * retro_atomic_int_t is illegal under the C11 stdatomic
-    * backend, so use the init helper for the atomic field. */
-   retro_atomic_int_init(&watch_data->event_count, 0);
-   watch_data->last_seen = 0;
-
-   if (!watch_data->watches)
-   {
-      free(watch_data);
-      return;
-   }
-
-   /* Convert generic flags to GCD dispatch VNODE flags */
-   {
-      unsigned long vnode_flags = 0;
-      size_t i;
-
-      if (flags & PATH_CHANGE_TYPE_MODIFIED)
-         vnode_flags |= DISPATCH_VNODE_WRITE;
-      if (flags & PATH_CHANGE_TYPE_WRITE_FILE_CLOSED)
-         vnode_flags |= DISPATCH_VNODE_ATTRIB; /* mtime changes on close */
-      if (flags & PATH_CHANGE_TYPE_FILE_MOVED)
-         vnode_flags |= DISPATCH_VNODE_RENAME;
-      if (flags & PATH_CHANGE_TYPE_FILE_DELETED)
-         vnode_flags |= DISPATCH_VNODE_DELETE;
-
-      /* Set up watch for each file in the list */
-      for (i = 0; i < list->size; i++)
-      {
-         const char *path = list->elems[i].data;
-         int fd           = open(path, O_EVTONLY);
-
-         watch_data->watches[i].fd         = fd;
-         watch_data->watches[i].source     = NULL;
-         watch_data->watches[i].path       = NULL;
-         watch_data->watches[i].cancel_sem = NULL;
-
-         if (fd >= 0)
-         {
-            dispatch_source_t    source;
-            dispatch_semaphore_t cancel_sem;
-
-            watch_data->watches[i].path = strdup(path);
-
-            /* Create cancel semaphore up-front.  If this fails
-             * (realistically only on OOM) we skip source creation
-             * entirely rather than create a source we cannot
-             * safely tear down - without a semaphore the free
-             * path has no way to wait for in-flight event
-             * handlers to drain before the free(). */
-            cancel_sem = dispatch_semaphore_create(0);
-            if (!cancel_sem)
-            {
-               close(fd);
-               watch_data->watches[i].fd = -1;
-               continue;
-            }
-
-            /* Create dispatch source for monitoring file events */
-            source = dispatch_source_create(
-                  DISPATCH_SOURCE_TYPE_VNODE,
-                  fd,
-                  vnode_flags,
-                  watch_data->queue);
-
-            if (source)
-            {
-               /* Set up event handler - bump the atomic event
-                * counter when a filesystem event fires.  This
-                * block captures watch_data by pointer and the
-                * cancel-handler synchronisation below is what
-                * keeps the capture safe against the teardown
-                * path.
-                *
-                * fetch_add (rather than the previous CAS(0, 1))
-                * always stores, but the rate is bounded by GCD
-                * vnode events (sub-millisecond/day in normal
-                * use), so the extra store cost is below
-                * measurement noise.  In return we get a
-                * monotonic counter that the reader can compare
-                * against its last_seen cursor without losing
-                * notifications, and we drop the dependency on
-                * OSAtomic.h which Apple deprecated in 10.12. */
-               dispatch_source_set_event_handler(source, ^{
-                  retro_atomic_fetch_add_int(
-                        &watch_data->event_count, 1);
-               });
-
-               /* Cancel handler signals cancel_sem.  darwin_watch_
-                * data_free will cancel the source and wait on this
-                * semaphore, guaranteeing all pending event handlers
-                * have completed before watch_data is freed. */
-               dispatch_source_set_cancel_handler(source, ^{
-                  dispatch_semaphore_signal(cancel_sem);
-               });
-
-               watch_data->watches[i].source     = source;
-               watch_data->watches[i].cancel_sem = cancel_sem;
-               dispatch_resume(source);
-            }
-            else
-            {
-               /* Failed to create dispatch source, close fd and
-                * release the unused semaphore. */
-               RARCH_DISPATCH_RELEASE(cancel_sem);
-               close(fd);
-               watch_data->watches[i].fd = -1;
-            }
-         }
-      }
-   }
-
-   /* Allocate and return change_data structure */
-   *change_data = (path_change_data_t*)calloc(1, sizeof(path_change_data_t));
-   if (*change_data)
-      (*change_data)->data = watch_data;
-   else
-   {
-      /* path_change_data_t wrapper alloc failed.  The previous code
-       * called frontend_darwin_watch_path_for_changes(NULL, 0,
-       *   &(path_change_data_t*){watch_data})
-       * i.e. it passed a fake path_change_data_t pointer that
-       * actually pointed at watch_data itself (a darwin_watch_data_t).
-       * The teardown branch then read '(*change_data)->data' from
-       * that pointer, which happened to be the 'queue' field of
-       * darwin_watch_data_t (both are void*-sized at offset 0).
-       * So watch_data got set to the global dispatch queue pointer;
-       * the subsequent for-loop walked off the end of that system-
-       * owned struct interpreting arbitrary bytes as watch_count /
-       * watches[], and the final free() free()d the shared global
-       * queue.  The only reason it has not caused user-visible
-       * breakage is that this OOM path is ~never taken in practice.
-       *
-       * Replaced with a direct call to darwin_watch_data_free which
-       * operates on a real darwin_watch_data_t* without the fake
-       * wrapper. */
-      darwin_watch_data_free(watch_data);
-   }
-}
-
-static bool frontend_darwin_check_for_path_changes(
-      path_change_data_t *change_data)
-{
-   darwin_watch_data_t *watch_data = NULL;
-
-   if (!change_data || !change_data->data)
-      return false;
-
-   watch_data = (darwin_watch_data_t*)(change_data->data);
-
-   /* Acquire-load the producer's counter and compare against
-    * our reader-side cursor.  If they differ, at least one
-    * event fired since the last call -- update the cursor and
-    * return true.
-    *
-    * No CAS is needed because last_seen is main-thread-only
-    * state.  The acquire-load pairs with the producer's
-    * fetch_add (which has acq_rel semantics in retro_atomic.h),
-    * so any data the producer published before its increment
-    * is visible to us by the time we read here.
-    *
-    * The counter is monotonic and never reset, so over a long
-    * enough run it would wrap around -- but on a 32-bit signed
-    * int at filesystem-event rates this takes hundreds of
-    * years.  The `now != last_seen` comparison remains correct
-    * across wraparound under modular int arithmetic; any non-
-    * zero (now - last_seen) means the producer advanced. */
-   {
-      int now = retro_atomic_load_acquire_int(
-            &watch_data->event_count);
-      bool changed = (now != watch_data->last_seen);
-      watch_data->last_seen = now;
-      return changed;
-   }
-}
-#endif
-
 static bool frontend_darwin_is_narrator_running(void)
 {
-#if !defined(OSX) || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
-   if (@available(macOS 10.14, iOS 7, tvOS 9, *))
+#if !TARGET_OS_OSX || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
+   if (apple_runtime_available(APPLE_RUNTIME_VER(10, 14, 0), APPLE_RUNTIME_VER(7, 0, 0), APPLE_RUNTIME_VER(9, 0, 0)))
       return true;
 #endif
-#if OSX
+#if TARGET_OS_OSX
    return is_narrator_running_macos();
 #else
    return false;
@@ -1175,8 +895,8 @@ static bool frontend_darwin_accessibility_speak(int speed,
    else if (speed > 10)
       speed               = 10;
 
-#if !defined(OSX) || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
-   if (@available(macOS 10.14, iOS 7, tvOS 9, *))
+#if !TARGET_OS_OSX || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
+   if (apple_runtime_available(APPLE_RUNTIME_VER(10, 14, 0), APPLE_RUNTIME_VER(7, 0, 0), APPLE_RUNTIME_VER(9, 0, 0)))
    {
       static dispatch_once_t once;
       static AVSpeechSynthesizer *synth;
@@ -1202,7 +922,7 @@ static bool frontend_darwin_accessibility_speak(int speed,
    }
 #endif
 
-#if defined(OSX)
+#if TARGET_OS_OSX
    return accessibility_speak_macos(speed, speak_text, priority);
 #else
    return false;
@@ -1212,7 +932,7 @@ static bool frontend_darwin_accessibility_speak(int speed,
 static void frontend_darwin_content_loaded(void)
 {
 #ifdef HAVE_SWIFT
-   if (@available(macOS 13.0, iOS 16.0, tvOS 16.0, *)) {
+   if (apple_runtime_available(APPLE_RUNTIME_VER(13, 0, 0), APPLE_RUNTIME_VER(16, 0, 0), APPLE_RUNTIME_VER(16, 0, 0))) {
       [RetroArchAppShortcuts contentLoaded];
    }
 #endif
@@ -1246,13 +966,6 @@ frontend_ctx_driver_t frontend_ctx_darwin = {
    NULL,                            /* detach_console */
    NULL,                            /* get_lakka_version */
    NULL,                            /* set_screen_brightness */
-#ifdef HAVE_GCD
-   frontend_darwin_watch_path_for_changes, /* watch_path_for_changes */
-   frontend_darwin_check_for_path_changes, /* check_for_path_changes */
-#else
-   NULL,                            /* watch_path_for_changes */
-   NULL,                            /* check_for_path_changes */
-#endif
    NULL,                            /* set_sustained_performance_mode */
    frontend_darwin_get_cpu_model_name, /* get_cpu_model_name */
    frontend_darwin_get_user_language, /* get_user_language   */

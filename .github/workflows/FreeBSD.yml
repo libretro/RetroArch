@@ -1,0 +1,64 @@
+name: CI FreeBSD
+
+# Builds RetroArch inside a FreeBSD VM (GitHub has no FreeBSD runners)
+# with the same feature set the games/retroarch port enables by default,
+# minus Qt (very slow to install) and Wayland (its port needs Linux
+# input headers).  This is what kept the port carrying patches on top of
+# each release: libudev is FreeBSD's libudev-devd, the input headers come
+# from dev/evdev/, and there is no linux_common.o to link against.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v4
+
+      - name: Build in FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: "14.3"
+          usesh: true
+          copyback: false
+          prepare: |
+            pkg install -y \
+              gmake pkgconf \
+              ffmpeg freetype2 openal-soft mesa-libs \
+              libudev-devd evdev-proto libxkbcommon \
+              libX11 libXext libXxf86vm libXinerama libXrandr libXv \
+              sdl2 pipewire alsa-lib pulseaudio libdrm v4l_compat
+          run: |
+            set -e
+            freebsd-version
+            NCPU=$(sysctl -n hw.ncpu)
+
+            # --disable-pipewire must not leave HAVE_PIPEWIRE_STABLE
+            # behind just because libpipewire is installed.
+            ./configure --disable-qt --disable-wayland --disable-discord \
+              --disable-pipewire
+            grep -q '^HAVE_PIPEWIRE_STABLE = 0' config.mk
+
+            # Real build: force the FreeBSD-specific paths on so a missing
+            # dependency fails configure instead of silently skipping them.
+            ./configure --disable-qt --disable-wayland --disable-discord \
+              --enable-udev --enable-x11 --enable-sdl2 --enable-ffmpeg \
+              --enable-pipewire --enable-alsa --enable-pulse --enable-oss
+            gmake -j$NCPU clean
+            gmake -j$NCPU info all
+            ./retroarch --version

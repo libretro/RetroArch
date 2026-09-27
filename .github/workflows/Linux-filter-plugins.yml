@@ -1,0 +1,79 @@
+name: CI Linux filter plugins
+
+# Builds every video filter (gfx/video_filters) and audio DSP filter
+# (libretro-common/audio/dsp_filters) plugin with its own Makefile and
+# runs samples/gfx/filter_plugins over all of them: each plugin is
+# loaded with RTLD_NOW into a host that does not link libm, so a
+# symbol it cannot resolve fails the load, then fed a frame or a run
+# of audio blocks at its default settings.  Every video filter that
+# takes more than one worker must give the single-worker output byte for
+# byte with 2, 3 and 4 workers running at once.  The same run is repeated
+# with the plugins and the harness built under ASan, UBSan and
+# LeakSanitizer, and under ThreadSanitizer.
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'gfx/video_filters/**'
+      - 'libretro-common/audio/dsp_filters/**'
+      - 'libretro-common/include/libretro_dspfilter.h'
+      - 'samples/gfx/filter_plugins/**'
+      - '.github/workflows/Linux-filter-plugins.yml'
+  pull_request:
+    paths:
+      - 'gfx/video_filters/**'
+      - 'libretro-common/audio/dsp_filters/**'
+      - 'libretro-common/include/libretro_dspfilter.h'
+      - 'samples/gfx/filter_plugins/**'
+      - '.github/workflows/Linux-filter-plugins.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  filter-plugins:
+    name: Load and run every filter plugin
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Build the plugins and the harness
+        run: |
+          set -eu
+          make -C samples/gfx/filter_plugins
+          # The harness must not bring libm in on the plugins' behalf.
+          if readelf -d samples/gfx/filter_plugins/filter_plugins_test \
+               | grep -q 'libm\.so'; then
+            echo "filter_plugins_test links libm; it would hide a plugin that does not"
+            exit 1
+          fi
+
+      - name: Load and run every plugin
+        run: make -C samples/gfx/filter_plugins check
+
+      - name: Load and run every plugin under ASan, UBSan and LeakSanitizer
+        env:
+          ASAN_OPTIONS: abort_on_error=1:detect_leaks=1:print_stacktrace=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: |
+          set -eu
+          make -C samples/gfx/filter_plugins clean
+          make -C samples/gfx/filter_plugins check SANITIZER=address,undefined
+
+      - name: Load and run every plugin under ThreadSanitizer
+        env:
+          TSAN_OPTIONS: halt_on_error=1
+        run: |
+          set -eu
+          make -C samples/gfx/filter_plugins clean
+          make -C samples/gfx/filter_plugins check SANITIZER=thread

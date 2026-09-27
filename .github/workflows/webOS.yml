@@ -19,6 +19,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Check Out Repo
@@ -37,15 +38,24 @@ jobs:
         with:
           repository: "webosbrew/dev-toolbox-cli"
           latest: true
-          fileName: "webosbrew-toolbox-gen-manifest_*.deb"
+          fileName: "webosbrew-toolbox-gen-manifest_*_amd64.deb"
           out-file-path: "temp"
 
       - name: Update packages
-        run: sudo apt-get -yq update
+        timeout-minutes: 5
+        run: |
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get -yq update \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
 
       - name: Install webOS CLI
+        timeout-minutes: 5
         run: |
           sudo apt-get -yq install \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
             ./temp/ares-package_*_amd64.deb \
             ./temp/webosbrew-toolbox-gen-manifest_*.deb
 
@@ -81,6 +91,32 @@ jobs:
           RARCH_VERSION=$(grep -Po '(?<=#define PACKAGE_VERSION ")[^"]+' version.all)
           echo "RARCH_VERSION=$RARCH_VERSION" >> "$GITHUB_ENV"
 
+      - name: Resolve SDL2 prebuilt archive
+        id: sdl2
+        shell: bash
+        run: |
+          URL=$(sed -n 's/^SDL2_PREBUILT_ARCHIVE *?= *//p' Makefile.webos)
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$URL")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache SDL2 prebuilt
+        id: sdl2-cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/sdl2-prebuilt
+          key: sdl2-prebuilt-${{ steps.sdl2.outputs.name }}
+
+      - name: Download SDL2 prebuilt
+        if: steps.sdl2-cache.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          SDL2_URL: ${{ steps.sdl2.outputs.url }}
+          SDL2_NAME: ${{ steps.sdl2.outputs.name }}
+        run: |
+          mkdir -p /tmp/sdl2-prebuilt
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 \
+            --connect-timeout 30 -o "/tmp/sdl2-prebuilt/$SDL2_NAME" "$SDL2_URL"
+
       - name: Compile RA (GLES2, no wayland legacy variant)
         shell: bash
         run: |
@@ -88,12 +124,14 @@ jobs:
           export SDK_PATH=/tmp/arm-webos-linux-gnueabi_sdk-buildroot
           make -f Makefile.webos clean
           make -f Makefile.webos ipk PACKAGE_NAME=${PACKAGE_NAME} ADD_SDL2_LIB=1 \
+          SDL2_PREBUILT_ARCHIVE="file:///tmp/sdl2-prebuilt/${SDL2_NAME}" \
           -j"$(getconf _NPROCESSORS_ONLN)"
           mkdir -p webos/arm
           mv webos/com.retroarch.webos_${RARCH_VERSION}_arm.ipk \
              webos/arm/com.retroarch.webos-legacy-gles2-no-wayland_${RARCH_VERSION}_arm.ipk
         env:
           DEBUG: ${{ github.event_name == 'release' && '0' || '1' }}
+          SDL2_NAME: ${{ steps.sdl2.outputs.name }}
 
       - name: Upload GLES2 artifact
         uses: actions/upload-artifact@v7
@@ -110,6 +148,7 @@ jobs:
           make -f Makefile.webos clean
           bash gfx/common/wayland/generate_wayland_protos.sh
           make -f Makefile.webos ipk PACKAGE_NAME=${PACKAGE_NAME} ADD_SDL2_LIB=1 \
+          SDL2_PREBUILT_ARCHIVE="file:///tmp/sdl2-prebuilt/${SDL2_NAME}" \
           HAVE_XKBCOMMON=1 HAVE_USERLAND=1 HAVE_EGL=1 HAVE_WAYLAND=1 \
           HAVE_OPENGLES3=1 HAVE_OPENGLES3_1=1 HAVE_OPENGLES3_2=1 -j"$(getconf _NPROCESSORS_ONLN)"
           mkdir -p webos/arm
@@ -117,6 +156,7 @@ jobs:
             webos/arm/com.retroarch.webos_${RARCH_VERSION}_arm.ipk
         env:
           DEBUG: ${{ github.event_name == 'release' && '0' || '1' }}
+          SDL2_NAME: ${{ steps.sdl2.outputs.name }}
 
       - name: Upload default artifact
         uses: actions/upload-artifact@v7
@@ -141,7 +181,8 @@ jobs:
           export SDK_PATH=/tmp/aarch64-webos-linux-gnu_sdk-buildroot
           make -f Makefile.webos clean
           bash gfx/common/wayland/generate_wayland_protos.sh
-          make -f Makefile.webos ipk PACKAGE_NAME=${PACKAGE_NAME} ADD_SDL2_LIB=0 \
+          make -f Makefile.webos ipk PACKAGE_NAME=${PACKAGE_NAME} \
+          ADD_SDL2_LIB=0 HAVE_SDL2=0 HAVE_SDL3=1 \
           HAVE_XKBCOMMON=1 HAVE_USERLAND=1 HAVE_EGL=1 HAVE_WAYLAND=1 \
           HAVE_OPENGLES3=1 HAVE_OPENGLES3_1=1 HAVE_OPENGLES3_2=1 \
           HAVE_WAYLAND_BACKPORT=0 HAVE_64TO32BIT_BRIDGE=1 SET_ELF_INTERPRETER=1 HAVE_UDEV=1 \

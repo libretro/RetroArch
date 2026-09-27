@@ -38,7 +38,7 @@
 #endif
 
 static void *nullcamera_init(const char *device, uint64_t caps,
-      unsigned width, unsigned height) { return (void*)-1; }
+      unsigned dims) { return (void*)-1; }
 static void nullcamera_free(void *data) { }
 static void nullcamera_stop(void *data) { }
 static bool nullcamera_start(void *data) { return true; }
@@ -62,7 +62,7 @@ const camera_driver_t *camera_drivers[] = {
 #if defined(HAVE_PIPEWIRE) && defined(HAVE_PIPEWIRE_STABLE)
    &camera_pipewire,
 #endif
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
    &camera_rwebcam,
 #endif
 #ifdef ANDROID

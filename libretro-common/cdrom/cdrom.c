@@ -338,7 +338,7 @@ static int cdrom_send_command_win32(const libretro_vfs_implementation_file *stre
    if (cmd[0] == 0xB9)
    {
       double time_taken = (double)(((clock() - t) * 1000) / CLOCKS_PER_SEC);
-      printf("time taken %f ms for DT received length %ld of %" PRId64 " for %02d:%02d:%02d to %02d:%02d:%02d%s req %d cur %d cur_lba %d\n", time_taken, sptd.s.DataTransferLength, len, cmd[3], cmd[4], cmd[5], cmd[6], cmd[7], cmd[8], extra, lba_req, lba_cur, stream->cdrom->cur_lba);
+      printf("time taken %f ms for DT received length %ld of %" PRId64 " for %02d:%02d:%02d to %02d:%02d:%02d%s req %d cur %d cur_lba %d\n", time_taken, sptd.s.DataTransferLength, len, cmd[3], cmd[4], cmd[5], cmd[6], cmd[7], cmd[8], extra, lba_req, lba_cur, stream->cdrom ? stream->cdrom->cur_lba : 0);
       fflush(stdout);
    }
 
@@ -816,7 +816,9 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
 
          lba_req = cdrom_msf_to_lba(cmd[3], cmd[4], cmd[5]);
 
-         if (stream->cdrom->last_frame_valid && lba_req == stream->cdrom->last_frame_lba)
+         if (     stream->cdrom
+               && stream->cdrom->last_frame_valid
+               && lba_req == stream->cdrom->last_frame_lba)
          {
             /* use cached frame */
             cached_read = true;
@@ -871,18 +873,25 @@ retry:
             memcpy((char*)s + copied_bytes, xfer_buf_pos + skip, copy_len);
             copied_bytes += copy_len;
 
-            if (read_cd && !cached_read && request_len >= 2352)
+            /* The sector cache only exists on cdrom:// handles. The
+             * raw device scan (cdrom_get_available_drives and
+             * friends) sends INQUIRY through a plain filestream open
+             * of /dev/sg* or \\.\X:, where stream->cdrom is NULL. */
+            if (stream->cdrom)
             {
-               unsigned frame_end = cdrom_msf_to_lba(cmd[6], cmd[7], cmd[8]);
+               if (read_cd && !cached_read && request_len >= 2352)
+               {
+                  unsigned frame_end = cdrom_msf_to_lba(cmd[6], cmd[7], cmd[8]);
 
-               /* cache the last received frame */
-               memcpy(stream->cdrom->last_frame, xfer_buf_pos, sizeof(stream->cdrom->last_frame));
-               stream->cdrom->last_frame_valid = true;
-               /* the ending frame is never actually read, so what we really just read is the one right before that */
-               stream->cdrom->last_frame_lba = frame_end - 1;
+                  /* cache the last received frame */
+                  memcpy(stream->cdrom->last_frame, xfer_buf_pos, sizeof(stream->cdrom->last_frame));
+                  stream->cdrom->last_frame_valid = true;
+                  /* the ending frame is never actually read, so what we really just read is the one right before that */
+                  stream->cdrom->last_frame_lba = frame_end - 1;
+               }
+               else
+                  stream->cdrom->last_frame_valid = false;
             }
-            else
-               stream->cdrom->last_frame_valid = false;
 
 #if 0
             printf("Frame %d, adding %" PRId64 " to buf_pos, is now %" PRId64 ". skip is %" PRId64 "\n", i, request_len, (xfer_buf_pos + request_len) - xfer_buf, skip);
@@ -1245,7 +1254,9 @@ int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *s, 
    unsigned short data_len = 0;
    unsigned char first_session = 0;
    unsigned char last_session = 0;
-   int i;
+   size_t max_entries = 0;
+   size_t num_entries = 0;
+   size_t i;
 #endif
    int rv;
 
@@ -1258,6 +1269,9 @@ int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *s, 
      return 1;
 
 #ifdef CDROM_DEBUG
+   if (len < 4)
+      return 0;
+
    data_len      = s[0] << 8 | s[1];
    first_session = s[2];
    last_session  = s[3];
@@ -1266,7 +1280,15 @@ int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *s, 
    printf("[CDROM] First Session: %d\n", first_session);
    printf("[CDROM] Last Session: %d\n", last_session);
 
-   for (i = 0; i < (data_len - 2) / 11; i++)
+   /* data_len comes off the wire; never let it walk the parse past
+    * the caller's buffer. */
+   max_entries = (len - 4) / 11;
+   if (data_len >= 2)
+      num_entries = (size_t)(data_len - 2) / 11;
+   if (num_entries > max_entries)
+      num_entries = max_entries;
+
+   for (i = 0; i < num_entries; i++)
    {
       unsigned char session_num = s[4 + (i * 11) + 0];
       unsigned char adr         = (s[4 + (i * 11) + 1] >> 4) & 0xF;
@@ -1581,7 +1603,8 @@ int cdrom_read(libretro_vfs_implementation_file *stream,
 
    if (rv)
    {
-      stream->cdrom->last_frame_valid = false;
+      if (stream->cdrom)
+         stream->cdrom->last_frame_valid = false;
       return 1;
    }
 
@@ -1726,7 +1749,7 @@ struct string_list* cdrom_get_available_drives(void)
          if (*drive_model)
             strlcpy(drive_string, drive_model, sizeof(drive_string));
          else
-            strlcpy(drive_string, "Unknown Drive", sizeof(drive_string));
+            strlcpy_lit(drive_string, "Unknown Drive", sizeof(drive_string));
 
          string_list_append(list, drive_string, attr);
       }
@@ -1827,7 +1850,7 @@ struct string_list* cdrom_get_available_drives(void)
          if (*drive_model)
             strlcpy(drive_string, drive_model, sizeof(drive_string));
          else
-            strlcpy(drive_string, "Unknown Drive", sizeof(drive_string));
+            strlcpy_lit(drive_string, "Unknown Drive", sizeof(drive_string));
 
          string_list_append(list, drive_string, attr);
       }
@@ -1868,7 +1891,7 @@ struct string_list* cdrom_get_available_drives(void)
          if (*drive_model)
             strlcpy(drive_string, drive_model, sizeof(drive_string));
          else
-            strlcpy(drive_string, "Unknown Drive", sizeof(drive_string));
+            strlcpy_lit(drive_string, "Unknown Drive", sizeof(drive_string));
 
          string_list_append(list, drive_string, attr);
       }
@@ -2077,20 +2100,20 @@ size_t cdrom_device_fillpath(char *s, size_t len, char drive, unsigned char trac
       if (is_cue)
       {
 #ifdef _WIN32
-         size_t _len = strlcpy(s, "cdrom://", len);
+         size_t _len = strlcpy_lit(s, "cdrom://", len);
          if (len > _len)
             s[_len++] = drive;
-         _len += strlcpy(s + _len, ":/drive.cue", len - _len);
+         _len += strlcpy_lit(s + _len, ":/drive.cue", len - _len);
          return _len;
 #else
 #if defined(__linux__) || defined(__APPLE__)
-         size_t _len = strlcpy(s, "cdrom://drive", len);
+         size_t _len = strlcpy_lit(s, "cdrom://drive", len);
          if (len > _len + 1)
          {
             s[_len++] = drive;
             s[_len]   = '\0';
          }
-         _len += strlcpy(s + _len, ".cue", len - _len);
+         _len += strlcpy_lit(s + _len, ".cue", len - _len);
          return _len;
 #endif
 #endif
@@ -2098,7 +2121,7 @@ size_t cdrom_device_fillpath(char *s, size_t len, char drive, unsigned char trac
       else
       {
 #ifdef _WIN32
-         size_t _len = strlcpy(s, "cdrom://", len);
+         size_t _len = strlcpy_lit(s, "cdrom://", len);
          if (len > _len + 1)
          {
             s[_len++] = drive;
@@ -2108,7 +2131,7 @@ size_t cdrom_device_fillpath(char *s, size_t len, char drive, unsigned char trac
          return _len;
 #else
 #if defined(__linux__) || defined(__APPLE__)
-         size_t _len = strlcpy(s, "cdrom://drive", len);
+         size_t _len = strlcpy_lit(s, "cdrom://drive", len);
          if (len > _len)
             s[_len++] = drive;
          _len += snprintf(s + _len, len - _len, "-track%02d.bin", track);

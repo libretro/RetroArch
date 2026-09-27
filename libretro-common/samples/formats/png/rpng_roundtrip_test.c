@@ -39,7 +39,9 @@
 #include <string.h>
 
 #include <file/nbio.h>
+#include <libretro.h>
 #include <formats/rpng.h>
+#include <streams/interface_stream.h>
 #include <formats/image.h>
 #include <encodings/crc32.h>
 
@@ -591,6 +593,137 @@ out:
    free(got);
 }
 
+/* XRGB8888 / RGB565 sources: encode via rpng_save_image_stream_fmt
+ * (the exact call shape the screenshot task's direct fast paths use),
+ * load, compare.  For RGB565 the expected 888 value uses the scaler's
+ * (c << 3) | (c >> 2) expansion, locking the encoder's conversion to
+ * the historical convert-then-encode output. */
+static void test_fmt_roundtrip(const char *path, enum rpng_pixfmt fmt,
+      unsigned w, unsigned h, enum pattern pat, bool flip_bottom_up)
+{
+   uint8_t  *src = NULL;
+   uint32_t *got = NULL;
+   unsigned got_w = 0, got_h = 0;
+   unsigned x, y;
+   const unsigned src_bpp = (fmt == RPNG_PIXFMT_XRGB8888) ? 4 : 2;
+   const size_t stride    = (size_t)w * src_bpp;
+   const char *fname      = (fmt == RPNG_PIXFMT_XRGB8888)
+         ? "xrgb8888" : "rgb565";
+   const char *pname      = pattern_name(pat);
+   const char *orient     = flip_bottom_up ? "bottom-up" : "top-down";
+   bool ok                = false;
+
+   src = (uint8_t*)malloc(stride * h);
+   if (!src)
+   {
+      printf("[ERROR] %s %s %s %ux%u: OOM for source\n",
+            fname, pname, orient, w, h);
+      failures++;
+      return;
+   }
+
+   for (y = 0; y < h; y++)
+   {
+      for (x = 0; x < w; x++)
+      {
+         uint32_t px = sample_argb(pat, x, y, w, h);
+         if (fmt == RPNG_PIXFMT_XRGB8888)
+         {
+            uint32_t *p = (uint32_t*)(void*)(src + y * stride) + x;
+            *p = px & 0x00FFFFFFu;
+         }
+         else
+         {
+            /* Truncate 888 -> 565 (keep the top bits per channel). */
+            uint16_t *p = (uint16_t*)(void*)(src + y * stride) + x;
+            uint16_t r5 = (uint16_t)(((px >> 16) & 0xFF) >> 3);
+            uint16_t g6 = (uint16_t)(((px >>  8) & 0xFF) >> 2);
+            uint16_t b5 = (uint16_t)(((px >>  0) & 0xFF) >> 3);
+            *p = (uint16_t)((r5 << 11) | (g6 << 5) | b5);
+         }
+      }
+   }
+
+   {
+      intfstream_t *intf_s = intfstream_open_file(path,
+            RETRO_VFS_FILE_ACCESS_WRITE,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      if (intf_s)
+      {
+         const uint8_t *base = flip_bottom_up
+               ? src + (size_t)(h - 1) * stride
+               : src;
+         signed pitch        = flip_bottom_up
+               ? -(signed)stride
+               :  (signed)stride;
+         ok = rpng_save_image_stream_fmt(base, intf_s,
+               w, h, pitch, fmt, NULL);
+         intfstream_close(intf_s);
+         free(intf_s);
+      }
+   }
+   if (!ok)
+   {
+      printf("[ERROR] %s %s %s %ux%u: save failed\n",
+            fname, pname, orient, w, h);
+      failures++;
+      goto out;
+   }
+
+   if (!structural_check_ok(path))
+   {
+      printf("[ERROR] %s %s %s %ux%u: structural check rejected output\n",
+            fname, pname, orient, w, h);
+      failures++;
+   }
+
+   if (!load_argb(path, &got, &got_w, &got_h)
+         || got_w != w || got_h != h)
+   {
+      printf("[ERROR] %s %s %s %ux%u: load failed (%ux%u)\n",
+            fname, pname, orient, w, h, got_w, got_h);
+      failures++;
+      goto out;
+   }
+
+   for (y = 0; y < h; y++)
+   {
+      for (x = 0; x < w; x++)
+      {
+         unsigned src_y   = flip_bottom_up ? (h - 1 - y) : y;
+         uint32_t px      = sample_argb(pat, x, src_y, w, h);
+         uint32_t exp_rgb;
+         if (fmt == RPNG_PIXFMT_XRGB8888)
+            exp_rgb = px & 0x00FFFFFFu;
+         else
+         {
+            uint32_t r5 = ((px >> 16) & 0xFF) >> 3;
+            uint32_t g6 = ((px >>  8) & 0xFF) >> 2;
+            uint32_t b5 = ((px >>  0) & 0xFF) >> 3;
+            exp_rgb = (((r5 << 3) | (r5 >> 2)) << 16)
+                    | (((g6 << 2) | (g6 >> 4)) <<  8)
+                    | (((b5 << 3) | (b5 >> 2)) <<  0);
+         }
+         if ((got[y * w + x] & 0x00FFFFFFu) != exp_rgb)
+         {
+            printf("[ERROR] %s %s %s %ux%u: pixel (%u,%u) "
+                   "exp=0x%06x got=0x%06x\n",
+                   fname, pname, orient, w, h, x, y,
+                   exp_rgb, got[y * w + x] & 0x00FFFFFFu);
+            failures++;
+            goto out;
+         }
+      }
+   }
+
+   printf("[SUCCESS] %s %s %s %ux%u round-trip\n",
+         fname, pname, orient, w, h);
+
+out:
+   free(src);
+   free(got);
+}
+
 /* ---- harness ---- */
 
 struct size_case { unsigned w, h; };
@@ -688,6 +821,14 @@ int main(int argc, char *argv[])
          test_argb_roundtrip (path, sizes[i].w, sizes[i].h, (enum pattern)p);
          test_bgr24_roundtrip(path, sizes[i].w, sizes[i].h, (enum pattern)p, false);
          test_bgr24_roundtrip(path, sizes[i].w, sizes[i].h, (enum pattern)p, true);
+         test_fmt_roundtrip(path, RPNG_PIXFMT_XRGB8888,
+               sizes[i].w, sizes[i].h, (enum pattern)p, false);
+         test_fmt_roundtrip(path, RPNG_PIXFMT_XRGB8888,
+               sizes[i].w, sizes[i].h, (enum pattern)p, true);
+         test_fmt_roundtrip(path, RPNG_PIXFMT_RGB565,
+               sizes[i].w, sizes[i].h, (enum pattern)p, false);
+         test_fmt_roundtrip(path, RPNG_PIXFMT_RGB565,
+               sizes[i].w, sizes[i].h, (enum pattern)p, true);
       }
    }
 

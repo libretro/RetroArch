@@ -16,6 +16,8 @@
 #include <file/file_path.h>
 #include <string/stdstring.h>
 
+#include <compat/strl.h>
+
 #include "../menu_driver.h"
 #include "../menu_cbs.h"
 #include "../../audio/audio_driver.h"
@@ -121,39 +123,38 @@ static int action_cancel_cheat_details(const char *path,
 static int action_cancel_core_content(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   const char *menu_path               = NULL;
    const char *menu_label              = NULL;
+   menu_handle_t *menu                 = menu_state_get_ptr()->driver_data;
 
-   menu_entries_get_last_stack(NULL, &menu_label, NULL, NULL, NULL);
+   menu_entries_get_last_stack(&menu_path, &menu_label, NULL, NULL, NULL);
 
+   if (menu)
+      menu->core_content_dir[0] = '\0';
+
+   /* The core updater list can be reached from both
+    * 'Online Updater' and 'Load Core' - flushing the stack
+    * to 'Online Updater' would pop all the way back to the
+    * Main Menu when entered via 'Load Core'. The list only
+    * ever occupies a single stack level, so a normal pop
+    * (which also handles removing search terms) returns to
+    * whichever menu it was opened from. */
    if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST_STR))
-   {
-      menu_search_terms_t *menu_search_terms =
-         menu_entries_search_get_terms();
+      return action_cancel_pop_default(path, label, type, idx);
 
-      /* Check whether search terms have been set
-       * > If so, remove the last search term */
-      if (   menu_search_terms
-          && menu_entries_search_pop())
-      {
-         struct menu_state *menu_st  = menu_state_get_ptr();
-         /* Reset navigation pointer */
-         menu_st->selection_ptr      = 0;
-         if (menu_st->driver_ctx->navigation_set)
-            menu_st->driver_ctx->navigation_set(menu_st->userdata, false);
-         /* Refresh menu */
-         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
-                         | MENU_ST_FLAG_PREVENT_POPULATE;
-         return 0;
-      }
-
-      menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
-   }
-   else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST_STR))
+   if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST_STR))
       menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
    else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS_STR))
       menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
    else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST_STR))
    {
+      /* Remember which directory is being left so that when the user
+       * goes back to the parent, it selects the core content directory
+       * the user was just in. */
+      if (menu && menu_path && *menu_path)
+         strlcpy(menu->core_content_dir, path_basename(menu_path),
+               sizeof(menu->core_content_dir));
+
       menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
 #ifdef HAVE_NETWORKING
       /* Allow going back from sub-categories within the Content Downloader. */

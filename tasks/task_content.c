@@ -161,6 +161,16 @@ struct content_information_ctx
    uint16_t flags;
 };
 
+#if defined(HAVE_GFX_WIDGETS)
+/* True while the deferred load path has a launch notification on
+ * screen that it started BEFORE the read, so it could carry the read
+ * percentage.  Only one deferral runs at a time
+ * (CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING), so one flag covers it.
+ * Consumed by content_load(), which must not restart the card the
+ * user has been watching. */
+static bool content_load_animation_showing = false;
+#endif
+
 /*************************************/
 /* Content file info functions START */
 /*************************************/
@@ -1197,7 +1207,10 @@ static bool content_file_extract_from_archive(
       char **err_string)
 {
    const char *tmp_path_ptr = NULL;
+   size_t _len;
+   unsigned i;
    char tmp_path[PATH_MAX_LENGTH];
+   char tmp_dir[DIR_MAX_LENGTH];
 
    tmp_path[0]  = '\0';
 
@@ -1205,19 +1218,52 @@ static bool content_file_extract_from_archive(
    RARCH_LOG("[Content] Core requires uncompressed content - "
          "extracting archive to temporary directory...\n");
 
+   /* The member is written under a directory of our own rather than
+    * straight into the cache or content directory.  Extraction keeps
+    * the member's own basename - savefile and savestate paths are
+    * derived from it, so a uniquified file name would silently move
+    * a user's saves - and a name that is already taken beside the
+    * archive would otherwise be overwritten here and deleted again
+    * on teardown, taking an unrelated file with it.  A directory of
+    * our own makes the collision impossible instead of detecting it.
+    *
+    * The cache directory is the parent when one is configured;
+    * otherwise the archive's own directory is, which is the only
+    * location known to exist and be writable at this point. */
+   if (content_ctx->directory_cache && *content_ctx->directory_cache)
+   {
+      strlcpy(tmp_dir, content_ctx->directory_cache, sizeof(tmp_dir));
+      fill_pathname_slash(tmp_dir, sizeof(tmp_dir));
+   }
+   else
+      fill_pathname_basedir(tmp_dir, *content_path, sizeof(tmp_dir));
+
+   _len = strlen(tmp_dir);
+
+   /* First name not already on disk wins.  A stale directory from a
+    * previous run - a crash between extraction and teardown - is
+    * therefore stepped over rather than reused, so its contents can
+    * never be mistaken for this load's content. */
+   for (i = 0; i < 1024; i++)
+   {
+      snprintf(tmp_dir + _len, sizeof(tmp_dir) - _len,
+            ".extract-%u", i);
+      if (!path_is_valid(tmp_dir))
+         break;
+   }
+
+   if (i == 1024 || !path_mkdir(tmp_dir))
+      goto error;
+
    /* Attempt to extract file  */
    if (!file_archive_extract_file(
-         *content_path, valid_exts,
-         (!content_ctx->directory_cache || !*content_ctx->directory_cache) ?
-               NULL : content_ctx->directory_cache,
+         *content_path, valid_exts, tmp_dir,
          tmp_path, sizeof(tmp_path)))
    {
-      char msg[PATH_MAX_LENGTH];
-      snprintf(msg, sizeof(msg), "%s: \"%s\".\n",
-            msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
-            *content_path);
-      *err_string = strdup(msg);
-      return false;
+      /* Only ever removes the directory created just above, and it
+       * is empty on this path, so nothing else can be caught by it. */
+      filestream_delete(tmp_dir);
+      goto error;
    }
 
    /* Add path of extracted file to temporary content
@@ -1227,6 +1273,10 @@ static bool content_file_extract_from_archive(
          p_content->content_list, tmp_path)))
       return false;
 
+   /* The directory follows its own file in the list, so teardown
+    * empties it before removing it. */
+   content_file_list_append_temporary(p_content->content_list, tmp_dir);
+
    /* Update content path pointer */
    *content_path = tmp_path_ptr;
 
@@ -1235,6 +1285,16 @@ static bool content_file_extract_from_archive(
          tmp_path);
 
    return true;
+
+error:
+   /* tmp_path is spent on this path - whatever the extraction left in
+    * it is unused - so it carries the message rather than a second
+    * buffer of its size sitting in the frame for the error case. */
+   snprintf(tmp_path, sizeof(tmp_path), "%s: \"%s\".\n",
+         msg_hash_to_str(MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE),
+         *content_path);
+   *err_string = strdup(tmp_path);
+   return false;
 }
 #endif
 
@@ -1744,7 +1804,6 @@ static bool content_file_load(
                uwp_set_acl(wcontent_path, L"S-1-15-2-1");
                if (!is_path_accessible_using_standard_io(content_path))
                {
-                  wchar_t wnew_path[MAX_PATH];
                   /* Fallback to a file copy into an accessible directory */
                   char new_basedir[DIR_MAX_LENGTH];
                   char new_path[PATH_MAX_LENGTH];
@@ -1768,7 +1827,7 @@ static bool content_file_load(
                         "but cache directory was not set or found. "
                         "Setting cache directory to root of writable app directory...\n");
                      _len = strlcpy(new_basedir, uwp_dir_data, sizeof(new_basedir));
-                     strlcpy(new_basedir + _len,
+                     strlcpy_lit(new_basedir + _len,
                            "VFSCACHE\\",
                            sizeof(new_basedir) - _len);
                      basedir_attribs = GetFileAttributes(new_basedir);
@@ -1782,11 +1841,11 @@ static bool content_file_load(
                   fill_pathname_join_special(new_path, new_basedir,
                      path_basename(content_path), sizeof(new_path));
 
-                  mbstowcs(wnew_path, new_path, MAX_PATH);
-                  /* TODO: This may fail on very large files...
-                   * but copying large files is not a good idea anyway
-                   * (This disclaimer is out dated but I don't want to remove it)*/
-                  if (!CopyFileFromAppW(wcontent_path, wnew_path, false))
+                  /* filestream_copy() reaches CopyFileFromAppW through
+                   * the UWP VFS backend, so this is the same kernel
+                   * copy without the local UTF-16 conversion, and the
+                   * destination directory is created for us. */
+                  if (filestream_copy(content_path, new_path) != 0)
                   {
                      char msg[PATH_MAX_LENGTH];
                      /* TODO/FIXME - localize */
@@ -2177,16 +2236,29 @@ static bool content_load(content_ctx_info_t *info,
 #ifdef HAVE_GFX_WIDGETS
 #ifdef HAVE_CONFIGFILE
    /* If retroarch_main_init() returned true, we
-    * can safely trigger a load content animation */
+    * can safely trigger a load content animation.
+    *
+    * Unless the deferred path already started one before the read,
+    * so it could carry the read percentage: restarting it here would
+    * replay the card the user has been watching.  Clear the
+    * percentage instead - the read is over - and leave it be. */
    if (gfx_widgets_ready())
    {
-      /* Note: Have to read settings value here
-       * (It will be invalid if we try to read
-       *  it earlier...) */
-      settings_t *settings              = config_get_ptr();
-      bool show_load_content_animation  = settings && settings->bools.menu_show_load_content_animation;
-      if (show_load_content_animation)
-         gfx_widget_start_load_content_animation();
+      if (content_load_animation_showing)
+      {
+         gfx_widget_set_load_content_progress(-1);
+         content_load_animation_showing = false;
+      }
+      else
+      {
+         /* Note: Have to read settings value here
+          * (It will be invalid if we try to read
+          *  it earlier...) */
+         settings_t *settings              = config_get_ptr();
+         bool show_load_content_animation  = settings && settings->bools.menu_show_load_content_animation;
+         if (show_load_content_animation)
+            gfx_widget_start_load_content_animation();
+      }
    }
 #endif
 #endif
@@ -2398,7 +2470,7 @@ static void task_push_to_history_list(
             entry.subsystem_ident = (char*)path_get(RARCH_PATH_SUBSYSTEM);
             entry.subsystem_name  = (char*)subsystem_name;
             entry.subsystem_roms  = (struct string_list*)path_get_subsystem_list();
-            entry.entry_slot      = runloop_st->entry_state_slot;
+            PLAYLIST_SET_ENTRY_SLOT(&entry, runloop_st->entry_state_slot);
 
             command_playlist_push_write(playlist_hist, &entry);
 #if TARGET_OS_TV
@@ -2494,7 +2566,7 @@ static bool task_push_to_history_list_from_playlist_pre_load_static(
                   {
                      label         = pl_entry->label;
                      crc32         = pl_entry->crc32;
-                     ss_entry_slot = pl_entry->entry_slot;
+                     ss_entry_slot = PLAYLIST_ENTRY_SLOT(pl_entry);
                   }
 
                   playlist_get_db_name(playlist_curr,
@@ -2522,7 +2594,7 @@ static bool task_push_to_history_list_from_playlist_pre_load_static(
       new_entry.core_name  = (char*)core_name;
       new_entry.crc32      = (char*)crc32;
       new_entry.db_name    = (char*)db_name;
-      new_entry.entry_slot = ss_entry_slot;
+      PLAYLIST_SET_ENTRY_SLOT(&new_entry, ss_entry_slot);
 
       /* TODO/FIXME: Subsystems are not properly supported
        * on static platforms, so exclude the following:
@@ -2568,7 +2640,21 @@ static bool command_event_cmd_exec(
       task_push_to_history_list(p_content, true, launched_from_cli, false);
    }
 #else
-   frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS);
+   /* Static build: the only way to run a different core is to
+    * fork/exec its executable. On platforms without fork support
+    * (GameCube, ...) report failure so the caller keeps the menu
+    * alive instead of shutting down as if a new instance had been
+    * started; the old behaviour was a silent exit/reboot. */
+   if (!frontend_driver_set_fork(FRONTEND_FORK_CORE_WITH_ARGS))
+   {
+      const char *_msg = msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT);
+      RARCH_ERR("[Content] Core \"%s\" is not the running core and "
+            "this platform cannot switch cores at runtime.\n",
+            path_get(RARCH_PATH_CORE));
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      return false;
+   }
 #endif
 
    return true;
@@ -2644,7 +2730,7 @@ bool task_push_load_content_from_playlist_from_menu(
    /* Check whether specified core is already loaded
     * > If so, content can be launched directly with
     *   the currently loaded core */
-   if (!force_core_reload &&
+   if ((!force_core_reload || !frontend_driver_has_fork()) &&
        retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
    {
       if (!content_info->environ_get)
@@ -2845,9 +2931,13 @@ bool task_push_load_contentless_core_from_menu(
     * run automatically on launch. We will leave this
     * non-functional code here as a place-marker for
     * future devs who may wish to implement this... */
-   command_event_cmd_exec(p_content,
+   if (!(ret = command_event_cmd_exec(p_content,
          path_get(RARCH_PATH_CONTENT), &content_ctx,
-         false);
+         false)))
+   {
+      retroarch_menu_running();
+      goto end;
+   }
    command_event(CMD_EVENT_QUIT, NULL);
 #endif
 
@@ -2860,9 +2950,7 @@ bool task_push_load_contentless_core_from_menu(
    /* Push Quick Menu onto menu stack */
    menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, &flush_menu);
 
-#ifdef HAVE_DYNAMIC
 end:
-#endif
    content_information_ctx_free(&content_ctx);
 
    return ret;
@@ -2874,8 +2962,10 @@ end:
 struct content_deferred_menu_load
 {
    char *fullpath;
+   char *core_path;              /* the world this belongs to      */
    enum rarch_core_type type;
    content_ctx_info_t info;      /* argv-free by the deferral gate */
+   bool showed_animation;        /* launch card already on screen */
 };
 
 /* The continuation parked by the prefetch's done callback, consumed
@@ -2930,6 +3020,22 @@ void task_content_deferred_load_check(void)
    p_content                 = content_state_get_ptr();
    p_content->flags         &= ~CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING;
 
+   /* A competing load may have replaced the world this continuation
+    * was parked for; the stamps say which one it belongs to.  On a
+    * mismatch, stand down: drop the cache and the continuation, and
+    * leave the current content alone. */
+   if (   !string_is_equal(path_get(RARCH_PATH_CONTENT), d->fullpath)
+       || !string_is_equal(path_get(RARCH_PATH_CORE),    d->core_path))
+   {
+      RARCH_LOG("[Content] Dropping a deferred load superseded by "
+            "another: \"%s\".\n", d->fullpath);
+      content_file_prefetch_free(p_content);
+      free(d->core_path);
+      free(d->fullpath);
+      free(d);
+      return;
+   }
+
    if (!content_load(&d->info, p_content))
    {
       content_file_prefetch_free(p_content);
@@ -2942,9 +3048,20 @@ void task_content_deferred_load_check(void)
          menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
    }
    content_file_prefetch_free(p_content);   /* leftovers, if any */
+   free(d->core_path);
    free(d->fullpath);
    free(d);
 }
+
+#if defined(HAVE_GFX_WIDGETS)
+/* Feeds the read percentage to the "Load Content" startup
+ * notification.  Delivered on the thread that pumps the queue -
+ * the thread that drives the frame and owns widget state. */
+static void content_file_prefetch_progress(void *ud, int8_t progress)
+{
+   gfx_widget_set_load_content_progress(progress);
+}
+#endif
 
 /* Deposit callback for task_push_content_prefetch.  ud carries the
  * deferred-load continuation for the done callback, not the content
@@ -2974,6 +3091,7 @@ static void content_file_prefetch_deposit(void *ud, const char *path,
 
 /* Returns true when the load was taken over by the deferred path. */
 static bool task_content_defer_menu_load(content_state_t *p_content,
+      runloop_state_t *runloop_st,
       const char *fullpath, enum rarch_core_type type,
       content_ctx_info_t *content_info)
 {
@@ -2988,6 +3106,23 @@ static bool task_content_defer_menu_load(content_state_t *p_content,
       return false;                /* only the plain menu shape     */
    if (p_content->flags & CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING)
       return false;                /* one deferral at a time        */
+   /* The cache's only consumer is content_file_load_into_memory(),
+    * reached only for a file the load reads into memory.  A
+    * need_fullpath core is handed the path instead, so a prefetch
+    * would fill an allocation nothing takes.  Mirror the load's own
+    * BLCK_NEED_FULLPATH decision from the live system info and the
+    * per-extension override - both current here, LOAD_CORE has run.
+    * (The caller's content_ctx is built before LOAD_CORE and without
+    * sys info; it cannot answer this.) */
+   {
+      const content_file_override_t *override = NULL;
+      bool need_fullpath = runloop_st->system.info.need_fullpath;
+      if (content_file_override_get_ext(p_content,
+            path_get_extension(fullpath), &override))
+         need_fullpath = override->need_fullpath;
+      if (need_fullpath)
+         return false;             /* the load hands the core a path */
+   }
    /* The prefetch keys on this exact path, but the load rewrites
     * some paths before reading them: a content:// SAF URI becomes a
     * VFS path, and a bare archive ("foo.zip") becomes an explicit
@@ -3015,14 +3150,53 @@ static bool task_content_defer_menu_load(content_state_t *p_content,
       free(d);
       return false;
    }
+   /* Stamp the world this continuation belongs to: in-flight tasks
+    * survive a competing load's queue reinit, so the continuation
+    * can fire after the user has loaded something else. */
+   if (!(d->core_path = strdup(path_get(RARCH_PATH_CORE))))
+   {
+      free(d->fullpath);
+      free(d);
+      return false;
+   }
    d->type = type;
    d->info = *content_info;        /* argv-free: shallow is whole   */
 
    paths[0] = d->fullpath;
-   if (!task_push_content_prefetch(paths, 1,
-         content_file_prefetch_deposit,
-         task_content_deferred_menu_load_done, d))
+
+#if defined(HAVE_GFX_WIDGETS)
+   /* Start the launch notification here rather than after the load,
+    * so it can carry the read percentage while the content streams
+    * in.  Gated on the same setting as before: with the notification
+    * off, nothing is shown and no progress is reported.
+    *
+    * Widgets persist across the driver reinit the load performs
+    * (DISPGFX_WIDGET_FLAG_PERSISTING), so the card started here
+    * survives into the loaded core. */
    {
+      settings_t *settings = config_get_ptr();
+      if (     settings
+            && settings->bools.menu_show_load_content_animation
+            && gfx_widgets_ready())
+      {
+         gfx_widget_set_load_content_progress(-1);
+         if (gfx_widget_start_load_content_animation())
+            d->showed_animation = true;
+      }
+   }
+#endif
+
+   if (!task_push_content_prefetch_progress(paths, 1,
+         content_file_prefetch_deposit,
+         task_content_deferred_menu_load_done,
+#if defined(HAVE_GFX_WIDGETS)
+         d->showed_animation ? content_file_prefetch_progress : NULL,
+#else
+         NULL,
+#endif
+         d))
+   {
+      free(d->core_path);
       free(d->fullpath);
       free(d);
       return false;
@@ -3050,7 +3224,9 @@ bool task_push_load_content_with_new_core_from_menu(
    /* Check whether specified core is already loaded
     * > If so, we can skip loading the core and
     *   just load the content directly */
-   if (   !force_core_reload
+   /* Forced reload needs fork support; without it the running
+    * core is all there is, so load in-process when it matches. */
+   if (   (!force_core_reload || !frontend_driver_has_fork())
        && (type == CORE_TYPE_PLAIN)
        && retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
       return task_push_load_content_with_core(fullpath, content_info,
@@ -3080,8 +3256,8 @@ bool task_push_load_content_with_new_core_from_menu(
     * synchronous path below, and if the prefetch cannot even be
     * pushed, so does everything.  The continuation performs the
     * identical remainder of this function. */
-   if (task_content_defer_menu_load(p_content, fullpath, type,
-         content_info))
+   if (task_content_defer_menu_load(p_content, runloop_st,
+         fullpath, type, content_info))
    {
       content_information_ctx_free(&content_ctx);
       return true;
@@ -3096,9 +3272,13 @@ bool task_push_load_content_with_new_core_from_menu(
 
    task_push_to_history_list(p_content, true, false, false);
 #else
-   command_event_cmd_exec(p_content,
+   if (!(ret = command_event_cmd_exec(p_content,
          path_get(RARCH_PATH_CONTENT), &content_ctx,
-         false);
+         false)))
+   {
+      retroarch_menu_running();
+      goto end;
+   }
    command_event(CMD_EVENT_QUIT, NULL);
 #endif
 
@@ -3106,9 +3286,7 @@ bool task_push_load_content_with_new_core_from_menu(
    if (type != CORE_TYPE_DUMMY)
       menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
 
-#ifdef HAVE_DYNAMIC
 end:
-#endif
    content_information_ctx_free(&content_ctx);
 
    return ret;
@@ -3281,12 +3459,27 @@ bool task_push_load_content_with_current_core_from_companion_ui(
 
 bool task_push_load_subsystem_with_core(
       const char *fullpath,
+      const char *label,
       content_ctx_info_t *content_info,
       enum rarch_core_type type,
       retro_task_callback_t cb,
       void *user_data)
 {
    content_state_t  *p_content = content_state_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+
+   /* The content label is global state that survives until
+    * the next content load overwrites it, and it is what
+    * task_push_to_history_list() writes into the history
+    * playlist entry. Every other load path either sets it
+    * or clears it; this one did neither, so a subsystem
+    * launch inherited - and recorded - the label belonging
+    * to whatever content was loaded before it. */
+   if (label && *label)
+      strlcpy(runloop_st->name.label, label,
+            sizeof(runloop_st->name.label));
+   else
+      runloop_st->name.label[0] = '\0';
 
    p_content->flags |= CONTENT_ST_FLAG_PENDING_SUBSYSTEM_INIT;
    return task_load_content_internal_wrap(content_info, type, false);

@@ -193,6 +193,70 @@ static void test_exact_fit_no_extension(void)
    free(region);
 }
 
+/* fill_pathname_join() reports the length it wanted, so >= len is how a
+ * caller detects truncation. Callers that size a path buffer from a
+ * bound held somewhere else rely on that, and on nothing outside the
+ * buffer being touched when the join does not fit. */
+static void test_join_truncation(void)
+{
+   char *region = (char*)malloc(DST_LEN + GUARD_LEN);
+   char dir[DST_LEN];
+   size_t want;
+   size_t i;
+
+   if (!region)
+      abort();
+   memset(region, SENTINEL, DST_LEN + GUARD_LEN);
+
+   for (i = 0; i < DST_LEN - 1; i++)
+      dir[i] = 'd';
+   dir[DST_LEN - 1] = '\0';
+
+   want = fill_pathname_join(region, dir, "hires.txt", DST_LEN);
+
+   if (want < DST_LEN)
+   {
+      printf("[FAILED] fill_pathname_join reported %zu for a join that cannot fit in %d\n",
+            want, DST_LEN);
+      failures++;
+   }
+   else
+      printf("[SUCCESS] oversized join reported truncation (%zu >= %d)\n",
+            want, DST_LEN);
+
+   for (i = DST_LEN; i < (size_t)(DST_LEN + GUARD_LEN); i++)
+   {
+      if ((unsigned char)region[i] != SENTINEL)
+      {
+         printf("[FAILED] fill_pathname_join overran dst: byte %zu changed\n", i);
+         failures++;
+         break;
+      }
+   }
+   if (i == (size_t)(DST_LEN + GUARD_LEN))
+      printf("[SUCCESS] oversized join did not overrun destination\n");
+
+   if (region[DST_LEN - 1] != '\0')
+   {
+      printf("[FAILED] fill_pathname_join left dst unterminated\n");
+      failures++;
+   }
+
+   /* A join that fits reports its own length and inserts one separator. */
+   memset(region, SENTINEL, DST_LEN + GUARD_LEN);
+   want = fill_pathname_join(region, "/packs/game.hdpack", "tiles.png", DST_LEN);
+   if (want != strlen("/packs/game.hdpack/tiles.png")
+         || strcmp(region, "/packs/game.hdpack/tiles.png"))
+   {
+      printf("[FAILED] fitting join gave \"%s\" (%zu)\n", region, want);
+      failures++;
+   }
+   else
+      printf("[SUCCESS] fitting join reported its own length\n");
+
+   free(region);
+}
+
 int main(void)
 {
    /* Documented semantics. */
@@ -211,6 +275,7 @@ int main(void)
    test_overlong_input_with_dot();
    test_exact_fit_no_extension();
    test_overlong_input_no_dot();
+   test_join_truncation();
 
    if (failures)
    {

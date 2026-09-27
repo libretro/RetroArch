@@ -58,6 +58,7 @@ RETRO_BEGIN_DECLS
 #define RHUFF_OK            0
 #define RHUFF_ERROR_DATA  (-1)
 #define RHUFF_ERROR_PARAM (-2)
+#define RHUFF_ERROR_MEM   (-3)
 
 /* Ceilings. The map tree is 16 codes at 8 bits; the 'huff' codec and the
  * A/V codec use 256 codes at 16 bits. A code index and its length share
@@ -177,7 +178,8 @@ int rhuff_dec_init(rhuff_dec_t *d, uint32_t num_codes, uint32_t max_bits,
  * Assigns canonical codes from the code lengths and fills the lookup
  * table. Rejects length sets that do not describe a complete tree.
  *
- * Returns: RHUFF_OK, or RHUFF_ERROR_DATA if the lengths are not a valid
+ * Returns: RHUFF_OK, RHUFF_ERROR_MEM if the build's scratch could not
+ * be allocated, or RHUFF_ERROR_DATA if the lengths are not a valid
  * canonical tree.
  */
 int rhuff_dec_build(rhuff_dec_t *d);

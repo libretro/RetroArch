@@ -7,10 +7,14 @@
  * management (including show_existing_frame) and the full loop filter.
  * Every path is verified byte-identical against libvpx.
  *
+ * Segmentation decodes in full: the map (coded, temporally predicted
+ * or inherited) and all four features - SEG_LVL_ALT_Q, ALT_LF,
+ * REF_FRAME and SKIP - in both absolute and delta form.
+ *
  * Deliberately unsupported (rvp9_decode_frame returns an error):
- * segmentation, scaled (different-size) reference frames, and
- * profiles 1-3 (profile 2/3 are the 10/12-bit streams used for HDR;
- * these return -15 specifically so callers can report them as such).
+ * scaled (different-size) reference frames, and profiles 1-3
+ * (profile 2/3 are the 10/12-bit streams used for HDR; these return
+ * -15 specifically so callers can report them as such).
  * Tiled streams (tile columns and tile rows) decode
  * fully, so encoder defaults at any resolution are covered.
  *
@@ -173,6 +177,8 @@ typedef struct
    uint8_t tx_size;
    uint8_t skip;
    uint8_t segment_id;
+   uint8_t seg_id_predicted;  /* temporal seg-id prediction flag; feeds
+                               * the above/left context of the next block */
    uint8_t bmodes[4];    /* sub-8x8 y modes / b inter modes        */
    int8_t  ref_frame[2]; /* 0=intra 1=last 2=golden 3=alt -1=none  */
    uint8_t interp_filter;
@@ -254,11 +260,50 @@ typedef struct
    int      fb_bit_depth;
 
    rvp9_tran dqcoeff[32 * 32];
+
+   /* Reconstruction scratch, kept in the (heap-recommended) decoder
+    * state rather than on the stack: several targets run decode on
+    * 8 KiB thread stacks.  mc_scratch is the motion-compensation
+    * edge-emulation buffer (worst case is the 10-bit path: a
+    * 160x160 block of uint16 pixels, 50 KiB); iht_scratch holds the
+    * inverse-transform row-pass output for the largest transform. */
+   uint16_t  mc_scratch[80 * 2 * 80 * 2];
+   rvp9_tran iht_scratch[32 * 32];
+   /* rvp9_convolve8's horizontal-pass intermediate; separate from
+    * mc_scratch because both are live during edge-emulated MC. */
+   uint16_t  convolve_scratch[64 * 135];
    int      max_blocks_wide, max_blocks_high;  /* token ctx trunc  */
    int      mb_to_right_edge, mb_to_bottom_edge; /* in 1/8 pel *8  */
    int      mb_to_left_edge, mb_to_top_edge;
    int      corrupted;
    int      lf_ref_deltas[4], lf_mode_deltas[2];   /* persistent */
+
+   /* Segmentation state that outlives a frame.  The header struct is
+    * wiped per frame, but a frame carrying seg_update_data == 0
+    * inherits the previous frame's feature table, so the surviving
+    * copy lives here (libvpx keeps it in cm->seg).  Reset by
+    * rvp9_past_independence, exactly like the loop filter deltas. */
+   int      seg_feature_enabled[RVP9_MAX_SEGMENTS][RVP9_SEG_LVL_MAX];
+   int      seg_feature_data[RVP9_MAX_SEGMENTS][RVP9_SEG_LVL_MAX];
+   int      seg_abs_delta;
+   /* Segmentation maps, mi_cols * mi_rows bytes each: the one this
+    * frame writes and the one the previous frame left behind (the
+    * predictor for temporal_update and the source a frame without
+    * seg_update_map copies forward).  Swapped after every decoded
+    * frame while segmentation is enabled. */
+   uint8_t *seg_map, *seg_map_prev;
+
+   /* Tile-column threading (rvp9_set_tile_pool): the pool the extra
+    * columns are decoded on, how many threads may share a frame, and
+    * the per-thread shadows of this decoder - one rvp9_dec each, a
+    * shallow copy taken at every frame so the frame-level state and
+    * every buffer are shared and only the tile-local fields (bool
+    * decoder, left contexts, scratch, counts, edges) are private.
+    * NULL / 1 decodes every column on the calling thread. */
+   void    *tile_pool;
+   unsigned tile_threads;
+   void    *shadows;                 /* (tile_threads - 1) rvp9_dec  */
+   unsigned num_shadows;
 } rvp9_dec;
 
 /* Decode one coded VP9 frame (one WebM block / IVF frame payload).
@@ -269,6 +314,18 @@ typedef struct
  * planes .u/.v of (w+1)/2 x (h+1)/2 (stride d->uvs). */
 int rvp9_decode_frame(rvp9_dec *d, const uint8_t *data, size_t len,
       int *show_fb);
+
+/* Decode the tile columns of each frame on up to @threads threads:
+ * the calling thread takes the first column and @pool (an rthreads
+ * tpool_t of at least threads - 1 threads) the rest, joined before
+ * the loop filter. VP9 tile columns share nothing but the frame -
+ * no entropy state, no intra or motion-vector neighbours cross a
+ * column edge - so this changes when pixels are written, never what
+ * they are. Frames coded as a single tile column decode as before.
+ * NULL or threads <= 1 restores single-threaded decoding. The pool
+ * is the caller's and must outlive every decode made while it is
+ * set; the extra decoder state is freed by rvp9_free. */
+void rvp9_set_tile_pool(rvp9_dec *d, void *pool, unsigned threads);
 
 /* Release all buffers owned by the decoder.  The rvp9_dec itself is
  * caller-owned.  Safe on a zero-initialised or partially set-up state. */

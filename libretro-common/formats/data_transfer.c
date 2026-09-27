@@ -62,8 +62,8 @@
  * File access goes through filestream/VFS throughout, so 64-bit
  * offsets and VFS-only paths work.  Where the platform cannot reserve
  * address space, every mode degrades to a plain allocation of
- * min(len, commit_cap) - or DT_FALLBACK_WINDOW when there is no cap -
- * and a window simply holds the whole file; reserve_supported() and
+ * min(len, commit_cap) - the whole file when there is no cap - and a
+ * window simply holds the whole file; reserve_supported() and
  * window_is_reserved() say which happened.
  *
  * NOT IMPLEMENTED
@@ -171,9 +171,131 @@
 #define DT_COMMIT_STEP  (1024 * 1024)
 /* Read granularity inside iterate. */
 #define DT_READ_CHUNK   (64 * 1024)
-/* Fallback window when the platform cannot reserve address space and
- * the caller gave no cap. */
-#define DT_FALLBACK_WINDOW  (32 * 1024 * 1024)
+
+/* ---- reservation pool ----
+ *
+ * Reserving and releasing per load is not free, and the cost is not
+ * the syscalls: measured, memreserve and memcommit are well under a
+ * microsecond each, memrelease about fifteen, and the rest - 140 us
+ * for a 512 KiB load, over a millisecond for 4 MiB - is first-touch
+ * faults on fresh anonymous pages.  A recycled reservation has none,
+ * because its pages are already resident.
+ *
+ * The guard is what makes recycling delicate: a slot handed back must
+ * be unreadable again before it is handed out, or the next consumer
+ * inherits a readable buffer and a read past avail() returns the
+ * previous file's bytes.  memdecommit() would do that, but it also
+ * frees the pages, which is the cost being avoided.  memrearm() is
+ * the mprotect without the madvise, so the slot comes back armed and
+ * still resident.  Measured against a fresh reservation: 16.1 us
+ * against 171.0 for 512 KiB, 973.8 against 9531.5 for 16 MiB.
+ *
+ * A slot is only usable for a file that fits in it, so the size is
+ * the point.  DT_POOL_SLOT is NBIO_SMALL_FILE_THRESHOLD, and for the
+ * same reason: it is the size below which a load finishes in one
+ * tick, which is every thumbnail.  A file larger than a slot takes a
+ * fresh reservation, where the pool would not have paid anyway.
+ *
+ * Residency is DT_POOL_SLOT * DT_POOL_SLOTS per thread that uses one,
+ * held between loads.  That is the whole cost, it is bounded, and
+ * data_transfer_pool_flush() gives it back.
+ *
+ * Thread-local rather than shared, so this module still synchronises
+ * nothing (see the scope comment).  A slot opened on one thread and
+ * freed on another simply migrates; ownership of a handle is
+ * exclusive either way, and a pool that overflows releases instead.
+ * Build with DT_NO_POOL to compile it out entirely. */
+#if !defined(DT_NO_POOL)
+#define DT_POOL_SLOT    (1024 * 1024)
+#define DT_POOL_SLOTS   4
+
+/* Some Darwin deployment targets have no thread-local storage: clang
+ * rejects __thread outright below macOS 10.7, iOS 9 on 32-bit devices
+ * (iOS 8 on 64-bit), iOS 10 in the 32-bit simulator, and watchOS 2
+ * (clang/lib/Basic/Targets/OSTargets.h).  This is a property of the
+ * -m*-version-min value, not of the architecture: the libretro ios9
+ * platform trips it because it builds armv7 with
+ * -miphoneos-version-min=8.0, while the same armv7 with a 9.0 minimum
+ * compiles __thread fine.  clang's __has_feature(tls) reports exactly
+ * this predicate, so ask it; without TLS the pool would be
+ * unsynchronised shared state, which this module promises not to
+ * have, so it is compiled out instead -- every load then falls
+ * through to a fresh reservation, the same behaviour as a pool miss.
+ * (GCC also answers __has_feature(tls), unconditionally true from
+ * GCC 14, which is correct there: GCC lowers __thread through emutls
+ * on targets without native TLS.) */
+#if defined(__has_feature)
+#if !__has_feature(tls)
+#define DT_NO_POOL
+#endif
+#endif
+
+/* The console targets have no native TLS: GCC lowers __thread there
+ * through emutls, which is a per-access table lookup plus a gthread
+ * mutex on the control path - on Vita that mutex is the toolchain's
+ * pthread port, the only thing left asking for it.  That costs more
+ * than the pool miss the cache exists to avoid, so the pool is
+ * compiled out and every load takes the fresh-reservation path. */
+#if defined(VITA) || defined(PSP) || defined(_3DS) || defined(GEKKO)
+#define DT_NO_POOL
+#endif
+#endif
+
+#if !defined(DT_NO_POOL)
+
+#if !defined(HAVE_THREADS)
+#define DT_TLS
+#elif defined(_MSC_VER)
+#define DT_TLS __declspec(thread)
+#else
+#define DT_TLS __thread
+#endif
+
+static DT_TLS uint8_t *dt_pool[DT_POOL_SLOTS];
+static DT_TLS size_t   dt_pool_slot;   /* slot length, page-rounded */
+static DT_TLS int      dt_pool_n;
+
+/* A slot, already armed: either recycled or freshly reserved.  NULL
+ * if the platform cannot reserve or the reservation was refused. */
+static uint8_t *data_transfer_pool_take(size_t pg, size_t *slot_len)
+{
+   size_t slot = ((size_t)DT_POOL_SLOT + pg - 1) & ~(pg - 1);
+   if (dt_pool_n > 0 && dt_pool_slot == slot)
+   {
+      *slot_len = slot;
+      return dt_pool[--dt_pool_n];
+   }
+   {
+      void *m = memreserve(slot);
+      if (!m)
+         return NULL;
+      *slot_len = slot;
+      return (uint8_t*)m;
+   }
+}
+
+/* Re-arm and keep, or decline and let the caller release. */
+static bool data_transfer_pool_give(uint8_t *m, size_t slot)
+{
+   if (dt_pool_n >= DT_POOL_SLOTS)
+      return false;
+   if (dt_pool_n > 0 && dt_pool_slot != slot)
+      return false;                /* different page size: not ours */
+   if (!memrearm(m, slot))
+      return false;
+   dt_pool_slot          = slot;
+   dt_pool[dt_pool_n++]  = m;
+   return true;
+}
+
+void data_transfer_pool_flush(void)
+{
+   while (dt_pool_n > 0)
+      memrelease(dt_pool[--dt_pool_n], dt_pool_slot);
+}
+#else
+void data_transfer_pool_flush(void) { }
+#endif
 
 
 struct data_transfer
@@ -192,6 +314,7 @@ struct data_transfer
    uint8_t failed;   /* ...but delivered less than the file          */
    uint8_t capped;   /* stopped at the commit ceiling                */
    /* window mode (open_window): cyclic streaming state */
+   uint8_t pooled;   /* map came from the slot pool                  */
    uint8_t window;   /* this dt is a cyclic window                   */
    size_t  keep;     /* head bytes always resident                   */
    size_t  wlo, whi; /* the moving window [wlo, whi)                 */
@@ -203,6 +326,11 @@ struct data_transfer
                         across calls because the feeder advances in
                         sub-page steps - per-call rounding of a tiny
                         interval decommits nothing, ever.            */
+   size_t  scrubbed; /* pooled slots only: every byte below this is
+                        accounted for - overwritten by the fill or
+                        zeroed - so a consumer over-reading past
+                        avail() cannot see the previous load.  See
+                        data_transfer_pool_scrub().                  */
 };
 
 bool data_transfer_arena_init(data_transfer_arena_t *a, size_t ceiling)
@@ -226,21 +354,15 @@ bool data_transfer_arena_ensure(data_transfer_arena_t *a, size_t need)
 
    if (need <= a->committed)
       return true;
+   /* Past half the address space no allocator can say yes, and asking
+    * one is a sanitizer report, not a NULL; refused here. Below it the
+    * doubling cannot overflow. */
+   if (need > ((size_t)-1) / 2)
+      return false;
 
    nc = a->cap ? a->cap : (256 * 1024);
    while (nc < need)
-   {
-      size_t nx = nc * 2;
-      /* No power of two at or above 'need' fits in a size_t: ask for
-       * exactly what was wanted and let realloc refuse it.  Left
-       * unchecked the doubling reaches 0 and the loop never ends. */
-      if (nx <= nc)
-      {
-         nc = need;
-         break;
-      }
-      nc = nx;
-   }
+      nc *= 2;
    if (!(nb = (uint8_t*)realloc(a->base, nc)))
       return false;
    a->base      = nb;
@@ -262,6 +384,11 @@ void data_transfer_arena_release(data_transfer_arena_t *a)
 
 static int data_transfer_read_at(data_transfer_t *dt, size_t off,
       uint8_t *dst, size_t n);
+/* open_prefix's body.  allow_pool is 0 for open_window, which builds
+ * on a prefix handle but reads map_len in punch/peek and so needs it
+ * to be the file's own rounded length rather than a pool slot's. */
+static data_transfer_t *data_transfer_open_prefix_ex(const char *path,
+      size_t commit_cap, int allow_pool);
 /* The fill proper.  data_transfer_iterate() refuses to run it on a
  * window; open_window's no-reservation path genuinely needs it and
  * calls it here directly. */
@@ -385,7 +512,7 @@ uint8_t *data_transfer_source_detach(data_transfer_t *dt, size_t *len)
 
 data_transfer_t *data_transfer_open_window(const char *path, size_t keep)
 {
-   data_transfer_t *dt = data_transfer_open_prefix(path, 0);
+   data_transfer_t *dt = data_transfer_open_prefix_ex(path, 0, 0);
    if (!dt)
       return NULL;
    dt->window = 1;
@@ -423,7 +550,30 @@ data_transfer_t *data_transfer_open_window(const char *path, size_t keep)
 
 bool data_transfer_reserve_supported(void)
 {
+#if defined(MEMMAP_TEST_NO_RESERVE)
+   /* The test hook that makes memreserve() refuse (see memmap.c) has
+    * to be visible here too: a caller asks this BEFORE opening so it
+    * can refuse a file too large to hold whole - with the answer
+    * still "yes", the gate was skipped and data_transfer_open_window
+    * fell back to malloc(file length) for a 7.8 GB fixture, which the
+    * sanitizers' allocators either refuse (TSan aborts the test) or
+    * grant and then page in. */
+   if (getenv("MEMMAP_NO_RESERVE"))
+      return false;
+#endif
    return mempagesize() != 0;
+}
+
+size_t data_transfer_window_resident(data_transfer_t *dt)
+{
+   size_t head, moving;
+   if (!dt || !dt->window)
+      return 0;
+   if (dt->map_len == 0)     /* settled into a whole-file commit */
+      return dt->len;
+   head   = dt->wfreed < dt->keep ? dt->wfreed : dt->keep;
+   moving = dt->whi > dt->wfreed ? dt->whi - dt->wfreed : 0;
+   return head + moving;
 }
 
 bool data_transfer_window_is_reserved(data_transfer_t *dt)
@@ -471,6 +621,46 @@ bool data_transfer_window_extend(data_transfer_t *dt, size_t hi)
    }
    dt->whi = hi;
    return true;
+}
+
+bool data_transfer_window_ensure(data_transfer_t *dt, size_t lo,
+      size_t hi)
+{
+   if (!dt || !dt->window || dt->failed)
+      return false;
+   if (hi > dt->len)
+      hi = dt->len;
+   if (lo >= hi)
+      return true;
+   if (!dt->map_len)
+      return true;               /* fallback: whole file resident */
+   if (!data_transfer_wcommit(dt, lo, hi))
+   {
+      data_transfer_wfail(dt);
+      return false;
+   }
+   if (!data_transfer_read_at(dt, lo, dt->map + lo, hi - lo))
+   {
+      data_transfer_wfail(dt);
+      return false;
+   }
+   return true;
+}
+
+void data_transfer_window_rebase(data_transfer_t *dt, size_t pos)
+{
+   size_t p;
+   if (!dt || !dt->window || !dt->map_len || dt->failed)
+      return;
+   if (pos > dt->len)
+      pos = dt->len;
+   p = (pos / dt->page) * dt->page;
+   if (p <= dt->whi)
+      return;                    /* frontier already covers it */
+   dt->wlo    = p;
+   dt->whi    = p;
+   dt->wfreed = p;
+   return;
 }
 
 void data_transfer_window_advance(data_transfer_t *dt, size_t lo)
@@ -578,9 +768,14 @@ void data_transfer_window_punch(data_transfer_t *dt, size_t from,
 #endif
 }
 
-bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
-      size_t lookahead, size_t margin)
+bool data_transfer_window_feed_budget(data_transfer_t *dt, size_t tell,
+      size_t lookahead, size_t margin, size_t budget,
+      size_t *resident_hi)
 {
+   bool ok;
+   size_t hi;
+   if (resident_hi)
+      *resident_hi = 0;
    if (!dt || !dt->window || dt->failed)
       return false;
    if (tell < dt->wtell)
@@ -588,11 +783,35 @@ bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
    dt->wtell = tell;
    if (tell > margin && tell - margin > dt->wlo)
       data_transfer_window_advance(dt, tell - margin);
-   return data_transfer_window_extend(dt, tell + lookahead);
+   hi = tell + lookahead;
+   /* The ceiling applies only while the frontier covers the consumer.
+    * A frontier behind tell means the consumer's next read lands on
+    * unresident pages, and pacing THAT read over ticks is not a
+    * smaller burst, it is a fault: close the gap in one extend, as
+    * the unbudgeted feed always has. */
+   if (budget && dt->whi >= tell)
+   {
+      size_t cap = dt->whi + budget;
+      if (cap < dt->whi)                 /* wrapped: no ceiling */
+         cap = (size_t)-1;
+      if (hi > cap)
+         hi = cap;
+   }
+   ok = data_transfer_window_extend(dt, hi);
+   if (resident_hi)
+      *resident_hi = dt->map_len ? dt->whi : dt->len;
+   return ok;
 }
 
-data_transfer_t *data_transfer_open_prefix(const char *path,
-      size_t commit_cap)
+bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
+      size_t lookahead, size_t margin)
+{
+   return data_transfer_window_feed_budget(dt, tell, lookahead,
+         margin, 0, NULL);
+}
+
+static data_transfer_t *data_transfer_open_prefix_ex(const char *path,
+      size_t commit_cap, int allow_pool)
 {
    data_transfer_t *dt;
    RFILE *f;
@@ -634,7 +853,30 @@ data_transfer_t *data_transfer_open_prefix(const char *path,
       if (pg)
       {
          size_t rl = ((dt->len + pg - 1) / pg) * pg;
-         void  *m  = memreserve(rl);
+         void  *m  = NULL;
+
+#if !defined(DT_NO_POOL)
+         /* A file that fits a slot takes one: same reservation, same
+          * guard, without the fresh-page faults.  map_len is then the
+          * slot rather than the rounded file length, which the prefix
+          * surface does not mind - every offset it derives is bounded
+          * by avail, which is bounded by len.  Declined for windows,
+          * whose punch/peek bounds do read map_len. */
+         if (allow_pool && rl <= (((size_t)DT_POOL_SLOT + pg - 1)
+                  & ~(pg - 1)))
+         {
+            size_t slot = 0;
+            if ((m = data_transfer_pool_take(pg, &slot)))
+            {
+               rl          = slot;
+               dt->pooled  = 1;
+            }
+         }
+#else
+         (void)allow_pool;
+#endif
+         if (!m)
+            m = memreserve(rl);
 
          if (m)
          {
@@ -646,9 +888,25 @@ data_transfer_t *data_transfer_open_prefix(const char *path,
    if (!dt->map)
    {
       /* No reservation (32-bit address space, or a platform without
-       * virtual memory): a bounded plain allocation.  The cap - or
-       * the built-in window - is the buffer. */
-      size_t w = dt->cap ? dt->cap : (size_t)DT_FALLBACK_WINDOW;
+       * virtual memory): a plain allocation.  The cap is the buffer
+       * when the caller set one; with no cap it is the whole file.
+       *
+       * There used to be a built-in 32 MiB ceiling for the uncapped
+       * case, so a caller that never asked for a cap got capped()
+       * anyway - and every console target takes this path, because
+       * none of them has mman.  A file past the ceiling failed after
+       * reading 32 MiB of it, and open_window failed outright, since
+       * its no-reservation degradation fills the file and requires
+       * complete(): background music over 32 MiB did not play on any
+       * of them.
+       *
+       * Sizing to the file lets the allocator answer instead.  Never
+       * worse - a file too big for memory failed before too, just
+       * later and after 32 MiB of pointless I/O - and better wherever
+       * the file would have fitted.  A caller wanting a bound still
+       * passes commit_cap, so capped() now means the caller's ceiling
+       * and nothing else. */
+      size_t w = dt->cap ? dt->cap : dt->len;
       if (w > dt->len)
          w = dt->len;
       dt->cap = w;
@@ -663,7 +921,32 @@ data_transfer_t *data_transfer_open_prefix(const char *path,
    return dt;
 }
 
-/* Grow the physical backing to cover at least 'need' bytes. */
+data_transfer_t *data_transfer_open_prefix(const char *path,
+      size_t commit_cap)
+{
+   return data_transfer_open_prefix_ex(path, commit_cap, 1);
+}
+
+/* Grow the physical backing to cover at least 'need' bytes.
+ *
+ * Only the new span is committed, not the whole prefix from base.
+ * The difference is not performance - mprotect short-circuits a range
+ * whose flags already match, and the two spellings measured the same
+ * on a warm run - it is that committing from base re-arms every page
+ * below the frontier, including the ones discard() just released.
+ *
+ * That silently undid the one guarantee discard() rests on.  Under
+ * DT_STRICT a look-back at a discarded byte faulted immediately after
+ * the discard and then stopped faulting as soon as the fill crossed
+ * the next DT_COMMIT_STEP boundary, reading as a zero instead - the
+ * exact silent-zeros failure the header argues against elsewhere, and
+ * invisible to a test that discards only after the fill is over.  On
+ * Windows the re-commit also brought the physical pages back, so a
+ * consumer discarding behind its read position held the whole file
+ * anyway.
+ *
+ * dt->committed only ever grows and 'need' is above it here, so the
+ * span is non-empty and never overlaps anything already released. */
 static int data_transfer_commit(data_transfer_t *dt, size_t need)
 {
    size_t target;
@@ -676,11 +959,64 @@ static int data_transfer_commit(data_transfer_t *dt, size_t need)
       target = need;
    if (target > dt->map_len)
       target = dt->map_len;
-   if (!memcommit(dt->map, target))
+   /* Never past the file.  map_len can exceed the rounded length on a
+    * pooled slot, and arming slot space beyond the file is both
+    * pointless and, below, more to scrub. */
+   if (dt->page)
+   {
+      size_t end = (dt->len + dt->page - 1) & ~(dt->page - 1);
+      if (target > end)
+         target = end;
+   }
+   if (target > dt->map_len)
+      target = dt->map_len;
+   if (!memcommit(dt->map + dt->committed, target - dt->committed))
       return 0;
    dt->committed = target;
    return 1;
 }
+
+#if !defined(DT_NO_POOL)
+/* A recycled slot's pages still hold the previous load's bytes, where
+ * a fresh reservation's are zero - and consumers can tell.  Without a
+ * scrub, a thumbnail over-reading its own buffer got the previous
+ * thumbnail rather than zeros: a leak across loads that the pool
+ * would have introduced by itself.
+ *
+ * This used to be a memset in data_transfer_commit() over the whole
+ * newly armed span, which for the pool's own population - files under
+ * a slot, armed in full by the first commit - zeroed the entire file
+ * length and then read the file over it.  Measured at 8 us for a
+ * 512 KiB thumbnail against ~30 us for the whole open+read: a quarter
+ * of the transfer spent scrubbing bytes the very next reads
+ * overwrite.
+ *
+ * Scrub lazily instead, at the moments the consumer can actually
+ * look.  The consumer only sees the buffer between iterate() calls
+ * (the budget callback receives counts, not the pointer), so zeroing
+ * [max(avail, scrubbed), committed) as the fill returns keeps the
+ * guarantee exact: below avail is the current file, from avail to
+ * committed is zeros, past committed faults.  'scrubbed' is the
+ * high-water mark of bytes either overwritten or zeroed, so nothing
+ * is scrubbed twice; a fill that completes in one call - every
+ * thumbnail, which is what the slot size is chosen for - scrubs only
+ * the sub-page tail above the file length, at most a page.
+ *
+ * Nothing is needed at free: handing a slot back re-arms it
+ * unreadable, and the next consumer's own exit scrub governs what its
+ * over-reads say. */
+static void data_transfer_pool_scrub(data_transfer_t *dt)
+{
+   size_t from;
+   if (!dt->pooled || dt->committed <= dt->avail)
+      return;
+   from = (dt->scrubbed > dt->avail) ? dt->scrubbed : dt->avail;
+   if (from >= dt->committed)
+      return;
+   memset(dt->map + from, 0, dt->committed - from);
+   dt->scrubbed = dt->committed;
+}
+#endif
 
 static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
       size_t max_bytes, data_transfer_continue_t cb, void *ud)
@@ -767,6 +1103,11 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
    }
    if (dt->avail >= dt->len && !dt->failed)
       dt->done = 1;
+#if !defined(DT_NO_POOL)
+   /* Every return from the fill is a point the consumer may read:
+    * make the armed-but-unfilled span answer zeros before then. */
+   data_transfer_pool_scrub(dt);
+#endif
    return dt->avail;
 }
 
@@ -911,7 +1252,13 @@ void data_transfer_free(data_transfer_t *dt)
    if (dt->map)
    {
       if (dt->map_len)
-         memrelease(dt->map, dt->map_len);
+      {
+#if !defined(DT_NO_POOL)
+         if (!dt->pooled
+               || !data_transfer_pool_give(dt->map, dt->map_len))
+#endif
+            memrelease(dt->map, dt->map_len);
+      }
       else
          free(dt->map);
    }

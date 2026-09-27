@@ -25,7 +25,7 @@
 #else
 #include <ApplicationServices/ApplicationServices.h>
 #endif
-#ifdef OSX
+#if TARGET_OS_OSX
 #include <AppKit/NSScreen.h>
 #endif
 
@@ -48,8 +48,6 @@ typedef struct cocoa_vk_ctx_data
 {
    gfx_ctx_vulkan_data_t vk;
    int swap_interval;
-   unsigned width;
-   unsigned height;
 } cocoa_vk_ctx_data_t;
 
 /* TODO/FIXME - static globals */
@@ -127,68 +125,60 @@ static void cocoa_vk_gfx_ctx_input_driver(void *data,
    *input_data = NULL;
 }
 
-#if MAC_OS_X_VERSION_10_7 && defined(OSX)
-/* NOTE: convertRectToBacking only available on MacOS X 10.7 and up.
- * Therefore, make specialized version of this function instead of
- * going through a selector for every call. */
-static void cocoa_vk_gfx_ctx_get_video_size_osx10_7_and_up(void *data,
-      unsigned* width, unsigned* height)
-{
-   CocoaView *g_view               = cocoaview_get();
-   CGRect _cgrect                  = NSRectToCGRect(g_view.frame);
-   CGRect bounds                   = CGRectMake(0, 0, CGRectGetWidth(_cgrect), CGRectGetHeight(_cgrect));
-   CGRect cgrect                   = NSRectToCGRect([g_view convertRectToBacking:bounds]);
-   GLsizei backingPixelWidth       = CGRectGetWidth(cgrect);
-   GLsizei backingPixelHeight      = CGRectGetHeight(cgrect);
-   CGRect size                     = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
-   *width                          = CGRectGetWidth(size);
-   *height                         = CGRectGetHeight(size);
-}
-#elif defined(OSX)
+#if TARGET_OS_OSX
+/* The view's frame is in points; a Retina backing store has more
+ * pixels than points. -convertRectToBacking: is 10.7, so the view is
+ * asked once - the answer cannot change while the process runs - and
+ * the answer kept, rather than probed per call or decided by the build
+ * SDK, which left a binary built on an old SDK blurry on every Retina
+ * Mac and one built on a new SDK unable to run anywhere older. */
 static void cocoa_vk_gfx_ctx_get_video_size(void *data,
-      unsigned* width, unsigned* height)
+      unsigned *dims)
 {
+   static int backing              = -1;
    CocoaView *g_view               = cocoaview_get();
    CGRect cgrect                   = NSRectToCGRect([g_view frame]);
-   GLsizei backingPixelWidth       = CGRectGetWidth(cgrect);
-   GLsizei backingPixelHeight      = CGRectGetHeight(cgrect);
-   CGRect size                     = CGRectMake(0, 0, backingPixelWidth, backingPixelHeight);
-   *width                          = CGRectGetWidth(size);
-   *height                         = CGRectGetHeight(size);
+
+   if (backing < 0)
+      backing = [g_view respondsToSelector:@selector(convertRectToBacking:)];
+
+   if (backing)
+   {
+      CGRect bounds                = CGRectMake(0, 0,
+            CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
+      cgrect                       = NSRectToCGRect(
+            [g_view convertRectToBacking:bounds]);
+   }
+
+   *dims = VIDEO_SCALE_PACK(CGRectGetWidth(cgrect), CGRectGetHeight(cgrect));
 }
 #else
 static void cocoa_vk_gfx_ctx_get_video_size(void *data,
-      unsigned* width, unsigned* height)
+      unsigned *dims)
 {
     UIView *renderView              = apple_platform.renderView;
     CGRect size                     = [renderView bounds];
     float viewScale                 = [renderView contentScaleFactor];
-    *width                          = CGRectGetWidth(size)  * viewScale;
-    *height                         = CGRectGetHeight(size) * viewScale;
+    *dims = VIDEO_SCALE_PACK(CGRectGetWidth(size)  * viewScale,
+          CGRectGetHeight(size) * viewScale);
 }
 #endif
 
 /* Live backing-size query.  Touches AppKit/UIKit and MUST run on the
  * main thread.  Selects the same implementation the vtable previously
  * exposed directly. */
-static void cocoa_vk_live_video_size(unsigned *width, unsigned *height)
+static void cocoa_vk_live_video_size(unsigned *dims)
 {
-#if MAC_OS_X_VERSION_10_7 && defined(OSX)
-   cocoa_vk_gfx_ctx_get_video_size_osx10_7_and_up(NULL, width, height);
-#else
-   cocoa_vk_gfx_ctx_get_video_size(NULL, width, height);
-#endif
+   cocoa_vk_gfx_ctx_get_video_size(NULL, dims);
 }
 
 /* Publish the current backing size for cross-thread readers.
  * MUST be called on the main thread. */
 void cocoa_vk_gfx_ctx_publish_size(void)
 {
-   unsigned w = 0;
-   unsigned h = 0;
-   cocoa_vk_live_video_size(&w, &h);
-   retro_atomic_store_release_size(&cocoa_vk_backing_size,
-         (size_t)(((size_t)(w & 0xFFFF) << 16) | (size_t)(h & 0xFFFF)));
+   unsigned dims = 0;
+   cocoa_vk_live_video_size(&dims);
+   retro_atomic_store_release_size(&cocoa_vk_backing_size, (size_t)dims);
 }
 
 /* Thread-safe backing-size getter used by the vtable and check_window.
@@ -196,14 +186,13 @@ void cocoa_vk_gfx_ctx_publish_size(void)
  * (preserving exact non-threaded behaviour); on the worker thread it
  * reads the last value published by the main thread, lock-free. */
 static void cocoa_vk_gfx_ctx_get_video_size_ts(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
-   size_t packed;
    if (sthread_is_main_thread())
       cocoa_vk_gfx_ctx_publish_size();
-   packed  = retro_atomic_load_acquire_size(&cocoa_vk_backing_size);
-   *width  = (unsigned)((packed >> 16) & 0xFFFF);
-   *height = (unsigned)(packed & 0xFFFF);
+   /* The published word is already width in the high half, height in
+    * the low - VIDEO_SCALE_PACK's layout - so it comes out whole. */
+   *dims = (unsigned)retro_atomic_load_acquire_size(&cocoa_vk_backing_size);
 }
 
 static float cocoa_vk_gfx_ctx_get_refresh_rate(void *data)
@@ -223,20 +212,19 @@ static gfx_ctx_proc_t cocoa_vk_gfx_ctx_get_proc_address(const char *symbol_name)
 static void cocoa_vk_gfx_ctx_bind_hw_render(void *data, bool enable) { }
 
 static void cocoa_vk_gfx_ctx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
-   unsigned new_width, new_height;
+   unsigned new_dims;
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
    *quit                          = false;
    *resize                        = (cocoa_ctx->vk.flags &
          VK_DATA_FLAG_NEED_NEW_SWAPCHAIN) ? true : false;
 
-   cocoa_vk_gfx_ctx_get_video_size_ts(data, &new_width, &new_height);
+   cocoa_vk_gfx_ctx_get_video_size_ts(data, &new_dims);
 
-   if (new_width != *width || new_height != *height)
+   if (new_dims != *dims)
    {
-      *width  = new_width;
-      *height = new_height;
+      *dims   = new_dims;
       *resize = true;
    }
 }
@@ -254,6 +242,23 @@ static void cocoa_vk_gfx_ctx_swap_interval(void *data, int i)
    }
 }
 
+static bool cocoa_vk_gfx_ctx_presentable(void *data)
+{
+   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
+   if (!cocoa_ctx)
+      return false;
+#if TARGET_OS_OSX
+   /* Miniaturised is asked of the window directly; the swapchain check
+    * covers the moment before it has been torn down or rebuilt. */
+   {
+      CocoaView *g_view = cocoaview_get();
+      if (g_view && [[g_view window] isMiniaturized])
+         return false;
+   }
+#endif
+   return cocoa_ctx->vk.swapchain != VK_NULL_HANDLE;
+}
+
 static void cocoa_vk_gfx_ctx_swap_buffers(void *data)
 {
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
@@ -261,11 +266,11 @@ static void cocoa_vk_gfx_ctx_swap_buffers(void *data)
    if (cocoa_ctx->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
       cocoa_ctx->vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
-      if (cocoa_ctx->vk.swapchain == VK_NULL_HANDLE)
-      {
-         retro_sleep(10);
-      }
-      else
+      /* No swapchain - the window is minimised or zero-sized, and
+       * the create is retried in vulkan_acquire_next_image() below,
+       * which throttles that path itself. Nothing to present and
+       * nothing to wait for here. */
+      if (cocoa_ctx->vk.swapchain != VK_NULL_HANDLE)
          vulkan_present(&cocoa_ctx->vk, cocoa_ctx->vk.context.current_swapchain_index);
    }
    vulkan_acquire_next_image(&cocoa_ctx->vk);
@@ -286,12 +291,11 @@ static void *cocoa_vk_gfx_ctx_get_context_data(void *data)
    return &cocoa_ctx->vk.context;
 }
 
-#ifdef OSX
+#if TARGET_OS_OSX
 typedef struct
 {
    void    *data;
-   unsigned width;
-   unsigned height;
+   unsigned dims;
    bool     fullscreen;
    bool     ok;
 } cocoa_vk_set_video_mode_args_t;
@@ -305,25 +309,18 @@ static void cocoa_vk_gfx_ctx_set_video_mode_mainthread(void *userdata)
 {
    cocoa_vk_set_video_mode_args_t *args = (cocoa_vk_set_video_mode_args_t*)userdata;
    gfx_ctx_mode_t mode;
-#if defined(HAVE_COCOA_METAL)
    NSView *g_view                 = apple_platform.renderView;
-#elif defined(HAVE_COCOA)
-   CocoaView *g_view              = (CocoaView*)nsview_get_ptr();
-#endif
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)args->data;
-   cocoa_ctx->width               = args->width;
-   cocoa_ctx->height              = args->height;
 
    RARCH_LOG("[Vulkan] Native window size: %ux%u.\n",
-         cocoa_ctx->width, cocoa_ctx->height);
+         VIDEO_SCALE_W(args->dims), VIDEO_SCALE_H(args->dims));
 
    if (!vulkan_surface_create(
             &cocoa_ctx->vk,
             VULKAN_WSI_MVK_MACOS,
             NULL,
             (BRIDGE void *)g_view.layer,
-            cocoa_ctx->width,
-            cocoa_ctx->height,
+            args->dims,
             cocoa_ctx->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to create surface.\n");
@@ -331,8 +328,7 @@ static void cocoa_vk_gfx_ctx_set_video_mode_mainthread(void *userdata)
       return;
    }
 
-   mode.width                     = args->width;
-   mode.height                    = args->height;
+   mode.dims                      = args->dims;
    mode.fullscreen                = args->fullscreen;
    [apple_platform setVideoMode:mode];
    cocoa_show_mouse(args->data, !args->fullscreen);
@@ -346,13 +342,12 @@ static void cocoa_vk_gfx_ctx_set_video_mode_mainthread(void *userdata)
 }
 
 static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
-      unsigned width, unsigned height, bool fullscreen)
+      unsigned dims, bool fullscreen)
 {
    cocoa_vk_set_video_mode_args_t args;
 
    args.data       = data;
-   args.width      = width;
-   args.height     = height;
+   args.dims       = dims;
    args.fullscreen = fullscreen;
    args.ok         = false;
 
@@ -402,8 +397,7 @@ static void *cocoa_vk_gfx_ctx_init(void *video_driver)
 typedef struct
 {
    void    *data;
-   unsigned width;
-   unsigned height;
+   unsigned dims;
    bool     ok;
 } cocoa_vk_set_video_mode_args_t;
 
@@ -415,15 +409,12 @@ static void cocoa_vk_gfx_ctx_set_video_mode_mainthread(void *userdata)
    cocoa_vk_set_video_mode_args_t *args = (cocoa_vk_set_video_mode_args_t*)userdata;
    id g_view                      = apple_platform.renderView;
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)args->data;
-   cocoa_ctx->width               = args->width;
-   cocoa_ctx->height              = args->height;
 
    if (!vulkan_surface_create(&cocoa_ctx->vk,
                               VULKAN_WSI_MVK_IOS,
                               NULL,
                               (BRIDGE void *)((MetalLayerView*)g_view).metalLayer,
-                              cocoa_ctx->width,
-                              cocoa_ctx->height,
+                              args->dims,
                               cocoa_ctx->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to create surface.\n");
@@ -440,13 +431,12 @@ static void cocoa_vk_gfx_ctx_set_video_mode_mainthread(void *userdata)
 }
 
 static bool cocoa_vk_gfx_ctx_set_video_mode(void *data,
-      unsigned width, unsigned height, bool fullscreen)
+      unsigned dims, bool fullscreen)
 {
    cocoa_vk_set_video_mode_args_t args;
 
    args.data   = data;
-   args.width  = width;
-   args.height = height;
+   args.dims   = dims;
    args.ok     = false;
 
    cocoa_main_thread_sync(cocoa_vk_gfx_ctx_set_video_mode_mainthread, &args);
@@ -492,12 +482,10 @@ static void *cocoa_vk_gfx_ctx_init(void *video_driver)
 }
 #endif
 
-#ifdef HAVE_COCOA_METAL
 typedef struct
 {
    cocoa_vk_ctx_data_t *ctx;
-   unsigned width;
-   unsigned height;
+   unsigned dims;
    bool     ok;
 } cocoa_vk_set_resize_args_t;
 
@@ -512,48 +500,44 @@ static void cocoa_vk_gfx_ctx_set_resize_mainthread(void *userdata)
    cocoa_vk_set_resize_args_t *args = (cocoa_vk_set_resize_args_t*)userdata;
    cocoa_vk_ctx_data_t *cocoa_ctx   = args->ctx;
 
-   if (!vulkan_create_swapchain(&cocoa_ctx->vk,
-            args->width, args->height, cocoa_ctx->swap_interval))
+   if (!vulkan_create_swapchain(&cocoa_ctx->vk, args->dims,
+            cocoa_ctx->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to update swapchain.\n");
       args->ok                    = false;
       return;
    }
 
-   cocoa_ctx->vk.context.flags   |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
    if (cocoa_ctx->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
+   {
+      cocoa_ctx->vk.context.flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
       vulkan_acquire_next_image(&cocoa_ctx->vk);
+   }
    cocoa_ctx->vk.flags           &= ~VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    args->ok                       = true;
 }
 
-static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
+static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned dims)
 {
    cocoa_vk_set_resize_args_t args;
-   cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)data;
 
-   cocoa_ctx->width               = width;
-   cocoa_ctx->height              = height;
-
-   args.ctx    = cocoa_ctx;
-   args.width  = width;
-   args.height = height;
+   args.ctx    = (cocoa_vk_ctx_data_t*)data;
+   args.dims   = dims;
    args.ok     = false;
 
    cocoa_main_thread_sync(cocoa_vk_gfx_ctx_set_resize_mainthread, &args);
 
    return args.ok;
 }
-#endif
 
 static void cocoa_vk_gfx_ctx_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len)
+      unsigned *dims, char *desc, size_t desc_len)
 {
    /* Body consolidated into cocoa_common.m.  Kept as a named
     * vtable entry because video_thread_wrapper.c's
     * thread_get_video_output_size calls the poke / ctx hook
     * directly, bypassing dispserv_apple. */
-   cocoa_get_video_output_size(width, height, desc, desc_len);
+   cocoa_get_video_output_size(dims, desc, desc_len);
 }
 
 const gfx_ctx_driver_t gfx_ctx_cocoavk = {
@@ -570,17 +554,13 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    NULL, /* get_video_output_next */
    cocoa_get_metrics,
    NULL, /* translate_aspect */
-#ifdef OSX
+#if TARGET_OS_OSX
    video_driver_update_title,
 #else
    NULL, /* update_title */
 #endif
    cocoa_vk_gfx_ctx_check_window,
-#if defined(HAVE_COCOA_METAL)
    cocoa_vk_gfx_ctx_set_resize,
-#else
-   NULL, /* set_resize */
-#endif
    cocoa_has_focus,
    cocoa_vk_gfx_ctx_suppress_screensaver,
 #if defined(HAVE_COCOATOUCH)
@@ -601,5 +581,6 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    cocoa_vk_gfx_ctx_get_context_data,
    NULL, /* make_current */
    NULL, /* create_surface */
-   NULL  /* destroy_surface */
+   NULL  /* destroy_surface */,
+   cocoa_vk_gfx_ctx_presentable
 };

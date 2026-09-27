@@ -202,27 +202,27 @@ static void vp8_yuv2rgb_row(const uint8_t *y, const uint8_t *u,
       for (; i + 8 <= len; i += 8)
       {
          /* load into the UPPER byte of each lane: value << 8 */
-         __m128i Y0 = _mm_unpacklo_epi8(zero, _mm_loadl_epi64((const __m128i*)(y + i)));
-         __m128i U0 = _mm_unpacklo_epi8(zero, _mm_loadl_epi64((const __m128i*)(u + i)));
-         __m128i V0 = _mm_unpacklo_epi8(zero, _mm_loadl_epi64((const __m128i*)(v + i)));
-         __m128i Y1 = _mm_mulhi_epu16(Y0, k19077);
-         __m128i R2 = _mm_add_epi16(_mm_sub_epi16(Y1, k14234),
-                                    _mm_mulhi_epu16(V0, k26149));
-         __m128i G4 = _mm_sub_epi16(_mm_add_epi16(Y1, k8708),
-                                    _mm_add_epi16(_mm_mulhi_epu16(U0, k6419),
-                                                  _mm_mulhi_epu16(V0, k13320)));
-         /* B path saturates in unsigned 16-bit, then logical shift */
-         __m128i B2 = _mm_subs_epu16(_mm_adds_epu16(_mm_mulhi_epu16(U0, k33050), Y1),
+         __m128i y0 = _mm_unpacklo_epi8(zero, _mm_loadl_epi64((const __m128i*)(y + i)));
+         __m128i u0 = _mm_unpacklo_epi8(zero, _mm_loadl_epi64((const __m128i*)(u + i)));
+         __m128i v0 = _mm_unpacklo_epi8(zero, _mm_loadl_epi64((const __m128i*)(v + i)));
+         __m128i y1 = _mm_mulhi_epu16(y0, k19077);
+         __m128i r2 = _mm_add_epi16(_mm_sub_epi16(y1, k14234),
+                                    _mm_mulhi_epu16(v0, k26149));
+         __m128i g4 = _mm_sub_epi16(_mm_add_epi16(y1, k8708),
+                                    _mm_add_epi16(_mm_mulhi_epu16(u0, k6419),
+                                                  _mm_mulhi_epu16(v0, k13320)));
+         /* blue path saturates in unsigned 16-bit, then logical shift */
+         __m128i b2 = _mm_subs_epu16(_mm_adds_epu16(_mm_mulhi_epu16(u0, k33050), y1),
                                      k17685);
-         __m128i R  = _mm_srai_epi16(R2, 6);
-         __m128i G  = _mm_srai_epi16(G4, 6);
-         __m128i B  = _mm_srli_epi16(B2, 6);
+         __m128i rr = _mm_srai_epi16(r2, 6);
+         __m128i gg = _mm_srai_epi16(g4, 6);
+         __m128i bb = _mm_srli_epi16(b2, 6);
          /* pack to words 0xFFrrggbb (memory order b,g,r,FF), or with
-          * R and B lanes exchanged (memory order r,g,b,FF) when
+          * red and blue lanes exchanged (memory order r,g,b,FF) when
           * swap_rb - channel order costs nothing at store time */
-         __m128i r8 = _mm_packus_epi16(R, R);
-         __m128i g8 = _mm_packus_epi16(G, G);
-         __m128i b8 = _mm_packus_epi16(B, B);
+         __m128i r8 = _mm_packus_epi16(rr, rr);
+         __m128i g8 = _mm_packus_epi16(gg, gg);
+         __m128i b8 = _mm_packus_epi16(bb, bb);
          __m128i a8 = _mm_packus_epi16(alpha, alpha);
          __m128i bg = _mm_unpacklo_epi8(swap_rb ? r8 : b8, g8);
          __m128i ra = _mm_unpacklo_epi8(swap_rb ? b8 : r8, a8);
@@ -240,31 +240,31 @@ static void vp8_yuv2rgb_row(const uint8_t *y, const uint8_t *u,
 
       for (; i + 8 <= len; i += 8)
       {
-         uint16x8_t Y0, U0, V0, Y1, R0, G0, G1, B0, B2;
-         int16x8_t  R2, G4;
+         uint16x8_t y0, u0, v0, y1, r0, g0, g1, b0, b2;
+         int16x8_t  r2, g4;
          uint8x8_t  r8, b8;
          uint8x8x4_t px;
-         Y0 = vshll_n_u8(vld1_u8(y + i), 8);
-         U0 = vshll_n_u8(vld1_u8(u + i), 8);
-         V0 = vshll_n_u8(vld1_u8(v + i), 8);
+         y0 = vshll_n_u8(vld1_u8(y + i), 8);
+         u0 = vshll_n_u8(vld1_u8(u + i), 8);
+         v0 = vshll_n_u8(vld1_u8(v + i), 8);
 #define RWEBP_MH8(A, C) \
          vcombine_u16(vshrn_n_u32(vmull_u16(vget_low_u16(A),  (C)), 16), \
                       vshrn_n_u32(vmull_u16(vget_high_u16(A), (C)), 16))
-         Y1 = RWEBP_MH8(Y0, c19077);
-         R0 = RWEBP_MH8(V0, c26149);
-         G0 = RWEBP_MH8(U0, c6419);
-         G1 = RWEBP_MH8(V0, c13320);
-         B0 = RWEBP_MH8(U0, c33050);
+         y1 = RWEBP_MH8(y0, c19077);
+         r0 = RWEBP_MH8(v0, c26149);
+         g0 = RWEBP_MH8(u0, c6419);
+         g1 = RWEBP_MH8(v0, c13320);
+         b0 = RWEBP_MH8(u0, c33050);
 #undef RWEBP_MH8
-         R2 = vaddq_s16(vsubq_s16(vreinterpretq_s16_u16(Y1), vdupq_n_s16(14234)),
-                        vreinterpretq_s16_u16(R0));
-         G4 = vsubq_s16(vaddq_s16(vreinterpretq_s16_u16(Y1), vdupq_n_s16(8708)),
-                        vreinterpretq_s16_u16(vaddq_u16(G0, G1)));
-         B2 = vqsubq_u16(vqaddq_u16(B0, Y1), vdupq_n_u16(17685));
-         b8 = vqmovn_u16(vshrq_n_u16(B2, 6));
-         r8 = vqshrun_n_s16(R2, 6);
+         r2 = vaddq_s16(vsubq_s16(vreinterpretq_s16_u16(y1), vdupq_n_s16(14234)),
+                        vreinterpretq_s16_u16(r0));
+         g4 = vsubq_s16(vaddq_s16(vreinterpretq_s16_u16(y1), vdupq_n_s16(8708)),
+                        vreinterpretq_s16_u16(vaddq_u16(g0, g1)));
+         b2 = vqsubq_u16(vqaddq_u16(b0, y1), vdupq_n_u16(17685));
+         b8 = vqmovn_u16(vshrq_n_u16(b2, 6));
+         r8 = vqshrun_n_s16(r2, 6);
          px.val[0] = swap_rb ? r8 : b8;                /* b (or r) */
-         px.val[1] = vqshrun_n_s16(G4, 6);             /* g        */
+         px.val[1] = vqshrun_n_s16(g4, 6);             /* g        */
          px.val[2] = swap_rb ? b8 : r8;                /* r (or b) */
          px.val[3] = vdup_n_u8(255);                   /* a        */
          vst4_u8((uint8_t*)(dst + i), px);
@@ -1844,12 +1844,50 @@ static void vp8_pred8(uint8_t *d, int s, int m, const uint8_t *a, const uint8_t 
 
 void rvp8_abort(rvp8_dec *s)
 {
-   free(s->seg_map_buf); free(s->skip_lf_buf); free(s->bpred_buf);
-   free(s->yb); free(s->ub); free(s->vb);
-   free(s->above_nz_y); free(s->above_nz_u); free(s->above_nz_v);
-   free(s->above_nz_dc); free(s->above_bmodes);
-   free(s->fancy_uv);
+   free(s->arena);
    memset(s, 0, sizeof(*s));
+}
+
+/* Region spacing inside the per-frame arena, in bytes. The three planes
+ * are written by every predictor and read back by the loop filter and
+ * the chroma upsampler, so each starts on a 64-byte boundary. */
+#define RVP8_ARENA_ALIGN 64
+#define RVP8_ARENA_NEXT(cur, bytes) \
+   ((((cur) + (bytes) + RVP8_ARENA_ALIGN - 1) / RVP8_ARENA_ALIGN) \
+    * RVP8_ARENA_ALIGN)
+
+/* Lay the per-frame scratch buffers out over base (measure only when
+ * base is NULL). The per-MB maps and the above-row context come first
+ * and are the region that must be zero at frame start; the chroma
+ * interpolation scratch and the three planes follow and are always
+ * written before they are read. Returns the byte offset of the first
+ * plane through *zero_len (the length of the zeroed prefix) and the
+ * total length as the return value. */
+static size_t rvp8_arena_carve(rvp8_dec *s, uint8_t *base,
+      size_t *zero_len)
+{
+   int    mbw = s->mbw, mbh = s->mbh, w = s->w;
+   size_t cur = 0;
+#define RVP8_CARVE(field, bytes) \
+   do { \
+      s->field = base ? base + cur : NULL; \
+      cur      = RVP8_ARENA_NEXT(cur, (size_t)(bytes)); \
+   } while (0)
+   RVP8_CARVE(seg_map_buf,  mbw * mbh);
+   RVP8_CARVE(skip_lf_buf,  mbw * mbh);
+   RVP8_CARVE(bpred_buf,    mbw * mbh);
+   RVP8_CARVE(above_nz_y,   mbw * 4);
+   RVP8_CARVE(above_nz_u,   mbw * 2);
+   RVP8_CARVE(above_nz_v,   mbw * 2);
+   RVP8_CARVE(above_nz_dc,  mbw);
+   RVP8_CARVE(above_bmodes, mbw * 4);
+   *zero_len = cur;
+   RVP8_CARVE(fancy_uv,     (size_t)w * 2);
+   RVP8_CARVE(yb,           (size_t)s->ys  * mbh * 16);
+   RVP8_CARVE(ub,           (size_t)s->uvs * mbh * 8);
+   RVP8_CARVE(vb,           (size_t)s->uvs * mbh * 8);
+#undef RVP8_CARVE
+   return cur;
 }
 
 /* Parse the frame + picture headers, size all buffers, initialize the
@@ -1881,21 +1919,16 @@ int rvp8_begin(const uint8_t *data, size_t len, rvp8_dec *s)
    uint8_t  save_mvc[2][19], save_ym[4], save_uvm[3];
    int      save_reflfd[4], save_modelfd[4];
    void    *save_mbinfo;
+   uint8_t *save_arena;
+   size_t   save_arena_len, arena_len, zero_len;
 
-   /* Free any per-frame buffers from a previous decode on this state
-    * (the persistent video decoder reuses one rvp8_dec across frames).
-    * The reference frames live in the wrapper, not here, so freeing these
-    * scratch buffers is safe. Persistent probability/delta/mbinfo state is
-    * saved and restored around the memset below. */
-   free(s->seg_map_buf); free(s->skip_lf_buf); free(s->bpred_buf);
-   free(s->yb); free(s->ub); free(s->vb);
-   free(s->above_nz_y); free(s->above_nz_u); free(s->above_nz_v);
-   free(s->above_nz_dc); free(s->above_bmodes);
-   free(s->fancy_uv);
-   s->seg_map_buf = s->skip_lf_buf = s->bpred_buf = NULL;
-   s->yb = s->ub = s->vb = NULL;
-   s->above_nz_y = s->above_nz_u = s->above_nz_v = NULL;
-   s->above_nz_dc = s->above_bmodes = s->fancy_uv = NULL;
+   /* The per-frame scratch arena of a previous decode on this state (the
+    * persistent video decoder reuses one rvp8_dec across frames) is kept
+    * and reused below when it is large enough. The reference frames live
+    * in the wrapper, not here. Persistent probability/delta/mbinfo state
+    * is saved and restored around the memset below. */
+   save_arena     = s->arena;
+   save_arena_len = s->arena_len;
 
    save_is_inter = s->is_inter;
    save_w = s->w; save_h = s->h;
@@ -1920,6 +1953,8 @@ int rvp8_begin(const uint8_t *data, size_t len, rvp8_dec *s)
    }
 
    memset(s, 0, sizeof(*s));
+   s->arena     = save_arena;
+   s->arena_len = save_arena_len;
 
    if (save_is_inter)
    {
@@ -2217,30 +2252,29 @@ tp_ok:
       s->tbr[i] = tbr[i];
    s->my = 0;
 
-   s->seg_map_buf = (uint8_t*)calloc(mbw * mbh, 1);
-   s->skip_lf_buf = (uint8_t*)calloc(mbw * mbh, 1);
-   s->bpred_buf   = (uint8_t*)calloc(mbw * mbh, 1);
-   s->yb = (uint8_t*)calloc(s->ys * mbh * 16, 1);
-   s->ub = (uint8_t*)calloc(s->uvs * mbh * 8, 1);
-   s->vb = (uint8_t*)calloc(s->uvs * mbh * 8, 1);
-   s->above_nz_y   = (uint8_t*)calloc(mbw * 4, 1);
-   s->above_nz_u   = (uint8_t*)calloc(mbw * 2, 1);
-   s->above_nz_v   = (uint8_t*)calloc(mbw * 2, 1);
-   s->above_nz_dc  = (uint8_t*)calloc(mbw, 1);
-   s->above_bmodes = (uint8_t*)calloc(mbw * 4, 1);
-   s->fancy_uv     = (uint8_t*)malloc((size_t)w * 2); /* NULL tolerated */
+   /* Size the arena for this frame's geometry; a previous frame's block
+    * is reused when it is big enough, otherwise it is replaced. The maps
+    * and above-row context at the front must start zeroed, the planes
+    * are set to 127 below. */
+   arena_len = rvp8_arena_carve(s, NULL, &zero_len);
+   if (arena_len > s->arena_len)
+   {
+      free(s->arena);
+      s->arena_len = 0;
+      if (!(s->arena = (uint8_t*)malloc(arena_len)))
+      {
+         rvp8_abort(s);
+         return -1;
+      }
+      s->arena_len = arena_len;
+   }
+   rvp8_arena_carve(s, s->arena, &zero_len);
+   memset(s->arena, 0, zero_len);
    /* Per-MB info for inter prediction (allocated once; persists across the
     * frame). The persistent decoder may pass one in via s->mb_info; if not
     * present and this is an inter frame, allocate it here. */
    if (s->is_inter && !s->mb_info)
       s->mb_info = calloc((size_t)mbw * mbh, sizeof(rvp8_mbinfo));
-   if (!s->yb || !s->ub || !s->vb
-         || !s->above_nz_y || !s->above_nz_u || !s->above_nz_v
-         || !s->above_nz_dc || !s->above_bmodes)
-   {
-      rvp8_abort(s);
-      return -1;
-   }
    memset(s->yb, 127, s->ys * mbh * 16);
    memset(s->ub, 127, s->uvs * mbh * 8);
    memset(s->vb, 127, s->uvs * mbh * 8);
@@ -3741,7 +3775,9 @@ struct rvp8_video
    int      w, h, mbw, mbh, ys, uvs;
    int      have_refs;
    /* three reference frames (last, golden, altref), each a full padded
-    * plane set matching the decoder's yb/ub/vb geometry. */
+    * plane set matching the decoder's yb/ub/vb geometry. All nine planes
+    * are carved out of ref_arena; the pointers are views into it. */
+   uint8_t *ref_arena;
    uint8_t *ry[3], *ru[3], *rv[3];
    size_t   ysz, uvsz;
 };
@@ -3749,11 +3785,11 @@ struct rvp8_video
 static void rvp8_video_free_refs(rvp8_video *v)
 {
    int i;
+   free(v->ref_arena);
+   v->ref_arena = NULL;
    for (i = 0; i < 3; i++)
-   {
-      free(v->ry[i]); free(v->ru[i]); free(v->rv[i]);
       v->ry[i] = v->ru[i] = v->rv[i] = NULL;
-   }
+   v->have_refs = 0;
 }
 
 rvp8_video *rvp8_video_open(void)
@@ -3766,29 +3802,29 @@ void rvp8_video_close(rvp8_video *v)
 {
    if (!v) return;
    rvp8_video_free_refs(v);
-   /* Free the decoder's per-frame scratch buffers from the last decode. */
-   free(v->s.seg_map_buf); free(v->s.skip_lf_buf); free(v->s.bpred_buf);
-   free(v->s.yb); free(v->s.ub); free(v->s.vb);
-   free(v->s.above_nz_y); free(v->s.above_nz_u); free(v->s.above_nz_v);
-   free(v->s.above_nz_dc); free(v->s.above_bmodes);
-   free(v->s.fancy_uv);
+   /* Free the decoder's per-frame scratch arena from the last decode. */
+   free(v->s.arena);
    free(v->s.mb_info);
    free(v);
 }
 
-/* Allocate the reference planes once the dimensions are known. */
+/* Allocate the reference planes once the dimensions are known: nine
+ * planes out of one block, each starting on a 64-byte boundary. */
 static int rvp8_video_alloc_refs(rvp8_video *v)
 {
-   int i;
+   int    i;
+   size_t cur = 0;
+   size_t ysz  = RVP8_ARENA_NEXT(0, (size_t)v->ys  * v->mbh * 16);
+   size_t uvsz = RVP8_ARENA_NEXT(0, (size_t)v->uvs * v->mbh * 8);
    v->ysz  = (size_t)v->ys  * v->mbh * 16;
    v->uvsz = (size_t)v->uvs * v->mbh * 8;
+   if (!(v->ref_arena = (uint8_t*)malloc(3 * (ysz + 2 * uvsz))))
+      return -1;
    for (i = 0; i < 3; i++)
    {
-      v->ry[i] = (uint8_t*)malloc(v->ysz);
-      v->ru[i] = (uint8_t*)malloc(v->uvsz);
-      v->rv[i] = (uint8_t*)malloc(v->uvsz);
-      if (!v->ry[i] || !v->ru[i] || !v->rv[i])
-         return -1;
+      v->ry[i] = v->ref_arena + cur; cur += ysz;
+      v->ru[i] = v->ref_arena + cur; cur += uvsz;
+      v->rv[i] = v->ref_arena + cur; cur += uvsz;
    }
    return 0;
 }
@@ -3817,6 +3853,9 @@ int rvp8_video_decode(rvp8_video *v, const uint8_t *data, size_t len)
          ;
       rvp8_filter_rows(&v->s, 0, v->s.mbh);
 
+      /* A key frame with a new geometry retires the old reference set. */
+      if (v->have_refs && (v->mbw != v->s.mbw || v->mbh != v->s.mbh))
+         rvp8_video_free_refs(v);
       v->w = v->s.w; v->h = v->s.h; v->mbw = v->s.mbw; v->mbh = v->s.mbh;
       v->ys = v->s.ys; v->uvs = v->s.uvs;
       if (!v->have_refs)

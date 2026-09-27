@@ -262,7 +262,7 @@ smb2_encode_query_directory_reply(struct smb2_context *smb2,
                                 in_offset += PAD_TO_64BIT(sizeof(struct smb2_fileidbothdirectoryinformation));
                                 in_remain -= PAD_TO_64BIT(sizeof(struct smb2_fileidbothdirectoryinformation));
                         }
-                        while (in_remain >= sizeof(struct smb2_fileidbothdirectoryinformation));
+                        while (in_remain >= (int)sizeof(struct smb2_fileidbothdirectoryinformation));
                 }
         }
 
@@ -385,7 +385,7 @@ smb2_encode_query_directory_reply(struct smb2_context *smb2,
 
                         offset += fs_size;
                 }
-                while (in_remain >= sizeof(struct smb2_fileidbothdirectoryinformation));
+                while (in_remain >= (int)sizeof(struct smb2_fileidbothdirectoryinformation));
         }
         return 0;
 }

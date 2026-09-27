@@ -33,6 +33,14 @@ typedef struct alsa_stream_info
    snd_pcm_uframes_t period_frames;
    unsigned int frame_bits;
    unsigned int rate;
+   /* The channels the device was opened with - what was asked for,
+    * or stereo when the device would not take that - and, for a
+    * wider count, the speaker layout the device's own channel map
+    * reports, as AUDIO_SPEAKER_ positions: which pair a six-channel
+    * device drives from the back or the sides is the device's to
+    * say, not the request's. 0 when the map could not be read. */
+   unsigned int channels;
+   uint32_t     layout;
    bool has_float;
    bool can_pause;
 } alsa_stream_info_t;

@@ -12,12 +12,23 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
 OBJS := $(SOURCES:.c=.o)
 
 CFLAGS += -DRXML_TEST -Wall -pedantic -std=gnu99 -g -I$(LIBRETRO_COMM_DIR)/include
+
+# The samples workflow passes SANITIZER=address,undefined to every
+# sample dir.  Without this block the variable was accepted and
+# ignored, so these targets built unsanitized while the workflow
+# reported them as checked.
+ifneq ($(SANITIZER),)
+   CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
+   LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
+
 
 all: $(TARGET)
 

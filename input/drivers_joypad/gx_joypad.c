@@ -139,7 +139,11 @@ static bool g_quit = false;
 static void power_callback(void) { g_quit = true; }
 #endif
 
-static void reset_cb(unsigned int a, void *b) { g_menu = true; }
+#ifdef EXTERNAL_LIBOGC
+static void reset_cb(u32 a, void *b) { (void)a; (void)b; g_menu = true; }
+#else
+static void reset_cb(void) { g_menu = true; }
+#endif
 
 #ifdef HW_RVL
 static inline void gx_mouse_info(uint32_t joybutton, unsigned port)
@@ -351,6 +355,7 @@ static int16_t gx_joypad_state(
 
 static int16_t WPAD_StickX(WPADData *data, u8 right)
 {
+  double val;
   float mag = 0.0f;
   float ang = 0.0f;
 
@@ -387,7 +392,7 @@ static int16_t WPAD_StickX(WPADData *data, u8 right)
      mag = 1.0f;
   else if (mag < -1.0f)
      mag = -1.0f;
-  double val = mag * sin(PI * ang/180.0f);
+  val = mag * sin(PI * ang/180.0f);
 
   return (int16_t)(val * 32767.0f);
 }

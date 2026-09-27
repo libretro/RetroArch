@@ -29,6 +29,8 @@
 #include "../tasks/tasks_internal.h"
 
 #include "natt.h"
+#include <compat/strl.h>
+#include "natt_desc.h"
 
 bool natt_init(struct natt_discovery *discovery)
 {
@@ -219,102 +221,21 @@ void natt_device_end(struct natt_discovery *discovery)
    }
 }
 
-static bool natt_build_control_url(
-      rxml_node_t *control_url,
-      struct natt_device *device)
+/* Condition for the blocking variants below: wait only while THIS
+ * device's operation is outstanding.  Every one of the callbacks
+ * clears device->busy on all of its paths, so the wait always ends.
+ *
+ * The blocking variants previously waited on a NULL condition, which
+ * task_queue_wait reads as "until the queue is empty" - so a caller
+ * asking to block on one UPnP round trip also waited out every
+ * unrelated task in flight, a content scan or a core download
+ * included.  No in-tree caller passes block = true today (the NAT
+ * task drives these non-blocking and steps its own state machine),
+ * so this is a latent trap being closed rather than a live freeze. */
+static bool natt_device_is_busy(void *data)
 {
-   if (!control_url->data || !*control_url->data)
-      return false;
-
-   /* Do we already have the full url? */
-   if (string_starts_with_case_insensitive(control_url->data, "http://"))
-   {
-      /* Make sure the control URL isn't too long. */
-      if (strlcpy(device->control, control_url->data,
-         sizeof(device->control)) >= sizeof(device->control))
-      {
-         *device->control = '\0';
-         return false;
-      }
-   }
-   else
-   {
-      /* We don't have a full url.
-         Build one using the desc url. */
-      char *control_path;
-      size_t _len = strlcpy(device->control, device->desc,
-         sizeof(device->control));
-
-      control_path = (char *)strchr(device->control +
-         STRLEN_CONST("http://"), '/');
-
-      if (control_path)
-         *control_path = '\0';
-      if (control_url->data[0] != '/')
-         strlcpy(device->control + _len, "/",
-               sizeof(device->control) - _len);
-      /* Make sure the control URL isn't too long. */
-      if (strlcat(device->control, control_url->data,
-         sizeof(device->control)) >= sizeof(device->control))
-      {
-         *device->control = '\0';
-         return false;
-      }
-   }
-
-   return true;
-}
-
-static bool natt_parse_desc_node(rxml_node_t *node,
-      struct natt_device *device)
-{
-   rxml_node_t *child = node ? node->children : NULL;
-
-   if (child)
-   {
-      /* We only care for services. */
-      if (string_is_equal_case_insensitive(node->name, "service"))
-      {
-         rxml_node_t *service_type = NULL;
-         rxml_node_t *control_url  = NULL;
-
-         do
-         {
-            if (string_is_equal_case_insensitive(child->name, "serviceType"))
-               service_type = child;
-            else if (string_is_equal_case_insensitive(child->name, "controlURL"))
-               control_url  = child;
-            if (service_type && control_url)
-               break;
-         } while ((child = child->next));
-
-         if (service_type && control_url)
-         {
-            /* These two are the only IGD service types we can work with. */
-            if (  strstr(service_type->data, ":WANIPConnection:")
-               || strstr(service_type->data, ":WANPPPConnection:"))
-            {
-               if (natt_build_control_url(control_url, device))
-               {
-                  strlcpy(device->service_type, service_type->data,
-                     sizeof(device->service_type));
-                  return true;
-               }
-            }
-          }
-      }
-   }
-   else
-   {
-      /* XML recursion */
-      do
-      {
-         if (natt_parse_desc_node(child, device))
-            return true;
-      } while ((child = child->next));
-   }
-
-   return false;
+   const struct natt_device *device = (const struct natt_device*)data;
+   return device && device->busy;
 }
 
 static void natt_query_device_cb(retro_task_t *task, void *task_data,
@@ -372,7 +293,7 @@ bool natt_query_device(struct natt_device *device, bool block)
    }
 
    if (block)
-      task_queue_wait(NULL, NULL);
+      task_queue_wait(natt_device_is_busy, device);
 
    return true;
 }
@@ -628,7 +549,7 @@ bool natt_external_address(struct natt_device *device, bool block)
    }
 
    if (block)
-      task_queue_wait(NULL, NULL);
+      task_queue_wait(natt_device_is_busy, device);
 
    return true;
 }
@@ -692,7 +613,7 @@ bool natt_open_port(struct natt_device *device,
    }
 
    if (block)
-      task_queue_wait(NULL, NULL);
+      task_queue_wait(natt_device_is_busy, device);
 
    return true;
 }
@@ -745,7 +666,7 @@ bool natt_close_port(struct natt_device *device,
    }
 
    if (block)
-      task_queue_wait(NULL, NULL);
+      task_queue_wait(natt_device_is_busy, device);
 
    return true;
 }

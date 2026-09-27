@@ -1,0 +1,34 @@
+# Header marshalling regression tests for tasks/task_http_emscripten.c.
+# Pure logic with behavioural copies of the static helpers, so it
+# builds and runs natively -- no emcc needed.
+#
+#   make -f Makefile.emsc_headers check
+#   make -f Makefile.emsc_headers check SANITIZER=address
+#   make -f Makefile.emsc_headers check SANITIZER=undefined
+
+TARGET  := http_emscripten_headers_test
+SOURCES := http_emscripten_headers_test.c
+OBJS    := $(SOURCES:.c=.o)
+
+CFLAGS  += -Wall -std=gnu99 -g -O0
+
+ifneq ($(SANITIZER),)
+   CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
+   LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
+
+all: $(TARGET)
+
+%.o: %.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(TARGET): $(OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+check: $(TARGET)
+	./$(TARGET)
+
+clean:
+	rm -f $(TARGET) $(OBJS)
+
+.PHONY: all check clean

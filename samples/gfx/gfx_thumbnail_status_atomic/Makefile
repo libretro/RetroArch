@@ -29,6 +29,17 @@ ifeq ($(HAVE_THREADS),1)
    LDFLAGS += -lrt
 endif
 
+# Extra flags for the caller, e.g. the -DSTRESS_ITERS= override the
+# test documents:
+#
+#     make EXTRA_CFLAGS=-DSTRESS_ITERS=20000
+#
+# Passing those through CFLAGS= instead would clobber everything set
+# above, -DHAVE_THREADS included, and the test would quietly report
+# "[skip] HAVE_THREADS not defined; static checks only" while still
+# exiting 0 -- a pass with the whole stress section switched off.
+CFLAGS += $(EXTRA_CFLAGS)
+
 OBJS := $(SOURCES:.c=.o)
 
 ifneq ($(SANITIZER),)

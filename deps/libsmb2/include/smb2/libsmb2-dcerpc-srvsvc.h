@@ -43,7 +43,7 @@ struct dcerpc_pdu;
 
 enum SHARE_INFO_enum {
         SHARE_INFO_0 = 0,
-        SHARE_INFO_1 = 1,
+        SHARE_INFO_1 = 1
 };
 
 struct srvsvc_SHARE_INFO_0 {
@@ -89,12 +89,16 @@ int srvsvc_SHARE_INFO_1_CONTAINER_coder(struct dcerpc_context *dce,
                                         struct smb2_iovec *iov, int *offset,
                                         void *ptr);
 
+/* The union is named for C89; the prebuilt libsmb2 shipped in
+ * retroarch-apple-deps declares it anonymous. Consumers that must
+ * compile against both use this marker to pick the access path. */
+#define SMB2_SHARE_ENUM_UNION_NAMED_U 1
 struct srvsvc_SHARE_ENUM_UNION {
         uint32_t Level;
         union {
                 struct srvsvc_SHARE_INFO_0_CONTAINER Level0;
                 struct srvsvc_SHARE_INFO_1_CONTAINER Level1;
-        };
+        } u;
 };
 
 struct srvsvc_SHARE_ENUM_STRUCT {
@@ -119,9 +123,7 @@ struct srvsvc_NetrShareEnum_rep {
 
 struct srvsvc_SHARE_INFO {
         uint32_t level;
-        union {
-                struct srvsvc_SHARE_INFO_1 ShareInfo1;
-        };
+        struct srvsvc_SHARE_INFO_1 ShareInfo1;
 };
 
 struct srvsvc_NetrShareGetInfo_req {

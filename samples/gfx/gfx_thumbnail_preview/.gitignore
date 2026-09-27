@@ -1,0 +1,11 @@
+fixtures/
+gfx_thumbnail_preview_test
+gfx_thumbnail_preview_test_threaded
+preview_audio_decode_test
+preview_audio_decode_test_norwebm
+preview_anim_window_test
+preview_blit_bands_test
+preview_catchup_test
+preview_decode_bench
+preview_audio_oracle_test
+*.o

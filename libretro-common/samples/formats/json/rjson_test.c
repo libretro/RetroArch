@@ -94,6 +94,72 @@ static void test_parser_happy_path(void)
    printf("[SUCCESS] parser happy path\n");
 }
 
+static void test_parser_deep_nesting_at(size_t depth, bool want_ok,
+      const char *what)
+{
+   size_t i;
+   size_t len   = depth * 2;
+   char  *input = (char*)malloc(len + 1);
+   struct count_ctx ctx;
+   bool   rc;
+
+   if (!input)
+   {
+      printf("[ERROR] %s: OOM\n", what);
+      failures++;
+      return;
+    }
+
+   for (i = 0; i < depth; ++i)
+      input[i] = '[';
+   for (i = 0; i < depth; ++i)
+      input[depth + i] = ']';
+   input[len] = '\0';
+
+   memset(&ctx, 0, sizeof(ctx));
+   rc = rjson_parse_quick(input, len, &ctx, 0,
+         cb_string, cb_string, cb_number,
+         cb_start_obj, cb_ignore_default,
+         cb_start_arr, cb_ignore_default,
+         cb_ignore_bool, cb_ignore_default, NULL);
+   free(input);
+
+   if (rc != want_ok)
+   {
+      printf("[ERROR] %s: parse returned %d, expected %d\n",
+            what, (int)rc, (int)want_ok);
+      failures++;
+      return;
+   }
+   printf("[SUCCESS] %s\n", what);
+}
+
+/* rjson_parse_quick() keeps its handle on the stack but not the two
+ * buffers inside it, and either can outgrow its inline storage onto
+ * the heap: the string buffer above, and the nesting stack here.
+ * Both leaked until _rjson_free_buffers() was split out of
+ * rjson_free().  test_parser_long_string() is what found the string
+ * half; this is the other one, which nothing exercised - the inline
+ * stack holds 10 levels, so anything shallower never allocates and
+ * never shows the leak.
+ *
+ * Both of parse_quick's returns are covered, because both leaked:
+ * 40 levels grows the stack and parses (the success return), and 200
+ * grows it to the 50-level ceiling and then fails (the error
+ * return), which is the path a hostile input takes.
+ *
+ * The only caller in the tree parses netplay lobby responses, so the
+ * nesting depth is a remote server's choice.  Run under
+ * LeakSanitizer to make this meaningful; without it, it only checks
+ * that the depth limit behaves. */
+static void test_parser_deep_nesting(void)
+{
+   test_parser_deep_nesting_at(40, true,
+         "deep nesting parsed and grown stack released");
+   test_parser_deep_nesting_at(200, false,
+         "over-deep nesting refused and grown stack released");
+}
+
 static void test_parser_long_string(void)
 {
    /* Forces multiple _rjson_grow_string growths: start from the
@@ -273,6 +339,7 @@ int main(void)
 {
    test_parser_happy_path();
    test_parser_long_string();
+   test_parser_deep_nesting();
    test_parser_malformed();
    test_writer_happy_path();
    test_writer_negative_len();

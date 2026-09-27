@@ -27,45 +27,26 @@
 #include <retro_endianness.h>
 #include <boolean.h>
 
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
 /* Either decoder will do; rzstd is preferred where a build has it, and
  * the reference remains available until every platform has moved. */
-#ifdef HAVE_RZSTD
 #include <encodings/rzstd.h>
 #define RVZ_SIZE_UNKNOWN RZSTD_CONTENT_SIZE_UNKNOWN
 #define RVZ_SIZE_ERROR   RZSTD_CONTENT_SIZE_ERROR
-#else
-#include <zstd.h>
-#define RVZ_SIZE_UNKNOWN ((int64_t)ZSTD_CONTENTSIZE_UNKNOWN)
-#define RVZ_SIZE_ERROR   ((int64_t)ZSTD_CONTENTSIZE_ERROR)
-#endif
 
 /* One decode for either backend: non-zero means the frame did not
  * decode, and @out receives how much came out. */
 static int rvz_zstd_decode(uint8_t *dst, size_t dst_len,
       const uint8_t *src, size_t src_len, size_t *out, const char **why)
 {
-#ifdef HAVE_RZSTD
    int e = rzstd_decode(dst, dst_len, src, src_len, out);
    *why  = rzstd_error_name(e);
    return e != RZSTD_PROCESS_END;
-#else
-   size_t r = ZSTD_decompress(dst, dst_len, src, src_len);
-   *why     = ZSTD_isError(r) ? ZSTD_getErrorName(r) : "no error";
-   if (ZSTD_isError(r))
-      return 1;
-   *out = r;
-   return 0;
-#endif
 }
 
 static int64_t rvz_zstd_frame_size(const uint8_t *src, size_t src_len)
 {
-#ifdef HAVE_RZSTD
    return rzstd_frame_content_size(src, src_len);
-#else
-   return (int64_t)ZSTD_getFrameContentSize(src, src_len);
-#endif
 }
 #endif
 
@@ -435,7 +416,7 @@ static uint8_t* rvz_decompress_data(RFILE* file, uint64_t offset, uint32_t compr
       return compressed_data;
    }
 
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
    if (compression_type == RVZ_COMPRESSION_ZSTD)
    {
       size_t result;
@@ -1039,7 +1020,7 @@ static bool rvz_decompress_rvzpack_only(rcheevos_rvz_file_t* rvz,
    return true;
 }
 
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
 /* Two-stage decompression: Zstd → RVZPack
  * Used for:
  * - GameCube with RVZPack
@@ -1396,7 +1377,7 @@ static bool rvz_decompress_chunk(rcheevos_rvz_file_t* rvz, uint32_t group_index,
 
       switch (compression_type)
       {
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
          case RVZ_COMPRESSION_ZSTD:
             if (group->rvz_packed_size != 0)
                return rvz_decompress_zstd_rvzpack(rvz, group_index, compressed_data,

@@ -14,6 +14,7 @@
 
 static const struct
 {
+   char s_74d0bdad[18];
    char s_9a250c33[29];
    char s_dec692c9[32];
    char s_9a250c34[29];
@@ -37,6 +38,8 @@ static const struct
    char s_76fae911[52];
    char s_56581215[53];
    char s_6b45243b[12];
+   char s_43585d45[34];
+   char s_43585d53[32];
    char s_ea6df2a1[121];
    char s_bfb33e98[95];
    char s_87603f77[23];
@@ -48,7 +51,7 @@ static const struct
    char s_b3841fa4[49];
    char s_d7d5e8f7[26];
    char s_23b2ac5a[228];
-   char s_37033dd5[110];
+   char s_37033dd5[95];
    char s_534835b5[59];
    char s_534cf44d[101];
    char s_5f9d9369[71];
@@ -60,14 +63,14 @@ static const struct
    char s_5523ef09[35];
    char s_38e226a5[34];
    char s_239aa255[134];
-   char s_fa198259[116];
+   char s_fa198259[124];
    char s_55288d64[31];
    char s_41d19ccb[44];
    char s_d32da48f[16];
    char s_d1558b35[49];
    char s_4c378b95[86];
    char s_c435566b[311];
-   char s_793f841a[253];
+   char s_793f841a[249];
    char s_b4ed19c0[32];
    char s_3a147fac[92];
    char s_a4a373a7[30];
@@ -129,7 +132,7 @@ static const struct
    char s_c073450a[195];
    char s_e6cd4ada[137];
 #ifdef HAVE_MICROPHONE
-   char s_86e940b7[107];
+   char s_86e940b7[103];
 #endif
    char s_3f5ab0a6[143];
    char s_39308167[416];
@@ -140,7 +143,7 @@ static const struct
    char s_1bd35af2[41];
    char s_24e40f00[287];
    char s_1382c258[265];
-   char s_4caab10c[281];
+   char s_4caab10c[265];
    char s_03580e17[184];
    char s_9998fdce[332];
    char s_1d269383[200];
@@ -188,7 +191,7 @@ static const struct
    char s_2d9d0a50[286];
    char s_0e7699a6[272];
    char s_16721de3[271];
-   char s_abab74fb[177];
+   char s_abab74fb[185];
    char s_c0a60ee2[231];
    char s_14a6bfe2[303];
    char s_4b0e8809[193];
@@ -202,7 +205,7 @@ static const struct
    char s_9834febe_1[79];
    char s_93805cc8_0[500];
    char s_93805cc8_1[40];
-   char s_b495662b[131];
+   char s_b495662b[435];
    char s_9953f4e2[249];
    char s_de76d2dc[20];
    char s_79e212bd[5];
@@ -253,35 +256,42 @@ static const struct
    char s_35a1323d[12];
    char s_f72667c9[12];
    char s_adce4374[14];
+   char s_5984f4f9[6];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[47];
 #endif
    char s_4e447c6c[53];
    char s_d9a51d02[10];
    char s_98760b94[27];
-   char s_af6007a1[23];
+   char s_b81eb68d[20];
    char s_da068369[12];
    char s_daead8a5[13];
    char s_48c208ee[11];
    char s_a38cafbb[21];
+   char s_cf4d4f28[47];
    char s_f4740f16[35];
    char s_d95f1db1[44];
    char s_3c9950ad[39];
    char s_aafc147d[12];
    char s_734f5242[35];
    char s_55404857[11];
+   char s_f08d700c[42];
    char s_792e0069[17];
+   char s_9908b98a[26];
    char s_a9d2227f[23];
    char s_76e73138[20];
    char s_e2062515[37];
    char s_ad791974[14];
+   char s_079ba7c7[27];
    char s_b271ae95[17];
    char s_fb84857a[8];
    char s_3943c7ae[31];
    char s_5b2d8d2f[25];
+   char s_6fd9b032[31];
    char s_affd948c[26];
    char s_d2d4c381[27];
    char s_a95aa0fc[27];
+   char s_532d60d5[24];
    char s_13d32d54[15];
    char s_91e41658[19];
    char s_30375dfa[30];
@@ -289,9 +299,13 @@ static const struct
    char s_8c7495e3[17];
    char s_ad7c73f6[16];
    char s_30acd6fb[16];
+   char s_ce7da552[38];
+   char s_6b5e88c4[55];
+   char s_79fff0ec[43];
    char s_04b30c51[26];
    char s_e5aeacf9[24];
    char s_24976a5b[25];
+   char s_59512220[32];
    char s_5209cc72[39];
    char s_9f1f3534[54];
    char s_e66b1cb9[43];
@@ -580,6 +594,7 @@ static const struct
    char s_dd6afca3[20];
    char s_4bcbcc14[32];
    char s_e97bb565[22];
+   char s_47e8dc21[39];
    char s_da7a38eb[24];
 #ifdef _3DS
    char s_9db0c321[25];
@@ -590,7 +605,26 @@ static const struct
    char s_f0ce97f7[17];
    char s_704e200c[23];
    char s_a82728ec[25];
+   char s_2fab99c4[62];
+   char s_cce25e3a[51];
    char s_7ca0c97c[38];
+   char s_a85293bc[33];
+   char s_e05e1cdf[27];
+   char s_fb4bba8f[39];
+   char s_6e8d7d8d[34];
+   char s_b3ffd267[45];
+   char s_ab72ef00[47];
+   char s_b65fb6ee[49];
+   char s_ed8d3608[21];
+   char s_95e923ca[49];
+   char s_c36b0d98[51];
+   char s_cbaa86a1[44];
+   char s_00602cda[31];
+   char s_ac5d5951[27];
+   char s_ce501285[28];
+   char s_3d9f9d8c[29];
+   char s_62302004[25];
+   char s_62302005[25];
    char s_328dfd67[15];
    char s_6831e4b8[19];
    char s_b48bf607[10];
@@ -607,11 +641,55 @@ static const struct
    char s_15f24ff4[9];
    char s_ec7e8026[9];
    char s_5d29b870[17];
+   char s_3cc9b420[18];
+   char s_bdea22f3[14];
+   char s_54250975[14];
+   char s_5fb85af7[10];
+   char s_575c05fd[22];
+   char s_9104dbe7[9];
+   char s_b4e9520b[25];
+   char s_12bd74ce[13];
+   char s_12c0a864[20];
    char s_08e9410c[16];
    char s_d95824aa[21];
    char s_639f529e[15];
    char s_4927597c[15];
    char s_77b74366[14];
+   char s_5266be65[11];
+   char s_8aeea24b[11];
+   char s_a18bec42[8];
+   char s_bf07df5b[17];
+   char s_b6df3202[11];
+   char s_bf5d5d76[17];
+   char s_0ec02c87[24];
+   char s_c07d4ce0[17];
+   char s_146397b0[12];
+   char s_c8d6f855[21];
+   char s_fda5cd4a[21];
+   char s_8e5cb774[20];
+   char s_d3deb2af[18];
+   char s_2821fa51[11];
+   char s_a10cbbd0[9];
+   char s_a1381a82[13];
+   char s_f3a18a9f[11];
+   char s_14691293[12];
+   char s_cab4e5d1[10];
+   char s_f3b9b113[12];
+   char s_b6d851f0[16];
+   char s_ab49119c[4];
+   char s_94ab8f8c[18];
+   char s_deed0812[13];
+   char s_dfa3c8c3[6];
+   char s_52dea05d[15];
+   char s_7ec63ffc[44];
+   char s_7f004a36[150];
+   char s_a3825f18[13];
+   char s_ef2d0a03[27];
+   char s_ad17a194[12];
+   char s_ddf679b9[8];
+   char s_7137e7c2[20];
+   char s_f9fe3b9c[11];
+   char s_e62892df[14];
    char s_3b7e9d77[9];
    char s_d31f6d88[19];
    char s_f03e9c42[19];
@@ -729,6 +807,9 @@ static const struct
    char s_700d45a9[30];
    char s_2a30a561[31];
    char s_6ae6f953[22];
+#ifdef ANDROID
+   char s_b573f90c[25];
+#endif
    char s_e28bc72f[27];
    char s_0b2a8528[42];
    char s_ea5757a0[9];
@@ -760,6 +841,7 @@ static const struct
    char s_d458f013[30];
    char s_56e1b31e[17];
    char s_56e1b31f[16];
+   char s_267cbe7d[34];
    char s_597c4715[18];
    char s_56e1b329[24];
    char s_3318187b[19];
@@ -776,6 +858,7 @@ static const struct
    char s_56e1b336[16];
    char s_313d15c0[9];
    char s_e9f0dd82[34];
+   char s_0bebb490[12];
    char s_72765a06[14];
    char s_72765a07[14];
    char s_72765a08[14];
@@ -868,7 +951,7 @@ static const struct
    char s_267cef24[50];
    char s_727b11f4[34];
    char s_21ec213c[28];
-   char s_030a629f[29];
+   char s_030a629f[27];
    char s_8bc5b398[30];
    char s_0c353c96[34];
    char s_629528b9[32];
@@ -908,6 +991,9 @@ static const struct
    char s_d7c1d887[21];
    char s_8c49943c[18];
    char s_d2c6b214[28];
+#ifdef HAVE_SDL3
+   char s_ba511c01[25];
+#endif
 #ifdef ANDROID
    char s_dd65ea83[30];
 #endif
@@ -1058,6 +1144,10 @@ static const struct
    char s_8d3a8b68[13];
    char s_68d27147[12];
    char s_f02f73fc[37];
+   char s_b5721b90[30];
+   char s_e5b971a0[6];
+   char s_8f27c71e[14];
+   char s_17615fcf[4];
    char s_3a0a3fef[13];
    char s_1b6ed818[19];
    char s_89a75c21[20];
@@ -1128,6 +1218,7 @@ static const struct
    char s_b4c3612a[33];
    char s_f638f238[16];
    char s_f3358a59[26];
+   char s_f8098721[67];
    char s_0d7d9688[33];
    char s_b00815b8[12];
    char s_1ef8917a[17];
@@ -1138,6 +1229,7 @@ static const struct
    char s_ac60056b[11];
    char s_1ad09b45[26];
    char s_774e2332[39];
+   char s_1c9e1ceb[38];
    char s_87064238[36];
    char s_2a273dd7[25];
    char s_5e5fc0ee[25];
@@ -1163,9 +1255,7 @@ static const struct
    char s_b201bb70[35];
    char s_b66840e9[30];
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    char s_f0db2883[21];
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -1262,6 +1352,7 @@ static const struct
    char s_04e3886f[36];
    char s_1d4d1099[29];
    char s_c19bc96b[61];
+   char s_733174db[14];
    char s_fc6e3a57[27];
    char s_8594979d[22];
    char s_c4ab544b[17];
@@ -1311,6 +1402,7 @@ static const struct
    char s_d9d847b8[32];
    char s_7a6a492f[23];
    char s_cf28bcf5[26];
+   char s_d3e7cd81[17];
    char s_821edb57[27];
    char s_5f080876[25];
    char s_9358d8ba[24];
@@ -1399,7 +1491,7 @@ static const struct
    char s_012938fb[33];
    char s_a747cdc9[54];
    char s_2f169651[21];
-   char s_73674a86[28];
+   char s_73674a86[29];
    char s_705eee28[43];
    char s_62af62ac[35];
    char s_12b25a4b[46];
@@ -1519,7 +1611,6 @@ static const struct
    char s_74b77b4a[19];
    char s_7534cfc9[7];
    char s_36259b63[16];
-   char s_37368130[12];
    char s_d51f54a2[14];
    char s_b35f573c[7];
    char s_753c8d3b[9];
@@ -1787,6 +1878,7 @@ static const struct
    char s_53b632e1[69];
    char s_f246e141[33];
    char s_dff02a9f[30];
+   char s_5b997f85[20];
    char s_87ee250e[33];
    char s_91e11405[66];
    char s_04681a15[33];
@@ -1882,11 +1974,14 @@ static const struct
    char s_8d5f85ee[22];
    char s_9b023eee[26];
    char s_ccae82ba[13];
+#endif
+   char s_35808dba[38];
+#ifdef HAVE_SMBCLIENT
    char s_ad6e88de[11];
    char s_c7bc8298[26];
    char s_e63b035a[17];
    char s_d21d875b[13];
-   char s_ae86fed0[32];
+   char s_ae86fed0[21];
    char s_b12ae22e[24];
    char s_b2d073c7[17];
    char s_1cbc2657[18];
@@ -1904,6 +1999,7 @@ static const struct
    char s_d7fc4c9c[24];
    char s_d21c686b[23];
    char s_f465878a[24];
+   char s_3aa6b936[32];
    char s_a35a9e13[21];
    char s_64a91b83[14];
 #ifdef HAVE_MIST
@@ -1921,7 +2017,9 @@ static const struct
    char s_b24d8753[12];
    char s_d748f469[31];
    char s_9f006f5c[21];
+   char s_773482e7[9];
    char s_7fec5ca7[11];
+   char s_f05bb3b5[11];
    char s_9374b989[21];
    char s_7943e750[32];
    char s_cec8f66d[20];
@@ -1963,6 +2061,7 @@ static const struct
    char s_d9b00fbd[22];
    char s_9c6ed9ca[21];
    char s_68664e16[15];
+   char s_9ad2e88b[33];
    char s_d4aabe7f[23];
    char s_4674fab3[15];
    char s_904219cb[23];
@@ -2022,6 +2121,7 @@ static const struct
    char s_f90272bb[21];
    char s_41713ab9[18];
    char s_f808254b[30];
+   char s_a2cb8534[13];
    char s_a4d3948f[13];
    char s_7f75b005[33];
    char s_c7e66e0a[33];
@@ -2108,25 +2208,32 @@ static const struct
    char s_44e1c38f[30];
    char s_aa9bc75d[12];
    char s_57047267[9];
+   char s_8a600be0[35];
    char s_6665b7fc[51];
+   char s_2e6ad26e[10];
+   char s_43e9897c[31];
+   char s_7fbf0860[7];
    char s_f417f6f1[16];
    char s_020e2bc5[14];
    char s_59f183c8[15];
    char s_59f183c9[14];
    char s_6b395e21[6];
+   char s_00ab7f5e[40];
    char s_71747541[10];
    char s_b45e4c28[22];
    char s_e92f8e07[26];
    char s_e9bca139[28];
    char s_59dc5d76[36];
    char s_78198818[17];
-   char s_a12ce1bf[6];
+   char s_a12ce1bf[9];
    char s_bfa23080[10];
    char s_ec326380[6];
    char s_8a86d1de[18];
    char s_8fc1e4da[4];
    char s_14ed14d0[11];
+   char s_fad361a0[20];
    char s_bb929824[16];
+   char s_fe2ec9bd[34];
    char s_5741c1d0[14];
    char s_a1a7717d[26];
    char s_e6ca3876[36];
@@ -2149,6 +2256,7 @@ static const struct
    char s_0e2c0fca[27];
    char s_93ac5ec8[26];
    char s_6cdf4f07[20];
+   char s_a03f132e[31];
    char s_b3d1e989[18];
    char s_50eb4c56[5];
    char s_a023adce[12];
@@ -2182,6 +2290,7 @@ static const struct
    char s_69b801ef[11];
    char s_a40653a7[25];
    char s_52e3d6ea[29];
+   char s_c992346c[32];
    char s_a9c8430e[13];
    char s_f5911f43[25];
    char s_9017e0d3[13];
@@ -2203,7 +2312,7 @@ static const struct
    char s_a9711945[33];
    char s_bdaa2cfe[51];
    char s_ec9ccdc3[26];
-   char s_8bf6ccd4[49];
+   char s_8bf6ccd4[46];
    char s_2cb6ab5c[19];
    char s_552163d9[40];
    char s_ef3d53d8[20];
@@ -2214,10 +2323,13 @@ static const struct
    char s_1edf58ee[21];
    char s_d74474ce[7];
    char s_541958e5[6];
+   char s_ba3e4ee6[12];
    char s_45816e1d[21];
    char s_c017f975[12];
    char s_730df420[16];
    char s_258060bf[26];
+   char s_3bbc8b05[30];
+   char s_e595f6df[37];
    char s_f90edcc2[55];
    char s_ad14307a[12];
 #if defined(RARCH_MOBILE)
@@ -2250,6 +2362,9 @@ static const struct
    char s_b9e24170[29];
    char s_30140cb5[14];
    char s_25a21976[69];
+   char s_95a59dc0[12];
+   char s_24244577[14];
+   char s_39143931[16];
    char s_7f2380a0[19];
    char s_1c0a61e2[13];
    char s_e0609921[16];
@@ -2268,6 +2383,8 @@ static const struct
    char s_9ccb925f[10];
    char s_92b879ff[21];
    char s_650f496e[13];
+   char s_565fbcfe[8];
+   char s_88ddcfc3[11];
    char s_3e3caa7d[29];
    char s_8d5d41b3[11];
    char s_988f5574[11];
@@ -2294,9 +2411,11 @@ static const struct
    char s_f9dd6e61[13];
    char s_f4b6d13e[39];
    char s_25e89959[3];
+   char s_b1d6fea6[10];
    char s_aa0659db[24];
    char s_49757b91[24];
    char s_660eb9c4[24];
+   char s_b6ca9df2[21];
 #if defined(RARCH_MOBILE)
    char s_b754294b[54];
    char s_b754294c[54];
@@ -2337,12 +2456,14 @@ static const struct
    char s_f7cc6630[19];
    char s_310ec7bd[80];
    char s_5832a2c2[108];
+   char s_6f6e337b[441];
    char s_20cc6597[110];
    char s_21b0bad3[54];
    char s_66e9521c[96];
    char s_a95c1929[45];
    char s_23b8ca2e[25];
    char s_daf6d7e2[57];
+   char s_708c69d6[335];
    char s_042502c4[55];
    char s_90ae9a9f[102];
    char s_81b79d5b_0[500];
@@ -2350,25 +2471,41 @@ static const struct
    char s_c9235dab[59];
    char s_330be970_0[500];
    char s_330be970_1[47];
-   char s_98b02857[229];
+   char s_014d553a[439];
+   char s_98b02857[228];
+   char s_81f09bf8_0[500];
+   char s_81f09bf8_1[89];
    char s_6c3c586d[232];
    char s_950e7a66[26];
    char s_ce113b1c[34];
    char s_272471c3[88];
    char s_cb649822[21];
+   char s_f0838a35_0[500];
+   char s_f0838a35_1[198];
    char s_95821d83[29];
    char s_bdeebb68[36];
    char s_f9005edc[142];
    char s_6ade80dd[42];
+   char s_ec7aa7a0_0[500];
+   char s_ec7aa7a0_1[6];
    char s_b5ccfdfa[173];
    char s_8a24406f[45];
    char s_8c6b0fea[52];
    char s_5977d6d8[50];
+   char s_f46c7b83_0[500];
+   char s_f46c7b83_1[130];
    char s_cb67f2a4[34];
    char s_3c3598a9[44];
+   char s_3bac47bd[447];
+   char s_90e7db40[465];
+   char s_b07cd572_0[500];
+   char s_b07cd572_1[89];
+   char s_1b3f0b9a[400];
    char s_4b78ee7f[62];
    char s_aed11d67[151];
    char s_dbe6e749[94];
+   char s_9e6f6ece_0[500];
+   char s_9e6f6ece_1[36];
    char s_ed8a1060[99];
    char s_822fa422[94];
    char s_a8d552a7[64];
@@ -2539,15 +2676,30 @@ static const struct
    char s_79b8ce4a[87];
    char s_a1a8257e[103];
    char s_282f7955[108];
-   char s_d5231783[99];
+   char s_d5231783[295];
    char s_a68d6d11[61];
    char s_74022c02[76];
    char s_8abad013[90];
+   char s_0a53120f[485];
    char s_a39ca959[98];
    char s_16b9856e[32];
    char s_0ef5e125[21];
    char s_b714023a[42];
    char s_b0d3045a[43];
+   char s_b50332b2[68];
+   char s_5239f728[68];
+   char s_7175042a[29];
+   char s_a2c852cd[40];
+   char s_32ab82b6[67];
+   char s_d6370c78[50];
+   char s_400c0506[42];
+   char s_d733484f[14];
+   char s_c9829d48[63];
+   char s_bc0e4cff[24];
+   char s_6f8f2d33[106];
+   char s_f4ef1a7a[106];
+   char s_249a55f2[107];
+   char s_249a55f3[107];
    char s_fe3fb37b[55];
    char s_d11127dc[119];
    char s_7b51019e[53];
@@ -2556,6 +2708,8 @@ static const struct
    char s_aa6534cc[31];
    char s_51d334ea[30];
    char s_95de8c94[33];
+   char s_f43bec66[118];
+   char s_d814ec71[111];
    char s_f2a19576[57];
    char s_b2a8d230[62];
    char s_11c7fa0c[112];
@@ -2613,6 +2767,9 @@ static const struct
    char s_5c8a1d63[108];
    char s_744c0f80[64];
    char s_2aa39081[50];
+#ifdef ANDROID
+   char s_50f43cfa[309];
+#endif
    char s_e85b309d[76];
    char s_cd94bb16[226];
    char s_a17a67e1[50];
@@ -2636,6 +2793,7 @@ static const struct
    char s_6da9b571[277];
    char s_c2827177[133];
    char s_09f2837b[244];
+   char s_2c4c27eb[238];
    char s_85147d5c[86];
    char s_0b56ad4c[65];
    char s_c312b1ca[39];
@@ -2684,8 +2842,8 @@ static const struct
    char s_d9153542[57];
    char s_8e48ec69[43];
    char s_cd43c108[81];
-   char s_cd46e260[84];
-   char s_cd482ffe[85];
+   char s_cd46e260[412];
+   char s_cd482ffe[412];
    char s_49336383[51];
    char s_e92351d4[113];
    char s_8e22cdce[54];
@@ -2746,6 +2904,9 @@ static const struct
    char s_dda608b5[352];
    char s_6f5a032a[61];
    char s_9530e802[126];
+#ifdef HAVE_SDL3
+   char s_5b9036af[280];
+#endif
 #ifdef ANDROID
    char s_e8eeac31[70];
 #endif
@@ -2836,6 +2997,7 @@ static const struct
    char s_6895dfd6[54];
    char s_788364f5[90];
    char s_dd9ff22a[66];
+   char s_ff7d19fe[219];
    char s_db495a9d[35];
    char s_ddc672a7[60];
    char s_ccea261d[149];
@@ -2898,12 +3060,14 @@ static const struct
    char s_7de5d198[59];
    char s_3b573ee6[28];
    char s_dc1d6cc7[56];
+   char s_28543dcf[82];
    char s_aebcb136[185];
    char s_8b636a26[31];
    char s_8f707459[29];
    char s_5aa622cc[254];
    char s_2b908073[300];
    char s_64bea160[226];
+   char s_2826de99[430];
    char s_97c62766[167];
    char s_6f458a85[128];
    char s_41702fdc[62];
@@ -3101,6 +3265,19 @@ static const struct
    char s_0e319bcf[41];
    char s_c11a10f0[183];
    char s_e8bf64a4[37];
+   char s_1e8b7442[137];
+   char s_bbc238b8[137];
+   char s_a71a2320[99];
+   char s_3a5444c9[66];
+   char s_e24628cd[128];
+   char s_5587ebcb[106];
+   char s_992f7725[61];
+   char s_d17500b1[57];
+   char s_bd5d9b57[126];
+   char s_f373722c[86];
+   char s_00544646[141];
+   char s_8594f008[157];
+   char s_72a5ea43[156];
    char s_b4bf3f71[61];
    char s_b91e9f23[48];
    char s_66664762[59];
@@ -3203,7 +3380,7 @@ static const struct
    char s_86d4b7cd[67];
    char s_6fed6990[127];
    char s_b775da75[160];
-   char s_5ae6337d[62];
+   char s_5ae6337d[63];
    char s_5ae9d14c[163];
    char s_f207335a[173];
    char s_9f7d37f6[142];
@@ -3211,6 +3388,7 @@ static const struct
    char s_98d47f8f[367];
    char s_9385fbef[40];
    char s_efb7504d[77];
+   char s_6b4a7333[392];
    char s_70d6077c[45];
    char s_31124733[188];
    char s_2d24a503[149];
@@ -3277,16 +3455,16 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[59];
    char s_69c0e487[57];
-   char s_706ff4dc[201];
+   char s_706ff4dc[318];
    char s_a0d1a85c[71];
-   char s_b5966528[37];
+   char s_b5966528[211];
    char s_907ef7cc[33];
    char s_b0a46506[50];
-   char s_04624c88[60];
-   char s_91976dbe[39];
+   char s_04624c88[167];
+   char s_91976dbe[49];
    char s_f6492edc[56];
-   char s_9bb85635[41];
-   char s_22a05685[35];
+   char s_9bb85635[219];
+   char s_22a05685[61];
 #endif
    char s_f3bfa8b9[119];
    char s_5fe2cee5[78];
@@ -3298,6 +3476,7 @@ static const struct
 #endif
    char s_9b51352c[26];
    char s_12510638[46];
+   char s_407622a4[66];
    char s_ac067981[52];
    char s_82d064b1[28];
 #ifdef HAVE_MIST
@@ -3337,6 +3516,7 @@ static const struct
    char s_f77f7a41[66];
 #endif
    char s_e7cb5685[53];
+   char s_8bb367a2[121];
    char s_2beab583[29];
    char s_a1c071eb[107];
    char s_0d9ceefa[92];
@@ -3396,11 +3576,16 @@ static const struct
    char s_fc2d67bb[179];
    char s_43946ee5[78];
    char s_5492b73d[49];
+   char s_15cad80e_0[500];
+   char s_15cad80e_1[37];
    char s_01e5fbea[372];
+   char s_0653bf6a_0[500];
+   char s_0653bf6a_1[15];
    char s_123f401f[125];
    char s_0d96ed73[35];
    char s_9f0fd076[125];
    char s_9f0fd077[124];
+   char s_c315b54c[453];
    char s_7a2050af[39];
    char s_d2859556[67];
    char s_ef13be35[66];
@@ -3412,8 +3597,10 @@ static const struct
    char s_cfa51e8c_1[13];
    char s_b62c2f7e[415];
    char s_456fcbc9[384];
+   char s_ba8ff8ce[322];
    char s_82fab47a[43];
    char s_72e21512[217];
+   char s_9f6de46b[376];
    char s_66f2b57e[56];
    char s_a776daeb[73];
    char s_88095324[73];
@@ -3432,7 +3619,8 @@ static const struct
    char s_1eebf4f8[186];
    char s_2f2ca2b6[185];
    char s_2c9be635[151];
-   char s_05ec12e6[193];
+   char s_c8fb9e1c[369];
+   char s_05ec12e6[212];
    char s_b5a603de[61];
    char s_d9c2db25[53];
 #ifdef HAVE_ODROIDGO2
@@ -3443,8 +3631,8 @@ static const struct
    char s_eec252b5[125];
    char s_f4e4e921[255];
    char s_7968f59d[39];
-   char s_8cee3615[164];
    char s_58c80718[336];
+   char s_894ecb9a[441];
    char s_67d549fd[36];
    char s_afac733c[34];
    char s_3aaf6bf1[135];
@@ -3468,14 +3656,17 @@ static const struct
    char s_261210b3[78];
    char s_3a4b246c[102];
    char s_2ceab671[153];
-   char s_977f8e82[96];
+   char s_977f8e82[301];
    char s_3c679f0a[336];
    char s_5b059407[144];
    char s_36033606[199];
-   char s_d62ed5dc[425];
+   char s_d62ed5dc[404];
    char s_2e69508b[389];
    char s_7e96b5ce[44];
-   char s_3547866d[156];
+   char s_3547866d_0[500];
+   char s_3547866d_1[75];
+   char s_d73ccef3[470];
+   char s_81163acd[468];
    char s_c2314d30[214];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[163];
@@ -3545,6 +3736,7 @@ static const struct
    char s_25e53d33[42];
    char s_26cce51e[20];
    char s_07dd4745[16];
+   char s_72293658[108];
    char s_aaaaf898[37];
    char s_4173591b[11];
    char s_c2b63d3e[10];
@@ -3588,6 +3780,7 @@ static const struct
    char s_8db0184a[43];
    char s_08abd26f[19];
    char s_48f0233f[54];
+   char s_63ab0b54[8];
    char s_510c1140[51];
    char s_3b592d2d[20];
    char s_ec5751c3[41];
@@ -3669,6 +3862,8 @@ static const struct
    char s_5eafa434[32];
    char s_7f1e25bf[41];
    char s_ed9e4f6f[179];
+   char s_ecbaddbe[82];
+   char s_c860f446[80];
    char s_30da3845[36];
    char s_d50c6bf1[30];
    char s_64a038aa[30];
@@ -4072,6 +4267,7 @@ static const struct
    char s_2dbb6496[42];
 } msg_hash_de_blob =
 {
+   "KI-Dienst-Backend",
    "1-Bit, maximaler Wert = 0x01",
    "16-Bit, maximaler Wert = 0xFFFF",
    "2-Bit, maximaler Wert = 0x03",
@@ -4095,6 +4291,8 @@ static const struct
    "N\303\244chsten Cheat ausf\303\274hren wenn Wert < Speicherwert",
    "N\303\244chsten Cheat ausf\303\274hren wenn Wert != Speicherwert",
    "Fester Wert",
+   "Manuelles horizontales Auff\303\274llen",
+   "Manuelles vertikales Auff\303\274llen",
    "RetroAchievements-Server ist nicht erreichbar. Es wird bis zum Erfolg erneut versucht oder bis d"
    "ie App geschlossen wird.",
    "Alle ausstehenden Anfragen wurden erfolgreich mit dem RetroAchievements-Server synchronisiert.",
@@ -4109,8 +4307,8 @@ static const struct
    "Anmeldedaten f\303\274r das RetroAchievements-Konto. Bitte retroachievements.org besuchen und si"
    "ch f\303\274r ein kostenloses Konto anmelden.\nNach erfolgter Registrierung muss der Benutzernam"
    "e und das Passwort in RetroArch eingeben werden.",
-   "Das Standard-Audioger\303\244t, welches vom Audiotreiber verwendet wird, \303\274berschreiben. D"
-   "ies ist treiberabh\303\244ngig.",
+   "Das vom Audiotreiber verwendete Standardaudioger\303\244t \303\274berschreiben. Dies ist treiber"
+   "abh\303\244ngig.",
    "Benutzerdefinierter PCM-Ger\303\244tewert f\303\274r den ALSA-Treiber.",
    "Benutzerdefinierte Portnameangabe f\303\274r den JACK-Treiber (z.\302\240B. system:playback1,sys"
    "tem:playback_2).",
@@ -4124,8 +4322,8 @@ static const struct
    "Legacy-Open-Sound-System-Treiber.",
    "PipeWire-Treiber. Falls das System PipeWire verwendet, sollte dieser Treiber anstelle von beispi"
    "elsweise PulseAudio verwendet werden.",
-   "PulseAudio-Treiber. Wenn das System PulseAudio verwendet, ist dieser Treiber anstelle von z.\302"
-   "\240B. ALSA zu verwenden.",
+   "PulseAudio-Treiber. Wenn das System PulseAudio verwendet, ist dieser Treiber anstelle von beispi"
+   "elsweise ALSA zu verwenden.",
    "RoarAudio Sound-Systemtreiber.",
    "RSound-Treiber f\303\274r vernetzte Audiosysteme.",
    "OpenSL-Treiber.",
@@ -4136,8 +4334,8 @@ static const struct
    "auf NTSC-Bildschirmen zu spielen, auf Kosten von ungenauen Tonh\303\266hen.\nEingangsrate ist de"
    "finiert als:\nEingangsrate * (1.0 +/- (Max. Audioversatz))",
    "0 deaktiviert die Ratensteuerung.\nJeder andere Wert bestimmt das Delta der Audioratensteuerung,"
-   " welches festlegt, wie stark die Eingangsrate dynamisch angepasst werden kann.\nDie Eingangsrate"
-   " ist definiert als:\nEingangsrate * (1,0 +/- (Steuerungsdelta))",
+   " das festlegt, wie stark die Eingangsrate dynamisch angepasst werden kann.\nDie Eingangsrate ist"
+   " definiert als:\nEingangsrate * (1,0 +/- (Steuerungsdelta))",
    "Kosinusfaltung-Implementierung.",
    "N\303\244chstes-Resampling-Implementierung. Dieser Resampler ignoriert die Qualit\303\244tseinst"
    "ellung.",
@@ -4274,8 +4472,8 @@ static const struct
    "XMB ist eine RetroArch-GUI, die wie ein Konsolenmen\303\274 der 7. Generation aussieht. Sie kann"
    " dieselben Funktionen wie Ozone unterst\303\274tzen.",
 #ifdef HAVE_MICROPHONE
-   "\303\234berschreibt das Standardeingabeger\303\244t, welches der Mikrofontreiber verwendet. Dies"
-   " ist treiberabh\303\244ngig.",
+   "\303\234berschreibt das Standardeingabeger\303\244t, das der Mikrofontreiber verwendet. Dies ist"
+   " treiberabh\303\244ngig.",
 #endif
    "Legt das Eingabeger\303\244t fest (treiberspezifisch). Bei \342\200\236Aus\342\200\234 wird der "
    "MIDI-Eingang deaktiviert. Der Ger\303\244tename kann auch eingegeben werden.",
@@ -4313,9 +4511,9 @@ static const struct
    "chert werden, deserialisiert werden sollen. Sollte f\303\274r die meisten Kerne auf true gesetzt"
    " werden, aber einige k\303\266nnen bei der Deserialisierung von Inhalten janky Verhalten zeigen.",
    "Speichert den Spielstatus w\303\244hrend der Replay-Aufnahme in einem regelm\303\244\303\237igen"
-   " Intervall. Dies ist standardm\303\244\303\237ig deaktiviert, es sei denn, es wird etwas anderes"
-   " festgelegt. Das Intervall wird in Sekunden gemessen. Ein Wert von 0 deaktiviert die Aufzeichnun"
-   "g von Kontrollpunkten.",
+   " Intervall. Dies ist standardm\303\244\303\237ig deaktiviert, falls nicht anders festgelegt. Das"
+   " Intervall wird in Sekunden gemessen. Ein Wert von 0 deaktiviert die Aufzeichnung von Kontrollpu"
+   "nkten.",
    "Alle Speicherdaten (*.srm) in diesem Verzeichnis speichern. Dies beinhaltet verwandte Dateitypen"
    " wie .rt, .psrm usw. Bestimmte Kommandozeilenoptionen \303\274berschreiben diese Einstellung.",
    "Speichert automatisch in regelm\303\244\303\237igen Zeitabst\303\244nden, in Sekunden angegeben,"
@@ -4429,9 +4627,9 @@ static const struct
    " versetzt wird, bevor er gestartet wird. Reduziert die Latenz auf Kosten eines h\303\266heren Ri"
    "sikos von Stottern.\nWerte von 20 und h\303\266her werden als Frame-Zeit-Prozents\303\244tze beh"
    "andelt.",
-   "Versucht das gew\303\274nschte Ziel der \"Bildverz\303\266gerung\" zu halten und Frame-Drops zu "
-   "minimieren. Ausgangspunkt ist die 3/4 Frame-Zeit, wenn \"Bildverz\303\266gerung\" 0 (Automatisch"
-   ") ist.",
+   "Versucht das gew\303\274nschte Ziel der \342\200\236Bildverz\303\266gerung\342\200\234 zu halten"
+   " und Frame-Drops zu minimieren. Ausgangspunkt ist die 3/4 Frame-Zeit, wenn \342\200\236Bildverz"
+   "\303\266gerung\342\200\234 0 (Automatisch) ist.",
    "Legt fest, wie viele Frames die CPU der GPU vorauslaufen kann, wenn \342\200\236GPU und CPU sync"
    "hronisieren\342\200\234 aktiviert ist. Das Maximum ist 3.\n 0: Sofort mit der GPU synchronisiere"
    "n.\n 1: Mit dem vorherigen Frame synchronisieren.\n 2: usw.",
@@ -4479,8 +4677,12 @@ static const struct
    "ombinieren mit Swap-Intervall > 1, Schwarzbilder, Bildverz\303\266gerung oder mit exakter Inhalt"
    "ssignalfrequenz synchronisieren. System-VRR eingeschaltet lass",
    "en ist ok, nur nicht diese Einstellung.",
-   "Video in separatem Thread ausf\303\274hren. Dies kann die Leistung auf Kosten der Latenz und ein"
-   "es st\303\244rkeren Videostotterns verbessern.",
+   "Den Grafiktreiber in einem eigenen Thread ausf\303\274hren. Die Anzeige beh\303\244lt ihre Bildr"
+   "ate bei, auch wenn der Core ruckelt, und der Core berechnet das n\303\244chste Bild, w\303\244hr"
+   "end das letzte die Shader-Kette durchl\303\244uft und dargestellt wird. Bei \342\200\236Threaded"
+   "-Video-Anzeigetaktung\342\200\234 startet der Kern so sp\303\244t, wie es die n\303\244chste Bil"
+   "dwiederholfrequenz zul\303\244sst, wodurch die Latenz auf dem durch \342\200\236Bildverz\303\266"
+   "gerung\342\200\234 festgelegten Wert bleibt.",
    "Mit der exakten Inhaltswiederholfrequenz synchronisieren. Diese Option entspricht dem Erzwingen "
    "von x1-Geschwindigkeit, erlaubt aber trotzdem Vorspulen. Keine Abweichung der angeforderten Core"
    "-Bildfrequenz, keine dynamische Ratensteuerung des Tons.",
@@ -4533,35 +4735,42 @@ static const struct
    "Sprachmodus",
    "Zielsprache",
    "KI-Dienst URL",
+   "Immer",
 #ifndef HAVE_DYNAMIC
    "Core beim Starten von Inhalten immer neu laden",
 #endif
    "Problemumgehung f\303\274r Verbindungstrennung auf Android",
    "Appsymbol",
    "ASIO Control Panel \303\266ffnen",
-   "Warte auf Audio-Frames",
+   "ASIO-Ausgabekan\303\244le",
    "Audioger\303\244t",
    "Audiotreiber",
    "DSP-Plugin",
    "DSP-Plugin entfernen",
+   "Schnellvorspulen ver\303\244ndert das Callback-Audio",
    "Auto-stumm bei schnellem Vorspulen",
    "Audiobeschleunigung bei schnellem Vorspulen",
    "Auf feste Ganzzahl resamplen (Hinweis)",
    "Audiofilter",
    "Aushandeln des Audioformats (Hint)",
    "Gleitkomma",
+   "Virtueller Surround-Sound f\303\274r Kopfh\303\266rer",
    "Audiolatenz (ms)",
+   "Minimale Audiolatenz (ms)",
    "Maximaler Audioversatz",
    "Mixer stummschalten",
    "Lautst\303\244rkeanpassung des Mixers (dB)",
    "Stummschalten",
+   "Anordnung der Lautsprecher",
    "Ausgaberate (Hz)",
    "Ausgabe",
    "Dynamische Audioratensteuerung",
    "Audio-Resampling-Treiber",
+   "Hochwertiges Sinc-Oversampling",
    "Audio-Resampler-Qualit\303\244t",
    "Lautlos-Modus respektieren",
    "Auto-stumm bei R\303\274ckspulen",
+   "Sch\303\244tzung der Sinkrate",
    "Status: k.\302\240A.",
    "Status: Wiedergabe",
    "Status: Wiedergabe (Schleife)",
@@ -4569,9 +4778,13 @@ static const struct
    "Status: Gestoppt",
    "Synchronisation",
    "Synchronisation",
+   "Priorit\303\244t des Audio-Threads erh\303\266hen",
+   "Geschwindigkeits\303\244nderungen ohne Tonh\303\266henver\303\244nderung",
+   "Geschwindigkeitsabh\303\244ngiger Tiefpassfilter",
    "Lautst\303\244rkeanpassung (dB)",
    "Exklusiver WASAPI-Modus",
    "WASAPI-Gleitkomma-Format",
+   "Pro-Audio-Scheduling bevorzugen",
    "Gr\303\266\303\237e des gemeinsamen WASAPI-Puffers",
    "Datei speichern: Autospeichern-Intervall f\303\274r SaveRAM",
    "\303\234berschreibende Dateien automatisch laden",
@@ -4860,6 +5073,7 @@ static const struct
    "CRT-Superaufl\303\266sung",
    "Benutzerdefinierte Bildfrequenz",
    "Vertikales Zentrieren",
+   "EDID f\303\274r CRT-Voreinstellung schreiben",
    "Horizontale Zentrierung",
 #ifdef _3DS
    "2D (Pixel-Raster-Effekt)",
@@ -4870,7 +5084,26 @@ static const struct
    "Datenbankmanager",
    "Von der Liste l\303\266schen",
    "Wiedergabeliste l\303\266schen",
+   "Desktop-Men\303\274: Maximale Anzahl f\303\274r Raster von Alle Playlists",
+   "Desktop-Men\303\274: Maximale Anzahl f\303\274r Alle Playlists",
    "Desktop-Men\303\274 (Neustart erforderlich)",
+   "Desktop-Men\303\274: Symbolansichtzoom",
+   "Desktop-Men\303\274: Letzter Tab",
+   "Desktop-Men\303\274: Fenstergeometrie merken",
+   "Desktop-Men\303\274: Letzten Tab merken",
+   "Desktop-Men\303\274: Beenden des Scans best\303\244tigen",
+   "Desktop-Men\303\274: Begr\303\274\303\237ungsbildschirm anzeigen",
+   "Desktop-Men\303\274: Geladenen Core zuerst vorschlagen",
+   "Desktop-Men\303\274: Theme",
+   "Desktop-Men\303\274: Begrenzung des Miniaturbildcaches",
+   "Desktop-Men\303\274: Maximale Gr\303\266\303\237e der Miniaturbilder",
+   "Desktop-Men\303\274: Qualit\303\244t der Miniaturbilder",
+   "Desktop-Men\303\274: Miniaturbildtyp",
+   "Desktop-Men\303\274: Ansichtstyp",
+   "Desktop-Men\303\274: Fensterh\303\266he",
+   "Desktop-Men\303\274: Fensterbreite",
+   "Desktop-Men\303\274: Fenster X",
+   "Desktop-Men\303\274: Fenster Y",
    "Aktueller Core",
    "Keine Reservierung",
    "Bevorzugt",
@@ -4887,11 +5120,56 @@ static const struct
    "Pausiert",
    "Im Spiel",
    "Disc-Information",
+   "Original-Disc: %s",
+   "V\303\226-Datum: %s",
+   "Seriennr.: %s",
+   "Titel: %s",
+   "Anzahl der Tracks: %d",
+   "Modus %d",
+   " - Dauer: %02d:%02d.%02d",
+   " - Modus: %s",
+   " - Gr\303\266\303\237e: %.1f MB",
    "Neue Disc laden",
    "Aktueller Disc-Index",
    "Disc-Steuerung",
    "Disc auswerfen",
    "Disc einlegen",
+   "Pr\303\274fsumme",
+   "Fehlerhaft",
+   "Farbart",
+   "CTA-Audioformate",
+   "Farbmetrik",
+   "CTA-F\303\244higkeiten",
+   "HDR Statische Metadaten",
+   "CTA-Videoformate",
+   "Hergestellt",
+   "Detailliertes Timing",
+   "DisplayID-Abschnitte",
+   "Festgelegtes Timing",
+   "Erweiterungsblock",
+   "Funktionen",
+   "Farbraum",
+   "Videoeingang",
+   "Hersteller",
+   "Monitorname",
+   "bevorzugt",
+   "Produktcode",
+   "Bereichsgrenzen",
+   "Roh",
+   "Bildschirmgr\303\266\303\237e",
+   "Seriennummer",
+   "Lesen",
+   "Standardtiming",
+   "Nur ein Teil der EDID konnte gelesen werden",
+   "Ein in einen Laptop oder All-in-One-PC integriertes Display verf\303\274gt \303\274ber keine EDI"
+   "D. Ein \303\274ber DDC angeschlossenes externes Display hingegen schon.",
+   "EDID-Version",
+   "Informationen des Displays",
+   "Ausrichtung",
+   "Ausgabe",
+   "Aktualisierungsrate",
+   "Aufl\303\266sung",
+   "Anzeigeserver",
    "Standard",
    "Core herunterladen",
    "Inhalts-Downloader",
@@ -5009,6 +5287,9 @@ static const struct
    "Rechter Analogstick Y- (oben)",
    "Rechter Analogstick Y+ (unten)",
    "Analogempfindlichkeit",
+#ifdef ANDROID
+   "Systemtastatur verwenden",
+#endif
    "Automatische Konfiguration",
    "'Spielfokus'-Modus automatisch aktivieren",
    "Erkennen",
@@ -5040,6 +5321,7 @@ static const struct
    "Tastatur-Controller-Zuordnung",
    "A-Knopf (rechts)",
    "B-Knopf (unten)",
+   "Controller-Eingabe im Hintergrund",
    "Steuerkreuz unten",
    "L-Knopf (Schultertaste)",
    "L2-Knopf (Trigger)",
@@ -5056,6 +5338,7 @@ static const struct
    "Y-Knopf (links)",
    "Taste %s",
    "Tastatur-Controller-Zuordnungstyp",
+   "Tastatur %s",
    "Pistole Aux A",
    "Pistole Aux B",
    "Pistole Aux C",
@@ -5148,7 +5431,7 @@ static const struct
    "Gr\303\266\303\237e von Tastatur-Overlay automatisch anpassen",
    "ABXY \303\234berlappungsempfindlichkeit",
    "Analoge Neuzentrierungszone",
-   "Overlay automatisch rotieren",
+   "Overlay automatisch drehen",
    "Overlay automatisch skalieren",
    "Overlay hinter dem Men\303\274 anzeigen",
    "D-Pad Diagonale Empfindlichkeit",
@@ -5188,6 +5471,9 @@ static const struct
    "RetroPad-Zuweisungen",
    "Vibrationsst\303\244rke",
    "Controller-Profil speichern",
+#ifdef HAVE_SDL3
+   "Systemtastatur verwenden",
+#endif
 #ifdef ANDROID
    "Physische Tastatur ausw\303\244hlen",
 #endif
@@ -5338,6 +5624,10 @@ static const struct
    "Men\303\274treiber",
    "Kiosk-Modus",
    "Bildwiederholrate im Men\303\274 begrenzen",
+   "Anzeiger der Dateierweiterung",
+   "Immer",
+   "Nur Duplikate",
+   "Nie",
    "Dateibrowser",
    "Schriftfarbe: Blau",
    "Schriftfarbe: Gr\303\274n",
@@ -5408,6 +5698,7 @@ static const struct
    "\"RetroArch neu starten\" anzeigen",
    "Zeige 'Beenden'",
    "Zeige Men\303\274beschreibungen",
+   "Unterbezeichnungen im Men\303\274 nur f\303\274r die aktuelle Auswahl anzeigen",
    "Wiedergabelisten mit Einzelklick",
    "Men\303\274-T\303\266ne",
    "'BGM' aktivieren",
@@ -5418,6 +5709,7 @@ static const struct
    "Startseite",
    "Vorschaubildhintergr\303\274nde",
    "Audio von animierten Miniaturansichten",
+   "Threads f\303\274r animierte Miniaturbilder",
    "Vorschaubildskalierungs-Schwellwert",
    "Gleichm\303\244\303\237iger Lauftext",
    "Lauftext-Geschwindigkeit",
@@ -5443,9 +5735,7 @@ static const struct
    "Horizontaler Versatz der Randtitel",
    "Vertikaler Verblassungsfaktor",
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    "Mikrofon-Blockframes",
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -5457,7 +5747,7 @@ static const struct
    "Mikrofon",
    "Standard-Eingangsfrequenz (Hz)",
    "Audioeingabelatenz (ms)",
-   "Mikrofon Resampler",
+   "Mikrofon-Resampler",
    "Audio-Resampler-Qualit\303\244t",
    "Mikrofon",
 #endif
@@ -5542,6 +5832,7 @@ static const struct
    "Server-Passwort f\303\274r Zuschauermodus",
    "Netzwerkspiel-Zuschauermodus",
    "Netzwerkspiel wird gestartet, sobald der Inhalt geladen ist.",
+   "Netzwerkspiel",
    "Netzwerkspiel-TCP/UDP-Port",
    "Relayserver verwenden",
    "Netzwerk-Befehle",
@@ -5591,6 +5882,7 @@ static const struct
    "Keine Core-Optionen verf\303\274gbar.",
    "Keine Disc ausgew\303\244hlt",
    "Keine Eintr\303\244ge vorhanden",
+   "Ohne Erweiterung",
    "Keine Favoriten verf\303\274gbar",
    "Kein Verlauf verf\303\274gbar.",
    "Keine Bilder verf\303\274gbar",
@@ -5679,7 +5971,7 @@ static const struct
    "Vorschaubilder-Skalierungsfaktor",
    "Wiedergabelistennamen k\303\274rzen (Neustart erforderlich)",
    "Verwende PAL60-Modus",
-   "\303\234bergeordnetes Verzeichnis",
+   "<\303\234bergeordetes Verzeichnis>",
    "Inhalt pausieren, wenn das Men\303\274 aktiv ist",
    "Inhalt pausieren, wenn nicht aktiv",
    "Inhalt beim Trennen des Controllers pausieren",
@@ -5800,7 +6092,6 @@ static const struct
    "Core dea&ktivieren",
    "&Hilfe",
    "\303\234ber RetroArch",
-   "Mitwirkende",
    "Dokumentation",
    "Leeren",
    "&Ansicht",
@@ -6075,6 +6366,7 @@ static const struct
    "Status speichern: H\303\266chster Wert f\303\274r Autoz\303\244hler, der behalten wird",
    "Status speichern: Vorschaubilder",
    "Konfiguration speichern unter",
+   "Komprimierungscodec",
    "Aktuelle Konfiguration speichern",
    "\303\234berschreibende Konfiguration f\303\274rs Inhaltsverzeichnis speichern",
    "Core-\303\234berschreibungen speichern",
@@ -6170,11 +6462,14 @@ static const struct
    "SMB-Client aktivieren",
    "Maximale SMB-Verbindungen",
    "SMB-Passwort",
+#endif
+   "KRB falls verf\303\274gbar, NTLM wenn nicht",
+#ifdef HAVE_SMBCLIENT
    "SMB-Server",
    "SMB-Netzwerkeinstellungen",
    "SMB-Freigabename",
    "SMB-Freigabe",
-   "SMB-Unterverzeichnis (optional)",
+   "SMB-Unterverzeichnis",
    "SMB-Zeit\303\274berschreitung",
    "SMB-Benutzername",
    "SMB-Arbeitsgruppe",
@@ -6192,6 +6487,7 @@ static const struct
    "Remote-RetroPad starten",
    "Videoprozessor starten",
    "Savestate-Speicherplatz",
+   "Statistiken im Men\303\274 ausblenden",
    "Statistiken anzeigen",
    "stdin-Befehle",
 #ifdef HAVE_MIST
@@ -6209,7 +6505,9 @@ static const struct
    "Streamtitel",
    "Eigene Streaming-Konfiguration",
    "Aktueller Inhalt: %s",
+   "Laden %s",
    "Subsysteme",
+   "Starten %s",
    "Vorgeschlagene Cores",
    "Bildschirmschoner unterdr\303\274cken",
    "Dauerleistungsmodus",
@@ -6251,6 +6549,7 @@ static const struct
    "Video-Kontext-Treiber",
    "Screenshot erstellen",
    "Multithreading",
+   "Leistungsstarke Cores bevorzugen",
    "Prim\303\244res Vorschaubild",
    "Vorschaubilder",
    "Prim\303\244res Vorschaubild",
@@ -6310,6 +6609,7 @@ static const struct
    "Einzeltaste (Halten)",
    "Doppelanalogstick",
    "Doppelanalogstick (Erzwungen)",
+   "Begleiter-UI",
    "UI-Companion",
    "UI-Companion beim Booten starten",
    "Desktop-Men\303\274 beim Start \303\266ffnen",
@@ -6398,25 +6698,32 @@ static const struct
    "Automatische Bildverz\303\266gerung",
    "Automatisch",
    "effektiv",
+   "Abtasten der Bilddauer vom Display",
    "Bildwiederholrate nur in stabilem Zustand erfassen",
+   "Erzwungen",
+   "Exklusive Vollbild-Verhandlung",
+   "Locker",
    "Vollbildanzeige",
    "Vollbildmodus",
    "Vollbildbreite",
    "Vollbildh\303\266he",
    "Gamma",
+   "Direkte SPIR-V-Unterst\303\274tzung (Hinweis)",
    "GPU-Index",
    "Verwende GPU-Aufnahme",
    "Screenshot: GPU verwenden",
    "GPU und CPU synchronisieren",
    "Anzahl der Frames f\303\274r GPU-CPU-Sync",
    "Farbverst\303\244rkung",
-   "Genau",
+   "Pr\303\244zise",
    "Erweitert",
    "Breit",
    "Spitzenhelligkeit",
    "Aus",
    "Helligkeit",
+   "Bildluminanz senden",
    "Subpixel-Layout",
+   "Spitzenwert vom Display verwenden",
    "Video-Layouts",
    "Maximale Frame-Latenzzeit",
    "Maximale Anzahl von Zwischenbildern",
@@ -6439,6 +6746,7 @@ static const struct
    "Overscan-Korrektur (unten)",
    "Overscan-Korrektur (oben)",
    "Filter mitaufnehmen",
+   "Taktwiederholungen vom Display",
    "Benutzerdefiniert",
    "Hoch",
    "Verlustfrei",
@@ -6472,6 +6780,7 @@ static const struct
    "Skalierung",
    "Scanline-Synchronisation",
    "Rollende Scanline-Simulation",
+   "Umschalten des SDL-Anzeigemodus",
    "Video-Shader",
    "Auto-Shader-Verz\303\266gerung",
    "Video-Shader",
@@ -6493,7 +6802,7 @@ static const struct
    "Globale Voreinstellung speichern",
    "Voreinstellung des Inhaltsverzeichnisses speichern",
    "Einfache Voreinstellungen",
-   "Das zuletzt verwendete Shader-Verzeichnis merken",
+   "Zuletzt verwendetes Shader-Verzeichnis merken",
    "Shader-Unterbilder",
    "Gemeinsamen Hardware-Kontext aktivieren",
    "Bilineare Filterung",
@@ -6501,13 +6810,16 @@ static const struct
    "Benutzerdefiniert",
    "Lokal",
    "Streamingqualit\303\244t",
-   "Bittiefe der Ausgabe",
+   "Bittiefe der Anzeige",
    "10-Bit",
    "8-Bit",
+   "Automatisch",
    "VSync Swap-Intervall",
    "Automatisch",
    "Synchronisation",
    "Video in separatem Thread",
+   "Threaded-Video-Anzeigetaktung",
+   "Bildwiederholung f\303\274r Threaded Video",
    "Metallargumentpuffer verwenden (Neustart erforderlich)",
    "Entflackern",
 #if defined(RARCH_MOBILE)
@@ -6540,6 +6852,9 @@ static const struct
    "Fensterdekorationen anzeigen",
    "Fensterbreite",
    "Mit exakter Inhaltssignalfrequenz synchronisieren (G-Sync, FreeSync)",
+   "Audiolatenz",
+   "Client-Puffer",
+   "Ger\303\244tezeitraum",
    "Verbindung trennen",
    "WLAN-Treiber",
    "WLAN aktivieren",
@@ -6558,6 +6873,8 @@ static const struct
    "Einfarbig",
    "Einfarbig invertiert",
    "Systematisch",
+   "Konsole",
+   "Hand\302\255held",
    "Einstellungen-Tab aktivieren",
    "Farbschema",
    "Apfelgr\303\274n",
@@ -6584,9 +6901,11 @@ static const struct
    "Symboldesign",
    "Vertikale Anordnung der Miniaturbilder",
    "Ja",
+   "HDR-Modus",
    "Shader-Voreinstellungen",
    "Shader-Voreinstellungen",
    "Shader-Voreinstellungen",
+   "Bittiefe der Anzeige",
 #if defined(RARCH_MOBILE)
    "Ansichtsfenster-Ankerpunkt-Ausrichtung X (Hochformat)",
    "Ansichtsfenster-Ankerpunkt-Ausrichtung Y (Hochformat)",
@@ -6643,6 +6962,12 @@ static const struct
    "Von RetroArch verwendete Men\303\274-Assets werden in diesem Verzeichnis gespeichert.",
    "Die ASIO-Treiber-Systemsteuerung \303\266ffnen, um die Ger\303\244te-Routing- und Puffereinstell"
    "ungen zu konfigurieren.",
+   "Welche beiden Ausg\303\244nge des Audioger\303\244ts von RetroArch zur Wiedergabe verwendet werd"
+   "en. Ein ASIO-Ger\303\244t listet seine Ausg\303\244nge in nummerierten Paaren auf; bei einem Ger"
+   "\303\244t mit mehr als zwei Ausg\303\244ngen ist das erste Paar nicht immer dasjenige, an dem di"
+   "e Lautsprecher oder Kopfh\303\266rer angeschlossen sind. Bitte das Paar ausw\303\244hlen, \303"
+   "\274ber das geh\303\266rt wird \342\200\223 so wie vom Ger\303\244t benannt. Ger\303\244te mit z"
+   "wei Ausg\303\244ngen haben nur die Paare 1 und 2.",
    "Das Standard-Audioger\303\244t, welches vom Audiotreiber verwendet wird, \303\274berschreiben. D"
    "ies ist treiberabh\303\244ngig.",
    "Zu verwendender Audiotreiber. (Neustart erforderlich)",
@@ -6650,6 +6975,10 @@ static const struct
    "Alle aktiven Audio-DSP-Plugins deaktivieren.",
    "Audioausgabe aktivieren.",
    "Gleichzeitige Wiedergabe von Audiostreams auch im Men\303\274.",
+   "Schnellvorlauf-Audioverarbeitung auf Cores anwenden, die Audio \303\274ber einen eigenen Callbac"
+   "k wiedergeben. Diese Cores erzeugen Audio in Echtzeit, daher wird die Geschwindigkeit anhand der"
+   " erreichten Bildrate des Videos ermittelt. Bei \342\200\236Aus\342\200\234 bleibt das Audio in E"
+   "chtzeit, wie es bei der stabilen RetroArch-Version stets der Fall war.",
    "Audio automatisch stummschalten, wenn vorgespult wird.",
    "Audio beim schnellen Vorlauf beschleunigen. Verhindert Knackger\303\244usche, ver\303\244ndert a"
    "ber die Tonh\303\266he.",
@@ -6670,9 +6999,22 @@ static const struct
    "16\342\200\234 wird mit dem Hinweis \342\200\236Auf feste Ganzzahl resampeln\342\200\234 kombini"
    "ert, um den ge",
    "samten Audiopfad im Ganzzahlbereich zu halten.",
-   "Maximale Audio-Latenz in Millisekunden. Der Treiber versucht, die tats\303\244chliche Latenz bei"
-   " 50\302\240% dieses Wertes zu halten. Dieser Wert kann nicht eingehalten werden, wenn der Audiot"
-   "reiber die angegebene Latenz nicht liefern kann.",
+   "Bei einem Stereoger\303\244t wird der Mix auf ein virtuelles 5.1-System erweitert und so an beid"
+   "e Ohren wiedergegeben, wie es der Kopf von diesen Lautsprechern h\303\266ren w\303\274rde: das h"
+   "intere Lautsprecherpaar hinter dem H\303\266rer, ein leichter Crossfeed \303\274ber die vorderen"
+   " Lautsprecher. F\303\274r Kopfh\303\266rer; bei Lautsprechern wird der Stereoklang dadurch ledig"
+   "lich eingeengt. Hat keine Auswirkung, wenn das Ger\303\244t mit einem breiteren Layout ge\303"
+   "\266ffnet wird.",
+   "Maximale Audiolatenz in Millisekunden. Der Treiber versucht, die tats\303\244chliche Latenz bei "
+   "50\302\240% dieses Wertes zu halten. Dieser Wert kann nicht eingehalten werden, wenn der Audiotr"
+   "eiber die angegebene Latenz nicht liefern kann.",
+   "Die niedrigste Audiolatenz, die RetroArch von einem Treiber anfordert. Standardm\303\244\303\237"
+   "ig acht Millisekunden \342\200\223 dieser Wert war lange Zeit fest vorgegeben: Fr\303\274her wur"
+   "de den Treibern der Wert Null \303\274bermittelt, was diese jedoch uneinheitlich handhabten. Tre"
+   "iber, die direkt mit dem Ger\303\244t kommunizieren \342\200\223 WASAPI im exklusiven Modus, ASI"
+   "O, WDM-KS \342\200\223 k\303\266nnen oft eine k\303\274rzere Latenz aushandeln; eine Verringerun"
+   "g dieses Werts erm\303\266glicht ihnen dies. Ein Treiber, der die Latenz nicht weiter senken ka",
+   "nn, wird dies nicht tun; er beh\303\244lt in jedem Fall seine eigene Hardware-Untergrenze bei.",
    "Maximale \303\204nderung der Audio-Eingangsrate. Das Erh\303\266hen dieses Wertes erm\303\266gli"
    "cht sehr gro\303\237e \303\204nderungen im Timing (beispielsweise um einen PAL-Core auf einem NT"
    "SC-Bildschirm darzustellen), verursacht jedoch fehlerhafte Tonh\303\266hen.",
@@ -6681,24 +7023,78 @@ static const struct
    "Globale Lautst\303\244rkeanpassung des Audiomixers (in dB). 0 dB ist die normale Lautst\303\244r"
    "ke.",
    "Audio stummschalten.",
+   "Lautsprecherkonfiguration, mit der das Ausgabeger\303\244t angesteuert wird. \342\200\236Stereo"
+   "\342\200\234 ist die Standardkonfiguration, wie es schon immer war. Die breiteren Konfiguratione"
+   "n steuern ein breiteres Ger\303\244t an, sofern der Treiber dies unterst\303\274tzt, und der Ste"
+   "reomix wird im letzten Schritt darauf hochgemischt: die Frontlautsprecher wie sie sind, ein Cent"
+   "er-Kanal aus der Summe, das hintere Paar bei -3 dB, der Bass auf den LFE. \342\200\2365.1\342"
+   "\200\234 platziert das hintere Paar hinten, \342\200\2365.1 Surround\342\200\234 an den Seiten; ",
+   "ein Ger\303\244t, das diese von einer anderen Position aus ansteuert, meldet dies entsprechend u"
+   "nd wird entsprechend behandelt. Treiber, die nicht mehr als Stereo wiedergeben k\303\266nnen, bl"
+   "eiben bei Stereo.",
    "Abtastrate der Audioausgabe.",
    "Audioausgabe-Einstellungen \303\244ndern.",
    "Hilft, Fehler bei der Audio- und Videosynchronisierung auszub\303\274geln. Wenn deaktiviert, ist"
    " eine brauchbare Synchronisation nahezu unm\303\266glich.",
    "Zu verwendender Audio-Resampling-Treiber.",
+   "Einen l\303\244ngeren Sinc-Filter verwenden, wenn die konfigurierte Ausgaberate mindestens doppe"
+   "lt so hoch ist wie die Inhaltsrate. \303\234berschreibt die Resampler-Qualit\303\244t ausschlie"
+   "\303\237lich f\303\274r Sinc. Erh\303\266ht die CPU-Auslastung, den Speicherbedarf und die Filte"
+   "rverz\303\266gerung, insbesondere bei mehreren Kan\303\244len. Verwendet w\303\244hrend der Akti"
+   "vierung Software-Resampling anstelle von Treiber-Resampling. Erfordert eine hohe Ausgaberate; be"
+   "im Schnellvorlauf kann sich das tats\303\244chliche Resampling-Verh\303\244ltnis verrin",
+   "gern.",
    "Diesen Wert verkleinern, f\303\274r bessere Leistung/kleinere Latenz zu Lasten der Audioqualit"
    "\303\244t; erh\303\266hen, f\303\274r bessere Audioqualit\303\244t auf Kosten der Leistung/klein"
    "erer Latenz.",
    "Gesamten Ton im Lautlos-Modus stummschalten.",
    "Audio beim Zur\303\274ckspulen automatisch stumm stellen.",
    "Audioeinstellungen f\303\274r Ein- und Ausgabe \303\244ndern.",
+   "Messen, wie schnell das Audioger\303\244t die Samples tats\303\244chlich im Vergleich zur System"
+   "uhr verarbeitet, und den Resamplers um diesen Wert anpassen. Der Quarz jeder Soundkarte schwankt"
+   " um einige Teile pro Million; bei deaktivierter Synchronisation wird dies durch nichts korrigier"
+   "t, und der Puffer driftet langsam in einen Aussetzer ab, den keine Puffergr\303\266\303\237e abf"
+   "edern kann. Die Korrektur ist winzig und nicht h\303\266rbar. Bei aktivierter Synchronisation fo"
+   "lgt der Core bereits dem Ger\303\244t, und es wird nicht",
+   "s korrigiert. Nur Treiber, die den Messwert \303\274bermitteln, k\303\266nnen daran teilnehmen; "
+   "das Overlay zeigt die Rate als \342\200\236Sink\342\200\234 an.",
    "Audio synchronisieren. Empfohlen.",
    "Audiosynchronisationseinstellungen \303\244ndern.",
+   "Das Resampling, Filtern und Mischen von Audio erfolgt im Audiothread statt innerhalb jedes einze"
+   "lnen Frames. Bei jeder Einstellung der Audiolatenz wird die gleiche Latenz wie beim framesynchro"
+   "nen Pfad erreicht, wobei die Ratensteuerung entsprechend dem ger\303\244teeigenen Takt erfolgt u"
+   "nd der Resampler nicht in das Frame-Budget einflie\303\237t. Audiotreiber, die das Ger\303\244t "
+   "nicht aus dem Ruhezustand wecken k\303\266nnen, behalten den framesynchronen Pfad bei.",
+   "Das Betriebssystem wird angewiesen, den Audiothread vor dem Rest des Frontends zu behandeln, sod"
+   "ass es weniger wahrscheinlich ist, dass ein ausgelasteter Frame das Audioger\303\244t ausbremst."
+   " Die Audiolatenz wird auf Systemen, die dies zulassen, verringert; ein System, das dies ablehnt,"
+   " beh\303\244lt die Standardpriorit\303\244t bei, und es \303\244ndert sich nichts weiter. Dies g"
+   "ilt f\303\274r den Audiothread, auf dem die Threaded Pipeline und die Core-Audio-Callbacks ausge"
+   "f\303\274hrt werden.",
+   "Die Tonh\303\266he bei Zeitlupe und Zeitraffer beibehalten. Unterst\303\274tzt Thread-basierte u"
+   "nd framesynchrone Wiedergabe, einschlie\303\237lich ausgehandeltem Mehrkanal-Audio. Erh\303\266h"
+   "t bei Aktivierung den Rechenaufwand sowie den Speicher- und Pufferbedarf. Erfordert eine Inhalts"
+   "rate von 8000\342\200\223192000\302\240Hz. Nicht unterst\303\274tzte Geschwindigkeiten oder Quel"
+   "lformate verwenden die normale Wiedergabe. Inline-Layout\303\244nderungen setzen den gepufferten"
+   " Ton zur\303\274ck. Bei der Thread-basierten Wiedergabe wird die Tonh\303\266henbei",
+   "behaltung fortgesetzt, sobald der in der Warteschlange befindliche Ton abgearbeitet ist.",
+   "Mildert hohe Frequenzen bei beschleunigter Wiedergabe, mit oder ohne tonh\303\266henkonservieren"
+   "de Geschwindigkeits\303\244nderungen. Unterst\303\274tzt dieselben Inhaltsraten und Quellformate"
+   ". F\303\274gt bei Aktivierung eine Signalverarbeitung und vorbereiteten Speicher hinzu; die Wied"
+   "ergabe mit normaler Geschwindigkeit erfolgt ungefiltert. Dieser optionale Effekt ersetzt nicht d"
+   "en Anti-Aliasing-Filter des Resamplers.",
    "Lautst\303\244rkeanpassung in dB. 0 dB ist die normale Lautst\303\244rke.",
    "Dem WASAPI-Treiber erlauben, die vollst\303\244ndige Kontrolle \303\274ber das Audio-Ger\303\244"
    "t zu \303\274bernehmen. Wenn deaktiviert, wird der gemeinsame Modus verwendet.",
    "Gleitkomma-Format f\303\274r den WASAPI-Treiber verwenden, wenn das Audio-Ger\303\244t dies unte"
    "rst\303\274tzt.",
+   "Den WASAPI-Ger\303\244te-Thread an den Multimedia-Klassenscheduler von Windows \303\274bergeben,"
+   " anstatt dessen Priorit\303\244t direkt zu erh\303\266hen. Dies ist f\303\274r Einstellungen mit"
+   " sehr geringer Audiolatenz vorgesehen; es ist nicht immer die bessere der beiden Optionen, und a"
+   "uf manchen Systemen verschlimmert es den schlechtesten Frame noch weiter, weshalb diese Option d"
+   "eaktiviert ist, sofern keine Messungen vorliegen. Der Treiber meldet beim Herunterfahren des Aud"
+   "ios, wie sp\303\244t er aufgewacht ist und welche Schedu",
+   "ling-Methode dabei verwendet wurde.",
    "Zwischenspeicher-Gr\303\266\303\237e (in Frames), wenn der WASAPI-Treiber im gemeinsamen Modus v"
    "erwendet wird.",
    "Das nichtfl\303\274chtige SaveRAM automatisch in regelm\303\244\303\237igen Abst\303\244nden spe"
@@ -6931,17 +7327,43 @@ static const struct
    "kein Inhalt geladen ist.",
    "Durch diese Optionen bl\303\244ttern, um die horizontalen Einstellungen zur \303\204nderung der "
    "Bildgr\303\266\303\237e anzupassen.",
-   "Nur f\303\274r CRT-Bildschirme. Versucht die exakte Core-/Spielaufl\303\266sung und Bildfrequenz"
-   " zu verwenden.",
+   "Einen Videomodus generieren, der der Aufl\303\266sung und Bildwiederholfrequenz des Inhalts ents"
+   "pricht. 15/31 kHz gelten f\303\274r CRT-Bildschirme; die Optionen \342\200\236An Bildschirm anpa"
+   "ssen\342\200\234 und \342\200\236Nur Bildwiederholfrequenz anpassen\342\200\234 beziehen ihre Gr"
+   "enzwerte ausschlie\303\237lich aus der EDID des Bildschirms.",
    "Zwischen nativer und ultraweiter Superaufl\303\266sung umschalten.",
    "Eine in der Konfigurationsdatei definierte Bildwiederholfrequenz verwenden.",
    "Diese Optionen durchwechseln, falls das Bild nicht richtig auf dem Display zentriert ist.",
+   "Einen EDID-Block, der die ausgew\303\244hlte CRT-Voreinstellung beschreibt, in das Konfiguration"
+   "sverzeichnis schreiben. Wird dieser unter Linux als Firmware-EDID (drm.edid_firmware) oder unter"
+   " Windows als EDID-Override geladen, kann ein Bildschirm ohne DDC seine Synchronisationsgrenzen m"
+   "elden, sodass das System mit einer Bildwiederholfrequenz startet, die der CRT darstellen kann. E"
+   "s wird nichts installiert; das Protokoll gibt an, wo sich die Datei befindet und wie sie zu verw"
+   "enden ist.",
    "Versuche eine dieser Einstellungen, wenn das Bild nicht richtig auf dem Bildschirm zentriert ist"
    ".",
    "Vorherige Suchanfragen ansehen.",
    "Datenbanken ansehen.",
    "Entferne diesen Eintrag aus der Playlist.",
    "Wiedergabeliste vom Dateisystem entfernen.",
+   "Eintr\303\244ge f\303\274r Alle Playlists in der Listenansicht; 0 = unbegrenzt.",
+   "Eintr\303\244ge f\303\274r Alle Playlists in der Listenansicht; 0 = unbegrenzt.",
+   "Zoomstufe der Symbolansicht.",
+   "0 = Wiedergabelisten, 1 = Dateibrowser.",
+   "0 = Systemvorgabe, 1 = dunkel, 2 = benutzerdefiniertes Stylesheet.",
+   "Anzahl der im Speicher gehaltenen Miniaturbilder.",
+   "L\303\244ngste Kante in Pixeln; 0 = unbegrenzt.",
+   "0 = Standard.",
+   "0 = Verpackung, 1 = Screenshot, 2 = Titelbildschirm, 3 = Logo.",
+   "0 = Liste, 1 = Symbole.",
+   "Gespeicherte Fenstergr\303\266\303\237e; wird verwendet, wenn die Option \342\200\236Fenstergeom"
+   "etrie merken\342\200\234 aktiviert ist.",
+   "Gespeicherte Fenstergr\303\266\303\237e; wird verwendet, wenn die Option \342\200\236Fenstergeom"
+   "etrie merken\342\200\234 aktiviert ist.",
+   "Gespeicherte Fensterposition; wird verwendet, wenn die Option \342\200\236Fenstergeometrie merke"
+   "n\342\200\234 aktiviert ist.",
+   "Gespeicherte Fensterposition; wird verwendet, wenn die Option \342\200\236Fenstergeometrie merke"
+   "n\342\200\234 aktiviert ist.",
    "Die Standard-Verzeichnisse f\303\274r diverse Daten \303\244ndern.",
    "Der App Discord erlauben, Daten \303\274ber den gespielten Inhalt anzuzeigen. Nur verf\303\274gb"
    "ar mit dem nativen Desktop-Client.",
@@ -6952,6 +7374,10 @@ static const struct
    "Verwaltung von Disc-Abbildern.",
    "Virtuelles Disc-Fach \303\266ffnen.",
    "Virtuelles Disc-Fach schlie\303\237en.",
+   "Die EDID des verwendeten Bildschirms anzeigen: Identit\303\244t, Funktionen, unterst\303\274tzte"
+   " Timings und Erweiterungsbl\303\266cke.",
+   "Anzeigeserver, Bildschirmausgabe, Anzeigemodus und die physische Gr\303\266\303\237e des verwend"
+   "eten Bildschirms anzeigen.",
    "Cores vom Online-Updater herunterladen und installieren.",
    "Kostenlose Inhalte f\303\274r den ausgew\303\244hlten Core herunterladen.",
    "Zus\303\244tzliche Systemdateien herunterladen, die f\303\274r den korrekten/optimalen Betrieb v"
@@ -7031,6 +7457,12 @@ static const struct
    "er 1 das Men\303\274 steuern.",
    "Analogstickbewegungen unterhalb des Deadzone-Wertes ignorieren.",
    "Die Empfindlichkeit von analogen Sticks anpassen.",
+#ifdef ANDROID
+   "Die Android-Systemtastatur wird anstelle der integrierten Bildschirmtastatur f\303\274r die Eing"
+   "abe von Men\303\274texten verwendet. Erm\303\266glicht das Einf\303\274gen aus der Zwischenablag"
+   "e und die Verwendung von Passwort-Managern. Erfordert einen Touchscreen oder eine Eingabemethode"
+   ", die mit einem Gamepad bedient werden kann.",
+#endif
    "Konfiguriert automatisch Controller mit einem Profil im Plug-and-Play-Stil.",
    "Den 'Spielfokus'-Modus aktivieren, wenn Inhalte gestartet oder fortgesetzt werden. Wenn diese Op"
    "tion auf 'Erkennen' gesetzt ist, wird sie aktiviert, wenn der aktuelle Core \303\274ber die Fron"
@@ -7070,6 +7502,9 @@ static const struct
    "Hotkeys sind an Core-Port 1 gebunden, auch wenn Core-Port 1 einem anderen Benutzer zugewiesen wu"
    "rde. Hinweis: Tastatur-Hotkeys funktionieren nicht, wenn Core-Port 1 einem Benutzer > 1 zugewies"
    "en wurde (Tastatureingaben stammen von Benutzer 1).",
+   "Controller-Eingaben akzeptieren, auch wenn RetroArch nicht das aktive Fenster ist. Wenn deaktivi"
+   "ert, werden Controller ignoriert, solange sie nicht im Fokus sind: Men\303\274, Tastenkombinatio"
+   "nen und der laufende Inhalt reagieren nicht darauf.",
    "Maximale Benutzeranzahl, die von RetroArch unterst\303\274tzt wird. (Neustart erforderlich)",
    "Controller-Tastenkombination, mit der das Men\303\274 aufgerufen wird.",
    "Men\303\274-Steuerungseinstellungen \303\244ndern.",
@@ -7135,8 +7570,16 @@ static const struct
    "Fertigt ein Foto des aktuellen Inhalts an.",
    "H\303\244lt den aktuell ausgew\303\244hlten Shader an/aus, solange die Taste gedr\303\274ckt wir"
    "d.",
-   "L\303\244dt und wendet die n\303\244chste Shader-Preset-Datei im 'Video-Shader'-Verzeichnis an.",
-   "L\303\244dt und wendet die vorherige Shader-Preset-Datei im 'Video-Shader'-Verzeichnis an.",
+   "L\303\244dt und wendet die n\303\244chste Shader-Voreinstellung aus dem Ordner der aktuellen Vor"
+   "einstellung an. Wechselt nach der letzten Voreinstellung zum n\303\244chsten Ordner auf derselbe"
+   "n Ebene. Wenn die Option \342\200\236Zuletzt verwendetes Shader-Verzeichnis merken\342\200\234 d"
+   "eaktiviert ist, werden stattdessen die Voreinstellungen im Stammverzeichnis des Ordners \342\200"
+   "\236Video Shaders\342\200\234 durchgewechselt, sofern dort welche vorhanden sind.",
+   "L\303\244dt und wendet die vorherige Shader-Voreinstellung aus dem Ordner der aktuellen Voreinst"
+   "ellung an. Wechselt vor der ersten Voreinstellung zum vorherigen Ordner auf derselben Ebene. Wen"
+   "n die Option \342\200\236Zuletzt verwendetes Shader-Verzeichnis merken\342\200\234 deaktiviert i"
+   "st, werden stattdessen die Voreinstellungen im Stammverzeichnis des Ordners \342\200\236Video Sh"
+   "aders\342\200\234 durchgewechselt, sofern dort welche vorhanden sind.",
    "Schaltet den aktuell ausgew\303\244hlten Shader ein/aus.",
    "Aktiviert Zeitlupe, solange gedr\303\274ckt. Inhalte laufen mit normaler Geschwindigkeit, wenn T"
    "aste losgelassen wird.",
@@ -7230,6 +7673,12 @@ static const struct
    "Die Gr\303\266\303\237enordnung der haptischen Feedback-Effekte angeben.",
    "Eine automatische Konfigurationsdatei speichern, die automatisch angewendet wird, wenn dieser Co"
    "ntroller erneut erkannt wird.",
+#ifdef HAVE_SDL3
+   "Die Bildschirmtastatur des Ger\303\244ts anstelle der integrierten Bildschirmtastatur zur Eingab"
+   "e von Men\303\274texten verwenden. Gilt nur, wenn das System eine Bildschirmtastatur bereitstell"
+   "t. Erfordert einen Touchscreen oder eine Eingabemethode, die mit einem Gamepad bedient werden ka"
+   "nn.",
+#endif
 #ifdef ANDROID
    "Dieses Ger\303\244t als physische Tastatur und nicht als Gamepad verwenden.",
 #endif
@@ -7360,6 +7809,9 @@ static const struct
    "Zu verwendender Men\303\274treiber. (Neustart erforderlich)",
    "Sch\303\274tzt das Setup, indem alle konfigurationsbezogenen Einstellungen ausgeblendet werden.",
    "Stellt sicher, dass die Bildwiederholrate im Men\303\274 begrenzt wird.",
+   "Festlegen, wann Dateiendungen beim Durchsuchen von Inhalten angezeigt werden sollen. In den Date"
+   "iauswahlfenstern f\303\274r Shader, Overlays, Konfigurationsdateien und andere Einstellungsdatei"
+   "en werden diese immer angezeigt.",
    "Dateibrowsereinstellungen \303\244ndern.",
    "\303\204ndert die Deckkraft des Standardhintergrunds f\303\274r Men\303\274s.",
    "Helligkeit des Men\303\274s in cd/m\302\262 (Nits) bei Nutzung eines HDR-Displays. Nur sichtbar,"
@@ -7458,6 +7910,7 @@ static const struct
    "Die Option \"RetroArch neu starten\" im Hauptmen\303\274 anzeigen.",
    "Zeige die Option 'Beenden'.",
    "Zus\303\244tzliche Informationen zu Men\303\274eintr\303\244gen anzeigen.",
+   "Nur eine Unterbezeichnung f\303\274r den aktuell hervorgehobenen Men\303\274eintrag anzeigen.",
    "\342\200\236Ausf\303\274hren\342\200\234-Men\303\274 beim Starten von Wiedergabelisteneintr\303"
    "\244ge \303\274berspringen. Das D-Pad dr\303\274cken, w\303\244hrend die OK-Taste gehalten wird,"
    " um auf das \342\200\236Ausf\303\274hren\342\200\234-Men\303\274 zuzugreifen.",
@@ -7474,6 +7927,11 @@ static const struct
    "Spielt die Audiospur von animierten WebM-Thumbnails ab, w\303\244hrend sie angezeigt werden. Vor"
    "bis- und Opus-Audio werden unterst\303\274tzt. Das Audio l\303\244uft mit der Animation in Schle"
    "ife und stoppt beim Schlie\303\237en der Miniaturansicht.",
+   "Anzahl der Threads, auf denen ein animiertes Vorschaubild decodiert werden kann. Bei einem Threa"
+   "d erfolgt die gesamte Decodierung in einem eigenen Thread. Bei einer h\303\266heren Anzahl wird "
+   "der Vorgang auf mehrere Kerne verteilt, wodurch eine gro\303\237e Vorschau z\303\274gig wiederge"
+   "geben werden kann. W\303\244hrend ein Kern ausgelastet ist, l\303\244uft die Vorschau weiterhin "
+   "in einem einzigen Thread, sodass dem Spiel die Kerne zur Verf\303\274gung stehen.",
    "Skaliert automatisch Vorschaubilder mit einer Breite/H\303\266he, die kleiner als der angegebene"
    " Wert ist. Verbessert die Bildqualit\303\244t. Bringt moderate Leistungseinbu\303\237en.",
    "Eine fl\303\274ssige Bildlaufanimation verwenden, wenn langer Men\303\274text angezeigt wird. Ha"
@@ -7787,6 +8245,28 @@ static const struct
    "e z.\302\240B. Ruckeln, wenn die Anzahl der spielinternen Verz\303\266gerungsframes \303\274bers"
    "chritten wird.",
    "Privatsph\303\244re-Einstellungen \303\244ndern.",
+   "Die meisten Eintr\303\244ge werden in der Ansicht \342\200\236Alle Wiedergabelisten\342\200\234 "
+   "im Rastermodus angezeigt. Bei 0 werden alle Eintr\303\244ge angezeigt.",
+   "Die meisten Eintr\303\244ge werden in der Ansicht \342\200\236Alle Wiedergabelisten\342\200\234 "
+   "im Listenmodus angezeigt. Bei 0 werden alle Eintr\303\244ge angezeigt.",
+   "Stylesheet-Datei, die verwendet wird, wenn das Design auf \342\200\236Benutzerdefiniert\342\200"
+   "\234 eingestellt ist.",
+   "Farbe zur Hervorhebung der ausgew\303\244hlten Zeile im Format #rrggbb.",
+   "Das Desktop-Men\303\274fenster wieder an der Position und in der Gr\303\266\303\237e angezeigen,"
+   " die es beim letzten Beenden von RetroArch hatte.",
+   "Den Inhaltsbrowser auf der Registerkarte \303\266ffnen, die beim letzten Beenden von RetroArch a"
+   "usgew\303\244hlt war.",
+   "Eine Nachricht anzeigen, wenn eine Inhaltssuche beendet ist.",
+   "Versteckte Dateien und Ordner im Dateibrowser auflisten.",
+   "Wiedergabeliste, die beim \303\226ffnen des Desktop-Men\303\274s angezeigt werden soll. F\303"
+   "\274r die erste Wiedergabeliste bitte leer lassen.",
+   "Wenn ein Core bereits geladen ist, diesen beim Starten des Inhalts zuerst angebieten.",
+   "Farbschema des Desktop-Men\303\274s: Dem System folgen, das integrierte dunkle Farbschema verwen"
+   "den oder ein benutzerdefiniertes Stylesheet laden.",
+   "F\303\274r dekodierte Miniaturansichten reservierter Speicherplatz in Megabyte. Je h\303\266her "
+   "der Wert, desto fl\303\274ssiger lassen sich gro\303\237e Wiedergabelisten scrollen.",
+   "Gr\303\266\303\237ter Rand in Pixeln, um den ein auf eine Miniaturansicht gezogenes Bild vor dem"
+   " Speichern verkleinert wird. Bei 0 bleibt die Originalgr\303\266\303\237e erhalten.",
    "Einstellungen zum \303\234berschreiben der globalen Konfiguration.",
    "Die Option \"Zu Favoriten hinzuf\303\274gen\" anzeigen.",
    "Die Option \342\200\236Zur Wiedergabeliste hinzuf\303\274gen\342\200\234 anzeigen.",
@@ -7933,7 +8413,7 @@ static const struct
    ". Auf 0 setzen, um die Funktion zu deaktivieren.",
    "Vor dem Erstellen eines Savestates wird der Index des Speicherplatzes automatisch erh\303\266ht."
    " Beim Laden von Inhalten wird der h\303\266chste vorhandene Index gew\303\244hlt.",
-   "Lade den zuletzt erstellten Savestate beim Start automatisch.",
+   "Den zuletzt erstellten Savestate beim Start automatisch laden.",
    "Beim Schlie\303\237en des Inhalts automatisch einen Speicherstand erstellen. Dieser Speicherstan"
    "d wird beim Start geladen, wenn \342\200\236Automatisches Laden\342\200\234 aktiviert ist.",
    "Savestates und Replays werden in diesem Verzeichnis gespeichert. Wenn nicht festgelegt, wird ver"
@@ -7948,6 +8428,11 @@ static const struct
    "l von Speicherst\303\244nden aufgezeichnet wird.",
    "Vorschaubilder von Savestates anzeigen.",
    "Aktuelle Konfiguration als benutzerdefinierte Konfigurationsdatei speichern.",
+   "Der Codec, mit dem jede komprimierte Datei geschrieben wird, einschlie\303\237lich Speicherst"
+   "\303\244nden, Spiellisten, Core-Backups und dem Core-Info-Cache. \342\200\236Zstandard\342\200"
+   "\234 wird um ein Vielfaches schneller geladen als \342\200\236Deflate\342\200\234 und speichert "
+   "etwas schneller, allerdings bei etwas gr\303\266\303\237eren Dateien. Mit beiden Codecs geschrie"
+   "bene Dateien werden wieder eingelesen; es \303\244ndern sich nur neue Dateien.",
    "Aktuelle Konfigurationsdatei \303\274berschreiben.",
    "Eine \303\274berschreibende Konfigurationsdatei speichern, die f\303\274r jeden Inhalt gilt, der"
    " aus demselben Verzeichnis wie die aktuelle Datei geladen wird. Hat Vorrang vor der Hauptkonfigu"
@@ -8038,18 +8523,24 @@ static const struct
 #ifdef HAVE_SMBCLIENT
    "Auswahl der in der Umgebung verwendeten Authentifizierung.",
    "Dateien auf der konfigurierten SMB-Freigabe durchsuchen.",
-   "SMB-Netzwerkfreigabe aktivieren. F\303\274r eine zuverl\303\244ssigere Verbindung wird Ethernet "
-   "gegen\303\274ber WLAN dringend empfohlen. Hinweis: Um diese Einstellungen zu \303\244ndern, muss"
-   " RetroArch neu gestartet werden.",
+   "Den SMB-Netzwerkfreigabezugriff aktivieren. F\303\274r eine zuverl\303\244ssigere Verbindung wir"
+   "d Ethernet gegen\303\274ber WLAN dringend empfohlen. Hinweis: Die \303\204nderungen werden beim "
+   "n\303\244chsten Aufrufen einer Freigabe wirksam, und Inhalte, die bereits von einer Freigabe aus"
+   " ausgef\303\274hrt werden, behalten ihre aktuelle Verbindung bei.",
    "Die maximale Anzahl der im Umfeld verwendeten Verbindungen ausw\303\244hlen.",
-   "Passwort f\303\274r die Authentifizierung.",
+   "Passwort f\303\274r die Authentifizierung. Dies ist optional, wenn Gastzugang auf dem Server akt"
+   "iviert ist. Windows 10 und h\303\266her: Gastzugang ist standardm\303\244\303\237ig deaktiviert,"
+   " daher ist hier ein Passwort erforderlich.",
    "Server-IP-Adresse oder Hostname.",
    "SMB-Netzwerkfreigabe-Einstellungen konfigurieren.",
-   "Name der Netzwerkfreigabe, auf die zugegriffen werden soll.",
-   "Unterverzeichnispfad auf der Freigabe.",
+   "Name der Netzwerkfreigabe, auf die zugegriffen werden soll. Leer lassen, um alle vom Server expo"
+   "rtierten Freigaben aufzulisten und beim Durchsuchen eine auszuw\303\244hlen.",
+   "Unterverzeichnispfad auf der Freigabe. Optional.",
    "Die Standardzeit\303\274berschreitung in Sekunden ausw\303\244hlen.",
-   "Benutzername f\303\274r die Authentifizierung.",
-   "Arbeitsgruppen- oder Dom\303\244nenname.",
+   "Benutzername f\303\274r die Authentifizierung. Dies ist optional, wenn Gastzugang auf dem Server"
+   " aktiviert ist. Windows 10 und h\303\266her: Gastzugang ist standardm\303\244\303\237ig deaktivi"
+   "ert, daher ist hier ein Benutzername erforderlich.",
+   "Arbeitsgruppe oder Dom\303\244nenname. Optional in einigen Setups.",
 #endif
    "Speicherdaten in Ordnern sichern, die nach dem Verzeichnis benannt sind, in dem sich der ausgef"
    "\303\274hrte Inhalt befindet.",
@@ -8064,6 +8555,7 @@ static const struct
 #endif
    "Core ohne Inhalt starten.",
    "Den aktuell gew\303\244hlten Speicherplatz \303\244ndern.",
+   "Die Statistiken nicht anzeigen, w\303\244hrend das Men\303\274 ge\303\266ffnet ist.",
    "Technische Statistiken auf dem Bildschirm anzeigen.",
    "stdin Befehlsschnittstelle.",
 #ifdef HAVE_MIST
@@ -8108,6 +8600,8 @@ static const struct
    "Zeitzone w\303\244hlen, um Datum und Zeit an Ihren Standort anzupassen.",
 #endif
    "Die aktuelle Uhrzeit im bevorzugten Format anzeigen.",
+   "Treiber f\303\274r die Desktop-Begleiter-UI, der verwendet wird, wenn das Desktop-Men\303\274 ak"
+   "tiviert ist. (Neustart erforderlich)",
    "Fenstermen\303\274leiste anzeigen.",
    "Wenn ein Savestate geladen wurde, wird der Inhalt zum Zustand vor dem Laden des Savestates zur"
    "\303\274ckgesetzt.",
@@ -8203,11 +8697,26 @@ static const struct
    "r Windows Videoprobleme mit sRGB FBOs. Mit dieser Einstellung kann dies umgangen werden.",
    "Reduziert die Latenzzeit auf Kosten eines h\303\266heren Risikos von Videostottern.",
    "Effektive \"Bildverz\303\266gerung\" dynamisch anpassen.",
+   "\342\200\236Gesch\303\244tzte Bildwiederholfrequenz\342\200\234 wird aus dem Bericht des Display"
+   "s selbst abgelesen, der angibt, wann die einzelnen Frames das Display erreicht haben, anstatt di"
+   "e Frame-Schleife des Frontends zu messen. Es \303\244ndert sich lediglich die Anzeige: Sie wird "
+   "nicht mehr durch die Bildrate des Cores und das Timing-Rauschen der Schleife verzerrt. Dies hat "
+   "keinen Einfluss darauf, wie Frames getaktet oder dargestellt werden. Gilt nur, wenn der Grafiktr"
+   "eiber diesen Wert melden kann; andernfalls wird di",
+   "e Frame-Schleife zeitlich gesteuert.",
    "Die Erfassung f\303\274r \342\200\236Gesch\303\244tzte Bildwiederholrate\342\200\234 sollte auf "
    "Bilder beschr\303\244nkt werden, bei denen der Inhalt reibungslos wiedergegeben wird (kein Men"
    "\303\274, keine Pause, kein Schnellvorlauf, Bilddauer innerhalb eines akzeptablen Bereichs). Die"
    " Diagnoseanzeige wird so zu einem realen Signal, allerdings auf Kosten einer langsameren Konverg"
    "enz nach dem Laden des Inhalts.",
+   "Es ist schwer, den Treiber um den exklusiven Vollbildmodus zu ersuchen, wenn der \342\200\236Win"
+   "dowed Fullscreen Mode\342\200\234 deaktiviert ist. Die Option \342\200\236Locker\342\200\234 l"
+   "\303\244sst dies lediglich zu, doch der Treiber kann es ablehnen; beim Vulkan-Treiber ist dies e"
+   "in Hinweis, den der Treiber bekannterma\303\237en ignoriert, wodurch die Swapchain auf dem \342"
+   "\200\236Independent-Flip\342\200\234-Pfad des Compositors verbleibt. Die Option \342\200\236Erzw"
+   "ungen\342\200\234 aktiviert den exklusiven Modus explizit und h\303\244lt ihn aufrecht. Erforder"
+   "t VK_EXT_full_scr",
+   "een_exclusive.",
    "Anzeige im Vollbild. L\303\244sst sich w\303\244hrend der Laufzeit \303\244ndern. Kann \303\274b"
    "er einen Kommandozeilenschalter \303\274bersteuert werden.",
    "Die Vollbildeinstellungen \303\244ndern.",
@@ -8215,6 +8724,12 @@ static const struct
    " die Desktop-Aufl\303\266sung verwendet.",
    "Benutzerdefinierte Bildh\303\266he f\303\274r den Vollbildmodus. Wird dieser Wert nicht gesetzt,"
    " wird die Desktop-Aufl\303\266sung verwendet.",
+   "Shader als SPIR-V an den Grafiktreiber \303\274bergeben, anstatt sie zun\303\244chst in GLSL zu "
+   "kompilieren, was die Ladezeiten von Shader-Voreinstellungen verk\303\274rzen kann. Dies ist ledi"
+   "glich ein Hinweis: Es ist die Treibererweiterung \342\200\236GL_ARB_gl_spirv\342\200\234 erforde"
+   "rlich, und alle Shader oder Treiber, die diese nicht nutzen k\303\266nnen, greifen automatisch a"
+   "uf die Kreuzkompilierung zur\303\274ck. Die \303\204nderung wird beim n\303\244chsten Laden eine"
+   "r Shader-Voreinstellung wirksam.",
    "Zu verwendende Grafikkarte ausw\303\244hlen.",
    "Bildmaterial nach Shaderdurchl\303\244ufen aufnehmen, sofern verf\303\274gbar.",
    "Screenshots erfassen GPU-schattiertes Material, falls verf\303\274gbar.",
@@ -8244,10 +8759,19 @@ static const struct
    "chirms abdunkelt und HDR einen Teil der verlorenen Helligkeit wiederherstellt. F\303\274r eine d"
    "etailliertere Steuerung der Scanlines k\303\266nnen die von RetroArch bereitgestellten benutzerd"
    "efinierten Shader verwendet werden.",
+   "Einem Wayland-Compositor \303\274ber den Helligkeitsbereich des Bildes informieren, damit er HDR"
+   "-Inhalte anhand der tats\303\244chlichen Bilddaten und nicht anhand von Annahmen abbildet. Ist d"
+   "iese Option deaktiviert, wird das Bild wie bisher als Windows-scRGB beschrieben. Die \303\204nde"
+   "rung wird beim Neustart des Grafiktreibers wirksam.",
    "Die Hochkontrastbildeinstellungen \303\244ndern.",
    "Subpixel-Layout des Bildschirms ausw\303\244hlen. Dies wirkt sich nur auf Scanlines aus. Falls d"
    "as \342\200\236Subpixel-Layout\342\200\234 des Bildschirms nicht bekannt ist, k\303\266nnen ents"
    "prechende Informationen auf Rtings.com gefunden werden",
+   "Die vom Display gemeldete Spitzenhelligkeit sollte anstelle der Einstellung \342\200\236Spitzenh"
+   "elligkeit\342\200\234 verwendet werden, sofern das Display einen Wert meldet: Dies ist der Wert,"
+   " der den Cores mitgeteilt wird und der in den an das Display gesendeten HDR-Metadaten enthalten "
+   "ist. Ist diese Option deaktiviert, wird die Einstellung \342\200\236Spitzenhelligkeit\342\200"
+   "\234 wie festgelegt verwendet.",
    "Video-Layouts werden in diesem Verzeichnis gespeichert.",
    "Zwingt den Videotreiber dazu, einen bestimmten Framebuffer zu verwenden.",
    "Zwingt den Videotreiber dazu, einen bestimmten Framebuffer zu verwenden.",
@@ -8275,9 +8799,13 @@ static const struct
    "hen.",
    "Video aufnehmen, nachdem Filter (aber keine Shader) angewendet wurden. Das Video wird genauso gu"
    "t aussehen, wie das, was Du auf dem Bildschirm siehst.",
-   "Vertikale Bildwiederholfrequenz des Bildschirms. Wird zur Berechnung einer geeigneten Audioabtas"
-   "trate verwendet. Dieser Wert wird ignoriert, wenn \342\200\236Video in separatem Thread\342\200"
-   "\234 aktiviert ist.",
+   "Zeit wiederholte Frames ab dem Zeitpunkt, zu dem das Display meldet, dass ein Frame tats\303\244"
+   "chlich bei ihm angekommen ist, und nicht ab der eigenen Uhr des Frontends. Gilt, sofern der Graf"
+   "iktreiber dies melden kann; ansonsten wird \303\274berall die Uhr verwendet, ebenso wie immer da"
+   "nn, wenn die Meldung veraltet ist. Diese Option deaktivieren, um stets die Uhr zu verwenden.",
+   "Vertikale Bildwiederholfrequenz des Bildschirms. Wird zur Berechnung einer geeigneten Audio-Eing"
+   "angsrate verwendet und dient als Anzeigedauer f\303\274r \342\200\236Threaded Video\342\200\234,"
+   " wenn der Treiber keine solche melden kann.",
    "Die gesch\303\244tzte Bildwiederholfrequenz des Bildschirms in Hz.",
    "Vom Displaytreiber angegebene Bildwiederholfrequenz.",
 #ifdef HAVE_ODROIDGO2
@@ -8294,12 +8822,16 @@ static const struct
    "ich auf eine nicht ganzzahlige Skalierung zur\303\274ck, wenn die Unterskalierungsr\303\244nder "
    "zu gro\303\237 sind.",
    "Videoskalierungseinstellungen \303\244ndern.",
-   "Die Videodarstellung wird mit der Scanline-Position synchronisiert. Dies verringert die Latenz, "
-   "erh\303\266ht jedoch das Risiko von Tearing. VSync muss deaktiviert sein.",
    "WARNUNG: Schnelles Flackern kann auf manchen Bildschirmen zu einem Nachleuchten des Bildes f\303"
    "\274hren. Verwendung auf eigene Gefahr // Simuliert eine einfache rollende Scanline \303\274ber "
    "mehrere Unterbilder, indem der Bildschirm vertikal aufgeteilt wird und jeder Teil des Bildschirm"
    "s entsprechend der Anzahl der Unterbilder dargestellt wird.",
+   "Damit das SDL-Fenster zwischen den aufgef\303\274hrten Anzeigemodi wechselt. Bei der Einstellung"
+   " \342\200\236Automatisch\342\200\234 wird diese Option nur verwendet, wenn der native Anzeigeser"
+   "ver nicht zwischen den Modi wechseln kann. Die Einstellung \342\200\236Immer\342\200\234 \303"
+   "\274berschreibt den nativen Server: CRT SwitchRes w\303\244hlt dann aus den aufgef\303\274hrten "
+   "Modi aus, einschlie\303\237lich solcher ohne bekannte Timings \342\200\223 benutzerdefinierte CR"
+   "T-Timings stehen nicht zur Verf\303\274gung.",
    "Videoausgabe-Einstellungen \303\244ndern.",
    "Video-Shader-Pipeline aktivieren.",
    "Das automatische Laden von Shadern verz\303\266gern (in ms). Kann grafische Fehler beim Verwende"
@@ -8331,8 +8863,10 @@ static const struct
    " speichern.",
    "Eine Shader-Voreinstellung speichern, die nur die von Dir vorgenommenen Parameter\303\244nderung"
    "en und einen Link zur urspr\303\274nglichen Voreinstellung enth\303\244lt.",
-   "Dateibrowser beim Laden von Shader-Voreinstellungen im zuletzt verwendeten Verzeichnis \303\266f"
-   "fnen.",
+   "Den Dateibrowser beim Laden von Shader-Voreinstellungen und -Durchl\303\244ufe im zuletzt verwen"
+   "deten Verzeichnis \303\266ffnen. Die Tastenkombinationen N\303\244chster/Vorheriger Shader start"
+   "en von der aktuellen Voreinstellung aus weiter, anstatt innerhalb des Stammverzeichnisses \342"
+   "\200\236Video-Shaders\342\200\234 durchzuwechseln.",
    "WARNUNG: Schnelles Flackern kann auf manchen Bildschirmen zu einem Nachleuchten des Bildes f\303"
    "\274hren. Verwendung auf eigene Gefahr // Simuliert eine einfache rollende Scanline \303\274ber "
    "mehrere Unterbilder, indem der Bildschirm vertikal aufgeteilt wird und jeder Teil des Bildschirm"
@@ -8342,19 +8876,37 @@ static const struct
    "Dem Bild eine leichte Unsch\303\244rfe hinzuf\303\274gen, um harte Pixelkanten zu gl\303\244tten"
    ". Diese Option hat nur sehr geringe Auswirkungen auf die Leistung. Sollte bei Verwendung von Sha"
    "dern deaktiviert werden.",
-   "Bittiefe f\303\274r die endg\303\274ltige Ausgabe von Oberfl\303\244che bei deaktiviertem HDR. 1"
-   "0-Bit beseitigt Streifenbildung, verursacht durch Shader, die das Bild stark abdunkeln, wie beis"
-   "pielsweise CRT-Beam-Profile und Schlitzmasken. Es wird auf 8-Bit zur\303\274ckgegriffen, wenn da"
-   "s Display oder der Compositor diese Option nicht unterst\303\274tzt. Wird ignoriert, solange HDR"
-   " aktiviert ist, da in diesem Fall ein eigenes Format ausgew\303\244hlt wird.",
+   "Bittiefe der finalen Oberfl\303\244che bei deaktiviertem HDR. 10-Bit beseitigt Streifenbildung, "
+   "verursacht durch Shader, die das Bild stark abdunkeln, wie beispielsweise CRT-Beam-Profile und S"
+   "chlitzmasken. Es wird auf 8-Bit zur\303\274ckgegriffen, wenn das Display oder der Compositor die"
+   "se Option nicht unterst\303\274tzt. Wird ignoriert, solange HDR aktiviert ist, da in diesem Fall"
+   " ein eigenes Format ausgew\303\244hlt wird.",
    "Benutzerdefinierte Swap-Intervalle f\303\274r VSync verwenden. Reduziert effektiv die Bildwieder"
    "holfrequenz des Monitors um den angegebenen Faktor. \"Automatisch\" legt den Faktor auf Basis de"
    "r vom Kern gemeldeten Bildwiederholfrequenz fest und sorgt f\303\274r besseres Frame Pacing, wen"
    "n z.\302\240B. Inhalte mit 30 FPS auf einem 60-Hz-Bildschirm oder 60 FPS auf einem 120-Hz-Bildsc"
    "hirm ausgef\303\274hrt werden.",
    "Videosynchronisationseinstellungen \303\244ndern.",
-   "Verbessert die Leistung auf Kosten der Latenz und erh\303\266htem Stottern vom Video. Nur verwen"
-   "den, wenn sonst keine volle Geschwindigkeit erreicht werden kann.",
+   "Den Core und den Grafiktreiber in separaten Threads ausf\303\274hren, damit die Anzeige ihren Ta"
+   "kt beibeh\303\244lt, wenn der Core ruckelt und sich der Core mit der Shader-Kette und der Darste"
+   "llung \303\274berschneidet. Bei \342\200\236Threaded-Video-Anzeigetaktung\342\200\234 startet de"
+   "r Kern so sp\303\244t, wie es die n\303\244chste Bildwiederholrate zul\303\244sst, entsprechend "
+   "der Latenz von \342\200\236Bildverz\303\266gerung\342\200\234. Cores, die auf der GPU rendern, l"
+   "aufen mit den Vulkan-, Direct3D 11-, Direct3D 12- und gl-Treibern im Thread-Modus; mit anderen T"
+   "re",
+   "ibern laufen sie unabh\303\244ngig von dieser Einstellung im Nicht-Thread-Modus.",
+   "Bei \342\200\236Threaded Video\342\200\234 wird jeder Core-Frame so sp\303\244t wie m\303\266gli"
+   "ch gestartet, wie es die n\303\244chste Bildschirmaktualisierung zul\303\244sst \342\200\223 bas"
+   "ierend auf den gemessenen Core- und Renderzeiten \342\200\223, anstatt nach einem festen Timer. "
+   "Dadurch wird die Latenz auf das Niveau gesenkt, das \342\200\236Bildverz\303\266gerung\342\200"
+   "\234 bei \342\200\236Unthreaded Video\342\200\234 erreicht, und ein Frame, der zu lange dauert, "
+   "wird wiederholt, anstatt ausgelassen zu werden. Aus: Der Timer bestimmt das Tempo wie bisher.",
+   "Mit \342\200\236Threaded Video\342\200\234 wird weiterhin das letzte Bild mit der Bildwiederholf"
+   "requenz des Displays dargestellt, w\303\244hrend der Core hinterherhinkt, anstatt das vorherige "
+   "Bild auf dem Bildschirm stehen zu lassen. Dies sorgt daf\303\274r, dass die Einblendung schwarze"
+   "r Bilder und Shader-Effekte zur Bildwiederholfrequenz auch bei Rucklern des Cores stabil bleiben"
+   ". Dies gilt, wenn der Grafiktreiber ein Bild wiederholen kann; bei Shader-Teilbildern wird dies "
+   "nicht angewendet.",
    "Versuchen, die Leistung durch Verwendung von Metallargumentpuffer zu verbessern. Einige Cores k"
    "\303\266nnen dies erfordern. Dies kann einige Shader st\303\266ren, insbesondere bei alten Hardw"
    "are- oder Betriebssystemversionen.",
@@ -8450,6 +9002,8 @@ static const struct
    "\303\204nderungen an Cheats werden \303\274bernommen.",
    "Patch angewandt: %s",
    "Shader anwenden",
+   "ASIO ist noch nicht der aktive Audiotreiber. Bitte RetroArch neu starten, um sein Kontrollpanel "
+   "zu \303\266ffnen.",
    "Globale Lautst\303\244rke des Audio-Mixers",
    "Audio aus.",
    "Audio an.",
@@ -8493,6 +9047,7 @@ static const struct
    "Suche wurde nicht initialisiert/gestartet.",
    "\303\234berpr\303\274fe Core: ",
    "Alle %d Errungenschaften f\303\274r diese Sitzung aktiviert",
+   "L\303\244ssig",
    "RetroAchievements Medienwechsel fehlgeschlagen: %s",
    "%s vervollst\303\244ndigt",
    "Dieses Spiel hat keine Errungenschaften.",
@@ -8586,6 +9141,8 @@ static const struct
    "CRC32-Pr\303\274fsumme des Inhalts und die gespeicherte Pr\303\274fsumme der Replay-Datei stimme"
    "n nicht \303\274berein. Wird die Aufzeichnung wiedergegeben, wird sie sehr wahrscheinlich asynch"
    "ron.",
+   "Es konnte keine EDID f\303\274r die ausgew\303\244hlte CRT-Voreinstellung geschrieben werden.",
+   "EDID wurde in %s geschrieben. Informationen zum Laden finden sich im Protokoll.",
    "Benutzerdefiniertes Timing gefunden",
    "Dekompression l\303\244uft bereits.",
    "Dekompression fehlgeschlagen.",
@@ -9008,12 +9565,12 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (191639u
+      (sizeof(msg_hash_de_blob) == (210947u
 #ifdef ANDROID
        + 358u
 #endif
 #ifdef HAVE_MICROPHONE
-       + 107u
+       + 103u
 #endif
 #ifdef HAVE_LAKKA
        + 217u
@@ -9058,11 +9615,17 @@ typedef char msg_hash_de_blob_check[
        + 18u
        + 27u
 #endif
+#ifdef ANDROID
+       + 25u
+#endif
 #ifdef GEKKO
        + 11u
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 53u
+#endif
+#ifdef HAVE_SDL3
+       + 25u
 #endif
 #ifdef ANDROID
        + 30u
@@ -9092,9 +9655,7 @@ typedef char msg_hash_de_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
        + 21u
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -9145,7 +9706,7 @@ typedef char msg_hash_de_blob_check[
        + 26u
        + 17u
        + 13u
-       + 32u
+       + 21u
        + 24u
        + 17u
        + 18u
@@ -9253,6 +9814,9 @@ typedef char msg_hash_de_blob_check[
        + 26u
        + 27u
 #endif
+#ifdef ANDROID
+       + 309u
+#endif
 #ifdef GEKKO
        + 62u
 #endif
@@ -9261,6 +9825,9 @@ typedef char msg_hash_de_blob_check[
 #endif
 #if defined(ANDROID)
        + 165u
+#endif
+#ifdef HAVE_SDL3
+       + 280u
 #endif
 #ifdef ANDROID
        + 70u
@@ -9332,16 +9899,16 @@ typedef char msg_hash_de_blob_check[
        + 41u
        + 59u
        + 57u
-       + 201u
+       + 318u
        + 71u
-       + 37u
+       + 211u
        + 33u
        + 50u
-       + 60u
-       + 39u
+       + 167u
+       + 49u
        + 56u
-       + 41u
-       + 35u
+       + 219u
+       + 61u
 #endif
 #ifdef HAVE_LAKKA
        + 45u
@@ -9428,6 +9995,7 @@ typedef char msg_hash_de_blob_check[
 
 static const uint32_t msg_hash_de_ids[] =
 {
+   (uint32_t)MENU_ENUM_LABEL_AI_SERVICE_BACKEND,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_2,
@@ -9451,6 +10019,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
@@ -9663,35 +10233,42 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_OUTPUT_CHANNEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_CALLBACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION_FLOAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_HEADPHONE_VIRTUAL_SURROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY_FLOOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
@@ -9699,9 +10276,13 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREAD_PRIORITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_TIME_STRETCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_TIME_STRETCH_LOWPASS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_MMCSS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
@@ -9990,6 +10571,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_WRITE_EDID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
 #ifdef _3DS
    (uint32_t)MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400X240,
@@ -10000,7 +10582,26 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ALL_PLAYLISTS_LIST_MAX_COUNT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ICON_VIEW_ZOOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_LAST_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SAVE_GEOMETRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SAVE_LAST_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SCAN_FINISH_CONFIRM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SHOW_WELCOME_SCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SUGGEST_LOADED_CORE_FIRST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THUMBNAIL_CACHE_LIMIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THUMBNAIL_MAX_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THUMBNAIL_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THUMBNAIL_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_VIEW_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_WINDOW_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_WINDOW_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
@@ -10017,11 +10618,55 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_GENUINE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_RELEASE_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_SERIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACKS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_DATA_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_SIZE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_BAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHROMATICITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_COLORIMETRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_FLAGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_HDR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_VIDEO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DETAILED_TIMING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DID_SECTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_ESTABLISHED_TIMINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_EXTENSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_FEATURES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_GAMUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_INPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_MANUFACTURER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PREFERRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PRODUCT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RANGE_LIMITS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SCREEN_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SERIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SOURCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_STANDARD_TIMINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TRUNCATED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_RESOLUTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -10139,6 +10784,9 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
@@ -10170,6 +10818,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_BACKGROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
@@ -10186,6 +10835,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
@@ -10318,6 +10968,9 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
+#ifdef HAVE_SDL3
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SDL3_SYSTEM_KEYBOARD,
+#endif
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif
@@ -10468,6 +11121,10 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_DUPLICATES_ONLY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
@@ -10538,6 +11195,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
@@ -10548,6 +11206,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
@@ -10573,9 +11232,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -10672,6 +11329,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
@@ -10721,6 +11379,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_DISK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_EXTENSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
@@ -10929,7 +11588,6 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW,
@@ -11196,6 +11854,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_COMPRESSION_CODEC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -11291,6 +11950,9 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SEC_KRB_OR_NTLM,
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
@@ -11313,6 +11975,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATE_SLOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
 #ifdef HAVE_MIST
@@ -11330,7 +11993,9 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_LOAD_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_START_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
@@ -11372,6 +12037,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
@@ -11431,6 +12097,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
@@ -11517,12 +12184,17 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_NEGOTIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
@@ -11535,7 +12207,9 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SEND_LUMINANCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_USE_DISPLAY_PEAK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -11558,6 +12232,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_PRESENT_TIMING_FROM_DISPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
@@ -11591,6 +12266,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
@@ -11623,10 +12299,13 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_10,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_8,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
 #if defined(RARCH_MOBILE)
@@ -11659,6 +12338,9 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_CLIENT_BUFFER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_DEVICE_PERIOD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
@@ -11677,6 +12359,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_CONSOLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_HANDHELD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN,
@@ -11703,9 +12387,11 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YES,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
@@ -11746,36 +12432,48 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_OUTPUT_CHANNEL,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_CALLBACK,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_HEADPHONE_VIRTUAL_SURROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY_FLOOR,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_MMCSS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
@@ -11950,11 +12648,26 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_WRITE_EDID,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    (uint32_t)MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
    (uint32_t)MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
    (uint32_t)MENU_ENUM_SUBLABEL_DELETE_ENTRY,
    (uint32_t)MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_ICON_VIEW_ZOOM,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_LAST_TAB,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THUMBNAIL_CACHE_LIMIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THUMBNAIL_MAX_SIZE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THUMBNAIL_QUALITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THUMBNAIL_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_VIEW_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_WINDOW_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_WINDOW_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
    (uint32_t)MENU_ENUM_SUBLABEL_DISC_INFORMATION,
@@ -11963,6 +12676,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISPLAY_EDID_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISPLAY_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
@@ -12020,6 +12735,9 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
@@ -12043,6 +12761,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_JOYPAD_BACKGROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
@@ -12153,6 +12872,9 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
+#ifdef HAVE_SDL3
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SDL3_SYSTEM_KEYBOARD,
+#endif
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif
@@ -12243,6 +12965,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
@@ -12305,12 +13028,14 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
@@ -12508,6 +13233,19 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_CUSTOM_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SCAN_FINISH_CONFIRM,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
@@ -12618,6 +13356,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_COMPRESSION_CODEC,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -12705,6 +13444,7 @@ static const uint32_t msg_hash_de_ids[] =
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_START_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_STATE_SLOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
 #ifdef HAVE_MIST
@@ -12744,6 +13484,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_TIMEZONE,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_TIME_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_UI_COMPANION_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
@@ -12803,11 +13544,14 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FSE_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
@@ -12818,8 +13562,10 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SEND_LUMINANCE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_USE_DISPLAY_PEAK,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -12838,6 +13584,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
@@ -12849,8 +13596,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
@@ -12882,6 +13629,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -12951,6 +13700,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MSG_APPLYING_CHEAT,
    (uint32_t)MSG_APPLYING_PATCH,
    (uint32_t)MSG_APPLYING_SHADER,
+   (uint32_t)MSG_AUDIO_ASIO_NOT_RUNNING,
    (uint32_t)MSG_AUDIO_MIXER_VOLUME,
    (uint32_t)MSG_AUDIO_MUTED,
    (uint32_t)MSG_AUDIO_UNMUTED,
@@ -12994,6 +13744,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MSG_CHEAT_SEARCH_NOT_INITIALIZED,
    (uint32_t)MSG_CHECKING_CORE,
    (uint32_t)MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   (uint32_t)MSG_CHEEVOS_CASUAL_MODE,
    (uint32_t)MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
    (uint32_t)MSG_CHEEVOS_COMPLETED_GAME,
    (uint32_t)MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
@@ -13075,6 +13826,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MSG_COULD_NOT_READ_MOVIE_HEADER,
    (uint32_t)MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
    (uint32_t)MSG_CRC32_CHECKSUM_MISMATCH,
+   (uint32_t)MSG_CRT_SWITCH_EDID_FAILED,
+   (uint32_t)MSG_CRT_SWITCH_EDID_WRITTEN,
    (uint32_t)MSG_CUSTOM_TIMING_GIVEN,
    (uint32_t)MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
    (uint32_t)MSG_DECOMPRESSION_FAILED,

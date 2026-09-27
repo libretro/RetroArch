@@ -575,10 +575,10 @@ static void test_init_failure_cleanup(void)
       printf("[FAIL] archive init failure did not clean up immediately\n");
       failures++;
    }
-#ifdef HAVE_MMAP
-   if (state.archive_mmap_data || state.archive_mmap_fd != 0)
+#ifdef VFS_HAVE_FILE_MAPPING
+   if (state.archive_mmap_data)
    {
-      printf("[FAIL] archive init failure retained mmap ownership\n");
+      printf("[FAIL] archive init failure retained the mapping\n");
       failures++;
    }
 #endif
@@ -607,6 +607,95 @@ static void test_init_failure_cleanup(void)
       printf("[SUCCESS] archive init failure cleaned up immediately\n");
 }
 
+/* file_archive_get_file_crc32_and_size() used to loop with no way out.
+ * Its iterate call is guarded on the transfer still being in ITERATE,
+ * but nothing broke once it left that state, and the name tests then
+ * re-read a current_file_path that could no longer change - so asking
+ * for a member the archive does not hold spun at full CPU forever.
+ *
+ * An archive that fails to open produces an empty walk and lands in
+ * exactly the same place, which is how it was found: a directory of
+ * 7z files stopped a scan dead rather than being skipped.
+ *
+ * A regression here does not fail this test so much as hang it. That
+ * is deliberate - there is no portable way to bound the call from
+ * inside - and a stuck test is a visible failure either way. */
+static void test_missing_member_terminates(void)
+{
+   const char *tmp_path = "rarch_zip_regression_test.zip";
+   uint8_t     buf[512];
+   size_t      len = 0;
+   char        member[256];
+   uint64_t    size = 12345;
+   uint32_t    crc;
+
+   /* One stored entry named "present.bin", built the same way as the
+    * cases above. */
+   len += write_minimal_lfh(buf + len, "present.bin");
+   len += write_eocd(buf + len, 1, 0, (uint32_t)len);
+
+   write_file(tmp_path, buf, len);
+
+   snprintf(member, sizeof(member), "%s#absent.bin", tmp_path);
+   crc = file_archive_get_file_crc32_and_size(member, &size);
+   remove(tmp_path);
+
+   if (crc != 0 || size != 0)
+   {
+      printf("FAIL  missing member reported crc=%08X size=%llu, "
+             "expected nothing\n", crc, (unsigned long long)size);
+      failures++;
+   }
+   else
+      printf("ok    missing member returns nothing rather than hanging\n");
+}
+
+/* path_get_archive_delim() recognises every archive extension the tree
+ * knows, but a backend exists only for the codecs compiled in.  This
+ * build carries HAVE_COMPRESSION alone, so '.7z' and '.zst' members
+ * reach file_archive_compressed_read() with no backend behind them and
+ * must be reported as read failures. */
+static void test_missing_backend_reports_failure(void)
+{
+   static const char *cases[] = { "backendless.7z", "backendless.zst" };
+   char tmp_path[1024];
+   char member[1088];
+   uint8_t buf[512];
+   size_t len;
+   size_t i;
+
+   for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+   {
+      void *read_buf  = NULL;
+      int64_t read_len = -1;
+      int ret;
+
+      /* Contents are irrelevant: the lookup fails before any read. */
+      len = 0;
+      len += write_minimal_lfh(buf + len, "member.bin");
+      len += write_eocd(buf + len, 1, 0, (uint32_t)len);
+
+      snprintf(tmp_path, sizeof(tmp_path), "%s", cases[i]);
+      write_file(tmp_path, buf, len);
+
+      snprintf(member, sizeof(member), "%s#member.bin", tmp_path);
+      ret = file_archive_compressed_read(member, &read_buf, NULL, &read_len);
+      remove(tmp_path);
+      free(read_buf);
+
+      if (ret != 0 || read_len != 0)
+      {
+         printf("FAIL  \"%s\" without a backend returned ret=%d len=%lld, "
+                "expected a clean failure\n", cases[i], ret,
+                (long long)read_len);
+         failures++;
+      }
+      else
+         printf("ok    \"%s\" without a backend fails instead of "
+                "dereferencing NULL\n", cases[i]);
+   }
+}
+
 int main(void)
 {
    test_truncated_entry();
@@ -616,6 +705,8 @@ int main(void)
    test_directory_size_overflow();
    test_appledouble_exact_member_selection();
    test_init_failure_cleanup();
+   test_missing_member_terminates();
+   test_missing_backend_reports_failure();
 
    if (failures)
    {

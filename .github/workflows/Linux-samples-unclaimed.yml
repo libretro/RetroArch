@@ -1,0 +1,101 @@
+name: CI Linux samples [nothing else runs these]
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  samples-unclaimed:
+    name: Samples no other job runs
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: |
+          pkgs="build-essential"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y -o Acquire::Retries=3 \
+            -o Acquire::http::Timeout=30 $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Run them
+        shell: bash
+        run: |
+          set -eu
+          # A sample that builds and runs, and that no workflow names,
+          # is a test nobody runs: font_lifecycle sat that way while
+          # its expectation drifted away from the font driver it was
+          # written against. This job takes whatever is left over -
+          # the list is computed, so a new sample joins it by existing
+          # rather than by being remembered.
+          #
+          # Samples that need a library the runner does not carry
+          # (SDL, FFmpeg, libusb) are skipped: their own workflows
+          # install what they need. A sample cross-built with mingw-w64
+          # and run under Wine gets both installed here, the first time
+          # one turns up, so it runs rather than fails for want of a
+          # compiler.
+          fails=0
+          wine_ready=0
+          for mk in $(find samples libretro-common/samples -name Makefile | sort); do
+             dir=$(dirname "$mk")
+             name=$(basename "$dir")
+             (cd "$dir" && make -n check >/dev/null 2>&1) || continue
+             if grep -rqlF "$name" .github/workflows/ 2>/dev/null; then
+                continue
+             fi
+             if grep -qiE 'sdl|ffmpeg|libav|libusb' "$mk"; then
+                echo "-- skip $dir (needs a library this job does not install)"
+                continue
+             fi
+             if [ $wine_ready -eq 0 ] && grep -qE 'mingw32-|wine' "$mk"; then
+                sudo apt-get update -y -qq -o Acquire::Retries=3 \
+                   -o Acquire::http::Timeout=30 >/dev/null || true
+                sudo apt-get install -y -qq gcc-mingw-w64-x86-64 wine64 \
+                   -o Acquire::Retries=3 -o Acquire::http::Timeout=30
+                wine_ready=1
+             fi
+             echo "== $dir"
+             if (cd "$dir" && make clean >/dev/null 2>&1 \
+                 && ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
+                    UBSAN_OPTIONS=print_stacktrace=1 \
+                    timeout 300 make SANITIZER=address,undefined check); then
+                echo "   ok"
+             else
+                echo "   FAIL $dir"
+                fails=$((fails + 1))
+             fi
+             (cd "$dir" && make clean >/dev/null 2>&1) || true
+          done
+          if [ "$fails" -ne 0 ]; then
+             echo "$fails sample(s) failed"
+             exit 1
+          fi

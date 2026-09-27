@@ -52,6 +52,17 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.retroarch.url</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>retroarch</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>GCSupportedGameControllers</key>
@@ -87,7 +98,7 @@
 	<string>RetroArch uses direct Bluetooth communication for some types of controllers</string>
 	<key>NSBonjourServices</key>
 	<array>
-		<string>_altserver._tcp</string>
+		<string>_ra-bless._tcp</string>
 		<string>_ra_netplay._tcp</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
@@ -102,6 +113,23 @@
 	<array>
 		<string>PlayGameIntent</string>
 	</array>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneConfigurationName</key>
+					<string>Default Configuration</string>
+					<key>UISceneDelegateClassName</key>
+					<string>RetroArchSceneDelegate</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
 	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -110,21 +138,10 @@
 	<array>
 		<string>arm64</string>
 	</array>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>com.retroarch.url</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>retroarch</string>
-			</array>
-		</dict>
-	</array>
 	<key>UIRequiresFullScreen</key>
 	<false/>
 	<key>UIStatusBarHidden</key>
-	<false/>
+	<true/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

@@ -40,28 +40,7 @@
 
 #include "arc4_alt.h"
 
-/*
- * 32-bit integer manipulation macros (big endian)
- */
-#ifndef GET_UINT32_BE
-#define GET_UINT32_BE(n,b,i)                            \
-{                                                       \
-    (n) = ( (uint32_t) (b)[(i)    ] << 24 )             \
-        | ( (uint32_t) (b)[(i) + 1] << 16 )             \
-        | ( (uint32_t) (b)[(i) + 2] <<  8 )             \
-        | ( (uint32_t) (b)[(i) + 3]       );            \
-}
-#endif
-
-#ifndef PUT_UINT32_BE
-#define PUT_UINT32_BE(n,b,i)                            \
-{                                                       \
-    (b)[(i)    ] = (unsigned char) ( (n) >> 24 );       \
-    (b)[(i) + 1] = (unsigned char) ( (n) >> 16 );       \
-    (b)[(i) + 2] = (unsigned char) ( (n) >>  8 );       \
-    (b)[(i) + 3] = (unsigned char) ( (n)       );       \
-}
-#endif
+#include "mbedtls/int_util.h"
 
 void mbedtls_sha1_init( mbedtls_sha1_context *ctx )
 {
@@ -102,22 +81,22 @@ void mbedtls_sha1_process( mbedtls_sha1_context *ctx, const unsigned char data[6
 {
     uint32_t temp, W[16], A, B, C, D, E;
 
-    GET_UINT32_BE( W[ 0], data,  0 );
-    GET_UINT32_BE( W[ 1], data,  4 );
-    GET_UINT32_BE( W[ 2], data,  8 );
-    GET_UINT32_BE( W[ 3], data, 12 );
-    GET_UINT32_BE( W[ 4], data, 16 );
-    GET_UINT32_BE( W[ 5], data, 20 );
-    GET_UINT32_BE( W[ 6], data, 24 );
-    GET_UINT32_BE( W[ 7], data, 28 );
-    GET_UINT32_BE( W[ 8], data, 32 );
-    GET_UINT32_BE( W[ 9], data, 36 );
-    GET_UINT32_BE( W[10], data, 40 );
-    GET_UINT32_BE( W[11], data, 44 );
-    GET_UINT32_BE( W[12], data, 48 );
-    GET_UINT32_BE( W[13], data, 52 );
-    GET_UINT32_BE( W[14], data, 56 );
-    GET_UINT32_BE( W[15], data, 60 );
+    MBEDTLS_GET_UINT32_BE( W[ 0], data,  0 );
+    MBEDTLS_GET_UINT32_BE( W[ 1], data,  4 );
+    MBEDTLS_GET_UINT32_BE( W[ 2], data,  8 );
+    MBEDTLS_GET_UINT32_BE( W[ 3], data, 12 );
+    MBEDTLS_GET_UINT32_BE( W[ 4], data, 16 );
+    MBEDTLS_GET_UINT32_BE( W[ 5], data, 20 );
+    MBEDTLS_GET_UINT32_BE( W[ 6], data, 24 );
+    MBEDTLS_GET_UINT32_BE( W[ 7], data, 28 );
+    MBEDTLS_GET_UINT32_BE( W[ 8], data, 32 );
+    MBEDTLS_GET_UINT32_BE( W[ 9], data, 36 );
+    MBEDTLS_GET_UINT32_BE( W[10], data, 40 );
+    MBEDTLS_GET_UINT32_BE( W[11], data, 44 );
+    MBEDTLS_GET_UINT32_BE( W[12], data, 48 );
+    MBEDTLS_GET_UINT32_BE( W[13], data, 52 );
+    MBEDTLS_GET_UINT32_BE( W[14], data, 56 );
+    MBEDTLS_GET_UINT32_BE( W[15], data, 60 );
 #undef  S
 #define S(x,n) ((x << n) | ((x & 0xFFFFFFFF) >> (32 - n)))
 #undef R
@@ -139,7 +118,9 @@ void mbedtls_sha1_process( mbedtls_sha1_context *ctx, const unsigned char data[6
     D = ctx->state[3];
     E = ctx->state[4];
 
+#undef F
 #define F(x,y,z) (z ^ (x & (y ^ z)))
+#undef K
 #define K 0x5A827999
 
     P( A, B, C, D, E, W[0]  );
@@ -253,6 +234,11 @@ void mbedtls_sha1_process( mbedtls_sha1_context *ctx, const unsigned char data[6
     ctx->state[3] += D;
     ctx->state[4] += E;
 }
+
+#undef S
+#undef R
+#undef P
+
 #endif /* !MBEDTLS_SHA1_PROCESS_ALT */
 
 /*
@@ -316,8 +302,8 @@ void mbedtls_sha1_finish( mbedtls_sha1_context *ctx, unsigned char output[20] )
          | ( ctx->total[1] <<  3 );
     low  = ( ctx->total[0] <<  3 );
 
-    PUT_UINT32_BE( high, msglen, 0 );
-    PUT_UINT32_BE( low,  msglen, 4 );
+    MBEDTLS_PUT_UINT32_BE( high, msglen, 0 );
+    MBEDTLS_PUT_UINT32_BE( low,  msglen, 4 );
 
     last = ctx->total[0] & 0x3F;
     padn = ( last < 56 ) ? ( 56 - last ) : ( 120 - last );
@@ -325,11 +311,11 @@ void mbedtls_sha1_finish( mbedtls_sha1_context *ctx, unsigned char output[20] )
     mbedtls_sha1_update( ctx, sha1_padding, padn );
     mbedtls_sha1_update( ctx, msglen, 8 );
 
-    PUT_UINT32_BE( ctx->state[0], output,  0 );
-    PUT_UINT32_BE( ctx->state[1], output,  4 );
-    PUT_UINT32_BE( ctx->state[2], output,  8 );
-    PUT_UINT32_BE( ctx->state[3], output, 12 );
-    PUT_UINT32_BE( ctx->state[4], output, 16 );
+    MBEDTLS_PUT_UINT32_BE( ctx->state[0], output,  0 );
+    MBEDTLS_PUT_UINT32_BE( ctx->state[1], output,  4 );
+    MBEDTLS_PUT_UINT32_BE( ctx->state[2], output,  8 );
+    MBEDTLS_PUT_UINT32_BE( ctx->state[3], output, 12 );
+    MBEDTLS_PUT_UINT32_BE( ctx->state[4], output, 16 );
 }
 
 #endif /* !MBEDTLS_SHA1_ALT */

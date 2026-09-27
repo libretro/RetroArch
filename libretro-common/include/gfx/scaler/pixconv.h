@@ -23,9 +23,82 @@
 #ifndef __LIBRETRO_SDK_SCALER_PIXCONV_H__
 #define __LIBRETRO_SDK_SCALER_PIXCONV_H__
 
+#include <stdint.h>
+
+#include <retro_inline.h>
 #include <clamping.h>
 
 #include <retro_common_api.h>
+
+/* Single-pixel expanders from 16-bit formats to 32-bit xRGB/xBGR.
+ *
+ * Each channel is widened by replicating its top bits into the new
+ * low bits, which maps 0 to 0 and full scale to 0xff exactly.  The
+ * channels are moved into their byte lanes first and replicated
+ * together with one shift and one mask, so red and blue (and green
+ * too for the 5:5:5 formats) cost a single operation instead of one
+ * each.  The byte above the colour channels is left zero; callers
+ * OR in the alpha they need.
+ *
+ * 4-bit channels are spread one per byte, low nibble, and multiplied
+ * by 0x11, which duplicates every nibble into its byte's high half
+ * without carries.
+ */
+static INLINE uint32_t pixconv_rgb565_to_xrgb8888(uint32_t c)
+{
+   uint32_t rb = ((c & 0xf800) << 8) | ((c & 0x001f) << 3);
+   uint32_t g  =  (c & 0x07e0) << 5;
+   rb |= (rb >> 5) & 0x070007;
+   g  |= (g  >> 6) & 0x000300;
+   return rb | g;
+}
+
+static INLINE uint32_t pixconv_rgb565_to_xbgr8888(uint32_t c)
+{
+   uint32_t br = ((c & 0x001f) << 19) | ((c & 0xf800) >> 8);
+   uint32_t g  =  (c & 0x07e0) << 5;
+   br |= (br >> 5) & 0x070007;
+   g  |= (g  >> 6) & 0x000300;
+   return br | g;
+}
+
+static INLINE uint32_t pixconv_0rgb1555_to_xrgb8888(uint32_t c)
+{
+   uint32_t x = ((c & 0x7c00) << 9) | ((c & 0x03e0) << 6)
+              | ((c & 0x001f) << 3);
+   return x | ((x >> 5) & 0x070707);
+}
+
+static INLINE uint32_t pixconv_0rgb1555_to_xbgr8888(uint32_t c)
+{
+   uint32_t x = ((c & 0x001f) << 19) | ((c & 0x03e0) << 6)
+              | ((c & 0x7c00) >> 7);
+   return x | ((x >> 5) & 0x070707);
+}
+
+/* 16-bit RGBA4444 (R in the top nibble) to ARGB8888. */
+static INLINE uint32_t pixconv_rgba4444_to_argb8888(uint32_t c)
+{
+   uint32_t x = ((c & 0x000f) << 24) | ((c & 0xf000) <<  4)
+              |  (c & 0x0f00)        | ((c & 0x00f0) >>  4);
+   return x * 0x11;
+}
+
+/* 16-bit ARGB4444 (A in the top nibble) to ARGB8888. */
+static INLINE uint32_t pixconv_argb4444_to_argb8888(uint32_t c)
+{
+   uint32_t x = ((c & 0xf000) << 12) | ((c & 0x0f00) <<  8)
+              | ((c & 0x00f0) <<  4) |  (c & 0x000f);
+   return x * 0x11;
+}
+
+/* 16-bit ARGB4444 (A in the top nibble) to ABGR8888. */
+static INLINE uint32_t pixconv_argb4444_to_abgr8888(uint32_t c)
+{
+   uint32_t x = ((c & 0xf000) << 12) | ((c & 0x000f) << 16)
+              | ((c & 0x00f0) <<  4) | ((c & 0x0f00) >>  8);
+   return x * 0x11;
+}
 
 RETRO_BEGIN_DECLS
 

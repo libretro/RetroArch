@@ -30,6 +30,9 @@
 #include "../connect/joypad_connection.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 typedef struct apple_input_rec
 {
@@ -692,7 +695,7 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
    IOHIDDeviceScheduleWithRunLoop(device, CFRunLoopGetCurrent(),
          kCFRunLoopCommonModes);
 
-#ifndef IOS
+#if !TARGET_OS_IPHONE
    iohidmanager_hid_device_get_product_string(device, adapter->name,
          sizeof(adapter->name));
 #endif

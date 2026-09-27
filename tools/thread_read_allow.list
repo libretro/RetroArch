@@ -1,0 +1,101 @@
+# runloop_msg_queue_push() defers an off-main caller before touching
+# anything: the worker's message waits under the message queue lock
+# for the main thread's iterate to replay it. Its widget, font,
+# accessibility and settings work therefore happens on the main
+# thread for every caller.
+@boundary runloop_msg_queue_push
+
+# The shader backends' per-frame sensor uniforms: the read side of a
+# seqlock whose only writer is input_driver_poll() on the main thread
+# (nine floats published as bits behind sensor_snap_seq). The getter
+# call inside the helper is how it reaches the atomics, not a live
+# state read.
+input_driver_read_sensor_snapshot|input_state_get_ptr
+# Release-store of the atomic shader-demand latch (shader_uses_sensors),
+# read with acquire by the poll's demand check. A latch write, not a
+# state read.
+input_driver_set_shader_uses_sensors|input_state_get_ptr
+# video_thread_swap_count: a documented cross-thread accessor. The
+# video thread's own writes to swap_count happen under thr->lock in
+# the wrapper's frame handler; this reader returns the field directly
+# when called on the video thread (or with no wrapper), and takes the
+# same thr->lock otherwise. The getter call is how it reaches the
+# field; both sides are ordered by the lock.
+video_thread_swap_count|video_state_get_ptr
+
+# The widgets/menu/font/display-text stack, verified for the
+# frame-context roots. Two safety arguments cover all five pairs:
+#
+# Batch state: gfx_display's quad batch (batch_* fields) is filled,
+# flushed and latched only on the thread that renders - the video
+# thread under the wrapper - so the flush/latch calls these callees
+# make through disp_get_ptr touch thread-confined state. The
+# main-written scalars on the same struct (framebuf dims, header
+# height) are not read by these callees; menu drivers take their
+# dimensions from their own snapshots per the menu sweep.
+font_driver_render_msg|disp_get_ptr
+menu_driver_frame|disp_get_ptr
+gfx_widgets_frame|disp_get_ptr
+#
+# Vtable dispatch: the video_state reads are current_video, poke and
+# data - the driver call pointers - which change only at video
+# init/free, and a frame cannot execute across either (the wrapper
+# joins and frees through blocking commands). Reading them to
+# dispatch is reading init-stable pointers.
+gfx_widgets_frame|video_state_get_ptr
+gfx_display_draw_text|video_state_get_ptr
+
+# The same batch and vtable arguments as the five pairs above, reached
+# from the frame roots themselves rather than through the menu and
+# widgets stack. All five touch gfx_display_flush_as - the batch_*
+# fields - and past it only blend_on, which is the same render-thread
+# bookkeeping, and dispctx, which changes at display-driver init.
+# Keyed on the reading function, so one line covers gl2_frame,
+# gl3_frame and vulkan_frame alike.
+gfx_display_blend_begin|disp_get_ptr
+gfx_display_blend_end|disp_get_ptr
+gfx_display_draw|disp_get_ptr
+gfx_display_scissor_begin|disp_get_ptr
+gfx_display_draw_text|disp_get_ptr
+
+# video_thread_hw_allowed() decides whether a hardware core may run
+# under the wrapper, from the core's context type and the configured
+# video driver's name. Both are settled before the video thread exists:
+# the context type is the core's, taken at content load, and changing
+# the driver goes through a reinit that joins and frees the thread. The
+# settings pointer itself is stable for the process (config_st is
+# assigned only at init and deinit).
+#
+# The one transient: the menu writes arrays.video_driver when the driver
+# is picked, before the reinit it queues, so a frame in that window can
+# compare against a name mid-copy. It is bounded - the comparison is
+# against a fixed literal in a fixed-size array that already held a
+# terminator, so it reads no further than the literal's length - and the
+# reinit that follows settles it. Latching instead is not free: the
+# macro that calls this is evaluated from inside gl2 and gl3 init,
+# before the active driver or a latch would be set.
+video_thread_hw_allowed|config_get_ptr
+video_thread_hw_allowed|video_state_get_ptr
+
+# A note on the counts: how many entries this audits depends on how wide
+# the build is, because an entry it cannot see in the binary is not a
+# finding. A default Linux build audits about 42 of them; Vulkan, Qt,
+# ffmpeg, HID and Bluetooth take it to 59, which is what surfaced the
+# five gfx_display pairs and the two above, and the audio device
+# callbacks with JACK, PipeWire and PulseAudio built take it to 76. A
+# narrow build reporting no findings is not the same as a clean tree.
+#
+# The Windows entries are reachable too, which is worth knowing because
+# they are a good part of what a Linux build cannot see - WASAPI, WDM-KS,
+# DirectSound, XAudio, ASIO, raw input, DirectInput enumeration, the
+# modeline resync and the D3D11 and D3D12 frame contexts:
+#
+#   ./configure --host=x86_64-w64-mingw32 --disable-qt && make
+#   tools/thread_read_audit.py --binary ./retroarch.exe \
+#      --objdump x86_64-w64-mingw32-objdump
+#
+# That audits 62, also clean. Between the two, 27 entries are left that
+# neither build contains - Apple, Android, emscripten, the consoles,
+# Steam, and a few drivers whose library is not packaged. Those need
+# their own toolchain; --list-unaudited names them for whichever binary
+# it is given.

@@ -274,41 +274,11 @@
    p2          = prob_lit + (offs + bit + symbol); \
    RC_GET_BIT_2(p2, symbol, offs ^= bit, ;)
 
-/* Branchless matched-literal step, same construction as the plain
- * literal above. The offs update (which is what makes the matched
- * literal degenerate into a normal one once the bits disagree) becomes
- * a masked xor rather than a conditional. */
-#define MATCHED_LITER_DEC_BL \
-   { \
-      uint32_t pv, bnd, m, upd; \
-      match_byte += match_byte; \
-      bit         = offs; \
-      offs       &= match_byte; \
-      p2          = prob_lit + (offs + bit + symbol); \
-      pv          = *p2; \
-      RC_NORMALIZE \
-      bnd   = (range >> NUM_MODEL_BITS) * pv; \
-      m     = (uint32_t)0 - (uint32_t)(code >= bnd); \
-      upd   = pv - (BIT_MODEL_OFFSET & ~m); \
-      *p2   = (uint16_t)(pv - (uint32_t)((int32_t)upd >> NUM_MOVE_BITS)); \
-      range = bnd + ((range - bnd - bnd) & m); \
-      code -= bnd & m; \
-      symbol = (symbol + symbol) + (m & 1); \
-      offs  ^= bit & ~m; \
-   }
-
 #undef TREE_DECODE
 #define TREE_DECODE(base, limit, dest) \
    { \
       dest = 1; \
       do { TREE_GET_BIT(base, dest) } while (dest < (limit)); \
-      dest -= (limit); \
-   }
-
-#define TREE_DECODE_BL(base, limit, dest) \
-   { \
-      dest = 1; \
-      do { TREE_GET_BIT_BL(base, dest) } while (dest < (limit)); \
       dest -= (limit); \
    }
 
@@ -753,16 +723,24 @@ int rlzma_dec_decode(rlzma_dec_t *dec,
             else
             {
                /* Overlapping copy: run-length semantics fall out of a
-                * forward copy, so memcpy is not usable. Copying in
-                * rep0-sized blocks lets each block be non-overlapping
-                * and doubles the run each time round. */
+                * forward copy, so memcpy is not usable directly. Copy
+                * from the fixed base instead, doubling the chunk each
+                * round: once done bytes are out, [copy_pos, pos + done)
+                * is one periodic run, so the next chunk may take
+                * rep0 + done bytes and still read only bytes written
+                * before it started. done stays a multiple of rep0 for
+                * every chunk but the last, which keeps the period
+                * aligned; the last chunk is a truncation and needs no
+                * alignment. Small periods are the common case here, and
+                * fixed rep0-sized chunks would mean a 2-16 byte memcpy
+                * per round for a match that can run to 273 bytes. */
                uint32_t done = 0;
                while (done < copy_len)
                {
-                  uint32_t chunk = rep0;
+                  uint32_t chunk = rep0 + done;
                   if (chunk > copy_len - done)
                      chunk = copy_len - done;
-                  memcpy(dst + pos + done, dst + copy_pos + done, chunk);
+                  memcpy(dst + pos + done, dst + copy_pos, chunk);
                   done += chunk;
                }
                pos += copy_len;

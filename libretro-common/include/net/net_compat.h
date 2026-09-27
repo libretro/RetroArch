@@ -39,21 +39,66 @@
 #if defined(_WIN32) && !defined(_XBOX)
 #define WIN32_LEAN_AND_MEAN
 
+#ifndef NOMINMAX
+#define NOMINMAX   /* MSVC defines min/max as macros in C++ too */
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <winsock2.h>
 #include <windows.h>
 #include <ws2tcpip.h>
 
-#if _MSC_VER && _MSC_VER <= 1600
-/* If we are using MSVC2010 or lower, disable WSAPoll support 
- * to ensure Windows XP and earlier backwards compatibility */
-#else
-#ifndef WIN32_SUPPORTS_POLL
-#define WIN32_SUPPORTS_POLL 1
+/* socket_poll() is provided on every Win32 target. The implementation
+ * uses select(), which exists on 9x through current Windows. Do not
+ * call WSAPoll; that export is Vista+ only. */
+#define NETWORK_HAVE_POLL 1
+
+/* Vista winsock2.h already has these. 9x/XP SDKs do not.
+ * Values must match Microsoft WSAPOLLFD bits, not POSIX poll.h. */
+#ifndef POLLRDNORM
+#define POLLRDNORM  0x0100
 #endif
+#ifndef POLLRDBAND
+#define POLLRDBAND  0x0200
+#endif
+#ifndef POLLIN
+#define POLLIN      (POLLRDNORM | POLLRDBAND)
+#endif
+#ifndef POLLPRI
+#define POLLPRI     0x0400
+#endif
+#ifndef POLLWRNORM
+#define POLLWRNORM  0x0010
+#endif
+#ifndef POLLOUT
+#define POLLOUT     POLLWRNORM
+#endif
+#ifndef POLLWRBAND
+#define POLLWRBAND  0x0020
+#endif
+#ifndef POLLERR
+#define POLLERR     0x0001
+#endif
+#ifndef POLLHUP
+#define POLLHUP     0x0002
+#endif
+#ifndef POLLNVAL
+#define POLLNVAL    0x0004
 #endif
 
-#if defined(WIN32_SUPPORTS_POLL) && defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0600
-#define NETWORK_HAVE_POLL 1
+/* winsock2.h declares struct pollfd only when the target is Vista or
+ * newer. 9x/2000/XP targets get it here, with the WSAPOLLFD layout. */
+#ifndef HAVE_POLLFD
+#define HAVE_POLLFD 1
+#if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x0600)
+struct pollfd
+{
+   SOCKET fd;
+   short  events;
+   short  revents;
+};
+#endif
 #endif
 
 #elif defined(_XBOX)
@@ -67,6 +112,49 @@
 #endif
 
 #define socklen_t unsigned int
+
+#define NETWORK_HAVE_POLL 1
+
+#ifndef POLLRDNORM
+#define POLLRDNORM  0x0100
+#endif
+#ifndef POLLRDBAND
+#define POLLRDBAND  0x0200
+#endif
+#ifndef POLLIN
+#define POLLIN      (POLLRDNORM | POLLRDBAND)
+#endif
+#ifndef POLLPRI
+#define POLLPRI     0x0400
+#endif
+#ifndef POLLWRNORM
+#define POLLWRNORM  0x0010
+#endif
+#ifndef POLLOUT
+#define POLLOUT     POLLWRNORM
+#endif
+#ifndef POLLWRBAND
+#define POLLWRBAND  0x0020
+#endif
+#ifndef POLLERR
+#define POLLERR     0x0001
+#endif
+#ifndef POLLHUP
+#define POLLHUP     0x0002
+#endif
+#ifndef POLLNVAL
+#define POLLNVAL    0x0004
+#endif
+
+#ifndef HAVE_POLLFD
+#define HAVE_POLLFD 1
+struct pollfd
+{
+   SOCKET fd;
+   short events;
+   short revents;
+};
+#endif
 
 #elif defined(VITA)
 #include <psp2/net/net.h>

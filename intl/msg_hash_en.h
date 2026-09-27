@@ -67,6 +67,7 @@ static const struct
    char s_ba582576[31];
    char s_eb66d46b[20];
    char s_da7a38eb[20];
+   char s_690efede[5];
    char s_5cb15718[13];
    char s_1e1182e5[21];
    char s_e645f7ac[24];
@@ -614,6 +615,7 @@ static const struct
    "Serialised (Save/Load, Rewind)",
    "Build-bot Cores URL",
    "Horizontal Centring",
+   "Okay",
    "By Art Style",
    "Initialising list...",
    "Fast-Forward Frame-Skip",
@@ -1152,7 +1154,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_en_blob_check[
-      (sizeof(msg_hash_en_blob) == (26756u
+      (sizeof(msg_hash_en_blob) == (26761u
 #ifdef HAVE_LAKKA
        + 176u
 #endif
@@ -1290,6 +1292,7 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ARTSTYLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,

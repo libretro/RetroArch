@@ -12,14 +12,14 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import com.retroarch.browser.preferences.util.ConfigFile;
 import com.retroarch.browser.preferences.util.UserPreferences;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public final class RetroActivityFuture extends RetroActivityCamera {
 
-  // Tracks activity lifecycle state for MainMenuActivity resume detection
+  // Tracks whether the native activity is already running, so a
+  // relaunch reorders it to the front instead of restarting it.
   public static volatile boolean isRunning = false;
 
   // If set to true then RetroArch will completely exit when it loses focus
@@ -104,25 +104,42 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       String refresh = getIntent().getStringExtra("REFRESH");
 
-      // If REFRESH parameter is provided then try to set refreshrate accordingly
-      if (refresh != null) {
+      /* If REFRESH parameter is provided then try to set refreshrate
+       * accordingly - unless a display mode has been chosen
+       * explicitly, in which case that mode names the rate already.
+       * The two are competing requests, and the rate preference wins,
+       * pinning the display wherever it points. */
+      if (refresh != null && !hasExplicitDisplayMode()) {
         WindowManager.LayoutParams params = getWindow().getAttributes();
         params.preferredRefreshRate = Integer.parseInt(refresh);
         getWindow().setAttributes(params);
       }
     }
 
-    // Checks if Android versions is above 9.0 (28) and enable the screen to write over notch if the user desires
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-      ConfigFile configFile = new ConfigFile(UserPreferences.getDefaultConfigPath(this));
-      try {
-        if (configFile.getBoolean("video_notch_write_over_enable")) {
-          getWindow().getAttributes().layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
-        }
-      } catch (Exception e) {
-        Log.w("RetroActivityFuture", "Key doesn't exist yet: " + e.getMessage());
+    /* The window is new after a trip to the background, and a chosen
+     * display mode does not come back with it. */
+    reapplyDisplayMode();
+
+    updateDisplayCutoutMode();
+  }
+
+  private void updateDisplayCutoutMode() {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P)
+      return;
+
+    getWindow().getAttributes().layoutInDisplayCutoutMode = notchWriteOver
+        ? WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        : WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
+  }
+
+  @Override
+  protected void onNotchSettingChanged() {
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        updateDisplayCutoutMode();
       }
-    }
+    });
   }
 
   @Override
@@ -145,14 +162,8 @@ public final class RetroActivityFuture extends RetroActivityCamera {
 
     mHandlerSendUiMessage(HANDLER_WHAT_TOGGLE_IMMERSIVE, hasFocus);
 
-    try {
-      ConfigFile configFile = new ConfigFile(UserPreferences.getDefaultConfigPath(this));
-      if (configFile.getBoolean("input_auto_mouse_grab")) {
-        inputGrabMouse(hasFocus);
-      }
-    } catch (Exception e) {
-      Log.w("RetroActivityFuture", "[onWindowFocusChanged] exception thrown: " + e.getMessage());
-    }
+    if (autoMouseGrab)
+      inputGrabMouse(hasFocus);
   }
 
   private void mHandlerSendUiMessage(int what, boolean state) {

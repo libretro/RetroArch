@@ -339,7 +339,8 @@ void cdzl_codec_free(void *codec)
 
 chd_error cdzl_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
 {
-	uint32_t framenum;
+	chd_error ret;
+	uint32_t framenum, complen_base;
 	cdzl_codec_data* cdzl = (cdzl_codec_data*)codec;
 
 	/* determine header bytes */
@@ -348,15 +349,40 @@ chd_error cdzl_codec_decompress(void *codec, const uint8_t *src, uint32_t comple
 	uint32_t ecc_bytes = (frames + 7) / 8;
 	uint32_t header_bytes = ecc_bytes + complen_bytes;
 
+
+	/* header_bytes and complen_base are both taken from the hunk, so
+	 * neither can be trusted before it is checked. Without this, a
+	 * complen_base larger than the hunk makes
+	 * `complen - complen_base - header_bytes` underflow to near 2^32 and
+	 * `&src[header_bytes + complen_base]` point past the end, handing the
+	 * subcode decompressor an out-of-bounds pointer and an enormous
+	 * length - a heap overread straight off a malformed image. Reading
+	 * the length bytes at src[ecc_bytes..] needs the first check too. */
+	if (complen < header_bytes)
+		return CHDERR_DECOMPRESSION_ERROR;
 	/* extract compressed length of base */
-	uint32_t complen_base = (src[ecc_bytes + 0] << 8) | src[ecc_bytes + 1];
+	complen_base = (src[ecc_bytes + 0] << 8) | src[ecc_bytes + 1];
 	if (complen_bytes > 2)
 		complen_base = (complen_base << 8) | src[ecc_bytes + 2];
 
+	if (complen_base > complen - header_bytes)
+		return CHDERR_DECOMPRESSION_ERROR;
+
+	/* A failed hunk has to be reported, not reassembled. Neither return
+	 * value was read, so a decode that bailed left cdXX->buffer holding
+	 * whatever the previous hunk put there - or, on the first hunk,
+	 * uninitialised heap, the buffer being malloc'd - and the loop below
+	 * copied that into dest and returned CHDERR_NONE. The caller cannot
+	 * tell that apart from a good hunk. cdfl_codec_decompress() already
+	 * checks its subcode decode; this brings the other three into line. */
 	/* reset and decode */
-	zlib_codec_decompress(&cdzl->base_decompressor, &src[header_bytes], complen_base, &cdzl->buffer[0], frames * CD_MAX_SECTOR_DATA);
+	ret = zlib_codec_decompress(&cdzl->base_decompressor, &src[header_bytes], complen_base, &cdzl->buffer[0], frames * CD_MAX_SECTOR_DATA);
+	if (ret != CHDERR_NONE)
+		return ret;
 #ifdef WANT_SUBCODE
-	zlib_codec_decompress(&cdzl->subcode_decompressor, &src[header_bytes + complen_base], complen - complen_base - header_bytes, &cdzl->buffer[frames * CD_MAX_SECTOR_DATA], frames * CD_MAX_SUBCODE_DATA);
+	ret = zlib_codec_decompress(&cdzl->subcode_decompressor, &src[header_bytes + complen_base], complen - complen_base - header_bytes, &cdzl->buffer[frames * CD_MAX_SECTOR_DATA], frames * CD_MAX_SUBCODE_DATA);
+	if (ret != CHDERR_NONE)
+		return ret;
 #endif
 
 	/* reassemble the data */

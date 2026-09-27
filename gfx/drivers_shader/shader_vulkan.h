@@ -39,8 +39,7 @@ struct vulkan_filter_chain_texture
    VkImage image;
    VkImageView view;
    VkImageLayout layout;
-   unsigned width;
-   unsigned height;
+   unsigned dims;                /* VIDEO_SCALE_PACK */
    VkFormat format;
 };
 
@@ -80,14 +79,29 @@ struct vulkan_filter_chain_create_info
    const VkPhysicalDeviceMemoryProperties *memory_properties;
    VkPipelineCache pipeline_cache;
    VkQueue queue;
+   /* Guards host access to `queue`. The same VkQueue is submitted to by
+    * Vulkan HW-render cores out of retro_run(), through the
+    * lock_queue/unlock_queue pair in retro_hw_render_interface_vulkan,
+    * on a different thread from the one that owns the filter chain when
+    * threaded video is on. Function pointers rather than an slock_t* so
+    * this header stays clear of rthreads and of HAVE_THREADS. Both may
+    * be NULL, in which case no locking is done. */
+   void *queue_lock_handle;
+   void (*lock_queue)(void *handle);
+   void (*unlock_queue)(void *handle);
+   /* Waits, with the queue lock free, until every submission the video
+    * driver has made on `queue` has retired. The chain's resources are
+    * only ever referenced by those submissions, so this is all a chain
+    * rebuild or teardown needs to wait for. Called with
+    * queue_lock_handle. NULL falls back to vkDeviceWaitIdle under the
+    * lock, which also drains a hardware core's work and cannot complete
+    * while that core is itself parked on lock_queue. */
+   void (*wait_submissions)(void *handle);
    VkCommandPool command_pool;
    unsigned num_passes;
 
    VkFormat original_format;
-   struct
-   {
-      unsigned width, height;
-   } max_input_size;
+   unsigned max_input_dims;      /* VIDEO_SCALE_PACK */
    struct vulkan_filter_chain_swapchain_info swapchain;
 #ifdef VULKAN_HDR_SWAPCHAIN
    bool hdr_enabled;
@@ -120,6 +134,9 @@ void vulkan_filter_chain_set_input_texture(vulkan_filter_chain_t *chain,
       const struct vulkan_filter_chain_texture *texture);
 
 void vulkan_filter_chain_set_frame_count(vulkan_filter_chain_t *chain,
+      uint64_t count);
+
+void vulkan_filter_chain_set_swap_count(vulkan_filter_chain_t *chain,
       uint64_t count);
 
 void vulkan_filter_chain_set_frame_count_period(vulkan_filter_chain_t *chain,

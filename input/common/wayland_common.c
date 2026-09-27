@@ -688,8 +688,6 @@ static void wl_output_handle_geometry(void *data,
       int transform)
 {
    output_info_t *oi   = (output_info_t*)data;
-   oi->physical_width  = physical_width;
-   oi->physical_height = physical_height;
    oi->make            = strdup(make);
    oi->model           = strdup(model);
 }
@@ -702,8 +700,7 @@ static void wl_output_handle_mode(void *data,
       int refresh)
 {
    output_info_t *oi = (output_info_t*)data;
-   oi->width         = width;
-   oi->height        = height;
+   oi->dims          = VIDEO_SCALE_PACK(width, height);
    oi->refresh_rate  = refresh;
 }
 
@@ -847,6 +844,8 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       wl->tearing_control_manager = (struct wp_tearing_control_manager_v1*)
          wl_registry_bind(
             reg, id, &wp_tearing_control_manager_v1_interface, MIN(version, 1));
+   else if (string_is_equal(interface, wl_color_interface_name()) && found++)
+      wl_color_bind(&wl->color, reg, id, version);
 
    if (found > 1)
    RARCH_LOG("[Wayland] Registered interface %s at version %u.\n",
@@ -866,7 +865,23 @@ static void wl_registry_handle_global_remove(void *data,
       {
          if (wl_current_outputs_remove(wl, od->output->output))
             surface_output_removed = true;
+
+         /* wl->current_output points into the output_info_t about to
+          * be freed.  wl_update_scale() below only reassigns it when
+          * it finds a replacement, so on the last output going away --
+          * a single monitor unplugged, or the surface leaving every
+          * output -- it would be left dangling for the next scale
+          * query to read. */
+         if (wl->current_output == od->output)
+            wl->current_output = NULL;
+
          wl_list_remove(&od->link);
+         /* The wl_output proxy is ours from wl_registry_bind() and has
+          * to go back; freeing only the output_info_t leaks it on
+          * every hotplug.  The teardown in
+          * gfx/common/wayland_common.c does destroy it. */
+         if (od->output->output)
+            wl_output_destroy(od->output->output);
          free(od->output);
          free(od);
          break;
@@ -1074,10 +1089,10 @@ static void wl_data_device_handle_drop(void *data,
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    data_offer_ctx *offer_data = wl->current_drag_offer;
 
-   offer_data->dropped        = true;
-
    if (!offer_data)
       return;
+
+   offer_data->dropped        = true;
 
    pipe(pipefd);
 
@@ -1095,6 +1110,7 @@ static void wl_data_device_handle_drop(void *data,
    if (!(stream = fmemopen(buffer, __len, "r")))
    {
       RARCH_WARN("[Wayland] Failed to open DnD buffer.\n");
+      free(buffer);
       return;
    }
 
@@ -1112,6 +1128,8 @@ static void wl_data_device_handle_drop(void *data,
 #endif
    }
 
+   /* getline allocates line on the first call and reuses it. */
+   free(line);
    fclose(stream);
    free(buffer);
 }

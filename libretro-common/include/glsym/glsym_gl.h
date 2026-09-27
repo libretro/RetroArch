@@ -486,6 +486,7 @@ typedef void (APIENTRYP RGLSYMGLENDQUERYINDEXEDPROC) (GLenum target, GLuint inde
 typedef void (APIENTRYP RGLSYMGLGETQUERYINDEXEDIVPROC) (GLenum target, GLuint index, GLenum pname, GLint *params);
 typedef void (APIENTRYP RGLSYMGLRELEASESHADERCOMPILERPROC) (void);
 typedef void (APIENTRYP RGLSYMGLSHADERBINARYPROC) (GLsizei count, const GLuint *shaders, GLenum binaryformat, const void *binary, GLsizei length);
+typedef void (APIENTRYP RGLSYMGLSPECIALIZESHADERPROC) (GLuint shader, const GLchar *pEntryPoint, GLuint numSpecializationConstants, const GLuint *pConstantIndex, const GLuint *pConstantValue);
 typedef void (APIENTRYP RGLSYMGLGETSHADERPRECISIONFORMATPROC) (GLenum shadertype, GLenum precisiontype, GLint *range, GLint *precision);
 typedef void (APIENTRYP RGLSYMGLDEPTHRANGEFPROC) (GLfloat n, GLfloat f);
 typedef void (APIENTRYP RGLSYMGLCLEARDEPTHFPROC) (GLfloat d);
@@ -1516,6 +1517,8 @@ typedef void (APIENTRYP RGLSYMGLGETIMAGETRANSFORMPARAMETERFVHPPROC) (GLenum targ
 #define glGetQueryIndexediv __rglgen_glGetQueryIndexediv
 #define glReleaseShaderCompiler __rglgen_glReleaseShaderCompiler
 #define glShaderBinary __rglgen_glShaderBinary
+#define glSpecializeShader __rglgen_glSpecializeShader
+#define glSpecializeShaderARB __rglgen_glSpecializeShaderARB
 #define glGetShaderPrecisionFormat __rglgen_glGetShaderPrecisionFormat
 #define glDepthRangef __rglgen_glDepthRangef
 #define glClearDepthf __rglgen_glClearDepthf
@@ -2542,6 +2545,8 @@ extern RGLSYMGLENDQUERYINDEXEDPROC __rglgen_glEndQueryIndexed;
 extern RGLSYMGLGETQUERYINDEXEDIVPROC __rglgen_glGetQueryIndexediv;
 extern RGLSYMGLRELEASESHADERCOMPILERPROC __rglgen_glReleaseShaderCompiler;
 extern RGLSYMGLSHADERBINARYPROC __rglgen_glShaderBinary;
+extern RGLSYMGLSPECIALIZESHADERPROC __rglgen_glSpecializeShader;
+extern RGLSYMGLSPECIALIZESHADERPROC __rglgen_glSpecializeShaderARB;
 extern RGLSYMGLGETSHADERPRECISIONFORMATPROC __rglgen_glGetShaderPrecisionFormat;
 extern RGLSYMGLDEPTHRANGEFPROC __rglgen_glDepthRangef;
 extern RGLSYMGLCLEARDEPTHFPROC __rglgen_glClearDepthf;

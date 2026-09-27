@@ -30,6 +30,9 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <formats/rjson.h>
+#include <formats/rjson_stream.h>
+
+#include <compat/strl.h>
 
 #include "../../config.def.h"
 #include "../../verbosity.h"
@@ -184,33 +187,35 @@ static bool input_test_file_read(const char* file_path)
 {
    bool success            = false;
    JTifJSONContext context = {0};
-   RFILE *file             = NULL;
+   uint8_t *file_buf       = NULL;
+   int64_t file_len        = 0;
    rjson_t* parser;
 
    /* Sanity check */
-   if (  (!file_path || !*file_path)
-       || !path_is_valid(file_path)
-      )
+   if (!file_path || !*file_path)
    {
       RARCH_DBG("[Test joypad] No test input file supplied.\n");
       return false;
    }
 
-   /* Attempt to open test input file */
-   file = filestream_open(
-         file_path,
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!file)
+   /* Read the whole file in one operation: it is tiny and always
+    * parsed in full, so a single open/size/read/close beats a
+    * pre-open stat plus the chunked callback path (which itself
+    * sizes the stream with an extra fstat).  The stat below runs
+    * only to classify a failure. */
+   if (!filestream_read_file(file_path,
+         (void**)&file_buf, &file_len))
    {
-      RARCH_ERR("[Test joypad] Failed to open test input file: \"%s\".\n",
-            file_path);
+      if (!path_is_valid(file_path))
+         RARCH_DBG("[Test joypad] No test input file supplied.\n");
+      else
+         RARCH_ERR("[Test joypad] Failed to open test input file: \"%s\".\n",
+               file_path);
       return false;
    }
 
    /* Initialise JSON parser */
-   if (!(parser = rjson_open_rfile(file)))
+   if (!(parser = rjson_open_buffer(file_buf, (size_t)file_len)))
    {
       RARCH_ERR("[Test joypad] Failed to create JSON parser.\n");
       goto end;
@@ -255,8 +260,8 @@ end:
    if (context.param_str)
       free(context.param_str);
 
-   /* Close log file */
-   filestream_close(file);
+   /* Release file contents */
+   free(file_buf);
 
    if (last_test_step >= MAX_TEST_STEPS)
    {
@@ -280,14 +285,33 @@ end:
 /* Test input file handling end */
 /********************************/
 
+static char test_joypad_name_buf[MAX_USERS][256];
+
 static const char *test_joypad_name(unsigned pad)
 {
+   const char *n;
+   char *at;
    if (pad >= MAX_USERS || (!test_joypads[pad].name
        || !*test_joypads[pad].name))
       return NULL;
    if (strstr(test_joypads[pad].name, ") "))
-      return strstr(test_joypads[pad].name, ") ") + 2;
-   return test_joypads[pad].name;
+      n = strstr(test_joypads[pad].name, ") ") + 2;
+   else
+      n = test_joypads[pad].name;
+   strlcpy(test_joypad_name_buf[pad], n, sizeof(test_joypad_name_buf[pad]));
+   if ((at = strstr(test_joypad_name_buf[pad], "@@")))
+      *at = '\0';
+   return test_joypad_name_buf[pad];
+}
+
+static const char *test_joypad_phys(unsigned pad)
+{
+   const char *at;
+   if (pad >= MAX_USERS || !test_joypads[pad].name)
+      return NULL;
+   if ((at = strstr(test_joypads[pad].name, "@@")))
+      return at + 2;
+   return NULL;
 }
 
 static void test_joypad_autodetect_add(unsigned autoconf_pad)
@@ -309,7 +333,7 @@ static void test_joypad_autodetect_add(unsigned autoconf_pad)
 
    input_autoconfigure_connect(
          test_joypad_name(autoconf_pad),
-         NULL, NULL,
+         NULL, test_joypad_phys(autoconf_pad),
          "test",
          autoconf_pad,
          vid,

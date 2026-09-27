@@ -56,12 +56,12 @@ HAVE_NETWORKING = 0
 HAVE_IFINFO = 0
 HAVE_NETPLAYDISCOVERY = 0
 HAVE_OVERLAY             := 1
-HAVE_STB_FONT = 1
 HAVE_COMMAND             := 1
 HAVE_STDIN_CMD           := 1
 HAVE_CMD                 := 1
 HAVE_CHEEVOS = 0
 HAVE_CHD = 1
+HAVE_RCHD = 1
 HAVE_RVORBIS = 1
 HAVE_RMODTRACKER = 1
 HAVE_CORE_INFO_CACHE = 1
@@ -78,6 +78,7 @@ OBJ := frontend/frontend_salamander.o \
 		 frontend/drivers/platform_dos.o \
 		 libretro-common/file/file_path.o \
 		 libretro-common/file/file_path_io.o \
+		 libretro-common/string/rstrtod.o \
 		 libretro-common/string/stdstring.o \
 		 libretro-common/lists/string_list.o \
 		 libretro-common/lists/dir_list.o \
@@ -88,6 +89,7 @@ OBJ := frontend/frontend_salamander.o \
 		 libretro-common/compat/compat_strldup.o \
 		 libretro-common/compat/compat_strcasestr.o \
 		 libretro-common/file/config_file.o \
+		 libretro-common/file/config_file_io.o \
 		 libretro-common/streams/file_stream.o \
 		 libretro-common/vfs/vfs_implementation.o \
 		 libretro-common/hash/lrc_hash.o \

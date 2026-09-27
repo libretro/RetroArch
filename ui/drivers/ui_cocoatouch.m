@@ -14,6 +14,7 @@
  */
 
 #include <stdint.h>
+#include "../../apple_runtime.h"
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,14 +33,15 @@
 #import "cocoa/RetroArchPlaylistManager.h"
 #endif
 
-#if defined(HAVE_COCOA_METAL)
-#include "../../gfx/common/metal_view.h"
+#ifdef HAVE_METAL
+#include "../../gfx/drivers/metal.h"
 #endif
 
 #include "../ui_companion_driver.h"
 #include "../../audio/audio_driver.h"
 #ifdef HAVE_MICROPHONE
 #include "../../audio/microphone_driver.h"
+#include "cocoa/cocoa_audio_session.h"
 #endif
 #include "../../gfx/video_display_server.h"
 #include "../../configuration.h"
@@ -66,6 +68,9 @@
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay_private.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 
 #import <AVFoundation/AVFoundation.h>
@@ -95,12 +100,7 @@
 #include "SDL.h"
 #endif
 
-#if defined(HAVE_COCOA_METAL) || defined(HAVE_COCOATOUCH)
 #import "JITSupport.h"
-id<ApplePlatform> apple_platform;
-#else
-static id apple_platform;
-#endif
 
 static void ui_companion_cocoatouch_event_command(
       void *data, enum event_command cmd) { }
@@ -144,23 +144,47 @@ static struct string_list *ui_companion_cocoatouch_get_app_icons(void)
    return list;
 }
 
+/* nil restores the primary icon, which is what "Default" means here, so
+ * the nil is deliberate - but it has to be written down. ARC
+ * zero-initialises a strong local; MRC, which is how the Makefile
+ * builds this file, leaves it indeterminate, so asking for "Default"
+ * passed whatever was on the stack to setAlternateIconName:. */
 static void ui_companion_cocoatouch_set_app_icon(const char *iconName)
 {
-   NSString *str;
+   NSString *str = nil;
    if (!string_is_equal(iconName, "Default"))
       str = [NSString stringWithCString:iconName encoding:NSUTF8StringEncoding];
    [[UIApplication sharedApplication] setAlternateIconName:str completionHandler:nil];
 }
 
+/* Main thread only: the sole caller is materialui's icon draw, which
+ * runs from the menu's frame.
+ *
+ * The cache used to be created under dispatch_once, which read as a
+ * thread-safety guarantee the rest of the function does not make - the
+ * very next lines mutate the dictionary with no synchronisation at
+ * all, so were this ever reached from two threads the once would be
+ * the one part that was safe. A plain lazy create says what is true:
+ * one thread, so neither the create nor the mutation needs guarding.
+ *
+ * +dictionaryWithCapacity: hands back an autoreleased object, which is
+ * wrong for something a static holds across calls: this file is built
+ * MRC by the Makefile - it is not in the -fobjc-arc list at Makefile:275
+ * - so the pool drains at the end of the run loop pass that created it
+ * and every later call messages freed memory. Under Xcode, where
+ * griffin_objc.m is ARC, the strong static retains it and the same
+ * code is fine, which is why this has sat here. -initWithCapacity: is
+ * +1 owned and correct in both: the object is kept for the process
+ * lifetime deliberately, as the dock indicator in dispserv_apple.m is. */
 static uintptr_t ui_companion_cocoatouch_get_app_icon_texture(const char *icon)
 {
    static NSMutableDictionary<NSString *, NSNumber *> *textures = nil;
-   static dispatch_once_t once;
-   dispatch_once(&once, ^{
-      textures = [NSMutableDictionary dictionaryWithCapacity:6];
-   });
+   NSString *iconName;
 
-   NSString *iconName = [NSString stringWithUTF8String:icon];
+   if (!textures)
+      textures = [[NSMutableDictionary alloc] initWithCapacity:6];
+
+   iconName = [NSString stringWithUTF8String:icon];
    if (!textures[iconName])
    {
       UIImage *img = [UIImage imageNamed:iconName];
@@ -179,7 +203,7 @@ static uintptr_t ui_companion_cocoatouch_get_app_icon_texture(const char *icon)
       uintptr_t item;
       gfx_display_reset_textures_list_buffer(&item, TEXTURE_FILTER_MIPMAP_LINEAR,
                                              (void*)[png bytes], (unsigned int)[png length], IMAGE_TYPE_PNG,
-                                             NULL, NULL);
+                                             NULL);
       textures[iconName] = [NSNumber numberWithUnsignedLong:item];
    }
 
@@ -276,57 +300,80 @@ enum
 /* This is specifically for iOS 9, according to the private headers */
 -(void)handleKeyUIEvent:(UIEvent *)event
 {
-    /* This gets called twice with the same timestamp
-     * for each keypress, that's fine for polling
-     * but is bad for business with events. */
-    static double last_time_stamp;
-
-    if (last_time_stamp == event.timestamp)
-       return [super handleKeyUIEvent:event];
-
-    last_time_stamp        = event.timestamp;
+    /* UIKit hands every key event over twice. Polling does not care,
+     * the event path does, so one event per (key, direction) pair is
+     * accepted per timestamp and the rest go straight to super.
+     * The record is a bitmap rather than a single slot because any
+     * number of keys can change state within one frame and they all
+     * carry that frame's timestamp - a single slot only keeps the
+     * key that happened to arrive last, and the others are either
+     * dropped or let through twice depending on the order UIKit
+     * chose. */
+    static double   last_time_stamp;
+    static uint32_t seen[2][MAX_KEYS / 32];
+    NSString       *ch;
+    uint32_t       *row;
+    NSUInteger      mods;
+    long long       code;
+    uint32_t        character = 0;
+    uint32_t        mod       = 0;
 
     /* If the _hidEvent is NULL, [event _keyCode] will crash.
      * (This happens with the on screen keyboard). */
-    if (event._hidEvent)
+    if (!event._hidEvent)
+       return [super handleKeyUIEvent:event];
+
+    /* apple_input_keyboard_event() indexes apple_key_state with the
+     * keycode and ignores anything outside it. */
+    code = event._keyCode;
+    if (code <= 0 || code >= MAX_KEYS)
+       return [super handleKeyUIEvent:event];
+
+    if (last_time_stamp != event.timestamp)
     {
-        NSString       *ch = (NSString*)event._privateInput;
-        uint32_t character = 0;
-        uint32_t mod       = 0;
-        NSUInteger mods    = event._modifierFlags;
+        last_time_stamp = event.timestamp;
+        memset(seen, 0, sizeof(seen));
+    }
 
-        if (mods & NSAlphaShiftKeyMask)
-           mod |= RETROKMOD_CAPSLOCK;
-        if (mods & NSShiftKeyMask)
-           mod |= RETROKMOD_SHIFT;
-        if (mods & NSControlKeyMask)
-           mod |= RETROKMOD_CTRL;
-        if (mods & NSAlternateKeyMask)
-           mod |= RETROKMOD_ALT;
-        if (mods & NSCommandKeyMask)
-           mod |= RETROKMOD_META;
-        if (mods & NSNumericPadKeyMask)
-           mod |= RETROKMOD_NUMLOCK;
+    row = seen[event._isKeyDown ? 1 : 0];
+    if (row[code >> 5] & (1u << (code & 31)))
+       return [super handleKeyUIEvent:event];
+    row[code >> 5] |= 1u << (code & 31);
 
-        if (ch && ch.length != 0)
-        {
-            unsigned i;
-            character = [ch characterAtIndex:0];
+    ch   = (NSString*)event._privateInput;
+    mods = event._modifierFlags;
 
-            apple_input_keyboard_event(event._isKeyDown,
-                  (uint32_t)event._keyCode, 0, mod,
-                  RETRO_DEVICE_KEYBOARD);
+    if (mods & NSAlphaShiftKeyMask)
+       mod |= RETROKMOD_CAPSLOCK;
+    if (mods & NSShiftKeyMask)
+       mod |= RETROKMOD_SHIFT;
+    if (mods & NSControlKeyMask)
+       mod |= RETROKMOD_CTRL;
+    if (mods & NSAlternateKeyMask)
+       mod |= RETROKMOD_ALT;
+    if (mods & NSCommandKeyMask)
+       mod |= RETROKMOD_META;
+    if (mods & NSNumericPadKeyMask)
+       mod |= RETROKMOD_NUMLOCK;
 
-            for (i = 1; i < ch.length; i++)
-                apple_input_keyboard_event(event._isKeyDown,
-                      0, [ch characterAtIndex:i], mod,
-                      RETRO_DEVICE_KEYBOARD);
-        }
+    if (ch && ch.length != 0)
+    {
+        unsigned i;
+        character = [ch characterAtIndex:0];
 
         apple_input_keyboard_event(event._isKeyDown,
-              (uint32_t)event._keyCode, character, mod,
+              (uint32_t)code, 0, mod,
               RETRO_DEVICE_KEYBOARD);
+
+        for (i = 1; i < ch.length; i++)
+            apple_input_keyboard_event(event._isKeyDown,
+                  0, [ch characterAtIndex:i], mod,
+                  RETRO_DEVICE_KEYBOARD);
     }
+
+    apple_input_keyboard_event(event._isKeyDown,
+          (uint32_t)code, character, mod,
+          RETRO_DEVICE_KEYBOARD);
 
     [super handleKeyUIEvent:event];
 }
@@ -334,56 +381,72 @@ enum
 /* This is for iOS versions < 9.0 */
 - (id)_keyCommandForEvent:(UIEvent*)event
 {
-   /* This gets called twice with the same timestamp
-    * for each keypress, that's fine for polling
-    * but is bad for business with events. */
-   static double last_time_stamp;
-
-   if (last_time_stamp == event.timestamp)
-      return [super _keyCommandForEvent:event];
-   last_time_stamp = event.timestamp;
+   /* Same per (key, direction) record as -handleKeyUIEvent:, kept
+    * separately because only one of the two paths is live on any
+    * given iOS version. */
+   static double   last_time_stamp;
+   static uint32_t seen[2][MAX_KEYS / 32];
+   NSString       *ch;
+   uint32_t       *row;
+   NSUInteger      mods;
+   long long       code;
+   uint32_t        character = 0;
+   uint32_t        mod       = 0;
 
    /* If the _hidEvent is null, [event _keyCode] will crash.
     * (This happens with the on screen keyboard). */
-   if (event._hidEvent)
+   if (!event._hidEvent)
+      return [super _keyCommandForEvent:event];
+
+   code = event._keyCode;
+   if (code <= 0 || code >= MAX_KEYS)
+      return [super _keyCommandForEvent:event];
+
+   if (last_time_stamp != event.timestamp)
    {
-      NSString       *ch = (NSString*)event._privateInput;
-      uint32_t character = 0;
-      uint32_t mod       = 0;
-      NSUInteger mods    = event._modifierFlags;
+      last_time_stamp = event.timestamp;
+      memset(seen, 0, sizeof(seen));
+   }
 
-      if (mods & NSAlphaShiftKeyMask)
-         mod |= RETROKMOD_CAPSLOCK;
-      if (mods & NSShiftKeyMask)
-         mod |= RETROKMOD_SHIFT;
-      if (mods & NSControlKeyMask)
-         mod |= RETROKMOD_CTRL;
-      if (mods & NSAlternateKeyMask)
-         mod |= RETROKMOD_ALT;
-      if (mods & NSCommandKeyMask)
-         mod |= RETROKMOD_META;
-      if (mods & NSNumericPadKeyMask)
-         mod |= RETROKMOD_NUMLOCK;
+   row = seen[event._isKeyDown ? 1 : 0];
+   if (row[code >> 5] & (1u << (code & 31)))
+      return [super _keyCommandForEvent:event];
+   row[code >> 5] |= 1u << (code & 31);
 
-      if (ch && ch.length != 0)
-      {
-         unsigned i;
-         character = [ch characterAtIndex:0];
+   ch   = (NSString*)event._privateInput;
+   mods = event._modifierFlags;
 
-         apple_input_keyboard_event(event._isKeyDown,
-               (uint32_t)event._keyCode, 0, mod,
-               RETRO_DEVICE_KEYBOARD);
+   if (mods & NSAlphaShiftKeyMask)
+      mod |= RETROKMOD_CAPSLOCK;
+   if (mods & NSShiftKeyMask)
+      mod |= RETROKMOD_SHIFT;
+   if (mods & NSControlKeyMask)
+      mod |= RETROKMOD_CTRL;
+   if (mods & NSAlternateKeyMask)
+      mod |= RETROKMOD_ALT;
+   if (mods & NSCommandKeyMask)
+      mod |= RETROKMOD_META;
+   if (mods & NSNumericPadKeyMask)
+      mod |= RETROKMOD_NUMLOCK;
 
-         for (i = 1; i < ch.length; i++)
-            apple_input_keyboard_event(event._isKeyDown,
-                  0, [ch characterAtIndex:i], mod,
-                  RETRO_DEVICE_KEYBOARD);
-      }
+   if (ch && ch.length != 0)
+   {
+      unsigned i;
+      character = [ch characterAtIndex:0];
 
       apple_input_keyboard_event(event._isKeyDown,
-            (uint32_t)event._keyCode, character, mod,
+            (uint32_t)code, 0, mod,
             RETRO_DEVICE_KEYBOARD);
+
+      for (i = 1; i < ch.length; i++)
+         apple_input_keyboard_event(event._isKeyDown,
+               0, [ch characterAtIndex:i], mod,
+               RETRO_DEVICE_KEYBOARD);
    }
+
+   apple_input_keyboard_event(event._isKeyDown,
+         (uint32_t)code, character, mod,
+         RETRO_DEVICE_KEYBOARD);
 
    return [super _keyCommandForEvent:event];
 }
@@ -394,7 +457,7 @@ enum
    uint32_t character = 0;
    uint32_t mod       = 0;
    NSUInteger mods    = 0;
-   if (@available(iOS 13.4, tvOS 13.4, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(13, 4, 0), APPLE_RUNTIME_VER(13, 4, 0)))
    {
       ch = (NSString*)press.key.characters;
       mods = event.modifierFlags;
@@ -428,7 +491,7 @@ enum
                                     RETRO_DEVICE_KEYBOARD);
    }
 
-   if (@available(iOS 13.4, tvOS 13.4, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(13, 4, 0), APPLE_RUNTIME_VER(13, 4, 0)))
       apple_input_keyboard_event(down,
                                  (uint32_t)press.key.keyCode, character, mod,
                                  RETRO_DEVICE_KEYBOARD);
@@ -457,6 +520,20 @@ enum
       [self handleUIPress:press withEvent:event down:NO];
    [super pressesEnded:presses withEvent:event];
 }
+
+- (void)pressesCancelled:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
+{
+   /* UIKit delivers pressesCancelled instead of pressesEnded when the
+    * system interrupts a press (incoming call, app switcher, keyboard
+    * shortcut HUD, ...). Without treating it as a release the key stays
+    * latched in apple_key_state until it is pressed again. */
+   if (ios_keyboard_active())
+      return [super pressesCancelled:presses withEvent:event];
+
+   for (UIPress *press in presses)
+      [self handleUIPress:press withEvent:event down:NO];
+   [super pressesCancelled:presses withEvent:event];
+}
 #endif
 
 #define GSEVENT_TYPE_KEYDOWN 10
@@ -465,7 +542,7 @@ enum
 - (void)sendEvent:(UIEvent *)event
 {
    [super sendEvent:event];
-   if (@available(iOS 13.4, tvOS 13.4, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(13, 4, 0), APPLE_RUNTIME_VER(13, 4, 0)))
    {
       if (event.type == UIEventTypeHover)
          return;
@@ -504,7 +581,7 @@ enum
 
 @end
 
-#ifdef HAVE_COCOA_METAL
+#ifdef HAVE_VULKAN
 @implementation MetalLayerView
 
 + (Class)layerClass {
@@ -537,6 +614,42 @@ enum
 
 @end
 #endif
+
+API_AVAILABLE(ios(13.0), tvos(13.0))
+@interface RetroArchSceneDelegate : UIResponder <UIWindowSceneDelegate>
+@end
+@implementation RetroArchSceneDelegate
+
+- (void)scene:(UIScene *)scene willConnectToSession:(UISceneSession *)session options:(UISceneConnectionOptions *)connectionOptions {
+   RetroArch_iOS *app = [RetroArch_iOS get];
+   app.window = [[UIWindow alloc] initWithWindowScene:(UIWindowScene *)scene];
+
+   [app.window makeKeyAndVisible];
+}
+
+- (void)sceneDidBecomeActive:(UIScene *)scene {
+   RetroArch_iOS *app = [RetroArch_iOS get];
+   [app applicationDidBecomeActive:[UIApplication sharedApplication]];
+}
+
+- (void)sceneWillResignActive:(UIScene *)scene {
+   RetroArch_iOS *app = [RetroArch_iOS get];
+   [app applicationWillResignActive:[UIApplication sharedApplication]];
+}
+
+- (void)sceneDidEnterBackground:(UIScene *)scene {
+   RetroArch_iOS *app = [RetroArch_iOS get];
+   [app applicationDidEnterBackground:[UIApplication sharedApplication]];
+}
+
+- (void)scene:(UIScene *)scene openURLContexts:(NSSet<UIOpenURLContext *> *)URLContexts {
+   RetroArch_iOS *app = [RetroArch_iOS get];
+   for (UIOpenURLContext *urlContext in URLContexts) {
+      [app application:(UIApplication *)app openURL:urlContext.URL options:@{}];
+   }
+}
+
+@end
 
 #if TARGET_OS_IOS
 @interface RetroArch_iOS () <MXMetricManagerSubscriber, UIPointerInteractionDelegate>
@@ -586,7 +699,7 @@ enum
 
    switch (vt)
    {
-#ifdef HAVE_COCOA_METAL
+#ifdef HAVE_VULKAN
        case APPLE_VIEW_TYPE_VULKAN:
          /* +new returns a +1 object; that retain transfers into
           * _renderView and satisfies the ivar's ownership invariant
@@ -596,6 +709,8 @@ enum
          _renderView.multipleTouchEnabled = YES;
 #endif
          break;
+#endif
+#ifdef HAVE_METAL
        case APPLE_VIEW_TYPE_METAL:
          {
             MetalView *v = [MetalView new];
@@ -622,11 +737,10 @@ enum
          return;
    }
 
-   _renderView.translatesAutoresizingMaskIntoConstraints = NO;
    UIView *rootView = [CocoaView get].view;
    [rootView addSubview:_renderView];
 #if TARGET_OS_IOS
-   if (@available(iOS 13.4, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(13, 4, 0), 0))
    {
       /* +[UIPointerInteraction alloc] initWithDelegate: returns +1.
        * -addInteraction: retains internally, so autorelease our own
@@ -641,10 +755,23 @@ enum
       _renderView.userInteractionEnabled = YES;
    }
 #endif
-   [[_renderView.topAnchor constraintEqualToAnchor:rootView.topAnchor] setActive:YES];
-   [[_renderView.bottomAnchor constraintEqualToAnchor:rootView.bottomAnchor] setActive:YES];
-   [[_renderView.leadingAnchor constraintEqualToAnchor:rootView.leadingAnchor] setActive:YES];
-   [[_renderView.trailingAnchor constraintEqualToAnchor:rootView.trailingAnchor] setActive:YES];
+   /* Layout anchors are iOS 9; the view is asked whether it has them
+    * and pinned to the container's edges either way. */
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 90000 || __TV_OS_VERSION_MAX_ALLOWED >= 90000
+   if ([_renderView respondsToSelector:@selector(topAnchor)])
+   {
+      _renderView.translatesAutoresizingMaskIntoConstraints = NO;
+      [[_renderView.topAnchor constraintEqualToAnchor:rootView.topAnchor] setActive:YES];
+      [[_renderView.bottomAnchor constraintEqualToAnchor:rootView.bottomAnchor] setActive:YES];
+      [[_renderView.leadingAnchor constraintEqualToAnchor:rootView.leadingAnchor] setActive:YES];
+      [[_renderView.trailingAnchor constraintEqualToAnchor:rootView.trailingAnchor] setActive:YES];
+   }
+   else
+#endif
+   {
+      _renderView.frame            = rootView.bounds;
+      _renderView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+   }
    [_renderView layoutIfNeeded];
 }
 
@@ -652,13 +779,18 @@ enum
 
 - (void)setVideoMode:(gfx_ctx_mode_t)mode
 {
-#ifdef HAVE_COCOA_METAL
-   MetalView *metalView = (MetalView*) _renderView;
-   CGFloat scale        = [[UIScreen mainScreen] scale];
-   [metalView setDrawableSize:CGSizeMake(
-         _renderView.bounds.size.width * scale,
-         _renderView.bounds.size.height * scale
-         )];
+#ifdef HAVE_METAL
+   /* Only the MTKView has a drawable size to set; the GLKView and
+    * the CAMetalLayer-backed Vulkan view size themselves. */
+   if (_vt == APPLE_VIEW_TYPE_METAL)
+   {
+      MetalView *metalView = (MetalView*) _renderView;
+      CGFloat scale        = [[UIScreen mainScreen] scale];
+      [metalView setDrawableSize:CGSizeMake(
+            _renderView.bounds.size.width * scale,
+            _renderView.bounds.size.height * scale
+            )];
+   }
 #endif
 }
 
@@ -688,6 +820,52 @@ enum
    return _documentsDirectory;
 }
 
+/* The record-category half of the session, for the microphone driver;
+ * see cocoa_audio_session.h. Moved here from the driver, which is C. */
+bool cocoa_audio_session_begin_record(unsigned preferred_rate,
+      unsigned *actual_rate)
+{
+   AVAudioSession *session = [AVAudioSession sharedInstance];
+   NSError *error = nil;
+   AVAudioSessionCategoryOptions options =
+      AVAudioSessionCategoryOptionAllowBluetoothA2DP;
+
+#if TARGET_OS_IOS
+   /* PlayAndRecord routes output to the receiver on iPhone unless
+    * DefaultToSpeaker is set, which would make game audio quiet and thin
+    * the moment a core asks for a microphone. tvOS has no receiver to be
+    * routed to and marks the option unavailable, so it is iOS-only -
+    * TARGET_OS_IPHONE covers tvOS as well and is too broad to gate it. */
+   options |= AVAudioSessionCategoryOptionDefaultToSpeaker;
+#endif
+
+   /* AllowBluetooth (HFP) is deliberately not requested: it would make a
+    * paired headset's microphone available, but only by dragging the whole
+    * route down to narrowband mono. Keeping A2DP alone leaves game audio
+    * at full quality on the headset and takes input from the built-in mic,
+    * which is the better trade for an emulator. It is also the option
+    * deprecated in the iOS 26 SDK in favour of AllowBluetoothHFP. */
+   [session setCategory:AVAudioSessionCategoryPlayAndRecord
+            withOptions:options
+                  error:&error];
+   if (error)
+   {
+      RARCH_ERR("[Cocoa] AVAudioSession record category: %s\n",
+            [[error localizedDescription] UTF8String]);
+      return false;
+   }
+
+   /* Let the system negotiate the rate rather than restricting it. */
+   [session setPreferredSampleRate:preferred_rate error:&error];
+   if (error)
+      RARCH_WARN("[Cocoa] AVAudioSession preferred sample rate %u: %s\n",
+            preferred_rate, [[error localizedDescription] UTF8String]);
+
+   if (actual_rate)
+      *actual_rate = (unsigned)[session sampleRate];
+   return true;
+}
+
 - (void)handleAudioSessionInterruption:(NSNotification *)notification
 {
    NSNumber *type = notification.userInfo[AVAudioSessionInterruptionTypeKey];
@@ -706,7 +884,23 @@ enum
    }
    else if ([type unsignedIntegerValue] == AVAudioSessionInterruptionTypeEnded)
    {
+      /* The system deactivated the session when the interruption
+       * began - a call, Siri, another app's playback - and does not
+       * reactivate it for us; the units must not be restarted into a
+       * dead session. Resume only when the system says to, and make
+       * the session active first. */
+      NSNumber *opts = notification.userInfo[AVAudioSessionInterruptionOptionKey];
+      NSError  *error = nil;
       RARCH_DBG("[Cocoa] AudioSession Interruption Ended.\n");
+      if (     [opts isKindOfClass:[NSNumber class]]
+            && !([opts unsignedIntegerValue] & AVAudioSessionInterruptionOptionShouldResume))
+      {
+         RARCH_DBG("[Cocoa] AudioSession Interruption Ended without ShouldResume; leaving audio stopped.\n");
+         return;
+      }
+      if (![[AVAudioSession sharedInstance] setActive:YES error:&error])
+         RARCH_ERR("[Cocoa] AVAudioSession setActive:YES after interruption: %s\n",
+               [[error localizedDescription] UTF8String]);
       audio_driver_start(false);
 #ifdef HAVE_MICROPHONE
       microphone_driver_start();
@@ -761,7 +955,7 @@ enum
    config.reportStoreConfiguration = storeConfig;
 
    /* Set appropriate monitors */
-   if (jit_available())
+   if (jit_available() || jit_possible())
       config.monitors = KSCrashMonitorTypeDebuggerSafe;
    else
       config.monitors = KSCrashMonitorTypeProductionSafe;
@@ -960,20 +1154,20 @@ enum
 #endif
 
 #if HAVE_SWIFT
-   if (@available(iOS 16.0, tvOS 16.0, *)) {
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(16, 0, 0), APPLE_RUNTIME_VER(16, 0, 0))) {
       [RetroArchAppShortcuts updateAppShortcuts];
    }
 #endif
 
 #if TARGET_OS_IOS
-   if (@available(iOS 13.0, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(13, 0, 0), 0))
       [MXMetricManager.sharedManager addSubscriber:self];
 #endif
 
 #ifdef HAVE_MFI
    extern void *apple_gamecontroller_joypad_init(void *data);
    apple_gamecontroller_joypad_init(NULL);
-   if (@available(macOS 11, iOS 14, tvOS 14, *))
+   if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(14, 0, 0), APPLE_RUNTIME_VER(14, 0, 0)))
    {
       [[NSNotificationCenter defaultCenter] addObserverForName:GCMouseDidConnectNotification
                                                         object:nil
@@ -1023,6 +1217,18 @@ enum
    rarch_stop_draw_observer();
    command_event(CMD_EVENT_SAVE_FILES, NULL);
 
+   /* -applicationWillTerminate: is not guaranteed: a suspended app that
+    * the system reclaims, or one the user swipes out of the app switcher,
+    * is killed without it ever being delivered. This is therefore the last
+    * callback that can be relied upon, and the only place the config can
+    * be written back - the 'Quit RetroArch' entry, which is what reaches
+    * retroarch_main_quit() elsewhere, is compiled out on Apple targets. */
+   {
+      settings_t *settings = config_get_ptr();
+      if (settings && settings->bools.config_save_on_exit)
+         command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
+   }
+
    /* Stop Bonjour services to prevent XPC crashes when connections are
     * invalidated while the app is suspended. Web servers will be restarted
     * when the app becomes active again. Netplay discovery must be
@@ -1068,6 +1274,10 @@ enum
       apple->touch_count = 0;
       memset(apple->touches, 0, sizeof(apple->touches));
    }
+
+   /* Hardware keyboard keys held while losing focus never get their
+    * release event; drop them like the macOS port does (ui_cocoa.m). */
+   apple_input_keyboard_reset();
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
@@ -1264,7 +1474,6 @@ enum
 
 #if TARGET_OS_IOS
    [self setToolbarHidden:true animated:NO];
-   [[UIApplication sharedApplication] setStatusBarHidden:true withAnimation:UIStatusBarAnimationNone];
    [[UIApplication sharedApplication] setIdleTimerDisabled:true];
 #endif
 
@@ -1477,6 +1686,7 @@ ui_companion_driver_t ui_companion_cocoatouch = {
    NULL, /* init */
    NULL, /* deinit */
    NULL, /* toggle */
+   NULL, /* iterate */
    ui_companion_cocoatouch_event_command,
    NULL, /* notify_refresh */
    NULL, /* msg_queue_push */
@@ -1578,12 +1788,11 @@ void ios_keyboard_end(void)
 
 int main(int argc, char *argv[])
 {
-#if TARGET_OS_IOS
+#if !TARGET_OS_TV
     if (jb_enable_ptrace_hack())
         RARCH_LOG("[Cocoa] Ptrace hack complete, JIT support is enabled.\n");
-    else
-        RARCH_WARN("[Cocoa] Ptrace hack NOT available; Please use an app like Jitterbug.\n");
 #endif
+    exec_mem_pool_init();
 #ifdef HAVE_SDL2
     SDL_SetMainReady();
 #endif

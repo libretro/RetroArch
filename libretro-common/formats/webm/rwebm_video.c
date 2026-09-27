@@ -42,6 +42,7 @@
 #include <formats/rvp9.h>
 #endif
 #include <formats/rwebm_video.h>
+#include <formats/image_blit_bands.h>
 
 /* Per-packet timestamps are pre-scanned at open so every frame's display
  * duration is known without lookahead decoding; cap the table so a
@@ -60,6 +61,10 @@ struct rwebm_video_stream
    rvp9_dec    *vp9;
 #endif
    uint32_t    *frame;      /* width * height ABGR words              */
+   uint32_t    *out;        /* caller's frame to blit into instead of
+                               'frame'; NULL for the stream's own    */
+   void        *blit_pool;  /* tpool_t the blit's row bands run on   */
+   unsigned     blit_bands; /* how many; <= 1 blits on this thread   */
    int64_t     *ts;         /* pre-scanned packet timestamps (ns)     */
    int          ts_count;   /* entries stored in ts                   */
    int          num_frames; /* total video packets in the stream      */
@@ -423,6 +428,7 @@ static bool rwebm_video_stream_open_decoder(rwebm_video_stream_t *s)
       case RWEBM_CODEC_VP9:
          if (!(s->vp9 = (rvp9_dec*)calloc(1, sizeof(*s->vp9))))
             return false;
+         rvp9_set_tile_pool(s->vp9, s->blit_pool, s->blit_bands);
          return true;
 #endif
       default:
@@ -652,6 +658,88 @@ void rwebm_video_stream_set_argb(rwebm_video_stream_t *s, int argb)
       s->emit_argb = argb ? 1 : 0;
 }
 
+void rwebm_video_stream_set_output(rwebm_video_stream_t *s, uint32_t *out)
+{
+   if (s)
+      s->out = out;
+}
+
+void rwebm_video_stream_set_blit_pool(rwebm_video_stream_t *s,
+      void *pool, unsigned bands)
+{
+   if (!s)
+      return;
+   s->blit_pool  = pool;
+   s->blit_bands = bands;
+#ifdef HAVE_RVP9
+   /* VP9 tile columns decode on the same pool, one per thread. */
+   if (s->vp9)
+      rvp9_set_tile_pool(s->vp9, pool, bands);
+#endif
+}
+
+/* The blit as a row-band job (image_blit_bands): every parameter of
+ * the frame's blit, with the row offset applied to the plane and
+ * destination pointers per band. The matrix is resolved before the
+ * split so a band's height does not pick the coefficients. */
+typedef struct
+{
+   uint32_t *dst;
+   const uint8_t *y, *u, *v;
+   unsigned dst_stride, w;
+   int ys, uvs;
+   unsigned matrix, transfer, range, max_cll;
+   int argb;
+   int kind;                /* 0: 8-bit, 1: hbd to 8-bit, 2: 10-bit */
+} rwebm_blit_ctx_t;
+
+static void rwebm_video_blit_rows(void *arg, unsigned row0, unsigned rows)
+{
+   const rwebm_blit_ctx_t *c = (const rwebm_blit_ctx_t*)arg;
+   uint32_t *dst             = c->dst + (size_t)row0 * c->dst_stride;
+   switch (c->kind)
+   {
+      case 0:
+         rwebm_video_blit_i420(dst, c->dst_stride, c->w, rows,
+               c->y + (size_t)row0 * c->ys, c->ys,
+               c->u + (size_t)(row0 >> 1) * c->uvs,
+               c->v + (size_t)(row0 >> 1) * c->uvs, c->uvs,
+               c->matrix, c->argb);
+         break;
+      case 1:
+         rwebm_video_blit_i420_hbd(dst, c->dst_stride, c->w, rows,
+               (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
+               (const uint16_t*)c->u + (size_t)(row0 >> 1) * c->uvs,
+               (const uint16_t*)c->v + (size_t)(row0 >> 1) * c->uvs, c->uvs,
+               c->matrix, c->transfer, c->range, c->max_cll, c->argb);
+         break;
+      default:
+         rwebm_video_blit_i420_10bit(dst, c->dst_stride, c->w, rows,
+               (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
+               (const uint16_t*)c->u + (size_t)(row0 >> 1) * c->uvs,
+               (const uint16_t*)c->v + (size_t)(row0 >> 1) * c->uvs, c->uvs,
+               c->matrix, c->transfer, c->range, c->max_cll);
+         break;
+   }
+}
+
+/* Run the frame's blit, in bands on the stream's pool when it has
+ * one. An untagged 8-bit matrix is decided by the frame's height here
+ * (rwebm_video_coefs); the HDR blits take theirs from the transfer
+ * and lazily build their tables, so those are warmed with a
+ * zero-row call before any band can race the build. */
+static void rwebm_video_blit_frame(rwebm_video_stream_t *s,
+      rwebm_blit_ctx_t *c, unsigned h)
+{
+   if (c->kind == 0 && !(c->matrix == 1 || c->matrix == 5
+            || c->matrix == 6 || c->matrix == 9 || c->matrix == 10))
+      c->matrix = h >= 720 ? 1 : 5;
+   else if (c->kind != 0 && s->blit_pool && s->blit_bands > 1)
+      rwebm_video_blit_rows(c, 0, 0);
+   image_blit_bands(s->blit_pool, s->blit_bands, h, 2,
+         rwebm_video_blit_rows, c);
+}
+
 void rwebm_video_stream_set_avail(rwebm_video_stream_t *s, size_t avail)
 {
    if (s)
@@ -666,6 +754,11 @@ size_t rwebm_video_stream_media_floor(rwebm_video_stream_t *s)
 size_t rwebm_video_stream_consumed(rwebm_video_stream_t *s)
 {
    return s ? rwebm_tell(s->demux) : 0;
+}
+
+int64_t rwebm_video_stream_duration_ns(rwebm_video_stream_t *s)
+{
+   return (s && s->demux) ? rwebm_duration_ns(s->demux) : 0;
 }
 
 void rwebm_video_stream_complete_scan(rwebm_video_stream_t *s,
@@ -728,12 +821,14 @@ static int rwebm_video_duration_ms(const rwebm_video_stream_t *s, int idx)
    return (int)(t1 / 1000000 - t0 / 1000000);
 }
 
-/* Decode one demuxed packet into s->frame. Returns 1 when a picture was
+/* Decode one demuxed packet into the output frame (the caller's when one
+ * was set, else s->frame). Returns 1 when a picture was
  * produced, 0 when the packet decoded but is not displayed, -1 on a
  * decode error. */
 static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
       const rwebm_packet *pkt)
 {
+   uint32_t *dst = s->out ? s->out : s->frame;
    /* A decoder can be absent if the re-open in rewind hit OOM. */
    if (!s->vp8
 #ifdef HAVE_RVP9
@@ -763,39 +858,44 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
          const rvp9_fb *fb = &s->vp9->fbs[last_show];
          unsigned w = (unsigned)fb->w < s->width  ? (unsigned)fb->w : s->width;
          unsigned h = (unsigned)fb->h < s->height ? (unsigned)fb->h : s->height;
-         if (s->vp9->hd.bit_depth == 10)
          {
             const rwebm_track *ct = rwebm_get_track(s->demux, s->track);
-            if (s->want10)
+            rwebm_blit_ctx_t c;
+            c.dst        = dst;
+            c.dst_stride = s->width;
+            c.w          = w;
+            c.y          = fb->y;
+            c.u          = fb->u;
+            c.v          = fb->v;
+            c.ys         = s->vp9->ys;
+            c.uvs        = s->vp9->uvs;
+            c.matrix     = ct ? ct->matrix_coefficients : 0;
+            c.transfer   = ct ? ct->transfer_characteristics : 0;
+            c.range      = ct ? ct->colour_range : 0;
+            c.max_cll    = ct ? ct->max_cll : 0;
+            if (s->vp9->hd.bit_depth == 10)
             {
-               /* Native 10-bit thumbnail: packed XRGB2101010, SDR-encoded
-                * at 10-bit precision (same colour as the 8-bit path). */
-               rwebm_video_blit_i420_10bit(s->frame, s->width, w, h,
-                     (const uint16_t*)fb->y, s->vp9->ys,
-                     (const uint16_t*)fb->u, (const uint16_t*)fb->v,
-                     s->vp9->uvs,
-                     ct ? ct->matrix_coefficients : 0,
-                     ct ? ct->transfer_characteristics : 0,
-                     ct ? ct->colour_range : 0,
-                     ct ? ct->max_cll : 0);
-               s->is10 = 1;
+               if (s->want10)
+               {
+                  /* Native 10-bit thumbnail: packed XRGB2101010,
+                   * SDR-encoded at 10-bit precision (same colour as
+                   * the 8-bit path). */
+                  c.kind = 2;
+                  c.argb = 0;
+                  s->is10 = 1;
+               }
+               else
+               {
+                  c.kind = 1;
+                  c.argb = s->emit_argb ? 0 : 1;
+               }
             }
             else
-               rwebm_video_blit_i420_hbd(s->frame, s->width, w, h,
-                     (const uint16_t*)fb->y, s->vp9->ys,
-                     (const uint16_t*)fb->u, (const uint16_t*)fb->v,
-                     s->vp9->uvs,
-                     ct ? ct->matrix_coefficients : 0,
-                     ct ? ct->transfer_characteristics : 0,
-                     ct ? ct->colour_range : 0,
-                     ct ? ct->max_cll : 0, s->emit_argb ? 0 : 1);
-         }
-         else
-         {
-            const rwebm_track *ct = rwebm_get_track(s->demux, s->track);
-            rwebm_video_blit_i420(s->frame, s->width, w, h,
-                  fb->y, s->vp9->ys, fb->u, fb->v, s->vp9->uvs,
-                  ct ? ct->matrix_coefficients : 0, s->emit_argb);
+            {
+               c.kind = 0;
+               c.argb = s->emit_argb;
+            }
+            rwebm_video_blit_frame(s, &c, h);
          }
          return 1;
       }
@@ -823,9 +923,22 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
          h = (int)s->height;
       {
          const rwebm_track *ct = rwebm_get_track(s->demux, s->track);
-         rwebm_video_blit_i420(s->frame, s->width,
-               (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
-               ct ? ct->matrix_coefficients : 0, s->emit_argb);
+         rwebm_blit_ctx_t c;
+         c.dst        = dst;
+         c.dst_stride = s->width;
+         c.w          = (unsigned)w;
+         c.y          = y;
+         c.u          = u;
+         c.v          = v;
+         c.ys         = ys;
+         c.uvs        = uvs;
+         c.matrix     = ct ? ct->matrix_coefficients : 0;
+         c.transfer   = 0;
+         c.range      = 0;
+         c.max_cll    = 0;
+         c.argb       = s->emit_argb;
+         c.kind       = 0;
+         rwebm_video_blit_frame(s, &c, (unsigned)h);
       }
       return 1;
    }
@@ -876,7 +989,7 @@ const uint32_t *rwebm_video_stream_next(rwebm_video_stream_t *s,
 
    while ((r = rwebm_video_stream_step(s, duration_ms)) == 0)
       ;                   /* non-shown frame: keep going      */
-   return (r == 1) ? s->frame : NULL;
+   return (r == 1) ? (s->out ? s->out : s->frame) : NULL;
 }
 
 void rwebm_video_stream_rewind(rwebm_video_stream_t *s)
@@ -954,8 +1067,11 @@ void rwebm_video_set_avail(rwebm_video_t *webm, size_t avail)
    webm->partial = 1;
    if (avail > webm->len)
       avail = webm->len;
-   if (avail > webm->avail)   /* monotonic */
-      webm->avail = avail;
+   /* An exact store: see rmp4_set_avail.  The bound is "readable
+    * right now"; a windowed feeder lowers it after a loop's rewind,
+    * and a raise-only mirror here would keep handing the stream its
+    * stale high-water mark - reads of decommitted pages one lap in. */
+   webm->avail = avail;
    if (webm->stream)
       rwebm_video_stream_set_avail(webm->stream, webm->avail);
 }

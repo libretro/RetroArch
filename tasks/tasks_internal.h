@@ -57,6 +57,32 @@ typedef struct nbio_buf
    unsigned bufsize;
 } nbio_buf_t;
 
+/* Shared per-frame I/O window (implementation and rationale in
+ * task_file_transfer.c).  A handler that performs bounded work per
+ * gather claims a share with task_nbio_slice_open(), consults
+ * task_nbio_slice_within_budget() between work items, and charges
+ * back what it actually spent with task_nbio_slice_close().  The
+ * window is shared by every participating task in a gather - file
+ * transfers, the content scanner - rather than handed to each one
+ * separately, because a per-task slice multiplies with the task
+ * count.  Every open grants a floor of one work item so a queue
+ * whose window is already spent still makes progress.  Under a
+ * threaded task queue each task simply gets a whole slice: there is
+ * no frame to protect there, and a shared static across threads
+ * would be a race for no benefit. */
+typedef struct
+{
+   retro_time_t start;       /* when this task's work began       */
+   retro_time_t allowance;   /* usec this task may spend in it    */
+   uint8_t      floor;       /* the guaranteed first work item    */
+} nbio_budget_t;
+
+void task_nbio_slice_open(nbio_budget_t *b);
+void task_nbio_slice_close(nbio_budget_t *b);
+/* Signature matches data_transfer's within-budget callback; the
+ * @avail / @len arguments are unused. */
+bool task_nbio_slice_within_budget(void *ud, size_t avail, size_t len);
+
 /* Generic progress_cb that forwards a task's progress (0-100) to the
  * platform's window/taskbar progress indicator (e.g. ITaskbarList3 on
  * Win32). Set this on any task whose progress should be reflected on
@@ -110,6 +136,8 @@ void *task_push_webdav_put(const char *url, const void *put_data, size_t len, bo
 void *task_push_webdav_delete(const char *url, bool mute, const char *headers,
       retro_task_callback_t cb, void *userdata);
 void *task_push_webdav_move(const char *url, const char *dest, bool mute, const char *headers,
+      retro_task_callback_t cb, void *userdata);
+void *task_push_webdav_copy(const char *url, const char *dest, bool mute, const char *headers,
       retro_task_callback_t cb, void *userdata);
 
 bool task_push_bluetooth_scan(retro_task_callback_t cb);
@@ -224,6 +252,15 @@ bool task_image_detach_video_stream(retro_task_t *task,
       void **stream, enum image_type_enum *type,
       struct data_transfer **xfer_owner, void **buf, size_t *len);
 
+/* What the image task learned about a PNG from the buffer it read:
+ * 1 the file is an APNG, 0 conclusively a still PNG, -1 unknown
+ * (not an image task, not a PNG, or the read did not complete).
+ * Same validity window as the detach above: the task's completion
+ * callback, while the task still owns its buffer.  Lets the caller
+ * skip re-opening the file to answer a question the task's bytes
+ * already answer. */
+int task_image_png_probe(retro_task_t *task);
+
 /* Async icon/texture loading.  generation_ptr must point to a static
  * variable in the calling module (not a heap struct field). */
 bool task_push_icon_load(const char *fullpath,
@@ -304,6 +341,8 @@ bool take_screenshot(
 
 bool event_load_save_files(bool is_sram_load_disabled);
 
+bool content_savefile_is_live(const char *path);
+
 bool event_save_files(bool sram_used, bool compress_files,
       const char *path_cheat_database);
 
@@ -354,6 +393,7 @@ bool input_autoconfigure_connect_ex(
       uint8_t flags);
 bool input_autoconfigure_disconnect(
       unsigned port, const char *name);
+bool input_autoconfigure_reconnect(unsigned port);
 
 void set_save_state_in_background(bool state);
 void set_save_state_disable_undo(bool disable);
@@ -367,13 +407,13 @@ void task_push_cdrom_dump(const char *drive);
 bool task_push_menu_explore_init(const char *directory_playlist,
       const char *directory_database);
 bool menu_explore_init_in_progress(void *data);
-void menu_explore_wait_for_init_task(void);
+void menu_explore_cancel_init_task(void);
 
 /* Menu database info tasks
  * (cache accessors with database types live in database_info.h) */
 void menu_dbinfo_cache_free(void);
 bool menu_dbinfo_load_in_progress(void *data);
-void menu_dbinfo_wait_for_task(void);
+void menu_dbinfo_cancel_task(void);
 bool task_push_dbinfo_load(const char *path, const char *query);
 #endif
 

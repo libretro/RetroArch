@@ -195,6 +195,12 @@ chd_error cdfl_codec_decompress(void *codec, const uint8_t *src, uint32_t comple
 #ifdef WANT_SUBCODE
 	/* inflate the subcode data */
 	offset = flac_decoder_finish(&cdfl->decoder);
+	/* offset is how far the flac decoder consumed, which a malformed
+	 * stream can drive past complen; src + offset would then be out of
+	 * bounds and complen - offset would underflow to near 2^32. Same
+	 * hazard as the complen_base checks in the other three CD codecs. */
+	if (offset > complen)
+		return CHDERR_DECOMPRESSION_ERROR;
 	ret = zlib_codec_decompress(&cdfl->subcode_decompressor, src + offset, complen - offset, &cdfl->buffer[frames * CD_MAX_SECTOR_DATA], frames * CD_MAX_SUBCODE_DATA);
 	if (ret != CHDERR_NONE)
 		return ret;

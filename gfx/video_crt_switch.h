@@ -25,20 +25,28 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "modeline/modeline_list.h"
+
 RETRO_BEGIN_DECLS
 
+/* Which geometry values the .switchres.ini override files set */
+#define CRT_INI_GEOM_H_SIZE  (1 << 0)
+#define CRT_INI_GEOM_H_SHIFT (1 << 1)
+#define CRT_INI_GEOM_V_SHIFT (1 << 2)
+
+/* State of the CRT consumer: the request last seen, the generator and
+ * the display server ops it applies through, and a drmModeModeInfo
+ * mirror the DRM context reads when KMS is the server. */
 typedef struct videocrt_switch
 {
    double p_clock;
+   video_modeline_gen_t *gen;
+   video_modeline_ops_t ops;
 
-   unsigned ra_core_width;
-   unsigned ra_core_height;
-   unsigned ra_tmp_width;
-   unsigned ra_tmp_height;
+   unsigned ra_core_dims;
+   unsigned ra_tmp_dims;
    unsigned ra_set_core_hz;
    unsigned index;
-   unsigned int fb_width;
-   unsigned int fb_height;
 
    float ra_core_hz;
    float sr_core_hz;
@@ -52,6 +60,13 @@ typedef struct videocrt_switch
    int tmp_porch_adjust;
    int tmp_center_adjust;
    int tmp_vert_adjust;
+   /* Geometry the core/directory/game .switchres.ini overrides
+    * set, and which of the three they set (CRT_INI_GEOM_*). An
+    * override holds until its own slider is moved. */
+   double ini_h_size;
+   int ini_h_shift;
+   int ini_v_shift;
+   unsigned ini_geom;
    int rtn;
    int interlace;
    int doublescan;
@@ -63,7 +78,9 @@ typedef struct videocrt_switch
    uint32_t vrefresh;
    uint16_t hdisplay, hsync_start, hsync_end, htotal, hskew;
    uint16_t vdisplay, vsync_start, vsync_end, vtotal, vscan;
-   bool sr2_active;
+   bool active;
+   bool ops_valid;
+   bool ops_lost;
    bool menu_active;
    bool hh_core;
 
@@ -75,9 +92,8 @@ typedef struct videocrt_switch
 
 void crt_switch_res_core(
       videocrt_switch_t *p_switch,
-      unsigned naitive_width,
-      unsigned width,
-      unsigned height,
+      unsigned native_width,
+      unsigned dims,
       float hz,
       bool rotated,
       unsigned crt_mode,
@@ -91,6 +107,18 @@ void crt_switch_res_core(
       int crt_switch_vert_adjust);
 
 void crt_destroy_modes(videocrt_switch_t *p_switch);
+
+/* The display server instance whose data is @data is about to be
+ * destroyed: drop the ops table bound to it so nothing dereferences
+ * freed memory, and arrange for the next switch to rebind and apply
+ * the mode again. No-op when the consumer is not bound to it. */
+void crt_switch_display_server_lost(videocrt_switch_t *p_switch, void *data);
+
+/* Write an EDID block for the configured CRT preset (menu mode, or
+ * the ini set for mode 4) to <config>/edid/<preset>.bin; s receives
+ * the path. Generation only: installing the block on a connector is
+ * the user's step, and the log says how. */
+bool crt_switch_write_edid(char *s, size_t len);
 
 RETRO_END_DECLS
 

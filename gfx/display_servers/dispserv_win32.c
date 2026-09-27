@@ -45,6 +45,13 @@
 #include <windows.h>
 #include <ntverp.h>
 
+/* objbase.h declares this as an enumerator where it has it at all;
+ * the oldest SDKs this builds against do not, so it is defined only
+ * after that header has been seen. */
+#ifndef COINIT_DISABLE_OLE1DDE
+#define COINIT_DISABLE_OLE1DDE 0x4
+#endif
+
 #ifndef COBJMACROS
 #define COBJMACROS
 #define COBJMACROS_DEFINED
@@ -55,8 +62,14 @@
 #undef COBJMACROS
 #endif
 
+#include <compat/strl.h>
+
 #include "../video_display_server.h"
 #include "../common/win32_common.h"
+#ifdef HAVE_MODELINE
+#include "win32_modeline.h"
+#include "../../verbosity.h"
+#endif
 
 #ifdef __ITaskbarList3_INTERFACE_DEFINED__
 #define HAS_TASKBAR_EXT
@@ -89,17 +102,44 @@ enum dispserv_win32_flags
    DISPSERV_WIN32_FLAG_DECORATIONS = (1 << 0)
 };
 
+#ifdef HAVE_MODELINE
+/* Modeline application state: the bound display device, the vendor
+ * timing path picked at open, and the desktop DEVMODE to restore. */
+typedef struct
+{
+   win32_modeline_backend_t backend;
+   DEVMODEA devmode;
+   bool opened;
+   bool has_backend;
+   bool keep_changes;
+   bool lock_unsupported_modes;
+   char device_name[32];
+   char device_id[128];
+   char device_key[128];
+} win32_modeline_t;
+#endif
+
 typedef struct
 {
 #ifdef HAS_TASKBAR_EXT
    ITaskbarList3 *taskbar_list;
+   /* This server's own reference on the apartment the taskbar
+    * interface lives in, so the interface outlives whatever else
+    * initialised COM (see the init below). */
+   bool com_inited;
+#endif
+#ifdef HAVE_MODELINE
+   win32_modeline_t ml;
 #endif
    int crt_center;
-   unsigned orig_width;
-   unsigned orig_height;
+   unsigned orig_dims;
    unsigned orig_refresh;
    uint8_t flags;
 } dispserv_win32_t;
+
+#ifdef HAVE_MODELINE
+static void win32_display_server_modeline_close(void *data);
+#endif
 
 /* Display configuration structs for QueryDisplayConfig */
 typedef struct DISPLAYCONFIG_RATIONAL_CUSTOM
@@ -223,6 +263,18 @@ static void *win32_display_server_init(void)
       return NULL;
 
 #ifdef HAS_TASKBAR_EXT
+   /* A COM interface may only be released while the apartment it was
+    * created in is still initialised, and the frontend's own
+    * CoInitialize is undone before the drivers are torn down: the
+    * taskbar interface was then released through a vtable in a module
+    * that had already unloaded, which is a segfault on the way out
+    * (call *0x10(%rax) - Release - with rax in a gone module). This
+    * reference of our own keeps the apartment alive for exactly as
+    * long as the interface, and is given back after the release
+    * below. CoInitializeEx returns S_FALSE when the apartment is
+    * already initialised, which still takes a reference. */
+   dispserv->com_inited = SUCCEEDED(CoInitializeEx(NULL,
+            COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE));
 #ifdef __cplusplus
    /* When compiling in C++ mode, GUIDs
       are references instead of pointers */
@@ -256,12 +308,15 @@ static void win32_display_server_destroy(void *data)
    if (!dispserv)
       return;
 
-   if (   dispserv->orig_width   > 0
-       && dispserv->orig_height  > 0
+#ifdef HAVE_MODELINE
+   win32_display_server_modeline_close(dispserv);
+#endif
+
+   if (   VIDEO_SCALE_W(dispserv->orig_dims) > 0
+       && VIDEO_SCALE_H(dispserv->orig_dims) > 0
        && dispserv->orig_refresh > 0)
       video_display_server_set_resolution(
-            dispserv->orig_width,
-            dispserv->orig_height,
+            dispserv->orig_dims,
             dispserv->orig_refresh,
             (float)dispserv->orig_refresh,
             dispserv->crt_center, 0, 0, 0);
@@ -271,6 +326,11 @@ static void win32_display_server_destroy(void *data)
    {
       ITaskbarList3_Release(dispserv->taskbar_list);
       dispserv->taskbar_list = NULL;
+   }
+   if (dispserv->com_inited)
+   {
+      CoUninitialize();
+      dispserv->com_inited = false;
    }
 #endif
 
@@ -382,7 +442,7 @@ static bool win32_get_video_output(DEVMODE *dm, int mode)
 }
 
 static bool win32_display_server_set_resolution(void *data,
-      unsigned width, unsigned height, int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
+      unsigned dims, int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust)
 {
    MONITORINFOEX current_mon;
    HMONITOR hm_to_use         = NULL;
@@ -401,21 +461,21 @@ static bool win32_display_server_set_resolution(void *data,
 
    win32_get_video_output(&dm, -1);
 
-   if (serv->orig_width == 0)
-      serv->orig_width   = GetSystemMetrics(SM_CXSCREEN);
-   if (serv->orig_height == 0)
-      serv->orig_height  = GetSystemMetrics(SM_CYSCREEN);
+   if (!VIDEO_SCALE_W(serv->orig_dims))
+      VIDEO_SCALE_PUT_W(serv->orig_dims, GetSystemMetrics(SM_CXSCREEN));
+   if (!VIDEO_SCALE_H(serv->orig_dims))
+      VIDEO_SCALE_PUT_H(serv->orig_dims, GetSystemMetrics(SM_CYSCREEN));
    if (serv->orig_refresh == 0)
       serv->orig_refresh = video_driver_get_refresh_rate();
 
    /* Used to stop super resolution bug */
-   if (width == dm.dmPelsWidth)
-      width = 0;
+   if (VIDEO_SCALE_W(dims) == dm.dmPelsWidth)
+      VIDEO_SCALE_PUT_W(dims, 0);
 
-   if (width == 0)
-      width = dm.dmPelsWidth;
-   if (height == 0)
-      height = dm.dmPelsHeight;
+   if (VIDEO_SCALE_W(dims) == 0)
+      VIDEO_SCALE_PUT_W(dims, dm.dmPelsWidth);
+   if (VIDEO_SCALE_H(dims) == 0)
+      VIDEO_SCALE_PUT_H(dims, dm.dmPelsHeight);
    if (curr_bpp == 0)
       curr_bpp = dm.dmBitsPerPel;
    if (int_hz == 0)
@@ -427,9 +487,9 @@ static bool win32_display_server_set_resolution(void *data,
 
    for (i = 0; win32_get_video_output(&dm, i); i++)
    {
-      if (dm.dmPelsWidth        != width)
+      if (dm.dmPelsWidth        != VIDEO_SCALE_W(dims))
          continue;
-      if (dm.dmPelsHeight       != height)
+      if (dm.dmPelsHeight       != VIDEO_SCALE_H(dims))
          continue;
       if (dm.dmBitsPerPel       != curr_bpp)
          continue;
@@ -488,13 +548,13 @@ static int resolution_list_qsort_func(
    str_a[0] = str_b[0] = '\0';
 
    snprintf(str_a, sizeof(str_a), "%04dx%04d (%d Hz)",
-         a->width,
-         a->height,
+         VIDEO_SCALE_W(a->dims),
+         VIDEO_SCALE_H(a->dims),
          a->refreshrate);
 
    snprintf(str_b, sizeof(str_b), "%04dx%04d (%d Hz)",
-         b->width,
-         b->height,
+         VIDEO_SCALE_W(b->dims),
+         VIDEO_SCALE_H(b->dims),
          b->refreshrate);
 
    return strcasecmp(str_a, str_b);
@@ -507,8 +567,7 @@ static void *win32_display_server_get_resolution_list(
    unsigned i                 = 0;
    unsigned count             = 0;
    unsigned capacity          = 64;
-   unsigned curr_width        = 0;
-   unsigned curr_height       = 0;
+   unsigned curr_dims         = 0;
    unsigned curr_bpp          = 0;
    unsigned curr_refreshrate  = 0;
 #if _WIN32_WINNT >= 0x0500
@@ -519,8 +578,7 @@ static void *win32_display_server_get_resolution_list(
 
    if (win32_get_video_output(&dm, -1))
    {
-      curr_width        = dm.dmPelsWidth;
-      curr_height       = dm.dmPelsHeight;
+      curr_dims       = VIDEO_SCALE_PACK(dm.dmPelsWidth, dm.dmPelsHeight);
       curr_bpp          = dm.dmBitsPerPel;
       curr_refreshrate  = dm.dmDisplayFrequency;
 #if _WIN32_WINNT >= 0x0500
@@ -566,8 +624,7 @@ static void *win32_display_server_get_resolution_list(
          conf = tmp;
       }
 
-      conf[count].width            = dm.dmPelsWidth;
-      conf[count].height           = dm.dmPelsHeight;
+      conf[count].dims = VIDEO_SCALE_PACK(dm.dmPelsWidth, dm.dmPelsHeight);
       conf[count].bpp              = dm.dmBitsPerPel;
       conf[count].refreshrate      = dm.dmDisplayFrequency;
       /* It may be possible to get exact refresh rate via different API - for now, it is integer only */
@@ -581,8 +638,7 @@ static void *win32_display_server_get_resolution_list(
 #endif
       conf[count].dblscan          = false; /* no flag for doublescan on this platform */
 
-      if (   (conf[count].width       == curr_width)
-          && (conf[count].height      == curr_height)
+      if (   (conf[count].dims == curr_dims)
           && (conf[count].bpp         == curr_bpp)
           && (conf[count].refreshrate == curr_refreshrate)
           && (conf[count].interlaced  == curr_interlaced)
@@ -728,7 +784,8 @@ static float win32_display_server_get_refresh_rate(void *data)
             GetProcAddress(user32, "GetDisplayConfigBufferSizes");
    }
 #else
-   static QUERYDISPLAYCONFIG          pQueryDisplayConfig          = QueryDisplayConfig;
+   static QUERYDISPLAYCONFIG          pQueryDisplayConfig          =
+      (QUERYDISPLAYCONFIG)QueryDisplayConfig;
    static GETDISPLAYCONFIGBUFFERSIZES pGetDisplayConfigBufferSizes = GetDisplayConfigBufferSizes;
 #endif
 
@@ -776,13 +833,12 @@ static float win32_display_server_get_refresh_rate(void *data)
 }
 
 static void win32_display_server_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *s, size_t len)
+      unsigned *dims, char *s, size_t len)
 {
    DEVMODE dm;
    if (win32_get_video_output(&dm, -1))
    {
-      *width  = dm.dmPelsWidth;
-      *height = dm.dmPelsHeight;
+      *dims = VIDEO_SCALE_PACK(dm.dmPelsWidth, dm.dmPelsHeight);
    }
 }
 
@@ -795,19 +851,16 @@ static void win32_display_server_get_video_output_prev(void *data)
    DEVMODE dm;
    DEVMODE prev_dm;
    bool have_prev        = false;
-   unsigned curr_width   = 0;
-   unsigned curr_height  = 0;
+   unsigned curr_dims    = 0;
 
    if (win32_get_video_output(&dm, -1))
    {
-      curr_width  = dm.dmPelsWidth;
-      curr_height = dm.dmPelsHeight;
+      curr_dims = VIDEO_SCALE_PACK(dm.dmPelsWidth, dm.dmPelsHeight);
    }
 
    for (i = 0; win32_get_video_output(&dm, i); i++)
    {
-      if (   dm.dmPelsWidth  == curr_width
-          && dm.dmPelsHeight == curr_height)
+      if (   VIDEO_SCALE_PACK(dm.dmPelsWidth, dm.dmPelsHeight) == curr_dims)
       {
          if (have_prev)
             break;
@@ -835,21 +888,18 @@ static void win32_display_server_get_video_output_next(void *data)
    int i;
    DEVMODE dm;
    bool found           = false;
-   unsigned curr_width  = 0;
-   unsigned curr_height = 0;
+   unsigned curr_dims   = 0;
 
    if (win32_get_video_output(&dm, -1))
    {
-      curr_width  = dm.dmPelsWidth;
-      curr_height = dm.dmPelsHeight;
+      curr_dims = VIDEO_SCALE_PACK(dm.dmPelsWidth, dm.dmPelsHeight);
    }
 
    for (i = 0; win32_get_video_output(&dm, i); i++)
    {
       if (found)
       {
-         if (   dm.dmPelsWidth  != curr_width
-             || dm.dmPelsHeight != curr_height)
+         if (   VIDEO_SCALE_PACK(dm.dmPelsWidth, dm.dmPelsHeight) != curr_dims)
          {
             win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
             win32_change_display_settings(
@@ -858,8 +908,7 @@ static void win32_display_server_get_video_output_next(void *data)
          }
       }
 
-      if (   dm.dmPelsWidth  == curr_width
-          && dm.dmPelsHeight == curr_height)
+      if (   VIDEO_SCALE_PACK(dm.dmPelsWidth, dm.dmPelsHeight) == curr_dims)
          found = true;
    }
 }
@@ -908,6 +957,7 @@ static bool win32_display_server_get_metrics(void *data,
          break;
       default:
          *value = 0;
+         ReleaseDC(NULL, monitor);
          return false;
    }
 
@@ -915,13 +965,550 @@ static bool win32_display_server_get_metrics(void *data,
    return true;
 }
 
+
+#ifdef HAVE_MODELINE
+#define WIN32_MODELINE_DISPLAY_MAX 16
+
+#ifndef DM_INTERLACED
+#define DM_INTERLACED 0x00000002
+#endif
+
+typedef struct
+{
+   HMONITOR h_monitor;
+   int index;
+} win32_monitor_enum_t;
+
+static BOOL CALLBACK win32_modeline_monitor_by_index(HMONITOR h_monitor,
+      HDC hdc, LPRECT rect, LPARAM data)
+{
+   win32_monitor_enum_t *mon = (win32_monitor_enum_t*)data;
+   if (--mon->index < 0)
+   {
+      mon->h_monitor = h_monitor;
+      return FALSE;
+   }
+   return TRUE;
+}
+
+typedef struct
+{
+   video_output_info_t *out;
+   int max;
+   int n;
+} win32_output_enum_t;
+
+static BOOL CALLBACK win32_modeline_output_enum(HMONITOR h_monitor,
+      HDC hdc, LPRECT rect, LPARAM data)
+{
+   MONITORINFOEXA info;
+   win32_output_enum_t *e = (win32_output_enum_t*)data;
+   video_output_info_t *o;
+
+   if (e->n >= e->max)
+      return FALSE;
+   memset(&info, 0, sizeof(info));
+   info.cbSize = sizeof(info);
+   if (!GetMonitorInfoA(h_monitor, (LPMONITORINFO)&info))
+      return TRUE;
+
+   o          = &e->out[e->n];
+   memset(o, 0, sizeof(*o));
+   o->id      = e->n;
+   o->x       = info.rcMonitor.left;
+   o->y       = info.rcMonitor.top;
+   o->dims = VIDEO_SCALE_PACK(info.rcMonitor.right - info.rcMonitor.left, info.rcMonitor.bottom - info.rcMonitor.top);
+   o->primary = (info.dwFlags & MONITORINFOF_PRIMARY) ? true : false;
+   strlcpy(o->name, info.szDevice, sizeof(o->name));
+   e->n++;
+   return TRUE;
+}
+
+static int win32_display_server_modeline_list_outputs(void *data,
+      video_output_info_t *out, int max)
+{
+   win32_output_enum_t e;
+   e.out = out;
+   e.max = max;
+   e.n   = 0;
+   EnumDisplayMonitors(NULL, NULL, win32_modeline_output_enum, (LPARAM)&e);
+   return e.n;
+}
+
+static bool win32_display_server_modeline_open(void *data,
+      const video_modeline_disp_t *ds)
+{
+   int idev  = 0;
+   int found = -1;
+   int i;
+   unsigned vendor, device;
+   char display[32];
+   DISPLAY_DEVICEA *dd;
+   dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
+   win32_modeline_t *ml       = &dispserv->ml;
+
+   if (ml->opened)
+      return true;
+
+   /* The device table is too large for a frame */
+   dd = (DISPLAY_DEVICEA*)calloc(WIN32_MODELINE_DISPLAY_MAX, sizeof(*dd));
+   if (!dd)
+      return false;
+
+   memset(ml, 0, sizeof(*ml));
+   ml->keep_changes           = ds->keep_changes;
+   ml->lock_unsupported_modes = ds->lock_unsupported_modes;
+   display[0]                 = '\0';
+
+   /* A one-digit screen is a monitor index; resolve it to a device */
+   if (strlen(ds->screen) == 1)
+   {
+      win32_monitor_enum_t mon;
+      int monitor_index = ds->screen[0] - '0';
+      if (monitor_index < 0 || monitor_index > 9)
+      {
+         RARCH_ERR("[Modeline] Bad monitor index %d\n", monitor_index);
+         free(dd);
+         return false;
+      }
+      mon.index     = monitor_index;
+      mon.h_monitor = NULL;
+      EnumDisplayMonitors(NULL, NULL, win32_modeline_monitor_by_index, (LPARAM)&mon);
+      if (!mon.h_monitor)
+      {
+         RARCH_ERR("[Modeline] Couldn't find handle for monitor index %d\n",
+               monitor_index);
+         free(dd);
+         return false;
+      }
+      else
+      {
+         MONITORINFOEXA info;
+         memset(&info, 0, sizeof(info));
+         info.cbSize = sizeof(info);
+         GetMonitorInfoA(mon.h_monitor, (LPMONITORINFO)&info);
+         strlcpy(display, info.szDevice, sizeof(display));
+         RARCH_LOG("[Modeline] Display %s\n", display);
+      }
+   }
+   else
+      strlcpy(display, ds->screen, sizeof(display));
+
+   /* "auto" is the head the RetroArch window sits on; without a
+    * window yet it is the primary device */
+   if (!strcmp(display, "auto"))
+   {
+      HWND win = win32_get_window();
+      if (win)
+      {
+         HMONITOR hm = MonitorFromWindow(win, MONITOR_DEFAULTTONEAREST);
+         MONITORINFOEXA info;
+         memset(&info, 0, sizeof(info));
+         info.cbSize = sizeof(info);
+         if (hm && GetMonitorInfoA(hm, (LPMONITORINFO)&info) && info.szDevice[0])
+         {
+            strlcpy(display, info.szDevice, sizeof(display));
+            RARCH_LOG("[Modeline] Window is on %s\n", display);
+         }
+      }
+   }
+
+   /* Device by name, or the primary one for "auto" */
+   while (idev < WIN32_MODELINE_DISPLAY_MAX)
+   {
+      memset(&dd[idev], 0, sizeof(dd[idev]));
+      dd[idev].cb = sizeof(dd[idev]);
+      if (!EnumDisplayDevicesA(NULL, idev, &dd[idev], 0))
+         break;
+      if ((!strcmp(display, "auto") && (dd[idev].StateFlags & DISPLAY_DEVICE_PRIMARY_DEVICE))
+            || !strcmp(display, dd[idev].DeviceName))
+         found = idev;
+      idev++;
+   }
+
+   if (found == -1)
+   {
+      RARCH_ERR("[Modeline] Failed obtaining the display's video registry key\n");
+      free(dd);
+      return false;
+   }
+
+   strlcpy(ml->device_name, dd[found].DeviceName, sizeof(ml->device_name));
+   strlcpy(ml->device_id, dd[found].DeviceID, sizeof(ml->device_id));
+   RARCH_DBG("[Modeline] %s: %s (%s)\n", ml->device_name,
+         dd[found].DeviceString, ml->device_id);
+
+   /* The registry key comes from the first device sharing the
+    * adapter's string, with the \Registry\Machine\ prefix dropped */
+   for (i = 0; i < idev; i++)
+   {
+      if (strstr(dd[i].DeviceString, dd[found].DeviceString))
+      {
+         found = i;
+         break;
+      }
+   }
+   strlcpy(ml->device_key, dd[found].DeviceKey + 18, sizeof(ml->device_key));
+   RARCH_DBG("[Modeline] Device key: %s\n", ml->device_key);
+
+   /* Vendor timing path: PowerStrip when asked, else by PCI id */
+   vendor = device = 0;
+   if (!strcmp(ds->api, "powerstrip"))
+      ml->has_backend = win32_modeline_pstrip_create(&ml->backend,
+            ml->device_name, ds);
+   else
+   {
+      sscanf(ml->device_id, "PCI\\VEN_%x&DEV_%x", &vendor, &device);
+      if (vendor == 0x1002)
+      {
+         if (win32_modeline_ati_is_legacy(vendor, device))
+            ml->has_backend = win32_modeline_ati_create(&ml->backend,
+                  ml->device_name, ml->device_key, ds);
+         else
+            ml->has_backend = win32_modeline_adl_create(&ml->backend,
+                  ml->device_name, ml->device_key, ds);
+      }
+      else
+         RARCH_LOG("[Modeline] Video chipset has no custom timing path\n");
+   }
+
+   /* Desktop mode, for restore */
+   memset(&ml->devmode, 0, sizeof(ml->devmode));
+   ml->devmode.dmSize = sizeof(ml->devmode);
+   EnumDisplaySettingsExA(ml->device_name, ENUM_CURRENT_SETTINGS, &ml->devmode, 0);
+
+   free(dd);
+   ml->opened = true;
+   return true;
+}
+
+static void win32_display_server_modeline_close(void *data)
+{
+   dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
+   win32_modeline_t *ml       = &dispserv->ml;
+
+   if (!ml->opened)
+      return;
+   if (!ml->keep_changes)
+      ChangeDisplaySettingsExA(ml->device_name, NULL, NULL, 0, 0);
+   if (ml->has_backend && ml->backend.close)
+      ml->backend.close(ml->backend.ctx);
+   ml->has_backend = false;
+   ml->opened      = false;
+}
+
+static unsigned win32_display_server_modeline_caps(void *data)
+{
+   dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
+   win32_modeline_t *ml       = &dispserv->ml;
+   if (ml->has_backend && ml->backend.caps)
+      return ml->backend.caps(ml->backend.ctx);
+   return 0;
+}
+
+static int win32_display_server_modeline_enum(void *data,
+      video_modeline_t *modes, int max)
+{
+   int i;
+   int mode_num = 0;
+   int n        = 0;
+   int custom   = 0;
+   DEVMODEA dm;
+   video_modeline_t desktop;
+   dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
+   win32_modeline_t *ml       = &dispserv->ml;
+
+   if (!ml->opened)
+      return -1;
+
+   memset(&desktop, 0, sizeof(desktop));
+   desktop.dims      = (ml->devmode.dmDisplayOrientation == DMDO_DEFAULT
+         || ml->devmode.dmDisplayOrientation == DMDO_180)
+      ? VIDEO_SCALE_PACK(ml->devmode.dmPelsWidth, ml->devmode.dmPelsHeight)
+      : VIDEO_SCALE_PACK(ml->devmode.dmPelsHeight, ml->devmode.dmPelsWidth);
+   desktop.refresh   = ml->devmode.dmDisplayFrequency;
+   desktop.interlace = (ml->devmode.dmDisplayFlags & DM_INTERLACED) ? 1 : 0;
+
+   memset(&dm, 0, sizeof(dm));
+   dm.dmSize = sizeof(dm);
+
+   RARCH_DBG("[Modeline] Searching for custom video modes...\n");
+   while (n < max && EnumDisplaySettingsExA(ml->device_name, mode_num, &dm,
+            ml->lock_unsupported_modes ? 0 : EDS_RAWMODE) != 0)
+   {
+      video_modeline_t m;
+      bool dup = false;
+
+      mode_num++;
+      if (dm.dmBitsPerPel != 32 || dm.dmDisplayFixedOutput != DMDFO_DEFAULT)
+         continue;
+
+      memset(&m, 0, sizeof(m));
+      m.interlace = (dm.dmDisplayFlags & DM_INTERLACED) ? 1 : 0;
+      m.dims      = (dm.dmDisplayOrientation == DMDO_DEFAULT
+            || dm.dmDisplayOrientation == DMDO_180)
+         ? VIDEO_SCALE_PACK(dm.dmPelsWidth, dm.dmPelsHeight)
+         : VIDEO_SCALE_PACK(dm.dmPelsHeight, dm.dmPelsWidth);
+      m.refresh   = dm.dmDisplayFrequency;
+      m.hactive   = (int)VIDEO_SCALE_W(m.dims);
+      m.vactive   = (int)VIDEO_SCALE_H(m.dims);
+      m.vfreq     = m.refresh;
+      m.type     |= (dm.dmDisplayOrientation == DMDO_90
+            || dm.dmDisplayOrientation == DMDO_270) ? MODELINE_ROTATED : MODELINE_OK;
+
+      for (i = 0; i < n; i++)
+      {
+         if (modes[i].dims == m.dims
+               && modes[i].refresh == m.refresh && modes[i].interlace == m.interlace)
+         {
+            dup = true;
+            break;
+         }
+      }
+      if (dup)
+         continue;
+
+      if (m.dims == desktop.dims
+            && m.refresh == desktop.refresh && m.interlace == desktop.interlace)
+         m.type |= MODELINE_DESKTOP;
+
+      if (ml->has_backend && ml->backend.get_timing
+            && ml->backend.get_timing(ml->backend.ctx, &m))
+         custom++;
+      else
+         m.type |= MODELINE_TIMING_SYSTEM;
+
+      modes[n++] = m;
+   }
+
+   RARCH_DBG("[Modeline] Found %d custom of %d active video modes\n",
+         custom, n);
+   return n;
+}
+
+static bool win32_display_server_modeline_add(void *data,
+      video_modeline_t *mode)
+{
+   dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
+   win32_modeline_t *ml       = &dispserv->ml;
+   if (ml->has_backend && ml->backend.add_mode)
+      return ml->backend.add_mode(ml->backend.ctx, mode);
+   return false;
+}
+
+static bool win32_display_server_modeline_update(void *data,
+      video_modeline_t *mode)
+{
+   dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
+   win32_modeline_t *ml       = &dispserv->ml;
+   if (ml->has_backend && ml->backend.update_mode)
+      return ml->backend.update_mode(ml->backend.ctx, mode);
+   return false;
+}
+
+static bool win32_display_server_modeline_delete(void *data,
+      video_modeline_t *mode)
+{
+   dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
+   win32_modeline_t *ml       = &dispserv->ml;
+   if (ml->has_backend && ml->backend.delete_mode)
+      return ml->backend.delete_mode(ml->backend.ctx, mode);
+   return false;
+}
+
+static bool win32_display_server_modeline_flush(void *data)
+{
+   dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
+   win32_modeline_t *ml       = &dispserv->ml;
+   if (ml->has_backend && ml->backend.flush)
+      return ml->backend.flush(ml->backend.ctx);
+   return true;
+}
+
+/* CDS switches between listed modes; the timing behind the listed
+ * WxH@R was rewritten by the vendor path at flush. */
+static bool win32_display_server_modeline_set(void *data,
+      video_modeline_t *mode)
+{
+   LONG result;
+   DEVMODEA dm;
+   dispserv_win32_t *dispserv = (dispserv_win32_t*)data;
+   win32_modeline_t *ml       = &dispserv->ml;
+
+   if (!ml->opened || !mode)
+      return false;
+
+   memset(&dm, 0, sizeof(dm));
+   dm.dmSize             = sizeof(dm);
+   dm.dmPelsWidth        = (mode->type & MODELINE_ROTATED)
+      ? VIDEO_SCALE_H(mode->dims) : VIDEO_SCALE_W(mode->dims);
+   dm.dmPelsHeight       = (mode->type & MODELINE_ROTATED)
+      ? VIDEO_SCALE_W(mode->dims) : VIDEO_SCALE_H(mode->dims);
+   dm.dmDisplayFrequency = mode->refresh;
+   dm.dmDisplayFlags     = mode->interlace ? DM_INTERLACED : 0;
+   dm.dmFields           = DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFREQUENCY | DM_DISPLAYFLAGS;
+
+   RARCH_LOG("[Modeline] Set desktop mode: %s (%dx%d@%d) flags(%x)\n",
+         ml->device_name, (int)dm.dmPelsWidth, (int)dm.dmPelsHeight,
+         (int)dm.dmDisplayFrequency, (int)dm.dmDisplayFlags);
+
+   result = ChangeDisplaySettingsExA(ml->device_name, &dm, NULL,
+         (ml->keep_changes ? CDS_UPDATEREGISTRY : CDS_FULLSCREEN) | CDS_RESET, 0);
+   if (result == DISP_CHANGE_SUCCESSFUL)
+      return true;
+   RARCH_ERR("[Modeline] ChangeDisplaySettingsExA error(%x)\n", (int)result);
+   return false;
+}
+#endif /* HAVE_MODELINE */
+
 static uint32_t win32_display_server_get_flags(void *data)
 {
    uint32_t flags   = 0;
 
-   BIT32_SET(flags, DISPSERV_CTX_CRT_SWITCHRES);
+   BIT32_SET(flags, DISPSERV_CTX_MODELINE);
 
    return flags;
+}
+
+#ifdef HAVE_D3DKMT
+static int win32_display_server_get_scanline(void *data)
+{
+   (void)data;
+   return d3dkmt_scanline_get();
+}
+
+static bool win32_display_server_wait_vblank(void *data)
+{
+   (void)data;
+   return d3dkmt_wait_vblank();
+}
+#endif
+
+/* The EDID of the monitor under the RetroArch window, from the PnP
+ * monitor's registry key: monitor.sys has kept the raw block at
+ * HKLM\SYSTEM\CurrentControlSet\Enum\DISPLAY\<PnP id>\<instance>\
+ * Device Parameters\EDID since Windows 2000 and still does. The
+ * instance path comes from EnumDisplayDevices' second level with
+ * EDD_GET_DEVICE_INTERFACE_NAME, as a device interface name
+ * (\\?\DISPLAY#GSM5B09#5&2a1b3c4d&0&UID4352#{guid}) that maps onto
+ * the Enum key by dropping the prefix and the GUID and turning the
+ * separators back into backslashes. Windows 9x and NT4 have neither
+ * the flag nor the key: -1 there. */
+#ifndef EDD_GET_DEVICE_INTERFACE_NAME
+#define EDD_GET_DEVICE_INTERFACE_NAME 0x00000001
+#endif
+
+static int win32_display_server_get_edid(void *data, uint8_t *out, size_t max)
+{
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500
+   dispserv_win32_t *serv = (dispserv_win32_t*)data;
+   const char *adapter    = NULL;
+   HWND win;
+   HMONITOR hm;
+   MONITORINFOEXA info;
+   DISPLAY_DEVICEA dd;
+   char key[512];
+   const char *p;
+   size_t _len;
+   HKEY hkey;
+   DWORD type = 0, size;
+   LONG rc;
+   int n = -1;
+
+   if (!out || max < 128)
+      return -1;
+
+   /* The adapter: the one the modeline path has open when the CRT
+    * switcher is running, since that is the display being driven - on
+    * a two-head box the window sits on the desktop monitor while the
+    * CRT is the other one - else the one under the window, else the
+    * primary */
+#ifdef HAVE_MODELINE
+   if (serv && serv->ml.opened && serv->ml.device_name[0])
+      adapter = serv->ml.device_name;
+#else
+   (void)serv;
+#endif
+   memset(&info, 0, sizeof(info));
+   info.cbSize = sizeof(info);
+   if (!adapter)
+   {
+      win = win32_get_window();
+      hm  = MonitorFromWindow(win, MONITOR_DEFAULTTOPRIMARY);
+      if (!hm || !GetMonitorInfoA(hm, (LPMONITORINFO)&info) || !info.szDevice[0])
+         return -1;
+      adapter = info.szDevice;
+   }
+
+   /* Its first monitor, as an interface name */
+   memset(&dd, 0, sizeof(dd));
+   dd.cb = sizeof(dd);
+   if (!EnumDisplayDevicesA(adapter, 0, &dd, EDD_GET_DEVICE_INTERFACE_NAME)
+         || !dd.DeviceID[0])
+      return -1;
+
+   /* \\?\DISPLAY#GSM5B09#5&2a1b&0&UID4352#{guid}
+    *  -> SYSTEM\CurrentControlSet\Enum\DISPLAY\GSM5B09\5&2a1b&0&UID4352 */
+   p = dd.DeviceID;
+   if (!strncmp(p, "\\\\?\\", 4))
+      p += 4;
+   _len = strlcpy(key, "SYSTEM\\CurrentControlSet\\Enum\\", sizeof(key));
+   for (; *p && *p != '{' && _len < sizeof(key) - 1; p++)
+      key[_len++] = (*p == '#') ? '\\' : *p;
+   /* the '#' before the GUID became a trailing backslash */
+   while (_len > 0 && key[_len - 1] == '\\')
+      _len--;
+   key[_len] = '\0';
+   strlcpy(key + _len, "\\Device Parameters", sizeof(key) - _len);
+
+   if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, key, 0, KEY_READ, &hkey) != ERROR_SUCCESS)
+      return -1;
+   /* Size first: a block longer than the caller's buffer is read
+    * through a scratch copy, since the registry API refuses a
+    * partial read rather than truncating */
+   size = 0;
+   rc   = RegQueryValueExA(hkey, "EDID", NULL, &type, NULL, &size);
+   if (rc == ERROR_SUCCESS && type == REG_BINARY && size >= 128)
+   {
+      if (size <= max)
+      {
+         if (RegQueryValueExA(hkey, "EDID", NULL, &type, out, &size) == ERROR_SUCCESS)
+            n = (int)(size - size % 128);
+      }
+      else
+      {
+         uint8_t *tmp = (uint8_t*)malloc(size);
+         if (tmp)
+         {
+            if (RegQueryValueExA(hkey, "EDID", NULL, &type, tmp, &size) == ERROR_SUCCESS)
+            {
+               n = (int)(max - max % 128);
+               memcpy(out, tmp, (size_t)n);
+            }
+            free(tmp);
+         }
+      }
+   }
+   RegCloseKey(hkey);
+   return n;
+#else
+   (void)data;
+   (void)out;
+   (void)max;
+   return -1;
+#endif
+}
+
+/* The calling thread's own message queue is where every Win32 input
+ * path begins. With no handles the wait is on the queue alone; with
+ * QS_ALLINPUT and MWMO_INPUTAVAILABLE it returns for any message,
+ * including one already queued, and removes nothing. */
+static bool win32_display_server_idle_wait(void *data, unsigned ms)
+{
+   (void)data;
+   MsgWaitForMultipleObjectsEx(0, NULL, ms, QS_ALLINPUT,
+         MWMO_INPUTAVAILABLE);
+   return true;
 }
 
 const video_display_server_t dispserv_win32 = {
@@ -946,5 +1533,37 @@ const video_display_server_t dispserv_win32 = {
    win32_display_server_get_video_output_next,
    win32_display_server_get_metrics,
    win32_display_server_get_flags,
+#ifdef HAVE_D3DKMT
+   win32_display_server_get_scanline,
+   win32_display_server_wait_vblank,
+#else
+   NULL,
+   NULL,
+#endif
+#ifdef HAVE_MODELINE
+   win32_display_server_modeline_list_outputs,
+   win32_display_server_modeline_open,
+   win32_display_server_modeline_close,
+   win32_display_server_modeline_caps,
+   win32_display_server_modeline_enum,
+   win32_display_server_modeline_add,
+   win32_display_server_modeline_update,
+   win32_display_server_modeline_delete,
+   win32_display_server_modeline_set,
+   win32_display_server_modeline_flush,
+#else
+   NULL, /* modeline_list_outputs */
+   NULL, /* modeline_open */
+   NULL, /* modeline_close */
+   NULL, /* modeline_caps */
+   NULL, /* modeline_enum */
+   NULL, /* modeline_add */
+   NULL, /* modeline_update */
+   NULL, /* modeline_delete */
+   NULL, /* modeline_set */
+   NULL, /* modeline_flush */
+#endif
+   win32_display_server_get_edid,
+   win32_display_server_idle_wait,
    "win32"
 };

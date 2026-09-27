@@ -227,9 +227,8 @@ int rc_hash_3do(char hash[33], const rc_hash_iterator_t* iterator)
   /* the Opera filesystem stores the volume information in the first 132 bytes of sector 0
    * https://github.com/barbeque/3dodump/blob/master/OperaFS-Format.md
    */
-  rc_cd_read_sector(iterator, track_handle, 0, buffer, 132);
-
-  if (memcmp(buffer, operafs_identifier, sizeof(operafs_identifier)) == 0) {
+  if (rc_cd_read_sector(iterator, track_handle, 0, buffer, 132) >= 132 &&
+      memcmp(buffer, operafs_identifier, sizeof(operafs_identifier)) == 0) {
     rc_hash_iterator_verbose_formatted(iterator, "Found 3DO CD, title=%.32s", &buffer[0x28]);
 
     /* include the volume header in the hash */
@@ -1126,15 +1125,13 @@ static int rc_hash_wii_disc(md5_state_t* md5, const rc_hash_iterator_t* iterator
 
   /* Hash main headers */
   buffer = (uint8_t*)malloc(CLUSTER_SIZE);
-  if (!buffer) {
-    rc_file_close(iterator, file_handle);
+  if (!buffer)
     return rc_hash_iterator_error(iterator, "Could not allocate temporary buffer");
-  }
 
-  rc_hash_iterator_verbose_formatted(iterator, "Hashing %u byte main header for [%c%c%c%c%c%c]",
-    MAIN_HEADER_SIZE, buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5]);
   rc_file_seek(iterator, file_handle, 0, SEEK_SET);
   rc_file_read(iterator, file_handle, buffer, MAIN_HEADER_SIZE);
+  rc_hash_iterator_verbose_formatted(iterator, "Hashing %u byte main header for [%c%c%c%c%c%c]",
+    MAIN_HEADER_SIZE, buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5]);
   md5_append(md5, buffer, MAIN_HEADER_SIZE);
 
   /* Hash region code */
@@ -1154,7 +1151,6 @@ static int rc_hash_wii_disc(md5_state_t* md5, const rc_hash_iterator_t* iterator
 
   if (total_partition_count == 0) {
     free(buffer);
-    rc_file_close(iterator, file_handle);
     return rc_hash_iterator_error(iterator, "No partitions found");
   }
 
@@ -1259,6 +1255,9 @@ static int rc_hash_wiiware(md5_state_t* md5, const rc_hash_iterator_t* iterator,
 
   /* Hash TMD */
   buffer = (uint8_t*)malloc(tmd_size);
+  if (!buffer)
+    return rc_hash_iterator_error(iterator, "Could not allocate TMD buffer");
+
   rc_file_seek(iterator, file_handle, tmd_start_addr, SEEK_SET);
   rc_file_read(iterator, file_handle, buffer, tmd_size);
   rc_hash_iterator_verbose_formatted(iterator, "Hashing %u byte TMD", tmd_size);
@@ -1291,6 +1290,9 @@ static int rc_hash_wiiware(md5_state_t* md5, const rc_hash_iterator_t* iterator,
 
     /* Hash content */
     buffer = (uint8_t*)malloc(buffer_size);
+    if (!buffer)
+      return rc_hash_iterator_error(iterator, "Could not allocate content buffer");
+
     rc_file_seek(iterator, file_handle, content_addr, SEEK_SET);
     rc_file_read(iterator, file_handle, buffer, buffer_size);
     md5_append(md5, buffer, buffer_size);

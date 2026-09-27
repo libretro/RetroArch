@@ -29,14 +29,22 @@
  * outputs interleaved signed 16-bit PCM, 1024 samples per channel
  * per access unit.
  *
- * Scope: AAC-LC (audioObjectType 2), mono and stereo, the 1024-sample
- * frame length, every standard sampling rate, M/S and intensity
- * stereo, PNS, pulse data and TNS.  Not decoded (open or decode
- * fails cleanly): other object types (Main, SSR, LTP, HE-AAC's
- * explicit SBR signalling), the 960-sample frame length, coupling
- * channel elements and multichannel programs.  Implicitly signalled
- * SBR in fill elements is skipped, decoding the LC core band, as
- * plain LC decoders do.
+ * Scope: AAC-LC (audioObjectType 2), the 1024- and 960-sample frame
+ * lengths,
+ * every standard sampling rate as well as explicitly coded ones
+ * (samplingFrequencyIndex 15), channel configurations 1 through 7 and
+ * configuration 0 with an embedded PCE, up to eight output channels,
+ * M/S and intensity stereo, PNS, pulse data and TNS.  In-stream PCE
+ * and DSE elements are parsed and skipped.  Coupling channel
+ * elements are decoded and mixed into their targets, dependently or
+ * independently switched, with up to four concurrent coupling tags.
+ * Channels are emitted in element transmission order, which for the
+ * standard configurations is the ISO order (e.g. 5.1: C, L, R, Ls,
+ * Rs, LFE); no downmix or reordering is applied.  Not decoded (open
+ * or decode fails cleanly): other object types (Main, SSR, LTP,
+ * HE-AAC's explicit SBR signalling) and the 960-sample frame length.
+ * Implicitly signalled SBR in fill elements is skipped, decoding the
+ * LC core band, as plain LC decoders do.
  */
 #ifndef __LIBRETRO_SDK_FORMAT_RAAC_H__
 #define __LIBRETRO_SDK_FORMAT_RAAC_H__
@@ -56,12 +64,36 @@ typedef struct raac raac_t;
 raac_t *raac_open(const uint8_t *asc, size_t asc_size);
 
 unsigned raac_channels(const raac_t *a);
+
+/* Samples per channel each access unit decodes to, and the return
+ * value of the decode calls: 1024, or 960 when the stream signals the
+ * short frame length, or 2048 when the doubled output rate is active.
+ *
+ * The doubled rate turns on at open and never changes mid-stream:
+ * either the configuration signals SBR explicitly (hierarchical or
+ * syncExtension form) at twice the core rate, or an unsignaled
+ * 1024-frame stream has a core rate of 16-24 kHz, the range where
+ * HE-AAC streams hide behind plain LC configurations. In that window
+ * genuinely plain LC decodes upsampled and reports the doubled rate;
+ * raac_sample_rate() always reports the rate the output is actually
+ * at. High-frequency reconstruction is not synthesised yet, so
+ * SBR-bearing streams currently decode as upsampled core audio.
+ * HE-AAC v2 configurations open as v1: the parametric-stereo payload
+ * is skipped and the SBR mono signal is decoded. Explicitly signaled
+ * downsampled SBR (extension rate equal to the core rate) decodes as
+ * plain LC at the core rate. Size output buffers from
+ * raac_frame_len() and raac_channels(), never a constant. */
+#define RAAC_MAX_FRAME 2048   /* upper bound of raac_frame_len() */
+unsigned raac_frame_len(const raac_t *a);
 unsigned raac_sample_rate(const raac_t *a);
 
 /* Decode one access unit (one MP4 sample). out must hold at least
- * 1024 * channels samples. Returns the number of samples produced
- * per channel (1024), or -1 on a bitstream or scope error - the
- * decoder stays usable for following packets.
+ * raac_frame_len(a) * raac_channels(a) samples - the core frame
+ * length (1024, or 960) doubles when the SBR path is active, so a
+ * fixed buffer must be sized for RAAC_MAX_FRAME per channel.  Returns
+ * the number of samples produced per channel (raac_frame_len(a)), or
+ * -1 on a bitstream or scope error - the decoder stays usable for
+ * following packets.
  *
  * The synthesis pipeline is float throughout; the two entry points
  * differ only in the output conversion.  s16 rounds and saturates

@@ -36,6 +36,7 @@
 #ifdef RARCH_INTERNAL
 #include "internal_cores.h"
 #include "../../gfx/video_driver.h"
+#include "../../gfx/gfx_surface.h"
 #define IMAGE_CORE_PREFIX(s) libretro_imageviewer_##s
 #else
 #define IMAGE_CORE_PREFIX(s) s
@@ -237,7 +238,11 @@ static bool imageviewer_load(const char *path, int image_index)
    free(buf);
 #else
 #ifdef RARCH_INTERNAL
-   image_texture.supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   {
+      gfx_surface_requirements_t req;
+      if (gfx_surface_query_requirements(0, &req))
+         image_texture.supports_rgba = req.rgba;
+   }
 #endif
    if (!image_texture_load(&image_texture, path))
       return false;

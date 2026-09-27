@@ -16,8 +16,10 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <malloc.h>
 
-#include <queues/fifo_queue.h>
+#include <retro_atomic.h>
+#include <retro_spsc.h>
 
 #include <defines/ps3_defines.h>
 
@@ -26,17 +28,48 @@
 #define AUDIO_BLOCKS 8
 #define AUDIO_CHANNELS 2
 
+/* Bound on any wait for the audio thread to consume, in microseconds
+ * (sysLwCondWait's unit; 0 there means no timeout at all), and how many
+ * of them before the caller gets the pass back. */
+#define PS3_AUDIO_WAIT_US   100000
+#define PS3_AUDIO_WAIT_LAPS 8
+
 typedef struct
 {
-   fifo_buffer_t *buffer;
+   /* Single producer (the frontend in ps3_audio_write), single
+    * consumer (the output thread in ps3_event_loop): a lock-free
+    * retro_spsc ring, so the writer no longer takes a mutex the
+    * output thread holds across its pull, as it did with the fifo.
+    * retro_spsc rounds capacity up to a power of two; ring_size is
+    * the size asked for and the producer never fills past it.
+    * cond_lock/cond remain for the writer's bounded waits. */
+   retro_spsc_t ring;
+   size_t ring_size;
+   bool ring_init;
    sys_ppu_thread_t thread;
-   sys_lwmutex_t lock;
    sys_lwmutex_t cond_lock;
    sys_lwcond_t cond;
    uint32_t audio_port;
    bool nonblock;
    bool started;
-   volatile bool quit_thread;
+   /* Set by the thread tearing the driver down, read by the output
+    * thread's loop. An atomic and not a volatile bool: volatile orders
+    * nothing between the two. */
+   retro_atomic_int_t quit_thread;
+   /* Blocks the output thread had nothing for and sent as silence. */
+   retro_atomic_size_t underruns;
+   /* One block, handed to audioAddData() as it comes out of the ring.
+    * On the heap and not the output thread's stack: that thread is
+    * created with 4 KiB, which a stereo block already half fills and
+    * a six channel one would run straight past. Aligned as the stack
+    * copy was. */
+   float *out_block;
+   size_t out_block_size;
+   /* The layout asked for, and the channels the port was opened with.
+    * They agree unless the port refused the count, which is what
+    * layout() reports on. */
+   uint32_t layout;
+   unsigned channels;
 } ps3_audio_t;
 
 
@@ -46,29 +79,30 @@ static void ps3_event_loop(void *data)
 static void ps3_event_loop(uint64_t data)
 #endif
 {
-   float out_tmp[AUDIO_BLOCK_SAMPLES * AUDIO_CHANNELS]
-      __attribute__((aligned(16)));
    sys_event_queue_t id;
    sys_ipc_key_t key;
    sys_event_t event;
    ps3_audio_t *aud = (ps3_audio_t*)(uintptr_t)data;
+   float *out_block = aud->out_block;
+   size_t block     = aud->out_block_size;
 
    audioCreateNotifyEventQueue(&id, &key);
    audioSetNotifyEventQueue(key);
 
-   while (!aud->quit_thread)
+   while (!retro_atomic_load_acquire_int(&aud->quit_thread))
    {
       sysEventQueueReceive(id, &event, PS3_SYS_NO_TIMEOUT);
 
-      sysLwMutexLock(&aud->lock, PS3_SYS_NO_TIMEOUT);
-      if (FIFO_READ_AVAIL(aud->buffer) >= sizeof(out_tmp))
-         fifo_read(aud->buffer, out_tmp, sizeof(out_tmp));
+      if (retro_spsc_read_avail(&aud->ring) >= block)
+         retro_spsc_read(&aud->ring, out_block, block);
       else
-         memset(out_tmp, 0, sizeof(out_tmp));
-      sysLwMutexUnlock(&aud->lock);
+      {
+         memset(out_block, 0, block);
+         retro_atomic_fetch_add_size(&aud->underruns, 1);
+      }
       sysLwCondSignal(&aud->cond);
 
-      audioAddData(aud->audio_port, out_tmp,
+      audioAddData(aud->audio_port, out_block,
             AUDIO_BLOCK_SAMPLES, 1.0);
    }
 
@@ -78,23 +112,19 @@ static void ps3_event_loop(uint64_t data)
 
 static void *ps3_audio_init(const char *device,
       unsigned rate, unsigned latency,
-      unsigned block_frames,
       unsigned *new_rate)
 {
+   unsigned channels;
    audioPortParam params;
    ps3_audio_t *data                 = NULL;
 #ifdef __PSL1GHT__
-   sys_lwmutex_attr_t lock_attr      =
-   {SYS_LWMUTEX_ATTR_PROTOCOL, SYS_LWMUTEX_ATTR_RECURSIVE, "\0"};
    sys_lwmutex_attr_t cond_lock_attr =
    {SYS_LWMUTEX_ATTR_PROTOCOL, SYS_LWMUTEX_ATTR_RECURSIVE, "\0"};
    sys_lwcond_attr_t cond_attr       = {"\0"};
 #else
-   sys_lwmutex_attr_t lock_attr;
    sys_lwmutex_attr_t cond_lock_attr;
    sys_lwcond_attr_t cond_attr;
 
-   sys_lwmutex_attribute_initialize(lock_attr);
    sys_lwmutex_attribute_initialize(cond_lock_attr);
    sys_lwcond_attribute_initialize(cond_attr);
 #endif
@@ -105,7 +135,16 @@ static void *ps3_audio_init(const char *device,
 
    audioInit();
 
-   params.numChannels                = AUDIO_CHANNELS;
+   /* The layout the frontend wants, where the port takes that many
+    * channels: libaudio opens two, six or eight, so a four channel
+    * mask is not one of them and opens as stereo. layout() reports
+    * what was granted. */
+   data->layout                      = audio_driver_requested_layout();
+   channels                          = audio_layout_channels(data->layout);
+   if (channels != 2 && channels != 6 && channels != 8)
+      channels                       = AUDIO_CHANNELS;
+
+   params.numChannels                = channels;
    params.numBlocks                  = AUDIO_BLOCKS;
    params.param_attrib               = 0;
 #if 0
@@ -117,20 +156,53 @@ static void *ps3_audio_init(const char *device,
 
    if (audioPortOpen(&params, &data->audio_port) != CELL_OK)
    {
+      /* A port that would not take the wider count still takes two. */
+      if (channels == AUDIO_CHANNELS)
+      {
+         audioQuit();
+         free(data);
+         return NULL;
+      }
+      channels           = AUDIO_CHANNELS;
+      params.numChannels = channels;
+      if (audioPortOpen(&params, &data->audio_port) != CELL_OK)
+      {
+         audioQuit();
+         free(data);
+         return NULL;
+      }
+   }
+   data->channels  = channels;
+
+   data->out_block_size = AUDIO_BLOCK_SAMPLES * channels * sizeof(float);
+   data->out_block      = (float*)memalign(16, data->out_block_size);
+   if (!data->out_block)
+   {
+      audioPortClose(data->audio_port);
       audioQuit();
       free(data);
       return NULL;
    }
 
-   data->buffer = fifo_new(AUDIO_BLOCK_SAMPLES *
-         AUDIO_CHANNELS * AUDIO_BLOCKS * sizeof(float));
+   data->ring_size = AUDIO_BLOCK_SAMPLES *
+         channels * AUDIO_BLOCKS * sizeof(float);
+   data->ring_init = retro_spsc_init(&data->ring, data->ring_size);
+   if (!data->ring_init)
+   {
+      free(data->out_block);
+      audioPortClose(data->audio_port);
+      audioQuit();
+      free(data);
+      return NULL;
+   }
 
-   sysLwMutexCreate(&data->lock, &lock_attr);
    sysLwMutexCreate(&data->cond_lock, &cond_lock_attr);
    sysLwCondCreate(&data->cond, &data->cond_lock, &cond_attr);
 
    audioPortStart(data->audio_port);
    data->started = true;
+   retro_atomic_int_init(&data->quit_thread, 0);
+   retro_atomic_size_init(&data->underruns, 0);
    sysThreadCreate(&data->thread, ps3_event_loop,
 #ifdef __PSL1GHT__
    data,
@@ -142,22 +214,50 @@ static void *ps3_audio_init(const char *device,
    return data;
 }
 
+static size_t ps3_audio_write_avail(void *data);
+
+/* Sleep on the condition the output thread signals after each block it
+ * takes.  sysLwCondWait() requires the lwcond's mutex - cond_lock, the
+ * one it was created with - to be held by the caller; called without
+ * it, it fails at once (EPERM) instead of sleeping, so the bounded
+ * waits below became a few microseconds of spinning and then gave up,
+ * returning 0 and dropping the audio, whenever the fifo was full. */
+static void ps3_audio_wait_block(ps3_audio_t *aud)
+{
+   sysLwMutexLock(&aud->cond_lock, PS3_SYS_NO_TIMEOUT);
+   sysLwCondWait(&aud->cond, PS3_AUDIO_WAIT_US);
+   sysLwMutexUnlock(&aud->cond_lock);
+}
+
 static ssize_t ps3_audio_write(void *data, const void *s, size_t len)
 {
    ps3_audio_t *aud = data;
 
    if (aud->nonblock)
    {
-      if (FIFO_WRITE_AVAIL(aud->buffer) < len)
+      if (ps3_audio_write_avail(aud) < len)
          return 0;
    }
 
-   while (FIFO_WRITE_AVAIL(aud->buffer) < len)
-      sysLwCondWait(&aud->cond, 0);
+   {
+      /* The audio thread signals each time it consumes a block. One
+       * that has stopped - the port closed, the thread quitting -
+       * signals nothing; the wait is timed and capped, and the write
+       * then returns having written nothing rather than holding the
+       * caller. */
+      int laps = PS3_AUDIO_WAIT_LAPS;
+      while (ps3_audio_write_avail(aud) < len)
+      {
+         if (      !aud->started
+               || retro_atomic_load_acquire_int(&aud->quit_thread))
+            return 0;
+         ps3_audio_wait_block(aud);
+         if (--laps < 0)
+            return 0;
+      }
+   }
 
-   sysLwMutexLock(&aud->lock, PS3_SYS_NO_TIMEOUT);
-   fifo_write(aud->buffer, s, len);
-   sysLwMutexUnlock(&aud->lock);
+   retro_spsc_write(&aud->ring, s, len);
    return len;
 }
 
@@ -203,28 +303,83 @@ static void ps3_audio_free(void *data)
    uint64_t val;
    ps3_audio_t *aud = data;
 
-   aud->quit_thread = true;
+   retro_atomic_store_release_int(&aud->quit_thread, 1);
    ps3_audio_start(aud, false);
    sysThreadJoin(aud->thread, &val);
 
    ps3_audio_stop(aud);
    audioPortClose(aud->audio_port);
    audioQuit();
-   fifo_free(aud->buffer);
+   if (aud->ring_init)
+      retro_spsc_free(&aud->ring);
 
-   sysLwMutexDestroy(&aud->lock);
    sysLwMutexDestroy(&aud->cond_lock);
    sysLwCondDestroy(&aud->cond);
 
+   free(aud->out_block);
    free(data);
 }
 
 static bool ps3_audio_use_float(void *data) { return true; }
 
+/* Room against the size asked for, not the rounded-up capacity.
+ * Producer-side query. */
 static size_t ps3_audio_write_avail(void *data)
 {
-   /* TODO/FIXME - implement? */
-   return 0;
+   ps3_audio_t *aud = data;
+   size_t room   = retro_spsc_write_avail(&aud->ring);
+   size_t excess = aud->ring.capacity - aud->ring_size;
+   return room > excess ? room - excess : 0;
+}
+
+static size_t ps3_audio_buffer_size(void *data)
+{
+   ps3_audio_t *aud = data;
+   return aud->ring_size;
+}
+
+/* Sleep on the condition the output thread signals after every block
+ * it takes from the fifo, until at least len bytes fit, len capped at
+ * half the fifo so the wait always ends. Returns the free space then,
+ * or 0 once the port has been stopped. */
+static size_t ps3_audio_wait_writable(void *data, size_t len)
+{
+   ps3_audio_t *aud = data;
+   size_t avail;
+   int laps         = PS3_AUDIO_WAIT_LAPS;
+
+   if (len > aud->ring_size / 2)
+      len = aud->ring_size / 2;
+
+   for (;;)
+   {
+      if (      !aud->started
+            || retro_atomic_load_acquire_int(&aud->quit_thread))
+         return 0;
+      avail = ps3_audio_write_avail(aud);
+      if (avail >= len)
+         return avail;
+      /* Timed and capped, as in the write: no room after this many
+       * waits is a thread that has stopped consuming, and the pass is
+       * handed back as no space coming from this call. */
+      ps3_audio_wait_block(aud);
+      if (--laps < 0)
+         return 0;
+   }
+}
+
+static uint32_t ps3_audio_layout(void *data)
+{
+   ps3_audio_t *aud = (ps3_audio_t*)data;
+   if (!aud || aud->channels != audio_layout_channels(aud->layout))
+      return AUDIO_LAYOUT_STEREO;
+   return aud->layout;
+}
+
+static size_t ps3_audio_underruns(void *data)
+{
+   ps3_audio_t *aud = (ps3_audio_t*)data;
+   return aud ? retro_atomic_load_acquire_size(&aud->underruns) : 0;
 }
 
 audio_driver_t audio_ps3 = {
@@ -240,6 +395,10 @@ audio_driver_t audio_ps3 = {
    NULL,
    NULL,
    ps3_audio_write_avail,
-   NULL, /* buffer_size */
-   NULL  /* write_raw */
+   ps3_audio_buffer_size,
+   NULL, /* write_raw */
+   ps3_audio_wait_writable,
+   NULL, /* frames_consumed */
+   ps3_audio_underruns,
+   ps3_audio_layout
 };

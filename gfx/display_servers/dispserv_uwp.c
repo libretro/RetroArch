@@ -27,12 +27,10 @@ static float uwp_display_server_get_refresh_rate(void *data)
 }
 
 static void uwp_display_server_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *s, size_t len)
+      unsigned *dims, char *s, size_t len)
 {
-   if (width)
-      *width  = uwp_get_width();
-   if (height)
-      *height = uwp_get_height();
+   if (dims)
+      *dims = VIDEO_SCALE_PACK(uwp_get_width(), uwp_get_height());
 }
 
 static bool uwp_display_server_get_metrics(void *data,
@@ -99,5 +97,19 @@ const video_display_server_t dispserv_uwp = {
    NULL, /* get_video_output_next */
    uwp_display_server_get_metrics,
    NULL, /* get_flags */
+   NULL, /* get_scanline */
+   NULL, /* wait_vblank */
+   NULL, /* modeline_list_outputs */
+   NULL, /* modeline_open */
+   NULL, /* modeline_close */
+   NULL, /* modeline_caps */
+   NULL, /* modeline_enum */
+   NULL, /* modeline_add */
+   NULL, /* modeline_update */
+   NULL, /* modeline_delete */
+   NULL, /* modeline_set */
+   NULL, /* modeline_flush */
+   NULL, /* get_edid */
+   NULL /* idle_wait: CoreDispatcher wait, a later round */,
    "uwp"
 };

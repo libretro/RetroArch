@@ -84,7 +84,7 @@ struct smb2_header {
         union {
                 struct smb2_async async;
                 struct smb2_sync sync;
-        };
+        } u;
         uint64_t session_id;
         uint8_t signature[16];
 };
@@ -121,7 +121,7 @@ enum smb2_recv_state {
         SMB2_RECV_VARIABLE,
         SMB2_RECV_PAD,
         SMB2_RECV_TRFM,
-        SMB2_RECV_UNKNOWN,
+        SMB2_RECV_UNKNOWN
 };
 
 /* current tree id stack, note: index 0 in the stack is not used
@@ -189,8 +189,8 @@ struct smb2_context {
         uint8_t *session_key;
         uint8_t session_key_size;
 
-        uint8_t seal:1;
-        uint8_t sign:1;
+        unsigned int seal:1;
+        unsigned int sign:1;
         uint8_t signing_key[SMB2_KEY_SIZE];
         uint8_t serverin_key[SMB2_KEY_SIZE];
         uint8_t serverout_key[SMB2_KEY_SIZE];
@@ -328,7 +328,7 @@ struct smb2_pdu {
         uint8_t file_info_class;
 
         /* For encrypted PDUs */
-        uint8_t seal:1;
+        unsigned int seal:1;
         uint32_t crypt_len;
         unsigned char *crypt;
         time_t timeout;

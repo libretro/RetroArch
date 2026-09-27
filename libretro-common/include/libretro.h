@@ -1715,6 +1715,24 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_GET_VFS_INTERFACE (45 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
+ * Returns a list of frontend-authorized filesystem locations.
+ *
+ * Paths returned by this call must be directly usable with the VFS interface,
+ * for example saf://... on Android.
+ *
+ * @param[out] data <tt>struct retro_vfs_authorized_locations *</tt>.
+ * The frontend owns the returned pointers. The core must copy strings
+ * if it needs to retain them.
+ * If \c data is \c NULL, the frontend should only return whether this
+ * environment callback is available.
+ *
+ * @return \c true if this environment call is available,
+ * \c false otherwise.
+ * @see RETRO_ENVIRONMENT_GET_VFS_INTERFACE
+ */
+#define RETRO_ENVIRONMENT_GET_VFS_AUTHORIZED_LOCATIONS (93 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
  * Returns an interface that the core can use
  * to set the state of any accessible device LEDs.
  *
@@ -2854,6 +2872,79 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_GET_HDR_MAX_NITS (92 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
+ * Negotiates multi-channel audio output.
+ *
+ * The classic batch callbacks carry interleaved stereo. A core whose
+ * source has more channels - a console with discrete surround, a
+ * media player, an arcade board with a distinct rear pair - has had
+ * to fold them to two at the libretro boundary. This call hands the
+ * core a pair of batch entry points that take a frame of any of the
+ * layouts below, so the channels reach the frontend as they are;
+ * what happens to them then is the frontend's: sent discretely to a
+ * device that has those speakers, folded to stereo for one that does
+ * not, folded and re-expanded as the user's settings say.
+ *
+ * On success the frontend fills the supplied
+ * \c retro_audio_sample_multi_callback: \c batch_int16 always, and
+ * \c batch_float when it also answers \c true to
+ * \c RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT (a core wanting
+ * float should query that first; a NULL \c batch_float means int16
+ * only). Either function takes interleaved frames of \c channels
+ * samples, in the ascending-bit order of \c layout - front left,
+ * front right, front centre, LFE, back left, back right, ...
+ * - which is the order the WAVEFORMATEXTENSIBLE channel mask, ALSA,
+ * SDL and the WAV format use. \c channels must equal the number of
+ * bits set in \c layout. The return value has the meaning of
+ * \c retro_audio_sample_batch_t.
+ *
+ * Contract:
+ *  - Negotiate once, during \c retro_load_game(). The layout may
+ *    change from call to call (a game switching from stereo to 5.1),
+ *    but the core commits to one sample format for the loaded game,
+ *    as with the float call, and does not mix these entry points
+ *    with the classic ones.
+ *  - A layout with a bit the frontend does not know, or more than
+ *    eight channels, is refused: the call returns 0 frames. Cores
+ *    should use the \c RETRO_AUDIO_LAYOUT_ constants.
+ *  - The function pointers are owned by the frontend and remain
+ *    valid until \c retro_unload_game().
+ *  - Frontends that do not recognise this call return \c false; the
+ *    core keeps folding to stereo and using the classic callbacks.
+ *
+ * @param[out] data <tt>struct retro_audio_sample_multi_callback *</tt>.
+ * @return \c true if multi-channel output is supported, \c false otherwise.
+ * @see retro_audio_sample_multi_callback
+ * @see RETRO_AUDIO_SPEAKER_FRONT_LEFT
+ */
+#define RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI (94 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/* Speaker positions, as bits of a layout mask; a frame's channels are
+ * interleaved in ascending bit order. The bits are those of the
+ * WAVEFORMATEXTENSIBLE channel mask. */
+#define RETRO_AUDIO_SPEAKER_FRONT_LEFT            0x001
+#define RETRO_AUDIO_SPEAKER_FRONT_RIGHT           0x002
+#define RETRO_AUDIO_SPEAKER_FRONT_CENTER          0x004
+#define RETRO_AUDIO_SPEAKER_LOW_FREQUENCY         0x008
+#define RETRO_AUDIO_SPEAKER_BACK_LEFT             0x010
+#define RETRO_AUDIO_SPEAKER_BACK_RIGHT            0x020
+#define RETRO_AUDIO_SPEAKER_FRONT_LEFT_OF_CENTER  0x040
+#define RETRO_AUDIO_SPEAKER_FRONT_RIGHT_OF_CENTER 0x080
+#define RETRO_AUDIO_SPEAKER_BACK_CENTER           0x100
+#define RETRO_AUDIO_SPEAKER_SIDE_LEFT             0x200
+#define RETRO_AUDIO_SPEAKER_SIDE_RIGHT            0x400
+
+/* The layouts a core is expected to use. Others are accepted where the
+ * frontend knows every bit. */
+#define RETRO_AUDIO_LAYOUT_MONO   (RETRO_AUDIO_SPEAKER_FRONT_CENTER)
+#define RETRO_AUDIO_LAYOUT_STEREO (RETRO_AUDIO_SPEAKER_FRONT_LEFT | RETRO_AUDIO_SPEAKER_FRONT_RIGHT)
+#define RETRO_AUDIO_LAYOUT_2_1    (RETRO_AUDIO_LAYOUT_STEREO | RETRO_AUDIO_SPEAKER_LOW_FREQUENCY)
+#define RETRO_AUDIO_LAYOUT_QUAD   (RETRO_AUDIO_LAYOUT_STEREO | RETRO_AUDIO_SPEAKER_BACK_LEFT | RETRO_AUDIO_SPEAKER_BACK_RIGHT)
+#define RETRO_AUDIO_LAYOUT_5_1    (RETRO_AUDIO_LAYOUT_QUAD | RETRO_AUDIO_SPEAKER_FRONT_CENTER | RETRO_AUDIO_SPEAKER_LOW_FREQUENCY)
+#define RETRO_AUDIO_LAYOUT_5_1_SIDE (RETRO_AUDIO_LAYOUT_STEREO | RETRO_AUDIO_SPEAKER_FRONT_CENTER | RETRO_AUDIO_SPEAKER_LOW_FREQUENCY \
+                                    | RETRO_AUDIO_SPEAKER_SIDE_LEFT | RETRO_AUDIO_SPEAKER_SIDE_RIGHT)
+#define RETRO_AUDIO_LAYOUT_7_1    (RETRO_AUDIO_LAYOUT_5_1 | RETRO_AUDIO_SPEAKER_SIDE_LEFT | RETRO_AUDIO_SPEAKER_SIDE_RIGHT)
+
+/**
  * Result of \c RETRO_ENVIRONMENT_GET_MEMORY_STATUS.
  *
  * Sizes are in bytes; a field the frontend cannot determine is left at 0.
@@ -2976,6 +3067,20 @@ struct retro_vfs_dir_handle;
  */
 #define RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS   (1 << 0)
 
+/**
+ * Indicates that the file will be read once, from start to finish,
+ * and then closed.
+ *
+ * No mapping or caching is wanted: the caller already keeps the bytes
+ * it asked for, so anything the frontend holds on to beyond the call
+ * is dead weight.  A frontend that buffers its reads may wish to skip
+ * doing so for such a stream, since a whole-file read gains nothing
+ * from being split across a buffer and copied twice.
+ *
+ * Only meaningful together with \c RETRO_VFS_FILE_ACCESS_READ.
+ */
+#define RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK   (1 << 1)
+
 /** @} */
 
 /** @defgroup RETRO_VFS_SEEK_POSITION File Seek Positions
@@ -3020,7 +3125,48 @@ struct retro_vfs_dir_handle;
  */
 #define RETRO_VFS_STAT_IS_CHARACTER_SPECIAL   (1 << 2)
 
+/**
+ * Indicates that the current user cannot write to the given path.
+ * POSIX: the owner write bit is clear.
+ * Windows/UWP: \c FILE_ATTRIBUTE_READONLY is set.
+ * Frontends that cannot determine this never set the flag.
+ * @since VFS API v5
+ */
+#define RETRO_VFS_STAT_IS_READONLY            (1 << 3)
+
 /** @} */
+
+/**
+ * @defgroup RETRO_VFS_COPY Copy Flags
+ * @since VFS API v5
+ * @{
+ */
+
+/** Replace \c dst if it already exists. Without it an existing \c dst is an error. */
+#define RETRO_VFS_COPY_OVERWRITE              (1 << 0)
+
+/** @} */
+
+/**
+ * @defgroup RETRO_VFS_COPY_STATUS Copy Status
+ * Values returned by \c retro_vfs_copy_step_t.
+ * @since VFS API v5
+ * @{
+ */
+/** The copy is still in progress. */
+#define RETRO_VFS_COPY_RUNNING                (0)
+/** The copy completed; \c dst is complete and closed. */
+#define RETRO_VFS_COPY_DONE                   (1)
+/** The copy failed or was cancelled; no partial \c dst remains. */
+#define RETRO_VFS_COPY_FAILED                 (-1)
+/** @} */
+
+/**
+ * Opaque handle to an in-progress file copy.
+ * @see retro_vfs_copy_begin_t
+ * @since VFS API v5
+ */
+struct retro_vfs_copy_handle;
 
 /**
  * Returns the path that was used to open this file.
@@ -3040,6 +3186,10 @@ typedef const char *(RETRO_CALLCONV *retro_vfs_get_path_t)(struct retro_vfs_file
  * @param path The path to open.
  * @param mode A bitwise combination of \c RETRO_VFS_FILE_ACCESS flags.
  * At a minimum, one of \c RETRO_VFS_FILE_ACCESS_READ or \c RETRO_VFS_FILE_ACCESS_WRITE must be specified.
+ * If \c RETRO_VFS_FILE_ACCESS_WRITE is specified and \c RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING is not specified,
+ * and no file or directory exists at \c path, this function will attempt to create an empty file at \c path.
+ * If either \c RETRO_VFS_FILE_ACCESS_WRITE is not specified or \c RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING is specified,
+ * and no file or directory exists at \c path, this function will return \c NULL without attempting to create a file at \c path.
  * @param hints A bitwise combination of \c RETRO_VFS_FILE_ACCESS_HINT flags.
  * @return A handle to the opened file,
  * or \c NULL upon failure.
@@ -3111,8 +3261,7 @@ typedef int64_t (RETRO_CALLCONV *retro_vfs_tell_t)(struct retro_vfs_file_handle 
  * @param stream The file to set the position of.
  * @param offset The new position, in bytes.
  * @param seek_position The position to seek from.
- * @return The new position,
- * or -1 if there was an error.
+ * @return 0 on success, -1 on failure.
  * @since VFS API v1
  * @see File Seek Positions
  * @see filestream_seek
@@ -3211,6 +3360,124 @@ typedef int (RETRO_CALLCONV *retro_vfs_stat_t)(const char *path, int32_t *size);
 typedef int (RETRO_CALLCONV *retro_vfs_stat_64_t)(const char *path, int64_t *size);
 
 /**
+ * Sets or clears the read-only state of a file or directory.
+ *
+ * POSIX: sets or clears the write bits of the mode, leaving the rest intact.
+ * Windows/UWP: sets or clears \c FILE_ATTRIBUTE_READONLY.
+ *
+ * @param path The path to the file or directory.
+ * @param readonly Non-zero to make the path read-only,
+ * zero to make it writable.
+ * @return 0 on success,
+ * or -1 if \c path does not exist or the platform or file system
+ * cannot store a read-only state.
+ * @see path_set_readonly
+ * @see RETRO_VFS_STAT_IS_READONLY
+ * @since VFS API v5
+ */
+typedef int (RETRO_CALLCONV *retro_vfs_set_readonly_t)(const char *path, int readonly);
+
+/**
+ * Gets the last modification time of a file or directory.
+ *
+ * @param path The path to the file or directory.
+ * @param[out] mtime Set to the modification time
+ * in seconds since 1970-01-01T00:00:00Z. May be negative.
+ * @return 0 on success,
+ * or -1 if \c path does not exist or the platform
+ * cannot report a modification time.
+ * @see path_get_mtime
+ * @since VFS API v5
+ */
+typedef int (RETRO_CALLCONV *retro_vfs_get_mtime_t)(const char *path, int64_t *mtime);
+
+/**
+ * Sets the last modification time of a file or directory.
+ *
+ * The frontend rounds to the file system's resolution,
+ * so a following \c retro_vfs_get_mtime_t may report a different value.
+ *
+ * @param path The path to the file or directory.
+ * @param mtime The modification time in seconds since 1970-01-01T00:00:00Z.
+ * @return 0 on success,
+ * or -1 if \c path does not exist or the platform or file system
+ * does not allow the modification time to be set.
+ * @see path_set_mtime
+ * @since VFS API v5
+ */
+typedef int (RETRO_CALLCONV *retro_vfs_set_mtime_t)(const char *path, int64_t mtime);
+
+/**
+ * Starts copying a single regular file and returns without moving any of it.
+ *
+ * A copy is a resumable operation that the caller advances with
+ * \c retro_vfs_copy_step_t, each step bounded by a byte budget the caller
+ * chooses. The frontend keeps no thread and holds no lock for it; a caller
+ * that wants the transfer off its own thread drives the steps from wherever
+ * it likes. No call in this group ever waits for more than the requested
+ * step.
+ *
+ * \c dst is the full path of the new file, not a directory; missing parent
+ * directories are created. Metadata (modification time, read-only state)
+ * of \c dst after the copy is platform-defined. Either path may belong to
+ * any file system the frontend supports.
+ *
+ * Checks that can be made up front (missing or non-regular \c src,
+ * \c dst is a directory, \c dst exists without \c RETRO_VFS_COPY_OVERWRITE,
+ * \c src equals \c dst) fail here by returning \c NULL.
+ *
+ * @param src The path to the file to copy. Must be a regular file.
+ * @param dst The full path of the destination file. Must differ from \c src.
+ * @param flags Bitwise combination of \c RETRO_VFS_COPY flags, or 0.
+ * @return A handle to poll and close, or \c NULL if the copy could not start.
+ * @see retro_vfs_copy_step_t
+ * @see retro_vfs_copy_close_t
+ * @see filestream_copy_begin
+ * @see RETRO_VFS_COPY
+ * @since VFS API v5
+ */
+typedef struct retro_vfs_copy_handle *(RETRO_CALLCONV *retro_vfs_copy_begin_t)(const char *src, const char *dst, unsigned flags);
+
+/**
+ * Advances a copy started with \c retro_vfs_copy_begin_t by at most
+ * \c max_bytes and reports its state.
+ *
+ * The budget is the caller's latency/throughput dial: a few MiB from a
+ * frame loop keeps each call short; a very large budget (or repeated calls
+ * until the status leaves \c RETRO_VFS_COPY_RUNNING) runs the transfer at
+ * the full speed of the platform's copy primitive with no user-space
+ * buffer where the kernel can move the bytes itself.
+ *
+ * A step never moves more than \c max_bytes, but it may move less, and it
+ * may report \c RETRO_VFS_COPY_DONE early if the platform completed the
+ * copy without moving bytes (e.g. a file-system clone).
+ *
+ * @param handle The copy.
+ * @param max_bytes Upper bound on bytes moved by this call; 0 selects a
+ * frontend default sized for a frame loop (a few MiB).
+ * @param[out] bytes_done Bytes written to \c dst so far. May be \c NULL.
+ * @param[out] bytes_total Size of \c src in bytes. May be \c NULL.
+ * @return One of the \c RETRO_VFS_COPY_STATUS values.
+ * @since VFS API v5
+ */
+typedef int (RETRO_CALLCONV *retro_vfs_copy_step_t)(struct retro_vfs_copy_handle *handle, int64_t max_bytes, int64_t *bytes_done, int64_t *bytes_total);
+
+/**
+ * Releases a copy handle.
+ *
+ * If the copy is still running it is cancelled and the partial \c dst
+ * removed; nothing is waited for. Must be called exactly once for every
+ * non-NULL handle from \c retro_vfs_copy_begin_t, whatever
+ * \c retro_vfs_copy_step_t reported.
+ *
+ * @param handle The copy.
+ * @return 0 if the copy had completed successfully, or -1 if it failed,
+ * was cancelled, or was still running when closed.
+ * @since VFS API v5
+ */
+typedef int (RETRO_CALLCONV *retro_vfs_copy_close_t)(struct retro_vfs_copy_handle *handle);
+
+/**
  * Creates a directory at the given path.
  *
  * @param dir The desired location of the new directory.
@@ -3281,6 +3548,29 @@ typedef const char *(RETRO_CALLCONV *retro_vfs_dirent_get_name_t)(struct retro_v
  * @since VFS API v3
  */
 typedef bool (RETRO_CALLCONV *retro_vfs_dirent_is_dir_t)(struct retro_vfs_dir_handle *dirstream);
+
+/**
+ * Gets information about the directory entry most recently returned by
+ * \c retro_vfs_readdir_t, without opening it or building its path.
+ *
+ * Only valid after a \c retro_vfs_readdir_t call that returned \c true,
+ * and before the next \c retro_vfs_readdir_t or \c retro_vfs_closedir_t
+ * call on the same handle.
+ *
+ * @param dirstream The directory being enumerated.
+ * @param[out] size The entry's size in bytes (0 for directories).
+ * May be \c NULL, in which case this value is ignored.
+ * @param[out] mtime The entry's modification time
+ * in seconds since 1970-01-01T00:00:00Z.
+ * May be \c NULL, in which case this value is ignored.
+ * @return A bitmask of \c RETRO_VFS_STAT flags for the entry
+ * (\c RETRO_VFS_STAT_IS_VALID is always set on success),
+ * or 0 if the frontend cannot provide entry information.
+ * @see retro_dirent_stat
+ * @see RETRO_VFS_STAT
+ * @since VFS API v5
+ */
+typedef int (RETRO_CALLCONV *retro_vfs_dirent_stat_t)(struct retro_vfs_dir_handle *dirstream, int64_t *size, int64_t *mtime);
 
 /**
  * Closes the given directory and release its resources.
@@ -3369,6 +3659,28 @@ struct retro_vfs_interface
    /* VFS API v4 */
    /** @copydoc retro_vfs_stat_64_t */
    retro_vfs_stat_64_t stat_64;
+
+   /* VFS API v5 */
+   /** @copydoc retro_vfs_set_readonly_t */
+   retro_vfs_set_readonly_t set_readonly;
+
+   /** @copydoc retro_vfs_get_mtime_t */
+   retro_vfs_get_mtime_t get_mtime;
+
+   /** @copydoc retro_vfs_set_mtime_t */
+   retro_vfs_set_mtime_t set_mtime;
+
+   /** @copydoc retro_vfs_copy_begin_t */
+   retro_vfs_copy_begin_t copy_begin;
+
+   /** @copydoc retro_vfs_copy_step_t */
+   retro_vfs_copy_step_t copy_step;
+
+   /** @copydoc retro_vfs_copy_close_t */
+   retro_vfs_copy_close_t copy_close;
+
+   /** @copydoc retro_vfs_dirent_stat_t */
+   retro_vfs_dirent_stat_t dirent_stat;
 };
 
 /**
@@ -3408,6 +3720,33 @@ struct retro_vfs_interface_info
     * and must not be modified or freed by the core.
     * @since VFS API v1 */
    struct retro_vfs_interface *iface;
+};
+
+/**
+ * Represents a single frontend-authorized filesystem location.
+ *
+ * The \c path field must be directly usable through the frontend VFS
+ * interface, for example saf://... on Android.
+ *
+ * The frontend owns all returned pointers. Cores must copy strings if they
+ * need to retain them after the environment callback returns.
+ */
+struct retro_vfs_authorized_location
+{
+   const char *path;
+   const char *label;
+   unsigned flags;
+};
+
+/**
+ * Represents the list of frontend-authorized filesystem locations.
+ *
+ * This is returned by RETRO_ENVIRONMENT_GET_VFS_AUTHORIZED_LOCATIONS.
+ */
+struct retro_vfs_authorized_locations
+{
+   const struct retro_vfs_authorized_location *locations;
+   size_t count;
 };
 
 /** @} */
@@ -3692,6 +4031,20 @@ enum retro_hw_render_context_negotiation_interface_type
     * @see retro_hw_render_context_negotiation_interface_vulkan
     */
    RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN = 0,
+
+   /**
+    * Denotes a context negotiation interface for Direct3D 12.
+    * Carries the highest hardware render interface version the core can use.
+    * @see retro_hw_render_context_negotiation_interface_d3d12
+    */
+   RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_D3D12 = 1,
+
+   /**
+    * Denotes a context negotiation interface for Direct3D 11.
+    * Carries the highest hardware render interface version the core can use.
+    * @see retro_hw_render_context_negotiation_interface_d3d11
+    */
+   RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_D3D11 = 2,
 
    /**
     * @private Defined to ensure <tt>sizeof(retro_hw_render_context_negotiation_interface_type) == sizeof(int)</tt>.
@@ -4514,6 +4867,73 @@ struct retro_log_callback
 
 /** Indicates CPU support for the LZCNT instruction (x86 ABM / ARM CLZ). */
 #define RETRO_SIMD_LZCNT    (1 << 23)
+
+/**
+ * Indicates CPU support for the PCLMULQDQ carry-less multiply instruction.
+ *
+ * Distinct from \c RETRO_SIMD_AES: AES-NI is CPUID.1:ECX[25] and
+ * PCLMULQDQ is CPUID.1:ECX[1]. They shipped together on most parts but
+ * hypervisors mask them independently and some early Westmere SKUs had
+ * AES fused off, so one must not be used as a proxy for the other.
+ */
+#define RETRO_SIMD_PCLMUL   (1 << 24)
+
+/**
+ * Indicates CPU support for the ARMv8 CRC32 instructions
+ * (\c crc32b / \c crc32h / \c crc32w / \c crc32x).
+ *
+ * These compute CRC-32/ISO-HDLC, the gzip and PNG polynomial, not
+ * CRC-32C. Optional in ARMv8.0 and mandatory from ARMv8.1, so a
+ * 64-bit ARM CPU does not imply their presence: Apple's A7 through
+ * A10 lack them, for instance.
+ */
+#define RETRO_SIMD_CRC32    (1 << 25)
+
+/**
+ * Indicates CPU support for hardware SHA-512 acceleration.
+ *
+ * On AArch64 this is FEAT_SHA512, optional from Armv8.1 and A64-only.
+ * On x86 it is the SHA512 instruction group enumerated by
+ * CPUID.(EAX=07H,ECX=1):EAX[0], which is separate from the SHA-NI
+ * instructions covering SHA-1 and SHA-256.
+ */
+#define RETRO_SIMD_SHA512   (1 << 26)
+
+/**
+ * Indicates CPU support for hardware SHA-1 acceleration.
+ *
+ * On AArch64 this is FEAT_SHA1; on x86 it is part of SHA-NI, which
+ * covers SHA-1 and SHA-256 in one CPUID bit and therefore always
+ * reports alongside \c RETRO_SIMD_SHA256 there.
+ */
+#define RETRO_SIMD_SHA1     (1 << 27)
+
+/**
+ * Indicates CPU support for hardware SHA-256 acceleration.
+ *
+ * On AArch64 this is FEAT_SHA256; on x86 it is the other half of
+ * SHA-NI. Separate from \c RETRO_SIMD_SHA1 because AArch64 enumerates
+ * the two independently.
+ */
+#define RETRO_SIMD_SHA256   (1 << 28)
+
+/**
+ * Indicates CPU support for the FMA3 fused multiply-add instructions.
+ *
+ * CPUID.(EAX=01H):ECX[12]. They operate on YMM state, so this reports
+ * only where the operating system preserves it, as \c RETRO_SIMD_AVX
+ * does.
+ */
+#define RETRO_SIMD_FMA3     (1 << 29)
+
+/**
+ * Indicates CPU support for the FMA4 fused multiply-add instructions.
+ *
+ * CPUID.(EAX=80000001H):ECX[16], an AMD extension dropped from Zen, and
+ * a different encoding from \c RETRO_SIMD_FMA3 rather than a superset
+ * of it. Gated on the same operating system state.
+ */
+#define RETRO_SIMD_FMA4     (1 << 30)
 
 /** @} */
 
@@ -7782,7 +8202,8 @@ struct retro_exec_mem_alloc
  */
 struct retro_exec_mem_free
 {
-   void *rx;  /**< The \c rx pointer returned by a previous alloc call. */
+   void *rx;  /**< The \c rx pointer returned by a previous alloc call.
+                   The matching \c rw pointer is also accepted. */
 };
 
 /** @} */
@@ -7889,6 +8310,40 @@ struct retro_audio_sample_float_callback
    /* Set by the frontend. The core calls this instead of the int16
     * batch callback once float output has been negotiated. */
    retro_audio_sample_batch_float_t batch;
+};
+
+/**
+ * Renders multiple audio frames of a multi-channel layout.
+ *
+ * Valid only after the frontend has answered \c true to
+ * \c RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI.
+ *
+ * @param data Interleaved frames of \c channels samples, one sample
+ *     a speaker in the ascending-bit order of \c layout; int16 or
+ *     float in [-1.0, 1.0] by the entry point.
+ * @param frames The number of frames in \c data.
+ * @param channels Samples per frame: the bits set in \c layout.
+ * @param layout The speaker mask, from the \c RETRO_AUDIO_SPEAKER_ bits.
+ * @return The number of frames processed; 0 for a layout the frontend
+ *     does not take.
+ * @see RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI
+ */
+typedef size_t (RETRO_CALLCONV *retro_audio_sample_batch_multi_int16_t)(
+      const int16_t *data, size_t frames, unsigned channels, unsigned layout);
+typedef size_t (RETRO_CALLCONV *retro_audio_sample_batch_multi_float_t)(
+      const float *data, size_t frames, unsigned channels, unsigned layout);
+
+/**
+ * Multi-channel batch callbacks handed to the core in response to
+ * \c RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI.
+ */
+struct retro_audio_sample_multi_callback
+{
+   /* Set by the frontend. */
+   retro_audio_sample_batch_multi_int16_t batch_int16;
+   /* Set by the frontend when float output is negotiated too, NULL
+    * otherwise. */
+   retro_audio_sample_batch_multi_float_t batch_float;
 };
 
 /**

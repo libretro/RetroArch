@@ -478,6 +478,42 @@ struct netplay_chat
    } messages[NETPLAY_CHAT_MAX_MESSAGES];
 };
 
+/* Flags of struct netplay's 'flags' word. */
+enum netplay_flags
+{
+   /* Set if we have a device that most cores translate to "up/down"
+    * actions, typically a keyboard. With such a device the input
+    * state has to be "fixed" to the frame BEFORE a state load, then
+    * the state loaded, for the up/down states to proceed as
+    * expected. */
+   NETPLAY_FLAG_HAVE_UPDOWN_DEVICE            = (1 << 0),
+   /* Are we the server? */
+   NETPLAY_FLAG_IS_SERVER                     = (1 << 1),
+   NETPLAY_FLAG_NAT_TRAVERSAL                 = (1 << 2),
+   /* Have we checked whether CRCs are valid at all? */
+   NETPLAY_FLAG_CRC_VALIDITY_CHECKED          = (1 << 3),
+   /* Are they valid? */
+   NETPLAY_FLAG_CRCS_VALID                    = (1 << 4),
+   /* Netplay pausing */
+   NETPLAY_FLAG_LOCAL_PAUSED                  = (1 << 5),
+   NETPLAY_FLAG_REMOTE_PAUSED                 = (1 << 6),
+   /* Are we replaying old frames? */
+   NETPLAY_FLAG_IS_REPLAY                     = (1 << 7),
+   /* Opposite of stalling, should we be catching up? */
+   NETPLAY_FLAG_CATCH_UP                      = (1 << 8),
+   /* Force a rewind to other_frame_count/other_ptr, for synchronized
+    * events such as restarting or savestate loading. */
+   NETPLAY_FLAG_FORCE_REWIND                  = (1 << 9),
+   /* Force a reset */
+   NETPLAY_FLAG_FORCE_RESET                   = (1 << 10),
+   /* Force our state to be sent to all connections */
+   NETPLAY_FLAG_FORCE_SEND_SAVESTATE          = (1 << 11),
+   /* Have we requested a savestate as a sync point? */
+   NETPLAY_FLAG_SAVESTATE_REQUEST_OUTSTANDING = (1 << 12),
+   /* Host settings */
+   NETPLAY_FLAG_ALLOW_PAUSING                 = (1 << 13)
+};
+
 struct netplay
 {
    /* We stall if we're far enough ahead that we
@@ -642,57 +678,14 @@ struct netplay
    /* Our nickname */
    char nick[NETPLAY_NICK_LEN];
 
-   /* Set to true if we have a device that most cores
-    * translate to "up/down" actions, typically a keyboard.
-    * We need to keep track of this because with such a device,
-    * we need to "fix" the input state to the frame BEFORE a
-    * state load, then perform the state load, and the
-    * up/down states will proceed as expected. */
-   bool have_updown_device;
-
-   /* Are we the server? */
-   bool is_server;
-
-   bool nat_traversal;
-
-   /* Have we checked whether CRCs are valid at all? */
-   bool crc_validity_checked;
-
-   /* Are they valid? */
-   bool crcs_valid;
-
-   /* Netplay pausing */
-   bool local_paused;
-   bool remote_paused;
-
-   /* Are we replaying old frames? */
-   bool is_replay;
-
-   /* Opposite of stalling, should we be catching up? */
-   bool catch_up;
-
-   /* Force a rewind to other_frame_count/other_ptr.
-    * This is for synchronized events, such as restarting
-    * or savestate loading. */
-   bool force_rewind;
-
-   /* Force a reset */
-   bool force_reset;
-
-   /* Force our state to be sent to all connections */
-   bool force_send_savestate;
-
-   /* Have we requested a savestate as a sync point? */
-   bool savestate_request_outstanding;
-
-   /* Host settings */
-   bool allow_pausing;
+   uint16_t flags; /* enum netplay_flags */
 };
 
 void video_frame_net(const void *data,
    unsigned width, unsigned height, size_t pitch);
 void audio_sample_net(int16_t left, int16_t right);
 size_t audio_sample_batch_net(const int16_t *data, size_t frames);
+bool audio_float_gate_net(void);
 int16_t input_state_net(unsigned port, unsigned device,
    unsigned idx, unsigned id);
 

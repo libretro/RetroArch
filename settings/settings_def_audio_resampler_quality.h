@@ -14,3 +14,9 @@ S_BOOL(audio_fastpath_s16, AUDIO_FASTPATH_S16,
       DEFAULT_AUDIO_FASTPATH_S16, SD_FLAG_ADVANCED, 0, CMD_EVENT_NONE,
       "Resample to Fixed Integer (Hint)",
       "Use the fixed-point (integer) resampler instead of the floating-point one when a core outputs 16-bit audio. Produces bit-identical output on every platform, making audio reproducible across runs and systems. This is for reproducibility, not speed: where the CPU has a vector FPU the integer resampler is slower, as only the floating-point one is vectorized. No effect on cores that output floating-point audio; falls back to floating-point while an incompatible DSP filter is active.")
+
+S_BOOL(audio_resampler_hq_oversampling, AUDIO_RESAMPLER_HQ_OVERSAMPLING,
+      "audio_resampler_hq_oversampling",
+      false, SD_FLAG_ADVANCED, 0, CMD_EVENT_AUDIO_REINIT,
+      "High Quality Sinc Oversampling",
+      "Use a longer sinc filter when the configured output rate is at least twice the content rate. Overrides Resampler Quality for sinc only. Increases CPU use, memory and filter delay, especially with multiple channels. Uses software resampling instead of driver resampling while active. Requires a high output rate; fast-forward can reduce the actual resampling ratio.")

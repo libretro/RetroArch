@@ -151,3 +151,39 @@ float path.
   the s16->float pass, so it does not reproduce sinc overshoot headroom a float
   endpoint could otherwise carry; intended for s16-source content and
   determinism. Turn the hint off to keep the float path (and that headroom).
+
+## Experimental HQ oversampling backend
+
+`sinc_resampler_int16_init_hq(bandwidth_mod, quality, hq)` opts into
+384-tap, 1024-phase, Kaiser beta 16 tables at nominal ratios >= 2.
+The float counterpart is `sinc_resampler_init_hq()` in
+`audio/sinc_resampler.h`; use the existing sinc vtable to process/reset/free
+that handle. Existing initialization APIs keep HQ off. There is no frontend
+setting yet.
+
+Both formats use cutoff 0.962 and the existing interpolated polyphase kernels.
+The int16 sample path stays integer-only (Q1.30 coefficients, int64 products
+and accumulation); the float sample path stays float. Table construction uses
+libm at initialization, as with existing quality tiers. No sample-format
+round trip, extra transport queue or process-time allocation is introduced.
+The nominal ratio chooses the tables once; live DRC ratios do not switch or
+rebuild tables. Settings/rate changes must recreate the instance.
+
+The table alone is 3 MiB per instance, versus 2 MiB for Highest. A frontend
+holding both float and int16 instances pays for both. The additional 128 taps
+add 64 input frames of group delay (1.33 ms at 48 kHz). This is an experimental
+quality/cost tradeoff, not a latency or audible-quality guarantee. Highest's
+published float/int16 parity figures above are not a certification of HQ.
+
+Run `make -C samples/audio/sinc_hq check` from the repository root.
+The harness covers inactive bit equality, fractional/DRC ratios, chunking,
+float reset, scalar/SIMD agreement and integer output error. Pass `--bench`
+to the executable for a 48-to-192 kHz microbenchmark. Pass a filename prefix
+instead to write Highest/HQ float impulse captures for spectral analysis.
+
+Before frontend enablement, validate NEON/weak targets, int16 spectral and
+cross-platform reproducibility, multichannel cost, and live device underruns.
+The write_raw path can delegate SRC to a driver even at unequal rates, so
+frontend integration must explicitly decline it only while software HQ is
+active. Inline audio processing is also supported by the frontend; resampling
+is consumer-owned only when its threaded pipeline is enabled.

@@ -48,6 +48,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <encodings/crc32.h>
+
 #include <7z/r7z_archive.h>
 #include <7z/r7z_lzma.h>
 #include <7z/r7z_lzma_stream.h>
@@ -105,11 +107,11 @@
  * of ROMs contains. Their job is to stop a header claiming four
  * billion of something and having us try to allocate for it before we
  * have read a single byte of the thing it is counting. */
-#define MAX_ENTRIES  (1u << 22)
-#define MAX_FOLDERS  (1u << 20)
-#define MAX_STREAMS  (1u << 22)
-#define MAX_CODERS   64
-#define MAX_BONDS    64
+#define R7Z_MAX_ENTRIES  (1u << 22)
+#define R7Z_MAX_FOLDERS  (1u << 20)
+#define R7Z_MAX_STREAMS  (1u << 22)
+#define R7Z_MAX_CODERS   64
+#define R7Z_MAX_BONDS    64
 
 /* --------------------------------------------------------------------
  * Bounds-checked reader
@@ -396,36 +398,6 @@ static void decode_pending_reset(r7z_archive_t *a);
 /* Prefixed because griffin builds every file in this directory into a
  * single translation unit, so a file-scope crc_table would be liable to
  * collide with another unit's. */
-static uint32_t r7z_crc_table[256];
-static int      r7z_crc_ready = 0;
-
-static void crc_init(void)
-{
-   uint32_t i, j, c;
-
-   if (r7z_crc_ready)
-      return;
-   for (i = 0; i < 256; i++)
-   {
-      c = i;
-      for (j = 0; j < 8; j++)
-         c = (c & 1) ? (0xEDB88320u ^ (c >> 1)) : (c >> 1);
-      r7z_crc_table[i] = c;
-   }
-   r7z_crc_ready = 1;
-}
-
-static uint32_t crc_calc(const uint8_t *p, size_t len)
-{
-   uint32_t c = 0xFFFFFFFFu;
-   size_t   i;
-
-   crc_init();
-   for (i = 0; i < len; i++)
-      c = r7z_crc_table[(c ^ p[i]) & 0xFF] ^ (c >> 8);
-   return c ^ 0xFFFFFFFFu;
-}
-
 /* --------------------------------------------------------------------
  * PackInfo
  *
@@ -443,7 +415,7 @@ static int parse_pack_info(r7z_archive_t *a, rd_t *r)
 
    if ((res = rd_num(r, &base)) != R7Z_OK)
       return res;
-   if ((res = rd_count(r, &a->num_pack, MAX_STREAMS, 1)) != R7Z_OK)
+   if ((res = rd_count(r, &a->num_pack, R7Z_MAX_STREAMS, 1)) != R7Z_OK)
       return res;
 
    a->pack_base = base;
@@ -536,7 +508,7 @@ static int parse_folder(r7z_archive_t *a, rd_t *r, folder_t *f,
    uint32_t num_out_total = 0;
    int      res;
 
-   if ((res = rd_count(r, &f->num_coders, MAX_CODERS, 2)) != R7Z_OK)
+   if ((res = rd_count(r, &f->num_coders, R7Z_MAX_CODERS, 2)) != R7Z_OK)
       return res;
    if (f->num_coders == 0)
       return R7Z_ERROR_DATA;
@@ -573,9 +545,9 @@ static int parse_folder(r7z_archive_t *a, rd_t *r, folder_t *f,
       if (flags & 0x10)
       {
          /* Complex coder: explicit port counts. */
-         if ((res = rd_count(r, &c->num_in, MAX_CODERS, 0)) != R7Z_OK)
+         if ((res = rd_count(r, &c->num_in, R7Z_MAX_CODERS, 0)) != R7Z_OK)
             return res;
-         if ((res = rd_count(r, &c->num_out, MAX_CODERS, 0)) != R7Z_OK)
+         if ((res = rd_count(r, &c->num_out, R7Z_MAX_CODERS, 0)) != R7Z_OK)
             return res;
          if (c->num_in == 0 || c->num_out == 0)
             return R7Z_ERROR_DATA;
@@ -613,7 +585,7 @@ static int parse_folder(r7z_archive_t *a, rd_t *r, folder_t *f,
 
       num_in_total  += c->num_in;
       num_out_total += c->num_out;
-      if (num_in_total > MAX_CODERS * 4 || num_out_total > MAX_CODERS * 4)
+      if (num_in_total > R7Z_MAX_CODERS * 4 || num_out_total > R7Z_MAX_CODERS * 4)
          return R7Z_ERROR_DATA;
    }
 
@@ -623,7 +595,7 @@ static int parse_folder(r7z_archive_t *a, rd_t *r, folder_t *f,
    if (num_out_total == 0)
       return R7Z_ERROR_DATA;
    f->num_bonds = num_out_total - 1;
-   if (f->num_bonds > MAX_BONDS)
+   if (f->num_bonds > R7Z_MAX_BONDS)
       return R7Z_ERROR_DATA;
    if (*bond_pos + f->num_bonds * 2 > a->num_bonds)
       return R7Z_ERROR_DATA;
@@ -645,7 +617,7 @@ static int parse_folder(r7z_archive_t *a, rd_t *r, folder_t *f,
 
    /* Packed streams feed the inputs no bond covers. */
    f->num_pack = num_in_total - f->num_bonds;
-   if (f->num_pack == 0 || f->num_pack > MAX_CODERS)
+   if (f->num_pack == 0 || f->num_pack > R7Z_MAX_CODERS)
       return R7Z_ERROR_DATA;
    if (*pack_pos + f->num_pack > a->num_folder_pack)
       return R7Z_ERROR_DATA;
@@ -750,7 +722,7 @@ static int count_folders(rd_t probe, uint32_t num_folders,
       uint32_t out_total = 0;
       int      res;
 
-      if ((res = rd_count(&probe, &nc, MAX_CODERS, 2)) != R7Z_OK)
+      if ((res = rd_count(&probe, &nc, R7Z_MAX_CODERS, 2)) != R7Z_OK)
          return res;
       if (nc == 0)
          return R7Z_ERROR_DATA;
@@ -771,9 +743,9 @@ static int count_folders(rd_t probe, uint32_t num_folders,
 
          if (flags & 0x10)
          {
-            if ((res = rd_count(&probe, &ni, MAX_CODERS, 0)) != R7Z_OK)
+            if ((res = rd_count(&probe, &ni, R7Z_MAX_CODERS, 0)) != R7Z_OK)
                return res;
-            if ((res = rd_count(&probe, &no, MAX_CODERS, 0)) != R7Z_OK)
+            if ((res = rd_count(&probe, &no, R7Z_MAX_CODERS, 0)) != R7Z_OK)
                return res;
             if (ni == 0 || no == 0)
                return R7Z_ERROR_DATA;
@@ -793,7 +765,7 @@ static int count_folders(rd_t probe, uint32_t num_folders,
          }
          in_total  += ni;
          out_total += no;
-         if (in_total > MAX_CODERS * 4 || out_total > MAX_CODERS * 4)
+         if (in_total > R7Z_MAX_CODERS * 4 || out_total > R7Z_MAX_CODERS * 4)
             return R7Z_ERROR_DATA;
       }
 
@@ -803,7 +775,7 @@ static int count_folders(rd_t probe, uint32_t num_folders,
          uint32_t nb = out_total - 1;
          uint32_t np;
 
-         if (nb > MAX_BONDS)
+         if (nb > R7Z_MAX_BONDS)
             return R7Z_ERROR_DATA;
          for (i = 0; i < nb; i++)
          {
@@ -816,7 +788,7 @@ static int count_folders(rd_t probe, uint32_t num_folders,
          if (in_total < nb)
             return R7Z_ERROR_DATA;
          np = in_total - nb;
-         if (np == 0 || np > MAX_CODERS)
+         if (np == 0 || np > R7Z_MAX_CODERS)
             return R7Z_ERROR_DATA;
          if (np > 1)
             for (i = 0; i < np; i++)
@@ -847,7 +819,7 @@ static int parse_unpack_info(r7z_archive_t *a, rd_t *r)
    if (id != ID_FOLDER)
       return R7Z_ERROR_DATA;
 
-   if ((res = rd_count(r, &a->num_folders, MAX_FOLDERS, 2)) != R7Z_OK)
+   if ((res = rd_count(r, &a->num_folders, R7Z_MAX_FOLDERS, 2)) != R7Z_OK)
       return res;
    if ((res = rd_byte(r, &external)) != R7Z_OK)
       return res;
@@ -1054,7 +1026,7 @@ static int parse_substreams_info(r7z_archive_t *a, rd_t *r,
       for (i = 0; i < a->num_folders; i++)
       {
          uint32_t n;
-         if ((res = rd_count(r, &n, MAX_ENTRIES, 0)) != R7Z_OK)
+         if ((res = rd_count(r, &n, R7Z_MAX_ENTRIES, 0)) != R7Z_OK)
             return res;
          a->folders[i].num_unpack_streams = n;
       }
@@ -1065,7 +1037,7 @@ static int parse_substreams_info(r7z_archive_t *a, rd_t *r,
    for (i = 0; i < a->num_folders; i++)
    {
       uint32_t n = a->folders[i].num_unpack_streams;
-      if (n > MAX_ENTRIES || total > MAX_ENTRIES - n)
+      if (n > R7Z_MAX_ENTRIES || total > R7Z_MAX_ENTRIES - n)
          return R7Z_ERROR_DATA;
       total += n;
    }
@@ -1202,7 +1174,7 @@ static int parse_files_info(r7z_archive_t *a, rd_t *r, substreams_t *ss)
    uint32_t num_empty    = 0;
    int      res;
 
-   if ((res = rd_count(r, &num_files, MAX_ENTRIES, 1)) != R7Z_OK)
+   if ((res = rd_count(r, &num_files, R7Z_MAX_ENTRIES, 1)) != R7Z_OK)
       return res;
 
    a->num_entries = num_files;
@@ -1769,7 +1741,7 @@ static int decode_folder_bcj2(r7z_archive_t *a, uint32_t fi,
       goto done;
    }
 
-   if (f->has_crc && crc_calc(dst, dst_len) != f->crc)
+   if (f->has_crc && encoding_crc32(0, dst, dst_len) != f->crc)
    {
       res = R7Z_ERROR_CRC;
       free(dst);
@@ -1898,7 +1870,7 @@ static int decode_folder(r7z_archive_t *a, uint32_t fi, uint8_t **out)
       return R7Z_ERROR_DATA;
    }
 
-   if (f->has_crc && crc_calc(cur, cur_len) != f->crc)
+   if (f->has_crc && encoding_crc32(0, cur, cur_len) != f->crc)
    {
       free(cur);
       return R7Z_ERROR_CRC;
@@ -2122,7 +2094,7 @@ int r7z_archive_open(r7z_archive_t **out, const uint8_t *data, size_t len)
    if (next_size == 0)
       return R7Z_ERROR_DATA;
 
-   if (crc_calc(data + 32 + next_off, (size_t)next_size) != next_crc)
+   if (encoding_crc32(0, data + 32 + next_off, (size_t)next_size) != next_crc)
       return R7Z_ERROR_CRC;
 
    a = (r7z_archive_t *)calloc(1, sizeof(*a));
@@ -2732,7 +2704,7 @@ static int decode_folder_bcj2_slice(r7z_archive_t *a, uint32_t fi,
    }
 
    if (f->has_crc
-         && crc_calc(a->pend_b2dst, a->pend_b2dstlen) != f->crc)
+         && encoding_crc32(0, a->pend_b2dst, a->pend_b2dstlen) != f->crc)
    {
       decode_pending_reset(a);
       return R7Z_ERROR_CRC;
@@ -2887,7 +2859,7 @@ static int decode_folder_slice(r7z_archive_t *a, uint32_t fi, int *done)
       decode_pending_reset(a);
       return R7Z_ERROR_DATA;
    }
-   if (f->has_crc && crc_calc(a->pend_in, a->pend_in_len) != f->crc)
+   if (f->has_crc && encoding_crc32(0, a->pend_in, a->pend_in_len) != f->crc)
    {
       decode_pending_reset(a);
       return R7Z_ERROR_CRC;
@@ -2933,7 +2905,7 @@ static int extract_from_cache(r7z_archive_t *a, const r7z_entry_t *e,
    memcpy(buf, a->cached_data + (size_t)e->offset_in_folder,
          (size_t)e->size);
 
-   if (e->has_crc && crc_calc(buf, (size_t)e->size) != e->crc)
+   if (e->has_crc && encoding_crc32(0, buf, (size_t)e->size) != e->crc)
    {
       free(buf);
       return R7Z_ERROR_CRC;
@@ -3077,7 +3049,7 @@ int r7z_archive_extract(r7z_archive_t *a, uint32_t index,
       return R7Z_ERROR_MEM;
    memcpy(buf, folder_data + (size_t)e->offset_in_folder, (size_t)e->size);
 
-   if (e->has_crc && crc_calc(buf, (size_t)e->size) != e->crc)
+   if (e->has_crc && encoding_crc32(0, buf, (size_t)e->size) != e->crc)
    {
       free(buf);
       return R7Z_ERROR_CRC;

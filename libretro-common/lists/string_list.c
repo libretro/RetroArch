@@ -20,6 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <retro_posix_source.h>
+
 #include <stdint.h>
 #include <string.h>
 #include <ctype.h>
@@ -54,16 +56,32 @@ static bool string_list_deinitialize_internal(struct string_list *list)
 
 bool string_list_capacity(struct string_list *list, size_t cap)
 {
-   struct string_list_elem *new_data = (struct string_list_elem*)
+   struct string_list_elem *new_data;
+
+   /* Public API, so hold it to its contract.  A cap below size would
+    * realloc the array out from under the live elements while size
+    * still counted them, and the next walk or free ran off the end;
+    * a cap of zero is a realloc(p, 0), which on glibc frees p and
+    * returns NULL - reported here as failure with elems dangling. */
+   if (!list || cap < list->size || cap == 0)
+      return false;
+
+   /* Guard the byte-count multiplication: a huge cap would wrap and
+    * realloc a buffer far smaller than the caller expects. */
+   if (cap > SIZE_MAX / sizeof(*new_data))
+      return false;
+
+   new_data = (struct string_list_elem*)
       realloc(list->elems, cap * sizeof(*new_data));
 
    if (!new_data)
       return false;
 
-   if (cap > list->cap)
-      memset(&new_data[list->cap], 0,
-            sizeof(*new_data) * (cap - list->cap));
-
+   /* Slots in [size, cap) are never read: string_list_free() only walks
+    * [0, size), and the append paths fully initialise a slot when it
+    * becomes live.  So there is no need to zero the whole new half on
+    * every doubling, which for large lists was a memset over hundreds of
+    * thousands of elements to add one entry. */
    list->elems = new_data;
    list->cap   = cap;
    return true;
@@ -142,17 +160,24 @@ bool string_list_append(struct string_list *list, const char *elem,
 {
    char *data_dup = NULL;
 
-   if (      list->size >= list->cap
-         && !string_list_capacity(list,
+   if (list->size >= list->cap)
+   {
+      if (list->cap > SIZE_MAX / 2)
+         return false;
+      if (!string_list_capacity(list,
                (list->cap > 0) ? (list->cap * 2) : 32))
-      return false;
+         return false;
+   }
 
    data_dup = strdup(elem);
    if (!data_dup)
       return false;
 
-   list->elems[list->size].data = data_dup;
-   list->elems[list->size].attr = attr;
+   list->elems[list->size].data     = data_dup;
+   list->elems[list->size].attr     = attr;
+   /* Slot is not pre-zeroed (see string_list_capacity); userdata must
+    * be NULL so string_list_free() does not free garbage. */
+   list->elems[list->size].userdata = NULL;
    list->size++;
 
    return true;
@@ -163,19 +188,31 @@ bool string_list_append_n(struct string_list *list, const char *elem,
 {
    char *data_dup = NULL;
 
-   if (      list->size >= list->cap
-         && !string_list_capacity(list,
+   if (list->size >= list->cap)
+   {
+      if (list->cap > SIZE_MAX / 2)
+         return false;
+      if (!string_list_capacity(list,
                (list->cap > 0) ? (list->cap * 2) : 32))
-      return false;
+         return false;
+   }
 
+   /* len + 1 wraps to 0 at SIZE_MAX; the memcpy below would then run
+    * len bytes into a zero-byte allocation.  Not reachable from a real
+    * string, but this is a public entry point taking any size_t. */
+   if (len == SIZE_MAX)
+      return false;
    data_dup = (char*)malloc(len + 1);
    if (!data_dup)
       return false;
    memcpy(data_dup, elem, len);
    data_dup[len] = '\0';
 
-   list->elems[list->size].data = data_dup;
-   list->elems[list->size].attr = attr;
+   list->elems[list->size].data     = data_dup;
+   list->elems[list->size].attr     = attr;
+   /* Slot is not pre-zeroed (see string_list_capacity); userdata must
+    * be NULL so string_list_free() does not free garbage. */
+   list->elems[list->size].userdata = NULL;
    list->size++;
    return true;
 }
@@ -195,11 +232,35 @@ void string_list_join_concat(char *s, size_t len,
    if (_len < len)
    {
       size_t i;
+      size_t dlen = strlen(delim);
+
       for (i = 0; i < list->size; i++)
       {
+         /* strlcpy() reports the length it was handed rather than the
+          * length it wrote, so an append that truncates would carry
+          * _len past len and leave every later len - _len wrapping to
+          * a very large size_t with s + _len already past the end.
+          * Fill what is left and stop instead. */
+         size_t elen = strlen(list->elems[i].data);
+
+         if (_len + elen >= len)
+         {
+            strlcpy(s + _len, list->elems[i].data, len - _len);
+            break;
+         }
+
          _len += strlcpy(s + _len, list->elems[i].data, len - _len);
+
          if ((i + 1) < list->size)
+         {
+            if (_len + dlen >= len)
+            {
+               strlcpy(s + _len, delim, len - _len);
+               break;
+            }
+
             _len += strlcpy(s + _len, delim, len - _len);
+         }
       }
    }
 }
@@ -207,13 +268,39 @@ void string_list_join_concat(char *s, size_t len,
 void string_list_join_concat_special(char *s, size_t len,
       const struct string_list *list, const char *delim)
 {
-   size_t i;
    size_t _len = strlen(s);
-   for (i = 0; i < list->size; i++)
+
+   /* As in string_list_join_concat() above: @s already being full
+    * leaves nothing to add, and an append is made only once it is
+    * known to fit. */
+   if (_len < len)
    {
-      _len += strlcpy(s + _len, list->elems[i].data, len - _len);
-      if ((i + 1) < list->size)
-         _len += strlcpy(s + _len, delim, len - _len);
+      size_t i;
+      size_t dlen = strlen(delim);
+
+      for (i = 0; i < list->size; i++)
+      {
+         size_t elen = strlen(list->elems[i].data);
+
+         if (_len + elen >= len)
+         {
+            strlcpy(s + _len, list->elems[i].data, len - _len);
+            break;
+         }
+
+         _len += strlcpy(s + _len, list->elems[i].data, len - _len);
+
+         if ((i + 1) < list->size)
+         {
+            if (_len + dlen >= len)
+            {
+               strlcpy(s + _len, delim, len - _len);
+               break;
+            }
+
+            _len += strlcpy(s + _len, delim, len - _len);
+         }
+      }
    }
 }
 

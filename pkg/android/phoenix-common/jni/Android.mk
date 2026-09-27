@@ -20,7 +20,23 @@ DEFINES     :=
 LIBRETRO_COMM_DIR := $(RARCH_DIR)/libretro-common
 DEPS_DIR          := $(RARCH_DIR)/deps
 
-GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
+RA_ROOT := $(abspath $(LOCAL_PATH)/$(RARCH_DIR))
+
+# Ask git whether RA_ROOT is itself the repository root. An empty prefix
+# means it is; a non-empty one means we resolved an enclosing repository
+# and must not use its HEAD. Comparing paths is unreliable here because
+# make and git may disagree on path syntax.
+ifeq ($(GIT_VERSION),)
+GIT_PROBE := $(strip $(shell git -C "$(RA_ROOT)" rev-parse --show-prefix 2>/dev/null && echo GIT_OK))
+ifeq ($(GIT_PROBE),GIT_OK)
+   GIT_VERSION := $(shell git -C "$(RA_ROOT)" rev-parse --short HEAD 2>/dev/null)
+else
+ifneq ($(GIT_PROBE),)
+   $(warning RetroArch: $(RA_ROOT) is not a git toplevel, omitting git version)
+endif
+endif
+endif
+
 ifneq ($(GIT_VERSION),)
    DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=$(GIT_VERSION)
 endif
@@ -249,13 +265,11 @@ LOCAL_LDLIBS	 := -landroid -lEGL $(GLES_LIB) $(LOGGER_LDLIBS) -ldl
 LOCAL_C_INCLUDES := \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/libretro-common/include \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/deps \
-		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/stb \
-		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/zstd/lib
+		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/stb
 
 INCLUDE_DIRS     := \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/stb/ \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/ \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/zstd/lib/
+		    -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/
 
 ifeq ($(HAVE_CHEEVOS),1)
 INCLUDE_DIRS += -I$(LOCAL_PATH)/$(DEPS_DIR)/rcheevos/include
@@ -290,11 +304,15 @@ ifeq ($(HAVE_VULKAN),1)
 INCFLAGS         += $(LOCAL_PATH)/$(RARCH_DIR)/gfx/include
 
 LOCAL_C_INCLUDES += $(INCFLAGS)
+# slang_process.c is C and amalgamated into griffin.c; it includes
+# <spirv_cross_c.h>, so the SPIRV-Cross directory must be on the C
+# include path, not just LOCAL_CPPFLAGS.  LOCAL_C_INCLUDES applies to
+# both C and C++ compiles under ndk-build.
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/$(DEPS_DIR)/SPIRV-Cross
 LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/glslang/Public \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/SPIRV \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/SPIRV-Cross
+		    -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/SPIRV
 
 LOCAL_CFLAGS    += -Wno-sign-compare -Wno-unused-variable -Wno-parentheses
 LOCAL_SRC_FILES += $(RARCH_DIR)/griffin/griffin_glslang.cpp

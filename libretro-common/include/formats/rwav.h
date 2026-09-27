@@ -231,6 +231,44 @@ enum rwav_state rwav_parse(rwav_t *out, const void *buf, size_t len);
  */
 void rwav_free(rwav_t *rwav);
 
+/**
+ * rwav_frame_extent:
+ * @wav        : header from rwav_parse
+ * @frame      : first frame wanted
+ * @frames     : how many
+ * @offset     : receives the byte offset within the file
+ * @length     : receives how many bytes to read from it
+ *
+ * The byte range a frame range needs, so a caller holding only the
+ * header can fetch exactly the payload it is about to decode rather
+ * than the file.  For the block-coded formats the range is widened to
+ * whole coded blocks, a block being what carries the predictor state
+ * its frames continue from - fetching anything narrower decodes to
+ * noise rather than failing, which is why this is stated here and not
+ * left to the caller's arithmetic.
+ *
+ * @frames is clamped to what the payload holds.
+ *
+ * Returns: nonzero on success, 0 if the range lies outside the payload.
+ */
+int rwav_frame_extent(const rwav_t *wav, size_t frame, size_t frames,
+      size_t *offset, size_t *length);
+
+/**
+ * rwav_decode_s16_at:
+ * @chunk        : the bytes rwav_frame_extent described
+ * @chunk_offset : the file offset they were read from
+ *
+ * rwav_decode_s16 against a partial payload rather than a whole one.
+ * @chunk_offset must be exactly what rwav_frame_extent reported for
+ * @frame, which is checked rather than assumed: a chunk starting
+ * anywhere else would decode a block from the middle and yield noise.
+ *
+ * Returns: frames produced.
+ */
+size_t rwav_decode_s16_at(const rwav_t *wav, const void *chunk,
+      size_t chunk_offset, size_t frame, size_t frames, short *out);
+
 RETRO_END_DECLS
 
 #endif

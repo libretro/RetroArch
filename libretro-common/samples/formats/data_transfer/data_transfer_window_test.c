@@ -136,6 +136,125 @@ static int residency_check(void)
 #endif
 
 
+/* The budgeted feeder.  Four things are the contract, and each has a
+ * failure mode this pins:
+ *
+ *  1. While the frontier covers the consumer, one call reads at most
+ *     'budget' new bytes - the burst bound the API exists for.
+ *  2. The bound it reports never falls behind the consumer, and the
+ *     bytes up to it match the file - a feeder that budgets itself
+ *     below the consumer's position has turned pacing into a fault.
+ *  3. Repeated calls at a fixed tell converge on exactly what the
+ *     unbudgeted feed produces (tell + lookahead), and budget == 0
+ *     produces it in one call - the ceiling changes when bytes become
+ *     resident, never which.
+ *  4. A frontier BEHIND the consumer (a lap landing past the head, a
+ *     rebase) is closed in ONE call, budget notwithstanding: pacing a
+ *     read the consumer is standing on does not shrink a burst, it
+ *     leaves the very next consumer read on unresident pages. */
+static int feed_budget_check(void)
+{
+   const char *path = "/tmp/dtwin_budget.bin";
+   size_t n = 8u << 20, i, tell;
+   size_t budget = 32u * 1024;
+   uint8_t *ref = (uint8_t*)malloc(n);
+   data_transfer_t *dt; const uint8_t *base; size_t blen = 0;
+   size_t res = 0, prev, target;
+   int r = 0;
+   FILE *f;
+
+   if (!ref)
+      return 0;
+   for (i = 0; i < n; i++)
+      ref[i] = (uint8_t)(i * 131u + (i >> 13));
+   f = fopen(path, "wb"); fwrite(ref, 1, n, f); fclose(f);
+
+   if (!(dt = data_transfer_open_window(path, KEEP)))
+   { free(ref); remove(path); return 0; }
+   base = data_transfer_window_base(dt, &blen);
+
+   /* 1 + 2: a consumer pacing forward under the budget */
+   prev = KEEP;                       /* the open's resident head */
+   for (tell = 0; tell < (2u << 20); tell += 16u * 1024)
+   {
+      if (!data_transfer_window_feed_budget(dt, tell, LOOKAHD, MARGIN,
+               budget, &res))
+      { fail("budget: feed failed mid-run"); r = 1; break; }
+      if (data_transfer_window_is_reserved(dt))
+      {
+         if (res > prev && res - prev > budget)
+         {
+            printf("[FAIL] budget: one call read %zu bytes "
+                   "(budget %zu)\n", res - prev, budget);
+            r = 1; break;
+         }
+         prev = res;
+      }
+      if (res < tell)
+      {
+         printf("[FAIL] budget: bound %zu fell behind consumer %zu\n",
+               res, tell);
+         r = 1; break;
+      }
+      if (memcmp(base + tell, ref + tell,
+               (res - tell < 4096) ? res - tell : 4096))
+      { fail("budget: resident bytes disagree with the file"); r = 1; break; }
+   }
+   if (!r)
+      ok("budget: bounded per call, never behind, bytes correct");
+
+   /* 3: convergence at a fixed tell equals the unbudgeted feed */
+   tell   = 2u << 20;
+   target = tell + LOOKAHD;
+   for (i = 0; i < 1 + LOOKAHD / budget + 2; i++)
+      data_transfer_window_feed_budget(dt, tell, LOOKAHD, MARGIN,
+            budget, &res);
+   if (data_transfer_window_is_reserved(dt) && res != target)
+   {
+      printf("[FAIL] budget: converged at %zu, unbudgeted feed "
+             "reaches %zu\n", res, target);
+      r = 1;
+   }
+   else
+      ok("budget: converges on the unbudgeted target");
+   if (!data_transfer_window_feed_budget(dt, tell + 16384, LOOKAHD,
+            MARGIN, 0, &res)
+         || (data_transfer_window_is_reserved(dt)
+            && res != tell + 16384 + LOOKAHD))
+   { fail("budget: 0 must behave as window_feed"); r = 1; }
+   else
+      ok("budget: 0 is window_feed by another name");
+
+   /* 4: a lap landing far past the frontier closes in one call */
+   data_transfer_window_feed_budget(dt, 4096, LOOKAHD, MARGIN,
+         budget, &res);                 /* loop: rewind to the head */
+   tell = 6u << 20;                     /* far past the reset frontier */
+   if (!data_transfer_window_feed_budget(dt, tell, LOOKAHD, MARGIN,
+            budget, &res))
+   { fail("budget: catch-up feed failed"); r = 1; }
+   else if (data_transfer_window_is_reserved(dt)
+         && res != tell + LOOKAHD)
+   {
+      printf("[FAIL] budget: catch-up left the bound at %zu with the "
+             "consumer at %zu - the next read faults\n", res, tell);
+      r = 1;
+   }
+   else
+   {
+      volatile uint8_t s = base[tell];  /* must be resident right now */
+      (void)s;
+      if (memcmp(base + tell, ref + tell, 4096))
+      { fail("budget: catch-up bytes disagree with the file"); r = 1; }
+      else
+         ok("budget: a frontier behind the consumer closes in one call");
+   }
+
+   data_transfer_free(dt);
+   free(ref);
+   remove(path);
+   return r;
+}
+
 #if defined(__unix__) || defined(__APPLE__)
 #include <sys/wait.h>
 
@@ -785,6 +904,7 @@ int main(void)
    printf("[skip] residency bound: not measurable on this platform\n");
 #endif
 
+   bad |= feed_budget_check();
    bad |= ahead_of_frontier_check();
    bad |= surface_mixing_check();
    bad |= range_bounds_check();

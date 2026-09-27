@@ -21,11 +21,13 @@
 #include <array/rbuf.h>
 #include <array/rhmap.h>
 #include <formats/rjson.h>
+#include <formats/rjson_stream.h>
 #include <formats/rjson_helpers.h>
 #include <retro_endianness.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 
+#include "../gfx/gfx_surface.h"
 #include "menu_driver.h"
 #include "menu_cbs.h"
 #include "../retroarch.h"
@@ -43,6 +45,7 @@ enum
    EXPLORE_BY_DEVELOPER          = 0,
    EXPLORE_BY_PUBLISHER,
    EXPLORE_BY_RELEASEYEAR,
+   EXPLORE_BY_RELEASEMONTH,
    EXPLORE_BY_PLAYERCOUNT,
    EXPLORE_BY_GENRE,
    EXPLORE_BY_ACHIEVEMENTS,
@@ -145,6 +148,7 @@ explore_by_info[EXPLORE_CAT_COUNT] =
    { "developer",          MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,           MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,          true,  true,  false, false },
    { "publisher",          MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,           MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,          true,  true,  false, false },
    { "releaseyear",        MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR, MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,       false, false, true,  false },
+   { "releasemonth",       MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,       MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_MONTH,      false, false, true,  false },
    { "users",              MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_PLAYER_COUNT, MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,       false, false, true,  false },
    { "genre",              MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,               MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,              true,  false, false, false },
    { "achievements",       MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,        MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ACHIEVEMENTS,       false, false, false, true  },
@@ -431,7 +435,7 @@ static void explore_load_icons(explore_state_t *state)
 {
    char path[PATH_MAX_LENGTH];
    size_t i, _len, system_count;
-   bool supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   bool supports_rgba = gfx_surface_wants_rgba();
    if (!state)
       return;
 
@@ -462,7 +466,7 @@ static void explore_load_icons(explore_state_t *state)
       __len       += strlcpy(path + _len,
                  state->by[EXPLORE_BY_SYSTEM][i]->str,
                  sizeof(path)     - _len);
-      strlcpy(path + __len, ".png", sizeof(path) - __len);
+      strlcpy_lit(path + __len, ".png", sizeof(path) - __len);
       if (!path_is_valid(path))
          continue;
 
@@ -1013,6 +1017,7 @@ static int explore_action_ok_find(const char *path, const char *label,
    line.label_setting         = NULL;
    line.type                  = 0;
    line.idx                   = 0;
+   line.text_type             = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    line.cb                    = explore_action_find_complete;
    menu_input_dialog_start(&line);
    return 0;
@@ -1103,7 +1108,7 @@ static void explore_action_saveview_complete(void *userdata, const char *name)
    settings               = config_get_ptr();
    _len                   = fill_pathname_join_special(lvwpath,
          settings->paths.directory_playlist, name, sizeof(lvwpath));
-   strlcpy(lvwpath + _len, ".lvw", sizeof(lvwpath) - _len);
+   strlcpy_lit(lvwpath + _len, ".lvw", sizeof(lvwpath) - _len);
 
    if (filestream_exists(lvwpath))
    {
@@ -1120,7 +1125,16 @@ static void explore_action_saveview_complete(void *userdata, const char *name)
       return;
    }
 
-   w = rjsonwriter_open_stream(file);
+   if (!(w = rjsonwriter_open_intfstream(file)))
+   {
+      /* Every rjsonwriter_* call below dereferences this without a
+       * check of its own. */
+      RARCH_ERR("[Explore] Failed to create json writer for %s.\n", lvwpath);
+      intfstream_close(file);
+      free(file);
+      filestream_delete(lvwpath);
+      return;
+   }
 
    rjsonwriter_add_start_object(w);
 
@@ -1184,7 +1198,23 @@ static void explore_action_saveview_complete(void *userdata, const char *name)
    rjsonwriter_add_newline(w);
    rjsonwriter_add_end_object(w);
    rjsonwriter_add_newline(w);
-   rjsonwriter_free(w);
+
+   /* rjsonwriter_free() performs the final flush, so its result is what
+    * says whether the view was written completely.  A short write used
+    * to be announced as "view saved" and left a truncated .lvw behind -
+    * which then fails to parse when the view is opened, and, because
+    * saving refuses to overwrite an existing file, also blocks saving
+    * the same view again under that name.  Remove the partial file so
+    * the name stays free. */
+   if (!rjsonwriter_free(w))
+   {
+      RARCH_ERR("[Explore] Failed to write json file %s.\n", lvwpath);
+      intfstream_close(file);
+      free(file);
+      filestream_delete(lvwpath);
+      return;
+   }
+
    intfstream_close(file);
    free(file);
 
@@ -1199,6 +1229,7 @@ static int explore_action_ok_saveview(const char *path, const char *label,
    line.label_setting         = NULL;
    line.type                  = 0;
    line.idx                   = 0;
+   line.text_type             = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    line.cb                    = explore_action_saveview_complete;
    menu_input_dialog_start(&line);
    return 0;
@@ -1219,7 +1250,7 @@ static void explore_load_view(explore_state_t *state, const char* path)
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE)))
       return;
 
-   json = rjson_open_stream(file);
+   json = rjson_open_intfstream(file);
 
    /* Configure parser */
    rjson_set_options(json,

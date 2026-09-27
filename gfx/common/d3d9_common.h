@@ -89,9 +89,6 @@ typedef struct d3d9_video
    bool quitting;
    bool needs_restore;
    bool overlays_enabled;
-   /* TODO - refactor this away properly. */
-   bool resolution_hd_enable;
-
    /* Only used for Xbox */
    bool widescreen_mode;
 

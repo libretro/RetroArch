@@ -15,6 +15,7 @@
  */
 
 #include <stdint.h>
+#include "../../apple_runtime.h"
 #include <unistd.h>
 
 #include <retro_miscellaneous.h>
@@ -34,6 +35,9 @@
 #include "../drivers_keyboard/keyboard_event_apple.h"
 #include "../../ui/drivers/cocoa/cocoa_common.h"
 #include "../../ui/ui_companion_driver.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #ifdef HAVE_COREMOTION
 #import <CoreMotion/CoreMotion.h>
@@ -67,7 +71,7 @@ typedef struct icade_map
 /*
  * FORWARD DECLARATIONS
  */
-#ifdef OSX
+#if TARGET_OS_OSX
 float cocoa_screen_get_backing_scale_factor(void);
 #endif
 
@@ -87,9 +91,30 @@ static void cocoa_input_init_haptic_engine(void) KEYPRESS_HAPTIC_AVAIL;
 
 static bool apple_key_state[MAX_KEYS];
 
+/* Drops every key that is currently held. The release is published to
+ * the input layer as well as cleared locally, so a core's keyboard
+ * callback, the menu's flush-and-wait-for-release and anything else
+ * driven by key events see the key-up that the window or the
+ * application never got to deliver. */
 void apple_input_keyboard_reset(void)
 {
-   memset(apple_key_state, 0, sizeof(apple_key_state));
+   unsigned i;
+
+   for (i = 1; i < MAX_KEYS; i++)
+   {
+      if (!apple_key_state[i])
+         continue;
+      apple_key_state[i] = false;
+      input_keyboard_event(false,
+            input_keymaps_translate_keysym_to_rk(i),
+            0, 0, RETRO_DEVICE_KEYBOARD);
+   }
+
+#if TARGET_OS_IPHONE
+   /* The small-keyboard layer latches on a held modifier, so it goes
+    * with the keys it was tracking. */
+   small_keyboard_active = false;
+#endif
 }
 
 /* Send keyboard inputs directly using RETROK_* codes
@@ -382,18 +407,18 @@ static void *cocoa_input_init(const char *joypad_driver)
 {
    cocoa_input_data_t *apple = NULL;
 #ifdef HAVE_COREMOTION
-   if (@available(macOS 10.15, *))
+   if (apple_runtime_available(APPLE_RUNTIME_VER(10, 15, 0), 0, 0))
       if (!motionManager)
          motionManager = [[CMMotionManager alloc] init];
 #endif
 
 #if TARGET_OS_IOS
-   if (@available(iOS 14, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
       cocoa_input_init_haptic_engine();
    else
    {
       /* Fallback for iOS 10-13 */
-      if (@available(iOS 10, *))
+      if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), 0))
       {
          if (!feedbackGenerator)
             feedbackGenerator = [[UISelectionFeedbackGenerator alloc] init];
@@ -416,7 +441,7 @@ static void cocoa_input_poll(void *data)
 {
    uint32_t i;
    cocoa_input_data_t *apple    = (cocoa_input_data_t*)data;
-#ifndef IOS
+#if !TARGET_OS_IPHONE
    float   backing_scale_factor = cocoa_screen_get_backing_scale_factor();
 #else
    int     backing_scale_factor = 1;
@@ -469,7 +494,7 @@ static int16_t cocoa_lightgun_aiming_state(
    int16_t x = apple->window_pos_x;
    int16_t y = apple->window_pos_y;
 
-#ifndef IOS
+#if !TARGET_OS_IPHONE
    x *= cocoa_screen_get_backing_scale_factor();
    y *= cocoa_screen_get_backing_scale_factor();
 #endif
@@ -548,20 +573,20 @@ static int16_t cocoa_input_state(
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
-                        && apple_key_state[rarch_keysym_lut[binds[port][i].key]])
+                  if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
+                        && apple_key_state[rarch_keysym_lut[RETRO_KEYBIND_KEY(&binds[port][i])]])
                      ret |= (1 << i);
                }
             }
             return ret;
          }
 
-         if (binds[port][id].valid)
+         if (RETRO_KEYBIND_VALID(&binds[port][id]))
          {
             if (id < RARCH_BIND_LIST_END)
             {
-               if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
-                     && apple_key_state[rarch_keysym_lut[binds[port][id].key]]
+               if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
+                     && apple_key_state[rarch_keysym_lut[RETRO_KEYBIND_KEY(&binds[port][id])]]
                      && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
                   )
                   return 1;
@@ -580,10 +605,10 @@ static int16_t cocoa_input_state(
 
             input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
-            id_minus_valid        = binds[port][id_minus].valid;
-            id_plus_valid         = binds[port][id_plus].valid;
-            id_minus_key          = binds[port][id_minus].key;
-            id_plus_key           = binds[port][id_plus].key;
+            id_minus_valid        = RETRO_KEYBIND_VALID(&binds[port][id_minus]);
+            id_plus_valid         = RETRO_KEYBIND_VALID(&binds[port][id_plus]);
+            id_minus_key          = RETRO_KEYBIND_KEY(&binds[port][id_minus]);
+            id_plus_key           = RETRO_KEYBIND_KEY(&binds[port][id_plus]);
 
             if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
             {
@@ -608,7 +633,7 @@ static int16_t cocoa_input_state(
          case RETRO_DEVICE_ID_MOUSE_X:
             if (device == RARCH_DEVICE_MOUSE_SCREEN)
             {
-#ifdef IOS
+#if TARGET_OS_IPHONE
                return apple->window_pos_x;
 #else
                return apple->window_pos_x * cocoa_screen_get_backing_scale_factor();
@@ -618,7 +643,7 @@ static int16_t cocoa_input_state(
          case RETRO_DEVICE_ID_MOUSE_Y:
             if (device == RARCH_DEVICE_MOUSE_SCREEN)
             {
-#ifdef IOS
+#if TARGET_OS_IPHONE
                return apple->window_pos_y;
 #else
                return apple->window_pos_y * cocoa_screen_get_backing_scale_factor();
@@ -704,7 +729,7 @@ static int16_t cocoa_input_state(
                   const uint32_t joykey          = (bind_joykey != NO_BTN) ? bind_joykey  : autobind_joykey;
                   const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE) ? bind_joyaxis : autobind_joyaxis;
 
-                  if (binds[port][new_id].valid)
+                  if (RETRO_KEYBIND_VALID(&binds[port][new_id]))
                   {
                      if ((uint16_t)joykey != NO_BTN && joypad->button(joyport, (uint16_t)joykey))
                         return 1;
@@ -712,9 +737,9 @@ static int16_t cocoa_input_state(
                          ((float)abs(joypad->axis(joyport, joyaxis))
                           / 0x8000) > axis_threshold)
                         return 1;
-                     else if ((binds[port][new_id].key && binds[port][new_id].key < RETROK_LAST)
+                     else if ((RETRO_KEYBIND_KEY(&binds[port][new_id]) && RETRO_KEYBIND_KEY(&binds[port][new_id]) < RETROK_LAST)
                               && !keyboard_mapping_blocked
-                              && apple_key_state[rarch_keysym_lut[(enum retro_key)binds[port][new_id].key]])
+                              && apple_key_state[rarch_keysym_lut[RETRO_KEYBIND_KEY(&binds[port][new_id])]])
                         return 1;
                      else
                      {
@@ -743,7 +768,7 @@ static void cocoa_input_free(void *data)
       return;
 
 #if TARGET_OS_IOS
-   if (@available(iOS 14, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
    {
       if (keypressHapticEngine)
       {
@@ -755,7 +780,7 @@ static void cocoa_input_free(void *data)
          }];
       }
    }
-   else if (@available(iOS 10, *))
+   else if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), 0))
       feedbackGenerator = nil;
 #endif
 
@@ -785,7 +810,7 @@ static bool cocoa_input_set_sensor_state(void *data, unsigned port,
       return false;
 
 #ifdef HAVE_MFI
-   if (@available(iOS 14.0, macOS 11.0, tvOS 14.0, *))
+   if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(14, 0, 0), APPLE_RUNTIME_VER(14, 0, 0)))
    {
       for (GCController *controller in [GCController controllers])
       {
@@ -847,8 +872,16 @@ static bool cocoa_input_set_sensor_state(void *data, unsigned port,
 static void cocoa_sensor_rotate_xy(float *x, float *y)
 {
    float rawX = *x, rawY = *y;
-   UIInterfaceOrientation orient =
-         [[UIApplication sharedApplication] statusBarOrientation];
+   UIInterfaceOrientation orient;
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(16, 0, 0), 0)) {
+      UIWindow *window = [[UIApplication sharedApplication] delegate].window;
+      if (!window) {
+         return;
+      }
+      orient = window.windowScene.effectiveGeometry.interfaceOrientation;
+   } else {
+      orient = [[UIApplication sharedApplication] statusBarOrientation];
+   }
    switch (orient)
    {
       case UIInterfaceOrientationLandscapeLeft:
@@ -872,7 +905,7 @@ static void cocoa_sensor_rotate_xy(float *x, float *y)
 static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id)
 {
 #ifdef HAVE_MFI
-   if (@available(iOS 14.0, macOS 11.0, tvOS 14.0, *))
+   if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(14, 0, 0), APPLE_RUNTIME_VER(14, 0, 0)))
    {
       for (GCController *controller in [GCController controllers])
       {
@@ -965,7 +998,7 @@ static void cocoa_input_init_haptic_engine(void) KEYPRESS_HAPTIC_AVAIL
 
 static void cocoa_input_keypress_vibrate(void)
 {
-   if (@available(iOS 14, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
    {
       /* Reinitialize engine if iOS stopped it (e.g., during backgrounding) */
       if (!keypressHapticEngine)
@@ -1039,7 +1072,7 @@ static void cocoa_input_keypress_vibrate(void)
    else
    {
       /* Fallback for iOS 10-13 */
-      if (@available(iOS 10, *))
+      if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), 0))
       {
          if (feedbackGenerator)
          {
@@ -1051,7 +1084,7 @@ static void cocoa_input_keypress_vibrate(void)
 }
 #endif
 
-#ifdef OSX
+#if TARGET_OS_OSX
 static void cocoa_input_grab_mouse(void *data, bool state)
 {
    cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
@@ -1083,7 +1116,7 @@ static void cocoa_input_grab_mouse(void *data, bool state)
 
    apple->mouse_grabbed = state;
 
-   if (@available(iOS 14, *))
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
       [[CocoaView get] setNeedsUpdateOfPrefersPointerLocked];
 }
 #endif
@@ -1097,7 +1130,7 @@ input_driver_t input_cocoa = {
    cocoa_input_get_sensor_input,
    cocoa_input_get_capabilities,
    "cocoa",
-#if defined(OSX) || TARGET_OS_IOS
+#if TARGET_OS_OSX || TARGET_OS_IOS
    cocoa_input_grab_mouse,
 #else
    NULL,                         /* grab_mouse */

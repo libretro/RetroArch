@@ -1,0 +1,216 @@
+name: CI Linux samples/input
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  samples-input:
+    name: Build and run samples/input
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: |
+          pkgs="build-essential libusb-1.0-0-dev libx11-dev libxtst-dev libxi-dev xvfb"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 500M
+          ccache -z
+
+      - name: X11 input poll sends no requests (Xvfb, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/input/x11_input_poll
+        run: |
+          set -eu
+          # The X input driver's poll runs every frame. Keys, and with
+          # XInput 2 the pointer, come from events on the driver's own
+          # connection, drained at the poll, so it sends no request on
+          # either connection; a query on the shared one waits behind
+          # whatever the video thread presents through it. XTEST drives
+          # the keyboard (held before init, auto-repeat, focus changes,
+          # another client's keyboard grab) and the pointer (a press
+          # without motion, buttons 1, 3 and 8, the wheel, a drag out of
+          # the window, a new driver over a held button, and grabbed
+          # motion across a warp the server holds back behind a server
+          # grab - where any wait on the server would hang the test).
+          Xvfb :96 -screen 0 1024x768x24 > /tmp/xvfb96.log 2>&1 &
+          XVFB_PID=$!
+          sleep 1
+          make clean all SANITIZER=address,undefined
+          DISPLAY=:96 ASAN_OPTIONS=detect_leaks=1 \
+             UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 120 ./x11_input_poll_test
+          make clean all SANITIZER=thread
+          DISPLAY=:96 TSAN_OPTIONS=halt_on_error=1 timeout 120 ./x11_input_poll_test
+          make clean
+          kill $XVFB_PID
+          echo "[pass] x11_input_poll_test (ASan, TSan)"
+
+      - name: Build and run illuminance_sensor_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/illuminance_sensor
+        run: |
+          set -eu
+          # The Linux IIO illuminance sensor poller, against a fake
+          # sysfs tree under /tmp. Pins that the poll thread waits on a
+          # condition between readings rather than sleeping: a raised
+          # rate applies at once, and close returns without waiting out
+          # the period.
+          make clean all SANITIZER=address,undefined
+          test -x illuminance_sensor_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./illuminance_sensor_test
+          echo "[pass] illuminance_sensor_test (ASan)"
+
+      - name: Build and run illuminance_sensor_test (TSan)
+        shell: bash
+        working-directory: samples/input/illuminance_sensor
+        run: |
+          set -eu
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 60 ./illuminance_sensor_test
+          echo "[pass] illuminance_sensor_test (TSan)"
+
+      - name: Build and run libusb_hid_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/libusb_hid
+        run: |
+          set -eu
+          # The libusb HID driver against a fake libusb: reads and
+          # commands run on asynchronous transfers completed by the poll
+          # thread, with no thread per pad. Pins that a command goes out
+          # at once even while the pad sends nothing, that commands stay
+          # in order one at a time, that unplugging frees the adapter,
+          # and that freeing the driver returns at once with a send
+          # still pending, releasing every transfer and handle.
+          make clean all SANITIZER=address,undefined
+          test -x libusb_hid_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./libusb_hid_test
+          echo "[pass] libusb_hid_test (ASan)"
+
+      - name: Build and run libusb_hid_test (TSan)
+        shell: bash
+        working-directory: samples/input/libusb_hid
+        run: |
+          set -eu
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 60 ./libusb_hid_test
+          echo "[pass] libusb_hid_test (TSan)"
+
+      - name: Build and run wii_handshake_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/wii_handshake
+        run: |
+          set -eu
+          # The Wiimote extension handshake in connect_wii.c, fed
+          # reports directly. Pins that each init write waits for the
+          # remote's acknowledgement instead of a sleep on the packet
+          # thread, that a missing acknowledgement is only overtaken by
+          # a packet after the old 100 ms, and that no packet blocks.
+          make clean all SANITIZER=address,undefined
+          test -x wii_handshake_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./wii_handshake_test
+          echo "[pass] wii_handshake_test (ASan)"
+
+      - name: Build and run overlay_textures_test (plain, ASan + UBSan, threaded)
+        shell: bash
+        working-directory: samples/input/overlay_textures
+        run: |
+          set -eu
+          # input/input_overlay_textures.c as it is, against a stub
+          # driver that reads every pixel it is handed. Pins every
+          # route a page takes to the driver: as textures (each page
+          # gets its own images' textures, a switch uploads nothing,
+          # the pixels go once the driver has them and the sizes
+          # stay), and as pixels through load() for a driver that
+          # declines the textures, has no such path, or fails an
+          # upload - live pixels on every page. 86fbf34e01 freed the
+          # pixels before the page lists were matched by them, so
+          # with threaded video off the fallback showed freed memory;
+          # under ASan that is a use-after-free here.
+          make clean all
+          timeout 60 ./overlay_textures_test
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./overlay_textures_test
+          # THREADS=1: the threaded wrapper as a stub whose video
+          # thread runs when the test says so, so both outcomes of
+          # the race between the uploads and the poll are lanes. The
+          # quick thread is 86fbf34e01's bug again under threaded
+          # video; the slow one must find the pack's pixels alive.
+          make clean all THREADS=1 SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./overlay_textures_test
+          make clean
+          echo "[pass] overlay_textures_test (plain, ASan, threaded ASan)"
+
+      - name: Build and run winraw_abs_pos_test (mingw + Wine)
+        shell: bash
+        working-directory: samples/input/winraw_abs_pos
+        run: |
+          set -eu
+          # input/drivers/winraw_input.c, cross-built with mingw-w64 and
+          # run under Wine: an absolute pointer report's position is
+          # kept as one word, and every read must give back a position
+          # a report carried, including a report that lands during poll.
+          if ! command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1 \
+                || ! command -v wine >/dev/null 2>&1; then
+             sudo apt-get install -y -qq gcc-mingw-w64-x86-64 wine64 \
+                -o Acquire::Retries=3 -o Acquire::http::Timeout=30
+          fi
+          make clean all
+          WINEDEBUG=-all timeout 300 make check
+          make clean
+          echo "[pass] winraw_abs_pos_test (wine)"

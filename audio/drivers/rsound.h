@@ -183,7 +183,6 @@ typedef struct rsound
    rsd_error_callback_t error_callback;
    size_t cb_max_size;
    void *cb_data;
-   slock_t *cb_lock;
 } rsound_t;
 
 /* -- API --
@@ -256,15 +255,6 @@ int rsd_set_param (rsound_t *rd, enum rsd_settings option, void* param);
    Callbacks can be disabled by setting callbacks to NULL. */
 
 void rsd_set_callback (rsound_t *rd, rsd_audio_callback_t callback, rsd_error_callback_t err_callback, size_t max_size, void *userdata);
-
-/* Lock and unlock the callback. When the callback lock is acquired, the callback is guaranteed to not be executing.
-   The lock has to be unlocked afterwards.
-   Attempting to call several rsd_callback_lock() in succession might cause a deadlock.
-   The lock should be held for as short period as possible.
-   Try to avoid calling code that may block when holding the lock. */
-void rsd_callback_lock (rsound_t *rd);
-
-void rsd_callback_unlock (rsound_t *rd);
 
 /* Establishes connection to server. Might fail if connection can't be established or that one of
    the mandatory options isn't set in rsd_set_param(). This needs to be called after params have been set

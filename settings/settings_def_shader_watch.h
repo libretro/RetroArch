@@ -20,4 +20,4 @@ S_BOOL(video_shader_remember_last_dir, VIDEO_SHADER_REMEMBER_LAST_DIR,
       "video_shader_remember_last_dir",
       DEFAULT_VIDEO_SHADER_REMEMBER_LAST_DIR, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
       "Remember Last Used Shader Directory",
-      "Open File Browser at the last used directory when loading shader presets and passes.")
+      "Open File Browser at the last used directory when loading shader presets and passes. The Next/Previous Shader hotkeys step from the current preset instead of cycling the root of the 'Video Shaders' directory.")

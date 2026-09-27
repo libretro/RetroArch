@@ -271,6 +271,7 @@ if [ "$OS" = 'Darwin' ]; then
    # MACOSX_DEPLOYMENT_TARGET (set by the invoker or the toolchain)
    # takes priority over sw_vers, because on a cross-build the host
    # OS version may be newer than the target.
+   macos_target_pre_10_5=no
    macos_target_pre_10_7=no
    macos_target_pre_10_11=no
    macos_target_ver="${MACOSX_DEPLOYMENT_TARGET:-}"
@@ -282,6 +283,10 @@ if [ "$OS" = 'Darwin' ]; then
       mt_minor=$(printf %s "$macos_target_ver" | cut -d. -f2)
       [ -z "$mt_major" ] && mt_major=0
       [ -z "$mt_minor" ] && mt_minor=0
+      if [ "$mt_major" -lt 10 ] || \
+         { [ "$mt_major" -eq 10 ] && [ "$mt_minor" -lt 5 ]; }; then
+         macos_target_pre_10_5=yes
+      fi
       if [ "$mt_major" -lt 10 ] || \
          { [ "$mt_major" -eq 10 ] && [ "$mt_minor" -lt 7 ]; }; then
          macos_target_pre_10_7=yes
@@ -298,15 +303,11 @@ if [ "$OS" = 'Darwin' ]; then
    #   * HAVE_METAL defaults to 'no' in config.params.sh so check_platform
    #     early-outs. Force it on here so the Metal video driver is built,
    #     unless the user explicitly passed --disable-metal.
-   #   * HAVE_VULKAN must be set to 'yes' before the COCOA_METAL check
-   #     below, which decides which AppKit glue to compile based on
-   #     whether Metal/Vulkan is in play. Link-time libvulkan is not
-   #     required on Darwin; MoltenVK is loaded dynamically at runtime
-   #     by gfx/common/vulkan_common.c.
+   #   * HAVE_VULKAN is forced on alongside it. Link-time libvulkan is
+   #     not required on Darwin; MoltenVK is loaded dynamically at
+   #     runtime by gfx/common/vulkan_common.c.
    # Skip the force-on on pre-10.7 targets — Metal is 10.11+ and
    # MoltenVK is 10.11+, so neither is buildable on Tiger/Leopard.
-   # That also keeps HAVE_COCOA_METAL off, which in turn avoids code
-   # paths that use the 10.6+ NSWindowDelegate protocol.
    if [ "$macos_target_pre_10_7" = 'no' ]; then
       [ "${USER_METAL:-}"  != 'no' ] && HAVE_METAL=yes
       [ "${USER_VULKAN:-}" != 'no' ] && HAVE_VULKAN=yes
@@ -317,7 +318,10 @@ if [ "$OS" = 'Darwin' ]; then
    check_platform Darwin COCOA 'Cocoa is' true
    check_lib '' COREAUDIO "-framework AudioUnit" AudioUnitInitialize
    check_lib '' CORETEXT "-framework CoreText" CTFontCreateWithName
-   add_opt CRTSWITCHRES no
+   # The modeline engine stays on: macOS cannot program a timing (the
+   # Apple display server has no modeline ops), but the engine also
+   # carries the EDID reader that System Information > Display
+   # Information > EDID shows, and that works here.
 
    # The microphone driver (audio/drivers/coreaudio_mic_macos.m) uses
    # C11 <stdatomic.h>, which requires a 10.6/10.7-era SDK or newer.
@@ -371,13 +375,30 @@ if [ "$OS" = 'Darwin' ]; then
       die : "Notice: macOS target $macos_target_ver is pre-10.7; disabling AVFoundation camera/recording drivers.  Override with --enable-avf."
    fi
 
-   unset macos_target_ver macos_target_pre_10_7 macos_target_pre_10_11
-
-   if [ "$HAVE_METAL" = yes ] || [ "$HAVE_VULKAN" = yes ]; then
-      check_lib '' COCOA_METAL "-framework AppKit" NSApplicationMain
-   else
-      check_lib '' COCOA "-framework AppKit" NSApplicationMain
+   # The CoreLocation driver (location/drivers/corelocation.m) is
+   # written for ARC, blocks and @available - a clang-era file.  A
+   # pre-10.7 target is a GCC-era target with none of those, so the
+   # driver is left out there unless the user asks for it.
+   if [ "$macos_target_pre_10_7" = 'yes' ] && \
+      [ "${USER_CORELOCATION:-}" != 'yes' ] && \
+      [ "$HAVE_CORELOCATION" != 'no' ]; then
+      HAVE_CORELOCATION=no
+      die : "Notice: macOS target $macos_target_ver is pre-10.7; disabling CoreLocation (requires ARC and blocks).  Override with --enable-corelocation."
    fi
+
+   # IOHIDManager (the joypad HID driver) is 10.5.  A 10.4 target
+   # leaves it out unless asked; the binary then launches on Tiger
+   # with keyboard and mouse input.
+   if [ "$macos_target_pre_10_5" = 'yes' ] && \
+      [ "${USER_IOHIDMANAGER:-}" != 'yes' ] && \
+      [ "$HAVE_IOHIDMANAGER" != 'no' ]; then
+      HAVE_IOHIDMANAGER=no
+      die : "Notice: macOS target $macos_target_ver is pre-10.5; disabling IOHIDManager joypad support (10.5 API).  Override with --enable-iohidmanager."
+   fi
+
+   unset macos_target_ver macos_target_pre_10_5 macos_target_pre_10_7 macos_target_pre_10_11
+
+   check_lib '' COCOA "-framework AppKit" NSApplicationMain
 
    check_lib '' CORELOCATION "-framework CoreLocation"
    check_lib '' IOHIDMANAGER "-framework IOKit" IOHIDManagerCreate
@@ -397,16 +418,48 @@ check_pkgconf RSOUND rsound 1.1
 check_pkgconf ROAR libroar 1.0.12
 check_val '' JACK -ljack '' jack 0.120.1 '' false
 check_val '' PULSE -lpulse '' libpulse '' '' false
-check_val '' PIPEWIRE -lpipewire-0.3 '' libpipewire-0.3 '' '' false
-check_val '' PIPEWIRE_STABLE -lpipewire-0.3 '' libpipewire-0.3 1.0.0 '' false
+check_val '' PIPEWIRE -lpipewire-0.3 'pipewire-0.3 spa-0.2' libpipewire-0.3 '' '' false
+# PIPEWIRE_STABLE only qualifies PIPEWIRE (it gates the camera driver), so
+# it must not be probed when PipeWire itself is off: with --disable-pipewire
+# and libpipewire installed it used to end up defined on its own.
+if [ "$HAVE_PIPEWIRE" = 'no' ]; then
+   add_opt PIPEWIRE_STABLE no
+else
+   check_val '' PIPEWIRE_STABLE -lpipewire-0.3 'pipewire-0.3 spa-0.2' libpipewire-0.3 1.0.0 '' false
+fi
+
+# Without pkg-config the library check above cannot see the version, so
+# PIPEWIRE_STABLE takes it from the headers instead.
+if [ "$HAVE_PIPEWIRE_STABLE" = 'yes' ] && [ "$PKG_CONF_PATH" = 'none' ]; then
+   printf %s\\n '#include <pipewire/version.h>' \
+      '#if !PW_CHECK_VERSION(1, 0, 0)' \
+      '#error PipeWire older than 1.0.0' \
+      '#endif' \
+      'int main(void) { return 0; }' > "$TEMP_C"
+   printf %s 'Checking PipeWire headers >= 1.0.0 ... '
+   if $(printf %s "$CC") -o "$TEMP_EXE" "$TEMP_C" \
+         $(printf %s "$BUILD_DIRS $CFLAGS $PIPEWIRE_STABLE_CFLAGS $LDFLAGS") \
+         >>config.log 2>&1; then
+      printf %s\\n 'yes'
+   else
+      printf %s\\n 'no'
+      HAVE_PIPEWIRE_STABLE=no
+   fi
+   rm -f -- "$TEMP_C" "$TEMP_EXE"
+fi
 check_val '' SDL -lSDL SDL sdl 1.2.10 '' true
 check_val '' SDL2 -lSDL2 SDL2 sdl2 2.0.0 '' true
 check_val '' SDL3 -lSDL3 SDL3 sdl3 3.2.20 '' true
 
 if [ "$HAVE_SDL3" = 'yes' ] && { [ "$HAVE_SDL2" = 'yes' ] || [ "$HAVE_SDL" = 'yes' ]; }; then
-   die : 'Notice: SDL drivers will be replaced by SDL3 ones.'
-   HAVE_SDL=no
-   HAVE_SDL2=no
+   if [ "$USER_SDL2" = 'yes' ] && [ "$USER_SDL3" != 'yes' ]; then
+      die : 'Notice: SDL2 was explicitly enabled, disabling SDL3 drivers.'
+      HAVE_SDL3=no
+   else
+      die : 'Notice: SDL drivers will be replaced by SDL3 ones.'
+      HAVE_SDL=no
+      HAVE_SDL2=no
+   fi
 fi
 if [ "$HAVE_SDL2" = 'yes' ] && [ "$HAVE_SDL" = 'yes' ]; then
    die : 'Notice: SDL drivers will be replaced by SDL2 ones.'
@@ -423,12 +476,35 @@ check_enabled CXX QT 'Qt companion' 'The C++ compiler is' false
 if [ "$HAVE_QT" != 'no' ]; then
    _have_qt=$HAVE_QT
    if [ "$HAVE_CXX17" = 'yes' ]; then
-      check_pkgconf QT6CORE Qt6Core 6.2
-      check_pkgconf QT6GUI Qt6Gui 6.2
-      check_pkgconf QT6WIDGETS Qt6Widgets 6.2
+      check_pkgconf QT6CORE Qt6Core 6.2 '' '' nopkg
+      check_pkgconf QT6GUI Qt6Gui 6.2 '' '' nopkg
+      check_pkgconf QT6WIDGETS Qt6Widgets 6.2 '' '' nopkg
       #check_pkgconf QT6WEBENGINE Qt6WebEngine 6.2
 
-      # pkg-config is needed to reliably find Qt6 libraries.
+      # Without pkg-config, Qt's own qmake answers for its headers and
+      # libraries.
+      if [ "$PKG_CONF_PATH" = 'none' ] && _qmake="$(nopkg_qmake 6)"; then
+         _qh="$("$_qmake" -query QT_INSTALL_HEADERS)"
+         _ql="-L$("$_qmake" -query QT_INSTALL_LIBS)"
+         _qspec="$("$_qmake" -query QT_INSTALL_ARCHDATA)/mkspecs/$("$_qmake" -query QMAKE_XSPEC)"
+         [ -d "$_qspec" ] || _qspec=''
+         check_nopkg cxx QT6CORE "$_ql -lQt6Core" \
+            "$_qh/QtCore $_qh -DQT_CORE_LIB $_qspec" \
+            '#include <QtCore/QCoreApplication>
+int main(int argc, char **argv) { QCoreApplication a(argc, argv); return 0; }' \
+            "$CXX17_CFLAGS -fPIC"
+         check_nopkg cxx QT6GUI "$_ql -lQt6Gui -lQt6Core" \
+            "$_qh/QtGui $_qh $_qh/QtCore -DQT_GUI_LIB -DQT_CORE_LIB $_qspec" \
+            '#include <QtGui/QGuiApplication>
+int main(int argc, char **argv) { QGuiApplication a(argc, argv); return 0; }' \
+            "$CXX17_CFLAGS -fPIC"
+         check_nopkg cxx QT6WIDGETS "$_ql -lQt6Widgets -lQt6Gui -lQt6Core" \
+            "$_qh/QtWidgets $_qh $_qh/QtCore $_qh/QtGui -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB $_qspec" \
+            '#include <QtWidgets/QApplication>
+int main(int argc, char **argv) { QApplication a(argc, argv); return 0; }' \
+            "$CXX17_CFLAGS -fPIC"
+      fi
+
 
       check_enabled QT6CORE QT Qt 'Qt6Core is' user
       check_enabled QT6GUI QT Qt 'Qt6GUI is' user
@@ -446,12 +522,35 @@ if [ "$HAVE_QT" != 'no' ]; then
    fi
    if [ "$HAVE_QT6" != 'yes' ]; then
       HAVE_QT=$_have_qt
-      check_pkgconf QT5CORE Qt5Core 5.2
-      check_pkgconf QT5GUI Qt5Gui 5.2
-      check_pkgconf QT5WIDGETS Qt5Widgets 5.2
+      check_pkgconf QT5CORE Qt5Core 5.2 '' '' nopkg
+      check_pkgconf QT5GUI Qt5Gui 5.2 '' '' nopkg
+      check_pkgconf QT5WIDGETS Qt5Widgets 5.2 '' '' nopkg
       #check_pkgconf QT5WEBENGINE Qt6WebEngine 5.2
 
-      # pkg-config is needed to reliably find Qt5 libraries.
+      # Without pkg-config, Qt's own qmake answers for its headers and
+      # libraries.
+      if [ "$PKG_CONF_PATH" = 'none' ] && _qmake="$(nopkg_qmake 5)"; then
+         _qh="$("$_qmake" -query QT_INSTALL_HEADERS)"
+         _ql="-L$("$_qmake" -query QT_INSTALL_LIBS)"
+         _qspec="$("$_qmake" -query QT_INSTALL_ARCHDATA)/mkspecs/$("$_qmake" -query QMAKE_XSPEC)"
+         [ -d "$_qspec" ] || _qspec=''
+         check_nopkg cxx QT5CORE "$_ql -lQt5Core" \
+            "$_qh/QtCore $_qh -DQT_CORE_LIB $_qspec" \
+            '#include <QtCore/QCoreApplication>
+int main(int argc, char **argv) { QCoreApplication a(argc, argv); return 0; }' \
+            "$CXX11_CFLAGS -fPIC"
+         check_nopkg cxx QT5GUI "$_ql -lQt5Gui -lQt5Core" \
+            "$_qh/QtGui $_qh $_qh/QtCore -DQT_GUI_LIB -DQT_CORE_LIB $_qspec" \
+            '#include <QtGui/QGuiApplication>
+int main(int argc, char **argv) { QGuiApplication a(argc, argv); return 0; }' \
+            "$CXX11_CFLAGS -fPIC"
+         check_nopkg cxx QT5WIDGETS "$_ql -lQt5Widgets -lQt5Gui -lQt5Core" \
+            "$_qh/QtWidgets $_qh $_qh/QtCore $_qh/QtGui -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB $_qspec" \
+            '#include <QtWidgets/QApplication>
+int main(int argc, char **argv) { QApplication a(argc, argv); return 0; }' \
+            "$CXX11_CFLAGS -fPIC"
+      fi
+
 
       check_enabled QT5CORE QT Qt 'Qt5Core is' true
       check_enabled QT5GUI QT Qt 'Qt5GUI is' true
@@ -463,7 +562,10 @@ if [ "$HAVE_QT" != 'no' ]; then
       die : 'Notice: Qt support disabled, required libraries were not found.'
    fi
 
-   check_pkgconf OPENSSL openssl 1.0.0
+   check_pkgconf OPENSSL openssl 1.0.0 '' '' nopkg
+   check_nopkg '' OPENSSL '-lssl -lcrypto' '' \
+      '#include <openssl/ssl.h>
+int main(void) { return SSL_new(NULL) != NULL; }'
 fi
 
 check_val '' FLAC '-lFLAC' '' flac '' '' false
@@ -536,9 +638,12 @@ check_platform Win32 WASAPI 'WASAPI is' true
 check_platform Win32 XAUDIO 'XAudio is' true
 check_platform Win32 WINMM 'WinMM is' true
 check_platform Win32 ASIO 'ASIO is' true
+check_platform Win32 WDMKS 'WDM-KS is' true
 
 if [ "$HAVE_BLISSBOX" != 'no' ]; then
-   if [ "$HAVE_LIBUSB" != 'no' ] || [ "$OS" = 'Win32' ]; then
+   # Linux resolves the pad type through hidraw and only falls back to
+   # libusb, so it does not need libusb to be present.
+   if [ "$HAVE_LIBUSB" != 'no' ] || [ "$OS" = 'Win32' ] || [ "$OS" = 'Linux' ]; then
       add_opt BLISSBOX yes
    else
       add_opt BLISSBOX no
@@ -657,7 +762,10 @@ if [ "$HAVE_EGL" = "yes" ]; then
    check_val '' VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS" '' "${VC_PREFIX}vg" '' '' false
 fi
 
-check_pkgconf DBUS dbus-1
+check_pkgconf DBUS dbus-1 '' '' '' nopkg
+check_nopkg '' DBUS -ldbus-1 'dbus-1.0 dbus-1.0/include' \
+   '#include <dbus/dbus.h>
+int main(void) { return dbus_bus_get(DBUS_BUS_SESSION, NULL) != NULL; }'
 check_val '' UDEV "-ludev" '' libudev '' '' false
 check_val '' V4L2 -lv4l2 '' libv4l2 '' '' false
 check_val '' FREETYPE -lfreetype freetype2 freetype2 '' '' false
@@ -666,6 +774,17 @@ check_val '' X11 -lX11 '' x11 '' '' false
 
 if [ "$HAVE_X11" != 'no' ]; then
    check_val '' XCB -lxcb '' xcb '' '' false
+
+   # XCB support needs X11/Xlib-xcb.h and libX11-xcb (XGetXCBConnection),
+   # which ship separately from libxcb on many distros.
+   if [ "$HAVE_XCB" != 'no' ]; then
+      check_val '' X11_XCB -lX11-xcb '' x11-xcb '' '' false
+      if [ "$HAVE_X11_XCB" = 'no' ]; then
+         die : 'Notice: x11-xcb not present. Skipping XCB code paths.'
+         HAVE_XCB=no
+      fi
+   fi
+
    check_val '' XEXT -lXext '' xext '' '' false
    check_val '' XF86VM -lXxf86vm '' xxf86vm '' '' false
    check_val '' XSCRNSAVER -lXss '' xscrnsaver '' '' false
@@ -689,7 +808,28 @@ check_val '' XKBCOMMON -lxkbcommon '' xkbcommon 0.3.2 '' false
 check_val '' WAYLAND '-lwayland-egl -lwayland-client' '' wayland-egl 10.1.0 '' false
 check_val '' WAYLAND_CURSOR -lwayland-cursor '' wayland-cursor 1.12 '' false
 check_pkgconf WAYLAND_PROTOS wayland-protocols 1.43
-check_pkgconf WAYLAND_SCANNER wayland-scanner '1.15 1.12'
+check_pkgconf WAYLAND_SCANNER wayland-scanner '1.15 1.12' '' '' nopkg
+
+# Without pkg-config the scanner still answers for its own version, and
+# the protocol generator falls back to deps/wayland-protocols.
+if [ "$PKG_CONF_PATH" = 'none' ] && [ "$TMP_WAYLAND_SCANNER" != 'no' ]; then
+   printf %s 'Checking for WAYLAND_SCANNER without pkg-config ... '
+   _wayscan="$(exists wayland-scanner || :)"
+   _wayscan_ver=''
+   [ "$_wayscan" ] && _wayscan_ver="$("$_wayscan" --version 2>&1 |
+      sed -n 's/.*wayland-scanner \([0-9][0-9.]*\).*/\1/p' | head -n 1)"
+   for _want in 1.15 1.12; do
+      if [ "$_wayscan_ver" ] && nopkg_version_ge "$_wayscan_ver" "$_want"; then
+         HAVE_WAYLAND_SCANNER='yes'
+         WAYLAND_SCANNER_VERSION="$_want"
+         break
+      fi
+   done
+   printf %s\\n "$HAVE_WAYLAND_SCANNER${_wayscan_ver:+ ($_wayscan_ver)}"
+   if [ "$HAVE_WAYLAND_SCANNER" != 'yes' ] && [ "${USER_WAYLAND_SCANNER:-}" = 'yes' ]; then
+      die 1 'Forced to build with WAYLAND_SCANNER, but it cannot be found without pkg-config. Exiting ...'
+   fi
+fi
 
 if [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
    [ "$HAVE_WAYLAND_CURSOR" = yes ] &&
@@ -700,8 +840,13 @@ if [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
          -s "$SHARE_DIR" ||
          die 1 'Error: Failed generating wayland protocols.'
 
-      check_pkgconf LIBDECOR libdecor-0
+      check_pkgconf LIBDECOR libdecor-0 '' '' '' nopkg
+      check_nopkg '' LIBDECOR -ldecor-0 libdecor-0 \
+         '#include <libdecor.h>
+int main(void) { return libdecor_new(NULL, NULL) != NULL; }'
 else
+    [ "${USER_WAYLAND:-}" = 'yes' ] &&
+       die 1 'Error: Forced to build with wayland, but its libraries or wayland-scanner were not found. Exiting ...'
     die : 'Notice: wayland libraries not found, disabling wayland support.'
     HAVE_WAYLAND='no'
 fi
@@ -797,12 +942,11 @@ check_enabled GLSLANG BUILTINGLSLANG 'builtin glslang' 'glslang is' true
 check_enabled SPIRV_CROSS BUILTINSPIRV_CROSS 'builtin spirv-cross' 'spirv-cross is' true
 
 if [ "$HAVE_SPIRV_CROSS" != no ] && [ "$HAVE_BUILTINSPIRV_CROSS" = no ]; then
+   # The slang stack uses the SPIRV-Cross C API, so only the
+   # spirv-cross-c-shared package can satisfy an external build; the
+   # C++ libraries carry no spvc_* symbols.  When it is absent we fall
+   # through to the builtin sources below.
    check_pkgconf SPIRV_CROSS spirv-cross-c-shared
-
-   if [ "$HAVE_SPIRV_CROSS" = no ]; then
-      check_header cxx SPIRV_CROSS spirv_cross/spirv_cross.hpp
-      check_lib cxx SPIRV_CROSS -lspirv-cross-core '' '-lspirv-cross-glsl'
-   fi
 
    if [ "$HAVE_SPIRV_CROSS" = no ]; then
       die : 'Notice: System SPIRV-Cross not found, enabling builtin SPIRV-Cross.'
@@ -842,13 +986,13 @@ if [ "$HAVE_GLSLANG" != no ]; then
    fi
 fi
 
-if [ "$HAVE_CRTSWITCHRES" != no ]; then
-   if [ "$HAVE_CXX11" = 'no' ]; then
-      HAVE_CRTSWITCHRES=no
-   else
-      HAVE_CRTSWITCHRES=yes
-   fi
+# The modeline engine is C89 with no libraries of its own, so it is on
+# unless turned off; --disable-crtswitchres, the old name, still turns
+# it off, and the alias follows the real switch either way.
+if [ "$HAVE_CRTSWITCHRES" = no ]; then
+   HAVE_MODELINE=no
 fi
+HAVE_CRTSWITCHRES="$HAVE_MODELINE"
 
 check_enabled SLANG GLSLANG glslang 'slang is' false
 check_enabled SLANG SPIRV_CROSS SPIRV-Cross 'slang is' false
@@ -907,6 +1051,23 @@ fi
 check_pkgconf SMBCLIENT libsmb2 0.0
 check_enabled NETWORKING SMBCLIENT libsmb2 'SMB client support is' false
 check_enabled NETWORKING BUILTINSMBCLIENT libsmb2 'SMB client support is' false
+
+# --enable-libsmb is the umbrella switch for SMB support: it guarantees SMB
+# gets built in without the caller having to know which libsmb2 provider is
+# available.  A system libsmb2 is preferred when pkg-config found one, and
+# the copy bundled in deps/libsmb2 is used otherwise.  --enable-smbclient and
+# --enable-builtinsmbclient remain available for packagers who need to pin a
+# specific provider.
+if [ "$HAVE_LIBSMB" = 'yes' ]; then
+   check_enabled NETWORKING LIBSMB libsmb2 'Networking is' false
+fi
+
+if [ "$HAVE_LIBSMB" = 'yes' ] && [ "$HAVE_SMBCLIENT" != 'yes' ]; then
+   if [ "$USER_BUILTINSMBCLIENT" = 'no' ]; then
+      die 1 'Error: --enable-libsmb requires a libsmb2, but no system libsmb2 was found and the bundled one is disabled.'
+   fi
+   HAVE_BUILTINSMBCLIENT=yes
+fi
 
 if [ "$HAVE_SMBCLIENT" = "yes" ]; then
     echo "SMB support enabled (system libsmb2)"

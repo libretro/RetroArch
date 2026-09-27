@@ -48,6 +48,7 @@
 
 /* Frame buffer */
 #define SCEGU_VRAM_TOP        (0x44000000)
+#define SCEGU_VRAM_SIZE       (2 * 1024 * 1024)
 /* 16bit mode */
 #define SCEGU_VRAM_BUFSIZE    (SCEGU_VRAM_WIDTH*SCEGU_SCR_HEIGHT*2)
 #define SCEGU_VRAM_BP_0       ((void *)(SCEGU_VRAM_TOP))
@@ -83,10 +84,11 @@ typedef struct psp1_menu_frame
    void* dList;
    void* frame;
    psp1_sprite_t* frame_coords;
+   /* The GE writes this, so it owns its cache lines rather than
+    * sharing them with fields the CPU touches every frame. */
+   PspGeContext* context_storage;
 
    bool active;
-
-   PspGeContext context_storage;
 } psp1_menu_frame_t;
 
 typedef struct psp1_video
@@ -95,23 +97,39 @@ typedef struct psp1_video
    video_viewport_t vp;
    void* main_dList;
    void* frame_dList;
+   void* blit_dList;
    void* draw_buffer;
    void* texture;
    psp1_sprite_t *frame_coords;
    int tex_filter;
    int bpp_log2;
    unsigned rotation;
+   /* VRAM left for the core frame, after the display buffers and the
+    * colour tables. */
+   unsigned texture_size;
+   /* Source geometry the texture coordinates were built for,
+    * (width << 16) | height. */
+   unsigned tex_geom;
+   /* Capacity of blit_dList, in command words. */
+   unsigned blit_dList_words;
    bool vsync;
    bool rgb32;
-   bool vblank_not_reached;
+   /* Cleared from interrupt context by psp_on_vblank(). */
+   volatile bool vblank_not_reached;
    bool keep_aspect;
    bool should_resize;
    bool hw_render;
 } psp1_video_t;
 
-/* Both row and column count need to be a power of 2 */
+/* Both row and column count need to be a power of 2. The split decides
+ * the shape of each slice, which is what the GE's texture cache sees;
+ * a build can pick another one to compare against. */
+#ifndef PSP_FRAME_ROWS_COUNT
 #define PSP_FRAME_ROWS_COUNT     4
+#endif
+#ifndef PSP_FRAME_COLUMNS_COUNT
 #define PSP_FRAME_COLUMNS_COUNT  16
+#endif
 #define PSP_FRAME_SLICE_COUNT    (PSP_FRAME_ROWS_COUNT * PSP_FRAME_COLUMNS_COUNT)
 #define PSP_FRAME_VERTEX_COUNT   (PSP_FRAME_SLICE_COUNT * 2)
 
@@ -244,25 +262,78 @@ static INLINE void psp_set_tex_coords (psp1_sprite_t* framecoords,
 
 static void psp_update_viewport(psp1_video_t* psp)
 {
-   psp->vp.full_width  = SCEGU_SCR_WIDTH;
-   psp->vp.full_height = SCEGU_SCR_HEIGHT;
+   psp->vp.full_dims   = VIDEO_SCALE_PACK(SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT);
    video_driver_update_viewport(&psp->vp, false, psp->keep_aspect, true);
 
    /* Ensure even dimensions */
-   psp->vp.width  += psp->vp.width  & 0x1;
-   psp->vp.height += psp->vp.height & 0x1;
+   {
+      unsigned vp_w = VIDEO_SCALE_W(psp->vp.dims);
+      unsigned vp_h = VIDEO_SCALE_H(psp->vp.dims);
+      psp->vp.dims  = VIDEO_SCALE_PACK(vp_w + (vp_w & 0x1),
+            vp_h + (vp_h & 0x1));
 
-   psp_set_screen_coords(psp->frame_coords, psp->vp.x,
-         psp->vp.y, psp->vp.width, psp->vp.height, psp->rotation);
+      psp_set_screen_coords(psp->frame_coords, VIDEO_POS_X(psp->vp.pos),
+            VIDEO_POS_Y(psp->vp.pos), VIDEO_SCALE_W(psp->vp.dims),
+            VIDEO_SCALE_H(psp->vp.dims), psp->rotation);
+   }
 
    psp->should_resize = false;
 }
 
 
-static void psp_on_vblank(u32 sub, psp1_video_t *psp)
+static void psp_on_vblank(int sub, void *arg)
 {
+   psp1_video_t *psp = (psp1_video_t*)arg;
+
+   (void)sub;
+
    if (psp)
       psp->vblank_not_reached = false;
+}
+
+static void psp_free(void *data);
+
+/* The GE's block transfer takes a source stride that is a multiple of 8
+ * and no wider than 1024. A core outside that is copied a row at a
+ * time, where the stride is not read. */
+static bool psp_build_row_blit(psp1_video_t *psp, const void *frame,
+      unsigned width, unsigned height, unsigned pitch, unsigned dest_stride,
+      void *dest, int psm)
+{
+   unsigned y;
+   unsigned words = height * 8 + 16;
+
+   if (psp->blit_dList_words < words)
+   {
+      void *list;
+
+      sceGuSync(0, 0);
+      if (psp->blit_dList)
+         free(psp->blit_dList);
+      psp->blit_dList       = NULL;
+      psp->blit_dList_words = 0;
+
+      if (!(list = memalign(64, ((words * 4) + 63) & ~63)))
+         return false;
+
+      psp->blit_dList       = list;
+      psp->blit_dList_words = words;
+   }
+
+   sceGuStart(GU_CALL, psp->blit_dList);
+
+   for (y = 0; y < height; y++)
+   {
+      const u8 *row = (const u8*)frame + y * pitch;
+
+      sceGuCopyImage(psm, ((u32)row & 0xF) >> psp->bpp_log2, 0,
+            width, 1, dest_stride, (void*)((u32)row & ~0xF),
+            0, y, dest_stride, dest);
+   }
+
+   sceGuFinish();
+
+   return true;
 }
 
 static void *psp_init(const video_info_t *video,
@@ -284,12 +355,11 @@ static void *psp_init(const video_info_t *video,
 
    sceGuInit();
 
-   psp->vp.x                = 0;
-   psp->vp.y                = 0;
-   psp->vp.width            = SCEGU_SCR_WIDTH;
-   psp->vp.height           = SCEGU_SCR_HEIGHT;
-   psp->vp.full_width       = SCEGU_SCR_WIDTH;
-   psp->vp.full_height      = SCEGU_SCR_HEIGHT;
+   psp->vp.pos              = VIDEO_POS_PACK(0, 0);
+   psp->vp.dims             = VIDEO_SCALE_PACK(SCEGU_SCR_WIDTH,
+         SCEGU_SCR_HEIGHT);
+   psp->vp.full_dims        = VIDEO_SCALE_PACK(SCEGU_SCR_WIDTH,
+         SCEGU_SCR_HEIGHT);
 
    /* Make sure anything using uncached pointers reserves
     * whole cachelines (memory address and size need to be a multiple of 64)
@@ -303,11 +373,26 @@ static void *psp_init(const video_info_t *video,
 
    psp->frame_dList         = memalign(64, 256);
    psp->menu.dList          = memalign(64, 256);
-   psp->menu.frame          = memalign(16,  2 * 480 * 272);
+   psp->menu.frame          = memalign(64,
+         2 * SCEGU_SCR_WIDTH * SCEGU_SCR_HEIGHT);
+   psp->menu.context_storage = (PspGeContext*)memalign(64,
+         sizeof(PspGeContext));
    psp->frame_coords        = memalign(64,
          (((PSP_FRAME_SLICE_COUNT * sizeof(psp1_sprite_t)) + 63) & ~63));
    psp->menu.frame_coords   = memalign(64,
          (((PSP_FRAME_SLICE_COUNT * sizeof(psp1_sprite_t)) + 63) & ~63));
+
+   if (     !psp->main_dList
+         || !psp->frame_dList
+         || !psp->menu.dList
+         || !psp->menu.frame
+         || !psp->menu.context_storage
+         || !psp->frame_coords
+         || !psp->menu.frame_coords)
+   {
+      psp_free(psp);
+      return NULL;
+   }
 
    memset(psp->frame_coords, 0,
          PSP_FRAME_SLICE_COUNT * sizeof(psp1_sprite_t));
@@ -394,6 +479,9 @@ static void *psp_init(const video_info_t *video,
 
    }
 
+   psp->texture_size = (SCEGU_VRAM_TOP + SCEGU_VRAM_SIZE)
+      - (uint32_t)psp->texture;
+
    psp->tex_filter = video->smooth? GU_LINEAR : GU_NEAREST;
 
    /* TODO: check if necessary. */
@@ -470,7 +558,8 @@ static void *psp_init(const video_info_t *video,
    }
 
    psp->vblank_not_reached = true;
-   sceKernelRegisterSubIntrHandler(PSP_VBLANK_INT, 0, psp_on_vblank, psp);
+   sceKernelRegisterSubIntrHandler(PSP_VBLANK_INT, 0,
+         (void*)psp_on_vblank, psp);
    sceKernelEnableSubIntr(PSP_VBLANK_INT, 0);
 
    psp->keep_aspect        = true;
@@ -481,9 +570,13 @@ static void *psp_init(const video_info_t *video,
 }
 
 static bool psp_frame(void *data, const void *frame,
-      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
+   unsigned dest_stride    = 0;
+   bool     rows_at_a_time  = false;
    psp1_video_t *psp  = (psp1_video_t*)data;
 #ifdef HAVE_MENU
    bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
@@ -498,10 +591,46 @@ static bool psp_frame(void *data, const void *frame,
       psp->hw_render = false;
 
    if (!psp->hw_render)
+   {
+      unsigned max_height;
+
+      /* No side of a GE transfer reaches past 1023. */
+      if (width > 1023)
+         width = 1023;
+      if (height > 1023)
+         height = 1023;
+
+      /* The destination stride is ours, and has to be a multiple of 8. */
+      dest_stride = (width + 7) & ~7u;
+
+      /* The blit below runs to the end of VRAM if the core frame is
+       * larger than what is left for it. */
+      max_height  = (psp->texture_size >> psp->bpp_log2) / dest_stride;
+      if (height > max_height)
+         height = max_height;
+      if (!height)
+         return false;
+
+      if (frame && ((pitch >> psp->bpp_log2) > 1024
+               || ((pitch >> psp->bpp_log2) & 0x7)))
+      {
+         if (!psp_build_row_blit(psp, frame, width, height, pitch,
+                  dest_stride, psp->texture,
+                  psp->rgb32? GU_PSM_8888 : GU_PSM_5650))
+            return false;
+         rows_at_a_time = true;
+      }
+
       sceGuSync(0, 0); /* let the core decide when to sync when HW_RENDER */
+   }
 
    if (msg)
    {
+      /* The CPU writes the framebuffer here, so the GE has to be off
+       * it even where the core drives its own rendering. */
+      if (psp->hw_render)
+         sceGuSync(0, 0);
+
       pspDebugScreenSetBase(psp->draw_buffer);
       pspDebugScreenSetXY(0,0);
       pspDebugScreenPuts(msg);
@@ -517,7 +646,12 @@ static bool psp_frame(void *data, const void *frame,
    if (psp->should_resize)
       psp_update_viewport(psp);
 
-   psp_set_tex_coords(psp->frame_coords, width, height);
+   /* frame_coords is uncached, so every store here goes to memory. */
+   if (psp->tex_geom != ((width << 16) | height))
+   {
+      psp_set_tex_coords(psp->frame_coords, width, height);
+      psp->tex_geom = (width << 16) | height;
+   }
 
    sceGuStart(GU_DIRECT, psp->main_dList);
 
@@ -535,12 +669,18 @@ static bool psp_frame(void *data, const void *frame,
       if (frame)
       {
          sceKernelDcacheWritebackRange(frame,pitch * height);
-         sceGuCopyImage(psp->rgb32? GU_PSM_8888 : GU_PSM_5650,
-               ((u32)frame & 0xF) >> psp->bpp_log2,
-               0, width, height, pitch >> psp->bpp_log2,
-               (void*)((u32)frame & ~0xF), 0, 0, width, psp->texture);
+
+         if (rows_at_a_time)
+            sceGuCallList(psp->blit_dList);
+         else
+            sceGuCopyImage(psp->rgb32? GU_PSM_8888 : GU_PSM_5650,
+                  ((u32)frame & 0xF) >> psp->bpp_log2,
+                  0, width, height, pitch >> psp->bpp_log2,
+                  (void*)((u32)frame & ~0xF), 0, 0, dest_stride,
+                  psp->texture);
       }
-      sceGuTexImage(0, next_pow2(width), next_pow2(height), width, psp->texture);
+      sceGuTexImage(0, next_pow2(width), next_pow2(height), dest_stride,
+            psp->texture);
       sceGuCallList(psp->frame_dList);
    }
 
@@ -552,7 +692,7 @@ static bool psp_frame(void *data, const void *frame,
 
    if (psp->menu.active)
    {
-      sceGuSendList(GU_TAIL, psp->menu.dList, &(psp->menu.context_storage));
+      sceGuSendList(GU_TAIL, psp->menu.dList, psp->menu.context_storage);
       sceGuSync(0, 0);
    }
 
@@ -576,8 +716,13 @@ static void psp_free(void *data)
 {
    psp1_video_t *psp = (psp1_video_t*)data;
 
-   if (!(psp) || !(psp->main_dList))
+   if (!psp)
       return;
+
+   /* psp_on_vblank() writes through its own copy of @psp, so it has to
+    * be gone before anything it touches is. */
+   sceKernelDisableSubIntr(PSP_VBLANK_INT, 0);
+   sceKernelReleaseSubIntrHandler(PSP_VBLANK_INT, 0);
 
    sceDisplayWaitVblankStart();
    sceGuDisplay(GU_FALSE);
@@ -587,6 +732,8 @@ static void psp_free(void *data)
       free(psp->main_dList);
    if (psp->frame_dList)
       free(psp->frame_dList);
+   if (psp->blit_dList)
+      free(psp->blit_dList);
    if (psp->frame_coords)
       free(TO_CACHED_PTR(psp->frame_coords));
    if (psp->menu.frame_coords)
@@ -595,34 +742,70 @@ static void psp_free(void *data)
       free(psp->menu.dList);
    if (psp->menu.frame)
       free(psp->menu.frame);
+   if (psp->menu.context_storage)
+      free(psp->menu.context_storage);
 
-   free(data);
-
-   sceKernelDisableSubIntr(PSP_VBLANK_INT, 0);
-   sceKernelReleaseSubIntrHandler(PSP_VBLANK_INT,0);
+   free(psp);
 }
 
 static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
-                               unsigned width, unsigned height, float alpha)
+                               unsigned dims, float alpha)
 {
+   unsigned max_height, dest_stride, src_stride;
+   bool     rows_at_a_time = false;
    psp1_video_t *psp = (psp1_video_t*)data;
+
+   if (!psp || !frame || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
+      return;
+
+   /* No side of a GE transfer reaches past 1023. */
+   if (VIDEO_SCALE_W(dims) > 1023)
+      VIDEO_SCALE_PUT_W(dims, 1023);
+   if (VIDEO_SCALE_H(dims) > 1023)
+      VIDEO_SCALE_PUT_H(dims, 1023);
+
+   dest_stride = (VIDEO_SCALE_W(dims) + 7) & ~7u;
+   src_stride  = VIDEO_SCALE_W(dims);
+
+   /* psp->menu.frame holds one screen of 4444. */
+   max_height  = (SCEGU_SCR_WIDTH * SCEGU_SCR_HEIGHT) / dest_stride;
+   if (VIDEO_SCALE_H(dims) > max_height)
+      VIDEO_SCALE_PUT_H(dims, max_height);
+   if (!VIDEO_SCALE_H(dims))
+      return;
 
    psp_set_screen_coords(psp->menu.frame_coords, 0, 0,
          SCEGU_SCR_WIDTH, SCEGU_SCR_HEIGHT, 0);
-   psp_set_tex_coords(psp->menu.frame_coords, width, height);
+   psp_set_tex_coords(psp->menu.frame_coords, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
 
-   sceKernelDcacheWritebackRange(frame, width * height * 2);
+   sceKernelDcacheWritebackRange(frame, src_stride * VIDEO_SCALE_H(dims) * 2);
+
+   /* The menu pushes a texture between frames, so the GE may still be
+    * on the list psp_frame() left it. */
+   sceGuSync(0, 0);
+
+   if (src_stride > 1024 || (src_stride & 0x7))
+   {
+      if (!psp_build_row_blit(psp, frame, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), src_stride * 2,
+               dest_stride, psp->menu.frame, GU_PSM_4444))
+         return;
+      rows_at_a_time = true;
+   }
 
    sceGuStart(GU_DIRECT, psp->main_dList);
-   sceGuCopyImage(GU_PSM_4444, 0, 0, width, height, width,
-         (void*)frame, 0, 0, width, psp->menu.frame);
+   if (rows_at_a_time)
+      sceGuCallList(psp->blit_dList);
+   else
+      sceGuCopyImage(GU_PSM_4444, 0, 0, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), src_stride,
+            (void*)frame, 0, 0, dest_stride, psp->menu.frame);
    sceGuFinish();
 
    sceGuStart(GU_SEND, psp->menu.dList);
    sceGuTexMode(GU_PSM_4444, 0, 0, GU_FALSE);
    sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGB);
    sceGuTexFilter(GU_LINEAR, GU_LINEAR);
-   sceGuTexImage(0, next_pow2(width), next_pow2(height), width, psp->menu.frame);
+   sceGuTexImage(0, next_pow2(VIDEO_SCALE_W(dims)), next_pow2(VIDEO_SCALE_H(dims)), dest_stride,
+         psp->menu.frame);
    sceGuEnable(GU_BLEND);
 
 #if 0
@@ -640,9 +823,9 @@ static void psp_set_texture_frame(void *data, const void *frame, bool rgb32,
 
 static void psp_set_texture_enable(void *data, bool state, bool full_screen)
 {
-   (void) full_screen;
-
    psp1_video_t *psp = (psp1_video_t*)data;
+
+   (void)full_screen;
 
    if (psp)
       psp->menu.active = state;
@@ -741,79 +924,109 @@ static void psp_get_poke_interface(void *data,
 static bool psp_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    void* src_buffer;
-   int i, j, src_bufferwidth, src_pixelformat, src_x, src_y, src_x_max, src_y_max;
+   int i, j, src_bufferwidth, src_pixelformat, x0, x1, y0, y1, width, height;
    uint8_t      *dst = buffer;
    psp1_video_t *psp = (psp1_video_t*)data;
 
+   if (!psp || !buffer)
+      return false;
+
    sceDisplayGetFrameBuf(&src_buffer, &src_bufferwidth, &src_pixelformat, PSP_DISPLAY_SETBUF_NEXTFRAME);
 
-   src_x     = (psp->vp.x > 0)? psp->vp.x : 0;
-   src_y     = (psp->vp.y > 0)? psp->vp.y : 0;
-   src_x_max = ((psp->vp.x + psp->vp.width) < src_bufferwidth)? (psp->vp.x + psp->vp.width): src_bufferwidth;
-   src_y_max = ((psp->vp.y + psp->vp.height) < SCEGU_SCR_HEIGHT)? (psp->vp.y + psp->vp.height): SCEGU_SCR_HEIGHT;
+   if (!src_buffer)
+      return false;
+
+   /* The GE wrote this buffer, so read it through the uncached alias. */
+   src_buffer = TO_UNCACHED_PTR(src_buffer);
+
+   width     = VIDEO_SCALE_W(psp->vp.dims);
+   height    = VIDEO_SCALE_H(psp->vp.dims);
+
+   /* The caller sizes its buffer from the viewport and encodes all of
+    * it, so anything the framebuffer does not cover reads as black. */
+   memset(buffer, 0, (size_t)width * height * 3);
+
+   x0        = (VIDEO_POS_X(psp->vp.pos) > 0)? VIDEO_POS_X(psp->vp.pos) : 0;
+   y0        = (VIDEO_POS_Y(psp->vp.pos) > 0)? VIDEO_POS_Y(psp->vp.pos) : 0;
+   x1        = ((VIDEO_POS_X(psp->vp.pos) + width)  < src_bufferwidth)? (VIDEO_POS_X(psp->vp.pos) + width): src_bufferwidth;
+   y1        = ((VIDEO_POS_Y(psp->vp.pos) + height) < SCEGU_SCR_HEIGHT)? (VIDEO_POS_Y(psp->vp.pos) + height): SCEGU_SCR_HEIGHT;
+
+/* Red is in the low bits of every display format, which is why the
+ * frame is drawn through the CLUT passes psp_init() builds: blue comes
+ * out of the high bits here. */
+
+/* Bottom-up, from the start of the row the viewport puts this line on. */
+#define PSP_VP_ROW(row) (buffer + ((size_t)(VIDEO_POS_Y(psp->vp.pos) + height - 1 - (row)) \
+      * width + (size_t)(x0 - VIDEO_POS_X(psp->vp.pos))) * 3)
 
    switch(src_pixelformat)
    {
    case PSP_DISPLAY_PIXEL_FORMAT_565:
-      for (j = (src_y_max - 1); j >= src_y; j--)
+      for (j = y0; j < y1; j++)
       {
-         uint16_t* src = (uint16_t*)src_buffer + src_bufferwidth * j + src_x;
-         for (i = src_x; i < src_x_max; i++)
+         uint16_t* src = (uint16_t*)src_buffer + src_bufferwidth * j + x0;
+         dst           = PSP_VP_ROW(j);
+         for (i = x0; i < x1; i++)
          {
+            uint16_t s = *(src++);
 
-            *(dst++) = ((*src) >> 11) << 3;
-            *(dst++) = (((*src) >> 5) << 2) &0xFF;
-            *(dst++) = ((*src) & 0x1F) << 3;
-            src++;
+            *(dst++) = (s >> 11) << 3;
+            *(dst++) = ((s >> 5) << 2) &0xFF;
+            *(dst++) = (s & 0x1F) << 3;
          }
       }
       return true;
 
    case PSP_DISPLAY_PIXEL_FORMAT_5551:
-      for (j = (src_y_max - 1); j >= src_y; j--)
+      for (j = y0; j < y1; j++)
       {
-         uint16_t* src = (uint16_t*)src_buffer + src_bufferwidth * j + src_x;
-         for (i = src_x; i < src_x_max; i++)
+         uint16_t* src = (uint16_t*)src_buffer + src_bufferwidth * j + x0;
+         dst           = PSP_VP_ROW(j);
+         for (i = x0; i < x1; i++)
          {
+            uint16_t s = *(src++);
 
-            *(dst++) = (((*src) >> 10) << 3) &0xFF;
-            *(dst++) = (((*src) >> 5) << 3) &0xFF;
-            *(dst++) = ((*src) & 0x1F) << 3;
-            src++;
+            *(dst++) = ((s >> 10) << 3) &0xFF;
+            *(dst++) = ((s >> 5) << 3) &0xFF;
+            *(dst++) = (s & 0x1F) << 3;
          }
       }
       return true;
 
    case PSP_DISPLAY_PIXEL_FORMAT_4444:
-      for (j = (src_y_max - 1); j >= src_y; j--)
+      for (j = y0; j < y1; j++)
       {
-         uint16_t* src = (uint16_t*)src_buffer + src_bufferwidth * j + src_x;
-         for (i = src_x; i < src_x_max; i++)
+         uint16_t* src = (uint16_t*)src_buffer + src_bufferwidth * j + x0;
+         dst           = PSP_VP_ROW(j);
+         for (i = x0; i < x1; i++)
          {
+            uint16_t s = *(src++);
 
-            *(dst++) = ((*src) >> 4) & 0xF0;
-            *(dst++) = (*src)        & 0xF0;
-            *(dst++) = ((*src) << 4) & 0xF0;
-            src++;
+            *(dst++) = (s >> 4) & 0xF0;
+            *(dst++) = s        & 0xF0;
+            *(dst++) = (s << 4) & 0xF0;
          }
       }
       return true;
 
    case PSP_DISPLAY_PIXEL_FORMAT_8888:
-      for (j = (src_y_max - 1); j >= src_y; j--)
+      for (j = y0; j < y1; j++)
       {
-         uint32_t* src = (uint32_t*)src_buffer + src_bufferwidth * j + src_x;
-         for (i = src_x; i < src_x_max; i++)
+         uint32_t* src = (uint32_t*)src_buffer + src_bufferwidth * j + x0;
+         dst           = PSP_VP_ROW(j);
+         for (i = x0; i < x1; i++)
          {
+            uint32_t s = *(src++);
 
-            *(dst++) = ((*src) >> 16) & 0xFF;
-            *(dst++) = ((*src) >> 8 ) & 0xFF;
-            *(dst++) = (*src) & 0xFF;
-            src++;
+            *(dst++) = (s >> 16) & 0xFF;
+            *(dst++) = (s >> 8 ) & 0xFF;
+            *(dst++) = s & 0xFF;
          }
       }
       return true;
    }
+
+#undef PSP_VP_ROW
 
    return false;
 }
@@ -835,7 +1048,6 @@ video_driver_t video_psp1 = {
    psp_set_rotation,
    psp_viewport_info,
    psp_read_viewport,
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL, /* get_overlay_interface */
 #endif

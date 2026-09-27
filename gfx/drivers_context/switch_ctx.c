@@ -39,24 +39,21 @@ void switch_ctx_destroy(void *data)
 #ifdef HAVE_EGL
         egl_destroy(&ctx_nx->egl);
 #endif
-        ctx_nx->resize = false;
         free(ctx_nx);
     }
 }
 
 static void switch_ctx_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    switch (appletGetOperationMode())
    {
       default:
       case AppletOperationMode_Handheld:
-         *width  = 1280;
-         *height = 720;
+         *dims = VIDEO_SCALE_PACK(1280, 720);
          break;
       case AppletOperationMode_Console:
-         *width  = 1920;
-         *height = 1080;
+         *dims = VIDEO_SCALE_PACK(1920, 1080);
          break;
    }
 }
@@ -115,34 +112,25 @@ error:
 }
 
 static void switch_ctx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
-    unsigned new_width, new_height;
+    unsigned new_dims;
+    switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
+    switch_ctx_get_video_size(data, &new_dims);
 
-    switch_ctx_get_video_size(data, &new_width, &new_height);
-
-    if (new_width != *width || new_height != *height)
+    if (new_dims != *dims)
     {
-        *width = new_width;
-        *height = new_height;
-        switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
-
-        ctx_nx->width = *width;
-        ctx_nx->height = *height;
-
-        ctx_nx->native_window.width = ctx_nx->width;
-        ctx_nx->native_window.height = ctx_nx->height;
-        ctx_nx->resize = true;
-
+        *dims = new_dims;
         *resize = true;
-        nwindowSetCrop(ctx_nx->win, 0, 1080 - ctx_nx->height, ctx_nx->width, 1080);
+        nwindowSetCrop(ctx_nx->win, 0, 1080 - VIDEO_SCALE_H(new_dims),
+              VIDEO_SCALE_W(new_dims), 1080);
     }
 
     *quit = (bool)false;
 }
 
 static bool switch_ctx_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
     /* Create an EGL rendering context */
@@ -152,11 +140,9 @@ static bool switch_ctx_set_video_mode(void *data,
             EGL_NONE};
 
     switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
+    unsigned win_dims         = 0;
 
-    switch_ctx_get_video_size(data, &ctx_nx->width, &ctx_nx->height);
-
-    ctx_nx->native_window.width = ctx_nx->width;
-    ctx_nx->native_window.height = ctx_nx->height;
+    switch_ctx_get_video_size(data, &win_dims);
 
     ctx_nx->refresh_rate = 60;
 
@@ -173,7 +159,8 @@ static bool switch_ctx_set_video_mode(void *data,
         goto error;
 #endif
 
-    nwindowSetCrop(ctx_nx->win, 0, 1080 - ctx_nx->height, ctx_nx->width, 1080);
+    nwindowSetCrop(ctx_nx->win, 0, 1080 - VIDEO_SCALE_H(win_dims),
+          VIDEO_SCALE_W(win_dims), 1080);
 
     return true;
 

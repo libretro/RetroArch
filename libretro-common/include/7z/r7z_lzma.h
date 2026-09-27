@@ -62,7 +62,7 @@ RETRO_BEGIN_DECLS
  * what the probability array is sized for. Streams asking for more are
  * rejected at init rather than silently mis-decoded. Raising this costs
  * 0x300 * 2 bytes of struct per increment. */
-#define RLZMA_LCLP_MAX 3
+#define RLZMA_LCLP_MAX 4
 /* Base tables (1984, including the layout bias the decoder relies on)
  * plus the literal coder, sized for the largest lc+lp we accept. */
 #define RLZMA_NUM_PROBS (1984 + ((uint32_t)0x300 << RLZMA_LCLP_MAX))

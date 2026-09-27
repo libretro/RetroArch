@@ -85,19 +85,23 @@ static void* ui_application_win32_initialize(void)
    return NULL;
 }
 
+static void ui_application_win32_dispatch(MSG *msg)
+{
+   bool translated_accelerator = main_window.hwnd == msg->hwnd && TranslateAccelerator(msg->hwnd, window_accelerators, msg) != 0;
+
+   if (!translated_accelerator)
+   {
+      TranslateMessage(msg);
+      DispatchMessage(msg);
+   }
+}
+
 static void ui_application_win32_process_events(void)
 {
    MSG msg;
-   while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
-   {
-      bool translated_accelerator = main_window.hwnd == msg.hwnd && TranslateAccelerator(msg.hwnd, window_accelerators, &msg) != 0;
 
-      if (!translated_accelerator)
-      {
-         TranslateMessage(&msg);
-         DispatchMessage(&msg);
-      }
-   }
+   while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+      ui_application_win32_dispatch(&msg);
 }
 
 static ui_application_t ui_application_win32 = {
@@ -134,13 +138,27 @@ static void ui_window_win32_set_visible(void *data,
 
 static void ui_window_win32_set_title(void *data, char *buf)
 {
+   /* SetWindowText sends WM_SETTEXT, and a send does not return until the
+    * window's own thread takes it off its queue. The title is updated from
+    * inside the frame callback, which a core driving a hardware context
+    * calls from whichever thread it renders on -- and the thread owning
+    * the window is then inside retro_run, not pumping messages. It waits
+    * for the core, the core waits for it, and neither returns.
+    *
+    * The same message, sent with a deadline: the title is cosmetic and a
+    * frame that cannot set it loses nothing. ABORTIFHUNG returns at once
+    * when the target is already known to be stuck rather than waiting out
+    * the timeout. Both predate NT 4, so the oldest target still builds. */
    ui_window_win32_t *window = (ui_window_win32_t*)data;
+   DWORD_PTR         result  = 0;
 #ifdef LEGACY_WIN32
    char         *title_local = utf8_to_local_string_alloc(buf);
-   SetWindowText(window->hwnd, title_local);
+   SendMessageTimeoutA(window->hwnd, WM_SETTEXT, 0, (LPARAM)title_local,
+         SMTO_ABORTIFHUNG | SMTO_NORMAL, 100, &result);
 #else
    wchar_t      *title_local = utf8_to_utf16_string_alloc(buf);
-   SetWindowTextW(window->hwnd, title_local);
+   SendMessageTimeoutW(window->hwnd, WM_SETTEXT, 0, (LPARAM)title_local,
+         SMTO_ABORTIFHUNG | SMTO_NORMAL, 100, &result);
 #endif
    free(title_local);
 }
@@ -1079,7 +1097,7 @@ static enum msg_hash_enums menu_id_to_label_enum(unsigned int menuId)
          return MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT;
       case ID_M_MUTE_TOGGLE:
          return MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE;
-#ifdef HAVE_QT
+#ifdef HAVE_COMPANION_WIMP
       case ID_M_TOGGLE_DESKTOP:
          return MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE;
 #endif
@@ -1139,7 +1157,7 @@ static const char *win32_meta_key_to_name(unsigned int meta_key,
 {
    int i = 0;
    const struct retro_keybind* key = &input_config_binds[0][meta_key];
-   int key_code                    = key->key;
+   int key_code                    = RETRO_KEYBIND_KEY(key);
 
    for (;;)
    {
@@ -1224,7 +1242,7 @@ void win32_localize_menu(HMENU menu)
          {
             size_t _len = strlcpy(ellipsis_buf, new_label,
                   sizeof(ellipsis_buf));
-            strlcpy(ellipsis_buf + _len, "...",
+            strlcpy_lit(ellipsis_buf + _len, "...",
                   sizeof(ellipsis_buf) - _len);
             new_label  = ellipsis_buf;
             new_label2 = ellipsis_buf;
@@ -1422,7 +1440,8 @@ HMENU win32_resources_create_menu(void)
    win32_append_popup_utf8(window_menu, scale_menu,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SCALE));
 
-#ifdef HAVE_QT
+#ifdef HAVE_COMPANION_WIMP
+   /* Any desktop companion (Qt or the native one), not Qt alone. */
    AppendMenuA(window_menu, MF_STRING, ID_M_TOGGLE_DESKTOP,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE));
 #endif
@@ -1577,6 +1596,7 @@ ui_companion_driver_t ui_companion_win32 = {
    ui_companion_win32_init,
    ui_companion_win32_deinit,
    ui_companion_win32_toggle,
+   NULL, /* iterate */
    ui_companion_win32_event_command,
    NULL,
    NULL,

@@ -51,6 +51,46 @@ void net_http_connection_set_user_agent(struct http_connection_t *conn, const ch
 
 void net_http_connection_set_headers(struct http_connection_t *conn, const char *headers);
 
+/**
+ * net_http_sink_t:
+ *
+ * Called with each run of decoded body bytes as they arrive.  Return
+ * false to abort the transfer (a failed write, a full disk); the
+ * handle then reports an error like any other transport failure.
+ *
+ * Runs on whichever thread drives net_http_update().
+ **/
+/**
+ * net_http_init:
+ *
+ * Creates the locks guarding the process-global DNS cache and
+ * connection pool.  Call once at startup, before any thread can reach
+ * net_http_update(); they were previously created lazily on first
+ * use, which raced.  Idempotent, but not safe to call concurrently.
+ **/
+void net_http_init(void);
+
+/**
+ * net_http_deinit:
+ *
+ * Closes pooled connections and frees the DNS cache and the locks.
+ * Call at shutdown, after the last transfer has finished.
+ **/
+void net_http_deinit(void);
+
+typedef bool (*net_http_sink_t)(void *userdata, const void *data, size_t len);
+
+/**
+ * net_http_connection_set_sink:
+ *
+ * Stream the response body to @cb instead of accumulating it, so peak
+ * memory is the receive window rather than the whole payload.  With a
+ * sink set, net_http_data() returns NULL/0; status and headers are
+ * unaffected.
+ **/
+void net_http_connection_set_sink(struct http_connection_t *conn,
+      net_http_sink_t cb, void *userdata);
+
 void net_http_connection_set_content(struct http_connection_t *conn, const char *content_type,
       size_t content_length, const void *content);
 
@@ -79,6 +119,22 @@ int net_http_fd(struct http_t *state);
 bool net_http_update(struct http_t *state, size_t* progress, size_t* total);
 
 /**
+ * net_http_wait:
+ *
+ * Waits until the transfer can make progress again, or until
+ * @timeout_ms elapses, for callers driving a transfer from their own
+ * thread rather than once per frame. Unlike net_http_fd(), which hands
+ * out the descriptor and leaves the caller to work out what to select
+ * for, this knows which way the transfer is waiting and knows when the
+ * last pass left bytes already buffered, in which case it returns at
+ * once.
+ *
+ * @return true if the transport is ready or no wait was needed,
+ * false if the timeout elapsed first.
+ **/
+bool net_http_wait(struct http_t *state, int timeout_ms);
+
+/**
  * net_http_status:
  *
  * Report HTTP status. 200, 404, or whatever.
@@ -97,6 +153,20 @@ int net_http_status(struct http_t *state);
 bool net_http_error(struct http_t *state);
 
 /**
+ * net_http_failure:
+ *
+ * Where a transfer that never produced a status failed: the transport
+ * stage, as a literal ("dns_lookup_failed", "ssl_connect_failed",
+ * ...), and through @code the library's own error for it when there
+ * is one - the TLS library's for the ssl stages (negative), the OS
+ * socket error (errno, or WSAGetLastError on Windows; positive) for
+ * socket_create/connect/send, 0 otherwise.  NULL
+ * when the transport did not fail.  For turning "HTTP -1" into a
+ * message that says what went wrong.
+ **/
+const char *net_http_failure(struct http_t *state, int *code);
+
+/**
  * net_http_headers:
  *
  * Leaf function.
@@ -109,6 +179,20 @@ bool net_http_error(struct http_t *state);
  **/
 struct string_list *net_http_headers(struct http_t *state);
 struct string_list *net_http_headers_ex(struct http_t *state, bool accept_error);
+
+/**
+ * net_http_body_is_framed:
+ * @headers : response headers as net_http_headers() returns them
+ *
+ * True when the response frames its body with Content-Length or
+ * "Transfer-Encoding: chunked", tested exactly as the receiver picks
+ * the body type. A transfer that ends short of either framing fails,
+ * but a body delimited only by the connection closing cannot be told
+ * apart from one cut off mid-transfer, so callers that must not act
+ * on a truncated body (writing a downloaded file over a local one)
+ * check this first.
+ **/
+bool net_http_body_is_framed(const struct string_list *headers);
 
 /**
  * net_http_data:

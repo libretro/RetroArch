@@ -1,8 +1,8 @@
-// "License": Public Domain
-// I, Mathias Panzenbck, place this file hereby into the public domain. Use it at your own risk for whatever you like.
-// In case there are jurisdictions that don't support putting things in the public domain you can also consider it to
-// be "dual licensed" under the BSD, MIT and Apache licenses, if you want to. This code is trivial anyway. Consider it
-// an example on how to get the endian conversion functions on different platforms.
+/* "License": Public Domain */
+/* I, Mathias Panzenbck, place this file hereby into the public domain. Use it at your own risk for whatever you like. */
+/* In case there are jurisdictions that don't support putting things in the public domain you can also consider it to */
+/* be "dual licensed" under the BSD, MIT and Apache licenses, if you want to. This code is trivial anyway. Consider it */
+/* an example on how to get the endian conversion functions on different platforms. */
 
 #ifndef PORTABLE_ENDIAN_H__
 #define PORTABLE_ENDIAN_H__
@@ -13,9 +13,6 @@
 
 #if defined(__PS2__) || defined(PICO_PLATFORM)
 
-#ifndef _LITTLE_ENDIAN
-#define _LITTLE_ENDIAN LITTLE_ENDIAN
-#endif
 #if defined(_EE) || defined(PICO_PLATFORM)
 #include <machine/endian.h>
 #ifdef PICO_PLATFORM
@@ -68,10 +65,7 @@
 #include <sys/endian.h>
 #endif
 
-/* These 4 #defines may be needed with older esp-idf environments */
-#ifndef _LITTLE_ENDIAN
-#define _LITTLE_ENDIAN LITTLE_ENDIAN
-#endif
+/* These 3 #defines may be needed with older esp-idf environments */
 
 #ifndef __bswap16
 #define __bswap16 __bswap_16
@@ -127,11 +121,6 @@
 #define htole64(x) OSSwapHostToLittleInt64(x)
 #define be64toh(x) OSSwapBigToHostInt64(x)
 #define le64toh(x) OSSwapLittleToHostInt64(x)
-
-#define __BYTE_ORDER BYTE_ORDER
-#define __BIG_ENDIAN BIG_ENDIAN
-#define __LITTLE_ENDIAN LITTLE_ENDIAN
-#define __PDP_ENDIAN PDP_ENDIAN
 
 #elif defined(PS3_PPU_PLATFORM) || defined(__WIIU__) || defined(__wii__) || defined(__gamecube__)
 
@@ -193,22 +182,6 @@
 #define htole64(x) (x)
 #define be64toh(x) _byteswap_uint64(x)
 #define le64toh(x) (x)
-
-#ifndef __BYTE_ORDER
-#define __BYTE_ORDER BYTE_ORDER
-#endif
-
-#ifndef __BIG_ENDIAN
-#define __BIG_ENDIAN BIG_ENDIAN
-#endif
-
-#ifndef __LITTLE_ENDIAN
-#define __LITTLE_ENDIAN LITTLE_ENDIAN
-#endif
-
-#ifndef __PDP_ENDIAN
-#define __PDP_ENDIAN PDP_ENDIAN
-#endif
 
 #elif defined(__GNUC__) || defined(__clang__)
 
@@ -313,7 +286,7 @@
 
 #endif
 
-#if _BYTE_ORDER == _LITTLE_ENDIAN
+#ifndef MSB_FIRST
 
 #define htobe16(x) __bswap16(x)
 #define htole16(x) (x)

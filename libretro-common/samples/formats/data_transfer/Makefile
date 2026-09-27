@@ -1,6 +1,7 @@
 TARGET       := data_transfer_source_test
 TARGET_TEST2 := data_transfer_prefix_test
 TARGET_TEST3 := data_transfer_window_test
+TARGET_TEST4 := data_transfer_pool_scrub_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -13,12 +14,14 @@ COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/formats/data_transfer.c \
 	$(LIBRETRO_COMM_DIR)/memmap/memmap.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
 COMMON_OBJS := $(COMMON_SOURCES:.c=.o)
 OBJS        := data_transfer_source_test.o data_transfer_prefix_test.o \
-	data_transfer_window_test.o $(COMMON_OBJS)
+	data_transfer_window_test.o data_transfer_pool_scrub_test.o \
+	$(COMMON_OBJS)
 
 CFLAGS += -Wall -pedantic -std=gnu99 -g -O0 -I$(LIBRETRO_COMM_DIR)/include
 
@@ -27,7 +30,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3)
+all: $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -41,7 +44,10 @@ $(TARGET_TEST2): data_transfer_prefix_test.o $(COMMON_OBJS)
 $(TARGET_TEST3): data_transfer_window_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+$(TARGET_TEST4): data_transfer_pool_scrub_test.o $(COMMON_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
 clean:
-	rm -f $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(OBJS)
+	rm -f $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(OBJS)
 
 .PHONY: clean

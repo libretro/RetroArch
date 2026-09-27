@@ -10,9 +10,11 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
@@ -25,6 +27,16 @@ SOURCES := \
 OBJS := $(SOURCES:.c=.o)
 
 CFLAGS  += -Wall -pedantic -std=gnu99 -g -I$(LIBRETRO_COMM_DIR)/include
+
+# The samples workflow passes SANITIZER=address,undefined to every
+# sample dir.  Without this block the variable was accepted and
+# ignored, so these targets built unsanitized while the workflow
+# reported them as checked.
+ifneq ($(SANITIZER),)
+   CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
+   LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
+
 
 all: $(TARGET)
 

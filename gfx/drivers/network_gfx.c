@@ -41,6 +41,10 @@
 #include "../../frontend/frontend_driver.h"
 
 #define xstr(s) str(s)
+
+/* A host that is down must not hang the frontend at startup; the
+ * connect is retried this many times and then the driver fails. */
+#define NETWORK_VIDEO_CONNECT_ATTEMPTS 5
 #define str(s) #s
 
 enum
@@ -97,6 +101,7 @@ static void *network_gfx_init(const video_info_t *video,
    int fd;
    struct addrinfo *addr = NULL, *next_addr = NULL;
    settings_t *settings                 = config_get_ptr();
+   unsigned retries                     = 0;
    network_video_t *network             = (network_video_t*)calloc(1, sizeof(*network));
    const char *joypad_driver            = settings->arrays.input_joypad_driver;
 
@@ -107,24 +112,20 @@ static void *network_gfx_init(const video_info_t *video,
    network_video_bits                   = video->rgb32 ? 32 : 16;
 
    if (video->rgb32)
-      network_video_pitch = video->width * 4;
+      network_video_pitch = VIDEO_SCALE_W(video->dims) * 4;
    else
-      network_video_pitch = video->width * 2;
+      network_video_pitch = VIDEO_SCALE_W(video->dims) * 2;
 
    gfx_ctx_network_input_driver(joypad_driver,
          input, input_data);
 
-      font_driver_init_osd(network,
-            video,
-            false,
-            video->is_threaded,
-            FONT_DRIVER_RENDER_NETWORK_VIDEO);
 
    strlcpy(network->address, xstr(NETWORK_VIDEO_HOST), sizeof(network->address));
    network->port = NETWORK_VIDEO_PORT;
 
    RARCH_LOG("[Network] Connecting to host %s:%d...\n", network->address, network->port);
 try_connect:
+   retries++;
    fd = socket_init((void**)&addr, network->port, network->address, SOCKET_TYPE_STREAM, 0);
 
    for (next_addr = addr; fd >= 0; fd = socket_next((void**)&next_addr))
@@ -148,9 +149,24 @@ try_connect:
       RARCH_LOG("[Network] Connected to host.\n");
    else
    {
-      RARCH_LOG("[Network] Could not connect to host, retrying...\n");
-      retro_sleep(1000);
-      goto try_connect;
+      /* Bounded. socket_connect_with_timeout() above already spends up
+       * to five seconds per address, so a host that is down costs about
+       * that per attempt on its own; the second between rounds is for a
+       * host that refuses instantly - nothing listening on the port -
+       * so it is not hammered. Unbounded, as this was, a host that
+       * never answers hung the frontend at startup with no way out but
+       * killing it. */
+      if (retries < NETWORK_VIDEO_CONNECT_ATTEMPTS)
+      {
+         RARCH_LOG("[Network] Could not connect to host, retrying (%u of %u)...\n",
+               retries, (unsigned)NETWORK_VIDEO_CONNECT_ATTEMPTS);
+         retro_sleep(1000);
+         goto try_connect;
+      }
+      RARCH_ERR("[Network] Could not connect to host %s:%d after %u attempts.\n",
+            network->address, network->port, retries);
+      free(network);
+      return NULL;
    }
 
    RARCH_LOG("[Network] Init complete.\n");
@@ -159,9 +175,11 @@ try_connect:
 }
 
 static bool network_gfx_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    const void *frame_to_copy = frame;
    unsigned width            = 0;
    unsigned height           = 0;
@@ -341,7 +359,7 @@ static void network_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) 
 
 static bool network_gfx_alive(void *data)
 {
-   /* The video_driver_get_output_size + conditional set_size dance that
+   /* The video_driver_get_output_dims + conditional set_size dance that
     * used to live here was a copy-paste from d3d8_alive, where the
     * intermediate win32_check_window call mutates the fetched
     * size on window resize.  The network driver has no equivalent
@@ -369,7 +387,6 @@ static void network_gfx_free(void *data)
    network_menu_frame_cap = 0;
    network_video_temp_buf = NULL;
 
-   font_driver_free_osd();
 
    if (network->fd >= 0)
       socket_close(network->fd);
@@ -384,16 +401,16 @@ static void network_gfx_set_rotation(void *data,
       unsigned rotation) { }
 
 static void network_set_texture_frame(void *data,
-      const void *frame, bool rgb32, unsigned width, unsigned height,
+      const void *frame, bool rgb32, unsigned dims,
       float alpha)
 {
-   unsigned pitch = width * (rgb32 ? 4 : 2);
+   unsigned pitch = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
    size_t   required;
 
-   if (!frame || !width || !height || !pitch)
+   if (!frame || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims) || !pitch)
       return;
 
-   required = (size_t)pitch * (size_t)height;
+   required = (size_t)pitch * (size_t)VIDEO_SCALE_H(dims);
 
    if (required > network_menu_frame_cap)
    {
@@ -406,18 +423,18 @@ static void network_set_texture_frame(void *data,
    }
 
    memcpy(network_menu_frame, frame, required);
-   network_menu_width  = width;
-   network_menu_height = height;
+   network_menu_width  = VIDEO_SCALE_W(dims);
+   network_menu_height = VIDEO_SCALE_H(dims);
    network_menu_pitch  = pitch;
    network_menu_bits   = rgb32 ? 32 : 16;
 }
 
 static void network_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len) { }
+      unsigned *dims, char *desc, size_t desc_len) { }
 static void network_get_video_output_prev(void *data) { }
 static void network_get_video_output_next(void *data) { }
 
-static void network_set_video_mode(void *data, unsigned width, unsigned height,
+static void network_set_video_mode(void *data, unsigned dims,
       bool fullscreen) { }
 
 static const video_poke_interface_t network_poke_interface = {
@@ -462,8 +479,8 @@ static void network_gfx_get_poke_interface(void *data,
    *iface = &network_poke_interface;
 }
 
-static void network_gfx_set_viewport(void *data, unsigned vp_width,
-      unsigned vp_height, bool force_full, bool allow_rotate) { }
+static void network_gfx_set_viewport(void *data, unsigned dims,
+      bool force_full, bool allow_rotate) { }
 
 bool network_has_menu_frame(void)
 {
@@ -485,7 +502,6 @@ video_driver_t video_network = {
    network_gfx_set_rotation,
    NULL, /* viewport_info */
    NULL, /* read_viewport */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL, /* overlay_interface */
 #endif

@@ -9,11 +9,11 @@
  * glue can drive either container identically.
  *
  * The codec set mirrors what libretro-common can decode: VP8 ('vp08'),
- * VP9 ('vp09') and H.264 ('avc1'/'avc3') video; Opus ('Opus'),
- * Vorbis and AAC ('mp4a' by object type) audio.  Other codecs (HEVC,
- * AV1, ...) are reported with their sample-entry fourcc in codec_id
- * and the codec field left RMP4_CODEC_UNKNOWN so callers can skip
- * them.
+ * VP9 ('vp09'), H.264 ('avc1'/'avc3') and H.265/HEVC ('hvc1'/'hev1')
+ * video; Opus ('Opus'), Vorbis and AAC ('mp4a' by object type) audio.
+ * Other codecs (AV1, ...) are reported with their sample-entry fourcc
+ * in codec_id and the codec field left RMP4_CODEC_UNKNOWN so callers
+ * can skip them.
  *
  * Both progressive files (sample tables in moov/trak/mdia/minf/stbl)
  * and fragmented movies (an mvex-marked moov followed by moof/mdat
@@ -53,7 +53,8 @@ enum rmp4_codec
    RMP4_CODEC_H264,
    RMP4_CODEC_VORBIS,
    RMP4_CODEC_OPUS,
-   RMP4_CODEC_AAC
+   RMP4_CODEC_AAC,
+   RMP4_CODEC_H265
 };
 
 typedef struct
@@ -142,8 +143,13 @@ int rmp4_read_packet(rmp4_t *mp4, rmp4_packet *pkt);
  * non-NULL) is set when the failure was running out of available
  * bytes rather than malformed data - retry with a larger avail.
  * rmp4_open_memory is this with avail == size. */
+/* need_lo/need_hi (optional): when the open stalls on the available
+ * prefix, the exact byte range that would let it progress - a box
+ * header past the wall, or the whole moov body.  A windowed caller
+ * can commit just that range instead of reading everything up to it;
+ * both stay 0 when the stall has no such range. */
 rmp4_t *rmp4_open_memory_avail(const uint8_t *data, size_t size,
-      size_t avail, int *need_more);
+      size_t avail, int *need_more, size_t *need_lo, size_t *need_hi);
 
 /* Raise the number of valid bytes (monotonic; clamped to the file
  * size). */

@@ -25,16 +25,18 @@
 #include "../../config.h"
 #endif
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
 #include <CoreText/CoreText.h>
 #include <CoreGraphics/CoreGraphics.h>
 #else
 #include <ApplicationServices/ApplicationServices.h>
 #endif
 
-#include <file/file_path.h>
 
 #include "../font_driver.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #define CT_ATLAS_ROWS 16
 #define CT_ATLAS_COLS 16
@@ -196,7 +198,9 @@ static void font_renderer_ct_free(void *data)
    free(handle);
 }
 
-static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer_t *handle, float font_size)
+static bool coretext_font_renderer_create_atlas(CTFontRef face,
+      ct_font_renderer_t *handle, float font_size,
+      enum font_atlas_format fmt)
 {
    unsigned i, x, y;
    coretext_atlas_slot_t* slot = NULL;
@@ -216,7 +220,7 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
 
    /* Higher-precision coverage when the video driver asked for it
     * (HDR output); the atlas then stores uint16_t samples. */
-   handle->atlas.format        = font_renderer_get_preferred_atlas_format();
+   handle->atlas.format        = fmt;
    handle->atlas.buffer        = (uint8_t*)calloc(
          (size_t)handle->atlas.height,
          (size_t)handle->atlas.width *
@@ -405,20 +409,14 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
       return true;
    }
 
-   CTFontGetBoundingRectsForGlyphs(face,
-#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1080
-         kCTFontOrientationDefault,
-#else
-         kCTFontDefaultOrientation,
-#endif
+   /* kCTFontDefaultOrientation was renamed kCTFontOrientationDefault
+    * in 10.8; both are zero and both still work, so the value goes in
+    * rather than either name, and no SDK version decides which of the
+    * two spellings this file is allowed to say. */
+   CTFontGetBoundingRectsForGlyphs(face, (CTFontOrientation)0,
          glyphs, &bounds, 1);
 
-   CTFontGetAdvancesForGlyphs(face,
-#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1080
-         kCTFontOrientationDefault,
-#else
-         kCTFontDefaultOrientation,
-#endif
+   CTFontGetAdvancesForGlyphs(face, (CTFontOrientation)0,
          glyphs, &advance, 1);
 
    /* Set up glyph metrics using cached ascent */
@@ -517,42 +515,48 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
    return true;
 }
 
-static void *font_renderer_ct_init(const char *font_path, float font_size)
+/* CoreGraphics calls this when it is done with the buffer, which is
+ * how ownership of the bytes handed to init() is discharged. */
+static void ct_font_data_release(void *info, const void *data, size_t size)
+{
+   (void)info;
+   (void)size;
+   free((void*)data);
+}
+
+static void *font_renderer_ct_init(
+      uint8_t *font_data, size_t font_data_len,
+      unsigned face_index,
+      float font_size, enum font_atlas_format fmt)
 {
    char err                       = 0;
-   CFStringRef cf_font_path       = NULL;
    CTFontRef face                 = NULL;
-   CFURLRef url                   = NULL;
    CGDataProviderRef dataProvider = NULL;
    CGFontRef theCGFont            = NULL;
    ct_font_renderer_t *handle     = (ct_font_renderer_t*)calloc(1, sizeof(*handle));
 
-   if (!handle || !path_is_valid(font_path))
+   /* CoreText has no collection index in this path. */
+   (void)face_index;
+
+   if (!handle || !font_data || !font_data_len)
    {
+      free(font_data);
       err = 1;
       goto error;
    }
 
-   if (!(cf_font_path = CFStringCreateWithCString(
-                     NULL, font_path, kCFStringEncodingUTF8)))
+   /* The bytes were read by font_renderer_create_default(); this
+    * renderer opens nothing. The provider takes them, and releases
+    * them through ct_font_data_release() when CoreGraphics is
+    * finished - so on success they must not be freed here. */
+   if (!(dataProvider = CGDataProviderCreateWithData(
+               NULL, font_data, font_data_len, ct_font_data_release)))
    {
+      free(font_data);
       err = 1;
       goto error;
    }
-
-   /* Each step is checked before use: several of these APIs do not
-    * accept NULL arguments. */
-   if (!(url = CFURLCreateWithFileSystemPath(
-         kCFAllocatorDefault, cf_font_path, kCFURLPOSIXPathStyle, false)))
-   {
-      err = 1;
-      goto error;
-   }
-   if (!(dataProvider = CGDataProviderCreateWithURL(url)))
-   {
-      err = 1;
-      goto error;
-   }
+   font_data = NULL;
    if (!(theCGFont = CGFontCreateWithDataProvider(dataProvider)))
    {
       err = 1;
@@ -591,7 +595,7 @@ static void *font_renderer_ct_init(const char *font_path, float font_size)
       goto error;
    }
 
-   if (!coretext_font_renderer_create_atlas(face, handle, font_size))
+   if (!coretext_font_renderer_create_atlas(face, handle, font_size, fmt))
    {
       err = 1;
       goto error;
@@ -604,22 +608,10 @@ error:
       handle = NULL;
    }
 
-   if (cf_font_path)
-   {
-      CFRelease(cf_font_path);
-      cf_font_path = NULL;
-   }
-
    if (face)
    {
       CFRelease(face);
       face = NULL;
-   }
-
-   if (url)
-   {
-      CFRelease(url);
-      url = NULL;
    }
 
    if (dataProvider)
@@ -637,12 +629,21 @@ error:
    return handle;
 }
 
-static const char *font_renderer_ct_get_default_font(void)
+static const char * const *font_renderer_ct_get_default_fonts(
+      const char *requested, unsigned *face_index)
 {
-   /* We can't tell if a font is going to be there until we actually
-      initialize CoreText and the best way to get fonts is by name, not
-      by path. */
-   return "Verdana";
+   /* A name rather than a path: CoreText looks fonts up by name, and
+    * there is no way to know one is present without initialising it.
+    * font_renderer_create_default() will not find this on disk, which
+    * matches the previous behaviour - init() rejected it too. */
+   static const char * const names[] = { "Verdana", NULL };
+
+   (void)face_index;
+
+   /* An explicit request wins; this is only the no-path default. */
+   if (requested && *requested)
+      return NULL;
+   return names;
 }
 
 static void font_renderer_ct_get_line_metrics(
@@ -659,7 +660,12 @@ font_renderer_driver_t coretext_font_renderer = {
    font_renderer_ct_get_atlas,
    font_renderer_ct_get_glyph,
    font_renderer_ct_free,
-   font_renderer_ct_get_default_font,
+   font_renderer_ct_get_default_fonts,
    "font_renderer_ct",
-   font_renderer_ct_get_line_metrics
+   font_renderer_ct_get_line_metrics,
+   false                       /* borrows_font_data: the buffer goes to
+                                * CGDataProviderCreateWithData and is
+                                * released by CoreGraphics on its own
+                                * schedule, so this renderer keeps
+                                * ownership and takes a private copy. */
 };

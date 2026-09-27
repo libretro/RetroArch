@@ -307,9 +307,11 @@ smb2_process_write_request_variable(struct smb2_context *smb2,
 {
         struct smb2_write_request *req = (struct smb2_write_request*)pdu->payload;
         struct smb2_iovec *iov = &smb2->in.iov[smb2->in.niov - 1];
-        struct smb2_iovec vec = { &iov->buf[IOVREQ_OFFSET_WRITE],
-                                iov->len,
-                                NULL };
+        struct smb2_iovec vec;
+
+        vec.buf  = &iov->buf[IOVREQ_OFFSET_WRITE];
+        vec.len  = iov->len;
+        vec.free = NULL;
 
         req->write_channel_info = (uint8_t *)vec.buf;
         /* 0-copy but app must know this buffer is gone when pdu is freed */

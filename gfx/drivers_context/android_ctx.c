@@ -148,43 +148,41 @@ error:
 }
 
 static void android_gfx_ctx_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
 #ifdef HAVE_EGL
    android_ctx_data_t *and  = (android_ctx_data_t*)data;
-   egl_get_video_size(&and->egl, width, height);
+   egl_get_video_size(&and->egl, dims);
 #endif
 }
 
 static void android_gfx_ctx_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
-   unsigned new_width       = 0;
-   unsigned new_height      = 0;
+   unsigned new_dims       = 0;
    android_ctx_data_t *and  = (android_ctx_data_t*)data;
 
    *quit                    = false;
 
 #ifdef HAVE_EGL
-   egl_get_video_size(&and->egl, &new_width, &new_height);
+   egl_get_video_size(&and->egl, &new_dims);
 #endif
 
-   if (new_width != *width || new_height != *height)
+   if (new_dims != *dims)
    {
       RARCH_LOG("[Android] Resizing (%u x %u) -> (%u x %u).\n",
-              *width, *height, new_width, new_height);
+              VIDEO_SCALE_W(*dims), VIDEO_SCALE_H(*dims),
+              VIDEO_SCALE_W(new_dims), VIDEO_SCALE_H(new_dims));
 
-      *width  = new_width;
-      *height = new_height;
+      *dims  = new_dims;
       *resize = true;
    }
 }
 
-static bool android_gfx_ctx_set_resize(void *data,
-      unsigned width, unsigned height) { return false; }
+static bool android_gfx_ctx_set_resize(void *data, unsigned dims) { return false; }
 
 static bool android_gfx_ctx_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
 #if defined(HAVE_OPENGLES)

@@ -175,6 +175,22 @@ enum menu_remember_selection_type
    MENU_REMEMBER_SELECTION_LAST
 };
 
+enum menu_file_browser_extension_display_type
+{
+   MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS = 0,
+   MENU_FILE_BROWSER_EXTENSION_DISPLAY_DUPLICATES_ONLY,
+   MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
+   MENU_FILE_BROWSER_EXTENSION_DISPLAY_LAST
+};
+
+/* How a single file browser entry draws its name */
+enum menu_file_browser_extension_state
+{
+   MENU_FILE_BROWSER_EXTENSION_STATE_FULL = 0, /* name.ext */
+   MENU_FILE_BROWSER_EXTENSION_STATE_HIDDEN,   /* name */
+   MENU_FILE_BROWSER_EXTENSION_STATE_HINT      /* name (ext) */
+};
+
 /* Note: These must be kept synchronised with
  * 'enum playlist_sublabel_last_played_date_separator_type'
  * in 'runtime_file.h' */
@@ -449,26 +465,6 @@ enum rgui_particle_animation_effect
    RGUI_PARTICLE_EFFECT_VORTEX,
    RGUI_PARTICLE_EFFECT_STARFIELD,
    RGUI_PARTICLE_EFFECT_LAST
-};
-
-enum ozone_color_theme
-{
-   OZONE_COLOR_THEME_BASIC_WHITE = 0,
-   OZONE_COLOR_THEME_BASIC_BLACK,
-   OZONE_COLOR_THEME_NORD,
-   OZONE_COLOR_THEME_GRUVBOX_DARK,
-   OZONE_COLOR_THEME_BOYSENBERRY,
-   OZONE_COLOR_THEME_HACKING_THE_KERNEL,
-   OZONE_COLOR_THEME_TWILIGHT_ZONE,
-   OZONE_COLOR_THEME_DRACULA,
-   OZONE_COLOR_THEME_SOLARIZED_DARK,
-   OZONE_COLOR_THEME_SOLARIZED_LIGHT,
-   OZONE_COLOR_THEME_GRAY_DARK,
-   OZONE_COLOR_THEME_GRAY_LIGHT,
-   OZONE_COLOR_THEME_PURPLE_RAIN,
-   OZONE_COLOR_THEME_SELENIUM,
-   OZONE_COLOR_THEME_EVERGARDEN,
-   OZONE_COLOR_THEME_LAST
 };
 
 enum ozone_header_icon

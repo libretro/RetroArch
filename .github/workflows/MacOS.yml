@@ -2,6 +2,7 @@ name: CI macOS
 
 on:
   push:
+    branches: [master]
   pull_request:
 
 permissions:
@@ -10,12 +11,78 @@ permissions:
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
   build:
     runs-on: macos-latest
+    timeout-minutes: 60
 
     steps:
     - uses: actions/checkout@v6
+
+    - name: Cocoa companion harness on Apple's AppKit
+      run: |
+        set -o pipefail
+        # The same harness the Linux job runs under GNUstep, built with
+        # Apple's clang against the real Cocoa framework and run on the
+        # runner's window server: key-window arbitration after closing the
+        # companion, the grid, the tables, the dialogs - as AppKit does them.
+        tools/companion_cocoa_test_macos.sh 2>&1 | grep -v "^$"
+
+    - name: Metal texture behaviour the surface and overlay paths assume
+      run: |
+        set -o pipefail
+        # The driver's Metal paths have only ever been compiled. This
+        # asserts the two behaviours they are built on, on the runner's
+        # real device: a texture replaced in place while GPU work that
+        # samples it is in flight - the animated preview's steady
+        # state, and the one path with no fence check or DO_NOT_WAIT to
+        # drop a frame with - and an overlay page holding textures the
+        # pack owns, where a page switch must not take them with it.
+        #
+        # 77 means the runner exposed no Metal device; the sample says
+        # so rather than passing quietly.
+        cd samples/gfx/metal_texture_update
+        make check; rc=$?
+        if [ "$rc" = 77 ]; then
+          echo "::warning::no Metal device on this runner; the check did not run"
+          exit 0
+        fi
+        exit "$rc"
+
+    - name: iCloud Drive cloud sync driver
+      run: |
+        set -o pipefail
+        # Includes network/cloud_sync/icloud_drive.m, with the iCloud
+        # container redirected to a temporary directory. Cloud sync
+        # waits for every request to report exactly once: a read whose
+        # local file could not be created never reported (the sync
+        # hung), and a cloud file that could not be loaded or a local
+        # file that could not be read reported twice. With iCloud
+        # unavailable, read and delete reported success. Also covers
+        # the ordinary read, missing file, upload and delete paths.
+        cd samples/network/icloud_drive
+        make clean check SANITIZER=address,undefined
+
+    - name: iCloud (CloudKit) cloud sync driver
+      run: |
+        set -o pipefail
+        # Includes network/cloud_sync/icloud.m, with CloudKit replaced by
+        # an in-memory database (+[CKContainer defaultContainer] is
+        # overridden in a category; real CKRecord/CKAsset/CKQuery). A
+        # read whose local file could not be written, or whose record
+        # held no readable data, reported success; an upload whose
+        # lookup failed created a duplicate record; a delete reported
+        # success before its deletes were sent, whatever became of
+        # them; and non-destructive sync was ignored. Checks each case,
+        # that deletes and uploads keep <path>-<time> with destructive
+        # sync off (and not for destructive sync or the manifest), and
+        # that every request reports exactly once.
+        cd samples/network/icloud_cloudkit
+        make clean check SANITIZER=address,undefined
 
     - name: Compile RA
       run: |

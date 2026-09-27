@@ -29,8 +29,17 @@ void *memalign_alloc(size_t boundary, size_t len)
 {
    void **place   = NULL;
    uintptr_t addr = 0;
-   void *ptr      = (void*)malloc(boundary + len + sizeof(uintptr_t));
-   if (!ptr)
+   void *ptr;
+   /* The pointer to free is kept in the word before the address
+    * returned, so that address has to be aligned for a pointer
+    * whatever the caller asked for: a boundary of 4 on a 64-bit host
+    * put the header on a 4-byte boundary, which is a misaligned store
+    * of a pointer - undefined, and a fault on a target that does not
+    * allow it. A boundary is a minimum, so raising it is always
+    * allowed. */
+   if (boundary < sizeof(uintptr_t))
+      boundary = sizeof(uintptr_t);
+   if (!(ptr = (void*)malloc(boundary + len + sizeof(uintptr_t))))
       return NULL;
    addr           = ((uintptr_t)ptr + sizeof(uintptr_t) + boundary)
       & ~(boundary - 1);

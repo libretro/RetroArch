@@ -24,7 +24,6 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 #include <net/net_http.h>
-#include <streams/file_stream.h>
 
 #include "tasks_internal.h"
 #include "task_file_transfer.h"
@@ -68,6 +67,11 @@ typedef struct pl_thumb_handle
    playlist_t *playlist;
    gfx_thumbnail_path_data_t *thumbnail_path_data;
    retro_task_t *http_task;
+
+   /* Captured on the main thread when the per-entry task is pushed:
+    * its handler runs on the threaded task queue's worker and
+    * resolves thumbnail paths from this, never from live settings. */
+   gfx_thumbnail_dir_config_t thumb_dir_config;
 
    playlist_config_t playlist_config; /* size_t alignment */
 
@@ -260,7 +264,6 @@ void cb_http_task_download_pl_thumbnail(
       retro_task_t *task, void *task_data,
       void *user_data, const char *err)
 {
-   char output_dir[DIR_MAX_LENGTH];
    http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
    file_transfer_t *transf     = (file_transfer_t*)user_data;
    pl_thumb_handle_t *pl_thumb = NULL;
@@ -276,31 +279,18 @@ void cb_http_task_download_pl_thumbnail(
 
    pl_thumb->flags |= PL_THUMB_FLAG_HTTP_TASK_COMPLETE;
 
-   /* Remaining sanity checks... */
-   if (!data || !data->data || !*transf->path)
+   /* Remaining sanity checks...
+    * > data->data is NULL by design: the body was streamed to
+    *   transf->path as it arrived, and task_push_http_download_file()
+    *   removes the partial file unless the transfer finished cleanly,
+    *   so there is nothing to write here. */
+   if (!data || !*transf->path)
       goto finish;
 
    /* Skip if data can't be good */
    if (data->status != 200)
    {
       err = "File not found.";
-      goto finish;
-   }
-
-   /* Create output directory, if required */
-   strlcpy(output_dir, transf->path, sizeof(output_dir));
-   path_basedir_wrapper(output_dir);
-
-   if (!path_mkdir(output_dir))
-   {
-      err = msg_hash_to_str(MSG_FAILED_TO_CREATE_THE_DIRECTORY);
-      goto finish;
-   }
-
-   /* Write thumbnail file to disk */
-   if (!filestream_write_file(transf->path, data->data, data->len))
-   {
-      err = "Write failed.";
       goto finish;
    }
 
@@ -349,14 +339,35 @@ static void download_pl_thumbnail(pl_thumb_handle_t *pl_thumb)
          transf->user_data            = (void*)pl_thumb;
          strlcpy(transf->path, path, sizeof(transf->path));
 
+         /* The body is streamed straight to transf->path as it
+          * arrives, so the output directory has to exist before the
+          * transfer starts rather than being created in the
+          * completion callback. */
+         {
+            char output_dir[DIR_MAX_LENGTH];
+            strlcpy(output_dir, transf->path, sizeof(output_dir));
+            path_basedir_wrapper(output_dir);
+
+            if (!path_mkdir(output_dir))
+            {
+               RARCH_ERR("[Thumbnail] Download \"%s\" failed: %s\n",
+                     transf->path,
+                     msg_hash_to_str(MSG_FAILED_TO_CREATE_THE_DIRECTORY));
+               free(transf);
+               pl_thumb->flags |= PL_THUMB_FLAG_HTTP_TASK_COMPLETE;
+               return;
+            }
+         }
+
          /* Note: We don't actually care if this fails since that
           * just means the file is missing from the server, so it's
           * not something we can handle here... */
 
          /* ...if it does fail, however, we can immediately
           * signal that the task is 'complete' */
-         if (!(pl_thumb->http_task = (retro_task_t*)task_push_http_transfer_file(
-               url, true, NULL, cb_http_task_download_pl_thumbnail, transf)))
+         if (!(pl_thumb->http_task = (retro_task_t*)task_push_http_download_file(
+               url, transf->path, true, NULL,
+               cb_http_task_download_pl_thumbnail, transf)))
             pl_thumb->flags             |= PL_THUMB_FLAG_HTTP_TASK_COMPLETE;
       }
    }
@@ -483,7 +494,7 @@ static void task_pl_thumbnail_download_handler(retro_task_t *task)
           *   current task is 'complete' */
          if (!pl_thumb->http_task)
             pl_thumb->flags             |= PL_THUMB_FLAG_HTTP_TASK_COMPLETE;
-         /* > Wait for task_push_http_transfer_file()
+         /* > Wait for task_push_http_download_file()
           *   callback to trigger */
          else if (!(pl_thumb->flags & PL_THUMB_FLAG_HTTP_TASK_COMPLETE))
             break;
@@ -762,16 +773,16 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
          pl_thumb->flags &= ~PL_THUMB_FLAG_RIGHT_THUMB_EXISTS;
          pl_thumb->flags &= ~PL_THUMB_FLAG_LEFT_THUMB_EXISTS;
 
-         if (gfx_thumbnail_update_path(pl_thumb->thumbnail_path_data,
-                  GFX_THUMBNAIL_RIGHT))
+         if (gfx_thumbnail_update_path_cfg(pl_thumb->thumbnail_path_data,
+                  GFX_THUMBNAIL_RIGHT, &pl_thumb->thumb_dir_config))
          {
             if (     *pl_thumb->thumbnail_path_data->right_path
                   && path_is_valid(pl_thumb->thumbnail_path_data->right_path))
                pl_thumb->flags |= PL_THUMB_FLAG_RIGHT_THUMB_EXISTS;
          }
 
-         if (gfx_thumbnail_update_path(pl_thumb->thumbnail_path_data,
-                  GFX_THUMBNAIL_LEFT))
+         if (gfx_thumbnail_update_path_cfg(pl_thumb->thumbnail_path_data,
+                  GFX_THUMBNAIL_LEFT, &pl_thumb->thumb_dir_config))
          {
             if (     *pl_thumb->thumbnail_path_data->left_path
                   && path_is_valid(pl_thumb->thumbnail_path_data->left_path))
@@ -799,7 +810,7 @@ static void task_pl_entry_thumbnail_download_handler(retro_task_t *task)
              *   current task is 'complete' */
             if (!pl_thumb->http_task)
                pl_thumb->flags |= PL_THUMB_FLAG_HTTP_TASK_COMPLETE;
-            /* > Wait for task_push_http_transfer_file()
+            /* > Wait for task_push_http_download_file()
              *   callback to trigger */
             else if (!(pl_thumb->flags & PL_THUMB_FLAG_HTTP_TASK_COMPLETE))
                break;
@@ -960,6 +971,7 @@ bool task_push_pl_entry_thumbnail_download(
    pl_thumb->type_idx            = 1;
    pl_thumb->name_flags          = next_flag;
    pl_thumb->status              = PL_THUMB_BEGIN;
+   gfx_thumbnail_dir_config_capture(&pl_thumb->thumb_dir_config);
 
    if (overwrite)
       pl_thumb->flags            = PL_THUMB_FLAG_OVERWRITE;

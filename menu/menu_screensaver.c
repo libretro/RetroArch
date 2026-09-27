@@ -22,6 +22,8 @@
 #include <file/file_path.h>
 #include <retro_inline.h>
 
+#include <compat/strl.h>
+
 #include "../verbosity.h"
 
 #if defined(HAVE_CONFIG_H)
@@ -40,7 +42,8 @@
 
 /* Determines whether current platform has
  * Unicode character support */
-#if defined(HAVE_FREETYPE) || (defined(__APPLE__) && defined(HAVE_CORETEXT)) || (defined(HAVE_STB_FONT) && (defined(VITA) || defined(WIIU) || defined(ANDROID) || (defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) && _MSC_VER >= 1400) || (defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER)) || defined(HAVE_LIBNX) || defined(__linux__) || defined (HAVE_EMSCRIPTEN) || defined(__APPLE__) || defined(HAVE_ODROIDGO2) || defined(__PS3__)))
+/* stb_truetype is always built, so a font renderer is always present */
+#if 1
 #define MENU_SS_UNICODE_ENABLED true
 #else
 #define MENU_SS_UNICODE_ENABLED false
@@ -117,8 +120,9 @@ struct menu_ss_handle
 {
    float bg_color[16];
    menu_ss_font_data_t font_data;
-   unsigned last_width;
-   unsigned last_height;
+   /* The video size this was last laid out for, one word,
+    * VIDEO_SCALE_PACK's layout. */
+   unsigned last_dims;
    float font_size;
    float particle_scale;
    menu_ss_particle_tint_t particle_tint;
@@ -247,8 +251,7 @@ menu_screensaver_t *menu_screensaver_init(void)
 
    /* Initial dimensions are zeroed out - will be set
     * on first call of menu_screensaver_iterate() */
-   screensaver->last_width     = 0;
-   screensaver->last_height    = 0;
+   screensaver->last_dims      = VIDEO_SCALE_PACK(0, 0);
    screensaver->font_size      = 0.0f;
    screensaver->particle_scale = 0.0f;
 
@@ -267,8 +270,6 @@ void menu_screensaver_free(menu_screensaver_t *screensaver)
       font_driver_free(screensaver->font_data.font);
       video_coord_array_free(&screensaver->font_data.raster_block.carr);
       screensaver->font_data.font = NULL;
-
-      font_driver_bind_block(NULL, NULL);
    }
 
    /* Free particle array */
@@ -323,20 +324,18 @@ static int menu_ss_vortex_qsort_func(const menu_ss_particle_t *a,
  * scale based on current screen dimensions */
 static INLINE void menu_screensaver_set_dimensions(
       menu_screensaver_t *screensaver,
-      unsigned width, unsigned height)
+      unsigned dims)
 {
-   float screen_size           = (float)((width < height) ? width : height);
+   float screen_size           = (float)((VIDEO_SCALE_W(dims) < VIDEO_SCALE_H(dims)) ? VIDEO_SCALE_W(dims) : VIDEO_SCALE_H(dims));
    screensaver->font_size      = (screen_size * MENU_SS_FONT_SIZE_FACTOR) + 0.5f;
    screensaver->particle_scale = (screen_size * MENU_SS_PARTICLE_SIZE_FACTOR) / screensaver->font_size;
-   screensaver->last_width     = width;
-   screensaver->last_height    = height;
+   screensaver->last_dims      = dims;
 }
 
 static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
 {
    size_t i;
-   unsigned width;
-   unsigned height;
+   unsigned dims = screensaver->last_dims;
 
    /* Create particle array, if required */
    if (!screensaver->particles)
@@ -348,9 +347,6 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
          return false;
    }
 
-   width  = screensaver->last_width;
-   height = screensaver->last_height;
-
    /* Initialise array */
    switch (screensaver->effect)
    {
@@ -361,8 +357,8 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
                menu_ss_particle_t *particle = &screensaver->particles[i];
                float size_factor;
 
-               particle->x    = (float)(menu_ss_rand() % width);
-               particle->y    = (float)(menu_ss_rand() % height);
+               particle->x    = (float)(menu_ss_rand() % VIDEO_SCALE_W(dims));
+               particle->y    = (float)(menu_ss_rand() % VIDEO_SCALE_H(dims));
                particle->a    = (float)(menu_ss_rand() % 64 - 16) * 0.1f;
                particle->b    = (float)(menu_ss_rand() % 64 - 48) * 0.1f;
 
@@ -381,7 +377,7 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
          break;
       case MENU_SCREENSAVER_STARFIELD:
          {
-            float max_depth            = (float)(width > height ? width : height);
+            float max_depth            = (float)(VIDEO_SCALE_W(dims) > VIDEO_SCALE_H(dims) ? VIDEO_SCALE_W(dims) : VIDEO_SCALE_H(dims));
             float initial_speed_factor = 0.02f * max_depth / 240.0f;
 
             for (i = 0; i < MENU_SS_NUM_PARTICLES; i++)
@@ -389,9 +385,9 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
                menu_ss_particle_t *particle = &screensaver->particles[i];
 
                /* x pos ('physical' space) */
-               particle->a = (float)(menu_ss_rand() % width);
+               particle->a = (float)(menu_ss_rand() % VIDEO_SCALE_W(dims));
                /* y pos ('physical' space) */
-               particle->b = (float)(menu_ss_rand() % height);
+               particle->b = (float)(menu_ss_rand() % VIDEO_SCALE_H(dims));
                /* depth */
                particle->c = max_depth;
                /* speed */
@@ -407,8 +403,8 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
          break;
       case MENU_SCREENSAVER_VORTEX:
          {
-            float min_screen_dimension = (float)(width < height ? width : height);
-            float max_radius           = (float)sqrt((double)((width * width) + (height * height))) / 2.0f;
+            float min_screen_dimension = (float)(VIDEO_SCALE_W(dims) < VIDEO_SCALE_H(dims) ? VIDEO_SCALE_W(dims) : VIDEO_SCALE_H(dims));
+            float max_radius           = (float)sqrt((double)((VIDEO_SCALE_W(dims) * VIDEO_SCALE_W(dims)) + (VIDEO_SCALE_H(dims) * VIDEO_SCALE_H(dims)))) / 2.0f;
             float radial_speed_factor  = 0.001f * min_screen_dimension / 240.0f;
 
             for (i = 0; i < MENU_SS_NUM_PARTICLES; i++)
@@ -445,7 +441,7 @@ static bool menu_screensaver_init_effect(menu_screensaver_t *screensaver)
 static bool menu_screensaver_update_state(
       menu_screensaver_t *screensaver, gfx_display_t *p_disp,
       enum menu_screensaver_effect effect, uint32_t particle_tint,
-      unsigned width, unsigned height, const char *dir_assets)
+      unsigned dims, const char *dir_assets)
 {
    bool init_effect = false;
 
@@ -456,15 +452,18 @@ static bool menu_screensaver_update_state(
 #endif
 
    /* Check if dimensions have changed */
-   if (   (screensaver->last_width  != width)
-       || (screensaver->last_height != height))
+   if (dims != screensaver->last_dims)
    {
-      menu_screensaver_set_dimensions(screensaver, width, height);
+      menu_screensaver_set_dimensions(screensaver, dims);
 
-      /* Free any existing font */
+      /* Retire any existing font. This runs from
+       * menu_screensaver_iterate(), before the video driver's frame
+       * function, and the font is rebuilt below, so releasing it
+       * outright can pull the atlas out from under a command list
+       * that still references it. */
       if (screensaver->font_data.font)
       {
-         font_driver_free(screensaver->font_data.font);
+         font_driver_free_deferred(screensaver->font_data.font);
          video_coord_array_free(&screensaver->font_data.raster_block.carr);
          screensaver->font_data.font = NULL;
       }
@@ -494,7 +493,8 @@ static bool menu_screensaver_update_state(
        &&  screensaver->font_enabled)
    {
       char font_file[PATH_MAX_LENGTH];
-#if defined(HAVE_FREETYPE) || (defined(__APPLE__) && defined(HAVE_CORETEXT)) || defined(HAVE_STB_FONT)
+/* stb_truetype is always built, so a font renderer is always present */
+#if 1
       char pkg_path[PATH_MAX_LENGTH];
       /* Get font file path */
       if (dir_assets && *dir_assets)
@@ -526,8 +526,9 @@ static bool menu_screensaver_update_state(
       /* If font was created successfully, fetch metadata */
       if (screensaver->font_data.font)
          screensaver->font_data.y_centre_offset =
-               (float)font_driver_get_line_centre_offset(
-                     screensaver->font_data.font, 1.0f);
+               roundf((screensaver->font_data.font->metrics.ascender
+                     - screensaver->font_data.font->metrics.descender)
+                     * 0.5f);
       /* In case of error, warn and disable
        * further attempts to create fonts */
       else
@@ -551,9 +552,11 @@ void menu_screensaver_iterate(
       menu_screensaver_t *screensaver,
       gfx_display_t *p_disp, gfx_animation_t *p_anim,
       enum menu_screensaver_effect effect, float effect_speed,
-      uint32_t particle_tint, unsigned width, unsigned height,
+      uint32_t particle_tint, unsigned dims,
       const char *dir_assets)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    size_t i;
    uint32_t tint_r;
    uint32_t tint_g;
@@ -568,7 +571,7 @@ void menu_screensaver_iterate(
    if (!menu_screensaver_update_state(
          screensaver, p_disp,
          effect, particle_tint,
-         width, height, dir_assets)
+         dims, dir_assets)
        || (screensaver->effect == MENU_SCREENSAVER_BLANK)
        || !screensaver->particles)
       return;
@@ -794,24 +797,23 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
       return;
 
    font                           = screensaver->font_data.font;
-   video_width                    = video_info->width;
-   video_height                   = video_info->height;
+   video_width                    = VIDEO_SCALE_W(video_info->dims);
+   video_height                   = VIDEO_SCALE_H(video_info->dims);
    userdata                       = video_info->userdata;
 
    /* Set viewport */
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
-            video_st->data, video_width, video_height, true, false);
+            video_st->data, video_info->dims, true, false);
 
    /* Draw background */
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height),
          0, 0,
-         screensaver->last_width, screensaver->last_height,
-         screensaver->last_width, screensaver->last_height,
+         screensaver->last_dims,
+         screensaver->last_dims,
          screensaver->bg_color,
          NULL);
 
@@ -838,7 +840,7 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
                particle->symbol,
                particle->x,
                particle->y + y_centre_offset,
-               video_width, video_height,
+               VIDEO_SCALE_PACK(video_width, video_height),
                particle->color,
                TEXT_ALIGN_CENTER,
                particle->size * particle_scale,
@@ -849,7 +851,8 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
       if (screensaver->font_data.raster_block.carr.coords.vertices != 0)
       {
          if (font->renderer && font->renderer->flush)
-            font->renderer->flush(video_width, video_height, font->renderer_data);
+            font->renderer->flush(video_info->dims,
+                  font->renderer_data);
          screensaver->font_data.raster_block.carr.coords.vertices = 0;
       }
       font_driver_bind_block(font, NULL);
@@ -858,5 +861,5 @@ void menu_screensaver_frame(menu_screensaver_t *screensaver,
    /* Unset viewport */
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
-            video_st->data, video_width, video_height, false, true);
+            video_st->data, video_info->dims, false, true);
 }

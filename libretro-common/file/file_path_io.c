@@ -20,6 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <retro_posix_source.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -71,6 +73,12 @@
 static retro_vfs_stat_t path_stat32_cb = retro_vfs_stat_impl;
 static retro_vfs_stat_64_t path_stat64_cb = retro_vfs_stat_64_impl;
 static retro_vfs_mkdir_t path_mkdir_cb = retro_vfs_mkdir_impl;
+/* VFS API v5.  NULL when a frontend older than v5 is in use, so the
+ * wrappers report failure instead of touching the local file system
+ * behind a foreign frontend's back. */
+static retro_vfs_set_readonly_t path_set_readonly_cb = retro_vfs_set_readonly_impl;
+static retro_vfs_get_mtime_t    path_get_mtime_cb    = retro_vfs_get_mtime_impl;
+static retro_vfs_set_mtime_t    path_set_mtime_cb    = retro_vfs_set_mtime_impl;
 
 void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 {
@@ -80,6 +88,9 @@ void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    path_stat32_cb         = retro_vfs_stat_impl;
    path_stat64_cb         = retro_vfs_stat_64_impl;
    path_mkdir_cb          = retro_vfs_mkdir_impl;
+   path_set_readonly_cb   = retro_vfs_set_readonly_impl;
+   path_get_mtime_cb      = retro_vfs_get_mtime_impl;
+   path_set_mtime_cb      = retro_vfs_set_mtime_impl;
 
    if (vfs_info->required_interface_version < PATH_REQUIRED_VFS_VERSION || !vfs_iface)
       return;
@@ -91,6 +102,46 @@ void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
       path_stat64_cb = vfs_iface->stat_64;
    else
       path_stat64_cb = NULL;
+
+   /* Members a v5 frontend left NULL stay NULL: the wrappers then
+    * report "unavailable" rather than dereferencing them. */
+   path_set_readonly_cb = NULL;
+   path_get_mtime_cb    = NULL;
+   path_set_mtime_cb    = NULL;
+   if (vfs_info->required_interface_version >= METADATA_REQUIRED_VFS_VERSION)
+   {
+      path_set_readonly_cb = vfs_iface->set_readonly;
+      path_get_mtime_cb    = vfs_iface->get_mtime;
+      path_set_mtime_cb    = vfs_iface->set_mtime;
+   }
+}
+
+bool path_is_readonly(const char *path)
+{
+   if (path_stat64_cb)
+      return (path_stat64_cb(path, NULL) & RETRO_VFS_STAT_IS_READONLY) != 0;
+   return (path_stat32_cb(path, NULL) & RETRO_VFS_STAT_IS_READONLY) != 0;
+}
+
+bool path_set_readonly(const char *path, bool readonly)
+{
+   if (!path_set_readonly_cb)
+      return false;
+   return path_set_readonly_cb(path, readonly ? 1 : 0) == 0;
+}
+
+bool path_get_mtime(const char *path, int64_t *mtime)
+{
+   if (!path_get_mtime_cb || !mtime)
+      return false;
+   return path_get_mtime_cb(path, mtime) == 0;
+}
+
+bool path_set_mtime(const char *path, int64_t mtime)
+{
+   if (!path_set_mtime_cb)
+      return false;
+   return path_set_mtime_cb(path, mtime) == 0;
 }
 
 int path_stat(const char *path)
@@ -128,6 +179,11 @@ bool path_is_valid(const char *path)
    return (path_stat32_cb(path, NULL) & RETRO_VFS_STAT_IS_VALID) != 0;
 }
 
+bool path_set_private(const char *path)
+{
+   return retro_vfs_restrict_permissions_impl(path) == 0;
+}
+
 int64_t path_get_size(const char *path)
 {
    int64_t filesize = 0;
@@ -160,6 +216,28 @@ bool path_mkdir(const char *dir)
 
    if (!(dir && *dir))
       return false;
+
+   /* Nothing to do if it is already there.
+    *
+    * Without this the common case - which for archive extraction is
+    * every member after the first in a given directory - still costs
+    * a strdup, a path_parent_dir, a strcmp, a stat of the parent, a
+    * mkdir that is guaranteed to fail with EEXIST, and then a stat of
+    * the leaf to interpret that failure.  Two directory probes and a
+    * doomed syscall to answer a question one probe answers.  On Win32
+    * each of those probes is a UTF-16 conversion allocation plus both
+    * GetFileAttributesW and _wstat64, so the saving there is larger
+    * than the syscall count suggests.
+    *
+    * This is not a shortcut around the slow path's result: the slow
+    * path already returns true for an existing directory, by way of
+    * the mkdir -> -2 -> path_is_directory sequence at the bottom.  The
+    * one behavioural difference is at a filesystem root ("/", "C:\"),
+    * where path_parent_dir empties the string and the !*basedir guard
+    * below returns false today; such a directory does exist, so
+    * reporting true for it is the correction, not a regression. */
+   if (path_is_directory(dir))
+      return true;
 
    /* Use heap. Real chance of stack 
     * overflow if we recurse too hard. */

@@ -16,110 +16,172 @@
  */
 
 #include <stdint.h>
-#if defined(VITA) || defined(PSP)
 #include <malloc.h>
-#endif
 #include <stdio.h>
 #include <string.h>
 
 #include <rthreads/rthreads.h>
-#include <queues/fifo_queue.h>
+#include <rthreads/retro_eventcount.h>
+#include <retro_atomic.h>
 
-#if defined(VITA)
-#include <psp2/kernel/processmgr.h>
-#include <psp2/kernel/threadmgr.h>
-#include <psp2/kernel/sysmem.h>
-#include <psp2/audioout.h>
-#elif defined(PSP)
 #include <pspkernel.h>
 #include <pspaudio.h>
-#elif defined(ORBIS)
-#include <libSceAudioOut.h>
-#include <defines/ps4_defines.h>
-#include <verbosity.h>
-#endif
 
 #include "../audio_driver.h"
 
 typedef struct psp_audio
 {
-   uint32_t* buffer;
-   uint32_t* zeroBuffer;
+   /* The ring, followed by one period of silence for the worker
+    * to output when the ring runs short. */
+   uint32_t* buffer_u32;
 
    sthread_t *worker_thread;
-   slock_t *fifo_lock;
-   scond_t *cond;
-   slock_t *cond_lock;
+   /* The writer's park; the worker notifies after every period it
+    * frees. Gated: the steady state, writer ahead and never waiting,
+    * costs the worker nothing per period, where the old
+    * signal-every-iteration took cond_lock each time. */
+   retro_eventcount_t park;
 
-   SceUID thread;
+   /* For the sink rate estimate and the statistics overlay.
+    * Only the worker writes either. */
+   retro_atomic_size_t consumed;
+   retro_atomic_size_t underruns;
 
    int port;
    int rate;
 
-   volatile uint16_t read_pos;
-   volatile uint16_t write_pos;
+   /* Frames the ring holds. Set before the worker starts, and
+    * fixed for the life of the driver. */
+   unsigned ring;
 
-   volatile bool running;
+   /* The ring's index pair, the SPSC discipline by hand because the
+    * worker consumes in place - psp->buffer_u32 + read_pos goes straight
+    * into the output syscall, and a retro_spsc would add a bounce
+    * copy per period. Producer publishes write_pos with release
+    * after the samples land; consumer publishes read_pos with
+    * release after the syscall returns; each side reads the other's
+    * index with acquire and its own relaxed. fifo_lock guarded
+    * nothing else, and is gone. */
+   retro_atomic_int_t read_pos;
+   retro_atomic_int_t write_pos;
+
+   retro_atomic_int_t running;
    bool nonblock;
 } psp_audio_t;
 
 #define AUDIO_OUT_COUNT 512u
-#define AUDIO_BUFFER_SIZE (1u<<13u)
-#define AUDIO_BUFFER_SIZE_MASK (AUDIO_BUFFER_SIZE-1)
+
+/* The ring is what the latency setting asks for, so it is a whole
+ * number of periods rather than a power of two and the wrap is a
+ * compare. The window the device is playing stays inside the ring
+ * as held until the output call after it returns (see the worker),
+ * so the writer's room is the ring less that window less one frame.
+ * Six periods is the floor: five of room, which holds a delivery of
+ * a video frame of audio - 1600 frames for 30 Hz content at 48 kHz -
+ * beside the window in flight without dipping under a period each
+ * refill. Anything at or above the default is unaffected. */
+#define AUDIO_RING_MIN  (AUDIO_OUT_COUNT * 6u)
+#define AUDIO_RING_MAX  (AUDIO_OUT_COUNT * 64u)
+
+/* Frames held, and frames the writer may still place - one short of
+ * the ring, so a full ring and an empty one do not both read as
+ * write_pos == read_pos. */
+#define RING_HELD(w, r, n) \
+   ((unsigned)((w) >= (r) ? (w) - (r) : (n) - (r) + (w)))
+#define RING_FREE(w, r, n) ((n) - 1u - RING_HELD((w), (r), (n)))
+
+/* Bound on any wait for the audio thread to consume: one wait, and how
+ * many of them before the caller gets the pass back. The thread
+ * consumes a period every period while the device runs. */
+#define PSP_AUDIO_WAIT_US   100000
+#define PSP_AUDIO_WAIT_LAPS 8
+
+/* The rate the SRC always takes, for a setting it will not. */
+#define PSP_AUDIO_RATE_FALLBACK 48000
+
+/* The ring the latency setting asks for: that many milliseconds at
+ * the rate the device opened at, in whole periods so no window the
+ * worker hands over crosses the ring's end. The window the device is
+ * playing is inside it, so this is the whole of the driver's
+ * buffering and what buffer_size() reports. */
+static unsigned psp_ring_frames(unsigned rate, unsigned latency)
+{
+   unsigned frames = rate * latency / 1000u;
+   frames = ((frames + AUDIO_OUT_COUNT - 1u) / AUDIO_OUT_COUNT)
+      * AUDIO_OUT_COUNT;
+   if (frames < AUDIO_RING_MIN)
+      return AUDIO_RING_MIN;
+   if (frames > AUDIO_RING_MAX)
+      return AUDIO_RING_MAX;
+   return frames;
+}
 
 /* Return port used */
-static int psp_configure_audio(unsigned rate)
+static int psp_configure_audio(unsigned rate, unsigned *new_rate)
 {
-#if defined(VITA)
-   return sceAudioOutOpenPort(
-         SCE_AUDIO_OUT_PORT_TYPE_MAIN, AUDIO_OUT_COUNT,
-         rate, SCE_AUDIO_OUT_MODE_STEREO);
-#elif defined(ORBIS)
-   return sceAudioOutOpen(0xff,
-         SCE_AUDIO_OUT_PORT_TYPE_MAIN, 0, AUDIO_OUT_COUNT,
-         rate, SCE_AUDIO_OUT_MODE_STEREO);
-#else
-   return sceAudioSRCChReserve(AUDIO_OUT_COUNT, rate, 2);
-#endif
+   int port = sceAudioSRCChReserve(AUDIO_OUT_COUNT, rate, 2);
+   /* The SRC takes a fixed set of rates and refuses the rest outright,
+    * which leaves the session with no audio at all. Open at a rate it
+    * takes and tell the frontend to resample to that instead. */
+   if (port < 0)
+   {
+      if ((port = sceAudioSRCChReserve(AUDIO_OUT_COUNT,
+                  PSP_AUDIO_RATE_FALLBACK, 2)) >= 0)
+         *new_rate = PSP_AUDIO_RATE_FALLBACK;
+   }
+   return port;
 }
 
 static void psp_audio_mainloop(void *data)
 {
    psp_audio_t* psp = (psp_audio_t*)data;
+   /* The worker's own cursor: the next window to hand over. The
+    * published read_pos runs one window behind it while a ring
+    * window is in flight. The output call returns once the window
+    * handed to the previous call has been output, and with this
+    * call's window queued and still to be read by the hardware -
+    * the SDKs document passing NULL as the way to wait for that
+    * last window - so the window a call hands over is the device's
+    * until the call after it returns, and is released there. */
+   uint16_t play_pos = (uint16_t)
+         retro_atomic_load_relaxed_int(&psp->read_pos);
 
-   while (psp->running)
+   while (retro_atomic_load_acquire_int(&psp->running))
    {
       bool cond           = false;
-      uint16_t read_pos   = psp->read_pos;
-      uint16_t read_pos_2 = psp->read_pos;
+      uint16_t next_pos   = play_pos;
+      uint16_t write_pos  = (uint16_t)
+            retro_atomic_load_acquire_int(&psp->write_pos);
 
-      slock_lock(psp->fifo_lock);
-
-      cond                = ((uint16_t)(psp->write_pos - read_pos) & AUDIO_BUFFER_SIZE_MASK)
-            < (AUDIO_OUT_COUNT * 2);
+      /* A period in hand is a period to play. Holding one back
+       * as a reserve only hands the device silence while the
+       * ring has audio in it. */
+      cond                = RING_HELD(write_pos, play_pos, psp->ring)
+            < AUDIO_OUT_COUNT;
 
       if (!cond)
       {
-         read_pos      += AUDIO_OUT_COUNT;
-         read_pos      &= AUDIO_BUFFER_SIZE_MASK;
-         psp->read_pos  = read_pos;
+         next_pos      += AUDIO_OUT_COUNT;
+         if (next_pos  >= psp->ring)
+            next_pos    = 0;
       }
+      else
+         retro_atomic_fetch_add_size(&psp->underruns, 1);
 
-      slock_unlock(psp->fifo_lock);
-      slock_lock(psp->cond_lock);
-      scond_signal(psp->cond);
-      slock_unlock(psp->cond_lock);
-
-#if defined(VITA) || defined(ORBIS)
-      sceAudioOutOutput(psp->port,
-        cond ? (psp->zeroBuffer)
-              : (psp->buffer + read_pos_2));
-#else
       sceAudioSRCOutputBlocking(PSP_AUDIO_VOLUME_MAX,
-              cond
-            ? (psp->zeroBuffer)
-            : (psp->buffer + read_pos));
-#endif
+            psp->buffer_u32
+            + (cond ? psp->ring : play_pos));
+
+      retro_atomic_fetch_add_size(&psp->consumed, AUDIO_OUT_COUNT);
+
+      /* The previous call's window has been output; this call's is
+       * the one in flight, so everything before play_pos is the
+       * writer's. When this call handed over silence, play_pos is
+       * where read_pos already stands. */
+      retro_atomic_store_release_int(&psp->read_pos, play_pos);
+      play_pos = next_pos;
+
+      retro_eventcount_notify(&psp->park);
    }
 
    return;
@@ -127,7 +189,6 @@ static void psp_audio_mainloop(void *data)
 
 static void *psp_audio_init(const char *device,
       unsigned rate, unsigned latency,
-      unsigned block_frames,
       unsigned *new_rate)
 {
    int port;
@@ -136,33 +197,49 @@ static void *psp_audio_init(const char *device,
    if (!psp)
       return NULL;
 
-   if ((port = psp_configure_audio(rate)) < 0)
+   if ((port = psp_configure_audio(rate, new_rate)) < 0)
    {
       free(psp);
       return NULL;
    }
 
-#if defined(ORBIS)
-   sceAudioOutInit();
-#endif
+   psp->rate          = *new_rate ? *new_rate : rate;
+   psp->ring          = psp_ring_frames(psp->rate, latency);
+
    /* Cache aligned, not necessary but helpful. */
-   psp->buffer        = (uint32_t*)malloc(AUDIO_BUFFER_SIZE * sizeof(uint32_t));
-   memset(psp->buffer, 0, AUDIO_BUFFER_SIZE * sizeof(uint32_t));
+   /* The ring, and one period of silence past its end. */
+   psp->buffer_u32    = (uint32_t*)calloc(psp->ring + AUDIO_OUT_COUNT,
+         sizeof(uint32_t));
 
-   psp->zeroBuffer    = (uint32_t*)malloc(AUDIO_OUT_COUNT   * sizeof(uint32_t));
-   memset(psp->zeroBuffer, 0, AUDIO_OUT_COUNT * sizeof(uint32_t));
-
-   psp->read_pos      = 0;
-   psp->write_pos     = 0;
+   retro_atomic_size_init(&psp->consumed, 0);
+   retro_atomic_size_init(&psp->underruns, 0);
+   retro_atomic_int_init(&psp->read_pos, 0);
+   retro_atomic_int_init(&psp->write_pos, 0);
    psp->port          = port;
 
-   psp->fifo_lock     = slock_new();
-   psp->cond_lock     = slock_new();
-   psp->cond          = scond_new();
+   if (   !psp->buffer_u32
+       || !retro_eventcount_init(&psp->park))
+   {
+      sceAudioSRCChRelease();
+      free(psp->buffer_u32);
+      free(psp);
+      return NULL;
+   }
 
    psp->nonblock      = false;
-   psp->running       = true;
-   psp->worker_thread = sthread_create(psp_audio_mainloop, psp);
+   /* running has to be set before the worker starts, so a worker that
+    * never starts leaves a driver reporting itself alive with nothing
+    * consuming the ring: writes wait out their laps and return zero,
+    * and teardown acts on a state that was never true. */
+   retro_atomic_int_init(&psp->running, 1);
+   if (!(psp->worker_thread = sthread_create(psp_audio_mainloop, psp)))
+   {
+      retro_eventcount_free(&psp->park);
+      sceAudioSRCChRelease();
+      free(psp->buffer_u32);
+      free(psp);
+      return NULL;
+   }
 
    return psp;
 }
@@ -173,32 +250,19 @@ static void psp_audio_free(void *data)
    if (!psp)
       return;
 
-   if (psp->running)
+   if (retro_atomic_load_acquire_int(&psp->running))
    {
       if (psp->worker_thread)
       {
-         psp->running = false;
+         retro_atomic_store_release_int(&psp->running, 0);
          sthread_join(psp->worker_thread);
       }
-
-      if (psp->cond)
-         scond_free(psp->cond);
-      if (psp->fifo_lock)
-         slock_free(psp->fifo_lock);
-      if (psp->cond_lock)
-         slock_free(psp->cond_lock);
    }
-   free(psp->buffer);
+   retro_eventcount_free(&psp->park);
+   free(psp->buffer_u32);
    psp->worker_thread = NULL;
-   free(psp->zeroBuffer);
 
-#if defined(VITA)
-      sceAudioOutReleasePort(psp->port);
-#elif defined(ORBIS)
-      sceAudioOutClose(psp->port);
-#else
-      sceAudioSRCChRelease();
-#endif
+   sceAudioSRCChRelease();
 
    free(psp);
 
@@ -207,42 +271,89 @@ static void psp_audio_free(void *data)
 static ssize_t psp_audio_write(void *data, const void *s, size_t len)
 {
    psp_audio_t* psp      = (psp_audio_t*)data;
-   uint16_t write_pos    = psp->write_pos;
-   uint16_t sample_count = len / sizeof(uint32_t);
+   uint16_t write_pos    = (uint16_t)
+         retro_atomic_load_relaxed_int(&psp->write_pos);
+   /* Frames, and wide enough for them: narrowed to uint16_t, a write of
+    * more than 65535 frames wrapped to a small count that the room check
+    * then waved through, and the copy below took len bytes for it. The
+    * ring holds one frame short of its length, so no wait can free room
+    * for more than that at once - take what fits and report the short
+    * write rather than spending the laps on room that will not come. A
+    * len that is not whole frames carries the frames it has. */
+   size_t   sample_count = len / sizeof(uint32_t);
 
-   if (!psp->running)
+   if (!retro_atomic_load_acquire_int(&psp->running))
       return -1;
+   if (!sample_count)
+      return 0;
+   if (sample_count > (size_t)(psp->ring - 1u))
+      sample_count = psp->ring - 1u;
+   len = sample_count * sizeof(uint32_t);
 
+   /* The ring is counted in uint32_t frames (write_pos, read_pos,
+    * ring); len is bytes.  Both room checks below used to
+    * compare the frame count against len, i.e. demanded four times the
+    * room actually needed: non-blocking writes were refused - the audio
+    * dropped - with plenty of space free, and blocking ones waited for
+    * space that rate control was not trying to free.  psp_write_avail()
+    * and psp_wait_writable() already convert; compare frames to
+    * frames here too. */
    if (psp->nonblock)
    {
-      if (AUDIO_BUFFER_SIZE - ((uint16_t)
-               (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < len)
+      if (RING_FREE(write_pos, (uint16_t)
+               retro_atomic_load_acquire_int(&psp->read_pos),
+               psp->ring) < sample_count)
          return 0;
    }
 
-   slock_lock(psp->cond_lock);
-   while (AUDIO_BUFFER_SIZE - ((uint16_t)
-      (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK) < len)
-      scond_wait(psp->cond, psp->cond_lock);
-   slock_unlock(psp->cond_lock);
-
-   slock_lock(psp->fifo_lock);
-   if ((write_pos + sample_count) > AUDIO_BUFFER_SIZE)
    {
-      memcpy(psp->buffer + write_pos, s,
-            (AUDIO_BUFFER_SIZE - write_pos) * sizeof(uint32_t));
-      memcpy(psp->buffer, (uint32_t*)s +
-            (AUDIO_BUFFER_SIZE - write_pos),
-            (write_pos + sample_count - AUDIO_BUFFER_SIZE) * sizeof(uint32_t));
+      /* The audio thread notifies every period it consumes. One that
+       * has stopped consuming - the device suspended, the thread gone
+       * - notifies nothing; each wait is bounded, the loop is
+       * lap-bounded, and the write then returns having written
+       * nothing rather than holding the caller. Room and liveness
+       * are re-checked inside the eventcount's window, so a period
+       * freed between the check and the park costs nothing. */
+      int laps = PSP_AUDIO_WAIT_LAPS;
+      while (RING_FREE(write_pos, (uint16_t)
+         retro_atomic_load_acquire_int(&psp->read_pos),
+         psp->ring) < sample_count)
+      {
+         int key;
+         if (--laps < 0 || !retro_atomic_load_acquire_int(&psp->running))
+            return 0;
+         key = retro_eventcount_prepare_wait(&psp->park);
+         if (   (RING_FREE(write_pos, (uint16_t)
+                  retro_atomic_load_acquire_int(&psp->read_pos),
+                  psp->ring) >= sample_count)
+             || !retro_atomic_load_acquire_int(&psp->running))
+         {
+            retro_eventcount_cancel_wait(&psp->park);
+            continue;
+         }
+         if (!retro_eventcount_commit_wait_timeout(&psp->park, key,
+                  PSP_AUDIO_WAIT_US))
+            continue;
+      }
+   }
+
+   if ((write_pos + sample_count) > psp->ring)
+   {
+      memcpy(psp->buffer_u32 + write_pos, s,
+            (psp->ring - write_pos) * sizeof(uint32_t));
+      memcpy(psp->buffer_u32, (uint32_t*)s +
+            (psp->ring - write_pos),
+            (write_pos + sample_count - psp->ring) * sizeof(uint32_t));
    }
    else
-      memcpy(psp->buffer + write_pos, s, len);
+      memcpy(psp->buffer_u32 + write_pos, s, len);
 
-   write_pos      += sample_count;
-   write_pos      &= AUDIO_BUFFER_SIZE_MASK;
-   psp->write_pos  = write_pos;
-
-   slock_unlock(psp->fifo_lock);
+   write_pos       = (uint16_t)(write_pos + sample_count);
+   if (write_pos  >= psp->ring)
+      write_pos   -= psp->ring;
+   /* Release: the samples land before the index that publishes
+    * them. */
+   retro_atomic_store_release_int(&psp->write_pos, write_pos);
    return len;
 }
 
@@ -251,19 +362,19 @@ static bool psp_audio_alive(void *data)
    psp_audio_t* psp = (psp_audio_t*)data;
    if (!psp)
       return false;
-   return psp->running;
+   return retro_atomic_load_acquire_int(&psp->running) != 0;
 }
 
 static bool psp_audio_stop(void *data)
 {
    psp_audio_t* psp = (psp_audio_t*)data;
 
-#if defined(ORBIS)
-   return false;
-#else
    if (psp)
    {
-      psp->running = false;
+      retro_atomic_store_release_int(&psp->running, 0);
+      /* A writer parked on the ring must see the flag drop; the
+       * worker may already be gone and notify nothing further. */
+      retro_eventcount_notify(&psp->park);
 
       if (psp->worker_thread)
       {
@@ -272,19 +383,22 @@ static bool psp_audio_stop(void *data)
       }
    }
    return true;
-#endif
 }
 
 static bool psp_audio_start(void *data, bool is_shutdown)
 {
    psp_audio_t* psp = (psp_audio_t*)data;
 
-   if (psp && !psp->running)
+   if (psp && !retro_atomic_load_acquire_int(&psp->running))
    {
       if (!psp->worker_thread)
       {
-         psp->running       = true;
-         psp->worker_thread = sthread_create(psp_audio_mainloop, psp);
+         retro_atomic_store_release_int(&psp->running, 1);
+         if (!(psp->worker_thread = sthread_create(psp_audio_mainloop, psp)))
+         {
+            retro_atomic_store_release_int(&psp->running, 0);
+            return false;
+         }
       }
    }
 
@@ -303,20 +417,93 @@ static size_t psp_write_avail(void *data)
    size_t _len;
    psp_audio_t* psp = (psp_audio_t*)data;
 
-   if (!psp||!psp->running)
+   if (!psp || !retro_atomic_load_acquire_int(&psp->running))
       return 0;
-   slock_lock(psp->fifo_lock);
-   _len = AUDIO_BUFFER_SIZE - ((uint16_t)
-         (psp->write_pos - psp->read_pos) & AUDIO_BUFFER_SIZE_MASK);
-   slock_unlock(psp->fifo_lock);
-   return _len;
+   _len = RING_FREE((uint16_t)
+         retro_atomic_load_relaxed_int(&psp->write_pos), (uint16_t)
+         retro_atomic_load_acquire_int(&psp->read_pos), psp->ring);
+   return _len * sizeof(uint32_t);
 }
 
-/* TODO/FIXME - implement? */
+/* Sleep on the condition the output thread signals after every block
+ * until the fifo has room for len, in the same units psp_audio_write()
+ * compares against, capped at half the fifo so the wait always ends.
+ * Returns the free space as psp_write_avail() reports it, or 0 when
+ * the output thread is not running. */
+static size_t psp_wait_writable(void *data, size_t len)
+{
+   psp_audio_t* psp = (psp_audio_t*)data;
+   size_t avail;
+   int laps         = PSP_AUDIO_WAIT_LAPS;
+   /* len arrives in bytes; the ring is counted in uint32_t frames. */
+   size_t want      = len / sizeof(uint32_t);
+
+   if (want > psp->ring / 2)
+      want = psp->ring / 2;
+
+   for (;;)
+   {
+      int key;
+      if (!retro_atomic_load_acquire_int(&psp->running))
+         return 0;
+      avail = RING_FREE((uint16_t)
+            retro_atomic_load_relaxed_int(&psp->write_pos), (uint16_t)
+            retro_atomic_load_acquire_int(&psp->read_pos), psp->ring);
+      if (avail >= want)
+         break;
+      /* Bounded per wait and overall: a thread that has stopped
+       * consuming hands the pass back as no space coming from this
+       * call. The room is re-checked inside the window. */
+      if (--laps < 0)
+         return 0;
+      key = retro_eventcount_prepare_wait(&psp->park);
+      if (RING_FREE((uint16_t)
+               retro_atomic_load_relaxed_int(&psp->write_pos), (uint16_t)
+               retro_atomic_load_acquire_int(&psp->read_pos),
+               psp->ring) >= want
+            || !retro_atomic_load_acquire_int(&psp->running))
+      {
+         retro_eventcount_cancel_wait(&psp->park);
+         continue;
+      }
+      if (!retro_eventcount_commit_wait_timeout(&psp->park, key,
+               PSP_AUDIO_WAIT_US))
+         continue;
+   }
+   return avail * sizeof(uint32_t);
+}
+
+/* sceAudio takes 16-bit PCM only; there is no float output on the
+ * PSP hardware or in the kernel API. */
 static bool psp_audio_use_float(void *data) { return false; }
 static size_t psp_buffer_size(void *data)
 {
-   return AUDIO_BUFFER_SIZE /** sizeof(uint32_t)*/;
+   psp_audio_t* psp = (psp_audio_t*)data;
+   if (!psp)
+      return 0;
+   /* In bytes: the ring, in uint32_t frames of int16 stereo. The
+    * window the device is playing is held inside it. */
+   return psp->ring * sizeof(uint32_t);
+}
+
+/* Frames the device has taken since init: the output call returns
+ * when it has taken the one before, so the worker counts a period
+ * per completed call. */
+static size_t psp_frames_consumed(void *data)
+{
+   psp_audio_t* psp = (psp_audio_t*)data;
+   if (!psp)
+      return 0;
+   return retro_atomic_load_acquire_size(&psp->consumed);
+}
+
+/* Periods played as silence for want of audio. */
+static size_t psp_underruns(void *data)
+{
+   psp_audio_t* psp = (psp_audio_t*)data;
+   if (!psp)
+      return 0;
+   return retro_atomic_load_acquire_size(&psp->underruns);
 }
 
 audio_driver_t audio_psp = {
@@ -328,16 +515,13 @@ audio_driver_t audio_psp = {
    psp_audio_set_nonblock_state,
    psp_audio_free,
    psp_audio_use_float,
-#if defined(VITA)
-   "vita",
-#elif defined(ORBIS)
-   "orbis",
-#else
    "psp",
-#endif
    NULL,
    NULL,
    psp_write_avail,
    psp_buffer_size,
-   NULL /* write_raw */
+   NULL, /* write_raw */
+   psp_wait_writable,
+   psp_frames_consumed,
+   psp_underruns
 };

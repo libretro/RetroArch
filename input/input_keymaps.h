@@ -240,6 +240,7 @@ extern const struct input_key_map input_config_key_map[];
 extern const struct rarch_key_map rarch_key_map_x11[];
 extern const struct rarch_key_map rarch_key_map_sdl[];
 extern const struct rarch_key_map rarch_key_map_sdl2[];
+extern const struct rarch_key_map rarch_key_map_sdl3[];
 extern const struct rarch_key_map rarch_key_map_dinput[];
 
  /* is generated at runtime so can't be const */

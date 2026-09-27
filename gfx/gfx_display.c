@@ -30,13 +30,8 @@
 #include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
 
-#ifdef HAVE_MIST
-#include "../steam/steam.h"
-#endif
-
-#ifdef HAVE_COCOATOUCH
-#include "../ui/drivers/cocoa/apple_platform.h"
-#endif
+#include "../input/input_osk.h"
+#include "gfx_surface.h"
 
 /* Standard reference DPI value, used when determining
  * DPI-aware scaling factors */
@@ -116,24 +111,25 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
    &gfx_display_ctx_sdl2,
 #endif
 #endif
+#ifdef HAVE_SDL3
+   &gfx_display_ctx_sdl3,
+#endif
    NULL,
 };
 
-static float gfx_display_get_dpi_scale_internal(
-      unsigned width, unsigned height)
+static float gfx_display_get_dpi_scale_internal(unsigned dims)
 {
    float dpi;
    float diagonal_pixels;
    float pixel_scale;
-   static unsigned last_width  = 0;
-   static unsigned last_height = 0;
+   unsigned width              = VIDEO_SCALE_W(dims);
+   unsigned height             = VIDEO_SCALE_H(dims);
+   static unsigned last_dims   = 0;
    static float scale          = 0.0f;
    static bool scale_cached    = false;
    gfx_ctx_metrics_t metrics;
 
-   if (    scale_cached
-       && (width  == last_width)
-       && (height == last_height))
+   if (scale_cached && dims == last_dims)
       return scale;
 
    /* Determine the diagonal 'size' of the display
@@ -239,8 +235,7 @@ static float gfx_display_get_dpi_scale_internal(
       scale             = pixel_scale;
 
    scale_cached         = true;
-   last_width           = width;
-   last_height          = height;
+   last_dims            = dims;
 
    return scale;
 }
@@ -248,13 +243,12 @@ static float gfx_display_get_dpi_scale_internal(
 float gfx_display_get_dpi_scale(
       gfx_display_t *p_disp,
       void *settings_data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen,
       bool is_widget
 )
 {
-   static unsigned last_width                          = 0;
-   static unsigned last_height                         = 0;
+   static unsigned last_dims                           = 0;
    static float scale                                  = 0.0f;
    static bool scale_cached                            = false;
    bool scale_updated                                  = false;
@@ -302,15 +296,12 @@ float gfx_display_get_dpi_scale(
     * hardware property. To minimise performance overheads
     * we therefore only call video_context_driver_get_metrics()
     * on first run, or when the current video resolution changes */
-   if (   !scale_cached
-       || (width  != last_width)
-       || (height != last_height))
+   if (!scale_cached || dims != last_dims)
    {
-      scale         = gfx_display_get_dpi_scale_internal(width, height);
+      scale         = gfx_display_get_dpi_scale_internal(dims);
       scale_cached  = true;
       scale_updated = true;
-      last_width    = width;
-      last_height   = height;
+      last_dims     = dims;
    }
 
    /* Adjusted scale calculation may also be slow, so
@@ -323,11 +314,12 @@ float gfx_display_get_dpi_scale(
 #ifdef HAVE_OZONE
       if (p_disp->menu_driver_id == MENU_DRIVER_ID_OZONE)
       {
-         /* Ozone has a capped scale factor */
-         float new_width        = (float)width * 0.3333333f;
+         /* Ozone's sidebar may take a third of the screen and no
+          * more, so the scale is capped at whatever puts it there. */
+         float sidebar_max      = (float)VIDEO_SCALE_W(dims) / 3.0f;
          if (((float)OZONE_SIDEBAR_WIDTH * adjusted_scale)
-               > new_width)
-            adjusted_scale      = (new_width / (float)OZONE_SIDEBAR_WIDTH);
+               > sidebar_max)
+            adjusted_scale      = (sidebar_max / (float)OZONE_SIDEBAR_WIDTH);
       }
 #endif
       adjusted_scale            = (adjusted_scale > 0.0001f) ? adjusted_scale : 1.0f;
@@ -338,15 +330,31 @@ float gfx_display_get_dpi_scale(
    return adjusted_scale;
 }
 
+static void gfx_display_flush_impl(gfx_display_t *p_disp);
+
+/* Sends what is gathered and records why it had to go */
+static void gfx_display_flush_as(gfx_display_t *p_disp,
+      enum gfx_display_flush_reason reason)
+{
+   if (p_disp && p_disp->batch_quads)
+      p_disp->stats.v[GFX_DISPLAY_STAT_FLUSH + reason]++;
+   gfx_display_flush_impl(p_disp);
+}
+
 /* Begin scissoring operation */
 void gfx_display_scissor_begin(
       gfx_display_t *p_disp,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y, unsigned width, unsigned height)
+      unsigned video_dims,
+      int x, int y, unsigned dims)
 {
+   unsigned video_width              = VIDEO_SCALE_W(video_dims);
+   unsigned video_height             = VIDEO_SCALE_H(video_dims);
+   unsigned width                    = VIDEO_SCALE_W(dims);
+   unsigned height                   = VIDEO_SCALE_H(dims);
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   /* What is gathered goes out before this draws */
+   gfx_display_flush_as(disp_get_ptr(), GFX_DISPLAY_FLUSH_SCISSOR);
    if (dispctx && dispctx->scissor_begin)
    {
       if (y < 0)
@@ -380,9 +388,8 @@ void gfx_display_scissor_begin(
       if ((x + width) > video_width)
          width      = video_width - x;
 
-      dispctx->scissor_begin(userdata,
-            video_width, video_height,
-            x, y, width, height);
+      dispctx->scissor_begin(userdata, video_dims,
+            x, y, dims);
    }
 }
 
@@ -403,7 +410,7 @@ font_data_t *gfx_display_font_file(
          font_size = 2.0f;
       if ((font_data = font_driver_init_first(video_driver_get_ptr(),
                   fontpath, font_size, true, is_threaded,
-                  dispctx->font_type)))
+                  dispctx->font_backend)))
          return font_data;
    }
    return NULL;
@@ -412,14 +419,20 @@ font_data_t *gfx_display_font_file(
 /* Draw text on top of the screen */
 static void gfx_display_draw_text_internal(
       const font_data_t *font, const char *text,
-      float x, float y, int width, int height,
+      float x, float y, unsigned dims,
       uint32_t color, const float *color_hp,
       enum text_alignment text_align,
       float scale, bool shadows_enable, float shadow_offset,
       bool draw_outside)
 {
+   size_t _len;
    struct font_params params;
+   int width                      = (int)VIDEO_SCALE_W(dims);
+   int height                     = (int)VIDEO_SCALE_H(dims);
+   gfx_display_t *p_disp          = disp_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
+   /* What is gathered goes out before this draws */
+   gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_TEXT);
 
    /* NULL text is a no-op: ozone_draw_footer and similar menu code can
     * legitimately reach here with text==NULL for unset/optional fields,
@@ -458,19 +471,23 @@ static void gfx_display_draw_text_internal(
       params.drop_alpha  = GFX_SHADOW_ALPHA;
    }
 
+   _len = strlen(text);
+   p_disp->stats.v[GFX_DISPLAY_STAT_TEXT_CALLS]++;
+   p_disp->stats.v[GFX_DISPLAY_STAT_TEXT_BYTES] += (unsigned)_len;
+
    if (video_st->poke && video_st->poke->set_osd_msg)
       video_st->poke->set_osd_msg(video_st->data,
-            text, strlen(text), &params, (void*)font);
+            text, _len, &params, (void*)font);
 }
 
 void gfx_display_draw_text(
       const font_data_t *font, const char *text,
-      float x, float y, int width, int height,
+      float x, float y, unsigned dims,
       uint32_t color, enum text_alignment text_align,
       float scale, bool shadows_enable, float shadow_offset,
       bool draw_outside)
 {
-   gfx_display_draw_text_internal(font, text, x, y, width, height,
+   gfx_display_draw_text_internal(font, text, x, y, dims,
          color, NULL, text_align, scale, shadows_enable, shadow_offset,
          draw_outside);
 }
@@ -483,13 +500,13 @@ void gfx_display_draw_text(
  * do not opt in behave exactly as the 8-bit entry point. */
 void gfx_display_draw_text_hp(
       const font_data_t *font, const char *text,
-      float x, float y, int width, int height,
+      float x, float y, unsigned dims,
       uint32_t color, const float *color_rgba,
       enum text_alignment text_align,
       float scale, bool shadows_enable, float shadow_offset,
       bool draw_outside)
 {
-   gfx_display_draw_text_internal(font, text, x, y, width, height,
+   gfx_display_draw_text_internal(font, text, x, y, dims,
          color, color_rgba, text_align, scale, shadows_enable,
          shadow_offset, draw_outside);
 }
@@ -540,16 +557,248 @@ void gfx_display_draw_bg(
             userdata);
 }
 
+/* How many quads may wait before the batch has to go out. One strip of
+ * them is six vertices a quad less the two the first does not need to
+ * be joined by, which is what the block below is sized for: 32 quads
+ * is 190 vertices, six kilobytes for the lot. A run of quads between
+ * two things that are not quads measured three or four, so this is
+ * room to spare; going over it costs a draw, not a correction. */
+#define GFX_DISPLAY_BATCH_QUADS 32
+#define GFX_DISPLAY_BATCH_VERTS (GFX_DISPLAY_BATCH_QUADS * 6 - 2)
+
+/* Adds one quad to the batch, in the strip order the drivers draw in -
+ * bottom left, bottom right, top left, top right - joined to the quad
+ * before it by a vertex repeated at each end of the seam, which the
+ * rasteriser drops as zero-area. Returns false when the quad cannot
+ * join, and the caller draws it itself. */
+static bool gfx_display_batch_add(gfx_display_t *p_disp,
+      uintptr_t texture, const float *color, void *userdata,
+      unsigned video_dims,
+      float x0, float x1, float y0, float y1,
+      int px, int py, unsigned dims)
+{
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
+   unsigned v, i;
+   float *vert, *tex, *col;
+
+   if (!p_disp)
+      return false;
+   /* A batch belongs to one texture and one frame's worth of state */
+   if (     p_disp->batch_quads
+         && (  p_disp->batch_texture     != texture
+            || p_disp->batch_userdata    != userdata
+            || VIDEO_SCALE_W(p_disp->batch_video_dims) != video_width
+            || VIDEO_SCALE_H(p_disp->batch_video_dims) != video_height))
+      gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_TEXTURE);
+   if (p_disp->batch_quads >= GFX_DISPLAY_BATCH_QUADS)
+      gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_CAPACITY);
+
+   if (!p_disp->batch_mem)
+   {
+      /* 2 + 2 + 4 floats a vertex, in one block: they are filled
+       * together and read together, so they are kept together. */
+      if (!(p_disp->batch_mem = (float*)malloc(
+                  sizeof(float) * 8 * GFX_DISPLAY_BATCH_VERTS)))
+         return false;
+      p_disp->batch_vertex = p_disp->batch_mem;
+      p_disp->batch_tex    = p_disp->batch_mem + 2 * GFX_DISPLAY_BATCH_VERTS;
+      p_disp->batch_color  = p_disp->batch_mem + 4 * GFX_DISPLAY_BATCH_VERTS;
+   }
+
+   vert = p_disp->batch_vertex;
+   tex  = p_disp->batch_tex;
+   col  = p_disp->batch_color;
+   v    = p_disp->batch_quads ? (p_disp->batch_quads * 6 - 2) : 0;
+
+   if (p_disp->batch_quads)
+   {
+      /* Seam: the quad before ends where this one starts */
+      vert[v * 2]     = vert[(v - 1) * 2];
+      vert[v * 2 + 1] = vert[(v - 1) * 2 + 1];
+      tex [v * 2]     = tex [(v - 1) * 2];
+      tex [v * 2 + 1] = tex [(v - 1) * 2 + 1];
+      for (i = 0; i < 4; i++)
+         col[v * 4 + i] = col[(v - 1) * 4 + i];
+      v++;
+      vert[v * 2]     = x0;
+      vert[v * 2 + 1] = y0;
+      tex [v * 2]     = 0.0f;
+      tex [v * 2 + 1] = 1.0f;
+      for (i = 0; i < 4; i++)
+         col[v * 4 + i] = color[i];
+      v++;
+   }
+
+   for (i = 0; i < 4; i++)
+   {
+      unsigned c;
+      /* bottom left, bottom right, top left, top right */
+      vert[v * 2]     = (i & 1) ? x1   : x0;
+      vert[v * 2 + 1] = (i & 2) ? y1   : y0;
+      tex [v * 2]     = (i & 1) ? 1.0f : 0.0f;
+      tex [v * 2 + 1] = (i & 2) ? 0.0f : 1.0f;
+      for (c = 0; c < 4; c++)
+         col[v * 4 + c] = color[i * 4 + c];
+      v++;
+   }
+
+   if (p_disp->batch_quads == 0)
+   {
+      p_disp->batch_first_x   = px;
+      p_disp->batch_first_y   = py;
+      p_disp->batch_first_dims = dims;
+   }
+   p_disp->batch_quads++;
+   p_disp->stats.v[GFX_DISPLAY_STAT_QUADS]++;
+   p_disp->batch_texture      = texture;
+   p_disp->batch_userdata     = userdata;
+   p_disp->batch_video_dims   = video_dims;
+   return true;
+}
+
+/* Sends the quads that are waiting, as one strip, and empties the
+ * batch. Called before anything else draws, so that what was gathered
+ * lands under what comes after it, and at the end of a frame so that
+ * nothing is still waiting when the frame is over. */
+static void gfx_display_flush_impl(gfx_display_t *p_disp)
+{
+   gfx_display_ctx_driver_t *dispctx;
+   gfx_display_ctx_draw_t draw;
+   struct video_coords coords;
+
+   if (!p_disp || !p_disp->batch_quads)
+      return;
+   dispctx                 = p_disp->dispctx;
+   p_disp->stats.v[GFX_DISPLAY_STAT_BATCHES]++;
+   if (p_disp->batch_quads > p_disp->stats.v[GFX_DISPLAY_STAT_BATCH_MAX])
+      p_disp->stats.v[GFX_DISPLAY_STAT_BATCH_MAX] = p_disp->batch_quads;
+   coords.lut_tex_coord    = NULL;
+   if (p_disp->batch_quads == 1)
+   {
+      /* One quad: hand it over as a quad */
+      coords.vertices      = 4;
+      coords.vertex        = NULL;
+      coords.tex_coord     = NULL;
+      coords.color         = p_disp->batch_color;
+      draw.pos             = VIDEO_POS_PACK(p_disp->batch_first_x,
+            p_disp->batch_first_y);
+      draw.dims            = p_disp->batch_first_dims;
+   }
+   else
+   {
+      coords.vertices      = p_disp->batch_quads * 6 - 2;
+      coords.vertex        = p_disp->batch_vertex;
+      coords.tex_coord     = p_disp->batch_tex;
+      coords.color         = p_disp->batch_color;
+      draw.pos             = VIDEO_POS_PACK(0, 0);
+      draw.dims            = p_disp->batch_video_dims;
+   }
+   draw.coords             = &coords;
+   draw.matrix_data        = NULL;
+   draw.texture            = p_disp->batch_texture;
+   draw.pipeline_id        = 0;
+   draw.scale_factor       = 1.0f;
+   draw.rotation           = 0.0f;
+   p_disp->batch_quads     = 0;
+   if (dispctx)
+   {
+      /* Inside a caller's group blending is already on and stays on:
+       * turning it off here would end the group early. */
+      bool own_blend = !p_disp->blend_on;
+      if (own_blend && dispctx->blend_begin)
+         dispctx->blend_begin(p_disp->batch_userdata);
+      if (dispctx->draw)
+         dispctx->draw(&draw, p_disp->batch_userdata,
+               p_disp->batch_video_dims);
+      if (own_blend && dispctx->blend_end)
+         dispctx->blend_end(p_disp->batch_userdata);
+   }
+}
+
+void gfx_display_flush_batch(gfx_display_t *p_disp)
+{
+   if (p_disp && p_disp->batch_quads)
+      p_disp->stats.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_EXPLICIT]++;
+   gfx_display_flush_impl(p_disp);
+}
+
+void gfx_display_stats_latch(gfx_display_t *p_disp)
+{
+   unsigned i;
+   if (!p_disp)
+      return;
+   for (i = 0; i < GFX_DISPLAY_STAT_LAST; i++)
+   {
+      retro_atomic_store_relaxed_int(&p_disp->stats_pub[i],
+            (int)p_disp->stats.v[i]);
+      p_disp->stats.v[i] = 0;
+   }
+}
+
+void gfx_display_stats_get(gfx_display_stats_t *out)
+{
+   unsigned i;
+   gfx_display_t *p_disp = disp_get_ptr();
+   for (i = 0; i < GFX_DISPLAY_STAT_LAST; i++)
+      out->v[i] = (unsigned)retro_atomic_load_relaxed_int(
+            &p_disp->stats_pub[i]);
+}
+
+void gfx_display_blend_begin(gfx_display_ctx_driver_t *dispctx,
+      void *userdata)
+{
+   gfx_display_t *p_disp = disp_get_ptr();
+   /* What was gathered outside this group goes out under the state it
+    * was gathered under */
+   gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_BLEND);
+   if (dispctx && dispctx->blend_begin)
+   {
+      dispctx->blend_begin(userdata);
+      p_disp->blend_on = true;
+   }
+}
+
+void gfx_display_blend_end(gfx_display_ctx_driver_t *dispctx,
+      void *userdata)
+{
+   gfx_display_t *p_disp = disp_get_ptr();
+   /* And what was gathered inside it goes out while it is still on */
+   gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_BLEND);
+   if (dispctx && dispctx->blend_end)
+   {
+      dispctx->blend_end(userdata);
+      p_disp->blend_on = false;
+   }
+}
+
+/* The one way a caller outside this file reaches the display driver.
+ * Everything drawn while the menu is up passes through here or through
+ * the helpers above it, which is what lets this file know the order
+ * things are drawn in - and, when quads start being gathered rather
+ * than drawn one at a time, where the gathered ones have to go out. */
+void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
+      gfx_display_ctx_draw_t *draw, void *userdata,
+      unsigned video_dims)
+{
+   gfx_display_flush_as(disp_get_ptr(), GFX_DISPLAY_FLUSH_DRAW);
+   if (dispctx && dispctx->draw && draw)
+      dispctx->draw(draw, userdata, video_dims);
+}
+
 void gfx_display_draw_quad(
       gfx_display_t *p_disp,
       void *data,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y, unsigned w, unsigned h,
-      unsigned width, unsigned height,
+      unsigned video_dims,
+      int x, int y, unsigned dims,
+      unsigned ref_dims,
       float *color,
       uintptr_t *texture)
 {
+   unsigned w            = VIDEO_SCALE_W(dims);
+   unsigned h            = VIDEO_SCALE_H(dims);
+   unsigned width        = VIDEO_SCALE_W(ref_dims);
+   unsigned height       = VIDEO_SCALE_H(ref_dims);
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    gfx_display_ctx_driver_t
@@ -566,10 +815,8 @@ void gfx_display_draw_quad(
    coords.lut_tex_coord = NULL;
    coords.color         = color;
 
-   draw.x               = x;
-   draw.y               = (int)height - y - (int)h;
-   draw.width           = w;
-   draw.height          = h;
+   draw.pos             = VIDEO_POS_PACK(x, (int)height - y - (int)h);
+   draw.dims            = dims;
    draw.coords          = &coords;
    draw.matrix_data     = NULL;
    draw.texture         = (texture && *texture)
@@ -579,10 +826,25 @@ void gfx_display_draw_quad(
    draw.scale_factor    = 1.0f;
    draw.rotation        = 0.0f;
 
+   /* Gathered rather than drawn, where the driver can be handed a
+    * strip of quads instead of one at a time. What is gathered goes
+    * out before anything else draws, so the order is unchanged. */
+   if (     dispctx->handles_vertex_strip
+         && gfx_display_batch_add(p_disp, draw.texture, color, data,
+            video_dims,
+            (float)x / (float)width,
+            (float)(x + (int)w) / (float)width,
+            (float)VIDEO_POS_Y(draw.pos) / (float)height,
+            (float)(VIDEO_POS_Y(draw.pos) + (int)h) / (float)height,
+            VIDEO_POS_X(draw.pos), VIDEO_POS_Y(draw.pos),
+            draw.dims))
+      return;
+
+   gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_DRAW);
    if (dispctx->blend_begin)
       dispctx->blend_begin(data);
    if (dispctx->draw)
-      dispctx->draw(&draw, data, video_width, video_height);
+      dispctx->draw(&draw, data, video_dims);
    if (dispctx->blend_end)
       dispctx->blend_end(data);
 }
@@ -593,22 +855,32 @@ void gfx_display_draw_quad(
 void gfx_display_draw_texture_slice(
       gfx_display_t *p_disp,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y, unsigned w, unsigned h,
-      unsigned new_w, unsigned new_h,
-      unsigned width, unsigned height,
+      unsigned video_dims,
+      int x, int y, unsigned src_dims,
+      unsigned dst_dims,
+      unsigned dims,
       float *color, unsigned offset, float scale_factor, uintptr_t texture,
       math_matrix_4x4 *mymat
 )
 {
+   unsigned w                        = VIDEO_SCALE_W(src_dims);
+   unsigned h                        = VIDEO_SCALE_H(src_dims);
+   unsigned new_w                    = VIDEO_SCALE_W(dst_dims);
+   unsigned new_h                    = VIDEO_SCALE_H(dst_dims);
+   unsigned width                    = VIDEO_SCALE_W(dims);
+   unsigned height                   = VIDEO_SCALE_H(dims);
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   float V_BL[2], V_BR[2], V_TL[2], V_TR[2];
-   float T_BL[2], T_BR[2], T_TL[2], T_TR[2];
-   float tex_coord[8];
-   float vert_coord[8];
+   /* The top left piece; the grid below walks out from it */
+   float V_BL[2], V_TL[2];
+   /* Nine pieces of four vertices, with two more at each of the eight
+    * seams that join them into one strip */
+   float tex_coord[52 * 2];
+   float vert_coord[52 * 2];
+   /* One colour per vertex: the source carries four, for a single
+    * quad's corners, and every piece repeats them */
+   float vert_color[52 * 4];
    float max_scale_w, max_scale_h, slice_scale;
    float vert_woff, vert_hoff, tex_woff, tex_hoff;
    float vert_scaled_mid_width, vert_scaled_mid_height;
@@ -620,6 +892,9 @@ void gfx_display_draw_texture_slice(
       1.0f, 1.0f, 1.0f, 1.0f,
       1.0f, 1.0f, 1.0f, 1.0f
    };
+
+   /* What is gathered goes out before this draws */
+   gfx_display_flush_as(disp_get_ptr(), GFX_DISPLAY_FLUSH_DRAW);
 
    /* Early-out: guard against division by zero from
     * zero display dimensions or zero texture dimensions */
@@ -682,35 +957,23 @@ void gfx_display_draw_texture_slice(
     */
    V_BL[0] = norm_x;
    V_BL[1] = norm_y;
-   V_BR[0] = norm_x + vert_woff;
-   V_BR[1] = norm_y;
    V_TL[0] = norm_x;
    V_TL[1] = norm_y + vert_hoff;
-   V_TR[0] = norm_x + vert_woff;
-   V_TR[1] = norm_y + vert_hoff;
-   T_BL[0] = 0.0f;
-   T_BL[1] = tex_hoff;
-   T_BR[0] = tex_woff;
-   T_BR[1] = tex_hoff;
-   T_TL[0] = 0.0f;
-   T_TL[1] = 0.0f;
-   T_TR[0] = tex_woff;
-   T_TR[1] = 0.0f;
 
    coords.vertices          = 4;
    coords.vertex            = vert_coord;
    coords.tex_coord         = tex_coord;
    coords.lut_tex_coord     = NULL;
-   draw.width               = width;
-   draw.height              = height;
+   draw.dims                = dims;
    draw.coords              = &coords;
    draw.matrix_data         = mymat;
    draw.pipeline_id         = 0;
    coords.color             = (const float*)(color == NULL ? colors : color);
 
    draw.texture             = texture;
-   draw.x                   = 0;
-   draw.y                   = 0;
+   draw.pos                 = VIDEO_POS_PACK(0, 0);
+   draw.scale_factor        = 1.0f;
+   draw.rotation            = 0.0f;
 
    /* vertex coords are specified bottom-up in this order: BL BR TL TR */
    /* texture coords are specified top-down in this order: BL BR TL TR */
@@ -718,194 +981,111 @@ void gfx_display_draw_texture_slice(
    /* If someone wants to change this to not draw several times, the
     * coordinates will need to be modified because of the triangle strip usage. */
 
-   /* Top Left corner */
-   vert_coord[0] = V_BL[0];
-   vert_coord[1] = V_BL[1];
-   vert_coord[2] = V_BR[0];
-   vert_coord[3] = V_BR[1];
-   vert_coord[4] = V_TL[0];
-   vert_coord[5] = V_TL[1];
-   vert_coord[6] = V_TR[0];
-   vert_coord[7] = V_TR[1];
+   /* One strip for the nine pieces rather than nine draws of four
+    * vertices each. The pieces are a three by three grid: four vertical
+    * lines and four horizontal ones in both vertex and texture space,
+    * and every piece is the rectangle between two of each. Consecutive
+    * pieces are joined by repeating a vertex at each end of the seam,
+    * which the rasteriser drops as zero-area - the price of a strip,
+    * and cheaper than nine viewport sets and nine blend pairs. */
+   {
+      unsigned row, col, v  = 0;
+      const float *src_col  = (const float*)(color == NULL ? colors : color);
+      /* Vertex space: V_* describe the top left piece, so the lines are
+       * its edges walked across and down by the middle's size. */
+      float vx[4];
+      float vy[4];
+      float tx[4];
+      float ty[4];
 
-   tex_coord[0] = T_BL[0];
-   tex_coord[1] = T_BL[1];
-   tex_coord[2] = T_BR[0];
-   tex_coord[3] = T_BR[1];
-   tex_coord[4] = T_TL[0];
-   tex_coord[5] = T_TL[1];
-   tex_coord[6] = T_TR[0];
-   tex_coord[7] = T_TR[1];
+      vx[0] = V_BL[0];
+      vx[1] = vx[0] + vert_woff;
+      vx[2] = vx[1] + vert_scaled_mid_width;
+      vx[3] = vx[2] + vert_woff;
+      vy[0] = V_TL[1];
+      vy[1] = vy[0] - vert_hoff;
+      vy[2] = vy[1] - vert_scaled_mid_height;
+      vy[3] = vy[2] - vert_hoff;
+      tx[0] = 0.0f;
+      tx[1] = tex_woff;
+      tx[2] = tx[1] + tex_mid_width;
+      tx[3] = 1.0f;
+      ty[0] = 0.0f;
+      ty[1] = tex_hoff;
+      ty[2] = ty[1] + tex_mid_height;
+      ty[3] = 1.0f;
 
-   dispctx->draw(&draw, userdata, video_width, video_height);
+      for (row = 0; row < 3; row++)
+      {
+         for (col = 0; col < 3; col++)
+         {
+            /* BL BR TL TR, the order the strip wants */
+            float qx[4];
+            float qy[4];
+            float qu[4];
+            float qv[4];
+            unsigned i;
 
-   /* Top Middle section */
-   vert_coord[0] = V_BL[0] + vert_woff;
-   vert_coord[1] = V_BL[1];
-   vert_coord[2] = V_BR[0] + vert_scaled_mid_width;
-   vert_coord[3] = V_BR[1];
-   vert_coord[4] = V_TL[0] + vert_woff;
-   vert_coord[5] = V_TL[1];
-   vert_coord[6] = V_TR[0] + vert_scaled_mid_width;
-   vert_coord[7] = V_TR[1];
+            qx[0] = vx[col];     qx[1] = vx[col + 1];
+            qx[2] = vx[col];     qx[3] = vx[col + 1];
+            qy[0] = vy[row + 1]; qy[1] = vy[row + 1];
+            qy[2] = vy[row];     qy[3] = vy[row];
+            qu[0] = tx[col];     qu[1] = tx[col + 1];
+            qu[2] = tx[col];     qu[3] = tx[col + 1];
+            qv[0] = ty[row + 1]; qv[1] = ty[row + 1];
+            qv[2] = ty[row];     qv[3] = ty[row];
 
-   tex_coord[0] = T_BL[0] + tex_woff;
-   tex_coord[1] = T_BL[1];
-   tex_coord[2] = T_BR[0] + tex_mid_width;
-   tex_coord[3] = T_BR[1];
-   tex_coord[4] = T_TL[0] + tex_woff;
-   tex_coord[5] = T_TL[1];
-   tex_coord[6] = T_TR[0] + tex_mid_width;
-   tex_coord[7] = T_TR[1];
+            if (v && !dispctx->handles_vertex_strip)
+            {
+               /* A driver that reads a fixed four vertices gets one
+                * piece at a time, as it did before the pieces were
+                * joined: it ends in a blit, and a blit has no use for
+                * geometry it cannot walk. */
+               coords.vertices = v;
+               coords.color    = vert_color;
+               dispctx->draw(&draw, userdata,
+                     video_dims);
+               v = 0;
+            }
+            if (v)
+            {
+               /* Seam: the piece before ends where this one starts */
+               unsigned c;
+               vert_coord[v * 2]     = vert_coord[(v - 1) * 2];
+               vert_coord[v * 2 + 1] = vert_coord[(v - 1) * 2 + 1];
+               tex_coord [v * 2]     = tex_coord [(v - 1) * 2];
+               tex_coord [v * 2 + 1] = tex_coord [(v - 1) * 2 + 1];
+               for (c = 0; c < 4; c++)
+                  vert_color[v * 4 + c] = vert_color[(v - 1) * 4 + c];
+               v++;
+               vert_coord[v * 2]     = qx[0];
+               vert_coord[v * 2 + 1] = qy[0];
+               tex_coord [v * 2]     = qu[0];
+               tex_coord [v * 2 + 1] = qv[0];
+               for (c = 0; c < 4; c++)
+                  vert_color[v * 4 + c] = src_col[c];
+               v++;
+            }
 
-   dispctx->draw(&draw, userdata, video_width, video_height);
+            for (i = 0; i < 4; i++)
+            {
+               unsigned c;
+               vert_coord[v * 2]     = qx[i];
+               vert_coord[v * 2 + 1] = qy[i];
+               tex_coord [v * 2]     = qu[i];
+               tex_coord [v * 2 + 1] = qv[i];
+               for (c = 0; c < 4; c++)
+                  vert_color[v * 4 + c] = src_col[i * 4 + c];
+               v++;
+            }
+         }
+      }
 
-   /* Top Right corner */
-   vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
-   vert_coord[1] = V_BL[1];
-   vert_coord[2] = V_BR[0] + vert_scaled_mid_width + vert_woff;
-   vert_coord[3] = V_BR[1];
-   vert_coord[4] = V_TL[0] + vert_woff + vert_scaled_mid_width;
-   vert_coord[5] = V_TL[1];
-   vert_coord[6] = V_TR[0] + vert_scaled_mid_width + vert_woff;
-   vert_coord[7] = V_TR[1];
-
-   tex_coord[0] = T_BL[0] + tex_woff + tex_mid_width;
-   tex_coord[1] = T_BL[1];
-   tex_coord[2] = T_BR[0] + tex_mid_width + tex_woff;
-   tex_coord[3] = T_BR[1];
-   tex_coord[4] = T_TL[0] + tex_woff + tex_mid_width;
-   tex_coord[5] = T_TL[1];
-   tex_coord[6] = T_TR[0] + tex_mid_width + tex_woff;
-   tex_coord[7] = T_TR[1];
-
-   dispctx->draw(&draw, userdata, video_width, video_height);
-
-   /* Middle Left section */
-   vert_coord[0] = V_BL[0];
-   vert_coord[1] = V_BL[1] - vert_scaled_mid_height;
-   vert_coord[2] = V_BR[0];
-   vert_coord[3] = V_BR[1] - vert_scaled_mid_height;
-   vert_coord[4] = V_TL[0];
-   vert_coord[5] = V_TL[1] - vert_hoff;
-   vert_coord[6] = V_TR[0];
-   vert_coord[7] = V_TR[1] - vert_hoff;
-
-   tex_coord[0] = T_BL[0];
-   tex_coord[1] = T_BL[1] + tex_mid_height;
-   tex_coord[2] = T_BR[0];
-   tex_coord[3] = T_BR[1] + tex_mid_height;
-   tex_coord[4] = T_TL[0];
-   tex_coord[5] = T_TL[1] + tex_hoff;
-   tex_coord[6] = T_TR[0];
-   tex_coord[7] = T_TR[1] + tex_hoff;
-
-   dispctx->draw(&draw, userdata, video_width, video_height);
-
-   /* center section */
-   vert_coord[0] = V_BL[0] + vert_woff;
-   vert_coord[1] = V_BL[1] - vert_scaled_mid_height;
-   vert_coord[2] = V_BR[0] + vert_scaled_mid_width;
-   vert_coord[3] = V_BR[1] - vert_scaled_mid_height;
-   vert_coord[4] = V_TL[0] + vert_woff;
-   vert_coord[5] = V_TL[1] - vert_hoff;
-   vert_coord[6] = V_TR[0] + vert_scaled_mid_width;
-   vert_coord[7] = V_TR[1] - vert_hoff;
-
-   tex_coord[0] = T_BL[0] + tex_woff;
-   tex_coord[1] = T_BL[1] + tex_mid_height;
-   tex_coord[2] = T_BR[0] + tex_mid_width;
-   tex_coord[3] = T_BR[1] + tex_mid_height;
-   tex_coord[4] = T_TL[0] + tex_woff;
-   tex_coord[5] = T_TL[1] + tex_hoff;
-   tex_coord[6] = T_TR[0] + tex_mid_width;
-   tex_coord[7] = T_TR[1] + tex_hoff;
-
-   dispctx->draw(&draw, userdata, video_width, video_height);
-
-   /* Middle Right section */
-   vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
-   vert_coord[1] = V_BL[1] - vert_scaled_mid_height;
-   vert_coord[2] = V_BR[0] + vert_woff + vert_scaled_mid_width;
-   vert_coord[3] = V_BR[1] - vert_scaled_mid_height;
-   vert_coord[4] = V_TL[0] + vert_woff + vert_scaled_mid_width;
-   vert_coord[5] = V_TL[1] - vert_hoff;
-   vert_coord[6] = V_TR[0] + vert_woff + vert_scaled_mid_width;
-   vert_coord[7] = V_TR[1] - vert_hoff;
-
-   tex_coord[0] = T_BL[0] + tex_woff + tex_mid_width;
-   tex_coord[1] = T_BL[1] + tex_mid_height;
-   tex_coord[2] = T_BR[0] + tex_woff + tex_mid_width;
-   tex_coord[3] = T_BR[1] + tex_mid_height;
-   tex_coord[4] = T_TL[0] + tex_woff + tex_mid_width;
-   tex_coord[5] = T_TL[1] + tex_hoff;
-   tex_coord[6] = T_TR[0] + tex_woff + tex_mid_width;
-   tex_coord[7] = T_TR[1] + tex_hoff;
-
-   dispctx->draw(&draw, userdata, video_width, video_height);
-
-   /* Bottom Left corner */
-   vert_coord[0] = V_BL[0];
-   vert_coord[1] = V_BL[1] - vert_hoff - vert_scaled_mid_height;
-   vert_coord[2] = V_BR[0];
-   vert_coord[3] = V_BR[1] - vert_hoff - vert_scaled_mid_height;
-   vert_coord[4] = V_TL[0];
-   vert_coord[5] = V_TL[1] - vert_hoff - vert_scaled_mid_height;
-   vert_coord[6] = V_TR[0];
-   vert_coord[7] = V_TR[1] - vert_hoff - vert_scaled_mid_height;
-
-   tex_coord[0] = T_BL[0];
-   tex_coord[1] = T_BL[1] + tex_hoff + tex_mid_height;
-   tex_coord[2] = T_BR[0];
-   tex_coord[3] = T_BR[1] + tex_hoff + tex_mid_height;
-   tex_coord[4] = T_TL[0];
-   tex_coord[5] = T_TL[1] + tex_hoff + tex_mid_height;
-   tex_coord[6] = T_TR[0];
-   tex_coord[7] = T_TR[1] + tex_hoff + tex_mid_height;
-
-   dispctx->draw(&draw, userdata, video_width, video_height);
-
-   /* Bottom Middle section */
-   vert_coord[0] = V_BL[0] + vert_woff;
-   vert_coord[1] = V_BL[1] - vert_hoff - vert_scaled_mid_height;
-   vert_coord[2] = V_BR[0] + vert_scaled_mid_width;
-   vert_coord[3] = V_BR[1] - vert_hoff - vert_scaled_mid_height;
-   vert_coord[4] = V_TL[0] + vert_woff;
-   vert_coord[5] = V_TL[1] - vert_hoff - vert_scaled_mid_height;
-   vert_coord[6] = V_TR[0] + vert_scaled_mid_width;
-   vert_coord[7] = V_TR[1] - vert_hoff - vert_scaled_mid_height;
-
-   tex_coord[0] = T_BL[0] + tex_woff;
-   tex_coord[1] = T_BL[1] + tex_hoff + tex_mid_height;
-   tex_coord[2] = T_BR[0] + tex_mid_width;
-   tex_coord[3] = T_BR[1] + tex_hoff + tex_mid_height;
-   tex_coord[4] = T_TL[0] + tex_woff;
-   tex_coord[5] = T_TL[1] + tex_hoff + tex_mid_height;
-   tex_coord[6] = T_TR[0] + tex_mid_width;
-   tex_coord[7] = T_TR[1] + tex_hoff + tex_mid_height;
-
-   dispctx->draw(&draw, userdata, video_width, video_height);
-
-   /* Bottom Right corner */
-   vert_coord[0] = V_BL[0] + vert_woff + vert_scaled_mid_width;
-   vert_coord[1] = V_BL[1] - vert_hoff - vert_scaled_mid_height;
-   vert_coord[2] = V_BR[0] + vert_scaled_mid_width + vert_woff;
-   vert_coord[3] = V_BR[1] - vert_hoff - vert_scaled_mid_height;
-   vert_coord[4] = V_TL[0] + vert_woff + vert_scaled_mid_width;
-   vert_coord[5] = V_TL[1] - vert_hoff - vert_scaled_mid_height;
-   vert_coord[6] = V_TR[0] + vert_scaled_mid_width + vert_woff;
-   vert_coord[7] = V_TR[1] - vert_hoff - vert_scaled_mid_height;
-
-   tex_coord[0] = T_BL[0] + tex_woff + tex_mid_width;
-   tex_coord[1] = T_BL[1] + tex_hoff + tex_mid_height;
-   tex_coord[2] = T_BR[0] + tex_woff + tex_mid_width;
-   tex_coord[3] = T_BR[1] + tex_hoff + tex_mid_height;
-   tex_coord[4] = T_TL[0] + tex_woff + tex_mid_width;
-   tex_coord[5] = T_TL[1] + tex_hoff + tex_mid_height;
-   tex_coord[6] = T_TR[0] + tex_woff + tex_mid_width;
-   tex_coord[7] = T_TR[1] + tex_hoff + tex_mid_height;
-
-   dispctx->draw(&draw, userdata, video_width, video_height);
+      coords.vertices = v;
+      coords.color    = vert_color;
+      dispctx->draw(&draw, userdata,
+            video_dims);
+   }
 }
 
 void gfx_display_rotate_z(gfx_display_t *p_disp,
@@ -937,15 +1117,16 @@ void gfx_display_rotate_z(gfx_display_t *p_disp,
 void gfx_display_draw_cursor(
       gfx_display_t *p_disp,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       bool cursor_visible,
       float *color, float cursor_size, uintptr_t texture,
-      float x, float y, unsigned width, unsigned height)
+      float x, float y)
 {
    gfx_display_ctx_draw_t draw;
    struct video_coords coords;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   /* What is gathered goes out before this draws */
+   gfx_display_flush_as(disp_get_ptr(), GFX_DISPLAY_FLUSH_DRAW);
 
    if (!dispctx)
       return;
@@ -960,10 +1141,10 @@ void gfx_display_draw_cursor(
    coords.lut_tex_coord = NULL;
    coords.color         = (const float*)color;
 
-   draw.x               = x - (cursor_size / 2);
-   draw.y               = (int)height - y - (cursor_size / 2);
-   draw.width           = cursor_size;
-   draw.height          = cursor_size;
+   draw.pos             = VIDEO_POS_PACK(VIDEO_PX(x - (cursor_size / 2)),
+         VIDEO_PX((int)VIDEO_SCALE_H(video_dims) - y - (cursor_size / 2)));
+   draw.dims            = VIDEO_SCALE_PACK((unsigned)cursor_size,
+         (unsigned)cursor_size);
    draw.coords          = &coords;
    draw.matrix_data     = NULL;
    draw.texture         = texture;
@@ -974,27 +1155,28 @@ void gfx_display_draw_cursor(
    if (dispctx->blend_begin)
       dispctx->blend_begin(userdata);
    if (dispctx->draw)
-      dispctx->draw(&draw, userdata, video_width, video_height);
+      dispctx->draw(&draw, userdata,
+            video_dims);
    if (dispctx->blend_end)
       dispctx->blend_end(userdata);
 }
 
 /* Returns the OSK key at a given position */
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
-      unsigned width, unsigned height)
+      unsigned dims)
 {
    unsigned i;
-   int ptr_width  = width / 11;
-   int ptr_height = height / 10;
+   int ptr_width  = VIDEO_SCALE_W(dims) / 11;
+   int ptr_height = VIDEO_SCALE_H(dims) / 10;
 
    if (ptr_width > ptr_height)
       ptr_width = ptr_height;
 
    for (i = 0; i < 44; i++)
    {
-      int line_y    = (int)((i / 11) * height / 10);
-      int ptr_x     = (int)(width / 2 - (11 * ptr_width) / 2 + (i % 11) * ptr_width);
-      int ptr_y     = (int)(height / 2 + ptr_height * 3 / 2 + line_y - ptr_height);
+      int line_y    = (int)((i / 11) * VIDEO_SCALE_H(dims) / 10);
+      int ptr_x     = (int)(VIDEO_SCALE_W(dims) / 2 - (11 * ptr_width) / 2 + (i % 11) * ptr_width);
+      int ptr_y     = (int)(VIDEO_SCALE_H(dims) / 2 + ptr_height * 3 / 2 + line_y - ptr_height);
 
       if (x > ptr_x && x < ptr_x + ptr_width
        && y > ptr_y && y < ptr_y + ptr_height)
@@ -1007,13 +1189,14 @@ int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
 void gfx_display_draw_keyboard(
       gfx_display_t *p_disp,
       void *userdata,
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       uintptr_t hover_texture,
       const font_data_t *font,
       char *grid[], unsigned id,
       unsigned text_color)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    unsigned i;
    int ptr_width, ptr_height;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
@@ -1031,26 +1214,19 @@ void gfx_display_draw_keyboard(
       0.00f, 0.00f, 0.00f, 0.85f,
    };
 
-#ifdef HAVE_MIST
-   if (steam_has_osk_open())
+   /* A native keyboard panel is already covering the screen; drawing
+    * the built-in one on top of it gives two keyboards at once. */
+   if (input_osk_native_active())
       return;
-#endif
-#ifdef HAVE_COCOATOUCH
-   if (ios_keyboard_active())
-      return;
-#endif
 
    gfx_display_draw_quad(
          p_disp,
          userdata,
-         video_width,
-         video_height,
+         video_dims,
          0,
          (int)(video_height / 2),
-         video_width,
-         video_height / 2,
-         video_width,
-         video_height,
+         VIDEO_SCALE_PACK(video_width, video_height / 2),
+         video_dims,
          (float*)osk_dark,
          NULL);
 
@@ -1073,13 +1249,11 @@ void gfx_display_draw_keyboard(
          gfx_display_draw_quad(
            p_disp,
            userdata,
-           video_width,
-           video_height,
+           video_dims,
            (int)(video_width / 2 - (11 * ptr_width) / 2 + (i % 11) * ptr_width),
            (int)(video_height / 2 + ptr_height * 3 / 2 + line_y - ptr_height),
-           ptr_width, ptr_height,
-           video_width,
-           video_height,
+           VIDEO_SCALE_PACK(ptr_width, ptr_height),
+           video_dims,
            (float*)white,
            &hover_texture);
 
@@ -1094,8 +1268,7 @@ void gfx_display_draw_keyboard(
                + (i % 11) * ptr_width + ptr_width / 2),
             (float)(video_height / 2 + ptr_height + line_y)
                + font->size / 3.0f,
-            video_width,
-            video_height,
+            video_dims,
             color,
             TEXT_ALIGN_CENTER,
             1.0f,
@@ -1107,23 +1280,20 @@ void gfx_display_draw_keyboard(
 bool gfx_display_reset_textures_list_buffer(
         uintptr_t *item, enum texture_filter_type filter_type,
         void* buffer, unsigned buffer_len, enum image_type_enum image_type,
-        unsigned *width, unsigned *height)
+        unsigned *dims)
 {
    struct texture_image ti;
 
    ti.width         = 0;
    ti.height        = 0;
    ti.pixels        = NULL;
-   ti.supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   ti.supports_rgba = gfx_surface_wants_rgba();
    ti.pix10         = false;
 
    if (image_texture_load_buffer(&ti, image_type, buffer, buffer_len))
    {
-      if (width)
-         *width     = ti.width;
-
-      if (height)
-         *height    = ti.height;
+      if (dims)
+         *dims      = VIDEO_SCALE_PACK(ti.width, ti.height);
 
       /* If the poke interface doesn't support 
          texture load then free and return false */
@@ -1143,7 +1313,7 @@ bool gfx_display_reset_textures_list_buffer(
 bool gfx_display_reset_textures_list(
       const char *texture_path, const char *iconpath,
       uintptr_t *item, enum texture_filter_type filter_type,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    char texpath[PATH_MAX_LENGTH];
    struct texture_image ti;
@@ -1151,7 +1321,7 @@ bool gfx_display_reset_textures_list(
    ti.width                      = 0;
    ti.height                     = 0;
    ti.pixels                     = NULL;
-   ti.supports_rgba              = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   ti.supports_rgba              = gfx_surface_wants_rgba();
    ti.pix10                      = false;
 
    if (!texture_path || !*texture_path)
@@ -1163,11 +1333,8 @@ bool gfx_display_reset_textures_list(
    if (!image_texture_load(&ti, texpath))
       return false;
 
-   if (width)
-      *width = ti.width;
-
-   if (height)
-      *height = ti.height;
+   if (dims)
+      *dims = VIDEO_SCALE_PACK(ti.width, ti.height);
 
    if (!video_driver_texture_load(&ti,
          filter_type, item))
@@ -1183,26 +1350,20 @@ bool gfx_display_reset_textures_list(
 
 bool gfx_display_reset_icon_texture(
       const char *texture_path,
-      uintptr_t *item, enum texture_filter_type filter_type,
-      unsigned *width, unsigned *height)
+      uintptr_t *item, enum texture_filter_type filter_type)
 {
    struct texture_image ti;
 
    ti.width                      = 0;
    ti.height                     = 0;
    ti.pixels                     = NULL;
-   ti.supports_rgba              = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   ti.supports_rgba              = gfx_surface_wants_rgba();
    ti.pix10                      = false;
 
    if (!texture_path || !*texture_path)
       return false;
    if (!image_texture_load(&ti, texture_path))
       return false;
-
-   if (width)
-      *width = ti.width;
-   if (height)
-      *height = ti.height;
 
    if (!video_driver_texture_load(&ti, filter_type, item))
    {
@@ -1235,12 +1396,28 @@ bool gfx_display_reset_icon_texture(
 #define GFX_DISPLAY_ICON_LOAD_SYNCHRONOUS
 #endif
 
+/* The mipmap choice, published for the draw-thread texture loads:
+ * every main-thread caller of the live read below refreshes it, and
+ * main callers run at least per menu rebuild, so the latch tracks
+ * the setting to within one texture's filter mode. */
+static retro_atomic_int_t gfx_display_mipmap_latch;
+
 enum texture_filter_type gfx_display_texture_filter(void)
 {
    settings_t *settings = config_get_ptr();
-   if (settings && settings->bools.menu_texture_mipmapping)
-      return TEXTURE_FILTER_MIPMAP_LINEAR;
-   return TEXTURE_FILTER_LINEAR;
+   int mip              = settings
+         && settings->bools.menu_texture_mipmapping;
+   retro_atomic_store_relaxed_int(&gfx_display_mipmap_latch, mip);
+   return mip ? TEXTURE_FILTER_MIPMAP_LINEAR : TEXTURE_FILTER_LINEAR;
+}
+
+/* For texture loads issued off the main thread - badge fetches from
+ * the widget appliers, the screenshot widget's iterate - where the
+ * live settings must not be read. */
+enum texture_filter_type gfx_display_texture_filter_latched(void)
+{
+   return retro_atomic_load_relaxed_int(&gfx_display_mipmap_latch)
+         ? TEXTURE_FILTER_MIPMAP_LINEAR : TEXTURE_FILTER_LINEAR;
 }
 
 bool gfx_display_load_icon(
@@ -1260,7 +1437,7 @@ bool gfx_display_load_icon(
    (void)generation_ptr;
    return gfx_display_reset_icon_texture(
          fullpath, target_texture,
-         gfx_display_texture_filter(), NULL, NULL);
+         gfx_display_texture_filter());
 #else
    return task_push_icon_load(
          fullpath, supports_rgba,
@@ -1280,11 +1457,15 @@ void gfx_display_init_white_texture(void)
    struct texture_image ti;
    static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
 
-   ti.width      = 1;
-   ti.height     = 1;
-   ti.pixels     = (uint32_t*)&white_data;
-   ti.compressed = NULL; /* raw pixels, not a loaded compressed texture */
-   ti.pix10      = false; /* 8-bit white; must not be read as 10-bit */
+   ti.width         = 1;
+   ti.height        = 1;
+   ti.pixels        = (uint32_t*)&white_data;
+   ti.compressed    = NULL; /* raw pixels, not a loaded compressed texture */
+   ti.pix10         = false; /* 8-bit white; must not be read as 10-bit */
+   /* Four 0xff bytes read either way, but the drivers read this field
+    * and it is the caller's to set: nothing here fills the struct
+    * beforehand, so an unset one is whatever the stack held. */
+   ti.supports_rgba = gfx_surface_wants_rgba();
 
    video_driver_texture_load(&ti,
          TEXTURE_FILTER_NEAREST, &gfx_white_texture);
@@ -1295,10 +1476,17 @@ void gfx_display_free(void)
    gfx_display_t *p_disp       = &dispgfx_st;
    video_coord_array_free(&p_disp->dispca);
 
+   free(p_disp->batch_mem);
+   p_disp->batch_mem           = NULL;
+   p_disp->batch_vertex        = NULL;
+   p_disp->batch_tex           = NULL;
+   p_disp->batch_color         = NULL;
+   p_disp->batch_quads         = 0;
+   p_disp->blend_on            = false;
+
    p_disp->flags               = 0;
    p_disp->header_height       = 0;
-   p_disp->framebuf_width      = 0;
-   p_disp->framebuf_height     = 0;
+   p_disp->framebuf_dims       = 0;
    p_disp->framebuf_pitch      = 0;
    p_disp->menu_driver_id      = MENU_DRIVER_ID_UNKNOWN;
    p_disp->dispctx             = NULL;
@@ -1314,6 +1502,11 @@ void gfx_display_init(void)
    else
       p_disp->flags             &= ~GFX_DISP_FLAG_HAS_WINDOWED;
    p_dispca->allocated           =  0;
+   {
+      unsigned i;
+      for (i = 0; i < GFX_DISPLAY_STAT_LAST; i++)
+         retro_atomic_int_init(&p_disp->stats_pub[i], 0);
+   }
 }
 
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,

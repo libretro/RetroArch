@@ -40,6 +40,7 @@
 #endif
 
 #include <retro_common_api.h>
+#include <retro_inline.h>
 
 RETRO_BEGIN_DECLS
 
@@ -69,6 +70,49 @@ size_t strlcpy(char *s, const char *source, size_t len);
 size_t strlcat(char *s, const char *source, size_t len);
 
 #endif
+
+/**
+ * @brief Copy a string \b literal, without scanning it at runtime.
+ *
+ * \c strlcpy() begins with \c strlen() of its source, and because it
+ * lives in another translation unit that scan happens at runtime even
+ * when the source is a literal whose length the compiler already knows.
+ * The scan is roughly half the cost of a \c strlcpy() of a short string
+ * -- there is a fixed setup cost before a single byte is compared -- so
+ * for a literal it is pure overhead.
+ *
+ * @param dst  Destination buffer.
+ * @param lit  A string \b literal. Anything else is a compile error:
+ *             the \c "" concatenation below only parses for a literal,
+ *             which is what keeps \c sizeof from silently measuring a
+ *             pointer instead of the characters.
+ * @param size Size of @p dst, exactly as for \c strlcpy().
+ *
+ * @return The length of @p lit, matching \c strlcpy().
+ *
+ * The destination bound is not dropped: when the literal (with its
+ * terminator) does not fit, this defers to \c strlcpy() so the copy
+ * truncates rather than overruns. With a compile-time @p size the test
+ * folds away and only one arm survives; with a runtime @p size it costs
+ * a comparison that predicts perfectly.
+ */
+static INLINE size_t strlcpy_lit_(char *s, const char *lit,
+      size_t lit_size, size_t len)
+{
+   /* lit_size is sizeof() of a literal, so it is a constant at every
+    * call site and this branch folds away; when @len is a constant too
+    * -- sizeof(buf), the common case -- the whole call becomes the
+    * stores memcpy() compiles to. */
+   if (lit_size <= len)
+   {
+      memcpy(s, lit, lit_size);
+      return lit_size - 1;
+   }
+   return strlcpy(s, lit, len);
+}
+
+#define strlcpy_lit(dst, lit, size) \
+   strlcpy_lit_((dst), "" lit, sizeof("" lit), (size))
 
 /**
  * A version of \c strndup(3) that guarantees the result will be null-terminated.

@@ -47,6 +47,7 @@ static const struct
    char s_e5aeacf9[21];
    char s_24976a5b[30];
    char s_5209cc72[36];
+   char s_e2eedfe1[22];
    char s_14ec7b7e[10];
    char s_005cc6dc[12];
    char s_00614813[17];
@@ -123,7 +124,9 @@ static const struct
    char s_f0ce97f7[34];
    char s_b92166cd[11];
    char s_5d29b870[21];
+   char s_6996339b[7];
    char s_4927597c[14];
+   char s_ddf679b9[7];
    char s_10342503[9];
    char s_d31f6d88[16];
    char s_f03e9c42[22];
@@ -383,6 +386,7 @@ static const struct
    char s_8fe41f79[39];
    char s_519cd5f8[42];
    char s_43ac80a0[15];
+   char s_aa628249[13];
    char s_ebe994b4[15];
    char s_da093426[21];
    char s_d9b00fbd[34];
@@ -523,7 +527,6 @@ static const struct
    char s_48e88dc4[154];
    char s_79b8ce4a[92];
    char s_a1a8257e[104];
-   char s_d5231783[131];
    char s_a68d6d11[50];
    char s_74022c02[115];
    char s_8abad013[71];
@@ -671,7 +674,6 @@ static const struct
    char s_3aaf6bf1[165];
    char s_5b059407[136];
    char s_7e96b5ce[49];
-   char s_3547866d[168];
    char s_8010a29e[157];
    char s_81120e85[157];
    char s_47ae341f[151];
@@ -748,6 +750,7 @@ static const struct
    "Mode WASAPI exclusiu",
    "Format WASAPI de punt flotant",
    "Mida del b\303\272fer compartit de WASAPI",
+   "Selecci\303\263 autom\303\240tica",
    "Confirmar",
    "Informaci\303\263",
    "Tancar RetroArch",
@@ -825,7 +828,9 @@ static const struct
    "Administrador de la base de dades",
    "Directoris",
    "Informaci\303\263 del disc",
+   "\303\200udio",
    "Expulsar disc",
+   "Eixida",
    "Baixades",
    "Baixar un nucli",
    "Baixador de contingut",
@@ -1085,6 +1090,7 @@ static const struct
    "Identificador del processador d'acc\303\251s",
    "Sistema operatiu del processador d'acc\303\251s",
    "Versi\303\263 de Git",
+   "Ritme de joc",
    "Font d'energia",
    "Versi\303\263 de RetroArch",
    "Controlador de contexte de v\303\255deo",
@@ -1244,8 +1250,6 @@ static const struct
    "\262dics (CRT).",
    "Canvia els men\303\272s a l\303\255nia de mode (modeline) en alta resoluci\303\263 quan no s'haj"
    "a carregat cap contingut.",
-   "Nom\303\251s per a pantalles de tub de raigs cat\303\262dics (CRT). Provar\303\240 d'usar-se la "
-   "resoluci\303\263 i refresc d'imatge exactes del nucli/joc.",
    "Canvia entre resolucions natives o panor\303\240miques.",
    "Usar par\303\240metres de freq\303\274\303\250ncia de refresc d'imatge especificats en l'arxiu d"
    "e configuraci\303\263 si es veu necessari.",
@@ -1456,8 +1460,6 @@ static const struct
    "D\303\263na un context privat als nuclis renderitzats per maquinari. Aix\303\262 alforra tragina"
    "r canvis en l'estat del maquinari entre fotogrames.",
    "Canvia els ajustos de sincronitzaci\303\263 de v\303\255deo.",
-   "Millora el rendiment del joc a costa d'un augment de la lat\303\250ncia i sacseig en la imatge. "
-   "Usar nom\303\251s si la m\303\240xima velocitat no pot ser obtinguda de cap altra manera.",
    "Establix l'al\303\247ada personalitzada de l'\303\240rea de visualitzaci\303\263. Este valor s'u"
    "sar\303\240 si ha sigut escollit \302\253Personalitzat\302\273 a l'ajust \302\253Relaci\303\263 "
    "d'aspecte\302\273.",
@@ -1517,7 +1519,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_val_blob_check[
-      (sizeof(msg_hash_val_blob) == (25754u
+      (sizeof(msg_hash_val_blob) == (25504u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -1647,6 +1649,7 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
@@ -1723,7 +1726,9 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -1983,6 +1988,7 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
@@ -2123,7 +2129,6 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
@@ -2271,7 +2276,6 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,

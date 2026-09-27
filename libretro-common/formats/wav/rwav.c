@@ -548,12 +548,25 @@ static const short rwav_ms_adapt[16] = {
 
 /* Decode one block into 'out', which must hold samplesperblock frames.
  * Returns frames produced, 0 on a malformed block. */
+/* Emit only the frames in [first, first + count) of the block, written
+ * to @out relative to @first.  A block must still be decoded from its
+ * start - the predictor state is what the samples continue from - but
+ * nothing before @first has to be *stored*, so a window landing inside
+ * a block needs no scratch buffer to be trimmed afterwards. */
+#define RWAV_PUT(idx, chan, v)                                          \
+   do {                                                                 \
+      unsigned rwav__i = (unsigned)(idx);                               \
+      if (rwav__i >= first && rwav__i - first < count)                   \
+         out[(rwav__i - first) * ch + (chan)] = (short)(v);              \
+   } while (0)
+
 static unsigned rwav_decode_block(const rwav_t *wav, const unsigned char *b,
-      size_t blen, short *out)
+      size_t blen, unsigned first, unsigned count, short *out)
 {
    unsigned ch  = wav->numchannels;
    unsigned spb = wav->samplesperblock;
    unsigned c, i;
+   unsigned end;
 
    if (wav->format == RWAV_FORMAT_IMA_ADPCM)
    {
@@ -567,7 +580,7 @@ static unsigned rwav_decode_block(const rwav_t *wav, const unsigned char *b,
          idx[c]  = b[c * 4 + 2];
          if (idx[c] > 88)
             idx[c] = 88;
-         out[c]  = (short)pred[c];
+         RWAV_PUT(0, c, pred[c]);
       }
       /* After the preamble the nibbles come in eight-sample runs per
        * channel: four bytes of one channel, then four of the next. */
@@ -599,14 +612,15 @@ static unsigned rwav_decode_block(const rwav_t *wav, const unsigned char *b,
                   if (idx[c] < 0)  idx[c] = 0;
                   if (idx[c] > 88) idx[c] = 88;
                   if (i + k < spb)
-                     out[(i + k) * ch + c] = (short)pred[c];
+                     RWAV_PUT(i + k, c, pred[c]);
                }
             }
             off += 4 * ch;
             i   += 8;
          }
       }
-      return spb;
+      end = (spb < first + count) ? spb : first + count;
+      return (end > first) ? end - first : 0;
    }
 
    /* MS ADPCM: each channel states a coefficient index, a delta and
@@ -633,8 +647,8 @@ static unsigned rwav_decode_block(const rwav_t *wav, const unsigned char *b,
          s2[c] = (short)rwav_u16(b + ch * 5 + c * 2);
       for (c = 0; c < ch; c++)
       {
-         out[c]      = (short)s2[c];
-         out[ch + c] = (short)s1[c];
+         RWAV_PUT(0, c, s2[c]);
+         RWAV_PUT(1, c, s1[c]);
       }
       off = need;
       i   = 2;
@@ -653,7 +667,7 @@ static unsigned rwav_decode_block(const rwav_t *wav, const unsigned char *b,
             delta[c] = (rwav_ms_adapt[nib] * delta[c]) / 256;
             if (delta[c] < 16)
                delta[c] = 16;
-            out[i * ch + c] = (short)p;
+            RWAV_PUT(i, c, p);
             if (c & 1)
                off++;
             if (c == ch - 1)
@@ -675,15 +689,18 @@ static unsigned rwav_decode_block(const rwav_t *wav, const unsigned char *b,
                delta[0] = (rwav_ms_adapt[nib] * delta[0]) / 256;
                if (delta[0] < 16)
                   delta[0] = 16;
-               out[i * ch] = (short)p;
+               RWAV_PUT(i, 0, p);
                i++;
             }
             off++;
          }
       }
-      return spb;
+      end = (spb < first + count) ? spb : first + count;
+      return (end > first) ? end - first : 0;
    }
 }
+
+#undef RWAV_PUT
 
 size_t rwav_decode_s16(const rwav_t *wav, const void *base, size_t frame,
       size_t frames, short *out)
@@ -727,7 +744,6 @@ size_t rwav_decode_s16(const rwav_t *wav, const void *base, size_t frame,
       /* Start at the block holding 'frame' and step forward within
        * it: a block restates its own predictor, so nothing before it
        * has to be decoded. */
-      static short blk[8192 * 16];
       unsigned spb = wav->samplesperblock;
       while (done < frames)
       {
@@ -738,31 +754,13 @@ size_t rwav_decode_s16(const rwav_t *wav, const void *base, size_t frame,
          unsigned got, take;
          if (boff + wav->blockalign > wav->subchunk2size)
             break;
-         if (within == 0 && frames - done >= (size_t)spb)
-         {
-            /* The window covers this whole block: decode straight
-             * into the caller's buffer.  The whole-file decode the
-             * mixer does lands here for every block, so the static
-             * scratch below - and with it the reentrancy caveat -
-             * only serves windows that start or end mid-block. */
-            got = rwav_decode_block(wav, d + boff, wav->blockalign,
-                  out + done * ch);
-            if (!got)
-               break;
-            done += got;
-            continue;
-         }
-         if ((size_t)spb * ch > sizeof(blk) / sizeof(blk[0]))
+         take = (frames - done > (size_t)spb)
+            ? spb : (unsigned)(frames - done);
+         got  = rwav_decode_block(wav, d + boff, wav->blockalign,
+               within, take, out + done * ch);
+         if (!got)
             break;
-         got = rwav_decode_block(wav, d + boff, wav->blockalign, blk);
-         if (!got || within >= got)
-            break;
-         take = got - within;
-         if ((size_t)take > frames - done)
-            take = (unsigned)(frames - done);
-         memcpy(out + done * ch, blk + (size_t)within * ch,
-               (size_t)take * ch * sizeof(short));
-         done += take;
+         done += got;
       }
       return done;
    }
@@ -790,8 +788,13 @@ size_t rwav_decode_s16(const rwav_t *wav, const void *base, size_t frame,
             }
             default:
                if (wav->bitspersample == 8)
+                  /* 8-bit PCM is unsigned with a bias of 128, so the
+                   * centred value is negative for the lower half of
+                   * the range and shifting it left is undefined.
+                   * Multiply instead; the result is identical on every
+                   * representation and defined on all of them. */
                   out[done * ch + c] =
-                        (short)(((int)p[c] - 128) << 8);
+                        (short)(((int)p[c] - 128) * 256);
                else if (wav->bitspersample == 24)
                   out[done * ch + c] = rwav_s24_to_s16(p + c * 3);
                else
@@ -801,4 +804,116 @@ size_t rwav_decode_s16(const rwav_t *wav, const void *base, size_t frame,
       }
    }
    return done;
+}
+
+/* ---- windowed reading ------------------------------------------------
+ *
+ * rwav_decode_s16 addresses frames, but a caller streaming a file has
+ * bytes: it must know which ones a frame range needs before it can
+ * fetch them.  For the uncompressed and companded formats that is
+ * blockalign arithmetic the caller could do itself; for the block-coded
+ * ones it is not, because a frame lives inside a coded block that only
+ * rwav can locate, and fetching the wrong span yields silence or noise
+ * rather than an error.  So the mapping is stated here once.
+ */
+
+static int rwav_block_coded(const rwav_t *wav)
+{
+   return    wav->format == RWAV_FORMAT_MS_ADPCM
+          || wav->format == RWAV_FORMAT_IMA_ADPCM;
+}
+
+int rwav_frame_extent(const rwav_t *wav, size_t frame, size_t frames,
+      size_t *offset, size_t *length)
+{
+   size_t first, last, off, len;
+
+   if (!wav || !wav->blockalign || frame >= wav->numsamples)
+      return 0;
+   if (frames > wav->numsamples - frame)
+      frames = wav->numsamples - frame;
+   if (!frames)
+      return 0;
+
+   if (rwav_block_coded(wav))
+   {
+      unsigned spb = wav->samplesperblock;
+      if (!spb)
+         return 0;
+      first = frame / spb;
+      last  = (frame + frames - 1) / spb;
+   }
+   else
+   {
+      first = frame;
+      last  = frame + frames - 1;
+   }
+
+   off = (size_t)wav->blockalign * first;
+   len = (size_t)wav->blockalign * (last - first + 1);
+   /* A declared payload may overrun the file; subchunk2size is already
+    * clamped to what is really there, so bound against it rather than
+    * describing bytes the caller cannot read. */
+   if (off >= wav->subchunk2size)
+      return 0;
+   if (len > wav->subchunk2size - off)
+      len = wav->subchunk2size - off;
+
+   if (offset)
+      *offset = wav->dataoffset + off;
+   if (length)
+      *length = len;
+   return 1;
+}
+
+size_t rwav_decode_s16_at(const rwav_t *wav, const void *chunk,
+      size_t chunk_offset, size_t frame, size_t frames, short *out)
+{
+   rwav_t h;
+   size_t want, rel;
+
+   if (!wav || !chunk || !out || !wav->blockalign)
+      return 0;
+   if (frame >= wav->numsamples)
+      return 0;
+   if (frames > wav->numsamples - frame)
+      frames = wav->numsamples - frame;
+   if (!frames)
+      return 0;
+
+   /* Re-express the payload as though the chunk were the whole file:
+    * the decode below is position-independent once told where the data
+    * starts and how much of it there is. */
+   h = *wav;
+   h.dataoffset = 0;
+   h.samples    = NULL;
+
+   if (rwav_block_coded(wav))
+   {
+      unsigned spb   = wav->samplesperblock;
+      size_t   first = frame / spb;
+      if (!spb)
+         return 0;
+      /* The chunk must begin on the block the frame lives in - that is
+       * what rwav_frame_extent hands back - because the block carries
+       * the predictor state the frame continues from. */
+      if (chunk_offset != wav->dataoffset + (size_t)wav->blockalign * first)
+         return 0;
+      rel  = frame - first * (size_t)spb;
+      want = rel + frames;
+   }
+   else
+   {
+      if (chunk_offset != wav->dataoffset + (size_t)wav->blockalign * frame)
+         return 0;
+      rel  = 0;
+      want = frames;
+   }
+
+   h.numsamples    = want;
+   h.subchunk2size = (size_t)wav->blockalign
+      * (rwav_block_coded(wav)
+            ? (want + wav->samplesperblock - 1) / wav->samplesperblock
+            : want);
+   return rwav_decode_s16(&h, chunk, rel, frames, out);
 }

@@ -127,6 +127,11 @@ bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, voi
 
 const char* video_shader_get_current_shader_preset(void);
 
+/* Cancels and drains the task queue (bounded) so in-flight tasks
+ * retire while the subsystems their callbacks reach are alive.
+ * main_exit() runs it first; exposed for the exit-drain harness. */
+void retroarch_drain_tasks_for_exit(void);
+
 /**
  * retroarch_main_init:
  * @argc                 : Count of (commandline) arguments.

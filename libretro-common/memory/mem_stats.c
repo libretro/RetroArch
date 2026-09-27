@@ -167,7 +167,10 @@ typedef struct
 
 static void mem_stats_proc_meminfo(uint64_t *total, uint64_t *avail)
 {
-   char    buf[2048];
+   /* Heap-held: /proc parsing is Linux-only today, but this is a
+    * libretro-common entry point and 2 KiB of stack is the whole
+    * budget on the smallest targets the tree serves. */
+   char   *buf;
    char   *line;
    ssize_t got;
    int     need = 6;
@@ -178,10 +181,18 @@ static void mem_stats_proc_meminfo(uint64_t *total, uint64_t *avail)
 
    if (fd < 0)
       return;
-   got = read(fd, buf, sizeof(buf) - 1);
+   if (!(buf = (char*)malloc(2048)))
+   {
+      close(fd);
+      return;
+   }
+   got = read(fd, buf, 2048 - 1);
    close(fd);
    if (got <= 0)
+   {
+      free(buf);
       return;
+   }
    buf[got] = '\0';
 
    line = buf;
@@ -226,11 +237,11 @@ static void mem_stats_proc_meminfo(uint64_t *total, uint64_t *avail)
    if (total)
       *total = (uint64_t)mem_total * 1024;
    if (!avail)
-      return;
+      { free(buf); return; }
    if (have_avail)
    {
       *avail = (uint64_t)mem_available * 1024;
-      return;
+      { free(buf); return; }
    }
    /* Subtracting shmem from the sum on unsigned longs wraps to an
     * enormous figure if it ever exceeds it, and an enormous figure here
@@ -240,6 +251,43 @@ static void mem_stats_proc_meminfo(uint64_t *total, uint64_t *avail)
       unsigned long sum = mem_free + buffers + cached;
       *avail = (uint64_t)((sum > shmem) ? (sum - shmem) : 0) * 1024;
    }
+   free(buf);
+}
+
+#endif
+
+#if defined(MEM_STATS_PS2)
+/* Retail has 32MB, a TOOL devkit has 128MB, and a retail unit switched
+ * into 64MiB mode has something in between; the kernel knows which, and
+ * has since the first BIOS, so ask it rather than assume the common
+ * case.  The literal is only a fallback for a kernel that answers with
+ * nothing - assuming retail understates a bigger machine, which is the
+ * safe direction for a caller sizing an allocation against it. */
+#define MEM_STATS_PS2_RAM_FALLBACK  (32 * 1024 * 1024)
+/* Three grabs, as before.  Each takes the largest block still inside
+ * the budget, so what a fourth would find is fragmentation rather than
+ * memory. */
+#define MEM_STATS_PS2_PROBES        3
+
+/* ps2sdk's kernel.h declares this, but that header is the whole EE
+ * kernel API and this file wants one prototype out of it - and it is a
+ * header no runner has, so taking it costs the tree the one platform arm
+ * that could be syntax checked anywhere.  The function itself is four
+ * instructions in libkernel, which every EE build already links for
+ * crt0: li $3, __NR_GetMemorySize (0x7f); syscall; jr $ra; nop.  s32 is
+ * int on this target, so this is that declaration and nothing else. */
+extern int GetMemorySize(void);
+
+static uint64_t mem_stats_ps2_ram(void)
+{
+   static uint64_t cached = 0;
+   if (!cached)
+   {
+      int size = GetMemorySize();
+      cached   = (size > 0) ? (uint64_t)size
+                            : (uint64_t)MEM_STATS_PS2_RAM_FALLBACK;
+   }
+   return cached;
 }
 #endif
 
@@ -303,7 +351,7 @@ uint64_t mem_stats_total(void)
     * "total" that means anything in a wasm process. */
    return (uint64_t)emscripten_get_heap_max();
 #elif defined(MEM_STATS_PS2)
-   return 32 * 1024 * 1024;
+   return mem_stats_ps2_ram();
 #elif defined(MEM_STATS_APPLE)
 #if !TARGET_OS_IPHONE
    {
@@ -441,31 +489,44 @@ uint64_t mem_stats_free(void)
     * poll it. */
    {
       static uint64_t cached = 0;
-      uint64_t free_mem;
-      size_t s0;
-      void *p1 = NULL, *p2 = NULL, *p3 = NULL;
+      static int      probed = 0;
+      uint64_t free_mem      = 0;
+      uint64_t budget        = mem_stats_ps2_ram();
+      void    *held[MEM_STATS_PS2_PROBES];
+      size_t   s0;
+      int      i;
 
-      if (cached)
+      if (probed)
          return cached;
-      s0 = 32 * 1024 * 1024;
-      while (s0 && (p1 = malloc(s0)) == NULL)
-         s0 >>= 1;
-      free_mem = s0;
-      s0 = 32 * 1024 * 1024;
-      while (s0 && (p2 = malloc(s0)) == NULL)
-         s0 >>= 1;
-      free_mem += s0;
-      s0 = 32 * 1024 * 1024;
-      while (s0 && (p3 = malloc(s0)) == NULL)
-         s0 >>= 1;
-      free_mem += s0;
-      if (p1)
-         free(p1);
-      if (p2)
-         free(p2);
-      if (p3)
-         free(p3);
+
+      for (i = 0; i < MEM_STATS_PS2_PROBES; i++)
+         held[i] = NULL;
+
+      /* Each grab starts from what is left of the budget rather than
+       * from the full 32MB.  Restarting every grab at the total was
+       * what let three of them add up to 96MB - three times the figure
+       * mem_stats_total() reports - and a caller doing the obvious
+       * total-minus-free then underflowed its unsigned arithmetic into
+       * an enormous number. */
+      for (i = 0; i < MEM_STATS_PS2_PROBES && budget; i++)
+      {
+         s0 = (size_t)budget;
+         while (s0 && (held[i] = malloc(s0)) == NULL)
+            s0 >>= 1;
+         if (!s0)
+            break;
+         free_mem += (uint64_t)s0;
+         budget   -= (uint64_t)s0;
+      }
+
+      for (i = 0; i < MEM_STATS_PS2_PROBES; i++)
+      {
+         if (held[i])
+            free(held[i]);
+      }
+
       cached = free_mem;
+      probed = 1;
       return cached;
    }
 #elif defined(MEM_STATS_APPLE)
@@ -480,12 +541,17 @@ uint64_t mem_stats_free(void)
       vm_statistics_data_t   vm_stat;
       mach_msg_type_number_t count     = HOST_VM_INFO_COUNT;
       mach_port_t            host      = mach_host_self();
+      uint64_t               avail     = 0;
       if (     host_page_size(host, &page_size) == KERN_SUCCESS
             && host_statistics(host, HOST_VM_INFO, (host_info_t)&vm_stat,
                   &count) == KERN_SUCCESS)
-         return ((uint64_t)vm_stat.free_count
+         avail = ((uint64_t)vm_stat.free_count
                + (uint64_t)vm_stat.inactive_count) * (uint64_t)page_size;
-      return 0;
+      /* mach_host_self() hands back a send right the caller owns. Both
+       * exits used to return without releasing it, leaking a user
+       * reference on the host port every time the memory readout ran. */
+      mach_port_deallocate(mach_task_self(), host);
+      return avail;
    }
 #else /* the iOS family */
    {

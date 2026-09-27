@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include <boolean.h>
 
 #include <compat/msvc.h>
@@ -40,11 +41,14 @@
 #endif
 #endif
 
+#include <retro_atomic.h>
+
 #ifdef HAVE_MMDEVICE
 #include "../common/mmdevice_common.h"
 #include "../common/mmdevice_common_inline.h"
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #endif
 #endif
 
@@ -68,11 +72,11 @@ typedef struct xaudio2 xaudio2_t;
  * the nonblocking clamp.  At a full queue this reports 0 rather than
  * underflowing size_t on the bufptr subtraction; the staging remainder
  * it forgoes there cannot be flushed without blocking anyway. */
-#define XAUDIO2_WRITE_AVAILABLE(handle) \
-   (((handle)->buffers < MAX_BUFFERS - 1) \
-    ? ((handle)->bufsize * (MAX_BUFFERS - (handle)->buffers - 1) \
-       - (handle)->bufptr) \
-    : 0)
+/* Bytes-writable computation lives in xaudio2_write_available()
+ * below the struct definition: it reads the cross-thread `buffers`
+ * counter exactly once, with acquire semantics.  The macro it
+ * replaces read the field twice, so the occupancy report could mix
+ * two different counter values. */
 #define XAUDIO_TIMEOUT   256
 
 enum xa_flags
@@ -144,7 +148,7 @@ struct xaudio2
    xaudio2() :
       buf(0), pXAudio2(0), pMasterVoice(0),
       pSourceVoice(0), bufsize(0), bufptr(0),
-      write_buffer(0), hEvent(0), buffers(0)
+      write_buffer(0), buffers(0)
    {}
 
    virtual ~xaudio2() {}
@@ -152,8 +156,11 @@ struct xaudio2
    STDMETHOD_(void, OnBufferStart) (void *) {}
    STDMETHOD_(void, OnBufferEnd) (void *)
    {
-      InterlockedDecrement((LONG volatile*)&buffers);
-      SetEvent(hEvent);
+      /* XAudio2's engine thread: one atomic and a gated wake - no
+       * syscall unless the writer is actually parked, where SetEvent
+       * was one per buffer regardless. */
+      retro_atomic_fetch_sub_int(&buffers, 1);
+      retro_eventcount_notify(&park);
    }
    STDMETHOD_(void, OnLoopEnd) (void *) {}
    STDMETHOD_(void, OnStreamEnd) () {}
@@ -168,7 +175,8 @@ struct xaudio2
    IXAudio2 *pXAudio2;
    IXAudio2MasteringVoice *pMasterVoice;
    IXAudio2SourceVoice *pSourceVoice;
-   WAVEFORMATEX wf;
+   WAVEFORMATEXTENSIBLE wf;
+   uint32_t layout;   /* the frontend's mask the source voice carries */
 
    /* Producer-only (emulator thread).  bufptr and write_buffer are
     * stored on every chunk copied in xa_write. */
@@ -182,20 +190,35 @@ struct xaudio2
    char _pad0[XA_CACHE_LINE];
 
    /* Touched by the XAudio2 engine thread: OnBufferEnd decrements
-    * `buffers` and signals `hEvent`.  The producer reads both. */
-   HANDLE hEvent;
-   unsigned long volatile buffers;
+    * `buffers` and notifies `park`.  The producer reads both.
+    * retro_atomic rather than raw Interlocked + volatile: the
+    * Interlocked RMWs were full barriers, but the producer-side
+    * plain volatile reads carried no acquire ordering, which is
+    * real on Windows-on-ARM (MSVC defaults to /volatile:iso on
+    * ARM64, unlike /volatile:ms on x86/x64). */
+   /* The writer's park; OnBufferEnd notifies. */
+   retro_eventcount_t park;
+   retro_atomic_int_t buffers;
 
    char _pad1[XA_CACHE_LINE];
 };
+
+static INLINE size_t xaudio2_write_available(xaudio2_t *handle)
+{
+   int buffers = retro_atomic_load_acquire_int(&handle->buffers);
+   if (buffers < MAX_BUFFERS - 1)
+      return handle->bufsize * (size_t)(MAX_BUFFERS - buffers - 1)
+            - handle->bufptr;
+   return 0;
+}
 
 #if !defined(__cplusplus) || defined(CINTERFACE)
 static void WINAPI xa_voice_on_buffer_end(IXAudio2VoiceCallback *handle_, void *data)
 {
    xaudio2_t *handle = (xaudio2_t*)handle_;
    (void)data;
-   InterlockedDecrement((LONG volatile*)&handle->buffers);
-   SetEvent(handle->hEvent);
+   retro_atomic_fetch_sub_int(&handle->buffers, 1);
+   retro_eventcount_notify(&handle->park);
 }
 
 static void WINAPI xa_dummy_voidp(IXAudio2VoiceCallback *handle, void *data) { (void)handle; (void)data; }
@@ -214,25 +237,43 @@ const struct IXAudio2VoiceCallbackVtbl xa_voice_vtable = {
 };
 #endif
 
-static void xaudio2_set_format(WAVEFORMATEX *wf,
-      bool float_fmt, unsigned channels, unsigned rate)
+/* The source voice's format. Stereo is the plain WAVEFORMATEX it
+ * always was; a wider layout is a WAVEFORMATEXTENSIBLE with the
+ * speaker mask - the frontend's bits are Windows' own - so XAudio2
+ * knows which channel is which and routes each to the mastering
+ * voice's speaker of that position, mixing where the device lacks
+ * one. Without the mask it would assume a default layout for the
+ * count, and six channels' rear pair would be the back pair whatever
+ * was meant. */
+static void xaudio2_set_format(WAVEFORMATEXTENSIBLE *wfx,
+      bool float_fmt, unsigned channels, uint32_t layout, unsigned rate)
 {
+   WAVEFORMATEX *wf      = &wfx->Format;
    WORD wBitsPerSample   = float_fmt ? 32 : 16;
    WORD nBlockAlign      = (channels * wBitsPerSample) / 8;
    DWORD nAvgBytesPerSec = rate * nBlockAlign;
 
-   if (float_fmt)
-      wf->wFormatTag     = WAVE_FORMAT_IEEE_FLOAT;
-   else
-      wf->wFormatTag     = WAVE_FORMAT_PCM;
-
+   memset(wfx, 0, sizeof(*wfx));
    wf->nChannels         = channels;
    wf->nSamplesPerSec    = rate;
    wf->nAvgBytesPerSec   = nAvgBytesPerSec;
    wf->nBlockAlign       = nBlockAlign;
    wf->wBitsPerSample    = wBitsPerSample;
 
-   wf->cbSize            = 0;
+   if (channels > 2)
+   {
+      wf->wFormatTag              = WAVE_FORMAT_EXTENSIBLE;
+      wf->cbSize                  = sizeof(WAVEFORMATEXTENSIBLE) - sizeof(WAVEFORMATEX);
+      wfx->Samples.wValidBitsPerSample = wBitsPerSample;
+      wfx->dwChannelMask          = (DWORD)layout;
+      wfx->SubFormat              = float_fmt
+            ? KSDATAFORMAT_SUBTYPE_IEEE_FLOAT : KSDATAFORMAT_SUBTYPE_PCM;
+   }
+   else
+   {
+      wf->wFormatTag        = float_fmt ? WAVE_FORMAT_IEEE_FLOAT : WAVE_FORMAT_PCM;
+      wf->cbSize            = 0;
+   }
 }
 
 static void xaudio2_free(xaudio2_t *handle)
@@ -257,8 +298,7 @@ static void xaudio2_free(xaudio2_t *handle)
       IXAudio2_Release(handle->pXAudio2);
    }
 
-   if (handle->hEvent)
-      CloseHandle(handle->hEvent);
+   retro_eventcount_free(&handle->park);
 
    free(handle->buf);
 
@@ -354,10 +394,11 @@ static void *xa_device_list_new(void *u)
 }
 
 static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
+      uint32_t layout,
       unsigned latency, size_t len, bool float_fmt, const char *dev_id)
 {
    int32_t idx_found        = -1;
-   WAVEFORMATEX desired_wf  = {0};
+   WAVEFORMATEXTENSIBLE desired_wf;
    struct string_list *list = NULL;
    xaudio2_t *handle        = NULL;
 
@@ -370,6 +411,11 @@ static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
    handle = new xaudio2;
 #else
    handle = (xaudio2_t*)calloc(1, sizeof(*handle));
+   /* calloc zero-fill is not a portable initializer for an atomic -
+    * initialize it explicitly.  (The C++ path handles this in the
+    * constructor's mem-initializer list.) */
+   if (handle)
+      retro_atomic_int_init(&handle->buffers, 0);
 #endif
 
    if (!handle)
@@ -389,14 +435,14 @@ static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
    if (FAILED(XAudio2Create(&handle->pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR)))
       goto error;
 
-   xaudio2_set_format(&desired_wf, float_fmt, channels, *rate);
+   xaudio2_set_format(&desired_wf, float_fmt, channels, layout, *rate);
    RARCH_DBG("[XAudio2] Requesting %u-bit %u-channel client with %s samples at %uHz %ums.\n",
-         desired_wf.wBitsPerSample,
-         desired_wf.nChannels,
-         xaudio2_wave_format_name(&desired_wf),
-         desired_wf.nSamplesPerSec,
+         desired_wf.Format.wBitsPerSample,
+         desired_wf.Format.nChannels,
+         xaudio2_wave_format_name(&desired_wf.Format),
+         desired_wf.Format.nSamplesPerSec,
          latency);
-   *rate = desired_wf.nSamplesPerSec;
+   *rate = desired_wf.Format.nSamplesPerSec;
 
    if (dev_id)
    {
@@ -421,8 +467,8 @@ static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
                    * previously hardcoded float, silently overriding an
                    * int16 negotiation whenever a named device was
                    * matched. */
-                  xaudio2_set_format(&desired_wf, float_fmt, channels, new_rate);
-                  *rate = desired_wf.nSamplesPerSec;
+                  xaudio2_set_format(&desired_wf, float_fmt, channels, layout, new_rate);
+                  *rate = desired_wf.Format.nSamplesPerSec;
                }
                break;
             }
@@ -474,16 +520,16 @@ static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
 #endif
 
    if (FAILED(IXAudio2_CreateSourceVoice(handle->pXAudio2,
-               &handle->pSourceVoice, &desired_wf,
+               &handle->pSourceVoice, &desired_wf.Format,
                XAUDIO2_VOICE_NOSRC, XAUDIO2_DEFAULT_FREQ_RATIO,
                (IXAudio2VoiceCallback*)handle, 0, 0)))
       goto error;
 
-   handle->hEvent  = CreateEvent(0, FALSE, FALSE, 0);
-   if (!handle->hEvent)
+   if (!retro_eventcount_init(&handle->park))
       goto error;
 
    handle->wf      = desired_wf;
+   handle->layout  = layout;
    handle->bufsize = len / MAX_BUFFERS;
    handle->buf     = (uint8_t*)calloc(1, handle->bufsize * MAX_BUFFERS);
    if (!handle->buf)
@@ -505,9 +551,11 @@ error:
 }
 
 static void *xa_init(const char *dev_id, unsigned rate, unsigned latency,
-      unsigned block_frames, unsigned *new_rate)
+       unsigned *new_rate)
 {
    size_t bufsize;
+   uint32_t layout;
+   unsigned channels;
    bool want_float = (config_get_ptr()->uints.audio_format_negotiation
          == AUDIO_FORMAT_NEGOTIATION_FLOAT);
    xa_t *xa    = (xa_t*)calloc(1, sizeof(*xa));
@@ -518,10 +566,14 @@ static void *xa_init(const char *dev_id, unsigned rate, unsigned latency,
    if (latency < 8)
       latency  = 8; /* Do not allow shenanigans. */
 
+   /* The layout the frontend asked for; XAudio2 routes its positions
+    * to the mastering voice's speakers, so what is asked is carried. */
+   layout      = audio_driver_requested_layout();
+   channels    = audio_layout_channels(layout);
    bufsize     = latency * rate / 1000;
-   xa->bufsize = bufsize * 2 * (want_float ? sizeof(float) : sizeof(int16_t));
+   xa->bufsize = bufsize * channels * (want_float ? sizeof(float) : sizeof(int16_t));
 
-   if (!(xa->xa = xaudio2_new(&rate, 2, latency, xa->bufsize, want_float, dev_id)))
+   if (!(xa->xa = xaudio2_new(&rate, channels, layout, latency, xa->bufsize, want_float, dev_id)))
    {
       RARCH_ERR("[XAudio2] Failed to init driver.\n");
       free(xa);
@@ -550,7 +602,7 @@ static ssize_t xa_write(void *data, const void *s, size_t len)
 
    if (xa->flags & XA2_FLAG_NONBLOCK)
    {
-      size_t avail = XAUDIO2_WRITE_AVAILABLE(xa->xa);
+      size_t avail = xaudio2_write_available(xa->xa);
 
       if (avail == 0)
          return 0;
@@ -577,9 +629,25 @@ static ssize_t xa_write(void *data, const void *s, size_t len)
       {
          XAUDIO2_BUFFER xa2buffer;
 
-         while (handle->buffers == MAX_BUFFERS - 1)
-            if (!(WaitForSingleObject(handle->hEvent, XAUDIO_TIMEOUT) == WAIT_OBJECT_0))
-               return -1;
+         /* A period with no completion is a voice that has stopped, not
+          * a device gone: the bytes already staged stay staged and are
+          * submitted on the next write that finds a slot, and this one
+          * returns what it took. A failed submit below is what -1 is
+          * for. */
+         while (retro_atomic_load_acquire_int(&handle->buffers)
+               == MAX_BUFFERS - 1)
+         {
+            int key = retro_eventcount_prepare_wait(&handle->park);
+            if (retro_atomic_load_acquire_int(&handle->buffers)
+                  != MAX_BUFFERS - 1)
+            {
+               retro_eventcount_cancel_wait(&handle->park);
+               break;
+            }
+            if (!retro_eventcount_commit_wait_timeout(&handle->park,
+                     key, (int64_t)XAUDIO_TIMEOUT * 1000))
+               return (ssize_t)_len;
+         }
 
          xa2buffer.Flags      = 0;
          xa2buffer.AudioBytes = handle->bufsize;
@@ -599,7 +667,7 @@ static ssize_t xa_write(void *data, const void *s, size_t len)
             return 0;
          }
 
-         InterlockedIncrement((LONG volatile*)&handle->buffers);
+         retro_atomic_fetch_add_int(&handle->buffers, 1);
          handle->bufptr       = 0;
          handle->write_buffer = (handle->write_buffer + 1) & MAX_BUFFERS_MASK;
       }
@@ -644,11 +712,17 @@ static bool xa_start(void *data, bool is_shutdown)
    return true;
 }
 
+static uint32_t xa_layout(void *data)
+{
+   xa_t *xa = (xa_t*)data;
+   return (xa && xa->xa) ? xa->xa->layout : AUDIO_LAYOUT_STEREO;
+}
+
 static bool xa_use_float(void *data)
 {
    xa_t *xa              = (xa_t*)data;
    xaudio2_t *handle     = xa->xa;
-   return (handle && handle->wf.wBitsPerSample == 32);
+   return (handle && handle->wf.Format.wBitsPerSample == 32);
 }
 
 static void xa_free(void *data)
@@ -667,11 +741,58 @@ static void xa_free(void *data)
    free(xa);
 }
 
+/* Sleep on the event the voice's OnBufferEnd callback sets until at
+ * least len bytes fit across the queued buffers, capped at half the
+ * total so the wait always ends. Returns the free space then, or 0 when
+ * the event stays silent past the timeout. */
+static size_t xa_wait_writable(void *data, size_t len)
+{
+   xa_t *xa          = (xa_t*)data;
+   xaudio2_t *handle = xa->xa;
+   size_t total      = handle->bufsize * (size_t)(MAX_BUFFERS - 1);
+   size_t avail;
+   int    laps       = 8;
+
+   if (len > total / 2)
+      len = total / 2;
+
+   for (;;)
+   {
+      avail = xaudio2_write_available(handle);
+      if (avail >= len)
+         return avail;
+      /* Each wait is bounded; this bounds the loop, for a voice that
+       * keeps completing buffers but never frees enough. */
+      if (--laps < 0)
+         return 0;
+      {
+         int key = retro_eventcount_prepare_wait(&handle->park);
+         if (xaudio2_write_available(handle) >= len)
+         {
+            retro_eventcount_cancel_wait(&handle->park);
+            continue;
+         }
+         if (!retro_eventcount_commit_wait_timeout(&handle->park,
+                  key, (int64_t)XAUDIO_TIMEOUT * 1000))
+            return 0;
+      }
+   }
+}
+
 static size_t xa_write_avail(void *data)
 {
    xa_t *xa = (xa_t*)data;
-   return XAUDIO2_WRITE_AVAILABLE(xa->xa);
+   return xaudio2_write_available(xa->xa);
 }
+
+/* No frames_consumed(): XAudio2 exposes no device clock. SamplesPlayed
+ * counts our samples rendered and pauses whenever the voice runs dry -
+ * for a stretch with a non-blocking writer, for a moment between bursts
+ * even with a blocking one - while the device runs on. On a pin that
+ * reads +11 ppm through asio, WASAPI exclusive and WASAPI shared it read
+ * -1569 non-blocking and -1480 climbing to -754 blocking: a count
+ * diluting over a growing baseline, not a clock. The sink rate estimate
+ * leaves xaudio alone; dsound and wasapi report on the same devices. */
 
 static size_t xa_buffer_size(void *data)
 {
@@ -703,5 +824,9 @@ audio_driver_t audio_xa = {
    xa_device_list_free,
    xa_write_avail,
    xa_buffer_size,
-   NULL /* write_raw */
+   NULL, /* write_raw */
+   xa_wait_writable,
+   NULL, /* frames_consumed */
+   NULL, /* underruns */
+   xa_layout
 };

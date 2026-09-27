@@ -35,6 +35,7 @@
 
 #elif !defined(VITA) && !defined(GEKKO)
 #if defined(WANT_IFADDRS)
+#include <net/if.h>
 #include <compat/ifaddrs.h>
 #elif !defined(HAVE_LIBNX) && !defined(_3DS)
 #include <ifaddrs.h>
@@ -45,6 +46,21 @@
 #endif
 
 #include <net/net_ifinfo.h>
+#include <compat/strl.h>
+
+/* IFF_UP is 0x1 on every system that has interface flags at all -
+ * BSD, Linux and Darwin alike - but it is not always visible. Apple
+ * hides it with the rest of the BSD names when the strict POSIX
+ * namespace is in effect, and griffin is one translation unit, so
+ * whether it is in effect by the time this file is reached depends on
+ * what was included before it rather than on anything here.
+ *
+ * Rather than chase that ordering, the flag is defined when it is
+ * missing. Where the platform declares it, the platform's own
+ * definition stands and this does nothing. */
+#ifndef IFF_UP
+#define IFF_UP 0x1
+#endif
 
 bool net_ifinfo_new(net_ifinfo_t *list)
 {
@@ -167,13 +183,13 @@ failure:
       return false;
    }
 
-   strlcpy(list->entries[0].name, "lo",        sizeof(list->entries[0].name));
-   strlcpy(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
+   strlcpy_lit(list->entries[0].name, "lo",        sizeof(list->entries[0].name));
+   strlcpy_lit(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
    list->size = 1;
 
    if (!sceNetCtlInetGetInfo(SCE_NETCTL_INFO_GET_IP_ADDRESS, &info))
    {
-      strlcpy(list->entries[1].name, "wlan", sizeof(list->entries[1].name));
+      strlcpy_lit(list->entries[1].name, "wlan", sizeof(list->entries[1].name));
       strlcpy(list->entries[1].host, info.ip_address,
          sizeof(list->entries[1].host));
       list->size++;
@@ -188,8 +204,8 @@ failure:
       return false;
    }
 
-   strlcpy(list->entries[0].name, "lo", sizeof(list->entries[0].name));
-   strlcpy(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
+   strlcpy_lit(list->entries[0].name, "lo", sizeof(list->entries[0].name));
+   strlcpy_lit(list->entries[0].host, "127.0.0.1", sizeof(list->entries[0].host));
    list->size = 1;
 
 #if defined(HAVE_LIBNX)
@@ -228,36 +244,53 @@ failure:
    struct net_ifinfo_entry *entry;
    size_t         interfaces = 0;
    struct ifaddrs *addresses = NULL;
+   bool           require_up = true;
 
    list->entries             = NULL;
 
    if (getifaddrs(&addresses) || !addresses)
       goto failure;
 
-   /* Count the number of valid interfaces first. */
-   addr                      = addresses;
-
-   do
+   /* Count the number of valid interfaces first.
+    *
+    * Reading the interface flags is a privileged operation on some
+    * platforms. Where it is refused every entry reports no flags at
+    * all, which is indistinguishable from every interface being down;
+    * take a second look without the flag test rather than report that
+    * the machine has no network at all. An address only reaches us
+    * here because it is configured on an interface. */
+   for (;;)
    {
-      if (!addr->ifa_addr)
-         continue;
+      addr       = addresses;
+      interfaces = 0;
+
+      do
+      {
+         if (!addr->ifa_addr)
+            continue;
 #ifndef WIIU
-      if (!(addr->ifa_flags & IFF_UP))
-         continue;
+         if (require_up && !(addr->ifa_flags & IFF_UP))
+            continue;
 #endif
 
-      switch (addr->ifa_addr->sa_family)
-      {
-         case AF_INET:
+         switch (addr->ifa_addr->sa_family)
+         {
+            case AF_INET:
 #ifdef HAVE_INET6
-         case AF_INET6:
+            case AF_INET6:
 #endif
-            interfaces++;
-            break;
-         default:
-            break;
-      }
-   } while ((addr = addr->ifa_next));
+               interfaces++;
+               break;
+            default:
+               break;
+         }
+      } while ((addr = addr->ifa_next));
+
+      if (interfaces || !require_up)
+         break;
+
+      require_up = false;
+   }
 
    if (!interfaces)
       goto failure;
@@ -279,7 +312,7 @@ failure:
       if (!addr->ifa_addr)
          continue;
 #ifndef WIIU
-      if (!(addr->ifa_flags & IFF_UP))
+      if (require_up && !(addr->ifa_flags & IFF_UP))
          continue;
 #endif
 

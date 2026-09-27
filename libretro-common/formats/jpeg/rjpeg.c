@@ -23,13 +23,12 @@
 /* Baseline and progressive JPEG decoder.
  *
  * What it implements: baseline sequential and progressive JFIF/EXIF
- * streams, 8-bit precision, grayscale and YCbCr with all common chroma
- * subsamplings, restart markers, and BGRA/RGBA output with SIMD IDCT,
- * upsampling and colour conversion.
+ * streams, 8-bit precision, grayscale, YCbCr and Adobe four-component
+ * CMYK/YCCK with all common chroma subsamplings, restart markers, and
+ * BGRA/RGBA output with SIMD IDCT, upsampling and colour conversion.
  *
  * What it does not implement: arithmetic entropy coding, hierarchical
- * and lossless JPEG modes, 12-bit precision, CMYK/YCCK four-component
- * streams, and encoding.
+ * and lossless JPEG modes, 12-bit precision, and encoding.
  *
  * Originally derived from stb_image's JPEG sources and since reworked
  * for RetroArch: the decoder is driven incrementally (rjpeg_process_image
@@ -49,8 +48,8 @@
  *   spatial  -> each 8x8 block is dequantised and run through the inverse
  *               DCT back to pixels;
  *   output   -> chroma planes are upsampled to full resolution and the
- *               YCbCr samples are converted to BGRA/RGBA, one row at a
- *               time (see the "Shared output pipeline" section).
+ *               samples are converted to BGRA/RGBA, one row at a time
+ *               (see the "Shared output pipeline" section).
  */
 
 #include <stdint.h>
@@ -284,6 +283,11 @@ struct rjpeg_jpeg_s
    uint8_t *img_buffer_true_end;
    int      hit_wall;   /* refill reached the resident frontier, not EOF */
    int      img_n;
+   /* Colour transform byte from the Adobe APP14 segment, or -1 if the
+    * segment was absent.  Disambiguates the two 4-component layouts
+    * (0 = CMYK, 2 = YCCK) and the two 3-component ones (0 = RGB,
+    * 1 = YCbCr).  See rjpeg_process_marker() and rjpeg_output_rows(). */
+   int      app14_transform;
    uint32_t img_x;
    uint32_t img_y;
 
@@ -406,11 +410,23 @@ static INLINE uint32_t rjpeg_get16be(rjpeg_jpeg *s)
 #define JPEG_MARKER_EOI       0xD9
 #define JPEG_MARKER_APP1      0xE1
 #define JPEG_MARKER_APP2      0xE2
+#define JPEG_MARKER_APP14     0xEE
 
 /* use comparisons since in some cases we handle more than one case (e.g. SOF) */
 
 #define RJPEG_DIV4(x)              ((uint8_t) ((x) >> 2))
 #define RJPEG_DIV16(x)             ((uint8_t) ((x) >> 4))
+
+/* Exact rounded (x*y)/255 for x,y in [0,255], without a divide:
+ * t = x*y+128; (t + (t>>8)) >> 8.  Used by the CMYK/YCCK black-plane
+ * multiply.  Both arguments are evaluated once. */
+#define RJPEG_MUL255(x, y)         rjpeg_mul255((unsigned)(x), (unsigned)(y))
+
+static INLINE uint8_t rjpeg_mul255(unsigned x, unsigned y)
+{
+   unsigned t = x * y + 128;
+   return (uint8_t)((t + (t >> 8)) >> 8);
+}
 
 static int rjpeg_build_huffman(rjpeg_huffman *h, int *count)
 {
@@ -2560,6 +2576,22 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
             }
             L -= 17;
 
+            /* Bad DHT symbol count. Corrupt JPEG?
+             *
+             * n is the sum of 16 independent count bytes, so a
+             * malformed segment can declare up to 16*255 = 4080
+             * symbols.  Both consumers below are sized for the 256 the
+             * format allows: rjpeg_build_huffman fills size[] (257
+             * bytes, and the last member of rjpeg_huffman) and the
+             * value read memcpy()s n bytes into values[256].  Without
+             * this bound a crafted DHT overruns both by kilobytes,
+             * corrupting the neighbouring Huffman and fast_ac tables.
+             * The overrun stays inside the rjpeg_jpeg allocation only
+             * because of where those members happen to sit, which is
+             * not a property worth relying on. */
+            if (n > 256)
+               return 0;
+
             if (tc == 0)
             {
                if (!rjpeg_build_huffman(z->huff_dc+th, sizes))
@@ -2601,6 +2633,23 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
        * and the enclosing marker scan would never terminate. */
       if (n < 0)
          return 0;
+
+      /* Adobe APP14 records the colour transform the encoder applied.
+       * Its payload is "Adobe" (5 bytes), version (2), flags0 (2),
+       * flags1 (2), transform (1) - 12 bytes, so anything shorter is
+       * not one and the signature check is only reached when 12 bytes
+       * are both declared and resident.  The peek does not move the
+       * cursor; the common skip below still consumes the segment. */
+      if (     m == JPEG_MARKER_APP14
+            && n >= 12
+            && z->img_buffer_end - z->img_buffer >= 12
+            && z->img_buffer[0] == 'A'
+            && z->img_buffer[1] == 'd'
+            && z->img_buffer[2] == 'o'
+            && z->img_buffer[3] == 'b'
+            && z->img_buffer[4] == 'e')
+         z->app14_transform = z->img_buffer[11];
+
       if (z->img_buffer + n > z->img_buffer_end)
          z->img_buffer = z->img_buffer_end;
       else
@@ -2733,10 +2782,14 @@ static int rjpeg_process_frame_header(rjpeg_jpeg *z, int scan)
 
    c = RJPEG_GET8(s);
 
-   /* JFIF requires */
+   /* JFIF requires 1 (grayscale) or 3 (YCbCr).  Adobe additionally
+    * emits 4-component frames: CMYK, or YCCK when APP14 says
+    * transform 2.  Both are decoded to BGRA/RGBA in
+    * rjpeg_output_rows(); everything downstream of here is already
+    * written against img_n rather than a hardcoded 3. */
 
    /* Bad component count. Corrupt JPEG? */
-   if (c != 3 && c != 1)
+   if (c != 3 && c != 1 && c != 4)
       return 0;
 
    s->img_n = c;
@@ -4221,6 +4274,7 @@ bool rjpeg_start(rjpeg_t *rjpeg)
    j->comp_arena = NULL; j->comp_arena_size = 0;
    j->plane_ring = 1;   /* iterative: fused decode may ring the planes */
    j->img_n = 0;
+   j->app14_transform = -1;   /* no Adobe APP14 seen yet */
 
    /* Context fields embedded in j */
    j->img_buffer          = (uint8_t*)rjpeg->buff_data;
@@ -4283,7 +4337,10 @@ bool rjpeg_is_valid(rjpeg_t *rjpeg)
 static int rjpeg_resample_setup(rjpeg_jpeg *j, rjpeg_resample *res)
 {
    int k;
-   int decode_n = (j->img_n >= 3) ? 3 : j->img_n;
+   /* Every component is resampled: 1 (grayscale), 3 (YCbCr) or 4
+    * (CMYK/YCCK, where the K plane carries its own sampling factors
+    * and must be upsampled like any other). */
+   int decode_n = j->img_n;
 
    for (k = 0; k < decode_n; ++k)
    {
@@ -4339,7 +4396,7 @@ static void rjpeg_output_rows(rjpeg_jpeg *z, rjpeg_resample *res,
       bool supports_rgba)
 {
    uint8_t *coutput[4];
-   int decode_n = (z->img_n >= 3) ? 3 : z->img_n;
+   int decode_n = z->img_n;
 
    /* use_fused depends only on the frame geometry and the selected
     * kernel, all fixed once the header is parsed, so it is constant for
@@ -4401,7 +4458,86 @@ static void rjpeg_output_rows(rjpeg_jpeg *z, rjpeg_resample *res,
          }
       }
 
-      if (z->img_n >= 3)
+      if (z->img_n == 4)
+      {
+         /* Four components: CMYK, or YCCK when APP14 says transform 2.
+          *
+          * Adobe stores CMYK inverted - the byte on disk is 255-C - and
+          * libjpeg hands those raw values to the caller rather than
+          * undoing it, so every consumer has applied the same
+          * reconstruction itself: R = v_c * v_k / 255, and likewise for
+          * G and B.  rjpeg's output contract is BGRA/RGBA, so it does
+          * that here.
+          *
+          * YCCK is that same inverted CMYK with the forward YCbCr
+          * transform applied to the first three planes, so the
+          * ordinary YCbCr->RGB kernel run over them recovers the
+          * complement of the stored bytes - true C, M and Y - and the
+          * YCCK path has to invert before the same multiply.  (This is
+          * why libjpeg's ycck_cmyk_convert emits MAXJSAMPLE minus the
+          * YCbCr result while its CMYK path is a null convert.)  A
+          * A 4-component frame with no APP14 is read as CMYK, and an
+          * unrecognised transform as YCCK, both matching libjpeg's
+          * assumptions.  Note that the marker-less case is still taken
+          * to be Adobe-inverted: decoders disagree here (libjpeg hands
+          * the raw planes out and leaves it to the caller, so ffmpeg
+          * treats them literally while Pillow always inverts), and
+          * four-component JPEGs in the wild are overwhelmingly of
+          * Adobe origin even when a tool has since stripped the
+          * segment, so inverting is the better bet.
+          *
+          * RJPEG_MUL255 is an exact rounded x*y/255 without a divide.
+          * The fused kernel is 3-component only, so this path always
+          * has materialised coutput[] rows for every plane. */
+         uint8_t *y = coutput[0];
+         if (y && coutput[1] && coutput[2] && coutput[3])
+         {
+            const uint8_t *k = coutput[3];
+            unsigned i;
+            /* > 0 rather than == 2: libjpeg maps transform 0 to CMYK,
+             * 2 to YCCK and warns-then-assumes-YCCK for anything else,
+             * and -1 (no APP14) must land on CMYK. */
+            if (z->app14_transform > 0)
+            {
+               /* YCCK.  The kernel honours supports_rgba and stores
+                * alpha, and the invert-and-scale below is identical
+                * per channel, so byte order needs no further care. */
+               z->YCbCr_to_RGB_kernel(out, y, coutput[1], coutput[2],
+                     z->img_x, 4, supports_rgba);
+               for (i = 0; i < z->img_x; ++i)
+               {
+                  unsigned kv  = k[i];
+                  out[i*4    ] = RJPEG_MUL255(255 - out[i*4    ], kv);
+                  out[i*4 + 1] = RJPEG_MUL255(255 - out[i*4 + 1], kv);
+                  out[i*4 + 2] = RJPEG_MUL255(255 - out[i*4 + 2], kv);
+               }
+            }
+            else if (supports_rgba)
+            {
+               for (i = 0; i < z->img_x; ++i)
+               {
+                  unsigned kv  = k[i];
+                  out[i*4    ] = RJPEG_MUL255(coutput[0][i], kv);
+                  out[i*4 + 1] = RJPEG_MUL255(coutput[1][i], kv);
+                  out[i*4 + 2] = RJPEG_MUL255(coutput[2][i], kv);
+                  out[i*4 + 3] = 255;
+               }
+            }
+            else
+            {
+               /* BGRA byte order -- reads as ARGB32 on LE. */
+               for (i = 0; i < z->img_x; ++i)
+               {
+                  unsigned kv  = k[i];
+                  out[i*4    ] = RJPEG_MUL255(coutput[2][i], kv);
+                  out[i*4 + 1] = RJPEG_MUL255(coutput[1][i], kv);
+                  out[i*4 + 2] = RJPEG_MUL255(coutput[0][i], kv);
+                  out[i*4 + 3] = 255;
+               }
+            }
+         }
+      }
+      else if (z->img_n == 3)
       {
          uint8_t *y = coutput[0];
          if (y)
@@ -5189,6 +5325,7 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
          rjpeg_setup_jpeg(j);
 
          j->img_n            = 0;
+         j->app14_transform  = -1;   /* no Adobe APP14 seen yet */
 
          if (!rjpeg_decode_jpeg_image(j))
          {

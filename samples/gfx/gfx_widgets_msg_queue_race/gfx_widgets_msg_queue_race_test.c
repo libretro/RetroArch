@@ -23,6 +23,12 @@
 /* Regression test for the producer-producer race fix on
  * dispgfx_widget_t::msg_queue in gfx/gfx_widgets.c.
  *
+ * (RUNLOOP_MSG_QUEUE_LOCK, referenced throughout this history, has
+ * since been removed entirely: the runloop queue became main-thread
+ * state behind an off-main deferral. The widget ring's own
+ * msg_queue_lock below is the lock this test holds - it never
+ * depended on the runloop's.)
+ *
  * Pre-fix: gfx_widgets_msg_queue_push called fifo_write on
  * p_dispwidget->msg_queue without holding any lock.  The
  * function is reachable from three callers:

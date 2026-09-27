@@ -40,24 +40,29 @@
 
 RETRO_BEGIN_DECLS
 
-typedef struct
-{
-   bool fullscreen;
-   bool enabled;
-   unsigned tex_w, tex_h;
-   float tex_coords[4];
-   float vert_coords[4];
-   float alpha_mod;
-   void *tex;
-   void *vert_buf;
-} overlay_t;
-
 typedef struct Vertex
 {
    float x, y, z;
    uint32_t color;
    float u, v;
 } Vertex;
+
+typedef struct
+{
+   void *tex;
+   void *vert_buf;
+   /* The quad last written to vert_buf (valid while vert_sent_ok):
+    * the draw locks the buffer only when the quad has changed. */
+   Vertex vert_sent[4];
+   /* The texture's pixel size, packed. */
+   unsigned tex_dims;
+   float tex_coords[4];
+   float vert_coords[4];
+   float alpha_mod;
+   bool fullscreen;
+   bool enabled;
+   bool vert_sent_ok;
+} overlay_t;
 
 int32_t d3d_translate_filter(unsigned type);
 

@@ -150,6 +150,165 @@ extern void rvorbis_packet_reset(rvorbis *f);
  * context as it was before its first packet.  This is what a rewind is
  * on a packet-fed stream: the caller restarts its own packet walk. */
 
+
+/*   STREAMING OGG API */
+
+/* For an .ogg that is not resident: bytes are handed over a window at a
+ * time and PCM comes back as they arrive, so what a decode costs in
+ * memory is a packet rather than a file.  The pulling API above wants
+ * the whole stream addressable at once - it seeks by bisecting over it -
+ * which a caller reading from storage, or off a CD image, does not have
+ * and should not have to fabricate.
+ *
+ * This is the same shape rflac uses: point it at input, point it at
+ * output, and step it.
+ *
+ *    rvorbis_stream_t *s = rvorbis_stream_new();
+ *    rvorbis_stream_set_out_s16(s, pcm, frames);
+ *    for (;;)
+ *    {
+ *       rvorbis_stream_set_in(s, buf, filled);
+ *       r = rvorbis_stream_process(s, &read, &wrote);
+ *       memmove(buf, buf + read, filled -= read);
+ *       if (r == RVORBIS_STREAM_NEED_IN)
+ *          filled += pull_bytes(buf + filled, cap - filled);
+ *       else if (r != RVORBIS_STREAM_OK)
+ *          break;
+ *    }
+ *
+ * Input is consumed, not borrowed: @read says how much was taken and
+ * the rest must be presented again, so a window may slide freely.  The
+ * decoder holds at most one packet across calls, which is what bounds
+ * it.
+ *
+ * Seeking is the caller's: Ogg locates a sample by bisecting on page
+ * granule positions, and only the caller can read at an arbitrary
+ * offset.  Reset the stream, re-point input at a guess, and read
+ * rvorbis_stream_granule() once a page has been parsed to see where
+ * that guess landed; the headers stay parsed across a reset, so
+ * converging costs no decode.
+ */
+
+#define RVORBIS_STREAM_OK        0
+#define RVORBIS_STREAM_NEED_IN   1  /* input window is spent            */
+#define RVORBIS_STREAM_EOS       2  /* end-of-stream page was consumed  */
+#define RVORBIS_STREAM_ERROR   (-1)
+
+typedef struct rvorbis_stream rvorbis_stream_t;
+
+rvorbis_stream_t *rvorbis_stream_new(void);
+void rvorbis_stream_free(rvorbis_stream_t *s);
+
+/**
+ * rvorbis_stream_set_in:
+ *
+ * Presents a window of the Ogg stream. Need not be page- or
+ * packet-aligned and may be as small as one byte; what is not consumed
+ * must be presented again at the head of the next window.
+ */
+void rvorbis_stream_set_in(rvorbis_stream_t *s, const void *in, size_t in_size);
+
+/**
+ * rvorbis_stream_set_out_s16:
+ * rvorbis_stream_set_out_f32:
+ *
+ * Sets the destination and its capacity in frames. Which one was set
+ * last selects the pipeline the frames are produced through. Interleaved
+ * at the stream's own channel count, which rvorbis_stream_info() reports.
+ *
+ * A NULL destination, or a capacity of zero, means parse-only: process
+ * consumes what it needs to read the setup headers and stops there,
+ * producing nothing. That is what opening a stream wants, the channel
+ * count not being known until those headers are in.
+ */
+void rvorbis_stream_set_out_s16(rvorbis_stream_t *s, int16_t *out,
+      size_t out_frames);
+void rvorbis_stream_set_out_f32(rvorbis_stream_t *s, float *out,
+      size_t out_frames);
+
+/**
+ * rvorbis_stream_process:
+ * @read       : receives how many input bytes were consumed
+ * @wrote      : receives how many frames were written
+ *
+ * Consumes input and produces output until one of them runs out.
+ *
+ * Returns: RVORBIS_STREAM_OK when the output is full, NEED_IN when the
+ * input is spent and more would let it continue, EOS when the stream
+ * ended, or RVORBIS_STREAM_ERROR.
+ */
+int rvorbis_stream_process(rvorbis_stream_t *s, size_t *read, size_t *wrote);
+
+/**
+ * rvorbis_stream_info:
+ *
+ * Returns: nonzero once the setup headers have been parsed, which is
+ * the point channels and rate are known.
+ */
+int rvorbis_stream_info(const rvorbis_stream_t *s, rvorbis_info *out);
+
+/**
+ * rvorbis_stream_granule:
+ *
+ * Returns: the granule position of the last page parsed, i.e. the frame
+ * the stream had reached at the end of that page. This is what a seek
+ * bisects on.
+ */
+uint64_t rvorbis_stream_granule(const rvorbis_stream_t *s);
+
+/**
+ * rvorbis_stream_decoder:
+ *
+ * Returns: the underlying decoder once the headers have been parsed,
+ * else NULL. For rvorbis_get_info and the other queries that apply to
+ * any context; the decode entry points must not be called on it
+ * directly, the stream being what drives it.
+ */
+rvorbis *rvorbis_stream_decoder(const rvorbis_stream_t *s);
+
+/**
+ * rvorbis_stream_tell:
+ *
+ * Returns: the frame position the next emitted frame sits at.
+ *
+ * Meaningless until rvorbis_stream_pos_known() reports otherwise, which
+ * it does from the first page boundary crossed after a reset: a resync
+ * lands inside a page and nothing in the bitstream says where the
+ * output from it belongs. Discard what comes out before that point -
+ * it is decoded without overlap history and is wrong anyway - and the
+ * frames after it are exactly placed.
+ */
+uint64_t rvorbis_stream_tell(const rvorbis_stream_t *s);
+
+int rvorbis_stream_pos_known(const rvorbis_stream_t *s);
+
+/**
+ * rvorbis_stream_reset:
+ *
+ * Discards the demuxer position, the partly-assembled packet and the
+ * overlap history, so the next input may come from anywhere in the
+ * stream; the next Ogg capture pattern is resynchronised on. The parsed
+ * headers survive, so this is a seek rather than a reopen.
+ */
+void rvorbis_stream_reset(rvorbis_stream_t *s);
+
+/**
+ * rvorbis_stream_rewind:
+ *
+ * As reset, but for input resuming at the head of the stream rather
+ * than at an arbitrary offset, so the position is known immediately
+ * instead of at the first page boundary crossed. A target inside the
+ * first page is reachable only this way.
+ */
+void rvorbis_stream_rewind(rvorbis_stream_t *s);
+
+/**
+ * rvorbis_stream_get_error:
+ *
+ * Returns: the last error, cleared by the call.
+ */
+int rvorbis_stream_get_error(rvorbis_stream_t *s);
+
 #ifdef __cplusplus
 }
 #endif

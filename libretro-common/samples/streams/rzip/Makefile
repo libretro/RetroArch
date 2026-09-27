@@ -1,5 +1,7 @@
-TARGET := rzip
-TARGET_TEST := rzip_chunk_size_test
+TARGET       := rzip
+TARGET_TEST  := rzip_chunk_size_test
+TARGET_TEST2 := rzip_matches_buf_test
+TARGET_TEST3 := rzip_codec_test
 
 LIBRETRO_COMM_DIR := ../../..
 LIBRETRO_DEPS_DIR := ../../../../deps
@@ -29,9 +31,11 @@ COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream_transforms.c \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
@@ -41,18 +45,24 @@ COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_rzstd.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
 
 
 SOURCES      := rzip.c $(COMMON_SOURCES)
 SOURCES_TEST := rzip_chunk_size_test.c $(COMMON_SOURCES)
+SOURCES_TEST2 := rzip_matches_buf_test.c $(COMMON_SOURCES)
+SOURCES_TEST3 := rzip_codec_test.c $(COMMON_SOURCES)
 
 OBJS      := $(SOURCES:.c=.o)
 OBJS_TEST := $(SOURCES_TEST:.c=.o)
+OBJS_TEST2 := $(SOURCES_TEST2:.c=.o)
+OBJS_TEST3 := $(SOURCES_TEST3:.c=.o)
 
 INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include
-CFLAGS += -DHAVE_COMPRESSION -Wall -pedantic -std=gnu99 $(INCLUDE_DIRS)
+CFLAGS += -DHAVE_COMPRESSION -DHAVE_RZSTD -Wall -pedantic -std=gnu99 $(INCLUDE_DIRS)
 
 # Silence "ISO C does not support the 'I64' ms_printf length modifier"
 # warnings when using MinGW
@@ -63,13 +73,18 @@ ifeq ($(UNAME), MSYS)
 	CFLAGS += -Wno-format
 endif
 
+ifneq ($(SANITIZER),)
+	CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
+	LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
+
 ifeq ($(DEBUG), 1)
 	CFLAGS += -O0 -g -DDEBUG -D_DEBUG
 else
 	CFLAGS += -O2 -DNDEBUG
 endif
 
-all: $(TARGET) $(TARGET_TEST)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -80,7 +95,13 @@ $(TARGET): $(OBJS)
 $(TARGET_TEST): $(OBJS_TEST)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+$(TARGET_TEST2): $(OBJS_TEST2)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+$(TARGET_TEST3): $(OBJS_TEST3)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
 clean:
-	rm -f $(TARGET) $(TARGET_TEST) $(OBJS) $(OBJS_TEST)
+	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(OBJS) $(OBJS_TEST) $(OBJS_TEST2) $(OBJS_TEST3)
 
 .PHONY: clean

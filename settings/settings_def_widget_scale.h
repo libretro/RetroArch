@@ -12,7 +12,7 @@
 #if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
 S_FLOAT(menu_widget_scale_factor, MENU_WIDGET_SCALE_FACTOR,
       "menu_widget_scale_factor",
-      DEFAULT_MENU_WIDGET_SCALE_FACTOR, "%.2fx", SD_FLAG_NONE, 0, 0, 0, 0, 0, NULL, NULL,
+      DEFAULT_MENU_WIDGET_SCALE_FACTOR, "%.2fx", SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0.2, 5.0, 0.01, setting_action_ok_uint, NULL,
       "Graphics Widgets Scale Override",
       "Apply a manual scaling factor override when drawing display widgets. Only applies when 'Scale Graphics Widgets Automatically' is disabled. Can be used to increase or decrease the size of decorated notifications, indicators and controls independently from the menu itself.")
 #endif

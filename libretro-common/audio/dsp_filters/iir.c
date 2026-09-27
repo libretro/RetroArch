@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include <retro_miscellaneous.h>
+#include <retro_math.h>
 #include <libretro_dspfilter.h>
 
 #define sqr(a) ((a) * (a))
@@ -80,7 +81,7 @@ static void iir_process(void *data, struct dspfilter_output *output,
 {
    unsigned i;
    struct iir_data *iir = (struct iir_data*)data;
-   float *out           = output->samples;
+   float *out           = input->samples;
 
    float b0             = iir->b0;
    float b1             = iir->b1;
@@ -380,6 +381,7 @@ static void iir_filter_init(struct iir_data *iir,
          A = exp(log(10.0) * -9.477 / 40.0);
          beta = sqrt(A + A);
          (void)a1pha;
+         /* fall through - RIAA CD de-emphasis is a high shelf */
       case HSH:
          b0 = A * ((A + 1.0) + (A - 1.0) * cs + beta * sn);
          b1 = -2.0 * A * ((A - 1.0) + (A + 1.0) * cs);
@@ -400,6 +402,12 @@ static void iir_filter_init(struct iir_data *iir,
    iir->a2 = a2;
 }
 
+/* Ordered so NaN, which compares false against everything, lands on lo. */
+static float iir_clampf(float x, float lo, float hi)
+{
+   return (x >= lo) ? ((x <= hi) ? x : hi) : lo;
+}
+
 static void *iir_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
@@ -409,12 +417,24 @@ static void *iir_init(const struct dspfilter_info *info,
    struct iir_data *iir   = (struct iir_data*)calloc(1, sizeof(*iir));
    if (!iir)
       return NULL;
+   /* 0 is what the rate is when the audio device never opened. */
+   if (!info || info->input_rate < 1)
+   {
+      free(iir);
+      return NULL;
+   }
 
    config->get_float(userdata, "frequency", &freq, 1024.0f);
    config->get_float(userdata, "quality", &qual, 0.707f);
    config->get_float(userdata, "gain", &gain, 0.0f);
 
    config->get_string(userdata, "type", &type, "LPF");
+
+   /* quality divides the biquad alpha, gain is in dB, and a corner at or
+    * past Nyquist leaves the coefficients undefined. */
+   freq = iir_clampf(freq, 1.0f, (float)info->input_rate * 0.49f);
+   qual = iir_clampf(qual, 0.01f, 100.0f);
+   gain = iir_clampf(gain, -60.0f, 60.0f);
 
    filter = str_to_type(type);
    config->free(type);

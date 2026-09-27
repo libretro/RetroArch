@@ -1,0 +1,48 @@
+name: CI extern "C" prototype parity
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  extern-c-prototype-check:
+    name: extern "C" definitions match their C prototypes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Checker self-test
+        shell: bash
+        run: |
+          set -eu
+          # Fixture pass: a matching definition is clean, a definition
+          # with a parameter more than its prototype (the shape of the
+          # 0b2613d Xbox boot crash) is flagged, and a parameter of
+          # another type is flagged.
+          python3 tools/extern_c_prototype_check.py --selftest
+
+      - name: Tree check
+        shell: bash
+        run: |
+          set -eu
+          # A .cpp file that defines a win32_common.h function under
+          # extern "C" without including the header (uwp_main.cpp) is
+          # never checked against the prototype by any compiler: the
+          # linker matches on the name alone. This is the check that
+          # compares the two, for every such definition in the tree.
+          python3 tools/extern_c_prototype_check.py

@@ -39,6 +39,7 @@
 #include "../../configuration.h"
 
 #include <streams/file_stream.h>
+#include <string/rstrtod.h>
 
 typedef struct
 {
@@ -51,7 +52,7 @@ typedef struct
       unsigned short width;
       unsigned short height;
    } native_window;
-   unsigned width, height;
+   unsigned dims;                /* VIDEO_SCALE_PACK */
    float refresh_rate;
    bool resize;
 } mali_ctx_data_t;
@@ -91,8 +92,7 @@ static int gfx_ctx_mali_fbdev_get_vinfo(void *data)
    close(fd);
    fd = -1;
 
-   mali->width                = vinfo.xres;
-   mali->height               = vinfo.yres;
+   mali->dims                 = VIDEO_SCALE_PACK(vinfo.xres, vinfo.yres);
 
    mali->native_window.width  = vinfo.xres;
    mali->native_window.height = vinfo.yres;
@@ -123,7 +123,7 @@ static int gfx_ctx_mali_fbdev_get_vinfo(void *data)
                else if (*(tmp + i) == 'h')
                   *(tmp + i) = '\0';
             }
-            k = j ? atof(tmp + j + 1) : k;
+            k = j ? rstrtod(tmp + j + 1, NULL) : k;
          }
          filestream_close(fr);
       }
@@ -238,11 +238,10 @@ static void gfx_ctx_mali_fbdev_destroy(void *data)
 }
 
 static void gfx_ctx_mali_fbdev_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    mali_ctx_data_t *mali = (mali_ctx_data_t*)data;
-   *width                = mali->width;
-   *height               = mali->height;
+   *dims = mali->dims;
 }
 
 static void *gfx_ctx_mali_fbdev_init(void *video_driver)
@@ -302,16 +301,14 @@ error:
 }
 
 static void gfx_ctx_mali_fbdev_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
-   unsigned new_width, new_height;
+   unsigned new_dims;
+   gfx_ctx_mali_fbdev_get_video_size(data, &new_dims);
 
-   gfx_ctx_mali_fbdev_get_video_size(data, &new_width, &new_height);
-
-   if (new_width != *width || new_height != *height)
+   if (new_dims != *dims)
    {
-      *width  = new_width;
-      *height = new_height;
+      *dims  = new_dims;
       *resize = true;
    }
 
@@ -322,7 +319,7 @@ static void gfx_ctx_mali_fbdev_check_window(void *data, bool *quit,
 }
 
 static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
    mali_ctx_data_t *mali      = (mali_ctx_data_t*)data;
@@ -335,9 +332,6 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
       gfx_ctx_mali_fbdev_destroy(data);
       return false;
    }
-
-   width                      = mali->width;
-   height                     = mali->height;
 
    return true;
 }

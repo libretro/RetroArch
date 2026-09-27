@@ -22,6 +22,9 @@
 
 #ifndef __RARCH_MISCELLANEOUS_H
 #define __RARCH_MISCELLANEOUS_H
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #define RARCH_MAX_SUBSYSTEMS 20
 #define RARCH_MAX_SUBSYSTEM_ROMS 10
@@ -38,6 +41,16 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
+/* MSVC's minwindef.h defines min and max as macros in C++ as well as C
+ * -- MinGW's is guarded by #ifndef __cplusplus -- and they then break
+ * every std::numeric_limits<>::max() in any C++ file that reaches this
+ * header. A public header must not leak them. */
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #endif
 
@@ -49,7 +62,7 @@
 #include <compat/msvc.h>
 #endif
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
 #include <sys/param.h>
 #endif
 
@@ -129,7 +142,7 @@ static INLINE bool bits_any_different(uint32_t *a, uint32_t *b, uint32_t count)
  * This value may vary by platform.
  */
 
-#if defined(_XBOX1) || defined(_3DS) || defined(PSP) || defined(PS2) || defined(GEKKO)|| defined(WIIU) || defined(__PSL1GHT__) || defined(__PS3__) || defined(HAVE_EMSCRIPTEN)
+#if defined(_XBOX1) || defined(_3DS) || defined(PSP) || defined(PS2) || defined(GEKKO)|| defined(WIIU) || defined(__PSL1GHT__) || defined(__PS3__)
 
 #ifndef PATH_MAX_LENGTH
 #define PATH_MAX_LENGTH 512
@@ -522,6 +535,25 @@ typedef struct
 #  else
 #    error PRI_SIZET: unknown SIZE_MAX
 #  endif
+#endif
+
+/* retro_cpu_relax: a hint inside a spin loop that the core is waiting
+ * on something another thread or the clock will change: lets a
+ * hyperthread sibling run and lowers the spinning core's power, at no
+ * cost to when the loop notices the change. Nothing where there is no
+ * such instruction. */
+#if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
+#include <intrin.h>
+#define retro_cpu_relax() _mm_pause()
+#elif defined(__i386__) || defined(__x86_64__)
+#define retro_cpu_relax() __asm__ __volatile__("pause" ::: "memory")
+#elif defined(__aarch64__) || (defined(__arm__) && defined(__ARM_ARCH) && __ARM_ARCH >= 7)
+#define retro_cpu_relax() __asm__ __volatile__("yield" ::: "memory")
+#elif defined(_MSC_VER) && (defined(_M_ARM) || defined(_M_ARM64))
+#include <intrin.h>
+#define retro_cpu_relax() __yield()
+#else
+#define retro_cpu_relax() do { } while (0)
 #endif
 
 #endif

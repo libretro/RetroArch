@@ -2,12 +2,17 @@ name: CI Windows (MSYS2)
 
 on:
   push:
+    branches: [master]
   pull_request:
   repository_dispatch:
     types: [run_build]
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
   msys2-build-test:
@@ -28,16 +33,16 @@ jobs:
             runner: windows-11-arm
 
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up MSYS2
         uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.sys }}
-          update: true
           install: >-
             base-devel
             git

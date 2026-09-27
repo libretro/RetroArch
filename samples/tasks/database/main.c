@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <queues/task_queue.h>
+#include <lists/dir_list.h>
 
 #include "../../../core_info.h"
 #include "../../../tasks/tasks_internal.h"
@@ -13,6 +14,7 @@
 
 #include <retro_timers.h>
 
+#include "../../../list_special.h"
 #include "../../../manual_content_scan.h"
 #include "../../../configuration.h"
 #include "../../../verbosity.h"
@@ -108,13 +110,22 @@ void task_window_progress_cb(retro_task_t *task)
 }
 
 /* dir_list_new_special lives in retroarch.c, which we cannot link
- * without dragging in the world.  manual_content_scan calls this to
- * walk the scan directory; returning NULL causes the scan to bail
- * without producing results, which is fine for a standalone demo. */
-void *dir_list_new_special(const char *input_dir, unsigned type,
-      const char *filter, bool show_hidden_files)
+ * without dragging in the world.
+ *
+ * Returning NULL here meant the scan never enumerated its databases,
+ * so it could not finish, and everything downstream of a completed
+ * scan - notably the task teardown - went unexercised.  The scanner
+ * only asks for DIR_LIST_DATABASES, which retroarch.c answers with a
+ * plain "rdb" listing, so that much is worth providing. */
+struct string_list *dir_list_new_special(const char *input_dir,
+      enum dir_list_type type, const char *filter, bool show_hidden_files)
 {
-   (void)input_dir; (void)type; (void)filter; (void)show_hidden_files;
+   (void)filter;
+
+   if (type == DIR_LIST_DATABASES)
+      return dir_list_new(input_dir, "rdb", false, show_hidden_files,
+            false, false);
+
    return NULL;
 }
 
@@ -194,12 +205,28 @@ int main(int argc, char *argv[])
 #else
    task_queue_init(false /* threaded enable */, main_msg_queue_push);
 #endif
-   core_info_init_list(core_info_dir, core_dir, exts, true, false, NULL);
+   {
+      /* core_info_list_new() writes through this unconditionally, so
+       * it cannot be NULL - passing one crashed the sample before it
+       * reached the scan. */
+      bool cache_supported = false;
+      core_info_init_list(core_info_dir, core_dir, exts, true, false,
+            &cache_supported);
+   }
 
-   /* The scan reads its playlist directory from settings, not from the
-    * argument below, so put it where the scan will look. */
+   /* task_push_dbscan() ignores its playlist_directory and
+    * content_database arguments - both are marked "always from
+    * settings" and the scan reads them from there.  Passing them and
+    * not setting the settings left the database path empty, so the
+    * scan had nothing to match against and never produced a result:
+    *
+    *   [Scanner] ""...
+    *
+    * is that empty path being logged. */
    strlcpy(config_get_ptr()->paths.directory_playlist, playlist_dir,
          sizeof(config_get_ptr()->paths.directory_playlist));
+   strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
+         sizeof(config_get_ptr()->paths.path_content_database));
 
    /* A scan needs a system name to build its playlist from.  Without
     * one manual_content_scan_get_task_config refuses and no task is

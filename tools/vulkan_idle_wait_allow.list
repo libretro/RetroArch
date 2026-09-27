@@ -1,0 +1,21 @@
+# Idle waits that remain in the Vulkan code, checked by
+# tools/vulkan_idle_wait_check.py: file|function|count. A new
+# vkQueueWaitIdle or vkDeviceWaitIdle anywhere in the checked files
+# fails CI unless it is added here, and an entry whose call is gone
+# fails too. Do not add to this list to make a wait go away: wait on
+# the driver's own fences instead (vulkan_wait_own_submissions).
+#
+# Context teardown: the one place the whole device is drained, before
+# the device itself goes. A swapchain rebuild or teardown waits on the
+# context's own frame fences instead.
+gfx/common/vulkan_common.c|vulkan_context_destroy|1
+# An acquire semaphore the frame never consumed goes on the stale list
+# for the next submission to wait on; the drain here is the fallback
+# once VULKAN_MAX_SWAPCHAIN_IMAGES frames in a row went unsubmitted.
+gfx/common/vulkan_common.c|vulkan_acquire_next_image|1
+# A staging upload that could not get a fence has nothing else to wait
+# on. Unreachable short of vkCreateFence failing.
+gfx/drivers/vulkan.c|vulkan_submit_deferred_cmd_fenced|1
+# The chain's fallback for a driver that supplies no wait_submissions
+# callback; the in-tree driver supplies one.
+gfx/drivers_shader/shader_vulkan.c|slang_chain_flush|1

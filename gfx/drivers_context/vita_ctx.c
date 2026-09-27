@@ -31,7 +31,6 @@ typedef struct
 #endif
    int native_window;
    bool resize;
-   unsigned width, height;
    float refresh_rate;
 } vita_ctx_data_t;
 
@@ -49,23 +48,20 @@ static void vita_swap_interval(void *data, int interval)
 #endif
 }
 
-static void vita_get_video_size(void *data, unsigned *width, unsigned *height)
+static void vita_get_video_size(void *data, unsigned *dims)
 {
-   *width     = ATTR_VITA_WIDTH;
-   *height    = ATTR_VITA_HEIGHT;
+   *dims = VIDEO_SCALE_PACK(ATTR_VITA_WIDTH, ATTR_VITA_HEIGHT);
 }
 
 static void vita_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
-   unsigned new_width, new_height;
+   unsigned new_dims;
+   vita_get_video_size(data, &new_dims);
 
-   vita_get_video_size(data, &new_width, &new_height);
-
-   if (new_width != *width || new_height != *height)
+   if (new_dims != *dims)
    {
-      *width  = new_width;
-      *height = new_height;
+      *dims  = new_dims;
       *resize = true;
    }
 
@@ -104,9 +100,11 @@ static void vita_destroy(void *data)
 }
 
 static bool vita_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
 #if defined(HAVE_VITAGLES)
   /* Create an EGL rendering context */
    static const EGLint 
@@ -115,15 +113,13 @@ static bool vita_set_video_mode(void *data,
       EGL_NONE
    };
    vita_ctx_data_t *ctx_vita = (vita_ctx_data_t *)data;
-   ctx_vita->width           = ATTR_VITA_WIDTH;
-   ctx_vita->height          = ATTR_VITA_HEIGHT;
    ctx_vita->native_window   = VITA_WINDOW_960X544;
    ctx_vita->refresh_rate    = 60;
 
 #ifdef HAVE_EGL
    if (!egl_create_context(&ctx_vita->egl, ctx_attr_list))
       goto error;
-   if (!egl_create_surface(&ctx_vita->egl, ctx_vita->native_window))
+   if (!egl_create_surface(&ctx_vita->egl, (void *)ctx_vita->native_window))
       goto error;
 #endif
 #endif
@@ -254,7 +250,7 @@ static bool vita_create_surface(void *data)
 {
 #ifdef HAVE_EGL
    vita_ctx_data_t *ctx_vita = (vita_ctx_data_t*)data;
-   return egl_create_surface(&ctx_vita->egl, ctx_vita->native_window);
+   return egl_create_surface(&ctx_vita->egl, (void *)ctx_vita->native_window);
 #else
    return false;
 #endif

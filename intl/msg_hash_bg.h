@@ -85,6 +85,8 @@ static const struct
    char s_fe9eade8[17];
    char s_b92166cd[21];
    char s_5d29b870[36];
+   char s_6996339b[9];
+   char s_ddf679b9[11];
    char s_10342503[21];
    char s_d31f6d88[29];
    char s_3674ba44[17];
@@ -456,6 +458,8 @@ static const struct
    "\320\224\320\270\321\200\320\265\320\272\321\202\320\276\321\200\320\270\321\217",
    "\320\224\320\270\321\201\320\272\320\276\320\262\320\260 \320\270\320\275\321\204\320\276\321"
    "\200\320\274\320\260\321\206\320\270\321\217",
+   "\320\227\320\262\321\203\320\272",
+   "\320\230\320\267\321\205\320\276\320\264",
    "\320\230\320\267\321\202\320\265\320\263\320\273\320\265\320\275\320\270\321\217",
    "\320\241\320\262\320\260\320\273\321\217\320\275\320\265 \320\275\320\260 \320\257\320\264\321"
    "\200\320\276",
@@ -857,7 +861,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_bg_blob_check[
-      (sizeof(msg_hash_bg_blob) == (10688u
+      (sizeof(msg_hash_bg_blob) == (10708u
 #ifdef HAVE_MIST
        + 34u
        + 38u
@@ -960,6 +964,8 @@ static const uint32_t msg_hash_bg_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,

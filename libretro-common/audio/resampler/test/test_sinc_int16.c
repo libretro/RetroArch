@@ -1,7 +1,7 @@
 /* Bit-exactness / accuracy harness: diffs the integer s16 sinc resampler
  * against the faithful float reference across a rate x quality x signal matrix.
  * Build:  cc -O2 -std=c89 -Wall test_sinc_int16.c sinc_resampler_int16.c \
- *            sinc_ref_float.c -lm -o test_sinc_int16 */
+ *            sinc_ref_float.c memmap/memalign.c -lm -o test_sinc_int16 */
 
 #include <stdint.h>
 #include <stdlib.h>

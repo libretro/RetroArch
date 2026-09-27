@@ -20,6 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <retro_posix_source.h>
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -110,7 +112,7 @@ static uint8_t *sevenzip_slurp(const char *path, size_t *out_len)
 static int sevenzip_bind_data(struct sevenzip_context_t *ctx,
       file_archive_transfer_t *state, const char *file)
 {
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
    if (state->archive_mmap_data && state->archive_size > 0)
    {
       ctx->data      = state->archive_mmap_data;
@@ -504,19 +506,13 @@ static int sevenzip_parse_file_iterate_step(void *context,
    return 1;
 }
 
-static uint32_t sevenzip_stream_crc32_calculate(uint32_t crc,
-      const uint8_t *data, size_t len)
-{
-   return encoding_crc32(crc, data, len);
-}
-
 const struct file_archive_file_backend sevenzip_backend = {
    sevenzip_parse_file_init,
    sevenzip_parse_file_iterate_step,
    sevenzip_parse_file_free,
    sevenzip_stream_decompress_data_to_file_init,
    sevenzip_stream_decompress_data_to_file_iterate,
-   sevenzip_stream_crc32_calculate,
+   encoding_crc32,
    sevenzip_file_read,
    "7z"
 };

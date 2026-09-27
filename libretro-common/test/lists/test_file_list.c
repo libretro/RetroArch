@@ -1,0 +1,835 @@
+/* Copyright  (C) 2010-2025 The RetroArch team
+ *
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (test_file_list.c).
+ * ---------------------------------------------------------------------------------------
+ *
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/* Tests for file_list_t::actiondata_free, the optional destructor for
+ * item_file::actiondata.
+ *
+ * It exists because the menu's actiondata (menu_file_list_cbs_t) owns
+ * a further allocation, so it cannot be torn down with a plain free().
+ * Seven call sites across menu_driver.c, xmb.c and ozone.c can destroy
+ * a menu list; routing them all through one hook is what keeps them
+ * from each needing to know how to take a cbs apart.
+ *
+ * Two properties are worth pinning down.  A list that has not set the
+ * hook must keep the old behaviour exactly -- every file_list_t outside
+ * the menu relies on it, and they get NULL by being calloc()ed or
+ * memset() to zero rather than by saying so.  And the hook must never
+ * be handed NULL, because a destructor written for a real object is
+ * under no obligation to tolerate it.
+ */
+
+#include <check.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <lists/file_list.h>
+
+#define SUITE_NAME "file_list"
+
+static int   dtor_calls;
+static void *dtor_seen[8];
+
+static void test_dtor(void *actiondata)
+{
+   ck_assert_ptr_nonnull(actiondata);
+   if (dtor_calls < (int)(sizeof(dtor_seen) / sizeof(dtor_seen[0])))
+      dtor_seen[dtor_calls] = actiondata;
+   dtor_calls++;
+   free(actiondata);
+}
+
+static void reset_dtor(void)
+{
+   dtor_calls = 0;
+   memset(dtor_seen, 0, sizeof(dtor_seen));
+}
+
+/* A file_list_t as every caller in tree obtains one: zeroed. */
+static void list_init(file_list_t *list)
+{
+   memset(list, 0, sizeof(*list));
+}
+
+static void *set_actiondata(file_list_t *list, size_t idx, int tag)
+{
+   int *p = (int*)malloc(sizeof(int));
+   *p     = tag;
+   list->list[idx].actiondata = p;
+   return p;
+}
+
+START_TEST (test_actiondata_free_uses_hook)
+{
+   file_list_t list;
+   void *p;
+
+   reset_dtor();
+   list_init(&list);
+   list.actiondata_free = test_dtor;
+
+   ck_assert(file_list_append(&list, "path", "label", 0, 0, 0));
+   p = set_actiondata(&list, 0, 0x1234);
+
+   file_list_free_actiondata(&list, 0);
+
+   ck_assert_int_eq(dtor_calls, 1);
+   ck_assert_ptr_eq(dtor_seen[0], p);
+   ck_assert_ptr_null(list.list[0].actiondata);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+/* No hook is the default and must stay a plain free().  The sanitizer
+ * catches the leak if it stops being one. */
+START_TEST (test_actiondata_free_without_hook)
+{
+   file_list_t list;
+
+   reset_dtor();
+   list_init(&list);
+
+   ck_assert_ptr_null(list.actiondata_free);
+
+   ck_assert(file_list_append(&list, "path", "label", 0, 0, 0));
+   set_actiondata(&list, 0, 0x1234);
+
+   file_list_free_actiondata(&list, 0);
+
+   ck_assert_int_eq(dtor_calls, 0);
+   ck_assert_ptr_null(list.list[0].actiondata);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+/* An entry with no actiondata must not reach the destructor at all. */
+START_TEST (test_actiondata_free_skips_null)
+{
+   file_list_t list;
+
+   reset_dtor();
+   list_init(&list);
+   list.actiondata_free = test_dtor;
+
+   ck_assert(file_list_append(&list, "path", "label", 0, 0, 0));
+   ck_assert_ptr_null(list.list[0].actiondata);
+
+   file_list_free_actiondata(&list, 0);
+   ck_assert_int_eq(dtor_calls, 0);
+
+   /* Twice over: the second call sees the slot already NULL. */
+   set_actiondata(&list, 0, 0x1234);
+   file_list_free_actiondata(&list, 0);
+   file_list_free_actiondata(&list, 0);
+   ck_assert_int_eq(dtor_calls, 1);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_actiondata_free_null_list)
+{
+   reset_dtor();
+   file_list_free_actiondata(NULL, 0);
+   ck_assert_int_eq(dtor_calls, 0);
+}
+END_TEST
+
+/* Tearing the whole list down has to route through the hook too --
+ * that is the path that made it necessary, since file_list_free() and
+ * file_list_deinitialize() share file_list_deinitialize_internal(),
+ * and menu_list_free_list() reaches it.  The tests use the
+ * deinitialize form because file_list_free() also free()s the
+ * file_list_t itself, which here lives on the stack. */
+START_TEST (test_deinitialize_uses_hook)
+{
+   file_list_t list;
+   void *p[3];
+   int i;
+
+   reset_dtor();
+   list_init(&list);
+   list.actiondata_free = test_dtor;
+
+   for (i = 0; i < 3; i++)
+   {
+      ck_assert(file_list_append(&list, "path", "label", 0, 0, 0));
+      p[i] = set_actiondata(&list, (size_t)i, 0x100 + i);
+   }
+
+   file_list_deinitialize(&list);
+
+   ck_assert_int_eq(dtor_calls, 3);
+   for (i = 0; i < 3; i++)
+      ck_assert_ptr_eq(dtor_seen[i], p[i]);
+}
+END_TEST
+
+/* Entries without actiondata are skipped while their neighbours are
+ * not. */
+START_TEST (test_deinitialize_mixed_entries)
+{
+   file_list_t list;
+   void *p;
+   int i;
+
+   reset_dtor();
+   list_init(&list);
+   list.actiondata_free = test_dtor;
+
+   for (i = 0; i < 3; i++)
+      ck_assert(file_list_append(&list, "path", "label", 0, 0, 0));
+
+   p = set_actiondata(&list, 1, 0x777);
+
+   file_list_deinitialize(&list);
+
+   ck_assert_int_eq(dtor_calls, 1);
+   ck_assert_ptr_eq(dtor_seen[0], p);
+}
+END_TEST
+
+/* file_list_clear() deliberately does not touch actiondata; it clears
+ * the strings and the size and leaves ownership with the caller.  The
+ * menu relies on that split, so it is worth stating rather than
+ * discovering. */
+START_TEST (test_file_list_clear_leaves_actiondata)
+{
+   file_list_t list;
+   void *p;
+
+   reset_dtor();
+   list_init(&list);
+   list.actiondata_free = test_dtor;
+
+   ck_assert(file_list_append(&list, "path", "label", 0, 0, 0));
+   p = set_actiondata(&list, 0, 0x1234);
+
+   file_list_clear(&list);
+
+   ck_assert_int_eq(dtor_calls, 0);
+   ck_assert_ptr_eq(list.list[0].actiondata, p);
+
+   /* Still the caller's to release. */
+   file_list_free_actiondata(&list, 0);
+   ck_assert_int_eq(dtor_calls, 1);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+/* The hook lives in the list, not in the entries, so growing past
+ * capacity must not disturb it. */
+START_TEST (test_hook_survives_growth)
+{
+   file_list_t list;
+   int i;
+   const int n = 64;
+
+   reset_dtor();
+   list_init(&list);
+   list.actiondata_free = test_dtor;
+
+   for (i = 0; i < n; i++)
+   {
+      ck_assert(file_list_append(&list, "path", "label", 0, 0, 0));
+      set_actiondata(&list, (size_t)i, i);
+   }
+
+   ck_assert_ptr_eq((void*)(uintptr_t)list.actiondata_free,
+         (void*)(uintptr_t)test_dtor);
+   ck_assert_uint_ge((unsigned)list.capacity, (unsigned)n);
+
+   file_list_deinitialize(&list);
+   ck_assert_int_eq(dtor_calls, n);
+}
+END_TEST
+
+/* file_list_insert() has its own initialisation path; an inserted
+ * entry must start with no actiondata rather than inheriting whatever
+ * was in the slot. */
+START_TEST (test_insert_starts_with_null_actiondata)
+{
+   file_list_t list;
+
+   reset_dtor();
+   list_init(&list);
+   list.actiondata_free = test_dtor;
+
+   ck_assert(file_list_append(&list, "a", "a", 0, 0, 0));
+   set_actiondata(&list, 0, 0x1234);
+
+   ck_assert(file_list_insert(&list, "b", "b", 0, 0, 0, 0));
+   ck_assert_ptr_null(list.list[0].actiondata);
+
+   file_list_deinitialize(&list);
+
+   /* Only the one that was set is destroyed, and it moved with its
+    * entry rather than being left behind at index 0. */
+   ck_assert_int_eq(dtor_calls, 1);
+}
+END_TEST
+
+/* file_list_pop() has to release everything the entry owns, not just
+ * path and label.  Its one caller in tree, menu_list_pop_stack(), frees
+ * userdata and actiondata itself beforehand, which hid the gap: alt is
+ * set by file_list_set_alt_at_offset() and nothing else was releasing
+ * it, so every menu stack pop of an entry carrying an alt leaked it. */
+START_TEST (test_pop_releases_every_field)
+{
+   file_list_t list;
+   size_t dir = 0xABCD;
+
+   reset_dtor();
+   list_init(&list);
+   list.actiondata_free = test_dtor;
+
+   ck_assert(file_list_append(&list, "path", "label", 7, 42, 0));
+   file_list_set_alt_at_offset(&list, 0, "alt");
+   set_actiondata(&list, 0, 0x5678);
+
+   ck_assert_ptr_nonnull(list.list[0].alt);
+
+   file_list_pop(&list, &dir);
+
+   ck_assert_int_eq((int)list.size, 0);
+   /* The slot is cleared, so a later append cannot inherit a stale
+    * pointer and the sanitizer sees no leak. */
+   ck_assert_ptr_null(list.list[0].path);
+   ck_assert_ptr_null(list.list[0].label);
+   ck_assert_ptr_null(list.list[0].alt);
+   ck_assert_ptr_null(list.list[0].actiondata);
+   /* actiondata went through the hook rather than a plain free(). */
+   ck_assert_int_eq(dtor_calls, 1);
+   ck_assert_uint_eq((unsigned)dir, 42u);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+/* A list that has never held an entry has no backing array, so the
+ * directory_ptr read at the end of file_list_pop() has nothing to
+ * index. */
+START_TEST (test_pop_empty_list)
+{
+   file_list_t list;
+   size_t dir = 0x1234;
+
+   list_init(&list);
+   ck_assert_ptr_null(list.list);
+
+   file_list_pop(&list, &dir);
+
+   ck_assert_int_eq((int)list.size, 0);
+   /* Left as the caller set it: there was no entry to read from. */
+   ck_assert_uint_eq((unsigned)dir, 0x1234u);
+
+   file_list_pop(&list, NULL);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+
+/* The userdata hook, mirroring the actiondata one above.  It exists
+ * because the menu drivers' userdata -- an xmb_node_t or an
+ * ozone_node_t -- owns further allocations, so a plain free() on it
+ * releases the node and leaks the strings inside.  A separate counter
+ * keeps the two hooks distinguishable in the test that installs both. */
+static int   udtor_calls;
+static void *udtor_seen[8];
+
+static void test_udtor(void *userdata)
+{
+   ck_assert_ptr_nonnull(userdata);
+   if (udtor_calls < (int)(sizeof(udtor_seen) / sizeof(udtor_seen[0])))
+      udtor_seen[udtor_calls] = userdata;
+   udtor_calls++;
+   free(userdata);
+}
+
+static void reset_udtor(void)
+{
+   udtor_calls = 0;
+   memset(udtor_seen, 0, sizeof(udtor_seen));
+}
+
+static void *set_userdata(file_list_t *list, size_t idx, int tag)
+{
+   int *p = (int*)malloc(sizeof(int));
+   *p     = tag;
+   list->list[idx].userdata = p;
+   return p;
+}
+
+START_TEST (test_userdata_free_uses_hook)
+{
+   file_list_t list;
+   void *p;
+
+   reset_udtor();
+   list_init(&list);
+   list.userdata_free = test_udtor;
+
+   ck_assert(file_list_append(&list, "path", "label", 0, 0, 0));
+   p = set_userdata(&list, 0, 0x5678);
+
+   file_list_free_userdata(&list, 0);
+
+   ck_assert_int_eq(udtor_calls, 1);
+   ck_assert_ptr_eq(udtor_seen[0], p);
+   ck_assert_ptr_null(list.list[0].userdata);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_userdata_free_without_hook)
+{
+   file_list_t list;
+
+   reset_udtor();
+   list_init(&list);
+   /* No hook: the plain free() path every file_list_t outside the menu
+    * relies on, and which they get by being zeroed rather than by
+    * saying so.  Under ASan this also proves the block is released. */
+   ck_assert(file_list_append(&list, "path", "label", 0, 0, 0));
+   set_userdata(&list, 0, 0x5678);
+
+   file_list_free_userdata(&list, 0);
+
+   ck_assert_int_eq(udtor_calls, 0);
+   ck_assert_ptr_null(list.list[0].userdata);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_userdata_free_skips_null)
+{
+   file_list_t list;
+
+   reset_udtor();
+   list_init(&list);
+   list.userdata_free = test_udtor;
+
+   ck_assert(file_list_append(&list, "path", "label", 0, 0, 0));
+   ck_assert_ptr_null(list.list[0].userdata);
+
+   /* A destructor written for a real node is under no obligation to
+    * tolerate NULL, so it must not be handed one. */
+   file_list_free_userdata(&list, 0);
+   ck_assert_int_eq(udtor_calls, 0);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_userdata_free_null_list)
+{
+   reset_udtor();
+   file_list_free_userdata(NULL, 0);
+   ck_assert_int_eq(udtor_calls, 0);
+}
+END_TEST
+
+START_TEST (test_deinitialize_uses_userdata_hook)
+{
+   file_list_t list;
+   void *a, *b;
+
+   reset_udtor();
+   list_init(&list);
+   list.userdata_free = test_udtor;
+
+   ck_assert(file_list_append(&list, "a", "la", 0, 0, 0));
+   ck_assert(file_list_append(&list, "b", "lb", 0, 0, 0));
+   a = set_userdata(&list, 0, 1);
+   b = set_userdata(&list, 1, 2);
+
+   file_list_deinitialize(&list);
+
+   ck_assert_int_eq(udtor_calls, 2);
+   ck_assert_ptr_eq(udtor_seen[0], a);
+   ck_assert_ptr_eq(udtor_seen[1], b);
+}
+END_TEST
+
+START_TEST (test_pop_uses_userdata_hook)
+{
+   file_list_t list;
+   void *p;
+   size_t dir_ptr = 0;
+
+   reset_udtor();
+   list_init(&list);
+   list.userdata_free = test_udtor;
+
+   ck_assert(file_list_append(&list, "a", "la", 0, 0, 0));
+   ck_assert(file_list_append(&list, "b", "lb", 0, 0, 0));
+   p = set_userdata(&list, 1, 7);
+
+   /* file_list_pop() is the path that reached free() directly on the
+    * menu stack, releasing the node and leaking what it owned. */
+   file_list_pop(&list, &dir_ptr);
+
+   ck_assert_int_eq(udtor_calls, 1);
+   ck_assert_ptr_eq(udtor_seen[0], p);
+   ck_assert_uint_eq(list.size, 1);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_both_hooks_are_independent)
+{
+   file_list_t list;
+   void *ud, *ad;
+
+   reset_dtor();
+   reset_udtor();
+   list_init(&list);
+   list.userdata_free   = test_udtor;
+   list.actiondata_free = test_dtor;
+
+   ck_assert(file_list_append(&list, "a", "la", 0, 0, 0));
+   ud = set_userdata(&list, 0, 1);
+   ad = set_actiondata(&list, 0, 2);
+
+   file_list_deinitialize(&list);
+
+   /* Each block goes to its own destructor; neither hook sees the
+    * other's pointer. */
+   ck_assert_int_eq(udtor_calls, 1);
+   ck_assert_int_eq(dtor_calls, 1);
+   ck_assert_ptr_eq(udtor_seen[0], ud);
+   ck_assert_ptr_eq(dtor_seen[0], ad);
+}
+END_TEST
+
+START_TEST (test_userdata_hook_survives_growth)
+{
+   file_list_t list;
+   size_t i;
+
+   reset_udtor();
+   list_init(&list);
+   list.userdata_free = test_udtor;
+
+   /* The hook lives on the list, not on an entry, so the realloc in
+    * file_list_reserve() must not disturb it. */
+   for (i = 0; i < 64; i++)
+   {
+      ck_assert(file_list_append(&list, "p", "l", 0, 0, 0));
+      set_userdata(&list, i, (int)i);
+   }
+
+   file_list_deinitialize(&list);
+   ck_assert_int_eq(udtor_calls, 64);
+}
+END_TEST
+
+
+/* The shared empty string.  file_list_append() is handed "" constantly
+ * -- a directory listing labels every entry that way -- and each one
+ * used to cost a malloc() for a lone NUL byte.
+ *
+ * What has to hold is that the entry still reads back as a valid empty
+ * string rather than NULL, because storing NULL would change what
+ * file_list_get_label_at_offset() returns and every strlen() of an
+ * entry field in the menu drivers would need auditing.  And the shared
+ * buffer must survive being "freed" by any number of entries and lists;
+ * under ASan a double free of it fails these outright. */
+
+START_TEST (test_empty_label_is_empty_not_null)
+{
+   file_list_t list;
+
+   list_init(&list);
+   ck_assert(file_list_append(&list, "path", "", 0, 0, 0));
+
+   ck_assert_ptr_nonnull(list.list[0].label);
+   ck_assert_str_eq(list.list[0].label, "");
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_empty_strings_are_shared)
+{
+   file_list_t list;
+
+   list_init(&list);
+   ck_assert(file_list_append(&list, "", "", 0, 0, 0));
+   ck_assert(file_list_append(&list, "", "", 0, 0, 0));
+
+   /* One buffer for every empty field of every entry: this is the
+    * allocation the change removes. */
+   ck_assert_ptr_eq(list.list[0].label, list.list[1].label);
+   ck_assert_ptr_eq(list.list[0].path,  list.list[0].label);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_null_stays_null)
+{
+   file_list_t list;
+
+   list_init(&list);
+   /* NULL and "" are different inputs and stay different. */
+   ck_assert(file_list_append(&list, NULL, NULL, 0, 0, 0));
+   ck_assert_ptr_null(list.list[0].path);
+   ck_assert_ptr_null(list.list[0].label);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_shared_empty_survives_two_lists)
+{
+   file_list_t a, b;
+
+   list_init(&a);
+   list_init(&b);
+   ck_assert(file_list_append(&a, "", "", 0, 0, 0));
+   ck_assert(file_list_append(&b, "", "", 0, 0, 0));
+
+   /* Tearing down one list must not release a buffer the other is
+    * still pointing at, nor free a static a second time. */
+   file_list_deinitialize(&a);
+   ck_assert_str_eq(b.list[0].label, "");
+   file_list_deinitialize(&b);
+}
+END_TEST
+
+START_TEST (test_shared_empty_survives_clear_and_pop)
+{
+   file_list_t list;
+   size_t dir_ptr = 0;
+
+   list_init(&list);
+   ck_assert(file_list_append(&list, "", "", 0, 0, 0));
+   ck_assert(file_list_append(&list, "", "", 0, 0, 0));
+
+   file_list_pop(&list, &dir_ptr);
+   ck_assert_uint_eq(list.size, 1);
+   ck_assert_str_eq(list.list[0].label, "");
+
+   file_list_clear(&list);
+   ck_assert_uint_eq(list.size, 0);
+
+   /* Still usable afterwards: the static was not released by either. */
+   ck_assert(file_list_append(&list, "", "", 0, 0, 0));
+   ck_assert_str_eq(list.list[0].label, "");
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_set_label_across_empty_and_nonempty)
+{
+   file_list_t list;
+
+   list_init(&list);
+   ck_assert(file_list_append(&list, "p", "", 0, 0, 0));
+
+   /* Empty -> non-empty: the setter must not free() the static. */
+   file_list_set_label_at_offset(&list, 0, "real");
+   ck_assert_str_eq(list.list[0].label, "real");
+
+   /* Non-empty -> empty: the heap block must be released and the
+    * static installed. */
+   file_list_set_label_at_offset(&list, 0, "");
+   ck_assert_str_eq(list.list[0].label, "");
+
+   file_list_set_label_at_offset(&list, 0, "again");
+   ck_assert_str_eq(list.list[0].label, "again");
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_set_alt_across_empty_and_nonempty)
+{
+   file_list_t list;
+
+   list_init(&list);
+   ck_assert(file_list_append(&list, "p", "l", 0, 0, 0));
+
+   file_list_set_alt_at_offset(&list, 0, "");
+   ck_assert_str_eq(list.list[0].alt, "");
+   file_list_set_alt_at_offset(&list, 0, "alt");
+   ck_assert_str_eq(list.list[0].alt, "alt");
+   file_list_set_alt_at_offset(&list, 0, "");
+   ck_assert_str_eq(list.list[0].alt, "");
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_insert_shares_empty_too)
+{
+   file_list_t list;
+
+   list_init(&list);
+   /* file_list_insert() goes through init_item_file() rather than the
+    * append path, so it needs its own check. */
+   ck_assert(file_list_insert(&list, "", "", 0, 0, 0, 0));
+   ck_assert(file_list_insert(&list, "", "", 0, 0, 0, 0));
+
+   ck_assert_ptr_eq(list.list[0].label, list.list[1].label);
+   ck_assert_str_eq(list.list[0].label, "");
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+/* An empty label is not an allocation of its own -- file_list.c hands
+ * every one of them the same shared buffer, because a directory listing
+ * labels every entry "" and each used to cost a malloc() for one NUL.
+ * Anything that releases a label therefore has to go through
+ * file_list_free_label() or file_list_set_label_at_offset(); a bare
+ * free() on the shared buffer is a free() of a static, which ASan
+ * reports as a free of memory that was never malloc()ed.
+ *
+ * The menu drivers relabel the menu stack top, which is why this is
+ * exported at all. */
+START_TEST (test_free_label_handles_shared_empty)
+{
+   file_list_t list;
+
+   list_init(&list);
+   ck_assert(file_list_append(&list, "path", "", 0, 0, 0));
+   /* Shared, not a private copy. */
+   ck_assert_ptr_nonnull(list.list[0].label);
+   ck_assert_str_eq(list.list[0].label, "");
+
+   file_list_free_label(&list, 0);
+   ck_assert_ptr_null(list.list[0].label);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_free_label_handles_owned_string)
+{
+   file_list_t list;
+
+   list_init(&list);
+   ck_assert(file_list_append(&list, "path", "a_real_label", 0, 0, 0));
+   file_list_free_label(&list, 0);
+   ck_assert_ptr_null(list.list[0].label);
+
+   /* Releasing twice must not double-free the owned case. */
+   file_list_free_label(&list, 0);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_free_label_out_of_range)
+{
+   file_list_t list;
+
+   list_init(&list);
+   ck_assert(file_list_append(&list, "path", "label", 0, 0, 0));
+   /* Past the end, and a NULL list: the menu computes the index as
+    * stack_size - 1, which is SIZE_MAX on an empty stack. */
+   file_list_free_label(&list, 1);
+   file_list_free_label(&list, (size_t)-1);
+   file_list_free_label(NULL, 0);
+   ck_assert_ptr_nonnull(list.list[0].label);
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+START_TEST (test_set_label_replaces_shared_empty)
+{
+   file_list_t list;
+
+   list_init(&list);
+   ck_assert(file_list_append(&list, "path", "", 0, 0, 0));
+   /* Relabelling away from the shared empty string, then back to it. */
+   file_list_set_label_at_offset(&list, 0, "now_a_real_label");
+   ck_assert_str_eq(list.list[0].label, "now_a_real_label");
+   file_list_set_label_at_offset(&list, 0, "");
+   ck_assert_str_eq(list.list[0].label, "");
+
+   file_list_deinitialize(&list);
+}
+END_TEST
+
+Suite *create_suite(void)
+{
+   Suite *s       = suite_create(SUITE_NAME);
+   TCase *tc_core = tcase_create("Core");
+
+   tcase_add_test(tc_core, test_actiondata_free_uses_hook);
+   tcase_add_test(tc_core, test_actiondata_free_without_hook);
+   tcase_add_test(tc_core, test_actiondata_free_skips_null);
+   tcase_add_test(tc_core, test_actiondata_free_null_list);
+   tcase_add_test(tc_core, test_deinitialize_uses_hook);
+   tcase_add_test(tc_core, test_deinitialize_mixed_entries);
+   tcase_add_test(tc_core, test_file_list_clear_leaves_actiondata);
+   tcase_add_test(tc_core, test_hook_survives_growth);
+   tcase_add_test(tc_core, test_insert_starts_with_null_actiondata);
+   tcase_add_test(tc_core, test_pop_releases_every_field);
+   tcase_add_test(tc_core, test_pop_empty_list);
+   tcase_add_test(tc_core, test_userdata_free_uses_hook);
+   tcase_add_test(tc_core, test_userdata_free_without_hook);
+   tcase_add_test(tc_core, test_userdata_free_skips_null);
+   tcase_add_test(tc_core, test_userdata_free_null_list);
+   tcase_add_test(tc_core, test_deinitialize_uses_userdata_hook);
+   tcase_add_test(tc_core, test_pop_uses_userdata_hook);
+   tcase_add_test(tc_core, test_both_hooks_are_independent);
+   tcase_add_test(tc_core, test_userdata_hook_survives_growth);
+   tcase_add_test(tc_core, test_free_label_handles_shared_empty);
+   tcase_add_test(tc_core, test_free_label_handles_owned_string);
+   tcase_add_test(tc_core, test_free_label_out_of_range);
+   tcase_add_test(tc_core, test_set_label_replaces_shared_empty);
+   tcase_add_test(tc_core, test_empty_label_is_empty_not_null);
+   tcase_add_test(tc_core, test_empty_strings_are_shared);
+   tcase_add_test(tc_core, test_null_stays_null);
+   tcase_add_test(tc_core, test_shared_empty_survives_two_lists);
+   tcase_add_test(tc_core, test_shared_empty_survives_clear_and_pop);
+   tcase_add_test(tc_core, test_set_label_across_empty_and_nonempty);
+   tcase_add_test(tc_core, test_set_alt_across_empty_and_nonempty);
+   tcase_add_test(tc_core, test_insert_shares_empty_too);
+
+   suite_add_tcase(s, tc_core);
+   return s;
+}
+
+int main(void)
+{
+   int num_fail;
+   Suite   *s  = create_suite();
+   SRunner *sr = srunner_create(s);
+   srunner_run_all(sr, CK_NORMAL);
+   num_fail = srunner_ntests_failed(sr);
+   srunner_free(sr);
+   return (num_fail == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+}

@@ -2,6 +2,7 @@ name: CI Windows (MSVC)
 
 on:
   push:
+    branches: [master]
   pull_request:
   repository_dispatch:
     types: [run_build]
@@ -13,10 +14,15 @@ env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
 # These jobs run smoke tests to ensure that MSVC-specific builds work properly.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
 jobs:
 
   msvc:
     runs-on: windows-2022
+    timeout-minutes: 90
     strategy:
       matrix:
         version: [UWP, 2019, 2022]
@@ -31,7 +37,7 @@ jobs:
             platform: x64
         # Qt and Cg builds are excluded for now
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1

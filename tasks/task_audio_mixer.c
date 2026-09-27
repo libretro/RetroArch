@@ -30,6 +30,7 @@
 #include <audio/audio_mixer.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <retro_atomic.h>
 #include <retro_miscellaneous.h>
 #include <queues/task_queue.h>
 
@@ -459,6 +460,186 @@ static void task_audio_mixer_handle_upload_m4a_and_play(retro_task_t *task,
    params.slot_selection_idx   = user->slot_selection_idx;
    params.stream_type          = user->stream_type;
    params.type                 = AUDIO_MIXER_TYPE_M4A;
+   params.state                = AUDIO_STREAM_STATE_PLAYING;
+   params.buf                  = img->b.buf;
+   params.bufsize              = img->b.bufsize;
+   params.cb                   = NULL;
+   params.buf_owner            = img->xfer;
+   params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
+   params.end_granule          = 0;
+   params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
+
+   audio_driver_mixer_add_stream(&params);
+
+   if (img->b.path)
+      free(img->b.path);
+   free(img);
+   free(user_data);
+}
+
+static void task_audio_mixer_handle_upload_ac3(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err)
+{
+   audio_mixer_stream_params_t params;
+   struct audio_mixer_task_data *img =
+         (struct audio_mixer_task_data*)task_data;
+   struct audio_mixer_userdata *user = (struct audio_mixer_userdata*)user_data;
+   if (!img || !user)
+   {
+      if (img)
+      {
+         if (img->xfer)
+            task_audio_mixer_release_xfer(img->xfer);
+         if (img->b.path)
+            free(img->b.path);
+         free(img);
+      }
+      free(user_data);
+      return;
+   }
+
+   params.volume               = 1.0f;
+   params.slot_selection_type  = user->slot_selection_type;
+   params.slot_selection_idx   = user->slot_selection_idx;
+   params.stream_type          = user->stream_type;
+   params.type                 = AUDIO_MIXER_TYPE_AC3;
+   params.state                = AUDIO_STREAM_STATE_STOPPED;
+   params.buf                  = img->b.buf;
+   params.bufsize              = img->b.bufsize;
+   params.cb                   = NULL;
+   params.buf_owner            = img->xfer;
+   params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
+   params.end_granule          = 0;
+   params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
+
+   audio_driver_mixer_add_stream(&params);
+
+   if (img->b.path)
+      free(img->b.path);
+   free(img);
+   free(user_data);
+}
+
+static void task_audio_mixer_handle_upload_lpcm(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err)
+{
+   audio_mixer_stream_params_t params;
+   struct audio_mixer_task_data *img =
+         (struct audio_mixer_task_data*)task_data;
+   struct audio_mixer_userdata *user = (struct audio_mixer_userdata*)user_data;
+   if (!img || !user)
+   {
+      if (img)
+      {
+         if (img->xfer)
+            task_audio_mixer_release_xfer(img->xfer);
+         if (img->b.path)
+            free(img->b.path);
+         free(img);
+      }
+      free(user_data);
+      return;
+   }
+
+   params.volume               = 1.0f;
+   params.slot_selection_type  = user->slot_selection_type;
+   params.slot_selection_idx   = user->slot_selection_idx;
+   params.stream_type          = user->stream_type;
+   params.type                 = AUDIO_MIXER_TYPE_LPCM;
+   params.state                = AUDIO_STREAM_STATE_STOPPED;
+   params.buf                  = img->b.buf;
+   params.bufsize              = img->b.bufsize;
+   params.cb                   = NULL;
+   params.buf_owner            = img->xfer;
+   params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
+   params.end_granule          = 0;
+   params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
+
+   audio_driver_mixer_add_stream(&params);
+
+   if (img->b.path)
+      free(img->b.path);
+   free(img);
+   free(user_data);
+}
+
+static void task_audio_mixer_handle_upload_ac3_and_play(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err)
+{
+   audio_mixer_stream_params_t params;
+   struct audio_mixer_task_data *img =
+         (struct audio_mixer_task_data*)task_data;
+   struct audio_mixer_userdata *user = (struct audio_mixer_userdata*)user_data;
+   if (!img || !user)
+   {
+      if (img)
+      {
+         if (img->xfer)
+            task_audio_mixer_release_xfer(img->xfer);
+         if (img->b.path)
+            free(img->b.path);
+         free(img);
+      }
+      free(user_data);
+      return;
+   }
+
+   params.volume               = 1.0f;
+   params.slot_selection_type  = user->slot_selection_type;
+   params.slot_selection_idx   = user->slot_selection_idx;
+   params.stream_type          = user->stream_type;
+   params.type                 = AUDIO_MIXER_TYPE_AC3;
+   params.state                = AUDIO_STREAM_STATE_PLAYING;
+   params.buf                  = img->b.buf;
+   params.bufsize              = img->b.bufsize;
+   params.cb                   = NULL;
+   params.buf_owner            = img->xfer;
+   params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
+   params.end_granule          = 0;
+   params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
+
+   audio_driver_mixer_add_stream(&params);
+
+   if (img->b.path)
+      free(img->b.path);
+   free(img);
+   free(user_data);
+}
+
+static void task_audio_mixer_handle_upload_lpcm_and_play(retro_task_t *task,
+      void *task_data,
+      void *user_data, const char *err)
+{
+   audio_mixer_stream_params_t params;
+   struct audio_mixer_task_data *img =
+         (struct audio_mixer_task_data*)task_data;
+   struct audio_mixer_userdata *user = (struct audio_mixer_userdata*)user_data;
+   if (!img || !user)
+   {
+      if (img)
+      {
+         if (img->xfer)
+            task_audio_mixer_release_xfer(img->xfer);
+         if (img->b.path)
+            free(img->b.path);
+         free(img);
+      }
+      free(user_data);
+      return;
+   }
+
+   params.volume               = 1.0f;
+   params.slot_selection_type  = user->slot_selection_type;
+   params.slot_selection_idx   = user->slot_selection_idx;
+   params.stream_type          = user->stream_type;
+   params.type                 = AUDIO_MIXER_TYPE_LPCM;
    params.state                = AUDIO_STREAM_STATE_PLAYING;
    params.buf                  = img->b.buf;
    params.bufsize              = img->b.bufsize;
@@ -925,7 +1106,11 @@ struct audio_mixer_wfeed
    size_t punch_hi;      /*  head after the decoder skips it       */
    int64_t end_granule;  /* windowed Opus: last-page granule, or 0 */
    size_t  avail;        /* windowed WebM: resident prefix, or 0    */
-   volatile bool dead;   /* set by the sound's release: wrap up    */
+   /* Set by the sound's release, which audio_mixer runs on the mixer
+    * thread as well as the caller's, and read by this task's handler on
+    * the task thread. An atomic and not a volatile bool: volatile
+    * orders nothing between the two. */
+   retro_atomic_int_t dead;
 };
 
 #ifdef HAVE_RFLAC
@@ -1041,7 +1226,8 @@ done:
 static void task_audio_mixer_wfeed_release(void *owner)
 {
    /* runs when the sound is destroyed; the feeder task frees */
-   ((struct audio_mixer_wfeed*)owner)->dead = true;
+   retro_atomic_store_release_int(
+         &((struct audio_mixer_wfeed*)owner)->dead, 1);
 }
 
 static void task_audio_mixer_wfeed_free(retro_task_t *task)
@@ -1081,7 +1267,7 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
          (struct audio_mixer_wfeed*)task->state;
    int64_t tell;
 
-   if (w->dead)
+   if (retro_atomic_load_acquire_int(&w->dead))
    {
       /* the borrowing sound is gone: the window with it */
       data_transfer_free(w->dt);
@@ -1462,6 +1648,7 @@ static bool task_audio_mixer_try_windowed(const char *fullpath,
       return false;
    if (!(w = (struct audio_mixer_wfeed*)calloc(1, sizeof(*w))))
       goto error;
+   retro_atomic_int_init(&w->dead, 0);
    if (!(w->user = (struct audio_mixer_userdata*)
          calloc(1, sizeof(*w->user))))
       goto error;
@@ -1582,6 +1769,21 @@ bool task_push_audio_mixer_load_and_play(
       mixer->type     = AUDIO_MIXER_TYPE_M4A;
       nbio->type      = NBIO_TYPE_M4A;
       t->callback     = task_audio_mixer_handle_upload_m4a_and_play;
+   }
+   else if (string_is_equal(ext_lower, "ac3")
+         || string_is_equal(ext_lower, "eac3")
+         || string_is_equal(ext_lower, "ec3"))
+   {
+      mixer->type     = AUDIO_MIXER_TYPE_AC3;
+      nbio->type      = NBIO_TYPE_AC3;
+      t->callback     = task_audio_mixer_handle_upload_ac3_and_play;
+   }
+   else if (string_is_equal(ext_lower, "lpcm")
+         || string_is_equal(ext_lower, "pcm"))
+   {
+      mixer->type     = AUDIO_MIXER_TYPE_LPCM;
+      nbio->type      = NBIO_TYPE_LPCM;
+      t->callback     = task_audio_mixer_handle_upload_lpcm_and_play;
    }
    else if (string_is_equal(ext_lower, "opus"))
    {
@@ -1743,6 +1945,21 @@ bool task_push_audio_mixer_load(
       mixer->type     = AUDIO_MIXER_TYPE_M4A;
       nbio->type      = NBIO_TYPE_M4A;
       t->callback     = task_audio_mixer_handle_upload_m4a;
+   }
+   else if (string_is_equal(ext_lower, "ac3")
+         || string_is_equal(ext_lower, "eac3")
+         || string_is_equal(ext_lower, "ec3"))
+   {
+      mixer->type     = AUDIO_MIXER_TYPE_AC3;
+      nbio->type      = NBIO_TYPE_AC3;
+      t->callback     = task_audio_mixer_handle_upload_ac3;
+   }
+   else if (string_is_equal(ext_lower, "lpcm")
+         || string_is_equal(ext_lower, "pcm"))
+   {
+      mixer->type     = AUDIO_MIXER_TYPE_LPCM;
+      nbio->type      = NBIO_TYPE_LPCM;
+      t->callback     = task_audio_mixer_handle_upload_lpcm;
    }
    else if (string_is_equal(ext_lower, "opus"))
    {

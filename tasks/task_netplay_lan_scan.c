@@ -26,6 +26,9 @@
 
 #include "../network/netplay/netplay.h"
 
+/* How long to wait between response polls, in microseconds. */
+#define NETPLAY_LAN_SCAN_POLL_INTERVAL 4000
+
 struct netplay_lan_scan_data
 {
    retro_time_t timeout;
@@ -38,6 +41,9 @@ static void task_netplay_lan_scan_handler(retro_task_t *task)
 {
    struct netplay_lan_scan_data *data =
       (struct netplay_lan_scan_data*)task->task_data;
+
+   if ((task_get_flags(task) & RETRO_TASK_FLG_CANCELLED) > 0)
+      goto finished;
 
    if (data->query)
    {
@@ -56,13 +62,25 @@ static void task_netplay_lan_scan_handler(retro_task_t *task)
    }
    else
    {
-      if (!netplay_discovery_driver_ctl(
-            RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, NULL))
-      {
-         if (cpu_features_get_time_usec() >= data->timeout)
-            goto finished;
-      }
+      netplay_discovery_driver_ctl(
+         RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, NULL);
+
+      /* The deadline is unconditional.  Testing it only when no host
+       * answered this poll let a peer that keeps answering hold the
+       * scan open indefinitely - observed still running 400s into an
+       * 800ms scan - which in turn kept the discovery socket open and,
+       * before the list was capped, grew it without bound. */
+      if (cpu_features_get_time_usec() >= data->timeout)
+         goto finished;
    }
+
+   /* Yield rather than spin.  The handler returns immediately after each
+    * poll and the threaded queue re-enters it with no delay, so a scan
+    * used to burn a core on back-to-back recvfrom() calls for its whole
+    * duration.  A poll every few milliseconds loses nothing: the
+    * responses are already sitting in the socket buffer. */
+   task->when = cpu_features_get_time_usec()
+      + NETPLAY_LAN_SCAN_POLL_INTERVAL;
 
    return;
 

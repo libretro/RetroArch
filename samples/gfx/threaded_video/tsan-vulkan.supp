@@ -1,0 +1,14 @@
+# ThreadSanitizer suppressions for the Vulkan lanes (check-vulkan with
+# SAN=thread): the loader, the validation layer, the lavapipe ICD, the
+# gallium library its rasteriser lives in on Mesa 24 (the ICD dlopens
+# it, so the frames carry that name) and the LLVM it JITs with are not
+# instrumented, so their internal atomics look like plain accesses.
+# None of it is frontend code; a race in RetroArch itself is still
+# reported and still fails the run.
+race:libVkLayer_khronos_validation.so
+race:libvulkan.so
+race:libvulkan_lvp.so
+race:libgallium
+race:libLLVM
+deadlock:libVkLayer_khronos_validation.so
+deadlock:libvulkan.so

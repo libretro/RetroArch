@@ -27,6 +27,8 @@
 #include <lists/dir_list.h>
 #include <retro_miscellaneous.h>
 
+#include <compat/strl.h>
+
 #include "msg_hash.h"
 #include "list_special.h"
 #include "core_info.h"
@@ -35,6 +37,7 @@
 #include "frontend/frontend_driver.h"
 
 #include "manual_content_scan.h"
+#include "retroarch.h"
 
 /* Holds all configuration parameters associated
  * with a manual content scan */
@@ -262,6 +265,51 @@ void manual_content_scan_scrub_file_exts_custom(void)
    manual_content_scan_scrub_file_exts(scan_file_exts_custom);
 }
 
+/* Performs rudimentary validation of the specified
+ * Logiqx XML DAT file path (not rigorous - just enough
+ * to prevent obvious errors), optionally returning the
+ * file size (DAT files can be very large, so callers
+ * use it for free-memory checks).
+ * The parser (logiqx_dat.c) is path-agnostic - bytes
+ * in, structs out - so both the extension whitelist
+ * and the file system checks live here, with the scan
+ * configuration that owns the path. */
+bool manual_content_scan_dat_path_is_valid(
+      const char *path, uint64_t *file_size)
+{
+   const char *file_ext = NULL;
+   int64_t file_size_int;
+
+   if (!path || !*path)
+      return false;
+
+   /* Check file extension (.dat / .xml, the extensions
+    * a Logiqx XML DAT may legitimately carry) */
+   file_ext = path_get_extension(path);
+
+   if (!file_ext || !*file_ext)
+      return false;
+
+   if (   !string_is_equal_noncase(file_ext, "dat")
+       && !string_is_equal_noncase(file_ext, "xml"))
+      return false;
+
+   /* Ensure file exists */
+   if (!path_is_valid(path))
+      return false;
+
+   /* Get file size */
+   file_size_int = path_get_size(path);
+
+   if (file_size_int <= 0)
+      return false;
+
+   if (file_size)
+      *file_size = (uint64_t)file_size_int;
+
+   return true;
+}
+
 /* Checks 'dat_file_path' string and resets it
  * if invalid */
 enum manual_content_scan_dat_file_path_status
@@ -276,7 +324,7 @@ enum manual_content_scan_dat_file_path_status
       uint64_t file_size;
 
       /* Check if path itself is valid */
-      if (logiqx_dat_path_is_valid(scan_dat_file_path, &file_size))
+      if (manual_content_scan_dat_path_is_valid(scan_dat_file_path, &file_size))
       {
          uint64_t free_memory = mem_stats_free();
          dat_file_path_status = MANUAL_CONTENT_SCAN_DAT_FILE_OK;
@@ -326,20 +374,55 @@ bool manual_content_scan_set_menu_content_dir(const char *content_dir)
 {
    size_t _len;
    const char *dir_name = NULL;
-
    char _tmpbuf[PATH_MAX_LENGTH];
-   fill_pathname_expand_special(_tmpbuf, content_dir, sizeof(_tmpbuf));
-   content_dir = _tmpbuf;
 
-   /* Sanity check */
+   /* Sanity check before the expansion.  It used to sit after
+    * content_dir had been reassigned to _tmpbuf, by which point it
+    * could never fire - and fill_pathname_expand_special() had
+    * already dereferenced the caller's pointer. */
    if (!content_dir || !*content_dir)
       goto error;
 
+   fill_pathname_expand_special(_tmpbuf, content_dir, sizeof(_tmpbuf));
+   content_dir = _tmpbuf;
+
+   if (!*content_dir)
+      goto error;
+
    /* Copy directory path to settings struct.
-    * Remove trailing slash, if required */
-   if ((_len = strlcpy(
-         scan_content_dir, content_dir,
-         sizeof(scan_content_dir))) <= 0)
+    * Remove trailing slash, if required.
+    *
+    * strlcpy() returns the length of its source, not the number of
+    * bytes it wrote, and the source can be longer than the
+    * destination here: _tmpbuf is PATH_MAX_LENGTH while
+    * scan_content_dir is DIR_MAX_LENGTH, which is half of it on
+    * every platform.  Indexing with the return value therefore ran
+    * off the end of the buffer for any content directory longer than
+    * DIR_MAX_LENGTH - a deeply nested folder picked in the file
+    * browser is enough:
+    *
+    *   AddressSanitizer: heap-buffer-overflow
+    *   READ of size 1 ... located 1022 bytes after 1024-byte region
+    */
+   _len = strlcpy(scan_content_dir, content_dir,
+         sizeof(scan_content_dir));
+
+   if (_len == 0)
+      goto error;
+
+   /* A path that did not fit is rejected rather than kept truncated.
+    * Truncation cuts mid-component, so what remains is a different
+    * directory: scanning ".../subdirectory_number_041/subdirectory_n"
+    * either finds nothing, with no indication why, or finds whatever
+    * happens to sit at that shortened path.  The tail also becomes
+    * the content-directory system name, so a scan that did produce
+    * entries would file them under a fragment of a folder name.
+    *
+    * Nothing is lost by refusing: a path this long already produced
+    * one of those two outcomes.  Failing here instead surfaces it as
+    * an invalid content directory, which is what the menu already
+    * reports for the other rejections above. */
+   if (_len >= sizeof(scan_content_dir))
       goto error;
 
    if (scan_content_dir[_len - 1] == PATH_DEFAULT_SLASH_C())
@@ -651,7 +734,7 @@ enum manual_content_scan_playlist_refresh_status
    fill_pathname(system_name, path_basename(playlist_path),
          "", sizeof(system_name));
 
-   if (database_name_lpl && database_name_lpl && *database_name_lpl)
+   if (database_name_lpl && *database_name_lpl)
       fill_pathname(database_name,database_name_lpl,"",sizeof(database_name));
    /* Cannot happen, but would constitute a
     * 'system name' error */
@@ -1490,7 +1573,7 @@ bool manual_content_scan_get_task_config(
        || scan_settings.db_usage == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE)
        && *scan_dat_file_path)
    {
-      if (!logiqx_dat_path_is_valid(scan_dat_file_path, NULL))
+      if (!manual_content_scan_dat_path_is_valid(scan_dat_file_path, NULL))
          return false;
       strlcpy(
             task_config->dat_file_path,
@@ -1514,6 +1597,14 @@ bool manual_content_scan_get_task_config(
    task_config->db_usage           = scan_settings.db_usage;
    task_config->db_selection       = scan_settings.db_selection;
 
+   /* Captured here, on the main thread, for the worker the scan's
+    * handler runs on. The CLI-scan flag is fixed at process start and
+    * the serial/CRC toggle is a settings read. */
+   task_config->cli_scan_output = retroarch_override_setting_is_set(
+         RARCH_OVERRIDE_SETTING_DATABASE_SCAN, NULL);
+   task_config->scan_serial_and_crc =
+         config_get_ptr()->bools.scan_serial_and_crc;
+
    return true;
 }
 
@@ -1521,6 +1612,91 @@ bool manual_content_scan_get_task_config(
  * content directory
  * > Returns NULL in the event of failure
  * > Returned string list must be free()'d */
+/* Shared policy for both content-list builders below:
+ * whether extension filtering applies and whether
+ * compressed files must be listed. */
+static void manual_content_scan_content_list_policy(
+      manual_content_scan_task_config_t *task_config,
+      bool *filter_exts, bool *include_compressed)
+{
+   /* Check whether files should be filtered by
+    * extension */
+   *filter_exts = *task_config->file_exts;
+
+   /* Check whether compressed files should be
+    * included in the directory list
+    * > If compressed files are already listed in
+    *   the 'file_exts' string, they will be included
+    *   automatically
+    * > If we don't have a 'file_exts' list, then all
+    *   files must be included regardless of type
+    * > If user has enabled 'search inside archives',
+    *   then compressed files must of course be included */
+   *include_compressed = (!*filter_exts || task_config->search_archives);
+}
+
+bool manual_content_scan_content_list_iter_new(
+      manual_content_scan_task_config_t *task_config,
+      struct string_list **list, dir_list_iter_t **iter)
+{
+   bool filter_exts;
+   bool include_compressed;
+
+   if (list)
+      *list = NULL;
+   if (iter)
+      *iter = NULL;
+
+   /* Sanity check */
+   if (!task_config || !*task_config->content_dir || !list || !iter)
+      return false;
+
+   manual_content_scan_content_list_policy(task_config,
+         &filter_exts, &include_compressed);
+
+   if (path_is_directory(task_config->content_dir))
+   {
+      if (!(*list = string_list_new()))
+         return false;
+
+      /* Same parameters as the blocking getter's
+       * dir_list_new() call: exclude directories and
+       * hidden files */
+      *iter = dir_list_iter_new(
+            task_config->content_dir,
+            filter_exts ? task_config->file_exts : NULL,
+            false, /* include_dirs */
+            false, /* include_hidden */ /* todo: obey global settings? */
+            include_compressed,
+            task_config->search_recursively,
+            *list);
+
+      if (!*iter)
+      {
+         string_list_free(*list);
+         *list = NULL;
+         return false;
+      }
+      return true;
+   }
+
+   /* A plain-file content dir needs no walk: the list
+    * is complete here and *iter stays NULL. */
+   if (!(*list = string_list_new()))
+      return false;
+   {
+      union string_list_elem_attr attr;
+      attr.i = 0;
+      if (!string_list_append(*list, task_config->content_dir, attr))
+      {
+         string_list_free(*list);
+         *list = NULL;
+         return false;
+      }
+   }
+   return true;
+}
+
 struct string_list *manual_content_scan_get_content_list(
       manual_content_scan_task_config_t *task_config)
 {
@@ -1532,20 +1708,8 @@ struct string_list *manual_content_scan_get_content_list(
    if (!task_config || !*task_config->content_dir)
       return NULL;
 
-   /* Check whether files should be filtered by
-    * extension */
-   filter_exts = *task_config->file_exts;
-
-   /* Check whether compressed files should be
-    * included in the directory list
-    * > If compressed files are already listed in
-    *   the 'file_exts' string, they will be included
-    *   automatically
-    * > If we don't have a 'file_exts' list, then all
-    *   files must be included regardless of type
-    * > If user has enabled 'search inside archives',
-    *   then compressed files must of course be included */
-   include_compressed = (!filter_exts || task_config->search_archives);
+   manual_content_scan_content_list_policy(task_config,
+         &filter_exts, &include_compressed);
 
    if (path_is_directory(task_config->content_dir))
    {
@@ -1715,7 +1879,7 @@ void manual_content_scan_add_content_to_playlist(
       entry.core_name  = (char*)FILE_PATH_DETECT;
       entry.crc32      = (char*)"00000000|crc";
       entry.db_name    = task_config->database_name;
-      entry.entry_slot = 0;
+      PLAYLIST_SET_ENTRY_SLOT(&entry, 0);
 
       /* Add entry to playlist */
       playlist_push(playlist, &entry);

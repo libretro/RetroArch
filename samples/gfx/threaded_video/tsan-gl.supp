@@ -1,0 +1,10 @@
+# ThreadSanitizer suppressions for the GL lanes (check-driver with
+# SAN=thread on gl/glcore): Mesa's llvmpipe and the LLVM it JITs with
+# are not instrumented, so their internal atomics look like plain
+# accesses. Libraries only; a race in RetroArch itself still fails.
+race:libGLX_mesa.so
+race:libGL.so
+race:libgallium
+race:libLLVM
+race:swrast_dri.so
+race:libglapi.so

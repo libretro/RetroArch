@@ -22,6 +22,7 @@ static const struct
    char s_005cc6dc[16];
    char s_5b51050b[25];
    char s_e68b50a2[18];
+   char s_6996339b[13];
    char s_1792565e[35];
    char s_40582c14[50];
    char s_35da9191[32];
@@ -93,6 +94,7 @@ static const struct
    "\340\254\270\340\255\202\340\254\232\340\254\250\340\254\276",
    "\340\254\265\340\254\260\340\255\215\340\254\243\340\255\215\340\254\243\340\254\250\340\254\276",
    "[\340\254\270\340\255\215\340\255\261\340\254\244\340\254\203]",
+   "\340\254\205\340\255\234\340\254\277\340\254\223",
    "\340\254\265\340\254\260\340\255\215\340\254\227 \340\254\205\340\254\250\340\255\201\340\254"
    "\257\340\254\276\340\255\237\340\255\200",
    "\340\254\250\340\254\277\340\255\237\340\254\250\340\255\215\340\254\244\340\255\215\340\254\260"
@@ -188,7 +190,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_or_blob_check[
-      (sizeof(msg_hash_or_blob) == (1636u
+      (sizeof(msg_hash_or_blob) == (1649u
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
        + 77u
@@ -207,6 +209,7 @@ static const uint32_t msg_hash_or_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CATEGORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONTROLS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,

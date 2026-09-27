@@ -1,0 +1,207 @@
+name: CI Linux samples/formats
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  samples-formats:
+    name: Build and run samples/formats
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: |
+          pkgs="build-essential ffmpeg"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 500M
+          ccache -z
+
+      - name: Build and run dts_lpcm_test (plain, ASan + UBSan)
+        shell: bash
+        working-directory: samples/formats/dts_lpcm
+        run: |
+          set -eu
+          # The DTS frame layer and the LPCM codec against ffmpeg.
+          #
+          # rdts reads frames, it does not decode them, so what is
+          # checked is that every frame is found where ffmpeg's
+          # encoder put it, that the rate and the arrangement agree
+          # with ffprobe's reading of the same file, and that a stream
+          # byte-swapped or packed fourteen bits to the word reads
+          # back to the same core - which is what a receiver and a
+          # decoder are handed.
+          #
+          # rlpcm does decode, and is bit-exact: the samples go out
+          # through ffmpeg's own converters and come back the same, at
+          # 16 and 24 bits and both byte orders, and what rlpcm writes
+          # back is the bytes it read. 20-bit has no ffmpeg format to
+          # compare against - two samples to five bytes is a disc
+          # packing - so it is checked against itself, and the DVD and
+          # Blu-ray headers against their field layouts. The
+          # audio_transfer arm is driven too: chunked reads against
+          # the codec's own output, the compressed frontier, and
+          # seeks, which for constant-size frames land exactly.
+          #
+          # And the pass-through route, which is what a format with no
+          # decoder is for: every frame repacked to the plain core,
+          # put in the IEC 61937 burst its sample count calls for, and
+          # read back out of that burst byte for byte.
+          make clean all
+          ./dts_lpcm_test
+          echo "[pass] dts_lpcm_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./dts_lpcm_test
+          echo "[pass] dts_lpcm_test (ASan)"
+
+      - name: Build and run image_decode_fuzz_test (ASan + UBSan + LSan)
+        shell: bash
+        working-directory: samples/formats/image_decode_fuzz
+        run: |
+          set -eu
+          # Malformed-input sweep for the BMP, TGA, DDS and WebP decoders in
+          # libretro-common/formats.  All three take dimensions and
+          # layout from a header the file supplies and size their
+          # output from it, which is where this kind of arithmetic
+          # goes wrong, and none of the four had any test at all.
+          # (WebP is told its buffer length, so it is the least
+          # exposed of them; its chunk walk still trusts sizes that
+          # came out of the file.)
+          #
+          # It found one on its first run: rbmp_proc_reset() gated the
+          # free of output_image on phase != RBMP_PHASE_IDLE, but
+          # rbmp_begin() allocates that surface before it sets any
+          # phase and returns false between the two for a palette
+          # header claiming a bits-per-pixel other than 4 or 8.  Every
+          # such image leaked the surface, reachable from any
+          # malformed or hostile BMP.  Leak detection is therefore
+          # switched on explicitly here rather than left to the
+          # default.
+          #
+          # The sweep truncates each seed at every length and sets
+          # every header byte to each of six interesting values,
+          # including the ones that make dimensions enormous.  The
+          # count of inputs that decode successfully is asserted
+          # inside the test, so a sweep where the seeds stopped being
+          # accepted would fail rather than exercise only the reject
+          # paths and report a pass.  That count is kept per format, not
+          # just in total, so one decoder quietly ceasing to accept its
+          # seed cannot hide behind the other three.
+          make clean all SANITIZER=address,undefined
+          test -x image_decode_fuzz_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 120 ./image_decode_fuzz_test
+          echo "[pass] image_decode_fuzz_test"
+
+      - name: Build and run image_avail_test (ASan + UBSan + LSan)
+        shell: bash
+        working-directory: samples/formats/image_avail
+        run: |
+          set -eu
+          # Partial-buffer ("avail-aware") still decoding for TGA and
+          # BMP, checked
+          # against the whole-buffer decode that has always been
+          # there: every fixture is decoded once with the file fully
+          # resident and again with the frontier raised a few bytes at
+          # a time, and the two surfaces must be bit-identical.
+          #
+          # The oracle is the decoder itself, so this catches the
+          # failures that do not crash: a wall mistaken for EOF (the
+          # decode pads the rest of the surface and reports success),
+          # an RLE run re-emitted after a stall, a cursor resumed off
+          # by a pixel.  It found all three of those on its first runs
+          # while TGA was being converted.
+          #
+          # BMP rows are bottom-up, so a prefix of the file is the
+          # bottom of the image and a stall resumed on the wrong row
+          # shows up as a vertically displaced surface rather than as
+          # noise.  The 4bpp and 8bpp fixtures put the wall inside the
+          # palette as well.
+          #
+          # Steps of 1, 3 and 7 bytes put the wall inside every field,
+          # inside RLE packets and mid-pixel for both 24bpp and 32bpp;
+          # 1024 is a realistic read granularity.  A truncated file
+          # must still settle rather than wait forever, which is the
+          # one case where stopping at the frontier and stopping at
+          # the end of the data have to be told apart.
+          #
+          # One set of checks replays task_image's real call sequence
+          # rather than an order this test invented - set_buffer_ptr,
+          # then set_avail BEFORE each process(), then set_avail
+          # ((size_t)-1) the instant the read completes, which for a
+          # small file is before any process() has run - at four read
+          # granularities.  Inventing the order instead of replaying
+          # it is exactly how the blank-BMP/TGA-thumbnail regression
+          # got past this file: every other check here raised the
+          # frontier only after the first process() call.
+          #
+          # One set of checks drives every avail-aware still decoder -
+          # PNG and JPEG as well as TGA and BMP - through the
+          # image_transfer facade in task_image's order.  PNG, JPEG,
+          # WEBM and MP4 clamp the requested frontier in the size
+          # domain because their set_buf_ptr is given the buffer
+          # length; rtga's and rbmp's are not, which is why those two
+          # were the only ones that could turn (size_t)-1 into a
+          # wrapped pointer, and did.  A sixth avail-aware decoder
+          # inherits whichever shape it copies, so the check lives
+          # here rather than in anyone's memory.
+          #
+          # It also checks header_ready, the gate the task layer uses
+          # to start a decode early, against the decoder itself: every
+          # prefix it accepts must be one the decoder can actually
+          # begin on, it must accept before the whole file has arrived
+          # (or partial decoding is silently off), and it must be
+          # monotonic in the prefix length.
+          make clean all SANITIZER=address,undefined
+          test -x image_avail_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 120 ./image_avail_test
+          echo "[pass] image_avail_test"

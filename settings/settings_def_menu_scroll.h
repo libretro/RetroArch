@@ -6,7 +6,7 @@
 
 S_BOOL(menu_linear_filter, MENU_LINEAR_FILTER,
       "menu_linear_filter",
-      true, SD_FLAG_NONE, 0, 0,
+      DEFAULT_VIDEO_SMOOTH, SD_FLAG_NONE, 0, 0,
       "Linear Filter",
       "Adds a slight blur to the menu to soften hard pixel edges.")
 S_UINT_EX(menu_rgui_internal_upscale_level, MENU_RGUI_INTERNAL_UPSCALE_LEVEL,

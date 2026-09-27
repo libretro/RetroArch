@@ -17,6 +17,8 @@
 #ifndef __WIIU_HID__H
 #define __WIIU_HID__H
 
+#include <retro_atomic.h>
+
 #include "hid_types.h"
 #include "input.h"
 
@@ -42,8 +44,10 @@ struct wiiu_hid
    OSThread *polling_thread;
    /* stack space for polling thread */
    void *polling_thread_stack;
-   /* watch variable for telling the polling thread to terminate */
-   volatile bool polling_thread_quit;
+   /* Tells the polling thread to terminate: set by the thread tearing
+    * the driver down, read by the polling thread's loop. An atomic and
+    * not a volatile bool: volatile orders nothing between two threads. */
+   retro_atomic_int_t polling_thread_quit;
 };
 
 /**

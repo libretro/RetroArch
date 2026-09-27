@@ -22,6 +22,7 @@
 #include <psp2/types.h>
 #include <psp2/kernel/sysmem.h>
 #include <psp2/display.h>
+#include <psp2/common_dialog.h>
 
 #include <retro_inline.h>
 #include <encodings/utf.h>
@@ -49,6 +50,7 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
+#include "../../input/input_osk.h"
 
 /* Forward declaration
    TODO/FIXME - check if this custom memcpy is genuinely more efficient */
@@ -75,8 +77,9 @@ typedef enum
 
 typedef struct gxm_video_mode_data
 {
-   int width;
-   int height;
+   /* The mode's pixel size, packed; stride is the row the display
+    * scans out, which is not always the width. */
+   unsigned dims;
    int stride;
 } gxm_video_mode_data_t;
 
@@ -136,8 +139,8 @@ typedef struct gxm_fragment_programs
 typedef struct vita_menu_frame
 {
    gxm_texture_t *texture;
-   int width;
-   int height;
+   /* The menu frame's pixel size, packed. */
+   unsigned dims;
    bool active;
 } vita_menu_t;
 
@@ -154,8 +157,9 @@ struct vita_overlay_data
    float tex_w;
    float tex_h;
    float alpha_mod;
-   float width;
-   float height;
+   /* The overlay image's pixel size, packed; tex_w and tex_h above
+    * are a fraction of it and stay the floats they are. */
+   unsigned dims;
 };
 #endif
 
@@ -163,8 +167,8 @@ typedef struct vita_video
 {
    gxm_texture_t *texture;
    SceGxmTextureFormat format;
-   int width;
-   int height;
+   /* The size of the frame the core last handed over, packed. */
+   unsigned dims;
    SceGxmTextureFilter tex_filter;
 
    video_viewport_t vp;
@@ -177,8 +181,8 @@ typedef struct vita_video
    struct vita_overlay_data *overlay;
    unsigned overlays;
 #endif
-   unsigned video_width;
-   unsigned video_height;
+   /* The size the driver is presenting at, packed. */
+   unsigned video_dims;
    unsigned rotation;
 
 #ifdef HAVE_OVERLAY
@@ -461,24 +465,21 @@ static int gxm_switch_video_mode(gxm_video_mode_t video_mode)
    switch (video_mode)
    {
       case GXM_VIDEO_MODE_960x544:
-         video_mode_data.width = 960;
-         video_mode_data.height = 544;
+         video_mode_data.dims   = VIDEO_SCALE_PACK(960, 544);
          video_mode_data.stride = 960;
          break;
 
       case GXM_VIDEO_MODE_1280x720:
-         video_mode_data.width = 1280;
-         video_mode_data.height = 720;
+         video_mode_data.dims   = VIDEO_SCALE_PACK(1280, 720);
          video_mode_data.stride = 1280;
          break;
 
       default:
          return -1;
-         break;
    }
 
-   clip_rect_x_max = video_mode_data.width;
-   clip_rect_y_max = video_mode_data.height;
+   clip_rect_x_max = VIDEO_SCALE_W(video_mode_data.dims);
+   clip_rect_y_max = VIDEO_SCALE_H(video_mode_data.dims);
 
    if (renderTarget != NULL)
    {
@@ -488,7 +489,8 @@ static int gxm_switch_video_mode(gxm_video_mode_t video_mode)
                 {
          /* clear the buffer then deallocate */
          memset(displayBufferData[i], 0,
-               video_mode_data.height*video_mode_data.stride*4);
+               VIDEO_SCALE_H(video_mode_data.dims)
+                  * video_mode_data.stride * 4);
          gpu_free(displayBufferUid[i]);
       }
    }
@@ -499,16 +501,17 @@ static int gxm_switch_video_mode(gxm_video_mode_t video_mode)
       /* allocate memory for display */
       displayBufferData[i] = gpu_alloc(
             SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-            4*video_mode_data.stride*video_mode_data.height,
+            4 * video_mode_data.stride
+               * VIDEO_SCALE_H(video_mode_data.dims),
             SCE_GXM_COLOR_SURFACE_ALIGNMENT,
             SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
             &displayBufferUid[i]);
 
       /* memset the buffer to black */
-      for (y = 0; y < video_mode_data.height; y++)
+      for (y = 0; y < (int)VIDEO_SCALE_H(video_mode_data.dims); y++)
                 {
          unsigned int *row = (unsigned int *)displayBufferData[i] + y*video_mode_data.stride;
-         for (x = 0; x < video_mode_data.width; x++)
+         for (x = 0; x < (int)VIDEO_SCALE_W(video_mode_data.dims); x++)
             row[x] = 0xff000000;
       }
 
@@ -519,8 +522,8 @@ static int gxm_switch_video_mode(gxm_video_mode_t video_mode)
             SCE_GXM_COLOR_SURFACE_LINEAR,
             (current_msaa == SCE_GXM_MULTISAMPLE_NONE) ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
             SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-            video_mode_data.width,
-            video_mode_data.height,
+            VIDEO_SCALE_W(video_mode_data.dims),
+            VIDEO_SCALE_H(video_mode_data.dims),
             video_mode_data.stride,
             displayBufferData[i]);
 
@@ -529,8 +532,8 @@ static int gxm_switch_video_mode(gxm_video_mode_t video_mode)
    /* set up parameters */
    memset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
    renderTargetParams.flags      = 0;
-   renderTargetParams.width      = video_mode_data.width;
-   renderTargetParams.height      = video_mode_data.height;
+   renderTargetParams.width      = VIDEO_SCALE_W(video_mode_data.dims);
+   renderTargetParams.height     = VIDEO_SCALE_H(video_mode_data.dims);
    renderTargetParams.scenesPerFrame     = 1;
    renderTargetParams.multisampleMode   = current_msaa;
    renderTargetParams.multisampleLocations     = 0;
@@ -540,7 +543,8 @@ static int gxm_switch_video_mode(gxm_video_mode_t video_mode)
    sceGxmCreateRenderTarget(&renderTargetParams, &renderTarget);
 
    matrix_init_orthographic(gxm_ortho_matrix, 0.0f,
-         video_mode_data.width, video_mode_data.height, 0.0f, 0.0f, 1.0f);
+         VIDEO_SCALE_W(video_mode_data.dims),
+         VIDEO_SCALE_H(video_mode_data.dims), 0.0f, 0.0f, 1.0f);
 
    return 0;
 }
@@ -555,8 +559,8 @@ static void gxm_display_callback(const void *callback_data)
    framebuf.base        = display_data->address;
    framebuf.pitch       = video_mode_data.stride;
    framebuf.pixelformat = DISPLAY_PIXEL_FORMAT;
-   framebuf.width       = video_mode_data.width;
-   framebuf.height      = video_mode_data.height;
+   framebuf.width       = VIDEO_SCALE_W(video_mode_data.dims);
+   framebuf.height      = VIDEO_SCALE_H(video_mode_data.dims);
    if (sceDisplaySetFrameBuf(&framebuf, SCE_DISPLAY_SETBUF_NEXTFRAME)
          == SCE_DISPLAY_ERROR_INVALID_RESOLUTION)
    {
@@ -747,8 +751,10 @@ static int gxm_init_internal(unsigned int temp_pool_size,
       err = sceGxmSyncObjectCreate(&displayBufferSync[i]);
 
    /* compute the memory footprint of the depth buffer */
-   alignedWidth = ALIGN(video_mode_data.width, SCE_GXM_TILE_SIZEX);
-   alignedHeight = ALIGN(video_mode_data.height, SCE_GXM_TILE_SIZEY);
+   alignedWidth  = ALIGN(VIDEO_SCALE_W(video_mode_data.dims),
+         SCE_GXM_TILE_SIZEX);
+   alignedHeight = ALIGN(VIDEO_SCALE_H(video_mode_data.dims),
+         SCE_GXM_TILE_SIZEY);
    sampleCount = alignedWidth*alignedHeight;
    depthStrideInSamples = alignedWidth;
    if (current_msaa == SCE_GXM_MULTISAMPLE_4X)
@@ -1009,7 +1015,8 @@ static int gxm_init_internal(unsigned int temp_pool_size,
 
 
    matrix_init_orthographic(gxm_ortho_matrix, 0.0f,
-         video_mode_data.width, video_mode_data.height, 0.0f, 0.0f, 1.0f);
+         VIDEO_SCALE_W(video_mode_data.dims),
+         VIDEO_SCALE_H(video_mode_data.dims), 0.0f, 0.0f, 1.0f);
 
    backBufferIndex = 0;
    frontBufferIndex = 0;
@@ -1020,7 +1027,7 @@ static int gxm_init_internal(unsigned int temp_pool_size,
 
 static void gxm_set_viewport(int x, int y, int width, int height)
 {
-   float vh = video_mode_data.height;
+   float vh = VIDEO_SCALE_H(video_mode_data.dims);
    float sw = width  / 2.;
    float sh = height / 2.;
    float x_scale = sw;
@@ -1096,7 +1103,8 @@ static void gxm_draw_rectangle(float x, float y, float w, float h,
 
 static void gxm_set_clip_rectangle(int x_min, int y_min, int x_max, int y_max)
 {
-   gxm_set_viewport(0,0,video_mode_data.width,video_mode_data.height);
+   gxm_set_viewport(0, 0, VIDEO_SCALE_W(video_mode_data.dims),
+         VIDEO_SCALE_H(video_mode_data.dims));
    clipping_enabled = 1;
    clip_rect_x_min = x_min;
    clip_rect_y_min = y_min;
@@ -1118,8 +1126,8 @@ static void gxm_set_clip_rectangle(int x_min, int y_min, int x_max, int y_max)
          SCE_GXM_STENCIL_OP_ZERO,
          0xFF,
          0xFF);
-      gxm_draw_rectangle(0, 0, video_mode_data.width,
-            video_mode_data.height, 0);
+      gxm_draw_rectangle(0, 0, VIDEO_SCALE_W(video_mode_data.dims),
+            VIDEO_SCALE_H(video_mode_data.dims), 0);
       /* set the stencil to 1 in the desired region */
       sceGxmSetFrontStencilFunc(
          gxm_context,
@@ -1534,7 +1542,7 @@ static void *gfx_display_gxm_get_default_mvp(void *data)
 }
 
 static void gfx_display_gxm_draw(gfx_display_ctx_draw_t *draw,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
    gxm_texture_tint_vertex_t *vertices;
    unsigned i;
@@ -1561,7 +1569,8 @@ static void gfx_display_gxm_draw(gfx_display_ctx_draw_t *draw,
    if (!color)
       color           = &gxm_colors[0];
 
-   gxm_set_viewport(draw->x, draw->y, draw->width, draw->height);
+   gxm_set_viewport(VIDEO_POS_X(draw->pos), VIDEO_POS_Y(draw->pos),
+         VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
    vertices = (gxm_texture_tint_vertex_t *)
       gxm_pool_memalign(
          draw->coords->vertices * sizeof(gxm_texture_tint_vertex_t),
@@ -1584,22 +1593,20 @@ static void gfx_display_gxm_draw(gfx_display_ctx_draw_t *draw,
          vita->mvp_no_rot.data);
 }
 
-static void gfx_display_gxm_scissor_begin(void *data,
-      unsigned video_width,
-      unsigned video_height,
-      int x, int y,
-      unsigned width, unsigned height)
+static void gfx_display_gxm_scissor_begin(void *data, unsigned video_dims,
+      int x, int y, unsigned dims)
 {
+   unsigned width        = VIDEO_SCALE_W(dims);
+   unsigned height       = VIDEO_SCALE_H(dims);
    gxm_set_clip_rectangle(x, y, x + width, y + height);
    sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_OUTSIDE, x, y,
          x + width, y + height);
 }
 
-static void gfx_display_gxm_scissor_end(
-      void *data,
-      unsigned video_width,
-      unsigned video_height)
+static void gfx_display_gxm_scissor_end(void *data, unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    sceGxmSetRegionClip(gxm_context, SCE_GXM_REGION_CLIP_NONE, 0, 0,
          video_width, video_height);
    clipping_enabled = 0;
@@ -1612,22 +1619,6 @@ static void gfx_display_gxm_scissor_end(
          0xFF,
          0xFF);
 }
-
-gfx_display_ctx_driver_t gfx_display_ctx_gxm = {
-   gfx_display_gxm_draw,
-   NULL,                                        /* draw_pipeline */
-   NULL,                                        /* blend_begin   */
-   NULL,                                        /* blend_end     */
-   gfx_display_gxm_get_default_mvp,
-   gfx_display_gxm_get_default_vertices,
-   gfx_display_gxm_get_default_tex_coords,
-   FONT_DRIVER_RENDER_GXM,
-   GFX_VIDEO_DRIVER_GXM,
-   "vita2d",
-   true,
-   gfx_display_gxm_scissor_begin,
-   gfx_display_gxm_scissor_end
-};
 
 /*
  * FONT DRIVER
@@ -1650,7 +1641,7 @@ static void *gxm_font_init(void *data,
 
    if (!font_renderer_create_default(
             &font->font_driver,
-            &font->font_data, font_path, font_size))
+            &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
       goto error;
 
    font->atlas   = font->font_driver->get_atlas(font->font_data);
@@ -1866,7 +1857,7 @@ static void gxm_font_render_message(
    int x                                  = roundf(pos_x * width);
    const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
-   line_height = line_metrics->height * scale / vita->vp.height;
+   line_height = line_metrics->height * scale / VIDEO_SCALE_H(vita->vp.dims);
    for (;;)
    {
       size_t msg_len;
@@ -1885,19 +1876,18 @@ static void gxm_font_render_message(
    }
 }
 
-static void gxm_set_viewport_wrapper(void *data, unsigned vp_width,
-      unsigned vp_height, bool force_full, bool allow_rotate)
+static void gxm_set_viewport_wrapper(void *data, unsigned dims,
+      bool force_full, bool allow_rotate)
 {
    struct video_ortho ortho  = {0, 1, 0, 1, -1, 1};
    vita_video_t *vita        = (vita_video_t*)data;
 
-   vita->vp.full_width  = vp_width;
-   vita->vp.full_height = vp_height;
+   vita->vp.full_dims   = dims;
    video_driver_update_viewport(&vita->vp, force_full,
    vita->keep_aspect, true);
 
-   gxm_set_viewport(vita->vp.x, vita->vp.y, vita->vp.width,
-   vita->vp.height);
+   gxm_set_viewport(VIDEO_POS_X(vita->vp.pos), VIDEO_POS_Y(vita->vp.pos), VIDEO_SCALE_W(vita->vp.dims),
+   VIDEO_SCALE_H(vita->vp.dims));
    gxm_set_projection(vita, &ortho, allow_rotate);
 }
 
@@ -1914,8 +1904,8 @@ static void gxm_font_render_msg(
    bool full_screen                 = false;
    vita_video_t *vita               = (vita_video_t *)userdata;
    vita_font_t *font                = (vita_font_t *)data;
-   unsigned width                   = vita->video_width;
-   unsigned height                  = vita->video_height;
+   unsigned width                   = VIDEO_SCALE_W(vita->video_dims);
+   unsigned height                  = VIDEO_SCALE_H(vita->video_dims);
 
    if (!font || !msg || !*msg)
       return;
@@ -1963,7 +1953,7 @@ static void gxm_font_render_msg(
       drop_alpha              = 1.0f;
    }
 
-   gxm_set_viewport_wrapper(vita, width, height, full_screen, false);
+   gxm_set_viewport_wrapper(vita, VIDEO_SCALE_PACK(width, height), full_screen, false);
 
    if (drop_x || drop_y)
    {
@@ -2003,18 +1993,6 @@ static bool gxm_font_get_line_metrics(void* data,
    return false;
 }
 
-font_renderer_t gxm_font = {
-   gxm_font_init,
-   gxm_font_free,
-   gxm_font_render_msg,
-   "vita2d",
-   gxm_font_get_glyph,
-   NULL,                      /* bind_block */
-   NULL,                      /* flush */
-   gxm_font_get_message_width,
-   gxm_font_get_line_metrics
-};
-
 /*
  * VIDEO DRIVER
  */
@@ -2047,16 +2025,15 @@ static void *gxm_gfx_init(const video_info_t *video,
    else
       vita->format    = SCE_GXM_TEXTURE_FORMAT_R5G6B5;
 
-   temp_width         = video_mode_data.width;
-   temp_height        = video_mode_data.height;
+   temp_width         = VIDEO_SCALE_W(video_mode_data.dims);
+   temp_height        = VIDEO_SCALE_H(video_mode_data.dims);
 
    vita->fullscreen   = video->fullscreen;
 
    vita->texture      = NULL;
    vita->menu.texture = NULL;
    vita->menu.active  = 0;
-   vita->menu.width   = 0;
-   vita->menu.height  = 0;
+   vita->menu.dims    = 0;
 
    vita->vsync        = video->vsync;
    vita->rgb32        = video->rgb32;
@@ -2064,11 +2041,10 @@ static void *gxm_gfx_init(const video_info_t *video,
    vita->tex_filter   = video->smooth
       ? SCE_GXM_TEXTURE_FILTER_LINEAR : SCE_GXM_TEXTURE_FILTER_POINT;
 
-   vita->video_width  = temp_width;
-   vita->video_height = temp_height;
+   vita->video_dims   = VIDEO_SCALE_PACK(temp_width, temp_height);
 
-   video_driver_set_output_size(temp_width, temp_height);
-   gxm_set_viewport_wrapper(vita, temp_width, temp_height, false, true);
+   video_driver_set_output_dims(VIDEO_SCALE_PACK(temp_width, temp_height));
+   gxm_set_viewport_wrapper(vita, VIDEO_SCALE_PACK(temp_width, temp_height), false, true);
 
    if (input && input_data)
    {
@@ -2084,11 +2060,6 @@ static void *gxm_gfx_init(const video_info_t *video,
 #ifdef HAVE_OVERLAY
    vita->overlay_enable     = false;
 #endif
-   font_driver_init_osd(vita,
-         video,
-         false,
-         video->is_threaded,
-         FONT_DRIVER_RENDER_GXM);
 
    return vita;
 }
@@ -2111,21 +2082,19 @@ static void gxm_free_overlay(vita_video_t *vita)
 
 static void gxm_update_viewport(vita_video_t* vita)
 {
-   unsigned temp_width  = video_mode_data.width;
-   unsigned temp_height = video_mode_data.height;
+   unsigned temp_width  = VIDEO_SCALE_W(video_mode_data.dims);
+   unsigned temp_height = VIDEO_SCALE_H(video_mode_data.dims);
    bool is_rotated      = (vita->rotation == ORIENTATION_VERTICAL)
                        || (vita->rotation == ORIENTATION_FLIPPED_ROTATED);
 
    /* For rotated displays, swap dimensions before viewport calculation */
    if (is_rotated && vita->keep_aspect)
    {
-      vita->vp.full_width  = temp_height;
-      vita->vp.full_height = temp_width;
+      vita->vp.full_dims   = VIDEO_SCALE_PACK(temp_height, temp_width);
    }
    else
    {
-      vita->vp.full_width  = temp_width;
-      vita->vp.full_height = temp_height;
+      vita->vp.full_dims   = VIDEO_SCALE_PACK(temp_width, temp_height);
    }
 
    video_driver_update_viewport(&vita->vp, false, vita->keep_aspect, true);
@@ -2133,22 +2102,48 @@ static void gxm_update_viewport(vita_video_t* vita)
    /* For rotated displays, swap x and y */
    if (is_rotated && vita->keep_aspect)
    {
-      unsigned tmp = vita->vp.x;
-      vita->vp.x   = vita->vp.y;
-      vita->vp.y   = tmp;
+      unsigned tmp = VIDEO_POS_X(vita->vp.pos);
+      vita->vp.pos = VIDEO_POS_PACK(VIDEO_POS_Y(vita->vp.pos), tmp);
    }
 
    /* Ensure even dimensions */
-   vita->vp.width      += vita->vp.width & 0x1;
-   vita->vp.height     += vita->vp.height & 0x1;
+   {
+      unsigned vp_w        = VIDEO_SCALE_W(vita->vp.dims);
+      unsigned vp_h        = VIDEO_SCALE_H(vita->vp.dims);
+      vita->vp.dims        = VIDEO_SCALE_PACK(vp_w + (vp_w & 0x1),
+            vp_h + (vp_h & 0x1));
+   }
 
    vita->should_resize  = false;
 }
 
+/* A system common dialog (the keyboard psp_input.c opens) is drawn by
+ * the OS into the back buffer this frame is about to present, but only
+ * when asked, once per frame, after our scene has ended. The sync
+ * object orders its rendering after ours. */
+static void gxm_common_dialog_update(void)
+{
+   SceCommonDialogUpdateParam param;
+
+   memset(&param, 0, sizeof(param));
+   param.renderTarget.colorFormat      = DISPLAY_COLOR_FORMAT;
+   param.renderTarget.surfaceType      = SCE_GXM_COLOR_SURFACE_LINEAR;
+   param.renderTarget.width            = VIDEO_SCALE_W(video_mode_data.dims);
+   param.renderTarget.height           = VIDEO_SCALE_H(video_mode_data.dims);
+   param.renderTarget.strideInPixels   = video_mode_data.stride;
+   param.renderTarget.colorSurfaceData = displayBufferData[backBufferIndex];
+   param.renderTarget.depthSurfaceData = depthBufferData;
+   param.displaySyncObject             = displayBufferSync[backBufferIndex];
+
+   sceCommonDialogUpdate(&param);
+}
+
 static bool gxm_frame(void *data, const void *frame,
-      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    void *tex_p;
    gxm_display_data_t displayData;
    vita_video_t *vita                     = (vita_video_t *)data;
@@ -2170,7 +2165,7 @@ static bool gxm_frame(void *data, const void *frame,
          unsigned i;
          unsigned int stride;
 
-         if ((width != vita->width || height != vita->height) && vita->texture)
+         if (vita->dims != dims && vita->texture)
          {
             if (gxm_initialized)
                sceGxmFinish(gxm_context);
@@ -2180,8 +2175,7 @@ static bool gxm_frame(void *data, const void *frame,
 
          if (!vita->texture)
          {
-            vita->width   = width;
-            vita->height  = height;
+            vita->dims    = dims;
             vita->texture = gxm_create_empty_texture_format(width, height,
                   vita->format);
             gxm_texture_set_filters(vita->texture, vita->tex_filter,
@@ -2222,8 +2216,8 @@ static bool gxm_frame(void *data, const void *frame,
    if (vita->should_resize)
       gxm_update_viewport(vita);
 
-   temp_width      = video_mode_data.width;
-   temp_height     = video_mode_data.height;
+   temp_width      = VIDEO_SCALE_W(video_mode_data.dims);
+   temp_height     = VIDEO_SCALE_H(video_mode_data.dims);
 
    pool_index = 0;
    sceGxmBeginScene(
@@ -2250,16 +2244,18 @@ static bool gxm_frame(void *data, const void *frame,
       if (vita->fullscreen)
          gxm_draw_texture_scale(vita->texture,
                0, 0,
-               temp_width  / (float)vita->width,
-               temp_height / (float)vita->height);
+               temp_width  / (float)VIDEO_SCALE_W(vita->dims),
+               temp_height / (float)VIDEO_SCALE_H(vita->dims));
       else
       {
          const float radian = 270 * 0.0174532925f;
          const float rad = vita->rotation * radian;
-         float scalex = vita->vp.width  / (float)vita->width;
-         float scaley = vita->vp.height / (float)vita->height;
-         gxm_draw_texture_scale_rotate(vita->texture,vita->vp.x,
-               vita->vp.y, scalex, scaley, rad);
+         float scalex = VIDEO_SCALE_W(vita->vp.dims)
+            / (float)VIDEO_SCALE_W(vita->dims);
+         float scaley = VIDEO_SCALE_H(vita->vp.dims)
+            / (float)VIDEO_SCALE_H(vita->dims);
+         gxm_draw_texture_scale_rotate(vita->texture,VIDEO_POS_X(vita->vp.pos),
+               VIDEO_POS_Y(vita->vp.pos), scalex, scaley, rad);
       }
    }
 
@@ -2274,22 +2270,25 @@ static bool gxm_frame(void *data, const void *frame,
          if (vita->fullscreen)
             gxm_draw_texture_scale(vita->menu.texture,
                   0, 0,
-                  temp_width  / (float)vita->menu.width,
-                  temp_height / (float)vita->menu.height);
+                  temp_width  / (float)VIDEO_SCALE_W(vita->menu.dims),
+                  temp_height / (float)VIDEO_SCALE_H(vita->menu.dims));
          else
          {
-            if (vita->menu.width > vita->menu.height)
+            if (VIDEO_SCALE_W(vita->menu.dims)
+                  > VIDEO_SCALE_H(vita->menu.dims))
             {
-               float scale = temp_height / (float)vita->menu.height;
-               float w = vita->menu.width * scale;
+               float scale = temp_height
+                  / (float)VIDEO_SCALE_H(vita->menu.dims);
+               float w = VIDEO_SCALE_W(vita->menu.dims) * scale;
                gxm_draw_texture_scale(vita->menu.texture,
                      temp_width / 2.0f - w/2.0f, 0.0f,
                      scale, scale);
             }
             else
             {
-               float scale = temp_width / (float)vita->menu.width;
-               float h = vita->menu.height * scale;
+               float scale = temp_width
+                  / (float)VIDEO_SCALE_W(vita->menu.dims);
+               float h = VIDEO_SCALE_H(vita->menu.dims) * scale;
                gxm_draw_texture_scale(vita->menu.texture,
                      0.0f, temp_height / 2.0f - h/2.0f,
                      scale, scale);
@@ -2318,6 +2317,9 @@ static bool gxm_frame(void *data, const void *frame,
 
    sceGxmEndScene(gxm_context, NULL, NULL);
    drawing = 0;
+
+   if (input_osk_native_active())
+      gxm_common_dialog_update();
 
    sceGxmPadHeartbeat(&displaySurface[backBufferIndex],
          displayBufferSync[backBufferIndex]);
@@ -2382,7 +2384,8 @@ static void gxm_free(void *data)
       {
          /* clear the buffer then deallocate */
          memset(displayBufferData[i], 0,
-               video_mode_data.height*video_mode_data.stride*4);
+               VIDEO_SCALE_H(video_mode_data.dims)
+                  * video_mode_data.stride * 4);
          gpu_free(displayBufferUid[i]);
 
          /* destroy the sync object */
@@ -2441,7 +2444,6 @@ static void gxm_free(void *data)
       vita->texture = NULL;
    }
 
-   font_driver_free_osd();
 }
 
 static void gxm_set_projection(vita_video_t *vita,
@@ -2533,7 +2535,7 @@ static void gxm_apply_state_changes(void *data)
 
 static void gxm_set_texture_frame(void *data,
       const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    unsigned i;
    void *tex_p;
@@ -2549,8 +2551,7 @@ static void gxm_set_texture_frame(void *data,
     * old texture's allocation (new size > old) or leave stale border
     * pixels (new size < old). */
    if (     vita->menu.texture
-         && (   width  != (unsigned)vita->menu.width
-             || height != (unsigned)vita->menu.height))
+         && dims != vita->menu.dims)
    {
       if (gxm_initialized)
          sceGxmFinish(gxm_context);
@@ -2561,13 +2562,12 @@ static void gxm_set_texture_frame(void *data,
    if (!vita->menu.texture)
    {
       if (rgb32)
-         vita->menu.texture = gxm_create_empty_texture_format(width,
-               height, SCE_GXM_TEXTURE_FORMAT_A8B8G8R8);
+         vita->menu.texture = gxm_create_empty_texture_format(VIDEO_SCALE_W(dims),
+               VIDEO_SCALE_H(dims), SCE_GXM_TEXTURE_FORMAT_A8B8G8R8);
       else
          vita->menu.texture = gxm_create_empty_texture_format(
-               width, height, SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA);
-      vita->menu.width      = width;
-      vita->menu.height     = height;
+               VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_RGBA);
+      vita->menu.dims       = dims;
    }
 
    gxm_texture_set_filters(vita->menu.texture,
@@ -2587,21 +2587,21 @@ static void gxm_set_texture_frame(void *data,
    {
       uint32_t       *tex32   = (uint32_t*)tex_p;
       const uint32_t *frame32 = (const uint32_t*)frame;
-      size_t          rowlen  = (size_t)width * 4;
+      size_t          rowlen  = (size_t)VIDEO_SCALE_W(dims) * 4;
 
       stride /= 4;
-      for (i = 0; i < height; i++)
-         memcpy(tex32 + i * stride, frame32 + i * width, rowlen);
+      for (i = 0; i < VIDEO_SCALE_H(dims); i++)
+         memcpy(tex32 + i * stride, frame32 + i * VIDEO_SCALE_W(dims), rowlen);
    }
    else
    {
       uint16_t       *tex16   = (uint16_t*)tex_p;
       const uint16_t *frame16 = (const uint16_t*)frame;
-      size_t          rowlen  = (size_t)width * 2;
+      size_t          rowlen  = (size_t)VIDEO_SCALE_W(dims) * 2;
 
       stride /= 2;
-      for (i = 0; i < height; i++)
-         memcpy(tex16 + i * stride, frame16 + i * width, rowlen);
+      for (i = 0; i < VIDEO_SCALE_H(dims); i++)
+         memcpy(tex16 + i * stride, frame16 + i * VIDEO_SCALE_W(dims), rowlen);
    }
 }
 
@@ -2671,8 +2671,8 @@ static bool gxm_get_current_sw_framebuffer(void *data,
    vita_video_t *vita = (vita_video_t*)data;
 
    if (     !vita->texture
-         || (vita->width  != framebuffer->width)
-         || (vita->height != framebuffer->height))
+         || (vita->dims != VIDEO_SCALE_PACK(framebuffer->width,
+                  framebuffer->height)))
    {
       if (vita->texture)
       {
@@ -2682,10 +2682,11 @@ static bool gxm_get_current_sw_framebuffer(void *data,
          vita->texture = NULL;
       }
 
-      vita->width   = framebuffer->width;
-      vita->height  = framebuffer->height;
+      vita->dims    = VIDEO_SCALE_PACK(framebuffer->width,
+            framebuffer->height);
       vita->texture = gxm_create_empty_texture_format(
-            vita->width, vita->height, vita->format);
+            VIDEO_SCALE_W(vita->dims), VIDEO_SCALE_H(vita->dims),
+            vita->format);
       gxm_texture_set_filters(vita->texture,
             vita->tex_filter,vita->tex_filter);
    }
@@ -2895,9 +2896,9 @@ static bool gxm_overlay_load(void *data, const void *image_data, unsigned num_im
       uint32_t *tex32;
       const uint32_t *frame32;
       struct vita_overlay_data *o = (struct vita_overlay_data*)&vita->overlay[i];
-      o->width   = images[i].width;
-      o->height  = images[i].height;
-      o->tex     = gxm_create_empty_texture_format(o->width, o->height,
+      o->dims    = VIDEO_SCALE_PACK(images[i].width, images[i].height);
+      o->tex     = gxm_create_empty_texture_format(
+            VIDEO_SCALE_W(o->dims), VIDEO_SCALE_H(o->dims),
             SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB);
       gxm_texture_set_filters(o->tex, SCE_GXM_TEXTURE_FILTER_LINEAR,
             SCE_GXM_TEXTURE_FILTER_LINEAR);
@@ -2905,9 +2906,9 @@ static bool gxm_overlay_load(void *data, const void *image_data, unsigned num_im
       stride    /= 4;
       tex32      = sceGxmTextureGetData(&o->tex->gxm_tex);
       frame32    = images[i].pixels;
-      pitch      = o->width;
-      for (j = 0; j < o->height; j++)
-         for (k = 0; k < o->width; k++)
+      pitch      = VIDEO_SCALE_W(o->dims);
+      for (j = 0; j < VIDEO_SCALE_H(o->dims); j++)
+         for (k = 0; k < VIDEO_SCALE_W(o->dims); k++)
             tex32[k + j*stride] = frame32[k + j*pitch];
 
       gxm_overlay_tex_geom(vita, i, 0, 0, 1, 1); /* Default. Stretch to whole screen. */
@@ -2924,15 +2925,15 @@ static void gxm_overlay_tex_geom(void *data, unsigned image,
    vita_video_t          *vita = (vita_video_t*)data;
    struct vita_overlay_data *o = NULL;
 
-   if (vita)
+   if (vita && vita->overlay && image < vita->overlays)
       o = (struct vita_overlay_data*)&vita->overlay[image];
 
    if (o)
    {
       o->tex_x = x;
       o->tex_y = y;
-      o->tex_w = w*o->width;
-      o->tex_h = h*o->height;
+      o->tex_w = w * VIDEO_SCALE_W(o->dims);
+      o->tex_h = h * VIDEO_SCALE_H(o->dims);
    }
 }
 
@@ -2947,15 +2948,17 @@ static void gxm_overlay_vertex_geom(void *data, unsigned image,
       h = -h;
     */
 
-   if (vita)
+   if (vita && vita->overlay && image < vita->overlays)
       o = (struct vita_overlay_data*)&vita->overlay[image];
 
    if (o)
    {
-      o->w = w * video_mode_data.width  / o->width;
-      o->h = h * video_mode_data.height / o->height;
-      o->x = video_mode_data.width  * (1 - w) / 2 + x;
-      o->y = video_mode_data.height * (1 - h) / 2 + y;
+      o->w = w * VIDEO_SCALE_W(video_mode_data.dims)
+         / VIDEO_SCALE_W(o->dims);
+      o->h = h * VIDEO_SCALE_H(video_mode_data.dims)
+         / VIDEO_SCALE_H(o->dims);
+      o->x = VIDEO_SCALE_W(video_mode_data.dims) * (1 - w) / 2 + x;
+      o->y = VIDEO_SCALE_H(video_mode_data.dims) * (1 - h) / 2 + y;
    }
 }
 
@@ -2974,7 +2977,11 @@ static void gxm_overlay_full_screen(void *data, bool enable)
 static void gxm_overlay_set_alpha(void *data, unsigned image, float mod)
 {
    vita_video_t *vita             = (vita_video_t*)data;
-   vita->overlay[image].alpha_mod = mod;
+   /* Called whenever the frontend likes, not only after a load that
+    * worked: no page is a NULL array, and an index off the end of the
+    * page is off the end of the allocation. */
+   if (vita && vita->overlay && image < vita->overlays)
+      vita->overlay[image].alpha_mod = mod;
 }
 
 static void gxm_render_overlay(void *data)
@@ -2992,12 +2999,13 @@ static void gxm_render_overlay(void *data)
             vita->overlay[i].tex_h,
             vita->overlay[i].w,
             vita->overlay[i].h,
-            RGBA8(0xFF,0xFF,0xFF,(uint8_t)(vita->overlay[i].alpha_mod * 255.0f)));
+            RGBA8(0xFF,0xFF,0xFF,(uint8_t)VIDEO_ALPHA_BYTE(vita->overlay[i].alpha_mod)));
 }
 
 static const video_overlay_interface_t gxm_overlay_interface = {
    gxm_overlay_enable,
    gxm_overlay_load,
+   NULL, /* load_textures */
    gxm_overlay_tex_geom,
    gxm_overlay_vertex_geom,
    gxm_overlay_full_screen,
@@ -3009,6 +3017,18 @@ static void gxm_get_overlay_interface(void *data, const video_overlay_interface_
    *iface = &gxm_overlay_interface;
 }
 #endif
+
+static font_renderer_t gxm_font = {
+   gxm_font_init,
+   gxm_font_free,
+   gxm_font_render_msg,
+   "vita2d",
+   gxm_font_get_glyph,
+   NULL,                      /* bind_block */
+   NULL,                      /* flush */
+   gxm_font_get_message_width,
+   gxm_font_get_line_metrics
+};
 
 video_driver_t video_gxm = {
    gxm_gfx_init,
@@ -3025,7 +3045,6 @@ video_driver_t video_gxm = {
    gxm_set_rotation,
    gxm_viewport_info,
    NULL, /* read_viewport */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    gxm_get_overlay_interface,
 #endif
@@ -3034,6 +3053,26 @@ video_driver_t video_gxm = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   gxm_widgets_enabled
+   gxm_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &gxm_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_gxm = {
+   gfx_display_gxm_draw,
+   NULL,                                        /* draw_pipeline */
+   NULL,                                        /* blend_begin   */
+   NULL,                                        /* blend_end     */
+   gfx_display_gxm_get_default_mvp,
+   gfx_display_gxm_get_default_vertices,
+   gfx_display_gxm_get_default_tex_coords,
+   &gxm_font,
+   GFX_VIDEO_DRIVER_GXM,
+   "vita2d",
+   true,
+   true,
+   gfx_display_gxm_scissor_begin,
+   gfx_display_gxm_scissor_end
 };

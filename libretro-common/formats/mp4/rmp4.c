@@ -2,6 +2,8 @@
  *
  * A pure demuxer: it parses the ISO-BMFF box tree and hands out the
  * elementary-stream packets, without decoding.  See rmp4.h for the API.
+ * The decoding glue lives next door: rmp4_audio.c (audio track to PCM)
+ * and rmp4_video.c (video track to images).
  *
  * What it implements: progressive files whose sample tables live in
  * moov/trak/mdia/minf/stbl - the parser reads the boxes it needs (mvhd
@@ -380,6 +382,26 @@ static void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
                t->pub.codec              = RMP4_CODEC_H264;
                t->pub.codec_private      = avcc.body;
                t->pub.codec_private_size = (size_t)avcc.size;
+            }
+            break;
+         }
+         case RMP4_FOURCC('h','v','c','1'):
+         case RMP4_FOURCC('h','e','v','1'):
+         {
+            /* HEVCSampleEntry carries an hvcC
+             * (HEVCDecoderConfigurationRecord) child at the same
+             * 78-byte offset.  'hvc1' keeps all parameter sets in the
+             * hvcC; 'hev1' may also repeat them in-band, which the
+             * decoder accepts either way.  As with avcC the record
+             * supplies the VPS/SPS/PPS and the NAL length size. */
+            rmp4_box hvcc;
+            if (e.size > 78
+                && rmp4_find_child(e.body + 78, e.size - 78,
+                      RMP4_FOURCC('h','v','c','C'), &hvcc))
+            {
+               t->pub.codec              = RMP4_CODEC_H265;
+               t->pub.codec_private      = hvcc.body;
+               t->pub.codec_private_size = (size_t)hvcc.size;
             }
             break;
          }
@@ -996,15 +1018,20 @@ static void rmp4_parse_moof(rmp4_t *m, const uint8_t *body, uint64_t size,
 /* ===== public API ===== */
 
 rmp4_t *rmp4_open_memory_avail(const uint8_t *data, size_t size,
-      size_t avail, int *need_more)
+      size_t avail, int *need_more, size_t *need_lo, size_t *need_hi)
 {
    rmp4_t  *m;
    uint64_t pos = 0, next;
    rmp4_box b;
    int      seen_known = 0, have_moov = 0, hit_wall = 0;
+   uint64_t want_lo = 0, want_hi = 0;
 
    if (need_more)
       *need_more = 0;
+   if (need_lo)
+      *need_lo = 0;
+   if (need_hi)
+      *need_hi = 0;
    if (avail > size)
       avail = size;
    if (!data || size < 16)
@@ -1029,7 +1056,13 @@ rmp4_t *rmp4_open_memory_avail(const uint8_t *data, size_t size,
        * header; at worst this costs one extra retry near the wall,
        * never a read past it). */
       if (avail < size && pos + 16 > avail)
-      { hit_wall = 1; break; }
+      {
+         /* the walk needs exactly this header; reporting the range
+          * lets a windowed caller commit it without reading the
+          * skipped body bytes in between */
+         want_lo = pos; want_hi = pos + 16;
+         hit_wall = 1; break;
+      }
       if (!rmp4_box_at(data, (uint64_t)size, pos, &b, &next))
          break;
       switch (b.type)
@@ -1045,7 +1078,11 @@ rmp4_t *rmp4_open_memory_avail(const uint8_t *data, size_t size,
          case RMP4_FOURCC('m','o','o','v'):
             seen_known = 1;
             if ((uint64_t)(b.body - data) + b.size > avail)
-            { hit_wall = 1; break; }   /* moov body still arriving */
+            {
+               want_lo = (uint64_t)(b.body - data) - 16;
+               want_hi = (uint64_t)(b.body - data) + b.size;
+               hit_wall = 1; break;    /* moov body still arriving */
+            }
             if (rmp4_parse_moov(m, b.body, b.size))
                have_moov = 1;
             break;
@@ -1063,7 +1100,16 @@ rmp4_t *rmp4_open_memory_avail(const uint8_t *data, size_t size,
    {
       rmp4_close(m);
       if ((hit_wall || avail < size) && need_more)
+      {
          *need_more = 1;
+         if (hit_wall && want_hi > want_lo && want_hi <= (uint64_t)size)
+         {
+            if (need_lo)
+               *need_lo = (size_t)want_lo;
+            if (need_hi)
+               *need_hi = (size_t)want_hi;
+         }
+      }
       return NULL;
    }
    if (!seen_known)
@@ -1102,7 +1148,7 @@ rmp4_t *rmp4_open_memory_avail(const uint8_t *data, size_t size,
 
 rmp4_t *rmp4_open_memory(const uint8_t *data, size_t size)
 {
-   return rmp4_open_memory_avail(data, size, size, NULL);
+   return rmp4_open_memory_avail(data, size, size, NULL, NULL, NULL);
 }
 
 const int64_t *rmp4_track_pts(const rmp4_t *m, int track, uint32_t *count)
@@ -1120,8 +1166,16 @@ void rmp4_set_avail(rmp4_t *m, size_t avail)
       return;
    if (avail > m->len)
       avail = m->len;
-   if (avail > m->avail)   /* monotonic: bytes never un-arrive */
-      m->avail = avail;
+   /* An exact store, not a raise.  "Bytes never un-arrive" was a
+    * growing-buffer model; a windowed caller's bound is "readable
+    * right now", and its bytes do un-arrive - the feeder decommits
+    * behind the consumer and rewinds the window at a loop.  Refusing
+    * to lower left the bound at its high-water mark, admitting reads
+    * of pages the window had taken back: the bound would then wave
+    * through a packet on unpopulated pages, and the decoder faulted
+    * inside its bitstream reader.  A caller with a growth-only source
+    * simply never lowers, so it loses nothing here. */
+   m->avail = avail;
 }
 
 void rmp4_close(rmp4_t *m)
@@ -1179,10 +1233,34 @@ int64_t rmp4_duration_ns(const rmp4_t *m)
 void rmp4_rewind(rmp4_t *m)
 {
    int i;
+   uint64_t next = 0;
+   int      have = 0;
    if (!m)
       return;
    for (i = 0; i < m->num_tracks; i++)
       m->trk[i].cursor = 0;
+   /* rmp4_consumed is "the compressed frontier a feeder needs" - where
+    * the next read lands.  Leaving media_max_end at its high-water
+    * mark froze that frontier at the file end across a loop: the
+    * feeder kept its window parked on the tail, the rewound decoder
+    * walked the head into pages the window had decommitted behind
+    * itself, and playback after the first lap degenerated into a
+    * stutter-loop of however much stayed resident (audio and video
+    * both - this is the byte_tell under each).  The frontier after a
+    * rewind is the merged next sample offset, the same merge
+    * rmp4_read_packet does. */
+   for (i = 0; i < m->num_tracks; i++)
+   {
+      rmp4_itrack *t = &m->trk[i];
+      if (!t->count)
+         continue;
+      if (!have || t->off[0] < next)
+      {
+         next = t->off[0];
+         have = 1;
+      }
+   }
+   m->media_max_end = have ? next : 0;
 }
 
 int rmp4_read_packet(rmp4_t *m, rmp4_packet *pkt)

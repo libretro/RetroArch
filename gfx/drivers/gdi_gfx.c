@@ -93,10 +93,7 @@ typedef struct gdi_texture
    HBITMAP bmp_old;
    void *data;            /* Owned BGRA premultiplied pixel buffer. */
 
-   int width;
-   int height;
-   int active_width;
-   int active_height;
+   unsigned dims;         /* Pixel size of `data`, packed. */
 
    bool has_alpha;
    bool premultiplied;
@@ -117,7 +114,7 @@ static bool gdi_ensure_menu_surface(gdi_t *gdi,
 static void gdi_release_menu_surface(gdi_t *gdi);
 /* Defined alongside the vtable near the bottom of the file, but
  * gdi_frame calls it through the should_resize path. */
-static void gdi_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
+static void gdi_set_viewport(void *data, unsigned dims,
       bool force_full, bool allow_rotate);
 #ifdef HAVE_OVERLAY
 /* Overlay impl lives near the bottom alongside the vtable; gdi_frame
@@ -274,8 +271,8 @@ static bool gdi_ensure_menu_surface(gdi_t *gdi,
       return false;
 
    if (     gdi->bmp_menu
-         && gdi->menu_surface_width  == width
-         && gdi->menu_surface_height == height)
+         && VIDEO_SCALE_W(gdi->menu_surface_dims)  == width
+         && VIDEO_SCALE_H(gdi->menu_surface_dims) == height)
       return true;
 
    /* Tear down any prior surface before creating the new one.  The
@@ -298,14 +295,12 @@ static bool gdi_ensure_menu_surface(gdi_t *gdi,
    {
       gdi->bmp_menu          = NULL;
       gdi->menu_pixels       = NULL;
-      gdi->menu_surface_width  = 0;
-      gdi->menu_surface_height = 0;
+      gdi->menu_surface_dims = 0;
       return false;
    }
 
    gdi->menu_pixels         = (uint32_t*)pixels;
-   gdi->menu_surface_width  = width;
-   gdi->menu_surface_height = height;
+   gdi->menu_surface_dims = VIDEO_SCALE_PACK(width, height);
    return true;
 }
 
@@ -322,8 +317,7 @@ static void gdi_release_menu_surface(gdi_t *gdi)
       DeleteObject(gdi->bmp_menu);
    gdi->bmp_menu          = NULL;
    gdi->menu_pixels       = NULL;
-   gdi->menu_surface_width  = 0;
-   gdi->menu_surface_height = 0;
+   gdi->menu_surface_dims = 0;
 }
 
 /* Allocate (or reuse) a BGRA32 scratch DIB section of at least
@@ -350,24 +344,23 @@ static bool gdi_ensure_scratch_quad(gdi_t *gdi, unsigned w, unsigned h)
    /* Existing allocation big enough? */
    if (     gdi->scratch_quad_bmp
          && gdi->scratch_quad_pixels
-         && gdi->scratch_quad_w >= w
-         && gdi->scratch_quad_h >= h)
+         && VIDEO_SCALE_W(gdi->scratch_quad_dims) >= w
+         && VIDEO_SCALE_H(gdi->scratch_quad_dims) >= h)
       return true;
 
    /* Grow.  Take the max of the current cap and the new request so
     * we don't shrink any axis (one big draw shouldn't force the next
     * smaller draw to reallocate). */
-   if (gdi->scratch_quad_w > w)
-      w = gdi->scratch_quad_w;
-   if (gdi->scratch_quad_h > h)
-      h = gdi->scratch_quad_h;
+   if (VIDEO_SCALE_W(gdi->scratch_quad_dims) > w)
+      w = VIDEO_SCALE_W(gdi->scratch_quad_dims);
+   if (VIDEO_SCALE_H(gdi->scratch_quad_dims) > h)
+      h = VIDEO_SCALE_H(gdi->scratch_quad_dims);
 
    if (gdi->scratch_quad_bmp)
       DeleteObject(gdi->scratch_quad_bmp);
    gdi->scratch_quad_bmp    = NULL;
    gdi->scratch_quad_pixels = NULL;
-   gdi->scratch_quad_w      = 0;
-   gdi->scratch_quad_h      = 0;
+   gdi->scratch_quad_dims = 0;
 
    memset(&bmi, 0, sizeof(bmi));
    bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
@@ -389,8 +382,7 @@ static bool gdi_ensure_scratch_quad(gdi_t *gdi, unsigned w, unsigned h)
    }
 
    gdi->scratch_quad_pixels = (uint32_t*)pixels;
-   gdi->scratch_quad_w      = w;
-   gdi->scratch_quad_h      = h;
+   gdi->scratch_quad_dims = VIDEO_SCALE_PACK(w, h);
    return true;
 }
 
@@ -408,21 +400,20 @@ static bool gdi_ensure_scratch_rgui(gdi_t *gdi, unsigned w, unsigned h)
 
    if (     gdi->scratch_rgui_bmp
          && gdi->scratch_rgui_pixels
-         && gdi->scratch_rgui_w >= w
-         && gdi->scratch_rgui_h >= h)
+         && VIDEO_SCALE_W(gdi->scratch_rgui_dims) >= w
+         && VIDEO_SCALE_H(gdi->scratch_rgui_dims) >= h)
       return true;
 
-   if (gdi->scratch_rgui_w > w)
-      w = gdi->scratch_rgui_w;
-   if (gdi->scratch_rgui_h > h)
-      h = gdi->scratch_rgui_h;
+   if (VIDEO_SCALE_W(gdi->scratch_rgui_dims) > w)
+      w = VIDEO_SCALE_W(gdi->scratch_rgui_dims);
+   if (VIDEO_SCALE_H(gdi->scratch_rgui_dims) > h)
+      h = VIDEO_SCALE_H(gdi->scratch_rgui_dims);
 
    if (gdi->scratch_rgui_bmp)
       DeleteObject(gdi->scratch_rgui_bmp);
    gdi->scratch_rgui_bmp    = NULL;
    gdi->scratch_rgui_pixels = NULL;
-   gdi->scratch_rgui_w      = 0;
-   gdi->scratch_rgui_h      = 0;
+   gdi->scratch_rgui_dims = 0;
 
    memset(&bmi, 0, sizeof(bmi));
    bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
@@ -444,8 +435,7 @@ static bool gdi_ensure_scratch_rgui(gdi_t *gdi, unsigned w, unsigned h)
    }
 
    gdi->scratch_rgui_pixels = (uint32_t*)pixels;
-   gdi->scratch_rgui_w      = w;
-   gdi->scratch_rgui_h      = h;
+   gdi->scratch_rgui_dims = VIDEO_SCALE_PACK(w, h);
    return true;
 }
 
@@ -505,12 +495,10 @@ static void gdi_release_scratch(gdi_t *gdi)
    gdi->scratch_1x1_pixels  = NULL;
    gdi->scratch_quad_bmp    = NULL;
    gdi->scratch_quad_pixels = NULL;
-   gdi->scratch_quad_w      = 0;
-   gdi->scratch_quad_h      = 0;
+   gdi->scratch_quad_dims = 0;
    gdi->scratch_rgui_bmp    = NULL;
    gdi->scratch_rgui_pixels = NULL;
-   gdi->scratch_rgui_w      = 0;
-   gdi->scratch_rgui_h      = 0;
+   gdi->scratch_rgui_dims = 0;
 }
 
 /* Clear the menu surface to a solid (premultiplied) BGRA value.
@@ -532,8 +520,8 @@ static void gdi_menu_surface_clear(gdi_t *gdi, uint8_t r, uint8_t g, uint8_t b)
       return;
    rect.left   = 0;
    rect.top    = 0;
-   rect.right  = (LONG)gdi->menu_surface_width;
-   rect.bottom = (LONG)gdi->menu_surface_height;
+   rect.right  = (LONG)VIDEO_SCALE_W(gdi->menu_surface_dims);
+   rect.bottom = (LONG)VIDEO_SCALE_H(gdi->menu_surface_dims);
    gdi_ensure_brush(gdi, RGB(r, g, b));
    if (gdi->brush_cached)
       FillRect(gdi->memDC, &rect, gdi->brush_cached);
@@ -620,7 +608,7 @@ static void gdi_upload_core_frame_to_menu(gdi_t *gdi,
     * was already cleared to black in Step 4, so we leave it
     * untouched and the bars appear automatically. */
    StretchDIBits(gdi->memDC,
-         gdi->vp.x, gdi->vp.y, gdi->vp.width, gdi->vp.height,
+         VIDEO_POS_X(gdi->vp.pos), VIDEO_POS_Y(gdi->vp.pos), VIDEO_SCALE_W(gdi->vp.dims), VIDEO_SCALE_H(gdi->vp.dims),
          0, 0, frame_w, frame_h,
          src, (BITMAPINFO*)&info, DIB_RGB_COLORS, SRCCOPY);
 }
@@ -674,7 +662,7 @@ static void gdi_blit_rgui_alpha(gdi_t *gdi,
     * the DIB are ignored. */
    if (!gdi_ensure_scratch_rgui(gdi, frame_w, frame_h))
       return;
-   stride = gdi->scratch_rgui_w;
+   stride = VIDEO_SCALE_W(gdi->scratch_rgui_dims);
 
    /* RGBA4444 → BGRA32 premultiplied.  Layout from
     * argb32_to_rgba4444:
@@ -810,10 +798,11 @@ static void gfx_display_gdi_blend_end  (void *data) { (void)data; }
  * arrive in the same conventions as the rest of the menu draw path:
  * (x,y) is the top-left of the scissor rect, with y measured from
  * the top of the screen. */
-static void gfx_display_gdi_scissor_begin(void *data,
-      unsigned video_width, unsigned video_height,
-      int x, int y, unsigned width, unsigned height)
+static void gfx_display_gdi_scissor_begin(void *data, unsigned video_dims,
+      int x, int y, unsigned dims)
 {
+   unsigned width        = VIDEO_SCALE_W(dims);
+   unsigned height       = VIDEO_SCALE_H(dims);
    gdi_t *gdi = (gdi_t*)data;
    HRGN rgn;
 
@@ -837,8 +826,7 @@ static void gfx_display_gdi_scissor_begin(void *data,
    gdi->scissor_active = true;
 }
 
-static void gfx_display_gdi_scissor_end(void *data,
-      unsigned video_width, unsigned video_height)
+static void gfx_display_gdi_scissor_end(void *data, unsigned video_dims)
 {
    gdi_t *gdi = (gdi_t*)data;
    if (!gdi || !gdi->memDC)
@@ -880,8 +868,8 @@ static void gdi_blit_texture_modulated(
    {
       src_x = 0;
       src_y = 0;
-      src_w = (unsigned)texture->width;
-      src_h = (unsigned)texture->height;
+      src_w = VIDEO_SCALE_W(texture->dims);
+      src_h = VIDEO_SCALE_H(texture->dims);
    }
 
    /* Fast path: no RGB tint, only an alpha multiplier.  The texture
@@ -918,7 +906,7 @@ static void gdi_blit_texture_modulated(
     * the cached DIB's row width which may exceed src_w. */
    if (!gdi_ensure_scratch_quad(gdi, src_w, src_h))
       return;
-   stride = gdi->scratch_quad_w;
+   stride = VIDEO_SCALE_W(gdi->scratch_quad_dims);
 
    src   = (const uint32_t*)texture->data;
    dst   = gdi->scratch_quad_pixels;
@@ -931,7 +919,7 @@ static void gdi_blit_texture_modulated(
    for (y_idx = 0; y_idx < src_h; y_idx++)
    {
       const uint32_t *src_row = src
-         + ((size_t)src_y + y_idx) * (size_t)texture->width
+         + ((size_t)src_y + y_idx) * (size_t)VIDEO_SCALE_W(texture->dims)
          + (size_t)src_x;
       uint32_t       *dst_row = dst + y_idx * stride;
       for (x_idx = 0; x_idx < src_w; x_idx++)
@@ -992,8 +980,8 @@ static bool gdi_texture_realize(gdi_t *gdi, gdi_texture_t *texture)
 
    memset(&bmi, 0, sizeof(bmi));
    bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
-   bmi.bmiHeader.biWidth       = texture->width;
-   bmi.bmiHeader.biHeight      = -texture->height;
+   bmi.bmiHeader.biWidth       =  (LONG)VIDEO_SCALE_W(texture->dims);
+   bmi.bmiHeader.biHeight      = -(LONG)VIDEO_SCALE_H(texture->dims);
    bmi.bmiHeader.biPlanes      = 1;
    bmi.bmiHeader.biBitCount    = 32;
    bmi.bmiHeader.biCompression = BI_RGB;
@@ -1010,15 +998,17 @@ static bool gdi_texture_realize(gdi_t *gdi, gdi_texture_t *texture)
    /* texture->data was already premultiplied at load time
     * (gdi_load_texture).  Just copy it into the DIB-backed memory. */
    memcpy(pixels, texture->data,
-         (size_t)texture->width * (size_t)texture->height * sizeof(uint32_t));
+         VIDEO_SCALE_AREA(texture->dims) * sizeof(uint32_t));
 
    texture->bmp = bmp;
    return true;
 }
 
 static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    gdi_t        *gdi     = (gdi_t*)data;
    gdi_texture_t *texture = NULL;
    uint32_t bl, br, tl, tr;
@@ -1052,13 +1042,13 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
     *     video_height the caller passed us. */
    if (gdi->menu_textured_active && gdi->bmp_menu)
    {
-      target_w = gdi->menu_surface_width;
-      target_h = gdi->menu_surface_height;
+      target_w = VIDEO_SCALE_W(gdi->menu_surface_dims);
+      target_h = VIDEO_SCALE_H(gdi->menu_surface_dims);
    }
-   else if (gdi->bmp_width && gdi->bmp_height)
+   else if (VIDEO_SCALE_W(gdi->bmp_dims) && VIDEO_SCALE_H(gdi->bmp_dims))
    {
-      target_w = gdi->bmp_width;
-      target_h = gdi->bmp_height;
+      target_w = VIDEO_SCALE_W(gdi->bmp_dims);
+      target_h = VIDEO_SCALE_H(gdi->bmp_dims);
    }
    else
    {
@@ -1076,13 +1066,13 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
    /* Two coordinate-input conventions in this vtable:
     *
     *   1. Plain quad:  coords->vertex is NULL, geometry comes from
-    *      draw->x / draw->y / draw->width / draw->height.  draw->y
+    *      the origin in draw->pos and the size in draw->dims.  Its y
     *      is "Y from bottom" because gfx_display_draw_quad flips it
     *      to match GL's bottom-up convention.  This is what
     *      menu/widget code uses for the simple-rect path.
     *
     *   2. Custom geometry:  coords->vertex points to 4 (x,y) pairs
-    *      in NORMALISED 0..1 space, bottom-up.  draw->x/y/width/h
+    *      in NORMALISED 0..1 space, bottom-up.  draw->pos/dims
     *      are unrelated junk in this case (typically 0/0/full
     *      target dim).  Used by gfx_display_draw_texture_slice
     *      (9-patch), among others.  Without recognising this we
@@ -1136,15 +1126,15 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
    }
    else
    {
-      if (draw->width == 0 || draw->height == 0)
+      if (VIDEO_SCALE_W(draw->dims) == 0 || VIDEO_SCALE_H(draw->dims) == 0)
          return;
-      /* Plain quad path: draw->y is bottom-up in caller's
+      /* Plain quad path: the origin's y is bottom-up in caller's
        * coordinate system (the video_height value we were
        * passed), so flip. */
-      dst_x = (int)draw->x;
-      dst_y = (int)video_height - (int)draw->height - (int)draw->y;
-      dst_w = draw->width;
-      dst_h = draw->height;
+      dst_x = (int)VIDEO_POS_X(draw->pos);
+      dst_y = (int)video_height - (int)VIDEO_SCALE_H(draw->dims) - (int)VIDEO_POS_Y(draw->pos);
+      dst_w = VIDEO_SCALE_W(draw->dims);
+      dst_h = VIDEO_SCALE_H(draw->dims);
 
       /* Apply draw->scale_factor (centered scaling around the
        * quad's midpoint).  XMB sets this on icon draws (node->zoom)
@@ -1202,7 +1192,9 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
     * the cursor texture.  Without this we'd sample the full source
     * for every slice, which would re-tile the entire cursor PNG
     * onto each section. */
-   if (have_tex_coords && texture && texture->width > 0 && texture->height > 0)
+   if (have_tex_coords && texture
+         && VIDEO_SCALE_W(texture->dims) > 0
+         && VIDEO_SCALE_H(texture->dims) > 0)
    {
       const float *t = draw->coords->tex_coord;
       float min_u, max_u, min_v, max_v;
@@ -1224,11 +1216,11 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
          if (tv[i] > max_v) max_v = tv[i];
       }
 
-      src_x = (int)(min_u * (float)texture->width  + 0.5f);
-      src_y = (int)(min_v * (float)texture->height + 0.5f);
+      src_x = (int)(min_u * (float)VIDEO_SCALE_W(texture->dims) + 0.5f);
+      src_y = (int)(min_v * (float)VIDEO_SCALE_H(texture->dims) + 0.5f);
       {
-         int x_end = (int)(max_u * (float)texture->width  + 0.5f);
-         int y_end = (int)(max_v * (float)texture->height + 0.5f);
+         int x_end = (int)(max_u * (float)VIDEO_SCALE_W(texture->dims) + 0.5f);
+         int y_end = (int)(max_v * (float)VIDEO_SCALE_H(texture->dims) + 0.5f);
          src_w = (x_end > src_x) ? (unsigned)(x_end - src_x) : 0;
          src_h = (y_end > src_y) ? (unsigned)(y_end - src_y) : 0;
       }
@@ -1245,7 +1237,9 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
     * "draw a textured quad with the white texture" as its idiom
     * for solid-colour rectangles.  Detect that case so we can
     * skip the (much more expensive) blit path entirely. */
-   is_white_texture = (!texture || (texture->width <= 1 && texture->height <= 1));
+   is_white_texture = (!texture
+         || (   VIDEO_SCALE_W(texture->dims) <= 1
+             && VIDEO_SCALE_H(texture->dims) <= 1));
 
    if (is_white_texture)
    {
@@ -1315,7 +1309,7 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
          if (!gdi_ensure_scratch_quad(gdi, dst_w, dst_h))
             return;
          out    = gdi->scratch_quad_pixels;
-         stride = gdi->scratch_quad_w;
+         stride = VIDEO_SCALE_W(gdi->scratch_quad_dims);
 
          /* In practice the menu / widget code almost always draws 1D
           * gradients: vertical (header strips, drop shadows, sidebar
@@ -1568,9 +1562,9 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
       int  bx_src = have_tex_coords ? src_x : 0;
       int  by_src = have_tex_coords ? src_y : 0;
       unsigned bw_src = (have_tex_coords && src_w) ? src_w
-         : (unsigned)texture->width;
+         : VIDEO_SCALE_W(texture->dims);
       unsigned bh_src = (have_tex_coords && src_h) ? src_h
-         : (unsigned)texture->height;
+         : VIDEO_SCALE_H(texture->dims);
       if (!gdi->texDC)
          gdi->texDC        = CreateCompatibleDC(gdi->winDC);
       texture->bmp_old     = (HBITMAP)SelectObject(gdi->texDC, texture->bmp);
@@ -1583,22 +1577,6 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
    }
 #endif
 }
-
-gfx_display_ctx_driver_t gfx_display_ctx_gdi = {
-   gfx_display_gdi_draw,
-   NULL,                                     /* draw_pipeline   */
-   gfx_display_gdi_blend_begin,
-   gfx_display_gdi_blend_end,
-   NULL,                                     /* get_default_mvp */
-   gfx_display_gdi_get_default_vertices,
-   gfx_display_gdi_get_default_tex_coords,
-   FONT_DRIVER_RENDER_GDI,
-   GFX_VIDEO_DRIVER_GDI,
-   "gdi",
-   false,
-   gfx_display_gdi_scissor_begin,
-   gfx_display_gdi_scissor_end
-};
 
 /*
  * FONT DRIVER
@@ -1640,16 +1618,14 @@ typedef struct
     * dirty flag is set.  Sized to atlas width × height, top-down. */
    HBITMAP                       atlas_bmp;
    uint32_t                     *atlas_pixels;
-   unsigned                      atlas_width;
-   unsigned                      atlas_height;
+   unsigned                      atlas_dims;
    /* Scratch DIB used to bake an RGB tint into a copy of the atlas
     * for one render_msg call.  Sized to the largest line we've
     * encountered; we reuse it across calls to keep allocations
     * bounded. */
    HBITMAP                       scratch_bmp;
    uint32_t                     *scratch_pixels;
-   unsigned                      scratch_width;
-   unsigned                      scratch_height;
+   unsigned                      scratch_dims;
 } gdi_raster_t;
 
 /* Build / refresh the BGRA premultiplied DIB that mirrors the A8
@@ -1661,14 +1637,23 @@ static bool gdi_font_upload_atlas(gdi_raster_t *font)
    BITMAPINFO bmi;
    void *pixels = NULL;
    unsigned i, j;
+   unsigned atlas_dims;
    bool recreated = false;
 
    if (!font || !font->atlas || !font->gdi || !font->gdi->memDC)
       return false;
 
+   /* The mirror's size has to survive the round trip through the
+    * word: the row stride below is read back out of it, and a
+    * clamped axis would index the DIB with a stride the DIB does
+    * not have. */
+   if (!VIDEO_SCALE_FITS(font->atlas->width, font->atlas->height))
+      return false;
+
+   atlas_dims = VIDEO_SCALE_PACK(font->atlas->width, font->atlas->height);
+
    if (     !font->atlas_bmp
-         || font->atlas_width  != font->atlas->width
-         || font->atlas_height != font->atlas->height)
+         || font->atlas_dims != atlas_dims)
    {
       recreated = true;
       if (font->atlas_bmp)
@@ -1697,8 +1682,7 @@ static bool gdi_font_upload_atlas(gdi_raster_t *font)
       }
 
       font->atlas_pixels = (uint32_t*)pixels;
-      font->atlas_width  = font->atlas->width;
-      font->atlas_height = font->atlas->height;
+      font->atlas_dims   = atlas_dims;
    }
 
    /* Expand A8 -> BGRA premultiplied: A=atlas[i], R=G=B=A.  This
@@ -1727,7 +1711,7 @@ static bool gdi_font_upload_atlas(gdi_raster_t *font)
       for (j = y0; j < y1; j++)
       {
          uint32_t      *dst = font->atlas_pixels
-            + (size_t)j * font->atlas_width + x0;
+            + (size_t)j * VIDEO_SCALE_W(font->atlas_dims) + x0;
          const uint8_t *src = font->atlas->buffer
             + (size_t)j * font->atlas->width + x0;
          for (i = 0; i < x1 - x0; i++)
@@ -1746,13 +1730,20 @@ static bool gdi_font_ensure_scratch(gdi_raster_t *font,
 {
    BITMAPINFO bmi;
    void *pixels = NULL;
+   unsigned sw, sh;
 
    if (!font || !font->gdi || !font->gdi->memDC)
       return false;
 
+   /* A line past what a word holds would be recorded as a smaller
+    * capacity than the DIB it describes, and every later call would
+    * find that capacity short and rebuild. */
+   if (!VIDEO_SCALE_FITS(width, height))
+      return false;
+
    if (     font->scratch_bmp
-         && font->scratch_width  >= width
-         && font->scratch_height >= height)
+         && VIDEO_SCALE_W(font->scratch_dims) >= width
+         && VIDEO_SCALE_H(font->scratch_dims) >= height)
       return true;
 
    /* Grow only - never shrink, so a long line followed by short
@@ -1764,15 +1755,20 @@ static bool gdi_font_ensure_scratch(gdi_raster_t *font,
       font->scratch_bmp    = NULL;
       font->scratch_pixels = NULL;
    }
-   if (font->scratch_width  < width)
-      font->scratch_width  = width  + width  / 2 + 1;
-   if (font->scratch_height < height)
-      font->scratch_height = height + height / 2 + 1;
+   sw = VIDEO_SCALE_W(font->scratch_dims);
+   sh = VIDEO_SCALE_H(font->scratch_dims);
+   if (sw < width)
+      sw = width  + width  / 2 + 1;
+   if (sh < height)
+      sh = height + height / 2 + 1;
+   /* The geometric step can overshoot what the word holds; the
+    * clamp still leaves it at or above the size asked for. */
+   font->scratch_dims = VIDEO_SCALE_PACK(sw, sh);
 
    memset(&bmi, 0, sizeof(bmi));
    bmi.bmiHeader.biSize        = sizeof(BITMAPINFOHEADER);
-   bmi.bmiHeader.biWidth       = (LONG)font->scratch_width;
-   bmi.bmiHeader.biHeight      = -(LONG)font->scratch_height;
+   bmi.bmiHeader.biWidth       =  (LONG)VIDEO_SCALE_W(font->scratch_dims);
+   bmi.bmiHeader.biHeight      = -(LONG)VIDEO_SCALE_H(font->scratch_dims);
    bmi.bmiHeader.biPlanes      = 1;
    bmi.bmiHeader.biBitCount    = 32;
    bmi.bmiHeader.biCompression = BI_RGB;
@@ -1804,7 +1800,7 @@ static void *gdi_font_init(void *data,
 
    if (!font_renderer_create_default(
             &font->font_driver,
-            &font->font_data, font_path, font_size))
+            &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
    {
       free(font);
       return NULL;
@@ -2023,7 +2019,7 @@ static void gdi_font_render_line(
 
       /* Clear scratch pixels to fully transparent. */
       {
-         size_t total = (size_t)font->scratch_width * (size_t)font->scratch_height;
+         size_t total = VIDEO_SCALE_AREA(font->scratch_dims);
          memset(font->scratch_pixels, 0, total * sizeof(uint32_t));
       }
 
@@ -2067,15 +2063,15 @@ static void gdi_font_render_line(
                int src_y2;
                uint32_t *dst_row;
                const uint8_t *src_row;
-               if (dst_y2 < 0 || dst_y2 >= (int)font->scratch_height)
+               if (dst_y2 < 0 || dst_y2 >= (int)VIDEO_SCALE_H(font->scratch_dims))
                   continue;
                src_y2  = gy_src + (int)((float)yy * (float)glyph->height
                      / (float)gh);
-               if (src_y2 < 0 || src_y2 >= (int)font->atlas_height)
+               if (src_y2 < 0 || src_y2 >= (int)VIDEO_SCALE_H(font->atlas_dims))
                   continue;
 
                dst_row = font->scratch_pixels
-                  + (size_t)dst_y2 * font->scratch_width;
+                  + (size_t)dst_y2 * VIDEO_SCALE_W(font->scratch_dims);
                src_row = font->atlas->buffer
                   + (size_t)src_y2 * font->atlas->width;
 
@@ -2085,11 +2081,11 @@ static void gdi_font_render_line(
                   int src_x2;
                   uint8_t  alpha;
                   uint32_t out_a, out_r, out_g, out_b;
-                  if (dst_x2 < 0 || dst_x2 >= (int)font->scratch_width)
+                  if (dst_x2 < 0 || dst_x2 >= (int)VIDEO_SCALE_W(font->scratch_dims))
                      continue;
                   src_x2 = gx_src + (int)((float)xx * (float)glyph->width
                         / (float)gw);
-                  if (src_x2 < 0 || src_x2 >= (int)font->atlas_width)
+                  if (src_x2 < 0 || src_x2 >= (int)VIDEO_SCALE_W(font->atlas_dims))
                      continue;
 
                   alpha = src_row[src_x2];
@@ -2190,14 +2186,18 @@ static void gdi_font_render_msg(
    if (gdi->menu_textured_active && gdi->bmp_menu)
    {
       dst_bmp = gdi->bmp_menu;
-      width   = gdi->menu_surface_width;
-      height  = gdi->menu_surface_height;
+      width   = VIDEO_SCALE_W(gdi->menu_surface_dims);
+      height  = VIDEO_SCALE_H(gdi->menu_surface_dims);
    }
    else
    {
       dst_bmp = gdi->bmp;
-      width   = gdi->bmp_width  ? gdi->bmp_width  : gdi->frame_width;
-      height  = gdi->bmp_height ? gdi->bmp_height : gdi->frame_height;
+      {
+         unsigned src_dims = gdi->bmp_dims
+               ? gdi->bmp_dims : gdi->frame_dims;
+         width  = VIDEO_SCALE_W(src_dims);
+         height = VIDEO_SCALE_H(src_dims);
+      }
    }
 
    if (!dst_bmp || !width || !height)
@@ -2326,31 +2326,18 @@ static void gdi_font_render_msg(
    SelectObject(dst_dc, dst_old);
 }
 
-font_renderer_t gdi_font = {
-   gdi_font_init,
-   gdi_font_free,
-   gdi_font_render_msg,
-   "gdi",
-   gdi_font_get_glyph,        /* get_glyph */
-   NULL,                      /* bind_block */
-   NULL,                      /* flush */
-   gdi_font_get_message_width,
-   gdi_font_get_line_metrics
-};
-
 /*
  * VIDEO DRIVER
  */
 
 static void gfx_ctx_gdi_get_video_size(
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    HWND window                  = win32_get_window();
 
    if (window)
    {
-      *width                    = g_win32_resize_width;
-      *height                   = g_win32_resize_height;
+      *dims = VIDEO_SCALE_PACK(g_win32_resize_width, g_win32_resize_height);
    }
    else
    {
@@ -2361,8 +2348,8 @@ static void gfx_ctx_gdi_get_video_size(
 
       win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
       mon_rect = current_mon.rcMonitor;
-      *width   = mon_rect.right - mon_rect.left;
-      *height  = mon_rect.bottom - mon_rect.top;
+      *dims    = VIDEO_SCALE_PACK(mon_rect.right - mon_rect.left,
+            mon_rect.bottom - mon_rect.top);
    }
 }
 
@@ -2418,10 +2405,10 @@ static void gfx_ctx_gdi_destroy(void)
 }
 
 static bool gfx_ctx_gdi_set_video_mode(
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
-   if (!win32_set_video_mode(NULL, width, height, fullscreen))
+   if (!win32_set_video_mode(NULL, dims, fullscreen))
    {
       gfx_ctx_gdi_destroy();
       return false;
@@ -2486,9 +2473,9 @@ static void *gdi_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
    unsigned full_x, full_y;
-   unsigned mode_width = 0, mode_height = 0;
-   unsigned win_width  = 0, win_height  = 0;
-   unsigned temp_width = 0, temp_height = 0;
+   unsigned mode_dims = 0;
+   unsigned win_dims   = 0;
+   unsigned temp_dims = 0;
    settings_t *settings                 = config_get_ptr();
    gdi_t *gdi                           = (gdi_t*)calloc(1, sizeof(*gdi));
 
@@ -2498,16 +2485,15 @@ static void *gdi_init(const video_info_t *video,
    *input                               = NULL;
    *input_data                          = NULL;
 
-   gdi->frame_width                     = video->width;
-   gdi->frame_height                    = video->height;
+   gdi->frame_dims = video->dims;
    gdi->rgb32                           = video->rgb32;
 
    gdi->frame_bits                      = video->rgb32 ? 32 : 16;
 
    if (video->rgb32)
-      gdi->frame_pitch                  = video->width * 4;
+      gdi->frame_pitch                  = VIDEO_SCALE_W(video->dims) * 4;
    else
-      gdi->frame_pitch                  = video->width * 2;
+      gdi->frame_pitch                  = VIDEO_SCALE_W(video->dims) * 2;
 
    /* Aspect-ratio handling.  Pulled from video_info_t at init the
     * same way d3d8/d3d9 do it; the user can override via the
@@ -2521,59 +2507,46 @@ static void *gdi_init(const video_info_t *video,
    if (!gfx_ctx_gdi_init())
       goto error;
 
-   gfx_ctx_gdi_get_video_size(&mode_width, &mode_height);
+   gfx_ctx_gdi_get_video_size(&mode_dims);
 
-   full_x      = mode_width;
-   full_y      = mode_height;
-   mode_width  = 0;
-   mode_height = 0;
+   full_x      = VIDEO_SCALE_W(mode_dims);
+   full_y      = VIDEO_SCALE_H(mode_dims);
+   mode_dims  = 0;
 
    RARCH_LOG("[GDI] Detecting screen resolution: %ux%u.\n", full_x, full_y);
 
-   win_width   = video->width;
-   win_height  = video->height;
+   win_dims    = video->dims;
 
-   if (video->fullscreen && (win_width == 0) && (win_height == 0))
-   {
-      win_width  = full_x;
-      win_height = full_y;
-   }
+   /* Neither axis set is the whole word clear */
+   if (video->fullscreen && (win_dims == 0))
+      win_dims = VIDEO_SCALE_PACK(full_x, full_y);
 
-   mode_width      = win_width;
-   mode_height     = win_height;
+   mode_dims       = win_dims;
 
-   if (!gfx_ctx_gdi_set_video_mode(mode_width,
-            mode_height, video->fullscreen))
+   if (!gfx_ctx_gdi_set_video_mode(win_dims, video->fullscreen))
       goto error;
 
-   mode_width     = 0;
-   mode_height    = 0;
+   mode_dims     = 0;
 
-   gfx_ctx_gdi_get_video_size(&mode_width, &mode_height);
+   gfx_ctx_gdi_get_video_size(&mode_dims);
 
-   temp_width     = mode_width;
-   temp_height    = mode_height;
-   mode_width     = 0;
-   mode_height    = 0;
+   temp_dims     = mode_dims;
+   mode_dims     = 0;
 
    /* Get real known video size, which might have been altered by context. */
 
-   if (temp_width != 0 && temp_height != 0)
-      video_driver_set_output_size(temp_width, temp_height);
+   /* One axis alone is not a size, so both have to be set */
+   if (VIDEO_SCALE_W(temp_dims) != 0 && VIDEO_SCALE_H(temp_dims) != 0)
+      video_driver_set_output_dims(temp_dims);
    else
-      video_driver_get_output_size(&temp_width, &temp_height);
-   gdi->full_width  = temp_width;
-   gdi->full_height = temp_height;
+      temp_dims = video_driver_get_output_dims();
+   gdi->full_dims = temp_dims;
 
-   RARCH_LOG("[GDI] Using resolution %ux%u.\n", temp_width, temp_height);
+   RARCH_LOG("[GDI] Using resolution %ux%u.\n",
+         VIDEO_SCALE_W(temp_dims), VIDEO_SCALE_H(temp_dims));
 
    gfx_ctx_gdi_input_driver(input, input_data);
 
-      font_driver_init_osd(gdi,
-            video,
-            false,
-            video->is_threaded,
-            FONT_DRIVER_RENDER_GDI);
 
    RARCH_LOG("[GDI] Init complete.\n");
 
@@ -2587,12 +2560,13 @@ error:
 }
 
 static bool gdi_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    struct bitmap_info info;
-   unsigned mode_width              = 0;
-   unsigned mode_height             = 0;
+   unsigned mode_dims              = 0;
    const void *frame_to_copy        = frame;
    unsigned width                   = 0;
    unsigned height                  = 0;
@@ -2660,21 +2634,20 @@ static bool gdi_frame(void *data, const void *frame,
        * with whatever size the core has just announced. */
       gdi->bmp          = CreateCompatibleBitmap(
             gdi->winDC, frame_width, frame_height);
-      gdi->bmp_width    = frame_width;
-      gdi->bmp_height   = frame_height;
-      gdi->frame_width  = frame_width;
-      gdi->frame_height = frame_height;
+      gdi->bmp_dims     = dims;
+      gdi->frame_dims   = dims;
    }
 
    /* --- Step 2: figure out the on-screen surface size. */
-   gfx_ctx_gdi_get_video_size(&mode_width, &mode_height);
-   surface_width  = mode_width  ? mode_width  : gdi->full_width;
-   surface_height = mode_height ? mode_height : gdi->full_height;
+   gfx_ctx_gdi_get_video_size(&mode_dims);
+   surface_width  = VIDEO_SCALE_W(mode_dims)
+      ? VIDEO_SCALE_W(mode_dims)  : VIDEO_SCALE_W(gdi->full_dims);
+   surface_height = VIDEO_SCALE_H(mode_dims)
+      ? VIDEO_SCALE_H(mode_dims) : VIDEO_SCALE_H(gdi->full_dims);
    if (!surface_width)  surface_width  = frame_width;
    if (!surface_height) surface_height = frame_height;
 
-   gdi->screen_width  = surface_width;
-   gdi->screen_height = surface_height;
+   gdi->screen_dims = VIDEO_SCALE_PACK(surface_width, surface_height);
 
    /* --- Step 2b: recompute the aspect-ratio-aware viewport when
     * something has dirtied it.  Triggers: window resize (caught in
@@ -2686,20 +2659,17 @@ static bool gdi_frame(void *data, const void *frame,
     * pillarbox bars.  Mirrors d3d8's should_resize pattern. */
    if (gdi->should_resize)
    {
-      gdi_set_viewport(gdi, surface_width, surface_height, false, true);
+      gdi_set_viewport(gdi, VIDEO_SCALE_PACK(surface_width, surface_height), false, true);
       gdi->should_resize = false;
    }
    /* Defensive: if vp was never populated (e.g. should_resize
     * cleared without us recomputing), fall back to full-window
     * destination so we still draw something. */
-   if (gdi->vp.width == 0 || gdi->vp.height == 0)
+   if (VIDEO_SCALE_W(gdi->vp.dims) == 0 || VIDEO_SCALE_H(gdi->vp.dims) == 0)
    {
-      gdi->vp.x           = 0;
-      gdi->vp.y           = 0;
-      gdi->vp.width       = surface_width;
-      gdi->vp.height      = surface_height;
-      gdi->vp.full_width  = surface_width;
-      gdi->vp.full_height = surface_height;
+      gdi->vp.pos         = VIDEO_POS_PACK(0, 0);
+      gdi->vp.dims        = VIDEO_SCALE_PACK(surface_width, surface_height);
+      gdi->vp.full_dims   = VIDEO_SCALE_PACK(surface_width, surface_height);
    }
 
    /* --- Step 3: detect whether any window-resolution content needs
@@ -2826,14 +2796,12 @@ static bool gdi_frame(void *data, const void *frame,
    /* --- Step 6: track core-frame size changes (needed for both the
     * RGUI-overlay path and the no-menu path).  We resize bmp here
     * if the core's announced dimensions changed. */
-   if (     (gdi->frame_width  != frame_width)
-         || (gdi->frame_height != frame_height)
-         || (gdi->frame_pitch  != pitch))
+   if (     (gdi->frame_dims  != dims)
+         || (gdi->frame_pitch != pitch))
    {
       if (frame_width > 4 && frame_height > 4)
       {
-         gdi->frame_width  = frame_width;
-         gdi->frame_height = frame_height;
+         gdi->frame_dims   = dims;
          gdi->frame_pitch  = pitch;
       }
    }
@@ -2847,16 +2815,16 @@ static bool gdi_frame(void *data, const void *frame,
    if (gdi->menu_frame && menu_is_alive)
    {
       frame_to_copy = gdi->menu_frame;
-      width         = gdi->menu_width;
-      height        = gdi->menu_height;
+      width         = VIDEO_SCALE_W(gdi->menu_dims);
+      height        = VIDEO_SCALE_H(gdi->menu_dims);
       pitch         = gdi->menu_pitch;
       bits          = gdi->menu_bits;
    }
    else
 #endif
    {
-      width         = gdi->frame_width;
-      height        = gdi->frame_height;
+      width         = VIDEO_SCALE_W(gdi->frame_dims);
+      height        = VIDEO_SCALE_H(gdi->frame_dims);
       pitch         = gdi->frame_pitch;
 
       if (  frame_width  == 4
@@ -2872,12 +2840,12 @@ static bool gdi_frame(void *data, const void *frame,
 
    /* --- Step 8: resize bmp if its current size doesn't match the
     * effective draw target size (width/height computed in Step 7).
-    * We compare against bmp_width/bmp_height (the DDB's own size),
-    * NOT frame_width — the latter holds the core's announced frame
+    * We compare against bmp_dims (the DDB's own size), NOT
+    * frame_dims — the latter holds the core's announced frame
     * size, which can legitimately differ from the menu's frame size
     * when RGUI is alive.  Conflating the two causes a destructive
     * recreate every frame as Steps 6 and 8 fight over the field. */
-   if (gdi->bmp_width != width || gdi->bmp_height != height)
+   if (gdi->bmp_dims != VIDEO_SCALE_PACK(width, height))
    {
       /* Deselect bmp_menu temporarily so we can reselect bmp for
        * the resize; restore bmp_menu afterwards if it was selected. */
@@ -2890,10 +2858,10 @@ static bool gdi_frame(void *data, const void *frame,
       if (gdi->bmp)
          DeleteObject(gdi->bmp);
 
-      gdi->bmp_width    = width;
-      gdi->bmp_height   = height;
+      gdi->bmp_dims = VIDEO_SCALE_PACK(width, height);
       gdi->bmp          = CreateCompatibleBitmap(
-            gdi->winDC, gdi->bmp_width, gdi->bmp_height);
+            gdi->winDC,
+            VIDEO_SCALE_W(gdi->bmp_dims), VIDEO_SCALE_H(gdi->bmp_dims));
 
       if (reselect_menu && gdi->bmp_menu)
          gdi->bmp_menu_old = (HBITMAP)SelectObject(gdi->memDC, gdi->bmp_menu);
@@ -3017,13 +2985,13 @@ static bool gdi_frame(void *data, const void *frame,
          if (frame_to_copy == gdi->menu_frame && bits == 16)
          {
             gdi_blit_rgui_alpha(gdi, frame_to_copy, width, height,
-                  gdi->vp.x, gdi->vp.y, gdi->vp.width, gdi->vp.height);
+                  VIDEO_POS_X(gdi->vp.pos), VIDEO_POS_Y(gdi->vp.pos), VIDEO_SCALE_W(gdi->vp.dims), VIDEO_SCALE_H(gdi->vp.dims));
          }
          else
 #endif
          {
             StretchDIBits(gdi->memDC,
-                  gdi->vp.x, gdi->vp.y, gdi->vp.width, gdi->vp.height,
+                  VIDEO_POS_X(gdi->vp.pos), VIDEO_POS_Y(gdi->vp.pos), VIDEO_SCALE_W(gdi->vp.dims), VIDEO_SCALE_H(gdi->vp.dims),
                   0, 0, width, height,
                   frame_to_copy, (BITMAPINFO*)&info, DIB_RGB_COLORS, SRCCOPY);
          }
@@ -3192,32 +3160,30 @@ static bool gdi_frame(void *data, const void *frame,
 
 static bool gdi_alive(void *data)
 {
-   unsigned temp_width  = 0;
-   unsigned temp_height = 0;
+   unsigned temp_dims  = VIDEO_SCALE_PACK(0,
+         0);
    bool quit            = false;
    bool resize          = false;
    bool ret             = false;
    gdi_t *gdi           = (gdi_t*)data;
 
    /* Read from local bookkeeping rather than video_st (which would
-    * acquire context_lock + display_lock).  gdi->full_{width,height}
+    * cross threads needlessly).  gdi->full_{width,height}
     * is written at every set_size call site in this driver. */
-   temp_width  = gdi->full_width;
-   temp_height = gdi->full_height;
+   temp_dims  = gdi->full_dims;
 
    win32_check_window(NULL,
-            &quit, &resize, &temp_width, &temp_height);
+            &quit, &resize, &temp_dims);
 
    ret = !quit;
 
    if (resize)
       gdi->should_resize = true;
 
-   if (temp_width != 0 && temp_height != 0)
+   if (VIDEO_SCALE_W(temp_dims) != 0 && VIDEO_SCALE_H(temp_dims) != 0)
    {
-      video_driver_set_output_size(temp_width, temp_height);
-      gdi->full_width  = temp_width;
-      gdi->full_height = temp_height;
+      video_driver_set_output_dims(temp_dims);
+      gdi->full_dims = temp_dims;
    }
 
    return ret;
@@ -3282,7 +3248,6 @@ static void gdi_free(void *data)
       gdi->winDC = 0;
    }
 
-   font_driver_free_osd();
    gfx_ctx_gdi_destroy();
    free(gdi);
 }
@@ -3302,17 +3267,17 @@ static void gdi_set_texture_enable(
 }
 
 static void gdi_set_texture_frame(void *data,
-      const void *frame, bool rgb32, unsigned width, unsigned height,
+      const void *frame, bool rgb32, unsigned dims,
       float alpha)
 {
    gdi_t   *gdi     = (gdi_t*)data;
-   unsigned pitch   = width * (rgb32 ? 4 : 2);
+   unsigned pitch   = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
    size_t   required;
 
-   if (!frame || !width || !height || !pitch)
+   if (!frame || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims) || !pitch)
       return;
 
-   required = (size_t)pitch * (size_t)height;
+   required = (size_t)pitch * (size_t)VIDEO_SCALE_H(dims);
 
    if (required > gdi->menu_frame_cap)
    {
@@ -3324,16 +3289,15 @@ static void gdi_set_texture_frame(void *data,
    }
 
    memcpy(gdi->menu_frame, frame, required);
-   gdi->menu_width  = width;
-   gdi->menu_height = height;
+   gdi->menu_dims = dims;
    gdi->menu_pitch  = pitch;
    gdi->menu_bits   = rgb32 ? 32 : 16;
 }
 
-static void gdi_set_video_mode(void *data, unsigned width, unsigned height,
+static void gdi_set_video_mode(void *data, unsigned dims,
       bool fullscreen)
 {
-   gfx_ctx_gdi_set_video_mode(width, height, fullscreen);
+   gfx_ctx_gdi_set_video_mode(dims, fullscreen);
 }
 
 static uintptr_t gdi_load_texture(void *video_data, void *data,
@@ -3354,12 +3318,9 @@ static uintptr_t gdi_load_texture(void *video_data, void *data,
    if (!texture)
       return 0;
 
-   texture->width              = image->width;
-   texture->height             = image->height;
-   texture->active_width       = image->width;
-   texture->active_height      = image->height;
+   texture->dims               = VIDEO_SCALE_PACK(image->width, image->height);
    texture->type               = filter_type;
-   total                       = (size_t)texture->width * (size_t)texture->height;
+   total                       = VIDEO_SCALE_AREA(texture->dims);
    texture->data               = calloc(1, total * sizeof(uint32_t));
 
    if (!texture->data)
@@ -3498,18 +3459,17 @@ static void gdi_get_poke_interface(void *data,
 /* Recompute the destination rect (gdi->vp.x/y/width/height) for
  * the core frame inside the window based on the current aspect
  * ratio settings.  Called from gdi_frame when should_resize is
- * set, mirroring d3d8 / d3d9 timing.  vp.full_width/full_height
- * must already hold the current window size (the caller refreshes
+ * set, mirroring d3d8 / d3d9 timing.  vp.full_dims must already
+ * hold the current window size (the caller refreshes
  * those via gfx_ctx_gdi_get_video_size first). */
-static void gdi_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
+static void gdi_set_viewport(void *data, unsigned dims,
       bool force_full, bool allow_rotate)
 {
    gdi_t *gdi = (gdi_t*)data;
    if (!gdi)
       return;
 
-   gdi->vp.full_width  = vp_width;
-   gdi->vp.full_height = vp_height;
+   gdi->vp.full_dims   = dims;
 
    video_driver_update_viewport(&gdi->vp, force_full, gdi->keep_aspect, true);
 }
@@ -3518,9 +3478,8 @@ static void gdi_set_viewport(void *data, unsigned vp_width, unsigned vp_height,
  *
  * Many subsystems call into video_driver_get_viewport_info() to
  * read viewport / window dimensions — most importantly the menu's
- * "Custom Aspect Ratio" handlers, which read vp.full_width /
- * vp.full_height to compute width-from-x / height-from-y for the
- * custom viewport.
+ * "Custom Aspect Ratio" handlers, which read vp.full_dims to
+ * compute width-from-x / height-from-y for the custom viewport.
  *
  * Without this hookup video_driver_get_viewport_info silently
  * returns false; that contract is now also strengthened on the
@@ -3536,12 +3495,9 @@ static void gdi_viewport_info(void *data, struct video_viewport *vp)
    if (!gdi || !vp)
       return;
 
-   vp->x           = gdi->vp.x;
-   vp->y           = gdi->vp.y;
-   vp->width       = gdi->vp.width;
-   vp->height      = gdi->vp.height;
-   vp->full_width  = gdi->vp.full_width;
-   vp->full_height = gdi->vp.full_height;
+   vp->pos         = gdi->vp.pos;
+   vp->dims        = gdi->vp.dims;
+   vp->full_dims   = gdi->vp.full_dims;
 }
 
 #ifdef HAVE_OVERLAY
@@ -3679,8 +3635,7 @@ static bool gdi_overlay_load(void *data,
       }
 
       o->bmp           = bmp;
-      o->tex_w         = w;
-      o->tex_h         = h;
+      o->tex_dims      = VIDEO_SCALE_PACK(w, h);
       o->alpha_mod     = 1.0f;
       o->fullscreen    = false;
       /* Stretch to the full target rect by default.  The overlay
@@ -3804,7 +3759,9 @@ static void gdi_overlays_render(gdi_t *gdi,
       int    dst_w, dst_h;
       unsigned alpha_byte;
 
-      if (!o->bmp || o->tex_w == 0 || o->tex_h == 0)
+      if (     !o->bmp
+            || VIDEO_SCALE_W(o->tex_dims) == 0
+            || VIDEO_SCALE_H(o->tex_dims) == 0)
          continue;
       if (o->alpha_mod <= 0.0f)
          continue;
@@ -3826,10 +3783,10 @@ static void gdi_overlays_render(gdi_t *gdi,
       }
       else
       {
-         base_x = gdi->vp.x;
-         base_y = gdi->vp.y;
-         base_w = gdi->vp.width  ? gdi->vp.width  : surface_width;
-         base_h = gdi->vp.height ? gdi->vp.height : surface_height;
+         base_x = VIDEO_POS_X(gdi->vp.pos);
+         base_y = VIDEO_POS_Y(gdi->vp.pos);
+         base_w = VIDEO_SCALE_W(gdi->vp.dims)  ? VIDEO_SCALE_W(gdi->vp.dims)  : surface_width;
+         base_h = VIDEO_SCALE_H(gdi->vp.dims) ? VIDEO_SCALE_H(gdi->vp.dims) : surface_height;
       }
 
       dst_x = base_x + (int)(vx * (float)base_w + 0.5f);
@@ -3839,9 +3796,7 @@ static void gdi_overlays_render(gdi_t *gdi,
       if (dst_w <= 0 || dst_h <= 0)
          continue;
 
-      alpha_byte = (unsigned)(o->alpha_mod * 255.0f);
-      if (alpha_byte > 255)
-         alpha_byte = 255;
+      alpha_byte = VIDEO_ALPHA_BYTE(o->alpha_mod);
 
       /* The overlay's own per-pixel alpha was premultiplied at
        * load.  alpha_mod is applied as SourceConstantAlpha so the
@@ -3858,7 +3813,8 @@ static void gdi_overlays_render(gdi_t *gdi,
       AlphaBlend(gdi->memDC,
             dst_x, dst_y, dst_w, dst_h,
             gdi->texDC,
-            0, 0, o->tex_w, o->tex_h, blend);
+            0, 0,
+            VIDEO_SCALE_W(o->tex_dims), VIDEO_SCALE_H(o->tex_dims), blend);
       SelectObject(gdi->texDC, tex_old);
    }
 #else
@@ -3871,6 +3827,7 @@ static void gdi_overlays_render(gdi_t *gdi,
 static const video_overlay_interface_t gdi_overlay_interface = {
    gdi_overlay_enable,
    gdi_overlay_load,
+   NULL, /* load_textures */
    gdi_overlay_tex_geom,
    gdi_overlay_vertex_geom,
    gdi_overlay_full_screen,
@@ -3884,6 +3841,18 @@ static void gdi_get_overlay_interface(void *data,
    *iface = &gdi_overlay_interface;
 }
 #endif
+
+static font_renderer_t gdi_font = {
+   gdi_font_init,
+   gdi_font_free,
+   gdi_font_render_msg,
+   "gdi",
+   gdi_font_get_glyph,        /* get_glyph */
+   NULL,                      /* bind_block */
+   NULL,                      /* flush */
+   gdi_font_get_message_width,
+   gdi_font_get_line_metrics
+};
 
 video_driver_t video_gdi = {
    gdi_init,
@@ -3900,7 +3869,6 @@ video_driver_t video_gdi = {
    NULL, /* set_rotation */
    gdi_viewport_info,
    NULL, /* read_viewport */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    gdi_get_overlay_interface,
 #endif
@@ -3909,6 +3877,26 @@ video_driver_t video_gdi = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   gdi_gfx_widgets_enabled
+   gdi_gfx_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   NULL, /* read_viewport_hdr */
+   &gdi_font
+};
+
+gfx_display_ctx_driver_t gfx_display_ctx_gdi = {
+   gfx_display_gdi_draw,
+   NULL,                                     /* draw_pipeline   */
+   gfx_display_gdi_blend_begin,
+   gfx_display_gdi_blend_end,
+   NULL,                                     /* get_default_mvp */
+   gfx_display_gdi_get_default_vertices,
+   gfx_display_gdi_get_default_tex_coords,
+   &gdi_font,
+   GFX_VIDEO_DRIVER_GDI,
+   "gdi",
+   false,
+   false,
+   gfx_display_gdi_scissor_begin,
+   gfx_display_gdi_scissor_end
 };

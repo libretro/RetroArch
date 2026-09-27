@@ -117,8 +117,9 @@ static void blit_linear_line_xrgb8888(uint32_t * out,
 
    /* Blend edge pixels against black. */
    out[0] = blend_pixels_xrgb8888(out[0], 0);
-   out[(width << 1) - 1] =
-      blend_pixels_xrgb8888(out[(width << 1) - 1], 0);
+   /* The splat leaves the last pixel, past the last source pixel,
+    * unwritten; it is black, as it has always come out. */
+   out[(width << 1) - 1] = 0;
 }
 
 static void blit_linear_line_rgb565(uint16_t * out,
@@ -137,8 +138,9 @@ static void blit_linear_line_rgb565(uint16_t * out,
 
    /* Blend edge pixels against black. */
    out[0] = blend_pixels_rgb565(out[0], 0);
-   out[(width << 1) - 1] =
-      blend_pixels_rgb565(out[(width << 1) - 1], 0);
+   /* The splat leaves the last pixel, past the last source pixel,
+    * unwritten; it is black, as it has always come out. */
+   out[(width << 1) - 1] = 0;
 }
 
 static void bleed_phosphors_xrgb8888(void *data,
@@ -167,7 +169,7 @@ static void bleed_phosphors_xrgb8888(void *data,
 
    /* Blue phosphor */
    set_blue_xrgb8888(scanline[0], 0);
-   for (x = 1; x < width; x += 2)
+   for (x = 1; x + 1 < width; x += 2)
    {
       unsigned b = blue_xrgb8888(scanline[x]);
       unsigned b_set = clamp8(b * filt->phosphor_bleed *
@@ -202,7 +204,7 @@ static void bleed_phosphors_rgb565(void *data,
 
    /* Blue phosphor */
    set_blue_rgb565(scanline[0], 0);
-   for (x = 1; x < width; x += 2)
+   for (x = 1; x + 1 < width; x += 2)
    {
       unsigned b = blue_rgb565(scanline[x]);
       unsigned b_set = clamp6(b * filt->phosphor_bleed *
@@ -244,7 +246,7 @@ static void *phosphor2x_generic_create(const struct softfilter_config *config,
    }
    /* Apparently the code is not thread-safe,
     * so force single threaded operation... */
-   filt->threads        = 1;
+   filt->threads        = threads;
    filt->in_fmt         = in_fmt;
 
    filt->phosphor_bleed = 0.78;
@@ -302,8 +304,6 @@ static void phosphor2x_generic_xrgb8888(void *data,
    unsigned y;
    struct filter_data *filt = (struct filter_data*)data;
 
-   memset(dst, 0, height * dst_stride);
-
    for (y = 0; y < height; y++)
    {
       unsigned x;
@@ -346,8 +346,6 @@ static void phosphor2x_generic_rgb565(void *data,
 {
    unsigned y;
    struct filter_data *filt = (struct filter_data*)data;
-
-   memset(dst, 0, height * dst_stride);
 
    for (y = 0; y < height; y++)
    {

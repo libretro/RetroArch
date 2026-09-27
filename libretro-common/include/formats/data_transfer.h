@@ -166,6 +166,13 @@ const uint8_t *data_transfer_window_base(data_transfer_t *dt, size_t *len);
  * the whole file, so a caller can charge admission against the window
  * in the first case and against the file in the second. */
 bool data_transfer_window_is_reserved(data_transfer_t *dt);
+
+/* Bytes currently committed by a windowed transfer: the resident head
+ * plus the moving window. A count for measurement (harness numbers,
+ * a memory readout), not a position: it says how much is resident,
+ * not where, so it gives a second consumer nothing to read by. For a
+ * transfer that settled into a whole-file commit it is the length. */
+size_t data_transfer_window_resident(data_transfer_t *dt);
 /* True when this build can reserve address space, i.e. when
  * data_transfer_open_window will map a window rather than degrading to
  * reading the whole file.  Lets a caller decide before opening whether
@@ -174,6 +181,27 @@ bool data_transfer_window_is_reserved(data_transfer_t *dt);
  * would silently take the wrong branch. */
 bool data_transfer_reserve_supported(void);
 bool data_transfer_window_extend(data_transfer_t *dt, size_t hi);
+/* Make an arbitrary byte range resident and read, without touching
+ * the sequential window: pages between the frontier and the range
+ * stay uncommitted.  This is what lets a trailing MP4 moov become
+ * readable without paging the multi-gigabyte mdat before it through
+ * memory.  Idempotent; safe to overlap the head, the window, or a
+ * previous island.  The island stays resident until the handle is
+ * freed - the decommit sweeps only run below the sequential
+ * frontier, which an island by construction sits above.  Callers
+ * must only dereference bytes inside the head, the window, or a
+ * range this call has covered. */
+bool data_transfer_window_ensure(data_transfer_t *dt, size_t lo,
+      size_t hi);
+/* Restart the sequential window at pos: after a need-range open
+ * jumped over the mdat to a trailing moov, the read frontier still
+ * sits at the head, and the first extend() toward the media would
+ * read the skipped gigabytes after all.  Rebasing moves the frontier
+ * to the media floor so extend()/advance() stream the samples from
+ * there, exactly as they do for a front-moov file from the head.
+ * No-op when pos does not lie past the frontier, so front-moov files
+ * are unaffected. */
+void data_transfer_window_rebase(data_transfer_t *dt, size_t pos);
 void data_transfer_window_advance(data_transfer_t *dt, size_t lo);
 void data_transfer_window_rewind(data_transfer_t *dt);
 /* Raise the permanently-resident head.  For codecs whose loop
@@ -200,6 +228,33 @@ void data_transfer_window_punch(data_transfer_t *dt, size_t from,
  * an I/O failure (the consumer will hit the end-of-data wall). */
 bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
       size_t lookahead, size_t margin);
+/* window_feed with a ceiling on the bytes one call may read.  The
+ * policy is identical - same rewind detection, same advance, same
+ * target of tell + lookahead - but when the frontier already covers
+ * the consumer (frontier >= tell), a call extends it by at most
+ * 'budget' bytes and later calls carry on from there, so a feeder
+ * ticking on a frame loop pays a bounded read per tick instead of
+ * the whole lookahead in one burst (the first tick after open, and
+ * every lap of a looping consumer, are exactly such bursts).
+ *
+ * The budget is deliberately NOT applied while the frontier is
+ * behind the consumer.  There the bytes at tell itself are what is
+ * missing - a lap that landed past the head, an open that rebased -
+ * and leaving them for a later tick leaves the consumer's very next
+ * read on unresident pages; that catch-up is one unbudgeted extend,
+ * exactly what window_feed has always done.  budget == 0 disables
+ * the ceiling entirely, making this window_feed by another name.
+ *
+ * *resident_hi (may be NULL) reports the sequential bound this call
+ * left resident: the offset the owner may advertise to its consumer
+ * as readable, clamped nowhere - on the no-reservation fallback it
+ * is the full length, since everything is.  It is feed-owner state,
+ * valid between this call and the owner's next feed, for the one
+ * consumer the window serves; it is not the shared-frontier accessor
+ * the single-owner contract above declines to provide. */
+bool data_transfer_window_feed_budget(data_transfer_t *dt, size_t tell,
+      size_t lookahead, size_t margin, size_t budget,
+      size_t *resident_hi);
 
 bool data_transfer_arena_ensure(data_transfer_arena_t *a, size_t need);
 void data_transfer_arena_release(data_transfer_arena_t *a);
@@ -219,9 +274,10 @@ void data_transfer_arena_release(data_transfer_arena_t *a);
  * complete() keeps its whole-file meaning for every consumer.
  *
  * On platforms without address-space reservation the buffer degrades
- * to a plain allocation of min(len, commit_cap) (or a built-in
- * window when commit_cap is 0), so callers there should treat the
- * cap as advisory sizing. */
+ * to a plain allocation of min(len, commit_cap), or of the whole file
+ * when commit_cap is 0.  There is no built-in ceiling: a caller that
+ * asks for no cap gets no cap, and a file too large for memory is
+ * refused at open rather than presented as a capped prefix. */
 data_transfer_t *data_transfer_open_prefix(const char *path,
       size_t commit_cap);
 
@@ -304,6 +360,17 @@ bool data_transfer_failed(data_transfer_t *dt);
 
 /* Close, cancelling any in-flight read.  NULL-safe. */
 void data_transfer_free(data_transfer_t *dt);
+
+/* Release the calling thread's pooled reservations.
+ *
+ * A prefix transfer over a file small enough to fit a pool slot
+ * recycles its reservation instead of releasing it, which skips the
+ * first-touch faults that dominate a small load.  The pool holds a
+ * bounded amount of memory per thread between loads; this hands it
+ * back - for a low-memory signal, or when a thread is done loading.
+ * Purely an optimisation either way: nothing needs to call it, and a
+ * flushed pool simply refills. */
+void data_transfer_pool_flush(void);
 
 RETRO_END_DECLS
 
