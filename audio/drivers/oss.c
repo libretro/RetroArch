@@ -37,7 +37,9 @@
 #include "../../config.h"
 #endif
 
+#include <retro_miscellaneous.h>
 #include "../audio_driver.h"
+#include "../audio_device_label.h"
 #include "../../verbosity.h"
 
 #ifdef HAVE_OSS_BSD
@@ -81,11 +83,18 @@ static void *oss_init(const char *device,
       unsigned *new_out_rate)
 {
    int frags, frag, channels, format, new_rate;
+   char oss_device[PATH_MAX_LENGTH];
    oss_audio_t *ossaudio  = (oss_audio_t*)calloc(1, sizeof(oss_audio_t));
-   const char *oss_device = device ? device : DEFAULT_OSS_DEV;
 
    if (!ossaudio)
       return NULL;
+
+   /* The device may be a list entry, "/dev/dsp0 (card)": the path is
+    * what is opened. */
+   if (device)
+      audio_device_label_path(oss_device, sizeof(oss_device), device);
+   else
+      strlcpy(oss_device, DEFAULT_OSS_DEV, sizeof(oss_device));
 
    if ((ossaudio->fd = open(oss_device, O_WRONLY)) < 0)
    {
