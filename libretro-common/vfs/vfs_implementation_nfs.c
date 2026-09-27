@@ -27,6 +27,9 @@
 #include <string/stdstring.h>
 #include <net/net_compat.h>
 #include <vfs/vfs_implementation.h>
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
 #include "vfs_implementation_nfs.h"
 
 #define NFS_PREFIX "nfs://"
@@ -40,6 +43,26 @@ static bool nfs_initialized = false;
 static int nfs_max_context_configured = 0;
 static const struct nfs_settings *nfs_cfg = NULL;
 static char nfs_last_error[256] = {0};
+static int nfs_open_handles = 0;
+#ifdef HAVE_THREADS
+static slock_t *nfs_lock = NULL;
+#endif
+
+static void nfs_lock_acquire(void)
+{
+#ifdef HAVE_THREADS
+   if (nfs_lock)
+      slock_lock(nfs_lock);
+#endif
+}
+
+static void nfs_lock_release(void)
+{
+#ifdef HAVE_THREADS
+   if (nfs_lock)
+      slock_unlock(nfs_lock);
+#endif
+}
 
 static void nfs_set_last_error(const char *msg)
 {
@@ -97,6 +120,10 @@ static void nfs_reset(unsigned num_contexts)
 bool nfs_init_cfg(const struct nfs_settings *new_cfg)
 {
    nfs_cfg = new_cfg;
+#ifdef HAVE_THREADS
+   if (!nfs_lock)
+      nfs_lock = slock_new();
+#endif
    return true;
 }
 
@@ -188,17 +215,29 @@ static bool nfs_init(void)
 
 bool nfs_probe_connection(void)
 {
+   bool ret;
+
    /* Remount with current settings so browse reflects edits without restart. */
-   nfs_shutdown();
-   return nfs_init();
+   nfs_lock_acquire();
+   if (nfs_open_handles > 0)
+   {
+      nfs_set_last_error("NFS files still open; close content first");
+      nfs_lock_release();
+      return false;
+   }
+   if (nfs_initialized && nfs_max_context_configured != 0)
+      nfs_reset((unsigned)nfs_max_context_configured);
+   ret = nfs_init();
+   nfs_lock_release();
+   return ret;
 }
 
 void nfs_shutdown(void)
 {
-   if (!nfs_initialized || nfs_max_context_configured == 0)
-      return;
-
-   nfs_reset((unsigned)nfs_max_context_configured);
+   nfs_lock_acquire();
+   if (nfs_initialized && nfs_max_context_configured != 0)
+      nfs_reset((unsigned)nfs_max_context_configured);
+   nfs_lock_release();
 }
 
 /* Build path relative to the mounted export from settings / URL. */
@@ -317,15 +356,22 @@ bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
          flags |= O_TRUNC;
    }
 
-   if (!nfs_init())
+   nfs_lock_acquire();
+   if (!nfs_init() || !(nfs = get_nfs_context()))
+   {
+      nfs_lock_release();
       return false;
-
-   nfs = get_nfs_context();
-   if (!nfs)
-      return false;
+   }
+   nfs_open_handles++;
+   nfs_lock_release();
 
    if (!nfs_build_path(full_path, sizeof(full_path), path))
+   {
+      nfs_lock_acquire();
+      nfs_open_handles--;
+      nfs_lock_release();
       return false;
+   }
 
    if (full_path[0] == '\0')
       strlcpy(full_path, "/", sizeof(full_path));
@@ -342,6 +388,9 @@ bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
       snprintf(msg, sizeof(msg), "nfs_open(\"%.180s\"): %.40s",
             full_path, (err && *err) ? err : "failed");
       nfs_set_last_error(msg);
+      nfs_lock_acquire();
+      nfs_open_handles--;
+      nfs_lock_release();
       return false;
    }
 
@@ -504,6 +553,10 @@ int retro_vfs_file_close_nfs(libretro_vfs_implementation_file *stream)
    stream->nfs_fh  = (intptr_t)-1;
    stream->nfs_ctx = (intptr_t)0;
 
+   nfs_lock_acquire();
+   nfs_open_handles--;
+   nfs_lock_release();
+
    return ret;
 }
 
@@ -517,33 +570,41 @@ nfs_dir_handle *retro_vfs_opendir_nfs(const char *path, bool include_hidden)
 
    (void)include_hidden;
 
-   if (!nfs_init())
+   nfs_lock_acquire();
+   if (!nfs_init() || !(nfs = get_nfs_context()))
+   {
+      nfs_lock_release();
       return NULL;
+   }
+   nfs_open_handles++;
+   nfs_lock_release();
 
    if (!nfs_build_path(full_path, sizeof(full_path), path))
-      return NULL;
+      goto error;
 
    if (full_path[0] == '\0')
       strlcpy(full_path, "/", sizeof(full_path));
 
-   nfs = get_nfs_context();
-   if (!nfs)
-      return NULL;
-
    ret = nfs_opendir(nfs, full_path, &dir);
    if (ret != 0 || !dir)
-      return NULL;
+      goto error;
 
    handle = (nfs_dir_handle *)malloc(sizeof(*handle));
    if (!handle)
    {
       nfs_closedir(nfs, dir);
-      return NULL;
+      goto error;
    }
 
    handle->ctx = nfs;
    handle->dir = dir;
    return handle;
+
+error:
+   nfs_lock_acquire();
+   nfs_open_handles--;
+   nfs_lock_release();
+   return NULL;
 }
 
 struct nfs_dirent *retro_vfs_readdir_nfs(nfs_dir_handle *dh)
@@ -572,6 +633,10 @@ int retro_vfs_closedir_nfs(nfs_dir_handle *dh)
 
    nfs_closedir(dh->ctx, dh->dir);
    free(dh);
+
+   nfs_lock_acquire();
+   nfs_open_handles--;
+   nfs_lock_release();
    return 0;
 }
 
@@ -580,21 +645,31 @@ int retro_vfs_stat_nfs(const char *path, int64_t *size)
    char rel_path[PATH_MAX_LENGTH];
    struct nfs_stat_64 st;
    struct nfs_context *nfs;
+   int ret;
 
-   if (!nfs_init())
+   nfs_lock_acquire();
+   if (!nfs_init() || !(nfs = get_nfs_context()))
+   {
+      nfs_lock_release();
       return 0;
+   }
+   nfs_open_handles++;
+   nfs_lock_release();
 
-   if (!nfs_build_path(rel_path, sizeof(rel_path), path))
-      return 0;
+   ret = 0;
+   if (nfs_build_path(rel_path, sizeof(rel_path), path))
+   {
+      if (rel_path[0] == '\0')
+         strlcpy(rel_path, "/", sizeof(rel_path));
+      if (nfs_stat64(nfs, rel_path, &st) == 0)
+         ret = 1;
+   }
 
-   if (rel_path[0] == '\0')
-      strlcpy(rel_path, "/", sizeof(rel_path));
+   nfs_lock_acquire();
+   nfs_open_handles--;
+   nfs_lock_release();
 
-   nfs = get_nfs_context();
-   if (!nfs)
-      return 0;
-
-   if (nfs_stat64(nfs, rel_path, &st) != 0)
+   if (!ret)
       return 0;
 
    if (size)
