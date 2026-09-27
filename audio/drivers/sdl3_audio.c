@@ -583,6 +583,8 @@ static size_t sdl3_audio_write_avail(void *data)
  * at least len bytes fit below the queue cap, len capped at half the
  * cap so the wait always ends. Returns the free space then, or 0 when
  * the device has been removed or has stopped moving data. */
+static bool sdl3_audio_stream_ok(sdl3_audio_t *sdl);
+
 static size_t sdl3_audio_wait_writable(void *data, size_t len)
 {
    size_t avail;
@@ -597,7 +599,13 @@ static size_t sdl3_audio_wait_writable(void *data, size_t len)
    for (;;)
    {
       if (SDL_GetAtomicInt(&sdl->device_removed))
-         break;
+      {
+         if (!sdl3_audio_stream_ok(sdl))
+         {
+            SDL_Delay(1);
+            return 0;
+         }
+      }
       if (laps-- < 0)
          break;
       avail = sdl3_audio_write_avail(sdl);
@@ -1142,9 +1150,15 @@ static size_t sdl3_microphone_wait_readable(void *driver_context,
    for (;;)
    {
       if (SDL_GetAtomicInt(&mic->device_removed))
+      {
+         SDL_Delay(1);
          return 0;
+      }
       if ((avail = SDL_GetAudioStreamAvailable(mic->stream)) < 0)
+      {
+         SDL_Delay(1);
          return 0;
+      }
       if (avail >= want)
          return (size_t)avail;
       if (--laps < 0)
