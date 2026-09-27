@@ -2722,6 +2722,53 @@ static void lane_zero_copy(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: the pacing flag a driver sees follows the presenter            */
+/*   video_frame_info_t::threaded_display_pacing tells a driver its     */
+/*   pushes are being held to the display's vblank; Metal takes its     */
+/*   next drawable late on it. Set with the setting on only while the  */
+/*   wrapper runs - with threaded video off nothing holds the push, and */
+/*   a driver relying on its own blocking present must be told so.     */
+/* ------------------------------------------------------------------ */
+
+static void lane_pacing_flag_follows_wrapper(void)
+{
+   unsigned had         = failures;
+   settings_t *settings = config_get_ptr();
+   bool saved           = settings->bools.video_threaded_display_pacing;
+   video_frame_info_t info;
+
+   settings->bools.video_threaded_display_pacing = true;
+
+   set_threaded_via_setting(false);
+   run_frames(2);
+   expect_wrapper(false, "pacing-flag lane");
+   memset(&info, 0, sizeof(info));
+   video_driver_build_info(&info);
+   CHECK(!info.threaded_display_pacing,
+         "pacing-flag lane: set with threaded video off");
+
+   set_threaded_via_setting(true);
+   run_frames(2);
+   expect_wrapper(true, "pacing-flag lane");
+   memset(&info, 0, sizeof(info));
+   video_driver_build_info(&info);
+   CHECK(info.threaded_display_pacing,
+         "pacing-flag lane: clear with the wrapper running and the setting on");
+
+   settings->bools.video_threaded_display_pacing = false;
+   memset(&info, 0, sizeof(info));
+   video_driver_build_info(&info);
+   CHECK(!info.threaded_display_pacing,
+         "pacing-flag lane: set with the setting off");
+
+   settings->bools.video_threaded_display_pacing = saved;
+   set_threaded_via_setting(false);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] pacing-flag lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: zero-copy with the ring full                                  */
 /*   A driver whose present blocks for longer than a display period -  */
 /*   a Metal drawable or a FIFO swapchain acquire waiting on vblank -   */
@@ -4521,6 +4568,7 @@ int main(int argc, char *argv[])
    }
    lane_zero_copy();
    lane_zero_copy_ring_full();
+   lane_pacing_flag_follows_wrapper();
    lane_surface_update();
    if (real_driver())
       lane_surface_4k();

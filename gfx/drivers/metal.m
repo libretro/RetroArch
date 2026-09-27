@@ -222,6 +222,10 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
  *  This should be called after end to match Vulkan's swap_buffers timing. */
 - (void)swapBuffers;
 
+/*! @brief Lets go of the drawable just presented without taking the next
+ *  one: the next frame acquires its own when it first draws. */
+- (void)releaseDrawable;
+
 /*! @brief When the last presented drawable reached the display, on the
  *  cpu_features_get_time_usec() clock; 0 when the OS cannot say. */
 - (retro_time_t)lastPresentTime;
@@ -2810,6 +2814,11 @@ static float metal_hdr_pq_to_nits(float pq)
     * This blocking behavior is intentional for proper frame pacing. */
    RARCH_RELEASE_NIL(_drawable);
    RARCH_ASSIGN(_drawable, _layer.nextDrawable);
+}
+
+- (void)releaseDrawable
+{
+   RARCH_RELEASE_NIL(_drawable);
 }
 
 - (retro_time_t)lastPresentTime
@@ -6582,8 +6591,22 @@ static bool metal_frame(void *data, const void *frame,
 
    /* Call swap_buffers to acquire next drawable. This moves the blocking
     * acquisition to AFTER presenting (like Vulkan), instead of BEFORE
-    * rendering. This is critical for proper 120Hz on ProMotion displays. */
-   metal_ctx_swap_buffers(NULL);
+    * rendering. This is critical for proper 120Hz on ProMotion displays.
+    * Under the threaded display pacer the push is already timed to the
+    * display, so the next drawable is taken when the next frame draws:
+    * held from here it would sit idle for a period, leave one drawable
+    * on screen and one queued, and block this thread until the next
+    * vblank on every frame - which the pacer reads as a frame queued
+    * behind another. */
+   if (video_info->threaded_display_pacing)
+   {
+      @autoreleasepool
+      {
+         [md.context releaseDrawable];
+      }
+   }
+   else
+      metal_ctx_swap_buffers(NULL);
 
    /* Frame duping for shader_subframes - present multiple times per core frame
     * to match high refresh rate displays (e.g., 60fps core on 120Hz display).
