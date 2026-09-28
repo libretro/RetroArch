@@ -253,15 +253,19 @@ static uint64_t rsmb_filetime(uint64_t ft)
 
 /* ---- transport ---------------------------------------------------- */
 
+/* Sends one NetBIOS-framed message. @msg lives in c->tx, which keeps
+ * four spare octets ahead of it for the length prefix, so frame and
+ * prefix leave in a single write: as two, the frame sat in Nagle's
+ * algorithm behind the unacknowledged prefix until the server's
+ * delayed ACK, 40 ms on every request. */
 static int rsmb_send_raw(struct rsmb_ctx *c, const uint8_t *msg, size_t len)
 {
-   uint8_t nb[4];
+   uint8_t *nb = (uint8_t*)msg - 4;
    nb[0] = 0;
    nb[1] = (uint8_t)(len >> 16);
    nb[2] = (uint8_t)(len >> 8);
    nb[3] = (uint8_t)len;
-   if (!socket_send_all_blocking_with_timeout(c->fd, nb, 4, (int)c->timeout * 1000, true)
-         || !socket_send_all_blocking_with_timeout(c->fd, msg, len, (int)c->timeout * 1000, true))
+   if (!socket_send_all_blocking_with_timeout(c->fd, nb, 4 + len, (int)c->timeout * 1000, true))
    {
       rsmb_err(c, "send failed or timed out");
       return -1;
@@ -947,7 +951,10 @@ struct rsmb_ctx *rsmb_new(void)
    if (!c)
       return NULL;
    c->rx = (uint8_t*)malloc(SMB2_RX_SIZE);
-   c->tx = (uint8_t*)malloc(SMB2_RX_SIZE);
+   /* four octets ahead of the frame for the NetBIOS length prefix */
+   c->tx = (uint8_t*)malloc(SMB2_RX_SIZE + 4);
+   if (c->tx)
+      c->tx += 4;
    if (!c->rx || !c->tx)
    {
       rsmb_free(c);
@@ -1079,7 +1086,8 @@ void rsmb_free(struct rsmb_ctx *c)
    rsmb_disconnect(c);
    rsmb_set_credentials(c, NULL, NULL, NULL);
    free(c->rx);
-   free(c->tx);
+   if (c->tx)
+      free(c->tx - 4);
    free(c);
 }
 

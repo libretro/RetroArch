@@ -6,6 +6,7 @@
 #include <string.h>
 #include <net/net_compat.h>
 #include <net/net_smb2.h>
+#include <features/features_cpu.h>
 
 #define CHECK(x, msg) do { if (!(x)) { fprintf(stderr, "FAIL: %s (%s, status 0x%08x)\n", msg, rsmb_get_error(c), rsmb_get_status(c)); return 1; } } while (0)
 
@@ -85,6 +86,19 @@ int main(int argc, char **argv)
             ipc = 1;
       }
       CHECK(seen && ipc, "enum shares content");
+      rsmb_disconnect(c);
+   }
+   /* request latency on this link, so a stall like the two-write
+    * NetBIOS framing once cost (40 ms per request) shows in the log */
+   {
+      retro_time_t t0;
+      int i, echoes = 20;
+      CHECK(rsmb_connect(c, argv[1], argv[2]) == 0, "reconnect for latency");
+      t0 = cpu_features_get_time_usec();
+      for (i = 0; i < echoes; i++)
+         CHECK(rsmb_echo(c) == 0, "echo");
+      printf("echo latency: %.2f ms per request\n",
+            (cpu_features_get_time_usec() - t0) / 1000.0 / echoes);
       rsmb_disconnect(c);
    }
    rsmb_free(c);

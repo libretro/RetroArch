@@ -6,6 +6,7 @@
 #include <string.h>
 #include <net/net_compat.h>
 #include <net/net_nfs3.h>
+#include <features/features_cpu.h>
 
 #define CHECK(x, msg) do { if (!(x)) { fprintf(stderr, "FAIL: %s (%s, status %u)\n", msg, rnfs_get_error(c), rnfs_get_status(c)); rnfs_free(c); return 1; } } while (0)
 
@@ -83,6 +84,13 @@ int main(int argc, char **argv)
    CHECK(rnfs_stat(c, "rnfs_dir/moved.bin", &st) != 0, "gone");
    CHECK(!rnfs_open(c, "no_such", RNFS_O_RDONLY), "open missing");
 
+   {
+      retro_time_t t0 = cpu_features_get_time_usec();
+      for (i = 0; i < 20; i++)
+         CHECK(rnfs_ping(c) == 0, "null");
+      printf("null latency: %.2f ms per request\n",
+            (cpu_features_get_time_usec() - t0) / 1000.0 / 20);
+   }
    rnfs_free(c);
    printf("ok: %s:%s (%u entries)\n", argv[1], argv[2], n);
    return 0;
