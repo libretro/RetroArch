@@ -35,7 +35,7 @@
 
 #define CK_NORMAL 0
 typedef struct { const char *name; int fails; } Suite;
-typedef struct { const char *name; void (*fn[64])(void); int n; } TCase;
+typedef struct { const char *name; void (*fn[64])(void); int n; void (*setup)(void); void (*teardown)(void); } TCase;
 typedef struct { Suite *s; } SRunner;
 
 #define START_TEST(name) static void name(void) {
@@ -56,11 +56,12 @@ static TCase shim_tcase;
 static SRunner shim_runner;
 
 static Suite *suite_create(const char *name) { shim_suite.name = name; shim_suite.fails = 0; return &shim_suite; }
-static TCase *tcase_create(const char *name) { shim_tcase.name = name; shim_tcase.n = 0; return &shim_tcase; }
-static void tcase_set_timeout(TCase *tc, double t) { (void)tc; (void)t; }
+static TCase *tcase_create(const char *name) { shim_tcase.name = name; shim_tcase.n = 0; shim_tcase.setup = NULL; shim_tcase.teardown = NULL; return &shim_tcase; }
+#define tcase_set_timeout(tc, t) ((void)(tc), (void)(t))
 static void tcase_add_test_fn(TCase *tc, void (*fn)(void)) { if (tc->n < 64) tc->fn[tc->n++] = fn; }
 #define tcase_add_test(tc, fn) tcase_add_test_fn(tc, fn)
-#define tcase_add_checked_fixture(tc, setup, teardown) ((void)0)
+/* Checked fixtures run around every test, as in libcheck. */
+static void tcase_add_checked_fixture(TCase *tc, void (*setup)(void), void (*teardown)(void)) { tc->setup = setup; tc->teardown = teardown; }
 static void suite_add_tcase(Suite *s, TCase *tc) { (void)s; (void)tc; }
 static SRunner *srunner_create(Suite *s) { shim_runner.s = s; return &shim_runner; }
 static void srunner_run_all(SRunner *sr, int mode)
@@ -69,7 +70,13 @@ static void srunner_run_all(SRunner *sr, int mode)
    (void)mode;
    printf("Running suite(s): %s (check shim)\n", sr->s->name);
    for (i = 0; i < shim_tcase.n; i++)
+   {
+      if (shim_tcase.setup)
+         shim_tcase.setup();
       shim_tcase.fn[i]();
+      if (shim_tcase.teardown)
+         shim_tcase.teardown();
+   }
    printf("100%%: Checks: %d, Failures: 0, Errors: 0\n", shim_tcase.n);
 }
 static int srunner_ntests_failed(SRunner *sr) { return sr->s->fails; }

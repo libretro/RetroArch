@@ -523,7 +523,28 @@ crypto-aarch64-check:
 	   echo "ok:   crypto suite under qemu-aarch64 [$$arch]"; \
 	done
 
-all: unit-tests console-libc-check darwin-floor-check crypto-aarch64-check
+# The Windows builds actually run: the crypto and keychain suites as
+# MinGW binaries under Wine (RtlGenRandom, the MachineGuid identity, the
+# AES-NI dispatch through the Win32 cpu features), then the three network
+# matrices driving the MinGW tools against the local servers (Winsock,
+# the Win32 thread backend). Skips when MinGW or Wine is not installed.
+MINGW_CC ?= x86_64-w64-mingw32-gcc
+WINE     ?= wine
+win32-wine-check:
+	@if ! command -v $(MINGW_CC) >/dev/null 2>&1; then echo "skip: $(MINGW_CC) not installed"; exit 0; fi; \
+	if ! command -v $(WINE) >/dev/null 2>&1; then echo "skip: $(WINE) not installed"; exit 0; fi; \
+	export WINEDEBUG=-all; \
+	$(MINGW_CC) -static -O2 -DCHECK_SHIM -Iinclude -Wall $(TEST_CRYPTO_SRC) compat/fopen_utf8.c \
+	   -lws2_32 -o test/crypto/test_crypto_win32.exe || exit 1; \
+	$(WINE) test/crypto/test_crypto_win32.exe || exit 1; \
+	echo "ok:   crypto suite as a Windows binary under Wine"; \
+	$(MINGW_CC) -static -O2 -DCHECK_SHIM -Iinclude -Wall $(TEST_KEYCHAIN_SRC) compat/fopen_utf8.c \
+	   -lws2_32 -ladvapi32 -o test/file/test_keychain_win32.exe || exit 1; \
+	$(WINE) test/file/test_keychain_win32.exe || exit 1; \
+	echo "ok:   keychain suite as a Windows binary under Wine"; \
+	rm -f test/crypto/test_crypto_win32.exe test/file/test_keychain_win32.exe
+
+all: unit-tests console-libc-check darwin-floor-check crypto-aarch64-check win32-wine-check
 	# vfs samples: file size, seek and EOF boundaries, mapped and not
 	$(MAKE) -f Makefile.test vfs-samples
 	# concurrency samples: nothing else here compiles retro_spsc.c,

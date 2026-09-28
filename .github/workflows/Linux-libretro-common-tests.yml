@@ -37,7 +37,7 @@ jobs:
         run: |
           # ffmpeg: tools/companion_thumbs_test.sh builds its video-hover
           # fixture (a 2 KB Baseline MP4) with it.
-          pkgs="build-essential check pkg-config zlib1g-dev lcov gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 wine wine64 ffmpeg gcc-aarch64-linux-gnu qemu-user samba libtirpc-dev flex bison autoconf automake"
+          pkgs="build-essential check pkg-config zlib1g-dev lcov gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 wine wine64 ffmpeg gcc-aarch64-linux-gnu qemu-user samba libtirpc-dev flex bison autoconf automake wine64"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -136,6 +136,27 @@ jobs:
           # AES-GCM sealing required, and a refused logon. Root for
           # port 445; the script itself skips without smbd.
           sudo samples/network/smb_retro/local_samba_test.sh
+
+      - name: Windows builds under Wine
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The MinGW builds run, not just link: the crypto and keychain
+          # suites, then the three server matrices with the Windows tools
+          # talking to the same local openssl, Samba and unfs3.
+          export WINEDEBUG=-all WINEPREFIX=$RUNNER_TEMP/wineprefix
+          make -C libretro-common -f Makefile.test win32-wine-check
+          export CC=x86_64-w64-mingw32-gcc RUNNER=wine EXE=.exe
+          make -C samples/network/tls_retro clean
+          samples/network/tls_retro/local_server_test.sh
+          make -C samples/network/tls_retro clean
+          make -C samples/network/smb_retro clean
+          sudo -E samples/network/smb_retro/local_samba_test.sh
+          make -C samples/network/smb_retro clean
+          make -C samples/network/nfs_retro clean
+          samples/network/nfs_retro/local_unfs3_test.sh
+          make -C samples/network/nfs_retro clean
 
       - name: Network client matrices under ASan + UBSan + LSan
         shell: bash

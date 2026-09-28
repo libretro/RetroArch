@@ -8,6 +8,8 @@ cd "$(dirname "$0")"
 command -v smbd >/dev/null 2>&1 || { echo "skip: no smbd"; exit 0; }
 [ "$(id -u)" = 0 ] || { echo "skip: needs root for port 445"; exit 0; }
 make -s smb_test vfs_test
+RUN=${RUNNER:-}
+EXE=${EXE:-}
 D=$(mktemp -d); chmod 755 $D; mkdir -p $D/share $D/priv $D/run /run/samba
 stop() { pkill -f "smbd -s $D/smb.conf" 2>/dev/null || true; pkill -f "configfile=$D/smb.conf" 2>/dev/null || true; }
 trap 'stop; rm -rf $D' EXIT
@@ -53,14 +55,14 @@ run() { # label max_protocol encrypt expect_rc password
    smbd -s $D/smb.conf -D
    # wait for the listener rather than guessing a delay
    i=0; while [ $i -lt 50 ]; do
-      ./smb_test 127.0.0.1 share rsmbtest 'Sekret1!' RETRO > $D/probe 2>&1 && break
+      $RUN ./smb_test$EXE 127.0.0.1 share rsmbtest 'Sekret1!' RETRO > $D/probe 2>&1 && break
       grep -q "connect failed" $D/probe || break
       i=$((i + 1)); sleep 0.2
    done
    rm -f $D/share/rsmb_test.bin
-   set +e; ./smb_test 127.0.0.1 share rsmbtest "$5" RETRO >$D/out 2>&1; rc=$?
+   set +e; $RUN ./smb_test$EXE 127.0.0.1 share rsmbtest "$5" RETRO >$D/out 2>&1; rc=$?
    # the real VFS backend on top, on the file the run above wrote
-   [ $rc -eq 0 ] && { ./vfs_test 127.0.0.1 share rsmbtest "$5" RETRO >>$D/out 2>&1 || rc=3; }
+   [ $rc -eq 0 ] && { $RUN ./vfs_test$EXE 127.0.0.1 share rsmbtest "$5" RETRO >>$D/out 2>&1 || rc=3; }
    set -e
    if [ $rc -eq $4 ]; then echo "ok:   $1"; else echo "FAIL: $1 (rc=$rc, want $4): $(cat $D/out)"; exit 1; fi
    rm -f $D/share/rsmb_test.bin

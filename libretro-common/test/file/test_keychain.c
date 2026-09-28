@@ -20,7 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#ifdef CHECK_SHIM
+#include "../check_shim.h"
+#else
 #include <check.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -34,7 +38,14 @@ static char keyfile[512];
 
 static void setup(void)
 {
-   snprintf(keyfile, sizeof(keyfile), "/tmp/rakc_test_%ld.key", (long)getpid());
+   /* the platform's temp dir: Windows has no /tmp, and TMP/TEMP is
+    * what a Windows build (run natively or under Wine) can write */
+   const char *tmp = getenv("TMP");
+   if (!tmp || !*tmp)
+      tmp = getenv("TEMP");
+   if (!tmp || !*tmp)
+      tmp = "/tmp";
+   snprintf(keyfile, sizeof(keyfile), "%s/rakc_test_%ld.key", tmp, (long)getpid());
    unlink(keyfile);
    keychain_deinit();
 }

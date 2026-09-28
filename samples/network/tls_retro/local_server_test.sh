@@ -8,6 +8,10 @@ command -v openssl >/dev/null 2>&1 || { echo "skip: no openssl"; exit 0; }
 D=$(mktemp -d); trap 'rm -rf $D; kill $SRV 2>/dev/null || true' EXIT
 cd "$(dirname "$0")"
 make -s tls_fetch
+# RUNNER prefixes every tool invocation: empty natively, "wine" for a
+# MinGW build of the tools
+RUN=${RUNNER:-}
+EXE=${EXE:-}
 openssl req -x509 -newkey rsa:2048 -nodes -keyout $D/ca.key -out $D/ca.pem -days 2 -subj "/CN=tls_retro test CA" 2>/dev/null
 mkcert() { # name keyalg [pkeyopt]
    openssl req -newkey "$2" $3 -nodes -keyout $D/$1.key -out $D/$1.csr -subj "/CN=$1" 2>/dev/null
@@ -39,7 +43,7 @@ run() { # label cert cipher curve expect_rc host mode ca [rounds] [server opts]
    CHAIN=""; [ -f $D/$2.chain.pem ] && CHAIN="-cert_chain $D/$2.chain.pem"
    openssl s_server -accept 44331 -cert $D/$2.pem $CHAIN -key $D/$2.key -tls1_2 -cipher "$3" -named_curve $4 -www ${10:-} >/dev/null 2>&1 &
    SRV=$!; sleep 0.4
-   set +e; ./tls_fetch $6 44331 $7 "$8" ${9:-1} >/dev/null 2>&1; rc=$?; set -e
+   set +e; $RUN ./tls_fetch$EXE $6 44331 $7 "$8" ${9:-1} >/dev/null 2>&1; rc=$?; set -e
    kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
    if [ $rc -eq $5 ]; then echo "ok:   $1"; else echo "FAIL: $1 (rc=$rc, want $5)"; exit 1; fi
 }
