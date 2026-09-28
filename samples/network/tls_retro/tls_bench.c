@@ -1,8 +1,11 @@
-/* Handshake cost of the built-in TLS client: N full handshakes (the
- * session cache cleared by using a fresh hostname alias each time is
- * not possible, so full ones run with verify on and resumption is
- * measured on the same host afterwards).
- *   tls_bench host port ca.pem rounds */
+/* Handshake cost of the built-in TLS client, and bulk receive
+ * throughput:
+ *   tls_bench host port ca.pem [rounds]        N connections; the first is
+ *                                             a full handshake, the rest
+ *                                             resume
+ *   tls_bench host port ca.pem get path        GET /path (openssl s_server
+ *                                             -WWW serves a file) and the
+ *                                             receive rate over it */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,6 +45,38 @@ done:
    return ok;
 }
 
+static int bulk_get(const char *host, int port, const char *path)
+{
+   struct addrinfo *addr = NULL;
+   int fd = socket_init((void**)&addr, port, host, SOCKET_TYPE_STREAM, AF_INET);
+   void *ssl;
+   static uint8_t buf[1 << 16];
+   int64_t total = 0;
+   retro_time_t t0;
+   char req[512];
+
+   if (fd < 0 || !addr || !socket_connect_with_timeout(fd, addr, 3000)
+         || !(ssl = ssl_socket_init(fd, host)))
+      return 1;
+   if (ssl_socket_connect(ssl, addr, true, true) < 0)
+   {
+      fprintf(stderr, "tls connect failed\n");
+      return 1;
+   }
+   snprintf(req, sizeof(req), "GET /%s HTTP/1.0\r\nHost: %s\r\n\r\n", path, host);
+   ssl_socket_send_all_blocking(ssl, req, strlen(req), true);
+   t0 = cpu_features_get_time_usec();
+   while (ssl_socket_receive_all_blocking(ssl, buf, sizeof(buf)) == 1)
+      total += (int64_t)sizeof(buf);
+   printf("receive: %lld MB in %.2f s = %.0f MB/s\n", (long long)(total >> 20),
+         (cpu_features_get_time_usec() - t0) / 1e6,
+         (total / 1048576.0) / ((cpu_features_get_time_usec() - t0) / 1e6));
+   ssl_socket_close(ssl);
+   ssl_socket_free(ssl);
+   freeaddrinfo_retro(addr);
+   return 0;
+}
+
 int main(int argc, char **argv)
 {
    const char *host = argv[1];
@@ -54,6 +89,11 @@ int main(int argc, char **argv)
    if (argc < 4)
       return 2;
    network_init();
+   if (argc > 5 && strcmp(argv[4], "get") == 0)
+   {
+      ssl_socket_set_verify_mode(2);
+      return bulk_get(host, port, argv[5]);
+   }
    if (filestream_read_file(argv[3], (void**)&pem, &pem_len))
       ssl_socket_retro_set_trust_pem(pem, (size_t)pem_len);
    ssl_socket_set_verify_mode(0);
