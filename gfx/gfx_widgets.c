@@ -567,7 +567,8 @@ static void gfx_widgets_msg_queue_push_state(
          }
 
          if (snapshot->title &&
-               !string_is_equal(snapshot->title, msg_widget->msg_new))
+               !string_is_equal(snapshot->title, msg_widget->msg_new
+                  ? msg_widget->msg_new : msg_widget->msg))
          {
             size_t _len;
             unsigned new_width;

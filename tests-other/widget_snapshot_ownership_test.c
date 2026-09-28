@@ -7,6 +7,7 @@
 static void *allocations[64];
 static unsigned live_allocations;
 static unsigned duplicate_calls;
+static unsigned animation_calls;
 static unsigned fail_after;
 
 static void *checked_malloc(size_t size)
@@ -82,6 +83,7 @@ bool gfx_animation_kill_widget_by_tag(uintptr_t *tag)
 bool gfx_animation_push_widget(gfx_animation_ctx_entry_t *entry)
 {
    (void)entry;
+   animation_calls++;
    return true;
 }
 
@@ -171,6 +173,14 @@ int main(void)
    assert(duplicate_calls == before && fail_after == 1);
    fail_after = 0;
 
+   /* Completed transitions compare against the displayed title. */
+   snapshot.title = checked_strdup("latest");
+   before = animation_calls;
+   push(&task, &snapshot);
+   assert(snapshot.title && !widget->msg_new);
+   assert(widget->msg == text && animation_calls == before);
+   release_snapshot(&snapshot);
+
    /* A missing title must still publish the final task state. */
    snapshot.flags = RETRO_TASK_FLG_FINISHED;
    snapshot.progress = 100;
@@ -208,6 +218,14 @@ int main(void)
    push(&task, &snapshot);
    assert(!snapshot.title && !widget->msg_new && widget->msg == text);
    assert(duplicate_calls == before);
+   snapshot.title = checked_strdup("immediate");
+   push(&task, &snapshot);
+   assert(snapshot.title && !widget->msg_new && widget->msg == text);
+   release_snapshot(&snapshot);
+   snapshot.title = checked_strdup("changed again");
+   text = snapshot.title;
+   push(&task, &snapshot);
+   assert(!snapshot.title && !widget->msg_new && widget->msg == text);
    release_widget(widget);
    assert(!task.frontend_userdata && live_allocations == 0);
 
