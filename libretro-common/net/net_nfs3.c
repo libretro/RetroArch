@@ -66,8 +66,13 @@
 #define NFS3ERR_NOENT    2
 #define NFS3ERR_NOTSUPP  10004
 #define NFS3_FHSIZE      64
+/* Default transfer size; FSINFO raises it to what the server allows,
+ * up to NFS3_LARGE_IO, and the buffers grow with it. */
 #define NFS3_MAX_IO      (64 * 1024)
-#define RNFS_RX_SIZE     (NFS3_MAX_IO + 4096)
+#define NFS3_LARGE_IO    (1024 * 1024)
+#define RNFS_BUF_SIZE(io) ((io) + 4096)
+#define RNFS_RX_SIZE     RNFS_BUF_SIZE(NFS3_MAX_IO)
+#define NFS_FSINFO       19
 
 #define NF3REG 1
 #define NF3DIR 2
@@ -105,6 +110,8 @@ struct rnfs_ctx
    struct rnfs_fh root;
    uint32_t xid;
    uint32_t status;
+   uint32_t io_size;         /* largest read or write, from FSINFO */
+   size_t   buf_size;        /* rx and tx capacity */
    uint32_t uid;
    uint32_t gid;
    unsigned timeout;
@@ -272,7 +279,7 @@ static int rnfs_rpc(struct rnfs_ctx *c, int fd, uint32_t prog, uint32_t vers,
    int        to = (int)c->timeout * 1000;
    static const char machine[] = "retroarch";
 
-   x.p = msg + 4; x.end = msg + RNFS_RX_SIZE; x.fail = 0;
+   x.p = msg + 4; x.end = msg + c->buf_size; x.fail = 0;
    xdr_u32(&x, xid);
    xdr_u32(&x, 0);                            /* CALL */
    xdr_u32(&x, 2);                            /* RPC version */
@@ -322,7 +329,7 @@ static int rnfs_rpc(struct rnfs_ctx *c, int fd, uint32_t prog, uint32_t vers,
       last = hdr[0] & 0x80;
       frag = ((uint32_t)(hdr[0] & 0x7f) << 24) | ((uint32_t)hdr[1] << 16)
            | ((uint32_t)hdr[2] << 8) | hdr[3];
-      if (rlen + frag > RNFS_RX_SIZE)
+      if (rlen + frag > c->buf_size)
       {
          rnfs_err(c, "reply too large");
          return -1;
@@ -404,8 +411,10 @@ struct rnfs_ctx *rnfs_new(void)
       free(c->rx); free(c->tx); free(c);
       return NULL;
    }
-   c->fd      = -1;
-   c->timeout = 10;
+   c->fd       = -1;
+   c->timeout  = 10;
+   c->io_size  = NFS3_MAX_IO;
+   c->buf_size = RNFS_RX_SIZE;
 #ifdef RNFS_HAVE_GETUID
    c->uid = (uint32_t)getuid();
    c->gid = (uint32_t)getgid();
@@ -477,6 +486,41 @@ int rnfs_connect(struct rnfs_ctx *c, const char *server, const char *export_path
    if ((c->fd = rnfs_tcp_connect(c, nport)) < 0)
       return -1;
    c->connected = 1;
+
+   /* FSINFO: the transfer sizes the server prefers; buffers follow */
+   c->io_size = NFS3_MAX_IO;
+   {
+      uint8_t  fargs[NFS3_FHSIZE + 4];
+      struct rnfs_stat st;
+      x.p = fargs; x.end = fargs + sizeof(fargs); x.fail = 0;
+      xdr_fh(&x, &c->root);
+      if (rnfs_call(c, NFS_FSINFO, fargs, (size_t)(x.p - fargs), &reply) == 0
+            && c->status == NFS3_OK)
+      {
+         uint32_t rtmax, wtmax, io;
+         xdr_get_post_op_attr(&reply, &st);
+         rtmax = xdr_get_u32(&reply); xdr_get_u32(&reply); xdr_get_u32(&reply);
+         wtmax = xdr_get_u32(&reply);
+         io = rtmax < wtmax ? rtmax : wtmax;
+         if (!reply.fail && io > NFS3_MAX_IO)
+         {
+            uint8_t *nrx, *ntx;
+            if (io > NFS3_LARGE_IO)
+               io = NFS3_LARGE_IO;
+            nrx = (uint8_t*)realloc(c->rx, RNFS_BUF_SIZE(io));
+            if (nrx)
+               c->rx = nrx;
+            ntx = (uint8_t*)realloc(c->tx, RNFS_BUF_SIZE(io));
+            if (ntx)
+               c->tx = ntx;
+            if (nrx && ntx)
+            {
+               c->io_size  = io;
+               c->buf_size = RNFS_BUF_SIZE(io);
+            }
+         }
+      }
+   }
    return 0;
 }
 
@@ -683,8 +727,8 @@ int64_t rnfs_read(struct rnfs_ctx *c, struct rnfs_file *f, void *buf, size_t len
       uint32_t count, eof;
       const uint8_t *d;
       size_t dl, n = len - done;
-      if (n > NFS3_MAX_IO)
-         n = NFS3_MAX_IO;
+      if (n > c->io_size)
+         n = c->io_size;
       x.p = args; x.end = args + sizeof(args); x.fail = 0;
       xdr_fh(&x, &f->fh);
       xdr_u64(&x, f->offset);
@@ -726,9 +770,9 @@ int64_t rnfs_write(struct rnfs_ctx *c, struct rnfs_file *f, const void *buf, siz
       struct xdr x, reply;
       uint32_t count;
       size_t   n = len - done;
-      if (n > NFS3_MAX_IO)
-         n = NFS3_MAX_IO;
-      x.p = args; x.end = c->rx + RNFS_RX_SIZE; x.fail = 0;
+      if (n > c->io_size)
+         n = c->io_size;
+      x.p = args; x.end = c->rx + c->buf_size; x.fail = 0;
       xdr_fh(&x, &f->fh);
       xdr_u64(&x, f->offset);
       xdr_u32(&x, (uint32_t)n);

@@ -72,8 +72,14 @@
 
 #define SMB2_HDR_SIZE 64
 #define SMB2_TRANSFORM_HDR_SIZE 52
-#define SMB2_MAX_IO (64 * 1024)
-#define SMB2_RX_SIZE (SMB2_TRANSFORM_HDR_SIZE + SMB2_HDR_SIZE + SMB2_MAX_IO + 4096)
+/* One credit's worth of data, and the unit of the small buffers
+ * (directory pages, the srvsvc pipe). Reads and writes go up to
+ * SMB2_LARGE_IO once the server has granted the credits; the
+ * connection's buffers are sized to what it negotiated. */
+#define SMB2_MAX_IO   (64 * 1024)
+#define SMB2_LARGE_IO (1024 * 1024)
+#define SMB2_BUF_SIZE(io) (SMB2_TRANSFORM_HDR_SIZE + SMB2_HDR_SIZE + (io) + 4096)
+#define SMB2_RX_SIZE  SMB2_BUF_SIZE(SMB2_MAX_IO)
 
 /* FILE_* access, attributes and create options, prefixed so they
  * do not collide with the Win32 headers' own definitions. */
@@ -136,6 +142,10 @@ struct rsmb_ctx
    uint32_t tree_id;
    uint32_t max_read;
    uint32_t max_write;
+   uint32_t io_size;            /* largest single read or write */
+   size_t   buf_size;           /* rx and tx capacity */
+   int      credits;            /* granted by the server, unspent */
+   unsigned charge;             /* CreditCharge of the next message */
    uint32_t status;
    unsigned dialect;
    unsigned cipher;             /* 0, CIPHER_AES128_CCM or _GCM */
@@ -284,7 +294,7 @@ static int rsmb_recv_raw(struct rsmb_ctx *c, size_t *len)
       return -1;
    }
    n = ((size_t)nb[1] << 16) | ((size_t)nb[2] << 8) | nb[3];
-   if (nb[0] != 0 || n < SMB2_HDR_SIZE || n > SMB2_RX_SIZE)
+   if (nb[0] != 0 || n < SMB2_HDR_SIZE || n > c->buf_size)
    {
       rsmb_err(c, "bad frame");
       return -1;
@@ -416,7 +426,7 @@ static uint8_t *rsmb_begin(struct rsmb_ctx *c, unsigned cmd)
    memset(h, 0, SMB2_HDR_SIZE);
    h[0] = 0xfe; h[1] = 'S'; h[2] = 'M'; h[3] = 'B';
    put16(h + 4, 64);
-   put16(h + 6, 1);                        /* CreditCharge */
+   put16(h + 6, (unsigned)(c->charge ? c->charge : 1));   /* CreditCharge */
    put16(h + 12, cmd);
    put16(h + 14, 64);                      /* CreditRequest: keep a pool */
    put64(h + 24, c->message_id);
@@ -448,7 +458,8 @@ static int rsmb_call(struct rsmb_ctx *c, size_t body_len,
       sha512_stream_update(&s, msg, len);
       sha512_stream_final(&s, c->preauth);
    }
-   c->message_id++;
+   /* a multi-credit message consumes as many ids as its charge */
+   c->message_id += c->charge ? c->charge : 1;
 
    if (c->encrypt)
    {
@@ -489,6 +500,9 @@ static int rsmb_call(struct rsmb_ctx *c, size_t body_len,
    }
 
    c->status = get32(c->rx + 8);
+   /* credit balance: what this reply grants, less what the message spent */
+   c->credits += (int)get16(c->rx + 14) - (int)(c->charge ? c->charge : 1);
+   c->charge   = 0;
    if (c->signing && c->session_ready && !c->encrypt
          && rsmb_verify_sig(c, c->rx, rlen) != 0)
    {
@@ -557,8 +571,15 @@ static int rsmb_negotiate(struct rsmb_ctx *c)
    c->dialect   = get16(r + 4);
    c->max_read  = get32(r + 32);
    c->max_write = get32(r + 36);
-   if (c->max_read > SMB2_MAX_IO)  c->max_read  = SMB2_MAX_IO;
-   if (c->max_write > SMB2_MAX_IO) c->max_write = SMB2_MAX_IO;
+   /* Large I/O needs multi-credit requests, which 2.0.2 does not have. */
+   {
+      uint32_t cap = c->dialect == DIALECT_202 ? SMB2_MAX_IO : SMB2_LARGE_IO;
+      if (c->max_read > cap)  c->max_read  = cap;
+      if (c->max_write > cap) c->max_write = cap;
+      if (c->max_read < SMB2_MAX_IO)  c->max_read  = SMB2_MAX_IO;
+      if (c->max_write < SMB2_MAX_IO) c->max_write = SMB2_MAX_IO;
+      c->io_size = c->max_read > c->max_write ? c->max_read : c->max_write;
+   }
    c->signing   = 1;
    c->cipher    = 0;
    if (c->dialect == DIALECT_300 || c->dialect == DIALECT_302)
@@ -591,6 +612,27 @@ static int rsmb_negotiate(struct rsmb_ctx *c)
    {
       rsmb_err(c, "unsupported dialect");
       return -1;
+   }
+   c->io_size = c->max_read > c->max_write ? c->max_read : c->max_write;
+   /* The reply in c->rx is done with: grow the buffers to the
+    * negotiated size (r pointed into the old one). */
+   if (c->io_size > SMB2_MAX_IO)
+   {
+      /* grow the buffers to the negotiated size */
+      size_t   need = SMB2_BUF_SIZE(c->io_size);
+      uint8_t *nrx  = (uint8_t*)realloc(c->rx, need);
+      uint8_t *ntx  = (uint8_t*)realloc(c->tx - 4, need + 4);
+      if (nrx)
+         c->rx = nrx;
+      if (ntx)
+         c->tx = ntx + 4;
+      if (!nrx || !ntx)
+      {
+         /* stay at one credit per message */
+         c->max_read = c->max_write = c->io_size = SMB2_MAX_IO;
+      }
+      else
+         c->buf_size = need;
    }
    return 0;
 }
@@ -958,6 +1000,8 @@ struct rsmb_ctx *rsmb_new(void)
    struct rsmb_ctx *c = (struct rsmb_ctx*)calloc(1, sizeof(*c));
    if (!c)
       return NULL;
+   c->buf_size = SMB2_RX_SIZE;
+   c->credits  = 1;
    c->rx = (uint8_t*)malloc(SMB2_RX_SIZE);
    /* four octets ahead of the frame for the NetBIOS length prefix */
    c->tx = (uint8_t*)malloc(SMB2_RX_SIZE + 4);
@@ -1044,6 +1088,9 @@ int rsmb_connect(struct rsmb_ctx *c, const char *server, const char *share)
    socket_set_block(fd, false);
    c->fd            = fd;
    c->message_id    = 0;
+   c->credits       = 1;
+   c->charge        = 0;
+   c->io_size       = SMB2_MAX_IO;
    c->session_id    = 0;
    c->tree_id       = 0;
    c->signing       = 0;
@@ -1192,12 +1239,20 @@ int64_t rsmb_read(struct rsmb_ctx *c, struct rsmb_file *f, void *buf, size_t len
 
    while (done < len)
    {
-      uint8_t *b = rsmb_begin(c, SMB2_READ);
+      uint8_t *b;
       uint8_t *r;
       size_t   rlen, n = len - done;
       uint32_t got, doff;
       if (n > c->max_read)
          n = c->max_read;
+      /* one credit per 64 KiB; never more than the server has granted */
+      c->charge = (unsigned)((n + SMB2_MAX_IO - 1) / SMB2_MAX_IO);
+      if (c->charge > 1 && c->credits < (int)c->charge)
+      {
+         c->charge = c->credits > 0 ? (unsigned)c->credits : 1;
+         n = (size_t)c->charge * SMB2_MAX_IO;
+      }
+      b = rsmb_begin(c, SMB2_READ);
       memset(b, 0, 49);
       put16(b, 49);
       b[2] = 0x50;                          /* Padding */
@@ -1236,12 +1291,19 @@ int64_t rsmb_write(struct rsmb_ctx *c, struct rsmb_file *f, const void *buf, siz
 
    while (done < len)
    {
-      uint8_t *b = rsmb_begin(c, SMB2_WRITE);
+      uint8_t *b;
       uint8_t *r;
       size_t   rlen, n = len - done;
       uint32_t count;
       if (n > c->max_write)
          n = c->max_write;
+      c->charge = (unsigned)((n + SMB2_MAX_IO - 1) / SMB2_MAX_IO);
+      if (c->charge > 1 && c->credits < (int)c->charge)
+      {
+         c->charge = c->credits > 0 ? (unsigned)c->credits : 1;
+         n = (size_t)c->charge * SMB2_MAX_IO;
+      }
+      b = rsmb_begin(c, SMB2_WRITE);
       memset(b, 0, 48);
       put16(b, 49);
       put16(b + 2, SMB2_HDR_SIZE + 48);
