@@ -440,7 +440,8 @@ ifeq ($(HAVE_CRYPTO), 1)
    DEFINES += -DHAVE_CRYPTO
    OBJ     += $(LIBRETRO_COMM_DIR)/crypto/crypto.o \
               $(LIBRETRO_COMM_DIR)/crypto/kdf.o \
-              $(LIBRETRO_COMM_DIR)/crypto/pk.o
+              $(LIBRETRO_COMM_DIR)/crypto/pk.o \
+              $(LIBRETRO_COMM_DIR)/crypto/x509.o
 endif
 
 ifeq ($(HAVE_CONFIGFILE), 1)

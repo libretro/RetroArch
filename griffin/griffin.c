@@ -289,6 +289,7 @@ CRYPTO
 #include "../libretro-common/crypto/crypto.c"
 #include "../libretro-common/crypto/kdf.c"
 #include "../libretro-common/crypto/pk.c"
+#include "../libretro-common/crypto/x509.c"
 #endif
 
 #include "../gfx/video_driver.c"

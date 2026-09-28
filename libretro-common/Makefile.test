@@ -49,7 +49,7 @@ TEST_HASH_SRC = test/hash/test_hash.c hash/lrc_hash.c \
 		file/file_path_io.c features/features_cpu.c \
 		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
 
-TEST_CRYPTO_LRC_SRC = crypto/crypto.c crypto/kdf.c crypto/pk.c
+TEST_CRYPTO_LRC_SRC = crypto/crypto.c crypto/kdf.c crypto/pk.c crypto/x509.c
 
 # Known-answer tests for every primitive (FIPS 197, RFC 4493, the GCM
 # spec vectors, RFC 8439, RFC 4231, RFC 5869, PBKDF2, FIPS 180-4), the
@@ -57,7 +57,7 @@ TEST_CRYPTO_LRC_SRC = crypto/crypto.c crypto/kdf.c crypto/pk.c
 # RSA PKCS#1 v1.5 verify, P-256 ECDH / ECDSA) against reference vectors.
 TEST_CRYPTO = test/crypto/test_crypto
 TEST_CRYPTO_SRC = test/crypto/test_crypto.c $(TEST_CRYPTO_LRC_SRC) \
-		hash/lrc_hash.c \
+		hash/lrc_hash.c encodings/encoding_base64.c \
 		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
 		string/rstrtod.c \
 		file/file_path_io.c features/features_cpu.c \

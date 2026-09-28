@@ -33,6 +33,9 @@
 #include <crypto/crypto.h>
 #include <crypto/kdf.h>
 #include <crypto/pk.h>
+#include <crypto/x509.h>
+#include "../../net/cacert.h"
+#include "test_x509_vectors.h"
 #include <lrc_hash.h>
 
 #define SUITE_NAME "crypto"
@@ -571,6 +574,88 @@ START_TEST (test_p256)
 }
 END_TEST
 
+START_TEST (test_x509)
+{
+   struct x509_cert c, r, in;
+   const uint8_t *chain[3];
+   size_t lens[3];
+   char info[128];
+
+   ck_assert_int_eq(x509_parse(&r, x509_root, sizeof(x509_root)), 0);
+   ck_assert_int_eq(r.key_type, X509_KEY_RSA);
+   ck_assert_int_eq(r.sig_alg, X509_SIG_RSA_SHA384);
+   ck_assert_int_eq(r.is_ca, 1);
+   ck_assert(r.key_usage & X509_KU_KEY_CERT_SIGN);
+   ck_assert_int_eq(x509_parse(&in, x509_inter, sizeof(x509_inter)), 0);
+   ck_assert_int_eq(in.key_type, X509_KEY_P256);
+   ck_assert_int_eq(in.path_len, 0);
+   ck_assert_int_eq(x509_parse(&c, x509_leaf, sizeof(x509_leaf)), 0);
+   ck_assert_int_eq(c.key_type, X509_KEY_RSA);
+   ck_assert_int_eq(c.sig_alg, X509_SIG_ECDSA_SHA256);
+   ck_assert_int_eq(c.is_ca, 0);
+   ck_assert(c.not_before < X509_TEST_NOW && c.not_after > X509_TEST_NOW);
+
+   /* signatures: RSA-SHA384 self-signed root, RSA-SHA256 over the
+    * intermediate, ECDSA-SHA256 over the leaf */
+   ck_assert_int_eq(x509_verify_signature(&r, &r), 0);
+   ck_assert_int_eq(x509_verify_signature(&in, &r), 0);
+   ck_assert_int_eq(x509_verify_signature(&c, &in), 0);
+   ck_assert_int_eq(x509_verify_signature(&c, &r), -1);
+   ck_assert_int_eq(x509_parse(&c, x509_badsig, sizeof(x509_badsig)), 0);
+   ck_assert_int_eq(x509_verify_signature(&c, &in), -1);
+
+   /* hostnames */
+   ck_assert_int_eq(x509_parse(&c, x509_leaf, sizeof(x509_leaf)), 0);
+   ck_assert_int_eq(x509_match_hostname(&c, "example.com"), 0);
+   ck_assert_int_eq(x509_match_hostname(&c, "EXAMPLE.com"), 0);
+   ck_assert_int_eq(x509_match_hostname(&c, "a.wild.example.com"), 0);
+   ck_assert_int_eq(x509_match_hostname(&c, "wild.example.com"), -1);
+   ck_assert_int_eq(x509_match_hostname(&c, "a.b.wild.example.com"), -1);
+   ck_assert_int_eq(x509_match_hostname(&c, "www.example.com"), -1);
+   ck_assert_int_eq(x509_match_hostname(&c, "example.co"), -1);
+   ck_assert_int_eq(x509_parse(&c, x509_cnonly, sizeof(x509_cnonly)), 0);
+   ck_assert_int_eq(c.sig_alg, X509_SIG_ECDSA_SHA512);
+   ck_assert_int_eq(x509_match_hostname(&c, "cn.example.com"), 0);
+
+   /* chain against the test root as the only anchor */
+   ck_assert_int_eq(x509_trust_load_pem(x509_root_pem, sizeof(x509_root_pem) - 1), 1);
+   chain[0] = x509_leaf;  lens[0] = sizeof(x509_leaf);
+   chain[1] = x509_inter; lens[1] = sizeof(x509_inter);
+   ck_assert_int_eq(x509_verify_chain(chain, lens, 2, "example.com", X509_TEST_NOW, info, sizeof(info)), 0);
+   ck_assert_int_eq(x509_verify_chain(chain, lens, 2, NULL, X509_TEST_NOW, info, sizeof(info)), 0);
+   ck_assert_int_eq(x509_verify_chain(chain, lens, 2, "other.com", X509_TEST_NOW, info, sizeof(info)), -1);
+   ck_assert_str_eq(info, "hostname mismatch");
+   ck_assert_int_eq(x509_verify_chain(chain, lens, 1, "example.com", X509_TEST_NOW, info, sizeof(info)), -1);
+   ck_assert_int_eq(x509_verify_chain(chain, lens, 2, "example.com", X509_TEST_NOW + 200L * 86400, info, sizeof(info)), -1);
+   ck_assert_str_eq(info, "certificate expired or not yet valid");
+   chain[0] = x509_expired; lens[0] = sizeof(x509_expired);
+   ck_assert_int_eq(x509_verify_chain(chain, lens, 2, "expired.example.com", X509_TEST_NOW, info, sizeof(info)), -1);
+   chain[0] = x509_badsig; lens[0] = sizeof(x509_badsig);
+   ck_assert_int_eq(x509_verify_chain(chain, lens, 2, "example.com", X509_TEST_NOW, info, sizeof(info)), -1);
+   ck_assert_str_eq(info, "issuer not found or signature invalid");
+   /* intermediate has pathLen 0: a CA below it is refused */
+   chain[0] = x509_deep; lens[0] = sizeof(x509_deep);
+   chain[1] = x509_sub2; lens[1] = sizeof(x509_sub2);
+   chain[2] = x509_inter; lens[2] = sizeof(x509_inter);
+   ck_assert_int_eq(x509_verify_chain(chain, lens, 3, "deep.example.com", X509_TEST_NOW, info, sizeof(info)), -1);
+   ck_assert_str_eq(info, "path length constraint violated");
+   /* the chain may arrive with the root included, or out of order */
+   chain[0] = x509_leaf;  lens[0] = sizeof(x509_leaf);
+   chain[1] = x509_root;  lens[1] = sizeof(x509_root);
+   chain[2] = x509_inter; lens[2] = sizeof(x509_inter);
+   ck_assert_int_eq(x509_verify_chain(chain, lens, 3, "example.com", X509_TEST_NOW, info, sizeof(info)), 0);
+
+   /* the shipped bundle: every anchor with an RSA or P-256 key parses */
+   {
+      int n = x509_trust_load_pem(cacert_pem, sizeof(cacert_pem));
+      ck_assert(n > 80);
+      ck_assert_int_eq(x509_trust_load_pem(cacert_pem, sizeof(cacert_pem)), n);
+      ck_assert_int_eq(x509_verify_chain(chain, lens, 3, "example.com", X509_TEST_NOW, info, sizeof(info)), -1);
+   }
+   x509_trust_free();
+}
+END_TEST
+
 Suite *create_suite(void)
 {
    Suite *s = suite_create(SUITE_NAME);
@@ -589,6 +674,7 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_bn);
    tcase_add_test(tc_core, test_rsa);
    tcase_add_test(tc_core, test_p256);
+   tcase_add_test(tc_core, test_x509);
    suite_add_tcase(s, tc_core);
    return s;
 }
