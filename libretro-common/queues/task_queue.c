@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include <queues/task_queue.h>
 
@@ -1595,6 +1596,48 @@ bool task_is_on_main_thread(void)
 #else
    return true;
 #endif
+}
+
+bool task_get_progress_snapshot(const retro_task_t *task,
+      task_progress_snapshot_t *snapshot)
+{
+   bool success = true;
+   size_t len;
+
+   snapshot->title = NULL;
+   snapshot->error = NULL;
+#ifdef HAVE_THREADS
+   slock_lock(property_lock);
+#endif
+   snapshot->flags    = task->flags;
+   snapshot->progress = task->progress;
+   if (task->title)
+   {
+      len = strlen(task->title) + 1;
+      if ((snapshot->title = (char*)malloc(len)))
+         memcpy(snapshot->title, task->title, len);
+      else
+         success = false;
+   }
+   if (success && task->error)
+   {
+      len = strlen(task->error) + 1;
+      if ((snapshot->error = (char*)malloc(len)))
+         memcpy(snapshot->error, task->error, len);
+      else
+         success = false;
+   }
+#ifdef HAVE_THREADS
+   slock_unlock(property_lock);
+#endif
+   if (!success)
+   {
+      free(snapshot->title);
+      free(snapshot->error);
+      snapshot->title = NULL;
+      snapshot->error = NULL;
+   }
+   return success;
 }
 
 void task_set_error(retro_task_t *task, char *err)

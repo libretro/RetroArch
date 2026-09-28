@@ -455,6 +455,21 @@ void task_queue_retriever_info_free(task_retriever_info_t *list);
  */
 void task_queue_cancel_task(void *task);
 
+typedef struct task_progress_snapshot
+{
+   char *title;
+   char *error;
+   uint8_t flags;
+   int8_t progress;
+} task_progress_snapshot_t;
+
+/* Copies display properties under their lock. The caller must keep the
+ * task alive during this call and free the snapshot's title and error.
+ * On allocation failure returns false with both strings set to NULL;
+ * flags and progress remain valid. */
+bool task_get_progress_snapshot(const retro_task_t *task,
+      task_progress_snapshot_t *snapshot);
+
 void task_set_flags(retro_task_t *task, uint8_t flags, bool set);
 
 /**

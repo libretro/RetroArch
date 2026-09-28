@@ -314,6 +314,7 @@ static void gfx_widgets_msg_measure(dispgfx_widget_t *p_dispwidget,
 
 static void gfx_widgets_msg_queue_push_state(
       retro_task_t *task,
+      const task_progress_snapshot_t *snapshot,
       const char *msg,
       size_t len,
       unsigned duration,
@@ -400,6 +401,9 @@ static void gfx_widgets_msg_queue_push_state(
       {
          const char *msg_title                  = msg;
 
+         if (task && !snapshot->title)
+            return;
+
          msg_widget                             = (disp_widget_msg_t*)malloc(sizeof(*msg_widget));
 
          if (!msg_widget)
@@ -415,11 +419,7 @@ static void gfx_widgets_msg_queue_push_state(
 
          msg_widget->offset_y                   = 0;
          msg_widget->alpha                      = 1.0f;
-         /* Set while the task is being built, before task_queue_push()
-          * hands it to the queue, and never changed after - so this is
-          * the one task property readable here without the queue's
-          * property lock, which the push no longer holds. */
-         msg_widget->alternative_look           = task && (task->flags & RETRO_TASK_FLG_ALTERNATIVE_LOOK);
+         msg_widget->alternative_look           = task && (snapshot->flags & RETRO_TASK_FLG_ALTERNATIVE_LOOK);
 
          msg_widget->width                      = 0;
 
@@ -448,25 +448,25 @@ static void gfx_widgets_msg_queue_push_state(
          {
             msg_widget->flags                  |= DISPWIDG_FLAG_TASK;
 
-            if (task->error && *task->error)
+            if (snapshot->error && *snapshot->error)
             {
                msg_widget->flags               |= DISPWIDG_FLAG_TASK_ERROR;
-               len                              = strlen(task->error);
-               msg_title = msg_widget->msg      = strdup(task->error);
+               len                              = strlen(snapshot->error);
+               msg_title = msg_widget->msg      = strdup(snapshot->error);
             }
             else
             {
-               len                              = strlen(task->title);
-               msg_title = msg_widget->msg      = strdup(task->title);
+               len                              = strlen(snapshot->title);
+               msg_title = msg_widget->msg      = strdup(snapshot->title);
             }
             msg_widget->msg_new                 = strdup(msg_title);
             msg_widget->msg_len                 = len;
 
-            if ((task->flags & RETRO_TASK_FLG_CANCELLED) != 0)
+            if ((snapshot->flags & RETRO_TASK_FLG_CANCELLED) != 0)
                msg_widget->flags               |= DISPWIDG_FLAG_TASK_CANCELLED;
-            if ((task->flags & RETRO_TASK_FLG_FINISHED) != 0)
+            if ((snapshot->flags & RETRO_TASK_FLG_FINISHED) != 0)
                msg_widget->flags               |= DISPWIDG_FLAG_TASK_FINISHED;
-            msg_widget->task_progress           = task->progress;
+            msg_widget->task_progress           = snapshot->progress;
             msg_widget->task_ident              = task->ident;
 
             if (task->style == TASK_STYLE_POSITIVE)
@@ -565,7 +565,8 @@ static void gfx_widgets_msg_queue_push_state(
             msg_widget->flags &= ~DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED;
          }
 
-         if (!string_is_equal(task->title, msg_widget->msg_new))
+         if (snapshot->title &&
+               !string_is_equal(snapshot->title, msg_widget->msg_new))
          {
             size_t _len;
             unsigned new_width;
@@ -577,7 +578,7 @@ static void gfx_widgets_msg_queue_push_state(
                msg_widget->msg_new                 = NULL;
             }
 
-            new_title   = msg_widget->msg_new      = strdup(task->title);
+            new_title   = msg_widget->msg_new      = strdup(snapshot->title);
 
             _len        = strlen(new_title);
             new_width   = font_driver_get_message_width(
@@ -609,13 +610,13 @@ static void gfx_widgets_msg_queue_push_state(
             msg_widget->width = new_width;
          }
 
-         if (task->error && *task->error)
+         if (snapshot->error && *snapshot->error)
             msg_widget->flags               |= DISPWIDG_FLAG_TASK_ERROR;
-         if ((task->flags & RETRO_TASK_FLG_CANCELLED) != 0)
+         if ((snapshot->flags & RETRO_TASK_FLG_CANCELLED) != 0)
             msg_widget->flags               |= DISPWIDG_FLAG_TASK_CANCELLED;
-         if ((task->flags & RETRO_TASK_FLG_FINISHED) != 0)
+         if ((snapshot->flags & RETRO_TASK_FLG_FINISHED) != 0)
             msg_widget->flags               |= DISPWIDG_FLAG_TASK_FINISHED;
-         msg_widget->task_progress     = task->progress;
+         msg_widget->task_progress     = snapshot->progress;
       }
    }
 }
@@ -631,18 +632,25 @@ void gfx_widgets_msg_queue_push(
       unsigned prio, bool flush,
       bool menu_is_alive)
 {
+   task_progress_snapshot_t snapshot;
+
    /* A plain message touches only the queue, under its own lock, and
     * the widget it allocates, which the consumer measures; a task's
     * reads and updates the widget it may already have on screen */
    if (!task)
    {
-      gfx_widgets_msg_queue_push_state(task, msg, len, duration, title,
+      gfx_widgets_msg_queue_push_state(task, NULL, msg, len, duration, title,
             icon, category, prio, flush, menu_is_alive);
       return;
    }
+   /* Publish terminal flags even if copying a string fails. */
+   task_get_progress_snapshot(task, &snapshot);
    gfx_widgets_state_lock();
-   gfx_widgets_msg_queue_push_state(task, msg, len, duration, title, icon, category, prio, flush, menu_is_alive);
+   gfx_widgets_msg_queue_push_state(task, &snapshot, msg, len, duration,
+         title, icon, category, prio, flush, menu_is_alive);
    gfx_widgets_state_unlock();
+   free(snapshot.title);
+   free(snapshot.error);
 }
 
 static void gfx_widgets_move_end(void *userdata)
