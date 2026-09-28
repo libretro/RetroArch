@@ -2554,7 +2554,7 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_online_updater_view.h"
 #endif
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_MENU) && defined(HAVE_SMBCLIENT)
 #include "settings/settings_def_settings_show_smb.h"
 #endif
 #ifdef HAVE_MENU
@@ -3264,7 +3264,7 @@ static struct config_float_setting *populate_settings_float(
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_online_updater_view.h"
 #endif
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_MENU) && defined(HAVE_SMBCLIENT)
 #include "settings/settings_def_settings_show_smb.h"
 #endif
 #ifdef HAVE_MENU
@@ -3942,7 +3942,7 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_online_updater_view.h"
 #endif
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_MENU) && defined(HAVE_SMBCLIENT)
 #include "settings/settings_def_settings_show_smb.h"
 #endif
 #ifdef HAVE_MENU
@@ -4672,7 +4672,7 @@ static struct config_int_setting *populate_settings_int(
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_online_updater_view.h"
 #endif
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_MENU) && defined(HAVE_SMBCLIENT)
 #include "settings/settings_def_settings_show_smb.h"
 #endif
 #ifdef HAVE_MENU
@@ -5267,7 +5267,7 @@ static struct config_int_setting *populate_settings_int(
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_online_updater_view.h"
 #endif
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_MENU) && defined(HAVE_SMBCLIENT)
 #include "settings/settings_def_settings_show_smb.h"
 #endif
 #ifdef HAVE_MENU
