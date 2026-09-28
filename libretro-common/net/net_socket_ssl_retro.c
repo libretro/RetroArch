@@ -22,8 +22,9 @@
 
 /* TLS 1.2 client on the cleanroom crypto (crypto/), behind the
  * ssl_socket_* API. ECDHE over P-256 or P-384, RSA or ECDSA server
- * authentication against net/cacert.h, AES-128-GCM or
- * ChaCha20-Poly1305 records, SHA-256 handshake and PRF; SNI sent.
+ * authentication against net/cacert.h, AES-128/256-GCM or
+ * ChaCha20-Poly1305 records, SHA-256 or SHA-384 handshake and PRF as
+ * the suite dictates; SNI sent.
  * No renegotiation, no resumption, no client certificates. The
  * handshake runs to completion inside ssl_socket_connect() as the
  * other backends' do. */
@@ -63,7 +64,9 @@
 #define TLS_HS_FINISHED         20
 
 #define TLS_SUITE_ECDHE_ECDSA_AES128_GCM   0xc02b
+#define TLS_SUITE_ECDHE_ECDSA_AES256_GCM   0xc02c
 #define TLS_SUITE_ECDHE_RSA_AES128_GCM     0xc02f
+#define TLS_SUITE_ECDHE_RSA_AES256_GCM     0xc030
 #define TLS_SUITE_ECDHE_RSA_CHACHA20       0xcca8
 #define TLS_SUITE_ECDHE_ECDSA_CHACHA20     0xcca9
 
@@ -106,6 +109,7 @@ struct ssl_state
    uint64_t cseq;
    uint64_t sseq;
    struct sha256_state transcript;
+   struct sha512_state transcript384;
    int      fd;
    int      last_err;
    unsigned suite;
@@ -145,51 +149,95 @@ static unsigned tls_get24(const uint8_t *p)
 
 /* ---- PRF ---------------------------------------------------------- */
 
-/* TLS 1.2 PRF with SHA-256: P_SHA256(secret, label || seed). */
-static void tls_prf(const uint8_t *secret, size_t secret_len,
-      const char *label, const uint8_t *seed1, size_t seed1_len,
-      const uint8_t *seed2, size_t seed2_len, uint8_t *out, size_t out_len)
-{
-   struct hmac_sha256_ctx h;
-   uint8_t a[32];
-   uint8_t p[32];
-   size_t  label_len = strlen(label);
-
-   /* A(1) = HMAC(secret, A(0)), A(0) = label || seed */
-   hmac_sha256_init(&h, secret, secret_len);
-   hmac_sha256_update(&h, (const uint8_t*)label, label_len);
-   hmac_sha256_update(&h, seed1, seed1_len);
-   hmac_sha256_update(&h, seed2, seed2_len);
-   hmac_sha256_final(&h, a);
-
-   while (out_len)
-   {
-      size_t take = out_len < 32 ? out_len : 32;
-      hmac_sha256_init(&h, secret, secret_len);
-      hmac_sha256_update(&h, a, 32);
-      hmac_sha256_update(&h, (const uint8_t*)label, label_len);
-      hmac_sha256_update(&h, seed1, seed1_len);
-      hmac_sha256_update(&h, seed2, seed2_len);
-      hmac_sha256_final(&h, p);
-      memcpy(out, p, take);
-      out     += take;
-      out_len -= take;
-
-      hmac_sha256_init(&h, secret, secret_len);
-      hmac_sha256_update(&h, a, 32);
-      hmac_sha256_final(&h, a);
-   }
-   crypto_memzero(a, sizeof(a));
-   crypto_memzero(p, sizeof(p));
-}
-
-/* ---- record layer ------------------------------------------------- */
-
 static int tls_suite_is_chacha(unsigned suite)
 {
    return suite == TLS_SUITE_ECDHE_RSA_CHACHA20
        || suite == TLS_SUITE_ECDHE_ECDSA_CHACHA20;
 }
+
+static int tls_suite_is_aes256(unsigned suite)
+{
+   return suite == TLS_SUITE_ECDHE_RSA_AES256_GCM
+       || suite == TLS_SUITE_ECDHE_ECDSA_AES256_GCM;
+}
+
+/* The AES-256-GCM suites run their PRF and transcript on SHA-384. */
+static int tls_suite_is_sha384(unsigned suite)
+{
+   return tls_suite_is_aes256(suite);
+}
+
+/* TLS 1.2 PRF: P_<hash>(secret, label || seed), hash per suite. */
+static void tls_prf(const struct ssl_state *s,
+      const uint8_t *secret, size_t secret_len,
+      const char *label, const uint8_t *seed1, size_t seed1_len,
+      const uint8_t *seed2, size_t seed2_len, uint8_t *out, size_t out_len)
+{
+   union
+   {
+      struct hmac_sha256_ctx h256;
+      struct hmac_sha384_ctx h384;
+   } h;
+   const int use384  = tls_suite_is_sha384(s->suite);
+   const size_t hlen = use384 ? 48 : 32;
+   uint8_t a[48];
+   uint8_t p[48];
+   size_t  label_len = strlen(label);
+
+#define TLS_HMAC_INIT()   do { if (use384) hmac_sha384_init(&h.h384, secret, secret_len); else hmac_sha256_init(&h.h256, secret, secret_len); } while (0)
+#define TLS_HMAC_UPD(d, l) do { if (use384) hmac_sha384_update(&h.h384, d, l); else hmac_sha256_update(&h.h256, d, l); } while (0)
+#define TLS_HMAC_FIN(o)   do { if (use384) hmac_sha384_final(&h.h384, o); else hmac_sha256_final(&h.h256, o); } while (0)
+
+   /* A(1) = HMAC(secret, A(0)), A(0) = label || seed */
+   TLS_HMAC_INIT();
+   TLS_HMAC_UPD((const uint8_t*)label, label_len);
+   TLS_HMAC_UPD(seed1, seed1_len);
+   TLS_HMAC_UPD(seed2, seed2_len);
+   TLS_HMAC_FIN(a);
+
+   while (out_len)
+   {
+      size_t take = out_len < hlen ? out_len : hlen;
+      TLS_HMAC_INIT();
+      TLS_HMAC_UPD(a, hlen);
+      TLS_HMAC_UPD((const uint8_t*)label, label_len);
+      TLS_HMAC_UPD(seed1, seed1_len);
+      TLS_HMAC_UPD(seed2, seed2_len);
+      TLS_HMAC_FIN(p);
+      memcpy(out, p, take);
+      out     += take;
+      out_len -= take;
+
+      TLS_HMAC_INIT();
+      TLS_HMAC_UPD(a, hlen);
+      TLS_HMAC_FIN(a);
+   }
+#undef TLS_HMAC_INIT
+#undef TLS_HMAC_UPD
+#undef TLS_HMAC_FIN
+   crypto_memzero(a, sizeof(a));
+   crypto_memzero(p, sizeof(p));
+}
+
+/* Transcript hash so far, in the suite's hash; both digests run until
+ * the ServerHello picks one. */
+static size_t tls_transcript(const struct ssl_state *s, uint8_t *out)
+{
+   if (tls_suite_is_sha384(s->suite))
+   {
+      struct sha512_state t = s->transcript384;
+      sha512_stream_final(&t, out);
+      return 48;
+   }
+   else
+   {
+      struct sha256_state t = s->transcript;
+      sha256_stream_final(&t, out);
+      return 32;
+   }
+}
+
+/* ---- record layer ------------------------------------------------- */
 
 /* Sends one record of @type carrying @len octets of @data, encrypting
  * once the client write keys are in force. */
@@ -249,7 +297,7 @@ static int tls_send_record(struct ssl_state *s, uint8_t type,
          memcpy(nonce, s->civ, 4);
          crypto_store64_be(nonce + 4, s->cseq);
          memcpy(body, nonce + 4, 8);
-         if (aes_gcm_init(&g, s->cwk, 16) != 0
+         if (aes_gcm_init(&g, s->cwk, tls_suite_is_aes256(s->suite) ? 32 : 16) != 0
                || aes_gcm_encrypt(&g, nonce, 12, aad, 13, data, len,
                      body + 8, body + 8 + len) != 0)
          {
@@ -351,7 +399,7 @@ static int tls_read_record(struct ssl_state *s, uint8_t *type,
       else
       {
          struct aes_gcm_ctx g;
-         int r = aes_gcm_init(&g, s->swk, 16);
+         int r = aes_gcm_init(&g, s->swk, tls_suite_is_aes256(s->suite) ? 32 : 16);
          if (r == 0)
             r = aes_gcm_decrypt(&g, nonce, 12, aad, 13, p, plen, p + plen, p);
          crypto_memzero(&g, sizeof(g));
@@ -409,6 +457,7 @@ static int tls_read_handshake(struct ssl_state *s, uint8_t *msg_type,
             *body     = m + 4;
             *len      = mlen;
             sha256_stream_update(&s->transcript, m, 4 + mlen);
+         sha512_stream_update(&s->transcript384, m, 4 + mlen);
             s->hs_off += 4 + mlen;
             return 0;
          }
@@ -450,6 +499,7 @@ static int tls_send_handshake(struct ssl_state *s, uint8_t msg_type,
    m[3] = (uint8_t)len;
    memcpy(m + 4, body, len);
    sha256_stream_update(&s->transcript, m, 4 + len);
+   sha512_stream_update(&s->transcript384, m, 4 + len);
    ret = tls_send_record(s, TLS_CT_HANDSHAKE, m, 4 + len);
    free(m);
    return ret;
@@ -458,7 +508,7 @@ static int tls_send_handshake(struct ssl_state *s, uint8_t msg_type,
 static int tls_send_client_hello(struct ssl_state *s)
 {
    static const uint8_t suites[] = {
-      0xc0, 0x2b, 0xc0, 0x2f, 0xcc, 0xa9, 0xcc, 0xa8
+      0xc0, 0x2b, 0xc0, 0x2f, 0xcc, 0xa9, 0xcc, 0xa8, 0xc0, 0x2c, 0xc0, 0x30
    };
    uint8_t *h;
    uint8_t *p;
@@ -543,7 +593,8 @@ static int tls_recv_server_hello(struct ssl_state *s)
       goto bad;
    suite = tls_get16(b + 35 + sid);
    if (suite != TLS_SUITE_ECDHE_ECDSA_AES128_GCM && suite != TLS_SUITE_ECDHE_RSA_AES128_GCM
-         && suite != TLS_SUITE_ECDHE_RSA_CHACHA20 && suite != TLS_SUITE_ECDHE_ECDSA_CHACHA20)
+         && suite != TLS_SUITE_ECDHE_RSA_CHACHA20 && suite != TLS_SUITE_ECDHE_ECDSA_CHACHA20
+         && suite != TLS_SUITE_ECDHE_ECDSA_AES256_GCM && suite != TLS_SUITE_ECDHE_RSA_AES256_GCM)
       goto bad;
    if (b[35 + sid + 2] != 0)
       goto bad;   /* compression */
@@ -760,15 +811,15 @@ static int tls_send_client_kex(struct ssl_state *s, const uint8_t *peer,
 static void tls_derive_keys(struct ssl_state *s)
 {
    uint8_t key_block[2 * 32 + 2 * 12];
-   size_t  key_len = tls_suite_is_chacha(s->suite) ? 32 : 16;
+   size_t  key_len = (tls_suite_is_chacha(s->suite) || tls_suite_is_aes256(s->suite)) ? 32 : 16;
    size_t  iv_len  = tls_suite_is_chacha(s->suite) ? 12 : 4;
    size_t  slen    = s->group == 23 ? 32 : 48;
    const uint8_t *p = key_block;
 
-   tls_prf(s->premaster, slen, "master secret",
+   tls_prf(s, s->premaster, slen, "master secret",
          s->client_random, 32, s->server_random, 32, s->master, 48);
    crypto_memzero(s->premaster, sizeof(s->premaster));
-   tls_prf(s->master, 48, "key expansion",
+   tls_prf(s, s->master, 48, "key expansion",
          s->server_random, 32, s->client_random, 32,
          key_block, 2 * key_len + 2 * iv_len);
 
@@ -781,26 +832,25 @@ static void tls_derive_keys(struct ssl_state *s)
 
 static int tls_send_finished(struct ssl_state *s)
 {
-   struct sha256_state t = s->transcript;
-   uint8_t hash[32];
+   uint8_t hash[48];
    uint8_t verify[12];
-   sha256_stream_final(&t, hash);
-   tls_prf(s->master, 48, "client finished", hash, 32, NULL, 0, verify, 12);
+   size_t  hlen = tls_transcript(s, hash);
+   tls_prf(s, s->master, 48, "client finished", hash, hlen, NULL, 0, verify, 12);
    return tls_send_handshake(s, TLS_HS_FINISHED, verify, 12);
 }
 
 static int tls_recv_finished(struct ssl_state *s)
 {
-   struct sha256_state t = s->transcript;
-   uint8_t hash[32];
+   uint8_t hash[48];
    uint8_t verify[12];
    uint8_t type;
    const uint8_t *b;
    size_t len;
+   size_t hlen;
 
    /* Expected value is over the transcript before this message. */
-   sha256_stream_final(&t, hash);
-   tls_prf(s->master, 48, "server finished", hash, 32, NULL, 0, verify, 12);
+   hlen = tls_transcript(s, hash);
+   tls_prf(s, s->master, 48, "server finished", hash, hlen, NULL, 0, verify, 12);
 
    if (tls_read_handshake(s, &type, &b, &len) != 0)
       return -1;
@@ -823,6 +873,7 @@ static int tls_handshake(struct ssl_state *s)
    static const uint8_t ccs = 1;
 
    sha256_stream_init(&s->transcript, 0);
+   sha512_stream_init(&s->transcript384, 1);
    if (crypto_random_bytes(s->client_random, 32) != 0)
    {
       s->last_err = TLS_ERR_KEX;

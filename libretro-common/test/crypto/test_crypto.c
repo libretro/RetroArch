@@ -284,6 +284,15 @@ START_TEST (test_hmac_hkdf_pbkdf2)
    hmac_sha256_final(&h, mac);
    ck_hex(mac, 32, "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843");
 
+   {
+      struct hmac_sha384_ctx h3;
+      uint8_t m3[48];
+      hmac_sha384_init(&h3, (const uint8_t*)"Jefe", 4);
+      hmac_sha384_update(&h3, (const uint8_t*)"what do ya want for nothing?", 28);
+      hmac_sha384_final(&h3, m3);
+      ck_hex(m3, 48, "af45d2e376484031617f78d2b58a6b1b9c7ef464f5a01b47e42ec3736322445e8e2240ca5e69e2c78b3239ecfab21649");
+   }
+
    /* key longer than a block goes through the hash */
    {
       uint8_t longkey[131];

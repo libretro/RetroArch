@@ -32,5 +32,7 @@ run "ECDSA P-384 cert (SHA-384 sig), AES-128-GCM"   p384 ECDHE-ECDSA-AES128-GCM-
 run "wrong hostname is refused"                     rsa  ECDHE-RSA-AES128-GCM-SHA256      prime256v1 1 127.0.0.1 0 $D/ca.pem
 run "untrusted CA is refused"                       rsa  ECDHE-RSA-AES128-GCM-SHA256      prime256v1 1 localhost 0
 run "untrusted CA passes with verify optional"      rsa  ECDHE-RSA-AES128-GCM-SHA256      prime256v1 0 localhost 1
-run "server offering only AES-256-GCM-SHA384 fails" rsa  ECDHE-RSA-AES256-GCM-SHA384      prime256v1 1 localhost 2
+run "RSA, AES-256-GCM-SHA384 (SHA-384 PRF)"          rsa  ECDHE-RSA-AES256-GCM-SHA384      prime256v1 0 localhost 0 $D/ca.pem
+run "ECDSA P-256, AES-256-GCM-SHA384"                p256 ECDHE-ECDSA-AES256-GCM-SHA384    prime256v1 0 localhost 0 $D/ca.pem
+run "server offering only a CBC suite fails"        rsa  ECDHE-RSA-AES128-SHA256          prime256v1 1 localhost 2
 echo "[pass] tls_retro local server matrix"

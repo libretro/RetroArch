@@ -83,6 +83,52 @@ void hmac_sha256(const uint8_t *key, size_t key_len,
    hmac_sha256_final(&ctx, mac);
 }
 
+void hmac_sha384_init(struct hmac_sha384_ctx *ctx,
+      const uint8_t *key, size_t key_len)
+{
+   unsigned i;
+   uint8_t  k[128];
+
+   memset(k, 0, sizeof(k));
+   if (key_len > 128)
+   {
+      struct sha512_state s;
+      sha512_stream_init(&s, 1);
+      sha512_stream_update(&s, key, key_len);
+      sha512_stream_final(&s, k);
+   }
+   else
+      memcpy(k, key, key_len);
+
+   for (i = 0; i < 128; i++)
+      k[i] ^= 0x36;
+   sha512_stream_init(&ctx->inner, 1);
+   sha512_stream_update(&ctx->inner, k, 128);
+
+   for (i = 0; i < 128; i++)
+      k[i] ^= 0x36 ^ 0x5c;
+   sha512_stream_init(&ctx->outer, 1);
+   sha512_stream_update(&ctx->outer, k, 128);
+
+   crypto_memzero(k, sizeof(k));
+}
+
+void hmac_sha384_update(struct hmac_sha384_ctx *ctx,
+      const uint8_t *data, size_t len)
+{
+   sha512_stream_update(&ctx->inner, data, len);
+}
+
+void hmac_sha384_final(struct hmac_sha384_ctx *ctx, uint8_t *mac)
+{
+   uint8_t ih[48];
+   sha512_stream_final(&ctx->inner, ih);
+   sha512_stream_update(&ctx->outer, ih, 48);
+   sha512_stream_final(&ctx->outer, mac);
+   crypto_memzero(ih, sizeof(ih));
+   crypto_memzero(ctx, sizeof(*ctx));
+}
+
 void hkdf_sha256_extract(const uint8_t *salt, size_t salt_len,
       const uint8_t *ikm, size_t ikm_len, uint8_t *prk)
 {

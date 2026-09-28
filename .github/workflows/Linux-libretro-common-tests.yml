@@ -112,6 +112,17 @@ jobs:
           # dispatched and the baseline-crypto shape.
           make -f Makefile.test crypto-aarch64-check
 
+      - name: Built-in TLS client against a local openssl server
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # net_socket_ssl_retro.c end to end: every cipher suite, both
+          # curves, RSA / P-256 / P-384 certificates under a CA made on
+          # the spot, verify required / optional / disabled, and the
+          # refusals that must happen (wrong hostname, untrusted CA).
+          samples/network/tls_retro/local_server_test.sh
+
       - name: Check VFS backend symbol parity
         shell: bash
         working-directory: ${{ github.workspace }}

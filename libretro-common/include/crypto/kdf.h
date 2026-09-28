@@ -58,6 +58,21 @@ void hmac_sha256_final(struct hmac_sha256_ctx *ctx, uint8_t *mac);
 void hmac_sha256(const uint8_t *key, size_t key_len,
       const uint8_t *data, size_t len, uint8_t *mac);
 
+/* HMAC-SHA384, for the TLS PRF of the SHA-384 cipher suites. */
+#define HMAC_SHA384_SIZE 48
+
+struct hmac_sha384_ctx
+{
+   struct sha512_state inner;
+   struct sha512_state outer;
+};
+
+void hmac_sha384_init(struct hmac_sha384_ctx *ctx,
+      const uint8_t *key, size_t key_len);
+void hmac_sha384_update(struct hmac_sha384_ctx *ctx,
+      const uint8_t *data, size_t len);
+void hmac_sha384_final(struct hmac_sha384_ctx *ctx, uint8_t *mac);
+
 /* HKDF-SHA256 (RFC 5869). */
 
 /**
