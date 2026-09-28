@@ -86,7 +86,9 @@ typedef bool (*retro_task_finder_t)(retro_task_t *task,
       void *userdata);
 
 /**
- * Displays a message output by a task.
+ * Displays a message output by a task. An empty message signals
+ * completion to an attached frontend when notification text is suppressed.
+ * It must update task lifetime state without displaying a notification.
  */
 typedef void (*retro_task_queue_msg_t)(retro_task_t *task,
       const char *msg,

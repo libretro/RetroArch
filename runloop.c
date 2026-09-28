@@ -9004,24 +9004,23 @@ void runloop_task_msg_queue_push(retro_task_t *task, const char *msg,
    dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
    bool widgets_active            = p_dispwidget->active;
 
-   /* The task's title and mute flag are what decided this message
-    * existed at all, and task_queue_push_progress() read them under the
-    * lock that guards them before it called here. Re-reading them now
-    * would be reading a title a worker is free to replace, so the test
-    * is the caller's and not repeated. */
+   /* An empty message only completes an existing widget's task link. */
    if (widgets_active)
    {
+      if (*msg)
+      {
          ui_companion_driver_msg_queue_push(msg,
-            prio, task ? duration : duration * 60 / 1000, flush);
+               prio, task ? duration : duration * 60 / 1000, flush);
 #ifdef HAVE_ACCESSIBILITY
-      if (is_accessibility_enabled(
-            accessibility_enable,
-            access_st->enabled))
-         accessibility_speak_priority(
+         if (is_accessibility_enabled(
                accessibility_enable,
-               accessibility_narrator_speech_speed,
-               (char*)msg, 0);
+               access_st->enabled))
+            accessibility_speak_priority(
+                  accessibility_enable,
+                  accessibility_narrator_speech_speed,
+                  (char*)msg, 0);
 #endif
+      }
       gfx_widgets_msg_queue_push(
             task,
             msg,
@@ -9038,9 +9037,10 @@ void runloop_task_msg_queue_push(retro_task_t *task, const char *msg,
             false
 #endif
             );
-      }
+   }
    else
 #endif
+   if (*msg)
       runloop_msg_queue_push(msg, strlen(msg), prio, duration, flush, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }

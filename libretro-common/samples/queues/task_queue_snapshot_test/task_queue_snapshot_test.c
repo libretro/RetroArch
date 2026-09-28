@@ -18,6 +18,48 @@ static void *snapshot_malloc(size_t size)
 #include "../../../queues/task_queue.c"
 #undef malloc
 
+static unsigned completion_updates;
+static void completion_push(retro_task_t *task, const char *msg,
+      unsigned prio, unsigned duration, bool flush)
+{
+   (void)prio;
+   (void)duration;
+   (void)flush;
+   assert(msg && !*msg);
+   assert(task_get_flags(task) & RETRO_TASK_FLG_FINISHED);
+   assert(task_get_progress(task) == 37);
+   completion_updates++;
+}
+
+static void test_suppressed_completion(bool threaded)
+{
+   retro_task_t task;
+   unsigned mute, title;
+   task_queue_init(threaded, completion_push);
+   for (mute = 0; mute < 2; mute++)
+      for (title = 0; title < 2; title++)
+      {
+         if (!mute && title)
+            continue;
+         memset(&task, 0, sizeof(task));
+         task.title = title ? "muted title" : NULL;
+         task.progress = 37;
+         task.flags = mute ? RETRO_TASK_FLG_MUTE : 0;
+         task.frontend_userdata = &task;
+         completion_updates = 0;
+         task_queue_push_progress(&task);
+         assert(completion_updates == 0);
+         task.flags |= RETRO_TASK_FLG_FINISHED;
+         task.frontend_userdata = NULL;
+         task_queue_push_progress(&task);
+         assert(completion_updates == 0);
+         task.frontend_userdata = &task;
+         task_queue_push_progress(&task);
+         assert(completion_updates == 1);
+      }
+   task_queue_deinit();
+}
+
 static slock_t *gate_lock;
 static scond_t *gate_cond;
 static unsigned stage;
@@ -148,6 +190,8 @@ int main(void)
    assert(strcmp(snapshot.title, "unthreaded") == 0);
    free_snapshot(&snapshot);
    task_queue_deinit();
+   test_suppressed_completion(false);
+   test_suppressed_completion(true);
    puts("task progress snapshot tests passed");
    return 0;
 }

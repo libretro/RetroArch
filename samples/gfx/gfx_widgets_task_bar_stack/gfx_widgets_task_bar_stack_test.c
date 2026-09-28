@@ -255,6 +255,58 @@ static void test_deinit_with_live_tasks(void)
    }
 }
 
+static void completion_push(retro_task_t *task, const char *msg,
+      unsigned prio, unsigned duration, bool flush)
+{
+   (void)prio;
+   (void)duration;
+   (void)flush;
+   CHECK(msg && !*msg, "suppressed completion produced notification text");
+   task_push(task);
+}
+
+static void finish_silent_task(retro_task_t *task)
+{
+   if (!(task_get_flags(task) & RETRO_TASK_FLG_MUTE))
+      task_free_title(task);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void test_suppressed_completion(void)
+{
+   unsigned muted;
+   task_queue_deinit();
+   task_queue_init(false, completion_push);
+   for (muted = 0; muted < 2; muted++)
+   {
+      retro_task_t *task;
+      disp_widget_msg_t *widget;
+      if (!widgets_up())
+         break;
+      task = task_init();
+      CHECK(task != NULL, "could not allocate completion task");
+      if (!task)
+         break;
+      task->title = strdup("finishing task");
+      task->progress = 37;
+      task->handler = finish_silent_task;
+      task_push(task);
+      pump(2);
+      widget = (disp_widget_msg_t*)task->frontend_userdata;
+      CHECK(widget != NULL, "completion task has no widget");
+      if (muted)
+         task_set_flags(task, RETRO_TASK_FLG_MUTE, true);
+      task_queue_push(task);
+      task_queue_check();
+      /* task has been retired; only the widget remains valid. */
+      if (widget)
+         CHECK(widget->flags & DISPWIDG_FLAG_TASK_FINISHED,
+               "widget retained a live link to a retired task");
+      pump(2);
+      gfx_widgets_deinit(false);
+   }
+}
+
 int main(void)
 {
    task_queue_init(false, NULL);
@@ -262,6 +314,7 @@ int main(void)
    test_title_churn(true);
    test_title_churn(false);
    test_deinit_with_live_tasks();
+   test_suppressed_completion();
 
    printf("pushes=%d frames=%d\n", pushes, iterations);
 

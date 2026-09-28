@@ -167,6 +167,7 @@ static void task_queue_push_progress(retro_task_t *task)
 {
    char buf[1024];
    bool have_msg = false;
+   bool finished;
    bool flush    = false;
 
    buf[0] = '\0';
@@ -174,6 +175,8 @@ static void task_queue_push_progress(retro_task_t *task)
 #ifdef HAVE_THREADS
    slock_lock(property_lock);
 #endif
+
+   finished = (task->flags & RETRO_TASK_FLG_FINISHED) != 0;
 
    if (task->title && (!((task->flags & RETRO_TASK_FLG_MUTE) > 0)))
    {
@@ -215,7 +218,10 @@ static void task_queue_push_progress(retro_task_t *task)
    slock_unlock(property_lock);
 #endif
 
-   if (have_msg && impl_current->msg_push)
+   /* Retirement must reach an attached frontend even when text is
+    * suppressed or a replacement title allocation failed. */
+   if (impl_current->msg_push &&
+         (have_msg || (finished && task->frontend_userdata)))
       impl_current->msg_push(task, buf, 1, 60, flush);
 }
 
