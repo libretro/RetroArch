@@ -74,6 +74,9 @@ void ssl_socket_log_verify_disabled(const char *domain);
  * @pem (concatenated PEM certificates) for the process, NULL to
  * restore. For tests against a local server. */
 void ssl_socket_retro_set_trust_pem(const char *pem, size_t len);
+/* net_socket_ssl_retro.c only: whether the last handshake on
+ * @state_data resumed a cached session rather than running in full. */
+int ssl_socket_retro_was_resumed(void *state_data);
 
 RETRO_END_DECLS
 

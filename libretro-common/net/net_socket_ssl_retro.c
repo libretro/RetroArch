@@ -42,6 +42,7 @@
 #include <crypto/x509.h>
 #include <lrc_hash.h>
 #include <retro_miscellaneous.h>
+#include <compat/strl.h>
 
 #include "cacert.h"
 
@@ -85,6 +86,66 @@
 
 static unsigned tls_verify_mode = 0;   /* 0 required, 1 optional, 2 disabled */
 
+/* Session cache for resumption (RFC 5246 7.4.1.2 session ids, RFC 5077
+ * tickets): one entry per host, oldest replaced. A resumed handshake
+ * skips the certificate chain and the ECDHE exchange; the server
+ * proves it holds the master secret from the verified full handshake
+ * that produced the entry. Process-wide, never written to disk. */
+#define TLS_CACHE_SLOTS   8
+#define TLS_CACHE_MAX_AGE (6 * 60 * 60)
+
+struct tls_session
+{
+   uint8_t *ticket;
+   size_t   ticket_len;
+   time_t   when;
+   unsigned suite;
+   size_t   sid_len;
+   uint8_t  sid[32];
+   uint8_t  master[48];
+   char     host[256];
+};
+
+static struct tls_session tls_cache[TLS_CACHE_SLOTS];
+
+static struct tls_session *tls_cache_find(const char *host)
+{
+   unsigned i;
+   if (!host || !*host)
+      return NULL;
+   for (i = 0; i < TLS_CACHE_SLOTS; i++)
+      if (tls_cache[i].when && strcmp(tls_cache[i].host, host) == 0)
+      {
+         if (time(NULL) - tls_cache[i].when > TLS_CACHE_MAX_AGE)
+            return NULL;
+         return &tls_cache[i];
+      }
+   return NULL;
+}
+
+static struct tls_session *tls_cache_slot(const char *host)
+{
+   struct tls_session *e = tls_cache_find(host);
+   unsigned i, oldest = 0;
+   if (e)
+      return e;
+   for (i = 0; i < TLS_CACHE_SLOTS; i++)
+   {
+      if (!tls_cache[i].when)
+      {
+         oldest = i;
+         break;
+      }
+      if (tls_cache[i].when < tls_cache[oldest].when)
+         oldest = i;
+   }
+   e = &tls_cache[oldest];
+   free(e->ticket);
+   crypto_memzero(e, sizeof(*e));
+   strlcpy(e->host, host, sizeof(e->host));
+   return e;
+}
+
 /* The trust bundle is net/cacert.h unless a test swapped one in. */
 static const char *tls_trust_pem     = cacert_pem;
 static size_t      tls_trust_pem_len = sizeof(cacert_pem);
@@ -127,6 +188,10 @@ struct ssl_state
    uint8_t  tx_encrypted;
    uint8_t  handshake_done;
    uint8_t  closed;
+   uint8_t  resumed;        /* this connection resumed a session */
+   uint8_t  expect_ticket;  /* server said it will send a NewSessionTicket */
+   uint8_t  offered_sid[32];
+   size_t   offered_sid_len;
 };
 
 /* ---- byte helpers ------------------------------------------------- */
@@ -515,11 +580,13 @@ static int tls_send_client_hello(struct ssl_state *s)
    size_t   dlen = s->domain ? strlen(s->domain) : 0;
    size_t   ext_len;
    int      ret;
+   const struct tls_session *cached = tls_cache_find(s->domain);
+   size_t   ticket_len = (cached && cached->ticket) ? cached->ticket_len : 0;
 
    if (dlen > 255)
       dlen = 0;
 
-   if (!(h = (uint8_t*)malloc(200 + dlen)))
+   if (!(h = (uint8_t*)malloc(250 + dlen + ticket_len)))
    {
       s->last_err = TLS_ERR_MEMORY;
       return -1;
@@ -527,7 +594,21 @@ static int tls_send_client_hello(struct ssl_state *s)
    p = h;
    *p++ = 3; *p++ = 3;                             /* client_version */
    memcpy(p, s->client_random, 32); p += 32;
-   *p++ = 0;                                       /* session id */
+   /* session id: the cached one, or a random one alongside a ticket
+    * so the server can echo it to signal resumption */
+   s->offered_sid_len = 0;
+   if (cached && cached->sid_len)
+   {
+      memcpy(s->offered_sid, cached->sid, cached->sid_len);
+      s->offered_sid_len = cached->sid_len;
+   }
+   else if (ticket_len)
+   {
+      crypto_random_bytes(s->offered_sid, 32);
+      s->offered_sid_len = 32;
+   }
+   *p++ = (uint8_t)s->offered_sid_len;
+   memcpy(p, s->offered_sid, s->offered_sid_len); p += s->offered_sid_len;
    tls_put16(p, sizeof(suites)); p += 2;
    memcpy(p, suites, sizeof(suites)); p += sizeof(suites);
    *p++ = 1; *p++ = 0;                             /* null compression */
@@ -560,6 +641,13 @@ static int tls_send_client_hello(struct ssl_state *s)
       tls_put16(e, 0x0601); e += 2;   /* rsa_pkcs1_sha512 */
       /* renegotiation_info: initial, empty */
       tls_put16(e, 0xff01); e += 2; tls_put16(e, 1); e += 2; *e++ = 0;
+      /* session_ticket: the cached ticket, or empty to say we take them */
+      tls_put16(e, 35); e += 2; tls_put16(e, (unsigned)ticket_len); e += 2;
+      if (ticket_len)
+      {
+         memcpy(e, cached->ticket, ticket_len);
+         e += ticket_len;
+      }
 
       ext_len = (size_t)(e - ext_start);
       tls_put16(p, (unsigned)ext_len);
@@ -599,6 +687,45 @@ static int tls_recv_server_hello(struct ssl_state *s)
    if (b[35 + sid + 2] != 0)
       goto bad;   /* compression */
    s->suite = suite;
+
+   /* Resumption: the offered id echoed back, and the cached suite. */
+   s->resumed = 0;
+   if (sid && sid == s->offered_sid_len && memcmp(b + 35, s->offered_sid, sid) == 0)
+   {
+      const struct tls_session *cached = tls_cache_find(s->domain);
+      if (cached && cached->suite == suite)
+      {
+         memcpy(s->master, cached->master, 48);
+         s->resumed = 1;
+      }
+      else
+         goto bad;
+   }
+   /* extensions: session_ticket (35) present means a ticket follows */
+   s->expect_ticket = 0;
+   if (len > 35 + sid + 3 + 2)
+   {
+      size_t off  = 35 + sid + 3;
+      size_t elen = tls_get16(b + off);
+      off += 2;
+      while (elen >= 4 && off + 4 <= len)
+      {
+         unsigned etype = tls_get16(b + off);
+         size_t   edata = tls_get16(b + off + 2);
+         if (etype == 35)
+            s->expect_ticket = 1;
+         off  += 4 + edata;
+         elen  = (elen >= 4 + edata) ? elen - 4 - edata : 0;
+      }
+   }
+   if (!s->resumed && sid)
+   {
+      /* a server-issued id for the cache once the handshake completes */
+      memcpy(s->offered_sid, b + 35, sid);
+      s->offered_sid_len = sid;
+   }
+   else if (!s->resumed)
+      s->offered_sid_len = 0;
    return 0;
 
 bad:
@@ -808,26 +935,82 @@ static int tls_send_client_kex(struct ssl_state *s, const uint8_t *peer,
    return tls_send_handshake(s, TLS_HS_CLIENT_KEX, msg, 1 + plen);
 }
 
-static void tls_derive_keys(struct ssl_state *s)
+/* NewSessionTicket (RFC 5077): lifetime, then the opaque ticket. */
+static int tls_recv_new_session_ticket(struct ssl_state *s)
+{
+   uint8_t type;
+   const uint8_t *b;
+   size_t len, tlen;
+   struct tls_session *e;
+
+   if (tls_read_handshake(s, &type, &b, &len) != 0)
+      return -1;
+   if (type != 4 || len < 6)
+   {
+      s->last_err = TLS_ERR_HANDSHAKE;
+      return -1;
+   }
+   tlen = tls_get16(b + 4);
+   if (6 + tlen != len || tlen == 0 || tlen > 16384)
+   {
+      s->last_err = TLS_ERR_HANDSHAKE;
+      return -1;
+   }
+   e = tls_cache_slot(s->domain);
+   if (e)
+   {
+      uint8_t *t = (uint8_t*)malloc(tlen);
+      if (t)
+      {
+         memcpy(t, b + 6, tlen);
+         free(e->ticket);
+         e->ticket     = t;
+         e->ticket_len = tlen;
+         e->when       = time(NULL);
+      }
+   }
+   return 0;
+}
+
+/* Master secret and suite into the cache once a full handshake has
+ * finished; the server's session id too, when it gave one. */
+static void tls_cache_store(struct ssl_state *s)
+{
+   struct tls_session *e = tls_cache_slot(s->domain);
+   if (!e)
+      return;
+   memcpy(e->master, s->master, 48);
+   e->suite   = s->suite;
+   e->sid_len = s->offered_sid_len;
+   memcpy(e->sid, s->offered_sid, s->offered_sid_len);
+   e->when    = time(NULL);
+}
+
+/* Key block from a master secret already in s->master. */
+static void tls_expand_keys(struct ssl_state *s)
 {
    uint8_t key_block[2 * 32 + 2 * 12];
    size_t  key_len = (tls_suite_is_chacha(s->suite) || tls_suite_is_aes256(s->suite)) ? 32 : 16;
    size_t  iv_len  = tls_suite_is_chacha(s->suite) ? 12 : 4;
-   size_t  slen    = s->group == 23 ? 32 : 48;
    const uint8_t *p = key_block;
 
-   tls_prf(s, s->premaster, slen, "master secret",
-         s->client_random, 32, s->server_random, 32, s->master, 48);
-   crypto_memzero(s->premaster, sizeof(s->premaster));
    tls_prf(s, s->master, 48, "key expansion",
          s->server_random, 32, s->client_random, 32,
          key_block, 2 * key_len + 2 * iv_len);
-
    memcpy(s->cwk, p, key_len); p += key_len;
    memcpy(s->swk, p, key_len); p += key_len;
    memcpy(s->civ, p, iv_len);  p += iv_len;
    memcpy(s->siv, p, iv_len);
    crypto_memzero(key_block, sizeof(key_block));
+}
+
+static void tls_derive_keys(struct ssl_state *s)
+{
+   size_t slen = s->group == 23 ? 32 : 48;
+   tls_prf(s, s->premaster, slen, "master secret",
+         s->client_random, 32, s->server_random, 32, s->master, 48);
+   crypto_memzero(s->premaster, sizeof(s->premaster));
+   tls_expand_keys(s);
 }
 
 static int tls_send_finished(struct ssl_state *s)
@@ -882,6 +1065,32 @@ static int tls_handshake(struct ssl_state *s)
 
    if (tls_send_client_hello(s) != 0)                   return -1;
    if (tls_recv_server_hello(s) != 0)                   return -1;
+
+   if (s->resumed)
+   {
+      /* Abbreviated: the server goes first with the cached master. */
+      tls_expand_keys(s);
+      if (s->expect_ticket && tls_recv_new_session_ticket(s) != 0)
+         return -1;
+      if (tls_read_record(s, &type, &b, &len) != 0)     return -1;
+      if (type != TLS_CT_CCS || len != 1 || b[0] != 1)
+      {
+         s->last_err = TLS_ERR_HANDSHAKE;
+         return -1;
+      }
+      s->rx_encrypted = 1;
+      s->sseq         = 0;
+      if (tls_recv_finished(s) != 0)                    return -1;
+      if (tls_send_record(s, TLS_CT_CCS, &ccs, 1) != 0) return -1;
+      s->tx_encrypted = 1;
+      s->cseq         = 0;
+      if (tls_send_finished(s) != 0)                    return -1;
+      tls_cache_store(s);
+      s->handshake_done = 1;
+      s->hs_len = s->hs_off = 0;
+      return 0;
+   }
+
    if (tls_recv_certificate(s, &leaf) != 0)             return -1;
    if (tls_recv_server_kex(s, &leaf, peer, &peer_len) != 0) return -1;
    if (tls_recv_server_done(s) != 0)                    return -1;
@@ -893,7 +1102,10 @@ static int tls_handshake(struct ssl_state *s)
    s->cseq         = 0;
    if (tls_send_finished(s) != 0)                       return -1;
 
-   /* Server ChangeCipherSpec, then its Finished under the new keys. */
+   /* NewSessionTicket when announced, then the server's
+    * ChangeCipherSpec and its Finished under the new keys. */
+   if (s->expect_ticket && tls_recv_new_session_ticket(s) != 0)
+      return -1;
    if (tls_read_record(s, &type, &b, &len) != 0)        return -1;
    if (type != TLS_CT_CCS || len != 1 || b[0] != 1)
    {
@@ -903,6 +1115,7 @@ static int tls_handshake(struct ssl_state *s)
    s->rx_encrypted = 1;
    s->sseq         = 0;
    if (tls_recv_finished(s) != 0)                       return -1;
+   tls_cache_store(s);
 
    s->handshake_done = 1;
    /* The accumulator is done; application data has its own buffer. */
@@ -936,6 +1149,12 @@ void* ssl_socket_init(int fd, const char *domain)
       return NULL;
    }
    return s;
+}
+
+int ssl_socket_retro_was_resumed(void *state_data)
+{
+   const struct ssl_state *s = (const struct ssl_state*)state_data;
+   return s && s->handshake_done && s->resumed;
 }
 
 int ssl_socket_last_error(void *state_data)

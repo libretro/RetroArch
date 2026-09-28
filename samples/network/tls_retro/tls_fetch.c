@@ -1,7 +1,9 @@
 /* End-to-end check of net_socket_ssl_retro.c: TCP connect, TLS
  * handshake, one HTTP GET, first line of the reply. Exit status is
  * the outcome, so it doubles as a test:
- *   tls_fetch host [port] [verify-mode] [ca.pem] */
+ *   tls_fetch host [port] [verify-mode] [ca.pem] [rounds]
+ * With rounds > 1 the connection is made that many times in one
+ * process and every round after the first must resume the session. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,8 +25,10 @@ int main(int argc, char **argv)
    const char *host = argc > 1 ? argv[1] : "buildbot.libretro.com";
    uint16_t    port = argc > 2 ? (uint16_t)atoi(argv[2]) : 443;
    unsigned    mode = argc > 3 ? (unsigned)atoi(argv[3]) : 0;
-   const char *capem = argc > 4 ? argv[4] : NULL;
+   const char *capem = argc > 4 && *argv[4] ? argv[4] : NULL;
    char       *pem   = NULL;
+   int         rounds = argc > 5 ? atoi(argv[5]) : 1;
+   int         round;
    struct addrinfo *addr = NULL;
    char req[512];
    char buf[4096];
@@ -51,6 +55,8 @@ int main(int argc, char **argv)
       fclose(f);
       ssl_socket_retro_set_trust_pem(pem, (size_t)n);
    }
+   for (round = 0; round < (rounds > 0 ? rounds : 1); round++)
+   {
    fd = socket_init((void**)&addr, port, host, SOCKET_TYPE_STREAM, AF_INET);
    if (fd < 0 || !addr)
    {
@@ -81,9 +87,18 @@ int main(int argc, char **argv)
       return 1;
    }
    buf[n] = '\0';
-   printf("%s: %.*s\n", host, (int)(strcspn(buf, "\r\n")), buf);
+   printf("%s: %.*s%s\n", host, (int)(strcspn(buf, "\r\n")), buf,
+         ssl_socket_retro_was_resumed(ssl) ? " (resumed)" : "");
+   if (round > 0 && !ssl_socket_retro_was_resumed(ssl))
+   {
+      fprintf(stderr, "round %d did not resume\n", round + 1);
+      return 1;
+   }
    ssl_socket_close(ssl);
    ssl_socket_free(ssl);
    freeaddrinfo_retro(addr);
-   return strncmp(buf, "HTTP/1.", 7) == 0 ? 0 : 1;
+   if (strncmp(buf, "HTTP/1.", 7) != 0)
+      return 1;
+   }
+   return 0;
 }

@@ -17,10 +17,10 @@ mkcert() { # name keyalg [pkeyopt]
 mkcert rsa rsa:2048
 mkcert p256 ec "-pkeyopt ec_paramgen_curve:prime256v1"
 mkcert p384 ec "-pkeyopt ec_paramgen_curve:secp384r1"
-run() { # label cert cipher curve expect_rc host mode ca
-   openssl s_server -accept 44331 -cert $D/$2.pem -key $D/$2.key -tls1_2 -cipher "$3" -named_curve $4 -www >/dev/null 2>&1 &
+run() { # label cert cipher curve expect_rc host mode ca [rounds] [server opts]
+   openssl s_server -accept 44331 -cert $D/$2.pem -key $D/$2.key -tls1_2 -cipher "$3" -named_curve $4 -www ${10:-} >/dev/null 2>&1 &
    SRV=$!; sleep 0.4
-   set +e; ./tls_fetch $6 44331 $7 $8 >/dev/null 2>&1; rc=$?; set -e
+   set +e; ./tls_fetch $6 44331 $7 "$8" ${9:-1} >/dev/null 2>&1; rc=$?; set -e
    kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
    if [ $rc -eq $5 ]; then echo "ok:   $1"; else echo "FAIL: $1 (rc=$rc, want $5)"; exit 1; fi
 }
@@ -35,4 +35,7 @@ run "untrusted CA passes with verify optional"      rsa  ECDHE-RSA-AES128-GCM-SH
 run "RSA, AES-256-GCM-SHA384 (SHA-384 PRF)"          rsa  ECDHE-RSA-AES256-GCM-SHA384      prime256v1 0 localhost 0 $D/ca.pem
 run "ECDSA P-256, AES-256-GCM-SHA384"                p256 ECDHE-ECDSA-AES256-GCM-SHA384    prime256v1 0 localhost 0 $D/ca.pem
 run "server offering only a CBC suite fails"        rsa  ECDHE-RSA-AES128-SHA256          prime256v1 1 localhost 2
+run "session resumption by ticket (3 rounds)"     rsa  ECDHE-RSA-AES128-GCM-SHA256      prime256v1 0 localhost 0 $D/ca.pem 3
+run "session resumption by id, no tickets"         rsa  ECDHE-RSA-AES128-GCM-SHA256      prime256v1 0 localhost 0 $D/ca.pem 3 -no_ticket
+run "ECDSA + ChaCha20 resumes too"                 p256 ECDHE-ECDSA-CHACHA20-POLY1305    prime256v1 0 localhost 0 $D/ca.pem 2
 echo "[pass] tls_retro local server matrix"
