@@ -686,6 +686,10 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_num_contexts,            
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_timeout,                          MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_smb_client_browse,                           MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE)
 #endif
+#ifdef HAVE_NFSCLIENT
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_nfs_client_settings,                         MENU_ENUM_SUBLABEL_NFS_CLIENT_SETTINGS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_nfs_client_browse,                           MENU_ENUM_SUBLABEL_NFS_CLIENT_BROWSE)
+#endif
 
 static int action_bind_sublabel_systeminfo_controller_entry(
       file_list_t *list,
@@ -3729,6 +3733,14 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_SMB_CLIENT_BROWSE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_smb_client_browse);
+            break;
+#endif
+#ifdef HAVE_NFSCLIENT
+         case MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_nfs_client_settings);
+            break;
+         case MENU_ENUM_LABEL_NFS_CLIENT_BROWSE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_nfs_client_browse);
             break;
 #endif
          default:

@@ -683,6 +683,7 @@ check_gates "griffin: HAVE_RETROSMB + cloud sync"  "$UIDEFS -DRARCH_INTERNAL -DH
 # menu, and the same with no menu at all.
 check_gates "gates: SMB client, no menu"        "$UIDEFS -DHAVE_CONFIGFILE -DHAVE_NETWORKING -DHAVE_CRYPTO -DHAVE_SMBCLIENT -DHAVE_RETROSMB -D_GNU_SOURCE" configuration.c
 check_gates "gates: NFS client, no menu"        "$UIDEFS -DHAVE_CONFIGFILE -DHAVE_NETWORKING -DHAVE_NFSCLIENT -DHAVE_RETRONFS -D_GNU_SOURCE" configuration.c
+check_gates "gates: NFS client + menu"          "$UIDEFS -DHAVE_CONFIGFILE -DHAVE_NETWORKING -DHAVE_NFSCLIENT -DHAVE_RETRONFS -DHAVE_MENU -DHAVE_RGUI -D_GNU_SOURCE" configuration.c menu/menu_setting.c menu/menu_displaylist.c menu/cbs/menu_cbs_ok.c menu/cbs/menu_cbs_deferred_push.c menu/cbs/menu_cbs_sublabel.c menu/cbs/menu_cbs_title.c
 check_gates "gates: no menu, no SMB"            "$UIDEFS -DHAVE_CONFIGFILE -DHAVE_NETWORKING -D_GNU_SOURCE" configuration.c
 check_gates "griffin: HAVE_RETRONFS"            "$UIDEFS -DRARCH_INTERNAL -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_RGUI -DHAVE_CONFIGFILE -DHAVE_NETWORKING -DHAVE_NFSCLIENT -DHAVE_RETRONFS -D_GNU_SOURCE" griffin/griffin.c
 check_gates "griffin: no crypto (console shape)" "$UIDEFS -DRARCH_INTERNAL -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_RGUI -DHAVE_CONFIGFILE -DHAVE_KEYCHAIN -D_GNU_SOURCE" griffin/griffin.c

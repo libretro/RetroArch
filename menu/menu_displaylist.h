@@ -222,6 +222,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_AI_SERVICE_SETTINGS_LIST,
 #ifdef HAVE_SMBCLIENT
    DISPLAYLIST_SMB_CLIENT_SETTINGS_LIST,
+   DISPLAYLIST_NFS_CLIENT_SETTINGS_LIST,
 #endif
    DISPLAYLIST_ACCESSIBILITY_SETTINGS_LIST,
    DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST,
@@ -309,6 +310,7 @@ enum menu_displaylist_ctl_state
 #endif
 #ifdef HAVE_SMBCLIENT
    DISPLAYLIST_OPTIONS_SMB_CLIENT,
+   DISPLAYLIST_OPTIONS_NFS_CLIENT,
 #endif
    DISPLAYLIST_PENDING_CLEAR
 };
@@ -397,6 +399,9 @@ enum filebrowser_enums filebrowser_get_type(void);
 /* Writes smb://<server>[/<share>][/<subdir>] into 's', returning false when
  * the client is disabled or no server is configured. */
 bool menu_displaylist_build_smb_root(char *s, size_t len);
+#endif
+#ifdef HAVE_NFSCLIENT
+bool menu_displaylist_build_nfs_root(char *s, size_t len);
 #endif
 
 void filebrowser_clear_type(void);

@@ -191,6 +191,38 @@ enum filebrowser_enums filebrowser_get_type(void)
    return p_displist->filebrowser_types;
 }
 
+#ifdef HAVE_NFSCLIENT
+/* nfs://server/[export]/[subdir]; the export may be left out of the
+ * settings when the address carries it. */
+bool menu_displaylist_build_nfs_root(char *s, size_t len)
+{
+   size_t _len;
+   settings_t *settings = config_get_ptr();
+   const char *server   = settings->arrays.nfs_server;
+   const char *export_p = settings->arrays.nfs_export;
+   const char *subdir   = settings->arrays.nfs_subdir;
+
+   if (!*server)
+      return false;
+   _len = strlcpy_lit(s, "nfs://", len);
+   _len += strlcpy(s + _len, server, len - _len);
+   if (_len >= len)
+      return false;
+   if (*export_p)
+   {
+      /* with an export configured the VFS resolves paths against it,
+       * so the root is the server alone (plus the subdir) */
+      if (*subdir)
+      {
+         if (*subdir != '/')
+            _len += strlcpy_lit(s + _len, "/", len - _len);
+         _len += strlcpy(s + _len, subdir, len - _len);
+      }
+   }
+   return _len < len;
+}
+#endif
+
 #ifdef HAVE_SMBCLIENT
 bool menu_displaylist_build_smb_root(char *s, size_t len)
 {
@@ -4779,6 +4811,14 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
       }
+#endif
+#ifdef HAVE_NFSCLIENT
+      if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SETTINGS),
+            MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS_STR,
+            MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+         count++;
 #endif
    }
 
@@ -9643,6 +9683,20 @@ unsigned menu_displaylist_build_list(
             }
          }
 #endif
+#ifdef HAVE_NFSCLIENT
+         {
+            settings_t *settings = config_get_ptr();
+            if (*settings->arrays.nfs_server)
+            {
+               if (menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NFS_CLIENT_BROWSE),
+                  msg_hash_to_str(MENU_ENUM_SUBLABEL_NFS_CLIENT_BROWSE),
+                  MENU_ENUM_LABEL_NFS_CLIENT_BROWSE,
+                  FILE_TYPE_DIRECTORY, 0, 0, NULL))
+                  count++;
+            }
+         }
+#endif
          if (     !settings->bools.kiosk_mode_enable
                &&  settings->bools.settings_show_file_browser)
             menu_entries_append(list,
@@ -10759,6 +10813,9 @@ unsigned menu_displaylist_build_list(
             static menu_displaylist_build_info_selective_t build_list[] = {
 #ifdef HAVE_SMBCLIENT
                {MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,                PARSE_ACTION,      true},
+#endif
+#ifdef HAVE_NFSCLIENT
+               {MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS,                PARSE_ACTION,      true},
 #endif
                {MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,            PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,            PARSE_ONLY_BOOL,   true},
@@ -13861,6 +13918,29 @@ unsigned menu_displaylist_build_list(
          }
          break;
 #endif
+#ifdef HAVE_NFSCLIENT
+      case DISPLAYLIST_NFS_CLIENT_SETTINGS_LIST:
+         {
+            static const menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_NFS_CLIENT_SERVER,       PARSE_ONLY_STRING},
+               {MENU_ENUM_LABEL_NFS_CLIENT_EXPORT,       PARSE_ONLY_STRING},
+               {MENU_ENUM_LABEL_NFS_CLIENT_SUBDIR,       PARSE_ONLY_STRING},
+               {MENU_ENUM_LABEL_NFS_CLIENT_TIMEOUT,      PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_NFS_CLIENT_NUM_CONTEXTS, PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_NFS_CLIENT_PORT,         PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_NFS_CLIENT_MOUNT_PORT,   PARSE_ONLY_UINT},
+            };
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx,
+                        build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
+#endif
       default:
          break;
    }
@@ -16354,6 +16434,10 @@ static bool menu_displaylist_ctl_internal(
 #ifdef HAVE_SMBCLIENT
          case DISPLAYLIST_SMB_CLIENT_SETTINGS_LIST:
          case DISPLAYLIST_OPTIONS_SMB_CLIENT:
+#endif
+#ifdef HAVE_NFSCLIENT
+         case DISPLAYLIST_NFS_CLIENT_SETTINGS_LIST:
+         case DISPLAYLIST_OPTIONS_NFS_CLIENT:
 #endif
          case DISPLAYLIST_OPTIONS_OVERRIDES:
             menu_entries_clear(info->list);

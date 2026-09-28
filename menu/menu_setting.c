@@ -427,6 +427,7 @@ enum settings_list_type
 #endif
 #ifdef HAVE_SMBCLIENT
    SETTINGS_LIST_SMBCLIENT,
+   SETTINGS_LIST_NFSCLIENT,
 #endif
    SETTINGS_LIST_MANUAL_CONTENT_SCAN
 };
@@ -8351,6 +8352,9 @@ static const enum settings_list_type settings_list_build_order[] =
 #endif
 #ifdef HAVE_SMBCLIENT
       SETTINGS_LIST_SMBCLIENT,
+#endif
+#ifdef HAVE_NFSCLIENT
+      SETTINGS_LIST_NFSCLIENT,
 #endif
       SETTINGS_LIST_MANUAL_CONTENT_SCAN
    };
@@ -17847,6 +17851,49 @@ static void settings_build_smbclient(
 }
 #endif
 
+#ifdef HAVE_NFSCLIENT
+#define NFS_STRING(field, T)                                             \
+   CONFIG_STRING(list, list_info, settings->arrays.field,                \
+         sizeof(settings->arrays.field), MENU_ENUM_LABEL_##T,            \
+         MENU_ENUM_LABEL_VALUE_##T, "", &group_info, &subgroup_info,     \
+         parent_group, NULL, NULL);                                      \
+   SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT)
+#define NFS_UINT(field, T, def, mn, mx)                                  \
+   CONFIG_UINT(list, list_info, &settings->uints.field,                  \
+         MENU_ENUM_LABEL_##T, MENU_ENUM_LABEL_VALUE_##T, def,            \
+         &group_info, &subgroup_info, parent_group, general_write_handler, \
+         general_read_handler);                                          \
+   SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint) \
+   menu_settings_list_current_add_range(list, list_info, mn, mx, 1, true, true)
+
+/* Descriptor holdouts: the strings take free input, the uints are
+ * plain ranges. */
+static void settings_build_nfsclient(
+      settings_t *settings, global_t *global,
+      rarch_setting_t **list, rarch_setting_info_t *list_info,
+      const char *parent_group)
+{
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
+   group_info.name    = NULL;
+   subgroup_info.name = NULL;
+   (void)global;
+   {
+      GROUP_STATE(MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SETTINGS, MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS);
+      NFS_STRING(nfs_server, NFS_CLIENT_SERVER);
+      NFS_STRING(nfs_export, NFS_CLIENT_EXPORT);
+      NFS_STRING(nfs_subdir, NFS_CLIENT_SUBDIR);
+      NFS_UINT(nfs_timeout,      NFS_CLIENT_TIMEOUT,      DEFAULT_NFS_TIMEOUT,      1, 60);
+      NFS_UINT(nfs_num_contexts, NFS_CLIENT_NUM_CONTEXTS, DEFAULT_NFS_NUM_CONTEXTS, 1, 16);
+      NFS_UINT(nfs_port,         NFS_CLIENT_PORT,         DEFAULT_NFS_PORT,         0, 65535);
+      NFS_UINT(nfs_mount_port,   NFS_CLIENT_MOUNT_PORT,   DEFAULT_NFS_MOUNT_PORT,   0, 65535);
+      GROUP_END();
+   }
+}
+#undef NFS_STRING
+#undef NFS_UINT
+#endif
+
 typedef struct settings_build_entry
 {
    enum settings_list_type type;
@@ -18012,6 +18059,9 @@ static const settings_build_entry_t settings_build_registry[] = {
 #endif
 #ifdef HAVE_SMBCLIENT
    { SETTINGS_LIST_SMBCLIENT, settings_build_smbclient, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+#endif
+#ifdef HAVE_NFSCLIENT
+   { SETTINGS_LIST_NFSCLIENT, settings_build_nfsclient, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
 #endif
 };
 

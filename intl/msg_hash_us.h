@@ -36785,6 +36785,70 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
    "Browse files on the configured SMB share."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SERVER,
+   "NFS Server"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
+   "Server IP address or hostname."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NFS_CLIENT_EXPORT,
+   "NFS Export"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NFS_CLIENT_EXPORT,
+   "Path the server exports, e.g. /export/roms. Leave empty to give the export in the address as nfs://server/export/path."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SUBDIR,
+   "NFS Sub directory"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NFS_CLIENT_SUBDIR,
+   "Sub directory path under the export. Optional."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NFS_CLIENT_TIMEOUT,
+   "NFS Timeout"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NFS_CLIENT_TIMEOUT,
+   "Seconds to wait for the server on each request."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NFS_CLIENT_NUM_CONTEXTS,
+   "NFS Maximum connections"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NFS_CLIENT_NUM_CONTEXTS,
+   "Connections kept open to the server."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NFS_CLIENT_PORT,
+   "NFS Port"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NFS_CLIENT_PORT,
+   "Port of the NFS service. 0 asks the server's portmapper."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NFS_CLIENT_MOUNT_PORT,
+   "NFS Mount Port"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NFS_CLIENT_MOUNT_PORT,
+   "Port of the MOUNT service. 0 asks the server's portmapper."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NFS_CLIENT_BROWSE,
+   "Browse NFS Export"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NFS_CLIENT_BROWSE,
+   "Browse the configured NFS export for content."
+   )
 /* GENERATED REGION: SMB client settings visibility setting (see settings_def_settings_show_smb.h). */
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \

@@ -299,6 +299,8 @@ GENERIC_DEFERRED_PUSH(deferred_push_core_game_ai_options,             DISPLAYLIS
 #ifdef HAVE_SMBCLIENT
 GENERIC_DEFERRED_PUSH(deferred_push_smb_client_settings_list,       DISPLAYLIST_SMB_CLIENT_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_smb_client_options,             DISPLAYLIST_OPTIONS_SMB_CLIENT)
+GENERIC_DEFERRED_PUSH(deferred_push_nfs_client_settings_list,       DISPLAYLIST_NFS_CLIENT_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_nfs_client_options,             DISPLAYLIST_OPTIONS_NFS_CLIENT)
 #endif
 
 static int general_push(menu_displaylist_info_t *info,
@@ -841,6 +843,10 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_SMB_CLIENT_SETTINGS_LIST, deferred_push_smb_client_settings_list},
       {MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS, deferred_push_smb_client_options},
 #endif
+#ifdef HAVE_NFSCLIENT
+      {MENU_ENUM_LABEL_DEFERRED_NFS_CLIENT_SETTINGS_LIST, deferred_push_nfs_client_settings_list},
+      {MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS, deferred_push_nfs_client_options},
+#endif
    };
 
    /* Fast path: try O(1) enum_idx switch first before O(n) string scan */
@@ -1047,6 +1053,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #ifdef HAVE_SMBCLIENT
          case MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_smb_client_options);
+            break;
+#endif
+#ifdef HAVE_NFSCLIENT
+         case MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_nfs_client_options);
             break;
 #endif
          default:
