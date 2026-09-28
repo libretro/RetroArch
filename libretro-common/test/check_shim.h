@@ -61,7 +61,7 @@ static TCase *tcase_create(const char *name) { shim_tcase.name = name; shim_tcas
 static void tcase_add_test_fn(TCase *tc, void (*fn)(void)) { if (tc->n < 64) tc->fn[tc->n++] = fn; }
 #define tcase_add_test(tc, fn) tcase_add_test_fn(tc, fn)
 /* Checked fixtures run around every test, as in libcheck. */
-static void tcase_add_checked_fixture(TCase *tc, void (*setup)(void), void (*teardown)(void)) { tc->setup = setup; tc->teardown = teardown; }
+#define tcase_add_checked_fixture(tc, s, t) ((tc)->setup = (s), (tc)->teardown = (t))
 static void suite_add_tcase(Suite *s, TCase *tc) { (void)s; (void)tc; }
 static SRunner *srunner_create(Suite *s) { shim_runner.s = s; return &shim_runner; }
 static void srunner_run_all(SRunner *sr, int mode)
