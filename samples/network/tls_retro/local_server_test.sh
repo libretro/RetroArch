@@ -5,7 +5,7 @@
 # failures that must fail (wrong host, untrusted CA). Needs openssl.
 set -e
 command -v openssl >/dev/null 2>&1 || { echo "skip: no openssl"; exit 0; }
-D=$(mktemp -d); trap 'rm -rf $D; kill $SRV 2>/dev/null' EXIT
+D=$(mktemp -d); trap 'rm -rf $D; kill $SRV 2>/dev/null || true' EXIT
 cd "$(dirname "$0")"
 make -s tls_fetch
 openssl req -x509 -newkey rsa:2048 -nodes -keyout $D/ca.key -out $D/ca.pem -days 2 -subj "/CN=tls_retro test CA" 2>/dev/null

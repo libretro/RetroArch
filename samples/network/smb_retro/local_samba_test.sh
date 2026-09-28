@@ -9,7 +9,7 @@ command -v smbd >/dev/null 2>&1 || { echo "skip: no smbd"; exit 0; }
 [ "$(id -u)" = 0 ] || { echo "skip: needs root for port 445"; exit 0; }
 make -s smb_test
 D=$(mktemp -d); chmod 755 $D; mkdir -p $D/share $D/priv $D/run /run/samba
-trap 'pkill -f "smbd -s $D/smb.conf" 2>/dev/null; rm -rf $D' EXIT
+trap 'pkill -f "smbd -s $D/smb.conf" 2>/dev/null || true; rm -rf $D' EXIT
 id rsmbtest >/dev/null 2>&1 || useradd -M -s /usr/sbin/nologin rsmbtest
 chown rsmbtest $D/share
 conf() { # max_protocol encrypt
