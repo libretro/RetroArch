@@ -19,11 +19,15 @@
 #include <errno.h>
 #include <time.h>
 #include <fcntl.h>
+#ifdef HAVE_RETROSMB
+#include <net/net_smb2_compat.h>
+#else
 #include <smb2/smb2.h>
 #include <smb2/libsmb2.h>
 #include <smb2/libsmb2-raw.h>
 #include <smb2/libsmb2-dcerpc.h>
 #include <smb2/libsmb2-dcerpc-srvsvc.h>
+#endif
 #include <net/net_socket.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
@@ -427,6 +431,7 @@ static bool smb_init(const char *want_share)
 /* libsmb2 exposes share enumeration through the async API only, so the reply
  * is pumped here off a context of its own.  srvsvc requires IPC$, which is a
  * different tree connect to the one the pool holds. */
+#ifndef HAVE_RETROSMB
 struct smb_enum_state
 {
    struct srvsvc_NetrShareEnum_rep *rep;
@@ -472,6 +477,8 @@ static int smb_wait_for_reply(struct smb2_context *ctx,
    return 0;
 }
 
+#endif
+
 static void smb_free_share_list(char **shares, unsigned count)
 {
    unsigned i;
@@ -484,6 +491,16 @@ static void smb_free_share_list(char **shares, unsigned count)
    free(shares);
 }
 
+#ifdef HAVE_RETROSMB
+/* Share enumeration needs SRVSVC over the IPC$ pipe, which the built-in
+ * client does not carry yet; browsing starts at a named share. */
+static bool smb_enum_shares(char ***out, unsigned *out_count)
+{
+   *out       = NULL;
+   *out_count = 0;
+   return false;
+}
+#else
 /* Collects the disk shares the server exports.  Hidden and administrative
  * shares are left out, as are printer, device and IPC entries. */
 static bool smb_enum_shares(char ***out, unsigned *out_count)
@@ -613,6 +630,7 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
    *out_count = count;
    return true;
 }
+#endif
 
 void smb_close_context(int index)
 {

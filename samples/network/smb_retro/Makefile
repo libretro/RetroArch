@@ -12,6 +12,11 @@ ifneq (,$(findstring mingw,$(CC))$(findstring MINGW,$(MSYSTEM))$(findstring Wind
 endif
 smb_test: $(SRC)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $(LDLIBS) -o $@
+
+VFS_SRC = vfs_test.c $(COMMON)/vfs/vfs_implementation_smb.c $(filter-out smb_test.c,$(SRC)) \
+      $(COMMON)/lists/string_list.c
+vfs_test: $(VFS_SRC)
+	$(CC) $(CPPFLAGS) -DHAVE_RETROSMB -DHAVE_SMBCLIENT -DHAVE_NETWORKING -DRARCH_INTERNAL -I$(ROOT) $(CFLAGS) $(VFS_SRC) $(LDLIBS) -o $@
 clean:
-	rm -f smb_test smb_test.exe
+	rm -f smb_test smb_test.exe vfs_test vfs_test.exe
 .PHONY: clean

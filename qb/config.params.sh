@@ -229,6 +229,7 @@ HAVE_MEMFD_CREATE=auto     # libc supports memfd_create
 HAVE_MICROPHONE=yes        # Microphone support
 HAVE_TEST_DRIVERS=yes      # Test input driver
 HAVE_GAME_AI=no
+HAVE_RETROSMB=auto         # Built-in SMB2/3 client (needs HAVE_CRYPTO), used unless a libsmb2 is asked for
 HAVE_SMBCLIENT=auto        # SMB client support
 HAVE_BUILTINSMBCLIENT=no   # Use builtin libsmb2
 HAVE_LIBSMB=no             # Build in libsmb2 SMB support (system libsmb2 if available, bundled otherwise)

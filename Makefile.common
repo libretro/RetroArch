@@ -2621,7 +2621,7 @@ ifeq ($(HAVE_NETWORKING), 1)
       ifeq ($(HAVE_SSL), 1)
          OBJ += network/cloud_sync/google_drive.o
       endif
-      ifneq (,$(filter 1,$(HAVE_SMBCLIENT) $(HAVE_BUILTINSMBCLIENT)))
+      ifneq (,$(filter 1,$(HAVE_SMBCLIENT) $(HAVE_BUILTINSMBCLIENT) $(HAVE_RETROSMB)))
          OBJ += network/cloud_sync/smb.o
       endif
    endif
@@ -2997,7 +2997,14 @@ ifeq ($(HAVE_TEST_DRIVERS), 1)
   OBJ += input/drivers/test_input.o
 endif
 
-ifneq (,$(filter 1,$(HAVE_SMBCLIENT) $(HAVE_BUILTINSMBCLIENT)))
+# The built-in SMB2/3 client (libretro-common/net/net_smb2.c) stands in
+# for libsmb2: the same HAVE_SMBCLIENT surface for the menu, VFS and
+# cloud sync, no bundled or system library, needs HAVE_CRYPTO.
+ifeq ($(HAVE_RETROSMB), 1)
+   DEFINES += -DHAVE_SMBCLIENT -DHAVE_RETROSMB
+   OBJ     += $(LIBRETRO_COMM_DIR)/net/net_smb2.o \
+              $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_smb.o
+else ifneq (,$(filter 1,$(HAVE_SMBCLIENT) $(HAVE_BUILTINSMBCLIENT)))
    DEFINES += -DHAVE_SMBCLIENT
    # The libsmb2 public headers gate their <stdint.h> include on
    # HAVE_STDINT_H (autoconf-style), and every TU that includes

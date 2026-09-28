@@ -676,6 +676,7 @@ check_gates "gates: GPU index, Vulkan only" "$UIDEFS -DHAVE_VULKAN"            c
 # MSVC job builds griffin. Both crypto shapes, on Linux, for free.
 check_gates "griffin: HAVE_CRYPTO + keychain"  "$UIDEFS -DRARCH_INTERNAL -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_RGUI -DHAVE_CONFIGFILE -DHAVE_CRYPTO -DHAVE_KEYCHAIN -D_GNU_SOURCE" griffin/griffin.c
 check_gates "griffin: HAVE_RETROSSL"            "$UIDEFS -DRARCH_INTERNAL -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_RGUI -DHAVE_CONFIGFILE -DHAVE_CRYPTO -DHAVE_KEYCHAIN -DHAVE_NETWORKING -DHAVE_SSL -DHAVE_RETROSSL -D_GNU_SOURCE" griffin/griffin.c
+check_gates "griffin: HAVE_RETROSMB + cloud sync"  "$UIDEFS -DRARCH_INTERNAL -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_RGUI -DHAVE_CONFIGFILE -DHAVE_CRYPTO -DHAVE_NETWORKING -DHAVE_SMBCLIENT -DHAVE_RETROSMB -DHAVE_CLOUDSYNC -D_GNU_SOURCE" griffin/griffin.c
 check_gates "griffin: no crypto (console shape)" "$UIDEFS -DRARCH_INTERNAL -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_RGUI -DHAVE_CONFIGFILE -DHAVE_KEYCHAIN -D_GNU_SOURCE" griffin/griffin.c
 
 # A subsystem's own unit is built only when its gate is on, so each is

@@ -50,6 +50,7 @@
 #define SMB2_ECHO             0x000d
 #define SMB2_QUERY_DIRECTORY  0x000e
 #define SMB2_QUERY_INFO       0x0010
+#define SMB2_SET_INFO         0x0011
 
 #define SMB2_FLAGS_SIGNED     0x00000008
 
@@ -92,6 +93,8 @@
 #define SMB2_FILE_OVERWRITE_IF     0x00000005
 #define SMB2_FILE_DIRECTORY_FILE     0x00000001
 #define SMB2_FILE_NON_DIRECTORY_FILE 0x00000040
+#define SMB2_FILE_DELETE_ON_CLOSE    0x00001000
+#define SMB2_DELETE                  0x00010000
 
 /* NTLMSSP */
 #define NTLMSSP_NEGOTIATE_UNICODE        0x00000001
@@ -981,6 +984,18 @@ void rsmb_set_credentials(struct rsmb_ctx *c, const char *user,
    c->domain   = rsmb_dup(domain);
 }
 
+static void rsmb_set_str(char **slot, const char *v, int secret)
+{
+   if (*slot && secret)
+      crypto_memzero(*slot, strlen(*slot));
+   free(*slot);
+   *slot = rsmb_dup(v);
+}
+
+void rsmb_set_user(struct rsmb_ctx *c, const char *user)         { rsmb_set_str(&c->user, user, 0); }
+void rsmb_set_password(struct rsmb_ctx *c, const char *password) { rsmb_set_str(&c->password, password, 1); }
+void rsmb_set_domain(struct rsmb_ctx *c, const char *domain)     { rsmb_set_str(&c->domain, domain, 0); }
+
 void rsmb_set_timeout(struct rsmb_ctx *c, unsigned seconds)
 {
    c->timeout = seconds ? seconds : 10;
@@ -1259,6 +1274,34 @@ int rsmb_close(struct rsmb_ctx *c, struct rsmb_file *f)
    return r;
 }
 
+int rsmb_ftruncate(struct rsmb_ctx *c, struct rsmb_file *f, uint64_t size)
+{
+   /* SET_INFO FileEndOfFileInformation (class 20) */
+   uint8_t *b = rsmb_begin(c, SMB2_SET_INFO);
+   uint8_t *r;
+   size_t   rlen;
+   memset(b, 0, 40);
+   put16(b, 33);
+   b[2] = 1;
+   b[3] = 20;
+   put32(b + 4, 8);
+   put16(b + 8, SMB2_HDR_SIZE + 32);
+   memcpy(b + 16, f->fid, 16);
+   put64(b + 32, size);
+   if (rsmb_call(c, 40, &r, &rlen, 0) != 0 || c->status != STATUS_SUCCESS)
+   {
+      rsmb_err(c, "truncate failed");
+      return -1;
+   }
+   f->size = size;
+   if (f->offset > size)
+      f->offset = size;
+   return 0;
+}
+
+uint32_t rsmb_max_read(const struct rsmb_ctx *c)  { return c->max_read; }
+uint32_t rsmb_max_write(const struct rsmb_ctx *c) { return c->max_write; }
+
 int rsmb_stat(struct rsmb_ctx *c, const char *path, struct rsmb_stat *st)
 {
    uint8_t  fid[16];
@@ -1273,6 +1316,57 @@ int rsmb_stat(struct rsmb_ctx *c, const char *path, struct rsmb_stat *st)
    st->mtime  = rsmb_filetime(get64(c->rx + SMB2_HDR_SIZE + 32));
    rsmb_close_fid(c, fid);
    return 0;
+}
+
+int rsmb_unlink(struct rsmb_ctx *c, const char *path)
+{
+   uint8_t fid[16];
+   if (rsmb_create(c, path, SMB2_DELETE | SMB2_SYNCHRONIZE, SMB2_FILE_OPEN,
+            SMB2_FILE_DELETE_ON_CLOSE, fid, NULL, NULL) != 0)
+      return -1;
+   return rsmb_close_fid(c, fid);
+}
+
+int rsmb_mkdir(struct rsmb_ctx *c, const char *path)
+{
+   uint8_t fid[16];
+   if (rsmb_create(c, path, SMB2_FILE_READ_ATTRIBUTES | SMB2_SYNCHRONIZE,
+            SMB2_FILE_CREATE, SMB2_FILE_DIRECTORY_FILE, fid, NULL, NULL) != 0)
+      return -1;
+   return rsmb_close_fid(c, fid);
+}
+
+int rsmb_rename(struct rsmb_ctx *c, const char *from, const char *to)
+{
+   /* SET_INFO FileRenameInformation on a handle opened with DELETE */
+   uint8_t  fid[16];
+   uint8_t *b, *r;
+   size_t   rlen, nlen;
+   int      ret = -1;
+
+   if (rsmb_create(c, from, SMB2_DELETE | SMB2_SYNCHRONIZE, SMB2_FILE_OPEN, 0,
+            fid, NULL, NULL) != 0)
+      return -1;
+   while (*to == '/' || *to == '\\')
+      to++;
+   b = rsmb_begin(c, SMB2_SET_INFO);
+   memset(b, 0, 32);
+   put16(b, 33);
+   b[2] = 1;                                  /* InfoType: FILE */
+   b[3] = 10;                                 /* FileRenameInformation */
+   put16(b + 8, SMB2_HDR_SIZE + 32);          /* BufferOffset */
+   memcpy(b + 16, fid, 16);
+   memset(b + 32, 0, 20);
+   b[32] = 1;                                 /* ReplaceIfExists */
+   nlen = rsmb_utf16(to, b + 52, 2048, 1);
+   put32(b + 48, (uint32_t)nlen);
+   put32(b + 4, (uint32_t)(20 + nlen));       /* BufferLength */
+   if (rsmb_call(c, 52 + nlen, &r, &rlen, 0) == 0 && c->status == STATUS_SUCCESS)
+      ret = 0;
+   else
+      rsmb_err(c, "rename failed");
+   rsmb_close_fid(c, fid);
+   return ret;
 }
 
 /* ---- directories -------------------------------------------------- */

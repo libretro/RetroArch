@@ -1064,6 +1064,23 @@ if [ "$HAVE_CXX11" = 'yes' ]; then
    fi
 fi
 
+# The built-in client is used unless a libsmb2 was explicitly asked
+# for; with it on, neither libsmb2 is looked for or built.
+check_enabled NETWORKING RETROSMB 'built-in SMB client' 'Networking is' false
+check_enabled CRYPTO RETROSMB 'built-in SMB client' 'crypto is' false
+if [ "$HAVE_RETROSMB" = 'auto' ]; then
+   if [ "$HAVE_SMBCLIENT" = 'yes' ] || [ "$HAVE_BUILTINSMBCLIENT" = 'yes' ] || [ "$HAVE_LIBSMB" = 'yes' ]; then
+      HAVE_RETROSMB=no
+   else
+      HAVE_RETROSMB=yes
+   fi
+fi
+if [ "$HAVE_RETROSMB" = 'yes' ]; then
+   HAVE_SMBCLIENT=no
+   HAVE_BUILTINSMBCLIENT=no
+   echo "SMB support enabled (built-in client)"
+fi
+
 # First try system libsmb2
 check_pkgconf SMBCLIENT libsmb2 0.0
 check_enabled NETWORKING SMBCLIENT libsmb2 'SMB client support is' false

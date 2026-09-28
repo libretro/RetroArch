@@ -67,6 +67,9 @@ void rsmb_free(struct rsmb_ctx *c);
 /* All three are copied; NULL means empty. */
 void rsmb_set_credentials(struct rsmb_ctx *c, const char *user,
       const char *password, const char *domain);
+void rsmb_set_user(struct rsmb_ctx *c, const char *user);
+void rsmb_set_password(struct rsmb_ctx *c, const char *password);
+void rsmb_set_domain(struct rsmb_ctx *c, const char *domain);
 /* Socket connect and per-request timeout, seconds; 0 restores the
  * default of 10. */
 void rsmb_set_timeout(struct rsmb_ctx *c, unsigned seconds);
@@ -88,8 +91,16 @@ int64_t rsmb_write(struct rsmb_ctx *c, struct rsmb_file *f, const void *buf, siz
 int64_t rsmb_seek(struct rsmb_ctx *c, struct rsmb_file *f, int64_t off, int whence);
 int64_t rsmb_tell(const struct rsmb_file *f);
 int rsmb_close(struct rsmb_ctx *c, struct rsmb_file *f);
+/* Sets the end of file. */
+int rsmb_ftruncate(struct rsmb_ctx *c, struct rsmb_file *f, uint64_t size);
+/* Per-request I/O limits negotiated with the server. */
+uint32_t rsmb_max_read(const struct rsmb_ctx *c);
+uint32_t rsmb_max_write(const struct rsmb_ctx *c);
 
 int rsmb_stat(struct rsmb_ctx *c, const char *path, struct rsmb_stat *st);
+int rsmb_unlink(struct rsmb_ctx *c, const char *path);
+int rsmb_mkdir(struct rsmb_ctx *c, const char *path);
+int rsmb_rename(struct rsmb_ctx *c, const char *from, const char *to);
 
 struct rsmb_dir *rsmb_opendir(struct rsmb_ctx *c, const char *path);
 /* NULL at the end; "." and ".." are skipped. */

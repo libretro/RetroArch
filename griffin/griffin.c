@@ -1978,5 +1978,8 @@ SMB CLIENT
 #endif
 
 #ifdef HAVE_SMBCLIENT
+#ifdef HAVE_RETROSMB
+#include "../libretro-common/net/net_smb2.c"
+#endif
 #include "../libretro-common/vfs/vfs_implementation_smb.c"
 #endif

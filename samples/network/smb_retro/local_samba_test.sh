@@ -7,7 +7,7 @@ set -e
 cd "$(dirname "$0")"
 command -v smbd >/dev/null 2>&1 || { echo "skip: no smbd"; exit 0; }
 [ "$(id -u)" = 0 ] || { echo "skip: needs root for port 445"; exit 0; }
-make -s smb_test
+make -s smb_test vfs_test
 D=$(mktemp -d); chmod 755 $D; mkdir -p $D/share $D/priv $D/run /run/samba
 trap 'pkill -f "smbd -s $D/smb.conf" 2>/dev/null || true; rm -rf $D' EXIT
 id rsmbtest >/dev/null 2>&1 || useradd -M -s /usr/sbin/nologin rsmbtest
@@ -51,7 +51,10 @@ run() { # label max_protocol encrypt expect_rc password
       i=$((i + 1)); sleep 0.2
    done
    rm -f $D/share/rsmb_test.bin
-   set +e; ./smb_test 127.0.0.1 share rsmbtest "$5" RETRO >$D/out 2>&1; rc=$?; set -e
+   set +e; ./smb_test 127.0.0.1 share rsmbtest "$5" RETRO >$D/out 2>&1; rc=$?
+   # the real VFS backend on top, on the file the run above wrote
+   [ $rc -eq 0 ] && { ./vfs_test 127.0.0.1 share rsmbtest "$5" RETRO >>$D/out 2>&1 || rc=3; }
+   set -e
    if [ $rc -eq $4 ]; then echo "ok:   $1"; else echo "FAIL: $1 (rc=$rc, want $4): $(cat $D/out)"; exit 1; fi
    rm -f $D/share/rsmb_test.bin
 }
