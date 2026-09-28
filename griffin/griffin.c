@@ -1983,3 +1983,7 @@ SMB CLIENT
 #endif
 #include "../libretro-common/vfs/vfs_implementation_smb.c"
 #endif
+#ifdef HAVE_NFSCLIENT
+#include "../libretro-common/net/net_nfs3.c"
+#include "../libretro-common/vfs/vfs_implementation_nfs.c"
+#endif

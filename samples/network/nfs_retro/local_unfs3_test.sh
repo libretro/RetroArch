@@ -18,7 +18,7 @@ if [ -z "$UNFSD" ]; then
    fi
 fi
 [ -n "$UNFSD" ] || { echo "skip: no unfsd and no way to build one"; exit 0; }
-make -s nfs_test
+make -s nfs_test vfs_test
 D=$(mktemp -d); chmod 755 $D; mkdir -p $D/export; chmod 777 $D/export
 echo "$D/export 127.0.0.1(rw,no_root_squash,insecure)" > $D/exports
 trap 'kill $SRV 2>/dev/null || true; rm -rf $D' EXIT
@@ -32,6 +32,12 @@ done
 rm -rf $D/export/*
 if ./nfs_test 127.0.0.1 $D/export 20049 20048 > $D/out 2>&1; then
    echo "ok:   NFSv3 over TCP against unfs3 (fixed ports)"
+else
+   echo "FAIL: $(cat $D/out)"; exit 1
+fi
+# the real VFS on top: nfs://server/... through filestream and retro_dirent
+if ./vfs_test 127.0.0.1 $D/export 20049 20048 > $D/out 2>&1; then
+   echo "ok:   nfs:// through vfs_implementation.c"
 else
    echo "FAIL: $(cat $D/out)"; exit 1
 fi

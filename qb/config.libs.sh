@@ -1064,6 +1064,9 @@ if [ "$HAVE_CXX11" = 'yes' ]; then
    fi
 fi
 
+check_enabled NETWORKING RETRONFS 'built-in NFS client' 'Networking is' false
+if [ "$HAVE_RETRONFS" = 'auto' ]; then HAVE_RETRONFS=yes; fi
+
 # The built-in client is used unless a libsmb2 was explicitly asked
 # for; with it on, neither libsmb2 is looked for or built.
 check_enabled NETWORKING RETROSMB 'built-in SMB client' 'Networking is' false

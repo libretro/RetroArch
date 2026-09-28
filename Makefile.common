@@ -2997,6 +2997,14 @@ ifeq ($(HAVE_TEST_DRIVERS), 1)
   OBJ += input/drivers/test_input.o
 endif
 
+# The built-in NFSv3 client and its nfs:// VFS backend. Needs only
+# networking; the console Makefiles do not set it.
+ifeq ($(HAVE_RETRONFS), 1)
+   DEFINES += -DHAVE_NFSCLIENT -DHAVE_RETRONFS
+   OBJ     += $(LIBRETRO_COMM_DIR)/net/net_nfs3.o \
+              $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_nfs.o
+endif
+
 # The built-in SMB2/3 client (libretro-common/net/net_smb2.c) stands in
 # for libsmb2: the same HAVE_SMBCLIENT surface for the menu, VFS and
 # cloud sync, no bundled or system library, needs HAVE_CRYPTO.
