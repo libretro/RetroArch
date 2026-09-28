@@ -1,0 +1,74 @@
+/* Exercises net_smb2.c against a share: connect, list the root, write
+ * a file, read it back, stat it, seek, echo. Exit status is the
+ * verdict: smb_test server share user password [domain] */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <net/net_compat.h>
+#include <net/net_smb2.h>
+
+#define CHECK(x, msg) do { if (!(x)) { fprintf(stderr, "FAIL: %s (%s, status 0x%08x)\n", msg, rsmb_get_error(c), rsmb_get_status(c)); return 1; } } while (0)
+
+int main(int argc, char **argv)
+{
+   struct rsmb_ctx *c;
+   struct rsmb_file *f;
+   struct rsmb_dir *d;
+   struct rsmb_stat st;
+   const struct rsmb_dirent *e;
+   static uint8_t big[200000];
+   static uint8_t back[200000];
+   char small[64];
+   unsigned i, n = 0, found = 0;
+
+   if (argc < 5)
+      return 2;
+   network_init();
+   c = rsmb_new();
+   if (!c)
+      return 2;
+   rsmb_set_credentials(c, argv[3], argv[4], argc > 5 ? argv[5] : "");
+   rsmb_set_timeout(c, 5);
+   CHECK(rsmb_connect(c, argv[1], argv[2]) == 0, "connect");
+   CHECK(rsmb_echo(c) == 0, "echo");
+
+   for (i = 0; i < sizeof(big); i++)
+      big[i] = (uint8_t)(i * 31 + 7);
+   f = rsmb_open(c, "rsmb_test.bin", RSMB_O_WRONLY | RSMB_O_CREAT | RSMB_O_TRUNC);
+   CHECK(f, "create");
+   CHECK(rsmb_write(c, f, big, sizeof(big)) == (int64_t)sizeof(big), "write");
+   CHECK(rsmb_close(c, f) == 0, "close after write");
+
+   CHECK(rsmb_stat(c, "rsmb_test.bin", &st) == 0, "stat");
+   CHECK(st.size == sizeof(big) && !st.is_dir, "stat size");
+   CHECK(rsmb_stat(c, "/", &st) == 0 && st.is_dir, "stat root");
+   CHECK(rsmb_stat(c, "no_such_file", &st) != 0, "stat missing");
+
+   f = rsmb_open(c, "/rsmb_test.bin", RSMB_O_RDONLY);
+   CHECK(f, "open");
+   CHECK(rsmb_read(c, f, back, sizeof(back)) == (int64_t)sizeof(back), "read");
+   CHECK(memcmp(big, back, sizeof(big)) == 0, "read content");
+   CHECK(rsmb_read(c, f, small, sizeof(small)) == 0, "read at eof");
+   CHECK(rsmb_seek(c, f, 100, 0) == 100, "seek");
+   CHECK(rsmb_read(c, f, small, 10) == 10 && memcmp(small, big + 100, 10) == 0, "read after seek");
+   CHECK(rsmb_seek(c, f, -5, 2) == (int64_t)sizeof(big) - 5, "seek end");
+   CHECK(rsmb_read(c, f, small, 64) == 5, "short read at end");
+   CHECK(rsmb_close(c, f) == 0, "close");
+
+   d = rsmb_opendir(c, "");
+   CHECK(d, "opendir");
+   while ((e = rsmb_readdir(c, d)))
+   {
+      n++;
+      if (strcmp(e->name, "rsmb_test.bin") == 0 && e->st.size == sizeof(big) && !e->st.is_dir)
+         found = 1;
+   }
+   rsmb_closedir(c, d);
+   CHECK(found, "readdir sees the file");
+   CHECK(!rsmb_open(c, "no_such_file", RSMB_O_RDONLY), "open missing");
+
+   rsmb_disconnect(c);
+   rsmb_free(c);
+   printf("ok: %s/%s (%u entries)\n", argv[1], argv[2], n);
+   return 0;
+}

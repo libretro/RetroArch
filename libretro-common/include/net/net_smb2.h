@@ -1,0 +1,107 @@
+/* Copyright  (C) 2026 The RetroArch team
+ *
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (net_smb2.h).
+ * ---------------------------------------------------------------------------------------
+ *
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+#ifndef _LIBRETRO_NET_SMB2_H
+#define _LIBRETRO_NET_SMB2_H
+
+#include <stdint.h>
+#include <stddef.h>
+#include <boolean.h>
+
+#include <retro_common_api.h>
+
+RETRO_BEGIN_DECLS
+
+/* SMB2/3 client on the cleanroom crypto: dialects 2.0.2 through 3.1.1,
+ * NTLMv2 through SPNEGO, signing (HMAC-SHA256 on 2.x, AES-CMAC on 3.x)
+ * and sealing (AES-CCM on 3.0 / 3.0.2, AES-GCM on 3.1.1) when the
+ * server or share asks for it. One connection, one session, one tree
+ * per context; calls are synchronous and the socket is blocking.
+ * Paths are UTF-8 with '/' or '\\' separators, relative to the share. */
+
+struct rsmb_ctx;
+struct rsmb_file;
+struct rsmb_dir;
+
+#define RSMB_O_RDONLY 0x0
+#define RSMB_O_WRONLY 0x1
+#define RSMB_O_RDWR   0x2
+#define RSMB_O_CREAT  0x40
+#define RSMB_O_TRUNC  0x200
+
+struct rsmb_stat
+{
+   uint64_t size;
+   uint64_t mtime;      /* seconds since 1970 */
+   int      is_dir;
+};
+
+struct rsmb_dirent
+{
+   struct rsmb_stat st;
+   char name[256];
+};
+
+struct rsmb_ctx *rsmb_new(void);
+void rsmb_free(struct rsmb_ctx *c);
+
+/* All three are copied; NULL means empty. */
+void rsmb_set_credentials(struct rsmb_ctx *c, const char *user,
+      const char *password, const char *domain);
+/* Socket connect and per-request timeout, seconds; 0 restores the
+ * default of 10. */
+void rsmb_set_timeout(struct rsmb_ctx *c, unsigned seconds);
+
+/**
+ * rsmb_connect:
+ * @server            : host name or address; port 445.
+ * @share             : share name without slashes.
+ *
+ * Returns: 0 on success, -1 with rsmb_get_error() set.
+ **/
+int rsmb_connect(struct rsmb_ctx *c, const char *server, const char *share);
+void rsmb_disconnect(struct rsmb_ctx *c);
+
+struct rsmb_file *rsmb_open(struct rsmb_ctx *c, const char *path, int flags);
+int64_t rsmb_read(struct rsmb_ctx *c, struct rsmb_file *f, void *buf, size_t len);
+int64_t rsmb_write(struct rsmb_ctx *c, struct rsmb_file *f, const void *buf, size_t len);
+/* whence: 0 set, 1 cur, 2 end. Returns the new position or -1. */
+int64_t rsmb_seek(struct rsmb_ctx *c, struct rsmb_file *f, int64_t off, int whence);
+int64_t rsmb_tell(const struct rsmb_file *f);
+int rsmb_close(struct rsmb_ctx *c, struct rsmb_file *f);
+
+int rsmb_stat(struct rsmb_ctx *c, const char *path, struct rsmb_stat *st);
+
+struct rsmb_dir *rsmb_opendir(struct rsmb_ctx *c, const char *path);
+/* NULL at the end; "." and ".." are skipped. */
+const struct rsmb_dirent *rsmb_readdir(struct rsmb_ctx *c, struct rsmb_dir *d);
+void rsmb_closedir(struct rsmb_ctx *c, struct rsmb_dir *d);
+
+int rsmb_echo(struct rsmb_ctx *c);
+const char *rsmb_get_error(const struct rsmb_ctx *c);
+/* Last NT status, for callers that map them. */
+uint32_t rsmb_get_status(const struct rsmb_ctx *c);
+int rsmb_get_fd(const struct rsmb_ctx *c);
+
+RETRO_END_DECLS
+
+#endif

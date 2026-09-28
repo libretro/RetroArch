@@ -37,7 +37,7 @@ jobs:
         run: |
           # ffmpeg: tools/companion_thumbs_test.sh builds its video-hover
           # fixture (a 2 KB Baseline MP4) with it.
-          pkgs="build-essential check pkg-config zlib1g-dev lcov gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 wine wine64 ffmpeg gcc-aarch64-linux-gnu qemu-user"
+          pkgs="build-essential check pkg-config zlib1g-dev lcov gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 wine wine64 ffmpeg gcc-aarch64-linux-gnu qemu-user samba"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -125,6 +125,17 @@ jobs:
           # The same tool cross-linked for Windows: the sample's link
           # line has to carry Winsock, which nothing on Linux checks.
           make -C samples/network/tls_retro clean
+
+      - name: Built-in SMB2/3 client against a local smbd
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # net_smb2.c end to end against Samba on the loopback: every
+          # dialect 2.0.2 to 3.1.1 with signing mandatory, AES-CCM and
+          # AES-GCM sealing required, and a refused logon. Root for
+          # port 445; the script itself skips without smbd.
+          sudo samples/network/smb_retro/local_samba_test.sh
           CC=x86_64-w64-mingw32-gcc make -C samples/network/tls_retro tls_fetch
           make -C samples/network/tls_retro clean
 
