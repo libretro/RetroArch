@@ -1924,6 +1924,13 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("smb_client_server_address",             settings->arrays.smb_client_server_address, false, NULL, true);
    SETTING_ARRAY("smb_client_share",                      settings->arrays.smb_client_share, false, NULL, true);
    SETTING_ARRAY("smb_client_subdir",                     settings->arrays.smb_client_subdir, false, NULL, true);
+#endif
+#ifdef HAVE_NFSCLIENT
+   SETTING_ARRAY("nfs_server",                            settings->arrays.nfs_server, false, NULL, true);
+   SETTING_ARRAY("nfs_export",                            settings->arrays.nfs_export, false, NULL, true);
+   SETTING_ARRAY("nfs_subdir",                            settings->arrays.nfs_subdir, false, NULL, true);
+#endif
+#ifdef HAVE_SMBCLIENT
    SETTING_ARRAY_SENSITIVE("smb_client_username",         settings->arrays.smb_client_username, false, NULL, true);
    SETTING_ARRAY_SENSITIVE("smb_client_password",         settings->arrays.smb_client_password, false, NULL, true);
    SETTING_ARRAY("smb_client_workgroup",                  settings->arrays.smb_client_workgroup, false, NULL, true);
@@ -3518,6 +3525,12 @@ static struct config_uint_setting *populate_settings_uint(
       return NULL;
 
    SETTING_UINT("frontend_log_level",            &settings->uints.frontend_log_level, true, DEFAULT_FRONTEND_LOG_LEVEL, false);
+#ifdef HAVE_NFSCLIENT
+   SETTING_UINT("nfs_timeout",                   &settings->uints.nfs_timeout, true, DEFAULT_NFS_TIMEOUT, false);
+   SETTING_UINT("nfs_num_contexts",              &settings->uints.nfs_num_contexts, true, DEFAULT_NFS_NUM_CONTEXTS, false);
+   SETTING_UINT("nfs_port",                      &settings->uints.nfs_port, true, DEFAULT_NFS_PORT, false);
+   SETTING_UINT("nfs_mount_port",                &settings->uints.nfs_mount_port, true, DEFAULT_NFS_MOUNT_PORT, false);
+#endif
    SETTING_UINT("core_updater_auto_backup_history_size", &settings->uints.core_updater_auto_backup_history_size, true, DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE, false);
    SETTING_UINT("run_ahead_frames",              &settings->uints.run_ahead_frames, true, DEFAULT_RUN_AHEAD_FRAMES,  false);
 #ifdef HAVE_MENU

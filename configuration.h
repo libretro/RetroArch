@@ -434,6 +434,12 @@ typedef struct settings
       unsigned smb_client_num_contexts;
       unsigned smb_client_timeout;
 #endif
+#ifdef HAVE_NFSCLIENT
+      unsigned nfs_timeout;
+      unsigned nfs_num_contexts;
+      unsigned nfs_port;
+      unsigned nfs_mount_port;
+#endif
       unsigned input_sensor_orientation;
    } uints;
 
@@ -1270,6 +1276,11 @@ typedef struct settings
       char smb_client_username[128];
       char smb_client_password[128];
       char smb_client_workgroup[64];
+#endif
+#ifdef HAVE_NFSCLIENT
+      char nfs_server[256];
+      char nfs_export[PATH_MAX_LENGTH];
+      char nfs_subdir[PATH_MAX_LENGTH];
 #endif
 } arrays;
 
