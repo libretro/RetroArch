@@ -70,6 +70,11 @@ void ssl_socket_log_verify_fail(int mode_required, const char *domain,
       const char *verify_info);
 void ssl_socket_log_verify_disabled(const char *domain);
 
+/* net_socket_ssl_retro.c only: replace the built-in CA bundle with
+ * @pem (concatenated PEM certificates) for the process, NULL to
+ * restore. For tests against a local server. */
+void ssl_socket_retro_set_trust_pem(const char *pem, size_t len);
+
 RETRO_END_DECLS
 
 #endif

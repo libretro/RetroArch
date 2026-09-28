@@ -571,6 +571,8 @@ fi
 check_val '' FLAC '-lFLAC' '' flac '' '' false
 
 
+check_enabled SSL RETROSSL 'retro ssl' 'ssl is' false
+check_enabled CRYPTO RETROSSL 'retro ssl' 'crypto is' false
 check_enabled SSL SYSTEMMBEDTLS 'system mbedtls' 'ssl is' false
 check_enabled SSL BUILTINMBEDTLS 'builtin mbedtls' 'ssl is' false
 check_enabled SSL BUILTINBEARSSL 'builtin bearssl' 'ssl is' false
@@ -588,6 +590,9 @@ if [ "$HAVE_SYSTEMMBEDX509" = 'no' ] || [ "$HAVE_SYSTEMMBEDCRYPTO" = 'no' ]; the
 if [ "$SYSTEMMBEDTLS_IS_AUTO" = "yes" ] && [ "$HAVE_SYSTEMMBEDTLS" = "yes" ]; then HAVE_SYSTEMMBEDTLS=auto; fi
 
 SSL_BACKEND_CHOSEN=no
+if [ "$HAVE_RETROSSL" = "yes" ]; then
+  SSL_BACKEND_CHOSEN=yes
+fi
 if [ "$HAVE_SYSTEMMBEDTLS" = "yes" ]; then
   if [ "$SSL_BACKEND_CHOSEN" = "yes" ]; then die 1 "Can't enable multiple SSL backends"; fi
   SSL_BACKEND_CHOSEN=yes
@@ -598,6 +603,12 @@ if [ "$HAVE_BUILTINMBEDTLS" = "yes" ]; then
 fi
 if [ "$HAVE_BUILTINBEARSSL" = "yes" ]; then
   if [ "$SSL_BACKEND_CHOSEN" = "yes" ]; then die 1 "Can't enable multiple SSL backends"; fi
+  SSL_BACKEND_CHOSEN=yes
+fi
+# The built-in client comes first: no library to find, and the
+# one every main build ships.
+if [ "$SSL_BACKEND_CHOSEN" = "no" ] && [ "$HAVE_RETROSSL" = "auto" ]; then
+  HAVE_RETROSSL=yes
   SSL_BACKEND_CHOSEN=yes
 fi
 if [ "$SSL_BACKEND_CHOSEN" = "no" ] && [ "$HAVE_SYSTEMMBEDTLS" = "auto" ]; then
@@ -612,6 +623,7 @@ if [ "$SSL_BACKEND_CHOSEN" = "no" ] && [ "$HAVE_BUILTINBEARSSL" = "auto" ]; then
   HAVE_BUILTINBEARSSL=yes
   SSL_BACKEND_CHOSEN=yes
 fi
+if [ "$HAVE_RETROSSL" = "auto" ]; then HAVE_RETROSSL=no; fi
 if [ "$HAVE_SYSTEMMBEDTLS" = "auto" ]; then HAVE_SYSTEMMBEDTLS=no; fi
 if [ "$HAVE_BUILTINMBEDTLS" = "auto" ]; then HAVE_BUILTINMBEDTLS=no; fi
 if [ "$HAVE_BUILTINBEARSSL" = "auto" ]; then HAVE_BUILTINBEARSSL=no; fi

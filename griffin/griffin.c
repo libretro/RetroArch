@@ -1759,6 +1759,10 @@ HTTP SERVER
 SSL
 ============================================================ */
 #if defined(HAVE_SSL)
+#if defined(HAVE_RETROSSL)
+#include "../libretro-common/net/net_socket_ssl_retro.c"
+#include "../network/tls_log.c"
+#else
 #if defined(HAVE_NETWORKING)
 #if defined(HAVE_BUILTINMBEDTLS)
 #include "../deps/mbedtls/aes.c"
@@ -1829,6 +1833,7 @@ SSL
 #include "../libretro-common/net/net_socket_ssl_mbed.c"
 #include "../network/tls_log.c"
 #endif
+#endif /* HAVE_RETROSSL */
 #endif
 
 /*============================================================

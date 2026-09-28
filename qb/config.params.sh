@@ -39,6 +39,7 @@ HAVE_WINMM=auto            # WinMM support
 HAVE_NEAREST_RESAMPLER=yes # Nearest resampler
 HAVE_CC_RESAMPLER=yes      # CC Resampler
 HAVE_SSL=auto              # SSL support
+HAVE_RETROSSL=auto         # Use built-in TLS client on libretro-common/crypto (needs HAVE_CRYPTO)
 C89_SSL=no
 HAVE_SYSTEMMBEDTLS=auto    # Use system mbedTLS
 C89_SYSTEMMBEDTLS=no

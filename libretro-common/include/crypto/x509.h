@@ -101,6 +101,19 @@ int x509_verify_signature(const struct x509_cert *c,
       const struct x509_cert *issuer);
 
 /**
+ * x509_verify_ecdsa_digest:
+ *
+ * Checks a DER ECDSA-Sig-Value @sig over an already computed @digest
+ * under @key's P-256 or P-384 key. What x509_verify_signature() uses
+ * for ECDSA, exposed for the TLS ServerKeyExchange signature.
+ *
+ * Returns: 0 when valid, -1 otherwise.
+ **/
+int x509_verify_ecdsa_digest(const struct x509_cert *key,
+      const uint8_t *digest, size_t digest_len,
+      const uint8_t *sig, size_t sig_len);
+
+/**
  * x509_match_hostname:
  *
  * dNSName entries of the subjectAltName, with a wildcard allowed as
