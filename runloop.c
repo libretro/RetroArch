@@ -8474,6 +8474,11 @@ int runloop_iterate(void)
 #endif
    }
 
+#ifdef HAVE_THREADS
+   if (runloop_st->flags & RUNLOOP_FLAG_AUTOSAVE)
+      autosave_check();
+#endif
+
    switch ((enum runloop_state_enum)runloop_check_state(
             input_st, audio_st, video_st,
             uico_st,
