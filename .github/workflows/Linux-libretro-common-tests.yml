@@ -37,7 +37,7 @@ jobs:
         run: |
           # ffmpeg: tools/companion_thumbs_test.sh builds its video-hover
           # fixture (a 2 KB Baseline MP4) with it.
-          pkgs="build-essential check pkg-config zlib1g-dev lcov gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 wine wine64 ffmpeg"
+          pkgs="build-essential check pkg-config zlib1g-dev lcov gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 wine wine64 ffmpeg gcc-aarch64-linux-gnu qemu-user"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -107,6 +107,10 @@ jobs:
              LIBCHECK_CFLAGS="$(pkg-config --cflags check)" \
              CFLAGS="$(pkg-config --cflags check)"
           echo "[pass] libretro-common unit test suites"
+          # The ARMv8 AES + PMULL path executes only on ARM; this
+          # runs the crypto suite under qemu-aarch64 in both the
+          # dispatched and the baseline-crypto shape.
+          make -f Makefile.test crypto-aarch64-check
 
       - name: Check VFS backend symbol parity
         shell: bash

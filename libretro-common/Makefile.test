@@ -500,7 +500,30 @@ unit-tests:
 	# rwebm audio
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RWEBM_AUDIO_SRC) $(LIBCHECK_LIBS) -o $(TEST_RWEBM_AUDIO)
 	$(TEST_RWEBM_AUDIO)
-all: unit-tests console-libc-check darwin-floor-check
+# --- aarch64 cross run ---------------------------------------------
+#
+# The ARMv8 AES + PMULL path in crypto/crypto.c (and lrc_hash's SHA
+# path) only executes on ARM silicon; an x86 runner would build it and
+# never run it. With an aarch64 cross gcc and qemu-user on PATH the
+# crypto suite runs under emulation in two shapes: baseline armv8-a
+# (runtime dispatch on the hwcap) and armv8-a+crypto (the intrinsics
+# used unconditionally). libcheck is not installed for the target, so
+# the suite is built against test/check_shim.h. Both tools are
+# optional: absent, this says so and passes.
+AARCH64_CC   ?= aarch64-linux-gnu-gcc
+QEMU_AARCH64 ?= qemu-aarch64
+
+crypto-aarch64-check:
+	@if ! command -v $(AARCH64_CC) >/dev/null 2>&1; then echo "skip: $(AARCH64_CC) not installed"; exit 0; fi; \
+	if ! command -v $(QEMU_AARCH64) >/dev/null 2>&1; then echo "skip: $(QEMU_AARCH64) not installed"; exit 0; fi; \
+	for arch in "-march=armv8-a" "-march=armv8-a+crypto"; do \
+	   $(AARCH64_CC) -static -O2 $$arch -DCHECK_SHIM -Iinclude -Wall \
+	      $(TEST_CRYPTO_SRC) -o test/crypto/test_crypto_aarch64 || exit 1; \
+	   $(QEMU_AARCH64) test/crypto/test_crypto_aarch64 || exit 1; \
+	   echo "ok:   crypto suite under qemu-aarch64 [$$arch]"; \
+	done
+
+all: unit-tests console-libc-check darwin-floor-check crypto-aarch64-check
 	# vfs samples: file size, seek and EOF boundaries, mapped and not
 	$(MAKE) -f Makefile.test vfs-samples
 	# concurrency samples: nothing else here compiles retro_spsc.c,
@@ -527,7 +550,7 @@ all: unit-tests console-libc-check darwin-floor-check
 clean:
 	rm -f *.gcda *.gcno
 	rm -f $(TEST_STDSTRING) $(TEST_UTILS) $(TEST_HASH) \
-	      $(TEST_CRYPTO) $(TEST_KEYCHAIN) \
+	      $(TEST_CRYPTO) $(TEST_KEYCHAIN) test/crypto/test_crypto_aarch64 \
 	      $(TEST_LINKED_LIST) $(TEST_FILE_LIST) $(TEST_MEMPOOL) \
 	      $(TEST_MENU_STR) $(TEST_STRL) \
 	      $(TEST_GENERIC_QUEUE) \

@@ -42,6 +42,32 @@
 #define AES_TARGET_X86 __attribute__((target("aes,pclmul,ssse3")))
 #endif
 
+/* ARMv8 AES + PMULL, same shape as lrc_hash.c's SHA path: used
+ * unconditionally when the baseline has the crypto extension, else
+ * compiled in under the target attribute and chosen at run time on
+ * toolchains whose arm_neon.h declares the intrinsics regardless of
+ * the baseline (Clang 16+, GCC 9+). */
+#if (defined(__aarch64__) || defined(_M_ARM64)) && !defined(_MSC_VER) && !defined(AES_NO_ARM)
+#if defined(__ARM_FEATURE_CRYPTO) || (defined(__ARM_FEATURE_AES) && defined(__ARM_FEATURE_SHA2))
+#define AES_HAVE_ARM_PATH 1
+#elif (defined(__clang__) && __clang_major__ >= 16) \
+   || (!defined(__clang__) && defined(__GNUC__) && __GNUC__ >= 9)
+#define AES_HAVE_ARM_PATH    1
+#define AES_ARM_NEEDS_TARGET 1
+#define AES_ARM_DISPATCH     1
+#endif
+#endif
+
+#if defined(AES_HAVE_ARM_PATH)
+#include <arm_neon.h>
+#include <features/features_cpu.h>
+#if defined(AES_ARM_NEEDS_TARGET)
+#define AES_TARGET_ARM __attribute__((target("+crypto")))
+#else
+#define AES_TARGET_ARM
+#endif
+#endif
+
 int crypto_memeq_ct(const void *a, const void *b, size_t len)
 {
    const volatile uint8_t *pa = (const volatile uint8_t*)a;
@@ -297,6 +323,191 @@ static void aes_x86_ghash(const struct aes_gcm_ctx *ctx,
 }
 #endif
 
+#if defined(AES_HAVE_ARM_PATH)
+static int aes_arm_available(void)
+{
+#if defined(AES_ARM_DISPATCH)
+   static int ok = -1;
+   if (ok < 0)
+      ok = (cpu_features_get() & RETRO_SIMD_AES) ? 1 : 0;
+   return ok;
+#else
+   return 1;
+#endif
+}
+
+/* Round key r as the 16 memory octets: the schedule holds big-endian
+ * words, so a little-endian load needs each word's bytes reversed. */
+AES_TARGET_ARM
+static uint8x16_t aes_arm_rk(const struct aes_ctx *ctx, unsigned r)
+{
+   return vrev32q_u8(vreinterpretq_u8_u32(vld1q_u32(ctx->rk + 4 * r)));
+}
+
+AES_TARGET_ARM
+static uint8x16_t aes_arm_encrypt(const struct aes_ctx *ctx, uint8x16_t b)
+{
+   unsigned r;
+   for (r = 0; r + 1 < ctx->rounds; r++)
+      b = vaesmcq_u8(vaeseq_u8(b, aes_arm_rk(ctx, r)));
+   b = vaeseq_u8(b, aes_arm_rk(ctx, r));
+   return veorq_u8(b, aes_arm_rk(ctx, r + 1));
+}
+
+AES_TARGET_ARM
+static void aes_arm_encrypt_block(const struct aes_ctx *ctx,
+      const uint8_t *in, uint8_t *out)
+{
+   vst1q_u8(out, aes_arm_encrypt(ctx, vld1q_u8(in)));
+}
+
+AES_TARGET_ARM
+static void aes_arm_ctr(const struct aes_ctx *ctx, uint8_t *counter,
+      const uint8_t *in, uint8_t *out, size_t len)
+{
+   uint32_t   c    = crypto_load32_be(counter + 12);
+   uint8x16_t base = vld1q_u8(counter);
+   uint8x16_t ks;
+
+   while (len >= 64)
+   {
+      uint8x16_t b0 = vreinterpretq_u8_u32(vsetq_lane_u32(__builtin_bswap32(c),     vreinterpretq_u32_u8(base), 3));
+      uint8x16_t b1 = vreinterpretq_u8_u32(vsetq_lane_u32(__builtin_bswap32(c + 1), vreinterpretq_u32_u8(base), 3));
+      uint8x16_t b2 = vreinterpretq_u8_u32(vsetq_lane_u32(__builtin_bswap32(c + 2), vreinterpretq_u32_u8(base), 3));
+      uint8x16_t b3 = vreinterpretq_u8_u32(vsetq_lane_u32(__builtin_bswap32(c + 3), vreinterpretq_u32_u8(base), 3));
+      unsigned r;
+      for (r = 0; r + 1 < ctx->rounds; r++)
+      {
+         uint8x16_t k = aes_arm_rk(ctx, r);
+         b0 = vaesmcq_u8(vaeseq_u8(b0, k)); b1 = vaesmcq_u8(vaeseq_u8(b1, k));
+         b2 = vaesmcq_u8(vaeseq_u8(b2, k)); b3 = vaesmcq_u8(vaeseq_u8(b3, k));
+      }
+      {
+         uint8x16_t k  = aes_arm_rk(ctx, r);
+         uint8x16_t kl = aes_arm_rk(ctx, r + 1);
+         b0 = veorq_u8(vaeseq_u8(b0, k), kl); b1 = veorq_u8(vaeseq_u8(b1, k), kl);
+         b2 = veorq_u8(vaeseq_u8(b2, k), kl); b3 = veorq_u8(vaeseq_u8(b3, k), kl);
+      }
+      vst1q_u8(out,      veorq_u8(b0, vld1q_u8(in)));
+      vst1q_u8(out + 16, veorq_u8(b1, vld1q_u8(in + 16)));
+      vst1q_u8(out + 32, veorq_u8(b2, vld1q_u8(in + 32)));
+      vst1q_u8(out + 48, veorq_u8(b3, vld1q_u8(in + 48)));
+      c   += 4;
+      in  += 64;
+      out += 64;
+      len -= 64;
+   }
+   while (len)
+   {
+      size_t  n = (len < 16) ? len : 16;
+      size_t  i;
+      uint8_t tmp[16];
+      ks = aes_arm_encrypt(ctx, vreinterpretq_u8_u32(vsetq_lane_u32(__builtin_bswap32(c), vreinterpretq_u32_u8(base), 3)));
+      vst1q_u8(tmp, ks);
+      for (i = 0; i < n; i++)
+         out[i] = in[i] ^ tmp[i];
+      c++;
+      in  += n;
+      out += n;
+      len -= n;
+   }
+   crypto_store32_be(counter + 12, c);
+}
+
+/* GHASH multiply on PMULL: the same byte-reversed-operand algorithm
+ * as the x86 path, with the SSE lane shifts spelled as vext and the
+ * word shifts as vshl / vshr. */
+AES_TARGET_ARM
+static uint8x16_t aes_arm_gfmul(uint8x16_t a, uint8x16_t b)
+{
+   const uint8x16_t z = vdupq_n_u8(0);
+   poly64x2_t pa = vreinterpretq_p64_u8(a);
+   poly64x2_t pb = vreinterpretq_p64_u8(b);
+   uint8x16_t t3 = vreinterpretq_u8_p128(vmull_p64((poly64_t)vgetq_lane_p64(pa, 0), (poly64_t)vgetq_lane_p64(pb, 0)));
+   uint8x16_t t4 = vreinterpretq_u8_p128(vmull_p64((poly64_t)vgetq_lane_p64(pa, 0), (poly64_t)vgetq_lane_p64(pb, 1)));
+   uint8x16_t t5 = vreinterpretq_u8_p128(vmull_p64((poly64_t)vgetq_lane_p64(pa, 1), (poly64_t)vgetq_lane_p64(pb, 0)));
+   uint8x16_t t6 = vreinterpretq_u8_p128(vmull_high_p64(pa, pb));
+   uint8x16_t t7, t8, t9, t2;
+   uint32x4_t w;
+
+   t4 = veorq_u8(t4, t5);
+   t5 = vextq_u8(z, t4, 8);            /* slli_si128 8 */
+   t4 = vextq_u8(t4, z, 8);            /* srli_si128 8 */
+   t3 = veorq_u8(t3, t5);
+   t6 = veorq_u8(t6, t4);
+
+   w  = vreinterpretq_u32_u8(t3);
+   t7 = vreinterpretq_u8_u32(vshrq_n_u32(w, 31));
+   t3 = vreinterpretq_u8_u32(vshlq_n_u32(w, 1));
+   w  = vreinterpretq_u32_u8(t6);
+   t8 = vreinterpretq_u8_u32(vshrq_n_u32(w, 31));
+   t6 = vreinterpretq_u8_u32(vshlq_n_u32(w, 1));
+   t9 = vextq_u8(t7, z, 12);           /* srli_si128 12 */
+   t8 = vextq_u8(z, t8, 12);           /* slli_si128 4 */
+   t7 = vextq_u8(z, t7, 12);           /* slli_si128 4 */
+   t3 = vorrq_u8(t3, t7);
+   t6 = vorrq_u8(t6, t8);
+   t6 = vorrq_u8(t6, t9);
+
+   w  = vreinterpretq_u32_u8(t3);
+   t7 = vreinterpretq_u8_u32(vshlq_n_u32(w, 31));
+   t8 = vreinterpretq_u8_u32(vshlq_n_u32(w, 30));
+   t9 = vreinterpretq_u8_u32(vshlq_n_u32(w, 25));
+   t7 = veorq_u8(t7, t8);
+   t7 = veorq_u8(t7, t9);
+   t8 = vextq_u8(t7, z, 4);            /* srli_si128 4 */
+   t7 = vextq_u8(z, t7, 4);            /* slli_si128 12 */
+   t3 = veorq_u8(t3, t7);
+
+   w  = vreinterpretq_u32_u8(t3);
+   t2 = vreinterpretq_u8_u32(vshrq_n_u32(w, 1));
+   t4 = vreinterpretq_u8_u32(vshrq_n_u32(w, 2));
+   t5 = vreinterpretq_u8_u32(vshrq_n_u32(w, 7));
+   t2 = veorq_u8(t2, t4);
+   t2 = veorq_u8(t2, t5);
+   t2 = veorq_u8(t2, t8);
+   t3 = veorq_u8(t3, t2);
+   return veorq_u8(t6, t3);
+}
+
+AES_TARGET_ARM
+static void aes_arm_ghash(const struct aes_gcm_ctx *ctx,
+      uint64_t *y_hi, uint64_t *y_lo, const uint8_t *data, size_t len)
+{
+   uint8_t    o[16];
+   uint8x16_t h, y;
+
+   crypto_store64_be(o,     ctx->h_hi);
+   crypto_store64_be(o + 8, ctx->h_lo);
+   h = vrev64q_u8(vextq_u8(vld1q_u8(o), vld1q_u8(o), 8));   /* full byte reverse */
+   crypto_store64_be(o,     *y_hi);
+   crypto_store64_be(o + 8, *y_lo);
+   y = vrev64q_u8(vextq_u8(vld1q_u8(o), vld1q_u8(o), 8));
+
+   while (len >= 16)
+   {
+      uint8x16_t d = vld1q_u8(data);
+      d = vrev64q_u8(vextq_u8(d, d, 8));
+      y = aes_arm_gfmul(veorq_u8(y, d), h);
+      data += 16;
+      len  -= 16;
+   }
+   if (len)
+   {
+      uint8x16_t d;
+      memset(o, 0, 16);
+      memcpy(o, data, len);
+      d = vld1q_u8(o);
+      d = vrev64q_u8(vextq_u8(d, d, 8));
+      y = aes_arm_gfmul(veorq_u8(y, d), h);
+   }
+
+   vst1q_u8(o, vrev64q_u8(vextq_u8(y, y, 8)));
+   *y_hi = crypto_load64_be(o);
+   *y_lo = crypto_load64_be(o + 8);
+}
+#endif
+
 int aes_init(struct aes_ctx *ctx, const uint8_t *key, size_t key_len)
 {
    unsigned i;
@@ -394,6 +605,12 @@ void aes_encrypt_block(const struct aes_ctx *ctx,
       aes_x86_encrypt_block(ctx, in, out);
       return;
    }
+#elif defined(AES_HAVE_ARM_PATH)
+   if (aes_arm_available())
+   {
+      aes_arm_encrypt_block(ctx, in, out);
+      return;
+   }
 #endif
    aes_encrypt_block_c(ctx, in, out);
 }
@@ -413,6 +630,12 @@ void aes_ctr_crypt(const struct aes_ctx *ctx, uint8_t *counter,
    if (aes_x86_available())
    {
       aes_x86_ctr(ctx, counter, in, out, len);
+      return;
+   }
+#elif defined(AES_HAVE_ARM_PATH)
+   if (aes_arm_available())
+   {
+      aes_arm_ctr(ctx, counter, in, out, len);
       return;
    }
 #endif
@@ -554,6 +777,12 @@ static void aes_gcm_ghash_update(const struct aes_gcm_ctx *ctx,
    if (aes_x86_available())
    {
       aes_x86_ghash(ctx, y_hi, y_lo, data, len);
+      return;
+   }
+#elif defined(AES_HAVE_ARM_PATH)
+   if (aes_arm_available())
+   {
+      aes_arm_ghash(ctx, y_hi, y_lo, data, len);
       return;
    }
 #endif

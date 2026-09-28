@@ -20,7 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#ifdef CHECK_SHIM
+#include "../check_shim.h"
+#else
 #include <check.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
