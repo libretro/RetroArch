@@ -427,6 +427,8 @@ enum settings_list_type
 #endif
 #ifdef HAVE_SMBCLIENT
    SETTINGS_LIST_SMBCLIENT,
+#endif
+#ifdef HAVE_NFSCLIENT
    SETTINGS_LIST_NFSCLIENT,
 #endif
    SETTINGS_LIST_MANUAL_CONTENT_SCAN
@@ -13085,7 +13087,7 @@ static const setting_desc_t core_updater_desc_2[] = {
 #endif
 #endif
 
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 static const setting_desc_t np_desc_0[] = {
 /* GENERATED: rows come from settings_def_netplay_action.h in order. */
 #include "../settings/settings_def_netplay_action.h"

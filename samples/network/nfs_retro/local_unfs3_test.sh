@@ -11,8 +11,13 @@ UNFSD=$(command -v unfsd || true)
 if [ -z "$UNFSD" ]; then
    if command -v git >/dev/null 2>&1 && command -v flex >/dev/null 2>&1 && command -v bison >/dev/null 2>&1; then
       B=$(mktemp -d)
+      # built with a plain toolchain: the sanitizer flags a caller sets
+      # for the client must not reach the server, which is not ours to
+      # fix and dies under them
       if git clone -q --depth 1 https://github.com/unfs3/unfs3.git $B/unfs3 \
-            && (cd $B/unfs3 && ./bootstrap >/dev/null 2>&1 && ./configure >/dev/null 2>&1 && make -j2 >/dev/null 2>&1); then
+            && (cd $B/unfs3 && env -u CFLAGS -u LDFLAGS -u CC ./bootstrap >/dev/null 2>&1 \
+                && env -u CFLAGS -u LDFLAGS -u CC ./configure >/dev/null 2>&1 \
+                && env -u CFLAGS -u LDFLAGS -u CC make -j2 >/dev/null 2>&1); then
          UNFSD=$B/unfs3/unfsd
       fi
    fi

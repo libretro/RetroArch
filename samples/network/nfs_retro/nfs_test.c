@@ -7,7 +7,7 @@
 #include <net/net_compat.h>
 #include <net/net_nfs3.h>
 
-#define CHECK(x, msg) do { if (!(x)) { fprintf(stderr, "FAIL: %s (%s, status %u)\n", msg, rnfs_get_error(c), rnfs_get_status(c)); return 1; } } while (0)
+#define CHECK(x, msg) do { if (!(x)) { fprintf(stderr, "FAIL: %s (%s, status %u)\n", msg, rnfs_get_error(c), rnfs_get_status(c)); rnfs_free(c); return 1; } } while (0)
 
 int main(int argc, char **argv)
 {

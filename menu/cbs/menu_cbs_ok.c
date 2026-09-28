@@ -439,6 +439,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
 #ifdef HAVE_SMBCLIENT
       case ACTION_OK_DL_SMB_CLIENT_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_SMB_CLIENT_SETTINGS_LIST;
+#endif
+#ifdef HAVE_NFSCLIENT
       case ACTION_OK_DL_NFS_CLIENT_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_NFS_CLIENT_SETTINGS_LIST;
 #endif

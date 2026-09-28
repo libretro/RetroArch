@@ -299,6 +299,8 @@ GENERIC_DEFERRED_PUSH(deferred_push_core_game_ai_options,             DISPLAYLIS
 #ifdef HAVE_SMBCLIENT
 GENERIC_DEFERRED_PUSH(deferred_push_smb_client_settings_list,       DISPLAYLIST_SMB_CLIENT_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_smb_client_options,             DISPLAYLIST_OPTIONS_SMB_CLIENT)
+#endif
+#ifdef HAVE_NFSCLIENT
 GENERIC_DEFERRED_PUSH(deferred_push_nfs_client_settings_list,       DISPLAYLIST_NFS_CLIENT_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_nfs_client_options,             DISPLAYLIST_OPTIONS_NFS_CLIENT)
 #endif

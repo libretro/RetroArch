@@ -59,7 +59,9 @@ jobs:
           nm retroarch | grep -q ' T ssl_socket_connect'
           nm retroarch | grep -q 'mbedtls_ssl_handshake'
           nm retroarch | grep -q ' T smb2_connect_share'
-          if nm retroarch | grep -q ' T rsmb_connect\| T rnfs_connect\| T x509_verify_chain'; then
+          # x509.c is part of HAVE_CRYPTO (the keychain needs the crypto
+          # foundation) and stays; the clients themselves must be gone
+          if nm retroarch | grep -q ' T rsmb_connect\| T rnfs_connect\| T ssl_socket_retro_was_resumed'; then
             echo "built-in client symbols present in a legacy build"; exit 1
           fi
           echo "[pass] legacy backends linked, built-in clients absent"
