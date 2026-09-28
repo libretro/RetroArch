@@ -37,7 +37,7 @@ jobs:
         run: |
           # ffmpeg: tools/companion_thumbs_test.sh builds its video-hover
           # fixture (a 2 KB Baseline MP4) with it.
-          pkgs="build-essential check pkg-config zlib1g-dev lcov gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 wine wine64 ffmpeg gcc-aarch64-linux-gnu qemu-user samba"
+          pkgs="build-essential check pkg-config zlib1g-dev lcov gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 wine wine64 ffmpeg gcc-aarch64-linux-gnu qemu-user samba libtirpc-dev flex bison autoconf automake"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -136,6 +136,21 @@ jobs:
           # AES-GCM sealing required, and a refused logon. Root for
           # port 445; the script itself skips without smbd.
           sudo samples/network/smb_retro/local_samba_test.sh
+
+      - name: Built-in NFSv3 client against unfs3
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # net_nfs3.c end to end against a user-space NFSv3 server built
+          # from unfs3's repository (Ubuntu no longer packages it), on
+          # fixed ports without a portmapper: mount, write, read, seek,
+          # stat, mkdir, rename, truncate, list, unlink, refused export.
+          samples/network/nfs_retro/local_unfs3_test.sh
+          # and its Windows link line, cross-linked
+          make -C samples/network/nfs_retro clean
+          CC=x86_64-w64-mingw32-gcc make -C samples/network/nfs_retro nfs_test
+          make -C samples/network/nfs_retro clean
           CC=x86_64-w64-mingw32-gcc make -C samples/network/tls_retro tls_fetch
           make -C samples/network/tls_retro clean
 
