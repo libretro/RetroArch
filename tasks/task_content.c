@@ -89,6 +89,9 @@
 #endif
 
 #include "task_content.h"
+#ifdef HAVE_NFSCLIENT
+#include "../libretro-common/vfs/vfs_implementation_nfs.h"
+#endif
 #include "patch_stream.h"
 #include "tasks_internal.h"
 #include "task_content_prefetch.h"
@@ -1433,6 +1436,16 @@ static void content_file_apply_overrides(
  *
  * Returns : true if successful, otherwise false.
  **/
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+/* smb:// or nfs://: a path only the VFS can open. */
+static bool content_path_is_network(const char *path)
+{
+   return path && path[3] == ':' && path[4] == '/' && path[5] == '/'
+      && (   (path[0] == 's' && path[1] == 'm' && path[2] == 'b')
+          || (path[0] == 'n' && path[1] == 'f' && path[2] == 's'));
+}
+#endif
+
 static bool content_file_load(
       content_state_t *p_content,
       struct string_list *content,
@@ -1444,7 +1457,7 @@ static bool content_file_load(
    size_t i;
    retro_ctx_load_content_info_t load_info;
    bool used_vfs_fallback_copy                = false;
-#ifdef __WINRT__
+#if defined(__WINRT__) || defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    rarch_system_info_t *sys_info              = &runloop_state_get_ptr()->system;
 #endif
    enum rarch_content_type first_content_type = RARCH_CONTENT_NONE;
@@ -1515,6 +1528,55 @@ static bool content_file_load(
                 && !content_file_extract_from_archive(content_ctx, p_content,
                      valid_exts, &content_path, err_string))
                return false;
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+            /* Network content for a core that reads paths itself: an
+             * smb:// or nfs:// path means nothing to its fopen(), so
+             * the file is staged into the cache directory and the
+             * copy handed over (and removed when the content is
+             * unloaded). A core that goes through the VFS streams the
+             * original, which is what keeps large disc images usable.
+             * Compressed content was extracted through the VFS above
+             * and is already local by the time it gets here. */
+            if (   !sys_info->supports_vfs
+                && !content_compressed
+                && content_path_is_network(content_path))
+            {
+               char new_path[PATH_MAX_LENGTH];
+
+               if (!content_ctx->directory_cache || !*content_ctx->directory_cache
+                     || !path_is_directory(content_ctx->directory_cache))
+               {
+                  char msg[PATH_MAX_LENGTH];
+                  /* TODO/FIXME - localize */
+                  snprintf(msg, sizeof(msg),
+                        "%s: \"%s\". (this core needs a local file; set a Cache Directory)\n",
+                        msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+                        content_path);
+                  *err_string = strdup(msg);
+                  return false;
+               }
+               fill_pathname_join_special(new_path, content_ctx->directory_cache,
+                     path_basename(content_path), sizeof(new_path));
+               RARCH_LOG("[Content] Core does not support VFS - staging network content to \"%s\".\n",
+                     new_path);
+               if (filestream_copy(content_path, new_path) != 0)
+               {
+                  char msg[PATH_MAX_LENGTH];
+#ifdef HAVE_NFSCLIENT
+                  if (content_path[0] == 'n')
+                     RARCH_ERR("[Content] NFS: %s\n", nfs_get_last_error());
+#endif
+                  snprintf(msg, sizeof(msg), "%s: \"%s\". (during copy read or write)\n",
+                        msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+                        content_path);
+                  *err_string = strdup(msg);
+                  return false;
+               }
+               content_path = content_file_list_append_temporary(
+                     p_content->content_list, new_path);
+               used_vfs_fallback_copy = true;
+            }
 #endif
 #ifdef __WINRT__
             /* TODO: When support for the 'actual' VFS is added,

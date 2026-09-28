@@ -91,32 +91,15 @@ static bool nfs_resolve(const char *url, char *server, size_t server_len,
    }
    else
    {
-      /* nfs:// server / export ... : the export is everything up to
-       * the first component that a MOUNT accepts is unknowable here,
-       * so take the whole first component as "/<name>". */
-      const char *p = rest;
-      const char *e;
-      while (*p == '/')
-         p++;
-      e = strchr(p, '/');
-      if (!*p)
-         return false;
-      export_path[0] = '/';
-      strlcpy(export_path + 1, p, export_len - 1);
-      if (e)
-      {
-         export_path[1 + (e - p)] = '\0';
-         strlcpy(path, e, path_len);
-      }
-      else
-         path[0] = '\0';
+      /* nfs://server/export/path: where the export ends is the
+       * server's to say, so the split is found at connect time by
+       * mounting prefixes; the whole remainder is handed over here. */
+      export_path[0] = '\0';
+      strlcpy(path, rest, path_len);
    }
    return true;
 }
 
-/* Settings are optional: an nfs://server/export/... URL carries all a
- * connection needs, so the pool comes up with defaults when there are
- * none; the settings add a default export, subdir, timeout and ports. */
 bool nfs_init_cfg(const struct nfs_settings *new_cfg)
 {
    nfs_shutdown();
@@ -145,6 +128,58 @@ void nfs_shutdown(void)
 const char *nfs_get_last_error(void)
 {
    return nfs_last_error;
+}
+
+static struct nfs_slot *nfs_acquire(const char *server, const char *export_path);
+
+/* With no export in the settings the URL's path starts with it. A slot
+ * already mounted on a prefix of @path is reused; otherwise prefixes
+ * are tried shortest first until the server accepts one. On success
+ * *rel points at the remainder of @path under the export. */
+static struct nfs_slot *nfs_acquire_url(const char *server, const char *path,
+      const char **rel)
+{
+   char     export_buf[512];
+   unsigned i;
+   const char *p;
+
+   for (i = 0; i < nfs_pool_len; i++)
+   {
+      struct nfs_slot *s = &nfs_pool[i];
+      size_t el = strlen(s->export_path);
+      if (s->ctx && el && strncmp(path, s->export_path, el) == 0
+            && (path[el] == '/' || path[el] == '\0'))
+      {
+         *rel = path + el;
+         return nfs_acquire(server, s->export_path);
+      }
+   }
+   p = path;
+   for (;;)
+   {
+      const char *e;
+      size_t n;
+      struct nfs_slot *s;
+      while (*p == '/')
+         p++;
+      if (!*p)
+         break;
+      e = strchr(p, '/');
+      n = (size_t)((e ? e : p + strlen(p)) - path);
+      if (n >= sizeof(export_buf))
+         break;
+      memcpy(export_buf, path, n);
+      export_buf[n] = '\0';
+      if ((s = nfs_acquire(server, export_buf)))
+      {
+         *rel = path + n;
+         return s;
+      }
+      if (!e)
+         break;
+      p = e;
+   }
+   return NULL;
 }
 
 /* Least-used slot, connected to @server:@export (reconnecting when it
@@ -200,6 +235,22 @@ static struct nfs_slot *nfs_acquire(const char *server, const char *export_path)
    return best;
 }
 
+/* nfs_acquire() for a resolved URL: cfg export, or probe the path. */
+static struct nfs_slot *nfs_acquire_resolved(const char *server,
+      const char *export_path, char *rel, size_t rel_len)
+{
+   if (*export_path)
+      return nfs_acquire(server, export_path);
+   {
+      const char *tail = NULL;
+      struct nfs_slot *s = nfs_acquire_url(server, rel, &tail);
+      if (s)
+         memmove(rel, tail, strlen(tail) + 1);
+      (void)rel_len;
+      return s;
+   }
+}
+
 static void nfs_release(struct nfs_slot *s)
 {
    if (s && s->users)
@@ -241,7 +292,7 @@ bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
 
    if (!nfs_resolve(path, server, sizeof(server), export_path, sizeof(export_path), rel, sizeof(rel)))
       return false;
-   if (!(s = nfs_acquire(server, export_path)))
+   if (!(s = nfs_acquire_resolved(server, export_path, rel, sizeof(rel))))
       return false;
 
    switch (mode & 0xf)
@@ -344,7 +395,7 @@ int retro_vfs_stat_nfs(const char *path, int64_t *size)
    int ret = 0;
    if (!nfs_resolve(path, server, sizeof(server), export_path, sizeof(export_path), rel, sizeof(rel)))
       return 0;
-   if (!(s = nfs_acquire(server, export_path)))
+   if (!(s = nfs_acquire_resolved(server, export_path, rel, sizeof(rel))))
       return 0;
    if (rnfs_stat(s->ctx, rel, &st) == 0)
    {
@@ -367,7 +418,7 @@ nfs_dir_handle *retro_vfs_opendir_nfs(const char *path, bool include_hidden)
    (void)include_hidden;
    if (!nfs_resolve(path, server, sizeof(server), export_path, sizeof(export_path), rel, sizeof(rel)))
       return NULL;
-   if (!(s = nfs_acquire(server, export_path)))
+   if (!(s = nfs_acquire_resolved(server, export_path, rel, sizeof(rel))))
       return NULL;
    if (!(d = rnfs_opendir(s->ctx, rel)))
    {

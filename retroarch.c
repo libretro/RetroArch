@@ -7973,6 +7973,15 @@ static bool retroarch_parse_input_and_config(
       config_load_file_salamander();
 #endif
       config_load(global_get_ptr());
+      /* The network clients took their settings before the file was
+       * read (the string fields point at the live buffers, the numeric
+       * ones were copied); hand them the loaded values. */
+#ifdef HAVE_SMBCLIENT
+      retroarch_smb_init();
+#endif
+#ifdef HAVE_NFSCLIENT
+      retroarch_nfs_init();
+#endif
 
       /* Remember the startup config path so "Save Main
        * Configuration" can find it after config_replace()
