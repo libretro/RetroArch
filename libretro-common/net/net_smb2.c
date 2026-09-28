@@ -893,16 +893,24 @@ static int rsmb_session_setup(struct rsmb_ctx *c)
    else
       memcpy(c->signing_key, c->session_key, 16);
 
-   /* the final response is signed with the new key: check it now */
    c->session_ready = 1;
-   if (rsmb_verify_sig(c, c->rx, rlen + SMB2_HDR_SIZE) != 0)
+
+   /* SessionFlags. A guest (0x0001) or anonymous/null (0x0002) session
+    * is not signed even when the server requires signing, so signing
+    * is turned off for it and the final response is not checked - the
+    * server returns SUCCESS on it unsigned, which would otherwise read
+    * as a bad signature (MS-SMB2 3.2.5.3.1). */
+   if (get16(r + 2) & 0x3)
+      c->signing = 0;
+   if ((get16(r + 2) & 0x4) && c->cipher)
+      c->encrypt = 1;
+
+   /* the final response is signed with the new key: check it now */
+   if (c->signing && rsmb_verify_sig(c, c->rx, rlen + SMB2_HDR_SIZE) != 0)
    {
       rsmb_err(c, "bad signature");
       goto done;
    }
-   /* SessionFlags: 0x0004 ENCRYPT_DATA */
-   if ((get16(r + 2) & 0x4) && c->cipher)
-      c->encrypt = 1;
    ret = 0;
 done:
    crypto_memzero(session_base, sizeof(session_base));

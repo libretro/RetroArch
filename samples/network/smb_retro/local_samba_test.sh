@@ -74,5 +74,48 @@ run "SMB 3.0.2, AES-CMAC signing"           SMB3_02 default  0 'Sekret1!'
 run "SMB 3.1.1, preauth + AES-CMAC signing" SMB3_11 default  0 'Sekret1!'
 run "SMB 3.0.2, AES-CCM sealing required"   SMB3_02 required 0 'Sekret1!'
 run "SMB 3.1.1, AES-GCM sealing required"   SMB3_11 required 0 'Sekret1!'
+# A guest / anonymous session is returned unsigned even under mandatory
+# signing; the client must drop signing for it, not read the unsigned
+# SUCCESS as a bad signature.
+guestconf() {
+cat > $D/smb.conf << EOC
+[global]
+   workgroup = RETRO
+   server role = standalone server
+   security = user
+   map to guest = Bad User
+   guest account = nobody
+   smb ports = 445
+   interfaces = lo
+   bind interfaces only = yes
+   pid directory = $D/run
+   lock directory = $D/run
+   state directory = $D/run
+   cache directory = $D/run
+   private dir = $D/priv
+   log file = $D/log
+   log level = 0
+   server min protocol = SMB2_02
+   server max protocol = SMB2_02
+   server signing = mandatory
+[public]
+   path = $D/share
+   read only = no
+   guest ok = yes
+   guest only = yes
+   force user = root
+EOC
+}
+stop; sleep 0.3; guestconf; smbd -s $D/smb.conf -D
+i=0; while [ $i -lt 50 ] && ! $RUN ./smb_test$EXE 127.0.0.1 public nobody x RETRO >$D/out 2>&1; do
+   grep -q "bad signature" $D/out && break
+   i=$((i + 1)); sleep 0.2
+done
+if $RUN ./smb_test$EXE 127.0.0.1 public nobody x RETRO >$D/out 2>&1; then
+   echo "ok:   guest session (unsigned under mandatory signing)"
+else
+   echo "FAIL: guest session: $(cat $D/out)"; exit 1
+fi
+
 run "wrong password is refused"             SMB3_11 default  1 'wrong'
 echo "[pass] smb_retro local samba matrix"
