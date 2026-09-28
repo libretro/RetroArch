@@ -279,6 +279,15 @@ CHEATS
 #endif
 #include "../libretro-common/hash/lrc_hash.c"
 
+/*============================================================
+CRYPTO
+============================================================ */
+#ifdef HAVE_CRYPTO
+#include "../libretro-common/crypto/crypto.c"
+#include "../libretro-common/crypto/kdf.c"
+#include "../libretro-common/crypto/pk.c"
+#endif
+
 #include "../gfx/video_driver.c"
 #include "../gfx/common/video_mode_select.c"
 /*============================================================

@@ -14,6 +14,7 @@ HAVE_DSP_FILTER=yes        # DSP filter support
 HAVE_BLISSBOX=auto         # Blissbox support
 HAVE_ANGLE=no              # ANGLE support (OpenGL wrapper)
 HAVE_CONFIGFILE=yes        # Config file support
+HAVE_CRYPTO=yes            # Cleanroom crypto library (libretro-common/crypto)
 HAVE_GDI=yes               # GDI support (Win32-only)
 HAVE_OPENGLES_LIBS=        # Link flags for custom GLES library
 HAVE_OPENGLES_CFLAGS=      # C-flags for custom GLES library

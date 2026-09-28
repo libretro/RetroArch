@@ -95,6 +95,27 @@ void sha256_stream_block(struct sha256_state *p, const uint8_t *data);
 
 void sha256_hash(char *s, const uint8_t *in, size_t len);
 
+/* SHA-512 and SHA-384 (FIPS 180-4), for the signature digests CA
+ * bundles use. */
+
+#define SHA512_DIGEST_SIZE 64
+#define SHA384_DIGEST_SIZE 48
+
+struct sha512_state
+{
+   uint64_t h[8];
+   uint64_t len;
+   uint8_t  buf[128];
+   unsigned buflen;
+   unsigned is384;
+};
+
+void sha512_stream_init(struct sha512_state *p, unsigned is384);
+void sha512_stream_update(struct sha512_state *p,
+      const uint8_t *data, size_t len);
+/* 64 octets for SHA-512, 48 for SHA-384. */
+void sha512_stream_final(struct sha512_state *p, uint8_t *digest);
+
 /**
  * SHA1Digest:
  * @data              : Input.

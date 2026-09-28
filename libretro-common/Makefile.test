@@ -49,6 +49,20 @@ TEST_HASH_SRC = test/hash/test_hash.c hash/lrc_hash.c \
 		file/file_path_io.c features/features_cpu.c \
 		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
 
+TEST_CRYPTO_LRC_SRC = crypto/crypto.c crypto/kdf.c crypto/pk.c
+
+# Known-answer tests for every primitive (FIPS 197, RFC 4493, the GCM
+# spec vectors, RFC 8439, RFC 4231, RFC 5869, PBKDF2, FIPS 180-4), the
+# DRBG and the platform entropy source, and the public-key side (bignum,
+# RSA PKCS#1 v1.5 verify, P-256 ECDH / ECDSA) against reference vectors.
+TEST_CRYPTO = test/crypto/test_crypto
+TEST_CRYPTO_SRC = test/crypto/test_crypto.c $(TEST_CRYPTO_LRC_SRC) \
+		hash/lrc_hash.c \
+		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
+		string/rstrtod.c \
+		file/file_path_io.c features/features_cpu.c \
+		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
+
 TEST_RWAV = test/formats/test_rwav
 TEST_RWAV_SRC = test/formats/test_rwav.c formats/wav/rwav.c
 
@@ -432,6 +446,10 @@ unit-tests:
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_HASH_SRC) $(LIBCHECK_LIBS) -o $(TEST_HASH)
 	$(TEST_HASH)
 	lcov -c -d . -o `dirname $(TEST_HASH)`/coverage.info
+	# crypto
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_CRYPTO_SRC) $(LIBCHECK_LIBS) -o $(TEST_CRYPTO)
+	$(TEST_CRYPTO)
+	lcov -c -d . -o `dirname $(TEST_CRYPTO)`/coverage.info
 	# list
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_LINKED_LIST_SRC) $(LIBCHECK_LIBS) -o $(TEST_LINKED_LIST)
 	$(TEST_LINKED_LIST)
@@ -481,6 +499,7 @@ all: unit-tests console-libc-check darwin-floor-check
 	
 	lcov -o test/coverage.info \
 	     -a test/utils/coverage.info \
+	     -a test/crypto/coverage.info \
 	     -a test/string/coverage.info \
 	     -a test/lists/coverage.info \
 	     -a test/lists/file_list_coverage.info \
@@ -494,6 +513,7 @@ all: unit-tests console-libc-check darwin-floor-check
 clean:
 	rm -f *.gcda *.gcno
 	rm -f $(TEST_STDSTRING) $(TEST_UTILS) $(TEST_HASH) \
+	      $(TEST_CRYPTO) \
 	      $(TEST_LINKED_LIST) $(TEST_FILE_LIST) $(TEST_MEMPOOL) \
 	      $(TEST_MENU_STR) $(TEST_STRL) \
 	      $(TEST_GENERIC_QUEUE) \

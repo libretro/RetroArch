@@ -432,6 +432,17 @@ OBJ += \
        tasks/task_database.o \
        disk_control_interface.o
 
+# The cleanroom crypto library. Off unless a build asks for it: the
+# round tables, curve constants and 4 KiB RSA working set are nothing
+# for a desktop and too much for GameCube, Wii or PS2, whose Makefiles
+# do not set it.
+ifeq ($(HAVE_CRYPTO), 1)
+   DEFINES += -DHAVE_CRYPTO
+   OBJ     += $(LIBRETRO_COMM_DIR)/crypto/crypto.o \
+              $(LIBRETRO_COMM_DIR)/crypto/kdf.o \
+              $(LIBRETRO_COMM_DIR)/crypto/pk.o
+endif
+
 ifeq ($(HAVE_CONFIGFILE), 1)
    DEFINES += -DHAVE_CONFIGFILE
 endif
