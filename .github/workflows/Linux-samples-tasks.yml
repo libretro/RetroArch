@@ -1596,6 +1596,18 @@ jobs:
           make -f Makefile.transport_fail clean
           echo "[pass] http_transport_failure_test (TSan)"
 
+      - name: Build and run HTTP DNS connect lifetime test
+        shell: bash
+        working-directory: samples/tasks/http
+        run: |
+          set -eu
+          for ssl in 0 1; do
+            make -f Makefile.dns_lifetime clean
+            make -f Makefile.dns_lifetime SSL=$ssl
+            timeout 60 ./http_dns_lifetime_test
+          done
+          make -f Makefile.dns_lifetime clean
+
       - name: Build and run http_dns_evict_deadlock_test (ASan, TSan)
         shell: bash
         working-directory: samples/tasks/http

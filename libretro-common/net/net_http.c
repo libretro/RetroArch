@@ -304,6 +304,7 @@ struct dns_cache_entry
    char *domain;
    int port;
    struct addrinfo *addr;
+   unsigned users; /* Connect attempts holding addr outside the lock. */
    retro_time_t timestamp;
    bool valid;
 #ifdef HAVE_THREADS
@@ -724,8 +725,9 @@ static void net_http_dns_cache_remove_expired(void)
    struct dns_cache_entry *prev = NULL;
    while (entry)
    {
-      if (     (entry->addr && (entry->timestamp + dns_cache_timeout < cpu_features_get_time_usec()))
-            || (!entry->addr && (entry->timestamp + dns_cache_fail_timeout < cpu_features_get_time_usec())))
+      if (!entry->users &&
+            ((entry->addr && (entry->timestamp + dns_cache_timeout < cpu_features_get_time_usec()))
+            || (!entry->addr && (entry->timestamp + dns_cache_fail_timeout < cpu_features_get_time_usec()))))
       {
 #ifdef HAVE_THREADS
          /* An entry whose resolver has not published a result yet
@@ -1223,6 +1225,7 @@ static bool net_http_connect(struct http_t *state)
    struct addrinfo *addr = NULL, *next_addr = NULL;
    struct conn_pool_entry *conn = state->conn;
    struct dns_cache_entry *dns_entry;
+   bool connected = false;
 #ifdef HAVE_SSL
    bool timeout          = true;
 #endif
@@ -1250,19 +1253,20 @@ static bool net_http_connect(struct http_t *state)
       state->err = true;
       return false;
    }
+   dns_entry->users++;
    addr = dns_entry->addr;
    UNLOCK_DNS_CACHE();
 
 #ifndef HAVE_SSL
    if (state->ssl)
-      return false;
+      goto release;
 #else
    if (state->ssl)
    {
       if (!conn)
       {
          net_http_log_transport_state(state, "connect_missing_dns_or_conn", -1);
-         return false;
+         goto release;
       }
       for (next_addr = addr; conn->fd >= 0; conn->fd = socket_next((void**)&next_addr))
       {
@@ -1296,14 +1300,15 @@ static bool net_http_connect(struct http_t *state)
          else
          {
             conn->connected = true;
-            return true;
+            connected = true;
+            goto release;
          }
       }
       conn->fd    = -1; /* already closed */
       net_http_conn_pool_remove(conn);
       state->conn = NULL;
       state->err  = true;
-      return false;
+      goto release;
    }
    else
 #endif
@@ -1313,7 +1318,8 @@ static bool net_http_connect(struct http_t *state)
          if (socket_connect_with_timeout(conn->fd, next_addr, 5000))
          {
             conn->connected = true;
-            return true;
+            connected = true;
+            goto release;
          }
 
          net_http_note_socket_error(state);
@@ -1324,8 +1330,13 @@ static bool net_http_connect(struct http_t *state)
       net_http_conn_pool_remove(conn);
       state->conn = NULL;
       state->err  = true;
-      return false;
+      goto release;
    }
+release:
+   LOCK_DNS_CACHE();
+   dns_entry->users--;
+   UNLOCK_DNS_CACHE();
+   return connected;
 }
 
 /**
