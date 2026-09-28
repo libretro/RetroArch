@@ -197,6 +197,9 @@ CONFIG FILE
 #include "../libretro-common/file/config_file.c"
 #include "../libretro-common/file/config_file_io.c"
 #include "../libretro-common/file/config_file_userdata.c"
+#if defined(HAVE_KEYCHAIN) && defined(HAVE_CRYPTO)
+#include "../libretro-common/file/keychain.c"
+#endif
 #endif
 
 /*============================================================

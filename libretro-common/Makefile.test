@@ -63,6 +63,15 @@ TEST_CRYPTO_SRC = test/crypto/test_crypto.c $(TEST_CRYPTO_LRC_SRC) \
 		file/file_path_io.c features/features_cpu.c \
 		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
 
+TEST_KEYCHAIN = test/file/test_keychain
+TEST_KEYCHAIN_SRC = test/file/test_keychain.c file/keychain.c \
+		$(TEST_CRYPTO_LRC_SRC) hash/lrc_hash.c encodings/encoding_base64.c \
+		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
+		string/rstrtod.c \
+		file/file_path_io.c features/features_cpu.c \
+		compat/compat_strl.c compat/compat_strldup.c time/rtime.c \
+		string/stdstring.c encodings/encoding_utf.c
+
 TEST_RWAV = test/formats/test_rwav
 TEST_RWAV_SRC = test/formats/test_rwav.c formats/wav/rwav.c
 
@@ -450,6 +459,10 @@ unit-tests:
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_CRYPTO_SRC) $(LIBCHECK_LIBS) -o $(TEST_CRYPTO)
 	$(TEST_CRYPTO)
 	lcov -c -d . -o `dirname $(TEST_CRYPTO)`/coverage.info
+	# keychain
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_KEYCHAIN_SRC) $(LIBCHECK_LIBS) -o $(TEST_KEYCHAIN)
+	$(TEST_KEYCHAIN)
+	lcov -c -d . -o `dirname $(TEST_KEYCHAIN)`/coverage.info
 	# list
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_LINKED_LIST_SRC) $(LIBCHECK_LIBS) -o $(TEST_LINKED_LIST)
 	$(TEST_LINKED_LIST)
@@ -500,6 +513,7 @@ all: unit-tests console-libc-check darwin-floor-check
 	lcov -o test/coverage.info \
 	     -a test/utils/coverage.info \
 	     -a test/crypto/coverage.info \
+	     -a test/file/coverage.info \
 	     -a test/string/coverage.info \
 	     -a test/lists/coverage.info \
 	     -a test/lists/file_list_coverage.info \
@@ -513,7 +527,7 @@ all: unit-tests console-libc-check darwin-floor-check
 clean:
 	rm -f *.gcda *.gcno
 	rm -f $(TEST_STDSTRING) $(TEST_UTILS) $(TEST_HASH) \
-	      $(TEST_CRYPTO) \
+	      $(TEST_CRYPTO) $(TEST_KEYCHAIN) \
 	      $(TEST_LINKED_LIST) $(TEST_FILE_LIST) $(TEST_MEMPOOL) \
 	      $(TEST_MENU_STR) $(TEST_STRL) \
 	      $(TEST_GENERIC_QUEUE) \
