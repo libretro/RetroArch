@@ -137,6 +137,30 @@ jobs:
           # port 445; the script itself skips without smbd.
           sudo samples/network/smb_retro/local_samba_test.sh
 
+      - name: Network client matrices under ASan + UBSan + LSan
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The three server matrices again, with the clients built under
+          # the sanitizers: every code path a real server drives, checked
+          # for memory errors, undefined behaviour and leaks. UBSan found
+          # a NULL memcpy in the SHA-2 stream updates on the SHA-384 PRF
+          # path the first time this ran.
+          export CFLAGS="-O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+          export LDFLAGS="-fsanitize=address,undefined"
+          export ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1
+          export UBSAN_OPTIONS=print_stacktrace=1
+          make -C samples/network/tls_retro clean
+          samples/network/tls_retro/local_server_test.sh
+          make -C samples/network/tls_retro clean
+          make -C samples/network/smb_retro clean
+          sudo -E samples/network/smb_retro/local_samba_test.sh
+          make -C samples/network/smb_retro clean
+          make -C samples/network/nfs_retro clean
+          samples/network/nfs_retro/local_unfs3_test.sh
+          make -C samples/network/nfs_retro clean
+
       - name: Built-in NFSv3 client against unfs3
         shell: bash
         working-directory: ${{ github.workspace }}

@@ -370,6 +370,8 @@ void sha256_stream_init(struct sha256_state *p, unsigned is224)
 void sha256_stream_update(struct sha256_state *p,
       const uint8_t *data, size_t len)
 {
+   if (!len)
+      return;
    sha256_chunk(p, data, len);
 }
 
@@ -1112,6 +1114,10 @@ void sha512_stream_init(struct sha512_state *p, unsigned is384)
 void sha512_stream_update(struct sha512_state *p,
       const uint8_t *data, size_t len)
 {
+   /* An empty update may carry a NULL pointer (a PRF with no second
+    * seed); nothing to copy, and memcpy must not see it. */
+   if (!len)
+      return;
    p->len += len;
    if (p->buflen)
    {
