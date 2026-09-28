@@ -257,6 +257,7 @@ static void test_deinit_with_live_tasks(void)
 
 int main(void)
 {
+   task_queue_init(false, NULL);
    test_two_concurrent_task_bars();
    test_title_churn(true);
    test_title_churn(false);
@@ -266,6 +267,8 @@ int main(void)
 
    CHECK(pushes > 0,     "no task was ever pushed");
    CHECK(iterations > 0, "no frame was ever iterated");
+
+   task_queue_deinit();
 
    if (failures)
    {

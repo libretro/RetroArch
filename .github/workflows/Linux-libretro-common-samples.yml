@@ -155,6 +155,7 @@ jobs:
             screenshot_io_bench
             word_wrap_overflow_test
             task_queue_title_error_test
+            task_queue_snapshot_test
             task_queue_init_failure_test
             # Stops the worker with a bound when a detachable
             # handler is stuck; waits ~1.5 s by design.
