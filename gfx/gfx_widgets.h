@@ -436,6 +436,9 @@ bool gfx_widgets_init(
 
 void gfx_widgets_deinit(bool widgets_persisting);
 
+/* Main thread: move an existing widget to a task with no frontend data. */
+void gfx_widgets_task_transfer(retro_task_t *from, retro_task_t *to);
+
 void gfx_widgets_msg_queue_push(
       retro_task_t *task, const char *msg,
       size_t len,

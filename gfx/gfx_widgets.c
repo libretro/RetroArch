@@ -311,6 +311,37 @@ static void gfx_widgets_msg_measure(dispgfx_widget_t *p_dispwidget,
    }
 }
 
+static void gfx_widgets_task_rebind(disp_widget_msg_t *msg_widget,
+      retro_task_t *task)
+{
+   if (msg_widget->task_ident != task->ident)
+   {
+      if (msg_widget->flags & DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED)
+      {
+         uintptr_t _tag     = (uintptr_t)&msg_widget->expiration_timer;
+         gfx_animation_kill_widget_by_tag(&_tag);
+         msg_widget->flags &= ~DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED;
+      }
+
+      msg_widget->flags    &= ~(DISPWIDG_FLAG_TASK_FINISHED
+                              | DISPWIDG_FLAG_TASK_ERROR
+                              | DISPWIDG_FLAG_TASK_CANCELLED);
+      msg_widget->task_ident = task->ident;
+   }
+   msg_widget->task_ptr  = task;
+   msg_widget->flags    |= DISPWIDG_FLAG_TASK;
+}
+
+void gfx_widgets_task_transfer(retro_task_t *from, retro_task_t *to)
+{
+   gfx_widgets_state_lock();
+   to->frontend_userdata = from->frontend_userdata;
+   from->frontend_userdata = NULL;
+   if (to->frontend_userdata)
+      gfx_widgets_task_rebind((disp_widget_msg_t*)to->frontend_userdata, to);
+   gfx_widgets_state_unlock();
+}
+
 static void gfx_widgets_msg_queue_push_state(
       retro_task_t *task,
       task_progress_snapshot_t *snapshot,
@@ -377,22 +408,7 @@ static void gfx_widgets_msg_queue_push_state(
           * expiration timer armed on the strength of it. EXPIRED is
           * deliberately left alone: once the FINISHED flag is accurate,
           * a widget already on its way out unlinks correctly on free. */
-         if (msg_widget->task_ident != task->ident)
-         {
-            if (msg_widget->flags & DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED)
-            {
-               uintptr_t _tag     = (uintptr_t)&msg_widget->expiration_timer;
-               gfx_animation_kill_widget_by_tag(&_tag);
-               msg_widget->flags &= ~DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED;
-            }
-
-            msg_widget->flags    &= ~(DISPWIDG_FLAG_TASK_FINISHED
-                                    | DISPWIDG_FLAG_TASK_ERROR
-                                    | DISPWIDG_FLAG_TASK_CANCELLED);
-            msg_widget->task_ident = task->ident;
-         }
-         msg_widget->task_ptr  = task;
-         msg_widget->flags    |= DISPWIDG_FLAG_TASK;
+         gfx_widgets_task_rebind(msg_widget, task);
       }
 
       /* Spawn a new notification */

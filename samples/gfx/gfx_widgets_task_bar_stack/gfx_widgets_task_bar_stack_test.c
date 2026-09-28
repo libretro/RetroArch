@@ -307,6 +307,72 @@ static void test_suppressed_completion(void)
    }
 }
 
+/* No extraction progress is published during the delay. The widget
+ * must already belong to the new task before any frame is iterated. */
+extern uintptr_t stub_last_killed_animation_tag;
+
+static void test_delayed_handoff(void)
+{
+   unsigned displayed, publish;
+   for (displayed = 0; displayed < 2; displayed++)
+      for (publish = 0; publish < 2; publish++)
+      {
+         retro_task_t download, extraction;
+         disp_widget_msg_t *widget;
+         if (!widgets_up())
+            return;
+         harness_task_init(&download, 100, "download", 100, true);
+         download.flags |= RETRO_TASK_FLG_FINISHED | RETRO_TASK_FLG_CANCELLED;
+         download.error = "old download error";
+         task_push(&download);
+         widget = (disp_widget_msg_t*)download.frontend_userdata;
+         CHECK(widget != NULL, "download has no handoff widget");
+         if (!widget)
+         {
+            gfx_widgets_deinit(false);
+            continue;
+         }
+         if (displayed)
+         {
+            pump(2);
+            CHECK(widget->flags & DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED,
+                  "finished download did not arm expiration");
+         }
+         harness_task_init(&extraction, 101, "extraction", 0, true);
+         stub_last_killed_animation_tag = 0;
+#ifdef WIDGET_HANDOFF_DEFECT
+         extraction.frontend_userdata = download.frontend_userdata;
+         download.frontend_userdata = NULL;
+#else
+         gfx_widgets_task_transfer(&download, &extraction);
+#endif
+         if (displayed)
+            CHECK(stub_last_killed_animation_tag ==
+                  (uintptr_t)&widget->expiration_timer,
+                  "handoff did not cancel the old expiration callback");
+         CHECK(!download.frontend_userdata, "download kept ownership");
+         CHECK(widget->task_ptr == &extraction && widget->task_ident == 101,
+               "handoff waits for extraction progress to bind its owner");
+         CHECK(!(widget->flags & (DISPWIDG_FLAG_TASK_FINISHED |
+                     DISPWIDG_FLAG_TASK_CANCELLED | DISPWIDG_FLAG_TASK_ERROR |
+                     DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED)),
+               "handoff retained download lifetime state");
+         pump(180);
+         CHECK(!(widget->flags & DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED),
+               "delayed extraction armed inherited expiration");
+         if (publish)
+         {
+            extraction.progress = 37;
+            task_push(&extraction);
+            CHECK(widget->task_ptr == &extraction && widget->task_progress == 37,
+                  "extraction progress did not update the inherited widget");
+         }
+         gfx_widgets_deinit(false);
+         CHECK(!extraction.frontend_userdata,
+               "teardown left extraction pointing at a freed widget");
+      }
+}
+
 int main(void)
 {
    task_queue_init(false, NULL);
@@ -315,6 +381,7 @@ int main(void)
    test_title_churn(false);
    test_deinit_with_live_tasks();
    test_suppressed_completion();
+   test_delayed_handoff();
 
    printf("pushes=%d frames=%d\n", pushes, iterations);
 

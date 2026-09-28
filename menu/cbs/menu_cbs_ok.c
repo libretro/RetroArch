@@ -46,6 +46,9 @@
 
 #include "../../config.def.h"
 #include "../../gfx/gfx_surface.h"
+#ifdef HAVE_GFX_WIDGETS
+#include "../../gfx/gfx_widgets.h"
+#endif
 #include "../../driver.h"
 #include "../../file_path_special.h"
 
@@ -5797,8 +5800,6 @@ void cb_generic_download(retro_task_t *task,
    if (path_is_compressed_file(output_path))
    {
       retro_task_t *decompress_task = NULL;
-      void *frontend_userdata       = task->frontend_userdata;
-      task->frontend_userdata       = NULL;
 
       /* Content from the Content Downloader is saved into a category
        * sub-directory. Make sure to extract it to the same directory.
@@ -5818,7 +5819,7 @@ void cb_generic_download(retro_task_t *task,
             NULL,
             cb_decompressed,
             (void*)(uintptr_t)transf->enum_idx,
-            frontend_userdata,
+            NULL,
             false);
 
       if (!decompress_task)
@@ -5826,6 +5827,10 @@ void cb_generic_download(retro_task_t *task,
          err = msg_hash_to_str(MSG_DECOMPRESSION_FAILED);
          goto finish;
       }
+#ifdef HAVE_GFX_WIDGETS
+      /* Rebind before a delayed extraction can inherit expiration. */
+      gfx_widgets_task_transfer(task, decompress_task);
+#endif
    }
 #endif
 

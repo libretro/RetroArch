@@ -253,7 +253,9 @@ font_data_t *gfx_display_font_file(gfx_display_t *p_disp, char *fontpath,
 /* --- animation --- */
 bool gfx_animation_push_widget(gfx_animation_ctx_entry_t *entry)
 { (void)entry; return true; }
-bool gfx_animation_kill_widget_by_tag(uintptr_t *tag) { (void)tag; return true; }
+uintptr_t stub_last_killed_animation_tag;
+bool gfx_animation_kill_widget_by_tag(uintptr_t *tag)
+{ stub_last_killed_animation_tag = *tag; return true; }
 void gfx_animation_timer_start_widget(float *timer,
       gfx_timer_ctx_entry_t *timer_entry)
 { (void)timer_entry; if (timer) *timer = 0.0f; }
