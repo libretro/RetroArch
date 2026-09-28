@@ -293,7 +293,7 @@ static bool webdav_create_digest_auth(char *digest)
          }
          else
          {
-            while (*ptr != ',' && *ptr != ',')
+            while (*ptr != ',' && *ptr != '\0')
                ptr++;
          }
       }
