@@ -107,6 +107,24 @@ struct rsmb_dir *rsmb_opendir(struct rsmb_ctx *c, const char *path);
 const struct rsmb_dirent *rsmb_readdir(struct rsmb_ctx *c, struct rsmb_dir *d);
 void rsmb_closedir(struct rsmb_ctx *c, struct rsmb_dir *d);
 
+/* One share as SRVSVC reports it. */
+struct rsmb_share
+{
+   char     name[256];
+   uint32_t type;       /* STYPE_*: 0 disk, 1 printer, 2 device, 3 IPC;
+                           0x80000000 hidden, 0x40000000 temporary */
+};
+
+/**
+ * rsmb_enum_shares:
+ *
+ * NetrShareEnum level 1 through the srvsvc pipe; @c must be connected
+ * to the server's IPC$ share. Fills up to @max entries.
+ *
+ * Returns: number of shares reported (may exceed @max), or -1.
+ **/
+int rsmb_enum_shares(struct rsmb_ctx *c, struct rsmb_share *out, unsigned max);
+
 int rsmb_echo(struct rsmb_ctx *c);
 const char *rsmb_get_error(const struct rsmb_ctx *c);
 /* Last NT status, for callers that map them. */

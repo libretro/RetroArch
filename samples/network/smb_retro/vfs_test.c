@@ -74,6 +74,35 @@ int main(int argc, char **argv)
       fprintf(stderr, "FAIL: readdir\n");
       return 1;
    }
+   /* the share browser: with no share configured, smb://server lists
+    * the shares; "share" is there, IPC$ and the hidden one are not */
+   smb_shutdown();
+   cfg.share = "";
+   if (!smb_init_cfg(&cfg))
+   {
+      fprintf(stderr, "FAIL: smb_init_cfg (browse)\n");
+      return 1;
+   }
+   snprintf(url, sizeof(url), "smb://%s", argv[1]);
+   found = 0;
+   if (!(dh = retro_vfs_opendir_smb(url, false)))
+   {
+      fprintf(stderr, "FAIL: opendir server\n");
+      return 1;
+   }
+   while ((ent = retro_vfs_readdir_smb(dh)))
+   {
+      if (strcmp(ent->name, argv[2]) == 0)
+         found = 1;
+      if (strcmp(ent->name, "IPC$") == 0 || strcmp(ent->name, "hidden$") == 0)
+         found = -1;
+   }
+   retro_vfs_closedir_smb(dh);
+   if (found != 1)
+   {
+      fprintf(stderr, "FAIL: share browse (%d)\n", found);
+      return 1;
+   }
    smb_shutdown();
    printf("ok: VFS over the built-in client\n");
    return 0;

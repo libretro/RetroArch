@@ -9,7 +9,8 @@ command -v smbd >/dev/null 2>&1 || { echo "skip: no smbd"; exit 0; }
 [ "$(id -u)" = 0 ] || { echo "skip: needs root for port 445"; exit 0; }
 make -s smb_test vfs_test
 D=$(mktemp -d); chmod 755 $D; mkdir -p $D/share $D/priv $D/run /run/samba
-trap 'pkill -f "smbd -s $D/smb.conf" 2>/dev/null || true; rm -rf $D' EXIT
+stop() { pkill -f "smbd -s $D/smb.conf" 2>/dev/null || true; pkill -f "configfile=$D/smb.conf" 2>/dev/null || true; }
+trap 'stop; rm -rf $D' EXIT
 id rsmbtest >/dev/null 2>&1 || useradd -M -s /usr/sbin/nologin rsmbtest
 chown rsmbtest $D/share
 conf() { # max_protocol encrypt
@@ -36,12 +37,18 @@ cat > $D/smb.conf << EOC
    path = $D/share
    read only = no
    valid users = rsmbtest
+[hidden$]
+   path = $D/share
+   read only = yes
+   valid users = rsmbtest
 EOC
 }
 conf SMB3_11 default
 (echo "Sekret1!"; echo "Sekret1!") | smbpasswd -c $D/smb.conf -s -a rsmbtest >/dev/null 2>&1
 run() { # label max_protocol encrypt expect_rc password
-   pkill -f "smbd -s $D/smb.conf" 2>/dev/null || true; sleep 0.3
+   # smbd and the samba-dcerpcd it spawned for this config; a stale
+   # rpc daemon from a previous run answers the srvsvc pipe for nobody
+   stop; sleep 0.3
    conf $2 $3
    smbd -s $D/smb.conf -D
    # wait for the listener rather than guessing a delay

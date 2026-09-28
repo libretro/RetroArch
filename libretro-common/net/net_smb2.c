@@ -260,10 +260,10 @@ static int rsmb_send_raw(struct rsmb_ctx *c, const uint8_t *msg, size_t len)
    nb[1] = (uint8_t)(len >> 16);
    nb[2] = (uint8_t)(len >> 8);
    nb[3] = (uint8_t)len;
-   if (!socket_send_all_blocking(c->fd, nb, 4, true)
-         || !socket_send_all_blocking(c->fd, msg, len, true))
+   if (!socket_send_all_blocking_with_timeout(c->fd, nb, 4, (int)c->timeout * 1000, true)
+         || !socket_send_all_blocking_with_timeout(c->fd, msg, len, (int)c->timeout * 1000, true))
    {
-      rsmb_err(c, "send failed");
+      rsmb_err(c, "send failed or timed out");
       return -1;
    }
    return 0;
@@ -274,9 +274,9 @@ static int rsmb_recv_raw(struct rsmb_ctx *c, size_t *len)
 {
    uint8_t nb[4];
    size_t  n;
-   if (socket_receive_all_blocking(c->fd, nb, 4) <= 0)
+   if (socket_receive_all_blocking_with_timeout(c->fd, nb, 4, (int)c->timeout * 1000) <= 0)
    {
-      rsmb_err(c, "receive failed");
+      rsmb_err(c, "receive failed or timed out");
       return -1;
    }
    n = ((size_t)nb[1] << 16) | ((size_t)nb[2] << 8) | nb[3];
@@ -285,9 +285,9 @@ static int rsmb_recv_raw(struct rsmb_ctx *c, size_t *len)
       rsmb_err(c, "bad frame");
       return -1;
    }
-   if (socket_receive_all_blocking(c->fd, c->rx, n) <= 0)
+   if (socket_receive_all_blocking_with_timeout(c->fd, c->rx, n, (int)c->timeout * 1000) <= 0)
    {
-      rsmb_err(c, "receive failed");
+      rsmb_err(c, "receive failed or timed out");
       return -1;
    }
    *len = n;
@@ -1024,7 +1024,9 @@ int rsmb_connect(struct rsmb_ctx *c, const char *server, const char *share)
       return -1;
    }
    freeaddrinfo_retro(addr);
-   socket_set_block(fd, true);
+   /* Non-blocking, so every send and receive is bounded by the
+    * context timeout instead of waiting on a server forever. */
+   socket_set_block(fd, false);
    c->fd            = fd;
    c->message_id    = 0;
    c->session_id    = 0;
@@ -1486,4 +1488,147 @@ int rsmb_echo(struct rsmb_ctx *c)
    if (rsmb_call(c, 4, &r, &rlen, 0) != 0)
       return -1;
    return c->status == STATUS_SUCCESS ? 0 : -1;
+}
+
+/* ---- SRVSVC NetrShareEnum over the srvsvc pipe --------------------- */
+
+/* DCERPC on the named pipe: a bind, then one request; both PDUs and
+ * the NDR stub are built and picked apart by hand, this being the one
+ * RPC the frontend makes. */
+static int rsmb_pipe_transceive(struct rsmb_ctx *c, struct rsmb_file *pipe,
+      const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap,
+      size_t *resp_len)
+{
+   int64_t n;
+   size_t  frag;
+   pipe->offset = 0;
+   if (rsmb_write(c, pipe, req, req_len) != (int64_t)req_len)
+      return -1;
+   pipe->offset = 0;
+   n = rsmb_read(c, pipe, resp, resp_cap);
+   if (n < 16)
+      return -1;
+   frag = get16(resp + 8);
+   while ((size_t)n < frag && (size_t)n < resp_cap)
+   {
+      int64_t m;
+      pipe->offset = 0;
+      m = rsmb_read(c, pipe, resp + n, resp_cap - (size_t)n);
+      if (m <= 0)
+         break;
+      n += m;
+   }
+   *resp_len = (size_t)n;
+   return 0;
+}
+
+int rsmb_enum_shares(struct rsmb_ctx *c, struct rsmb_share *out, unsigned max)
+{
+   static const uint8_t srvsvc_uuid[16] = {
+      0xc8,0x4f,0x32,0x4b,0x70,0x16,0xd3,0x01,0x12,0x78,0x5a,0x47,0xbf,0x6e,0xe1,0x88 };
+   static const uint8_t ndr_uuid[16] = {
+      0x04,0x5d,0x88,0x8a,0xeb,0x1c,0xc9,0x11,0x9f,0xe8,0x08,0x00,0x2b,0x10,0x48,0x60 };
+   struct rsmb_file *pipe;
+   uint8_t *buf;
+   uint8_t  req[128];
+   size_t   rlen, off;
+   uint32_t count, i;
+   int      ret = -1;
+
+   if (!(pipe = rsmb_open(c, "srvsvc", RSMB_O_RDWR)))
+      return -1;
+   if (!(buf = (uint8_t*)malloc(SMB2_MAX_IO)))
+   {
+      rsmb_close(c, pipe);
+      return -1;
+   }
+
+   /* bind */
+   memset(req, 0, sizeof(req));
+   req[0] = 5; req[1] = 0; req[2] = 11; req[3] = 3;
+   put32(req + 4, 0x10);                      /* data rep: LE, ASCII, IEEE */
+   put16(req + 8, 72);                        /* frag length */
+   put32(req + 12, 1);                        /* call id */
+   put16(req + 16, 4280); put16(req + 18, 4280);
+   put32(req + 20, 0);                        /* assoc group */
+   req[24] = 1;                               /* one context */
+   put16(req + 28, 0); req[30] = 1;           /* ctx 0, one transfer syntax */
+   memcpy(req + 32, srvsvc_uuid, 16); put16(req + 48, 3); put16(req + 50, 0);
+   memcpy(req + 52, ndr_uuid, 16);    put32(req + 68, 2);
+   if (rsmb_pipe_transceive(c, pipe, req, 72, buf, SMB2_MAX_IO, &rlen) != 0
+         || rlen < 16 || buf[2] != 12)
+   {
+      rsmb_err(c, "srvsvc bind failed");
+      goto done;
+   }
+
+   /* NetrShareEnum(NULL server, level 1, empty container, max length, resume 0) */
+   memset(req, 0, sizeof(req));
+   req[0] = 5; req[2] = 0; req[3] = 3;
+   put32(req + 4, 0x10);
+   put16(req + 8, 24 + 36);
+   put32(req + 12, 2);
+   put32(req + 16, 36);                       /* alloc hint */
+   put16(req + 20, 0);                        /* context id */
+   put16(req + 22, 15);                       /* opnum NetrShareEnum */
+   off = 24;
+   put32(req + off, 0);              off += 4; /* ServerName: NULL */
+   put32(req + off, 1);              off += 4; /* Level */
+   put32(req + off, 1);              off += 4; /* union switch */
+   put32(req + off, 0x00020000);     off += 4; /* container pointer */
+   put32(req + off, 0);              off += 4; /*   EntriesRead */
+   put32(req + off, 0);              off += 4; /*   Buffer: NULL */
+   put32(req + off, 0xffffffffu);    off += 4; /* PreferedMaximumLength */
+   put32(req + off, 0x00020004);     off += 4; /* ResumeHandle pointer */
+   put32(req + off, 0);              off += 4; /*   value */
+   if (rsmb_pipe_transceive(c, pipe, req, off, buf, SMB2_MAX_IO, &rlen) != 0
+         || rlen < 24 + 24 || buf[2] != 2)
+   {
+      rsmb_err(c, "srvsvc request failed");
+      goto done;
+   }
+
+   /* stub: Level, switch, container ptr, EntriesRead, Buffer ptr, MaxCount */
+   off = 24;
+   if (get32(buf + off + 8) == 0 || get32(buf + off + 16) == 0)
+   {
+      ret = 0;                                /* no container / buffer */
+      goto done;
+   }
+   count = get32(buf + off + 12);
+   off  += 24;
+   if (count > 4096 || off + count * 12 > rlen)
+      goto done;
+   for (i = 0; i < count; i++)
+      if (i < max)
+      {
+         out[i].type    = get32(buf + off + i * 12 + 4);
+         out[i].name[0] = '\0';
+      }
+   off += count * 12;
+   /* then the deferred strings: netname and remark per entry */
+   for (i = 0; i < count; i++)
+   {
+      unsigned s2;
+      for (s2 = 0; s2 < 2; s2++)
+      {
+         uint32_t actual;
+         if (off + 12 > rlen)
+            goto done;
+         actual = get32(buf + off + 8);
+         off   += 12;
+         if (actual > 512 || off + actual * 2 > rlen)
+            goto done;
+         if (s2 == 0 && i < max)
+            rsmb_utf8(buf + off, actual * 2, out[i].name, sizeof(out[i].name));
+         off += actual * 2;
+         if (off & 3)
+            off += 4 - (off & 3);
+      }
+   }
+   ret = (int)count;
+done:
+   free(buf);
+   rsmb_close(c, pipe);
+   return ret;
 }

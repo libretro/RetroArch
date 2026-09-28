@@ -68,6 +68,25 @@ int main(int argc, char **argv)
    CHECK(!rsmb_open(c, "no_such_file", RSMB_O_RDONLY), "open missing");
 
    rsmb_disconnect(c);
+
+   /* share enumeration through IPC$: the share we used must be listed,
+    * IPC$ itself comes back typed as IPC */
+   {
+      static struct rsmb_share list[64];
+      int cnt, i, seen = 0, ipc = 0;
+      CHECK(rsmb_connect(c, argv[1], "IPC$") == 0, "connect IPC$");
+      cnt = rsmb_enum_shares(c, list, 64);
+      CHECK(cnt > 0, "enum shares");
+      for (i = 0; i < cnt && i < 64; i++)
+      {
+         if (strcmp(list[i].name, argv[2]) == 0 && (list[i].type & 3) == 0)
+            seen = 1;
+         if (strcmp(list[i].name, "IPC$") == 0 && (list[i].type & 3) == 3)
+            ipc = 1;
+      }
+      CHECK(seen && ipc, "enum shares content");
+      rsmb_disconnect(c);
+   }
    rsmb_free(c);
    printf("ok: %s/%s (%u entries)\n", argv[1], argv[2], n);
    return 0;

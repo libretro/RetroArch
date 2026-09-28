@@ -492,13 +492,69 @@ static void smb_free_share_list(char **shares, unsigned count)
 }
 
 #ifdef HAVE_RETROSMB
-/* Share enumeration needs SRVSVC over the IPC$ pipe, which the built-in
- * client does not carry yet; browsing starts at a named share. */
+/* Collects the disk shares the server exports through the built-in
+ * client's NetrShareEnum. Hidden and administrative shares are left
+ * out, as are printer, device and IPC entries. */
 static bool smb_enum_shares(char ***out, unsigned *out_count)
 {
+   struct rsmb_ctx   *ctx;
+   struct rsmb_share *list;
+   char **shares;
+   unsigned count = 0;
+   int      n, i;
+
    *out       = NULL;
    *out_count = 0;
-   return false;
+
+   if (!smb_cfg || !smb_cfg->server_address || !*smb_cfg->server_address)
+      return false;
+   if (!network_init())
+      return false;
+   if (!(ctx = rsmb_new()))
+      return false;
+   rsmb_set_credentials(ctx, smb_cfg->username, smb_cfg->password, smb_cfg->workgroup);
+   rsmb_set_timeout(ctx, smb_cfg->timeout ? smb_cfg->timeout : RETRO_SMB2_DEFAULT_CLIENT_TIMEOUT);
+   if (rsmb_connect(ctx, smb_cfg->server_address, "IPC$") != 0)
+   {
+      rsmb_free(ctx);
+      return false;
+   }
+   if (!(list = (struct rsmb_share*)calloc(256, sizeof(*list))))
+   {
+      rsmb_free(ctx);
+      return false;
+   }
+   n = rsmb_enum_shares(ctx, list, 256);
+   rsmb_free(ctx);
+   if (n <= 0 || !(shares = (char**)calloc((size_t)n, sizeof(char*))))
+   {
+      free(list);
+      return false;
+   }
+   if (n > 256)
+      n = 256;
+   for (i = 0; i < n; i++)
+   {
+      const char *name = list[i].name;
+      size_t _len;
+      if (!*name || (list[i].type & 3) != 0 || (list[i].type & 0xc0000000u)
+            || name[strlen(name) - 1] == '$')
+         continue;
+      _len = strlen(name) + 1;
+      if (!(shares[count] = (char*)malloc(_len)))
+         break;
+      memcpy(shares[count], name, _len);
+      count++;
+   }
+   free(list);
+   if (count == 0)
+   {
+      smb_free_share_list(shares, count);
+      return false;
+   }
+   *out       = shares;
+   *out_count = count;
+   return true;
 }
 #else
 /* Collects the disk shares the server exports.  Hidden and administrative
