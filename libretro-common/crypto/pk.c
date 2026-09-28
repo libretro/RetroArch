@@ -488,7 +488,8 @@ int rsa_pkcs1_verify(const uint8_t *n, size_t n_len,
    return ok ? 0 : -1;
 }
 
-#define P256_K (256 / BN_WORD_BITS)
+/* Largest curve here is P-384. */
+#define EC_MAX_K (384 / BN_WORD_BITS)
 
 static const uint8_t p256_p_be[32] = {
    0xff,0xff,0xff,0xff,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -511,385 +512,490 @@ static const uint8_t p256_gy_be[32] = {
    0x2b,0xce,0x33,0x57,0x6b,0x31,0x5e,0xce,0xcb,0xb6,0x40,0x68,0x37,0xbf,0x51,0xf5
 };
 
+static const uint8_t p384_p_be[48] = {
+   0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+   0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xfe,
+   0xff,0xff,0xff,0xff,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xff,0xff,0xff,0xff
+};
+static const uint8_t p384_n_be[48] = {
+   0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+   0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xc7,0x63,0x4d,0x81,0xf4,0x37,0x2d,0xdf,
+   0x58,0x1a,0x0d,0xb2,0x48,0xb0,0xa7,0x7a,0xec,0xec,0x19,0x6a,0xcc,0xc5,0x29,0x73
+};
+static const uint8_t p384_b_be[48] = {
+   0xb3,0x31,0x2f,0xa7,0xe2,0x3e,0xe7,0xe4,0x98,0x8e,0x05,0x6b,0xe3,0xf8,0x2d,0x19,
+   0x18,0x1d,0x9c,0x6e,0xfe,0x81,0x41,0x12,0x03,0x14,0x08,0x8f,0x50,0x13,0x87,0x5a,
+   0xc6,0x56,0x39,0x8d,0x8a,0x2e,0xd1,0x9d,0x2a,0x85,0xc8,0xed,0xd3,0xec,0x2a,0xef
+};
+static const uint8_t p384_gx_be[48] = {
+   0xaa,0x87,0xca,0x22,0xbe,0x8b,0x05,0x37,0x8e,0xb1,0xc7,0x1e,0xf3,0x20,0xad,0x74,
+   0x6e,0x1d,0x3b,0x62,0x8b,0xa7,0x9b,0x98,0x59,0xf7,0x41,0xe0,0x82,0x54,0x2a,0x38,
+   0x55,0x02,0xf2,0x5d,0xbf,0x55,0x29,0x6c,0x3a,0x54,0x5e,0x38,0x72,0x76,0x0a,0xb7
+};
+static const uint8_t p384_gy_be[48] = {
+   0x36,0x17,0xde,0x4a,0x96,0x26,0x2c,0x6f,0x5d,0x9e,0x98,0xbf,0x92,0x92,0xdc,0x29,
+   0xf8,0xf4,0x1d,0xbd,0x28,0x9a,0x14,0x7c,0xe9,0xda,0x31,0x13,0xb5,0xf0,0xb8,0xc0,
+   0x0a,0x60,0xb1,0xce,0x1d,0x7e,0x81,0x9d,0x7a,0x43,0x1d,0x7c,0x90,0xea,0x0e,0x5f
+};
+
 /* Jacobian point, coordinates in the Montgomery domain of p.
  * Infinity is z == 0. */
-struct p256_pt
+struct ec_pt
 {
-   bn_word x[P256_K];
-   bn_word y[P256_K];
-   bn_word z[P256_K];
+   bn_word x[EC_MAX_K];
+   bn_word y[EC_MAX_K];
+   bn_word z[EC_MAX_K];
 };
 
 /* Curve constants, derived once from the octet strings above. */
-struct p256_ctx
+struct ec_curve
 {
-   bn_word p[P256_K];
-   bn_word n[P256_K];
-   bn_word r2p[P256_K];
-   bn_word r2n[P256_K];
-   bn_word one[P256_K];    /* R mod p */
-   bn_word b[P256_K];      /* b in Montgomery form */
-   bn_word pm2[P256_K];    /* p - 2, inversion exponent */
-   bn_word nm2[P256_K];    /* n - 2 */
-   struct p256_pt g;
-   bn_word n0p;
-   bn_word n0n;
+   bn_word p[EC_MAX_K];
+   bn_word n[EC_MAX_K];
+   bn_word r2p[EC_MAX_K];
+   bn_word r2n[EC_MAX_K];
+   bn_word one[EC_MAX_K];    /* R mod p */
+   bn_word b[EC_MAX_K];      /* b in Montgomery form */
+   bn_word pm2[EC_MAX_K];    /* p - 2, inversion exponent */
+   bn_word nm2[EC_MAX_K];    /* n - 2 */
+   struct ec_pt g;
+   bn_word  n0p;
+   bn_word  n0n;
+   const uint8_t *p_be, *n_be, *b_be, *gx_be, *gy_be;
+   unsigned k;          /* words per element */
+   unsigned bits;       /* 256 or 384 */
+   unsigned bytes;      /* 32 or 48 */
    int      ready;
 };
 
-static struct p256_ctx p256;
+static struct ec_curve ec_p256 = { {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0},
+   { {0}, {0}, {0} }, 0, 0,
+   p256_p_be, p256_n_be, p256_b_be, p256_gx_be, p256_gy_be,
+   256 / BN_WORD_BITS, 256, 32, 0 };
+static struct ec_curve ec_p384 = { {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0},
+   { {0}, {0}, {0} }, 0, 0,
+   p384_p_be, p384_n_be, p384_b_be, p384_gx_be, p384_gy_be,
+   384 / BN_WORD_BITS, 384, 48, 0 };
 
-static void p256_init(void)
+static void ec_init(struct ec_curve *cv)
 {
-   bn_word tmp[BN_MONT_TMP_WORDS(P256_K)];
-   bn_word two[P256_K];
+   bn_word tmp[BN_MONT_TMP_WORDS(EC_MAX_K)];
+   bn_word two[EC_MAX_K];
+   const unsigned k = cv->k;
 
-   if (p256.ready)
+   if (cv->ready)
       return;
 
-   bn_from_be(p256.p, P256_K, p256_p_be, 32);
-   bn_from_be(p256.n, P256_K, p256_n_be, 32);
-   p256.n0p = bn_mont_n0(p256.p);
-   p256.n0n = bn_mont_n0(p256.n);
-   bn_mont_r2(p256.r2p, p256.p, P256_K);
-   bn_mont_r2(p256.r2n, p256.n, P256_K);
+   bn_from_be(cv->p, k, cv->p_be, cv->bytes);
+   bn_from_be(cv->n, k, cv->n_be, cv->bytes);
+   cv->n0p = bn_mont_n0(cv->p);
+   cv->n0n = bn_mont_n0(cv->n);
+   bn_mont_r2(cv->r2p, cv->p, k);
+   bn_mont_r2(cv->r2n, cv->n, k);
 
-   bn_zero(two, P256_K);
+   bn_zero(two, k);
    two[0] = 1;
-   bn_mont_mul(p256.one, p256.r2p, two, p256.p, p256.n0p, P256_K, tmp);
+   bn_mont_mul(cv->one, cv->r2p, two, cv->p, cv->n0p, k, tmp);
 
    two[0] = 2;
-   bn_sub(p256.pm2, p256.p, two, P256_K);
-   bn_sub(p256.nm2, p256.n, two, P256_K);
+   bn_sub(cv->pm2, cv->p, two, k);
+   bn_sub(cv->nm2, cv->n, two, k);
 
-   bn_from_be(p256.b, P256_K, p256_b_be, 32);
-   bn_mont_mul(p256.b, p256.b, p256.r2p, p256.p, p256.n0p, P256_K, tmp);
+   bn_from_be(cv->b, k, cv->b_be, cv->bytes);
+   bn_mont_mul(cv->b, cv->b, cv->r2p, cv->p, cv->n0p, k, tmp);
 
-   bn_from_be(p256.g.x, P256_K, p256_gx_be, 32);
-   bn_from_be(p256.g.y, P256_K, p256_gy_be, 32);
-   bn_mont_mul(p256.g.x, p256.g.x, p256.r2p, p256.p, p256.n0p, P256_K, tmp);
-   bn_mont_mul(p256.g.y, p256.g.y, p256.r2p, p256.p, p256.n0p, P256_K, tmp);
-   bn_copy(p256.g.z, p256.one, P256_K);
+   bn_from_be(cv->g.x, k, cv->gx_be, cv->bytes);
+   bn_from_be(cv->g.y, k, cv->gy_be, cv->bytes);
+   bn_mont_mul(cv->g.x, cv->g.x, cv->r2p, cv->p, cv->n0p, k, tmp);
+   bn_mont_mul(cv->g.y, cv->g.y, cv->r2p, cv->p, cv->n0p, k, tmp);
+   bn_copy(cv->g.z, cv->one, k);
 
    /* Every field above is written with the same values by any thread
     * that races in here, so the flag can go last without a lock. */
-   p256.ready = 1;
+   cv->ready = 1;
 }
 
 /* Field helpers, all in the Montgomery domain. */
-static void p256_fmul(bn_word *r, const bn_word *a, const bn_word *b)
+/* The word count is a run-time field, which stops the compiler from
+ * unrolling the limb loops; P-256 is the curve on the TLS fast path,
+ * so its length is spelled as a constant on that branch and the
+ * compiler clones the Montgomery routines for it. */
+#define EC_P256_K (256 / BN_WORD_BITS)
+
+static void p256_fmul(const struct ec_curve *cv, bn_word *r,
+      const bn_word *a, const bn_word *b)
 {
-   bn_word tmp[BN_MONT_TMP_WORDS(P256_K)];
-   bn_mont_mul(r, a, b, p256.p, p256.n0p, P256_K, tmp);
+   bn_word tmp[BN_MONT_TMP_WORDS(EC_MAX_K)];
+   if (cv->k == EC_P256_K)
+      bn_mont_mul(r, a, b, cv->p, cv->n0p, EC_P256_K, tmp);
+   else
+      bn_mont_mul(r, a, b, cv->p, cv->n0p, cv->k, tmp);
 }
 
-static void p256_fsqr(bn_word *r, const bn_word *a)
+static void p256_fsqr(const struct ec_curve *cv, bn_word *r, const bn_word *a)
 {
-   bn_word tmp[BN_MONT_TMP_WORDS(P256_K)];
-   bn_mont_sqr(r, a, p256.p, p256.n0p, P256_K, tmp);
+   bn_word tmp[BN_MONT_TMP_WORDS(EC_MAX_K)];
+   if (cv->k == EC_P256_K)
+      bn_mont_sqr(r, a, cv->p, cv->n0p, EC_P256_K, tmp);
+   else
+      bn_mont_sqr(r, a, cv->p, cv->n0p, cv->k, tmp);
 }
-#define p256_fadd(r, a, b) bn_mod_add(r, a, b, p256.p, P256_K)
-#define p256_fsub(r, a, b) bn_mod_sub(r, a, b, p256.p, P256_K)
+
+static void p256_fadd(const struct ec_curve *cv, bn_word *r,
+      const bn_word *a, const bn_word *b)
+{
+   if (cv->k == EC_P256_K)
+      bn_mod_add(r, a, b, cv->p, EC_P256_K);
+   else
+      bn_mod_add(r, a, b, cv->p, cv->k);
+}
+
+static void p256_fsub(const struct ec_curve *cv, bn_word *r,
+      const bn_word *a, const bn_word *b)
+{
+   if (cv->k == EC_P256_K)
+      bn_mod_sub(r, a, b, cv->p, EC_P256_K);
+   else
+      bn_mod_sub(r, a, b, cv->p, cv->k);
+}
 
 /* r = a^e in the Montgomery domain (a is aR, so is the result). */
-static void p256_fexp(bn_word *r, const bn_word *a, const bn_word *e,
+static void p256_fexp(const struct ec_curve *cv, bn_word *r,
+      const bn_word *a, const bn_word *e,
       const bn_word *m, bn_word n0, const bn_word *one)
 {
-   bn_word acc[P256_K];
-   bn_word t[P256_K];
-   bn_word tmp[BN_MONT_TMP_WORDS(P256_K)];
+   bn_word acc[EC_MAX_K];
+   bn_word t[EC_MAX_K];
+   bn_word tmp[BN_MONT_TMP_WORDS(EC_MAX_K)];
    unsigned i;
 
-   bn_copy(acc, one, P256_K);
-   for (i = 256; i-- > 0; )
+   bn_copy(acc, one, cv->k);
+   for (i = cv->bits; i-- > 0; )
    {
-      bn_mont_sqr(t, acc, m, n0, P256_K, tmp);
+      bn_mont_sqr(t, acc, m, n0, cv->k, tmp);
       if (bn_get_bit(e, i))
-         bn_mont_mul(acc, t, a, m, n0, P256_K, tmp);
+         bn_mont_mul(acc, t, a, m, n0, cv->k, tmp);
       else
-         bn_copy(acc, t, P256_K);
+         bn_copy(acc, t, cv->k);
    }
-   bn_copy(r, acc, P256_K);
+   bn_copy(r, acc, cv->k);
 }
 
-static void p256_pt_double(struct p256_pt *r, const struct p256_pt *a)
+static void p256_pt_double(const struct ec_curve *cv, struct ec_pt *r, const struct ec_pt *a)
 {
    /* dbl-2001-b, a = -3 */
-   bn_word delta[P256_K], gamma[P256_K], beta[P256_K], alpha[P256_K], t1[P256_K], t2[P256_K];
+   bn_word delta[EC_MAX_K], gamma[EC_MAX_K], beta[EC_MAX_K], alpha[EC_MAX_K], t1[EC_MAX_K], t2[EC_MAX_K];
 
-   p256_fsqr(delta, a->z);
-   p256_fsqr(gamma, a->y);
-   p256_fmul(beta, a->x, gamma);
-   p256_fsub(t1, a->x, delta);
-   p256_fadd(t2, a->x, delta);
-   p256_fmul(alpha, t1, t2);
-   p256_fadd(t1, alpha, alpha);
-   p256_fadd(alpha, t1, alpha);             /* 3 (x - d)(x + d) */
+   p256_fsqr(cv, delta, a->z);
+   p256_fsqr(cv, gamma, a->y);
+   p256_fmul(cv, beta, a->x, gamma);
+   p256_fsub(cv, t1, a->x, delta);
+   p256_fadd(cv, t2, a->x, delta);
+   p256_fmul(cv, alpha, t1, t2);
+   p256_fadd(cv, t1, alpha, alpha);
+   p256_fadd(cv, alpha, t1, alpha);             /* 3 (x - d)(x + d) */
 
-   p256_fsqr(t1, alpha);
-   p256_fadd(t2, beta, beta);
-   p256_fadd(t2, t2, t2);
-   p256_fadd(t2, t2, t2);                   /* 8 beta */
-   p256_fsub(t1, t1, t2);                   /* x3 = alpha^2 - 8 beta */
+   p256_fsqr(cv, t1, alpha);
+   p256_fadd(cv, t2, beta, beta);
+   p256_fadd(cv, t2, t2, t2);
+   p256_fadd(cv, t2, t2, t2);                   /* 8 beta */
+   p256_fsub(cv, t1, t1, t2);                   /* x3 = alpha^2 - 8 beta */
 
-   p256_fadd(t2, a->y, a->z);
-   p256_fsqr(t2, t2);
-   p256_fsub(t2, t2, gamma);
-   p256_fsub(r->z, t2, delta);              /* z3 = (y + z)^2 - gamma - delta */
+   p256_fadd(cv, t2, a->y, a->z);
+   p256_fsqr(cv, t2, t2);
+   p256_fsub(cv, t2, t2, gamma);
+   p256_fsub(cv, r->z, t2, delta);              /* z3 = (y + z)^2 - gamma - delta */
 
-   p256_fadd(t2, beta, beta);
-   p256_fadd(t2, t2, t2);                   /* 4 beta */
-   p256_fsub(t2, t2, t1);                   /* 4 beta - x3 */
-   p256_fmul(t2, alpha, t2);
-   p256_fsqr(gamma, gamma);
-   p256_fadd(gamma, gamma, gamma);
-   p256_fadd(gamma, gamma, gamma);
-   p256_fadd(gamma, gamma, gamma);          /* 8 gamma^2 */
-   p256_fsub(r->y, t2, gamma);
-   bn_copy(r->x, t1, P256_K);
+   p256_fadd(cv, t2, beta, beta);
+   p256_fadd(cv, t2, t2, t2);                   /* 4 beta */
+   p256_fsub(cv, t2, t2, t1);                   /* 4 beta - x3 */
+   p256_fmul(cv, t2, alpha, t2);
+   p256_fsqr(cv, gamma, gamma);
+   p256_fadd(cv, gamma, gamma, gamma);
+   p256_fadd(cv, gamma, gamma, gamma);
+   p256_fadd(cv, gamma, gamma, gamma);          /* 8 gamma^2 */
+   p256_fsub(cv, r->y, t2, gamma);
+   bn_copy(r->x, t1, cv->k);
 }
 
-static void p256_pt_add(struct p256_pt *r, const struct p256_pt *a,
-      const struct p256_pt *b)
+static void p256_pt_add(const struct ec_curve *cv, struct ec_pt *r, const struct ec_pt *a,
+      const struct ec_pt *b)
 {
    /* add-2007-bl */
-   bn_word z1z1[P256_K], z2z2[P256_K], u1[P256_K], u2[P256_K], s1[P256_K], s2[P256_K], h[P256_K], rr[P256_K];
-   bn_word t[P256_K];
+   bn_word z1z1[EC_MAX_K], z2z2[EC_MAX_K], u1[EC_MAX_K], u2[EC_MAX_K], s1[EC_MAX_K], s2[EC_MAX_K], h[EC_MAX_K], rr[EC_MAX_K];
+   bn_word t[EC_MAX_K];
 
-   if (bn_is_zero(a->z, P256_K))
+   if (bn_is_zero(a->z, cv->k))
    {
       *r = *b;
       return;
    }
-   if (bn_is_zero(b->z, P256_K))
+   if (bn_is_zero(b->z, cv->k))
    {
       *r = *a;
       return;
    }
 
-   p256_fsqr(z1z1, a->z);
-   p256_fsqr(z2z2, b->z);
-   p256_fmul(u1, a->x, z2z2);
-   p256_fmul(u2, b->x, z1z1);
-   p256_fmul(s1, a->y, b->z);
-   p256_fmul(s1, s1, z2z2);
-   p256_fmul(s2, b->y, a->z);
-   p256_fmul(s2, s2, z1z1);
-   p256_fsub(h, u2, u1);
-   p256_fsub(rr, s2, s1);
+   p256_fsqr(cv, z1z1, a->z);
+   p256_fsqr(cv, z2z2, b->z);
+   p256_fmul(cv, u1, a->x, z2z2);
+   p256_fmul(cv, u2, b->x, z1z1);
+   p256_fmul(cv, s1, a->y, b->z);
+   p256_fmul(cv, s1, s1, z2z2);
+   p256_fmul(cv, s2, b->y, a->z);
+   p256_fmul(cv, s2, s2, z1z1);
+   p256_fsub(cv, h, u2, u1);
+   p256_fsub(cv, rr, s2, s1);
 
-   if (bn_is_zero(h, P256_K))
+   if (bn_is_zero(h, cv->k))
    {
-      if (bn_is_zero(rr, P256_K))
-         p256_pt_double(r, a);
+      if (bn_is_zero(rr, cv->k))
+         p256_pt_double(cv, r, a);
       else
       {
-         bn_zero(r->x, P256_K);
-         bn_zero(r->y, P256_K);
-         bn_zero(r->z, P256_K);
+         bn_zero(r->x, cv->k);
+         bn_zero(r->y, cv->k);
+         bn_zero(r->z, cv->k);
       }
       return;
    }
 
-   p256_fadd(rr, rr, rr);                   /* r = 2 (s2 - s1) */
-   p256_fadd(t, h, h);
-   p256_fsqr(t, t);                         /* i = (2h)^2 */
-   p256_fmul(u2, h, t);                     /* j = h i */
-   p256_fmul(u1, u1, t);                    /* v = u1 i */
+   p256_fadd(cv, rr, rr, rr);                   /* r = 2 (s2 - s1) */
+   p256_fadd(cv, t, h, h);
+   p256_fsqr(cv, t, t);                         /* i = (2h)^2 */
+   p256_fmul(cv, u2, h, t);                     /* j = h i */
+   p256_fmul(cv, u1, u1, t);                    /* v = u1 i */
 
-   p256_fsqr(t, rr);
-   p256_fsub(t, t, u2);
-   p256_fsub(t, t, u1);
-   p256_fsub(t, t, u1);                     /* x3 = r^2 - j - 2v */
+   p256_fsqr(cv, t, rr);
+   p256_fsub(cv, t, t, u2);
+   p256_fsub(cv, t, t, u1);
+   p256_fsub(cv, t, t, u1);                     /* x3 = r^2 - j - 2v */
 
-   p256_fsub(u1, u1, t);                    /* v - x3 */
-   p256_fmul(u1, rr, u1);
-   p256_fmul(s1, s1, u2);
-   p256_fadd(s1, s1, s1);                   /* 2 s1 j */
-   p256_fsub(r->y, u1, s1);
+   p256_fsub(cv, u1, u1, t);                    /* v - x3 */
+   p256_fmul(cv, u1, rr, u1);
+   p256_fmul(cv, s1, s1, u2);
+   p256_fadd(cv, s1, s1, s1);                   /* 2 s1 j */
+   p256_fsub(cv, r->y, u1, s1);
 
-   p256_fadd(s2, a->z, b->z);
-   p256_fsqr(s2, s2);
-   p256_fsub(s2, s2, z1z1);
-   p256_fsub(s2, s2, z2z2);
-   p256_fmul(r->z, s2, h);
-   bn_copy(r->x, t, P256_K);
+   p256_fadd(cv, s2, a->z, b->z);
+   p256_fsqr(cv, s2, s2);
+   p256_fsub(cv, s2, s2, z1z1);
+   p256_fsub(cv, s2, s2, z2z2);
+   p256_fmul(cv, r->z, s2, h);
+   bn_copy(r->x, t, cv->k);
 }
 
-static void p256_pt_select(struct p256_pt *r, bn_word bit,
-      const struct p256_pt *a, const struct p256_pt *b)
+static void p256_pt_select(const struct ec_curve *cv, struct ec_pt *r, bn_word bit,
+      const struct ec_pt *a, const struct ec_pt *b)
 {
-   bn_select(r->x, bit, a->x, b->x, P256_K);
-   bn_select(r->y, bit, a->y, b->y, P256_K);
-   bn_select(r->z, bit, a->z, b->z, P256_K);
+   bn_select(r->x, bit, a->x, b->x, cv->k);
+   bn_select(r->y, bit, a->y, b->y, cv->k);
+   bn_select(r->z, bit, a->z, b->z, cv->k);
 }
 
 /* r = k * a. Double-and-always-add with a select, so the sequence of
  * field operations does not depend on the scalar; what still does is
  * the infinity test inside p256_pt_add for the leading zero bits. */
-static void p256_pt_mul(struct p256_pt *r, const bn_word *k,
-      const struct p256_pt *a)
+static void p256_pt_mul(const struct ec_curve *cv, struct ec_pt *r, const bn_word *k,
+      const struct ec_pt *a)
 {
-   struct p256_pt acc, t;
+   struct ec_pt acc, t;
    unsigned i;
 
-   bn_zero(acc.x, P256_K);
-   bn_zero(acc.y, P256_K);
-   bn_zero(acc.z, P256_K);
+   bn_zero(acc.x, cv->k);
+   bn_zero(acc.y, cv->k);
+   bn_zero(acc.z, cv->k);
 
-   for (i = 256; i-- > 0; )
+   for (i = cv->bits; i-- > 0; )
    {
-      p256_pt_double(&acc, &acc);
-      p256_pt_add(&t, &acc, a);
-      p256_pt_select(&acc, bn_get_bit(k, i), &t, &acc);
+      p256_pt_double(cv, &acc, &acc);
+      p256_pt_add(cv, &t, &acc, a);
+      p256_pt_select(cv, &acc, bn_get_bit(k, i), &t, &acc);
    }
    *r = acc;
 }
 
 /* Affine x, y (plain domain) from Jacobian. Returns -1 at infinity. */
-static int p256_pt_affine(bn_word *x, bn_word *y, const struct p256_pt *a)
+static int p256_pt_affine(const struct ec_curve *cv, bn_word *x, bn_word *y, const struct ec_pt *a)
 {
-   bn_word zi[P256_K], zi2[P256_K], one[P256_K];
-   bn_word tmp[BN_MONT_TMP_WORDS(P256_K)];
+   bn_word zi[EC_MAX_K], zi2[EC_MAX_K], one[EC_MAX_K];
+   bn_word tmp[BN_MONT_TMP_WORDS(EC_MAX_K)];
 
-   if (bn_is_zero(a->z, P256_K))
+   if (bn_is_zero(a->z, cv->k))
       return -1;
 
-   p256_fexp(zi, a->z, p256.pm2, p256.p, p256.n0p, p256.one);
-   p256_fsqr(zi2, zi);
-   p256_fmul(x, a->x, zi2);
+   p256_fexp(cv, zi, a->z, cv->pm2, cv->p, cv->n0p, cv->one);
+   p256_fsqr(cv, zi2, zi);
+   p256_fmul(cv, x, a->x, zi2);
    if (y)
    {
-      p256_fmul(zi, zi, zi2);
-      p256_fmul(y, a->y, zi);
+      p256_fmul(cv, zi, zi, zi2);
+      p256_fmul(cv, y, a->y, zi);
    }
 
    /* Out of the Montgomery domain. */
-   bn_zero(one, P256_K);
+   bn_zero(one, cv->k);
    one[0] = 1;
-   bn_mont_mul(x, x, one, p256.p, p256.n0p, P256_K, tmp);
+   bn_mont_mul(x, x, one, cv->p, cv->n0p, cv->k, tmp);
    if (y)
-      bn_mont_mul(y, y, one, p256.p, p256.n0p, P256_K, tmp);
+      bn_mont_mul(y, y, one, cv->p, cv->n0p, cv->k, tmp);
    return 0;
 }
 
 /* Parse 0x04 || X || Y, check both coordinates < p and the curve
  * equation y^2 = x^3 - 3x + b. */
-static int p256_pt_load(struct p256_pt *r, const uint8_t *pub)
+static int p256_pt_load(const struct ec_curve *cv, struct ec_pt *r, const uint8_t *pub)
 {
-   bn_word tmp[BN_MONT_TMP_WORDS(P256_K)];
-   bn_word lhs[P256_K], rhs[P256_K], t[P256_K];
+   bn_word tmp[BN_MONT_TMP_WORDS(EC_MAX_K)];
+   bn_word lhs[EC_MAX_K], rhs[EC_MAX_K], t[EC_MAX_K];
 
    if (pub[0] != 0x04)
       return -1;
 
-   bn_from_be(r->x, P256_K, pub + 1, 32);
-   bn_from_be(r->y, P256_K, pub + 33, 32);
-   if (bn_cmp(r->x, p256.p, P256_K) >= 0 || bn_cmp(r->y, p256.p, P256_K) >= 0)
+   bn_from_be(r->x, cv->k, pub + 1, cv->bytes);
+   bn_from_be(r->y, cv->k, pub + 1 + cv->bytes, cv->bytes);
+   if (bn_cmp(r->x, cv->p, cv->k) >= 0 || bn_cmp(r->y, cv->p, cv->k) >= 0)
       return -1;
 
-   bn_mont_mul(r->x, r->x, p256.r2p, p256.p, p256.n0p, P256_K, tmp);
-   bn_mont_mul(r->y, r->y, p256.r2p, p256.p, p256.n0p, P256_K, tmp);
-   bn_copy(r->z, p256.one, P256_K);
+   bn_mont_mul(r->x, r->x, cv->r2p, cv->p, cv->n0p, cv->k, tmp);
+   bn_mont_mul(r->y, r->y, cv->r2p, cv->p, cv->n0p, cv->k, tmp);
+   bn_copy(r->z, cv->one, cv->k);
 
-   p256_fsqr(lhs, r->y);
-   p256_fsqr(rhs, r->x);
-   p256_fmul(rhs, rhs, r->x);
-   p256_fadd(t, r->x, r->x);
-   p256_fadd(t, t, r->x);
-   p256_fsub(rhs, rhs, t);
-   p256_fadd(rhs, rhs, p256.b);
-   return bn_cmp(lhs, rhs, P256_K) == 0 ? 0 : -1;
+   p256_fsqr(cv, lhs, r->y);
+   p256_fsqr(cv, rhs, r->x);
+   p256_fmul(cv, rhs, rhs, r->x);
+   p256_fadd(cv, t, r->x, r->x);
+   p256_fadd(cv, t, t, r->x);
+   p256_fsub(cv, rhs, rhs, t);
+   p256_fadd(cv, rhs, rhs, cv->b);
+   return bn_cmp(lhs, rhs, cv->k) == 0 ? 0 : -1;
 }
 
-static int p256_scalar_load(bn_word *k, const uint8_t *s)
+static int p256_scalar_load(const struct ec_curve *cv, bn_word *k, const uint8_t *s)
 {
-   bn_from_be(k, P256_K, s, 32);
-   if (bn_is_zero(k, P256_K) || bn_cmp(k, p256.n, P256_K) >= 0)
+   bn_from_be(k, cv->k, s, cv->bytes);
+   if (bn_is_zero(k, cv->k) || bn_cmp(k, cv->n, cv->k) >= 0)
       return -1;
    return 0;
 }
 
-int p256_keygen(const uint8_t *priv, uint8_t *pub)
+static int ec_keygen(const struct ec_curve *cv, const uint8_t *priv, uint8_t *pub)
 {
-   bn_word k[P256_K], x[P256_K], y[P256_K];
-   struct p256_pt q;
+   bn_word k[EC_MAX_K], x[EC_MAX_K], y[EC_MAX_K];
+   struct ec_pt q;
    int ret;
 
-   p256_init();
-   if (p256_scalar_load(k, priv) != 0)
+   if (p256_scalar_load(cv, k, priv) != 0)
       return -1;
-   p256_pt_mul(&q, k, &p256.g);
-   ret = p256_pt_affine(x, y, &q);
+   p256_pt_mul(cv, &q, k, &cv->g);
+   ret = p256_pt_affine(cv, x, y, &q);
    crypto_memzero(k, sizeof(k));
    crypto_memzero(&q, sizeof(q));
    if (ret != 0)
       return -1;
    pub[0] = 0x04;
-   bn_to_be(pub + 1, 32, x, P256_K);
-   bn_to_be(pub + 33, 32, y, P256_K);
+   bn_to_be(pub + 1, cv->bytes, x, cv->k);
+   bn_to_be(pub + 1 + cv->bytes, cv->bytes, y, cv->k);
    return 0;
 }
 
-int p256_ecdh(const uint8_t *priv, const uint8_t *peer, uint8_t *shared)
+static int ec_ecdh(const struct ec_curve *cv, const uint8_t *priv, const uint8_t *peer, uint8_t *shared)
 {
-   bn_word k[P256_K], x[P256_K];
-   struct p256_pt q;
+   bn_word k[EC_MAX_K], x[EC_MAX_K];
+   struct ec_pt q;
    int ret;
 
-   p256_init();
-   if (p256_scalar_load(k, priv) != 0 || p256_pt_load(&q, peer) != 0)
+   if (p256_scalar_load(cv, k, priv) != 0 || p256_pt_load(cv, &q, peer) != 0)
       return -1;
-   p256_pt_mul(&q, k, &q);
-   ret = p256_pt_affine(x, NULL, &q);
+   p256_pt_mul(cv, &q, k, &q);
+   ret = p256_pt_affine(cv, x, NULL, &q);
    crypto_memzero(k, sizeof(k));
    crypto_memzero(&q, sizeof(q));
    if (ret != 0)
       return -1;
-   bn_to_be(shared, 32, x, P256_K);
+   bn_to_be(shared, cv->bytes, x, cv->k);
    crypto_memzero(x, sizeof(x));
    return 0;
+}
+
+static int ec_ecdsa_verify(const struct ec_curve *cv, const uint8_t *pub,
+      const uint8_t *digest, size_t digest_len,
+      const uint8_t *r, const uint8_t *s)
+{
+   bn_word rr[EC_MAX_K], ss[EC_MAX_K], e[EC_MAX_K], w[EC_MAX_K], u1[EC_MAX_K], u2[EC_MAX_K], x[EC_MAX_K];
+   bn_word tmp[BN_MONT_TMP_WORDS(EC_MAX_K)];
+   bn_word one[EC_MAX_K];
+   struct ec_pt q, a, b;
+
+   if (p256_pt_load(cv, &q, pub) != 0)
+      return -1;
+   if (p256_scalar_load(cv, rr, r) != 0 || p256_scalar_load(cv, ss, s) != 0)
+      return -1;
+
+   /* e = leftmost 256 bits of the digest, reduced once. */
+   bn_from_be(e, cv->k, digest, digest_len > cv->bytes ? cv->bytes : digest_len);
+   if (bn_cmp(e, cv->n, cv->k) >= 0)
+      bn_sub(e, e, cv->n, cv->k);
+
+   /* w = s^-1 mod n: s^(n-2) in the Montgomery domain of n, then
+    * back out, so the multiplies below run in the plain domain. */
+   bn_mont_mul(w, ss, cv->r2n, cv->n, cv->n0n, cv->k, tmp);
+   bn_zero(one, cv->k);
+   one[0] = 1;
+   bn_mont_mul(x, cv->r2n, one, cv->n, cv->n0n, cv->k, tmp);  /* R mod n */
+   p256_fexp(cv, w, w, cv->nm2, cv->n, cv->n0n, x);
+   bn_mont_mul(w, w, one, cv->n, cv->n0n, cv->k, tmp);
+
+   bn_mod_mul(u1, e,  w, cv->n, cv->r2n, cv->n0n, cv->k, tmp);
+   bn_mod_mul(u2, rr, w, cv->n, cv->r2n, cv->n0n, cv->k, tmp);
+
+   p256_pt_mul(cv, &a, u1, &cv->g);
+   p256_pt_mul(cv, &b, u2, &q);
+   p256_pt_add(cv, &a, &a, &b);
+   if (p256_pt_affine(cv, x, NULL, &a) != 0)
+      return -1;
+   if (bn_cmp(x, cv->n, cv->k) >= 0)
+      bn_sub(x, x, cv->n, cv->k);
+   return bn_cmp(x, rr, cv->k) == 0 ? 0 : -1;
+}
+
+
+int p256_keygen(const uint8_t *priv, uint8_t *pub)
+{
+   ec_init(&ec_p256);
+   return ec_keygen(&ec_p256, priv, pub);
+}
+
+int p256_ecdh(const uint8_t *priv, const uint8_t *peer, uint8_t *shared)
+{
+   ec_init(&ec_p256);
+   return ec_ecdh(&ec_p256, priv, peer, shared);
 }
 
 int p256_ecdsa_verify(const uint8_t *pub,
       const uint8_t *digest, size_t digest_len,
       const uint8_t *r, const uint8_t *s)
 {
-   bn_word rr[P256_K], ss[P256_K], e[P256_K], w[P256_K], u1[P256_K], u2[P256_K], x[P256_K];
-   bn_word tmp[BN_MONT_TMP_WORDS(P256_K)];
-   bn_word one[P256_K];
-   struct p256_pt q, a, b;
-
-   p256_init();
-   if (p256_pt_load(&q, pub) != 0)
-      return -1;
-   if (p256_scalar_load(rr, r) != 0 || p256_scalar_load(ss, s) != 0)
-      return -1;
-
-   /* e = leftmost 256 bits of the digest, reduced once. */
-   bn_from_be(e, P256_K, digest, digest_len > 32 ? 32 : digest_len);
-   if (bn_cmp(e, p256.n, P256_K) >= 0)
-      bn_sub(e, e, p256.n, P256_K);
-
-   /* w = s^-1 mod n: s^(n-2) in the Montgomery domain of n, then
-    * back out, so the multiplies below run in the plain domain. */
-   bn_mont_mul(w, ss, p256.r2n, p256.n, p256.n0n, P256_K, tmp);
-   bn_zero(one, P256_K);
-   one[0] = 1;
-   bn_mont_mul(x, p256.r2n, one, p256.n, p256.n0n, P256_K, tmp);  /* R mod n */
-   p256_fexp(w, w, p256.nm2, p256.n, p256.n0n, x);
-   bn_mont_mul(w, w, one, p256.n, p256.n0n, P256_K, tmp);
-
-   bn_mod_mul(u1, e,  w, p256.n, p256.r2n, p256.n0n, P256_K, tmp);
-   bn_mod_mul(u2, rr, w, p256.n, p256.r2n, p256.n0n, P256_K, tmp);
-
-   p256_pt_mul(&a, u1, &p256.g);
-   p256_pt_mul(&b, u2, &q);
-   p256_pt_add(&a, &a, &b);
-   if (p256_pt_affine(x, NULL, &a) != 0)
-      return -1;
-   if (bn_cmp(x, p256.n, P256_K) >= 0)
-      bn_sub(x, x, p256.n, P256_K);
-   return bn_cmp(x, rr, P256_K) == 0 ? 0 : -1;
+   ec_init(&ec_p256);
+   return ec_ecdsa_verify(&ec_p256, pub, digest, digest_len, r, s);
 }
 
+int p384_keygen(const uint8_t *priv, uint8_t *pub)
+{
+   ec_init(&ec_p384);
+   return ec_keygen(&ec_p384, priv, pub);
+}
+
+int p384_ecdh(const uint8_t *priv, const uint8_t *peer, uint8_t *shared)
+{
+   ec_init(&ec_p384);
+   return ec_ecdh(&ec_p384, priv, peer, shared);
+}
+
+int p384_ecdsa_verify(const uint8_t *pub,
+      const uint8_t *digest, size_t digest_len,
+      const uint8_t *r, const uint8_t *s)
+{
+   ec_init(&ec_p384);
+   return ec_ecdsa_verify(&ec_p384, pub, digest, digest_len, r, s);
+}

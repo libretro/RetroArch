@@ -33,14 +33,15 @@ RETRO_BEGIN_DECLS
 
 /* X.509 for a TLS client: parse a DER certificate, load the PEM trust
  * bundle, and verify a server chain against it. Keys are RSA (up to
- * 4096 bits) and P-256; signatures are RSA PKCS#1 v1.5 and ECDSA over
+ * 4096 bits), P-256 and P-384; signatures are RSA PKCS#1 v1.5 and ECDSA over
  * SHA-256/384/512. Names are compared as DER octet strings. */
 
 enum x509_key_type
 {
    X509_KEY_NONE = 0,
    X509_KEY_RSA,
-   X509_KEY_P256
+   X509_KEY_P256,
+   X509_KEY_P384
 };
 
 enum x509_sig_alg
@@ -67,7 +68,7 @@ struct x509_cert
    const uint8_t *rsa_e;      size_t rsa_e_len;
    const uint8_t *san;        size_t san_len;    /* SubjectAltName value */
    const uint8_t *cn;         size_t cn_len;     /* subject commonName */
-   const uint8_t *ec_point;                      /* 65 octets */
+   const uint8_t *ec_point;                      /* 65 or 97 octets */
    time_t not_before;
    time_t not_after;
    enum x509_key_type key_type;

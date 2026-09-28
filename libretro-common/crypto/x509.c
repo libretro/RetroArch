@@ -132,6 +132,7 @@ static const uint8_t oid_rsa_sha384[]     = {0x2a,0x86,0x48,0x86,0xf7,0x0d,0x01,
 static const uint8_t oid_rsa_sha512[]     = {0x2a,0x86,0x48,0x86,0xf7,0x0d,0x01,0x01,0x0d};
 static const uint8_t oid_ec_pub[]         = {0x2a,0x86,0x48,0xce,0x3d,0x02,0x01};
 static const uint8_t oid_p256[]           = {0x2a,0x86,0x48,0xce,0x3d,0x03,0x01,0x07};
+static const uint8_t oid_p384[]           = {0x2b,0x81,0x04,0x00,0x22};
 static const uint8_t oid_ecdsa_sha256[]   = {0x2a,0x86,0x48,0xce,0x3d,0x04,0x03,0x02};
 static const uint8_t oid_ecdsa_sha384[]   = {0x2a,0x86,0x48,0xce,0x3d,0x04,0x03,0x03};
 static const uint8_t oid_ecdsa_sha512[]   = {0x2a,0x86,0x48,0xce,0x3d,0x04,0x03,0x04};
@@ -280,6 +281,11 @@ static int x509_parse_spki(struct x509_cert *c, struct der *d)
       {
          c->ec_point = v;
          c->key_type = X509_KEY_P256;
+      }
+      else if (OID_EQ(curve, curve_len, oid_p384) && vl == 97 && v[0] == 0x04)
+      {
+         c->ec_point = v;
+         c->key_type = X509_KEY_P384;
       }
    }
    return 0;
@@ -547,22 +553,28 @@ int x509_verify_signature(const struct x509_cert *c,
          /* ECDSA-Sig-Value ::= SEQUENCE { r INTEGER, s INTEGER } */
          struct der d, sv;
          const uint8_t *r, *s;
-         size_t rl, sl;
-         uint8_t r32[32], s32[32];
-         if (issuer->key_type != X509_KEY_P256)
+         size_t rl, sl, n;
+         uint8_t rb[48], sb[48];
+         if (issuer->key_type == X509_KEY_P256)
+            n = 32;
+         else if (issuer->key_type == X509_KEY_P384)
+            n = 48;
+         else
             return -1;
          d.p   = c->sig;
          d.end = c->sig + c->sig_len;
          if (der_enter(&d, DER_SEQUENCE, &sv) != 0
                || der_read_uint(&sv, &r, &rl) != 0
                || der_read_uint(&sv, &s, &sl) != 0
-               || rl > 32 || sl > 32)
+               || rl > n || sl > n)
             return -1;
-         memset(r32, 0, 32);
-         memset(s32, 0, 32);
-         memcpy(r32 + 32 - rl, r, rl);
-         memcpy(s32 + 32 - sl, s, sl);
-         return p256_ecdsa_verify(issuer->ec_point, digest, dlen, r32, s32);
+         memset(rb, 0, n);
+         memset(sb, 0, n);
+         memcpy(rb + n - rl, r, rl);
+         memcpy(sb + n - sl, s, sl);
+         if (n == 32)
+            return p256_ecdsa_verify(issuer->ec_point, digest, dlen, rb, sb);
+         return p384_ecdsa_verify(issuer->ec_point, digest, dlen, rb, sb);
       }
       default:
          break;

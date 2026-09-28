@@ -174,6 +174,17 @@ int p256_ecdsa_verify(const uint8_t *pub,
       const uint8_t *digest, size_t digest_len,
       const uint8_t *r, const uint8_t *s);
 
+/* NIST P-384 (secp384r1), the same operations on 48-octet scalars and
+ * 97-octet points. Needed for the CA roots that carry P-384 keys. */
+#define P384_SCALAR_SIZE 48
+#define P384_POINT_SIZE  97
+
+int p384_keygen(const uint8_t *priv, uint8_t *pub);
+int p384_ecdh(const uint8_t *priv, const uint8_t *peer, uint8_t *shared);
+int p384_ecdsa_verify(const uint8_t *pub,
+      const uint8_t *digest, size_t digest_len,
+      const uint8_t *r, const uint8_t *s);
+
 RETRO_END_DECLS
 
 #endif

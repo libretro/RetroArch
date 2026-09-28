@@ -574,6 +574,32 @@ START_TEST (test_p256)
 }
 END_TEST
 
+START_TEST (test_p384)
+{
+   uint8_t pub[97], shared[48], bad[97], sig[48];
+
+   ck_assert_int_eq(p384_keygen(ecdh384_a_priv, pub), 0);
+   ck_assert(memcmp(pub, ecdh384_a_pub, 97) == 0);
+   ck_assert_int_eq(p384_ecdh(ecdh384_a_priv, ecdh384_b_pub, shared), 0);
+   ck_assert(memcmp(shared, ecdh384_shared, 48) == 0);
+   memcpy(bad, ecdh384_b_pub, 97);
+   bad[50] ^= 1;
+   ck_assert_int_eq(p384_ecdh(ecdh384_a_priv, bad, shared), -1);
+
+   ck_assert_int_eq(p384_ecdsa_verify(ecdsa384_pub, ecdsa384_digest, 48,
+         ecdsa384_r, ecdsa384_s), 0);
+   memcpy(sig, ecdsa384_s, 48);
+   sig[47] ^= 1;
+   ck_assert_int_eq(p384_ecdsa_verify(ecdsa384_pub, ecdsa384_digest, 48,
+         ecdsa384_r, sig), -1);
+   ck_assert_int_eq(p384_ecdsa_verify(ecdsa384_pub, ecdsa_sha256_digest, 32,
+         ecdsa384_r, ecdsa384_s), -1);
+   /* the P-256 vectors still hold after the curve-generic rewrite */
+   ck_assert_int_eq(p256_ecdsa_verify(ecdsa_pub, ecdsa_sha256_digest, 32,
+         ecdsa_sha256_r, ecdsa_sha256_s), 0);
+}
+END_TEST
+
 START_TEST (test_x509)
 {
    struct x509_cert c, r, in;
@@ -648,7 +674,7 @@ START_TEST (test_x509)
    /* the shipped bundle: every anchor with an RSA or P-256 key parses */
    {
       int n = x509_trust_load_pem(cacert_pem, sizeof(cacert_pem));
-      ck_assert(n > 80);
+      ck_assert_int_eq(n, 155);   /* every certificate in the bundle */
       ck_assert_int_eq(x509_trust_load_pem(cacert_pem, sizeof(cacert_pem)), n);
       ck_assert_int_eq(x509_verify_chain(chain, lens, 3, "example.com", X509_TEST_NOW, info, sizeof(info)), -1);
    }
@@ -674,6 +700,7 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_bn);
    tcase_add_test(tc_core, test_rsa);
    tcase_add_test(tc_core, test_p256);
+   tcase_add_test(tc_core, test_p384);
    tcase_add_test(tc_core, test_x509);
    suite_add_tcase(s, tc_core);
    return s;
