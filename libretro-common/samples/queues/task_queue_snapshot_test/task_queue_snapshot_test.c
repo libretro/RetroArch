@@ -18,6 +18,51 @@ static void *snapshot_malloc(size_t size)
 #include "../../../queues/task_queue.c"
 #undef malloc
 
+static unsigned regular_updates;
+static void regular_progress_push(retro_task_t *task, const char *msg,
+      unsigned prio, unsigned duration, bool flush)
+{
+   (void)prio;
+   (void)duration;
+   (void)flush;
+   regular_updates++;
+   assert(msg && *msg);
+   assert(task_get_progress(task) == (int8_t)(regular_updates * 25));
+   assert(((task_get_flags(task) & RETRO_TASK_FLG_FINISHED) != 0)
+         == (regular_updates == 3));
+}
+
+static void regular_progress_handler(retro_task_t *task)
+{
+   int8_t progress = task_get_progress(task) + 25;
+   task_set_progress(task, progress);
+   if (progress == 75)
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void test_regular_progress(void)
+{
+   retro_task_t *task;
+   unsigned i;
+   task_queue_init(false, regular_progress_push);
+   task = task_init();
+   assert(task);
+   task->title = strdup("regular progress");
+   assert(task->title);
+   task->progress = 0;
+   task->handler = regular_progress_handler;
+   regular_updates = 0;
+   task_queue_push(task);
+   for (i = 1; i <= 3; i++)
+   {
+      task_queue_check();
+      assert(regular_updates == i);
+   }
+   task_queue_check();
+   assert(regular_updates == 3);
+   task_queue_deinit();
+}
+
 static unsigned completion_updates;
 static void completion_push(retro_task_t *task, const char *msg,
       unsigned prio, unsigned duration, bool flush)
@@ -190,6 +235,7 @@ int main(void)
    assert(strcmp(snapshot.title, "unthreaded") == 0);
    free_snapshot(&snapshot);
    task_queue_deinit();
+   test_regular_progress();
    test_suppressed_completion(false);
    test_suppressed_completion(true);
    puts("task progress snapshot tests passed");

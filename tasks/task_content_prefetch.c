@@ -105,8 +105,8 @@ static void content_prefetch_update_progress(retro_task_t *task,
 
    /* On the threaded queue this runs on the worker; delivery there
     * is content_prefetch_task_progress' job, on the pumping thread.
-    * The regular queue's handler IS the pump, and the queue only
-    * fires progress callbacks at retirement - deliver directly. */
+    * The regular queue's handler IS the pump, so deliver directly;
+    * reported suppresses the queue's duplicate progress callback. */
    if (st->progress_cb && !task_queue_is_threaded())
    {
       st->reported = pct;
