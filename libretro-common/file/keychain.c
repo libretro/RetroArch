@@ -37,12 +37,16 @@
 #include <windows.h>
 #elif defined(__APPLE__)
 #include <TargetConditionals.h>
-#include <AvailabilityMacros.h>
-#if !TARGET_OS_IPHONE && defined(MAC_OS_X_VERSION_10_5) \
-   && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5
+#if !TARGET_OS_IPHONE
+/* gethostuuid() has been in libSystem since 10.5 but the SDKs the
+ * PowerPC and early Intel jobs build against do not declare it, and
+ * a 10.4 libSystem does not have it at all; resolve it at run time
+ * so neither the header nor the link line has to know. */
 #define KEYCHAIN_HAVE_GETHOSTUUID 1
-#include <unistd.h>
+#include <dlfcn.h>
 #include <sys/time.h>
+struct timespec;
+typedef int (*keychain_gethostuuid_t)(unsigned char *, const struct timespec *);
 #endif
 #endif
 
@@ -88,12 +92,15 @@ static size_t keychain_machine_id(char *s, size_t len)
    }
 #elif defined(KEYCHAIN_HAVE_GETHOSTUUID)
    {
-      /* IOPlatformUUID without linking IOKit. */
+      /* IOPlatformUUID without linking IOKit. A host without the
+       * symbol falls through to the key-file-only key. */
       unsigned char  uuid[16];
       struct timespec wait;
+      keychain_gethostuuid_t fn =
+         (keychain_gethostuuid_t)dlsym(RTLD_DEFAULT, "gethostuuid");
       wait.tv_sec  = 0;
       wait.tv_nsec = 0;
-      if (gethostuuid(uuid, &wait) == 0)
+      if (fn && fn(uuid, &wait) == 0)
       {
          unsigned i;
          for (i = 0; i < 16 && 2 * i + 3 <= len; i++)
