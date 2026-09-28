@@ -217,6 +217,13 @@ struct ssl_state
    uint8_t  tx_encrypted;
    uint8_t  handshake_done;
    uint8_t  closed;
+   /* Handshake flights are corked: the client's records go out in one
+    * write, since sending ClientKeyExchange, ChangeCipherSpec and
+    * Finished as three small writes trips Nagle against the server's
+    * delayed ACK and costs a 40 ms stall per full handshake. */
+   uint8_t *cork;
+   size_t   cork_len;
+   uint8_t  corked;
    uint8_t  resumed;        /* this connection resumed a session */
    uint8_t  expect_ticket;  /* server said it will send a NewSessionTicket */
    uint8_t  offered_sid[32];
@@ -335,6 +342,30 @@ static size_t tls_transcript(const struct ssl_state *s, uint8_t *out)
 
 /* Sends one record of @type carrying @len octets of @data, encrypting
  * once the client write keys are in force. */
+#define TLS_CORK_MAX 1024
+
+static void tls_cork(struct ssl_state *s)
+{
+   s->corked   = 1;
+   s->cork_len = 0;
+}
+
+/* Sends what was corked in one write. */
+static int tls_uncork(struct ssl_state *s)
+{
+   int ok = 1;
+   s->corked = 0;
+   if (s->cork_len)
+      ok = socket_send_all_blocking(s->fd, s->cork, s->cork_len, true);
+   s->cork_len = 0;
+   if (!ok)
+   {
+      s->last_err = TLS_ERR_SOCKET;
+      return -1;
+   }
+   return 0;
+}
+
 static int tls_send_record(struct ssl_state *s, uint8_t type,
       const uint8_t *data, size_t len)
 {
@@ -405,6 +436,15 @@ static int tls_send_record(struct ssl_state *s, uint8_t type,
       s->cseq++;
    }
 
+   if (s->corked)
+   {
+      if (s->cork_len + rec_len > TLS_CORK_MAX)
+         goto fail;
+      memcpy(s->cork + s->cork_len, rec, rec_len);
+      s->cork_len += rec_len;
+      free(rec);
+      return 0;
+   }
    ok = socket_send_all_blocking(s->fd, rec, rec_len, true);
    free(rec);
    if (!ok)
@@ -1140,10 +1180,12 @@ static int tls_handshake(struct ssl_state *s)
       s->rx_encrypted = 1;
       s->sseq         = 0;
       if (tls_recv_finished(s) != 0)                    return -1;
+      tls_cork(s);
       if (tls_send_record(s, TLS_CT_CCS, &ccs, 1) != 0) return -1;
       s->tx_encrypted = 1;
       s->cseq         = 0;
       if (tls_send_finished(s) != 0)                    return -1;
+      if (tls_uncork(s) != 0)                           return -1;
       tls_cache_store(s);
       s->handshake_done = 1;
       s->hs_len = s->hs_off = 0;
@@ -1153,6 +1195,7 @@ static int tls_handshake(struct ssl_state *s)
    if (tls_recv_certificate(s, &leaf) != 0)             return -1;
    if (tls_recv_server_kex(s, &leaf, peer, &peer_len) != 0) return -1;
    if (tls_recv_server_done(s) != 0)                    return -1;
+   tls_cork(s);
    if (tls_send_client_kex(s, peer, peer_len) != 0)     return -1;
    tls_derive_keys(s);
 
@@ -1160,6 +1203,7 @@ static int tls_handshake(struct ssl_state *s)
    s->tx_encrypted = 1;
    s->cseq         = 0;
    if (tls_send_finished(s) != 0)                       return -1;
+   if (tls_uncork(s) != 0)                              return -1;
 
    /* NewSessionTicket when announced, then the server's
     * ChangeCipherSpec and its Finished under the new keys. */
@@ -1199,8 +1243,10 @@ void* ssl_socket_init(int fd, const char *domain)
    s->rx     = (uint8_t*)malloc(TLS_RX_SIZE);
    s->hs     = (uint8_t*)malloc(TLS_HS_MAX);
    s->pt     = (uint8_t*)malloc(TLS_REC_MAX);
-   if (!s->rx || !s->hs || !s->pt)
+   s->cork   = (uint8_t*)malloc(TLS_CORK_MAX);
+   if (!s->rx || !s->hs || !s->pt || !s->cork)
    {
+      free(s->cork);
       free(s->rx);
       free(s->hs);
       free(s->pt);
@@ -1378,6 +1424,7 @@ void ssl_socket_free(void *state_data)
    free(s->rx);
    free(s->hs);
    free(s->pt);
+   free(s->cork);
    free(s);
 }
 
