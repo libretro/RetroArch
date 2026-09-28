@@ -185,8 +185,7 @@ static void msg_widget_msg_transition_animation_done(void *userdata)
 
    if (msg->msg_new)
    {
-      msg->msg     = strdup(msg->msg_new);
-      free(msg->msg_new);
+      msg->msg     = msg->msg_new;
       msg->msg_new = NULL;
    }
 
@@ -314,7 +313,7 @@ static void gfx_widgets_msg_measure(dispgfx_widget_t *p_dispwidget,
 
 static void gfx_widgets_msg_queue_push_state(
       retro_task_t *task,
-      const task_progress_snapshot_t *snapshot,
+      task_progress_snapshot_t *snapshot,
       const char *msg,
       size_t len,
       unsigned duration,
@@ -446,20 +445,22 @@ static void gfx_widgets_msg_queue_push_state(
 
          if (task)
          {
+            char **text = (snapshot->error && *snapshot->error)
+               ? &snapshot->error : &snapshot->title;
             msg_widget->flags                  |= DISPWIDG_FLAG_TASK;
 
             if (snapshot->error && *snapshot->error)
-            {
                msg_widget->flags               |= DISPWIDG_FLAG_TASK_ERROR;
-               len                              = strlen(snapshot->error);
-               msg_title = msg_widget->msg      = strdup(snapshot->error);
-            }
-            else
+
+            msg_widget->msg_new                 = strdup(*text);
+            if (!msg_widget->msg_new)
             {
-               len                              = strlen(snapshot->title);
-               msg_title = msg_widget->msg      = strdup(snapshot->title);
+               free(msg_widget);
+               return;
             }
-            msg_widget->msg_new                 = strdup(msg_title);
+            msg_title = msg_widget->msg         = *text;
+            *text                              = NULL;
+            len                                = strlen(msg_title);
             msg_widget->msg_len                 = len;
 
             if ((snapshot->flags & RETRO_TASK_FLG_CANCELLED) != 0)
@@ -578,7 +579,8 @@ static void gfx_widgets_msg_queue_push_state(
                msg_widget->msg_new                 = NULL;
             }
 
-            new_title   = msg_widget->msg_new      = strdup(snapshot->title);
+            new_title   = msg_widget->msg_new      = snapshot->title;
+            snapshot->title                       = NULL;
 
             _len        = strlen(new_title);
             new_width   = font_driver_get_message_width(
