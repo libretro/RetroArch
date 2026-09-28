@@ -612,6 +612,7 @@ static const struct
    char s_beaf53f1[19];
    char s_c3fd1e84[20];
    char s_0f2da3af[19];
+   char s_a89a965a[6];
    char s_f4875576[35];
    char s_6a07da9c[19];
    char s_df3def90[35];
@@ -2194,6 +2195,10 @@ static const struct
    char s_db01e988[6];
    char s_e1c715da[5];
    char s_9a981aa0[6];
+   char s_b4d6cb93[34];
+   char s_ee1c318a[23];
+   char s_32b51618[23];
+   char s_a2906bd3[24];
    char s_e2f93e68[9];
    char s_47d26662[12];
    char s_0ca3b319[9];
@@ -2284,6 +2289,7 @@ static const struct
    char s_cf6bc52a[25];
    char s_05c5a263[20];
    char s_ed22c5f1[24];
+   char s_32c41d0e[33];
    char s_49f9815b[27];
    char s_ddc4f021[25];
    char s_ddc6b80f[26];
@@ -3599,6 +3605,7 @@ static const struct
    char s_ffd591e0[50];
    char s_a51ab538[35];
    char s_55d6cc44[47];
+   char s_5a8f7fb9[245];
    char s_f2963d2d[30];
    char s_4c592ae1[123];
    char s_52ac4fb9[116];
@@ -3610,6 +3617,7 @@ static const struct
    char s_f77f7a41[73];
 #endif
    char s_e7cb5685[48];
+   char s_bd82a701[432];
    char s_8bb367a2[149];
    char s_2beab583[42];
    char s_a1c071eb[89];
@@ -3663,6 +3671,8 @@ static const struct
    char s_e4aa2e10[71];
    char s_b853a798[92];
    char s_d60aa85f[62];
+   char s_38a84d3c_0[500];
+   char s_38a84d3c_1[41];
    char s_2d09f049[30];
    char s_e670cb8f[53];
    char s_e672937d[140];
@@ -5207,6 +5217,7 @@ static const struct
    "Frecuencia m\303\241xima",
    "Regulador de men\303\272s",
    "Frecuencia m\303\255nima",
+   "hilos",
    "Crear lista de reproducci\303\263n nueva",
    "SwitchRes para CRT",
    "Utilizar men\303\272 en alta resoluci\303\263n",
@@ -6800,6 +6811,10 @@ static const struct
    "a\303\261os",
    "a\303\261o",
    "Ritmo",
+   "Verificaci\303\263n de certificados TLS",
+   "Desactivada (insegura)",
+   "Opcional (solo avisar)",
+   "Requerida (recomendada)",
    "Activado",
    "Medio ciclo",
    "Cl\303\241sico",
@@ -6891,6 +6906,7 @@ static const struct
    "Activar filtro de v\303\255deo",
    "Filtro antiparpadeo",
    "Quitar filtro de v\303\255deo",
+   "Hilos para los filtros de v\303\255deo",
    "Notificaciones en pantalla",
    "Fuente de notificaciones",
    "Tama\303\261o de notificaciones",
@@ -8899,6 +8915,10 @@ static const struct
    "Muestra informaci\303\263n espec\303\255fica del dispositivo.",
    "Captura una imagen de la pantalla.",
    "Ejecuta otras tareas en un hilo independiente.",
+   "Mantiene los hilos principal, de v\303\255deo, de audio y de tareas en los n\303\272cleos m\303"
+   "\241s r\303\241pidos de la CPU cuando esta sea un procesador de n\303\272cleos mixtos. No afecta"
+   "r\303\241 a aquellos procesadores cuyos n\303\272cleos sean id\303\251nticos. Es necesario reini"
+   "ciar.",
    "Tipo de miniaturas a mostrar.",
    "En este directorio se guardar\303\241n las car\303\241tulas, capturas de pantalla de ejemplo y m"
    "iniaturas de las pantallas de t\303\255tulo.",
@@ -8915,6 +8935,12 @@ static const struct
    "Selecciona tu zona horaria para ajustar la fecha y hora a tu ubicaci\303\263n.",
 #endif
    "Muestra la hora actual en el formato preferido.",
+   "Controla la verificaci\303\263n de los certificados de servidor en conexiones seguras (a trav"
+   "\303\251s de HTTPS) para la sincronizaci\303\263n en la nube, los RetroAchievements y el actuali"
+   "zador en l\303\255nea. Requerida rechazar\303\241 los certificados que no sean de confianza y te"
+   " proteger\303\241 de ataques \"man-in-the-middle\". Solo deber\303\255as los requisitos de esta "
+   "opci\303\263n si te conectas a trav\303\251s de un proxy empresarial o a un host autofirmado de "
+   "confianza.",
    "Selecciona el controlador de la interfaz asistente de escritorio que se utilizar\303\241 cuando "
    "se active el men\303\272 de escritorio (es necesario reiniciar).",
    "Muestra la barra del men\303\272 en la ventana.",
@@ -9009,6 +9035,14 @@ static const struct
    "Aplica el filtro de v\303\255deo. Es posible que el controlador de v\303\255deo no respete este "
    "ajuste.",
    "Descarga cualquier filtro de v\303\255deo por CPU que est\303\251 activo.",
+   "Establece el n\303\272mero de hilos en los que puede ejecutarse un filtro de v\303\255deo de la "
+   "CPU. El valor autom\303\241tico aprovechar\303\241 los n\303\272cleos que queden una vez los hil"
+   "os de emulaci\303\263n, v\303\255deo, audio y tareas se hayan asignado los suyos, con un m\303"
+   "\241ximo de 8, o menos en el caso de los filtros m\303\241s ligeros que se ejecutan m\303\241s l"
+   "entos cuando se distribuyen por demasiados hilos. Los filtros m\303\241s cargantes, como NTSC, s"
+   "on los que salen mejor parados al asignar m\303\241s hilos. Los filtros que se est\303\251n ejec"
+   "utan",
+   "do detectar\303\241n el cambio inmediatamente.",
    "Muestra mensajes en pantalla.",
    "Selecciona la fuente de letra de las notificaciones.",
    "Especifica el tama\303\261o de la fuente en puntos. Cuando se utilicen los widgets, este valor s"
@@ -9929,7 +9963,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (228900u
+      (sizeof(msg_hash_es_blob) == (230261u
 #ifdef ANDROID
        + 329u
 #endif
@@ -10948,6 +10982,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_MAX_FREQ,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
@@ -12529,6 +12564,10 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_REQUIRED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TRUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
@@ -12619,6 +12658,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
@@ -13927,6 +13967,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
@@ -13938,6 +13979,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_TIMEZONE,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_TIME_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_TLS_VERIFY_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_UI_COMPANION_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
@@ -13991,6 +14033,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,

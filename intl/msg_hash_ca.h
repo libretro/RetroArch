@@ -606,6 +606,7 @@ static const struct
    char s_beaf53f1[21];
    char s_c3fd1e84[21];
    char s_0f2da3af[21];
+   char s_a89a965a[5];
    char s_f4875576[37];
    char s_6a07da9c[29];
    char s_df3def90[36];
@@ -2165,6 +2166,10 @@ static const struct
    char s_db01e988[5];
    char s_e1c715da[4];
    char s_9a981aa0[17];
+   char s_b4d6cb93[31];
+   char s_ee1c318a[21];
+   char s_32b51618[26];
+   char s_a2906bd3[22];
    char s_e2f93e68[5];
    char s_47d26662[10];
    char s_0ca3b319[9];
@@ -2254,6 +2259,7 @@ static const struct
    char s_cf6bc52a[27];
    char s_05c5a263[21];
    char s_ed22c5f1[28];
+   char s_32c41d0e[40];
    char s_49f9815b[25];
    char s_ddc4f021[37];
    char s_ddc6b80f[26];
@@ -3566,6 +3572,7 @@ static const struct
    char s_ffd591e0[50];
    char s_a51ab538[35];
    char s_55d6cc44[34];
+   char s_5a8f7fb9[206];
    char s_f2963d2d[38];
    char s_4c592ae1[101];
    char s_52ac4fb9[120];
@@ -3577,6 +3584,7 @@ static const struct
    char s_f77f7a41[83];
 #endif
    char s_e7cb5685[46];
+   char s_bd82a701[366];
    char s_8bb367a2[116];
    char s_2beab583[42];
    char s_a1c071eb[86];
@@ -3630,6 +3638,8 @@ static const struct
    char s_e4aa2e10[65];
    char s_b853a798[101];
    char s_d60aa85f[50];
+   char s_38a84d3c_0[500];
+   char s_38a84d3c_1[18];
    char s_2d09f049[30];
    char s_e670cb8f[65];
    char s_e672937d[137];
@@ -5157,6 +5167,7 @@ static const struct
    "M\303\240xima freq\303\274\303\250ncia",
    "Governador del men\303\272",
    "M\303\255nima freq\303\274\303\250ncia",
+   "fils",
    "Crea una nova llista de reproducci\303\263",
    "SwitchRes per a monitors CRT",
    "Utilitza el men\303\272 d'alta resoluci\303\263",
@@ -6729,6 +6740,10 @@ static const struct
    "anys",
    "any",
    "Temporalitzaci\303\263",
+   "Verificaci\303\263 del certficat TLS",
+   "Desactivat (insegur)",
+   "Opcional (Nom\303\251s l'av\303\255s)",
+   "Necessari (Recomanat)",
    "Cert",
    "Mig cicle",
    "Cl\303\240ssic",
@@ -6820,6 +6835,7 @@ static const struct
    "Activa el filtre de v\303\255deo",
    "Filtre de parpelleig",
    "Elimina el filtre de v\303\255deo",
+   "Fils d'execuci\303\263 dels filtres de v\303\255deo",
    "Notificacions en pantall",
    "Tipus de lletra de les notificacions",
    "Mida de les notificacions",
@@ -8779,6 +8795,9 @@ static const struct
    "Mostra la informaci\303\263 espec\303\255fica del dispositiu.",
    "Captura una imatge de la pantalla.",
    "Executa tasques en un fil a part.",
+   "Mant\303\251 els fils principals de v\303\255deo, \303\240udio i tasques en els nuclis m\303\251"
+   "s r\303\240pids del processador. No t\303\251 efecte en els processadors que tinguin tots els nu"
+   "clis iguals. Cal reiniciar perqu\303\250 tingui efecte.",
    "Tipus de miniatures que es mostrar\303\240.",
    "Les miniatures de l\342\200\231art de les capses, captures i pantalla de t\303\255tol es desen e"
    "n aquest directori.",
@@ -8796,6 +8815,11 @@ static const struct
    "\303\263.",
 #endif
    "Mostra el temps actual en el format preferit.",
+   "Controla com es comprova el certificat en connexions segures (HTTPS) que es fan servir per Cloud"
+   " Sync, RetroAchievements i l'actualitzador en l\303\255nia. L'opci\303\263 'Necessari' rebutja c"
+   "ertificats que no siguin fiables i protegeix contra atacs man-in-the-middle. Rebaixa aquesta opc"
+   "i\303\263 nom\303\251s si et connectes a trav\303\251s d'un proxy o b\303\251 en un amfitri\303"
+   "\263 en el qual confies.",
    "Selecciona el controlador d'escriptori que es far\303\240 servir quan el men\303\272 d'escriptor"
    "i estigui actiu (Cal reiniciar)",
    "Mostra la barra del men\303\272 de la finestra.",
@@ -8889,6 +8913,14 @@ static const struct
    "Aplica el filtre de v\303\255deo: \303\211s una petici\303\263 que el controlador de v\303\255de"
    "o no t\303\251 per qu\303\250 respectar.",
    "Elimina qualsevol filtre de v\303\255deo per CPU actiu.",
+   "Determina en quants fils d'execuci\303\263 pot funcionar un filtre de v\303\255deo de la CPU. L'"
+   "opci\303\263 \302\253Autom\303\240tic\302\273 utilitza els nuclis que queden lliures un cop assi"
+   "gnats els corresponents als fils d'emulaci\303\263, v\303\255deo, \303\240udio i tasques (amb un"
+   " m\303\240xim de 8), i en fa servir menys per als filtres lleugers que funcionen m\303\251s lent"
+   "ament si es reparteixen entre massa nuclis. Els filtres intensius, com ara l'NTSC, s\303\263n el"
+   "s que m\303\251s es beneficien d'un nombre elevat de fils. Un filtre en funcionament aplica el c"
+   "an",
+   "vi immediatament.",
    "Mostra missatges en pantalla.",
    "Selecciona el tipus de lletra per les notificacions en pantalla.",
    "Especifica la mida de la tipografia en punts. Si es fan servir els widgets, la mida nom\303\251s"
@@ -9798,7 +9830,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (219112u
+      (sizeof(msg_hash_ca_blob) == (220347u
 #ifdef ANDROID
        + 281u
 #endif
@@ -10811,6 +10843,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_MAX_FREQ,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
@@ -12369,6 +12402,10 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_REQUIRED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TRUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
@@ -12458,6 +12495,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
@@ -13764,6 +13802,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
@@ -13775,6 +13814,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_TIMEZONE,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_TIME_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_TLS_VERIFY_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_UI_COMPANION_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
@@ -13828,6 +13868,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,

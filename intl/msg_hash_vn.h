@@ -3643,6 +3643,7 @@ static const struct
    char s_ffd591e0[45];
    char s_a51ab538[43];
    char s_55d6cc44[57];
+   char s_5a8f7fb9[282];
    char s_f2963d2d[42];
    char s_4c592ae1[121];
    char s_52ac4fb9[136];
@@ -3709,6 +3710,8 @@ static const struct
    char s_e4aa2e10[70];
    char s_b853a798[136];
    char s_d60aa85f[83];
+   char s_38a84d3c_0[499];
+   char s_38a84d3c_1[82];
    char s_2d09f049[43];
    char s_e670cb8f[54];
    char s_e672937d[171];
@@ -11282,6 +11285,13 @@ static const struct
    "Ch\341\273\245p m\341\273\231t h\303\254nh \341\272\243nh c\341\273\247a m\303\240n h\303\254nh.",
    "Th\341\273\261c hi\341\273\207n c\303\241c t\303\241c v\341\273\245 tr\303\252n m\341\273\231t l"
    "u\341\273\223ng ri\303\252ng.",
+   "Gi\341\273\257 c\303\241c lu\341\273\223ng ch\303\255nh, h\303\254nh \341\272\243nh, \303\242m t"
+   "hanh v\303\240 t\303\241c v\341\273\245 tr\303\252n nh\341\273\257ng l\303\265i CPU nhanh nh\341"
+   "\272\245t c\341\273\247a b\341\273\231 x\341\273\255 l\303\275 c\303\263 c\303\241c lo\341\272"
+   "\241i l\303\265i kh\303\241c nhau. Kh\303\264ng c\303\263 t\303\241c d\341\273\245ng tr\303\252n"
+   " c\303\241c b\341\273\231 x\341\273\255 l\303\275 c\303\263 c\303\241c l\303\265i gi\341\273\221"
+   "ng h\341\273\207t nhau. C\303\263 hi\341\273\207u l\341\273\261c sau khi kh\341\273\237i \304"
+   "\221\341\273\231ng l\341\272\241i.",
    "Lo\341\272\241i h\303\254nh thu nh\341\273\217 s\341\272\275 hi\341\273\203n th\341\273\213.",
    "H\303\254nh b\303\254a game, \341\272\243nh ch\341\273\245p m\303\240n h\303\254nh v\303\240 h"
    "\303\254nh thu nh\341\273\217 m\303\240n h\303\254nh ti\303\252u \304\221\341\273\201 \304\221"
@@ -11486,6 +11496,21 @@ static const struct
    "\207n theo.",
    "G\341\273\241 b\341\273\217 b\341\272\245t k\341\273\263 b\341\273\231 l\341\273\215c video n"
    "\303\240o \304\221ang ho\341\272\241t \304\221\341\273\231ng do CPU cung c\341\272\245p.",
+   "C\303\263 th\341\273\203 ch\341\272\241y b\341\273\231 l\341\273\215c h\303\254nh \341\272\243nh"
+   " b\341\272\261ng bao nhi\303\252u lu\341\273\223ng x\341\273\255 l\303\275 c\341\273\247a CPU. "
+   "\342\200\234T\341\273\261 \304\221\341\273\231ng\342\200\235 s\341\272\275 s\341\273\255 d\341"
+   "\273\245ng c\303\241c l\303\265i CPU c\303\262n tr\341\273\221ng sau khi c\303\241c lu\341\273"
+   "\223ng gi\341\272\243 l\341\272\255p, h\303\254nh \341\272\243nh, \303\242m thanh v\303\240 t"
+   "\303\241c v\341\273\245 \304\221\303\243 \304\221\306\260\341\273\243c ph\303\242n b\341\273\225"
+   ", t\341\273\221i \304\221a 8 lu\341\273\223ng; v\341\273\233i c\303\241c b\341\273\231 l\341\273"
+   "\215c nh\341\272\271, s\341\273\221 lu\341\273\223ng s\341\272\275 \303\255t h\306\241n v\303"
+   "\254 ch\341\272\241y tr\303\252n qu\303\241 nhi\341\273\201u lu\341\273\223ng c\303\263 th\341"
+   "\273\203 l\303\240m ch\341\272\255m t\341\273\221c \304\221\341\273\231 x\341\273\255 l\303\275."
+   " C\303\241c b\341\273\231 l\341\273\215c n\341\272\267ng nh\306\260 NTSC s\341\272\275 h\306\260"
+   "\341\273\237ng l\341\273\243i nhi\341\273\201u nh\341\272\245t khi s\341\273\255 d\341\273\245ng"
+   " nhi\341\273\201u lu",
+   "\341\273\223ng h\306\241n. B\341\273\231 l\341\273\215c \304\221ang ch\341\272\241y s\341\272"
+   "\275 \303\241p d\341\273\245ng thay \304\221\341\273\225i ngay l\341\272\255p t\341\273\251c.",
    "Hi\341\273\203n th\341\273\213 th\303\264ng b\303\241o tr\303\252n m\303\240n h\303\254nh.",
    "Ch\341\273\215n ph\303\264ng ch\341\273\257 cho th\303\264ng b\303\241o tr\303\252n m\303\240n h"
    "\303\254nh.",
@@ -13011,7 +13036,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (253337u
+      (sizeof(msg_hash_vn_blob) == (254200u
 #ifdef ANDROID
        + 373u
 #endif
@@ -17040,6 +17065,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
@@ -17105,6 +17131,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,

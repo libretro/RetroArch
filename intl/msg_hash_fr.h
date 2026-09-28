@@ -3597,6 +3597,7 @@ static const struct
    char s_ffd591e0[50];
    char s_a51ab538[32];
    char s_55d6cc44[55];
+   char s_5a8f7fb9[259];
    char s_f2963d2d[32];
    char s_4c592ae1[114];
    char s_52ac4fb9[135];
@@ -3662,6 +3663,8 @@ static const struct
    char s_e4aa2e10[79];
    char s_b853a798[107];
    char s_d60aa85f[62];
+   char s_38a84d3c_0[500];
+   char s_38a84d3c_1[100];
    char s_2d09f049[34];
    char s_e670cb8f[60];
    char s_e672937d[155];
@@ -9029,6 +9032,10 @@ static const struct
    "Voir les informations sp\303\251cifiques \303\240 l'appareil.",
    "Capturer une image de l'\303\251cran.",
    "Effectue des t\303\242ches sur un fil d'ex\303\251cution distinct.",
+   "Maintenir le fil d'ex\303\251cution principal, vid\303\251o, audio et de t\303\242ches sur les c"
+   "\305\223urs de processeur les plus rapides d'un processeur \303\240 architecture hybride. N'a au"
+   "cun effet sur les processeurs dont tous les c\305\223urs sont identiques. Prend effet au red\303"
+   "\251marrage.",
    "Type de miniatures \303\240 afficher.",
    "Les images de pochettes, de capture d'\303\251cran et de miniatures d'\303\251cran de titre sont"
    " conserv\303\251es dans ce dossier.",
@@ -9149,6 +9156,15 @@ static const struct
    "Applique le filtre vid\303\251o. C'est une requ\303\252te qui n'est pas n\303\251cessairement ho"
    "nor\303\251e par le pilote vid\303\251o.",
    "D\303\251charge tout filtre vid\303\251o produit par le processeur actif.",
+   "D\303\251finit le nombre de fils d'ex\303\251cution qu'un filtre vid\303\251o produit par le pro"
+   "cesseur peut utiliser. 'Automatique' utilise les c\305\223urs restants une fois que les fils d'e"
+   "x\303\251cution d'\303\251mulation, vid\303\251o, audio et de t\303\242ches ont \303\251t\303"
+   "\251 servis, jusqu'\303\240 8 c\305\223urs au maximum, ou moins pour les filtres l\303\251gers d"
+   "ont les performances diminuent lorsqu'ils sont r\303\251partis sur trop de c\305\223urs. Les fil"
+   "tres exigeants comme le filtre NTSC sont ceux qui tirent le meilleur parti d'un nombre de fils d"
+   "'ex\303\251cution plus ",
+   "\303\251lev\303\251. Toute modification est prise en compte imm\303\251diatement par un filtre e"
+   "n cours d'ex\303\251cution.",
    "Affiche les messages \303\240 l'\303\251cran.",
    "S\303\251lectionner la police pour les notifications \303\240 l'\303\251cran.",
    "Sp\303\251cifie la taille de la police en points. Lorsque des widgets sont utilis\303\251s, cett"
@@ -10104,7 +10120,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (237854u
+      (sizeof(msg_hash_fr_blob) == (238713u
 #ifdef ANDROID
        + 373u
 #endif
@@ -14087,6 +14103,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
@@ -14152,6 +14169,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,

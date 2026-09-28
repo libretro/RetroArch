@@ -616,6 +616,7 @@ static const struct
    char s_beaf53f1[18];
    char s_c3fd1e84[24];
    char s_0f2da3af[19];
+   char s_a89a965a[13];
    char s_f4875576[26];
    char s_6a07da9c[21];
    char s_df3def90[33];
@@ -2206,6 +2207,10 @@ static const struct
    char s_db01e988[8];
    char s_e1c715da[7];
    char s_9a981aa0[5];
+   char s_b4d6cb93[21];
+   char s_ee1c318a[29];
+   char s_32b51618[27];
+   char s_a2906bd3[20];
    char s_e2f93e68[6];
    char s_47d26662[16];
    char s_0ca3b319[12];
@@ -2296,6 +2301,7 @@ static const struct
    char s_cf6bc52a[29];
    char s_05c5a263[19];
    char s_ed22c5f1[20];
+   char s_32c41d0e[28];
    char s_49f9815b[26];
    char s_ddc4f021[12];
    char s_ddc6b80f[17];
@@ -3613,6 +3619,7 @@ static const struct
    char s_ffd591e0[62];
    char s_a51ab538[29];
    char s_55d6cc44[42];
+   char s_5a8f7fb9[253];
    char s_f2963d2d[36];
    char s_4c592ae1[114];
    char s_52ac4fb9[121];
@@ -3624,6 +3631,7 @@ static const struct
    char s_f77f7a41[87];
 #endif
    char s_e7cb5685[55];
+   char s_bd82a701[461];
    char s_8bb367a2[127];
    char s_2beab583[44];
    char s_a1c071eb[97];
@@ -3677,6 +3685,7 @@ static const struct
    char s_e4aa2e10[66];
    char s_b853a798[84];
    char s_d60aa85f[67];
+   char s_38a84d3c[475];
    char s_2d09f049[47];
    char s_e670cb8f[57];
    char s_e672937d[173];
@@ -5319,6 +5328,7 @@ static const struct
    "Minic\303\255ocht Uasta",
    "Gobharn\303\263ir Roghchl\303\241ir",
    "Minic\303\255ocht \303\215osta",
+   "sn\303\241itheanna",
    "Cruthaigh Seinmliosta Nua",
    "Athr\303\272 Athraithe CRT",
    "\303\232s\303\241id an Roghchl\303\241r Ardtaifigh",
@@ -6934,6 +6944,10 @@ static const struct
    "blianta",
    "bliain",
    "Am\303\272",
+   "F\303\255or\303\272 Teastais TLS",
+   "D\303\255chumasaithe (Neamhshl\303\241n)",
+   "Roghnach (Rabhadh Amh\303\241in)",
+   "Riachtanach (Molta)",
    "F\303\255or",
    "Leaththr\303\251imhse",
    "Clasaiceach",
@@ -7026,6 +7040,7 @@ static const struct
    "Cumasaigh Scagaire F\303\255se\303\241in",
    "Scagaire caocha\303\255l",
    "Bain Scagaire F\303\255se",
+   "Sn\303\241itheanna Scagaire F\303\255se",
    "F\303\263gra\303\255 ar an Sc\303\241ile\303\241n",
    "Cl\303\263 F\303\263gra",
    "M\303\251id an Fh\303\263gra",
@@ -9328,6 +9343,10 @@ static const struct
    "F\303\251ach ar fhaisn\303\251is a bhaineann go sonrach leis an bhfeiste.",
    "Gabh \303\255omh\303\241 den sc\303\241ile\303\241n.",
    "D\303\251an tascanna ar shn\303\241ithe ar leithligh.",
+   "Coinnigh na pr\303\255omhshn\303\241itheanna, f\303\255se, fuaime agus tascanna ar chro\303\255l"
+   "eac\303\241in LAP is tap\303\272la pr\303\263ise\303\241la\303\255 cro\303\255-mheasctha. N\303"
+   "\255l aon \303\251ifeacht aige ar phr\303\263ise\303\241laithe a bhfuil a gcro\303\255leac\303"
+   "\241in go l\303\251ir mar a ch\303\251ile. Tagann s\303\251 i bhfeidhm ar atos\303\272.",
    "Cine\303\241l mionsamhail le taispe\303\241int.",
    "St\303\263r\303\241iltear eala\303\255n bosca, mionsamhlacha sc\303\241ile\303\241in, agus mions"
    "amhlacha teidil sc\303\241ile\303\241in sa chomhadlann seo.",
@@ -9345,6 +9364,13 @@ static const struct
    "hu\303\255omh.",
 #endif
    "Taispe\303\241in an t-am reatha san fhorm\303\241id is fearr leat.",
+   "Riala\303\255onn s\303\251 an chaoi a nd\303\251antar deimhnithe freastala\303\255 a sheice\303"
+   "\241il ar na naisc shl\303\241vacha (HTTPS) a \303\272s\303\241ideann Cloud Sync, RetroAchieveme"
+   "nts agus an t-uasd\303\241taitheoir ar l\303\255ne. Di\303\272lta\303\255onn an socr\303\272 'Ri"
+   "achtanach' do theastais neamhiontaofa agus cosna\303\255onn s\303\251 i gcoinne ionsaithe 'fear "
+   "sa l\303\241r'. N\303\241 laghdaigh an socr\303\272 seo ach amh\303\241in m\303\241 t\303\241 t"
+   "\303\272 ag nascadh tr\303\255 sheachfhreastala\303\255 corpar\303\241ideach n\303\263 le h\303"
+   "\263stach f\303\251ins\303\255nithe a bhfuil muin\303\255n agat as.",
    "Tiom\303\241na\303\255 Chomh\303\251adain Chomh\303\251adain Deisce le h\303\272s\303\241id nuai"
    "r a bh\303\255onn an Roghchl\303\241r Deisce cumasaithe. (Atos\303\272 ag teast\303\241il)",
    "Taispe\303\241in barra roghchl\303\241ir na fuinneoige.",
@@ -9455,6 +9481,13 @@ static const struct
    "Cuir Scagaire F\303\255se i bhFeidhm. Leid nach g\303\241 don tiom\303\241na\303\255 f\303\255se"
    " a chomhl\303\255onadh.",
    "D\303\255luchtaigh aon scagaire f\303\255se gn\303\255omhach faoi thiom\303\241int ag LAP.",
+   "C\303\251 mh\303\251ad sn\303\241ithe ar f\303\251idir le scagaire f\303\255se LAP rith orthu. "
+   "\303\232s\303\241ideann 'Uathoibr\303\255och' na cro\303\255leac\303\241in at\303\241 f\303\241g"
+   "tha tar \303\251is do na sn\303\241itheanna aithrise, f\303\255se, fuaime agus tascanna a gcuid "
+   "f\303\251in a bheith acu, 8 gcro\303\255 ar a mh\303\251ad, agus n\303\255os l\303\272 i gc\303"
+   "\241s scagair\303\255 \303\251adroma a ritheann n\303\255os moille nuair a scaiptear amach iad. "
+   "Baineann scagair\303\255 troma, ar n\303\263s NTSC, an leas is m\303\263 as tuilleadh sn\303\241"
+   "itheanna. Braitear an t-athr\303\272 l\303\241ithreach ag scagaire at\303\241 ag rith.",
    "Taispe\303\241in teachtaireachta\303\255 ar an sc\303\241ile\303\241n.",
    "Roghnaigh an cl\303\263 le haghaidh f\303\263gra\303\255 ar an sc\303\241ile\303\241n.",
    "Sonraigh m\303\251id an chl\303\263 i bpoint\303\255. Nuair a \303\272s\303\241idtear giuirl\303"
@@ -10464,7 +10497,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (223230u
+      (sizeof(msg_hash_ga_blob) == (224557u
 #ifdef ANDROID
        + 390u
 #endif
@@ -11484,6 +11517,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_MAX_FREQ,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
@@ -13073,6 +13107,10 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_REQUIRED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TRUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
@@ -13163,6 +13201,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
@@ -14474,6 +14513,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
@@ -14485,6 +14525,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_TIMEZONE,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_TIME_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_TLS_VERIFY_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_UI_COMPANION_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
@@ -14538,6 +14579,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
