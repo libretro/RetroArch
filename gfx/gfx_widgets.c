@@ -1527,10 +1527,6 @@ static void gfx_widgets_draw_task_msg(
    {
       if (msg->flags & DISPWIDG_FLAG_TASK_ERROR)
          _len = strlcpy(task_percentage, msg_hash_to_str(MSG_ERROR), sizeof(task_percentage));
-
-      /* Not finished yet really */
-      if (msg->task_progress > 0 && msg->task_progress < 100)
-         msg->flags &= ~DISPWIDG_FLAG_TASK_FINISHED;
    }
    else if (msg->task_progress >= 0 && msg->task_progress <= 100)
       _len = snprintf(task_percentage, sizeof(task_percentage),

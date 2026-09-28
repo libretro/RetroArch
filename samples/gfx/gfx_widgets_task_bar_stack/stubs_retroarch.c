@@ -63,6 +63,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <compat/strl.h>
 #include <boolean.h>
 #include <features/features_cpu.h>
 
