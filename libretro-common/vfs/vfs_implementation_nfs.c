@@ -32,6 +32,38 @@
 #include <vfs/vfs_implementation.h>
 #include "vfs_implementation_nfs.h"
 
+/* One lock over the whole backend: the contexts below are not safe to
+ * share between threads, and the VFS is entered from several (content
+ * loading, cloud sync, thumbnails). Calls to one server serialise;
+ * they are network-bound anyway. Published once with a CAS so two
+ * first callers cannot each install their own. */
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#include <retro_atomic.h>
+static retro_atomic_ptr_t nfs_lock_ptr;
+static slock_t *nfs_lock_get(void)
+{
+   slock_t *l = (slock_t*)retro_atomic_load_acquire_ptr(&nfs_lock_ptr);
+   if (!l)
+   {
+      slock_t *fresh = slock_new();
+      if (retro_atomic_cas_ptr(&nfs_lock_ptr, NULL, fresh))
+         l = fresh;
+      else
+      {
+         slock_free(fresh);
+         l = (slock_t*)retro_atomic_load_acquire_ptr(&nfs_lock_ptr);
+      }
+   }
+   return l;
+}
+#define NFS_LOCK()   slock_lock(nfs_lock_get())
+#define NFS_UNLOCK() slock_unlock(nfs_lock_get())
+#else
+#define NFS_LOCK()   do { } while (0)
+#define NFS_UNLOCK() do { } while (0)
+#endif
+
 #define NFS_PREFIX "nfs://"
 
 /* One connection per pool slot; a stream or directory keeps the slot
@@ -100,9 +132,11 @@ static bool nfs_resolve(const char *url, char *server, size_t server_len,
    return true;
 }
 
-bool nfs_init_cfg(const struct nfs_settings *new_cfg)
+static void nfs_shutdown_impl(void);
+
+static bool nfs_init_cfg_impl(const struct nfs_settings *new_cfg)
 {
-   nfs_shutdown();
+   nfs_shutdown_impl();
    nfs_cfg = new_cfg;
    nfs_pool_len = (new_cfg && new_cfg->num_contexts) ? new_cfg->num_contexts : RETRO_NFS_DEFAULT_NUM_CONTEXTS;
    if (nfs_pool_len > 16)
@@ -115,7 +149,7 @@ bool nfs_init_cfg(const struct nfs_settings *new_cfg)
    return true;
 }
 
-void nfs_shutdown(void)
+static void nfs_shutdown_impl(void)
 {
    unsigned i;
    for (i = 0; i < nfs_pool_len; i++)
@@ -257,7 +291,7 @@ static void nfs_release(struct nfs_slot *s)
       s->users--;
 }
 
-bool nfs_probe_connection(void)
+static bool nfs_probe_connection_impl(void)
 {
    char server[256], export_path[512], path[8];
    char url[800];
@@ -280,7 +314,7 @@ bool nfs_probe_connection(void)
 
 /* ---- files -------------------------------------------------------- */
 
-bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
+static bool retro_vfs_file_open_nfs_impl(libretro_vfs_implementation_file *stream,
       const char *path, unsigned mode, unsigned hints)
 {
    char server[256], export_path[512], rel[PATH_MAX_LENGTH];
@@ -324,7 +358,7 @@ bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
    return true;
 }
 
-int64_t retro_vfs_file_read_nfs(libretro_vfs_implementation_file *stream,
+static int64_t retro_vfs_file_read_nfs_impl(libretro_vfs_implementation_file *stream,
       void *buf, uint64_t len)
 {
    struct nfs_slot *s = (struct nfs_slot*)stream->nfs_ctx;
@@ -334,7 +368,7 @@ int64_t retro_vfs_file_read_nfs(libretro_vfs_implementation_file *stream,
    return rnfs_read(s->ctx, f, buf, (size_t)len);
 }
 
-int64_t retro_vfs_file_write_nfs(libretro_vfs_implementation_file *stream,
+static int64_t retro_vfs_file_write_nfs_impl(libretro_vfs_implementation_file *stream,
       const void *buf, uint64_t len)
 {
    struct nfs_slot *s = (struct nfs_slot*)stream->nfs_ctx;
@@ -344,7 +378,7 @@ int64_t retro_vfs_file_write_nfs(libretro_vfs_implementation_file *stream,
    return rnfs_write(s->ctx, f, buf, (size_t)len);
 }
 
-int64_t retro_vfs_file_seek_nfs(libretro_vfs_implementation_file *stream,
+static int64_t retro_vfs_file_seek_nfs_impl(libretro_vfs_implementation_file *stream,
       int64_t offset, int whence)
 {
    struct nfs_slot *s = (struct nfs_slot*)stream->nfs_ctx;
@@ -369,7 +403,7 @@ int64_t retro_vfs_file_tell_nfs(libretro_vfs_implementation_file *stream)
    return f ? rnfs_tell(f) : -1;
 }
 
-int retro_vfs_file_close_nfs(libretro_vfs_implementation_file *stream)
+static int retro_vfs_file_close_nfs_impl(libretro_vfs_implementation_file *stream)
 {
    struct nfs_slot *s = (struct nfs_slot*)stream->nfs_ctx;
    struct rnfs_file *f = (struct rnfs_file*)stream->nfs_fh;
@@ -387,7 +421,7 @@ int retro_vfs_file_error_nfs(libretro_vfs_implementation_file *stream)
    return 0;
 }
 
-int retro_vfs_stat_nfs(const char *path, int64_t *size)
+static int retro_vfs_stat_nfs_impl(const char *path, int64_t *size)
 {
    char server[256], export_path[512], rel[PATH_MAX_LENGTH];
    struct nfs_slot *s;
@@ -409,7 +443,7 @@ int retro_vfs_stat_nfs(const char *path, int64_t *size)
 
 /* ---- directories -------------------------------------------------- */
 
-nfs_dir_handle *retro_vfs_opendir_nfs(const char *path, bool include_hidden)
+static nfs_dir_handle *retro_vfs_opendir_nfs_impl(const char *path, bool include_hidden)
 {
    char server[256], export_path[512], rel[PATH_MAX_LENGTH];
    struct nfs_slot *s;
@@ -437,7 +471,7 @@ nfs_dir_handle *retro_vfs_opendir_nfs(const char *path, bool include_hidden)
    return dh;
 }
 
-struct nfs_dirent *retro_vfs_readdir_nfs(nfs_dir_handle *dh)
+static struct nfs_dirent *retro_vfs_readdir_nfs_impl(nfs_dir_handle *dh)
 {
    struct nfs_slot *s = (struct nfs_slot*)dh->ctx;
    const struct rnfs_dirent *e = rnfs_readdir(s->ctx, (struct rnfs_dir*)dh->dir);
@@ -449,7 +483,7 @@ struct nfs_dirent *retro_vfs_readdir_nfs(nfs_dir_handle *dh)
    return &dh->ent;
 }
 
-int retro_vfs_closedir_nfs(nfs_dir_handle *dh)
+static int retro_vfs_closedir_nfs_impl(nfs_dir_handle *dh)
 {
    struct nfs_slot *s;
    if (!dh)
@@ -459,4 +493,114 @@ int retro_vfs_closedir_nfs(nfs_dir_handle *dh)
    nfs_release(s);
    free(dh);
    return 0;
+}
+
+bool nfs_init_cfg(const struct nfs_settings *new_cfg)
+{
+   bool r;
+   NFS_LOCK();
+   r = nfs_init_cfg_impl(new_cfg);
+   NFS_UNLOCK();
+   return r;
+}
+
+bool nfs_probe_connection(void)
+{
+   bool r;
+   NFS_LOCK();
+   r = nfs_probe_connection_impl();
+   NFS_UNLOCK();
+   return r;
+}
+
+bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
+      const char *path, unsigned mode, unsigned hints)
+{
+   bool r;
+   NFS_LOCK();
+   r = retro_vfs_file_open_nfs_impl(stream, path, mode, hints);
+   NFS_UNLOCK();
+   return r;
+}
+
+int64_t retro_vfs_file_read_nfs(libretro_vfs_implementation_file *stream,
+      void *buf, uint64_t len)
+{
+   int64_t r;
+   NFS_LOCK();
+   r = retro_vfs_file_read_nfs_impl(stream, buf, len);
+   NFS_UNLOCK();
+   return r;
+}
+
+int64_t retro_vfs_file_write_nfs(libretro_vfs_implementation_file *stream,
+      const void *buf, uint64_t len)
+{
+   int64_t r;
+   NFS_LOCK();
+   r = retro_vfs_file_write_nfs_impl(stream, buf, len);
+   NFS_UNLOCK();
+   return r;
+}
+
+int64_t retro_vfs_file_seek_nfs(libretro_vfs_implementation_file *stream,
+      int64_t offset, int whence)
+{
+   int64_t r;
+   NFS_LOCK();
+   r = retro_vfs_file_seek_nfs_impl(stream, offset, whence);
+   NFS_UNLOCK();
+   return r;
+}
+
+int retro_vfs_file_close_nfs(libretro_vfs_implementation_file *stream)
+{
+   int r;
+   NFS_LOCK();
+   r = retro_vfs_file_close_nfs_impl(stream);
+   NFS_UNLOCK();
+   return r;
+}
+
+int retro_vfs_stat_nfs(const char *path, int64_t *size)
+{
+   int r;
+   NFS_LOCK();
+   r = retro_vfs_stat_nfs_impl(path, size);
+   NFS_UNLOCK();
+   return r;
+}
+
+nfs_dir_handle *retro_vfs_opendir_nfs(const char *path, bool include_hidden)
+{
+   nfs_dir_handle *r;
+   NFS_LOCK();
+   r = retro_vfs_opendir_nfs_impl(path, include_hidden);
+   NFS_UNLOCK();
+   return r;
+}
+
+struct nfs_dirent *retro_vfs_readdir_nfs(nfs_dir_handle *dh)
+{
+   struct nfs_dirent *r;
+   NFS_LOCK();
+   r = retro_vfs_readdir_nfs_impl(dh);
+   NFS_UNLOCK();
+   return r;
+}
+
+int retro_vfs_closedir_nfs(nfs_dir_handle *dh)
+{
+   int r;
+   NFS_LOCK();
+   r = retro_vfs_closedir_nfs_impl(dh);
+   NFS_UNLOCK();
+   return r;
+}
+
+void nfs_shutdown(void)
+{
+   NFS_LOCK();
+   nfs_shutdown_impl();
+   NFS_UNLOCK();
 }

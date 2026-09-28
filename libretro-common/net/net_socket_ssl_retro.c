@@ -108,6 +108,35 @@ struct tls_session
 
 static struct tls_session tls_cache[TLS_CACHE_SLOTS];
 
+/* Connections are made from several threads (updater, achievements,
+ * cloud sync); the cache is the one thing they share. */
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#include <retro_atomic.h>
+static retro_atomic_ptr_t tls_cache_lock_ptr;
+static slock_t *tls_cache_lock_get(void)
+{
+   slock_t *l = (slock_t*)retro_atomic_load_acquire_ptr(&tls_cache_lock_ptr);
+   if (!l)
+   {
+      slock_t *fresh = slock_new();
+      if (retro_atomic_cas_ptr(&tls_cache_lock_ptr, NULL, fresh))
+         l = fresh;
+      else
+      {
+         slock_free(fresh);
+         l = (slock_t*)retro_atomic_load_acquire_ptr(&tls_cache_lock_ptr);
+      }
+   }
+   return l;
+}
+#define TLS_CACHE_LOCK()   slock_lock(tls_cache_lock_get())
+#define TLS_CACHE_UNLOCK() slock_unlock(tls_cache_lock_get())
+#else
+#define TLS_CACHE_LOCK()   do { } while (0)
+#define TLS_CACHE_UNLOCK() do { } while (0)
+#endif
+
 static struct tls_session *tls_cache_find(const char *host)
 {
    unsigned i;
@@ -580,14 +609,34 @@ static int tls_send_client_hello(struct ssl_state *s)
    size_t   dlen = s->domain ? strlen(s->domain) : 0;
    size_t   ext_len;
    int      ret;
-   const struct tls_session *cached = tls_cache_find(s->domain);
-   size_t   ticket_len = (cached && cached->ticket) ? cached->ticket_len : 0;
+   const struct tls_session *cached;
+   size_t   ticket_len;
+   uint8_t *ticket = NULL;
+   size_t   cached_sid_len = 0;
+   uint8_t  cached_sid[32];
+
+   /* the cache entry is copied out here, so nothing below reads it
+    * once another thread may be rewriting the slot */
+   TLS_CACHE_LOCK();
+   cached     = tls_cache_find(s->domain);
+   ticket_len = (cached && cached->ticket) ? cached->ticket_len : 0;
+   if (ticket_len && (ticket = (uint8_t*)malloc(ticket_len)))
+      memcpy(ticket, cached->ticket, ticket_len);
+   else
+      ticket_len = 0;
+   if (cached && cached->sid_len)
+   {
+      memcpy(cached_sid, cached->sid, cached->sid_len);
+      cached_sid_len = cached->sid_len;
+   }
+   TLS_CACHE_UNLOCK();
 
    if (dlen > 255)
       dlen = 0;
 
    if (!(h = (uint8_t*)malloc(250 + dlen + ticket_len)))
    {
+      free(ticket);
       s->last_err = TLS_ERR_MEMORY;
       return -1;
    }
@@ -597,10 +646,10 @@ static int tls_send_client_hello(struct ssl_state *s)
    /* session id: the cached one, or a random one alongside a ticket
     * so the server can echo it to signal resumption */
    s->offered_sid_len = 0;
-   if (cached && cached->sid_len)
+   if (cached_sid_len)
    {
-      memcpy(s->offered_sid, cached->sid, cached->sid_len);
-      s->offered_sid_len = cached->sid_len;
+      memcpy(s->offered_sid, cached_sid, cached_sid_len);
+      s->offered_sid_len = cached_sid_len;
    }
    else if (ticket_len)
    {
@@ -645,7 +694,7 @@ static int tls_send_client_hello(struct ssl_state *s)
       tls_put16(e, 35); e += 2; tls_put16(e, (unsigned)ticket_len); e += 2;
       if (ticket_len)
       {
-         memcpy(e, cached->ticket, ticket_len);
+         memcpy(e, ticket, ticket_len);
          e += ticket_len;
       }
 
@@ -656,6 +705,7 @@ static int tls_send_client_hello(struct ssl_state *s)
 
    ret = tls_send_handshake(s, TLS_HS_CLIENT_HELLO, h, (size_t)(p - h));
    free(h);
+   free(ticket);
    return ret;
 }
 
@@ -692,13 +742,16 @@ static int tls_recv_server_hello(struct ssl_state *s)
    s->resumed = 0;
    if (sid && sid == s->offered_sid_len && memcmp(b + 35, s->offered_sid, sid) == 0)
    {
-      const struct tls_session *cached = tls_cache_find(s->domain);
+      const struct tls_session *cached;
+      TLS_CACHE_LOCK();
+      cached = tls_cache_find(s->domain);
       if (cached && cached->suite == suite)
       {
          memcpy(s->master, cached->master, 48);
          s->resumed = 1;
       }
-      else
+      TLS_CACHE_UNLOCK();
+      if (!s->resumed)
          goto bad;
    }
    /* extensions: session_ticket (35) present means a ticket follows */
@@ -956,6 +1009,7 @@ static int tls_recv_new_session_ticket(struct ssl_state *s)
       s->last_err = TLS_ERR_HANDSHAKE;
       return -1;
    }
+   TLS_CACHE_LOCK();
    e = tls_cache_slot(s->domain);
    if (e)
    {
@@ -969,6 +1023,7 @@ static int tls_recv_new_session_ticket(struct ssl_state *s)
          e->when       = time(NULL);
       }
    }
+   TLS_CACHE_UNLOCK();
    return 0;
 }
 
@@ -976,14 +1031,18 @@ static int tls_recv_new_session_ticket(struct ssl_state *s)
  * finished; the server's session id too, when it gave one. */
 static void tls_cache_store(struct ssl_state *s)
 {
-   struct tls_session *e = tls_cache_slot(s->domain);
-   if (!e)
-      return;
-   memcpy(e->master, s->master, 48);
-   e->suite   = s->suite;
-   e->sid_len = s->offered_sid_len;
-   memcpy(e->sid, s->offered_sid, s->offered_sid_len);
-   e->when    = time(NULL);
+   struct tls_session *e;
+   TLS_CACHE_LOCK();
+   e = tls_cache_slot(s->domain);
+   if (e)
+   {
+      memcpy(e->master, s->master, 48);
+      e->suite   = s->suite;
+      e->sid_len = s->offered_sid_len;
+      memcpy(e->sid, s->offered_sid, s->offered_sid_len);
+      e->when    = time(NULL);
+   }
+   TLS_CACHE_UNLOCK();
 }
 
 /* Key block from a master secret already in s->master. */

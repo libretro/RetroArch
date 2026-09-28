@@ -46,6 +46,13 @@ if ./vfs_test 127.0.0.1 $D/export 20049 20048 > $D/out 2>&1; then
 else
    echo "FAIL: $(cat $D/out)"; exit 1
 fi
+# four threads on a two-slot pool through the VFS; under TSan when the
+# caller built the tools with it (CFLAGS=-fsanitize=thread)
+if make -s vfs_threads_test >/dev/null 2>&1 && ./vfs_threads_test 127.0.0.1 $D/export 20049 20048 > $D/out 2>&1; then
+   echo "ok:   concurrent threads through the nfs:// backend"
+else
+   echo "FAIL: $(cat $D/out)"; exit 1
+fi
 rm -rf $D/export/*
 if ./nfs_test 127.0.0.1 /nonexistent/export 20049 20048 > $D/out 2>&1; then
    echo "FAIL: unknown export was accepted"; exit 1

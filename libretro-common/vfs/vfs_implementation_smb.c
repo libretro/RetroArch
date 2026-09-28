@@ -36,6 +36,38 @@
 #include <vfs/vfs_implementation.h>
 #include "vfs_implementation_smb.h"
 
+/* One lock over the whole backend: the contexts below are not safe to
+ * share between threads, and the VFS is entered from several (content
+ * loading, cloud sync, thumbnails). Calls to one server serialise;
+ * they are network-bound anyway. Published once with a CAS so two
+ * first callers cannot each install their own. */
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#include <retro_atomic.h>
+static retro_atomic_ptr_t smb_lock_ptr;
+static slock_t *smb_lock_get(void)
+{
+   slock_t *l = (slock_t*)retro_atomic_load_acquire_ptr(&smb_lock_ptr);
+   if (!l)
+   {
+      slock_t *fresh = slock_new();
+      if (retro_atomic_cas_ptr(&smb_lock_ptr, NULL, fresh))
+         l = fresh;
+      else
+      {
+         slock_free(fresh);
+         l = (slock_t*)retro_atomic_load_acquire_ptr(&smb_lock_ptr);
+      }
+   }
+   return l;
+}
+#define SMB_LOCK()   slock_lock(smb_lock_get())
+#define SMB_UNLOCK() slock_unlock(smb_lock_get())
+#else
+#define SMB_LOCK()   do { } while (0)
+#define SMB_UNLOCK() do { } while (0)
+#endif
+
 #define SMB_PREFIX "smb://"
 
 static struct smb2_context **smb_context_pool = NULL;
@@ -249,7 +281,9 @@ static void smb_reset(unsigned num_contexts)
    memset(&smb_active_key, 0, sizeof(smb_active_key));
 }
 
-bool smb_init_cfg(const struct smb_settings *new_cfg)
+static void smb_shutdown_impl(void);
+
+static bool smb_init_cfg_impl(const struct smb_settings *new_cfg)
 {
    smb_cfg = new_cfg;
    return true;
@@ -280,7 +314,7 @@ static bool smb_init(const char *want_share)
       if (smb_live_handles > 0)
          return true;
 
-      smb_shutdown();
+      smb_shutdown_impl();
    }
 
    if (!network_init())
@@ -702,7 +736,7 @@ void smb_close_context(int index)
 }
 
 /* Shutdown SMB context - called on exit */
-void smb_shutdown(void)
+static void smb_shutdown_impl(void)
 {
    int i;
 
@@ -771,7 +805,7 @@ static bool smb_build_path(char *dest, size_t dest_size, const char *relative_pa
    return true;
 }
 
-bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
+static bool retro_vfs_file_open_smb_impl(libretro_vfs_implementation_file *stream,
    const char *path, unsigned mode, unsigned hints)
 {
    char full_path[PATH_MAX_LENGTH];
@@ -842,7 +876,7 @@ bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
    return true;
 }
 
-int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
+static int64_t retro_vfs_file_read_smb_impl(libretro_vfs_implementation_file *stream,
    void *s, uint64_t len)
 {
    uint8_t *ptr               = (uint8_t*)s;
@@ -889,7 +923,7 @@ int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
    return (int64_t)total;
 }
 
-int64_t retro_vfs_file_write_smb(libretro_vfs_implementation_file *stream,
+static int64_t retro_vfs_file_write_smb_impl(libretro_vfs_implementation_file *stream,
    const void *s, uint64_t len)
 {
    const uint8_t *ptr         = (const uint8_t*)s;
@@ -932,7 +966,7 @@ int64_t retro_vfs_file_write_smb(libretro_vfs_implementation_file *stream,
    return (int64_t)total;
 }
 
-int64_t retro_vfs_file_seek_smb(libretro_vfs_implementation_file *stream,
+static int64_t retro_vfs_file_seek_smb_impl(libretro_vfs_implementation_file *stream,
    int64_t offset, int whence)
 {
    struct smb2fh *fh;
@@ -965,7 +999,7 @@ int64_t retro_vfs_file_seek_smb(libretro_vfs_implementation_file *stream,
 }
 
 /* return the current byte offset in an open file */
-int64_t retro_vfs_file_tell_smb(libretro_vfs_implementation_file *stream)
+static int64_t retro_vfs_file_tell_smb_impl(libretro_vfs_implementation_file *stream)
 {
    uint64_t cur = 0;
    struct smb2fh *fh;
@@ -991,7 +1025,7 @@ int64_t retro_vfs_file_tell_smb(libretro_vfs_implementation_file *stream)
    return (int64_t)cur;
 }
 
-int retro_vfs_file_close_smb(libretro_vfs_implementation_file *stream)
+static int retro_vfs_file_close_smb_impl(libretro_vfs_implementation_file *stream)
 {
    int ret;
    struct smb2_context *ctx;
@@ -1027,7 +1061,7 @@ int retro_vfs_file_close_smb(libretro_vfs_implementation_file *stream)
    return ret;
 }
 
-smb_dir_handle* retro_vfs_opendir_smb(const char *path, bool include_hidden)
+static smb_dir_handle* retro_vfs_opendir_smb_impl(const char *path, bool include_hidden)
 {
    char full_path[PATH_MAX_LENGTH];
    char share[256];
@@ -1108,7 +1142,7 @@ smb_dir_handle* retro_vfs_opendir_smb(const char *path, bool include_hidden)
    return handle;
 }
 
-struct smbc_dirent* retro_vfs_readdir_smb(smb_dir_handle* dh)
+static struct smbc_dirent* retro_vfs_readdir_smb_impl(smb_dir_handle* dh)
 {
    struct smb2dirent *ent;
    static struct smbc_dirent result;
@@ -1151,7 +1185,7 @@ struct smbc_dirent* retro_vfs_readdir_smb(smb_dir_handle* dh)
    return &result;
 }
 
-int retro_vfs_closedir_smb(smb_dir_handle* dh)
+static int retro_vfs_closedir_smb_impl(smb_dir_handle* dh)
 {
    if (!dh)
       return -1;
@@ -1187,7 +1221,7 @@ int retro_vfs_closedir_smb(smb_dir_handle* dh)
    return 0;
 }
 
-int retro_vfs_stat_smb(const char *path, int64_t *size)
+static int retro_vfs_stat_smb_impl(const char *path, int64_t *size)
 {
    char rel_path[PATH_MAX_LENGTH];
    char share[256];
@@ -1247,7 +1281,7 @@ int retro_vfs_stat_smb(const char *path, int64_t *size)
          (st.smb2_type == SMB2_TYPE_DIRECTORY ? RETRO_VFS_STAT_IS_DIRECTORY : 0);
 }
 
-int retro_vfs_file_error_smb(libretro_vfs_implementation_file *stream)
+static int retro_vfs_file_error_smb_impl(libretro_vfs_implementation_file *stream)
 {
    struct smb2_context *ctx;
    const char *err;
@@ -1270,4 +1304,123 @@ int retro_vfs_file_error_smb(libretro_vfs_implementation_file *stream)
       return -1;
 
    return 0;
+}
+
+bool smb_init_cfg(const struct smb_settings *new_cfg)
+{
+   bool r;
+   SMB_LOCK();
+   r = smb_init_cfg_impl(new_cfg);
+   SMB_UNLOCK();
+   return r;
+}
+
+bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
+   const char *path, unsigned mode, unsigned hints)
+{
+   bool r;
+   SMB_LOCK();
+   r = retro_vfs_file_open_smb_impl(stream, path, mode, hints);
+   SMB_UNLOCK();
+   return r;
+}
+
+int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
+   void *s, uint64_t len)
+{
+   int64_t r;
+   SMB_LOCK();
+   r = retro_vfs_file_read_smb_impl(stream, s, len);
+   SMB_UNLOCK();
+   return r;
+}
+
+int64_t retro_vfs_file_write_smb(libretro_vfs_implementation_file *stream,
+   const void *s, uint64_t len)
+{
+   int64_t r;
+   SMB_LOCK();
+   r = retro_vfs_file_write_smb_impl(stream, s, len);
+   SMB_UNLOCK();
+   return r;
+}
+
+int64_t retro_vfs_file_seek_smb(libretro_vfs_implementation_file *stream,
+   int64_t offset, int whence)
+{
+   int64_t r;
+   SMB_LOCK();
+   r = retro_vfs_file_seek_smb_impl(stream, offset, whence);
+   SMB_UNLOCK();
+   return r;
+}
+
+int64_t retro_vfs_file_tell_smb(libretro_vfs_implementation_file *stream)
+{
+   int64_t r;
+   SMB_LOCK();
+   r = retro_vfs_file_tell_smb_impl(stream);
+   SMB_UNLOCK();
+   return r;
+}
+
+int retro_vfs_file_close_smb(libretro_vfs_implementation_file *stream)
+{
+   int r;
+   SMB_LOCK();
+   r = retro_vfs_file_close_smb_impl(stream);
+   SMB_UNLOCK();
+   return r;
+}
+
+smb_dir_handle* retro_vfs_opendir_smb(const char *path, bool include_hidden)
+{
+   smb_dir_handle* r;
+   SMB_LOCK();
+   r = retro_vfs_opendir_smb_impl(path, include_hidden);
+   SMB_UNLOCK();
+   return r;
+}
+
+struct smbc_dirent* retro_vfs_readdir_smb(smb_dir_handle* dh)
+{
+   struct smbc_dirent* r;
+   SMB_LOCK();
+   r = retro_vfs_readdir_smb_impl(dh);
+   SMB_UNLOCK();
+   return r;
+}
+
+int retro_vfs_closedir_smb(smb_dir_handle* dh)
+{
+   int r;
+   SMB_LOCK();
+   r = retro_vfs_closedir_smb_impl(dh);
+   SMB_UNLOCK();
+   return r;
+}
+
+int retro_vfs_stat_smb(const char *path, int64_t *size)
+{
+   int r;
+   SMB_LOCK();
+   r = retro_vfs_stat_smb_impl(path, size);
+   SMB_UNLOCK();
+   return r;
+}
+
+int retro_vfs_file_error_smb(libretro_vfs_implementation_file *stream)
+{
+   int r;
+   SMB_LOCK();
+   r = retro_vfs_file_error_smb_impl(stream);
+   SMB_UNLOCK();
+   return r;
+}
+
+void smb_shutdown(void)
+{
+   SMB_LOCK();
+   smb_shutdown_impl();
+   SMB_UNLOCK();
 }

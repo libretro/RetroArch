@@ -17,6 +17,9 @@ VFS_SRC = vfs_test.c $(COMMON)/vfs/vfs_implementation_nfs.c $(COMMON)/vfs/vfs_im
       $(filter-out nfs_test.c,$(SRC))
 vfs_test: $(VFS_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_NFSCLIENT -I$(ROOT) $(CFLAGS) $(VFS_SRC) $(LDLIBS) -o $@
+THR_SRC = vfs_threads_test.c $(filter-out vfs_test.c,$(VFS_SRC)) $(COMMON)/rthreads/rthreads.c
+vfs_threads_test: $(THR_SRC)
+	$(CC) $(CPPFLAGS) -DHAVE_NFSCLIENT -DHAVE_THREADS -I$(ROOT) $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@
 clean:
-	rm -f nfs_test nfs_test.exe vfs_test vfs_test.exe
+	rm -f nfs_test nfs_test.exe vfs_test vfs_test.exe vfs_threads_test vfs_threads_test.exe
 .PHONY: clean
