@@ -609,6 +609,65 @@ START_TEST (test_p384)
 }
 END_TEST
 
+START_TEST (test_smb_prereqs)
+{
+   struct aes_ctx a;
+   uint8_t k[16], n[13], aad[8], pt[23], ct[40], tag[16], dec[23], d[16], kb[16];
+   unsigned i;
+
+   /* AES-CCM: RFC 3610 packet vector #1 (13-octet nonce, 8-octet tag)
+    * and the SMB3 shape (11-octet nonce, 16-octet tag). */
+   for (i = 0; i < 16; i++) k[i] = (uint8_t)(0xc0 + i);
+   hex_to_pk(n, "00000003020100a0a1a2a3a4a5", 13);
+   hex_to_pk(aad, "0001020304050607", 8);
+   hex_to_pk(pt, "08090a0b0c0d0e0f101112131415161718191a1b1c1d1e", 23);
+   ck_assert_int_eq(aes_init(&a, k, 16), 0);
+   ck_assert_int_eq(aes_ccm_encrypt(&a, n, 13, aad, 8, pt, 23, ct, tag, 8), 0);
+   ck_hex(ct, 23, "588c979a61c663d2f066d0c2c0f989806d5f6b61dac384");
+   ck_hex(tag, 8, "17e8d12cfdf926e0");
+   ck_assert_int_eq(aes_ccm_decrypt(&a, n, 13, aad, 8, ct, 23, tag, 8, dec), 0);
+   ck_assert(memcmp(dec, pt, 23) == 0);
+   tag[0] ^= 1;
+   ck_assert_int_eq(aes_ccm_decrypt(&a, n, 13, aad, 8, ct, 23, tag, 8, dec), -1);
+   ck_assert_int_eq(aes_ccm_encrypt(&a, n, 11, aad, 8, pt, 23, ct, tag, 16), 0);
+   ck_hex(ct, 23, "aa2d3ecba66863758f03015116de30ed8ab542dcfa72d0");
+   ck_hex(tag, 16, "32afd3d6fcc0340360db1d8a51b1d753");
+   ck_assert_int_eq(aes_ccm_decrypt(&a, n, 11, aad, 8, ct, 23, tag, 16, dec), 0);
+   ck_assert(memcmp(dec, pt, 23) == 0);
+   ck_assert_int_eq(aes_ccm_encrypt(&a, n, 6, aad, 8, pt, 23, ct, tag, 16), -1);
+   ck_assert_int_eq(aes_ccm_encrypt(&a, n, 11, aad, 8, pt, 23, ct, tag, 7), -1);
+
+   /* MD4: RFC 1320 A.5 */
+   md4((const uint8_t*)"", 0, d);
+   ck_hex(d, 16, "31d6cfe0d16ae931b73c59d7e0c089c0");
+   md4((const uint8_t*)"abc", 3, d);
+   ck_hex(d, 16, "a448017aaf21d8525fc10ae87aa6729d");
+   md4((const uint8_t*)"12345678901234567890123456789012345678901234567890123456789012345678901234567890", 80, d);
+   ck_hex(d, 16, "e33b4ddc9c38f2199c3e7b164fcc0536");
+
+   /* HMAC-MD5: RFC 2202 case 2 and the "quick brown fox" vector */
+   hmac_md5((const uint8_t*)"Jefe", 4, (const uint8_t*)"what do ya want for nothing?", 28, d);
+   ck_hex(d, 16, "750c783e6ab0b503eaa86e310a5db738");
+   hmac_md5((const uint8_t*)"key", 3, (const uint8_t*)"The quick brown fox jumps over the lazy dog", 43, d);
+   ck_hex(d, 16, "80070713463e7749b90c2dc24911e275");
+
+   /* SP 800-108 counter mode, the SMB 3.0 signing-key shape */
+   for (i = 0; i < 16; i++) k[i] = (uint8_t)i;
+   kbkdf_hmac_sha256(k, 16, (const uint8_t*)"SMB2AESCMAC", 12,
+         (const uint8_t*)"SmbSign", 8, kb, 16);
+   ck_hex(kb, 16, "6234814cbb8ea9227440ebfeb5eacbe1");
+
+   /* NTOWFv2: MS-NLMP 4.2.4.1.1 (User / Domain / Password) */
+   ck_assert_int_eq(ntlm_ntowf_v2("Password", "User", "Domain", d), 0);
+   ck_hex(d, 16, "0c868a403bfd7a93a3001ef22ef02e3f");
+   ck_assert_int_eq(ntlm_ntowf_v2("Password", "user", "Domain", kb), 0);
+   ck_assert(memcmp(d, kb, 16) == 0);   /* user name is upper-cased */
+   ck_assert_int_eq(ntlm_ntowf_v2("Password", "User", "domain", kb), 0);
+   ck_assert(memcmp(d, kb, 16) != 0);   /* the domain is not */
+   ck_assert_int_eq(ntlm_ntowf_v2("\xff\xfe", "User", "Domain", kb), -1);
+}
+END_TEST
+
 START_TEST (test_x509)
 {
    struct x509_cert c, r, in;
@@ -710,6 +769,7 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_rsa);
    tcase_add_test(tc_core, test_p256);
    tcase_add_test(tc_core, test_p384);
+   tcase_add_test(tc_core, test_smb_prereqs);
    tcase_add_test(tc_core, test_x509);
    suite_add_tcase(s, tc_core);
    return s;

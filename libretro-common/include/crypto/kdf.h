@@ -171,6 +171,43 @@ int drbg_generate(struct drbg_ctx *ctx, uint8_t *out, size_t len);
 
 void drbg_free(struct drbg_ctx *ctx);
 
+/* NTLMv2 needs two things nothing else here does: MD4 (RFC 1320),
+ * the hash NT password hashes are still made of, and HMAC-MD5 over
+ * the MD5 in lrc_hash. They exist for that one protocol. */
+#define MD4_DIGEST_SIZE 16
+void md4(const uint8_t *data, size_t len, uint8_t *digest);
+
+#define HMAC_MD5_SIZE 16
+void hmac_md5(const uint8_t *key, size_t key_len,
+      const uint8_t *data, size_t len, uint8_t *mac);
+
+/**
+ * kbkdf_hmac_sha256:
+ *
+ * SP 800-108 KDF in counter mode with HMAC-SHA256: K(i) = HMAC(Ki,
+ * [i]_32 || label || 0x00 || context || [L]_32), the form SMB 3.x
+ * derives its signing, encryption and application keys with. The
+ * separator octet is included; @label and @context are passed as
+ * SMB spells them (including their trailing NUL).
+ **/
+void kbkdf_hmac_sha256(const uint8_t *ki, size_t ki_len,
+      const uint8_t *label, size_t label_len,
+      const uint8_t *context, size_t context_len,
+      uint8_t *out, size_t out_len);
+
+/**
+ * ntlm_ntowf_v2:
+ * @password, @user, @domain: UTF-8. The user name is upper-cased
+ *                      (ASCII) as NTOWFv2 requires; the domain is not.
+ * @out               : 16 octets: HMAC-MD5(MD4(UTF-16LE(password)),
+ *                      UTF-16LE(UPPER(user) || domain)).
+ *
+ * Returns: 0 on success, -1 on a string that is not valid UTF-8 or is
+ * longer than 255 code points.
+ **/
+int ntlm_ntowf_v2(const char *password, const char *user,
+      const char *domain, uint8_t *out);
+
 RETRO_END_DECLS
 
 #endif

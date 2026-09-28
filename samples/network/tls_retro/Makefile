@@ -4,7 +4,7 @@ CFLAGS ?= -O2 -g
 CPPFLAGS += -I$(COMMON)/include -DHAVE_SSL -DHAVE_RETROSSL -DHAVE_CRYPTO -D_GNU_SOURCE
 SRC = tls_fetch.c $(COMMON)/net/net_socket_ssl_retro.c $(COMMON)/net/net_socket.c $(COMMON)/net/net_compat.c \
       $(COMMON)/crypto/crypto.c $(COMMON)/crypto/kdf.c $(COMMON)/crypto/pk.c $(COMMON)/crypto/x509.c \
-      $(COMMON)/hash/lrc_hash.c $(COMMON)/encodings/encoding_base64.c $(COMMON)/streams/file_stream.c \
+      $(COMMON)/hash/lrc_hash.c $(COMMON)/utils/md5.c $(COMMON)/encodings/encoding_base64.c $(COMMON)/streams/file_stream.c \
       $(COMMON)/vfs/vfs_implementation.c $(COMMON)/file/file_path.c $(COMMON)/string/rstrtod.c \
       $(COMMON)/file/file_path_io.c $(COMMON)/features/features_cpu.c $(COMMON)/compat/compat_strl.c \
       $(COMMON)/compat/fopen_utf8.c \

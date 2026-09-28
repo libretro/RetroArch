@@ -49,7 +49,7 @@ TEST_HASH_SRC = test/hash/test_hash.c hash/lrc_hash.c \
 		file/file_path_io.c features/features_cpu.c \
 		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
 
-TEST_CRYPTO_LRC_SRC = crypto/crypto.c crypto/kdf.c crypto/pk.c crypto/x509.c
+TEST_CRYPTO_LRC_SRC = crypto/crypto.c crypto/kdf.c crypto/pk.c crypto/x509.c utils/md5.c
 
 # Known-answer tests for every primitive (FIPS 197, RFC 4493, the GCM
 # spec vectors, RFC 8439, RFC 4231, RFC 5869, PBKDF2, FIPS 180-4), the

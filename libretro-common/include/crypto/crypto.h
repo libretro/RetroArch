@@ -167,6 +167,35 @@ void aes_cmac(const struct aes_ctx *ctx,
       const uint8_t *msg, size_t len, uint8_t *mac);
 
 /**
+ * aes_ccm_encrypt:
+ * @nonce_len         : 7 to 13 octets (SMB3 uses 11).
+ * @tag_len           : 4 to 16, even.
+ *
+ * CCM (RFC 3610) under a plain AES context. @ct may alias @pt.
+ *
+ * Returns: 0 on success, -1 on a bad nonce or tag length or a message
+ * too long for the nonce.
+ **/
+int aes_ccm_encrypt(const struct aes_ctx *ctx,
+      const uint8_t *nonce, size_t nonce_len,
+      const uint8_t *aad, size_t aad_len,
+      const uint8_t *pt, size_t pt_len,
+      uint8_t *ct, uint8_t *tag, size_t tag_len);
+
+/**
+ * aes_ccm_decrypt:
+ *
+ * Returns: 0 on success, -1 on a bad parameter or authentication
+ * failure (the plaintext is cleared in that case: CCM cannot check
+ * the tag before decrypting).
+ **/
+int aes_ccm_decrypt(const struct aes_ctx *ctx,
+      const uint8_t *nonce, size_t nonce_len,
+      const uint8_t *aad, size_t aad_len,
+      const uint8_t *ct, size_t ct_len,
+      const uint8_t *tag, size_t tag_len, uint8_t *pt);
+
+/**
  * aes_gcm_init:
  *
  * Returns: 0 on success, -1 on an unsupported key length.

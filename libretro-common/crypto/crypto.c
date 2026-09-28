@@ -722,6 +722,151 @@ void aes_cmac(const struct aes_ctx *ctx,
    crypto_memzero(last, sizeof(last));
 }
 
+/* ---- CCM (RFC 3610) ---------------------------------------------- */
+
+/* CBC-MAC over B_0 || AAD (length-prefixed, padded) || payload
+ * (padded), then CTR with A_i counters; the tag is the MAC under
+ * counter zero. */
+static int aes_ccm_crypt(const struct aes_ctx *ctx, int encrypt,
+      const uint8_t *nonce, size_t nonce_len,
+      const uint8_t *aad, size_t aad_len,
+      const uint8_t *in, size_t len, uint8_t *out,
+      uint8_t *tag, size_t tag_len)
+{
+   uint8_t  x[16];
+   uint8_t  ctr[16];
+   uint8_t  s0[16];
+   size_t   L, i, off;
+   size_t   remaining;
+
+   if (nonce_len < 7 || nonce_len > 13 || tag_len < 4 || tag_len > 16 || (tag_len & 1))
+      return -1;
+   L = 15 - nonce_len;
+   if (L < 8 && (len >> (8 * L)) != 0)
+      return -1;
+
+   /* B_0: flags | nonce | length of the message */
+   x[0] = (uint8_t)((aad_len ? 0x40 : 0) | (((tag_len - 2) / 2) << 3) | (L - 1));
+   memcpy(x + 1, nonce, nonce_len);
+   remaining = len;
+   for (i = 0; i < L; i++)
+   {
+      x[15 - i]  = (uint8_t)remaining;
+      remaining >>= 8;
+   }
+   aes_encrypt_block(ctx, x, x);
+
+   /* AAD, length-prefixed (2 or 6 octets here; > 2^32 is not needed) */
+   if (aad_len)
+   {
+      uint8_t blk[16];
+      size_t  n;
+      memset(blk, 0, 16);
+      if (aad_len < 0xff00)
+      {
+         blk[0] = (uint8_t)(aad_len >> 8);
+         blk[1] = (uint8_t)aad_len;
+         off    = 2;
+      }
+      else
+      {
+         blk[0] = 0xff; blk[1] = 0xfe;
+         crypto_store32_be(blk + 2, (uint32_t)aad_len);
+         off = 6;
+      }
+      n = 16 - off;
+      if (n > aad_len)
+         n = aad_len;
+      memcpy(blk + off, aad, n);
+      for (i = 0; i < 16; i++)
+         x[i] ^= blk[i];
+      aes_encrypt_block(ctx, x, x);
+      aad += n;
+      aad_len -= n;
+      while (aad_len)
+      {
+         n = aad_len < 16 ? aad_len : 16;
+         for (i = 0; i < n; i++)
+            x[i] ^= aad[i];
+         aes_encrypt_block(ctx, x, x);
+         aad += n;
+         aad_len -= n;
+      }
+   }
+
+   /* Counter blocks: flags = L - 1, nonce, counter */
+   memset(ctr, 0, 16);
+   ctr[0] = (uint8_t)(L - 1);
+   memcpy(ctr + 1, nonce, nonce_len);
+   aes_encrypt_block(ctx, ctr, s0);           /* S_0, for the tag */
+
+   off = 0;
+   while (off < len)
+   {
+      uint8_t ks[16];
+      size_t  n = (len - off < 16) ? len - off : 16;
+      size_t  c = off / 16 + 1;
+      for (i = 0; i < L; i++)
+      {
+         ctr[15 - i] = (uint8_t)c;
+         c >>= 8;
+      }
+      aes_encrypt_block(ctx, ctr, ks);
+      if (encrypt)
+      {
+         for (i = 0; i < n; i++)
+            x[i] ^= in[off + i];
+         aes_encrypt_block(ctx, x, x);
+         for (i = 0; i < n; i++)
+            out[off + i] = in[off + i] ^ ks[i];
+      }
+      else
+      {
+         for (i = 0; i < n; i++)
+         {
+            out[off + i] = in[off + i] ^ ks[i];
+            x[i]        ^= out[off + i];
+         }
+         aes_encrypt_block(ctx, x, x);
+      }
+      off += n;
+   }
+
+   for (i = 0; i < tag_len; i++)
+      tag[i] = x[i] ^ s0[i];
+   crypto_memzero(x, sizeof(x));
+   crypto_memzero(s0, sizeof(s0));
+   return 0;
+}
+
+int aes_ccm_encrypt(const struct aes_ctx *ctx,
+      const uint8_t *nonce, size_t nonce_len,
+      const uint8_t *aad, size_t aad_len,
+      const uint8_t *pt, size_t pt_len,
+      uint8_t *ct, uint8_t *tag, size_t tag_len)
+{
+   return aes_ccm_crypt(ctx, 1, nonce, nonce_len, aad, aad_len,
+         pt, pt_len, ct, tag, tag_len);
+}
+
+int aes_ccm_decrypt(const struct aes_ctx *ctx,
+      const uint8_t *nonce, size_t nonce_len,
+      const uint8_t *aad, size_t aad_len,
+      const uint8_t *ct, size_t ct_len,
+      const uint8_t *tag, size_t tag_len, uint8_t *pt)
+{
+   uint8_t calc[16];
+   if (aes_ccm_crypt(ctx, 0, nonce, nonce_len, aad, aad_len,
+            ct, ct_len, pt, calc, tag_len) != 0)
+      return -1;
+   if (!crypto_memeq_ct(calc, tag, tag_len))
+   {
+      crypto_memzero(pt, ct_len);
+      return -1;
+   }
+   return 0;
+}
+
 /* GHASH, scalar: 4-bit tables of H (16 entries, built at init) and a
  * 16-entry reduction table, two lookups per octet. */
 static const uint64_t aes_gcm_last4[16] = {

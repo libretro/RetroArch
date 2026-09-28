@@ -26,6 +26,7 @@
 #include <crypto/kdf.h>
 #include <crypto/crypto.h>
 #include <retro_miscellaneous.h>
+#include <encodings/utf.h>
 
 void hmac_sha256_init(struct hmac_sha256_ctx *ctx,
       const uint8_t *key, size_t key_len)
@@ -527,3 +528,216 @@ void drbg_free(struct drbg_ctx *ctx)
    crypto_memzero(ctx, sizeof(*ctx));
 }
 
+
+/* ---- MD4 (RFC 1320) ---------------------------------------------- */
+
+#define MD4_F(x, y, z) (((x) & (y)) | (~(x) & (z)))
+#define MD4_G(x, y, z) (((x) & (y)) | ((x) & (z)) | ((y) & (z)))
+#define MD4_H(x, y, z) ((x) ^ (y) ^ (z))
+
+static void md4_block(uint32_t *st, const uint8_t *p)
+{
+   uint32_t x[16];
+   uint32_t a = st[0], b = st[1], c = st[2], d = st[3];
+   unsigned i;
+   for (i = 0; i < 16; i++)
+      x[i] = crypto_load32_le(p + 4 * i);
+
+#define R1(a, b, c, d, k, s) a = crypto_rotl32(a + MD4_F(b, c, d) + x[k], s)
+#define R2(a, b, c, d, k, s) a = crypto_rotl32(a + MD4_G(b, c, d) + x[k] + 0x5a827999u, s)
+#define R3(a, b, c, d, k, s) a = crypto_rotl32(a + MD4_H(b, c, d) + x[k] + 0x6ed9eba1u, s)
+   R1(a,b,c,d, 0,3); R1(d,a,b,c, 1,7); R1(c,d,a,b, 2,11); R1(b,c,d,a, 3,19);
+   R1(a,b,c,d, 4,3); R1(d,a,b,c, 5,7); R1(c,d,a,b, 6,11); R1(b,c,d,a, 7,19);
+   R1(a,b,c,d, 8,3); R1(d,a,b,c, 9,7); R1(c,d,a,b,10,11); R1(b,c,d,a,11,19);
+   R1(a,b,c,d,12,3); R1(d,a,b,c,13,7); R1(c,d,a,b,14,11); R1(b,c,d,a,15,19);
+   R2(a,b,c,d, 0,3); R2(d,a,b,c, 4,5); R2(c,d,a,b, 8,9); R2(b,c,d,a,12,13);
+   R2(a,b,c,d, 1,3); R2(d,a,b,c, 5,5); R2(c,d,a,b, 9,9); R2(b,c,d,a,13,13);
+   R2(a,b,c,d, 2,3); R2(d,a,b,c, 6,5); R2(c,d,a,b,10,9); R2(b,c,d,a,14,13);
+   R2(a,b,c,d, 3,3); R2(d,a,b,c, 7,5); R2(c,d,a,b,11,9); R2(b,c,d,a,15,13);
+   R3(a,b,c,d, 0,3); R3(d,a,b,c, 8,9); R3(c,d,a,b, 4,11); R3(b,c,d,a,12,15);
+   R3(a,b,c,d, 2,3); R3(d,a,b,c,10,9); R3(c,d,a,b, 6,11); R3(b,c,d,a,14,15);
+   R3(a,b,c,d, 1,3); R3(d,a,b,c, 9,9); R3(c,d,a,b, 5,11); R3(b,c,d,a,13,15);
+   R3(a,b,c,d, 3,3); R3(d,a,b,c,11,9); R3(c,d,a,b, 7,11); R3(b,c,d,a,15,15);
+#undef R1
+#undef R2
+#undef R3
+   st[0] += a; st[1] += b; st[2] += c; st[3] += d;
+   crypto_memzero(x, sizeof(x));
+}
+
+void md4(const uint8_t *data, size_t len, uint8_t *digest)
+{
+   uint32_t st[4];
+   uint8_t  tail[128];
+   size_t   rem, off = 0, i;
+   uint64_t bits = (uint64_t)len * 8;
+
+   st[0] = 0x67452301u; st[1] = 0xefcdab89u;
+   st[2] = 0x98badcfeu; st[3] = 0x10325476u;
+
+   while (len - off >= 64)
+   {
+      md4_block(st, data + off);
+      off += 64;
+   }
+   rem = len - off;
+   memset(tail, 0, sizeof(tail));
+   memcpy(tail, data + off, rem);
+   tail[rem] = 0x80;
+   i = (rem < 56) ? 56 : 120;
+   crypto_store64_le(tail + i, bits);
+   md4_block(st, tail);
+   if (i == 120)
+      md4_block(st, tail + 64);
+
+   for (i = 0; i < 4; i++)
+      crypto_store32_le(digest + 4 * i, st[i]);
+   crypto_memzero(tail, sizeof(tail));
+   crypto_memzero(st, sizeof(st));
+}
+
+/* ---- HMAC-MD5 ----------------------------------------------------- */
+
+void hmac_md5(const uint8_t *key, size_t key_len,
+      const uint8_t *data, size_t len, uint8_t *mac)
+{
+   MD5_CTX  ctx;
+   uint8_t  k[64];
+   uint8_t  ih[16];
+   unsigned i;
+
+   memset(k, 0, sizeof(k));
+   if (key_len > 64)
+   {
+      MD5_Init(&ctx);
+      MD5_Update(&ctx, key, (unsigned long)key_len);
+      MD5_Final(k, &ctx);
+   }
+   else
+      memcpy(k, key, key_len);
+
+   for (i = 0; i < 64; i++)
+      k[i] ^= 0x36;
+   MD5_Init(&ctx);
+   MD5_Update(&ctx, k, 64);
+   MD5_Update(&ctx, data, (unsigned long)len);
+   MD5_Final(ih, &ctx);
+
+   for (i = 0; i < 64; i++)
+      k[i] ^= 0x36 ^ 0x5c;
+   MD5_Init(&ctx);
+   MD5_Update(&ctx, k, 64);
+   MD5_Update(&ctx, ih, 16);
+   MD5_Final(mac, &ctx);
+
+   crypto_memzero(k, sizeof(k));
+   crypto_memzero(ih, sizeof(ih));
+   crypto_memzero(&ctx, sizeof(ctx));
+}
+
+/* ---- SP 800-108 counter mode ------------------------------------- */
+
+void kbkdf_hmac_sha256(const uint8_t *ki, size_t ki_len,
+      const uint8_t *label, size_t label_len,
+      const uint8_t *context, size_t context_len,
+      uint8_t *out, size_t out_len)
+{
+   struct hmac_sha256_ctx h;
+   uint8_t  be[4];
+   uint8_t  block[32];
+   uint32_t i    = 0;
+   size_t   done = 0;
+   const uint8_t zero = 0;
+
+   while (done < out_len)
+   {
+      size_t take = out_len - done < 32 ? out_len - done : 32;
+      i++;
+      hmac_sha256_init(&h, ki, ki_len);
+      crypto_store32_be(be, i);
+      hmac_sha256_update(&h, be, 4);
+      hmac_sha256_update(&h, label, label_len);
+      hmac_sha256_update(&h, &zero, 1);
+      hmac_sha256_update(&h, context, context_len);
+      crypto_store32_be(be, (uint32_t)(out_len * 8));
+      hmac_sha256_update(&h, be, 4);
+      hmac_sha256_final(&h, block);
+      memcpy(out + done, block, take);
+      done += take;
+   }
+   crypto_memzero(block, sizeof(block));
+}
+
+/* ---- NTOWFv2 ------------------------------------------------------ */
+
+/* UTF-8 to UTF-16LE into a caller buffer of @cap code units;
+ * returns the octet count or 0 when it does not fit / is not UTF-8. */
+static void crypto_store16_le_pair(uint8_t *p, uint16_t v)
+{
+   p[0] = (uint8_t)v;
+   p[1] = (uint8_t)(v >> 8);
+}
+
+static size_t ntlm_utf16le(const char *s, uint8_t *out, size_t cap,
+      int upper)
+{
+   size_t n = 0;
+   while (*s)
+   {
+      uint32_t cp = utf8_walk(&s);
+      if (cp == 0 || cp > 0x10ffff)
+         return 0;
+      if (upper && cp >= 'a' && cp <= 'z')
+         cp -= 32;
+      if (cp >= 0x10000)
+      {
+         if (n + 2 > cap)
+            return 0;
+         cp -= 0x10000;
+         crypto_store16_le_pair(out + 2 * n, (uint16_t)(0xd800 | (cp >> 10)));
+         crypto_store16_le_pair(out + 2 * n + 2, (uint16_t)(0xdc00 | (cp & 0x3ff)));
+         n += 2;
+      }
+      else
+      {
+         if (n + 1 > cap)
+            return 0;
+         crypto_store16_le_pair(out + 2 * n, (uint16_t)cp);
+         n += 1;
+      }
+   }
+   return n * 2;
+}
+
+int ntlm_ntowf_v2(const char *password, const char *user,
+      const char *domain, uint8_t *out)
+{
+   /* 255 code points each, as UTF-16 with surrogates: 1020 octets. */
+   uint8_t *buf = (uint8_t*)malloc(2 * 1020);
+   uint8_t  nt[16];
+   size_t   plen, ulen, dlen;
+   if (!buf)
+      return -1;
+
+   plen = ntlm_utf16le(password, buf, 510, 0);
+   if (!plen && *password)
+   {
+      free(buf);
+      return -1;
+   }
+   md4(buf, plen, nt);
+
+   ulen = ntlm_utf16le(user, buf, 510, 1);
+   dlen = ntlm_utf16le(domain, buf + ulen, 510, 0);
+   if ((!ulen && *user) || (!dlen && *domain))
+   {
+      crypto_memzero(buf, 2 * 1020);
+      free(buf);
+      return -1;
+   }
+   hmac_md5(nt, 16, buf, ulen + dlen, out);
+   crypto_memzero(nt, sizeof(nt));
+   crypto_memzero(buf, 2 * 1020);
+   free(buf);
+   return 0;
+}
