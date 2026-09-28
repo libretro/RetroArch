@@ -582,6 +582,16 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 120 \
              ./gfx_widgets_sanitize_test
           echo "[pass] gfx_widgets_sanitize_test (TSan)"
+      - name: Build and run widget snapshot ownership test
+        shell: bash
+        working-directory: tests-other
+        run: |
+          set -eu
+          make -f Makefile.widget_snapshot clean
+          make -f Makefile.widget_snapshot
+          timeout 60 ./widget_snapshot_ownership_test
+          make -f Makefile.widget_snapshot clean
+
       - name: Build and run gfx_widgets_task_bar_stack_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/gfx/gfx_widgets_task_bar_stack

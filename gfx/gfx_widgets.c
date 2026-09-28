@@ -570,9 +570,12 @@ static void gfx_widgets_msg_queue_push_state(
                !string_is_equal(snapshot->title, msg_widget->msg_new
                   ? msg_widget->msg_new : msg_widget->msg))
          {
+            uintptr_t title_tag = (uintptr_t)&msg_widget->msg_transition_animation;
             size_t _len;
             unsigned new_width;
             const char *new_title;
+
+            gfx_animation_kill_widget_by_tag(&title_tag);
 
             if (msg_widget->msg_new)
             {
@@ -598,7 +601,7 @@ static void gfx_widgets_msg_queue_push_state(
                gfx_animation_ctx_entry_t entry;
 
                entry.easing_enum    = EASING_OUT_QUAD;
-               entry.tag            = (uintptr_t)msg_widget;
+               entry.tag            = title_tag;
                entry.duration       = MSG_QUEUE_ANIMATION_DURATION;
                entry.target_value   = p_dispwidget->msg_queue_height / 2.0f;
                entry.subject        = &msg_widget->msg_transition_animation;
@@ -720,6 +723,7 @@ static void gfx_widgets_msg_queue_free(
 {
    uintptr_t tag = (uintptr_t)msg;
    uintptr_t hourglass_timer_tag = (uintptr_t)&msg->hourglass_timer;
+   uintptr_t title_tag = (uintptr_t)&msg->msg_transition_animation;
 
    /* Remove the reference the task has of ourself, so that its next
     * progress push spawns a fresh widget instead of dereferencing the
@@ -755,6 +759,7 @@ static void gfx_widgets_msg_queue_free(
    }
 
    /* Kill all animations */
+   gfx_animation_kill_widget_by_tag(&title_tag);
    gfx_animation_kill_widget_by_tag(&hourglass_timer_tag);
    gfx_animation_kill_widget_by_tag(&tag);
 
