@@ -2095,14 +2095,22 @@ static void video_thread_loop(void *data)
           * from the main thread. */
          if (ret_frame)
          {
-            /* A frame handed over more than a period and a half before
-             * the vblank it went out on was queued behind another: its
-             * swap waited on that vblank, not on rendering. The wait is
-             * not render cost to reserve against - reserving it would
-             * release the core a period early and keep the queue full -
-             * and the frame behind is drained by holding the core one
-             * extra period, once. */
+            /* A frame handed over more than a content period and a
+             * half before the vblank it went out on was queued behind
+             * another: its swap waited on that vblank, not on
+             * rendering. The wait is not render cost to reserve
+             * against - reserving it would release the core a period
+             * early and keep the queue full - and the frame behind is
+             * drained by holding the core one extra period, once. The
+             * content's period, not the display's: a 60 fps frame on a
+             * 120 Hz display is due every other vblank, and against the
+             * display's 8 ms a render of a few milliseconds plus the
+             * wait to its vblank read as a queue, draining frames that
+             * were never queued. */
             bool early = false;
+            retro_time_t queue_period = thr->present_period;
+            if (thr->content_period > queue_period)
+               queue_period = thr->content_period;
 
             video_thread_schedule_next(thr);
             /* Latency: from the core's handover of this slot to the
@@ -2112,7 +2120,7 @@ static void video_thread_loop(void *data)
             {
                retro_time_t lat = thr->last_present_end - thr->frame.slot[slot].pushed_at;
                if (     thr->present_period > 0
-                     && lat >= thr->present_period * 3 / 2)
+                     && lat >= queue_period * 3 / 2)
                {
                   early = true;
                   /* Frames pushed before a drain still report the
@@ -2399,6 +2407,7 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
        * rate, twice its speed on a 120 Hz panel. */
       if (!thr->core_running)
          content = period;
+      thr->content_period = content;
       if (thr->content_due <= 0 || thr->content_due < now - content)
          thr->content_due = thr->next_present;
       else

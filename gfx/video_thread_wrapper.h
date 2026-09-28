@@ -380,8 +380,13 @@ typedef struct thread_video
     * push: the hold's period is the content's only while it does. */
    bool core_running;
    /* Display pacing's schedule: when the next content frame is due,
-    * accumulated in the content's own period. Main thread. */
+    * accumulated in the content's own period. Main thread. The
+    * period itself is kept under 'lock' for the video thread, which
+    * judges a frame queued by it: on a display faster than the
+    * content, a frame is due every few vblanks, and the display's
+    * period would call every longer render a queue. */
    retro_time_t content_due;
+   retro_time_t content_period;
    retro_time_t run_start;
    /* Handoff cost, this window and the last full one. Main thread. */
    struct

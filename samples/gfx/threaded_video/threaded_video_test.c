@@ -1986,6 +1986,146 @@ static void lane_pacing_queue_drain(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: a frame due every other vblank is not a queued one            */
+/*   A presenter on a 120 Hz vblank grid with the core at 60 fps, whose */
+/*   render alternates 2 and 7 ms, as a hardware core's does when the   */
+/*   video thread waits out the frame's GPU work before presenting.     */
+/*   A frame is due every other vblank; from its push to the vblank it  */
+/*   goes out on is a render plus up to a vblank, which against the     */
+/*   display's period and a half reads as queued behind another, and    */
+/*   the hold then skips a content period to drain a queue that is not  */
+/*   there. Against the content's period nothing is drained, and the    */
+/*   core keeps its 60 frames a second.                                 */
+/* ------------------------------------------------------------------ */
+
+static video_driver_t                rvlane_driver;
+static const video_driver_t         *rvlane_inner;
+static video_poke_interface_t        rvlane_poke;
+static const video_poke_interface_t *rvlane_inner_poke;
+static retro_time_t                  rvlane_period;
+static retro_time_t                  rvlane_base;
+static retro_time_t                  rvlane_last_out;
+static unsigned                      rvlane_presents;
+
+static retro_time_t rvlane_grid_after(retro_time_t t)
+{
+   retro_time_t k = (t - rvlane_base) / rvlane_period + 1;
+   return rvlane_base + k * rvlane_period;
+}
+
+static bool rvlane_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+{
+   retro_time_t in   = cpu_features_get_time_usec();
+   /* The render: short, then long, as the GPU frame varies. Slept to
+    * a millisecond short and spun the rest, so a sleep's granularity
+    * is not the variance measured. */
+   retro_time_t took = (rvlane_presents & 1) ? 7000 : 2000;
+   retro_time_t now  = in;
+   retro_time_t slot;
+   if (took > 1500)
+      retro_sleep((unsigned)((took - 1000) / 1000));
+   now = cpu_features_get_time_usec();
+   while (now < in + took)
+      now = cpu_features_get_time_usec();
+   /* Out on the first vblank after the render, as a vsynced present */
+   slot = rvlane_grid_after(now);
+   if (slot <= rvlane_last_out)
+      slot = rvlane_last_out + rvlane_period;
+   rvlane_last_out = slot;
+   rvlane_presents++;
+   return rvlane_inner->frame(data, frame, dims, frame_count,
+         pitch, msg, video_info);
+}
+
+static retro_time_t rvlane_last_present(void *data)
+{
+   retro_time_t now = cpu_features_get_time_usec();
+   (void)data;
+   return rvlane_last_out <= now ? rvlane_last_out
+      : rvlane_last_out - rvlane_period;
+}
+
+static void lane_pacing_fast_display(void)
+{
+   unsigned had = failures;
+   settings_t *settings = config_get_ptr();
+   thread_video_t *thr;
+   bool  saved_pacing  = settings->bools.video_threaded_display_pacing;
+   bool  saved_ask     = settings->bools.video_present_timing_from_display;
+   float saved_refresh = settings->floats.video_refresh_rate;
+   unsigned drains_before, drains;
+   uint64_t frames_before;
+   retro_time_t t0, took;
+   double fps;
+
+   /* Display at twice the core's rate: a content frame every other vblank */
+   settings->floats.video_refresh_rate               = 120.0f;
+   settings->bools.video_present_timing_from_display = true;
+   settings->bools.video_threaded_display_pacing     = true;
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "fast-display lane");
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   CHECK(!menu_is_up(), "fast-display lane: menu still up");
+   run_frames(3);
+   video_thread_wait_idle();
+
+   thr                 = (thread_video_t*)video_state_get_ptr()->data;
+   rvlane_period       = 1000000 / 120;
+   rvlane_base         = cpu_features_get_time_usec();
+   rvlane_last_out     = rvlane_base;
+   rvlane_presents     = 0;
+   rvlane_inner        = thr->driver;
+   rvlane_driver       = *thr->driver;
+   rvlane_driver.frame = rvlane_frame;
+   rvlane_inner_poke   = thr->poke;
+   rvlane_poke         = *thr->poke;
+   rvlane_poke.get_last_present_time = rvlane_last_present;
+   thr->driver         = &rvlane_driver;
+   thr->poke           = &rvlane_poke;
+
+   /* Let the hold settle on the measured times, then count. */
+   run_frames(60);
+   video_thread_wait_idle();
+   slock_lock(thr->lock);
+   drains_before = thr->handoff.drains;
+   slock_unlock(thr->lock);
+   frames_before = core_frames();
+   t0 = cpu_features_get_time_usec();
+   run_frames(120);
+   took = cpu_features_get_time_usec() - t0;
+   video_thread_wait_idle();
+   slock_lock(thr->lock);
+   drains = thr->handoff.drains - drains_before;
+   slock_unlock(thr->lock);
+   fps = took > 0 ? (double)(core_frames() - frames_before) * 1000000.0 / (double)took : 0.0;
+
+   CHECK(drains <= 1,
+         "fast-display lane: %u drains over 120 frames due every other vblank "
+         "(%.1f fps, render reserve %.1f ms)",
+         drains, fps, thr->render_time / 1000.0);
+   CHECK(fps > 57.0,
+         "fast-display lane: the core ran at %.1f fps against its 60", fps);
+   fprintf(stderr, "   fast display: %u drains of 120, %.1f fps, render reserve %.1f ms, %u presents\n",
+         drains, fps, thr->render_time / 1000.0, rvlane_presents);
+
+   thr->driver = rvlane_inner;
+   thr->poke   = rvlane_inner_poke;
+   settings->bools.video_threaded_display_pacing     = saved_pacing;
+   settings->bools.video_present_timing_from_display = saved_ask;
+   settings->floats.video_refresh_rate               = saved_refresh;
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   set_threaded_via_setting(false);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] fast-display lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* The window's answers reach the main thread, each as itself          */
 /*                                                                    */
 /*   alive, focus, has_windowed and presentable are published by the  */
@@ -4565,6 +4705,7 @@ int main(int argc, char *argv[])
    {
       lane_display_pacing();
       lane_pacing_queue_drain();
+      lane_pacing_fast_display();
    }
    lane_zero_copy();
    lane_zero_copy_ring_full();
