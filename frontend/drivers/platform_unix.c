@@ -27,6 +27,7 @@
 #include <fcntl.h>
 #include <sys/utsname.h>
 #include <sys/resource.h>
+#include <sys/wait.h>
 
 #ifdef __linux__
 #include <linux/version.h>
@@ -146,7 +147,7 @@ static char unix_cpu_model_name[64]      = {0};
 
 
 #if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
-static int speak_pid                     = 0;
+static pid_t speak_pid                   = 0;
 #endif
 
 /* Counts SIGINT/SIGTERM. Written by the signal handler and read by
@@ -4101,7 +4102,24 @@ enum retro_language frontend_unix_get_user_language(void)
 #if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
 static bool is_narrator_running_unix(void)
 {
-   return (kill(speak_pid, 0) == 0);
+   return speak_pid > 0 && kill(speak_pid, 0) == 0;
+}
+
+static bool narrator_read_pid_unix(int fd, pid_t *pid)
+{
+   uint8_t *dst = (uint8_t*)pid;
+   size_t done  = 0;
+
+   while (done < sizeof(*pid))
+   {
+      ssize_t n = read(fd, dst + done, sizeof(*pid) - done);
+      if (n < 0 && errno == EINTR)
+         continue;
+      if (n <= 0)
+         return false;
+      done += (size_t)n;
+   }
+   return true;
 }
 
 static const char* accessibility_unix_language_code(const char* language)
@@ -4202,7 +4220,10 @@ static const char* accessibility_unix_language_code(const char* language)
 static bool accessibility_speak_unix(int speed,
       const char* speak_text, int priority)
 {
-   int pid;
+   int pid_pipe[2];
+   pid_t pid;
+   pid_t narrator_pid = 0;
+   bool got_pid;
    settings_t *settings   = config_get_ptr();
    unsigned engine        = settings
       ? settings->uints.accessibility_narrator_engine
@@ -4254,58 +4275,101 @@ static bool accessibility_speak_unix(int speed,
       speak_pid = 0;
    }
 
-   pid = fork();
-   switch (pid)
+   /* Use a short-lived launcher so the narrator is reparented without
+    * changing SIGCHLD handling for other child processes. */
+   if (pipe(pid_pipe) < 0)
    {
-      case 0:
-         if (engine == ACCESSIBILITY_NARRATOR_ENGINE_SPEECH_DISPATCHER)
-         {
-            /* child process: speech-dispatcher via spd-say.
-             *   -l <lang>   language
-             *   -r <rate>   rate (-100..100)
-             *   -w          wait until finished, so this child stays
-             *               alive for is_narrator_running_unix()/SIGTERM
-             *               to track and interrupt, matching the espeak
-             *               long-lived-child behaviour. */
-            char* cmd[] = { (char*) "spd-say",
-               (char*) "-l", NULL,
-               (char*) "-r", NULL,
-               (char*) "-w",
-               NULL, NULL };
-            cmd[2] = (char*)language;
-            cmd[4] = (char*)spd_rates[speed-1];
-            cmd[6] = (char*)speak_text;
-            execvp("spd-say", cmd);
-
-            RARCH_WARN("Could not execute spd-say.\n");
-            /* Prevent interfere with the parent process */
-            _exit(EXIT_FAILURE);
-         }
-         else
-         {
-            /* child process: replace process with the espeak command */
-            char* cmd[] = { (char*) "espeak", NULL, NULL, NULL, NULL };
-            cmd[1] = voice_out;
-            cmd[2] = speed_out;
-            cmd[3] = (char*)speak_text;
-            execvp("espeak", cmd);
-
-            RARCH_WARN("Could not execute espeak.\n");
-            /* Prevent interfere with the parent process */
-            _exit(EXIT_FAILURE);
-         }
-      case -1:
-         RARCH_ERR("Could not fork for narrator.\n");
-      default:
-         {
-            /* parent process */
-            speak_pid = pid;
-
-            /* Tell the system that we'll ignore the exit status of the child
-             * process.  This prevents zombie processes. */
-            signal(SIGCHLD, SIG_IGN);
-         }
+      RARCH_ERR("Could not create pipe for narrator.\n");
+      goto end;
    }
+
+   pid = fork();
+   if (pid == 0)
+   {
+      ssize_t sent = -1;
+
+      close(pid_pipe[0]);
+      narrator_pid = fork();
+      if (narrator_pid != 0)
+      {
+         if (narrator_pid > 0)
+         {
+            /* Report the narrator PID before this short-lived launcher
+             * exits. The narrator is then reparented. */
+            do
+            {
+               sent = write(pid_pipe[1], &narrator_pid,
+                     sizeof(narrator_pid));
+            } while (sent < 0 && errno == EINTR);
+
+            if (sent != (ssize_t)sizeof(narrator_pid))
+            {
+               kill(narrator_pid, SIGTERM);
+               while (waitpid(narrator_pid, NULL, 0) < 0 && errno == EINTR)
+                  continue;
+            }
+         }
+         close(pid_pipe[1]);
+         _exit(narrator_pid > 0 &&
+               sent == (ssize_t)sizeof(narrator_pid) ? 0 : 1);
+      }
+
+      close(pid_pipe[1]);
+      if (engine == ACCESSIBILITY_NARRATOR_ENGINE_SPEECH_DISPATCHER)
+      {
+         /* child process: speech-dispatcher via spd-say.
+          *   -l <lang>   language
+          *   -r <rate>   rate (-100..100)
+          *   -w          wait until finished, so this child stays
+          *               alive for is_narrator_running_unix()/SIGTERM
+          *               to track and interrupt, matching the espeak
+          *               long-lived-child behaviour. */
+         char* cmd[] = { (char*) "spd-say",
+            (char*) "-l", NULL,
+            (char*) "-r", NULL,
+            (char*) "-w",
+            NULL, NULL };
+         cmd[2] = (char*)language;
+         cmd[4] = (char*)spd_rates[speed-1];
+         cmd[6] = (char*)speak_text;
+         execvp("spd-say", cmd);
+
+         RARCH_WARN("Could not execute spd-say.\n");
+         /* Prevent interfere with the parent process */
+         _exit(EXIT_FAILURE);
+      }
+      else
+      {
+         /* child process: replace process with the espeak command */
+         char* cmd[] = { (char*) "espeak", NULL, NULL, NULL, NULL };
+         cmd[1] = voice_out;
+         cmd[2] = speed_out;
+         cmd[3] = (char*)speak_text;
+         execvp("espeak", cmd);
+
+         RARCH_WARN("Could not execute espeak.\n");
+         /* Prevent interfere with the parent process */
+         _exit(EXIT_FAILURE);
+      }
+   }
+
+   close(pid_pipe[1]);
+   if (pid < 0)
+   {
+      close(pid_pipe[0]);
+      RARCH_ERR("Could not fork for narrator.\n");
+      goto end;
+   }
+
+   got_pid = narrator_read_pid_unix(pid_pipe[0], &narrator_pid);
+   close(pid_pipe[0]);
+   while (waitpid(pid, NULL, 0) < 0 && errno == EINTR)
+      continue;
+
+   if (got_pid && narrator_pid > 0)
+      speak_pid = narrator_pid;
+   else
+      RARCH_ERR("Could not start narrator.\n");
 
 end:
    if (voice_out)
