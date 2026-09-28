@@ -17,8 +17,27 @@ mkcert() { # name keyalg [pkeyopt]
 mkcert rsa rsa:2048
 mkcert p256 ec "-pkeyopt ec_paramgen_curve:prime256v1"
 mkcert p384 ec "-pkeyopt ec_paramgen_curve:secp384r1"
+# a real-world shape: root -> intermediate CA -> leaf, the server sending
+# leaf + intermediate and the client trusting only the root; one with an
+# RSA intermediate, one with a P-384 intermediate under the RSA root
+mkinter() { # name keyalg [pkeyopt]
+   openssl req -newkey "$2" $3 -nodes -keyout $D/$1.key -out $D/$1.csr -subj "/CN=$1 intermediate" 2>/dev/null
+   printf 'basicConstraints=critical,CA:TRUE,pathlen:0\nkeyUsage=critical,keyCertSign,cRLSign\n' > $D/$1.ext
+   openssl x509 -req -in $D/$1.csr -CA $D/ca.pem -CAkey $D/ca.key -CAcreateserial -out $D/$1.pem -days 2 -extfile $D/$1.ext 2>/dev/null
+}
+mkleaf() { # name inter
+   openssl req -newkey rsa:2048 -nodes -keyout $D/$1.key -out $D/$1.csr -subj "/CN=$1" 2>/dev/null
+   printf 'subjectAltName=DNS:localhost\nbasicConstraints=CA:FALSE\n' > $D/$1.ext
+   openssl x509 -req -in $D/$1.csr -CA $D/$2.pem -CAkey $D/$2.key -CAcreateserial -out $D/$1.pem -days 2 -extfile $D/$1.ext 2>/dev/null
+   cp $D/$2.pem $D/$1.chain.pem   # what the server sends along with the leaf
+}
+mkinter irsa rsa:2048
+mkinter ip384 ec "-pkeyopt ec_paramgen_curve:secp384r1"
+mkleaf viarsa irsa
+mkleaf viap384 ip384
 run() { # label cert cipher curve expect_rc host mode ca [rounds] [server opts]
-   openssl s_server -accept 44331 -cert $D/$2.pem -key $D/$2.key -tls1_2 -cipher "$3" -named_curve $4 -www ${10:-} >/dev/null 2>&1 &
+   CHAIN=""; [ -f $D/$2.chain.pem ] && CHAIN="-cert_chain $D/$2.chain.pem"
+   openssl s_server -accept 44331 -cert $D/$2.pem $CHAIN -key $D/$2.key -tls1_2 -cipher "$3" -named_curve $4 -www ${10:-} >/dev/null 2>&1 &
    SRV=$!; sleep 0.4
    set +e; ./tls_fetch $6 44331 $7 "$8" ${9:-1} >/dev/null 2>&1; rc=$?; set -e
    kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
@@ -38,4 +57,9 @@ run "server offering only a CBC suite fails"        rsa  ECDHE-RSA-AES128-SHA256
 run "session resumption by ticket (3 rounds)"     rsa  ECDHE-RSA-AES128-GCM-SHA256      prime256v1 0 localhost 0 $D/ca.pem 3
 run "session resumption by id, no tickets"         rsa  ECDHE-RSA-AES128-GCM-SHA256      prime256v1 0 localhost 0 $D/ca.pem 3 -no_ticket
 run "ECDSA + ChaCha20 resumes too"                 p256 ECDHE-ECDSA-CHACHA20-POLY1305    prime256v1 0 localhost 0 $D/ca.pem 2
+run "chain: root -> RSA intermediate -> leaf"      viarsa  ECDHE-RSA-AES128-GCM-SHA256 prime256v1 0 localhost 0 $D/ca.pem
+run "chain: root -> P-384 intermediate -> leaf"    viap384 ECDHE-RSA-AES128-GCM-SHA256 prime256v1 0 localhost 0 $D/ca.pem
+run "chain: trusting the intermediate directly also works" viarsa ECDHE-RSA-AES128-GCM-SHA256 prime256v1 0 localhost 0 $D/irsa.pem
+cp $D/viarsa.pem $D/nointer.pem; cp $D/viarsa.key $D/nointer.key
+run "chain: server omitting the intermediate is refused" nointer ECDHE-RSA-AES128-GCM-SHA256 prime256v1 1 localhost 0 $D/ca.pem
 echo "[pass] tls_retro local server matrix"
