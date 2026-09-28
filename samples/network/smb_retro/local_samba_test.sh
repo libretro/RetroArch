@@ -12,6 +12,17 @@ RUN=${RUNNER:-}
 EXE=${EXE:-}
 D=$(mktemp -d); chmod 755 $D; mkdir -p $D/share $D/priv $D/run /run/samba
 stop() { pkill -f "smbd -s $D/smb.conf" 2>/dev/null || true; pkill -f "configfile=$D/smb.conf" 2>/dev/null || true; }
+# Port 445 must be ours: a distribution smbd started by the package
+# (the CI runner's samba comes up as a service) answers every case
+# instead of the one this script configured - it maps the unknown
+# user to guest and knows no [share].
+port_busy() { ss -ltn 2>/dev/null | grep -q ':445 '; }
+if port_busy; then
+   systemctl stop smbd nmbd samba-ad-dc 2>/dev/null || true
+   pkill -x smbd 2>/dev/null || true
+   i=0; while port_busy && [ $i -lt 50 ]; do i=$((i + 1)); sleep 0.2; done
+   port_busy && { echo "FAIL: port 445 is held by another smbd"; exit 1; }
+fi
 trap 'stop; rm -rf $D' EXIT
 id rsmbtest >/dev/null 2>&1 || useradd -M -s /usr/sbin/nologin rsmbtest
 chown rsmbtest $D/share
