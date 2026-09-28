@@ -1596,6 +1596,18 @@ jobs:
           make -f Makefile.transport_fail clean
           echo "[pass] http_transport_failure_test (TSan)"
 
+      - name: Build and run HTTP initialization failure test
+        shell: bash
+        working-directory: samples/tasks/http
+        run: |
+          set -eu
+          for threads in 0 1; do
+            make -f Makefile.init_failure clean
+            make -f Makefile.init_failure THREADS=$threads
+            timeout 60 ./http_init_failure_test
+          done
+          make -f Makefile.init_failure clean
+
       - name: Build and run HTTP DNS connect lifetime test
         shell: bash
         working-directory: samples/tasks/http

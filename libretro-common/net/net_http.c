@@ -820,6 +820,11 @@ static struct dns_cache_entry *net_http_dns_cache_add(
    if (!entry)
       return NULL;
    entry->domain = strdup(domain);
+   if (!entry->domain)
+   {
+      free(entry);
+      return NULL;
+   }
    entry->port = port;
    entry->addr = addr;
    entry->timestamp = cpu_features_get_time_usec();
@@ -997,6 +1002,11 @@ static struct conn_pool_entry *net_http_conn_pool_add(const char *domain, int po
    if (!entry)
       return NULL;
    entry->domain = strdup(domain);
+   if (!entry->domain)
+   {
+      free(entry);
+      return NULL;
+   }
    entry->port = port;
    entry->fd = fd;
    entry->in_use = true;
@@ -1126,7 +1136,7 @@ static void net_http_resolve(void *data)
    port = entry->port;
    UNLOCK_DNS_CACHE();
 
-   if (!network_init())
+   if (!domain || !network_init())
    {
       LOCK_DNS_CACHE();
       entry->valid = true;
@@ -1187,7 +1197,15 @@ static bool net_http_new_socket(struct http_t *state)
          addr = entry->addr;
          fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
          if (fd >= 0)
+         {
             state->conn = net_http_conn_pool_add(state->request.domain, state->request.port, fd, state->ssl);
+            if (!state->conn)
+            {
+               socket_close(fd);
+               fd = -1;
+               net_http_log_transport_state(state, "conn_pool_alloc_failed", -1);
+            }
+         }
          else
          {
             net_http_note_socket_error(state);
@@ -1207,9 +1225,25 @@ static bool net_http_new_socket(struct http_t *state)
    else
    {
       entry = net_http_dns_cache_add(state->request.domain, state->request.port, NULL);
+      if (!entry)
+      {
+         UNLOCK_DNS_CACHE();
+         net_http_log_transport_state(state, "dns_cache_alloc_failed", -1);
+         return false;
+      }
 #ifdef HAVE_THREADS
       /* create the entry for it as an indicator that the request is underway */
       entry->thread = sthread_create(net_http_resolve, entry);
+      if (!entry->thread)
+      {
+         /* The new head has not been exposed outside the lock. */
+         dns_cache = entry->next;
+         free(entry->domain);
+         free(entry);
+         UNLOCK_DNS_CACHE();
+         net_http_log_transport_state(state, "dns_thread_create_failed", -1);
+         return false;
+      }
 #else
       net_http_resolve(entry);
 #endif
