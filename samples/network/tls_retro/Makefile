@@ -7,9 +7,16 @@ SRC = tls_fetch.c $(COMMON)/net/net_socket_ssl_retro.c $(COMMON)/net/net_socket.
       $(COMMON)/hash/lrc_hash.c $(COMMON)/encodings/encoding_base64.c $(COMMON)/streams/file_stream.c \
       $(COMMON)/vfs/vfs_implementation.c $(COMMON)/file/file_path.c $(COMMON)/string/rstrtod.c \
       $(COMMON)/file/file_path_io.c $(COMMON)/features/features_cpu.c $(COMMON)/compat/compat_strl.c \
+      $(COMMON)/compat/fopen_utf8.c \
       $(COMMON)/time/rtime.c $(COMMON)/string/stdstring.c $(COMMON)/encodings/encoding_utf.c
+
+# Winsock on Windows (MSYS2 / MinGW, or a cross build with a *-w64-mingw32 CC).
+ifneq (,$(findstring mingw,$(CC))$(findstring MINGW,$(MSYSTEM))$(findstring Windows,$(OS)))
+   LDLIBS += -lws2_32 -liphlpapi
+endif
+
 tls_fetch: $(SRC)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $(LDLIBS) -o $@
 clean:
-	rm -f tls_fetch
+	rm -f tls_fetch tls_fetch.exe
 .PHONY: clean

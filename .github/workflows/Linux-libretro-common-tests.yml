@@ -122,6 +122,11 @@ jobs:
           # the spot, verify required / optional / disabled, and the
           # refusals that must happen (wrong hostname, untrusted CA).
           samples/network/tls_retro/local_server_test.sh
+          # The same tool cross-linked for Windows: the sample's link
+          # line has to carry Winsock, which nothing on Linux checks.
+          make -C samples/network/tls_retro clean
+          CC=x86_64-w64-mingw32-gcc make -C samples/network/tls_retro tls_fetch
+          make -C samples/network/tls_retro clean
 
       - name: Check VFS backend symbol parity
         shell: bash
