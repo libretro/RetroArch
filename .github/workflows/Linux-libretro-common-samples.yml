@@ -108,6 +108,7 @@ jobs:
             rzip_chunk_size_test
             rzip_matches_buf_test
             rzip_codec_test
+            rzip_parallel_test
             data_transfer_source_test
             data_transfer_prefix_test
             data_transfer_window_test
@@ -567,6 +568,26 @@ jobs:
 
           make clean
           CC=clang make check SANITIZER=thread
+
+      - name: Run rzip_parallel_test under Clang + ThreadSanitizer
+        shell: bash
+        working-directory: libretro-common/samples/streams/rzip
+        run: |
+          # rzip_stream.c's chunk-writer pool hands each slot between the
+          # writer and one worker on an acquire/release status word and
+          # parks both sides on retro_eventcount, with no lock anywhere.
+          # The value checks prove in-order emission; a weakened store
+          # or a lost wakeup still passes them on x86 TSO, and only TSan
+          # sees the missing barrier.  The test drives the pool at every
+          # width and through two hundred short lifetimes so the
+          # start / park / shutdown edges are exercised often.
+          set -u
+          set -o pipefail
+
+          make clean
+          CC=clang make rzip_parallel_test SANITIZER=thread
+
+          TSAN_OPTIONS=halt_on_error=1 ./rzip_parallel_test
 
       - name: Run crc32_test under Clang + ThreadSanitizer
         shell: bash

@@ -32,7 +32,9 @@
 #include <streams/rzip_stream.h>
 
 #ifdef HAVE_THREADS
+#include <retro_atomic.h>
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #include <features/features_cpu.h>
 #endif
 
@@ -117,14 +119,21 @@ enum rzip_slot_status
 };
 
 /* One in-flight compression job. Each slot is
- * statically owned by one worker thread */
+ * statically owned by one worker thread, so it is
+ * a two-party handshake: the writer publishes
+ * in/in_size under a release store of READY, the
+ * worker publishes out_size under a release store
+ * of DONE or ERROR, and each side acquire-loads
+ * status before touching the other's fields. No
+ * lock is involved; 'wake' parks the worker */
 typedef struct rzip_par_slot
 {
+   retro_eventcount_t wake;
    const uint8_t *in;
    uint8_t *out;
    uint32_t in_size;
    uint32_t out_size;
-   enum rzip_slot_status status;
+   retro_atomic_int_t status;
 } rzip_par_slot_t;
 
 struct rzip_par;
@@ -140,13 +149,14 @@ typedef struct rzip_par_worker
 
 typedef struct rzip_par
 {
-   slock_t *lock;
-   scond_t *cond;
+   /* Parks the writer while the oldest slot is
+    * still in flight; notified by every worker */
+   retro_eventcount_t drain;
    rzip_par_slot_t slots[RZIP_MAX_THREADS];
    rzip_par_worker_t workers[RZIP_MAX_THREADS];
    uint32_t out_buf_size;
    unsigned num_threads;
-   bool shutdown;
+   retro_atomic_int_t shutdown;
 } rzip_par_t;
 #endif
 
@@ -1057,16 +1067,30 @@ static void rzipstream_par_worker(void *data)
       uint32_t deflate_written = 0;
       bool ok                  = false;
 
-      slock_lock(par->lock);
-      while ((slot->status != RZIP_SLOT_READY) && !par->shutdown)
-         scond_wait(par->cond, par->lock);
-
-      if (par->shutdown)
+      /* Park until the writer publishes READY or
+       * shutdown. The re-check between prepare and
+       * commit is what makes the sleep safe against
+       * a notify racing the first check */
+      for (;;)
       {
-         slock_unlock(par->lock);
-         return;
+         int key;
+
+         if (retro_atomic_load_acquire_int(&par->shutdown))
+            return;
+         if (retro_atomic_load_acquire_int(&slot->status) == RZIP_SLOT_READY)
+            break;
+
+         key = retro_eventcount_prepare_wait(&slot->wake);
+
+         if (   retro_atomic_load_acquire_int(&par->shutdown)
+             || (retro_atomic_load_acquire_int(&slot->status)
+                   == RZIP_SLOT_READY))
+         {
+            retro_eventcount_cancel_wait(&slot->wake);
+            continue;
+         }
+         retro_eventcount_commit_wait(&slot->wake, key);
       }
-      slock_unlock(par->lock);
 
       /* Compress assigned chunk with this worker's
        * private deflate state. Each chunk is an
@@ -1089,11 +1113,10 @@ static void rzipstream_par_worker(void *data)
             ok = false;
       }
 
-      slock_lock(par->lock);
       slot->out_size = deflate_written;
-      slot->status   = ok ? RZIP_SLOT_DONE : RZIP_SLOT_ERROR;
-      scond_broadcast(par->cond);
-      slock_unlock(par->lock);
+      retro_atomic_store_release_int(&slot->status,
+            ok ? RZIP_SLOT_DONE : RZIP_SLOT_ERROR);
+      retro_eventcount_notify(&par->drain);
    }
 }
 
@@ -1106,15 +1129,11 @@ static void rzipstream_par_free(rzipstream_t *stream)
    if (!par)
       return;
 
-   if (par->lock && par->cond)
-   {
-      slock_lock(par->lock);
-      par->shutdown = true;
-      scond_broadcast(par->cond);
-      slock_unlock(par->lock);
-   }
-
+   retro_atomic_store_release_int(&par->shutdown, 1);
    for (i = 0; i < par->num_threads; i++)
+      retro_eventcount_notify(&par->slots[i].wake);
+
+   for (i = 0; i < RZIP_MAX_THREADS; i++)
    {
       if (par->workers[i].thread)
          sthread_join(par->workers[i].thread);
@@ -1127,12 +1146,11 @@ static void rzipstream_par_free(rzipstream_t *stream)
       if (par->slots[i].out)
          free(par->slots[i].out);
       par->slots[i].out = NULL;
+
+      retro_eventcount_free(&par->slots[i].wake);
    }
 
-   if (par->cond)
-      scond_free(par->cond);
-   if (par->lock)
-      slock_free(par->lock);
+   retro_eventcount_free(&par->drain);
 
    free(par);
    stream->par = NULL;
@@ -1164,10 +1182,9 @@ static bool rzipstream_par_init(rzipstream_t *stream)
       return false;
 
    par->out_buf_size = stream->out_buf_size;
+   retro_atomic_int_init(&par->shutdown, 0);
 
-   if (!(par->lock = slock_new()))
-      goto error;
-   if (!(par->cond = scond_new()))
+   if (!retro_eventcount_init(&par->drain))
       goto error;
 
    for (i = 0; i < num_threads; i++)
@@ -1191,6 +1208,10 @@ static bool rzipstream_par_init(rzipstream_t *stream)
          goto error;
 
       if (!(par->slots[i].out = (uint8_t*)malloc(par->out_buf_size)))
+         goto error;
+
+      retro_atomic_int_init(&par->slots[i].status, RZIP_SLOT_EMPTY);
+      if (!retro_eventcount_init(&par->slots[i].wake))
          goto error;
 
       if (!(worker->thread = sthread_create(
@@ -1229,6 +1250,7 @@ static bool rzipstream_write_chunks_parallel(rzipstream_t *stream,
           || (!failed && (dispatched < num_chunks)))
    {
       rzip_par_slot_t *slot = NULL;
+      int st                = RZIP_SLOT_EMPTY;
 
       /* Dispatch until the slot window is full */
       if (   !failed
@@ -1237,30 +1259,43 @@ static bool rzipstream_write_chunks_parallel(rzipstream_t *stream,
       {
          slot = &par->slots[dispatched % num_slots];
 
-         slock_lock(par->lock);
          slot->in       = data + (size_t)dispatched * chunk_size;
          slot->in_size  = chunk_size;
          slot->out_size = 0;
-         slot->status   = RZIP_SLOT_READY;
-         scond_broadcast(par->cond);
-         slock_unlock(par->lock);
+         retro_atomic_store_release_int(&slot->status, RZIP_SLOT_READY);
+         retro_eventcount_notify(&slot->wake);
 
          dispatched++;
          continue;
       }
 
-      /* Drain oldest in-flight chunk (in-order emission) */
+      /* Drain oldest in-flight chunk (in-order emission).
+       * Park on the pool's drain eventcount; any worker
+       * finishing notifies it, and the re-check between
+       * prepare and commit closes the lost-wakeup window */
       slot = &par->slots[drained % num_slots];
 
-      slock_lock(par->lock);
-      while (   (slot->status != RZIP_SLOT_DONE)
-             && (slot->status != RZIP_SLOT_ERROR))
-         scond_wait(par->cond, par->lock);
+      for (;;)
+      {
+         int key;
 
-      if (slot->status == RZIP_SLOT_ERROR)
+         st = retro_atomic_load_acquire_int(&slot->status);
+         if ((st == RZIP_SLOT_DONE) || (st == RZIP_SLOT_ERROR))
+            break;
+
+         key = retro_eventcount_prepare_wait(&par->drain);
+         st  = retro_atomic_load_acquire_int(&slot->status);
+         if ((st == RZIP_SLOT_DONE) || (st == RZIP_SLOT_ERROR))
+         {
+            retro_eventcount_cancel_wait(&par->drain);
+            break;
+         }
+         retro_eventcount_commit_wait(&par->drain, key);
+      }
+
+      if (st == RZIP_SLOT_ERROR)
          failed = true;
-      slot->status = RZIP_SLOT_EMPTY;
-      slock_unlock(par->lock);
+      retro_atomic_store_relaxed_int(&slot->status, RZIP_SLOT_EMPTY);
 
       if (!failed)
       {
