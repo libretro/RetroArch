@@ -163,6 +163,22 @@ jobs:
           samples/network/nfs_retro/local_unfs3_test.sh
           make -C samples/network/nfs_retro clean
 
+      - name: Fuzz the network parsers
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # libFuzzer over the X.509 parser and the TLS, SMB and NFS
+          # clients' receive paths (a listener in the harness answers the
+          # client with the fuzzer's input), under ASan + UBSan, from a
+          # seed corpus recorded off real servers. Any crash, timeout or
+          # leak artifact fails the step.
+          make -C libretro-common/test/fuzz fuzz-run FUZZ_SECONDS=30
+          if ls libretro-common/test/fuzz/crash-* libretro-common/test/fuzz/leak-* libretro-common/test/fuzz/timeout-* >/dev/null 2>&1; then
+            echo "fuzzer artifacts found"; exit 1
+          fi
+          make -C libretro-common/test/fuzz clean
+
       - name: Network client matrices under ASan + UBSan + LSan
         shell: bash
         working-directory: ${{ github.workspace }}

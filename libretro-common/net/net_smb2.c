@@ -150,6 +150,7 @@ struct rsmb_ctx
    unsigned dialect;
    unsigned cipher;             /* 0, CIPHER_AES128_CCM or _GCM */
    unsigned timeout;
+   uint16_t port;
    int      fd;
    uint8_t  session_key[16];
    uint8_t  signing_key[16];
@@ -1055,6 +1056,8 @@ void rsmb_set_user(struct rsmb_ctx *c, const char *user)         { rsmb_set_str(
 void rsmb_set_password(struct rsmb_ctx *c, const char *password) { rsmb_set_str(&c->password, password, 1); }
 void rsmb_set_domain(struct rsmb_ctx *c, const char *domain)     { rsmb_set_str(&c->domain, domain, 0); }
 
+void rsmb_set_port(struct rsmb_ctx *c, uint16_t port) { c->port = port; }
+
 void rsmb_set_timeout(struct rsmb_ctx *c, unsigned seconds)
 {
    c->timeout = seconds ? seconds : 10;
@@ -1067,7 +1070,7 @@ int rsmb_connect(struct rsmb_ctx *c, const char *server, const char *share)
 
    rsmb_disconnect(c);
    strlcpy(c->server, server, sizeof(c->server));
-   fd = socket_init((void**)&addr, SMB2_PORT, server, SOCKET_TYPE_STREAM, AF_UNSPEC);
+   fd = socket_init((void**)&addr, c->port ? c->port : SMB2_PORT, server, SOCKET_TYPE_STREAM, AF_UNSPEC);
    if (fd < 0 || !addr)
    {
       rsmb_err(c, "cannot resolve server");

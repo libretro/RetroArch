@@ -72,6 +72,8 @@ void rsmb_set_password(struct rsmb_ctx *c, const char *password);
 void rsmb_set_domain(struct rsmb_ctx *c, const char *domain);
 /* Socket connect and per-request timeout, seconds; 0 restores the
  * default of 10. */
+/* TCP port; 0 (the default) means 445. */
+void rsmb_set_port(struct rsmb_ctx *c, uint16_t port);
 void rsmb_set_timeout(struct rsmb_ctx *c, unsigned seconds);
 
 /**
