@@ -120,8 +120,15 @@ static void handoff_consumer(void *unused)
          continue;
       }
 
+      /* The flag is set after the last item: seeing it means a fresh
+       * look at the count is the final one */
       if (retro_atomic_load_acquire_int(&done_flag))
+      {
+         if (retro_atomic_load_acquire_size(&consumed)
+               < retro_atomic_load_acquire_size(&produced))
+            continue;
          return;
+      }
 
       key = retro_eventcount_prepare_wait(&ec);
 
