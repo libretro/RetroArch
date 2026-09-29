@@ -161,6 +161,7 @@ struct libretro_vfs_implementation_file
 #ifdef HAVE_SMBCLIENT
    intptr_t smb_fh;
    intptr_t smb_ctx;
+   intptr_t smb_slot;   /* pool slot held from open to close, 0 if private */
 #endif
 #ifdef HAVE_NFSCLIENT
    intptr_t nfs_fh;

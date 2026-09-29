@@ -17,6 +17,9 @@ VFS_SRC = vfs_test.c $(COMMON)/vfs/vfs_implementation_smb.c $(filter-out smb_tes
       $(COMMON)/lists/string_list.c
 vfs_test: $(VFS_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_RETROSMB -DHAVE_SMBCLIENT -DHAVE_NETWORKING -DRARCH_INTERNAL -I$(ROOT) $(CFLAGS) $(VFS_SRC) $(LDLIBS) -o $@
+THR_SRC = vfs_threads_test.c $(filter-out vfs_test.c,$(VFS_SRC)) $(COMMON)/rthreads/rthreads.c $(COMMON)/file/retro_dirent.c
+vfs_threads_test: $(THR_SRC)
+	$(CC) $(CPPFLAGS) -DHAVE_RETROSMB -DHAVE_SMBCLIENT -DHAVE_NETWORKING -DHAVE_THREADS -DRARCH_INTERNAL -I$(ROOT) $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@
 clean:
-	rm -f smb_test smb_test.exe vfs_test vfs_test.exe
+	rm -f smb_test smb_test.exe vfs_test vfs_test.exe vfs_threads_test vfs_threads_test.exe
 .PHONY: clean

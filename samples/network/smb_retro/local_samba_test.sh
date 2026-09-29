@@ -7,7 +7,7 @@ set -e
 cd "$(dirname "$0")"
 command -v smbd >/dev/null 2>&1 || { echo "skip: no smbd"; exit 0; }
 [ "$(id -u)" = 0 ] || { echo "skip: needs root for port 445"; exit 0; }
-make -s smb_test vfs_test
+make -s smb_test vfs_test vfs_threads_test
 RUN=${RUNNER:-}
 EXE=${EXE:-}
 D=$(mktemp -d); chmod 755 $D; mkdir -p $D/share $D/priv $D/run /run/samba
@@ -72,8 +72,10 @@ run() { # label max_protocol encrypt expect_rc password
    done
    rm -f $D/share/rsmb_test.bin
    set +e; $RUN ./smb_test$EXE 127.0.0.1 share rsmbtest "$5" RETRO >$D/out 2>&1; rc=$?
-   # the real VFS backend on top, on the file the run above wrote
+   # the real VFS backend on top, on the file the run above wrote,
+   # then four threads on a two-slot pool through it
    [ $rc -eq 0 ] && { $RUN ./vfs_test$EXE 127.0.0.1 share rsmbtest "$5" RETRO >>$D/out 2>&1 || rc=3; }
+   [ $rc -eq 0 ] && { $RUN ./vfs_threads_test$EXE 127.0.0.1 share rsmbtest "$5" RETRO >>$D/out 2>&1 || rc=4; }
    set -e
    if [ $rc -eq $4 ]; then echo "ok:   $1"; else echo "FAIL: $1 (rc=$rc, want $4): $(cat $D/out)"; exit 1; fi
    rm -f $D/share/rsmb_test.bin

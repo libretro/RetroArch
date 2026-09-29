@@ -45,6 +45,7 @@ struct smbc_dirent {
 typedef struct {
    struct smb2_context *ctx;
    struct smb2dir *dir;
+   void *slot;          /* the pool slot the listing holds, NULL if private */
    char **shares;
    unsigned share_count;
    unsigned share_index;
