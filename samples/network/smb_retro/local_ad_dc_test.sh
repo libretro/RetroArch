@@ -84,16 +84,31 @@ EOF
    KRB5_CONFIG=$D/krb5-cli.conf KRB5CCNAME=$D/cc sh -c "echo 'Sekret1!!' | kinit player >/dev/null 2>&1" || return 1
    KRB5_CONFIG=$D/krb5-cli.conf KRB5CCNAME=$D/cc smbclient --use-kerberos=required -N //$DCNAME/games -c ls > $D/oracle.out 2>&1
 }
+# (an if, not a bare call: under set -e a failing oracle would end the
+# script before it could say why)
+orc=1
 i=0; while [ $i -lt 100 ]; do
-   oracle; orc=$?
+   if oracle; then orc=0; else orc=$?; fi
    [ $orc -eq 0 ] && break
    [ $orc -eq 2 ] && break
    i=$((i + 1)); sleep 0.3
 done
+# Everything the failure needs to be understood, printed by a helper
+# that set -e cannot cut short (a log that does not exist yet must not
+# end the report).
+dc_report() {
+   set +e
+   echo "--- smbclient:"; [ -f $D/oracle.out ] && tail -5 $D/oracle.out
+   echo "--- klist:"; KRB5_CONFIG=$D/krb5-cli.conf KRB5CCNAME=$D/cc klist 2>&1 | head -5
+   echo "--- samba.out:"; [ -f $D/samba.out ] && tail -10 $D/samba.out
+   for l in $D/log.samba $D/log.smbd $D/log.winbindd $D/log.kdc; do
+      [ -f $l ] && { echo "--- $(basename $l):"; tail -25 $l; }
+   done
+   return 0
+}
 if [ $orc -eq 1 ]; then
    echo "skip: Samba's own client cannot log in to the DC with a ticket here:"
-   tail -5 $D/oracle.out 2>/dev/null
-   tail -20 $D/log.samba 2>/dev/null
+   dc_report
    exit 0
 fi
 export SMB_KRB_REALM=AD.RETRO.TEST SMB_KRB_KDC=127.0.0.1 SMB_KRB_REQUIRE=1
@@ -108,7 +123,7 @@ if grep -q "^ok:" $D/out; then
    echo "ok:   Kerberos login to the AD DC (SMB 3.1.1, signed, NTLM disabled on the server)"
 else
    echo "FAIL: $(cat $D/out)"
-   echo "--- DC log tail:"; tail -30 $D/log.samba 2>/dev/null; tail -30 $D/log.smbd 2>/dev/null
+   dc_report
    exit 1
 fi
 if $RUN ./smb_test$EXE $DCNAME games player wrong > $D/out 2>&1; then
