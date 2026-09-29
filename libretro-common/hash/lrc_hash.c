@@ -1051,10 +1051,10 @@ static const uint64_t sha512_k[80] = {
 #define ROTR64(x, n) (((x) >> (n)) | ((x) << (64 - (n))))
 #define CH(x, y, z)  (((x) & (y)) ^ (~(x) & (z)))
 #define MAJ(x, y, z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
-#define BS0(x) (ROTR64(x, 28) ^ ROTR64(x, 34) ^ ROTR64(x, 39))
-#define BS1(x) (ROTR64(x, 14) ^ ROTR64(x, 18) ^ ROTR64(x, 41))
-#define SS0(x) (ROTR64(x,  1) ^ ROTR64(x,  8) ^ ((x) >> 7))
-#define SS1(x) (ROTR64(x, 19) ^ ROTR64(x, 61) ^ ((x) >> 6))
+#define SHA512_BSIG0(x) (ROTR64(x, 28) ^ ROTR64(x, 34) ^ ROTR64(x, 39))
+#define SHA512_BSIG1(x) (ROTR64(x, 14) ^ ROTR64(x, 18) ^ ROTR64(x, 41))
+#define SHA512_SSIG0(x) (ROTR64(x,  1) ^ ROTR64(x,  8) ^ ((x) >> 7))
+#define SHA512_SSIG1(x) (ROTR64(x, 19) ^ ROTR64(x, 61) ^ ((x) >> 6))
 
 static void sha512_block(struct sha512_state *p, const uint8_t *d)
 {
@@ -1065,15 +1065,15 @@ static void sha512_block(struct sha512_state *p, const uint8_t *d)
    for (i = 0; i < 16; i++)
       w[i] = sha512_load64(d + 8 * i);
    for (i = 16; i < 80; i++)
-      w[i] = SS1(w[i - 2]) + w[i - 7] + SS0(w[i - 15]) + w[i - 16];
+      w[i] = SHA512_SSIG1(w[i - 2]) + w[i - 7] + SHA512_SSIG0(w[i - 15]) + w[i - 16];
 
    a = p->h[0]; b = p->h[1]; c = p->h[2]; dd = p->h[3];
    e = p->h[4]; f = p->h[5]; g = p->h[6]; h  = p->h[7];
 
 #define SHA512_STEP(a, b, c, d, e, f, g, h, i)                         \
    do {                                                                \
-      uint64_t t1 = h + BS1(e) + CH(e, f, g) + sha512_k[i] + w[i];   \
-      uint64_t t2 = BS0(a) + MAJ(a, b, c);                            \
+      uint64_t t1 = h + SHA512_BSIG1(e) + CH(e, f, g) + sha512_k[i] + w[i];   \
+      uint64_t t2 = SHA512_BSIG0(a) + MAJ(a, b, c);                            \
       d += t1;                                                         \
       h  = t1 + t2;                                                    \
    } while (0)
