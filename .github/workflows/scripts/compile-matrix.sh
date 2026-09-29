@@ -524,6 +524,12 @@ check "orbis: ps4_audio"       "$HOSTOFF -Itools/platform_stubs/orbis -DORBIS $C
 check "qnx: alsa_qsa"          "$HOSTOFF -Itools/platform_stubs/qnx -D__QNX__ $CDECL" audio/drivers/alsa_qsa.c
 check "android: vfs saf"       "$HOSTOFF -Itools/platform_stubs/android -DANDROID $CDECL" libretro-common/vfs/vfs_implementation_saf.c
 check "android: play delivery" "$HOSTOFF -Itools/platform_stubs/android -DANDROID $CDECL" play_feature_delivery/play_feature_delivery.c
+# the Android build carries the built-in NFS client and its backend
+# (HAVE_RETRONFS in pkg/android/phoenix-common/jni/Android.mk) and the
+# prefetcher both network backends read through
+check "android: nfs client"    "$HOSTOFF -Itools/platform_stubs/android -DANDROID -DHAVE_NFSCLIENT -DHAVE_RETRONFS -DHAVE_THREADS -DHAVE_NETWORKING $CDECL" libretro-common/net/net_nfs3.c
+check "android: nfs backend"   "$HOSTOFF -Itools/platform_stubs/android -DANDROID -DHAVE_NFSCLIENT -DHAVE_RETRONFS -DHAVE_THREADS -DHAVE_NETWORKING -DRARCH_INTERNAL $CDECL" libretro-common/vfs/vfs_implementation_nfs.c
+check "android: vfs prefetch"  "$HOSTOFF -Itools/platform_stubs/android -DANDROID -DHAVE_THREADS $CDECL" libretro-common/vfs/vfs_prefetch.c
 # rwebaudio is its own translation unit in the emscripten build, not
 # part of griffin's, and nothing else compiles it at all.
 check "emscripten: rwebaudio"  "$HOSTOFF -Itools/platform_stubs/emscripten -D__EMSCRIPTEN__ -DEMSCRIPTEN -DHAVE_RWEBAUDIO $CDECL" audio/drivers/rwebaudio.c

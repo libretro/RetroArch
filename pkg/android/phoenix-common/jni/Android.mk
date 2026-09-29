@@ -12,6 +12,9 @@ HAVE_FILE_LOGGER := 1
 HAVE_GFX_WIDGETS := 1
 HAVE_SAF := 1
 HAVE_BUILTINSMBCLIENT := 1
+# The built-in NFSv3/v4 client and its nfs:// backend: plain sockets,
+# nothing to link.
+HAVE_RETRONFS := 1
 
 INCFLAGS    :=
 DEFINES     :=
@@ -205,6 +208,10 @@ endif
 
 ifeq ($(HAVE_BUILTINSMBCLIENT),1)
    DEFINES += -DHAVE_SMBCLIENT
+endif
+
+ifeq ($(HAVE_RETRONFS),1)
+   DEFINES += -DHAVE_NFSCLIENT -DHAVE_RETRONFS
 endif
 
 LOCAL_CFLAGS   += -Wall -std=gnu99 -pthread -Wno-unused-function -fno-stack-protector -funroll-loops $(DEFINES)
