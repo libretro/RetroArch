@@ -34,7 +34,7 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y --no-install-recommends build-essential clang \
-            gcc-mingw-w64-x86-64 openssl samba libtirpc-dev flex bison autoconf automake wine64
+            gcc-mingw-w64-x86-64 openssl samba libtirpc-dev flex bison autoconf automake wine wine64
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -75,6 +75,8 @@ jobs:
           # suites, then the three server matrices with the Windows tools
           # talking to the same local openssl, Samba and unfs3.
           export WINEDEBUG=-all WINEPREFIX=$RUNNER_TEMP/wineprefix
+          # the tools below are run through wine, so it must be there
+          command -v wine >/dev/null
           make -C libretro-common -f Makefile.test win32-wine-check
           export CC=x86_64-w64-mingw32-gcc RUNNER=wine EXE=.exe
           make -C samples/network/tls_retro clean
