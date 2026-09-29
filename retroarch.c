@@ -8543,7 +8543,99 @@ static bool retroarch_core_info_savestate_probe(void)
          && core_serialize_size() > 0;
 }
 
-bool retroarch_main_init(int argc, char *argv[])
+/* What a failed phase leaves behind: no core, no session, and the
+ * jmp_buf retroarch_fail() would land in dead. */
+static bool retroarch_main_init_fail(global_t *global)
+{
+   command_event(CMD_EVENT_CORE_DEINIT, NULL);
+   runloop_is_inited_clear();
+   global->flags &= ~GLOB_FLG_INIT_IN_PROGRESS;
+   return false;
+}
+
+/* Picks the driver of every kind from the configuration; the video,
+ * input and menu ones are required.  Reports through retroarch_fail(),
+ * so it runs under a live error_sjlj_context. */
+static void retroarch_find_drivers(settings_t *settings,
+      bool verbosity_enabled)
+{
+#ifdef HAVE_MENU
+   struct menu_state *menu_st    = menu_state_get_ptr();
+#endif
+   if (!(audio_driver_find_driver(settings->arrays.audio_driver,
+         "audio driver", verbosity_enabled)))
+      retroarch_fail(1, "audio_driver_find()");
+   if (!video_driver_find_driver(settings,
+         "video driver", verbosity_enabled))
+      retroarch_fail(1, "video_driver_find_driver()");
+   if (!input_driver_find_driver(settings,
+         "input driver", verbosity_enabled))
+      retroarch_fail(1, "input_driver_find_driver()");
+
+   if (!camera_driver_find_driver("camera driver", verbosity_enabled))
+      retroarch_fail(1, "find_camera_driver()");
+
+#ifdef HAVE_BLUETOOTH
+   bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_FIND_DRIVER, NULL);
+#endif
+#ifdef HAVE_WIFI
+   wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
+#endif
+#ifdef HAVE_CLOUDSYNC
+   cloud_sync_find_driver(settings->arrays.cloud_sync_driver,
+         "cloud sync driver", verbosity_enabled);
+#endif
+   location_driver_find_driver(settings->arrays.location_driver,
+         &location_driver_st,
+         "location driver", verbosity_enabled);
+#ifdef HAVE_MENU
+   {
+      const menu_ctx_driver_t *menu_ctx_new = menu_driver_find_driver(
+            settings, "menu driver", verbosity_enabled);
+      if (!menu_ctx_new)
+         retroarch_fail(1, "menu_driver_find_driver()");
+
+      /* If a menu driver instance is already allocated and the
+       * selected menu driver has changed since that instance was
+       * created - e.g. a configuration file specifying a different
+       * 'menu_driver' has just been loaded at runtime - the stale
+       * instance must be torn down here, while menu_st->driver_ctx
+       * still references the *old* driver (so that the correct
+       * free()/context_destroy() handlers are invoked on the old
+       * handle).
+       *
+       * Otherwise menu_driver_init() would skip (re)initialisation
+       * - because driver_data is non-NULL - and invoke the new
+       * driver's context_reset() on the old driver's handle,
+       * dereferencing it as the wrong type (crash). */
+      if (     menu_st->driver_data
+            &&  menu_st->driver_ctx
+            && (menu_st->driver_ctx != menu_ctx_new))
+      {
+         uint16_t menu_data_own = (menu_st->flags & MENU_ST_FLAG_DATA_OWN);
+#ifdef HAVE_THREADS
+         /* Same barrier as driver_uninit(): RARCH_MENU_CTL_DEINIT runs
+          * the old driver's context_destroy(), which frees the textures
+          * and fonts an in-flight threaded frame is still drawing with.
+          *
+          * No-op when threaded video is not active. */
+         video_driver_state_t *video_st = video_state_get_ptr();
+         if (     VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
+               && video_st->thread_wrapper_active)
+            video_thread_wait_idle();
+#endif
+         menu_st->flags        &= ~MENU_ST_FLAG_DATA_OWN;
+         menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
+         menu_st->flags        |= menu_data_own;
+      }
+
+      menu_st->driver_ctx = menu_ctx_new;
+   }
+#endif
+}
+
+bool retroarch_main_init_core(int argc, char *argv[],
+      bool find_drivers, bool *verbosity)
 {
 #if defined(DEBUG) && defined(HAVE_DRMINGW)
    char log_file_name[128];
@@ -8555,7 +8647,6 @@ bool retroarch_main_init(int argc, char *argv[])
    input_driver_state_t
       *input_st                  = input_state_get_ptr();
    settings_t *settings          = config_get_ptr();
-   recording_state_t *rec_st     = recording_state_get_ptr();
    global_t            *global   = global_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
    access_state_t *access_st     = access_state_get_ptr();
@@ -8569,15 +8660,23 @@ bool retroarch_main_init(int argc, char *argv[])
    core_info_set_savestate_probe(retroarch_core_info_savestate_probe);
 
    input_st->osk_idx             = OSK_LOWERCASE_LATIN;
-   video_state_get_ptr()->main_flags |=  VIDEO_FLAG_ACTIVE;
-   AUDIO_FLAGS_SET(audio_state_get_ptr(), AUDIO_FLAG_ACTIVE);
+   /* The active bits answer the core's GET_AV_ENABLE during its init.
+    * Staged, the previous session's drivers are still up and present
+    * between stages, so the bits keep saying what those drivers can
+    * do (an audio driver that failed to start has none); the driver
+    * phase raises them for the new session. */
+   if (find_drivers)
+   {
+      video_state_get_ptr()->main_flags |=  VIDEO_FLAG_ACTIVE;
+      AUDIO_FLAGS_SET(audio_state_get_ptr(), AUDIO_FLAG_ACTIVE);
+   }
 
    if (setjmp(global->error_sjlj_context) > 0)
    {
       RARCH_ERR("%s: \"%s\"\n",
             msg_hash_to_str(MSG_FATAL_ERROR_RECEIVED_IN),
             global_get_ptr()->error_string);
-      goto error;
+      return retroarch_main_init_fail(global);
    }
 
    /* Mark error_sjlj_context as live. retroarch_fail checks this
@@ -8811,80 +8910,12 @@ bool retroarch_main_init(int argc, char *argv[])
       }
    }
 
-   /* Pre-initialize all drivers
-    * Attempts to find a default driver for
-    * all driver types.
-    */
-   if (!(audio_driver_find_driver(settings->arrays.audio_driver,
-         "audio driver", verbosity_enabled)))
-      retroarch_fail(1, "audio_driver_find()");
-   if (!video_driver_find_driver(settings,
-         "video driver", verbosity_enabled))
-      retroarch_fail(1, "video_driver_find_driver()");
-   if (!input_driver_find_driver(settings,
-         "input driver", verbosity_enabled))
-      retroarch_fail(1, "input_driver_find_driver()");
+   /* Pre-initialize all drivers: find a driver of every kind.  The
+    * staged load has the previous session's drivers up at this point
+    * and finds after freeing them, in retroarch_main_init_drivers(). */
+   if (find_drivers)
+      retroarch_find_drivers(settings, verbosity_enabled);
 
-   if (!camera_driver_find_driver("camera driver", verbosity_enabled))
-      retroarch_fail(1, "find_camera_driver()");
-
-#ifdef HAVE_BLUETOOTH
-   bluetooth_driver_ctl(RARCH_BLUETOOTH_CTL_FIND_DRIVER, NULL);
-#endif
-#ifdef HAVE_WIFI
-   wifi_driver_ctl(RARCH_WIFI_CTL_FIND_DRIVER, NULL);
-#endif
-#ifdef HAVE_CLOUDSYNC
-   cloud_sync_find_driver(settings->arrays.cloud_sync_driver,
-         "cloud sync driver", verbosity_enabled);
-#endif
-   location_driver_find_driver(settings->arrays.location_driver,
-         &location_driver_st,
-         "location driver", verbosity_enabled);
-#ifdef HAVE_MENU
-   {
-      const menu_ctx_driver_t *menu_ctx_new = menu_driver_find_driver(
-            settings, "menu driver", verbosity_enabled);
-      if (!menu_ctx_new)
-         retroarch_fail(1, "menu_driver_find_driver()");
-
-      /* If a menu driver instance is already allocated and the
-       * selected menu driver has changed since that instance was
-       * created - e.g. a configuration file specifying a different
-       * 'menu_driver' has just been loaded at runtime - the stale
-       * instance must be torn down here, while menu_st->driver_ctx
-       * still references the *old* driver (so that the correct
-       * free()/context_destroy() handlers are invoked on the old
-       * handle).
-       *
-       * Otherwise menu_driver_init() would skip (re)initialisation
-       * - because driver_data is non-NULL - and invoke the new
-       * driver's context_reset() on the old driver's handle,
-       * dereferencing it as the wrong type (crash). */
-      if (     menu_st->driver_data
-            &&  menu_st->driver_ctx
-            && (menu_st->driver_ctx != menu_ctx_new))
-      {
-         uint16_t menu_data_own = (menu_st->flags & MENU_ST_FLAG_DATA_OWN);
-#ifdef HAVE_THREADS
-         /* Same barrier as driver_uninit(): RARCH_MENU_CTL_DEINIT runs
-          * the old driver's context_destroy(), which frees the textures
-          * and fonts an in-flight threaded frame is still drawing with.
-          *
-          * No-op when threaded video is not active. */
-         video_driver_state_t *video_st = video_state_get_ptr();
-         if (     VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
-               && video_st->thread_wrapper_active)
-            video_thread_wait_idle();
-#endif
-         menu_st->flags        &= ~MENU_ST_FLAG_DATA_OWN;
-         menu_driver_ctl(RARCH_MENU_CTL_DEINIT, NULL);
-         menu_st->flags        |= menu_data_own;
-      }
-
-      menu_st->driver_ctx = menu_ctx_new;
-   }
-#endif
    /* Enforce stored brightness if needed */
    if (frontend_driver_can_set_screen_brightness())
       frontend_driver_set_screen_brightness(settings->uints.screen_brightness);
@@ -8946,11 +8977,11 @@ bool retroarch_main_init(int argc, char *argv[])
          /* Attempt initializing dummy core */
          runloop_st->current_core_type = CORE_TYPE_DUMMY;
          if (!command_event(CMD_EVENT_CORE_INIT, &runloop_st->current_core_type))
-            goto error;
+            return retroarch_main_init_fail(global);
       }
 #ifdef HAVE_DYNAMIC
       else /* Fall back to regular error handling */
-         goto error;
+         return retroarch_main_init_fail(global);
 #endif
    }
 
@@ -8966,6 +8997,38 @@ bool retroarch_main_init(int argc, char *argv[])
 #endif
          );
 #endif
+   /* The jmp_buf dies with this frame; the next phase arms its own. */
+   global->flags &= ~GLOB_FLG_INIT_IN_PROGRESS;
+   *verbosity     = verbosity_enabled;
+   return true;
+}
+
+bool retroarch_main_init_drivers(bool find_drivers,
+      bool verbosity_enabled)
+{
+   runloop_state_t *runloop_st   = runloop_state_get_ptr();
+   input_driver_state_t
+      *input_st                  = input_state_get_ptr();
+   settings_t *settings          = config_get_ptr();
+   recording_state_t *rec_st     = recording_state_get_ptr();
+   global_t            *global   = global_get_ptr();
+
+   if (setjmp(global->error_sjlj_context) > 0)
+   {
+      RARCH_ERR("%s: \"%s\"\n",
+            msg_hash_to_str(MSG_FATAL_ERROR_RECEIVED_IN),
+            global_get_ptr()->error_string);
+      return retroarch_main_init_fail(global);
+   }
+   global->flags |= GLOB_FLG_INIT_IN_PROGRESS;
+
+   if (find_drivers)
+   {
+      video_state_get_ptr()->main_flags |=  VIDEO_FLAG_ACTIVE;
+      AUDIO_FLAGS_SET(audio_state_get_ptr(), AUDIO_FLAG_ACTIVE);
+      retroarch_find_drivers(settings, verbosity_enabled);
+   }
+
    drivers_init(settings, DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0, verbosity_enabled);
 #ifdef HAVE_COMMAND
    input_driver_deinit_command(input_st);
@@ -9036,13 +9099,13 @@ bool retroarch_main_init(int argc, char *argv[])
 
    global->flags &= ~GLOB_FLG_INIT_IN_PROGRESS;
    return true;
+}
 
-error:
-   command_event(CMD_EVENT_CORE_DEINIT, NULL);
-   runloop_is_inited_clear();
-   global->flags &= ~GLOB_FLG_INIT_IN_PROGRESS;
-
-   return false;
+bool retroarch_main_init(int argc, char *argv[])
+{
+   bool verbosity_enabled = false;
+   return retroarch_main_init_core(argc, argv, true, &verbosity_enabled)
+       && retroarch_main_init_drivers(false, verbosity_enabled);
 }
 
 #ifdef DEBUG

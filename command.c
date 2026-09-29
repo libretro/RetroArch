@@ -2890,6 +2890,13 @@ void command_event_reinit(const int flags)
       return;
    }
 
+   /* A staged content load ends in a reinit of every driver against
+    * the new core: one asked for before then - the old override
+    * unloading, the new core's SET_SYSTEM_AV_INFO - would rebuild
+    * the drivers the stage is about to rebuild again. */
+   if (runloop_is_content_switching())
+      return;
+
 
 
    {

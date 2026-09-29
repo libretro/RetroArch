@@ -4288,7 +4288,12 @@ void video_driver_cached_frame(void)
    /* Cannot allow recording when pushing duped frames. */
    recording_st->data             = NULL;
 
-   if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
+   /* A staged content load has no core between its close and the
+    * next core's init, and the drivers it left up present the last
+    * frame they were handed - a dupe - under the menu, as they do
+    * on the first frame after a core comes up. */
+   if (     (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
+         || runloop_st->content_switching)
    {
       const void *data;
       unsigned    dims;

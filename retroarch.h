@@ -143,6 +143,28 @@ void retroarch_drain_tasks_for_exit(void);
  **/
 bool retroarch_main_init(int argc, char *argv[]);
 
+/**
+ * retroarch_main_init_core:
+ * retroarch_main_init_drivers:
+ *
+ * retroarch_main_init() in two phases, for the staged content load:
+ * the first parses the configuration and brings the core up (dlopen,
+ * retro_init, the content read, retro_load_game), the second finds
+ * and initializes the drivers and finishes the session.  The staged
+ * load runs the first behind the drivers of the previous session and
+ * frees those between the two; the drivers are then found in the
+ * second phase (find_drivers), where the previous session's are no
+ * longer in the way.  Startup runs both back to back with the find
+ * in the first phase, ahead of the core, as it always has.
+ *
+ * Both phases report a failure that retroarch_fail() raised; the
+ * verbosity the first phase parsed is handed to the second.
+ **/
+bool retroarch_main_init_core(int argc, char *argv[],
+      bool find_drivers, bool *verbosity_enabled);
+bool retroarch_main_init_drivers(bool find_drivers,
+      bool verbosity_enabled);
+
 bool retroarch_main_quit(void);
 
 global_t *global_get_ptr(void);

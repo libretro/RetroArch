@@ -468,6 +468,11 @@ bool runloop_is_content_closing(void)
    return runloop_state.content_closing;
 }
 
+bool runloop_is_content_switching(void)
+{
+   return runloop_state.content_switching;
+}
+
 bool state_manager_frame_is_reversed(void)
 {
 #ifdef HAVE_REWIND
@@ -4713,7 +4718,11 @@ void runloop_event_deinit_core(void)
    if (settings->bools.video_frame_delay_auto)
       video_st->frame_delay_target = 0;
 
-   driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
+   /* A staged content load keeps the drivers up through the close
+    * and the next core's init, so the window keeps presenting; it
+    * frees them itself, right before the new session's drivers_init. */
+   if (!runloop_st->content_switching)
+      driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
 
 #ifdef HAVE_CONFIGFILE
    /* Reload the original config */
@@ -7028,7 +7037,13 @@ static enum runloop_state_enum runloop_check_state(
        * free and recreate the menu driver), so it must never run from
        * within menu iteration. Exit afterwards to start the next frame
        * with a freshly (re)built menu. */
-      if (menu_st->flags & MENU_ST_FLAG_PENDING_CONFIG_REPLACE)
+      /* A content load in flight owns the session until it is through:
+       * a pending config replace or close starts another load (of the
+       * dummy core) and a pending core reload loads a library into a
+       * session the job is still building, so each waits, flag set,
+       * for the frame after the load. */
+      if (     (menu_st->flags & MENU_ST_FLAG_PENDING_CONFIG_REPLACE)
+            && !runloop_st->content_switching)
       {
          bool config_save_on_exit = settings->bools.config_save_on_exit;
          menu_st->flags          &= ~MENU_ST_FLAG_PENDING_CONFIG_REPLACE;
@@ -7150,8 +7165,9 @@ static enum runloop_state_enum runloop_check_state(
          menu_st->flags &= ~MENU_ST_FLAG_PENDING_STARTUP_PAGE;
          return RUNLOOP_STATE_POLLED_AND_CONTINUE;
       }
-      else if ((menu_st->flags & MENU_ST_FLAG_PENDING_CLOSE_CONTENT)
-            || (menu_st->flags & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH))
+      else if (   ((menu_st->flags & MENU_ST_FLAG_PENDING_CLOSE_CONTENT)
+               || (menu_st->flags & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH))
+               && !runloop_st->content_switching)
       {
          menu_list_t *menu_list    = menu_st->entries.list;
          file_list_t *menu_stack   = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
@@ -7253,7 +7269,8 @@ static enum runloop_state_enum runloop_check_state(
       }
 
       /* Handle pending core reload separately after menu driver iterate */
-      if (menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE)
+      if (     (menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE)
+            && !runloop_st->content_switching)
       {
 #ifdef HAVE_DYNAMIC
          const char *a = path_get(RARCH_PATH_CORE_LAST);
@@ -8382,13 +8399,13 @@ int runloop_iterate(void)
    android_input_flush_pending_haptics();
 #endif
 
-#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
-   /* Perform the parked remainder of a deferred (prefetched) menu
-    * load.  It runs here, not from the prefetch task's callback,
-    * because content_load() reinitializes the task queue - fatal
-    * from inside the queue's own dispatch. */
-   task_content_deferred_load_check();
-#endif
+   /* Advance a staged content load by one stage, and take up a
+    * prefetched menu load whose read has completed.  Here, at the
+    * top of the frame, rather than from a task callback: the load
+    * reinitializes the task queue, fatal from inside the queue's
+    * own dispatch, and the rest of this frame presents whatever
+    * the stage left on screen. */
+   task_content_load_check();
 
    /* Tick deferred shader compilation (one pass per frame) */
    video_driver_shader_deferred_tick();
@@ -8611,6 +8628,15 @@ int runloop_iterate(void)
 #endif
          goto end;
       case RUNLOOP_STATE_ITERATE:
+         /* A staged content load has no core to run between its
+          * stages: poll, present what is on screen, and pace as a
+          * paused frame does. */
+         if (runloop_st->content_switching)
+         {
+            input_driver_poll();
+            video_driver_cached_frame();
+            goto end;
+         }
          runloop_st->flags       |= RUNLOOP_FLAG_CORE_RUNNING;
          break;
    }
@@ -9516,7 +9542,7 @@ void core_run(void)
     * keeps being drawn.  Same shape as the netplay-paused case
     * below, for the same reason: a frame that stops being produced
     * reads as a hang. */
-   if (runloop_st->content_closing)
+   if (runloop_st->content_closing || runloop_st->content_switching)
    {
       input_driver_poll();
       video_driver_cached_frame();

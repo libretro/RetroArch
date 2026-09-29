@@ -73,6 +73,16 @@ bool task_push_start_current_core(content_ctx_info_t *content_info);
 
 bool task_push_start_dummy_core(content_ctx_info_t *content_info);
 
+/* Advances a staged content load by one stage, and starts the parked
+ * remainder of a prefetched menu load whose read has completed.
+ * Called once per frame from runloop_iterate(), outside the task
+ * system's dispatch: a stage reinitializes the task queue.  Every
+ * task_push_load_* entry point below (the CLI one excepted, which is
+ * startup itself and loads in one go) only starts the job and
+ * returns; the load is done when runloop_is_content_switching()
+ * reads false again. */
+void task_content_load_check(void);
+
 bool task_push_load_content_with_new_core_from_companion_ui(
       const char *core_path,
       const char *fullpath,
@@ -92,13 +102,6 @@ bool task_push_load_content_with_new_core_from_menu(
       retro_task_callback_t cb,
       void *user_data);
 
-#ifdef HAVE_DYNAMIC
-/* Performs the parked remainder of a deferred (prefetched) menu
- * load, if one is ready.  Called once per frame from
- * runloop_iterate(); content_load() reinitializes the task queue,
- * so this must run outside the task system's dispatch. */
-void task_content_deferred_load_check(void);
-#endif
 
 bool task_push_load_content_from_playlist_from_menu(
       const char *core_path,

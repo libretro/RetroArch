@@ -371,22 +371,22 @@ struct runloop
    bool perfcnt_enable;
    bool paused_hotkey;
 
-   /* True from the moment closing content starts tearing the core
-    * down until the teardown is finished.
+   /* content_closing: true while the core is being torn down, from
+    * the first step of closing until the last.
     *
-    * Set and cleared around the existing synchronous teardown, so at
-    * present nothing can observe it as true: the main thread is
-    * inside that teardown for its whole duration and no frame runs.
-    * It is introduced separately, and deliberately inert, because
-    * the work that makes it observable - returning to the frame loop
-    * instead of blocking - is a lifecycle change, and this is the
-    * piece everything else will key off.
+    * content_switching: true while content is being replaced in
+    * stages from the frame loop (tasks/task_content.c): the old core
+    * is closed with the drivers left up, the new one is brought up
+    * behind them, and one driver reinit follows.  Core deinit keeps
+    * the drivers and a reinit the core asks for defers to that stage
+    * while this is set, and the frame loop presents instead of
+    * running a core.
     *
-    * A plain bool rather than a RUNLOOP_FLAG bit: bits 0-30 of that
+    * Plain bools rather than RUNLOOP_FLAG bits: bits 0-30 of that
     * word are taken and bit 31 was deliberately vacated to avoid a
-    * cross-thread race, so reusing it would undo that reasoning for
-    * no gain. This is main-thread only. */
+    * cross-thread race.  Both are main-thread only. */
    bool content_closing;
+   bool content_switching;
 };
 
 /* Frame pacing sources.
@@ -940,10 +940,17 @@ runloop_state_t *runloop_state_get_ptr(void);
  * runloop_is_content_closing:
  *
  * True while content is being closed, i.e. while the core is being
- * torn down.  Currently only ever true inside the synchronous
- * teardown, where nothing else runs to ask.
+ * torn down.
  */
 bool runloop_is_content_closing(void);
+
+/**
+ * runloop_is_content_switching:
+ *
+ * True while a staged content load is in flight, from the close of
+ * the old core to the driver reinit that follows the new one.
+ */
+bool runloop_is_content_switching(void);
 
 RETRO_END_DECLS
 
