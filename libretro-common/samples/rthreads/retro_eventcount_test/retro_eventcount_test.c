@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include <rthreads/rthreads.h>
 #include <rthreads/retro_eventcount.h>
@@ -655,6 +656,71 @@ static int lane_crowd(void)
    return 0;
 }
 
+/* ---- lane 7: the epoch's wrap ------------------------------------- */
+/* The epoch is a counter that wraps, and a backend that compares it
+ * with anything but equality has an edge there: the 3DS arbiter waits
+ * while the word is below key + 1, and INT_MAX + 1 does not exist.
+ * A wait registered at INT_MAX must come back, promptly, rather than
+ * sleep its bound out - it is answered as a spurious wake - and a wait
+ * registered just past the wrap must still be woken by a notify. */
+
+static retro_atomic_int_t wrap_go;
+
+static void wrap_notifier(void *unused)
+{
+   (void)unused;
+   while (!retro_atomic_load_acquire_int(&wrap_go))
+      sthread_yield();
+   timed_spin_us(2000);
+   retro_eventcount_notify(&ec);
+}
+
+static int lane_wrap(void)
+{
+   sthread_t   *t;
+   int          key;
+   retro_time_t began, took;
+
+   if (!retro_eventcount_init(&ec))
+   {
+      fprintf(stderr, "FAIL: wrap: eventcount init\n");
+      return 1;
+   }
+   retro_atomic_int_init(&wrap_go, 0);
+
+   /* At the top: a bounded wait with nothing to wake it must not
+    * sleep its bound out on a backend that cannot express key + 1 */
+   retro_atomic_store_release_int(&ec.epoch, INT_MAX);
+   key   = retro_eventcount_prepare_wait(&ec);
+   began = cpu_features_get_time_usec();
+   retro_eventcount_commit_wait_timeout(&ec, key, 200000);
+   took  = cpu_features_get_time_usec() - began;
+   if (key != INT_MAX)
+   {
+      fprintf(stderr, "FAIL: wrap: the key is not the epoch\n");
+      return 1;
+   }
+
+   /* Over the top: a notify bumps it past INT_MAX, and a wait taken
+    * there is still woken by the next one */
+   retro_eventcount_notify(&ec);
+   t   = sthread_create(wrap_notifier, NULL);
+   key = retro_eventcount_prepare_wait(&ec);
+   retro_atomic_store_release_int(&wrap_go, 1);
+   if (!retro_eventcount_commit_wait_timeout(&ec, key, 2000000))
+   {
+      fprintf(stderr, "FAIL: wrap: a wait past the wrap was not woken\n");
+      sthread_join(t);
+      return 1;
+   }
+   sthread_join(t);
+   retro_eventcount_free(&ec);
+
+   printf("  wrap       wait at INT_MAX came back in %ld us; past it, woken\n",
+         (long)took);
+   return 0;
+}
+
 int main(void)
 {
    sthread_t *wd;
@@ -672,6 +738,7 @@ int main(void)
    rc |= lane_broadcast_stress();
    rc |= lane_timed_race();
    rc |= lane_crowd();
+   rc |= lane_wrap();
 
    retro_atomic_store_release_int(&watchdog_stop, 1);
    sthread_join(wd);

@@ -68,6 +68,12 @@ typedef char retro_eventcount_epoch_is_a_word_
  * back to the condition variable on older firmware, decided once at
  * init from the version libnx reads at startup.
  *
+ * RETRO_EC_ADDR_3DS parks on the 3DS's address arbiter, the same shape
+ * with a less-than comparison in place of the Switch's equal: the epoch
+ * only ever climbs, so waiting while it is below key + 1 is waiting
+ * while it still reads key, except at the one key whose successor does
+ * not exist, which is answered as a spurious wake instead.
+ *
  * RETRO_EC_SEM names the builds that park on a semaphore of the
  * waiting thread's own, listed on the object the way the Windows
  * backend lists its blocks: Darwin, where the semaphore is a Mach one
@@ -94,7 +100,8 @@ typedef char retro_eventcount_epoch_is_a_word_
  * one.  All mirror retro_atomic.h's RETRO_ATOMIC_FORCE_* overrides and
  * exist for the same reason.  RETRO_EVENTCOUNT_FORCE_SWITCH likewise
  * builds the arbiter protocol on a host that supplies the two system
- * calls and the version query (the sample stands them in over futex).
+ * calls and the version query (the sample stands them in over futex),
+ * and RETRO_EVENTCOUNT_FORCE_3DS the arbiter's less-than form.
  */
 #if defined(RETRO_ATOMIC_LOCK_FREE) && !defined(RETRO_EVENTCOUNT_FORCE_SCOND)
 #if defined(RETRO_EVENTCOUNT_FORCE_SEM) && defined(RETRO_ATOMIC_HAS_PTR)
@@ -104,10 +111,14 @@ typedef char retro_eventcount_epoch_is_a_word_
 #define RETRO_EC_SEM_POOL 1
 #elif defined(RETRO_EVENTCOUNT_FORCE_SWITCH)
 #define RETRO_EC_ADDR_SWITCH 1
+#elif defined(RETRO_EVENTCOUNT_FORCE_3DS)
+#define RETRO_EC_ADDR_3DS 1
 #elif defined(__linux__) && !defined(ANDROID_NO_FUTEX)
 #define RETRO_EC_ADDR_LINUX 1
 #elif defined(__SWITCH__)
 #define RETRO_EC_ADDR_SWITCH 1
+#elif defined(_3DS)
+#define RETRO_EC_ADDR_3DS 1
 #elif (defined(VITA) || defined(__PS3__) || defined(WIIU)) \
       && defined(RETRO_ATOMIC_HAS_PTR)
 #define RETRO_EC_SEM 1
@@ -187,6 +198,33 @@ static bool ec_switch_park(retro_eventcount_t *ec, int key, s64 timeout_ns)
 static void ec_switch_wake_all(retro_eventcount_t *ec)
 {
    svcSignalToAddress((void*)&ec->epoch, SignalType_Signal, 0, -1);
+}
+#endif
+
+#if defined(RETRO_EC_ADDR_3DS)
+#include <3ds/svc.h>
+#include <3ds/synchronization.h>
+#include <3ds/result.h>
+
+/* Waits while the epoch still reads @key, for @timeout_ns.  The
+ * arbiter waits while the word is below the value given, and the epoch
+ * only climbs, so below key + 1 is still at key.  INT_MAX has no
+ * successor to compare against: that key is not parked on, and the
+ * caller re-checks its predicate as for any spurious wake. */
+static bool ec_3ds_park(retro_eventcount_t *ec, int key, s64 timeout_ns)
+{
+   Result rc;
+   if (key == INT_MAX)
+      return true;
+   rc = syncArbitrateAddressWithTimeout((s32*)&ec->epoch,
+         ARBITRATION_WAIT_IF_LESS_THAN_TIMEOUT, (s32)key + 1, timeout_ns);
+   return R_DESCRIPTION(rc) != RD_TIMEOUT;
+}
+
+static void ec_3ds_wake_all(retro_eventcount_t *ec)
+{
+   syncArbitrateAddress((s32*)&ec->epoch, ARBITRATION_SIGNAL,
+         ARBITRATION_SIGNAL_ALL);
 }
 #endif
 
@@ -1150,6 +1188,8 @@ bool retro_eventcount_init(retro_eventcount_t *ec)
     * condition variable and ec->cond says so */
    if (ec_switch_has_arbiter())
       lockless = 1;
+#elif defined(RETRO_EC_ADDR_3DS)
+   lockless = 1;
 #elif defined(RETRO_EC_SEM)
    ec_sem_init();
    /* As for Win32 below: only with a key to keep the semaphores in,
@@ -1250,6 +1290,10 @@ void retro_eventcount_notify(retro_eventcount_t *ec)
       return;
    }
 #endif
+#if defined(RETRO_EC_ADDR_3DS)
+   ec_3ds_wake_all(ec);
+   return;
+#endif
 #if defined(RETRO_EC_WAITLIST)
    if (!ec->cond)
    {
@@ -1331,6 +1375,15 @@ void retro_eventcount_commit_wait(retro_eventcount_t *ec, int key)
       return;
    }
 #endif
+#if defined(RETRO_EC_ADDR_3DS)
+   /* No unbounded form of the wait: a long bound, re-armed while the
+    * epoch still reads key, is the same thing */
+   while (   retro_atomic_load_acquire_int(&ec->epoch) == key
+          && !ec_3ds_park(ec, key, INT64_C(1000000000)))
+      ;
+   retro_atomic_fetch_sub_int(&ec->waiters, 1);
+   return;
+#endif
 #if defined(RETRO_EC_ADDR_WIN32)
    if (!ec->cond)
    {
@@ -1398,6 +1451,13 @@ bool retro_eventcount_commit_wait_timeout(retro_eventcount_t *ec,
       return signalled;
    }
 #endif
+#if defined(RETRO_EC_ADDR_3DS)
+   if (retro_atomic_load_acquire_int(&ec->epoch) == key)
+      signalled = ec_3ds_park(ec, key,
+            timeout_us > 0 ? (s64)timeout_us * 1000 : 1);
+   retro_atomic_fetch_sub_int(&ec->waiters, 1);
+   return signalled;
+#endif
 #if defined(RETRO_EC_ADDR_WIN32)
    if (!ec->cond)
    {
@@ -1445,6 +1505,8 @@ const char *retro_eventcount_backend_name(void)
 #elif defined(RETRO_EC_ADDR_SWITCH)
    return ec_switch_has_arbiter()
       ? "horizon address arbiter" : "scond (firmware before 4.0.0)";
+#elif defined(RETRO_EC_ADDR_3DS)
+   return "3ds address arbiter";
 #elif defined(RETRO_EC_SEM)
    ec_sem_init();
 #if defined(VITA)

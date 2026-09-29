@@ -61,6 +61,14 @@ ifneq ($(SEMPOOL),)
    CFLAGS += -DRETRO_EVENTCOUNT_FORCE_SEM_POOL
    TARGET := retro_eventcount_test_sempool
 endif
+# CTR=1 builds the 3DS address-arbiter backend on this host, against
+# hostctr/3ds - the slice of libctru it uses - with the two arbiter
+# wrappers stood in for over futex in ctr_arbiter_shim.c.
+ifneq ($(CTR),)
+   CFLAGS += -DRETRO_EVENTCOUNT_FORCE_3DS -Ihostctr
+   SOURCES += ctr_arbiter_shim.c
+   TARGET := retro_eventcount_test_ctr
+endif
 # SWITCH=1 builds the Horizon address-arbiter backend on this host,
 # against hostnx/switch.h - the slice of libnx it uses - with the two
 # system calls and the firmware query stood in for over futex in
@@ -105,10 +113,14 @@ check: all
 	@$(MAKE) -s SWITCH=1 $(if $(SANITIZER),SANITIZER=$(SANITIZER))
 	./retro_eventcount_test_switch
 	HOSTNX_OLD_FIRMWARE=1 ./retro_eventcount_test_switch
+	@$(MAKE) -s clean
+	@$(MAKE) -s CTR=1 $(if $(SANITIZER),SANITIZER=$(SANITIZER))
+	./retro_eventcount_test_ctr
 
 clean:
-	rm -f $(OBJS) switch_arbiter_shim.o retro_eventcount_test \
+	rm -f $(OBJS) switch_arbiter_shim.o ctr_arbiter_shim.o retro_eventcount_test \
 	      retro_eventcount_test_scond retro_eventcount_test_sem \
-	      retro_eventcount_test_sempool retro_eventcount_test_switch
+	      retro_eventcount_test_sempool retro_eventcount_test_switch \
+	      retro_eventcount_test_ctr
 
 .PHONY: all check clean

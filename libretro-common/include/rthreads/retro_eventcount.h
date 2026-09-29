@@ -122,6 +122,9 @@
  *                        the thread's life.  Every call is in Mac OS X
  *                        10.4's headers, so one binary runs from there
  *                        up; no mutex, and one signal per parked waiter.
+ *   3DS                  the 3DS address arbiter (svcArbitrateAddress),
+ *                        the futex shape with a less-than comparison,
+ *                        which the climbing epoch turns into an equal.
  *   Vita / PS3 / Wii U   the same list, slept on with a kernel semaphore
  *                        (an auto-reset OSEvent on the Wii U) drawn from
  *                        a lock-free pool for the length of the park,
