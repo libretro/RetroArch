@@ -14,10 +14,17 @@ static retro_environment_t   environ_cb;
 static uint16_t frame[W * H];
 static unsigned runs;
 static unsigned inits;
+static unsigned hw_resets;
+static unsigned hw_destroys;
 
 /* RETRO_API, like the core's own entry points: a Windows DLL exports
- * only what is marked, and the harness looks this up by name. */
-RETRO_API unsigned harness_core_inits(void) { return inits; }
+ * only what is marked, and the harness looks these up by name. */
+RETRO_API unsigned harness_core_inits(void)       { return inits; }
+RETRO_API unsigned harness_core_hw_resets(void)   { return hw_resets; }
+RETRO_API unsigned harness_core_hw_destroys(void) { return hw_destroys; }
+
+static void hw_context_reset(void)   { hw_resets++; }
+static void hw_context_destroy(void) { hw_destroys++; }
 
 void retro_set_environment(retro_environment_t cb)
 {
@@ -68,7 +75,23 @@ bool retro_serialize(void *data, size_t size) { (void)data; (void)size; return f
 bool retro_unserialize(const void *data, size_t size) { (void)data; (void)size; return false; }
 void retro_cheat_reset(void) { }
 void retro_cheat_set(unsigned index, bool enabled, const char *code) { (void)index; (void)enabled; (void)code; }
-bool retro_load_game(const struct retro_game_info *game) { (void)game; return true; }
+bool retro_load_game(const struct retro_game_info *game)
+{
+   /* A hardware-render request, as a hardware core makes at load: the
+    * frontend must hold it until the drivers it builds for this core
+    * reset the context, and must not destroy a context that was
+    * never reset.  RETRO_HW_CONTEXT_NONE keeps the request off any
+    * real driver so the lanes run under the null driver; the
+    * callbacks are what the frontend holds and calls. */
+   struct retro_hw_render_callback hw;
+   (void)game;
+   memset(&hw, 0, sizeof(hw));
+   hw.context_type    = RETRO_HW_CONTEXT_NONE;
+   hw.context_reset   = hw_context_reset;
+   hw.context_destroy = hw_context_destroy;
+   environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw);
+   return true;
+}
 bool retro_load_game_special(unsigned type, const struct retro_game_info *info, size_t num) { (void)type; (void)info; (void)num; return false; }
 void retro_unload_game(void) { }
 unsigned retro_get_region(void) { return RETRO_REGION_NTSC; }

@@ -2107,8 +2107,6 @@ static bool content_load_stage_core(struct content_load_job *job)
 
 static bool content_load_stage_drivers(struct content_load_job *job)
 {
-   if (job->staged)
-      driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
    return retroarch_main_init_drivers(job->staged, job->verbosity);
 }
 
@@ -2235,17 +2233,13 @@ static void content_load_step(struct content_load_job *job,
          break;
       case CONTENT_LOAD_STAGE_CORE:
          job->ok = content_load_stage_core(job);
-         if (!job->ok && job->staged)
+         if (!job->ok)
          {
             /* Not even the dummy core: no session to build drivers
              * for, and the previous session's are freed as an
              * unstaged failure leaves them. */
-            driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
-            content_load_finish(job, p_content);
-            break;
-         }
-         if (!job->ok)
-         {
+            if (job->staged)
+               driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
             content_load_finish(job, p_content);
             break;
          }

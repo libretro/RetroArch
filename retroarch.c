@@ -9003,7 +9003,7 @@ bool retroarch_main_init_core(int argc, char *argv[],
    return true;
 }
 
-bool retroarch_main_init_drivers(bool find_drivers,
+bool retroarch_main_init_drivers(bool staged,
       bool verbosity_enabled)
 {
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
@@ -9022,8 +9022,18 @@ bool retroarch_main_init_drivers(bool find_drivers,
    }
    global->flags |= GLOB_FLG_INIT_IN_PROGRESS;
 
-   if (find_drivers)
+   if (staged)
    {
+      /* The previous session's drivers go here, and the new core's
+       * hardware-render request goes around them: the request is for
+       * a context these drivers never built, so the teardown must
+       * not destroy it, and drivers_init builds it from the request
+       * once it is back. */
+      struct video_hw_request hw_request;
+      video_driver_hw_request_take(&hw_request);
+      driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
+      video_driver_hw_request_restore(&hw_request);
+
       video_state_get_ptr()->main_flags |=  VIDEO_FLAG_ACTIVE;
       AUDIO_FLAGS_SET(audio_state_get_ptr(), AUDIO_FLAG_ACTIVE);
       retroarch_find_drivers(settings, verbosity_enabled);

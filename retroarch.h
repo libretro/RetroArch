@@ -151,9 +151,10 @@ bool retroarch_main_init(int argc, char *argv[]);
  * the first parses the configuration and brings the core up (dlopen,
  * retro_init, the content read, retro_load_game), the second finds
  * and initializes the drivers and finishes the session.  The staged
- * load runs the first behind the drivers of the previous session and
- * frees those between the two; the drivers are then found in the
- * second phase (find_drivers), where the previous session's are no
+ * load runs the first behind the drivers of the previous session
+ * (find_drivers false); the second phase (staged) then frees those,
+ * carrying the new core's hardware-render request around the
+ * teardown, and finds the drivers with the previous session's no
  * longer in the way.  Startup runs both back to back with the find
  * in the first phase, ahead of the core, as it always has.
  *
@@ -162,7 +163,7 @@ bool retroarch_main_init(int argc, char *argv[]);
  **/
 bool retroarch_main_init_core(int argc, char *argv[],
       bool find_drivers, bool *verbosity_enabled);
-bool retroarch_main_init_drivers(bool find_drivers,
+bool retroarch_main_init_drivers(bool staged,
       bool verbosity_enabled);
 
 bool retroarch_main_quit(void);

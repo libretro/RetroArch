@@ -2533,6 +2533,26 @@ void video_driver_free_hw_context(void)
    video_st->hw_render_context_negotiation = NULL;
 }
 
+void video_driver_hw_request_take(struct video_hw_request *req)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   memcpy(&req->cb, &video_st->hw_render, sizeof(req->cb));
+   req->negotiation = video_st->hw_render_context_negotiation;
+   memset(&video_st->hw_render, 0, sizeof(video_st->hw_render));
+   retro_atomic_store_release_int(&video_st->hw_context_type,
+         RETRO_HW_CONTEXT_NONE);
+   video_st->hw_render_context_negotiation = NULL;
+}
+
+void video_driver_hw_request_restore(const struct video_hw_request *req)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   memcpy(&video_st->hw_render, &req->cb, sizeof(video_st->hw_render));
+   video_st->hw_render_context_negotiation = req->negotiation;
+   retro_atomic_store_release_int(&video_st->hw_context_type,
+         (int)req->cb.context_type);
+}
+
 void video_driver_free_internal(void)
 {
    input_driver_state_t *input_st = input_state_get_ptr();
@@ -5515,7 +5535,9 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
    if (!flags)
       return false;
 
-   if (!ctx->set_flags)
+   /* Flags set during a staged content load are for the context the
+    * load is about to build, not the one it is about to free. */
+   if (!ctx->set_flags || runloop_is_content_switching())
    {
       video_st->deferred_flag_data.flags  = flags->flags;
       video_driver_modify_disp_flags(VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS, 0);

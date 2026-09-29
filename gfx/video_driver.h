@@ -2074,6 +2074,21 @@ retro_proc_address_t video_driver_get_proc_address(const char *sym);
 
 void video_driver_free_hw_context(void);
 
+/* A hardware-render request the core made for a context that does not
+ * exist yet - a staged content load takes the request during the new
+ * core's init, while the previous session's drivers are still up.
+ * The pair carries it across the teardown of those drivers: take
+ * moves the request out (the teardown then destroys nothing that was
+ * never reset), restore puts it back for drivers_init to build the
+ * context from, and publishes the type. */
+struct video_hw_request
+{
+   struct retro_hw_render_callback cb;
+   const struct retro_hw_render_context_negotiation_interface *negotiation;
+};
+void video_driver_hw_request_take(struct video_hw_request *req);
+void video_driver_hw_request_restore(const struct video_hw_request *req);
+
 #ifdef HAVE_VIDEO_FILTER
 void video_driver_filter_free(void);
 

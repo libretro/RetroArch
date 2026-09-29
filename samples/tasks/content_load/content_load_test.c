@@ -49,6 +49,7 @@
 #include "../../../frontend/frontend.h"
 #include "../../../verbosity.h"
 #include "../../../gfx/video_driver.h"
+#include "../../../gfx/video_defines.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../tasks/task_content.h"
 #include "../../../paths.h"
@@ -122,12 +123,17 @@ static bool menu_is_up(void)
    return (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) != 0;
 }
 
-static unsigned core_inits(void)
+static unsigned core_export(const char *name)
 {
    dylib_t lib = runloop_state_get_ptr()->lib_handle;
-   unsigned (*inits)(void) = lib
-      ? (unsigned (*)(void))dylib_proc(lib, "harness_core_inits") : NULL;
-   return inits ? inits() : 0;
+   unsigned (*fn)(void) = lib
+      ? (unsigned (*)(void))dylib_proc(lib, name) : NULL;
+   return fn ? fn() : 0;
+}
+
+static unsigned core_inits(void)
+{
+   return core_export("harness_core_inits");
 }
 
 /* What one frame of the load looked like. */
@@ -343,6 +349,78 @@ static void lane_fallback(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: hardware-render request                                       */
+/* ------------------------------------------------------------------ */
+
+/* The core makes its hardware-render request during the core stage,
+ * while the previous session's drivers are still up.  The request is
+ * for a context those drivers never built: freeing them must not
+ * destroy it (the core's context_destroy before any context_reset -
+ * a hardware core then runs with no context), and drivers_init must
+ * still see it.  Context flags set in that window are for the next
+ * context too, so they defer rather than land on the one being freed. */
+/* A context that takes flags, standing in for a GL context's: the
+ * null driver's has no set_flags, which defers by itself and proves
+ * nothing. */
+static unsigned ctx_flags_applied;
+static void ctx_set_flags(void *data, uint32_t flags)
+{
+   (void)data; (void)flags;
+   ctx_flags_applied++;
+}
+
+static void lane_hw_request(void)
+{
+   struct load_frame log[LOAD_FRAMES];
+   video_driver_state_t *video_st = video_state_get_ptr();
+   unsigned n;
+   unsigned had = failures;
+
+   open_menu();
+   hook_install();
+
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the reload was not started");
+   /* Past the close and the core stage: the request has been made
+    * on the old drivers. */
+   runloop_iterate();
+   runloop_iterate();
+   CHECK(core_is_up() && hook_installed(), "not at the core stage");
+   CHECK(video_st->hw_render.context_reset != NULL,
+         "the core's hardware-render request was not taken");
+   {
+      gfx_ctx_flags_t flags;
+      void (*saved)(void*, uint32_t) = video_st->current_video_context.set_flags;
+      video_st->current_video_context.set_flags = ctx_set_flags;
+      ctx_flags_applied = 0;
+      flags.flags = 0;
+      BIT32_SET(flags.flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
+      video_context_driver_set_flags(&flags);
+      video_st->current_video_context.set_flags = saved;
+      CHECK(ctx_flags_applied == 0,
+            "context flags set mid-load landed on the context being freed");
+      CHECK(video_st->deferred_flag_data.flags == flags.flags
+            && (video_driver_get_disp_flags()
+               & VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS),
+            "context flags set mid-load were not deferred to the next context");
+   }
+
+   n = run_load(log, LOAD_FRAMES);
+   CHECK(n < LOAD_FRAMES && !hook_installed() && core_is_up(),
+         "the load did not go through");
+   CHECK(core_export("harness_core_hw_destroys") == 0,
+         "the new core's context was destroyed before it was reset (%u)",
+         core_export("harness_core_hw_destroys"));
+   CHECK(video_st->hw_render.context_reset != NULL
+         && video_st->hw_render.context_destroy != NULL,
+         "the hardware-render request did not survive the driver rebuild");
+   runloop_iterate();
+
+   if (failures == had)
+      fprintf(stderr, "[pass] hw-request lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: close content                                                 */
 /* ------------------------------------------------------------------ */
 
@@ -497,6 +575,7 @@ int main(int argc, char *argv[])
    lane_one_at_a_time();
    lane_reinit_deferred();
    lane_fallback();
+   lane_hw_request();
    lane_close_content();
 
    main_exit(NULL);
