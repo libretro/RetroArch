@@ -134,6 +134,16 @@ int rsa_pkcs1_verify(const uint8_t *n, size_t n_len,
       enum rsa_hash hash, const uint8_t *digest, size_t digest_len,
       const uint8_t *sig, size_t sig_len);
 
+/**
+ * rsa_pss_verify:
+ * RSASSA-PSS with MGF1 over the same hash and a salt of the hash
+ * length (TLS 1.3 rsa_pss_rsae_*). Arguments as rsa_pkcs1_verify().
+ **/
+int rsa_pss_verify(const uint8_t *n, size_t n_len,
+      const uint8_t *e, size_t e_len,
+      enum rsa_hash hash, const uint8_t *digest, size_t digest_len,
+      const uint8_t *sig, size_t sig_len);
+
 /* NIST P-256 (secp256r1): ECDH for the TLS key exchange and ECDSA
  * signature verification for certificates. Points on the wire are
  * uncompressed SEC 1 encodings, 0x04 || X || Y. Field and scalar

@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <crypto/pk.h>
 #include <crypto/crypto.h>
+#include <lrc_hash.h>
 
 void bn_from_be(bn_word *r, unsigned k, const uint8_t *in, size_t len)
 {
@@ -484,6 +485,130 @@ int rsa_pkcs1_verify(const uint8_t *n, size_t n_len,
       ok = crypto_memeq_ct(w->em, w->expect, n_len);
    }
 
+   free(w);
+   return ok ? 0 : -1;
+}
+
+/* RSASSA-PSS verification (RFC 8017 9.1.2) with MGF1 over the same
+ * hash and a salt of the hash length, the form TLS 1.3 signs with.
+ * The modular exponentiation is the one rsa_pkcs1_verify() uses. */
+static void rsa_hash_of(enum rsa_hash hash, const uint8_t *data, size_t len, uint8_t *out)
+{
+   if (hash == RSA_HASH_SHA384)
+   {
+      struct sha512_state st;
+      sha512_stream_init(&st, 1);
+      sha512_stream_update(&st, data, len);
+      sha512_stream_final(&st, out);
+   }
+   else
+   {
+      struct sha256_state st;
+      sha256_stream_init(&st, 0);
+      sha256_stream_update(&st, data, len);
+      sha256_stream_final(&st, out);
+   }
+}
+
+int rsa_pss_verify(const uint8_t *n, size_t n_len,
+      const uint8_t *e, size_t e_len,
+      enum rsa_hash hash, const uint8_t *digest, size_t digest_len,
+      const uint8_t *sig, size_t sig_len)
+{
+   size_t   hlen, em_len, db_len, i, counter;
+   unsigned k, ek;
+   struct rsa_work *w;
+   uint8_t *db, *h, *db_mask, hprime[64], seed[64 + 4];
+   int ok = 0;
+
+   switch (hash)
+   {
+      case RSA_HASH_SHA256: hlen = 32; break;
+      case RSA_HASH_SHA384: hlen = 48; break;
+      default:
+         return -1;
+   }
+   if (digest_len != hlen)
+      return -1;
+   while (n_len && n[0] == 0) { n++; n_len--; }
+   while (e_len && e[0] == 0) { e++; e_len--; }
+   if (n_len < 64 || n_len > BN_MAX_WORDS * BN_WORD_BYTES || !(n[n_len - 1] & 1))
+      return -1;
+   if (!e_len || e_len > n_len || !(e[e_len - 1] & 1))
+      return -1;
+   if (sig_len != n_len)
+      return -1;
+   em_len = n_len;                       /* emBits = modBits - 1; a full octet count when
+                                            the top bit of n is set, which the mask below
+                                            handles for any modBits */
+   if (em_len < 2 * hlen + 2)
+      return -1;
+   if (!(w = (struct rsa_work*)malloc(sizeof(*w))))
+      return -1;
+   k  = (unsigned)((n_len + BN_WORD_BYTES - 1) / BN_WORD_BYTES);
+   ek = (unsigned)((e_len + BN_WORD_BYTES - 1) / BN_WORD_BYTES);
+   bn_from_be(w->mod, k, n, n_len);
+   bn_from_be(w->s,   k, sig, sig_len);
+   bn_from_be(w->exp, ek, e, e_len);
+   if (bn_cmp(w->s, w->mod, k) >= 0)
+      goto done;
+   bn_mont_r2(w->r2, w->mod, k);
+   bn_mod_exp(w->m, w->s, w->exp, ek, w->mod, w->r2, bn_mont_n0(w->mod), k, w->work);
+   bn_to_be(w->em, em_len, w->m, k);
+
+   /* EM = maskedDB || H || 0xbc */
+   if (w->em[em_len - 1] != 0xbc)
+      goto done;
+   db_len  = em_len - hlen - 1;
+   db      = w->em;
+   h       = w->em + db_len;
+   db_mask = w->expect;                  /* scratch of em_len octets */
+   /* MGF1(H, db_len) */
+   memcpy(seed, h, hlen);
+   for (counter = 0, i = 0; i < db_len; counter++)
+   {
+      uint8_t t[64];
+      size_t  take;
+      seed[hlen]     = (uint8_t)(counter >> 24);
+      seed[hlen + 1] = (uint8_t)(counter >> 16);
+      seed[hlen + 2] = (uint8_t)(counter >> 8);
+      seed[hlen + 3] = (uint8_t)counter;
+      rsa_hash_of(hash, seed, hlen + 4, t);
+      take = db_len - i < hlen ? db_len - i : hlen;
+      memcpy(db_mask + i, t, take);
+      i += take;
+   }
+   for (i = 0; i < db_len; i++)
+      db[i] ^= db_mask[i];
+   /* the bits above emBits are cleared: with emBits = modBits - 1 and
+    * a modulus whose top octet is used, that is the top bit */
+   {
+      unsigned top_bits = 0;
+      uint8_t  t = n[0];
+      while (t) { top_bits++; t >>= 1; }
+      /* emBits = 8 * n_len - (8 - top_bits) - 1 */
+      {
+         unsigned em_bits = 8 * (unsigned)n_len - (8 - top_bits) - 1;
+         unsigned clear   = 8 * (unsigned)em_len - em_bits;
+         db[0] &= (uint8_t)(0xff >> clear);
+      }
+   }
+   /* DB = PS (zeros) || 0x01 || salt, salt of hlen octets */
+   for (i = 0; i < db_len - hlen - 1; i++)
+      if (db[i] != 0)
+         goto done;
+   if (db[db_len - hlen - 1] != 0x01)
+      goto done;
+   /* H' = Hash(0x00 * 8 || mHash || salt) */
+   {
+      uint8_t *m2 = w->expect;           /* db_mask no longer needed */
+      memset(m2, 0, 8);
+      memcpy(m2 + 8, digest, hlen);
+      memcpy(m2 + 8 + hlen, db + db_len - hlen, hlen);
+      rsa_hash_of(hash, m2, 8 + 2 * hlen, hprime);
+   }
+   ok = crypto_memeq_ct(h, hprime, hlen);
+done:
    free(w);
    return ok ? 0 : -1;
 }

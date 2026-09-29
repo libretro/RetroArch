@@ -87,9 +87,12 @@ int main(int argc, char **argv)
       return 1;
    }
    buf[n] = '\0';
-   printf("%s: %.*s%s\n", host, (int)(strcspn(buf, "\r\n")), buf,
+   printf("%s: %.*s%s%s\n", host, (int)(strcspn(buf, "\r\n")), buf,
+         ssl_socket_retro_version(ssl) == 0x0304 ? " [TLS 1.3]" : " [TLS 1.2]",
          ssl_socket_retro_was_resumed(ssl) ? " (resumed)" : "");
-   if (round > 0 && !ssl_socket_retro_was_resumed(ssl))
+   /* 1.2 sessions must resume from the second round on; 1.3 has no
+    * PSK resumption here, every round is a fresh 1-RTT handshake */
+   if (round > 0 && ssl_socket_retro_version(ssl) == 0x0303 && !ssl_socket_retro_was_resumed(ssl))
    {
       fprintf(stderr, "round %d did not resume\n", round + 1);
       return 1;

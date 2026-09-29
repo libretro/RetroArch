@@ -531,6 +531,29 @@ START_TEST (test_rsa)
 }
 END_TEST
 
+START_TEST (test_rsa_pss)
+{
+   uint8_t bad[256];
+   /* OpenSSL PSS signatures, SHA-256 and SHA-384, verify */
+   ck_assert_int_eq(rsa_pss_verify(rsa2048_pss_n, 256, e65537, 3,
+         RSA_HASH_SHA256, rsa2048_pss_sha256_digest, 32, rsa2048_pss_sha256_sig, 256), 0);
+   ck_assert_int_eq(rsa_pss_verify(rsa2048_pss_n, 256, e65537, 3,
+         RSA_HASH_SHA384, rsa2048_pss_sha384_digest, 48, rsa2048_pss_sha384_sig, 256), 0);
+   /* a flipped bit, the wrong hash, a PKCS#1 signature as PSS, the
+    * wrong digest: all refused */
+   memcpy(bad, rsa2048_pss_sha256_sig, 256);
+   bad[100] ^= 0x01;
+   ck_assert_int_eq(rsa_pss_verify(rsa2048_pss_n, 256, e65537, 3,
+         RSA_HASH_SHA256, rsa2048_pss_sha256_digest, 32, bad, 256), -1);
+   ck_assert_int_eq(rsa_pss_verify(rsa2048_pss_n, 256, e65537, 3,
+         RSA_HASH_SHA384, rsa2048_pss_sha384_digest, 48, rsa2048_pss_sha256_sig, 256), -1);
+   ck_assert_int_eq(rsa_pss_verify(rsa2048_sha256_n, 256, e65537, 3,
+         RSA_HASH_SHA256, rsa2048_sha256_digest, 32, rsa2048_sha256_sig, 256), -1);
+   ck_assert_int_eq(rsa_pss_verify(rsa2048_pss_n, 256, e65537, 3,
+         RSA_HASH_SHA256, rsa2048_pss_sha384_digest, 32, rsa2048_pss_sha256_sig, 256), -1);
+}
+END_TEST
+
 START_TEST (test_p256)
 {
    uint8_t pub[65], shared[32], bad[65], sig[32];
@@ -767,6 +790,7 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_sha512);
    tcase_add_test(tc_core, test_bn);
    tcase_add_test(tc_core, test_rsa);
+   tcase_add_test(tc_core, test_rsa_pss);
    tcase_add_test(tc_core, test_p256);
    tcase_add_test(tc_core, test_p384);
    tcase_add_test(tc_core, test_smb_prereqs);

@@ -70,6 +70,13 @@
 #define TLS_SUITE_ECDHE_RSA_AES256_GCM     0xc030
 #define TLS_SUITE_ECDHE_RSA_CHACHA20       0xcca8
 #define TLS_SUITE_ECDHE_ECDSA_CHACHA20     0xcca9
+/* TLS 1.3 (RFC 8446), the two SHA-256 suites */
+#define TLS13_AES_128_GCM_SHA256           0x1301
+#define TLS13_CHACHA20_POLY1305_SHA256     0x1303
+#define TLS_HS_ENCRYPTED_EXTENSIONS 8
+#define TLS_HS_CERTIFICATE_VERIFY   15
+#define TLS_HS_KEY_UPDATE           24
+#define TLS_HS_NEW_SESSION_TICKET   4
 
 /* Error codes reported through ssl_socket_last_error(); negative like
  * mbedtls's so callers' "library error" logging stays meaningful. */
@@ -228,6 +235,17 @@ struct ssl_state
    uint8_t  expect_ticket;  /* server said it will send a NewSessionTicket */
    uint8_t  offered_sid[32];
    size_t   offered_sid_len;
+   /* TLS 1.3 */
+   uint8_t  v13;            /* the server chose 1.3 */
+   uint8_t  pub[65];        /* our P-256 key share */
+   uint8_t  hs_secret[32];  /* handshake secret, for the master derivation */
+   uint8_t  c_app[32];      /* client/server application traffic secrets */
+   uint8_t  s_app[32];
+   uint8_t  s_hs[32];       /* server handshake traffic secret (Finished key) */
+   uint8_t  c_hs[32];
+   uint8_t  cert_hash[32];  /* transcript hash up to Certificate, for CertificateVerify */
+   uint8_t  tls13_peer[65]; /* server key share from the ServerHello */
+   size_t   tls13_peer_len;
 };
 
 /* ---- byte helpers ------------------------------------------------- */
@@ -250,10 +268,16 @@ static unsigned tls_get24(const uint8_t *p)
 
 /* ---- PRF ---------------------------------------------------------- */
 
+static int tls_suite_is_13(unsigned suite)
+{
+   return suite == TLS13_AES_128_GCM_SHA256 || suite == TLS13_CHACHA20_POLY1305_SHA256;
+}
+
 static int tls_suite_is_chacha(unsigned suite)
 {
    return suite == TLS_SUITE_ECDHE_RSA_CHACHA20
-       || suite == TLS_SUITE_ECDHE_ECDSA_CHACHA20;
+       || suite == TLS_SUITE_ECDHE_ECDSA_CHACHA20
+       || suite == TLS13_CHACHA20_POLY1305_SHA256;
 }
 
 static int tls_suite_is_aes256(unsigned suite)
@@ -391,6 +415,45 @@ static int tls_send_record(struct ssl_state *s, uint8_t type,
       memcpy(rec + 5, data, len);
       rec_len = 5 + len;
    }
+   else if (s->v13)
+   {
+      /* TLS 1.3: outer type application_data, inner = data || type,
+       * nonce = iv XOR seq, AAD = the 5-octet header */
+      uint8_t aad[5];
+      uint8_t nonce[12];
+      uint8_t *body = rec + 5;
+      size_t  i;
+
+      rec[0] = TLS_CT_APPDATA;
+      memcpy(body, data, len);
+      body[len] = type;
+      rec_len = 5 + len + 1 + 16;
+      aad[0] = TLS_CT_APPDATA; aad[1] = 3; aad[2] = 3;
+      tls_put16(aad + 3, (unsigned)(rec_len - 5));
+      memcpy(nonce, s->civ, 12);
+      for (i = 0; i < 8; i++)
+         nonce[4 + i] ^= (uint8_t)(s->cseq >> (56 - 8 * i));
+      if (tls_suite_is_chacha(s->suite))
+      {
+         if (aead_encrypt(AEAD_CHACHA20_POLY1305, s->cwk, 32, nonce, 12,
+                  aad, 5, body, len + 1, body, body + len + 1, 16) != 0)
+            goto fail;
+      }
+      else
+      {
+         struct aes_gcm_ctx g;
+         if (aes_gcm_init(&g, s->cwk, 16) != 0
+               || aes_gcm_encrypt(&g, nonce, 12, aad, 5, body, len + 1,
+                     body, body + len + 1) != 0)
+         {
+            crypto_memzero(&g, sizeof(g));
+            goto fail;
+         }
+         crypto_memzero(&g, sizeof(g));
+      }
+      tls_put16(rec + 3, (unsigned)(rec_len - 5));
+      s->cseq++;
+   }
    else
    {
       uint8_t aad[13];
@@ -486,10 +549,51 @@ static int tls_read_record(struct ssl_state *s, uint8_t *type,
    }
    *type = s->rx[0];
 
-   if (!s->rx_encrypted)
+   if (!s->rx_encrypted || (s->v13 && *type == TLS_CT_CCS))
    {
+      /* a 1.3 server may send a plaintext ChangeCipherSpec for
+       * middlebox compatibility; it carries nothing */
       *body = s->rx + 5;
       *len  = rlen;
+   }
+   else if (s->v13)
+   {
+      uint8_t aad[5];
+      uint8_t nonce[12];
+      uint8_t *p = s->rx + 5;
+      size_t  plen, i;
+      int     r;
+
+      if (*type != TLS_CT_APPDATA || rlen < 17)
+         goto bad;
+      plen = rlen - 16;
+      aad[0] = s->rx[0]; aad[1] = 3; aad[2] = 3;
+      tls_put16(aad + 3, (unsigned)rlen);
+      memcpy(nonce, s->siv, 12);
+      for (i = 0; i < 8; i++)
+         nonce[4 + i] ^= (uint8_t)(s->sseq >> (56 - 8 * i));
+      if (tls_suite_is_chacha(s->suite))
+         r = aead_decrypt(AEAD_CHACHA20_POLY1305, s->swk, 32, nonce, 12,
+               aad, 5, p, plen, p + plen, 16, p);
+      else
+      {
+         struct aes_gcm_ctx g;
+         r = aes_gcm_init(&g, s->swk, 16);
+         if (r == 0)
+            r = aes_gcm_decrypt(&g, nonce, 12, aad, 5, p, plen, p + plen, p);
+         crypto_memzero(&g, sizeof(g));
+      }
+      if (r != 0)
+         goto bad;
+      s->sseq++;
+      /* inner: content || type || zero padding */
+      while (plen && p[plen - 1] == 0)
+         plen--;
+      if (!plen)
+         goto bad;
+      *type = p[plen - 1];
+      *body = p;
+      *len  = plen - 1;
    }
    else
    {
@@ -602,6 +706,9 @@ static int tls_read_handshake(struct ssl_state *s, uint8_t *msg_type,
        * of the handshake, and a whole handshake fits in it. */
       if (tls_read_record(s, &type, &rb, &rl) != 0)
          return -1;
+      /* a 1.3 server's compatibility ChangeCipherSpec carries nothing */
+      if (s->v13 && type == TLS_CT_CCS)
+         continue;
       if (type != TLS_CT_HANDSHAKE)
       {
          s->last_err = TLS_ERR_HANDSHAKE;
@@ -642,6 +749,7 @@ static int tls_send_handshake(struct ssl_state *s, uint8_t msg_type,
 static int tls_send_client_hello(struct ssl_state *s)
 {
    static const uint8_t suites[] = {
+      0x13, 0x01, 0x13, 0x03,                          /* TLS 1.3 */
       0xc0, 0x2b, 0xc0, 0x2f, 0xcc, 0xa9, 0xcc, 0xa8, 0xc0, 0x2c, 0xc0, 0x30
    };
    uint8_t *h;
@@ -674,7 +782,15 @@ static int tls_send_client_hello(struct ssl_state *s)
    if (dlen > 255)
       dlen = 0;
 
-   if (!(h = (uint8_t*)malloc(250 + dlen + ticket_len)))
+   /* our key share, P-256: 1.3 uses it as is, 1.2 too when the server
+    * picks that group */
+   if (crypto_random_bytes(s->priv, 32) != 0 || p256_keygen(s->priv, s->pub) != 0)
+   {
+      free(ticket);
+      s->last_err = TLS_ERR_KEX;
+      return -1;
+   }
+   if (!(h = (uint8_t*)malloc(350 + dlen + ticket_len)))
    {
       free(ticket);
       s->last_err = TLS_ERR_MEMORY;
@@ -683,15 +799,16 @@ static int tls_send_client_hello(struct ssl_state *s)
    p = h;
    *p++ = 3; *p++ = 3;                             /* client_version */
    memcpy(p, s->client_random, 32); p += 32;
-   /* session id: the cached one, or a random one alongside a ticket
-    * so the server can echo it to signal resumption */
+   /* session id: the cached one, or a random one - alongside a ticket
+    * so the server can echo it to signal 1.2 resumption, and in any
+    * case for 1.3 middlebox compatibility, where the server echoes it */
    s->offered_sid_len = 0;
    if (cached_sid_len)
    {
       memcpy(s->offered_sid, cached_sid, cached_sid_len);
       s->offered_sid_len = cached_sid_len;
    }
-   else if (ticket_len)
+   else
    {
       crypto_random_bytes(s->offered_sid, 32);
       s->offered_sid_len = 32;
@@ -722,12 +839,22 @@ static int tls_send_client_hello(struct ssl_state *s)
       /* ec_point_formats: uncompressed */
       tls_put16(e, 11); e += 2; tls_put16(e, 2); e += 2; *e++ = 1; *e++ = 0;
       /* signature_algorithms */
-      tls_put16(e, 13); e += 2; tls_put16(e, 12); e += 2; tls_put16(e, 10); e += 2;
+      tls_put16(e, 13); e += 2; tls_put16(e, 16); e += 2; tls_put16(e, 14); e += 2;
       tls_put16(e, 0x0403); e += 2;   /* ecdsa_secp256r1_sha256 */
       tls_put16(e, 0x0503); e += 2;   /* ecdsa_secp384r1_sha384 */
+      tls_put16(e, 0x0804); e += 2;   /* rsa_pss_rsae_sha256 (1.3) */
+      tls_put16(e, 0x0805); e += 2;   /* rsa_pss_rsae_sha384 (1.3) */
       tls_put16(e, 0x0401); e += 2;   /* rsa_pkcs1_sha256 */
       tls_put16(e, 0x0501); e += 2;   /* rsa_pkcs1_sha384 */
       tls_put16(e, 0x0601); e += 2;   /* rsa_pkcs1_sha512 */
+      /* supported_versions: 1.3 then 1.2 */
+      tls_put16(e, 43); e += 2; tls_put16(e, 5); e += 2; *e++ = 4;
+      tls_put16(e, 0x0304); e += 2; tls_put16(e, 0x0303); e += 2;
+      /* key_share: one entry, secp256r1 */
+      tls_put16(e, 51); e += 2; tls_put16(e, 2 + 4 + 65); e += 2;
+      tls_put16(e, 4 + 65); e += 2;
+      tls_put16(e, 23); e += 2; tls_put16(e, 65); e += 2;
+      memcpy(e, s->pub, 65); e += 65;
       /* renegotiation_info: initial, empty */
       tls_put16(e, 0xff01); e += 2; tls_put16(e, 1); e += 2; *e++ = 0;
       /* session_ticket: the cached ticket, or empty to say we take them */
@@ -772,11 +899,64 @@ static int tls_recv_server_hello(struct ssl_state *s)
    suite = tls_get16(b + 35 + sid);
    if (suite != TLS_SUITE_ECDHE_ECDSA_AES128_GCM && suite != TLS_SUITE_ECDHE_RSA_AES128_GCM
          && suite != TLS_SUITE_ECDHE_RSA_CHACHA20 && suite != TLS_SUITE_ECDHE_ECDSA_CHACHA20
-         && suite != TLS_SUITE_ECDHE_ECDSA_AES256_GCM && suite != TLS_SUITE_ECDHE_RSA_AES256_GCM)
+         && suite != TLS_SUITE_ECDHE_ECDSA_AES256_GCM && suite != TLS_SUITE_ECDHE_RSA_AES256_GCM
+         && !tls_suite_is_13(suite))
       goto bad;
    if (b[35 + sid + 2] != 0)
       goto bad;   /* compression */
    s->suite = suite;
+
+   /* TLS 1.3: supported_versions says 0x0304, key_share carries the
+    * server's share. A HelloRetryRequest (a ServerHello with the
+    * fixed random) asks for another group; we offer P-256 only, which
+    * every 1.3 server takes, so it is treated as a failure. */
+   s->v13 = 0;
+   s->tls13_peer_len = 0;
+   if (len > 35 + sid + 3 + 2)
+   {
+      static const uint8_t hrr_random[8] = { 0xcf, 0x21, 0xad, 0x74, 0xe5, 0x9a, 0x61, 0x11 };
+      size_t off  = 35 + sid + 3;
+      size_t elen = tls_get16(b + off);
+      off += 2;
+      while (elen >= 4 && off + 4 <= len)
+      {
+         unsigned etype = tls_get16(b + off);
+         size_t   edata = tls_get16(b + off + 2);
+         const uint8_t *ed = b + off + 4;
+         if (off + 4 + edata > len)
+            goto bad;
+         if (etype == 43 && edata == 2 && tls_get16(ed) == 0x0304)
+            s->v13 = 1;
+         if (etype == 51 && edata >= 4)
+         {
+            unsigned grp = tls_get16(ed);
+            size_t   kl  = tls_get16(ed + 2);
+            if (grp == 23 && kl == 65 && 4 + kl == edata)
+            {
+               memcpy(s->tls13_peer, ed + 4, 65);
+               s->tls13_peer_len = 65;
+            }
+         }
+         off  += 4 + edata;
+         elen  = (elen >= 4 + edata) ? elen - 4 - edata : 0;
+      }
+      if (memcmp(s->server_random, hrr_random, 8) == 0)
+      {
+         s->last_err = TLS_ERR_KEX;
+         return -1;
+      }
+   }
+   if (s->v13)
+   {
+      if (!tls_suite_is_13(suite) || !s->tls13_peer_len
+            || sid != s->offered_sid_len || memcmp(b + 35, s->offered_sid, sid) != 0)
+         goto bad;
+      s->resumed = 0;
+      s->expect_ticket = 0;
+      return 0;
+   }
+   if (tls_suite_is_13(suite))
+      goto bad;
 
    /* Resumption: the offered id echoed back, and the cached suite. */
    s->resumed = 0;
@@ -926,10 +1106,15 @@ static int tls_recv_server_kex(struct ssl_state *s, const struct x509_cert *leaf
    if (plen + 4 + sig_len != len)
       goto bad;
 
-   /* hash: sig_alg high octet is the hash (4 = sha256, 5 = 384, 6 = 512) */
+   /* hash: sig_alg high octet is the hash (4 = sha256, 5 = 384, 6 = 512);
+    * the rsa_pss_rsae_* schemes (0x0804 / 0x0805) are an exception, and
+    * a 1.2 server may pick them once they are offered for 1.3 */
    {
       uint8_t hash = (uint8_t)(sig_alg >> 8);
       uint8_t sigt = (uint8_t)sig_alg;
+      int     pss  = 0;
+      if (sig_alg == 0x0804) { hash = 4; pss = 1; }
+      else if (sig_alg == 0x0805) { hash = 5; pss = 1; }
       if (hash == 4)
       {
          struct sha256_state h;
@@ -953,12 +1138,17 @@ static int tls_recv_server_kex(struct ssl_state *s, const struct x509_cert *leaf
       else
          goto bad;
 
-      if (sigt == 1 && leaf->key_type == X509_KEY_RSA)
+      if (pss && leaf->key_type == X509_KEY_RSA)
+         ok = rsa_pss_verify(leaf->rsa_n, leaf->rsa_n_len,
+               leaf->rsa_e, leaf->rsa_e_len,
+               dlen == 32 ? RSA_HASH_SHA256 : RSA_HASH_SHA384,
+               digest, dlen, sig, sig_len);
+      else if (!pss && sigt == 1 && leaf->key_type == X509_KEY_RSA)
          ok = rsa_pkcs1_verify(leaf->rsa_n, leaf->rsa_n_len,
                leaf->rsa_e, leaf->rsa_e_len,
                dlen == 32 ? RSA_HASH_SHA256 : dlen == 48 ? RSA_HASH_SHA384 : RSA_HASH_SHA512,
                digest, dlen, sig, sig_len);
-      else if (sigt == 3 && (leaf->key_type == X509_KEY_P256 || leaf->key_type == X509_KEY_P384))
+      else if (!pss && sigt == 3 && (leaf->key_type == X509_KEY_P256 || leaf->key_type == X509_KEY_P384))
          ok = x509_verify_ecdsa_digest(leaf, digest, dlen, sig, sig_len);
    }
    if (ok != 0)
@@ -1144,6 +1334,370 @@ static int tls_recv_finished(struct ssl_state *s)
    return 0;
 }
 
+/* ---- TLS 1.3 (RFC 8446) ------------------------------------------- */
+
+/* HKDF-Expand-Label(secret, label, context, len), SHA-256. */
+static int tls13_expand_label(const uint8_t *secret, const char *label,
+      const uint8_t *ctx, size_t ctx_len, uint8_t *out, size_t out_len)
+{
+   uint8_t info[2 + 1 + 6 + 32 + 1 + 32];
+   size_t  llen = strlen(label), n = 0;
+   if (llen > 32 || ctx_len > 32)
+      return -1;
+   tls_put16(info, (unsigned)out_len);            n += 2;
+   info[n++] = (uint8_t)(6 + llen);
+   memcpy(info + n, "tls13 ", 6);                 n += 6;
+   memcpy(info + n, label, llen);                 n += llen;
+   info[n++] = (uint8_t)ctx_len;
+   if (ctx_len)
+   {
+      memcpy(info + n, ctx, ctx_len);
+      n += ctx_len;
+   }
+   return hkdf_sha256_expand(secret, 32, info, n, out, out_len);
+}
+
+/* Derive-Secret(secret, label, transcript-so-far) */
+static int tls13_derive_secret(const struct ssl_state *s, const uint8_t *secret,
+      const char *label, uint8_t *out)
+{
+   uint8_t th[32];
+   struct sha256_state t = s->transcript;
+   sha256_stream_final(&t, th);
+   return tls13_expand_label(secret, label, th, 32, out, 32);
+}
+
+/* Traffic keys from a traffic secret into the given key / iv slots. */
+static int tls13_traffic_keys(struct ssl_state *s, const uint8_t *secret,
+      uint8_t *key, uint8_t *iv)
+{
+   size_t klen = tls_suite_is_chacha(s->suite) ? 32 : 16;
+   if (tls13_expand_label(secret, "key", NULL, 0, key, klen) != 0
+         || tls13_expand_label(secret, "iv", NULL, 0, iv, 12) != 0)
+      return -1;
+   return 0;
+}
+
+/* The handshake secrets once the ServerHello is in: shared secret from
+ * the key share, then the client and server handshake traffic keys. */
+static int tls13_handshake_keys(struct ssl_state *s, const uint8_t *peer, size_t peer_len)
+{
+   static const uint8_t zeros[32] = {0};
+   uint8_t shared[32], early[32], derived[32];
+   uint8_t empty_hash[32];
+   struct sha256_state e;
+
+   if (peer_len != 65 || p256_ecdh(s->priv, peer, shared) != 0)
+      return -1;
+   /* early_secret = Extract(0, 0); derived = Derive-Secret(early, "derived", "") */
+   hkdf_sha256_extract(zeros, 32, zeros, 32, early);
+   sha256_stream_init(&e, 0);
+   sha256_stream_final(&e, empty_hash);
+   if (tls13_expand_label(early, "derived", empty_hash, 32, derived, 32) != 0)
+      return -1;
+   hkdf_sha256_extract(derived, 32, shared, 32, s->hs_secret);
+   crypto_memzero(shared, sizeof(shared));
+   if (tls13_derive_secret(s, s->hs_secret, "c hs traffic", s->c_hs) != 0
+         || tls13_derive_secret(s, s->hs_secret, "s hs traffic", s->s_hs) != 0)
+      return -1;
+   /* the server encrypts from here; we switch to our handshake keys
+    * when we send our Finished */
+   if (tls13_traffic_keys(s, s->s_hs, s->swk, s->siv) != 0)
+      return -1;
+   s->rx_encrypted = 1;
+   s->sseq         = 0;
+   return 0;
+}
+
+/* Application traffic secrets, from the transcript through the
+ * server's Finished. */
+static int tls13_application_secrets(struct ssl_state *s)
+{
+   static const uint8_t zeros[32] = {0};
+   uint8_t derived[32], master[32], empty_hash[32];
+   struct sha256_state e;
+   sha256_stream_init(&e, 0);
+   sha256_stream_final(&e, empty_hash);
+   if (tls13_expand_label(s->hs_secret, "derived", empty_hash, 32, derived, 32) != 0)
+      return -1;
+   hkdf_sha256_extract(derived, 32, zeros, 32, master);
+   if (tls13_derive_secret(s, master, "c ap traffic", s->c_app) != 0
+         || tls13_derive_secret(s, master, "s ap traffic", s->s_app) != 0)
+      return -1;
+   crypto_memzero(master, sizeof(master));
+   crypto_memzero(derived, sizeof(derived));
+   return 0;
+}
+
+/* verify_data = HMAC(Expand-Label(base, "finished", "", 32), transcript) */
+static int tls13_finished_mac(const struct ssl_state *s, const uint8_t *base, uint8_t *out)
+{
+   uint8_t fk[32], th[32];
+   struct sha256_state t = s->transcript;
+   if (tls13_expand_label(base, "finished", NULL, 0, fk, 32) != 0)
+      return -1;
+   sha256_stream_final(&t, th);
+   hmac_sha256(fk, 32, th, 32, out);
+   crypto_memzero(fk, sizeof(fk));
+   return 0;
+}
+
+/* Certificate (1.3 shape): request context, then entries of cert +
+ * extensions. Verifies the chain and leaves the leaf key in @leaf. */
+static int tls13_recv_certificate(struct ssl_state *s, struct x509_cert *leaf)
+{
+   uint8_t type;
+   const uint8_t *b, *ders[16];
+   size_t len, off, total, lens[16], n = 0;
+   char info[128];
+
+   if (tls_read_handshake(s, &type, &b, &len) != 0)
+      return -1;
+   if (type != TLS_HS_CERTIFICATE || len < 4 || b[0] != 0)
+      goto bad;
+   total = tls_get24(b + 1);
+   if (total + 4 != len)
+      goto bad;
+   off = 4;
+   while (off + 3 <= len && n < 16)
+   {
+      size_t cl = tls_get24(b + off), el;
+      off += 3;
+      if (cl == 0 || off + cl + 2 > len)
+         goto bad;
+      ders[n] = b + off;
+      lens[n] = cl;
+      n++;
+      off += cl;
+      el   = tls_get16(b + off);
+      off += 2 + el;
+      if (off > len)
+         goto bad;
+   }
+   if (!n || x509_parse(leaf, ders[0], lens[0]) != 0 || leaf->key_type == X509_KEY_NONE)
+   {
+      s->last_err = TLS_ERR_CERT;
+      return -1;
+   }
+   if (tls_verify_mode == 2)
+   {
+      ssl_socket_log_verify_disabled(s->domain);
+      return 0;
+   }
+   x509_trust_load_pem(tls_trust_pem, tls_trust_pem_len);
+   info[0] = '\0';
+   if (x509_verify_chain(ders, lens, n, s->domain, time(NULL), info, sizeof(info)) != 0)
+   {
+      ssl_socket_log_verify_fail(tls_verify_mode == 0, s->domain, info);
+      if (tls_verify_mode == 0)
+      {
+         s->last_err = TLS_ERR_CERT;
+         return -1;
+      }
+   }
+   return 0;
+
+bad:
+   s->last_err = TLS_ERR_HANDSHAKE;
+   return -1;
+}
+
+/* CertificateVerify: the signature covers 64 spaces, the context
+ * string, a zero and the transcript hash through Certificate. */
+static int tls13_recv_certificate_verify(struct ssl_state *s, const struct x509_cert *leaf)
+{
+   static const char ctx[] = "TLS 1.3, server CertificateVerify";
+   uint8_t type;
+   const uint8_t *b, *sig;
+   size_t len, sig_len;
+   unsigned alg;
+   uint8_t content[64 + 33 + 1 + 32];
+   uint8_t digest[64];
+   size_t  dlen;
+   int ok = -1;
+
+   /* transcript hash before this message: the accumulator has not been
+    * fed the CertificateVerify yet, so take it now */
+   {
+      struct sha256_state t = s->transcript;
+      sha256_stream_final(&t, s->cert_hash);
+   }
+   if (tls_read_handshake(s, &type, &b, &len) != 0)
+      return -1;
+   if (type != TLS_HS_CERTIFICATE_VERIFY || len < 4)
+   {
+      s->last_err = TLS_ERR_HANDSHAKE;
+      return -1;
+   }
+   alg     = tls_get16(b);
+   sig_len = tls_get16(b + 2);
+   sig     = b + 4;
+   if (4 + sig_len != len)
+   {
+      s->last_err = TLS_ERR_HANDSHAKE;
+      return -1;
+   }
+   memset(content, 0x20, 64);
+   memcpy(content + 64, ctx, 33);
+   content[64 + 33] = 0;
+   memcpy(content + 64 + 33 + 1, s->cert_hash, 32);
+
+   if (alg == 0x0804 || alg == 0x0403)           /* SHA-256 based */
+   {
+      struct sha256_state h;
+      sha256_stream_init(&h, 0);
+      sha256_stream_update(&h, content, sizeof(content));
+      sha256_stream_final(&h, digest);
+      dlen = 32;
+   }
+   else if (alg == 0x0805 || alg == 0x0503)      /* SHA-384 based */
+   {
+      struct sha512_state h;
+      sha512_stream_init(&h, 1);
+      sha512_stream_update(&h, content, sizeof(content));
+      sha512_stream_final(&h, digest);
+      dlen = 48;
+   }
+   else
+   {
+      s->last_err = TLS_ERR_SIGNATURE;
+      return -1;
+   }
+   if ((alg == 0x0804 || alg == 0x0805) && leaf->key_type == X509_KEY_RSA)
+      ok = rsa_pss_verify(leaf->rsa_n, leaf->rsa_n_len, leaf->rsa_e, leaf->rsa_e_len,
+            dlen == 32 ? RSA_HASH_SHA256 : RSA_HASH_SHA384, digest, dlen, sig, sig_len);
+   else if ((alg == 0x0403 && leaf->key_type == X509_KEY_P256)
+         || (alg == 0x0503 && leaf->key_type == X509_KEY_P384))
+      ok = x509_verify_ecdsa_digest(leaf, digest, dlen, sig, sig_len);
+   if (ok != 0)
+   {
+      s->last_err = TLS_ERR_SIGNATURE;
+      return -1;
+   }
+   return 0;
+}
+
+static int tls13_recv_finished(struct ssl_state *s)
+{
+   uint8_t type, expect[32];
+   const uint8_t *b;
+   size_t len;
+   /* the expected MAC is over the transcript before this message */
+   if (tls13_finished_mac(s, s->s_hs, expect) != 0)
+      return -1;
+   if (tls_read_handshake(s, &type, &b, &len) != 0)
+      return -1;
+   if (type != TLS_HS_FINISHED || len != 32 || !crypto_memeq_ct(b, expect, 32))
+   {
+      s->last_err = TLS_ERR_HANDSHAKE;
+      return -1;
+   }
+   return 0;
+}
+
+static int tls13_send_finished(struct ssl_state *s)
+{
+   uint8_t mac[32];
+   if (tls13_finished_mac(s, s->c_hs, mac) != 0)
+      return -1;
+   return tls_send_handshake(s, TLS_HS_FINISHED, mac, 32);
+}
+
+/* The whole 1.3 handshake after the ServerHello has been read and its
+ * key share handed over. */
+static int tls13_handshake(struct ssl_state *s, const uint8_t *peer, size_t peer_len)
+{
+   struct x509_cert leaf;
+   uint8_t type;
+   const uint8_t *b;
+   size_t len;
+   static const uint8_t ccs = 1;
+
+   if (tls13_handshake_keys(s, peer, peer_len) != 0)
+   {
+      s->last_err = TLS_ERR_KEX;
+      return -1;
+   }
+   /* EncryptedExtensions: nothing we act on */
+   if (tls_read_handshake(s, &type, &b, &len) != 0)
+      return -1;
+   if (type != TLS_HS_ENCRYPTED_EXTENSIONS)
+   {
+      s->last_err = TLS_ERR_HANDSHAKE;
+      return -1;
+   }
+   if (tls13_recv_certificate(s, &leaf) != 0)          return -1;
+   if (tls13_recv_certificate_verify(s, &leaf) != 0)   return -1;
+   if (tls13_recv_finished(s) != 0)                    return -1;
+
+   /* application secrets come from the transcript through the server
+    * Finished; our own Finished goes out under the handshake keys */
+   if (tls13_application_secrets(s) != 0)              return -1;
+   tls_cork(s);
+   /* middlebox-compatibility ChangeCipherSpec, in the clear */
+   s->tx_encrypted = 0;
+   if (tls_send_record(s, TLS_CT_CCS, &ccs, 1) != 0)   return -1;
+   if (tls13_traffic_keys(s, s->c_hs, s->cwk, s->civ) != 0) return -1;
+   s->tx_encrypted = 1;
+   s->cseq         = 0;
+   if (tls13_send_finished(s) != 0)                    return -1;
+   if (tls_uncork(s) != 0)                             return -1;
+
+   /* both sides on application keys */
+   if (tls13_traffic_keys(s, s->c_app, s->cwk, s->civ) != 0
+         || tls13_traffic_keys(s, s->s_app, s->swk, s->siv) != 0)
+      return -1;
+   s->cseq = s->sseq = 0;
+   crypto_memzero(s->hs_secret, sizeof(s->hs_secret));
+   crypto_memzero(s->c_hs, sizeof(s->c_hs));
+   crypto_memzero(s->s_hs, sizeof(s->s_hs));
+   s->handshake_done = 1;
+   s->hs_len = s->hs_off = 0;
+   return 0;
+}
+
+/* A post-handshake message on the application stream: tickets are
+ * dropped (no PSK resumption), a KeyUpdate rotates the server keys and
+ * is answered with our own when asked. */
+static int tls13_post_handshake(struct ssl_state *s, const uint8_t *msg, size_t len)
+{
+   if (len < 4)
+      return -1;
+   switch (msg[0])
+   {
+      case TLS_HS_NEW_SESSION_TICKET:
+         return 0;
+      case TLS_HS_KEY_UPDATE:
+      {
+         uint8_t next[32];
+         if (len != 5)
+            return -1;
+         if (tls13_expand_label(s->s_app, "traffic upd", NULL, 0, next, 32) != 0)
+            return -1;
+         memcpy(s->s_app, next, 32);
+         if (tls13_traffic_keys(s, s->s_app, s->swk, s->siv) != 0)
+            return -1;
+         s->sseq = 0;
+         if (msg[4] == 1)
+         {
+            /* update_requested: rotate ours too, announcing it first */
+            uint8_t ku[1] = {0};
+            if (tls_send_handshake(s, TLS_HS_KEY_UPDATE, ku, 1) != 0)
+               return -1;
+            if (tls13_expand_label(s->c_app, "traffic upd", NULL, 0, next, 32) != 0)
+               return -1;
+            memcpy(s->c_app, next, 32);
+            if (tls13_traffic_keys(s, s->c_app, s->cwk, s->civ) != 0)
+               return -1;
+            s->cseq = 0;
+         }
+         return 0;
+      }
+      default:
+         return -1;
+   }
+}
+
 static int tls_handshake(struct ssl_state *s)
 {
    struct x509_cert leaf;
@@ -1164,6 +1718,9 @@ static int tls_handshake(struct ssl_state *s)
 
    if (tls_send_client_hello(s) != 0)                   return -1;
    if (tls_recv_server_hello(s) != 0)                   return -1;
+
+   if (s->v13)
+      return tls13_handshake(s, s->tls13_peer, s->tls13_peer_len);
 
    if (s->resumed)
    {
@@ -1256,6 +1813,14 @@ void* ssl_socket_init(int fd, const char *domain)
    return s;
 }
 
+unsigned ssl_socket_retro_version(void *state_data)
+{
+   const struct ssl_state *s = (const struct ssl_state*)state_data;
+   if (!s || !s->handshake_done)
+      return 0;
+   return s->v13 ? 0x0304 : 0x0303;
+}
+
 int ssl_socket_retro_was_resumed(void *state_data)
 {
    const struct ssl_state *s = (const struct ssl_state*)state_data;
@@ -1311,8 +1876,23 @@ static int tls_fill(struct ssl_state *s)
          s->pt_off = 0;
          return 0;
       }
-      /* Anything else after the handshake (a HelloRequest, a CCS) is
-       * ignored; alerts were handled in tls_read_record. */
+      /* A 1.3 server sends tickets and key updates on the application
+       * stream; anything else after the handshake (a HelloRequest, a
+       * CCS) is ignored. Alerts were handled in tls_read_record. */
+      if (s->v13 && type == TLS_CT_HANDSHAKE)
+      {
+         size_t off = 0;
+         while (off + 4 <= len)
+         {
+            size_t ml = tls_get24(b + off + 1);
+            if (off + 4 + ml > len || tls13_post_handshake(s, b + off, 4 + ml) != 0)
+            {
+               s->last_err = TLS_ERR_HANDSHAKE;
+               return -1;
+            }
+            off += 4 + ml;
+         }
+      }
    }
 }
 

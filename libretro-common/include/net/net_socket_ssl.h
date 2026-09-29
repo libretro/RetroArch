@@ -77,6 +77,9 @@ void ssl_socket_retro_set_trust_pem(const char *pem, size_t len);
 /* net_socket_ssl_retro.c only: whether the last handshake on
  * @state_data resumed a cached session rather than running in full. */
 int ssl_socket_retro_was_resumed(void *state_data);
+/* net_socket_ssl_retro.c only: 0x0304 for a TLS 1.3 connection,
+ * 0x0303 for 1.2, 0 before the handshake. */
+unsigned ssl_socket_retro_version(void *state_data);
 
 RETRO_END_DECLS
 
