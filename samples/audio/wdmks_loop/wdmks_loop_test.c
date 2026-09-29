@@ -544,9 +544,76 @@ static void run_capture_loop(void)
    fifo_free(m.fifo);
 }
 
+/* A pin whose only range is 32-bit PCM stereo, 44100-384000 - a
+ * USB Audio Class 2 DAC as its class driver reports it: the integer
+ * shapes are in the ranges, float is the last-resort proposal, and the
+ * conversion into the pin's width is full scale. */
+static void run_wide_pcm_pin(void)
+{
+   wdmks_pin_t    pin;
+   wdmks_format_t f;
+   float          in[6]  = { 0.0f, 0.5f, -0.5f, 1.0f, -1.0f, 2.0f };
+   int32_t        out[6];
+   wdmks_mic_t    m;
+   int32_t        s32[2] = { 0x40000000, (int32_t)-0x40000000 };
+   float          fo;
+
+   printf("32-bit PCM pin\n");
+   memset(&pin, 0, sizeof(pin));
+   pin.range_count = 1;
+   pin.ranges[0].max_channels = 2;
+   pin.ranges[0].min_bits     = 32;
+   pin.ranges[0].max_bits     = 32;
+   pin.ranges[0].min_rate     = 44100;
+   pin.ranges[0].max_rate     = 384000;
+
+   memset(&f, 0, sizeof(f));
+   f.rate = 48000; f.channels = 2;
+   f.bits = 32; f.container_bits = 32; f.is_float = true;
+   check(!wdmks_format_in_pin(&pin, &f), "float is not in the ranges");
+   check(wdmks_pin_has_wide(&pin, 48000, 2), "but the pin is 32 bits wide, so it is proposed last");
+   check(!wdmks_pin_has_wide(&pin, 32000, 2), "not at a rate outside the range");
+   f.is_float = false;
+   check(wdmks_format_in_pin(&pin, &f), "32-bit integer is in the ranges");
+   f.bits = 24;
+   check(!wdmks_format_in_pin(&pin, &f), "24 valid bits is not, on a 32/32 range");
+   f.bits = 16; f.container_bits = 16;
+   check(!wdmks_format_in_pin(&pin, &f), "nor 16");
+   check(wdmks_shape_order[0].is_float && wdmks_shape_order[1].bits == 32
+         && !wdmks_shape_order[1].is_float && wdmks_shape_order[2].bits == 24
+         && wdmks_shape_order[3].container_bits == 16,
+         "shapes: float, 32, 24-in-32, 16");
+
+   wdmks_float_to_s32(out, in, sizeof(in), 32);
+   check(out[0] == 0 && out[1] == 0x40000000 && out[2] == (int32_t)-0x40000000,
+         "float to 32-bit: full scale");
+   check(out[3] == 0x7FFFFFFF && out[4] == (int32_t)-0x7FFFFFFF - 1
+         && out[5] == 0x7FFFFFFF, "and clamped at the ends");
+   in[1] = 0.5f + 1.0f / 4096.0f;
+   wdmks_float_to_s32(out, in, sizeof(in), 24);
+   check(out[1] == 0x40080000 && (out[1] & 0xFF) == 0,
+         "24 in 32: the low byte is clear");
+
+   memset(&m, 0, sizeof(m));
+   m.fifo        = fifo_new(64);
+   m.frame_bytes = 8;
+   m.out_bytes   = 4;
+   m.pin_s32     = true;
+   m.is_float    = true;
+   check(wdmks_mic_fold(&m, (const unsigned char*)s32, sizeof(s32)) == 8, "capture: a stereo 32-bit frame taken");
+   fifo_read(m.fifo, &fo, sizeof(fo));
+   check(fo == 0.0f, "averaged as float");
+   m.frame_bytes = 4;
+   wdmks_mic_fold(&m, (const unsigned char*)s32, 4);
+   fifo_read(m.fifo, &fo, sizeof(fo));
+   check(fo == 0.5f, "mono 32-bit: full scale float out");
+   fifo_free(m.fifo);
+}
+
 int main(void)
 {
    run_ranges();
+   run_wide_pcm_pin();
    run_wide_register();
    run_capture_fold();
    run_capture_loop();

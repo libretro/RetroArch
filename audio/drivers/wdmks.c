@@ -1489,29 +1489,70 @@ static HANDLE wdmks_pin_try_ac3(HANDLE filter, ULONG pin_id,
    return pin;
 }
 
+/* The sample shapes proposed, in preference order: float first (the
+ * frontend's own pipeline is float), then the integer widths this
+ * driver converts into - 32, 24 in 32 - and 16 last. 24-in-32 and
+ * 32-bit integer are the same size as float, so the conversion is a
+ * copy that changes nothing else about a write or a read. */
+typedef struct
+{
+   unsigned bits;
+   unsigned container_bits;
+   bool     is_float;
+} wdmks_shape_t;
+
+static const wdmks_shape_t wdmks_shape_order[] =
+{
+   { 32, 32, true  },
+   { 32, 32, false },
+   { 24, 32, false },
+   { 16, 16, false }
+};
+
+/* Whether a 32-bit-wide range exists at all, of either type: a pin
+ * advertising only 32-bit PCM has taken 32-bit float when proposed. */
+static bool wdmks_pin_has_wide(const wdmks_pin_t *pin, unsigned rate,
+      unsigned channels)
+{
+   unsigned i;
+   for (i = 0; i < pin->range_count; i++)
+   {
+      const wdmks_range_t *r = &pin->ranges[i];
+      if (     rate >= r->min_rate && rate <= r->max_rate
+            && channels <= r->max_channels
+            && r->min_bits <= 32 && r->max_bits >= 32)
+         return true;
+   }
+   return false;
+}
+
+static const char *wdmks_shape_name(const wdmks_format_t *fmt)
+{
+   if (fmt->is_float)
+      return "32-bit float";
+   if (fmt->container_bits == 16)
+      return "16-bit integer";
+   return fmt->bits == 24 ? "24-in-32-bit integer" : "32-bit integer";
+}
+
 /* Opens the best format a pin will actually take, rather than the
- * best its ranges claim. Preference order: the rate asked for before
- * any other, float before integer where the pin says it takes both
- * (the frontend's own pipeline is float, so that is one conversion
- * fewer), and the widest integer before the narrowest. */
+ * best its ranges claim: the rate asked for before any other, and the
+ * shapes in wdmks_shape_order. A pin whose ranges name no float
+ * subtype is still offered float once, as a last resort where it has
+ * a 32-bit-wide range: the ranges some class drivers report are
+ * narrower than what their pins accept, and a refusal costs one call. */
 static bool wdmks_pin_open(HANDLE filter, const wdmks_pin_t *pin,
       unsigned wanted_rate, unsigned channels, bool looped, DWORD access,
       wdmks_stream_t *out)
 {
    unsigned r;
+   unsigned pass;
 
+   for (pass = 0; pass < 2; pass++)
    for (r = 0; r <= sizeof(wdmks_rate_order) / sizeof(*wdmks_rate_order); r++)
    {
       unsigned rate = (r == 0) ? wanted_rate : wdmks_rate_order[r - 1];
       unsigned b;
-      /* Only what the frontend can hand over: 32-bit float, or
-       * 16-bit integer. It sends one or the other according to what
-       * use_float() says, and nothing here converts - so a pin opened
-       * at 24 or 32-bit integer is a pin being fed samples half the
-       * width it is reading, which plays at the wrong pitch rather
-       * than failing. Those two widths belong here only once
-       * something converts into them. */
-      static const unsigned bits_order[] = { 32, 16 };
 
       if (!rate)
          continue;
@@ -1520,18 +1561,25 @@ static bool wdmks_pin_open(HANDLE filter, const wdmks_pin_t *pin,
       if (r > 0 && rate == wanted_rate)
          continue;
 
-      for (b = 0; b < sizeof(bits_order) / sizeof(*bits_order); b++)
+      for (b = 0; b < sizeof(wdmks_shape_order) / sizeof(*wdmks_shape_order); b++)
       {
          wdmks_format_t fmt;
          HANDLE         h;
 
-         fmt.rate     = rate;
-         fmt.channels = channels;
-         fmt.bits     = bits_order[b];
-         fmt.is_float = (b == 0);
-         fmt.container_bits = fmt.bits;
+         fmt.rate           = rate;
+         fmt.channels       = channels;
+         fmt.bits           = wdmks_shape_order[b].bits;
+         fmt.container_bits = wdmks_shape_order[b].container_bits;
+         fmt.is_float       = wdmks_shape_order[b].is_float;
 
-         if (!wdmks_format_in_pin(pin, &fmt))
+         if (pass == 0)
+         {
+            if (!wdmks_format_in_pin(pin, &fmt))
+               continue;
+         }
+         else if (     !fmt.is_float
+                    || wdmks_format_in_pin(pin, &fmt)
+                    || !wdmks_pin_has_wide(pin, rate, channels))
             continue;
 
          h = wdmks_pin_try(filter, pin->pin_id, &fmt, looped, access);
@@ -1543,15 +1591,40 @@ static bool wdmks_pin_open(HANDLE filter, const wdmks_pin_t *pin,
          out->fmt    = fmt;
          out->looped = looped;
          RARCH_LOG("[WDM-KS] Pin %u opened %s at %u Hz, %u channel(s),"
-               " %s, %u-byte frame.\n",
+               " %s, %u-byte frame%s.\n",
                (unsigned)pin->pin_id, looped ? "(WaveRT)" : "(WaveCyclic)",
-               fmt.rate, fmt.channels,
-               fmt.is_float ? "32-bit float" : "16-bit integer",
-               fmt.channels * (fmt.container_bits / 8));
+               fmt.rate, fmt.channels, wdmks_shape_name(&fmt),
+               fmt.channels * (fmt.container_bits / 8),
+               pass ? ", outside the ranges it reported" : "");
          return true;
       }
    }
    return false;
+}
+
+/* Float frames to 32-bit integer of the same size: full scale, and for
+ * 24 valid bits the low byte cleared. */
+static void wdmks_float_to_s32(void *dst, const void *src, size_t bytes,
+      unsigned bits)
+{
+   const float *f = (const float*)src;
+   int32_t     *o = (int32_t*)dst;
+   size_t       n = bytes / sizeof(float);
+   size_t   i;
+   int32_t  mask = (bits == 24) ? (int32_t)~0xFF : (int32_t)~0;
+
+   for (i = 0; i < n; i++)
+   {
+      float v = f[i];
+      int32_t s;
+      if (v >= 1.0f)
+         s = 0x7FFFFFFF;
+      else if (v <= -1.0f)
+         s = (int32_t)-0x7FFFFFFF - 1;
+      else
+         s = (int32_t)(v * 2147483648.0f);
+      o[i] = s & mask;
+   }
 }
 
 /* The pin's state. A pin is driven STOP to ACQUIRE to PAUSE to RUN on
@@ -1722,6 +1795,10 @@ typedef struct
     * one frame to the receiver and has to go out whole. */
    size_t          ac3_burst_len;
    size_t          ac3_burst_at;
+   /* Where the pin took 32- or 24-in-32-bit integer: the frontend's
+    * float frames are converted here on the way in, the same size. */
+   unsigned char  *cvt;
+   size_t          cvt_size;
    bool            running;
    retro_atomic_int_t dead;   /* an I/O failed; stop writing, still reclaim */
    bool            nonblock;
@@ -2760,6 +2837,21 @@ static ssize_t wdmks_write(void *data, const void *buf, size_t size)
       return -1;
    if (retro_atomic_load_acquire_int(&w->dead))
       return -1;
+
+   if (w->cvt)
+   {
+      if (size > w->cvt_size)
+      {
+         unsigned char *grow = (unsigned char*)realloc(w->cvt, size);
+         if (!grow)
+            return -1;
+         w->cvt      = grow;
+         w->cvt_size = size;
+      }
+      wdmks_float_to_s32(w->cvt, src, size, w->stream.fmt.bits);
+      src = w->cvt;
+   }
+
    if (w->stream.looped)
       return wdmks_rt_write(w, src, size);
 
@@ -3428,6 +3520,7 @@ static void wdmks_free(void *data)
    if (w->ac3)
       rac3_encoder_free(w->ac3);
    free(w->ac3_in);
+   free(w->cvt);
 
    if (w->filter && w->filter != INVALID_HANDLE_VALUE)
       CloseHandle(w->filter);
@@ -3632,9 +3725,23 @@ static void *wdmks_init(const char *device, unsigned rate,
    }
 
    w->rate        = w->stream.fmt.rate;
-   w->is_float    = w->stream.fmt.is_float;
+   /* An integer pin wider than 16 is fed float and converted here, so
+    * the frontend is told float either way. */
+   w->is_float    = w->stream.fmt.is_float
+      || w->stream.fmt.container_bits == 32;
    w->frame_bytes = w->stream.fmt.channels
       * (w->stream.fmt.container_bits / 8);
+   if (w->is_float && !w->stream.fmt.is_float)
+   {
+      w->cvt_size = (size_t)latency * w->rate / 1000 * w->frame_bytes;
+      if (w->cvt_size < 4096)
+         w->cvt_size = 4096;
+      if (!(w->cvt = (unsigned char*)malloc(w->cvt_size)))
+      {
+         wdmks_free(w);
+         return NULL;
+      }
+   }
    /* The pin's own channel count, except on the bit-stream path, where
     * what the frontend hands over is the encoder's layout and the pin
     * only carries it. */
@@ -3790,7 +3897,8 @@ typedef struct
    bool             rt_pos_wide;
    bool             rt_barrier;
    bool             running;
-   bool             is_float;
+   bool             is_float;   /* what is handed over */
+   bool             pin_s32;    /* the pin's integer samples become float */
 } wdmks_mic_t;
 
 static void *wdmks_mic_init(void)
@@ -3851,7 +3959,7 @@ static size_t wdmks_mic_fold(wdmks_mic_t *m, const unsigned char *src,
    if (!frames)
       return 0;
 
-   if (m->frame_bytes == m->out_bytes)
+   if (m->frame_bytes == m->out_bytes && !m->pin_s32)
    {
       fifo_write(m->fifo, src, frames * m->out_bytes);
       return frames * m->frame_bytes;
@@ -3860,7 +3968,21 @@ static size_t wdmks_mic_fold(wdmks_mic_t *m, const unsigned char *src,
    for (i = 0; i < frames; i++)
    {
       const unsigned char *f = src + i * m->frame_bytes;
-      if (m->is_float)
+      if (m->pin_s32)
+      {
+         int32_t l, r;
+         float   o;
+         memcpy(&l, f, sizeof(l));
+         if (m->frame_bytes == 8)
+         {
+            memcpy(&r, f + 4, sizeof(r));
+            o = ((float)l + (float)r) * (0.5f / 2147483648.0f);
+         }
+         else
+            o = (float)l * (1.0f / 2147483648.0f);
+         fifo_write(m->fifo, &o, sizeof(o));
+      }
+      else if (m->is_float)
       {
          float l, r, o;
          memcpy(&l, f,     sizeof(l));
@@ -4345,7 +4467,9 @@ static void *wdmks_mic_open(void *driver_context, const char *device,
    }
 
    m->rate        = m->stream.fmt.rate;
-   m->is_float    = m->stream.fmt.is_float;
+   m->pin_s32     = !m->stream.fmt.is_float
+      && m->stream.fmt.container_bits == 32;
+   m->is_float    = m->stream.fmt.is_float || m->pin_s32;
    m->frame_bytes = m->stream.fmt.channels * (m->stream.fmt.container_bits / 8);
    m->out_bytes   = m->stream.fmt.container_bits / 8;
    if (new_rate)
