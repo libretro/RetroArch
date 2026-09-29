@@ -8701,7 +8701,7 @@ int runloop_iterate(void)
 
    /* Check if we should save state automatically */
    if (savestate_automatic_enable)
-      content_save_state_automatic();
+      content_save_state_automatic(current_time);
 
 end:
    if (vrr_runloop_enable)
