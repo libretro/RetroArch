@@ -144,6 +144,16 @@ int rsa_pss_verify(const uint8_t *n, size_t n_len,
       enum rsa_hash hash, const uint8_t *digest, size_t digest_len,
       const uint8_t *sig, size_t sig_len);
 
+/**
+ * x25519:
+ * RFC 7748 X25519: @out = @scalar * @u_le, all 32 octets little-endian
+ * as on the wire; the scalar is clamped here. Returns -1 when the
+ * result is the all-zero point (a low-order input), 0 otherwise.
+ * x25519_base() uses the base point 9.
+ **/
+int x25519(uint8_t *out, const uint8_t *scalar, const uint8_t *u_le);
+int x25519_base(uint8_t *out, const uint8_t *scalar);
+
 /* NIST P-256 (secp256r1): ECDH for the TLS key exchange and ECDSA
  * signature verification for certificates. Points on the wire are
  * uncompressed SEC 1 encodings, 0x04 || X || Y. Field and scalar

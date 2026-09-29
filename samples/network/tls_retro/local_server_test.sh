@@ -87,6 +87,12 @@ run13 "TLS 1.3, chain through an intermediate"         viarsa TLS_AES_128_GCM_SH
 run13 "TLS 1.3, untrusted CA is refused"               rsa  TLS_AES_128_GCM_SHA256       1 localhost 0
 run13 "TLS 1.3, wrong hostname is refused"             rsa  TLS_AES_128_GCM_SHA256       1 127.0.0.1 0 $D/ca.pem
 run13 "TLS 1.3, only AES-256-GCM-SHA384 offered: no connection" rsa TLS_AES_256_GCM_SHA384 1 localhost 0 $D/ca.pem
+# Groups: X25519 is the group most servers prefer; both handshakes
+# take it, and a server allowing only one of the three still connects
+run13 "TLS 1.3, X25519 only"                          rsa  TLS_AES_128_GCM_SHA256       0 localhost 0 $D/ca.pem 1 "-groups X25519"
+run13 "TLS 1.3, P-256 only"                           rsa  TLS_AES_128_GCM_SHA256       0 localhost 0 $D/ca.pem 1 "-groups P-256"
+run "TLS 1.2, X25519 key exchange"                    rsa  ECDHE-RSA-AES128-GCM-SHA256  X25519     0 localhost 0 $D/ca.pem
+run "TLS 1.2, ECDSA cert, X25519 + ChaCha20"          p256 ECDHE-ECDSA-CHACHA20-POLY1305 X25519   0 localhost 0 $D/ca.pem
 # PSK resumption: the ticket from the first connection resumes the next
 # ones, on both suites; a server that issues no tickets means every
 # connection is a full handshake, which the tool then reports as failure

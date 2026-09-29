@@ -613,6 +613,127 @@ done:
    return ok ? 0 : -1;
 }
 
+/* X25519 (RFC 7748): the Montgomery ladder over 2^255 - 19 on the
+ * same Montgomery-form field arithmetic the curves use. Scalars and
+ * coordinates are little-endian on the wire; the scalar is clamped as
+ * the RFC says and the top bit of a coordinate ignored. */
+#define X25519_K (256 / BN_WORD_BITS)
+
+static const uint8_t x25519_p_be[32] = {
+   0x7f,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+   0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xed
+};
+
+static void x25519_cswap(bn_word swap, bn_word *a, bn_word *b)
+{
+   bn_word mask = (bn_word)0 - swap;
+   unsigned i;
+   for (i = 0; i < X25519_K; i++)
+   {
+      bn_word t = mask & (a[i] ^ b[i]);
+      a[i] ^= t;
+      b[i] ^= t;
+   }
+}
+
+int x25519(uint8_t *out, const uint8_t *scalar, const uint8_t *u_le)
+{
+   bn_word p[X25519_K], r2[X25519_K], one[X25519_K], a24[X25519_K];
+   bn_word x1[X25519_K], x2[X25519_K], z2[X25519_K], x3[X25519_K], z3[X25519_K];
+   bn_word A[X25519_K], AA[X25519_K], B[X25519_K], BB[X25519_K], E[X25519_K];
+   bn_word C[X25519_K], D[X25519_K], DA[X25519_K], CB[X25519_K], t[X25519_K];
+   bn_word tmp[BN_MONT_TMP_WORDS(X25519_K)];
+   bn_word n0, swap = 0;
+   uint8_t k[32], ube[32], pm2_be[32];
+   int i;
+
+   memcpy(k, scalar, 32);
+   k[0]  &= 248;
+   k[31] &= 127;
+   k[31] |= 64;
+   for (i = 0; i < 32; i++)
+      ube[i] = u_le[31 - i];
+   ube[0] &= 0x7f;
+
+   bn_from_be(p, X25519_K, x25519_p_be, 32);
+   n0 = bn_mont_n0(p);
+   bn_mont_r2(r2, p, X25519_K);
+   /* Montgomery forms of 1, 121665 and u */
+   bn_zero(t, X25519_K); t[0] = 1;
+   bn_mont_mul(one, t, r2, p, n0, X25519_K, tmp);
+   bn_zero(t, X25519_K); t[0] = 121665;
+   bn_mont_mul(a24, t, r2, p, n0, X25519_K, tmp);
+   bn_from_be(t, X25519_K, ube, 32);
+   if (bn_cmp(t, p, X25519_K) >= 0)
+      bn_sub(t, t, p, X25519_K);
+   bn_mont_mul(x1, t, r2, p, n0, X25519_K, tmp);
+
+   bn_copy(x2, one, X25519_K); bn_zero(z2, X25519_K);
+   bn_copy(x3, x1, X25519_K);  bn_copy(z3, one, X25519_K);
+
+   for (i = 254; i >= 0; i--)
+   {
+      bn_word bit = (bn_word)((k[i >> 3] >> (i & 7)) & 1);
+      swap ^= bit;
+      x25519_cswap(swap, x2, x3);
+      x25519_cswap(swap, z2, z3);
+      swap = bit;
+
+      bn_mod_add(A, x2, z2, p, X25519_K);
+      bn_mont_sqr(AA, A, p, n0, X25519_K, tmp);
+      bn_mod_sub(B, x2, z2, p, X25519_K);
+      bn_mont_sqr(BB, B, p, n0, X25519_K, tmp);
+      bn_mod_sub(E, AA, BB, p, X25519_K);
+      bn_mod_add(C, x3, z3, p, X25519_K);
+      bn_mod_sub(D, x3, z3, p, X25519_K);
+      bn_mont_mul(DA, D, A, p, n0, X25519_K, tmp);
+      bn_mont_mul(CB, C, B, p, n0, X25519_K, tmp);
+      bn_mod_add(t, DA, CB, p, X25519_K);
+      bn_mont_sqr(x3, t, p, n0, X25519_K, tmp);
+      bn_mod_sub(t, DA, CB, p, X25519_K);
+      bn_mont_sqr(t, t, p, n0, X25519_K, tmp);
+      bn_mont_mul(z3, x1, t, p, n0, X25519_K, tmp);
+      bn_mont_mul(x2, AA, BB, p, n0, X25519_K, tmp);
+      bn_mont_mul(t, a24, E, p, n0, X25519_K, tmp);
+      bn_mod_add(t, AA, t, p, X25519_K);
+      bn_mont_mul(z2, E, t, p, n0, X25519_K, tmp);
+   }
+   x25519_cswap(swap, x2, x3);
+   x25519_cswap(swap, z2, z3);
+
+   /* x2 / z2: z2^(p-2) by square-and-multiply, all in Montgomery form */
+   memcpy(pm2_be, x25519_p_be, 32);
+   pm2_be[31] -= 2;
+   bn_copy(A, one, X25519_K);
+   for (i = 254; i >= 0; i--)
+   {
+      bn_mont_sqr(A, A, p, n0, X25519_K, tmp);
+      if ((pm2_be[31 - (i >> 3)] >> (i & 7)) & 1)
+         bn_mont_mul(A, A, z2, p, n0, X25519_K, tmp);
+   }
+   bn_mont_mul(t, x2, A, p, n0, X25519_K, tmp);
+   /* out of Montgomery form: multiply by 1 */
+   bn_zero(A, X25519_K); A[0] = 1;
+   bn_mont_mul(t, t, A, p, n0, X25519_K, tmp);
+   bn_to_be(ube, 32, t, X25519_K);
+   for (i = 0; i < 32; i++)
+      out[i] = ube[31 - i];
+   crypto_memzero(k, sizeof(k));
+   /* all-zero output means a low-order point: refuse it */
+   {
+      uint8_t acc = 0;
+      for (i = 0; i < 32; i++)
+         acc |= out[i];
+      return acc ? 0 : -1;
+   }
+}
+
+int x25519_base(uint8_t *out, const uint8_t *scalar)
+{
+   uint8_t nine[32] = {9};
+   return x25519(out, scalar, nine);
+}
+
 /* Largest curve here is P-384. */
 #define EC_MAX_K (384 / BN_WORD_BITS)
 

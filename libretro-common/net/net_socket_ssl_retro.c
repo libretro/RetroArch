@@ -243,6 +243,8 @@ struct ssl_state
    /* TLS 1.3 */
    uint8_t  v13;            /* the server chose 1.3 */
    uint8_t  pub[65];        /* our P-256 key share */
+   uint8_t  xpriv[32];      /* our X25519 key share */
+   uint8_t  xpub[32];
    uint8_t  hs_secret[32];  /* handshake secret, for the master derivation */
    uint8_t  c_app[32];      /* client/server application traffic secrets */
    uint8_t  s_app[32];
@@ -807,13 +809,14 @@ static int tls_send_client_hello(struct ssl_state *s)
 
    /* our key share, P-256: 1.3 uses it as is, 1.2 too when the server
     * picks that group */
-   if (crypto_random_bytes(s->priv, 32) != 0 || p256_keygen(s->priv, s->pub) != 0)
+   if (crypto_random_bytes(s->priv, 32) != 0 || p256_keygen(s->priv, s->pub) != 0
+         || crypto_random_bytes(s->xpriv, 32) != 0 || x25519_base(s->xpub, s->xpriv) != 0)
    {
       free(ticket);
       s->last_err = TLS_ERR_KEX;
       return -1;
    }
-   if (!(h = (uint8_t*)malloc(350 + dlen + ticket_len)))
+   if (!(h = (uint8_t*)malloc(400 + dlen + ticket_len)))
    {
       free(ticket);
       s->last_err = TLS_ERR_MEMORY;
@@ -856,9 +859,9 @@ static int tls_send_client_hello(struct ssl_state *s)
          tls_put16(e, (unsigned)dlen);   e += 2;
          memcpy(e, s->domain, dlen);     e += dlen;
       }
-      /* supported_groups: secp256r1, secp384r1 */
-      tls_put16(e, 10); e += 2; tls_put16(e, 6); e += 2;
-      tls_put16(e, 4);  e += 2; tls_put16(e, 23); e += 2; tls_put16(e, 24); e += 2;
+      /* supported_groups: x25519, secp256r1, secp384r1 */
+      tls_put16(e, 10); e += 2; tls_put16(e, 8); e += 2;
+      tls_put16(e, 6);  e += 2; tls_put16(e, 29); e += 2; tls_put16(e, 23); e += 2; tls_put16(e, 24); e += 2;
       /* ec_point_formats: uncompressed */
       tls_put16(e, 11); e += 2; tls_put16(e, 2); e += 2; *e++ = 1; *e++ = 0;
       /* signature_algorithms */
@@ -873,9 +876,11 @@ static int tls_send_client_hello(struct ssl_state *s)
       /* supported_versions: 1.3 then 1.2 */
       tls_put16(e, 43); e += 2; tls_put16(e, 5); e += 2; *e++ = 4;
       tls_put16(e, 0x0304); e += 2; tls_put16(e, 0x0303); e += 2;
-      /* key_share: one entry, secp256r1 */
-      tls_put16(e, 51); e += 2; tls_put16(e, 2 + 4 + 65); e += 2;
-      tls_put16(e, 4 + 65); e += 2;
+      /* key_share: x25519 and secp256r1, so no server needs a retry */
+      tls_put16(e, 51); e += 2; tls_put16(e, 2 + 4 + 32 + 4 + 65); e += 2;
+      tls_put16(e, 4 + 32 + 4 + 65); e += 2;
+      tls_put16(e, 29); e += 2; tls_put16(e, 32); e += 2;
+      memcpy(e, s->xpub, 32); e += 32;
       tls_put16(e, 23); e += 2; tls_put16(e, 65); e += 2;
       memcpy(e, s->pub, 65); e += 65;
       /* renegotiation_info: initial, empty */
@@ -1007,10 +1012,11 @@ static int tls_recv_server_hello(struct ssl_state *s)
          {
             unsigned grp = tls_get16(ed);
             size_t   kl  = tls_get16(ed + 2);
-            if (grp == 23 && kl == 65 && 4 + kl == edata)
+            if (((grp == 23 && kl == 65) || (grp == 29 && kl == 32)) && 4 + kl == edata)
             {
-               memcpy(s->tls13_peer, ed + 4, 65);
-               s->tls13_peer_len = 65;
+               memcpy(s->tls13_peer, ed + 4, kl);
+               s->tls13_peer_len = kl;
+               s->group          = grp;
             }
          }
          off  += 4 + edata;
@@ -1167,9 +1173,10 @@ static int tls_recv_server_kex(struct ssl_state *s, const struct x509_cert *leaf
       goto bad;
    s->group  = tls_get16(b + 1);
    point_len = b[3];
-   if ((s->group != 23 && s->group != 24)
+   if ((s->group != 23 && s->group != 24 && s->group != 29)
          || (s->group == 23 && point_len != 65)
          || (s->group == 24 && point_len != 97)
+         || (s->group == 29 && point_len != 32)
          || len < 4 + point_len + 4)
       goto bad;
    memcpy(peer, b + 4, point_len);
@@ -1259,11 +1266,25 @@ static int tls_send_client_kex(struct ssl_state *s, const uint8_t *peer,
 {
    uint8_t msg[1 + 97];
    uint8_t pub[97];
-   size_t  slen = s->group == 23 ? 32 : 48;
-   size_t  plen = s->group == 23 ? 65 : 97;
+   size_t  slen = s->group == 24 ? 48 : 32;
+   size_t  plen = s->group == 23 ? 65 : s->group == 24 ? 97 : 32;
    unsigned tries;
    int r;
 
+   if (s->group == 29)
+   {
+      /* X25519: the share made with the ClientHello, shared secret
+       * straight from the ladder */
+      if (peer_len != 32 || x25519(s->premaster, s->xpriv, peer) != 0)
+      {
+         s->last_err = TLS_ERR_KEX;
+         return -1;
+      }
+      crypto_memzero(s->xpriv, sizeof(s->xpriv));
+      msg[0] = 32;
+      memcpy(msg + 1, s->xpub, 32);
+      return tls_send_handshake(s, TLS_HS_CLIENT_KEX, msg, 33);
+   }
    for (tries = 0; tries < 8; tries++)
    {
       if (crypto_random_bytes(s->priv, slen) != 0)
@@ -1372,7 +1393,7 @@ static void tls_expand_keys(struct ssl_state *s)
 
 static void tls_derive_keys(struct ssl_state *s)
 {
-   size_t slen = s->group == 23 ? 32 : 48;
+   size_t slen = s->group == 24 ? 48 : 32;
    tls_prf(s, s->premaster, slen, "master secret",
          s->client_random, 32, s->server_random, 32, s->master, 48);
    crypto_memzero(s->premaster, sizeof(s->premaster));
@@ -1464,8 +1485,15 @@ static int tls13_handshake_keys(struct ssl_state *s, const uint8_t *peer, size_t
    uint8_t empty_hash[32];
    struct sha256_state e;
 
-   if (peer_len != 65 || p256_ecdh(s->priv, peer, shared) != 0)
+   if (s->group == 29)
+   {
+      if (peer_len != 32 || x25519(shared, s->xpriv, peer) != 0)
+         return -1;
+   }
+   else if (peer_len != 65 || p256_ecdh(s->priv, peer, shared) != 0)
       return -1;
+   crypto_memzero(s->xpriv, sizeof(s->xpriv));
+   crypto_memzero(s->priv, sizeof(s->priv));
    /* early_secret = Extract(0, PSK) - or Extract(0, 0) without one;
     * derived = Derive-Secret(early, "derived", "") */
    hkdf_sha256_extract(zeros, 32, s->psk_accepted ? s->psk : zeros, 32, early);
