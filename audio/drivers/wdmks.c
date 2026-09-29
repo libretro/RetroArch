@@ -2271,6 +2271,21 @@ static void wdmks_rt_wait_room(wdmks_t *w, size_t want)
  * notification form first so that those which do will accept it. */
 static void wdmks_rt_register_event(wdmks_t *w)
 {
+   /* The event fires twice a loop, and the waits that sleep on it
+    * sleep until it does.  That paces a refill only while the loop is
+    * what is held ahead of the hardware; with the loop larger than
+    * that - four times, since the loop was decoupled from the latency
+    * setting - a notification every half loop is every two settings'
+    * worth, and a thread that waits for it has run the held audio out
+    * before it wakes.  The timer path reads the position on a cadence
+    * sized from what is held, so it is the one that paces here. */
+   if (w->rt_size > w->rt_ahead)
+   {
+      w->rt_event = NULL;
+      RARCH_LOG("[WDM-KS] The loop is larger than what is held ahead;"
+            " the position is read on a timer, not the notification.\n");
+      return;
+   }
    if (!(w->rt_event = wdmks_rt_event_register(w->stream.handle)))
       RARCH_LOG("[WDM-KS] No notification event; the write path will"
             " poll, which is worse when backgrounded.\n");

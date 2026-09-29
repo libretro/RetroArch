@@ -676,6 +676,12 @@ static void run_held_ahead(void)
    margin     = wdmks_rt_margin(&w);
    check(margin == (48 + RATE / 2000) * FRAME,
          "the margin is the FIFO's, not cut to a quarter of the audio held");
+   /* The notification fires twice a loop - every two settings' worth
+    * here - so it cannot pace the refill and must not be taken. */
+   w.rt_event = (HANDLE)(uintptr_t)1;
+   wdmks_rt_register_event(&w);
+   check(w.rt_event == NULL,
+         "the notification event is not taken: it fires too seldom to pace");
 
    hw_play(RATE / 125 * FRAME);
    fill_tone(tone, sizeof(tone), 0x20);
