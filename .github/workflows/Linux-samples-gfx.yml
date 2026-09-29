@@ -466,42 +466,19 @@ jobs:
         working-directory: samples/gfx/gfx_widgets_msg_queue_race
         run: |
           set -eu
-          # Regression test for the producer-producer race fix on
-          # dispgfx_widget_t::msg_queue in gfx/gfx_widgets.c.
-          # Pre-fix the FIFO had no dedicated lock: producers could
-          # be invoked from any thread (the threaded task system at
-          # libretro-common/queues/task_queue.c runs a worker
-          # thread; gfx/video_driver.c::video_driver_frame released
-          # RUNLOOP_MSG_QUEUE_LOCK before calling the producer, so
-          # main-thread producers ran unlocked) yet there was no
-          # lock dedicated to msg_queue itself.  Post-fix a
-          # msg_queue_lock is acquired around every fifo_write (in
-          # gfx_widgets_msg_queue_push), every fifo_read (in
-          # gfx_widgets_iterate), and the avail-check that gates
-          # them.  The outer fast-path FIFO_*_AVAIL checks that
-          # used to wrap the function bodies were dropped: reading
-          # the FIFO cursors outside the lock is itself a data
-          # race against the locked writes (TSan-detectable;
-          # benign on x86 TSO but real on weak-memory hardware).
-          #
-          # ThreadSanitizer is the right validator: it instruments
-          # every memory access on fifo_buffer_t::end and
-          # ::first and would flag a missing-lock regression as a
-          # data race on the producer side, the consumer side, or
-          # the avail check.  ASan/UBSan would not catch the lock
-          # removal at all.  halt_on_error=1 makes TSan exit
-          # non-zero on the first observed race, which is what we
-          # want for CI: any race here means the production
-          # locking discipline is broken.
-          #
-          # The test mirrors the post-fix locking protocol of
-          # gfx_widgets_msg_queue_push and gfx_widgets_iterate's
-          # FIFO interaction; the widget allocation, font
-          # measurement, and animation push that wrap the actual
-          # FIFO calls in production are not part of the race and
-          # are stripped from the test.  If gfx_widgets.c amends
-          # the locking around msg_queue, the verbatim copies in
-          # gfx_widgets_msg_queue_race_test.c must follow.
+          # The widget message ring in gfx/gfx_widgets.c is a lock-free
+          # single-producer / single-consumer queue: the main thread
+          # publishes through msg_queue_tail, the widgets' owner pops
+          # through msg_queue_head, each cursor released by its writer
+          # and acquired by the other side, and the slot pointer rides
+          # that pairing.  The test builds the production push and pop
+          # out of gfx_widgets.c itself and drives them from one producer
+          # thread and one consumer thread, checking order, loss, and the
+          # full-ring refusal.  ThreadSanitizer is the validator that
+          # matters: a store to the slot array outside the release /
+          # acquire pairing, or a cursor published before its slot is
+          # written, is a race it reports and the value checks may not.
+          # halt_on_error=1 fails the run on the first race.
           make clean all SANITIZER=thread
           test -x gfx_widgets_msg_queue_race_test
           TSAN_OPTIONS=halt_on_error=1 timeout 60 \

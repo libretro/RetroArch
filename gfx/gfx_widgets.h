@@ -36,6 +36,9 @@
 #define DEFAULT_BACKDROP               0.75f
 
 #define MSG_QUEUE_PENDING_MAX          32
+#if (MSG_QUEUE_PENDING_MAX & (MSG_QUEUE_PENDING_MAX - 1))
+#error "MSG_QUEUE_PENDING_MAX must be a power of two: the ring indexes by mask"
+#endif
 #define MSG_QUEUE_ONSCREEN_MAX         4
 
 #define MSG_QUEUE_ANIMATION_DURATION   330
@@ -196,18 +199,6 @@ typedef struct disp_widget_msg
 typedef struct dispgfx_widget
 {
 #ifdef HAVE_THREADS
-   /* Serialises producer and consumer access to msg_queue.
-    * Producers (gfx_widgets_msg_queue_push) can be called from
-    * any thread, and no caller holds any other lock across the
-    * call (the runloop message queue is main-thread state with no
-    * lock at all; its off-main producers ride a deferral).  The
-    * consumer is whichever thread owns the widgets: the threaded
-    * video worker when it draws them, the main thread otherwise.
-    * msg_queue_lock guards the pending ring (msg_queue[] /
-    * msg_queue_head / msg_queue_count) and is held across every
-    * push and pop of it.  The displayed messages (current_msgs[])
-    * belong to that same owning thread alone and take no lock. */
-   slock_t* msg_queue_lock;
    /* Everything the widgets draw. With the threaded video wrapper the
     * worker animates, iterates and draws it while the main thread's
     * setters, task updates and relayout change it, so both sides hold
@@ -232,19 +223,22 @@ typedef struct dispgfx_widget
    void *video_st;
    bool worker;
 #endif
-   /* Messages pushed but not yet on screen: a ring of pointers,
-    * pushed from any thread (gfx_widgets_msg_queue_push), popped by
-    * the thread that owns the widgets, one per frame.  Was a
-    * fifo_buffer_t carrying sizeof(pointer)-byte records: a heap
-    * buffer, byte arithmetic and a write that silently wrapped when
-    * full, for what is a bounded array of MSG_QUEUE_PENDING_MAX
-    * pointers.  Several producers, so this is not an SPSC ring and
-    * stays under msg_queue_lock.  msg_queue_count is written only
-    * under it; the consumer reads it without, so a frame with nothing
-    * pending takes no lock at all. */
+   /* Messages pushed but not yet on screen: a ring of pointers with
+    * one producer and one consumer, so it takes no lock.  The
+    * producer is the main thread - every gfx_widgets_msg_queue_push()
+    * caller is main-thread code (runloop_msg_queue_push() defers
+    * off-main callers before it gets here, and the task queue's
+    * progress push runs from its main-thread gather) - and the
+    * consumer is the thread that owns the widgets: the threaded video
+    * worker when it draws them, the main thread otherwise.  The
+    * producer owns msg_queue_tail and the consumer msg_queue_head;
+    * both are free-running counts, indexed modulo
+    * MSG_QUEUE_PENDING_MAX (a power of two), published with a release
+    * store and read across with an acquire load, the retro_spsc
+    * pairing.  Full is tail - head == MSG_QUEUE_PENDING_MAX. */
    disp_widget_msg_t* msg_queue[MSG_QUEUE_PENDING_MAX];
-   unsigned msg_queue_head;
-   retro_atomic_int_t msg_queue_count;
+   retro_atomic_int_t msg_queue_head;
+   retro_atomic_int_t msg_queue_tail;
    disp_widget_msg_t* current_msgs[MSG_QUEUE_ONSCREEN_MAX];
    gfx_widget_fonts_t gfx_widget_fonts; /* ptr alignment */
 

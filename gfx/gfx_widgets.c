@@ -199,33 +199,33 @@ static void gfx_widgets_msg_queue_free(
       dispgfx_widget_t *p_dispwidget,
       disp_widget_msg_t *msg);
 
-/* The pending ring.  Caller holds msg_queue_lock (HAVE_THREADS).  The
- * count is published with a release store so the consumer can test it
- * without the lock (gfx_widgets_iterate_frame()). */
+/* The pending ring: one producer (the main thread), one consumer (the
+ * widgets' owner), release/acquire on the two cursors, no lock.  Each
+ * side reads its own cursor relaxed and the other's with an acquire
+ * load, which is what carries the slot pointer across. */
 static bool gfx_widgets_pending_push(dispgfx_widget_t *p_dispwidget,
       disp_widget_msg_t *msg_widget)
 {
-   unsigned tail;
-   int count = retro_atomic_load_acquire_int(&p_dispwidget->msg_queue_count);
-   if (count >= MSG_QUEUE_PENDING_MAX)
+   int tail = retro_atomic_load_relaxed_int(&p_dispwidget->msg_queue_tail);
+   int head = retro_atomic_load_acquire_int(&p_dispwidget->msg_queue_head);
+   if (tail - head >= MSG_QUEUE_PENDING_MAX)
       return false;
-   tail = (p_dispwidget->msg_queue_head + (unsigned)count)
-         % MSG_QUEUE_PENDING_MAX;
-   p_dispwidget->msg_queue[tail] = msg_widget;
-   retro_atomic_store_release_int(&p_dispwidget->msg_queue_count, count + 1);
+   p_dispwidget->msg_queue[(unsigned)tail & (MSG_QUEUE_PENDING_MAX - 1)]
+         = msg_widget;
+   retro_atomic_store_release_int(&p_dispwidget->msg_queue_tail, tail + 1);
    return true;
 }
 
 static disp_widget_msg_t *gfx_widgets_pending_pop(dispgfx_widget_t *p_dispwidget)
 {
    disp_widget_msg_t *msg_widget;
-   int count = retro_atomic_load_acquire_int(&p_dispwidget->msg_queue_count);
-   if (!count)
+   int head = retro_atomic_load_relaxed_int(&p_dispwidget->msg_queue_head);
+   int tail = retro_atomic_load_acquire_int(&p_dispwidget->msg_queue_tail);
+   if (head == tail)
       return NULL;
-   msg_widget = p_dispwidget->msg_queue[p_dispwidget->msg_queue_head];
-   p_dispwidget->msg_queue_head = (p_dispwidget->msg_queue_head + 1)
-         % MSG_QUEUE_PENDING_MAX;
-   retro_atomic_store_release_int(&p_dispwidget->msg_queue_count, count - 1);
+   msg_widget = p_dispwidget->msg_queue[
+         (unsigned)head & (MSG_QUEUE_PENDING_MAX - 1)];
+   retro_atomic_store_release_int(&p_dispwidget->msg_queue_head, head + 1);
    return msg_widget;
 }
 
@@ -357,18 +357,11 @@ static void gfx_widgets_msg_queue_push_state(
    disp_widget_msg_t    *msg_widget = NULL;
    dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
 
-   /* No FIFO_WRITE_AVAIL fast-path check wraps this function body,
-    * deliberately: reading the FIFO cursors
-    * outside msg_queue_lock is a data race against the producer
-    * lock-protected fifo_write below (TSan-detectable; benign on
-    * x86 TSO but real on weak-memory hardware).  The locked
-    * avail re-check at the fifo_write site is the correctness gate.
-    *
-    * Removing the outer gate also fixes a latent behaviour bug:
-    * the update-existing branch (else clause below) does not write
-    * to the FIFO -- it only mutates an already-tracked widget --
-    * so suppressing it on FIFO-full was wrong.  Existing widgets
-    * now get updated regardless of FIFO state. */
+   /* No ring-full fast path wraps this function body: the
+    * update-existing branch (else clause below) does not enter the
+    * ring, it only mutates an already-tracked widget, so a full ring
+    * must not suppress it.  The push site checks for room itself.
+    */
    {
       /* Get current msg if it exists */
       if (task && task->frontend_userdata)
@@ -522,18 +515,10 @@ static void gfx_widgets_msg_queue_push_state(
                msg_widget->text_height *= 2;
          }
 
-         /* Push under msg_queue_lock: several producers, and the
-          * full check and the push have to be one step so two of
-          * them cannot both pass the check for the last slot. */
+         /* One producer, so the room check and the push are one
+          * step by construction */
          {
-            bool queue_full;
-#ifdef HAVE_THREADS
-            slock_lock(p_dispwidget->msg_queue_lock);
-#endif
-            queue_full = !gfx_widgets_pending_push(p_dispwidget, msg_widget);
-#ifdef HAVE_THREADS
-            slock_unlock(p_dispwidget->msg_queue_lock);
-#endif
+            bool queue_full = !gfx_widgets_pending_push(p_dispwidget, msg_widget);
 
             if (queue_full)
             {
@@ -1305,51 +1290,36 @@ static INLINE void gfx_widgets_iterate_frame(
 
    /* Consume one message if available.  current_msgs[] and the MOVING
     * flag belong to this thread, the one that owns the widgets.  The
-    * pending ring is shared with its producers: its count is read
-    * without the lock, so a frame with nothing pending takes none, and
-    * the pop under msg_queue_lock is the correctness gate.  A push that
-    * lands just after the test is taken on the next frame. */
+    * pending ring is shared with its producer and popped without a
+    * lock; a push that lands just after the pop is taken on the next
+    * frame. */
    if (    !(p_dispwidget->flags & DISPGFX_WIDGET_FLAG_MOVING)
          && (p_dispwidget->current_msgs_size < ARRAY_SIZE(p_dispwidget->current_msgs)))
    {
-      disp_widget_msg_t *msg_widget = NULL;
-
-      if (retro_atomic_load_acquire_int(&p_dispwidget->msg_queue_count))
-      {
-#ifdef HAVE_THREADS
-         slock_lock(p_dispwidget->msg_queue_lock);
-#endif
-         msg_widget = gfx_widgets_pending_pop(p_dispwidget);
-#ifdef HAVE_THREADS
-         slock_unlock(p_dispwidget->msg_queue_lock);
-#endif
-
-         if (msg_widget)
-         {
-            /* Plain messages arrive unmeasured; this thread owns the font */
-            if (!(msg_widget->flags & DISPWIDG_FLAG_TASK) && !msg_widget->width)
-               gfx_widgets_msg_measure(p_dispwidget, msg_widget);
-
-            /* Task messages always appear from the bottom of the screen, append it */
-            if (   p_dispwidget->msg_queue_tasks_count == 0
-                || (msg_widget->flags & DISPWIDG_FLAG_TASK))
-               p_dispwidget->current_msgs[p_dispwidget->current_msgs_size] = msg_widget;
-            /* Regular messages are always above tasks, make room and insert it */
-            else
-            {
-               unsigned idx = (unsigned)(p_dispwidget->current_msgs_size -
-                  p_dispwidget->msg_queue_tasks_count);
-               for (i = p_dispwidget->current_msgs_size; i > idx; i--)
-                  p_dispwidget->current_msgs[i] = p_dispwidget->current_msgs[i - 1];
-               p_dispwidget->current_msgs[idx] = msg_widget;
-            }
-
-            p_dispwidget->current_msgs_size++;
-         }
-      }
+      disp_widget_msg_t *msg_widget = gfx_widgets_pending_pop(p_dispwidget);
 
       if (msg_widget)
       {
+         /* Plain messages arrive unmeasured; this thread owns the font */
+         if (!(msg_widget->flags & DISPWIDG_FLAG_TASK) && !msg_widget->width)
+            gfx_widgets_msg_measure(p_dispwidget, msg_widget);
+
+         /* Task messages always appear from the bottom of the screen, append it */
+         if (   p_dispwidget->msg_queue_tasks_count == 0
+             || (msg_widget->flags & DISPWIDG_FLAG_TASK))
+            p_dispwidget->current_msgs[p_dispwidget->current_msgs_size] = msg_widget;
+         /* Regular messages are always above tasks, make room and insert it */
+         else
+         {
+            unsigned idx = (unsigned)(p_dispwidget->current_msgs_size -
+               p_dispwidget->msg_queue_tasks_count);
+            for (i = p_dispwidget->current_msgs_size; i > idx; i--)
+               p_dispwidget->current_msgs[i] = p_dispwidget->current_msgs[i - 1];
+            p_dispwidget->current_msgs[idx] = msg_widget;
+         }
+
+         p_dispwidget->current_msgs_size++;
+
          /* Start expiration timer if not associated to a task */
          if (!(msg_widget->flags & DISPWIDG_FLAG_TASK))
          {
@@ -1941,7 +1911,6 @@ static void gfx_widgets_frame_state(void *data)
    bool onscreen_panels             = fps_show || framecount_show || memory_show || core_status_msg_show || time_show;
    void *userdata                   = video_info->userdata;
    unsigned video_width             = VIDEO_SCALE_W(video_info->dims);
-   unsigned video_height            = VIDEO_SCALE_H(video_info->dims);
    uint32_t video_flags             = video_info->video_st_flags;
    bool widgets_is_paused           = (video_flags & VIDEO_FLAG_WIDGETS_PAUSED) != 0;
    bool widgets_is_fastmotion       = (video_flags & VIDEO_FLAG_WIDGETS_FASTMOTION) != 0;
@@ -2013,7 +1982,7 @@ static void gfx_widgets_frame_state(void *data)
       int overlay_x             = 0;
       int overlay_y             = 0;
       unsigned overlay_width    = video_width;
-      unsigned overlay_height   = video_height;
+      unsigned overlay_height   = VIDEO_SCALE_H(video_info->dims);
       float outline_color[16] = {
       0.00, 1.00, 0.00, 1.00,
       0.00, 1.00, 0.00, 1.00,
@@ -2278,7 +2247,9 @@ static void gfx_widgets_frame_state(void *data)
 
 void gfx_widgets_frame(void *data)
 {
+#ifdef HAVE_THREADS
    dispgfx_widget_t *p_dispwidget = &dispwidget_st;
+#endif
 
    gfx_widgets_state_lock();
 #ifdef HAVE_THREADS
@@ -2364,8 +2335,6 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
       p_dispwidget->current_msgs[i] = NULL;
    }
 #ifdef HAVE_THREADS
-   slock_free(p_dispwidget->msg_queue_lock);
-   p_dispwidget->msg_queue_lock = NULL;
    slock_free(p_dispwidget->state_lock);
    p_dispwidget->state_lock = NULL;
 #endif
@@ -2502,14 +2471,13 @@ bool gfx_widgets_init(
             widget->init(p_disp, p_anim, video_is_threaded, fullscreen);
       }
 
-      p_dispwidget->msg_queue_head  = 0;
-      retro_atomic_int_init(&p_dispwidget->msg_queue_count, 0);
+      retro_atomic_int_init(&p_dispwidget->msg_queue_head, 0);
+      retro_atomic_int_init(&p_dispwidget->msg_queue_tail, 0);
 
       memset(&p_dispwidget->current_msgs[0], 0, sizeof(p_dispwidget->current_msgs));
       p_dispwidget->current_msgs_size = 0;
 
 #ifdef HAVE_THREADS
-      p_dispwidget->msg_queue_lock    = slock_new();
       retro_atomic_size_init(&p_dispwidget->state_owner, 0);
       p_dispwidget->state_depth       = 0;
       p_dispwidget->state_lock        = slock_new();
@@ -2646,13 +2614,7 @@ static void gfx_widgets_detach_tasks(dispgfx_widget_t *p_dispwidget)
    {
       disp_widget_msg_t *msg_widget = NULL;
 
-#ifdef HAVE_THREADS
-      slock_lock(p_dispwidget->msg_queue_lock);
-#endif
       msg_widget = gfx_widgets_pending_pop(p_dispwidget);
-#ifdef HAVE_THREADS
-      slock_unlock(p_dispwidget->msg_queue_lock);
-#endif
 
       if (!msg_widget)
          break;

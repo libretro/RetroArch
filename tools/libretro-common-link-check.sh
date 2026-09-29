@@ -4,7 +4,8 @@
 # (a call into another libretro-common TU) is caught at link time here,
 # before a mailbox is delivered.
 #
-# The harnesses under samples/, libretro-common/samples/ and tools/ each
+# The harnesses under samples/, libretro-common/samples/, tests-other/
+# and tools/ each
 # carry a hand-picked list of libretro-common sources, and a TU that
 # starts calling into a unit those lists do not name links in the main
 # build and fails in every one of them.  Nothing short of linking them
@@ -31,7 +32,7 @@ fail=0
 built=0
 
 # Every Makefile that names the unit, by the source list the build reads
-for mk in $(grep -rl --include='Makefile*' "$name" samples libretro-common/samples 2>/dev/null | sort); do
+for mk in $(grep -rl --include='Makefile*' "$name" samples libretro-common/samples tests-other 2>/dev/null | sort); do
    dir=$(dirname "$mk")
    file=$(basename "$mk")
    if [ "$file" = "Makefile" ]; then

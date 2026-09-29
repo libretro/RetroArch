@@ -131,7 +131,8 @@ int main(void)
    memset(&task, 0, sizeof(task));
    memset(&snapshot, 0, sizeof(snapshot));
    task.ident = 1;
-   retro_atomic_int_init(&dispwidget_st.msg_queue_count, 0);
+   retro_atomic_int_init(&dispwidget_st.msg_queue_head, 0);
+   retro_atomic_int_init(&dispwidget_st.msg_queue_tail, 0);
 
    /* Neither widget allocation failure nor duplicate failure publishes
     * a task association or consumes the caller's snapshot. */
@@ -265,15 +266,18 @@ int main(void)
    release_widget(widget);
    assert(!task.frontend_userdata && live_allocations == 0);
 
-   /* A full pending ring rolls back the transferred text and task link. */
-   retro_atomic_store_release_int(&dispwidget_st.msg_queue_count,
-         MSG_QUEUE_PENDING_MAX);
+   /* A full pending ring rolls back the transferred text and task link:
+    * full is tail - head == MSG_QUEUE_PENDING_MAX. */
+   retro_atomic_store_release_int(&dispwidget_st.msg_queue_tail,
+         retro_atomic_load_acquire_int(&dispwidget_st.msg_queue_head)
+         + MSG_QUEUE_PENDING_MAX);
    snapshot.title = checked_strdup("full");
    push(&task, &snapshot);
    assert(!snapshot.title && !task.frontend_userdata);
    release_snapshot(&snapshot);
    assert(live_allocations == 0);
-   retro_atomic_store_release_int(&dispwidget_st.msg_queue_count, 0);
+   retro_atomic_store_release_int(&dispwidget_st.msg_queue_tail,
+         retro_atomic_load_acquire_int(&dispwidget_st.msg_queue_head));
    puts("widget snapshot ownership tests passed");
    return 0;
 }
