@@ -93,6 +93,7 @@ static void loop_setup(wdmks_t *w)
    w->clk_ppm       = AUDIO_CLOCK_PPM_NONE;
    w->rt_buf        = (unsigned char*)malloc(LOOP_BYTES);
    w->rt_size       = LOOP_BYTES;
+   w->rt_ahead      = LOOP_BYTES;    /* held ahead: the whole loop, as before */
    w->rt_pos        = &fake_pos;
    fake_pos         = 0;
    /* As wdmks_rt_get_buffer leaves it. */
@@ -105,7 +106,7 @@ static void loop_setup(wdmks_t *w)
    w->rt_origin        = true;
    w->rt_fed           = false;
    retro_atomic_size_init(&w->rt_underruns, 0);
-   w->rt_ring_size     = w->rt_size;
+   w->rt_ring_size     = w->rt_ahead;
    retro_spsc_init(&w->rt_ring, w->rt_ring_size);
    retro_eventcount_init(&w->rt_park);
    retro_atomic_int_init(&w->rt_run, 0);
@@ -652,6 +653,60 @@ static void run_refill_thread(bool priority, bool mmcss)
    loop_teardown(&w);
 }
 
+/* ------------------------------------------------------------------ */
+/* Audio held ahead of the hardware is the latency setting; the loop  */
+/* it sits in is larger.  A short setting on a large loop: the write  */
+/* fills the margin and the setting's worth and no more, a pass late  */
+/* by several settings' worth is an overrun on the held audio and not */
+/* a lost lap - the loop is still there to follow the cursor round -  */
+/* and the margin is the FIFO's, not a quarter of a tiny loop.        */
+/* ------------------------------------------------------------------ */
+
+static void run_held_ahead(void)
+{
+   wdmks_t       w;
+   unsigned char tone[LOOP_BYTES];
+   size_t        ahead = RATE / 125 * FRAME;    /* 8 ms on a 200 ms loop */
+   size_t        margin, placed;
+
+   printf("-- 8 ms held ahead on a 200 ms loop --\n");
+   fifo_frames = 48;
+   loop_setup(&w);
+   w.rt_ahead = ahead;
+   margin     = wdmks_rt_margin(&w);
+   check(margin == (48 + RATE / 2000) * FRAME,
+         "the margin is the FIFO's, not cut to a quarter of the audio held");
+
+   hw_play(RATE / 125 * FRAME);
+   fill_tone(tone, sizeof(tone), 0x20);
+   placed = put_direct(&w, tone, sizeof(tone));
+   check(placed == ahead,
+         "a write fills the setting's worth beyond the margin and no more");
+   check(wdmks_rt_room(&w) == 0, "and the loop then has no room");
+   check(wdmks_buffer_size(&w) == ahead,
+         "what the frontend is told it holds is what is held");
+
+   /* Half of it plays: that much room again, and nothing lost */
+   hw_play(ahead / 2);
+   check(wdmks_rt_free(&w) == ahead / 2, "half played: half the room");
+   check(wdmks_underruns(&w) == 0, "no underrun");
+
+   /* The refill is late by three settings' worth: the hardware ran
+    * past the held audio, which is an overrun - counted, resynced -
+    * but the loop is far from a lap, so the position was followed
+    * and the loop was not cleared whole. */
+   fill_tone(w.rt_buf, LOOP_BYTES, 0x30);   /* whatever is in the loop */
+   hw_play(ahead * 3);
+   check(wdmks_rt_free(&w) > 0, "three settings late: room again");
+   check(wdmks_underruns(&w) == 1, "counted as one underrun");
+   check(w.rt_have_last, "and the position was followed, not lost");
+   check(!region_is_silent(&w, (fake_pos + LOOP_BYTES / 2) % LOOP_BYTES, FRAME * 16),
+         "the loop was not cleared whole");
+
+   loop_teardown(&w);
+   fifo_frames = 0;
+}
+
 int main(void)
 {
    run_ranges();
@@ -659,6 +714,7 @@ int main(void)
    run_wide_register();
    run_capture_fold();
    run_capture_loop();
+   run_held_ahead();
    run_refill_thread(true, false);
    run_refill_thread(true, true);
    run_refill_thread(false, false);

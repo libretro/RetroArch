@@ -1682,6 +1682,11 @@ typedef struct
     * fill. */
    unsigned char  *rt_buf;
    size_t          rt_size;
+   /* How much audio is held ahead of the hardware's fetch point: the
+    * latency setting.  The loop itself is larger - see the request in
+    * wdmks_init - so that a late pass has laps to spare before the
+    * position is ambiguous, and so the margin the FIFO needs fits. */
+   size_t          rt_ahead;
    size_t          rt_write;
 #ifdef HAVE_THREADS
    /* The refill thread's estate, threaded looped pins only. The
@@ -1962,7 +1967,7 @@ static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
    /* One device loop's worth of frontend ring: the only frontend
     * buffer, per the notes - packets or the mapped loop stay the
     * device's. */
-   w->rt_ring_size = w->rt_size;
+   w->rt_ring_size = w->rt_ahead;
    if (!retro_spsc_init(&w->rt_ring, w->rt_ring_size))
       return false;
    if (!retro_eventcount_init(&w->rt_park))
@@ -2134,6 +2139,7 @@ static void wdmks_rt_report_latency(wdmks_t *w)
  */
 static size_t wdmks_rt_free(wdmks_t *w);
 static size_t wdmks_rt_room(const wdmks_t *w);
+static size_t wdmks_rt_margin(const wdmks_t *w);
 static bool   wdmks_rt_play_offset(wdmks_t *w, ULONG *offset);
 static DWORD  wdmks_watchdog_ms(const wdmks_t *w, size_t bytes);
 static void   wdmks_clock_sample_qpc(wdmks_t *w, uint64_t frames,
@@ -2480,9 +2486,15 @@ static bool wdmks_rt_play_offset(wdmks_t *w, ULONG *offset)
 static size_t wdmks_rt_room(const wdmks_t *w)
 {
    uint64_t queued = w->rt_written_bytes - w->rt_played_bytes;
-   if (queued + w->frame_bytes >= w->rt_size)
+   /* Held ahead of the hardware: the margin its FIFO needs and the
+    * latency setting's worth of audio beyond it, never the loop - the
+    * loop is larger than that on purpose. */
+   size_t   limit  = wdmks_rt_margin(w) + w->rt_ahead;
+   if (limit + w->frame_bytes > w->rt_size)
+      limit = w->rt_size - w->frame_bytes;
+   if (queued >= limit)
       return 0;
-   return (size_t)(w->rt_size - w->frame_bytes - queued);
+   return (size_t)(limit - queued);
 }
 
 static size_t wdmks_rt_free(wdmks_t *w)
@@ -2755,9 +2767,14 @@ static void wdmks_rt_refill_thread(void *data)
     * most one slice. */
    if (w->frame_bytes && w->rate)
    {
+      size_t held = w->rt_ahead < w->rt_size ? w->rt_ahead : w->rt_size;
       loop_usec  = (retro_time_t)(w->rt_size / w->frame_bytes)
             * 1000000 / w->rate;
-      slice_usec = loop_usec / 4;
+      /* A quarter of what is held ahead, not of the loop: the loop is
+       * larger than that, and it is the held audio a late pass runs
+       * out of. */
+      slice_usec = (retro_time_t)(held / w->frame_bytes)
+            * 1000000 / w->rate / 4;
       if (slice_usec < 500)
          slice_usec = 500;
    }
@@ -3317,7 +3334,7 @@ static size_t wdmks_wait_writable(void *data, size_t len)
        || retro_atomic_load_acquire_int(&w->dead))
       return 0;
 
-   cap = (w->stream.looped ? w->rt_size : w->packet_bytes * WDMKS_PACKETS) / 2;
+   cap = (w->stream.looped ? w->rt_ahead : w->packet_bytes * WDMKS_PACKETS) / 2;
    if (len > cap)
       len = cap;
 
@@ -3391,7 +3408,7 @@ static size_t wdmks_buffer_size(void *data)
    if (!w)
       return 0;
    return wdmks_caller_bytes(w, w->stream.looped
-         ? w->rt_size : w->packet_bytes * WDMKS_PACKETS);
+         ? w->rt_ahead : w->packet_bytes * WDMKS_PACKETS);
 }
 
 static bool wdmks_start(void *data, bool is_shutdown)
@@ -3864,17 +3881,36 @@ static void *wdmks_init(const char *device, unsigned rate,
 
    if (w->stream.looped)
    {
-      /* The whole latency setting is the loop, not a quarter of it:
-       * there are no packets to divide it between. */
-      size_t wanted = (size_t)latency * w->rate / 1000 * w->frame_bytes;
-      if (wanted < w->frame_bytes * 64)
-         wanted = w->frame_bytes * 64;
+      /* What is held ahead of the hardware is the latency setting;
+       * the loop it is held in is larger.  A loop the size of the
+       * latency put a 2 ms setting on a 2 ms loop, where one pass of
+       * the refill thread 2.5 ms late was a lap the position could
+       * not be followed across, and the margin the codec's FIFO needs
+       * - a millisecond on the ones seen - did not fit under a
+       * quarter of it, so every resync wrote into bytes already
+       * fetched.  Four times the setting, and 8 ms at the least. */
+      size_t ahead = (size_t)latency * w->rate / 1000 * w->frame_bytes;
+      size_t wanted;
+      if (ahead < w->frame_bytes * 64)
+         ahead = w->frame_bytes * 64;
+      wanted = ahead * 4;
+      if (wanted < (size_t)w->rate * 8 / 1000 * w->frame_bytes)
+         wanted = (size_t)w->rate * 8 / 1000 * w->frame_bytes;
 
+      w->rt_ahead = ahead;
       if (!wdmks_rt_get_buffer(w, wanted))
       {
          RARCH_ERR("[WDM-KS] The WaveRT pin would not start.\n");
          wdmks_free(w);
          return NULL;
+      }
+      /* A driver that gave less than asked: hold no more than fits */
+      if (w->rt_ahead + w->frame_bytes > w->rt_size)
+      {
+         w->rt_ahead     = w->rt_size - w->frame_bytes;
+#ifdef HAVE_THREADS
+         w->rt_ring_size = w->rt_ahead;
+#endif
       }
       /* Before the pin runs: the first sample after a start resyncs
        * the write cursor a margin ahead of the hardware, and the
@@ -3897,9 +3933,11 @@ static void *wdmks_init(const char *device, unsigned rate,
                w->rt_pos ? "yes" : "no",
                wdmks_position(w, &probe) ? "yes" : "no");
       }
-      RARCH_LOG("[WDM-KS] WaveRT buffer of %u bytes, %u ms%s.\n",
+      RARCH_LOG("[WDM-KS] WaveRT loop of %u bytes, %u ms; %u ms held"
+            " ahead of the hardware%s.\n",
             (unsigned)w->rt_size,
             (unsigned)(w->rt_size * 1000 / (w->frame_bytes * w->rate)),
+            (unsigned)(w->rt_ahead * 1000 / (w->frame_bytes * w->rate)),
             w->rt_barrier ? ", writes need a barrier" : "");
       return w;
    }
