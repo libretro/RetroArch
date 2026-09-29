@@ -5270,9 +5270,19 @@ static size_t audio_driver_pipe_target_frames(audio_driver_state_t *audio_st)
    }
    /* Never under one publish: the core delivers a frame at a time, and
     * a pipe holding less than that between publishes is a device that
-    * runs dry between them whatever its own buffer holds. */
+    * runs dry between them whatever its own buffer holds.
+    *
+    * And where nothing regulates the fill - no rate control - one
+    * publish is no margin at all: the pipe holds a frame just after
+    * the core hands one over and nothing just before the next, so a
+    * frame late by any amount reaches the device as silence.  Two
+    * publishes there, so a frame's worth is held at the worst phase,
+    * which is what a late frame costs. */
    if (target < audio_st->pipe_pass_frames)
       target = audio_st->pipe_pass_frames;
+   if (     !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_CONTROL)
+         && target < 2 * audio_st->pipe_pass_frames)
+      target = 2 * audio_st->pipe_pass_frames;
    /* Within the ring less two publishes: one arriving, one of swing
     * in the fill between the core's publish and the consumer's pass. */
    ring_max    = audio_st->pipe_ring.capacity / audio_st->pipe_frame_bytes;
@@ -5281,6 +5291,29 @@ static size_t audio_driver_pipe_target_frames(audio_driver_state_t *audio_st)
    else
       ring_max  = 0;
    return target < ring_max ? target : ring_max;
+}
+
+/* What priming fills the pipe to: the target and the device's buffer
+ * on top, since the device starts empty and the pipe is to hold a
+ * buffer's worth ahead of it.  The same figure is the line above which
+ * audio is late after an underrun: trimming to the target alone threw
+ * the device's share away on the first pass after every prime, and the
+ * pipe then ran a device buffer short of what it had just been filled
+ * to.  Zero when there is no target. */
+static size_t audio_driver_pipe_prime_frames(audio_driver_state_t *audio_st)
+{
+   size_t target = audio_driver_pipe_target_frames(audio_st);
+   size_t frame_bytes, device, room, limit;
+   if (!target)
+      return 0;
+   frame_bytes = audio_driver_dev_frame_bytes(audio_st);
+   device      = (size_t)((double)audio_st->buffer_size / frame_bytes
+         / audio_st->src_ratio_orig);
+   room        = audio_st->pipe_ring.capacity / audio_st->pipe_frame_bytes;
+   limit       = room > audio_st->pipe_pass_frames
+      ? room - audio_st->pipe_pass_frames : 1;
+   target     += device;
+   return target > limit ? limit : target;
 }
 #endif
 
@@ -6170,26 +6203,28 @@ static void audio_driver_transport_consume(audio_driver_state_t *st)
       size_t seen = audio->underruns(st->context_audio_data);
       if (seen != st->pipe_underruns_seen)
       {
-         size_t target = audio_driver_pipe_target_frames(st);
+         size_t target = audio_driver_pipe_prime_frames(st);
          if (!audio_driver_pipeline_transport_discard(held > target ? held - target : 0))
             return;
          st->pipe_underruns_seen = seen;
          held = retro_spsc_read_avail(&st->pipe_ring) / st->pipe_frame_bytes;
+         /* Silence with the pipe short is the core having been late,
+          * and the cushion the pipe held ahead of the device is what
+          * the stall burned.  Nothing rebuilds it on this path - no
+          * rate control, and a core paced to the display never runs
+          * ahead - so from here every ordinary bit of jitter would be
+          * a hole.  Prime again: the same wait the first pass made,
+          * while the device is silent anyway, so the next stall meets
+          * a full cushion. */
+         if (held < target)
+            st->pipe_priming = true;
       }
    }
    if (st->pipe_priming)
    {
-      size_t target = audio_driver_pipe_target_frames(st);
-      size_t need = 1;
-      if (target)
-      {
-         size_t room = st->pipe_ring.capacity / st->pipe_frame_bytes;
-         size_t device = (size_t)((double)st->buffer_size
-               / audio_driver_dev_frame_bytes(st) / st->src_ratio_orig);
-         size_t limit = room > st->pipe_pass_frames ? room - st->pipe_pass_frames : 1;
-         need = target + device;
-         if (need > limit) need = limit;
-      }
+      size_t need = audio_driver_pipe_prime_frames(st);
+      if (!need)
+         need = 1;
       if (!audio_driver_transport_wait(st, need * st->pipe_frame_bytes,
                AUDIO_PIPELINE_LAYOUT_CAPACITY))
          return;
@@ -6309,18 +6344,9 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
       size_t need = audio_st->pipe_frame_bytes;
       if (audio_st->pipe_priming)
       {
-         size_t target = audio_driver_pipe_target_frames(audio_st);
-         if (target)
-         {
-            size_t frame_bytes = audio_driver_dev_frame_bytes(audio_st);
-            size_t device = (size_t)((double)audio_st->buffer_size / frame_bytes
-                  / audio_st->src_ratio_orig);
-            size_t room   = audio_st->pipe_ring.capacity / audio_st->pipe_frame_bytes;
-            target += device;
-            if (target > room - audio_st->pipe_pass_frames)
-               target = room - audio_st->pipe_pass_frames;
-            need = target * audio_st->pipe_frame_bytes;
-         }
+         size_t prime = audio_driver_pipe_prime_frames(audio_st);
+         if (prime)
+            need = prime * audio_st->pipe_frame_bytes;
       }
    while (retro_spsc_read_avail(&audio_st->pipe_ring) < need)
    {
@@ -6447,7 +6473,7 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
       size_t seen = audio->underruns(audio_st->context_audio_data);
       if (seen != audio_st->pipe_underruns_seen)
       {
-         size_t target = audio_driver_pipe_target_frames(audio_st) * audio_st->pipe_frame_bytes;
+         size_t target = audio_driver_pipe_prime_frames(audio_st) * audio_st->pipe_frame_bytes;
          size_t held   = retro_spsc_read_avail(&audio_st->pipe_ring);
          bool discarded = false;
          audio_st->pipe_underruns_seen = seen;
@@ -6468,6 +6494,17 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
             audio_driver_state_lock();
             audio_driver_reset_resamplers(audio_st);
             audio_driver_state_unlock();
+         }
+         /* Silence with the pipe short is the core having been late,
+          * and what the stall burned is the cushion the pipe held
+          * ahead of the device; nothing on this path rebuilds it.
+          * Prime again on the next pass - the wait the first pass
+          * made, while the device is silent anyway - so the next
+          * stall meets a full cushion rather than an empty pipe. */
+         if (held < target)
+         {
+            audio_st->pipe_priming = true;
+            return;
          }
          if (have > held / audio_st->pipe_frame_bytes)
             have = held / audio_st->pipe_frame_bytes;

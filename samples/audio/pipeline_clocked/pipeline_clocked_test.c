@@ -230,6 +230,7 @@ static audio_driver_t clocked_driver = {
 /* --- threads --------------------------------------------------------- */
 
 static retro_atomic_int_t consumer_run = RETRO_ATOMIC_INT_INITIALIZER(1);
+static unsigned stall_failures;
 
 static void *consumer(void *arg)
 {
@@ -300,7 +301,7 @@ static bool pipeline_up(unsigned latency_ms)
    config_get_ptr()->bools.audio_sync                 = true;
    audio_driver_publish_runloop();
 
-   ring_bytes = per_frame * 3 * st->pipe_frame_bytes;
+   ring_bytes = per_frame * 6 * st->pipe_frame_bytes;
    if (!retro_spsc_init(&st->pipe_ring, ring_bytes))
       return false;
    retro_eventcount_init(&st->pipe_space);
@@ -407,6 +408,166 @@ static void run_one(unsigned latency_ms, double seconds)
    pipeline_down();
 }
 
+/* --- a stall, then jitter -------------------------------------------- */
+/* Audio Sync and rate control off: the pipe's fill is regulated by
+ * nothing, so the cushion it holds ahead of the device is what priming
+ * put there.  One stall - the core away for longer than that cushion,
+ * and, as a core paced to the display does, not catching up afterwards
+ * - burns it.  From then on the core's ordinary jitter, well inside the
+ * cushion, reaches the device as silence unless the pipe primes again.
+ *
+ * The device holds 8 ms; the jitter is up to 12 ms, past the device and
+ * well short of the cushion of a frame plus the device.  Passes when
+ * the tail after the stall has no short pull. */
+
+static bool stall_case_once(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   long      host_stall_ns  = 0;
+   pthread_t cons, dev;
+   size_t    per_frame = (size_t)(CORE_RATE / FPS);
+   size_t    i;
+   struct timespec next;
+   long      step_ns   = (long)(1e9 / FPS);
+   size_t    before_under, before_silent, after_under, after_silent;
+   unsigned  seed = 12345;
+
+   if (!pipeline_up(8))
+   {
+      printf("stall: fixture failed\n");
+      stall_failures++;
+      return true;
+   }
+   /* The unregulated path: no sync, no rate control. */
+   config_get_ptr()->bools.audio_sync = false;
+   AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_CONTROL);
+   audio_driver_publish_runloop();
+
+   retro_atomic_store_release_int(&dev_running, 1);
+   retro_atomic_store_release_int(&consumer_run, 1);
+   pthread_create(&dev,  NULL, dev_thread, NULL);
+   pthread_create(&cons, NULL, consumer,   NULL);
+
+   clock_gettime(CLOCK_MONOTONIC, &next);
+   /* Steady for a second */
+   for (i = 0; i < (size_t)FPS; i++)
+   {
+      next.tv_nsec += step_ns;
+      next.tv_sec  += next.tv_nsec / 1000000000L;
+      next.tv_nsec %= 1000000000L;
+      clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
+      audio_driver_submit(st, 1.0f, frame_audio, per_frame * 2,
+            false, false, false, true);
+      audio_driver_pipeline_signal(st);
+   }
+   /* The stall: 60 ms away, and the schedule moves with it */
+   next.tv_nsec += 60000000L;
+   next.tv_sec  += next.tv_nsec / 1000000000L;
+   next.tv_nsec %= 1000000000L;
+   clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
+   /* Half a second for the stall's own silence and the re-prime to
+    * settle, then the count that matters */
+   for (i = 0; i < (size_t)(FPS / 2); i++)
+   {
+      next.tv_nsec += step_ns;
+      next.tv_sec  += next.tv_nsec / 1000000000L;
+      next.tv_nsec %= 1000000000L;
+      clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
+      audio_driver_submit(st, 1.0f, frame_audio, per_frame * 2,
+            false, false, false, true);
+      audio_driver_pipeline_signal(st);
+   }
+   before_under  = retro_atomic_load_acquire_size(&dev_underruns);
+   before_silent = retro_atomic_load_acquire_size(&dev_silent_samples);
+
+   /* Three seconds of jitter: frames up to 12 ms late, the schedule
+    * kept, so each late frame is made up by the next */
+   for (i = 0; i < (size_t)(FPS * 3); i++)
+   {
+      struct timespec at = next;
+      long late_ns;
+      next.tv_nsec += step_ns;
+      next.tv_sec  += next.tv_nsec / 1000000000L;
+      next.tv_nsec %= 1000000000L;
+      at = next;
+      seed    = seed * 1103515245u + 12345u;
+      late_ns = (long)((seed >> 16) % 12001) * 1000L;
+      at.tv_nsec += late_ns;
+      at.tv_sec  += at.tv_nsec / 1000000000L;
+      at.tv_nsec %= 1000000000L;
+      clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &at, NULL);
+      /* How late this thread actually woke past the lateness it
+       * meant: a host that descheduled the whole process for a frame
+       * or more makes the device's count meaningless, and the run is
+       * retried rather than read. */
+      {
+         struct timespec now;
+         long overshoot_ns;
+         clock_gettime(CLOCK_MONOTONIC, &now);
+         overshoot_ns = (now.tv_sec - at.tv_sec) * 1000000000L
+            + (now.tv_nsec - at.tv_nsec);
+         if (overshoot_ns > host_stall_ns)
+            host_stall_ns = overshoot_ns;
+      }
+      audio_driver_submit(st, 1.0f, frame_audio, per_frame * 2,
+            false, false, false, true);
+      audio_driver_pipeline_signal(st);
+   }
+   /* Counted at the last publish, before the tail drains: the drain
+    * is the run ending, not the core being late. */
+   after_under  = retro_atomic_load_acquire_size(&dev_underruns);
+   after_silent = retro_atomic_load_acquire_size(&dev_silent_samples);
+   usleep(50000);
+
+   retro_atomic_store_release_int(&consumer_run, 0);
+   retro_atomic_store_release_int(&dev_running, 0);
+   audio_driver_pipeline_wake();
+   dev_signal();
+   pthread_join(cons, NULL);
+   pthread_join(dev,  NULL);
+
+   pipeline_down();
+
+   /* A wake more than a quarter frame past its mark is the host, not
+    * the fixture: inconclusive, whichever way the count went. */
+   if (host_stall_ns > 4000000L)
+   {
+      printf("stall: the host held this process %.1f ms past a wake; retrying\n",
+            host_stall_ns / 1e6);
+      return false;
+   }
+
+   printf("stall: %u short pull%s through the stall; after it, with jitter"
+         " to 12 ms: %u short pull%s, %.2f ms silence\n",
+         (unsigned)before_under, before_under == 1 ? "" : "s",
+         (unsigned)(after_under - before_under),
+         (after_under - before_under) == 1 ? "" : "s",
+         (double)(after_silent - before_silent) / CHANNELS * 1000.0 / OUT_RATE);
+   if (!before_under)
+   {
+      printf("FAIL: the stall did not reach the device; the lane is not exercised\n");
+      stall_failures++;
+   }
+   if (after_under != before_under)
+   {
+      printf("FAIL: the pipe did not prime again after the stall - jitter inside"
+            " the cushion reached the device\n");
+      stall_failures++;
+   }
+   else
+      printf("ok: the pipe primed again after the stall\n");
+   return true;
+}
+
+static void stall_case(void)
+{
+   int attempt;
+   for (attempt = 0; attempt < 5; attempt++)
+      if (stall_case_once())
+         return;
+   printf("stall: the host never left the fixture alone for a run; inconclusive\n");
+}
+
 int main(int argc, char **argv)
 {
    static const unsigned sweep[] = { 8, 12, 16, 24, 32, 40, 48, 64 };
@@ -421,5 +582,6 @@ int main(int argc, char **argv)
          seconds, FPS);
    for (i = 0; i < sizeof(sweep) / sizeof(sweep[0]); i++)
       run_one(sweep[i], seconds);
-   return 0;
+   stall_case();
+   return stall_failures ? 1 : 0;
 }
