@@ -176,8 +176,12 @@ static void krb5_cts_encrypt(const struct aes_ctx *aes,
       }
       if (n_full > 1)
       {
+         /* swap the last two blocks through temporaries: no copy
+          * within @out itself */
+         uint8_t cn[KRB5_BLOCK];
          memcpy(last, out + (n_full - 1) * KRB5_BLOCK, KRB5_BLOCK);
-         memcpy(out + (n_full - 1) * KRB5_BLOCK, out + (n_full - 2) * KRB5_BLOCK, KRB5_BLOCK);
+         memcpy(cn,   out + (n_full - 2) * KRB5_BLOCK, KRB5_BLOCK);
+         memcpy(out + (n_full - 1) * KRB5_BLOCK, cn,   KRB5_BLOCK);
          memcpy(out + (n_full - 2) * KRB5_BLOCK, last, KRB5_BLOCK);
       }
       return;
