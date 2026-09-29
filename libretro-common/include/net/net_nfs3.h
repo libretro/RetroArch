@@ -69,6 +69,10 @@ void rnfs_set_timeout(struct rnfs_ctx *c, unsigned seconds);
 /* AUTH_UNIX identity; defaults to the process's own on POSIX, 1000
  * elsewhere. */
 void rnfs_set_identity(struct rnfs_ctx *c, uint32_t uid, uint32_t gid);
+/* 3 (the default) or 4: NFSv4.0 needs no portmapper or MOUNT protocol,
+ * the export is its pseudo-filesystem path (as the server names it,
+ * e.g. "/export"), and the default port is 2049. */
+void rnfs_set_version(struct rnfs_ctx *c, unsigned version);
 /* Explicit ports; 0 (the default) asks the portmapper. */
 void rnfs_set_ports(struct rnfs_ctx *c, uint16_t nfs_port, uint16_t mount_port);
 

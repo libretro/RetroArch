@@ -33,6 +33,8 @@ int main(int argc, char **argv)
       cfg.nfs_port   = (unsigned)atoi(argv[3]);
       cfg.mount_port = (unsigned)atoi(argv[4]);
    }
+   if (argc > 5)
+      cfg.version = (unsigned)atoi(argv[5]);
    if (!nfs_init_cfg(&cfg))
    {
       fprintf(stderr, "FAIL: nfs_init_cfg\n");

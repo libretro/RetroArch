@@ -30,6 +30,8 @@ int main(int argc, char **argv)
    rnfs_set_timeout(c, 5);
    if (argc > 4)
       rnfs_set_ports(c, (uint16_t)atoi(argv[3]), (uint16_t)atoi(argv[4]));
+   if (argc > 5)
+      rnfs_set_version(c, (unsigned)atoi(argv[5]));
    CHECK(rnfs_connect(c, argv[1], argv[2]) == 0, "mount");
    CHECK(rnfs_ping(c) == 0, "null");
 

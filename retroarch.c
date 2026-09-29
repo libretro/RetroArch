@@ -424,6 +424,7 @@ void retroarch_nfs_init(void)
    nfs_global_cfg.num_contexts   = settings->uints.nfs_num_contexts;
    nfs_global_cfg.nfs_port       = settings->uints.nfs_port;
    nfs_global_cfg.mount_port     = settings->uints.nfs_mount_port;
+   nfs_global_cfg.version        = settings->uints.nfs_version;
 
    nfs_init_cfg(&nfs_global_cfg);
 }

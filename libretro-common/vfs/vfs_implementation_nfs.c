@@ -62,7 +62,16 @@ struct nfs_pool
 
 static retro_atomic_ptr_t nfs_pool_ptr;           /* struct nfs_pool * */
 static retro_atomic_ptr_t nfs_cfg_ptr;            /* const struct nfs_settings * */
-static char               nfs_last_error[128];
+/* Last error for nfs_get_last_error(), used only for diagnostics off
+ * the hot path. Writers may run on several pool threads at once, so
+ * each publishes into its own ring slot (claimed by an atomic counter)
+ * and then advances an atomic "latest" index; the reader loads that
+ * index. Distinct slots per writer means no buffer is written by two
+ * threads at once, and the only shared scalars are atomic. */
+#define NFS_ERR_SLOTS 8
+static char               nfs_err_ring[NFS_ERR_SLOTS][128];
+static retro_atomic_int_t nfs_err_seq;    /* next slot to hand out */
+static retro_atomic_int_t nfs_err_latest; /* slot last published, or -1 */
 
 static const struct nfs_settings *nfs_cfg(void)
 {
@@ -173,9 +182,21 @@ void nfs_shutdown(void)
       nfs_pool_free(old);
 }
 
+/* Record a diagnostic string from whichever thread hit the error. */
+static void nfs_note_error(const char *msg)
+{
+   int slot = retro_atomic_fetch_add_int(&nfs_err_seq, 1);
+   slot &= (NFS_ERR_SLOTS - 1);
+   strlcpy(nfs_err_ring[slot], msg, sizeof(nfs_err_ring[slot]));
+   retro_atomic_store_release_int(&nfs_err_latest, slot);
+}
+
 const char *nfs_get_last_error(void)
 {
-   return nfs_last_error;
+   int slot = retro_atomic_load_acquire_int(&nfs_err_latest);
+   if (slot < 0)
+      return "";
+   return nfs_err_ring[slot & (NFS_ERR_SLOTS - 1)];
 }
 
 /* A connection to @server:@export for one caller: a free slot already
@@ -235,10 +256,13 @@ static struct rnfs_ctx *nfs_take(const char *server, const char *export_path,
    {
       rnfs_set_timeout(c, cfg && cfg->timeout ? cfg->timeout : RETRO_NFS_DEFAULT_TIMEOUT);
       if (cfg)
+      {
          rnfs_set_ports(c, (uint16_t)cfg->nfs_port, (uint16_t)cfg->mount_port);
+         rnfs_set_version(c, cfg->version ? cfg->version : 3);
+      }
       if (rnfs_connect(c, server, export_path) != 0)
       {
-         strlcpy(nfs_last_error, rnfs_get_error(c), sizeof(nfs_last_error));
+         nfs_note_error(rnfs_get_error(c));
          if (*slot)
          {
             (*slot)->export_path[0] = '\0';
@@ -410,7 +434,7 @@ bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
    }
    if (!(f = rnfs_open(c, rel, flags)))
    {
-      strlcpy(nfs_last_error, rnfs_get_error(c), sizeof(nfs_last_error));
+      nfs_note_error(rnfs_get_error(c));
       nfs_give(c, slot);
       free(ns);
       return false;
@@ -549,7 +573,7 @@ nfs_dir_handle *retro_vfs_opendir_nfs(const char *path, bool include_hidden)
       return NULL;
    if (!(d = rnfs_opendir(c, rel)))
    {
-      strlcpy(nfs_last_error, rnfs_get_error(c), sizeof(nfs_last_error));
+      nfs_note_error(rnfs_get_error(c));
       nfs_give(c, slot);
       return NULL;
    }

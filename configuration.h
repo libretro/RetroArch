@@ -439,6 +439,7 @@ typedef struct settings
       unsigned nfs_num_contexts;
       unsigned nfs_port;
       unsigned nfs_mount_port;
+      unsigned nfs_version;
 #endif
       unsigned input_sensor_orientation;
    } uints;

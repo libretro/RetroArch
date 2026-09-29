@@ -29,6 +29,7 @@
 #include <net/net_socket.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
+#include <features/features_cpu.h>
 
 #if !defined(_WIN32) && !defined(__WINRT__) && !defined(_XBOX) && !defined(RARCH_CONSOLE)
 #include <unistd.h>
@@ -62,6 +63,42 @@
 #define NFS_READDIR     16
 #define NFS_READDIRPLUS 17
 
+/* NFSv4.0 (RFC 7530): everything is one COMPOUND procedure */
+#define NFS4_COMPOUND     1
+#define OP_ACCESS         3
+#define OP_CLOSE          4
+#define OP_CREATE         6
+#define OP_GETATTR        9
+#define OP_GETFH          10
+#define OP_LOOKUP         15
+#define OP_OPEN           18
+#define OP_OPEN_CONFIRM   20
+#define OP_PUTFH          22
+#define OP_PUTROOTFH      24
+#define OP_READ           25
+#define OP_READDIR        26
+#define OP_REMOVE         28
+#define OP_RENAME         29
+#define OP_RENEW          30
+#define OP_SAVEFH         32
+#define OP_SETATTR        34
+#define OP_SETCLIENTID    35
+#define OP_SETCLIENTID_CONFIRM 36
+#define OP_RESTOREFH      31
+#define OP_WRITE_OP       38
+#define NFS4ERR_STALE_CLIENTID 10022
+#define NFS4ERR_EXPIRED        10011
+#define NFS4ERR_BAD_STATEID    10025
+#define NFS4ERR_OLD_STATEID    10024
+#define NFS4ERR_GRACE          10013
+#define NFS4ERR_DELAY          10008
+#define NF4DIR            2
+/* attribute bits: type(1) size(4) in word 0, time_modify(53) in word 1 */
+#define FATTR4_W0_TYPE    (1u << 1)
+#define FATTR4_W0_SIZE    (1u << 4)
+#define FATTR4_W1_MODE    (1u << (33 - 32))
+#define FATTR4_W1_TIME_MODIFY (1u << (53 - 32))
+
 #define NFS3_OK          0
 #define NFS3ERR_NOENT    2
 #define NFS3ERR_NOTSUPP  10004
@@ -88,6 +125,8 @@ struct rnfs_file
    struct rnfs_fh fh;
    uint64_t offset;
    uint64_t size;
+   uint8_t  stateid[16];     /* v4: from OPEN, all-zero for the anonymous one */
+   uint8_t  opened;          /* v4: an OPEN state to CLOSE */
 };
 
 struct rnfs_dir
@@ -119,6 +158,12 @@ struct rnfs_ctx
    uint16_t nfs_port;
    uint16_t mount_port;
    uint8_t  connected;
+   uint8_t  version;         /* 3 or 4 */
+   /* NFSv4 client state: a client id from SETCLIENTID, and one
+    * open-owner whose seqid advances with each OPEN / CLOSE */
+   uint64_t clientid;
+   uint32_t open_seq;
+   uint8_t  owner[8];
    char     server[256];
    char     export_path[512];
    char     error[128];
@@ -399,6 +444,653 @@ static uint16_t rnfs_getport(struct rnfs_ctx *c, uint32_t prog, uint32_t vers)
 
 /* ---- context ------------------------------------------------------ */
 
+
+/* ---- NFSv4.0 -------------------------------------------------------- */
+
+/* A short wait without dragging in the timer header (which pulls
+ * platform threading includes): an empty select with a timeout. */
+static void nfs4_wait_ms(unsigned ms)
+{
+   struct timeval tv;
+   tv.tv_sec  = ms / 1000;
+   tv.tv_usec = (ms % 1000) * 1000;
+   select(0, NULL, NULL, NULL, &tv);
+}
+
+/* Client verifier and open-owner: these need to be unique per client
+ * instance, not secret, and the NFS client must not depend on the
+ * crypto module (consoles build it without) - so a clock-and-counter
+ * mix does. */
+static void nfs4_unique(uint8_t *out, size_t len)
+{
+   /* No shared mutable state: two threads seeding at once still differ
+    * because each has its own @out and stack-local addresses. */
+   size_t   i;
+   uint64_t v = (uint64_t)cpu_features_get_time_usec();
+   v ^= (uint64_t)(uintptr_t)out << 17;
+   v ^= (uint64_t)(uintptr_t)&i << 3;
+   v ^= (uint64_t)(uintptr_t)&v >> 5;
+   for (i = 0; i < len; i++)
+   {
+      v ^= v >> 12; v ^= v << 25; v ^= v >> 27;
+      out[i] = (uint8_t)((v * 2685821657736338717ull) >> 56);
+   }
+}
+
+/* One COMPOUND: @ops is the body after tag / minorversion / numops.
+ * The reply is positioned after the tag and numres; each result's
+ * opnum and status are read by the callers with nfs4_res(). */
+static int nfs4_compound(struct rnfs_ctx *c, const uint8_t *ops, size_t ops_len,
+      unsigned nops, struct xdr *reply)
+{
+   uint8_t *args = c->rx;               /* free until the reply lands */
+   struct xdr x;
+   size_t tl;
+   x.p = args; x.end = c->rx + c->buf_size; x.fail = 0;
+   xdr_u32(&x, 0);                      /* tag: empty */
+   xdr_u32(&x, 0);                      /* minorversion */
+   xdr_u32(&x, nops);
+   if (x.fail || (size_t)(x.end - x.p) < ops_len)
+      return -1;
+   memcpy(x.p, ops, ops_len); x.p += ops_len;
+   if (c->fd < 0)
+   {
+      rnfs_err(c, "not connected");
+      return -1;
+   }
+   {
+      /* NFS4ERR_GRACE while the server recovers after a restart and
+       * NFS4ERR_DELAY are "ask again shortly", not failures: the
+       * request is repeated, a second apart, for as long as the
+       * context timeout allows - the one wait a v4 client cannot
+       * avoid, and only ever right after a server came up. */
+      /* GRACE/DELAY is a transient, self-clearing server state (only
+       * ever just after the server started); retry on a fixed bound
+       * so a stuck server still cannot block a caller forever. */
+      unsigned tries = 15;
+      size_t   alen  = (size_t)(x.p - args);
+      uint8_t *keep  = (uint8_t*)malloc(alen);
+      if (!keep)
+         return -1;
+      memcpy(keep, args, alen);
+      for (;;)
+      {
+         if (rnfs_rpc(c, c->fd, NFS_PROG, 4, NFS4_COMPOUND, keep, alen, reply) != 0)
+         {
+            free(keep);
+            return -1;
+         }
+         c->status = xdr_get_u32(reply);   /* overall status */
+         if ((c->status == NFS4ERR_GRACE || c->status == NFS4ERR_DELAY) && tries--)
+         {
+            nfs4_wait_ms(1000);
+            continue;
+         }
+         break;
+      }
+      free(keep);
+   }
+   xdr_get_opaque(reply, &tl);          /* tag */
+   xdr_get_u32(reply);                  /* numres */
+   return reply->fail ? -1 : 0;
+}
+
+/* Next result: its status, positioned at the body. */
+static uint32_t nfs4_res(struct xdr *r)
+{
+   xdr_get_u32(r);                      /* opnum */
+   return xdr_get_u32(r);
+}
+
+static void nfs4_put_fh(struct xdr *x, const struct rnfs_fh *fh)
+{
+   xdr_u32(x, OP_PUTFH);
+   xdr_fh(x, fh);
+}
+
+/* GETATTR request for type, size, time_modify */
+static void nfs4_getattr_req(struct xdr *x)
+{
+   xdr_u32(x, OP_GETATTR);
+   xdr_u32(x, 2);
+   xdr_u32(x, FATTR4_W0_TYPE | FATTR4_W0_SIZE);
+   xdr_u32(x, FATTR4_W1_TIME_MODIFY);
+}
+
+/* fattr4 reply: only the bits the request named can be set; each
+ * present attribute follows in bit order. */
+static int nfs4_get_fattr(struct xdr *r, struct rnfs_stat *st)
+{
+   uint32_t n = xdr_get_u32(r), w0 = 0, w1 = 0;
+   size_t vl;
+   const uint8_t *v;
+   struct xdr a;
+   if (n >= 1) w0 = xdr_get_u32(r);
+   if (n >= 2) w1 = xdr_get_u32(r);
+   while (n > 2) { xdr_get_u32(r); n--; }
+   v = xdr_get_opaque(r, &vl);
+   if (!v)
+      return -1;
+   a.p = (uint8_t*)v; a.end = (uint8_t*)v + vl; a.fail = 0;
+   memset(st, 0, sizeof(*st));
+   if (w0 & FATTR4_W0_TYPE)
+      st->is_dir = xdr_get_u32(&a) == NF4DIR;
+   if (w0 & FATTR4_W0_SIZE)
+      st->size = xdr_get_u64(&a);
+   if (w1 & FATTR4_W1_TIME_MODIFY)
+   {
+      st->mtime = xdr_get_u64(&a);
+      xdr_get_u32(&a);
+   }
+   return a.fail ? -1 : 0;
+}
+
+/* Client id for this connection: SETCLIENTID then its CONFIRM. */
+static int nfs4_setclientid(struct rnfs_ctx *c)
+{
+   uint8_t ops[256];
+   struct xdr x, r;
+   uint8_t verf[8];
+   uint64_t clientid;
+   char id[32];
+   uint32_t st;
+   unsigned i;
+   static const char hex[] = "0123456789abcdef";
+
+   nfs4_unique(verf, 8);
+   nfs4_unique(c->owner, 8);
+   /* client id string: "retroarch-" and the verifier in hex, unique
+    * per connection, no secrecy needed */
+   memcpy(id, "retroarch-", 10);
+   for (i = 0; i < 8; i++)
+   {
+      id[10 + i * 2]     = hex[verf[i] >> 4];
+      id[10 + i * 2 + 1] = hex[verf[i] & 15];
+   }
+   id[26] = '\0';
+   x.p = ops; x.end = ops + sizeof(ops); x.fail = 0;
+   xdr_u32(&x, OP_SETCLIENTID);
+   memcpy(x.p, verf, 8); x.p += 8;
+   xdr_string(&x, id);
+   xdr_u32(&x, 0x40000000);             /* callback program: none we serve */
+   xdr_string(&x, "tcp");
+   xdr_string(&x, "0.0.0.0.0.0");
+   xdr_u32(&x, 1);                      /* callback_ident */
+   if (x.fail || nfs4_compound(c, ops, (size_t)(x.p - ops), 1, &r) != 0)
+      return -1;
+   if (c->status != NFS3_OK || nfs4_res(&r) != NFS3_OK)
+   {
+      rnfs_err(c, "setclientid refused");
+      return -1;
+   }
+   clientid = xdr_get_u64(&r);
+   memcpy(verf, r.p, 8);
+   x.p = ops; x.fail = 0;
+   xdr_u32(&x, OP_SETCLIENTID_CONFIRM);
+   xdr_u64(&x, clientid);
+   memcpy(x.p, verf, 8); x.p += 8;
+   if (nfs4_compound(c, ops, (size_t)(x.p - ops), 1, &r) != 0)
+      return -1;
+   st = nfs4_res(&r);
+   if (c->status != NFS3_OK || st != NFS3_OK)
+   {
+      rnfs_err(c, "setclientid confirm refused");
+      return -1;
+   }
+   c->clientid = clientid;
+   c->open_seq = 0;
+   return 0;
+}
+
+/* The export root: PUTROOTFH then LOOKUP down the pseudo path. */
+static int nfs4_mount(struct rnfs_ctx *c)
+{
+   size_t   cap = NFS3_FHSIZE + 64 + strlen(c->export_path) * 2 + 32;
+   uint8_t *ops = (uint8_t*)malloc(cap);
+   struct xdr x, r;
+   const char *p = c->export_path;
+   unsigned n = 1, i;
+   int ret = -1;
+
+   if (!ops)
+      return -1;
+   x.p = ops; x.end = ops + cap; x.fail = 0;
+   xdr_u32(&x, OP_PUTROOTFH);
+   for (;;)
+   {
+      const char *e;
+      size_t len;
+      while (*p == '/')
+         p++;
+      if (!*p)
+         break;
+      e   = strchr(p, '/');
+      len = e ? (size_t)(e - p) : strlen(p);
+      xdr_u32(&x, OP_LOOKUP);
+      xdr_opaque(&x, p, len);
+      n++;
+      p = e ? e : p + len;
+   }
+   xdr_u32(&x, OP_GETFH); n++;
+   if (x.fail || nfs4_compound(c, ops, (size_t)(x.p - ops), n, &r) != 0)
+      goto done;
+   for (i = 0; i < n - 1; i++)
+      if (nfs4_res(&r) != NFS3_OK)
+      {
+         rnfs_err(c, "export not found");
+         goto done;
+      }
+   if (nfs4_res(&r) != NFS3_OK || xdr_get_fh(&r, &c->root) != 0)
+   {
+      rnfs_err(c, "export not found");
+      goto done;
+   }
+   ret = 0;
+done:
+   free(ops);
+   return ret;
+}
+
+/* Walk @path from the root with LOOKUPs in one COMPOUND, ending with
+ * GETFH and GETATTR; with @parent the last component is left for the
+ * caller in @last. */
+static int nfs4_walk(struct rnfs_ctx *c, const char *path, struct rnfs_fh *fh,
+      struct rnfs_stat *st, int parent, char *last, size_t last_len)
+{
+   /* PUTFH, a LOOKUP per path component, GETFH, GETATTR: sized for the
+    * path on the heap rather than a large stack frame */
+   size_t   cap = NFS3_FHSIZE + 64 + strlen(path) * 2 + 300;
+   uint8_t *ops = (uint8_t*)malloc(cap);
+   struct xdr x, r;
+   const char *p = path;
+   unsigned n = 1, i;
+   int ret = -1;
+
+   if (!ops)
+      return -1;
+   if (last)
+      last[0] = '\0';
+   x.p = ops; x.end = ops + cap; x.fail = 0;
+   nfs4_put_fh(&x, &c->root);
+   for (;;)
+   {
+      const char *e, *q;
+      size_t len;
+      while (*p == '/')
+         p++;
+      if (!*p)
+         break;
+      e   = strchr(p, '/');
+      len = e ? (size_t)(e - p) : strlen(p);
+      if (len >= 256)
+         goto done;
+      if (parent)
+      {
+         q = e;
+         while (q && *q == '/')
+            q++;
+         if (!q || !*q)
+         {
+            if (len + 1 > last_len)
+               goto done;
+            memcpy(last, p, len);
+            last[len] = '\0';
+            break;
+         }
+      }
+      xdr_u32(&x, OP_LOOKUP);
+      xdr_opaque(&x, p, len);
+      n++;
+      p = e ? e : p + len;
+   }
+   xdr_u32(&x, OP_GETFH); n++;
+   nfs4_getattr_req(&x); n++;
+   if (x.fail || nfs4_compound(c, ops, (size_t)(x.p - ops), n, &r) != 0)
+      goto done;
+   for (i = 0; i < n - 2; i++)
+      if (nfs4_res(&r) != NFS3_OK)
+      {
+         rnfs_err(c, "not found");
+         goto done;
+      }
+   if (nfs4_res(&r) != NFS3_OK || xdr_get_fh(&r, fh) != 0)
+   {
+      rnfs_err(c, "not found");
+      goto done;
+   }
+   if (nfs4_res(&r) != NFS3_OK)
+   {
+      rnfs_err(c, "getattr failed");
+      goto done;
+   }
+   {
+      struct rnfs_stat tmp;
+      if (nfs4_get_fattr(&r, &tmp) != 0)
+         goto done;
+      if (st)
+         *st = tmp;
+   }
+   ret = 0;
+done:
+   free(ops);
+   return ret;
+}
+
+/* OPEN with create in @dir, then OPEN_CONFIRM when asked; the result
+ * stateid is CLOSEd by rnfs_close. */
+static int nfs4_open_create(struct rnfs_ctx *c, const struct rnfs_fh *dir,
+      const char *name, int truncate, struct rnfs_file *f)
+{
+   uint8_t ops[NFS3_FHSIZE + 8 + 300];
+   struct xdr x, r;
+   uint32_t rflags;
+   size_t sl;
+   const uint8_t *sid;
+
+   x.p = ops; x.end = ops + sizeof(ops); x.fail = 0;
+   nfs4_put_fh(&x, dir);
+   xdr_u32(&x, OP_OPEN);
+   xdr_u32(&x, c->open_seq);
+   xdr_u32(&x, 2);                      /* OPEN4_SHARE_ACCESS_WRITE */
+   xdr_u32(&x, 0);                      /* share_deny none */
+   xdr_u64(&x, c->clientid);
+   xdr_opaque(&x, c->owner, 8);         /* open_owner */
+   xdr_u32(&x, 1);                      /* OPEN4_CREATE */
+   xdr_u32(&x, 0);                      /* UNCHECKED4 */
+   xdr_u32(&x, 2); xdr_u32(&x, truncate ? FATTR4_W0_SIZE : 0); xdr_u32(&x, FATTR4_W1_MODE);
+   if (truncate)
+   {
+      xdr_u32(&x, 12);
+      xdr_u64(&x, 0);
+      xdr_u32(&x, 0644);
+   }
+   else
+   {
+      xdr_u32(&x, 4);
+      xdr_u32(&x, 0644);
+   }
+   xdr_u32(&x, 0);                      /* CLAIM_NULL */
+   xdr_string(&x, name);
+   xdr_u32(&x, OP_GETFH);
+   nfs4_getattr_req(&x);
+   if (x.fail || nfs4_compound(c, ops, (size_t)(x.p - ops), 4, &r) != 0)
+      return -1;
+   if (nfs4_res(&r) != NFS3_OK || nfs4_res(&r) != NFS3_OK)
+   {
+      rnfs_err(c, "create failed");
+      return -1;
+   }
+   c->open_seq++;
+   /* stateid, change_info(atomic + 2 x u64), rflags, attrset, delegation */
+   sid = r.p; r.p += 16;
+   xdr_get_u32(&r); xdr_get_u64(&r); xdr_get_u64(&r);
+   rflags = xdr_get_u32(&r);
+   {
+      uint32_t nb = xdr_get_u32(&r);
+      while (nb--) xdr_get_u32(&r);
+   }
+   {
+      uint32_t dt = xdr_get_u32(&r);   /* delegation: none expected */
+      if (dt != 0)
+         return -1;
+   }
+   memcpy(f->stateid, sid, 16);
+   if (nfs4_res(&r) != NFS3_OK || xdr_get_fh(&r, &f->fh) != 0)
+      return -1;
+   if (nfs4_res(&r) == NFS3_OK)
+   {
+      struct rnfs_stat st;
+      if (nfs4_get_fattr(&r, &st) == 0)
+         f->size = st.size;
+   }
+   f->opened = 1;
+   if (rflags & 2)                      /* OPEN4_RESULT_CONFIRM */
+   {
+      x.p = ops; x.fail = 0;
+      nfs4_put_fh(&x, &f->fh);
+      xdr_u32(&x, OP_OPEN_CONFIRM);
+      memcpy(x.p, f->stateid, 16); x.p += 16;
+      xdr_u32(&x, c->open_seq);
+      if (nfs4_compound(c, ops, (size_t)(x.p - ops), 2, &r) != 0)
+         return -1;
+      if (nfs4_res(&r) != NFS3_OK || nfs4_res(&r) != NFS3_OK)
+      {
+         rnfs_err(c, "open confirm failed");
+         return -1;
+      }
+      c->open_seq++;
+      memcpy(f->stateid, r.p, 16);
+   }
+   (void)sl;
+   return 0;
+}
+
+static int nfs4_close(struct rnfs_ctx *c, struct rnfs_file *f)
+{
+   uint8_t ops[NFS3_FHSIZE + 32];
+   struct xdr x, r;
+   if (!f->opened)
+      return 0;
+   x.p = ops; x.end = ops + sizeof(ops); x.fail = 0;
+   nfs4_put_fh(&x, &f->fh);
+   xdr_u32(&x, OP_CLOSE);
+   xdr_u32(&x, c->open_seq);
+   memcpy(x.p, f->stateid, 16); x.p += 16;
+   if (nfs4_compound(c, ops, (size_t)(x.p - ops), 2, &r) != 0)
+      return -1;
+   if (nfs4_res(&r) != NFS3_OK || nfs4_res(&r) != NFS3_OK)
+      return -1;
+   c->open_seq++;
+   f->opened = 0;
+   return 0;
+}
+
+static int64_t nfs4_read(struct rnfs_ctx *c, struct rnfs_file *f, void *buf, size_t len)
+{
+   uint8_t *out = (uint8_t*)buf;
+   size_t done = 0;
+   while (done < len)
+   {
+      uint8_t ops[NFS3_FHSIZE + 48];
+      struct xdr x, r;
+      uint32_t eof;
+      const uint8_t *d;
+      size_t dl, n = len - done;
+      if (n > c->io_size)
+         n = c->io_size;
+      x.p = ops; x.end = ops + sizeof(ops); x.fail = 0;
+      nfs4_put_fh(&x, &f->fh);
+      xdr_u32(&x, OP_READ);
+      memcpy(x.p, f->stateid, 16); x.p += 16;
+      xdr_u64(&x, f->offset);
+      xdr_u32(&x, (uint32_t)n);
+      if (nfs4_compound(c, ops, (size_t)(x.p - ops), 2, &r) != 0)
+         return -1;
+      if (nfs4_res(&r) != NFS3_OK || nfs4_res(&r) != NFS3_OK)
+      {
+         rnfs_err(c, "read failed");
+         return -1;
+      }
+      eof = xdr_get_u32(&r);
+      d   = xdr_get_opaque(&r, &dl);
+      if (!d || dl > n)
+      {
+         rnfs_err(c, "bad read reply");
+         return -1;
+      }
+      memcpy(out + done, d, dl);
+      done      += dl;
+      f->offset += dl;
+      if (eof || dl < n)
+         break;
+   }
+   return (int64_t)done;
+}
+
+static int64_t nfs4_write(struct rnfs_ctx *c, struct rnfs_file *f, const void *buf, size_t len)
+{
+   const uint8_t *in = (const uint8_t*)buf;
+   size_t done = 0;
+   while (done < len)
+   {
+      /* the COMPOUND is assembled in rx and the RPC in tx, so the ops
+       * need a buffer of their own for a payload this size */
+      uint8_t *ops;
+      struct xdr x, r;
+      uint32_t count;
+      size_t n = len - done;
+      if (n > c->io_size)
+         n = c->io_size;
+      if (!(ops = (uint8_t*)malloc(n + NFS3_FHSIZE + 64)))
+         return -1;
+      x.p = ops; x.end = ops + n + NFS3_FHSIZE + 64; x.fail = 0;
+      nfs4_put_fh(&x, &f->fh);
+      xdr_u32(&x, OP_WRITE_OP);
+      memcpy(x.p, f->stateid, 16); x.p += 16;
+      xdr_u64(&x, f->offset);
+      xdr_u32(&x, 2);                   /* FILE_SYNC4 */
+      xdr_opaque(&x, in + done, n);
+      if (x.fail || nfs4_compound(c, ops, (size_t)(x.p - ops), 2, &r) != 0)
+      {
+         free(ops);
+         return -1;
+      }
+      free(ops);
+      if (nfs4_res(&r) != NFS3_OK || nfs4_res(&r) != NFS3_OK)
+      {
+         rnfs_err(c, "write failed");
+         return -1;
+      }
+      count = xdr_get_u32(&r);
+      if (r.fail || count > n)
+      {
+         rnfs_err(c, "bad write reply");
+         return -1;
+      }
+      done      += count;
+      f->offset += count;
+      if (f->offset > f->size)
+         f->size = f->offset;
+      if (count == 0)
+         break;
+   }
+   return (int64_t)done;
+}
+
+static int nfs4_set_size(struct rnfs_ctx *c, const struct rnfs_file *f, uint64_t size)
+{
+   uint8_t ops[NFS3_FHSIZE + 64];
+   struct xdr x, r;
+   x.p = ops; x.end = ops + sizeof(ops); x.fail = 0;
+   nfs4_put_fh(&x, &f->fh);
+   xdr_u32(&x, OP_SETATTR);
+   memcpy(x.p, f->stateid, 16); x.p += 16;
+   xdr_u32(&x, 2); xdr_u32(&x, FATTR4_W0_SIZE); xdr_u32(&x, 0);
+   xdr_u32(&x, 8); xdr_u64(&x, size);
+   if (nfs4_compound(c, ops, (size_t)(x.p - ops), 2, &r) != 0)
+      return -1;
+   if (nfs4_res(&r) != NFS3_OK || nfs4_res(&r) != NFS3_OK)
+   {
+      rnfs_err(c, "setattr failed");
+      return -1;
+   }
+   return 0;
+}
+
+/* REMOVE or CREATE(directory) of the last component under its parent. */
+static int nfs4_dirop(struct rnfs_ctx *c, int mkdir, const char *path)
+{
+   struct rnfs_fh dir;
+   char last[256];
+   uint8_t ops[NFS3_FHSIZE + 8 + 300];
+   struct xdr x, r;
+   if (nfs4_walk(c, path, &dir, NULL, 1, last, sizeof(last)) != 0 || !last[0])
+      return -1;
+   x.p = ops; x.end = ops + sizeof(ops); x.fail = 0;
+   nfs4_put_fh(&x, &dir);
+   if (mkdir)
+   {
+      xdr_u32(&x, OP_CREATE);
+      xdr_u32(&x, NF4DIR);
+      xdr_string(&x, last);
+      xdr_u32(&x, 2); xdr_u32(&x, 0); xdr_u32(&x, FATTR4_W1_MODE);
+      xdr_u32(&x, 4); xdr_u32(&x, 0755);
+   }
+   else
+   {
+      xdr_u32(&x, OP_REMOVE);
+      xdr_string(&x, last);
+   }
+   if (x.fail || nfs4_compound(c, ops, (size_t)(x.p - ops), 2, &r) != 0)
+      return -1;
+   if (nfs4_res(&r) != NFS3_OK || nfs4_res(&r) != NFS3_OK)
+   {
+      rnfs_err(c, mkdir ? "mkdir failed" : "remove failed");
+      return -1;
+   }
+   return 0;
+}
+
+static int nfs4_rename(struct rnfs_ctx *c, const char *from, const char *to)
+{
+   struct rnfs_fh fdir, tdir;
+   char flast[256], tlast[256];
+   uint8_t ops[2 * NFS3_FHSIZE + 16 + 600];
+   struct xdr x, r;
+   if (nfs4_walk(c, from, &fdir, NULL, 1, flast, sizeof(flast)) != 0 || !flast[0])
+      return -1;
+   if (nfs4_walk(c, to, &tdir, NULL, 1, tlast, sizeof(tlast)) != 0 || !tlast[0])
+      return -1;
+   /* saved fh = source dir, current fh = target dir */
+   x.p = ops; x.end = ops + sizeof(ops); x.fail = 0;
+   nfs4_put_fh(&x, &fdir);
+   xdr_u32(&x, OP_SAVEFH);
+   nfs4_put_fh(&x, &tdir);
+   xdr_u32(&x, OP_RENAME);
+   xdr_string(&x, flast);
+   xdr_string(&x, tlast);
+   if (x.fail || nfs4_compound(c, ops, (size_t)(x.p - ops), 4, &r) != 0)
+      return -1;
+   if (nfs4_res(&r) != NFS3_OK || nfs4_res(&r) != NFS3_OK
+         || nfs4_res(&r) != NFS3_OK || nfs4_res(&r) != NFS3_OK)
+   {
+      rnfs_err(c, "rename failed");
+      return -1;
+   }
+   return 0;
+}
+
+/* One READDIR page into d->buf: entries of cookie, name, fattr4. */
+static int nfs4_readdir_fill(struct rnfs_ctx *c, struct rnfs_dir *d)
+{
+   uint8_t ops[NFS3_FHSIZE + 64];
+   struct xdr x, r;
+   size_t n;
+   x.p = ops; x.end = ops + sizeof(ops); x.fail = 0;
+   nfs4_put_fh(&x, &d->fh);
+   xdr_u32(&x, OP_READDIR);
+   xdr_u64(&x, d->cookie);
+   memcpy(x.p, d->cookieverf, 8); x.p += 8;
+   xdr_u32(&x, 8192);                   /* dircount */
+   xdr_u32(&x, NFS3_MAX_IO);            /* maxcount */
+   xdr_u32(&x, 2); xdr_u32(&x, FATTR4_W0_TYPE | FATTR4_W0_SIZE); xdr_u32(&x, FATTR4_W1_TIME_MODIFY);
+   if (nfs4_compound(c, ops, (size_t)(x.p - ops), 2, &r) != 0)
+      return -1;
+   if (nfs4_res(&r) != NFS3_OK || nfs4_res(&r) != NFS3_OK)
+   {
+      rnfs_err(c, "readdir failed");
+      return -1;
+   }
+   memcpy(d->cookieverf, r.p, 8); r.p += 8;
+   n = (size_t)(r.end - r.p);
+   if (n > NFS3_MAX_IO)
+      n = NFS3_MAX_IO;
+   memcpy(d->buf, r.p, n);
+   d->buf_len = n;
+   d->buf_off = 0;
+   return 0;
+}
+
 struct rnfs_ctx *rnfs_new(void)
 {
    struct rnfs_ctx *c = (struct rnfs_ctx*)calloc(1, sizeof(*c));
@@ -413,6 +1105,7 @@ struct rnfs_ctx *rnfs_new(void)
    }
    c->fd       = -1;
    c->timeout  = 10;
+   c->version  = 3;
    c->io_size  = NFS3_MAX_IO;
    c->buf_size = RNFS_RX_SIZE;
 #ifdef RNFS_HAVE_GETUID
@@ -437,6 +1130,11 @@ void rnfs_free(struct rnfs_ctx *c)
 
 void rnfs_set_timeout(struct rnfs_ctx *c, unsigned seconds) { c->timeout = seconds ? seconds : 10; }
 void rnfs_set_identity(struct rnfs_ctx *c, uint32_t uid, uint32_t gid) { c->uid = uid; c->gid = gid; }
+void rnfs_set_version(struct rnfs_ctx *c, unsigned version)
+{
+   c->version = (uint8_t)(version == 4 ? 4 : 3);
+}
+
 void rnfs_set_ports(struct rnfs_ctx *c, uint16_t nfs_port, uint16_t mount_port)
 {
    c->nfs_port   = nfs_port;
@@ -456,6 +1154,24 @@ int rnfs_connect(struct rnfs_ctx *c, const char *server, const char *export_path
    rnfs_disconnect(c);
    strlcpy(c->server, server, sizeof(c->server));
    strlcpy(c->export_path, export_path, sizeof(c->export_path));
+
+   if (c->version == 4)
+   {
+      /* v4: no MOUNT protocol; the export is a pseudo-filesystem path
+       * looked up from the root handle, and the client identifies
+       * itself first. 2049 unless told otherwise, portmapper or not. */
+      nport = c->nfs_port ? c->nfs_port : 2049;
+      if ((c->fd = rnfs_tcp_connect(c, nport)) < 0)
+         return -1;
+      c->connected = 1;
+      c->io_size   = NFS3_MAX_IO;
+      if (nfs4_setclientid(c) != 0 || nfs4_mount(c) != 0)
+      {
+         rnfs_disconnect(c);
+         return -1;
+      }
+      return 0;
+   }
 
    mport = c->mount_port ? c->mount_port : rnfs_getport(c, MOUNT_PROG, MOUNT_VERS);
    if (!mport)
@@ -645,6 +1361,39 @@ struct rnfs_file *rnfs_open(struct rnfs_ctx *c, const char *path, int flags)
       return NULL;
    memset(&st, 0, sizeof(st));
 
+   if (c->version == 4)
+   {
+      if (flags & RNFS_O_CREAT)
+      {
+         if (nfs4_walk(c, path, &dir, NULL, 1, last, sizeof(last)) != 0 || !last[0]
+               || nfs4_open_create(c, &dir, last, (flags & RNFS_O_TRUNC) != 0, f) != 0)
+         {
+            free(f);
+            return NULL;
+         }
+         return f;
+      }
+      /* reads go with the anonymous stateid: no OPEN state to keep */
+      if (nfs4_walk(c, path, &f->fh, &st, 0, NULL, 0) != 0)
+      {
+         free(f);
+         return NULL;
+      }
+      if (st.is_dir)
+      {
+         rnfs_err(c, "is a directory");
+         free(f);
+         return NULL;
+      }
+      if ((flags & RNFS_O_TRUNC) && st.size && nfs4_set_size(c, f, 0) != 0)
+      {
+         free(f);
+         return NULL;
+      }
+      f->size = (flags & RNFS_O_TRUNC) ? 0 : st.size;
+      return f;
+   }
+
    if (flags & RNFS_O_CREAT)
    {
       uint8_t args[NFS3_FHSIZE + 4 + 260 + 40];
@@ -719,6 +1468,8 @@ int64_t rnfs_read(struct rnfs_ctx *c, struct rnfs_file *f, void *buf, size_t len
 {
    uint8_t *out = (uint8_t*)buf;
    size_t   done = 0;
+   if (c->version == 4)
+      return nfs4_read(c, f, buf, len);
    while (done < len)
    {
       uint8_t args[NFS3_FHSIZE + 16];
@@ -762,6 +1513,8 @@ int64_t rnfs_write(struct rnfs_ctx *c, struct rnfs_file *f, const void *buf, siz
 {
    const uint8_t *in = (const uint8_t*)buf;
    size_t done = 0;
+   if (c->version == 4)
+      return nfs4_write(c, f, buf, len);
    while (done < len)
    {
       /* the payload is built in the receive buffer, which is free
@@ -815,7 +1568,7 @@ int64_t rnfs_tell(const struct rnfs_file *f) { return (int64_t)f->offset; }
 
 int rnfs_ftruncate(struct rnfs_ctx *c, struct rnfs_file *f, uint64_t size)
 {
-   if (rnfs_set_size(c, &f->fh, size) != 0)
+   if (c->version == 4 ? nfs4_set_size(c, f, size) != 0 : rnfs_set_size(c, &f->fh, size) != 0)
       return -1;
    f->size = size;
    if (f->offset > size)
@@ -825,14 +1578,18 @@ int rnfs_ftruncate(struct rnfs_ctx *c, struct rnfs_file *f, uint64_t size)
 
 int rnfs_close(struct rnfs_ctx *c, struct rnfs_file *f)
 {
-   (void)c;
+   int ret = 0;
+   if (c && f && c->version == 4 && f->opened)
+      ret = nfs4_close(c, f);
    free(f);
-   return 0;
+   return ret;
 }
 
 int rnfs_stat(struct rnfs_ctx *c, const char *path, struct rnfs_stat *st)
 {
    struct rnfs_fh fh;
+   if (c->version == 4)
+      return nfs4_walk(c, path, &fh, st, 0, NULL, 0);
    return rnfs_walk(c, path, &fh, st, 0, NULL, 0);
 }
 
@@ -863,8 +1620,14 @@ static int rnfs_dirop(struct rnfs_ctx *c, uint32_t proc, const char *path, int m
    return 0;
 }
 
-int rnfs_unlink(struct rnfs_ctx *c, const char *path) { return rnfs_dirop(c, NFS_REMOVE, path, 0); }
-int rnfs_mkdir(struct rnfs_ctx *c, const char *path)  { return rnfs_dirop(c, NFS_MKDIR, path, 1); }
+int rnfs_unlink(struct rnfs_ctx *c, const char *path)
+{
+   return c->version == 4 ? nfs4_dirop(c, 0, path) : rnfs_dirop(c, NFS_REMOVE, path, 0);
+}
+int rnfs_mkdir(struct rnfs_ctx *c, const char *path)
+{
+   return c->version == 4 ? nfs4_dirop(c, 1, path) : rnfs_dirop(c, NFS_MKDIR, path, 1);
+}
 
 int rnfs_rename(struct rnfs_ctx *c, const char *from, const char *to)
 {
@@ -872,6 +1635,8 @@ int rnfs_rename(struct rnfs_ctx *c, const char *from, const char *to)
    char flast[256], tlast[256];
    uint8_t args[2 * (NFS3_FHSIZE + 4 + 260)];
    struct xdr x, reply;
+   if (c->version == 4)
+      return nfs4_rename(c, from, to);
    if (rnfs_walk(c, from, &fdir, NULL, 1, flast, sizeof(flast)) != 0 || !flast[0])
       return -1;
    if (rnfs_walk(c, to, &tdir, NULL, 1, tlast, sizeof(tlast)) != 0 || !tlast[0])
@@ -896,7 +1661,8 @@ struct rnfs_dir *rnfs_opendir(struct rnfs_ctx *c, const char *path)
    struct rnfs_stat st;
    if (!d)
       return NULL;
-   if (rnfs_walk(c, path, &d->fh, &st, 0, NULL, 0) != 0 || !st.is_dir)
+   if ((c->version == 4 ? nfs4_walk(c, path, &d->fh, &st, 0, NULL, 0)
+                        : rnfs_walk(c, path, &d->fh, &st, 0, NULL, 0)) != 0 || !st.is_dir)
    {
       if (!c->error[0] || st.is_dir == 0)
          rnfs_err(c, "not a directory");
@@ -983,7 +1749,7 @@ const struct rnfs_dirent *rnfs_readdir(struct rnfs_ctx *c, struct rnfs_dir *d)
          return NULL;
       if (d->buf_off >= d->buf_len)
       {
-         if (rnfs_readdir_fill(c, d) != 0)
+         if ((c->version == 4 ? nfs4_readdir_fill(c, d) : rnfs_readdir_fill(c, d)) != 0)
             return NULL;
       }
       x.p = d->buf + d->buf_off; x.end = d->buf + d->buf_len; x.fail = 0;
@@ -995,17 +1761,28 @@ const struct rnfs_dirent *rnfs_readdir(struct rnfs_ctx *c, struct rnfs_dir *d)
             /* eof false: more to fetch */
             d->done = 0;
             d->buf_off = d->buf_len;
-            if (rnfs_readdir_fill(c, d) != 0)
+            if ((c->version == 4 ? nfs4_readdir_fill(c, d) : rnfs_readdir_fill(c, d)) != 0)
                return NULL;
             continue;
          }
          return NULL;
       }
+      memset(&d->ent.st, 0, sizeof(d->ent.st));
+      if (c->version == 4)
+      {
+         /* entry4: cookie, name, fattr4 */
+         d->cookie = xdr_get_u64(&x);
+         name = xdr_get_opaque(&x, &name_len);
+         if (nfs4_get_fattr(&x, &d->ent.st) != 0)
+            x.fail = 1;
+      }
+      else
+      {
       xdr_get_u64(&x);                         /* fileid */
       name = xdr_get_opaque(&x, &name_len);
       d->cookie = xdr_get_u64(&x);
-      memset(&d->ent.st, 0, sizeof(d->ent.st));
-      if (!d->plain)
+      }
+      if (c->version != 4 && !d->plain)
       {
          xdr_get_post_op_attr(&x, &d->ent.st);
          if (xdr_get_u32(&x))                  /* name_handle present */
@@ -1026,7 +1803,7 @@ const struct rnfs_dirent *rnfs_readdir(struct rnfs_ctx *c, struct rnfs_dir *d)
       d->ent.name[name_len] = '\0';
       if (strcmp(d->ent.name, ".") == 0 || strcmp(d->ent.name, "..") == 0)
          continue;
-      if (d->plain)
+      if (c->version != 4 && d->plain)
          rnfs_entry_attrs(c, d);
       return &d->ent;
    }
@@ -1046,5 +1823,5 @@ int rnfs_ping(struct rnfs_ctx *c)
    struct xdr reply;
    if (c->fd < 0)
       return -1;
-   return rnfs_rpc(c, c->fd, NFS_PROG, NFS_VERS, NFS_NULL, NULL, 0, &reply);
+   return rnfs_rpc(c, c->fd, NFS_PROG, c->version == 4 ? 4 : NFS_VERS, NFS_NULL, NULL, 0, &reply);
 }

@@ -2223,3 +2223,7 @@
 #define DEFAULT_NFS_PORT 0
 #define DEFAULT_NFS_MOUNT_PORT 0
 
+/* NFS protocol version for nfs://: 3 (default) or 4. Version 4 needs
+ * no portmapper or MOUNT service and takes the export as the server's
+ * pseudo-filesystem path. */
+#define DEFAULT_NFS_VERSION 3

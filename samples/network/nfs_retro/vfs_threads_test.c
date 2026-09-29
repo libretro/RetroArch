@@ -65,6 +65,8 @@ int main(int argc, char **argv)
       cfg.nfs_port   = (unsigned)atoi(argv[3]);
       cfg.mount_port = (unsigned)atoi(argv[4]);
    }
+   if (argc > 5)
+      cfg.version = (unsigned)atoi(argv[5]);
    nfs_init_cfg(&cfg);
    snprintf(url_file, sizeof(url_file), "nfs://%s/rnfs_dir/vfs.bin", argv[1]);
    snprintf(url_dir, sizeof(url_dir), "nfs://%s/rnfs_dir", argv[1]);

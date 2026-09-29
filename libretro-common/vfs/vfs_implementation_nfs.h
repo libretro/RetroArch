@@ -50,6 +50,8 @@ struct nfs_settings
    unsigned    num_contexts;    /* connection pool size */
    unsigned    nfs_port;        /* 0: ask the portmapper */
    unsigned    mount_port;      /* 0: ask the portmapper */
+   unsigned    version;         /* 0/3: NFSv3; 4: NFSv4.0 (no portmapper,
+                                 * export is the server's pseudo path) */
 };
 typedef struct nfs_settings nfs_settings_t;
 

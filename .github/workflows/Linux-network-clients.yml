@@ -1,7 +1,7 @@
 name: CI Linux network clients
 
 # The built-in TLS, SMB2/3 and NFSv3 clients against real servers:
-# openssl s_server, Samba and unfs3 on the runner, natively, as Windows
+# openssl s_server, Samba, unfs3 and nfs-ganesha on the runner, natively, as Windows
 # builds under Wine, under ASan + UBSan + LSan, plus libFuzzer over the
 # parsers. Its own job so the libretro-common unit-test job keeps its
 # short budget.
@@ -34,7 +34,8 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y --no-install-recommends build-essential clang \
-            gcc-mingw-w64-x86-64 openssl samba libtirpc-dev flex bison autoconf automake wine wine64
+            gcc-mingw-w64-x86-64 openssl samba libtirpc-dev flex bison autoconf automake wine wine64 \
+            nfs-ganesha nfs-ganesha-vfs
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -93,6 +94,8 @@ jobs:
           make -C samples/network/nfs_retro clean
           samples/network/nfs_retro/local_unfs3_test.sh
           make -C samples/network/nfs_retro clean
+          sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root samples/network/nfs_retro/local_ganesha_test.sh
+          sudo make -C samples/network/nfs_retro clean
 
 
       - name: Fuzz the network parsers
@@ -135,6 +138,8 @@ jobs:
           make -C samples/network/nfs_retro clean
           samples/network/nfs_retro/local_unfs3_test.sh
           make -C samples/network/nfs_retro clean
+          sudo -E samples/network/nfs_retro/local_ganesha_test.sh
+          sudo make -C samples/network/nfs_retro clean
 
 
       - name: Built-in NFSv3 client against unfs3
@@ -147,10 +152,12 @@ jobs:
           # fixed ports without a portmapper: mount, write, read, seek,
           # stat, mkdir, rename, truncate, list, unlink, refused export.
           samples/network/nfs_retro/local_unfs3_test.sh
+          # NFSv4.0 (one COMPOUND per operation, no portmapper or MOUNT,
+          # pseudo-filesystem export) against nfs-ganesha from apt
+          sudo -E samples/network/nfs_retro/local_ganesha_test.sh
           # and its Windows link line, cross-linked
-          make -C samples/network/nfs_retro clean
+          sudo make -C samples/network/nfs_retro clean
           CC=x86_64-w64-mingw32-gcc make -C samples/network/nfs_retro nfs_test
           make -C samples/network/nfs_retro clean
           CC=x86_64-w64-mingw32-gcc make -C samples/network/tls_retro tls_fetch
           make -C samples/network/tls_retro clean
-
