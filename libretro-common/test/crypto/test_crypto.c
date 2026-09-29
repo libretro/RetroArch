@@ -34,6 +34,7 @@
 #include <crypto/kdf.h>
 #include <crypto/pk.h>
 #include <crypto/x509.h>
+#include <net/net_krb5.h>
 #include "../../net/cacert.h"
 #include "test_x509_vectors.h"
 #include <lrc_hash.h>
@@ -839,6 +840,125 @@ START_TEST (test_x509)
 }
 END_TEST
 
+/* AES inverse cipher (FIPS 197 C.1-C.3) and HMAC-SHA1 / PBKDF2-SHA1
+ * (RFC 2202, RFC 6070): the pieces the Kerberos enctypes stand on. */
+START_TEST (test_aes_decrypt_hmac_sha1)
+{
+   static const uint8_t pt[16] = {0x00,0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xaa,0xbb,0xcc,0xdd,0xee,0xff};
+   static const uint8_t key[32] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31};
+   static const uint8_t ct128[16] = {0x69,0xc4,0xe0,0xd8,0x6a,0x7b,0x04,0x30,0xd8,0xcd,0xb7,0x80,0x70,0xb4,0xc5,0x5a};
+   static const uint8_t ct192[16] = {0xdd,0xa9,0x7c,0xa4,0x86,0x4c,0xdf,0xe0,0x6e,0xaf,0x70,0xa0,0xec,0x0d,0x71,0x91};
+   static const uint8_t ct256[16] = {0x8e,0xa2,0xb7,0xca,0x51,0x67,0x45,0xbf,0xea,0xfc,0x49,0x90,0x4b,0x49,0x60,0x89};
+   static const uint8_t mac2[20]  = {0xef,0xfc,0xdf,0x6a,0xe5,0xeb,0x2f,0xa2,0xd2,0x74,0x16,0xd5,0xf1,0x84,0xdf,0x9c,0x25,0x9a,0x7c,0x79};
+   static const uint8_t mac7[20]  = {0xe8,0xe9,0x9d,0x0f,0x45,0x23,0x7d,0x78,0x6d,0x6b,0xba,0xa7,0x96,0x5c,0x78,0x08,0xbb,0xff,0x1a,0x91};
+   static const uint8_t dk20[20]  = {0x4b,0x00,0x79,0x01,0xb7,0x65,0x48,0x9a,0xbe,0xad,0x49,0xd9,0x26,0xf7,0x21,0xd0,0x65,0xa4,0x29,0xc1};
+   static const uint8_t dk25[25]  = {0x3d,0x2e,0xec,0x4f,0xe4,0x1c,0x84,0x9b,0x80,0xc8,0xd8,0x36,0x62,0xc0,0xe4,0x4a,0x8b,0x29,0x1a,0x96,0x4c,0xf2,0xf0,0x70,0x38};
+   struct aes_ctx c;
+   uint8_t out[32], big[80];
+   unsigned i;
+
+   aes_init(&c, key, 16); aes_decrypt_block(&c, ct128, out); ck_assert(memcmp(out, pt, 16) == 0);
+   aes_init(&c, key, 24); aes_decrypt_block(&c, ct192, out); ck_assert(memcmp(out, pt, 16) == 0);
+   aes_init(&c, key, 32); aes_decrypt_block(&c, ct256, out); ck_assert(memcmp(out, pt, 16) == 0);
+   /* and the inverse of the forward cipher on this build's own path */
+   for (i = 0; i < 64; i++)
+   {
+      uint8_t b[16], e[16], d[16];
+      unsigned j;
+      for (j = 0; j < 16; j++)
+         b[j] = (uint8_t)(i * 37 + j * 11);
+      aes_init(&c, key, 16 + 8 * (i % 3));
+      aes_encrypt_block(&c, b, e);
+      aes_decrypt_block(&c, e, d);
+      ck_assert(memcmp(b, d, 16) == 0);
+   }
+
+   hmac_sha1((const uint8_t*)"Jefe", 4, (const uint8_t*)"what do ya want for nothing?", 28, out);
+   ck_assert(memcmp(out, mac2, 20) == 0);
+   memset(big, 0xaa, 80);
+   hmac_sha1(big, 80, (const uint8_t*)"Test Using Larger Than Block-Size Key and Larger Than One Block-Size Data", 73, out);
+   ck_assert(memcmp(out, mac7, 20) == 0);
+   ck_assert(pbkdf2_hmac_sha1((const uint8_t*)"password", 8, (const uint8_t*)"salt", 4, 4096, out, 20) == 0);
+   ck_assert(memcmp(out, dk20, 20) == 0);
+   ck_assert(pbkdf2_hmac_sha1((const uint8_t*)"passwordPASSWORDpassword", 24,
+            (const uint8_t*)"saltSALTsaltSALTsaltSALTsaltSALTsalt", 36, 4096, out, 25) == 0);
+   ck_assert(memcmp(out, dk25, 25) == 0);
+}
+END_TEST
+
+/* Kerberos AES enctypes: n-fold (RFC 3961 A.1), CTS (RFC 3962 B),
+ * string-to-key (RFC 3962 B), and encrypt / decrypt with the
+ * confounder and truncated HMAC, tampering and wrong usage refused. */
+START_TEST (test_krb5_enctypes)
+{
+   static const struct { const char *in; unsigned n; const char *out; } nf[] = {
+      { "012345", 8, "\xbe\x07\x26\x31\x27\x6b\x19\x55" },
+      { "password", 7, "\x78\xa0\x7b\x6c\xaf\x85\xfa" },
+      { "Rough Consensus, and Running Code", 8, "\xbb\x6e\xd3\x08\x70\xb7\xf0\xe0" },
+      { "password", 21, "\x59\xe4\xa8\xca\x7c\x03\x85\xc3\xc3\x7b\x3f\x6d\x20\x00\x24\x7c\xb6\xe6\xbd\x5b\x3e" },
+      { "MASSACHVSETTS INSTITVTE OF TECHNOLOGY", 24, "\xdb\x3b\x0d\x8f\x0b\x06\x1e\x60\x32\x82\xb3\x08\xa5\x08\x41\x22\x9a\xd7\x98\xfa\xb9\x54\x0c\x1b" },
+      { "kerberos", 16, "\x6b\x65\x72\x62\x65\x72\x6f\x73\x7b\x9b\x5b\x2b\x93\x13\x2b\x93" },
+      { "kerberos", 32, "\x6b\x65\x72\x62\x65\x72\x6f\x73\x7b\x9b\x5b\x2b\x93\x13\x2b\x93\x5c\x9b\xdc\xda\xd9\x5c\x98\x99\xc4\xca\xe4\xde\xe6\xd6\xca\xe4" },
+   };
+   static const uint8_t cts_key[16] = { 0x63,0x68,0x69,0x63,0x6b,0x65,0x6e,0x20,0x74,0x65,0x72,0x69,0x79,0x61,0x6b,0x69 };
+   static const char    cts_pt[]    = "I would like the General Gau's Chicken, please, and wonton soup.";
+   static const struct { unsigned len; const char *ct; } cts[] = {
+      { 17, "\xc6\x35\x35\x68\xf2\xbf\x8c\xb4\xd8\xa5\x80\x36\x2d\xa7\xff\x7f\x97" },
+      { 31, "\xfc\x00\x78\x3e\x0e\xfd\xb2\xc1\xd4\x45\xd4\xc8\xef\xf7\xed\x22\x97\x68\x72\x68\xd6\xec\xcc\xc0\xc0\x7b\x25\xe2\x5e\xcf\xe5" },
+      { 32, "\x39\x31\x25\x23\xa7\x86\x62\xd5\xbe\x7f\xcb\xcc\x98\xeb\xf5\xa8\x97\x68\x72\x68\xd6\xec\xcc\xc0\xc0\x7b\x25\xe2\x5e\xcf\xe5\x84" },
+      { 47, "\x97\x68\x72\x68\xd6\xec\xcc\xc0\xc0\x7b\x25\xe2\x5e\xcf\xe5\x84\xb3\xff\xfd\x94\x0c\x16\xa1\x8c\x1b\x55\x49\xd2\xf8\x38\x02\x9e\x39\x31\x25\x23\xa7\x86\x62\xd5\xbe\x7f\xcb\xcc\x98\xeb\xf5" },
+      { 48, "\x97\x68\x72\x68\xd6\xec\xcc\xc0\xc0\x7b\x25\xe2\x5e\xcf\xe5\x84\x9d\xad\x8b\xbb\x96\xc4\xcd\xc0\x3b\xc1\x03\xe1\xa1\x94\xbb\xd8\x39\x31\x25\x23\xa7\x86\x62\xd5\xbe\x7f\xcb\xcc\x98\xeb\xf5\xa8" },
+      { 64, "\x97\x68\x72\x68\xd6\xec\xcc\xc0\xc0\x7b\x25\xe2\x5e\xcf\xe5\x84\x39\x31\x25\x23\xa7\x86\x62\xd5\xbe\x7f\xcb\xcc\x98\xeb\xf5\xa8\x48\x07\xef\xe8\x36\xee\x89\xa5\x26\x73\x0d\xbc\x2f\x7b\xc8\x40\x9d\xad\x8b\xbb\x96\xc4\xcd\xc0\x3b\xc1\x03\xe1\xa1\x94\xbb\xd8" },
+   };
+   static const struct { int et; const char *pw; size_t pwl; const char *salt; uint32_t it; const char *key; } s2k[] = {
+      { 17, "password", 8, "ATHENA.MIT.EDUraeburn", 1,    "\x42\x26\x3c\x6e\x89\xf4\xfc\x28\xb8\xdf\x68\xee\x09\x79\x9f\x15" },
+      { 18, "password", 8, "ATHENA.MIT.EDUraeburn", 1,    "\xfe\x69\x7b\x52\xbc\x0d\x3c\xe1\x44\x32\xba\x03\x6a\x92\xe6\x5b\xbb\x52\x28\x09\x90\xa2\xfa\x27\x88\x39\x98\xd7\x2a\xf3\x01\x61" },
+      { 17, "password", 8, "ATHENA.MIT.EDUraeburn", 2,    "\xc6\x51\xbf\x29\xe2\x30\x0a\xc2\x7f\xa4\x69\xd6\x93\xbd\xda\x13" },
+      { 18, "password", 8, "ATHENA.MIT.EDUraeburn", 1200, "\x55\xa6\xac\x74\x0a\xd1\x7b\x48\x46\x94\x10\x51\xe1\xe8\xb0\xa7\x54\x8d\x93\xb0\xab\x30\xa8\xbc\x3f\xf1\x62\x80\x38\x2b\x8c\x2a" },
+      { 17, "\xf0\x9d\x84\x9e", 4, "EXAMPLE.COMpianist", 50, "\xf1\x49\xc1\xf2\xe1\x54\xa7\x34\x52\xd4\x3e\x7f\xe6\x2a\x56\xe5" },
+   };
+   struct krb5_key k;
+   uint8_t buf[80], out[80], msg[100], conf[16];
+   size_t n, i, L, pl;
+
+   for (i = 0; i < sizeof(nf) / sizeof(nf[0]); i++)
+   {
+      krb5_nfold((const uint8_t*)nf[i].in, (unsigned)strlen(nf[i].in), buf, nf[i].n);
+      ck_assert(memcmp(buf, nf[i].out, nf[i].n) == 0);
+   }
+   for (i = 0; i < sizeof(cts) / sizeof(cts[0]); i++)
+   {
+      ck_assert(krb5_raw_cts(cts_key, 16, 0, (const uint8_t*)cts_pt, cts[i].len, buf) == 0);
+      ck_assert(memcmp(buf, cts[i].ct, cts[i].len) == 0);
+      ck_assert(krb5_raw_cts(cts_key, 16, 1, buf, cts[i].len, buf) == 0);   /* in place */
+      ck_assert(memcmp(buf, cts_pt, cts[i].len) == 0);
+   }
+   for (i = 0; i < sizeof(s2k) / sizeof(s2k[0]); i++)
+   {
+      ck_assert(krb5_string_to_key(s2k[i].et, s2k[i].pw, s2k[i].pwl, s2k[i].salt, strlen(s2k[i].salt), s2k[i].it, &k) == 0);
+      ck_assert(memcmp(k.k, s2k[i].key, k.len) == 0);
+   }
+   ck_assert(krb5_string_to_key(23, "x", 1, "y", 1, 1, &k) == -1);
+
+   memset(conf, 0x11, sizeof(conf));
+   for (i = 0; i < sizeof(msg); i++)
+      msg[i] = (uint8_t)(i * 3);
+   ck_assert(krb5_string_to_key(18, "pw", 2, "salt", 4, 3, &k) == 0);
+   for (L = 0; L < 50; L += 7)
+   {
+      n = krb5_encrypt(&k, 3, conf, msg, L, buf);
+      ck_assert(n == L + 16 + 12);
+      ck_assert(krb5_decrypt(&k, 3, buf, n, out, &pl) == 0);
+      ck_assert(pl == L && memcmp(out, msg, L) == 0);
+      buf[5] ^= 1;
+      ck_assert(krb5_decrypt(&k, 3, buf, n, out, &pl) == -1);
+      buf[5] ^= 1;
+      ck_assert(krb5_decrypt(&k, 4, buf, n, out, &pl) == -1);
+      ck_assert(krb5_decrypt(&k, 3, buf, 27, out, &pl) == -1);
+   }
+}
+END_TEST
+
 Suite *create_suite(void)
 {
    Suite *s = suite_create(SUITE_NAME);
@@ -863,6 +983,8 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_p384);
    tcase_add_test(tc_core, test_smb_prereqs);
    tcase_add_test(tc_core, test_x509);
+   tcase_add_test(tc_core, test_aes_decrypt_hmac_sha1);
+   tcase_add_test(tc_core, test_krb5_enctypes);
    suite_add_tcase(s, tc_core);
    return s;
 }

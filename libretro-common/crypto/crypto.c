@@ -124,8 +124,13 @@ static uint32_t aes_sub_word(uint32_t w)
 
 /* Round tables: ft[0][x] = (2s, s, s, 3s) with s = sbox[x], the other
  * three are its byte rotations. Filled on first use; every writer
- * stores the same values, so a race on first use is harmless. */
+ * stores the same values, so a race on first use is harmless. The
+ * inverse S-box and imc[x] = (14x, 9x, 13x, 11x) serve the inverse
+ * cipher, which runs in the standard order on the encryption schedule
+ * (InvMixColumns on the state, so no second schedule is kept). */
 static uint32_t aes_ft[4][256];
+static uint8_t  aes_isbox[256];
+static uint32_t aes_imc[256];
 static int      aes_ft_ready = 0;
 
 static void aes_ft_init(void)
@@ -137,10 +142,14 @@ static void aes_ft_init(void)
       uint32_t x2 = XTIME(sv);
       uint32_t x3 = x2 ^ sv;
       uint32_t t  = (x2 << 24) | (sv << 16) | (sv << 8) | x3;
+      uint32_t m2 = XTIME((uint8_t)x), m4 = XTIME((uint8_t)m2), m8 = XTIME((uint8_t)m4);
+      uint32_t m9 = m8 ^ x, m11 = m8 ^ m2 ^ x, m13 = m8 ^ m4 ^ x, m14 = m8 ^ m4 ^ m2;
       aes_ft[0][x] = t;
       aes_ft[1][x] = (t >>  8) | (t << 24);
       aes_ft[2][x] = (t >> 16) | (t << 16);
       aes_ft[3][x] = (t >> 24) | (t <<  8);
+      aes_isbox[sv] = (uint8_t)x;
+      aes_imc[x]    = (m14 << 24) | (m9 << 16) | (m13 << 8) | m11;
    }
    aes_ft_ready = 1;
 }
@@ -181,6 +190,24 @@ static void aes_x86_encrypt_block(const struct aes_ctx *ctx,
 {
    _mm_storeu_si128((__m128i*)out,
          aes_x86_encrypt(ctx, _mm_loadu_si128((const __m128i*)in)));
+}
+
+/* Inverse cipher on the encryption schedule: aesdec wants the round
+ * keys through InvMixColumns, applied here per block, as decryption
+ * only serves the short Kerberos messages and keeps the context and
+ * every other caller unchanged. */
+AES_TARGET_X86
+static void aes_x86_decrypt_block(const struct aes_ctx *ctx,
+      const uint8_t *in, uint8_t *out)
+{
+   unsigned r = ctx->rounds;
+   __m128i b  = _mm_loadu_si128((const __m128i*)in);
+   b = _mm_xor_si128(b, aes_x86_bswap32(_mm_loadu_si128((const __m128i*)(ctx->rk + 4 * r))));
+   for (r--; r > 0; r--)
+      b = _mm_aesdec_si128(b, _mm_aesimc_si128(
+               aes_x86_bswap32(_mm_loadu_si128((const __m128i*)(ctx->rk + 4 * r)))));
+   b = _mm_aesdeclast_si128(b, aes_x86_bswap32(_mm_loadu_si128((const __m128i*)ctx->rk)));
+   _mm_storeu_si128((__m128i*)out, b);
 }
 
 /* CTR with four blocks in flight so the AES units overlap. */
@@ -359,6 +386,20 @@ static void aes_arm_encrypt_block(const struct aes_ctx *ctx,
       const uint8_t *in, uint8_t *out)
 {
    vst1q_u8(out, aes_arm_encrypt(ctx, vld1q_u8(in)));
+}
+
+/* Equivalent inverse cipher: AESD fuses the round key add with the
+ * inverse shift and substitution, so the InvMixColumns that the
+ * standard order puts after the key add moves onto the round key. */
+AES_TARGET_ARM
+static void aes_arm_decrypt_block(const struct aes_ctx *ctx,
+      const uint8_t *in, uint8_t *out)
+{
+   unsigned r    = ctx->rounds;
+   uint8x16_t b  = vaesdq_u8(vld1q_u8(in), aes_arm_rk(ctx, r));
+   for (r--; r > 0; r--)
+      b = vaesdq_u8(vaesimcq_u8(b), vaesimcq_u8(aes_arm_rk(ctx, r)));
+   vst1q_u8(out, veorq_u8(b, aes_arm_rk(ctx, 0)));
 }
 
 AES_TARGET_ARM
@@ -594,6 +635,91 @@ static void aes_encrypt_block_c(const struct aes_ctx *ctx,
    crypto_store32_be(out + 4,  t1);
    crypto_store32_be(out + 8,  t2);
    crypto_store32_be(out + 12, t3);
+}
+
+/* InvMixColumns of one column: each output byte is the matching
+ * byte of imc[b] rotated into place. */
+static uint32_t aes_imc_col(uint32_t c)
+{
+   uint32_t t;
+   t  = aes_imc[(c >> 24) & 0xff];
+   t ^= crypto_rotl32(aes_imc[(c >> 16) & 0xff], 24);
+   t ^= crypto_rotl32(aes_imc[(c >>  8) & 0xff], 16);
+   t ^= crypto_rotl32(aes_imc[ c        & 0xff],  8);
+   return t;
+}
+
+/* Inverse cipher, standard order: AddRoundKey with the last round key,
+ * then per round InvShiftRows + InvSubBytes, AddRoundKey, and
+ * InvMixColumns on the state (skipped for the final round). */
+static void aes_decrypt_block_c(const struct aes_ctx *ctx,
+      const uint8_t *in, uint8_t *out)
+{
+   const uint32_t *rk = ctx->rk + 4 * ctx->rounds;
+   uint32_t s0, s1, s2, s3, t0, t1, t2, t3;
+   unsigned r;
+
+   s0 = crypto_load32_be(in)      ^ rk[0];
+   s1 = crypto_load32_be(in + 4)  ^ rk[1];
+   s2 = crypto_load32_be(in + 8)  ^ rk[2];
+   s3 = crypto_load32_be(in + 12) ^ rk[3];
+
+   for (r = ctx->rounds; r > 0; r--)
+   {
+      rk -= 4;
+      /* InvShiftRows moves row i right by i; column j gathers byte
+       * row i from column (j - i) mod 4 */
+      t0 = ((uint32_t)aes_isbox[(s0 >> 24) & 0xff] << 24)
+         | ((uint32_t)aes_isbox[(s3 >> 16) & 0xff] << 16)
+         | ((uint32_t)aes_isbox[(s2 >>  8) & 0xff] <<  8)
+         |  (uint32_t)aes_isbox[ s1        & 0xff];
+      t1 = ((uint32_t)aes_isbox[(s1 >> 24) & 0xff] << 24)
+         | ((uint32_t)aes_isbox[(s0 >> 16) & 0xff] << 16)
+         | ((uint32_t)aes_isbox[(s3 >>  8) & 0xff] <<  8)
+         |  (uint32_t)aes_isbox[ s2        & 0xff];
+      t2 = ((uint32_t)aes_isbox[(s2 >> 24) & 0xff] << 24)
+         | ((uint32_t)aes_isbox[(s1 >> 16) & 0xff] << 16)
+         | ((uint32_t)aes_isbox[(s0 >>  8) & 0xff] <<  8)
+         |  (uint32_t)aes_isbox[ s3        & 0xff];
+      t3 = ((uint32_t)aes_isbox[(s3 >> 24) & 0xff] << 24)
+         | ((uint32_t)aes_isbox[(s2 >> 16) & 0xff] << 16)
+         | ((uint32_t)aes_isbox[(s1 >>  8) & 0xff] <<  8)
+         |  (uint32_t)aes_isbox[ s0        & 0xff];
+      t0 ^= rk[0]; t1 ^= rk[1]; t2 ^= rk[2]; t3 ^= rk[3];
+      if (r > 1)
+      {
+         s0 = aes_imc_col(t0); s1 = aes_imc_col(t1);
+         s2 = aes_imc_col(t2); s3 = aes_imc_col(t3);
+      }
+      else
+      {
+         s0 = t0; s1 = t1; s2 = t2; s3 = t3;
+      }
+   }
+
+   crypto_store32_be(out,      s0);
+   crypto_store32_be(out + 4,  s1);
+   crypto_store32_be(out + 8,  s2);
+   crypto_store32_be(out + 12, s3);
+}
+
+void aes_decrypt_block(const struct aes_ctx *ctx,
+      const uint8_t *in, uint8_t *out)
+{
+#if defined(AES_HAVE_X86_PATH)
+   if (aes_x86_available())
+   {
+      aes_x86_decrypt_block(ctx, in, out);
+      return;
+   }
+#elif defined(AES_HAVE_ARM_PATH)
+   if (aes_arm_available())
+   {
+      aes_arm_decrypt_block(ctx, in, out);
+      return;
+   }
+#endif
+   aes_decrypt_block_c(ctx, in, out);
 }
 
 void aes_encrypt_block(const struct aes_ctx *ctx,

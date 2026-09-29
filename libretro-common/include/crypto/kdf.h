@@ -61,6 +61,28 @@ void hmac_sha256(const uint8_t *key, size_t key_len,
 /* HMAC-SHA384, for the TLS PRF of the SHA-384 cipher suites. */
 #define HMAC_SHA384_SIZE 48
 
+/* HMAC-SHA1 and PBKDF2-HMAC-SHA1 (RFC 2898), for the Kerberos AES
+ * enctypes of RFC 3962, whose checksum and string-to-key are SHA-1
+ * based. Not for new designs of our own. */
+struct hmac_sha1_ctx
+{
+   struct sha1_state inner;
+   struct sha1_state outer;
+};
+
+void hmac_sha1_init(struct hmac_sha1_ctx *ctx,
+      const uint8_t *key, size_t key_len);
+void hmac_sha1_update(struct hmac_sha1_ctx *ctx,
+      const uint8_t *data, size_t len);
+/* @mac is 20 octets; the context is wiped. */
+void hmac_sha1_final(struct hmac_sha1_ctx *ctx, uint8_t *mac);
+void hmac_sha1(const uint8_t *key, size_t key_len,
+      const uint8_t *data, size_t len, uint8_t *mac);
+
+int pbkdf2_hmac_sha1(const uint8_t *password, size_t password_len,
+      const uint8_t *salt, size_t salt_len, uint32_t iterations,
+      uint8_t *out, size_t out_len);
+
 struct hmac_sha384_ctx
 {
    struct sha512_state inner;

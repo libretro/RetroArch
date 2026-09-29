@@ -84,6 +84,120 @@ void hmac_sha256(const uint8_t *key, size_t key_len,
    hmac_sha256_final(&ctx, mac);
 }
 
+/* HMAC-SHA1: what Kerberos aes*-cts-hmac-sha1-96 (RFC 3962) keys its
+ * checksums and its string-to-key PBKDF2 with. Same shape as the
+ * SHA-256 one above. */
+void hmac_sha1_init(struct hmac_sha1_ctx *ctx,
+      const uint8_t *key, size_t key_len)
+{
+   unsigned i;
+   uint8_t  k[64];
+
+   memset(k, 0, sizeof(k));
+   if (key_len > 64)
+      SHA1Digest(key, key_len, k);
+   else
+      memcpy(k, key, key_len);
+
+   for (i = 0; i < 64; i++)
+      k[i] ^= 0x36;
+   sha1_stream_init(&ctx->inner);
+   sha1_stream_update(&ctx->inner, k, 64);
+
+   for (i = 0; i < 64; i++)
+      k[i] ^= 0x36 ^ 0x5c;
+   sha1_stream_init(&ctx->outer);
+   sha1_stream_update(&ctx->outer, k, 64);
+
+   crypto_memzero(k, sizeof(k));
+}
+
+void hmac_sha1_update(struct hmac_sha1_ctx *ctx,
+      const uint8_t *data, size_t len)
+{
+   sha1_stream_update(&ctx->inner, data, len);
+}
+
+void hmac_sha1_final(struct hmac_sha1_ctx *ctx, uint8_t *mac)
+{
+   uint8_t ih[20];
+   sha1_stream_final(&ctx->inner, ih);
+   sha1_stream_update(&ctx->outer, ih, 20);
+   sha1_stream_final(&ctx->outer, mac);
+   crypto_memzero(ih, sizeof(ih));
+   crypto_memzero(ctx, sizeof(*ctx));
+}
+
+void hmac_sha1(const uint8_t *key, size_t key_len,
+      const uint8_t *data, size_t len, uint8_t *mac)
+{
+   struct hmac_sha1_ctx ctx;
+   hmac_sha1_init(&ctx, key, key_len);
+   hmac_sha1_update(&ctx, data, len);
+   hmac_sha1_final(&ctx, mac);
+}
+
+int pbkdf2_hmac_sha1(const uint8_t *password, size_t password_len,
+      const uint8_t *salt, size_t salt_len, uint32_t iterations,
+      uint8_t *out, size_t out_len)
+{
+   /* as pbkdf2_hmac_sha256: keyed once, state copied per block */
+   struct pbkdf2_sha1_work
+   {
+      struct hmac_sha1_ctx base;
+      struct hmac_sha1_ctx ctx;
+   } *w;
+   uint8_t  u[20];
+   uint8_t  t[20];
+   uint8_t  ibe[4];
+   uint32_t block = 0;
+   size_t   done  = 0;
+
+   if (!iterations)
+      return -1;
+   if (!(w = (struct pbkdf2_sha1_work*)malloc(sizeof(*w))))
+      return -1;
+
+   hmac_sha1_init(&w->base, password, password_len);
+
+   while (done < out_len)
+   {
+      uint32_t i;
+      unsigned j;
+      size_t   take;
+
+      block++;
+      crypto_store32_be(ibe, block);
+
+      memcpy(&w->ctx, &w->base, sizeof(w->ctx));
+      hmac_sha1_update(&w->ctx, salt, salt_len);
+      hmac_sha1_update(&w->ctx, ibe, 4);
+      hmac_sha1_final(&w->ctx, u);
+      memcpy(t, u, 20);
+
+      for (i = 1; i < iterations; i++)
+      {
+         memcpy(&w->ctx, &w->base, sizeof(w->ctx));
+         hmac_sha1_update(&w->ctx, u, 20);
+         hmac_sha1_final(&w->ctx, u);
+         for (j = 0; j < 20; j++)
+            t[j] ^= u[j];
+      }
+
+      take = out_len - done;
+      if (take > 20)
+         take = 20;
+      memcpy(out + done, t, take);
+      done += take;
+   }
+
+   crypto_memzero(w, sizeof(*w));
+   free(w);
+   crypto_memzero(u, sizeof(u));
+   crypto_memzero(t, sizeof(t));
+   return 0;
+}
+
 void hmac_sha384_init(struct hmac_sha384_ctx *ctx,
       const uint8_t *key, size_t key_len)
 {

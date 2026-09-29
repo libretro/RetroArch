@@ -144,6 +144,16 @@ void aes_encrypt_block(const struct aes_ctx *ctx,
       const uint8_t *in, uint8_t *out);
 
 /**
+ * aes_decrypt_block:
+ *
+ * Inverse cipher on one block with the same context aes_init() made;
+ * no separate decryption schedule is needed. Serves CBC and CTS
+ * (Kerberos); the AEAD modes above never decrypt with the cipher.
+ **/
+void aes_decrypt_block(const struct aes_ctx *ctx,
+      const uint8_t *in, uint8_t *out);
+
+/**
  * aes_ctr_crypt:
  * @counter           : 16-octet counter block. The low 32 bits (big
  *                      endian, octets 12..15) are incremented per
