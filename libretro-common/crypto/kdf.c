@@ -177,6 +177,63 @@ int hkdf_sha256_expand(const uint8_t *prk, size_t prk_len,
    return 0;
 }
 
+void hmac_sha384(const uint8_t *key, size_t key_len,
+      const uint8_t *data, size_t len, uint8_t *mac)
+{
+   struct hmac_sha384_ctx ctx;
+   hmac_sha384_init(&ctx, key, key_len);
+   hmac_sha384_update(&ctx, data, len);
+   hmac_sha384_final(&ctx, mac);
+}
+
+/* HKDF over SHA-384, for the TLS 1.3 SHA-384 suite. */
+void hkdf_sha384_extract(const uint8_t *salt, size_t salt_len,
+      const uint8_t *ikm, size_t ikm_len, uint8_t *prk)
+{
+   static const uint8_t zero[48] = { 0 };
+   if (!salt || !salt_len)
+   {
+      salt     = zero;
+      salt_len = sizeof(zero);
+   }
+   hmac_sha384(salt, salt_len, ikm, ikm_len, prk);
+}
+
+int hkdf_sha384_expand(const uint8_t *prk, size_t prk_len,
+      const uint8_t *info, size_t info_len,
+      uint8_t *okm, size_t okm_len)
+{
+   struct hmac_sha384_ctx ctx;
+   uint8_t t[48];
+   size_t  tlen = 0;
+   size_t  done = 0;
+   uint8_t n    = 0;
+
+   if (okm_len > 255 * 48)
+      return -1;
+
+   while (done < okm_len)
+   {
+      size_t take;
+      n++;
+      hmac_sha384_init(&ctx, prk, prk_len);
+      hmac_sha384_update(&ctx, t, tlen);
+      hmac_sha384_update(&ctx, info, info_len);
+      hmac_sha384_update(&ctx, &n, 1);
+      hmac_sha384_final(&ctx, t);
+      tlen = 48;
+
+      take = okm_len - done;
+      if (take > 48)
+         take = 48;
+      memcpy(okm + done, t, take);
+      done += take;
+   }
+
+   crypto_memzero(t, sizeof(t));
+   return 0;
+}
+
 int hkdf_sha256(const uint8_t *salt, size_t salt_len,
       const uint8_t *ikm, size_t ikm_len,
       const uint8_t *info, size_t info_len,

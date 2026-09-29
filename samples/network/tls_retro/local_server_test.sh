@@ -67,9 +67,9 @@ run "chain: trusting the intermediate directly also works" viarsa ECDHE-RSA-AES1
 cp $D/viarsa.pem $D/nointer.pem; cp $D/viarsa.key $D/nointer.key
 run "chain: server omitting the intermediate is refused" nointer ECDHE-RSA-AES128-GCM-SHA256 prime256v1 1 localhost 0 $D/ca.pem
 # TLS 1.3: the server picks it over 1.2 when offered; RSA certs sign the
-# CertificateVerify with RSA-PSS, ECDSA with P-256; both 1.3 suites; the
-# chain still has to verify; a 1.3-only suite we do not offer must not
-# connect at all rather than silently downgrade.
+# CertificateVerify with RSA-PSS, ECDSA with P-256; all three suites,
+# the SHA-384 one on its own key schedule; the chain still has to
+# verify.
 run13() { # label cert ciphersuite expect_rc host mode ca [rounds] [server opts]
    CHAIN=""; [ -f $D/$2.chain.pem ] && CHAIN="-cert_chain $D/$2.chain.pem"
    openssl s_server -accept 44331 -cert $D/$2.pem $CHAIN -key $D/$2.key -tls1_3 -ciphersuites "$3" -www ${9:-} >/dev/null 2>&1 &
@@ -86,7 +86,8 @@ run13 "TLS 1.3, ECDSA P-384 cert (sha384 sig)"         p384 TLS_AES_128_GCM_SHA2
 run13 "TLS 1.3, chain through an intermediate"         viarsa TLS_AES_128_GCM_SHA256     0 localhost 0 $D/ca.pem
 run13 "TLS 1.3, untrusted CA is refused"               rsa  TLS_AES_128_GCM_SHA256       1 localhost 0
 run13 "TLS 1.3, wrong hostname is refused"             rsa  TLS_AES_128_GCM_SHA256       1 127.0.0.1 0 $D/ca.pem
-run13 "TLS 1.3, only AES-256-GCM-SHA384 offered: no connection" rsa TLS_AES_256_GCM_SHA384 1 localhost 0 $D/ca.pem
+run13 "TLS 1.3, AES-256-GCM-SHA384 (SHA-384 schedule)"   rsa  TLS_AES_256_GCM_SHA384       0 localhost 0 $D/ca.pem
+run13 "TLS 1.3, AES-256-GCM-SHA384, ECDSA, PSK resumes"   p256 TLS_AES_256_GCM_SHA384       0 localhost 0 $D/ca.pem 3
 # Groups: X25519 is the group most servers prefer; both handshakes
 # take it, and a server allowing only one of the three still connects
 run13 "TLS 1.3, X25519 only"                          rsa  TLS_AES_128_GCM_SHA256       0 localhost 0 $D/ca.pem 1 "-groups X25519"

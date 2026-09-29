@@ -319,6 +319,20 @@ START_TEST (test_hmac_hkdf_pbkdf2)
    ck_hex(dk, 32, "c5e478d59288c841aa530db6845c4c8d962893a001ce4e11a4963873aa98134a");
    ck_assert_int_eq(pbkdf2_hmac_sha256((const uint8_t*)"password", 8,
          (const uint8_t*)"salt", 4, 0, dk, 32), -1);
+   /* HKDF-SHA384 known answer (RFC 5869 has SHA-256 only): the RFC's
+    * test case 1 inputs, checked against an independent HMAC/SHA-384
+    * implementation */
+   {
+      static const uint8_t okm384[48] = {0x9b,0x50,0x97,0xa8,0x60,0x38,0xb8,0x05,0x30,0x90,0x76,0xa4,0x4b,0x3a,0x9f,0x38,0x06,0x3e,0x25,0xb5,0x16,0xdc,0xbf,0x36,0x9f,0x39,0x4c,0xfa,0xb4,0x36,0x85,0xf7,0x48,0xb6,0x45,0x77,0x63,0xe4,0xf0,0x20,0x4f,0xc5,0xd9,0x5d,0x1d,0xa3,0xe6,0x25};
+      uint8_t ikm[22], salt[13], info[10], prk[48], okm[48];
+      unsigned i;
+      memset(ikm, 0x0b, 22);
+      for (i = 0; i < 13; i++) salt[i] = (uint8_t)i;
+      for (i = 0; i < 10; i++) info[i] = (uint8_t)(0xf0 + i);
+      hkdf_sha384_extract(salt, 13, ikm, 22, prk);
+      ck_assert_int_eq(hkdf_sha384_expand(prk, 48, info, 10, okm, 48), 0);
+      ck_assert(memcmp(okm, okm384, 48) == 0);
+   }
 }
 END_TEST
 

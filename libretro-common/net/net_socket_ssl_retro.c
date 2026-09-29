@@ -72,6 +72,7 @@
 #define TLS_SUITE_ECDHE_ECDSA_CHACHA20     0xcca9
 /* TLS 1.3 (RFC 8446), the two SHA-256 suites */
 #define TLS13_AES_128_GCM_SHA256           0x1301
+#define TLS13_AES_256_GCM_SHA384           0x1302
 #define TLS13_CHACHA20_POLY1305_SHA256     0x1303
 #define TLS_HS_ENCRYPTED_EXTENSIONS 8
 #define TLS_HS_CERTIFICATE_VERIFY   15
@@ -113,7 +114,7 @@ struct tls_session
    /* TLS 1.3: the ticket doubles as the PSK identity, psk is the
     * resumption secret expanded with the ticket nonce */
    uint8_t  is13;
-   uint8_t  psk[32];
+   uint8_t  psk[48];
    uint32_t age_add;
    char     host[256];
 };
@@ -245,17 +246,17 @@ struct ssl_state
    uint8_t  pub[65];        /* our P-256 key share */
    uint8_t  xpriv[32];      /* our X25519 key share */
    uint8_t  xpub[32];
-   uint8_t  hs_secret[32];  /* handshake secret, for the master derivation */
-   uint8_t  c_app[32];      /* client/server application traffic secrets */
-   uint8_t  s_app[32];
-   uint8_t  s_hs[32];       /* server handshake traffic secret (Finished key) */
-   uint8_t  c_hs[32];
-   uint8_t  cert_hash[32];  /* transcript hash up to Certificate, for CertificateVerify */
+   uint8_t  hs_secret[48];  /* handshake secret, for the master derivation */
+   uint8_t  c_app[48];      /* client/server application traffic secrets */
+   uint8_t  s_app[48];
+   uint8_t  s_hs[48];       /* server handshake traffic secret (Finished key) */
+   uint8_t  c_hs[48];
+   uint8_t  cert_hash[48];  /* transcript hash up to Certificate, for CertificateVerify */
    uint8_t  tls13_peer[65]; /* server key share from the ServerHello */
    size_t   tls13_peer_len;
-   uint8_t  master13[32];   /* 1.3 master secret until the resumption secret is taken */
-   uint8_t  res_master[32]; /* resumption master secret, for the tickets */
-   uint8_t  psk[32];        /* PSK offered in this ClientHello */
+   uint8_t  master13[48];   /* 1.3 master secret until the resumption secret is taken */
+   uint8_t  res_master[48]; /* resumption master secret, for the tickets */
+   uint8_t  psk[48];        /* PSK offered in this ClientHello */
    uint8_t  psk_offered;
    uint8_t  psk_accepted;
 };
@@ -282,7 +283,8 @@ static unsigned tls_get24(const uint8_t *p)
 
 static int tls_suite_is_13(unsigned suite)
 {
-   return suite == TLS13_AES_128_GCM_SHA256 || suite == TLS13_CHACHA20_POLY1305_SHA256;
+   return suite == TLS13_AES_128_GCM_SHA256 || suite == TLS13_CHACHA20_POLY1305_SHA256
+      || suite == TLS13_AES_256_GCM_SHA384;
 }
 
 static int tls_suite_is_chacha(unsigned suite)
@@ -295,7 +297,8 @@ static int tls_suite_is_chacha(unsigned suite)
 static int tls_suite_is_aes256(unsigned suite)
 {
    return suite == TLS_SUITE_ECDHE_RSA_AES256_GCM
-       || suite == TLS_SUITE_ECDHE_ECDSA_AES256_GCM;
+       || suite == TLS_SUITE_ECDHE_ECDSA_AES256_GCM
+       || suite == TLS13_AES_256_GCM_SHA384;
 }
 
 /* The AES-256-GCM suites run their PRF and transcript on SHA-384. */
@@ -454,7 +457,7 @@ static int tls_send_record(struct ssl_state *s, uint8_t type,
       else
       {
          struct aes_gcm_ctx g;
-         if (aes_gcm_init(&g, s->cwk, 16) != 0
+         if (aes_gcm_init(&g, s->cwk, tls_suite_is_aes256(s->suite) ? 32 : 16) != 0
                || aes_gcm_encrypt(&g, nonce, 12, aad, 5, body, len + 1,
                      body, body + len + 1) != 0)
          {
@@ -590,7 +593,7 @@ static int tls_read_record(struct ssl_state *s, uint8_t *type,
       else
       {
          struct aes_gcm_ctx g;
-         r = aes_gcm_init(&g, s->swk, 16);
+         r = aes_gcm_init(&g, s->swk, tls_suite_is_aes256(s->suite) ? 32 : 16);
          if (r == 0)
             r = aes_gcm_decrypt(&g, nonce, 12, aad, 5, p, plen, p + plen, p);
          crypto_memzero(&g, sizeof(g));
@@ -758,13 +761,18 @@ static int tls_send_handshake(struct ssl_state *s, uint8_t msg_type,
    return ret;
 }
 
-static int tls13_expand_label(const uint8_t *secret, const char *label,
+static int tls13_expand_label_h(size_t hlen, const uint8_t *secret, const char *label,
       const uint8_t *ctx, size_t ctx_len, uint8_t *out, size_t out_len);
+static void tls13_hkdf_extract(size_t hlen, const uint8_t *salt, size_t salt_len,
+      const uint8_t *ikm, size_t ikm_len, uint8_t *prk);
+static void tls13_hmac(size_t hlen, const uint8_t *key, const uint8_t *data,
+      size_t len, uint8_t *mac);
+static void tls13_empty_hash(size_t hlen, uint8_t *out);
 
 static int tls_send_client_hello(struct ssl_state *s)
 {
    static const uint8_t suites[] = {
-      0x13, 0x01, 0x13, 0x03,                          /* TLS 1.3 */
+      0x13, 0x01, 0x13, 0x03, 0x13, 0x02,              /* TLS 1.3 */
       0xc0, 0x2b, 0xc0, 0x2f, 0xcc, 0xa9, 0xcc, 0xa8, 0xc0, 0x2c, 0xc0, 0x30
    };
    uint8_t *h;
@@ -778,6 +786,8 @@ static int tls_send_client_hello(struct ssl_state *s)
    size_t   cached_sid_len = 0;
    uint8_t  cached_sid[32];
    uint8_t  cached_is13 = 0;
+   unsigned cached_suite13 = 0;
+   size_t   bhlen = 32;          /* binder hash length: the ticket's suite */
    uint32_t obf_age = 0;
 
    /* the cache entry is copied out here, so nothing below reads it
@@ -797,7 +807,8 @@ static int tls_send_client_hello(struct ssl_state *s)
    if (cached && cached->is13 && ticket_len)
    {
       cached_is13 = 1;
-      memcpy(s->psk, cached->psk, 32);
+      cached_suite13 = cached->suite;
+      memcpy(s->psk, cached->psk, 48);
       obf_age = (uint32_t)((time(NULL) - cached->when) * 1000) + cached->age_add;
    }
    TLS_CACHE_UNLOCK();
@@ -904,16 +915,17 @@ static int tls_send_client_hello(struct ssl_state *s)
       {
          /* pre_shared_key, last: one identity (the ticket, obfuscated
           * age) and one binder, filled in once the rest is hashed */
+         bhlen = cached_suite13 == TLS13_AES_256_GCM_SHA384 ? 48 : 32;
          tls_put16(e, 41); e += 2;
-         tls_put16(e, (unsigned)(2 + 2 + ticket_len + 4 + 2 + 1 + 32)); e += 2;
+         tls_put16(e, (unsigned)(2 + 2 + ticket_len + 4 + 2 + 1 + bhlen)); e += 2;
          tls_put16(e, (unsigned)(2 + ticket_len + 4)); e += 2;
          tls_put16(e, (unsigned)ticket_len); e += 2;
          memcpy(e, ticket, ticket_len); e += ticket_len;
          e[0] = (uint8_t)(obf_age >> 24); e[1] = (uint8_t)(obf_age >> 16);
          e[2] = (uint8_t)(obf_age >> 8);  e[3] = (uint8_t)obf_age; e += 4;
-         tls_put16(e, 33); e += 2;          /* binders list */
-         *e++ = 32;
-         memset(e, 0, 32); e += 32;         /* binder placeholder */
+         tls_put16(e, (unsigned)(bhlen + 1)); e += 2;   /* binders list */
+         *e++ = (uint8_t)bhlen;
+         memset(e, 0, bhlen); e += bhlen;   /* binder placeholder */
          s->psk_offered = 1;
       }
 
@@ -926,28 +938,36 @@ static int tls_send_client_hello(struct ssl_state *s)
    {
       /* binder = HMAC(binder_key, Hash(header || ClientHello[..binders]))
        * with binder_key from the PSK's early secret */
-      static const uint8_t zeros[32] = {0};
-      uint8_t early[32], bkey[32], fkey[32], th[32], hdr[4], empty_hash[32];
-      struct sha256_state t, e0;
-      size_t  body_len = (size_t)(p - h), trunc = body_len - 35;
+      static const uint8_t zeros[48] = {0};
+      uint8_t early[48], bkey[48], fkey[48], th[48], hdr[4], empty_hash[48];
+      size_t  body_len = (size_t)(p - h), trunc = body_len - (bhlen + 3);
       hdr[0] = TLS_HS_CLIENT_HELLO;
       hdr[1] = (uint8_t)(body_len >> 16); hdr[2] = (uint8_t)(body_len >> 8); hdr[3] = (uint8_t)body_len;
-      t = s->transcript;
-      sha256_stream_update(&t, hdr, 4);
-      sha256_stream_update(&t, h, trunc);
-      sha256_stream_final(&t, th);
-      hkdf_sha256_extract(zeros, 32, s->psk, 32, early);
-      sha256_stream_init(&e0, 0);
-      sha256_stream_final(&e0, empty_hash);
-      if (tls13_expand_label(early, "res binder", empty_hash, 32, bkey, 32) != 0
-            || tls13_expand_label(bkey, "finished", NULL, 0, fkey, 32) != 0)
+      if (bhlen == 48)
+      {
+         struct sha512_state t = s->transcript384;
+         sha512_stream_update(&t, hdr, 4);
+         sha512_stream_update(&t, h, trunc);
+         sha512_stream_final(&t, th);
+      }
+      else
+      {
+         struct sha256_state t = s->transcript;
+         sha256_stream_update(&t, hdr, 4);
+         sha256_stream_update(&t, h, trunc);
+         sha256_stream_final(&t, th);
+      }
+      tls13_hkdf_extract(bhlen, zeros, bhlen, s->psk, bhlen, early);
+      tls13_empty_hash(bhlen, empty_hash);
+      if (tls13_expand_label_h(bhlen, early, "res binder", empty_hash, bhlen, bkey, bhlen) != 0
+            || tls13_expand_label_h(bhlen, bkey, "finished", NULL, 0, fkey, bhlen) != 0)
       {
          free(h); free(ticket);
          s->last_err = TLS_ERR_KEX;
          return -1;
       }
-      hmac_sha256(fkey, 32, th, 32, h + trunc + 3);
-      crypto_memzero(early, 32); crypto_memzero(bkey, 32); crypto_memzero(fkey, 32);
+      tls13_hmac(bhlen, fkey, th, bhlen, h + trunc + 3);
+      crypto_memzero(early, 48); crypto_memzero(bkey, 48); crypto_memzero(fkey, 48);
    }
    ret = tls_send_handshake(s, TLS_HS_CLIENT_HELLO, h, (size_t)(p - h));
    free(h);
@@ -1434,8 +1454,64 @@ static int tls_recv_finished(struct ssl_state *s)
 
 /* ---- TLS 1.3 (RFC 8446) ------------------------------------------- */
 
-/* HKDF-Expand-Label(secret, label, context, len), SHA-256. */
-static int tls13_expand_label(const uint8_t *secret, const char *label,
+/* The 1.3 suites hash with SHA-256, except AES-256-GCM-SHA384. */
+static size_t tls13_hlen(const struct ssl_state *s)
+{
+   return s->suite == TLS13_AES_256_GCM_SHA384 ? 48 : 32;
+}
+
+static void tls13_hkdf_extract(size_t hlen, const uint8_t *salt, size_t salt_len,
+      const uint8_t *ikm, size_t ikm_len, uint8_t *prk)
+{
+   if (hlen == 48)
+      hkdf_sha384_extract(salt, salt_len, ikm, ikm_len, prk);
+   else
+      hkdf_sha256_extract(salt, salt_len, ikm, ikm_len, prk);
+}
+
+static void tls13_hmac(size_t hlen, const uint8_t *key, const uint8_t *data,
+      size_t len, uint8_t *mac)
+{
+   if (hlen == 48)
+      hmac_sha384(key, hlen, data, len, mac);
+   else
+      hmac_sha256(key, hlen, data, len, mac);
+}
+
+/* Hash of the transcript so far, for the suite's hash. */
+static void tls13_transcript_hash(const struct ssl_state *s, uint8_t *out)
+{
+   if (tls13_hlen(s) == 48)
+   {
+      struct sha512_state t = s->transcript384;
+      sha512_stream_final(&t, out);
+   }
+   else
+   {
+      struct sha256_state t = s->transcript;
+      sha256_stream_final(&t, out);
+   }
+}
+
+static void tls13_empty_hash(size_t hlen, uint8_t *out)
+{
+   if (hlen == 48)
+   {
+      struct sha512_state e;
+      sha512_stream_init(&e, 1);
+      sha512_stream_final(&e, out);
+   }
+   else
+   {
+      struct sha256_state e;
+      sha256_stream_init(&e, 0);
+      sha256_stream_final(&e, out);
+   }
+}
+
+/* HKDF-Expand-Label(secret, label, context, len) over the suite's hash;
+ * @hlen is the hash and secret length. */
+static int tls13_expand_label_h(size_t hlen, const uint8_t *secret, const char *label,
       const uint8_t *ctx, size_t ctx_len, uint8_t *out, size_t out_len)
 {
    uint8_t info[2 + 1 + 6 + 32 + 1 + 255];   /* a ticket nonce may be 255 octets */
@@ -1452,26 +1528,35 @@ static int tls13_expand_label(const uint8_t *secret, const char *label,
       memcpy(info + n, ctx, ctx_len);
       n += ctx_len;
    }
+   if (hlen == 48)
+      return hkdf_sha384_expand(secret, 48, info, n, out, out_len);
    return hkdf_sha256_expand(secret, 32, info, n, out, out_len);
+}
+
+/* the connection's suite decides the hash */
+static int tls13_expand_label(const struct ssl_state *s, const uint8_t *secret,
+      const char *label, const uint8_t *ctx, size_t ctx_len, uint8_t *out, size_t out_len)
+{
+   return tls13_expand_label_h(tls13_hlen(s), secret, label, ctx, ctx_len, out, out_len);
 }
 
 /* Derive-Secret(secret, label, transcript-so-far) */
 static int tls13_derive_secret(const struct ssl_state *s, const uint8_t *secret,
       const char *label, uint8_t *out)
 {
-   uint8_t th[32];
-   struct sha256_state t = s->transcript;
-   sha256_stream_final(&t, th);
-   return tls13_expand_label(secret, label, th, 32, out, 32);
+   uint8_t th[48];
+   size_t  hlen = tls13_hlen(s);
+   tls13_transcript_hash(s, th);
+   return tls13_expand_label(s, secret, label, th, hlen, out, hlen);
 }
 
 /* Traffic keys from a traffic secret into the given key / iv slots. */
 static int tls13_traffic_keys(struct ssl_state *s, const uint8_t *secret,
       uint8_t *key, uint8_t *iv)
 {
-   size_t klen = tls_suite_is_chacha(s->suite) ? 32 : 16;
-   if (tls13_expand_label(secret, "key", NULL, 0, key, klen) != 0
-         || tls13_expand_label(secret, "iv", NULL, 0, iv, 12) != 0)
+   size_t klen = (tls_suite_is_chacha(s->suite) || tls_suite_is_aes256(s->suite)) ? 32 : 16;
+   if (tls13_expand_label(s, secret, "key", NULL, 0, key, klen) != 0
+         || tls13_expand_label(s, secret, "iv", NULL, 0, iv, 12) != 0)
       return -1;
    return 0;
 }
@@ -1480,10 +1565,10 @@ static int tls13_traffic_keys(struct ssl_state *s, const uint8_t *secret,
  * the key share, then the client and server handshake traffic keys. */
 static int tls13_handshake_keys(struct ssl_state *s, const uint8_t *peer, size_t peer_len)
 {
-   static const uint8_t zeros[32] = {0};
-   uint8_t shared[32], early[32], derived[32];
-   uint8_t empty_hash[32];
-   struct sha256_state e;
+   static const uint8_t zeros[48] = {0};
+   uint8_t shared[32], early[48], derived[48];
+   uint8_t empty_hash[48];
+   size_t  hlen = tls13_hlen(s);
 
    if (s->group == 29)
    {
@@ -1496,12 +1581,11 @@ static int tls13_handshake_keys(struct ssl_state *s, const uint8_t *peer, size_t
    crypto_memzero(s->priv, sizeof(s->priv));
    /* early_secret = Extract(0, PSK) - or Extract(0, 0) without one;
     * derived = Derive-Secret(early, "derived", "") */
-   hkdf_sha256_extract(zeros, 32, s->psk_accepted ? s->psk : zeros, 32, early);
-   sha256_stream_init(&e, 0);
-   sha256_stream_final(&e, empty_hash);
-   if (tls13_expand_label(early, "derived", empty_hash, 32, derived, 32) != 0)
+   tls13_hkdf_extract(hlen, zeros, hlen, s->psk_accepted ? s->psk : zeros, hlen, early);
+   tls13_empty_hash(hlen, empty_hash);
+   if (tls13_expand_label(s, early, "derived", empty_hash, hlen, derived, hlen) != 0)
       return -1;
-   hkdf_sha256_extract(derived, 32, shared, 32, s->hs_secret);
+   tls13_hkdf_extract(hlen, derived, hlen, shared, 32, s->hs_secret);
    crypto_memzero(shared, sizeof(shared));
    if (tls13_derive_secret(s, s->hs_secret, "c hs traffic", s->c_hs) != 0
          || tls13_derive_secret(s, s->hs_secret, "s hs traffic", s->s_hs) != 0)
@@ -1519,18 +1603,17 @@ static int tls13_handshake_keys(struct ssl_state *s, const uint8_t *peer, size_t
  * server's Finished. */
 static int tls13_application_secrets(struct ssl_state *s)
 {
-   static const uint8_t zeros[32] = {0};
-   uint8_t derived[32], master[32], empty_hash[32];
-   struct sha256_state e;
-   sha256_stream_init(&e, 0);
-   sha256_stream_final(&e, empty_hash);
-   if (tls13_expand_label(s->hs_secret, "derived", empty_hash, 32, derived, 32) != 0)
+   static const uint8_t zeros[48] = {0};
+   uint8_t derived[48], master[48], empty_hash[48];
+   size_t  hlen = tls13_hlen(s);
+   tls13_empty_hash(hlen, empty_hash);
+   if (tls13_expand_label(s, s->hs_secret, "derived", empty_hash, hlen, derived, hlen) != 0)
       return -1;
-   hkdf_sha256_extract(derived, 32, zeros, 32, master);
+   tls13_hkdf_extract(hlen, derived, hlen, zeros, hlen, master);
    if (tls13_derive_secret(s, master, "c ap traffic", s->c_app) != 0
          || tls13_derive_secret(s, master, "s ap traffic", s->s_app) != 0)
       return -1;
-   memcpy(s->master13, master, 32);
+   memcpy(s->master13, master, hlen);
    crypto_memzero(master, sizeof(master));
    crypto_memzero(derived, sizeof(derived));
    return 0;
@@ -1539,12 +1622,12 @@ static int tls13_application_secrets(struct ssl_state *s)
 /* verify_data = HMAC(Expand-Label(base, "finished", "", 32), transcript) */
 static int tls13_finished_mac(const struct ssl_state *s, const uint8_t *base, uint8_t *out)
 {
-   uint8_t fk[32], th[32];
-   struct sha256_state t = s->transcript;
-   if (tls13_expand_label(base, "finished", NULL, 0, fk, 32) != 0)
+   uint8_t fk[48], th[48];
+   size_t  hlen = tls13_hlen(s);
+   if (tls13_expand_label(s, base, "finished", NULL, 0, fk, hlen) != 0)
       return -1;
-   sha256_stream_final(&t, th);
-   hmac_sha256(fk, 32, th, 32, out);
+   tls13_transcript_hash(s, th);
+   tls13_hmac(hlen, fk, th, hlen, out);
    crypto_memzero(fk, sizeof(fk));
    return 0;
 }
@@ -1618,17 +1701,15 @@ static int tls13_recv_certificate_verify(struct ssl_state *s, const struct x509_
    const uint8_t *b, *sig;
    size_t len, sig_len;
    unsigned alg;
-   uint8_t content[64 + 33 + 1 + 32];
+   uint8_t content[64 + 33 + 1 + 48];
    uint8_t digest[64];
-   size_t  dlen;
+   size_t  dlen, clen, hlen = tls13_hlen(s);
    int ok = -1;
 
    /* transcript hash before this message: the accumulator has not been
     * fed the CertificateVerify yet, so take it now */
-   {
-      struct sha256_state t = s->transcript;
-      sha256_stream_final(&t, s->cert_hash);
-   }
+   tls13_transcript_hash(s, s->cert_hash);
+   clen = 64 + 33 + 1 + hlen;
    if (tls_read_handshake(s, &type, &b, &len) != 0)
       return -1;
    if (type != TLS_HS_CERTIFICATE_VERIFY || len < 4)
@@ -1647,13 +1728,13 @@ static int tls13_recv_certificate_verify(struct ssl_state *s, const struct x509_
    memset(content, 0x20, 64);
    memcpy(content + 64, ctx, 33);
    content[64 + 33] = 0;
-   memcpy(content + 64 + 33 + 1, s->cert_hash, 32);
+   memcpy(content + 64 + 33 + 1, s->cert_hash, hlen);
 
    if (alg == 0x0804 || alg == 0x0403)           /* SHA-256 based */
    {
       struct sha256_state h;
       sha256_stream_init(&h, 0);
-      sha256_stream_update(&h, content, sizeof(content));
+      sha256_stream_update(&h, content, clen);
       sha256_stream_final(&h, digest);
       dlen = 32;
    }
@@ -1661,7 +1742,7 @@ static int tls13_recv_certificate_verify(struct ssl_state *s, const struct x509_
    {
       struct sha512_state h;
       sha512_stream_init(&h, 1);
-      sha512_stream_update(&h, content, sizeof(content));
+      sha512_stream_update(&h, content, clen);
       sha512_stream_final(&h, digest);
       dlen = 48;
    }
@@ -1686,15 +1767,15 @@ static int tls13_recv_certificate_verify(struct ssl_state *s, const struct x509_
 
 static int tls13_recv_finished(struct ssl_state *s)
 {
-   uint8_t type, expect[32];
+   uint8_t type, expect[48];
    const uint8_t *b;
-   size_t len;
+   size_t len, hlen = tls13_hlen(s);
    /* the expected MAC is over the transcript before this message */
    if (tls13_finished_mac(s, s->s_hs, expect) != 0)
       return -1;
    if (tls_read_handshake(s, &type, &b, &len) != 0)
       return -1;
-   if (type != TLS_HS_FINISHED || len != 32 || !crypto_memeq_ct(b, expect, 32))
+   if (type != TLS_HS_FINISHED || len != hlen || !crypto_memeq_ct(b, expect, hlen))
    {
       s->last_err = TLS_ERR_HANDSHAKE;
       return -1;
@@ -1704,10 +1785,10 @@ static int tls13_recv_finished(struct ssl_state *s)
 
 static int tls13_send_finished(struct ssl_state *s)
 {
-   uint8_t mac[32];
+   uint8_t mac[48];
    if (tls13_finished_mac(s, s->c_hs, mac) != 0)
       return -1;
-   return tls_send_handshake(s, TLS_HS_FINISHED, mac, 32);
+   return tls_send_handshake(s, TLS_HS_FINISHED, mac, tls13_hlen(s));
 }
 
 /* The whole 1.3 handshake after the ServerHello has been read and its
@@ -1793,7 +1874,7 @@ static int tls13_post_handshake(struct ssl_state *s, const uint8_t *msg, size_t 
          const uint8_t *b = msg + 4;
          size_t bl = len - 4, nl, tl;
          uint32_t age_add;
-         uint8_t psk[32];
+         uint8_t psk[48];
          struct tls_session *e;
          if (bl < 9)
             return -1;
@@ -1805,7 +1886,7 @@ static int tls13_post_handshake(struct ssl_state *s, const uint8_t *msg, size_t 
          if (!tl || tl > 16384 || bl < 9 + nl + 2 + tl)
             return -1;
          /* PSK = Expand-Label(res_master, "resumption", nonce, 32) */
-         if (tls13_expand_label(s->res_master, "resumption", b + 9, nl, psk, 32) != 0)
+         if (tls13_expand_label(s, s->res_master, "resumption", b + 9, nl, psk, tls13_hlen(s)) != 0)
             return -1;
          TLS_CACHE_LOCK();
          e = tls_cache_slot(s->domain);
@@ -1822,7 +1903,7 @@ static int tls13_post_handshake(struct ssl_state *s, const uint8_t *msg, size_t 
                e->suite      = s->suite;
                e->sid_len    = 0;
                e->age_add    = age_add;
-               memcpy(e->psk, psk, 32);
+               memcpy(e->psk, psk, 48);
                e->when       = time(NULL);
             }
          }
@@ -1832,12 +1913,13 @@ static int tls13_post_handshake(struct ssl_state *s, const uint8_t *msg, size_t 
       }
       case TLS_HS_KEY_UPDATE:
       {
-         uint8_t next[32];
+         uint8_t next[48];
+         size_t  hlen = tls13_hlen(s);
          if (len != 5)
             return -1;
-         if (tls13_expand_label(s->s_app, "traffic upd", NULL, 0, next, 32) != 0)
+         if (tls13_expand_label(s, s->s_app, "traffic upd", NULL, 0, next, hlen) != 0)
             return -1;
-         memcpy(s->s_app, next, 32);
+         memcpy(s->s_app, next, hlen);
          if (tls13_traffic_keys(s, s->s_app, s->swk, s->siv) != 0)
             return -1;
          s->sseq = 0;
@@ -1847,9 +1929,9 @@ static int tls13_post_handshake(struct ssl_state *s, const uint8_t *msg, size_t 
             uint8_t ku[1] = {0};
             if (tls_send_handshake(s, TLS_HS_KEY_UPDATE, ku, 1) != 0)
                return -1;
-            if (tls13_expand_label(s->c_app, "traffic upd", NULL, 0, next, 32) != 0)
+            if (tls13_expand_label(s, s->c_app, "traffic upd", NULL, 0, next, hlen) != 0)
                return -1;
-            memcpy(s->c_app, next, 32);
+            memcpy(s->c_app, next, hlen);
             if (tls13_traffic_keys(s, s->c_app, s->cwk, s->civ) != 0)
                return -1;
             s->cseq = 0;

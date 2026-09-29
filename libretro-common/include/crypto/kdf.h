@@ -72,6 +72,8 @@ void hmac_sha384_init(struct hmac_sha384_ctx *ctx,
 void hmac_sha384_update(struct hmac_sha384_ctx *ctx,
       const uint8_t *data, size_t len);
 void hmac_sha384_final(struct hmac_sha384_ctx *ctx, uint8_t *mac);
+void hmac_sha384(const uint8_t *key, size_t key_len,
+      const uint8_t *data, size_t len, uint8_t *mac);
 
 /* HKDF-SHA256 (RFC 5869). */
 
@@ -90,6 +92,12 @@ void hkdf_sha256_extract(const uint8_t *salt, size_t salt_len,
  * Returns: 0 on success, -1 when @okm_len is too large.
  **/
 int hkdf_sha256_expand(const uint8_t *prk, size_t prk_len,
+      const uint8_t *info, size_t info_len,
+      uint8_t *okm, size_t okm_len);
+/* The same over SHA-384 (48-octet PRK, 48 octets per block). */
+void hkdf_sha384_extract(const uint8_t *salt, size_t salt_len,
+      const uint8_t *ikm, size_t ikm_len, uint8_t *prk);
+int hkdf_sha384_expand(const uint8_t *prk, size_t prk_len,
       const uint8_t *info, size_t info_len,
       uint8_t *okm, size_t okm_len);
 
