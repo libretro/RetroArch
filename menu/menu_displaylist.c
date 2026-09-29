@@ -5185,7 +5185,7 @@ static unsigned menu_displaylist_parse_playlists(
    size_t i, list_size;
    struct string_list str_list  = {0};
    struct string_list *walk_list = NULL;
-   enum menu_dirwalk_status walk_status;
+   enum menu_dirwalk_status walk_status = MENU_DIRWALK_FAILED;
    unsigned count               = 0;
    unsigned content_count       = 0;
    bool show_hidden_files       = settings->bools.show_hidden_files;
