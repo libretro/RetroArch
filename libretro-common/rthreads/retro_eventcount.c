@@ -83,7 +83,13 @@ typedef char retro_eventcount_epoch_is_a_word_
 #define RETRO_EC_ADDR_WIN32 1
 #elif (defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) \
       || defined(__OpenBSD__) || defined(__DragonFly__)) \
+      && !defined(__ORBIS__) && !defined(ORBIS) \
       && defined(RETRO_ATOMIC_HAS_PTR)
+/* The PS4 is FreeBSD underneath and its toolchain defines __FreeBSD__,
+ * but its libc carries neither the POSIX clock the bounded wait needs
+ * nor a semaphore this backend can rely on: it keeps the condition
+ * variable, as rthreads.c and retro_procbarrier.c keep it off the
+ * FreeBSD paths. */
 #define RETRO_EC_SEM 1
 #endif
 #endif
