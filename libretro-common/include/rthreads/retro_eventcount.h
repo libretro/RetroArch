@@ -112,6 +112,10 @@
  *                        be had - no ntdll entry points and no TLS index
  *                        left for the event - the object falls back to
  *                        the scond backend below rather than failing.
+ *   Switch               the Horizon address arbiter (svcWaitForAddress /
+ *                        svcSignalToAddress), the futex shape, on
+ *                        firmware 4.0.0 and newer; the scond backend
+ *                        below on older firmware, decided at init.
  *   macOS / iOS / BSDs   the same waiter list, slept on with a semaphore
  *                        of the waiting thread's own - a Mach semaphore
  *                        on Darwin, a POSIX one on the BSDs - kept for

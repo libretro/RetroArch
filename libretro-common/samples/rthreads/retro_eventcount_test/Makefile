@@ -52,6 +52,16 @@ ifneq ($(SEM),)
    CFLAGS += -DRETRO_EVENTCOUNT_FORCE_SEM
    TARGET := retro_eventcount_test_sem
 endif
+# SWITCH=1 builds the Horizon address-arbiter backend on this host,
+# against hostnx/switch.h - the slice of libnx it uses - with the two
+# system calls and the firmware query stood in for over futex in
+# switch_arbiter_shim.c.  check runs it as current firmware and as
+# firmware before 4.0.0, where it must fall back to scond.
+ifneq ($(SWITCH),)
+   CFLAGS += -DRETRO_EVENTCOUNT_FORCE_SWITCH -Ihostnx
+   SOURCES += switch_arbiter_shim.c
+   TARGET := retro_eventcount_test_switch
+endif
 
 OBJS := $(SOURCES:.c=.o)
 
@@ -79,9 +89,14 @@ check: all
 	@$(MAKE) -s clean
 	@$(MAKE) -s SEM=1 $(if $(SANITIZER),SANITIZER=$(SANITIZER))
 	./retro_eventcount_test_sem
+	@$(MAKE) -s clean
+	@$(MAKE) -s SWITCH=1 $(if $(SANITIZER),SANITIZER=$(SANITIZER))
+	./retro_eventcount_test_switch
+	HOSTNX_OLD_FIRMWARE=1 ./retro_eventcount_test_switch
 
 clean:
-	rm -f $(OBJS) retro_eventcount_test retro_eventcount_test_scond \
-	      retro_eventcount_test_sem
+	rm -f $(OBJS) switch_arbiter_shim.o retro_eventcount_test \
+	      retro_eventcount_test_scond retro_eventcount_test_sem \
+	      retro_eventcount_test_switch
 
 .PHONY: all check clean

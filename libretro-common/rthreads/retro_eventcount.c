@@ -61,6 +61,13 @@ typedef char retro_eventcount_epoch_is_a_word_
  * for the handshake in notify to hold, so a build that lands on the
  * volatile fallback drops to the locked backend regardless of platform.
  *
+ * RETRO_EC_ADDR_SWITCH parks on the Horizon address arbiter
+ * (svcWaitForAddress / svcSignalToAddress), which is the futex shape:
+ * wait while the word still holds the value read, wake every waiter on
+ * the word.  The arbiter is a 4.0.0 system call, so the object falls
+ * back to the condition variable on older firmware, decided once at
+ * init from the version libnx reads at startup.
+ *
  * RETRO_EC_SEM names the builds that park on a semaphore of the
  * waiting thread's own, listed on the object the way the Windows
  * backend lists its blocks: Darwin, where the semaphore is a Mach one
@@ -72,13 +79,20 @@ typedef char retro_eventcount_epoch_is_a_word_
  * console ports take.  RETRO_EVENTCOUNT_FORCE_SEM selects the semaphore
  * backend on any POSIX host, so its list protocol runs where futex would
  * otherwise be chosen.  Both mirror retro_atomic.h's RETRO_ATOMIC_FORCE_*
- * overrides and exist for the same reason.
+ * overrides and exist for the same reason.  RETRO_EVENTCOUNT_FORCE_SWITCH
+ * likewise builds the arbiter protocol on a host that supplies the two
+ * system calls and the version query (the sample stands them in over
+ * futex).
  */
 #if defined(RETRO_ATOMIC_LOCK_FREE) && !defined(RETRO_EVENTCOUNT_FORCE_SCOND)
 #if defined(RETRO_EVENTCOUNT_FORCE_SEM) && defined(RETRO_ATOMIC_HAS_PTR)
 #define RETRO_EC_SEM 1
+#elif defined(RETRO_EVENTCOUNT_FORCE_SWITCH)
+#define RETRO_EC_ADDR_SWITCH 1
 #elif defined(__linux__) && !defined(ANDROID_NO_FUTEX)
 #define RETRO_EC_ADDR_LINUX 1
+#elif defined(__SWITCH__)
+#define RETRO_EC_ADDR_SWITCH 1
 #elif defined(_WIN32) && !defined(_XBOX) && defined(RETRO_ATOMIC_HAS_PTR)
 #define RETRO_EC_ADDR_WIN32 1
 #elif (defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) \
@@ -129,6 +143,32 @@ typedef char retro_eventcount_epoch_is_a_word_
 #ifndef FUTEX_WAKE_PRIVATE
 #define FUTEX_WAKE_PRIVATE 129
 #endif
+#endif
+
+#if defined(RETRO_EC_ADDR_SWITCH)
+#include <switch.h>
+
+/* Whether the running firmware has the arbiter: libnx reads the
+ * version at startup, and this is asked once per object at init. */
+static bool ec_switch_has_arbiter(void)
+{
+   return hosversionAtLeast(4, 0, 0);
+}
+
+/* Waits while the epoch still reads @key, for @timeout_ns (negative:
+ * no bound).  InvalidState is the word having moved before the call
+ * took effect, which is a wake; only TimedOut is the bound expiring. */
+static bool ec_switch_park(retro_eventcount_t *ec, int key, s64 timeout_ns)
+{
+   Result rc = svcWaitForAddress((void*)&ec->epoch,
+         ArbitrationType_WaitIfEqual, (s64)key, timeout_ns);
+   return R_VALUE(rc) != KERNELRESULT(TimedOut);
+}
+
+static void ec_switch_wake_all(retro_eventcount_t *ec)
+{
+   svcSignalToAddress((void*)&ec->epoch, SignalType_Signal, 0, -1);
+}
 #endif
 
 #if defined(RETRO_EC_SEM)
@@ -860,6 +900,11 @@ bool retro_eventcount_init(retro_eventcount_t *ec)
 
 #if defined(RETRO_EC_ADDR_LINUX)
    lockless = 1;
+#elif defined(RETRO_EC_ADDR_SWITCH)
+   /* Only on firmware with the arbiter; else this object takes the
+    * condition variable and ec->cond says so */
+   if (ec_switch_has_arbiter())
+      lockless = 1;
 #elif defined(RETRO_EC_SEM)
    ec_sem_init();
    /* As for Win32 below: only with a key to keep the semaphores in,
@@ -953,6 +998,13 @@ void retro_eventcount_notify(retro_eventcount_t *ec)
    syscall(SYS_futex, (void*)&ec->epoch, FUTEX_WAKE_PRIVATE,
          INT_MAX, NULL, NULL, 0);
 #else
+#if defined(RETRO_EC_ADDR_SWITCH)
+   if (!ec->cond)
+   {
+      ec_switch_wake_all(ec);
+      return;
+   }
+#endif
 #if defined(RETRO_EC_WAITLIST)
    if (!ec->cond)
    {
@@ -1025,6 +1077,15 @@ void retro_eventcount_commit_wait(retro_eventcount_t *ec, int key)
             expect, NULL, NULL, 0);
    retro_atomic_fetch_sub_int(&ec->waiters, 1);
 #else
+#if defined(RETRO_EC_ADDR_SWITCH)
+   if (!ec->cond)
+   {
+      if (retro_atomic_load_acquire_int(&ec->epoch) == key)
+         ec_switch_park(ec, key, -1);
+      retro_atomic_fetch_sub_int(&ec->waiters, 1);
+      return;
+   }
+#endif
 #if defined(RETRO_EC_ADDR_WIN32)
    if (!ec->cond)
    {
@@ -1078,6 +1139,20 @@ bool retro_eventcount_commit_wait_timeout(retro_eventcount_t *ec,
    }
    retro_atomic_fetch_sub_int(&ec->waiters, 1);
 #else
+#if defined(RETRO_EC_ADDR_SWITCH)
+   if (!ec->cond)
+   {
+      if (retro_atomic_load_acquire_int(&ec->epoch) == key)
+      {
+         /* A bound of zero polls; the call takes nanoseconds and a
+          * negative value means none, so zero is spelled as one. */
+         s64 ns = timeout_us > 0 ? (s64)timeout_us * 1000 : 1;
+         signalled = ec_switch_park(ec, key, ns);
+      }
+      retro_atomic_fetch_sub_int(&ec->waiters, 1);
+      return signalled;
+   }
+#endif
 #if defined(RETRO_EC_ADDR_WIN32)
    if (!ec->cond)
    {
@@ -1122,6 +1197,9 @@ const char *retro_eventcount_backend_name(void)
 {
 #if defined(RETRO_EC_ADDR_LINUX)
    return "futex";
+#elif defined(RETRO_EC_ADDR_SWITCH)
+   return ec_switch_has_arbiter()
+      ? "horizon address arbiter" : "scond (firmware before 4.0.0)";
 #elif defined(RETRO_EC_SEM)
    ec_sem_init();
 #if defined(__APPLE__)
