@@ -89,8 +89,11 @@ START_TEST (test_roundtrip)
    /* bound to the setting name */
    ck_assert_ptr_null(keychain_open_alloc("cheevos_token", sealed));
 
-   /* tamper */
-   sealed[strlen(sealed) - 3] ^= 1;
+   /* tamper: swap the third-last character (all six of its bits are
+    * data) for a different alphabet character, so the decoded octets
+    * always change; flipping a bit could turn 'A' into '@', which the
+    * decoder does not reject and reads as 'A' again */
+   sealed[strlen(sealed) - 3] = sealed[strlen(sealed) - 3] == 'A' ? 'B' : 'A';
    ck_assert_ptr_null(keychain_open_alloc("cheevos_password", sealed));
    free(sealed);
    free(sealed2);
