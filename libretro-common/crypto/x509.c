@@ -243,8 +243,22 @@ static int der_read_time(struct der *d, time_t *t)
       return -1;
    if (mo < 1 || mo > 12 || da < 1 || da > 31 || h > 23 || mi > 59 || s > 60)
       return -1;
-   *t = (time_t)(x509_days_from_civil((long)y, mo, da) * 86400L
-         + (long)h * 3600 + (long)mi * 60 + (long)s);
+   {
+      /* long is 32 bits on Windows: past 2038-01-19 the seconds no
+       * longer fit it, so widen first, and where time_t itself is 32
+       * bits saturate rather than wrap a far-future notAfter into the
+       * past (a leaf good until 2046 must not read as expired). */
+      int64_t secs = (int64_t)x509_days_from_civil((long)y, mo, da) * 86400
+            + (int64_t)h * 3600 + (int64_t)mi * 60 + (int64_t)s;
+      if (sizeof(time_t) < 8)
+      {
+         if (secs > 0x7fffffff)
+            secs = 0x7fffffff;
+         else if (secs < -0x7fffffff - 1)
+            secs = -0x7fffffff - 1;
+      }
+      *t = (time_t)secs;
+   }
    return 0;
 }
 
