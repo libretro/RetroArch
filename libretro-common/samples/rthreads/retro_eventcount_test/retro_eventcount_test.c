@@ -556,6 +556,105 @@ static int lane_timed_race(void)
    return 0;
 }
 
+/* ---- lane 6: a crowd of waiters ----------------------------------- */
+/* More threads than the pooled semaphore backend has semaphores, all
+ * parking with a bound against a notifier that keeps moving.  Past the
+ * pool's size a park has nothing to sleep on and answers at once,
+ * which the callers of this primitive already tolerate as a spurious
+ * wake; what must hold is that every thread comes back, and that the
+ * semaphores the crowd hands back and forth are clean.  For the second
+ * part the notifier is held and the first CROWD_PROBERS threads take a
+ * bounded wait each, concurrently, so that many distinct semaphores are
+ * drawn: on a semaphore backend nothing can end those waits but their
+ * bound, so an early return is a count left on a semaphore by a park
+ * before it.  Other backends may wake spuriously by contract, and the
+ * probe is reported only. */
+
+#define CROWD_THREADS  96
+#define CROWD_ROUNDS   200
+#define CROWD_BOUND_US 50
+#define CROWD_PROBERS  32
+
+static retro_atomic_int_t crowd_stormed;
+static retro_atomic_int_t crowd_probe_go;
+static retro_atomic_int_t crowd_early;
+
+static void crowd_waiter(void *data)
+{
+   int i;
+   int me = (int)(intptr_t)data;
+
+   for (i = 0; i < CROWD_ROUNDS; i++)
+   {
+      int key = retro_eventcount_prepare_wait(&ec);
+      retro_eventcount_commit_wait_timeout(&ec, key, CROWD_BOUND_US);
+   }
+   retro_atomic_fetch_add_int(&crowd_stormed, 1);
+
+   if (me >= CROWD_PROBERS)
+      return;
+   while (!retro_atomic_load_acquire_int(&crowd_probe_go))
+      sthread_yield();
+   {
+      int key = retro_eventcount_prepare_wait(&ec);
+      if (retro_eventcount_commit_wait_timeout(&ec, key, 200))
+         retro_atomic_fetch_add_int(&crowd_early, 1);
+   }
+}
+
+static int lane_crowd(void)
+{
+   sthread_t *t[CROWD_THREADS];
+   sthread_t *n;
+   int i;
+   int early;
+   const char *backend = retro_eventcount_backend_name();
+
+   retro_atomic_int_init(&timed_stop, 0);
+   retro_atomic_int_init(&timed_hold, 0);
+   retro_atomic_int_init(&timed_held, 0);
+   retro_atomic_int_init(&crowd_stormed, 0);
+   retro_atomic_int_init(&crowd_probe_go, 0);
+   retro_atomic_int_init(&crowd_early, 0);
+
+   if (!retro_eventcount_init(&ec))
+   {
+      fprintf(stderr, "FAIL: crowd: eventcount init\n");
+      return 1;
+   }
+
+   n = sthread_create(timed_notifier, NULL);
+   for (i = 0; i < CROWD_THREADS; i++)
+      t[i] = sthread_create(crowd_waiter, (void*)(intptr_t)i);
+
+   while (retro_atomic_load_acquire_int(&crowd_stormed) < CROWD_THREADS)
+      sthread_yield();
+
+   /* Hold the notifier, then the probes, all at once */
+   retro_atomic_store_release_int(&timed_hold, 1);
+   while (!retro_atomic_load_acquire_int(&timed_held))
+      retro_cpu_relax();
+   retro_atomic_store_release_int(&crowd_probe_go, 1);
+
+   for (i = 0; i < CROWD_THREADS; i++)
+      sthread_join(t[i]);
+   retro_atomic_store_release_int(&timed_stop, 1);
+   retro_atomic_store_release_int(&timed_hold, 0);
+   sthread_join(n);
+   retro_eventcount_free(&ec);
+
+   early = retro_atomic_load_acquire_int(&crowd_early);
+   printf("  crowd      %d threads x %d bounded waits; %d of %d probes "
+         "ended early\n", CROWD_THREADS, CROWD_ROUNDS, early, CROWD_PROBERS);
+   if (early && strstr(backend, "semaphore"))
+   {
+      fprintf(stderr, "FAIL: crowd: a semaphore came back to the pool "
+            "with a count on it (%s backend)\n", backend);
+      return 1;
+   }
+   return 0;
+}
+
 int main(void)
 {
    sthread_t *wd;
@@ -572,6 +671,7 @@ int main(void)
    rc |= lane_broadcast();
    rc |= lane_broadcast_stress();
    rc |= lane_timed_race();
+   rc |= lane_crowd();
 
    retro_atomic_store_release_int(&watchdog_stop, 1);
    sthread_join(wd);

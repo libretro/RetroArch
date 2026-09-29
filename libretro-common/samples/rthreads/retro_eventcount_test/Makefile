@@ -52,6 +52,15 @@ ifneq ($(SEM),)
    CFLAGS += -DRETRO_EVENTCOUNT_FORCE_SEM
    TARGET := retro_eventcount_test_sem
 endif
+# SEMPOOL=1 builds the pooled variant of the semaphore backend, the
+# one the Vita takes because its threads have no storage of their own
+# to keep a semaphore in: the same list, the semaphores drawn from a
+# lock-free pool per park.  Over POSIX semaphores here; the Vita
+# spelling differs in the three semaphore calls only.
+ifneq ($(SEMPOOL),)
+   CFLAGS += -DRETRO_EVENTCOUNT_FORCE_SEM_POOL
+   TARGET := retro_eventcount_test_sempool
+endif
 # SWITCH=1 builds the Horizon address-arbiter backend on this host,
 # against hostnx/switch.h - the slice of libnx it uses - with the two
 # system calls and the firmware query stood in for over futex in
@@ -90,6 +99,9 @@ check: all
 	@$(MAKE) -s SEM=1 $(if $(SANITIZER),SANITIZER=$(SANITIZER))
 	./retro_eventcount_test_sem
 	@$(MAKE) -s clean
+	@$(MAKE) -s SEMPOOL=1 $(if $(SANITIZER),SANITIZER=$(SANITIZER))
+	./retro_eventcount_test_sempool
+	@$(MAKE) -s clean
 	@$(MAKE) -s SWITCH=1 $(if $(SANITIZER),SANITIZER=$(SANITIZER))
 	./retro_eventcount_test_switch
 	HOSTNX_OLD_FIRMWARE=1 ./retro_eventcount_test_switch
@@ -97,6 +109,6 @@ check: all
 clean:
 	rm -f $(OBJS) switch_arbiter_shim.o retro_eventcount_test \
 	      retro_eventcount_test_scond retro_eventcount_test_sem \
-	      retro_eventcount_test_switch
+	      retro_eventcount_test_sempool retro_eventcount_test_switch
 
 .PHONY: all check clean

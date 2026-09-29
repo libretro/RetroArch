@@ -74,25 +74,39 @@ typedef char retro_eventcount_epoch_is_a_word_
  * and every call is in Mac OS X 10.4's headers, and the BSDs, where it
  * is a POSIX one.  Like the Windows list it needs the pointer atomics.
  *
+ * RETRO_EC_SEM_POOL is the same backend where the thread has nowhere to
+ * keep a semaphore of its own: the console ports have no thread-local
+ * storage rthreads exposes.  The semaphores are kept in a pool instead,
+ * a lock-free stack of kernel semaphores that a park takes one from and
+ * puts back once it returns, which the protocol lets it do because a
+ * park never returns with a signal still counted.  The Vita takes this
+ * one, on the kernel semaphore its threads are built on.
+ *
  * RETRO_EVENTCOUNT_FORCE_SCOND selects the condition-variable backend on
  * any target, so a host with futex can still build and test the path the
  * console ports take.  RETRO_EVENTCOUNT_FORCE_SEM selects the semaphore
  * backend on any POSIX host, so its list protocol runs where futex would
- * otherwise be chosen.  Both mirror retro_atomic.h's RETRO_ATOMIC_FORCE_*
- * overrides and exist for the same reason.  RETRO_EVENTCOUNT_FORCE_SWITCH
- * likewise builds the arbiter protocol on a host that supplies the two
- * system calls and the version query (the sample stands them in over
- * futex).
+ * otherwise be chosen, and RETRO_EVENTCOUNT_FORCE_SEM_POOL the pooled
+ * one.  All mirror retro_atomic.h's RETRO_ATOMIC_FORCE_* overrides and
+ * exist for the same reason.  RETRO_EVENTCOUNT_FORCE_SWITCH likewise
+ * builds the arbiter protocol on a host that supplies the two system
+ * calls and the version query (the sample stands them in over futex).
  */
 #if defined(RETRO_ATOMIC_LOCK_FREE) && !defined(RETRO_EVENTCOUNT_FORCE_SCOND)
 #if defined(RETRO_EVENTCOUNT_FORCE_SEM) && defined(RETRO_ATOMIC_HAS_PTR)
 #define RETRO_EC_SEM 1
+#elif defined(RETRO_EVENTCOUNT_FORCE_SEM_POOL) && defined(RETRO_ATOMIC_HAS_PTR)
+#define RETRO_EC_SEM 1
+#define RETRO_EC_SEM_POOL 1
 #elif defined(RETRO_EVENTCOUNT_FORCE_SWITCH)
 #define RETRO_EC_ADDR_SWITCH 1
 #elif defined(__linux__) && !defined(ANDROID_NO_FUTEX)
 #define RETRO_EC_ADDR_LINUX 1
 #elif defined(__SWITCH__)
 #define RETRO_EC_ADDR_SWITCH 1
+#elif defined(VITA) && defined(RETRO_ATOMIC_HAS_PTR)
+#define RETRO_EC_SEM 1
+#define RETRO_EC_SEM_POOL 1
 #elif defined(_WIN32) && !defined(_XBOX) && defined(RETRO_ATOMIC_HAS_PTR)
 #define RETRO_EC_ADDR_WIN32 1
 #elif (defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) \
@@ -172,8 +186,14 @@ static void ec_switch_wake_all(retro_eventcount_t *ec)
 #endif
 
 #if defined(RETRO_EC_SEM)
-#include <pthread.h>
+#if defined(VITA)
+#include <psp2/kernel/threadmgr.h>
+#include <psp2/kernel/error.h>
+#else
 #include <errno.h>
+#if !defined(RETRO_EC_SEM_POOL)
+#include <pthread.h>
+#endif
 #if defined(__APPLE__)
 #include <mach/mach.h>
 #include <mach/semaphore.h>
@@ -181,6 +201,7 @@ static void ec_switch_wake_all(retro_eventcount_t *ec)
 #else
 #include <semaphore.h>
 #include <time.h>
+#endif
 #endif
 #endif
 
@@ -229,7 +250,9 @@ static void ec_switch_wake_all(retro_eventcount_t *ec)
 #define EC_STATUS_TIMEOUT 0x102
 
 #if defined(RETRO_EC_SEM)
-#if defined(__APPLE__)
+#if defined(VITA)
+typedef SceUID      ec_sem_t;
+#elif defined(__APPLE__)
 typedef semaphore_t ec_sem_t;
 #else
 typedef sem_t       ec_sem_t;
@@ -528,6 +551,119 @@ static void ec_wake_one(struct ec_waiter *w)
 #endif /* RETRO_EC_ADDR_WIN32: resolve, sleep, wake */
 
 #if defined(RETRO_EC_SEM)
+/* The three semaphore calls in each platform's spelling.  Create
+ * answers false when the kernel will not give one. */
+static bool ec_sem_create(ec_sem_t *sem)
+{
+#if defined(VITA)
+   return (*sem = sceKernelCreateSema("rarch_ec", 0, 0, 0x7FFFFFFF, NULL))
+      >= 0;
+#elif defined(__APPLE__)
+   return semaphore_create(mach_task_self(), sem, SYNC_POLICY_FIFO, 0)
+      == KERN_SUCCESS;
+#else
+   return sem_init(sem, 0, 0) == 0;
+#endif
+}
+
+static void ec_sem_signal(ec_sem_t *sem)
+{
+#if defined(VITA)
+   sceKernelSignalSema(*sem, 1);
+#elif defined(__APPLE__)
+   semaphore_signal(*sem);
+#else
+   sem_post(sem);
+#endif
+}
+
+#if defined(RETRO_EC_SEM_POOL)
+/* Nowhere to keep a semaphore per thread, so a pool of them: a stack
+ * of slots, each holding a kernel semaphore made on the slot's first
+ * use and kept for the process's life.  A park pops a slot and pushes
+ * it back on return, and the semaphore it hands back always counts
+ * zero, because the park protocol below consumes any signal a waker
+ * left in flight before it returns; so the next thread to pop the
+ * slot gets a clean one.
+ *
+ * The stack head packs the slot index with a tag that moves on every
+ * pop, which is what keeps a pop that read a stale head from
+ * succeeding after the slot went out and came back in between (the
+ * ABA case).  An index of zero is the empty stack, so the zeroed
+ * static is the initial state and no init step is needed.  The pool
+ * is as large as the number of threads that can be parked at once,
+ * which on the ports that take it is a handful; a park that finds it
+ * empty and full up answers as a spurious wake-up, as the per-thread
+ * variant does when a semaphore cannot be had. */
+#define EC_POOL_MAX   64
+#define EC_POOL_IDX   0xFF
+#define EC_POOL_TAG   0x100
+
+struct ec_pool_slot
+{
+   ec_sem_t           sem;
+   retro_atomic_int_t next;   /* index + 1 of the slot below; 0: none */
+};
+
+static struct
+{
+   retro_atomic_int_t   head;   /* (tag) | (index + 1); 0: empty */
+   retro_atomic_int_t   made;   /* slots whose semaphore exists */
+   struct ec_pool_slot  slot[EC_POOL_MAX];
+   int                  ready;
+} ec_g;
+
+static void ec_sem_init(void)
+{
+   ec_g.ready = 1;
+}
+
+static ec_sem_t *ec_sem_get(void)
+{
+   int h;
+   int n;
+
+   /* pop */
+   for (;;)
+   {
+      h = retro_atomic_load_acquire_int(&ec_g.head);
+      if (!(h & EC_POOL_IDX))
+         break;
+      n = retro_atomic_load_acquire_int(&ec_g.slot[(h & EC_POOL_IDX) - 1].next);
+      if (retro_atomic_cas_int(&ec_g.head, h,
+               (int)(((unsigned)h + EC_POOL_TAG) & ~(unsigned)EC_POOL_IDX) | n))
+         return &ec_g.slot[(h & EC_POOL_IDX) - 1].sem;
+   }
+
+   /* empty: make a slot, while there are slots left to make */
+   for (;;)
+   {
+      n = retro_atomic_load_acquire_int(&ec_g.made);
+      if (n >= EC_POOL_MAX)
+         return NULL;
+      if (retro_atomic_cas_int(&ec_g.made, n, n + 1))
+         break;
+   }
+   if (!ec_sem_create(&ec_g.slot[n].sem))
+      return NULL;   /* the slot is spent; the count stays taken */
+   return &ec_g.slot[n].sem;
+}
+
+static void ec_sem_put(ec_sem_t *sem)
+{
+   struct ec_pool_slot *s = (struct ec_pool_slot*)sem;
+   int                  i = (int)(s - ec_g.slot) + 1;
+   int                  h;
+
+   do
+   {
+      h = retro_atomic_load_acquire_int(&ec_g.head);
+      retro_atomic_store_release_int(&s->next, h & EC_POOL_IDX);
+   } while (!retro_atomic_cas_int(&ec_g.head, h,
+            (int)((unsigned)h & ~(unsigned)EC_POOL_IDX) | i));
+}
+
+#else /* per-thread: kept in a key for the thread's life */
 static struct
 {
    pthread_key_t      key;    /* this thread's semaphore, for its life */
@@ -571,12 +707,7 @@ static ec_sem_t *ec_sem_get(void)
       return sem;
    if (!(sem = (ec_sem_t*)malloc(sizeof(*sem))))
       return NULL;
-#if defined(__APPLE__)
-   if (semaphore_create(mach_task_self(), sem, SYNC_POLICY_FIFO, 0)
-         != KERN_SUCCESS)
-#else
-   if (sem_init(sem, 0, 0) != 0)
-#endif
+   if (!ec_sem_create(sem))
    {
       free(sem);
       return NULL;
@@ -585,13 +716,28 @@ static ec_sem_t *ec_sem_get(void)
    return sem;
 }
 
-/* Blocks on this thread's semaphore until signalled or, when bounded,
- * until timeout_us has passed.  An interrupted wait resumes: the
- * block is still listed, and leaving here would free its frame under
- * a waker.  False only on the timeout. */
+static void ec_sem_put(ec_sem_t *sem)
+{
+   (void)sem;   /* the thread keeps it */
+}
+#endif /* RETRO_EC_SEM_POOL */
+
+/* Blocks on the semaphore until signalled or, when bounded, until
+ * timeout_us has passed.  An interrupted wait resumes: the block is
+ * still listed, and leaving here would free its frame under a waker.
+ * False on the timeout, and on the Vita on any other failure too: the
+ * caller then takes the block off the list itself, which is the one
+ * safe way out. */
 static bool ec_sem_sleep(ec_sem_t *sem, bool bounded, int64_t timeout_us)
 {
-#if defined(__APPLE__)
+#if defined(VITA)
+   SceUInt us;
+   if (!bounded)
+      return sceKernelWaitSema(*sem, 1, NULL) == 0;
+   /* a bound of zero would mean none to the kernel */
+   us = timeout_us > 0 ? (SceUInt)timeout_us : 1;
+   return sceKernelWaitSema(*sem, 1, &us) == 0;
+#elif defined(__APPLE__)
    kern_return_t kr;
    if (bounded)
    {
@@ -644,11 +790,7 @@ static void ec_wake_one(struct ec_waiter *w)
 
    if (!(prev & EC_W_ASLEEP))
       return;   /* not yet committed: it sees the flag, no syscall */
-#if defined(__APPLE__)
-   semaphore_signal(*sem);
-#else
-   sem_post(sem);
-#endif
+   ec_sem_signal(sem);
 }
 #endif /* RETRO_EC_SEM */
 
@@ -658,8 +800,13 @@ static INLINE uintptr_t ec_head(retro_eventcount_t *ec)
    return (uintptr_t)retro_atomic_load_acquire_ptr(&ec->waitlist);
 }
 
+/* The bit is held across a few instructions - a swap of the head, an
+ * unlink - so a spin is right, but a bounded one: with more runnable
+ * threads than cores the holder may not be running, and a spin then
+ * only keeps it from getting back on. */
 static void ec_list_lock(retro_eventcount_t *ec)
 {
+   unsigned spins = 0;
    for (;;)
    {
       uintptr_t old = ec_head(ec);
@@ -667,7 +814,13 @@ static void ec_list_lock(retro_eventcount_t *ec)
             && retro_atomic_cas_ptr(&ec->waitlist, (void*)old,
                (void*)(old | EC_HEAD_LOCK)))
          return;
-      retro_cpu_relax();
+      if (++spins < 64)
+         retro_cpu_relax();
+      else
+      {
+         sthread_yield();
+         spins = 0;
+      }
    }
 }
 
@@ -831,7 +984,9 @@ static bool ec_win32_park(retro_eventcount_t *ec, int key, bool bounded,
 
 #if defined(RETRO_EC_SEM)
 /* The Windows park without its spin: returns false only when a
- * bounded wait expired. */
+ * bounded wait expired.  Every way out hands the semaphore back with
+ * nothing counted on it, which is what lets the pooled variant give
+ * it to another thread next. */
 static bool ec_sem_park(retro_eventcount_t *ec, int key, bool bounded,
       int64_t timeout_us)
 {
@@ -839,7 +994,13 @@ static bool ec_sem_park(retro_eventcount_t *ec, int key, bool bounded,
    bool             woken = true;
 
    if (!(w.sem = ec_sem_get()))
-      return true;   /* nothing to wait on: a spurious wake-up */
+   {
+      /* Nothing to wait on: a spurious wake-up, after a turn for the
+       * thread this one would have waited for, so a pool that has
+       * run out degrades to yielding rather than spinning. */
+      sthread_yield();
+      return true;
+   }
    w.next = NULL;
    retro_atomic_int_init(&w.flags, 0);
 
@@ -864,18 +1025,22 @@ static bool ec_sem_park(retro_eventcount_t *ec, int key, bool bounded,
          while (!(retro_atomic_load_acquire_int(&w.flags) & EC_W_WOKEN))
             retro_cpu_relax();
       }
+      ec_sem_put(w.sem);
       return true;
    }
 
    /* commit: past this a waker that takes the block must signal */
    if (retro_atomic_fetch_or_int(&w.flags, EC_W_ASLEEP) & EC_W_WOKEN)
+   {
+      ec_sem_put(w.sem);   /* taken before the commit: no signal sent */
       return true;
+   }
 
    if (!ec_sem_sleep(w.sem, bounded, timeout_us))
    {
       /* timed out, unless a waker already took the block, in which case
        * its signal is in flight and has to be consumed so the count
-       * does not carry into this thread's next park */
+       * does not carry into the semaphore's next park */
       ec_list_lock(ec);
       woken = !ec_list_unlink(ec, &w);
       ec_list_unlock(ec);
@@ -883,6 +1048,7 @@ static bool ec_sem_park(retro_eventcount_t *ec, int key, bool bounded,
          ec_sem_sleep(w.sem, false, 0);
    }
 
+   ec_sem_put(w.sem);
    return woken;
 }
 #endif
@@ -1202,7 +1368,11 @@ const char *retro_eventcount_backend_name(void)
       ? "horizon address arbiter" : "scond (firmware before 4.0.0)";
 #elif defined(RETRO_EC_SEM)
    ec_sem_init();
-#if defined(__APPLE__)
+#if defined(VITA)
+   return "sce semaphore pool";
+#elif defined(RETRO_EC_SEM_POOL)
+   return "posix semaphore pool";
+#elif defined(__APPLE__)
    return ec_g.ready ? "mach semaphore" : "scond (no thread key)";
 #else
    return ec_g.ready ? "posix semaphore" : "scond (no thread key)";
