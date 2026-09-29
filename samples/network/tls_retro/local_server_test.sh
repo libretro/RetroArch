@@ -99,4 +99,19 @@ run "TLS 1.2, ECDSA cert, X25519 + ChaCha20"          p256 ECDHE-ECDSA-CHACHA20-
 run13 "TLS 1.3, PSK resumption (3 rounds)"           rsa  TLS_AES_128_GCM_SHA256       0 localhost 0 $D/ca.pem 3
 run13 "TLS 1.3, PSK resumption, ChaCha20 (2 rounds)" p256 TLS_CHACHA20_POLY1305_SHA256 0 localhost 0 $D/ca.pem 2
 run13 "TLS 1.3, no tickets issued: no resumption"    rsa  TLS_AES_128_GCM_SHA256       1 localhost 0 $D/ca.pem 2 "-num_tickets 0"
+# KeyUpdate, both kinds: s_server's console sends one with update
+# requested (K) and one without (k) between lines; the client must keep
+# reading across each and the server must decrypt what we send after
+# rotating our own keys on the requested one.
+make -s tls_keyupdate
+(sleep 1.5; echo hello; sleep 0.7; echo K; sleep 0.7; echo after-K; sleep 0.7; echo k; sleep 0.7; echo after-k; sleep 2) \
+   | openssl s_server -accept 44331 -cert $D/rsa.pem -key $D/rsa.key -tls1_3 > $D/ku.out 2>&1 &
+SRV=$!; sleep 0.6
+set +e; $RUN ./tls_keyupdate$EXE localhost 44331 $D/ca.pem > $D/ku.client 2>&1; rc=$?; set -e
+sleep 2.5; kill $SRV 2>/dev/null || true; wait $SRV 2>/dev/null || true
+if [ $rc -eq 0 ] && grep -q "^ack-after-K" $D/ku.out && grep -q "^ack-after-k" $D/ku.out; then
+   echo "ok:   TLS 1.3, KeyUpdate requested and unrequested, both directions"
+else
+   echo "FAIL: KeyUpdate: $(cat $D/ku.client) / server saw: $(grep '^ack' $D/ku.out | tr '\n' ' ')"; exit 1
+fi
 echo "[pass] tls_retro local server matrix"

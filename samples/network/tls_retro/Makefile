@@ -19,6 +19,8 @@ tls_fetch: $(SRC)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $(LDLIBS) -o $@
 tls_bench: tls_bench.c $(filter-out tls_fetch.c,$(SRC))
 	$(CC) $(CPPFLAGS) $(CFLAGS) tls_bench.c $(filter-out tls_fetch.c,$(SRC)) $(LDLIBS) -o $@
+tls_keyupdate: tls_keyupdate.c $(filter-out tls_fetch.c,$(SRC))
+	$(CC) $(CPPFLAGS) $(CFLAGS) tls_keyupdate.c $(filter-out tls_fetch.c,$(SRC)) $(LDLIBS) -o $@
 clean:
-	rm -f tls_fetch tls_fetch.exe tls_bench tls_bench.exe
+	rm -f tls_fetch tls_fetch.exe tls_bench tls_bench.exe tls_keyupdate tls_keyupdate.exe
 .PHONY: clean

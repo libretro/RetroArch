@@ -29,8 +29,6 @@ static int one(const char *host, int port, int *resumed)
    int ok = 0;
    if (fd < 0 || !addr)
       return 0;
-   if (!socket_connect_with_timeout(fd, addr, 3000))
-      goto done;
    if (!(ssl = ssl_socket_init(fd, host)))
       goto done;
    if (ssl_socket_connect(ssl, addr, true, true) >= 0)
@@ -61,8 +59,8 @@ static int bulk_get(const char *host, int port, const char *path)
    retro_time_t t0;
    char req[512];
 
-   if (fd < 0 || !addr || !socket_connect_with_timeout(fd, addr, 3000)
-         || !(ssl = ssl_socket_init(fd, host)))
+   /* ssl_socket_connect() makes the TCP connection itself */
+   if (fd < 0 || !addr || !(ssl = ssl_socket_init(fd, host)))
       return 1;
    if (ssl_socket_connect(ssl, addr, true, true) < 0)
    {
