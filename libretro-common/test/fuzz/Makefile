@@ -15,13 +15,13 @@ CRYPTO_SRC = $(COMMON)/crypto/crypto.c $(COMMON)/crypto/kdf.c $(COMMON)/crypto/p
           $(COMMON)/crypto/x509.c $(COMMON)/hash/lrc_hash.c $(COMMON)/utils/md5.c \
           $(COMMON)/encodings/encoding_base64.c
 
-fuzz_tls: net_fuzz.c
+fuzz_tls: net_fuzz.c $(COMMON)/net/net_socket_ssl_retro.c $(NET_SRC) $(CRYPTO_SRC)
 	$(CC) $(CFLAGS) -DTARGET_TLS -DHAVE_SSL net_fuzz.c $(COMMON)/net/net_socket_ssl_retro.c $(NET_SRC) $(CRYPTO_SRC) -lpthread -o $@
-fuzz_smb: net_fuzz.c
-	$(CC) $(CFLAGS) -DTARGET_SMB net_fuzz.c $(COMMON)/net/net_smb2.c $(NET_SRC) $(CRYPTO_SRC) -lpthread -o $@
-fuzz_nfs: net_fuzz.c
+fuzz_smb: net_fuzz.c $(COMMON)/net/net_smb2.c $(COMMON)/net/net_krb5.c $(NET_SRC) $(CRYPTO_SRC)
+	$(CC) $(CFLAGS) -DTARGET_SMB net_fuzz.c $(COMMON)/net/net_smb2.c $(COMMON)/net/net_krb5.c $(NET_SRC) $(CRYPTO_SRC) -lpthread -o $@
+fuzz_nfs: net_fuzz.c $(COMMON)/net/net_nfs3.c $(NET_SRC)
 	$(CC) $(CFLAGS) -DTARGET_NFS net_fuzz.c $(COMMON)/net/net_nfs3.c $(NET_SRC) -lpthread -o $@
-fuzz_x509: net_fuzz.c
+fuzz_x509: net_fuzz.c $(CRYPTO_SRC) $(NET_SRC)
 	$(CC) $(CFLAGS) -DTARGET_X509 net_fuzz.c $(CRYPTO_SRC) $(NET_SRC) -lpthread -o $@
 
 fuzz-all: fuzz_tls fuzz_smb fuzz_nfs fuzz_x509
