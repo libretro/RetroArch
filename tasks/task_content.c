@@ -1596,7 +1596,8 @@ static bool content_file_load(
                   }
                   fill_pathname_join_special(new_path, stage_dir,
                         path_basename(content_path), sizeof(new_path));
-                  snprintf(part_path, sizeof(part_path), "%s.part", new_path);
+                  strlcpy(part_path, new_path, sizeof(part_path));
+                  strlcat(part_path, ".part", sizeof(part_path));
                   RARCH_LOG("[Content] Core does not support VFS - staging network content to \"%s\".\n",
                         new_path);
                   if (filestream_copy(content_path, part_path) != 0
