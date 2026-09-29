@@ -616,19 +616,22 @@ static void run_wide_pcm_pin(void)
 /* setting asks for it, and keeps its own account of how it woke.      */
 /* ------------------------------------------------------------------ */
 
-static void run_refill_thread(bool priority)
+static void run_refill_thread(bool priority, bool mmcss)
 {
    wdmks_t      w;
    sthread_t   *t;
    retro_time_t loop_usec = (retro_time_t)LOOP_FRAMES * 1000000 / RATE;
    retro_time_t slice     = loop_usec / 4 < 500 ? 500 : loop_usec / 4;
-   /* Four slices: enough passes for a gap between two of them. */
-   retro_time_t run_usec  = slice * 4;
-   unsigned     expect    = 4;
+   /* Eight slices: enough passes for a gap between two of them even
+    * on a host that holds the process for a slice or two. */
+   retro_time_t run_usec  = slice * 8;
+   unsigned     expect    = 8;
 
-   printf("-- refill thread, priority %s --\n", priority ? "on" : "off");
+   printf("-- refill thread, priority %s, Pro Audio class %s --\n",
+         priority ? "on" : "off", mmcss ? "on" : "off");
    loop_setup(&w);
    w.thread_priority = priority;
+   w.mmcss           = mmcss;
    retro_atomic_store_release_int(&w.rt_run, 1);
    t = sthread_create(wdmks_rt_refill_thread, &w);
    check(t != NULL, "the refill thread starts");
@@ -636,11 +639,12 @@ static void run_refill_thread(bool priority)
    retro_atomic_store_release_int(&w.rt_run, 0);
    sthread_join(t);
 
-   check(w.rt_time_critical == priority,
-         priority ? "it raised itself to time-critical"
-                  : "it left its priority alone");
-   check(w.rt_passes >= expect / 2,
-         "it passed at least half as often as a quarter-loop cadence");
+   check(w.rt_sched && (strcmp(w.rt_sched, "normal priority") != 0) == priority,
+         priority ? "it raised itself" : "it left its priority alone");
+   if (priority)
+      printf("  (ran under %s)\n", w.rt_sched);
+   check(w.rt_passes >= expect / 4,
+         "it passed at least a quarter as often as a quarter-loop cadence");
    check(w.rt_passes <= expect * 3,
          "and not more often than the slice floor allows");
    check(w.rt_gap_max_usec > 0 && w.rt_gap_max_usec < 1000000,
@@ -655,8 +659,9 @@ int main(void)
    run_wide_register();
    run_capture_fold();
    run_capture_loop();
-   run_refill_thread(true);
-   run_refill_thread(false);
+   run_refill_thread(true, false);
+   run_refill_thread(true, true);
+   run_refill_thread(false, false);
    fifo_frames = 0;
    run_contract("caller-driven loop, no FIFO report", put_direct, false);
    run_contract("refill thread pump, no FIFO report", put_pump, true);

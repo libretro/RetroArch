@@ -1707,7 +1707,7 @@ typedef struct
    retro_time_t        rt_gap_max_usec;
    size_t              rt_gaps_over;
    size_t              rt_passes;
-   bool                rt_time_critical;
+   const char         *rt_sched;   /* what the refill thread ran under */
    retro_atomic_64_t   rt_frames_pub;  /* absolute frames played */
    retro_atomic_int_t  clk_ppm_pub;   /* AUDIO_CLOCK_PPM_NONE until known */
 #endif
@@ -1788,6 +1788,7 @@ typedef struct
    retro_atomic_int_t dead;   /* an I/O failed; stop writing, still reclaim */
    bool            nonblock;
    bool             thread_priority; /* audio_thread_priority */
+   bool             mmcss;           /* audio_wasapi_mmcss: the Pro Audio class */
    bool            is_float;
    uint32_t        layout;
 
@@ -2662,6 +2663,47 @@ static size_t wdmks_rt_pump_once(wdmks_t *w)
    return moved;
 }
 
+/* The Pro Audio scheduling class, from avrt.dll by name: the DLL is
+ * Vista and newer, and the driver runs on older systems than that.
+ * NULL where it is not asked for, not present, or refused. */
+typedef HANDLE (WINAPI *wdmks_av_set_t)(LPCWSTR, LPDWORD);
+typedef BOOL   (WINAPI *wdmks_av_revert_t)(HANDLE);
+
+static HANDLE wdmks_mmcss_begin(HMODULE *avrt, bool enable)
+{
+   wdmks_av_set_t set;
+   HANDLE         task = NULL;
+   DWORD          idx  = 0;
+
+   *avrt = NULL;
+   if (!enable)
+      return NULL;
+   if (!(*avrt = LoadLibraryA("avrt.dll")))
+      return NULL;
+   if ((set = (wdmks_av_set_t)GetProcAddress(*avrt,
+               "AvSetMmThreadCharacteristicsW")))
+      task = set(L"Pro Audio", &idx);
+   if (!task || task == INVALID_HANDLE_VALUE)
+   {
+      FreeLibrary(*avrt);
+      *avrt = NULL;
+      return NULL;
+   }
+   return task;
+}
+
+static void wdmks_mmcss_end(HMODULE avrt, HANDLE task)
+{
+   if (avrt)
+   {
+      wdmks_av_revert_t revert = (wdmks_av_revert_t)GetProcAddress(
+            avrt, "AvRevertMmThreadCharacteristics");
+      if (revert && task)
+         revert(task);
+      FreeLibrary(avrt);
+   }
+}
+
 /* The thread the register was waiting for: it samples and refills at
  * the device's pace however long the frontend is descheduled. Waits
  * are the device's - the notification event under the stream-scaled
@@ -2674,16 +2716,30 @@ static void wdmks_rt_refill_thread(void *data)
    retro_time_t loop_usec  = 0;
    retro_time_t last       = 0;
    retro_time_t slice_usec = 1000;
+   HMODULE      avrt       = NULL;
+   HANDLE       mmtask     = NULL;
 
    /* A pass a loop late is a lap the position cannot be followed
     * across, and at a loop of a few milliseconds that is one ordinary
-    * scheduling delay next to a busy core.  So this thread runs
-    * time-critical where the setting asks for the audio thread to be
-    * raised, as the WASAPI pump does under the same setting: it is
-    * the one thread here with a deadline the hardware sets. */
+    * scheduling delay next to a busy core.  So this thread is raised
+    * where the setting asks for the audio thread to be, as the WASAPI
+    * pump is under the same settings: it is the one thread here with
+    * a deadline the hardware sets.  The Pro Audio class where that
+    * setting is on too - time-critical is 15 in the normal class, and
+    * a display driver's workers sit above it; the class runs in the
+    * twenties - and time-critical otherwise, or where the class is
+    * refused. */
+   w->rt_sched = "normal priority";
    if (w->thread_priority)
-      w->rt_time_critical = SetThreadPriority(GetCurrentThread(),
-            THREAD_PRIORITY_TIME_CRITICAL) != 0;
+   {
+      HANDLE task = wdmks_mmcss_begin(&avrt, w->mmcss);
+      if (task)
+         w->rt_sched = "Pro Audio";
+      else if (SetThreadPriority(GetCurrentThread(),
+               THREAD_PRIORITY_TIME_CRITICAL))
+         w->rt_sched = "time-critical";
+      mmtask = task;
+   }
 
    /* Sampling cadence for a pin that refused a notification event: a
     * quarter of the loop's duration, so a sample that lands late by
@@ -2731,6 +2787,7 @@ static void wdmks_rt_refill_thread(void *data)
       w->rt_passes++;
       wdmks_rt_pump_once(w);
    }
+   wdmks_mmcss_end(avrt, mmtask);
 }
 
 /* Producer-side ring room, capped to the size that was asked for
@@ -3448,7 +3505,7 @@ static void wdmks_free(void *data)
    if (w->rt_passes)
       RARCH_LOG("[WDM-KS] Refill (%s): %u pass%s, %.2f ms between two at"
             " worst, %u a loop or more apart.\n",
-            w->rt_time_critical ? "time-critical" : "normal priority",
+            w->rt_sched ? w->rt_sched : "normal priority",
             (unsigned)w->rt_passes, w->rt_passes == 1 ? "" : "es",
             (double)w->rt_gap_max_usec / 1000.0,
             (unsigned)w->rt_gaps_over);
@@ -3605,6 +3662,11 @@ static void *wdmks_init(const char *device, unsigned rate,
    w->filter        = INVALID_HANDLE_VALUE;
    w->clk_ppm       = AUDIO_CLOCK_PPM_NONE;
    w->thread_priority = config_get_ptr()->bools.audio_thread_priority;
+#ifdef HAVE_WASAPI
+   /* The same knob the WASAPI pump uses for the class; the two run
+    * on the same machines and the choice is about the machine. */
+   w->mmcss           = config_get_ptr()->bools.audio_wasapi_mmcss;
+#endif
 
    for (i = chosen; i < count && !opened; i++)
    {
