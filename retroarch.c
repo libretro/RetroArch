@@ -404,6 +404,8 @@ void retroarch_smb_init(void)
    smb_global_cfg.num_contexts = settings->uints.smb_client_num_contexts;
    smb_global_cfg.auth_mode = settings->uints.smb_client_auth_mode;
    smb_global_cfg.subdir = settings->arrays.smb_client_subdir;
+   smb_global_cfg.realm = settings->arrays.smb_client_realm;
+   smb_global_cfg.kdc = settings->arrays.smb_client_kdc;
 
    smb_init_cfg(&smb_global_cfg);
 }

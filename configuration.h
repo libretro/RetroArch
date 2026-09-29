@@ -1277,6 +1277,8 @@ typedef struct settings
       char smb_client_username[128];
       char smb_client_password[128];
       char smb_client_workgroup[64];
+      char smb_client_realm[128];
+      char smb_client_kdc[256];
 #endif
 #ifdef HAVE_NFSCLIENT
       char nfs_server[256];

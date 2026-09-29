@@ -69,6 +69,8 @@ struct smb_conn_key
    char username[256];
    char password[256];
    char workgroup[256];
+   char realm[128];
+   char kdc[256];
 };
 
 struct smb_pool
@@ -155,6 +157,10 @@ static void smb_conn_key_fill(struct smb_conn_key *key, const char *share)
       strlcpy(key->password, cfg->password, sizeof(key->password));
    if (cfg->workgroup)
       strlcpy(key->workgroup, cfg->workgroup, sizeof(key->workgroup));
+   if (cfg->realm)
+      strlcpy(key->realm, cfg->realm, sizeof(key->realm));
+   if (cfg->kdc)
+      strlcpy(key->kdc, cfg->kdc, sizeof(key->kdc));
    key->timeout      = cfg->timeout ? cfg->timeout : RETRO_SMB2_DEFAULT_CLIENT_TIMEOUT;
    key->num_contexts = cfg->num_contexts ? cfg->num_contexts : RETRO_SMB2_DEFAULT_MAX_CLIENTS;
    key->auth_mode    = cfg->auth_mode;
@@ -176,6 +182,9 @@ static struct smb2_context *smb_connect_with(const struct smb_conn_key *key, int
    smb2_set_timeout(ctx, key->timeout);
    smb2_set_security_mode(ctx, auth);
    smb2_set_authentication(ctx, auth);
+#ifdef HAVE_RETROSMB
+   smb2_set_kerberos(ctx, key->realm, key->kdc, 0);
+#endif
    if (smb2_connect_share(ctx, key->server_address, key->share, username) < 0)
    {
       smb2_destroy_context(ctx);
@@ -437,6 +446,10 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
       return false;
    rsmb_set_credentials(ctx, smb_cfg->username, smb_cfg->password, smb_cfg->workgroup);
    rsmb_set_timeout(ctx, smb_cfg->timeout ? smb_cfg->timeout : RETRO_SMB2_DEFAULT_CLIENT_TIMEOUT);
+   /* a ticket when a realm is configured and the mode allows it; the
+    * client falls back to NTLMSSP on its own */
+   if (smb_cfg->realm && *smb_cfg->realm && smb_cfg->auth_mode != RETRO_SMB2_SEC_NTLMSSP)
+      rsmb_set_kerberos(ctx, smb_cfg->realm, smb_cfg->kdc, 0);
    if (rsmb_connect(ctx, smb_cfg->server_address, "IPC$") != 0)
    {
       rsmb_free(ctx);
@@ -523,6 +536,9 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
          mode = RETRO_SMB2_SEC_NTLMSSP;
       smb2_set_security_mode(ctx, mode);
       smb2_set_authentication(ctx, mode);
+#ifdef HAVE_RETROSMB
+      smb2_set_kerberos(ctx, smb_cfg->realm, smb_cfg->kdc, 0);
+#endif
    }
 
    if (smb2_connect_share(ctx, smb_cfg->server_address, "IPC$",

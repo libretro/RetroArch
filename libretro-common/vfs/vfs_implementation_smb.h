@@ -27,6 +27,10 @@ struct smb_settings {
    unsigned    num_contexts;
    unsigned    auth_mode;
    const char *subdir;
+   /* Kerberos (built-in client): the realm, and the KDC when it is not
+    * the server itself; empty realm means NTLMSSP only */
+   const char *realm;
+   const char *kdc;
 };
 
 typedef struct smb_settings smb_settings_t;

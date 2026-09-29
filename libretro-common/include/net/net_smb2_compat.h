@@ -41,6 +41,7 @@
 #endif
 #include <retro_inline.h>
 #include <net/net_smb2.h>
+#include <compat/strl.h>
 
 struct smb2_context;
 
@@ -49,7 +50,10 @@ struct smb2_context;
 struct smb2_compat_ctx
 {
    struct rsmb_ctx *c;
-   int auth_mode;
+   int      auth_mode;
+   char     realm[128];
+   char     kdc[256];
+   uint16_t kdc_port;
 };
 
 struct smb2fh  { struct rsmb_file *f; };
@@ -98,15 +102,43 @@ static INLINE void smb2_set_timeout(struct smb2_context *ctx, int seconds)    { 
 static INLINE void smb2_set_security_mode(struct smb2_context *ctx, int mode) { ((struct smb2_compat_ctx*)ctx)->auth_mode = mode; }
 static INLINE void smb2_set_authentication(struct smb2_context *ctx, int mode){ ((struct smb2_compat_ctx*)ctx)->auth_mode = mode; }
 
-/* Kerberos is not implemented: a KRB5 request fails so the caller's
- * NTLMSSP fallback runs. */
+/* The realm and KDC a KRB5 request uses (a libsmb2 build reads them
+ * from krb5.conf instead; this extension is guarded HAVE_RETROSMB by
+ * the caller). */
+static INLINE void smb2_set_kerberos(struct smb2_context *ctx, const char *realm,
+      const char *kdc, uint16_t port)
+{
+   struct smb2_compat_ctx *x = (struct smb2_compat_ctx*)ctx;
+   strlcpy(x->realm, realm ? realm : "", sizeof(x->realm));
+   strlcpy(x->kdc, kdc ? kdc : "", sizeof(x->kdc));
+   x->kdc_port = port;
+}
+
+/* A KRB5 request needs a realm and succeeds only when the session
+ * really came from a ticket, so a pool that tries Kerberos first
+ * records the truth and its NTLMSSP attempt still runs; an NTLMSSP
+ * request never touches the KDC. */
 static INLINE int smb2_connect_share(struct smb2_context *ctx, const char *server,
       const char *share, const char *user)
 {
+   struct smb2_compat_ctx *x = (struct smb2_compat_ctx*)ctx;
    (void)user;
-   if (((struct smb2_compat_ctx*)ctx)->auth_mode == SMB2_SEC_KRB5)
-      return -1;
-   return rsmb_connect(SMB2_CTX(ctx), server, share);
+   if (x->auth_mode == SMB2_SEC_KRB5)
+   {
+      if (!x->realm[0])
+         return -1;
+      rsmb_set_kerberos(x->c, x->realm, x->kdc, x->kdc_port);
+      if (rsmb_connect(x->c, server, share) != 0)
+         return -1;
+      if (!rsmb_used_kerberos(x->c))
+      {
+         rsmb_disconnect(x->c);
+         return -1;
+      }
+      return 0;
+   }
+   rsmb_set_kerberos(x->c, NULL, NULL, 0);
+   return rsmb_connect(x->c, server, share);
 }
 static INLINE int  smb2_disconnect_share(struct smb2_context *ctx) { rsmb_disconnect(SMB2_CTX(ctx)); return 0; }
 static INLINE int  smb2_context_active(struct smb2_context *ctx)   { return rsmb_get_fd(SMB2_CTX(ctx)) >= 0; }

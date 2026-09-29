@@ -1934,6 +1934,8 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY_SENSITIVE("smb_client_username",         settings->arrays.smb_client_username, false, NULL, true);
    SETTING_ARRAY_SENSITIVE("smb_client_password",         settings->arrays.smb_client_password, false, NULL, true);
    SETTING_ARRAY("smb_client_workgroup",                  settings->arrays.smb_client_workgroup, false, NULL, true);
+   SETTING_ARRAY("smb_client_realm",                      settings->arrays.smb_client_realm, false, NULL, true);
+   SETTING_ARRAY("smb_client_kdc",                        settings->arrays.smb_client_kdc, false, NULL, true);
 #endif
 
 #ifdef HAVE_LAKKA
