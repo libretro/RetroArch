@@ -233,8 +233,25 @@ static void ec_3ds_wake_all(retro_eventcount_t *ec)
 #include <psp2/kernel/threadmgr.h>
 #include <psp2/kernel/error.h>
 #elif defined(WIIU)
+/* The tree ships its own coreinit headers under wiiu/os; wut's layout
+ * is the fallback for a build that points at the SDK instead. */
+#if defined(__has_include)
+#if __has_include(<wiiu/os/event.h>)
+#define RETRO_EC_WIIU_VENDORED
+#endif
+#endif
+#ifdef RETRO_EC_WIIU_VENDORED
+/* time.h's tick rate reads the system info, so that comes first */
+#include <wiiu/os/systeminfo.h>
+#include <wiiu/os/event.h>
+#include <wiiu/os/time.h>
+#else
 #include <coreinit/event.h>
 #include <coreinit/time.h>
+#endif
+#ifndef OSMicroseconds
+#define OSMicroseconds(us) OSMicrosecondsToTicks(us)
+#endif
 #elif defined(__PS3__)
 /* Both PS3 SDKs put the lv2 semaphore behind different names, as
  * rthreads.c finds for its mutex and condition variable; the four
@@ -852,7 +869,7 @@ static bool ec_sem_sleep(ec_sem_t *sem, bool bounded, int64_t timeout_us)
    }
    /* In timer ticks; a bound of zero is spelled as a microsecond */
    return OSWaitEventWithTimeout(sem,
-         (OSTime)OSMicrosecondsToTicks(timeout_us > 0 ? timeout_us : 1))
+         (OSTime)OSMicroseconds(timeout_us > 0 ? timeout_us : 1))
       ? true : false;
 #elif defined(__APPLE__)
    kern_return_t kr;
