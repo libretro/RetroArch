@@ -21,6 +21,9 @@ tls_bench: tls_bench.c $(filter-out tls_fetch.c,$(SRC))
 	$(CC) $(CPPFLAGS) $(CFLAGS) tls_bench.c $(filter-out tls_fetch.c,$(SRC)) $(LDLIBS) -o $@
 tls_keyupdate: tls_keyupdate.c $(filter-out tls_fetch.c,$(SRC))
 	$(CC) $(CPPFLAGS) $(CFLAGS) tls_keyupdate.c $(filter-out tls_fetch.c,$(SRC)) $(LDLIBS) -o $@
+THR_SRC = tls_threads.c $(filter-out tls_fetch.c,$(SRC)) $(COMMON)/rthreads/rthreads.c
+tls_threads: $(THR_SRC)
+	$(CC) $(CPPFLAGS) -DHAVE_THREADS $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@
 clean:
-	rm -f tls_fetch tls_fetch.exe tls_bench tls_bench.exe tls_keyupdate tls_keyupdate.exe
+	rm -f tls_fetch tls_fetch.exe tls_bench tls_bench.exe tls_keyupdate tls_keyupdate.exe tls_threads tls_threads.exe
 .PHONY: clean

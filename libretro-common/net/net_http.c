@@ -1476,6 +1476,10 @@ static void net_http_send_source(struct http_t *state)
       if (want > run)
          want = run;
       got = request->source(request->source_data, buf, want);
+      /* a callback claiming more than the buffer it was given would
+       * have us send past it */
+      if (got > (int64_t)want)
+         got = -1;
       if (got <= 0)
       {
          state->err = true;

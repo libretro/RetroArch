@@ -35,6 +35,7 @@
 
 #include <net/net_compat.h>
 #include <net/net_socket.h>
+#include <retro_atomic.h>
 #include <net/net_socket_ssl.h>
 #include <crypto/crypto.h>
 #include <crypto/kdf.h>
@@ -92,7 +93,11 @@
 #define TLS_ERR_MEMORY     -8
 #define TLS_ERR_VERSION    -9
 
-static unsigned tls_verify_mode = 0;   /* 0 required, 1 optional, 2 disabled */
+/* Verification policy: written from the settings thread, read by
+ * every connection thread, so it is an atomic that each connection
+ * copies once at creation and keeps for its lifetime. 0 required,
+ * 1 optional, 2 disabled. */
+static retro_atomic_int_t tls_verify_mode_setting;
 
 /* Session cache for resumption (RFC 5246 7.4.1.2 session ids, RFC 5077
  * tickets): one entry per host, oldest replaced. A resumed handshake
@@ -242,6 +247,7 @@ struct ssl_state
    uint8_t  offered_sid[32];
    size_t   offered_sid_len;
    /* TLS 1.3 */
+   unsigned verify_mode;    /* this connection's copy of the policy */
    uint8_t  v13;            /* the server chose 1.3 */
    uint8_t  pub[65];        /* our P-256 key share */
    uint8_t  xpriv[32];      /* our X25519 key share */
@@ -1148,7 +1154,7 @@ static int tls_recv_certificate(struct ssl_state *s, struct x509_cert *leaf)
       return -1;
    }
 
-   if (tls_verify_mode == 2)
+   if (s->verify_mode == 2)
    {
       ssl_socket_log_verify_disabled(s->domain);
       return 0;
@@ -1157,8 +1163,8 @@ static int tls_recv_certificate(struct ssl_state *s, struct x509_cert *leaf)
    info[0] = '\0';
    if (x509_verify_chain(ders, lens, n, s->domain, time(NULL), info, sizeof(info)) != 0)
    {
-      ssl_socket_log_verify_fail(tls_verify_mode == 0, s->domain, info);
-      if (tls_verify_mode == 0)
+      ssl_socket_log_verify_fail(s->verify_mode == 0, s->domain, info);
+      if (s->verify_mode == 0)
       {
          s->last_err = TLS_ERR_CERT;
          return -1;
@@ -1669,7 +1675,7 @@ static int tls13_recv_certificate(struct ssl_state *s, struct x509_cert *leaf)
       s->last_err = TLS_ERR_CERT;
       return -1;
    }
-   if (tls_verify_mode == 2)
+   if (s->verify_mode == 2)
    {
       ssl_socket_log_verify_disabled(s->domain);
       return 0;
@@ -1678,8 +1684,8 @@ static int tls13_recv_certificate(struct ssl_state *s, struct x509_cert *leaf)
    info[0] = '\0';
    if (x509_verify_chain(ders, lens, n, s->domain, time(NULL), info, sizeof(info)) != 0)
    {
-      ssl_socket_log_verify_fail(tls_verify_mode == 0, s->domain, info);
-      if (tls_verify_mode == 0)
+      ssl_socket_log_verify_fail(s->verify_mode == 0, s->domain, info);
+      if (s->verify_mode == 0)
       {
          s->last_err = TLS_ERR_CERT;
          return -1;
@@ -2032,7 +2038,7 @@ static int tls_handshake(struct ssl_state *s)
 
 void ssl_socket_set_verify_mode(unsigned mode)
 {
-   tls_verify_mode = mode;
+   retro_atomic_store_release_int(&tls_verify_mode_setting, (int)mode);
 }
 
 void* ssl_socket_init(int fd, const char *domain)
@@ -2040,6 +2046,7 @@ void* ssl_socket_init(int fd, const char *domain)
    struct ssl_state *s = (struct ssl_state*)calloc(1, sizeof(*s));
    if (!s)
       return NULL;
+   s->verify_mode = (unsigned)retro_atomic_load_acquire_int(&tls_verify_mode_setting);
    /* No Nagle on a TLS socket. Everything RetroArch does over TLS is
     * request-then-reply, and with Nagle the first request after a
     * resumed 1.2 handshake waits behind the unacknowledged Finished

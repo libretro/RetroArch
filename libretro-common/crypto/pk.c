@@ -25,6 +25,7 @@
 #include <crypto/pk.h>
 #include <crypto/crypto.h>
 #include <lrc_hash.h>
+#include <retro_atomic.h>
 
 void bn_from_be(bn_word *r, unsigned k, const uint8_t *in, size_t len)
 {
@@ -811,7 +812,7 @@ struct ec_curve
    unsigned k;          /* words per element */
    unsigned bits;       /* 256 or 384 */
    unsigned bytes;      /* 32 or 48 */
-   int      ready;
+   retro_atomic_int_t ready;
 };
 
 static struct ec_curve ec_p256 = { {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0},
@@ -823,14 +824,52 @@ static struct ec_curve ec_p384 = { {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0},
    p384_p_be, p384_n_be, p384_b_be, p384_gx_be, p384_gy_be,
    384 / BN_WORD_BITS, 384, 48, 0 };
 
+/* The curve constants are computed on first use. Two threads making
+ * their first connections at once both get here; without a lock one
+ * can publish the flag while the other is still rewriting the same
+ * fields, and a third reads a half-written constant. The flag is an
+ * acquire load on the fast path, the computation runs under a lock,
+ * and the flag is stored with release once every field is in place. */
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+static retro_atomic_ptr_t ec_lock_ptr;
+static slock_t *ec_lock_get(void)
+{
+   slock_t *l = (slock_t*)retro_atomic_load_acquire_ptr(&ec_lock_ptr);
+   if (!l)
+   {
+      slock_t *fresh = slock_new();
+      if (retro_atomic_cas_ptr(&ec_lock_ptr, NULL, fresh))
+         l = fresh;
+      else
+      {
+         slock_free(fresh);
+         l = (slock_t*)retro_atomic_load_acquire_ptr(&ec_lock_ptr);
+      }
+   }
+   return l;
+}
+#define EC_LOCK()   slock_lock(ec_lock_get())
+#define EC_UNLOCK() slock_unlock(ec_lock_get())
+#else
+#define EC_LOCK()   do { } while (0)
+#define EC_UNLOCK() do { } while (0)
+#endif
+
 static void ec_init(struct ec_curve *cv)
 {
    bn_word tmp[BN_MONT_TMP_WORDS(EC_MAX_K)];
    bn_word two[EC_MAX_K];
    const unsigned k = cv->k;
 
-   if (cv->ready)
+   if (retro_atomic_load_acquire_int(&cv->ready))
       return;
+   EC_LOCK();
+   if (retro_atomic_load_acquire_int(&cv->ready))
+   {
+      EC_UNLOCK();
+      return;
+   }
 
    bn_from_be(cv->p, k, cv->p_be, cv->bytes);
    bn_from_be(cv->n, k, cv->n_be, cv->bytes);
@@ -856,9 +895,8 @@ static void ec_init(struct ec_curve *cv)
    bn_mont_mul(cv->g.y, cv->g.y, cv->r2p, cv->p, cv->n0p, k, tmp);
    bn_copy(cv->g.z, cv->one, k);
 
-   /* Every field above is written with the same values by any thread
-    * that races in here, so the flag can go last without a lock. */
-   cv->ready = 1;
+   retro_atomic_store_release_int(&cv->ready, 1);
+   EC_UNLOCK();
 }
 
 /* Field helpers, all in the Montgomery domain. */

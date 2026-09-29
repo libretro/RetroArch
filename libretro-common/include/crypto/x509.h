@@ -36,6 +36,11 @@ RETRO_BEGIN_DECLS
  * 4096 bits), P-256 and P-384; signatures are RSA PKCS#1 v1.5 and ECDSA over
  * SHA-256/384/512. Names are compared as DER octet strings. */
 
+/* extendedKeyUsage as far as a TLS client cares */
+#define X509_EKU_ABSENT      0   /* no extension: any use */
+#define X509_EKU_SERVER_AUTH 1   /* serverAuth or anyExtendedKeyUsage listed */
+#define X509_EKU_OTHER       2   /* present, without either */
+
 enum x509_key_type
 {
    X509_KEY_NONE = 0,
@@ -76,6 +81,7 @@ struct x509_cert
    int  is_ca;          /* basicConstraints cA; -1 when absent */
    int  path_len;       /* basicConstraints pathLenConstraint; -1 none */
    int  key_usage;      /* keyUsage bits, -1 when absent */
+   int  eku;            /* X509_EKU_*: may this key authenticate a server? */
 };
 
 #define X509_KU_DIGITAL_SIGNATURE 0x80

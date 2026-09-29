@@ -21,6 +21,22 @@ mkcert() { # name keyalg [pkeyopt]
 mkcert rsa rsa:2048
 mkcert p256 ec "-pkeyopt ec_paramgen_curve:prime256v1"
 mkcert p384 ec "-pkeyopt ec_paramgen_curve:secp384r1"
+# leaf policy: certificates a correctly chaining, in-date, host-matching
+# server may still not present - an unknown critical extension, an EKU
+# without serverAuth (client-auth only, code-signing only), a keyUsage
+# that cannot sign - all refused; and the same shapes with a serverAuth
+# EKU or an unknown *non-critical* extension accepted
+mkleafx() { # name extfile-lines
+   openssl req -newkey rsa:2048 -nodes -keyout $D/$1.key -out $D/$1.csr -subj "/CN=localhost" 2>/dev/null
+   printf 'subjectAltName=DNS:localhost\nbasicConstraints=CA:FALSE\n%b' "$2" > $D/$1.ext
+   openssl x509 -req -in $D/$1.csr -CA $D/ca.pem -CAkey $D/ca.key -CAcreateserial -out $D/$1.pem -days 2 -extfile $D/$1.ext 2>/dev/null
+}
+mkleafx critunknown 'extendedKeyUsage=serverAuth\n1.2.3.4.5=critical,DER:05:00\n'
+mkleafx noncritunknown 'extendedKeyUsage=serverAuth\n1.2.3.4.5=DER:05:00\n'
+mkleafx clientonly 'extendedKeyUsage=clientAuth\n'
+mkleafx codesign 'extendedKeyUsage=codeSigning\n'
+mkleafx serverauth 'extendedKeyUsage=serverAuth,clientAuth\nkeyUsage=digitalSignature,keyEncipherment\n'
+mkleafx nosign 'keyUsage=keyEncipherment,dataEncipherment\n'
 # a real-world shape: root -> intermediate CA -> leaf, the server sending
 # leaf + intermediate and the client trusting only the root; one with an
 # RSA intermediate, one with a P-384 intermediate under the RSA root
@@ -61,6 +77,12 @@ run "server offering only a CBC suite fails"        rsa  ECDHE-RSA-AES128-SHA256
 run "session resumption by ticket (3 rounds)"     rsa  ECDHE-RSA-AES128-GCM-SHA256      prime256v1 0 localhost 0 $D/ca.pem 3
 run "session resumption by id, no tickets"         rsa  ECDHE-RSA-AES128-GCM-SHA256      prime256v1 0 localhost 0 $D/ca.pem 3 -no_ticket
 run "ECDSA + ChaCha20 resumes too"                 p256 ECDHE-ECDSA-CHACHA20-POLY1305    prime256v1 0 localhost 0 $D/ca.pem 2
+run "policy: unknown critical extension is refused"      critunknown ECDHE-RSA-AES128-GCM-SHA256 prime256v1 1 localhost 0 $D/ca.pem
+run "policy: unknown non-critical extension is fine"      noncritunknown ECDHE-RSA-AES128-GCM-SHA256 prime256v1 0 localhost 0 $D/ca.pem
+run "policy: clientAuth-only EKU is refused"              clientonly ECDHE-RSA-AES128-GCM-SHA256 prime256v1 1 localhost 0 $D/ca.pem
+run "policy: codeSigning-only EKU is refused"             codesign   ECDHE-RSA-AES128-GCM-SHA256 prime256v1 1 localhost 0 $D/ca.pem
+run "policy: serverAuth EKU with digitalSignature is fine" serverauth ECDHE-RSA-AES128-GCM-SHA256 prime256v1 0 localhost 0 $D/ca.pem
+run "policy: keyUsage without digitalSignature is refused" nosign    ECDHE-RSA-AES128-GCM-SHA256 prime256v1 1 localhost 0 $D/ca.pem
 run "chain: root -> RSA intermediate -> leaf"      viarsa  ECDHE-RSA-AES128-GCM-SHA256 prime256v1 0 localhost 0 $D/ca.pem
 run "chain: root -> P-384 intermediate -> leaf"    viap384 ECDHE-RSA-AES128-GCM-SHA256 prime256v1 0 localhost 0 $D/ca.pem
 run "chain: trusting the intermediate directly also works" viarsa ECDHE-RSA-AES128-GCM-SHA256 prime256v1 0 localhost 0 $D/irsa.pem
@@ -115,4 +137,12 @@ if [ $rc -eq 0 ] && grep -q "^ack-after-K" $D/ku.out && grep -q "^ack-after-k" $
 else
    echo "FAIL: KeyUpdate: $(cat $D/ku.client) / server saw: $(grep '^ack' $D/ku.out | tr '\n' ' ')"; exit 1
 fi
+# concurrent first use: six threads verify against a store none of them
+# has built yet; under TSan when the tools are built with it
+make -s tls_threads
+openssl s_server -accept 44331 -cert $D/rsa.pem -key $D/rsa.key -www >/dev/null 2>&1 &
+SRV=$!; sleep 0.4
+set +e; $RUN ./tls_threads$EXE localhost 44331 $D/ca.pem > $D/thr.out 2>&1; rc=$?; set -e
+kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
+if [ $rc -eq 0 ]; then echo "ok:   concurrent first-use verification from six threads"; else echo "FAIL: threads: $(cat $D/thr.out)"; exit 1; fi
 echo "[pass] tls_retro local server matrix"

@@ -139,6 +139,15 @@ static const uint8_t oid_ecdsa_sha512[]   = {0x2a,0x86,0x48,0xce,0x3d,0x04,0x03,
 static const uint8_t oid_cn[]             = {0x55,0x04,0x03};
 static const uint8_t oid_basic_constr[]   = {0x55,0x1d,0x13};
 static const uint8_t oid_key_usage[]      = {0x55,0x1d,0x0f};
+static const uint8_t oid_ext_key_usage[]   = { 0x55, 0x1d, 0x25 };             /* 2.5.29.37 */
+static const uint8_t oid_eku_server_auth[] = { 0x2b, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x01 }; /* 1.3.6.1.5.5.7.3.1 */
+static const uint8_t oid_eku_any[]         = { 0x55, 0x1d, 0x25, 0x00 };       /* 2.5.29.37.0 */
+static const uint8_t oid_subject_key_id[]  = { 0x55, 0x1d, 0x0e };             /* 2.5.29.14 */
+static const uint8_t oid_authority_key_id[] = { 0x55, 0x1d, 0x23 };            /* 2.5.29.35 */
+static const uint8_t oid_cert_policies[]   = { 0x55, 0x1d, 0x20 };             /* 2.5.29.32 */
+static const uint8_t oid_crl_dist[]        = { 0x55, 0x1d, 0x1f };             /* 2.5.29.31 */
+static const uint8_t oid_auth_info_access[] = { 0x2b, 0x06, 0x01, 0x05, 0x05, 0x07, 0x01, 0x01 }; /* 1.3.6.1.5.5.7.1.1 */
+static const uint8_t oid_ct_scts[]         = { 0x2b, 0x06, 0x01, 0x04, 0x01, 0xd6, 0x79, 0x02, 0x04, 0x02 }; /* 1.3.6.1.4.1.11129.2.4.2 */
 static const uint8_t oid_san[]            = {0x55,0x1d,0x11};
 
 #define OID_EQ(v, vl, o) der_oid_eq(v, vl, o, sizeof(o))
@@ -337,19 +346,32 @@ static int x509_parse_extensions(struct x509_cert *c, struct der *d)
       const uint8_t *oid, *v;
       size_t oid_len, vl;
       struct der val;
+      int critical = 0;
       if (der_enter(&exts, DER_SEQUENCE, &ext) != 0)
          return -1;
       if (der_read(&ext, DER_OID, &oid, &oid_len) != 0)
          return -1;
       if (der_peek(&ext, 0x01))
       {
-         if (der_read(&ext, 0x01, &v, &vl) != 0)   /* critical BOOLEAN */
+         if (der_read(&ext, 0x01, &v, &vl) != 0 || vl != 1)   /* critical BOOLEAN */
             return -1;
+         critical = v[0] != 0;
       }
       if (der_read(&ext, DER_OCTET, &v, &vl) != 0)
          return -1;
       val.p   = v;
       val.end = v + vl;
+
+      /* An extension marked critical that this verifier does not
+       * understand makes the certificate unusable (RFC 5280 4.2):
+       * the ones it acts on are handled below, a few others are
+       * known to be safe to skip, everything else is refused. */
+      if (critical
+            && !OID_EQ(oid, oid_len, oid_basic_constr)
+            && !OID_EQ(oid, oid_len, oid_key_usage)
+            && !OID_EQ(oid, oid_len, oid_san)
+            && !OID_EQ(oid, oid_len, oid_ext_key_usage))
+         return -1;
 
       if (OID_EQ(oid, oid_len, oid_basic_constr))
       {
@@ -391,6 +413,31 @@ static int x509_parse_extensions(struct x509_cert *c, struct der *d)
          c->san     = s;
          c->san_len = sl;
       }
+      else if (OID_EQ(oid, oid_len, oid_ext_key_usage))
+      {
+         /* ExtKeyUsageSyntax: a sequence of OIDs; note whether
+          * serverAuth (or anyExtendedKeyUsage) is among them */
+         struct der eku;
+         if (der_enter(&val, DER_SEQUENCE, &eku) != 0)
+            return -1;
+         c->eku = X509_EKU_OTHER;
+         while (eku.p < eku.end)
+         {
+            const uint8_t *eo;
+            size_t el;
+            if (der_read(&eku, DER_OID, &eo, &el) != 0)
+               return -1;
+            if (OID_EQ(eo, el, oid_eku_server_auth) || OID_EQ(eo, el, oid_eku_any))
+               c->eku = X509_EKU_SERVER_AUTH;
+         }
+      }
+      else
+      {
+         /* known, not acted on: subject / authority key id, policies,
+          * CRL points, AIA, SCTs and any other non-critical one */
+         (void)oid_subject_key_id; (void)oid_authority_key_id; (void)oid_cert_policies;
+         (void)oid_crl_dist; (void)oid_auth_info_access; (void)oid_ct_scts;
+      }
    }
    return 0;
 }
@@ -406,6 +453,7 @@ int x509_parse(struct x509_cert *c, const uint8_t *der, size_t len)
    c->is_ca     = -1;
    c->path_len  = -1;
    c->key_usage = -1;
+   c->eku       = X509_EKU_ABSENT;
    c->der       = der;
    c->der_len   = len;
 
@@ -661,7 +709,40 @@ static unsigned            x509_anchor_count = 0;
 static const char         *x509_anchor_src   = NULL;
 static size_t              x509_anchor_src_len = 0;
 
-void x509_trust_free(void)
+/* The store is process-wide and TLS handshakes run on several threads
+ * (updater, achievements, cloud sync), the first of them building it:
+ * one lock covers building, freeing and every chain walk over it, so
+ * a rebuild can never race a verification and two first uses build it
+ * once. Chain walks are a few milliseconds and rare, so serialising
+ * them costs nothing measurable. */
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#include <retro_atomic.h>
+static retro_atomic_ptr_t x509_lock_ptr;
+static slock_t *x509_lock_get(void)
+{
+   slock_t *l = (slock_t*)retro_atomic_load_acquire_ptr(&x509_lock_ptr);
+   if (!l)
+   {
+      slock_t *fresh = slock_new();
+      if (retro_atomic_cas_ptr(&x509_lock_ptr, NULL, fresh))
+         l = fresh;
+      else
+      {
+         slock_free(fresh);
+         l = (slock_t*)retro_atomic_load_acquire_ptr(&x509_lock_ptr);
+      }
+   }
+   return l;
+}
+#define X509_LOCK()   slock_lock(x509_lock_get())
+#define X509_UNLOCK() slock_unlock(x509_lock_get())
+#else
+#define X509_LOCK()   do { } while (0)
+#define X509_UNLOCK() do { } while (0)
+#endif
+
+static void x509_trust_free_locked(void)
 {
    unsigned i;
    for (i = 0; i < x509_anchor_count; i++)
@@ -673,7 +754,25 @@ void x509_trust_free(void)
    x509_anchor_src_len = 0;
 }
 
+void x509_trust_free(void)
+{
+   X509_LOCK();
+   x509_trust_free_locked();
+   X509_UNLOCK();
+}
+
+static int x509_trust_load_pem_locked(const char *pem, size_t len);
+
 int x509_trust_load_pem(const char *pem, size_t len)
+{
+   int n;
+   X509_LOCK();
+   n = x509_trust_load_pem_locked(pem, len);
+   X509_UNLOCK();
+   return n;
+}
+
+static int x509_trust_load_pem_locked(const char *pem, size_t len)
 {
    static const char begin[] = "-----BEGIN CERTIFICATE-----";
    static const char end_[]  = "-----END CERTIFICATE-----";
@@ -681,9 +780,11 @@ int x509_trust_load_pem(const char *pem, size_t len)
    const char *e   = pem + len;
    unsigned    cap = 0;
 
+   /* the same source is already loaded: nothing to do - this is the
+    * path every handshake after the first takes */
    if (pem == x509_anchor_src && len == x509_anchor_src_len && x509_anchors)
       return (int)x509_anchor_count;
-   x509_trust_free();
+   x509_trust_free_locked();
 
    for (;;)
    {
@@ -793,6 +894,7 @@ int x509_verify_chain(const uint8_t **ders, const size_t *lens, unsigned n,
    }
    if (!(certs = (struct x509_cert*)malloc(n * sizeof(*certs))))
       return -1;
+   X509_LOCK();
 
    for (i = 0; i < n; i++)
       if (x509_parse(&certs[i], ders[i], lens[i]) != 0)
@@ -804,6 +906,26 @@ int x509_verify_chain(const uint8_t **ders, const size_t *lens, unsigned n,
    if (host && x509_match_hostname(&certs[0], host) != 0)
    {
       x509_info(info, info_len, "hostname mismatch");
+      goto done;
+   }
+   /* Leaf policy: an extendedKeyUsage without serverAuth (a client
+    * or code-signing certificate) does not authenticate a server; a
+    * keyUsage without digitalSignature cannot sign the handshake,
+    * which is the only way an ECDHE suite uses the key. A CA
+    * certificate is not a server certificate either. */
+   if (certs[0].eku == X509_EKU_OTHER)
+   {
+      x509_info(info, info_len, "certificate not for server authentication");
+      goto done;
+   }
+   if (certs[0].key_usage >= 0 && !(certs[0].key_usage & X509_KU_DIGITAL_SIGNATURE))
+   {
+      x509_info(info, info_len, "certificate key cannot sign");
+      goto done;
+   }
+   if (certs[0].is_ca == 1 && n > 1)
+   {
+      x509_info(info, info_len, "server certificate is a CA");
       goto done;
    }
 
@@ -874,6 +996,7 @@ int x509_verify_chain(const uint8_t **ders, const size_t *lens, unsigned n,
    x509_info(info, info_len, "chain too long");
 
 done:
+   X509_UNLOCK();
    free(certs);
    return ret;
 }

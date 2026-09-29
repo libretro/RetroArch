@@ -415,6 +415,9 @@ static void content_file_list_free(
                msg_hash_to_str(MSG_REMOVING_TEMPORARY_CONTENT_FILE),
                path);
 
+         /* a private staging directory (attr 1) is listed after the
+          * file it held, so it is empty by now and the same remove
+          * takes it through the VFS */
          if (filestream_delete(path) != 0)
             RARCH_ERR("[Content] %s: \"%s\".\n",
                   msg_hash_to_str(MSG_FAILED_TO_REMOVE_TEMPORARY_FILE),
@@ -474,19 +477,25 @@ static content_file_list_t *content_file_list_init(size_t len)
 /* Convenience function: Adds an entry to the
  * temporary (i.e. extracted) content file list.
  * Returns pointer to allocated char array. */
-static const char *content_file_list_append_temporary(
-      content_file_list_t *file_list, const char *path)
+static const char *content_file_list_append_temporary_kind(
+      content_file_list_t *file_list, const char *path, int kind)
 {
    if (file_list && (path && *path))
    {
       union string_list_elem_attr attr;
-      attr.i = 0;
+      attr.i = kind;
       if (string_list_append(file_list->temporary_files,
                path, attr))
          return file_list->temporary_files->elems[
             file_list->temporary_files->size - 1].data;
    }
    return NULL;
+}
+
+static const char *content_file_list_append_temporary(
+      content_file_list_t *file_list, const char *path)
+{
+   return content_file_list_append_temporary_kind(file_list, path, 0);
 }
 
 /* NOTE: Takes ownership of supplied 'data' buffer */
@@ -1440,9 +1449,7 @@ static void content_file_apply_overrides(
 /* smb:// or nfs://: a path only the VFS can open. */
 static bool content_path_is_network(const char *path)
 {
-   return path && path[3] == ':' && path[4] == '/' && path[5] == '/'
-      && (   (path[0] == 's' && path[1] == 'm' && path[2] == 'b')
-          || (path[0] == 'n' && path[1] == 'f' && path[2] == 's'));
+   return path && (string_starts_with(path, "smb://") || string_starts_with(path, "nfs://"));
 }
 #endif
 
@@ -1556,26 +1563,65 @@ static bool content_file_load(
                   *err_string = strdup(msg);
                   return false;
                }
-               fill_pathname_join_special(new_path, content_ctx->directory_cache,
-                     path_basename(content_path), sizeof(new_path));
-               RARCH_LOG("[Content] Core does not support VFS - staging network content to \"%s\".\n",
-                     new_path);
-               if (filestream_copy(content_path, new_path) != 0)
+               /* A private directory of its own, so the copy can never
+                * land on (and later remove) an unrelated cache file, and
+                * two remote files sharing a name cannot collide; the
+                * basename is kept inside it for the save paths. The
+                * copy is written under a part name and renamed into
+                * place only once complete. */
                {
-                  char msg[PATH_MAX_LENGTH];
+                  char stage_dir[PATH_MAX_LENGTH];
+                  char part_path[PATH_MAX_LENGTH];
+                  static unsigned stage_seq = 0;
+                  unsigned attempt;
+                  bool made = false;
+
+                  for (attempt = 0; attempt < 64 && !made; attempt++)
+                  {
+                     snprintf(new_path, sizeof(new_path), "retroarch-stage-%u-%u",
+                           (unsigned)cpu_features_get_time_usec(), ++stage_seq);
+                     fill_pathname_join_special(stage_dir, content_ctx->directory_cache,
+                           new_path, sizeof(stage_dir));
+                     if (!path_is_directory(stage_dir) && !path_is_valid(stage_dir))
+                        made = path_mkdir(stage_dir);
+                  }
+                  if (!made)
+                  {
+                     char msg[PATH_MAX_LENGTH];
+                     snprintf(msg, sizeof(msg), "%s: \"%s\". (no staging directory in the cache)\n",
+                           msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+                           content_path);
+                     *err_string = strdup(msg);
+                     return false;
+                  }
+                  fill_pathname_join_special(new_path, stage_dir,
+                        path_basename(content_path), sizeof(new_path));
+                  snprintf(part_path, sizeof(part_path), "%s.part", new_path);
+                  RARCH_LOG("[Content] Core does not support VFS - staging network content to \"%s\".\n",
+                        new_path);
+                  if (filestream_copy(content_path, part_path) != 0
+                        || filestream_rename(part_path, new_path) != 0)
+                  {
+                     char msg[PATH_MAX_LENGTH];
 #ifdef HAVE_NFSCLIENT
-                  if (content_path[0] == 'n')
-                     RARCH_ERR("[Content] NFS: %s\n", nfs_get_last_error());
+                     if (content_path[0] == 'n')
+                        RARCH_ERR("[Content] NFS: %s\n", nfs_get_last_error());
 #endif
-                  snprintf(msg, sizeof(msg), "%s: \"%s\". (during copy read or write)\n",
-                        msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
-                        content_path);
-                  *err_string = strdup(msg);
-                  return false;
+                     filestream_delete(part_path);
+                     filestream_delete(stage_dir);
+                     snprintf(msg, sizeof(msg), "%s: \"%s\". (during copy read or write)\n",
+                           msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+                           content_path);
+                     *err_string = strdup(msg);
+                     return false;
+                  }
+                  /* file first, then the directory that held it */
+                  content_path = content_file_list_append_temporary(
+                        p_content->content_list, new_path);
+                  content_file_list_append_temporary_kind(
+                        p_content->content_list, stage_dir, 1);
+                  used_vfs_fallback_copy = true;
                }
-               content_path = content_file_list_append_temporary(
-                     p_content->content_list, new_path);
-               used_vfs_fallback_copy = true;
             }
 #endif
 #ifdef __WINRT__
