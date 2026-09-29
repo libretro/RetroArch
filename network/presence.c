@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "presence.h"
 
 #ifdef HAVE_DISCORD
@@ -19,4 +20,13 @@ void presence_update(enum presence presence)
 #ifdef HAVE_MIST
    steam_update_presence(presence, false);
 #endif
+}
+
+void presence_poll(enum presence presence, int64_t now_us)
+{
+   static int64_t last_us;
+   if (last_us && now_us - last_us < PRESENCE_POLL_INTERVAL_US)
+      return;
+   last_us = now_us;
+   presence_update(presence);
 }

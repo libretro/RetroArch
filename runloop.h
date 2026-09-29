@@ -751,10 +751,16 @@ enum runloop_frame_work
    RUNLOOP_WORK_DISCORD  = (1 << 0),  /* Discord RPC is up: pump it */
    RUNLOOP_WORK_PRESENCE = (1 << 1),  /* a rich-presence sink is up */
    RUNLOOP_WORK_CHEATS   = (1 << 2),  /* a cheat list is loaded */
-   RUNLOOP_WORK_CAMERA   = (1 << 3)   /* the core started the camera */
+   RUNLOOP_WORK_CAMERA   = (1 << 3),  /* the core started the camera */
+   RUNLOOP_WORK_CHEEVOS  = (1 << 4)   /* achievements attached to content */
 };
 
-/* Raise or drop one frame_work bit from the product that owns it. */
+/* Raise or drop one frame_work bit from the product that owns it.
+ * MAIN THREAD ONLY: frame_work is a plain word read by the iterate
+ * with no acquire; every caller runs on the thread that runs
+ * runloop_iterate() (init/deinit, a command, a setting handler, a
+ * task's *main-thread* callback). A worker thread must not call
+ * this - post a command or a main-thread callback instead. */
 void runloop_frame_work_set(unsigned bit, bool on);
 
 /* Runs deferred off-main message pushes; the main thread, once per

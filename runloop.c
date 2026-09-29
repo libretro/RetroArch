@@ -8345,9 +8345,6 @@ int runloop_iterate(void)
    bool core_paused                       = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
 #endif
    float slowmotion_ratio                 = settings->floats.slowmotion_ratio;
-#ifdef HAVE_CHEEVOS
-   bool cheevos_enable                    = settings->bools.cheevos_enable;
-#endif
    bool audio_sync                        = settings->bools.audio_sync;
    bool savestate_automatic_enable        = settings->uints.savestate_automatic_interval > 0;
 
@@ -8554,7 +8551,7 @@ int runloop_iterate(void)
 #endif
 
 #ifdef HAVE_CHEEVOS
-         if (cheevos_enable)
+         if (runloop_st->frame_work & RUNLOOP_WORK_CHEEVOS)
          {
             if (runloop_is_libretro_running(runloop_st, menu_pause_libretro))
                rcheevos_test();
@@ -8669,7 +8666,7 @@ int runloop_iterate(void)
          runloop_st, slowmotion_ratio, current_time);
 
 #ifdef HAVE_CHEEVOS
-   if (cheevos_enable)
+   if (runloop_st->frame_work & RUNLOOP_WORK_CHEEVOS)
       rcheevos_test();
 #endif
 #ifdef HAVE_CHEATS
@@ -8677,8 +8674,10 @@ int runloop_iterate(void)
       cheat_manager_apply_retro_cheats();
 #endif
 #ifdef HAVE_PRESENCE
+   /* "In a game" does not change at the core rate; the sinks
+    * (Discord at 10 Hz, Steam) are written on the same cadence. */
    if (runloop_st->frame_work & RUNLOOP_WORK_PRESENCE)
-      presence_update(PRESENCE_GAME);
+      presence_poll(PRESENCE_GAME, current_time);
 #endif
 #ifdef HAVE_BSV_MOVIE
    /* The movie handle lives on input_st, which this frame already
