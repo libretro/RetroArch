@@ -79,7 +79,8 @@ SRCS="ui/companion/companion_core.c \
       $LC/hash/lrc_hash.c \
       $LC/time/rtime.c \
       $LC/features/features_cpu.c \
-      $LC/rthreads/rthreads.c"
+      $LC/rthreads/rthreads.c \
+      $LC/rthreads/retro_eventcount.c"
 
 $CC -std=gnu99 -O1 -g $SAN -Wall -Wno-unused-parameter -Wno-unused-function \
    $INC $DEFS $SRCS -o "$OUT/companion_core_test" -lpthread -lm -lz

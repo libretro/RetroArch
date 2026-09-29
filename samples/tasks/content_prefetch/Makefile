@@ -12,6 +12,7 @@ SOURCES := content_prefetch_test.c \
            $(REPO_ROOT)/tasks/task_content_prefetch.c \
            $(LIBRETRO_COMM_DIR)/queues/task_queue.c \
            $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+           $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
            $(LIBRETRO_COMM_DIR)/features/features_cpu.c \
            $(LIBRETRO_COMM_DIR)/formats/data_transfer.c \
            $(LIBRETRO_COMM_DIR)/memmap/memmap.c \
