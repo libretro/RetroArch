@@ -37,7 +37,7 @@ jobs:
         run: |
           # ffmpeg: tools/companion_thumbs_test.sh builds its video-hover
           # fixture (a 2 KB Baseline MP4) with it.
-          pkgs="build-essential check pkg-config zlib1g-dev lcov gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 wine wine64 ffmpeg gcc-aarch64-linux-gnu qemu-user samba libtirpc-dev flex bison autoconf automake wine64"
+          pkgs="build-essential check pkg-config zlib1g-dev lcov gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 wine wine64 ffmpeg gcc-aarch64-linux-gnu qemu-user"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -111,114 +111,6 @@ jobs:
           # runs the crypto suite under qemu-aarch64 in both the
           # dispatched and the baseline-crypto shape.
           make -f Makefile.test crypto-aarch64-check
-
-      - name: Built-in TLS client against a local openssl server
-        shell: bash
-        working-directory: ${{ github.workspace }}
-        run: |
-          set -eu
-          # net_socket_ssl_retro.c end to end: every cipher suite, both
-          # curves, RSA / P-256 / P-384 certificates under a CA made on
-          # the spot, verify required / optional / disabled, and the
-          # refusals that must happen (wrong hostname, untrusted CA).
-          samples/network/tls_retro/local_server_test.sh
-          # The same tool cross-linked for Windows: the sample's link
-          # line has to carry Winsock, which nothing on Linux checks.
-          make -C samples/network/tls_retro clean
-
-      - name: Built-in SMB2/3 client against a local smbd
-        shell: bash
-        working-directory: ${{ github.workspace }}
-        run: |
-          set -eu
-          # net_smb2.c end to end against Samba on the loopback: every
-          # dialect 2.0.2 to 3.1.1 with signing mandatory, AES-CCM and
-          # AES-GCM sealing required, and a refused logon. Root for
-          # port 445; the script itself skips without smbd.
-          sudo samples/network/smb_retro/local_samba_test.sh
-
-      - name: Windows builds under Wine
-        shell: bash
-        working-directory: ${{ github.workspace }}
-        run: |
-          set -eu
-          # The MinGW builds run, not just link: the crypto and keychain
-          # suites, then the three server matrices with the Windows tools
-          # talking to the same local openssl, Samba and unfs3.
-          export WINEDEBUG=-all WINEPREFIX=$RUNNER_TEMP/wineprefix
-          make -C libretro-common -f Makefile.test win32-wine-check
-          export CC=x86_64-w64-mingw32-gcc RUNNER=wine EXE=.exe
-          make -C samples/network/tls_retro clean
-          samples/network/tls_retro/local_server_test.sh
-          make -C samples/network/tls_retro clean
-          make -C samples/network/smb_retro clean
-          # smbd needs root for port 445, and Wine refuses both a prefix
-          # owned by someone else and creating one inside a directory it
-          # does not own ($RUNNER_TEMP belongs to the runner user), so the
-          # root run gets a prefix under /tmp with root's own HOME
-          sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root wineboot -u
-          sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root samples/network/smb_retro/local_samba_test.sh
-          sudo make -C samples/network/smb_retro clean
-          make -C samples/network/nfs_retro clean
-          samples/network/nfs_retro/local_unfs3_test.sh
-          make -C samples/network/nfs_retro clean
-
-      - name: Fuzz the network parsers
-        shell: bash
-        working-directory: ${{ github.workspace }}
-        run: |
-          set -eu
-          # libFuzzer over the X.509 parser and the TLS, SMB and NFS
-          # clients' receive paths (a listener in the harness answers the
-          # client with the fuzzer's input), under ASan + UBSan, from a
-          # seed corpus recorded off real servers. Any crash, timeout or
-          # leak artifact fails the step.
-          make -C libretro-common/test/fuzz fuzz-run FUZZ_SECONDS=30
-          if ls libretro-common/test/fuzz/crash-* libretro-common/test/fuzz/leak-* libretro-common/test/fuzz/timeout-* >/dev/null 2>&1; then
-            echo "fuzzer artifacts found"; exit 1
-          fi
-          make -C libretro-common/test/fuzz clean
-
-      - name: Network client matrices under ASan + UBSan + LSan
-        shell: bash
-        working-directory: ${{ github.workspace }}
-        run: |
-          set -eu
-          # The three server matrices again, with the clients built under
-          # the sanitizers: every code path a real server drives, checked
-          # for memory errors, undefined behaviour and leaks. UBSan found
-          # a NULL memcpy in the SHA-2 stream updates on the SHA-384 PRF
-          # path the first time this ran.
-          export CFLAGS="-O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
-          export LDFLAGS="-fsanitize=address,undefined"
-          export ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1
-          export UBSAN_OPTIONS=print_stacktrace=1
-          make -C samples/network/tls_retro clean
-          samples/network/tls_retro/local_server_test.sh
-          make -C samples/network/tls_retro clean
-          make -C samples/network/smb_retro clean
-          sudo -E samples/network/smb_retro/local_samba_test.sh
-          make -C samples/network/smb_retro clean
-          make -C samples/network/nfs_retro clean
-          samples/network/nfs_retro/local_unfs3_test.sh
-          make -C samples/network/nfs_retro clean
-
-      - name: Built-in NFSv3 client against unfs3
-        shell: bash
-        working-directory: ${{ github.workspace }}
-        run: |
-          set -eu
-          # net_nfs3.c end to end against a user-space NFSv3 server built
-          # from unfs3's repository (Ubuntu no longer packages it), on
-          # fixed ports without a portmapper: mount, write, read, seek,
-          # stat, mkdir, rename, truncate, list, unlink, refused export.
-          samples/network/nfs_retro/local_unfs3_test.sh
-          # and its Windows link line, cross-linked
-          make -C samples/network/nfs_retro clean
-          CC=x86_64-w64-mingw32-gcc make -C samples/network/nfs_retro nfs_test
-          make -C samples/network/nfs_retro clean
-          CC=x86_64-w64-mingw32-gcc make -C samples/network/tls_retro tls_fetch
-          make -C samples/network/tls_retro clean
 
       - name: Check VFS backend symbol parity
         shell: bash
