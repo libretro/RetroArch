@@ -1037,6 +1037,23 @@ static bool audio_driver_deinit_internal(bool audio_enable)
       if (n)
          RARCH_LOG("[Audio] Driver \"%s\": %u period%s of silence for want of audio this session.\n",
                audio_driver_get_ident(), (unsigned)n, n == 1 ? "" : "s");
+#ifdef HAVE_THREADS
+      /* And the consumer's side of it: whether the pipe ever ran
+       * short of the core, which is the other place silence comes
+       * from, and how low it got. */
+      if (audio_st->pipe_threaded
+            && retro_atomic_load_acquire_size(&audio_st->pipe_held_min1))
+      {
+         size_t waits = retro_atomic_load_acquire_size(&audio_st->pipe_source_waits);
+         size_t low   = retro_atomic_load_acquire_size(&audio_st->pipe_held_min1) - 1;
+         RARCH_LOG("[Audio] Pipeline: waited for the core %u time%s after priming,"
+               " %.2f ms at the longest; the pipe held %u frames (%.1f ms) at its lowest.\n",
+               (unsigned)waits, waits == 1 ? "" : "s",
+               (double)retro_atomic_load_acquire_size(&audio_st->pipe_source_wait_max_us) / 1000.0,
+               (unsigned)low,
+               audio_st->input > 0.0f ? (double)low * 1000.0 / (double)audio_st->input : 0.0);
+      }
+#endif
       if (audio_st->context_audio_data)
          audio->free(audio_st->context_audio_data);
       audio_st->context_audio_data = NULL;
@@ -4246,6 +4263,9 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       retro_atomic_store_release_int(&audio_driver_st.pipe_ctrl_avail, -1);
       audio_driver_st.pipe_underruns_seen = 0;
       audio_driver_st.pipe_priming        = true;
+      retro_atomic_size_init(&audio_driver_st.pipe_source_waits, 0);
+      retro_atomic_size_init(&audio_driver_st.pipe_source_wait_max_us, 0);
+      retro_atomic_size_init(&audio_driver_st.pipe_held_min1, 0);
       if (audio_driver_st.pipe_channels > 2)
       {
          size_t wide = audio_driver_st.pipe_pass_frames * AUDIO_PIPE_CANON_CHANNELS * sizeof(float);
@@ -6062,6 +6082,27 @@ bool audio_driver_pipeline_transport_step(struct audio_pipeline_stretch *stage,
          output_budget, finishing, complete, &progress);
 }
 
+/* The consumer's account of the core, kept for the teardown line:
+ * a pass that starts with the pipe at its lowest so far, and a wait
+ * for source that ran after priming, with how long it took. */
+static void audio_driver_pipe_note_held(audio_driver_state_t *st, size_t held)
+{
+   size_t cur = retro_atomic_load_relaxed_size(&st->pipe_held_min1);
+   if (!cur || held + 1 < cur)
+      retro_atomic_store_release_size(&st->pipe_held_min1, held + 1);
+}
+
+static void audio_driver_pipe_note_wait(audio_driver_state_t *st,
+      retro_time_t began)
+{
+   retro_time_t took = cpu_features_get_time_usec() - began;
+   retro_atomic_fetch_add_size(&st->pipe_source_waits, 1);
+   if (took > 0 && (size_t)took
+         > retro_atomic_load_relaxed_size(&st->pipe_source_wait_max_us))
+      retro_atomic_store_release_size(&st->pipe_source_wait_max_us,
+            (size_t)took);
+}
+
 static bool audio_driver_transport_wait(audio_driver_state_t *st, size_t need,
       unsigned metadata_threshold)
 {
@@ -6090,8 +6131,13 @@ static bool audio_driver_transport_wait(audio_driver_state_t *st, size_t need,
         || retro_atomic_load_acquire_int(&st->pipe_wake))
       retro_eventcount_cancel_wait(&st->pipe_data);
    else
+   {
+      retro_time_t began = st->pipe_priming ? 0 : cpu_features_get_time_usec();
       retro_eventcount_commit_wait_timeout(&st->pipe_data, key,
             AUDIO_PIPE_WAIT_MAX_US);
+      if (began)
+         audio_driver_pipe_note_wait(st, began);
+   }
    if (retro_atomic_load_acquire_int(&st->pipe_wake))
    {
       retro_atomic_store_release_int(&st->pipe_wake, 0);
@@ -6153,6 +6199,8 @@ static void audio_driver_transport_consume(audio_driver_state_t *st)
          && audio_pipeline_stretch_needs_input(st->pipe_transport)
          && !audio_driver_transport_wait(st, st->pipe_frame_bytes, 1))
       return;
+   if (!st->pipe_priming)
+      audio_driver_pipe_note_held(st, held);
    /* What a pause left in the ring is stale behind its tail, and so is
     * what the stage holds: taken out unplayed, up to where the pause was
     * published. */
@@ -6309,15 +6357,25 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
          retro_eventcount_cancel_wait(&audio_st->pipe_data);
          continue;
       }
-      if (!retro_eventcount_commit_wait_timeout(&audio_st->pipe_data, key,
-               AUDIO_PIPE_WAIT_MAX_US))
       {
-         /* Nothing came within the bound. A producer that has stopped
-          * is the wrapper's business, not this pass's. */
-         if (retro_atomic_load_acquire_int(&audio_st->pipe_data_gen) == gen)
-            return;
+         retro_time_t began = audio_st->pipe_priming
+            ? 0 : cpu_features_get_time_usec();
+         bool woken = retro_eventcount_commit_wait_timeout(&audio_st->pipe_data,
+               key, AUDIO_PIPE_WAIT_MAX_US);
+         if (began)
+            audio_driver_pipe_note_wait(audio_st, began);
+         if (!woken)
+         {
+            /* Nothing came within the bound. A producer that has
+             * stopped is the wrapper's business, not this pass's. */
+            if (retro_atomic_load_acquire_int(&audio_st->pipe_data_gen) == gen)
+               return;
+         }
       }
    }
+   if (!audio_st->pipe_priming)
+      audio_driver_pipe_note_held(audio_st,
+            retro_spsc_read_avail(&audio_st->pipe_ring) / audio_st->pipe_frame_bytes);
    audio_st->pipe_priming = false;
    }
 
