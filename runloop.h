@@ -748,8 +748,14 @@ typedef struct runloop runloop_state_t;
 /* runloop_state_t::frame_work bits */
 enum runloop_frame_work
 {
-   RUNLOOP_WORK_DISCORD = (1 << 0)   /* Discord RPC is up: pump it */
+   RUNLOOP_WORK_DISCORD  = (1 << 0),  /* Discord RPC is up: pump it */
+   RUNLOOP_WORK_PRESENCE = (1 << 1),  /* a rich-presence sink is up */
+   RUNLOOP_WORK_CHEATS   = (1 << 2),  /* a cheat list is loaded */
+   RUNLOOP_WORK_CAMERA   = (1 << 3)   /* the core started the camera */
 };
+
+/* Raise or drop one frame_work bit from the product that owns it. */
+void runloop_frame_work_set(unsigned bit, bool on);
 
 /* Runs deferred off-main message pushes; the main thread, once per
  * iterate. */

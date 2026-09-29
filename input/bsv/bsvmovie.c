@@ -1015,8 +1015,8 @@ void bsv_movie_scan_from_start(bsv_movie_t *movie, int32_t len)
 
 void bsv_movie_next_frame(input_driver_state_t *input_st)
 {
-   unsigned checkpoint_interval   = config_get_ptr()->uints.replay_checkpoint_interval;
-   unsigned checkpoint_deserialize= config_get_ptr()->bools.replay_checkpoint_deserialize;
+   unsigned checkpoint_interval;
+   unsigned checkpoint_deserialize;
    /* If bsv_movie_state_next_handle is not NULL, deinit and set
       bsv_movie_state_handle to bsv_movie_state_next_handle and clear
       next_handle */
@@ -1024,6 +1024,8 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
 
    if (!handle)
       return;
+   checkpoint_interval    = config_get_ptr()->uints.replay_checkpoint_interval;
+   checkpoint_deserialize = config_get_ptr()->bools.replay_checkpoint_deserialize;
 #ifdef HAVE_REWIND
    if (state_manager_frame_is_reversed())
    {

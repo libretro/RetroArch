@@ -455,6 +455,14 @@ runloop_state_t *runloop_state_get_ptr(void)
    return &runloop_state;
 }
 
+void runloop_frame_work_set(unsigned bit, bool on)
+{
+   if (on)
+      runloop_state.frame_work |=  bit;
+   else
+      runloop_state.frame_work &= ~bit;
+}
+
 bool runloop_is_content_closing(void)
 {
    return runloop_state.content_closing;
@@ -8362,7 +8370,8 @@ int runloop_iterate(void)
 #endif
 
 #ifdef HAVE_BSV_MOVIE
-   bsv_movie_dequeue_next(input_st);
+   if (input_st->bsv_movie_state_next_handle)
+      bsv_movie_dequeue_next(input_st);
 #endif
 
 #ifdef ANDROID
@@ -8614,7 +8623,8 @@ int runloop_iterate(void)
       autosave_lock();
 #endif
 
-   if (     settings->bools.camera_allow
+   if (     (runloop_st->frame_work & RUNLOOP_WORK_CAMERA)
+         && settings->bools.camera_allow
          && camera_st->cb.caps
          && camera_st->driver
          && camera_st->driver->poll
@@ -8663,17 +8673,24 @@ int runloop_iterate(void)
       rcheevos_test();
 #endif
 #ifdef HAVE_CHEATS
-   cheat_manager_apply_retro_cheats();
+   if (runloop_st->frame_work & RUNLOOP_WORK_CHEATS)
+      cheat_manager_apply_retro_cheats();
 #endif
 #ifdef HAVE_PRESENCE
-   presence_update(PRESENCE_GAME);
+   if (runloop_st->frame_work & RUNLOOP_WORK_PRESENCE)
+      presence_update(PRESENCE_GAME);
 #endif
 #ifdef HAVE_BSV_MOVIE
-   bsv_movie_next_frame(input_st);
-   if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END)
+   /* The movie handle lives on input_st, which this frame already
+    * has in cache; no bit needed. */
+   if (input_st->bsv_movie_state_handle)
    {
-      movie_stop(input_st);
-      command_event(CMD_EVENT_PAUSE, NULL);
+      bsv_movie_next_frame(input_st);
+      if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END)
+      {
+         movie_stop(input_st);
+         command_event(CMD_EVENT_PAUSE, NULL);
+      }
    }
 #endif
 

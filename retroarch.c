@@ -1989,6 +1989,7 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
       }
 
       camera_st->data = NULL;
+      runloop_frame_work_set(RUNLOOP_WORK_CAMERA, false);
    }
 
 #ifdef HAVE_BLUETOOTH
@@ -8998,7 +8999,7 @@ bool retroarch_main_init(int argc, char *argv[])
       if (command_event(CMD_EVENT_DISCORD_INIT, NULL))
       {
          discord_st->inited       = true;
-         runloop_st->frame_work  |= RUNLOOP_WORK_DISCORD;
+         runloop_st->frame_work  |= RUNLOOP_WORK_DISCORD | RUNLOOP_WORK_PRESENCE;
       }
    }
 #endif
@@ -9695,6 +9696,9 @@ bool retroarch_main_quit(void)
       }
       discord_st->inited         = false;
       runloop_st->frame_work    &= ~RUNLOOP_WORK_DISCORD;
+#ifndef HAVE_MIST
+      runloop_st->frame_work    &= ~RUNLOOP_WORK_PRESENCE;
+#endif
    }
 #endif
 
