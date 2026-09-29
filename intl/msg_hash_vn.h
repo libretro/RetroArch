@@ -1426,6 +1426,23 @@ static const struct
 #ifdef _3DS
    char s_4b1915d7[49];
 #endif
+#ifdef HAVE_NFSCLIENT
+   char s_2ab94c3e[33];
+   char s_3225c36e[25];
+   char s_eaf7de23[23];
+   char s_f11cbd53[31];
+   char s_46d3d8b1[11];
+   char s_51775f83[15];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   char s_9155967d[25];
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   char s_528fd575[19];
+   char s_d64e8d73[22];
+#endif
    char s_c3168ee5[7];
    char s_e2f5e678[7];
    char s_e53de5dd[70];
@@ -2027,8 +2044,10 @@ static const struct
    char s_b160f7a1[38];
    char s_cd5ff0f5[25];
    char s_8b92e740[24];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_e2415d78[30];
+#endif
 #endif
    char s_aeef8db2[25];
    char s_14d20957[34];
@@ -2057,21 +2076,43 @@ static const struct
    char s_01a73130[53];
    char s_44ebca0d[44];
    char s_608ac5a1[19];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_3839f91d[28];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_86b07599[33];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_8d5f85ee[22];
    char s_9b023eee[46];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_ccae82ba[17];
 #endif
    char s_35808dba[44];
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_ad6e88de[15];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_c7bc8298[23];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_e63b035a[30];
    char s_d21d875b[14];
    char s_ae86fed0[19];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b12ae22e[22];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_b2d073c7[24];
    char s_1cbc2657[22];
 #endif
@@ -3299,6 +3340,23 @@ static const struct
 #ifdef _3DS
    char s_0d834bc5[73];
 #endif
+#ifdef HAVE_NFSCLIENT
+   char s_0dc9bb2c[68];
+   char s_1536325c[215];
+   char s_ad621411[125];
+   char s_f6ec26c1[58];
+   char s_4f7fb41f[117];
+   char s_3487ce71[40];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   char s_7a3d78eb[63];
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   char s_35a04463[85];
+   char s_1b6cda21[65];
+#endif
    char s_d2ae640b[112];
    char s_8e5bac99[99];
    char s_28a346d2[77];
@@ -3573,8 +3631,10 @@ static const struct
    char s_bce9b94f[51];
    char s_d32f5a63[38];
    char s_9177176e[37];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_a1fdf4a6[54];
+#endif
 #endif
    char s_97d77020[38];
    char s_59f05605[47];
@@ -3590,17 +3650,39 @@ static const struct
    char s_4b009af3[42];
    char s_46c57dde[86];
    char s_7eb20ecf[65];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[87];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_69c0e487[68];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_706ff4dc[361];
    char s_a0d1a85c[98];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_b5966528[261];
    char s_907ef7cc[40];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b0a46506[53];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_04624c88[205];
    char s_91976dbe[80];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_f6492edc[61];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_9bb85635[275];
    char s_22a05685[97];
 #endif
@@ -6664,6 +6746,23 @@ static const struct
    "B\341\272\255t \304\220\341\273\223ng h\341\273\223 / B\341\273\231 nh\341\273\233 \304\221\341"
    "\273\207m L2 New3DS",
 #endif
+#ifdef HAVE_NFSCLIENT
+   "Duy\341\273\207t th\306\260 m\341\273\245c chia s\341\272\273 NFS",
+   "Th\306\260 m\341\273\245c chia s\341\272\273 NFS",
+   "C\341\273\225ng g\341\272\257n k\341\272\277t NFS",
+   "S\341\273\221 k\341\272\277t n\341\273\221i NFS t\341\273\221i \304\221a",
+   "C\341\273\225ng NFS",
+   "M\303\241y ch\341\273\247 NFS",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   "Thi\341\272\277t l\341\272\255p m\341\272\241ng NFS",
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   "Th\306\260 m\341\273\245c con NFS",
+   "Th\341\273\235i gian ch\341\273\235 NFS",
+#endif
    "Kh\303\264ng",
    "Kh\303\264ng",
    "Th\303\264ng b\303\241o k\341\272\277t n\341\273\221i thi\341\272\277t b\341\273\213 nh\341\272"
@@ -7391,8 +7490,10 @@ static const struct
    "\231",
    "Hi\341\273\203n th\341\273\213 \"Ghi h\303\254nh\"",
    "Hi\341\273\203n th\341\273\213 \342\200\230L\306\260u\342\200\231",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Hi\341\273\203n th\341\273\213 \342\200\234SMB Client\342\200\235",
+#endif
 #endif
    "Hi\341\273\203n th\341\273\213 \342\200\234Steam\342\200\235",
    "Hi\341\273\203n th\341\273\213 \342\200\230Ng\306\260\341\273\235i d\303\271ng\342\200\231",
@@ -7426,22 +7527,44 @@ static const struct
    "C\303\240i \304\221\341\272\267t tr\303\254nh gi\341\272\243 l\341\272\255p th\303\240nh c\303"
    "\264ng",
    "T\341\273\221c \304\221\341\273\231 Ch\341\272\255m",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Ch\341\272\277 \304\221\341\273\231 x\303\241c th\341\273\261c SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Duy\341\273\207t th\306\260 m\341\273\245c chia s\341\272\273 SMB",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "B\341\272\255t m\303\241y kh\303\241ch SMB",
    "S\341\273\221 l\306\260\341\273\243ng k\341\272\277t n\341\273\221i t\341\273\221i \304\221a c"
    "\341\273\247a SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "M\341\272\255t kh\341\272\251u SMB",
 #endif
    "KRB n\341\272\277u c\303\263, n\341\272\277u kh\303\264ng th\303\254 d\303\271ng NTLM",
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "M\303\241y ch\341\273\247 SMB",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "C\303\240i \304\221\341\272\267t m\341\272\241ng SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "T\303\252n th\306\260 m\341\273\245c chia s\341\272\273 SMB",
    "Chia s\341\272\273 SMB",
    "SMB Th\306\260 m\341\273\245c con",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Th\341\273\235i gian ch\341\273\235 SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "T\303\252n ng\306\260\341\273\235i d\303\271ng SMB",
    "Nh\303\263m l\303\240m vi\341\273\207c SMB",
 #endif
@@ -10311,6 +10434,38 @@ static const struct
    "B\341\272\255t t\341\273\221c \304\221\341\273\231 \304\221\341\273\223ng h\341\273\223 New3DS ("
    "804MHz) v\303\240 b\341\273\231 nh\341\273\233 \304\221\341\273\207m L2.",
 #endif
+#ifdef HAVE_NFSCLIENT
+   "Duy\341\273\207t n\341\273\231i dung trong th\306\260 m\341\273\245c chia s\341\272\273 NFS \304"
+   "\221\303\243 c\341\272\245u h\303\254nh.",
+   "\304\220\306\260\341\273\235ng d\341\272\253n th\306\260 m\341\273\245c \304\221\306\260\341\273"
+   "\243c m\303\241y ch\341\273\247 chia s\341\272\273, v\303\255 d\341\273\245: /export/roms. \304"
+   "\220\341\273\203 tr\341\273\221ng n\341\272\277u mu\341\273\221n s\341\273\255 d\341\273\245ng t"
+   "h\306\260 m\341\273\245c \304\221\306\260\341\273\243c ch\341\273\211 \304\221\341\273\213nh tro"
+   "ng \304\221\341\273\213a ch\341\273\211 d\306\260\341\273\233i d\341\272\241ng nfs://server/expo"
+   "rt/path.",
+   "C\341\273\225ng c\341\273\247a d\341\273\213ch v\341\273\245 G\341\272\256N K\341\272\276T. Nh"
+   "\341\272\255p 0 \304\221\341\273\203 y\303\252u c\341\272\247u tr\303\254nh qu\341\272\243n l"
+   "\303\275 c\341\273\225ng c\341\273\247a m\303\241y ch\341\273\247 cung c\341\272\245p c\341\273"
+   "\225ng.",
+   "S\341\273\221 k\341\272\277t n\341\273\221i \304\221\306\260\341\273\243c duy tr\303\254 m\341"
+   "\273\237 t\341\273\233i m\303\241y ch\341\273\247.",
+   "C\341\273\225ng c\341\273\247a d\341\273\213ch v\341\273\245 NFS. Nh\341\272\255p 0 \304\221\341"
+   "\273\203 y\303\252u c\341\272\247u tr\303\254nh qu\341\272\243n l\303\275 c\341\273\225ng c\341"
+   "\273\247a m\303\241y ch\341\273\247 cung c\341\272\245p c\341\273\225ng.",
+   "\304\220\341\273\213a ch\341\273\211 IP ho\341\272\267c t\303\252n m\303\241y ch\341\273\247.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   "C\341\272\245u h\303\254nh c\303\241c thi\341\272\277t l\341\272\255p c\341\273\247a th\306\260 "
+   "m\341\273\245c chia s\341\272\273 NFS.",
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   "\304\220\306\260\341\273\235ng d\341\272\253n th\306\260 m\341\273\245c con b\303\252n trong th"
+   "\306\260 m\341\273\245c chia s\341\272\273. Kh\303\264ng b\341\272\257t bu\341\273\231c.",
+   "S\341\273\221 gi\303\242y ch\341\273\235 m\303\241y ch\341\273\247 ph\341\272\243n h\341\273\223"
+   "i trong m\341\273\227i y\303\252u c\341\272\247u.",
+#endif
    "Hi\341\273\203n th\341\273\213 th\303\264ng b\303\241o tr\303\252n m\303\240n h\303\254nh khi k"
    "\341\272\277t n\341\273\221i ho\341\272\267c ng\341\272\257t k\341\272\277t n\341\273\221i thi"
    "\341\272\277t b\341\273\213 nh\341\272\255p li\341\273\207u.",
@@ -11136,9 +11291,11 @@ static const struct
    "Hi\341\273\203n th\341\273\213 c\303\240i \304\221\341\272\267t \"Ghi h\303\254nh\".",
    "Hi\341\273\203n th\341\273\213 c\303\240i \304\221\341\272\267t \342\200\230L\306\260u\342\200"
    "\231.",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Hi\341\273\203n th\341\273\213 c\303\241c c\303\240i \304\221\341\272\267t c\341\273\247a \342"
    "\200\234SMB Client\342\200\235.",
+#endif
 #endif
    "Hi\341\273\203n th\341\273\213 c\303\240i \304\221\341\272\267t \342\200\234Steam\342\200\235.",
    "Hi\341\273\203n th\341\273\213 c\303\240i \304\221\341\272\267t \342\200\234Ng\306\260\341\273"
@@ -11170,12 +11327,19 @@ static const struct
    "\221ng'.",
    "T\341\273\221c \304\221\341\273\231 ph\303\241t tr\303\262 ch\306\241i khi s\341\273\255 d\341"
    "\273\245ng ch\341\272\277 \304\221\341\273\231 ch\341\272\255m.",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Ch\341\273\215n ph\306\260\306\241ng th\341\273\251c x\303\241c th\341\273\261c ph\303\271 h\341"
    "\273\243p v\341\273\233i m\303\264i tr\306\260\341\273\235ng m\341\272\241ng c\341\273\247a b"
    "\341\272\241n.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Duy\341\273\207t c\303\241c t\341\273\207p trong th\306\260 m\341\273\245c chia s\341\272\273 SM"
    "B \304\221\303\243 c\341\272\245u h\303\254nh.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "B\341\272\255t quy\341\273\201n truy c\341\272\255p th\306\260 m\341\273\245c chia s\341\272\273"
    " m\341\272\241ng SMB. Khuy\341\272\277n ngh\341\273\213 s\341\273\255 d\341\273\245ng k\341\272"
    "\277t n\341\273\221i Ethernet thay v\303\254 Wi-Fi \304\221\341\273\203 c\303\263 k\341\272\277t"
@@ -11188,6 +11352,9 @@ static const struct
    "Ch\341\273\215n s\341\273\221 l\306\260\341\273\243ng k\341\272\277t n\341\273\221i t\341\273"
    "\221i \304\221a \304\221\306\260\341\273\243c s\341\273\255 d\341\273\245ng trong m\303\264i tr"
    "\306\260\341\273\235ng c\341\273\247a b\341\272\241n.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "M\341\272\255t kh\341\272\251u \304\221\341\273\203 x\303\241c th\341\273\261c. Kh\303\264ng b"
    "\341\272\257t bu\341\273\231c khi m\303\241y ch\341\273\247 cho ph\303\251p truy c\341\272\255p "
    "v\341\273\233i t\306\260 c\303\241ch kh\303\241ch. Windows 10 tr\341\273\237 l\303\252n: t\303"
@@ -11195,8 +11362,14 @@ static const struct
    "\273\213 t\341\272\257t theo m\341\272\267c \304\221\341\273\213nh, v\303\254 v\341\272\255y c"
    "\341\272\247n nh\341\272\255p m\341\272\255t kh\341\272\251u t\341\272\241i \304\221\303\242y.",
    "\304\220\341\273\213a ch\341\273\211 IP ho\341\272\267c t\303\252n m\303\241y ch\341\273\247.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "C\341\272\245u h\303\254nh c\303\241c thi\341\272\277t l\341\272\255p chia s\341\272\273 m\341"
    "\272\241ng SMB.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "T\303\252n c\341\273\247a th\306\260 m\341\273\245c chia s\341\272\273 m\341\272\241ng c\341\272"
    "\247n truy c\341\272\255p. \304\220\341\273\203 tr\341\273\221ng n\341\272\277u mu\341\273\221n "
    "li\341\273\207t k\303\252 t\341\272\245t c\341\272\243 c\303\241c th\306\260 m\341\273\245c chia"
@@ -11204,8 +11377,14 @@ static const struct
    " m\341\273\231t th\306\260 m\341\273\245c trong khi duy\341\273\207t.",
    "\304\220\306\260\341\273\235ng d\341\272\253n th\306\260 m\341\273\245c con tr\303\252n th\306"
    "\260 m\341\273\245c chia s\341\272\273. Kh\303\264ng b\341\272\257t bu\341\273\231c.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Ch\341\273\215n th\341\273\235i gian ch\341\273\235 m\341\272\267c \304\221\341\273\213nh (t\303"
    "\255nh b\341\272\261ng gi\303\242y).",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "T\303\252n ng\306\260\341\273\235i d\303\271ng \304\221\341\273\203 x\303\241c th\341\273\261c. "
    "Kh\303\264ng b\341\272\257t bu\341\273\231c khi m\303\241y ch\341\273\247 cho ph\303\251p truy c"
    "\341\272\255p v\341\273\233i t\306\260 c\303\241ch kh\303\241ch. Windows 10 tr\341\273\237 l\303"
@@ -13149,6 +13328,23 @@ typedef char msg_hash_vn_blob_check[
 #ifdef _3DS
        + 49u
 #endif
+#ifdef HAVE_NFSCLIENT
+       + 33u
+       + 25u
+       + 23u
+       + 31u
+       + 11u
+       + 15u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+       + 25u
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+       + 19u
+       + 22u
+#endif
 #ifdef HAVE_QT
        + 749u
 #endif
@@ -13163,19 +13359,41 @@ typedef char msg_hash_vn_blob_check[
 #ifdef HAVE_LAKKA
        + 18u
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 30u
        + 28u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 33u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 22u
        + 46u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 17u
        + 15u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 23u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 30u
        + 14u
        + 19u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 22u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 24u
        + 22u
 #endif
@@ -13350,6 +13568,23 @@ typedef char msg_hash_vn_blob_check[
 #ifdef _3DS
        + 73u
 #endif
+#ifdef HAVE_NFSCLIENT
+       + 68u
+       + 215u
+       + 125u
+       + 58u
+       + 117u
+       + 40u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+       + 63u
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+       + 85u
+       + 65u
+#endif
 #ifdef HAVE_GAME_AI
        + 36u
 #endif
@@ -13365,18 +13600,40 @@ typedef char msg_hash_vn_blob_check[
        + 56u
        + 49u
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 54u
        + 87u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 68u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 361u
        + 98u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 261u
        + 40u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 53u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 205u
        + 80u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 61u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 275u
        + 97u
 #endif
@@ -14865,6 +15122,23 @@ static const uint32_t msg_hash_vn_ids[] =
 #ifdef _3DS
    (uint32_t)MENU_ENUM_LABEL_VALUE_NEW3DS_SPEEDUP_ENABLE,
 #endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_BROWSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_EXPORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_MOUNT_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_NUM_CONTEXTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SETTINGS,
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SUBDIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_TIMEOUT,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
@@ -15465,8 +15739,10 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
@@ -15495,21 +15771,43 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SEC_KRB_OR_NTLM,
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
 #endif
@@ -16723,6 +17021,23 @@ static const uint32_t msg_hash_vn_ids[] =
 #ifdef _3DS
    (uint32_t)MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
 #endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_BROWSE,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_EXPORT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_MOUNT_PORT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_NUM_CONTEXTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_PORT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SETTINGS,
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SUBDIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_TIMEOUT,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
@@ -16995,8 +17310,10 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -17012,17 +17329,39 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
 #endif

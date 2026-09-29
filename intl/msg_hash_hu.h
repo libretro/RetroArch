@@ -1864,8 +1864,10 @@ static const struct
    char s_b160f7a1[33];
    char s_cd5ff0f5[22];
    char s_8b92e740[20];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_e2415d78[23];
+#endif
 #endif
    char s_aeef8db2[18];
    char s_14d20957[27];
@@ -1893,17 +1895,39 @@ static const struct
    char s_01a73130[42];
    char s_44ebca0d[25];
    char s_608ac5a1[19];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_3839f91d[24];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_86b07599[29];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_8d5f85ee[27];
    char s_9b023eee[34];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_ccae82ba[12];
    char s_ad6e88de[12];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_c7bc8298[30];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_e63b035a[20];
    char s_d21d875b[15];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b12ae22e[20];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_b2d073c7[22];
    char s_1cbc2657[17];
 #endif
@@ -3017,6 +3041,9 @@ static const struct
 #ifdef _3DS
    char s_0d834bc5[76];
 #endif
+#ifdef HAVE_NFSCLIENT
+   char s_3487ce71[39];
+#endif
    char s_d2ae640b[87];
    char s_8e5bac99[75];
    char s_28a346d2[54];
@@ -3275,8 +3302,10 @@ static const struct
    char s_bce9b94f[55];
    char s_d32f5a63[43];
    char s_9177176e[42];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_a1fdf4a6[45];
+#endif
 #endif
    char s_97d77020[39];
    char s_59f05605[47];
@@ -3292,13 +3321,27 @@ static const struct
    char s_4b009af3[42];
    char s_46c57dde[75];
    char s_7eb20ecf[58];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[51];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_69c0e487[55];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_a0d1a85c[56];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_907ef7cc[39];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b0a46506[45];
    char s_f6492edc[51];
+#endif
 #endif
    char s_f3bfa8b9[91];
    char s_5fe2cee5[70];
@@ -6292,8 +6335,10 @@ static const struct
    "\"Energiagazd\303\241lkod\303\241s\" l\303\241that\303\263",
    "\"Felv\303\251tel\" l\303\241that\303\263",
    "\"Ment\303\251s\" l\303\241that\303\263",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "\"SMB kliens\" l\303\241that\303\263",
+#endif
 #endif
    "\"Steam\" l\303\241that\303\263",
    "\"Felhaszn\303\241l\303\263k\" l\303\241that\303\263",
@@ -6321,17 +6366,39 @@ static const struct
    "Magok telep\303\255t\303\251se vagy vissza\303\241ll\303\255t\303\241sa",
    "Mag telep\303\255t\303\251se sikeres",
    "Lass\303\255t\303\241s ar\303\241nya",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "SMB hiteles\303\255t\303\251si m\303\263d",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "SMB megoszt\303\241s b\303\266ng\303\251sz\303\251se",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "SMB kliens enged\303\251lyez\303\251se",
    "SMB kapcsolatok maxim\303\241lis sz\303\241ma",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "SMB jelsz\303\263",
    "SMB szerver",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "SMB h\303\241l\303\263zati be\303\241ll\303\255t\303\241sok",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "SMB megoszt\303\241s neve",
    "SMB megoszt\303\241s",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "SMB id\305\221t\303\272ll\303\251p\303\251s",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "SMB felhaszn\303\241l\303\263n\303\251v",
    "SMB munkacsoport",
 #endif
@@ -8049,6 +8116,9 @@ static const struct
    "A New3DS \303\263rajel\303\251nek (804 MHz) \303\251s L2 gyors\303\255t\303\263t\303\241r\303"
    "\241nak enged\303\251lyez\303\251se.",
 #endif
+#ifdef HAVE_NFSCLIENT
+   "A kiszolg\303\241l\303\263 IP c\303\255me vagy hostneve.",
+#endif
    "\303\234zenet megjelen\303\255t\303\251se bemeneti eszk\303\266z\303\266k csatlakoztat\303\241sa"
    "kor \303\251s lev\303\241laszt\303\241sakor.",
    "\303\234zenet megjelen\303\255t\303\251se bemeneti eszk\303\266z\303\266k sikertelen konfigur"
@@ -8568,8 +8638,10 @@ static const struct
    "Az energiagazd\303\241lkod\303\241s be\303\241ll\303\255t\303\241sai jelenjenek meg.",
    "A felv\303\251tel be\303\241ll\303\255t\303\241sai jelenjenek meg.",
    "A ment\303\251si be\303\241ll\303\255t\303\241sok jelenjenek meg.",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Az SMB kliens be\303\241ll\303\255t\303\241sok jelenjenek meg.",
+#endif
 #endif
    "A Steam be\303\241ll\303\255t\303\241sai jelenjenek meg.",
    "A felhaszn\303\241l\303\263 be\303\241ll\303\255t\303\241sai jelenjenek meg.",
@@ -8593,13 +8665,27 @@ static const struct
    "Magok telep\303\255t\303\251se vagy vissza\303\241ll\303\255t\303\241sa a \"Let\303\266lt\303"
    "\251sek\" k\303\266nyvt\303\241rb\303\263l.",
    "A tartalom lass\303\255t\303\241skor ennyiszer lassabban jelenik meg.",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "A k\303\266rnyezet \303\241ltal haszn\303\241lt hiteles\303\255t\303\251si m\303\263d.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "F\303\241jlok b\303\266ng\303\251sz\303\251se a be\303\241ll\303\255tott SMB megoszt\303\241son.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "A k\303\266rnyezet \303\241ltal haszn\303\241lhat\303\263 maxim\303\241lis kapcsolat.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "A kiszolg\303\241l\303\263 IP c\303\255me vagy hostneve.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Az SMB h\303\241l\303\263zati megoszt\303\241s be\303\241ll\303\255t\303\241sai.",
    "Az alap\303\251rtelmezett id\305\221t\303\272ll\303\251p\303\251s m\303\241sodpercben.",
+#endif
 #endif
    "A ment\303\251seket olyan mapp\303\241kba rendezi, amelyeket a tartalom k\303\266nyvt\303\241ra "
    "alapj\303\241n nevez el.",
@@ -9832,18 +9918,40 @@ typedef char msg_hash_hu_blob_check[
        + 77u
 #endif
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 23u
        + 24u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 29u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 27u
        + 34u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 12u
        + 12u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 30u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 20u
        + 15u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 20u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 22u
        + 17u
 #endif
@@ -10008,6 +10116,9 @@ typedef char msg_hash_hu_blob_check[
 #ifdef _3DS
        + 76u
 #endif
+#ifdef HAVE_NFSCLIENT
+       + 39u
+#endif
 #ifdef HAVE_GAME_AI
        + 43u
 #endif
@@ -10023,14 +10134,28 @@ typedef char msg_hash_hu_blob_check[
        + 51u
        + 35u
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 45u
        + 51u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 55u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 56u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 39u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 45u
        + 51u
+#endif
 #endif
 #ifdef HAVE_LAKKA
        + 51u
@@ -11964,8 +12089,10 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
@@ -11993,17 +12120,39 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
 #endif
@@ -13115,6 +13264,9 @@ static const uint32_t msg_hash_hu_ids[] =
 #ifdef _3DS
    (uint32_t)MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
 #endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
@@ -13373,8 +13525,10 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -13390,13 +13544,27 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,

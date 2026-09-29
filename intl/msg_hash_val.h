@@ -369,7 +369,7 @@ static const struct
    char s_93bae0e3[11];
    char s_ed013a05[24];
    char s_01a73130[31];
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_d21d875b[21];
 #endif
    char s_d7fc4c9c[23];
@@ -1073,7 +1073,7 @@ static const struct
    "Un sol \303\272s",
    "Vore men\303\272 d'escriptori",
    "Instal\302\267la o restaura un nucli",
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Xarxa compartida SMB",
 #endif
    "Iniciar RetroPad remot",
@@ -1551,7 +1551,7 @@ typedef char msg_hash_val_blob_check[
        + 77u
 #endif
 #endif
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 21u
 #endif
 #if defined(DINGUX)
@@ -1971,7 +1971,7 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,

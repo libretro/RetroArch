@@ -1422,6 +1422,23 @@ static const struct
 #ifdef _3DS
    char s_4b1915d7[50];
 #endif
+#ifdef HAVE_NFSCLIENT
+   char s_2ab94c3e[26];
+   char s_3225c36e[17];
+   char s_eaf7de23[25];
+   char s_f11cbd53[36];
+   char s_46d3d8b1[14];
+   char s_51775f83[16];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   char s_9155967d[19];
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   char s_528fd575[21];
+   char s_d64e8d73[24];
+#endif
    char s_e2f5e678[8];
    char s_e53de5dd[60];
    char s_4e0dc3eb[57];
@@ -2022,8 +2039,10 @@ static const struct
    char s_b160f7a1[36];
    char s_cd5ff0f5[19];
    char s_8b92e740[17];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_e2415d78[20];
+#endif
 #endif
    char s_aeef8db2[14];
    char s_14d20957[16];
@@ -2050,21 +2069,43 @@ static const struct
    char s_01a73130[32];
    char s_44ebca0d[41];
    char s_608ac5a1[27];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_3839f91d[30];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_86b07599[32];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_8d5f85ee[20];
    char s_9b023eee[36];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_ccae82ba[19];
 #endif
    char s_35808dba[48];
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_ad6e88de[16];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_c7bc8298[19];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_e63b035a[36];
    char s_d21d875b[19];
    char s_ae86fed0[21];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b12ae22e[24];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_b2d073c7[25];
    char s_1cbc2657[24];
 #endif
@@ -3263,6 +3304,23 @@ static const struct
 #ifdef _3DS
    char s_0d834bc5[74];
 #endif
+#ifdef HAVE_NFSCLIENT
+   char s_0dc9bb2c[61];
+   char s_1536325c[183];
+   char s_ad621411[96];
+   char s_f6ec26c1[77];
+   char s_4f7fb41f[94];
+   char s_3487ce71[51];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   char s_7a3d78eb[44];
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   char s_35a04463[53];
+   char s_1b6cda21[70];
+#endif
    char s_d2ae640b[82];
    char s_8e5bac99[87];
    char s_28a346d2[50];
@@ -3535,8 +3593,10 @@ static const struct
    char s_bce9b94f[52];
    char s_d32f5a63[35];
    char s_9177176e[33];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_a1fdf4a6[37];
+#endif
 #endif
    char s_97d77020[30];
    char s_59f05605[32];
@@ -3552,17 +3612,39 @@ static const struct
    char s_4b009af3[41];
    char s_46c57dde[59];
    char s_7eb20ecf[90];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[56];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_69c0e487[75];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_706ff4dc[343];
    char s_a0d1a85c[70];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_b5966528[236];
    char s_907ef7cc[51];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b0a46506[48];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_04624c88[184];
    char s_91976dbe[60];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_f6492edc[61];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_9bb85635[247];
    char s_22a05685[79];
 #endif
@@ -6030,6 +6112,23 @@ static const struct
 #ifdef _3DS
    "Activar aceleraci\303\263n de CPU de New3DS y cach\303\251 L2",
 #endif
+#ifdef HAVE_NFSCLIENT
+   "Explorar exportado de NFS",
+   "Exportado de NFS",
+   "Puerto de montaje de NFS",
+   "N.\302\272 de conexiones m\303\241ximas por NFS",
+   "Puerto de NFS",
+   "Servidor de NFS",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   "Ajustes de red NFS",
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   "Subdirectorio de NFS",
+   "Tiempo de espera de NFS",
+#endif
    "Ninguno",
    "Notificaciones de conexi\303\263n de entrada (autoconfiguraci\303\263n)",
    "Notificaciones de fallos de entrada (autoconfiguraci\303\263n)",
@@ -6638,8 +6737,10 @@ static const struct
    "Mostrar Administraci\303\263n de energ\303\255a",
    "Mostrar Grabaci\303\263n",
    "Mostrar Guardado",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Mostrar Cliente SMB",
+#endif
 #endif
    "Mostrar Steam",
    "Mostrar Usuario",
@@ -6666,21 +6767,43 @@ static const struct
    "Instalar o restaurar un n\303\272cleo",
    "El n\303\272cleo se ha instalado correctamente",
    "Velocidad de c\303\241mara lenta",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Modo de autenticaci\303\263n de SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Explorar recurso compartido SMB",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Activar cliente SMB",
    "N.\302\272 de conexiones m\303\241ximas por SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Contrase\303\261a de SMB",
 #endif
    "KRB si est\303\241 disponible, en caso contrario NTLM",
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Servidor de SMB",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Ajustes de red SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Nombre de recurso compartido de SMB",
    "Red compartida SMB",
    "Subdirectorio de SMB",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Tiempo de espera de SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Nombre de usuario de SMB",
    "Grupo de trabajo de SMB",
 #endif
@@ -8367,6 +8490,25 @@ static const struct
 #ifdef _3DS
    "Activa la velocidad m\303\241xima de la CPU de New3DS (804 MHz) y la cach\303\251 L2.",
 #endif
+#ifdef HAVE_NFSCLIENT
+   "Explora el exportado NFS configurado para buscar contenidos.",
+   "La ruta exportada por el servidor, por ejemplo, /export/roms. Deja esta opci\303\263n en blanco "
+   "para que el exportado se incluya en la direcci\303\263n con el formato nds://servidor/export/rut"
+   "a.",
+   "Indica el puerto del servicio MOUNT. 0 solicita el puerto al asignador de puertos del servidor.",
+   "Indica el n\303\272mero de conexiones que se mantendr\303\241n abiertas con el servidor.",
+   "Indica el puerto del servicio NFS. 0 solicita el puerto al asignador de puertos del servidor.",
+   "La direcci\303\263n IP o el nombre de host del servidor.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   "Configura los ajustes del exportado de NFS.",
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   "La ruta del subdirectorio en el exportado. Opcional.",
+   "Indica el tiempo que hay que esperar al servidor tras cada petici\303\263n.",
+#endif
    "Muestra un mensaje en pantalla al conectar o desconectar dispositivos de entrada.",
    "Muestra un mensaje en pantalla cuando no se puedan configurar dispositivos de entrada.",
    "Muestra un mensaje en pantalla al aplicar trucos.",
@@ -8827,8 +8969,10 @@ static const struct
    "Muestra los ajustes de administraci\303\263n de energ\303\255a.",
    "Muestra los ajustes de grabaci\303\263n.",
    "Muestra los ajustes de guardado.",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Muestra los ajustes del cliente SMB.",
+#endif
 #endif
    "Muestra los ajustes de Steam.",
    "Muestra los ajustes de usuario.",
@@ -8846,24 +8990,46 @@ static const struct
    "Instala o restaura un n\303\272cleo del directorio de descargas.",
    "Ajusta la velocidad a la que se reproducir\303\241 el contenido si se utiliza la c\303\241mara l"
    "enta.",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Selecciona el modo de autenticaci\303\263n de tu entorno SMB.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Accede a los archivos del recurso compartido de SMB que hayas configurado.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Activa el acceso a la red compartida SMB. Se recomienda encarecidamente utilizar un cable Ethern"
    "et en vez de una se\303\261al wifi para tener una conexi\303\263n m\303\241s fiable. Nota: los c"
    "ambios se aplicar\303\241n la pr\303\263xima vez que navegues por un recurso compartido, el cont"
    "enido que ya est\303\251 siendo ejecutado desde un recurso compartido no se desconectar\303\241.",
    "Selecciona el n\303\272mero m\303\241ximo de conexiones permitidas en tu entorno.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "La contrase\303\261a para la autenticaci\303\263n. Opcional si el acceso de invitado est\303\241"
    " activado en el servidor. Para Windows 10 en adelante: el acceso de invitado est\303\241 desacti"
    "vado por defecto, as\303\255 que es necesario introducir una contrase\303\261a.",
    "La direcci\303\263n IP o el nombre de host del servidor.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Configura los ajustes de la red compartida SMB.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "El nombre del recurso compartido de red al que quieres acceder. Deja esta opci\303\263n en blanc"
    "o para mostrar todos los recursos que exporte el servidor y as\303\255 poder elegir uno al naveg"
    "ar.",
    "La ruta del subdirectorio del recurso compartido. Opcional.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Selecciona el tiempo de espera predeterminado (en segundos).",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "El nombre de usuario para la autenticaci\303\263n. Opcional si el acceso de invitado est\303\241"
    " activado en el servidor. Para Windows 10 en adelante: el acceso de invitado est\303\241 desacti"
    "vado por defecto, as\303\255 que es necesario introducir un nombre de usuario.",
@@ -10082,6 +10248,23 @@ typedef char msg_hash_es_blob_check[
 #ifdef _3DS
        + 50u
 #endif
+#ifdef HAVE_NFSCLIENT
+       + 26u
+       + 17u
+       + 25u
+       + 36u
+       + 14u
+       + 16u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+       + 19u
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+       + 21u
+       + 24u
+#endif
 #ifdef HAVE_QT
        + 671u
 #endif
@@ -10093,19 +10276,41 @@ typedef char msg_hash_es_blob_check[
        + 77u
 #endif
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 20u
        + 30u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 32u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 20u
        + 36u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 19u
        + 16u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 19u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 36u
        + 19u
        + 21u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 24u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 25u
        + 24u
 #endif
@@ -10276,6 +10481,23 @@ typedef char msg_hash_es_blob_check[
 #ifdef _3DS
        + 74u
 #endif
+#ifdef HAVE_NFSCLIENT
+       + 61u
+       + 183u
+       + 96u
+       + 77u
+       + 94u
+       + 51u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+       + 44u
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+       + 53u
+       + 70u
+#endif
 #ifdef HAVE_GAME_AI
        + 36u
 #endif
@@ -10291,18 +10513,40 @@ typedef char msg_hash_es_blob_check[
        + 61u
        + 48u
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 37u
        + 56u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 75u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 343u
        + 70u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 236u
        + 51u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 48u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 184u
        + 60u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 61u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 247u
        + 79u
 #endif
@@ -11792,6 +12036,23 @@ static const uint32_t msg_hash_es_ids[] =
 #ifdef _3DS
    (uint32_t)MENU_ENUM_LABEL_VALUE_NEW3DS_SPEEDUP_ENABLE,
 #endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_BROWSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_EXPORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_MOUNT_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_NUM_CONTEXTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SETTINGS,
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SUBDIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_TIMEOUT,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
@@ -12391,8 +12652,10 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
@@ -12419,21 +12682,43 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SEC_KRB_OR_NTLM,
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
 #endif
@@ -13625,6 +13910,23 @@ static const uint32_t msg_hash_es_ids[] =
 #ifdef _3DS
    (uint32_t)MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
 #endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_BROWSE,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_EXPORT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_MOUNT_PORT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_NUM_CONTEXTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_PORT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SETTINGS,
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SUBDIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_TIMEOUT,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
@@ -13897,8 +14199,10 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -13914,17 +14218,39 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
 #endif

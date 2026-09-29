@@ -588,6 +588,7 @@ static const struct
    char s_beaf53f1[18];
    char s_c3fd1e84[13];
    char s_0f2da3af[18];
+   char s_a89a965a[8];
    char s_f4875576[31];
    char s_df3def90[33];
    char s_22600fe7[20];
@@ -1939,8 +1940,10 @@ static const struct
    char s_b160f7a1[29];
    char s_cd5ff0f5[20];
    char s_8b92e740[21];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_e2415d78[26];
+#endif
 #endif
    char s_aeef8db2[21];
    char s_14d20957[20];
@@ -1968,21 +1971,43 @@ static const struct
    char s_01a73130[40];
    char s_44ebca0d[30];
    char s_608ac5a1[15];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_3839f91d[28];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_86b07599[25];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_8d5f85ee[22];
    char s_9b023eee[26];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_ccae82ba[13];
 #endif
    char s_35808dba[38];
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_ad6e88de[11];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_c7bc8298[26];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_e63b035a[17];
    char s_d21d875b[13];
    char s_ae86fed0[21];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b12ae22e[24];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_b2d073c7[17];
    char s_1cbc2657[18];
 #endif
@@ -2113,6 +2138,10 @@ static const struct
    char s_60a38895[6];
    char s_db01e988[6];
    char s_e1c715da[5];
+   char s_b4d6cb93[29];
+   char s_ee1c318a[23];
+   char s_32b51618[22];
+   char s_a2906bd3[25];
    char s_e2f93e68[3];
    char s_47d26662[14];
    char s_0ca3b319[10];
@@ -2199,6 +2228,7 @@ static const struct
    char s_cf6bc52a[23];
    char s_05c5a263[26];
    char s_ed22c5f1[22];
+   char s_32c41d0e[20];
    char s_49f9815b[30];
    char s_ddc4f021[29];
    char s_ddc6b80f[33];
@@ -3163,6 +3193,9 @@ static const struct
 #ifdef _3DS
    char s_0d834bc5[55];
 #endif
+#ifdef HAVE_NFSCLIENT
+   char s_3487ce71[33];
+#endif
    char s_d2ae640b[84];
    char s_8e5bac99[99];
    char s_28a346d2[78];
@@ -3435,8 +3468,10 @@ static const struct
    char s_bce9b94f[48];
    char s_d32f5a63[39];
    char s_9177176e[40];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_a1fdf4a6[41];
+#endif
 #endif
    char s_97d77020[36];
    char s_59f05605[39];
@@ -3452,17 +3487,39 @@ static const struct
    char s_4b009af3[41];
    char s_46c57dde[71];
    char s_7eb20ecf[63];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[59];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_69c0e487[57];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_706ff4dc[318];
    char s_a0d1a85c[71];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_b5966528[211];
    char s_907ef7cc[33];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b0a46506[50];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_04624c88[167];
    char s_91976dbe[49];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_f6492edc[56];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_9bb85635[219];
    char s_22a05685[61];
 #endif
@@ -3505,6 +3562,7 @@ static const struct
    char s_ffd591e0[43];
    char s_a51ab538[32];
    char s_55d6cc44[42];
+   char s_5a8f7fb9[235];
    char s_f2963d2d[51];
    char s_4c592ae1[93];
    char s_52ac4fb9[123];
@@ -3516,6 +3574,7 @@ static const struct
    char s_f77f7a41[66];
 #endif
    char s_e7cb5685[53];
+   char s_bd82a701[467];
    char s_8bb367a2[121];
    char s_2beab583[29];
    char s_a1c071eb[107];
@@ -3569,6 +3628,8 @@ static const struct
    char s_e4aa2e10[68];
    char s_b853a798[101];
    char s_d60aa85f[55];
+   char s_38a84d3c_0[500];
+   char s_38a84d3c_1[15];
    char s_2d09f049[37];
    char s_e670cb8f[62];
    char s_e672937d[155];
@@ -5067,6 +5128,7 @@ static const struct
    "Maximale Frequenz",
    "Men\303\274-Regler",
    "Minimale Frequenz",
+   "Threads",
    "Neue Wiedergabeliste erstellen",
    "Hochaufl\303\266sendes Men\303\274 verwenden",
    "Horizontale Gr\303\266\303\237e",
@@ -6427,8 +6489,10 @@ static const struct
    "\"Energieverwaltung\" anzeigen",
    "\"Aufnahme\" anzeigen",
    "\"Speichern\" anzeigen",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "\342\200\236SMB-Client\342\200\234 anzeigen",
+#endif
 #endif
    "\342\200\236Steam\342\200\234 anzeigen",
    "\"Benutzer\" anzeigen",
@@ -6456,21 +6520,43 @@ static const struct
    "Core installieren oder wiederherstellen",
    "Core Installation erfolgreich",
    "Zeitlupen-Rate",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "SMB-Authentifizierungsmodus",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "SMB-Freigabe durchsuchen",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "SMB-Client aktivieren",
    "Maximale SMB-Verbindungen",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "SMB-Passwort",
 #endif
    "KRB falls verf\303\274gbar, NTLM wenn nicht",
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "SMB-Server",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "SMB-Netzwerkeinstellungen",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "SMB-Freigabename",
    "SMB-Freigabe",
    "SMB-Unterverzeichnis",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "SMB-Zeit\303\274berschreitung",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "SMB-Benutzername",
    "SMB-Arbeitsgruppe",
 #endif
@@ -6601,6 +6687,10 @@ static const struct
    "Woche",
    "Jahre",
    "Jahr",
+   "TLS-Zertifikats\303\274berpr\303\274fung",
+   "Deaktiviert (unsicher)",
+   "Optional (nur warnen)",
+   "Erforderlich (empfohlen)",
    "An",
    "Halbe Periode",
    "Klassisch",
@@ -6689,6 +6779,7 @@ static const struct
    "Videofilter aktivieren",
    "Flacker-Filter aktivieren",
    "Videofilter entfernen",
+   "Videofilter-Threads",
    "Bildschirm-Benachrichtigungen",
    "Benachrichtigungs-Schriftart",
    "Benachrichtigungs-Schriftgr\303\266\303\237e",
@@ -8070,6 +8161,9 @@ static const struct
 #ifdef _3DS
    "New3DS-Taktfrequenz (804MHz) und -L2-Cache aktivieren.",
 #endif
+#ifdef HAVE_NFSCLIENT
+   "Server-IP-Adresse oder Hostname.",
+#endif
    "Eine Bildschirmmeldung anzeigen, wenn Eingabeger\303\244te angeschlossen/getrennt werden.",
    "Zeigt eine Nachricht auf dem Bildschirm an, wenn Eingabeger\303\244te nicht konfiguriert werden "
    "konnten.",
@@ -8501,8 +8595,10 @@ static const struct
    "Die \"Energieverwaltung\"-Einstellungen anzeigen.",
    "Die \"Aufnahme\"-Einstellungen anzeigen.",
    "Die \"Speichern\"-Einstellungen anzeigen.",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "\342\200\236SMB-Client\342\200\234-Einstellungen anzeigen.",
+#endif
 #endif
    "\342\200\236Steam\342\200\234-Einstellungen anzeigen.",
    "Die \"Benutzer\"-Einstellungen anzeigen.",
@@ -8520,23 +8616,45 @@ static const struct
    "Das traditionelle Desktop-Men\303\274 \303\266ffnen.",
    "Cores aus dem Download-Verzeichnis installieren oder wiederherstellen.",
    "Der Faktor, um den die Abspielgeschwindigkeit verringert wird.",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Auswahl der in der Umgebung verwendeten Authentifizierung.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Dateien auf der konfigurierten SMB-Freigabe durchsuchen.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Den SMB-Netzwerkfreigabezugriff aktivieren. F\303\274r eine zuverl\303\244ssigere Verbindung wir"
    "d Ethernet gegen\303\274ber WLAN dringend empfohlen. Hinweis: Die \303\204nderungen werden beim "
    "n\303\244chsten Aufrufen einer Freigabe wirksam, und Inhalte, die bereits von einer Freigabe aus"
    " ausgef\303\274hrt werden, behalten ihre aktuelle Verbindung bei.",
    "Die maximale Anzahl der im Umfeld verwendeten Verbindungen ausw\303\244hlen.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Passwort f\303\274r die Authentifizierung. Dies ist optional, wenn Gastzugang auf dem Server akt"
    "iviert ist. Windows 10 und h\303\266her: Gastzugang ist standardm\303\244\303\237ig deaktiviert,"
    " daher ist hier ein Passwort erforderlich.",
    "Server-IP-Adresse oder Hostname.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "SMB-Netzwerkfreigabe-Einstellungen konfigurieren.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Name der Netzwerkfreigabe, auf die zugegriffen werden soll. Leer lassen, um alle vom Server expo"
    "rtierten Freigaben aufzulisten und beim Durchsuchen eine auszuw\303\244hlen.",
    "Unterverzeichnispfad auf der Freigabe. Optional.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Die Standardzeit\303\274berschreitung in Sekunden ausw\303\244hlen.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Benutzername f\303\274r die Authentifizierung. Dies ist optional, wenn Gastzugang auf dem Server"
    " aktiviert ist. Windows 10 und h\303\266her: Gastzugang ist standardm\303\244\303\237ig deaktivi"
    "ert, daher ist hier ein Benutzername erforderlich.",
@@ -8585,6 +8703,9 @@ static const struct
    "Informationen \303\274ber dieses Ger\303\244t ansehen.",
    "Foto des Bildschirms aufnehmen.",
    "Aufgaben in separaten Threads ausf\303\274hren.",
+   "Die Haupt-, Video-, Audio- und Task-Threads werden auf den schnellsten CPU-Kernen eines Mixed-Co"
+   "re-Prozessors ausgef\303\274hrt. Hat keine Auswirkungen auf Prozessoren, deren Kerne alle gleich"
+   " sind. Die \303\204nderung wird beim Neustart wirksam.",
    "Art der Vorschaubilder, die verwendet werden soll.",
    "Box-Art-, Screenshot- und Titelbild-Vorschaubilder werden in diesem Verzeichnis gespeichert.",
    "Haupttyp der Vorschaubilder, die jedem Wiedergabelisteneintrag zugeordnet werden. Dienen normale"
@@ -8600,6 +8721,12 @@ static const struct
    "Zeitzone w\303\244hlen, um Datum und Zeit an Ihren Standort anzupassen.",
 #endif
    "Die aktuelle Uhrzeit im bevorzugten Format anzeigen.",
+   "Legt fest, wie Serverzertifikate bei sicheren (HTTPS-)Verbindungen \303\274berpr\303\274ft werde"
+   "n, die von Cloud Sync, RetroAchievements und dem Online-Updater genutzt werden. Die Einstellung "
+   "\342\200\236Erforderlich\342\200\234 lehnt nicht vertrauensw\303\274rdige Zertifikate ab und sch"
+   "\303\274tzt vor Man-in-the-Middle-Angriffen. Diese Einstellung sollte nur herabgesetzt werden, w"
+   "enn eine Verbindung \303\274ber einen firmeninternen Proxy oder zu einem selbstsignierten Host h"
+   "ergestellt wird, dem man vertraut.",
    "Treiber f\303\274r die Desktop-Begleiter-UI, der verwendet wird, wenn das Desktop-Men\303\274 ak"
    "tiviert ist. (Neustart erforderlich)",
    "Fenstermen\303\274leiste anzeigen.",
@@ -8687,6 +8814,13 @@ static const struct
    "Videofilter anwenden. Dies ist ein Hinweis, der nicht unbedingt vom Treiber respektiert werden m"
    "uss.",
    "Alle aktiven CPU-gest\303\274tzten Videofilter deaktivieren.",
+   "Anzahl der Threads, auf denen ein CPU-Videofilter ausgef\303\274hrt werden kann. Bei der Einstel"
+   "lung \342\200\236Automatisch\342\200\234 werden die Kerne verwendet, die nach der Zuweisung an d"
+   "ie Emulations-, Video-, Audio- und Task-Threads \303\274brig bleiben \342\200\223 maximal 8, bei"
+   " weniger anspruchsvollen Filtern, die bei einer Verteilung auf mehrere Threads langsamer laufen,"
+   " auch weniger. Anspruchsvolle Filter wie NTSC profitieren am meisten von einer h\303\266heren An"
+   "zahl an Threads. Ein bereits ausgef\303\274hrter Filter erkennt die \303\204n",
+   "derung sofort.",
    "Bildschirmbenachrichtungen anzeigen.",
    "Die Schriftart f\303\274r Bildschirm-Benachrichtigungen ausw\303\244hlen.",
    "Gibt die Schriftgr\303\266\303\237e in Punkten an. Wenn Widgets verwendet werden, wirkt sich die"
@@ -9565,7 +9699,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (210947u
+      (sizeof(msg_hash_de_blob) == (212291u
 #ifdef ANDROID
        + 358u
 #endif
@@ -9695,19 +9829,41 @@ typedef char msg_hash_de_blob_check[
 #ifdef HAVE_LAKKA
        + 17u
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 26u
        + 28u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 25u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 22u
        + 26u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 13u
        + 11u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 26u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 17u
        + 13u
        + 21u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 24u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 17u
        + 18u
 #endif
@@ -9880,6 +10036,9 @@ typedef char msg_hash_de_blob_check[
 #ifdef _3DS
        + 55u
 #endif
+#ifdef HAVE_NFSCLIENT
+       + 33u
+#endif
 #ifdef HAVE_GAME_AI
        + 36u
 #endif
@@ -9895,18 +10054,40 @@ typedef char msg_hash_de_blob_check[
        + 46u
        + 34u
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 41u
        + 59u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 57u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 318u
        + 71u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 211u
        + 33u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 50u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 167u
        + 49u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 56u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 219u
        + 61u
 #endif
@@ -10565,6 +10746,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_MAX_FREQ,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
@@ -11915,8 +12097,10 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
@@ -11944,21 +12128,43 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SEC_KRB_OR_NTLM,
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
 #endif
@@ -12089,6 +12295,10 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_SINGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_REQUIRED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TRUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
@@ -12175,6 +12385,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
@@ -13131,6 +13342,9 @@ static const uint32_t msg_hash_de_ids[] =
 #ifdef _3DS
    (uint32_t)MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
 #endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
@@ -13403,8 +13617,10 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -13420,17 +13636,39 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
 #endif
@@ -13473,6 +13711,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
@@ -13484,6 +13723,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_TIMEZONE,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_TIME_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_TLS_VERIFY_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_UI_COMPANION_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
@@ -13537,6 +13777,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
