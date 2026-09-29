@@ -45,6 +45,11 @@ void RARCH_ERR(const char *f, ...)  { (void)f; }
 void RARCH_DBG(const char *f, ...)  { (void)f; }
 uint32_t audio_driver_requested_layout(void) { return AUDIO_LAYOUT_STEREO; }
 void audio_driver_set_device_latency(size_t frames) { (void)frames; }
+settings_t *config_get_ptr(void)
+{
+   static settings_t settings;
+   return &settings;
+}
 
 static unsigned failures = 0;
 
@@ -429,10 +434,122 @@ static void run_wide_register(void)
    check(wdmks_rt_register_read(&w) == 1000, "a 32-bit register is read as it is");
 }
 
+/* The capture side's fold into the fifo: a stereo pin averaged to mono
+ * in either width, a mono pin copied through, and never more than the
+ * fifo takes. */
+static void run_capture_fold(void)
+{
+   wdmks_mic_t m;
+   int16_t     s16[8] = { 100, 300, -400, -200, 32767, 32767, -32768, 0 };
+   float       f32[4] = { 0.5f, 0.25f, -1.0f, 1.0f };
+   int16_t     out16[4];
+   float       outf[2];
+   size_t      took;
+
+   printf("capture fold\n");
+   memset(&m, 0, sizeof(m));
+   m.fifo        = fifo_new(1024);
+   m.frame_bytes = 4;
+   m.out_bytes   = 2;
+   took = wdmks_mic_fold(&m, (const unsigned char*)s16, sizeof(s16));
+   check(took == sizeof(s16), "stereo s16: every frame taken");
+   check(FIFO_READ_AVAIL(m.fifo) == 4 * sizeof(int16_t), "four mono samples out");
+   fifo_read(m.fifo, out16, sizeof(out16));
+   check(out16[0] == 200 && out16[1] == -300 && out16[2] == 32767
+         && out16[3] == -16384, "each the average of its pair, without wrapping");
+
+   m.frame_bytes = 8;
+   m.out_bytes   = 4;
+   m.is_float    = true;
+   took = wdmks_mic_fold(&m, (const unsigned char*)f32, sizeof(f32));
+   check(took == sizeof(f32), "stereo float: every frame taken");
+   fifo_read(m.fifo, outf, sizeof(outf));
+   check(outf[0] == 0.375f && outf[1] == 0.0f, "averaged as float");
+
+   m.frame_bytes = 4;
+   m.is_float    = true;
+   took = wdmks_mic_fold(&m, (const unsigned char*)f32, sizeof(f32));
+   check(took == sizeof(f32) && FIFO_READ_AVAIL(m.fifo) == sizeof(f32),
+         "mono float: copied through");
+   fifo_read(m.fifo, f32, sizeof(f32));
+
+   /* A fifo with room for two samples takes two frames of the three. */
+   fifo_free(m.fifo);
+   m.fifo        = fifo_new(2 * 4);   /* two floats */
+   took = wdmks_mic_fold(&m, (const unsigned char*)f32, 12);
+   check(took == 8, "only what the fifo takes, in whole samples");
+   fifo_free(m.fifo);
+}
+
+/* The WaveRT read model: what the hardware writes is read from behind
+ * its position, wrapping with the loop; a lap unseen means what it held
+ * is gone and the read cursor moves up to the hardware. */
+static void run_capture_loop(void)
+{
+   wdmks_mic_t   m;
+   unsigned char loop[LOOP_BYTES];
+   unsigned char out[LOOP_BYTES];
+   size_t        i;
+
+   printf("capture loop\n");
+   memset(&m, 0, sizeof(m));
+   m.stream.looped = true;
+   m.stream.handle = INVALID_HANDLE_VALUE;
+   m.fifo        = fifo_new(2 * LOOP_BYTES);
+   m.frame_bytes = FRAME;
+   m.out_bytes   = FRAME;     /* a stereo-wide mono pin, no fold */
+   m.rate        = RATE;
+   m.rt_buf      = loop;
+   m.rt_size     = LOOP_BYTES;
+   m.rt_pos      = &fake_pos;
+   for (i = 0; i < LOOP_BYTES; i++)
+      loop[i] = (unsigned char)(i * 7);
+
+   fake_pos = 0;
+   check(wdmks_mic_rt_drain(&m) && FIFO_READ_AVAIL(m.fifo) == 0,
+         "the first sample places the cursor and delivers nothing");
+
+   hw_play(1000);
+   check(wdmks_mic_rt_drain(&m) && FIFO_READ_AVAIL(m.fifo) == 1000,
+         "what the hardware wrote is delivered");
+   fifo_read(m.fifo, out, 1000);
+   check(!memcmp(out, loop, 1000), "from the start of the loop");
+
+   /* Round the wrap. */
+   hw_play(LOOP_BYTES - 1000 + 500);
+   check(wdmks_mic_rt_drain(&m) && FIFO_READ_AVAIL(m.fifo) == LOOP_BYTES - 500,
+         "a delivery that wraps is whole");
+   fifo_read(m.fifo, out, LOOP_BYTES - 500);
+   check(!memcmp(out, loop + 1000, LOOP_BYTES - 1000)
+         && !memcmp(out + LOOP_BYTES - 1000, loop, 500),
+         "and in order across the wrap");
+
+   /* A lap went by unobserved: the read cursor comes up to the
+    * hardware and nothing stale is delivered. */
+   m.rt_last_usec -= (retro_time_t)LOOP_FRAMES * 1000000 / RATE * 2;
+   hw_play(LOOP_BYTES / 3);
+   check(wdmks_mic_rt_drain(&m) && FIFO_READ_AVAIL(m.fifo) == 0
+         && m.rt_read == fake_pos, "laps lost: the cursor moves up to the hardware");
+
+   /* The hardware overruns: more written than the loop holds. */
+   hw_play(LOOP_BYTES / 2);
+   wdmks_mic_rt_drain(&m);
+   fifo_read(m.fifo, out, FIFO_READ_AVAIL(m.fifo));
+   fake_pos = (ULONG)((fake_pos + LOOP_BYTES / 2) % LOOP_BYTES);
+   wdmks_mic_rt_sample(&m);   /* observed, but not drained */
+   hw_play(LOOP_BYTES / 2 + FRAME);
+   check(wdmks_mic_rt_drain(&m) && FIFO_READ_AVAIL(m.fifo) == 0
+         && m.rt_read == fake_pos, "an overrun drops what was overwritten");
+
+   fifo_free(m.fifo);
+}
+
 int main(void)
 {
    run_ranges();
    run_wide_register();
+   run_capture_fold();
+   run_capture_loop();
    fifo_frames = 0;
    run_contract("caller-driven loop, no FIFO report", put_direct, false);
    run_contract("refill thread pump, no FIFO report", put_pump, true);

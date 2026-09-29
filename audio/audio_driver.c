@@ -371,6 +371,9 @@ microphone_driver_t *microphone_drivers[] = {
 #ifdef HAVE_WASAPI
       &microphone_wasapi,
 #endif
+#ifdef HAVE_WDMKS
+      &microphone_wdmks,
+#endif
 #ifdef HAVE_SDL2
       &microphone_sdl, /* Microphones are not supported in SDL 1 */
 #endif
