@@ -106,7 +106,7 @@ static void loop_setup(wdmks_t *w)
    w->rt_origin        = true;
    w->rt_fed           = false;
    retro_atomic_size_init(&w->rt_underruns, 0);
-   w->rt_ring_size     = w->rt_ahead;
+   w->rt_ring_size     = w->rt_ahead * 2;
    retro_spsc_init(&w->rt_ring, w->rt_ring_size);
    retro_eventcount_init(&w->rt_park);
    retro_atomic_int_init(&w->rt_run, 0);
@@ -713,6 +713,92 @@ static void run_held_ahead(void)
    fifo_frames = 0;
 }
 
+/* ------------------------------------------------------------------ */
+/* The production geometry, run.  For a latency setting, the loop and */
+/* the ring are what wdmks_init makes, the position moves a fragment  */
+/* per notification (the coarsest a driver reports it), the refill    */
+/* runs once per notification as the thread does, and the consumer    */
+/* writes chunks of half the buffer it is told, whenever the ring has */
+/* room, as the pipeline does.  A pass is made late by a fragment and */
+/* a half, once; the loop must heal from it and then never run dry.   */
+/*                                                                    */
+/* Three things this has caught, each a build that crackled:          */
+/*   a loop four times the setting, notified twice a loop - a refill  */
+/*   two settings apart;                                              */
+/*   a ring of one fragment - supply exactly consumption, a deficit   */
+/*   nothing repays, every fourth pass short for good;                */
+/*   a margin cut to a quarter of a loop the size of the FIFO.        */
+/* ------------------------------------------------------------------ */
+
+static void run_geometry(unsigned latency_ms, unsigned fifo)
+{
+   wdmks_t       w;
+   size_t        ahead, loop, chunk, fragment, margin;
+   unsigned char tone[65536];
+   unsigned      step, late_at = 200, first_under = 0;
+   size_t        under_before = 0, under_late = 0, under_after = 0;
+   char          what[96];
+
+   wdmks_rt_geometry(latency_ms, RATE, FRAME, &ahead, &loop);
+   snprintf(what, sizeof(what), "-- geometry: %u ms setting, %u-frame FIFO:"
+         " loop %u bytes, %u held --", latency_ms, fifo,
+         (unsigned)loop, (unsigned)ahead);
+   printf("%s\n", what);
+
+   fifo_frames = fifo;
+   loop_setup(&w);
+   free(w.rt_buf);
+   w.rt_buf   = (unsigned char*)calloc(1, loop);
+   w.rt_size  = loop;
+   w.rt_ahead = ahead;
+   retro_spsc_free(&w.rt_ring);
+   w.rt_ring_size = wdmks_rt_ring_bytes(ahead);
+   retro_spsc_init(&w.rt_ring, w.rt_ring_size);
+   fake_pos = 0;
+
+   margin   = wdmks_rt_margin(&w);
+   fragment = ahead;
+   chunk    = wdmks_buffer_size(&w) / 2;
+   check(margin >= (size_t)fifo * FRAME,
+         "the resync margin covers the FIFO the pin reported");
+   check(wdmks_buffer_size(&w) == ahead,
+         "the frontend is told the held amount");
+   check(w.rt_ring_size > fragment,
+         "the ring holds more than one fragment, so a deficit can be repaid");
+
+   fill_tone(tone, sizeof(tone), 0x50);
+   for (step = 0; step < 2000; step++)
+   {
+      size_t before = wdmks_underruns(&w);
+      /* A notification: the hardware has gone half a loop - late,
+       * once, by a fragment and a half. */
+      fake_pos = (ULONG)((fake_pos + loop / 2) % loop);
+      if (step == late_at)
+         fake_pos = (ULONG)((fake_pos + fragment * 3 / 2) % loop);
+      wdmks_rt_pump_once(&w);
+      /* The consumer, woken by the pass: chunks while the ring has room */
+      while (wdmks_rt_ring_room(&w) >= chunk)
+         retro_spsc_write(&w.rt_ring, tone, chunk);
+      if (wdmks_underruns(&w) != before)
+      {
+         if (step < late_at)        under_before++;
+         else if (step <= late_at + 2) under_late++;
+         else                       under_after++;
+         if (!first_under)
+            first_under = step + 1;
+      }
+   }
+   check(under_before == 0, "the loop never runs dry while the passes are on time");
+   check(under_late <= 2, "a pass a fragment and a half late costs at most one short pull");
+   check(under_after == 0, "and the loop heals: no short pull after it, ever");
+   if (under_before || under_after)
+      printf("  (first short pull at pass %u; %u before the late pass, %u after)\n",
+            first_under, (unsigned)under_before, (unsigned)under_after);
+
+   loop_teardown(&w);
+   fifo_frames = 0;
+}
+
 int main(void)
 {
    run_ranges();
@@ -721,6 +807,10 @@ int main(void)
    run_capture_fold();
    run_capture_loop();
    run_held_ahead();
+   run_geometry(2, 46);
+   run_geometry(2, 0);
+   run_geometry(8, 46);
+   run_geometry(16, 480);
    run_refill_thread(true, false);
    run_refill_thread(true, true);
    run_refill_thread(false, false);

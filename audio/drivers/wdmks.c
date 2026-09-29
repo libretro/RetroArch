@@ -1923,6 +1923,8 @@ static void wdmks_rt_event_unregister(HANDLE pin, HANDLE ev)
    CloseHandle(ev);
 }
 
+static size_t wdmks_rt_ring_bytes(size_t ahead);
+
 static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
 {
    ra_ksrtaudio_buffer_t out;
@@ -1967,7 +1969,12 @@ static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
    /* One device loop's worth of frontend ring: the only frontend
     * buffer, per the notes - packets or the mapped loop stay the
     * device's. */
-   w->rt_ring_size = w->rt_ahead;
+   /* Two fragments of ring, not one: the refill moves the ring into
+    * the loop once per notification, so a ring of one fragment feeds
+    * exactly what a fragment plays and a pass that comes late leaves
+    * a deficit nothing repays - every fourth pass short, for good.
+    * With two, a pass can move the fragment and the deficit. */
+   w->rt_ring_size = wdmks_rt_ring_bytes(w->rt_ahead);
    if (!retro_spsc_init(&w->rt_ring, w->rt_ring_size))
       return false;
    if (!retro_eventcount_init(&w->rt_park))
@@ -2336,9 +2343,8 @@ static void wdmks_rt_scrub(wdmks_t *w, ULONG from, ULONG to)
  * write itself. Where the pin reports no FIFO it is two milliseconds,
  * a guess that covers what the reports seen so far say - and this is
  * also the floor the reported latency can reach on the loop, so a
- * guess is only as good as the hardware it stays above. Kept under a
- * quarter of the loop so a very short loop still has most of itself
- * to fill, and whole frames. */
+ * guess is only as good as the hardware it stays above. Kept under
+ * half the loop so a fragment is left to fill, and whole frames. */
 static size_t wdmks_rt_margin(const wdmks_t *w)
 {
    size_t bytes;
@@ -2347,8 +2353,12 @@ static size_t wdmks_rt_margin(const wdmks_t *w)
       bytes = w->rt_fifo_bytes + (size_t)w->rate / 2000 * w->frame_bytes;
    else
       bytes = (size_t)w->rate * 2 / 1000 * w->frame_bytes;
-   if (bytes > w->rt_size / 4)
-      bytes = w->rt_size / 4;
+   /* Under half the loop: a margin past that leaves less than a
+    * fragment to hold, but a quarter cut it under the FIFO on a loop
+    * of two small fragments, and a resync then wrote into bytes the
+    * hardware had already fetched. */
+   if (bytes > w->rt_size / 2)
+      bytes = w->rt_size / 2;
    bytes -= bytes % w->frame_bytes;
    if (bytes < w->frame_bytes)
       bytes = w->frame_bytes;
@@ -2730,6 +2740,29 @@ static void wdmks_mmcss_end(HMODULE avrt, HANDLE task)
          revert(task);
       FreeLibrary(avrt);
    }
+}
+
+/* The loop's geometry from the latency setting, in one place so the
+ * harness runs the numbers the driver runs.  ahead is what is held
+ * ahead of the hardware - the setting, floored at 64 frames; loop is
+ * what is asked of the driver - two fragments of that.  The ring the
+ * frontend writes is two fragments too (wdmks_rt_ring_bytes): the
+ * refill moves it once per notification, and a ring of one fragment
+ * feeds exactly what a fragment plays, so a late pass leaves a deficit
+ * nothing repays. */
+static void wdmks_rt_geometry(unsigned latency, unsigned rate,
+      unsigned frame_bytes, size_t *ahead, size_t *loop)
+{
+   size_t a = (size_t)latency * rate / 1000 * frame_bytes;
+   if (a < (size_t)frame_bytes * 64)
+      a = (size_t)frame_bytes * 64;
+   *ahead = a;
+   *loop  = a * 2;
+}
+
+static size_t wdmks_rt_ring_bytes(size_t ahead)
+{
+   return ahead * 2;
 }
 
 /* The thread the register was waiting for: it samples and refills at
@@ -3908,12 +3941,8 @@ static void *wdmks_init(const char *device, unsigned rate,
        * a 2 ms loop lost a lap to one pass 2.5 ms late, and a loop
        * four times the setting put the notification two settings'
        * worth apart. */
-      size_t ahead = (size_t)latency * w->rate / 1000 * w->frame_bytes;
-      size_t wanted;
-      if (ahead < w->frame_bytes * 64)
-         ahead = w->frame_bytes * 64;
-      wanted = ahead * 2;
-
+      size_t ahead, wanted;
+      wdmks_rt_geometry(latency, w->rate, w->frame_bytes, &ahead, &wanted);
       w->rt_ahead = ahead;
       if (!wdmks_rt_get_buffer(w, wanted))
       {
@@ -3926,7 +3955,7 @@ static void *wdmks_init(const char *device, unsigned rate,
       {
          w->rt_ahead     = w->rt_size - w->frame_bytes;
 #ifdef HAVE_THREADS
-         w->rt_ring_size = w->rt_ahead;
+         w->rt_ring_size = wdmks_rt_ring_bytes(w->rt_ahead);
 #endif
       }
       /* Before the pin runs: the first sample after a start resyncs
