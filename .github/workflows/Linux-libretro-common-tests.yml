@@ -152,9 +152,12 @@ jobs:
           samples/network/tls_retro/local_server_test.sh
           make -C samples/network/tls_retro clean
           make -C samples/network/smb_retro clean
-          # smbd needs root for port 445, and Wine refuses a prefix owned
-          # by someone else, so the root run gets a prefix of its own
-          sudo -E env WINEPREFIX=$RUNNER_TEMP/wineprefix-root samples/network/smb_retro/local_samba_test.sh
+          # smbd needs root for port 445, and Wine refuses both a prefix
+          # owned by someone else and creating one inside a directory it
+          # does not own ($RUNNER_TEMP belongs to the runner user), so the
+          # root run gets a prefix under /tmp with root's own HOME
+          sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root wineboot -u
+          sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root samples/network/smb_retro/local_samba_test.sh
           sudo make -C samples/network/smb_retro clean
           make -C samples/network/nfs_retro clean
           samples/network/nfs_retro/local_unfs3_test.sh
