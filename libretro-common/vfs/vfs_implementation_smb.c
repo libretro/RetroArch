@@ -34,6 +34,7 @@
 #include <string/stdstring.h>
 #include <net/net_compat.h>
 #include <vfs/vfs_implementation.h>
+#include <vfs/vfs_prefetch.h>
 #include "vfs_implementation_smb.h"
 
 
@@ -703,6 +704,97 @@ static bool smb_build_path(char *dest, size_t dest_size, const char *relative_pa
    return true;
 }
 
+/* The background prefetcher of a read-only stream: a connection and a
+ * handle of its own, so its fetches never wait on the reader's. */
+struct smb_prefetch
+{
+   struct vfs_prefetch *p;
+   struct smb2_context *ctx;
+   struct smb_slot     *slot;
+   struct smb2fh       *fh;
+};
+
+#ifdef HAVE_THREADS
+static int64_t smb_prefetch_fetch(void *user, uint64_t off, uint8_t *buf, size_t len)
+{
+   struct smb_prefetch *sp = (struct smb_prefetch*)user;
+   size_t done = 0;
+   if (smb2_lseek(sp->ctx, sp->fh, (int64_t)off, SEEK_SET, NULL) == -EINVAL)
+      return -1;
+   while (done < len)
+   {
+      int r = smb2_read(sp->ctx, sp->fh, buf + done, (uint32_t)(len - done));
+      if (r < 0)
+         return done ? (int64_t)done : -1;
+      if (r == 0)
+         break;
+      done += (size_t)r;
+   }
+   return (int64_t)done;
+}
+#endif
+
+/* Start prefetching @path for a stream opened read-only. Nothing
+ * happens without threads, or without a spare connection, or when the
+ * window is off: the stream then reads as before. */
+static void smb_prefetch_start(libretro_vfs_implementation_file *stream,
+      const char *share, const char *path)
+{
+#ifdef HAVE_THREADS
+   const struct smb_settings *cfg = smb_cfg_get();
+   struct smb_prefetch *sp;
+   size_t window = (cfg && cfg->readahead) ? (size_t)cfg->readahead * 1024 : 1024 * 1024;
+   if (!(sp = (struct smb_prefetch*)calloc(1, sizeof(*sp))))
+      return;
+   if (!(sp->ctx = smb_take(share, &sp->slot)))
+   {
+      free(sp);
+      return;
+   }
+#ifdef HAVE_RETROSMB
+   /* windows are fetched whole and pipelined; the client's own window
+    * would only copy them once more */
+   smb2_set_readahead(sp->ctx, 0);
+#endif
+   if (!(sp->fh = smb2_open(sp->ctx, path, O_RDONLY)))
+   {
+      smb_give(sp->ctx, sp->slot);
+      free(sp);
+      return;
+   }
+   if (!(sp->p = vfs_prefetch_new(smb_prefetch_fetch, sp, window, 2, 0)))
+   {
+      smb2_close(sp->ctx, sp->fh);
+      smb_give(sp->ctx, sp->slot);
+      free(sp);
+      return;
+   }
+   stream->smb_prefetch = (intptr_t)(uintptr_t)sp;
+#else
+   (void)stream; (void)share; (void)path;
+#endif
+}
+
+static void smb_prefetch_stop(libretro_vfs_implementation_file *stream)
+{
+   struct smb_prefetch *sp = (struct smb_prefetch*)(void*)(uintptr_t)stream->smb_prefetch;
+   if (!sp)
+      return;
+   vfs_prefetch_free(sp->p);              /* joins the thread first */
+   if (smb2_context_active(sp->ctx))
+      smb2_close(sp->ctx, sp->fh);
+#ifdef HAVE_RETROSMB
+   {
+      /* the pooled connection goes back with its window as configured */
+      const struct smb_settings *cfg = smb_cfg_get();
+      smb2_set_readahead(sp->ctx, (cfg && cfg->readahead) ? cfg->readahead * 1024 : 1024 * 1024);
+   }
+#endif
+   smb_give(sp->ctx, sp->slot);
+   free(sp);
+   stream->smb_prefetch = (intptr_t)0;
+}
+
 bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
    const char *path, unsigned mode, unsigned hints)
 {
@@ -718,6 +810,7 @@ bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
    /* reset file handle */
    stream->smb_fh = (intptr_t)0;
    stream->smb_ctx = (intptr_t)0;
+   stream->smb_prefetch = (intptr_t)0;
 
    smb_effective_share(path, share, sizeof(share));
    if (!*share)
@@ -769,6 +862,8 @@ bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
    stream->smb_ctx  = (intptr_t)(uintptr_t)smb_context;
    stream->smb_slot = (intptr_t)(uintptr_t)slot;
    stream->scheme   = VFS_SCHEME_SMB; /* ensure SMB dispatch on IO calls */
+   if (flags == O_RDONLY)
+      smb_prefetch_start(stream, share, full_path);
    return true;
 }
 
@@ -793,6 +888,23 @@ int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
    fh = (struct smb2fh *)(intptr_t)stream->smb_fh;
    if (!fh)
       return -1;
+
+   /* the prefetcher's windows first; on a miss the stream reads the
+    * network itself, and the thread starts over from here */
+   if (stream->smb_prefetch)
+   {
+      struct smb_prefetch *sp = (struct smb_prefetch*)(void*)(uintptr_t)stream->smb_prefetch;
+      uint64_t pos = 0;
+      if (smb2_lseek(ctx, fh, 0, SEEK_CUR, &pos) != -EINVAL)
+      {
+         int64_t got = vfs_prefetch_read(sp->p, pos, ptr, (size_t)len);
+         if (got >= 0)
+         {
+            smb2_lseek(ctx, fh, got, SEEK_CUR, NULL);
+            return got;
+         }
+      }
+   }
 
    /* libsmb2 silently caps each smb2_read() to max_read_size / credits
     * (often 64 KiB–1 MiB).  Archive parsers (ZIP EOCD / central directory)
@@ -932,6 +1044,7 @@ int retro_vfs_file_close_smb(libretro_vfs_implementation_file *stream)
    slot = (struct smb_slot *)(void *)(uintptr_t)stream->smb_slot;
    if (!ctx)
       return -1;
+   smb_prefetch_stop(stream);
    /* a dead transport: the handle went with the session */
    if (!smb2_context_active(ctx))
       ret = -1;

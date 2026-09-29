@@ -31,6 +31,7 @@
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
 #include <retro_atomic.h>
+#include <vfs/vfs_prefetch.h>
 #include <vfs/vfs_implementation.h>
 #include "vfs_implementation_nfs.h"
 
@@ -397,6 +398,89 @@ static struct rnfs_ctx *nfs_stream_take(const struct nfs_stream *st, struct nfs_
    return nfs_take(st->server, st->export_path, slot);
 }
 
+/* The background prefetcher of a read-only stream: a connection held
+ * for its lifetime and a handle of its own. */
+struct nfs_prefetch
+{
+   struct vfs_prefetch *p;
+   struct rnfs_ctx     *c;
+   struct nfs_slot     *slot;
+   struct rnfs_file    *f;
+};
+
+#ifdef HAVE_THREADS
+static int64_t nfs_prefetch_fetch(void *user, uint64_t off, uint8_t *buf, size_t len)
+{
+   struct nfs_prefetch *np = (struct nfs_prefetch*)user;
+   size_t done = 0;
+   if (rnfs_seek(np->c, np->f, (int64_t)off, 0) < 0)
+      return -1;
+   while (done < len)
+   {
+      int64_t r = rnfs_read(np->c, np->f, buf + done, len - done);
+      if (r < 0)
+         return done ? (int64_t)done : -1;
+      if (r == 0)
+         break;
+      done += (size_t)r;
+   }
+   return (int64_t)done;
+}
+#endif
+
+static void nfs_prefetch_start(libretro_vfs_implementation_file *stream,
+      const struct nfs_stream *ns, const char *rel)
+{
+#ifdef HAVE_THREADS
+   const struct nfs_settings *cfg = nfs_cfg();
+   struct nfs_prefetch *np;
+   size_t window = (cfg && cfg->readahead) ? (size_t)cfg->readahead * 1024 : 1024 * 1024;
+   if (!(np = (struct nfs_prefetch*)calloc(1, sizeof(*np))))
+      return;
+   if (!(np->c = nfs_stream_take(ns, &np->slot)))
+   {
+      free(np);
+      return;
+   }
+   /* windows are fetched whole and pipelined; the client's own window
+    * would only copy them once more */
+   rnfs_set_readahead(np->c, 0);
+   if (!(np->f = rnfs_open(np->c, rel, RNFS_O_RDONLY)))
+   {
+      rnfs_set_readahead(np->c, window);
+      nfs_give(np->c, np->slot);
+      free(np);
+      return;
+   }
+   if (!(np->p = vfs_prefetch_new(nfs_prefetch_fetch, np, window, 2, 0)))
+   {
+      rnfs_close(np->c, np->f);
+      rnfs_set_readahead(np->c, window);
+      nfs_give(np->c, np->slot);
+      free(np);
+      return;
+   }
+   stream->nfs_prefetch = (intptr_t)(uintptr_t)np;
+#else
+   (void)stream; (void)ns; (void)rel;
+#endif
+}
+
+static void nfs_prefetch_stop(libretro_vfs_implementation_file *stream)
+{
+   struct nfs_prefetch *np = (struct nfs_prefetch*)(void*)(uintptr_t)stream->nfs_prefetch;
+   const struct nfs_settings *cfg;
+   if (!np)
+      return;
+   vfs_prefetch_free(np->p);              /* joins the thread first */
+   rnfs_close(np->c, np->f);
+   cfg = nfs_cfg();
+   rnfs_set_readahead(np->c, (cfg && cfg->readahead) ? cfg->readahead * 1024 : 1024 * 1024);
+   nfs_give(np->c, np->slot);
+   free(np);
+   stream->nfs_prefetch = (intptr_t)0;
+}
+
 bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
       const char *path, unsigned mode, unsigned hints)
 {
@@ -452,6 +536,9 @@ bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
    nfs_give(c, slot);
    stream->nfs_fh  = (intptr_t)ns;
    stream->nfs_ctx = 0;
+   stream->nfs_prefetch = 0;
+   if (flags == RNFS_O_RDONLY)
+      nfs_prefetch_start(stream, ns, rel);
    return true;
 }
 
@@ -462,7 +549,21 @@ int64_t retro_vfs_file_read_nfs(libretro_vfs_implementation_file *stream,
    struct nfs_slot *slot;
    struct rnfs_ctx *c;
    int64_t r;
-   if (!ns || !(c = nfs_stream_take(ns, &slot)))
+   if (!ns)
+      return -1;
+   /* the prefetcher's windows first; on a miss the stream reads the
+    * network itself, and the thread starts over from here */
+   if (stream->nfs_prefetch)
+   {
+      struct nfs_prefetch *np = (struct nfs_prefetch*)(void*)(uintptr_t)stream->nfs_prefetch;
+      int64_t got = vfs_prefetch_read(np->p, (uint64_t)rnfs_tell(ns->f), (uint8_t*)buf, (size_t)len);
+      if (got >= 0)
+      {
+         rnfs_seek(NULL, ns->f, got, 1);
+         return got;
+      }
+   }
+   if (!(c = nfs_stream_take(ns, &slot)))
       return -1;
    r = rnfs_read(c, ns->f, buf, (size_t)len);
    nfs_give(c, slot);
@@ -499,7 +600,14 @@ int64_t retro_vfs_file_seek_nfs(libretro_vfs_implementation_file *stream,
          return -1;
    }
    /* the seek is bookkeeping on the file, no connection involved */
-   return rnfs_seek(NULL, ns->f, offset, w) < 0 ? -1 : 0;
+   if (rnfs_seek(NULL, ns->f, offset, w) < 0)
+      return -1;
+   if (stream->nfs_prefetch)
+   {
+      struct nfs_prefetch *np = (struct nfs_prefetch*)(void*)(uintptr_t)stream->nfs_prefetch;
+      vfs_prefetch_seek(np->p, (uint64_t)rnfs_tell(ns->f));
+   }
+   return 0;
 }
 
 int64_t retro_vfs_file_tell_nfs(libretro_vfs_implementation_file *stream)
@@ -513,7 +621,17 @@ int retro_vfs_file_close_nfs(libretro_vfs_implementation_file *stream)
    struct nfs_stream *ns = (struct nfs_stream*)stream->nfs_fh;
    if (ns)
    {
-      rnfs_close(NULL, ns->f);
+      struct nfs_slot *slot;
+      struct rnfs_ctx *c;
+      nfs_prefetch_stop(stream);
+      /* on a connection: NFSv4 sends its CLOSE, v3 has nothing to say */
+      if ((c = nfs_stream_take(ns, &slot)))
+      {
+         rnfs_close(c, ns->f);
+         nfs_give(c, slot);
+      }
+      else
+         rnfs_close(NULL, ns->f);
       free(ns);
    }
    stream->nfs_fh  = 0;

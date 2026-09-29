@@ -162,10 +162,12 @@ struct libretro_vfs_implementation_file
    intptr_t smb_fh;
    intptr_t smb_ctx;
    intptr_t smb_slot;   /* pool slot held from open to close, 0 if private */
+   intptr_t smb_prefetch; /* struct smb_prefetch *, read-only opens with threads */
 #endif
 #ifdef HAVE_NFSCLIENT
    intptr_t nfs_fh;
    intptr_t nfs_ctx;
+   intptr_t nfs_prefetch; /* struct nfs_prefetch *, read-only opens with threads */
 #endif
 #if defined(HAVE_CDROM) && defined(__APPLE__)
    void *iokit_plugin;   /* IOCFPlugInInterface ** */

@@ -1989,3 +1989,6 @@ SMB CLIENT
 #include "../libretro-common/net/net_nfs3.c"
 #include "../libretro-common/vfs/vfs_implementation_nfs.c"
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#include "../libretro-common/vfs/vfs_prefetch.c"
+#endif

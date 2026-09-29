@@ -11,13 +11,13 @@ endif
 nfs_test: $(SRC)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $(LDLIBS) -o $@
 
-VFS_SRC = vfs_test.c $(COMMON)/vfs/vfs_implementation_nfs.c $(COMMON)/vfs/vfs_implementation.c \
+VFS_SRC = vfs_test.c $(COMMON)/vfs/vfs_implementation_nfs.c $(COMMON)/vfs/vfs_implementation.c $(COMMON)/vfs/vfs_prefetch.c \
       $(COMMON)/streams/file_stream.c $(COMMON)/file/retro_dirent.c $(COMMON)/file/file_path.c \
       $(COMMON)/file/file_path_io.c $(COMMON)/string/rstrtod.c $(COMMON)/compat/fopen_utf8.c \
       $(filter-out nfs_test.c,$(SRC))
 vfs_test: $(VFS_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_NFSCLIENT -I$(ROOT) $(CFLAGS) $(VFS_SRC) $(LDLIBS) -o $@
-THR_SRC = vfs_threads_test.c $(filter-out vfs_test.c,$(VFS_SRC)) $(COMMON)/rthreads/rthreads.c
+THR_SRC = vfs_threads_test.c $(filter-out vfs_test.c,$(VFS_SRC)) $(COMMON)/rthreads/rthreads.c $(COMMON)/rthreads/retro_eventcount.c
 vfs_threads_test: $(THR_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_NFSCLIENT -DHAVE_THREADS -I$(ROOT) $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@
 clean:
