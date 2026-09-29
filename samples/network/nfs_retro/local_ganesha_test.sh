@@ -6,6 +6,7 @@
 # thread test runs under TSan when the tools are built with it. The VFS
 # FSAL changes fsuid per request, so ganesha wants root (as smbd does).
 set -eu
+cd "$(dirname "$0")"
 GANESHA=$(command -v ganesha.nfsd || true)
 [ -n "$GANESHA" ] || { echo "skip: nfs-ganesha not installed"; exit 0; }
 make -s nfs_test vfs_test
