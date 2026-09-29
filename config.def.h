@@ -2214,6 +2214,10 @@
 #define DEFAULT_SMB_CLIENT_MAX_CONTEXTS 20
 #define DEFAULT_SMB_CLIENT_TIMEOUT 5
 #define DEFAULT_SMB_CLIENT_MAX_TIMEOUT 20
+/* Read-ahead window per open file, KiB: small sequential reads are
+ * served from one pipelined fetch of this size. */
+#define DEFAULT_SMB_CLIENT_READAHEAD 1024
+#define DEFAULT_SMB_CLIENT_MAX_READAHEAD 16384
 #endif
 
 /* NFS client (nfs://): pool size, timeout in seconds, and the NFS and
@@ -2227,3 +2231,5 @@
  * no portmapper or MOUNT service and takes the export as the server's
  * pseudo-filesystem path. */
 #define DEFAULT_NFS_VERSION 3
+#define DEFAULT_NFS_READAHEAD 1024
+#define DEFAULT_NFS_MAX_READAHEAD 16384

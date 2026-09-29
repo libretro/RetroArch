@@ -105,6 +105,17 @@ void rsmb_disconnect(struct rsmb_ctx *c);
 
 struct rsmb_file *rsmb_open(struct rsmb_ctx *c, const char *path, int flags);
 int64_t rsmb_read(struct rsmb_ctx *c, struct rsmb_file *f, void *buf, size_t len);
+/**
+ * rsmb_set_readahead:
+ * @bytes    : window per open file; 0 turns read-ahead off
+ *
+ * Reads smaller than the window are served from a window fetched
+ * with pipelined READs, so a run of small sequential reads costs one
+ * round trip per window instead of one per read. Defaults to 1 MiB
+ * (the large-I/O size) once negotiated; the window is allocated on the
+ * first small read of each file and freed with it.
+ **/
+void rsmb_set_readahead(struct rsmb_ctx *c, uint32_t bytes);
 int64_t rsmb_write(struct rsmb_ctx *c, struct rsmb_file *f, const void *buf, size_t len);
 /* whence: 0 set, 1 cur, 2 end. Returns the new position or -1. */
 int64_t rsmb_seek(struct rsmb_ctx *c, struct rsmb_file *f, int64_t off, int whence);

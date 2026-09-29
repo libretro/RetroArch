@@ -433,6 +433,7 @@ typedef struct settings
       unsigned smb_client_auth_mode;
       unsigned smb_client_num_contexts;
       unsigned smb_client_timeout;
+      unsigned smb_client_readahead;
 #endif
 #ifdef HAVE_NFSCLIENT
       unsigned nfs_timeout;
@@ -440,6 +441,7 @@ typedef struct settings
       unsigned nfs_port;
       unsigned nfs_mount_port;
       unsigned nfs_version;
+      unsigned nfs_readahead;
 #endif
       unsigned input_sensor_orientation;
    } uints;

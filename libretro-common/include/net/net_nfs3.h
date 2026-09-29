@@ -73,6 +73,18 @@ void rnfs_set_identity(struct rnfs_ctx *c, uint32_t uid, uint32_t gid);
  * the export is its pseudo-filesystem path (as the server names it,
  * e.g. "/export"), and the default port is 2049. */
 void rnfs_set_version(struct rnfs_ctx *c, unsigned version);
+
+/**
+ * rnfs_set_readahead:
+ * @bytes    : window per open file; 0 turns read-ahead off
+ *
+ * Reads smaller than the window are served from a window fetched with
+ * pipelined READs, so a run of small sequential reads costs one round
+ * trip per window instead of one per read. Defaults to 1 MiB; the
+ * window is allocated on the first small read of each file and freed
+ * with it.
+ **/
+void rnfs_set_readahead(struct rnfs_ctx *c, uint32_t bytes);
 /* Explicit ports; 0 (the default) asks the portmapper. */
 void rnfs_set_ports(struct rnfs_ctx *c, uint16_t nfs_port, uint16_t mount_port);
 

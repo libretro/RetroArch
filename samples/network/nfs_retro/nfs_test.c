@@ -55,6 +55,35 @@ int main(int argc, char **argv)
    CHECK(rnfs_read(c, f, small, 10) == 10 && memcmp(small, big + 100, 10) == 0, "read after seek");
    CHECK(rnfs_seek(c, f, -5, 2) == (int64_t)sizeof(big) - 5, "seek end");
    CHECK(rnfs_read(c, f, small, 64) == 5, "short read at end");
+   /* the read-ahead window: a run of small sequential reads, seeks
+    * inside and outside it, a tiny window so its edges are crossed */
+   {
+      size_t pos = 0, ok = 1;
+      rnfs_set_readahead(c, 4096);
+      CHECK(rnfs_seek(c, f, 0, 0) == 0, "seek start");
+      while (pos < sizeof(big) && ok)
+      {
+         size_t want = 1000;
+         int64_t got = rnfs_read(c, f, small, want > sizeof(small) ? sizeof(small) : want);
+         if (got <= 0 || memcmp(small, big + pos, (size_t)got) != 0)
+            ok = 0;
+         pos += (size_t)got;
+      }
+      CHECK(ok && pos == sizeof(big), "small sequential reads through the window");
+      CHECK(rnfs_seek(c, f, 4090, 0) == 4090 && rnfs_read(c, f, small, 20) == 20
+            && memcmp(small, big + 4090, 20) == 0, "read across a window edge");
+      CHECK(rnfs_seek(c, f, 150000, 0) == 150000 && rnfs_read(c, f, small, 16) == 16
+            && memcmp(small, big + 150000, 16) == 0, "read after a seek out of the window");
+      CHECK(rnfs_seek(c, f, 150004, 0) == 150004 && rnfs_read(c, f, small, 8) == 8
+            && memcmp(small, big + 150004, 8) == 0, "read inside the window after a seek");
+      CHECK(rnfs_seek(c, f, -3, 2) == (int64_t)sizeof(big) - 3 && rnfs_read(c, f, small, 64) == 3
+            && memcmp(small, big + sizeof(big) - 3, 3) == 0, "short read at end through the window");
+      CHECK(rnfs_read(c, f, small, 64) == 0, "eof through the window");
+      rnfs_set_readahead(c, 0);
+      CHECK(rnfs_seek(c, f, 7, 0) == 7 && rnfs_read(c, f, small, 9) == 9
+            && memcmp(small, big + 7, 9) == 0, "read with read-ahead off");
+      rnfs_set_readahead(c, 1024 * 1024);
+   }
    rnfs_close(c, f);
 
    CHECK(rnfs_mkdir(c, "rnfs_dir") == 0, "mkdir");

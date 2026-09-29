@@ -71,6 +71,7 @@ struct smb_conn_key
    char workgroup[256];
    char realm[128];
    char kdc[256];
+   unsigned readahead;
 };
 
 struct smb_pool
@@ -164,6 +165,7 @@ static void smb_conn_key_fill(struct smb_conn_key *key, const char *share)
    key->timeout      = cfg->timeout ? cfg->timeout : RETRO_SMB2_DEFAULT_CLIENT_TIMEOUT;
    key->num_contexts = cfg->num_contexts ? cfg->num_contexts : RETRO_SMB2_DEFAULT_MAX_CLIENTS;
    key->auth_mode    = cfg->auth_mode;
+   key->readahead    = cfg->readahead;
 }
 
 /* A context set up from @key with @auth, connected to the key's share. */
@@ -184,6 +186,8 @@ static struct smb2_context *smb_connect_with(const struct smb_conn_key *key, int
    smb2_set_authentication(ctx, auth);
 #ifdef HAVE_RETROSMB
    smb2_set_kerberos(ctx, key->realm, key->kdc, 0);
+   if (key->readahead)
+      smb2_set_readahead(ctx, key->readahead * 1024);
 #endif
    if (smb2_connect_share(ctx, key->server_address, key->share, username) < 0)
    {

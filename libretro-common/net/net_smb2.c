@@ -119,6 +119,12 @@ struct rsmb_file
    uint64_t offset;
    uint64_t size;
    uint8_t  fid[16];
+   /* read-ahead: the last fetched window, so a run of small
+    * sequential reads costs one round trip per window */
+   uint8_t *ra;
+   uint64_t ra_off;
+   size_t   ra_len;
+   size_t   ra_cap;
 };
 
 struct rsmb_dir
@@ -142,6 +148,8 @@ struct rsmb_ctx
    uint64_t message_id;
    uint32_t tree_id;
    uint32_t max_read;
+   uint32_t readahead;          /* window per file, 0 = off */
+   uint8_t  readahead_set;      /* the caller chose; keep it at negotiate */
    uint32_t max_write;
    uint32_t io_size;            /* largest single read or write */
    size_t   buf_size;           /* rx and tx capacity */
@@ -449,14 +457,16 @@ static uint8_t *rsmb_begin(struct rsmb_ctx *c, unsigned cmd)
  * and reads the reply into c->rx; *body / *body_len describe the
  * reply body, c->status the NT status. Signs and seals per session
  * state; the preauth chain is fed when @preauth is set. */
-static int rsmb_call(struct rsmb_ctx *c, size_t body_len,
-      uint8_t **body, size_t *body_len_out, int preauth)
+/* Sign, seal and send the message in @c->tx; returns its id in @mid
+ * and spends its credit charge, which is cleared. */
+static int rsmb_send_msg(struct rsmb_ctx *c, size_t body_len, int preauth,
+      uint64_t *mid, unsigned *charge)
 {
    uint8_t *msg  = c->tx + SMB2_TRANSFORM_HDR_SIZE;
    size_t   len  = SMB2_HDR_SIZE + body_len;
-   size_t   rlen;
-   uint64_t mid  = c->message_id;
 
+   *mid    = c->message_id;
+   *charge = c->charge ? c->charge : 1;
    if (c->signing && c->session_ready && !c->encrypt)
       rsmb_sign(c, msg, len);
    if (preauth && c->dialect == DIALECT_311)
@@ -468,7 +478,9 @@ static int rsmb_call(struct rsmb_ctx *c, size_t body_len,
       sha512_stream_final(&s, c->preauth);
    }
    /* a multi-credit message consumes as many ids as its charge */
-   c->message_id += c->charge ? c->charge : 1;
+   c->message_id += *charge;
+   c->credits    -= (int)*charge;
+   c->charge      = 0;
 
    if (c->encrypt)
    {
@@ -477,47 +489,63 @@ static int rsmb_call(struct rsmb_ctx *c, size_t body_len,
          rsmb_err(c, "seal failed");
          return -1;
       }
-      if (rsmb_send_raw(c, c->tx, SMB2_TRANSFORM_HDR_SIZE + len) != 0)
-         return -1;
+      return rsmb_send_raw(c, c->tx, SMB2_TRANSFORM_HDR_SIZE + len);
    }
-   else if (rsmb_send_raw(c, msg, len) != 0)
-      return -1;
+   return rsmb_send_raw(c, msg, len);
+}
 
+/* Receive the next real reply (interim STATUS_PENDING ones are
+ * skipped) into @c->rx, unsealed and verified; its id in @mid, its
+ * status in c->status, its credit grant added to the balance. */
+static int rsmb_recv_msg(struct rsmb_ctx *c, size_t *rlen, uint64_t *mid)
+{
    for (;;)
    {
-      if (rsmb_recv_raw(c, &rlen) != 0)
+      if (rsmb_recv_raw(c, rlen) != 0)
          return -1;
       if (c->rx[0] == 0xfd)
       {
-         if (!c->encrypt || rsmb_unseal(c, &rlen) != 0)
+         if (!c->encrypt || rsmb_unseal(c, rlen) != 0)
          {
             rsmb_err(c, "unseal failed");
             return -1;
          }
       }
-      if (rlen < SMB2_HDR_SIZE || c->rx[0] != 0xfe)
+      if (*rlen < SMB2_HDR_SIZE || c->rx[0] != 0xfe)
       {
          rsmb_err(c, "bad response");
          return -1;
       }
-      /* STATUS_PENDING interim replies carry our id and 0x103. */
-      if (get64(c->rx + 24) != mid)
-         continue;
       if (get32(c->rx + 8) == 0x00000103 && (get32(c->rx + 16) & 0x2))
          continue;
       break;
    }
-
+   *mid      = get64(c->rx + 24);
    c->status = get32(c->rx + 8);
-   /* credit balance: what this reply grants, less what the message spent */
-   c->credits += (int)get16(c->rx + 14) - (int)(c->charge ? c->charge : 1);
-   c->charge   = 0;
+   c->credits += (int)get16(c->rx + 14);
    if (c->signing && c->session_ready && !c->encrypt
-         && rsmb_verify_sig(c, c->rx, rlen) != 0)
+         && rsmb_verify_sig(c, c->rx, *rlen) != 0)
    {
       rsmb_err(c, "bad signature");
       return -1;
    }
+   return 0;
+}
+
+static int rsmb_call(struct rsmb_ctx *c, size_t body_len,
+      uint8_t **body, size_t *body_len_out, int preauth)
+{
+   size_t   rlen;
+   uint64_t mid, got;
+   unsigned charge;
+
+   if (rsmb_send_msg(c, body_len, preauth, &mid, &charge) != 0)
+      return -1;
+   do
+   {
+      if (rsmb_recv_msg(c, &rlen, &got) != 0)
+         return -1;
+   } while (got != mid);
    if (preauth && c->dialect == DIALECT_311
          && c->status == STATUS_MORE_PROCESSING_REQUIRED)
    {
@@ -579,6 +607,8 @@ static int rsmb_negotiate(struct rsmb_ctx *c)
    }
    c->dialect   = get16(r + 4);
    c->max_read  = get32(r + 32);
+   if (!c->readahead_set)
+      c->readahead = SMB2_LARGE_IO;
    c->max_write = get32(r + 36);
    /* Large I/O needs multi-credit requests, which 2.0.2 does not have. */
    {
@@ -1410,62 +1440,185 @@ struct rsmb_file *rsmb_open(struct rsmb_ctx *c, const char *path, int flags)
    return f;
 }
 
+/* Up to this many READ requests in flight at once: the fetch of a
+ * window runs near line rate instead of one round trip per chunk. */
+#define RSMB_PIPELINE 8
+
+/* Fetch @len octets at @off into @out with pipelined READs. Returns
+ * the octets read (short at end of file), -1 on a failure. Requests
+ * are issued while credits last and replies matched by id, so a
+ * server answering out of order is fine. */
+static int64_t rsmb_fetch(struct rsmb_ctx *c, struct rsmb_file *f,
+      uint64_t off, uint8_t *out, size_t len)
+{
+   uint64_t mids[RSMB_PIPELINE];
+   size_t   offs[RSMB_PIPELINE], lens[RSMB_PIPELINE];
+   unsigned inflight = 0, i;
+   size_t   sent = 0, end = 0;     /* contiguous data: up to the first short reply */
+   int      eof = 0, fail = 0, short_at = 0;
+
+   while ((sent < len && !eof && !fail) || inflight)
+   {
+      /* issue while there is room, work and credit */
+      while (inflight < RSMB_PIPELINE && sent < len && !eof && !fail)
+      {
+         size_t   n = len - sent;
+         unsigned charge;
+         uint8_t *b;
+         if (n > c->max_read)
+            n = c->max_read;
+         charge = (unsigned)((n + SMB2_MAX_IO - 1) / SMB2_MAX_IO);
+         if (charge > 1 && c->credits < (int)charge)
+         {
+            if (inflight)
+               break;                        /* wait for grants */
+            charge = c->credits > 0 ? (unsigned)c->credits : 1;
+            n = (size_t)charge * SMB2_MAX_IO;
+            if (n > len - sent)
+               n = len - sent;
+         }
+         else if (charge <= 1 && c->credits < 1 && inflight)
+            break;
+         c->charge = charge;
+         b = rsmb_begin(c, SMB2_READ);
+         memset(b, 0, 49);
+         put16(b, 49);
+         b[2] = 0x50;                          /* Padding */
+         put32(b + 4, (uint32_t)n);
+         put64(b + 8, off + sent);
+         memcpy(b + 16, f->fid, 16);
+         if (rsmb_send_msg(c, 49, 0, &mids[inflight], &charge) != 0)
+         {
+            fail = 1;
+            break;
+         }
+         offs[inflight] = sent;
+         lens[inflight] = n;
+         inflight++;
+         sent += n;
+      }
+      if (!inflight)
+         break;
+      /* take one reply and match it */
+      {
+         size_t   rlen;
+         uint64_t mid;
+         unsigned slot = RSMB_PIPELINE;
+         if (rsmb_recv_msg(c, &rlen, &mid) != 0)
+            return -1;
+         for (i = 0; i < inflight; i++)
+            if (mids[i] == mid)
+               slot = i;
+         if (slot == RSMB_PIPELINE)
+            continue;                          /* not ours: a stray */
+         if (c->status == STATUS_END_OF_FILE)
+         {
+            eof = 1;
+            if (!short_at || offs[slot] < end)
+            {
+               end      = offs[slot];
+               short_at = 1;
+            }
+         }
+         else if (c->status != STATUS_SUCCESS || rlen < SMB2_HDR_SIZE + 16)
+         {
+            rsmb_err(c, "read failed");
+            fail = 1;
+         }
+         else
+         {
+            const uint8_t *r = c->rx + SMB2_HDR_SIZE;
+            uint32_t doff = r[2], got = get32(r + 4);
+            if (doff < SMB2_HDR_SIZE || doff + got > rlen || got > lens[slot])
+            {
+               rsmb_err(c, "bad read reply");
+               fail = 1;
+            }
+            else
+            {
+               memcpy(out + offs[slot], c->rx + doff, got);
+               /* a short or empty reply ends the contiguous run
+                * there, whatever later chunks answered */
+               if (got < lens[slot])
+               {
+                  eof = 1;
+                  if (!short_at || offs[slot] + got < end)
+                  {
+                     end      = offs[slot] + got;
+                     short_at = 1;
+                  }
+               }
+            }
+         }
+         /* drop the slot; order among the rest is irrelevant */
+         mids[slot] = mids[inflight - 1];
+         offs[slot] = offs[inflight - 1];
+         lens[slot] = lens[inflight - 1];
+         inflight--;
+      }
+   }
+   if (fail)
+      return -1;
+   return (int64_t)(short_at ? end : sent);
+}
+
 int64_t rsmb_read(struct rsmb_ctx *c, struct rsmb_file *f, void *buf, size_t len)
 {
-   uint8_t *out  = (uint8_t*)buf;
-   size_t   done = 0;
+   uint8_t *out = (uint8_t*)buf;
+   int64_t  n;
 
-   while (done < len)
+   if (!len)
+      return 0;
+   /* large reads go straight to the caller's buffer */
+   if (!c->readahead || len >= c->readahead)
    {
-      uint8_t *b;
-      uint8_t *r;
-      size_t   rlen, n = len - done;
-      uint32_t got, doff;
-      if (n > c->max_read)
-         n = c->max_read;
-      /* one credit per 64 KiB; never more than the server has granted */
-      c->charge = (unsigned)((n + SMB2_MAX_IO - 1) / SMB2_MAX_IO);
-      if (c->charge > 1 && c->credits < (int)c->charge)
-      {
-         c->charge = c->credits > 0 ? (unsigned)c->credits : 1;
-         n = (size_t)c->charge * SMB2_MAX_IO;
-      }
-      b = rsmb_begin(c, SMB2_READ);
-      memset(b, 0, 49);
-      put16(b, 49);
-      b[2] = 0x50;                          /* Padding */
-      put32(b + 4, (uint32_t)n);
-      put64(b + 8, f->offset);
-      memcpy(b + 16, f->fid, 16);
-      if (rsmb_call(c, 49, &r, &rlen, 0) != 0)
-         return -1;
-      if (c->status == STATUS_END_OF_FILE)
-         break;
-      if (c->status != STATUS_SUCCESS || rlen < 16)
-      {
-         rsmb_err(c, "read failed");
-         return -1;
-      }
-      doff = r[2];
-      got  = get32(r + 4);
-      if (doff < SMB2_HDR_SIZE || doff + got > rlen + SMB2_HDR_SIZE)
-      {
-         rsmb_err(c, "bad read reply");
-         return -1;
-      }
-      memcpy(out + done, c->rx + doff, got);
-      done      += got;
-      f->offset += got;
-      if (got < n)
-         break;
+      f->ra_len = 0;
+      n = rsmb_fetch(c, f, f->offset, out, len);
+      if (n > 0)
+         f->offset += (uint64_t)n;
+      return n;
    }
-   return (int64_t)done;
+   /* served from the window when it holds the range */
+   if (f->ra_len && f->offset >= f->ra_off && f->offset + len <= f->ra_off + f->ra_len)
+   {
+      memcpy(out, f->ra + (f->offset - f->ra_off), len);
+      f->offset += len;
+      return (int64_t)len;
+   }
+   /* otherwise refill the window from here; the tail of a previous
+    * window is not reused, one fetch is cheaper than the bookkeeping */
+   if (!f->ra)
+   {
+      f->ra_cap = c->readahead;
+      if (!(f->ra = (uint8_t*)malloc(f->ra_cap)))
+      {
+         n = rsmb_fetch(c, f, f->offset, out, len);
+         if (n > 0)
+            f->offset += (uint64_t)n;
+         return n;
+      }
+   }
+   n = rsmb_fetch(c, f, f->offset, f->ra, f->ra_cap);
+   if (n < 0)
+   {
+      f->ra_len = 0;
+      return -1;
+   }
+   f->ra_off = f->offset;
+   f->ra_len = (size_t)n;
+   if ((size_t)n < len)
+      len = (size_t)n;
+   memcpy(out, f->ra, len);
+   f->offset += len;
+   return (int64_t)len;
 }
 
 int64_t rsmb_write(struct rsmb_ctx *c, struct rsmb_file *f, const void *buf, size_t len)
 {
    const uint8_t *in = (const uint8_t*)buf;
    size_t done = 0;
+
+   f->ra_len = 0;                  /* the window is stale past a write */
 
    while (done < len)
    {
@@ -1528,6 +1681,7 @@ int rsmb_close(struct rsmb_ctx *c, struct rsmb_file *f)
    if (!f)
       return -1;
    r = rsmb_close_fid(c, f->fid);
+   free(f->ra);
    free(f);
    return r;
 }
@@ -1551,13 +1705,20 @@ int rsmb_ftruncate(struct rsmb_ctx *c, struct rsmb_file *f, uint64_t size)
       rsmb_err(c, "truncate failed");
       return -1;
    }
-   f->size = size;
+   f->size   = size;
+   f->ra_len = 0;
    if (f->offset > size)
       f->offset = size;
    return 0;
 }
 
 uint32_t rsmb_max_read(const struct rsmb_ctx *c)  { return c->max_read; }
+
+void rsmb_set_readahead(struct rsmb_ctx *c, uint32_t bytes)
+{
+   c->readahead     = bytes;
+   c->readahead_set = 1;
+}
 uint32_t rsmb_max_write(const struct rsmb_ctx *c) { return c->max_write; }
 
 int rsmb_stat(struct rsmb_ctx *c, const char *path, struct rsmb_stat *st)
@@ -1751,6 +1912,42 @@ int rsmb_echo(struct rsmb_ctx *c)
 /* DCERPC on the named pipe: a bind, then one request; both PDUs and
  * the NDR stub are built and picked apart by hand, this being the one
  * RPC the frontend makes. */
+/* One READ on a pipe: whatever the server has, no window, nothing
+ * else in flight (a pipe holds extra reads pending). */
+static int64_t rsmb_pipe_read(struct rsmb_ctx *c, struct rsmb_file *pipe,
+      uint8_t *out, size_t len)
+{
+   uint8_t *b, *r;
+   size_t   rlen;
+   uint32_t got, doff;
+   if (len > c->max_read)
+      len = c->max_read;
+   c->charge = (unsigned)((len + SMB2_MAX_IO - 1) / SMB2_MAX_IO);
+   if (c->charge > 1 && c->credits < (int)c->charge)
+   {
+      c->charge = c->credits > 0 ? (unsigned)c->credits : 1;
+      len = (size_t)c->charge * SMB2_MAX_IO;
+   }
+   b = rsmb_begin(c, SMB2_READ);
+   memset(b, 0, 49);
+   put16(b, 49);
+   b[2] = 0x50;
+   put32(b + 4, (uint32_t)len);
+   memcpy(b + 16, pipe->fid, 16);
+   if (rsmb_call(c, 49, &r, &rlen, 0) != 0)
+      return -1;
+   if (c->status == STATUS_END_OF_FILE)
+      return 0;
+   if (c->status != STATUS_SUCCESS || rlen < 16)
+      return -1;
+   doff = r[2];
+   got  = get32(r + 4);
+   if (doff < SMB2_HDR_SIZE || doff + got > rlen + SMB2_HDR_SIZE || got > len)
+      return -1;
+   memcpy(out, c->rx + doff, got);
+   return (int64_t)got;
+}
+
 static int rsmb_pipe_transceive(struct rsmb_ctx *c, struct rsmb_file *pipe,
       const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap,
       size_t *resp_len)
@@ -1760,16 +1957,13 @@ static int rsmb_pipe_transceive(struct rsmb_ctx *c, struct rsmb_file *pipe,
    pipe->offset = 0;
    if (rsmb_write(c, pipe, req, req_len) != (int64_t)req_len)
       return -1;
-   pipe->offset = 0;
-   n = rsmb_read(c, pipe, resp, resp_cap);
+   n = rsmb_pipe_read(c, pipe, resp, resp_cap);
    if (n < 16)
       return -1;
    frag = get16(resp + 8);
    while ((size_t)n < frag && (size_t)n < resp_cap)
    {
-      int64_t m;
-      pipe->offset = 0;
-      m = rsmb_read(c, pipe, resp + n, resp_cap - (size_t)n);
+      int64_t m = rsmb_pipe_read(c, pipe, resp + n, resp_cap - (size_t)n);
       if (m <= 0)
          break;
       n += m;

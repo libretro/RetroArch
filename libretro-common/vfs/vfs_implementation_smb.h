@@ -31,6 +31,7 @@ struct smb_settings {
     * the server itself; empty realm means NTLMSSP only */
    const char *realm;
    const char *kdc;
+   unsigned    readahead;       /* KiB per open file; 0: the client's default */
 };
 
 typedef struct smb_settings smb_settings_t;

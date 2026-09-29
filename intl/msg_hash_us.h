@@ -36888,6 +36888,14 @@ MSG_HASH(
    "3 uses the portmapper and MOUNT service; 4 connects straight to the NFS port and takes the export as the server's pseudo-filesystem path."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NFS_CLIENT_READAHEAD,
+   "NFS Read-Ahead (KiB)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NFS_CLIENT_READAHEAD,
+   "Data fetched per network round trip when a game reads a file in small pieces. Larger is smoother over a slow link and costs that much memory per open file."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NFS_CLIENT_BROWSE,
    "Browse NFS Export"
    )

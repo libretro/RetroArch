@@ -62,6 +62,35 @@ int main(int argc, char **argv)
    CHECK(rsmb_read(c, f, small, 10) == 10 && memcmp(small, big + 100, 10) == 0, "read after seek");
    CHECK(rsmb_seek(c, f, -5, 2) == (int64_t)sizeof(big) - 5, "seek end");
    CHECK(rsmb_read(c, f, small, 64) == 5, "short read at end");
+   /* the read-ahead window: a run of small sequential reads, seeks
+    * inside and outside it, a tiny window so its edges are crossed */
+   {
+      size_t pos = 0, ok = 1;
+      rsmb_set_readahead(c, 4096);
+      CHECK(rsmb_seek(c, f, 0, 0) == 0, "seek start");
+      while (pos < sizeof(big) && ok)
+      {
+         size_t want = 1000;
+         int64_t got = rsmb_read(c, f, small, want > sizeof(small) ? sizeof(small) : want);
+         if (got <= 0 || memcmp(small, big + pos, (size_t)got) != 0)
+            ok = 0;
+         pos += (size_t)got;
+      }
+      CHECK(ok && pos == sizeof(big), "small sequential reads through the window");
+      CHECK(rsmb_seek(c, f, 4090, 0) == 4090 && rsmb_read(c, f, small, 20) == 20
+            && memcmp(small, big + 4090, 20) == 0, "read across a window edge");
+      CHECK(rsmb_seek(c, f, 150000, 0) == 150000 && rsmb_read(c, f, small, 16) == 16
+            && memcmp(small, big + 150000, 16) == 0, "read after a seek out of the window");
+      CHECK(rsmb_seek(c, f, 150004, 0) == 150004 && rsmb_read(c, f, small, 8) == 8
+            && memcmp(small, big + 150004, 8) == 0, "read inside the window after a seek");
+      CHECK(rsmb_seek(c, f, -3, 2) == (int64_t)sizeof(big) - 3 && rsmb_read(c, f, small, 64) == 3
+            && memcmp(small, big + sizeof(big) - 3, 3) == 0, "short read at end through the window");
+      CHECK(rsmb_read(c, f, small, 64) == 0, "eof through the window");
+      rsmb_set_readahead(c, 0);
+      CHECK(rsmb_seek(c, f, 7, 0) == 7 && rsmb_read(c, f, small, 9) == 9
+            && memcmp(small, big + 7, 9) == 0, "read with read-ahead off");
+      rsmb_set_readahead(c, 1024 * 1024);
+   }
    CHECK(rsmb_close(c, f) == 0, "close");
 
    d = rsmb_opendir(c, "");

@@ -259,6 +259,8 @@ static struct rnfs_ctx *nfs_take(const char *server, const char *export_path,
       {
          rnfs_set_ports(c, (uint16_t)cfg->nfs_port, (uint16_t)cfg->mount_port);
          rnfs_set_version(c, cfg->version ? cfg->version : 3);
+         if (cfg->readahead)
+            rnfs_set_readahead(c, cfg->readahead * 1024);
       }
       if (rnfs_connect(c, server, export_path) != 0)
       {

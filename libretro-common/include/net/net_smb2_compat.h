@@ -99,6 +99,7 @@ static INLINE void smb2_set_user(struct smb2_context *ctx, const char *u)     { 
 static INLINE void smb2_set_password(struct smb2_context *ctx, const char *p) { rsmb_set_password(SMB2_CTX(ctx), p); }
 static INLINE void smb2_set_domain(struct smb2_context *ctx, const char *d)   { rsmb_set_domain(SMB2_CTX(ctx), d); }
 static INLINE void smb2_set_timeout(struct smb2_context *ctx, int seconds)    { rsmb_set_timeout(SMB2_CTX(ctx), seconds > 0 ? (unsigned)seconds : 0); }
+static INLINE void smb2_set_readahead(struct smb2_context *ctx, uint32_t bytes){ rsmb_set_readahead(SMB2_CTX(ctx), bytes); }
 static INLINE void smb2_set_security_mode(struct smb2_context *ctx, int mode) { ((struct smb2_compat_ctx*)ctx)->auth_mode = mode; }
 static INLINE void smb2_set_authentication(struct smb2_context *ctx, int mode){ ((struct smb2_compat_ctx*)ctx)->auth_mode = mode; }
 

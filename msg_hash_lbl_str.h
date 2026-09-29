@@ -941,6 +941,7 @@
 #define MENU_ENUM_LABEL_NFS_CLIENT_PORT_STR "nfs_client_port"
 #define MENU_ENUM_LABEL_NFS_CLIENT_MOUNT_PORT_STR "nfs_client_mount_port"
 #define MENU_ENUM_LABEL_NFS_CLIENT_VERSION_STR "nfs_client_version"
+#define MENU_ENUM_LABEL_NFS_CLIENT_READAHEAD_STR "nfs_client_readahead"
 #define MENU_ENUM_LABEL_NFS_CLIENT_BROWSE_STR "nfs_client_browse"
 
 /* Not a settings row: a submenu entry, listed here so the generated
@@ -1588,6 +1589,7 @@
 #define MENU_ENUM_LABEL_SMB_CLIENT_ENABLE_STR "smb_client_enable"
 #define MENU_ENUM_LABEL_SMB_CLIENT_KDC_STR "smb_client_kdc"
 #define MENU_ENUM_LABEL_SMB_CLIENT_NUM_CONTEXTS_STR "smb_client_num_contexts"
+#define MENU_ENUM_LABEL_SMB_CLIENT_READAHEAD_STR "smb_client_readahead"
 #define MENU_ENUM_LABEL_SMB_CLIENT_REALM_STR "smb_client_realm"
 #define MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS_STR "smb_client_settings"
 #define MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT_STR "smb_client_timeout"

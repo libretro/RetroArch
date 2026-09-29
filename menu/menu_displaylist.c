@@ -13869,6 +13869,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_SMB_CLIENT_AUTH_MODE,    PARSE_ONLY_UINT, false},
                {MENU_ENUM_LABEL_SMB_CLIENT_NUM_CONTEXTS, PARSE_ONLY_UINT, false},
                {MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT,      PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_SMB_CLIENT_READAHEAD,    PARSE_ONLY_UINT, false},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -13884,6 +13885,7 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_SMB_CLIENT_AUTH_MODE:
                   case MENU_ENUM_LABEL_SMB_CLIENT_NUM_CONTEXTS:
                   case MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT:
+                  case MENU_ENUM_LABEL_SMB_CLIENT_READAHEAD:
                      build_list[i].checked = smb_enable;
                      break;
                   default:
@@ -13917,6 +13919,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_NFS_CLIENT_PORT,         PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_NFS_CLIENT_MOUNT_PORT,   PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_NFS_CLIENT_VERSION,      PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_NFS_CLIENT_READAHEAD,    PARSE_ONLY_UINT},
             };
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {

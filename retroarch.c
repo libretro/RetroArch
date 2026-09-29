@@ -401,6 +401,7 @@ void retroarch_smb_init(void)
    smb_global_cfg.password = settings->arrays.smb_client_password;
    smb_global_cfg.workgroup = settings->arrays.smb_client_workgroup;
    smb_global_cfg.timeout = settings->uints.smb_client_timeout;
+   smb_global_cfg.readahead = settings->uints.smb_client_readahead;
    smb_global_cfg.num_contexts = settings->uints.smb_client_num_contexts;
    smb_global_cfg.auth_mode = settings->uints.smb_client_auth_mode;
    smb_global_cfg.subdir = settings->arrays.smb_client_subdir;
@@ -427,6 +428,7 @@ void retroarch_nfs_init(void)
    nfs_global_cfg.nfs_port       = settings->uints.nfs_port;
    nfs_global_cfg.mount_port     = settings->uints.nfs_mount_port;
    nfs_global_cfg.version        = settings->uints.nfs_version;
+   nfs_global_cfg.readahead      = settings->uints.nfs_readahead;
 
    nfs_init_cfg(&nfs_global_cfg);
 }
