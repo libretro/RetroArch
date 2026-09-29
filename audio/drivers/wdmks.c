@@ -2689,7 +2689,11 @@ static void wdmks_rt_refill_thread(void *data)
     * quarter of the loop's duration, so a sample that lands late by
     * up to three quarters of a loop is still inside the lap, floored
     * where wdmks_rt_wait_room floors its own interval.  Half the loop
-    * left a 2 ms loop one late millisecond from losing a lap.  The
+    * left a 2 ms loop one late millisecond from losing a lap.  Under
+    * the floor the cadence is no longer a quarter of the loop - a
+    * loop shorter than 2 ms would be sampled fewer than four times a
+    * lap - but no such loop is asked for: the frontend floors the
+    * latency at 2 ms before the driver sizes the loop from it.  The
     * high-resolution timer keeps it honest - Sleep(1) was a 15.6 ms
     * tick, longer than a typical loop.  Bounded residual on join: at
     * most one slice. */
