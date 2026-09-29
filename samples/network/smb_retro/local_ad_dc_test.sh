@@ -15,7 +15,21 @@ make -s smb_test
 RUN=${RUNNER:-}
 EXE=${EXE:-}
 DCNAME=dc1.ad.retro.test
-D=$(mktemp -d); chmod 755 $D; mkdir -p $D/share; chmod 777 $D/share
+# Provisioning sets POSIX ACLs on SYSVOL, so the DC has to live on a
+# filesystem that takes them: the temp directory first, then the
+# repository's own filesystem, then /var/tmp. Probed with setfacl
+# (package acl); without any ACL-capable place the matrix is skipped
+# rather than failed.
+acl_dir() {
+   d=$(mktemp -d "$1/ad_dc.XXXXXX" 2>/dev/null) || return 1
+   if command -v setfacl >/dev/null 2>&1; then
+      if ! setfacl -m u:0:rwx "$d" >/dev/null 2>&1; then rmdir "$d"; return 1; fi
+   fi
+   echo "$d"
+}
+D=$(acl_dir "${TMPDIR:-/tmp}" || acl_dir "$(pwd)" || acl_dir /var/tmp || true)
+[ -n "$D" ] || { echo "skip: no directory with POSIX ACL support for the AD DC"; exit 0; }
+chmod 755 $D; mkdir -p $D/share; chmod 777 $D/share
 stop() { pkill -f "samba -F -s $D/etc/smb.conf" 2>/dev/null || true; pkill -f "configfile=$D/etc/smb.conf" 2>/dev/null || true; sleep 0.5; }
 cleanup() { stop; rm -rf $D; }
 trap cleanup EXIT
@@ -27,7 +41,7 @@ sleep 0.5
 grep -q "$DCNAME" /etc/hosts || echo "127.0.0.1 $DCNAME" >> /etc/hosts
 samba-tool domain provision --realm=AD.RETRO.TEST --domain=ADRETRO --server-role=dc \
    --dns-backend=NONE --adminpass='Adm1n!!pass' --targetdir=$D --host-name=dc1 --use-rfc2307 > $D/provision.log 2>&1 \
-   || { echo "FAIL: provision: $(tail -3 $D/provision.log)"; exit 1; }
+   || { echo "FAIL: provision:"; tail -15 $D/provision.log; exit 1; }
 cat >> $D/etc/smb.conf << EOF
 
 [global]
