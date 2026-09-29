@@ -412,3 +412,1204 @@ void krb5_prf(const struct krb5_key *key, const uint8_t *data, size_t len,
    crypto_memzero(&kp, sizeof(kp));
    crypto_memzero(digest, sizeof(digest));
 }
+
+/* ======================================================================
+ * The protocol: DER, the KDC exchanges and the AP exchange
+ * ====================================================================== */
+
+#include <stdio.h>
+#include <time.h>
+#include <net/net_compat.h>
+#include <net/net_socket.h>
+#include <compat/strl.h>
+
+/* ---- DER writer ------------------------------------------------ */
+
+/* Content is written forward into a flat buffer; a constructed value
+ * is closed by der_wrap(), which moves what was written since @start
+ * up to make room for the tag and its minimal length. Messages here
+ * are a few hundred octets, so the moves are nothing. */
+struct der_w
+{
+   uint8_t *buf;
+   size_t   len;
+   size_t   cap;
+   int      fail;
+};
+
+static void der_put(struct der_w *w, const uint8_t *p, size_t n)
+{
+   if (w->len + n > w->cap)
+   {
+      w->fail = 1;
+      return;
+   }
+   memcpy(w->buf + w->len, p, n);
+   w->len += n;
+}
+
+static void der_put_byte(struct der_w *w, uint8_t b)
+{
+   der_put(w, &b, 1);
+}
+
+static size_t der_len_size(size_t n)
+{
+   if (n < 128)
+      return 1;
+   if (n < 256)
+      return 2;
+   if (n < 65536)
+      return 3;
+   return 4;
+}
+
+/* Close a value: the octets from @start to the end become the content
+ * of a TLV with @tag (already including the class / constructed bits). */
+static void der_wrap(struct der_w *w, size_t start, uint8_t tag)
+{
+   size_t n   = w->len - start;
+   size_t hdr = 1 + der_len_size(n);
+   uint8_t *p;
+   if (w->fail || w->len + hdr > w->cap)
+   {
+      w->fail = 1;
+      return;
+   }
+   memmove(w->buf + start + hdr, w->buf + start, n);
+   p    = w->buf + start;
+   *p++ = tag;
+   if (n < 128)
+      *p++ = (uint8_t)n;
+   else if (n < 256)
+   {
+      *p++ = 0x81; *p++ = (uint8_t)n;
+   }
+   else if (n < 65536)
+   {
+      *p++ = 0x82; *p++ = (uint8_t)(n >> 8); *p++ = (uint8_t)n;
+   }
+   else
+   {
+      *p++ = 0x83; *p++ = (uint8_t)(n >> 16); *p++ = (uint8_t)(n >> 8); *p++ = (uint8_t)n;
+   }
+   w->len += hdr;
+}
+
+#define DER_SEQ        0x30
+#define DER_INT        0x02
+#define DER_BITSTR     0x03
+#define DER_OCTSTR     0x04
+#define DER_GENSTR     0x1b
+#define DER_GENTIME    0x18
+#define DER_CTX(n)     (uint8_t)(0xa0 | (n))     /* [n] explicit */
+#define DER_APP(n)     (uint8_t)(0x60 | (n))     /* [APPLICATION n] */
+
+static void der_int32(struct der_w *w, int32_t v)
+{
+   size_t start = w->len;
+   uint8_t b[4];
+   unsigned n = 4, i;
+   crypto_store32_be(b, (uint32_t)v);
+   /* minimal two's complement */
+   while (n > 1 && ((b[4 - n] == 0 && !(b[5 - n] & 0x80))
+            || (b[4 - n] == 0xff && (b[5 - n] & 0x80))))
+      n--;
+   for (i = 4 - n; i < 4; i++)
+      der_put_byte(w, b[i]);
+   der_wrap(w, start, DER_INT);
+}
+
+/* UInt32 values above INT32_MAX need a leading zero */
+static void der_uint32(struct der_w *w, uint32_t v)
+{
+   size_t start = w->len;
+   uint8_t b[5];
+   unsigned n, i;
+   b[0] = 0;
+   crypto_store32_be(b + 1, v);
+   n = 5;
+   while (n > 1 && b[5 - n] == 0 && !(b[6 - n] & 0x80))
+      n--;
+   for (i = 5 - n; i < 5; i++)
+      der_put_byte(w, b[i]);
+   der_wrap(w, start, DER_INT);
+}
+
+static void der_octets(struct der_w *w, uint8_t tag, const uint8_t *p, size_t n)
+{
+   size_t start = w->len;
+   der_put(w, p, n);
+   der_wrap(w, start, tag);
+}
+
+static void der_string(struct der_w *w, const char *s)
+{
+   der_octets(w, DER_GENSTR, (const uint8_t*)s, strlen(s));
+}
+
+/* Wrap the last value written since @start in [n] */
+static void der_ctx(struct der_w *w, size_t start, unsigned n)
+{
+   der_wrap(w, start, DER_CTX(n));
+}
+
+/* KerberosTime "YYYYMMDDHHMMSSZ" from a UTC time_t. */
+static void krb5_civil_from_days(int64_t z, int *y, unsigned *m, unsigned *d)
+{
+   int64_t era, doe, yoe, mp;
+   z  += 719468;
+   era = (z >= 0 ? z : z - 146096) / 146097;
+   doe = z - era * 146097;
+   yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+   *y  = (int)(yoe + era * 400);
+   {
+      int64_t doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+      mp  = (5 * doy + 2) / 153;
+      *d  = (unsigned)(doy - (153 * mp + 2) / 5 + 1);
+      *m  = (unsigned)(mp < 10 ? mp + 3 : mp - 9);
+   }
+   if (*m <= 2)
+      (*y)++;
+}
+
+static void krb5_time_string(int64_t t, char *out)
+{
+   int y; unsigned m, d;
+   int64_t days = t / 86400, secs = t % 86400;
+   if (secs < 0)
+   {
+      secs += 86400;
+      days--;
+   }
+   krb5_civil_from_days(days, &y, &m, &d);
+   out[0]  = (char)('0' + (y / 1000) % 10); out[1] = (char)('0' + (y / 100) % 10);
+   out[2]  = (char)('0' + (y / 10) % 10);   out[3] = (char)('0' + y % 10);
+   out[4]  = (char)('0' + m / 10);          out[5] = (char)('0' + m % 10);
+   out[6]  = (char)('0' + d / 10);          out[7] = (char)('0' + d % 10);
+   out[8]  = (char)('0' + (int)(secs / 36000));       out[9]  = (char)('0' + (int)(secs / 3600 % 10));
+   out[10] = (char)('0' + (int)(secs % 3600 / 600));  out[11] = (char)('0' + (int)(secs % 3600 / 60 % 10));
+   out[12] = (char)('0' + (int)(secs % 60 / 10));     out[13] = (char)('0' + (int)(secs % 60 % 10));
+   out[14] = 'Z';
+   out[15] = '\0';
+}
+
+static void der_time(struct der_w *w, int64_t t)
+{
+   char s[16];
+   krb5_time_string(t, s);
+   der_octets(w, DER_GENTIME, (const uint8_t*)s, 15);
+}
+
+/* PrincipalName: name-type [0], name-string [1] SEQUENCE OF string.
+ * @name is "a/b/c" style; the separator splits components. */
+static void der_principal(struct der_w *w, int type, const char *name)
+{
+   size_t seq = w->len, s;
+   const char *p = name;
+   s = w->len; der_int32(w, type); der_ctx(w, s, 0);
+   s = w->len;
+   {
+      size_t inner = w->len;
+      while (*p)
+      {
+         const char *e = strchr(p, '/');
+         size_t   n    = e ? (size_t)(e - p) : strlen(p);
+         der_octets(w, DER_GENSTR, (const uint8_t*)p, n);
+         p += n;
+         if (*p == '/')
+            p++;
+      }
+      der_wrap(w, inner, DER_SEQ);
+   }
+   der_ctx(w, s, 1);
+   der_wrap(w, seq, DER_SEQ);
+}
+
+/* EncryptedData: etype [0], (kvno [1] if @kvno), cipher [2] */
+static void der_encrypted(struct der_w *w, int etype, uint32_t kvno,
+      const uint8_t *cipher, size_t len)
+{
+   size_t seq = w->len, s;
+   s = w->len; der_int32(w, etype); der_ctx(w, s, 0);
+   if (kvno)
+   {
+      s = w->len; der_uint32(w, kvno); der_ctx(w, s, 1);
+   }
+   s = w->len; der_octets(w, DER_OCTSTR, cipher, len); der_ctx(w, s, 2);
+   der_wrap(w, seq, DER_SEQ);
+}
+
+/* ---- DER reader ------------------------------------------------ */
+
+struct der_r
+{
+   const uint8_t *p;
+   const uint8_t *end;
+};
+
+/* Read one TLV at the cursor: returns its tag, sets @c to its content
+ * and advances past it. 0 on any malformation. */
+static int der_next(struct der_r *r, uint8_t *tag, struct der_r *c)
+{
+   size_t n;
+   const uint8_t *p = r->p;
+   if (p + 2 > r->end)
+      return 0;
+   *tag = *p++;
+   if ((*tag & 0x1f) == 0x1f)
+      return 0;                       /* high tag numbers never occur */
+   n = *p++;
+   if (n & 0x80)
+   {
+      unsigned k = n & 0x7f, i;
+      if (k == 0 || k > 4 || p + k > r->end)
+         return 0;
+      n = 0;
+      for (i = 0; i < k; i++)
+         n = (n << 8) | *p++;
+   }
+   if (n > (size_t)(r->end - p))
+      return 0;
+   c->p   = p;
+   c->end = p + n;
+   r->p   = p + n;
+   return 1;
+}
+
+/* The next TLV, which must carry @want */
+static int der_expect(struct der_r *r, uint8_t want, struct der_r *c)
+{
+   uint8_t tag;
+   if (!der_next(r, &tag, c) || tag != want)
+      return 0;
+   return 1;
+}
+
+/* Peek: is the next TLV tagged @want? */
+static int der_peek(const struct der_r *r, uint8_t want)
+{
+   return r->p < r->end && *r->p == want;
+}
+
+/* [n] explicit: enter the context tag and return its single content
+ * TLV's content in @c, its tag in @tag. */
+static int der_ctx_get(struct der_r *r, unsigned n, uint8_t *tag, struct der_r *c)
+{
+   struct der_r outer;
+   if (!der_expect(r, DER_CTX(n), &outer))
+      return 0;
+   if (!der_next(&outer, tag, c) || outer.p != outer.end)
+      return 0;
+   return 1;
+}
+
+static int der_get_int(struct der_r *c, int32_t *v)
+{
+   size_t n = (size_t)(c->end - c->p);
+   int32_t acc;
+   size_t i;
+   if (n == 0 || n > 5)
+      return 0;
+   acc = (c->p[0] & 0x80) ? -1 : 0;
+   for (i = 0; i < n; i++)
+      acc = (int32_t)(((uint32_t)acc << 8) | c->p[i]);
+   *v = acc;
+   return 1;
+}
+
+static int der_ctx_int(struct der_r *r, unsigned n, int32_t *v)
+{
+   uint8_t tag;
+   struct der_r c;
+   return der_ctx_get(r, n, &tag, &c) && tag == DER_INT && der_get_int(&c, v);
+}
+
+/* [n] wrapping an OCTET STRING / string: content span */
+static int der_ctx_octets(struct der_r *r, unsigned n, uint8_t want, struct der_r *c)
+{
+   uint8_t tag;
+   return der_ctx_get(r, n, &tag, c) && tag == want;
+}
+
+/* Skip an optional [n] */
+static void der_ctx_skip(struct der_r *r, unsigned n)
+{
+   struct der_r c;
+   if (der_peek(r, DER_CTX(n)))
+      der_expect(r, DER_CTX(n), &c);
+}
+
+/* EncryptedData -> etype, kvno, cipher span */
+static int der_get_encrypted(struct der_r *r, int32_t *etype, struct der_r *cipher)
+{
+   struct der_r seq;
+   if (!der_expect(r, DER_SEQ, &seq) || !der_ctx_int(&seq, 0, etype))
+      return 0;
+   der_ctx_skip(&seq, 1);
+   return der_ctx_octets(&seq, 2, DER_OCTSTR, cipher);
+}
+
+/* EncryptionKey -> krb5_key */
+static int der_get_key(struct der_r *r, struct krb5_key *k)
+{
+   struct der_r seq, val;
+   int32_t t;
+   if (!der_expect(r, DER_SEQ, &seq) || !der_ctx_int(&seq, 0, &t)
+         || !der_ctx_octets(&seq, 1, DER_OCTSTR, &val))
+      return 0;
+   k->len = (size_t)(val.end - val.p);
+   if ((t != KRB5_ENCTYPE_AES128_CTS_HMAC_SHA1_96 && t != KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96)
+         || k->len != (t == KRB5_ENCTYPE_AES128_CTS_HMAC_SHA1_96 ? 16u : 32u))
+      return 0;
+   memcpy(k->k, val.p, k->len);
+   k->enctype = t;
+   return 1;
+}
+
+
+/* ---- context ---------------------------------------------------- */
+
+#define KRB5_MSG_AS_REQ   10
+#define KRB5_MSG_AS_REP   11
+#define KRB5_MSG_TGS_REQ  12
+#define KRB5_MSG_TGS_REP  13
+#define KRB5_MSG_AP_REQ   14
+#define KRB5_MSG_AP_REP   15
+#define KRB5_MSG_ERROR    30
+
+#define KRB5_PA_TGS_REQ        1
+#define KRB5_PA_ENC_TIMESTAMP  2
+#define KRB5_PA_ETYPE_INFO2    19
+
+#define KRB5_NT_PRINCIPAL      1
+#define KRB5_NT_SRV_INST       2
+
+#define KRB5_ERR_PREAUTH_REQUIRED 25
+
+/* Key usages, RFC 4120 7.5.1 */
+#define KU_PA_ENC_TS        1
+#define KU_TICKET           2
+#define KU_AS_REP           3
+#define KU_TGS_REQ_AUTH_CKSUM 6
+#define KU_TGS_REQ_AUTH     7
+#define KU_TGS_REP_SESSION  8      /* no subkey in the authenticator */
+#define KU_TGS_REP_SUBKEY   9
+#define KU_AP_REQ_AUTH_CKSUM 10
+#define KU_AP_REQ_AUTH      11
+#define KU_AP_REP           12
+
+#define KRB5_MAX_MSG 8192
+
+struct krb5_ctx
+{
+   char     kdc[256];
+   char     realm[128];
+   char     client[128];
+   uint16_t port;
+   unsigned timeout;
+   int64_t  time_offset;           /* KDC clock minus ours, from KRB-ERROR */
+   char     error[128];
+   /* the TGT */
+   struct krb5_key tgt_key;
+   uint8_t *tgt;                   /* Ticket, DER */
+   size_t   tgt_len;
+   /* the last service ticket */
+   struct krb5_key svc_key;
+   uint8_t *svc;
+   size_t   svc_len;
+   char     svc_name[128];
+   /* the GSS context */
+   struct krb5_key gss_key;        /* subkey we sent in the authenticator */
+   uint32_t seq;
+   int      ap_done;
+};
+
+static void krb5_err(struct krb5_ctx *c, const char *msg)
+{
+   strlcpy(c->error, msg, sizeof(c->error));
+}
+
+/* "KDC error N (why)" without snprintf, for the strict C89 lane */
+static void krb5_kdc_err(struct krb5_ctx *c, int32_t code, const char *why)
+{
+   char num[16];
+   int  i = 15;
+   uint32_t v = (uint32_t)(code < 0 ? -code : code);
+   num[i] = '\0';
+   do
+   {
+      num[--i] = (char)('0' + v % 10);
+      v /= 10;
+   } while (v && i);
+   if (code < 0 && i)
+      num[--i] = '-';
+   strlcpy(c->error, "KDC error ", sizeof(c->error));
+   strlcat(c->error, num + i, sizeof(c->error));
+   if (why)
+      strlcat(c->error, why, sizeof(c->error));
+}
+
+struct krb5_ctx *krb5_new(void)
+{
+   struct krb5_ctx *c = (struct krb5_ctx*)calloc(1, sizeof(*c));
+   if (c)
+   {
+      c->port    = 88;
+      c->timeout = 10;
+   }
+   return c;
+}
+
+void krb5_free(struct krb5_ctx *c)
+{
+   if (!c)
+      return;
+   free(c->tgt);
+   free(c->svc);
+   crypto_memzero(c, sizeof(*c));
+   free(c);
+}
+
+const char *krb5_get_error(const struct krb5_ctx *c)
+{
+   return c->error;
+}
+
+static int64_t krb5_now(const struct krb5_ctx *c)
+{
+   return (int64_t)time(NULL) + c->time_offset;
+}
+
+/* ---- transport: TCP with the 4-octet length ---------------------- */
+
+static int krb5_exchange(struct krb5_ctx *c, const uint8_t *req, size_t len,
+      uint8_t *rep, size_t *rep_len)
+{
+   struct addrinfo *addr = NULL;
+   uint8_t hdr[4];
+   int fd, to = (int)c->timeout * 1000;
+   uint32_t n;
+
+   fd = socket_init((void**)&addr, c->port, c->kdc, SOCKET_TYPE_STREAM, AF_UNSPEC);
+   if (fd < 0 || !addr)
+   {
+      if (addr)
+         freeaddrinfo_retro(addr);
+      krb5_err(c, "cannot resolve KDC");
+      return -1;
+   }
+   if (!socket_connect_with_timeout(fd, addr, to))
+   {
+      freeaddrinfo_retro(addr);
+      socket_close(fd);
+      krb5_err(c, "KDC connect failed");
+      return -1;
+   }
+   freeaddrinfo_retro(addr);
+   socket_set_block(fd, false);
+   crypto_store32_be(hdr, (uint32_t)len);
+   if (!socket_send_all_blocking_with_timeout(fd, hdr, 4, to, true)
+         || !socket_send_all_blocking_with_timeout(fd, req, len, to, true)
+         || !socket_receive_all_blocking_with_timeout(fd, hdr, 4, to))
+   {
+      socket_close(fd);
+      krb5_err(c, "KDC send/receive failed");
+      return -1;
+   }
+   n = crypto_load32_be(hdr) & 0x7fffffff;
+   if (n > *rep_len || !socket_receive_all_blocking_with_timeout(fd, rep, n, to))
+   {
+      socket_close(fd);
+      krb5_err(c, "KDC reply too large or truncated");
+      return -1;
+   }
+   socket_close(fd);
+   *rep_len = n;
+   return 0;
+}
+
+/* ---- KRB-ERROR --------------------------------------------------- */
+
+/* Parse a KRB-ERROR: the code, the KDC's time (for our offset) and,
+ * for preauth-required, the ETYPE-INFO2 salt and enctype. */
+static int krb5_parse_error(struct krb5_ctx *c, struct der_r *r, int32_t *code,
+      char *salt, size_t salt_cap, int32_t *etype)
+{
+   struct der_r app, seq, t, edata;
+   int32_t v;
+   *etype = 0;
+   salt[0] = '\0';
+   if (!der_expect(r, DER_APP(30), &app) || !der_expect(&app, DER_SEQ, &seq))
+      return 0;
+   if (!der_ctx_int(&seq, 0, &v) || !der_ctx_int(&seq, 1, &v))
+      return 0;
+   der_ctx_skip(&seq, 2);
+   der_ctx_skip(&seq, 3);
+   if (der_ctx_octets(&seq, 4, DER_GENTIME, &t) && t.end - t.p == 15)
+   {
+      /* the KDC's idea of now, to correct clock skew on the retry */
+      const char *s = (const char*)t.p;
+      int y = (s[0]-'0')*1000 + (s[1]-'0')*100 + (s[2]-'0')*10 + (s[3]-'0');
+      unsigned mo = (s[4]-'0')*10 + (s[5]-'0'), d = (s[6]-'0')*10 + (s[7]-'0');
+      unsigned h = (s[8]-'0')*10 + (s[9]-'0'), mi = (s[10]-'0')*10 + (s[11]-'0'), se = (s[12]-'0')*10 + (s[13]-'0');
+      int64_t yy = y - (mo <= 2), era = (yy >= 0 ? yy : yy - 399) / 400, yoe = yy - era * 400;
+      int64_t doy = (153 * (mo + (mo > 2 ? -3 : 9)) + 2) / 5 + d - 1;
+      int64_t days = era * 146097 + yoe * 365 + yoe / 4 - yoe / 100 + doy - 719468;
+      c->time_offset = days * 86400 + h * 3600 + mi * 60 + se - (int64_t)time(NULL);
+   }
+   der_ctx_skip(&seq, 5);
+   if (!der_ctx_int(&seq, 6, code))
+      return 0;
+   der_ctx_skip(&seq, 7); der_ctx_skip(&seq, 8);
+   der_ctx_skip(&seq, 9); der_ctx_skip(&seq, 10); der_ctx_skip(&seq, 11);
+   if (*code == KRB5_ERR_PREAUTH_REQUIRED && der_ctx_octets(&seq, 12, DER_OCTSTR, &edata))
+   {
+      /* METHOD-DATA: SEQUENCE OF PA-DATA; find ETYPE-INFO2 and take
+       * the first entry with an enctype we speak */
+      struct der_r md, pa, val, ent, inner;
+      int32_t ptype;
+      if (!der_expect(&edata, DER_SEQ, &md))
+         return 1;
+      while (md.p < md.end)
+      {
+         if (!der_expect(&md, DER_SEQ, &pa) || !der_ctx_int(&pa, 1, &ptype)
+               || !der_ctx_octets(&pa, 2, DER_OCTSTR, &val))
+            break;
+         if (ptype != KRB5_PA_ETYPE_INFO2 || !der_expect(&val, DER_SEQ, &inner))
+            continue;
+         while (inner.p < inner.end && !*etype)
+         {
+            int32_t et;
+            struct der_r sv;
+            if (!der_expect(&inner, DER_SEQ, &ent) || !der_ctx_int(&ent, 0, &et))
+               break;
+            if (et != KRB5_ENCTYPE_AES128_CTS_HMAC_SHA1_96 && et != KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96)
+               continue;
+            *etype = et;
+            if (der_peek(&ent, DER_CTX(1)) && der_ctx_octets(&ent, 1, DER_GENSTR, &sv))
+            {
+               size_t n = (size_t)(sv.end - sv.p);
+               if (n < salt_cap)
+               {
+                  memcpy(salt, sv.p, n);
+                  salt[n] = '\0';
+               }
+            }
+         }
+      }
+   }
+   return 1;
+}
+
+/* ---- KDC-REQ ----------------------------------------------------- */
+
+/* The req-body, shared by AS and TGS: options, cname (AS only), realm,
+ * sname, till, nonce, etypes. Returned as a span in @w for the TGS
+ * checksum. */
+static void der_req_body(struct der_w *w, const char *cname, const char *realm,
+      int stype, const char *sname, int64_t till, uint32_t nonce)
+{
+   size_t seq = w->len, s;
+   static const uint8_t opts[5] = { 0x00, 0x40, 0x80, 0x00, 0x00 }; /* forwardable, renewable... keep minimal: canonicalize off */
+   static const uint8_t opts_plain[5] = { 0x00, 0x00, 0x00, 0x00, 0x00 };
+   s = w->len; der_octets(w, DER_BITSTR, cname ? opts_plain : opts_plain, 5); der_ctx(w, s, 0);
+   (void)opts;
+   if (cname)
+   {
+      s = w->len; der_principal(w, KRB5_NT_PRINCIPAL, cname); der_ctx(w, s, 1);
+   }
+   s = w->len; der_string(w, realm); der_ctx(w, s, 2);
+   s = w->len; der_principal(w, stype, sname); der_ctx(w, s, 3);
+   s = w->len; der_time(w, till); der_ctx(w, s, 5);
+   s = w->len; der_uint32(w, nonce); der_ctx(w, s, 7);
+   s = w->len;
+   {
+      size_t inner = w->len;
+      der_int32(w, KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96);
+      der_int32(w, KRB5_ENCTYPE_AES128_CTS_HMAC_SHA1_96);
+      der_wrap(w, inner, DER_SEQ);
+   }
+   der_ctx(w, s, 8);
+   der_wrap(w, seq, DER_SEQ);
+}
+
+/* PA-DATA ::= SEQUENCE { padata-type [1], padata-value [2] } */
+static void der_padata(struct der_w *w, int type, const uint8_t *val, size_t len)
+{
+   size_t seq = w->len, s;
+   s = w->len; der_int32(w, type); der_ctx(w, s, 1);
+   s = w->len; der_octets(w, DER_OCTSTR, val, len); der_ctx(w, s, 2);
+   der_wrap(w, seq, DER_SEQ);
+}
+
+/* Decrypt and read an EncKDCRepPart: session key, and the sname it is
+ * for; tags 25 (AS) and 26 (TGS) are both accepted for either. */
+static int krb5_read_kdc_rep_part(struct krb5_ctx *c, const struct krb5_key *k,
+      uint32_t usage, const struct der_r *cipher, struct krb5_key *session)
+{
+   uint8_t *plain;
+   size_t   plen, clen = (size_t)(cipher->end - cipher->p);
+   struct der_r r, app, seq;
+   uint8_t  tag;
+   int      ok = 0;
+
+   if (!(plain = (uint8_t*)malloc(clen)))
+      return 0;
+   if (krb5_decrypt(k, usage, cipher->p, clen, plain, &plen) != 0)
+   {
+      krb5_err(c, "KDC reply does not decrypt: wrong password or key");
+      free(plain);
+      return 0;
+   }
+   r.p = plain; r.end = plain + plen;
+   if (der_next(&r, &tag, &app) && (tag == DER_APP(25) || tag == DER_APP(26))
+         && der_expect(&app, DER_SEQ, &seq))
+   {
+      struct der_r kseq;
+      if (der_expect(&seq, DER_CTX(0), &kseq) && der_get_key(&kseq, session))
+         ok = 1;
+   }
+   crypto_memzero(plain, plen);
+   free(plain);
+   if (!ok)
+      krb5_err(c, "bad KDC reply part");
+   return ok;
+}
+
+/* Parse a KDC-REP: the ticket (copied out) and the enc-part span. */
+static int krb5_parse_kdc_rep(struct der_r *r, int msg, uint8_t **ticket,
+      size_t *ticket_len, int32_t *etype, struct der_r *cipher)
+{
+   struct der_r app, seq, t;
+   int32_t v;
+   uint8_t *copy;
+   if (!der_expect(r, DER_APP(msg), &app) || !der_expect(&app, DER_SEQ, &seq))
+      return 0;
+   if (!der_ctx_int(&seq, 0, &v) || v != 5 || !der_ctx_int(&seq, 1, &v) || v != msg)
+      return 0;
+   der_ctx_skip(&seq, 2);
+   der_ctx_skip(&seq, 3);
+   der_ctx_skip(&seq, 4);
+   /* [5] Ticket: keep the whole APPLICATION 1 TLV */
+   {
+      struct der_r outer;
+      const uint8_t *start;
+      if (!der_expect(&seq, DER_CTX(5), &outer))
+         return 0;
+      start = outer.p;
+      if (!der_expect(&outer, DER_APP(1), &t))
+         return 0;
+      *ticket_len = (size_t)(outer.p - start);
+      if (!(copy = (uint8_t*)malloc(*ticket_len)))
+         return 0;
+      memcpy(copy, start, *ticket_len);
+      *ticket = copy;
+   }
+   if (!der_expect(&seq, DER_CTX(6), &t) || !der_get_encrypted(&t, etype, cipher))
+   {
+      free(copy);
+      *ticket = NULL;
+      return 0;
+   }
+   return 1;
+}
+
+int krb5_set_kdc(struct krb5_ctx *c, const char *realm, const char *kdc, uint16_t port)
+{
+   strlcpy(c->realm, realm, sizeof(c->realm));
+   strlcpy(c->kdc, kdc, sizeof(c->kdc));
+   if (port)
+      c->port = port;
+   return 0;
+}
+
+void krb5_set_timeout(struct krb5_ctx *c, unsigned seconds)
+{
+   c->timeout = seconds;
+}
+
+/* ---- AS exchange ------------------------------------------------- */
+
+/* Send one AS-REQ, with PA-ENC-TIMESTAMP when @pa_key is set. */
+static int krb5_as_req_once(struct krb5_ctx *c, const char *user,
+      const struct krb5_key *pa_key, uint8_t *rep, size_t *rep_len, uint32_t nonce)
+{
+   uint8_t *buf = (uint8_t*)malloc(KRB5_MAX_MSG);
+   struct der_w w;
+   size_t   seq, s;
+   char     sname[160];
+   int      rc;
+
+   if (!buf)
+      return -1;
+   w.buf = buf; w.len = 0; w.cap = KRB5_MAX_MSG; w.fail = 0;
+
+   seq = w.len;
+   s = w.len; der_int32(&w, 5); der_ctx(&w, s, 1);
+   s = w.len; der_int32(&w, KRB5_MSG_AS_REQ); der_ctx(&w, s, 2);
+   if (pa_key)
+   {
+      /* PA-ENC-TIMESTAMP: EncryptedData of PA-ENC-TS-ENC { patimestamp
+       * [0], pausec [1] } under the user's key, usage 1 */
+      uint8_t ts[64], conf[16], enc[128], pad[200];
+      struct der_w tw, ew;
+      size_t n, e;
+      tw.buf = ts; tw.len = 0; tw.cap = sizeof(ts); tw.fail = 0;
+      e = tw.len;
+      { size_t q = tw.len; der_time(&tw, krb5_now(c)); der_ctx(&tw, q, 0); }
+      { size_t q = tw.len; der_int32(&tw, 0); der_ctx(&tw, q, 1); }
+      der_wrap(&tw, e, DER_SEQ);
+      crypto_random_bytes(conf, 16);
+      n = krb5_encrypt(pa_key, KU_PA_ENC_TS, conf, ts, tw.len, enc);
+      ew.buf = pad; ew.len = 0; ew.cap = sizeof(pad); ew.fail = 0;
+      der_encrypted(&ew, pa_key->enctype, 0, enc, n);
+      s = w.len;
+      {
+         size_t inner = w.len;
+         der_padata(&w, KRB5_PA_ENC_TIMESTAMP, pad, ew.len);
+         der_wrap(&w, inner, DER_SEQ);
+      }
+      der_ctx(&w, s, 3);
+   }
+   strlcpy(sname, "krbtgt/", sizeof(sname));
+   strlcat(sname, c->realm, sizeof(sname));
+   s = w.len;
+   der_req_body(&w, user, c->realm, KRB5_NT_SRV_INST, sname, krb5_now(c) + 10 * 3600, nonce);
+   der_ctx(&w, s, 4);
+   der_wrap(&w, seq, DER_SEQ);
+   der_wrap(&w, 0, DER_APP(KRB5_MSG_AS_REQ));
+   if (w.fail)
+   {
+      free(buf);
+      krb5_err(c, "request too large");
+      return -1;
+   }
+   rc = krb5_exchange(c, buf, w.len, rep, rep_len);
+   free(buf);
+   return rc;
+}
+
+int krb5_get_tgt(struct krb5_ctx *c, const char *user, const char *password)
+{
+   uint8_t *rep = (uint8_t*)malloc(KRB5_MAX_MSG);
+   size_t   rep_len;
+   struct der_r r, cipher;
+   struct krb5_key ukey;
+   int32_t  etype, code;
+   char     salt[256];
+   uint32_t nonce;
+   int      tries;
+
+   if (!rep)
+      return -1;
+   strlcpy(c->client, user, sizeof(c->client));
+   crypto_random_bytes((uint8_t*)&nonce, 4);
+   nonce &= 0x7fffffff;
+
+   /* the default salt, used when the KDC returns none */
+   strlcpy(salt, c->realm, sizeof(salt));
+   strlcat(salt, user, sizeof(salt));
+   {
+      char *p = strchr(salt + strlen(c->realm), '/');
+      while (p)
+      {
+         memmove(p, p + 1, strlen(p));
+         p = strchr(p, '/');
+      }
+   }
+   etype = KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96;
+
+   /* first without preauth; a KDC that wants it answers with the salt
+    * and enctype to use, then once more with the encrypted timestamp */
+   for (tries = 0; tries < 2; tries++)
+   {
+      struct krb5_key *pa = NULL;
+      rep_len = KRB5_MAX_MSG;
+      if (tries)
+      {
+         if (krb5_string_to_key(etype, password, strlen(password), salt, strlen(salt), 4096, &ukey) != 0)
+            break;
+         pa = &ukey;
+      }
+      if (krb5_as_req_once(c, user, pa, rep, &rep_len, nonce) != 0)
+         break;
+      r.p = rep; r.end = rep + rep_len;
+      if (der_peek(&r, DER_APP(30)))
+      {
+         char nsalt[256];
+         int32_t netype;
+         if (!krb5_parse_error(c, &r, &code, nsalt, sizeof(nsalt), &netype))
+         {
+            krb5_err(c, "bad KRB-ERROR");
+            break;
+         }
+         if (code == KRB5_ERR_PREAUTH_REQUIRED && !tries)
+         {
+            if (netype)
+               etype = netype;
+            if (nsalt[0])
+               strlcpy(salt, nsalt, sizeof(salt));
+            continue;
+         }
+         krb5_kdc_err(c, code, code == 24 ? " (wrong password)" : code == 6 ? " (no such user)" : NULL);
+         break;
+      }
+      /* AS-REP: the user's key decrypts the enc-part (usage 3) */
+      {
+         uint8_t *ticket = NULL;
+         size_t   tlen;
+         int32_t  rep_etype;
+         if (!krb5_parse_kdc_rep(&r, KRB5_MSG_AS_REP, &ticket, &tlen, &rep_etype, &cipher))
+         {
+            krb5_err(c, "bad AS-REP");
+            break;
+         }
+         if (!tries || rep_etype != ukey.enctype)
+         {
+            /* no preauth happened (or a different enctype): derive now */
+            if (krb5_string_to_key(rep_etype, password, strlen(password), salt, strlen(salt), 4096, &ukey) != 0)
+            {
+               free(ticket);
+               krb5_err(c, "unsupported enctype");
+               break;
+            }
+         }
+         if (!krb5_read_kdc_rep_part(c, &ukey, KU_AS_REP, &cipher, &c->tgt_key))
+         {
+            free(ticket);
+            break;
+         }
+         free(c->tgt);
+         c->tgt     = ticket;
+         c->tgt_len = tlen;
+         crypto_memzero(&ukey, sizeof(ukey));
+         free(rep);
+         return 0;
+      }
+   }
+   crypto_memzero(&ukey, sizeof(ukey));
+   free(rep);
+   return -1;
+}
+
+/* ---- AP-REQ builder (shared by TGS and the service) --------------- */
+
+/* Authenticator ::= [APPLICATION 2] SEQUENCE { vno [0] 5, crealm [1],
+ * cname [2], cksum [3] opt, cusec [4], ctime [5], subkey [6] opt,
+ * seq-number [7] opt }. Encrypted under @key with @usage into an
+ * AP-REQ [APPLICATION 14] wrapping @ticket. @cksum (type 16 / 15, or
+ * the GSS 0x8003 one) is optional. */
+static int krb5_build_ap_req(struct krb5_ctx *c, struct der_w *w,
+      const uint8_t *ticket, size_t ticket_len, const struct krb5_key *key,
+      uint32_t usage, int32_t cksumtype, const uint8_t *cksum, size_t cksum_len,
+      const struct krb5_key *subkey, uint32_t seqnum, int mutual)
+{
+   /* authenticator, its ciphertext and the EncryptedData around it:
+    * one heap scratch rather than 1.7 KiB of stack */
+   uint8_t *scratch = (uint8_t*)malloc(512 + 600 + 640);
+   uint8_t *auth, *enc, *ed, conf[16];
+   struct der_w a, e;
+   size_t   s, seq, n, top = w->len;
+   int      ok;
+   static const uint8_t opt_mutual[5] = { 0x00, 0x20, 0x00, 0x00, 0x00 };
+   static const uint8_t opt_none[5]   = { 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+   if (!scratch)
+      return 0;
+   auth = scratch; enc = scratch + 512; ed = scratch + 512 + 600;
+   a.buf = auth; a.len = 0; a.cap = 512; a.fail = 0;
+   seq = a.len;
+   s = a.len; der_int32(&a, 5); der_ctx(&a, s, 0);
+   s = a.len; der_string(&a, c->realm); der_ctx(&a, s, 1);
+   s = a.len; der_principal(&a, KRB5_NT_PRINCIPAL, c->client); der_ctx(&a, s, 2);
+   if (cksum)
+   {
+      size_t cs;
+      s = a.len;
+      cs = a.len;
+      { size_t q = a.len; der_int32(&a, cksumtype); der_ctx(&a, q, 0); }
+      { size_t q = a.len; der_octets(&a, DER_OCTSTR, cksum, cksum_len); der_ctx(&a, q, 1); }
+      der_wrap(&a, cs, DER_SEQ);
+      der_ctx(&a, s, 3);
+   }
+   s = a.len; der_int32(&a, 0); der_ctx(&a, s, 4);
+   s = a.len; der_time(&a, krb5_now(c)); der_ctx(&a, s, 5);
+   if (subkey)
+   {
+      size_t ks;
+      s = a.len;
+      ks = a.len;
+      { size_t q = a.len; der_int32(&a, subkey->enctype); der_ctx(&a, q, 0); }
+      { size_t q = a.len; der_octets(&a, DER_OCTSTR, subkey->k, subkey->len); der_ctx(&a, q, 1); }
+      der_wrap(&a, ks, DER_SEQ);
+      der_ctx(&a, s, 6);
+   }
+   s = a.len; der_uint32(&a, seqnum); der_ctx(&a, s, 7);
+   der_wrap(&a, seq, DER_SEQ);
+   der_wrap(&a, 0, DER_APP(2));
+   if (a.fail)
+   {
+      free(scratch);
+      return 0;
+   }
+
+   crypto_random_bytes(conf, 16);
+   n = krb5_encrypt(key, usage, conf, auth, a.len, enc);
+   e.buf = ed; e.len = 0; e.cap = 640; e.fail = 0;
+   der_encrypted(&e, key->enctype, 0, enc, n);
+
+   seq = w->len;
+   s = w->len; der_int32(w, 5); der_ctx(w, s, 0);
+   s = w->len; der_int32(w, KRB5_MSG_AP_REQ); der_ctx(w, s, 1);
+   s = w->len; der_octets(w, DER_BITSTR, mutual ? opt_mutual : opt_none, 5); der_ctx(w, s, 2);
+   s = w->len; der_put(w, ticket, ticket_len); der_ctx(w, s, 3);
+   s = w->len; der_put(w, ed, e.len); der_ctx(w, s, 4);
+   der_wrap(w, seq, DER_SEQ);
+   der_wrap(w, top, DER_APP(KRB5_MSG_AP_REQ));
+   ok = !w->fail && !e.fail;
+   crypto_memzero(scratch, 512 + 600 + 640);
+   free(scratch);
+   return ok;
+}
+
+/* ---- TGS exchange ------------------------------------------------ */
+
+int krb5_get_service_ticket(struct krb5_ctx *c, const char *service)
+{
+   uint8_t *buf = (uint8_t*)malloc(KRB5_MAX_MSG), *rep;
+   uint8_t  body[1024], ck[12];
+   struct der_w w, bw;
+   size_t   seq, s, rep_len = KRB5_MAX_MSG;
+   uint32_t nonce;
+   struct der_r r, cipher;
+   int rc = -1;
+
+   if (!buf)
+      return -1;
+   if (!c->tgt)
+   {
+      free(buf);
+      krb5_err(c, "no TGT");
+      return -1;
+   }
+   rep = buf + KRB5_MAX_MSG / 2;
+   rep_len = KRB5_MAX_MSG / 2;
+   crypto_random_bytes((uint8_t*)&nonce, 4);
+   nonce &= 0x7fffffff;
+
+   /* the req-body first: its checksum (usage 6) goes in the authenticator */
+   bw.buf = body; bw.len = 0; bw.cap = sizeof(body); bw.fail = 0;
+   der_req_body(&bw, NULL, c->realm, KRB5_NT_SRV_INST, service, krb5_now(c) + 10 * 3600, nonce);
+   if (bw.fail)
+   {
+      free(buf);
+      return -1;
+   }
+   krb5_checksum(&c->tgt_key, KU_TGS_REQ_AUTH_CKSUM, body, bw.len, ck);
+
+   w.buf = buf; w.len = 0; w.cap = KRB5_MAX_MSG / 2; w.fail = 0;
+   seq = w.len;
+   s = w.len; der_int32(&w, 5); der_ctx(&w, s, 1);
+   s = w.len; der_int32(&w, KRB5_MSG_TGS_REQ); der_ctx(&w, s, 2);
+   /* padata: PA-TGS-REQ = AP-REQ of the TGT */
+   s = w.len;
+   {
+      size_t inner = w.len, pa = w.len, ap;
+      { size_t q = w.len; der_int32(&w, KRB5_PA_TGS_REQ); der_ctx(&w, q, 1); }
+      ap = w.len;
+      if (!krb5_build_ap_req(c, &w, c->tgt, c->tgt_len, &c->tgt_key, KU_TGS_REQ_AUTH,
+               c->tgt_key.enctype == KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96 ? 16 : 15,
+               ck, 12, NULL, 0, 0))
+      {
+         free(buf);
+         krb5_err(c, "request too large");
+         return -1;
+      }
+      der_wrap(&w, ap, DER_OCTSTR);
+      der_ctx(&w, ap, 2);
+      der_wrap(&w, pa, DER_SEQ);
+      der_wrap(&w, inner, DER_SEQ);
+   }
+   der_ctx(&w, s, 3);
+   s = w.len; der_put(&w, body, bw.len); der_ctx(&w, s, 4);
+   der_wrap(&w, seq, DER_SEQ);
+   der_wrap(&w, 0, DER_APP(KRB5_MSG_TGS_REQ));
+   if (w.fail || krb5_exchange(c, buf, w.len, rep, &rep_len) != 0)
+   {
+      if (w.fail)
+         krb5_err(c, "request too large");
+      free(buf);
+      return -1;
+   }
+   r.p = rep; r.end = rep + rep_len;
+   if (der_peek(&r, DER_APP(30)))
+   {
+      int32_t code, et;
+      char salt[8];
+      if (krb5_parse_error(c, &r, &code, salt, sizeof(salt), &et))
+         krb5_kdc_err(c, code, code == 7 ? " (no such service principal)" : NULL);
+      else
+         krb5_err(c, "bad KRB-ERROR");
+      free(buf);
+      return -1;
+   }
+   {
+      uint8_t *ticket = NULL;
+      size_t   tlen;
+      int32_t  et;
+      if (!krb5_parse_kdc_rep(&r, KRB5_MSG_TGS_REP, &ticket, &tlen, &et, &cipher))
+         krb5_err(c, "bad TGS-REP");
+      else if (krb5_read_kdc_rep_part(c, &c->tgt_key, KU_TGS_REP_SESSION, &cipher, &c->svc_key))
+      {
+         free(c->svc);
+         c->svc     = ticket;
+         c->svc_len = tlen;
+         strlcpy(c->svc_name, service, sizeof(c->svc_name));
+         rc = 0;
+      }
+      else
+         free(ticket);
+   }
+   free(buf);
+   return rc;
+}
+
+/* ---- the AP exchange, as a GSS-API token (RFC 4121) -------------- */
+
+/* The initial context token: 0x60 len { OID 1.2.840.113554.1.2.2,
+ * TOK_ID 01 00, AP-REQ }. The authenticator carries the 0x8003
+ * checksum with channel bindings and the flags, and a fresh subkey
+ * that becomes the context key. */
+static const uint8_t krb5_gss_oid[11] = { 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x12, 0x01, 0x02, 0x02 };
+
+#define GSS_C_MUTUAL_FLAG    0x02
+#define GSS_C_REPLAY_FLAG    0x04
+#define GSS_C_SEQUENCE_FLAG  0x08
+#define GSS_C_CONF_FLAG      0x10
+#define GSS_C_INTEG_FLAG     0x20
+
+int krb5_gss_init_token(struct krb5_ctx *c, uint8_t *out, size_t cap, size_t *out_len)
+{
+   struct der_w w;
+   uint8_t cb[24];
+   uint32_t flags = GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG | GSS_C_SEQUENCE_FLAG
+      | GSS_C_CONF_FLAG | GSS_C_INTEG_FLAG;
+   size_t s;
+
+   if (!c->svc)
+   {
+      krb5_err(c, "no service ticket");
+      return -1;
+   }
+   /* the context key: a subkey of the service ticket's enctype */
+   c->gss_key.enctype = c->svc_key.enctype;
+   c->gss_key.len     = c->svc_key.len;
+   crypto_random_bytes(c->gss_key.k, c->gss_key.len);
+   crypto_random_bytes((uint8_t*)&c->seq, 4);
+   c->seq &= 0x3fffffff;
+
+   /* RFC 4121 4.1.1: Lgth=16, Bnd = MD5 of zero channel bindings
+    * (16 zero octets as sent by everyone), Flags, little-endian */
+   memset(cb, 0, sizeof(cb));
+   cb[0] = 16;
+   /* MD5 of the 20-octet all-zero bindings: fixed constant */
+   {
+      static const uint8_t md5_zero20[16] = { 0x44, 0x10, 0x18, 0x52, 0x52, 0x08, 0x45, 0x77, 0x05, 0xbf, 0x09, 0xa8, 0xee, 0x3c, 0x10, 0x93 };
+      /* (computed once by MD5 of 20 zero bytes; kept literal so no MD5
+       * dependency sits in this file) */
+      memcpy(cb + 4, md5_zero20, 16);
+   }
+   cb[20] = (uint8_t)flags; cb[21] = (uint8_t)(flags >> 8); cb[22] = 0; cb[23] = 0;
+
+   w.buf = out; w.len = 0; w.cap = cap; w.fail = 0;
+   der_put(&w, krb5_gss_oid, sizeof(krb5_gss_oid));
+   der_put_byte(&w, 0x01); der_put_byte(&w, 0x00);        /* TOK_ID KRB_AP_REQ */
+   s = w.len;
+   if (!krb5_build_ap_req(c, &w, c->svc, c->svc_len, &c->svc_key, KU_AP_REQ_AUTH,
+            0x8003, cb, sizeof(cb), &c->gss_key, c->seq, 1))
+   {
+      krb5_err(c, "token too large");
+      return -1;
+   }
+   (void)s;
+   der_wrap(&w, 0, 0x60);
+   if (w.fail)
+      return -1;
+   *out_len = w.len;
+   return 0;
+}
+
+/* The reply: 0x60 { OID, TOK_ID 02 00, AP-REP }. The EncAPRepPart
+ * (usage 12, under the service session key) may carry the acceptor's
+ * subkey, which then replaces ours as the context key (RFC 4121 says
+ * the acceptor subkey wins when present). */
+int krb5_gss_accept_token(struct krb5_ctx *c, const uint8_t *in, size_t len)
+{
+   struct der_r r, tok, app, seq, ed, cipher;
+   int32_t v, et;
+   uint8_t *plain;
+   size_t plen, clen;
+   int ok = 0;
+
+   r.p = in; r.end = in + len;
+   if (!der_expect(&r, 0x60, &tok) || tok.end - tok.p < 13
+         || memcmp(tok.p, krb5_gss_oid, sizeof(krb5_gss_oid)) != 0
+         || tok.p[11] != 0x02 || tok.p[12] != 0x00)
+   {
+      krb5_err(c, "not a GSS AP-REP token");
+      return -1;
+   }
+   tok.p += 13;
+   if (!der_expect(&tok, DER_APP(KRB5_MSG_AP_REP), &app) || !der_expect(&app, DER_SEQ, &seq)
+         || !der_ctx_int(&seq, 0, &v) || !der_ctx_int(&seq, 1, &v)
+         || !der_expect(&seq, DER_CTX(2), &ed) || !der_get_encrypted(&ed, &et, &cipher))
+   {
+      krb5_err(c, "bad AP-REP");
+      return -1;
+   }
+   clen = (size_t)(cipher.end - cipher.p);
+   if (!(plain = (uint8_t*)malloc(clen)))
+      return -1;
+   if (krb5_decrypt(&c->svc_key, KU_AP_REP, cipher.p, clen, plain, &plen) == 0)
+   {
+      struct der_r pr, papp, pseq, t;
+      pr.p = plain; pr.end = plain + plen;
+      if (der_expect(&pr, DER_APP(27), &papp) && der_expect(&papp, DER_SEQ, &pseq)
+            && der_ctx_octets(&pseq, 0, DER_GENTIME, &t) && der_ctx_int(&pseq, 1, &v))
+      {
+         ok = 1;
+         if (der_peek(&pseq, DER_CTX(2)))
+         {
+            struct der_r ks;
+            struct krb5_key sub;
+            if (der_expect(&pseq, DER_CTX(2), &ks) && der_get_key(&ks, &sub))
+               c->gss_key = sub;
+            else
+               ok = 0;
+         }
+      }
+   }
+   else
+      krb5_err(c, "AP-REP does not verify");
+   crypto_memzero(plain, clen);
+   free(plain);
+   if (!ok)
+      return -1;
+   c->ap_done = 1;
+   return 0;
+}
+
+int krb5_gss_session_key(const struct krb5_ctx *c, uint8_t *out, size_t *len)
+{
+   if (!c->ap_done)
+      return -1;
+   memcpy(out, c->gss_key.k, c->gss_key.len);
+   *len = c->gss_key.len;
+   return 0;
+}
+
+const char *krb5_realm(const struct krb5_ctx *c)
+{
+   return c->realm;
+}

@@ -49,7 +49,10 @@ TEST_HASH_SRC = test/hash/test_hash.c hash/lrc_hash.c \
 		file/file_path_io.c features/features_cpu.c \
 		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
 
-TEST_CRYPTO_LRC_SRC = crypto/crypto.c crypto/kdf.c crypto/pk.c crypto/x509.c utils/md5.c net/net_krb5.c
+# net_krb5.c is the Kerberos client; its enctype vectors are in the
+# crypto suite, so the socket layer it talks to the KDC with comes too.
+TEST_CRYPTO_LRC_SRC = crypto/crypto.c crypto/kdf.c crypto/pk.c crypto/x509.c utils/md5.c \
+		net/net_krb5.c net/net_socket.c net/net_compat.c
 
 # Known-answer tests for every primitive (FIPS 197, RFC 4493, the GCM
 # spec vectors, RFC 8439, RFC 4231, RFC 5869, PBKDF2, FIPS 180-4), the
@@ -535,11 +538,11 @@ win32-wine-check:
 	if ! command -v $(WINE) >/dev/null 2>&1; then echo "skip: $(WINE) not installed"; exit 0; fi; \
 	export WINEDEBUG=-all; \
 	$(MINGW_CC) -static -O2 -DCHECK_SHIM -Iinclude -Wall $(TEST_CRYPTO_SRC) compat/fopen_utf8.c \
-	   -lws2_32 -o test/crypto/test_crypto_win32.exe || exit 1; \
+	   -lws2_32 -liphlpapi -o test/crypto/test_crypto_win32.exe || exit 1; \
 	$(WINE) test/crypto/test_crypto_win32.exe || exit 1; \
 	echo "ok:   crypto suite as a Windows binary under Wine"; \
 	$(MINGW_CC) -static -O2 -DCHECK_SHIM -Iinclude -Wall $(TEST_KEYCHAIN_SRC) compat/fopen_utf8.c \
-	   -lws2_32 -ladvapi32 -o test/file/test_keychain_win32.exe || exit 1; \
+	   -lws2_32 -liphlpapi -ladvapi32 -o test/file/test_keychain_win32.exe || exit 1; \
 	$(WINE) test/file/test_keychain_win32.exe || exit 1; \
 	echo "ok:   keychain suite as a Windows binary under Wine"; \
 	rm -f test/crypto/test_crypto_win32.exe test/file/test_keychain_win32.exe

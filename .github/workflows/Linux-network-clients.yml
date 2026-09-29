@@ -1,7 +1,7 @@
 name: CI Linux network clients
 
 # The built-in TLS, SMB2/3 and NFSv3 clients against real servers:
-# openssl s_server, Samba, unfs3 and nfs-ganesha on the runner, natively, as Windows
+# openssl s_server, Samba, unfs3, nfs-ganesha and a MIT KDC on the runner, natively, as Windows
 # builds under Wine, under ASan + UBSan + LSan, plus libFuzzer over the
 # parsers. Its own job so the libretro-common unit-test job keeps its
 # short budget.
@@ -35,7 +35,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y --no-install-recommends build-essential clang \
             gcc-mingw-w64-x86-64 openssl samba libtirpc-dev flex bison autoconf automake wine wine64 \
-            nfs-ganesha nfs-ganesha-vfs
+            nfs-ganesha nfs-ganesha-vfs krb5-kdc krb5-admin-server krb5-user
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -96,6 +96,9 @@ jobs:
           make -C samples/network/nfs_retro clean
           sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root samples/network/nfs_retro/local_ganesha_test.sh
           sudo make -C samples/network/nfs_retro clean
+          make -C samples/network/krb5_retro clean
+          samples/network/krb5_retro/local_kdc_test.sh
+          make -C samples/network/krb5_retro clean
 
 
       - name: Fuzz the network parsers
@@ -140,6 +143,9 @@ jobs:
           make -C samples/network/nfs_retro clean
           sudo -E samples/network/nfs_retro/local_ganesha_test.sh
           sudo make -C samples/network/nfs_retro clean
+          make -C samples/network/krb5_retro clean
+          samples/network/krb5_retro/local_kdc_test.sh
+          make -C samples/network/krb5_retro clean
 
 
       - name: Built-in NFSv3 client against unfs3
@@ -161,3 +167,17 @@ jobs:
           make -C samples/network/nfs_retro clean
           CC=x86_64-w64-mingw32-gcc make -C samples/network/tls_retro tls_fetch
           make -C samples/network/tls_retro clean
+
+      - name: Built-in Kerberos client against a MIT KDC
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # net_krb5.c against krb5kdc on a fixed port: AS with and
+          # without PA-ENC-TIMESTAMP, TGS for a cifs/ service with the
+          # ticket checked against the service's keytab key, wrong
+          # password and unknown service refused.
+          samples/network/krb5_retro/local_kdc_test.sh
+          make -C samples/network/krb5_retro clean
+          CC=x86_64-w64-mingw32-gcc make -C samples/network/krb5_retro krb5_test
+          make -C samples/network/krb5_retro clean
