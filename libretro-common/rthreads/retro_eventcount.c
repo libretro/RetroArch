@@ -61,17 +61,36 @@ typedef char retro_eventcount_epoch_is_a_word_
  * for the handshake in notify to hold, so a build that lands on the
  * volatile fallback drops to the locked backend regardless of platform.
  *
+ * RETRO_EC_SEM names the builds that park on a semaphore of the
+ * waiting thread's own, listed on the object the way the Windows
+ * backend lists its blocks: Darwin, where the semaphore is a Mach one
+ * and every call is in Mac OS X 10.4's headers, and the BSDs, where it
+ * is a POSIX one.  Like the Windows list it needs the pointer atomics.
+ *
  * RETRO_EVENTCOUNT_FORCE_SCOND selects the condition-variable backend on
  * any target, so a host with futex can still build and test the path the
- * console and Apple ports take.  It mirrors retro_atomic.h's
- * RETRO_ATOMIC_FORCE_* overrides and exists for the same reason.
+ * console ports take.  RETRO_EVENTCOUNT_FORCE_SEM selects the semaphore
+ * backend on any POSIX host, so its list protocol runs where futex would
+ * otherwise be chosen.  Both mirror retro_atomic.h's RETRO_ATOMIC_FORCE_*
+ * overrides and exist for the same reason.
  */
 #if defined(RETRO_ATOMIC_LOCK_FREE) && !defined(RETRO_EVENTCOUNT_FORCE_SCOND)
-#if defined(__linux__) && !defined(ANDROID_NO_FUTEX)
+#if defined(RETRO_EVENTCOUNT_FORCE_SEM) && defined(RETRO_ATOMIC_HAS_PTR)
+#define RETRO_EC_SEM 1
+#elif defined(__linux__) && !defined(ANDROID_NO_FUTEX)
 #define RETRO_EC_ADDR_LINUX 1
 #elif defined(_WIN32) && !defined(_XBOX) && defined(RETRO_ATOMIC_HAS_PTR)
 #define RETRO_EC_ADDR_WIN32 1
+#elif (defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) \
+      || defined(__OpenBSD__) || defined(__DragonFly__)) \
+      && defined(RETRO_ATOMIC_HAS_PTR)
+#define RETRO_EC_SEM 1
 #endif
+#endif
+
+/* The two list backends share the waiter list; only the sleep differs. */
+#if defined(RETRO_EC_ADDR_WIN32) || defined(RETRO_EC_SEM)
+#define RETRO_EC_WAITLIST 1
 #endif
 
 /* Where the atomics are not lock-free their read-modify-writes are not
@@ -106,9 +125,24 @@ typedef char retro_eventcount_epoch_is_a_word_
 #endif
 #endif
 
+#if defined(RETRO_EC_SEM)
+#include <pthread.h>
+#include <errno.h>
+#if defined(__APPLE__)
+#include <mach/mach.h>
+#include <mach/semaphore.h>
+#include <mach/task.h>
+#else
+#include <semaphore.h>
+#include <time.h>
+#endif
+#endif
+
 #if defined(RETRO_EC_ADDR_WIN32)
 #include <windows.h>
+#endif
 
+#if defined(RETRO_EC_WAITLIST)
 /* Windows has no one primitive that reaches every version, so the
  * waiter list is ours and only the sleep is delegated.  Three tiers,
  * resolved once from ntdll:
@@ -130,6 +164,16 @@ typedef char retro_eventcount_epoch_is_a_word_
  * broadcast across its waiters.
  */
 
+/* The semaphore backend keeps the same list and the same two flags.
+ * What it sleeps on is a counting semaphore of the waiting thread's
+ * own, created on its first park and kept for the thread's life: a
+ * signal that arrives before the wait is counted, not lost, which is
+ * the property the ALERT tier above has and the reason neither needs
+ * a rendezvous.  A wake is therefore one signal per parked waiter and
+ * a park one wait, the same as the address-wait calls cost, with no
+ * mutex on either side; and every call it makes is in Mac OS X 10.4's
+ * headers, so one binary runs from there up. */
+
 #define EC_W_WOKEN   1  /* a waker has taken this block          */
 #define EC_W_ASLEEP  2  /* the waiter committed to the kernel wait */
 
@@ -137,6 +181,14 @@ typedef char retro_eventcount_epoch_is_a_word_
 #define EC_HEAD_MASK (~EC_HEAD_LOCK)
 
 #define EC_STATUS_TIMEOUT 0x102
+
+#if defined(RETRO_EC_SEM)
+#if defined(__APPLE__)
+typedef semaphore_t ec_sem_t;
+#else
+typedef sem_t       ec_sem_t;
+#endif
+#endif
 
 /* How long a waiter spins on its flag word before committing to the
  * kernel, on multiprocessor only.  A budget in microseconds rather
@@ -172,10 +224,19 @@ typedef char retro_eventcount_epoch_is_a_word_
 struct ec_waiter
 {
    struct ec_waiter  *next;
+#if defined(RETRO_EC_SEM)
+   ec_sem_t          *sem;     /* the waiting thread's own */
+#else
    HANDLE             event;   /* EVENT tier only */
+#endif
    retro_atomic_int_t flags;
+#if !defined(RETRO_EC_SEM)
    DWORD              tid;
+#endif
 };
+#endif /* RETRO_EC_WAITLIST */
+
+#if defined(RETRO_EC_ADDR_WIN32)
 
 typedef LONG (WINAPI *ec_nt_wait_alert_t)(volatile void*, LARGE_INTEGER*);
 typedef LONG (WINAPI *ec_nt_alert_tid_t)(HANDLE);
@@ -418,6 +479,134 @@ static void ec_wake_one(struct ec_waiter *w)
    }
 }
 
+#endif /* RETRO_EC_ADDR_WIN32: resolve, sleep, wake */
+
+#if defined(RETRO_EC_SEM)
+static struct
+{
+   pthread_key_t      key;    /* this thread's semaphore, for its life */
+   retro_atomic_int_t state;
+   int                ready;  /* the key exists */
+} ec_g;
+
+static void ec_sem_release(void *p)
+{
+   ec_sem_t *sem = (ec_sem_t*)p;
+   if (!sem)
+      return;
+#if defined(__APPLE__)
+   semaphore_destroy(mach_task_self(), *sem);
+#else
+   sem_destroy(sem);
+#endif
+   free(sem);
+}
+
+static void ec_sem_init(void)
+{
+   if (retro_atomic_load_acquire_int(&ec_g.state) == 2)
+      return;
+   if (retro_atomic_cas_int(&ec_g.state, 0, 1))
+   {
+      ec_g.ready = (pthread_key_create(&ec_g.key, ec_sem_release) == 0);
+      retro_atomic_store_release_int(&ec_g.state, 2);
+      return;
+   }
+   while (retro_atomic_load_acquire_int(&ec_g.state) != 2)
+      sthread_yield();
+}
+
+/* This thread's semaphore, made on its first park.  NULL when one
+ * cannot be had, which the park answers as a spurious wake. */
+static ec_sem_t *ec_sem_get(void)
+{
+   ec_sem_t *sem = (ec_sem_t*)pthread_getspecific(ec_g.key);
+   if (sem)
+      return sem;
+   if (!(sem = (ec_sem_t*)malloc(sizeof(*sem))))
+      return NULL;
+#if defined(__APPLE__)
+   if (semaphore_create(mach_task_self(), sem, SYNC_POLICY_FIFO, 0)
+         != KERN_SUCCESS)
+#else
+   if (sem_init(sem, 0, 0) != 0)
+#endif
+   {
+      free(sem);
+      return NULL;
+   }
+   pthread_setspecific(ec_g.key, sem);
+   return sem;
+}
+
+/* Blocks on this thread's semaphore until signalled or, when bounded,
+ * until timeout_us has passed.  An interrupted wait resumes: the
+ * block is still listed, and leaving here would free its frame under
+ * a waker.  False only on the timeout. */
+static bool ec_sem_sleep(ec_sem_t *sem, bool bounded, int64_t timeout_us)
+{
+#if defined(__APPLE__)
+   kern_return_t kr;
+   if (bounded)
+   {
+      mach_timespec_t ts;
+      ts.tv_sec  = (unsigned int)(timeout_us / 1000000);
+      ts.tv_nsec = (clock_res_t)((timeout_us % 1000000) * 1000);
+      do
+      {
+         kr = semaphore_timedwait(*sem, ts);
+      } while (kr == KERN_ABORTED);
+      return kr != KERN_OPERATION_TIMED_OUT;
+   }
+   do
+   {
+      kr = semaphore_wait(*sem);
+   } while (kr == KERN_ABORTED);
+   return true;
+#else
+   int r;
+   if (bounded)
+   {
+      struct timespec ts;
+      clock_gettime(CLOCK_REALTIME, &ts);
+      ts.tv_sec  += (time_t)(timeout_us / 1000000);
+      ts.tv_nsec += (long)((timeout_us % 1000000) * 1000);
+      if (ts.tv_nsec >= 1000000000L)
+      {
+         ts.tv_sec++;
+         ts.tv_nsec -= 1000000000L;
+      }
+      do
+      {
+         r = sem_timedwait(sem, &ts);
+      } while (r != 0 && errno == EINTR);
+      return !(r != 0 && errno == ETIMEDOUT);
+   }
+   do
+   {
+      r = sem_wait(sem);
+   } while (r != 0 && errno == EINTR);
+   return true;
+#endif
+}
+
+static void ec_wake_one(struct ec_waiter *w)
+{
+   /* copied first: the waiter may leave as soon as it sees WOKEN */
+   ec_sem_t *sem = w->sem;
+   int       prev = retro_atomic_fetch_or_int(&w->flags, EC_W_WOKEN);
+
+   if (!(prev & EC_W_ASLEEP))
+      return;   /* not yet committed: it sees the flag, no syscall */
+#if defined(__APPLE__)
+   semaphore_signal(*sem);
+#else
+   sem_post(sem);
+#endif
+}
+#endif /* RETRO_EC_SEM */
+
+#if defined(RETRO_EC_WAITLIST)
 static INLINE uintptr_t ec_head(retro_eventcount_t *ec)
 {
    return (uintptr_t)retro_atomic_load_acquire_ptr(&ec->waitlist);
@@ -510,6 +699,9 @@ static void ec_wake_all(retro_eventcount_t *ec)
    }
 }
 
+#endif /* RETRO_EC_WAITLIST */
+
+#if defined(RETRO_EC_ADDR_WIN32)
 /* returns false only when a bounded wait expired */
 static bool ec_win32_park(retro_eventcount_t *ec, int key, bool bounded,
       int64_t timeout_us)
@@ -591,6 +783,64 @@ static bool ec_win32_park(retro_eventcount_t *ec, int key, bool bounded,
 }
 #endif
 
+#if defined(RETRO_EC_SEM)
+/* The Windows park without its spin: returns false only when a
+ * bounded wait expired. */
+static bool ec_sem_park(retro_eventcount_t *ec, int key, bool bounded,
+      int64_t timeout_us)
+{
+   struct ec_waiter w;
+   bool             woken = true;
+
+   if (!(w.sem = ec_sem_get()))
+      return true;   /* nothing to wait on: a spurious wake-up */
+   w.next = NULL;
+   retro_atomic_int_init(&w.flags, 0);
+
+   ec_list_push(ec, &w);
+
+   /* Listed first, then re-check: a notify from here on either finds
+    * this block or has already moved the epoch. */
+   if (retro_atomic_load_acquire_int(&ec->epoch) != key)
+   {
+      bool unlinked;
+
+      ec_list_lock(ec);
+      unlinked = ec_list_unlink(ec, &w);
+      ec_list_unlock(ec);
+
+      /* This block lives on this thread's stack: a waker that has
+       * taken it off the list is reading it now and publishes WOKEN
+       * once done, so the frame stays until then.  No signal is in
+       * flight to consume: ASLEEP was never set. */
+      if (!unlinked)
+      {
+         while (!(retro_atomic_load_acquire_int(&w.flags) & EC_W_WOKEN))
+            retro_cpu_relax();
+      }
+      return true;
+   }
+
+   /* commit: past this a waker that takes the block must signal */
+   if (retro_atomic_fetch_or_int(&w.flags, EC_W_ASLEEP) & EC_W_WOKEN)
+      return true;
+
+   if (!ec_sem_sleep(w.sem, bounded, timeout_us))
+   {
+      /* timed out, unless a waker already took the block, in which case
+       * its signal is in flight and has to be consumed so the count
+       * does not carry into this thread's next park */
+      ec_list_lock(ec);
+      woken = !ec_list_unlink(ec, &w);
+      ec_list_unlock(ec);
+      if (woken)
+         ec_sem_sleep(w.sem, false, 0);
+   }
+
+   return woken;
+}
+#endif
+
 bool retro_eventcount_init(retro_eventcount_t *ec)
 {
    int lockless = 0;
@@ -604,6 +854,16 @@ bool retro_eventcount_init(retro_eventcount_t *ec)
 
 #if defined(RETRO_EC_ADDR_LINUX)
    lockless = 1;
+#elif defined(RETRO_EC_SEM)
+   ec_sem_init();
+   /* As for Win32 below: only with a key to keep the semaphores in,
+    * else this object takes the condition variable and ec->cond says
+    * so. */
+   if (ec_g.ready)
+   {
+      retro_atomic_ptr_init(&ec->waitlist, NULL);
+      lockless = 1;
+   }
 #elif defined(RETRO_EC_ADDR_WIN32)
    ec_win32_init();
    /* Only if a sleep tier resolved. With none - no ntdll entry points
@@ -687,7 +947,7 @@ void retro_eventcount_notify(retro_eventcount_t *ec)
    syscall(SYS_futex, (void*)&ec->epoch, FUTEX_WAKE_PRIVATE,
          INT_MAX, NULL, NULL, 0);
 #else
-#if defined(RETRO_EC_ADDR_WIN32)
+#if defined(RETRO_EC_WAITLIST)
    if (!ec->cond)
    {
       ec_wake_all(ec);
@@ -768,6 +1028,15 @@ void retro_eventcount_commit_wait(retro_eventcount_t *ec, int key)
       return;
    }
 #endif
+#if defined(RETRO_EC_SEM)
+   if (!ec->cond)
+   {
+      if (retro_atomic_load_acquire_int(&ec->epoch) == key)
+         ec_sem_park(ec, key, false, 0);
+      retro_atomic_fetch_sub_int(&ec->waiters, 1);
+      return;
+   }
+#endif
    /* The mutex is taken here, not in prepare_wait: it has to cover the
     * epoch re-check and the sleep together, and nothing before that.  A
     * notify that lands before the lock is acquired has already moved
@@ -812,6 +1081,15 @@ bool retro_eventcount_commit_wait_timeout(retro_eventcount_t *ec,
       return signalled;
    }
 #endif
+#if defined(RETRO_EC_SEM)
+   if (!ec->cond)
+   {
+      if (retro_atomic_load_acquire_int(&ec->epoch) == key)
+         signalled = ec_sem_park(ec, key, true, timeout_us);
+      retro_atomic_fetch_sub_int(&ec->waiters, 1);
+      return signalled;
+   }
+#endif
    slock_lock(ec->lock);
    if (retro_atomic_load_acquire_int(&ec->epoch) == key)
       signalled = scond_wait_timeout(ec->cond, ec->lock, timeout_us);
@@ -838,6 +1116,13 @@ const char *retro_eventcount_backend_name(void)
 {
 #if defined(RETRO_EC_ADDR_LINUX)
    return "futex";
+#elif defined(RETRO_EC_SEM)
+   ec_sem_init();
+#if defined(__APPLE__)
+   return ec_g.ready ? "mach semaphore" : "scond (no thread key)";
+#else
+   return ec_g.ready ? "posix semaphore" : "scond (no thread key)";
+#endif
 #elif defined(RETRO_EC_ADDR_WIN32)
    ec_win32_init();
    switch (ec_g.sleep)

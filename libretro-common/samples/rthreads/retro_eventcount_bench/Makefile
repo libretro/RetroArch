@@ -19,6 +19,10 @@ ifneq ($(SCOND),)
    CFLAGS += -DRETRO_EVENTCOUNT_FORCE_SCOND
    TARGET := retro_eventcount_bench_scond
 endif
+ifneq ($(SEM),)
+   CFLAGS += -DRETRO_EVENTCOUNT_FORCE_SEM
+   TARGET := retro_eventcount_bench_sem
+endif
 
 OBJS := $(SOURCES:.c=.o)
 
@@ -46,6 +50,6 @@ $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
-	rm -f $(OBJS) retro_eventcount_bench retro_eventcount_bench_scond
+	rm -f $(OBJS) retro_eventcount_bench retro_eventcount_bench_scond retro_eventcount_bench_sem
 
 .PHONY: all clean

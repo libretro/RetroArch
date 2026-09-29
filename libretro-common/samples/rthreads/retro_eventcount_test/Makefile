@@ -8,7 +8,8 @@ LIBRETRO_COMM_DIR := ../../..
 SOURCES := \
 	retro_eventcount_test.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
-	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
+	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c
 
 CFLAGS  += -Wall -W -std=gnu99 -g -O1 \
            -DHAVE_THREADS -I$(LIBRETRO_COMM_DIR)/include
@@ -42,6 +43,15 @@ ifneq ($(SCOND),)
    CFLAGS += -DRETRO_EVENTCOUNT_FORCE_SCOND
    TARGET := retro_eventcount_test_scond
 endif
+# SEM=1 builds the semaphore backend - the waiter list slept on with a
+# semaphore of the waiting thread's own, which Darwin and the BSDs
+# select - on this host, over a POSIX semaphore, so its list protocol
+# runs here under the sanitizers.  The Mach spelling on Darwin differs
+# in the three semaphore calls only.
+ifneq ($(SEM),)
+   CFLAGS += -DRETRO_EVENTCOUNT_FORCE_SEM
+   TARGET := retro_eventcount_test_sem
+endif
 
 OBJS := $(SOURCES:.c=.o)
 
@@ -66,8 +76,12 @@ check: all
 	@$(MAKE) -s clean
 	@$(MAKE) -s SCOND=1 $(if $(SANITIZER),SANITIZER=$(SANITIZER))
 	./retro_eventcount_test_scond
+	@$(MAKE) -s clean
+	@$(MAKE) -s SEM=1 $(if $(SANITIZER),SANITIZER=$(SANITIZER))
+	./retro_eventcount_test_sem
 
 clean:
-	rm -f $(OBJS) retro_eventcount_test retro_eventcount_test_scond
+	rm -f $(OBJS) retro_eventcount_test retro_eventcount_test_scond \
+	      retro_eventcount_test_sem
 
 .PHONY: all check clean

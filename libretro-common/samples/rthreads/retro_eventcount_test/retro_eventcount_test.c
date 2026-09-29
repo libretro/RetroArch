@@ -36,6 +36,7 @@
 #include <rthreads/retro_eventcount.h>
 #include <retro_atomic.h>
 #include <retro_miscellaneous.h>
+#include <features/features_cpu.h>
 
 /* A plain pause, not the tree's sleep helper: on desktop Windows that
  * one lives in time/rtime.c on top of a waitable timer, and this
@@ -426,6 +427,122 @@ static int lane_broadcast_stress(void)
    return 0;
 }
 
+
+/* ---- lane 5: bounded waits racing wakes --------------------------- */
+/* A bounded wait that expires while a notifier has already taken its
+ * block has a wake in flight, and the backends that sleep on something
+ * of the thread's own - a semaphore, an event - must consume it, or it
+ * carries into the thread's next park and ends that one at once.  The
+ * notifier here is paced to the consumer's bound so expiry and wake
+ * land together often, in bursts; after each burst it is held, and a
+ * bounded wait with nothing to wake it must then expire.  On the
+ * semaphore backend nothing else can end that wait, so any early
+ * return is a carried-over count and fails the lane.  The futex and
+ * condition-variable sleeps may return spuriously by their own
+ * contract, so there the probe is reported and not asserted on. */
+
+#define TIMED_RACE_BURSTS   200
+#define TIMED_RACE_ROUNDS   100
+#define TIMED_RACE_BOUND_US 50
+
+static retro_atomic_int_t timed_stop;
+static retro_atomic_int_t timed_hold;
+static retro_atomic_int_t timed_held;
+
+static void timed_spin_us(unsigned us)
+{
+   retro_time_t until = cpu_features_get_time_usec() + us;
+   while (cpu_features_get_time_usec() < until)
+      retro_cpu_relax();
+}
+
+static void timed_notifier(void *unused)
+{
+   unsigned n = 0;
+   (void)unused;
+   while (!retro_atomic_load_acquire_int(&timed_stop))
+   {
+      if (retro_atomic_load_acquire_int(&timed_hold))
+      {
+         retro_atomic_store_release_int(&timed_held, 1);
+         while (retro_atomic_load_acquire_int(&timed_hold))
+            retro_cpu_relax();
+         continue;
+      }
+      /* around the consumer's bound, on both sides of it */
+      timed_spin_us(TIMED_RACE_BOUND_US - 10 + (n++ % 21));
+      retro_eventcount_notify(&ec);
+   }
+}
+
+static int lane_timed_race(void)
+{
+   sthread_t *t;
+   int b, i;
+   int early = 0;
+   int expired = 0, woken = 0;
+   const char *backend = retro_eventcount_backend_name();
+
+   retro_atomic_int_init(&timed_stop, 0);
+   retro_atomic_int_init(&timed_hold, 0);
+   retro_atomic_int_init(&timed_held, 0);
+
+   if (!retro_eventcount_init(&ec))
+   {
+      fprintf(stderr, "FAIL: timed_race: eventcount init\n");
+      return 1;
+   }
+
+   t = sthread_create(timed_notifier, NULL);
+
+   for (b = 0; b < TIMED_RACE_BURSTS; b++)
+   {
+      int key;
+      for (i = 0; i < TIMED_RACE_ROUNDS; i++)
+      {
+         key = retro_eventcount_prepare_wait(&ec);
+         if (retro_eventcount_commit_wait_timeout(&ec, key,
+                  TIMED_RACE_BOUND_US))
+            woken++;
+         else
+            expired++;
+      }
+
+      /* Hold the notifier, then a wait with nothing to wake it */
+      retro_atomic_store_release_int(&timed_held, 0);
+      retro_atomic_store_release_int(&timed_hold, 1);
+      while (!retro_atomic_load_acquire_int(&timed_held))
+         retro_cpu_relax();
+
+      key = retro_eventcount_prepare_wait(&ec);
+      if (retro_eventcount_commit_wait_timeout(&ec, key, 200))
+         early++;
+
+      retro_atomic_store_release_int(&timed_hold, 0);
+   }
+
+   retro_atomic_store_release_int(&timed_stop, 1);
+   retro_atomic_store_release_int(&timed_hold, 0);
+   sthread_join(t);
+   retro_eventcount_free(&ec);
+
+   printf("  timed_race %d bursts x %d bounded waits: %d woken, %d "
+         "expired; %d probe(s) ended early\n",
+         TIMED_RACE_BURSTS, TIMED_RACE_ROUNDS, woken, expired, early);
+   if (!expired || !woken)
+   {
+      fprintf(stderr, "FAIL: timed_race: the race was not exercised\n");
+      return 1;
+   }
+   if (early && strstr(backend, "semaphore"))
+   {
+      fprintf(stderr, "FAIL: timed_race: a wake carried over into a "
+            "later park on the %s backend\n", backend);
+      return 1;
+   }
+   return 0;
+}
+
 int main(void)
 {
    sthread_t *wd;
@@ -441,6 +558,7 @@ int main(void)
    rc |= lane_wakeup();
    rc |= lane_broadcast();
    rc |= lane_broadcast_stress();
+   rc |= lane_timed_race();
 
    retro_atomic_store_release_int(&watchdog_stop, 1);
    sthread_join(wd);

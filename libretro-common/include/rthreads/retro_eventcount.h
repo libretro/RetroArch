@@ -112,13 +112,19 @@
  *                        be had - no ntdll entry points and no TLS index
  *                        left for the event - the object falls back to
  *                        the scond backend below rather than failing.
+ *   macOS / iOS / BSDs   the same waiter list, slept on with a semaphore
+ *                        of the waiting thread's own - a Mach semaphore
+ *                        on Darwin, a POSIX one on the BSDs - kept for
+ *                        the thread's life.  Every call is in Mac OS X
+ *                        10.4's headers, so one binary runs from there
+ *                        up; no mutex, and one signal per parked waiter.
  *   everything else      rthreads scond, with the lock taken only across
  *                        the sleep itself
  *
  * The scond backend is not a degraded mode; it is correct and it is what
- * macOS, the BSDs and the console ports use.  What it costs is one lock
- * acquisition per notify while a consumer is parked, which is the case
- * where a syscall was going to happen anyway.
+ * the console ports use.  What it costs is one lock acquisition per
+ * notify while a consumer is parked, which is the case where a syscall
+ * was going to happen anyway.
  *
  * Where the atomics themselves are not lock-free, the handshake that
  * lets notify skip the lock cannot be relied on, so that build takes the
@@ -140,11 +146,14 @@ typedef struct retro_eventcount
 {
    struct slock       *lock;    /* NULL unless the backend needs a condvar   */
    struct scond       *cond;    /* NULL unless the backend needs a condvar   */
-#if defined(_WIN32) && !defined(_XBOX) && defined(RETRO_ATOMIC_HAS_PTR)
-   /* Win32 keeps its own waiter list: the blocks live on the waiters'
-    * stacks and the low bit of the head is the list's spin lock.  No
+#if defined(RETRO_ATOMIC_HAS_PTR)
+   /* Win32, Darwin and the BSDs keep their own waiter list: the blocks
+    * live on the waiters' stacks and the low bit of the head is the
+    * list's spin bit, held for the instructions of one link.  No
     * caller mutex is involved, which is the whole point of it -- a
-    * condition variable would re-acquire one on every wake. */
+    * condition variable would re-acquire one on every wake.  Present
+    * wherever the pointer atomics are, so a forced backend on another
+    * host has it too; unused by the futex and scond backends. */
    retro_atomic_ptr_t  waitlist;
 #endif
    /* One cache line on purpose, and measured that way. The notifier
