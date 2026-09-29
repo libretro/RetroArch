@@ -5918,6 +5918,25 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
          VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st),
          RARCH_SCALE_BASE * scale);
 
+   /* The XRGB2101010 -> XRGB8888 scratch, for a driver that cannot
+    * take the 10-bit surface: sized here from the declared geometry
+    * so the narrow never allocates on the frame path. */
+   if (     video_st->pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010
+         && geom->max_width && geom->max_height)
+   {
+      size_t needed = (size_t)geom->max_width * geom->max_height;
+      if (video_st->pix10_convert_cap < needed)
+      {
+         uint32_t *buf = (uint32_t*)realloc(video_st->pix10_convert_buf,
+               needed * sizeof(uint32_t));
+         if (buf)
+         {
+            video_st->pix10_convert_buf = buf;
+            video_st->pix10_convert_cap = needed;
+         }
+      }
+   }
+
    video.dims                        = VIDEO_SCALE_PACK(width, height);
    video.fullscreen                  = settings->bools.video_fullscreen
          || ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_FORCE_FULLSCREEN);
@@ -6188,6 +6207,9 @@ VIDEO_NOINLINE const void *video_driver_convert_xrgb2101010(
    uint32_t      *dst;
    size_t         needed  = VIDEO_SCALE_AREA(dims);
 
+   /* Sized once at video init from the core's declared max geometry
+    * (video_driver_init_internal); this grow is only reached
+    * by a core that delivers a frame larger than it declared. */
    if (video_st->pix10_convert_cap < needed)
    {
       uint32_t *buf = (uint32_t*)realloc(video_st->pix10_convert_buf,
@@ -6202,18 +6224,19 @@ VIDEO_NOINLINE const void *video_driver_convert_xrgb2101010(
    for (y = 0; y < VIDEO_SCALE_H(dims); y++)
    {
       const uint32_t *src = (const uint32_t*)src_row;
-      for (x = 0; x < VIDEO_SCALE_W(dims); x++)
+      const unsigned  w   = VIDEO_SCALE_W(dims);
+      /* Each channel's high 8 bits land in place with one shift and
+       * one mask per channel; the compiler vectorises this form,
+       * where the extract-then-reinsert one it did not. */
+      for (x = 0; x < w; x++)
       {
          uint32_t p = src[x];
-         uint32_t r = (p >> 20) & 0x3ff;
-         uint32_t g = (p >> 10) & 0x3ff;
-         uint32_t b =  p        & 0x3ff;
          dst[x]     = 0xff000000u
-                    | ((r >> 2) << 16)
-                    | ((g >> 2) <<  8)
-                    |  (b >> 2);
+                    | ((p >> 6) & 0x00ff0000u)
+                    | ((p >> 4) & 0x0000ff00u)
+                    | ((p >> 2) & 0x000000ffu);
       }
-      dst     += VIDEO_SCALE_W(dims);
+      dst     += w;
       src_row += in_pitch;
    }
 
