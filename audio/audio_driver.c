@@ -118,6 +118,13 @@ static bool audio_driver_pipeline_transport_publish(uint32_t tempo_q16,
  * out of pipe_ring per pass (one batch slice), and the producer stages
  * at most this many when it has to convert a float batch first. */
 #define AUDIO_PIPE_SLICE_INT16S        AUDIO_CHUNK_SIZE_NONBLOCKING
+
+/* Multichannel fold staging (audio_driver_state_t::multi_fold), in
+ * frames. Every multichannel entry slices its batch to at most this
+ * many frames before folding, so the region is sized once at init and
+ * the fold never grows it on the batch callback. Shared by the float
+ * and int16 paths; sized for float, the larger. */
+#define AUDIO_MULTI_FOLD_FRAMES        (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1)
 /* The canonical wide frame on a multi-channel core's ring: a slot per
  * speaker position bit, FL and FR first. */
 #define AUDIO_PIPE_CANON_CHANNELS      11
@@ -1105,7 +1112,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_st->pipe_wide                = NULL;
    audio_st->pipe_wide_bytes          = 0;
    audio_st->pipe_channels            = 2;
-   free(audio_st->multi_fold);
+   /* multi_fold is a region of arena_float, freed with it below. */
    audio_st->multi_fold               = NULL;
    audio_st->multi_fold_frames        = 0;
    free(audio_st->record_remap);
@@ -4100,10 +4107,13 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
 #ifdef HAVE_REWIND
    size_t f32_rewind              = AUDIO_ARENA_NEXT(f32_out,
          outsamples_max, AUDIO_ARENA_ALIGN_FLOAT);
-   size_t f32_total               = f32_rewind + max_buffer_samples;
+   size_t f32_fold                = AUDIO_ARENA_NEXT(f32_rewind,
+         max_buffer_samples, AUDIO_ARENA_ALIGN_FLOAT);
 #else
-   size_t f32_total               = f32_out + outsamples_max;
+   size_t f32_fold                = AUDIO_ARENA_NEXT(f32_out,
+         outsamples_max, AUDIO_ARENA_ALIGN_FLOAT);
 #endif
+   size_t f32_total               = f32_fold + AUDIO_MULTI_FOLD_FRAMES * 2;
    int16_t *arena_int16           = (int16_t*)memalign_alloc(64,
          i16_total * sizeof(int16_t));
    float *arena_float             = (float*)memalign_alloc(64,
@@ -4164,6 +4174,8 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    audio_driver_st.rewind_buf_f                = arena_float + f32_rewind;
 #endif
    audio_driver_st.output_samples_buf_length   = outsamples_max * sizeof(float);
+   audio_driver_st.multi_fold                  = arena_float + f32_fold;
+   audio_driver_st.multi_fold_frames           = AUDIO_MULTI_FOLD_FRAMES;
 
    if (!audio_enable)
    {
@@ -6821,18 +6833,11 @@ size_t audio_driver_sample_batch(const int16_t *data, size_t frames)
 static bool audio_driver_multi_fold_room(audio_driver_state_t *audio_st,
       size_t frames, size_t sample)
 {
-   if (frames > audio_st->multi_fold_frames)
-   {
-      /* float and int16 batches share the buffer: sized for float,
-       * the larger */
-      void *n = realloc(audio_st->multi_fold, frames * 2 * sizeof(float));
-      if (!n)
-         return false;
-      audio_st->multi_fold        = n;
-      audio_st->multi_fold_frames = frames;
-   }
+   /* The region is carved out of arena_float by
+    * audio_driver_init_internal() at AUDIO_MULTI_FOLD_FRAMES frames;
+    * callers slice to that bound, so this is a check, never a grow. */
    (void)sample;
-   return true;
+   return audio_st->multi_fold && frames <= audio_st->multi_fold_frames;
 }
 
 static bool audio_driver_multi_layout_ok(unsigned channels, unsigned layout)

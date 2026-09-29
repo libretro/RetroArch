@@ -912,7 +912,7 @@ typedef struct
    unsigned      out_channels;
    /* The multi-channel batch entry (RETRO_ENVIRONMENT_GET_AUDIO_
     * SAMPLE_BATCH_MULTI): the layout the core last delivered, and
-    * the stereo fold of a batch, grown to the largest batch seen. The
+    * the stereo fold of a batch slice, a fixed region of arena_float. The
     * pipeline carries stereo; a core's wider frame is folded here at
     * the boundary, and the device's upmix widens the stereo again.
     * core_layout is stereo until the core delivers something else,
