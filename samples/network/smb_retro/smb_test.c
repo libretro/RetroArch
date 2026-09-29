@@ -30,7 +30,15 @@ int main(int argc, char **argv)
       return 2;
    rsmb_set_credentials(c, argv[3], argv[4], argc > 5 ? argv[5] : "");
    rsmb_set_timeout(c, 5);
+   /* SMB_KRB_REALM (and SMB_KRB_KDC, SMB_KRB_PORT) in the environment:
+    * authenticate with Kerberos; SMB_KRB_REQUIRE=1 fails the run if
+    * the session did not come from a ticket */
+   if (getenv("SMB_KRB_REALM"))
+      rsmb_set_kerberos(c, getenv("SMB_KRB_REALM"), getenv("SMB_KRB_KDC"),
+            getenv("SMB_KRB_PORT") ? (uint16_t)atoi(getenv("SMB_KRB_PORT")) : 0);
    CHECK(rsmb_connect(c, argv[1], argv[2]) == 0, "connect");
+   if (getenv("SMB_KRB_REQUIRE"))
+      CHECK(rsmb_used_kerberos(c), "session authenticated with Kerberos");
    CHECK(rsmb_echo(c) == 0, "echo");
 
    for (i = 0; i < sizeof(big); i++)

@@ -74,6 +74,23 @@ void rsmb_set_domain(struct rsmb_ctx *c, const char *domain);
  * default of 10. */
 /* TCP port; 0 (the default) means 445. */
 void rsmb_set_port(struct rsmb_ctx *c, uint16_t port);
+/**
+ * rsmb_set_kerberos:
+ * @realm    : the Kerberos realm ("EXAMPLE.COM"); NULL or "" turns
+ *             Kerberos off again
+ * @kdc      : the KDC host; NULL or "" uses the SMB server itself,
+ *             which is right for an Active Directory domain controller
+ * @port     : KDC port, 0 for 88
+ *
+ * With a realm set, rsmb_connect() authenticates the session with a
+ * Kerberos ticket for cifs/server (AS and TGS exchanges with the user
+ * and password from rsmb_set_credentials, then an RFC 4121 token in
+ * SPNEGO). Should the KDC be unreachable or refuse, the session falls
+ * back to NTLMSSP as before; rsmb_used_kerberos() says which one it
+ * ended up with.
+ **/
+void rsmb_set_kerberos(struct rsmb_ctx *c, const char *realm, const char *kdc, uint16_t port);
+int  rsmb_used_kerberos(const struct rsmb_ctx *c);
 void rsmb_set_timeout(struct rsmb_ctx *c, unsigned seconds);
 
 /**

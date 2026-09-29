@@ -131,4 +131,14 @@ else
 fi
 
 run "wrong password is refused"             SMB3_11 default  1 'wrong'
+# Kerberos configured with a realm whose KDC is not there: the client
+# must fall back to NTLMSSP and still get in (a standalone server has
+# no KDC); the AD DC matrix covers the ticket path itself
+if SMB_KRB_REALM=NOWHERE.TEST SMB_KRB_KDC=127.0.0.1 SMB_KRB_PORT=1 \
+      $RUN ./smb_test$EXE 127.0.0.1 share rsmbtest 'Sekret1!' RETRO >$D/out 2>&1; then
+   echo "ok:   Kerberos unavailable falls back to NTLMSSP"
+else
+   echo "FAIL: Kerberos fallback: $(cat $D/out)"; exit 1
+fi
+rm -f $D/share/rsmb_test.bin
 echo "[pass] smb_retro local samba matrix"

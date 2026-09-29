@@ -26,6 +26,7 @@
 #include <time.h>
 
 #include <net/net_smb2.h>
+#include <net/net_krb5.h>
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 #include <crypto/crypto.h>
@@ -164,6 +165,13 @@ struct rsmb_ctx
    uint8_t  connected;
    char     server[256];
    char     error[128];
+   /* Kerberos: set, the session is authenticated with a ticket for
+    * cifs/@server from @krb_kdc, falling back to NTLMSSP when the
+    * KDC cannot be reached or refuses */
+   char     krb_realm[128];
+   char     krb_kdc[256];
+   uint16_t krb_port;
+   uint8_t  krb_used;           /* the session came from Kerberos */
 };
 
 /* ---- little-endian helpers ---------------------------------------- */
@@ -642,6 +650,7 @@ static int rsmb_negotiate(struct rsmb_ctx *c)
 
 static const uint8_t oid_spnego[] = {0x06,0x06,0x2b,0x06,0x01,0x05,0x05,0x02};
 static const uint8_t oid_ntlmssp[] = {0x06,0x0a,0x2b,0x06,0x01,0x04,0x01,0x82,0x37,0x02,0x02,0x0a};
+static const uint8_t oid_krb5[]    = {0x06,0x09,0x2a,0x86,0x48,0x86,0xf7,0x12,0x01,0x02,0x02};
 
 /* DER length: short form or 0x82 nn nn (nothing here exceeds 64K). */
 static size_t der_len(uint8_t *p, size_t n)
@@ -652,11 +661,13 @@ static size_t der_len(uint8_t *p, size_t n)
 }
 
 /* NegTokenInit: [APPLICATION 0] { OID spnego, [0] { SEQ { [0] mechTypes
- * { OID ntlmssp }, [2] mechToken OCTET STRING } } } */
-static size_t spnego_init(uint8_t *out, const uint8_t *tok, size_t tok_len)
+ * { OID mech }, [2] mechToken OCTET STRING } } }; @mech is ntlmssp or
+ * krb5 (the token being NTLMSSP NEGOTIATE or the RFC 4121 AP-REQ). */
+static size_t spnego_init_mech(uint8_t *out, const uint8_t *mech, size_t mech_len,
+      const uint8_t *tok, size_t tok_len)
 {
    uint8_t  tmp[16];
-   size_t   mech_types = 2 + sizeof(oid_ntlmssp);          /* 30 len OID */
+   size_t   mech_types = 2 + mech_len;                     /* 30 len OID */
    size_t   a0 = 2 + mech_types;                           /* a0 len SEQ */
    size_t   octet = 1 + der_len(tmp, tok_len) + tok_len;   /* 04 len tok */
    size_t   a2 = 1 + der_len(tmp, octet) + octet;
@@ -671,12 +682,146 @@ static size_t spnego_init(uint8_t *out, const uint8_t *tok, size_t tok_len)
    *p++ = 0xa0; p += der_len(p, inner);
    *p++ = 0x30; p += der_len(p, seq);
    *p++ = 0xa0; *p++ = (uint8_t)mech_types;
-   *p++ = 0x30; *p++ = (uint8_t)sizeof(oid_ntlmssp);
-   memcpy(p, oid_ntlmssp, sizeof(oid_ntlmssp)); p += sizeof(oid_ntlmssp);
+   *p++ = 0x30; *p++ = (uint8_t)mech_len;
+   memcpy(p, mech, mech_len); p += mech_len;
    *p++ = 0xa2; p += der_len(p, octet);
    *p++ = 0x04; p += der_len(p, tok_len);
    memcpy(p, tok, tok_len); p += tok_len;
    return (size_t)(p - out);
+}
+
+static size_t spnego_init(uint8_t *out, const uint8_t *tok, size_t tok_len)
+{
+   return spnego_init_mech(out, oid_ntlmssp, sizeof(oid_ntlmssp), tok, tok_len);
+}
+
+/* The Kerberos reply inside a NegTokenResp: the responseToken is the
+ * RFC 4121 AP-REP token, 0x60 len { OID krb5, 02 00, ... }; find it by
+ * its OID and TOK_ID. */
+static const uint8_t *spnego_find_krb5_rep(const uint8_t *blob, size_t len, size_t *tok_len)
+{
+   size_t i;
+   for (i = 0; i + 4 + sizeof(oid_krb5) + 2 <= len; i++)
+   {
+      size_t h, n;
+      if (blob[i] != 0x60)
+         continue;
+      n = blob[i + 1];
+      if (n & 0x80)
+      {
+         unsigned k = n & 0x7f, j;
+         if (k > 2 || i + 2 + k > len)
+            continue;
+         n = 0;
+         for (j = 0; j < k; j++)
+            n = (n << 8) | blob[i + 2 + j];
+         h = 2 + k;
+      }
+      else
+         h = 2;
+      if (i + h + n > len || n < sizeof(oid_krb5) + 2)
+         continue;
+      if (memcmp(blob + i + h, oid_krb5, sizeof(oid_krb5)) != 0
+            || blob[i + h + sizeof(oid_krb5)] != 0x02 || blob[i + h + sizeof(oid_krb5) + 1] != 0x00)
+         continue;
+      *tok_len = h + n;
+      return blob + i;
+   }
+   return NULL;
+}
+
+/* Signing and sealing keys from the 16-octet session key, per dialect. */
+static void rsmb_derive_session_keys(struct rsmb_ctx *c)
+{
+   if (c->dialect == DIALECT_311)
+   {
+      kbkdf_hmac_sha256(c->session_key, 16, (const uint8_t*)"SMBSigningKey", 14, c->preauth, 64, c->signing_key, 16);
+      kbkdf_hmac_sha256(c->session_key, 16, (const uint8_t*)"SMBC2SCipherKey", 16, c->preauth, 64, c->enc_key, 16);
+      kbkdf_hmac_sha256(c->session_key, 16, (const uint8_t*)"SMBS2CCipherKey", 16, c->preauth, 64, c->dec_key, 16);
+   }
+   else if (c->dialect >= DIALECT_300)
+   {
+      kbkdf_hmac_sha256(c->session_key, 16, (const uint8_t*)"SMB2AESCMAC", 12, (const uint8_t*)"SmbSign", 8, c->signing_key, 16);
+      kbkdf_hmac_sha256(c->session_key, 16, (const uint8_t*)"SMB2AESCCM", 11, (const uint8_t*)"ServerIn ", 10, c->enc_key, 16);
+      kbkdf_hmac_sha256(c->session_key, 16, (const uint8_t*)"SMB2AESCCM", 11, (const uint8_t*)"ServerOut", 10, c->dec_key, 16);
+   }
+   else
+      memcpy(c->signing_key, c->session_key, 16);
+}
+
+/* One SESSION_SETUP with a Kerberos ticket. Returns 0 with the session
+ * key set, 1 when Kerberos could not be used (the caller falls back to
+ * NTLMSSP), -1 on a transport failure. */
+static int rsmb_session_setup_krb5(struct rsmb_ctx *c)
+{
+   struct krb5_ctx *k;
+   uint8_t *b, *r, *tok;
+   size_t   rlen, blen, tok_len = 0;
+   char     service[300];
+   uint8_t  key[32];
+   size_t   key_len;
+   int      rc = 1;
+
+   if (!(k = krb5_new()))
+      return 1;
+   if (!(tok = (uint8_t*)malloc(4096)))
+   {
+      krb5_free(k);
+      return 1;
+   }
+   krb5_set_kdc(k, c->krb_realm, c->krb_kdc[0] ? c->krb_kdc : c->server, c->krb_port);
+   krb5_set_timeout(k, c->timeout);
+   strlcpy(service, "cifs/", sizeof(service));
+   strlcat(service, c->server, sizeof(service));
+   if (krb5_get_tgt(k, c->user ? c->user : "", c->password ? c->password : "") != 0
+         || krb5_get_service_ticket(k, service) != 0
+         || krb5_gss_init_token(k, tok, 4096, &tok_len) != 0)
+   {
+      rsmb_err(c, krb5_get_error(k));
+      goto out;
+   }
+
+   b = rsmb_begin(c, SMB2_SESSION_SETUP);
+   memset(b, 0, 24);
+   put16(b, 25);
+   b[3] = 1;
+   put16(b + 12, SMB2_HDR_SIZE + 24);
+   blen = spnego_init_mech(b + 24, oid_krb5, sizeof(oid_krb5), tok, tok_len);
+   put16(b + 14, (unsigned)blen);
+   if (rsmb_call(c, 24 + blen, &r, &rlen, 1) != 0)
+   {
+      rc = -1;
+      goto out;
+   }
+   if (c->status != STATUS_SUCCESS || rlen < 8)
+   {
+      rsmb_err(c, c->status == STATUS_LOGON_FAILURE ? "Kerberos logon refused" : "Kerberos session setup failed");
+      goto out;
+   }
+   c->session_id = get64(c->rx + 40);
+   {
+      size_t boff = get16(r + 4), bl = get16(r + 6);
+      const uint8_t *rep;
+      size_t rep_len;
+      if (boff < SMB2_HDR_SIZE || boff + bl > rlen + SMB2_HDR_SIZE
+            || !(rep = spnego_find_krb5_rep(c->rx + boff, bl, &rep_len))
+            || krb5_gss_accept_token(k, rep, rep_len) != 0
+            || krb5_gss_session_key(k, key, &key_len) != 0)
+      {
+         rsmb_err(c, "server did not prove itself (no valid AP-REP)");
+         goto out;
+      }
+   }
+   /* MS-SMB2 3.2.5.3.1: the first 16 octets of the GSS key */
+   memcpy(c->session_key, key, 16);
+   crypto_memzero(key, sizeof(key));
+   c->krb_used = 1;
+   rc = 0;
+out:
+   crypto_memzero(tok, 4096);
+   free(tok);
+   krb5_free(k);
+   return rc;
 }
 
 /* NegTokenResp: [1] { SEQ { [2] responseToken OCTET STRING } } */
@@ -710,7 +855,43 @@ static const uint8_t *spnego_find_ntlm(const uint8_t *blob, size_t len, size_t *
    return NULL;
 }
 
+static int rsmb_session_setup_ntlm(struct rsmb_ctx *c);
+
+/* Kerberos first when a realm is configured; a KDC that cannot be
+ * reached or a refused ticket falls through to NTLMSSP, and if that
+ * fails too the error names both reasons. */
 static int rsmb_session_setup(struct rsmb_ctx *c)
+{
+   char krb_err[128];
+   int  kr, nr;
+
+   if (!c->krb_realm[0])
+      return rsmb_session_setup_ntlm(c);
+   kr = rsmb_session_setup_krb5(c);
+   if (kr == 0)
+   {
+      rsmb_derive_session_keys(c);
+      c->session_ready = 1;
+      return 0;
+   }
+   if (kr < 0)
+      return -1;
+   strlcpy(krb_err, c->error, sizeof(krb_err));
+   c->session_id = 0;
+   nr = rsmb_session_setup_ntlm(c);
+   if (nr != 0)
+   {
+      char both[128];
+      strlcpy(both, "Kerberos: ", sizeof(both));
+      strlcat(both, krb_err, sizeof(both));
+      strlcat(both, "; NTLMSSP: ", sizeof(both));
+      strlcat(both, c->error, sizeof(both));
+      strlcpy(c->error, both, sizeof(c->error));
+   }
+   return nr;
+}
+
+static int rsmb_session_setup_ntlm(struct rsmb_ctx *c)
 {
    uint8_t *b, *r;
    size_t   rlen, blen;
@@ -920,22 +1101,7 @@ static int rsmb_session_setup(struct rsmb_ctx *c)
       goto done;
    }
 
-   /* keys */
-   if (c->dialect == DIALECT_311)
-   {
-      kbkdf_hmac_sha256(c->session_key, 16, (const uint8_t*)"SMBSigningKey", 14, c->preauth, 64, c->signing_key, 16);
-      kbkdf_hmac_sha256(c->session_key, 16, (const uint8_t*)"SMBC2SCipherKey", 16, c->preauth, 64, c->enc_key, 16);
-      kbkdf_hmac_sha256(c->session_key, 16, (const uint8_t*)"SMBS2CCipherKey", 16, c->preauth, 64, c->dec_key, 16);
-   }
-   else if (c->dialect >= DIALECT_300)
-   {
-      kbkdf_hmac_sha256(c->session_key, 16, (const uint8_t*)"SMB2AESCMAC", 12, (const uint8_t*)"SmbSign", 8, c->signing_key, 16);
-      kbkdf_hmac_sha256(c->session_key, 16, (const uint8_t*)"SMB2AESCCM", 11, (const uint8_t*)"ServerIn ", 10, c->enc_key, 16);
-      kbkdf_hmac_sha256(c->session_key, 16, (const uint8_t*)"SMB2AESCCM", 11, (const uint8_t*)"ServerOut", 10, c->dec_key, 16);
-   }
-   else
-      memcpy(c->signing_key, c->session_key, 16);
-
+   rsmb_derive_session_keys(c);
    c->session_ready = 1;
 
    /* SessionFlags. A guest (0x0001) or anonymous/null (0x0002) session
@@ -1057,6 +1223,15 @@ void rsmb_set_password(struct rsmb_ctx *c, const char *password) { rsmb_set_str(
 void rsmb_set_domain(struct rsmb_ctx *c, const char *domain)     { rsmb_set_str(&c->domain, domain, 0); }
 
 void rsmb_set_port(struct rsmb_ctx *c, uint16_t port) { c->port = port; }
+
+void rsmb_set_kerberos(struct rsmb_ctx *c, const char *realm, const char *kdc, uint16_t port)
+{
+   strlcpy(c->krb_realm, realm ? realm : "", sizeof(c->krb_realm));
+   strlcpy(c->krb_kdc, kdc ? kdc : "", sizeof(c->krb_kdc));
+   c->krb_port = port;
+}
+
+int rsmb_used_kerberos(const struct rsmb_ctx *c) { return c->krb_used; }
 
 void rsmb_set_timeout(struct rsmb_ctx *c, unsigned seconds)
 {
