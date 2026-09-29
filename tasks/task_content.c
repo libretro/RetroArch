@@ -3085,15 +3085,6 @@ static void task_content_deferred_load_start(void)
 }
 #endif
 
-void task_content_load_check(void)
-{
-#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
-   task_content_deferred_load_start();
-#endif
-   if (content_load_job.stage != CONTENT_LOAD_STAGE_NONE)
-      content_load_step(&content_load_job, content_state_get_ptr());
-}
-
 #if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
 #if defined(HAVE_GFX_WIDGETS)
 /* Feeds the read percentage to the "Load Content" startup
@@ -3326,6 +3317,15 @@ end:
    return ret;
 }
 #endif
+
+void task_content_load_check(void)
+{
+#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
+   task_content_deferred_load_start();
+#endif
+   if (content_load_job.stage != CONTENT_LOAD_STAGE_NONE)
+      content_load_step(&content_load_job, content_state_get_ptr());
+}
 
 static bool task_load_content_internal(
       content_ctx_info_t *content_info,
