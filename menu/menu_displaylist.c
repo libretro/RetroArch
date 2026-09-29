@@ -13929,6 +13929,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_NFS_CLIENT_NUM_CONTEXTS, PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_NFS_CLIENT_PORT,         PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_NFS_CLIENT_MOUNT_PORT,   PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_NFS_CLIENT_VERSION,      PARSE_ONLY_UINT},
             };
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {

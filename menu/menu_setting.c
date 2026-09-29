@@ -17889,6 +17889,7 @@ static void settings_build_nfsclient(
       NFS_UINT(nfs_num_contexts, NFS_CLIENT_NUM_CONTEXTS, DEFAULT_NFS_NUM_CONTEXTS, 1, 16);
       NFS_UINT(nfs_port,         NFS_CLIENT_PORT,         DEFAULT_NFS_PORT,         0, 65535);
       NFS_UINT(nfs_mount_port,   NFS_CLIENT_MOUNT_PORT,   DEFAULT_NFS_MOUNT_PORT,   0, 65535);
+      NFS_UINT(nfs_version,      NFS_CLIENT_VERSION,      DEFAULT_NFS_VERSION,      3, 4);
       GROUP_END();
    }
 }

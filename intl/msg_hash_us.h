@@ -36880,6 +36880,14 @@ MSG_HASH(
    "Port of the MOUNT service. 0 asks the server's portmapper."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NFS_CLIENT_VERSION,
+   "NFS Version"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NFS_CLIENT_VERSION,
+   "3 uses the portmapper and MOUNT service; 4 connects straight to the NFS port and takes the export as the server's pseudo-filesystem path."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NFS_CLIENT_BROWSE,
    "Browse NFS Export"
    )
