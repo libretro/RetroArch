@@ -70,11 +70,11 @@ run "chain: server omitting the intermediate is refused" nointer ECDHE-RSA-AES12
 # CertificateVerify with RSA-PSS, ECDSA with P-256; both 1.3 suites; the
 # chain still has to verify; a 1.3-only suite we do not offer must not
 # connect at all rather than silently downgrade.
-run13() { # label cert ciphersuite expect_rc host mode ca
+run13() { # label cert ciphersuite expect_rc host mode ca [rounds] [server opts]
    CHAIN=""; [ -f $D/$2.chain.pem ] && CHAIN="-cert_chain $D/$2.chain.pem"
-   openssl s_server -accept 44331 -cert $D/$2.pem $CHAIN -key $D/$2.key -tls1_3 -ciphersuites "$3" -www >/dev/null 2>&1 &
+   openssl s_server -accept 44331 -cert $D/$2.pem $CHAIN -key $D/$2.key -tls1_3 -ciphersuites "$3" -www ${9:-} >/dev/null 2>&1 &
    SRV=$!; sleep 0.4
-   set +e; $RUN ./tls_fetch$EXE $5 44331 $6 "$7" 1 >/dev/null 2>&1; rc=$?; set -e
+   set +e; $RUN ./tls_fetch$EXE $5 44331 $6 "$7" ${8:-1} >/dev/null 2>&1; rc=$?; set -e
    kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
    if [ $rc -eq $4 ]; then echo "ok:   $1"; else echo "FAIL: $1 (rc=$rc, want $4)"; exit 1; fi
 }
@@ -87,4 +87,10 @@ run13 "TLS 1.3, chain through an intermediate"         viarsa TLS_AES_128_GCM_SH
 run13 "TLS 1.3, untrusted CA is refused"               rsa  TLS_AES_128_GCM_SHA256       1 localhost 0
 run13 "TLS 1.3, wrong hostname is refused"             rsa  TLS_AES_128_GCM_SHA256       1 127.0.0.1 0 $D/ca.pem
 run13 "TLS 1.3, only AES-256-GCM-SHA384 offered: no connection" rsa TLS_AES_256_GCM_SHA384 1 localhost 0 $D/ca.pem
+# PSK resumption: the ticket from the first connection resumes the next
+# ones, on both suites; a server that issues no tickets means every
+# connection is a full handshake, which the tool then reports as failure
+run13 "TLS 1.3, PSK resumption (3 rounds)"           rsa  TLS_AES_128_GCM_SHA256       0 localhost 0 $D/ca.pem 3
+run13 "TLS 1.3, PSK resumption, ChaCha20 (2 rounds)" p256 TLS_CHACHA20_POLY1305_SHA256 0 localhost 0 $D/ca.pem 2
+run13 "TLS 1.3, no tickets issued: no resumption"    rsa  TLS_AES_128_GCM_SHA256       1 localhost 0 $D/ca.pem 2 "-num_tickets 0"
 echo "[pass] tls_retro local server matrix"

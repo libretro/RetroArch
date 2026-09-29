@@ -35,8 +35,14 @@ static int one(const char *host, int port, int *resumed)
       goto done;
    if (ssl_socket_connect(ssl, addr, true, true) >= 0)
    {
+      /* one request and its reply: a 1.3 server's session ticket
+       * arrives with the first application data */
+      static const char req[] = "GET / HTTP/1.0\r\n\r\n";
+      uint8_t buf[256];
       ok = 1;
       *resumed = ssl_socket_retro_was_resumed(ssl);
+      ssl_socket_send_all_blocking(ssl, req, sizeof(req) - 1, true);
+      ssl_socket_receive_all_blocking(ssl, buf, 16);
    }
    ssl_socket_close(ssl);
    ssl_socket_free(ssl);

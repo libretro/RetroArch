@@ -110,6 +110,11 @@ struct tls_session
    size_t   sid_len;
    uint8_t  sid[32];
    uint8_t  master[48];
+   /* TLS 1.3: the ticket doubles as the PSK identity, psk is the
+    * resumption secret expanded with the ticket nonce */
+   uint8_t  is13;
+   uint8_t  psk[32];
+   uint32_t age_add;
    char     host[256];
 };
 
@@ -246,6 +251,11 @@ struct ssl_state
    uint8_t  cert_hash[32];  /* transcript hash up to Certificate, for CertificateVerify */
    uint8_t  tls13_peer[65]; /* server key share from the ServerHello */
    size_t   tls13_peer_len;
+   uint8_t  master13[32];   /* 1.3 master secret until the resumption secret is taken */
+   uint8_t  res_master[32]; /* resumption master secret, for the tickets */
+   uint8_t  psk[32];        /* PSK offered in this ClientHello */
+   uint8_t  psk_offered;
+   uint8_t  psk_accepted;
 };
 
 /* ---- byte helpers ------------------------------------------------- */
@@ -746,6 +756,9 @@ static int tls_send_handshake(struct ssl_state *s, uint8_t msg_type,
    return ret;
 }
 
+static int tls13_expand_label(const uint8_t *secret, const char *label,
+      const uint8_t *ctx, size_t ctx_len, uint8_t *out, size_t out_len);
+
 static int tls_send_client_hello(struct ssl_state *s)
 {
    static const uint8_t suites[] = {
@@ -762,6 +775,8 @@ static int tls_send_client_hello(struct ssl_state *s)
    uint8_t *ticket = NULL;
    size_t   cached_sid_len = 0;
    uint8_t  cached_sid[32];
+   uint8_t  cached_is13 = 0;
+   uint32_t obf_age = 0;
 
    /* the cache entry is copied out here, so nothing below reads it
     * once another thread may be rewriting the slot */
@@ -777,7 +792,15 @@ static int tls_send_client_hello(struct ssl_state *s)
       memcpy(cached_sid, cached->sid, cached->sid_len);
       cached_sid_len = cached->sid_len;
    }
+   if (cached && cached->is13 && ticket_len)
+   {
+      cached_is13 = 1;
+      memcpy(s->psk, cached->psk, 32);
+      obf_age = (uint32_t)((time(NULL) - cached->when) * 1000) + cached->age_add;
+   }
    TLS_CACHE_UNLOCK();
+   s->psk_offered  = 0;
+   s->psk_accepted = 0;
 
    if (dlen > 255)
       dlen = 0;
@@ -857,12 +880,36 @@ static int tls_send_client_hello(struct ssl_state *s)
       memcpy(e, s->pub, 65); e += 65;
       /* renegotiation_info: initial, empty */
       tls_put16(e, 0xff01); e += 2; tls_put16(e, 1); e += 2; *e++ = 0;
-      /* session_ticket: the cached ticket, or empty to say we take them */
-      tls_put16(e, 35); e += 2; tls_put16(e, (unsigned)ticket_len); e += 2;
-      if (ticket_len)
+      /* session_ticket (1.2): the cached ticket, or empty to say we
+       * take them; a 1.3 ticket goes in pre_shared_key instead */
+      tls_put16(e, 35); e += 2;
+      if (ticket_len && !cached_is13)
       {
+         tls_put16(e, (unsigned)ticket_len); e += 2;
          memcpy(e, ticket, ticket_len);
          e += ticket_len;
+      }
+      else
+      {
+         tls_put16(e, 0); e += 2;
+      }
+      /* psk_key_exchange_modes: psk_dhe_ke */
+      tls_put16(e, 45); e += 2; tls_put16(e, 2); e += 2; *e++ = 1; *e++ = 1;
+      if (cached_is13)
+      {
+         /* pre_shared_key, last: one identity (the ticket, obfuscated
+          * age) and one binder, filled in once the rest is hashed */
+         tls_put16(e, 41); e += 2;
+         tls_put16(e, (unsigned)(2 + 2 + ticket_len + 4 + 2 + 1 + 32)); e += 2;
+         tls_put16(e, (unsigned)(2 + ticket_len + 4)); e += 2;
+         tls_put16(e, (unsigned)ticket_len); e += 2;
+         memcpy(e, ticket, ticket_len); e += ticket_len;
+         e[0] = (uint8_t)(obf_age >> 24); e[1] = (uint8_t)(obf_age >> 16);
+         e[2] = (uint8_t)(obf_age >> 8);  e[3] = (uint8_t)obf_age; e += 4;
+         tls_put16(e, 33); e += 2;          /* binders list */
+         *e++ = 32;
+         memset(e, 0, 32); e += 32;         /* binder placeholder */
+         s->psk_offered = 1;
       }
 
       ext_len = (size_t)(e - ext_start);
@@ -870,6 +917,33 @@ static int tls_send_client_hello(struct ssl_state *s)
       p = e;
    }
 
+   if (s->psk_offered)
+   {
+      /* binder = HMAC(binder_key, Hash(header || ClientHello[..binders]))
+       * with binder_key from the PSK's early secret */
+      static const uint8_t zeros[32] = {0};
+      uint8_t early[32], bkey[32], fkey[32], th[32], hdr[4], empty_hash[32];
+      struct sha256_state t, e0;
+      size_t  body_len = (size_t)(p - h), trunc = body_len - 35;
+      hdr[0] = TLS_HS_CLIENT_HELLO;
+      hdr[1] = (uint8_t)(body_len >> 16); hdr[2] = (uint8_t)(body_len >> 8); hdr[3] = (uint8_t)body_len;
+      t = s->transcript;
+      sha256_stream_update(&t, hdr, 4);
+      sha256_stream_update(&t, h, trunc);
+      sha256_stream_final(&t, th);
+      hkdf_sha256_extract(zeros, 32, s->psk, 32, early);
+      sha256_stream_init(&e0, 0);
+      sha256_stream_final(&e0, empty_hash);
+      if (tls13_expand_label(early, "res binder", empty_hash, 32, bkey, 32) != 0
+            || tls13_expand_label(bkey, "finished", NULL, 0, fkey, 32) != 0)
+      {
+         free(h); free(ticket);
+         s->last_err = TLS_ERR_KEX;
+         return -1;
+      }
+      hmac_sha256(fkey, 32, th, 32, h + trunc + 3);
+      crypto_memzero(early, 32); crypto_memzero(bkey, 32); crypto_memzero(fkey, 32);
+   }
    ret = tls_send_handshake(s, TLS_HS_CLIENT_HELLO, h, (size_t)(p - h));
    free(h);
    free(ticket);
@@ -927,6 +1001,8 @@ static int tls_recv_server_hello(struct ssl_state *s)
             goto bad;
          if (etype == 43 && edata == 2 && tls_get16(ed) == 0x0304)
             s->v13 = 1;
+         if (etype == 41 && edata == 2 && tls_get16(ed) == 0 && s->psk_offered)
+            s->psk_accepted = 1;
          if (etype == 51 && edata >= 4)
          {
             unsigned grp = tls_get16(ed);
@@ -1267,6 +1343,7 @@ static void tls_cache_store(struct ssl_state *s)
    if (e)
    {
       memcpy(e->master, s->master, 48);
+      e->is13    = 0;
       e->suite   = s->suite;
       e->sid_len = s->offered_sid_len;
       memcpy(e->sid, s->offered_sid, s->offered_sid_len);
@@ -1340,9 +1417,9 @@ static int tls_recv_finished(struct ssl_state *s)
 static int tls13_expand_label(const uint8_t *secret, const char *label,
       const uint8_t *ctx, size_t ctx_len, uint8_t *out, size_t out_len)
 {
-   uint8_t info[2 + 1 + 6 + 32 + 1 + 32];
+   uint8_t info[2 + 1 + 6 + 32 + 1 + 255];   /* a ticket nonce may be 255 octets */
    size_t  llen = strlen(label), n = 0;
-   if (llen > 32 || ctx_len > 32)
+   if (llen > 32 || ctx_len > 255)
       return -1;
    tls_put16(info, (unsigned)out_len);            n += 2;
    info[n++] = (uint8_t)(6 + llen);
@@ -1389,8 +1466,9 @@ static int tls13_handshake_keys(struct ssl_state *s, const uint8_t *peer, size_t
 
    if (peer_len != 65 || p256_ecdh(s->priv, peer, shared) != 0)
       return -1;
-   /* early_secret = Extract(0, 0); derived = Derive-Secret(early, "derived", "") */
-   hkdf_sha256_extract(zeros, 32, zeros, 32, early);
+   /* early_secret = Extract(0, PSK) - or Extract(0, 0) without one;
+    * derived = Derive-Secret(early, "derived", "") */
+   hkdf_sha256_extract(zeros, 32, s->psk_accepted ? s->psk : zeros, 32, early);
    sha256_stream_init(&e, 0);
    sha256_stream_final(&e, empty_hash);
    if (tls13_expand_label(early, "derived", empty_hash, 32, derived, 32) != 0)
@@ -1424,6 +1502,7 @@ static int tls13_application_secrets(struct ssl_state *s)
    if (tls13_derive_secret(s, master, "c ap traffic", s->c_app) != 0
          || tls13_derive_secret(s, master, "s ap traffic", s->s_app) != 0)
       return -1;
+   memcpy(s->master13, master, 32);
    crypto_memzero(master, sizeof(master));
    crypto_memzero(derived, sizeof(derived));
    return 0;
@@ -1626,9 +1705,18 @@ static int tls13_handshake(struct ssl_state *s, const uint8_t *peer, size_t peer
       s->last_err = TLS_ERR_HANDSHAKE;
       return -1;
    }
-   if (tls13_recv_certificate(s, &leaf) != 0)          return -1;
-   if (tls13_recv_certificate_verify(s, &leaf) != 0)   return -1;
-   if (tls13_recv_finished(s) != 0)                    return -1;
+   if (s->psk_accepted)
+   {
+      /* resumed: the server proves the PSK with its Finished alone */
+      s->resumed = 1;
+      if (tls13_recv_finished(s) != 0)                 return -1;
+   }
+   else
+   {
+      if (tls13_recv_certificate(s, &leaf) != 0)       return -1;
+      if (tls13_recv_certificate_verify(s, &leaf) != 0) return -1;
+      if (tls13_recv_finished(s) != 0)                 return -1;
+   }
 
    /* application secrets come from the transcript through the server
     * Finished; our own Finished goes out under the handshake keys */
@@ -1642,6 +1730,12 @@ static int tls13_handshake(struct ssl_state *s, const uint8_t *peer, size_t peer
    s->cseq         = 0;
    if (tls13_send_finished(s) != 0)                    return -1;
    if (tls_uncork(s) != 0)                             return -1;
+
+   /* resumption master secret: the transcript through our Finished */
+   if (tls13_derive_secret(s, s->master13, "res master", s->res_master) != 0)
+      return -1;
+   crypto_memzero(s->master13, sizeof(s->master13));
+   crypto_memzero(s->psk, sizeof(s->psk));
 
    /* both sides on application keys */
    if (tls13_traffic_keys(s, s->c_app, s->cwk, s->civ) != 0
@@ -1666,7 +1760,48 @@ static int tls13_post_handshake(struct ssl_state *s, const uint8_t *msg, size_t 
    switch (msg[0])
    {
       case TLS_HS_NEW_SESSION_TICKET:
+      {
+         /* lifetime(4) age_add(4) nonce<0..255> ticket<1..2^16-1> exts */
+         const uint8_t *b = msg + 4;
+         size_t bl = len - 4, nl, tl;
+         uint32_t age_add;
+         uint8_t psk[32];
+         struct tls_session *e;
+         if (bl < 9)
+            return -1;
+         age_add = ((uint32_t)b[4] << 24) | ((uint32_t)b[5] << 16) | ((uint32_t)b[6] << 8) | b[7];
+         nl = b[8];
+         if (bl < 9 + nl + 2)
+            return -1;
+         tl = tls_get16(b + 9 + nl);
+         if (!tl || tl > 16384 || bl < 9 + nl + 2 + tl)
+            return -1;
+         /* PSK = Expand-Label(res_master, "resumption", nonce, 32) */
+         if (tls13_expand_label(s->res_master, "resumption", b + 9, nl, psk, 32) != 0)
+            return -1;
+         TLS_CACHE_LOCK();
+         e = tls_cache_slot(s->domain);
+         if (e)
+         {
+            uint8_t *t = (uint8_t*)malloc(tl);
+            if (t)
+            {
+               memcpy(t, b + 9 + nl + 2, tl);
+               free(e->ticket);
+               e->ticket     = t;
+               e->ticket_len = tl;
+               e->is13       = 1;
+               e->suite      = s->suite;
+               e->sid_len    = 0;
+               e->age_add    = age_add;
+               memcpy(e->psk, psk, 32);
+               e->when       = time(NULL);
+            }
+         }
+         TLS_CACHE_UNLOCK();
+         crypto_memzero(psk, sizeof(psk));
          return 0;
+      }
       case TLS_HS_KEY_UPDATE:
       {
          uint8_t next[32];
@@ -1795,6 +1930,16 @@ void* ssl_socket_init(int fd, const char *domain)
    struct ssl_state *s = (struct ssl_state*)calloc(1, sizeof(*s));
    if (!s)
       return NULL;
+   /* No Nagle on a TLS socket. Everything RetroArch does over TLS is
+    * request-then-reply, and with Nagle the first request after a
+    * resumed 1.2 handshake waits behind the unacknowledged Finished
+    * for the server's delayed ACK: 40 ms on every such connection. */
+#ifdef TCP_NODELAY
+   {
+      int one = 1;
+      setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (const char*)&one, sizeof(one));
+   }
+#endif
    s->fd     = fd;
    s->domain = domain;
    s->rx     = (uint8_t*)malloc(TLS_RX_SIZE);
