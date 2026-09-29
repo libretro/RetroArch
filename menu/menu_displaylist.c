@@ -5318,28 +5318,39 @@ static unsigned menu_displaylist_parse_playlists(
 #endif
    }
 
-   menu_dirwalk_set_refresh_cb(menu_displaylist_dirwalk_refresh);
-   walk_status = menu_dirwalk_request(path, NULL, true,
-         show_hidden_files, true, MENU_DIRWALK_SORT_IGNORE_EXT,
-         MENU_DIRWALK_TAG_PLAYLISTS, &walk_list);
-
-   if (walk_status == MENU_DIRWALK_PENDING)
+   if (horizontal)
    {
-      /* The playlist-directory walk continues in the background;
-       * the refresh callback rebuilds this list on completion. */
-      if (menu_entries_append(info_list,
-            msg_hash_to_str(MSG_LOADING), "",
-            MSG_UNKNOWN, MENU_SETTING_NO_ITEM, 0, 0, NULL))
-         count++;
-      return count;
-   }
-   if (walk_status != MENU_DIRWALK_DONE || !walk_list)
-      return count;   /* same early-out as a failed walk before */
+      if (!dir_list_initialize(&str_list, path, NULL, true,
+            show_hidden_files, true, false))
+         return count;
 
-   /* Move the completed listing (sorted by the module) into the
-    * local list the loop below reads. */
-   str_list = *walk_list;
-   free(walk_list);
+      dir_list_sort_ignore_ext(&str_list, true);
+   }
+   else
+   {
+      menu_dirwalk_set_refresh_cb(menu_displaylist_dirwalk_refresh);
+      walk_status = menu_dirwalk_request(path, NULL, true,
+            show_hidden_files, true, MENU_DIRWALK_SORT_IGNORE_EXT,
+            MENU_DIRWALK_TAG_PLAYLISTS, &walk_list);
+
+      if (walk_status == MENU_DIRWALK_PENDING)
+      {
+         /* The playlist-directory walk continues in the background;
+          * the refresh callback rebuilds this list on completion. */
+         if (menu_entries_append(info_list,
+               msg_hash_to_str(MSG_LOADING), "",
+               MSG_UNKNOWN, MENU_SETTING_NO_ITEM, 0, 0, NULL))
+            count++;
+         return count;
+      }
+      if (walk_status != MENU_DIRWALK_DONE || !walk_list)
+         return count;   /* same early-out as a failed walk before */
+
+      /* Move the completed listing (sorted by the module) into the
+       * local list the loop below reads. */
+      str_list = *walk_list;
+      free(walk_list);
+   }
 
    content_count = count;
 
