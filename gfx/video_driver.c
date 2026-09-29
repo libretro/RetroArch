@@ -6991,16 +6991,17 @@ void video_driver_frame(const void *data, unsigned width,
 
       if (video_info.fps_show)
       {
-         status_text[  _len] = 'F';
-         status_text[++_len] = 'P';
-         status_text[++_len] = 'S';
-         status_text[++_len] = ':';
-         status_text[++_len] = ' ';
-         status_text[++_len] = '\0';
-         _len                  += snprintf(
-               status_text         + _len,
-               sizeof(status_text) - _len,
-               "%6.2f", last_fps);
+         /* last_fps moves once per fps_update_interval; format it
+          * then, not on every frame in between. */
+         static char  fps_text[16];
+         static float fps_text_val = -1.0f;
+         if (last_fps != fps_text_val)
+         {
+            snprintf(fps_text, sizeof(fps_text), "FPS: %6.2f", last_fps);
+            fps_text_val = last_fps;
+         }
+         _len += strlcpy(status_text + _len, fps_text,
+               sizeof(status_text) - _len);
       }
 
       if (video_info.framecount_show)
@@ -7026,21 +7027,26 @@ void video_driver_frame(const void *data, unsigned width,
 
       if (video_info.memory_show)
       {
-         static uint64_t last_used_memory, last_total_memory;
+         /* The figures move once per memory_update_interval; the
+          * text is formatted on that tick and copied in between. */
+         static char mem_text[48];
 
-         if ((video_st->frame_count % memory_update_interval) == 0)
+         if (     (video_st->frame_count % memory_update_interval) == 0
+               || !mem_text[0])
          {
             /* Both are snapshots of a machine that moves underneath
              * them, and a platform with no accounting of its own has to
              * probe for the free figure, so the pair can disagree.
              * Subtracting unsigned without checking turned any such
              * disagreement into a number in the trillions of MB. */
-            uint64_t free_memory;
-            last_total_memory = mem_stats_total();
-            free_memory       = mem_stats_free();
-            last_used_memory  = (last_total_memory > free_memory)
-                              ? (last_total_memory - free_memory)
-                              : 0;
+            uint64_t total_memory = mem_stats_total();
+            uint64_t free_memory  = mem_stats_free();
+            uint64_t used_memory  = (total_memory > free_memory)
+                                  ? (total_memory - free_memory)
+                                  : 0;
+            snprintf(mem_text, sizeof(mem_text), "MEM: %.2f/%.2fMB",
+                  used_memory  / (1024.0f * 1024.0f),
+                  total_memory / (1024.0f * 1024.0f));
          }
 
          if (_len > 0)
@@ -7051,21 +7057,8 @@ void video_driver_frame(const void *data, unsigned width,
             status_text[++_len] = ' ';
             status_text[++_len] = '\0';
          }
-         status_text[_len  ]    = 'M';
-         status_text[++_len]    = 'E';
-         status_text[++_len]    = 'M';
-         status_text[++_len]    = ':';
-         status_text[++_len]    = ' ';
-         status_text[++_len]    = '\0';
-         _len                  += snprintf(
-                       status_text + _len,
-               sizeof(status_text) - _len,
-               "%.2f/%.2f",
-               last_used_memory  / (1024.0f * 1024.0f),
-               last_total_memory / (1024.0f * 1024.0f));
-         status_text[_len  ]    = 'M';
-         status_text[++_len]    = 'B';
-         status_text[++_len]    = '\0';
+         _len += strlcpy(status_text + _len, mem_text,
+               sizeof(status_text) - _len);
       }
 
       if ((video_st->frame_count % fps_update_interval) == 0)
