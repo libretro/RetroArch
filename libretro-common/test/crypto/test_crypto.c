@@ -591,6 +591,35 @@ START_TEST (test_x25519)
 }
 END_TEST
 
+START_TEST (test_x509_policy)
+{
+   /* leaf policy (RFC 5280 4.2, TLS server usage): a fresh CA loaded
+    * as the trust store, leaves under it that must pass or fail */
+   static const struct { const uint8_t *der; size_t len; int expect; const char *why; } cases[] = {
+      { x509_policy_good,        sizeof(x509_policy_good),         0, "serverAuth EKU + digitalSignature" },
+      { x509_policy_noncrit,     sizeof(x509_policy_noncrit),      0, "unknown non-critical extension" },
+      { x509_policy_critunknown, sizeof(x509_policy_critunknown), -1, "unknown critical extension" },
+      { x509_policy_clientonly,  sizeof(x509_policy_clientonly),  -1, "clientAuth-only EKU" },
+      { x509_policy_codesign,    sizeof(x509_policy_codesign),    -1, "codeSigning-only EKU" },
+      { x509_policy_nosign,      sizeof(x509_policy_nosign),      -1, "keyUsage without digitalSignature" },
+   };
+   unsigned i;
+   char info[128];
+   ck_assert(x509_trust_load_pem(x509_policy_ca_pem, sizeof(x509_policy_ca_pem) - 1) == 1);
+   for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+   {
+      const uint8_t *ders[1] = { cases[i].der };
+      size_t lens[1] = { cases[i].len };
+      /* the policy certificates run from late 2026 for twenty years */
+      int r = x509_verify_chain(ders, lens, 1, "policy.example.com", (time_t)1800000000, info, sizeof(info));
+      if (r != cases[i].expect)
+         fprintf(stderr, "policy case %s: got %d (%s)\n", cases[i].why, r, info);
+      ck_assert_int_eq(r, cases[i].expect);
+   }
+   x509_trust_free();
+}
+END_TEST
+
 START_TEST (test_p256)
 {
    uint8_t pub[65], shared[32], bad[65], sig[32];
@@ -829,6 +858,7 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_rsa);
    tcase_add_test(tc_core, test_rsa_pss);
    tcase_add_test(tc_core, test_x25519);
+   tcase_add_test(tc_core, test_x509_policy);
    tcase_add_test(tc_core, test_p256);
    tcase_add_test(tc_core, test_p384);
    tcase_add_test(tc_core, test_smb_prereqs);
