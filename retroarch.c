@@ -8996,7 +8996,10 @@ bool retroarch_main_init(int argc, char *argv[])
       discord_state_t *discord_st = discord_state_get_ptr();
 
       if (command_event(CMD_EVENT_DISCORD_INIT, NULL))
-         discord_st->inited = true;
+      {
+         discord_st->inited       = true;
+         runloop_st->frame_work  |= RUNLOOP_WORK_DISCORD;
+      }
    }
 #endif
 
@@ -9691,6 +9694,7 @@ bool retroarch_main_quit(void)
          discord_st->ready       = false;
       }
       discord_st->inited         = false;
+      runloop_st->frame_work    &= ~RUNLOOP_WORK_DISCORD;
    }
 #endif
 

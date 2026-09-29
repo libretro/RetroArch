@@ -8357,7 +8357,8 @@ int runloop_iterate(void)
       runloop_gpu_device_lost(runloop_st);
 
 #ifdef HAVE_DISCORD
-   discord_poll(current_time);
+   if (runloop_st->frame_work & RUNLOOP_WORK_DISCORD)
+      discord_poll(current_time);
 #endif
 
 #ifdef HAVE_BSV_MOVIE

@@ -211,6 +211,12 @@ struct runloop
    retro_time_t pace_iter_last;
    retro_time_t pace_period_usec;
    unsigned     pace;                           /* enum runloop_pace_source bits */
+   /* Optional products with a per-frame hook in runloop_iterate().
+    * Each bit is raised when its product comes up and dropped when it
+    * goes down, so a build that has the product compiled in but not
+    * in use pays one bit test on this hot word - not a call into the
+    * product's own translation unit to find out it is idle. */
+   unsigned     frame_work;                     /* RUNLOOP_WORK_* bits */
    retro_usec_t frame_time_last;                /* int64_t alignment */
 
    /* Per-frame scalar state. Kept adjacent to the timing block above so the
@@ -738,6 +744,12 @@ static INLINE unsigned runloop_pace_decide(runloop_pace_facts_t f)
 
 
 typedef struct runloop runloop_state_t;
+
+/* runloop_state_t::frame_work bits */
+enum runloop_frame_work
+{
+   RUNLOOP_WORK_DISCORD = (1 << 0)   /* Discord RPC is up: pump it */
+};
 
 /* Runs deferred off-main message pushes; the main thread, once per
  * iterate. */
