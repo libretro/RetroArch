@@ -610,6 +610,44 @@ static void run_wide_pcm_pin(void)
    fifo_free(m.fifo);
 }
 
+/* ------------------------------------------------------------------ */
+/* The refill thread itself, on the fake register with no event: it   */
+/* samples at a quarter of the loop, runs time-critical where the      */
+/* setting asks for it, and keeps its own account of how it woke.      */
+/* ------------------------------------------------------------------ */
+
+static void run_refill_thread(bool priority)
+{
+   wdmks_t      w;
+   sthread_t   *t;
+   retro_time_t loop_usec = (retro_time_t)LOOP_FRAMES * 1000000 / RATE;
+   retro_time_t slice     = loop_usec / 4 < 500 ? 500 : loop_usec / 4;
+   /* Four slices: enough passes for a gap between two of them. */
+   retro_time_t run_usec  = slice * 4;
+   unsigned     expect    = 4;
+
+   printf("-- refill thread, priority %s --\n", priority ? "on" : "off");
+   loop_setup(&w);
+   w.thread_priority = priority;
+   retro_atomic_store_release_int(&w.rt_run, 1);
+   t = sthread_create(wdmks_rt_refill_thread, &w);
+   check(t != NULL, "the refill thread starts");
+   retro_sleep_us((unsigned)run_usec);
+   retro_atomic_store_release_int(&w.rt_run, 0);
+   sthread_join(t);
+
+   check(w.rt_time_critical == priority,
+         priority ? "it raised itself to time-critical"
+                  : "it left its priority alone");
+   check(w.rt_passes >= expect / 2,
+         "it passed at least half as often as a quarter-loop cadence");
+   check(w.rt_passes <= expect * 3,
+         "and not more often than the slice floor allows");
+   check(w.rt_gap_max_usec > 0 && w.rt_gap_max_usec < 1000000,
+         "the worst gap between passes is recorded");
+   loop_teardown(&w);
+}
+
 int main(void)
 {
    run_ranges();
@@ -617,6 +655,8 @@ int main(void)
    run_wide_register();
    run_capture_fold();
    run_capture_loop();
+   run_refill_thread(true);
+   run_refill_thread(false);
    fifo_frames = 0;
    run_contract("caller-driven loop, no FIFO report", put_direct, false);
    run_contract("refill thread pump, no FIFO report", put_pump, true);

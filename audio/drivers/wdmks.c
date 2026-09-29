@@ -1700,6 +1700,14 @@ typedef struct
    retro_eventcount_t  rt_park;
    sthread_t          *rt_thread;
    retro_atomic_int_t  rt_run;
+   /* How the thread woke, kept by it and read once it has joined: the
+    * longest gap between two of its passes and how many gaps were a
+    * loop or more, which is the count of laps the position could not
+    * be followed across. */
+   retro_time_t        rt_gap_max_usec;
+   size_t              rt_gaps_over;
+   size_t              rt_passes;
+   bool                rt_time_critical;
    retro_atomic_64_t   rt_frames_pub;  /* absolute frames played */
    retro_atomic_int_t  clk_ppm_pub;   /* AUDIO_CLOCK_PPM_NONE until known */
 #endif
@@ -1779,6 +1787,7 @@ typedef struct
    bool            running;
    retro_atomic_int_t dead;   /* an I/O failed; stop writing, still reclaim */
    bool            nonblock;
+   bool             thread_priority; /* audio_thread_priority */
    bool            is_float;
    uint32_t        layout;
 
@@ -2661,25 +2670,41 @@ static size_t wdmks_rt_pump_once(wdmks_t *w)
  * frontend on ring room, not this side on the pin. */
 static void wdmks_rt_refill_thread(void *data)
 {
-   wdmks_t *w = (wdmks_t*)data;
-
-   /* Sampling cadence for a pin that refused a notification event:
-    * half the loop's duration, so the register is read at least
-    * twice per wrap, floored where wdmks_rt_wait_room floors its
-    * own interval. The high-resolution timer keeps it honest -
-    * Sleep(1) was a 15.6 ms tick, longer than a typical loop.
-    * Bounded residual on join: at most one slice. */
+   wdmks_t     *w          = (wdmks_t*)data;
+   retro_time_t loop_usec  = 0;
+   retro_time_t last       = 0;
    retro_time_t slice_usec = 1000;
+
+   /* A pass a loop late is a lap the position cannot be followed
+    * across, and at a loop of a few milliseconds that is one ordinary
+    * scheduling delay next to a busy core.  So this thread runs
+    * time-critical where the setting asks for the audio thread to be
+    * raised, as the WASAPI pump does under the same setting: it is
+    * the one thread here with a deadline the hardware sets. */
+   if (w->thread_priority)
+      w->rt_time_critical = SetThreadPriority(GetCurrentThread(),
+            THREAD_PRIORITY_TIME_CRITICAL) != 0;
+
+   /* Sampling cadence for a pin that refused a notification event: a
+    * quarter of the loop's duration, so a sample that lands late by
+    * up to three quarters of a loop is still inside the lap, floored
+    * where wdmks_rt_wait_room floors its own interval.  Half the loop
+    * left a 2 ms loop one late millisecond from losing a lap.  The
+    * high-resolution timer keeps it honest - Sleep(1) was a 15.6 ms
+    * tick, longer than a typical loop.  Bounded residual on join: at
+    * most one slice. */
    if (w->frame_bytes && w->rate)
    {
-      slice_usec = (retro_time_t)(w->rt_size / w->frame_bytes)
-            * 1000000 / w->rate / 2;
+      loop_usec  = (retro_time_t)(w->rt_size / w->frame_bytes)
+            * 1000000 / w->rate;
+      slice_usec = loop_usec / 4;
       if (slice_usec < 500)
          slice_usec = 500;
    }
 
    while (retro_atomic_load_acquire_int(&w->rt_run))
    {
+      retro_time_t now;
       if (w->rt_event)
          WaitForSingleObject(w->rt_event,
                wdmks_watchdog_ms(w, w->rt_size));
@@ -2687,6 +2712,19 @@ static void wdmks_rt_refill_thread(void *data)
          retro_sleep_us((unsigned)slice_usec);
       if (!retro_atomic_load_acquire_int(&w->rt_run))
          break;
+      /* The gap since the last pass, which is what the position's
+       * wrap window is measured against. */
+      now = cpu_features_get_time_usec();
+      if (last)
+      {
+         retro_time_t gap = now - last;
+         if (gap > w->rt_gap_max_usec)
+            w->rt_gap_max_usec = gap;
+         if (loop_usec && gap >= loop_usec)
+            w->rt_gaps_over++;
+      }
+      last = now;
+      w->rt_passes++;
       wdmks_rt_pump_once(w);
    }
 }
@@ -3399,6 +3437,17 @@ static void wdmks_free(void *data)
       w->rt_thread = NULL;
       retro_eventcount_notify(&w->rt_park);
    }
+   /* How the refill thread woke, said once the thread is gone: the
+    * worst gap between two passes against the loop it was following,
+    * and which scheduling it ran under, so two runs can be put beside
+    * each other. */
+   if (w->rt_passes)
+      RARCH_LOG("[WDM-KS] Refill (%s): %u pass%s, %.2f ms between two at"
+            " worst, %u a loop or more apart.\n",
+            w->rt_time_critical ? "time-critical" : "normal priority",
+            (unsigned)w->rt_passes, w->rt_passes == 1 ? "" : "es",
+            (double)w->rt_gap_max_usec / 1000.0,
+            (unsigned)w->rt_gaps_over);
 #endif
 
    if (w->clk_ppm != AUDIO_CLOCK_PPM_NONE)
@@ -3551,6 +3600,7 @@ static void *wdmks_init(const char *device, unsigned rate,
    w->stream.handle = INVALID_HANDLE_VALUE;
    w->filter        = INVALID_HANDLE_VALUE;
    w->clk_ppm       = AUDIO_CLOCK_PPM_NONE;
+   w->thread_priority = config_get_ptr()->bools.audio_thread_priority;
 
    for (i = chosen; i < count && !opened; i++)
    {
