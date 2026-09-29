@@ -26,7 +26,7 @@ jobs:
           # The gl2 arms compile against the desktop GL and EGL headers,
           # and the Dingux and RS90 video drivers against SDL 1.2's.
           # The Direct3D and WASAPI lanes cross-compile with mingw-w64.
-          pkgs="build-essential libgl-dev libegl-dev libgles-dev libsdl1.2-dev gcc-mingw-w64-x86-64"
+          pkgs="build-essential libgl-dev libegl-dev libgles-dev libsdl1.2-dev gcc-mingw-w64-x86-64 clang gcc-aarch64-linux-gnu"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0

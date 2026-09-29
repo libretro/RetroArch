@@ -530,6 +530,40 @@ check "android: play delivery" "$HOSTOFF -Itools/platform_stubs/android -DANDROI
 check "android: nfs client"    "$HOSTOFF -Itools/platform_stubs/android -DANDROID -DHAVE_NFSCLIENT -DHAVE_RETRONFS -DHAVE_THREADS -DHAVE_NETWORKING $CDECL" libretro-common/net/net_nfs3.c
 check "android: nfs backend"   "$HOSTOFF -Itools/platform_stubs/android -DANDROID -DHAVE_NFSCLIENT -DHAVE_RETRONFS -DHAVE_THREADS -DHAVE_NETWORKING -DRARCH_INTERNAL $CDECL" libretro-common/vfs/vfs_implementation_nfs.c
 check "android: vfs prefetch"  "$HOSTOFF -Itools/platform_stubs/android -DANDROID -DHAVE_THREADS $CDECL" libretro-common/vfs/vfs_prefetch.c
+
+# The Android build carries the cleanroom network stack (Android.mk:
+# HAVE_CRYPTO, keychain, RETROSSL, RETROSMB, RETRONFS) and is compiled
+# by the NDK's clang for aarch64. The same compiler family and target
+# here, with the aarch64 cross headers standing in for the NDK's, over
+# every translation unit of the stack: the AES/PMULL path takes the
+# +crypto target attribute this way, which gcc lanes never exercise.
+ANDROID_CLANG=${ANDROID_CLANG:-clang}
+ANDROID_SYSINC=${ANDROID_SYSINC:-/usr/aarch64-linux-gnu/include}
+android_clang() {
+   name="$1"; defs="$2"; tu="$3"
+   if ! command -v "$ANDROID_CLANG" > /dev/null 2>&1 || [ ! -d "$ANDROID_SYSINC" ]; then
+      echo "skip  $name (no $ANDROID_CLANG or $ANDROID_SYSINC)"
+      return
+   fi
+   if ! out=$($ANDROID_CLANG --target=aarch64-linux-gnu -isystem "$ANDROID_SYSINC" \
+         -Wall -Werror -Wno-unused-function -D__ANDROID__ -DANDROID $INC $defs \
+         -fsyntax-only "$tu" 2>&1); then
+      echo "FAIL  $name"
+      echo "      $tu"
+      show_out "$out"
+      fail=1
+   else
+      echo "ok    $name"
+   fi
+}
+ANDROID_NET="-DHAVE_CRYPTO -DHAVE_KEYCHAIN -DHAVE_SSL -DHAVE_RETROSSL -DHAVE_SMBCLIENT -DHAVE_RETROSMB -DHAVE_NFSCLIENT -DHAVE_RETRONFS -DHAVE_NETWORKING -DHAVE_THREADS -DHAVE_CONFIGFILE -DRARCH_INTERNAL -D_GNU_SOURCE"
+for tu in libretro-common/crypto/crypto.c libretro-common/crypto/kdf.c libretro-common/crypto/pk.c \
+      libretro-common/crypto/x509.c libretro-common/file/keychain.c libretro-common/net/net_socket_ssl_retro.c \
+      libretro-common/net/net_smb2.c libretro-common/net/net_krb5.c libretro-common/net/net_nfs3.c \
+      libretro-common/vfs/vfs_implementation_smb.c libretro-common/vfs/vfs_implementation_nfs.c \
+      libretro-common/vfs/vfs_prefetch.c network/tls_log.c; do
+   android_clang "android clang/aarch64: $(basename $tu)" "$ANDROID_NET" "$tu"
+done
 # rwebaudio is its own translation unit in the emscripten build, not
 # part of griffin's, and nothing else compiles it at all.
 check "emscripten: rwebaudio"  "$HOSTOFF -Itools/platform_stubs/emscripten -D__EMSCRIPTEN__ -DEMSCRIPTEN -DHAVE_RWEBAUDIO $CDECL" audio/drivers/rwebaudio.c
