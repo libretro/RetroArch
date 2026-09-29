@@ -447,7 +447,7 @@ static void nfs_prefetch_start(libretro_vfs_implementation_file *stream,
    rnfs_set_readahead(np->c, 0);
    if (!(np->f = rnfs_open(np->c, rel, RNFS_O_RDONLY)))
    {
-      rnfs_set_readahead(np->c, window);
+      rnfs_set_readahead(np->c, (uint32_t)window);
       nfs_give(np->c, np->slot);
       free(np);
       return;
@@ -455,7 +455,7 @@ static void nfs_prefetch_start(libretro_vfs_implementation_file *stream,
    if (!(np->p = vfs_prefetch_new(nfs_prefetch_fetch, np, window, 2, 0)))
    {
       rnfs_close(np->c, np->f);
-      rnfs_set_readahead(np->c, window);
+      rnfs_set_readahead(np->c, (uint32_t)window);
       nfs_give(np->c, np->slot);
       free(np);
       return;

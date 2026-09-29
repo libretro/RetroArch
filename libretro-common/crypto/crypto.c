@@ -853,7 +853,7 @@ void aes_cmac(const struct aes_ctx *ctx,
 /* CBC-MAC over B_0 || AAD (length-prefixed, padded) || payload
  * (padded), then CTR with A_i counters; the tag is the MAC under
  * counter zero. */
-static int aes_ccm_crypt(const struct aes_ctx *ctx, int encrypt,
+static int aes_ccm_core(const struct aes_ctx *ctx, int encrypt,
       const uint8_t *nonce, size_t nonce_len,
       const uint8_t *aad, size_t aad_len,
       const uint8_t *in, size_t len, uint8_t *out,
@@ -971,7 +971,7 @@ int aes_ccm_encrypt(const struct aes_ctx *ctx,
       const uint8_t *pt, size_t pt_len,
       uint8_t *ct, uint8_t *tag, size_t tag_len)
 {
-   return aes_ccm_crypt(ctx, 1, nonce, nonce_len, aad, aad_len,
+   return aes_ccm_core(ctx, 1, nonce, nonce_len, aad, aad_len,
          pt, pt_len, ct, tag, tag_len);
 }
 
@@ -982,7 +982,7 @@ int aes_ccm_decrypt(const struct aes_ctx *ctx,
       const uint8_t *tag, size_t tag_len, uint8_t *pt)
 {
    uint8_t calc[16];
-   if (aes_ccm_crypt(ctx, 0, nonce, nonce_len, aad, aad_len,
+   if (aes_ccm_core(ctx, 0, nonce, nonce_len, aad, aad_len,
             ct, ct_len, pt, calc, tag_len) != 0)
       return -1;
    if (!crypto_memeq_ct(calc, tag, tag_len))
