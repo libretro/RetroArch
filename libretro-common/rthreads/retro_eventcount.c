@@ -80,7 +80,11 @@ typedef char retro_eventcount_epoch_is_a_word_
  * a lock-free stack of kernel semaphores that a park takes one from and
  * puts back once it returns, which the protocol lets it do because a
  * park never returns with a signal still counted.  The Vita takes this
- * one, on the kernel semaphore its threads are built on.
+ * one, on the kernel semaphore its threads are built on; so does the
+ * PS3, on the lv2 semaphore, and the Wii U, where what is pooled is an
+ * auto-reset OSEvent - a signal that arrives before the wait sets it
+ * and the wait then returns at once, which is the counted property the
+ * protocol needs, since it signals at most once per park.
  *
  * RETRO_EVENTCOUNT_FORCE_SCOND selects the condition-variable backend on
  * any target, so a host with futex can still build and test the path the
@@ -104,7 +108,8 @@ typedef char retro_eventcount_epoch_is_a_word_
 #define RETRO_EC_ADDR_LINUX 1
 #elif defined(__SWITCH__)
 #define RETRO_EC_ADDR_SWITCH 1
-#elif (defined(VITA) || defined(__PS3__)) && defined(RETRO_ATOMIC_HAS_PTR)
+#elif (defined(VITA) || defined(__PS3__) || defined(WIIU)) \
+      && defined(RETRO_ATOMIC_HAS_PTR)
 #define RETRO_EC_SEM 1
 #define RETRO_EC_SEM_POOL 1
 #elif defined(_WIN32) && !defined(_XBOX) && defined(RETRO_ATOMIC_HAS_PTR)
@@ -189,6 +194,9 @@ static void ec_switch_wake_all(retro_eventcount_t *ec)
 #if defined(VITA)
 #include <psp2/kernel/threadmgr.h>
 #include <psp2/kernel/error.h>
+#elif defined(WIIU)
+#include <coreinit/event.h>
+#include <coreinit/time.h>
 #elif defined(__PS3__)
 /* Both PS3 SDKs put the lv2 semaphore behind different names, as
  * rthreads.c finds for its mutex and condition variable; the four
@@ -273,6 +281,8 @@ typedef sys_semaphore_t ec_ps3_sem_t;
 typedef SceUID      ec_sem_t;
 #elif defined(__PS3__)
 typedef ec_ps3_sem_t ec_sem_t;
+#elif defined(WIIU)
+typedef OSEvent     ec_sem_t;
 #elif defined(__APPLE__)
 typedef semaphore_t ec_sem_t;
 #else
@@ -603,6 +613,9 @@ static bool ec_sem_create(ec_sem_t *sem)
       >= 0;
 #elif defined(__PS3__)
    return ec_ps3_sem_create(sem, 0, 0x7FFFFFFF) == 0;
+#elif defined(WIIU)
+   OSInitEvent(sem, FALSE, OS_EVENT_MODE_AUTO);
+   return true;
 #elif defined(__APPLE__)
    return semaphore_create(mach_task_self(), sem, SYNC_POLICY_FIFO, 0)
       == KERN_SUCCESS;
@@ -617,6 +630,8 @@ static void ec_sem_signal(ec_sem_t *sem)
    sceKernelSignalSema(*sem, 1);
 #elif defined(__PS3__)
    ec_ps3_sem_post(*sem, 1);
+#elif defined(WIIU)
+   OSSignalEvent(sem);
 #elif defined(__APPLE__)
    semaphore_signal(*sem);
 #else
@@ -791,6 +806,16 @@ static bool ec_sem_sleep(ec_sem_t *sem, bool bounded, int64_t timeout_us)
       return ec_ps3_sem_wait(*sem, 0) == 0;
    return ec_ps3_sem_wait(*sem,
          (uint64_t)(timeout_us > 0 ? timeout_us : 1)) == 0;
+#elif defined(WIIU)
+   if (!bounded)
+   {
+      OSWaitEvent(sem);
+      return true;
+   }
+   /* In timer ticks; a bound of zero is spelled as a microsecond */
+   return OSWaitEventWithTimeout(sem,
+         (OSTime)OSMicrosecondsToTicks(timeout_us > 0 ? timeout_us : 1))
+      ? true : false;
 #elif defined(__APPLE__)
    kern_return_t kr;
    if (bounded)
@@ -1426,6 +1451,8 @@ const char *retro_eventcount_backend_name(void)
    return "sce semaphore pool";
 #elif defined(__PS3__)
    return "lv2 semaphore pool";
+#elif defined(WIIU)
+   return "coreinit event pool";
 #elif defined(RETRO_EC_SEM_POOL)
    return "posix semaphore pool";
 #elif defined(__APPLE__)
