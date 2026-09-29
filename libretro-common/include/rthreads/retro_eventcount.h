@@ -122,10 +122,10 @@
  *                        the thread's life.  Every call is in Mac OS X
  *                        10.4's headers, so one binary runs from there
  *                        up; no mutex, and one signal per parked waiter.
- *   Vita                 the same list, slept on with a kernel semaphore
+ *   Vita / PS3           the same list, slept on with a kernel semaphore
  *                        drawn from a lock-free pool for the length of
- *                        the park, since its threads have no storage of
- *                        their own to keep one in.
+ *                        the park, since their threads have no storage
+ *                        of their own to keep one in.
  *   everything else      rthreads scond, with the lock taken only across
  *                        the sleep itself
  *

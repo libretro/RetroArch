@@ -104,7 +104,7 @@ typedef char retro_eventcount_epoch_is_a_word_
 #define RETRO_EC_ADDR_LINUX 1
 #elif defined(__SWITCH__)
 #define RETRO_EC_ADDR_SWITCH 1
-#elif defined(VITA) && defined(RETRO_ATOMIC_HAS_PTR)
+#elif (defined(VITA) || defined(__PS3__)) && defined(RETRO_ATOMIC_HAS_PTR)
 #define RETRO_EC_SEM 1
 #define RETRO_EC_SEM_POOL 1
 #elif defined(_WIN32) && !defined(_XBOX) && defined(RETRO_ATOMIC_HAS_PTR)
@@ -189,6 +189,25 @@ static void ec_switch_wake_all(retro_eventcount_t *ec)
 #if defined(VITA)
 #include <psp2/kernel/threadmgr.h>
 #include <psp2/kernel/error.h>
+#elif defined(__PS3__)
+/* Both PS3 SDKs put the lv2 semaphore behind different names, as
+ * rthreads.c finds for its mutex and condition variable; the four
+ * calls below are written against one set of the file's own. */
+#ifdef __PSL1GHT__
+#include <sys/sem.h>
+typedef sys_sem_t ec_ps3_sem_t;
+#define ec_ps3_sem_create(sem, init, max) \
+   ec_ps3_sem_create_psl1ght(sem, init, max)
+#define ec_ps3_sem_wait     sysSemWait
+#define ec_ps3_sem_post     sysSemPost
+#else
+#include <sys/synchronization.h>
+typedef sys_semaphore_t ec_ps3_sem_t;
+#define ec_ps3_sem_create(sem, init, max) \
+   ec_ps3_sem_create_cell(sem, init, max)
+#define ec_ps3_sem_wait     sys_semaphore_wait
+#define ec_ps3_sem_post     sys_semaphore_post
+#endif
 #else
 #include <errno.h>
 #if !defined(RETRO_EC_SEM_POOL)
@@ -252,6 +271,8 @@ static void ec_switch_wake_all(retro_eventcount_t *ec)
 #if defined(RETRO_EC_SEM)
 #if defined(VITA)
 typedef SceUID      ec_sem_t;
+#elif defined(__PS3__)
+typedef ec_ps3_sem_t ec_sem_t;
 #elif defined(__APPLE__)
 typedef semaphore_t ec_sem_t;
 #else
@@ -553,11 +574,35 @@ static void ec_wake_one(struct ec_waiter *w)
 #if defined(RETRO_EC_SEM)
 /* The three semaphore calls in each platform's spelling.  Create
  * answers false when the kernel will not give one. */
+#if defined(__PS3__)
+#ifdef __PSL1GHT__
+static int ec_ps3_sem_create_psl1ght(ec_ps3_sem_t *sem, int init, int max)
+{
+   sys_sem_attr_t attr;
+   attr.attr_protocol = SYS_SEM_ATTR_PROTOCOL;
+   attr.attr_pshared  = SYS_SEM_ATTR_PSHARED;
+   attr.key           = 0;
+   attr.flags         = 0;
+   attr.name[0]       = '\0';
+   return sysSemCreate(sem, &attr, init, max);
+}
+#else
+static int ec_ps3_sem_create_cell(ec_ps3_sem_t *sem, int init, int max)
+{
+   sys_semaphore_attribute_t attr;
+   sys_semaphore_attribute_initialize(attr);
+   return sys_semaphore_create(sem, &attr, init, max);
+}
+#endif
+#endif
+
 static bool ec_sem_create(ec_sem_t *sem)
 {
 #if defined(VITA)
    return (*sem = sceKernelCreateSema("rarch_ec", 0, 0, 0x7FFFFFFF, NULL))
       >= 0;
+#elif defined(__PS3__)
+   return ec_ps3_sem_create(sem, 0, 0x7FFFFFFF) == 0;
 #elif defined(__APPLE__)
    return semaphore_create(mach_task_self(), sem, SYNC_POLICY_FIFO, 0)
       == KERN_SUCCESS;
@@ -570,6 +615,8 @@ static void ec_sem_signal(ec_sem_t *sem)
 {
 #if defined(VITA)
    sceKernelSignalSema(*sem, 1);
+#elif defined(__PS3__)
+   ec_ps3_sem_post(*sem, 1);
 #elif defined(__APPLE__)
    semaphore_signal(*sem);
 #else
@@ -725,9 +772,9 @@ static void ec_sem_put(ec_sem_t *sem)
 /* Blocks on the semaphore until signalled or, when bounded, until
  * timeout_us has passed.  An interrupted wait resumes: the block is
  * still listed, and leaving here would free its frame under a waker.
- * False on the timeout, and on the Vita on any other failure too: the
- * caller then takes the block off the list itself, which is the one
- * safe way out. */
+ * False on the timeout, and on the Vita and the PS3 on any other
+ * failure too: the caller then takes the block off the list itself,
+ * which is the one safe way out. */
 static bool ec_sem_sleep(ec_sem_t *sem, bool bounded, int64_t timeout_us)
 {
 #if defined(VITA)
@@ -737,6 +784,13 @@ static bool ec_sem_sleep(ec_sem_t *sem, bool bounded, int64_t timeout_us)
    /* a bound of zero would mean none to the kernel */
    us = timeout_us > 0 ? (SceUInt)timeout_us : 1;
    return sceKernelWaitSema(*sem, 1, &us) == 0;
+#elif defined(__PS3__)
+   /* An lv2 wait takes microseconds, with zero standing for no
+    * timeout, so a bound of zero is spelled as one. */
+   if (!bounded)
+      return ec_ps3_sem_wait(*sem, 0) == 0;
+   return ec_ps3_sem_wait(*sem,
+         (uint64_t)(timeout_us > 0 ? timeout_us : 1)) == 0;
 #elif defined(__APPLE__)
    kern_return_t kr;
    if (bounded)
@@ -1370,6 +1424,8 @@ const char *retro_eventcount_backend_name(void)
    ec_sem_init();
 #if defined(VITA)
    return "sce semaphore pool";
+#elif defined(__PS3__)
+   return "lv2 semaphore pool";
 #elif defined(RETRO_EC_SEM_POOL)
    return "posix semaphore pool";
 #elif defined(__APPLE__)
