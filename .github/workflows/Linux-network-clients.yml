@@ -36,7 +36,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends build-essential clang \
             gcc-mingw-w64-x86-64 openssl samba libtirpc-dev flex bison autoconf automake wine wine64 \
             nfs-ganesha nfs-ganesha-vfs krb5-kdc krb5-admin-server krb5-user winbind \
-            samba-dsdb-modules samba-ad-provision acl
+            samba-dsdb-modules samba-ad-provision samba-vfs-modules acl
 
       - name: Checkout
         uses: actions/checkout@v5

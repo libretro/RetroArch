@@ -66,9 +66,11 @@ i=0; while [ $i -lt 100 ]; do
 done
 grep -q "added successfully" $D/user.log || { echo "FAIL: user create: $(cat $D/user.log)"; exit 1; }
 export SMB_KRB_REALM=AD.RETRO.TEST SMB_KRB_KDC=127.0.0.1 SMB_KRB_REQUIRE=1
-i=0; while [ $i -lt 50 ]; do
+# the DC's KDC and file server come up in their own time after the
+# user exists: retry a refused connect or session setup for a while
+i=0; while [ $i -lt 100 ]; do
    $RUN ./smb_test$EXE $DCNAME games player 'Sekret1!!' > $D/out 2>&1 && break
-   grep -q "connect failed" $D/out || break
+   grep -qE "connect failed|session setup failed|logon failure" $D/out || break
    i=$((i + 1)); sleep 0.3
 done
 if grep -q "^ok:" $D/out; then
