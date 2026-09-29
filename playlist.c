@@ -2203,7 +2203,9 @@ void playlist_write_file(playlist_t *playlist)
     *   match requested
     * > Current playlist compression status does
     *   not match requested */
+#if defined(HAVE_COMPRESSION)
    bool pl_compressed   = ((playlist->flags & CNT_PLAYLIST_FLG_COMPRESSED) > 0);
+#endif
    bool pl_old_fmt      = ((playlist->flags & CNT_PLAYLIST_FLG_OLD_FMT)    > 0);
 
    if (   !playlist
@@ -3995,7 +3997,9 @@ static bool playlist_cached_is_reusable(const playlist_config_t *config)
  * mutation of playlist_cached. */
 static void playlist_init_cached_install(playlist_t *playlist)
 {
+#if defined(HAVE_COMPRESSION)
    bool pl_compressed = ((playlist->flags & CNT_PLAYLIST_FLG_COMPRESSED) > 0);
+#endif
    bool pl_old_fmt    = ((playlist->flags & CNT_PLAYLIST_FLG_OLD_FMT)    > 0);
    /* If playlist format/compression state
     * does not match requested settings, update
