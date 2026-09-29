@@ -15,8 +15,12 @@ thread_get_refresh_rate          0
 # where the viewport has not changed, which is all of them but a
 # resize.
 video_thread_viewport_info       1
-# The handoff's own region, the ring wait, and the menu-texture drain.
-video_thread_frame               3
+# The handoff runs on the ring word and eventcounts; nothing here.
+video_thread_frame               0
+# The video thread's pass: the command copy, the upload list's take and
+# per-node put, and the menu-texture handoff, each behind a test that
+# is false on a pass with only a frame to draw.
+video_thread_loop                6
 # Park on a stop, the stop's own region, the idle park, and teardown.
 audio_thread_loop                5
 # Taken once it has something to retire; returns on two atomic loads

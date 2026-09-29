@@ -100,6 +100,7 @@ measure gfx/video_thread_wrapper.o  thread_get_refresh_rate
 measure gfx/video_thread_wrapper.o  video_thread_viewport_info
 # The handoff itself: one region, and the ring is what it is for.
 measure gfx/video_thread_wrapper.o  video_thread_frame
+measure gfx/video_thread_wrapper.o  video_thread_loop
 
 # The audio thread's loop: the lock belongs to the pass that parks or
 # leaves, not to the passes that play audio.

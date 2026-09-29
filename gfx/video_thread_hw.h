@@ -73,7 +73,7 @@ int video_thread_hw_publish(struct thread_video *thr);
 void video_thread_hw_before_frame(struct thread_video *thr, int hw_slot);
 void video_thread_hw_after_frame(struct thread_video *thr, int hw_slot);
 
-/* Video thread, under thr->lock, when it claims a frame: the HW slot
+/* Video thread, when it claims a frame: the HW slot
  * that frame reads, so a later dupe knows what it re-reads. */
 void video_thread_hw_note_claim(struct thread_video *thr, int hw_slot);
 
