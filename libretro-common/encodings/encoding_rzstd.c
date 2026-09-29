@@ -3875,11 +3875,10 @@ literals_done:
       int16_t  (*norm)[RZSTD_FSE_MAX_SYMBOLS] = st->norm;
       static const uint32_t nsym_of[3] = { 36, 53, 29 };
       static const uint32_t log_max[3] = { 9, 9, 8 };
-      static const int16_t *predef[3];
+      static const int16_t *const predef[3] = {
+         rzstd_ll_default, rzstd_ml_default, rzstd_of_default
+      };
       uint32_t modes = 0, t;
-      predef[0] = rzstd_ll_default;
-      predef[1] = rzstd_ml_default;
-      predef[2] = rzstd_of_default;
       memset(st->hist, 0, sizeof(st->hist));
       for (i = 0; fit_tables && i < nseq; i++)
       {
