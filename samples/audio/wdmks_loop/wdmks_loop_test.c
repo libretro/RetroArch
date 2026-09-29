@@ -584,13 +584,13 @@ static void run_wide_pcm_pin(void)
          && wdmks_shape_order[3].container_bits == 16,
          "shapes: float, 32, 24-in-32, 16");
 
-   wdmks_float_to_s32(out, in, sizeof(in), 32);
+   convert_float_to_s32(out, in, 6, 32);
    check(out[0] == 0 && out[1] == 0x40000000 && out[2] == (int32_t)-0x40000000,
          "float to 32-bit: full scale");
    check(out[3] == 0x7FFFFFFF && out[4] == (int32_t)-0x7FFFFFFF - 1
          && out[5] == 0x7FFFFFFF, "and clamped at the ends");
    in[1] = 0.5f + 1.0f / 4096.0f;
-   wdmks_float_to_s32(out, in, sizeof(in), 24);
+   convert_float_to_s32(out, in, 6, 24);
    check(out[1] == 0x40080000 && (out[1] & 0xFF) == 0,
          "24 in 32: the low byte is clear");
 

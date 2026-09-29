@@ -75,6 +75,7 @@
 #endif
 
 #include <queues/fifo_queue.h>
+#include <audio/conversion/float_to_s32.h>
 
 #include "../audio_upmix.h"
 #include "../audio_driver.h"
@@ -1602,30 +1603,6 @@ static bool wdmks_pin_open(HANDLE filter, const wdmks_pin_t *pin,
    return false;
 }
 
-/* Float frames to 32-bit integer of the same size: full scale, and for
- * 24 valid bits the low byte cleared. */
-static void wdmks_float_to_s32(void *dst, const void *src, size_t bytes,
-      unsigned bits)
-{
-   const float *f = (const float*)src;
-   int32_t     *o = (int32_t*)dst;
-   size_t       n = bytes / sizeof(float);
-   size_t   i;
-   int32_t  mask = (bits == 24) ? (int32_t)~0xFF : (int32_t)~0;
-
-   for (i = 0; i < n; i++)
-   {
-      float v = f[i];
-      int32_t s;
-      if (v >= 1.0f)
-         s = 0x7FFFFFFF;
-      else if (v <= -1.0f)
-         s = (int32_t)-0x7FFFFFFF - 1;
-      else
-         s = (int32_t)(v * 2147483648.0f);
-      o[i] = s & mask;
-   }
-}
 
 /* The pin's state. A pin is driven STOP to ACQUIRE to PAUSE to RUN on
  * the way up and back down the same way: the transitions are ordered
@@ -2848,7 +2825,8 @@ static ssize_t wdmks_write(void *data, const void *buf, size_t size)
          w->cvt      = grow;
          w->cvt_size = size;
       }
-      wdmks_float_to_s32(w->cvt, src, size, w->stream.fmt.bits);
+      convert_float_to_s32((int32_t*)w->cvt, (const float*)src,
+            size / sizeof(float), w->stream.fmt.bits);
       src = w->cvt;
    }
 
@@ -3741,6 +3719,7 @@ static void *wdmks_init(const char *device, unsigned rate,
          wdmks_free(w);
          return NULL;
       }
+      convert_float_to_s32_init_simd();
    }
    /* The pin's own channel count, except on the bit-stream path, where
     * what the frontend hands over is the encoder's layout and the pin

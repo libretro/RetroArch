@@ -93,6 +93,7 @@ jobs:
           # self-contained test and exits 0 on success / non-zero on
           # failure.  These are built AND executed.
           declare -a RUN_TARGETS=(
+            float_to_s32_test
             compat_fnmatch_test
             snprintf
             unbase64_test

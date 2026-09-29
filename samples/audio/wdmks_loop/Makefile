@@ -26,6 +26,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(LIBRETRO_COMM_DIR)/queues/retro_spsc.c \
 	$(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
+	$(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s32.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \

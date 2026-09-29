@@ -1730,6 +1730,7 @@ XML
 ============================================================ */
 #include "../libretro-common/audio/conversion/s16_to_float.c"
 #include "../libretro-common/audio/conversion/float_to_s16.c"
+#include "../libretro-common/audio/conversion/float_to_s32.c"
 #include "../libretro-common/audio/conversion/stereo_to_mono_float.c"
 #include "../libretro-common/audio/conversion/mono_to_stereo_float.c"
 #ifdef HAVE_AUDIOMIXER
