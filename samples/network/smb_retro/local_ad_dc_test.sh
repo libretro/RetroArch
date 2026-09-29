@@ -59,24 +59,57 @@ cat >> $D/etc/smb.conf << EOF
 	read only = no
 	guest ok = no
 EOF
-samba -F -s $D/etc/smb.conf > $D/samba.out 2>&1 &
+KRB5_CONFIG=$D/private/krb5.conf samba -F -s $D/etc/smb.conf > $D/samba.out 2>&1 &
 i=0; while [ $i -lt 100 ]; do
    samba-tool user create player 'Sekret1!!' -s $D/etc/smb.conf > $D/user.log 2>&1 && break
    i=$((i + 1)); sleep 0.3
 done
 grep -q "added successfully" $D/user.log || { echo "FAIL: user create: $(cat $D/user.log)"; exit 1; }
+# Samba's own client as the oracle for the environment: when it
+# cannot log in to this DC with a ticket either, the DC is not usable
+# here and the lane skips with the reason; when it can and ours
+# cannot, that is a real failure.
+oracle() {
+   command -v smbclient >/dev/null 2>&1 && command -v kinit >/dev/null 2>&1 || return 2
+   cat > $D/krb5-cli.conf << EOF
+[libdefaults]
+    default_realm = AD.RETRO.TEST
+    dns_lookup_kdc = false
+    dns_lookup_realm = false
+[realms]
+    AD.RETRO.TEST = {
+        kdc = 127.0.0.1:88
+    }
+EOF
+   KRB5_CONFIG=$D/krb5-cli.conf KRB5CCNAME=$D/cc sh -c "echo 'Sekret1!!' | kinit player >/dev/null 2>&1" || return 1
+   KRB5_CONFIG=$D/krb5-cli.conf KRB5CCNAME=$D/cc smbclient --use-kerberos=required -N //$DCNAME/games -c ls > $D/oracle.out 2>&1
+}
+i=0; while [ $i -lt 100 ]; do
+   oracle; orc=$?
+   [ $orc -eq 0 ] && break
+   [ $orc -eq 2 ] && break
+   i=$((i + 1)); sleep 0.3
+done
+if [ $orc -eq 1 ]; then
+   echo "skip: Samba's own client cannot log in to the DC with a ticket here:"
+   tail -5 $D/oracle.out 2>/dev/null
+   tail -20 $D/log.samba 2>/dev/null
+   exit 0
+fi
 export SMB_KRB_REALM=AD.RETRO.TEST SMB_KRB_KDC=127.0.0.1 SMB_KRB_REQUIRE=1
 # the DC's KDC and file server come up in their own time after the
 # user exists: retry a refused connect or session setup for a while
 i=0; while [ $i -lt 100 ]; do
    $RUN ./smb_test$EXE $DCNAME games player 'Sekret1!!' > $D/out 2>&1 && break
-   grep -qE "connect failed|session setup failed|logon failure" $D/out || break
+   grep -qE "connect failed|session setup failed|logon refused|logon failure" $D/out || break
    i=$((i + 1)); sleep 0.3
 done
 if grep -q "^ok:" $D/out; then
    echo "ok:   Kerberos login to the AD DC (SMB 3.1.1, signed, NTLM disabled on the server)"
 else
-   echo "FAIL: $(cat $D/out)"; exit 1
+   echo "FAIL: $(cat $D/out)"
+   echo "--- DC log tail:"; tail -30 $D/log.samba 2>/dev/null; tail -30 $D/log.smbd 2>/dev/null
+   exit 1
 fi
 if $RUN ./smb_test$EXE $DCNAME games player wrong > $D/out 2>&1; then
    echo "FAIL: wrong password was accepted"; exit 1
