@@ -529,7 +529,13 @@ static int lane_timed_race(void)
    printf("  timed_race %d bursts x %d bounded waits: %d woken, %d "
          "expired; %d probe(s) ended early\n",
          TIMED_RACE_BURSTS, TIMED_RACE_ROUNDS, woken, expired, early);
-   if (!expired || !woken)
+   /* Whether a burst ever expires depends on the machine: a sleep
+    * with millisecond granularity (the win32 event tier) rounds the
+    * bound up past the notifier's period, and a loaded runner under a
+    * sanitizer wakes every wait before its bound.  The held probes are
+    * then what shows the bound is honoured, so only their all ending
+    * early, with no burst expiring either, says the bound is not. */
+   if (!woken || (!expired && early == TIMED_RACE_BURSTS))
    {
       fprintf(stderr, "FAIL: timed_race: the race was not exercised\n");
       return 1;
