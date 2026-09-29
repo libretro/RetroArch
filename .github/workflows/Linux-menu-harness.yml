@@ -22,6 +22,9 @@ on:
       - 'playlist.h'
       - 'tasks/task_content*'
       - 'samples/menu/playlist_nav/**'
+      - 'samples/menu/network_settings/**'
+      - 'intl/msg_hash_lbl.h'
+      - 'msg_hash_lbl_str.h'
       - 'samples/menu/resolution_reset/**'
       - 'samples/settings/packed_rows/**'
       - 'setting_list.h'
@@ -34,6 +37,9 @@ on:
       - 'playlist.h'
       - 'tasks/task_content*'
       - 'samples/menu/playlist_nav/**'
+      - 'samples/menu/network_settings/**'
+      - 'intl/msg_hash_lbl.h'
+      - 'msg_hash_lbl_str.h'
       - 'samples/menu/resolution_reset/**'
       - 'samples/settings/packed_rows/**'
       - 'setting_list.h'
@@ -106,10 +112,12 @@ jobs:
           #
           # Qt in particular has to go: with it enabled main() lives
           # in ui_qt.o, and the harness replaces main().
+          # Networking stays on: the network settings harness below
+          # needs the SMB and NFS client screens compiled in.
           ./configure --disable-qt --disable-x11 \
                       --disable-opengl --disable-opengl_core \
                       --disable-opengl1 --disable-vulkan \
-                      --disable-cheevos --disable-networking \
+                      --disable-cheevos \
                       --disable-ffmpeg
           make -j$(nproc)
 
@@ -153,6 +161,21 @@ jobs:
           samples/menu/playlist_nav/build.sh
           ./samples/menu/playlist_nav/menu_playlist_nav_test
           make -C samples/menu/playlist_nav clean
+
+      - name: Build and run menu_network_settings_test
+        shell: bash
+        run: |
+          set -eu
+          # The NFS Network Settings entry opened an empty "null"
+          # browser: the label its deferred list is pushed with had no
+          # row in msg_hash_lbl.h, so it resolved to "null" and the
+          # push found nothing. The harness resolves the SMB and NFS
+          # labels, opens Settings > Network and both screens through
+          # the real dispatch, and checks the Quick Menu no longer
+          # carries the two entries.
+          samples/menu/network_settings/build.sh
+          ./samples/menu/network_settings/menu_network_settings_test
+          make -C samples/menu/network_settings clean
 
       - name: Build and run resolution_reset_test
         shell: bash

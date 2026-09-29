@@ -4796,30 +4796,6 @@ static int menu_displaylist_parse_load_content_settings(
             count++;
       }
 #endif
-#ifdef HAVE_SMBCLIENT
-      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-            MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,
-            PARSE_ONLY_BOOL, false) == 0)
-         count++;
-
-      if (settings->bools.smb_client_enable)
-      {
-         if (menu_entries_append(list,
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS),
-               MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS_STR,
-               MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,
-               MENU_SETTING_ACTION, 0, 0, NULL))
-            count++;
-      }
-#endif
-#ifdef HAVE_NFSCLIENT
-      if (menu_entries_append(list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SETTINGS),
-            MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS_STR,
-            MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS,
-            MENU_SETTING_ACTION, 0, 0, NULL))
-         count++;
-#endif
    }
 
    return count;

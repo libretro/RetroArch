@@ -932,6 +932,16 @@
 #define MENU_ENUM_LABEL_SMB_CLIENT_PASSWORD_STR "smb_client_password"
 #define MENU_ENUM_LABEL_SMB_CLIENT_WORKGROUP_STR "smb_client_workgroup"
 #define MENU_ENUM_LABEL_SMB_CLIENT_BROWSE_STR "smb_client_browse"
+#define MENU_ENUM_LABEL_DEFERRED_NFS_CLIENT_SETTINGS_LIST_STR "deferred_nfs_client_settings_list"
+#define MENU_ENUM_LABEL_NFS_CLIENT_SERVER_STR "nfs_client_server"
+#define MENU_ENUM_LABEL_NFS_CLIENT_EXPORT_STR "nfs_client_export"
+#define MENU_ENUM_LABEL_NFS_CLIENT_SUBDIR_STR "nfs_client_subdir"
+#define MENU_ENUM_LABEL_NFS_CLIENT_TIMEOUT_STR "nfs_client_timeout"
+#define MENU_ENUM_LABEL_NFS_CLIENT_NUM_CONTEXTS_STR "nfs_client_num_contexts"
+#define MENU_ENUM_LABEL_NFS_CLIENT_PORT_STR "nfs_client_port"
+#define MENU_ENUM_LABEL_NFS_CLIENT_MOUNT_PORT_STR "nfs_client_mount_port"
+#define MENU_ENUM_LABEL_NFS_CLIENT_VERSION_STR "nfs_client_version"
+#define MENU_ENUM_LABEL_NFS_CLIENT_BROWSE_STR "nfs_client_browse"
 
 /* Not a settings row: a submenu entry, listed here so the generated
  * region below can be rebuilt without dropping it. */
