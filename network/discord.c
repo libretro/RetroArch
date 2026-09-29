@@ -1694,6 +1694,22 @@ void Discord_UpdateHandlers(DiscordEventHandlers *new_handlers)
 
 static discord_state_t discord_state_st = {0}; /* int64_t alignment */
 
+void discord_poll(int64_t now_us)
+{
+   discord_state_t *discord_st = &discord_state_st;
+   if (!discord_st->inited)
+      return;
+   /* A non-blocking pipe read every frame is a syscall on the
+    * emulation thread for nothing; 10 Hz is plenty for join/spectate
+    * callbacks and presence flushes. */
+   if (now_us - discord_st->last_poll_us < DISCORD_POLL_INTERVAL_US
+         && discord_st->last_poll_us != 0)
+      return;
+   discord_st->last_poll_us = now_us;
+   Discord_RunCallbacks();
+   Discord_UpdateConnection();
+}
+
 discord_state_t *discord_state_get_ptr(void)
 {
    return &discord_state_st;

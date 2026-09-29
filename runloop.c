@@ -8342,9 +8342,6 @@ int runloop_iterate(void)
 #endif
    bool audio_sync                        = settings->bools.audio_sync;
    bool savestate_automatic_enable        = settings->uints.savestate_automatic_interval > 0;
-#ifdef HAVE_DISCORD
-   discord_state_t *discord_st            = discord_state_get_ptr();
-#endif
 
    runloop_msg_queue_drain_deferred();
 
@@ -8360,11 +8357,7 @@ int runloop_iterate(void)
       runloop_gpu_device_lost(runloop_st);
 
 #ifdef HAVE_DISCORD
-   if (discord_st->inited)
-   {
-      Discord_RunCallbacks();
-      Discord_UpdateConnection();
-   }
+   discord_poll(current_time);
 #endif
 
 #ifdef HAVE_BSV_MOVIE
