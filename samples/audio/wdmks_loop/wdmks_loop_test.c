@@ -316,8 +316,123 @@ static void run_contract(const char *name, put_fn put, bool pump)
    loop_teardown(&w);
 }
 
+/* The ranges a pin reports each bind their own bounds: a pin offering
+ * 44100-48000 stereo and 44100-192000 8-channel PCM, and 48000 stereo
+ * float, has not offered 192000 stereo PCM, nor float at 44100. */
+static void run_ranges(void)
+{
+   wdmks_pin_t    pin;
+   wdmks_format_t f;
+   ra_ksmultiple_item_t   *item;
+   ra_ksdatarange_audio_t *r;
+   unsigned i;
+
+   printf("pin ranges, kept apart\n");
+   memset(&pin, 0, sizeof(pin));
+   pin.range_count = 3;
+   pin.ranges[0].max_channels = 2;  pin.ranges[0].min_bits = 16;
+   pin.ranges[0].max_bits = 16;     pin.ranges[0].min_rate = 44100;
+   pin.ranges[0].max_rate = 48000;
+   pin.ranges[1].max_channels = 8;  pin.ranges[1].min_bits = 16;
+   pin.ranges[1].max_bits = 24;     pin.ranges[1].min_rate = 44100;
+   pin.ranges[1].max_rate = 192000;
+   pin.ranges[2].max_channels = 2;  pin.ranges[2].min_bits = 32;
+   pin.ranges[2].max_bits = 32;     pin.ranges[2].min_rate = 48000;
+   pin.ranges[2].max_rate = 48000;  pin.ranges[2].is_float = true;
+
+   memset(&f, 0, sizeof(f));
+   f.rate = 48000; f.channels = 2; f.bits = 16;
+   check(wdmks_format_in_pin(&pin, &f), "48000 stereo 16-bit: the first range");
+   f.rate = 192000; f.channels = 8; f.bits = 24;
+   check(wdmks_format_in_pin(&pin, &f), "192000 8-channel 24-bit: the second");
+   f.rate = 192000; f.channels = 2; f.bits = 16;
+   check(wdmks_format_in_pin(&pin, &f), "192000 stereo 16-bit: also the second");
+   f.rate = 96000; f.channels = 2; f.bits = 32;
+   check(!wdmks_format_in_pin(&pin, &f), "96000 stereo 32-bit integer: no range holds it");
+   f.rate = 48000; f.channels = 2; f.bits = 32; f.is_float = true;
+   check(wdmks_format_in_pin(&pin, &f), "48000 stereo float: the third");
+   f.rate = 44100;
+   check(!wdmks_format_in_pin(&pin, &f), "44100 float: not offered, though 44100 and float each are");
+   f.rate = 48000; f.channels = 8; f.bits = 32;
+   check(!wdmks_format_in_pin(&pin, &f), "8-channel float: not offered");
+
+   /* Past the cap, the rest fold into the last kept range of their
+    * own type, never the other's. */
+   item = (ra_ksmultiple_item_t*)calloc(1, sizeof(*item)
+         + (WDMKS_MAX_RANGES + 2) * sizeof(*r));
+   item->Count = WDMKS_MAX_RANGES + 2;
+   item->Size  = (ULONG)(sizeof(*item) + item->Count * sizeof(*r));
+   r = (ra_ksdatarange_audio_t*)(item + 1);
+   for (i = 0; i < item->Count; i++)
+   {
+      r[i].DataRange.f.FormatSize  = sizeof(*r);
+      r[i].DataRange.f.MajorFormat = ra_ks_dataformat_type_audio;
+      r[i].DataRange.f.SubFormat   = (i == 1)
+         ? ra_ks_dataformat_subtype_float : ra_ks_dataformat_subtype_pcm;
+      r[i].MaximumChannels         = 2;
+      r[i].MinimumBitsPerSample    = (i == 1) ? 32 : 16;
+      r[i].MaximumBitsPerSample    = (i == 1) ? 32 : 16;
+      r[i].MinimumSampleFrequency  = 8000 + i * 1000;
+      r[i].MaximumSampleFrequency  = 8000 + i * 1000;
+   }
+   /* The last two are the ones past the cap: one PCM at 176400, and
+    * one float at 22050. */
+   r[WDMKS_MAX_RANGES].MinimumSampleFrequency     = 176400;
+   r[WDMKS_MAX_RANGES].MaximumSampleFrequency     = 176400;
+   r[WDMKS_MAX_RANGES + 1].DataRange.f.SubFormat  = ra_ks_dataformat_subtype_float;
+   r[WDMKS_MAX_RANGES + 1].MinimumBitsPerSample   = 32;
+   r[WDMKS_MAX_RANGES + 1].MaximumBitsPerSample   = 32;
+   r[WDMKS_MAX_RANGES + 1].MinimumSampleFrequency = 22050;
+   r[WDMKS_MAX_RANGES + 1].MaximumSampleFrequency = 22050;
+
+   memset(&pin, 0, sizeof(pin));
+   wdmks_pin_fold_ranges(item, &pin);
+   free(item);
+   check(pin.range_count == WDMKS_MAX_RANGES, "the cap holds");
+   memset(&f, 0, sizeof(f));
+   f.channels = 2; f.bits = 16; f.rate = 176400;
+   check(wdmks_format_in_pin(&pin, &f), "a PCM range past the cap widened the last PCM range");
+   f.rate = 8000; f.bits = 32; f.is_float = true;
+   check(!wdmks_format_in_pin(&pin, &f), "and not the float one");
+   f.rate = 22050;
+   check(wdmks_format_in_pin(&pin, &f), "a float range past the cap widened the float range");
+   f.rate = 176400;
+   check(!wdmks_format_in_pin(&pin, &f), "and not with the PCM one's rate");
+}
+
+/* A 64-bit position register: a byte count past 2^32, on a loop that
+ * is not a power of two, lands where the count says and not where its
+ * low word alone would. */
+static void run_wide_register(void)
+{
+   wdmks_t  w;
+   ULONG    reg[2];
+   uint64_t count;
+
+   printf("64-bit position register\n");
+   memset(&w, 0, sizeof(w));
+   w.rt_size     = LOOP_BYTES;
+   w.frame_bytes = FRAME;
+   w.rate        = RATE;
+   w.rt_pos      = reg;
+   w.rt_pos_wide = true;
+
+   count  = ((uint64_t)1 << 32) + 4 * LOOP_BYTES + 1000;
+   reg[0] = (ULONG)count;
+   reg[1] = (ULONG)(count >> 32);
+   check(wdmks_rt_register_read(&w) == (ULONG)(count % LOOP_BYTES),
+         "the position is the whole count modulo the loop");
+   check(wdmks_rt_register_read(&w) != (ULONG)(reg[0] % LOOP_BYTES),
+         "which is not where the low word alone would put it");
+   w.rt_pos_wide = false;
+   reg[0]        = 1000;
+   check(wdmks_rt_register_read(&w) == 1000, "a 32-bit register is read as it is");
+}
+
 int main(void)
 {
+   run_ranges();
+   run_wide_register();
    fifo_frames = 0;
    run_contract("caller-driven loop, no FIFO report", put_direct, false);
    run_contract("refill thread pump, no FIFO report", put_pump, true);

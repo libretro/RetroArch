@@ -751,24 +751,33 @@ static ra_ksmultiple_item_t *wdmks_pin_property_multi(HANDLE filter,
 
 /* ---- what a pin will take ---------------------------------------- */
 
-/* A render pin, and the formats it said it would accept. The ranges a
- * pin reports are ranges rather than a list of formats: a minimum and
- * maximum rate, a minimum and maximum width, and a channel ceiling.
- * A pin may report several, and what this keeps is the widest of each
- * across all of them - a pin offering 44100-48000 stereo and
- * 44100-192000 8-channel is a pin that can do 192000 and 8, so the
- * ranges are collapsed here and the exact combination is settled when
- * the format is proposed. */
+/* One data range a pin reports: a minimum and maximum rate, a minimum
+ * and maximum width, a channel ceiling, and which sample type the
+ * three bound together. */
 typedef struct
 {
-   ULONG pin_id;
    ULONG max_channels;
    ULONG min_bits;
    ULONG max_bits;
    ULONG min_rate;
    ULONG max_rate;
-   bool  takes_pcm;
-   bool  takes_float;
+   bool  is_float;
+} wdmks_range_t;
+
+/* A render pin, and the formats it said it would accept. The ranges
+ * are kept apart, because each one binds its bounds together: a pin
+ * offering 44100-48000 stereo and 44100-192000 8-channel has not
+ * offered 192000 stereo, and a candidate is in the pin only when one
+ * range holds all of it at once. Past the cap the rest are folded into
+ * the last one kept, which widens it to the box the whole list would
+ * have been - still a pin the proposal settles. */
+#define WDMKS_MAX_RANGES 12
+
+typedef struct
+{
+   wdmks_range_t ranges[WDMKS_MAX_RANGES];
+   ULONG         pin_id;
+   unsigned      range_count;
 } wdmks_pin_t;
 
 /* One audio filter: the device path to open it by, the name to show,
@@ -779,35 +788,27 @@ typedef struct
 {
    WCHAR       *path;
    char        *name;
-   wdmks_pin_t  pins[WDMKS_MAX_PINS];
+   wdmks_pin_t *pins;
    unsigned     pin_count;
    bool         wavert;
 } wdmks_device_t;
 
-/* Reads one pin's data ranges and folds them into the pin record.
+/* Reads one pin's data ranges into the pin record, one kept per range.
  * Returns false where the pin reports nothing usable, which is the
  * normal answer for the many pins on a filter that are not audio
  * sinks at all. */
-static bool wdmks_pin_read_ranges(HANDLE filter, ULONG pin_id,
+static bool wdmks_pin_fold_ranges(const ra_ksmultiple_item_t *item,
       wdmks_pin_t *pin)
 {
-   ra_ksmultiple_item_t *item;
-   unsigned char        *walk;
-   unsigned char        *end;
-   ULONG                 i;
-   bool                  any = false;
-
-   if (!(item = wdmks_pin_property_multi(filter, pin_id,
-               RA_KSPROPERTY_PIN_DATARANGES)))
-      return false;
-
-   walk = (unsigned char*)(item + 1);
-   end  = (unsigned char*)item + item->Size;
+   const unsigned char *walk = (const unsigned char*)(item + 1);
+   const unsigned char *end  = (const unsigned char*)item + item->Size;
+   ULONG                i;
+   bool                 any  = false;
 
    for (i = 0; i < item->Count; i++)
    {
-      ra_ksdatarange_audio_t *r = (ra_ksdatarange_audio_t*)walk;
-      ULONG                   step;
+      const ra_ksdatarange_audio_t *r = (const ra_ksdatarange_audio_t*)walk;
+      ULONG                         step;
 
       /* Each range says its own length, and the next follows it
        * aligned to eight. A length that does not fit inside what the
@@ -831,42 +832,64 @@ static bool wdmks_pin_read_ranges(HANDLE filter, ULONG pin_id,
          bool flt   = !memcmp(&r->DataRange.f.SubFormat,
                &ra_ks_dataformat_subtype_float, sizeof(GUID));
 
-         if (pcm || flt)
+         if ((pcm || flt) && r->MaximumChannels && r->MaximumSampleFrequency)
          {
-            if (pcm)
-               pin->takes_pcm   = true;
-            if (flt)
-               pin->takes_float = true;
+            wdmks_range_t *k;
 
-            if (!any)
+            if (pin->range_count < WDMKS_MAX_RANGES)
             {
-               pin->max_channels = r->MaximumChannels;
-               pin->min_bits     = r->MinimumBitsPerSample;
-               pin->max_bits     = r->MaximumBitsPerSample;
-               pin->min_rate     = r->MinimumSampleFrequency;
-               pin->max_rate     = r->MaximumSampleFrequency;
+               k               = &pin->ranges[pin->range_count++];
+               k->max_channels = r->MaximumChannels;
+               k->min_bits     = r->MinimumBitsPerSample;
+               k->max_bits     = r->MaximumBitsPerSample;
+               k->min_rate     = r->MinimumSampleFrequency;
+               k->max_rate     = r->MaximumSampleFrequency;
+               k->is_float     = flt;
             }
             else
             {
-               if (r->MaximumChannels        > pin->max_channels)
-                  pin->max_channels = r->MaximumChannels;
-               if (r->MinimumBitsPerSample   < pin->min_bits)
-                  pin->min_bits     = r->MinimumBitsPerSample;
-               if (r->MaximumBitsPerSample   > pin->max_bits)
-                  pin->max_bits     = r->MaximumBitsPerSample;
-               if (r->MinimumSampleFrequency < pin->min_rate)
-                  pin->min_rate     = r->MinimumSampleFrequency;
-               if (r->MaximumSampleFrequency > pin->max_rate)
-                  pin->max_rate     = r->MaximumSampleFrequency;
+               unsigned j = WDMKS_MAX_RANGES;
+               k          = NULL;
+               while (j--)
+                  if (pin->ranges[j].is_float == flt)
+                  {
+                     k = &pin->ranges[j];
+                     break;
+                  }
+               if (k)
+               {
+                  if (r->MaximumChannels        > k->max_channels)
+                     k->max_channels = r->MaximumChannels;
+                  if (r->MinimumBitsPerSample   < k->min_bits)
+                     k->min_bits     = r->MinimumBitsPerSample;
+                  if (r->MaximumBitsPerSample   > k->max_bits)
+                     k->max_bits     = r->MaximumBitsPerSample;
+                  if (r->MinimumSampleFrequency < k->min_rate)
+                     k->min_rate     = r->MinimumSampleFrequency;
+                  if (r->MaximumSampleFrequency > k->max_rate)
+                     k->max_rate     = r->MaximumSampleFrequency;
+               }
             }
             any = true;
          }
       }
       walk += step;
    }
+   return any;
+}
 
+static bool wdmks_pin_read_ranges(HANDLE filter, ULONG pin_id,
+      wdmks_pin_t *pin)
+{
+   ra_ksmultiple_item_t *item;
+   bool                  any;
+
+   if (!(item = wdmks_pin_property_multi(filter, pin_id,
+               RA_KSPROPERTY_PIN_DATARANGES)))
+      return false;
+   any = wdmks_pin_fold_ranges(item, pin);
    free(item);
-   return any && pin->max_channels > 0 && pin->max_rate > 0;
+   return any;
 }
 
 /* Finds the render pins on an open filter: the ones audio flows INTO
@@ -885,11 +908,14 @@ static void wdmks_filter_read_pins(HANDLE filter, wdmks_device_t *dev)
          != sizeof(pin_count))
       return;
 
+   if (!(dev->pins = (wdmks_pin_t*)calloc(WDMKS_MAX_PINS, sizeof(*dev->pins))))
+      return;
+
    for (i = 0; i < pin_count && dev->pin_count < WDMKS_MAX_PINS; i++)
    {
-      ULONG       flow = 0;
-      ULONG       comm = 0;
-      wdmks_pin_t pin;
+      ULONG        flow = 0;
+      ULONG        comm = 0;
+      wdmks_pin_t *pin  = &dev->pins[dev->pin_count];
 
       if (wdmks_pin_property(filter, i, RA_KSPROPERTY_PIN_DATAFLOW,
                &flow, sizeof(flow)) != sizeof(flow))
@@ -904,12 +930,12 @@ static void wdmks_filter_read_pins(HANDLE filter, wdmks_device_t *dev)
             && comm != RA_KSPIN_COMMUNICATION_BOTH)
          continue;
 
-      memset(&pin, 0, sizeof(pin));
-      pin.pin_id = i;
-      if (!wdmks_pin_read_ranges(filter, i, &pin))
+      memset(pin, 0, sizeof(*pin));
+      pin->pin_id = i;
+      if (!wdmks_pin_read_ranges(filter, i, pin))
          continue;
 
-      dev->pins[dev->pin_count++] = pin;
+      dev->pin_count++;
    }
 }
 
@@ -1018,6 +1044,7 @@ static wdmks_device_t *wdmks_devices_scan(unsigned *count_out)
       {
          RARCH_DBG("[WDM-KS] A filter opened but offers no render pin"
                " this driver can write to.\n");
+         free(dev.pins);
          free(detail);
          continue;
       }
@@ -1050,6 +1077,7 @@ static wdmks_device_t *wdmks_devices_scan(unsigned *count_out)
 
       if (!dev.path)
       {
+         free(dev.pins);
          free(dev.name);
          continue;
       }
@@ -1061,6 +1089,7 @@ static wdmks_device_t *wdmks_devices_scan(unsigned *count_out)
                next * sizeof(*devices));
          if (!grow)
          {
+            free(dev.pins);
             free(dev.path);
             free(dev.name);
             break;
@@ -1085,6 +1114,7 @@ static void wdmks_devices_free(wdmks_device_t *devices, unsigned count)
       return;
    for (i = 0; i < count; i++)
    {
+      free(devices[i].pins);
       free(devices[i].path);
       free(devices[i].name);
    }
@@ -1187,20 +1217,29 @@ typedef struct
 static const unsigned wdmks_rate_order[] =
 { 48000, 44100, 96000, 88200, 192000, 32000, 22050, 16000, 11025, 8000 };
 
+/* Whether one range holds every bound of a candidate at once. */
+static bool wdmks_format_in_range(const wdmks_range_t *r,
+      const wdmks_format_t *fmt)
+{
+   if (r->is_float != fmt->is_float)
+      return false;
+   if (fmt->rate < r->min_rate || fmt->rate > r->max_rate)
+      return false;
+   if (fmt->channels > r->max_channels || fmt->channels == 0)
+      return false;
+   if (fmt->bits < r->min_bits || fmt->bits > r->max_bits)
+      return false;
+   return true;
+}
+
 static bool wdmks_format_in_pin(const wdmks_pin_t *pin,
       const wdmks_format_t *fmt)
 {
-   if (fmt->rate < pin->min_rate || fmt->rate > pin->max_rate)
-      return false;
-   if (fmt->channels > pin->max_channels || fmt->channels == 0)
-      return false;
-   if (fmt->bits < pin->min_bits || fmt->bits > pin->max_bits)
-      return false;
-   if (fmt->is_float && !pin->takes_float)
-      return false;
-   if (!fmt->is_float && !pin->takes_pcm)
-      return false;
-   return true;
+   unsigned i;
+   for (i = 0; i < pin->range_count; i++)
+      if (wdmks_format_in_range(&pin->ranges[i], fmt))
+         return true;
+   return false;
 }
 
 /* Fills a WAVEFORMATEX for a format. Mono and stereo go out as the
@@ -1596,7 +1635,8 @@ typedef struct
    retro_atomic_64_t   rt_frames_pub;  /* absolute frames played */
    retro_atomic_int_t  clk_ppm_pub;   /* AUDIO_CLOCK_PPM_NONE until known */
 #endif
-   volatile ULONG *rt_pos;      /* byte offset, updated by the device */
+   volatile ULONG *rt_pos;      /* byte position, updated by the device */
+   bool            rt_pos_wide; /* the register is 64 bits, not 32 */
    bool            rt_presentation;
    retro_time_t    rt_last_usec;  /* when the cursor was last read */
    HANDLE          rt_event;    /* signalled per notification, if offered */
@@ -1849,10 +1889,33 @@ static void wdmks_rt_get_position_register(wdmks_t *w)
 
    if (DeviceIoControl(w->stream.handle, RA_IOCTL_KS_PROPERTY,
             &inn, sizeof(inn), &out, sizeof(out), &written, NULL)
-         && written >= sizeof(out) && out.Register)
-      w->rt_pos = (volatile ULONG*)out.Register;
+         && written >= sizeof(out) && out.Register
+         && (out.Width == 32 || out.Width == 64))
+   {
+      w->rt_pos      = (volatile ULONG*)out.Register;
+      w->rt_pos_wide = (out.Width == 64);
+   }
    else
       RARCH_LOG("[WDM-KS] No position register; asking the pin instead.\n");
+}
+
+/* The register's value, brought into the loop. A 64-bit register is a
+ * byte count the low word alone cannot place once it passes 2^32 on a
+ * loop that is not a power of two, so the whole of it is read; the
+ * high word is taken twice so a 32-bit build cannot see it torn. */
+static ULONG wdmks_rt_register_read(const wdmks_t *w)
+{
+   ULONG lo, hi, hi2;
+
+   if (!w->rt_pos_wide)
+      return *w->rt_pos;
+   do
+   {
+      hi  = w->rt_pos[1];
+      lo  = w->rt_pos[0];
+      hi2 = w->rt_pos[1];
+   } while (hi != hi2);
+   return (ULONG)((((uint64_t)hi << 32) | lo) % w->rt_size);
 }
 
 /* What the hardware adds after this driver's buffer: the FIFO the
@@ -2263,7 +2326,7 @@ static bool wdmks_rt_play_offset(wdmks_t *w, ULONG *offset)
 {
    if (w->rt_pos)
    {
-      ULONG v = *w->rt_pos;
+      ULONG v = wdmks_rt_register_read(w);
       if (v >= (ULONG)w->rt_size)
          v %= (ULONG)w->rt_size;
 
