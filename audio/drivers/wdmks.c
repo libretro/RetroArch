@@ -2731,6 +2731,46 @@ static void wdmks_mmcss_end(HMODULE avrt, HANDLE task)
    }
 }
 
+/* How coarsely the pin's position moves.  A driver that reports the
+ * DMA's link position moves it a few frames at a time; one that
+ * reports from its fragment interrupts moves it a fragment at a
+ * time, and on a loop of two fragments that is half the loop.  Audio
+ * held ahead of a position that is stale by a fragment is audio the
+ * hardware may already have passed - it plays the previous lap's
+ * bytes there, and nothing in the count says so.  So the step is
+ * measured once the pin runs, before the frontend is told what is
+ * held, and what is held is floored at the margin and two steps.
+ * Only where there is no register: the register is the DMA's own.
+ * Returns the largest step seen in bytes, 0 when none was. */
+static size_t wdmks_rt_probe_step(wdmks_t *w)
+{
+   uint64_t frames = 0;
+   ULONG    last, v;
+   size_t   step = 0;
+   unsigned i;
+
+   if (w->rt_pos || !w->frame_bytes || !w->rt_size)
+      return 0;
+   if (!wdmks_position(w, &frames))
+      return 0;
+   last = (ULONG)((frames * w->frame_bytes) % w->rt_size);
+   /* 40 ms of the pin running, read every 200 us: several fragments
+    * of any loop this driver makes. */
+   for (i = 0; i < 200; i++)
+   {
+      ULONG d;
+      retro_sleep_us(200);
+      if (!wdmks_position(w, &frames))
+         return 0;
+      v = (ULONG)((frames * w->frame_bytes) % w->rt_size);
+      d = (v >= last) ? v - last : (ULONG)(v + w->rt_size - last);
+      if (d > step)
+         step = d;
+      last = v;
+   }
+   return step;
+}
+
 /* The thread the register was waiting for: it samples and refills at
  * the device's pace however long the frontend is descheduled. Waits
  * are the device's - the notification event under the stream-scaled
@@ -3939,6 +3979,36 @@ static void *wdmks_init(const char *device, unsigned rate,
       }
       wdmks_rt_probe_presentation(w);
       wdmks_rt_get_position_register(w);
+      {
+         size_t step = wdmks_rt_probe_step(w);
+         if (step)
+         {
+            size_t need = wdmks_rt_margin(w) + 2 * step;
+            need -= need % w->frame_bytes;
+            if (need + w->frame_bytes > w->rt_size)
+               need = w->rt_size - w->frame_bytes;
+            RARCH_LOG("[WDM-KS] The position moves in steps of up to %u"
+                  " bytes (%.2f ms)%s.\n", (unsigned)step,
+                  (double)step * 1000.0 / (double)(w->frame_bytes * w->rate),
+                  need > w->rt_ahead
+                     ? "; more than the setting is held ahead to cover it"
+                     : "");
+            if (need > w->rt_ahead)
+            {
+               w->rt_ahead = need;
+#ifdef HAVE_THREADS
+               retro_spsc_free(&w->rt_ring);
+               w->rt_ring_size = w->rt_ahead;
+               if (!retro_spsc_init(&w->rt_ring, w->rt_ring_size))
+               {
+                  RARCH_ERR("[WDM-KS] The WaveRT pin would not start.\n");
+                  wdmks_free(w);
+                  return NULL;
+               }
+#endif
+            }
+         }
+      }
       wdmks_rt_register_event(w);
 
       {
