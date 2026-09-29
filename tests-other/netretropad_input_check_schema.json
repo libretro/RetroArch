@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://docs.libretro.com/development/input-api/netretropad_input_check_schema.json",
+  "title": "RetroArch_netretropad_validator",
+  "description": "Definition for driving RetroArch's Remote RetroPad test part.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "expected_button": {
+        "description": "Button to wait for",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 4294967295
+      },
+      "message": {
+        "description": "Message to be displayed to the user",
+        "type": "string",
+        "maxLength": 512
+      }
+    },
+    "required": [ "expected_button" ]
+  }
+}
+
