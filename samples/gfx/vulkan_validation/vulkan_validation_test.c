@@ -107,7 +107,10 @@
 
 #include <X11/Xlib.h>
 
+#include <retro_timers.h>
+
 #include "../../../gfx/common/vulkan_common.h"
+#include "../../../configuration.h"
 
 /* Scored by the RARCH_LOG hook in stubs_retroarch.c. */
 extern int g_vk_validation_errors;
@@ -908,6 +911,192 @@ static int test_failed_present(void)
    return report("a present that fails");
 }
 
+/* One frame the way the driver makes one: the acquired image into the
+ * present layout, waiting on its acquire, signalling the swapchain
+ * semaphore, fenced - then the present. */
+static void mailbox_frame(gfx_ctx_vulkan_data_t *vk, VkCommandBuffer cmd)
+{
+   VkSubmitInfo submit;
+   VkCommandBufferBeginInfo begin;
+   VkImageMemoryBarrier barrier;
+   VkSemaphore wait_sems[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
+   VkPipelineStageFlags wait_stages[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
+   unsigned index = vk->context.current_swapchain_index;
+   unsigned frame = vk->context.current_frame_index;
+
+   memset(&begin, 0, sizeof(begin));
+   begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   vkBeginCommandBuffer(cmd, &begin);
+
+   memset(&barrier, 0, sizeof(barrier));
+   barrier.sType                       = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+   barrier.dstAccessMask               = VK_ACCESS_MEMORY_READ_BIT;
+   barrier.oldLayout                   = VK_IMAGE_LAYOUT_UNDEFINED;
+   barrier.newLayout                   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+   barrier.srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
+   barrier.dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
+   barrier.image                       = vk->context.swapchain_images[index];
+   barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   barrier.subresourceRange.levelCount = 1;
+   barrier.subresourceRange.layerCount = 1;
+   vkCmdPipelineBarrier(cmd,
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+         0, 0, NULL, 0, NULL, 1, &barrier);
+   vkEndCommandBuffer(cmd);
+
+   memset(&submit, 0, sizeof(submit));
+   submit.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit.commandBufferCount   = 1;
+   submit.pCommandBuffers      = &cmd;
+   submit.waitSemaphoreCount   = vulkan_context_take_acquire_waits(
+         &vk->context, frame, wait_sems, wait_stages,
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+   submit.pWaitSemaphores      = wait_sems;
+   submit.pWaitDstStageMask    = wait_stages;
+   submit.signalSemaphoreCount = 1;
+   submit.pSignalSemaphores    = &vk->context.swapchain_semaphores[index];
+
+   vkQueueSubmit(vk->context.queue, 1, &submit,
+         vk->context.swapchain_fences[frame]);
+   vk->context.swapchain_fences_signalled[frame] = true;
+
+   vk->context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
+   vulkan_present(vk, index);
+}
+
+/* Emulated mailbox: with vsync on and a swap interval of 0 asked for
+ * (fast-forward), the swapchain stays in FIFO and a second thread does
+ * the acquiring, so the presenting thread never blocks on the display:
+ * it asks, and draws the frames for which an image has come back.
+ *
+ * The two threads pass a request and an answer back and forth. That
+ * was a mutex and a condition variable; it is three atomic words and
+ * two eventcounts now. What has to hold either way:
+ *
+ *   - frames keep coming: every request is answered, and the image it
+ *     names is one the presenting thread can render to and present
+ *     (the validation layer checks each one);
+ *   - switching emulation off, with a request possibly in flight, ends
+ *     with an image acquired and the acquire thread joined;
+ *   - so does tearing the swapchain down while it is on.
+ *
+ * Run under ThreadSanitizer this is also the check on the hand-over
+ * itself (make SANITIZER=thread). */
+static int test_emulated_mailbox(void)
+{
+   gfx_ctx_vulkan_data_t vk;
+   VkCommandPoolCreateInfo pool_info;
+   VkCommandBufferAllocateInfo cmd_info;
+   VkCommandPool pool   = VK_NULL_HANDLE;
+   VkCommandBuffer cmd  = VK_NULL_HANDLE;
+   settings_t *settings = (settings_t*)config_get_ptr();
+   unsigned frames      = 0;
+   unsigned asks        = 0;
+   unsigned round;
+   int fail             = 0;
+
+   reset_counts();
+
+   if (!context_up(&vk))
+   {
+      fputs("FAIL: context setup failed for the mailbox test\n", stderr);
+      return 1;
+   }
+   if (!(vk.flags & VK_DATA_FLAG_EMULATE_MAILBOX))
+   {
+      /* Not compiled in for this platform. */
+      vulkan_context_destroy(&vk, true);
+      puts("[skip] emulated mailbox is not available here");
+      return 0;
+   }
+
+   memset(&pool_info, 0, sizeof(pool_info));
+   pool_info.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+   pool_info.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+   pool_info.queueFamilyIndex = vk.context.graphics_queue_index;
+   vkCreateCommandPool(vk.context.device, &pool_info, NULL, &pool);
+   memset(&cmd_info, 0, sizeof(cmd_info));
+   cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+   cmd_info.commandPool        = pool;
+   cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+   cmd_info.commandBufferCount = 1;
+   vkAllocateCommandBuffers(vk.context.device, &cmd_info, &cmd);
+
+   /* A swapchain is marked invalid when it is made, until the driver
+    * has rebuilt what hangs off it; only then are interval changes
+    * applied to it in place, which is where emulation is switched on
+    * and off. This test is the driver here. */
+   vk.context.flags &= ~VK_CTX_FLAG_INVALID_SWAPCHAIN;
+
+   for (round = 0; round < 3 && !fail; round++)
+   {
+      unsigned want = frames + 40;
+
+      /* Fast-forward with vsync on: emulation comes up. */
+      settings->bools.video_vsync = true;
+      if (     !vulkan_create_swapchain(&vk, vk.context.swapchain_dims, 0)
+            || !(vk.flags & VK_DATA_FLAG_EMULATING_MAILBOX)
+            || vk.mailbox.swapchain == VK_NULL_HANDLE)
+      {
+         fputs("FAIL: mailbox emulation did not come up\n", stderr);
+         fail = 1;
+         break;
+      }
+      vk.context.flags &= ~VK_CTX_FLAG_INVALID_SWAPCHAIN;
+
+      while (frames < want && asks < 200000)
+      {
+         if (vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
+         {
+            /* The one command buffer is reused: wait out its last use. */
+            vkDeviceWaitIdle(vk.context.device);
+            mailbox_frame(&vk, cmd);
+            frames++;
+         }
+         /* Non-blocking: no image yet is a frame the driver skips. */
+         vulkan_acquire_next_image(&vk);
+         asks++;
+         if (!(vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
+            retro_sleep(1);
+      }
+      if (frames < want)
+      {
+         fprintf(stderr, "FAIL: only %u frame(s) got an image in %u asks\n",
+               frames, asks);
+         fail = 1;
+         break;
+      }
+
+      if (round == 2)
+         break;   /* the last round is torn down with emulation on */
+
+      /* Fast-forward released: emulation goes, with an image in hand. */
+      if (     !vulkan_create_swapchain(&vk, vk.context.swapchain_dims, 1)
+            || (vk.flags & VK_DATA_FLAG_EMULATING_MAILBOX)
+            || vk.mailbox.swapchain != VK_NULL_HANDLE
+            || !(vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
+      {
+         fputs("FAIL: leaving mailbox emulation did not end with an"
+               " image acquired and the acquire thread gone\n", stderr);
+         fail = 1;
+      }
+      vk.context.flags &= ~VK_CTX_FLAG_INVALID_SWAPCHAIN;
+   }
+   settings->bools.video_vsync = false;
+
+   vulkan_surface_destroy(&vk);
+   vkDeviceWaitIdle(vk.context.device);
+   vkDestroyCommandPool(vk.context.device, pool, NULL);
+   vulkan_context_destroy(&vk, true);
+
+   if (fail)
+      return 1;
+   printf("       emulated mailbox: %u frames from %u asks\n", frames, asks);
+   return report("emulated mailbox, on, off and torn down");
+}
+
 /* vulkan_find_memory_type() picks the heap for every allocation
  * the backend makes; a wrong answer is a validation error at the
  * first vkBindImageMemory rather than here, so check the
@@ -1005,6 +1194,8 @@ int main(void)
    else if (test_unsubmitted_acquires())
       ret = 1;
    else if (test_failed_present())
+      ret = 1;
+   else if (test_emulated_mailbox())
       ret = 1;
 
    XDestroyWindow(s_dpy, s_win);

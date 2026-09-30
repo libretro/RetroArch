@@ -31,3 +31,11 @@ retro_task_threaded_gather       8
 video_driver_frame               0
 audio_driver_sample_batch        0
 runloop_iterate                  0
+# The emulated mailbox's acquire thread: atomic words and eventcounts.
+vulkan_emulated_mailbox_loop     0
+# queue_lock around vkQueuePresentKHR, dropped when it returns.
+vulkan_present                   1
+# None on a frame. The one is queue_lock around the submission that
+# empties a full stale-acquire list (vulkan_consume_stale_acquires,
+# inlined here).
+vulkan_acquire_next_image        1

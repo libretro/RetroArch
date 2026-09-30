@@ -116,6 +116,15 @@ measure gfx/video_driver.o    video_driver_frame
 measure audio/audio_driver.o  audio_driver_sample_batch
 measure runloop.o             runloop_iterate
 
+# The Vulkan context. The emulated mailbox's two threads pass a
+# request and an answer through atomic words and eventcounts, and the
+# only lock anywhere near a frame is queue_lock, around the queue call:
+# the present takes it once, and the acquire takes it only in the path
+# that empties a full stale-acquire list.
+measure gfx/common/vulkan_common.o  vulkan_emulated_mailbox_loop
+measure gfx/common/vulkan_common.o  vulkan_present
+measure gfx/common/vulkan_common.o  vulkan_acquire_next_image
+
 if [ "$fail" = 1 ]; then
    echo
    echo "A path that is meant to be lock-free took a lock. If that is"

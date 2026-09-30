@@ -359,20 +359,20 @@ jobs:
           set -eu
           # Regression test for the partial-init leak fix in
           # gfx/common/vulkan_common.c::vulkan_emulated_mailbox_init.
-          # Pre-fix the function had three sequential allocations
-          # (scond_new, slock_new, sthread_create) and on any of the
-          # latter two failures returned `false` directly, leaking
-          # the already-allocated cond and/or lock.  Both production
-          # call sites in vulkan_create_swapchain ignore the return
-          # value, so an init failure also left vk->mailbox.lock ==
-          # NULL and vk->mailbox.cond == NULL while VK_DATA_FLAG_
-          # EMULATING_MAILBOX was still set, setting up a NULL-deref
-          # the next time vulkan_acquire_next_image routed into
-          # vulkan_emulated_mailbox_acquire_next_image (slock_lock
-          # on a NULL pointer).  Fix routes every early failure
-          # through `goto error` to a single deinit call, which is
-          # null-safe and ends with a memset, leaving the struct in
-          # the same shape the deinit-on-shutdown path produces and
+          # The function brings up three things in sequence (two
+          # eventcounts and the acquire thread; a condition variable,
+          # a mutex and the thread when this was written) and used to
+          # return `false` directly when the second or third failed,
+          # leaking what the earlier ones had allocated.  Both
+          # production call sites in vulkan_create_swapchain ignore
+          # the return value, so an init failure also left the
+          # mailbox half built while VK_DATA_FLAG_EMULATING_MAILBOX
+          # was still set, setting up a crash the next time
+          # vulkan_acquire_next_image routed into the emulated path.
+          # Fix routes every early failure through `goto error` to a
+          # single deinit call, which is safe on a partly built
+          # mailbox and ends with a memset, leaving the struct in the
+          # same shape the deinit-on-shutdown path produces and
           # tripping the existing `mailbox.swapchain == VK_NULL_
           # HANDLE` guard at vulkan_acquire_next_image.  Build under
           # AddressSanitizer with leak detection so any
