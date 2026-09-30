@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 15
+        timeout-minutes: 20
         run: |
           # All three packages ship on the stock ubuntu-latest image, so
           # this step is a no-op there and apt is only contacted if the
@@ -45,16 +45,26 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
           for i in 1 2 3; do
-            sudo apt-get install -y \
+            sudo timeout 240 apt-get install -y --download-only \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
               build-essential zlib1g-dev clang ffmpeg && break
             [ $i = 3 ] && exit 1
-            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
-            sleep 10
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            build-essential zlib1g-dev clang ffmpeg
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -733,7 +743,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 15
+        timeout-minutes: 20
         run: |
           # clang ships on the stock ubuntu-latest image; apt is only
           # contacted if the image ever drops it.
@@ -747,16 +757,26 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
           for i in 1 2 3; do
-            sudo apt-get install -y \
+            sudo timeout 240 apt-get install -y --download-only \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
               clang && break
             [ $i = 3 ] && exit 1
-            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
-            sleep 10
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            clang
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -843,7 +863,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 15
+        timeout-minutes: 20
         run: |
           for i in 1 2 3; do
             sudo timeout 90 apt-get update -y \
@@ -851,16 +871,26 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
           for i in 1 2 3; do
-            sudo apt-get install -y \
+            sudo timeout 240 apt-get install -y --download-only \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
               build-essential ${{ matrix.apt_pkgs }} qemu-user-static && break
             [ $i = 3 ] && exit 1
-            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
-            sleep 10
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            build-essential ${{ matrix.apt_pkgs }} qemu-user-static
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -985,7 +1015,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 15
+        timeout-minutes: 20
         run: |
           for i in 1 2 3; do
             sudo timeout 90 apt-get update -y \
@@ -993,16 +1023,26 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
           for i in 1 2 3; do
-            sudo apt-get install -y \
+            sudo timeout 240 apt-get install -y --download-only \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
               build-essential ${{ matrix.apt_pkgs }} qemu-user-static && break
             [ $i = 3 ] && exit 1
-            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
-            sleep 10
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            build-essential ${{ matrix.apt_pkgs }} qemu-user-static
 
       - name: Checkout
         uses: actions/checkout@v5

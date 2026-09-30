@@ -123,7 +123,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 15
+        timeout-minutes: 20
         run: |
           pkgs="build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev"
           for i in 1 2 3; do
@@ -132,16 +132,26 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
           for i in 1 2 3; do
-            sudo apt-get install -y \
+            sudo timeout 240 apt-get install -y --download-only \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
               $pkgs && break
             [ $i = 3 ] && exit 1
-            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
-            sleep 10
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -224,7 +234,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 15
+        timeout-minutes: 20
         run: |
           pkgs="build-essential libx11-dev libx11-xcb-dev libxcb1-dev xvfb x11-utils libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools"
           for i in 1 2 3; do
@@ -233,16 +243,26 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
           for i in 1 2 3; do
-            sudo apt-get install -y \
+            sudo timeout 240 apt-get install -y --download-only \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
               $pkgs && break
             [ $i = 3 ] && exit 1
-            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
-            sleep 10
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -278,7 +298,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 15
+        timeout-minutes: 20
         run: |
           pkgs="build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev"
           for i in 1 2 3; do
@@ -287,16 +307,26 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
           for i in 1 2 3; do
-            sudo apt-get install -y \
+            sudo timeout 240 apt-get install -y --download-only \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
               $pkgs && break
             [ $i = 3 ] && exit 1
-            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
-            sleep 10
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -335,7 +365,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 15
+        timeout-minutes: 20
         run: |
           pkgs="build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev"
           for i in 1 2 3; do
@@ -344,16 +374,26 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
           for i in 1 2 3; do
-            sudo apt-get install -y \
+            sudo timeout 240 apt-get install -y --download-only \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
               $pkgs && break
             [ $i = 3 ] && exit 1
-            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
-            sleep 10
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -396,7 +436,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 15
+        timeout-minutes: 20
         run: |
           pkgs="build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libgl-dev libglx-dev libegl-dev libgles-dev libgl1-mesa-dri libglx-mesa0 mesa-utils libasound2-dev"
           for i in 1 2 3; do
@@ -405,16 +445,26 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
           for i in 1 2 3; do
-            sudo apt-get install -y \
+            sudo timeout 240 apt-get install -y --download-only \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
               $pkgs && break
             [ $i = 3 ] && exit 1
-            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
-            sleep 10
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
 
       - name: Checkout
         uses: actions/checkout@v5

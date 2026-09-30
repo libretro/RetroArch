@@ -30,20 +30,31 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 20
+        timeout-minutes: 25
         run: |
           sudo apt-get update -y
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
           for i in 1 2 3; do
-            sudo apt-get install -y --no-install-recommends build-essential clang \
+            sudo timeout 240 apt-get install -y --download-only --no-install-recommends build-essential clang \
               gcc-mingw-w64-x86-64 openssl samba libtirpc-dev flex bison autoconf automake wine wine64 \
               nfs-ganesha nfs-ganesha-vfs krb5-kdc krb5-admin-server krb5-user winbind \
               samba-dsdb-modules samba-ad-provision samba-vfs-modules acl smbclient && break
             [ $i = 3 ] && exit 1
-            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
-            sleep 10
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
+          sudo apt-get install -y --no-install-recommends build-essential clang \
+            gcc-mingw-w64-x86-64 openssl samba libtirpc-dev flex bison autoconf automake wine wine64 \
+            nfs-ganesha nfs-ganesha-vfs krb5-kdc krb5-admin-server krb5-user winbind \
+            samba-dsdb-modules samba-ad-provision samba-vfs-modules acl smbclient
 
       - name: Checkout
         uses: actions/checkout@v5
