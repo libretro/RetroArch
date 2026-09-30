@@ -468,6 +468,10 @@ struct cmd_action_map
 
 /* HELP [command]: the commands, their arguments and what they do. */
 bool command_help(command_t *cmd, const char* arg);
+/* Queries for clients that browse and launch content. */
+bool command_list_cores(command_t *cmd, const char* arg);
+bool command_list_playlists(command_t *cmd, const char* arg);
+bool command_get_playlist(command_t *cmd, const char* arg);
 
 /* Runs one command by name; see command.c. */
 bool command_run(command_t *handle, const char *name, const char *arg);
@@ -513,6 +517,9 @@ static const struct cmd_action_map action_map[] = {
    { "VERSION",          command_version,          "No argument", "Report the RetroArch version.", CMD_INFO_READ_ONLY },
    { "GET_STATUS",       command_get_status,       "No argument", "Report whether content is playing or paused, with its system, name and CRC32, or that none is loaded.", CMD_INFO_READ_ONLY },
    { "GET_CONFIG_PARAM", command_get_config_param, "<param name>", "Report the value of a configuration setting.", CMD_INFO_READ_ONLY },
+   { "LIST_CORES",       command_list_cores,       "No argument", "List the installed cores: name, a tab, and the path LOAD_CONTENT takes.", CMD_INFO_READ_ONLY },
+   { "LIST_PLAYLISTS",   command_list_playlists,   "No argument", "List the playlists, as GET_PLAYLIST takes them.", CMD_INFO_READ_ONLY },
+   { "GET_PLAYLIST",     command_get_playlist,     "<playlist> [first entry]", "List a playlist's entries: index, label, content path and core path, tab separated, 200 at a time; MORE <next> when there are more.", CMD_INFO_READ_ONLY },
    { "SHOW_MSG",         command_show_osd_msg,     "<message>", "Show a message on screen.", 0 },
 #if defined(HAVE_CHEEVOS)
    /* These functions use achievement addresses and only work if a game with achievements is

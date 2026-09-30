@@ -57,6 +57,8 @@
 #include "autosave.h"
 #include "command.h"
 #include "core_info.h"
+#include "playlist.h"
+#include <queues/task_queue.h>
 #include "cheat_manager.h"
 #include "content.h"
 #include "dynamic.h"
@@ -1267,6 +1269,265 @@ bool command_write_ram(command_t *cmd, const char *arg)
    return true;
 }
 #endif
+
+/* ---- Queries for clients that browse and launch content --------- */
+
+/* A reply larger than one UDP datagram cannot go back over the network
+ * command port; lists stop short of it and say where to go on. */
+#define COMMAND_LIST_REPLY_MAX 60000
+#define COMMAND_PLAYLIST_PAGE  200
+
+/* LIST_CORES
+ *
+ * The installed cores, one per line: display name, a tab, the path
+ * LOAD_CONTENT takes. The list is already in memory. */
+bool command_list_cores(command_t *cmd, const char *arg)
+{
+   core_info_list_t *list = NULL;
+   size_t i, len = 0;
+   char  *reply;
+
+   if (!(reply = (char*)malloc(COMMAND_LIST_REPLY_MAX + 64)))
+      return false;
+   reply[0] = '\0';
+   if (core_info_get_list(&list) && list)
+      for (i = 0; i < list->count; i++)
+      {
+         const core_info_t *ci = &list->list[i];
+         int n;
+         if (!ci->path)
+            continue;
+         n = snprintf(reply + len, COMMAND_LIST_REPLY_MAX - len, "%s\t%s\n",
+               ci->display_name ? ci->display_name : "", ci->path);
+         if (n < 0 || (size_t)n >= COMMAND_LIST_REPLY_MAX - len)
+         {
+            len += (size_t)snprintf(reply + len, 64, "MORE\n");
+            break;
+         }
+         len += (size_t)n;
+      }
+   if (!len)
+      len = strlcpy(reply, "LIST_CORES none\n", COMMAND_LIST_REPLY_MAX);
+   cmd->replier(cmd, reply, len);
+   free(reply);
+   return true;
+}
+
+/* LIST_PLAYLISTS and GET_PLAYLIST read files, which may be slow, so
+ * they answer from a task: the text is made on the task thread and sent
+ * from the callback, where the asking interface's reply_to takes it
+ * (the reply owed to one sender or one MCP request), or its replier
+ * when its replies all go one way. Dropped if the interfaces were
+ * re-created meanwhile. */
+struct command_query
+{
+   command_t *cmd;
+   void      *dest;
+   unsigned   gen;
+   size_t     first;           /* GET_PLAYLIST: first entry */
+   char      *reply;           /* made by the handler */
+   size_t     reply_len;
+   char       dir[PATH_MAX_LENGTH];
+   char       name[NAME_MAX_LENGTH];
+   bool       list_playlists;
+   /* the playlist format settings, taken on the main thread */
+   bool       old_format;
+   bool       compress;
+   bool       fuzzy_archive_match;
+   bool       portable_paths;
+   char       content_dir[DIR_MAX_LENGTH];
+};
+
+static void command_query_append(struct command_query *q, size_t *cap,
+      const char *s)
+{
+   size_t n = strlen(s);
+   if (!q->reply || q->reply_len + n + 1 > *cap)
+      return;
+   memcpy(q->reply + q->reply_len, s, n + 1);
+   q->reply_len += n;
+}
+
+static void command_query_handler(retro_task_t *task)
+{
+   struct command_query *q = (struct command_query*)task->state;
+   size_t cap              = COMMAND_LIST_REPLY_MAX;
+
+   if ((q->reply = (char*)malloc(cap + 1)))
+      q->reply[0] = '\0';
+
+   if (q->list_playlists)
+   {
+      struct string_list *files = dir_list_new(q->dir, "lpl",
+            false, false, false, false);
+      size_t i;
+      for (i = 0; files && i < files->size; i++)
+      {
+         char line[NAME_MAX_LENGTH + 2];
+         const char *base = path_basename(files->elems[i].data);
+         snprintf(line, sizeof(line), "%s\n", base);
+         if (q->reply_len + strlen(line) + 6 > cap)
+         {
+            command_query_append(q, &cap, "MORE\n");
+            break;
+         }
+         command_query_append(q, &cap, line);
+      }
+      if (files)
+         string_list_free(files);
+      if (!q->reply_len)
+         command_query_append(q, &cap, "LIST_PLAYLISTS none\n");
+   }
+   else
+   {
+      char path[PATH_MAX_LENGTH];
+      playlist_config_t config;
+      playlist_t *pl;
+
+      fill_pathname_join_special(path, q->dir, q->name, sizeof(path));
+      if (!string_ends_with_size(path, ".lpl", strlen(path), 4))
+         strlcat(path, ".lpl", sizeof(path));
+      config.capacity            = COLLECTION_SIZE;
+      config.old_format          = q->old_format;
+      config.compress            = q->compress;
+      config.fuzzy_archive_match = q->fuzzy_archive_match;
+      playlist_config_set_path(&config, path);
+      playlist_config_set_base_content_directory(&config,
+            q->portable_paths ? q->content_dir : NULL);
+
+      if (!path_is_valid(path) || !(pl = playlist_init(&config)))
+         command_query_append(q, &cap, "GET_PLAYLIST ERROR no such playlist\n");
+      else
+      {
+         size_t i, n = playlist_size(pl);
+         for (i = q->first; i < n; i++)
+         {
+            const struct playlist_entry *e = NULL;
+            char line[3 * PATH_MAX_LENGTH];
+            if (i - q->first >= COMMAND_PLAYLIST_PAGE)
+            {
+               snprintf(line, sizeof(line), "MORE %u\n", (unsigned)i);
+               command_query_append(q, &cap, line);
+               break;
+            }
+            playlist_get_index(pl, i, &e);
+            if (!e)
+               continue;
+            snprintf(line, sizeof(line), "%u\t%s\t%s\t%s\n", (unsigned)i,
+                  e->label     ? e->label     : "",
+                  e->path      ? e->path      : "",
+                  e->core_path ? e->core_path : "");
+            if (q->reply_len + strlen(line) + 16 > cap)
+            {
+               snprintf(line, sizeof(line), "MORE %u\n", (unsigned)i);
+               command_query_append(q, &cap, line);
+               break;
+            }
+            command_query_append(q, &cap, line);
+         }
+         if (!q->reply_len)
+            command_query_append(q, &cap, "GET_PLAYLIST empty\n");
+         playlist_free(pl);
+      }
+   }
+   task_set_progress(task, 100);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void command_query_callback(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   struct command_query *q = (struct command_query*)task->state;
+   if (!q || !q->reply || input_driver_command_generation() != q->gen)
+      return;
+   if (q->cmd->reply_to && q->dest)
+      q->cmd->reply_to(q->cmd, q->dest, q->reply, q->reply_len);
+   else if (!q->cmd->reply_dest)
+      q->cmd->replier(q->cmd, q->reply, q->reply_len);
+}
+
+static void command_query_cleanup(retro_task_t *task)
+{
+   struct command_query *q = (struct command_query*)task->state;
+   if (!q)
+      return;
+   free(q->reply);
+   free(q->dest);
+   free(q);
+   task->state = NULL;
+}
+
+static bool command_query_push(command_t *cmd, bool list_playlists,
+      const char *arg)
+{
+   settings_t           *settings = config_get_ptr();
+   struct command_query *q;
+   retro_task_t         *task;
+
+   if (!(q = (struct command_query*)calloc(1, sizeof(*q))))
+      return false;
+   q->cmd            = cmd;
+   q->gen            = input_driver_command_generation();
+   q->list_playlists = list_playlists;
+   strlcpy(q->dir, settings->paths.directory_playlist, sizeof(q->dir));
+   q->old_format          = settings->bools.playlist_use_old_format;
+   q->compress            = settings->bools.playlist_compression;
+   q->fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+   q->portable_paths      = settings->bools.playlist_portable_paths;
+   strlcpy(q->content_dir, settings->paths.directory_menu_content,
+         sizeof(q->content_dir));
+   if (!list_playlists)
+   {
+      /* "<name> [first]": the name may hold spaces; a trailing number
+       * is the first entry wanted */
+      const char *sp;
+      while (*arg == ' ')
+         arg++;
+      strlcpy(q->name, arg, sizeof(q->name));
+      if ((sp = strrchr(q->name, ' ')) && sp[1] >= '0' && sp[1] <= '9')
+      {
+         q->first = (size_t)strtoul(sp + 1, NULL, 10);
+         q->name[sp - q->name] = '\0';
+      }
+      if (!*q->name || strchr(q->name, '/') || strchr(q->name, '\\'))
+      {
+         const char *msg = "GET_PLAYLIST ERROR a playlist name, as LIST_PLAYLISTS gives\n";
+         cmd->replier(cmd, msg, strlen(msg));
+         free(q);
+         return false;
+      }
+   }
+   if (!(task = task_init()))
+   {
+      free(q);
+      return false;
+   }
+   /* where the answer goes, taken now: after this command returns the
+    * interface may be answering someone else */
+   q->dest        = cmd->reply_dest ? cmd->reply_dest(cmd) : NULL;
+   task->state    = q;
+   task->handler  = command_query_handler;
+   task->callback = command_query_callback;
+   task->cleanup  = command_query_cleanup;
+   task->flags   |= RETRO_TASK_FLG_MUTE;
+   task_queue_push(task);
+   return true;
+}
+
+/* LIST_PLAYLISTS: the playlist files, one per line, as GET_PLAYLIST
+ * takes them. */
+bool command_list_playlists(command_t *cmd, const char *arg)
+{
+   return command_query_push(cmd, true, arg);
+}
+
+/* GET_PLAYLIST <playlist> [first]: a playlist's entries, one per line:
+ * index, label, content path, core path, tab separated;
+ * COMMAND_PLAYLIST_PAGE at a time, "MORE <next>" when there are more. */
+bool command_get_playlist(command_t *cmd, const char *arg)
+{
+   return command_query_push(cmd, false, arg);
+}
 
 /* One HELP line: name, argument, description, and what it does to
  * RetroArch, appended to @s at *@len; false when it would not fit. */

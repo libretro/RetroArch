@@ -62,6 +62,13 @@ single string parameter, `argument`, written as the command expects it:
 `<core path>|<content path>`. The tool's result is what the command
 answers; commands that answer nothing report `Done.`.
 
+To find something to play, an assistant lists the playlists with
+`LIST_PLAYLISTS`, reads one with `GET_PLAYLIST` (index, label, content
+path and core path per entry, 200 at a time; `MORE <next>` gives the
+argument for the next page, as in `Nintendo - SNES 200`), and loads an
+entry with `LOAD_CONTENT <core path>|<content path>`. `LIST_CORES` gives
+the installed cores and their paths.
+
 Hotkey tools (`PAUSE_TOGGLE`, `FAST_FORWARD`, `MENU_UP`) press the hotkey
 for one frame. Tools marked as holds (`FAST_FORWARD_HOLD`, `REWIND`) last
 that one frame too.
