@@ -597,6 +597,16 @@ ifeq ($(HAVE_LIBRETRODB), 1)
    endif
 endif
 
+# TLS needs the sockets: a makefile that asks for a client without
+# networking (a handheld with the crypto and keychain for the store
+# but no network) gets neither the define nor the object.
+ifneq ($(HAVE_NETWORKING), 1)
+   HAVE_SSL = 0
+   HAVE_RETROSSL = 0
+   HAVE_BUILTINBEARSSL = 0
+   HAVE_BUILTINMBEDTLS = 0
+endif
+
 ifeq ($(HAVE_RETROSSL), 1)
    HAVE_SSL = 1
    DEFINES += -DHAVE_SSL -DHAVE_RETROSSL

@@ -8683,7 +8683,7 @@ bool retroarch_main_init_core(int argc, char *argv[],
    verbosity_enabled = retroarch_parse_input_and_config(p_rarch,
          global_get_ptr(), argc, argv);
 
-#ifdef HAVE_SSL
+#if defined(HAVE_SSL) && defined(HAVE_NETWORKING)
    /* Apply the persisted TLS certificate-verification policy to the active
     * SSL backend before any HTTPS task (cloud sync, cheevos, updater) runs. */
    ssl_socket_set_verify_mode(settings->uints.tls_verify_mode);

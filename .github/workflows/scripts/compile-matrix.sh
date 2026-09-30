@@ -180,6 +180,15 @@ console_set "3ds crypto"    "-Itools/platform_stubs/ctr"  "-D_3DS -DARM11"      
 console_set "vita crypto"   "-Itools/platform_stubs/vita" "-DVITA"                            $CRYPTO_SET
 console_set "switch tls"    "-I$STUBS/libnx"              "-DHAVE_LIBNX -DSWITCH -D__SWITCH__" $TLS_SET
 
+# Every platform makefile on Makefile.common, without its toolchain: the
+# graph's own DEFINES checked for consistency (TLS, SMB, NFS need the
+# networking they are built on) and the frontend compiled under exactly
+# them. Makefile.retrofw asked for the TLS client with no networking
+# and only its own workflow saw the undefined reference.
+pm_out=$(tools/platform_makefile_check.sh 2>&1); pm_rc=$?
+printf '%s\n' "$pm_out" | sed 's/^ok    /ok    platform makefile: /'
+[ $pm_rc -eq 0 ] || { echo "FAIL  platform makefile check"; fail=1; }
+
 # The OpenDingux family builds with a MIPS toolchain; the crypto and the
 # TLS client compile with a MIPS cross compiler when one is installed.
 MIPSEL_CC=${MIPSEL_CC:-mipsel-linux-gnu-gcc}
