@@ -1012,22 +1012,39 @@ jobs:
           # by cancellation plus a stale-completion generation guard
           # (menu_explore_cancel_init_task / menu_dbinfo_cancel_task).
           #
-          # Scope is deliberately narrow and mechanical: menu/ and the
-          # two task translation units the menu drives directly.  The
-          # remaining wait sites elsewhere (core deinit save/load, NAT
-          # traversal, netplay MITM) are tracked separately and are
-          # NOT covered here - widening this guard is what should
-          # happen as each of those is converted.
+          # Scope is mechanical: menu/, the task translation units the
+          # menu drives directly, and the content load - a chain of
+          # main-thread tasks that closes content from the frame loop.
+          # The remaining wait sites (NAT traversal, the CLI database
+          # scan, the exit path) are tracked separately; widening this
+          # guard is what should happen as each of those is converted.
           hits=$(grep -rn 'task_queue_wait' menu/ \
                    tasks/task_menu_explore.c \
                    tasks/task_database_info.c \
-                   tasks/task_netplay_nat_traversal.c || true)
+                   tasks/task_netplay_nat_traversal.c \
+                   tasks/task_content.c || true)
           if [[ -n "$hits" ]]; then
             printf '%s\n' "$hits"
             printf '::error title=Blocking wait on a menu path::task_queue_wait() must not be reachable from the menu. Use cancellation with a stale-completion guard, or a deferred continuation.\n'
             exit 1
           fi
-          printf 'No task_queue_wait on the guarded menu paths.\n'
+          # The close's blocking helpers wait inside task_save.c, where
+          # the grep above cannot see them: the menu and the tasks must
+          # not call them.  The load closes through
+          # retroarch_main_deinit_begin/pending/finish instead.
+          hits=$(grep -rn 'content_wait_for_\(save\|load\)_state_task' \
+                   menu/ tasks/ --include='*.c' \
+                   | grep -v '^tasks/task_save.c:' || true)
+          if [[ -n "$hits" ]]; then
+            printf '%s\n' "$hits"
+            printf '::error title=Blocking close on a menu path::content_wait_for_*_state_task() blocks the frame loop. Close through retroarch_main_deinit_begin/pending/finish from a main-thread task.\n'
+            exit 1
+          fi
+          grep -q 'retroarch_main_deinit_pending' tasks/task_content.c || {
+            printf '::error title=Blocking close on a menu path::the content load no longer waits for state tasks from the frame loop.\n'
+            exit 1
+          }
+          printf 'No task_queue_wait or blocking close on the guarded menu paths.\n'
 
       - name: Build and run playlist_parity_test (plain, ASan + UBSan)
         shell: bash

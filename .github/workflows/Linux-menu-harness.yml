@@ -231,3 +231,29 @@ jobs:
           samples/gfx/threaded_video/build.sh
           ./samples/gfx/threaded_video/threaded_video_test 3
           make -C samples/gfx/threaded_video clean
+
+      - name: Build and run content_load_test
+        shell: bash
+        run: |
+          set -eu
+          # The content load as a chain of main-thread tasks, against the
+          # real runloop on the same non-Qt menu build: frames presented
+          # between stages, one load at a time, a core's reinit deferred
+          # to the load's driver stage, the dummy-core fallback, a
+          # hardware-render request carried across the driver rebuild,
+          # the task queue surviving the load, and the close waiting out
+          # a save state from the frame loop.
+          samples/tasks/content_load/build.sh
+          ./samples/tasks/content_load/content_load_test
+          make -C samples/tasks/content_load clean
+
+      - name: Build and run explore_build_test
+        shell: bash
+        run: |
+          set -eu
+          # The Explore index built in steps: one item per step hashes
+          # the same as the build in one go, and the explore task returns
+          # unfinished across checks with Threaded Tasks off.
+          samples/menu/explore_build/build.sh
+          ./samples/menu/explore_build/explore_build_test
+          make -C samples/menu/explore_build clean
