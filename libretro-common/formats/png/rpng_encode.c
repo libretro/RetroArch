@@ -664,45 +664,71 @@ static bool flush_idat_chunk(intfstream_t *intf_s,
    return png_write_idat_string(intf_s, chunk_buf, payload_len + 8);
 }
 
-bool rpng_save_image_stream_fmt(const uint8_t *data,
-      intfstream_t* intf_s, unsigned width, unsigned height, signed pitch,
-      enum rpng_pixfmt fmt, const struct rpng_hdr_metadata *hdr)
+/* The encoder between steps: everything the row loop carries. */
+struct rpng_encoder
 {
-   unsigned h;
-   unsigned bpp = rpng_pixfmt_bpp(fmt);
-   struct png_ihdr ihdr = {0};
-   bool ret = true;
-   const struct trans_stream_backend *stream_backend = NULL;
-   uint8_t *rgba_line        = NULL;
-   uint8_t *row_arena        = NULL;
-   size_t   row_stride       = 0;
-   uint8_t *prev_base        = NULL;
-   uint8_t *rgba_base        = NULL;
-   uint8_t *up_base          = NULL;
-   uint8_t *sub_base         = NULL;
-   uint8_t *avg_base         = NULL;
-   uint8_t *paeth_base       = NULL;
-   uint8_t *up_filtered      = NULL;
-   uint8_t *sub_filtered     = NULL;
-   uint8_t *avg_filtered     = NULL;
-   uint8_t *paeth_filtered   = NULL;
-   uint8_t *prev_encoded     = NULL;
+   const struct trans_stream_backend *backend;
+   void *stream;
+   intfstream_t *intf_s;
+   const uint8_t *data;      /* the next row */
+   uint8_t *row_arena;
+   uint8_t *rgba_line;
+   uint8_t *prev_encoded;
+   uint8_t *up_filtered;
+   uint8_t *sub_filtered;
+   uint8_t *avg_filtered;
+   uint8_t *paeth_filtered;
    /* chunk_buf is the IDAT-chunk staging buffer:
     *   [0..4):        length field (filled in at flush time)
     *   [4..8):        "IDAT"
     *   [8..8+IDAT_CHUNK_SIZE): deflate output */
-   uint8_t *chunk_buf        = NULL;
-   void *stream              = NULL;
-   size_t line_len           = (size_t)width * bpp;
+   uint8_t *chunk_buf;
+   size_t line_len;
    /* How many bytes deflate has produced into the current chunk_buf
     * since the last set_out.  Reset to 0 after every flush_idat_chunk. */
-   size_t chunk_fill         = 0;
-   enum trans_stream_error err = TRANS_STREAM_ERROR_NONE;
+   size_t chunk_fill;
+   signed pitch;
+   unsigned width;
+   unsigned height;
+   unsigned bpp;
+   unsigned row;             /* rows encoded so far */
+   enum rpng_pixfmt fmt;
+};
+
+void rpng_encode_free(rpng_encoder_t *e)
+{
+   if (!e)
+      return;
+   free(e->row_arena);
+   if (e->backend && e->stream && e->backend->stream_free)
+      e->backend->stream_free(e->stream);
+   free(e);
+}
+
+rpng_encoder_t *rpng_encode_begin(const uint8_t *data,
+      intfstream_t *intf_s, unsigned width, unsigned height, signed pitch,
+      enum rpng_pixfmt fmt, const struct rpng_hdr_metadata *hdr)
+{
+   struct png_ihdr ihdr = {0};
+   bool ret             = true;
+   size_t row_stride;
+   uint8_t *prev_base, *rgba_base, *up_base, *sub_base, *avg_base, *paeth_base;
+   rpng_encoder_t *e    = NULL;
 
    if (!intf_s)
       GOTO_END_ERROR();
+   if (!(e = (rpng_encoder_t*)calloc(1, sizeof(*e))))
+      GOTO_END_ERROR();
 
-   stream_backend = trans_stream_get_zlib_deflate_backend();
+   e->intf_s   = intf_s;
+   e->data     = data;
+   e->width    = width;
+   e->height   = height;
+   e->pitch    = pitch;
+   e->fmt      = fmt;
+   e->bpp      = rpng_pixfmt_bpp(fmt);
+   e->line_len = (size_t)width * e->bpp;
+   e->backend  = trans_stream_get_zlib_deflate_backend();
 
    if (intfstream_write(intf_s, png_magic, sizeof(png_magic)) != sizeof(png_magic))
       GOTO_END_ERROR();
@@ -710,8 +736,8 @@ bool rpng_save_image_stream_fmt(const uint8_t *data,
    ihdr.width      = width;
    ihdr.height     = height;
    /* bpp is bytes per pixel: 6 = 16-bit RGB, 4 = 8-bit RGBA, 3 = 8-bit RGB. */
-   ihdr.depth      = (bpp == 6) ? 16 : 8;
-   ihdr.color_type = (bpp == sizeof(uint32_t)) ? 6 : 2; /* RGBA or RGB */
+   ihdr.depth      = (e->bpp == 6) ? 16 : 8;
+   ihdr.color_type = (e->bpp == sizeof(uint32_t)) ? 6 : 2; /* RGBA or RGB */
    if (!png_write_ihdr_string(intf_s, &ihdr))
       GOTO_END_ERROR();
 
@@ -733,27 +759,27 @@ bool rpng_save_image_stream_fmt(const uint8_t *data,
     * 64-byte boundary, so the filter passes that read the current and
     * previous rows together stream from aligned lines. The previous-row
     * buffer is the only one read before it is written and is zeroed. */
-   row_stride     = ROW_ARENA_NEXT(64, line_len + 1);
-   row_arena      = (uint8_t*)malloc(6 * row_stride + IDAT_CHUNK_SIZE + 8);
-   if (!row_arena)
+   row_stride     = ROW_ARENA_NEXT(64, e->line_len + 1);
+   e->row_arena   = (uint8_t*)malloc(6 * row_stride + IDAT_CHUNK_SIZE + 8);
+   if (!e->row_arena)
       GOTO_END_ERROR();
-   prev_base      = row_arena + 0 * row_stride + 63;
-   rgba_base      = row_arena + 1 * row_stride + 63;
-   up_base        = row_arena + 2 * row_stride + 63;
-   sub_base       = row_arena + 3 * row_stride + 63;
-   avg_base       = row_arena + 4 * row_stride + 63;
-   paeth_base     = row_arena + 5 * row_stride + 63;
-   chunk_buf      = row_arena + 6 * row_stride;
-   memset(prev_base, 0, line_len + 1);
+   prev_base      = e->row_arena + 0 * row_stride + 63;
+   rgba_base      = e->row_arena + 1 * row_stride + 63;
+   up_base        = e->row_arena + 2 * row_stride + 63;
+   sub_base       = e->row_arena + 3 * row_stride + 63;
+   avg_base       = e->row_arena + 4 * row_stride + 63;
+   paeth_base     = e->row_arena + 5 * row_stride + 63;
+   e->chunk_buf   = e->row_arena + 6 * row_stride;
+   memset(prev_base, 0, e->line_len + 1);
 
-   prev_encoded   = prev_base  + 1;
-   rgba_line      = rgba_base  + 1;
-   up_filtered    = up_base    + 1;
-   sub_filtered   = sub_base   + 1;
-   avg_filtered   = avg_base   + 1;
-   paeth_filtered = paeth_base + 1;
+   e->prev_encoded   = prev_base  + 1;
+   e->rgba_line      = rgba_base  + 1;
+   e->up_filtered    = up_base    + 1;
+   e->sub_filtered   = sub_base   + 1;
+   e->avg_filtered   = avg_base   + 1;
+   e->paeth_filtered = paeth_base + 1;
 
-   stream = stream_backend->stream_new();
+   e->stream = e->backend->stream_new();
 
    /* Both deflate backends default to level 9, which is the wrong
     * trade for a screenshot: it is a foreground action the user waits
@@ -777,8 +803,8 @@ bool rpng_save_image_stream_fmt(const uint8_t *data,
     *
     * 6 is also zlib's and libpng's own default, so a screenshot is no
     * longer larger or slower than what every other PNG writer emits. */
-   if (stream)
-      stream_backend->define(stream, "level", 6);
+   if (e->stream)
+      e->backend->define(e->stream, "level", 6);
 
    /* The filtered match strategy is deliberately not requested here.
     * It does close the size gap against libpng on noisy 3D output -
@@ -814,130 +840,156 @@ bool rpng_save_image_stream_fmt(const uint8_t *data,
     * with a level chosen alongside it, against real captures rather than
     * synthetic ones - is a one-line change whenever that measurement
     * exists. */
-   if (!stream)
+   if (!e->stream)
       GOTO_END_ERROR();
 
    /* Point deflate's output at our chunk staging area (after the
     * 8-byte chunk header).  We re-point it every time we flush
     * a chunk so the driver doesn't need to know the chunk layout. */
-   stream_backend->set_out(stream,
-         chunk_buf + 8, (uint32_t)IDAT_CHUNK_SIZE);
+   e->backend->set_out(e->stream,
+         e->chunk_buf + 8, (uint32_t)IDAT_CHUNK_SIZE);
 
-   for (h = 0; h < height; h++, data += pitch)
+end:
+   if (!ret)
    {
-      uint32_t rd, wn;
-      uint8_t filter;
-      unsigned none_score, up_score, sub_score, avg_score, paeth_score;
-      unsigned min_sad;
-      uint8_t *chosen_filtered;
+      rpng_encode_free(e);
+      return NULL;
+   }
+   return e;
+}
 
-      switch (fmt)
-      {
-         case RPNG_PIXFMT_ARGB32:
-            copy_argb_line(rgba_line, (const uint32_t*)data, width);
-            break;
-         case RPNG_PIXFMT_RGBA32:
-            copy_rgba_line(rgba_line, data, width);
-            break;
-         case RPNG_PIXFMT_RGB48:
-            copy_rgb48_line(rgba_line, (const uint16_t*)data, width);
-            break;
-         case RPNG_PIXFMT_XRGB8888:
-            copy_xrgb8888_line(rgba_line, (const uint32_t*)(const void*)data, width);
-            break;
-         case RPNG_PIXFMT_RGB565:
-            copy_rgb565_line(rgba_line, (const uint16_t*)(const void*)data, width);
-            break;
-         case RPNG_PIXFMT_BGR24:
-         default:
-            copy_bgr24_line(rgba_line, data, width);
-            break;
-      }
+/* One row: convert, filter, feed deflate, flushing full chunks. */
+static bool rpng_encode_row(rpng_encoder_t *e)
+{
+   uint32_t rd, wn;
+   uint8_t filter;
+   unsigned none_score, up_score, sub_score, avg_score, paeth_score;
+   unsigned min_sad;
+   uint8_t *chosen_filtered;
+   bool ret                    = true;
+   enum trans_stream_error err = TRANS_STREAM_ERROR_NONE;
+   unsigned width              = e->width;
+   unsigned bpp                = e->bpp;
+   size_t line_len             = e->line_len;
+   const uint8_t *data         = e->data;
 
-      /* Filter selection unchanged from the previous implementation:
-       * try every filter, pick the one with lowest sum-of-abs-deviation. */
-      none_score  = count_sad(rgba_line, line_len);
-      up_score    = filter_up   (up_filtered,    rgba_line, prev_encoded, width, bpp);
-      sub_score   = filter_sub  (sub_filtered,   rgba_line,               width, bpp);
-      avg_score   = filter_avg  (avg_filtered,   rgba_line, prev_encoded, width, bpp);
-      paeth_score = filter_paeth(paeth_filtered, rgba_line, prev_encoded, width, bpp);
-
-      filter          = 0;
-      min_sad         = none_score;
-      chosen_filtered = rgba_line;
-      if (sub_score < min_sad)   { filter = 1; chosen_filtered = sub_filtered;   min_sad = sub_score;   }
-      if (up_score < min_sad)    { filter = 2; chosen_filtered = up_filtered;    min_sad = up_score;    }
-      if (avg_score < min_sad)   { filter = 3; chosen_filtered = avg_filtered;   min_sad = avg_score;   }
-      if (paeth_score < min_sad) { filter = 4; chosen_filtered = paeth_filtered;                        }
-
-      /* Tag goes in the spare byte ahead of the winning buffer, so the
-       * row is fed to deflate in place. */
-      chosen_filtered[-1] = filter;
-
-      /* Feed this row into deflate. The loop handles the case where
-       * our chunk buffer fills mid-row (BUFFER_FULL): flush IDAT,
-       * point deflate at a fresh output buffer, and keep going.
-       *
-       * When trans() returns success with err=AGAIN, zlib has
-       * consumed what we gave it but hasn't finalized (no Z_FINISH
-       * was requested) -- that's the normal "ok, send more data
-       * next time" signal.  We break out and feed the next row. */
-      stream_backend->set_in(stream, chosen_filtered - 1,
-            (uint32_t)(line_len + 1));
-      for (;;)
-      {
-         bool ok = stream_backend->trans(stream, false, &rd, &wn, &err);
-         chunk_fill += wn;
-
-         if (ok)
-         {
-            /* All input consumed.  If the output buffer also happens
-             * to be exactly full (avail_in=0 AND avail_out=0 on the
-             * same call, which the trans API reports as success
-             * with AGAIN rather than BUFFER_FULL), flush proactively
-             * -- otherwise the next row's trans() would find
-             * avail_out=0 and error out. */
-            if (chunk_fill >= IDAT_CHUNK_SIZE)
-            {
-               if (!flush_idat_chunk(intf_s, chunk_buf, chunk_fill))
-                  GOTO_END_ERROR();
-               chunk_fill = 0;
-               stream_backend->set_out(stream,
-                     chunk_buf + 8, (uint32_t)IDAT_CHUNK_SIZE);
-            }
-            break;
-         }
-
-         if (err != TRANS_STREAM_ERROR_BUFFER_FULL)
-            GOTO_END_ERROR();
-
-         /* Output filled mid-row.  chunk_fill should equal
-          * IDAT_CHUNK_SIZE.  Flush and re-point. */
-         if (!flush_idat_chunk(intf_s, chunk_buf, chunk_fill))
-            GOTO_END_ERROR();
-         chunk_fill = 0;
-         stream_backend->set_out(stream,
-               chunk_buf + 8, (uint32_t)IDAT_CHUNK_SIZE);
-      }
-
-      /* This row becomes the next row's predictor.  Swapping the two
-       * buffers replaces a second full-row copy; both were allocated
-       * the same way, so either can serve as either. */
-      {
-         uint8_t *tmp = prev_encoded;
-         prev_encoded = rgba_line;
-         rgba_line    = tmp;
-      }
+   switch (e->fmt)
+   {
+      case RPNG_PIXFMT_ARGB32:
+         copy_argb_line(e->rgba_line, (const uint32_t*)data, width);
+         break;
+      case RPNG_PIXFMT_RGBA32:
+         copy_rgba_line(e->rgba_line, data, width);
+         break;
+      case RPNG_PIXFMT_RGB48:
+         copy_rgb48_line(e->rgba_line, (const uint16_t*)data, width);
+         break;
+      case RPNG_PIXFMT_XRGB8888:
+         copy_xrgb8888_line(e->rgba_line, (const uint32_t*)(const void*)data, width);
+         break;
+      case RPNG_PIXFMT_RGB565:
+         copy_rgb565_line(e->rgba_line, (const uint16_t*)(const void*)data, width);
+         break;
+      case RPNG_PIXFMT_BGR24:
+      default:
+         copy_bgr24_line(e->rgba_line, data, width);
+         break;
    }
 
-   /* All rows consumed.  Drain deflate with Z_FINISH, emitting IDATs
-    * on BUFFER_FULL, final partial on NONE (Z_STREAM_END). */
-   stream_backend->set_in(stream, NULL, 0);
+   /* Filter selection unchanged from the previous implementation:
+    * try every filter, pick the one with lowest sum-of-abs-deviation. */
+   none_score  = count_sad(e->rgba_line, line_len);
+   up_score    = filter_up   (e->up_filtered,    e->rgba_line, e->prev_encoded, width, bpp);
+   sub_score   = filter_sub  (e->sub_filtered,   e->rgba_line,                  width, bpp);
+   avg_score   = filter_avg  (e->avg_filtered,   e->rgba_line, e->prev_encoded, width, bpp);
+   paeth_score = filter_paeth(e->paeth_filtered, e->rgba_line, e->prev_encoded, width, bpp);
+
+   filter          = 0;
+   min_sad         = none_score;
+   chosen_filtered = e->rgba_line;
+   if (sub_score < min_sad)   { filter = 1; chosen_filtered = e->sub_filtered;   min_sad = sub_score;   }
+   if (up_score < min_sad)    { filter = 2; chosen_filtered = e->up_filtered;    min_sad = up_score;    }
+   if (avg_score < min_sad)   { filter = 3; chosen_filtered = e->avg_filtered;   min_sad = avg_score;   }
+   if (paeth_score < min_sad) { filter = 4; chosen_filtered = e->paeth_filtered;                        }
+
+   /* Tag goes in the spare byte ahead of the winning buffer, so the
+    * row is fed to deflate in place. */
+   chosen_filtered[-1] = filter;
+
+   /* Feed this row into deflate. The loop handles the case where
+    * our chunk buffer fills mid-row (BUFFER_FULL): flush IDAT,
+    * point deflate at a fresh output buffer, and keep going.
+    *
+    * When trans() returns success with err=AGAIN, zlib has
+    * consumed what we gave it but hasn't finalized (no Z_FINISH
+    * was requested) -- that's the normal "ok, send more data
+    * next time" signal.  We break out and feed the next row. */
+   e->backend->set_in(e->stream, chosen_filtered - 1,
+         (uint32_t)(line_len + 1));
+   for (;;)
+   {
+      bool ok = e->backend->trans(e->stream, false, &rd, &wn, &err);
+      e->chunk_fill += wn;
+
+      if (ok)
+      {
+         /* All input consumed.  If the output buffer also happens
+          * to be exactly full (avail_in=0 AND avail_out=0 on the
+          * same call, which the trans API reports as success
+          * with AGAIN rather than BUFFER_FULL), flush proactively
+          * -- otherwise the next row's trans() would find
+          * avail_out=0 and error out. */
+         if (e->chunk_fill >= IDAT_CHUNK_SIZE)
+         {
+            if (!flush_idat_chunk(e->intf_s, e->chunk_buf, e->chunk_fill))
+               GOTO_END_ERROR();
+            e->chunk_fill = 0;
+            e->backend->set_out(e->stream,
+                  e->chunk_buf + 8, (uint32_t)IDAT_CHUNK_SIZE);
+         }
+         break;
+      }
+
+      if (err != TRANS_STREAM_ERROR_BUFFER_FULL)
+         GOTO_END_ERROR();
+
+      /* Output filled mid-row.  chunk_fill should equal
+       * IDAT_CHUNK_SIZE.  Flush and re-point. */
+      if (!flush_idat_chunk(e->intf_s, e->chunk_buf, e->chunk_fill))
+         GOTO_END_ERROR();
+      e->chunk_fill = 0;
+      e->backend->set_out(e->stream,
+            e->chunk_buf + 8, (uint32_t)IDAT_CHUNK_SIZE);
+   }
+
+   /* This row becomes the next row's predictor.  Swapping the two
+    * buffers replaces a second full-row copy; both were allocated
+    * the same way, so either can serve as either. */
+   {
+      uint8_t *tmp    = e->prev_encoded;
+      e->prev_encoded = e->rgba_line;
+      e->rgba_line    = tmp;
+   }
+   e->data += e->pitch;
+   e->row++;
+
+end:
+   return ret;
+}
+
+/* All rows consumed.  Drain deflate with Z_FINISH, emitting IDATs
+ * on BUFFER_FULL, final partial on NONE (Z_STREAM_END); then IEND. */
+static bool rpng_encode_finish(rpng_encoder_t *e)
+{
+   bool ret                    = true;
+   enum trans_stream_error err = TRANS_STREAM_ERROR_NONE;
+
+   e->backend->set_in(e->stream, NULL, 0);
    for (;;)
    {
       uint32_t rd = 0, wn = 0;
-      bool ok = stream_backend->trans(stream, true, &rd, &wn, &err);
-      chunk_fill += wn;
+      bool ok = e->backend->trans(e->stream, true, &rd, &wn, &err);
+      e->chunk_fill += wn;
 
       if (!ok)
       {
@@ -945,11 +997,11 @@ bool rpng_save_image_stream_fmt(const uint8_t *data,
           * strictly be reachable, but handle defensively. */
          if (err != TRANS_STREAM_ERROR_BUFFER_FULL)
             GOTO_END_ERROR();
-         if (!flush_idat_chunk(intf_s, chunk_buf, chunk_fill))
+         if (!flush_idat_chunk(e->intf_s, e->chunk_buf, e->chunk_fill))
             GOTO_END_ERROR();
-         chunk_fill = 0;
-         stream_backend->set_out(stream,
-               chunk_buf + 8, (uint32_t)IDAT_CHUNK_SIZE);
+         e->chunk_fill = 0;
+         e->backend->set_out(e->stream,
+               e->chunk_buf + 8, (uint32_t)IDAT_CHUNK_SIZE);
          continue;
       }
       if (err == TRANS_STREAM_ERROR_AGAIN)
@@ -957,35 +1009,58 @@ bool rpng_save_image_stream_fmt(const uint8_t *data,
          /* Z_OK during Z_FINISH with avail_in=0 means deflate has
           * more output to emit but our buffer ran out of space.
           * Flush the full chunk and give it more room. */
-         if (!flush_idat_chunk(intf_s, chunk_buf, chunk_fill))
+         if (!flush_idat_chunk(e->intf_s, e->chunk_buf, e->chunk_fill))
             GOTO_END_ERROR();
-         chunk_fill = 0;
-         stream_backend->set_out(stream,
-               chunk_buf + 8, (uint32_t)IDAT_CHUNK_SIZE);
+         e->chunk_fill = 0;
+         e->backend->set_out(e->stream,
+               e->chunk_buf + 8, (uint32_t)IDAT_CHUNK_SIZE);
          continue;
       }
       /* err == NONE: Z_STREAM_END.  Flush whatever's in the buffer
        * and we're done.  flush_idat_chunk tolerates chunk_fill==0. */
-      if (!flush_idat_chunk(intf_s, chunk_buf, chunk_fill))
+      if (!flush_idat_chunk(e->intf_s, e->chunk_buf, e->chunk_fill))
          GOTO_END_ERROR();
       break;
    }
 
-   if (!png_write_iend_string(intf_s))
+   if (!png_write_iend_string(e->intf_s))
       GOTO_END_ERROR();
 
 end:
-   free(row_arena);
-
-   if (stream_backend)
-   {
-      if (stream)
-      {
-         if (stream_backend->stream_free)
-            stream_backend->stream_free(stream);
-      }
-   }
    return ret;
+}
+
+int rpng_encode_step(rpng_encoder_t *e,
+      bool (*within)(void *userdata), void *userdata)
+{
+   unsigned done = 0;
+   if (!e)
+      return -1;
+   /* Asked before every row; the first row of a step runs whatever the
+    * answer, so a step always gets somewhere. */
+   while (e->row < e->height)
+   {
+      if (within && !within(userdata) && done)
+         return 0;
+      if (!rpng_encode_row(e))
+         return -1;
+      done++;
+   }
+   return rpng_encode_finish(e) ? 1 : -1;
+}
+
+bool rpng_save_image_stream_fmt(const uint8_t *data,
+      intfstream_t* intf_s, unsigned width, unsigned height, signed pitch,
+      enum rpng_pixfmt fmt, const struct rpng_hdr_metadata *hdr)
+{
+   int r;
+   rpng_encoder_t *e = rpng_encode_begin(data, intf_s,
+         width, height, pitch, fmt, hdr);
+   if (!e)
+      return false;
+   r = rpng_encode_step(e, NULL, NULL);
+   rpng_encode_free(e);
+   return r == 1;
 }
 
 /* Bytes-per-pixel entry point kept for callers outside this file, which
