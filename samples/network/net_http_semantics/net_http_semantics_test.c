@@ -1106,6 +1106,52 @@ static void run_section_b1(void)
    free(in);
 }
 
+/* ---- B2: redirects resolved through net_http_url_join ---- */
+
+static void redirect_case(const char *from, const char *loc,
+      const char *want_line, const char *want_host, const char *what)
+{
+   char head[256];
+   struct step st[2];
+   struct xfer a;
+   struct reqlog r;
+
+   snprintf(head, sizeof(head),
+         "HTTP/1.1 302 Found\r\nLocation: %s\r\nContent-Length: 0\r\n\r\n", loc);
+   memset(st, 0, sizeof(st));
+   memset(&a, 0, sizeof(a));
+   st[0].head = head;
+   st[1].head = OK_2;
+   case_begin(st, 2, 0);
+   xfer_run(&a, from);
+   r = log_get(1);
+   check(a.done && body_is(&a, "ok") && !strcmp(r.line, want_line)
+         && (!want_host || !strcmp(r.host, want_host)), what);
+   xfer_free(&a);
+}
+
+static void run_section_b2(void)
+{
+   char loc[128], host[64];
+
+   redirect_case("/a/b/c", "../up",
+         "GET /a/up HTTP/1.1", NULL,
+         "302 Location ../up: dot segments resolved");
+   redirect_case("/dir/page", "?q=1",
+         "GET /dir/page?q=1 HTTP/1.1", NULL,
+         "302 Location ?q=1: query replaces the base query on the same path");
+   redirect_case("/x", "/y#frag",
+         "GET /y HTTP/1.1", NULL,
+         "302 Location with a fragment: fragment not sent");
+   redirect_case("/x", "/files/My%20Game.zip",
+         "GET /files/My%20Game.zip HTTP/1.1", NULL,
+         "302 Location with %20: sent still encoded");
+   snprintf(loc, sizeof(loc), "//localhost:%d/sr", srv_port);
+   snprintf(host, sizeof(host), "localhost:%d", srv_port);
+   redirect_case("/x", loc, "GET /sr HTTP/1.1", host,
+         "302 Location //host:port/path: network-path reference changes host");
+}
+
 int main(void)
 {
    if (!network_init() || srv_start())
@@ -1122,6 +1168,7 @@ int main(void)
    run_section_a4();
    run_section_a5();
    run_section_b1();
+   run_section_b2();
 
    srv_shutdown();
    net_http_deinit();

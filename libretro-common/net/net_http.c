@@ -36,7 +36,6 @@
 #endif
 #include <compat/strl.h>
 #include <features/features_cpu.h>
-#include <file/file_path.h>
 #include <lists/string_list.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
@@ -2563,14 +2562,21 @@ static bool net_http_redirect(struct http_t *state, const char *location)
     * allocation below is checked; on any failure state->err is
     * set and we return true (the dispatch loop reads that as
     * "transfer finished with an error"), leaving the state in a
-    * safe-to-delete shape. */
-
-   /* URL may be absolute or relative to the current URL */
+    * safe-to-delete shape.
+    *
+    * @location aliases the header list, which is cleared further
+    * down; it is only read before that, by the join. */
    char *new_domain = NULL;
    char *new_path   = NULL;
    char *tmp;
-   bool absolute = (!strncmp(location, "http://", sizeof("http://")-1)
-                 || !strncmp(location, "https://", sizeof("https://")-1));
+   char *base;
+   char *url;
+   char *host;
+   char *auth_end;
+   char *colon;
+   size_t base_size, url_size, host_len;
+   int port;
+   bool ssl;
 
    /* The request goes out again, body included; a streamed body has
     * to start over from its first byte, the same contract as the
@@ -2587,74 +2593,72 @@ static bool net_http_redirect(struct http_t *state, const char *location)
       }
    }
 
-   if (absolute)
+   /* One resolution path for every Location form: rebuild the current
+    * URL and join the reference onto it.  This replaced an absolute /
+    * absolute-path / relative split whose absolute branch allocated a
+    * whole connection object to parse the URL and whose relative
+    * branch used a filesystem path helper.  One scratch block holds
+    * both strings; the join never outgrows base + ref + '/'. */
+   base_size = sizeof("https://:65535/") + strlen(state->request.domain)
+             + strlen(state->request.path);
+   url_size  = base_size + strlen(location) + 1;
+   if (!(base = (char*)malloc(base_size + url_size)))
    {
-      /* this block is a little wasteful, memory-wise */
-      struct http_connection_t *new_url = net_http_connection_new(
-      location, NULL, NULL);
-      if (!new_url)
-      {
-         state->err = true;
-         return true;
-      }
-      net_http_connection_iterate(new_url);
-      if (!net_http_connection_done(new_url))
-      {
-         net_http_connection_free(new_url);
-         state->err = true;
-         return true;
-      }
-      new_domain = strdup(new_url->domain);
-      new_path   = strdup(new_url->path);
-      if (!new_domain || !new_path)
-      {
-         free(new_domain);
-         free(new_path);
-         net_http_connection_free(new_url);
-         state->err = true;
-         return true;
-      }
-      state->ssl  = new_url->ssl;
-      state->request.port = new_url->port;
-      if (state->request.domain)
-         free(state->request.domain);
-      state->request.domain = new_domain;
-      if (state->request.path)
-         free(state->request.path);
-      state->request.path = new_path;
-      net_http_connection_free(new_url);
+      state->err = true;
+      return true;
    }
-   else
+   url = base + base_size;
+   snprintf(base, base_size, "%s://%s:%d/%s",
+         state->ssl ? "https" : "http", state->request.domain,
+         state->request.port, state->request.path);
+   if (net_http_url_join(url, url_size, base, location) < 0)
+      goto fail;
+
+   ssl      = (url[4] == 's' || url[4] == 'S');
+   host     = url + (ssl ? sizeof("https://") : sizeof("http://")) - 1;
+   auth_end = host + strcspn(host, "/?#");
+   /* The fragment is the client's, never part of the request. */
+   auth_end[strcspn(auth_end, "#")] = '\0';
+
+   colon    = (char*)memchr(host, ':', (size_t)(auth_end - host));
+   host_len = (size_t)((colon ? colon : auth_end) - host);
+   if (!host_len)
+      goto fail;
+   port = ssl ? 443 : 80;
+   if (colon)
    {
-      if (*location == '/')
+      char *d;
+      port = 0;
+      for (d = colon + 1; d < auth_end; d++)
       {
-         /* request.path is stored without its leading slash (the
-          * request line supplies it), so "Location: /foo" kept whole
-          * went out as "GET //foo". */
-         new_path = strdup(location + 1);
-         if (!new_path)
-         {
-            state->err = true;
-            return true;
-         }
-         if (state->request.path)
-            free(state->request.path);
-         state->request.path = new_path;
+         if (*d < '0' || *d > '9' || port > 6553)
+            goto fail;
+         port = port * 10 + (*d - '0');
       }
-      else
-      {
-         new_path = (char*)malloc(PATH_MAX_LENGTH);
-         if (!new_path)
-         {
-            state->err = true;
-            return true;
-         }
-         fill_pathname_resolve_relative(new_path, state->request.path,
-         location, PATH_MAX_LENGTH);
-         free(state->request.path);
-         state->request.path = new_path;
-      }
+      if (port < 1 || port > 65535)
+         goto fail;
    }
+
+   /* request.path is kept without its leading slash; the request line
+    * supplies it. */
+   new_domain = (char*)malloc(host_len + 1);
+   new_path   = strdup(*auth_end == '/' ? auth_end + 1 : auth_end);
+   if (!new_domain || !new_path)
+   {
+      free(new_domain);
+      free(new_path);
+      goto fail;
+   }
+   memcpy(new_domain, host, host_len);
+   new_domain[host_len] = '\0';
+   free(base);
+
+   free(state->request.domain);
+   free(state->request.path);
+   state->request.domain = new_domain;
+   state->request.path   = new_path;
+   state->request.port   = port;
+   state->ssl            = ssl;
    state->request_sent       = false;
    state->retried            = false;
    state->response.part      = P_HEADER_TOP;
@@ -2681,6 +2685,11 @@ static bool net_http_redirect(struct http_t *state, const char *location)
    net_http_headers_clear(&state->response);
    /* keep going */
    return false;
+
+fail:
+   free(base);
+   state->err = true;
+   return true;
 }
 
 /**
