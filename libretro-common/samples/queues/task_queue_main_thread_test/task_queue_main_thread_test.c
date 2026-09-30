@@ -15,7 +15,9 @@
  *  - the slow-handler watchdog reports a main-thread handler that
  *    overruns its budget, and not a worker handler that does;
  *  - a main-thread handler that waits on the queue does not run the
- *    main-thread tasks a second time, nor retire them twice.
+ *    main-thread tasks a second time, nor retire them twice;
+ *  - one that waits for a worker's task sees it retire from inside the
+ *    wait, its callback run once, and goes on.
  * On the unthreaded runner the flag changes nothing: the handler runs
  * here as every handler does.
  */
@@ -286,6 +288,62 @@ static void lane_wait_inside_main(void)
       fprintf(stderr, "[pass] wait-inside-main-handler lane\n");
 }
 
+static struct probe *awaited;
+static bool awaited_pending(void *data)
+{
+   (void)data;
+   return awaited && !awaited->retired;
+}
+
+static void sleepy_worker(retro_task_t *task)
+{
+   struct probe *p = (struct probe*)task->user_data;
+   p->thread = sthread_get_current_thread_id();
+   if (p->thread != main_id)
+      p->off_main = true;
+   p->calls++;
+   retro_sleep(20);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static unsigned waiter_saw_retired;
+static bool     waiter_wait_ended;
+static void awaiting_handler(retro_task_t *task)
+{
+   struct probe *p = (struct probe*)task->user_data;
+   p->calls++;
+   /* Bounded, so a queue that never retires it fails here, not hangs */
+   waiter_wait_ended  = task_queue_wait_timeout(awaited_pending, NULL, 5000000);
+   waiter_saw_retired = awaited ? awaited->retired : 0;
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void lane_wait_for_worker_inside_main(void)
+{
+   struct probe worker, waiter;
+   unsigned had = failures;
+   unsigned i;
+
+   waiter_saw_retired = 0;
+   waiter_wait_ended  = false;
+   CHECK(push_h(&worker, false, 1, 0, sleepy_worker) != NULL, "push");
+   awaited = &worker;
+   CHECK(push_h(&waiter, true, 1, 0, awaiting_handler) != NULL, "push");
+   pump_until_retired(&waiter, 2000);
+   for (i = 0; i < 5; i++)
+      task_queue_check();
+   CHECK(waiter.calls == 1, "the waiting handler ran %u times", waiter.calls);
+   CHECK(waiter_wait_ended, "the wait inside the handler never saw the worker's task retire");
+   CHECK(waiter_saw_retired == 1,
+         "inside the wait the worker's task had retired %u times", waiter_saw_retired);
+   CHECK(worker.retired == 1, "the worker's task retired %u times", worker.retired);
+   CHECK(waiter.retired == 1, "the waiting task retired %u times", waiter.retired);
+   CHECK(worker.off_main, "the worker's task ran on the main thread");
+   awaited = NULL;
+   if (failures == had)
+      fprintf(stderr, "[pass] wait-for-worker-inside-main-handler lane\n");
+}
+
 int main(void)
 {
    main_id = sthread_get_current_thread_id();
@@ -303,6 +361,7 @@ int main(void)
    lane_interleaved();
    lane_slow_main_handler();
    lane_wait_inside_main();
+   lane_wait_for_worker_inside_main();
    task_queue_deinit();
 
    task_queue_init(false, NULL);
