@@ -3335,6 +3335,23 @@ static void lane_zero_copy_ring_full(void)
    video_thread_wait_idle();
    g1  = granted();
    slock_lock(thr->lock); zc1 = (unsigned)thr->frame.zero_copy_count; slock_unlock(thr->lock);
+
+   /* The staleness check wants a fair number of draws behind the
+    * slow present, and how many of the 60 frames above the video
+    * thread drew is a race between this thread and a 30 ms present
+    * on that GPU - 32 on an M1, 8 on the CI runner's paravirtual
+    * device. Keep the core pushing until the driver has drawn its
+    * ten; a driver that never gets there is the failure, not a slow
+    * one. The grant counts are taken over the 60 frames above. */
+   {
+      unsigned extra = 0;
+      while (fulllane_drawn < 10 && extra < 600)
+      {
+         run_frames(10);
+         extra += 10;
+      }
+      video_thread_wait_idle();
+   }
    use_fb(0);
 
    set_driver(thr, fulllane_inner);
@@ -3346,7 +3363,7 @@ static void lane_zero_copy_ring_full(void)
          name, zc1 - zc0, g1 - g0);
    CHECK(zc1 - zc0 <= g1 - g0, "%s: %u zero-copy frames for %u grants",
          name, zc1 - zc0, g1 - g0);
-   CHECK(fulllane_drawn >= 10, "%s: the driver drew only %u frames", name, fulllane_drawn);
+   CHECK(fulllane_drawn >= 10, "%s: the driver drew only %u frames in 660", name, fulllane_drawn);
    CHECK(!fulllane_stale, "%s: %u of %u drawn frames were not newer than the one before",
          name, fulllane_stale, fulllane_drawn);
 
