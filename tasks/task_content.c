@@ -2318,11 +2318,24 @@ static void content_load_task_callback(retro_task_t *task,
       }
 }
 
+bool task_content_is_load_stage(const retro_task_t *task)
+{
+   return task && task->handler == content_load_task_handler
+       && (enum content_load_stage)(uintptr_t)task->state
+          != CONTENT_LOAD_STAGE_CLOSE_WAIT;
+}
+
 static bool content_load_push_stage(struct content_load_job *job)
 {
+   static const char *titles[] = {
+      NULL, "Closing content", "Closing content",
+      "Loading core", "Starting drivers" };
    retro_task_t *task = task_init();
    if (!task)
       return false;
+   if (     (unsigned)job->stage < sizeof(titles) / sizeof(titles[0])
+         && titles[job->stage])
+      task->title  = strdup(titles[job->stage]);
    task->handler   = content_load_task_handler;
    task->callback  = content_load_task_callback;
    task->user_data = job;

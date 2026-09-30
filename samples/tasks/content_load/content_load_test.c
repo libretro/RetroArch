@@ -29,6 +29,7 @@
  *   samples/tasks/content_load/build.sh
  */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,6 +57,11 @@
 #include "../../../gfx/video_defines.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../tasks/task_content.h"
+#include "../../../tasks/tasks_internal.h"
+#include "../../../menu/menu_entries.h"
+#include "../../../menu/menu_displaylist.h"
+#include "../../../msg_hash_lbl_str.h"
+#include "../../../playlist.h"
 #include "../../../paths.h"
 #include "../../../content.h"
 #ifdef HAVE_NETWORKING
@@ -715,6 +721,406 @@ static void lane_host_setup_deferred(void)
 #endif
 
 /* ------------------------------------------------------------------ */
+/* Lane: acceptance - no task or list work holds a frame              */
+/* ------------------------------------------------------------------ */
+
+/* The UI non-blocking plan's acceptance test: with Threaded Tasks off,
+ * a run through menu navigation, playlist browsing, overlay switching,
+ * the Explore index and a content load produces no handler that holds
+ * the frame thread past a frame's budget.  The watchdog is the queue's
+ * own slow-handler callback, the one debug builds register; a content
+ * load's stages that run the core's own load and the driver rebuild
+ * are not counted (task_content_is_load_stage).  Timings mean nothing
+ * under a sanitizer, so there the paths run but only report. */
+
+#define ACCEPT_BUDGET_USEC 16000
+#define ACCEPT_ENTRIES     10000
+
+static unsigned     accept_over;
+static retro_time_t accept_worst;
+static char         accept_worst_title[128];
+
+static void accept_slow_cb(retro_task_t *task, retro_time_t usec)
+{
+   if (task_content_is_load_stage(task))
+      return;
+   accept_over++;
+   if (usec > accept_worst)
+   {
+      accept_worst = usec;
+      strlcpy(accept_worst_title, task->title ? task->title : "(untitled)",
+            sizeof(accept_worst_title));
+   }
+}
+
+/* Frames as the main loop runs them, with the watchdog kept armed:
+ * a debug build's configure re-registers its own on every load. */
+static void accept_pump(unsigned n)
+{
+   unsigned i;
+   for (i = 0; i < n; i++)
+   {
+      task_queue_set_slow_handler_cb(accept_slow_cb, ACCEPT_BUDGET_USEC);
+      runloop_iterate();
+      task_queue_check();
+   }
+}
+
+static bool accept_task_any(retro_task_t *task, void *user_data)
+{
+   (void)task; (void)user_data;
+   return true;
+}
+
+/* Frames until the queue holds nothing, bounded. */
+static unsigned accept_settle(unsigned cap)
+{
+   task_finder_data_t find;
+   unsigned n = 0;
+   find.func     = accept_task_any;
+   find.userdata = NULL;
+   do
+   {
+      accept_pump(1);
+      n++;
+   } while (n < cap && (task_queue_find(&find)
+            || playlist_init_cached_pending()
+            || runloop_is_content_switching()));
+   return n;
+}
+
+static file_list_t *accept_selection_buf(void)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   return menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+}
+
+/* Builds a screen the way opening it does. */
+static size_t accept_open_screen(enum menu_displaylist_ctl_state type,
+      const char *label, enum msg_hash_enums label_enum, const char *path)
+{
+   menu_displaylist_info_t info;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   file_list_t *buf           = accept_selection_buf();
+   file_list_t *menu_stack    = MENU_LIST_GET(menu_st->entries.list, 0);
+
+   if (!buf || !menu_stack)
+      return 0;
+   menu_entries_clear(buf);
+   menu_entries_append(menu_stack, path, label, label_enum,
+         MENU_SETTING_ACTION, 0, 0, NULL);
+   menu_displaylist_info_init(&info);
+   info.list          = buf;
+   info.path          = strdup(path);
+   info.label         = strdup(label);
+   info.enum_idx      = label_enum;
+   info.type          = MENU_SETTING_ACTION;
+   info.directory_ptr = 0;
+   menu_displaylist_ctl(type, &info, config_get_ptr());
+   menu_displaylist_process(&info);
+   menu_displaylist_info_free(&info);
+   return buf->size;
+}
+
+/* OK on the entry whose path contains @needle, as a tap does. */
+static bool accept_press_ok(const char *needle)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   file_list_t *buf           = accept_selection_buf();
+   size_t i;
+   if (!buf)
+      return false;
+   for (i = 0; i < buf->size; i++)
+   {
+      const char *p = buf->list[i].path;
+      if (p && strstr(p, needle))
+      {
+         menu_entry_t entry;
+         menu_st->selection_ptr = i;
+         MENU_ENTRY_INITIALIZE(entry);
+         entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED
+                      | MENU_ENTRY_FLAG_LABEL_ENABLED
+                      | MENU_ENTRY_FLAG_RICH_LABEL_ENABLED
+                      | MENU_ENTRY_FLAG_VALUE_ENABLED
+                      | MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
+         menu_entry_get(&entry, 0, i, NULL, true);
+         menu_entry_action(&entry, i, MENU_ACTION_OK);
+         return true;
+      }
+   }
+   return false;
+}
+
+/* A little msgpack, enough to write a libretrodb file. */
+typedef struct { uint8_t *d; size_t len, cap; } accept_buf_t;
+
+static void accept_put(accept_buf_t *b, const void *p, size_t n)
+{
+   if (b->len + n > b->cap)
+   {
+      size_t want = b->cap ? b->cap * 2 : 256;
+      while (want < b->len + n)
+         want *= 2;
+      b->d   = (uint8_t*)realloc(b->d, want);
+      b->cap = want;
+   }
+   memcpy(b->d + b->len, p, n);
+   b->len += n;
+}
+static void accept_byte(accept_buf_t *b, uint8_t v) { accept_put(b, &v, 1); }
+static void accept_str(accept_buf_t *b, const char *s)
+{
+   size_t n = strlen(s);
+   if (n < 32)
+      accept_byte(b, (uint8_t)(0xa0 | n));
+   else
+   {
+      accept_byte(b, 0xd9);
+      accept_byte(b, (uint8_t)n);
+   }
+   accept_put(b, s, n);
+}
+static void accept_uint(accept_buf_t *b, unsigned v)
+{
+   accept_byte(b, 0xcd);
+   accept_byte(b, (uint8_t)(v >> 8));
+   accept_byte(b, (uint8_t)v);
+}
+
+static uint32_t accept_crc(unsigned sys, unsigned g)
+{
+   return 0x100000u * (sys + 1) + g * 7u + 1u;
+}
+
+/* One database of ACCEPT_ENTRIES records that the playlist of the
+ * same name matches by crc, so the Explore index has every entry to
+ * categorise. */
+static bool accept_write_db(const char *path, unsigned sys)
+{
+   static const char *genres[] = { "Action", "Puzzle", "Racing" };
+   accept_buf_t body, meta;
+   uint8_t hdr[16];
+   uint64_t off;
+   unsigned g;
+   int i;
+   FILE *f;
+
+   memset(&body, 0, sizeof(body));
+   memset(&meta, 0, sizeof(meta));
+   for (g = 0; g < ACCEPT_ENTRIES; g++)
+   {
+      char name[64];
+      uint32_t crc = accept_crc(sys, g);
+      uint8_t c[4];
+      snprintf(name, sizeof(name), "Accept S%u N%05u", sys, g);
+      c[0] = (uint8_t)(crc >> 24); c[1] = (uint8_t)(crc >> 16);
+      c[2] = (uint8_t)(crc >> 8);  c[3] = (uint8_t)crc;
+      accept_byte(&body, 0x85);
+      accept_str(&body, "name");        accept_str(&body, name);
+      accept_str(&body, "crc");
+      accept_byte(&body, 0xc4); accept_byte(&body, 4); accept_put(&body, c, 4);
+      accept_str(&body, "developer");   accept_str(&body, genres[(g / 3) % 3]);
+      accept_str(&body, "genre");       accept_str(&body, genres[g % 3]);
+      accept_str(&body, "releaseyear"); accept_uint(&body, 1985 + (g % 12));
+   }
+   accept_byte(&body, 0xc0);
+   accept_byte(&meta, 0x81);
+   accept_str(&meta, "count");
+   accept_uint(&meta, ACCEPT_ENTRIES);
+
+   off = 16 + (uint64_t)body.len;
+   memcpy(hdr, "RARCHDB", 7);
+   hdr[7] = 0;
+   for (i = 0; i < 8; i++)
+      hdr[8 + i] = (uint8_t)(off >> (56 - 8 * i));
+   if ((f = fopen(path, "wb")))
+   {
+      fwrite(hdr, 1, sizeof(hdr), f);
+      fwrite(body.d, 1, body.len, f);
+      fwrite(meta.d, 1, meta.len, f);
+      fclose(f);
+   }
+   free(body.d);
+   free(meta.d);
+   return f != NULL;
+}
+
+static bool accept_write_playlist(const char *path, unsigned sys,
+      const char *db)
+{
+   unsigned g;
+   FILE *f = fopen(path, "wb");
+   if (!f)
+      return false;
+   fprintf(f, "{\n  \"version\": \"1.5\",\n  \"items\": [\n");
+   for (g = 0; g < ACCEPT_ENTRIES; g++)
+      fprintf(f,
+            "    { \"path\": \"/nowhere/s%u/g%05u.bin\", \"label\": \"Accept S%u N%05u\","
+            " \"core_path\": \"DETECT\", \"core_name\": \"DETECT\","
+            " \"crc32\": \"%08X|crc\", \"db_name\": \"%s\" }%s\n",
+            sys, g, sys, g, (unsigned)accept_crc(sys, g), db,
+            (g + 1 < ACCEPT_ENTRIES) ? "," : "");
+   fprintf(f, "  ]\n}\n");
+   fclose(f);
+   return true;
+}
+
+static bool accept_write_overlay(const char *dir, char *cfg, size_t len)
+{
+   unsigned o, d;
+   char img[600];
+   FILE *f;
+   snprintf(img, sizeof(img), "%s/img.png", dir);
+   if (!(f = fopen(img, "wb")))
+      return false;
+   fputc(0, f);
+   fclose(f);
+   snprintf(cfg, len, "%s/accept.cfg", dir);
+   if (!(f = fopen(cfg, "wb")))
+      return false;
+   fprintf(f, "overlays = 3\n");
+   for (o = 0; o < 3; o++)
+   {
+      fprintf(f, "overlay%u_name = ol%u\n", o, o);
+      fprintf(f, "overlay%u_full_screen = true\n", o);
+      fprintf(f, "overlay%u_rect = \"0.0,0.0,1.0,1.0\"\n", o);
+      fprintf(f, "overlay%u_overlay = img.png\n", o);
+      fprintf(f, "overlay%u_descs = 40\n", o);
+      for (d = 0; d < 40; d++)
+      {
+         fprintf(f, "overlay%u_desc%u = \"a,0.5,0.5,rect,0.1,0.1\"\n", o, d);
+         fprintf(f, "overlay%u_desc%u_overlay = img.png\n", o, d);
+      }
+   }
+   fclose(f);
+   return true;
+}
+
+static void lane_acceptance(const char *dir)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned had = failures;
+   char pl_dir[512], db_dir[512], path[640], ol_cfg[600];
+   unsigned s, frames = 0;
+#if defined(__SANITIZE_ADDRESS__) || defined(__SANITIZE_THREAD__)
+   bool timed = false;
+#else
+   bool timed = true;
+#endif
+
+   snprintf(pl_dir, sizeof(pl_dir), "%s/accept_playlists", dir);
+   snprintf(db_dir, sizeof(db_dir), "%s/accept_rdb", dir);
+   path_mkdir(pl_dir);
+   path_mkdir(db_dir);
+   for (s = 0; s < 2; s++)
+   {
+      char db[64];
+      snprintf(db, sizeof(db), "Accept System %u.lpl", s);
+      snprintf(path, sizeof(path), "%s/%s", pl_dir, db);
+      CHECK(accept_write_playlist(path, s, db), "fixture playlist not written");
+      snprintf(path, sizeof(path), "%s/Accept System %u.rdb", db_dir, s);
+      CHECK(accept_write_db(path, s), "fixture database not written");
+   }
+   CHECK(accept_write_overlay(pl_dir, ol_cfg, sizeof(ol_cfg)),
+         "fixture overlay not written");
+   configuration_set_bool(settings, settings->bools.threaded_data_runloop_enable, false);
+   task_queue_unset_threaded();
+   strlcpy(settings->paths.directory_playlist, pl_dir,
+         sizeof(settings->paths.directory_playlist));
+
+   accept_over  = 0;
+   accept_worst = 0;
+   accept_worst_title[0] = '\0';
+   open_menu();
+   frames += accept_settle(200);
+
+   /* Menu navigation: the main menu, every setting, the history. */
+   accept_open_screen(DISPLAYLIST_MAIN_MENU,
+         MENU_ENUM_LABEL_MAIN_MENU_STR, MENU_ENUM_LABEL_MAIN_MENU, "");
+   frames += accept_settle(200);
+   accept_open_screen(DISPLAYLIST_SETTINGS_ALL,
+         MENU_ENUM_LABEL_SETTINGS_STR, MENU_ENUM_LABEL_SETTINGS, "");
+   frames += accept_settle(200);
+   accept_open_screen(DISPLAYLIST_HISTORY,
+         MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR,
+         MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY, "");
+   frames += accept_settle(200);
+
+   /* Playlist browsing: the Playlists screen, then each playlist. */
+   for (s = 0; s < 2; s++)
+   {
+      char leaf[32];
+      snprintf(leaf, sizeof(leaf), "Accept System %u.lpl", s);
+      CHECK(accept_open_screen(DISPLAYLIST_DATABASE_PLAYLISTS,
+            MENU_ENUM_LABEL_PLAYLISTS_TAB_STR, MENU_ENUM_LABEL_PLAYLISTS_TAB,
+            pl_dir) > 0, "the Playlists screen was empty");
+      CHECK(accept_press_ok(leaf), "no %s to open", leaf);
+      frames += accept_settle(2000);
+      CHECK(accept_selection_buf() && accept_selection_buf()->size > 1,
+            "playlist %s did not list its entries", leaf);
+   }
+
+#ifdef HAVE_OVERLAY
+   /* Overlay switching: load a pack, then step through it. */
+   strlcpy(settings->paths.path_overlay, ol_cfg,
+         sizeof(settings->paths.path_overlay));
+   configuration_set_bool(settings, settings->bools.input_overlay_enable, true);
+   command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+   frames += accept_settle(2000);
+   for (s = 0; s < 3; s++)
+   {
+      command_event(CMD_EVENT_OVERLAY_NEXT, NULL);
+      frames += accept_settle(200);
+   }
+   configuration_set_bool(settings, settings->bools.input_overlay_enable, false);
+   command_event(CMD_EVENT_OVERLAY_UNLOAD, NULL);
+   frames += accept_settle(200);
+#endif
+
+#ifdef HAVE_LIBRETRODB
+   /* The Explore index over the same playlists. */
+   menu_explore_free();
+   CHECK(task_push_menu_explore_init(pl_dir, db_dir), "explore not pushed");
+   frames += accept_settle(4000);
+   CHECK(menu_explore_state_entry_count(NULL) == 2 * ACCEPT_ENTRIES,
+         "the Explore index holds %u entries, not %u",
+         (unsigned)menu_explore_state_entry_count(NULL), 2 * ACCEPT_ENTRIES);
+   menu_explore_free();
+#endif
+
+   /* A content load. */
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the load was not started");
+   frames += accept_settle(200);
+   CHECK(core_is_up(), "the load did not go through");
+
+   task_queue_set_slow_handler_cb(NULL, 0);
+   for (s = 0; s < 2; s++)
+   {
+      snprintf(path, sizeof(path), "%s/Accept System %u.lpl", pl_dir, s);
+      remove(path);
+      snprintf(path, sizeof(path), "%s/Accept System %u.rdb", db_dir, s);
+      remove(path);
+   }
+   remove(ol_cfg);
+   snprintf(path, sizeof(path), "%s/img.png", pl_dir);
+   remove(path);
+   rmdir(pl_dir);
+   rmdir(db_dir);
+
+   if (timed)
+      CHECK(accept_over == 0,
+            "%u handler call(s) held the frame thread past %d ms; worst %lld us "
+            "(%s)", accept_over, ACCEPT_BUDGET_USEC / 1000,
+            (long long)accept_worst, accept_worst_title);
+   if (failures == had)
+      fprintf(stderr, "[%s] acceptance lane (%u frames, %u over budget%s%s)\n",
+            timed ? "pass" : "report", frames, accept_over,
+            accept_over ? ", worst: " : "", accept_over ? accept_worst_title : "");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: close content                                                 */
 /* ------------------------------------------------------------------ */
 
@@ -883,6 +1289,7 @@ int main(int argc, char *argv[])
 #ifdef HAVE_NETWORKING
    lane_host_setup_deferred();
 #endif
+   lane_acceptance(dir);
 
    main_exit(NULL);
 

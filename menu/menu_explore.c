@@ -1148,6 +1148,8 @@ uint32_t menu_explore_state_hash(const explore_state_t *state)
 
 size_t menu_explore_state_entry_count(const explore_state_t *state)
 {
+   if (!state)
+      state = explore_state;   /* the installed index */
    return state ? RBUF_LEN(state->entries) : 0;
 }
 

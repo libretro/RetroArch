@@ -73,6 +73,12 @@ bool task_push_start_current_core(content_ctx_info_t *content_info);
 
 bool task_push_start_dummy_core(content_ctx_info_t *content_info);
 
+/* True for the task of a content load stage that runs the core's own
+ * load or unload, or the driver rebuild - work no slicing can shorten
+ * (the slow-handler watchdog does not count it).  The close's wait
+ * for a state task is not one: it only polls. */
+bool task_content_is_load_stage(const retro_task_t *task);
+
 /* Every task_push_load_* entry point below (the CLI one excepted, which
  * is startup itself and loads in one go) starts the load as a chain of
  * main-thread tasks of the frontend's queue and returns; the load is

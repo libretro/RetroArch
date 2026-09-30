@@ -9136,6 +9136,12 @@ static void runloop_task_slow_handler(retro_task_t *task,
    if (!task)
       return;
 
+   /* A content load's stages run the core's own load, unload and
+    * the driver rebuild: work the core and the drivers do, not task
+    * or list work, and no slicing can shorten retro_load_game. */
+   if (task_content_is_load_stage(task))
+      return;
+
    if (task->handler == last_handler)
    {
       suppressed++;
@@ -9186,14 +9192,14 @@ void retroarch_task_queue_configure(void)
 #endif
 
 #ifdef DEBUG
-   /* With Threaded Tasks off, task handlers run on the thread that
-    * also drives the frame loop, so a handler that does not return
-    * promptly is a visible stall - and the queue is the only place
-    * that can attribute one to a specific task rather than to
-    * "something in the frame".  Debug builds only: this exists to
-    * catch a regression during development, not to police release
-    * builds, and with no callback registered the queue reads no
-    * clock at all.
+   /* Handlers that run on the thread that also drives the frame loop -
+    * every one with Threaded Tasks off, the main-thread ones with it
+    * on - are a visible stall when they do not return promptly, and
+    * the queue is the only place that can attribute one to a specific
+    * task rather than to "something in the frame".  Debug builds
+    * only: this exists to catch a regression during development, not
+    * to police release builds, and with no callback registered the
+    * queue reads no clock at all.
     *
     * The budget is a whole frame at 60Hz.  Handlers designed to be
     * sliced (the budgeted directory walks, playlist parse and scan)
@@ -9201,10 +9207,8 @@ void retroarch_task_queue_configure(void)
     * anything crossing a full frame in one call is either
     * unsliced work or a slice that has stopped honouring its
     * budget. */
-   if (!threaded_enable)
-      task_queue_set_slow_handler_cb(runloop_task_slow_handler, 16000);
-   else
-      task_queue_set_slow_handler_cb(NULL, 0);
+   task_queue_set_slow_handler_cb(runloop_task_slow_handler, 16000);
+   (void)threaded_enable;
 #endif
 
    /* What one task_queue_check() may spend of the frame it runs in.

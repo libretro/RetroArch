@@ -660,7 +660,7 @@ explore_state_t *menu_explore_build_end(explore_build_t *b);
 void menu_explore_build_abort(explore_build_t *b);
 /* The index's identity for verification: the same collection built in
  * one go and in steps hashes the same (NULL: the installed index); and
- * its size. */
+ * its size (NULL: the installed index too). */
 uint32_t menu_explore_state_hash(const explore_state_t *state);
 size_t menu_explore_state_entry_count(const explore_state_t *state);
 uintptr_t menu_explore_get_entry_icon(unsigned type);
