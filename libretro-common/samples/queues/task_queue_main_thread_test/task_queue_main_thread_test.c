@@ -11,7 +11,9 @@
  *    it is due;
  *  - task_queue_wait() from this thread advances main-thread tasks;
  *  - a main-thread task and a plain task ahead of it in the list do
- *    not block each other: the worker skips past the main-thread one.
+ *    not block each other: the worker skips past the main-thread one;
+ *  - the slow-handler watchdog reports a main-thread handler that
+ *    overruns its budget, and not a worker handler that does.
  * On the unthreaded runner the flag changes nothing: the handler runs
  * here as every handler does.
  */
@@ -71,15 +73,26 @@ static void probe_callback(retro_task_t *task, void *task_data,
    p->retired++;
 }
 
-static retro_task_t *push(struct probe *p, bool main_thread,
-      unsigned finish_after, retro_time_t when)
+static void sleepy_handler(retro_task_t *task)
+{
+   struct probe *p = (struct probe*)task->user_data;
+   p->thread = sthread_get_current_thread_id();
+   if (p->thread != main_id)
+      p->off_main = true;
+   p->calls++;
+   retro_sleep(20);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static retro_task_t *push_h(struct probe *p, bool main_thread,
+      unsigned finish_after, retro_time_t when, retro_task_handler_t h)
 {
    retro_task_t *task = task_init();
    if (!task)
       return NULL;
    memset(p, 0, sizeof(*p));
    p->finish_after = finish_after;
-   task->handler   = probe_handler;
+   task->handler   = h;
    task->callback  = probe_callback;
    task->user_data = p;
    task->when      = when;
@@ -88,6 +101,12 @@ static retro_task_t *push(struct probe *p, bool main_thread,
       task->flags |= RETRO_TASK_FLG_MAIN_THREAD;
    task_queue_push(task);
    return task;
+}
+
+static retro_task_t *push(struct probe *p, bool main_thread,
+      unsigned finish_after, retro_time_t when)
+{
+   return push_h(p, main_thread, finish_after, when, probe_handler);
 }
 
 /* Checks until the probe retires, bounded. */
@@ -189,6 +208,43 @@ static void lane_interleaved(void)
       fprintf(stderr, "[pass] interleaved lane\n");
 }
 
+static retro_task_t *slow_seen;
+static unsigned      slow_reports;
+
+static void slow_report(retro_task_t *task, retro_time_t took)
+{
+   (void)took;
+   slow_seen = task;
+   slow_reports++;
+}
+
+static void lane_slow_main_handler(void)
+{
+   struct probe plain, mainp;
+   retro_task_t *mt;
+   unsigned had = failures;
+
+   slow_seen    = NULL;
+   slow_reports = 0;
+   task_queue_set_slow_handler_cb(slow_report, 5000);
+
+   CHECK(push_h(&plain, false, 1, 0, sleepy_handler) != NULL, "push");
+   pump_until_retired(&plain, 2000);
+   CHECK(plain.retired == 1 && plain.off_main, "the slow plain task did not run on the worker");
+   CHECK(slow_reports == 0, "a worker handler was reported");
+
+   mt = push_h(&mainp, true, 1, 0, sleepy_handler);
+   CHECK(mt != NULL, "push");
+   pump_until_retired(&mainp, 2000);
+   CHECK(mainp.retired == 1 && !mainp.off_main, "the slow main-thread task did not run here");
+   CHECK(slow_reports == 1, "the slow main-thread handler was reported %u times", slow_reports);
+   CHECK(slow_seen == mt, "the report named another task");
+
+   task_queue_set_slow_handler_cb(NULL, 0);
+   if (failures == had)
+      fprintf(stderr, "[pass] slow main-thread handler lane\n");
+}
+
 int main(void)
 {
    main_id = sthread_get_current_thread_id();
@@ -204,6 +260,7 @@ int main(void)
    lane_when();
    lane_wait();
    lane_interleaved();
+   lane_slow_main_handler();
    task_queue_deinit();
 
    task_queue_init(false, NULL);

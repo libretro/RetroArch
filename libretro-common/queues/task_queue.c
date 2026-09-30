@@ -1023,7 +1023,19 @@ static void retro_task_threaded_run_main(void)
       if (!task)
          break;
 
-      task->handler(task);
+      /* On the checking thread, as on the unthreaded runner: timed
+       * when someone is listening. */
+      if (task_slow_handler_cb)
+      {
+         retro_time_t h_started = cpu_features_get_time_usec();
+         retro_time_t took;
+         task->handler(task);
+         took = cpu_features_get_time_usec() - h_started;
+         if (took > task_slow_handler_budget)
+            task_slow_handler_cb(task, took);
+      }
+      else
+         task->handler(task);
       n_ran++;
       retro_task_threaded_settle(task);
    }

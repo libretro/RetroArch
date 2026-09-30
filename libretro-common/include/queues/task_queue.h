@@ -857,13 +857,14 @@ typedef void (*retro_task_slow_handler_t)(retro_task_t *task,
 /**
  * Report task handlers that occupy the calling thread too long.
  *
- * This measures the UNTHREADED queue only, which is the
- * configuration where task handlers run on the thread that also
- * drives the frame loop: there, a handler that does not return
- * within a frame's worth of time is a visible stall, and the
- * queue is the only place that can attribute one to a specific
- * task.  On the threaded queue handlers run on a worker, where
- * taking a long time is the point, so nothing is measured.
+ * This measures every handler that runs on the thread calling
+ * task_queue_check() - the frame loop's thread: all of them on the
+ * unthreaded queue, and the RETRO_TASK_FLG_MAIN_THREAD ones on the
+ * threaded queue.  There, a handler that does not return within a
+ * frame's worth of time is a visible stall, and the queue is the
+ * only place that can attribute one to a specific task.  Handlers
+ * on the worker are not measured: taking a long time there is the
+ * point.
  *
  * @param cb Called for each handler invocation exceeding
  * \c budget_usec, or \c NULL to disable the check (the default -
