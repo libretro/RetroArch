@@ -309,7 +309,12 @@ jobs:
           # absolute-path Location used to go out as "GET //foo", a
           # 302 loop was followed forever (now 8 hops), a streamed PUT
           # redirected by a 307 is rewound and resent whole, and a 3xx
-          # body no longer lands in the caller's sink. Every case has a
+          # body no longer lands in the caller's sink. Bounds: a header
+          # block (1xx blocks included) over 64 KiB and a chunk size
+          # with no hex digits fail instead of growing the buffer or
+          # passing as the last chunk, a Content-Length buffer never
+          # grows past the body, and a pooled connection that dies
+          # after the status line is not replayed. Every case has a
           # deadline, so a hang fails the case instead of the job.
           make clean all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \

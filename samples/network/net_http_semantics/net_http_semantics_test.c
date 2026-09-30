@@ -943,6 +943,91 @@ static void run_section_a3(void)
    xfer_free(&a);
 }
 
+/* ---- A4: bounds ---- */
+
+static char big_head[96 * 1024];
+
+static void run_section_a4(void)
+{
+   struct xfer a, b;
+   size_t off;
+   int i;
+   struct step s_big[1];
+   static const struct step s_badchunk[] = {
+      { "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\nxyz\r\n", 0, B_NONE, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+   /* 16 KiB past a 64 KiB boundary, so the last read starts with less
+    * than a window floor of body left. */
+   static const struct step s_len[] = {
+      { "HTTP/1.1 200 OK\r\nContent-Length: 1064960\r\n\r\n", 1064960, B_RAW, 0 },
+   };
+   static const struct step s_torn[] = {
+      { OK_2, 0, B_NONE, 0 },
+      { "HTTP/1.1 200 OK\r\n", 0, B_NONE, 1 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+
+   memset(&a, 0, sizeof(a));
+   memset(&b, 0, sizeof(b));
+
+   case_begin(s_badchunk, 2, 0);
+   xfer_run(&a, "/badchunk");
+   xfer_run(&b, "/next");
+   check(a.done && a.err, "chunk size \"xyz\": error, not an empty success");
+   check(b.done && body_is(&b, "ok") && !second_reused(),
+         "chunk size \"xyz\": connection not pooled");
+   xfer_free(&a); xfer_free(&b);
+
+   /* ~72 KiB of header lines */
+   off = (size_t)snprintf(big_head, sizeof(big_head), "HTTP/1.1 200 OK\r\n");
+   for (i = 0; i < 70; i++)
+   {
+      off += (size_t)snprintf(big_head + off, sizeof(big_head) - off,
+            "X-Pad-%02d: ", i);
+      memset(big_head + off, 'a', 1000);
+      off += 1000;
+      memcpy(big_head + off, "\r\n", 2);
+      off += 2;
+   }
+   memcpy(big_head + off, "Content-Length: 2\r\n\r\nok", 24);
+   memset(s_big, 0, sizeof(s_big));
+   s_big[0].head = big_head;
+   case_begin(s_big, 1, 0);
+   xfer_run(&a, "/bighead");
+   check(a.done && a.err, "header block over 64 KiB: error");
+   xfer_free(&a);
+
+   /* ~90 KiB of 102 blocks: the cap counts interim blocks too */
+   off = 0;
+   while (off + 32 < sizeof(big_head) - 64)
+   {
+      memcpy(big_head + off, "HTTP/1.1 102 P\r\n\r\n", 18);
+      off += 18;
+   }
+   memcpy(big_head + off, OK_2, sizeof(OK_2));
+   case_begin(s_big, 1, 0);
+   xfer_run(&a, "/flood");
+   check(a.done && a.err, "endless 1xx blocks: error once past the header cap");
+   xfer_free(&a);
+
+   case_begin(s_len, 1, 0);
+   realloc_max = 0;
+   xfer_run(&a, "/len");
+   check(a.done && body_is_pattern(&a, 1064960) && realloc_max <= 1064960,
+         "GET 200 Content-Length: receive buffer never grows past the body");
+   xfer_free(&a);
+
+   /* A pooled connection that dies after the status line has already
+    * given us part of a response: no replay. */
+   case_begin(s_torn, 3, 0);
+   xfer_run(&a, "/first");
+   xfer_run(&b, "/torn");
+   check(a.done && b.done && b.err && log_count() == 2,
+         "pooled connection dying after the status line: not replayed");
+   xfer_free(&a); xfer_free(&b);
+}
+
 int main(void)
 {
    if (!network_init() || srv_start())
@@ -956,6 +1041,7 @@ int main(void)
    run_section_a1();
    run_section_a2();
    run_section_a3();
+   run_section_a4();
 
    srv_shutdown();
    net_http_deinit();

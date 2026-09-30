@@ -58,6 +58,16 @@
  * net_http_update(). */
 #define NET_HTTP_MIN_RECV_WINDOW    (32 * 1024)
 
+/* The receive buffer never grows past a maximal body plus one window.
+ * Content-Length was already capped, but a close-delimited or chunked
+ * body doubled the buffer for as long as the peer kept sending. */
+#define NET_HTTP_MAX_BUFFER         (NET_HTTP_MAX_CONTENT_LENGTH + NET_HTTP_MIN_RECV_WINDOW)
+
+/* Status line plus headers, summed over any 1xx blocks before the
+ * final one.  Beyond this the peer is not sending a response we want;
+ * failing is cheaper than doubling the buffer to find out. */
+#define NET_HTTP_MAX_HEADER_BYTES   (64 * 1024)
+
 /* Per-call drain bounds.  The budget keeps a saturated link from
  * stalling a frame; the iteration cap keeps a peer that dribbles
  * single bytes from spinning us.
@@ -154,6 +164,8 @@ typedef struct response
     * as bytes are flushed and can no longer answer progress queries. */
    size_t flushed;
    size_t content_len;
+   /* Header bytes consumed so far, 1xx blocks included. */
+   size_t hdr_bytes;
    int status;
    enum response_part part;
    enum bodytype bodytype;
@@ -1409,7 +1421,11 @@ release:
  **/
 static bool net_http_retry_fresh(struct http_t *state)
 {
-   if (!state->conn_reused || state->retried || state->response.pos)
+   /* pos alone misses a status line that was consumed whole before
+    * the connection died: pos is back at 0 by then, and the replay
+    * appended a second header set to the first. */
+   if (     !state->conn_reused || state->retried
+         || state->response.pos || state->response.hdr_bytes)
       return false;
 
    /* A streamed body may already be partly consumed; it has to be
@@ -1687,6 +1703,15 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
       if (!lineend)
          break;
 
+      response->hdr_bytes += (size_t)(lineend - scan) + 1;
+      if (response->hdr_bytes > NET_HTTP_MAX_HEADER_BYTES)
+      {
+         net_http_log_transport_state(state, "header_too_large", -1);
+         response->part = P_DONE;
+         state->err     = true;
+         return -1;
+      }
+
       *lineend = '\0';
       if (lineend != scan && lineend[-1] == '\r')
          lineend[-1] = '\0';
@@ -1935,6 +1960,15 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
    }
    else
    {
+      /* A line still without its newline counts too, or one endless
+       * header line would grow the buffer without bound. */
+      if (response->hdr_bytes + response->pos > NET_HTTP_MAX_HEADER_BYTES)
+      {
+         net_http_log_transport_state(state, "header_too_large", -1);
+         response->part = P_DONE;
+         state->err     = true;
+         return -1;
+      }
       if (response->pos >= response->buflen - 64)
       {
          char *tmp;
@@ -2091,6 +2125,7 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
       for (;;)
       {
          char  *end;
+         const char *digits;
          size_t chunklen;
          size_t avail = (size_t)(rawend - in);
 
@@ -2105,7 +2140,20 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
          if (!end)
             break;
 
-         chunklen = strtoul(in, NULL, 16);
+         /* A size line with no hex digits used to parse as 0 - the
+          * last chunk - so the transfer "succeeded" with whatever was
+          * decoded so far and the connection went back to the pool
+          * with the rest of the garbage unread. */
+         for (digits = in; digits < end
+               && (*digits == '\r' || *digits == '\n'
+                || *digits == ' '  || *digits == '\t'); digits++) { }
+         if (digits == end || !isxdigit((unsigned char)*digits))
+         {
+            response->part = P_DONE;
+            state->err     = true;
+            return false;
+         }
+         chunklen = strtoul(digits, NULL, 16);
          /* Cap the chunk length at the same Content-Length ceiling.
           * A hostile server sending a chunklen like ffffffffffffffff
           * drives the client into an effectively unbounded receive
@@ -2274,15 +2322,23 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
 check_grow:
    if (response->pos >= response->buflen)
    {
-      char *tmp;
-      response->buflen *= 2;
-      tmp               = (char*)realloc(response->data, response->buflen);
-      if (!tmp)
+      char  *tmp;
+      size_t want = response->buflen * 2;
+      if (want > NET_HTTP_MAX_BUFFER)
+         want = NET_HTTP_MAX_BUFFER;
+      if (want <= response->pos)
+      {
+         net_http_log_transport_state(state, "body_too_large", -1);
+         state->err = true;
+         return false;
+      }
+      if (!(tmp = (char*)realloc(response->data, want)))
       {
          state->err = true;
          return false;
       }
       response->data    = tmp;
+      response->buflen  = want;
    }
    return true;
 }
@@ -2405,6 +2461,7 @@ static bool net_http_redirect(struct http_t *state, const char *location)
    state->response.len         = 0;
    state->response.flushed     = 0;
    state->response.content_len = 0;
+   state->response.hdr_bytes   = 0;
    state->response.bodytype    = T_FULL;
    /* after this, assume location is invalid */
    net_http_headers_clear(&state->response);
@@ -2734,13 +2791,30 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
           * nothing.  Grow early instead of waiting for pos to reach
           * buflen. */
          window = response->buflen - response->pos;
+         /* Not for a buffered Content-Length body: its buffer is
+          * already exactly the body, so the window can only shrink
+          * toward the last byte.  Growing there doubled a 16MiB
+          * buffer to 32MiB for its final 32KiB and then shrank it back
+          * at P_DONE - two reallocs, and on allocators without
+          * mremap two whole-body copies, for nothing. */
          if (     window < NET_HTTP_MIN_RECV_WINDOW
-               && response->part != P_DONE)
+               && response->part != P_DONE
+               && !(   response->part     == P_BODY
+                    && response->bodytype == T_LEN
+                    && !state->sink))
          {
             char  *tmp;
             size_t want = response->buflen * 2;
             if (want < response->pos + NET_HTTP_MIN_RECV_WINDOW)
                want = response->pos + NET_HTTP_MIN_RECV_WINDOW;
+            if (want > NET_HTTP_MAX_BUFFER)
+               want = NET_HTTP_MAX_BUFFER;
+            if (want < response->pos + NET_HTTP_MIN_RECV_WINDOW)
+            {
+               net_http_log_transport_state(state, "body_too_large", -1);
+               state->err = true;
+               break;
+            }
             if (!(tmp = (char*)realloc(response->data, want)))
             {
                state->err = true;
