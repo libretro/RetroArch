@@ -5183,6 +5183,12 @@ int main(int argc, char *argv[])
       fprintf(cfg, "video_threaded = \"false\"\n");
       fprintf(cfg, "video_vsync = \"false\"\n");
       fprintf(cfg, "menu_pause_libretro = \"true\"\n");
+      /* The window is never the active one - the harness is run from
+       * a terminal, and on macOS the application never becomes key -
+       * and the default pauses the core while it is not (that is the
+       * "Paused" in the corner). Every lane counts frames the core
+       * ran; a paused core runs none. */
+      fprintf(cfg, "pause_nonactive = \"false\"\n");
       fprintf(cfg, "config_save_on_exit = \"false\"\n");
       /* Tunable from the environment so the task worker can be kept
        * out of the process: TSan's registry never observes that
