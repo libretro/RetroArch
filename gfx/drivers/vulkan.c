@@ -199,6 +199,12 @@ struct vk_texture
    uint32_t memory_type;
    unsigned dims;                /* VIDEO_SCALE_PACK */
 
+   /* The link and countdown for a texture parked for destruction
+    * (vulkan_deferred_textures_push). In the texture itself so that
+    * parking one allocates nothing and cannot fail. */
+   struct vk_texture *park_next;
+   unsigned park_frames;
+
    VkImageLayout layout;         /* enum alignment */
    VkFormat format;              /* enum alignment */
    enum vk_texture_type type;
@@ -491,7 +497,7 @@ typedef struct vk
     * parks one by pushing it on deferred_textures_in; the list proper
     * belongs to the thread that records frames. */
    retro_atomic_ptr_t deferred_textures_in;
-   struct vk_deferred_texture *deferred_textures;
+   struct vk_texture *deferred_textures;
 
    /* One-shot staging command buffers submitted without a CPU wait
     * (texture and glyph atlas uploads), each released once its own
@@ -1176,40 +1182,41 @@ static void vulkan_destroy_texture(
  * the shared pointer, so the push needs no more than a compare-and-swap
  * loop. This used to borrow queue_lock, which made every parked
  * texture wait behind whatever held the queue - a present, or a
- * hardware core's submit. */
-struct vk_deferred_texture
-{
-   struct vk_deferred_texture *next;
-   struct vk_texture *texture;
-   unsigned frames_left;
-};
-
+ * hardware core's submit.
+ *
+ * The link is in the texture (park_next, park_frames). It used to be
+ * a node allocated per unload, and when that allocation failed the
+ * texture was destroyed on the spot after waiting for the frames
+ * already submitted - which does nothing for a frame handed over but
+ * not yet recorded, or for the menu code still looking at the handle.
+ * Parking cannot fail now, so there is no such path. */
 static void vulkan_texture_retire(vk_t *vk, struct vk_texture *texture);
 
-/* Any thread. */
+/* Any thread. The list owns the texture from here. */
 static void vulkan_deferred_textures_push(vk_t *vk,
-      struct vk_deferred_texture *node)
+      struct vk_texture *texture)
 {
    void *head;
+   texture->park_frames = vk->context->num_swapchain_images + 1;
    do
    {
-      head       = retro_atomic_load_acquire_ptr(&vk->deferred_textures_in);
-      node->next = (struct vk_deferred_texture*)head;
-   } while (!retro_atomic_cas_ptr(&vk->deferred_textures_in, head, node));
+      head               = retro_atomic_load_acquire_ptr(&vk->deferred_textures_in);
+      texture->park_next = (struct vk_texture*)head;
+   } while (!retro_atomic_cas_ptr(&vk->deferred_textures_in, head, texture));
 }
 
 /* The thread that records frames. Moves what was pushed since the
  * last call onto the private list. */
 static void vulkan_deferred_textures_collect(vk_t *vk)
 {
-   struct vk_deferred_texture *node = (struct vk_deferred_texture*)
+   struct vk_texture *texture = (struct vk_texture*)
       retro_atomic_exchange_ptr(&vk->deferred_textures_in, NULL);
-   while (node)
+   while (texture)
    {
-      struct vk_deferred_texture *next = node->next;
-      node->next            = vk->deferred_textures;
-      vk->deferred_textures = node;
-      node                  = next;
+      struct vk_texture *next = texture->park_next;
+      texture->park_next      = vk->deferred_textures;
+      vk->deferred_textures   = texture;
+      texture                 = next;
    }
 }
 
@@ -1217,32 +1224,31 @@ static void vulkan_deferred_textures_collect(vk_t *vk)
  * submitted frame. */
 static void vulkan_deferred_textures_tick(vk_t *vk)
 {
-   struct vk_deferred_texture **cur;
-   struct vk_deferred_texture *expired = NULL;
+   struct vk_texture **cur;
+   struct vk_texture *expired = NULL;
 
    vulkan_deferred_textures_collect(vk);
    cur = &vk->deferred_textures;
    while (*cur)
    {
-      struct vk_deferred_texture *node = *cur;
-      if (node->frames_left > 1)
+      struct vk_texture *texture = *cur;
+      if (texture->park_frames > 1)
       {
-         node->frames_left--;
-         cur           = &node->next;
+         texture->park_frames--;
+         cur                = &texture->park_next;
       }
       else
       {
-         *cur          = node->next;
-         node->next    = expired;
-         expired       = node;
+         *cur               = texture->park_next;
+         texture->park_next = expired;
+         expired            = texture;
       }
    }
 
    while (expired)
    {
-      struct vk_deferred_texture *next = expired->next;
-      vulkan_texture_retire(vk, expired->texture);
-      free(expired);
+      struct vk_texture *next = expired->park_next;
+      vulkan_texture_retire(vk, expired);
       expired = next;
    }
 }
@@ -1251,18 +1257,17 @@ static void vulkan_deferred_textures_tick(vk_t *vk)
  * the graphics queue is idle and no other thread is recording. */
 static void vulkan_deferred_textures_flush(vk_t *vk)
 {
-   struct vk_deferred_texture *node;
+   struct vk_texture *texture;
 
    vulkan_deferred_textures_collect(vk);
-   node                  = vk->deferred_textures;
+   texture               = vk->deferred_textures;
    vk->deferred_textures = NULL;
 
-   while (node)
+   while (texture)
    {
-      struct vk_deferred_texture *next = node->next;
-      vulkan_texture_retire(vk, node->texture);
-      free(node);
-      node = next;
+      struct vk_texture *next = texture->park_next;
+      vulkan_texture_retire(vk, texture);
+      texture = next;
    }
 }
 
@@ -1587,27 +1592,20 @@ static void vulkan_deferred_fences_free(vk_t *vk)
 /* Park a heap-allocated texture on the deferred list, to be destroyed
  * once a full swapchain cycle of submissions has passed. The list
  * owns the pointer from here. Used by the sites that used to drain
- * the queue and destroy in place; parking costs nothing and the
- * frames in flight keep what they were recorded with. Without a node
- * the texture is destroyed after this driver's submissions retire. */
+ * the queue and destroy in place; parking costs nothing, cannot fail,
+ * and the frames in flight keep what they were recorded with. With no
+ * device there is nothing of the texture's left to destroy. */
 static void vulkan_wait_own_submissions(vk_t *vk);
 
 static void vulkan_texture_defer(vk_t *vk, struct vk_texture *texture)
 {
-   struct vk_deferred_texture *node;
    if (!texture)
       return;
-   if (vk->context && vk->context->device
-         && (node = (struct vk_deferred_texture*)malloc(sizeof(*node))))
+   if (vk->context && vk->context->device)
    {
-      node->texture     = texture;
-      node->frames_left = vk->context->num_swapchain_images + 1;
-      vulkan_deferred_textures_push(vk, node);
+      vulkan_deferred_textures_push(vk, texture);
       return;
    }
-   vulkan_wait_own_submissions(vk);
-   if (vk->context && vk->context->device)
-      vulkan_destroy_texture(vk->context->device, texture);
    free(texture);
 }
 
@@ -9659,28 +9657,14 @@ typedef struct
  * queue-idle flush point (swapchain recreation, driver teardown). */
 static void vulkan_unload_texture_internal(vk_t *vk, uintptr_t handle)
 {
-   struct vk_deferred_texture *node;
    struct vk_texture *texture = (struct vk_texture*)handle;
    if (!texture || !vk || !vk->context)
       return;
 
+   /* Parked, never destroyed here: see the deferred list. With no
+    * device the texture's GPU objects went with it. */
    if (vk->context->device)
-   {
-      node = (struct vk_deferred_texture*)malloc(sizeof(*node));
-      if (node)
-      {
-         node->texture     = texture;
-         node->frames_left = vk->context->num_swapchain_images + 1;
-         vulkan_deferred_textures_push(vk, node);
-         return;
-      }
-   }
-
-   /* Out of memory (or no device): fall back to synchronous
-    * destruction once this driver's submissions have retired. */
-   vulkan_wait_own_submissions(vk);
-   if (vk->context->device)
-      vulkan_texture_retire(vk, texture);
+      vulkan_deferred_textures_push(vk, texture);
    else
       free(texture);
 }
@@ -9704,14 +9688,11 @@ static void vulkan_unload_texture(void *data,
       return;
 
 #ifdef HAVE_THREADS
-   /* When threaded video is active, dispatch the Release to
-    * the video thread so it is serialised with command buffer
-    * recording.  The queue_lock + vkQueueWaitIdle in the inner
-    * function only waits for submitted work -- it does not
-    * cover command buffers currently being recorded by the
-    * video thread, which may still reference this texture.
-    * Dispatching ensures the video thread completes its
-    * current recording before the texture is destroyed. */
+   /* When threaded video is active, dispatch the release to the
+    * video thread, as the load and the update are. The inner function
+    * only parks the texture, which any thread may do; this keeps the
+    * unload in order with the uploads the same caller dispatched
+    * before it. */
    if (threaded)
    {
       vulkan_texture_cmd_t cmd;

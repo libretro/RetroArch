@@ -1315,8 +1315,8 @@ static uintptr_t font_driver_free_wrap(void *data)
  *    the main thread while the video thread draws is UB.
  *  - D3D12: fenceValue++ from the main thread races with
  *    the video thread's own fence signalling.
- *  - Vulkan: vkQueueWaitIdle under queue_lock only drains
- *    submitted work, not command buffers being recorded.
+ *  - Vulkan: the atlas textures are parked for the frame thread
+ *    to retire, and the glyph uploads share its staging pool.
  *
  * Dispatch renderer->free to the video thread via
  * video_thread_texture_handle so it runs serialised with
