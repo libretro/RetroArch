@@ -421,6 +421,24 @@ C89="-std=c89 -ansi -pedantic -Werror=pedantic -Werror=declaration-after-stateme
 check "gl3: desktop, C89" \
    "$GL3DEFS $GLINC $C89" gfx/drivers/gl3.c
 
+# Without threads, in C89: audio_driver.h and rthreads.h both reach the
+# tasks and the audio driver, and a typedef each declared on its own is
+# one C89 refuses twice. make C89_BUILD=1 --disable-threads stopped at
+# task_save.c on it; no job builds that shape. check() always adds
+# HAVE_THREADS, so this lane spells its defines out.
+NOTHREADS_BASE=$(echo "$BASE" | sed 's/-DHAVE_THREADS//')
+nt_bad=0
+for tu in tasks/task_save.c tasks/task_audio_mixer.c \
+          audio/audio_driver.c audio/audio_thread_wrapper.c; do
+   if ! out=$($CC $WARN $INC $NOTHREADS_BASE $C89 -fsyntax-only "$tu" 2>&1); then
+      echo "FAIL  audio + tasks: no threads, C89"
+      echo "      $tu"
+      show_out "$out"
+      fail=1; nt_bad=1
+   fi
+done
+[ "$nt_bad" = 1 ] || echo "ok    audio + tasks: no threads, C89"
+
 # WASAPI is in the Windows C89_BUILD lane, which no job here builds, and
 # its error-string helper serves only the microphone path, so both halves
 # are compiled: C89 flags, with and without HAVE_MICROPHONE, unused

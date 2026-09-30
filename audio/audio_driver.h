@@ -31,12 +31,10 @@
  * calls into it - so the type has to exist there even though nothing
  * uses it. */
 #include <rthreads/retro_eventcount.h>
-#ifdef HAVE_THREADS
+/* Declarations only, with or without threads: the state holds lock and
+ * condition pointers either way. Declaring the types here instead would
+ * repeat typedefs a C89 compiler refuses once a file includes both. */
 #include <rthreads/rthreads.h>
-#else
-typedef struct slock slock_t;
-typedef struct scond scond_t;
-#endif
 #include <retro_inline.h>
 #include <libretro.h>
 #include <retro_miscellaneous.h>
