@@ -23,6 +23,7 @@
 #include "video_driver.h"
 #include "video_thread_wrapper.h"
 #include "video_thread_hw.h"
+#include "video_thread_hw_fence.h"
 #include "../configuration.h"
 #include "../verbosity.h"
 
@@ -86,10 +87,10 @@ typedef struct
     * slot holds a reference from publish until it is handed over again. */
    ID3D11Texture2D *d3d11_direct;
 #endif
-   void            *fence;
-   /* The video thread has driven the driver with this slot and its
-    * fence is armed; the next user of the slot waits it first. */
-   bool             in_flight;
+   /* Armed by the video thread after every frame it drives the driver
+    * with from this slot; the next user of the slot waits it first.
+    * Handed between the two threads lock-free: video_thread_hw_fence.h. */
+   hw_fence_t       fence;
 } hw_slot_t;
 
 enum hw_api
@@ -163,18 +164,16 @@ static void hw_wait_slot(hw_ring_t *ring, unsigned i)
 {
    hw_slot_t *s        = &ring->slot[i];
    thread_video_t *thr = ring->thr;
-   if (!s->in_flight)
+   if (!thr->poke || !thr->poke->hw_ring_fence_wait)
       return;
-   if (thr->poke && thr->poke->hw_ring_fence_wait)
-   {
 #ifdef __APPLE__
-      while (!thr->poke->hw_ring_fence_wait(thr->driver_data, s->fence, 2000))
-         video_thread_main_pump();
+   while (!hw_fence_wait(&s->fence, thr->poke->hw_ring_fence_wait,
+            thr->driver_data, 2000))
+      video_thread_main_pump();
 #else
-      thr->poke->hw_ring_fence_wait(thr->driver_data, s->fence, HW_RING_WAIT_FOREVER);
+   hw_fence_wait(&s->fence, thr->poke->hw_ring_fence_wait,
+         thr->driver_data, HW_RING_WAIT_FOREVER);
 #endif
-   }
-   s->in_flight = false;
 }
 
 /* --- Vulkan: the core's side, main thread ----------------------------- */
@@ -544,12 +543,16 @@ static bool hw_ring_setup(thread_video_t *thr, hw_ring_t **out)
    ring->thr            = thr;
    retro_atomic_int_init(&ring->last_presented, -1);
    for (i = 0; i < VIDEO_THREAD_HW_RING; i++)
+      hw_fence_init(&ring->slot[i].fence);
+   for (i = 0; i < VIDEO_THREAD_HW_RING * HW_FENCE_CELLS; i++)
    {
-      if (!thr->poke->hw_ring_fence_new(thr->driver_data, &ring->slot[i].fence))
+      if (!thr->poke->hw_ring_fence_new(thr->driver_data,
+               &ring->slot[i / HW_FENCE_CELLS].fence.cell[i % HW_FENCE_CELLS]))
       {
          unsigned j;
          for (j = 0; j < i; j++)
-            thr->poke->hw_ring_fence_free(thr->driver_data, ring->slot[j].fence);
+            thr->poke->hw_ring_fence_free(thr->driver_data,
+                  ring->slot[j / HW_FENCE_CELLS].fence.cell[j % HW_FENCE_CELLS]);
          free(ring);
          return false;
       }
@@ -946,10 +949,11 @@ void video_thread_hw_after_frame(thread_video_t *thr, int hw_slot)
    if (!ring || hw_slot < 0 || hw_slot >= VIDEO_THREAD_HW_RING)
       return;
    s = &ring->slot[hw_slot];
-   /* Signalled after the submission the frame call just made; the fence
-    * was reset by whoever waited it last, or is fresh. */
-   thr->poke->hw_ring_fence_signal(thr->driver_data, s->fence);
-   s->in_flight = true;
+   /* Signalled after the submission the frame call just made, on a
+    * fence nobody else holds: a dupe arms a slot that is armed already. */
+   hw_fence_arm(&s->fence, thr->poke->hw_ring_fence_signal,
+         thr->poke->hw_ring_fence_wait, thr->driver_data,
+         HW_RING_WAIT_FOREVER);
 }
 
 bool video_thread_hw_holds_frame(thread_video_t *thr)
@@ -1015,7 +1019,11 @@ void video_thread_hw_free(thread_video_t *thr)
       /* Wait anything in flight before its fence goes. */
       hw_wait_slot(ring, i);
       if (thr->poke && thr->poke->hw_ring_fence_free)
-         thr->poke->hw_ring_fence_free(thr->driver_data, s->fence);
+      {
+         unsigned c;
+         for (c = 0; c < HW_FENCE_CELLS; c++)
+            thr->poke->hw_ring_fence_free(thr->driver_data, s->fence.cell[c]);
+      }
 #ifdef HAVE_VULKAN
       free(s->semaphores);
       free(s->cmd);

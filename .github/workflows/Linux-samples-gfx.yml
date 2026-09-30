@@ -1376,3 +1376,25 @@ jobs:
              ./preview_audio_decode_test fixtures/trailing_large.mp4 1024 island
              ./preview_audio_decode_test fixtures/trailing_large.mp4 262144 island'
           echo "[pass] preview_audio_decode_test (TSan)"
+
+      - name: Build and run hw_ring_fence_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/gfx/hw_ring_fence
+        run: |
+          set -u
+          set -o pipefail
+          # The hardware ring's fence handoff between the video thread
+          # and the core's thread (gfx/video_thread_hw_fence.h), the
+          # tree's own header, with two threads at one slot: a fence is
+          # signalled only while idle, waited only once signalled, and
+          # never inside two calls at once - with no lock. The single
+          # re-signalled fence it replaced is built too and must fail.
+          make clean all SANITIZER=address,undefined
+          timeout 120 make check SANITIZER=address,undefined
+          echo "[pass] hw_ring_fence_test (ASan + UBSan)"
+          # The two threads share nothing but atomics, and TSan is
+          # what says so.
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 make check SANITIZER=thread
+          echo "[pass] hw_ring_fence_test (TSan)"
+          make clean

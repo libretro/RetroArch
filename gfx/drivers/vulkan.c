@@ -7452,127 +7452,66 @@ static bool vulkan_hw_ring_install(void *data, const void *image,
    return true;
 }
 
-/* The ring's fence for one slot.
- *
- * The video thread signals it after every frame it draws from the
- * slot, and a dupe draws from the same slot again - one frame in two
- * for a 30 fps game, every frame while the menu is up over a hardware
- * core - so the fence is signalled again before anyone has waited it.
- * A VkFence cannot take that: it is signalled once, and submitting one
- * that is signalled, or still pending, is invalid usage
- * (VUID-vkQueueSubmit-fence-00063 and -00064). Drivers differ in what
- * they then do; lavapipe aborts.
- *
- * So the fence records whether it is armed, and a signal that finds it
- * armed waits the earlier arming out and resets it first. That wait is
- * on work submitted a frame ago. The lock orders it against the main
- * thread's wait-and-reset: a reset must not land on a fence the other
- * thread has just submitted. */
-typedef struct
-{
-   VkFence  fence;
-#ifdef HAVE_THREADS
-   slock_t *lock;
-#endif
-   bool     armed;
-} vk_hw_ring_fence_t;
-
+/* The ring's fences. The wrapper hands each one between the video
+ * thread and the core's thread so that only one of them holds it at a
+ * time, signals it only while it is idle and waits it only once it has
+ * been signalled (video_thread_hw_fence.h) - which is what a VkFence
+ * needs: it may not be submitted while signalled or pending, nor reset
+ * under the other thread. Nothing here needs a lock of its own. */
 static bool vulkan_hw_ring_fence_new(void *data, void **fence)
 {
    VkFenceCreateInfo info;
-   vk_hw_ring_fence_t *f;
+   VkFence f = VK_NULL_HANDLE;
    vk_t *vk  = (vk_t*)data;
    if (!vk || !vk->context || !fence)
       return false;
-   if (!(f = (vk_hw_ring_fence_t*)calloc(1, sizeof(*f))))
-      return false;
    memset(&info, 0, sizeof(info));
    info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-   if (vkCreateFence(vk->context->device, &info, NULL, &f->fence) != VK_SUCCESS)
-   {
-      free(f);
+   if (vkCreateFence(vk->context->device, &info, NULL, &f) != VK_SUCCESS)
       return false;
-   }
-#ifdef HAVE_THREADS
-   if (!(f->lock = slock_new()))
-   {
-      vkDestroyFence(vk->context->device, f->fence, NULL);
-      free(f);
-      return false;
-   }
-#endif
-   *fence = f;
+   *fence = (void*)(uintptr_t)f;
    return true;
 }
 
 static void vulkan_hw_ring_fence_free(void *data, void *fence)
 {
-   vk_hw_ring_fence_t *f = (vk_hw_ring_fence_t*)fence;
-   vk_t *vk              = (vk_t*)data;
-   if (!vk || !vk->context || !f)
+   vk_t *vk = (vk_t*)data;
+   if (!vk || !vk->context || !fence)
       return;
-   vkDestroyFence(vk->context->device, f->fence, NULL);
-#ifdef HAVE_THREADS
-   slock_free(f->lock);
-#endif
-   free(f);
+   vkDestroyFence(vk->context->device, (VkFence)(uintptr_t)fence, NULL);
 }
 
 /* An empty submission that signals the fence: it completes after every
  * submission before it on the queue, so after the frame just made. */
 static void vulkan_hw_ring_fence_signal(void *data, void *fence)
 {
-   vk_hw_ring_fence_t *f = (vk_hw_ring_fence_t*)fence;
-   vk_t *vk              = (vk_t*)data;
-   if (!vk || !vk->context || !f)
+   vk_t *vk = (vk_t*)data;
+   if (!vk || !vk->context || !fence)
       return;
-#ifdef HAVE_THREADS
-   slock_lock(f->lock);
-#endif
-   if (f->armed)
-   {
-      vkWaitForFences(vk->context->device, 1, &f->fence, VK_TRUE, UINT64_MAX);
-      vkResetFences(vk->context->device, 1, &f->fence);
-   }
-   f->armed = true;
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
 #endif
-   vkQueueSubmit(vk->context->queue, 0, NULL, f->fence);
+   vkQueueSubmit(vk->context->queue, 0, NULL, (VkFence)(uintptr_t)fence);
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
-   slock_unlock(f->lock);
 #endif
 }
 
-/* Waiting needs no queue. Returns true with the fence reset and ready
- * to be signalled again, false when timeout_us passed first. */
+/* Waits the fence and resets it, ready to be signalled again. Needs no
+ * queue; the caller is the only holder of the fence. */
 static bool vulkan_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_us)
 {
-   bool ret              = true;
-   vk_hw_ring_fence_t *f = (vk_hw_ring_fence_t*)fence;
-   vk_t *vk              = (vk_t*)data;
-   if (!vk || !vk->context || !f)
+   VkFence f;
+   vk_t *vk = (vk_t*)data;
+   if (!vk || !vk->context || !fence)
       return true;
-#ifdef HAVE_THREADS
-   slock_lock(f->lock);
-#endif
-   if (f->armed)
-   {
-      if (vkWaitForFences(vk->context->device, 1, &f->fence, VK_TRUE,
-               timeout_us == HW_RING_WAIT_FOREVER
-                  ? UINT64_MAX : (uint64_t)timeout_us * 1000) == VK_SUCCESS)
-      {
-         vkResetFences(vk->context->device, 1, &f->fence);
-         f->armed = false;
-      }
-      else
-         ret = false;
-   }
-#ifdef HAVE_THREADS
-   slock_unlock(f->lock);
-#endif
-   return ret;
+   f = (VkFence)(uintptr_t)fence;
+   if (vkWaitForFences(vk->context->device, 1, &f, VK_TRUE,
+            timeout_us == HW_RING_WAIT_FOREVER
+               ? UINT64_MAX : (uint64_t)timeout_us * 1000) != VK_SUCCESS)
+      return false;
+   vkResetFences(vk->context->device, 1, &f);
+   return true;
 }
 
 static retro_time_t vulkan_get_last_present_time(void *data)
