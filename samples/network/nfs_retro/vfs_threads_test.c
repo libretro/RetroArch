@@ -96,6 +96,34 @@ int main(int argc, char **argv)
          }
          filestream_close(f);
       }
+      /* the whole file read in order, then closed: read-ahead's counts
+       * add up to it when on, and stay empty when off */
+      if ((f = filestream_open(url_file, RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+      {
+         static uint8_t chunk[4096];
+         uint64_t read_total = 0;
+         unsigned window_kib, direct_kib, want_kib;
+         int64_t  got;
+         while ((got = filestream_read(f, chunk, sizeof(chunk))) > 0)
+            read_total += (uint64_t)got;
+         filestream_close(f);
+         nfs_take_readahead_stats(&window_kib, &direct_kib);
+         want_kib = (unsigned)((read_total + 512) >> 10);
+         if (!phase && (window_kib || direct_kib))
+         {
+            fprintf(stderr, "FAIL: read-ahead off still counted %u + %u KiB\n",
+                  window_kib, direct_kib);
+            failures++;
+         }
+         if (phase && (window_kib + direct_kib + 1 < want_kib
+                  || window_kib + direct_kib > want_kib + 1))
+         {
+            fprintf(stderr, "FAIL: read-ahead counted %u + %u KiB of %u KiB read\n",
+                  window_kib, direct_kib, want_kib);
+            failures++;
+         }
+      }
       nfs_shutdown();
    }
    if (failures)

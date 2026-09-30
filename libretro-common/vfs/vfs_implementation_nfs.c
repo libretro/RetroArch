@@ -406,7 +406,20 @@ struct nfs_prefetch
    struct rnfs_ctx     *c;
    struct nfs_slot     *slot;
    struct rnfs_file    *f;
+   uint64_t             from_window;  /* octets served by the prefetcher */
+   uint64_t             direct;       /* octets it missed, read directly */
 };
+
+/* What the prefetchers served and missed, in KiB, over the streams
+ * closed since nfs_take_readahead_stats() last took them. */
+static retro_atomic_int_t nfs_ra_window_kib;
+static retro_atomic_int_t nfs_ra_direct_kib;
+
+void nfs_take_readahead_stats(unsigned *window_kib, unsigned *direct_kib)
+{
+   *window_kib = (unsigned)retro_atomic_exchange_int(&nfs_ra_window_kib, 0);
+   *direct_kib = (unsigned)retro_atomic_exchange_int(&nfs_ra_direct_kib, 0);
+}
 
 #ifdef HAVE_THREADS
 static int64_t nfs_prefetch_fetch(void *user, uint64_t off, uint8_t *buf, size_t len)
@@ -476,6 +489,8 @@ static void nfs_prefetch_stop(libretro_vfs_implementation_file *stream)
    if (!np)
       return;
    vfs_prefetch_free(np->p);              /* joins the thread first */
+   retro_atomic_fetch_add_int(&nfs_ra_window_kib, (int)((np->from_window + 512) >> 10));
+   retro_atomic_fetch_add_int(&nfs_ra_direct_kib, (int)((np->direct + 512) >> 10));
    rnfs_close(np->c, np->f);
    cfg = nfs_cfg();
    rnfs_set_readahead(np->c, cfg ? cfg->readahead * 1024 : 0);
@@ -563,6 +578,7 @@ int64_t retro_vfs_file_read_nfs(libretro_vfs_implementation_file *stream,
       if (got >= 0)
       {
          rnfs_seek(NULL, ns->f, got, 1);
+         np->from_window += (uint64_t)got;
          return got;
       }
    }
@@ -570,6 +586,9 @@ int64_t retro_vfs_file_read_nfs(libretro_vfs_implementation_file *stream,
       return -1;
    r = rnfs_read(c, ns->f, buf, (size_t)len);
    nfs_give(c, slot);
+   /* a read the prefetcher had nothing ready for */
+   if (r > 0 && stream->nfs_prefetch)
+      ((struct nfs_prefetch*)(void*)(uintptr_t)stream->nfs_prefetch)->direct += (uint64_t)r;
    return r;
 }
 

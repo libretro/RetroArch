@@ -3385,10 +3385,40 @@ static bool command_event_core_deinit_pending(void)
 
 static void command_event_finish_content_deinit(void);
 
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+/* How much of what the content read over the network read-ahead had
+ * ready, so a user can tell whether a window size helps: logged once
+ * the core has closed its files, and only while read-ahead is on. */
+static void command_event_log_readahead(const char *proto,
+      unsigned window_kib, unsigned direct_kib)
+{
+   unsigned total = window_kib + direct_kib;
+   if (!total)
+      return;
+   RARCH_LOG("[%s] Read-ahead: %u of %u KiB read came from its window (%u%%).\n",
+         proto, window_kib, total,
+         (unsigned)(((uint64_t)window_kib * 100 + total / 2) / total));
+}
+#endif
+
 static void command_event_core_deinit_finish(void)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    command_event_finish_content_deinit();
+#ifdef HAVE_SMBCLIENT
+   {
+      unsigned w, d;
+      smb_take_readahead_stats(&w, &d);
+      command_event_log_readahead("SMB", w, d);
+   }
+#endif
+#ifdef HAVE_NFSCLIENT
+   {
+      unsigned w, d;
+      nfs_take_readahead_stats(&w, &d);
+      command_event_log_readahead("NFS", w, d);
+   }
+#endif
    runloop_st->content_closing = false;
 }
 

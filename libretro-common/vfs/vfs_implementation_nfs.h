@@ -93,6 +93,11 @@ int retro_vfs_closedir_nfs(nfs_dir_handle *dh);
 int retro_vfs_stat_nfs(const char *path, int64_t *size);
 int retro_vfs_file_error_nfs(libretro_vfs_implementation_file *stream);
 void nfs_shutdown(void);
+
+/* What read-ahead served from its windows and what it missed, in KiB,
+ * over the files closed since the last call; the counts are then reset.
+ * Both are 0 while read-ahead is off. */
+void nfs_take_readahead_stats(unsigned *window_kib, unsigned *direct_kib);
 bool nfs_probe_connection(void);
 const char *nfs_get_last_error(void);
 

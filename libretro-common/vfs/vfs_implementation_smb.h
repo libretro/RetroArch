@@ -86,6 +86,11 @@ int retro_vfs_file_error_smb(libretro_vfs_implementation_file *stream);
 /* Context management */
 void smb_shutdown(void);
 
+/* What read-ahead served from its windows and what it missed, in KiB,
+ * over the files closed since the last call; the counts are then reset.
+ * Both are 0 while read-ahead is off. */
+void smb_take_readahead_stats(unsigned *window_kib, unsigned *direct_kib);
+
 #ifdef __cplusplus
 }
 #endif
