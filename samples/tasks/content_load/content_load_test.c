@@ -1270,6 +1270,142 @@ static void lane_replay_reply(const char *dir)
 #endif
 
 /* ------------------------------------------------------------------ */
+/* Lane: screenshot steps                                              */
+/* ------------------------------------------------------------------ */
+
+#if defined(HAVE_SCREENSHOTS) && defined(HAVE_RPNG)
+/* A task ahead of the screenshot that spends the shared per-frame I/O
+ * window on every check, so the screenshot's handler gets only the
+ * window's floor: one row a check, on any machine. */
+static bool ss_hog_stop;
+static void ss_hog_handler(retro_task_t *task)
+{
+   nbio_budget_t b;
+   if (ss_hog_stop)
+   {
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+      return;
+   }
+   task_nbio_slice_open(&b);
+   while (task_nbio_slice_within_budget(&b, 0, 0)) { }
+   task_nbio_slice_close(&b);
+}
+
+static bool ss_is_screenshot(retro_task_t *task, void *user_data)
+{
+   if (task->type != TASK_TYPE_BLOCKING)
+      return false;
+   if (user_data)
+      *(retro_task_t**)user_data = task;
+   return true;
+}
+
+static bool ss_in_flight(void)
+{
+   task_finder_data_t find;
+   find.func     = ss_is_screenshot;
+   find.userdata = NULL;
+   return task_queue_find(&find);
+}
+
+static bool ss_png_complete(const char *path)
+{
+   static const uint8_t magic[8] = { 0x89, 'P', 'N', 'G', 13, 10, 26, 10 };
+   uint8_t head[8], tail[8];
+   bool ok = false;
+   FILE *f = fopen(path, "rb");
+   if (!f)
+      return false;
+   if (     fread(head, 1, 8, f) == 8
+         && fseek(f, -8, SEEK_END) == 0
+         && fread(tail, 1, 8, f) == 8)
+      ok = !memcmp(head, magic, 8) && !memcmp(tail, "IEND", 4);
+   fclose(f);
+   return ok;
+}
+
+/* With Threaded Tasks off a screenshot is encoded a slice at a time
+ * from the frame loop, not in one handler call that holds the frame
+ * for the whole deflate; the file it leaves is whole.  Cancelled part
+ * way, it leaves no file. */
+static void lane_screenshot_steps(const char *dir)
+{
+   settings_t *settings = config_get_ptr();
+   retro_task_t *hog;
+   char path[600], file[640];
+   unsigned had = failures, checks = 0, rows = 240;
+
+   if (!core_is_up())
+   {
+      CHECK(task_push_load_contentless_core_from_menu(core_path),
+            "the load was not started");
+      pump(200);
+   }
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   configuration_set_bool(settings, settings->bools.threaded_data_runloop_enable, false);
+   task_queue_unset_threaded();
+   pump(3);
+
+   ss_hog_stop = false;
+   hog = task_init();
+   hog->handler = ss_hog_handler;
+   hog->flags  |= RETRO_TASK_FLG_MUTE;
+   task_queue_push(hog);
+
+   /* With fullpath the name is the file, as given */
+   snprintf(path, sizeof(path), "%s/harness_shot.png", dir);
+   snprintf(file, sizeof(file), "%s", path);
+   remove(file);
+   CHECK(take_screenshot(dir, path, false, false, true, true),
+         "the screenshot was not started");
+   while (ss_in_flight() && checks < 4 * rows)
+   {
+      task_queue_check();
+      checks++;
+   }
+   CHECK(!ss_in_flight(), "the screenshot did not finish in %u checks", checks);
+   CHECK(checks >= rows,
+         "the screenshot finished in %u checks for %u rows: encoded in one go",
+         checks, rows);
+   CHECK(ss_png_complete(file), "the screenshot file is not a whole PNG");
+   remove(file);
+
+   /* Cancelled part way through */
+   CHECK(take_screenshot(dir, path, false, false, true, true),
+         "the second screenshot was not started");
+   {
+      unsigned n;
+      for (n = 0; n < 20; n++)
+         task_queue_check();
+   }
+   CHECK(ss_in_flight(), "the second screenshot was already done");
+   {
+      retro_task_t *shot = NULL;
+      task_finder_data_t find;
+      find.func     = ss_is_screenshot;
+      find.userdata = &shot;
+      if (task_queue_find(&find) && shot)
+         task_queue_cancel_task(shot);
+   }
+   {
+      unsigned n;
+      for (n = 0; n < 20 && ss_in_flight(); n++)
+         task_queue_check();
+   }
+   CHECK(!ss_in_flight(), "the cancelled screenshot did not retire");
+   CHECK(!path_is_valid(file), "a cancelled screenshot left a partial file");
+
+   ss_hog_stop = true;
+   pump(3);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] screenshot-steps lane (%u checks for %u rows)\n",
+            checks, rows);
+}
+#endif
+
+/* ------------------------------------------------------------------ */
 /* Lane: close content                                                 */
 /* ------------------------------------------------------------------ */
 
@@ -1441,6 +1577,9 @@ int main(int argc, char *argv[])
    lane_acceptance(dir);
 #ifdef HAVE_BSV_MOVIE
    lane_replay_reply(dir);
+#endif
+#if defined(HAVE_SCREENSHOTS) && defined(HAVE_RPNG)
+   lane_screenshot_steps(dir);
 #endif
 
    main_exit(NULL);

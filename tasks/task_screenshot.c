@@ -90,6 +90,11 @@ struct screenshot_task_state
    /* Colour-space metadata for an HDR screenshot (SS_TASK_FLAG_HDR). The
     * frame buffer then holds three uint16_t per pixel (48-bit RGB). */
    struct rpng_hdr_metadata hdr;
+#if defined(HAVE_RPNG)
+   /* The encode in progress, from the handler's first call */
+   rpng_encoder_t *enc;
+   intfstream_t   *enc_s;
+#endif
 };
 
 /* The image encoders are pure (bytes in -> bytes out); this task owns
@@ -103,15 +108,12 @@ struct screenshot_task_state
  * straight into the file, which needs only a few rows of scratch. */
 
 #if defined(HAVE_RPNG)
-static bool screenshot_save_png(const char *path, const uint8_t *data,
-      unsigned dims, signed pitch,
+/* Opens the file and begins the encode: the header is written, the
+ * rows follow in steps. */
+static bool screenshot_png_begin(screenshot_task_state_t *state,
+      const uint8_t *data, unsigned dims, signed pitch,
       enum rpng_pixfmt fmt, const struct rpng_hdr_metadata *hdr)
 {
-   bool ret;
-   intfstream_t *intf_s = intfstream_open_file(path,
-         RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
    /* Stream the encode straight into the file.  The VFS gives every
     * file a 64 KiB stdio buffer, so the encoder's 16 KiB IDAT chunks
     * already coalesce into large writes; measured at 4K, buffering the
@@ -120,15 +122,39 @@ static bool screenshot_save_png(const char *path, const uint8_t *data,
     * of magnitude) while costing a raw-frame-sized allocation that
     * no-overcommit platforms would have to commit up front.  Peak
     * scratch this way is a handful of rows plus the deflate window. */
-   if (!intf_s)
+   if (!(state->enc_s = intfstream_open_file(state->filename,
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
       return false;
+   if (!(state->enc = rpng_encode_begin(data, state->enc_s,
+         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), pitch, fmt, hdr)))
+   {
+      intfstream_close(state->enc_s);
+      free(state->enc_s);
+      state->enc_s = NULL;
+      filestream_delete(state->filename);
+      return false;
+   }
+   return true;
+}
 
-   ret = rpng_save_image_stream_fmt(data, intf_s,
-         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), pitch, fmt, hdr);
-
-   intfstream_close(intf_s);
-   free(intf_s);
-   return ret;
+/* Closes the file and lets go of the encoder and the scaled copy.  A
+ * file not written through (@done false) is removed rather than left
+ * half-written. */
+static void screenshot_png_end(screenshot_task_state_t *state, bool done)
+{
+   rpng_encode_free(state->enc);
+   state->enc = NULL;
+   if (state->enc_s)
+   {
+      intfstream_close(state->enc_s);
+      free(state->enc_s);
+      state->enc_s = NULL;
+      if (!done)
+         filestream_delete(state->filename);
+   }
+   free(state->out_buffer);
+   state->out_buffer = NULL;
 }
 #elif defined(HAVE_RBMP)
 static bool screenshot_save_bmp(const char *path, const void *frame,
@@ -158,61 +184,42 @@ static bool screenshot_save_bmp(const char *path, const void *frame,
 }
 #endif
 
-static bool screenshot_dump_direct(screenshot_task_state_t *state)
-{
-   bool ret                      = false;
-
 #if defined(HAVE_RPNG)
+/* Chooses what the encoder reads - the source itself where no
+ * resampling is needed, the scaled BGR24 copy where it is - and begins
+ * the encode. */
+static bool screenshot_encode_begin(screenshot_task_state_t *state)
+{
    struct scaler_ctx *scaler     = (struct scaler_ctx*)&state->scaler;
    const uint8_t* input          = (const uint8_t*)state->frame
       + ((int)VIDEO_SCALE_H(state->dims) - 1) * state->pitch;
 
-   if (!input)
-      return ret;
+   if (!state->frame)
+      return false;
 
    /* HDR screenshot: the frame is 48-bit RGB (three uint16_t per pixel),
     * bottom-up, and carries colour-space metadata. Encode a 16-bit PNG
     * tagged with the HDR chunks, using the same negative-pitch top-down
     * trick as the BGR24 fast path. Never resampled. */
    if (state->flags & SS_TASK_FLAG_HDR)
-   {
-      ret = screenshot_save_png(
-            state->filename,
-            input,
-            state->out_dims,
-            -state->pitch,
-            RPNG_PIXFMT_RGB48,
-            &state->hdr);
-      if (state->out_buffer)
-         free(state->out_buffer);
-      return ret;
-   }
+      return screenshot_png_begin(state, input, state->out_dims,
+            -state->pitch, RPNG_PIXFMT_RGB48, &state->hdr);
 
    /* Fast path: source is already BGR24 and no resampling is
     * needed, so hand the source buffer directly to the PNG
-    * encoder. rpng_save_image_stream walks rows via `data +=
-    * pitch` with a signed pitch, so a bottom-up source is
-    * encoded top-down for free by starting at the last row and
-    * passing a negative row stride (same trick take_screenshot_raw
-    * uses via screenshot_dump's pitch argument).
+    * encoder. The encoder walks rows via `data += pitch` with a
+    * signed pitch, so a bottom-up source is encoded top-down for
+    * free by starting at the last row and passing a negative row
+    * stride (same trick take_screenshot_raw uses via
+    * screenshot_dump's pitch argument).
     *
     * This avoids allocating a second full-frame BGR24 buffer and
     * the flip-and-copy the scaler would otherwise do between them;
     * at 4K that is ~48 MiB of allocation and copy per screenshot. */
    if (     (state->flags & SS_TASK_FLAG_BGR24)
          &&  state->out_dims == state->dims)
-   {
-      ret = screenshot_save_png(
-            state->filename,
-            input,
-            state->out_dims,
-            -state->pitch,
-            RPNG_PIXFMT_BGR24,
-            NULL);
-      /* state->out_buffer is NULL in this path (see screenshot_dump);
-       * nothing to free. */
-      return ret;
-   }
+      return screenshot_png_begin(state, input, state->out_dims,
+            -state->pitch, RPNG_PIXFMT_BGR24, NULL);
 
    /* Same idea for the raw-framebuffer formats: when no resampling is
     * needed, feed the core's XRGB8888/RGB565 rows straight to the
@@ -222,20 +229,16 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
     * 4K), for output that is pixel-identical. */
    if (     !(state->flags & SS_TASK_FLAG_BGR24)
          &&  state->out_dims == state->dims)
-   {
-      ret = screenshot_save_png(
-            state->filename,
-            input,
-            state->out_dims,
+      return screenshot_png_begin(state, input, state->out_dims,
             -state->pitch,
             (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
                   ? RPNG_PIXFMT_XRGB8888
                   : RPNG_PIXFMT_RGB565,
             NULL);
-      /* state->out_buffer is NULL in this path (see screenshot_dump). */
-      return ret;
-   }
 
+   /* Resampled (a save state's thumbnail at the core's own size): the
+    * scaled copy is made here, in one go, and encoded in steps.  It is
+    * the output's size, which for a thumbnail is the core's. */
    if (state->flags & SS_TASK_FLAG_BGR24)
       scaler->in_fmt             = SCALER_FMT_BGR24;
    else if (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
@@ -257,15 +260,21 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
 
    scaler_ctx_gen_reset(&state->scaler);
 
-   ret = screenshot_save_png(
-         state->filename,
-         state->out_buffer,
-         state->out_dims,
+   return screenshot_png_begin(state, state->out_buffer, state->out_dims,
          (signed)(VIDEO_SCALE_W(state->out_dims) * 3),
-         RPNG_PIXFMT_BGR24,
-         NULL);
+         RPNG_PIXFMT_BGR24, NULL);
+}
+#endif
 
-   free(state->out_buffer);
+/* The whole screenshot at once, for a caller that asked for no task. */
+static bool screenshot_dump_direct(screenshot_task_state_t *state)
+{
+   bool ret                      = false;
+
+#if defined(HAVE_RPNG)
+   if (screenshot_encode_begin(state))
+      ret = (rpng_encode_step(state->enc, NULL, NULL) == 1);
+   screenshot_png_end(state, ret);
 #elif defined(HAVE_RBMP)
    {
       enum rbmp_source_type bmp_type = RBMP_SOURCE_TYPE_DONT_CARE;
@@ -291,6 +300,13 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
  *
  * Saves a screenshot to disk.
  **/
+#if defined(HAVE_RPNG)
+static bool screenshot_within_budget(void *ud)
+{
+   return task_nbio_slice_within_budget(ud, 0, 0);
+}
+#endif
+
 static void task_screenshot_handler(retro_task_t *task)
 {
    uint8_t flg;
@@ -311,7 +327,29 @@ static void task_screenshot_handler(retro_task_t *task)
       goto task_finished;
 
    /* Take screenshot */
+#if defined(HAVE_RPNG)
+   /* Encoded a bounded number of rows per check under the shared
+    * per-frame I/O window, so a large screenshot does not hold the
+    * frame thread for the whole deflate with Threaded Tasks off. */
+   {
+      nbio_budget_t b;
+      int r = -1;
+      if (!state->enc && !screenshot_encode_begin(state))
+         r = -1;
+      else
+      {
+         task_nbio_slice_open(&b);
+         r = rpng_encode_step(state->enc, screenshot_within_budget, &b);
+         task_nbio_slice_close(&b);
+      }
+      if (r == 0)
+         return;
+      ret = (r == 1);
+      screenshot_png_end(state, ret);
+   }
+#else
    ret = screenshot_dump_direct(state);
+#endif
 
    /* Push screenshot to image history playlist */
 #ifdef HAVE_IMAGEVIEWER
@@ -356,6 +394,12 @@ static void task_screenshot_handler(retro_task_t *task)
 task_finished:
    if (task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+
+#if defined(HAVE_RPNG)
+   /* Cancelled mid-encode: the partial file goes */
+   if (state && state->enc)
+      screenshot_png_end(state, false);
+#endif
 
    if (task->title)
       task_free_title(task);
