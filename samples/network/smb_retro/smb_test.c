@@ -37,6 +37,9 @@ int main(int argc, char **argv)
       rsmb_set_kerberos(c, getenv("SMB_KRB_REALM"), getenv("SMB_KRB_KDC"),
             getenv("SMB_KRB_PORT") ? (uint16_t)atoi(getenv("SMB_KRB_PORT")) : 0);
    CHECK(rsmb_connect(c, argv[1], argv[2]) == 0, "connect");
+   /* the signing algorithm negotiated, when the harness says which */
+   if (getenv("SMB_EXPECT_SIGN"))
+      CHECK(rsmb_get_sign_alg(c) == (unsigned)atoi(getenv("SMB_EXPECT_SIGN")), "signing algorithm");
    if (getenv("SMB_KRB_REQUIRE"))
       CHECK(rsmb_used_kerberos(c), "session authenticated with Kerberos");
    CHECK(rsmb_echo(c) == 0, "echo");

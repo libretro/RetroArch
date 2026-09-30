@@ -49,6 +49,7 @@ cat > $D/smb.conf << EOC
    server max protocol = $1
    server signing = mandatory
    smb encrypt = $2
+   ${3:+server smb3 signing algorithms = $3}
 [share]
    path = $D/share
    read only = no
@@ -65,7 +66,7 @@ run() { # label max_protocol encrypt expect_rc password
    # smbd and the samba-dcerpcd it spawned for this config; a stale
    # rpc daemon from a previous run answers the srvsvc pipe for nobody
    stop; sleep 0.3
-   conf $2 $3
+   conf $2 $3 "${SIGN_ALGS:-}"
    smbd -s $D/smb.conf -D
    # wait for the listener rather than guessing a delay
    i=0; while [ $i -lt 50 ]; do
@@ -91,7 +92,13 @@ run "SMB 2.0.2, HMAC-SHA256 signing"        SMB2_02 default  0 'Sekret1!'
 run "SMB 2.1, HMAC-SHA256 signing"          SMB2_10 default  0 'Sekret1!'
 run "SMB 3.0, AES-CMAC signing"             SMB3_00 default  0 'Sekret1!'
 run "SMB 3.0.2, AES-CMAC signing"           SMB3_02 default  0 'Sekret1!'
-run "SMB 3.1.1, preauth + AES-CMAC signing" SMB3_11 default  0 'Sekret1!'
+# 3.1.1 offers GMAC and CMAC: Samba's default list takes GMAC; a server
+# that allows only CMAC gets CMAC. smb_test checks which was chosen.
+export SMB_EXPECT_SIGN=2
+run "SMB 3.1.1, preauth + AES-GMAC signing" SMB3_11 default 0 'Sekret1!'
+SIGN_ALGS=AES-128-CMAC; SMB_EXPECT_SIGN=1
+run "SMB 3.1.1, preauth + AES-CMAC signing (server allows no GMAC)" SMB3_11 default 0 'Sekret1!'
+SIGN_ALGS=; unset SMB_EXPECT_SIGN
 run "SMB 3.0.2, AES-CCM sealing required"   SMB3_02 required 0 'Sekret1!'
 run "SMB 3.1.1, AES-GCM sealing required"   SMB3_11 required 0 'Sekret1!'
 # A guest / anonymous session is returned unsigned even under mandatory

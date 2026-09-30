@@ -33,8 +33,12 @@ problem, and set it back afterwards.
 
 The SMB client connects to Windows shares, Samba and NAS devices using
 SMB 2.0.2 through 3.1.1. Messages are signed (a guest session has no key
-to sign with); when a server or share requires encryption, traffic is
-sealed with AES-CCM (SMB 3.0/3.0.2) or AES-GCM (SMB 3.1.1).
+to sign with): with AES-GMAC on SMB 3.1.1 when the server offers it
+(Samba 4.15 and later, Windows 11 and Server 2022), otherwise AES-CMAC,
+or HMAC-SHA256 on SMB 2. GMAC runs several times faster than CMAC at
+both ends, which matters where every read is signed, as Windows 11 24H2
+requires by default. When a server or share requires encryption, traffic
+is sealed with AES-CCM (SMB 3.0/3.0.2) or AES-GCM (SMB 3.1.1).
 Authentication is NTLMv2 with a user name and password, or Kerberos in
 an Active Directory domain.
 

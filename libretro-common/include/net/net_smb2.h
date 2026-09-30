@@ -159,6 +159,9 @@ int rsmb_echo(struct rsmb_ctx *c);
 const char *rsmb_get_error(const struct rsmb_ctx *c);
 /* Last NT status, for callers that map them. */
 uint32_t rsmb_get_status(const struct rsmb_ctx *c);
+/* The signing algorithm in use: 0 HMAC-SHA256 (2.x), 1 AES-CMAC,
+ * 2 AES-GMAC (3.1.1, when the server chose it). */
+unsigned rsmb_get_sign_alg(const struct rsmb_ctx *c);
 int rsmb_get_fd(const struct rsmb_ctx *c);
 
 RETRO_END_DECLS
