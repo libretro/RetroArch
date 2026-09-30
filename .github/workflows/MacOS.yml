@@ -32,7 +32,7 @@ jobs:
         # companion, the grid, the tables, the dialogs - as AppKit does them.
         tools/companion_cocoa_test_macos.sh 2>&1 | grep -v "^$"
 
-    - name: Metal texture behaviour the surface and overlay paths assume
+    - name: Metal texture behaviour the surface, overlay and lent-framebuffer paths assume
       run: |
         set -o pipefail
         # The driver's Metal paths have only ever been compiled. This

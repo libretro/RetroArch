@@ -54,6 +54,7 @@
 
 #include "../font_driver.h"
 #include "../video_driver.h"
+#include "../gfx_instrument.h"
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
 #endif
@@ -418,6 +419,9 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
 - (BOOL)setShaderFromPath:(NSString *)path;
 - (void)clearShader;
 - (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch;
+/* GET_CURRENT_SOFTWARE_FRAMEBUFFER: lend the core a buffer the GPU
+ * reads directly. See lendFramebuffer: in the implementation. */
+- (bool)lendFramebuffer:(struct retro_framebuffer *)fb;
 - (bool)readViewport:(uint8_t *)buffer isIdle:(bool)isIdle;
 - (bool)readViewportHDR:(uint16_t *)buffer
                  isIdle:(bool)isIdle
@@ -5144,6 +5148,20 @@ typedef struct MTLALIGN(16)
    id<MTLTexture> _src; /* source texture */
    bool _srcDirty;
 
+   /* The framebuffer lent to the core (GET_CURRENT_SOFTWARE_FRAMEBUFFER):
+    * a shared-storage buffer the core renders into, seen by the GPU as
+    * a linear texture in the frame's source format. A frame pushed from
+    * it - the whole loan, or a window into it at the loan's pitch - is
+    * blitted out of it, with no host copy. _loanReader is the command
+    * buffer of the last such blit: the next lend waits for it before
+    * the core writes over what it read. */
+   id<MTLBuffer>        _loan;
+   id<MTLTexture>       _loanTex;
+   id<MTLCommandBuffer> _loanReader;
+   NSUInteger           _loanStride;
+   NSUInteger           _loanWidth;
+   NSUInteger           _loanHeight;
+
    id<MTLSamplerState> _samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX][2];
    struct video_shader *_shader;
 
@@ -5236,6 +5254,13 @@ typedef struct MTLALIGN(16)
 {
    int i;
 
+   /* The cached frame may point into the lent framebuffer, which
+    * goes with this view: retire it, and wait out any reader, before
+    * the buffer does. (The GPU's own reads hold the buffer through
+    * the command buffer.) */
+   if (_loan)
+      video_driver_cached_frame_retire();
+
    /* The engine's unretained slots each own one reference placed there
     * by RARCH_STRUCT_ASSIGN; they must be dropped explicitly in both modes.
     * _freeVideoShader clears the per-pass slots and the LUTs and frees
@@ -5263,6 +5288,9 @@ typedef struct MTLALIGN(16)
    [_context release];
    [(id)_texture release];
    [(id)_src release];
+   [(id)_loan release];
+   [(id)_loanTex release];
+   [(id)_loanReader release];
    RARCH_SUPER_DEALLOC();
 #endif
 }
@@ -5548,22 +5576,190 @@ typedef struct MTLALIGN(16)
 
    [self _updateHistory];
 
-   if (   _format == RPixelFormatBGRA8Unorm
-       || _format == RPixelFormatBGRX8Unorm
-       || _format == RPixelFormatBGR10A2Unorm)
    {
-      id<MTLTexture> tex = _engine.frame.texture[0].view;
-      [tex replaceRegion:MTLRegionMake2D(0, 0, (NSUInteger)_size.width, (NSUInteger)_size.height)
-             mipmapLevel:0 withBytes:src
-             bytesPerRow:pitch];
+      NSUInteger win_x, win_y;
+      bool       window = [self _frameWindow:src pitch:pitch x:&win_x y:&win_y];
+      bool       direct = (   _format == RPixelFormatBGRA8Unorm
+                           || _format == RPixelFormatBGRX8Unorm
+                           || _format == RPixelFormatBGR10A2Unorm);
+      /* The whole loan, or a window into it: already where the GPU
+       * reads it. Blit the window into the texture the frame is
+       * sampled from (or converted from), on the blit command buffer
+       * the format conversion also uses, which the context commits
+       * ahead of the frame's own. */
+      if (window)
+      {
+         id<MTLTexture> dst = direct ? _engine.frame.texture[0].view : _src;
+         id<MTLCommandBuffer> cb = _context.blitCommandBuffer;
+         id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
+         GFX_INSTR_INC(GFX_INSTR_FRAME_LENT_WINDOW);
+         [bce copyFromTexture:_loanTex
+                  sourceSlice:0
+                  sourceLevel:0
+                 sourceOrigin:MTLOriginMake(win_x, win_y, 0)
+                   sourceSize:MTLSizeMake((NSUInteger)_size.width, (NSUInteger)_size.height, 1)
+                    toTexture:dst
+             destinationSlice:0
+             destinationLevel:0
+            destinationOrigin:MTLOriginMake(0, 0, 0)];
+         [bce endEncoding];
+         RARCH_ASSIGN(_loanReader, cb);
+         if (!direct)
+            _srcDirty = YES;
+      }
+      else if (direct)
+      {
+         id<MTLTexture> tex = _engine.frame.texture[0].view;
+         GFX_INSTR_INC(GFX_INSTR_FRAME_COPY_HOST);
+         [tex replaceRegion:MTLRegionMake2D(0, 0, (NSUInteger)_size.width, (NSUInteger)_size.height)
+                mipmapLevel:0 withBytes:src
+                bytesPerRow:pitch];
+      }
+      else
+      {
+         GFX_INSTR_INC(GFX_INSTR_FRAME_COPY_HOST);
+         [_src replaceRegion:MTLRegionMake2D(0, 0, (NSUInteger)_size.width, (NSUInteger)_size.height)
+                 mipmapLevel:0 withBytes:src
+                 bytesPerRow:(NSUInteger)(pitch)];
+         _srcDirty = YES;
+      }
    }
-   else
+}
+
+/* Where a pushed frame lies in the lent framebuffer.
+ *
+ * A core that renders into the loan may push back a pointer partway
+ * into it, at the loan's pitch, with the size of the window it wants
+ * shown (an overscan crop by offset; beetle-psx does this). True, with
+ * the window's texel origin, when @src at @pitch with the view's size
+ * is inside the loan, on its pitch and whole: the same test the Vulkan
+ * and D3D12 drivers and the threaded wrapper make. */
+- (bool)_frameWindow:(const void *)src pitch:(NSUInteger)pitch
+                   x:(NSUInteger *)x y:(NSUInteger *)y
+{
+   uintptr_t base, p;
+   size_t off, row;
+   NSUInteger bpp;
+
+   if (!_loan || !_loanTex)
+      return false;
+   base = (uintptr_t)_loan.contents;
+   p    = (uintptr_t)src;
+   if (p < base || p - base >= _loan.length || pitch != _loanStride)
+      return false;
+   bpp  = RPixelFormatToBPP(_format);
+   off  = (size_t)(p - base);
+   row  = off % _loanStride;
+   if (row % bpp)
+      return false;
+   *y   = (NSUInteger)(off / _loanStride);
+   *x   = (NSUInteger)(row / bpp);
+   if (     *x + (NSUInteger)_size.width  > _loanWidth
+         || *y + (NSUInteger)_size.height > _loanHeight)
+      return false;
+   return true;
+}
+
+/* Lend the core a framebuffer of the size it asks for, in the frame's
+ * pixel format, at a row pitch the GPU can read as a linear texture.
+ * The buffer is shared storage, so on Apple silicon the core writes
+ * the memory the GPU samples; the texture over it is in the source
+ * format (BGRA8, or R16Uint for RGB565 as _src is) so a frame pushed
+ * from it needs one blit and no host copy (updateFrame:pitch:).
+ *
+ * Declined when the frame format has no such texture (a 10-bit
+ * source), or when the row pitch the GPU needs is wider than
+ * width * bpp: cores that ignore fb.pitch and write at the tight
+ * pitch would shear, so, as the Vulkan and D3D12 lends do, this one
+ * only goes out at the tight pitch and the core keeps its own buffer
+ * otherwise.
+ *
+ * Before the core writes, the GPU must be done reading the previous
+ * frame out of it: the blit that read it is waited for here (usually
+ * long complete - it was committed ahead of the previous frame's
+ * render). A resize retires the cached frame first, as the pointer
+ * it holds is into the buffer about to go. */
+- (bool)lendFramebuffer:(struct retro_framebuffer *)fb
+{
+   NSUInteger bpp, tight, align, stride;
+   MTLPixelFormat mtlFmt;
+
+   if (!fb->width || !fb->height)
+      return false;
+   switch (_format)
    {
-      [_src replaceRegion:MTLRegionMake2D(0, 0, (NSUInteger)_size.width, (NSUInteger)_size.height)
-              mipmapLevel:0 withBytes:src
-              bytesPerRow:(NSUInteger)(pitch)];
-      _srcDirty = YES;
+      case RPixelFormatBGRA8Unorm:
+      case RPixelFormatBGRX8Unorm:
+         mtlFmt = MTLPixelFormatBGRA8Unorm;
+         break;
+      case RPixelFormatB5G6R5Unorm:
+         mtlFmt = MTLPixelFormatR16Uint;
+         break;
+      default:
+         return false;
    }
+   bpp    = RPixelFormatToBPP(_format);
+   tight  = (NSUInteger)fb->width * bpp;
+   align  = [_context.device minimumLinearTextureAlignmentForPixelFormat:mtlFmt];
+   if (align < 16)
+      align = 16;
+   stride = (tight + align - 1) & ~(align - 1);
+   if (stride != tight)
+      return false;
+
+   if (     !_loan
+         || _loanWidth  != fb->width
+         || _loanHeight != fb->height
+         || _loanStride != stride)
+   {
+      MTLTextureDescriptor *td;
+      /* The cached frame may point into the buffer about to go. */
+      video_driver_cached_frame_retire();
+      if (_loanReader)
+      {
+         [_loanReader waitUntilCompleted];
+         RARCH_RELEASE_NIL(_loanReader);
+      }
+      RARCH_RELEASE_NIL(_loanTex);
+      RARCH_RELEASE_NIL(_loan);
+      GFX_INSTR_INC(GFX_INSTR_FRAME_TEX_CREATE);
+      RARCH_ASSIGN(_loan, RARCH_AUTORELEASE_R([_context.device
+            newBufferWithLength:stride * fb->height
+                        options:MTLResourceStorageModeShared]));
+      if (!_loan)
+         return false;
+      td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:mtlFmt
+                                                              width:fb->width
+                                                             height:fb->height
+                                                          mipmapped:NO];
+      td.storageMode = MTLStorageModeShared;
+      td.usage       = MTLTextureUsageShaderRead;
+      RARCH_ASSIGN(_loanTex, RARCH_AUTORELEASE_R([_loan
+            newTextureWithDescriptor:td offset:0 bytesPerRow:stride]));
+      if (!_loanTex)
+      {
+         RARCH_RELEASE_NIL(_loan);
+         return false;
+      }
+      _loanWidth  = fb->width;
+      _loanHeight = fb->height;
+      _loanStride = stride;
+   }
+   else if (_loanReader)
+   {
+      /* The GPU read the previous frame out of this buffer; the core
+       * is about to write the next one over it. */
+      [_loanReader waitUntilCompleted];
+      RARCH_RELEASE_NIL(_loanReader);
+   }
+
+   fb->data         = _loan.contents;
+   fb->pitch        = stride;
+   fb->format       = (_format == RPixelFormatB5G6R5Unorm)
+      ? RETRO_PIXEL_FORMAT_RGB565 : RETRO_PIXEL_FORMAT_XRGB8888;
+   /* Shared storage is host-cached memory: the core may read it back. */
+   fb->memory_flags = RETRO_MEMORY_TYPE_CACHED;
+   return true;
 }
 
 - (void)_initTexture:(texture_t *)t withDescriptor:(MTLTextureDescriptor *)td
@@ -7145,6 +7341,15 @@ static void metal_show_mouse(void *data, bool state)
          state ? (void*)1 : NULL);
 }
 
+static bool metal_get_current_sw_framebuffer(void *data,
+      struct retro_framebuffer *framebuffer)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (!md)
+      return false;
+   return [md.frameView lendFramebuffer:framebuffer];
+}
+
 static struct video_shader *metal_get_current_shader(void *data)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
@@ -7308,7 +7513,7 @@ static const video_poke_interface_t metal_poke_interface = {
    metal_show_mouse,
    NULL, /* grab_mouse_toggle */
    metal_get_current_shader,
-   NULL, /* get_current_software_framebuffer */
+   metal_get_current_sw_framebuffer,
    NULL, /* get_hw_render_interface */
    metal_set_hdr_menu_nits,
    metal_set_hdr_paper_white_nits,
