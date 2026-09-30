@@ -32911,6 +32911,42 @@ MSG_HASH(
    "Password incorrect."
    )
 MSG_HASH(
+   MSG_INPUT_KEYCHAIN_PASSPHRASE,
+   "Keychain Passphrase"
+   )
+MSG_HASH(
+   MSG_INPUT_KEYCHAIN_PASSPHRASE_NEW,
+   "New Keychain Passphrase (empty removes it)"
+   )
+MSG_HASH(
+   MSG_KEYCHAIN_UNLOCKING,
+   "Unlocking keychain..."
+   )
+MSG_HASH(
+   MSG_KEYCHAIN_SETTING_PASSPHRASE,
+   "Setting keychain passphrase..."
+   )
+MSG_HASH(
+   MSG_KEYCHAIN_UNLOCKED,
+   "Keychain unlocked."
+   )
+MSG_HASH(
+   MSG_KEYCHAIN_PASSPHRASE_WRONG,
+   "Keychain passphrase incorrect."
+   )
+MSG_HASH(
+   MSG_KEYCHAIN_PASSPHRASE_SET,
+   "Keychain passphrase set."
+   )
+MSG_HASH(
+   MSG_KEYCHAIN_PASSPHRASE_REMOVED,
+   "Keychain passphrase removed."
+   )
+MSG_HASH(
+   MSG_KEYCHAIN_WRITE_FAILED,
+   "Could not update the keychain key file."
+   )
+MSG_HASH(
    MSG_CONFIG_OVERRIDE_LOADED,
    "Configuration override loaded."
    )

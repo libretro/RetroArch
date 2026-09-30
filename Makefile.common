@@ -449,7 +449,8 @@ ifeq ($(HAVE_CONFIGFILE), 1)
    ifeq ($(HAVE_CRYPTO), 1)
       ifeq ($(HAVE_KEYCHAIN), 1)
          DEFINES += -DHAVE_KEYCHAIN
-         OBJ     += $(LIBRETRO_COMM_DIR)/file/keychain.o
+         OBJ     += $(LIBRETRO_COMM_DIR)/file/keychain.o \
+                    tasks/task_keychain.o
       endif
    endif
 endif

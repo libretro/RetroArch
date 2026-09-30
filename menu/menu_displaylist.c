@@ -13093,6 +13093,9 @@ unsigned menu_displaylist_build_list(
             static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_PRIVACY_SETTINGS,  PARSE_ACTION},
                {MENU_ENUM_LABEL_ACCOUNTS_LIST,     PARSE_ACTION},
+#if defined(HAVE_KEYCHAIN) && defined(HAVE_CRYPTO) && defined(HAVE_CONFIGFILE)
+               {MENU_ENUM_LABEL_KEYCHAIN_PASSPHRASE, PARSE_ACTION},
+#endif
                {MENU_ENUM_LABEL_NETPLAY_NICKNAME,  PARSE_ONLY_STRING},
             };
 

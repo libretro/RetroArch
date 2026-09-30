@@ -24,6 +24,7 @@
 #define _LIBRETRO_FILE_KEYCHAIN_H
 
 #include <stddef.h>
+#include <stdint.h>
 #include <boolean.h>
 
 #include <retro_common_api.h>
@@ -64,6 +65,77 @@ RETRO_BEGIN_DECLS
 bool keychain_init(const char *keyfile_path);
 
 bool keychain_is_ready(void);
+
+/**
+ * keychain_is_locked:
+ *
+ * Returns: true when the key file was wrapped on another machine and
+ * nothing here opens it until keychain_unlock() is given the
+ * passphrase. Nothing may be written in the clear meanwhile: sealed
+ * values in the file stay as they are.
+ **/
+bool keychain_is_locked(void);
+
+/**
+ * keychain_has_passphrase:
+ *
+ * Returns: true when the key file carries a passphrase wrap, so that
+ * it can be moved to another machine and opened there.
+ **/
+bool keychain_has_passphrase(void);
+
+/**
+ * keychain_unlock:
+ *
+ * Opens a locked keychain with @passphrase and wraps its key for this
+ * machine, so that it opens by itself from then on.
+ *
+ * Returns: true when the passphrase was right and the key file could
+ * be rewritten.
+ **/
+bool keychain_unlock(const char *passphrase);
+
+/**
+ * keychain_set_passphrase:
+ * @passphrase        : New passphrase, or NULL/empty to remove it.
+ *
+ * Wraps the keychain's key under @passphrase in the key file, next to
+ * this machine's wrap. The sealed values do not change, so nothing
+ * needs sealing again. Needs a ready keychain.
+ *
+ * Returns: true when the key file was rewritten.
+ **/
+bool keychain_set_passphrase(const char *passphrase);
+
+/* The same two operations in three steps, for callers that must not
+ * wait on the key derivation (it runs hundreds of milliseconds on a
+ * PC, seconds on a handheld):
+ *   1. keychain_passphrase_params()  - caller's thread, instant: the
+ *      salt and iteration count, read from the key file to unlock
+ *      (@for_unlock) or made fresh to set a passphrase;
+ *   2. keychain_passphrase_derive()  - any thread: the slow part,
+ *      touching nothing of the keychain's own state;
+ *   3. keychain_unlock_kek() or keychain_set_passphrase_kek() - the
+ *      keychain's thread again, instant. A NULL @kek removes the
+ *      passphrase.
+ * @psalt is KEYCHAIN_PASS_SALT_SIZE octets, @kek 32. */
+#define KEYCHAIN_PASS_SALT_SIZE 16
+bool keychain_passphrase_params(bool for_unlock,
+      uint8_t *psalt, uint32_t *iterations);
+bool keychain_passphrase_derive(const char *passphrase,
+      const uint8_t *psalt, uint32_t iterations, uint8_t *kek);
+/* Step 2 in slices, for a caller with no thread to give it to: begin,
+ * step @n iterations at a time until it returns true, then end, which
+ * writes the key to @kek (NULL discards it) and frees the state. */
+struct keychain_kdf;
+struct keychain_kdf *keychain_kdf_begin(const char *passphrase,
+      const uint8_t *psalt, uint32_t iterations);
+bool keychain_kdf_step(struct keychain_kdf *k, uint32_t n);
+unsigned keychain_kdf_progress(const struct keychain_kdf *k);
+void keychain_kdf_end(struct keychain_kdf *k, uint8_t *kek);
+bool keychain_unlock_kek(const uint8_t *kek);
+bool keychain_set_passphrase_kek(const uint8_t *kek,
+      const uint8_t *psalt, uint32_t iterations);
 
 /**
  * keychain_deinit:

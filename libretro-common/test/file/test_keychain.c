@@ -31,6 +31,7 @@
 #include <unistd.h>
 
 #include <file/keychain.h>
+#include <crypto/kdf.h>
 
 #define SUITE_NAME "keychain"
 
@@ -168,13 +169,192 @@ START_TEST (test_keyfile_persistence)
 }
 END_TEST
 
+/* The key file as text, or "" */
+static void read_keyfile(char *out, size_t len)
+{
+   FILE  *f = fopen(keyfile, "rb");
+   size_t n = 0;
+   out[0] = '\0';
+   if (!f)
+      return;
+   n = fread(out, 1, len - 1, f);
+   out[n] = '\0';
+   fclose(f);
+}
+
+static void write_keyfile(const char *text)
+{
+   FILE *f = fopen(keyfile, "wb");
+   ck_assert(f != NULL);
+   fwrite(text, 1, strlen(text), f);
+   fclose(f);
+}
+
+/* Replace the machine line with one wrapped for some other machine,
+ * which is what a key file carried to another machine looks like. */
+static void make_foreign(void)
+{
+   char  text[1024];
+   char  out[1200];
+   char *m, *eol;
+   read_keyfile(text, sizeof(text));
+   m = strstr(text, "machine ");
+   ck_assert(m != NULL);
+   eol = strchr(m, '\n');
+   ck_assert(eol != NULL);
+   *m = '\0';
+   /* 60 octets of base64 that no machine key opens */
+   snprintf(out, sizeof(out), "%smachine %s%s", text,
+         "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7",
+         eol);
+   write_keyfile(out);
+}
+
+START_TEST (test_no_passphrase_file_unchanged)
+{
+   char text[1024];
+   ck_assert(keychain_init(keyfile));
+   ck_assert(!keychain_is_locked());
+   ck_assert(!keychain_has_passphrase());
+   read_keyfile(text, sizeof(text));
+   /* the salt alone, exactly as before passphrases existed */
+   ck_assert_int_eq((int)strlen(text), 65);
+   ck_assert(strchr(text, ' ') == NULL);
+}
+END_TEST
+
+START_TEST (test_passphrase_moves_keychain)
+{
+   char *sealed, *plain;
+   ck_assert(keychain_init(keyfile));
+   sealed = keychain_seal_alloc("cheevos_password", "hunter2");
+   ck_assert(sealed != NULL);
+   ck_assert(keychain_set_passphrase("correct horse"));
+   ck_assert(keychain_has_passphrase());
+
+   /* the same machine still opens it by itself */
+   keychain_deinit();
+   ck_assert(keychain_init(keyfile));
+   ck_assert(!keychain_is_locked());
+   plain = keychain_open_alloc("cheevos_password", sealed);
+   ck_assert_str_eq(plain, "hunter2");
+   free(plain);
+
+   /* another machine: locked, nothing opens, nothing unlocks wrongly */
+   keychain_deinit();
+   make_foreign();
+   ck_assert(!keychain_init(keyfile));
+   ck_assert(keychain_is_locked());
+   ck_assert(!keychain_is_ready());
+   ck_assert(keychain_open_alloc("cheevos_password", sealed) == NULL);
+   ck_assert(keychain_seal_alloc("cheevos_password", "x") == NULL);
+   ck_assert(!keychain_unlock("wrong horse"));
+   ck_assert(keychain_is_locked());
+
+   /* the passphrase opens it, and the values sealed elsewhere */
+   ck_assert(keychain_unlock("correct horse"));
+   ck_assert(keychain_is_ready());
+   ck_assert(!keychain_is_locked());
+   plain = keychain_open_alloc("cheevos_password", sealed);
+   ck_assert_str_eq(plain, "hunter2");
+   free(plain);
+
+   /* ...and it is wrapped for this machine now: opens by itself */
+   keychain_deinit();
+   ck_assert(keychain_init(keyfile));
+   ck_assert(!keychain_is_locked());
+   ck_assert(keychain_has_passphrase());
+   plain = keychain_open_alloc("cheevos_password", sealed);
+   ck_assert_str_eq(plain, "hunter2");
+   free(plain);
+   free(sealed);
+}
+END_TEST
+
+START_TEST (test_passphrase_clear)
+{
+   char  text[1024];
+   char *sealed, *plain;
+   ck_assert(keychain_init(keyfile));
+   sealed = keychain_seal_alloc("netplay_password", "p4ss");
+   ck_assert(keychain_set_passphrase("pw"));
+   ck_assert(keychain_set_passphrase(NULL));
+   ck_assert(!keychain_has_passphrase());
+   read_keyfile(text, sizeof(text));
+   /* back to the plain salt: the key is this machine's own again */
+   ck_assert_int_eq((int)strlen(text), 65);
+   keychain_deinit();
+   ck_assert(keychain_init(keyfile));
+   plain = keychain_open_alloc("netplay_password", sealed);
+   ck_assert_str_eq(plain, "p4ss");
+   free(plain);
+   free(sealed);
+}
+END_TEST
+
+START_TEST (test_passphrase_change)
+{
+   char *sealed, *plain;
+   ck_assert(keychain_init(keyfile));
+   sealed = keychain_seal_alloc("webdav_password", "dav");
+   ck_assert(keychain_set_passphrase("first"));
+   ck_assert(keychain_set_passphrase("second"));
+   keychain_deinit();
+   make_foreign();
+   ck_assert(!keychain_init(keyfile));
+   ck_assert(!keychain_unlock("first"));
+   ck_assert(keychain_unlock("second"));
+   plain = keychain_open_alloc("webdav_password", sealed);
+   ck_assert_str_eq(plain, "dav");
+   free(plain);
+   free(sealed);
+}
+END_TEST
+
+START_TEST (test_kdf_resumable_matches_pbkdf2)
+{
+   static const uint8_t psalt[KEYCHAIN_PASS_SALT_SIZE] = {
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+   static const uint32_t slices[] = { 1, 7, 1000, 5000 };
+   uint8_t  want[32], got[32];
+   unsigned i;
+   ck_assert(pbkdf2_hmac_sha256((const uint8_t*)"pass phrase", 11,
+         psalt, sizeof(psalt), 5003, want, sizeof(want)) == 0);
+   for (i = 0; i < sizeof(slices) / sizeof(slices[0]); i++)
+   {
+      struct keychain_kdf *k = keychain_kdf_begin("pass phrase", psalt, 5003);
+      unsigned last = 0;
+      ck_assert(k != NULL);
+      while (!keychain_kdf_step(k, slices[i]))
+      {
+         ck_assert(keychain_kdf_progress(k) >= last);
+         last = keychain_kdf_progress(k);
+      }
+      ck_assert_int_eq((int)keychain_kdf_progress(k), 100);
+      keychain_kdf_end(k, got);
+      ck_assert(memcmp(got, want, sizeof(want)) == 0);
+   }
+   ck_assert(keychain_passphrase_derive("pass phrase", psalt, 5003, got));
+   ck_assert(memcmp(got, want, sizeof(want)) == 0);
+   ck_assert(keychain_kdf_begin("", psalt, 5003) == NULL);
+   ck_assert(keychain_kdf_begin("x", psalt, 0) == NULL);
+}
+END_TEST
+
 Suite *create_suite(void)
 {
    Suite *s = suite_create(SUITE_NAME);
    TCase *tc_core = tcase_create("Core");
    tcase_add_checked_fixture(tc_core, setup, teardown);
+   /* a passphrase is 200000 PBKDF2 rounds, slow under the sanitizers */
+   tcase_set_timeout(tc_core, 120);
    tcase_add_test(tc_core, test_roundtrip);
    tcase_add_test(tc_core, test_keyfile_persistence);
+   tcase_add_test(tc_core, test_no_passphrase_file_unchanged);
+   tcase_add_test(tc_core, test_passphrase_moves_keychain);
+   tcase_add_test(tc_core, test_passphrase_clear);
+   tcase_add_test(tc_core, test_passphrase_change);
+   tcase_add_test(tc_core, test_kdf_resumable_matches_pbkdf2);
    suite_add_tcase(s, tc_core);
    return s;
 }

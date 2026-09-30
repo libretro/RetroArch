@@ -1542,6 +1542,9 @@ DATA RUNLOOP
 #endif
 #include "../save.c"
 #include "../tasks/task_save.c"
+#if defined(HAVE_KEYCHAIN) && defined(HAVE_CRYPTO) && defined(HAVE_CONFIGFILE)
+#include "../tasks/task_keychain.c"
+#endif
 #include "../tasks/task_movie.c"
 #include "../tasks/task_content_prefetch.c"
 #include "../tasks/task_image.c"

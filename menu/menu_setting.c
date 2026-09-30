@@ -118,6 +118,9 @@ void android_app_set_window_settings(bool notch_write_over,
 #include "../network/cloud_sync_driver.h"
 #include "../record/record_driver.h"
 #include "../tasks/tasks_internal.h"
+#if defined(HAVE_KEYCHAIN) && defined(HAVE_CRYPTO) && defined(HAVE_CONFIGFILE)
+#include <file/keychain.h>
+#endif
 #include "../accessibility.h"
 #include "../config.def.h"
 #include "../ui/ui_companion_driver.h"
@@ -13168,6 +13171,33 @@ static const setting_desc_t np_desc_8[] = {
 /* GENERATED: rows come from settings_def_network_ondemand_thumbnails.h in order. */
 #include "../settings/settings_def_network_ondemand_thumbnails.h"
 };
+#endif
+
+#if defined(HAVE_KEYCHAIN) && defined(HAVE_CRYPTO) && defined(HAVE_CONFIGFILE)
+static void menu_input_st_string_cb_keychain_passphrase(void *userdata,
+      const char *str)
+{
+   /* Enter only: a cancelled dialog does not call back. An empty
+    * entry removes the passphrase (or does nothing while locked). */
+   task_push_keychain_passphrase(str ? str : "");
+   menu_input_dialog_end();
+}
+
+static int setting_action_keychain_passphrase(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   menu_input_ctx_line_t line;
+   line.label         = msg_hash_to_str(keychain_is_locked()
+         ? MSG_INPUT_KEYCHAIN_PASSPHRASE : MSG_INPUT_KEYCHAIN_PASSPHRASE_NEW);
+   line.label_setting = setting ? setting->name : NULL;
+   line.type          = 0;
+   line.idx           = 0;
+   line.text_type     = MENU_INPUT_DIALOG_KB_TYPE_PASSWORD;
+   line.cb            = menu_input_st_string_cb_keychain_passphrase;
+   if (!menu_input_dialog_start(&line))
+      return -1;
+   return 0;
+}
 #endif
 
 static const setting_desc_t user_desc_0[] = {

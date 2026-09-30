@@ -1557,6 +1557,12 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user);
  **/
 bool config_save_file(const char *path);
 
+#if defined(HAVE_KEYCHAIN) && defined(HAVE_CRYPTO) && defined(HAVE_CONFIGFILE)
+/* After a keychain unlock: open the credentials sealed on another
+ * machine and put them into the running settings. Returns how many. */
+unsigned config_keychain_reapply(void);
+#endif
+
 /**
  * config_save_overrides:
  * @path            : Path that shall be written to.
