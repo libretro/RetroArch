@@ -33,6 +33,12 @@ jobs:
         run: |
           ./configure --disable-qt --enable-xdelta
 
+      - name: Include order
+        run: |
+          # The tree's own headers are found before same-named ones in the
+          # system include dirs configure or pkg-config put on the line.
+          sh tools/include_order_check.sh
+
       - name: Compile RA
         run: |
           make -j$(getconf _NPROCESSORS_ONLN) clean

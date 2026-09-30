@@ -10,6 +10,12 @@ endif
 
 include config.mk
 
+# The absolute include paths configure found on the system
+# (/usr/local/include on the BSDs, /opt/vc/include, ...) are searched after
+# the tree's own; the relative ones (gfx/include/ANGLE) are the tree's.
+SYSTEM_INCLUDE_DIRS := $(filter -I/%,$(INCLUDE_DIRS))
+INCLUDE_DIRS        := $(filter-out -I/%,$(INCLUDE_DIRS))
+
 # Put your favorite compile flags in this file, if you want different defaults than upstream.
 # Do not attempt to create that file upstream.
 # (It'd be better to put this comment in that file, but .gitignore doesn't work on files that exist in the repo.)
@@ -125,7 +131,11 @@ ifneq ($(CXX_BUILD), 1)
    CFLAGS += -D_GNU_SOURCE
 endif
 
-DEF_FLAGS += $(INCLUDE_DIRS) -Ideps
+# The tree's own headers come before any system or pkg-config path, so a
+# same-named header installed on the system cannot stand in for one of
+# ours.
+DEF_FLAGS := -I. $(INCLUDE_DIRS) -Ideps $(filter-out -I.,$(DEF_FLAGS)) \
+             $(SYSTEM_INCLUDE_DIRS)
 
 CFLAGS += $(DEF_FLAGS)
 CXXFLAGS += $(DEF_FLAGS) -D__STDC_CONSTANT_MACROS
