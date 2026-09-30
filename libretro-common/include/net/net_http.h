@@ -264,6 +264,48 @@ void net_http_urlencode(char **dest, const char *source);
  **/
 void net_http_urlencode_full(char *s, const char *source, size_t len);
 
+/**
+ * net_http_url_join:
+ * @dst      : output buffer
+ * @dst_size : size of @dst including the NUL
+ * @base     : absolute http:// or https:// URL
+ * @ref      : reference to resolve against @base (RFC 3986 section 5)
+ *
+ * An empty @ref gives @base; an absolute http(s) URL replaces it; a
+ * reference starting with "//" keeps only the scheme, "/" keeps scheme
+ * and authority, "?" keeps the path and "#" keeps path and query;
+ * anything else replaces the last segment of the base path.  "." and
+ * ".." segments are then removed.  No allocation.
+ *
+ * Returns: length of the result, or -1 when @base is not an http(s)
+ * URL, @ref has another scheme, or @dst is too small (@dst is then an
+ * empty string).
+ **/
+int net_http_url_join(char *dst, size_t dst_size,
+      const char *base, const char *ref);
+
+/**
+ * net_http_urldecode:
+ *
+ * Decode %XX escapes from @src into @dst.  A '%' not followed by two
+ * hex digits is copied as is; '+' is left alone (it is a space only in
+ * form bodies).  Returns the decoded length, or -1 when @dst is too
+ * small (@dst holds the truncated, terminated prefix).
+ *
+ * Not for a URL that is about to be requested: decoding "%20" puts a
+ * space in the request line.  Use it on names meant for display or for
+ * the local filesystem.
+ **/
+int net_http_urldecode(char *dst, size_t dst_size, const char *src);
+
+/**
+ * net_http_urldecode_inplace:
+ *
+ * As net_http_urldecode(), in @s itself; decoded text is never longer
+ * than its source.  Returns the decoded length.
+ **/
+int net_http_urldecode_inplace(char *s);
+
 RETRO_END_DECLS
 
 #endif

@@ -494,6 +494,223 @@ void net_http_urlencode_full(char *s, const char *source, size_t len)
    s[pos] = '\0';
 }
 
+/* Length of "http://" or "https://" at the front of @s, 0 for anything
+ * else. */
+static size_t net_http_scheme_len(const char *s)
+{
+   if (!strncasecmp(s, "http://", sizeof("http://") - 1))
+      return sizeof("http://") - 1;
+   if (!strncasecmp(s, "https://", sizeof("https://") - 1))
+      return sizeof("https://") - 1;
+   return 0;
+}
+
+static bool net_http_join_put(char *dst, size_t dst_size, size_t *len,
+      const char *src, size_t n)
+{
+   if (n >= dst_size - *len)
+      return false;
+   memcpy(dst + *len, src, n);
+   *len      += n;
+   dst[*len]  = '\0';
+   return true;
+}
+
+/* RFC 3986 5.2.4, in place on a path that starts with '/' and ends at
+ * the first '?' or '#'.  Output never outgrows input, so the write
+ * cursor stays at or behind the read cursor. */
+static void net_http_remove_dot_segments(char *p)
+{
+   char *r   = p;
+   char *w   = p;
+   char *end = p + strcspn(p, "?#");
+
+   while (r < end)
+   {
+      char  *seg  = r + 1;
+      char  *next = seg;
+      size_t n;
+      while (next < end && *next != '/')
+         next++;
+      n = (size_t)(next - seg);
+      if (n == 1 && seg[0] == '.')
+      {
+         if (next == end)
+            *w++ = '/';
+      }
+      else if (n == 2 && seg[0] == '.' && seg[1] == '.')
+      {
+         while (w > p && *--w != '/') { }
+         if (next == end)
+            *w++ = '/';
+      }
+      else
+      {
+         memmove(w, r, (size_t)(next - r));
+         w += next - r;
+      }
+      r = next;
+   }
+   memmove(w, end, strlen(end) + 1);
+}
+
+int net_http_url_join(char *dst, size_t dst_size,
+      const char *base, const char *ref)
+{
+   size_t len = 0;
+   size_t scheme_len;
+   const char *auth_end;
+   const char *path_end;
+   const char *r;
+
+   if (!dst || !dst_size || !base)
+      return -1;
+   dst[0] = '\0';
+   if (!ref)
+      ref = "";
+   if (!(scheme_len = net_http_scheme_len(base)))
+      return -1;
+
+   /* A reference with a scheme of its own replaces everything, but
+    * only an http(s) one is ours to follow. */
+   for (r = ref; (*r >= 'a' && *r <= 'z') || (*r >= 'A' && *r <= 'Z')
+         || (r != ref && ((*r >= '0' && *r <= '9')
+         || *r == '+' || *r == '-' || *r == '.')); r++) { }
+   if (r != ref && *r == ':')
+   {
+      if (!net_http_scheme_len(ref))
+         return -1;
+      base       = ref;
+      scheme_len = net_http_scheme_len(ref);
+      ref        = "";
+   }
+
+   auth_end = base + scheme_len + strcspn(base + scheme_len, "/?#");
+   path_end = auth_end + strcspn(auth_end, "?#");
+
+   if (!*ref)
+   {
+      if (!net_http_join_put(dst, dst_size, &len, base, strlen(base)))
+         goto overflow;
+   }
+   else if (ref[0] == '/' && ref[1] == '/')
+   {
+      /* network-path reference: keep "http:" / "https:" only */
+      if (   !net_http_join_put(dst, dst_size, &len, base, scheme_len - 2)
+          || !net_http_join_put(dst, dst_size, &len, ref, strlen(ref)))
+         goto overflow;
+   }
+   else if (ref[0] == '/')
+   {
+      if (   !net_http_join_put(dst, dst_size, &len, base,
+               (size_t)(auth_end - base))
+          || !net_http_join_put(dst, dst_size, &len, ref, strlen(ref)))
+         goto overflow;
+   }
+   else if (ref[0] == '?' || ref[0] == '#')
+   {
+      const char *keep = (ref[0] == '?')
+         ? path_end
+         : auth_end + strcspn(auth_end, "#");
+      if (   !net_http_join_put(dst, dst_size, &len, base,
+               (size_t)(keep - base))
+          || !net_http_join_put(dst, dst_size, &len, ref, strlen(ref)))
+         goto overflow;
+   }
+   else
+   {
+      /* Replace the last segment of the base path. */
+      const char *slash = path_end;
+      while (slash > auth_end && slash[-1] != '/')
+         slash--;
+      if (slash > auth_end)
+      {
+         if (!net_http_join_put(dst, dst_size, &len, base,
+                  (size_t)(slash - base)))
+            goto overflow;
+      }
+      else if (   !net_http_join_put(dst, dst_size, &len, base,
+                     (size_t)(auth_end - base))
+               || !net_http_join_put(dst, dst_size, &len, "/", 1))
+         goto overflow;
+      if (!net_http_join_put(dst, dst_size, &len, ref, strlen(ref)))
+         goto overflow;
+   }
+
+   /* The path of the result starts after its own authority, which a
+    * "//" reference may have replaced. */
+   scheme_len = net_http_scheme_len(dst);
+   {
+      char *path = dst + scheme_len + strcspn(dst + scheme_len, "/?#");
+      if (*path == '/')
+      {
+         net_http_remove_dot_segments(path);
+         len = strlen(dst);
+      }
+   }
+   return (int)len;
+
+overflow:
+   dst[0] = '\0';
+   return -1;
+}
+
+static int net_http_hexval(char c)
+{
+   if (c >= '0' && c <= '9')
+      return c - '0';
+   if (c >= 'a' && c <= 'f')
+      return c - 'a' + 10;
+   if (c >= 'A' && c <= 'F')
+      return c - 'A' + 10;
+   return -1;
+}
+
+/* Shared by both decoders.  The two digits are read into locals
+ * before anything is written, so w == r (in place) is safe; the 2018
+ * version rewrote the source nibbles themselves. */
+static int net_http_urldecode_core(char *w, size_t cap, const char *r)
+{
+   size_t len = 0;
+   while (*r)
+   {
+      char c = *r;
+      if (c == '%')
+      {
+         int hi = net_http_hexval(r[1]);
+         int lo = (hi >= 0) ? net_http_hexval(r[2]) : -1;
+         if (lo >= 0)
+         {
+            c  = (char)((hi << 4) | lo);
+            r += 2;
+         }
+      }
+      if (len + 1 >= cap)
+      {
+         w[len] = '\0';
+         return -1;
+      }
+      w[len++] = c;
+      r++;
+   }
+   w[len] = '\0';
+   return (int)len;
+}
+
+int net_http_urldecode(char *dst, size_t dst_size, const char *src)
+{
+   if (!dst || !dst_size || !src)
+      return -1;
+   return net_http_urldecode_core(dst, dst_size, src);
+}
+
+int net_http_urldecode_inplace(char *s)
+{
+   if (!s)
+      return -1;
+   return net_http_urldecode_core(s, (size_t)-1, s);
+}
+
 struct http_connection_t *net_http_connection_new(const char *url,
       const char *method, const char *data)
 {

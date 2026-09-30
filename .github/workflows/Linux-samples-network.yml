@@ -315,7 +315,9 @@ jobs:
           # passing as the last chunk, a Content-Length buffer never
           # grows past the body, and a pooled connection that dies
           # after the status line is not replayed. A URL shorter than
-          # its scheme is rejected without an overread. Every case has a
+          # its scheme is rejected without an overread. Unit matrix for
+          # net_http_url_join() and net_http_urldecode(), including
+          # buffer bounds and in-place decoding. Every case has a
           # deadline, so a hang fails the case instead of the job.
           make clean all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \

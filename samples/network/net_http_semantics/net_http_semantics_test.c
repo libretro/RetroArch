@@ -1043,6 +1043,69 @@ static void run_section_a5(void)
    free(u);
 }
 
+/* ---- B1: URL join and percent-decoding ---- */
+
+static void join_case(const char *base, const char *ref, const char *want)
+{
+   char out[256], what[512];
+   int  n = net_http_url_join(out, sizeof(out), base, ref);
+   snprintf(what, sizeof(what), "url_join(\"%s\", \"%s\") = \"%s\"",
+         base, ref ? ref : "(null)", want ? want : "(fail)");
+   if (!want)
+      check(n == -1 && out[0] == '\0', what);
+   else
+      check(n == (int)strlen(want) && !strcmp(out, want), what);
+}
+
+static void run_section_b1(void)
+{
+   const char *B = "http://h:8080/a/b/c?q=1#f";
+   char buf[16];
+   char guard[32];
+   char *in;
+   int n;
+
+   join_case(B, "",               B);
+   join_case(B, NULL,             B);
+   join_case(B, "https://x/y",    "https://x/y");
+   join_case(B, "HTTP://X/../y",  "HTTP://X/y");
+   join_case(B, "//other:1/z",    "http://other:1/z");
+   join_case(B, "/p?r",           "http://h:8080/p?r");
+   join_case(B, "d",              "http://h:8080/a/b/d");
+   join_case(B, "d?z#w",          "http://h:8080/a/b/d?z#w");
+   join_case(B, "../d",           "http://h:8080/a/d");
+   join_case(B, "../../../../d",  "http://h:8080/d");
+   join_case(B, "./",             "http://h:8080/a/b/");
+   join_case(B, "..",             "http://h:8080/a/");
+   join_case(B, "?x=2",           "http://h:8080/a/b/c?x=2");
+   join_case(B, "#g",             "http://h:8080/a/b/c?q=1#g");
+   join_case("http://h",   "x",   "http://h/x");
+   join_case("http://h?q", "x",   "http://h/x");
+   join_case("https://h/dir/", "f%20g.zip", "https://h/dir/f%20g.zip");
+   join_case(B, "mailto:x@y",     NULL);
+   join_case("ftp://h/a", "b",    NULL);
+
+   memset(guard, 'Z', sizeof(guard));
+   n = net_http_url_join(guard, 8, "http://host/", "long/path");
+   check(n == -1 && guard[0] == '\0' && guard[8] == 'Z',
+         "url_join: too small a buffer fails without writing past it");
+
+   n = net_http_urldecode(buf, sizeof(buf), "a%2Fb%20c");
+   check(n == 5 && !strcmp(buf, "a/b c"), "urldecode: %2F and %20");
+   n = net_http_urldecode(buf, sizeof(buf), "%zz%4+%41");
+   check(n == 7 && !strcmp(buf, "%zz%4+A"), "urldecode: bad escapes and '+' copied as is");
+   memset(guard, 'Z', sizeof(guard));
+   n = net_http_urldecode(guard, 4, "abcdef");
+   check(n == -1 && !strcmp(guard, "abc") && guard[4] == 'Z',
+         "urldecode: truncates inside dst_size");
+
+   in = (char*)malloc(16);
+   memcpy(in, "%41%42%43%2", 12);
+   n = net_http_urldecode_inplace(in);
+   check(n == 5 && !strcmp(in, "ABC%2"), "urldecode_inplace: overlapping cursors");
+   free(in);
+}
+
 int main(void)
 {
    if (!network_init() || srv_start())
@@ -1058,6 +1121,7 @@ int main(void)
    run_section_a3();
    run_section_a4();
    run_section_a5();
+   run_section_b1();
 
    srv_shutdown();
    net_http_deinit();
