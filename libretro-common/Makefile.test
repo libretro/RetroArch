@@ -526,6 +526,23 @@ crypto-aarch64-check:
 	   echo "ok:   crypto suite under qemu-aarch64 [$$arch]"; \
 	done
 
+# A 32-bit, strict-alignment target: size_t is 32 bits and a shift by
+# the word width is not the zero it silently is elsewhere (the AES-CCM
+# length check failed here and nowhere else), and a misaligned load
+# traps rather than costs a cycle. MIPS under qemu is the one such
+# target a Linux host can run; it stands in for the 32-bit ARM and x86
+# builds as well.
+MIPSEL_CC   ?= mipsel-linux-gnu-gcc
+QEMU_MIPSEL ?= qemu-mipsel
+
+crypto-mips-check:
+	@if ! command -v $(MIPSEL_CC) >/dev/null 2>&1; then echo "skip: $(MIPSEL_CC) not installed"; exit 0; fi; \
+	if ! command -v $(QEMU_MIPSEL) >/dev/null 2>&1; then echo "skip: $(QEMU_MIPSEL) not installed"; exit 0; fi; \
+	$(MIPSEL_CC) -static -O2 -march=mips32r2 -DCHECK_SHIM -Iinclude -Wall \
+	   $(TEST_CRYPTO_SRC) -o test/crypto/test_crypto_mipsel || exit 1; \
+	$(QEMU_MIPSEL) test/crypto/test_crypto_mipsel || exit 1; \
+	echo "ok:   crypto suite under qemu-mipsel (32-bit, strict alignment)"
+
 # The Windows builds actually run: the crypto and keychain suites as
 # MinGW binaries under Wine (RtlGenRandom, the MachineGuid identity, the
 # AES-NI dispatch through the Win32 cpu features), then the three network
@@ -547,7 +564,7 @@ win32-wine-check:
 	echo "ok:   keychain suite as a Windows binary under Wine"; \
 	rm -f test/crypto/test_crypto_win32.exe test/file/test_keychain_win32.exe
 
-all: unit-tests console-libc-check darwin-floor-check crypto-aarch64-check win32-wine-check
+all: unit-tests console-libc-check darwin-floor-check crypto-aarch64-check crypto-mips-check win32-wine-check
 	# vfs samples: file size, seek and EOF boundaries, mapped and not
 	$(MAKE) -f Makefile.test vfs-samples
 	# concurrency samples: nothing else here compiles retro_spsc.c,
@@ -574,7 +591,7 @@ all: unit-tests console-libc-check darwin-floor-check crypto-aarch64-check win32
 clean:
 	rm -f *.gcda *.gcno
 	rm -f $(TEST_STDSTRING) $(TEST_UTILS) $(TEST_HASH) \
-	      $(TEST_CRYPTO) $(TEST_KEYCHAIN) test/crypto/test_crypto_aarch64 \
+	      $(TEST_CRYPTO) $(TEST_KEYCHAIN) test/crypto/test_crypto_aarch64 test/crypto/test_crypto_mipsel \
 	      $(TEST_LINKED_LIST) $(TEST_FILE_LIST) $(TEST_MEMPOOL) \
 	      $(TEST_MENU_STR) $(TEST_STRL) \
 	      $(TEST_GENERIC_QUEUE) \

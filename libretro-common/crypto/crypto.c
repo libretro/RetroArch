@@ -868,7 +868,10 @@ static int aes_ccm_core(const struct aes_ctx *ctx, int encrypt,
    if (nonce_len < 7 || nonce_len > 13 || tag_len < 4 || tag_len > 16 || (tag_len & 1))
       return -1;
    L = 15 - nonce_len;
-   if (L < 8 && (len >> (8 * L)) != 0)
+   /* the length must fit L octets; shifted as 64 bits, since a 32-bit
+    * size_t shifted by 32 (L = 4, the 11-octet nonce SMB uses) is
+    * undefined and comes back unshifted on MIPS */
+   if (L < 8 && ((uint64_t)len >> (8 * L)) != 0)
       return -1;
 
    /* B_0: flags | nonce | length of the message */
