@@ -546,6 +546,53 @@ static void oga_blit(oga_surface_t* src, int sx, int sy, int sw, int sh,
    c_RkRgaBlit(&s, &d, NULL);
 }
 
+/* Where a pushed frame lies in the lent surface.
+ *
+ * A core that renders into the buffer
+ * GET_CURRENT_SOFTWARE_FRAMEBUFFER lends it may push back a pointer
+ * partway into that buffer, at the buffer's pitch, with the size of
+ * the window it wants shown: that is how an overscan crop is done by
+ * offset (beetle-psx renders its whole 700x480 scanout surface into
+ * the loan and pushes the visible part). The threaded wrapper accepts
+ * that as a lend since 9ed0db58c3 and the vulkan and d3d12 drivers
+ * since 7510039d5d; this is the same test for this driver's loan.
+ *
+ * True, with the window's pixel origin, when @frame lies inside
+ * @surface's mapping on that mapping's pitch and starts on a pixel.
+ * Anything else is a frame of the core's own and is copied in. */
+static bool oga_frame_window(const oga_surface_t *surface,
+      const void *frame, size_t pitch, int *x, int *y)
+{
+   uintptr_t base = (uintptr_t)surface->map;
+   uintptr_t p    = (uintptr_t)frame;
+   size_t    bpp  = (surface->rk_format == RK_FORMAT_BGRA_8888) ? 4 : 2;
+   size_t    off;
+   size_t    row;
+
+   if (!surface->map || surface->pitch <= 0 || surface->height <= 0)
+      return false;
+   if (p < base || (p - base) >= (uintptr_t)surface->pitch *
+         (uintptr_t)surface->height)
+      return false;
+
+   off = (size_t)(p - base);
+   row = off % (size_t)surface->pitch;
+
+   /* Inside the mapping but not addressable as a window: copying it
+    * would memcpy the surface onto itself and shred it, so show the
+    * loan from its origin instead. */
+   if (pitch != (size_t)surface->pitch || (row % bpp))
+   {
+      *x = 0;
+      *y = 0;
+      return true;
+   }
+
+   *y = (int)(off / (size_t)surface->pitch);
+   *x = (int)(row / bpp);
+   return true;
+}
+
 static void oga_calc_bounds(oga_rect_t* r, int dw, int dh, int sw, int sh, float aspect, float dar)
 {
    if (dar >= aspect)
@@ -616,18 +663,22 @@ static bool oga_frame(void *data, const void *frame,
       uint8_t* dst = (uint8_t*)vid->frame_surface->map;
       unsigned int blend = video_info->runloop_is_paused ? 0x800105 : 0;
       oga_rect_t r;
+      int sx       = 0;
+      int sy       = 0;
+      bool lent    = oga_frame_window(vid->frame_surface, frame,
+            (size_t)pitch, &sx, &sy);
 
       /* The surface holds the geometry declared at init. A core is
        * free to hand over more than it declared, so take what fits:
-       * the rows the surface has, and the bytes one of its rows
-       * holds. Both the copy below and the blit that follows read and
-       * write this allocation. */
-      if (width  > (unsigned)vid->frame_surface->width)
-         width  = (unsigned)vid->frame_surface->width;
-      if (height > (unsigned)vid->frame_surface->height)
-         height = (unsigned)vid->frame_surface->height;
+       * the rows the surface has from the window's origin, and the
+       * bytes one of its rows holds. Both the copy below and the blit
+       * that follows read and write this allocation. */
+      if (width  > (unsigned)(vid->frame_surface->width  - sx))
+         width  = (unsigned)(vid->frame_surface->width  - sx);
+      if (height > (unsigned)(vid->frame_surface->height - sy))
+         height = (unsigned)(vid->frame_surface->height - sy);
 
-      if (src != dst)
+      if (!lent)
       {
          int    dst_pitch = vid->frame_surface->pitch;
          size_t row       = (pitch < (unsigned)dst_pitch)
@@ -644,7 +695,7 @@ static bool oga_frame(void *data, const void *frame,
       }
 
       oga_calc_bounds(&r, vid->drm_width, vid->drm_height, width, height, aspect_ratio, vid->display_ar);
-      oga_blit(vid->frame_surface, 0, 0, width, height,
+      oga_blit(vid->frame_surface, sx, sy, width, height,
             page_surface, r.y, r.x, r.h, r.w, vid->rotation, vid->scale_mode, blend);
    }
 
