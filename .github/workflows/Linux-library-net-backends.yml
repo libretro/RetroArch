@@ -114,3 +114,26 @@ jobs:
           sudo -E env PATH="$PATH" PKG_CONFIG_PATH="$PKG_CONFIG_PATH" WITH_LIBSMB2=1 \
              samples/network/smb_retro/local_samba_test.sh
           sudo make -C samples/network/smb_retro clean
+
+      # libsmb2 keeps process-wide state (its list of live contexts) with
+      # no lock of its own; the VFS backend must serialise it. A race
+      # there needs two cores to show up by timing, so the same tests run
+      # again under TSan against a TSan-built libsmb2, which reports it on
+      # any runner, every time.
+      - name: Operate the libsmb2 backend under TSan (instrumented libsmb2)
+        if: matrix.lane == 'libsmb2'
+        run: |
+          set -eu
+          cmake -S "$RUNNER_TEMP/libsmb2" -B "$RUNNER_TEMP/libsmb2/build-tsan" \
+            -DCMAKE_INSTALL_PREFIX=/opt/libsmb2-tsan -DBUILD_SHARED_LIBS=ON \
+            -DCMAKE_C_FLAGS="-O1 -g -fsanitize=thread" \
+            -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=thread" >/dev/null
+          make -C "$RUNNER_TEMP/libsmb2/build-tsan" -j"$(nproc)" >/dev/null
+          sudo make -C "$RUNNER_TEMP/libsmb2/build-tsan" install >/dev/null
+          sudo -E env PATH="$PATH" \
+             PKG_CONFIG_PATH=/opt/libsmb2-tsan/lib/pkgconfig \
+             LD_LIBRARY_PATH=/opt/libsmb2-tsan/lib \
+             TSAN_OPTIONS="halt_on_error=1 exitcode=66" \
+             CFLAGS="-O1 -g -fsanitize=thread" LDLIBS="-fsanitize=thread" \
+             WITH_LIBSMB2=1 samples/network/smb_retro/local_samba_test.sh
+          sudo make -C samples/network/smb_retro clean
