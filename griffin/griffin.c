@@ -1425,7 +1425,7 @@ RETROARCH
 #include "../runahead.c"
 #endif
 #include "../command.c"
-#ifdef HAVE_NETWORK_CMD
+#if defined(HAVE_MCP) && defined(HAVE_NETWORK_CMD) && defined(HAVE_COMMAND)
 #include "../network/mcp_server.c"
 #endif
 #include "../ui/ui_companion_driver.c"

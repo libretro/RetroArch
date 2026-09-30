@@ -70,6 +70,7 @@ HAVE_NETWORKGAMEPAD=auto   # Networked game pad (plus baked-in core)
 C89_NETWORKGAMEPAD=no
 HAVE_NETPLAYDISCOVERY=yes  # Add netplay discovery (room creation, etc.)
 HAVE_COMMAND=no            # Network command interface, to remote control RA
+HAVE_MCP=yes               # MCP server for AI assistants (needs networking and the command interface; off unless enabled in settings)
 HAVE_D3D8=no               # Direct3D 8 support
 HAVE_D3D9=auto             # Direct3D 9 support
 C89_D3D9=no

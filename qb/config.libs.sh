@@ -221,6 +221,7 @@ check_enabled RVP9 WEBMPLAYER 'the WebM player' 'RVP9 is' false
 check_enabled NETWORKING CHEEVOS cheevos 'Networking is' false
 check_enabled NETWORKING DISCORD discord 'Networking is' false
 check_enabled NETWORKING SSL ssl 'Networking is' false
+check_enabled NETWORKING MCP 'the MCP server' 'Networking is' false
 check_enabled NETWORKING TRANSLATE OCR 'Networking is' false
 check_enabled NETWORKING HAVE_NETPLAYDISCOVERY 'Netplay discovery' 'Networking is' false
 

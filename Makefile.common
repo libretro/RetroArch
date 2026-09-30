@@ -632,6 +632,14 @@ endif
 
 ifeq ($(HAVE_COMMAND), 1)
    DEFINES += -DHAVE_COMMAND
+   # The MCP server: desktop builds, through ./configure; no console
+   # Makefile sets HAVE_MCP.
+   ifeq ($(HAVE_NETWORKING), 1)
+      ifeq ($(HAVE_MCP), 1)
+         DEFINES += -DHAVE_MCP
+         OBJ     += network/mcp_server.o
+      endif
+   endif
 endif
 
 ifeq ($(HAVE_STDIN_CMD), 1)
@@ -2493,7 +2501,6 @@ ifeq ($(HAVE_NETWORKING), 1)
    # Netplay
    DEFINES += -DHAVE_NETWORK_CMD
    OBJ += \
-	  network/mcp_server.o \
 	  network/netplay/netplay_frontend.o \
 	  network/netplay/netplay_room_parse.o
 

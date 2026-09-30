@@ -10877,7 +10877,7 @@ unsigned menu_displaylist_build_list(
                   count++;
             }
 
-#ifdef HAVE_NETWORK_CMD
+#ifdef HAVE_MCP
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_MCP_SERVER_ENABLE,
                   PARSE_ONLY_BOOL, false) == 0)

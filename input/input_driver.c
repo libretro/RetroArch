@@ -96,7 +96,7 @@
 
 #include "../ai/game_ai.h"
 #include <compat/strl.h>
-#ifdef HAVE_NETWORK_CMD
+#ifdef HAVE_MCP
 #include "../network/mcp_server.h"
 #endif
 #ifdef HAVE_CRYPTO
@@ -6487,7 +6487,7 @@ void input_driver_init_command(input_driver_state_t *input_st,
    }
 #endif
 
-#ifdef HAVE_NETWORK_CMD
+#ifdef HAVE_MCP
    /* The MCP server. A token is required; the first start makes one,
     * kept in the configuration (sealed by the keychain) for the user
     * to give the client. Without a random source it must be set by
