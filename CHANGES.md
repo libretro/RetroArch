@@ -97,7 +97,9 @@
 - NETWORK: Built-in SMB2/3 client with signing, AES-CCM/GCM encryption and Kerberos; libsmb2 is no longer bundled (--enable-libsmb uses a system one)
 - NETWORK: Built-in NFSv3 and NFSv4 (4.0, 4.1, 4.2) client for loading content from nfs:// exports
 - NETWORK: NFS files stay usable across a server restart, a dropped connection or a long pause: the client reconnects and reopens what it needs
+- 3DS/VITA/SWITCH/WIIU: nfs:// content through the built-in NFS client
 - NETWORK: SMB files stay usable across a server restart: the connection is mended and the file opened again where it was
+- 3DS/SWITCH: nfs:// content through the built-in NFS client
 - NETWORK: Optional SMB/NFS read-ahead with background prefetch, for large disc images over a slow link (off by default)
 - NETWORK: Saved passwords are encrypted in retroarch-keychain.cfg; an optional passphrase lets the keychain move to another machine (see docs/network-stack.md)
 - OVERLAY: Allow overlays to position the viewport

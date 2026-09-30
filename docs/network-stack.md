@@ -90,7 +90,9 @@ consoles, send user and group 1000.
 | `nfs_timeout` | `5` | Seconds to wait for the server, 1 to 60. |
 | `nfs_readahead` | `0` | Read-ahead in KiB, 0 (off) to 16384 (see below). |
 
-Content is addressed as `nfs://server/export/path/to/game.chd`.
+Content is addressed as `nfs://server/export/path/to/game.chd`. Besides
+the desktop and mobile builds, the 3DS, Vita, Switch and Wii U carry the
+NFS client; it needs no crypto library.
 
 ## Read-ahead
 

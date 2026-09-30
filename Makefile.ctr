@@ -104,6 +104,8 @@ else
 	HAVE_CRYPTO = 1
 	HAVE_KEYCHAIN = 1
 	HAVE_RETROSSL = 1
+	# the built-in NFS client (nfs://); it needs no crypto
+	HAVE_RETRONFS = 1
 	HAVE_CORE_INFO_CACHE = 1
 	HAVE_CLOUDSYNC = 1
 

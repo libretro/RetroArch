@@ -28,6 +28,9 @@
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 #include <compat/strl.h>
+#ifdef RARCH_CONSOLE
+#include <retro_timers.h>
+#endif
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 #include <features/features_cpu.h>
@@ -122,7 +125,14 @@
 /* Default transfer size; FSINFO raises it to what the server allows,
  * up to NFS3_LARGE_IO, and the buffers grow with it. */
 #define NFS3_MAX_IO      (64 * 1024)
+/* The largest transfer asked for once the server allows it. The 3DS
+ * keeps the 64 KiB start: its RAM is small, four connections at 1 MiB
+ * would hold 8 MiB of buffers, and its Wi-Fi gains nothing from them. */
+#ifdef _3DS
+#define NFS3_LARGE_IO    (64 * 1024)
+#else
 #define NFS3_LARGE_IO    (1024 * 1024)
+#endif
 #define RNFS_BUF_SIZE(io) ((io) + 4096)
 #define RNFS_RX_SIZE     RNFS_BUF_SIZE(NFS3_MAX_IO)
 #define NFS_FSINFO       19
@@ -573,14 +583,20 @@ static uint16_t rnfs_getport(struct rnfs_ctx *c, uint32_t prog, uint32_t vers)
 
 /* ---- NFSv4.0 -------------------------------------------------------- */
 
-/* A short wait without dragging in the timer header (which pulls
- * platform threading includes): an empty select with a timeout. */
+/* A short wait. On a desktop an empty select with a timeout, without
+ * dragging in the timer header (which pulls platform threading
+ * includes); the consoles' socket layers do not all sleep in a select
+ * with no descriptors, so there the platform's own sleep. */
 static void nfs4_wait_ms(unsigned ms)
 {
+#ifdef RARCH_CONSOLE
+   retro_sleep(ms);
+#else
    struct timeval tv;
    tv.tv_sec  = ms / 1000;
    tv.tv_usec = (ms % 1000) * 1000;
    select(0, NULL, NULL, NULL, &tv);
+#endif
 }
 
 /* Client verifier and open-owner: these need to be unique per client

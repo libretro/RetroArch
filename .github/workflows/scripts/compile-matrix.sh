@@ -179,6 +179,17 @@ console_set() {
 console_set "3ds crypto"    "-Itools/platform_stubs/ctr"  "-D_3DS -DARM11"                    $CRYPTO_SET
 console_set "vita crypto"   "-Itools/platform_stubs/vita" "-DVITA"                            $CRYPTO_SET
 console_set "switch tls"    "-I$STUBS/libnx"              "-DHAVE_LIBNX -DSWITCH -D__SWITCH__" $TLS_SET
+# The built-in NFS client, which the 3DS, Vita, Switch and Wii U
+# build, under the defines their Makefiles set (RARCH_CONSOLE for the
+# console sleep and the 3DS transfer cap, Vita's legacy socket layer):
+# Wii U against its own wiiu/include, Vita against stubs of vitasdk's
+# socket headers.
+NFS_SET="libretro-common/net/net_nfs3.c libretro-common/vfs/vfs_implementation_nfs.c libretro-common/vfs/vfs_prefetch.c"
+NFSD="-DHAVE_RETRONFS -DHAVE_NFSCLIENT"
+console_set "3ds nfs"       "-Itools/platform_stubs/ctr $NFSD"  "-D_3DS -DARM11 -DRARCH_CONSOLE" $NFS_SET
+console_set "vita nfs"      "-Itools/platform_stubs/vita $NFSD" "-DVITA -DRARCH_CONSOLE -DHAVE_SOCKET_LEGACY" $NFS_SET
+console_set "switch nfs"    "-I$STUBS/libnx $NFSD"              "-DHAVE_LIBNX -DSWITCH -D__SWITCH__ -DRARCH_CONSOLE" $NFS_SET
+console_set "wiiu nfs"      "-Iwiiu/include -Itools/platform_stubs/wiiu $NFSD" "-DWIIU -D__WUT__ -DHW_WUP -D__wiiu__ -DRARCH_CONSOLE" $NFS_SET
 
 # Every platform makefile on Makefile.common, without its toolchain: the
 # graph's own DEFINES checked for consistency (TLS, SMB, NFS need the

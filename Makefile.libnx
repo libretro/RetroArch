@@ -62,6 +62,8 @@ HAVE_CLOUDSYNC = 1
 HAVE_CRYPTO = 1
 HAVE_KEYCHAIN = 1
 HAVE_RETROSSL = 1
+# The built-in NFS client (nfs://); it needs no crypto.
+HAVE_RETRONFS = 1
 
 # RetroArch libnx useful flags
 HAVE_THREADS = 1
