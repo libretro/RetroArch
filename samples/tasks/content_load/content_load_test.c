@@ -1280,7 +1280,10 @@ static void lane_replay_reply(const char *dir)
 #if defined(HAVE_SCREENSHOTS) && defined(HAVE_RPNG)
 /* A task ahead of the screenshot that spends the shared per-frame I/O
  * window on every check, so the screenshot's handler gets only the
- * window's floor: one row a check, on any machine. */
+ * window's floor: one row a check, on any machine.  The window resets
+ * by the clock; waiting out a whole period first makes this open the
+ * one that starts it, so the screenshot opens well inside the same
+ * window, not across a reset that would hand it a fresh one. */
 static bool ss_hog_stop;
 static void ss_hog_handler(retro_task_t *task)
 {
@@ -1290,6 +1293,7 @@ static void ss_hog_handler(retro_task_t *task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
       return;
    }
+   retro_sleep(17);
    task_nbio_slice_open(&b);
    while (task_nbio_slice_within_budget(&b, 0, 0)) { }
    task_nbio_slice_close(&b);
