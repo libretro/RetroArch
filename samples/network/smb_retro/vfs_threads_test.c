@@ -17,22 +17,56 @@
 static char url_file[600], url_dir[600];
 static int  failures = 0;
 
+/* Each failure names its operation, thread and round, so a failure on
+ * a CI runner says what went wrong rather than only how often. */
+static void report(int id, int round, const char *what)
+{
+   fprintf(stderr, "thread %d round %d: %s failed\n", id, round, what);
+}
+
 static void worker(void *arg)
 {
    int i, bad = 0;
+   int id = (int)(intptr_t)arg;
    uint8_t buf[64];
-   (void)arg;
    for (i = 0; i < ROUNDS; i++)
    {
       RFILE *f = filestream_open(url_file, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
       struct RDIR *d;
-      if (!f || filestream_seek(f, 8 * (i % 4), RETRO_VFS_SEEK_POSITION_START) != 0
-            || filestream_read(f, buf, sizeof(buf)) != (int64_t)sizeof(buf) || buf[0] != (uint8_t)((8 * (i % 4)) * 31 + 7))
+      int64_t off = 8 * (i % 4);
+      if (!f)
+      {
+         report(id, i, "open");
          bad++;
+      }
+      else if (filestream_seek(f, off, RETRO_VFS_SEEK_POSITION_START) != 0)
+      {
+         report(id, i, "seek");
+         bad++;
+      }
+      else
+      {
+         int64_t got = filestream_read(f, buf, sizeof(buf));
+         if (got != (int64_t)sizeof(buf))
+         {
+            fprintf(stderr, "thread %d round %d: read at %d returned %d of %d\n",
+                  id, i, (int)off, (int)got, (int)sizeof(buf));
+            bad++;
+         }
+         else if (buf[0] != (uint8_t)(off * 31 + 7))
+         {
+            fprintf(stderr, "thread %d round %d: read at %d gave byte 0x%02x, want 0x%02x\n",
+                  id, i, (int)off, buf[0], (uint8_t)(off * 31 + 7));
+            bad++;
+         }
+      }
       if (f)
          filestream_close(f);
       if (!path_is_valid(url_file))
+      {
+         report(id, i, "stat");
          bad++;
+      }
       if ((d = retro_opendir(url_dir)))
       {
          while (retro_readdir(d))
@@ -40,7 +74,10 @@ static void worker(void *arg)
          retro_closedir(d);
       }
       else
+      {
+         report(id, i, "opendir");
          bad++;
+      }
    }
    if (bad)
       __sync_fetch_and_add(&failures, bad);
@@ -69,7 +106,7 @@ int main(int argc, char **argv)
    snprintf(url_dir, sizeof(url_dir), "smb://%s/%s", argv[1], argv[2]);
 
    for (i = 0; i < NTHREADS; i++)
-      t[i] = sthread_create(worker, NULL);
+      t[i] = sthread_create(worker, (void*)(intptr_t)i);
    for (i = 0; i < NTHREADS; i++)
       if (t[i])
          sthread_join(t[i]);

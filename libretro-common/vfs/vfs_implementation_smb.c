@@ -1131,23 +1131,24 @@ smb_dir_handle* retro_vfs_opendir_smb(const char *path, bool include_hidden)
 struct smbc_dirent* retro_vfs_readdir_smb(smb_dir_handle* dh)
 {
    struct smb2dirent *ent;
-   static struct smbc_dirent result;
+   struct smbc_dirent *result;
 
    if (!dh)
       return NULL;
+   result = &dh->ent;
 
    if (dh->shares)
    {
       if (dh->share_index >= dh->share_count)
          return NULL;
 
-      memset(&result, 0, sizeof(result));
-      strlcpy(result.name, dh->shares[dh->share_index++],
-            sizeof(result.name));
-      result.type = RETRO_SMB_DIRENT_DIR;
-      result.size = 0;
+      memset(result, 0, sizeof(*result));
+      strlcpy(result->name, dh->shares[dh->share_index++],
+            sizeof(result->name));
+      result->type = RETRO_SMB_DIRENT_DIR;
+      result->size = 0;
 
-      return &result;
+      return result;
    }
 
    if (!dh->ctx || !dh->dir || !smb2_context_active(dh->ctx))
@@ -1157,15 +1158,15 @@ struct smbc_dirent* retro_vfs_readdir_smb(smb_dir_handle* dh)
    if (!ent)
       return NULL;
 
-   memset(&result, 0, sizeof(result));
-   strlcpy(result.name, ent->name ? ent->name : "", sizeof(result.name));
+   memset(result, 0, sizeof(*result));
+   strlcpy(result->name, ent->name ? ent->name : "", sizeof(result->name));
 
-   result.type = (ent->st.smb2_type == SMB2_TYPE_DIRECTORY)
+   result->type = (ent->st.smb2_type == SMB2_TYPE_DIRECTORY)
       ? RETRO_SMB_DIRENT_DIR
       : RETRO_SMB_DIRENT_FILE;
-   result.size = ent->st.smb2_size;
+   result->size = ent->st.smb2_size;
 
-   return &result;
+   return result;
 }
 
 int retro_vfs_closedir_smb(smb_dir_handle* dh)

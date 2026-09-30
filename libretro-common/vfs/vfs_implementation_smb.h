@@ -54,6 +54,8 @@ typedef struct {
    char **shares;
    unsigned share_count;
    unsigned share_index;
+   struct smbc_dirent ent;   /* the entry readdir returns; per handle, so
+                              * listings on different threads never share it */
 } smb_dir_handle;
 
 bool smb_init_cfg(const struct smb_settings *new_cfg);
