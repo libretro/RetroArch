@@ -10,6 +10,9 @@ ifneq (,$(findstring mingw,$(CC))$(findstring MINGW,$(MSYSTEM))$(findstring Wind
 endif
 nfs_test: $(SRC)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $(LDLIBS) -o $@
+IDLE_SRC = nfs_idle_test.c $(filter-out nfs_test.c,$(SRC))
+nfs_idle_test: $(IDLE_SRC)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(IDLE_SRC) $(LDLIBS) -o $@
 
 VFS_SRC = vfs_test.c $(COMMON)/vfs/vfs_implementation_nfs.c $(COMMON)/vfs/vfs_implementation.c $(COMMON)/vfs/vfs_prefetch.c \
       $(COMMON)/streams/file_stream.c $(COMMON)/file/retro_dirent.c $(COMMON)/file/file_path.c \
@@ -21,5 +24,5 @@ THR_SRC = vfs_threads_test.c $(filter-out vfs_test.c,$(VFS_SRC)) $(COMMON)/rthre
 vfs_threads_test: $(THR_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_NFSCLIENT -DHAVE_THREADS -I$(ROOT) $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@
 clean:
-	rm -f nfs_test nfs_test.exe vfs_test vfs_test.exe vfs_threads_test vfs_threads_test.exe
+	rm -f nfs_test nfs_test.exe nfs_idle_test nfs_idle_test.exe vfs_test vfs_test.exe vfs_threads_test vfs_threads_test.exe
 .PHONY: clean

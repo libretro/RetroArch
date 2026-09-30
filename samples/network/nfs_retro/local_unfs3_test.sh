@@ -23,7 +23,7 @@ if [ -z "$UNFSD" ]; then
    fi
 fi
 [ -n "$UNFSD" ] || { echo "skip: no unfsd and no way to build one"; exit 0; }
-make -s nfs_test vfs_test
+make -s nfs_test vfs_test nfs_idle_test
 RUN=${RUNNER:-}
 EXE=${EXE:-}
 D=$(mktemp -d); chmod 755 $D; mkdir -p $D/export; chmod 777 $D/export
@@ -61,4 +61,23 @@ if $RUN ./nfs_test$EXE 127.0.0.1 /nonexistent/export 20049 20048 > $D/out 2>&1; 
 else
    echo "ok:   unknown export is refused"
 fi
+# A file kept open across a server restart (a NAS rebooting): v3 keeps
+# no open state, so the next call must dial again and go on - the read
+# first, then the write first, since a write builds its arguments where
+# the dial works and must not send what the dial left there.
+for order in r w; do
+   rm -rf $D/export/*
+   $RUN ./nfs_idle_test$EXE 127.0.0.1 $D/export 20049 20048 3 10 $order > $D/out 2>&1 &
+   idler=$!
+   sleep 3
+   kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
+   sleep 1
+   $UNFSD -p -n 20049 -m 20048 -e $D/exports -d > $D/log 2>&1 &
+   SRV=$!
+   if wait $idler; then
+      echo "ok:   NFSv3: a file read and written across a server restart ($order first)"
+   else
+      echo "FAIL: NFSv3 across a server restart ($order first): $(cat $D/out)"; exit 1
+   fi
+done
 echo "[pass] nfs_retro local unfs3 matrix"

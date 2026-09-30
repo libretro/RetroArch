@@ -14,7 +14,7 @@ RUN=${RUNNER:-}
 EXE=${EXE:-}
 PORT=20449
 D=$(mktemp -d); chmod 755 $D; mkdir -p $D/export $D/run; chmod 777 $D/export
-make -s vfs_threads_test >/dev/null 2>&1 || true
+make -s vfs_threads_test nfs_idle_test >/dev/null 2>&1 || true
 stop() {
    kill $(cat $D/run/g.pid 2>/dev/null) 2>/dev/null || pkill -x ganesha.nfsd 2>/dev/null || true
    i=0; while pgrep -x ganesha.nfsd >/dev/null 2>&1 && [ $i -lt 30 ]; do sleep 0.2; i=$((i + 1)); done
@@ -94,4 +94,51 @@ round "0"       0
 round "1"       1
 round "2"       2
 round "0, 1, 2" 2
+
+# Files kept open across a pause - the game paused, a long cutscene -
+# must still read and write afterwards: past a short lease on a server
+# that reclaims, and across a server restart (a NAS rebooting), where
+# the write is the call that finds the connection gone.
+serve() {
+   minors="$1"; lease="$2"
+   rm -rf $D/export/* 2>/dev/null || true
+   cat > $D/ganesha.conf << EOF
+NFS_Core_Param { NFS_Port = $PORT; Enable_UDP = false; Bind_addr = 127.0.0.1; Protocols = 4; Enable_NLM = false; Enable_RQUOTA = false; }
+NFSv4 { Minor_Versions = $minors; Grace_Period = $lease; Lease_Lifetime = $lease; RecoveryBackend = fs_ng; RecoveryRoot = $D/run; }
+EXPORT_DEFAULTS { Protocols = 4; Transports = TCP; SecType = sys; Access_Type = RW; Squash = No_Root_Squash; }
+EXPORT { Export_Id = 77; Path = $D/export; Pseudo = /export; FSAL { Name = VFS; } }
+LOG { Default_Log_Level = EVENT; }
+EOF
+   setsid nohup $GANESHA -F -L $D/ganesha.log -f $D/ganesha.conf -p $D/run/g.pid -N NIV_EVENT > $D/out 2>&1 < /dev/null &
+   i=0; while [ $i -lt 50 ]; do
+      $RUN ./nfs_test$EXE 127.0.0.1 /export $PORT 0 4 > $D/res 2>&1 && break
+      i=$((i + 1)); sleep 0.3
+   done
+   rm -rf $D/export/*
+}
+for m in 0 1; do
+   serve $m 5
+   if $RUN ./nfs_idle_test$EXE 127.0.0.1 /export $PORT 0 4 12 > $D/res 2>&1; then
+      echo "ok:   NFSv4.$m: a file read and written after idling past the lease"
+   else
+      echo "FAIL: NFSv4.$m idle past the lease: $(cat $D/res)"; exit 1
+   fi
+   stop
+   serve $m 5
+   $RUN ./nfs_idle_test$EXE 127.0.0.1 /export $PORT 0 4 12 w > $D/res 2>&1 &
+   idler=$!
+   sleep 4
+   stop_keep() {
+      kill $(cat $D/run/g.pid 2>/dev/null) 2>/dev/null || true
+      i=0; while pgrep -x ganesha.nfsd >/dev/null 2>&1 && [ $i -lt 30 ]; do sleep 0.2; i=$((i + 1)); done
+   }
+   stop_keep   # the server goes, its state with it; the files stay
+   setsid nohup $GANESHA -F -L $D/ganesha.log -f $D/ganesha.conf -p $D/run/g.pid -N NIV_EVENT > $D/out 2>&1 < /dev/null &
+   if wait $idler; then
+      echo "ok:   NFSv4.$m: a file read and written across a server restart"
+   else
+      echo "FAIL: NFSv4.$m across a server restart: $(cat $D/res)"; exit 1
+   fi
+   stop
+done
 echo "[pass] nfs_retro local ganesha matrix"
