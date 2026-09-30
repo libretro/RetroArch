@@ -4852,6 +4852,12 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_CORE_DEINIT:
          command_event_core_deinit_begin();
+         /* A state task calls into the core this unloads.  Reached
+          * when an init fails, and from a staged load's core stage -
+          * after its close has waited the state tasks out from the
+          * frame loop, so there is nothing left to wait for.  The
+          * interactive close goes through retroarch_main_deinit_begin /
+          * _pending / _finish instead. */
          content_wait_for_save_state_task();
          content_wait_for_load_state_task();
          command_event_core_deinit_finish();
@@ -8418,6 +8424,9 @@ static bool retroarch_parse_input_and_config(
 
                   if (!explicit_menu)
                   {
+                     /* Command-line scan with no menu: the scan is
+                      * the whole run, so run the queue dry and exit.
+                      * Nothing is drawn meanwhile. */
                      task_queue_wait(NULL, NULL);
                      driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
                      exit(0);
@@ -9441,6 +9450,9 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_MAIN_DEINIT:
          if (!retroarch_main_deinit_begin())
             return false;
+         /* In one go: reached on exit and from the load at startup,
+          * before the first frame.  A load from the menu waits these
+          * out a frame at a time (task_content.c). */
          content_wait_for_save_state_task();
          content_wait_for_load_state_task();
          retroarch_main_deinit_finish();

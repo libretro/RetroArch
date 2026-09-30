@@ -2090,6 +2090,8 @@ bool content_save_state_in_progress(void* data)
    return save_state_task_pending;
 }
 
+/* Blocks until the state task is through.  For the exit, startup and
+ * init-failure paths only; CI keeps it out of menu/ and tasks/. */
 void content_wait_for_save_state_task(void)
 {
    task_queue_wait(content_save_state_in_progress, NULL);
@@ -2121,6 +2123,7 @@ bool content_load_state_in_progress(void* data)
    return load_state_task_pending;
 }
 
+/* As content_wait_for_save_state_task(), for a load. */
 void content_wait_for_load_state_task(void)
 {
    task_queue_wait(content_load_state_in_progress, NULL);

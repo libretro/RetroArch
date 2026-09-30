@@ -268,6 +268,16 @@ Debug builds report handlers that overrun a frame - see
 task_queue_set_slow_handler_cb() - which is the cheapest way to find
 out whether a handler you are adding respects any of this.
 
+The waits that remain are the accepted ones, none of them reachable
+while the menu is up or a core runs, each commented where it is:
+  * the command-line scan without a menu, which exits once done
+    (retroarch.c);
+  * the save/load state waits on exit, at startup and when an init
+    fails (content_wait_for_save_state_task() and
+    content_wait_for_load_state_task());
+  * the Wii U main loop's vsync wait (platform_wiiu.c).
+Win32 file dialogs are modal by nature and stay so.
+
 Commit message density
 ----------------------
 Keep commit message short and appropriate for the size of the change. One or two
