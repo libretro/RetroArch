@@ -651,6 +651,8 @@ static void retro_task_threaded_cancel(void *task)
    slock_unlock(running_lock);
 }
 
+static void retro_task_threaded_run_main(void);
+
 static void retro_task_threaded_gather(void)
 {
    retro_task_t *task = NULL;
@@ -666,6 +668,8 @@ static void retro_task_threaded_gather(void)
    for (task = tasks_running.front; task; task = task->next)
       task_queue_push_progress(task);
    slock_unlock(running_lock);
+
+   retro_task_threaded_run_main();
 
    /* Detach the entire finished list under the lock, then retire
     * the tasks (progress push, callback, cleanup, free) outside
@@ -899,6 +903,132 @@ void task_queue_set_prefer_fast_cores(bool prefer)
    task_worker_prefer_fast_cores = prefer;
 }
 
+/* Main-thread tasks are run by retro_task_threaded_gather(), never by
+ * the worker.  The bit is set before the push and never changes, but
+ * it shares its byte with the bits task_set_flags() writes under
+ * property_lock, so it is read there too. */
+static bool task_is_main_thread_task(retro_task_t *task)
+{
+   bool main;
+   slock_lock(property_lock);
+   main = (task->flags & RETRO_TASK_FLG_MAIN_THREAD) != 0;
+   slock_unlock(property_lock);
+   return main;
+}
+
+/* After a handler returned: a finished task moves to the finished
+ * list, an unfinished one to the back of the running list.  Called
+ * without running_lock held, by the worker for its tasks and by the
+ * gather for main-thread ones. */
+static void retro_task_threaded_settle(retro_task_t *task)
+{
+   bool finished;
+
+   slock_lock(property_lock);
+   finished = ((task->flags & RETRO_TASK_FLG_FINISHED) > 0) ? true : false;
+   slock_unlock(property_lock);
+
+   if (!finished)
+   {
+      /* Move the task to the back of the queue */
+      /* mimics retro_task_threaded_push_running,
+       * but also includes a task_queue_remove */
+      slock_lock(running_lock);
+
+      /* do nothing if only item in queue */
+      if (task->next)
+      {
+         task_queue_remove(&tasks_running, task);
+         task_queue_put(&tasks_running, task);
+         scond_signal(worker_cond);
+      }
+      slock_unlock(running_lock);
+   }
+   else
+   {
+      /* Move the task from the running queue to the finished
+       * queue while continuously holding running_lock: if the
+       * locks were dropped between the remove and the put, the
+       * task would briefly be in neither queue, and
+       * retro_task_threaded_find() - which scans both queues
+       * under both locks - could miss a task that is not yet
+       * fully retired. Lock nesting order is
+       * running_lock -> finished_lock, matching the find
+       * function; no other path nests these locks. */
+      slock_lock(running_lock);
+      task_queue_remove(&tasks_running, task);
+
+      /* Add task to finished queue */
+      slock_lock(finished_lock);
+      task_queue_put(&tasks_finished, task);
+      retro_atomic_fetch_add_int(&tasks_finished_count, 1);
+      retro_atomic_fetch_sub_int(&tasks_running_count, 1);
+      scond_signal(finished_cond);
+      slock_unlock(finished_lock);
+      slock_unlock(running_lock);
+   }
+}
+
+/* Runs the due main-thread tasks once each, within the handler
+ * budget.  Each one processed goes to the back of the running list
+ * (or off it), so counting them first bounds the pass; one pushed by
+ * a handler meanwhile waits for the next check. */
+static void retro_task_threaded_run_main(void)
+{
+   retro_time_t now     = 0;
+   retro_time_t started = 0;
+   unsigned     due     = 0;
+   unsigned     n_ran   = 0;
+   retro_task_t *task   = NULL;
+
+   slock_lock(running_lock);
+   for (task = tasks_running.front; task; task = task->next)
+   {
+      if (!task_is_main_thread_task(task))
+         continue;
+      if (task->when)
+      {
+         if (!now)
+            now = cpu_features_get_time_usec();
+         if (task->when > now)
+            continue;
+      }
+      due++;
+   }
+   slock_unlock(running_lock);
+
+   if (!due)
+      return;
+   if (task_handler_budget_usec)
+      started = cpu_features_get_time_usec();
+
+   while (due--)
+   {
+      /* Past the budget, the rest wait for the next check.  At
+       * least one due handler always runs. */
+      if (   n_ran && task_handler_budget_usec
+          && cpu_features_get_time_usec() - started >= task_handler_budget_usec)
+         break;
+
+      slock_lock(running_lock);
+      for (task = tasks_running.front; task; task = task->next)
+      {
+         if (!task_is_main_thread_task(task))
+            continue;
+         if (task->when && task->when > cpu_features_get_time_usec())
+            continue;
+         break;
+      }
+      slock_unlock(running_lock);
+      if (!task)
+         break;
+
+      task->handler(task);
+      n_ran++;
+      retro_task_threaded_settle(task);
+   }
+}
+
 static void threaded_worker(void *userdata)
 {
    struct task_worker *self = (struct task_worker*)userdata;
@@ -910,7 +1040,6 @@ static void threaded_worker(void *userdata)
    for (;;)
    {
       retro_task_t *task  = NULL;
-      bool       finished = false;
 
       slock_lock(running_lock);
 
@@ -930,8 +1059,11 @@ static void threaded_worker(void *userdata)
          break;
       }
 
-      /* Get first task to run */
-      if (!(task = tasks_running.front))
+      /* Get first task to run; main-thread tasks are the gather's */
+      for (task = tasks_running.front; task; task = task->next)
+         if (!task_is_main_thread_task(task))
+            break;
+      if (!task)
       {
          scond_wait(worker_cond, running_lock);
          slock_unlock(running_lock);
@@ -985,50 +1117,7 @@ static void threaded_worker(void *userdata)
       retro_sleep(1);
 #endif
 
-      slock_lock(property_lock);
-      finished = ((task->flags & RETRO_TASK_FLG_FINISHED) > 0) ? true : false;
-      slock_unlock(property_lock);
-
-      /* Update queue */
-      if (!finished)
-      {
-         /* Move the task to the back of the queue */
-         /* mimics retro_task_threaded_push_running,
-          * but also includes a task_queue_remove */
-         slock_lock(running_lock);
-
-         /* do nothing if only item in queue */
-         if (task->next)
-         {
-            task_queue_remove(&tasks_running, task);
-            task_queue_put(&tasks_running, task);
-            scond_signal(worker_cond);
-         }
-         slock_unlock(running_lock);
-      }
-      else
-      {
-         /* Move the task from the running queue to the finished
-          * queue while continuously holding running_lock: if the
-          * locks were dropped between the remove and the put, the
-          * task would briefly be in neither queue, and
-          * retro_task_threaded_find() - which scans both queues
-          * under both locks - could miss a task that is not yet
-          * fully retired. Lock nesting order is
-          * running_lock -> finished_lock, matching the find
-          * function; no other path nests these locks. */
-         slock_lock(running_lock);
-         task_queue_remove(&tasks_running, task);
-
-         /* Add task to finished queue */
-         slock_lock(finished_lock);
-         task_queue_put(&tasks_finished, task);
-         retro_atomic_fetch_add_int(&tasks_finished_count, 1);
-         retro_atomic_fetch_sub_int(&tasks_running_count, 1);
-         scond_signal(finished_cond);
-         slock_unlock(finished_lock);
-         slock_unlock(running_lock);
-      }
+      retro_task_threaded_settle(task);
    }
 }
 
@@ -1282,9 +1371,13 @@ static void retro_task_gcd_push_running(retro_task_t *task)
    slock_lock(running_lock);
    task_queue_put(&tasks_running, task);
    retro_atomic_fetch_add_int(&tasks_running_count, 1);
-   gcd_queue_count++;
-   dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
-                  ^{ gcd_worker(task); });
+   /* A main-thread task is the gather's; only the rest go to GCD. */
+   if (!task_is_main_thread_task(task))
+   {
+      gcd_queue_count++;
+      dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
+                     ^{ gcd_worker(task); });
+   }
    slock_unlock(running_lock);
 }
 
@@ -1328,6 +1421,8 @@ static bool retro_task_gcd_init(void)
    worker_continue = true;
    for (task = tasks_running.front; task; task = task->next)
    {
+      if (task_is_main_thread_task(task))
+         continue;
       gcd_queue_count++;
       dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
                      ^{ gcd_worker(task); });

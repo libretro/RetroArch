@@ -158,7 +158,19 @@ enum retro_task_flags
     * block in an OS call for arbitrarily long, such as a device
     * enumeration.
     */
-   RETRO_TASK_FLG_DETACHABLE       = (1 << 4)
+   RETRO_TASK_FLG_DETACHABLE       = (1 << 4),
+   /**
+    * Set by the pusher before \c task_queue_push: \c handler runs on
+    * the thread that calls \c task_queue_check - the frontend's main
+    * thread - under every runner, never on the worker.  For work that
+    * must happen there (calls into the core, the drivers, the menu)
+    * yet wants a task's lifetime: pushed, found, cancelled, retired
+    * through \c callback and \c cleanup like any other.  It runs
+    * inside the check's handler budget, so a handler that returns
+    * unfinished is called again on a later check, as on the
+    * unthreaded runner.  Not changed after the push.
+    */
+   RETRO_TASK_FLG_MAIN_THREAD      = (1 << 5)
 };
 
 /**

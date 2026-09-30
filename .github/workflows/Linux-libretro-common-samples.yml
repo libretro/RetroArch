@@ -162,6 +162,7 @@ jobs:
             # Stops the worker with a bound when a detachable
             # handler is stuck; waits ~1.5 s by design.
             task_queue_detach_test
+            task_queue_main_thread_test
             task_queue_budget_test
             image_blit_bands_test
             tpool_wait_test
