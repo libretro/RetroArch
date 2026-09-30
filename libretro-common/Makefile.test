@@ -535,6 +535,17 @@ crypto-aarch64-check:
 MIPSEL_CC   ?= mipsel-linux-gnu-gcc
 QEMU_MIPSEL ?= qemu-mipsel
 
+# The crypto library first used from eight threads at once, under
+# TSan: a table built on first use or a cached CPU-feature check is a
+# reported race here on any runner, where a network test sees it only
+# when two connections happen to start together on two cores.
+crypto-tsan-check:
+	$(CC) -O1 -g -fsanitize=thread -Iinclude test/crypto/crypto_threads_test.c \
+	   $(filter-out test/crypto/test_crypto.c,$(TEST_CRYPTO_SRC)) -lpthread -lm \
+	   -o test/crypto/crypto_threads_test
+	TSAN_OPTIONS="halt_on_error=1 exitcode=66" test/crypto/crypto_threads_test
+	rm -f test/crypto/crypto_threads_test
+
 crypto-mips-check:
 	@if ! command -v $(MIPSEL_CC) >/dev/null 2>&1; then echo "skip: $(MIPSEL_CC) not installed"; exit 0; fi; \
 	if ! command -v $(QEMU_MIPSEL) >/dev/null 2>&1; then echo "skip: $(QEMU_MIPSEL) not installed"; exit 0; fi; \
