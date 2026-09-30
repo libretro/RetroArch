@@ -17,7 +17,7 @@
 #include <unistd.h>
 
 #ifdef HAVE_WAYLAND_BACKPORT
-#include "../../gfx/common/wayland_client_backport.h"
+#include "../../gfx/common/wayland_common_backport.h"
 #endif
 
 #include <wayland-client.h>
