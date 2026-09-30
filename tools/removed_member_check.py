@@ -277,7 +277,13 @@ def main(argv):
         i += 1
 
     try:
-        diff = subprocess.run(['git', 'diff', '--unified=0', rng],
+        # The pruned trees are left out of the diff as they are out of
+        # the scan: a vendored library's members are its own API, read
+        # through its own headers, and deleting the library removes
+        # nothing RetroArch declares.
+        diff = subprocess.run(['git', 'diff', '--unified=0', rng, '--', '.']
+                              + [':(exclude)%s' % pr for pr in PRUNE
+                                 if pr != '.git'],
                               capture_output=True, text=True,
                               check=True).stdout
     except (OSError, subprocess.CalledProcessError) as e:
