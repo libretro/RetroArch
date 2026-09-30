@@ -1874,10 +1874,12 @@
 #define DEFAULT_INPUT_SENSORS_ENABLE true
 
 /* Use the Android system (IME) keyboard for menu text entry instead of
- * the built-in on-screen keyboard. Off by default so gamepad-only
- * and no-touch devices keep the navigable on-screen keyboard at
- * all times. */
-#define DEFAULT_INPUT_ANDROID_SYSTEM_KEYBOARD false
+ * the built-in on-screen keyboard. On by default: it is the keyboard
+ * the device's users already know, and it brings clipboard paste and
+ * password managers. Gamepad-only and no-touch devices whose input
+ * method cannot be driven from a pad can turn it off to get the
+ * navigable on-screen keyboard back. */
+#define DEFAULT_INPUT_ANDROID_SYSTEM_KEYBOARD true
 
 /* Use the system screen keyboard for menu text entry on SDL3
  * platforms that provide one. Off by default so gamepad-only
