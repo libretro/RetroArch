@@ -84,7 +84,7 @@ check-vulkan: all
 RUNNER := $(if $(filter 1,$(GDB)),gdb -q -batch -return-child-result -ex run -ex 'printf "--- fault site ---\n"' -ex 'x/i $$pc' -ex 'info symbol $$pc' -ex 'info registers rax rbx rcx rdx rsi rdi' -ex 'x/4i $$pc-12' -ex 'thread apply all bt 25' --args,)
 
 check-driver: all
-	@if [ -z "$$DISPLAY" ] && [ "$${OS:-}" != Windows_NT ]; then echo "check-driver: no DISPLAY, skipping"; exit 77; fi; \
+	@if [ -z "$$DISPLAY" ] && [ "$${OS:-}" != Windows_NT ] && [ "$$(uname -s)" != Darwin ]; then echo "check-driver: no DISPLAY, skipping"; exit 77; fi; \
 	 if [ -z "$(DRIVER)" ]; then echo "check-driver: DRIVER=<video driver> required"; exit 2; fi; \
 	 HARNESS_VIDEO_DRIVER=$(DRIVER) HARNESS_VERBOSE=1 \
 	 ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
@@ -101,6 +101,6 @@ check-driver: all
 
 clean:
 	rm -f $(TARGET) check.log harness_core.so retroarch_nomain.o retroarch_nomain.d \
-	      harness_main.o harness_main.d
+	      harness_main.o harness_main.d harness_cocoa.o harness_cocoa.d
 
 .PHONY: all check check-vulkan check-driver clean

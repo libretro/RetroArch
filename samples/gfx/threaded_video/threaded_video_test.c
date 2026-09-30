@@ -87,11 +87,23 @@ static bool real_driver(void)
    return drv && strcmp(drv, "null") != 0;
 }
 
+#ifdef HAVE_COCOA
+/* harness_cocoa.m: the harness runs inside Cocoa's application on
+ * macOS - see there. */
+void harness_cocoa_pump(void);
+void harness_cocoa_exit_status(int status);
+#endif
+
 static void run_frames(unsigned n)
 {
    unsigned i;
    for (i = 0; i < n; i++)
+   {
       runloop_iterate();
+#ifdef HAVE_COCOA
+      harness_cocoa_pump();
+#endif
+   }
 }
 
 /* Frames the frontend has accepted from the core; the counter the core
@@ -5309,6 +5321,11 @@ shutdown:
     * under test. */
    set_threaded_via_setting(true);
    run_frames(3);
+#ifdef HAVE_COCOA
+   /* main_exit() terminates the Cocoa application; the status has
+    * to be in place before it. */
+   harness_cocoa_exit_status(failures ? 1 : 0);
+#endif
    main_exit(NULL);
 
    /* The scratch directory holds the config and nothing else. */

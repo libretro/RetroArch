@@ -38,6 +38,10 @@ touch retroarch.c
 make -n $MAKE_ARGS 2>/dev/null | grep -E '\-o obj-unix/[^/ ]+/retroarch\.o' | head -1 > "$cc_line"
 if [ ! -s "$cc_line" ]; then
    echo "could not determine the compile command for retroarch.o" >&2
+   # Usually the tree is not configured, or config.mk has fallen
+   # behind configure after a pull: make says which.
+   make -n $MAKE_ARGS 2>&1 | grep -iE 'config\.mk|error' | head -3 >&2
+   echo "(a configured, built Makefile tree is needed: ./configure --disable-qt && make $MAKE_ARGS)" >&2
    exit 1
 fi
 objdir=$(grep -oE 'obj-unix/[^/ ]+/retroarch\.o' "$cc_line" | head -1 | sed 's#/retroarch\.o##')
@@ -46,12 +50,38 @@ if [ ! -f "$objdir/video_driver.o" ] && [ ! -f "$objdir/gfx/video_driver.o" ]; t
    exit 1
 fi
 
-sed "s#-o $objdir/retroarch\.o#-Dmain=rarch_harness_unused_main -o $out/retroarch_nomain.o#" \
-   "$cc_line" | sh
+# On macOS main() is Cocoa's (HAVE_MAIN in ui_cocoa.m) and it calls
+# rarch_main() with the application up; the harness keeps that main
+# and takes rarch_main() over (harness_cocoa.m). Elsewhere main() is
+# retroarch.c's and the harness's own replaces it.
+cocoa_objs=""
+if grep -q -- '-DHAVE_MAIN' "$cc_line"; then
+   sed "s#-o $objdir/retroarch\.o#-Drarch_main=rarch_harness_unused_rarch_main -o $out/retroarch_nomain.o#" \
+      "$cc_line" | sh
 
-sed -e "s#-o $objdir/retroarch\.o#-o $out/harness_main.o#" \
-    -e "s# retroarch\.c# $out/threaded_video_test.c#" \
-   "$cc_line" | sh
+   sed -e "s#-o $objdir/retroarch\.o#-Dmain=harness_main -o $out/harness_main.o#" \
+       -e "s# retroarch\.c# $out/threaded_video_test.c#" \
+      "$cc_line" | sh
+
+   # The tree's own compile line for an Objective-C file.
+   touch ui/drivers/ui_cocoa.m
+   make -n $MAKE_ARGS 2>/dev/null | grep -E '\-o obj-unix/[^/ ]+/ui/drivers/ui_cocoa\.o' | head -1 > "$ld_line"
+   if [ ! -s "$ld_line" ]; then
+      echo "could not determine the compile command for ui_cocoa.o" >&2
+      exit 1
+   fi
+   sed -e "s#-o $objdir/ui/drivers/ui_cocoa\.o#-o $out/harness_cocoa.o#" \
+       -e "s# ui/drivers/ui_cocoa\.m# $out/harness_cocoa.m#" \
+      "$ld_line" | sh
+   cocoa_objs="$out/harness_cocoa.o"
+else
+   sed "s#-o $objdir/retroarch\.o#-Dmain=rarch_harness_unused_main -o $out/retroarch_nomain.o#" \
+      "$cc_line" | sh
+
+   sed -e "s#-o $objdir/retroarch\.o#-o $out/harness_main.o#" \
+       -e "s# retroarch\.c# $out/threaded_video_test.c#" \
+      "$cc_line" | sh
+fi
 
 rm -f retroarch retroarch_debug
 make -n $MAKE_ARGS 2>/dev/null | grep -E ' -o retroarch(_debug)? ' | tail -1 > "$ld_line"
@@ -60,7 +90,7 @@ if [ ! -s "$ld_line" ]; then
    exit 1
 fi
 
-sed -e "s#$objdir/retroarch\.o#$out/retroarch_nomain.o $out/harness_main.o#" \
+sed -e "s#$objdir/retroarch\.o#$out/retroarch_nomain.o $out/harness_main.o $cocoa_objs#" \
     -e "s#-o retroarch\(_debug\)\? #-o $out/threaded_video_test #" \
    "$ld_line" | sh
 
