@@ -956,6 +956,20 @@ jobs:
              timeout 60 ./wayland_wlr_output_test
           echo "[pass] wayland_wlr_output_test"
 
+      - name: Build and run wayland_cursor_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/wayland_cursor
+        run: |
+          set -eu
+          # input/common/wayland_cursor.h: the size and scale the Wayland
+          # context loads its cursor theme at when the compositor has no
+          # cursor-shape-v1 - XCURSOR_SIZE honoured, fractional scales
+          # rounded up to a whole buffer scale.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./wayland_cursor_test
+          echo "[pass] wayland_cursor_test"
+
       - name: Build and run video_mode_select_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/video_mode_select

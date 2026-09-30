@@ -256,6 +256,7 @@ typedef struct gfx_ctx_wayland_data
       struct wl_cursor_theme *theme;
       struct wl_surface *surface;
       uint32_t serial;
+      unsigned scale;   /* the scale the theme was loaded at */
       bool visible;
    } cursor;
 
@@ -331,6 +332,10 @@ void free_xkb(void);
 #endif
 
 void gfx_ctx_wl_show_mouse(void *data, bool state);
+
+/* Loads the cursor theme at the scale the surface is drawn at; does
+ * nothing while the loaded one still fits. */
+void gfx_ctx_wl_cursor_load(gfx_ctx_wayland_data_t *wl);
 
 void flush_wayland_fd(void *data);
 

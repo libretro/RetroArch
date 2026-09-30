@@ -583,10 +583,7 @@ static bool gfx_ctx_wl_webos_adopt(gfx_ctx_wayland_data_t *wl)
     * not wl->surface. */
    wl->input.mouse.surface   = wl->surface;
    /* The theme went with the old context; its surface was kept. */
-   wl->cursor.theme          = wl_cursor_theme_load(NULL, 16, wl->shm);
-   if (wl->cursor.theme)
-      wl->cursor.default_cursor = wl_cursor_theme_get_cursor(
-            wl->cursor.theme, "left_ptr");
+   gfx_ctx_wl_cursor_load(wl);
 
    wl->num_active_touches = 0;
    for (i = 0; i < MAX_TOUCHES; i++)
@@ -875,10 +872,7 @@ bool gfx_ctx_wl_init_webos(
    wl->input.mouse.focus    = true;
 
    wl->cursor.surface        = wl_compositor_create_surface(wl->compositor);
-   wl->cursor.theme          = wl_cursor_theme_load(NULL, 16, wl->shm);
-
-   if (wl->cursor.theme)
-      wl->cursor.default_cursor = wl_cursor_theme_get_cursor(wl->cursor.theme, "left_ptr");
+   gfx_ctx_wl_cursor_load(wl);
 
    wl->num_active_touches = 0;
 

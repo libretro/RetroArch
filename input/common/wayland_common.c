@@ -36,6 +36,7 @@
 #include "wayland_common.h"
 
 #include "../input_keymaps.h"
+#include "wayland_cursor.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../verbosity.h"
 
@@ -158,30 +159,62 @@ static void wl_keyboard_handle_repeat_info(void *data,
     * repeat working. We'll have to do it on our own. */
 }
 
+void gfx_ctx_wl_cursor_load(gfx_ctx_wayland_data_t *wl)
+{
+   struct wl_cursor_theme *theme;
+   unsigned scale = wl_cursor_scale(wl->fractional_scale != NULL,
+         wl->buffer_scale, wl->fractional_scale_num,
+            wl->cursor.surface
+         && wl_surface_get_version(wl->cursor.surface)
+            >= WL_SURFACE_SET_BUFFER_SCALE_SINCE_VERSION);
+
+   if ((wl->cursor.theme && wl->cursor.scale == scale) || !wl->shm)
+      return;
+
+   if (!(theme = wl_cursor_theme_load(getenv("XCURSOR_THEME"),
+               wl_cursor_size(getenv("XCURSOR_SIZE")) * scale, wl->shm)))
+      return;
+
+   if (wl->cursor.theme)
+      wl_cursor_theme_destroy(wl->cursor.theme);
+   wl->cursor.theme          = theme;
+   wl->cursor.default_cursor = wl_cursor_theme_get_cursor(theme, "left_ptr");
+   wl->cursor.scale          = scale;
+}
+
 void gfx_ctx_wl_show_mouse(void *data, bool state)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    if (!wl->wl_pointer)
       return;
 
-   if (state)
-      if (wl->cursor_shape_device)
-         wp_cursor_shape_device_v1_set_shape(
-            wl->cursor_shape_device, wl->cursor.serial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
-      else
+   if (!state)
+      wl_pointer_set_cursor(wl->wl_pointer, wl->cursor.serial, NULL, 0, 0);
+   else if (wl->cursor_shape_device)
+      wp_cursor_shape_device_v1_set_shape(
+         wl->cursor_shape_device, wl->cursor.serial, WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
+   else
+   {
+      /* No cursor-shape-v1: the theme is ours to draw, at the scale the
+       * surface is on now. */
+      gfx_ctx_wl_cursor_load(wl);
+      if (wl->cursor.default_cursor)
       {
          struct wl_cursor_image *image = wl->cursor.default_cursor->images[0];
+         int scale                     = (int)wl->cursor.scale;
          wl_pointer_set_cursor(wl->wl_pointer,
                wl->cursor.serial, wl->cursor.surface,
-               image->hotspot_x, image->hotspot_y);
+               image->hotspot_x / scale, image->hotspot_y / scale);
          wl_surface_attach(wl->cursor.surface,
                wl_cursor_image_get_buffer(image), 0, 0);
-         wl_surface_damage(wl->cursor.surface, 0, 0, image->width, image->height);
+         if (     wl_surface_get_version(wl->cursor.surface)
+               >= WL_SURFACE_SET_BUFFER_SCALE_SINCE_VERSION)
+            wl_surface_set_buffer_scale(wl->cursor.surface, scale);
+         wl_surface_damage(wl->cursor.surface, 0, 0,
+               image->width / scale, image->height / scale);
          wl_surface_commit(wl->cursor.surface);
-
       }
-   else
-      wl_pointer_set_cursor(wl->wl_pointer, wl->cursor.serial, NULL, 0, 0);
+   }
 
    wl->cursor.visible = state;
 }
