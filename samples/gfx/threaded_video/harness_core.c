@@ -5,6 +5,7 @@
  * sometimes taller than the geometry it declared. */
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <libretro.h>
 
@@ -14,16 +15,34 @@
 
 static retro_video_refresh_t video_cb;
 static retro_environment_t   environ_cb;
-static uint16_t frame[W * H_OVERSIZE];
+/* Room for a 32-bit oversize frame; the pixel size follows the
+ * format chosen at set_environment. */
+static uint8_t  frame[W * H_OVERSIZE * 4];
+static unsigned bpp = 2;
+static enum retro_pixel_format pixel_format = RETRO_PIXEL_FORMAT_RGB565;
 static unsigned runs;
 
 void retro_set_environment(retro_environment_t cb)
 {
    bool no_content = true;
    environ_cb = cb;
+   /* RGB565 by default; XRGB8888 with HARNESS_CORE_XRGB8888 set. The
+    * two take different paths through a driver - Vulkan converts
+    * RGB565 with a compute shader and samples a linear XRGB8888
+    * image directly, and D3D12 lends its framebuffer only for a row
+    * pitch on a 256-byte boundary, which 320 pixels reach at 4 bytes
+    * and not at 2 - so the CI legs run the harness under both. */
    {
-      /* The frames below are RGB565; say so, as a real core must. */
-      enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
+      const char *xrgb = getenv("HARNESS_CORE_XRGB8888");
+      if (xrgb && *xrgb)
+      {
+         pixel_format = RETRO_PIXEL_FORMAT_XRGB8888;
+         bpp          = 4;
+      }
+   }
+   {
+      /* Say what the frames below are, as a real core must. */
+      enum retro_pixel_format fmt = pixel_format;
       cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt);
    }
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
@@ -77,12 +96,11 @@ void retro_run(void)
 {
    unsigned h = (runs % 61 == 60) ? H_OVERSIZE : H;
    unsigned i;
-   uint16_t *dst = frame;
-   size_t   pitch = W * 2;
-   runs++;
-
+   uint8_t *dst   = frame;
+   size_t   pitch = W * bpp;
    unsigned out_w = W, out_h = h;
-   const uint16_t *push = NULL;
+   const uint8_t *push = NULL;
+   runs++;
 
    if (harness_use_fb && h == H)
    {
@@ -95,22 +113,32 @@ void retro_run(void)
       fb.access_flags = RETRO_MEMORY_ACCESS_WRITE
                       | RETRO_MEMORY_ACCESS_READ;
       if (     environ_cb(RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER, &fb)
-            && fb.format == RETRO_PIXEL_FORMAT_RGB565)
+            && fb.format == pixel_format)
       {
-         dst   = (uint16_t*)fb.data;
+         dst   = (uint8_t*)fb.data;
          pitch = fb.pitch;
          harness_fb_granted++;
       }
    }
 
+   /* Pixel i carries (run + i) in its low bits, at either size, so a
+    * lane reading the first pixel as 16-bit sees the run number
+    * move whichever format is on. Rows at the pitch: a loan may pad
+    * them. */
    for (i = 0; i < W * h; i++)
-      dst[i] = (uint16_t)(runs + i);
+   {
+      uint8_t *px = dst + (i / W) * pitch + (i % W) * bpp;
+      if (bpp == 4)
+         *(uint32_t*)px = (uint32_t)(runs + i);
+      else
+         *(uint16_t*)px = (uint16_t)(runs + i);
+   }
    push = dst;
    if (harness_use_fb == 2 && h == H)
    {
       /* Cropped window: CROP_Y rows down and CROP_X pixels in, at the
        * full pitch. Same for a loan and for the core's own buffer. */
-      push  = dst + CROP_Y * (pitch / 2) + CROP_X;
+      push  = dst + CROP_Y * pitch + CROP_X * bpp;
       out_w = W - 2 * CROP_X;
       out_h = H - 2 * CROP_Y;
    }

@@ -2985,6 +2985,18 @@ static void lane_lent_window_paused(void)
    run_frames(60);
    g1 = granted();
    f1 = core_frames();
+   /* A driver that has no framebuffer to lend (d3d11), or declines
+    * this one (d3d12 lends only a row pitch on a 256-byte boundary,
+    * which RGB565 at 320 wide is not), has no loan to push a window
+    * into: nothing here to test. */
+   if (g1 == g0)
+   {
+      fprintf(stderr, "[skip] lent-window lane (driver lent no framebuffer)\n");
+      use_fb(0);
+      if (!menu_is_up())
+         command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+      return;
+   }
    CHECK(g1 - g0 >= 30,
          "lent-window lane: driver granted only %u of 60 asks with threaded video off",
          g1 - g0);

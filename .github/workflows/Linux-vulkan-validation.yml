@@ -185,6 +185,12 @@ jobs:
           # allocation per post, no copy, a 4K submit that stays a
           # descriptor hand-off.
           SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=2 make -C samples/gfx/threaded_video check-vulkan
+          # Once more with the harness core pushing XRGB8888: the
+          # driver samples a linear 32-bit image itself where it
+          # converts RGB565 with a compute pass, so a lent frame and
+          # a window into it take the other upload path (the one
+          # beetle-psx takes).
+          HARNESS_CORE_XRGB8888=1 SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
 
   vulkan-validation-sample:
@@ -281,6 +287,7 @@ jobs:
           export DISPLAY=:99
           export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json
           SAN=address VK_DEBUG=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
+          HARNESS_CORE_XRGB8888=1 SAN=address VK_DEBUG=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
 
   vulkan-tsan-harness:
@@ -403,8 +410,15 @@ jobs:
         # d3d12 runs the same lanes on the other explicit-API backend:
         # its in-place texture update is fence-tagged against the frame
         # that last copied from the upload buffer, which only a running
-        # driver exercises.
+        # driver exercises. It runs with the harness core pushing
+        # XRGB8888: d3d12 lends its framebuffer only for a row pitch
+        # on a 256-byte boundary, which 320 pixels reach at 4 bytes and
+        # not at 2, so that is the run in which a frame is lent and a
+        # window into the loan is read out of it (lent-window lane).
         driver: [d3d11, d3d12]
+        include:
+          - driver: d3d12
+            core_xrgb8888: 1
 
     steps:
       - name: Checkout
@@ -436,5 +450,6 @@ jobs:
         run: |
           set -eu
           samples/gfx/threaded_video/build.sh
-          SAN=none DRIVER=${{ matrix.driver }} CYCLES=1 GDB=1 make -C samples/gfx/threaded_video check-driver
+          HARNESS_CORE_XRGB8888=${{ matrix.core_xrgb8888 || '' }} \
+            SAN=none DRIVER=${{ matrix.driver }} CYCLES=1 GDB=1 make -C samples/gfx/threaded_video check-driver
           make -C samples/gfx/threaded_video clean
