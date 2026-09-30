@@ -9415,6 +9415,12 @@ static void netplay_host_setup_handler(retro_task_t *task)
    command_event(CMD_EVENT_NETPLAY_INIT, NULL);
 }
 
+static void netplay_host_setup_cleanup(retro_task_t *task)
+{
+   free(task->state);
+   task->state = NULL;
+}
+
 static bool netplay_host_setup_finder(retro_task_t *task, void *user_data)
 {
    (void)user_data;
@@ -9468,6 +9474,7 @@ bool netplay_host_setup_defer(void)
    }
    hs->deadline    = cpu_features_get_time_usec() + NETPLAY_MITM_QUERY_TIMEOUT;
    task->handler   = netplay_host_setup_handler;
+   task->cleanup   = netplay_host_setup_cleanup;
    task->state     = hs;
    task->flags    |= RETRO_TASK_FLG_MAIN_THREAD | RETRO_TASK_FLG_MUTE;
    if (!task_queue_push(task))
