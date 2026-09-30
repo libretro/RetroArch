@@ -13,7 +13,9 @@
  *  - a main-thread task and a plain task ahead of it in the list do
  *    not block each other: the worker skips past the main-thread one;
  *  - the slow-handler watchdog reports a main-thread handler that
- *    overruns its budget, and not a worker handler that does.
+ *    overruns its budget, and not a worker handler that does;
+ *  - a main-thread handler that waits on the queue does not run the
+ *    main-thread tasks a second time, nor retire them twice.
  * On the unthreaded runner the flag changes nothing: the handler runs
  * here as every handler does.
  */
@@ -245,6 +247,45 @@ static void lane_slow_main_handler(void)
       fprintf(stderr, "[pass] slow main-thread handler lane\n");
 }
 
+static bool never(void *data)
+{
+   (void)data;
+   return false;
+}
+
+static void waiting_handler(retro_task_t *task)
+{
+   struct probe *p = (struct probe*)task->user_data;
+   p->calls++;
+   /* As a content load's stage does when it deinitialises a core:
+    * a wait from inside the handler, here with nothing to wait for. */
+   task_queue_wait(never, NULL);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void lane_wait_inside_main(void)
+{
+   struct probe waiter, other;
+   unsigned had = failures;
+   unsigned i;
+
+   CHECK(push_h(&waiter, true, 1, 0, waiting_handler) != NULL, "push");
+   CHECK(push_h(&other,  true, 1000, 0, probe_handler) != NULL, "push");
+   for (i = 1; i <= 4; i++)
+   {
+      task_queue_check();
+      CHECK(other.calls == i, "check %u: the other main-thread task ran %u times",
+            i, other.calls);
+   }
+   CHECK(waiter.calls == 1, "the waiting handler ran %u times", waiter.calls);
+   CHECK(waiter.retired == 1, "the waiting task retired %u times", waiter.retired);
+   other.finish_after = 1;
+   pump_until_retired(&other, 2000);
+   CHECK(other.retired == 1, "the other task retired %u times", other.retired);
+   if (failures == had)
+      fprintf(stderr, "[pass] wait-inside-main-handler lane\n");
+}
+
 int main(void)
 {
    main_id = sthread_get_current_thread_id();
@@ -261,6 +302,7 @@ int main(void)
    lane_wait();
    lane_interleaved();
    lane_slow_main_handler();
+   lane_wait_inside_main();
    task_queue_deinit();
 
    task_queue_init(false, NULL);

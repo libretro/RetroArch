@@ -1005,9 +1005,20 @@ static unsigned retro_task_threaded_due_main(retro_task_t *task,
  * a handler meanwhile waits for the next check. */
 static void retro_task_threaded_run_main(unsigned due)
 {
+   /* A main-thread handler that waits on the queue gathers again from
+    * inside this pass.  The task it runs in, and every other one this
+    * pass took, is still on the running list; running them from the
+    * nested gather would run them twice and settle them twice.  The
+    * pass further up the stack runs them.  Only the checking thread
+    * gets here, so a plain flag does. */
+   static bool in_run_main = false;
    retro_time_t started = 0;
    unsigned     n_ran   = 0;
    retro_task_t *task   = NULL;
+
+   if (in_run_main)
+      return;
+   in_run_main = true;
 
    if (task_handler_budget_usec)
       started = cpu_features_get_time_usec();
@@ -1049,6 +1060,8 @@ static void retro_task_threaded_run_main(unsigned due)
       n_ran++;
       retro_task_threaded_settle(task);
    }
+
+   in_run_main = false;
 }
 
 static void threaded_worker(void *userdata)

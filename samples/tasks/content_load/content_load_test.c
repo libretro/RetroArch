@@ -1410,6 +1410,76 @@ static void lane_screenshot_steps(const char *dir)
 #endif
 
 /* ------------------------------------------------------------------ */
+/* Lane: fallback, threaded                                            */
+/* ------------------------------------------------------------------ */
+
+/* A main-thread task that counts the checks it is run in.  The queue
+ * runs it once per task_queue_check(); more means a handler re-entered
+ * the queue from inside a check. */
+static unsigned probe_runs;
+static bool     probe_stop;
+static void probe_main_handler(retro_task_t *task)
+{
+   probe_runs++;
+   if (probe_stop)
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+/* A load that fails falls back to the dummy core, and the core stage
+ * deinitialises the old core as it goes - with the close already
+ * through, nothing is left for that to wait on.  With Threaded Tasks
+ * on, the stage runs from inside the check: a wait there would gather
+ * the queue again from within it, running the main-thread tasks a
+ * second time in the same check. */
+static void lane_fallback_threaded(void)
+{
+   settings_t *settings = config_get_ptr();
+   char bogus[512];
+   retro_task_t *probe;
+   unsigned had = failures, checks = 0, n;
+
+   snprintf(bogus, sizeof(bogus), "%.500s.missing", core_path);
+   configuration_set_bool(settings, settings->bools.threaded_data_runloop_enable, true);
+   task_queue_set_threaded();
+   open_menu();
+
+   probe_runs = 0;
+   probe_stop = false;
+   probe = task_init();
+   probe->handler = probe_main_handler;
+   probe->flags  |= RETRO_TASK_FLG_MAIN_THREAD | RETRO_TASK_FLG_MUTE;
+   task_queue_push(probe);
+
+   CHECK(task_push_load_contentless_core_from_menu(bogus),
+         "the load of a missing core was not started");
+   for (n = 0; n < LOAD_FRAMES && runloop_is_content_switching(); n++)
+   {
+      runloop_iterate();
+      task_queue_check();
+      checks++;
+   }
+   CHECK(!runloop_is_content_switching(), "the load did not finish");
+   CHECK(runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY,
+         "the fallback is not the dummy core");
+   CHECK(probe_runs <= checks,
+         "main-thread tasks ran %u times in %u checks: the load re-entered "
+         "the queue from inside a check", probe_runs, checks);
+
+   probe_stop = true;
+   pump(3);
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the reload after the fallback was not started");
+   pump(LOAD_FRAMES);
+   CHECK(core_is_up(), "the reload after the fallback did not go through");
+   configuration_set_bool(settings, settings->bools.threaded_data_runloop_enable, false);
+   task_queue_unset_threaded();
+   pump(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] fallback-threaded lane (%u checks)\n", checks);
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: close content                                                 */
 /* ------------------------------------------------------------------ */
 
@@ -1571,6 +1641,7 @@ int main(int argc, char *argv[])
    lane_one_at_a_time();
    lane_reinit_deferred();
    lane_fallback();
+   lane_fallback_threaded();
    lane_hw_request();
    lane_queue_survives();
    lane_close_content();
