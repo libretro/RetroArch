@@ -22,6 +22,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "../../../paths.h"
+
 int harness_main(int argc, char *argv[]);
 
 static int harness_status = -1;
@@ -51,8 +53,16 @@ void harness_cocoa_pump(void)
 
 int rarch_main(int argc, char *argv[], void *data)
 {
-   int rc = harness_main(argc, argv);
+   int rc;
    (void)data;
+   /* AppKit hands every command-line argument that is not a flag to
+    * the delegate as a file to open (application:openFiles:) while
+    * the application finishes launching, before this is reached; with
+    * no core up yet the delegate stores it as the content path. The
+    * harness's argument is its cycle count, not content: forget it,
+    * or retroarch_main_init() tries to load a file named "1". */
+   path_clear(RARCH_PATH_CONTENT);
+   rc = harness_main(argc, argv);
    harness_cocoa_exit_status(rc);
    exit(rc);
 }
