@@ -953,6 +953,14 @@ void video_thread_call_on_waiter(void (*fn)(void *data), void *data);
 
 void video_thread_wait_idle(void);
 
+/* The wrapper's invalidate_hw_render_cache, and what a hardware core's
+ * set_image(NULL) means under the ring. Main thread. On return no
+ * frame that reads the core's image is queued, being drawn or still on
+ * the GPU, and neither the driver nor the ring will hand it to a later
+ * one: a dupe draws the driver's blank texture until the core presents
+ * again. The core's image is then the core's to destroy. */
+void video_thread_invalidate_hw_render_cache(void *data);
+
 /* GPU recording under the wrapper, main thread. The video thread reads
  * back each frame it draws through a dedicated recording reader; this
  * takes the newest since the last call without waiting for one.

@@ -2522,8 +2522,19 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
 void video_driver_free_hw_context(void)
 {
    video_driver_state_t *video_st       = &video_driver_st;
+
+   /* The driver can outlive this: a staged content close keeps it up
+    * and presenting dupes of the last frame until the next session's
+    * drivers are built, and for a hardware core the last frame is an
+    * image the core destroys in context_destroy. So the driver lets go
+    * of it on both sides of the call - before, so nothing is drawing
+    * from the image while the core tears it down, and after, because
+    * a core may present once more on its way out (one that runs ahead
+    * of the frontend drains the frame it had queued). */
+   video_driver_invalidate_hw_render_cache();
    if (video_st->hw_render.context_destroy)
       video_st->hw_render.context_destroy();
+   video_driver_invalidate_hw_render_cache();
 
    memset(&video_st->hw_render, 0, sizeof(video_st->hw_render));
    /* After the memset: an acquire reader that sees NONE is

@@ -89,6 +89,16 @@ bool video_thread_hw_bind_core_context(void *data);
 /* thread_poke.get_current_framebuffer for OpenGL cores. Main thread. */
 uintptr_t video_thread_hw_get_current_framebuffer(void *data);
 
+/* Main thread: whether the ring holds anything of the core's - an image
+ * in a slot, or a presented slot a dupe would read again. Vulkan only; the other APIs' slots hold a reference or
+ * are the driver's own. */
+bool video_thread_hw_holds_frame(struct thread_video *thr);
+
+/* Main thread, with no frame queued or being drawn and the driver's own
+ * hold on the core's image dropped: the ring forgets it too, so nothing
+ * installs it again. See video_thread_invalidate_hw_render_cache(). */
+void video_thread_hw_forget(struct thread_video *thr);
+
 /* Video thread, before the driver is freed: releases the ring and its
  * fences while the device is still up. */
 void video_thread_hw_free(struct thread_video *thr);

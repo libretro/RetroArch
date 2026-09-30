@@ -4167,8 +4167,12 @@ static const video_driver_t video_thread = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   video_thread_wrapper_gfx_widgets_enabled
+   video_thread_wrapper_gfx_widgets_enabled,
 #endif
+   /* Without this the runloop's invalidate stopped at the wrapper: the
+    * driver kept the core's image across a reset, and the ring kept
+    * handing it back across a close. */
+   video_thread_invalidate_hw_render_cache
 };
 
 static void video_thread_set_callbacks(thread_video_t *thr,
@@ -4475,6 +4479,34 @@ void video_thread_status_text(const char *s)
       thr->status_text_len = sizeof(thr->status_text) - 1;
 }
 #endif
+
+static uintptr_t video_thread_invalidate_hw_cb(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+   if (thr->driver && thr->driver->invalidate_hw_render_cache)
+      thr->driver->invalidate_hw_render_cache(thr->driver_data);
+   return 0;
+}
+
+void video_thread_invalidate_hw_render_cache(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (!thr || !thr->thread)
+      return;
+   /* From the video thread the frame in progress is the caller's own. */
+   if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id())
+      return;
+   if (!video_thread_hw_holds_frame(thr))
+      return;
+
+   /* In this order: nothing queued or being drawn, then the driver
+    * waits out what it submitted and lets go of the image on the
+    * thread that owns its state, then the ring stops offering it. */
+   video_thread_ring_drain(thr);
+   video_thread_run_blocking(video_thread_invalidate_hw_cb, thr);
+   video_thread_hw_forget(thr);
+}
 
 void video_thread_wait_idle(void)
 {

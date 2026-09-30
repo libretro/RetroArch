@@ -215,7 +215,17 @@ static void hw_set_image(void *handle,
       s->has_image = true;
    }
    else
+   {
       s->has_image = false;
+      /* A core that withdraws its image means every frame after this
+       * one, dupes included - that is what the call does without the
+       * wrapper, where it writes the driver's state directly. Here it
+       * only reached the slot the core fills next, which is not the
+       * one a dupe re-reads: the ring went on handing the driver the
+       * last presented image, and a core that withdraws it to destroy
+       * it had it drawn from afterwards. */
+      video_thread_invalidate_hw_render_cache(ring->thr);
+   }
    if (num_semaphores > s->cap_semaphores)
    {
       VkSemaphore *grown = (VkSemaphore*)realloc(s->semaphores,
@@ -942,6 +952,49 @@ void video_thread_hw_after_frame(thread_video_t *thr, int hw_slot)
    s->in_flight = true;
 }
 
+bool video_thread_hw_holds_frame(thread_video_t *thr)
+{
+#ifdef HAVE_VULKAN
+   hw_ring_t *ring = (hw_ring_t*)thr->frame.hw_ring;
+   unsigned i;
+   if (!ring || ring->api != HW_API_VULKAN)
+      return false;
+   if (retro_atomic_load_acquire_int(&ring->last_presented) >= 0)
+      return true;
+   for (i = 0; i < VIDEO_THREAD_HW_RING; i++)
+   {
+      if (ring->slot[i].has_image)
+         return true;
+   }
+#else
+   (void)thr;
+#endif
+   return false;
+}
+
+void video_thread_hw_forget(thread_video_t *thr)
+{
+#ifdef HAVE_VULKAN
+   hw_ring_t *ring = (hw_ring_t*)thr->frame.hw_ring;
+   unsigned i;
+   if (!ring || ring->api != HW_API_VULKAN)
+      return;
+   for (i = 0; i < VIDEO_THREAD_HW_RING; i++)
+   {
+      hw_slot_t *s      = &ring->slot[i];
+      /* The empty submission behind the slot's last frame. */
+      hw_wait_slot(ring, i);
+      s->has_image      = false;
+      s->num_semaphores = 0;
+      s->num_cmd        = 0;
+   }
+   /* A dupe has no slot to re-read until the core presents again. */
+   retro_atomic_store_release_int(&ring->last_presented, -1);
+#else
+   (void)thr;
+#endif
+}
+
 static void hw_context_free_cb(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
@@ -1055,6 +1108,8 @@ void video_thread_hw_free(thread_video_t *thr) { (void)thr; }
 bool video_thread_hw_allowed(void) { return false; }
 bool video_thread_hw_bind_core_context(void *data) { (void)data; return false; }
 uintptr_t video_thread_hw_get_current_framebuffer(void *data) { (void)data; return 0; }
+bool video_thread_hw_holds_frame(thread_video_t *thr) { (void)thr; return false; }
+void video_thread_hw_forget(thread_video_t *thr) { (void)thr; }
 
 #endif /* VIDEO_THREAD_HW_ANY */
 
