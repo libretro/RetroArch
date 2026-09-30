@@ -151,6 +151,8 @@ int main(int argc, char **argv)
       printf("null latency: %.2f ms per request\n",
             (cpu_features_get_time_usec() - t0) / 1000.0 / 20);
    }
+   if (argc > 5 && atoi(argv[5]) == 4)
+      printf("minor version %u\n", rnfs_get_minor_version(c));
    rnfs_free(c);
    printf("ok: %s:%s (%u entries)\n", argv[1], argv[2], n);
    return 0;

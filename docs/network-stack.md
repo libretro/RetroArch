@@ -68,9 +68,11 @@ keeps its connection. A wired connection is more reliable than Wi-Fi.
 ## Loading content from NFS exports
 
 The NFS client supports NFSv3, which finds the NFS and MOUNT services
-through the server's portmapper, and NFSv4.0, which connects straight to
+through the server's portmapper, and NFSv4, which connects straight to
 the NFS port and addresses the export as a path in the server's
-pseudo-filesystem. It authenticates with AUTH_UNIX, as the user
+pseudo-filesystem. With version 4 chosen, the client speaks the newest
+of 4.2, 4.1 and 4.0 the server offers, so servers that have dropped 4.0
+work too. It authenticates with AUTH_UNIX, as the user
 RetroArch runs as; platforms without user IDs, such as Windows and the
 consoles, send user and group 1000.
 
@@ -81,7 +83,7 @@ consoles, send user and group 1000.
 | `nfs_server` | | Server IP address or host name. |
 | `nfs_export` | | Exported path, for example `/export/roms`. For NFSv4 the same path works: when the server roots its v4 namespace lower down (Linux `fsid=0`), the leading part is dropped until the directory is found. Empty to give the export in the address instead. |
 | `nfs_subdir` | | Directory under the export. Optional. |
-| `nfs_version` | `3` | 3 or 4. |
+| `nfs_version` | `3` | 3, or 4 for the newest of 4.2, 4.1 and 4.0 the server offers. |
 | `nfs_port` | `0` | NFS service port; 0 asks the portmapper. |
 | `nfs_mount_port` | `0` | MOUNT service port (NFSv3); 0 asks the portmapper. |
 | `nfs_num_contexts` | `4` | Connections kept open, 1 to 16. |
