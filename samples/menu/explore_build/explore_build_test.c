@@ -279,6 +279,35 @@ static void lane_oracle(void)
 
 static unsigned task_handler_calls;
 
+/* The explore task's title: the slow-handler watchdog names a task by
+ * it, so an untitled one cannot be told apart.  The explore task is
+ * the one on the queue after the push that was not there before. */
+#define SEEN_MAX 128
+static retro_task_t *seen[SEEN_MAX];
+static unsigned      seen_n;
+static unsigned      new_tasks;
+static char          new_title[128];
+
+static bool seen_collect(retro_task_t *task, void *user_data)
+{
+   (void)user_data;
+   if (seen_n < SEEN_MAX)
+      seen[seen_n++] = task;
+   return false;
+}
+
+static bool seen_new(retro_task_t *task, void *user_data)
+{
+   unsigned i;
+   (void)user_data;
+   for (i = 0; i < seen_n; i++)
+      if (seen[i] == task)
+         return false;
+   new_tasks++;
+   strlcpy(new_title, task->title ? task->title : "", sizeof(new_title));
+   return false;
+}
+
 static void lane_task(void)
 {
    unsigned had = failures;
@@ -289,8 +318,21 @@ static void lane_task(void)
    menu_explore_free_state(once); free(once);
 
    menu_explore_free();
-   CHECK(task_push_menu_explore_init(dir_playlists, dir_database),
-         "the explore task was not pushed");
+   {
+      task_finder_data_t find;
+      find.userdata = NULL;
+      find.func     = seen_collect;
+      seen_n        = 0;
+      task_queue_find(&find);
+      CHECK(task_push_menu_explore_init(dir_playlists, dir_database),
+            "the explore task was not pushed");
+      find.func     = seen_new;
+      new_tasks     = 0;
+      new_title[0]  = '\0';
+      task_queue_find(&find);
+      CHECK(new_tasks == 1, "%u new tasks after the push, not 1", new_tasks);
+      CHECK(*new_title, "the explore task has no title");
+   }
    task_handler_calls = 0;
    for (i = 0; i < 2000 && menu_explore_init_in_progress(NULL); i++)
    {

@@ -23,6 +23,7 @@
 #include <string/stdstring.h>
 
 #include "tasks_internal.h"
+#include "../msg_hash.h"
 
 #include "../menu/menu_driver.h"
 
@@ -255,11 +256,14 @@ bool task_push_menu_explore_init(const char *directory_playlist,
    menu_explore->generation         = menu_explore_init_generation;
 
    /* Configure task
-    * > Note: This is silent task, with no title
-    *   and no user notification messages */
+    * > Note: This is a silent task, with no user
+    *   notification messages */
    task->handler  = task_menu_explore_init_handler;
    task->state    = menu_explore;
-   task->title    = NULL;
+   /* Muted, so never shown: it names the task to the slow-handler
+    * watchdog. */
+   task->title    = strdup(msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST));
    task->progress = 0;
    task->callback = cb_task_menu_explore_init;
    task->cleanup  = task_menu_explore_init_free;
