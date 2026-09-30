@@ -181,6 +181,25 @@ jobs:
              timeout 60 ./wii_handshake_test
           echo "[pass] wii_handshake_test (ASan)"
 
+      - name: Build and run android_lifecycle_flush_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/input/android_lifecycle_flush
+        run: |
+          set -eu
+          # The Android background flush handshake, a UI thread against
+          # an app thread. Pins that onPause() and onStop() return only
+          # once SRAM, core options and the config are on disk - a
+          # swiped-away task is killed as soon as they have returned -
+          # that the save is written once per trip to the background,
+          # and that the startup pump acknowledges without saving.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./android_lifecycle_flush_test
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 60 ./android_lifecycle_flush_test
+          make clean
+          echo "[pass] android_lifecycle_flush_test (ASan, TSan)"
+
       - name: Build and run overlay_textures_test (plain, ASan + UBSan, threaded)
         shell: bash
         working-directory: samples/input/overlay_textures

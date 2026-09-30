@@ -670,15 +670,20 @@ static void android_input_destroy_surface(video_driver_state_t *state)
 #endif
 }
 
-/* Set once the pause-time flush has been performed, cleared again on
- * resume. A pause -> resume -> pause cycle therefore flushes twice, but a
- * duplicate APP_CMD_PAUSE does not rewrite the config a second time. */
+/* Set once the background flush has been performed, cleared again on
+ * start or resume. A pause -> resume -> pause cycle therefore flushes
+ * twice, but a duplicate APP_CMD_PAUSE, or the APP_CMD_STOP that follows
+ * it, does not rewrite the config a second time. */
 static bool android_state_flushed = false;
 
-/* Set by the APP_CMD_PAUSE handler, consumed by
+/* Set by the APP_CMD_PAUSE and APP_CMD_STOP handlers, consumed by
  * android_input_flush_pending_state() at the top of the next runloop
  * iteration. */
 static bool android_state_flush_pending = false;
+
+/* APP_CMD_PAUSE or APP_CMD_STOP whose acknowledgement is held back until
+ * the flush has run, or -1. See android_input_flush_pending_state(). */
+static int android_state_ack_cmd = -1;
 
 /* Set by the keypress haptic callback, consumed by
  * android_input_flush_pending_haptics() at the top of the next runloop
@@ -687,32 +692,27 @@ static bool android_state_flush_pending = false;
  * delivered on the resume that follows. */
 static bool android_keypress_vibrate_pending = false;
 
-/* Android may reclaim the process at any point after onPause() has
- * returned. onDestroy() is not guaranteed to run at all - in particular,
- * swiping the task away from Recents never delivers it - so onPause() is
- * the last callback that can be relied upon.
- *
- * Everything that would otherwise only be written by retroarch_main_quit()
- * is therefore flushed here instead, so that settings survive the process
- * being killed without the user having to invoke 'Quit RetroArch'.
- *
- * Called from the runloop rather than from the command handler: the
- * command pipe is drained by android_input_poll(), which a core reaches
- * through the input poll callback, so a flush performed there would read
- * core memory and rewrite the config from inside retro_run(). One frame
- * of latency is well inside the window Android allows after onPause(). */
-void android_input_flush_pending_state(void)
+/* Hands a held-back APP_CMD_PAUSE/APP_CMD_STOP acknowledgement to the
+ * lifecycle callback waiting for it in android_app_set_activity_state(). */
+static void android_input_release_state_ack(struct android_app *android_app)
+{
+   if (android_state_ack_cmd < 0 || !android_app)
+      return;
+
+   slock_lock(android_app->mutex);
+   android_app->activityState = android_state_ack_cmd;
+   scond_broadcast(android_app->cond);
+   slock_unlock(android_app->mutex);
+
+   android_state_ack_cmd = -1;
+}
+
+/* Everything that would otherwise only be written by retroarch_main_quit():
+ * SRAM, core options and the main config. */
+static void android_input_flush_state(void)
 {
    settings_t *settings        = config_get_ptr();
    runloop_state_t *runloop_st = runloop_state_get_ptr();
-
-   if (!android_state_flush_pending)
-      return;
-   android_state_flush_pending = false;
-
-   if (android_state_flushed)
-      return;
-   android_state_flushed = true;
 
    /* Config subsystem is not up yet - nothing to persist. */
    if (!settings)
@@ -773,6 +773,39 @@ void android_input_flush_pending_state(void)
          configuration_set_string(settings,
                settings->arrays.video_driver, live_driver);
    }
+}
+
+/* Swiping the task away from Recents and the low-memory killer end the
+ * process with SIGKILL, and a QUITFOCUS launch exits from the Java side's
+ * onStop(); onDestroy() is not delivered first in any of them, so
+ * retroarch_main_quit() never runs. What Android does
+ * guarantee is ordering: a task removed while RetroArch is in the
+ * foreground is killed only once the process drops to the background,
+ * which is after onPause() has returned, and a stopped process is only
+ * reclaimed after onStop() has returned.
+ *
+ * APP_CMD_PAUSE and APP_CMD_STOP are therefore acknowledged only after
+ * the flush has run. The lifecycle callback waiting in
+ * android_app_set_activity_state() does not return until then, so the
+ * files are on disk before the process can be killed.
+ *
+ * Called from the runloop rather than from the command handler: the
+ * command pipe is drained by android_input_poll(), which a core reaches
+ * through the input poll callback, so a flush performed there would read
+ * core memory and rewrite the config from inside retro_run(). */
+void android_input_flush_pending_state(void)
+{
+   if (!android_state_flush_pending)
+      return;
+   android_state_flush_pending = false;
+
+   if (!android_state_flushed)
+   {
+      android_state_flushed = true;
+      android_input_flush_state();
+   }
+
+   android_input_release_state_ack(g_android);
 }
 
 static void android_input_poll_main_cmd(void)
@@ -849,9 +882,14 @@ static void android_input_poll_main_cmd(void)
       case APP_CMD_PAUSE:
       {
          video_driver_state_t *state = video_state_get_ptr();
+         /* Acknowledged by the flush, see
+          * android_input_flush_pending_state(). */
+         bool hold_ack               = (cmd == APP_CMD_PAUSE)
+            && !android_state_flushed;
 
          slock_lock(android_app->mutex);
-         android_app->activityState = cmd;
+         if (!hold_ack)
+            android_app->activityState = cmd;
          /* RESUME/START can arrive before INIT_WINDOW. In that case,
           * wait for INIT_WINDOW rather than falling back to a full
           * video-driver reinitialization without a native window. */
@@ -869,11 +907,16 @@ static void android_input_poll_main_cmd(void)
          {
             android_state_flush_pending = true;
             android_keypress_vibrate_pending = false;
+            if (hold_ack)
+               android_state_ack_cmd    = APP_CMD_PAUSE;
          }
          else
          {
+            /* A callback still waiting on a held-back acknowledgement
+             * has timed out by now; this state supersedes it. */
             android_state_flush_pending = false;
             android_state_flushed       = false;
+            android_state_ack_cmd       = -1;
          }
 
 #ifdef HAVE_ANDROID_LIFECYCLE_HOOKS
@@ -891,10 +934,23 @@ static void android_input_poll_main_cmd(void)
 
          android_keypress_vibrate_pending = false;
 
-         slock_lock(android_app->mutex);
-         android_app->activityState = cmd;
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
+         /* Normally flushed on the preceding APP_CMD_PAUSE already. When
+          * that has not happened - its acknowledgement timed out while
+          * this thread was held elsewhere - the flush is still owed, and
+          * onStop() is the last point before the process can be
+          * reclaimed. */
+         if (!android_state_flushed)
+         {
+            android_state_flush_pending = true;
+            android_state_ack_cmd       = APP_CMD_STOP;
+         }
+         else
+         {
+            slock_lock(android_app->mutex);
+            android_app->activityState = cmd;
+            scond_broadcast(android_app->cond);
+            slock_unlock(android_app->mutex);
+         }
 
          /* Android may retain the same ANativeWindow while the app is
           * backgrounded. Release Vulkan's acquired buffers anyway so BLAST
@@ -2698,6 +2754,10 @@ bool android_run_events(void *data)
    {
       case LOOPER_ID_MAIN:
          android_input_poll_main_cmd();
+         /* Nothing is loaded yet, so there is nothing to flush: the
+          * first runloop iteration performs any flush still pending.
+          * Acknowledge now rather than hold the UI thread. */
+         android_input_release_state_ack(android_app);
          break;
       case LOOPER_ID_INPUT:
          android_input_discard_events(android_app);

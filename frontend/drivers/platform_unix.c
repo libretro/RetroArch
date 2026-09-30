@@ -329,7 +329,10 @@ static void android_app_set_window(struct android_app *android_app,
 /* START/RESUME/PAUSE/STOP are notifications: activityState is written by
  * the app thread and read by nothing else, so giving up on the
  * acknowledgement costs the caller nothing beyond returning before the app
- * thread has caught up.
+ * thread has caught up. PAUSE and STOP are acknowledged once SRAM, core
+ * options and the config have been written (see
+ * android_input_flush_pending_state()), so while the wait lasts the
+ * process cannot be killed with those unsaved.
  *
  * This does not generalise to android_app_set_window() or
  * android_app_set_input(), where returning early hands the framework an
