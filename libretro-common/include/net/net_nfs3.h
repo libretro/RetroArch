@@ -117,6 +117,10 @@ void rnfs_closedir(struct rnfs_ctx *c, struct rnfs_dir *d);
 /* NULL procedure round trip. */
 int rnfs_ping(struct rnfs_ctx *c);
 const char *rnfs_get_error(const struct rnfs_ctx *c);
+
+/* Remote calls this connection has made, for tests that count round
+ * trips. */
+uint32_t rnfs_get_call_count(const struct rnfs_ctx *c);
 /* Last nfsstat3, for callers that map them. */
 uint32_t rnfs_get_status(const struct rnfs_ctx *c);
 int rnfs_get_fd(const struct rnfs_ctx *c);

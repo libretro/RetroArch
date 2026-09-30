@@ -115,6 +115,35 @@ int main(int argc, char **argv)
    CHECK(rnfs_stat(c, "rnfs_dir/moved.bin", &st) != 0, "gone");
    CHECK(!rnfs_open(c, "no_such", RNFS_O_RDONLY), "open missing");
 
+   /* NFSv3 opens in a directory walked recently cost one LOOKUP, not
+    * one per component plus a GETATTR; a rename empties the cache so
+    * a path through the old name does not resolve to the new one */
+   if (argc <= 5 || atoi(argv[5]) != 4)
+   {
+      uint32_t before, cost;
+      CHECK(rnfs_mkdir(c, "rnfs_dir/a") == 0, "mkdir a");
+      CHECK(rnfs_mkdir(c, "rnfs_dir/a/b") == 0, "mkdir a/b");
+      f = rnfs_open(c, "rnfs_dir/a/b/f.bin", RNFS_O_WRONLY | RNFS_O_CREAT | RNFS_O_TRUNC);
+      CHECK(f != NULL, "create a/b/f.bin");
+      rnfs_close(c, f);
+      f = rnfs_open(c, "rnfs_dir/a/b/f.bin", RNFS_O_RDONLY);
+      CHECK(f != NULL, "open a/b/f.bin");
+      rnfs_close(c, f);
+      before = rnfs_get_call_count(c);
+      f = rnfs_open(c, "rnfs_dir/a/b/f.bin", RNFS_O_RDONLY);
+      cost = rnfs_get_call_count(c) - before;
+      CHECK(f != NULL, "open a/b/f.bin again");
+      rnfs_close(c, f);
+      printf("open three directories deep, directory known: %u call(s)\n", cost);
+      CHECK(cost == 1, "an open in a known directory is one LOOKUP");
+      CHECK(rnfs_rename(c, "rnfs_dir/a", "rnfs_dir/a2") == 0, "rename a");
+      f = rnfs_open(c, "rnfs_dir/a2/b/f.bin", RNFS_O_RDONLY);
+      CHECK(f != NULL, "open through the new name");
+      rnfs_close(c, f);
+      CHECK(!rnfs_open(c, "rnfs_dir/a/b/f.bin", RNFS_O_RDONLY), "old name gone");
+      CHECK(rnfs_unlink(c, "rnfs_dir/a2/b/f.bin") == 0, "unlink a2/b/f.bin");
+   }
+
    {
       retro_time_t t0 = cpu_features_get_time_usec();
       for (i = 0; i < 20; i++)

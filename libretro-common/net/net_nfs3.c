@@ -28,6 +28,7 @@
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 #include <compat/strl.h>
+#include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 #include <features/features_cpu.h>
 
@@ -101,6 +102,8 @@
 
 #define NFS3_OK          0
 #define NFS3ERR_NOENT    2
+#define NFS3ERR_STALE    70
+#define NFS3ERR_BADHANDLE 10001
 #define NFS3ERR_NOTSUPP  10004
 #define NFS3_FHSIZE      64
 /* Default transfer size; FSINFO raises it to what the server allows,
@@ -148,6 +151,9 @@ struct rnfs_dir
    uint8_t  plain;       /* server has no READDIRPLUS: READDIR + LOOKUP */
 };
 
+#define RNFS_DCACHE_SIZE 16
+#define RNFS_DCACHE_PATH 256
+
 struct rnfs_ctx
 {
    uint8_t *rx;
@@ -174,6 +180,18 @@ struct rnfs_ctx
    char     server[256];
    char     export_path[512];
    char     error[128];
+   /* NFSv3: directories walked through recently, so an open in one of
+    * them is a single LOOKUP instead of one per path component. Handles
+    * are stable; one the server calls stale empties the cache and the
+    * walk starts again from the root. */
+   struct rnfs_dent
+   {
+      struct rnfs_fh fh;
+      uint32_t       use;           /* last touched, for eviction */
+      char           path[RNFS_DCACHE_PATH];
+   } dcache[RNFS_DCACHE_SIZE];
+   uint32_t dcache_tick;
+   uint32_t calls;                  /* RPCs made, for tests */
 };
 
 static void rnfs_err(struct rnfs_ctx *c, const char *msg)
@@ -278,10 +296,12 @@ static void xdr_get_fattr(struct xdr *x, struct rnfs_stat *st)
    st->is_dir = (type == NF3DIR);
 }
 
-static void xdr_get_post_op_attr(struct xdr *x, struct rnfs_stat *st)
+static int xdr_get_post_op_attr(struct xdr *x, struct rnfs_stat *st)
 {
-   if (xdr_get_u32(x))
-      xdr_get_fattr(x, st);
+   if (!xdr_get_u32(x))
+      return 0;
+   xdr_get_fattr(x, st);
+   return 1;
 }
 
 static void xdr_get_wcc_data(struct xdr *x)
@@ -443,9 +463,12 @@ static int rnfs_rpc(struct rnfs_ctx *c, int fd, uint32_t prog, uint32_t vers,
 
 /* NFS call; on success the nfsstat3 is in c->status and @reply sits
  * after it. */
+static void rnfs_dcache_flush(struct rnfs_ctx *c);
+
 static int rnfs_call(struct rnfs_ctx *c, uint32_t proc,
       const uint8_t *args, size_t args_len, struct xdr *reply)
 {
+   c->calls++;
    if (c->fd < 0)
    {
       rnfs_err(c, "not connected");
@@ -1193,6 +1216,7 @@ int rnfs_connect(struct rnfs_ctx *c, const char *server, const char *export_path
    int      mfd;
    uint8_t  args[600];
    struct xdr x, reply;
+   rnfs_dcache_flush(c);   /* handles belong to the export mounted before */
 
    rnfs_disconnect(c);
    strlcpy(c->server, server, sizeof(c->server));
@@ -1296,15 +1320,89 @@ void rnfs_disconnect(struct rnfs_ctx *c)
 /* Walks @path from the export root with LOOKUP, one component at a
  * time. With @parent set, stops before the last component and returns
  * it in @last (for CREATE / MKDIR / REMOVE). */
-static int rnfs_walk(struct rnfs_ctx *c, const char *path, struct rnfs_fh *fh,
-      struct rnfs_stat *st, int parent, char *last, size_t last_len)
+static void rnfs_dcache_flush(struct rnfs_ctx *c)
 {
-   const char *p = path;
+   unsigned i;
+   for (i = 0; i < RNFS_DCACHE_SIZE; i++)
+      c->dcache[i].path[0] = '\0';
+}
+
+/* The cached handle of directory @key (normalised, no leading '/'). */
+static const struct rnfs_fh *rnfs_dcache_get(struct rnfs_ctx *c, const char *key)
+{
+   unsigned i;
+   for (i = 0; i < RNFS_DCACHE_SIZE; i++)
+      if (c->dcache[i].path[0] && string_is_equal(c->dcache[i].path, key))
+      {
+         c->dcache[i].use = ++c->dcache_tick;
+         return &c->dcache[i].fh;
+      }
+   return NULL;
+}
+
+static void rnfs_dcache_put(struct rnfs_ctx *c, const char *key,
+      const struct rnfs_fh *fh)
+{
+   unsigned i, victim = 0;
+   if (!*key || strlen(key) >= RNFS_DCACHE_PATH)
+      return;
+   for (i = 0; i < RNFS_DCACHE_SIZE; i++)
+   {
+      if (c->dcache[i].path[0] && string_is_equal(c->dcache[i].path, key))
+      {
+         victim = i;
+         break;
+      }
+      if (!c->dcache[i].path[0] || c->dcache[i].use < c->dcache[victim].use)
+         victim = i;
+      if (!c->dcache[i].path[0])
+         break;
+   }
+   c->dcache[victim].fh  = *fh;
+   c->dcache[victim].use = ++c->dcache_tick;
+   strlcpy(c->dcache[victim].path, key, RNFS_DCACHE_PATH);
+}
+
+/* @path as components joined by single '/', into @out; the length of
+ * the directory part (all but the last component) into *@dir_len. */
+static int rnfs_normalise(const char *path, char *out, size_t size,
+      size_t *dir_len)
+{
+   size_t o = 0;
+   *dir_len = 0;
+   for (;;)
+   {
+      const char *e;
+      size_t      n;
+      while (*path == '/')
+         path++;
+      if (!*path)
+         break;
+      e = strchr(path, '/');
+      n = e ? (size_t)(e - path) : strlen(path);
+      if (o + n + 2 > size)
+         return -1;
+      if (o)
+         out[o++] = '/';
+      *dir_len = o ? o - 1 : 0;
+      memcpy(out + o, path, n);
+      o   += n;
+      path = e ? e : path + n;
+   }
+   out[o] = '\0';
+   return 0;
+}
+
+static int rnfs_walk_from(struct rnfs_ctx *c, const char *norm, size_t start,
+      struct rnfs_fh *fh, struct rnfs_stat *st, int parent,
+      char *last, size_t last_len, int *stale)
+{
+   const char *p = norm + start;
    struct rnfs_stat tmp;
    uint8_t args[NFS3_FHSIZE + 4 + 260];
    struct xdr x, reply;
+   int have_attr = 0;
 
-   *fh = c->root;
    memset(&tmp, 0, sizeof(tmp));
    tmp.is_dir = 1;
    if (last)
@@ -1325,20 +1423,14 @@ static int rnfs_walk(struct rnfs_ctx *c, const char *path, struct rnfs_fh *fh,
          rnfs_err(c, "name too long");
          return -1;
       }
-      if (parent)
+      if (parent && !e)
       {
-         const char *q = e;
-         while (q && *q == '/')
-            q++;
-         if (!q || !*q)
-         {
-            /* last component */
-            if (n + 1 > last_len)
-               return -1;
-            memcpy(last, p, n);
-            last[n] = '\0';
-            break;
-         }
+         /* last component */
+         if (n + 1 > last_len)
+            return -1;
+         memcpy(last, p, n);
+         last[n] = '\0';
+         break;
       }
       x.p = args; x.end = args + sizeof(args); x.fail = 0;
       xdr_fh(&x, fh);
@@ -1347,29 +1439,97 @@ static int rnfs_walk(struct rnfs_ctx *c, const char *path, struct rnfs_fh *fh,
          return -1;
       if (c->status != NFS3_OK)
       {
+         /* a cached handle the server no longer knows */
+         if (start && (c->status == NFS3ERR_STALE || c->status == NFS3ERR_BADHANDLE))
+            *stale = 1;
          rnfs_err(c, c->status == NFS3ERR_NOENT ? "not found" : "lookup failed");
          return -1;
       }
       if (xdr_get_fh(&reply, fh) != 0)
          return -1;
-      xdr_get_post_op_attr(&reply, &tmp);
+      have_attr = xdr_get_post_op_attr(&reply, &tmp);
       p = e ? e : p + n;
+      /* remember directories on the way, and the target if it is one */
+      if (have_attr && tmp.is_dir)
+      {
+         char key[RNFS_DCACHE_PATH];
+         size_t k = (size_t)(p - norm);
+         if (k < sizeof(key))
+         {
+            memcpy(key, norm, k);
+            key[k] = '\0';
+            rnfs_dcache_put(c, key, fh);
+         }
+      }
    }
    if (st)
    {
-      /* attributes for the target: LOOKUP's post_op_attr may be
-       * absent, so ask when the walk did not deliver them. */
-      x.p = args; x.end = args + sizeof(args); x.fail = 0;
-      xdr_fh(&x, fh);
-      if (rnfs_call(c, NFS_GETATTR, args, (size_t)(x.p - args), &reply) != 0
-            || c->status != NFS3_OK)
+      /* LOOKUP's own attributes are the target's when they came; ask
+       * only when the walk did not deliver them */
+      if (have_attr)
+         *st = tmp;
+      else
       {
-         rnfs_err(c, "getattr failed");
-         return -1;
+         x.p = args; x.end = args + sizeof(args); x.fail = 0;
+         xdr_fh(&x, fh);
+         if (rnfs_call(c, NFS_GETATTR, args, (size_t)(x.p - args), &reply) != 0
+               || c->status != NFS3_OK)
+         {
+            rnfs_err(c, "getattr failed");
+            return -1;
+         }
+         xdr_get_fattr(&reply, st);
       }
-      xdr_get_fattr(&reply, st);
    }
    return 0;
+}
+
+/* Walk @path from the root (or the nearest directory cached on the
+ * way) with LOOKUPs; with @parent the last component is left for the
+ * caller in @last. */
+static int rnfs_walk(struct rnfs_ctx *c, const char *path, struct rnfs_fh *fh,
+      struct rnfs_stat *st, int parent, char *last, size_t last_len)
+{
+   char   norm[RNFS_DCACHE_PATH + 256];
+   size_t dir_len, k;
+   int    stale = 0;
+
+   if (rnfs_normalise(path, norm, sizeof(norm), &dir_len) != 0)
+   {
+      rnfs_err(c, "path too long");
+      return -1;
+   }
+   /* the deepest cached directory the path passes through: its own
+    * directory part, else a shorter prefix at a component boundary */
+   for (k = parent ? dir_len : strlen(norm); k > 0; k--)
+   {
+      if (norm[k] == '/' || norm[k] == '\0')
+      {
+         const struct rnfs_fh *hit;
+         char save = norm[k];
+         norm[k]   = '\0';
+         hit       = rnfs_dcache_get(c, norm);
+         norm[k]   = save;
+         if (hit)
+         {
+            *fh = *hit;
+            if (rnfs_walk_from(c, norm, k, fh, st, parent, last, last_len, &stale) == 0)
+               return 0;
+            if (!stale)
+               return -1;
+            rnfs_dcache_flush(c);   /* the server moved on: start over */
+            break;
+         }
+      }
+   }
+   *fh = c->root;
+   return rnfs_walk_from(c, norm, 0, fh, st, parent, last, last_len, &stale);
+}
+
+/* RPCs this connection has made: for tests that count round trips. */
+uint32_t rnfs_get_call_count(const struct rnfs_ctx *c)
+{
+   return c->calls;
 }
 
 /* ---- files -------------------------------------------------------- */
@@ -1840,6 +2000,7 @@ static int rnfs_dirop(struct rnfs_ctx *c, uint32_t proc, const char *path, int m
 
 int rnfs_unlink(struct rnfs_ctx *c, const char *path)
 {
+   rnfs_dcache_flush(c);
    return c->version == 4 ? nfs4_dirop(c, 0, path) : rnfs_dirop(c, NFS_REMOVE, path, 0);
 }
 int rnfs_mkdir(struct rnfs_ctx *c, const char *path)
@@ -1853,6 +2014,7 @@ int rnfs_rename(struct rnfs_ctx *c, const char *from, const char *to)
    char flast[256], tlast[256];
    uint8_t args[2 * (NFS3_FHSIZE + 4 + 260)];
    struct xdr x, reply;
+   rnfs_dcache_flush(c);   /* a directory may move */
    if (c->version == 4)
       return nfs4_rename(c, from, to);
    if (rnfs_walk(c, from, &fdir, NULL, 1, flast, sizeof(flast)) != 0 || !flast[0])
