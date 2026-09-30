@@ -289,3 +289,26 @@ jobs:
           else
              echo "::warning::Mbed TLS $mbed_ver download failed; TLS 1.3 leg skipped"
           fi
+
+      - name: Build and run net_http_semantics_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/network/net_http_semantics
+        run: |
+          set -eu
+          # HTTP/1.1 semantics of libretro-common/net/net_http.c against
+          # an in-process scripted server on 127.0.0.1, which logs which
+          # connection every request arrived on. Covers GET 200 framing
+          # and pool reuse, and responses without a body: HEAD, 204 and
+          # 304 on keep-alive used to sit waiting for a close that never
+          # came, a 1xx other than 100 was taken as the final status,
+          # and a 101 or stray bytes after a bodyless response left the
+          # socket in the pool. Every case has a deadline, so a hang
+          # fails the case instead of the job.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \
+             ./net_http_semantics_test
+          echo "[pass] net_http_semantics_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./net_http_semantics_test
+          echo "[pass] net_http_semantics_test (TSan)"

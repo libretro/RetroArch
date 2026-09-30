@@ -1,0 +1,772 @@
+/* HTTP/1.1 semantics oracle for libretro-common/net/net_http.c.
+ *
+ * Links the real net_http.c and plays the server in-process on
+ * 127.0.0.1: a thread that accepts connections, logs every request it
+ * receives (which connection, request line, Host, body) and answers
+ * from a per-case script.  Connection identity is what the pool tests
+ * look at: a request that should reuse a pooled socket must arrive on
+ * the same server-side connection as the one before it, and one that
+ * must not must arrive on a new one.
+ *
+ * Every case has a deadline.  The failures this guards against were
+ * mostly hangs (HEAD and 204 waiting for a close that never came, a
+ * 302 loop, a 1xx read as the final status), so a hang is a failure,
+ * never a stuck job. */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include <stdint.h>
+#include <pthread.h>
+#include <poll.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/time.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <arpa/inet.h>
+
+#include <net/net_http.h>
+#include <net/net_compat.h>
+#include <lists/string_list.h>
+
+#define MAX_CONNS   16
+#define CONN_BUF    (256 * 1024)
+#define MAX_LOG     64
+#define CASE_MS     3000
+
+static int failures = 0;
+
+static void check(int ok, const char *what)
+{
+   printf("[%s] %s\n", ok ? "pass" : "FAIL", what);
+   if (!ok)
+      failures++;
+}
+
+static int64_t now_ms(void)
+{
+   struct timeval tv;
+   gettimeofday(&tv, NULL);
+   return (int64_t)tv.tv_sec * 1000 + tv.tv_usec / 1000;
+}
+
+static unsigned char pat(size_t i)
+{
+   return (unsigned char)((i * 131u + (i >> 11)) & 0xff);
+}
+
+/* Largest realloc() request net_http made, for the buffer-growth
+ * cases.  Linked with --wrap=realloc; only the client thread (this
+ * one) reaches net_http's reallocs. */
+static size_t realloc_max = 0;
+void *__real_realloc(void *p, size_t n);
+void *__wrap_realloc(void *p, size_t n)
+{
+   if (n > realloc_max)
+      realloc_max = n;
+   return __real_realloc(p, n);
+}
+
+/* ---- scripted server ---- */
+
+enum body_kind { B_NONE = 0, B_RAW, B_CHUNKED };
+
+struct step
+{
+   const char *head;    /* status line + headers + blank line, verbatim */
+   size_t body_len;
+   enum body_kind body;
+   int close_after;
+};
+
+struct reqlog
+{
+   int conn_id;
+   char line[256];
+   char host[128];
+   size_t body_len;
+   int body_ok;
+};
+
+struct srv_conn
+{
+   int fd;
+   int id;
+   size_t len;
+   char buf[CONN_BUF];
+};
+
+static pthread_mutex_t srv_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t       srv_thread;
+static int             srv_fd   = -1;
+static int             srv_port = 0;
+static int             srv_stop = 0;
+static int             srv_next_id = 0;
+static struct srv_conn srv_conns[MAX_CONNS];
+/* The script is copied in by case_begin(), heads included, and the
+ * copies live until shutdown: the server can still be writing the last
+ * response of a case after the client side has finished with it and
+ * the case's own (often stack) step array is gone. */
+#define MAX_STEPS   8
+#define MAX_HEADS   128
+static struct step     script[MAX_STEPS];
+static char           *heads[MAX_HEADS];
+static int             nheads = 0;
+static int             script_n = 0;
+static int             script_repeat = 0;
+static struct reqlog   reqs[MAX_LOG];
+static int             nreqs = 0;
+
+static int send_all(int fd, const void *p, size_t n)
+{
+   const char *c = (const char*)p;
+   while (n)
+   {
+      ssize_t w = send(fd, c, n, MSG_NOSIGNAL);
+      if (w <= 0)
+      {
+         if (w < 0 && errno == EINTR)
+            continue;
+         return -1;
+      }
+      c += w;
+      n -= (size_t)w;
+   }
+   return 0;
+}
+
+static void send_body(int fd, const struct step *st)
+{
+   static unsigned char blk[64 * 1024];
+   size_t off = 0;
+
+   if (st->body == B_RAW)
+   {
+      while (off < st->body_len)
+      {
+         size_t i, n = st->body_len - off;
+         if (n > sizeof(blk))
+            n = sizeof(blk);
+         for (i = 0; i < n; i++)
+            blk[i] = pat(off + i);
+         if (send_all(fd, blk, n))
+            return;
+         off += n;
+      }
+   }
+   else if (st->body == B_CHUNKED)
+   {
+      while (off < st->body_len)
+      {
+         char hdr[32];
+         size_t i, n = st->body_len - off;
+         if (n > 1024)
+            n = 1024;
+         snprintf(hdr, sizeof(hdr), "%lx\r\n", (unsigned long)n);
+         for (i = 0; i < n; i++)
+            blk[i] = pat(off + i);
+         memcpy(blk + n, "\r\n", 2);
+         if (send_all(fd, hdr, strlen(hdr)) || send_all(fd, blk, n + 2))
+            return;
+         off += n;
+      }
+      send_all(fd, "0\r\n\r\n", 5);
+   }
+}
+
+static void srv_close(struct srv_conn *c)
+{
+   close(c->fd);
+   c->fd  = -1;
+   c->len = 0;
+}
+
+/* One complete request at the front of c->buf: log it, answer it,
+ * drop it.  Returns 0 when more bytes are needed. */
+static int srv_handle(struct srv_conn *c)
+{
+   char *end, *p;
+   size_t head_len, clen = 0, i;
+   struct step st_copy;
+   const struct step *st;
+   struct reqlog *r;
+
+   if (c->len < 4)
+      return 0;
+   c->buf[c->len < CONN_BUF ? c->len : CONN_BUF - 1] = '\0';
+   if (!(end = strstr(c->buf, "\r\n\r\n")))
+      return 0;
+   head_len = (size_t)(end - c->buf) + 4;
+
+   for (p = c->buf; p < end; )
+   {
+      char *nl = strstr(p, "\r\n");
+      if (!strncasecmp(p, "Content-Length:", 15))
+         clen = strtoul(p + 15, NULL, 10);
+      p = nl + 2;
+   }
+   if (c->len < head_len + clen)
+      return 0;
+
+   pthread_mutex_lock(&srv_lock);
+   r = (nreqs < MAX_LOG) ? &reqs[nreqs] : NULL;
+   if (r)
+   {
+      char *nl = strstr(c->buf, "\r\n");
+      size_t ll = (size_t)(nl - c->buf);
+      memset(r, 0, sizeof(*r));
+      r->conn_id = c->id;
+      if (ll >= sizeof(r->line))
+         ll = sizeof(r->line) - 1;
+      memcpy(r->line, c->buf, ll);
+      for (p = c->buf; p < end; )
+      {
+         char *e = strstr(p, "\r\n");
+         if (!strncasecmp(p, "Host: ", 6))
+         {
+            size_t hl = (size_t)(e - p - 6);
+            if (hl >= sizeof(r->host))
+               hl = sizeof(r->host) - 1;
+            memcpy(r->host, p + 6, hl);
+         }
+         p = e + 2;
+      }
+      r->body_len = clen;
+      r->body_ok  = 1;
+      for (i = 0; i < clen; i++)
+         if ((unsigned char)c->buf[head_len + i] != pat(i))
+            r->body_ok = 0;
+   }
+   st = NULL;
+   if (script_n)
+   {
+      if (nreqs < script_n)
+         st = &script[nreqs];
+      else if (script_repeat)
+         st = &script[script_n - 1];
+   }
+   if (st)
+   {
+      st_copy = *st;
+      st      = &st_copy;
+   }
+   nreqs++;
+   pthread_mutex_unlock(&srv_lock);
+
+   memmove(c->buf, c->buf + head_len + clen, c->len - head_len - clen);
+   c->len -= head_len + clen;
+
+   if (!st)
+   {
+      srv_close(c);
+      return 1;
+   }
+   if (st->head && send_all(c->fd, st->head, strlen(st->head)) == 0)
+      send_body(c->fd, st);
+   if (st->close_after)
+      srv_close(c);
+   return 1;
+}
+
+static void *srv_main(void *arg)
+{
+   (void)arg;
+   for (;;)
+   {
+      struct pollfd pfd[MAX_CONNS + 1];
+      int map[MAX_CONNS + 1];
+      int n = 0, i, stop;
+
+      pthread_mutex_lock(&srv_lock);
+      stop = srv_stop;
+      pthread_mutex_unlock(&srv_lock);
+      if (stop)
+         break;
+
+      pfd[n].fd = srv_fd; pfd[n].events = POLLIN; map[n++] = -1;
+      for (i = 0; i < MAX_CONNS; i++)
+      {
+         if (srv_conns[i].fd < 0)
+            continue;
+         pfd[n].fd = srv_conns[i].fd; pfd[n].events = POLLIN; map[n++] = i;
+      }
+      if (poll(pfd, (nfds_t)n, 20) <= 0)
+         continue;
+
+      for (i = 0; i < n; i++)
+      {
+         if (!pfd[i].revents)
+            continue;
+         if (map[i] < 0)
+         {
+            int fd = accept(srv_fd, NULL, NULL), k;
+            if (fd < 0)
+               continue;
+            for (k = 0; k < MAX_CONNS; k++)
+               if (srv_conns[k].fd < 0)
+                  break;
+            if (k == MAX_CONNS)
+            {
+               close(fd);
+               continue;
+            }
+            srv_conns[k].fd  = fd;
+            srv_conns[k].len = 0;
+            pthread_mutex_lock(&srv_lock);
+            srv_conns[k].id  = srv_next_id++;
+            pthread_mutex_unlock(&srv_lock);
+         }
+         else
+         {
+            struct srv_conn *c = &srv_conns[map[i]];
+            ssize_t r = recv(c->fd, c->buf + c->len,
+                  CONN_BUF - 1 - c->len, 0);
+            if (r <= 0)
+            {
+               srv_close(c);
+               continue;
+            }
+            c->len += (size_t)r;
+            while (c->fd >= 0 && srv_handle(c)) { }
+         }
+      }
+   }
+   return NULL;
+}
+
+static int srv_start(void)
+{
+   struct sockaddr_in a;
+   socklen_t al = sizeof(a);
+   int i, one = 1;
+
+   for (i = 0; i < MAX_CONNS; i++)
+      srv_conns[i].fd = -1;
+   srv_fd = socket(AF_INET, SOCK_STREAM, 0);
+   setsockopt(srv_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+   memset(&a, 0, sizeof(a));
+   a.sin_family      = AF_INET;
+   a.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+   if (   bind(srv_fd, (struct sockaddr*)&a, sizeof(a))
+       || listen(srv_fd, 16)
+       || getsockname(srv_fd, (struct sockaddr*)&a, &al))
+      return -1;
+   srv_port = ntohs(a.sin_port);
+   return pthread_create(&srv_thread, NULL, srv_main, NULL);
+}
+
+static void srv_shutdown(void)
+{
+   int i;
+   pthread_mutex_lock(&srv_lock);
+   srv_stop = 1;
+   pthread_mutex_unlock(&srv_lock);
+   pthread_join(srv_thread, NULL);
+   for (i = 0; i < MAX_CONNS; i++)
+      if (srv_conns[i].fd >= 0)
+         srv_close(&srv_conns[i]);
+   close(srv_fd);
+   while (nheads)
+      free(heads[--nheads]);
+}
+
+/* Fresh pool and DNS cache per case, so each case sees only its own
+ * connections; then install the script.  The deinit closes whatever
+ * the previous case left pooled, and the server drops those on EOF. */
+static void case_begin(const struct step *steps, int n, int repeat)
+{
+   int i;
+   net_http_deinit();
+   net_http_init();
+   pthread_mutex_lock(&srv_lock);
+   if (n > MAX_STEPS)
+      n = MAX_STEPS;
+   for (i = 0; i < n; i++)
+   {
+      script[i] = steps[i];
+      if (steps[i].head && nheads < MAX_HEADS)
+      {
+         heads[nheads] = strdup(steps[i].head);
+         script[i].head = heads[nheads++];
+      }
+   }
+   script_n      = n;
+   script_repeat = repeat;
+   nreqs         = 0;
+   pthread_mutex_unlock(&srv_lock);
+}
+
+static int log_count(void)
+{
+   int n;
+   pthread_mutex_lock(&srv_lock);
+   n = nreqs;
+   pthread_mutex_unlock(&srv_lock);
+   return n;
+}
+
+static struct reqlog log_get(int i)
+{
+   struct reqlog r;
+   memset(&r, 0, sizeof(r));
+   r.conn_id = -1;
+   pthread_mutex_lock(&srv_lock);
+   if (i >= 0 && i < nreqs && i < MAX_LOG)
+      r = reqs[i];
+   pthread_mutex_unlock(&srv_lock);
+   return r;
+}
+
+/* ---- client side ---- */
+
+struct xfer
+{
+   const char *method;
+   /* streamed request body */
+   size_t source_len;
+   int use_source;
+   int source_can_rewind;
+   /* streamed response body */
+   int use_sink;
+   /* results */
+   int done;         /* net_http_update() reported completion */
+   int err;
+   int status;
+   size_t len;
+   uint8_t *data;
+   struct string_list *headers;
+};
+
+static size_t source_pos = 0, source_total = 0;
+static int    source_rewinds = 0;
+static unsigned char sink_buf[64 * 1024];
+static size_t sink_len = 0;
+
+static int64_t test_source(void *ud, void *buf, size_t len)
+{
+   size_t i, n = source_total - source_pos;
+   (void)ud;
+   if (n > len)
+      n = len;
+   for (i = 0; i < n; i++)
+      ((unsigned char*)buf)[i] = pat(source_pos + i);
+   source_pos += n;
+   return (int64_t)n;
+}
+
+static bool test_rewind(void *ud)
+{
+   (void)ud;
+   source_pos = 0;
+   source_rewinds++;
+   return true;
+}
+
+static bool test_sink(void *ud, const void *data, size_t len)
+{
+   (void)ud;
+   if (sink_len + len > sizeof(sink_buf))
+      return false;
+   memcpy(sink_buf + sink_len, data, len);
+   sink_len += len;
+   return true;
+}
+
+static void xfer_free(struct xfer *x)
+{
+   free(x->data);
+   if (x->headers)
+      string_list_free(x->headers);
+   x->data    = NULL;
+   x->headers = NULL;
+}
+
+static void xfer_run_url(struct xfer *x, const char *url)
+{
+   struct http_connection_t *conn;
+   struct http_t *h;
+   int64_t deadline = now_ms() + CASE_MS;
+   uint8_t *d;
+
+   x->done = x->err = 0;
+   x->status = -1;
+   x->len = 0;
+   x->data = NULL;
+   x->headers = NULL;
+
+   if (!(conn = net_http_connection_new(url,
+               x->method ? x->method : "GET", NULL)))
+      return;
+   while (!net_http_connection_iterate(conn)) { }
+   if (!net_http_connection_done(conn))
+   {
+      net_http_connection_free(conn);
+      return;
+   }
+   if (x->use_source)
+   {
+      source_pos     = 0;
+      source_total   = x->source_len;
+      source_rewinds = 0;
+      net_http_connection_set_content_source(conn,
+            "application/octet-stream", x->source_len, test_source,
+            x->source_can_rewind ? test_rewind : NULL, NULL);
+   }
+   if (x->use_sink)
+   {
+      sink_len = 0;
+      net_http_connection_set_sink(conn, test_sink, NULL);
+   }
+   h = net_http_new(conn);
+   net_http_connection_free(conn);
+   if (!h)
+      return;
+
+   for (;;)
+   {
+      if (net_http_update(h, NULL, NULL))
+      {
+         x->done = 1;
+         break;
+      }
+      if (now_ms() > deadline)
+         break;
+      net_http_wait(h, 20);
+   }
+
+   x->status = net_http_status(h);
+   if (!x->done)
+      x->err = 1;
+   else
+   {
+      /* headers_ex() without accept_err refuses exactly when the
+       * transfer ended on an error, whatever the status. */
+      x->headers = net_http_headers_ex(h, false);
+      if (!x->headers)
+      {
+         x->err     = 1;
+         x->headers = net_http_headers_ex(h, true);
+      }
+      d = net_http_data(h, &x->len, true);
+      if (d)
+      {
+         x->data = (uint8_t*)malloc(x->len + 1);
+         if (x->data)
+         {
+            memcpy(x->data, d, x->len);
+            x->data[x->len] = '\0';
+         }
+         free(d);
+      }
+   }
+   net_http_delete(h);
+}
+
+static void xfer_run(struct xfer *x, const char *path)
+{
+   char url[256];
+   snprintf(url, sizeof(url), "http://127.0.0.1:%d%s", srv_port, path);
+   xfer_run_url(x, url);
+}
+
+static int body_is(const struct xfer *x, const char *s)
+{
+   return x->data && x->len == strlen(s) && !memcmp(x->data, s, x->len);
+}
+
+static int body_is_pattern(const struct xfer *x, size_t n)
+{
+   size_t i;
+   if (!x->data || x->len != n)
+      return 0;
+   for (i = 0; i < n; i++)
+      if (x->data[i] != pat(i))
+         return 0;
+   return 1;
+}
+
+static int has_header(const struct xfer *x, const char *prefix)
+{
+   size_t i, n = strlen(prefix);
+   if (!x->headers)
+      return 0;
+   for (i = 0; i < x->headers->size; i++)
+      if (!strncasecmp(x->headers->elems[i].data, prefix, n))
+         return 1;
+   return 0;
+}
+
+/* Two requests in a row; returns whether the second arrived on the
+ * connection the first used. */
+static int second_reused(void)
+{
+   return log_count() >= 2 && log_get(0).conn_id == log_get(1).conn_id;
+}
+
+#define OK_2 "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok"
+
+/* ---- baseline: GET 200 framing and pool reuse ---- */
+
+static void run_section_baseline(void)
+{
+   struct xfer a, b;
+   static const struct step s_len[] = {
+      { "HTTP/1.1 200 OK\r\nContent-Length: 1048576\r\n\r\n", 1048576, B_RAW, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+   static const struct step s_16m[] = {
+      { "HTTP/1.1 200 OK\r\nContent-Length: 16777216\r\n\r\n", 16777216, B_RAW, 0 },
+   };
+   static const struct step s_chunk[] = {
+      { "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n", 300000, B_CHUNKED, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+
+   memset(&a, 0, sizeof(a));
+   memset(&b, 0, sizeof(b));
+
+   case_begin(s_len, 2, 0);
+   xfer_run(&a, "/len");
+   xfer_run(&b, "/next");
+   check(a.done && a.status == 200 && body_is_pattern(&a, 1048576),
+         "GET 200 Content-Length 1 MiB: full body");
+   check(b.done && body_is(&b, "ok") && second_reused(),
+         "GET 200 Content-Length: connection returned to the pool");
+   xfer_free(&a); xfer_free(&b);
+
+   case_begin(s_16m, 1, 0);
+   xfer_run(&a, "/16m");
+   check(a.done && a.status == 200 && body_is_pattern(&a, 16777216),
+         "GET 200 Content-Length 16 MiB: full body");
+   xfer_free(&a);
+
+   case_begin(s_chunk, 2, 0);
+   xfer_run(&a, "/chunked");
+   xfer_run(&b, "/next");
+   check(a.done && a.status == 200 && body_is_pattern(&a, 300000),
+         "GET 200 chunked, 1 KiB chunks: decoded body matches");
+   check(b.done && body_is(&b, "ok") && second_reused(),
+         "GET 200 chunked: connection returned to the pool");
+   xfer_free(&a); xfer_free(&b);
+}
+
+/* ---- A1: responses without a body ---- */
+
+static void run_section_a1(void)
+{
+   struct xfer a, b;
+   static const struct step s_head[] = {
+      { "HTTP/1.1 200 OK\r\nContent-Length: 1234\r\n\r\n", 0, B_NONE, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+   static const struct step s_204[] = {
+      { "HTTP/1.1 204 No Content\r\n\r\n", 0, B_NONE, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+   static const struct step s_304[] = {
+      { "HTTP/1.1 304 Not Modified\r\nETag: \"x\"\r\nContent-Length: 99\r\n\r\n", 0, B_NONE, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+   static const struct step s_leftover[] = {
+      { "HTTP/1.1 204 No Content\r\n\r\nGARBAGE", 0, B_NONE, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+   static const struct step s_interim[] = {
+      { "HTTP/1.1 102 Processing\r\nX-Interim: 1\r\n\r\n"
+        "HTTP/1.1 103 Early Hints\r\nLink: </a>\r\n\r\n"
+        OK_2, 0, B_NONE, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+   static const struct step s_101[] = {
+      { "HTTP/1.1 101 Switching Protocols\r\nUpgrade: x\r\nConnection: Upgrade\r\n\r\n", 0, B_NONE, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+
+   memset(&a, 0, sizeof(a));
+   memset(&b, 0, sizeof(b));
+
+   case_begin(s_head, 2, 0);
+   a.method = "HEAD";
+   xfer_run(&a, "/head");
+   a.method = NULL;
+   xfer_run(&b, "/next");
+   check(a.done && a.status == 200 && a.len == 0,
+         "HEAD on keep-alive: finishes at the headers, empty body");
+   check(b.done && body_is(&b, "ok") && second_reused(),
+         "HEAD on keep-alive: next request reads a new status line on the same socket");
+   xfer_free(&a); xfer_free(&b);
+
+   case_begin(s_204, 2, 0);
+   xfer_run(&a, "/204");
+   xfer_run(&b, "/next");
+   check(a.done && a.status == 204 && a.len == 0,
+         "204 on keep-alive: finishes at the headers");
+   check(b.done && body_is(&b, "ok") && second_reused(),
+         "204 on keep-alive: socket reused for the next request");
+   xfer_free(&a); xfer_free(&b);
+
+   case_begin(s_304, 2, 0);
+   xfer_run(&a, "/304");
+   xfer_run(&b, "/next");
+   check(a.done && a.status == 304 && a.len == 0,
+         "304 with a Content-Length: finishes at the headers");
+   check(b.done && body_is(&b, "ok") && second_reused(),
+         "304 on keep-alive: socket reused for the next request");
+   xfer_free(&a); xfer_free(&b);
+
+   case_begin(s_leftover, 2, 0);
+   xfer_run(&a, "/204");
+   xfer_run(&b, "/next");
+   check(a.done && a.status == 204,
+         "204 followed by stray bytes: transfer still completes");
+   check(b.done && body_is(&b, "ok") && !second_reused(),
+         "204 followed by stray bytes: socket not returned to the pool");
+   xfer_free(&a); xfer_free(&b);
+
+   case_begin(s_interim, 2, 0);
+   xfer_run(&a, "/interim");
+   xfer_run(&b, "/next");
+   check(a.done && a.status == 200 && body_is(&a, "ok"),
+         "102 and 103 before the final status: read as interim header blocks");
+   check(a.done && !has_header(&a, "X-Interim") && !has_header(&a, "Link:")
+         && has_header(&a, "Content-Length"),
+         "interim response headers are not reported as the final response's");
+   check(b.done && body_is(&b, "ok") && second_reused(),
+         "interim responses: socket reused for the next request");
+   xfer_free(&a); xfer_free(&b);
+
+   case_begin(s_101, 2, 0);
+   xfer_run(&a, "/upgrade");
+   xfer_run(&b, "/next");
+   check(a.done && a.status == 101, "101: transfer ends at the headers");
+   check(b.done && body_is(&b, "ok") && !second_reused(),
+         "101: socket not returned to the pool");
+   xfer_free(&a); xfer_free(&b);
+}
+
+int main(void)
+{
+   if (!network_init() || srv_start())
+   {
+      fprintf(stderr, "cannot start loopback server\n");
+      return 1;
+   }
+   net_http_init();
+
+   run_section_baseline();
+   run_section_a1();
+
+   srv_shutdown();
+   net_http_deinit();
+
+   if (failures)
+   {
+      printf("%d check(s) failed\n", failures);
+      return 1;
+   }
+   puts("net_http semantics: all checks passed");
+   return 0;
+}

@@ -153,6 +153,10 @@ typedef struct response
    int status;
    enum response_part part;
    enum bodytype bodytype;
+   /* The connection cannot carry another request once this response
+    * is done: a 101, or bytes left over after a response that has no
+    * body, which can only be garbage or a response nobody asked for. */
+   bool conn_close;
 } response_t;
 
 typedef struct request
@@ -1603,6 +1607,24 @@ int net_http_fd(struct http_t *state)
    return state->conn->fd;
 }
 
+/* Drop the header lines and everything derived from them, keeping
+ * the list's storage: for an interim (1xx) block, whose headers are
+ * not the final response's, and for a redirect. */
+static void net_http_headers_clear(struct response *response)
+{
+   size_t i;
+   struct string_list *list = response->headers;
+   for (i = 0; i < list->size; i++)
+   {
+      free(list->elems[i].data);
+      free(list->elems[i].userdata);
+      list->elems[i].data     = NULL;
+      list->elems[i].userdata = NULL;
+   }
+   list->size           = 0;
+   response->conn_close = false;
+}
+
 static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
 {
    struct response *response = (struct response*)&state->response;
@@ -1665,8 +1687,30 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
       {
          if (scan[0] == '\0')
          {
-            if (response->status == 100)
+            int status = response->status;
+            if (status >= 100 && status < 200 && status != 101)
+            {
+               /* Interim response (100 Continue, 102 Processing, 103
+                * Early Hints): the real status line follows on this
+                * connection. */
+               net_http_headers_clear(response);
                response->part = P_HEADER_TOP;
+            }
+            else if (  status == 204
+                    || status == 304
+                    || status == 101
+                    || (   state->request.method
+                        && !strcmp(state->request.method, "HEAD")))
+            {
+               /* No body, whatever the framing headers say: a HEAD's
+                * Content-Length describes the GET it stands in for and
+                * a 304's the cached copy.  Waiting for that body, or
+                * for a close, is waiting for something a keep-alive
+                * server never sends. */
+               response->part = P_DONE;
+               if (status == 101)
+                  response->conn_close = true;
+            }
             else
             {
                response->part = P_BODY;
@@ -1764,6 +1808,17 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
       if (leftover > 0)
          memmove(response->data, scan, leftover);
       response->pos = leftover;
+   }
+
+   if (response->part == P_DONE)
+   {
+      /* Bodyless response.  Anything past it is not ours to read,
+       * and the next request on this socket would read it first. */
+      if (response->pos)
+         response->conn_close = true;
+      response->pos = 0;
+      response->len = 0;
+      return 0;
    }
 
    if (response->part >= P_BODY)
@@ -2238,8 +2293,7 @@ static bool net_http_redirect(struct http_t *state, const char *location)
    state->response.len       = 0;
    state->response.bodytype  = T_FULL;
    /* after this, assume location is invalid */
-   string_list_deinitialize(state->response.headers);
-   string_list_initialize(state->response.headers);
+   net_http_headers_clear(&state->response);
    /* keep going */
    return false;
 }
@@ -2700,13 +2754,21 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    if (response->part != P_DONE)
       return false;
 
-   for (_len = 0; (size_t)_len < response->headers->size; _len++)
+   if (response->conn_close)
    {
-      if (string_is_equal_case_insensitive(response->headers->elems[_len].data, "connection: close"))
+      net_http_conn_pool_remove(state->conn);
+      state->conn = NULL;
+   }
+   else
+   {
+      for (_len = 0; (size_t)_len < response->headers->size; _len++)
       {
-         net_http_conn_pool_remove(state->conn);
-         state->conn = NULL;
-         break;
+         if (string_is_equal_case_insensitive(response->headers->elems[_len].data, "connection: close"))
+         {
+            net_http_conn_pool_remove(state->conn);
+            state->conn = NULL;
+            break;
+         }
       }
    }
 
