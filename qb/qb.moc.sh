@@ -23,25 +23,25 @@ if [ "$HAVE_QT" = "yes" ]; then
 	moc_works=0
 	if [ "$MOC" ]; then
 		QT_SELECT="$QT_VERSION" \
-		"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" >/dev/null 2>&1 &&
+		"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" >>config.log 2>&1 &&
 			$(printf %s "$CXX") -o "$TEMP_EXE" \
 			$(printf %s "$QT_FLAGS") -fPIC -c "$TEMP_CPP" \
-			>/dev/null 2>&1 &&
+			>>config.log 2>&1 &&
 		moc_works=1
 	else
 		if [ "$QT_VERSION" = "qt6" ]; then
 			QMAKE="$(exists qmake6)" || QMAKE="qmake"
-			$QMAKE -query QT_HOST_LIBEXECS && QT_HOST_LIBEXECS="$($QMAKE -query QT_HOST_LIBEXECS)/"
+			$QMAKE -query QT_HOST_LIBEXECS >>config.log 2>&1 && QT_HOST_LIBEXECS="$($QMAKE -query QT_HOST_LIBEXECS)/"
 		fi
 		for moc in "${QT_HOST_LIBEXECS}moc-$QT_VERSION" "${QT_HOST_LIBEXECS}moc"; do
 			MOC="$(exists "$moc")" || MOC=""
 			if [ "$MOC" ]; then
 				QT_SELECT="$QT_VERSION" \
-				"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" >/dev/null 2>&1 ||
+				"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" >>config.log 2>&1 ||
 					continue
 				if $(printf %s "$CXX") -o "$TEMP_EXE" \
 						$(printf %s "$QT_FLAGS") -fPIC -c \
-						"$TEMP_CPP" >/dev/null 2>&1; then
+						"$TEMP_CPP" >>config.log 2>&1; then
 					moc_works=1
 					break
 				fi
