@@ -878,6 +878,75 @@ static void smb_prefetch_stop(libretro_vfs_implementation_file *stream)
    stream->smb_prefetch = (intptr_t)0;
 }
 
+#ifndef HAVE_RETROSMB
+static void smb_close_dropped(struct smb2_context *ctx, int status,
+      void *command_data, void *private_data)
+{
+   (void)ctx; (void)status; (void)command_data; (void)private_data;
+}
+#endif
+
+/* How a stream's file is opened again after its connection went: the
+ * share, the path in it, and the open flags less create and truncate,
+ * so opening again never loses what was written. */
+struct smb_reopen
+{
+   char share[256];
+   char path[PATH_MAX_LENGTH];
+   int  flags;
+};
+
+/* The stream's connection went - the server restarted, or dropped it
+ * after an idle spell - or its handle did: the connection is mended in
+ * place, the file opened again, and the position restored, so the call
+ * that found it can go on. Its position is the client's own record,
+ * good whatever happened to the server. */
+static bool smb_stream_mend(libretro_vfs_implementation_file *stream)
+{
+   struct smb_reopen   *ro   = (struct smb_reopen*)(void*)(uintptr_t)stream->smb_reopen;
+   struct smb2_context *ctx  = (struct smb2_context*)(void*)(uintptr_t)stream->smb_ctx;
+   struct smb_slot     *slot = (struct smb_slot*)(void*)(uintptr_t)stream->smb_slot;
+   struct smb2fh       *fh   = (struct smb2fh*)(void*)(uintptr_t)stream->smb_fh;
+   struct smb2_context *fresh;
+   bool                 prefetch = stream->smb_prefetch != 0;
+   uint64_t             pos      = 0;
+
+   if (!ro || !ctx || !fh)
+      return false;
+   smb2_lseek(ctx, fh, 0, SEEK_CUR, &pos);
+   if (prefetch)
+      smb_prefetch_stop(stream);
+   if (smb_ctx_active(ctx) && smb2_echo(ctx) == 0)
+      smb2_close(ctx, fh);                 /* the connection lives: only the handle went */
+   else
+   {
+#ifndef HAVE_RETROSMB
+      /* libsmb2 frees a handle only through its close: queued here (it
+       * sends nothing yet), it is answered with a shutdown, and the
+       * handle freed, as the dead context is let go below. The built-in
+       * client frees a context's files with it. */
+      smb2_close_async(ctx, fh, smb_close_dropped, NULL);
+#endif
+      if (!(fresh = smb_heal(ctx, slot, ro->share)))
+      {
+         stream->smb_fh = (intptr_t)0;
+         return false;
+      }
+      ctx = fresh;                         /* the old one went, handles and all */
+   }
+   stream->smb_ctx = (intptr_t)(uintptr_t)ctx;
+   if (!(fh = smb2_open(ctx, ro->path, ro->flags)))
+   {
+      stream->smb_fh = (intptr_t)0;
+      return false;
+   }
+   smb2_lseek(ctx, fh, (int64_t)pos, SEEK_SET, NULL);
+   stream->smb_fh = (intptr_t)(uintptr_t)fh;
+   if (prefetch)
+      smb_prefetch_start(stream, ro->share, ro->path);
+   return true;
+}
+
 bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
    const char *path, unsigned mode, unsigned hints)
 {
@@ -944,6 +1013,16 @@ bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
    stream->smb_fh   = (intptr_t)(uintptr_t)fh;
    stream->smb_ctx  = (intptr_t)(uintptr_t)smb_context;
    stream->smb_slot = (intptr_t)(uintptr_t)slot;
+   {
+      struct smb_reopen *ro = (struct smb_reopen*)malloc(sizeof(*ro));
+      if (ro)
+      {
+         strlcpy(ro->share, share, sizeof(ro->share));
+         strlcpy(ro->path, full_path, sizeof(ro->path));
+         ro->flags = flags & ~(O_CREAT | O_TRUNC | O_EXCL);
+      }
+      stream->smb_reopen = (intptr_t)(uintptr_t)ro;
+   }
    stream->scheme   = VFS_SCHEME_SMB; /* ensure SMB dispatch on IO calls */
    if (flags == O_RDONLY)
       smb_prefetch_start(stream, share, full_path);
@@ -955,6 +1034,7 @@ int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
 {
    uint8_t *ptr               = (uint8_t*)s;
    uint64_t total             = 0;
+   bool mended                = false;
    struct smb2_context *ctx;
    struct smb2fh *fh;
 
@@ -965,8 +1045,15 @@ int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
       return 0;
 
    ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
-   if (!ctx || !smb_ctx_active(ctx))
+   if (!ctx)
       return -1;
+   if (!smb_ctx_active(ctx))
+   {
+      if (!smb_stream_mend(stream))
+         return -1;
+      mended = true;
+      ctx    = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
+   }
 
    fh = (struct smb2fh *)(intptr_t)stream->smb_fh;
    if (!fh)
@@ -1004,6 +1091,18 @@ int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
          want = UINT32_MAX;
 
       ret = smb2_read(ctx, fh, ptr + total, (uint32_t)want);
+      if (ret < 0 && !mended)
+      {
+         /* the connection or the handle went: mend it and read on from
+          * the position the stream had reached */
+         mended = true;
+         if (smb_stream_mend(stream))
+         {
+            ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
+            fh  = (struct smb2fh *)(intptr_t)stream->smb_fh;
+            continue;
+         }
+      }
       if (ret < 0)
          return (total > 0) ? (int64_t)total : -1;
       if (ret == 0)
@@ -1023,6 +1122,7 @@ int64_t retro_vfs_file_write_smb(libretro_vfs_implementation_file *stream,
 {
    const uint8_t *ptr         = (const uint8_t*)s;
    uint64_t total             = 0;
+   bool mended                = false;
    struct smb2_context *ctx;
    struct smb2fh *fh;
 
@@ -1033,8 +1133,15 @@ int64_t retro_vfs_file_write_smb(libretro_vfs_implementation_file *stream,
       return 0;
 
    ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
-   if (!ctx || !smb_ctx_active(ctx))
+   if (!ctx)
       return -1;
+   if (!smb_ctx_active(ctx))
+   {
+      if (!smb_stream_mend(stream))
+         return -1;
+      mended = true;
+      ctx    = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
+   }
 
    fh = (struct smb2fh *)(intptr_t)stream->smb_fh;
    if (!fh)
@@ -1050,6 +1157,18 @@ int64_t retro_vfs_file_write_smb(libretro_vfs_implementation_file *stream,
          want = UINT32_MAX;
 
       ret = smb2_write(ctx, fh, ptr + total, (uint32_t)want);
+      if (ret < 0 && !mended)
+      {
+         /* the connection or the handle went: mend it and write this
+          * piece again at the position the stream had reached */
+         mended = true;
+         if (smb_stream_mend(stream))
+         {
+            ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
+            fh  = (struct smb2fh *)(intptr_t)stream->smb_fh;
+            continue;
+         }
+      }
       if (ret < 0)
          return (total > 0) ? (int64_t)total : -1;
       if (ret == 0)
@@ -1080,8 +1199,15 @@ int64_t retro_vfs_file_seek_smb(libretro_vfs_implementation_file *stream,
       return -1;
 
    ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
-   if (!ctx || !smb_ctx_active(ctx))
+   if (!ctx)
       return -1;
+   if (!smb_ctx_active(ctx))
+   {
+      if (!smb_stream_mend(stream))
+         return -1;
+      ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
+      fh  = (struct smb2fh *)(void *)(uintptr_t)stream->smb_fh;
+   }
 
    /* Only allow valid values */
    if (whence != SEEK_SET && whence != SEEK_CUR && whence != SEEK_END)
@@ -1140,6 +1266,8 @@ int retro_vfs_file_close_smb(libretro_vfs_implementation_file *stream)
    stream->smb_fh   = (intptr_t)-1;
    stream->smb_ctx  = (intptr_t)0;
    stream->smb_slot = (intptr_t)0;
+   free((void*)(uintptr_t)stream->smb_reopen);
+   stream->smb_reopen = (intptr_t)0;
    smb_give(ctx, slot);
    return ret;
 }

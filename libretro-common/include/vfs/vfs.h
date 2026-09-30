@@ -163,6 +163,7 @@ struct libretro_vfs_implementation_file
    intptr_t smb_ctx;
    intptr_t smb_slot;   /* pool slot held from open to close, 0 if private */
    intptr_t smb_prefetch; /* struct smb_prefetch *, read-only opens with threads */
+   intptr_t smb_reopen;   /* struct smb_reopen *: how to open it again */
 #endif
 #ifdef HAVE_NFSCLIENT
    intptr_t nfs_fh;

@@ -7,10 +7,10 @@ set -e
 cd "$(dirname "$0")"
 command -v smbd >/dev/null 2>&1 || { echo "skip: no smbd"; exit 0; }
 [ "$(id -u)" = 0 ] || { echo "skip: needs root for port 445"; exit 0; }
-make -s smb_test vfs_test vfs_threads_test
+make -s smb_test vfs_test vfs_threads_test smb_idle_test
 # WITH_LIBSMB2=1: the VFS tests over a system libsmb2 as well (the
 # --enable-libsmb build), on every case the built-in client passes
-[ -n "${WITH_LIBSMB2:-}" ] && make -s vfs_test_libsmb2 vfs_threads_test_libsmb2
+[ -n "${WITH_LIBSMB2:-}" ] && make -s vfs_test_libsmb2 vfs_threads_test_libsmb2 smb_idle_test_libsmb2
 RUN=${RUNNER:-}
 EXE=${EXE:-}
 D=$(mktemp -d); chmod 755 $D; mkdir -p $D/share $D/priv $D/run /run/samba
@@ -148,4 +148,29 @@ else
    echo "FAIL: Kerberos fallback: $(cat $D/out)"; exit 1
 fi
 rm -f $D/share/rsmb_test.bin
+
+# smb:// files kept open across a server restart (a NAS rebooting):
+# the stream mends its connection, opens its file again and goes on
+# from where it was - the read first, then the write first, since the
+# first call after the restart is the one that finds it gone.
+restart_round() { # binary order label
+   rm -f $D/share/idle.bin $D/share/idle_w.bin
+   stop; sleep 0.3; conf SMB3_11 default; smbd -s $D/smb.conf -D; sleep 1
+   $RUN ./$1$EXE 127.0.0.1 share rsmbtest 'Sekret1!' RETRO 10 $2 >$D/out 2>&1 &
+   idler=$!
+   sleep 3
+   stop; i=0; while pgrep -f "smbd -s $D/smb.conf" >/dev/null 2>&1 && [ $i -lt 30 ]; do sleep 0.2; i=$((i + 1)); done
+   smbd -s $D/smb.conf -D
+   if wait $idler; then
+      echo "ok:   $3: files read and written across a server restart ($2 first)"
+   else
+      echo "FAIL: $3 across a server restart ($2 first): $(cat $D/out)"; exit 1
+   fi
+}
+restart_round smb_idle_test r "built-in client"
+restart_round smb_idle_test w "built-in client"
+if [ -n "${WITH_LIBSMB2:-}" ]; then
+   restart_round smb_idle_test_libsmb2 r "libsmb2"
+   restart_round smb_idle_test_libsmb2 w "libsmb2"
+fi
 echo "[pass] smb_retro local samba matrix"

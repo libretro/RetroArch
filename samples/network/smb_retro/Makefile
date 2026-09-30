@@ -17,6 +17,9 @@ VFS_SRC = vfs_test.c $(COMMON)/vfs/vfs_implementation_smb.c $(COMMON)/vfs/vfs_pr
       $(COMMON)/lists/string_list.c
 vfs_test: $(VFS_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_RETROSMB -DHAVE_SMBCLIENT -DHAVE_NETWORKING -DRARCH_INTERNAL -I$(ROOT) $(CFLAGS) $(VFS_SRC) $(LDLIBS) -o $@
+IDLE_SRC = smb_idle_test.c $(filter-out vfs_test.c,$(VFS_SRC))
+smb_idle_test: $(IDLE_SRC)
+	$(CC) $(CPPFLAGS) -DHAVE_RETROSMB -DHAVE_SMBCLIENT -DHAVE_NETWORKING -DRARCH_INTERNAL -I$(ROOT) $(CFLAGS) $(IDLE_SRC) $(LDLIBS) -o $@
 THR_SRC = vfs_threads_test.c $(filter-out vfs_test.c,$(VFS_SRC)) $(COMMON)/rthreads/rthreads.c $(COMMON)/rthreads/retro_eventcount.c $(COMMON)/file/retro_dirent.c
 vfs_threads_test: $(THR_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_RETROSMB -DHAVE_SMBCLIENT -DHAVE_NETWORKING -DHAVE_THREADS -DRARCH_INTERNAL -I$(ROOT) $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@
@@ -29,9 +32,11 @@ L2_SRC = $(COMMON)/vfs/vfs_implementation_smb.c $(COMMON)/vfs/vfs_prefetch.c $(C
       $(filter-out smb_test.c $(COMMON)/net/net_smb2.c $(COMMON)/net/net_krb5.c $(COMMON)/crypto/crypto.c $(COMMON)/crypto/kdf.c $(COMMON)/hash/lrc_hash.c $(COMMON)/utils/md5.c,$(SRC))
 vfs_test_libsmb2: vfs_test.c $(L2_SRC)
 	$(CC) -I$(COMMON)/include -D_GNU_SOURCE -DHAVE_SMBCLIENT -DHAVE_STDINT_H -DHAVE_NETWORKING -DRARCH_INTERNAL -I$(ROOT) $(LIBSMB2_CFLAGS) $(CFLAGS) vfs_test.c $(L2_SRC) $(LIBSMB2_LIBS) $(LDLIBS) -o $@
+smb_idle_test_libsmb2: smb_idle_test.c $(L2_SRC)
+	$(CC) -I$(COMMON)/include -D_GNU_SOURCE -DHAVE_SMBCLIENT -DHAVE_STDINT_H -DHAVE_NETWORKING -DRARCH_INTERNAL -I$(ROOT) $(LIBSMB2_CFLAGS) $(CFLAGS) smb_idle_test.c $(L2_SRC) $(LIBSMB2_LIBS) $(LDLIBS) -o $@
 vfs_threads_test_libsmb2: vfs_threads_test.c $(L2_SRC)
 	$(CC) -I$(COMMON)/include -D_GNU_SOURCE -DHAVE_SMBCLIENT -DHAVE_STDINT_H -DHAVE_NETWORKING -DHAVE_THREADS -DRARCH_INTERNAL -I$(ROOT) $(LIBSMB2_CFLAGS) $(CFLAGS) vfs_threads_test.c $(L2_SRC) $(COMMON)/rthreads/rthreads.c $(COMMON)/rthreads/retro_eventcount.c $(COMMON)/file/retro_dirent.c $(LIBSMB2_LIBS) $(LDLIBS) -lpthread -o $@
 
 clean:
-	rm -f smb_test smb_test.exe vfs_test vfs_test.exe vfs_threads_test vfs_threads_test.exe vfs_test_libsmb2 vfs_threads_test_libsmb2
+	rm -f smb_idle_test smb_idle_test.exe smb_idle_test_libsmb2 smb_test smb_test.exe vfs_test vfs_test.exe vfs_threads_test vfs_threads_test.exe vfs_test_libsmb2 vfs_threads_test_libsmb2
 .PHONY: clean

@@ -56,7 +56,11 @@ struct smb2_compat_ctx
    uint16_t kdc_port;
 };
 
-struct smb2fh  { struct rsmb_file *f; };
+/* struct smb2fh is the client's struct rsmb_file under libsmb2's name:
+ * no handle of its own, so a context freeing its files frees these,
+ * as libsmb2's does. */
+struct smb2fh;
+#define SMB2_FH(fh) ((struct rsmb_file*)(void*)(fh))
 struct smb2_stat_64 { uint32_t smb2_type; uint64_t smb2_size; uint64_t smb2_mtime; };
 struct smb2dirent { const char *name; struct smb2_stat_64 st; };
 struct smb2dir { struct rsmb_dir *d; struct smb2dirent ent; };
@@ -148,36 +152,28 @@ static INLINE const char *smb2_get_error(struct smb2_context *ctx) { return rsmb
 
 static INLINE struct smb2fh *smb2_open(struct smb2_context *ctx, const char *path, int flags)
 {
-   struct smb2fh *fh;
    int rf = 0;
    if ((flags & O_ACCMODE) == O_WRONLY) rf = RSMB_O_WRONLY;
    else if ((flags & O_ACCMODE) == O_RDWR) rf = RSMB_O_RDWR;
    if (flags & O_CREAT) rf |= RSMB_O_CREAT;
    if (flags & O_TRUNC) rf |= RSMB_O_TRUNC;
-   if (!(fh = (struct smb2fh*)calloc(1, sizeof(*fh))))
-      return NULL;
-   if (!(fh->f = rsmb_open(SMB2_CTX(ctx), path, rf)))
-   {
-      free(fh);
-      return NULL;
-   }
-   return fh;
+   return (struct smb2fh*)(void*)rsmb_open(SMB2_CTX(ctx), path, rf);
 }
 static INLINE int smb2_read(struct smb2_context *ctx, struct smb2fh *fh, uint8_t *buf, uint32_t len)
 {
-   int64_t r = rsmb_read(SMB2_CTX(ctx), fh->f, buf, len);
+   int64_t r = rsmb_read(SMB2_CTX(ctx), SMB2_FH(fh), buf, len);
    return r < 0 ? -1 : (int)r;
 }
 static INLINE int smb2_write(struct smb2_context *ctx, struct smb2fh *fh, const uint8_t *buf, uint32_t len)
 {
-   int64_t r = rsmb_write(SMB2_CTX(ctx), fh->f, buf, len);
+   int64_t r = rsmb_write(SMB2_CTX(ctx), SMB2_FH(fh), buf, len);
    return r < 0 ? -1 : (int)r;
 }
 static INLINE int64_t smb2_lseek(struct smb2_context *ctx, struct smb2fh *fh,
       int64_t offset, int whence, uint64_t *current_offset)
 {
    /* libsmb2 reports failure as -EINVAL, which the VFS tests for. */
-   int64_t r = rsmb_seek(SMB2_CTX(ctx), fh->f,
+   int64_t r = rsmb_seek(SMB2_CTX(ctx), SMB2_FH(fh),
          offset, whence == SEEK_SET ? 0 : whence == SEEK_CUR ? 1 : 2);
    if (r < 0)
       return -EINVAL;
@@ -190,13 +186,12 @@ static INLINE int smb2_close(struct smb2_context *ctx, struct smb2fh *fh)
    int r;
    if (!fh)
       return -1;
-   r = rsmb_close(SMB2_CTX(ctx), fh->f);
-   free(fh);
+   r = rsmb_close(SMB2_CTX(ctx), SMB2_FH(fh));
    return r;
 }
 static INLINE int smb2_ftruncate(struct smb2_context *ctx, struct smb2fh *fh, uint64_t size)
 {
-   return rsmb_ftruncate(SMB2_CTX(ctx), fh->f, size);
+   return rsmb_ftruncate(SMB2_CTX(ctx), SMB2_FH(fh), size);
 }
 static INLINE uint32_t smb2_get_max_read_size(struct smb2_context *ctx)  { return rsmb_max_read(SMB2_CTX(ctx)); }
 static INLINE uint32_t smb2_get_max_write_size(struct smb2_context *ctx) { return rsmb_max_write(SMB2_CTX(ctx)); }

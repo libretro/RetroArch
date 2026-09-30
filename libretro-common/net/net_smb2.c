@@ -116,6 +116,7 @@
 
 struct rsmb_file
 {
+   struct rsmb_file *next, *prev;   /* the context's open files */
    uint64_t offset;
    uint64_t size;
    uint8_t  fid[16];
@@ -139,6 +140,10 @@ struct rsmb_dir
 
 struct rsmb_ctx
 {
+   /* files open on this context: freed with it, as libsmb2 frees a
+    * context's handles, so a caller dropping a dead connection does
+    * not have to close each one over it first */
+   struct rsmb_file *files;
    uint8_t *rx;                 /* SMB2_RX_SIZE */
    uint8_t *tx;                 /* SMB2_RX_SIZE */
    char    *user;
@@ -1346,6 +1351,15 @@ void rsmb_free(struct rsmb_ctx *c)
 {
    if (!c)
       return;
+   /* files still open go with the context, without a word to the
+    * server: it is gone, or the caller has given the connection up */
+   while (c->files)
+   {
+      struct rsmb_file *f = c->files;
+      c->files = f->next;
+      free(f->ra);
+      free(f);
+   }
    rsmb_disconnect(c);
    rsmb_set_credentials(c, NULL, NULL, NULL);
    free(c->rx);
@@ -1437,6 +1451,10 @@ struct rsmb_file *rsmb_open(struct rsmb_ctx *c, const char *path, int flags)
       return NULL;
    }
    f->size = size;
+   f->next = c->files;
+   if (c->files)
+      c->files->prev = f;
+   c->files = f;
    return f;
 }
 
@@ -1675,12 +1693,24 @@ int64_t rsmb_tell(const struct rsmb_file *f)
    return (int64_t)f->offset;
 }
 
+static void rsmb_file_unlink(struct rsmb_ctx *c, struct rsmb_file *f)
+{
+   if (f->prev)
+      f->prev->next = f->next;
+   else if (c->files == f)
+      c->files = f->next;
+   if (f->next)
+      f->next->prev = f->prev;
+   f->next = f->prev = NULL;
+}
+
 int rsmb_close(struct rsmb_ctx *c, struct rsmb_file *f)
 {
    int r;
    if (!f)
       return -1;
    r = rsmb_close_fid(c, f->fid);
+   rsmb_file_unlink(c, f);
    free(f->ra);
    free(f);
    return r;
