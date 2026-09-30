@@ -2169,6 +2169,7 @@ static void lane_pacing_fast_display(void)
    uint64_t frames_before;
    retro_time_t t0, took;
    double fps;
+   unsigned n, intervals = 0, on_cadence = 0;
 
    /* Display at twice the core's rate: a content frame every other vblank */
    settings->floats.video_refresh_rate               = 120.0f;
@@ -2204,23 +2205,48 @@ static void lane_pacing_fast_display(void)
    drains_before = thr->handoff.drains;
    slock_unlock(thr->lock);
    frames_before = core_frames();
+   rvlane_log_n     = 0;
+   rvlane_log_count = 0;
+   rvlane_logging   = true;
    t0 = cpu_features_get_time_usec();
    run_frames(120);
    took = cpu_features_get_time_usec() - t0;
    video_thread_wait_idle();
+   rvlane_logging   = false;
+   /* Content frames are due every other vblank.  The render here
+    * alternates short and long, and a long one misses its vblank and
+    * goes out on the next: one interval of three, the next of one.
+    * Two intervals together always make four. */
+   for (n = 2; n < rvlane_log_n; n++)
+   {
+      retro_time_t gap;
+      if (rvlane_log_frame[n] != rvlane_log_frame[n - 2] + 2)
+         continue;
+      gap = rvlane_log[n] - rvlane_log[n - 2];
+      intervals++;
+      if ((gap + rvlane_period / 2) / rvlane_period == 4)
+         on_cadence++;
+   }
    slock_lock(thr->lock);
    drains = thr->handoff.drains - drains_before;
    slock_unlock(thr->lock);
    fps = took > 0 ? (double)(core_frames() - frames_before) * 1000000.0 / (double)took : 0.0;
 
-   CHECK(drains <= 1,
+   /* Counted, not timed.  The render and its wait for the vblank
+    * mistaken for a queue drain every fifth frame (the cooldown's
+    * ceiling), 24 of 120; a machine that stalls both threads makes a
+    * frame late for real and drains once per stall. */
+   CHECK(drains <= 6,
          "fast-display lane: %u drains over 120 frames due every other vblank "
          "(%.1f fps, render reserve %.1f ms)",
          drains, fps, thr->render_time / 1000.0);
-   CHECK(fps > 57.0,
-         "fast-display lane: the core ran at %.1f fps against its 60", fps);
-   fprintf(stderr, "   fast display: %u drains of 120, %.1f fps, render reserve %.1f ms, %u presents\n",
-         drains, fps, thr->render_time / 1000.0, rvlane_presents);
+   /* A hold too long spaces frames wider, one that releases early
+    * closer; either moves every pair, where a stall moves a few. */
+   CHECK(intervals >= 60 && on_cadence * 4 >= intervals * 3,
+         "fast-display lane: %u of %u frames went out four vblanks after the "
+         "one two before (%.1f fps)", on_cadence, intervals, fps);
+   fprintf(stderr, "   fast display: %u drains of 120, %u/%u on cadence, %.1f fps, render reserve %.1f ms, %u presents\n",
+         drains, on_cadence, intervals, fps, thr->render_time / 1000.0, rvlane_presents);
 
    set_driver(thr, rvlane_inner);
    set_poke(thr, rvlane_inner_poke);
