@@ -1984,6 +1984,8 @@ static void lane_pacing_queue_drain(void)
    retro_time_t avg, worst, render;
    bool from_display;
    unsigned latched = 0, settled = 0, i;
+   unsigned hits0, misses0, presents0, hits, misses, presents;
+   uint64_t frames0, frames;
 
    /* Display at the core's own 60 Hz: one content frame per vblank */
    settings->floats.video_refresh_rate               = 60.0f;
@@ -2011,6 +2013,10 @@ static void lane_pacing_queue_drain(void)
    vslane_poke.get_last_present_time = vslane_last_present;
    set_driver(thr, &vslane_driver);
    set_poke(thr, &vslane_poke);
+   hits0     = thr->hit_count;
+   misses0   = thr->miss_count;
+   presents0 = vslane_presents;
+   frames0   = core_frames();
 
    /* Unpaced, the loop runs ahead of the display and a frame queues
     * behind another: every swap now waits a vblank. */
@@ -2040,13 +2046,27 @@ static void lane_pacing_queue_drain(void)
          "pacing-drain lane: latched behind the queued frame: %u of %u "
          "frames at %.1f ms latency, render reserve %.1f ms",
          latched, latched + settled, avg / 1000.0, render / 1000.0);
-   CHECK(vslane_presents >= 90,
-         "pacing-drain lane: the vsync driver saw only %u presents", vslane_presents);
+   /* Every frame reached the display, but for the ones the wrapper
+    * replaced in the ring because the display was late - with vsync
+    * off that is its job, and a busy machine makes the display late
+    * on its own schedule.  Counted, not timed: each push either took
+    * a free slot (a hit, drawn) or replaced an undrawn frame (a miss,
+    * one frame lost). */
+   hits     = thr->hit_count  - hits0;
+   misses   = thr->miss_count - misses0;
+   presents = vslane_presents - presents0;
+   frames   = core_frames()   - frames0;
+   CHECK(hits + misses == frames,
+         "pacing-drain lane: %u of %llu frames reached the wrapper",
+         hits + misses, (unsigned long long)frames);
+   CHECK(presents == hits,
+         "pacing-drain lane: the vsync driver saw %u presents of %u frames "
+         "the wrapper kept (%u replaced)", presents, hits, misses);
    CHECK(render < vslane_period / 2,
          "pacing-drain lane: render reserve grew to %.1f ms of a %.1f ms period",
          render / 1000.0, vslane_period / 1000.0);
-   fprintf(stderr, "   pacing drain: latency %.1f ms, render reserve %.1f ms, %u/%u settled, %u presents\n",
-         avg / 1000.0, render / 1000.0, settled, settled + latched, vslane_presents);
+   fprintf(stderr, "   pacing drain: latency %.1f ms, render reserve %.1f ms, %u/%u settled, %u presents, %u replaced\n",
+         avg / 1000.0, render / 1000.0, settled, settled + latched, presents, misses);
 
    set_driver(thr, vslane_inner);
    set_poke(thr, vslane_inner_poke);
