@@ -148,12 +148,6 @@ void *task_push_webdav_copy(const char *url, const char *dest, bool mute, const 
 
 bool task_push_bluetooth_scan(retro_task_callback_t cb);
 
-#if defined(HAVE_KEYCHAIN) && defined(HAVE_CRYPTO) && defined(HAVE_CONFIGFILE)
-/* Unlocks a keychain moved from another machine with @passphrase, or
- * sets it as the keychain's passphrase; empty removes the passphrase.
- * The key derivation runs as a task, the result is a notification. */
-bool task_push_keychain_passphrase(const char *passphrase);
-#endif
 
 bool task_push_wifi_scan(retro_task_callback_t cb);
 bool task_push_wifi_enable(retro_task_callback_t cb);
@@ -211,6 +205,13 @@ bool task_push_pl_thumbnail_download(
       const char *dir_thumbnails);
 #endif
 
+#endif
+
+#if defined(HAVE_KEYCHAIN) && defined(HAVE_CRYPTO) && defined(HAVE_CONFIGFILE)
+/* Unlocks a keychain moved from another machine with @passphrase, or
+ * sets it as the keychain's passphrase; empty removes the passphrase.
+ * The key derivation runs as a task, the result is a notification. */
+bool task_push_keychain_passphrase(const char *passphrase);
 #endif
 
 /* Core backup/restore tasks */

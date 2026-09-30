@@ -730,6 +730,11 @@ UITU="retroarch.c runloop.c gfx/video_driver.c gfx/gfx_display.c"
 UIDEFS="$GLINC -DHAVE_COMMAND -DHAVE_STDIN_CMD"
 check_gates "gates: menu + widgets" "$UIDEFS -DHAVE_MENU -DHAVE_GFX_WIDGETS" $UITU
 check_gates "gates: menu only"      "$UIDEFS -DHAVE_MENU"                    $UITU
+# The keychain without networking: its menu entry and task must be
+# declared outside the networking-only parts of tasks_internal.h.
+check_gates "gates: keychain menu, no networking" \
+   "$UIDEFS -DHAVE_MENU -DHAVE_KEYCHAIN -DHAVE_CRYPTO -DHAVE_CONFIGFILE" \
+   menu/menu_setting.c tasks/task_keychain.c
 check_gates "gates: widgets only"   "$UIDEFS -DHAVE_GFX_WIDGETS"             $UITU
 check_gates "gates: neither"        "$UIDEFS"                                $UITU
 
