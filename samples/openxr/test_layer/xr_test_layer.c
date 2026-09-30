@@ -34,6 +34,9 @@
  *   RA_XR_LAYER_OUT         directory for frames.jsonl and snap_*.png
  *   RA_XR_LAYER_SNAP_EVERY  write images every Nth frame; 0 never
  *   RA_XR_LAYER_SCRIPT      script file, re-read when it changes
+ *   RA_XR_LAYER_QUAD_INDEX0 1: quads show array layer 0 whatever their
+ *                           imageArrayIndex, as SteamVR on the Steam
+ *                           Frame does
  *
  * Script lines:
  *   head <x> <y> <z> <yaw>  the VIEW space's pose in LOCAL, yaw in degrees
@@ -88,6 +91,7 @@
 #define MAX_CHAINS 32
 #define MAX_IMAGES 8
 #define MAX_SPACES 64
+#define MAX_FRAME_LAYERS 64
 #define MAX_RATES 8
 
 #define MAX_SETS        16
@@ -136,6 +140,7 @@ static struct
    FILE *out;
    char dir[1024];
    unsigned snap_every;
+   bool quad_index0;
    char script[1024];
    struct timespec script_mtime;
    ino_t script_ino;
@@ -240,6 +245,7 @@ static void layer_open(void)
    const char *dir   = getenv("RA_XR_LAYER_OUT");
    const char *snap  = getenv("RA_XR_LAYER_SNAP_EVERY");
    const char *scr   = getenv("RA_XR_LAYER_SCRIPT");
+   const char *idx0  = getenv("RA_XR_LAYER_QUAD_INDEX0");
    char path[1100];
    if (dir && *dir && !L.out)
    {
@@ -247,7 +253,8 @@ static void layer_open(void)
       snprintf(path, sizeof(path), "%s/frames.jsonl", dir);
       L.out = fopen(path, "w");
    }
-   L.snap_every = snap ? (unsigned)strtoul(snap, NULL, 10) : 0;
+   L.snap_every  = snap ? (unsigned)strtoul(snap, NULL, 10) : 0;
+   L.quad_index0 = idx0 && atoi(idx0) != 0;
    if (scr)
       snprintf(L.script, sizeof(L.script), "%s", scr);
 }
@@ -1222,8 +1229,27 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_EndFrame(XrSession session,
    uint32_t i, v;
    uint64_t n;
    bool do_snap;
+   XrFrameEndInfo shown;
+   XrCompositionLayerQuad quads[MAX_FRAME_LAYERS];
+   const XrCompositionLayerBaseHeader *ptrs[MAX_FRAME_LAYERS];
    pthread_mutex_lock(&L.lock);
    script_poll();
+   /* Recorded, snapped and submitted as the runtime shows them. */
+   if (L.quad_index0 && info->layerCount <= MAX_FRAME_LAYERS)
+   {
+      for (i = 0; i < info->layerCount; i++)
+      {
+         ptrs[i] = info->layers[i];
+         if (info->layers[i]->type != XR_TYPE_COMPOSITION_LAYER_QUAD)
+            continue;
+         quads[i] = *(const XrCompositionLayerQuad*)info->layers[i];
+         quads[i].subImage.imageArrayIndex = 0;
+         ptrs[i]  = (const XrCompositionLayerBaseHeader*)&quads[i];
+      }
+      shown        = *info;
+      shown.layers = ptrs;
+      info         = &shown;
+   }
    n       = ++L.frames;
    do_snap = L.snap_every && !(n % L.snap_every);
    if (L.out)

@@ -450,8 +450,8 @@ def check_screens(swap=False, horizontal=False):
                     % [x['eye'] for x in q]]
         lq, rq, bq = left[0], right[0], both[0]
         errors = []
-        if lq['sc'] != rq['sc'] or {lq['layer'], rq['layer']} != {0, 1}:
-            errors.append('the eyes are not two layers of one image')
+        if lq['sc'] == rq['sc'] or (lq['layer'], rq['layer']) != (0, 0):
+            errors.append('the eyes share an image')
         for x in (lq, rq):
             if not at(x, (0.0, 0.0, -1.8)) or not sized(x, (1.6, 0.96)):
                 errors.append('top screen at %s size %s'
@@ -463,9 +463,11 @@ def check_screens(swap=False, horizontal=False):
             errors.append('bottom screen at %s size %s, want %s'
                           % (bq['pose'][:3], bq['size'], want))
         errors += image_size(res, lq)
+        errors += image_size(res, rq)
         errors += image_size(res, bq)
-        if res.chains.get(lq['sc'], {}).get('layers') != 2:
-            errors.append('the top screen\'s image has no layer per eye')
+        if any(res.chains.get(x['sc'], {}).get('layers') != 1
+               for x in (lq, rq)):
+            errors.append('the eyes\' images are not one layer each')
         want_l, want_r = (BLUE, RED) if swap else (RED, BLUE)
         for x, want, what in ((lq, want_l, 'left eye'),
                               (rq, want_r, 'right eye'),
@@ -2571,6 +2573,8 @@ KEPT_LEAK = [('VUID-vkDestroyDevice-device-05137', kept_leak)]
 SIZED = {'video_shader_enable': 'true'}
 CHECKER = {'video_views_test_pattern': 'checker'}
 SHOT = [('wait', 8), ('shot', None)]
+# SteamVR on the Steam Frame shows array layer 0 of every quad.
+INDEX0 = {'RA_XR_LAYER_QUAD_INDEX0': '1'}
 # Master's threaded HW ring raises these for a core's own images.
 THREADED_HW = [
     ('VUID-vkQueueSubmit-fence-00063', 'submitted in SIGNALED state'),
@@ -2581,6 +2585,11 @@ CASES = [
     {'name': '3ds-stereo', 'map': '3ds', 'steps': SETTLE,
      'check': check_screens()},
     {'name': '3ds-swap', 'map': '3ds',
+     'settings': {'video_stereo_swap_eyes': 'true'}, 'steps': SETTLE,
+     'check': check_screens(swap=True)},
+    {'name': '3ds-stereo-index0', 'map': '3ds', 'env': INDEX0,
+     'steps': SETTLE, 'check': check_screens()},
+    {'name': '3ds-swap-index0', 'map': '3ds', 'env': INDEX0,
      'settings': {'video_stereo_swap_eyes': 'true'}, 'steps': SETTLE,
      'check': check_screens(swap=True)},
     {'name': '3ds-horizontal', 'map': '3ds',

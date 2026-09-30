@@ -186,16 +186,17 @@ unsigned vulkan_openxr_max_dim(const vulkan_openxr_t *xr);
 bool vulkan_openxr_supports_format(const vulkan_openxr_t *xr,
       VkFormat format);
 
-/* Video thread. A slot's swapchain, replacing any it had; they take the
- * queue lock themselves. */
+/* Video thread. A slot's swapchains, replacing any it had; they take
+ * the queue lock themselves. images[i][l] is image i of layer l's. */
 bool vulkan_openxr_slot_create(vulkan_openxr_t *xr, unsigned slot,
       VkFormat format, bool mutable_format, unsigned dims, unsigned layers,
-      VkImage *images, unsigned *num_images);
+      VkImage (*images)[2], unsigned *num_images);
 void vulkan_openxr_slot_destroy(vulkan_openxr_t *xr, unsigned slot);
 
-/* Video thread, holding the queue lock. Acquire keeps an image until it
- * can be written, never waiting on the compositor: false means try next
- * frame. Release after the frame that drew it is submitted. */
+/* Video thread, holding the queue lock. Acquire keeps an image of each
+ * layer until they can be written, never waiting on the compositor:
+ * false means try next frame. index[l] is layer l's. Release after the
+ * frame that drew them is submitted. */
 bool vulkan_openxr_slot_acquire(vulkan_openxr_t *xr, unsigned slot,
       unsigned *index);
 void vulkan_openxr_slot_release(vulkan_openxr_t *xr, unsigned slot);

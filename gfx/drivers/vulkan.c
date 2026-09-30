@@ -344,14 +344,14 @@ typedef struct vk
       vulkan_filter_chain_t *frame_shrink;
       struct
       {
-         VkImage images[VULKAN_OPENXR_MAX_IMAGES];
+         VkImage images[VULKAN_OPENXR_MAX_IMAGES][2];
          VkImageView views[VULKAN_OPENXR_MAX_IMAGES][2];
          VkFramebuffer framebuffers[VULKAN_OPENXR_MAX_IMAGES][2];
          unsigned num_images;
          unsigned dims;
          unsigned layers;
          unsigned failed_dims;
-         unsigned index;
+         unsigned index[2];
          bool drawn;      /* acquired and drawn; released after submit */
          bool released;   /* the runtime has had an image of it */
       } slots[VIDEO_XR_MAX_SLOTS];
@@ -9973,12 +9973,11 @@ static bool vulkan_xr_slot_ensure(vk_t *vk, unsigned s)
          VkFramebufferCreateInfo fi;
          memset(&vi, 0, sizeof(vi));
          vi.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-         vi.image                           = vk->xr.slots[s].images[i];
+         vi.image                           = vk->xr.slots[s].images[i][l];
          vi.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
          vi.format                          = vk->context->swapchain_format;
          vi.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
          vi.subresourceRange.levelCount     = 1;
-         vi.subresourceRange.baseArrayLayer = l;
          vi.subresourceRange.layerCount     = 1;
          if (vkCreateImageView(device, &vi, NULL,
                   &vk->xr.slots[s].views[i][l]) != VK_SUCCESS)
@@ -10109,15 +10108,18 @@ static void vulkan_xr_draw_screen(vk_t *vk, unsigned s,
    VkClearValue clear;
    VkRenderPassBeginInfo rp;
    const video_xr_slot_t *plan = &vk->xr.set.slots[s];
-   unsigned index              = vk->xr.slots[s].index;
+   const unsigned *index       = vk->xr.slots[s].index;
 
-   /* Every layer is drawn again, so what the image held goes. The
+   /* Every layer is drawn again, so what the images held goes. The
     * runtime's acquire barrier ends at colour output, as a WSI one. */
-   VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, vk->xr.slots[s].images[index],
-         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-         0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+   for (l = 0; l < plan->layers; l++)
+      VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd,
+            vk->xr.slots[s].images[index[l]][l],
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
    vp.x        = 0.0f;
    vp.y        = 0.0f;
@@ -10137,7 +10139,7 @@ static void vulkan_xr_draw_screen(vk_t *vk, unsigned s,
       rp.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
       rp.pNext                    = NULL;
       rp.renderPass               = vk->views.render_pass;
-      rp.framebuffer              = vk->xr.slots[s].framebuffers[index][l];
+      rp.framebuffer              = vk->xr.slots[s].framebuffers[index[l]][l];
       rp.renderArea.offset.x      = 0;
       rp.renderArea.offset.y      = 0;
       rp.renderArea.extent.width  = VIDEO_SCALE_W(plan->dims);
@@ -10168,9 +10170,9 @@ static void vulkan_xr_draw_screen(vk_t *vk, unsigned s,
 static void vulkan_xr_copy_ui(vk_t *vk, unsigned s, unsigned ui_dims)
 {
    VkImageCopy region;
-   unsigned index = vk->xr.slots[s].index;
+   unsigned index = vk->xr.slots[s].index[0];
    unsigned dims  = vk->xr.set.slots[s].dims;
-   VkImage dst    = vk->xr.slots[s].images[index];
+   VkImage dst    = vk->xr.slots[s].images[index][0];
 
    if (dims != ui_dims || vk->views.ui_sdr)
    {
@@ -10284,7 +10286,6 @@ static void vulkan_xr_draw(vk_t *vk, const video_frame_info_t *video_info,
    for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
    {
       bool ok;
-      unsigned index = 0;
       vk->xr.slots[s].drawn = false;
       /* A menu that comes back must not show the last one's image. */
       if (     s == VIDEO_XR_MENU_SLOT && !vk->xr.set.slots[s].dims
@@ -10303,13 +10304,12 @@ static void vulkan_xr_draw(vk_t *vk, const video_frame_info_t *video_info,
 #ifdef HAVE_THREADS
       slock_lock(vk->context->queue_lock);
 #endif
-      ok = vulkan_openxr_slot_acquire(xr, s, &index);
+      ok = vulkan_openxr_slot_acquire(xr, s, vk->xr.slots[s].index);
 #ifdef HAVE_THREADS
       slock_unlock(vk->context->queue_lock);
 #endif
       if (!ok)
          continue;
-      vk->xr.slots[s].index = index;
       /* The menu slot has no view: -1 would draw the whole frame. */
       if (s == VIDEO_XR_MENU_SLOT)
          vulkan_xr_copy_ui(vk, s, ui_dims);
