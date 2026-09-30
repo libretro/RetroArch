@@ -620,7 +620,11 @@ static void lane_close_waits_for_save(void)
    pump(1);
    CHECK(runloop_is_content_switching(), "the close did not start a staged load");
 
-   for (i = 0; i < 400 && runloop_is_content_switching(); i++)
+   /* The save is written under the per-frame I/O window, so the frames
+    * it takes follow the machine's speed: a dozen on a release build,
+    * some five hundred under TSan.  The bound only stops a close that
+    * never ends. */
+   for (i = 0; i < 20000 && runloop_is_content_switching(); i++)
    {
       unsigned before = presented;
       pump(1);
