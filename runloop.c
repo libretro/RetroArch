@@ -8400,11 +8400,9 @@ int runloop_iterate(void)
 #endif
 
    /* Advance a staged content load by one stage, and take up a
-    * prefetched menu load whose read has completed.  Here, at the
-    * top of the frame, rather than from a task callback: the load
-    * reinitializes the task queue, fatal from inside the queue's
-    * own dispatch, and the rest of this frame presents whatever
-    * the stage left on screen. */
+    * prefetched menu load whose read has completed.  At the top of
+    * the frame, so the rest of it presents whatever the stage left
+    * on screen. */
    task_content_load_check();
 
    /* Tick deferred shader compilation (one pass per frame) */

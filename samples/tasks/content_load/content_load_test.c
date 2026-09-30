@@ -40,6 +40,10 @@
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <time/rtime.h>
+#include <retro_timers.h>
+#include <rthreads/rthreads.h>
+#include <queues/task_queue.h>
+#include <retro_atomic.h>
 
 #include "../../../configuration.h"
 #include "../../../retroarch.h"
@@ -421,6 +425,131 @@ static void lane_hw_request(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: the queue survives the load                                   */
+/* ------------------------------------------------------------------ */
+
+/* A load onto a running session applies the task-queue settings and
+ * leaves the queue alone: the worker keeps its thread and a task in
+ * flight keeps running.  Under the threaded queue the worker's thread
+ * id is the witness - a queue rebuilt by the load spawns a new one. */
+static sthread_tls_t probe_tls;
+static void         *probe_seen[2];
+static unsigned      probe_done;
+static retro_atomic_int_t long_task_release;
+static unsigned      long_task_retired;
+
+/* The first probe marks the worker's thread-local slot; the second
+ * reads it.  A worker thread the load rebuilt carries no mark. */
+static void probe_handler(retro_task_t *task)
+{
+   probe_seen[probe_done] = sthread_tls_get(&probe_tls);
+   sthread_tls_set(&probe_tls, (void*)1);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+static void probe_callback(retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   (void)task; (void)task_data; (void)user_data; (void)err;
+   probe_done++;
+}
+static void long_handler(retro_task_t *task)
+{
+   if (retro_atomic_load_acquire_int(&long_task_release))
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   else
+      retro_sleep(1);
+}
+static void long_callback(retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   (void)task; (void)task_data; (void)user_data; (void)err;
+   long_task_retired++;
+}
+
+static retro_task_t *push_task(retro_task_handler_t handler,
+      retro_task_callback_t callback)
+{
+   retro_task_t *task = task_init();
+   if (!task)
+      return NULL;
+   task->handler  = handler;
+   task->callback = callback;
+   task->flags   |= RETRO_TASK_FLG_MUTE;
+   task_queue_push(task);
+   return task;
+}
+
+/* Frames with the queue pumped, as the main loop pumps it. */
+static void pump(unsigned n)
+{
+   unsigned i;
+   for (i = 0; i < n; i++)
+   {
+      runloop_iterate();
+      task_queue_check();
+   }
+}
+
+static void lane_queue_survives(void)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned had = failures;
+   unsigned i;
+
+   /* Threaded Tasks on, as the setting the menu writes; the queue
+    * swaps at the next check. */
+   configuration_set_bool(settings, settings->bools.threaded_data_runloop_enable, true);
+   task_queue_set_threaded();
+   task_queue_check();
+   if (!task_queue_is_threaded())
+   {
+      fprintf(stderr, "[skip] queue-survives lane (no threaded queue)\n");
+      return;
+   }
+
+   probe_done        = 0;
+   long_task_retired = 0;
+   retro_atomic_store_release_int(&long_task_release, 0);
+   CHECK(sthread_tls_create(&probe_tls), "no thread-local slot");
+   CHECK(push_task(probe_handler, probe_callback) != NULL, "probe not pushed");
+   for (i = 0; i < 200 && probe_done < 1; i++)
+      pump(1);
+   CHECK(probe_done == 1, "the first probe did not retire");
+   CHECK(push_task(long_handler, long_callback) != NULL, "long task not pushed");
+   pump(2);
+
+   open_menu();
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the reload was not started");
+   for (i = 0; i < LOAD_FRAMES && runloop_is_content_switching(); i++)
+      pump(1);
+   CHECK(!runloop_is_content_switching() && core_is_up(),
+         "the load did not go through");
+   CHECK(task_queue_is_threaded(), "the load turned the threaded queue off");
+   CHECK(long_task_retired == 0, "the task in flight retired during the load");
+
+   retro_atomic_store_release_int(&long_task_release, 1);
+   CHECK(push_task(probe_handler, probe_callback) != NULL, "probe not pushed");
+   for (i = 0; i < 200 && (probe_done < 2 || !long_task_retired); i++)
+      pump(1);
+   CHECK(probe_done == 2, "the second probe did not retire");
+   CHECK(long_task_retired == 1, "the task in flight did not retire after the load");
+   CHECK(probe_seen[0] == NULL && probe_seen[1] == (void*)1,
+         "the load rebuilt the queue: a new worker thread after it");
+   sthread_tls_delete(&probe_tls);
+
+   /* Back to the inline queue for the rest. */
+   configuration_set_bool(settings, settings->bools.threaded_data_runloop_enable, false);
+   task_queue_unset_threaded();
+   task_queue_check();
+   CHECK(!task_queue_is_threaded(), "the queue did not swap back");
+   pump(1);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] queue-survives lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: close content                                                 */
 /* ------------------------------------------------------------------ */
 
@@ -576,6 +705,7 @@ int main(int argc, char *argv[])
    lane_reinit_deferred();
    lane_fallback();
    lane_hw_request();
+   lane_queue_survives();
    lane_close_content();
 
    main_exit(NULL);

@@ -224,6 +224,9 @@ unsigned int retroarch_get_rotation(void);
 
 void retroarch_init_task_queue(void);
 
+/* Applies the task-queue settings to the running queue. */
+void retroarch_task_queue_configure(void);
+
 /* Creates folder and core options stub file for subsequent runs */
 bool core_options_create_override(bool game_specific);
 bool core_options_remove_override(bool game_specific);

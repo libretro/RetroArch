@@ -2720,8 +2720,6 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info)
     * load the actual content. Can differ per mode. */
    sys_info->load_no_content = false;
    retroarch_ctl(RARCH_CTL_STATE_FREE, NULL);
-   task_queue_deinit();
-   retroarch_init_task_queue();
 
    /* Loads content into currently selected core. */
    ret = content_load(content_info, p_content,
@@ -3007,13 +3005,10 @@ struct content_deferred_menu_load
  * gate), so a single pointer is the whole queue. */
 static struct content_deferred_menu_load *deferred_menu_load_ready = NULL;
 
-/* Fires when the prefetch task completes.  The remainder of the
- * load cannot start here: its core stage reaches
- * retroarch_init_task_queue(), which tears down and recreates the
- * task queue - fatal from inside the queue's own dispatch (and,
- * under the threaded queue, this may not be the main thread).  So
- * the continuation is parked, and task_content_load_check() starts
- * the job from the top of the next frame. */
+/* Fires when the prefetch task completes, on whichever thread pumps
+ * the queue.  The continuation is parked, and task_content_load_check()
+ * starts the job from the top of the next frame, on the main thread,
+ * where every other load starts. */
 static void task_content_deferred_menu_load_done(void *ud, bool all_ok)
 {
    deferred_menu_load_ready = (struct content_deferred_menu_load*)ud;
@@ -3177,9 +3172,9 @@ static bool task_content_defer_menu_load(content_state_t *p_content,
       free(d);
       return false;
    }
-   /* Stamp the world this continuation belongs to: in-flight tasks
-    * survive a competing load's queue reinit, so the continuation
-    * can fire after the user has loaded something else. */
+   /* Stamp the world this continuation belongs to: a competing load
+    * leaves the prefetch in flight, so the continuation can fire
+    * after the user has loaded something else. */
    if (!(d->core_path = strdup(path_get(RARCH_PATH_CORE))))
    {
       free(d->fullpath);

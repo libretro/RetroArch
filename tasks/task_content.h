@@ -75,8 +75,7 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info);
 
 /* Advances a staged content load by one stage, and starts the parked
  * remainder of a prefetched menu load whose read has completed.
- * Called once per frame from runloop_iterate(), outside the task
- * system's dispatch: a stage reinitializes the task queue.  Every
+ * Called once per frame from runloop_iterate().  Every
  * task_push_load_* entry point below (the CLI one excepted, which is
  * startup itself and loads in one go) only starts the job and
  * returns; the load is done when runloop_is_content_switching()

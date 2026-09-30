@@ -8859,7 +8859,12 @@ bool retroarch_main_init_core(int argc, char *argv[],
 #endif
 
    retroarch_validate_cpu_features();
-   retroarch_init_task_queue();
+   /* Startup builds the queue; a load onto a running session keeps
+    * it - and every task in flight - and applies the configuration. */
+   if (find_drivers)
+      retroarch_init_task_queue();
+   else
+      retroarch_task_queue_configure();
 
    {
       const char    *fullpath  = p_rarch->path_content;
@@ -9156,40 +9161,32 @@ static void runloop_task_slow_handler(retro_task_t *task,
 }
 #endif
 
-void retroarch_init_task_queue(void)
+/* Everything the queue takes from the configuration.  A session that
+ * comes up on the running queue - a content load - applies the
+ * settings here and leaves the queue itself alone: a change of
+ * Threaded Tasks takes effect at the next task_queue_check(), between
+ * frames, where the swap can join the worker without holding up a
+ * load. */
+void retroarch_task_queue_configure(void)
 {
 #ifdef HAVE_THREADS
    settings_t *settings        = config_get_ptr();
    bool threaded_enable        = settings->bools.threaded_data_runloop_enable;
-#else
-   bool threaded_enable        = false;
-#endif
 
-   task_queue_deinit();
-#ifdef HAVE_NETWORKING
-   /* Before task_queue_init(), which is what spawns the task
-    * thread: net_http's DNS cache and connection pool locks must
-    * exist before any two transfers can race - created lazily on
-    * first use, the first two concurrent transfers of the process
-    * can each create one and then lock different objects. */
-   net_http_init();
-#endif
-#ifdef HAVE_THREADS
+   if (threaded_enable)
+      task_queue_set_threaded();
+   else
+      task_queue_unset_threaded();
    task_queue_set_prefer_fast_cores(settings->bools.thread_prefer_fast_cores);
-#endif
-   task_queue_init(threaded_enable, runloop_task_msg_queue_push);
-#ifdef HAVE_THREADS
-   /* The queue falls back to running tasks on the caller's thread when
-    * its worker or synchronisation primitives could not be created. */
-   if (threaded_enable && !task_queue_is_threaded())
-      RARCH_ERR("[Task] Threaded tasks were requested but could not be started; running tasks inline.\n");
    /* The main thread runs the emulation loop; on a mixed-core part
-    * keep it off the slow cluster when asked. The task worker did the
+    * keep it off the slow cluster when asked. The task worker does the
     * same for itself at start (task_queue_set_prefer_fast_cores above),
     * the audio thread does in audio_thread_wrapper, the video thread
     * in video_driver.c before video_init_thread(). */
    if (settings->bools.thread_prefer_fast_cores)
       sthread_prefer_fast_cores();
+#else
+   bool threaded_enable        = false;
 #endif
 
 #ifdef DEBUG
@@ -9223,6 +9220,37 @@ void retroarch_init_task_queue(void)
     * frame to the core; a blocking task_queue_wait() still loops
     * until its condition holds. */
    task_queue_set_budget(2000, 32, 4000);
+}
+
+void retroarch_init_task_queue(void)
+{
+#ifdef HAVE_THREADS
+   settings_t *settings        = config_get_ptr();
+   bool threaded_enable        = settings->bools.threaded_data_runloop_enable;
+#else
+   bool threaded_enable        = false;
+#endif
+
+   task_queue_deinit();
+#ifdef HAVE_NETWORKING
+   /* Before task_queue_init(), which is what spawns the task
+    * thread: net_http's DNS cache and connection pool locks must
+    * exist before any two transfers can race - created lazily on
+    * first use, the first two concurrent transfers of the process
+    * can each create one and then lock different objects. */
+   net_http_init();
+#endif
+#ifdef HAVE_THREADS
+   task_queue_set_prefer_fast_cores(settings->bools.thread_prefer_fast_cores);
+#endif
+   task_queue_init(threaded_enable, runloop_task_msg_queue_push);
+#ifdef HAVE_THREADS
+   /* The queue falls back to running tasks on the caller's thread when
+    * its worker or synchronisation primitives could not be created. */
+   if (threaded_enable && !task_queue_is_threaded())
+      RARCH_ERR("[Task] Threaded tasks were requested but could not be started; running tasks inline.\n");
+#endif
+   retroarch_task_queue_configure();
 }
 
 bool retroarch_ctl(enum rarch_ctl_state state, void *data)
