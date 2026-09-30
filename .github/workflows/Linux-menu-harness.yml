@@ -221,6 +221,17 @@ jobs:
           # this job already built.
           .github/workflows/scripts/hot-function-budget.sh
 
+      - name: Lock budget
+        shell: bash
+        run: |
+          set -eu
+          # Lock acquisitions on the paths meant to take none, or a
+          # counted few, against tools/lock_acquire_budget.ref: a lock
+          # put back on a per-frame path passes every lane and shows up
+          # only as a slower frame. Same release objects as above; this
+          # build has no Vulkan, so the Vulkan entries report SKIP.
+          tools/lock_acquire_budget.sh
+
       - name: Build and run threaded_video_test
         shell: bash
         run: |
