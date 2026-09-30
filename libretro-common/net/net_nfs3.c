@@ -154,6 +154,10 @@ struct rnfs_file
    uint8_t  stateid[16];     /* v4: from OPEN, all-zero for the anonymous one */
    uint8_t  opened;          /* v4: an OPEN state to CLOSE */
    char    *path;            /* v4, opened: to open again if the server lost it */
+   /* v4, opened: on its context's list of files holding open state,
+    * which the context takes back whenever it identifies itself anew */
+   struct rnfs_ctx  *owner;
+   struct rnfs_file *next, *prev;
    /* read-ahead: the last fetched window, so a run of small
     * sequential reads costs one round trip per window */
    uint8_t *ra;
@@ -215,6 +219,8 @@ struct rnfs_ctx
     * back instead of starting a stranger */
    uint8_t  verf[8];
    uint8_t  have_identity;
+   struct rnfs_file *stateful;      /* v4 files holding open state */
+   uint8_t  reclaiming;
    uint8_t  redialing;
    /* why the last READ or WRITE failed, for its one retry */
    uint8_t  lost_session;
@@ -794,6 +800,52 @@ static int nfs4_get_fattr(struct xdr *r, struct rnfs_stat *st)
 }
 
 /* Client id for this connection: SETCLIENTID then its CONFIRM. */
+static void nfs4_state_link(struct rnfs_ctx *c, struct rnfs_file *f)
+{
+   if (f->owner)
+      return;
+   f->owner = c;
+   f->prev  = NULL;
+   f->next  = c->stateful;
+   if (c->stateful)
+      c->stateful->prev = f;
+   c->stateful = f;
+}
+
+static void nfs4_state_unlink(struct rnfs_file *f)
+{
+   struct rnfs_ctx *c = f->owner;
+   if (!c)
+      return;
+   if (f->prev)
+      f->prev->next = f->next;
+   else
+      c->stateful = f->next;
+   if (f->next)
+      f->next->prev = f->prev;
+   f->owner = NULL;
+   f->next  = f->prev = NULL;
+}
+
+static int nfs4_open_reclaim(struct rnfs_ctx *c, struct rnfs_file *f);
+
+/* After a restart the server grants a client it knew its opens back
+ * during its grace period - and refuses new ones until grace ends
+ * (90 seconds on Linux). Each file holding open state is claimed back
+ * as soon as the client has identified itself again; where the server
+ * did not restart this fails harmlessly (NO_GRACE) and the state it
+ * kept goes on working. */
+static void nfs4_reclaim_all(struct rnfs_ctx *c)
+{
+   struct rnfs_file *f;
+   if (c->reclaiming)
+      return;                          /* a session set up again mid-reclaim */
+   c->reclaiming = 1;
+   for (f = c->stateful; f; f = f->next)
+      nfs4_open_reclaim(c, f);
+   c->reclaiming = 0;
+}
+
 /* The verifier and open-owner, made the first time this context
  * identifies itself and kept for its life. */
 static void nfs4_identity(struct rnfs_ctx *c)
@@ -858,6 +910,7 @@ static int nfs4_setclientid(struct rnfs_ctx *c)
    }
    c->clientid = clientid;
    c->open_seq = 0;
+   nfs4_reclaim_all(c);
    return 0;
 }
 
@@ -955,6 +1008,9 @@ static int nfs4_session_setup(struct rnfs_ctx *c)
       c->slot_seq[i] = 0;
    c->have_session = 1;
    c->open_seq     = 0;
+   /* opens this client held are claimed back before it says it has
+    * reclaimed all it will */
+   nfs4_reclaim_all(c);
 
    x.p = ops; x.fail = 0;
    xdr_u32(&x, OP_RECLAIM_COMPLETE);
@@ -1243,6 +1299,7 @@ static int nfs4_open_create(struct rnfs_ctx *c, const struct rnfs_fh *dir,
          f->size = st.size;
    }
    f->opened = 1;
+   nfs4_state_link(c, f);
    if (rflags & 2)                      /* OPEN4_RESULT_CONFIRM */
    {
       x.p = ops; x.fail = 0;
@@ -1272,6 +1329,63 @@ static int nfs4_state_lost(uint32_t st)
        || st == NFS4ERR_EXPIRED       || st == NFS4ERR_ADMIN_REVOKED;
 }
 
+/* NFSv4.0 after a server restart: take the open back (CLAIM_PREVIOUS)
+ * by its handle, as the same client the server knew before, which it
+ * grants during its grace period - when an ordinary open is refused
+ * until grace ends, which on Linux is 90 seconds.
+ *
+ * Returns: 0; -1 with c->status NFS4ERR_NO_GRACE when the server is
+ * not in grace (the open goes by path then), or another failure. */
+static int nfs4_open_reclaim(struct rnfs_ctx *c, struct rnfs_file *f)
+{
+   uint8_t  ops[NFS3_FHSIZE + 96];
+   struct xdr x, r;
+   uint32_t rflags, st;
+
+   x.p = ops; x.end = ops + sizeof(ops); x.fail = 0;
+   nfs4_put_fh(&x, &f->fh);
+   xdr_u32(&x, OP_OPEN);
+   xdr_u32(&x, c->open_seq);
+   xdr_u32(&x, 2);                      /* OPEN4_SHARE_ACCESS_WRITE, as opened */
+   xdr_u32(&x, 0);                      /* share_deny none */
+   xdr_u64(&x, c->clientid);
+   xdr_opaque(&x, c->owner, 8);         /* open_owner */
+   xdr_u32(&x, 0);                      /* OPEN4_NOCREATE */
+   xdr_u32(&x, 1);                      /* CLAIM_PREVIOUS */
+   xdr_u32(&x, 0);                      /* delegation: none */
+   if (x.fail || nfs4_compound(c, ops, (size_t)(x.p - ops), 2, &r) != 0)
+      return -1;
+   if (nfs4_res(&r) != NFS3_OK || (st = nfs4_res(&r)) != NFS3_OK)
+      return -1;
+   c->open_seq++;
+   memcpy(f->stateid, r.p, 16); r.p += 16;
+   xdr_get_u32(&r); xdr_get_u64(&r); xdr_get_u64(&r);   /* change_info */
+   rflags = xdr_get_u32(&r);
+   {
+      uint32_t nb = xdr_get_u32(&r);    /* attrset */
+      while (nb-- && !r.fail)
+         xdr_get_u32(&r);
+   }
+   if (r.fail || xdr_get_u32(&r) != 0)  /* no delegation asked, none taken */
+      return -1;
+   f->opened = 1;
+   nfs4_state_link(c, f);
+   if (rflags & 2)                      /* OPEN4_RESULT_CONFIRM */
+   {
+      x.p = ops; x.fail = 0;
+      nfs4_put_fh(&x, &f->fh);
+      xdr_u32(&x, OP_OPEN_CONFIRM);
+      memcpy(x.p, f->stateid, 16); x.p += 16;
+      xdr_u32(&x, c->open_seq);
+      if (nfs4_compound(c, ops, (size_t)(x.p - ops), 2, &r) != 0
+            || nfs4_res(&r) != NFS3_OK || nfs4_res(&r) != NFS3_OK)
+         return -1;
+      c->open_seq++;
+      memcpy(f->stateid, r.p, 16);
+   }
+   return 0;
+}
+
 /* Open @f again by the path it was opened with, keeping its position:
  * a fresh OPEN state for one the server lost. */
 static int nfs4_reopen(struct rnfs_ctx *c, struct rnfs_file *f)
@@ -1281,6 +1395,20 @@ static int nfs4_reopen(struct rnfs_ctx *c, struct rnfs_file *f)
    uint64_t offset = f->offset, size = f->size;
    if (!f->path)
       return -1;
+   /* 4.0 after a restart: the server is in grace and refuses a new
+    * open until it ends, but grants this client its old ones back. A
+    * server that restarted knows the client no more until it says who
+    * it is again - the same identity, which the server remembers. 4.1
+    * says RECLAIM_COMPLETE when it sets up a session, so its server
+    * can end grace for it at once and the open below goes through. */
+   if (!c->minor)
+   {
+      if (nfs4_open_reclaim(c, f) == 0)
+         goto done;
+      if (     (c->status == NFS4ERR_STALE_CLIENTID || c->status == NFS4ERR_EXPIRED)
+            && nfs4_setclientid(c) == 0 && nfs4_open_reclaim(c, f) == 0)
+         goto done;
+   }
    if (nfs4_walk(c, f->path, &dir, NULL, 1, last, sizeof(last)) != 0 || !last[0])
       return -1;
    if (nfs4_open_create(c, &dir, last, 0, f) != 0)
@@ -1294,6 +1422,7 @@ static int nfs4_reopen(struct rnfs_ctx *c, struct rnfs_file *f)
             || nfs4_open_create(c, &dir, last, 0, f) != 0)
          return -1;
    }
+done:
    f->offset = offset;
    if (size > f->size)
       f->size = size;
@@ -1342,6 +1471,7 @@ static int64_t nfs4_write(struct rnfs_ctx *c, struct rnfs_file *f, const void *b
       /* the COMPOUND is assembled in rx and the RPC in tx, so the ops
        * need a buffer of their own for a payload this size */
       uint8_t *ops;
+      uint8_t  sid[16];                 /* the state this WRITE goes with */
       struct xdr x, r;
       uint32_t count;
       size_t n = len - done;
@@ -1352,7 +1482,8 @@ static int64_t nfs4_write(struct rnfs_ctx *c, struct rnfs_file *f, const void *b
       x.p = ops; x.end = ops + n + NFS3_FHSIZE + 64; x.fail = 0;
       nfs4_put_fh(&x, &f->fh);
       xdr_u32(&x, OP_WRITE_OP);
-      memcpy(x.p, f->stateid, 16); x.p += 16;
+      memcpy(sid, f->stateid, 16);
+      memcpy(x.p, sid, 16); x.p += 16;
       xdr_u64(&x, f->offset);
       xdr_u32(&x, 2);                   /* FILE_SYNC4 */
       xdr_opaque(&x, in + done, n);
@@ -1360,6 +1491,16 @@ static int64_t nfs4_write(struct rnfs_ctx *c, struct rnfs_file *f, const void *b
       {
          free(ops);
          return -1;
+      }
+      if (     f->opened && nfs4_state_lost(c->status) && !c->stale_state
+            && memcmp(sid, f->stateid, 16) != 0)
+      {
+         /* the call found the connection gone and the dial that mended
+          * it took the open back (a reclaim): the state is fresh, only
+          * this WRITE carried the old one */
+         c->stale_state = 1;
+         free(ops);
+         continue;
       }
       if (f->opened && nfs4_state_lost(c->status) && !c->stale_state)
       {
@@ -1544,6 +1685,9 @@ void rnfs_free(struct rnfs_ctx *c)
 {
    if (!c)
       return;
+   /* files still open are the caller's: they only leave this list */
+   while (c->stateful)
+      nfs4_state_unlink(c->stateful);
    rnfs_disconnect(c);
    free(c->rx);
    free(c->tx);
@@ -2457,6 +2601,7 @@ int rnfs_close(struct rnfs_ctx *c, struct rnfs_file *f)
    {
       free(f->ra);
       free(f->path);
+      nfs4_state_unlink(f);
    }
    free(f);
    return ret;

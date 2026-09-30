@@ -133,6 +133,9 @@ for m in 0 1; do
       i=0; while pgrep -x ganesha.nfsd >/dev/null 2>&1 && [ $i -lt 30 ]; do sleep 0.2; i=$((i + 1)); done
    }
    stop_keep   # the server goes, its state with it; the files stay
+   # back with a grace period longer than any retry could wait out, as
+   # Linux's 90 seconds is: the files' opens must be claimed back
+   sed -i 's/Grace_Period = [0-9]*;/Grace_Period = 60;/' $D/ganesha.conf
    setsid nohup $GANESHA -F -L $D/ganesha.log -f $D/ganesha.conf -p $D/run/g.pid -N NIV_EVENT > $D/out 2>&1 < /dev/null &
    if wait $idler; then
       echo "ok:   NFSv4.$m: a file read and written across a server restart"
