@@ -521,10 +521,10 @@
 
 /* Threaded video: the core runs on one thread and the video driver
  * presents on another. Off by default, as it has always been; the
- * Switch keeps its own default. When it is on, hardware-rendered cores
- * follow it on every API that has a ring, with no setting of their
- * own. */
-#if defined(HAVE_LIBNX)
+ * Switch and Android keep their own default. When it is on,
+ * hardware-rendered cores follow it on every API that has a ring,
+ * with no setting of their own. */
+#if defined(HAVE_LIBNX) || defined(ANDROID)
 #define DEFAULT_VIDEO_THREADED true
 #else
 #define DEFAULT_VIDEO_THREADED false
