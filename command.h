@@ -317,6 +317,9 @@ struct command_handler;
 typedef void (*command_poller_t)(struct command_handler *cmd);
 typedef void (*command_replier_t)(struct command_handler *cmd, const char * data, size_t len);
 typedef void (*command_destructor_t)(struct command_handler *cmd);
+typedef void *(*command_reply_dest_t)(struct command_handler *cmd);
+typedef void (*command_reply_to_t)(struct command_handler *cmd,
+      void *dest, const char *data, size_t len);
 
 struct command_handler
 {
@@ -324,6 +327,12 @@ struct command_handler
    command_poller_t poll;
    /* Interface to reply */
    command_replier_t replier;
+   /* Where the reply to the command being handled goes, for a reply
+    * sent after the handler has returned: a heap copy, released with
+    * free().  NULL on an interface whose replies all go one way. */
+   command_reply_dest_t reply_dest;
+   /* Sends to a destination reply_dest returned. */
+   command_reply_to_t reply_to;
    /* Interface to delete the underlying command */
    command_destructor_t destroy;
    /* Underlying command storage */
@@ -444,6 +453,10 @@ bool command_show_osd_msg(command_t *cmd, const char* arg);
 bool command_load_state_slot(command_t *cmd, const char* arg);
 bool command_save_state_slot(command_t* cmd, const char* arg);
 bool command_play_replay_slot(command_t *cmd, const char* arg);
+/* Sends a reply owed by a command that returned before it could
+ * answer (PLAY_REPLAY_SLOT waits for the movie task), once it can.
+ * Called once per input poll, after the command interfaces. */
+void command_owed_reply_poll(void);
 bool command_seek_replay(command_t *cmd, const char *arg);
 bool command_save_savefiles(command_t *cmd, const char* arg);
 bool command_load_savefiles(command_t *cmd, const char* arg);

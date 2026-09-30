@@ -216,6 +216,34 @@ static void network_command_reply(command_t *cmd,
       (struct sockaddr*)&netcmd->cmd_source, netcmd->cmd_source_len);
 }
 
+typedef struct
+{
+   struct sockaddr_storage addr;
+   socklen_t addr_len;
+} command_network_dest_t;
+
+static void *network_command_reply_dest(command_t *cmd)
+{
+   command_network_t      *netcmd = (command_network_t*)cmd->userptr;
+   command_network_dest_t *dest   = (command_network_dest_t*)
+      malloc(sizeof(*dest));
+   if (dest)
+   {
+      dest->addr     = netcmd->cmd_source;
+      dest->addr_len = netcmd->cmd_source_len;
+   }
+   return dest;
+}
+
+static void network_command_reply_to(command_t *cmd, void *data,
+   const char *s, size_t len)
+{
+   command_network_t      *netcmd = (command_network_t*)cmd->userptr;
+   command_network_dest_t *dest   = (command_network_dest_t*)data;
+   sendto(netcmd->net_fd, s, len, 0,
+      (struct sockaddr*)&dest->addr, dest->addr_len);
+}
+
 static void network_command_free(command_t *handle)
 {
    command_network_t *netcmd = (command_network_t*)handle->userptr;
@@ -299,8 +327,10 @@ command_t* command_network_new(uint16_t port, const char *bind_address)
    netcmd->net_fd = fd;
    cmd->userptr   = netcmd;
    cmd->poll      = command_network_poll;
-   cmd->replier   = network_command_reply;
-   cmd->destroy   = network_command_free;
+   cmd->replier    = network_command_reply;
+   cmd->reply_dest = network_command_reply_dest;
+   cmd->reply_to   = network_command_reply_to;
+   cmd->destroy    = network_command_free;
 
    if (!socket_nonblock(netcmd->net_fd))
       goto error;
@@ -589,15 +619,54 @@ typedef struct
    int sfd;
    /* Client sockets */
    int userfd[MAX_USER_CONNECTIONS];
+   /* Which connection holds each slot: a closed descriptor's number
+    * is handed out again, so the number alone does not say. */
+   unsigned serial[MAX_USER_CONNECTIONS];
+   unsigned next_serial;
    /* Last received user socket */
    int last_fd;
+   unsigned last_serial;
 } command_uds_t;
+
+typedef struct
+{
+   int fd;
+   unsigned serial;
+} command_uds_dest_t;
 
 static void uds_command_reply(command_t *cmd,
       const char *s, size_t len)
 {
    command_uds_t *subcmd = (command_uds_t*)cmd->userptr;
    write(subcmd->last_fd, s, len);
+}
+
+static void *uds_command_reply_dest(command_t *cmd)
+{
+   command_uds_t      *subcmd = (command_uds_t*)cmd->userptr;
+   command_uds_dest_t *dest   = (command_uds_dest_t*)malloc(sizeof(*dest));
+   if (dest)
+   {
+      dest->fd     = subcmd->last_fd;
+      dest->serial = subcmd->last_serial;
+   }
+   return dest;
+}
+
+/* Only to the connection that asked: gone, the reply is dropped. */
+static void uds_command_reply_to(command_t *cmd, void *data,
+      const char *s, size_t len)
+{
+   int i;
+   command_uds_t      *subcmd = (command_uds_t*)cmd->userptr;
+   command_uds_dest_t *dest   = (command_uds_dest_t*)data;
+   for (i = 0; i < MAX_USER_CONNECTIONS; i++)
+      if (   subcmd->userfd[i] == dest->fd
+          && subcmd->serial[i] == dest->serial)
+      {
+         write(dest->fd, s, len);
+         return;
+      }
 }
 
 static void uds_command_free(command_t *handle)
@@ -641,8 +710,9 @@ static void command_uds_poll(command_t *handle)
 
       if (!err)
       {
-         buf[ret]        = '\0';
-         udscmd->last_fd = fd;
+         buf[ret]            = '\0';
+         udscmd->last_fd     = fd;
+         udscmd->last_serial = udscmd->serial[i];
 
          command_parse_msg(handle, buf);
          /* See command_generation: this object may be gone now. */
@@ -667,6 +737,7 @@ static void command_uds_poll(command_t *handle)
             if (udscmd->userfd[i] < 0)
             {
                udscmd->userfd[i] = fd;
+               udscmd->serial[i] = ++udscmd->next_serial;
                return;
             }
          }
@@ -717,6 +788,8 @@ command_t* command_uds_new(void)
    cmd->userptr         = subcmd;
    cmd->poll            = command_uds_poll;
    cmd->replier         = uds_command_reply;
+   cmd->reply_dest      = uds_command_reply_dest;
+   cmd->reply_to        = uds_command_reply_to;
    cmd->destroy         = uds_command_free;
    return cmd;
 }
@@ -916,47 +989,78 @@ bool command_save_state_slot(command_t* cmd, const char* arg)
    return ret;
 }
 
+#ifdef HAVE_BSV_MOVIE
+/* The reply owed by a command that returned before it could answer:
+ * PLAY_REPLAY_SLOT's carries the replay handle, which the movie
+ * task's callback installs.  command_owed_reply_poll() sends it once
+ * the task is through.  Dropped, unsent, if the interface that asked
+ * is torn down first (the command generation moves). */
+static struct
+{
+   command_t *cmd;
+   void      *dest;
+   unsigned   gen;
+   bool       owed;
+} command_owed;
+#endif
+
+void command_owed_reply_poll(void)
+{
+#ifdef HAVE_BSV_MOVIE
+   char reply[128];
+
+   if (!command_owed.owed || movie_playback_start_in_progress(NULL))
+      return;
+
+   snprintf(reply, sizeof(reply), "PLAY_REPLAY_SLOT %lld",
+         (long long)movie_playback_start_identifier());
+   command_post_state_loaded();
+
+   if (input_driver_command_generation() == command_owed.gen)
+   {
+      command_t *cmd = command_owed.cmd;
+      if (cmd->reply_to && command_owed.dest)
+         cmd->reply_to(cmd, command_owed.dest, reply, strlen(reply));
+      else
+         cmd->replier(cmd, reply, strlen(reply));
+   }
+   free(command_owed.dest);
+   command_owed.dest = NULL;
+   command_owed.cmd  = NULL;
+   command_owed.owed = false;
+#endif
+}
+
 bool command_play_replay_slot(command_t *cmd, const char *arg)
 {
 #ifdef HAVE_BSV_MOVIE
    char replay_path[16384];
-   char reply[128]              = "";
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
    bool savestates_enabled      = core_info_current_supports_savestate();
    bool ret                     = false;
    replay_path[0]               = '\0';
-   if (savestates_enabled)
+   /* One playback start at a time: the owed reply names its handle. */
+   if (savestates_enabled && !command_owed.owed)
    {
       size_t info_size;
       runloop_get_replay_path(replay_path, sizeof(replay_path), slot);
 
       info_size          = core_serialize_size();
-      savestates_enabled = (info_size > 0);
+      if (info_size > 0)
+         ret = movie_start_playback(input_state_get_ptr(), replay_path);
    }
-   if (savestates_enabled)
+   if (!ret)
    {
-      ret = movie_start_playback(input_state_get_ptr(), replay_path);
-      if (ret)
-      {
-         input_driver_state_t *input_st = input_state_get_ptr();
-         /* The reply carries the replay handle, which the movie
-          * task's callback installs, so this still waits - but only
-          * for that task.  A NULL condition means "until the queue
-          * is empty", which made a network command block on every
-          * unrelated scan or download in flight. */
-         task_queue_wait(movie_playback_start_in_progress, NULL);
-         if (input_st->bsv_movie_state_next_handle)
-            snprintf(reply, sizeof(reply) - 1, "PLAY_REPLAY_SLOT %lld", (long long)(input_st->bsv_movie_state_next_handle->identifier));
-         else
-            snprintf(reply, sizeof(reply) - 1, "PLAY_REPLAY_SLOT 0");
-         command_post_state_loaded();
-      }
+      cmd->replier(cmd, "", 0);
+      return false;
    }
-   else
-      ret = false;
-
-   cmd->replier(cmd, reply, strlen(reply));
-   return ret;
+   /* Answered from the frame loop once the movie task has installed
+    * the handle, rather than holding the frame until it has. */
+   command_owed.cmd  = cmd;
+   command_owed.dest = cmd->reply_dest ? cmd->reply_dest(cmd) : NULL;
+   command_owed.gen  = input_driver_command_generation();
+   command_owed.owed = true;
+   return true;
 #else
    return false;
 #endif

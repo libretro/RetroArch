@@ -64,6 +64,7 @@
 #include "../../../playlist.h"
 #include "../../../paths.h"
 #include "../../../content.h"
+#include "../../../input/input_driver.h"
 #ifdef HAVE_NETWORKING
 #include "../../../network/netplay/netplay.h"
 #endif
@@ -1121,6 +1122,154 @@ static void lane_acceptance(const char *dir)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: replay reply                                                  */
+/* ------------------------------------------------------------------ */
+
+#ifdef HAVE_BSV_MOVIE
+/* A command interface of the test's own: which sender a reply is for
+ * is 'source' at the time of the reply, as with the network
+ * interface's last datagram source. */
+static int      rr_source;
+static unsigned rr_replies;
+static int      rr_reply_to;          /* the sender the reply went to */
+static char     rr_reply[128];
+static bool     rr_in_command;        /* inside command_play_replay_slot */
+static unsigned rr_in_command_replies;
+
+static void rr_record(int to, const char *s, size_t len)
+{
+   rr_replies++;
+   if (rr_in_command)
+      rr_in_command_replies++;
+   rr_reply_to = to;
+   if (len >= sizeof(rr_reply))
+      len = sizeof(rr_reply) - 1;
+   memcpy(rr_reply, s, len);
+   rr_reply[len] = '\0';
+}
+
+static void rr_replier(command_t *cmd, const char *s, size_t len)
+{
+   (void)cmd;
+   rr_record(rr_source, s, len);
+}
+
+static void *rr_reply_dest(command_t *cmd)
+{
+   int *dest = (int*)malloc(sizeof(int));
+   (void)cmd;
+   if (dest)
+      *dest = rr_source;
+   return dest;
+}
+
+static void rr_reply_to_cb(command_t *cmd, void *dest, const char *s, size_t len)
+{
+   (void)cmd;
+   rr_record(*(int*)dest, s, len);
+}
+
+static bool rr_play(command_t *cmd, const char *slot)
+{
+   bool ok;
+   rr_in_command = true;
+   ok            = command_play_replay_slot(cmd, slot);
+   rr_in_command = false;
+   return ok;
+}
+
+/* PLAY_REPLAY_SLOT answers with the replay's handle, which the movie
+ * task installs from its callback.  The command returns at once and
+ * the reply follows from the frame loop, to the sender that asked;
+ * the frame is not held while the task runs.  With the interface torn
+ * down in between, the reply is dropped and the next command is
+ * served. */
+static void lane_replay_reply(const char *dir)
+{
+   runloop_state_t      *runloop_st = runloop_state_get_ptr();
+   input_driver_state_t *input_st   = input_state_get_ptr();
+   settings_t           *settings   = config_get_ptr();
+   command_t cmd;
+   char slot[16], path[600];
+   unsigned had = failures, before, n;
+
+   if (!core_is_up())
+   {
+      CHECK(task_push_load_contentless_core_from_menu(core_path),
+            "the load was not started");
+      pump(200);
+   }
+   CHECK(core_is_up(), "no core to record a replay against");
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   pump(2);
+
+   snprintf(runloop_st->name.replay, sizeof(runloop_st->name.replay),
+         "%s/harness.replay", dir);
+   configuration_set_bool(settings, settings->bools.replay_auto_index, false);
+   configuration_set_int(settings, settings->ints.replay_slot, 3);
+   CHECK(command_event(CMD_EVENT_RECORD_REPLAY, NULL), "recording did not start");
+   pump(30);
+   command_event(CMD_EVENT_HALT_REPLAY, NULL);
+   pump(2);
+   runloop_get_replay_path(path, sizeof(path), 3);
+   CHECK(path_is_valid(path), "no replay was written to %s", path);
+
+   memset(&cmd, 0, sizeof(cmd));
+   cmd.replier    = rr_replier;
+   cmd.reply_dest = rr_reply_dest;
+   cmd.reply_to   = rr_reply_to_cb;
+   snprintf(slot, sizeof(slot), "%d", 3);
+
+   rr_replies = rr_in_command_replies = 0;
+   rr_source  = 1;
+   CHECK(rr_play(&cmd, slot), "PLAY_REPLAY_SLOT did not start playback");
+   CHECK(rr_in_command_replies == 0,
+         "PLAY_REPLAY_SLOT answered before returning: it held the frame "
+         "until the movie task was through");
+   CHECK(movie_playback_start_in_progress(NULL),
+         "the playback start was not left to the task");
+   /* Another sender's datagram arrives meanwhile. */
+   rr_source = 2;
+   before    = (unsigned)video_state_get_ptr()->frame_count;
+   for (n = 0; n < 200 && !rr_replies; n++)
+      pump(1);
+   CHECK(rr_replies == 1, "%u replies, not 1", rr_replies);
+   CHECK((unsigned)video_state_get_ptr()->frame_count > before,
+         "no frame was drawn while the reply was owed");
+   CHECK(rr_reply_to == 1, "the reply went to sender %d, not the one that asked",
+         rr_reply_to);
+   CHECK(strncmp(rr_reply, "PLAY_REPLAY_SLOT ", 17) == 0
+         && strcmp(rr_reply, "PLAY_REPLAY_SLOT 0") != 0,
+         "reply \"%s\" does not carry the replay handle", rr_reply);
+   pump(5);
+   CHECK(rr_replies == 1, "the reply was sent again");
+   command_event(CMD_EVENT_HALT_REPLAY, NULL);
+   pump(2);
+
+   /* The interfaces torn down while the reply is owed. */
+   rr_replies = rr_in_command_replies = 0;
+   rr_source  = 1;
+   CHECK(rr_play(&cmd, slot), "the second PLAY_REPLAY_SLOT did not start");
+   input_driver_deinit_command(input_st);
+   pump(20);
+   CHECK(rr_replies == 0, "a reply went to a torn-down interface");
+   command_event(CMD_EVENT_HALT_REPLAY, NULL);
+   pump(2);
+   CHECK(rr_play(&cmd, slot), "a dropped reply left the next command refused");
+   pump(20);
+   CHECK(rr_replies == 1, "the command after a dropped reply was not answered");
+   command_event(CMD_EVENT_HALT_REPLAY, NULL);
+   pump(2);
+
+   remove(path);
+   runloop_st->name.replay[0] = '\0';
+   if (failures == had)
+      fprintf(stderr, "[pass] replay-reply lane (answered after %u frames)\n", n);
+}
+#endif
+
+/* ------------------------------------------------------------------ */
 /* Lane: close content                                                 */
 /* ------------------------------------------------------------------ */
 
@@ -1290,6 +1439,9 @@ int main(int argc, char *argv[])
    lane_host_setup_deferred();
 #endif
    lane_acceptance(dir);
+#ifdef HAVE_BSV_MOVIE
+   lane_replay_reply(dir);
+#endif
 
    main_exit(NULL);
 

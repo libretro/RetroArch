@@ -347,10 +347,16 @@ typedef struct bsv_state moviectl_task_state_t;
  * same window between a worker finishing and its callback running.
  * The flag transitions strictly on the main thread. */
 static bool movie_playback_start_pending = false;
+static int64_t movie_playback_start_id  = 0;
 
 bool movie_playback_start_in_progress(void *data)
 {
    return movie_playback_start_pending;
+}
+
+int64_t movie_playback_start_identifier(void)
+{
+   return movie_playback_start_id;
 }
 
 static void task_moviectl_playback_handler(retro_task_t *task)
@@ -375,7 +381,10 @@ static void moviectl_start_playback_cb(retro_task_t *task,
   input_driver_state_t *input_st = input_state_get_ptr();
   movie_playback_start_pending   = false;
   input_st->bsv_movie_state      = *state;
-  bsv_movie_start_playback(input_st, state->movie_start_path);
+  if (   bsv_movie_start_playback(input_st, state->movie_start_path)
+      && input_st->bsv_movie_state_next_handle)
+     movie_playback_start_id     =
+        input_st->bsv_movie_state_next_handle->identifier;
   free(state);
 }
 
@@ -512,6 +521,7 @@ bool movie_start_playback(input_driver_state_t *input_st, char *path)
      task->title                   = strdup(msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
 
      movie_playback_start_pending  = true;
+     movie_playback_start_id       = 0;
 
      if (task_queue_push(task))
         return true;

@@ -8280,6 +8280,7 @@ void input_driver_poll(void)
             input_st->command[i]);
       }
    }
+   command_owed_reply_poll();
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD

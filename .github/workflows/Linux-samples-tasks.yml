@@ -1018,7 +1018,7 @@ jobs:
           # The remaining wait sites (NAT traversal, the CLI database
           # scan, the exit path) are tracked separately; widening this
           # guard is what should happen as each of those is converted.
-          hits=$(grep -rn 'task_queue_wait' menu/ network/ \
+          hits=$(grep -rn 'task_queue_wait' menu/ network/ command.c \
                    tasks/task_menu_explore.c \
                    tasks/task_database_info.c \
                    tasks/task_netplay_nat_traversal.c \
