@@ -399,6 +399,74 @@ static struct
    bool valid;
 } s_webos_keep;
 
+/* Destroys a stash no init adopted. Between the teardown that fills it
+ * and the init that empties it the stash owns these objects, so this is
+ * the only thing that can free them then. */
+void gfx_ctx_wl_webos_release_kept_surface(void)
+{
+   if (!s_webos_keep.valid)
+      return;
+
+   if (s_webos_keep.shell_surface)
+      wl_shell_surface_destroy(s_webos_keep.shell_surface);
+   if (s_webos_keep.webos_shell_surface)
+      wl_webos_shell_surface_destroy(s_webos_keep.webos_shell_surface);
+   if (s_webos_keep.surface)
+      wl_surface_destroy(s_webos_keep.surface);
+   if (s_webos_keep.cursor_surface)
+      wl_surface_destroy(s_webos_keep.cursor_surface);
+   if (s_webos_keep.seat)
+      wl_seat_destroy(s_webos_keep.seat);
+   if (s_webos_keep.webos_shell)
+      wl_webos_shell_destroy(s_webos_keep.webos_shell);
+   if (s_webos_keep.data_device_manager)
+      wl_data_device_manager_destroy(s_webos_keep.data_device_manager);
+   if (s_webos_keep.shm)
+      wl_shm_destroy(s_webos_keep.shm);
+   if (s_webos_keep.compositor)
+      wl_compositor_destroy(s_webos_keep.compositor);
+   if (s_webos_keep.registry)
+      wl_registry_destroy(s_webos_keep.registry);
+   if (s_webos_keep.dpy)
+   {
+      wl_display_flush(s_webos_keep.dpy);
+      wl_display_disconnect(s_webos_keep.dpy);
+   }
+
+   /* The nodes tracking the proxies are ours; the session goes on and
+    * may stash again. */
+   while (!wl_list_empty(&s_webos_keep.current_outputs))
+   {
+      surface_output_t *os = wl_container_of(
+            s_webos_keep.current_outputs.next, os, link);
+      wl_list_remove(&os->link);
+      free(os);
+   }
+   while (!wl_list_empty(&s_webos_keep.all_outputs))
+   {
+      display_output_t *od = wl_container_of(
+            s_webos_keep.all_outputs.next, od, link);
+      output_info_t *oi    = od->output;
+      wl_list_remove(&od->link);
+      if (oi)
+      {
+         free(oi->make);
+         free(oi->model);
+         free(oi);
+      }
+      free(od);
+   }
+   while (!wl_list_empty(&s_webos_keep.all_seats))
+   {
+      seat_info_t *si = wl_container_of(
+            s_webos_keep.all_seats.next, si, link);
+      wl_list_remove(&si->link);
+      free(si);
+   }
+
+   memset(&s_webos_keep, 0, sizeof(s_webos_keep));
+}
+
 /* Move the live objects out of wl into the cache (reinit) or destroy
  * them (shutdown). Returns true when the objects were stashed and the
  * caller must skip its own teardown of them. */
@@ -410,6 +478,9 @@ static bool gfx_ctx_wl_webos_keep_or_destroy(gfx_ctx_wayland_data_t *wl,
 
    if (reinit)
    {
+      /* A stash still here was never adopted: nothing else frees it. */
+      gfx_ctx_wl_webos_release_kept_surface();
+
       /* Stash. The seat/output lists are moved wholesale; their nodes
        * stay allocated and are re-adopted by the next context. */
       s_webos_keep.dpy                 = wl->input.dpy;
@@ -442,35 +513,7 @@ static bool gfx_ctx_wl_webos_keep_or_destroy(gfx_ctx_wayland_data_t *wl,
    }
 
    /* Shutdown: destroy any previously stashed objects for real. */
-   if (s_webos_keep.valid)
-   {
-      if (s_webos_keep.shell_surface)
-         wl_shell_surface_destroy(s_webos_keep.shell_surface);
-      if (s_webos_keep.webos_shell_surface)
-         wl_webos_shell_surface_destroy(s_webos_keep.webos_shell_surface);
-      if (s_webos_keep.surface)
-         wl_surface_destroy(s_webos_keep.surface);
-      if (s_webos_keep.cursor_surface)
-         wl_surface_destroy(s_webos_keep.cursor_surface);
-      if (s_webos_keep.seat)
-         wl_seat_destroy(s_webos_keep.seat);
-      if (s_webos_keep.webos_shell)
-         wl_webos_shell_destroy(s_webos_keep.webos_shell);
-      if (s_webos_keep.data_device_manager)
-         wl_data_device_manager_destroy(s_webos_keep.data_device_manager);
-      if (s_webos_keep.shm)
-         wl_shm_destroy(s_webos_keep.shm);
-      if (s_webos_keep.compositor)
-         wl_compositor_destroy(s_webos_keep.compositor);
-      if (s_webos_keep.registry)
-         wl_registry_destroy(s_webos_keep.registry);
-      if (s_webos_keep.dpy)
-      {
-         wl_display_flush(s_webos_keep.dpy);
-         wl_display_disconnect(s_webos_keep.dpy);
-      }
-      memset(&s_webos_keep, 0, sizeof(s_webos_keep));
-   }
+   gfx_ctx_wl_webos_release_kept_surface();
    return false;
 }
 

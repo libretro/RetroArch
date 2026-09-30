@@ -21,7 +21,9 @@
  *  - reinit deferred: a driver reinit asked for while the load is in
  *    flight leaves the drivers as they are - the load rebuilds them;
  *  - fallback: a core that cannot be loaded ends on the dummy core
- *    with the drivers rebuilt and the menu up.
+ *    with the drivers rebuilt and the menu up;
+ *  - not a core: a library that opens but lacks retro_init does the
+ *    same, and the failure is said.
  *
  * Requires a completed non-Qt build:
  *
@@ -1484,6 +1486,83 @@ static void lane_fallback_threaded(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: not a core                                                    */
+/* ------------------------------------------------------------------ */
+
+/* Empties the message queue: true when a message on it held @want. */
+static bool queued_message(const char *want)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   bool found                  = false;
+   const char *m;
+   while ((m = msg_queue_pull(&runloop_st->msg_queue)))
+      if (strstr(m, want))
+         found = true;
+   return found;
+}
+
+/* A library that opens but is not a core - it lacks retro_init - is
+ * found out only once the load has committed and the old session is
+ * gone.  The load falls back to the dummy core: drivers come back, the
+ * menu runs against them, and the failure is said.  Frames go on
+ * being presented throughout. */
+static void lane_not_a_core(void)
+{
+   struct load_frame log[LOAD_FRAMES];
+   char noinit[600];
+   const char *slash = strrchr(core_path, '/');
+   unsigned n, i, presented_frames = 0;
+   unsigned had          = failures;
+   settings_t *settings = config_get_ptr();
+   bool font_enable     = settings->bools.video_font_enable;
+
+   snprintf(noinit, sizeof(noinit), "%.*s/harness_core_noinit.so",
+         slash ? (int)(slash - core_path) : 1, slash ? core_path : ".");
+   CHECK(path_is_valid(noinit), "no %s: build.sh builds it", noinit);
+
+   open_menu();
+   hook_install();
+   queued_message("");   /* nothing left over from earlier lanes */
+   /* Frames show queued messages on the OSD, taking them off the
+    * queue; with it off they stay there to be read here. */
+   settings->bools.video_font_enable = false;
+
+   CHECK(task_push_load_contentless_core_from_menu(noinit),
+         "the load of a library that is not a core was not started");
+   n = run_load(log, LOAD_FRAMES);
+   for (i = 0; i < n; i++)
+      presented_frames += log[i].presented;
+   CHECK(n < LOAD_FRAMES && !runloop_is_content_switching(),
+         "the load did not finish within %u frames", LOAD_FRAMES);
+   CHECK(queued_message(msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT)),
+         "the failure was not said");
+   CHECK(video_state_get_ptr()->data != NULL,
+         "no video driver after the failed load");
+   CHECK(input_state_get_ptr()->current_data != NULL,
+         "no input driver after the failed load");
+   CHECK(runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY,
+         "the failed load did not fall back to the dummy core");
+   CHECK(presented_frames >= 1, "no frame presented during the fallback");
+   settings->bools.video_font_enable = font_enable;
+   runloop_iterate();
+   task_queue_check();
+   CHECK(menu_is_up(), "menu not up after a failed load");
+
+   /* And the real core loads again. */
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the reload after the failed load was not started");
+   n = run_load(log, LOAD_FRAMES);
+   CHECK(n < LOAD_FRAMES && core_is_up()
+         && runloop_state_get_ptr()->current_core_type != CORE_TYPE_DUMMY,
+         "the reload after the failed load did not go through");
+   runloop_iterate();
+
+   if (failures == had)
+      fprintf(stderr, "[pass] not-a-core lane (%u presented)\n",
+            presented_frames);
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: close content                                                 */
 /* ------------------------------------------------------------------ */
 
@@ -1599,6 +1678,7 @@ int main(int argc, char *argv[])
    retroarch_config_init();
    retroarch_ctl(RARCH_CTL_STATE_FREE, NULL);
    frontend_driver_init_first(NULL);
+   runloop_msg_queue_init();   /* as rarch_main() does */
 
    rarch_argv[rarch_argc++] = (char*)"retroarch";
    rarch_argv[rarch_argc++] = (char*)"--config";
@@ -1646,6 +1726,7 @@ int main(int argc, char *argv[])
    lane_reinit_deferred();
    lane_fallback();
    lane_fallback_threaded();
+   lane_not_a_core();
    lane_hw_request();
    lane_queue_survives();
    lane_close_content();

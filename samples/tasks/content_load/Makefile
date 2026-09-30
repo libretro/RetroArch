@@ -30,7 +30,7 @@ check: all
 	 exit $$rc
 
 clean:
-	rm -f $(TARGET) harness_core.so retroarch_nomain.o harness_main.o \
+	rm -f $(TARGET) harness_core.so harness_core_noinit.so retroarch_nomain.o harness_main.o \
 	      retroarch_nomain.d harness_main.d
 
 .PHONY: all check clean

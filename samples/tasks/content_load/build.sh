@@ -71,5 +71,7 @@ sed -e "s#$objdir/retroarch\.o#$out/retroarch_nomain.o $out/harness_main.o#" \
 # takes it.
 core_cc=$(awk '{print $1}' "$cc_line")
 $core_cc -O1 -g -shared -fPIC -Ilibretro-common/include -o $out/harness_core.so $out/harness_core.c
+$core_cc -O1 -g -shared -fPIC -Ilibretro-common/include -DHARNESS_CORE_NO_INIT \
+   -o $out/harness_core_noinit.so $out/harness_core.c
 
 echo "built $out/content_load_test and $out/harness_core.so"

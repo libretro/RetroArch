@@ -40,7 +40,12 @@ void retro_set_audio_sample(retro_audio_sample_t cb) { (void)cb; }
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { (void)cb; }
 void retro_set_input_poll(retro_input_poll_t cb) { (void)cb; }
 void retro_set_input_state(retro_input_state_t cb) { (void)cb; }
+/* HARNESS_CORE_NO_INIT builds a library that opens and exports the
+ * rest of the API but not retro_init: not a core, found out only once
+ * the load has committed. */
+#ifndef HARNESS_CORE_NO_INIT
 void retro_init(void) { inits++; }
+#endif
 void retro_deinit(void) { }
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }
 void retro_get_system_info(struct retro_system_info *info)
