@@ -91,8 +91,21 @@ if [ ! -s "$ld_line" ]; then
 fi
 
 sed -e "s#$objdir/retroarch\.o#$out/retroarch_nomain.o $out/harness_main.o $cocoa_objs#" \
-    -e "s#-o retroarch\(_debug\)\? #-o $out/threaded_video_test #" \
+    -e "s#-o retroarch #-o $out/threaded_video_test #" \
+    -e "s#-o retroarch_debug #-o $out/threaded_video_test #" \
    "$ld_line" | sh
+
+# Every substitution above is checked by its result. The link line
+# used to be rewritten with \?, which BSD sed (macOS) does not take:
+# it left the line alone, the link produced retroarch in the tree
+# root, and this script said "built". Plain patterns now, and a
+# missing object or binary fails here.
+for f in $out/retroarch_nomain.o $out/harness_main.o $cocoa_objs $out/threaded_video_test; do
+   if [ ! -f "$f" ]; then
+      echo "build.sh: $f was not produced - a compile or link line was not rewritten as intended" >&2
+      exit 1
+   fi
+done
 
 # The harness core: a plain shared library, no sanitizer, so that what
 # the sanitizer reports is the frontend. Built with the compiler the
@@ -104,5 +117,6 @@ core_cc=$(awk '{print $1}' "$cc_line")
 # hardware mode (HARNESS_CORE_HW_VULKAN); it calls Vulkan through the
 # frontend's interface and links nothing.
 $core_cc -O1 -g -shared -fPIC -Ilibretro-common/include -Igfx/include -o $out/harness_core.so $out/harness_core.c
+[ -f $out/harness_core.so ] || { echo "build.sh: $out/harness_core.so was not produced" >&2; exit 1; }
 
 echo "built $out/threaded_video_test and $out/harness_core.so"
