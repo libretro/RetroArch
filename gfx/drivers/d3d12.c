@@ -58,6 +58,7 @@
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../font_driver.h"
+#include "../gfx_instrument.h"
 #include "../common/win32_common.h"
 #include "../../performance_counters.h"
 #include "../../menu/menu_driver.h"
@@ -117,7 +118,6 @@ enum d3d12_video_flags
    D3D12_ST_FLAG_WAITABLE_SWAPCHAINS   = (1 << 13),
    D3D12_ST_FLAG_HW_IFACE_ENABLE       = (1 << 14),
    D3D12_ST_FLAG_FRAME_DUPE_LOCK       = (1 << 15),
-   D3D12_ST_FLAG_SW_FRAMEBUFFER_READY  = (1 << 16),
    /* The core's frames are already PQ-encoded Rec.2020 at absolute
     * luminance (RETRO_PIXEL_FORMAT_HDR10_2101010), so the HDR composition
     * must pass them through rather than encode them a second time. */
@@ -1062,8 +1062,15 @@ static void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
    texture->size_data.w = 1.0f / texture->desc.Height;
 }
 
-static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
-      d3d12_texture_t* texture, void *userdata)
+/* Copy @texture's pixels in from @upload_buffer laid out as @layout:
+ * the texture's own upload buffer, or the driver's lent framebuffer.
+ * @src_box, when given, is the part of that footprint to copy - a
+ * window into a loan - and the texture is its size. */
+static void d3d12_upload_texture_from(D3D12GraphicsCommandList cmd,
+      d3d12_texture_t* texture, void *userdata,
+      D3D12Resource upload_buffer,
+      const D3D12_PLACED_SUBRESOURCE_FOOTPRINT *layout,
+      const D3D12_BOX *src_box)
 {
    D3D12_TEXTURE_COPY_LOCATION src, dst;
    d3d12_video_t* d3d12_ = (d3d12_video_t*)userdata;
@@ -1073,9 +1080,9 @@ static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
    if (d3d12_)
       texture->upload_fence = d3d12_->queue.fenceValue + 1;
 
-   src.pResource        = texture->upload_buffer;
+   src.pResource        = upload_buffer;
    src.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-   src.PlacedFootprint  = texture->layout;
+   src.PlacedFootprint  = *layout;
 
    dst.pResource        = texture->handle;
    dst.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
@@ -1087,7 +1094,7 @@ static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
          D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
          D3D12_RESOURCE_STATE_COPY_DEST);
 
-   cmd->lpVtbl->CopyTextureRegion(cmd, &dst, 0, 0, 0, &src, NULL);
+   cmd->lpVtbl->CopyTextureRegion(cmd, &dst, 0, 0, 0, &src, src_box);
 
    D3D12_RESOURCE_TRANSITION(
          cmd,
@@ -1155,6 +1162,13 @@ static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
    }
 
    texture->dirty = false;
+}
+
+static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
+      d3d12_texture_t* texture, void *userdata)
+{
+   d3d12_upload_texture_from(cmd, texture, userdata,
+         texture->upload_buffer, &texture->layout, NULL);
 }
 
 static void d3d12_update_texture(
@@ -5834,6 +5848,48 @@ static INLINE void d3d12_wait_for_vblank(d3d12_video_t* d3d12)
    }
 }
 
+/* Where a pushed frame lies in the lent framebuffer.
+ *
+ * True, with the box to copy, when @frame at @pitch with the size
+ * @width x @height is inside d3d12->sw_fb's mapping, on its row pitch
+ * and whole: the whole loan pushed back, or a window into it. The
+ * same test the Vulkan driver and the threaded wrapper make. */
+static bool d3d12_sw_fb_window(d3d12_video_t *d3d12,
+      const void *frame, unsigned width, unsigned height,
+      unsigned pitch, D3D12_BOX *box)
+{
+   uintptr_t base, p;
+   size_t off, row, bytes;
+   unsigned bpp, x, y;
+   unsigned row_pitch;
+
+   if (!d3d12->sw_fb.buffer || !d3d12->sw_fb.mapped)
+      return false;
+   base      = (uintptr_t)d3d12->sw_fb.mapped + d3d12->sw_fb.layout.Offset;
+   p         = (uintptr_t)frame;
+   bytes     = (size_t)(d3d12->sw_fb.total_bytes - d3d12->sw_fb.layout.Offset);
+   row_pitch = d3d12->sw_fb.layout.Footprint.RowPitch;
+   if (p < base || p - base >= bytes || pitch != row_pitch)
+      return false;
+   bpp       = (d3d12->sw_fb.format == DXGI_FORMAT_B8G8R8X8_UNORM) ? 4 : 2;
+   off       = (size_t)(p - base);
+   row       = off % row_pitch;
+   if (row % bpp)
+      return false;
+   y         = (unsigned)(off / row_pitch);
+   x         = (unsigned)(row / bpp);
+   if (     x + width  > d3d12->sw_fb.layout.Footprint.Width
+         || y + height > d3d12->sw_fb.layout.Footprint.Height)
+      return false;
+   box->left   = x;
+   box->top    = y;
+   box->front  = 0;
+   box->right  = x + width;
+   box->bottom = y + height;
+   box->back   = 1;
+   return true;
+}
+
 static bool d3d12_gfx_frame(
       void*               data,
       const void*         frame,
@@ -6218,10 +6274,9 @@ static bool d3d12_gfx_frame(
             /* History rotation moves texture[0] to a history slot,
              * but the SW framebuffer the core wrote into lives in
              * the separate d3d12->sw_fb buffer, not in any of the
-             * rotated d3d12_texture_t slots.  Rotation therefore
-             * leaves SW_FRAMEBUFFER_READY validly set, and the GPU
-             * upload below sources from sw_fb.buffer regardless of
-             * which physical texture is in the front slot. */
+             * rotated d3d12_texture_t slots, so the GPU upload below
+             * sources from sw_fb.buffer regardless of which physical
+             * texture is in the front slot. */
          }
       }
 
@@ -6232,6 +6287,7 @@ static bool d3d12_gfx_frame(
          d3d12->frame.texture[0].desc.Width  = width;
          d3d12->frame.texture[0].desc.Height = height;
          d3d12->frame.texture[0].srv_heap    = &d3d12->desc.srv_heap;
+         GFX_INSTR_INC(GFX_INSTR_FRAME_TEX_CREATE);
          d3d12_release_texture(&d3d12->frame.texture[0]);
          d3d12_init_texture(d3d12->device, &d3d12->frame.texture[0]);
 
@@ -6326,28 +6382,25 @@ static bool d3d12_gfx_frame(
       }
       else
       {
-         if (d3d12->flags & D3D12_ST_FLAG_SW_FRAMEBUFFER_READY)
+         D3D12_BOX window;
+         /* A frame the core rendered into the lent framebuffer
+          * (d3d12->sw_fb) is read out of it by the GPU. Decided by
+          * where the pushed pointer lies, not by whether the loan was
+          * asked for: a core may ask and then push its own buffer, or
+          * a dupe, and a core that crops overscan by offset pushes a
+          * pointer partway into the loan with the window's size
+          * (beetle-psx does) - the copy takes that window. */
+         if (d3d12_sw_fb_window(d3d12, frame, width, height, pitch,
+                  &window))
          {
-            /* Core wrote directly into the cached SW FB buffer
-             * (d3d12->sw_fb).  GPU-copy from there into the front
-             * frame texture by temporarily pointing texture[0]'s
-             * upload_buffer / layout at sw_fb's, calling the
-             * standard upload helper, then restoring -- this reuses
-             * the existing CopyTextureRegion + mipmap-generate
-             * plumbing without a signature change. */
-            D3D12Resource                       saved_buf
-               = d3d12->frame.texture[0].upload_buffer;
-            D3D12_PLACED_SUBRESOURCE_FOOTPRINT  saved_layout
-               = d3d12->frame.texture[0].layout;
-            d3d12->frame.texture[0].upload_buffer = d3d12->sw_fb.buffer;
-            d3d12->frame.texture[0].layout        = d3d12->sw_fb.layout;
-            d3d12_upload_texture(cmd, &d3d12->frame.texture[0], d3d12);
-            d3d12->frame.texture[0].upload_buffer = saved_buf;
-            d3d12->frame.texture[0].layout        = saved_layout;
-            d3d12->flags &= ~D3D12_ST_FLAG_SW_FRAMEBUFFER_READY;
+            GFX_INSTR_INC(GFX_INSTR_FRAME_LENT_WINDOW);
+            d3d12_upload_texture_from(cmd, &d3d12->frame.texture[0],
+                  d3d12, d3d12->sw_fb.buffer, &d3d12->sw_fb.layout,
+                  &window);
          }
          else
          {
+            GFX_INSTR_INC(GFX_INSTR_FRAME_COPY_HOST);
             if (d3d12->frame.texture[0].upload_buffer)
                d3d12_update_texture(width, height, pitch, d3d12->format,
                      frame, &d3d12->frame.texture[0]);
@@ -8589,10 +8642,10 @@ static bool d3d12_get_current_software_framebuffer(
     * to its own staging buffer. */
    fb->memory_flags = RETRO_MEMORY_TYPE_CACHED;
 
-   /* Signal d3d12_gfx_frame that the core wrote directly into
-    * the cached SW FB buffer; the GPU copy at upload time should
-    * source from there instead of texture[0].upload_buffer. */
-   d3d12->flags    |= D3D12_ST_FLAG_SW_FRAMEBUFFER_READY;
+   /* d3d12_gfx_frame() recognises a frame pushed from this buffer
+    * by its pointer (d3d12_sw_fb_window) and has the GPU read it
+    * from here; nothing is flagged, so a core that asks and then
+    * pushes its own buffer, or a dupe, is served as it pushed. */
 
    return true;
 }

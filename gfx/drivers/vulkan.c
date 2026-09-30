@@ -2246,14 +2246,20 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
 /* Dynamic texture type should be set to : VULKAN_TEXTURE_DYNAMIC
  * Staging texture type should be set to : VULKAN_TEXTURE_STAGING
  */
+/* Fill @dynamic from the staging buffer, starting @src_x, @src_y texels
+ * into it: (0, 0) for a frame that fills the buffer, the window's
+ * origin for a frame pushed as a window into a lent buffer. The
+ * staging buffer's row pitch is @staging->stride either way. */
 static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
-      struct vk_texture *dynamic, struct vk_texture *staging)
+      struct vk_texture *dynamic, struct vk_texture *staging,
+      unsigned src_x, unsigned src_y)
 {
    bool compute_upload = dynamic->format != staging->format;
+   unsigned bpp        = vulkan_format_to_bpp(staging->format);
 
    if (compute_upload)
    {
-      uint32_t ubo[3];
+      uint32_t ubo[4];
       VkWriteDescriptorSet write;
       VkDescriptorBufferInfo buffer_info;
       VkDescriptorImageInfo image_info;
@@ -2263,6 +2269,10 @@ static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
       ubo[0] = VIDEO_SCALE_W(dynamic->dims);
       ubo[1] = VIDEO_SCALE_H(dynamic->dims);
       ubo[2] = (uint32_t)(staging->stride / 4); /* in terms of u32 words */
+      /* The shader converts pixel pairs, one word each, so the window
+       * has to start on a pair: vulkan_frame_window() only reports a
+       * window whose byte origin is word-aligned. */
+      ubo[3] = (uint32_t)((src_y * staging->stride + (size_t)src_x * bpp) / 4);
 
       VULKAN_IMAGE_LAYOUT_TRANSITION(
             cmd,
@@ -2352,8 +2362,12 @@ static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
             VK_ACCESS_TRANSFER_WRITE_BIT,
             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
             VK_PIPELINE_STAGE_TRANSFER_BIT);
-      region.bufferOffset                    = 0;
-      region.bufferRowLength                 = 0;
+      region.bufferOffset                    =
+         src_y * staging->stride + (size_t)src_x * bpp;
+      /* The buffer's row pitch in texels. 0 means tightly packed at
+       * the image width, which a window into a wider buffer is not. */
+      region.bufferRowLength                 =
+         (uint32_t)(staging->stride / bpp);
       region.bufferImageHeight               = 0;
       region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
       region.imageSubresource.mipLevel       = 0;
@@ -2383,6 +2397,103 @@ static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
    }
    dynamic->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+}
+
+/* Fill @dynamic from a window into the streamed (linear, host-mapped)
+ * image @linear, starting @src_x, @src_y texels in. Both are images of
+ * the same format, so this is a plain transfer; the host's writes to
+ * the loan were made before this submission, and queue submission
+ * makes them visible to it. */
+static void vulkan_copy_linear_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
+      struct vk_texture *dynamic, struct vk_texture *linear,
+      unsigned src_x, unsigned src_y)
+{
+   VkImageCopy region;
+
+   /* A streamed image is sampled in GENERAL, and is read as a
+    * transfer source in GENERAL as well. */
+   vulkan_transition_texture(vk, cmd, linear);
+
+   VULKAN_IMAGE_LAYOUT_TRANSITION(
+         cmd,
+         dynamic->image,
+         VK_IMAGE_LAYOUT_UNDEFINED,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         0,
+         VK_ACCESS_TRANSFER_WRITE_BIT,
+         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+   region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+   region.srcSubresource.mipLevel       = 0;
+   region.srcSubresource.baseArrayLayer = 0;
+   region.srcSubresource.layerCount     = 1;
+   region.srcOffset.x                   = (int32_t)src_x;
+   region.srcOffset.y                   = (int32_t)src_y;
+   region.srcOffset.z                   = 0;
+   region.dstSubresource                = region.srcSubresource;
+   region.dstOffset.x                   = 0;
+   region.dstOffset.y                   = 0;
+   region.dstOffset.z                   = 0;
+   region.extent.width                  = VIDEO_SCALE_W(dynamic->dims);
+   region.extent.height                 = VIDEO_SCALE_H(dynamic->dims);
+   region.extent.depth                  = 1;
+   vkCmdCopyImage(cmd,
+         linear->image,  VK_IMAGE_LAYOUT_GENERAL,
+         dynamic->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         1, &region);
+
+   VULKAN_IMAGE_LAYOUT_TRANSITION(
+         cmd,
+         dynamic->image,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         VK_ACCESS_TRANSFER_WRITE_BIT,
+         VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+   dynamic->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+}
+
+/* Where a pushed frame lies in a lent texture.
+ *
+ * A core that renders into the buffer GET_CURRENT_SOFTWARE_FRAMEBUFFER
+ * lent it may push back a pointer partway into that buffer, at the
+ * buffer's pitch, with the size of the window it wants shown: that is
+ * how an overscan crop is done by offset (beetle-psx renders its
+ * whole 700x480 scanout surface into the loan and pushes the visible
+ * part). The threaded wrapper accepts that as a lend since
+ * 9ed0db58c3; this is the same test for the driver's own loan.
+ *
+ * True, with the window's texel origin, when @frame at @pitch with
+ * the size @dims is such a window into @tex: inside its mapping, on
+ * the mapping's pitch, whole, and starting on a word so the RGB565
+ * compute upload can address it. Anything else is a frame of the
+ * core's own, or of another texture, and is uploaded by copying. */
+static bool vulkan_frame_window(const struct vk_texture *tex,
+      const void *frame, unsigned dims, size_t pitch,
+      unsigned *x, unsigned *y)
+{
+   uintptr_t base   = (uintptr_t)tex->mapped;
+   uintptr_t p      = (uintptr_t)frame;
+   size_t off, row;
+   unsigned bpp;
+
+   if (!tex->mapped || !tex->stride || p < base || p - base >= tex->size)
+      return false;
+   if (pitch != tex->stride)
+      return false;
+   bpp = vulkan_format_to_bpp(tex->format);
+   off = (size_t)(p - base);
+   row = off % tex->stride;
+   if ((row % bpp) || (off & 3))
+      return false;
+   *y  = (unsigned)(off / tex->stride);
+   *x  = (unsigned)(row / bpp);
+   if (     *x + VIDEO_SCALE_W(dims) > VIDEO_SCALE_W(tex->dims)
+         || *y + VIDEO_SCALE_H(dims) > VIDEO_SCALE_H(tex->dims))
+      return false;
+   return true;
 }
 
 /**
@@ -8135,12 +8246,36 @@ static bool vulkan_frame(void *data, const void *frame,
       unsigned y;
       unsigned frame_width  = VIDEO_SCALE_W(dims);
       unsigned frame_height = VIDEO_SCALE_H(dims);
-      uint8_t *dst        = NULL;
-      const uint8_t *src  = (const uint8_t*)frame;
-      unsigned bpp        = vk->video.rgb32 ? 4 : 2;
+      unsigned win_x        = 0;
+      unsigned win_y        = 0;
+      uint8_t *dst          = NULL;
+      const uint8_t *src    = (const uint8_t*)frame;
+      unsigned bpp          = vk->video.rgb32 ? 4 : 2;
+      bool retire_cached    = false;
+      /* A window into this texture's own loan: the pixels are already
+       * where the GPU reads them, and the texture keeps the loan's
+       * size for the next lend. The window is cut out on the GPU into
+       * texture_optimal, which is what gets sampled. Nothing is
+       * recreated per frame, and the mapping the cached frame points
+       * into stays mapped. */
+      bool window           = vulkan_frame_window(&chain->texture,
+            frame, dims, pitch, &win_x, &win_y);
 
-      if (chain->texture.dims != dims)
+      if (!window && chain->texture.dims != dims)
       {
+         /* A frame inside this texture's mapping that is not a window
+          * into it (another pitch, or it would not fit) is copied out
+          * below before the mapping goes, but the mapping goes only
+          * frames later, off the deferred list, and the cached frame
+          * still names it until then: a paused redraw would read it
+          * after its release. Retire the cached frame once the copy
+          * is done. */
+         {
+            uintptr_t base = (uintptr_t)chain->texture.mapped;
+            uintptr_t p    = (uintptr_t)frame;
+            retire_cached  = base && p >= base && p - base < chain->texture.size;
+         }
+         GFX_INSTR_INC(GFX_INSTR_FRAME_TEX_CREATE);
          chain->texture = vulkan_create_texture(vk, &chain->texture,
                frame_width, frame_height, chain->texture.format, NULL, NULL,
                chain->texture_optimal.memory
@@ -8152,30 +8287,74 @@ static bool vulkan_frame(void *data, const void *frame,
          }
 
          if (chain->texture.type == VULKAN_TEXTURE_STAGING)
+         {
+            GFX_INSTR_INC(GFX_INSTR_FRAME_TEX_CREATE);
             chain->texture_optimal = vulkan_create_texture(
                   vk,
                   &chain->texture_optimal,
                   frame_width, frame_height,
                   chain->texture.format, /* Ensure we use the original format and not any remapped format. */
                   NULL, NULL, VULKAN_TEXTURE_DYNAMIC);
+         }
       }
 
-      if (frame != chain->texture.mapped)
+      if (window)
       {
-         dst = (uint8_t*)chain->texture.mapped;
-         if (chain->texture.stride == pitch)
-            /* Stride matches pitch — single contiguous copy regardless
-             * of whether pitch == frame_width * bpp (there may be
-             * trailing padding per row, but the layout is identical). */
-            memcpy(dst, src, (size_t)chain->texture.stride * frame_height);
-         else
+         GFX_INSTR_INC(GFX_INSTR_FRAME_LENT_WINDOW);
+         if (     chain->texture_optimal.memory == VK_NULL_HANDLE
+               || chain->texture_optimal.dims   != dims)
          {
-            /* Stride and pitch differ — copy each row.
-             * Use the tight pixel width to avoid copying garbage. */
-            unsigned row_bytes = frame_width * bpp;
-            for (y = 0; y < frame_height; y++,
-                  dst += chain->texture.stride, src += pitch)
-               memcpy(dst, src, row_bytes);
+            GFX_INSTR_INC(GFX_INSTR_FRAME_TEX_CREATE);
+            chain->texture_optimal = vulkan_create_texture(
+                  vk,
+                  &chain->texture_optimal,
+                  frame_width, frame_height,
+                  chain->texture.format,
+                  NULL, NULL, VULKAN_TEXTURE_DYNAMIC);
+         }
+      }
+      else
+      {
+         if (frame != chain->texture.mapped)
+         {
+            GFX_INSTR_INC(GFX_INSTR_FRAME_COPY_HOST);
+            dst = (uint8_t*)chain->texture.mapped;
+            if (chain->texture.stride == pitch)
+               /* Stride matches pitch — single contiguous copy regardless
+                * of whether pitch == frame_width * bpp (there may be
+                * trailing padding per row, but the layout is identical). */
+               memcpy(dst, src, (size_t)chain->texture.stride * frame_height);
+            else
+            {
+               /* Stride and pitch differ — copy each row.
+                * Use the tight pixel width to avoid copying garbage. */
+               unsigned row_bytes = frame_width * bpp;
+               for (y = 0; y < frame_height; y++,
+                     dst += chain->texture.stride, src += pitch)
+                  memcpy(dst, src, row_bytes);
+            }
+         }
+
+         /* texture_optimal is sampled whenever it exists, so it has
+          * to be this frame's size. A window earlier left it at the
+          * window's: a staging texture is copied into it and gets one
+          * at the frame's size, a streamed texture is sampled itself
+          * and has no use for it. */
+         if (     chain->texture_optimal.memory != VK_NULL_HANDLE
+               && chain->texture_optimal.dims   != dims)
+         {
+            if (chain->texture.type == VULKAN_TEXTURE_STAGING)
+            {
+               GFX_INSTR_INC(GFX_INSTR_FRAME_TEX_CREATE);
+               chain->texture_optimal = vulkan_create_texture(
+                     vk,
+                     &chain->texture_optimal,
+                     frame_width, frame_height,
+                     chain->texture.format,
+                     NULL, NULL, VULKAN_TEXTURE_DYNAMIC);
+            }
+            else
+               vulkan_texture_defer_copy(vk, &chain->texture_optimal);
          }
       }
 
@@ -8194,9 +8373,17 @@ static bool vulkan_frame(void *data, const void *frame,
       if (chain->texture_optimal.memory != VK_NULL_HANDLE)
       {
          struct vk_texture *dynamic = &chain->texture_optimal;
-         struct vk_texture *staging = &chain->texture;
-         vulkan_copy_staging_to_dynamic(vk, vk->cmd, dynamic, staging);
+         struct vk_texture *source  = &chain->texture;
+         if (source->type == VULKAN_TEXTURE_STAGING)
+            vulkan_copy_staging_to_dynamic(vk, vk->cmd, dynamic, source,
+                  win_x, win_y);
+         else
+            vulkan_copy_linear_to_dynamic(vk, vk->cmd, dynamic, source,
+                  win_x, win_y);
       }
+
+      if (retire_cached)
+         video_driver_cached_frame_retire();
 
       vk->last_valid_index = frame_index;
    }
@@ -8382,7 +8569,7 @@ static bool vulkan_frame(void *data, const void *frame,
                      vkFlushMappedMemoryRanges(vk->context->device, 1, &range);
                   }
                   vulkan_copy_staging_to_dynamic(vk, vk->cmd,
-                        dynamic, staging);
+                        dynamic, staging, 0, 0);
                   vk->menu.dirty[vk->menu.last_index] = false;
                }
            }

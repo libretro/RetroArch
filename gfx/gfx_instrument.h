@@ -91,6 +91,11 @@ enum gfx_instrument_counter
    GFX_INSTR_OVERLAY_DRAW,      /* overlay pages drawn (Vulkan)     */
    GFX_INSTR_OVERLAY_DRAW_ALLOC,/* ..buffer ranges they took       */
 
+   /* The software frame's way to the screen (Vulkan) */
+   GFX_INSTR_FRAME_TEX_CREATE,  /* frame textures (re)created       */
+   GFX_INSTR_FRAME_COPY_HOST,   /* frames copied by the CPU          */
+   GFX_INSTR_FRAME_LENT_WINDOW, /* frames read straight out of a loan*/
+
    GFX_INSTR_COUNT
 };
 

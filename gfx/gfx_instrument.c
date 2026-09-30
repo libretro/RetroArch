@@ -50,7 +50,10 @@ static const char *gfx_instrument_names[GFX_INSTR_COUNT] = {
    "overlay_page",
    "overlay_page_load",
    "overlay_draw",
-   "overlay_draw_alloc"
+   "overlay_draw_alloc",
+   "frame_tex_create",
+   "frame_copy_host",
+   "frame_lent_window"
 };
 
 int gfx_instrument_get(enum gfx_instrument_counter c)

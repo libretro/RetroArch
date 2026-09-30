@@ -38,6 +38,7 @@
 #include "../../../frontend/frontend_driver.h"
 #include "../../../frontend/frontend.h"
 #include "../../../gfx/video_driver.h"
+#include "../../../gfx/gfx_instrument.h"
 #include "../../../gfx/video_thread_wrapper.h"
 #include "../../../gfx/font_driver.h"
 #include "../../../menu/menu_driver.h"
@@ -2935,6 +2936,96 @@ static void lane_zero_copy(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: a window into the driver's own loan, then a paused redraw      */
+/*   With threaded video off the driver lends its own texture through   */
+/*   GET_CURRENT_SOFTWARE_FRAMEBUFFER, and a core that crops overscan   */
+/*   by offset pushes a pointer partway into that loan (beetle-psx      */
+/*   does). The Vulkan driver used to see only a frame of another size  */
+/*   than its texture: it recreated the texture every frame, parked the */
+/*   loan on its deferred list and copied out of it - and the cached    */
+/*   frame kept naming the parked mapping. Open the menu, so the core   */
+/*   stops and every iteration redraws the cached frame, and after the  */
+/*   deferral window the redraw read freed memory (RetroArch #19652).   */
+/*   The run must survive the paused redraws, and with the tree built   */
+/*   GFX_INSTRUMENT=1 the window frames must be read out of the loan    */
+/*   itself: no host copy, no texture created per frame.               */
+/* ------------------------------------------------------------------ */
+
+/* The Vulkan swapchain image cap, without the driver's header. */
+#define LENT_LANE_MAX_IMAGES 16
+
+static void lane_lent_window_paused(void)
+{
+   unsigned had = failures;
+   dylib_t lib = runloop_state_get_ptr()->lib_handle;
+   void (*use_fb)(int) = lib ? (void (*)(int))dylib_proc(lib, "harness_core_use_framebuffer") : NULL;
+   unsigned (*granted)(void) = lib ? (unsigned (*)(void))dylib_proc(lib, "harness_core_fb_granted") : NULL;
+   unsigned g0, g1;
+   uint64_t f0, f1;
+
+   CHECK(use_fb && granted, "harness core lacks the framebuffer exports");
+   if (!use_fb || !granted)
+      return;
+
+   set_threaded_via_setting(false);
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(5);
+   expect_wrapper(false, "lent-window lane");
+
+   /* The loan comes from the driver now, and the core pushes its
+    * window into it. Let the swapchain go round a few times. */
+   use_fb(2);
+   run_frames(3);
+#ifdef HAVE_GFX_INSTRUMENT
+   gfx_instrument_reset();
+#endif
+   g0 = granted();
+   f0 = core_frames();
+   run_frames(60);
+   g1 = granted();
+   f1 = core_frames();
+   CHECK(g1 - g0 >= 30,
+         "lent-window lane: driver granted only %u of 60 asks with threaded video off",
+         g1 - g0);
+#ifdef HAVE_GFX_INSTRUMENT
+   {
+      int creates = gfx_instrument_get(GFX_INSTR_FRAME_TEX_CREATE);
+      int copies  = gfx_instrument_get(GFX_INSTR_FRAME_COPY_HOST);
+      int windows = gfx_instrument_get(GFX_INSTR_FRAME_LENT_WINDOW);
+      /* The core asks every frame and pushes a window on two of
+       * three (the third is a dupe); the oversize frame it pushes
+       * every 61st is its own buffer and is copied, as it should be. */
+      CHECK(windows >= (int)((g1 - g0) * 2 / 3) - 4,
+            "lent-window lane: %u grants but only %d frames read out of the loan",
+            g1 - g0, windows);
+      CHECK(copies <= 2,
+            "lent-window lane: %d frames copied by the host out of a loan", copies);
+      /* One loan-sized texture and one window-sized target per
+       * swapchain image, once; not one per frame. */
+      CHECK(creates <= 2 * LENT_LANE_MAX_IMAGES,
+            "lent-window lane: %d frame textures created over %llu frames",
+            creates, (unsigned long long)(f1 - f0));
+      fprintf(stderr, "[baseline] lent-window lane: %u grants, %d windows, %d host copies, %d textures created over %llu frames\n",
+            g1 - g0, windows, copies, creates, (unsigned long long)(f1 - f0));
+   }
+#else
+   (void)f0; (void)f1;
+#endif
+
+   /* Pause: the menu over a paused core redraws the cached frame,
+    * which is the last window pushed, every iteration. Well past the
+    * deferral window of any texture the frames above retired. */
+   command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   CHECK(menu_is_up(), "lent-window lane: menu did not open");
+   run_frames(4 * LENT_LANE_MAX_IMAGES + 20);
+   use_fb(0);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] lent-window lane, paused redraw\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: the pacing flag a driver sees follows the presenter            */
 /*   video_frame_info_t::threaded_display_pacing tells a driver its     */
 /*   pushes are being held to the display's vblank; Metal takes its     */
@@ -3331,7 +3422,6 @@ static void lane_async_texture_load(void)
 /* ------------------------------------------------------------------ */
 
 #include "../../../gfx/gfx_surface.h"
-#include "../../../gfx/gfx_instrument.h"
 #include "../../../input/input_overlay.h"
 
 static unsigned surf_releases;
@@ -4784,6 +4874,8 @@ int main(int argc, char *argv[])
    }
    lane_zero_copy();
    lane_zero_copy_ring_full();
+   if (real_driver())
+      lane_lent_window_paused();
    lane_pacing_flag_follows_wrapper();
    lane_surface_update();
    if (real_driver())
