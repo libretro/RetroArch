@@ -676,12 +676,17 @@ static int nfs4_setclientid(struct rnfs_ctx *c)
 }
 
 /* The export root: PUTROOTFH then LOOKUP down the pseudo path. */
-static int nfs4_mount(struct rnfs_ctx *c)
+/* PUTROOTFH, a LOOKUP per component of @path, GETFH: the handle of
+ * @path in the server's pseudo-filesystem into c->root.
+ *
+ * Returns: 0; -1 when the path is not there; -2 when the call itself
+ * failed, which no other path would change. */
+static int nfs4_mount_path(struct rnfs_ctx *c, const char *path)
 {
-   size_t   cap = NFS3_FHSIZE + 64 + strlen(c->export_path) * 2 + 32;
+   size_t   cap = NFS3_FHSIZE + 64 + strlen(path) * 2 + 32;
    uint8_t *ops = (uint8_t*)malloc(cap);
    struct xdr x, r;
-   const char *p = c->export_path;
+   const char *p = path;
    unsigned n = 1, i;
    int ret = -1;
 
@@ -706,22 +711,67 @@ static int nfs4_mount(struct rnfs_ctx *c)
    }
    xdr_u32(&x, OP_GETFH); n++;
    if (x.fail || nfs4_compound(c, ops, (size_t)(x.p - ops), n, &r) != 0)
-      goto done;
-   for (i = 0; i < n - 1; i++)
-      if (nfs4_res(&r) != NFS3_OK)
-      {
-         rnfs_err(c, "export not found");
-         goto done;
-      }
-   if (nfs4_res(&r) != NFS3_OK || xdr_get_fh(&r, &c->root) != 0)
    {
-      rnfs_err(c, "export not found");
+      ret = -2;
       goto done;
    }
+   for (i = 0; i < n - 1; i++)
+      if (nfs4_res(&r) != NFS3_OK)
+         goto done;
+   if (nfs4_res(&r) != NFS3_OK || xdr_get_fh(&r, &c->root) != 0)
+      goto done;
    ret = 0;
 done:
    free(ops);
    return ret;
+}
+
+/* The export as a v4 path. Servers may root the v4 namespace below the
+ * v3 export paths (Linux's fsid=0, a Ganesha Pseudo of /): /media
+ * exported as the root is "/" to v4, and /media/user is "/user". When
+ * the export as given is not there and its first component is not in
+ * the namespace either, that component is taken to lie above the v4
+ * root and is dropped, down to the root itself, so the path a user
+ * knows from v3 or another client finds its directory. A first
+ * component the namespace does have means the path is simply wrong:
+ * that is refused. */
+static int nfs4_mount(struct rnfs_ctx *c)
+{
+   const char *p = c->export_path;
+
+   for (;;)
+   {
+      char        first[256];
+      const char *e;
+      size_t      len;
+      int         ret = nfs4_mount_path(c, p);
+      if (ret == 0)
+         return 0;
+      if (ret == -2)
+         return -1;                    /* the call failed, not the path */
+      while (*p == '/')
+         p++;
+      if (!*p)
+         break;                        /* the root itself was not there */
+      e   = strchr(p, '/');
+      len = e ? (size_t)(e - p) : strlen(p);
+      if (!e || len >= sizeof(first))
+      {
+         /* one component left and not found: the namespace root is
+          * all that remains to try */
+         p = "";
+         continue;
+      }
+      memcpy(first, p, len);
+      first[len] = '\0';
+      if ((ret = nfs4_mount_path(c, first)) == 0)
+         break;                        /* it is there: the rest is wrong */
+      if (ret == -2)
+         return -1;
+      p = e;
+   }
+   rnfs_err(c, "export not found");
+   return -1;
 }
 
 /* Walk @path from the root with LOOKUPs in one COMPOUND, ending with

@@ -36877,7 +36877,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NFS_CLIENT_EXPORT,
-   "Path the server exports, e.g. /export/roms. Leave empty to give the export in the address as nfs://server/export/path."
+   "Path the server exports, e.g. /export/roms. The directory's path on the server works for NFS version 4 too, where the server may present it under a shorter name. Leave empty to give the export in the address as nfs://server/export/path."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SUBDIR,

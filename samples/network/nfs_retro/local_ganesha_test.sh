@@ -52,9 +52,19 @@ if make -s vfs_threads_test >/dev/null 2>&1 && $RUN ./vfs_threads_test$EXE 127.0
 else
    echo "FAIL: $(cat $D/res)"; exit 1
 fi
-if $RUN ./nfs_test$EXE 127.0.0.1 /nonexistent $PORT 0 4 > $D/res 2>&1; then
-   echo "FAIL: unknown export was accepted"; exit 1
+# the export as a v3 client knows it - the directory's own path on the
+# server - above the v4 namespace root: its leading components are
+# dropped until the namespace has it (Linux fsid=0 roots it the same)
+rm -rf $D/export/*
+if $RUN ./nfs_test$EXE 127.0.0.1 $D/export $PORT 0 4 > $D/res 2>&1; then
+   echo "ok:   NFSv4 export given by its server path, above the namespace root"
 else
-   echo "ok:   unknown export is refused"
+   echo "FAIL: $(cat $D/res)"; exit 1
+fi
+# a path under an export the namespace does have is not guessed at
+if $RUN ./nfs_test$EXE 127.0.0.1 /export/nonexistent $PORT 0 4 > $D/res 2>&1; then
+   echo "FAIL: a wrong path under an existing export was accepted"; exit 1
+else
+   echo "ok:   wrong path under an export is refused"
 fi
 echo "[pass] nfs_retro local ganesha matrix"

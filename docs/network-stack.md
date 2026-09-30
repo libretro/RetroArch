@@ -79,7 +79,7 @@ consoles, send user and group 1000.
 | Key | Default | Meaning |
 | --- | --- | --- |
 | `nfs_server` | | Server IP address or host name. |
-| `nfs_export` | | Exported path, for example `/export/roms`. Empty to give the export in the address instead. |
+| `nfs_export` | | Exported path, for example `/export/roms`. For NFSv4 the same path works: when the server roots its v4 namespace lower down (Linux `fsid=0`), the leading part is dropped until the directory is found. Empty to give the export in the address instead. |
 | `nfs_subdir` | | Directory under the export. Optional. |
 | `nfs_version` | `3` | 3 or 4. |
 | `nfs_port` | `0` | NFS service port; 0 asks the portmapper. |
