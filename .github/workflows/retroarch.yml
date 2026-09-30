@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Dependencies
-        timeout-minutes: 5
+        timeout-minutes: 15
         run: |
           # libvulkan-dev brings the Vulkan driver, the slang shader stack
           # (shader_vulkan.c, slang_process.c, glslang_util.c, slang_cache.c)
@@ -43,9 +43,16 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            $pkgs
+          for i in 1 2 3; do
+            sudo apt-get install -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
+            sleep 10
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
       - name: Checkout
         uses: actions/checkout@v5
       - name: Configure

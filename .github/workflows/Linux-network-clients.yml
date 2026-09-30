@@ -30,13 +30,20 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 10
+        timeout-minutes: 20
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y --no-install-recommends build-essential clang \
-            gcc-mingw-w64-x86-64 openssl samba libtirpc-dev flex bison autoconf automake wine wine64 \
-            nfs-ganesha nfs-ganesha-vfs krb5-kdc krb5-admin-server krb5-user winbind \
-            samba-dsdb-modules samba-ad-provision samba-vfs-modules acl smbclient
+          for i in 1 2 3; do
+            sudo apt-get install -y --no-install-recommends build-essential clang \
+              gcc-mingw-w64-x86-64 openssl samba libtirpc-dev flex bison autoconf automake wine wine64 \
+              nfs-ganesha nfs-ganesha-vfs krb5-kdc krb5-admin-server krb5-user winbind \
+              samba-dsdb-modules samba-ad-provision samba-vfs-modules acl smbclient && break
+            [ $i = 3 ] && exit 1
+            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
+            sleep 10
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
 
       - name: Checkout
         uses: actions/checkout@v5

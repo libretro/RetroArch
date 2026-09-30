@@ -41,7 +41,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 15
         run: |
           pkgs="build-essential pkg-config libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev"
           if dpkg -s $pkgs >/dev/null 2>&1; then
@@ -54,9 +54,16 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            $pkgs
+          for i in 1 2 3; do
+            sudo apt-get install -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
+            sleep 10
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
 
       - name: Checkout
         uses: actions/checkout@v5

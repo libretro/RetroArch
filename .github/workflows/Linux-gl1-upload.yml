@@ -40,7 +40,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 15
         run: |
           for i in 1 2 3; do
             sudo timeout 90 apt-get update -y \
@@ -48,13 +48,20 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            build-essential zlib1g-dev ccache python3 \
-            xvfb libgl1-mesa-dri \
-            libx11-dev libx11-xcb-dev libxcb1-dev libxext-dev \
-            libxxf86vm-dev libxrandr-dev libxinerama-dev \
-            libgl-dev libegl-dev
+          for i in 1 2 3; do
+            sudo apt-get install -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              build-essential zlib1g-dev ccache python3 \
+              xvfb libgl1-mesa-dri \
+              libx11-dev libx11-xcb-dev libxcb1-dev libxext-dev \
+              libxxf86vm-dev libxrandr-dev libxinerama-dev \
+              libgl-dev libegl-dev && break
+            [ $i = 3 ] && exit 1
+            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
+            sleep 10
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
 
       - name: Checkout
         uses: actions/checkout@v5

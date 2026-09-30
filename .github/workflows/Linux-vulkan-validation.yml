@@ -123,7 +123,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 8
+        timeout-minutes: 15
         run: |
           pkgs="build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev"
           for i in 1 2 3; do
@@ -132,9 +132,16 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            $pkgs
+          for i in 1 2 3; do
+            sudo apt-get install -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
+            sleep 10
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -217,7 +224,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 8
+        timeout-minutes: 15
         run: |
           pkgs="build-essential libx11-dev libx11-xcb-dev libxcb1-dev xvfb x11-utils libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools"
           for i in 1 2 3; do
@@ -226,9 +233,16 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            $pkgs
+          for i in 1 2 3; do
+            sudo apt-get install -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
+            sleep 10
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -264,7 +278,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 8
+        timeout-minutes: 15
         run: |
           pkgs="build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev"
           for i in 1 2 3; do
@@ -273,9 +287,16 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            $pkgs
+          for i in 1 2 3; do
+            sudo apt-get install -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
+            sleep 10
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -314,7 +335,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 8
+        timeout-minutes: 15
         run: |
           pkgs="build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers vulkan-tools libasound2-dev"
           for i in 1 2 3; do
@@ -323,9 +344,16 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            $pkgs
+          for i in 1 2 3; do
+            sudo apt-get install -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
+            sleep 10
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -368,7 +396,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 8
+        timeout-minutes: 15
         run: |
           pkgs="build-essential libxkbcommon-dev libx11-xcb-dev libxcb1-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxv-dev xvfb x11-utils zlib1g-dev libfreetype6-dev libgl-dev libglx-dev libegl-dev libgles-dev libgl1-mesa-dri libglx-mesa0 mesa-utils libasound2-dev"
           for i in 1 2 3; do
@@ -377,9 +405,16 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            $pkgs
+          for i in 1 2 3; do
+            sudo apt-get install -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
+            sleep 10
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
 
       - name: Checkout
         uses: actions/checkout@v5

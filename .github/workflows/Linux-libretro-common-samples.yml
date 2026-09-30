@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 15
         run: |
           # All three packages ship on the stock ubuntu-latest image, so
           # this step is a no-op there and apt is only contacted if the
@@ -45,9 +45,16 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            build-essential zlib1g-dev clang ffmpeg
+          for i in 1 2 3; do
+            sudo apt-get install -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              build-essential zlib1g-dev clang ffmpeg && break
+            [ $i = 3 ] && exit 1
+            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
+            sleep 10
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -726,7 +733,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 15
         run: |
           # clang ships on the stock ubuntu-latest image; apt is only
           # contacted if the image ever drops it.
@@ -740,9 +747,16 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            clang
+          for i in 1 2 3; do
+            sudo apt-get install -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              clang && break
+            [ $i = 3 ] && exit 1
+            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
+            sleep 10
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -829,7 +843,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 15
         run: |
           for i in 1 2 3; do
             sudo timeout 90 apt-get update -y \
@@ -837,9 +851,16 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            build-essential ${{ matrix.apt_pkgs }} qemu-user-static
+          for i in 1 2 3; do
+            sudo apt-get install -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              build-essential ${{ matrix.apt_pkgs }} qemu-user-static && break
+            [ $i = 3 ] && exit 1
+            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
+            sleep 10
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -964,7 +985,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 15
         run: |
           for i in 1 2 3; do
             sudo timeout 90 apt-get update -y \
@@ -972,9 +993,16 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            build-essential ${{ matrix.apt_pkgs }} qemu-user-static
+          for i in 1 2 3; do
+            sudo apt-get install -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              build-essential ${{ matrix.apt_pkgs }} qemu-user-static && break
+            [ $i = 3 ] && exit 1
+            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
+            sleep 10
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
 
       - name: Checkout
         uses: actions/checkout@v5

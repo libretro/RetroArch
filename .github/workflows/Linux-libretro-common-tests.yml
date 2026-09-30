@@ -33,7 +33,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 8
+        timeout-minutes: 15
         run: |
           # ffmpeg: tools/companion_thumbs_test.sh builds its video-hover
           # fixture (a 2 KB Baseline MP4) with it.
@@ -48,9 +48,16 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
-          sudo apt-get install -y \
-            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
-            $pkgs
+          for i in 1 2 3; do
+            sudo apt-get install -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "apt-get install failed (attempt $i); refreshing the index and retrying"
+            sleep 10
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
           # mingw and wine are for the Windows A/W configuration matrix
           # in Makefile.test.  libretro-common selects between the ANSI
           # and the wide Win32 entry points three ways and, until these
