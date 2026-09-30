@@ -201,7 +201,7 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
 
       case NAT_TRAVERSAL_STATUS_QUERY_DEVICE:
          {
-            if (natt_query_device(&device, false))
+            if (natt_query_device(&device))
                data->status = NAT_TRAVERSAL_STATUS_EXTERNAL_ADDRESS;
             else
                data->status = NAT_TRAVERSAL_STATUS_SELECT_DEVICE;
@@ -216,7 +216,7 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
                break;
             }
 
-            if (natt_external_address(&device, false))
+            if (natt_external_address(&device))
             {
                data->forward_type = NATT_FORWARD_TYPE_ANY;
                data->status       = NAT_TRAVERSAL_STATUS_OPEN;
@@ -235,7 +235,7 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
             }
 
             if (natt_open_port(&device, &data->request,
-                  data->forward_type, false))
+                  data->forward_type))
                data->status = NAT_TRAVERSAL_STATUS_OPENING;
             else
                data->status = NAT_TRAVERSAL_STATUS_SELECT_DEVICE;
@@ -269,7 +269,7 @@ static void task_netplay_nat_traversal_handler(retro_task_t *task)
 
       case NAT_TRAVERSAL_STATUS_CLOSE:
          {
-            natt_close_port(&device, &data->request, false);
+            natt_close_port(&device, &data->request);
 
             data->status = NAT_TRAVERSAL_STATUS_CLOSING;
          }

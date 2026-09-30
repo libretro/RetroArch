@@ -121,13 +121,13 @@ void natt_device_end(struct natt_discovery *discovery)
 {
 }
 
-bool natt_query_device(struct natt_device *device, bool block)
+bool natt_query_device(struct natt_device *device)
 {
    device->busy = false;
    return true;
 }
 
-bool natt_external_address(struct natt_device *device, bool block)
+bool natt_external_address(struct natt_device *device)
 {
    device->busy                = false;
    device->ext_addr.sin_family = AF_INET;
@@ -135,8 +135,7 @@ bool natt_external_address(struct natt_device *device, bool block)
 }
 
 bool natt_open_port(struct natt_device *device,
-      struct natt_request *request, enum natt_forward_type forward_type,
-      bool block)
+      struct natt_request *request, enum natt_forward_type forward_type)
 {
    fake_open_calls++;
    fake_record('O');
@@ -149,7 +148,7 @@ bool natt_open_port(struct natt_device *device,
 }
 
 bool natt_close_port(struct natt_device *device,
-      struct natt_request *request, bool block)
+      struct natt_request *request)
 {
    fake_close_calls++;
    fake_record('C');
