@@ -36,11 +36,14 @@ jobs:
           # Fetch first, under a bound: a download is safe to stop and
           # resumes, an install is not. A mirror that stalls is left for
           # the main archive on the next attempt.
+          # tshark's dumpcap asks whether to be setuid: no, runs are root
+          echo "wireshark-common wireshark-common/install-setuid boolean false" | sudo debconf-set-selections
+          export DEBIAN_FRONTEND=noninteractive
           for i in 1 2 3; do
             sudo timeout 240 apt-get install -y --download-only --no-install-recommends build-essential clang \
               gcc-mingw-w64-x86-64 openssl samba libtirpc-dev flex bison autoconf automake wine wine64 \
               nfs-ganesha nfs-ganesha-vfs krb5-kdc krb5-admin-server krb5-user winbind \
-              samba-dsdb-modules samba-ad-provision samba-vfs-modules acl smbclient && break
+              samba-dsdb-modules samba-ad-provision samba-vfs-modules acl smbclient tshark && break
             [ $i = 3 ] && exit 1
             echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
             for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
@@ -54,7 +57,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends build-essential clang \
             gcc-mingw-w64-x86-64 openssl samba libtirpc-dev flex bison autoconf automake wine wine64 \
             nfs-ganesha nfs-ganesha-vfs krb5-kdc krb5-admin-server krb5-user winbind \
-            samba-dsdb-modules samba-ad-provision samba-vfs-modules acl smbclient
+            samba-dsdb-modules samba-ad-provision samba-vfs-modules acl smbclient tshark
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -120,6 +123,8 @@ jobs:
           make -C samples/network/nfs_retro clean
           sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root samples/network/nfs_retro/local_ganesha_test.sh
           sudo make -C samples/network/nfs_retro clean
+          sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root samples/network/nfs_retro/local_read_plus_test.sh
+          sudo make -C samples/network/nfs_retro clean
           make -C samples/network/krb5_retro clean
           samples/network/krb5_retro/local_kdc_test.sh
           make -C samples/network/krb5_retro clean
@@ -168,6 +173,8 @@ jobs:
           make -C samples/network/nfs_retro clean
           sudo -E samples/network/nfs_retro/local_ganesha_test.sh
           sudo make -C samples/network/nfs_retro clean
+          sudo -E samples/network/nfs_retro/local_read_plus_test.sh
+          sudo make -C samples/network/nfs_retro clean
           make -C samples/network/krb5_retro clean
           samples/network/krb5_retro/local_kdc_test.sh
           make -C samples/network/krb5_retro clean
@@ -186,6 +193,11 @@ jobs:
           # NFSv4.0 (one COMPOUND per operation, no portmapper or MOUNT,
           # pseudo-filesystem export) against nfs-ganesha from apt
           sudo -E samples/network/nfs_retro/local_ganesha_test.sh
+          # NFSv4.2 READ_PLUS against a fake server reporting the holes
+          # the filesystem really holds, its replies checked by
+          # Wireshark's own dissector
+          sudo make -C samples/network/nfs_retro clean
+          sudo -E samples/network/nfs_retro/local_read_plus_test.sh
           # and its Windows link line, cross-linked
           sudo make -C samples/network/nfs_retro clean
           CC=x86_64-w64-mingw32-gcc make -C samples/network/nfs_retro nfs_test

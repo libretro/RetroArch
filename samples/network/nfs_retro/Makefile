@@ -10,6 +10,9 @@ ifneq (,$(findstring mingw,$(CC))$(findstring MINGW,$(MSYSTEM))$(findstring Wind
 endif
 nfs_test: $(SRC)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $(LDLIBS) -o $@
+SPARSE_SRC = nfs_sparse_test.c $(filter-out nfs_test.c,$(SRC))
+nfs_sparse_test: $(SPARSE_SRC)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(SPARSE_SRC) $(LDLIBS) -o $@
 IDLE_SRC = nfs_idle_test.c $(filter-out nfs_test.c,$(SRC))
 nfs_idle_test: $(IDLE_SRC)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(IDLE_SRC) $(LDLIBS) -o $@
@@ -24,5 +27,5 @@ THR_SRC = vfs_threads_test.c $(filter-out vfs_test.c,$(VFS_SRC)) $(COMMON)/rthre
 vfs_threads_test: $(THR_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_NFSCLIENT -DHAVE_THREADS -I$(ROOT) $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@
 clean:
-	rm -f nfs_test nfs_test.exe nfs_idle_test nfs_idle_test.exe vfs_test vfs_test.exe vfs_threads_test vfs_threads_test.exe
+	rm -f nfs_test nfs_test.exe nfs_sparse_test nfs_sparse_test.exe nfs_idle_test nfs_idle_test.exe vfs_test vfs_test.exe vfs_threads_test vfs_threads_test.exe
 .PHONY: clean

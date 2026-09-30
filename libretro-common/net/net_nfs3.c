@@ -80,6 +80,11 @@
 #define OP_PUTFH          22
 #define OP_PUTROOTFH      24
 #define OP_READ           25
+/* NFSv4.2 (RFC 7862): a read that says which runs are holes */
+#define OP_READ_PLUS      68
+#define NFS4_CONTENT_DATA 0
+#define NFS4_CONTENT_HOLE 1
+#define OP_ILLEGAL        10044
 #define OP_READDIR        26
 #define OP_REMOVE         28
 #define OP_RENAME         29
@@ -227,6 +232,7 @@ struct rnfs_ctx
    uint8_t  stale_state;
    uint8_t  sessionid[16];
    uint32_t slots;                  /* granted, at most RNFS_SLOTS */
+   uint8_t  read_plus;              /* 4.2: READ_PLUS, until the server refuses it */
    uint32_t slot_seq[RNFS_SLOTS];
    char     server[256];
    char     export_path[512];
@@ -243,6 +249,7 @@ struct rnfs_ctx
    } dcache[RNFS_DCACHE_SIZE];
    uint32_t dcache_tick;
    uint32_t calls;                  /* RPCs made, for tests */
+   uint64_t rx_bytes;               /* RPC replies received, for tests */
 };
 
 static void rnfs_err(struct rnfs_ctx *c, const char *msg)
@@ -474,6 +481,7 @@ static int rnfs_rpc_recv(struct rnfs_ctx *c, int fd, uint32_t *xid_out, struct x
          return -1;
       }
       rlen += frag;
+      c->rx_bytes += frag;
       if (last)
          break;
    }
@@ -1003,7 +1011,8 @@ static int nfs4_session_setup(struct rnfs_ctx *c)
       rnfs_err(c, "create_session reply");
       return -1;
    }
-   c->slots = (uint32_t)(n < RNFS_SLOTS ? n : RNFS_SLOTS);
+   c->slots     = (uint32_t)(n < RNFS_SLOTS ? n : RNFS_SLOTS);
+   c->read_plus = c->minor >= 2;
    for (i = 0; i < RNFS_SLOTS; i++)
       c->slot_seq[i] = 0;
    c->have_session = 1;
@@ -2073,6 +2082,19 @@ static int rnfs_walk(struct rnfs_ctx *c, const char *path, struct rnfs_fh *fh,
    return rnfs_walk_once(c, path, fh, st, parent, last, last_len);
 }
 
+/* Octets of RPC replies this connection has received: for tests that
+ * check what crossed the network. */
+uint64_t rnfs_get_rx_bytes(const struct rnfs_ctx *c)
+{
+   return c->rx_bytes;
+}
+
+/* READ_PLUS in use for reads (NFSv4.2, until a server refuses it). */
+int rnfs_get_read_plus(const struct rnfs_ctx *c)
+{
+   return c->read_plus;
+}
+
 /* RPCs this connection has made: for tests that count round trips. */
 uint32_t rnfs_get_call_count(const struct rnfs_ctx *c)
 {
@@ -2236,7 +2258,9 @@ static int rnfs_send_read(struct rnfs_ctx *c, struct rnfs_file *f,
       if (c->have_session)
          nfs4_sequence(&x, c, slot);
       nfs4_put_fh(&x, &f->fh);
-      xdr_u32(&x, OP_READ);
+      /* READ_PLUS takes READ's arguments; its reply sends holes as
+       * their extent rather than as zeros */
+      xdr_u32(&x, c->read_plus ? OP_READ_PLUS : OP_READ);
       memcpy(x.p, f->stateid, 16); x.p += 16;
       xdr_u64(&x, off);
       xdr_u32(&x, (uint32_t)n);
@@ -2255,13 +2279,17 @@ static int rnfs_send_read(struct rnfs_ctx *c, struct rnfs_file *f,
 /* Parse a READ reply at the cursor: data span in @d/@dl, @eof; 1 on
  * success, 0 for a v4 GRACE/DELAY (ask again), -1 on failure. */
 static int rnfs_parse_read(struct rnfs_ctx *c, struct xdr *r, unsigned slot,
-      const uint8_t **d, size_t *dl, uint32_t *eof)
+      uint64_t at, uint64_t size, uint8_t *dst, size_t want, size_t *got,
+      uint32_t *eof)
 {
    struct rnfs_stat st;
+   const uint8_t *d;
+   size_t   dl;
    uint32_t count;
    if (c->version == 4)
    {
-      size_t tl;
+      size_t   tl;
+      uint32_t op, ost;
       c->status = xdr_get_u32(r);
       xdr_get_opaque(r, &tl);              /* tag */
       xdr_get_u32(r);                      /* numres */
@@ -2282,14 +2310,78 @@ static int rnfs_parse_read(struct rnfs_ctx *c, struct xdr *r, unsigned slot,
          c->stale_state = 1;
       if (c->status == NFS4ERR_GRACE || c->status == NFS4ERR_DELAY)
          return 0;
-      if (c->status != NFS3_OK || nfs4_res(r) != NFS3_OK || nfs4_res(r) != NFS3_OK)
+      if (nfs4_res(r) != NFS3_OK)          /* PUTFH */
+      {
+         rnfs_err(c, "read failed");
+         return -1;
+      }
+      op  = xdr_get_u32(r);
+      ost = xdr_get_u32(r);
+      /* a server that has no READ_PLUS after all: plain READ from
+       * here on, and this one asked again as that */
+      if (     (op == OP_READ_PLUS || op == OP_ILLEGAL)
+            && (ost == NFS3ERR_NOTSUPP || ost == OP_ILLEGAL))
+      {
+         c->read_plus = 0;
+         return 2;
+      }
+      if (c->status != NFS3_OK || ost != NFS3_OK)
       {
          rnfs_err(c, "read failed");
          return -1;
       }
       *eof = xdr_get_u32(r);
-      *d   = xdr_get_opaque(r, dl);
-      return *d ? 1 : -1;
+      if (op == OP_READ_PLUS)
+      {
+         /* runs of data and holes, in order from @at: data copied in,
+          * holes zeroed here instead of crossing the network */
+         uint32_t n     = xdr_get_u32(r);
+         size_t   pos   = 0;
+         while (n-- && !r->fail)
+         {
+            uint32_t type = xdr_get_u32(r);
+            uint64_t sof  = xdr_get_u64(r);
+            uint64_t slen;
+            if (sof != at + pos)
+               goto broken;               /* runs out of order */
+            if (type == NFS4_CONTENT_DATA)
+            {
+               if (!(d = xdr_get_opaque(r, &dl)) || dl > want - pos)
+                  goto broken;
+               memcpy(dst + pos, d, dl);
+               pos += dl;
+            }
+            else if (type == NFS4_CONTENT_HOLE)
+            {
+               slen = xdr_get_u64(r);
+               if (slen > want - pos)
+                  slen = want - pos;         /* a hole may run on past the request */
+               memset(dst + pos, 0, (size_t)slen);
+               pos += (size_t)slen;
+            }
+            else
+               goto broken;
+         }
+         /* nothing read and not at the end: no progress to make; or the
+          * end claimed short of the size the file was opened with */
+         if (     r->fail || (!pos && want && !*eof)
+               || (*eof && at + pos < size))
+            goto broken;
+         *got = pos;
+         return 1;
+broken:
+         /* a reply no READ could have given - servers exist whose
+          * READ_PLUS is broken (nfs-ganesha 4.3 answers every range
+          * with one empty data run): plain READ from here on, and this
+          * range asked again as that */
+         c->read_plus = 0;
+         return 2;
+      }
+      if (!(d = xdr_get_opaque(r, &dl)) || dl > want)
+         return -1;
+      memcpy(dst, d, dl);
+      *got = dl;
+      return 1;
    }
    c->status = xdr_get_u32(r);
    if (c->status != NFS3_OK)
@@ -2300,9 +2392,11 @@ static int rnfs_parse_read(struct rnfs_ctx *c, struct xdr *r, unsigned slot,
    xdr_get_post_op_attr(r, &st);
    count = xdr_get_u32(r);
    *eof  = xdr_get_u32(r);
-   *d    = xdr_get_opaque(r, dl);
-   if (!*d || *dl != count)
+   d     = xdr_get_opaque(r, &dl);
+   if (!d || dl != count || dl > want)
       return -1;
+   memcpy(dst, d, dl);
+   *got = dl;
    return 1;
 }
 
@@ -2355,7 +2449,6 @@ static int64_t rnfs_fetch_once(struct rnfs_ctx *c, struct rnfs_file *f,
       {
          struct xdr r;
          uint32_t xid, reof = 0;
-         const uint8_t *d = NULL;
          size_t dl = 0;
          unsigned slot = RNFS_PIPELINE;
          int pr;
@@ -2369,7 +2462,19 @@ static int64_t rnfs_fetch_once(struct rnfs_ctx *c, struct rnfs_file *f,
                slot = i;
          if (slot == RNFS_PIPELINE)
             continue;
-         pr = rnfs_parse_read(c, &r, sslot[slot], &d, &dl, &reof);
+         pr = rnfs_parse_read(c, &r, sslot[slot], off + offs[slot], f->size,
+               out + offs[slot], lens[slot], &dl, &reof);
+         if (pr == 2)
+         {
+            /* READ_PLUS refused: this chunk again, now as READ */
+            if (rnfs_send_read(c, f, off + offs[slot], lens[slot],
+                     sslot[slot], &xids[slot]) != 0)
+            {
+               rnfs_drop(c);
+               fail = 1;
+            }
+            continue;
+         }
          if (pr == 0)
          {
             /* v4 GRACE/DELAY: wait and reissue this chunk, bounded */
@@ -2397,7 +2502,7 @@ static int64_t rnfs_fetch_once(struct rnfs_ctx *c, struct rnfs_file *f,
          }
          else
          {
-            memcpy(out + offs[slot], d, dl);
+            /* the data is in place: the parser wrote it there */
             /* a short or empty reply ends the contiguous run there,
              * whatever later chunks answered; only the run counts */
             if (reof || dl < lens[slot])

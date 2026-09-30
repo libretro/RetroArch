@@ -14,7 +14,7 @@ RUN=${RUNNER:-}
 EXE=${EXE:-}
 PORT=20449
 D=$(mktemp -d); chmod 755 $D; mkdir -p $D/export $D/run; chmod 777 $D/export
-make -s vfs_threads_test nfs_idle_test >/dev/null 2>&1 || true
+make -s vfs_threads_test nfs_idle_test nfs_sparse_test >/dev/null 2>&1 || true
 stop() {
    kill $(cat $D/run/g.pid 2>/dev/null) 2>/dev/null || pkill -x ganesha.nfsd 2>/dev/null || true
    i=0; while pgrep -x ganesha.nfsd >/dev/null 2>&1 && [ $i -lt 30 ]; do sleep 0.2; i=$((i + 1)); done
@@ -86,6 +86,20 @@ EOF
       echo "FAIL: 4.[$minors]: a wrong path under an existing export was accepted"; exit 1
    else
       echo "ok:   wrong path under an export is refused"
+   fi
+   # nfs-ganesha's READ_PLUS answers every range with one empty data
+   # run: a 4.2 client must see that no READ could have said so, go
+   # back to READ and read the file right
+   if [ "$want" = 2 ]; then
+      truncate -s 4M $D/export/sparse.img
+      head -c 262144 /dev/urandom | dd of=$D/export/sparse.img bs=65536 seek=16 conv=notrunc status=none
+      local_path=$D/export/sparse.img
+      [ -n "$RUN" ] && local_path="Z:$D/export/sparse.img"
+      if [ -x ./nfs_sparse_test$EXE ] && $RUN ./nfs_sparse_test$EXE 127.0.0.1 /export $PORT sparse.img "$local_path" 262144 fallback > $D/res 2>&1; then
+         echo "ok:   NFSv4.2: a server's broken READ_PLUS is left for READ, the file read right"
+      else
+         echo "FAIL: 4.[$minors] READ_PLUS fallback: $(cat $D/res)"; exit 1
+      fi
    fi
    stop
 }

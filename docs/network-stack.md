@@ -72,7 +72,11 @@ through the server's portmapper, and NFSv4, which connects straight to
 the NFS port and addresses the export as a path in the server's
 pseudo-filesystem. With version 4 chosen, the client speaks the newest
 of 4.2, 4.1 and 4.0 the server offers, so servers that have dropped 4.0
-work too. It authenticates with AUTH_UNIX, as the user
+work too. Over 4.2 it reads with READ_PLUS, which sends the holes of a
+sparse file as their extent instead of as zeros: an image the
+filesystem stores sparse costs its data on the network, not its size.
+A server whose READ_PLUS answers are impossible (nfs-ganesha 4.3's) is
+read with plain READ instead. It authenticates with AUTH_UNIX, as the user
 RetroArch runs as; platforms without user IDs, such as Windows and the
 consoles, send user and group 1000.
 

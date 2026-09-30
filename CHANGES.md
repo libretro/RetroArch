@@ -99,6 +99,7 @@
 - NETWORK: NFS files stay usable across a server restart, a dropped connection or a long pause: the client reconnects and reopens what it needs
 - 3DS/VITA/SWITCH/WIIU: nfs:// content through the built-in NFS client
 - NETWORK: SMB files stay usable across a server restart: the connection is mended and the file opened again where it was
+- NETWORK: NFSv4.2 reads use READ_PLUS: holes in sparse files no longer cross the network
 - 3DS/SWITCH: nfs:// content through the built-in NFS client
 - NETWORK: Optional SMB/NFS read-ahead with background prefetch, for large disc images over a slow link (off by default)
 - NETWORK: Saved passwords are encrypted in retroarch-keychain.cfg; an optional passphrase lets the keychain move to another machine (see docs/network-stack.md)
