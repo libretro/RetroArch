@@ -487,7 +487,10 @@ typedef struct vk
    /* Textures released through vulkan_unload_texture, kept alive
     * until enough frames have been submitted that neither the GPU
     * nor a concurrently recorded or observed reference can still
-    * touch them. See vulkan_deferred_textures_tick(). */
+    * touch them. See vulkan_deferred_textures_tick(). Any thread
+    * parks one by pushing it on deferred_textures_in; the list proper
+    * belongs to the thread that records frames. */
+   retro_atomic_ptr_t deferred_textures_in;
    struct vk_deferred_texture *deferred_textures;
 
    /* One-shot staging command buffers submitted without a CPU wait
@@ -496,6 +499,11 @@ typedef struct vk
     * vulkan_deferred_cmds_tick(). */
    struct vk_deferred_cmd *deferred_cmds;
    struct vk_deferred_fence *deferred_fences;
+   /* The fence an upload is waited on when it has to be finished
+    * before returning (no node or no fence of its own to defer it
+    * with). One is enough: the wait is synchronous, on the thread that
+    * records frames. */
+   VkFence sync_fence;
    /* Textures updated in place (vulkan_update_texture): the staging
     * pair and fences each one streams through. Frame-recording thread
     * only, like the two lists above. */
@@ -1157,11 +1165,18 @@ static void vulkan_destroy_texture(
  * the unload returns). Keeping the texture alive for a full
  * swapchain cycle of subsequent submissions closes both windows.
  *
- * List discipline: mutations are serialised with queue_lock. The
- * enqueue normally runs on the thread that records frames (the
- * threaded wrapper marshals unloads there), but driver-reinit
- * fallbacks can enqueue from the main thread while a frame ticks the
- * list, so the lock is not optional. */
+ * List discipline: no lock. The enqueue normally runs on the thread
+ * that records frames (the threaded wrapper marshals unloads there),
+ * but driver-reinit fallbacks can enqueue from the main thread while a
+ * frame ticks the list. So parking a texture is a push onto
+ * deferred_textures_in, one atomic pointer, and the list the frames
+ * count down is private to the thread that records them: each tick
+ * takes everything pushed since the last with an exchange and then
+ * walks a list nobody else can reach. Nothing pops a single node off
+ * the shared pointer, so the push needs no more than a compare-and-swap
+ * loop. This used to borrow queue_lock, which made every parked
+ * texture wait behind whatever held the queue - a present, or a
+ * hardware core's submit. */
 struct vk_deferred_texture
 {
    struct vk_deferred_texture *next;
@@ -1171,17 +1186,41 @@ struct vk_deferred_texture
 
 static void vulkan_texture_retire(vk_t *vk, struct vk_texture *texture);
 
+/* Any thread. */
+static void vulkan_deferred_textures_push(vk_t *vk,
+      struct vk_deferred_texture *node)
+{
+   void *head;
+   do
+   {
+      head       = retro_atomic_load_acquire_ptr(&vk->deferred_textures_in);
+      node->next = (struct vk_deferred_texture*)head;
+   } while (!retro_atomic_cas_ptr(&vk->deferred_textures_in, head, node));
+}
+
+/* The thread that records frames. Moves what was pushed since the
+ * last call onto the private list. */
+static void vulkan_deferred_textures_collect(vk_t *vk)
+{
+   struct vk_deferred_texture *node = (struct vk_deferred_texture*)
+      retro_atomic_exchange_ptr(&vk->deferred_textures_in, NULL);
+   while (node)
+   {
+      struct vk_deferred_texture *next = node->next;
+      node->next            = vk->deferred_textures;
+      vk->deferred_textures = node;
+      node                  = next;
+   }
+}
+
 /* Retire textures whose deferral window has elapsed. Called once per
- * submitted frame. Nodes are detached under the lock and destroyed
- * outside it. */
+ * submitted frame. */
 static void vulkan_deferred_textures_tick(vk_t *vk)
 {
    struct vk_deferred_texture **cur;
    struct vk_deferred_texture *expired = NULL;
 
-#ifdef HAVE_THREADS
-   slock_lock(vk->context->queue_lock);
-#endif
+   vulkan_deferred_textures_collect(vk);
    cur = &vk->deferred_textures;
    while (*cur)
    {
@@ -1198,9 +1237,6 @@ static void vulkan_deferred_textures_tick(vk_t *vk)
          expired       = node;
       }
    }
-#ifdef HAVE_THREADS
-   slock_unlock(vk->context->queue_lock);
-#endif
 
    while (expired)
    {
@@ -1217,14 +1253,9 @@ static void vulkan_deferred_textures_flush(vk_t *vk)
 {
    struct vk_deferred_texture *node;
 
-#ifdef HAVE_THREADS
-   slock_lock(vk->context->queue_lock);
-#endif
+   vulkan_deferred_textures_collect(vk);
    node                  = vk->deferred_textures;
    vk->deferred_textures = NULL;
-#ifdef HAVE_THREADS
-   slock_unlock(vk->context->queue_lock);
-#endif
 
    while (node)
    {
@@ -1339,8 +1370,11 @@ static void vulkan_deferred_cmd_release(vk_t *vk,
  * buffer and of the optional staging texture / raw staging buffer
  * passes to the deferred list, which releases them once the upload's
  * fence has signalled. If a node or fence cannot be obtained the
- * submission is drained synchronously and everything is released
- * before returning. */
+ * upload is waited for here and everything is released before
+ * returning - on the upload's own fence, with nothing held. That wait
+ * used to be vkQueueWaitIdle under queue_lock: it drained whatever a
+ * hardware core had on the queue as well, and kept the core out of
+ * lock_queue for as long as that took. */
 static void vulkan_submit_deferred_cmd_fenced(vk_t *vk,
       VkCommandBuffer cmd,
       struct vk_texture *staging_tex,
@@ -1371,12 +1405,18 @@ static void vulkan_submit_deferred_cmd_fenced(vk_t *vk,
    submit_info.signalSemaphoreCount = 0;
    submit_info.pSignalSemaphores    = NULL;
 
+   /* Nothing to defer it with: the upload is waited on below, on the
+    * caller's fence if it gave one, else on the driver's. */
+   if (!node && fence == VK_NULL_HANDLE && vk->sync_fence != VK_NULL_HANDLE)
+   {
+      fence = vk->sync_fence;
+      vkResetFences(vk->context->device, 1, &fence);
+   }
+
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
 #endif
    vkQueueSubmit(vk->context->queue, 1, &submit_info, fence);
-   if (!node)
-      vkQueueWaitIdle(vk->context->queue);
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
@@ -1384,6 +1424,12 @@ static void vulkan_submit_deferred_cmd_fenced(vk_t *vk,
    if (!node)
    {
       VkDevice device = vk->context->device;
+      /* Not even the driver's fence (it could not be created): there
+       * is nothing to wait on, and freeing these under the GPU is
+       * worse than leaving them to the device teardown. */
+      if (fence == VK_NULL_HANDLE)
+         return;
+      vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
       vkFreeCommandBuffers(device, vk->staging_pool, 1, &cmd);
       if (staging_tex)
          vulkan_destroy_texture(device, staging_tex);
@@ -1556,16 +1602,7 @@ static void vulkan_texture_defer(vk_t *vk, struct vk_texture *texture)
    {
       node->texture     = texture;
       node->frames_left = vk->context->num_swapchain_images + 1;
-#ifdef HAVE_THREADS
-      if (vk->context->queue_lock)
-         slock_lock(vk->context->queue_lock);
-#endif
-      node->next            = vk->deferred_textures;
-      vk->deferred_textures = node;
-#ifdef HAVE_THREADS
-      if (vk->context->queue_lock)
-         slock_unlock(vk->context->queue_lock);
-#endif
+      vulkan_deferred_textures_push(vk, node);
       return;
    }
    vulkan_wait_own_submissions(vk);
@@ -5729,6 +5766,15 @@ static void vulkan_init_static_resources(vk_t *vk)
    vkCreateCommandPool(vk->context->device,
          &pool_info, NULL, &vk->staging_pool);
 
+   {
+      VkFenceCreateInfo fence_info;
+      fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+      fence_info.pNext = NULL;
+      fence_info.flags = 0;
+      vkCreateFence(vk->context->device, &fence_info, NULL,
+            &vk->sync_fence);
+   }
+
    for (i = 0; i < 4 * 4; i++)
       blank[i] = -1u;
 
@@ -5754,6 +5800,9 @@ static void vulkan_deinit_static_resources(vk_t *vk)
    vulkan_deinit_ribbon_vbo(vk);
 
    vulkan_deferred_fences_free(vk);
+   if (vk->sync_fence != VK_NULL_HANDLE)
+      vkDestroyFence(vk->context->device, vk->sync_fence, NULL);
+   vk->sync_fence = VK_NULL_HANDLE;
    vkDestroyCommandPool(vk->context->device,
          vk->staging_pool, NULL);
    free(vk->hw.cmd);
@@ -9622,16 +9671,7 @@ static void vulkan_unload_texture_internal(vk_t *vk, uintptr_t handle)
       {
          node->texture     = texture;
          node->frames_left = vk->context->num_swapchain_images + 1;
-#ifdef HAVE_THREADS
-         if (vk->context->queue_lock)
-            slock_lock(vk->context->queue_lock);
-#endif
-         node->next            = vk->deferred_textures;
-         vk->deferred_textures = node;
-#ifdef HAVE_THREADS
-         if (vk->context->queue_lock)
-            slock_unlock(vk->context->queue_lock);
-#endif
+         vulkan_deferred_textures_push(vk, node);
          return;
       }
    }

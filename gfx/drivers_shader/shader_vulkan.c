@@ -966,22 +966,8 @@ struct vulkan_filter_chain
 
    /* See vulkan_filter_chain_create_info. */
    void *queue_lock_handle;
-   void (*lock_queue)(void *handle);
-   void (*unlock_queue)(void *handle);
    void (*wait_submissions)(void *handle);
 };
-
-static INLINE void slang_chain_lock_queue(struct vulkan_filter_chain *chain)
-{
-   if (chain->lock_queue)
-      chain->lock_queue(chain->queue_lock_handle);
-}
-
-static INLINE void slang_chain_unlock_queue(struct vulkan_filter_chain *chain)
-{
-   if (chain->unlock_queue)
-      chain->unlock_queue(chain->queue_lock_handle);
-}
 
 static struct vulkan_filter_chain *slang_chain_new(
       const vulkan_filter_chain_create_info *info);
@@ -1526,8 +1512,12 @@ static bool vulkan_filter_chain_load_luts(
 static struct vulkan_filter_chain *slang_chain_new(
       const vulkan_filter_chain_create_info *info)
 {
-   struct vulkan_filter_chain *chain = (struct vulkan_filter_chain*)
-      calloc(1, sizeof(*chain));
+   struct vulkan_filter_chain *chain;
+   /* See slang_chain_flush(): there is no way to tear a chain down
+    * without it that does not drain the queue. */
+   if (!info->wait_submissions)
+      return NULL;
+   chain = (struct vulkan_filter_chain*)calloc(1, sizeof(*chain));
    if (!chain)
       return NULL;
    chain->device            = info->device;
@@ -1536,9 +1526,7 @@ static struct vulkan_filter_chain *slang_chain_new(
    chain->cache             = info->pipeline_cache;
    chain->original_format   = info->original_format;
    chain->queue_lock_handle = info->queue_lock_handle;
-   chain->lock_queue        = info->lock_queue;
    chain->wait_submissions  = info->wait_submissions;
-   chain->unlock_queue      = info->unlock_queue;
    common_resources_init(&chain->common, info->device,
          info->memory_properties);
    chain->max_input_size_dims   = info->max_input_dims;
@@ -1655,20 +1643,13 @@ static void slang_chain_flush(struct vulkan_filter_chain *chain)
     * outlive is the frames that still reference the chain's images,
     * buffers and descriptor sets: the video driver's own submissions,
     * which it can wait on by fence without touching the queue. That
-    * is what wait_submissions does. Only a driver that gave none
-    * gets the device drained, and that is specified as vkQueueWaitIdle
-    * on every queue, so it takes the lock a submit does - and blocks
-    * vkQueuePresentKHR for the duration, and cannot complete while a
-    * hardware core waiting on that same lock still has work to submit
-    * that the queue is waiting for. */
-   if (chain->wait_submissions)
-      chain->wait_submissions(chain->queue_lock_handle);
-   else
-   {
-      slang_chain_lock_queue(chain);
-      vkDeviceWaitIdle(chain->device);
-      slang_chain_unlock_queue(chain);
-   }
+    * is what wait_submissions does, and a chain cannot be created
+    * without it. The alternative was draining the device, which is
+    * vkQueueWaitIdle on every queue: it takes the lock a submit does,
+    * blocks vkQueuePresentKHR for the duration, and cannot complete
+    * while a hardware core waiting on that same lock still has work
+    * to submit that the queue is waiting for. */
+   chain->wait_submissions(chain->queue_lock_handle);
    slang_chain_execute_deferred(chain);
 }
 

@@ -36,6 +36,11 @@
 #include <stdlib.h>
 int  g_vk_validation_errors;
 int  g_vk_validation_warnings;
+/* When set, an error line containing it is printed nowhere and counted
+ * here instead: for a test whose scenario is itself what the layer
+ * objects to, and which must still be clean in every other respect. */
+const char *g_vk_validation_expect;
+int  g_vk_validation_expected;
 static void vk_log(const char *fmt, va_list ap)
 {
    char line[4096];
@@ -46,8 +51,13 @@ static void vk_log(const char *fmt, va_list ap)
     * which arrive at INFO severity, as warnings. */
    if (strstr(line, "ERROR Validation"))
    {
-      g_vk_validation_errors++;
-      fputs(line, stderr);
+      if (g_vk_validation_expect && strstr(line, g_vk_validation_expect))
+         g_vk_validation_expected++;
+      else
+      {
+         g_vk_validation_errors++;
+         fputs(line, stderr);
+      }
    }
    else if (strstr(line, "WARNING Validation"))
    {

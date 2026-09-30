@@ -2147,6 +2147,78 @@ uint32_t vulkan_find_memory_type_fallback(
          device_reqs, host_reqs_second, 0);
 }
 
+/* The stale list is full: consume every signal on it, so the
+ * semaphores can be destroyed and the list starts again.
+ *
+ * A pending acquire signal is consumed by a submission that waits on
+ * it, and a batch may wait without running anything. So one batch
+ * waits on the whole list, with a fence, and the fence is waited on
+ * here. queue_lock is held for the submit call and not a moment
+ * longer.
+ *
+ * This was vkDeviceWaitIdle followed by destroying one semaphore. That
+ * is a use of every queue of the device made without queue_lock, while
+ * a hardware core may be submitting on the queue from its own thread;
+ * it waited for the core's work as well as ours; and an acquire is not
+ * queue work, so it did not even wait for the signal it then destroyed
+ * the semaphore under. */
+static void vulkan_consume_stale_acquires(gfx_ctx_vulkan_data_t *vk)
+{
+   VkSubmitInfo submit;
+   VkFenceCreateInfo fence_info;
+   VkPipelineStageFlags stages[VULKAN_MAX_SWAPCHAIN_IMAGES];
+   struct vulkan_context *ctx = &vk->context;
+   VkFence fence              = VK_NULL_HANDLE;
+   VkResult res;
+   unsigned i;
+
+   fence_info.sType            = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+   fence_info.pNext            = NULL;
+   fence_info.flags            = 0;
+   if (vkCreateFence(ctx->device, &fence_info, NULL, &fence) != VK_SUCCESS)
+      fence = VK_NULL_HANDLE;
+
+   for (i = 0; i < ctx->num_stale_acquire_semaphores; i++)
+      stages[i]                = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+   submit.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit.pNext                = NULL;
+   submit.waitSemaphoreCount   = ctx->num_stale_acquire_semaphores;
+   submit.pWaitSemaphores      = ctx->swapchain_stale_acquire_semaphores;
+   submit.pWaitDstStageMask    = stages;
+   submit.commandBufferCount   = 0;
+   submit.pCommandBuffers      = NULL;
+   submit.signalSemaphoreCount = 0;
+   submit.pSignalSemaphores    = NULL;
+
+#ifdef HAVE_THREADS
+   slock_lock(ctx->queue_lock);
+#endif
+   res = (fence != VK_NULL_HANDLE)
+      ? vkQueueSubmit(ctx->queue, 1, &submit, fence)
+      : VK_ERROR_OUT_OF_HOST_MEMORY;
+#ifdef HAVE_THREADS
+   slock_unlock(ctx->queue_lock);
+#endif
+
+   if (res == VK_SUCCESS)
+   {
+      vkWaitForFences(ctx->device, 1, &fence, VK_TRUE, UINT64_MAX);
+      for (i = 0; i < ctx->num_stale_acquire_semaphores; i++)
+         vkDestroySemaphore(ctx->device,
+               ctx->swapchain_stale_acquire_semaphores[i], NULL);
+   }
+   /* else: nothing waits on them and their signals stay pending.
+    * They cannot be destroyed or acquired with again; the handles are
+    * dropped, and the device teardown takes them. */
+   if (fence != VK_NULL_HANDLE)
+      vkDestroyFence(ctx->device, fence, NULL);
+
+   for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
+      ctx->swapchain_stale_acquire_semaphores[i] = VK_NULL_HANDLE;
+   ctx->num_stale_acquire_semaphores = 0;
+}
+
 void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
 {
    unsigned index;
@@ -2234,19 +2306,15 @@ retry:
           * with again nor destroyed. It goes on the stale list, and
           * the next submission waits on it along with its own
           * acquire - that consumes the signal, and it recycles with
-          * that frame. Only when frames have gone unsubmitted for
-          * a whole swapchain's worth is the device drained to
-          * destroy one, as every one of them used to be. */
+          * that frame. When frames have gone unsubmitted for a whole
+          * swapchain's worth the list is full, and it is emptied by
+          * the same means: see vulkan_consume_stale_acquires(). */
          VkSemaphore old_sem                     = vk->context.swapchain_acquire_semaphore;
          vk->context.swapchain_acquire_semaphore = semaphore;
-         if (vk->context.num_stale_acquire_semaphores < VULKAN_MAX_SWAPCHAIN_IMAGES)
-            vk->context.swapchain_stale_acquire_semaphores[
-               vk->context.num_stale_acquire_semaphores++] = old_sem;
-         else
-         {
-            vkDeviceWaitIdle(vk->context.device);
-            vkDestroySemaphore(vk->context.device, old_sem, NULL);
-         }
+         if (vk->context.num_stale_acquire_semaphores == VULKAN_MAX_SWAPCHAIN_IMAGES)
+            vulkan_consume_stale_acquires(vk);
+         vk->context.swapchain_stale_acquire_semaphores[
+            vk->context.num_stale_acquire_semaphores++] = old_sem;
       }
       else
          vk->context.swapchain_acquire_semaphore = semaphore;
@@ -3564,11 +3632,21 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
       present.pNext              = &times;
    }
 
-   /* Better hope QueuePresent doesn't block D: */
+   /* queue_lock is for the queue call and is dropped the moment it
+    * returns. It used to be kept to the end of this function, across
+    * the failure handling - and a failed present tears the swapchain
+    * down, which waits for the present with an empty fenced submission
+    * behind it (vulkan_context_wait_frames), which takes queue_lock.
+    * Where the mutex is not recursive - everywhere but Windows - the
+    * thread then waited on itself: an out-of-date present, as on a
+    * resize, never returned. */
 #ifdef HAVE_THREADS
    slock_lock(vk->context.queue_lock);
 #endif
    err = vkQueuePresentKHR(vk->context.queue, &present);
+#ifdef HAVE_THREADS
+   slock_unlock(vk->context.queue_lock);
+#endif
    /* Queued whatever it returned: a failed present has still put its
     * semaphore wait on the queue, or may have, and the fence taken
     * before the next rebuild covers either. */
@@ -3619,8 +3697,4 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
          video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
       vulkan_destroy_swapchain(vk);
    }
-
-#ifdef HAVE_THREADS
-   slock_unlock(vk->context.queue_lock);
-#endif
 }

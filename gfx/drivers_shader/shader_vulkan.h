@@ -93,9 +93,10 @@ struct vulkan_filter_chain_create_info
     * driver has made on `queue` has retired. The chain's resources are
     * only ever referenced by those submissions, so this is all a chain
     * rebuild or teardown needs to wait for. Called with
-    * queue_lock_handle. NULL falls back to vkDeviceWaitIdle under the
-    * lock, which also drains a hardware core's work and cannot complete
-    * while that core is itself parked on lock_queue. */
+    * queue_lock_handle. Required: a chain is not created without it.
+    * (The fallback it once had was vkDeviceWaitIdle under the lock,
+    * which also drains a hardware core's work and cannot complete
+    * while that core is itself parked on lock_queue.) */
    void (*wait_submissions)(void *handle);
    VkCommandPool command_pool;
    unsigned num_passes;
