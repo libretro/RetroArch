@@ -151,6 +151,37 @@ struct load_frame
    bool     video_data;  /* a driver instance exists */
 };
 
+/* Frames with the queue pumped, as the main loop pumps it. */
+static void pump(unsigned n)
+{
+   unsigned i;
+   for (i = 0; i < n; i++)
+   {
+      runloop_iterate();
+      task_queue_check();
+   }
+}
+
+/* The load is a task of the queue: a running task carrying the
+ * main-thread flag, one at a time. */
+static bool main_thread_task_finder(retro_task_t *task, void *user_data)
+{
+   unsigned *count = (unsigned*)user_data;
+   if (task_get_flags(task) & RETRO_TASK_FLG_MAIN_THREAD)
+      (*count)++;
+   return false;
+}
+
+static unsigned main_thread_tasks_running(void)
+{
+   task_finder_data_t find;
+   unsigned count = 0;
+   find.func      = main_thread_task_finder;
+   find.userdata  = &count;
+   task_queue_find(&find);
+   return count;
+}
+
 /* Runs frames until the load reports done, recording each. */
 static unsigned run_load(struct load_frame *log, unsigned cap)
 {
@@ -159,6 +190,7 @@ static unsigned run_load(struct load_frame *log, unsigned cap)
    {
       unsigned before = presented;
       runloop_iterate();
+      task_queue_check();
       log[n].presented  = presented - before;
       log[n].core_up    = core_is_up();
       log[n].hooked     = hook_installed();
@@ -175,6 +207,7 @@ static void open_menu(void)
    if (!menu_is_up())
       command_event(CMD_EVENT_MENU_TOGGLE, NULL);
    runloop_iterate();
+   task_queue_check();
    CHECK(menu_is_up(), "menu did not open");
 }
 
@@ -200,10 +233,15 @@ static void lane_staged(void)
          "the entry point returned without a load in flight");
    CHECK(core_is_up() && hook_installed(),
          "the entry point did work the frame loop owns");
+   CHECK(main_thread_tasks_running() == 1,
+         "the load is not a task of the queue (%u main-thread tasks running)",
+         main_thread_tasks_running());
 
    n = run_load(log, LOAD_FRAMES);
    CHECK(n < LOAD_FRAMES && !runloop_is_content_switching(),
          "the load did not finish within %u frames", LOAD_FRAMES);
+   CHECK(main_thread_tasks_running() == 0,
+         "a load task is still on the queue after the load");
 
    for (i = 0; i < n; i++)
    {
@@ -294,7 +332,7 @@ static void lane_reinit_deferred(void)
    CHECK(task_push_load_contentless_core_from_menu(core_path),
          "the reload was not started");
    /* Past the close: the old drivers are up with no core behind them. */
-   runloop_iterate();
+   pump(1);
    CHECK(!core_is_up() && hook_installed(), "not at the close stage");
 
    command_event(CMD_EVENT_REINIT, NULL);
@@ -388,8 +426,7 @@ static void lane_hw_request(void)
          "the reload was not started");
    /* Past the close and the core stage: the request has been made
     * on the old drivers. */
-   runloop_iterate();
-   runloop_iterate();
+   pump(2);
    CHECK(core_is_up() && hook_installed(), "not at the core stage");
    CHECK(video_st->hw_render.context_reset != NULL,
          "the core's hardware-render request was not taken");
@@ -478,17 +515,6 @@ static retro_task_t *push_task(retro_task_handler_t handler,
    task->flags   |= RETRO_TASK_FLG_MUTE;
    task_queue_push(task);
    return task;
-}
-
-/* Frames with the queue pumped, as the main loop pumps it. */
-static void pump(unsigned n)
-{
-   unsigned i;
-   for (i = 0; i < n; i++)
-   {
-      runloop_iterate();
-      task_queue_check();
-   }
 }
 
 static void lane_queue_survives(void)
@@ -648,7 +674,7 @@ static void lane_close_content(void)
    path_set(RARCH_PATH_CORE_LAST, core_path);
 
    menu_st->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
-   runloop_iterate();
+   pump(1);
    CHECK(runloop_is_content_switching(),
          "closing content did not start a staged load of the dummy core");
    CHECK(menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE,
@@ -663,8 +689,9 @@ static void lane_close_content(void)
          "the core library was reloaded into the session being built");
    CHECK(menu_is_up(), "menu not up after the close");
 
-   /* The frame after: the reload, into the finished dummy session. */
-   runloop_iterate();
+   /* The frames after: the menu's flush, then the reload into the
+    * finished dummy session. */
+   pump(2);
    CHECK(!(menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE),
          "the core reload did not follow the close");
    CHECK(string_is_equal(runloop_st->system.info.library_name,

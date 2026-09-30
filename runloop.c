@@ -8399,12 +8399,6 @@ int runloop_iterate(void)
    android_input_flush_pending_haptics();
 #endif
 
-   /* Advance a staged content load by one stage, and take up a
-    * prefetched menu load whose read has completed.  At the top of
-    * the frame, so the rest of it presents whatever the stage left
-    * on screen. */
-   task_content_load_check();
-
    /* Tick deferred shader compilation (one pass per frame) */
    video_driver_shader_deferred_tick();
 

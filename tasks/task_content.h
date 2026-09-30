@@ -73,14 +73,10 @@ bool task_push_start_current_core(content_ctx_info_t *content_info);
 
 bool task_push_start_dummy_core(content_ctx_info_t *content_info);
 
-/* Advances a staged content load by one stage, and starts the parked
- * remainder of a prefetched menu load whose read has completed.
- * Called once per frame from runloop_iterate().  Every
- * task_push_load_* entry point below (the CLI one excepted, which is
- * startup itself and loads in one go) only starts the job and
- * returns; the load is done when runloop_is_content_switching()
- * reads false again. */
-void task_content_load_check(void);
+/* Every task_push_load_* entry point below (the CLI one excepted, which
+ * is startup itself and loads in one go) starts the load as a chain of
+ * main-thread tasks of the frontend's queue and returns; the load is
+ * done when runloop_is_content_switching() reads false again. */
 
 bool task_push_load_content_with_new_core_from_companion_ui(
       const char *core_path,

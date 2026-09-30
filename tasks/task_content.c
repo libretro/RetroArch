@@ -2274,16 +2274,71 @@ static void content_load_step(struct content_load_job *job,
    }
 }
 
+/* ---- the stages as tasks ----
+ *
+ * Staged, each stage is a task of the frontend's queue with
+ * RETRO_TASK_FLG_MAIN_THREAD: its handler runs on the main thread from
+ * task_queue_check(), once per check, and returns unfinished while the
+ * stage waits (the close, for a state task inside the core).  Its
+ * callback pushes the next stage's task, so one stage runs per frame
+ * and the frame loop presents between them.  The task's state is the
+ * stage it carries; the job is the file-scope one.
+ *
+ * Cancellation is not honoured: past the close there is no session
+ * to fall back to, so the stages run to their end regardless. */
+
+static bool content_load_push_stage(struct content_load_job *job);
+
+static void content_load_task_handler(retro_task_t *task)
+{
+   struct content_load_job *job = (struct content_load_job*)task->user_data;
+   enum content_load_stage stage = (enum content_load_stage)(uintptr_t)task->state;
+
+   if (job->stage == stage)
+      content_load_step(job, content_state_get_ptr());
+
+   /* Moved on, or done: this stage's task is through. */
+   if (job->stage != stage)
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void content_load_task_callback(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   struct content_load_job *job = (struct content_load_job*)user_data;
+   (void)task; (void)task_data; (void)err;
+
+   if (job->stage != CONTENT_LOAD_STAGE_NONE)
+      if (!content_load_push_stage(job))
+      {
+         /* No memory for the next stage: the session cannot be left
+          * half switched, so finish the stages here, in one go. */
+         while (job->stage != CONTENT_LOAD_STAGE_NONE)
+            content_load_step(job, content_state_get_ptr());
+      }
+}
+
+static bool content_load_push_stage(struct content_load_job *job)
+{
+   retro_task_t *task = task_init();
+   if (!task)
+      return false;
+   task->handler   = content_load_task_handler;
+   task->callback  = content_load_task_callback;
+   task->user_data = job;
+   task->state     = (void*)(uintptr_t)job->stage;
+   task->flags    |= RETRO_TASK_FLG_MAIN_THREAD | RETRO_TASK_FLG_MUTE;
+   return task_queue_push(task);
+}
+
 /**
  * content_load:
  *
  * Starts loading the content file and bringing the session up on
  * it - or on the dummy core, if no content can be loaded.
  *
- * Staged, the job is advanced one stage per frame by
- * task_content_load_check() and after-work runs when it is through;
- * the frame loop presents between stages.  Unstaged (startup), the
- * whole load runs here.
+ * Staged, the stages are tasks (above) and the after-work runs when
+ * the last is through.  Unstaged (startup), the whole load runs here.
  *
  * Returns: false (0) if the load could not be started - another is
  * in flight, or no memory - otherwise true (1).  Unstaged, false
@@ -2324,6 +2379,11 @@ static bool content_load(content_ctx_info_t *info,
 
    if (staged)
    {
+      if (!content_load_push_stage(job))
+      {
+         content_load_job_free(job);
+         return false;
+      }
       runloop_state_get_ptr()->content_switching = true;
       return true;
    }
@@ -3019,20 +3079,7 @@ struct content_deferred_menu_load
    bool showed_animation;        /* launch card already on screen */
 };
 
-/* The continuation parked by the prefetch's done callback, consumed
- * by task_content_deferred_load_check() from the runloop.  One
- * deferral at a time (the CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING
- * gate), so a single pointer is the whole queue. */
-static struct content_deferred_menu_load *deferred_menu_load_ready = NULL;
-
-/* Fires when the prefetch task completes, on whichever thread pumps
- * the queue.  The continuation is parked, and task_content_load_check()
- * starts the job from the top of the next frame, on the main thread,
- * where every other load starts. */
-static void task_content_deferred_menu_load_done(void *ud, bool all_ok)
-{
-   deferred_menu_load_ready = (struct content_deferred_menu_load*)ud;
-}
+static void task_content_deferred_menu_load_done(void *ud, bool all_ok);
 
 /* Drop whatever the load did not consume. */
 static void content_file_prefetch_free(content_state_t *p_content)
@@ -3050,21 +3097,19 @@ static void content_file_prefetch_free(content_state_t *p_content)
 }
 
 
-/* Starts the remainder of task_push_load_content_with_new_core_from_menu
- * for a completed prefetch: the load, then history and the Quick
- * Menu once it is through.  A prefetch that skipped files changed
- * nothing; the load's ordinary reads cover whatever is not in the
- * cache. */
-static void task_content_deferred_load_start(void)
+/* Fires when the prefetch task completes - on the main thread, from
+ * the queue's retire - and starts the remainder of
+ * task_push_load_content_with_new_core_from_menu: the load, then
+ * history and the Quick Menu once it is through.  A prefetch that
+ * skipped files changed nothing; the load's ordinary reads cover
+ * whatever is not in the cache. */
+static void task_content_deferred_menu_load_done(void *ud, bool all_ok)
 {
-   struct content_deferred_menu_load *d = deferred_menu_load_ready;
-   content_state_t *p_content;
+   struct content_deferred_menu_load *d = (struct content_deferred_menu_load*)ud;
+   content_state_t *p_content           = content_state_get_ptr();
+   (void)all_ok;
 
-   if (!d)
-      return;
-   deferred_menu_load_ready  = NULL;
-   p_content                 = content_state_get_ptr();
-   p_content->flags         &= ~CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING;
+   p_content->flags &= ~CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING;
 
    /* A competing load may have replaced the world this continuation
     * was parked for; the stamps say which one it belongs to.  On a
@@ -3098,9 +3143,7 @@ static void task_content_deferred_load_start(void)
    free(d->fullpath);
    free(d);
 }
-#endif
 
-#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
 #if defined(HAVE_GFX_WIDGETS)
 /* Feeds the read percentage to the "Load Content" startup
  * notification.  Delivered on the thread that pumps the queue -
@@ -3332,15 +3375,6 @@ end:
    return ret;
 }
 #endif
-
-void task_content_load_check(void)
-{
-#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
-   task_content_deferred_load_start();
-#endif
-   if (content_load_job.stage != CONTENT_LOAD_STAGE_NONE)
-      content_load_step(&content_load_job, content_state_get_ptr());
-}
 
 static bool task_load_content_internal(
       content_ctx_info_t *content_info,
