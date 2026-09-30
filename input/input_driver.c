@@ -96,6 +96,13 @@
 
 #include "../ai/game_ai.h"
 #include <compat/strl.h>
+#ifdef HAVE_NETWORK_CMD
+#include "../network/mcp_server.h"
+#endif
+#ifdef HAVE_CRYPTO
+#include <crypto/crypto.h>
+#include <crypto/kdf.h>
+#endif
 #ifdef __MACH__
 #include <TargetConditionals.h>
 #endif
@@ -6477,6 +6484,37 @@ void input_driver_init_command(input_driver_state_t *input_st,
                      settings->arrays.network_cmd_bind_address)))
             RARCH_ERR("Failed to initialize the network command interface.\n");
       }
+   }
+#endif
+
+#ifdef HAVE_NETWORK_CMD
+   /* The MCP server. A token is required; the first start makes one,
+    * kept in the configuration (sealed by the keychain) for the user
+    * to give the client. Without a random source it must be set by
+    * hand. */
+   if (settings->bools.mcp_server_enable)
+   {
+      char *token = settings->arrays.mcp_server_token;
+#ifdef HAVE_CRYPTO
+      if (!*token)
+      {
+         uint8_t  raw[24];
+         unsigned i;
+         if (crypto_random_bytes(raw, sizeof(raw)) == 0)
+         {
+            for (i = 0; i < sizeof(raw); i++)
+               snprintf(token + 2 * i, 3, "%02x", raw[i]);
+            settings->flags |= SETTINGS_FLG_MODIFIED;
+         }
+         crypto_memzero(raw, sizeof(raw));
+      }
+#endif
+      if (!*token)
+         RARCH_ERR("[MCP] Set mcp_server_token to start the MCP server.\n");
+      else if (!(input_st->command[3] = command_mcp_new(
+                  (uint16_t)settings->uints.mcp_server_port,
+                  settings->arrays.mcp_server_bind_address, token)))
+         RARCH_ERR("[MCP] Failed to start the MCP server.\n");
    }
 #endif
 

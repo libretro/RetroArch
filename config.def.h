@@ -1701,6 +1701,10 @@
 /* Enable stdin/network command interface. */
 #define DEFAULT_NETWORK_CMD_ENABLE false
 #define DEFAULT_NETWORK_CMD_PORT 55355
+
+/* The MCP server: off, and only on this machine, unless chosen. */
+#define DEFAULT_MCP_SERVER_ENABLE false
+#define DEFAULT_MCP_SERVER_PORT 55357
 #define DEFAULT_NETWORK_REMOTE_BASE_PORT 55400
 #define DEFAULT_STDIN_CMD_ENABLE false
 

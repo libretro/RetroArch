@@ -800,6 +800,42 @@ command_t* command_uds_new(void)
 
 /* Routines used to invoke retroarch command ... */
 
+/* Runs @name with @arg (NULL or "" for none) as if it had arrived as a
+ * command line on @handle: replies go to @handle's replier, a hotkey
+ * presses on @handle for one frame. For interfaces that receive
+ * commands as structured requests rather than lines.
+ *
+ * Returns: false for an unknown command or one whose handler failed. */
+bool command_run(command_t *handle, const char *name, const char *arg)
+{
+   unsigned i;
+   for (i = 0; i < ARRAY_SIZE(action_map); i++)
+      if (string_is_equal(name, action_map[i].str))
+         return action_map[i].action(handle, arg ? arg : "");
+   for (i = 0; i < ARRAY_SIZE(map); i++)
+      if (string_is_equal(name, map[i].str))
+      {
+         if (map[i].id == RARCH_MENU_TOGGLE)
+            command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+         else
+            handle->state[map[i].id] = true;
+         return true;
+      }
+   return false;
+}
+
+const struct cmd_action_map *command_action_list(size_t *count)
+{
+   *count = ARRAY_SIZE(action_map);
+   return action_map;
+}
+
+const struct cmd_map *command_hotkey_list(size_t *count)
+{
+   *count = ARRAY_SIZE(map);
+   return map;
+}
+
 #ifdef HAVE_NETWORK_CMD
 static bool command_verify(const char *cmd)
 {

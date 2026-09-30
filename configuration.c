@@ -1040,6 +1040,7 @@ static const char *config_sensitive_keys[] = {
    "kick_stream_key",
    "smb_client_username",
    "smb_client_password",
+   "mcp_server_token",
    "netplay_password",
    "netplay_spectate_password",
    "kiosk_mode_password",
@@ -1932,6 +1933,8 @@ static struct config_array_setting *populate_settings_array(
 
 #ifdef HAVE_NETWORKING
    SETTING_ARRAY("network_cmd_bind_address",              settings->arrays.network_cmd_bind_address, false, NULL, true);
+   SETTING_ARRAY("mcp_server_bind_address",               settings->arrays.mcp_server_bind_address, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("mcp_server_token",            settings->arrays.mcp_server_token, false, NULL, true);
    SETTING_ARRAY("netplay_mitm_server",                   settings->arrays.netplay_mitm_server, false, NULL, true);
 #ifdef HAVE_CLOUDSYNC
    SETTING_ARRAY("webdav_url",                            settings->arrays.webdav_url, false, NULL, true);
@@ -5795,6 +5798,9 @@ void config_set_defaults(void *data, settings_t *target)
             def_mitm);
    /* Empty: bind on every interface, as before the setting existed. */
    *settings->arrays.network_cmd_bind_address = '\0';
+   strlcpy(settings->arrays.mcp_server_bind_address, "127.0.0.1",
+         sizeof(settings->arrays.mcp_server_bind_address));
+   *settings->arrays.mcp_server_token = '\0';
 #ifdef HAVE_MENU
    if (def_menu)
       configuration_set_string(settings,

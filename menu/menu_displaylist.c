@@ -10877,6 +10877,24 @@ unsigned menu_displaylist_build_list(
                   count++;
             }
 
+#ifdef HAVE_NETWORK_CMD
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_MCP_SERVER_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (settings->bools.mcp_server_enable)
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_MCP_SERVER_PORT,
+                     PARSE_ONLY_UINT, false) == 0)
+                  count++;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_MCP_SERVER_TOKEN,
+                     PARSE_ONLY_STRING, false) == 0)
+                  count++;
+            }
+#endif
+
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_NETWORK_REMOTE_ENABLE,
                   PARSE_ONLY_BOOL, false) == 0)

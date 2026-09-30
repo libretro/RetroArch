@@ -90,6 +90,8 @@
 - MENU/XMB: Tab change possible by gestures
 - MENU/XMB: Horizontal menu is now optional
 - NETWORK: New network commands SAVE_STATE_SLOT N and GET_CONFIG_PARAM
+- NETWORK: HELP network command lists every command with what it does
+- NETWORK: MCP server: AI assistants can drive RetroArch through the Model Context Protocol, every network command a tool (off by default, see docs/mcp-server.md)
 - NETWORK: Built-in TLS 1.2/1.3 client; mbedTLS and BearSSL are no longer bundled (--enable-mbedtls / --enable-bearssl use a system one)
 - NETWORK: Built-in SMB2/3 client with signing, AES-CCM/GCM encryption and Kerberos; libsmb2 is no longer bundled (--enable-libsmb uses a system one)
 - NETWORK: Built-in NFSv3 and NFSv4.0 client for loading content from nfs:// exports

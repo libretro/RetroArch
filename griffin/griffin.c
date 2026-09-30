@@ -1425,6 +1425,9 @@ RETROARCH
 #include "../runahead.c"
 #endif
 #include "../command.c"
+#ifdef HAVE_NETWORK_CMD
+#include "../network/mcp_server.c"
+#endif
 #include "../ui/ui_companion_driver.c"
 #ifdef HAVE_COMPANION_WIMP
 #include "../ui/companion/companion_core.c"

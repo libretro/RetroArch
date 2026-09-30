@@ -34,7 +34,7 @@
 
 #include "configuration.h"
 
-#define MAX_CMD_DRIVERS              3
+#define MAX_CMD_DRIVERS              4
 #define DEFAULT_NETWORK_CMD_PORT 55355
 
 RETRO_BEGIN_DECLS
@@ -468,6 +468,13 @@ struct cmd_action_map
 
 /* HELP [command]: the commands, their arguments and what they do. */
 bool command_help(command_t *cmd, const char* arg);
+
+/* Runs one command by name; see command.c. */
+bool command_run(command_t *handle, const char *name, const char *arg);
+
+/* Every command, for interfaces that describe them to a client. */
+const struct cmd_action_map *command_action_list(size_t *count);
+const struct cmd_map *command_hotkey_list(size_t *count);
 
 bool command_version(command_t *cmd, const char* arg);
 bool command_get_status(command_t *cmd, const char* arg);

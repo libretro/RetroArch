@@ -243,6 +243,7 @@ typedef struct settings
       unsigned savestate_max_keep;
       unsigned save_compression_codec;
       unsigned network_cmd_port;
+      unsigned mcp_server_port;
       unsigned network_remote_base_port;
       unsigned keymapper_port;
       unsigned cloud_sync_sync_mode;
@@ -1042,6 +1043,7 @@ typedef struct settings
       bool save_file_compression;
       bool savestate_file_compression;
       bool network_cmd_enable;
+      bool mcp_server_enable;
       bool stdin_cmd_enable;
       bool keymapper_enable;
       bool network_remote_enable;
@@ -1237,6 +1239,8 @@ typedef struct settings
        * every interface (the historical behaviour); 127.0.0.1 limits
        * it to this machine. */
       char network_cmd_bind_address[NAME_MAX_LENGTH];
+      char mcp_server_bind_address[NAME_MAX_LENGTH];
+      char mcp_server_token[NAME_MAX_LENGTH];
       char netplay_mitm_server[NAME_MAX_LENGTH];
 #ifdef HAVE_NETWORKING
 #ifdef HAVE_CLOUDSYNC

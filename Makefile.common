@@ -2493,6 +2493,7 @@ ifeq ($(HAVE_NETWORKING), 1)
    # Netplay
    DEFINES += -DHAVE_NETWORK_CMD
    OBJ += \
+	  network/mcp_server.o \
 	  network/netplay/netplay_frontend.o \
 	  network/netplay/netplay_room_parse.o
 
