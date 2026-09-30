@@ -5399,6 +5399,12 @@ bool command_event(enum event_command cmd, void *data)
             char *netplay_session = NULL;
             unsigned netplay_port = 0;
 
+            /* Hosting through a relay whose address is still being
+             * asked for: set up once the answer is in, from the frame
+             * loop, rather than waiting for it here. */
+            if (netplay_host_setup_defer())
+               break;
+
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 
             tmp_netplay_server[0]  = '\0';

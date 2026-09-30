@@ -215,13 +215,27 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data);
  *
  * Start the relay tunnel query early, when the user commits to
  * hosting, rather than when host setup needs the address.  The round
- * trip then overlaps work that was going to happen anyway, so the
- * wait for it usually costs nothing.
+ * trip then overlaps work that was going to happen anyway, so host
+ * setup usually finds the answer in hand and is not deferred.
  *
  * Best effort: if it is skipped or fails, host setup issues the
  * query exactly as it did before.
  */
 void netplay_mitm_query_prefetch(void);
+
+/**
+ * netplay_host_setup_defer:
+ *
+ * Called by host setup (CMD_EVENT_NETPLAY_INIT) before it runs: when
+ * hosting through a relay whose address query is still out, puts the
+ * setup off to a main-thread task that runs it once the answer is in
+ * (or directly, past the query's bound) and returns true; otherwise
+ * returns false and the setup goes ahead now.
+ **/
+bool netplay_host_setup_defer(void);
+
+/* True while host setup is deferred on the tunnel query. */
+bool netplay_host_setup_pending(void);
 
 bool netplay_reinit_serialization(void);
 bool netplay_is_spectating(void);

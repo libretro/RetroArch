@@ -58,6 +58,10 @@
 #include "../../../tasks/task_content.h"
 #include "../../../paths.h"
 #include "../../../content.h"
+#ifdef HAVE_NETWORKING
+#include "../../../network/netplay/netplay.h"
+#endif
+#include <features/features_cpu.h>
 #include <string/stdstring.h>
 
 static unsigned failures = 0;
@@ -654,6 +658,63 @@ static void lane_close_waits_for_save(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: host setup waits for the relay query from the frame loop      */
+/* ------------------------------------------------------------------ */
+
+#ifdef HAVE_NETWORKING
+/* Hosting through a lobby relay: the relay's address is asked of the
+ * lobby server, and host setup is put off to a main-thread task until
+ * the answer is in (or its bound passes) instead of waiting inside the
+ * command.  The query is a real HTTP task: whether the lobby answers,
+ * refuses or cannot be reached, the command must return with the
+ * setup queued, frames must keep presenting, and the setup must run
+ * once the query is settled. */
+static void lane_host_setup_deferred(void)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned had = failures;
+   unsigned i, frames = 0, before;
+   retro_time_t started, took;
+
+   configuration_set_bool(settings, settings->bools.netplay_use_mitm_server, true);
+   strlcpy(settings->arrays.netplay_mitm_server, "nyc",
+         sizeof(settings->arrays.netplay_mitm_server));
+
+   hook_install();
+   open_menu();
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
+
+   started = cpu_features_get_time_usec();
+   command_event(CMD_EVENT_NETPLAY_INIT, NULL);
+   took    = cpu_features_get_time_usec() - started;
+
+   CHECK(netplay_host_setup_pending(),
+         "host setup was not deferred on the pending relay query");
+   CHECK(took < 100000, "the command blocked for %lld us", (long long)took);
+
+   before = presented;
+   for (i = 0; i < 20000 && netplay_host_setup_pending(); i++)
+   {
+      pump(1);
+      frames++;
+      retro_sleep(1);
+   }
+   CHECK(!netplay_host_setup_pending(), "host setup never ran");
+   CHECK(presented - before >= 1,
+         "no frame presented while host setup waited (%u frames)", frames);
+
+   command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
+   configuration_set_bool(settings, settings->bools.netplay_use_mitm_server, false);
+   pump(1);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] host-setup-deferred lane (%u frames, command %lld us)\n",
+            frames, (long long)took);
+}
+#endif
+
+/* ------------------------------------------------------------------ */
 /* Lane: close content                                                 */
 /* ------------------------------------------------------------------ */
 
@@ -819,6 +880,9 @@ int main(int argc, char *argv[])
    lane_queue_survives();
    lane_close_content();
    lane_close_waits_for_save();
+#ifdef HAVE_NETWORKING
+   lane_host_setup_deferred();
+#endif
 
    main_exit(NULL);
 
