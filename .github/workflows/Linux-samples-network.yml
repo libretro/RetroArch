@@ -305,8 +305,12 @@ jobs:
           # socket in the pool. Connection and Transfer-Encoding are
           # read as lists ("Keep-Alive, Close", "gzip, chunked"),
           # HTTP/1.0 without keep-alive is not pooled, and a length
-          # after "chunked" does not reframe the body. Every case has
-          # a deadline, so a hang fails the case instead of the job.
+          # after "chunked" does not reframe the body. Redirects: an
+          # absolute-path Location used to go out as "GET //foo", a
+          # 302 loop was followed forever (now 8 hops), a streamed PUT
+          # redirected by a 307 is rewound and resent whole, and a 3xx
+          # body no longer lands in the caller's sink. Every case has a
+          # deadline, so a hang fails the case instead of the job.
           make clean all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \

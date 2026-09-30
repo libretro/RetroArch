@@ -83,6 +83,10 @@
 #define NET_HTTP_DRAIN_BUDGET       ((size_t)256 * 1024)
 #define NET_HTTP_DRAIN_MAX_ITERS    256
 
+/* Redirects followed per request.  A server bouncing between two
+ * URLs used to be followed forever. */
+#define NET_HTTP_MAX_REDIRECTS      8
+
 enum response_part
 {
    P_HEADER_TOP = 0,
@@ -166,6 +170,9 @@ typedef struct response
    bool conn_close;
    bool keep_alive;
    bool http10;
+   /* A 3xx that will be followed: its body belongs to nobody and
+    * must not reach the caller's sink. */
+   bool discard;
 } response_t;
 
 typedef struct request
@@ -213,6 +220,7 @@ struct http_t
    /* The request has already been replayed once on a fresh
     * connection; it will not be replayed again. */
    bool retried;
+   unsigned redirects;
 
    request_t request;
    response_t response;
@@ -1632,6 +1640,7 @@ static void net_http_headers_clear(struct response *response)
    }
    list->size           = 0;
    response->location   = NULL;
+   response->discard    = false;
    response->conn_close = false;
    response->keep_alive = false;
    response->http10     = false;
@@ -1729,6 +1738,10 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
             int status = response->status;
             if (response->http10 && !response->keep_alive)
                response->conn_close = true;
+            if (   status >= 300 && status < 400
+                && response->location
+                && state->redirects < NET_HTTP_MAX_REDIRECTS)
+               response->discard = true;
             if (status >= 100 && status < 200 && status != 101)
             {
                /* Interim response (100 Continue, 102 Processing, 103
@@ -1949,7 +1962,7 @@ static bool net_http_sink_flush(struct http_t *state, size_t n)
 {
    struct response *response = (struct response*)&state->response;
 
-   if (!n)
+   if (!n || response->discard)
       return true;
 
    if (!state->sink(state->sink_data, response->data, n))
@@ -2289,11 +2302,31 @@ static bool net_http_redirect(struct http_t *state, const char *location)
    bool absolute = (!strncmp(location, "http://", sizeof("http://")-1)
                  || !strncmp(location, "https://", sizeof("https://")-1));
 
+   /* The request goes out again, body included; a streamed body has
+    * to start over from its first byte, the same contract as the
+    * stale-pool replay.  Without a rewind there is no body to send,
+    * which is a clean failure rather than a short one. */
+   if (state->request.source && state->request.contentlength)
+   {
+      if (     !state->request.source_rewind
+            || !state->request.source_rewind(state->request.source_data))
+      {
+         net_http_log_transport_state(state, "redirect_rewind_failed", -1);
+         state->err = true;
+         return true;
+      }
+   }
+
    if (absolute)
    {
       /* this block is a little wasteful, memory-wise */
       struct http_connection_t *new_url = net_http_connection_new(
       location, NULL, NULL);
+      if (!new_url)
+      {
+         state->err = true;
+         return true;
+      }
       net_http_connection_iterate(new_url);
       if (!net_http_connection_done(new_url))
       {
@@ -2325,7 +2358,10 @@ static bool net_http_redirect(struct http_t *state, const char *location)
    {
       if (*location == '/')
       {
-         new_path = strdup(location);
+         /* request.path is stored without its leading slash (the
+          * request line supplies it), so "Location: /foo" kept whole
+          * went out as "GET //foo". */
+         new_path = strdup(location + 1);
          if (!new_path)
          {
             state->err = true;
@@ -2365,9 +2401,11 @@ static bool net_http_redirect(struct http_t *state, const char *location)
       return true;
    }
    state->response.data      = tmp;
-   state->response.pos       = 0;
-   state->response.len       = 0;
-   state->response.bodytype  = T_FULL;
+   state->response.pos         = 0;
+   state->response.len         = 0;
+   state->response.flushed     = 0;
+   state->response.content_len = 0;
+   state->response.bodytype    = T_FULL;
    /* after this, assume location is invalid */
    net_http_headers_clear(&state->response);
    /* keep going */
@@ -2849,7 +2887,16 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 
    if (   response->status >= 300 && response->status < 400
        && response->location)
+   {
+      if (state->redirects >= NET_HTTP_MAX_REDIRECTS)
+      {
+         net_http_log_transport_state(state, "redirect_limit", -1);
+         state->err = true;
+         return true;
+      }
+      state->redirects++;
       return net_http_redirect(state, response->location);
+   }
 
    return true;
 }

@@ -835,6 +835,114 @@ static void run_section_a2(void)
    string_list_free(l);
 }
 
+/* ---- A3: redirect policy ---- */
+
+static void run_section_a3(void)
+{
+   struct xfer a;
+   struct reqlog r;
+   char abs_head[256];
+   char want_host[64];
+   struct step s_abs[2];
+   static const struct step s_path[] = {
+      { "HTTP/1.1 302 Found\r\nContent-Length: 0\r\nLocation: /foo\r\n\r\n", 0, B_NONE, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+   static const struct step s_rel[] = {
+      { "HTTP/1.1 302 Found\r\nLocation: bar\r\nContent-Length: 0\r\nX-After: 1\r\n\r\n", 0, B_NONE, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+   static const struct step s_nospace[] = {
+      { "HTTP/1.1 301 Moved\r\nLocation:/moved\r\nContent-Length: 0\r\n\r\n", 0, B_NONE, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+   static const struct step s_loop[] = {
+      { "HTTP/1.1 302 Found\r\nLocation: /loop\r\nContent-Length: 0\r\n\r\n", 0, B_NONE, 0 },
+   };
+   static const struct step s_put[] = {
+      { "HTTP/1.1 307 Temporary Redirect\r\nLocation: /put2\r\nContent-Length: 0\r\n\r\n", 0, B_NONE, 0 },
+      { "HTTP/1.1 201 Created\r\nContent-Length: 2\r\n\r\nok", 0, B_NONE, 0 },
+   };
+   static const struct step s_sink[] = {
+      { "HTTP/1.1 302 Found\r\nLocation: /final\r\nContent-Length: 13\r\n\r\nredirect-body", 0, B_NONE, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+
+   memset(&a, 0, sizeof(a));
+
+   case_begin(s_path, 2, 0);
+   xfer_run(&a, "/start");
+   r = log_get(1);
+   check(a.done && body_is(&a, "ok") && !strcmp(r.line, "GET /foo HTTP/1.1"),
+         "302 Location: /foo: request line in origin form, not //foo");
+   check(second_reused(), "302 on keep-alive: redirect reuses the socket");
+   xfer_free(&a);
+
+   case_begin(s_rel, 2, 0);
+   xfer_run(&a, "/dir/page");
+   r = log_get(1);
+   check(a.done && body_is(&a, "ok") && !strcmp(r.line, "GET /dir/bar HTTP/1.1"),
+         "302 relative Location (followed by more headers): resolved under the base directory");
+   xfer_free(&a);
+
+   case_begin(s_nospace, 2, 0);
+   xfer_run(&a, "/old");
+   r = log_get(1);
+   check(a.done && body_is(&a, "ok") && !strcmp(r.line, "GET /moved HTTP/1.1"),
+         "301 Location:/moved without a space: followed");
+   xfer_free(&a);
+
+   snprintf(abs_head, sizeof(abs_head),
+         "HTTP/1.1 302 Found\r\nContent-Length: 0\r\n"
+         "Location: http://localhost:%d/abs?x=1\r\n\r\n", srv_port);
+   snprintf(want_host, sizeof(want_host), "localhost:%d", srv_port);
+   memset(s_abs, 0, sizeof(s_abs));
+   s_abs[0].head = abs_head;
+   s_abs[1].head = OK_2;
+   case_begin(s_abs, 2, 0);
+   xfer_run(&a, "/start");
+   r = log_get(1);
+   check(a.done && body_is(&a, "ok")
+         && !strcmp(r.line, "GET /abs?x=1 HTTP/1.1")
+         && !strcmp(r.host, want_host),
+         "302 absolute Location: host, port and path taken from it");
+   xfer_free(&a);
+
+   case_begin(s_loop, 1, 1);
+   xfer_run(&a, "/loop");
+   check(a.done && a.err && log_count() == 9,
+         "302 loop: stops with an error after 8 redirects (9 requests)");
+   xfer_free(&a);
+
+   case_begin(s_put, 2, 0);
+   a.method            = "PUT";
+   a.use_source        = 1;
+   a.source_can_rewind = 1;
+   a.source_len        = 100000;
+   xfer_run(&a, "/put");
+   check(a.done && a.status == 201 && log_count() == 2
+         && log_get(0).body_len == 100000 && log_get(0).body_ok
+         && log_get(1).body_len == 100000 && log_get(1).body_ok
+         && source_rewinds == 1 && second_reused(),
+         "streamed PUT then 307: source rewound, full body sent again on the same socket");
+   xfer_free(&a);
+
+   case_begin(s_put, 2, 0);
+   a.source_can_rewind = 0;
+   xfer_run(&a, "/put");
+   check(a.done && a.err && log_count() == 1,
+         "streamed PUT without a rewind then 307: clean error, nothing half-sent");
+   xfer_free(&a);
+   memset(&a, 0, sizeof(a));
+
+   case_begin(s_sink, 2, 0);
+   a.use_sink = 1;
+   xfer_run(&a, "/start");
+   check(a.done && !a.err && sink_len == 2 && !memcmp(sink_buf, "ok", 2),
+         "302 with a body and a sink: only the final body reaches the sink");
+   xfer_free(&a);
+}
+
 int main(void)
 {
    if (!network_init() || srv_start())
@@ -847,6 +955,7 @@ int main(void)
    run_section_baseline();
    run_section_a1();
    run_section_a2();
+   run_section_a3();
 
    srv_shutdown();
    net_http_deinit();
