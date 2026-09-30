@@ -28,6 +28,7 @@
 #include "../../../menu/menu_displaylist.h"
 #include "../../../configuration.h"
 #include "../../../retroarch.h"
+#include "../../../config.def.h"
 #include "../../../menu/menu_setting.h"
 #include "../../../menu/menu_entries.h"
 #include "../../../frontend/frontend_driver.h"
@@ -222,6 +223,9 @@ int main(int argc, char *argv[])
          "NFS Version: picking 3 sets 3");
    CHECK(pick_uint(MENU_ENUM_LABEL_NFS_CLIENT_READAHEAD, "64") == 64,
          "NFS Read-Ahead: picking 64 sets 64");
+   CHECK(pick_uint(MENU_ENUM_LABEL_NFS_CLIENT_READAHEAD, "0") == 0,
+         "NFS Read-Ahead: 0 (off) can be picked");
+   CHECK(DEFAULT_NFS_READAHEAD == 0, "NFS Read-Ahead is off by default");
 #endif
 #ifdef HAVE_SMBCLIENT
    CHECK(pick_uint(MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT, "1") == 1,
@@ -230,6 +234,11 @@ int main(int argc, char *argv[])
          "SMB Timeout: picking 20 sets 20");
    CHECK(pick_uint(MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT, "60") == 60,
          "SMB Timeout goes to 60, as NFS's does");
+   CHECK(pick_uint(MENU_ENUM_LABEL_SMB_CLIENT_READAHEAD, "0") == 0,
+         "SMB Read-Ahead: 0 (off) can be picked");
+   CHECK(pick_uint(MENU_ENUM_LABEL_SMB_CLIENT_READAHEAD, "1024") == 1024,
+         "SMB Read-Ahead: picking 1024 sets 1024");
+   CHECK(DEFAULT_SMB_CLIENT_READAHEAD == 0, "SMB Read-Ahead is off by default");
 #endif
 
    /* and neither sits in the Quick Menu */

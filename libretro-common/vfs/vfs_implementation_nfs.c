@@ -260,8 +260,8 @@ static struct rnfs_ctx *nfs_take(const char *server, const char *export_path,
       {
          rnfs_set_ports(c, (uint16_t)cfg->nfs_port, (uint16_t)cfg->mount_port);
          rnfs_set_version(c, cfg->version ? cfg->version : 3);
-         if (cfg->readahead)
-            rnfs_set_readahead(c, cfg->readahead * 1024);
+         /* 0 is off: one request per read, as before read-ahead */
+         rnfs_set_readahead(c, cfg->readahead * 1024);
       }
       if (rnfs_connect(c, server, export_path) != 0)
       {
@@ -434,7 +434,10 @@ static void nfs_prefetch_start(libretro_vfs_implementation_file *stream,
 #ifdef HAVE_THREADS
    const struct nfs_settings *cfg = nfs_cfg();
    struct nfs_prefetch *np;
-   size_t window = (cfg && cfg->readahead) ? (size_t)cfg->readahead * 1024 : 1024 * 1024;
+   size_t window = cfg ? (size_t)cfg->readahead * 1024 : 0;
+   /* read-ahead off: no second connection, no thread */
+   if (!window)
+      return;
    if (!(np = (struct nfs_prefetch*)calloc(1, sizeof(*np))))
       return;
    if (!(np->c = nfs_stream_take(ns, &np->slot)))
@@ -475,7 +478,7 @@ static void nfs_prefetch_stop(libretro_vfs_implementation_file *stream)
    vfs_prefetch_free(np->p);              /* joins the thread first */
    rnfs_close(np->c, np->f);
    cfg = nfs_cfg();
-   rnfs_set_readahead(np->c, (cfg && cfg->readahead) ? cfg->readahead * 1024 : 1024 * 1024);
+   rnfs_set_readahead(np->c, cfg ? cfg->readahead * 1024 : 0);
    nfs_give(np->c, np->slot);
    free(np);
    stream->nfs_prefetch = (intptr_t)0;

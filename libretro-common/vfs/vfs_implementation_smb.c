@@ -260,8 +260,8 @@ static struct smb2_context *smb_connect_with(const struct smb_conn_key *key, int
    smb2_set_authentication(ctx, auth);
 #ifdef HAVE_RETROSMB
    smb2_set_kerberos(ctx, key->realm, key->kdc, 0);
-   if (key->readahead)
-      smb2_set_readahead(ctx, key->readahead * 1024);
+   /* 0 is off: one request per read, as before read-ahead existed */
+   smb2_set_readahead(ctx, key->readahead * 1024);
 #endif
    if (smb2_connect_share(ctx, key->server_address, key->share, username) < 0)
    {
@@ -800,15 +800,18 @@ static int64_t smb_prefetch_fetch(void *user, uint64_t off, uint8_t *buf, size_t
 #endif
 
 /* Start prefetching @path for a stream opened read-only. Nothing
- * happens without threads, or without a spare connection, or when the
- * window is off: the stream then reads as before. */
+ * happens without threads, without a spare connection, or with
+ * read-ahead off: the stream then reads as before, holding no second
+ * connection and no thread. */
 static void smb_prefetch_start(libretro_vfs_implementation_file *stream,
       const char *share, const char *path)
 {
 #ifdef HAVE_THREADS
    const struct smb_settings *cfg = smb_cfg_get();
    struct smb_prefetch *sp;
-   size_t window = (cfg && cfg->readahead) ? (size_t)cfg->readahead * 1024 : 1024 * 1024;
+   size_t window = cfg ? (size_t)cfg->readahead * 1024 : 0;
+   if (!window)
+      return;
    if (!(sp = (struct smb_prefetch*)calloc(1, sizeof(*sp))))
       return;
    if (!(sp->ctx = smb_take(share, &sp->slot)))
@@ -852,7 +855,7 @@ static void smb_prefetch_stop(libretro_vfs_implementation_file *stream)
    {
       /* the pooled connection goes back with its window as configured */
       const struct smb_settings *cfg = smb_cfg_get();
-      smb2_set_readahead(sp->ctx, (cfg && cfg->readahead) ? cfg->readahead * 1024 : 1024 * 1024);
+      smb2_set_readahead(sp->ctx, cfg ? cfg->readahead * 1024 : 0);
    }
 #endif
    smb_give(sp->ctx, sp->slot);

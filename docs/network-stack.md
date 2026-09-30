@@ -53,7 +53,7 @@ Enable it under **Settings > Network > SMB Network Settings**:
 | `smb_client_kdc` | | Kerberos key distribution center host. Empty when the SMB server is the domain controller. |
 | `smb_client_num_contexts` | `4` | Connections kept open to the server, 1 to 20. |
 | `smb_client_timeout` | `5` | Seconds to wait for the server, 1 to 60. |
-| `smb_client_readahead` | `1024` | Read-ahead in KiB, 64 to 16384 (see below). |
+| `smb_client_readahead` | `0` | Read-ahead in KiB, 0 (off) to 16384 (see below). |
 
 For Kerberos, give the server by host name, not by IP address: the ticket
 is issued for that name.
@@ -86,22 +86,24 @@ consoles, send user and group 1000.
 | `nfs_mount_port` | `0` | MOUNT service port (NFSv3); 0 asks the portmapper. |
 | `nfs_num_contexts` | `4` | Connections kept open, 1 to 16. |
 | `nfs_timeout` | `5` | Seconds to wait for the server, 1 to 60. |
-| `nfs_readahead` | `1024` | Read-ahead in KiB, 64 to 16384 (see below). |
+| `nfs_readahead` | `0` | Read-ahead in KiB, 0 (off) to 16384 (see below). |
 
 Content is addressed as `nfs://server/export/path/to/game.chd`.
 
 ## Read-ahead
 
-Many cores read a disc image in small pieces. Over a network each piece
-would cost a round trip, which shows up as stutter. The SMB and NFS
-clients fetch a window around each read instead, with several requests
-in flight at once, and on a build with threads a background prefetcher
-keeps the next window coming for files opened read-only.
+Read-ahead is off by default: each read a core makes is one request to
+the server, which suits most content.
 
-`smb_client_readahead` and `nfs_readahead` set the window in KiB. A
-larger window is smoother over a slow or high-latency link and costs that
-much memory per open file. The default of 1024 KiB suits a local network;
-large disc images over Wi-Fi or a slow NAS may want 2048 or more.
+Some cores read a disc image in many small pieces, and over a slow or
+high-latency link each piece costs a round trip, which shows as
+stutter. With `smb_client_readahead` or `nfs_readahead` set, the client
+fetches a window of that many KiB around each read, with several
+requests in flight, and on a build with threads a background thread
+keeps the next window coming for files opened read-only. Each open file
+then holds that much memory, a second connection and a thread, so it is
+a poor fit for content that opens many small files at once. Try 1024
+for a large disc image that stutters; raise it for a slow link.
 
 ## Saved passwords: the keychain
 

@@ -44,7 +44,7 @@ S_UINT_EX(smb_client_timeout, SMB_CLIENT_TIMEOUT,
 #ifdef HAVE_SMBCLIENT
 S_UINT_EX(smb_client_readahead, SMB_CLIENT_READAHEAD,
       "smb_client_readahead",
-      DEFAULT_SMB_CLIENT_READAHEAD, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 64, DEFAULT_SMB_CLIENT_MAX_READAHEAD, 64, 0, setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0,
+      DEFAULT_SMB_CLIENT_READAHEAD, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, DEFAULT_SMB_CLIENT_MAX_READAHEAD, 64, 0, setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0,
       "SMB Read-Ahead (KiB)",
-      "Data fetched per network round trip when a game reads a file in small pieces. Larger is smoother over a slow link and costs that much memory per open file.")
+      "Data fetched ahead when a game reads a file in small pieces, with a background thread keeping the next window coming. Can smooth large disc images over a slow link; costs that much memory and one more connection per open file. 0 turns it off: each read is one request, as before read-ahead existed.")
 #endif

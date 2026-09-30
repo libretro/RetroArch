@@ -4,8 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <boolean.h>
 #include <net/net_compat.h>
 #include <streams/file_stream.h>
+#include <vfs/vfs.h>
 #include <file/file_path.h>
 #include <retro_dirent.h>
 #include <rthreads/rthreads.h>
@@ -50,7 +52,7 @@ int main(int argc, char **argv)
 {
    struct nfs_settings cfg;
    sthread_t *t[NTHREADS];
-   int i;
+   int i, phase;
 
    if (argc < 3)
       return 2;
@@ -67,21 +69,41 @@ int main(int argc, char **argv)
    }
    if (argc > 5)
       cfg.version = (unsigned)atoi(argv[5]);
-   nfs_init_cfg(&cfg);
    snprintf(url_file, sizeof(url_file), "nfs://%s/rnfs_dir/vfs.bin", argv[1]);
    snprintf(url_dir, sizeof(url_dir), "nfs://%s/rnfs_dir", argv[1]);
-
-   for (i = 0; i < NTHREADS; i++)
-      t[i] = sthread_create(worker, NULL);
-   for (i = 0; i < NTHREADS; i++)
-      if (t[i])
-         sthread_join(t[i]);
-   nfs_shutdown();
+   /* read-ahead off, then on: off is one request per read with no
+    * prefetcher; on, a read-only open starts one (with threads) */
+   for (phase = 0; phase < 2; phase++)
+   {
+      RFILE *f;
+      cfg.readahead = phase ? 1024 : 0;
+      nfs_init_cfg(&cfg);
+      for (i = 0; i < NTHREADS; i++)
+         t[i] = sthread_create(worker, (void*)(intptr_t)i);
+      for (i = 0; i < NTHREADS; i++)
+         if (t[i])
+            sthread_join(t[i]);
+      if ((f = filestream_open(url_file, RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+      {
+         libretro_vfs_implementation_file *h = filestream_get_vfs_handle(f);
+         bool started = h && h->nfs_prefetch != 0;
+         if (started != (phase != 0))
+         {
+            fprintf(stderr, "FAIL: read-ahead %u KiB %s a prefetcher\n",
+                  cfg.readahead, started ? "started" : "did not start");
+            failures++;
+         }
+         filestream_close(f);
+      }
+      nfs_shutdown();
+   }
    if (failures)
    {
       fprintf(stderr, "FAIL: %d bad operations across %d threads\n", failures, NTHREADS);
       return 1;
    }
-   printf("ok: %d threads x %d rounds through the VFS\n", NTHREADS, ROUNDS);
+   printf("ok: %d threads x %d rounds through the VFS, read-ahead off and on\n",
+         NTHREADS, ROUNDS);
    return 0;
 }

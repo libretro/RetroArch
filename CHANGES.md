@@ -95,7 +95,7 @@
 - NETWORK: Built-in TLS 1.2/1.3 client; mbedTLS and BearSSL are no longer bundled (--enable-mbedtls / --enable-bearssl use a system one)
 - NETWORK: Built-in SMB2/3 client with signing, AES-CCM/GCM encryption and Kerberos; libsmb2 is no longer bundled (--enable-libsmb uses a system one)
 - NETWORK: Built-in NFSv3 and NFSv4.0 client for loading content from nfs:// exports
-- NETWORK: SMB/NFS read-ahead and background prefetch, for smooth streaming of large disc images
+- NETWORK: Optional SMB/NFS read-ahead with background prefetch, for large disc images over a slow link (off by default)
 - NETWORK: Saved passwords are encrypted in retroarch-keychain.cfg; an optional passphrase lets the keychain move to another machine (see docs/network-stack.md)
 - OVERLAY: Allow overlays to position the viewport
 - OVERLAY: Hold button function
