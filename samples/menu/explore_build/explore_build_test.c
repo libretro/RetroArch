@@ -46,6 +46,7 @@
 #include "../../../verbosity.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../tasks/tasks_internal.h"
+#include "../../../msg_hash_lbl_str.h"
 
 static unsigned failures = 0;
 
@@ -144,7 +145,7 @@ static int write_db(const char *path, unsigned sys)
       char name[64], tags[64];
       snprintf(name, sizeof(name), "Game S%u N%04u", sys, g);
       snprintf(tags, sizeof(tags), "%s|%s", genres[g % 3], genres[(g + 1) % 3]);
-      bfixmap(&body, (g % 5 == 4) ? 6 : 7);
+      bfixmap(&body, (g % 5 == 4) ? 8 : 9);
       bstr(&body, "name");        bstr(&body, name);
       if (g % 5 != 4)
       {
@@ -154,6 +155,8 @@ static int write_db(const char *path, unsigned sys)
       bstr(&body, "publisher");   bstr(&body, devs[(g / 4) % 4]);
       bstr(&body, "genre");       bstr(&body, genres[g % 3]);
       bstr(&body, "releaseyear"); buint(&body, 1985 + (g % 12));
+      bstr(&body, "releasemonth"); buint(&body, 1 + (g % 12));
+      bstr(&body, "users");       buint(&body, 1 + (g % 4));
       bstr(&body, "tags");        bstr(&body, tags);
    }
    bbyte(&body, 0xc0);
@@ -306,6 +309,58 @@ static void lane_task(void)
       fprintf(stderr, "[pass] task lane (%u checks)\n", task_handler_calls);
 }
 
+/* Every category row on the top Explore screen carries its "By ..."
+ * name: a category whose name string is missing reads "null". */
+static void lane_labels(void)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *menu_stack    = menu_list ? MENU_LIST_GET(menu_list, 0) : NULL;
+   file_list_t *buf           = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+   unsigned had               = failures;
+   unsigned rows              = 0;
+   size_t i;
+
+   CHECK(menu_stack && buf, "no menu to build the Explore screen in");
+   if (!menu_stack || !buf)
+      return;
+
+   menu_explore_free();
+   CHECK(task_push_menu_explore_init(dir_playlists, dir_database),
+         "the explore task was not pushed");
+   for (i = 0; i < 2000 && menu_explore_init_in_progress(NULL); i++)
+   {
+      runloop_iterate();
+      task_queue_check();
+   }
+   CHECK(!menu_explore_init_in_progress(NULL), "the explore task did not finish");
+
+   /* As Explore is opened: the path names no saved view. */
+   menu_entries_append(menu_stack, MENU_ENUM_LABEL_GOTO_EXPLORE_STR,
+         MENU_ENUM_LABEL_GOTO_EXPLORE_STR, MENU_ENUM_LABEL_GOTO_EXPLORE,
+         MENU_EXPLORE_TAB, 0, 0, NULL);
+   menu_entries_clear(buf);
+   menu_displaylist_explore(buf, config_get_ptr());
+   for (i = 0; i < buf->size; i++)
+   {
+      const char *path = buf->list[i].path;
+      if (!path || !*path)
+         continue;
+      rows++;
+      CHECK(strncmp(path, "null", 4) != 0,
+            "an Explore row has no name: \"%s\"", path);
+   }
+   /* Search, then developer, publisher, release year, release month,
+    * player count, genre, tags and system - every field the fixture
+    * carries - then Show All. */
+   CHECK(rows >= 10, "the Explore screen listed %u rows, not 10", rows);
+   menu_entries_clear(buf);
+   menu_explore_free();
+
+   if (failures == had)
+      fprintf(stderr, "[pass] labels lane (%u rows)\n", rows);
+}
+
 /* ------------------------------------------------------------------ */
 
 int main(int argc, char *argv[])
@@ -380,6 +435,7 @@ int main(int argc, char *argv[])
 
    lane_oracle();
    lane_task();
+   lane_labels();
 
    main_exit(NULL);
 

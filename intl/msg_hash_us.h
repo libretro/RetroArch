@@ -24081,6 +24081,10 @@ MSG_HASH(
    "By Release Year"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_MONTH,
+   "By Release Month"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
    "By Player Count"
    )
