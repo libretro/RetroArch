@@ -74,6 +74,17 @@ if grep -q -- '-DHAVE_MAIN' "$cc_line"; then
        -e "s# ui/drivers/ui_cocoa\.m# $out/harness_cocoa.m#" \
       "$ld_line" | sh
    cocoa_objs="$out/harness_cocoa.o"
+
+   # The Metal driver loads default.metallib from the executable's
+   # own directory (a bare binary has no .app bundle for
+   # newDefaultLibrary to look in). The tree builds it next to
+   # retroarch; the harness binary needs it next to itself.
+   if [ -f default.metallib ]; then
+      cp -f default.metallib $out/default.metallib
+   else
+      echo "build.sh: no default.metallib in the tree - make builds it next to retroarch; the Metal driver cannot come up without it" >&2
+      exit 1
+   fi
 else
    sed "s#-o $objdir/retroarch\.o#-Dmain=rarch_harness_unused_main -o $out/retroarch_nomain.o#" \
       "$cc_line" | sh

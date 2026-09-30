@@ -101,6 +101,6 @@ check-driver: all
 
 clean:
 	rm -f $(TARGET) check.log harness_core.so retroarch_nomain.o retroarch_nomain.d \
-	      harness_main.o harness_main.d harness_cocoa.o harness_cocoa.d
+	      harness_main.o harness_main.d harness_cocoa.o harness_cocoa.d default.metallib
 
 .PHONY: all check check-vulkan check-driver clean
