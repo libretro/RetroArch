@@ -153,10 +153,19 @@ typedef struct response
    int status;
    enum response_part part;
    enum bodytype bodytype;
+   /* Set during the header walk, while each line is in cache, so
+    * that nothing walks the list again at P_DONE.  location points
+    * into the string_list copy of the Location line, never into the
+    * receive buffer, which is memmove'd after the walk. */
+   const char *location;
    /* The connection cannot carry another request once this response
-    * is done: a 101, or bytes left over after a response that has no
-    * body, which can only be garbage or a response nobody asked for. */
+    * is done: Connection: close, HTTP/1.0 without keep-alive, a
+    * close-delimited body, a 101, or bytes left over after a response
+    * that has no body, which can only be garbage or a response nobody
+    * asked for. */
    bool conn_close;
+   bool keep_alive;
+   bool http10;
 } response_t;
 
 typedef struct request
@@ -1622,7 +1631,33 @@ static void net_http_headers_clear(struct response *response)
       list->elems[i].userdata = NULL;
    }
    list->size           = 0;
+   response->location   = NULL;
    response->conn_close = false;
+   response->keep_alive = false;
+   response->http10     = false;
+}
+
+/* Does the comma-separated header value @v list @tok?  Members are
+ * compared whole and case-insensitively, with the optional whitespace
+ * around them ignored, so "Keep-Alive, Close" lists close and
+ * "gzip, chunked" lists chunked.  Only called on Connection and
+ * Transfer-Encoding lines. */
+static bool net_http_list_has(const char *v, const char *tok, size_t toklen)
+{
+   for (;;)
+   {
+      const char *e;
+      const char *t;
+      while (*v == ' ' || *v == '\t' || *v == ',')
+         v++;
+      if (!*v)
+         return false;
+      for (e = v; *e && *e != ','; e++) { }
+      for (t = e; t > v && (t[-1] == ' ' || t[-1] == '\t'); t--) { }
+      if ((size_t)(t - v) == toklen && !strncasecmp(v, tok, toklen))
+         return true;
+      v = e;
+   }
 }
 
 static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
@@ -1630,6 +1665,7 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
    struct response *response = (struct response*)&state->response;
    char *scan;
    char *dataend;
+   const char *location;
 
    response->pos += len;
    scan    = response->data;
@@ -1680,6 +1716,9 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
             response->status = (p[0] - '0') * 100
                              + (p[1] - '0') * 10
                              + (p[2] - '0');
+            /* HTTP/1.0 closes after the response unless the server
+             * says keep-alive. */
+            response->http10 = (scan[7] == '0');
          }
          response->part = P_HEADER;
       }
@@ -1688,6 +1727,8 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
          if (scan[0] == '\0')
          {
             int status = response->status;
+            if (response->http10 && !response->keep_alive)
+               response->conn_close = true;
             if (status >= 100 && status < 200 && status != 101)
             {
                /* Interim response (100 Continue, 102 Processing, 103
@@ -1735,10 +1776,21 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
             continue;
          }
 
+         location = NULL;
          switch (scan[0] | 0x20)
          {
             case 'c':
-               if (strncasecmp(scan, "Content-Length:",
+               if (strncasecmp(scan, "Connection:",
+                     sizeof("Connection:") - 1) == 0)
+               {
+                  const char *v = scan + (sizeof("Connection:") - 1);
+                  if (net_http_list_has(v, "close", sizeof("close") - 1))
+                     response->conn_close = true;
+                  else if (net_http_list_has(v, "keep-alive",
+                           sizeof("keep-alive") - 1))
+                     response->keep_alive = true;
+               }
+               else if (strncasecmp(scan, "Content-Length:",
                      sizeof("Content-Length:") - 1) == 0)
                {
                   /* Parse Content-Length as unsigned with an explicit
@@ -1778,15 +1830,33 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
                      state->err     = true;
                      return -1;
                   }
-                  response->bodytype    = T_LEN;
-                  response->len         = val;
-                  response->content_len = val;
+                  /* Transfer-Encoding wins over Content-Length whichever
+                   * comes first (RFC 9112 6.3); a length arriving after
+                   * "chunked" used to reframe the body. */
+                  if (response->bodytype != T_CHUNK)
+                  {
+                     response->bodytype    = T_LEN;
+                     response->len         = val;
+                     response->content_len = val;
+                  }
                }
                break;
             case 't':
-               if (strcasecmp(scan,
-                     "Transfer-Encoding: chunked") == 0)
+               if (   strncasecmp(scan, "Transfer-Encoding:",
+                        sizeof("Transfer-Encoding:") - 1) == 0
+                   && net_http_list_has(
+                        scan + (sizeof("Transfer-Encoding:") - 1),
+                        "chunked", sizeof("chunked") - 1))
                   response->bodytype = T_CHUNK;
+               break;
+            case 'l':
+               if (strncasecmp(scan, "Location:",
+                     sizeof("Location:") - 1) == 0)
+               {
+                  location = scan + (sizeof("Location:") - 1);
+                  while (*location == ' ' || *location == '\t')
+                     location++;
+               }
                break;
             default:
                break;
@@ -1795,7 +1865,11 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
          {
             union string_list_elem_attr attr;
             attr.i = 0;
-            string_list_append(response->headers, scan, attr);
+            if (   string_list_append(response->headers, scan, attr)
+                && location)
+               response->location =
+                    response->headers->elems[response->headers->size - 1].data
+                  + (location - scan);
          }
       }
 
@@ -1898,7 +1972,9 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
    {
       if (response->bodytype != T_FULL)
          return false;
-      response->part      = P_DONE;
+      response->part       = P_DONE;
+      /* The close that ended the body ended the connection too. */
+      response->conn_close = true;
       if (response->buflen != response->len && response->len > 0)
       {
          /* Shrink response->data from buflen bytes to len bytes.
@@ -2759,18 +2835,6 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
       net_http_conn_pool_remove(state->conn);
       state->conn = NULL;
    }
-   else
-   {
-      for (_len = 0; (size_t)_len < response->headers->size; _len++)
-      {
-         if (string_is_equal_case_insensitive(response->headers->elems[_len].data, "connection: close"))
-         {
-            net_http_conn_pool_remove(state->conn);
-            state->conn = NULL;
-            break;
-         }
-      }
-   }
 
    if (state->conn)
    {
@@ -2783,14 +2847,9 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    }
    state->conn = NULL;
 
-   if (response->status >= 300 && response->status < 400)
-   {
-      for (_len = 0; (size_t)_len < response->headers->size; _len++)
-      {
-         if (string_starts_with_case_insensitive(response->headers->elems[_len].data, "Location: "))
-            return net_http_redirect(state, response->headers->elems[_len].data + (sizeof("Location: ")-1));
-      }
-   }
+   if (   response->status >= 300 && response->status < 400
+       && response->location)
+      return net_http_redirect(state, response->location);
 
    return true;
 }
@@ -2850,7 +2909,10 @@ bool net_http_body_is_framed(const struct string_list *headers)
       /* Same two tests as the header parser above. */
       if (strncasecmp(h, "Content-Length:", STRLEN_CONST("Content-Length:")) == 0)
          return true;
-      if (strcasecmp(h, "Transfer-Encoding: chunked") == 0)
+      if (   strncasecmp(h, "Transfer-Encoding:",
+               STRLEN_CONST("Transfer-Encoding:")) == 0
+          && net_http_list_has(h + STRLEN_CONST("Transfer-Encoding:"),
+               "chunked", STRLEN_CONST("chunked")))
          return true;
    }
    return false;

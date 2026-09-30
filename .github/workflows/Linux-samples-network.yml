@@ -302,8 +302,11 @@ jobs:
           # 304 on keep-alive used to sit waiting for a close that never
           # came, a 1xx other than 100 was taken as the final status,
           # and a 101 or stray bytes after a bodyless response left the
-          # socket in the pool. Every case has a deadline, so a hang
-          # fails the case instead of the job.
+          # socket in the pool. Connection and Transfer-Encoding are
+          # read as lists ("Keep-Alive, Close", "gzip, chunked"),
+          # HTTP/1.0 without keep-alive is not pooled, and a length
+          # after "chunked" does not reframe the body. Every case has
+          # a deadline, so a hang fails the case instead of the job.
           make clean all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \

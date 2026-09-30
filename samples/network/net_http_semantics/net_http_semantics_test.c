@@ -747,6 +747,94 @@ static void run_section_a1(void)
    xfer_free(&a); xfer_free(&b);
 }
 
+/* ---- A2: Connection / Transfer-Encoding as lists, HTTP/1.0 ---- */
+
+static void run_section_a2(void)
+{
+   struct xfer a, b;
+   struct string_list *l;
+   union string_list_elem_attr attr;
+   static const struct step s_10[] = {
+      { "HTTP/1.0 200 OK\r\nContent-Length: 2\r\n\r\nok", 0, B_NONE, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+   static const struct step s_10ka[] = {
+      { "HTTP/1.0 200 OK\r\nConnection: keep-alive\r\nContent-Length: 2\r\n\r\nok", 0, B_NONE, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+   static const struct step s_list[] = {
+      { "HTTP/1.1 200 OK\r\nConnection: Keep-Alive, Close\r\nContent-Length: 2\r\n\r\nok", 0, B_NONE, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+   static const struct step s_nospace[] = {
+      { "HTTP/1.1 200 OK\r\nConnection:close\r\nContent-Length: 2\r\n\r\nok", 0, B_NONE, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+   static const struct step s_te[] = {
+      { "HTTP/1.1 200 OK\r\nTransfer-Encoding: gzip, chunked\r\n\r\n", 5000, B_CHUNKED, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+   static const struct step s_te_cl[] = {
+      { "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nContent-Length: 5\r\n\r\n", 5000, B_CHUNKED, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+
+   memset(&a, 0, sizeof(a));
+   memset(&b, 0, sizeof(b));
+
+   case_begin(s_10, 2, 0);
+   xfer_run(&a, "/v10");
+   xfer_run(&b, "/next");
+   check(a.done && body_is(&a, "ok"), "HTTP/1.0 without Connection: body read");
+   check(b.done && body_is(&b, "ok") && !second_reused(),
+         "HTTP/1.0 without Connection: socket not returned to the pool");
+   xfer_free(&a); xfer_free(&b);
+
+   case_begin(s_10ka, 2, 0);
+   xfer_run(&a, "/v10ka");
+   xfer_run(&b, "/next");
+   check(a.done && body_is(&a, "ok") && b.done && second_reused(),
+         "HTTP/1.0 with Connection: keep-alive: socket reused");
+   xfer_free(&a); xfer_free(&b);
+
+   case_begin(s_list, 2, 0);
+   xfer_run(&a, "/list");
+   xfer_run(&b, "/next");
+   check(a.done && body_is(&a, "ok") && b.done && !second_reused(),
+         "Connection: Keep-Alive, Close: close honoured as a list member");
+   xfer_free(&a); xfer_free(&b);
+
+   case_begin(s_nospace, 2, 0);
+   xfer_run(&a, "/nospace");
+   xfer_run(&b, "/next");
+   check(a.done && body_is(&a, "ok") && b.done && !second_reused(),
+         "Connection:close without a space: close honoured");
+   xfer_free(&a); xfer_free(&b);
+
+   case_begin(s_te, 2, 0);
+   xfer_run(&a, "/te");
+   xfer_run(&b, "/next");
+   check(a.done && body_is_pattern(&a, 5000),
+         "Transfer-Encoding: gzip, chunked: body de-chunked without waiting for close");
+   check(b.done && second_reused(),
+         "Transfer-Encoding: gzip, chunked: socket reused");
+   xfer_free(&a); xfer_free(&b);
+
+   case_begin(s_te_cl, 2, 0);
+   xfer_run(&a, "/tecl");
+   xfer_run(&b, "/next");
+   check(a.done && body_is_pattern(&a, 5000) && b.done && body_is(&b, "ok"),
+         "Content-Length after Transfer-Encoding: chunked does not reframe the body");
+   xfer_free(&a); xfer_free(&b);
+
+   l = string_list_new();
+   attr.i = 0;
+   string_list_append(l, "Transfer-Encoding: gzip, chunked", attr);
+   check(net_http_body_is_framed(l),
+         "net_http_body_is_framed: chunked as a list member counts");
+   string_list_free(l);
+}
+
 int main(void)
 {
    if (!network_init() || srv_start())
@@ -758,6 +846,7 @@ int main(void)
 
    run_section_baseline();
    run_section_a1();
+   run_section_a2();
 
    srv_shutdown();
    net_http_deinit();
