@@ -27,11 +27,6 @@ SOURCES_C := 	\
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_intf.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_linux.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_windowsmmap.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file_zlib.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
@@ -65,7 +60,7 @@ TEST_SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
 
 # The round-trip regression test writes with rpng_encode and reads
-# back with rpng, so it needs the full file/nbio/stream stack.
+# back with rpng, so it needs the full file/stream stack.
 # Sources intentionally mirror $(SOURCES_C) minus the demo's
 # rpng_test.c entry point, plus the new test entry point.
 TEST2_SOURCES_C := \
@@ -80,11 +75,6 @@ TEST2_SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_intf.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_linux.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_windowsmmap.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file_zlib.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \

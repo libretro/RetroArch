@@ -42,7 +42,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <file/nbio.h>
+#include <streams/file_stream.h>
 #include <libretro.h>
 #include <formats/rpng.h>
 #include <streams/interface_stream.h>
@@ -292,23 +292,17 @@ static bool load_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height)
 {
    int retval;
-   size_t file_len       = 0;
+   int64_t file_len      = 0;
    bool ret              = true;
    rpng_t *rpng          = NULL;
    void *ptr             = NULL;
-   struct nbio_t *handle = (struct nbio_t*)nbio_open(path, NBIO_READ);
 
-   if (!handle)
+   if (!filestream_read_file(path, &ptr, &file_len) || !ptr)
       return false;
-
-   nbio_begin_read(handle);
-   while (!nbio_iterate(handle));
-   ptr = nbio_get_ptr(handle, &file_len);
-   if (!ptr)          { ret = false; goto done; }
 
    rpng = rpng_alloc();
    if (!rpng)         { ret = false; goto done; }
-   if (!rpng_set_buf_ptr(rpng, (uint8_t*)ptr, file_len))
+   if (!rpng_set_buf_ptr(rpng, (uint8_t*)ptr, (size_t)file_len))
                       { ret = false; goto done; }
    if (!rpng_start(rpng))
                       { ret = false; goto done; }
@@ -319,15 +313,15 @@ static bool load_argb(const char *path, uint32_t **data,
    do
    {
       retval = rpng_process_image(rpng,
-            (void**)data, file_len, width, height, false);
+            (void**)data, (size_t)file_len, width, height, false);
    } while (retval == IMAGE_PROCESS_NEXT);
 
    if (retval == IMAGE_PROCESS_ERROR || retval == IMAGE_PROCESS_ERROR_END)
       ret = false;
 
 done:
-   if (handle) nbio_free(handle);
    if (rpng)   rpng_free(rpng);
+   free(ptr);
    if (!ret && *data) { free(*data); *data = NULL; }
    return ret;
 }

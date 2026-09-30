@@ -125,7 +125,6 @@ WINE          ?= wine
 
 # Every file that selects between A and W.
 WIN32_AW_SRC = compat/fopen_utf8.c dynamic/dylib.c file/file_path.c \
-	       file/nbio/nbio_stdio.c file/nbio/nbio_windowsmmap.c \
 	       vfs/vfs_implementation.c
 
 # What a runnable test needs linked in besides the file under test.
