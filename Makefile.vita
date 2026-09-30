@@ -75,7 +75,7 @@ else
 	HAVE_VITAGL		:= 0
    endif
 	HAVE_NETWORKING		:= 1
-	# the cleanroom crypto, keychain and TLS client, not the bundled mbedtls
+	# the cleanroom crypto, keychain and TLS client
 	HAVE_CRYPTO		:= 1
 	HAVE_KEYCHAIN		:= 1
 	HAVE_RETROSSL		:= 1

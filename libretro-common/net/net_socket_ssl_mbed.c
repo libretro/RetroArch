@@ -31,17 +31,7 @@
 #include <3ds/services/ps.h>
 #endif
 
-#if defined(HAVE_BUILTINMBEDTLS)
-#include "../../deps/mbedtls/mbedtls/config.h"
-#include "../../deps/mbedtls/mbedtls/version.h"
-#include "../../deps/mbedtls/mbedtls/certs.h"
-#include "../../deps/mbedtls/mbedtls/debug.h"
-#include "../../deps/mbedtls/mbedtls/platform.h"
-#include "../../deps/mbedtls/mbedtls/net_sockets.h"
-#include "../../deps/mbedtls/mbedtls/ssl.h"
-#include "../../deps/mbedtls/mbedtls/ctr_drbg.h"
-#include "../../deps/mbedtls/mbedtls/entropy.h"
-#else
+/* A system Mbed TLS: 2.x, 3.x and 4.x are all taken. */
 #include <mbedtls/version.h>
 #if MBEDTLS_VERSION_MAJOR < 3
 #include <mbedtls/config.h>
@@ -59,7 +49,6 @@
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/entropy.h>
 #endif
-#endif
 
 /* Mbed TLS 4.x moved the crypto code out into TF-PSA-Crypto and dropped
  * the legacy entropy/CTR_DRBG interfaces from the public API - the
@@ -67,7 +56,7 @@
  * parameters were removed from every function that took them.  All
  * randomness comes from the PSA subsystem instead, which just needs a
  * one-time psa_crypto_init(). */
-#if !defined(HAVE_BUILTINMBEDTLS) && defined(MBEDTLS_VERSION_MAJOR) \
+#if defined(MBEDTLS_VERSION_MAJOR) \
  && MBEDTLS_VERSION_MAJOR >= 4
 #define SSL_MBED_LEGACY_RNG 0
 #else
@@ -80,7 +69,7 @@
  * even build its ClientHello key share and every handshake fails with
  * MBEDTLS_ERR_SSL_INTERNAL_ERROR.  3.6 compiles TLS 1.3 in by default,
  * so a system 3.6 build hits this on every connection. */
-#if SSL_MBED_LEGACY_RNG && !defined(HAVE_BUILTINMBEDTLS) \
+#if SSL_MBED_LEGACY_RNG \
  && defined(MBEDTLS_VERSION_MAJOR) && MBEDTLS_VERSION_MAJOR == 3 \
  && defined(MBEDTLS_PSA_CRYPTO_C) \
  && (defined(MBEDTLS_SSL_PROTO_TLS1_3) || defined(MBEDTLS_USE_PSA_CRYPTO))
@@ -134,7 +123,7 @@ static int platform_entropy_func(void *data, unsigned char *s, size_t len)
 }
 #elif defined(VITA) && SSL_MBED_LEGACY_RNG
 /* The Vita has no platform entropy source mbedtls can poll (see
- * MBEDTLS_NO_PLATFORM_ENTROPY in deps/mbedtls/mbedtls/config.h), so
+ * MBEDTLS_NO_PLATFORM_ENTROPY in an mbedtls built for it), so
  * seed CTR_DRBG straight from the kernel RNG.  A single
  * sceKernelGetRandomNumber() call is limited to 64 bytes. */
 static int platform_entropy_func(void *data, unsigned char *s, size_t len)

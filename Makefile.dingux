@@ -43,8 +43,7 @@ HAVE_AL = 1
 HAVE_ALSA = 0
 HAVE_DSP_FILTER = 1
 HAVE_VIDEO_FILTER = 1
-# the cleanroom crypto, keychain and TLS client, not the bundled mbedtls
-HAVE_BUILTINMBEDTLS = 0
+# the cleanroom crypto, keychain and TLS client
 HAVE_CRYPTO = 1
 HAVE_KEYCHAIN = 1
 HAVE_RETROSSL = 1

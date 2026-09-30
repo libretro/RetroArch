@@ -13,8 +13,7 @@ HAVE_GFX_WIDGETS := 1
 HAVE_SAF := 1
 # The cleanroom network stack, as on the desktop builds: the crypto,
 # the encrypted keychain, the TLS 1.2/1.3 client and the SMB2/3 client
-# with Kerberos, in place of the bundled mbedtls and libsmb2 sources
-# griffin used to pull in for the same jobs. All of it needs nothing
+# with Kerberos. All of it needs nothing
 # but sockets; the NFSv3/v4 client and its nfs:// backend likewise.
 HAVE_CRYPTO   := 1
 HAVE_KEYCHAIN := 1
@@ -184,8 +183,6 @@ DEFINES += -DRARCH_MOBILE \
 
 ifeq ($(HAVE_RETROSSL),1)
    DEFINES += -DHAVE_RETROSSL
-else
-   DEFINES += -DHAVE_BUILTINMBEDTLS
 endif
 
 ifeq ($(HAVE_GFX_WIDGETS),1)

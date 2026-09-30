@@ -49,7 +49,6 @@ HAVE_AUDIOIO = 0
 HAVE_AUDIOMIXER = 1
 HAVE_BLISSBOX = 0
 HAVE_BSV_MOVIE = 1
-HAVE_BUILTINBEARSSL = 0
 HAVE_RFLAC = 1
 HAVE_DSP_FILTER = 1
 HAVE_VIDEO_FILTER = 1
@@ -58,9 +57,7 @@ HAVE_STATIC_AUDIO_FILTERS = 1
 HAVE_FILTERS_BUILTIN	= 1
 # The cleanroom network stack, as on the desktop builds: the crypto,
 # the encrypted keychain, the TLS 1.2/1.3 client and the SMB2/3 client
-# with Kerberos, in place of the bundled mbedtls and libsmb2; plus the
-# NFSv3/v4 client. Needs nothing but sockets.
-HAVE_BUILTINMBEDTLS = 0
+# with Kerberos; plus the NFSv3/v4 client. Needs nothing but sockets.
 HAVE_CRYPTO = 1
 HAVE_KEYCHAIN = 1
 HAVE_RETROSSL = 1

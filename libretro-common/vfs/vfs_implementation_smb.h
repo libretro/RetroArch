@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 /* System headers may lack SMB2_SEC_ defines but
- * will clash with deps/libsmb2 if provided here
+ * will clash with libsmb2 if provided here
  */
 #define RETRO_SMB2_SEC_UNDEFINED 0
 #define RETRO_SMB2_SEC_NTLMSSP 1

@@ -573,36 +573,41 @@ check_val '' FLAC '-lFLAC' '' flac '' '' false
 
 check_enabled SSL RETROSSL 'retro ssl' 'ssl is' false
 check_enabled CRYPTO RETROSSL 'retro ssl' 'crypto is' false
-check_enabled SSL SYSTEMMBEDTLS 'system mbedtls' 'ssl is' false
-check_enabled SSL BUILTINMBEDTLS 'builtin mbedtls' 'ssl is' false
-check_enabled SSL BUILTINBEARSSL 'builtin bearssl' 'ssl is' false
+check_enabled SSL MBEDTLS 'system mbedtls' 'ssl is' false
+check_enabled SSL BEARSSL 'system bearssl' 'ssl is' false
 
-if [ "$HAVE_SYSTEMMBEDTLS" = "auto" ]; then SYSTEMMBEDTLS_IS_AUTO=yes; else SYSTEMMBEDTLS_IS_AUTO=no; fi
-check_val '' SYSTEMMBEDTLS '-lmbedtls' 'mbedtls' mbedtls 2.5.1 '' true
-check_val '' SYSTEMMBEDX509 '-lmbedx509' 'mbedtls' mbedx509 2.5.1 '' true
-check_val '' SYSTEMMBEDCRYPTO '-lmbedcrypto' 'mbedtls' mbedcrypto 2.5.1 '' true
-if [ "$HAVE_SYSTEMMBEDTLS" = 'yes' ] && [ -z "$SYSTEMMBEDTLS_VERSION" ]; then
-  # Ancient versions (such as the one included in the Ubuntu version used for
-  # build checks) don't have this header
-  check_header '' SYSTEMMBEDTLS mbedtls/net_sockets.h
+# The built-in client is the default and needs no library. A system
+# mbedTLS or BearSSL replaces it when asked for, and is then required:
+# nothing is bundled any more, so a library asked for and not found is
+# an error rather than a silent fallback.
+if [ "$HAVE_MBEDTLS" = 'yes' ] && [ "$HAVE_BEARSSL" = 'yes' ]; then
+  die 1 "Can't enable multiple SSL backends"
 fi
-if [ "$HAVE_SYSTEMMBEDX509" = 'no' ] || [ "$HAVE_SYSTEMMBEDCRYPTO" = 'no' ]; then HAVE_SYSTEMMBEDTLS=no; fi
-if [ "$SYSTEMMBEDTLS_IS_AUTO" = "yes" ] && [ "$HAVE_SYSTEMMBEDTLS" = "yes" ]; then HAVE_SYSTEMMBEDTLS=auto; fi
+if [ "$HAVE_MBEDTLS" = 'yes' ]; then
+  check_val '' MBEDTLS '-lmbedtls' 'mbedtls' mbedtls 2.5.1 '' true
+  check_val '' MBEDX509 '-lmbedx509' 'mbedtls' mbedx509 2.5.1 '' true
+  check_val '' MBEDCRYPTO '-lmbedcrypto' 'mbedtls' mbedcrypto 2.5.1 '' true
+  if [ "$HAVE_MBEDTLS" = 'yes' ] && [ -z "$MBEDTLS_VERSION" ]; then
+    # Ancient versions (such as the one included in the Ubuntu version used
+    # for build checks) don't have this header
+    check_header '' MBEDTLS mbedtls/net_sockets.h
+  fi
+  if [ "$HAVE_MBEDTLS" != 'yes' ] || [ "$HAVE_MBEDX509" != 'yes' ] || [ "$HAVE_MBEDCRYPTO" != 'yes' ]; then
+    die 1 'Error: --enable-mbedtls requires a system mbedTLS (mbedtls, mbedx509 and mbedcrypto), and none was found.'
+  fi
+  HAVE_RETROSSL=no
+fi
+if [ "$HAVE_BEARSSL" = 'yes' ]; then
+  check_lib '' BEARSSL -lbearssl br_ssl_client_init_full
+  check_header '' BEARSSL bearssl.h
+  if [ "$HAVE_BEARSSL" != 'yes' ]; then
+    die 1 'Error: --enable-bearssl requires a system BearSSL, and none was found.'
+  fi
+  HAVE_RETROSSL=no
+fi
 
 SSL_BACKEND_CHOSEN=no
-if [ "$HAVE_RETROSSL" = "yes" ]; then
-  SSL_BACKEND_CHOSEN=yes
-fi
-if [ "$HAVE_SYSTEMMBEDTLS" = "yes" ]; then
-  if [ "$SSL_BACKEND_CHOSEN" = "yes" ]; then die 1 "Can't enable multiple SSL backends"; fi
-  SSL_BACKEND_CHOSEN=yes
-fi
-if [ "$HAVE_BUILTINMBEDTLS" = "yes" ]; then
-  if [ "$SSL_BACKEND_CHOSEN" = "yes" ]; then die 1 "Can't enable multiple SSL backends"; fi
-  SSL_BACKEND_CHOSEN=yes
-fi
-if [ "$HAVE_BUILTINBEARSSL" = "yes" ]; then
-  if [ "$SSL_BACKEND_CHOSEN" = "yes" ]; then die 1 "Can't enable multiple SSL backends"; fi
+if [ "$HAVE_RETROSSL" = "yes" ] || [ "$HAVE_MBEDTLS" = "yes" ] || [ "$HAVE_BEARSSL" = "yes" ]; then
   SSL_BACKEND_CHOSEN=yes
 fi
 # The built-in client comes first: no library to find, and the
@@ -611,22 +616,9 @@ if [ "$SSL_BACKEND_CHOSEN" = "no" ] && [ "$HAVE_RETROSSL" = "auto" ]; then
   HAVE_RETROSSL=yes
   SSL_BACKEND_CHOSEN=yes
 fi
-if [ "$SSL_BACKEND_CHOSEN" = "no" ] && [ "$HAVE_SYSTEMMBEDTLS" = "auto" ]; then
-  HAVE_SYSTEMMBEDTLS=yes
-  SSL_BACKEND_CHOSEN=yes
-fi
-if [ "$SSL_BACKEND_CHOSEN" = "no" ] && [ "$HAVE_BUILTINMBEDTLS" = "auto" ]; then
-  HAVE_BUILTINMBEDTLS=yes
-  SSL_BACKEND_CHOSEN=yes
-fi
-if [ "$SSL_BACKEND_CHOSEN" = "no" ] && [ "$HAVE_BUILTINBEARSSL" = "auto" ]; then
-  HAVE_BUILTINBEARSSL=yes
-  SSL_BACKEND_CHOSEN=yes
-fi
 if [ "$HAVE_RETROSSL" = "auto" ]; then HAVE_RETROSSL=no; fi
-if [ "$HAVE_SYSTEMMBEDTLS" = "auto" ]; then HAVE_SYSTEMMBEDTLS=no; fi
-if [ "$HAVE_BUILTINMBEDTLS" = "auto" ]; then HAVE_BUILTINMBEDTLS=no; fi
-if [ "$HAVE_BUILTINBEARSSL" = "auto" ]; then HAVE_BUILTINBEARSSL=no; fi
+if [ "$HAVE_MBEDX509" = "auto" ]; then HAVE_MBEDX509=no; fi
+if [ "$HAVE_MBEDCRYPTO" = "auto" ]; then HAVE_MBEDCRYPTO=no; fi
 
 if [ "$HAVE_SSL" = "auto" ]; then HAVE_SSL=$SSL_BACKEND_CHOSEN; fi
 if [ "$HAVE_SSL" = "yes" ] && [ "$SSL_BACKEND_CHOSEN" = "no" ]; then die 1 "error: SSL enabled, but all backends disabled"; fi
@@ -1067,12 +1059,13 @@ fi
 check_enabled NETWORKING RETRONFS 'built-in NFS client' 'Networking is' false
 if [ "$HAVE_RETRONFS" = 'auto' ]; then HAVE_RETRONFS=yes; fi
 
-# The built-in client is used unless a libsmb2 was explicitly asked
-# for; with it on, neither libsmb2 is looked for or built.
+# The built-in client is used unless a system libsmb2 was asked for
+# (--enable-libsmb, or --enable-smbclient); nothing is bundled any more,
+# so libsmb2 asked for and not found is an error.
 check_enabled NETWORKING RETROSMB 'built-in SMB client' 'Networking is' false
 check_enabled CRYPTO RETROSMB 'built-in SMB client' 'crypto is' false
 if [ "$HAVE_RETROSMB" = 'auto' ]; then
-   if [ "$HAVE_SMBCLIENT" = 'yes' ] || [ "$HAVE_BUILTINSMBCLIENT" = 'yes' ] || [ "$HAVE_LIBSMB" = 'yes' ]; then
+   if [ "$HAVE_SMBCLIENT" = 'yes' ] || [ "$HAVE_LIBSMB" = 'yes' ]; then
       HAVE_RETROSMB=no
    else
       HAVE_RETROSMB=yes
@@ -1080,35 +1073,19 @@ if [ "$HAVE_RETROSMB" = 'auto' ]; then
 fi
 if [ "$HAVE_RETROSMB" = 'yes' ]; then
    HAVE_SMBCLIENT=no
-   HAVE_BUILTINSMBCLIENT=no
+   HAVE_LIBSMB=no
    echo "SMB support enabled (built-in client)"
-fi
-
-# First try system libsmb2
-check_pkgconf SMBCLIENT libsmb2 0.0
-check_enabled NETWORKING SMBCLIENT libsmb2 'SMB client support is' false
-
-# --enable-libsmb is the umbrella switch for SMB support: it guarantees SMB
-# gets built in without the caller having to know which libsmb2 provider is
-# available.  A system libsmb2 is preferred when pkg-config found one, and
-# the copy bundled in deps/libsmb2 is used otherwise.  --enable-smbclient and
-# --enable-builtinsmbclient remain available for packagers who need to pin a
-# specific provider.
-if [ "$HAVE_LIBSMB" = 'yes' ]; then
-   check_enabled NETWORKING LIBSMB libsmb2 'Networking is' false
-fi
-
-if [ "$HAVE_LIBSMB" = 'yes' ] && [ "$HAVE_SMBCLIENT" != 'yes' ]; then
-   if [ "$USER_BUILTINSMBCLIENT" = 'no' ]; then
-      die 1 'Error: --enable-libsmb requires a libsmb2, but no system libsmb2 was found and the bundled one is disabled.'
+else
+   if [ "$HAVE_LIBSMB" = 'yes' ]; then
+      check_enabled NETWORKING LIBSMB libsmb2 'Networking is' false
+      HAVE_SMBCLIENT=yes
    fi
-   HAVE_BUILTINSMBCLIENT=yes
-fi
-
-if [ "$HAVE_SMBCLIENT" = "yes" ]; then
-    echo "SMB support enabled (system libsmb2)"
-elif [ "$HAVE_BUILTINSMBCLIENT" = "yes" ] || [ "$HAVE_BUILTINSMBCLIENT" = "auto" ]; then
-    HAVE_BUILTINSMBCLIENT=yes
-    echo "SMB support - building bundled libsmb2"
-    add_dirs INCLUDE ./deps/libsmb2/include
+   check_pkgconf SMBCLIENT libsmb2 0.0
+   check_enabled NETWORKING SMBCLIENT libsmb2 'SMB client support is' false
+   if [ "$HAVE_LIBSMB" = 'yes' ] && [ "$HAVE_SMBCLIENT" != 'yes' ]; then
+      die 1 'Error: --enable-libsmb requires a system libsmb2, and none was found.'
+   fi
+   if [ "$HAVE_SMBCLIENT" = 'yes' ]; then
+      echo "SMB support enabled (system libsmb2)"
+   fi
 fi

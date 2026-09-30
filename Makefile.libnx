@@ -58,8 +58,7 @@ HAVE_RVORBIS = 1
 HAVE_RMODTRACKER = 1
 HAVE_CORE_INFO_CACHE = 1
 HAVE_CLOUDSYNC = 1
-# The cleanroom crypto, keychain and TLS 1.2/1.3 client in place of
-# devkitPro's mbedtls; nothing to link.
+# The cleanroom crypto, keychain and TLS 1.2/1.3 client; nothing to link.
 HAVE_CRYPTO = 1
 HAVE_KEYCHAIN = 1
 HAVE_RETROSSL = 1

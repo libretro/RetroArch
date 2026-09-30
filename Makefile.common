@@ -603,200 +603,28 @@ endif
 ifneq ($(HAVE_NETWORKING), 1)
    HAVE_SSL = 0
    HAVE_RETROSSL = 0
-   HAVE_BUILTINBEARSSL = 0
-   HAVE_BUILTINMBEDTLS = 0
+   HAVE_BEARSSL = 0
+   HAVE_MBEDTLS = 0
 endif
 
+# TLS: the built-in client by default; a system mbedTLS or BearSSL in
+# its place when configure was asked for one. Nothing is bundled.
 ifeq ($(HAVE_RETROSSL), 1)
    HAVE_SSL = 1
    DEFINES += -DHAVE_SSL -DHAVE_RETROSSL
-else ifeq ($(HAVE_BUILTINBEARSSL), 1)
+else ifeq ($(HAVE_BEARSSL), 1)
    HAVE_SSL = 1
    DEFINES += -DHAVE_SSL -DHAVE_BEARSSL
-
-   # these -Is are only needed for BearSSL itself
-   INCLUDE_DIRS += -Ideps/bearssl-0.6/src -Ideps/bearssl-0.6/inc
-   OBJS_BEAR = deps/bearssl-0.6/src/aead/ccm.o \
-               deps/bearssl-0.6/src/codec/ccopy.o \
-               deps/bearssl-0.6/src/codec/dec32be.o \
-               deps/bearssl-0.6/src/codec/dec32le.o \
-               deps/bearssl-0.6/src/codec/dec64be.o \
-               deps/bearssl-0.6/src/codec/enc32be.o \
-               deps/bearssl-0.6/src/codec/enc32le.o \
-               deps/bearssl-0.6/src/codec/enc64be.o \
-               deps/bearssl-0.6/src/ec/ec_all_m31.o \
-               deps/bearssl-0.6/src/ec/ec_c25519_m31.o \
-               deps/bearssl-0.6/src/ec/ecdsa_atr.o \
-               deps/bearssl-0.6/src/ec/ecdsa_i31_bits.o \
-               deps/bearssl-0.6/src/ec/ecdsa_i31_vrfy_asn1.o \
-               deps/bearssl-0.6/src/ec/ecdsa_i31_vrfy_raw.o \
-               deps/bearssl-0.6/src/ec/ec_p256_m31.o \
-               deps/bearssl-0.6/src/ec/ec_prime_i31.o \
-               deps/bearssl-0.6/src/ec/ec_secp256r1.o \
-               deps/bearssl-0.6/src/ec/ec_secp384r1.o \
-               deps/bearssl-0.6/src/ec/ec_secp521r1.o \
-               deps/bearssl-0.6/src/hash/ghash_ctmul64.o \
-               deps/bearssl-0.6/src/hash/ghash_pclmul.o \
-               deps/bearssl-0.6/src/hash/md5.o \
-               deps/bearssl-0.6/src/hash/multihash.o \
-               deps/bearssl-0.6/src/hash/sha1.o \
-               deps/bearssl-0.6/src/hash/sha2big.o \
-               deps/bearssl-0.6/src/hash/sha2small.o \
-               deps/bearssl-0.6/src/int/i31_add.o \
-               deps/bearssl-0.6/src/int/i31_bitlen.o \
-               deps/bearssl-0.6/src/int/i31_decmod.o \
-               deps/bearssl-0.6/src/int/i31_decode.o \
-               deps/bearssl-0.6/src/int/i31_decred.o \
-               deps/bearssl-0.6/src/int/i31_encode.o \
-               deps/bearssl-0.6/src/int/i31_fmont.o \
-               deps/bearssl-0.6/src/int/i31_iszero.o \
-               deps/bearssl-0.6/src/int/i31_modpow2.o \
-               deps/bearssl-0.6/src/int/i31_modpow.o \
-               deps/bearssl-0.6/src/int/i31_montmul.o \
-               deps/bearssl-0.6/src/int/i31_muladd.o \
-               deps/bearssl-0.6/src/int/i31_ninv31.o \
-               deps/bearssl-0.6/src/int/i31_rshift.o \
-               deps/bearssl-0.6/src/int/i31_sub.o \
-               deps/bearssl-0.6/src/int/i31_tmont.o \
-               deps/bearssl-0.6/src/int/i32_div32.o \
-               deps/bearssl-0.6/src/int/i62_modpow2.o \
-               deps/bearssl-0.6/src/mac/hmac_ct.o \
-               deps/bearssl-0.6/src/mac/hmac.o \
-               deps/bearssl-0.6/src/rand/hmac_drbg.o \
-               deps/bearssl-0.6/src/rand/sysrng.o \
-               deps/bearssl-0.6/src/rsa/rsa_default_pkcs1_vrfy.o \
-               deps/bearssl-0.6/src/rsa/rsa_default_pub.o \
-               deps/bearssl-0.6/src/rsa/rsa_i31_pkcs1_vrfy.o \
-               deps/bearssl-0.6/src/rsa/rsa_i31_pub.o \
-               deps/bearssl-0.6/src/rsa/rsa_i62_pkcs1_vrfy.o \
-               deps/bearssl-0.6/src/rsa/rsa_i62_pub.o \
-               deps/bearssl-0.6/src/rsa/rsa_pkcs1_sig_unpad.o \
-               deps/bearssl-0.6/src/ssl/prf_md5sha1.o \
-               deps/bearssl-0.6/src/ssl/prf.o \
-               deps/bearssl-0.6/src/ssl/prf_sha256.o \
-               deps/bearssl-0.6/src/ssl/prf_sha384.o \
-               deps/bearssl-0.6/src/ssl/ssl_client_default_rsapub.o \
-               deps/bearssl-0.6/src/ssl/ssl_client_full.o \
-               deps/bearssl-0.6/src/ssl/ssl_client.o \
-               deps/bearssl-0.6/src/ssl/ssl_engine_default_aescbc.o \
-               deps/bearssl-0.6/src/ssl/ssl_engine_default_aesccm.o \
-               deps/bearssl-0.6/src/ssl/ssl_engine_default_aesgcm.o \
-               deps/bearssl-0.6/src/ssl/ssl_engine_default_chapol.o \
-               deps/bearssl-0.6/src/ssl/ssl_engine_default_descbc.o \
-               deps/bearssl-0.6/src/ssl/ssl_engine_default_ecdsa.o \
-               deps/bearssl-0.6/src/ssl/ssl_engine_default_rsavrfy.o \
-               deps/bearssl-0.6/src/ssl/ssl_engine.o \
-               deps/bearssl-0.6/src/ssl/ssl_hs_client.o \
-               deps/bearssl-0.6/src/ssl/ssl_rec_cbc.o \
-               deps/bearssl-0.6/src/ssl/ssl_rec_ccm.o \
-               deps/bearssl-0.6/src/ssl/ssl_rec_chapol.o \
-               deps/bearssl-0.6/src/ssl/ssl_rec_gcm.o \
-               deps/bearssl-0.6/src/symcipher/aes_ct64_cbcdec.o \
-               deps/bearssl-0.6/src/symcipher/aes_ct64_cbcenc.o \
-               deps/bearssl-0.6/src/symcipher/aes_ct64_ctrcbc.o \
-               deps/bearssl-0.6/src/symcipher/aes_ct64_ctr.o \
-               deps/bearssl-0.6/src/symcipher/aes_ct64_dec.o \
-               deps/bearssl-0.6/src/symcipher/aes_ct64_enc.o \
-               deps/bearssl-0.6/src/symcipher/aes_ct64.o \
-               deps/bearssl-0.6/src/symcipher/aes_x86ni_cbcdec.o \
-               deps/bearssl-0.6/src/symcipher/aes_x86ni_cbcenc.o \
-               deps/bearssl-0.6/src/symcipher/aes_x86ni_ctrcbc.o \
-               deps/bearssl-0.6/src/symcipher/aes_x86ni_ctr.o \
-               deps/bearssl-0.6/src/symcipher/aes_x86ni.o \
-               deps/bearssl-0.6/src/symcipher/chacha20_ct.o \
-               deps/bearssl-0.6/src/symcipher/chacha20_sse2.o \
-               deps/bearssl-0.6/src/symcipher/des_ct_cbcdec.o \
-               deps/bearssl-0.6/src/symcipher/des_ct_cbcenc.o \
-               deps/bearssl-0.6/src/symcipher/des_ct.o \
-               deps/bearssl-0.6/src/symcipher/des_support.o \
-               deps/bearssl-0.6/src/symcipher/poly1305_ctmul.o \
-               deps/bearssl-0.6/src/symcipher/poly1305_ctmulq.o \
-               deps/bearssl-0.6/src/x509/x509_decoder.o \
-               deps/bearssl-0.6/src/x509/x509_minimal_full.o \
-               deps/bearssl-0.6/src/x509/x509_minimal.o \
-
-   OBJ += $(OBJS_BEAR)
-else ifeq ($(HAVE_BUILTINMBEDTLS), 1)
+   LIBS += $(if $(BEARSSL_LIBS),$(BEARSSL_LIBS),-lbearssl)
+   DEF_FLAGS += $(BEARSSL_CFLAGS)
+else ifeq ($(HAVE_MBEDTLS), 1)
    HAVE_SSL = 1
    DEFINES += -DHAVE_SSL
-
    ifeq ($(DEBUG), 1)
       DEFINES += -DMBEDTLS_SSL_DEBUG_ALL
    endif
-
-   # MinGW requires this for some reason,
-	# even though the include paths are relative to the source
-   INCLUDE_DIRS += -Ideps/mbedtls
-
-   OBJS_TLS_CRYPTO = deps/mbedtls/aes.o \
-                     deps/mbedtls/aesni.o \
-                     deps/mbedtls/arc4.o \
-                     deps/mbedtls/asn1parse.o \
-                     deps/mbedtls/asn1write.o \
-                     deps/mbedtls/base64.o \
-                     deps/mbedtls/bignum.o \
-                     deps/mbedtls/blowfish.o \
-                     deps/mbedtls/camellia.o \
-                     deps/mbedtls/ccm.o \
-                     deps/mbedtls/cipher.o \
-                     deps/mbedtls/cipher_wrap.o \
-                     deps/mbedtls/ctr_drbg.o \
-                     deps/mbedtls/des.o \
-                     deps/mbedtls/dhm.o \
-                     deps/mbedtls/ecdh.o \
-                     deps/mbedtls/ecdsa.o \
-                     deps/mbedtls/ecp.o \
-                     deps/mbedtls/ecp_curves.o \
-                     deps/mbedtls/entropy.o \
-                     deps/mbedtls/entropy_poll.o \
-                     deps/mbedtls/gcm.o \
-                     deps/mbedtls/hmac_drbg.o \
-                     deps/mbedtls/md.o \
-                     deps/mbedtls/md5.o \
-                     deps/mbedtls/md_wrap.o \
-                     deps/mbedtls/oid.o \
-                     deps/mbedtls/padlock.o \
-                     deps/mbedtls/pem.o \
-                     deps/mbedtls/pk.o \
-                     deps/mbedtls/pk_wrap.o \
-                     deps/mbedtls/pkcs12.o \
-                     deps/mbedtls/pkcs5.o \
-                     deps/mbedtls/pkparse.o \
-                     deps/mbedtls/pkwrite.o \
-                     deps/mbedtls/ripemd160.o \
-                     deps/mbedtls/rsa.o \
-                     deps/mbedtls/sha1.o \
-                     deps/mbedtls/sha_alt.o \
-                     deps/mbedtls/sha256.o \
-                     deps/mbedtls/sha512.o \
-                     deps/mbedtls/threading.o \
-                     deps/mbedtls/timing.o \
-                     deps/mbedtls/xtea.o
-
-   OBJS_TLS_X509 = deps/mbedtls/certs.o \
-                   deps/mbedtls/x509.o \
-                   deps/mbedtls/x509_create.o \
-                   deps/mbedtls/x509_crl.o \
-                   deps/mbedtls/x509_crt.o \
-                   deps/mbedtls/x509_csr.o \
-                   deps/mbedtls/x509write_crt.o \
-                   deps/mbedtls/x509write_csr.o
-
-   OBJS_TLS = deps/mbedtls/debug.o \
-              deps/mbedtls/net_sockets.o \
-              deps/mbedtls/ssl_cache.o \
-              deps/mbedtls/ssl_ciphersuites.o \
-              deps/mbedtls/ssl_cli.o \
-              deps/mbedtls/ssl_cookie.o \
-              deps/mbedtls/ssl_srv.o \
-              deps/mbedtls/ssl_ticket.o \
-              deps/mbedtls/ssl_tls.o
-
-   OBJ += $(OBJS_TLS_CRYPTO) $(OBJS_TLS_X509) $(OBJS_TLS)
-else ifeq ($(HAVE_SSL), 1)
-   DEFINES += -DHAVE_SSL
-   LIBS += $(SYSTEMMBEDTLS_LIBS) $(SYSTEMMBEDX509_LIBS) $(SYSTEMMBEDCRYPTO_LIBS)
-   DEF_FLAGS += $(SYSTEMMBEDTLS_CFLAGS) $(SYSTEMMBEDX509_CFLAGS) $(SYSTEMMBEDCRYPTO_CFLAGS)
+   LIBS += $(MBEDTLS_LIBS) $(MBEDX509_LIBS) $(MBEDCRYPTO_LIBS)
+   DEF_FLAGS += $(MBEDTLS_CFLAGS) $(MBEDX509_CFLAGS) $(MBEDCRYPTO_CFLAGS)
 endif
 
 # Miscellaneous
@@ -2632,7 +2460,7 @@ ifeq ($(HAVE_NETWORKING), 1)
       ifeq ($(HAVE_SSL), 1)
          OBJ += network/cloud_sync/google_drive.o
       endif
-      ifneq (,$(filter 1,$(HAVE_SMBCLIENT) $(HAVE_BUILTINSMBCLIENT) $(HAVE_RETROSMB)))
+      ifneq (,$(filter 1,$(HAVE_SMBCLIENT) $(HAVE_RETROSMB)))
          OBJ += network/cloud_sync/smb.o
       endif
    endif
@@ -2640,9 +2468,9 @@ ifeq ($(HAVE_NETWORKING), 1)
    ifeq ($(HAVE_RETROSSL), 1)
       OBJ += $(LIBRETRO_COMM_DIR)/net/net_socket_ssl_retro.o \
              network/tls_log.o
-   else ifeq ($(HAVE_BUILTINBEARSSL), 1)
+   else ifeq ($(HAVE_BEARSSL), 1)
       OBJ += $(LIBRETRO_COMM_DIR)/net/net_socket_ssl_bear.o
-   else ifeq ($(HAVE_SSL), 1)
+   else ifeq ($(HAVE_MBEDTLS), 1)
       OBJ += $(LIBRETRO_COMM_DIR)/net/net_socket_ssl_mbed.o \
              network/tls_log.o
    endif
@@ -3018,7 +2846,7 @@ endif
 
 # The background prefetcher the network backends read through; once,
 # whichever of them are built.
-ifneq (,$(filter 1,$(HAVE_RETRONFS) $(HAVE_RETROSMB) $(HAVE_SMBCLIENT) $(HAVE_BUILTINSMBCLIENT)))
+ifneq (,$(filter 1,$(HAVE_RETRONFS) $(HAVE_RETROSMB) $(HAVE_SMBCLIENT)))
    OBJ += $(LIBRETRO_COMM_DIR)/vfs/vfs_prefetch.o
 endif
 
@@ -3030,109 +2858,19 @@ ifeq ($(HAVE_RETROSMB), 1)
    OBJ     += $(LIBRETRO_COMM_DIR)/net/net_smb2.o \
               $(LIBRETRO_COMM_DIR)/net/net_krb5.o \
               $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_smb.o
-else ifneq (,$(filter 1,$(HAVE_SMBCLIENT) $(HAVE_BUILTINSMBCLIENT)))
+else ifeq ($(HAVE_SMBCLIENT), 1)
+   # a system libsmb2 behind the same HAVE_SMBCLIENT surface
    DEFINES += -DHAVE_SMBCLIENT
    # The libsmb2 public headers gate their <stdint.h> include on
-   # HAVE_STDINT_H (autoconf-style), and every TU that includes
-   # them - the bundled library sources and frontend consumers
-   # like network/cloud_sync/smb.c alike - needs the define.
-   # It used to arrive only as a side effect of an unrelated block,
-   # which broke builds that did not enable that block on hundreds
-   # of unknown uint*_t types. Own the dependency here.
+   # HAVE_STDINT_H (autoconf-style); every TU that includes them needs
+   # the define.
    DEFINES += -DHAVE_STDINT_H
-
-   ifeq ($(HAVE_SMBCLIENT),1)
-      # system libsmb2
-      ifeq ($(shell pkg-config --exists libsmb2 && echo yes),yes)
-         CFLAGS += $(shell pkg-config --cflags libsmb2)
-         LIBS   += $(shell pkg-config --libs libsmb2)
-      else
-         LIBS   += -lsmb2
-      endif
-   else ifeq ($(HAVE_BUILTINSMBCLIENT),1)
-      # builtin libsmb2
-      ifneq ($(findstring Win32,$(OS)),)
-         # WIN32_LEAN_AND_MEAN is defined with an empty replacement list on
-         # purpose. It has to be on the command line because the bundled
-         # libsmb2 needs it, but it lands on every TU in the build, and ~40
-         # RetroArch headers do a bare "#define WIN32_LEAN_AND_MEAN" of their
-         # own before including <windows.h>. A plain -DWIN32_LEAN_AND_MEAN
-         # expands to 1, which does not match those, so each one of them
-         # warns about a macro redefinition. Nothing tests the value, only
-         # #ifndef, so an empty definition is equivalent and silent.
-         CFLAGS += -D_WINDOWS -DWIN32_LEAN_AND_MEAN=
-         CFLAGS += -DNEED_RANDOM -DNEED_SRANDOM -DNEED_GETLOGIN_R
-      endif
-      INCLUDE_DIRS += -I$(DEPS_DIR)/libsmb2/include
-      INCLUDE_DIRS += -I$(DEPS_DIR)/libsmb2/include/smb2
-      CFLAGS += "-D_U_=__attribute__((unused))"
-      CFLAGS += -DHAVE_TIME_H -DHAVE_FCNTL_H -DHAVE_UNISTD_H
-      CFLAGS += -DHAVE_STDLIB_H -DSTDC_HEADERS
-      CFLAGS += -DHAVE_STRING_H
-      CFLAGS += -DHAVE_LINGER
-ifeq ($(findstring Win32,$(OS)),)
-      CFLAGS += -DHAVE_SYS_UIO_H
-      CFLAGS += -DHAVE_POLL_H -DHAVE_NETDB_H
-      CFLAGS += -DHAVE_NETINET_TCP_H -DHAVE_NETINET_IN_H
-      CFLAGS += -DHAVE_SYS_SOCKET_H -DHAVE_ARPA_INET_H
-endif
-      OBJ += \
-         deps/libsmb2/lib/aes.o \
-         deps/libsmb2/lib/aes_apple.o \
-         deps/libsmb2/lib/aes128ccm.o \
-         deps/libsmb2/lib/asn1-ber.o \
-         deps/libsmb2/lib/aes_reference.o \
-         deps/libsmb2/lib/alloc.o \
-         deps/libsmb2/lib/compat.o \
-         deps/libsmb2/lib/dcerpc.o \
-         deps/libsmb2/lib/dcerpc-lsa.o \
-         deps/libsmb2/lib/dcerpc-srvsvc.o \
-         deps/libsmb2/lib/errors.o \
-         deps/libsmb2/lib/hmac.o \
-         deps/libsmb2/lib/hmac-md5.o \
-         deps/libsmb2/lib/init.o \
-         deps/libsmb2/lib/krb5-wrapper.o \
-         deps/libsmb2/lib/libsmb2.o \
-         deps/libsmb2/lib/md4c.o \
-         deps/libsmb2/lib/ntlmssp.o \
-         deps/libsmb2/lib/pdu.o \
-         deps/libsmb2/lib/sha1.o \
-         deps/libsmb2/lib/sha224-256.o \
-         deps/libsmb2/lib/sha384-512.o \
-         deps/libsmb2/lib/smb2-cmd-close.o \
-         deps/libsmb2/lib/smb2-cmd-create.o \
-         deps/libsmb2/lib/smb2-cmd-echo.o \
-         deps/libsmb2/lib/smb2-cmd-error.o \
-         deps/libsmb2/lib/smb2-cmd-flush.o \
-         deps/libsmb2/lib/smb2-cmd-ioctl.o \
-         deps/libsmb2/lib/smb2-cmd-lock.o \
-         deps/libsmb2/lib/smb2-cmd-logoff.o \
-         deps/libsmb2/lib/smb2-cmd-negotiate.o \
-         deps/libsmb2/lib/smb2-cmd-oplock-break.o \
-         deps/libsmb2/lib/smb2-cmd-notify-change.o \
-         deps/libsmb2/lib/smb2-cmd-query-directory.o \
-         deps/libsmb2/lib/smb2-cmd-query-info.o \
-         deps/libsmb2/lib/smb2-cmd-read.o \
-         deps/libsmb2/lib/smb2-cmd-session-setup.o \
-         deps/libsmb2/lib/smb2-cmd-set-info.o \
-         deps/libsmb2/lib/smb2-cmd-tree-connect.o \
-         deps/libsmb2/lib/smb2-cmd-tree-disconnect.o \
-         deps/libsmb2/lib/smb2-cmd-write.o \
-         deps/libsmb2/lib/smb2-data-file-info.o \
-         deps/libsmb2/lib/smb2-data-filesystem-info.o \
-         deps/libsmb2/lib/smb2-data-security-descriptor.o \
-         deps/libsmb2/lib/smb2-data-reparse-point.o \
-         deps/libsmb2/lib/smb2-share-enum.o \
-         deps/libsmb2/lib/smb2-signing.o \
-         deps/libsmb2/lib/smb3-seal.o \
-         deps/libsmb2/lib/socket.o \
-         deps/libsmb2/lib/spnego-wrapper.o \
-         deps/libsmb2/lib/sync.o \
-         deps/libsmb2/lib/timestamps.o \
-         deps/libsmb2/lib/usha.o \
-         deps/libsmb2/lib/unicode.o
+   ifeq ($(shell pkg-config --exists libsmb2 && echo yes),yes)
+      CFLAGS += $(shell pkg-config --cflags libsmb2)
+      LIBS   += $(shell pkg-config --libs libsmb2)
+   else
+      LIBS   += -lsmb2
    endif
-
    OBJ += $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_smb.o
 endif
 

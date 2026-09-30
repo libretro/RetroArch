@@ -26,7 +26,7 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 
-#include "../../deps/bearssl-0.6/inc/bearssl.h"
+#include <bearssl.h>
 
 struct ssl_state
 {

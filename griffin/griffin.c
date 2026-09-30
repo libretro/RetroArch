@@ -1763,78 +1763,14 @@ SSL
 #if defined(HAVE_RETROSSL)
 #include "../libretro-common/net/net_socket_ssl_retro.c"
 #include "../network/tls_log.c"
-#else
-#if defined(HAVE_NETWORKING)
-#if defined(HAVE_BUILTINMBEDTLS)
-#include "../deps/mbedtls/aes.c"
-#include "../deps/mbedtls/aesni.c"
-#include "../deps/mbedtls/arc4.c"
-#include "../deps/mbedtls/asn1parse.c"
-#include "../deps/mbedtls/asn1write.c"
-#include "../deps/mbedtls/base64.c"
-#include "../deps/mbedtls/bignum.c"
-#include "../deps/mbedtls/blowfish.c"
-#include "../deps/mbedtls/camellia.c"
-#include "../deps/mbedtls/ccm.c"
-#include "../deps/mbedtls/cipher.c"
-#include "../deps/mbedtls/cipher_wrap.c"
-#include "../deps/mbedtls/ctr_drbg.c"
-#include "../deps/mbedtls/des.c"
-#include "../deps/mbedtls/dhm.c"
-#include "../deps/mbedtls/ecdh.c"
-#include "../deps/mbedtls/ecdsa.c"
-#include "../deps/mbedtls/ecp.c"
-#include "../deps/mbedtls/ecp_curves.c"
-#include "../deps/mbedtls/entropy.c"
-#include "../deps/mbedtls/entropy_poll.c"
-#include "../deps/mbedtls/gcm.c"
-#include "../deps/mbedtls/hmac_drbg.c"
-#include "../deps/mbedtls/md.c"
-#include "../deps/mbedtls/md5.c"
-#include "../deps/mbedtls/md_wrap.c"
-#include "../deps/mbedtls/oid.c"
-#include "../deps/mbedtls/padlock.c"
-#include "../deps/mbedtls/pem.c"
-#include "../deps/mbedtls/pk.c"
-#include "../deps/mbedtls/pk_wrap.c"
-#include "../deps/mbedtls/pkcs12.c"
-#include "../deps/mbedtls/pkcs5.c"
-#include "../deps/mbedtls/pkparse.c"
-#include "../deps/mbedtls/pkwrite.c"
-#include "../deps/mbedtls/ripemd160.c"
-#include "../deps/mbedtls/rsa.c"
-#include "../deps/mbedtls/sha1.c"
-#include "../deps/mbedtls/sha_alt.c"
-#include "../deps/mbedtls/sha256.c"
-#include "../deps/mbedtls/sha512.c"
-#include "../deps/mbedtls/threading.c"
-#include "../deps/mbedtls/timing.c"
-#include "../deps/mbedtls/xtea.c"
-
-#include "../deps/mbedtls/certs.c"
-#include "../deps/mbedtls/x509.c"
-#include "../deps/mbedtls/x509_create.c"
-#include "../deps/mbedtls/x509_crl.c"
-#include "../deps/mbedtls/x509_crt.c"
-#include "../deps/mbedtls/x509_csr.c"
-#include "../deps/mbedtls/x509write_crt.c"
-#include "../deps/mbedtls/x509write_csr.c"
-
-#include "../deps/mbedtls/debug.c"
-#include "../deps/mbedtls/net_sockets.c"
-#include "../deps/mbedtls/ssl_cache.c"
-#include "../deps/mbedtls/ssl_ciphersuites.c"
-#include "../deps/mbedtls/ssl_cli.c"
-#include "../deps/mbedtls/ssl_cookie.c"
-#include "../deps/mbedtls/ssl_srv.c"
-#include "../deps/mbedtls/ssl_ticket.c"
-#include "../deps/mbedtls/ssl_tls.c"
-#endif
-
+#elif defined(HAVE_BEARSSL)
+/* a system BearSSL, linked; only the socket layer over it is here */
+#include "../libretro-common/net/net_socket_ssl_bear.c"
+#elif defined(HAVE_NETWORKING)
+/* a system mbedTLS, linked; only the socket layer over it is here */
 #include "../libretro-common/net/net_socket_ssl_mbed.c"
 #include "../network/tls_log.c"
 #endif
-#endif /* HAVE_RETROSSL */
 #endif
 
 /*============================================================
@@ -1915,69 +1851,6 @@ GAME AI
 /*============================================================
 SMB CLIENT
 ============================================================ */
-#ifdef HAVE_BUILTINSMBCLIENT
-/* libsmb2 sources expect autoconf-style unused-param marker and
- * GNU C (typeof in alloc.c). Platforms that compile griffin as
- * ISO C99 must pass -std=gnu99 (or equivalent) as well. */
-#ifndef _U_
-#define _U_ __attribute__((unused))
-#endif
-#include "../deps/libsmb2/lib/aes.c"
-#include "../deps/libsmb2/lib/aes_apple.c"
-#include "../deps/libsmb2/lib/aes128ccm.c"
-#include "../deps/libsmb2/lib/asn1-ber.c"
-#include "../deps/libsmb2/lib/aes_reference.c"
-#include "../deps/libsmb2/lib/alloc.c"
-#include "../deps/libsmb2/lib/compat.c"
-#include "../deps/libsmb2/lib/dcerpc.c"
-#include "../deps/libsmb2/lib/dcerpc-lsa.c"
-#include "../deps/libsmb2/lib/dcerpc-srvsvc.c"
-#include "../deps/libsmb2/lib/errors.c"
-#include "../deps/libsmb2/lib/hmac.c"
-#include "../deps/libsmb2/lib/hmac-md5.c"
-#include "../deps/libsmb2/lib/init.c"
-#include "../deps/libsmb2/lib/krb5-wrapper.c"
-#include "../deps/libsmb2/lib/libsmb2.c"
-#include "../deps/libsmb2/lib/md4c.c"
-#include "../deps/libsmb2/lib/ntlmssp.c"
-#include "../deps/libsmb2/lib/pdu.c"
-#include "../deps/libsmb2/lib/sha1.c"
-#include "../deps/libsmb2/lib/sha224-256.c"
-#include "../deps/libsmb2/lib/sha384-512.c"
-#include "../deps/libsmb2/lib/smb2-cmd-close.c"
-#include "../deps/libsmb2/lib/smb2-cmd-create.c"
-#include "../deps/libsmb2/lib/smb2-cmd-echo.c"
-#include "../deps/libsmb2/lib/smb2-cmd-error.c"
-#include "../deps/libsmb2/lib/smb2-cmd-flush.c"
-#include "../deps/libsmb2/lib/smb2-cmd-ioctl.c"
-#include "../deps/libsmb2/lib/smb2-cmd-lock.c"
-#include "../deps/libsmb2/lib/smb2-cmd-logoff.c"
-#include "../deps/libsmb2/lib/smb2-cmd-negotiate.c"
-#include "../deps/libsmb2/lib/smb2-cmd-oplock-break.c"
-#include "../deps/libsmb2/lib/smb2-cmd-notify-change.c"
-#include "../deps/libsmb2/lib/smb2-cmd-query-directory.c"
-#include "../deps/libsmb2/lib/smb2-cmd-query-info.c"
-#include "../deps/libsmb2/lib/smb2-cmd-read.c"
-#include "../deps/libsmb2/lib/smb2-cmd-session-setup.c"
-#include "../deps/libsmb2/lib/smb2-cmd-set-info.c"
-#include "../deps/libsmb2/lib/smb2-cmd-tree-connect.c"
-#include "../deps/libsmb2/lib/smb2-cmd-tree-disconnect.c"
-#include "../deps/libsmb2/lib/smb2-cmd-write.c"
-#include "../deps/libsmb2/lib/smb2-data-file-info.c"
-#include "../deps/libsmb2/lib/smb2-data-filesystem-info.c"
-#include "../deps/libsmb2/lib/smb2-data-security-descriptor.c"
-#include "../deps/libsmb2/lib/smb2-data-reparse-point.c"
-#include "../deps/libsmb2/lib/smb2-share-enum.c"
-#include "../deps/libsmb2/lib/smb2-signing.c"
-#include "../deps/libsmb2/lib/smb3-seal.c"
-#include "../deps/libsmb2/lib/socket.c"
-#include "../deps/libsmb2/lib/spnego-wrapper.c"
-#include "../deps/libsmb2/lib/sync.c"
-#include "../deps/libsmb2/lib/timestamps.c"
-#include "../deps/libsmb2/lib/usha.c"
-#include "../deps/libsmb2/lib/unicode.c"
-#endif
-
 #ifdef HAVE_SMBCLIENT
 #ifdef HAVE_RETROSMB
 #include "../libretro-common/net/net_smb2.c"

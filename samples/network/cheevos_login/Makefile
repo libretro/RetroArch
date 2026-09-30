@@ -8,8 +8,9 @@ INCDIRS := -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR)
 CC      := $(compiler)
 flags   += -std=gnu99
 
-# SSL_BACKEND=bear (default, builtin BearSSL from deps/) or mbed
-# (system mbedTLS) - the two backends a Linux build can ship with.
+# SSL_BACKEND=bear (default, a system BearSSL: libbearssl-dev) or
+# mbed (a system mbedTLS) - the two library backends a build can be
+# configured with in place of the built-in client.
 SSL_BACKEND ?= bear
 
 SOURCES_C := \
@@ -39,10 +40,8 @@ LDFLAGS += -lm
 
 ifeq ($(SSL_BACKEND),bear)
    SOURCES_C += bear_seed.c
-   BEAR_DIR   = $(CORE_DIR)/deps/bearssl-0.6
-   SOURCES_C += $(wildcard $(BEAR_DIR)/src/*/*.c) $(wildcard $(BEAR_DIR)/src/*.c)
    CFLAGS    += -DHAVE_BEARSSL -DTEST_SSL_BEAR
-   CFLAGS    += -I$(BEAR_DIR)/src -I$(BEAR_DIR)/inc
+   LDFLAGS   += -lbearssl
 else
    # mbed_seed.c #includes the real backend (see the file).
    SOURCES_C += mbed_seed.c

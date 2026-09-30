@@ -22,11 +22,12 @@
 #ifdef HAVE_RETROSMB
 #include <net/net_smb2_compat.h>
 #else
+/* a system libsmb2 (6.0 or later: the share enumeration API of
+ * libsmb2-share-enum.h) */
 #include <smb2/smb2.h>
 #include <smb2/libsmb2.h>
 #include <smb2/libsmb2-raw.h>
-#include <smb2/libsmb2-dcerpc.h>
-#include <smb2/libsmb2-dcerpc-srvsvc.h>
+#include <smb2/libsmb2-share-enum.h>
 #endif
 #include <net/net_socket.h>
 #include <file/file_path.h>
@@ -574,16 +575,9 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
       return false;
    }
 
-#ifdef SMB2_SHARE_ENUM_UNION_NAMED_U
-   level1 = &state.rep->ses.ShareInfo.u.Level1;
-#else
-   /* prebuilt libsmb2 (retroarch-apple-deps): anonymous union */
-   level1 = &state.rep->ses.ShareInfo.Level1;
-#endif
+   level1 = &state.rep->ses.ShareEnum.Level1;
 
-   if (     !level1->Buffer
-         || !level1->Buffer->share_info_1
-         || level1->EntriesRead == 0)
+   if (!level1->share_info_1 || level1->EntriesRead == 0)
    {
       smb2_free_data(ctx, state.rep);
       smb2_disconnect_share(ctx);
@@ -601,15 +595,14 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
 
    for (i = 0; i < level1->EntriesRead; i++)
    {
-      const struct srvsvc_SHARE_INFO_1 *info =
-         &level1->Buffer->share_info_1[i];
-      const char *name = info->netname.utf8;
+      const struct srvsvc_SHARE_INFO_1 *info = &level1->share_info_1[i];
+      const char *name = info->netname;
 
       if (!name || !*name)
          continue;
-      if ((info->type & 3) != SHARE_TYPE_DISKTREE)
+      if ((info->type & 3) != SRVSVC_SHARE_TYPE_DISKTREE)
          continue;
-      if (info->type & (SHARE_TYPE_HIDDEN | SHARE_TYPE_TEMPORARY))
+      if (info->type & (SRVSVC_SHARE_TYPE_HIDDEN | SRVSVC_SHARE_TYPE_TEMPORARY))
          continue;
       if (name[strlen(name) - 1] == '$')
          continue;

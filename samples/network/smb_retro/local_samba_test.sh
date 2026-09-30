@@ -8,6 +8,9 @@ cd "$(dirname "$0")"
 command -v smbd >/dev/null 2>&1 || { echo "skip: no smbd"; exit 0; }
 [ "$(id -u)" = 0 ] || { echo "skip: needs root for port 445"; exit 0; }
 make -s smb_test vfs_test vfs_threads_test
+# WITH_LIBSMB2=1: the VFS tests over a system libsmb2 as well (the
+# --enable-libsmb build), on every case the built-in client passes
+[ -n "${WITH_LIBSMB2:-}" ] && make -s vfs_test_libsmb2 vfs_threads_test_libsmb2
 RUN=${RUNNER:-}
 EXE=${EXE:-}
 D=$(mktemp -d); chmod 755 $D; mkdir -p $D/share $D/priv $D/run /run/samba
@@ -76,6 +79,10 @@ run() { # label max_protocol encrypt expect_rc password
    # then four threads on a two-slot pool through it
    [ $rc -eq 0 ] && { $RUN ./vfs_test$EXE 127.0.0.1 share rsmbtest "$5" RETRO >>$D/out 2>&1 || rc=3; }
    [ $rc -eq 0 ] && { $RUN ./vfs_threads_test$EXE 127.0.0.1 share rsmbtest "$5" RETRO >>$D/out 2>&1 || rc=4; }
+   if [ $rc -eq 0 ] && [ -n "${WITH_LIBSMB2:-}" ] && [ $4 -eq 0 ]; then
+      $RUN ./vfs_test_libsmb2$EXE 127.0.0.1 share rsmbtest "$5" RETRO >>$D/out 2>&1 || rc=5
+      [ $rc -eq 0 ] && { $RUN ./vfs_threads_test_libsmb2$EXE 127.0.0.1 share rsmbtest "$5" RETRO >>$D/out 2>&1 || rc=6; }
+   fi
    set -e
    if [ $rc -eq $4 ]; then echo "ok:   $1"; else echo "FAIL: $1 (rc=$rc, want $4): $(cat $D/out)"; exit 1; fi
    rm -f $D/share/rsmb_test.bin

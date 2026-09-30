@@ -104,6 +104,6 @@ int main(int argc, char **argv)
       return 1;
    }
    smb_shutdown();
-   printf("ok: VFS over the built-in client\n");
+   printf("ok: VFS over the SMB backend\n");
    return 0;
 }
