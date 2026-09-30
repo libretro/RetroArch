@@ -3448,10 +3448,6 @@ static void common_resources_init(CommonResources *common,
                   mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
                   break;
 
-               case GLSLANG_FILTER_CHAIN_ADDRESS_MIRROR_CLAMP_TO_EDGE:
-                  mode = VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE;
-                  break;
-
                default:
                   break;
             }

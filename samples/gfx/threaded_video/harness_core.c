@@ -35,6 +35,14 @@ static unsigned runs;
  * before it rebuilds its renderer: set_image(NULL), then destroy. Either
  * way the frontend must not draw from the image again. */
 static int hw_mode;
+/* HARNESS_CORE_HW_VULKAN=2: the core creates the device, through the
+ * negotiation interface's create_device, the way Beetle PSX and the
+ * other cores with a renderer of their own do. The device has exactly
+ * the extensions the frontend says it requires and none of the ones it
+ * would have added to a device of its own making - so whatever the
+ * frontend then does on the strength of an optional extension is a
+ * validation error here. */
+static int hw_own_device;
 static const struct retro_hw_render_interface_vulkan *hw_vk;
 static struct retro_hw_render_callback hw_cb;
 static struct retro_vulkan_image hw_image;
@@ -254,6 +262,94 @@ static void hw_context_reset(void)
       hw_image_create();
 }
 
+static bool hw_create_device(struct retro_vulkan_context *context,
+      VkInstance instance, VkPhysicalDevice gpu, VkSurfaceKHR surface,
+      PFN_vkGetInstanceProcAddr gipa,
+      const char **exts, unsigned num_exts,
+      const char **layers, unsigned num_layers,
+      const VkPhysicalDeviceFeatures *features)
+{
+   PFN_vkEnumeratePhysicalDevices enum_gpus = (PFN_vkEnumeratePhysicalDevices)
+      gipa(instance, "vkEnumeratePhysicalDevices");
+   PFN_vkGetPhysicalDeviceQueueFamilyProperties family_props =
+      (PFN_vkGetPhysicalDeviceQueueFamilyProperties)
+      gipa(instance, "vkGetPhysicalDeviceQueueFamilyProperties");
+   PFN_vkGetPhysicalDeviceSurfaceSupportKHR surface_support =
+      (PFN_vkGetPhysicalDeviceSurfaceSupportKHR)
+      gipa(instance, "vkGetPhysicalDeviceSurfaceSupportKHR");
+   PFN_vkCreateDevice create_device = (PFN_vkCreateDevice)
+      gipa(instance, "vkCreateDevice");
+   PFN_vkGetDeviceProcAddr gdpa = (PFN_vkGetDeviceProcAddr)
+      gipa(instance, "vkGetDeviceProcAddr");
+   PFN_vkGetDeviceQueue get_queue;
+   VkQueueFamilyProperties props[16];
+   VkDeviceQueueCreateInfo qi;
+   VkDeviceCreateInfo di;
+   VkDevice device       = VK_NULL_HANDLE;
+   uint32_t count        = 16;
+   uint32_t family       = UINT32_MAX;
+   uint32_t i;
+   static const float prio = 1.0f;
+
+   if (!enum_gpus || !family_props || !create_device || !gdpa)
+      return false;
+   if (gpu == VK_NULL_HANDLE)
+   {
+      uint32_t one = 1;
+      enum_gpus(instance, &one, &gpu);
+      if (gpu == VK_NULL_HANDLE)
+         return false;
+   }
+   family_props(gpu, &count, props);
+   for (i = 0; i < count && family == UINT32_MAX; i++)
+   {
+      VkBool32 ok = VK_TRUE;
+      if (!(props[i].queueFlags & VK_QUEUE_GRAPHICS_BIT))
+         continue;
+      if (surface != VK_NULL_HANDLE && surface_support)
+         surface_support(gpu, i, surface, &ok);
+      if (ok)
+         family = i;
+   }
+   if (family == UINT32_MAX)
+      return false;
+
+   memset(&qi, 0, sizeof(qi));
+   qi.sType                   = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+   qi.queueFamilyIndex        = family;
+   qi.queueCount              = 1;
+   qi.pQueuePriorities        = &prio;
+   memset(&di, 0, sizeof(di));
+   di.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+   di.queueCreateInfoCount    = 1;
+   di.pQueueCreateInfos       = &qi;
+   di.enabledExtensionCount   = num_exts;
+   di.ppEnabledExtensionNames = exts;
+   di.enabledLayerCount       = num_layers;
+   di.ppEnabledLayerNames     = layers;
+   di.pEnabledFeatures        = features;
+   if (create_device(gpu, &di, NULL, &device) != VK_SUCCESS)
+      return false;
+
+   get_queue = (PFN_vkGetDeviceQueue)gdpa(device, "vkGetDeviceQueue");
+   context->gpu                             = gpu;
+   context->device                          = device;
+   context->queue_family_index              = family;
+   context->presentation_queue_family_index = family;
+   get_queue(device, family, 0, &context->queue);
+   context->presentation_queue              = context->queue;
+   return true;
+}
+
+/* Version 1: create_device, and the frontend destroys what it made. */
+static const struct retro_hw_render_context_negotiation_interface_vulkan hw_negotiation = {
+   RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN,
+   1,
+   NULL,
+   hw_create_device,
+   NULL
+};
+
 /* The image goes with the context, and the frontend is not told. */
 static void hw_context_destroy(void)
 {
@@ -296,7 +392,8 @@ void retro_set_environment(retro_environment_t cb)
    environ_cb = cb;
    {
       const char *hw = getenv("HARNESS_CORE_HW_VULKAN");
-      hw_mode = (hw && *hw) ? 1 : 0;
+      hw_mode       = (hw && *hw) ? 1 : 0;
+      hw_own_device = (hw && *hw == '2') ? 1 : 0;
    }
    /* RGB565 by default; XRGB8888 with HARNESS_CORE_XRGB8888 set. The
     * two take different paths through a driver - Vulkan converts
@@ -453,6 +550,9 @@ bool retro_load_game(const struct retro_game_info *game)
       /* Refused (another driver): a software core after all. */
       if (!environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_cb))
          hw_mode = 0;
+      else if (hw_own_device)
+         environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE,
+               (void*)&hw_negotiation);
    }
    return true;
 }

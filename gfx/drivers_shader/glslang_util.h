@@ -123,7 +123,13 @@ typedef enum glslang_filter_chain_address
    GLSLANG_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT      = 1,
    GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE        = 2,
    GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER      = 3,
-   GLSLANG_FILTER_CHAIN_ADDRESS_MIRROR_CLAMP_TO_EDGE = 4,
+   /* One entry per wrap mode a preset can name (rarch_wrap_to_address
+    * below), and no more: the Vulkan filter chain creates a sampler for
+    * every entry. A fifth, mirror-clamp-to-edge, stood here with no
+    * wrap mode mapping to it; its samplers were never bound, and
+    * creating them is invalid on a device without
+    * VK_KHR_sampler_mirror_clamp_to_edge - which is every device a
+    * core creates for itself through create_device. */
    GLSLANG_FILTER_CHAIN_ADDRESS_COUNT
 } glslang_filter_chain_address;
 

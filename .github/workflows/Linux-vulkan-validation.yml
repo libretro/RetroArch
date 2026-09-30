@@ -200,6 +200,15 @@ jobs:
           # here, and on lavapipe a crash.
           HARNESS_CORE_HW_VULKAN=1 SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
+          # And as a core that creates the device itself, through the
+          # negotiation interface's create_device - Beetle PSX, for one.
+          # That device has the extensions the frontend requires and
+          # none of the optional ones it adds to a device of its own, so
+          # anything the driver or the filter chain does that leans on
+          # an optional extension is a validation error here and nowhere
+          # else. The filter chain's mirror-clamp samplers were.
+          HARNESS_CORE_HW_VULKAN=2 SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
+          make -C samples/gfx/threaded_video clean
 
   vulkan-validation-sample:
     name: vulkan_validation sample (lavapipe, validation layer)
