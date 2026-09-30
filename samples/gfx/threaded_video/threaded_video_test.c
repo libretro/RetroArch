@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <time.h>
+#include <math.h>
 #include <string.h>
 #include <unistd.h>
 #include <file/file_path.h>
@@ -2368,6 +2369,184 @@ static void lane_pacing_after_stall(void)
       fprintf(stderr, "[pass] after-stall lane\n");
 }
 
+
+/* ------------------------------------------------------------------ */
+/* Lane: the paced loop keeps the content's rate                       */
+/*   Frames counted over two seconds under display pacing, for every   */
+/*   pairing of content and display rate that ships, with and without  */
+/*   the driver reporting when its presents reach the display (vsync   */
+/*   off reports nothing, and the hold lays its own grid from the      */
+/*   clock).  The render takes 0.6-2.1 ms, varying frame to frame.     */
+/*   The loop must hold within 2% of the rate it is due at: a hold     */
+/*   that picks a vblank one past the frame's due time sleeps out a    */
+/*   whole period, and a 120 fps core on a 120 Hz display then runs    */
+/*   at 103.  The core takes 1.3 ms a frame: the hold's cap counts     */
+/*   from the push, so a core that takes nothing hides a hold that     */
+/*   sleeps out a whole period.  Rate is the count over the window,    */
+/*   not per-frame timing, and each case gets three tries: a busy      */
+/*   runner costs a try, a hold that misses its slot fails all three.  */
+/* ------------------------------------------------------------------ */
+
+static video_driver_t                prlane_driver;
+static const video_driver_t         *prlane_inner;
+static video_poke_interface_t        prlane_poke;
+static const video_poke_interface_t *prlane_inner_poke;
+static retro_time_t                  prlane_period;   /* the panel's real period */
+static retro_time_t                  prlane_base;
+static retro_time_t                  prlane_last_out;
+static unsigned                      prlane_seed;
+
+static bool prlane_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+{
+   retro_time_t now  = cpu_features_get_time_usec();
+   retro_time_t done;
+   prlane_seed = prlane_seed * 1103515245u + 12345u;
+   /* 0.6 ms, plus up to 1.5 ms more on some frames */
+   done = now + 600 + ((prlane_seed >> 16) % 4 == 0
+         ? (retro_time_t)((prlane_seed >> 8) % 1500) : 0);
+   while (cpu_features_get_time_usec() < done) { }
+   /* Vsync off: out on the next scanout, the present does not wait */
+   now = cpu_features_get_time_usec();
+   prlane_last_out = prlane_base
+      + ((now - prlane_base) / prlane_period + 1) * prlane_period;
+   return prlane_inner->frame(data, frame, dims, frame_count,
+         pitch, msg, video_info);
+}
+
+static retro_time_t prlane_last_present(void *data)
+{
+   retro_time_t now = cpu_features_get_time_usec();
+   (void)data;
+   return prlane_last_out <= now ? prlane_last_out
+      : prlane_last_out - prlane_period;
+}
+
+static double pacing_rate_measure(thread_video_t *thr, float display_hz,
+      double panel_hz, double content_fps, bool timestamps)
+{
+   settings_t *settings = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   unsigned n = (unsigned)(content_fps * 2.0);
+   uint64_t f0;
+   retro_time_t t0, took;
+
+   settings->floats.video_refresh_rate               = display_hz;
+   settings->bools.video_present_timing_from_display = timestamps;
+   video_st->av_info.timing.fps                      = content_fps;
+   prlane_period     = (retro_time_t)(1000000.0 / panel_hz);
+   prlane_base       = cpu_features_get_time_usec();
+   prlane_last_out   = prlane_base;
+   prlane_poke.get_last_present_time = timestamps ? prlane_last_present : NULL;
+   set_poke(thr, &prlane_poke);
+   /* Settle: the period, render and core estimates */
+   run_frames(n / 4);
+   video_thread_wait_idle();
+   f0 = core_frames();
+   t0 = cpu_features_get_time_usec();
+   run_frames(n);
+   took = cpu_features_get_time_usec() - t0;
+   return took > 0
+      ? (double)(core_frames() - f0) * 1000000.0 / (double)took : 0.0;
+}
+
+static void lane_pacing_rate(void)
+{
+   static const struct
+   {
+      float  display_hz;  /* what the driver reports */
+      double panel_hz;    /* what the panel runs at */
+      double content_fps;
+      double expect;
+   } cases[] = {
+      { 120.0f, 120.0,   120.0, 120.0 },
+      { 120.0f, 119.982, 120.0, 120.0 },   /* a real panel, a hair slow */
+      { 120.0f, 120.018, 120.0, 120.0 },   /* and a hair fast */
+      { 120.0f, 120.0,    60.0,  60.0 },
+      {  60.0f,  60.0,    60.0,  60.0 },
+      {  60.0f,  59.94,   60.0,  60.0 },
+      { 144.0f, 144.0,    60.0,  60.0 },
+      { 144.0f, 144.0,   120.0, 120.0 },
+   };
+   unsigned had = failures;
+   settings_t *settings = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   bool   saved_pacing  = settings->bools.video_threaded_display_pacing;
+   bool   saved_ask     = settings->bools.video_present_timing_from_display;
+   float  saved_refresh = settings->floats.video_refresh_rate;
+   double saved_fps     = video_st->av_info.timing.fps;
+   dylib_t lib = runloop_state_get_ptr()->lib_handle;
+   void (*run_us)(unsigned) = lib
+      ? (void (*)(unsigned))dylib_proc(lib, "harness_core_set_run_us") : NULL;
+   unsigned c, ts;
+
+   CHECK(run_us != NULL, "pacing-rate lane: harness core has no run time");
+   if (!run_us)
+      return;
+   settings->bools.video_threaded_display_pacing = true;
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "pacing-rate lane");
+   /* The core takes 1.3 ms, as prboom does at 2560x1600: the loop has
+    * that to spend inside every period on top of the hold. */
+   run_us(1300);
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   CHECK(!menu_is_up(), "pacing-rate lane: menu still up");
+   run_frames(3);
+   video_thread_wait_idle();
+
+   thr                 = (thread_video_t*)video_state_get_ptr()->data;
+   prlane_seed         = 1;
+   prlane_inner        = thr->driver;
+   prlane_driver       = *thr->driver;
+   prlane_driver.frame = prlane_frame;
+   prlane_inner_poke   = thr->poke;
+   prlane_poke         = *thr->poke;
+   set_driver(thr, &prlane_driver);
+
+   for (c = 0; c < ARRAY_SIZE(cases); c++)
+      for (ts = 0; ts < 2; ts++)
+      {
+         double best = 0.0, fps;
+         unsigned t;
+         for (t = 0; t < 3; t++)
+         {
+            fps = pacing_rate_measure(thr, cases[c].display_hz,
+                  cases[c].panel_hz, cases[c].content_fps, ts != 0);
+            if (fabs(fps - cases[c].expect) < fabs(best - cases[c].expect))
+               best = fps;
+            if (fabs(best - cases[c].expect) <= cases[c].expect * 0.02)
+               break;
+         }
+         CHECK(fabs(best - cases[c].expect) <= cases[c].expect * 0.02,
+               "pacing-rate lane: %.0f fps content on a %.3f Hz panel "
+               "(reported %.0f Hz), %s: ran at %.2f fps, not %.0f",
+               cases[c].content_fps, cases[c].panel_hz,
+               cases[c].display_hz,
+               ts ? "present timestamps" : "no timestamps (vsync off)",
+               best, cases[c].expect);
+         fprintf(stderr, "   pacing rate: %5.1f fps on %8.3f Hz, %-13s %.2f fps\n",
+               cases[c].content_fps, cases[c].panel_hz,
+               ts ? "timestamps:" : "clock grid:", best);
+      }
+
+   run_us(0);
+   set_driver(thr, prlane_inner);
+   set_poke(thr, prlane_inner_poke);
+   video_st->av_info.timing.fps                      = saved_fps;
+   settings->bools.video_threaded_display_pacing     = saved_pacing;
+   settings->bools.video_present_timing_from_display = saved_ask;
+   settings->floats.video_refresh_rate               = saved_refresh;
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   set_threaded_via_setting(false);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] pacing-rate lane\n");
+}
 
 /* ------------------------------------------------------------------ */
 /* The window's answers reach the main thread, each as itself          */
@@ -5308,6 +5487,7 @@ int main(int argc, char *argv[])
       lane_pacing_queue_drain();
       lane_pacing_fast_display();
       lane_pacing_after_stall();
+      lane_pacing_rate();
    }
    lane_zero_copy();
    lane_zero_copy_ring_full();

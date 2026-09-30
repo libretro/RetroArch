@@ -2576,9 +2576,19 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
       }
       if (thr->content_due < next)
          thr->content_due = next;
+      /* The vblank nearest the due time, not the first at or after it:
+       * the due time accumulates in the content's period and the grid
+       * in the display's, and a due time a hair past a vblank belongs
+       * to that vblank, not the next.  A grid the video thread laid
+       * from its own clock - vsync off, no timestamps - is no scanout
+       * at all, just its last completion plus a period: it sits a
+       * margin ahead of the due time every frame, and the frame is
+       * aimed at the due time itself. */
       vblank = next;
-      if (period > 0)
-         while (vblank < thr->content_due)
+      if (!(snap.flags & VIDEO_THREAD_STAT_F_PHASE_DISPLAY))
+         vblank = thr->content_due;
+      else if (period > 0)
+         while (vblank + period / 2 < thr->content_due)
             vblank += period;
 
       target = vblank - reserve - margin;

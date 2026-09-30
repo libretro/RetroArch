@@ -459,6 +459,26 @@ static unsigned harness_fb_granted;
 /* RETRO_API, like the core's own entry points: a Windows DLL exports
  * only what is marked, and the harness looks these two up by name. */
 RETRO_API void harness_core_use_framebuffer(int on) { harness_use_fb = on; }
+
+/* The time each retro_run takes, spun on the frontend's clock: a real
+ * core's cost, which the pacer reserves against.  0 runs as fast as
+ * the frame can be written. */
+static unsigned                harness_run_us;
+static retro_perf_get_time_usec_t harness_time_usec;
+RETRO_API void harness_core_set_run_us(unsigned us)
+{
+   struct retro_perf_callback perf;
+   harness_run_us = 0;
+   if (!us || !environ_cb)
+      return;
+   memset(&perf, 0, sizeof(perf));
+   if (     environ_cb(RETRO_ENVIRONMENT_GET_PERF_INTERFACE, &perf)
+         && perf.get_time_usec)
+   {
+      harness_time_usec = perf.get_time_usec;
+      harness_run_us    = us;
+   }
+}
 RETRO_API unsigned harness_core_fb_granted(void)   { return harness_fb_granted; }
 
 void retro_run(void)
@@ -470,6 +490,12 @@ void retro_run(void)
    unsigned out_w = W, out_h = h;
    const uint8_t *push = NULL;
    runs++;
+
+   if (harness_run_us)
+   {
+      retro_time_t until = harness_time_usec() + (retro_time_t)harness_run_us;
+      while (harness_time_usec() < until) { }
+   }
 
    if (hw_mode && hw_vk)
    {
