@@ -98,6 +98,7 @@
 - NETWORK: Built-in NFSv3 and NFSv4 (4.0, 4.1, 4.2) client for loading content from nfs:// exports
 - NETWORK: NFS files stay usable across a server restart, a dropped connection or a long pause: the client reconnects and reopens what it needs
 - 3DS/VITA/SWITCH/WIIU: nfs:// content through the built-in NFS client
+- 3DS/VITA/SWITCH: smb:// content through the built-in SMB client
 - NETWORK: SMB files stay usable across a server restart: the connection is mended and the file opened again where it was
 - NETWORK: NFSv4.2 reads use READ_PLUS: holes in sparse files no longer cross the network
 - 3DS/SWITCH: nfs:// content through the built-in NFS client

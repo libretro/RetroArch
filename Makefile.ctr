@@ -106,6 +106,8 @@ else
 	HAVE_RETROSSL = 1
 	# the built-in NFS client (nfs://); it needs no crypto
 	HAVE_RETRONFS = 1
+	# the built-in SMB client (smb://), on the crypto above
+	HAVE_RETROSMB = 1
 	HAVE_CORE_INFO_CACHE = 1
 	HAVE_CLOUDSYNC = 1
 

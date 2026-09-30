@@ -78,7 +78,13 @@
  * SMB2_LARGE_IO once the server has granted the credits; the
  * connection's buffers are sized to what it negotiated. */
 #define SMB2_MAX_IO   (64 * 1024)
+/* The 3DS keeps the 64 KiB start: its RAM is small, four connections
+ * at 1 MiB would hold 8 MiB of buffers, and its Wi-Fi gains nothing. */
+#ifdef _3DS
+#define SMB2_LARGE_IO (64 * 1024)
+#else
 #define SMB2_LARGE_IO (1024 * 1024)
+#endif
 #define SMB2_BUF_SIZE(io) (SMB2_TRANSFORM_HDR_SIZE + SMB2_HDR_SIZE + (io) + 4096)
 #define SMB2_RX_SIZE  SMB2_BUF_SIZE(SMB2_MAX_IO)
 

@@ -190,6 +190,13 @@ console_set "3ds nfs"       "-Itools/platform_stubs/ctr $NFSD"  "-D_3DS -DARM11 
 console_set "vita nfs"      "-Itools/platform_stubs/vita $NFSD" "-DVITA -DRARCH_CONSOLE -DHAVE_SOCKET_LEGACY" $NFS_SET
 console_set "switch nfs"    "-I$STUBS/libnx $NFSD"              "-DHAVE_LIBNX -DSWITCH -D__SWITCH__ -DRARCH_CONSOLE" $NFS_SET
 console_set "wiiu nfs"      "-Iwiiu/include -Itools/platform_stubs/wiiu $NFSD" "-DWIIU -D__WUT__ -DHW_WUP -D__wiiu__ -DRARCH_CONSOLE" $NFS_SET
+# The built-in SMB and Kerberos clients, which the 3DS, Vita and Switch
+# build on their crypto (the Wii U has no kernel RNG for it to draw on).
+SMB_SET="libretro-common/net/net_smb2.c libretro-common/net/net_krb5.c libretro-common/vfs/vfs_implementation_smb.c"
+SMBD="-DHAVE_RETROSMB -DHAVE_SMBCLIENT"
+console_set "3ds smb"       "-Itools/platform_stubs/ctr $SMBD"  "-D_3DS -DARM11 -DRARCH_CONSOLE" $SMB_SET
+console_set "vita smb"      "-Itools/platform_stubs/vita $SMBD" "-DVITA -DRARCH_CONSOLE -DHAVE_SOCKET_LEGACY" $SMB_SET
+console_set "switch smb"    "-I$STUBS/libnx $SMBD"              "-DHAVE_LIBNX -DSWITCH -D__SWITCH__ -DRARCH_CONSOLE" $SMB_SET
 
 # Every platform makefile on Makefile.common, without its toolchain: the
 # graph's own DEFINES checked for consistency (TLS, SMB, NFS need the

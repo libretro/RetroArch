@@ -64,6 +64,8 @@ HAVE_KEYCHAIN = 1
 HAVE_RETROSSL = 1
 # The built-in NFS client (nfs://); it needs no crypto.
 HAVE_RETRONFS = 1
+# The built-in SMB client (smb://), on the crypto above.
+HAVE_RETROSMB = 1
 
 # RetroArch libnx useful flags
 HAVE_THREADS = 1

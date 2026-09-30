@@ -84,6 +84,8 @@ else
 	HAVE_SOCKET_LEGACY	:= 1
 	# the built-in NFS client (nfs://); it needs no crypto
 	HAVE_RETRONFS		:= 1
+	# the built-in SMB client (smb://), on the crypto above
+	HAVE_RETROSMB		:= 1
 	HAVE_MENU		:= 1
 	HAVE_MENU_COMMON	:= 1
 	HAVE_GFX_WIDGETS 	:= 1

@@ -65,6 +65,10 @@ other cores have the file copied to local storage first. Changes to these
 settings apply the next time a share is browsed; content already running
 keeps its connection. A wired connection is more reliable than Wi-Fi.
 
+Besides the desktop and mobile builds, the 3DS, Vita and Switch carry the
+SMB client, on their hardware random number generators. The Wii U does
+not: it has no kernel source of randomness for the keys SMB derives.
+
 ## Loading content from NFS exports
 
 The NFS client supports NFSv3, which finds the NFS and MOUNT services
