@@ -161,6 +161,40 @@ arm "ps3"        ps3        "-D__PSL1GHT__ -DHAVE_MEMINFO"
 arm "ps2"        ""         "-DPS2"
 arm "emscripten" emscripten "-D__EMSCRIPTEN__"
 
+# The consoles that carry the cleanroom crypto, keychain and TLS client
+# (3DS, Vita, Switch), each in its own shape with the SDK stand-ins the
+# random source and the socket layer need. Vita's and the 3DS's socket
+# layers are the SDKs' own, so the TLS client itself is compiled only
+# in the Switch shape here; those two builds are their workflows' to
+# link.
+CRYPTO_SET="libretro-common/crypto/crypto.c libretro-common/crypto/kdf.c libretro-common/crypto/pk.c libretro-common/crypto/x509.c libretro-common/file/keychain.c"
+TLS_SET="$CRYPTO_SET libretro-common/net/net_socket_ssl_retro.c network/tls_log.c"
+CONSOLE_NET="-DHAVE_CRYPTO -DHAVE_KEYCHAIN -DHAVE_SSL -DHAVE_RETROSSL -DHAVE_NETWORKING -DHAVE_THREADS -DHAVE_CONFIGFILE -DRARCH_INTERNAL"
+console_set() {
+   cs_name="$1"; cs_inc="$2"; cs_defs="$3"; shift 3
+   for cs_tu in "$@"; do
+      check "$cs_name: $(basename $cs_tu)" "$HOSTOFF $cs_inc $CONSOLE_NET $cs_defs $CDECL" "$cs_tu"
+   done
+}
+console_set "3ds crypto"    "-Itools/platform_stubs/ctr"  "-D_3DS -DARM11"                    $CRYPTO_SET
+console_set "vita crypto"   "-Itools/platform_stubs/vita" "-DVITA"                            $CRYPTO_SET
+console_set "switch tls"    "-I$STUBS/libnx"              "-DHAVE_LIBNX -DSWITCH -D__SWITCH__" $TLS_SET
+
+# The OpenDingux family builds with a MIPS toolchain; the crypto and the
+# TLS client compile with a MIPS cross compiler when one is installed.
+MIPSEL_CC=${MIPSEL_CC:-mipsel-linux-gnu-gcc}
+if command -v "$MIPSEL_CC" >/dev/null 2>&1; then
+   for tu in $TLS_SET; do
+      if out=$($MIPSEL_CC -march=mips32r2 $INC $CONSOLE_NET -DDINGUX -D_GNU_SOURCE -Wall -Werror -Wno-unused-function -fsyntax-only "$tu" 2>&1); then
+         echo "ok    dingux mips: $(basename $tu)"
+      else
+         echo "FAIL  dingux mips: $(basename $tu)"; show_out "$out"; fail=1
+      fi
+   done
+else
+   echo "skip  dingux mips (no $MIPSEL_CC)"
+fi
+
 platform_video "odroidgo2 video" \
    "-DHAVE_ODROIDGO2 -DHAVE_OPENGL -DHAVE_GLSL" "" \
    gfx/drivers/gl2.c ""

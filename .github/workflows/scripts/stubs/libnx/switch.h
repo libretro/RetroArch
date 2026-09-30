@@ -51,4 +51,8 @@ void    *framebufferBegin(Framebuffer *fb, u32 *out_stride);
 void     framebufferEnd(Framebuffer *fb);
 void     framebufferClose(Framebuffer *fb);
 
+
+/* the kernel random source the crypto's random path draws on */
+void randomGet(void *buf, size_t len);
+
 #endif
