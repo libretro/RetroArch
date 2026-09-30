@@ -2522,6 +2522,7 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
       retro_time_t reserve = snap.render_time + thr->core_time;
       retro_time_t margin  = reserve / 8;
       retro_time_t period  = snap.present_period;
+      retro_time_t next    = snap.next_present;
       retro_time_t content;
       retro_time_t vblank;
       retro_time_t target;
@@ -2529,6 +2530,14 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
       double fps = thr->video_st->av_info.timing.fps;
       if (margin < 500)
          margin = 500;
+      /* The snapshot's vblank was the next one when the video thread
+       * last presented.  With nothing presented since - the loop
+       * stalled, or the display idled - it has passed, and a target
+       * measured from it releases every frame at once until the
+       * presenter catches up: the core ran at the display's rate after
+       * each hitch.  Carried forward on the display's grid instead. */
+      if (next <= now)
+         next += ((now - next) / period + 1) * period;
 
       /* The content's own period, not the display's: on a 120 Hz
        * display a 60 fps core is due every other vblank, and a hold
@@ -2552,7 +2561,7 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
       retro_atomic_store_release_int(&thr->content_period_us,
             (int)content);
       if (thr->content_due <= 0 || thr->content_due < now - content)
-         thr->content_due = snap.next_present;
+         thr->content_due = next;
       else
          thr->content_due += content;
       /* Once after a frame went out a period late for having queued
@@ -2565,9 +2574,9 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
          drained            = true;
          thr->handoff.drains++;
       }
-      if (thr->content_due < snap.next_present)
-         thr->content_due = snap.next_present;
-      vblank = snap.next_present;
+      if (thr->content_due < next)
+         thr->content_due = next;
+      vblank = next;
       if (period > 0)
          while (vblank < thr->content_due)
             vblank += period;

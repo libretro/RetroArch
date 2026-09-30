@@ -2102,6 +2102,13 @@ static retro_time_t                  rvlane_period;
 static retro_time_t                  rvlane_base;
 static retro_time_t                  rvlane_last_out;
 static unsigned                      rvlane_presents;
+/* The vblank each new content frame went out on, while logging */
+#define RVLANE_LOG_MAX 128
+static retro_time_t                  rvlane_log[RVLANE_LOG_MAX];
+static uint64_t                      rvlane_log_frame[RVLANE_LOG_MAX];
+static unsigned                      rvlane_log_n;
+static bool                          rvlane_logging;
+static uint64_t                      rvlane_log_count;
 
 static retro_time_t rvlane_grid_after(retro_time_t t)
 {
@@ -2131,6 +2138,13 @@ static bool rvlane_frame(void *data, const void *frame,
       slot = rvlane_last_out + rvlane_period;
    rvlane_last_out = slot;
    rvlane_presents++;
+   if (     rvlane_logging && frame_count != rvlane_log_count
+         && rvlane_log_n < RVLANE_LOG_MAX)
+   {
+      rvlane_log_frame[rvlane_log_n] = frame_count;
+      rvlane_log[rvlane_log_n++]     = slot;
+      rvlane_log_count               = frame_count;
+   }
    return rvlane_inner->frame(data, frame, dims, frame_count,
          pitch, msg, video_info);
 }
@@ -2220,6 +2234,102 @@ static void lane_pacing_fast_display(void)
    if (failures == had)
       fprintf(stderr, "[pass] fast-display lane\n");
 }
+
+/* ------------------------------------------------------------------ */
+/* Lane: no catch-up after a stall                                     */
+/* ------------------------------------------------------------------ */
+
+/* The hold measures from the vblank the video thread expected when it
+ * last presented.  After the loop has stalled that vblank has passed,
+ * and a hold measured from it released every frame at once: the core
+ * ran at the display's rate, a 60 fps game at 120 on this display,
+ * until the presenter caught up.  Counted on the display's grid, not
+ * timed: content frames are due two vblanks apart, so the frames from
+ * the first shown to the last must span twice as many vblanks as the
+ * frame counter advanced.  A frame the wrapper replaced (vsync off)
+ * still counts: it was due all the same.  Ten vblanks are allowed
+ * for the restart: the first frame is pushed before any hold has run,
+ * and the restart costs about four here.  Lateness after that only
+ * widens the span.  The catch-up fell short by thirty to sixty. */
+static void lane_pacing_after_stall(void)
+{
+   unsigned had = failures;
+   settings_t *settings = config_get_ptr();
+   thread_video_t *thr;
+   bool  saved_pacing  = settings->bools.video_threaded_display_pacing;
+   bool  saved_ask     = settings->bools.video_present_timing_from_display;
+   float saved_refresh = settings->floats.video_refresh_rate;
+   unsigned frames     = 60;
+   retro_time_t span;
+   unsigned vblanks, want, advanced;
+
+   settings->floats.video_refresh_rate               = 120.0f;
+   settings->bools.video_present_timing_from_display = true;
+   settings->bools.video_threaded_display_pacing     = true;
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "after-stall lane");
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   CHECK(!menu_is_up(), "after-stall lane: menu still up");
+   run_frames(3);
+   video_thread_wait_idle();
+
+   thr                 = (thread_video_t*)video_state_get_ptr()->data;
+   rvlane_period       = 1000000 / 120;
+   rvlane_base         = cpu_features_get_time_usec();
+   rvlane_last_out     = rvlane_base;
+   rvlane_presents     = 0;
+   rvlane_inner        = thr->driver;
+   rvlane_driver       = *thr->driver;
+   rvlane_driver.frame = rvlane_frame;
+   rvlane_inner_poke   = thr->poke;
+   rvlane_poke         = *thr->poke;
+   rvlane_poke.get_last_present_time = rvlane_last_present;
+   set_driver(thr, &rvlane_driver);
+   set_poke(thr, &rvlane_poke);
+
+   run_frames(60);
+   video_thread_wait_idle();
+
+   /* The loop stalls, as a descheduled process does, then resumes. */
+   retro_sleep(300);
+   rvlane_log_n     = 0;
+   rvlane_log_count = 0;
+   rvlane_logging   = true;
+   run_frames(frames);
+   video_thread_wait_idle();
+   rvlane_logging   = false;
+
+   CHECK(rvlane_log_n >= frames / 2, "after-stall lane: %u of %u frames presented",
+         rvlane_log_n, frames);
+   if (rvlane_log_n > 1)
+   {
+      advanced = (unsigned)(rvlane_log_frame[rvlane_log_n - 1] - rvlane_log_frame[0]);
+      span     = rvlane_log[rvlane_log_n - 1] - rvlane_log[0];
+      vblanks  = (unsigned)((span + rvlane_period / 2) / rvlane_period);
+      want     = 2 * advanced;
+      CHECK(vblanks + 10 >= want,
+            "after-stall lane: %u frames went out over %u vblanks, not %u: "
+            "the core caught up at the display's rate",
+            advanced, vblanks, want);
+      fprintf(stderr, "   after stall: %u frames over %u vblanks (%u due), %u shown\n",
+            advanced, vblanks, want, rvlane_log_n);
+   }
+
+   set_driver(thr, rvlane_inner);
+   set_poke(thr, rvlane_inner_poke);
+   settings->bools.video_threaded_display_pacing     = saved_pacing;
+   settings->bools.video_present_timing_from_display = saved_ask;
+   settings->floats.video_refresh_rate               = saved_refresh;
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   set_threaded_via_setting(false);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] after-stall lane\n");
+}
+
 
 /* ------------------------------------------------------------------ */
 /* The window's answers reach the main thread, each as itself          */
@@ -5136,6 +5246,7 @@ int main(int argc, char *argv[])
       lane_display_pacing();
       lane_pacing_queue_drain();
       lane_pacing_fast_display();
+      lane_pacing_after_stall();
    }
    lane_zero_copy();
    lane_zero_copy_ring_full();
