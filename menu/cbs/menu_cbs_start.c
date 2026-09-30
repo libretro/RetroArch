@@ -462,11 +462,11 @@ static int action_start_state_slot(
 
    if (menu_st->driver_ctx)
    {
-      if (menu_st->driver_ctx->update_savestate_thumbnail_path)
-         menu_st->driver_ctx->update_savestate_thumbnail_path(
+      if (menu_st->driver_ctx->update_entry_thumbnail_path)
+         menu_st->driver_ctx->update_entry_thumbnail_path(
                menu_st->userdata, (unsigned)menu_st->selection_ptr);
-      if (menu_st->driver_ctx->update_savestate_thumbnail_image)
-         menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
+      if (menu_st->driver_ctx->update_entry_thumbnail_image)
+         menu_st->driver_ctx->update_entry_thumbnail_image(menu_st->userdata);
    }
 
    return 0;
@@ -520,11 +520,11 @@ static int action_start_replay_slot(
 
    if (menu_st->driver_ctx)
    {
-      if (menu_st->driver_ctx->update_savestate_thumbnail_path)
-         menu_st->driver_ctx->update_savestate_thumbnail_path(
+      if (menu_st->driver_ctx->update_entry_thumbnail_path)
+         menu_st->driver_ctx->update_entry_thumbnail_path(
                menu_st->userdata, (unsigned)selection);
-      if (menu_st->driver_ctx->update_savestate_thumbnail_image)
-         menu_st->driver_ctx->update_savestate_thumbnail_image(menu_st->userdata);
+      if (menu_st->driver_ctx->update_entry_thumbnail_image)
+         menu_st->driver_ctx->update_entry_thumbnail_image(menu_st->userdata);
    }
 
    return 0;

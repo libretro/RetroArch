@@ -981,6 +981,7 @@ typedef struct settings
       bool cheevos_hardcore_mode_enable;
       bool cheevos_richpresence_enable;
       bool cheevos_badges_enable;
+      bool cheevos_screenshot_previews_enable;
       bool cheevos_verbose_enable;
       bool cheevos_auto_screenshot;
       bool cheevos_start_active;

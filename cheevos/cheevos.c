@@ -415,6 +415,15 @@ static void rcheevos_retry_achievement_popup(retro_task_t* task)
 
 #endif /* HAVE_GFX_WIDGETS */
 
+int rcheevos_get_screenshot_name_base(char *s, size_t len,
+      unsigned achievement_id)
+{
+   return snprintf(s, len, "%s/%s-cheevo-%u",
+         config_get_ptr()->paths.directory_screenshot,
+         path_basename(path_get(RARCH_PATH_BASENAME)),
+         achievement_id);
+}
+
 static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
 {
    const settings_t* settings = config_get_ptr();
@@ -517,9 +526,7 @@ static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
       if (shotname)
       {
          const char *path_directory_screenshot = settings->paths.directory_screenshot;
-         snprintf(shotname, shotname_len, "%s/%s-cheevo-%u",
-            path_directory_screenshot,
-            path_basename(path_get(RARCH_PATH_BASENAME)),
+         rcheevos_get_screenshot_name_base(shotname, shotname_len,
             (unsigned)cheevo->id);
          shotname[shotname_len - 1] = '\0';
 

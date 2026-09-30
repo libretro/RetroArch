@@ -11265,6 +11265,7 @@ unsigned menu_displaylist_build_list(
          {
             static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_CHEEVOS_BADGES_ENABLE,             PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CHEEVOS_SCREENSHOT_PREVIEWS_ENABLE, PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CHEEVOS_ACHIEVEMENT_LIST_ORDER,    PARSE_ONLY_UINT},
                {MENU_ENUM_LABEL_CHEEVOS_HIGHLIGHTED_ACHIEVEMENTS,  PARSE_ONLY_UINT},
             };

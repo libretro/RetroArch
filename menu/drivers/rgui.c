@@ -56,6 +56,9 @@
 #include "../../file_path_special.h"
 #include "../../input/input_osk.h"
 #include "../../tasks/tasks_internal.h"
+#ifdef HAVE_CHEEVOS
+#include "../../cheevos/cheevos_menu.h"
+#endif
 
 #include "../../gfx/bitmapfont.h"
 #ifdef HAVE_LANGEXTRA
@@ -290,7 +293,8 @@ enum rgui_flags
    RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL = (1 << 23),
    RGUI_FLAG_IS_PLAYLISTS_TAB          = (1 << 24),
    RGUI_FLAG_IS_QUICK_MENU             = (1 << 25),
-   RGUI_FLAG_DRAW_ENTRY_SKIP           = (1 << 26)
+   RGUI_FLAG_DRAW_ENTRY_SKIP           = (1 << 26),
+   RGUI_FLAG_IS_ACHIEVEMENT_LIST       = (1 << 27)
 };
 
 typedef struct
@@ -382,7 +386,7 @@ typedef struct
 
    char menu_title[NAME_MAX_LENGTH];              /* Must be a fixed length array... */
    char msgbox[1024];
-   char savestate_thumbnail_file_path[PATH_MAX_LENGTH];
+   char entry_thumbnail_file_path[PATH_MAX_LENGTH];
    char theme_preset_path[PATH_MAX_LENGTH];       /* Must be a fixed length array... */
    char theme_dynamic_path[PATH_MAX_LENGTH];      /* Must be a fixed length array... */
    char last_theme_dynamic_path[PATH_MAX_LENGTH]; /* Must be a fixed length array... */
@@ -2810,7 +2814,7 @@ static bool rgui_downscale_thumbnail(
       struct texture_image *image_dst)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
-   bool thumbnail_core_aspect     = *rgui->savestate_thumbnail_file_path;
+   bool thumbnail_core_aspect     = *rgui->entry_thumbnail_file_path;
    unsigned max_width            = VIDEO_SCALE_W(max_dims);
    unsigned max_height           = VIDEO_SCALE_H(max_dims);
    /* Determine output dimensions */
@@ -6012,7 +6016,7 @@ static void rgui_render(void *data, unsigned dims,
       char thumbnail_title_buf[NAME_MAX_LENGTH];
       unsigned title_x, title_width;
       const char *thumbnail_title = NULL;
-      bool is_state_slot          = *rgui->savestate_thumbnail_file_path;
+      bool is_state_slot          = *rgui->entry_thumbnail_file_path;
       thumbnail_title_buf[0]      = '\0';
 
       /* Draw thumbnail */
@@ -6096,9 +6100,10 @@ static void rgui_render(void *data, unsigned dims,
                || ((rgui->flags & RGUI_FLAG_IS_QUICK_MENU) && !menu_is_running_quick_menu()));
       bool show_thumbnail            = false;
       bool show_left_thumbnail       = false;
-      bool show_savestate_thumbnail  = (*rgui->savestate_thumbnail_file_path
+      bool show_entry_thumbnail = (*rgui->entry_thumbnail_file_path
             && (   (rgui->flags & RGUI_FLAG_IS_STATE_SLOT)
-               || ((rgui->flags & RGUI_FLAG_IS_QUICK_MENU) && menu_is_running_quick_menu())));
+               || ((rgui->flags & RGUI_FLAG_IS_QUICK_MENU) && menu_is_running_quick_menu())
+               ||  (rgui->flags & RGUI_FLAG_IS_ACHIEVEMENT_LIST)));
       unsigned thumbnail_panel_width = 0;
       unsigned term_mid_point        = 0;
       size_t powerstate_len          = 0;
@@ -6270,6 +6275,15 @@ static void rgui_render(void *data, unsigned dims,
 
       rgui_blit_line(rgui, fb_width, title_x, title_y,
             title_buf, rgui->colors.title_color, rgui->colors.shadow_color);
+
+      /* Achievement screenshots sit behind the list text. */
+      if (show_entry_thumbnail &&
+            (rgui->flags & RGUI_FLAG_IS_ACHIEVEMENT_LIST))
+         rgui_render_mini_thumbnail(rgui, &rgui->mini_left_thumbnail,
+               rgui->frame_buf.data,
+               (rgui_swap_thumbnails) ? GFX_THUMBNAIL_RIGHT : GFX_THUMBNAIL_LEFT,
+               p_disp->framebuf_dims, fb_pitch,
+               rgui_swap_thumbnails, thumbnail_background, true);
 
       /* Print menu entries */
       x         = rgui->term_layout.start_x;
@@ -6517,11 +6531,12 @@ static void rgui_render(void *data, unsigned dims,
       }
 
       /* Draw mini thumbnails, if required */
-      if (show_savestate_thumbnail)
+      if (show_entry_thumbnail &&
+             !(rgui->flags & RGUI_FLAG_IS_ACHIEVEMENT_LIST))
       {
-         thumbnail_t *thumbnail_savestate = &rgui->mini_left_thumbnail;
-         if (show_savestate_thumbnail && thumbnail_savestate)
-            rgui_render_mini_thumbnail(rgui, thumbnail_savestate,
+         thumbnail_t *entry_thumbnail = &rgui->mini_left_thumbnail;
+         if (show_entry_thumbnail && entry_thumbnail)
+            rgui_render_mini_thumbnail(rgui, entry_thumbnail,
                   rgui->frame_buf.data,
                   (rgui_swap_thumbnails) ? GFX_THUMBNAIL_RIGHT : GFX_THUMBNAIL_LEFT,
                   p_disp->framebuf_dims, fb_pitch,
@@ -7473,7 +7488,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
    rgui->playlist_selection_ptr      = 0;
    memset(rgui->playlist_selection, 0, sizeof(rgui->playlist_selection));
 
-   rgui->savestate_thumbnail_file_path[0]      = '\0';
+   rgui->entry_thumbnail_file_path[0]      = '\0';
 
    /* Ensure that pointer device starts with well defined
     * values (should not be necessary, but some platforms may
@@ -7681,7 +7696,7 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_s
     * (Note: there is no need to load this when viewing
     * fullscreen thumbnails) */
    if (     !(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
-         && !*rgui->savestate_thumbnail_file_path)
+         && !*rgui->entry_thumbnail_file_path)
    {
       rgui->flags &= ~RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL;
       if (*menu_st->thumbnail_path_data->left_path)
@@ -7695,7 +7710,7 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_s
             rgui->flags |=  RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL;
       }
    }
-   else if (*rgui->savestate_thumbnail_file_path)
+   else if (*rgui->entry_thumbnail_file_path)
    {
       rgui->flags &= ~RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL;
       if (*menu_st->thumbnail_path_data->left_path)
@@ -7704,7 +7719,7 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_s
                   &rgui->mini_left_thumbnail,
                   GFX_THUMBNAIL_LEFT,
                   &rgui->left_thumbnail_queue_size,
-                  rgui->savestate_thumbnail_file_path,
+                  rgui->entry_thumbnail_file_path,
                   &thumbnails_missing))
             rgui->flags |=  RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL;
       }
@@ -7739,7 +7754,7 @@ static void rgui_load_current_thumbnails(rgui_t *rgui, struct menu_state *menu_s
 #endif
 }
 
-static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
+static void rgui_update_entry_thumbnail_path(void *data, unsigned i)
 {
    /* Off the frame: a path and a menu_entry_t came to 5960 bytes where
     * this tree allows four thousand. This runs when the selection
@@ -7759,7 +7774,19 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
 
    if (!rgui)
       { free(scratch); return; }
-   rgui->savestate_thumbnail_file_path[0] = '\0';
+   rgui->entry_thumbnail_file_path[0] = '\0';
+
+#ifdef HAVE_CHEEVOS
+   if (rgui->flags & RGUI_FLAG_IS_ACHIEVEMENT_LIST)
+   {
+      if (settings->bools.cheevos_screenshot_previews_enable)
+         rcheevos_menu_get_screenshot_path(i,
+               rgui->entry_thumbnail_file_path,
+               sizeof(rgui->entry_thumbnail_file_path));
+      free(scratch);
+      return;
+   }
+#endif
 
    /* Savestate thumbnails are only relevant
     * when viewing the running quick menu or state slots */
@@ -7798,20 +7825,20 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
             gfx_savestate_thumbnail_get_path(path, PATH_MAX_LENGTH,
                   runloop_st->name.savestate, state_slot);
 
-            strlcpy(rgui->savestate_thumbnail_file_path,
+            strlcpy(rgui->entry_thumbnail_file_path,
                   path,
-                  sizeof(rgui->savestate_thumbnail_file_path));
+                  sizeof(rgui->entry_thumbnail_file_path));
          }
       }
    }
    free(scratch);
 }
 
-static void rgui_reset_savestate_thumbnail(void *data)
+static void rgui_reset_entry_thumbnail(void *data)
 {
    rgui_t *rgui    = (rgui_t*)data;
 
-   if (!*rgui->savestate_thumbnail_file_path)
+   if (!*rgui->entry_thumbnail_file_path)
       return;
 
    rgui->mini_left_thumbnail.dims     = 0;
@@ -7826,16 +7853,16 @@ static void rgui_reset_savestate_thumbnail(void *data)
    rgui->flags &= ~RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL;
 }
 
-static void rgui_update_savestate_thumbnail_image(void *data)
+static void rgui_update_entry_thumbnail_image(void *data)
 {
    rgui_t *rgui    = (rgui_t*)data;
    if (!rgui)
       return;
 
    /* If path is empty, just reset thumbnail */
-   if (     !*rgui->savestate_thumbnail_file_path
-         || !path_is_valid(rgui->savestate_thumbnail_file_path))
-      rgui_reset_savestate_thumbnail(rgui);
+   if (     !*rgui->entry_thumbnail_file_path
+         || !path_is_valid(rgui->entry_thumbnail_file_path))
+      rgui_reset_entry_thumbnail(rgui);
    else
    {
       bool thumbnails_missing        = false;
@@ -7845,7 +7872,7 @@ static void rgui_update_savestate_thumbnail_image(void *data)
             &rgui->mini_left_thumbnail,
             GFX_THUMBNAIL_LEFT,
             &rgui->left_thumbnail_queue_size,
-            rgui->savestate_thumbnail_file_path,
+            rgui->entry_thumbnail_file_path,
             &thumbnails_missing))
          rgui->flags |=  RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL;
    }
@@ -7870,8 +7897,8 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
    /* Reset savestate thumbnails always */
    if (selection < list_size)
    {
-      rgui_update_savestate_thumbnail_path(rgui, (unsigned)selection);
-      rgui_update_savestate_thumbnail_image(rgui);
+      rgui_update_entry_thumbnail_path(rgui, (unsigned)selection);
+      rgui_update_entry_thumbnail_image(rgui);
    }
 
    /* Update thumbnail content/path */
@@ -7900,7 +7927,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
       }
       else if (rgui->flags & RGUI_FLAG_IS_QUICK_MENU)
       {
-         if (!*rgui->savestate_thumbnail_file_path)
+         if (!*rgui->entry_thumbnail_file_path)
             playlist_valid = true;
 
          playlist_index = rgui->playlist_index;
@@ -7973,8 +8000,8 @@ static void rgui_toggle_fs_thumbnail(rgui_t *rgui,
     * currently inactive right thumbnail. */
    if (menu_rgui_inline_thumbnails)
    {
-      if (*rgui->savestate_thumbnail_file_path)
-         rgui_reset_savestate_thumbnail(rgui);
+      if (*rgui->entry_thumbnail_file_path)
+         rgui_reset_entry_thumbnail(rgui);
 
       if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
       {
@@ -8324,6 +8351,12 @@ static void rgui_populate_entries(
       rgui->flags |=  RGUI_FLAG_IS_STATE_SLOT;
    else
       rgui->flags &= ~RGUI_FLAG_IS_STATE_SLOT;
+
+   if (     string_is_equal(label, MENU_ENUM_LABEL_ACHIEVEMENT_LIST_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_ACHIEVEMENTS_SUBMENU_LIST_STR))
+      rgui->flags |= RGUI_FLAG_IS_ACHIEVEMENT_LIST;
+   else
+      rgui->flags &= ~RGUI_FLAG_IS_ACHIEVEMENT_LIST;
 
 #if defined(HAVE_LIBRETRODB)
    if (     string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST_STR)
@@ -8896,7 +8929,7 @@ static void rgui_toggle(void *userdata, bool menu_on)
     * 'save state' option */
    if (rgui->flags & RGUI_FLAG_IS_QUICK_MENU)
    {
-      rgui_reset_savestate_thumbnail(rgui);
+      rgui_reset_entry_thumbnail(rgui);
 
       /* Prevent thumbnail flashing after toggling menu */
       if (!menu_on)
@@ -9081,7 +9114,7 @@ static enum menu_action rgui_parse_menu_entry_action(
          if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
          {
             if (     ((rgui->flags & RGUI_FLAG_IS_STATE_SLOT) || (rgui->flags & RGUI_FLAG_IS_QUICK_MENU))
-                  && *rgui->savestate_thumbnail_file_path)
+                  && *rgui->entry_thumbnail_file_path)
             {
                rgui_toggle_fs_thumbnail(rgui, true);
             }
@@ -9182,7 +9215,7 @@ static enum menu_action rgui_parse_menu_entry_action(
 
          /* Save state slot fullscreen toggle */
          if (     ((rgui->flags & RGUI_FLAG_IS_STATE_SLOT) || (rgui->flags & RGUI_FLAG_IS_QUICK_MENU))
-               && *rgui->savestate_thumbnail_file_path)
+               && *rgui->entry_thumbnail_file_path)
          {
             rgui_toggle_fs_thumbnail(rgui, true);
             new_action = MENU_ACTION_NOOP;
@@ -9313,8 +9346,8 @@ menu_ctx_driver_t menu_ctx_rgui = {
    NULL,                               /* set_thumbnail_content */
    rgui_osk_ptr_at_pos,
    rgui_osk_pointer_over_textbox,
-   rgui_update_savestate_thumbnail_path,
-   rgui_update_savestate_thumbnail_image,
+   rgui_update_entry_thumbnail_path,
+   rgui_update_entry_thumbnail_image,
    NULL,                               /* pointer_down */
    rgui_pointer_up,
    rgui_menu_entry_action,

@@ -286,6 +286,7 @@ bool	video_crop_overscan	1	1
 bool	cheevos_test_unofficial	1	0
 bool	cheevos_richpresence_enable	1	1
 bool	cheevos_badges_enable	1	0
+bool	cheevos_screenshot_previews_enable	1	0
 bool	cheevos_unlock_sound_enable	1	0
 bool	cheevos_auto_screenshot	1	0
 bool	cheevos_start_active	1	0
@@ -954,6 +955,7 @@ bool	video_crop_overscan	1	1
 bool	cheevos_test_unofficial	1	0
 bool	cheevos_richpresence_enable	1	1
 bool	cheevos_badges_enable	1	0
+bool	cheevos_screenshot_previews_enable	1	0
 bool	cheevos_unlock_sound_enable	1	0
 bool	cheevos_auto_screenshot	1	0
 bool	cheevos_start_active	1	0
@@ -1629,6 +1631,7 @@ bool	video_crop_overscan	1	1
 bool	cheevos_test_unofficial	1	0
 bool	cheevos_richpresence_enable	1	1
 bool	cheevos_badges_enable	1	0
+bool	cheevos_screenshot_previews_enable	1	0
 bool	cheevos_unlock_sound_enable	1	0
 bool	cheevos_auto_screenshot	1	0
 bool	cheevos_start_active	1	0

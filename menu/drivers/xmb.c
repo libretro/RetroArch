@@ -422,7 +422,7 @@ typedef struct xmb_handle
       gfx_thumbnail_t right;
       gfx_thumbnail_t left;
       gfx_thumbnail_t icon;
-      gfx_thumbnail_t savestate;
+      gfx_thumbnail_t entry;
       enum xmb_pending_thumbnail_type pending;
       enum xmb_pending_thumbnail_type pending_icons;
    } thumbnails;
@@ -519,7 +519,7 @@ typedef struct xmb_handle
     * watches it alongside the scale factor and schedules the same
     * deferred rebuild. */
    char last_font_path[PATH_MAX_LENGTH];
-   char savestate_thumbnail_file_path[PATH_MAX_LENGTH];
+   char entry_thumbnail_file_path[PATH_MAX_LENGTH];
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
 
    char thumbnails_left_status_prev;
@@ -552,6 +552,7 @@ typedef struct xmb_handle
 
    /* Favorites, History, Images, Music, Videos, user generated */
    bool is_playlist;
+   bool is_achievement_list;
    bool is_playlist_tab;
    bool is_playlist_information;
    bool is_db_manager_list;
@@ -1842,7 +1843,7 @@ static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
    }
 }
 
-static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
+static void xmb_update_entry_thumbnail_path(void *data, unsigned i)
 {
    /* Off the frame: two paths and a menu_entry_t came to 8008 bytes
     * where this tree allows four thousand. This runs when the selection
@@ -1875,11 +1876,30 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
    if (!xmb)
       { free(scratch); return; }
    savestate_thumbnail        = settings->bools.savestate_thumbnail_enable;
-   strlcpy(old_path, xmb->savestate_thumbnail_file_path, PATH_MAX_LENGTH);
+   strlcpy(old_path, xmb->entry_thumbnail_file_path, PATH_MAX_LENGTH);
 
    if (xmb->skip_thumbnail_reset)
       { free(scratch); return; }
-   xmb->savestate_thumbnail_file_path[0] = '\0';
+   xmb->entry_thumbnail_file_path[0] = '\0';
+
+#ifdef HAVE_CHEEVOS
+   if (xmb->is_achievement_list)
+   {
+      if (settings->bools.cheevos_screenshot_previews_enable)
+         rcheevos_menu_get_screenshot_path(i,
+               xmb->entry_thumbnail_file_path,
+               sizeof(xmb->entry_thumbnail_file_path));
+
+      if (!string_is_equal(old_path, xmb->entry_thumbnail_file_path))
+      {
+         gfx_thumbnail_cancel_pending_requests();
+         gfx_thumbnail_reset(&xmb->thumbnails.entry);
+      }
+
+      free(scratch);
+      return;
+   }
+#endif
 
    /* Savestate thumbnails are only relevant
     * when viewing the running quick menu or state slots */
@@ -1919,11 +1939,11 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
             gfx_savestate_thumbnail_get_path(path, PATH_MAX_LENGTH,
                   runloop_st->name.savestate, state_slot);
 
-            strlcpy(xmb->savestate_thumbnail_file_path, path,
-                  sizeof(xmb->savestate_thumbnail_file_path));
+            strlcpy(xmb->entry_thumbnail_file_path, path,
+                  sizeof(xmb->entry_thumbnail_file_path));
 
-            if (!string_is_equal(old_path, xmb->savestate_thumbnail_file_path))
-               gfx_thumbnail_reset(&xmb->thumbnails.savestate);
+            if (!string_is_equal(old_path, xmb->entry_thumbnail_file_path))
+               gfx_thumbnail_reset(&xmb->thumbnails.entry);
 
             xmb->fullscreen_thumbnails_available = true;
 
@@ -2036,7 +2056,7 @@ static void xmb_unload_thumbnail_textures(void *data)
    gfx_thumbnail_reset(&xmb->thumbnails.right);
    gfx_thumbnail_reset(&xmb->thumbnails.left);
    gfx_thumbnail_reset(&xmb->thumbnails.icon);
-   gfx_thumbnail_reset(&xmb->thumbnails.savestate);
+   gfx_thumbnail_reset(&xmb->thumbnails.entry);
 }
 
 static void xmb_unload_icon_thumbnail_textures(void *xmb_handle_ptr)
@@ -2359,7 +2379,7 @@ static void xmb_set_dynamic_icon_content(
    }
 }
 
-static void xmb_update_savestate_thumbnail_image(void *data)
+static void xmb_update_entry_thumbnail_image(void *data)
 {
    xmb_handle_t *xmb          = (xmb_handle_t*)data;
    unsigned upscale_threshold = config_get_ptr()->uints.gfx_thumbnail_upscale_threshold;
@@ -2368,15 +2388,15 @@ static void xmb_update_savestate_thumbnail_image(void *data)
       return;
 
    /* If path is empty, just reset thumbnail */
-   if (!*xmb->savestate_thumbnail_file_path)
-      gfx_thumbnail_reset(&xmb->thumbnails.savestate);
-   else if (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+   if (!*xmb->entry_thumbnail_file_path)
+      gfx_thumbnail_reset(&xmb->thumbnails.entry);
+   else if (xmb->thumbnails.entry.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
       gfx_thumbnail_request_file(
-            xmb->savestate_thumbnail_file_path,
-            &xmb->thumbnails.savestate,
+            xmb->entry_thumbnail_file_path,
+            &xmb->thumbnails.entry,
             upscale_threshold);
 
-   xmb->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT | GFX_THUMB_FLAG_BG_ONLY;
+   xmb->thumbnails.entry.flags |= GFX_THUMB_FLAG_CORE_ASPECT | GFX_THUMB_FLAG_BG_ONLY;
 }
 
 /* Is called when the pointer position changes
@@ -2538,10 +2558,10 @@ static void xmb_selection_pointer_changed(
             xmb_update_thumbnail_image(xmb);
       }
 
-      if (end > 1)
+      if (end > 1 || xmb->is_achievement_list)
       {
-         xmb_update_savestate_thumbnail_path(xmb, selection);
-         xmb_update_savestate_thumbnail_image(xmb);
+         xmb_update_entry_thumbnail_path(xmb, selection);
+         xmb_update_entry_thumbnail_image(xmb);
       }
    }
 
@@ -2719,15 +2739,16 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
       }
    }
 
-   if (        savestate_thumbnail
-          && ((xmb->is_quick_menu && xmb->depth >= 2)
-          ||  (xmb->is_state_slot)))
+   if (     xmb->is_achievement_list
+       || (     savestate_thumbnail
+            && ((xmb->is_quick_menu && xmb->depth >= 2)
+            ||  (xmb->is_state_slot))))
    {
       /* This shows savestate thumbnail after
-       * opening savestate submenu */
+       * opening savestate submenu or achievement list */
       xmb->skip_thumbnail_reset = false;
-      xmb_update_savestate_thumbnail_path(xmb, (unsigned)current);
-      xmb_update_savestate_thumbnail_image(xmb);
+      xmb_update_entry_thumbnail_path(xmb, (unsigned)current);
+      xmb_update_entry_thumbnail_image(xmb);
    }
 
    xmb->old_depth = xmb->depth;
@@ -3992,6 +4013,10 @@ static void xmb_populate_entries(void *data,
             string_is_equal(label, MENU_ENUM_LABEL_INFORMATION_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL_STR);
 
+   xmb->is_achievement_list =
+            string_is_equal(label, MENU_ENUM_LABEL_ACHIEVEMENT_LIST_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_ACHIEVEMENTS_SUBMENU_LIST_STR);
+
    /* Determine whether this is a database manager list */
    was_db_manager_list     = xmb->is_db_manager_list && depth >= 4;
    xmb->is_db_manager_list = string_is_equal(label,
@@ -4170,7 +4195,7 @@ static void xmb_populate_entries(void *data,
          && !(xmb_system_tab > XMB_SYSTEM_TAB_SETTINGS && xmb->depth > 2);
 
    if (     (xmb->is_quick_menu || xmb->is_state_slot)
-         && *xmb->savestate_thumbnail_file_path)
+         && *xmb->entry_thumbnail_file_path)
    {
       xmb->fullscreen_thumbnails_available = true;
    }
@@ -6074,7 +6099,7 @@ XMB_NOINLINE static int xmb_draw_item(
       default:
          if (!xmb->use_ps3_layout)
             break;
-         if ((xmb->is_quick_menu && *xmb->savestate_thumbnail_file_path) || xmb->is_state_slot)
+         if ((xmb->is_quick_menu && *xmb->entry_thumbnail_file_path) || xmb->is_state_slot)
             extra_margins_setting_left = -(100 * xmb->last_scale_factor * xmb->scale_mod[2]);
          break;
    }
@@ -6959,7 +6984,7 @@ static enum menu_action xmb_parse_menu_entry_action(
 
          if (     !xmb->show_fullscreen_thumbnails
                && (  (xmb->is_state_slot)
-                  || (xmb->is_quick_menu && *xmb->savestate_thumbnail_file_path)))
+                  || (xmb->is_quick_menu && *xmb->entry_thumbnail_file_path)))
          {
             xmb_hide_fullscreen_thumbnails(xmb, false);
             xmb_show_fullscreen_thumbnails(xmb, menu_st, menu_st->selection_ptr);
@@ -7980,10 +8005,10 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       }
    }
 
-   /* Have to reset this, otherwise savestate
+   /* Have to reset this, otherwise the entry
     * thumbnail won't update after fullscreen toggle */
-   gfx_thumbnail_reset(&xmb->thumbnails.savestate);
-   xmb_update_savestate_thumbnail_image(xmb);
+   gfx_thumbnail_reset(&xmb->thumbnails.entry);
+   xmb_update_entry_thumbnail_image(xmb);
 }
 
 
@@ -8858,10 +8883,10 @@ XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
             (  left_thumbnail->status  == GFX_THUMBNAIL_STATUS_AVAILABLE
             || left_thumbnail->status  == GFX_THUMBNAIL_STATUS_PENDING);
 
-      if (     (xmb->is_quick_menu && *xmb->savestate_thumbnail_file_path)
+      if (     (xmb->is_quick_menu && *xmb->entry_thumbnail_file_path)
             || (xmb->is_state_slot))
       {
-         left_thumbnail       = &xmb->thumbnails.savestate;
+         left_thumbnail       = &xmb->thumbnails.entry;
          show_left_thumbnail  = (left_thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE);
          show_right_thumbnail = false;
       }
@@ -9657,9 +9682,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          &&  xmb->want_fullscreen_thumbnails)
       xmb_show_fullscreen_thumbnails(xmb, menu_st, menu_st->selection_ptr);
 
-   /* Save state thumbnail, right side in PS3 layout, left in PSP layout */
-   if (     (xmb->is_quick_menu || xmb->is_state_slot)
-         && *xmb->savestate_thumbnail_file_path
+   /* Save state or achievement screenshot, right side in PS3 layout, left in PSP layout */
+   if (     (xmb->is_quick_menu || xmb->is_state_slot || xmb->is_achievement_list)
+         && *xmb->entry_thumbnail_file_path
          && (!xmb->show_fullscreen_thumbnails)
       )
    {
@@ -9692,8 +9717,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          thumb_y             = video_height - thumbnail_margin_height_under - height_offset;
       }
 
-      if (     (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
-            || (xmb->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_PENDING))
+      if (     (xmb->thumbnails.entry.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
+            || (xmb->thumbnails.entry.status == GFX_THUMBNAIL_STATUS_PENDING))
       {
          if (((video_info->menu.flags & VIDEO_MENU_FLAG_THUMBNAIL_BACKGROUND_ENABLE) ? true : false))
             gfx_display_draw_quad(
@@ -9710,7 +9735,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          gfx_thumbnail_draw(
                userdata,
                video_info->dims,
-               &xmb->thumbnails.savestate,
+               &xmb->thumbnails.entry,
                thumb_x,
                thumb_y,
                VIDEO_SCALE_PACK(scaled_thumb_width  > 0.0f ? (unsigned)scaled_thumb_width  : 0, scaled_thumb_height > 0.0f ? (unsigned)scaled_thumb_height : 0),
@@ -9731,7 +9756,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                background_color,
                NULL);
 
-         if (!(xmb->thumbnails.savestate.flags & GFX_THUMB_FLAG_BG_ONLY))
+         if (!(xmb->thumbnails.entry.flags & GFX_THUMB_FLAG_BG_ONLY))
             xmb_draw_no_thumbnail_available(
                   xmb,
                   video_info,
@@ -10489,7 +10514,7 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
    xmb->fullscreen_thumbnail_alpha            = 0.0f;
    xmb->fullscreen_thumbnail_selection        = 0;
    xmb->fullscreen_thumbnail_label[0]         = '\0';
-   xmb->savestate_thumbnail_file_path[0]      = '\0';
+   xmb->entry_thumbnail_file_path[0]      = '\0';
 
    xmb->thumbnails.pending                    = XMB_PENDING_THUMBNAIL_NONE;
    gfx_thumbnail_set_stream_delay(-1.0f);
@@ -10909,7 +10934,7 @@ static void xmb_toggle(void *userdata, bool menu_on)
     * 'save state' option */
    if (xmb->is_quick_menu)
    {
-      gfx_thumbnail_reset(&xmb->thumbnails.savestate);
+      gfx_thumbnail_reset(&xmb->thumbnails.entry);
 
       if (xmb->libretro_running)
          xmb->fullscreen_thumbnails_available = false;
@@ -11347,8 +11372,8 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_set_thumbnail_content,
    gfx_display_osk_ptr_at_pos,
    xmb_osk_pointer_over_textbox,
-   xmb_update_savestate_thumbnail_path,
-   xmb_update_savestate_thumbnail_image,
+   xmb_update_entry_thumbnail_path,
+   xmb_update_entry_thumbnail_image,
    xmb_pointer_down,
    xmb_pointer_up,
    xmb_menu_entry_action

@@ -27,6 +27,7 @@
 #include "../gfx/video_driver.h"
 #include "../tasks/tasks_internal.h"
 #include "../file_path_special.h"
+#include "../configuration.h"
 #include "../msg_hash.h"
 
 #include "cheevos.h"
@@ -489,6 +490,48 @@ uintptr_t rcheevos_menu_get_badge_texture(unsigned menu_offset)
    }
 
    return 0;
+}
+
+bool rcheevos_menu_get_screenshot_path(unsigned menu_offset, char *path, size_t len)
+{
+   const rcheevos_locals_t* rcheevos_locals = get_rcheevos_locals();
+   const rcheevos_menuitem_t* menuitem;
+   const rc_client_achievement_t* achievement;
+   int written;
+
+   if (!path || !len)
+      return false;
+
+   path[0] = '\0';
+   if (menu_offset >= rcheevos_locals->menuitem_count)
+      return false;
+
+   menuitem = &rcheevos_locals->menuitems[menu_offset];
+   if (menuitem->type != RCHEEVOS_MENU_ACHIEVEMENT)
+      return false;
+
+   /* A reset or Encore mode relocks it but leaves the old screenshot. */
+   if (     menuitem->state_label_idx != MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY
+         && menuitem->state_label_idx != MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY_HARDCORE)
+      return false;
+
+   achievement = menuitem->source.achievement.achievement;
+   if (!achievement)
+      return false;
+
+   written = rcheevos_get_screenshot_name_base(path, len,
+         (unsigned)achievement->id);
+
+   if (     written < 0
+         || (size_t)written >= len
+         || strlcat(path, ".png", len) >= len
+         || !path_is_valid(path))
+   {
+      path[0] = '\0';
+      return false;
+   }
+
+   return true;
 }
 
 static bool rcheevos_menu_achievement_in_list(const rc_client_achievement_t* achievement, rc_client_achievement_list_t* list, uint32_t subset_id)

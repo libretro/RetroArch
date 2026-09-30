@@ -34,6 +34,15 @@ S_BOOL(cheevos_badges_enable, CHEEVOS_BADGES_ENABLE,
 /* Descriptor and configuration rows are #ifdef HAVE_CHEEVOS; the string
  * tables always carry this row via the strings pass. */
 #if defined(HAVE_CHEEVOS) || defined(SETTINGS_DEF_STRINGS_PASS)
+S_BOOL(cheevos_screenshot_previews_enable, CHEEVOS_SCREENSHOT_PREVIEWS_ENABLE,
+      "cheevos_screenshot_previews_enable",
+      false, SD_FLAG_NONE, 0, 0,
+      "Show Achievement Screenshots",
+      "Show saved achievement screenshots for the selected achievement.")
+#endif
+/* Descriptor and configuration rows are #ifdef HAVE_CHEEVOS; the string
+ * tables always carry this row via the strings pass. */
+#if defined(HAVE_CHEEVOS) || defined(SETTINGS_DEF_STRINGS_PASS)
 S_UINT(cheevos_achievement_list_order, CHEEVOS_ACHIEVEMENT_LIST_ORDER,
       "cheevos_achievement_list_order",
       CHEEVOS_ACHIEVEMENT_LIST_ORDER_LOCKED_FIRST, SD_FLAG_NONE, SDESC_RANGE_MINMAX,
