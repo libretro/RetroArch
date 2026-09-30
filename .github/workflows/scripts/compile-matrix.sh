@@ -189,6 +189,14 @@ pm_out=$(tools/platform_makefile_check.sh 2>&1); pm_rc=$?
 printf '%s\n' "$pm_out" | sed 's/^ok    /ok    platform makefile: /'
 [ $pm_rc -eq 0 ] || { echo "FAIL  platform makefile check"; fail=1; }
 
+# What each console Makefile actually builds, from its own object list:
+# no MCP server on any console (a desktop HAVE_MCP option; listed once
+# with the networking objects it broke the 3DS), and no crypto library
+# on the 24/32 MiB machines.
+co_out=$(tools/console_objects_check.sh 2>&1); co_rc=$?
+printf '%s\n' "$co_out" | sed 's/^ok    /ok    console objects: /'
+[ $co_rc -eq 0 ] || { echo "FAIL  console object check"; fail=1; }
+
 # The OpenDingux family builds with a MIPS toolchain; the crypto and the
 # TLS client compile with a MIPS cross compiler when one is installed.
 MIPSEL_CC=${MIPSEL_CC:-mipsel-linux-gnu-gcc}

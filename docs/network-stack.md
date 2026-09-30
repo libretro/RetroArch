@@ -52,7 +52,7 @@ Enable it under **Settings > Network > SMB Network Settings**:
 | `smb_client_realm` | | Kerberos realm, the Active Directory domain in capitals (`EXAMPLE.COM`). Empty for password authentication. |
 | `smb_client_kdc` | | Kerberos key distribution center host. Empty when the SMB server is the domain controller. |
 | `smb_client_num_contexts` | `4` | Connections kept open to the server, 1 to 20. |
-| `smb_client_timeout` | `5` | Seconds to wait for the server, 1 to 20. |
+| `smb_client_timeout` | `5` | Seconds to wait for the server, 1 to 60. |
 | `smb_client_readahead` | `1024` | Read-ahead in KiB, 64 to 16384 (see below). |
 
 For Kerberos, give the server by host name, not by IP address: the ticket

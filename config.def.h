@@ -2217,7 +2217,7 @@
 #define DEFAULT_SMB_CLIENT_NUM_CONTEXTS 4
 #define DEFAULT_SMB_CLIENT_MAX_CONTEXTS 20
 #define DEFAULT_SMB_CLIENT_TIMEOUT 5
-#define DEFAULT_SMB_CLIENT_MAX_TIMEOUT 20
+#define DEFAULT_SMB_CLIENT_MAX_TIMEOUT 60
 /* Read-ahead window per open file, KiB: small sequential reads are
  * served from one pipelined fetch of this size. */
 #define DEFAULT_SMB_CLIENT_READAHEAD 1024

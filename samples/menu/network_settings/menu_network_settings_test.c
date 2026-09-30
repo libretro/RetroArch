@@ -28,6 +28,8 @@
 #include "../../../menu/menu_displaylist.h"
 #include "../../../configuration.h"
 #include "../../../retroarch.h"
+#include "../../../menu/menu_setting.h"
+#include "../../../menu/menu_entries.h"
 #include "../../../frontend/frontend_driver.h"
 
 static unsigned failures;
@@ -78,6 +80,51 @@ static bool list_has_label(const char *label)
       if (string_is_equal(buf->list[i].label, label))
          return true;
    return false;
+}
+
+/* Opens @e's dropdown, the list a click on the setting shows, and runs
+ * the OK action of the row reading @want, as picking it does. Returns
+ * the setting's value afterwards, or -1 when the row is not listed. */
+static long pick_uint(enum msg_hash_enums e, const char *want)
+{
+   menu_displaylist_info_t info;
+   char                 enum_s[16];
+   struct menu_state   *menu_st    = menu_state_get_ptr();
+   file_list_t         *buf        = selection_buf();
+   file_list_t         *menu_stack = MENU_LIST_GET(menu_st->entries.list, 0);
+   settings_t          *settings   = config_get_ptr();
+   rarch_setting_t     *setting    = menu_setting_find_enum(e);
+   size_t               i;
+
+   if (!buf || !menu_stack || !setting)
+      return -1;
+   snprintf(enum_s, sizeof(enum_s), "%d", (int)e);
+   menu_entries_clear(buf);
+   menu_entries_append(menu_stack, enum_s, "", MSG_UNKNOWN,
+         MENU_SETTING_ACTION, 0, 0, NULL);
+   menu_displaylist_info_init(&info);
+   info.list          = buf;
+   info.path          = strdup(enum_s);
+   info.label         = strdup("");
+   info.enum_idx      = MSG_UNKNOWN;
+   info.type          = 0;
+   info.directory_ptr = 0;
+   menu_displaylist_ctl(DISPLAYLIST_DROPDOWN_LIST, &info, settings);
+   menu_displaylist_process(&info);
+   menu_displaylist_info_free(&info);
+
+   for (i = 0; i < buf->size; i++)
+   {
+      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)buf->list[i].actiondata;
+      if (!string_is_equal(buf->list[i].path, want))
+         continue;
+      if (!cbs || !cbs->action_ok)
+         return -1;
+      cbs->action_ok(buf->list[i].path, buf->list[i].label,
+            buf->list[i].type, i, i);
+      return (long)*setting->value.target.unsigned_integer;
+   }
+   return -1;
 }
 
 int main(int argc, char *argv[])
@@ -164,6 +211,25 @@ int main(int argc, char *argv[])
          MENU_ENUM_LABEL_DEFERRED_NFS_CLIENT_SETTINGS_LIST);
    CHECK(n > 0 && list_has_label(MENU_ENUM_LABEL_NFS_CLIENT_SERVER_STR), "NFS Network Settings screen has its rows");
    CHECK(list_has_label(MENU_ENUM_LABEL_NFS_CLIENT_VERSION_STR), "NFS Version row is on it");
+#endif
+
+   /* picking a value from a setting's list sets that value: the lists
+    * start at the setting's minimum, not at 0 */
+#ifdef HAVE_NFSCLIENT
+   CHECK(pick_uint(MENU_ENUM_LABEL_NFS_CLIENT_VERSION, "4") == 4,
+         "NFS Version: picking 4 sets 4");
+   CHECK(pick_uint(MENU_ENUM_LABEL_NFS_CLIENT_VERSION, "3") == 3,
+         "NFS Version: picking 3 sets 3");
+   CHECK(pick_uint(MENU_ENUM_LABEL_NFS_CLIENT_READAHEAD, "64") == 64,
+         "NFS Read-Ahead: picking 64 sets 64");
+#endif
+#ifdef HAVE_SMBCLIENT
+   CHECK(pick_uint(MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT, "1") == 1,
+         "SMB Timeout: picking 1 sets 1");
+   CHECK(pick_uint(MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT, "20") == 20,
+         "SMB Timeout: picking 20 sets 20");
+   CHECK(pick_uint(MENU_ENUM_LABEL_SMB_CLIENT_TIMEOUT, "60") == 60,
+         "SMB Timeout goes to 60, as NFS's does");
 #endif
 
    /* and neither sits in the Quick Menu */
