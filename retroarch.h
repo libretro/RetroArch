@@ -227,6 +227,21 @@ void retroarch_init_task_queue(void);
 /* Applies the task-queue settings to the running queue. */
 void retroarch_task_queue_configure(void);
 
+/**
+ * retroarch_main_deinit_begin:
+ * retroarch_main_deinit_pending:
+ * retroarch_main_deinit_finish:
+ *
+ * RARCH_CTL_MAIN_DEINIT in two halves around the wait for a save or
+ * load state task still inside the core.  RARCH_CTL_MAIN_DEINIT waits
+ * between them; the staged content load returns to the frame loop
+ * between them and asks pending() each frame, then finishes.  begin
+ * returns false when there is no session to close.
+ **/
+bool retroarch_main_deinit_begin(void);
+bool retroarch_main_deinit_pending(void);
+void retroarch_main_deinit_finish(void);
+
 /* Creates folder and core options stub file for subsequent runs */
 bool core_options_create_override(bool game_specific);
 bool core_options_remove_override(bool game_specific);

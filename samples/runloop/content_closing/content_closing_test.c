@@ -8,19 +8,13 @@
  * freed code, which is why the close waits for those tasks and why
  * that wait cannot simply be deleted.
  *
- * The plan for removing the freeze is to stop blocking and let the
- * frame loop keep running while the close finishes.  The guard that
- * makes that safe - core_run() refusing to enter retro_run() while
- * runloop_state.content_closing is set - is in place but cannot fire
- * yet, because the close is still synchronous and no frame runs
- * during it.
- *
- * Which means the guard is, right now, entirely unexercised: it will
- * go live in the same change that first lets frames run during a
- * close, and if it is wrong the symptom is a call into an unloaded
- * dylib.  This drives it directly instead - the real core_run(), in
- * a real frontend, with the flag set - so that when it does go live
- * it is not going live untested.
+ * The staged content load spends that wait in the frame loop, so
+ * frames run while runloop_state.content_closing is set, and the
+ * guard that makes that safe - core_run() refusing to enter
+ * retro_run() - is live.  This drives the guard directly - the real
+ * core_run(), in a real frontend, with the flag set - independently
+ * of the load; samples/tasks/content_load's close-waits-for-save
+ * lane covers the load itself.
  *
  * Links the shipping objects with only main() replaced; nothing is
  * stubbed.

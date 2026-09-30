@@ -3320,6 +3320,78 @@ bool is_accessibility_enabled(bool accessibility_enable, bool accessibility_enab
  *
  * Every local is re-derived from its accessor rather than passed in,
  * so it carries no dependency on the caller's frame. */
+/* Closing content, in two halves around the wait for a save or load
+ * state task still inside the core: CMD_EVENT_CORE_DEINIT waits
+ * between them, a staged content load returns to the frame loop
+ * between them and asks core_deinit_pending() each frame. */
+static void command_event_core_deinit_begin(void)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   settings_t *settings        = config_get_ptr();
+
+   /* Persist core options before anything below calls
+    * back into the core (auto save-state, unload, deinit),
+    * so a crash there cannot lose them. */
+   runloop_core_options_save();
+
+   /* Restore unpaused state. The recursive command_event call
+    * here re-enters the dispatcher; the UNPAUSE branch is
+    * deliberately small (clears flags, resumes audio) and
+    * does not touch core state, so the self-call is safe.
+    * Any future addition to the UNPAUSE handler that would
+    * touch core state must consider that we're mid-deinit. */
+   runloop_st->paused_hotkey = false;
+   command_event(CMD_EVENT_UNPAUSE, NULL);
+
+   /* The platform that uses ram_state_save calls it when the content
+    * ends and writes it to a file */
+   ram_state_to_file();
+
+   /* Save auto state */
+   if (     (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
+         && !(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
+         && settings->bools.savestate_auto_save)
+      command_event_save_auto_state();
+
+   /* Closing content starts here: retro_run() is not entered again
+    * (core_run's guard), whatever the frame loop does meanwhile. */
+   runloop_st->content_closing = true;
+
+   /* Say what a wait is for: an unexplained frozen frame and a frame
+    * that says "saving state" are very different experiences, and on
+    * slow storage this is seconds.  Only when there is something to
+    * wait for - a close with no save in flight shows nothing. */
+   if (content_save_state_in_progress(NULL))
+   {
+      const char *_msg = msg_hash_to_str(MSG_SAVING_STATE);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT,
+            MESSAGE_QUEUE_CATEGORY_INFO);
+      video_driver_cached_frame();
+   }
+}
+
+/* A save or load state task still runs inside the core: both call
+ * into core function pointers (retro_serialize via
+ * content_get_serialized_data, retro_unserialize via core_unserialize)
+ * from the task worker, and the deinit below unloads the library they
+ * live in.  The auto-save just pushed is covered too: it runs against
+ * the same condition. */
+static bool command_event_core_deinit_pending(void)
+{
+   return content_save_state_in_progress(NULL)
+       || content_load_state_in_progress(NULL);
+}
+
+static void command_event_finish_content_deinit(void);
+
+static void command_event_core_deinit_finish(void)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   command_event_finish_content_deinit();
+   runloop_st->content_closing = false;
+}
+
 static void command_event_finish_content_deinit(void)
 {
    runloop_state_t *runloop_st          = runloop_state_get_ptr();
@@ -4749,93 +4821,11 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_CORE_DEINIT:
-         {
-            /* Persist core options before anything below calls
-             * back into the core (auto save-state, unload, deinit),
-             * so a crash there cannot lose them. */
-            runloop_core_options_save();
-
-            /* Restore unpaused state. The recursive command_event call
-             * here re-enters this dispatcher; the UNPAUSE branch is
-             * deliberately small (clears flags, resumes audio) and
-             * does not touch core state, so the self-call is safe.
-             * Any future addition to the UNPAUSE handler that would
-             * touch core state must consider that we're mid-deinit. */
-            runloop_st->paused_hotkey = false;
-            command_event(CMD_EVENT_UNPAUSE, NULL);
-
-            /* The platform that uses ram_state_save calls it when the content
-             * ends and writes it to a file */
-            ram_state_to_file();
-
-            /* Save auto state */
-            if (     runloop_st
-                  && (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
-                  && !(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
-                  && settings->bools.savestate_auto_save)
-               command_event_save_auto_state();
-
-            /* Wait for any in-flight save / load state tasks before
-             * tearing down the core. Both task_save_handler and
-             * task_load_handler run on the threaded task worker and
-             * call into core function pointers (retro_serialize via
-             * content_get_serialized_data, retro_unserialize via
-             * core_unserialize). If a worker is mid-call when
-             * runloop_event_deinit_core runs uninit_libretro_symbols,
-             * the worker dispatches into a closed dylib.
-             *
-             * This covers the auto-state save conditionally kicked
-             * off just above as well: it runs unconditionally,
-             * against the same condition, with nothing in between
-             * that can push a task, so the auto-save path needs no
-             * wait of its own. It also covers what that one could
-             * not - a manually triggered save (menu / hotkey /
-             * netplay) already in flight when the user closed
-             * content with savestate_auto_save disabled. */
-            /* Say what the pause is for before blocking on it.
-             *
-             * This does not shorten the wait - the invariant above
-             * means it cannot be skipped - but an unexplained frozen
-             * frame and a frame that says "saving state" are very
-             * different experiences, and on slow storage this is
-             * seconds.  The message is pushed and one frame forced
-             * out first, because nothing draws once the wait starts.
-             *
-             * Only when there is actually something to wait for:
-             * content_save_state_in_progress() is the same condition
-             * the wait uses, so a close with no save in flight - the
-             * common case - is untouched and shows nothing. */
-            /* Closing content starts here.
-             *
-             * Set around the whole teardown, including the waits
-             * below: they are part of closing, and once the wait
-             * stops blocking they are the part that will still be
-             * running when the frame loop resumes. Nothing observes
-             * this yet - the main thread does not leave this block -
-             * which is the point of introducing it on its own. */
-            runloop_st->content_closing = true;
-
-            if (content_save_state_in_progress(NULL))
-            {
-               const char *_msg = msg_hash_to_str(MSG_SAVING_STATE);
-               runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true,
-                     NULL, MESSAGE_QUEUE_ICON_DEFAULT,
-                     MESSAGE_QUEUE_CATEGORY_INFO);
-               video_driver_cached_frame();
-            }
-
-            content_wait_for_save_state_task();
-            content_wait_for_load_state_task();
-
-            command_event_finish_content_deinit();
-
-            /* Closing content is finished.  One clear covers the
-             * whole block: it has a single exit, with no early
-             * return or goto between the set above and here. */
-            runloop_st->content_closing = false;
-
-            break;
-         }
+         command_event_core_deinit_begin();
+         content_wait_for_save_state_task();
+         content_wait_for_load_state_task();
+         command_event_core_deinit_finish();
+         break;
       case CMD_EVENT_CORE_INIT:
          {
             enum rarch_core_type *type     = (enum rarch_core_type*)data;
@@ -9253,6 +9243,88 @@ void retroarch_init_task_queue(void)
    retroarch_task_queue_configure();
 }
 
+bool retroarch_main_deinit_begin(void)
+{
+   runloop_state_t     *runloop_st = runloop_state_get_ptr();
+   input_driver_state_t *input_st  = input_state_get_ptr();
+   if (!runloop_is_inited())
+   return false;
+   command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
+#ifdef HAVE_NETWORKING
+   /* Free netplay lobby state at shutdown. room_list and
+    * rooms_data are populated when browsing the netplay lobby
+    * and recycled on each refresh, but nothing frees them at
+    * exit, so the last-populated allocation leaks. This is the
+    * one-time teardown point: deinit_netplay() above runs on
+    * every session start/stop and must not free the lobby list
+    * (the menu may still be reading room_list to join a room). */
+   {
+      net_driver_state_t *net_st = networking_state_get_ptr();
+      netplay_rooms_free();
+      if (net_st->room_list)
+      {
+         free(net_st->room_list);
+         net_st->room_list  = NULL;
+      }
+      net_st->room_count = 0;
+#ifdef HAVE_NETPLAYDISCOVERY
+      /* Same story for the LAN discovery list, which is grown
+       * by the scan task and only ever truncated between
+       * scans. */
+      netplay_discovery_free_hosts();
+#endif
+   }
+#endif
+#ifdef HAVE_COMMAND
+   input_driver_deinit_command(input_st);
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
+   if (input_st->remote)
+      input_remote_free(input_st->remote,
+            config_get_ptr()->uints.input_max_users);
+   input_st->remote = NULL;
+#endif
+   input_mapper_reset(&input_st->mapper);
+
+#ifdef HAVE_THREADS
+   if (runloop_st->flags & RUNLOOP_FLAG_USE_SRAM)
+      autosave_deinit();
+#endif
+
+   command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+
+   command_event(CMD_EVENT_SAVE_FILES, NULL);
+
+#ifdef HAVE_REWIND
+   command_event(CMD_EVENT_REWIND_DEINIT, NULL);
+#endif
+#ifdef HAVE_CHEATS
+   cheat_manager_state_free();
+#endif
+#ifdef HAVE_BSV_MOVIE
+   movie_stop(input_st);
+#endif
+   command_event_core_deinit_begin();
+   return true;
+}
+
+bool retroarch_main_deinit_pending(void)
+{
+   return command_event_core_deinit_pending();
+}
+
+void retroarch_main_deinit_finish(void)
+{
+   command_event_core_deinit_finish();
+
+   content_deinit();
+
+   runloop_path_deinit_subsystem();
+   path_deinit_savefile();
+
+   runloop_is_inited_clear();
+}
+
 bool retroarch_ctl(enum rarch_ctl_state state, void *data)
 {
    struct rarch_state     *p_rarch = &rarch_st;
@@ -9327,75 +9399,11 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
                &&  (runloop_st->secondary_lib_handle != NULL);
 #endif
       case RARCH_CTL_MAIN_DEINIT:
-         {
-            input_driver_state_t *input_st = input_state_get_ptr();
-            if (!runloop_is_inited())
-               return false;
-            command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-#ifdef HAVE_NETWORKING
-            /* Free netplay lobby state at shutdown. room_list and
-             * rooms_data are populated when browsing the netplay lobby
-             * and recycled on each refresh, but nothing frees them at
-             * exit, so the last-populated allocation leaks. This is the
-             * one-time teardown point: deinit_netplay() above runs on
-             * every session start/stop and must not free the lobby list
-             * (the menu may still be reading room_list to join a room). */
-            {
-               net_driver_state_t *net_st = networking_state_get_ptr();
-               netplay_rooms_free();
-               if (net_st->room_list)
-               {
-                  free(net_st->room_list);
-                  net_st->room_list  = NULL;
-               }
-               net_st->room_count = 0;
-#ifdef HAVE_NETPLAYDISCOVERY
-               /* Same story for the LAN discovery list, which is grown
-                * by the scan task and only ever truncated between
-                * scans. */
-               netplay_discovery_free_hosts();
-#endif
-            }
-#endif
-#ifdef HAVE_COMMAND
-            input_driver_deinit_command(input_st);
-#endif
-#ifdef HAVE_NETWORKGAMEPAD
-            if (input_st->remote)
-               input_remote_free(input_st->remote,
-                     config_get_ptr()->uints.input_max_users);
-            input_st->remote = NULL;
-#endif
-            input_mapper_reset(&input_st->mapper);
-
-#ifdef HAVE_THREADS
-            if (runloop_st->flags & RUNLOOP_FLAG_USE_SRAM)
-               autosave_deinit();
-#endif
-
-            command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-
-            command_event(CMD_EVENT_SAVE_FILES, NULL);
-
-#ifdef HAVE_REWIND
-            command_event(CMD_EVENT_REWIND_DEINIT, NULL);
-#endif
-#ifdef HAVE_CHEATS
-            cheat_manager_state_free();
-#endif
-#ifdef HAVE_BSV_MOVIE
-            movie_stop(input_st);
-#endif
-            command_event(CMD_EVENT_CORE_DEINIT, NULL);
-
-            content_deinit();
-
-            runloop_path_deinit_subsystem();
-            path_deinit_savefile();
-
-            runloop_is_inited_clear();
-
-         }
+         if (!retroarch_main_deinit_begin())
+            return false;
+         content_wait_for_save_state_task();
+         content_wait_for_load_state_task();
+         retroarch_main_deinit_finish();
          break;
 #ifdef HAVE_CONFIGFILE
       case RARCH_CTL_SET_BLOCK_CONFIG_READ:

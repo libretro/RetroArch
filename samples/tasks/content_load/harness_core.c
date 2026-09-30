@@ -14,6 +14,7 @@ static retro_environment_t   environ_cb;
 static uint16_t frame[W * H];
 static unsigned runs;
 static unsigned inits;
+RETRO_API unsigned harness_core_runs(void) { return runs; }
 static unsigned hw_resets;
 static unsigned hw_destroys;
 
@@ -70,9 +71,19 @@ void retro_run(void)
       frame[i] = (uint16_t)(runs + i);
    video_cb(frame, W, H, W * 2);
 }
-size_t retro_serialize_size(void) { return 0; }
-bool retro_serialize(void *data, size_t size) { (void)data; (void)size; return false; }
-bool retro_unserialize(const void *data, size_t size) { (void)data; (void)size; return false; }
+/* A state large enough that the save task writes it over several
+ * checks (task_save writes one chunk per tick at least, and a chunk
+ * is 16 MiB on desktop), so a close can find the save in flight. */
+#define STATE_SIZE (64u * 1024 * 1024)
+size_t retro_serialize_size(void) { return STATE_SIZE; }
+bool retro_serialize(void *data, size_t size)
+{
+   if (size < STATE_SIZE)
+      return false;
+   memset(data, 0x5a, STATE_SIZE);
+   return true;
+}
+bool retro_unserialize(const void *data, size_t size) { (void)data; return size >= STATE_SIZE; }
 void retro_cheat_reset(void) { }
 void retro_cheat_set(unsigned index, bool enabled, const char *code) { (void)index; (void)enabled; (void)code; }
 bool retro_load_game(const struct retro_game_info *game)

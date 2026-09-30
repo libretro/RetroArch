@@ -9524,16 +9524,13 @@ void core_run(void)
    bool netplay_preframe;
 #endif
 
-   /* The core is being torn down: do not run it.
+   /* The core is being torn down, or replaced: do not run it.
     *
     * retro_run() must not be entered once closing has begun, because
-    * the teardown unloads the library that function lives in.
-    *
-    * Today this cannot be reached - closing is synchronous, so the
-    * main thread sits inside the teardown and no frame runs - and
-    * the guard is placed first, inert, so that the change which does
-    * let frames run during a close is only about where the waiting
-    * happens, not about what the frame loop may touch.
+    * the teardown unloads the library that function lives in.  A
+    * staged content load closes the core and then returns to the
+    * frame loop - while a save state task is still inside the core,
+    * and between its stages - so frames run here with the flags set.
     *
     * Poll and present anyway rather than returning bare, so input
     * keeps being drained and whatever the close has put on screen

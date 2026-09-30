@@ -57,6 +57,7 @@
 #include "../../../menu/menu_driver.h"
 #include "../../../tasks/task_content.h"
 #include "../../../paths.h"
+#include "../../../content.h"
 #include <string/stdstring.h>
 
 static unsigned failures = 0;
@@ -550,6 +551,83 @@ static void lane_queue_survives(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: the close waits for a save in flight, presenting             */
+/* ------------------------------------------------------------------ */
+
+/* A save state task still inside the core when content closes: the
+ * close must wait for it (the task calls the core's serialize, and
+ * the close unloads the library), and the wait is spent in the frame
+ * loop - frames presented, retro_run never entered - rather than
+ * blocking inside one frame. */
+static void lane_close_waits_for_save(void)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   unsigned had = failures;
+   unsigned i, runs_at_wait = 0, presented_waiting = 0, waited = 0;
+   bool ran_while_closing = false;
+   settings_t *settings = config_get_ptr();
+
+   /* The core runs (menu closed) so a save can be taken. */
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   pump(2);
+   CHECK(core_is_up() && !menu_is_up(), "not running the core");
+
+   configuration_set_int(settings, settings->ints.state_slot, 0);
+   CHECK(command_event(CMD_EVENT_SAVE_STATE, NULL), "save state not started");
+   CHECK(content_save_state_in_progress(NULL), "no save task in flight");
+
+   hook_install();
+   open_menu();
+   menu_st->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
+   pump(1);
+   CHECK(runloop_is_content_switching(), "the close did not start a staged load");
+
+   for (i = 0; i < 400 && runloop_is_content_switching(); i++)
+   {
+      unsigned before = presented;
+      pump(1);
+      if (runloop_is_content_closing())
+      {
+         /* The old core is still loaded while the close waits: its
+          * run count must stand still. */
+         if (!waited)
+            runs_at_wait = core_export("harness_core_runs");
+         else if (core_export("harness_core_runs") != runs_at_wait)
+            ran_while_closing = true;
+         waited++;
+         presented_waiting += presented - before;
+         CHECK(!content_save_state_in_progress(NULL) || hook_installed(),
+               "drivers rebuilt while the close was still waiting");
+      }
+   }
+   CHECK(!runloop_is_content_switching(), "the close did not finish");
+   CHECK(waited >= 1, "the close never waited for the save (%u frames)", waited);
+   CHECK(presented_waiting >= 1,
+         "no frame presented while the close waited (%u waits)", waited);
+   CHECK(!content_save_state_in_progress(NULL), "the save task did not finish");
+   CHECK(!ran_while_closing, "retro_run entered while the close waited");
+   CHECK(runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY,
+         "not on the dummy core after the close");
+
+   /* Back on the harness core. */
+   pump(2);
+   {
+      content_ctx_info_t content_info = {0};
+      struct load_frame log[LOAD_FRAMES];
+      unsigned n;
+      CHECK(task_push_start_current_core(&content_info), "Start Core not started");
+      n = run_load(log, LOAD_FRAMES);
+      CHECK(n < LOAD_FRAMES && core_is_up(), "Start Core did not go through");
+      pump(1);
+   }
+
+   if (failures == had)
+      fprintf(stderr, "[pass] close-waits-for-save lane (%u frames waited, "
+            "%u presented)\n", waited, presented_waiting);
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: close content                                                 */
 /* ------------------------------------------------------------------ */
 
@@ -620,7 +698,8 @@ int main(int argc, char *argv[])
    char dir[400];
    /* NULL past the last argument, as a real main()'s argv is: the
     * option parser reads up to that. */
-   char *rarch_argv[8] = {0};
+   char *rarch_argv[10] = {0};
+   char state_path[512];
    int rarch_argc = 0;
    FILE *cfg;
    (void)argc;
@@ -684,6 +763,11 @@ int main(int argc, char *argv[])
    }
    rarch_argv[rarch_argc++] = (char*)"-L";
    rarch_argv[rarch_argc++] = core_path;
+   /* A state path of its own: a contentless core derives none, and
+    * the close-waits-for-save lane needs a save that can be written. */
+   snprintf(state_path, sizeof(state_path), "%s/harness.state", dir);
+   rarch_argv[rarch_argc++] = (char*)"-S";
+   rarch_argv[rarch_argc++] = state_path;
    if (getenv("HARNESS_VERBOSE"))
       rarch_argv[rarch_argc++] = (char*)"-v";
 
@@ -707,10 +791,12 @@ int main(int argc, char *argv[])
    lane_hw_request();
    lane_queue_survives();
    lane_close_content();
+   lane_close_waits_for_save();
 
    main_exit(NULL);
 
    remove(cfg_path);
+   remove(state_path);
    rmdir(dir);
 
    if (failures)

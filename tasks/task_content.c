@@ -2011,6 +2011,9 @@ enum content_load_stage
    /* The old session closes: SRAM written, core unloaded; the drivers
     * stay up when staged. */
    CONTENT_LOAD_STAGE_DEINIT,
+   /* A save or load state task is still inside the old core: the
+    * close waits for it, presenting, and finishes when it is out. */
+   CONTENT_LOAD_STAGE_CLOSE_WAIT,
    /* The new core comes up behind those drivers: configuration,
     * task queue, dlopen, retro_init, the content read, retro_load_game. */
    CONTENT_LOAD_STAGE_CORE,
@@ -2090,11 +2093,18 @@ static bool content_load_stage_deinit(struct content_load_job *job)
       job->argc_ptr = &job->rarch_argc;
    }
 
-   retroarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
-
    wrap_args->argc = *job->argc_ptr;
    wrap_args->argv = job->argv_ptr;
-   return true;
+
+   /* Staged, a save or load state task still inside the core is
+    * waited out from the frame loop, one check per frame; in one go,
+    * here. */
+   if (!job->staged)
+   {
+      retroarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
+      return false;
+   }
+   return retroarch_main_deinit_begin();
 }
 
 static bool content_load_stage_core(struct content_load_job *job)
@@ -2228,7 +2238,17 @@ static void content_load_step(struct content_load_job *job,
    switch (job->stage)
    {
       case CONTENT_LOAD_STAGE_DEINIT:
-         content_load_stage_deinit(job);
+         if (!content_load_stage_deinit(job))
+         {
+            job->stage = CONTENT_LOAD_STAGE_CORE;
+            break;
+         }
+         job->stage = CONTENT_LOAD_STAGE_CLOSE_WAIT;
+         /* fall through */
+      case CONTENT_LOAD_STAGE_CLOSE_WAIT:
+         if (retroarch_main_deinit_pending())
+            break;
+         retroarch_main_deinit_finish();
          job->stage = CONTENT_LOAD_STAGE_CORE;
          break;
       case CONTENT_LOAD_STAGE_CORE:
