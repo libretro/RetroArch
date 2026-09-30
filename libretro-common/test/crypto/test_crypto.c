@@ -961,6 +961,89 @@ START_TEST (test_krb5_enctypes)
 }
 END_TEST
 
+/* The bulk paths - eight AES blocks at a time, four ChaCha20 blocks,
+ * Poly1305 in 44-bit limbs - against the block functions they must
+ * agree with, over lengths either side of each group size and counters
+ * across the 32-bit wrap. */
+static uint32_t bulk_rng = 0x9e3779b9u;
+static uint32_t bulk_rand(void)
+{
+   bulk_rng ^= bulk_rng << 13; bulk_rng ^= bulk_rng >> 17; bulk_rng ^= bulk_rng << 5;
+   return bulk_rng;
+}
+
+START_TEST(test_bulk_paths)
+{
+   static uint8_t in[2100], out[2100], ref[2100];
+   uint8_t key[32], nonce[12], blk[64], iv[16], tag1[16], tag2[16];
+   unsigned it, i;
+
+   for (i = 0; i < sizeof(in); i++)
+      in[i] = (uint8_t)bulk_rand();
+   for (it = 0; it < 300; it++)
+   {
+      size_t   len = bulk_rand() % 2049;
+      uint32_t ctr = (it & 1) ? bulk_rand() : 0xfffffff0u + (bulk_rand() % 16);
+      struct aes_ctx a;
+      for (i = 0; i < 32; i++)
+         key[i] = (uint8_t)bulk_rand();
+      for (i = 0; i < 12; i++)
+         nonce[i] = (uint8_t)bulk_rand();
+
+      /* ChaCha20: chacha20_xor against the keystream a block at a time */
+      chacha20_xor(key, nonce, ctr, in, out, len);
+      for (i = 0; i < len; i++)
+      {
+         if (!(i % 64))
+            chacha20_block(key, nonce, ctr + (uint32_t)(i / 64), blk);
+         ref[i] = in[i] ^ blk[i % 64];
+      }
+      ck_assert_int_eq(memcmp(out, ref, len), 0);
+
+      /* AES-CTR: aes_ctr_crypt against aes_encrypt_block per counter */
+      ck_assert_int_eq(aes_init(&a, key, (it & 2) ? 32 : 16), 0);
+      memcpy(iv, nonce, 12);
+      iv[12] = (uint8_t)(ctr >> 24); iv[13] = (uint8_t)(ctr >> 16);
+      iv[14] = (uint8_t)(ctr >> 8);  iv[15] = (uint8_t)ctr;
+      {
+         uint8_t c[16];
+         memcpy(c, iv, 16);
+         aes_ctr_crypt(&a, c, in, out, len);
+      }
+      for (i = 0; i < len; i++)
+      {
+         if (!(i % 16))
+         {
+            uint32_t n = ctr + (uint32_t)(i / 16);
+            iv[12] = (uint8_t)(n >> 24); iv[13] = (uint8_t)(n >> 16);
+            iv[14] = (uint8_t)(n >> 8);  iv[15] = (uint8_t)n;
+            aes_encrypt_block(&a, iv, blk);
+         }
+         ref[i] = in[i] ^ blk[i % 16];
+      }
+      ck_assert_int_eq(memcmp(out, ref, len), 0);
+
+      /* Poly1305: random chunks against the one-shot tag */
+      poly1305_auth(tag1, in, len, key);
+      {
+         struct poly1305_ctx pc;
+         size_t p = 0;
+         poly1305_init(&pc, key);
+         while (p < len)
+         {
+            size_t k = bulk_rand() % 200;
+            if (k > len - p)
+               k = len - p;
+            poly1305_update(&pc, in + p, k);
+            p += k;
+         }
+         poly1305_final(&pc, tag2);
+      }
+      ck_assert_int_eq(memcmp(tag1, tag2, 16), 0);
+   }
+}
+END_TEST
+
 Suite *create_suite(void)
 {
    Suite *s = suite_create(SUITE_NAME);
@@ -987,6 +1070,7 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_x509);
    tcase_add_test(tc_core, test_aes_decrypt_hmac_sha1);
    tcase_add_test(tc_core, test_krb5_enctypes);
+   tcase_add_test(tc_core, test_bulk_paths);
    suite_add_tcase(s, tc_core);
    return s;
 }
