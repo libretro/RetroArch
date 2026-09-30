@@ -1028,6 +1028,21 @@ static void run_section_a4(void)
    xfer_free(&a); xfer_free(&b);
 }
 
+/* ---- A5: scheme check ---- */
+
+static void run_section_a5(void)
+{
+   /* Exactly sized, so a memcmp of the 7- or 8-byte scheme reads past
+    * the allocation and ASan reports it. */
+   char *u = (char*)malloc(3);
+   struct http_connection_t *c;
+   memcpy(u, "ht", 3);
+   c = net_http_connection_new(u, "GET", NULL);
+   check(c == NULL, "URL shorter than its scheme: rejected without reading past it");
+   net_http_connection_free(c);
+   free(u);
+}
+
 int main(void)
 {
    if (!network_init() || srv_start())
@@ -1042,6 +1057,7 @@ int main(void)
    run_section_a2();
    run_section_a3();
    run_section_a4();
+   run_section_a5();
 
    srv_shutdown();
    net_http_deinit();

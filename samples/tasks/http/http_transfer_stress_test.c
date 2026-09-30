@@ -1286,8 +1286,10 @@ static void t_wait_on_a_silent_peer_times_out(void)
    /* Drop any pooled connections first. An earlier test's server can
     * have left one for a loopback port the kernel then hands back to
     * the listener below, and reusing a dead connection would end this
-    * transfer before it ever had to wait. */
+    * transfer before it ever had to wait. net_http_init() puts the
+    * locks back: net_http no longer creates them on first use. */
    net_http_deinit();
+   net_http_init();
 
    if (!srv_start_with(&sp, &th, silent_server_thread))
    {

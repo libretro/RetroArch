@@ -66,7 +66,9 @@ void net_http_connection_set_headers(struct http_connection_t *conn, const char 
  * Creates the locks guarding the process-global DNS cache and
  * connection pool.  Call once at startup, before any thread can reach
  * net_http_update(); they were previously created lazily on first
- * use, which raced.  Idempotent, but not safe to call concurrently.
+ * use, which raced.  Nothing creates them anywhere else now: a
+ * threaded program that skips this call runs unlocked.  Idempotent,
+ * but not safe to call concurrently.
  **/
 void net_http_init(void);
 

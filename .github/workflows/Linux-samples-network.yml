@@ -314,7 +314,8 @@ jobs:
           # with no hex digits fail instead of growing the buffer or
           # passing as the last chunk, a Content-Length buffer never
           # grows past the body, and a pooled connection that dies
-          # after the status line is not replayed. Every case has a
+          # after the status line is not replayed. A URL shorter than
+          # its scheme is rejected without an overread. Every case has a
           # deadline, so a hang fails the case instead of the job.
           make clean all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \

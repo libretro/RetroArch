@@ -518,9 +518,11 @@ struct http_connection_t *net_http_connection_new(const char *url,
    conn->url = strdup(url);
    if (!conn->url)
       goto error;
-   if (memcmp(url, "http://", 7) == 0)
+   /* strncmp, not memcmp: a URL shorter than the scheme must not be
+    * read past its terminator. */
+   if (strncmp(url, "http://", 7) == 0)
       conn->scan = conn->url + 7;
-   else if (memcmp(url, "https://", 8) == 0)
+   else if (strncmp(url, "https://", 8) == 0)
    {
       conn->scan = conn->url + 8;
       conn->ssl  = true;
@@ -1203,17 +1205,12 @@ static bool net_http_new_socket(struct http_t *state)
    struct addrinfo *addr = NULL;
    struct dns_cache_entry *entry;
 
-#ifdef HAVE_THREADS
-   if (!dns_cache_lock)
-      dns_cache_lock = slock_new();
-   if (!dns_cache_cond)
-      dns_cache_cond = scond_new();
+   /* The locks come from net_http_init() only.  Creating them here on
+    * first use was an unsynchronised initialisation of the very lock
+    * meant to serialise the cache (see net_http_init()).  A program
+    * that never calls net_http_init() runs unlocked: slock_lock(NULL)
+    * is a no-op. */
    LOCK_DNS_CACHE();
-
-   /* need some place to create this, I guess */
-   if (!conn_pool_lock)
-      conn_pool_lock = slock_new();
-#endif
 
    entry = net_http_dns_cache_find(state->request.domain, state->request.port);
    if (entry)
