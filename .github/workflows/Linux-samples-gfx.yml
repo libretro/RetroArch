@@ -970,6 +970,22 @@ jobs:
              timeout 60 ./wayland_cursor_test
           echo "[pass] wayland_cursor_test"
 
+      - name: Build and run wayland_resize_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/wayland_resize
+        run: |
+          set -eu
+          # gfx/common/wayland_resize.h, what the Wayland GL and Vulkan
+          # contexts do once their buffers are resized, against an
+          # in-process compositor: configures count again whatever the
+          # scaling, and the buffer scale goes only to a surface on the
+          # whole-scale path that is new enough to take it.
+          export XDG_RUNTIME_DIR=$(mktemp -d)
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./wayland_resize_test
+          echo "[pass] wayland_resize_test"
+
       - name: Build and run video_mode_select_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/video_mode_select

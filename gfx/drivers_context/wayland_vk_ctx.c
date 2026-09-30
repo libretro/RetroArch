@@ -30,6 +30,7 @@
 #endif
 
 #include "../common/wayland_common.h"
+#include "../common/wayland_resize.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../input/common/wayland_common.h"
 #include "../../input/input_driver.h"
@@ -73,12 +74,11 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned dims)
 
    wl->last_buffer_scale = wl->buffer_scale;
    wl->last_fractional_scale_num = wl->fractional_scale_num;
-   if (!wl->fractional_scale)
-      wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
 
    if (vulkan_create_swapchain(&wl->vk, dims, wl->swap_interval))
    {
-      wl->ignore_configuration = false;
+      wl_surface_resized(wl->surface, wl->fractional_scale != NULL,
+            wl->buffer_scale, &wl->ignore_configuration);
       if (wl->vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
       {
          wl->vk.context.flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;

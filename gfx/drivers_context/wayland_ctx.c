@@ -31,6 +31,7 @@
 #endif
 
 #include "../common/wayland_common.h"
+#include "../common/wayland_resize.h"
 #include "../gfx/video_driver.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../input/common/wayland_common.h"
@@ -132,10 +133,8 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned dims)
    gfx_ctx_wayland_data_t *wl    = (gfx_ctx_wayland_data_t*)data;
    wl->last_buffer_scale         = wl->buffer_scale;
    wl->last_fractional_scale_num = wl->fractional_scale_num;
-   if (!wl->fractional_scale &&
-       wl_compositor_get_version(wl->compositor) >=
-       WL_SURFACE_SET_BUFFER_SCALE_SINCE_VERSION)
-      wl->ignore_configuration = false;
+   wl_surface_resized(wl->surface, wl->fractional_scale != NULL,
+         wl->buffer_scale, &wl->ignore_configuration);
 #ifdef HAVE_EGL
    wl_egl_window_resize(wl->win, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), 0, 0);
 #endif
