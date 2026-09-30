@@ -138,8 +138,10 @@ static bool command_get_arg(const char *tok,
          if (*argument != ' ' && *argument != '\0')
             return false;
 
+         /* past the separating space; a bare command gets "", not the
+          * byte after its terminator */
          if (arg)
-            *arg = argument + 1;
+            *arg = *argument ? argument + 1 : argument;
 
          if (index)
             *index = i;
@@ -1229,6 +1231,75 @@ bool command_write_ram(command_t *cmd, const char *arg)
    return true;
 }
 #endif
+
+/* One HELP line: name, argument, description, and what it does to
+ * RetroArch, appended to @s at *@len; false when it would not fit. */
+static bool command_help_line(char *s, size_t size, size_t *len,
+      const char *name, const char *arg_desc, const char *desc,
+      unsigned flags)
+{
+   int n = snprintf(s + *len, size - *len, "%s%s%s\t%s%s\n",
+         name,
+         arg_desc ? " " : "", arg_desc ? arg_desc : "",
+         desc ? desc : "",
+           (flags & CMD_INFO_READ_ONLY)   ? " [read-only]"
+         : (flags & CMD_INFO_DESTRUCTIVE) ? " [destructive]"
+         : "");
+   if (n < 0 || (size_t)n >= size - *len)
+      return false;
+   *len += (size_t)n;
+   return true;
+}
+
+/* HELP [command]
+ *
+ * With no argument, every command, one per line: the name, its
+ * argument, a tab, what it does, and [read-only] or [destructive].
+ * Hotkey commands take no argument and press the hotkey for one
+ * frame. With a command name, that command's line alone. */
+bool command_help(command_t *cmd, const char* arg)
+{
+   size_t   i;
+   size_t   _len  = 0;
+   size_t   size  = 256
+      + (ARRAY_SIZE(map) + ARRAY_SIZE(action_map)) * 160;
+   bool     found = false;
+   char    *reply;
+
+   while (arg && *arg == ' ')
+      arg++;
+   if (!(reply = (char*)malloc(size)))
+      return false;
+   reply[0] = '\0';
+
+   for (i = 0; i < ARRAY_SIZE(action_map); i++)
+   {
+      bool noarg = string_is_equal(action_map[i].arg_desc, "No argument");
+      if (arg && *arg && !string_is_equal(arg, action_map[i].str))
+         continue;
+      found = true;
+      if (!command_help_line(reply, size, &_len, action_map[i].str,
+               noarg ? NULL : action_map[i].arg_desc,
+               action_map[i].desc, action_map[i].flags))
+         break;
+   }
+   for (i = 0; i < ARRAY_SIZE(map); i++)
+   {
+      if (arg && *arg && !string_is_equal(arg, map[i].str))
+         continue;
+      found = true;
+      if (!command_help_line(reply, size, &_len, map[i].str, NULL,
+               map[i].desc, map[i].flags))
+         break;
+   }
+   if (!found)
+      _len = (size_t)snprintf(reply, size, "HELP ERROR unknown command %s\n",
+            arg);
+
+   cmd->replier(cmd, reply, _len);
+   free(reply);
+   return found;
+}
 
 bool command_version(command_t *cmd, const char* arg)
 {

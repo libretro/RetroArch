@@ -131,6 +131,16 @@ jobs:
           # free, on Linux.
           python3 tools/vfs_backend_parity.py
 
+      - name: Check every command describes itself
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # HELP prints command.h's tables, and interfaces that hand the
+          # commands to a client are generated from them: a command
+          # added without a description reaches all of those blank.
+          python3 tools/command_table_check.py
+
       - name: Check no video driver deletes overlay textures it was lent
         shell: bash
         run: |
