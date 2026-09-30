@@ -193,14 +193,30 @@ static struct tls_session *tls_cache_slot(const char *host)
    return e;
 }
 
-/* The trust bundle is net/cacert.h unless a test swapped one in. */
-static const char *tls_trust_pem     = cacert_pem;
-static size_t      tls_trust_pem_len = sizeof(cacert_pem);
+/* The trust bundle is net/cacert.h's parts unless a test swapped one
+ * in, which is then the single part. */
+static const char         *tls_test_pem[1];
+static size_t              tls_test_pem_len[1];
+static const char *const  *tls_trust_parts = cacert_pem_parts;
+static const size_t       *tls_trust_sizes = cacert_pem_sizes;
+static unsigned            tls_trust_count = CACERT_PEM_PARTS;
 
 void ssl_socket_retro_set_trust_pem(const char *pem, size_t len)
 {
-   tls_trust_pem     = pem ? pem : cacert_pem;
-   tls_trust_pem_len = pem ? len : sizeof(cacert_pem);
+   if (pem)
+   {
+      tls_test_pem[0]     = pem;
+      tls_test_pem_len[0] = len;
+      tls_trust_parts     = (const char *const*)tls_test_pem;
+      tls_trust_sizes     = tls_test_pem_len;
+      tls_trust_count     = 1;
+   }
+   else
+   {
+      tls_trust_parts     = cacert_pem_parts;
+      tls_trust_sizes     = cacert_pem_sizes;
+      tls_trust_count     = CACERT_PEM_PARTS;
+   }
 }
 
 struct ssl_state
@@ -1159,7 +1175,7 @@ static int tls_recv_certificate(struct ssl_state *s, struct x509_cert *leaf)
       ssl_socket_log_verify_disabled(s->domain);
       return 0;
    }
-   x509_trust_load_pem(tls_trust_pem, tls_trust_pem_len);
+   x509_trust_load_pem_parts(tls_trust_parts, tls_trust_sizes, tls_trust_count);
    info[0] = '\0';
    if (x509_verify_chain(ders, lens, n, s->domain, time(NULL), info, sizeof(info)) != 0)
    {
@@ -1680,7 +1696,7 @@ static int tls13_recv_certificate(struct ssl_state *s, struct x509_cert *leaf)
       ssl_socket_log_verify_disabled(s->domain);
       return 0;
    }
-   x509_trust_load_pem(tls_trust_pem, tls_trust_pem_len);
+   x509_trust_load_pem_parts(tls_trust_parts, tls_trust_sizes, tls_trust_count);
    info[0] = '\0';
    if (x509_verify_chain(ders, lens, n, s->domain, time(NULL), info, sizeof(info)) != 0)
    {

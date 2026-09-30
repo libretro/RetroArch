@@ -198,6 +198,49 @@ console_set "3ds smb"       "-Itools/platform_stubs/ctr $SMBD"  "-D_3DS -DARM11 
 console_set "vita smb"      "-Itools/platform_stubs/vita $SMBD" "-DVITA -DRARCH_CONSOLE -DHAVE_SOCKET_LEGACY" $SMB_SET
 console_set "switch smb"    "-I$STUBS/libnx $SMBD"              "-DHAVE_LIBNX -DSWITCH -D__SWITCH__ -DRARCH_CONSOLE" $SMB_SET
 
+# The network stack in the old MSVC projects (2005 - 2017), which no job
+# here builds: 32-bit Windows, C89, at the Windows floors those projects
+# target - VS2005's _WIN32_WINNT 0x0410 and XP's 0x0501. The stack keeps
+# to what those compilers and SDKs have: C89, the LL/ULL suffixes code
+# they already build uses, Windows entry points resolved at run time,
+# and a CA bundle split into parts under MSVC's 64 KiB string limit.
+MSVC_OLD_CC=${MSVC_OLD_CC:-i686-w64-mingw32-gcc}
+if command -v "$MSVC_OLD_CC" > /dev/null 2>&1; then
+   MSVC_OLD_STACK="$CRYPTO_SET libretro-common/net/net_socket_ssl_retro.c network/tls_log.c libretro-common/net/net_smb2.c libretro-common/net/net_krb5.c libretro-common/net/net_nfs3.c libretro-common/vfs/vfs_implementation_smb.c libretro-common/vfs/vfs_implementation_nfs.c libretro-common/vfs/vfs_prefetch.c"
+   MSVC_OLD_DEFS="-DRARCH_INTERNAL -DHAVE_NETWORKING -DHAVE_THREADS -DHAVE_CONFIGFILE -DHAVE_CRYPTO -DHAVE_KEYCHAIN -DHAVE_SSL -DHAVE_RETROSSL -DHAVE_SMBCLIENT -DHAVE_RETROSMB -DHAVE_NFSCLIENT -DHAVE_RETRONFS -DLEGACY_WIN32_NO_MIGRATION_NOTE"
+   for winnt in 0x0410 0x0501; do
+      mo_bad=0
+      for tu in $MSVC_OLD_STACK; do
+         if ! out=$($MSVC_OLD_CC -std=c89 -ansi -pedantic -Werror=pedantic -Werror=declaration-after-statement -Wno-long-long -Wno-variadic-macros -Werror=implicit-function-declaration -Wall -Wno-unused-function -Wno-overlength-strings \
+               -I. -Ilibretro-common/include -D_WIN32_WINNT=$winnt $MSVC_OLD_DEFS -fsyntax-only "$tu" 2>&1) \
+               || echo "$out" | grep -q "warning:"; then
+            echo "FAIL  msvc-old network stack, _WIN32_WINNT=$winnt"
+            echo "      $tu"
+            show_out "$out"
+            fail=1; mo_bad=1
+         fi
+      done
+      [ "$mo_bad" = 1 ] || echo "ok    msvc-old network stack, _WIN32_WINNT=$winnt"
+   done
+   # and no single string literal in the CA bundle reaches MSVC's limit
+   if python3 - << 'PYEOF'
+import re, sys
+t = open("libretro-common/net/cacert.h", encoding="latin-1").read()
+for body in re.findall(r"\[\] = \{(.*?)\};", t, re.S):
+    lits = re.findall(r'"((?:[^"\\]|\\.)*)"', body)
+    size = sum(len(l.encode("latin-1").decode("unicode_escape")) for l in lits) + len(lits)
+    if size >= 65535:
+        sys.exit(1)
+PYEOF
+   then
+      echo "ok    cacert.h parts under MSVC's 64 KiB string limit"
+   else
+      echo "FAIL  cacert.h has a part at or over MSVC's 64 KiB string limit"; fail=1
+   fi
+else
+   echo "skip  msvc-old network stack (no $MSVC_OLD_CC)"
+fi
+
 # Every platform makefile on Makefile.common, without its toolchain: the
 # graph's own DEFINES checked for consistency (TLS, SMB, NFS need the
 # networking they are built on) and the frontend compiled under exactly

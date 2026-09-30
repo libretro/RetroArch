@@ -182,3 +182,9 @@ The stack is on by default. `./configure` switches:
 The library options need the library installed and fail at configure time
 if it is not found. The consoles with 24 or 32 MiB of RAM (GameCube, Wii,
 PS2) build without the crypto library.
+
+The Visual Studio projects build the whole stack, from Visual Studio 2005
+up; Visual Studio 6 and .NET 2003 build without it. The CA bundle
+(`libretro-common/net/cacert.h`) is kept in parts under 64 KiB, the
+longest string literal MSVC before 2019 accepts; `tools/cacert_split.py`
+regenerates it from a new `cacert.pem`.

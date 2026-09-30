@@ -199,8 +199,14 @@ void* ssl_socket_init(int fd, const char *domain)
 #endif
 
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
-   if (mbedtls_x509_crt_parse(&state->ca, (const unsigned char*)cacert_pem, sizeof(cacert_pem) / sizeof(cacert_pem[0])) < 0)
-      goto error;
+   {
+      /* the bundle's parts, each NUL-terminated PEM, into one chain */
+      unsigned i;
+      for (i = 0; i < CACERT_PEM_PARTS; i++)
+         if (mbedtls_x509_crt_parse(&state->ca,
+                  (const unsigned char*)cacert_pem_parts[i], cacert_pem_sizes[i]) < 0)
+            goto error;
+   }
 #endif
 
    return state;

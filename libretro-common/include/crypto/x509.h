@@ -142,6 +142,19 @@ int x509_match_hostname(const struct x509_cert *c, const char *host);
  **/
 int x509_trust_load_pem(const char *pem, size_t len);
 
+/**
+ * x509_trust_load_pem_parts:
+ *
+ * As x509_trust_load_pem() for a bundle kept in @count parts, each a
+ * run of whole certificates (net/cacert.h, split for compilers that
+ * refuse long string literals): all of them are loaded into the one
+ * trust store, the table standing for the source.
+ *
+ * Returns: the number of anchors loaded, or -1 on failure.
+ **/
+int x509_trust_load_pem_parts(const char *const *parts, const size_t *lens,
+      unsigned count);
+
 void x509_trust_free(void);
 
 /**

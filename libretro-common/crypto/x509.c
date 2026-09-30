@@ -722,6 +722,7 @@ static struct x509_anchor *x509_anchors      = NULL;
 static unsigned            x509_anchor_count = 0;
 static const char         *x509_anchor_src   = NULL;
 static size_t              x509_anchor_src_len = 0;
+static unsigned            x509_anchor_cap   = 0;   /* x509_anchors' room */
 
 /* The store is process-wide and TLS handshakes run on several threads
  * (updater, achievements, cloud sync), the first of them building it:
@@ -766,6 +767,7 @@ static void x509_trust_free_locked(void)
    x509_anchor_count   = 0;
    x509_anchor_src     = NULL;
    x509_anchor_src_len = 0;
+   x509_anchor_cap     = 0;
 }
 
 void x509_trust_free(void)
@@ -786,19 +788,13 @@ int x509_trust_load_pem(const char *pem, size_t len)
    return n;
 }
 
-static int x509_trust_load_pem_locked(const char *pem, size_t len)
+/* Every certificate in @pem added to the anchors loaded so far. */
+static int x509_trust_append_pem_locked(const char *pem, size_t len)
 {
    static const char begin[] = "-----BEGIN CERTIFICATE-----";
    static const char end_[]  = "-----END CERTIFICATE-----";
    const char *p   = pem;
    const char *e   = pem + len;
-   unsigned    cap = 0;
-
-   /* the same source is already loaded: nothing to do - this is the
-    * path every handshake after the first takes */
-   if (pem == x509_anchor_src && len == x509_anchor_src_len && x509_anchors)
-      return (int)x509_anchor_count;
-   x509_trust_free_locked();
 
    for (;;)
    {
@@ -845,17 +841,18 @@ static int x509_trust_load_pem_locked(const char *pem, size_t len)
          continue;
       }
 
-      if (x509_anchor_count == cap)
+      if (x509_anchor_count == x509_anchor_cap)
       {
          struct x509_anchor *grown;
-         cap = cap ? cap * 2 : 64;
+         unsigned cap = x509_anchor_cap ? x509_anchor_cap * 2 : 64;
          grown = (struct x509_anchor*)realloc(x509_anchors, cap * sizeof(*grown));
          if (!grown)
          {
             free(der);
             return -1;
          }
-         x509_anchors = grown;
+         x509_anchors    = grown;
+         x509_anchor_cap = cap;
       }
       a          = &x509_anchors[x509_anchor_count];
       a->der     = der;
@@ -870,10 +867,46 @@ static int x509_trust_load_pem_locked(const char *pem, size_t len)
       }
       x509_anchor_count++;
    }
+   return (int)x509_anchor_count;
+}
 
+static int x509_trust_load_pem_locked(const char *pem, size_t len)
+{
+   /* the same source is already loaded: nothing to do - this is the
+    * path every handshake after the first takes */
+   if (pem == x509_anchor_src && len == x509_anchor_src_len && x509_anchors)
+      return (int)x509_anchor_count;
+   x509_trust_free_locked();
+   if (x509_trust_append_pem_locked(pem, len) < 0)
+      return -1;
    x509_anchor_src     = pem;
    x509_anchor_src_len = len;
    return (int)x509_anchor_count;
+}
+
+int x509_trust_load_pem_parts(const char *const *parts, const size_t *lens,
+      unsigned count)
+{
+   unsigned i;
+   int      n = 0;
+   X509_LOCK();
+   /* the part table is the source: loaded once, as a single one is */
+   if (     (const char*)parts == x509_anchor_src && count == x509_anchor_src_len
+         && x509_anchors)
+      n = (int)x509_anchor_count;
+   else
+   {
+      x509_trust_free_locked();
+      for (i = 0; i < count && n >= 0; i++)
+         n = x509_trust_append_pem_locked(parts[i], lens[i]);
+      if (n >= 0)
+      {
+         x509_anchor_src     = (const char*)parts;
+         x509_anchor_src_len = count;
+      }
+   }
+   X509_UNLOCK();
+   return n;
 }
 
 /* ---- chain -------------------------------------------------------- */

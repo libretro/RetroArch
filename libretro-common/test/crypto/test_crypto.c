@@ -831,9 +831,11 @@ START_TEST (test_x509)
 
    /* the shipped bundle: every anchor with an RSA or P-256 key parses */
    {
-      int n = x509_trust_load_pem(cacert_pem, sizeof(cacert_pem));
-      ck_assert_int_eq(n, 155);   /* every certificate in the bundle */
-      ck_assert_int_eq(x509_trust_load_pem(cacert_pem, sizeof(cacert_pem)), n);
+      int n = x509_trust_load_pem_parts(cacert_pem_parts, cacert_pem_sizes,
+            CACERT_PEM_PARTS);
+      ck_assert_int_eq(n, 155);   /* every certificate in the bundle, all parts */
+      ck_assert_int_eq(x509_trust_load_pem_parts(cacert_pem_parts, cacert_pem_sizes,
+            CACERT_PEM_PARTS), n);
       ck_assert_int_eq(x509_verify_chain(chain, lens, 3, "example.com", X509_TEST_NOW, info, sizeof(info)), -1);
    }
    x509_trust_free();
