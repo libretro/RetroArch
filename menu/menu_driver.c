@@ -5498,7 +5498,7 @@ unsigned menu_event(
        * That is what makes the selection jump several places when
        * the menu unblocks mid-hold. Treat the block as ending the
        * hold: the next press starts from the initial delay again. */
-      last_time_us                                 = menu_st->current_time_us;
+      last_time_us                                 = menu_st->input_time_us;
       hold_reset                                   = true;
       hold_initial                                 = true;
       delay_count                                  = 0.0f;
@@ -5644,7 +5644,7 @@ unsigned menu_event(
                                       | BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
       /* Reset the navigation auto-repeat state machine, for the
        * same reason as the BLOCK_ALL_INPUT path above */
-      last_time_us                    = menu_st->current_time_us;
+      last_time_us                    = menu_st->input_time_us;
       hold_reset                      = true;
       hold_initial                    = true;
       delay_count                     = 0.0f;
@@ -5668,9 +5668,9 @@ unsigned menu_event(
 
    if (navigation_current)
    {
-      float delta_time              = (float)(menu_st->current_time_us - last_time_us) / 1000;
+      float delta_time              = (float)(menu_st->input_time_us - last_time_us) / 1000;
 
-      last_time_us                  = menu_st->current_time_us;
+      last_time_us                  = menu_st->input_time_us;
       navigation_reset_delay        = true;
 
       /* Store first direction in order to block "diagonals" */

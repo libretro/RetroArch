@@ -6946,6 +6946,13 @@ static enum runloop_state_enum runloop_check_state(
 
       /* Get current time */
       menu_st->current_time_us      = current_time;
+      /* 'current_bits' was collected from the previous poll. On the
+       * first menu frame that poll was taken outside the menu, so
+       * the current time stands in for it. */
+      if (!menu_was_alive)
+         menu_st->input_poll_time_us = current_time;
+      menu_st->input_time_us        = menu_st->input_poll_time_us;
+      menu_st->input_poll_time_us   = current_time;
 
       cbs->poll_cb();
 

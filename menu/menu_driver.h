@@ -495,6 +495,14 @@ struct menu_state
 {
    /* Timers */
    retro_time_t current_time_us;
+   /* Time of the input poll whose state menu_event() reads this
+    * frame, and of the poll taken for the next frame. The menu
+    * collects its input before polling, so the state it acts on is
+    * one poll old; navigation auto-repeat measures a hold between
+    * polls so that a stall after the last poll is not counted as
+    * time the button was held. */
+   retro_time_t input_time_us;
+   retro_time_t input_poll_time_us;
    retro_time_t powerstate_last_time_us;
    retro_time_t datetime_last_time_us;
    retro_time_t input_last_time_us;

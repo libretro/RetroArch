@@ -22,6 +22,8 @@ on:
       - 'playlist.h'
       - 'tasks/task_content*'
       - 'samples/menu/playlist_nav/**'
+      - 'samples/menu/nav_repeat_stall/**'
+      - 'runloop.c'
       - 'samples/menu/network_settings/**'
       - 'intl/msg_hash_lbl.h'
       - 'msg_hash_lbl_str.h'
@@ -37,6 +39,8 @@ on:
       - 'playlist.h'
       - 'tasks/task_content*'
       - 'samples/menu/playlist_nav/**'
+      - 'samples/menu/nav_repeat_stall/**'
+      - 'runloop.c'
       - 'samples/menu/network_settings/**'
       - 'intl/msg_hash_lbl.h'
       - 'msg_hash_lbl_str.h'
@@ -178,6 +182,23 @@ jobs:
           samples/menu/playlist_nav/build.sh
           ./samples/menu/playlist_nav/menu_playlist_nav_test
           make -C samples/menu/playlist_nav clean
+
+      - name: Build and run menu_nav_repeat_stall_test
+        shell: bash
+        run: |
+          set -eu
+          # One press on a menu entry whose frame stalls - Ozone and
+          # XMB build a large playlist synchronously when the selection
+          # lands on it - has to move the selection once. The menu acts
+          # on input one poll old, so the hold time has to be measured
+          # between polls or the stall fires an auto-repeat. Drives the
+          # real runloop with a scripted input driver; also checks that
+          # a hold across the stall still repeats and that a steady hold
+          # waits out the initial scroll delay. Shares the non-Qt build
+          # made above.
+          samples/menu/nav_repeat_stall/build.sh
+          ./samples/menu/nav_repeat_stall/menu_nav_repeat_stall_test
+          make -C samples/menu/nav_repeat_stall clean
 
       - name: Build and run menu_network_settings_test
         shell: bash
