@@ -191,6 +191,14 @@ jobs:
           # a window into it take the other upload path (the one
           # beetle-psx takes).
           HARNESS_CORE_XRGB8888=1 SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
+          # And with the harness core as a Vulkan hardware core, which
+          # runs its own lane alone: the core's image must not be drawn
+          # from once the core has destroyed it - at a content close,
+          # unthreaded and under the wrapper, and after a set_image(NULL)
+          # - and a dupe of a hardware frame must not re-submit a fence
+          # that is already signalled. Either is a validation error
+          # here, and on lavapipe a crash.
+          HARNESS_CORE_HW_VULKAN=1 SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
 
   vulkan-validation-sample:

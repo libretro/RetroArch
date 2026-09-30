@@ -45,6 +45,7 @@
 #include "../../../menu/menu_setting.h"
 #include "../../../verbosity.h"
 #include "../../../input/input_driver.h"
+#include "../../../tasks/task_content.h"
 
 #ifdef HAVE_X11
 #include <X11/Xlib.h>
@@ -56,6 +57,7 @@
 #include <features/features_cpu.h>
 #include <rthreads/rthreads.h>
 #include <file/config_file.h>
+#include <queues/task_queue.h>
 
 static unsigned failures = 0;
 
@@ -4744,6 +4746,230 @@ static void lane_x11_wsi_connection(void)
 #endif
 }
 
+/* ------------------------------------------------------------------ */
+/* Lane: a hardware core's image is not drawn from after it is gone   */
+/*   A Vulkan hardware core hands the frontend an image of its own    */
+/*   and destroys it in context_destroy. A staged content close keeps */
+/*   the old drivers presenting dupes of the last frame until the new */
+/*   session's are built, so unless the driver is made to let go of   */
+/*   the image first, every one of those dupes samples a destroyed    */
+/*   VkImageView: reported as a freeze and a fault inside the GPU     */
+/*   driver on closing content with LRPS2 (libretro/ps2 #171).        */
+/*   The same for a core that withdraws its image in mid-session with */
+/*   set_image(NULL) and then destroys it: under the wrapper the      */
+/*   withdrawal reached only the ring slot the core fills next, and   */
+/*   the dupes that followed re-read the slot last presented.         */
+/*                                                                    */
+/*   Runs with the harness core in its hardware mode, which is a      */
+/*   separate invocation (HARNESS_CORE_HW_VULKAN=1) with this lane    */
+/*   alone: the other lanes are about software frames. Unthreaded the */
+/*   proof is the run itself - the driver's pointer to the core's     */
+/*   image goes into the unloaded core, and the validation layer sees */
+/*   the destroyed view. Under the wrapper the ring's installs are    */
+/*   also counted: none may name an image after the core destroyed    */
+/*   it.                                                              */
+/* ------------------------------------------------------------------ */
+
+static video_poke_interface_t        hwlane_poke;
+static const video_poke_interface_t *hwlane_inner_poke;
+static retro_hw_context_reset_t      hwlane_core_destroy;
+static retro_atomic_int_t hwlane_gone;          /* the core's image is destroyed */
+static retro_atomic_int_t hwlane_installs;      /* installs that named an image */
+static retro_atomic_int_t hwlane_installs_gone; /* ... after it was destroyed */
+
+static bool hwlane_install(void *data, const void *image,
+      const void *semaphores, unsigned num_semaphores,
+      unsigned src_queue_family, const void *cmd, unsigned num_cmd)
+{
+   if (image)
+   {
+      retro_atomic_fetch_add_int(&hwlane_installs, 1);
+      if (retro_atomic_load_acquire_int(&hwlane_gone))
+         retro_atomic_fetch_add_int(&hwlane_installs_gone, 1);
+   }
+   return hwlane_inner_poke->hw_ring_install(data, image, semaphores,
+         num_semaphores, src_queue_family, cmd, num_cmd);
+}
+
+/* In front of the core's context_destroy, to know when the image went. */
+static void hwlane_context_destroy(void)
+{
+   hwlane_core_destroy();
+   retro_atomic_store_release_int(&hwlane_gone, 1);
+}
+
+static unsigned hwlane_core_call(const char *name)
+{
+   dylib_t lib = runloop_state_get_ptr()->lib_handle;
+   unsigned (*fn)(void) = lib
+      ? (unsigned (*)(void))dylib_proc(lib, name) : NULL;
+   return fn ? fn() : 0;
+}
+
+/* The frame loop as the frontend's main loop runs it: the staged close
+ * and load are tasks. */
+static void hwlane_pump(unsigned n)
+{
+   unsigned i;
+   for (i = 0; i < n; i++)
+   {
+      runloop_iterate();
+      task_queue_check();
+   }
+}
+
+/* Counts the wrapper's installs from here on. The wrapper is idle
+ * while its table is swapped. */
+static bool hwlane_probe(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr            = (thread_video_t*)video_st->data;
+   if (     !video_st->thread_wrapper_active
+         || !thr || !thr->poke || !thr->poke->hw_ring_install)
+      return false;
+   video_thread_wait_idle();
+   hwlane_inner_poke           = thr->poke;
+   hwlane_poke                 = *thr->poke;
+   hwlane_poke.hw_ring_install = hwlane_install;
+   thr->poke                   = &hwlane_poke;
+   return true;
+}
+
+/* Closes content from the menu, staged, and runs the frame loop until
+ * the dummy core's drivers are up. Returns the frames the old drivers
+ * presented after the core destroyed its image. */
+static unsigned hwlane_close(const char *when)
+{
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   unsigned i;
+   unsigned after = 0;
+
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   hwlane_pump(2);
+   CHECK(menu_is_up(), "%s: menu did not open", when);
+
+   hwlane_core_destroy = video_st->hw_render.context_destroy;
+   CHECK(hwlane_core_destroy != NULL, "%s: the core has no context_destroy", when);
+   if (!hwlane_core_destroy)
+      return 0;
+   retro_atomic_store_release_int(&hwlane_gone, 0);
+   retro_atomic_store_release_int(&hwlane_installs_gone, 0);
+   video_st->hw_render.context_destroy = hwlane_context_destroy;
+
+   menu_st->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
+   hwlane_pump(1);
+   CHECK(runloop_is_content_switching(),
+         "%s: the close did not start a staged load", when);
+   for (i = 0; i < 400 && runloop_is_content_switching(); i++)
+   {
+      if (retro_atomic_load_acquire_int(&hwlane_gone))
+         after++;
+      hwlane_pump(1);
+   }
+   CHECK(!runloop_is_content_switching(), "%s: the close did not finish", when);
+   CHECK(retro_atomic_load_acquire_int(&hwlane_gone),
+         "%s: the core's context_destroy never ran", when);
+   CHECK(runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY,
+         "%s: not on the dummy core after the close", when);
+   /* The window the lane is about. If the close ever stops presenting
+    * between the core's teardown and the new drivers, this lane no
+    * longer tests anything and should say so. */
+   CHECK(after >= 1,
+         "%s: no frame presented between the core's teardown and the new drivers",
+         when);
+   hwlane_pump(5);
+   return after;
+}
+
+static void lane_hw_image_lifetime(const char *core_path)
+{
+   unsigned had = failures;
+   unsigned after_plain, after_wrapped;
+   int before;
+   unsigned i;
+
+   if (!hwlane_core_call("harness_core_hw_active"))
+   {
+      CHECK(0, "hw image lifetime: the harness core is not a hardware core"
+            " (needs the vulkan driver)");
+      return;
+   }
+
+   /* Unthreaded: frames in game, then the close. */
+   expect_wrapper(false, "hw unthreaded");
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   hwlane_pump(20);
+   after_plain = hwlane_close("hw unthreaded close");
+
+   /* The core again, under the wrapper this time. */
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "hw image lifetime: the core was not started again");
+   for (i = 0; i < 400 && runloop_is_content_switching(); i++)
+      hwlane_pump(1);
+   CHECK(!runloop_is_content_switching(),
+         "hw image lifetime: the core's restart did not finish");
+   hwlane_pump(5);
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   set_threaded_via_setting(true);
+   hwlane_pump(20);
+   expect_wrapper(true, "hw under the wrapper");
+   CHECK(hwlane_core_call("harness_core_hw_active"),
+         "hw image lifetime: the core did not come back as a hardware core");
+   if (!hwlane_probe())
+   {
+      CHECK(0, "hw image lifetime: the wrapper has no hardware ring for this driver");
+      return;
+   }
+
+   retro_atomic_store_release_int(&hwlane_gone, 0);
+   retro_atomic_store_release_int(&hwlane_installs, 0);
+   retro_atomic_store_release_int(&hwlane_installs_gone, 0);
+   hwlane_pump(20);
+   video_thread_wait_idle();
+   before = retro_atomic_load_acquire_int(&hwlane_installs);
+   CHECK(before > 0, "hw image lifetime: no hardware frame reached the driver");
+
+   /* The core withdraws its image and destroys it; dupes follow. */
+   CHECK(hwlane_core_call("harness_core_hw_withdraw"),
+         "hw image lifetime: the core did not withdraw its image");
+   retro_atomic_store_release_int(&hwlane_gone, 1);
+   hwlane_pump(20);
+   video_thread_wait_idle();
+   CHECK(retro_atomic_load_acquire_int(&hwlane_installs_gone) == 0,
+         "hw image lifetime: the core withdrew and destroyed its image, and"
+         " the ring handed it to the driver %d more time(s)",
+         retro_atomic_load_acquire_int(&hwlane_installs_gone));
+
+   /* And presents again: the ring is not left deaf. */
+   retro_atomic_store_release_int(&hwlane_gone, 0);
+   before = retro_atomic_load_acquire_int(&hwlane_installs);
+   CHECK(hwlane_core_call("harness_core_hw_restore"),
+         "hw image lifetime: the core did not restore its image");
+   hwlane_pump(20);
+   video_thread_wait_idle();
+   CHECK(retro_atomic_load_acquire_int(&hwlane_installs) > before,
+         "hw image lifetime: no hardware frame reached the driver after the"
+         " core presented again");
+
+   /* The close, under the wrapper. */
+   after_wrapped = hwlane_close("hw wrapped close");
+   CHECK(retro_atomic_load_acquire_int(&hwlane_installs_gone) == 0,
+         "hw image lifetime: the core destroyed its image at the close, and"
+         " the ring handed it to the driver %d more time(s)",
+         retro_atomic_load_acquire_int(&hwlane_installs_gone));
+
+   set_threaded_via_setting(false);
+   hwlane_pump(5);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] hw image lifetime lane (%u + %u frames presented"
+            " after the core's teardown)\n", after_plain, after_wrapped);
+}
+
 int main(int argc, char *argv[])
 {
    char cfg_path[512];
@@ -4856,6 +5082,13 @@ int main(int argc, char *argv[])
    CHECK(menu_is_up(), "menu did not open");
    expect_wrapper(false, "boot");
 
+   /* The harness core as a hardware core: its own lane, alone. */
+   if (getenv("HARNESS_CORE_HW_VULKAN"))
+   {
+      lane_hw_image_lifetime(core_path);
+      goto shutdown;
+   }
+
    lane_line_separation();
    lane_vp_params_publish();
    lane_toggle_cycle(cycles);
@@ -4914,6 +5147,7 @@ int main(int argc, char *argv[])
       fprintf(stderr, "[skip] null-driver instrumented lanes (real driver: %s)\n",
             getenv("HARNESS_VIDEO_DRIVER"));
 
+shutdown:
    /* Orderly shutdown: the teardown barriers are part of what is
     * under test. */
    set_threaded_via_setting(true);

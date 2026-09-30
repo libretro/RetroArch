@@ -70,6 +70,9 @@ sed -e "s#$objdir/retroarch\.o#$out/retroarch_nomain.o $out/harness_main.o#" \
 # the frontend can load; the .so name is only a name, every loader
 # takes it.
 core_cc=$(awk '{print $1}' "$cc_line")
-$core_cc -O1 -g -shared -fPIC -Ilibretro-common/include -o $out/harness_core.so $out/harness_core.c
+# gfx/include carries the tree's own Vulkan headers, for the core's
+# hardware mode (HARNESS_CORE_HW_VULKAN); it calls Vulkan through the
+# frontend's interface and links nothing.
+$core_cc -O1 -g -shared -fPIC -Ilibretro-common/include -Igfx/include -o $out/harness_core.so $out/harness_core.c
 
 echo "built $out/threaded_video_test and $out/harness_core.so"
