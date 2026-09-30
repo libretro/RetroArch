@@ -651,7 +651,9 @@ static void retro_task_threaded_cancel(void *task)
    slock_unlock(running_lock);
 }
 
-static void retro_task_threaded_run_main(void);
+static void retro_task_threaded_run_main(unsigned due);
+static unsigned retro_task_threaded_due_main(retro_task_t *task,
+      retro_time_t *now);
 
 static void retro_task_threaded_gather(void)
 {
@@ -664,12 +666,22 @@ static void retro_task_threaded_gather(void)
        && !retro_atomic_load_acquire_int(&tasks_finished_count))
       return;
 
-   slock_lock(running_lock);
-   for (task = tasks_running.front; task; task = task->next)
-      task_queue_push_progress(task);
-   slock_unlock(running_lock);
+   {
+      /* One pass under the lock: publish progress, and count the
+       * main-thread tasks that are due. */
+      retro_time_t now = 0;
+      unsigned     due = 0;
+      slock_lock(running_lock);
+      for (task = tasks_running.front; task; task = task->next)
+      {
+         task_queue_push_progress(task);
+         due += retro_task_threaded_due_main(task, &now);
+      }
+      slock_unlock(running_lock);
 
-   retro_task_threaded_run_main();
+      if (due)
+         retro_task_threaded_run_main(due);
+   }
 
    /* Detach the entire finished list under the lock, then retire
     * the tasks (progress push, callback, cleanup, free) outside
@@ -969,36 +981,34 @@ static void retro_task_threaded_settle(retro_task_t *task)
    }
 }
 
-/* Runs the due main-thread tasks once each, within the handler
- * budget.  Each one processed goes to the back of the running list
- * (or off it), so counting them first bounds the pass; one pushed by
- * a handler meanwhile waits for the next check. */
-static void retro_task_threaded_run_main(void)
+/* 1 when @task is a main-thread task that is due; @now is read
+ * once, the first time a 'when' needs it.  Called under
+ * running_lock. */
+static unsigned retro_task_threaded_due_main(retro_task_t *task,
+      retro_time_t *now)
 {
-   retro_time_t now     = 0;
+   if (!task_is_main_thread_task(task))
+      return 0;
+   if (task->when)
+   {
+      if (!*now)
+         *now = cpu_features_get_time_usec();
+      if (task->when > *now)
+         return 0;
+   }
+   return 1;
+}
+
+/* Runs @due main-thread tasks once each, within the handler budget.
+ * Each one processed goes to the back of the running list (or off
+ * it), so the count taken beforehand bounds the pass; one pushed by
+ * a handler meanwhile waits for the next check. */
+static void retro_task_threaded_run_main(unsigned due)
+{
    retro_time_t started = 0;
-   unsigned     due     = 0;
    unsigned     n_ran   = 0;
    retro_task_t *task   = NULL;
 
-   slock_lock(running_lock);
-   for (task = tasks_running.front; task; task = task->next)
-   {
-      if (!task_is_main_thread_task(task))
-         continue;
-      if (task->when)
-      {
-         if (!now)
-            now = cpu_features_get_time_usec();
-         if (task->when > now)
-            continue;
-      }
-      due++;
-   }
-   slock_unlock(running_lock);
-
-   if (!due)
-      return;
    if (task_handler_budget_usec)
       started = cpu_features_get_time_usec();
 

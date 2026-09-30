@@ -24,8 +24,10 @@ video_thread_loop                6
 # Parks and handshakes ride an eventcount and atomic words; nothing here.
 audio_thread_loop                0
 # Taken once it has something to retire; returns on two atomic loads
-# before any of them on a frame with nothing in flight.
-retro_task_threaded_gather       5
+# before any of them on a frame with nothing in flight.  The progress
+# walk also counts the due main-thread tasks; picking and settling one
+# (inlined here) takes the lock only when such a task is due.
+retro_task_threaded_gather       8
 video_driver_frame               0
 audio_driver_sample_batch        0
 runloop_iterate                  0
