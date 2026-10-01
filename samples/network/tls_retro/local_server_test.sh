@@ -145,4 +145,22 @@ SRV=$!; sleep 0.4
 set +e; $RUN ./tls_threads$EXE localhost 44331 $D/ca.pem > $D/thr.out 2>&1; rc=$?; set -e
 kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
 if [ $rc -eq 0 ]; then echo "ok:   concurrent first-use verification from six threads"; else echo "FAIL: threads: $(cat $D/thr.out)"; exit 1; fi
+# RetroArch's HTTP client over the built-in TLS: net_http fetches a file
+# of 3 MiB and change, whose records straddle its read windows at odd
+# offsets, on both versions and both AEADs; the body must hash right.
+make -s tls_http
+mkdir -p $D/www
+head -c 3158073 /dev/urandom > $D/www/body.bin
+SUM=$(openssl dgst -sha256 -r $D/www/body.bin | cut -d' ' -f1)
+http() { # label version cipher-option cipher
+   (cd $D/www && exec openssl s_server -accept 44331 -cert $D/rsa.pem -key $D/rsa.key $2 $3 "$4" -WWW) >/dev/null 2>&1 &
+   SRV=$!; sleep 0.4
+   set +e; $RUN ./tls_http$EXE 44331 body.bin $SUM $D/ca.pem > $D/http.out 2>&1; rc=$?; set -e
+   kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
+   if [ $rc -eq 0 ]; then echo "ok:   $1"; else echo "FAIL: $1: $(cat $D/http.out)"; exit 1; fi
+}
+http "net_http over TLS 1.2, AES-128-GCM"        -tls1_2 -cipher       ECDHE-RSA-AES128-GCM-SHA256
+http "net_http over TLS 1.2, ChaCha20-Poly1305"  -tls1_2 -cipher       ECDHE-RSA-CHACHA20-POLY1305
+http "net_http over TLS 1.3, AES-128-GCM"        -tls1_3 -ciphersuites TLS_AES_128_GCM_SHA256
+http "net_http over TLS 1.3, ChaCha20-Poly1305"  -tls1_3 -ciphersuites TLS_CHACHA20_POLY1305_SHA256
 echo "[pass] tls_retro local server matrix"

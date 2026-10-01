@@ -106,6 +106,7 @@
 - NETWORK: Optional SMB/NFS read-ahead with background prefetch, for large disc images over a slow link (off by default)
 - NETWORK: Saved passwords are encrypted in retroarch-keychain.cfg; an optional passphrase lets the keychain move to another machine (see docs/network-stack.md)
 - NETWORK: SMB 3.1.1 signs with AES-GMAC where the server offers it, several times faster than AES-CMAC on signed reads
+- NETWORK: HTTPS downloads whose length is set by the server closing the connection now finish instead of hanging
 - OVERLAY: Allow overlays to position the viewport
 - OVERLAY: Hold button function
 - OVERLAY: Allow interaction during next overlay swap

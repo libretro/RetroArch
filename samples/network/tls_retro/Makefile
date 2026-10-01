@@ -21,9 +21,15 @@ tls_bench: tls_bench.c $(filter-out tls_fetch.c,$(SRC))
 	$(CC) $(CPPFLAGS) $(CFLAGS) tls_bench.c $(filter-out tls_fetch.c,$(SRC)) $(LDLIBS) -o $@
 tls_keyupdate: tls_keyupdate.c $(filter-out tls_fetch.c,$(SRC))
 	$(CC) $(CPPFLAGS) $(CFLAGS) tls_keyupdate.c $(filter-out tls_fetch.c,$(SRC)) $(LDLIBS) -o $@
+# net_http over the built-in client, as RetroArch's HTTP task drives it
+HTTP_SRC = tls_http.c $(filter-out tls_fetch.c,$(SRC)) $(COMMON)/net/net_http.c \
+      $(COMMON)/compat/compat_strcasestr.c $(COMMON)/compat/compat_posix_string.c \
+      $(COMMON)/lists/string_list.c $(COMMON)/file/retro_dirent.c $(COMMON)/rthreads/rthreads.c
+tls_http: $(HTTP_SRC)
+	$(CC) $(CPPFLAGS) -DHAVE_THREADS $(CFLAGS) $(HTTP_SRC) $(LDLIBS) -lpthread -o $@
 THR_SRC = tls_threads.c $(filter-out tls_fetch.c,$(SRC)) $(COMMON)/rthreads/rthreads.c
 tls_threads: $(THR_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_THREADS $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@
 clean:
-	rm -f tls_fetch tls_fetch.exe tls_bench tls_bench.exe tls_keyupdate tls_keyupdate.exe tls_threads tls_threads.exe
+	rm -f tls_http tls_http.exe tls_fetch tls_fetch.exe tls_bench tls_bench.exe tls_keyupdate tls_keyupdate.exe tls_threads tls_threads.exe
 .PHONY: clean

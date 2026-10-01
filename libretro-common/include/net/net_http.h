@@ -279,8 +279,9 @@ bool net_http_body_is_framed(const char *headers);
  *
  * Leaf function.
  *
- * @return the downloaded data. The returned buffer is owned by the
- * HTTP handler; it's freed by net_http_delete.
+ * @return the downloaded data. Ownership of the returned buffer passes
+ * to the caller, who frees it with free(); net_http_delete() no longer
+ * does. A NULL return leaves the buffer with the handler.
  * If the status is not 20x and accept_error is false, it returns NULL.
  **/
 uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_error);
