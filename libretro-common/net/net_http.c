@@ -2078,7 +2078,14 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
                 * Early Hints): the real status line follows on this
                 * connection. */
                net_http_headers_clear(response);
-               response->part = P_HEADER_TOP;
+               /* Framing too: a Content-Length or "chunked" on the
+                * interim block is not the final response's, and
+                * Transfer-Encoding winning over Content-Length would
+                * otherwise carry it straight over. */
+               response->bodytype    = T_FULL;
+               response->len         = 0;
+               response->content_len = 0;
+               response->part        = P_HEADER_TOP;
             }
             else if (  status == 204
                     || status == 304

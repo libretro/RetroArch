@@ -1251,6 +1251,35 @@ static void run_section_headers(void)
    net_http_delete(h);
 }
 
+/* ---- interim responses do not frame the final one ---- */
+
+static void run_section_interim_framing(void)
+{
+   struct xfer a;
+   static const struct step s_te[] = {
+      { "HTTP/1.1 100 Continue\r\nTransfer-Encoding: chunked\r\n\r\n"
+        OK_2, 0, B_NONE, 0 },
+   };
+   static const struct step s_cl[] = {
+      { "HTTP/1.1 103 Early Hints\r\nContent-Length: 5\r\n\r\n"
+        "HTTP/1.1 200 OK\r\n\r\nhello world", 0, B_NONE, 1 },
+   };
+
+   memset(&a, 0, sizeof(a));
+
+   case_begin(s_te, 1, 0);
+   xfer_run(&a, "/te");
+   check(a.done && !a.err && body_is(&a, "ok"),
+         "\"chunked\" on a 100 does not frame the final Content-Length body");
+   xfer_free(&a);
+
+   case_begin(s_cl, 1, 0);
+   xfer_run(&a, "/cl");
+   check(a.done && body_is(&a, "hello world"),
+         "Content-Length on a 103 does not cut the final close-delimited body");
+   xfer_free(&a);
+}
+
 int main(void)
 {
    if (!network_init() || srv_start())
@@ -1269,6 +1298,7 @@ int main(void)
    run_section_b1();
    run_section_b2();
    run_section_headers();
+   run_section_interim_framing();
 
    srv_shutdown();
    net_http_deinit();

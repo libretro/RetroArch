@@ -324,7 +324,9 @@ jobs:
           # through it ("../", "?q", "//host", fragments dropped,
           # %20 left encoded). The response header block: lookup and
           # iteration, the legacy string_list accessor, and 64 header
-          # lines costing no per-line allocations. Every case has a
+          # lines costing no per-line allocations. A Content-Length or
+          # "chunked" on a 1xx block does not frame the final response.
+          # Every case has a
           # deadline, so a hang fails the case instead of the job.
           # net_http is lock-free by design (DNS cache and pool owned by
           # the driving thread, resolvers publish with an atomic store);
