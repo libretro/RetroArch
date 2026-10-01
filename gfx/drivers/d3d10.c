@@ -1155,6 +1155,9 @@ static void d3d10_font_render_msg(
       } while (0)
 
 #define FONT_LAYOUT_ALIGNED (need_align || has_drop)
+      /* A line too long for the sprite buffer is not looked up either */
+#define FONT_LAYOUT_SKIP(line, bytes) \
+      ((bytes) > (unsigned)d3d10->sprites.capacity)
 #define FONT_LAYOUT_LINE(line, width, count, bytes) \
       do \
       { \

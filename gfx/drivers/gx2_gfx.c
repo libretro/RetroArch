@@ -777,6 +777,9 @@ static void gx2_font_render_message(
    line_height = line_metrics->height * scale / VIDEO_SCALE_H(wiiu->vp.dims);
 
 #define FONT_LAYOUT_ALIGNED aligned
+   /* A line the vertex cache cannot take is not looked up either */
+#define FONT_LAYOUT_SKIP(line, bytes) \
+   (wiiu->vertex_cache.current + ((bytes) * 4) > wiiu->vertex_cache.size)
 #define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
    do \
    { \

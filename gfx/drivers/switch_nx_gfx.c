@@ -180,6 +180,8 @@ static void switch_font_render_message(
    line_height = scale / line_metrics->height;
 
 #define FONT_LAYOUT_ALIGNED aligned
+   /* A line over the limit is not looked up either */
+#define FONT_LAYOUT_SKIP(line, bytes) ((bytes) > AVG_GLPYH_LIMIT)
 #define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
    do \
    { \

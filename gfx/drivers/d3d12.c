@@ -1943,6 +1943,8 @@ static void d3d12_font_render_msg(
          : (size_t)d3d12->sprites.capacity;
 
 #define FONT_LAYOUT_ALIGNED 0
+      /* A line too long for the sprite buffer is not looked up either */
+#define FONT_LAYOUT_SKIP(line, bytes) ((bytes) > line_cap)
 #define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
       do \
       { \

@@ -1526,6 +1526,10 @@ static void d3d11_font_render_msg(
       } while (0)
 
 #define FONT_LAYOUT_ALIGNED have_drop
+      /* An empty line, or one too long for the sprite buffer, is not
+       * looked up either */
+#define FONT_LAYOUT_SKIP(line, bytes) \
+      ((bytes) == 0 || (bytes) > (unsigned)capacity)
 #define FONT_LAYOUT_LINE(line, width, count, bytes) \
       do \
       { \
