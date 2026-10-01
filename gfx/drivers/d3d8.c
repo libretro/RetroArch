@@ -1360,122 +1360,11 @@ static INLINE Vertex *d3d8_font_get_scratch(
 /* Render a single line of glyphs from `m` of length `msg_len` at
  * (line_x, line_y) in [0..1] coords, with the supplied colour.
  * Used for both the drop-shadow pass and the main text pass. */
-static void d3d8_font_render_line(
-      d3d8_video_t *d3d,
-      d3d8_font_t  *font,
-      const char   *m,
-      size_t        msg_len,
-      float         line_x,
-      float         line_y,
-      float         scale,
-      enum text_alignment text_align,
-      unsigned      width,
-      unsigned      height,
-      D3DCOLOR      color)
+/* Draws @vert_count glyph vertices from @verts with the atlas bound and
+ * the coverage modulated by the per-vertex colour. */
+static void d3d8_font_draw_verts(d3d8_video_t *d3d, d3d8_font_t *font,
+      Vertex *verts, unsigned vert_count)
 {
-   unsigned i;
-   float inv_viewport_w             = 1.0f / (float)width;
-   float inv_viewport_h             = 1.0f / (float)height;
-   float inv_tex_w                  =
-      1.0f / (float)VIDEO_SCALE_W(font->tex_dims);
-   float inv_tex_h                  =
-      1.0f / (float)VIDEO_SCALE_H(font->tex_dims);
-   const struct font_glyph *glyph_q = font->font_driver->get_glyph(
-         font->font_data, '?');
-   int lx                           = roundf(line_x * width);
-   int ly                           = roundf((1.0f - line_y) * height);
-   unsigned vert_count              = 0;
-   Vertex *verts                    = d3d8_font_get_scratch(font, msg_len * 6);
-
-   if (!verts)
-      return;
-
-   /* Soft scissor for text.  The font path doesn't go through
-    * gfx_display_d3d8_draw, so apply a similar skip-only check
-    * here.  ly is the baseline in top-down screen pixels.
-    * Visible glyphs sit at or above ly (the baseline is the
-    * bottom of the line for most glyphs; descenders dip slightly
-    * below).  We don't know the line height here, but two
-    * conservative whole-line culls catch the cases that actually
-    * overflow in practice:
-    *
-    *   - ly >= sy2: baseline at or below the scissor bottom edge
-    *     means the whole line (which is above the baseline) is
-    *     mostly below the scissor.  In Ozone that's the entry
-    *     that has just scrolled past the footer.
-    *   - ly < sy:   baseline above the scissor top edge means
-    *     the whole line is above sy — every visible glyph sits
-    *     above its own baseline, so above sy too.  In Ozone
-    *     that's the entry that has just scrolled past the
-    *     header.
-    *
-    * Edge-aligned lines (baseline ~ sy or ~ sy2) still render in
-    * full — partial overlap isn't culled.  Pixel-perfect glyph
-    * clipping would need per-glyph bounding-box checks; the
-    * whole-line cull is enough to stop the visible overflow into
-    * Ozone's header/footer regions. */
-   if (d3d->menu_display.scissor_active)
-   {
-      int sy  = VIDEO_POS_Y(d3d->menu_display.scissor_pos);
-      int sy2 = sy + (int)VIDEO_SCALE_H(d3d->menu_display.scissor_dims);
-      if (ly >= sy2 || ly < sy)
-         return;
-   }
-
-   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
-   {
-      int width_accum      = 0;
-      const char *scan     = m;
-      const char *scan_end = m + msg_len;
-      while (scan < scan_end)
-      {
-         const struct font_glyph *glyph;
-         uint32_t code = utf8_walk(&scan);
-         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
-            if (!(glyph = glyph_q))
-               continue;
-         width_accum += glyph->advance_x;
-      }
-      if (text_align == TEXT_ALIGN_RIGHT)
-         line_x -= (float)(width_accum * scale) / (float)width;
-      else
-         line_x -= (float)(width_accum * scale) / (float)width / 2.0f;
-      lx = roundf(line_x * width);
-   }
-
-   for (i = 0; i < msg_len; i++)
-   {
-      const struct font_glyph *glyph;
-      const char *msg_tmp = &m[i];
-      unsigned    code    = utf8_walk(&msg_tmp);
-      unsigned    skip    = msg_tmp - &m[i];
-
-      if (skip > 1)
-         i += skip - 1;
-
-      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      vert_count += d3d8_font_emit_quad(
-            &verts[vert_count],
-            (lx + glyph->draw_offset_x * scale) * inv_viewport_w,
-            (ly + glyph->draw_offset_y * scale) * inv_viewport_h,
-            glyph->width  * scale * inv_viewport_w,
-            glyph->height * scale * inv_viewport_h,
-            glyph->atlas_offset_x * inv_tex_w,
-            glyph->atlas_offset_y * inv_tex_h,
-            glyph->width  * inv_tex_w,
-            glyph->height * inv_tex_h,
-            color);
-
-      lx += glyph->advance_x * scale;
-      ly += glyph->advance_y * scale;
-   }
-
-   if (vert_count == 0)
-      return;
-
    IDirect3DDevice8_SetTexture(d3d->dev, 0,
          (IDirect3DBaseTexture8*)font->texture);
    IDirect3DDevice8_SetTextureStageState(d3d->dev, 0,
@@ -1656,9 +1545,26 @@ static void d3d8_font_render_msg(
    }
 
    {
-      int lines     = 0;
-      bool has_drop = drop_x || drop_y;
-      const char *m = msg;
+      bool has_drop                    = drop_x || drop_y;
+      bool line_ok                     = false;
+      bool cull_s                      = false;
+      bool cull_f                      = false;
+      Vertex *verts_s                  = NULL;
+      Vertex *verts_f                  = NULL;
+      unsigned vs                      = 0;
+      unsigned vf                      = 0;
+      int lx_s                         = 0;
+      int ly_s                         = 0;
+      int lx_f                         = 0;
+      int ly_f                         = 0;
+      float inv_viewport_w             = 1.0f / (float)width;
+      float inv_viewport_h             = 1.0f / (float)height;
+      float inv_tex_w                  = 0.0f;
+      float inv_tex_h                  = 0.0f;
+      const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                       = font->font_driver->get_glyph;
+      void *font_data                  = font->font_data;
+      const struct font_glyph *glyph_q = NULL;
 
       if (has_drop)
       {
@@ -1669,40 +1575,109 @@ static void d3d8_font_render_msg(
          color_dark          = D3DCOLOR_ARGB(alpha_dark, r_dark, g_dark, b_dark);
       }
 
-      for (;;)
-      {
-         const char *end = m;
-         size_t msg_len;
-
-         while (*end && *end != '\n')
-            end++;
-         msg_len = (size_t)(end - m);
-
-         if (msg_len > 0)
-         {
-            float line_y = y - (float)lines * line_height;
-
-            /* Drop shadow pass. */
-            if (has_drop)
-            {
-               float drop_pos_x = x + scale * drop_x / (float)width;
-               float drop_pos_y = line_y + scale * drop_y / (float)height;
-               d3d8_font_render_line(d3d, font, m, msg_len,
-                     drop_pos_x, drop_pos_y, scale, text_align,
-                     width, height, color_dark);
-            }
-
-            /* Main text pass. */
-            d3d8_font_render_line(d3d, font, m, msg_len,
-                  x, line_y, scale, text_align,
-                  width, height, color);
-         }
-
-         if (*end != '\n')
-            break;
-         m = end + 1;
-         lines++;
-      }
+      /* One pass per line: each glyph is looked up once and written
+       * to the line's shadow run and its foreground run, drawn in
+       * that order, the shadow behind. A run whose baseline falls
+       * outside the scissor is left out: the font path does not go
+       * through gfx_display_d3d8_draw, so it applies the same
+       * skip-only check - a baseline at or below the scissor's bottom
+       * edge, or above its top, puts the whole line out (in Ozone, the
+       * entry just scrolled past the footer or the header). */
+      glyph_q = get_glyph(font_data, '?');
+#define D3D8_FONT_QUAD(dst, px, py, glyph, col) \
+      d3d8_font_emit_quad(dst, \
+            ((px) + (glyph)->draw_offset_x * scale) * inv_viewport_w, \
+            ((py) + (glyph)->draw_offset_y * scale) * inv_viewport_h, \
+            (glyph)->width  * scale * inv_viewport_w, \
+            (glyph)->height * scale * inv_viewport_h, \
+            (glyph)->atlas_offset_x * inv_tex_w, \
+            (glyph)->atlas_offset_y * inv_tex_h, \
+            (glyph)->width  * inv_tex_w, \
+            (glyph)->height * inv_tex_h, \
+            col)
+#define D3D8_FONT_CULLED(ly) \
+      (d3d->menu_display.scissor_active \
+       && (   (ly) >= (int)VIDEO_POS_Y(d3d->menu_display.scissor_pos) \
+            + (int)VIDEO_SCALE_H(d3d->menu_display.scissor_dims) \
+           || (ly) < (int)VIDEO_POS_Y(d3d->menu_display.scissor_pos)))
+#define FONT_LAYOUT_ALIGNED (text_align == TEXT_ALIGN_RIGHT \
+            || text_align == TEXT_ALIGN_CENTER)
+      /* An empty line, or one with every run out of the scissor, is
+       * not even looked up */
+#define FONT_LAYOUT_SKIP(line, bytes) \
+      (   (bytes) == 0 \
+       || (   D3D8_FONT_CULLED((int)roundf((1.0f - (y \
+                     - (float)(line) * line_height)) * height)) \
+           && (!has_drop || D3D8_FONT_CULLED((int)roundf((1.0f - ((y \
+                     - (float)(line) * line_height) + scale * drop_y \
+                     / (float)height)) * height)))))
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+      do \
+      { \
+         float line_y = y - (float)(line) * line_height; \
+         float fx     = x; \
+         (void)(count); \
+         vs = vf = 0; \
+         line_ok = ((bytes) > 0 \
+               && (verts_s = d3d8_font_get_scratch(font, (bytes) * 12))); \
+         if (!line_ok) \
+            break; \
+         verts_f   = verts_s + (bytes) * 6; \
+         inv_tex_w = 1.0f / (float)VIDEO_SCALE_W(font->tex_dims); \
+         inv_tex_h = 1.0f / (float)VIDEO_SCALE_H(font->tex_dims); \
+         if (text_align == TEXT_ALIGN_RIGHT) \
+            fx -= (float)((line_width) * scale) / (float)width; \
+         else if (text_align == TEXT_ALIGN_CENTER) \
+            fx -= (float)((line_width) * scale) / (float)width / 2.0f; \
+         lx_f   = roundf(fx * width); \
+         ly_f   = roundf((1.0f - line_y) * height); \
+         cull_f = D3D8_FONT_CULLED(ly_f); \
+         if (has_drop) \
+         { \
+            float sx = x + scale * drop_x / (float)width; \
+            if (text_align == TEXT_ALIGN_RIGHT) \
+               sx -= (float)((line_width) * scale) / (float)width; \
+            else if (text_align == TEXT_ALIGN_CENTER) \
+               sx -= (float)((line_width) * scale) / (float)width / 2.0f; \
+            lx_s   = roundf(sx * width); \
+            ly_s   = roundf((1.0f - (line_y + scale * drop_y \
+                        / (float)height)) * height); \
+            cull_s = D3D8_FONT_CULLED(ly_s); \
+         } \
+      } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+      do \
+      { \
+         /* This driver keeps its own truncating pens */ \
+         (void)(pen_x); \
+         (void)(pen_y); \
+         if (!line_ok) \
+            break; \
+         if (has_drop && !cull_s) \
+         { \
+            vs   += D3D8_FONT_QUAD(&verts_s[vs], lx_s, ly_s, glyph, \
+                  color_dark); \
+            lx_s += (glyph)->advance_x * scale; \
+            ly_s += (glyph)->advance_y * scale; \
+         } \
+         if (!cull_f) \
+         { \
+            vf   += D3D8_FONT_QUAD(&verts_f[vf], lx_f, ly_f, glyph, color); \
+            lx_f += (glyph)->advance_x * scale; \
+            ly_f += (glyph)->advance_y * scale; \
+         } \
+      } while (0)
+#define FONT_LAYOUT_LINE_END() \
+      do \
+      { \
+         if (vs) \
+            d3d8_font_draw_verts(d3d, font, verts_s, vs); \
+         if (vf) \
+            d3d8_font_draw_verts(d3d, font, verts_f, vf); \
+      } while (0)
+#include "../font_layout.h"
+#undef D3D8_FONT_QUAD
+#undef D3D8_FONT_CULLED
    }
 
    /* Restore the menu vertex stream so subsequent gfx_display_d3d8_draw

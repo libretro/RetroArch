@@ -503,100 +503,11 @@ static int ctr_font_get_message_width(void* data, const char* msg,
    return delta_x * scale;
 }
 
-static void ctr_font_render_line(
-      ctr_video_t *ctr,
-      ctr_font_t* font,
-      const struct font_glyph* glyph_q,
-      const char* msg,
-      size_t msg_len,
-      float scale,
-      const unsigned int color,
-      float pos_x,
-      float pos_y,
-      unsigned width,
-      unsigned height,
-      unsigned text_align)
+/* Draws the glyph vertices from vertex_cache.current up to @v, one
+ * line's worth, and moves the cache past them. */
+static void ctr_font_draw_line(ctr_video_t *ctr, ctr_font_t *font,
+      ctr_vertex_t *v, const unsigned int color)
 {
-   unsigned int i;
-   const char* msg_end = msg + msg_len;
-   ctr_vertex_t* v     = NULL;
-   int delta_x         = 0;
-   int delta_y         = 0;
-   int x               = roundf(pos_x * width);
-   int y               = roundf((1.0f - pos_y) * height);
-   const struct font_glyph* (*get_glyph)(void*, uint32_t)
-                       = font->font_driver->get_glyph;
-   void *font_data     = font->font_data;
-
-   /* For right/center alignment, compute width with a lightweight pass
-    * that only accumulates advance_x — avoids the redundant glyph lookups
-    * and atlas dirty checks that ctr_font_get_message_width would repeat. */
-   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
-   {
-      int width_accum      = 0;
-      const char *scan     = msg;
-      const char *scan_end = msg_end;
-      while (scan < scan_end)
-      {
-         const struct font_glyph *glyph;
-         uint32_t code       = utf8_walk(&scan);
-         if (!(glyph = get_glyph(font_data, code)))
-            if (!(glyph = glyph_q))
-               continue;
-         width_accum += glyph->advance_x;
-      }
-
-      if (text_align == TEXT_ALIGN_RIGHT)
-         x -= (int)(width_accum * scale);
-      else
-         x -= (int)(width_accum * scale) / 2;
-   }
-
-   if ((ctr->vertex_cache.size - (ctr->vertex_cache.current - ctr->vertex_cache.buffer)) < msg_len)
-      ctr->vertex_cache.current = ctr->vertex_cache.buffer;
-
-   v       = ctr->vertex_cache.current;
-
-   for (i = 0; i < msg_len; i++)
-   {
-      const struct font_glyph* glyph;
-      int off_x, off_y, tex_x, tex_y, width, height;
-      const char* msg_tmp            = &msg[i];
-      unsigned code                  = utf8_walk(&msg_tmp);
-      unsigned skip                  = msg_tmp - &msg[i];
-
-      if (skip > 1)
-         i += skip - 1;
-
-      /* Do something smarter here ... */
-      if (!(glyph = get_glyph(font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      off_x    = glyph->draw_offset_x;
-      off_y    = glyph->draw_offset_y;
-      tex_x    = glyph->atlas_offset_x;
-      tex_y    = glyph->atlas_offset_y;
-      width    = glyph->width;
-      height   = glyph->height;
-
-      v->x0    = x + (off_x + delta_x) * scale;
-      v->y0    = y + (off_y + delta_y) * scale;
-      v->u0    = tex_x;
-      v->v0    = tex_y;
-      v->x1    = v->x0 + width * scale;
-      v->y1    = v->y0 + height * scale;
-      v->u1    = v->u0 + width;
-      v->v1    = v->v0 + height;
-
-      v++;
-      delta_x += glyph->advance_x;
-      delta_y += glyph->advance_y;
-   }
-
-   if (v == ctr->vertex_cache.current)
-      return;
-
    GPUCMD_AddWrite(GPUREG_GSH_BOOLUNIFORM, 0);
    if (!ctr->render_font_bottom)
       ctrGuSetVertexShaderFloatUniform(0, (float*)&font->scale_vector_top, 1);
@@ -660,33 +571,67 @@ static void ctr_font_render_line(
 
 static void ctr_font_render_message(
       ctr_video_t *ctr,
-      ctr_font_t* font, const char* msg, float scale,
+      ctr_font_t* font, const char* msg, size_t msg_len, float scale,
       const unsigned int color, float pos_x, float pos_y,
       unsigned width, unsigned height, unsigned text_align)
 {
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
+   ctr_vertex_t* v                        = NULL;
+   int x                                  = 0;
+   int y                                  = 0;
    const struct font_glyph* (*get_glyph)(void*, uint32_t)
                                           = font->font_driver->get_glyph;
    void *font_data                        = font->font_data;
    const struct font_glyph* glyph_q       = get_glyph(font_data, '?');
-   int lines                              = 0;
+   bool aligned                           = (text_align == TEXT_ALIGN_RIGHT
+                                         || text_align == TEXT_ALIGN_CENTER);
+
    font->font_driver->get_line_metrics(font_data, &line_metrics);
    line_height = (float)line_metrics->height * scale / (float)height;
-   for (;;)
-   {
-      const char *end = msg;
-      while (*end && *end != '\n')
-         end++;
 
-      ctr_font_render_line(ctr, font, glyph_q, msg, (size_t)(end - msg),
-            scale, color, pos_x, pos_y - (float)lines * line_height,
-            width, height, text_align);
-      if (!*end)
-         break;
-      msg = end + 1;
-      lines++;
-   }
+#define FONT_LAYOUT_ALIGNED aligned
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+   do \
+   { \
+      (void)(count); \
+      x = roundf(pos_x * width); \
+      y = roundf((1.0f - (pos_y - (float)(line) * line_height)) * height); \
+      if (text_align == TEXT_ALIGN_RIGHT) \
+         x -= (int)((line_width) * scale); \
+      else if (text_align == TEXT_ALIGN_CENTER) \
+         x -= (int)((line_width) * scale) / 2; \
+      if ((ctr->vertex_cache.size - (ctr->vertex_cache.current \
+                  - ctr->vertex_cache.buffer)) < (bytes)) \
+         ctr->vertex_cache.current = ctr->vertex_cache.buffer; \
+      v = ctr->vertex_cache.current; \
+   } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+   do \
+   { \
+      int off_x  = (glyph)->draw_offset_x; \
+      int off_y  = (glyph)->draw_offset_y; \
+      int tex_x  = (glyph)->atlas_offset_x; \
+      int tex_y  = (glyph)->atlas_offset_y; \
+      int g_w    = (glyph)->width; \
+      int g_h    = (glyph)->height; \
+      v->x0      = x + (off_x + (pen_x)) * scale; \
+      v->y0      = y + (off_y + (pen_y)) * scale; \
+      v->u0      = tex_x; \
+      v->v0      = tex_y; \
+      v->x1      = v->x0 + g_w * scale; \
+      v->y1      = v->y0 + g_h * scale; \
+      v->u1      = v->u0 + g_w; \
+      v->v1      = v->v0 + g_h; \
+      v++; \
+   } while (0)
+#define FONT_LAYOUT_LINE_END() \
+   do \
+   { \
+      if (v != ctr->vertex_cache.current) \
+         ctr_font_draw_line(ctr, font, v, color); \
+   } while (0)
+#include "../font_layout.h"
 }
 
 static void ctr_font_render_msg(
@@ -759,13 +704,13 @@ static void ctr_font_render_msg(
       unsigned alpha_dark     = alpha * drop_alpha;
       unsigned color_dark     = COLOR_ABGR(r_dark, g_dark,
             b_dark, alpha_dark);
-      ctr_font_render_message(ctr, font, msg, scale, color_dark,
+      ctr_font_render_message(ctr, font, msg, msg_len, scale, color_dark,
                               x + scale * drop_x / width, y +
                               scale * drop_y / height,
                               width, height, text_align);
    }
 
-   ctr_font_render_message(ctr, font, msg, scale,
+   ctr_font_render_message(ctr, font, msg, msg_len, scale,
                            color, x, y,
                            width, height, text_align);
 }

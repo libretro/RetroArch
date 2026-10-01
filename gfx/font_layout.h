@@ -50,6 +50,10 @@
  *       driver that uploads the atlas as glyphs arrive.
  *   FONT_LAYOUT_LINE_END()            optional
  *       Ends the line, for a driver that draws a line at a time.
+ *   FONT_LAYOUT_SKIP(line, bytes)     optional
+ *       Expression, nonzero when line number 'line', 'bytes' long, is
+ *       not drawn at all - out of view, say - so that its glyphs are
+ *       not even looked up.
  *
  * C89: the block declares its locals at its top, so it may appear
  * wherever a statement may. Its names all begin fl_. */
@@ -59,6 +63,9 @@
 #endif
 #ifndef FONT_LAYOUT_LINE_END
 #define FONT_LAYOUT_LINE_END()
+#endif
+#ifndef FONT_LAYOUT_SKIP
+#define FONT_LAYOUT_SKIP(line, bytes) 0
 #endif
 
 {
@@ -77,6 +84,9 @@
 
       while (fl_delim < fl_end && *fl_delim != '\n' && *fl_delim != '\0')
          fl_delim++;
+
+      if (FONT_LAYOUT_SKIP(fl_line, (size_t)(fl_delim - fl_m)))
+         goto fl_next;
 
       if (FONT_LAYOUT_ALIGNED)
       {
@@ -115,6 +125,7 @@
 
       FONT_LAYOUT_LINE_END();
 
+fl_next:
       if (fl_delim >= fl_end || *fl_delim == '\0')
          break;
       fl_m = fl_delim + 1;
@@ -127,3 +138,4 @@
 #undef FONT_LAYOUT_GLYPH
 #undef FONT_LAYOUT_DIRTY
 #undef FONT_LAYOUT_LINE_END
+#undef FONT_LAYOUT_SKIP
