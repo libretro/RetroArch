@@ -2125,6 +2125,15 @@ static bool net_http_list_has(const char *v, const char *tok, size_t toklen)
    }
 }
 
+/* The body is handed off as it arrives rather than kept: to the
+ * caller's sink, or nowhere, for a 3xx whose Location will be followed.
+ * Either way it never needs a buffer sized to Content-Length, and the
+ * receive buffer is drained after every read. */
+static bool net_http_body_streams(const struct http_t *state)
+{
+   return state->sink || state->response.discard;
+}
+
 static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
 {
    struct response *response = (struct response*)&state->response;
@@ -2407,7 +2416,8 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
        * to Content-Length would allocate the very thing streaming
        * exists to avoid -- up to NET_HTTP_MAX_CONTENT_LENGTH of it,
        * on a server's say-so.  Keep the receive-window buffer. */
-      if (response->bodytype == T_LEN && response->len > 0 && !state->sink)
+      if (     response->bodytype == T_LEN && response->len > 0
+            && !net_http_body_streams(state))
       {
          /* Use a tmp pointer so a realloc failure does not leak the
           * original buffer AND leave response->data NULL for later
@@ -2568,7 +2578,7 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
          {
             response->pos += newlen;
             response->len -= newlen;
-            if (state->sink)
+            if (net_http_body_streams(state))
             {
                if (!net_http_sink_flush(state, response->pos))
                   return false;
@@ -2647,7 +2657,7 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
             response->pos  = (size_t)(out - response->data);
             response->part = P_DONE;
             response->len  = response->pos;
-            if (state->sink)
+            if (net_http_body_streams(state))
             {
                if (!net_http_sink_flush(state, response->pos))
                   return false;
@@ -2681,7 +2691,7 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
             response->pos  = (size_t)(out - response->data);
             response->len  = chunklen - avail;
             response->part = P_BODY;
-            if (state->sink)
+            if (net_http_body_streams(state))
             {
                /* In P_BODY, pos is the decoded count and len is what
                 * is still outstanding in this chunk, so the decoded
@@ -2707,7 +2717,7 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
          memmove(out, in, leftover);
       response->pos  = response->len + leftover;
       response->part = P_BODY_CHUNKLEN;
-      if (state->sink)
+      if (net_http_body_streams(state))
       {
          /* Decoded bytes sit at data[0..len) with the unconsumed raw
           * tail behind them; hand off the former and slide the tail
@@ -2735,7 +2745,7 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
        * function, which sets P_DONE and shrinks the buffer. */
       response->pos += newlen;
       response->len  = response->pos;
-      if (state->sink)
+      if (net_http_body_streams(state))
       {
          if (!net_http_sink_flush(state, response->pos))
             return false;
@@ -2752,7 +2762,7 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
       else if (response->pos == response->len)
       {
          response->part = P_DONE;
-         if (state->sink)
+         if (net_http_body_streams(state))
          {
             if (!net_http_sink_flush(state, response->pos))
                return false;
@@ -2772,7 +2782,7 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
          }
          return true;
       }
-      if (state->sink)
+      if (net_http_body_streams(state))
       {
          /* T_LEN's `len` is the outstanding count once streaming, so
           * decrement it by what we hand off; the "pos == len"
@@ -3247,7 +3257,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
                && response->part != P_DONE
                && !(   response->part     == P_BODY
                     && response->bodytype == T_LEN
-                    && !state->sink))
+                    && !net_http_body_streams(state)))
          {
             char  *tmp;
             size_t want = response->buflen * 2;

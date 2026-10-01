@@ -1280,6 +1280,29 @@ static void run_section_interim_framing(void)
    xfer_free(&a);
 }
 
+/* ---- followed redirect bodies ---- */
+
+static void run_section_body_edges(void)
+{
+   struct xfer a;
+   static const struct step s_big302[] = {
+      { "HTTP/1.1 302 Found\r\nLocation: /final\r\nContent-Length: 8388608\r\n\r\n",
+        8388608, B_RAW, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
+
+   memset(&a, 0, sizeof(a));
+
+   /* A 302 with an 8 MiB body: read through and dropped, never held. */
+   case_begin(s_big302, 2, 0);
+   realloc_max = 0;
+   xfer_run(&a, "/start");
+   check(a.done && !a.err && body_is(&a, "ok") && realloc_max < 1048576,
+         "followed 302 with an 8 MiB body: body dropped as it arrives, not buffered");
+   check(second_reused(), "followed 302 with a body: socket reused for the redirect");
+   xfer_free(&a);
+}
+
 int main(void)
 {
    if (!network_init() || srv_start())
@@ -1299,6 +1322,7 @@ int main(void)
    run_section_b2();
    run_section_headers();
    run_section_interim_framing();
+   run_section_body_edges();
 
    srv_shutdown();
    net_http_deinit();
