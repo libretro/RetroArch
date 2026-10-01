@@ -446,6 +446,14 @@ struct font_atlas
    unsigned dirty_y0;
    unsigned dirty_x1;
    unsigned dirty_y1;
+   /* Set by the consumer to the largest texture it can make. When a
+    * frame needs more glyphs than the atlas has cells for, the next
+    * get_atlas() call in a later frame grows the atlas - width and
+    * height, never past these - and the consumer remakes its texture at
+    * the new size. Zero, the default, keeps the atlas at its first
+    * size. Cells only ever get added: a glyph's offsets never change. */
+   unsigned max_width;
+   unsigned max_height;
    enum font_atlas_format format;
    bool dirty;
 };

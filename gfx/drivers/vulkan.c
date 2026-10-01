@@ -3080,6 +3080,12 @@ static INLINE void vulkan_font_update_glyph(
    unsigned gx_max = gx_min + glyph->width;
    unsigned gy_max = gy_min + glyph->height;
 
+   /* A cell past the textures' size - the atlas grew and they could
+    * not be made again - has nowhere to go */
+   if (     gx_max > VIDEO_SCALE_W(font->texture.dims)
+         || gy_max > VIDEO_SCALE_H(font->texture.dims))
+      return;
+
    {
       size_t esz = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
             ? sizeof(uint16_t) : sizeof(uint8_t);
@@ -3099,6 +3105,55 @@ static INLINE void vulkan_font_update_glyph(
    if (gy_min < font->dirty_y_min) font->dirty_y_min = gy_min;
    if (gx_max > font->dirty_x_max) font->dirty_x_max = gx_max;
    if (gy_max > font->dirty_y_max) font->dirty_y_max = gy_max;
+}
+
+/* Makes the staging and the sampled texture anew at the atlas's size,
+ * when it has grown, with the whole atlas to upload. The old pair may
+ * still be bound by a frame in flight, so it is parked rather than
+ * destroyed; if the new one cannot be made, the old one stays. */
+static void vulkan_font_follow_atlas(vulkan_raster_t *font)
+{
+   struct vk_texture staging, optimal;
+   VkFormat tex_fmt;
+
+   if (     font->atlas->width  == VIDEO_SCALE_W(font->texture.dims)
+         && font->atlas->height == VIDEO_SCALE_H(font->texture.dims))
+      return;
+
+   tex_fmt = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+         ? VK_FORMAT_R16_UNORM : VK_FORMAT_R8_UNORM;
+   staging = vulkan_create_texture(font->vk, NULL,
+         font->atlas->width, font->atlas->height, tex_fmt,
+         font->atlas->buffer, NULL, VULKAN_TEXTURE_STAGING);
+   if (staging.memory == VK_NULL_HANDLE)
+      return;
+   if (vkMapMemory(font->vk->context->device, staging.memory,
+            staging.offset, staging.size, 0, &staging.mapped)
+         != VK_SUCCESS)
+   {
+      staging.mapped = NULL;
+      vulkan_destroy_texture(font->vk->context->device, &staging);
+      return;
+   }
+   optimal = vulkan_create_texture(font->vk, NULL,
+         font->atlas->width, font->atlas->height, tex_fmt, NULL,
+         NULL, VULKAN_TEXTURE_DYNAMIC);
+   if (optimal.memory == VK_NULL_HANDLE)
+   {
+      vulkan_destroy_texture(font->vk->context->device, &staging);
+      return;
+   }
+
+   vulkan_texture_defer_copy(font->vk, &font->texture);
+   vulkan_texture_defer_copy(font->vk, &font->texture_optimal);
+   font->texture         = staging;
+   font->texture_optimal = optimal;
+   font->atlas->dirty    = false;
+   font->dirty_x_min     = 0;
+   font->dirty_y_min     = 0;
+   font->dirty_x_max     = font->atlas->width;
+   font->dirty_y_max     = font->atlas->height;
+   font->needs_update    = true;
 }
 
 static void vulkan_font_free(void *data, bool is_threaded)
@@ -3210,6 +3265,12 @@ static void *vulkan_font_init(void *data,
       if (font->texture_optimal.memory == VK_NULL_HANDLE)
          goto error;
    }
+
+   /* The atlas may grow, up to the largest image the device makes */
+   font->atlas->max_width  =
+      font->vk->context->gpu_properties.limits.maxImageDimension2D;
+   font->atlas->max_height =
+      font->vk->context->gpu_properties.limits.maxImageDimension2D;
 
    /* Initial upload is full atlas. */
    font->dirty_x_min  = 0;
@@ -3492,6 +3553,14 @@ static void vulkan_font_render_msg(
 
    if (!font || !msg || !*msg || !vk)
       return;
+
+   /* Asked for before anything is laid out: it may have grown, and the
+    * texture coordinates are taken from the texture's size */
+   if (font->font_driver && font->font_data)
+   {
+      font->atlas = font->font_driver->get_atlas(font->font_data);
+      vulkan_font_follow_atlas(font);
+   }
 
 
    font_driver_resolve_params(params, &rp);

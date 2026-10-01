@@ -1113,6 +1113,9 @@ typedef struct
 {
    gl3_t *gl;
    GLuint tex;
+   /* The atlas size the texture was made at; the atlas may grow */
+   unsigned tex_w;
+   unsigned tex_h;
 
    const font_renderer_driver_t *font_driver;
    void *font_data;
@@ -1163,6 +1166,8 @@ static void gl3_raster_font_upload_atlas(gl3_raster_t *font)
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
    glTexStorage2D(GL_TEXTURE_2D, 1, GL_R8, font->atlas->width, font->atlas->height);
+   font->tex_w = font->atlas->width;
+   font->tex_h = font->atlas->height;
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
                    font->atlas->width, font->atlas->height, GL_RED, GL_UNSIGNED_BYTE, font->atlas->buffer);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -1222,6 +1227,16 @@ static void *gl3_raster_font_init(void *data,
          font->gl->ctx_driver->make_current(false);
 
    font->atlas      = font->font_driver->get_atlas(font->font_data);
+   /* The atlas may grow, up to the largest texture there is */
+   {
+      GLint max_tex = 0;
+      glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_tex);
+      if (max_tex > 0)
+      {
+         font->atlas->max_width  = (unsigned)max_tex;
+         font->atlas->max_height = (unsigned)max_tex;
+      }
+   }
 
    gl3_raster_font_upload_atlas(font);
 
@@ -1245,7 +1260,11 @@ static void gl3_raster_font_draw_vertices(gl3_t *gl,
 {
    if (font->atlas->dirty)
    {
-      if (font->tex)
+      /* Immutable storage: an atlas that grew needs a texture of its
+       * own size */
+      if (     font->tex
+            && font->tex_w == font->atlas->width
+            && font->tex_h == font->atlas->height)
          gl3_raster_font_update_atlas_region(font,
                font->atlas->dirty_x0, font->atlas->dirty_y0,
                font->atlas->dirty_x1, font->atlas->dirty_y1);
@@ -1450,6 +1469,10 @@ static void gl3_raster_font_render_msg(
 
    if (!font || !msg || !*msg || !gl)
       return;
+
+   /* Asked for before anything is laid out: it may have grown, and the
+    * texture coordinates are taken from its size */
+   font->atlas = font->font_driver->get_atlas(font->font_data);
 
    font_driver_resolve_params(params, &rp);
    x           = rp.x;

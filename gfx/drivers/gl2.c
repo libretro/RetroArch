@@ -388,6 +388,7 @@ typedef struct
    gl2_t *gl;
    GLuint tex;
    unsigned tex_dims;            /* VIDEO_SCALE_PACK, the atlas texture */
+   bool respecify;               /* The atlas grew: remake the texture */
 
    const font_renderer_driver_t *font_driver;
    void *font_data;
@@ -941,6 +942,16 @@ static void *gl2_raster_font_init(void *data,
    font->atlas      = font->font_driver->get_atlas(font->font_data);
    font->tex_dims   = VIDEO_SCALE_PACK(next_pow2(font->atlas->width),
          next_pow2(font->atlas->height));
+   /* The atlas may grow, up to the largest texture there is */
+   {
+      GLint max_tex = 0;
+      glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_tex);
+      if (max_tex > 0)
+      {
+         font->atlas->max_width  = (unsigned)max_tex;
+         font->atlas->max_height = (unsigned)max_tex;
+      }
+   }
 
    gl2_raster_font_upload_atlas(font, 0, 0, true);
 
@@ -966,7 +977,13 @@ static void gl2_raster_font_draw_vertices(gl2_t *gl,
       gl2_raster_t *font,
       const video_coords_t *coords)
 {
-   if (font->atlas->dirty)
+   if (font->respecify)
+   {
+      gl2_raster_font_upload_atlas(font, 0, 0, true);
+      font->respecify      = false;
+      font->atlas->dirty   = false;
+   }
+   else if (font->atlas->dirty)
    {
       gl2_raster_font_upload_atlas(font,
             font->atlas->dirty_y0, font->atlas->dirty_y1, false);
@@ -1122,6 +1139,19 @@ static void gl2_raster_font_render_msg(
 
    if (!font || !msg || !*msg || !gl)
       return;
+
+   /* Asked for before anything is laid out: it may have grown, and the
+    * texture coordinates are taken from the texture's size */
+   font->atlas = font->font_driver->get_atlas(font->font_data);
+   {
+      unsigned tex_dims = VIDEO_SCALE_PACK(next_pow2(font->atlas->width),
+            next_pow2(font->atlas->height));
+      if (tex_dims != font->tex_dims)
+      {
+         font->tex_dims  = tex_dims;
+         font->respecify = true;
+      }
+   }
 
    font_driver_resolve_params(params, &rp);
    x           = rp.x;
