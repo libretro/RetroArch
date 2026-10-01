@@ -1514,10 +1514,10 @@ static struct module* module_load_it( struct data *data, char *message ) {
 	module->default_speed = tick_speed > 0 ? tick_speed : 6;
 	module->default_tempo = tempo > 31 ? tempo : 125;
 	module->c2_rate = 8363;
-	/* The S3M-style mapping of the mix-volume byte ran about 2 dB
-	   under libxmp's IT levels (geometric mean 0.77 over the
-	   real-world A/B corpus); scale by 4/3 to sit on it. */
-	module->gain = ( mv & 0x7F ) > 0 ? ( ( mv & 0x7F ) * 4 ) / 3 : 64;
+	/* The mix-volume byte, 0..128, maps straight onto the engine's
+	   gain: this sits within about half a dB of Impulse Tracker
+	   ( it2play ) and OpenMPT. 0 is treated as the default. */
+	module->gain = mv > 0 ? ( mv > 128 ? 128 : mv ) : 64;
 	module->sequence_len = 0;
 	module->sequence = calloc( ord_num > 0 ? ord_num : 1,
 		sizeof( unsigned char ) );
