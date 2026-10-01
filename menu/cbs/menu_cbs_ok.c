@@ -5300,7 +5300,26 @@ static void cb_decompressed(retro_task_t *task,
       switch (enum_idx)
       {
          case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
-            generic_action_ok_command(CMD_EVENT_REINIT);
+            {
+               /* The menu reads its icons and fonts from the assets
+                * directory when its context is built, so the new ones
+                * only need that context rebuilt against the running
+                * video driver - the same destroy/reset pair the menu
+                * goes through when it survives a video driver swap.
+                * Texture and font releases are handed to the video
+                * thread under the wrapper, as on that path. */
+               struct menu_state *menu_st = menu_state_get_ptr();
+               if (menu_st->driver_ctx && menu_st->userdata)
+               {
+                  if (menu_st->driver_ctx->context_destroy)
+                     menu_st->driver_ctx->context_destroy(
+                           menu_st->userdata);
+                  if (menu_st->driver_ctx->context_reset)
+                     menu_st->driver_ctx->context_reset(
+                           menu_st->userdata,
+                           video_driver_is_threaded());
+               }
+            }
             break;
          case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
             {
