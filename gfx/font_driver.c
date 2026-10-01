@@ -242,12 +242,21 @@ enum font_fallback_state
    FONT_FALLBACK_FAILED
 };
 
+/* The fallback files load on a worker, which needs threads and a
+ * lock-free compare-and-swap; without them no fallback font loads. */
+#if defined(HAVE_THREADS) && defined(retro_atomic_cas_int) \
+ && defined(RETRO_ATOMIC_LOCK_FREE)
+#define FONT_FALLBACK_LOADS 1
+#endif
+
+#ifdef FONT_FALLBACK_LOADS
 static const char * const font_fallback_files[FONT_FALLBACK_COUNT] = {
    "chinese-fallback-font.ttf",
    "korean-fallback-font.ttf",
    "thai-fallback-font.ttf",
    "fallback-font.ttf"
 };
+#endif
 
 /* Where the fallback files are: the assets' pkg/ directory, as the menu
  * and the widgets give it when they set up their language fonts.
@@ -258,7 +267,9 @@ static char font_fallback_pkg_dir[PATH_MAX_LENGTH];
  * before the state flips to READY, and are kept for the life of the
  * process once read. */
 static retro_atomic_int_t font_fallback_state[FONT_FALLBACK_COUNT];
+#ifdef FONT_FALLBACK_LOADS
 static font_file_ref_t   *font_fallback_ref[FONT_FALLBACK_COUNT];
+#endif
 
 typedef struct font_cache_slot
 {
@@ -314,8 +325,7 @@ static int font_fallback_for(uint32_t code)
    return FONT_FALLBACK_GENERAL;
 }
 
-#if defined(HAVE_THREADS) && defined(retro_atomic_cas_int) \
- && defined(RETRO_ATOMIC_LOCK_FREE)
+#ifdef FONT_FALLBACK_LOADS
 typedef struct font_fallback_load
 {
    int  id;
@@ -370,7 +380,6 @@ static void font_fallback_request(int id)
    }
    sthread_detach(thread);
 }
-#define FONT_FALLBACK_LOADS 1
 #endif
 
 /* The fallback face this font draws codepoints of fallback @id from:
