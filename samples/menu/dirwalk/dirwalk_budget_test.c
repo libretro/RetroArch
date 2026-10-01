@@ -62,16 +62,22 @@
 #define PACING_SLACK_MULTIPLIER 4
 
 /* Wall-clock to a consumed result vs blocking walk + sort, both
- * sides warmed and taken as the best of three so the page cache and
- * the scheduler stop voting.  The incremental path's honest cost at
+ * sides warmed.  Each bench round times a blocking walk immediately
+ * followed by a deferred one, and the gate takes the best per-pair
+ * ratio: a regression is slow in every pair, while runner noise (a
+ * preempted vCPU, a neighbour flushing the page cache) only has to
+ * miss one pair.  Timing the blocking side once up front and the
+ * deferred side much later let drift between the two moments vote -
+ * a CI run measured 24.0ms vs 17.1ms (1.40) on unchanged code.  The incremental path's honest cost at
  * 40k entries - per-entry budget checks, slice bookkeeping, task
  * scheduling, and a mergesort in place of qsort - measures ~10-15%;
  * the factor rejects a mechanism that regresses to a second
  * enumeration or a quadratic anywhere (those measure 2x and up),
  * while the pacing lane, not this one, owns the interactivity
  * claim. */
-#define BENCH_FACTOR 1.35
-#define BENCH_ROUNDS 3
+#define BENCH_FACTOR 1.5
+#define BENCH_ROUNDS 5
+#define PACED_ROUNDS 3
 
 static char fixture_root[256];
 
@@ -468,10 +474,9 @@ int main(int argc, char *argv[])
       goto out;
    }
 
-   /* Blocking reference timing: one unmeasured warmup walk, then
-    * best of BENCH_ROUNDS, before any queue exists. */
+   /* One unmeasured blocking warmup walk before any queue exists;
+    * the timed blocking walks are paired with the bench rounds. */
    {
-      int round;
       struct string_list *warm = reference_list(big_dir, NULL, true,
             false, true, MENU_DIRWALK_SORT_DIR_FIRST);
       if (!warm)
@@ -480,23 +485,6 @@ int main(int argc, char *argv[])
          goto out;
       }
       string_list_free(warm);
-
-      for (round = 0; round < BENCH_ROUNDS; round++)
-      {
-         retro_time_t t0 = real_clock_usec();
-         retro_time_t dt;
-         struct string_list *ref = reference_list(big_dir, NULL, true,
-               false, true, MENU_DIRWALK_SORT_DIR_FIRST);
-         dt = real_clock_usec() - t0;
-         if (!ref)
-         {
-            fprintf(stderr, "blocking reference failed\n");
-            goto out;
-         }
-         string_list_free(ref);
-         if (!blocking_usec || dt < blocking_usec)
-            blocking_usec = dt;
-      }
    }
 
    task_queue_init(false, msgq_push);
@@ -685,7 +673,7 @@ int main(int argc, char *argv[])
     * every round.  Pacing rounds run the real clock: worst stall
     * across all rounds (pacing must hold in every round, not the
     * friendliest one).  Bench rounds run with the window held open:
-    * best-of-rounds total against the best blocking reference. */
+    * best per-pair ratio of deferred total to blocking walk. */
    {
       struct string_list *ref = NULL;
       retro_time_t max_stall  = 0;
@@ -699,14 +687,34 @@ int main(int argc, char *argv[])
       if (!ref)
          goto out_queue;
 
-      /* 2 x BENCH_ROUNDS: the first half paced, the second frozen. */
-      for (round = 0; round < 2 * BENCH_ROUNDS; round++)
+      /* PACED_ROUNDS on the real clock, then BENCH_ROUNDS frozen,
+       * each frozen round paired with a blocking walk just before. */
+      for (round = 0; round < PACED_ROUNDS + BENCH_ROUNDS; round++)
       {
          struct string_list *got = NULL;
          retro_time_t t0, dt;
+         retro_time_t bdt        = 0;
          bool this_deferred      = false;
-         bool frozen             = (round >= BENCH_ROUNDS);
+         bool frozen             = (round >= PACED_ROUNDS);
          bool equal;
+
+         if (frozen)
+         {
+            struct string_list *blk;
+            t0  = real_clock_usec();
+            blk = reference_list(big_dir, NULL, true, false, true,
+                  MENU_DIRWALK_SORT_DIR_FIRST);
+            bdt = real_clock_usec() - t0;
+            if (!blk)
+            {
+               fprintf(stderr, "blocking reference failed\n");
+               string_list_free(ref);
+               goto out_queue;
+            }
+            string_list_free(blk);
+            if (bdt < 1)
+               bdt = 1;
+         }
 
          clock_frozen = frozen;
          t0  = real_clock_usec();
@@ -730,8 +738,13 @@ int main(int argc, char *argv[])
          }
          if (frozen)
          {
-            if (!total || dt < total)
-               total = dt;
+            /* Keep the pair with the best ratio. */
+            if (!total || (double)dt * (double)blocking_usec
+                  < (double)total * (double)bdt)
+            {
+               total         = dt;
+               blocking_usec = bdt;
+            }
          }
          else
          {
@@ -747,7 +760,7 @@ int main(int argc, char *argv[])
        * stall is bounded by the window either way; the frozen
        * rounds always defer the sort (the fixture exceeds
        * MENU_DIRWALK_SORT_SYNC_MAX) and their total may not regress
-       * past the blocking baseline.  The deterministic deferred
+       * past the paired blocking baseline.  The deterministic deferred
        * coverage lives in the virtual-clock lanes above. */
       fprintf(stderr,
             "[metrics] big=%u files path=%s paced=%.1fms "
