@@ -448,6 +448,15 @@ arm "win32-old"  win32      "-D_WIN32 -D_WIN32_WINNT=0x0400"
 arm "macos"      apple      "-D__APPLE__"
 arm "ios"        apple      "-D__APPLE__ -DTARGET_OS_IPHONE=1"
 
+# The GL core driver without slang: its HDR encode is slang's, and state
+# for it once sat outside the slang guards, which only the C89 lane -
+# built without slang - ever compiled.
+platform_video "glcore without slang" "-DHAVE_OPENGL -DHAVE_OPENGL_CORE" \
+   "" gfx/drivers/gl3.c "/usr/include/GL/gl.h"
+platform_video "glcore with slang" \
+   "-DHAVE_OPENGL -DHAVE_OPENGL_CORE -DHAVE_SLANG -DHAVE_SHADERPIPELINE" \
+   "" gfx/drivers/gl3.c "/usr/include/GL/gl.h"
+
 # The CoreText rasterizer and the font driver's Apple branch, against
 # stand-ins for the SDK headers it includes: no runner builds it but the
 # Apple jobs, so a change to the rasterizer interface reached them first.

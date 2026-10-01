@@ -166,6 +166,7 @@ typedef struct gl3
       GLuint hdr_scrgb;
       struct gl3_buffer_locations hdr_scrgb_loc;
    } pipelines;
+#endif /* HAVE_SLANG */
 
    /* scRGB (FP16) default framebuffer support: when the context
     * advertises GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER, everything (core
@@ -194,7 +195,6 @@ typedef struct gl3
       float    paper_white_nits;
       unsigned expand_gamut;
    } scrgb;
-#endif /* HAVE_SLANG */
 
    /* In VIDEO_SCALE_PACK's layout. */
    unsigned video_dims;
@@ -676,6 +676,7 @@ uint32_t gl3_get_cross_compiler_target_version(void)
    return 100 * major + 10 * minor;
 }
 
+#if defined(HAVE_SLANG) && defined(HAVE_SHADERPIPELINE)
 /* Bind the ribbon's static VBO, uploading it first if this vertex
  * array has not been seen. Returns false if it cannot be had, in which
  * case the caller streams through the scratch VBOs as before. */
@@ -703,6 +704,7 @@ static bool gl3_bind_ribbon_vbo(gl3_t *gl, const float *vertex,
    memcpy(gl->ribbon.tail, vertex + 2 * vertices - 4, sizeof(gl->ribbon.tail));
    return true;
 }
+#endif
 
 static void gl3_bind_scratch_vbo(gl3_t *gl, const void *data, size_t len)
 {
@@ -3326,6 +3328,8 @@ static void *gl3_init(const video_info_t *video,
    renderer = (const char*)glGetString(GL_RENDERER);
    version  = (const char*)glGetString(GL_VERSION);
 
+   /* The scRGB / HDR10 encode needs the slang pipelines */
+#ifdef HAVE_SLANG
    {
       gfx_ctx_flags_t ctx_flags;
       ctx_flags.flags = 0;
@@ -3343,6 +3347,7 @@ static void *gl3_init(const video_info_t *video,
          RARCH_LOG("[GLCore] scRGB backbuffer active; SDR content will be encoded for HDR output.\n");
       }
    }
+#endif
 
    /* Whether the source is PQ decides every later composition choice, it
     * arrives only through video_info, and getting it wrong is silent --
@@ -4357,7 +4362,13 @@ static void gl3_draw_menu_texture(gl3_t *gl,
  * accepts and the driver reconciles it here. */
 static bool gl3_needs_pq_downconvert(gl3_t *gl)
 {
+#ifdef HAVE_SLANG
    return gl->video_info.source_hdr10 && !gl->scrgb.active;
+#else
+   /* Nothing to downconvert with */
+   (void)gl;
+   return false;
+#endif
 }
 
 static GLuint gl3_frame_target_fbo(gl3_t *gl, unsigned dims)
@@ -4671,6 +4682,7 @@ static void gl3_renderchain_render(
  * linear-light compositing applies. */
 static void gl3_encode_pq_to_sdr(gl3_t *gl, unsigned width, unsigned height)
 {
+#ifdef HAVE_SLANG
    float ubo_data[24];
    static const float quad_pos[8] = {
       0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f
@@ -4738,6 +4750,11 @@ static void gl3_encode_pq_to_sdr(gl3_t *gl, unsigned width, unsigned height)
    glBindTexture(GL_TEXTURE_2D, 0);
    glActiveTexture(GL_TEXTURE0);
    glUseProgram(0);
+#else
+   (void)gl;
+   (void)width;
+   (void)height;
+#endif
 }
 
 static bool gl3_frame(void *data, const void *frame,
@@ -5216,6 +5233,7 @@ static bool gl3_frame(void *data, const void *frame,
     * linearize, gamut handling, paper-white / 80 scaling). Runs before
     * the read-back block so screenshots and recording keep observing
     * the backbuffer as before. */
+#ifdef HAVE_SLANG
    if (gl->scrgb.active && gl->scrgb.fbo && gl->pipelines.hdr_scrgb)
    {
       float ubo_data[24];
@@ -5326,6 +5344,7 @@ static bool gl3_frame(void *data, const void *frame,
       glActiveTexture(GL_TEXTURE0);
       glUseProgram(0);
    }
+#endif
 
    if (gl->ctx_driver->update_window_title)
       gl->ctx_driver->update_window_title(gl->ctx_data);
