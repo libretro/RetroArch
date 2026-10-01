@@ -986,6 +986,14 @@ font_layout() {
 }
 font_layout "font layout: vulkan" "" "-DHAVE_VULKAN" gfx/drivers/vulkan.c
 font_layout "font layout: gl" "" "-DHAVE_OPENGL" gfx/drivers/gl2.c
+font_layout "font layout: gl1" "" "-DHAVE_OPENGL -DHAVE_OPENGL1" \
+   gfx/drivers/gl1.c
+if command -v sdl2-config > /dev/null 2>&1; then
+   font_layout "font layout: sdl2" "" "-DHAVE_SDL2 $(sdl2-config --cflags)" \
+      gfx/drivers/sdl2_gfx.c
+else
+   echo "skip  font layout: sdl2 (no sdl2-config)"
+fi
 font_layout "font layout: glcore" "" \
    "-DHAVE_OPENGL -DHAVE_OPENGL_CORE -DHAVE_SLANG" gfx/drivers/gl3.c
 if [ -d /usr/x86_64-w64-mingw32/include ]; then
