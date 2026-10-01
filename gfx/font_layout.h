@@ -35,10 +35,13 @@
  *
  *   FONT_LAYOUT_ALIGNED
  *       Expression, nonzero when each line has to be measured before it
- *       is drawn (right or centred text).
- *   FONT_LAYOUT_LINE(line, width)
+ *       is drawn (right or centred text, or a driver that places a
+ *       line's shadows ahead of its glyphs).
+ *   FONT_LAYOUT_LINE(line, width, count, bytes)
  *       Starts line number 'line'; 'width' is the sum of its glyphs'
- *       advance_x, in the font's pixels, or 0 when not ALIGNED.
+ *       advance_x, in the font's pixels, and 'count' the number of
+ *       glyphs it draws, both 0 when not ALIGNED; 'bytes' is its length
+ *       in the text.
  *   FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y)
  *       Emits 'glyph' with the pen at (pen_x, pen_y) from the start of
  *       the line, in the font's pixels.
@@ -68,6 +71,7 @@
       const char *fl_delim = fl_m;
       const char *fl_scan;
       int fl_width         = 0;
+      int fl_count         = 0;
       int fl_dx            = 0;
       int fl_dy            = 0;
 
@@ -87,10 +91,12 @@
                   continue;
             FONT_LAYOUT_DIRTY(fl_g);
             fl_width += fl_g->advance_x;
+            fl_count++;
          }
       }
 
-      FONT_LAYOUT_LINE(fl_line, fl_width);
+      FONT_LAYOUT_LINE(fl_line, fl_width, fl_count,
+            (size_t)(fl_delim - fl_m));
 
       fl_scan = fl_m;
       while (fl_scan < fl_delim)

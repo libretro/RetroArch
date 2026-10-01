@@ -1391,7 +1391,7 @@ static void gl3_raster_font_render_message(
    }
 
 #define FONT_LAYOUT_ALIGNED aligned
-#define FONT_LAYOUT_LINE(line, line_width) \
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
    do \
    { \
       x = pre_x; \

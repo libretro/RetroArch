@@ -1064,7 +1064,7 @@ static void gl2_raster_font_render_message(gl2_t *gl,
    }
 
 #define FONT_LAYOUT_ALIGNED aligned
-#define FONT_LAYOUT_LINE(line, line_width) \
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
    do \
    { \
       x = roundf(pos_x * VIDEO_SCALE_W(gl->vp.dims)); \
