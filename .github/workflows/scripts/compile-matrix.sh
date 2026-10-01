@@ -994,6 +994,17 @@ if command -v sdl2-config > /dev/null 2>&1; then
 else
    echo "skip  font layout: sdl2 (no sdl2-config)"
 fi
+font_layout "font layout: switch" "" \
+   "-DHAVE_LIBNX -DSWITCH -D__SWITCH__ -I$STUBS/libnx" \
+   gfx/drivers/switch_nx_gfx.c
+font_layout "font layout: gxm" "" \
+   "-DVITA -DRARCH_CONSOLE $HOSTOFF -Itools/platform_stubs/vita" \
+   gfx/drivers/gxm_gfx.c
+font_layout "font layout: ps2" "" \
+   "-DPS2 -DRARCH_CONSOLE -DHAVE_WINDOW_OFFSET -DHAVE_RGUI $HOSTOFF -Itools/platform_stubs/ps2" \
+   gfx/drivers/ps2_gfx.c
+font_layout "font layout: gx2" "" \
+   "-DWIIU $HOSTOFF -Iwiiu/include -Iwiiu" gfx/drivers/gx2_gfx.c
 font_layout "font layout: glcore" "" \
    "-DHAVE_OPENGL -DHAVE_OPENGL_CORE -DHAVE_SLANG" gfx/drivers/gl3.c
 if [ -d /usr/x86_64-w64-mingw32/include ]; then

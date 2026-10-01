@@ -236,144 +236,76 @@ static int ps2_font_get_message_width(void* data, const char* msg,
    return delta_x * scale;
 }
 
-static void ps2_font_render_line(
-      ps2_video_t *ps2,
-      ps2_font_t* font,
-      const struct font_glyph* glyph_q,
-      const char* msg,
-      size_t msg_len,
-      float scale,
-      const unsigned int color,
-      float pos_x,
-      float pos_y,
-      unsigned width,
-      unsigned height,
-      unsigned text_align)
-{
-   int i;
-   const char* msg_end = msg + msg_len;
-   int x               = roundf(pos_x * width);
-   int y               = roundf((1.0f - pos_y) * height);
-   int delta_x         = 0;
-   int delta_y         = 0;
-   /* We need to >> 1, because GS_SETREG_RGBAQ expects 0x80 as max color */
-   int color_a         = (int)(((color & 0xFF000000) >> 24) >> 2);
-   int color_b         = (int)(((color & 0x00FF0000) >> 16) >> 1);
-   int color_g         = (int)(((color & 0x0000FF00) >> 8)  >> 1);
-   int color_r         = (int)(((color & 0x000000FF) >> 0)  >> 1);
-   const struct font_glyph* (*get_glyph)(void*, uint32_t)
-                       = font->font_driver->get_glyph;
-   void *font_data     = font->font_data;
-
-   /* Enable Alpha for font */
-   gsKit_set_primalpha(ps2->gsGlobal, GS_SETREG_ALPHA(0, 1, 0, 1, 0), 0);
-   ps2->gsGlobal->PrimAlphaEnable = GS_SETTING_ON;
-   gsKit_set_test(ps2->gsGlobal, GS_ATEST_ON);
-
-   /* For right/center alignment, compute width with a lightweight pass
-    * that only accumulates advance_x — avoids the redundant glyph lookups
-    * and atlas dirty checks that ps2_font_get_message_width would repeat. */
-   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
-   {
-      int width_accum      = 0;
-      const char *scan     = msg;
-      const char *scan_end = msg_end;
-      while (scan < scan_end)
-      {
-         const struct font_glyph *glyph;
-         uint32_t code       = utf8_walk(&scan);
-         if (!(glyph = get_glyph(font_data, code)))
-            if (!(glyph = glyph_q))
-               continue;
-         width_accum += glyph->advance_x;
-      }
-
-      if (text_align == TEXT_ALIGN_RIGHT)
-         x -= (int)(width_accum * scale);
-      else
-         x -= (int)(width_accum * scale) / 2;
-   }
-
-   for (i = 0; i < msg_len; i++)
-   {
-      const struct font_glyph* glyph;
-      int off_x, off_y, tex_x, tex_y, width, height;
-      float x1, y1, u1, v1, x2, y2, u2, v2;
-      const char* msg_tmp            = &msg[i];
-      unsigned code                  = utf8_walk(&msg_tmp);
-      unsigned skip                  = msg_tmp - &msg[i];
-
-      if (skip > 1)
-         i += skip - 1;
-
-      /* Do something smarter here ... */
-      if (!(glyph = get_glyph(font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      off_x  = glyph->draw_offset_x;
-      off_y  = glyph->draw_offset_y;
-      tex_x  = glyph->atlas_offset_x;
-      tex_y  = glyph->atlas_offset_y;
-      width  = glyph->width;
-      height = glyph->height;
-
-      /* The -0.5 is needed to achieve pixel perfect.
-       * More info here (PS2 GSKit uses same logic as Direct3D9)
-       * https://docs.microsoft.com/en-us/windows/win32/direct3d10/d3d10-graphics-programming-guide-resources-coordinates
-      */
-      x1     = -0.5f + x + (off_x + delta_x) * scale;
-      y1     = -0.5f + y + (off_y + delta_y) * scale;
-      u1     = tex_x;
-      v1     = tex_y;
-      x2     = x1 + width * scale;
-      y2     = y1 + height * scale;
-      u2     = u1 + width;
-      v2     = v1 + height;
-
-      gsKit_prim_sprite_texture(ps2->gsGlobal, font->texture,
-            x1,                /* X1 */
-            y1,                /* Y1 */
-            u1,                /* U1 */
-            v1,                /* V1 */
-            x2,                /* X2 */
-            y2,                /* Y2 */
-            u2,                /* U2 */
-            v2,                /* V2 */
-            5,                 /* Z  */
-            GS_SETREG_RGBAQ(color_r, color_g, color_b, color_a, 0x00));
-
-      delta_x += glyph->advance_x;
-      delta_y += glyph->advance_y;
-   }
-}
-
 static void ps2_font_render_message(
       ps2_video_t *ps2,
-      ps2_font_t* font, const char* msg, float scale,
+      ps2_font_t* font, const char* msg, size_t msg_len, float scale,
       const unsigned int color, float pos_x, float pos_y,
       unsigned width, unsigned height, unsigned text_align)
 {
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
-   const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
-   int lines                              = 0;
+   int x                                  = 0;
+   int y                                  = 0;
+   /* We need to >> 1, because GS_SETREG_RGBAQ expects 0x80 as max color */
+   int color_a                            = (int)(((color & 0xFF000000) >> 24) >> 2);
+   int color_b                            = (int)(((color & 0x00FF0000) >> 16) >> 1);
+   int color_g                            = (int)(((color & 0x0000FF00) >> 8)  >> 1);
+   int color_r                            = (int)(((color & 0x000000FF) >> 0)  >> 1);
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                          = font->font_driver->get_glyph;
+   void *font_data                        = font->font_data;
+   const struct font_glyph* glyph_q       = get_glyph(font_data, '?');
+   bool aligned                           = (text_align == TEXT_ALIGN_RIGHT
+                                         || text_align == TEXT_ALIGN_CENTER);
+
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = (float)line_metrics->height * scale / (float)height;
 
-   for (;;)
-   {
-      const char* scan = msg;
-      while (*scan && *scan != '\n')
-         scan++;
-      ps2_font_render_line(ps2, font, glyph_q, msg, (size_t)(scan - msg),
-            scale, color, pos_x, pos_y - (float)lines * line_height,
-            width, height, text_align);
-      if (!*scan)
-         break;
-      msg = scan + 1;
-      lines++;
-   }
+#define FONT_LAYOUT_ALIGNED aligned
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+   do \
+   { \
+      (void)(count); \
+      x = roundf(pos_x * width); \
+      y = roundf((1.0f - (pos_y - (float)(line) * line_height)) * height); \
+      /* Enable Alpha for font */ \
+      gsKit_set_primalpha(ps2->gsGlobal, GS_SETREG_ALPHA(0, 1, 0, 1, 0), 0); \
+      ps2->gsGlobal->PrimAlphaEnable = GS_SETTING_ON; \
+      gsKit_set_test(ps2->gsGlobal, GS_ATEST_ON); \
+      if (text_align == TEXT_ALIGN_RIGHT) \
+         x -= (int)((line_width) * scale); \
+      else if (text_align == TEXT_ALIGN_CENTER) \
+         x -= (int)((line_width) * scale) / 2; \
+   } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+   do \
+   { \
+      float x1, y1, u1, v1, x2, y2, u2, v2; \
+      int off_x   = (glyph)->draw_offset_x; \
+      int off_y   = (glyph)->draw_offset_y; \
+      int tex_x   = (glyph)->atlas_offset_x; \
+      int tex_y   = (glyph)->atlas_offset_y; \
+      int g_w     = (glyph)->width; \
+      int g_h     = (glyph)->height; \
+      int delta_x = (pen_x); \
+      int delta_y = (pen_y); \
+      /* The -0.5 is needed to achieve pixel perfect. \
+       * More info here (PS2 GSKit uses same logic as Direct3D9) \
+       * https://docs.microsoft.com/en-us/windows/win32/direct3d10/d3d10-graphics-programming-guide-resources-coordinates \
+       */ \
+      x1     = -0.5f + x + (off_x + delta_x) * scale; \
+      y1     = -0.5f + y + (off_y + delta_y) * scale; \
+      u1     = tex_x; \
+      v1     = tex_y; \
+      x2     = x1 + g_w * scale; \
+      y2     = y1 + g_h * scale; \
+      u2     = u1 + g_w; \
+      v2     = v1 + g_h; \
+      gsKit_prim_sprite_texture(ps2->gsGlobal, font->texture, \
+            x1, y1, u1, v1, x2, y2, u2, v2, 5, \
+            GS_SETREG_RGBAQ(color_r, color_g, color_b, color_a, 0x00)); \
+   } while (0)
+#include "../font_layout.h"
 }
 
 static void ps2_font_render_msg(
@@ -480,13 +412,13 @@ static void ps2_font_render_msg(
       unsigned b_dark         = b * drop_mod;
       unsigned alpha_dark     = alpha * drop_alpha;
       unsigned color_dark     = COLOR_ABGR(r_dark, g_dark, b_dark, alpha_dark);
-      ps2_font_render_message(ps2, font, msg, scale, color_dark,
+      ps2_font_render_message(ps2, font, msg, msg_len, scale, color_dark,
                               x + scale * drop_x / width, y +
                               scale * drop_y / height,
                               width, height, text_align);
    }
 
-   ps2_font_render_message(ps2, font, msg, scale,
+   ps2_font_render_message(ps2, font, msg, msg_len, scale,
                            color, x, y,
                            width, height, text_align);
 }

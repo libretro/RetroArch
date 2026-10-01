@@ -608,6 +608,8 @@ static void gxm_make_fragment_programs(gxm_fragment_programs_t *out,
       blend_info,
       textureTintVertexProgramGxp,
       &out->textureTint);
+   /* The results have never been acted on here */
+   (void)err;
 }
 
 static void gxm_set_blend_mode_add(int enable)
@@ -1733,147 +1735,77 @@ static int gxm_font_get_message_width(void *data, const char *msg,
    return delta_x * scale;
 }
 
-static void gxm_font_render_line(
-      vita_video_t *vita,
-      vita_font_t *font,
-      const struct font_glyph* glyph_q,
-      const char *msg, size_t msg_len,
-      float scale, const unsigned int color, float pos_x,
-      float pos_y,
-      unsigned width,
-      unsigned height,
-      int pre_x,
-      unsigned text_align)
-{
-   int i;
-   int x           = pre_x;
-   int y           = roundf((1.0f - pos_y) * height);
-   int delta_x     = 0;
-   int delta_y     = 0;
-   const char* msg_end = msg + msg_len;
-   const struct font_glyph* (*get_glyph)(void*, uint32_t)
-                     = font->font_driver->get_glyph;
-   void *font_data   = font->font_data;
-
-   /* For right/center alignment, compute width with a lightweight pass
-    * that only accumulates advance_x — avoids the redundant glyph lookups
-    * and atlas dirty checks that gxm_font_get_message_width 
-    * would repeat. */
-   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
-   {
-      int width_accum      = 0;
-      const char *scan     = msg;
-      const char *scan_end = msg_end;
-      while (scan < scan_end)
-      {
-         const struct font_glyph *glyph;
-         uint32_t code       = utf8_walk(&scan);
-         if (!(glyph = get_glyph(font_data, code)))
-            if (!(glyph = glyph_q))
-               continue;
-         width_accum += glyph->advance_x;
-      }
-
-      if (text_align == TEXT_ALIGN_RIGHT)
-         x -= (int)(width_accum * scale);
-      else
-         x -= (int)(width_accum * scale) / 2;
-   }
-
-   for (i = 0; i < msg_len; i++)
-   {
-      int j;
-      int off_x, off_y, tex_x, tex_y, width, height;
-      const struct font_glyph *glyph = NULL;
-      const char *msg_tmp            = &msg[i];
-      unsigned code                  = utf8_walk(&msg_tmp);
-      unsigned skip                  = msg_tmp - &msg[i];
-
-      if (skip > 1)
-         i += skip - 1;
-
-      /* Do something smarter here ... */
-      if (!(glyph = get_glyph(font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      off_x  = glyph->draw_offset_x;
-      off_y  = glyph->draw_offset_y;
-      tex_x  = glyph->atlas_offset_x;
-      tex_y  = glyph->atlas_offset_y;
-      width  = glyph->width;
-      height = glyph->height;
-
-      if (font->atlas->dirty)
-      {
-        unsigned int stride    = gxm_texture_get_stride(font->texture);
-        uint8_t *tex32         = sceGxmTextureGetData(&font->texture->gxm_tex);
-        const uint8_t *frame32 = font->atlas->buffer;
-        unsigned int pitch     = font->atlas->width;
-        /* Copy only the dirty rectangle tracked by the font
-         * renderers, one row at a time */
-        unsigned int x0        = font->atlas->dirty_x0;
-        unsigned int y0        = font->atlas->dirty_y0;
-        unsigned int x1        = font->atlas->dirty_x1;
-        unsigned int y1        = font->atlas->dirty_y1;
-
-        if (x1 <= x0 || y1 <= y0 || x1 > pitch || y1 > font->atlas->height)
-        {
-           x0 = 0;
-           y0 = 0;
-           x1 = pitch;
-           y1 = font->atlas->height;
-        }
-
-        for (j = y0; j < y1; j++)
-           memcpy(tex32 + x0 + j * stride,
-                  frame32 + x0 + j * pitch, x1 - x0);
-
-         font->atlas->dirty = false;
-      }
-
-      gxm_draw_texture_tint_part_scale(font->texture,
-            x + (off_x + delta_x) * scale,
-            y + (off_y + delta_y) * scale,
-            tex_x, tex_y, width, height,
-            scale,
-            scale,
-            color);
-
-      delta_x += glyph->advance_x;
-      delta_y += glyph->advance_y;
-   }
-}
-
 static void gxm_font_render_message(
       vita_video_t *vita,
-      vita_font_t *font, const char *msg, float scale,
+      vita_font_t *font, const char *msg, size_t msg_len, float scale,
       const unsigned int color, float pos_x, float pos_y,
       unsigned width, unsigned height, unsigned text_align)
 {
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
-   int lines                              = 0;
-   int x                                  = roundf(pos_x * width);
-   const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
+   int pre_x                              = roundf(pos_x * width);
+   int x                                  = 0;
+   int y                                  = 0;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                          = font->font_driver->get_glyph;
+   void *font_data                        = font->font_data;
+   const struct font_glyph* glyph_q       = get_glyph(font_data, '?');
+   bool aligned                           = (text_align == TEXT_ALIGN_RIGHT
+                                         || text_align == TEXT_ALIGN_CENTER);
+
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / VIDEO_SCALE_H(vita->vp.dims);
-   for (;;)
-   {
-      size_t msg_len;
-      const char *delim = msg;
-      while (*delim && *delim != '\n')
-         delim++;
-      msg_len = delim - msg;
-      /* Draw the line */
-      gxm_font_render_line(vita, font, glyph_q, msg, msg_len,
-            scale, color, pos_x, pos_y - (float)lines * line_height,
-            width, height, x, text_align);
-      if (!*delim)
-         break;
-      msg += msg_len + 1;
-      lines++;
-   }
+
+#define FONT_LAYOUT_ALIGNED aligned
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+   do \
+   { \
+      (void)(count); \
+      x = pre_x; \
+      y = roundf((1.0f - (pos_y - (float)(line) * line_height)) * height); \
+      if (text_align == TEXT_ALIGN_RIGHT) \
+         x -= (int)((line_width) * scale); \
+      else if (text_align == TEXT_ALIGN_CENTER) \
+         x -= (int)((line_width) * scale) / 2; \
+   } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+   do \
+   { \
+      if (font->atlas->dirty) \
+      { \
+         unsigned j; \
+         unsigned int stride    = gxm_texture_get_stride(font->texture); \
+         uint8_t *tex32         = sceGxmTextureGetData(&font->texture->gxm_tex); \
+         const uint8_t *frame32 = font->atlas->buffer; \
+         unsigned int pitch     = font->atlas->width; \
+         /* Copy only the dirty rectangle tracked by the font \
+          * renderers, one row at a time */ \
+         unsigned int x0        = font->atlas->dirty_x0; \
+         unsigned int y0        = font->atlas->dirty_y0; \
+         unsigned int x1        = font->atlas->dirty_x1; \
+         unsigned int y1        = font->atlas->dirty_y1; \
+         if (x1 <= x0 || y1 <= y0 || x1 > pitch || y1 > font->atlas->height) \
+         { \
+            x0 = 0; \
+            y0 = 0; \
+            x1 = pitch; \
+            y1 = font->atlas->height; \
+         } \
+         for (j = y0; j < y1; j++) \
+            memcpy(tex32 + x0 + j * stride, \
+                  frame32 + x0 + j * pitch, x1 - x0); \
+         font->atlas->dirty = false; \
+      } \
+      gxm_draw_texture_tint_part_scale(font->texture, \
+            x + ((glyph)->draw_offset_x + (pen_x)) * scale, \
+            y + ((glyph)->draw_offset_y + (pen_y)) * scale, \
+            (glyph)->atlas_offset_x, (glyph)->atlas_offset_y, \
+            (glyph)->width, (glyph)->height, \
+            scale, \
+            scale, \
+            color); \
+   } while (0)
+#include "../font_layout.h"
 }
 
 static void gxm_set_viewport_wrapper(void *data, unsigned dims,
@@ -1963,12 +1895,12 @@ static void gxm_font_render_msg(
       unsigned alpha_dark     = alpha * drop_alpha;
       unsigned color_dark     = RGBA8(r_dark,g_dark,b_dark,alpha_dark);
 
-      gxm_font_render_message(vita, font, msg, scale, color_dark,
+      gxm_font_render_message(vita, font, msg, msg_len, scale, color_dark,
             x + scale * drop_x / width, y +
             scale * drop_y / height, width, height, text_align);
    }
 
-   gxm_font_render_message(vita, font, msg, scale,
+   gxm_font_render_message(vita, font, msg, msg_len, scale,
          color, x, y, width, height, text_align);
 }
 

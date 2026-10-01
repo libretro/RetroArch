@@ -156,129 +156,72 @@ static int switch_font_get_message_width(void *data, const char *msg,
    return delta_x * scale;
 }
 
-static void switch_font_render_line(
-      switch_video_t *sw,
-      switch_font_t *font,
-      const struct font_glyph* glyph_q,
-      const char *msg,
-      size_t msg_len,
-      float scale,
-      const unsigned int color,
-      float pos_x,
-      float pos_y,
-      unsigned text_align)
-{
-   int i;
-   const char* msg_end              = msg + msg_len;
-   int delta_x                      = 0;
-   int delta_y                      = 0;
-   unsigned fb_width                = VIDEO_SCALE_W(sw->vp.full_dims);
-   unsigned fb_height               = VIDEO_SCALE_H(sw->vp.full_dims);
-   int x                            = roundf(pos_x * fb_width);
-   int y                            = roundf((1.0f - pos_y) * fb_height);
-
-   /* For right/center alignment, compute width with a lightweight pass
-    * that only accumulates advance_x — avoids the redundant glyph lookups
-    * and atlas dirty checks that switch_font_get_message_width 
-    * would repeat. */
-   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
-   {
-      int width_accum      = 0;
-      const char *scan     = msg;
-      const char *scan_end = msg_end;
-      while (scan < scan_end)
-      {
-         const struct font_glyph *glyph;
-         uint32_t code       = utf8_walk(&scan);
-         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
-            if (!(glyph = glyph_q))
-               continue;
-         width_accum += glyph->advance_x;
-      }
-
-      if (text_align == TEXT_ALIGN_RIGHT)
-         x -= (int)(width_accum * scale);
-      else
-         x -= (int)(width_accum * scale) / 2;
-   }
-
-   for (i = 0; i < msg_len; i++)
-   {
-      const struct font_glyph *glyph;
-      int off_x, off_y, tex_x, tex_y, width, height;
-      const char *msg_tmp = &msg[i];
-      unsigned code       = utf8_walk(&msg_tmp);
-      unsigned skip       = msg_tmp - &msg[i];
-
-      if (skip > 1)
-         i               += skip - 1;
-
-      /* Do something smarter here ... */
-      if (!(glyph =
-               font->font_driver->get_glyph(font->font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      off_x  = x + glyph->draw_offset_x + delta_x;
-      off_y  = y + glyph->draw_offset_y + delta_y;
-      width  = glyph->width;
-      height = glyph->height;
-
-      tex_x = glyph->atlas_offset_x;
-      tex_y = glyph->atlas_offset_y;
-
-      for (y = tex_y; y < tex_y + height; y++)
-      {
-         int x;
-         uint8_t *row = &font->atlas->buffer[y * font->atlas->width];
-         for (x = tex_x; x < tex_x + width; x++)
-         {
-            int x1, y1;
-            if (!row[x])
-               continue;
-            x1 = off_x + (x - tex_x);
-            y1 = off_y + (y - tex_y);
-            if (x1 < fb_width && y1 < fb_height)
-               sw->out_buffer[y1 * sw->stride / sizeof(uint32_t) + x1] = color;
-         }
-      }
-
-      delta_x += glyph->advance_x;
-      delta_y += glyph->advance_y;
-   }
-}
-
 static void switch_font_render_message(
       switch_video_t *sw,
-      switch_font_t *font, const char *msg, float scale,
+      switch_font_t *font, const char *msg, size_t msg_len, float scale,
       const unsigned int color, float pos_x, float pos_y,
       unsigned text_align)
 {
    float line_height;
-   const char *start                      = msg;
    struct font_line_metrics *line_metrics = NULL;
-   const struct font_glyph* glyph_q       =
-font->font_driver->get_glyph(font->font_data, '?');
-   int lines                              = 0;
+   bool line_ok                           = false;
+   int x                                  = 0;
+   int y                                  = 0;
+   unsigned fb_width                      = VIDEO_SCALE_W(sw->vp.full_dims);
+   unsigned fb_height                     = VIDEO_SCALE_H(sw->vp.full_dims);
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                          = font->font_driver->get_glyph;
+   void *font_data                        = font->font_data;
+   const struct font_glyph* glyph_q       = get_glyph(font_data, '?');
+   bool aligned                           = (text_align == TEXT_ALIGN_RIGHT
+                                         || text_align == TEXT_ALIGN_CENTER);
+
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = scale / line_metrics->height;
-   for (;;)
-   {
-      if (*msg == '\n' || *msg == '\0')
-      {
-         size_t msg_len = (size_t)(msg - start);
-         if (msg_len <= AVG_GLPYH_LIMIT)
-            switch_font_render_line(sw, font, glyph_q, start, msg_len,
-                  scale, color, pos_x, pos_y - (float)lines * line_height,
-                  text_align);
-         if (*msg == '\0')
-            break;
-         start = ++msg;
-         lines++;
-      }
-      else
-         msg++;
-   }
+
+#define FONT_LAYOUT_ALIGNED aligned
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+   do \
+   { \
+      (void)(count); \
+      line_ok = ((bytes) <= AVG_GLPYH_LIMIT); \
+      x       = roundf(pos_x * fb_width); \
+      y       = roundf((1.0f - (pos_y - (float)(line) * line_height)) \
+            * fb_height); \
+      if (text_align == TEXT_ALIGN_RIGHT) \
+         x -= (int)((line_width) * scale); \
+      else if (text_align == TEXT_ALIGN_CENTER) \
+         x -= (int)((line_width) * scale) / 2; \
+   } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+   do \
+   { \
+      int ty; \
+      int off_x  = x + (glyph)->draw_offset_x + (pen_x); \
+      int off_y  = y + (glyph)->draw_offset_y + (pen_y); \
+      int g_w    = (glyph)->width; \
+      int g_h    = (glyph)->height; \
+      int tex_x  = (glyph)->atlas_offset_x; \
+      int tex_y  = (glyph)->atlas_offset_y; \
+      if (!line_ok) \
+         break; \
+      for (ty = tex_y; ty < tex_y + g_h; ty++) \
+      { \
+         int tx; \
+         uint8_t *row = &font->atlas->buffer[ty * font->atlas->width]; \
+         for (tx = tex_x; tx < tex_x + g_w; tx++) \
+         { \
+            int x1, y1; \
+            if (!row[tx]) \
+               continue; \
+            x1 = off_x + (tx - tex_x); \
+            y1 = off_y + (ty - tex_y); \
+            if (x1 < fb_width && y1 < fb_height) \
+               sw->out_buffer[y1 * sw->stride / sizeof(uint32_t) + x1] = color; \
+         } \
+      } \
+   } while (0)
+#include "../font_layout.h"
 }
 
 static void switch_font_render_msg(
@@ -331,7 +274,7 @@ static void switch_font_render_msg(
 
    }
 
-   switch_font_render_message(sw, font, msg, scale,
+   switch_font_render_message(sw, font, msg, msg_len, scale,
          color, x, y, text_align);
 }
 
