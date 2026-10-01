@@ -1407,6 +1407,18 @@ static void *d3d9_font_init(void *data,
    }
 
    font->atlas      = font->font_driver->get_atlas(font->font_data);
+   /* The atlas may grow, up to the largest texture the device takes;
+    * the draw remakes the texture when the atlas's size has changed */
+   {
+      D3DCAPS9 caps;
+      if (     SUCCEEDED(IDirect3DDevice9_GetDeviceCaps(d3d->dev, &caps))
+            && caps.MaxTextureWidth  > 0
+            && caps.MaxTextureHeight > 0)
+      {
+         font->atlas->max_width  = caps.MaxTextureWidth;
+         font->atlas->max_height = caps.MaxTextureHeight;
+      }
+   }
    font->tex_width  = font->atlas->width;
    font->tex_height = font->atlas->height;
 
@@ -1639,6 +1651,12 @@ static void d3d9_font_render_msg(
    }
 
    /* Update atlas texture if dirty */
+   /* Asked for before anything is laid out: it may have grown, which
+    * marks it dirty, and the texture is remade below at its new size
+    * before any texture coordinate is taken from it */
+   if (font->font_driver && font->font_data)
+      font->atlas = font->font_driver->get_atlas(font->font_data);
+
    if (font->atlas->dirty)
    {
       /* If the atlas dimensions changed (grew), we must recreate

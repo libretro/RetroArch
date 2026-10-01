@@ -3699,56 +3699,88 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
 
       _uniforms.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
       _atlas  = _font_driver->get_atlas(_font_data);
-      _esz    = (_atlas->format == FONT_ATLAS_FORMAT_A16)
-            ? sizeof(uint16_t) : sizeof(uint8_t);
-      _stride = MTL_ALIGN_BUFFER(_atlas->width * _esz);
-
-      /* Allocate an uninitialized managed buffer and fill it through
-       * .contents. This collapses two previous branches (fast path
-       * via newBufferWithBytes:, slow path via row memcpy loop) into
-       * one: row memcpy handles both the aligned and padded cases
-       * and avoids the newBufferWithBytes: workaround (which had to
-       * manually didModifyRange: the whole buffer anyway because
-       * the initial copy was not correctly invalidated on macOS). */
-      _buffer = [_context.device newBufferWithLength:(NSUInteger)(_stride * _atlas->height)
-                                             options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
-      {
-         size_t i;
-         size_t row_bytes   = (size_t)_atlas->width * _esz;
-         uint8_t       *dst = (uint8_t *)_buffer.contents;
-         const uint8_t *src = (const uint8_t *)_atlas->buffer;
-         if (_stride == row_bytes)
-         {
-            memcpy(dst, src, (size_t)_stride * _atlas->height);
-         }
-         else
-         {
-            for (i = 0; i < _atlas->height; i++)
-            {
-               memcpy(dst, src, row_bytes);
-               dst += _stride;
-               src += row_bytes;
-            }
-         }
-      }
-#if !defined(HAVE_COCOATOUCH)
-      [_buffer didModifyRange:NSMakeRange(0, _buffer.length)];
-#endif
-
-      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:
-                                        (_atlas->format == FONT_ATLAS_FORMAT_A16)
-                                              ? MTLPixelFormatR16Unorm
-                                              : MTLPixelFormatR8Unorm
-                                                                                    width:_atlas->width
-                                                                                   height:_atlas->height
-                                                                                mipmapped:NO];
-
-      _texture  = [_buffer newTextureWithDescriptor:td offset:0 bytesPerRow:_stride];
+      /* The atlas may grow, up to a texture every Metal GPU makes; the
+       * buffer and texture follow it (_followAtlas) */
+      _atlas->max_width  = 8192;
+      _atlas->max_height = 8192;
+      [self _makeAtlasTexture];
 
       if (![self _initializeState])
          RARCH_RETURN_INIT_FAILURE();
    }
    return self;
+}
+
+/* The managed buffer the atlas is copied into, and the texture made
+ * on it, at the atlas's size: at init, and when the atlas has grown. A
+ * command buffer still drawing from the old pair keeps it alive. */
+- (void)_makeAtlasTexture
+{
+#if !__has_feature(objc_arc)
+   [(id)_texture release];
+   [(id)_buffer release];
+#endif
+   _texture = nil;
+   _buffer  = nil;
+   _esz    = (_atlas->format == FONT_ATLAS_FORMAT_A16)
+         ? sizeof(uint16_t) : sizeof(uint8_t);
+   _stride = MTL_ALIGN_BUFFER(_atlas->width * _esz);
+
+   /* Allocate an uninitialized managed buffer and fill it through
+    * .contents. This collapses two previous branches (fast path
+    * via newBufferWithBytes:, slow path via row memcpy loop) into
+    * one: row memcpy handles both the aligned and padded cases
+    * and avoids the newBufferWithBytes: workaround (which had to
+    * manually didModifyRange: the whole buffer anyway because
+    * the initial copy was not correctly invalidated on macOS). */
+   _buffer = [_context.device newBufferWithLength:(NSUInteger)(_stride * _atlas->height)
+                                          options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
+   {
+      size_t i;
+      size_t row_bytes   = (size_t)_atlas->width * _esz;
+      uint8_t       *dst = (uint8_t *)_buffer.contents;
+      const uint8_t *src = (const uint8_t *)_atlas->buffer;
+      if (_stride == row_bytes)
+      {
+         memcpy(dst, src, (size_t)_stride * _atlas->height);
+      }
+      else
+      {
+         for (i = 0; i < _atlas->height; i++)
+         {
+            memcpy(dst, src, row_bytes);
+            dst += _stride;
+            src += row_bytes;
+         }
+      }
+   }
+#if !defined(HAVE_COCOATOUCH)
+   [_buffer didModifyRange:NSMakeRange(0, _buffer.length)];
+#endif
+
+   MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:
+                                     (_atlas->format == FONT_ATLAS_FORMAT_A16)
+                                           ? MTLPixelFormatR16Unorm
+                                           : MTLPixelFormatR8Unorm
+                                                                                 width:_atlas->width
+                                                                                height:_atlas->height
+                                                                             mipmapped:NO];
+
+   _texture  = [_buffer newTextureWithDescriptor:td offset:0 bytesPerRow:_stride];
+}
+
+/* Asked for before a message is laid out: when the atlas has grown,
+ * the texture is made again at its size before any texture coordinate
+ * is taken from it */
+- (void)_followAtlas
+{
+   _atlas = _font_driver->get_atlas(_font_data);
+   if (     _atlas->width  != _texture.width
+         || _atlas->height != _texture.height)
+   {
+      [self _makeAtlasTexture];
+      _atlas->dirty = false;
+   }
 }
 
 - (bool)_initializeState
@@ -3970,6 +4002,8 @@ static INLINE void write_quad6(SpriteVertex *pv,
     * video context reset or if font was freed while in use */
    if (!_font_driver || !_font_data)
       return;
+
+   [self _followAtlas];
 
    get_glyph        = _font_driver->get_glyph;
    font_data        = _font_data;

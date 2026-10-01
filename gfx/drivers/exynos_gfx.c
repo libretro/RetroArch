@@ -1081,6 +1081,14 @@ static int exynos_init_font(struct exynos_video *vid)
       vid->font_color = ((b < 0 ? 0 : (b > 15 ? 15 : b)) << 0) |
          ((g < 0 ? 0 : (g > 15 ? 15 : g)) << 4) |
          ((r < 0 ? 0 : (r > 15 ? 15 : r)) << 8);
+      /* The atlas may grow when a message needs more glyphs than it holds;
+       * the glyphs are blitted from it in memory, so there is no texture
+       * to make again */
+      {
+         struct font_atlas *grow = vid->font_driver->get_atlas(vid->font);
+         grow->max_width  = 2048;
+         grow->max_height = 2048;
+      }
    }
    else
    {

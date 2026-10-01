@@ -427,6 +427,15 @@ static void *oga_init(const video_info_t *video,
          vid->font_driver = NULL;
          vid->font        = NULL;
       }
+      else
+      {
+         /* The atlas may grow when a message needs more glyphs than it
+          * holds; the glyphs are blitted from it in memory, so there is
+          * no texture to make again */
+         struct font_atlas *grow = vid->font_driver->get_atlas(vid->font);
+         grow->max_width  = 2048;
+         grow->max_height = 2048;
+      }
    }
 
    for (i = 0; i < NUM_PAGES; ++i)

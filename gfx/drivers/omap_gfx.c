@@ -835,6 +835,14 @@ static void omap_init_font(omap_video_t *vid)
       RARCH_ERR("[Omap] Font init failed.\n");
       return;
    }
+   /* The atlas may grow when a message needs more glyphs than it holds;
+    * the glyphs are blitted from it in memory, so there is no texture
+    * to make again */
+   {
+      struct font_atlas *grow = vid->font_driver->get_atlas(vid->font);
+      grow->max_width  = 2048;
+      grow->max_height = 2048;
+   }
 
    r = msg_color_r * 255;
    g = msg_color_g * 255;

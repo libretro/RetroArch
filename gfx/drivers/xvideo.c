@@ -198,6 +198,14 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
 
       xv_calculate_yuv(&xv->font_y, &xv->font_u, &xv->font_v,
             r, g, b);
+      /* The atlas may grow when a message needs more glyphs than it holds;
+       * the glyphs are blitted from it in memory, so there is no texture
+       * to make again */
+      {
+         struct font_atlas *grow = xv->font_driver->get_atlas(xv->font);
+         grow->max_width  = 2048;
+         grow->max_height = 2048;
+      }
    }
    else
       RARCH_LOG("[XVideo] Could not initialize fonts.\n");

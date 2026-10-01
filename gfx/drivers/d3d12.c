@@ -638,6 +638,14 @@ typedef struct
    unsigned                      region_x1;
    unsigned                      region_y1;
    bool                          region_pending;
+   /* Textures the atlas outgrew, and the queue fence value past which
+    * no command list still names them; released then, not waited for */
+   struct
+   {
+      d3d12_texture_t            texture;
+      UINT64                     fence;
+   }                             retired[2];
+   unsigned                      retired_count;
 } d3d12_font_t;
 
 static D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc = {
@@ -1593,6 +1601,86 @@ static void d3d12_font_update_atlas_region(d3d12_font_t *font,
 }
 
 
+/* Makes the font texture at the atlas's size and stages all of it for
+ * the copy at first draw: at init, and when the atlas has grown. */
+static void d3d12_font_make_texture(d3d12_video_t *d3d12,
+      d3d12_font_t *font)
+{
+   font->texture.sampler     = d3d12->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_BORDER];
+   font->texture.desc.Width  = font->atlas->width;
+   font->texture.desc.Height = font->atlas->height;
+   if (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+   {
+      /* 16-bit coverage: sample alpha from the R16 channel so the
+       * A8 pixel shader entry keeps working unchanged */
+      font->texture.desc.Format = DXGI_FORMAT_R16_UNORM;
+      font->texture.srv_mapping = D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(
+            D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0,
+            D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0,
+            D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0,
+            D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0);
+   }
+   else
+      font->texture.desc.Format = DXGI_FORMAT_A8_UNORM;
+   font->texture.srv_heap    = &d3d12->desc.srv_heap;
+   d3d12_init_texture(d3d12->device, &font->texture);
+   if (font->texture.upload_buffer)
+   {
+      if (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+         /* stage the whole atlas; the boxed copy at first draw
+          * transfers it (the generic path's conversion table does
+          * not cover R16) */
+         d3d12_font_update_atlas_region(font,
+               0, 0, font->atlas->width, font->atlas->height);
+      else
+         d3d12_update_texture(
+               font->atlas->width, font->atlas->height,
+               font->atlas->width, DXGI_FORMAT_A8_UNORM,
+               font->atlas->buffer, &font->texture);
+   }
+   font->atlas->dirty = false;
+}
+
+/* Releases the textures the fence has passed */
+static void d3d12_font_reap(d3d12_video_t *d3d12, d3d12_font_t *font)
+{
+   unsigned i, kept = 0;
+   UINT64 done = d3d12->queue.fence->lpVtbl->GetCompletedValue(
+         d3d12->queue.fence);
+   for (i = 0; i < font->retired_count; i++)
+   {
+      if (done >= font->retired[i].fence)
+         d3d12_release_texture(&font->retired[i].texture);
+      else
+         font->retired[kept++] = font->retired[i];
+   }
+   font->retired_count = kept;
+}
+
+/* The atlas grew: a texture at its new size, the old one retired until
+ * the frames still drawing from it are done - this frame's command
+ * list, which signals the next fence value at its end, names only the
+ * new one. With both retirement slots taken the old one stays, and
+ * the atlas's new cells wait for a later frame. */
+static void d3d12_font_follow_atlas(d3d12_video_t *d3d12,
+      d3d12_font_t *font)
+{
+   d3d12_font_reap(d3d12, font);
+   if (     font->texture.desc.Width  == font->atlas->width
+         && font->texture.desc.Height == font->atlas->height)
+      return;
+   if (font->retired_count >= sizeof(font->retired)
+         / sizeof(font->retired[0]))
+      return;
+   font->retired[font->retired_count].texture = font->texture;
+   font->retired[font->retired_count].fence   =
+      d3d12->queue.fenceValue + 1;
+   font->retired_count++;
+   memset(&font->texture, 0, sizeof(font->texture));
+   font->region_pending = false;
+   d3d12_font_make_texture(d3d12, font);
+}
+
 static void * d3d12_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
@@ -1622,40 +1710,11 @@ static void * d3d12_font_init(void* data, const char* font_path,
 
    font->d3d12               = d3d12;
    font->atlas               = font->font_driver->get_atlas(font->font_data);
-   font->texture.sampler     = d3d12->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_BORDER];
-   font->texture.desc.Width  = font->atlas->width;
-   font->texture.desc.Height = font->atlas->height;
-   if (font->atlas->format == FONT_ATLAS_FORMAT_A16)
-   {
-      /* 16-bit coverage: sample alpha from the R16 channel so the
-       * A8 pixel shader entry keeps working unchanged */
-      font->texture.desc.Format = DXGI_FORMAT_R16_UNORM;
-      font->texture.srv_mapping = D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(
-            D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0,
-            D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0,
-            D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0,
-            D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0);
-   }
-   else
-      font->texture.desc.Format = DXGI_FORMAT_A8_UNORM;
-   font->texture.srv_heap    = &d3d12->desc.srv_heap;
+   /* The atlas may grow, up to the largest 2D texture D3D12 has */
+   font->atlas->max_width    = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+   font->atlas->max_height   = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
    d3d12_release_texture(&font->texture);
-   d3d12_init_texture(d3d12->device, &font->texture);
-   if (font->texture.upload_buffer)
-   {
-      if (font->atlas->format == FONT_ATLAS_FORMAT_A16)
-         /* stage the whole atlas; the boxed copy at first draw
-          * transfers it (the generic path's conversion table does
-          * not cover R16) */
-         d3d12_font_update_atlas_region(font,
-               0, 0, font->atlas->width, font->atlas->height);
-      else
-         d3d12_update_texture(
-               font->atlas->width, font->atlas->height,
-               font->atlas->width, DXGI_FORMAT_A8_UNORM,
-               font->atlas->buffer, &font->texture);
-   }
-   font->atlas->dirty = false;
+   d3d12_font_make_texture(d3d12, font);
 
    return font;
 }
@@ -1681,6 +1740,11 @@ static void d3d12_font_free(void* data, bool is_threaded)
       font->font_driver->free(font->font_data);
 
    d3d12_release_texture(&font->texture);
+   {
+      unsigned i;
+      for (i = 0; i < font->retired_count; i++)
+         d3d12_release_texture(&font->retired[i].texture);
+   }
 
    free(font->acc);
    free(font);
@@ -1775,6 +1839,14 @@ static void d3d12_font_render_msg(
       return;
    if (!d3d12 || (!(d3d12->flags & D3D12_ST_FLAG_SPRITES_ENABLE)))
       return;
+
+   /* Asked for before anything is laid out: it may have grown, and the
+    * texture coordinates are taken from the texture's size */
+   if (font->font_driver && font->font_data)
+   {
+      font->atlas = font->font_driver->get_atlas(font->font_data);
+      d3d12_font_follow_atlas(d3d12, font);
+   }
 
    width  = VIDEO_SCALE_W(d3d12->vp.full_dims);
    height = VIDEO_SCALE_H(d3d12->vp.full_dims);
