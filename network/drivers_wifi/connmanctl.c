@@ -549,7 +549,8 @@ static size_t connmanctl_get_connected_servicename(
    if (len < 1)
       return 0;
 
-   tmp = (char*)malloc(sizeof(char) * len);
+   if (!(tmp = (char*)malloc(sizeof(char) * len)))
+      return 0;
 
    /* Following command lists all stored services in
     * connman settings folder, which are then used in
@@ -627,6 +628,7 @@ static size_t connmanctl_get_connected_servicename(
    }
 
    pclose(command_file);
+   free(tmp);
    return 0;
 }
 
