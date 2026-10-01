@@ -377,9 +377,16 @@ static void sample_ping_pong( struct sample *sample ) {
 	int idx;
 	int loop_start = sample->loop_start;
 	int loop_length = sample->loop_length;
-	int loop_end = loop_start + loop_length;
+	int loop_end;
 	short *sample_data = sample->data;
-	short *new_data = calloc( loop_end + loop_length + 1, sizeof( short ) );
+	short *new_data;
+	/* The doubled loop and its sentinel must fit in an int. */
+	if( loop_start < 0 || loop_start >= INT_MAX || loop_length < 0
+		|| loop_length > ( INT_MAX - 1 - loop_start ) / 2 ) {
+		return;
+	}
+	loop_end = loop_start + loop_length;
+	new_data = calloc( loop_end + loop_length + 1, sizeof( short ) );
 	if( new_data ) {
 		memcpy( new_data, sample_data, loop_end * sizeof( short ) );
 		for( idx = 0; idx < loop_length; idx++ ) {
@@ -425,6 +432,7 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 	int num_rows, num_notes, pat_data_len, pat_data_offset;
 	int sam, sam_head_offset, sam_data_bytes, sam_data_samples;
 	int num_samples, sam_loop_start, sam_loop_length, amp;
+	uint32_t sample_bytes, loop_start, loop_length;
 	int note, flags, key, ins, vol, fxc, fxp;
 	int point, point_tick, point_offset;
 	int looped, ping_pong, sixteen_bit, adpcm;
@@ -612,9 +620,15 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 			offset += num_samples * 40;
 			for( sam = 0; sam < num_samples; sam++ ) {
 				sample = &instrument->samples[ sam ];
-				sam_data_bytes = data_u32le( data, sam_head_offset );
-				sam_loop_start = data_u32le( data, sam_head_offset + 4 );
-				sam_loop_length = data_u32le( data, sam_head_offset + 8 );
+				sample_bytes = data_u32le( data, sam_head_offset );
+				loop_start = data_u32le( data, sam_head_offset + 4 );
+				loop_length = data_u32le( data, sam_head_offset + 8 );
+				/* The decoder and its allocation count use signed ints. */
+				if( sample_bytes > INT_MAX - 1 ) {
+					dispose_module( module );
+					return NULL;
+				}
+				sam_data_bytes = ( int ) sample_bytes;
 				sample->volume = data_u8( data, sam_head_offset + 12 );
 				sample->fine_tune = data_s8( data, sam_head_offset + 13 );
 				looped = ( data_u8( data, sam_head_offset + 14 ) & 0x3 ) > 0;
@@ -631,12 +645,17 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 				sam_data_samples = sam_data_bytes;
 				if( sixteen_bit ) {
 					sam_data_samples = sam_data_samples >> 1;
-					sam_loop_start = sam_loop_start >> 1;
-					sam_loop_length = sam_loop_length >> 1;
+					loop_start >>= 1;
+					loop_length >>= 1;
 				}
-				if( !looped || ( sam_loop_start + sam_loop_length ) > sam_data_samples ) {
+				/* Compare before converting to int or adding the loop fields. */
+				if( !looped || loop_start > ( uint32_t ) sam_data_samples
+					|| loop_length > ( uint32_t ) sam_data_samples - loop_start ) {
 					sam_loop_start = sam_data_samples;
 					sam_loop_length = 0;
+				} else {
+					sam_loop_start = ( int ) loop_start;
+					sam_loop_length = ( int ) loop_length;
 				}
 				sample->loop_start = sam_loop_start;
 				sample->loop_length = sam_loop_length;
