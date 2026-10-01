@@ -6726,12 +6726,6 @@ static bool netplay_get_cmd(netplay_t *netplay,
                RARCH_ERR("[Netplay] NETPLAY_CMD_NETPACKET while core netpacket interface is not set.\n");
                return netplay_cmd_nak(netplay, connection);
             }
-            if (     (netplay->flags & NETPLAY_FLAG_IS_SERVER)
-                  && connection->mode != NETPLAY_CONNECTION_PLAYING)
-            {
-               RARCH_ERR("[Netplay] NETPLAY_CMD_NETPACKET from a non-playing client.\n");
-               return netplay_cmd_nak(netplay, connection);
-            }
             if (cmd_size > netplay->zbuffer_size)
             {
                RARCH_ERR("[Netplay] Received netpacket of unexpected size.\n");
@@ -6743,6 +6737,19 @@ static bool netplay_get_cmd(netplay_t *netplay,
             pkt_client_id = ntohl(pkt_client_id);
             RECV(buf, cmd_size)
                return false;
+
+            /* Only playing clients may talk to the core. A packet from
+             * anyone else is read off the stream and dropped rather than
+             * NAKed: a NAK hangs the connection up, and a client that is
+             * still waiting for its promotion to player, or an older
+             * client whose core sends from start(), is not misbehaving. */
+            if (     (netplay->flags & NETPLAY_FLAG_IS_SERVER)
+                  && connection->mode != NETPLAY_CONNECTION_PLAYING)
+            {
+               /* debug level: a spectator core may send every frame */
+               RARCH_DBG("[Netplay] Dropped a netpacket from a non-playing client.\n");
+               break;
+            }
 
             if (!(netplay->flags & NETPLAY_FLAG_IS_SERVER))
             {
