@@ -990,10 +990,14 @@ font_layout "font layout: glcore" "" \
    "-DHAVE_OPENGL -DHAVE_OPENGL_CORE -DHAVE_SLANG" gfx/drivers/gl3.c
 if [ -d /usr/x86_64-w64-mingw32/include ]; then
    MINGW_CLANG="--target=x86_64-w64-mingw32 -isystemgfx/include/dxsdk -isystem /usr/x86_64-w64-mingw32/include"
+   font_layout "font layout: d3d10" "$MINGW_CLANG" \
+      "-DHAVE_D3D -DHAVE_RGUI -DHAVE_OVERLAY -DHAVE_D3D10" gfx/drivers/d3d10.c
    font_layout "font layout: d3d11" "$MINGW_CLANG" \
       "-DHAVE_D3D -DHAVE_RGUI -DHAVE_OVERLAY -DHAVE_D3D11" gfx/drivers/d3d11.c
+   font_layout "font layout: d3d12" "$MINGW_CLANG" \
+      "-DHAVE_D3D -DHAVE_RGUI -DHAVE_OVERLAY -DHAVE_D3D12" gfx/drivers/d3d12.c
 else
-   echo "skip  font layout: d3d11 (no MinGW headers)"
+   echo "skip  font layout: d3d10/11/12 (no MinGW headers)"
 fi
 
 exit $fail

@@ -1928,145 +1928,103 @@ static void d3d12_font_render_msg(
    v_batch_start  = v;
    range.Begin    = (uintptr_t)v - (uintptr_t)vbo_start;
 
-   /* ---- Single fused pass: shadow + foreground per glyph ----
-    *
-    * Walk the message once. For each glyph, emit the foreground sprite
-    * and (if active) its shadow sprite immediately after.  This halves
-    * UTF-8 decode + glyph lookup cost compared to separate passes.
-    *
-    * For right/center alignment the retroactive shift must adjust both
-    * shadow and foreground sprites.  We track per-line start pointers
-    * for both sets.
-    *
-    * Shadow sprites are emitted *before* the foreground sprite so that
-    * the GPU draws them first (painter's order within the same draw
-    * call). */
+   /* One pass over the message: each glyph is looked up once and
+    * written as its shadow sprite (if any) and then its foreground
+    * sprite, so the shadow draws first. Right and centred lines are
+    * shifted, shadows and all, once their advance is known. */
    {
-      const char     *line_start = msg;
-      int             line_idx   = 0;
-      int             xi         = roundf(x * width);
+      d3d12_sprite_t *line_v_first = v;
+      bool line_ok                 = false;
+      int xi                       = roundf(x * width);
+      int lx                       = 0;
+      int ly                       = 0;
+      size_t line_cap              = font->block
+         ? (size_t)(font->acc_cap - font->acc_count)
+         : (size_t)d3d12->sprites.capacity;
 
-      while (*line_start)
-      {
-         const char        *p;
-         size_t             line_len;
-         size_t             i;
-         int                lx, ly;
-         d3d12_sprite_t    *line_v_first;
-
-         for (p = line_start; *p && *p != '\n'; p++)
-            ;
-         line_len = (size_t)(p - line_start);
-
-         if (line_len > (font->block
-                  ? (size_t)(font->acc_cap - font->acc_count)
-                  : (size_t)d3d12->sprites.capacity))
-            goto next_line;
-
-         lx          = xi;
-         ly          = roundf((1.0f - (y - (float)line_idx * line_height)) * height);
-         line_v_first = v;
-
-         for (i = 0; i < line_len; i++)
-         {
-            const struct font_glyph *glyph;
-            const char *msg_tmp = &line_start[i];
-            unsigned    code    = utf8_walk(&msg_tmp);
-            unsigned    skip    = msg_tmp - &line_start[i];
-
-            float       gx, gy, gw, gh;
-            float       gu, gv, gtw, gth;
-
-            if (skip > 1)
-               i += skip - 1;
-
-            if (!(glyph = get_glyph(font_data, code)))
-               if (!(glyph = glyph_q))
-                  continue;
-
-            /* Compute position and texcoord once, reuse for shadow. */
-            gx  = (lx + (glyph->draw_offset_x * scale)) * inv_vp_w;
-            gy  = (ly + (glyph->draw_offset_y * scale)) * inv_vp_h;
-            gw  = glyph->width  * scale * inv_vp_w;
-            gh  = glyph->height * scale * inv_vp_h;
-
-            gu  = glyph->atlas_offset_x * inv_tex_w;
-            gv  = glyph->atlas_offset_y * inv_tex_h;
-            gtw = glyph->width          * inv_tex_w;
-            gth = glyph->height         * inv_tex_h;
-
-            /* Shadow sprite (emitted first for correct draw order). */
-            if (has_shadow)
-            {
-               v->pos.x           = gx + shadow_dx;
-               v->pos.y           = gy + shadow_dy;
-               v->pos.w           = gw;
-               v->pos.h           = gh;
-
-               v->coords.u        = gu;
-               v->coords.v        = gv;
-               v->coords.w        = gtw;
-               v->coords.h        = gth;
-
-               v->params.scaling  = 1;
-               v->params.rotation = 0;
-
-               v->colors[0]       = color_dark;
-               v->colors[1]       = color_dark;
-               v->colors[2]       = color_dark;
-               v->colors[3]       = color_dark;
-
-               v++;
-            }
-
-            /* Foreground sprite. */
-            v->pos.x           = gx;
-            v->pos.y           = gy;
-            v->pos.w           = gw;
-            v->pos.h           = gh;
-
-            v->coords.u        = gu;
-            v->coords.v        = gv;
-            v->coords.w        = gtw;
-            v->coords.h        = gth;
-
-            v->params.scaling  = 1;
-            v->params.rotation = 0;
-
-            v->colors[0]       = color;
-            v->colors[1]       = color;
-            v->colors[2]       = color;
-            v->colors[3]       = color;
-
-            v++;
-
-            lx                += glyph->advance_x * scale;
-            ly                += glyph->advance_y * scale;
-         }
-
-         /* Retroactive alignment shift — adjusts both shadow and
-          * foreground sprites since they are interleaved. */
-         if (text_align != TEXT_ALIGN_LEFT)
-         {
-            int             total_advance = lx - xi;
-            float           shift;
-            d3d12_sprite_t *s;
-
-            if (text_align == TEXT_ALIGN_RIGHT)
-               shift = (float)total_advance * inv_vp_w;
-            else
-               shift = (float)(total_advance / 2) * inv_vp_w;
-
-            for (s = line_v_first; s < v; s++)
-               s->pos.x -= shift;
-         }
-
-next_line:
-         if (!*p)
-            break;
-         line_start = p + 1;
-         line_idx++;
-      }
+#define FONT_LAYOUT_ALIGNED 0
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+      do \
+      { \
+         (void)(line_width); \
+         (void)(count); \
+         line_ok      = ((bytes) <= line_cap); \
+         lx           = xi; \
+         ly           = roundf((1.0f - (y - (float)(line) * line_height)) \
+               * height); \
+         line_v_first = v; \
+      } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+      do \
+      { \
+         float gx, gy, gw, gh, gu, gv, gtw, gth; \
+         /* This driver keeps its own truncating pen */ \
+         (void)(pen_x); \
+         (void)(pen_y); \
+         if (!line_ok) \
+            break; \
+         /* Position and texcoord once, shared with the shadow */ \
+         gx  = (lx + ((glyph)->draw_offset_x * scale)) * inv_vp_w; \
+         gy  = (ly + ((glyph)->draw_offset_y * scale)) * inv_vp_h; \
+         gw  = (glyph)->width  * scale * inv_vp_w; \
+         gh  = (glyph)->height * scale * inv_vp_h; \
+         gu  = (glyph)->atlas_offset_x * inv_tex_w; \
+         gv  = (glyph)->atlas_offset_y * inv_tex_h; \
+         gtw = (glyph)->width          * inv_tex_w; \
+         gth = (glyph)->height         * inv_tex_h; \
+         if (has_shadow) \
+         { \
+            v->pos.x           = gx + shadow_dx; \
+            v->pos.y           = gy + shadow_dy; \
+            v->pos.w           = gw; \
+            v->pos.h           = gh; \
+            v->coords.u        = gu; \
+            v->coords.v        = gv; \
+            v->coords.w        = gtw; \
+            v->coords.h        = gth; \
+            v->params.scaling  = 1; \
+            v->params.rotation = 0; \
+            v->colors[0]       = color_dark; \
+            v->colors[1]       = color_dark; \
+            v->colors[2]       = color_dark; \
+            v->colors[3]       = color_dark; \
+            v++; \
+         } \
+         v->pos.x           = gx; \
+         v->pos.y           = gy; \
+         v->pos.w           = gw; \
+         v->pos.h           = gh; \
+         v->coords.u        = gu; \
+         v->coords.v        = gv; \
+         v->coords.w        = gtw; \
+         v->coords.h        = gth; \
+         v->params.scaling  = 1; \
+         v->params.rotation = 0; \
+         v->colors[0]       = color; \
+         v->colors[1]       = color; \
+         v->colors[2]       = color; \
+         v->colors[3]       = color; \
+         v++; \
+         lx                += (glyph)->advance_x * scale; \
+         ly                += (glyph)->advance_y * scale; \
+      } while (0)
+#define FONT_LAYOUT_LINE_END() \
+      do \
+      { \
+         if (line_ok && text_align != TEXT_ALIGN_LEFT) \
+         { \
+            int total_advance = lx - xi; \
+            float shift; \
+            d3d12_sprite_t *s; \
+            if (text_align == TEXT_ALIGN_RIGHT) \
+               shift = (float)total_advance * inv_vp_w; \
+            else \
+               shift = (float)(total_advance / 2) * inv_vp_w; \
+            for (s = line_v_first; s < v; s++) \
+               s->pos.x -= shift; \
+         } \
+      } while (0)
+#include "../font_layout.h"
    }
 
    total_count = v - v_batch_start;
