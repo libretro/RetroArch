@@ -1626,6 +1626,11 @@ static struct module* module_load_it( struct data *data, char *message ) {
 		return NULL;
 	}
 	module->it_effects = 1;
+	/* Header flag 3 selects linear slides: pitch in 1/64ths of a
+	   semitone, Exx/Fxx/Gxx moving xx * 4 of them a tick - the units
+	   the XM linear period table already uses. Otherwise IT slides
+	   Amiga-style. */
+	module->linear_periods = ( flags & 0x08 ) ? 1 : 0;
 	it_load_macros( module, data, data_u16le( data, 0x2E ),
 		ofs + ins_num * 4 + smp_num * 4 + pat_num * 4 );
 	module->default_chan_vol = calloc( module->num_channels,
