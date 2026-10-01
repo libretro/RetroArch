@@ -42,6 +42,8 @@
 
 #include "frontend/frontend_driver.h"
 
+#include <encodings/utf.h>
+
 #include "../font_driver.h"
 #include "../video_driver.h"
 
@@ -459,7 +461,6 @@ static bool render_msg(oga_video_t* vid, const char* msg)
 {
    const struct font_atlas* atlas;
    uint32_t* fb;
-   const char *c    = msg;
    int dest_x       = 0;
    int dest_y       = 0;
    int dest_stride;
@@ -470,7 +471,7 @@ static bool render_msg(oga_video_t* vid, const char* msg)
    if (strcmp(msg, vid->last_msg) == 0)
       return true;
 
-   strlcpy(vid->last_msg, c, sizeof(vid->last_msg));
+   strlcpy(vid->last_msg, msg, sizeof(vid->last_msg));
    rga_clear_surface(vid->msg_surface, 0);
 
    atlas          = vid->font_driver->get_atlas(vid->font);
@@ -478,46 +479,87 @@ static bool render_msg(oga_video_t* vid, const char* msg)
    dest_stride    = vid->msg_surface->pitch / 4;
    vid->msg_width = vid->msg_height = 0;
 
-   while (*c)
    {
-      int x, y;
-      uint32_t* dest             = NULL;
-      const uint8_t *source      = NULL;
-      const struct font_glyph* g = vid->font_driver->get_glyph(vid->font, *c);
+      const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                             = vid->font_driver->get_glyph;
+      void *font_data                        = vid->font;
+      const struct font_glyph *glyph_q       = get_glyph(font_data, '?');
+      struct font_line_metrics *line_metrics = NULL;
+      size_t msg_len                         = strlen(msg);
+      int line_h                             = 0;
+      int surf_w                             = vid->msg_surface->width;
+      int surf_h                             = vid->msg_surface->height;
+      bool full                              = false;
 
-      if (!g)
-         continue;
+      vid->font_driver->get_line_metrics(font_data, &line_metrics);
+      if (line_metrics)
+         line_h = (int)line_metrics->height;
 
-      if (vid->msg_height == 0)
-         vid->msg_height = g->height;
+      /* UTF-8; a line break starts a new row, as running out of width
+       * does. A glyph is laid in the surface whole or not at all: it
+       * wraps before it would cross the right edge, and nothing is
+       * drawn once a row would cross the bottom. */
+#define FONT_LAYOUT_ALIGNED 0
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+      do \
+      { \
+         (void)(line_width); \
+         (void)(count); \
+         (void)(bytes); \
+         if (line) \
+         { \
+            dest_x           = 0; \
+            dest_y          += line_h; \
+            vid->msg_height += line_h; \
+         } \
+      } while (0)
+#define FONT_LAYOUT_GLYPH(g, pen_x, pen_y) \
+      do \
+      { \
+         int x, y; \
+         uint32_t* dest        = NULL; \
+         const uint8_t *source = NULL; \
+         (void)(pen_x); \
+         (void)(pen_y); \
+         if (full) \
+            break; \
+         if (vid->msg_height == 0) \
+            vid->msg_height = (g)->height; \
+         if (dest_x + (g)->advance_x > surf_w) \
+         { \
+            dest_x           = 0; \
+            dest_y          += (g)->height; \
+            vid->msg_height += (g)->height; \
+         } \
+         if (     (g)->advance_x > surf_w \
+               || dest_y + (int)(g)->height > surf_h) \
+         { \
+            full = true; \
+            break; \
+         } \
+         source = atlas->buffer + (g)->atlas_offset_y * \
+            atlas->width  + (g)->atlas_offset_x; \
+         dest   = fb + dest_y * dest_stride + dest_x; \
+         for (y = 0; y < (int)(g)->height; y++) \
+         { \
+            for (x = 0; x < (int)(g)->advance_x; x++) \
+            { \
+               uint32_t px = (x < (int)(g)->width) ? *(source++) : 0x00; \
+               *(dest++)   = (0xCD << 24) | (px << 16) | (px << 8) | px; \
+            } \
+            dest   += dest_stride - (g)->advance_x; \
+            source += atlas->width - (g)->width; \
+         } \
+         dest_x += (g)->advance_x; \
+         if (vid->msg_width < dest_x) \
+            vid->msg_width = MIN(dest_x, surf_w); \
+      } while (0)
+#include "../font_layout.h"
 
-      if (dest_x >= vid->drm_width)
-      {
-         dest_x = 0;
-         dest_y += g->height;
-         vid->msg_height += g->height;
-      }
-
-      source = atlas->buffer + g->atlas_offset_y *
-         atlas->width  + g->atlas_offset_x;
-      dest   = fb + dest_y * dest_stride + dest_x;
-
-      for (y = 0; y < (int)g->height; y++)
-      {
-         for (x = 0; x < (int)g->advance_x; x++)
-         {
-            uint32_t px = (x < (int)g->width) ? *(source++) : 0x00;
-            *(dest++)   = (0xCD << 24) | (px << 16) | (px << 8) | px;
-         }
-         dest   += dest_stride - g->advance_x;
-         source += atlas->width - g->width;
-      }
-
-      c++;
-      dest_x += g->advance_x;
-
-      if (vid->msg_width < dest_x)
-         vid->msg_width = MIN(dest_x, vid->msg_surface->width);
+      /* A row that did not fit counted towards the height before it was
+       * found not to; the blit takes no more than the surface holds */
+      if (vid->msg_height > surf_h)
+         vid->msg_height = surf_h;
    }
 
 

@@ -37,6 +37,8 @@
 #include "SDL.h"
 #include "SDL_syswm.h"
 
+#include <encodings/utf.h>
+
 #include "../font_driver.h"
 
 #include "../../configuration.h"
@@ -144,73 +146,86 @@ static void sdl_render_msg(
    gshift     = fmt->Gshift;
    bshift     = fmt->Bshift;
 
-   for (; *msg; msg++)
    {
-      int glyph_width, glyph_height;
-      int base_x, base_y, max_width, max_height;
-      uint32_t             *out      = NULL;
-      const uint8_t             *src = NULL;
-      const struct font_glyph *glyph = vid->font_driver->get_glyph(vid->font, (uint8_t)*msg);
-      if (!glyph)
-         continue;
+      const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                             = vid->font_driver->get_glyph;
+      void *font_data                        = vid->font;
+      const struct font_glyph *glyph_q       = get_glyph(font_data, '?');
+      struct font_line_metrics *line_metrics = NULL;
+      size_t msg_len                         = strlen(msg);
+      int line_h                             = 0;
+      int line_x                             = msg_base_x;
+      int line_y                             = msg_base_y;
 
-      glyph_width  = glyph->width;
-      glyph_height = glyph->height;
+      vid->font_driver->get_line_metrics(font_data, &line_metrics);
+      if (line_metrics)
+         line_h = (int)line_metrics->height;
 
-      base_x       = msg_base_x + glyph->draw_offset_x;
-      base_y       = msg_base_y + glyph->draw_offset_y;
-      src          = atlas->buffer + glyph->atlas_offset_x
-         + glyph->atlas_offset_y * atlas->width;
-
-      if (base_x < 0)
-      {
-         src         -= base_x;
-         glyph_width += base_x;
-         base_x       = 0;
-      }
-
-      if (base_y < 0)
-      {
-         src          -= base_y * (int)atlas->width;
-         glyph_height += base_y;
-         base_y        = 0;
-      }
-
-      max_width  = width - base_x;
-      max_height = height - base_y;
-
-      if (max_width <= 0 || max_height <= 0)
-         continue;
-
-      if (glyph_width > max_width)
-         glyph_width = max_width;
-      if (glyph_height > max_height)
-         glyph_height = max_height;
-
-      out = (uint32_t*)buffer->pixels + base_y
-         * (buffer->pitch >> 2) + base_x;
-
-      for (y = 0; y < glyph_height; y++, src += atlas->width, out += buffer->pitch >> 2)
-      {
-         for (x = 0; x < glyph_width; x++)
-         {
-            unsigned blend   = src[x];
-            unsigned out_pix = out[x];
-            unsigned       r = (out_pix >> rshift) & 0xff;
-            unsigned       g = (out_pix >> gshift) & 0xff;
-            unsigned       b = (out_pix >> bshift) & 0xff;
-
-            unsigned   out_r = (r * (256 - blend) + vid->font_r * blend) >> 8;
-            unsigned   out_g = (g * (256 - blend) + vid->font_g * blend) >> 8;
-            unsigned   out_b = (b * (256 - blend) + vid->font_b * blend) >> 8;
-            out[x]           = (out_r << rshift) |
-                               (out_g << gshift) |
-                               (out_b << bshift);
-         }
-      }
-
-      msg_base_x += glyph->advance_x;
-      msg_base_y += glyph->advance_y;
+      /* UTF-8, each line one line height below the last */
+#define FONT_LAYOUT_ALIGNED 0
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+      do \
+      { \
+         (void)(line_width); \
+         (void)(count); \
+         (void)(bytes); \
+         line_x = msg_base_x; \
+         line_y = msg_base_y + (line) * line_h; \
+      } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+      do \
+      { \
+         int glyph_width, glyph_height; \
+         int base_x, base_y, max_width, max_height; \
+         uint32_t             *out      = NULL; \
+         const uint8_t             *src = NULL; \
+         glyph_width  = glyph->width; \
+         glyph_height = glyph->height; \
+         base_x       = (line_x + (pen_x)) + glyph->draw_offset_x; \
+         base_y       = (line_y + (pen_y)) + glyph->draw_offset_y; \
+         src          = atlas->buffer + glyph->atlas_offset_x \
+            + glyph->atlas_offset_y * atlas->width; \
+         if (base_x < 0) \
+         { \
+            src         -= base_x; \
+            glyph_width += base_x; \
+            base_x       = 0; \
+         } \
+         if (base_y < 0) \
+         { \
+            src          -= base_y * (int)atlas->width; \
+            glyph_height += base_y; \
+            base_y        = 0; \
+         } \
+         max_width  = width - base_x; \
+         max_height = height - base_y; \
+         if (max_width <= 0 || max_height <= 0) \
+            break; \
+         if (glyph_width > max_width) \
+            glyph_width = max_width; \
+         if (glyph_height > max_height) \
+            glyph_height = max_height; \
+         out = (uint32_t*)buffer->pixels + base_y \
+            * (buffer->pitch >> 2) + base_x; \
+         for (y = 0; y < glyph_height; y++, src += atlas->width, out += buffer->pitch >> 2) \
+         { \
+            for (x = 0; x < glyph_width; x++) \
+            { \
+               unsigned blend   = src[x]; \
+               unsigned out_pix = out[x]; \
+               unsigned       r = (out_pix >> rshift) & 0xff; \
+               unsigned       g = (out_pix >> gshift) & 0xff; \
+               unsigned       b = (out_pix >> bshift) & 0xff; \
+               unsigned   out_r = (r * (256 - blend) + vid->font_r * blend) >> 8; \
+               unsigned   out_g = (g * (256 - blend) + vid->font_g * blend) >> 8; \
+               unsigned   out_b = (b * (256 - blend) + vid->font_b * blend) >> 8; \
+               out[x]           = (out_r << rshift) | \
+                                  (out_g << gshift) | \
+                                  (out_b << bshift); \
+            } \
+         } \
+      } while (0)
+#include "../font_layout.h"
    }
 }
 

@@ -1024,6 +1024,18 @@ if [ -f /usr/include/SDL3/SDL.h ]; then
 else
    echo "skip  font layout: sdl3 (no SDL3 headers)"
 fi
+# The software OSD blitters, where their headers are installed
+if [ -f /usr/include/X11/extensions/Xvlib.h ]; then
+   font_layout "font layout: xvideo" "" "-DHAVE_X11 -DHAVE_XVIDEO" \
+      gfx/drivers/xvideo.c
+fi
+if [ -f /usr/include/SDL/SDL.h ]; then
+   font_layout "font layout: sdl" "" "-DHAVE_SDL -I/usr/include/SDL" \
+      gfx/drivers/sdl_gfx.c
+fi
+if [ -f /usr/include/linux/omapfb.h ]; then
+   font_layout "font layout: omap" "" "-DHAVE_OMAP" gfx/drivers/omap_gfx.c
+fi
 font_layout "font layout: switch" "" \
    "-DHAVE_LIBNX -DSWITCH -D__SWITCH__ -I$STUBS/libnx" \
    gfx/drivers/switch_nx_gfx.c
