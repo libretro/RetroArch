@@ -232,6 +232,7 @@ enum font_fallback_id
    FONT_FALLBACK_CJK = 0,
    FONT_FALLBACK_KOREAN,
    FONT_FALLBACK_THAI,
+   FONT_FALLBACK_ETHIOPIC,
    FONT_FALLBACK_GENERAL,
    FONT_FALLBACK_COUNT
 };
@@ -256,6 +257,7 @@ static const char * const font_fallback_files[FONT_FALLBACK_COUNT] = {
    "chinese-fallback-font.ttf",
    "korean-fallback-font.ttf",
    "thai-fallback-font.ttf",
+   "ethiopic-fallback-font.ttf",
    "fallback-font.ttf"
 };
 #endif
@@ -315,6 +317,12 @@ static int font_fallback_for(uint32_t code)
       return FONT_FALLBACK_KOREAN;
    if (code >= 0x0E00 && code <= 0x0E7F)
       return FONT_FALLBACK_THAI;
+   /* Ethiopic and its supplement and extensions */
+   if (     (code >= 0x1200 && code <= 0x139F)
+         || (code >= 0x2D80 && code <= 0x2DDF)
+         || (code >= 0xAB00 && code <= 0xAB2F)
+         || (code >= 0x1E7E0 && code <= 0x1E7FF))
+      return FONT_FALLBACK_ETHIOPIC;
    /* CJK radicals, punctuation, kana, bopomofo, the unified ideographs
     * and their extensions, compatibility forms and the full-width
     * forms */

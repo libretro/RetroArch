@@ -96,6 +96,16 @@ int main(void)
    CHECK(drawn(drv, h, 0x2460), "circled one drawn from the second face");
    CHECK(read_file("chinese-fallback-font.ttf"), "the CJK fallback was read");
 
+   /* Ethiopic goes to its own face, which this directory lacks: it is
+    * looked for, and nothing breaks for want of it */
+   for (spins = 0; spins < 200; spins++)
+   {
+      drv->get_glyph(h, 0x1200);
+      usleep(1000);
+   }
+   CHECK(read_file("ethiopic-fallback-font.ttf"),
+         "Ethiopic looked for in its own fallback");
+
    drv->free(h);
    snprintf(to, sizeof(to), "%s/fallback-font.ttf", dir);
    unlink(to);
