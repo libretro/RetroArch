@@ -431,14 +431,6 @@ static void rtt_vmetrics(const rtt_font_t *f, int *ascent, int *descent,
    if (line_gap) *line_gap = (int16_t)rtt__u16(f, f->hhea + 8);
 }
 
-static float rtt_scale_for_pixel_height(const rtt_font_t *f, float h)
-{
-   int fh = (int16_t)rtt__u16(f, f->hhea + 4) - (int16_t)rtt__u16(f, f->hhea + 6);
-   if (fh == 0)
-      return 0.0f;
-   return h / (float)fh;
-}
-
 static float rtt_scale_for_em_to_pixels(const rtt_font_t *f, float px)
 {
    return px / (float)f->units_per_em;
@@ -1309,381 +1301,53 @@ static void rtt_render_glyph(const rtt_font_t *f, void *dst,
 
 #include "../bitmapfont.h"
 
-#define STB_ATLAS_ROWS 16
-#define STB_ATLAS_COLS 16
-#define STB_ATLAS_SIZE (STB_ATLAS_ROWS * STB_ATLAS_COLS)
-/* Padding is required between each glyph in
- * the atlas to prevent texture bleed when
- * drawing with linear filtering enabled */
-#define STB_ATLAS_PADDING 1
-
-/* Improved hash: mix in upper bits to reduce clustering
- * for CJK and other non-Latin codepoints */
-#define STB_HASH_SIZE 0x100
-#define STB_HASH(c) (((c) ^ ((c) >> 8)) & (STB_HASH_SIZE - 1))
-
-typedef struct stb_atlas_slot
-{
-   struct stb_atlas_slot* next;
-   struct font_glyph glyph;      /* unsigned alignment */
-   unsigned charcode;
-   unsigned last_used;
-} stb_atlas_slot_t;
-
 typedef struct
 {
    uint8_t *font_data;
    size_t font_data_size;
-   /* Whether font_data was allocated by us (and must be freed) or points
-    * to OS-owned shared memory (WiiU) that must not be freed. */
-   bool font_data_owned;
-   struct font_atlas atlas;               /* ptr alignment */
-   stb_atlas_slot_t* uc_map[STB_HASH_SIZE];
-   stb_atlas_slot_t atlas_slots[STB_ATLAS_SIZE];
    rtt_font_t info;                       /* ptr alignment */
-   /* The cell every glyph is rendered into, packed. */
-   unsigned max_glyph_dims;
-   unsigned usage_counter;
    float scale_factor;
    struct font_line_metrics line_metrics; /* float alignment */
-   /* No usable TTF was found, so the atlas holds the built-in 5x10
-    * glyphs instead. All 256 are rasterised up front, nothing is
-    * evicted, and get_glyph never reaches the TrueType path. */
-   bool builtin;
-} stb_font_renderer_t;
+   /* The cell every glyph is drawn into, packed. */
+   unsigned cell_dims;
+   /* Scale of the built-in 5x10 glyphs; 0 for a TrueType face. */
+   unsigned builtin_scale;
+} stb_face_t;
+
+static void font_rasterizer_stb_free(void *data)
+{
+   /* The bytes are borrowed - from font_driver.c, or on WiiU from the
+    * OS shared font - and never freed here. */
+   free(data);
+}
 
 /* Built-in fallback: the 5x10 bitmap in bitmap.h, scaled to the
  * requested size. Used when no TrueType font can be found, so that
- * on-screen text still appears on a system with no fonts installed
- * and no assets downloaded. STB_ATLAS_SIZE is 256, which is exactly
- * the number of glyphs the bitmap holds, so the existing slot array
- * carries them and no separate allocation is needed. */
-static bool font_renderer_stb_init_builtin(
-      stb_font_renderer_t *self, float font_size)
+ * on-screen text still appears on a system with no fonts installed and
+ * no assets downloaded. */
+static bool font_rasterizer_stb_init_builtin(stb_face_t *self,
+      float font_size)
 {
-   unsigned i, scale;
+   unsigned scale;
 
    if (!(scale = (unsigned)roundf(font_size / FONT_HEIGHT)))
       scale = 1;
 
-   self->atlas.width  = (1 + (FONT_WIDTH  * scale)) * STB_ATLAS_COLS;
-   self->atlas.height = (1 + (FONT_HEIGHT * scale)) * STB_ATLAS_ROWS;
-   self->atlas.format = FONT_ATLAS_FORMAT_A8;
-
-   if (!(self->atlas.buffer = (uint8_t*)calloc(
-               (size_t)self->atlas.width * self->atlas.height, 1)))
-      return false;
-
-   for (i = 0; i < STB_ATLAS_SIZE; i++)
-   {
-      stb_atlas_slot_t *slot = &self->atlas_slots[i];
-      unsigned ax            = (i % STB_ATLAS_COLS) * (1 + (scale * FONT_WIDTH));
-      unsigned ay            = (i / STB_ATLAS_COLS) * (1 + (scale * FONT_HEIGHT));
-      unsigned x, y;
-
-      for (y = 0; y < FONT_HEIGHT; y++)
-      {
-         for (x = 0; x < FONT_WIDTH; x++)
-         {
-            unsigned px    = x + y * FONT_WIDTH;
-            uint8_t  col   = (bitmap_bin[FONT_OFFSET(i) + (px >> 3)]
-                              & (1 << (px & 7))) ? 0xff : 0;
-            uint8_t *dst   = self->atlas.buffer
-                           + (ax + x * scale)
-                           + (size_t)(ay + y * scale) * self->atlas.width;
-            unsigned xo, yo;
-
-            for (yo = 0; yo < scale; yo++)
-               for (xo = 0; xo < scale; xo++)
-                  dst[xo + (size_t)yo * self->atlas.width] = col;
-         }
-      }
-
-      slot->charcode              = i;
-      slot->last_used             = 1;
-      slot->glyph.width           = FONT_WIDTH  * scale;
-      slot->glyph.height          = FONT_HEIGHT * scale;
-      slot->glyph.atlas_offset_x  = ax;
-      slot->glyph.atlas_offset_y  = ay;
-      slot->glyph.draw_offset_x   = 0;
-      slot->glyph.draw_offset_y   = 1 - FONT_HEIGHT_BASELINE_OFFSET * (int)scale;
-      slot->glyph.advance_x       = FONT_WIDTH_STRIDE * scale;
-      slot->glyph.advance_y       = 0;
-
-      slot->next                  = self->uc_map[STB_HASH(i)];
-      self->uc_map[STB_HASH(i)]   = slot;
-   }
-
+   self->builtin_scale          = scale;
+   self->cell_dims              = VIDEO_SCALE_PACK(FONT_WIDTH * scale,
+         FONT_HEIGHT * scale);
    self->line_metrics.ascender  = (float)FONT_HEIGHT_BASELINE_OFFSET * scale;
    self->line_metrics.descender = (float)(FONT_HEIGHT
          - FONT_HEIGHT_BASELINE_OFFSET) * scale;
    self->line_metrics.height    = (float)FONT_HEIGHT_STRIDE * scale;
-   self->atlas.dirty            = true;
-   self->builtin                = true;
    return true;
 }
 
-static struct font_atlas *font_renderer_stb_get_atlas(void *data)
+static void *font_rasterizer_stb_init(uint8_t *font_data,
+      size_t font_data_len, unsigned face_index, float font_size)
 {
-   stb_font_renderer_t *self = (stb_font_renderer_t*)data;
-   return &self->atlas;
-}
-
-static void font_renderer_stb_free(void *data)
-{
-   stb_font_renderer_t *self = (stb_font_renderer_t*)data;
-
-   free(self->atlas.buffer);
-   /* Do not free WiiU shared-memory font data; it is owned by the OS. */
-   if (self->font_data_owned)
-      free(self->font_data);
-   free(self);
-}
-
-static stb_atlas_slot_t* font_renderer_stb_get_slot(stb_font_renderer_t *handle)
-{
-   int i;
-   unsigned map_id;
-   unsigned oldest = 0;
-   stb_atlas_slot_t *ptr;
-   /* Find the least-recently-used slot.
-    * Unsigned subtraction handles wrap-around correctly. */
-   unsigned oldest_age = handle->usage_counter -
-      handle->atlas_slots[0].last_used;
-
-   for (i = 1; i < STB_ATLAS_SIZE; i++)
-   {
-      unsigned age = handle->usage_counter - handle->atlas_slots[i].last_used;
-      if (age > oldest_age)
-      {
-         oldest_age = age;
-         oldest     = i;
-      }
-   }
-
-   /* Remove from map */
-   map_id = STB_HASH(handle->atlas_slots[oldest].charcode);
-   if (handle->uc_map[map_id] == &handle->atlas_slots[oldest])
-      handle->uc_map[map_id] = handle->atlas_slots[oldest].next;
-   else if (handle->uc_map[map_id])
-   {
-      ptr = handle->uc_map[map_id];
-      while (ptr->next && ptr->next != &handle->atlas_slots[oldest])
-         ptr = ptr->next;
-      ptr->next = handle->atlas_slots[oldest].next;
-   }
-
-   return &handle->atlas_slots[oldest];
-}
-
-/* Merge one updated glyph cell into the atlas dirty region */
-static void font_renderer_stb_dirty_cell(struct font_atlas *atlas,
-      unsigned x, unsigned y, unsigned w, unsigned h)
-{
-   if (!atlas->dirty)
-   {
-      atlas->dirty_x0 = x;
-      atlas->dirty_y0 = y;
-      atlas->dirty_x1 = x + w;
-      atlas->dirty_y1 = y + h;
-      atlas->dirty    = true;
-   }
-   else
-   {
-      if (x < atlas->dirty_x0)
-         atlas->dirty_x0 = x;
-      if (y < atlas->dirty_y0)
-         atlas->dirty_y0 = y;
-      if (x + w > atlas->dirty_x1)
-         atlas->dirty_x1 = x + w;
-      if (y + h > atlas->dirty_y1)
-         atlas->dirty_y1 = y + h;
-   }
-}
-
-static const struct font_glyph *font_renderer_stb_get_glyph(
-      void *data, uint32_t charcode)
-{
-   int glyph_index                      = 0;
-   int x0                               = 0;
-   int y1                               = 0;
-   int advance_width                    = 0;
-   int left_side_bearing                = 0;
-   unsigned map_id                      = 0;
-   uint8_t *dst                         = NULL;
-   stb_atlas_slot_t* atlas_slot = NULL;
-   stb_font_renderer_t *self    = (stb_font_renderer_t*)data;
-   float glyph_advance_x               = 0.0f;
-   float glyph_draw_offset_y           = 0.0f;
-
-   if (!self)
-      return NULL;
-
-   map_id                               = STB_HASH(charcode);
-   atlas_slot                           = self->uc_map[map_id];
-
-   if (self->builtin)
-   {
-      /* Every glyph the built-in font has is already in the atlas, so
-       * a miss means the codepoint is simply not representable. */
-      while (atlas_slot)
-      {
-         if (atlas_slot->charcode == charcode)
-            return &atlas_slot->glyph;
-         atlas_slot = atlas_slot->next;
-      }
-      return NULL;
-   }
-
-   while (atlas_slot)
-   {
-      if (atlas_slot->charcode == charcode)
-      {
-         atlas_slot->last_used = self->usage_counter++;
-         return &atlas_slot->glyph;
-      }
-      atlas_slot = atlas_slot->next;
-   }
-
-   atlas_slot             = font_renderer_stb_get_slot(self);
-   atlas_slot->charcode   = charcode;
-   atlas_slot->next       = self->uc_map[map_id];
-   self->uc_map[map_id]   = atlas_slot;
-
-   glyph_index            = rtt_find_glyph(&self->info, charcode);
-
-   {
-      size_t esz = (self->atlas.format == FONT_ATLAS_FORMAT_A16)
-            ? sizeof(uint16_t) : sizeof(uint8_t);
-      dst = (uint8_t*)self->atlas.buffer
-            + ((size_t)atlas_slot->glyph.atlas_offset_x
-            +  (size_t)atlas_slot->glyph.atlas_offset_y
-                  * self->atlas.width) * esz;
-   }
-
-   rtt_glyph_hmetrics(&self->info, glyph_index, &advance_width, &left_side_bearing);
-
-   if (rtt_glyph_box(&self->info, glyph_index, &x0, NULL, NULL, &y1))
-      rtt_render_glyph(&self->info, dst,
-         VIDEO_SCALE_W(self->max_glyph_dims),
-         VIDEO_SCALE_H(self->max_glyph_dims),
-         self->atlas.width, self->scale_factor,
-         self->scale_factor, glyph_index,
-         self->atlas.format == FONT_ATLAS_FORMAT_A16);
-   else
-   {
-      /* This means the glyph is empty; zero its atlas region.
-       * Use row-major memset for cache-friendly clearing. */
-      int row;
-      size_t esz = (self->atlas.format == FONT_ATLAS_FORMAT_A16)
-            ? sizeof(uint16_t) : sizeof(uint8_t);
-      for (row = 0; row < (int)VIDEO_SCALE_H(self->max_glyph_dims); row++)
-         memset(dst + (size_t)row * self->atlas.width * esz, 0,
-                (size_t)VIDEO_SCALE_W(self->max_glyph_dims) * esz);
-   }
-
-   atlas_slot->glyph.width          = VIDEO_SCALE_W(self->max_glyph_dims);
-   atlas_slot->glyph.height         = VIDEO_SCALE_H(self->max_glyph_dims);
-
-   /* advance_x must always be rounded to the
-    * *nearest* integer */
-   glyph_advance_x                  = (float)advance_width * self->scale_factor;
-   atlas_slot->glyph.advance_x      = (int)((glyph_advance_x > 0.0f)
-         ? (glyph_advance_x + 0.5f)
-         : (glyph_advance_x - 0.5f));
-   /* advance_y is always zero */
-   atlas_slot->glyph.advance_y      = 0;
-
-   /* draw_offset_x must always be rounded *down*
-    * to the nearest integer */
-   atlas_slot->glyph.draw_offset_x  = (int)((float)x0 * self->scale_factor);
-
-   /* draw_offset_y must always be rounded *up*
-    * to the nearest integer */
-   glyph_draw_offset_y              = (float)(-y1) * self->scale_factor;
-   atlas_slot->glyph.draw_offset_y  = (int)((glyph_draw_offset_y < 0.0f)
-         ? floor((double)glyph_draw_offset_y)
-         : ceil((double)glyph_draw_offset_y));
-
-   font_renderer_stb_dirty_cell(&self->atlas,
-         atlas_slot->glyph.atlas_offset_x, atlas_slot->glyph.atlas_offset_y,
-         VIDEO_SCALE_W(self->max_glyph_dims),
-         VIDEO_SCALE_H(self->max_glyph_dims));
-   atlas_slot->last_used            = self->usage_counter++;
-   return &atlas_slot->glyph;
-}
-
-static bool font_renderer_stb_create_atlas_fmt(
-      stb_font_renderer_t *self, float font_size,
-      enum font_atlas_format fmt)
-{
-   unsigned i, x, y;
-   stb_atlas_slot_t* slot = NULL;
-   int max_glyph_size             = (font_size < 0) ? (int)(-font_size) : (int)font_size;
-
-   /* Bound the glyph size. Every glyph cell is max_glyph_size on a side and
-    * the atlas is (size + padding) * 16 in each dimension, so an unchecked
-    * size lets self->atlas.width * self->atlas.height overflow 'unsigned',
-    * after which the calloc below is undersized and every subsequent
-    * rtt_render_glyph()/memset writes past the buffer. Keep the
-    * 2048-per-axis ceiling. */
-   if (max_glyph_size < 1)
-      return false;
-   if (max_glyph_size > 2048 / STB_ATLAS_COLS - STB_ATLAS_PADDING)
-      max_glyph_size = 2048 / STB_ATLAS_COLS - STB_ATLAS_PADDING;
-
-   self->max_glyph_dims           = VIDEO_SCALE_PACK(max_glyph_size,
-         max_glyph_size);
-
-   self->atlas.width              = (VIDEO_SCALE_W(self->max_glyph_dims)
-         + STB_ATLAS_PADDING) * STB_ATLAS_COLS;
-   self->atlas.height             = (VIDEO_SCALE_H(self->max_glyph_dims)
-         + STB_ATLAS_PADDING) * STB_ATLAS_ROWS;
-   /* Higher-precision coverage when the video driver asked for it
-    * (HDR output); the atlas then stores uint16_t samples. */
-   self->atlas.format             = fmt;
-
-   /* Pass the two dimensions separately so the C library's calloc overflow
-    * check applies, rather than pre-multiplying into a single argument. */
-   self->atlas.buffer             = (uint8_t*)calloc(
-      self->atlas.height,
-      (size_t)self->atlas.width *
-      ((self->atlas.format == FONT_ATLAS_FORMAT_A16) ? 2 : 1));
-
-   if (!self->atlas.buffer)
-      return false;
-
-   slot = self->atlas_slots;
-
-   for (y = 0; y < STB_ATLAS_ROWS; y++)
-   {
-      for (x = 0; x < STB_ATLAS_COLS; x++)
-      {
-         slot->glyph.atlas_offset_x = x
-            * (VIDEO_SCALE_W(self->max_glyph_dims) + STB_ATLAS_PADDING);
-         slot->glyph.atlas_offset_y = y
-            * (VIDEO_SCALE_H(self->max_glyph_dims) + STB_ATLAS_PADDING);
-         slot++;
-      }
-   }
-
-   /* Pre-populate only printable ASCII (32-126).
-    * Control characters (0-31) are never rendered and
-    * would waste atlas slots that could hold real glyphs. */
-   for (i = 32; i < 127; i++)
-      font_renderer_stb_get_glyph(self, i);
-
-   return true;
-}
-
-static void *font_renderer_stb_init(
-      uint8_t *font_data, size_t font_data_len,
-      unsigned face_index,
-      float font_size, enum font_atlas_format fmt)
-{
-   int ascent, descent, line_gap;
-   stb_font_renderer_t *self =
-      (stb_font_renderer_t*)calloc(1, sizeof(*self));
+   int ascent, descent, line_gap, max_glyph_size;
+   stb_face_t *self = (stb_face_t*)calloc(1, sizeof(*self));
 
    /* stb_truetype has no collection support, so the face index is
     * not applicable here. */
@@ -1692,48 +1356,33 @@ static void *font_renderer_stb_init(
    if (!self || font_size < 1.0f)
       goto error;
 
-   /* Negative size selects em-mapped scaling below (the convention the
-    * previous STBTT_POINT_SIZE() macro encoded). */
-   font_size = -font_size;
-
 #ifdef WIIU
    if (!font_data)
    {
       uint32_t size = 0;
-      /* OS-owned shared memory: borrowed, not owned - must not be freed. */
-      if (!OSGetSharedData(SHARED_FONT_DEFAULT, 0, (void**)&self->font_data, &size))
+      /* OS-owned shared memory: borrowed, not owned. */
+      if (!OSGetSharedData(SHARED_FONT_DEFAULT, 0,
+               (void**)&self->font_data, &size))
          goto error;
-      self->font_data_size  = size;
-      self->font_data_owned = false;
+      self->font_data_size = size;
    }
    else
 #endif
    if (!font_data || !font_data_len)
    {
       /* Nothing was loaded for us - either no candidate existed or it
-       * could not be read - so fall back to the built-in glyphs. The
-       * path is not consulted: this renderer does no file I/O, so the
-       * bytes are the only thing that says whether a font arrived. */
-      if (!font_renderer_stb_init_builtin(self, -font_size))
+       * could not be read - so fall back to the built-in glyphs. */
+      if (!font_rasterizer_stb_init_builtin(self, font_size))
          goto error;
       return self;
    }
    else
    {
-      /* Borrowed: font_renderer_create_default() owns these bytes and
-       * may be sharing them with other fonts built from the same
-       * path, so this renderer must not free them.  It only ever
-       * reads them - rtt_font_t keeps a pointer into the buffer for
-       * glyph rasterisation, which is why the owner has to outlive
-       * every font using it rather than hand out copies. */
-      self->font_data       = font_data;
-      self->font_data_size  = font_data_len;
-      self->font_data_owned = false;
+      /* Borrowed: rtt_font_t keeps a pointer into the buffer, which
+       * font_driver.c keeps alive for as long as this face. */
+      self->font_data      = font_data;
+      self->font_data_size = font_data_len;
    }
-
-   /* Guard against empty/corrupt font files */
-   if (!self->font_data)
-      goto error;
 
    {
       int font_offs = rtt_font_offset_for_index(self->font_data,
@@ -1745,12 +1394,9 @@ static void *font_renderer_stb_init(
 
    rtt_vmetrics(&self->info, &ascent, &descent, &line_gap);
 
-   if (font_size < 0)
-      self->scale_factor = rtt_scale_for_em_to_pixels(&self->info, -font_size);
-   else
-      self->scale_factor = rtt_scale_for_pixel_height(&self->info, font_size);
-
-   if (self->scale_factor <= 0.0f)
+   /* The size is pixels to the em */
+   if ((self->scale_factor = rtt_scale_for_em_to_pixels(&self->info,
+               font_size)) <= 0.0f)
       goto error;
 
    /* Ascender, descender and line_gap values always
@@ -1760,15 +1406,150 @@ static void *font_renderer_stb_init(
    self->line_metrics.descender = 0.5f + ((float)(-descent) * self->scale_factor);
    self->line_metrics.height    = 0.5f + (float)(ascent - descent + line_gap) * self->scale_factor;
 
-   if (!font_renderer_stb_create_atlas_fmt(self, font_size, fmt))
-      goto error;
+   /* Every glyph cell is the em on a side, bounded so the atlas built
+    * from it stays within texture limits. */
+   max_glyph_size = (int)font_size;
+   if (max_glyph_size > 127)
+      max_glyph_size = 127;
+   self->cell_dims = VIDEO_SCALE_PACK(max_glyph_size, max_glyph_size);
 
    return self;
 
 error:
-   if (self)
-      font_renderer_stb_free(self);
+   free(self);
    return NULL;
+}
+
+static unsigned font_rasterizer_stb_glyph_index(void *data, uint32_t code)
+{
+   stb_face_t *self = (stb_face_t*)data;
+   if (self->builtin_scale)
+      return (code < 256) ? code + 1 : 0;
+   return (unsigned)rtt_find_glyph(&self->info, code);
+}
+
+static bool font_rasterizer_stb_render_builtin(stb_face_t *self,
+      unsigned gi, uint8_t *dst, unsigned pitch, unsigned cell_w,
+      unsigned cell_h, enum font_atlas_format fmt, struct font_glyph *glyph)
+{
+   unsigned x, y, xo, yo;
+   unsigned scale = self->builtin_scale;
+   unsigned i;
+   bool     fmt16 = (fmt == FONT_ATLAS_FORMAT_A16);
+   size_t   esz   = fmt16 ? sizeof(uint16_t) : sizeof(uint8_t);
+
+   /* No glyph: the caller has nothing to draw, as before */
+   if (!gi)
+      return false;
+   i = gi - 1;
+
+   for (y = 0; y < cell_h; y++)
+      memset(dst + (size_t)y * pitch * esz, 0, (size_t)cell_w * esz);
+
+   for (y = 0; y < FONT_HEIGHT; y++)
+   {
+      for (x = 0; x < FONT_WIDTH; x++)
+      {
+         unsigned px = x + y * FONT_WIDTH;
+         bool     on = (bitmap_bin[FONT_OFFSET(i) + (px >> 3)]
+               & (1 << (px & 7))) != 0;
+
+         if (!on)
+            continue;
+
+         for (yo = 0; yo < scale; yo++)
+         {
+            size_t row = (size_t)(y * scale + yo) * pitch;
+            for (xo = 0; xo < scale; xo++)
+            {
+               size_t at = row + x * scale + xo;
+               if (fmt16)
+                  ((uint16_t*)(void*)dst)[at] = 0xFFFF;
+               else
+                  dst[at]                    = 0xFF;
+            }
+         }
+      }
+   }
+
+   glyph->width         = FONT_WIDTH  * scale;
+   glyph->height        = FONT_HEIGHT * scale;
+   glyph->draw_offset_x = 0;
+   glyph->draw_offset_y = 1 - FONT_HEIGHT_BASELINE_OFFSET * (int)scale;
+   glyph->advance_x     = FONT_WIDTH_STRIDE * scale;
+   glyph->advance_y     = 0;
+   return true;
+}
+
+static bool font_rasterizer_stb_render_glyph(void *data, uint32_t code,
+      unsigned gi, uint8_t *dst, unsigned pitch, unsigned cell_w,
+      unsigned cell_h, enum font_atlas_format fmt, struct font_glyph *glyph)
+{
+   int x0                    = 0;
+   int y1                    = 0;
+   int advance_width         = 0;
+   int left_side_bearing     = 0;
+   float glyph_advance_x     = 0.0f;
+   float glyph_draw_offset_y = 0.0f;
+   stb_face_t *self          = (stb_face_t*)data;
+
+   (void)code;
+
+   if (self->builtin_scale)
+      return font_rasterizer_stb_render_builtin(self, gi, dst, pitch,
+            cell_w, cell_h, fmt, glyph);
+
+   rtt_glyph_hmetrics(&self->info, (int)gi, &advance_width,
+         &left_side_bearing);
+
+   if (rtt_glyph_box(&self->info, (int)gi, &x0, NULL, NULL, &y1))
+      rtt_render_glyph(&self->info, dst, cell_w, cell_h, pitch,
+            self->scale_factor, self->scale_factor, (int)gi,
+            fmt == FONT_ATLAS_FORMAT_A16);
+   else
+   {
+      /* The glyph is empty; clear its cell */
+      int row;
+      size_t esz = (fmt == FONT_ATLAS_FORMAT_A16)
+            ? sizeof(uint16_t) : sizeof(uint8_t);
+      for (row = 0; row < (int)cell_h; row++)
+         memset(dst + (size_t)row * pitch * esz, 0, (size_t)cell_w * esz);
+   }
+
+   glyph->width          = cell_w;
+   glyph->height         = cell_h;
+
+   /* advance_x must always be rounded to the
+    * *nearest* integer */
+   glyph_advance_x       = (float)advance_width * self->scale_factor;
+   glyph->advance_x      = (int)((glyph_advance_x > 0.0f)
+         ? (glyph_advance_x + 0.5f)
+         : (glyph_advance_x - 0.5f));
+   /* advance_y is always zero */
+   glyph->advance_y      = 0;
+
+   /* draw_offset_x must always be rounded *down*
+    * to the nearest integer */
+   glyph->draw_offset_x  = (int)((float)x0 * self->scale_factor);
+
+   /* draw_offset_y must always be rounded *up*
+    * to the nearest integer */
+   glyph_draw_offset_y   = (float)(-y1) * self->scale_factor;
+   glyph->draw_offset_y  = (int)((glyph_draw_offset_y < 0.0f)
+         ? floor((double)glyph_draw_offset_y)
+         : ceil((double)glyph_draw_offset_y));
+   return true;
+}
+
+static unsigned font_rasterizer_stb_cell_dims(void *data)
+{
+   return ((stb_face_t*)data)->cell_dims;
+}
+
+static void font_rasterizer_stb_get_line_metrics(void *data,
+      struct font_line_metrics *metrics)
+{
+   *metrics = ((stb_face_t*)data)->line_metrics;
 }
 
 static const char * const *font_renderer_stb_get_default_fonts(
@@ -1837,20 +1618,14 @@ static const char * const *font_renderer_stb_get_default_fonts(
 #endif
 }
 
-static void font_renderer_stb_get_line_metrics(
-      void* data, struct font_line_metrics **metrics)
-{
-   stb_font_renderer_t *handle = (stb_font_renderer_t*)data;
-   *metrics = &handle->line_metrics;
-}
-
-font_renderer_driver_t stb_font_renderer = {
-   font_renderer_stb_init,
-   font_renderer_stb_get_atlas,
-   font_renderer_stb_get_glyph,
-   font_renderer_stb_free,
+const font_rasterizer_t stb_font_rasterizer = {
+   font_rasterizer_stb_init,
+   font_rasterizer_stb_free,
+   font_rasterizer_stb_glyph_index,
+   font_rasterizer_stb_render_glyph,
+   font_rasterizer_stb_cell_dims,
+   font_rasterizer_stb_get_line_metrics,
    font_renderer_stb_get_default_fonts,
    "font_renderer_stb",
-   font_renderer_stb_get_line_metrics,
    true                        /* borrows_font_data */
 };

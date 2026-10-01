@@ -47,6 +47,55 @@ typedef struct font_renderer
    bool (*get_line_metrics)(void* data, struct font_line_metrics **metrics);
 } font_renderer_t;
 
+/* A font rasterizer: one face, drawn one glyph at a time into a cell
+ * it is handed. The glyph cache, the atlas, eviction and fallback faces
+ * are font_driver.c's; a rasterizer keeps none of them and does no file
+ * I/O. */
+typedef struct font_rasterizer
+{
+   /* Opens a face on @data, the bytes of the chosen font, at @font_size
+    * pixels to the em. A rasterizer with borrows_font_data set only
+    * reads the bytes, which outlive the face; one without owns them
+    * from the moment init() is called, success or not. NULL @data means
+    * no file was found: use an internal or system source if there is
+    * one (stb's built-in glyphs, the WiiU shared font), or fail. */
+   void *(*init)(uint8_t *data, size_t len, unsigned face_index,
+         float font_size);
+
+   void (*free)(void *face);
+
+   /* Nonzero when the face has a glyph for @code, 0 when it has none.
+    * The value is the face's own and is passed back to render_glyph. */
+   unsigned (*glyph_index)(void *face, uint32_t code);
+
+   /* Draws glyph @gi (for codepoint @code; 0 asks for the face's
+    * missing-glyph mark) into the @cell_w x @cell_h cell at @dst,
+    * whose rows are @pitch samples apart, covering the whole cell, and
+    * fills width, height, draw_offset_x/y and advance_x/y of @glyph,
+    * leaving its atlas offsets alone. Returns false when nothing can
+    * be drawn for @gi; the cell is then left as it was. */
+   bool (*render_glyph)(void *face, uint32_t code, unsigned gi,
+         uint8_t *dst, unsigned pitch, unsigned cell_w, unsigned cell_h,
+         enum font_atlas_format fmt, struct font_glyph *glyph);
+
+   /* The cell every glyph of this face is drawn into, packed with
+    * VIDEO_SCALE_PACK. */
+   unsigned (*cell_dims)(void *face);
+
+   void (*get_line_metrics)(void *face, struct font_line_metrics *metrics);
+
+   /* Candidate paths for the requested font, best first, NULL
+    * terminated; NULL to take the request as it stands. An empty entry
+    * means the rasterizer needs no file. @face_index is written with
+    * the face to use within whichever candidate is taken. */
+   const char * const *(*get_default_fonts)(const char *requested,
+         unsigned *face_index);
+
+   const char *ident;
+
+   bool borrows_font_data;
+} font_rasterizer_t;
+
 /* NOTE: All functions are required to be implemented for font_renderer_driver */
 
 typedef struct font_renderer_driver
@@ -292,9 +341,9 @@ void font_driver_init_osd(
  * next init. */
 void font_driver_free_osd_for(void *video_data);
 
-extern font_renderer_driver_t stb_font_renderer;
-extern font_renderer_driver_t freetype_font_renderer;
-extern font_renderer_driver_t coretext_font_renderer;
+extern const font_rasterizer_t stb_font_rasterizer;
+extern const font_rasterizer_t freetype_font_rasterizer;
+extern const font_rasterizer_t coretext_font_rasterizer;
 
 RETRO_END_DECLS
 

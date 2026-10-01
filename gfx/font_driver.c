@@ -31,6 +31,9 @@
 #include "gfx_display.h"
 #include "video_thread_wrapper.h"
 #include <retro_atomic.h>
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
 
 #include <compat/strl.h>
 
@@ -44,12 +47,11 @@
  * buffers each time round.
  *
  * The bytes of one path are read once and handed to every font built
- * from it, and freed when the last of them is gone.  A renderer that
+ * from it, and freed when the last of them is gone.  A rasterizer that
  * only reads what it is given (borrows_font_data) gets the shared
  * buffer; one that disposes of the bytes on its own schedule gets a
- * private copy and is unaffected, which is why coretext - whose
- * buffer is released by CoreGraphics rather than at font teardown -
- * needs no change.
+ * private copy - coretext, whose buffer is released by CoreGraphics
+ * rather than at font teardown.
  * ------------------------------------------------------------------ */
 
 typedef struct font_file_ref
@@ -61,18 +63,7 @@ typedef struct font_file_ref
    unsigned              refs;
 } font_file_ref_t;
 
-/* handle -> buffer, so the teardown path can find what a renderer was
- * handed without the renderer or font_data_t having to carry it. */
-typedef struct font_file_use
-{
-   struct font_file_use *next;
-   const void           *handle;
-   font_file_ref_t      *ref;      /* NULL when no file was involved */
-   void                (*real_free)(void *data);
-} font_file_use_t;
-
 static font_file_ref_t *font_file_refs;
-static font_file_use_t *font_file_uses;
 
 /* A plain int rather than an slock_t, because an slock_t has to be
  * created and there is nowhere race-free to create it: rthreads has no
@@ -206,125 +197,492 @@ static void font_file_ref_release(font_file_ref_t *entry)
 /* Caller holds the lock.  On failure the reference is dropped rather
  * than leaked: a font whose use cannot be recorded would keep the
  * buffer alive for the rest of the run. */
-static void font_file_use_add(const void *handle, font_file_ref_t *entry,
-      void (*real_free)(void *data))
-{
-   font_file_use_t *use;
-
-   if (!handle || !(use = (font_file_use_t*)calloc(1, sizeof(*use))))
-   {
-      font_file_ref_release(entry);
-      return;
-   }
-
-   use->handle    = handle;
-   use->ref       = entry;
-   use->real_free = real_free;
-   use->next      = font_file_uses;
-   font_file_uses = use;
-}
-
-/* The free() every caller of font_renderer_create_default() ends up
- * invoking.
+/* ------------------------------------------------------------------
+ * Glyph cache.
  *
- * The reference cannot be dropped by whoever tears the font down: some
- * thirty video drivers hold the driver pointer and the handle and call
- * 'font_driver->free(font_data)' themselves, and asking every one of
- * them to call a new destructor instead would be thirty edits in files
- * that mostly cannot be built outside their own platform.  So the
- * release rides on the free itself.  The driver handed back by
- * font_renderer_create_default() is a copy of the backend's with this
- * in place of its free, which means the reference is dropped wherever
- * the font is destroyed, by callers that need to know nothing about
- * any of it.
+ * Every font a video driver draws with is one of these: a 16 x 16 grid
+ * of cells in one atlas, a hash from codepoint to cell, least recently
+ * used eviction and a dirty rectangle for the driver to upload. The
+ * rasterizer behind it only draws a glyph into the cell it is given.
  *
- * The backend's own teardown runs first and outside the lock: freetype
- * disposes of its face there, and the face holds a pointer into the
- * bytes this is about to release. */
-static void font_renderer_shared_free_for(void *data,
-      const font_renderer_driver_t *backend)
+ * A codepoint the font has no glyph for is drawn from a fallback face
+ * picked by its Unicode block - the CJK, Korean, Thai and general
+ * fallback fonts the assets ship in pkg/ - and cached like any other.
+ * A fallback file is read the first time a codepoint needs it, on a
+ * thread of its own, and shared by every font from then on; until the
+ * bytes are there the codepoint draws blank and is not cached, so it is
+ * looked up again on the next draw. A hit costs what it always has.
+ * ------------------------------------------------------------------ */
+
+#define FONT_CACHE_ROWS      16
+#define FONT_CACHE_COLS      16
+#define FONT_CACHE_SLOTS     (FONT_CACHE_ROWS * FONT_CACHE_COLS)
+/* Padding between cells, so linear filtering does not bleed one
+ * glyph into the next */
+#define FONT_CACHE_PADDING   1
+#define FONT_CACHE_HASH_SIZE 0x100
+#define FONT_CACHE_HASH(c)   (((c) ^ ((c) >> 8)) & (FONT_CACHE_HASH_SIZE - 1))
+/* No codepoint: an evicted cell whose redraw failed */
+#define FONT_CACHE_NO_CODE   0xFFFFFFFFu
+
+enum font_fallback_id
 {
-   font_file_use_t **link;
-   font_file_use_t  *use  = NULL;
-
-   if (!data)
-      return;
-
-   FONT_FILE_LOCK();
-   for (link = &font_file_uses; *link; link = &(*link)->next)
-      if ((*link)->handle == data)
-      {
-         use   = *link;
-         *link = use->next;
-         break;
-      }
-   FONT_FILE_UNLOCK();
-
-   /* No record means the bookkeeping allocation failed at creation.
-    * The font itself is still real and still owns an atlas and
-    * whatever the backend hung off it, so tear it down regardless -
-    * returning here would turn a failed calloc of a few bytes into a
-    * leaked font, which is the worse of the two by a wide margin.
-    * There is no reference to drop in that case, by construction. */
-   if (!use)
-   {
-      if (backend && backend->free)
-         backend->free(data);
-      return;
-   }
-
-   if (use->real_free)
-      use->real_free(data);
-
-   FONT_FILE_LOCK();
-   font_file_ref_release(use->ref);
-   FONT_FILE_UNLOCK();
-
-   free(use);
-}
-
-/* One wrapper per backend, built on first use.  Static, so the pointer
- * handed to callers stays valid for the life of the process exactly as
- * the backend's own struct did. */
-#define FONT_SHARED_DRV_MAX 4
-static font_renderer_driver_t  font_shared_drv[FONT_SHARED_DRV_MAX];
-static const font_renderer_driver_t *font_shared_src[FONT_SHARED_DRV_MAX];
-static unsigned                font_shared_drv_count;
-
-/* One trampoline per slot, so the wrapper knows which backend it
- * stands for without the record it may not have. */
-static void font_renderer_shared_free_0(void *d)
-{ font_renderer_shared_free_for(d, font_shared_src[0]); }
-static void font_renderer_shared_free_1(void *d)
-{ font_renderer_shared_free_for(d, font_shared_src[1]); }
-static void font_renderer_shared_free_2(void *d)
-{ font_renderer_shared_free_for(d, font_shared_src[2]); }
-static void font_renderer_shared_free_3(void *d)
-{ font_renderer_shared_free_for(d, font_shared_src[3]); }
-
-static void (* const font_shared_free_fn[FONT_SHARED_DRV_MAX])(void *) =
-{
-   font_renderer_shared_free_0, font_renderer_shared_free_1,
-   font_renderer_shared_free_2, font_renderer_shared_free_3
+   FONT_FALLBACK_CJK = 0,
+   FONT_FALLBACK_KOREAN,
+   FONT_FALLBACK_THAI,
+   FONT_FALLBACK_GENERAL,
+   FONT_FALLBACK_COUNT
 };
 
-static const font_renderer_driver_t *font_renderer_shared_driver(
-      const font_renderer_driver_t *backend)
+enum font_fallback_state
+{
+   FONT_FALLBACK_IDLE = 0,
+   FONT_FALLBACK_LOADING,
+   FONT_FALLBACK_READY,
+   FONT_FALLBACK_FAILED
+};
+
+static const char * const font_fallback_files[FONT_FALLBACK_COUNT] = {
+   "chinese-fallback-font.ttf",
+   "korean-fallback-font.ttf",
+   "thai-fallback-font.ttf",
+   "fallback-font.ttf"
+};
+
+/* Where the fallback files are: the assets' pkg/ directory, as the menu
+ * and the widgets give it when they set up their language fonts.
+ * Guarded by the file lock. */
+static char font_fallback_pkg_dir[PATH_MAX_LENGTH];
+
+/* One read per fallback file per process. The bytes are published
+ * before the state flips to READY, and are kept for the life of the
+ * process once read. */
+static retro_atomic_int_t font_fallback_state[FONT_FALLBACK_COUNT];
+static font_file_ref_t   *font_fallback_ref[FONT_FALLBACK_COUNT];
+
+typedef struct font_cache_slot
+{
+   struct font_cache_slot *next;
+   struct font_glyph glyph;
+   uint32_t charcode;
+   unsigned last_used;
+} font_cache_slot_t;
+
+typedef struct font_cache
+{
+   font_cache_slot_t *map[FONT_CACHE_HASH_SIZE];
+   font_cache_slot_t slots[FONT_CACHE_SLOTS];
+   struct font_atlas atlas;
+   const font_rasterizer_t *rast;
+   void *face;
+   /* The bytes behind the face, when they are shared */
+   font_file_ref_t *ref;
+   void *fallback_face[FONT_FALLBACK_COUNT];
+   const font_rasterizer_t *fallback_rast[FONT_FALLBACK_COUNT];
+   /* Drawn for a codepoint whose fallback file is still being read */
+   struct font_glyph pending_glyph;
+   struct font_line_metrics metrics;
+   float font_size;
+   unsigned cell_dims;
+   unsigned usage_counter;
+   /* Per fallback: opened, or found to be of no use to this font */
+   uint8_t fallback_done[FONT_FALLBACK_COUNT];
+} font_cache_t;
+
+/* The fallback a codepoint the font lacks is drawn from, or -1 */
+static int font_fallback_for(uint32_t code)
+{
+   if (code < 0x80)
+      return -1;
+   /* Hangul jamo, compatibility jamo, extended jamo and syllables */
+   if (     (code >= 0x1100 && code <= 0x11FF)
+         || (code >= 0x3130 && code <= 0x318F)
+         || (code >= 0xA960 && code <= 0xA97F)
+         || (code >= 0xAC00 && code <= 0xD7FF))
+      return FONT_FALLBACK_KOREAN;
+   if (code >= 0x0E00 && code <= 0x0E7F)
+      return FONT_FALLBACK_THAI;
+   /* CJK radicals, punctuation, kana, bopomofo, the unified ideographs
+    * and their extensions, compatibility forms and the full-width
+    * forms */
+   if (     (code >= 0x2E80 && code <= 0x9FFF)
+         || (code >= 0xF900 && code <= 0xFAFF)
+         || (code >= 0xFE30 && code <= 0xFE4F)
+         || (code >= 0xFF00 && code <= 0xFFEF)
+         || (code >= 0x20000 && code <= 0x3FFFF))
+      return FONT_FALLBACK_CJK;
+   return FONT_FALLBACK_GENERAL;
+}
+
+#if defined(HAVE_THREADS) && defined(retro_atomic_cas_int) \
+ && defined(RETRO_ATOMIC_LOCK_FREE)
+typedef struct font_fallback_load
+{
+   int  id;
+   char path[PATH_MAX_LENGTH];
+} font_fallback_load_t;
+
+static void font_fallback_load_thread(void *userdata)
+{
+   font_fallback_load_t *load = (font_fallback_load_t*)userdata;
+   font_file_ref_t      *ref  = font_file_ref_acquire(load->path);
+   font_fallback_ref[load->id] = ref;
+   retro_atomic_store_release_int(&font_fallback_state[load->id],
+         ref ? FONT_FALLBACK_READY : FONT_FALLBACK_FAILED);
+   free(load);
+}
+
+/* Starts the read of fallback @id unless it has been started before */
+static void font_fallback_request(int id)
+{
+   sthread_t            *thread;
+   font_fallback_load_t *load;
+
+   if (!retro_atomic_cas_int(&font_fallback_state[id],
+            FONT_FALLBACK_IDLE, FONT_FALLBACK_LOADING))
+      return;
+
+   if (!(load = (font_fallback_load_t*)malloc(sizeof(*load))))
+   {
+      retro_atomic_store_release_int(&font_fallback_state[id],
+            FONT_FALLBACK_FAILED);
+      return;
+   }
+   load->id = id;
+   FONT_FILE_LOCK();
+   if (*font_fallback_pkg_dir)
+      fill_pathname_join_special(load->path, font_fallback_pkg_dir,
+            font_fallback_files[id], sizeof(load->path));
+   else
+      *load->path = '\0';
+   FONT_FILE_UNLOCK();
+
+   if (     !*load->path
+         || !(thread = sthread_create(font_fallback_load_thread, load)))
+   {
+      free(load);
+      /* Nowhere to read it from yet: let a later miss try again once
+       * the pkg directory is known */
+      retro_atomic_store_release_int(&font_fallback_state[id],
+            *font_fallback_pkg_dir ? FONT_FALLBACK_FAILED
+                                   : FONT_FALLBACK_IDLE);
+      return;
+   }
+   sthread_detach(thread);
+}
+#define FONT_FALLBACK_LOADS 1
+#endif
+
+/* The fallback face this font draws codepoints of fallback @id from:
+ * NULL with *pending set while its file is still being read, NULL
+ * without when there is none to be had. */
+static void *font_cache_fallback_face(font_cache_t *c, int id,
+      const font_rasterizer_t **rast, bool *pending)
+{
+#ifdef FONT_FALLBACK_LOADS
+   font_file_ref_t *ref;
+   uint8_t         *data;
+
+   *pending = false;
+   if (c->fallback_done[id])
+   {
+      *rast = c->fallback_rast[id];
+      return c->fallback_face[id];
+   }
+
+   switch (retro_atomic_load_acquire_int(&font_fallback_state[id]))
+   {
+      case FONT_FALLBACK_READY:
+         break;
+      case FONT_FALLBACK_FAILED:
+         c->fallback_done[id] = 1;
+         return NULL;
+      default:
+         font_fallback_request(id);
+         *pending = (retro_atomic_load_acquire_int(&font_fallback_state[id])
+               == FONT_FALLBACK_LOADING);
+         return NULL;
+   }
+
+   c->fallback_done[id] = 1;
+   ref                  = font_fallback_ref[id];
+   /* The font already is this file: nothing more to find in it */
+   if (!ref || ref == c->ref)
+      return NULL;
+
+   /* A rasterizer that takes the bytes would need a private copy of a
+    * file of megabytes for every font; stb reads them in place. */
+   *rast = c->rast->borrows_font_data ? c->rast : &stb_font_rasterizer;
+   data  = ref->data;
+   if (!(c->fallback_face[id] = (*rast)->init(data, ref->len, 0,
+               c->font_size)))
+      return NULL;
+   c->fallback_rast[id] = *rast;
+   return c->fallback_face[id];
+#else
+   (void)c;
+   (void)id;
+   (void)rast;
+   *pending = false;
+   return NULL;
+#endif
+}
+
+/* The least recently used cell, taken out of the hash */
+static font_cache_slot_t *font_cache_take_slot(font_cache_t *c)
 {
    unsigned i;
+   unsigned oldest     = 0;
+   /* Unsigned subtraction handles the counter wrapping */
+   unsigned oldest_age = c->usage_counter - c->slots[0].last_used;
+   font_cache_slot_t **link;
 
-   for (i = 0; i < font_shared_drv_count; i++)
-      if (font_shared_src[i] == backend)
-         return &font_shared_drv[i];
+   for (i = 1; i < FONT_CACHE_SLOTS; i++)
+   {
+      unsigned age = c->usage_counter - c->slots[i].last_used;
+      if (age > oldest_age)
+      {
+         oldest_age = age;
+         oldest     = i;
+      }
+   }
 
-   if (font_shared_drv_count >= FONT_SHARED_DRV_MAX)
-      return backend;
+   if (c->slots[oldest].charcode != FONT_CACHE_NO_CODE)
+   {
+      for (link = &c->map[FONT_CACHE_HASH(c->slots[oldest].charcode)];
+            *link; link = &(*link)->next)
+      {
+         if (*link == &c->slots[oldest])
+         {
+            *link = c->slots[oldest].next;
+            break;
+         }
+      }
+   }
+   c->slots[oldest].charcode = FONT_CACHE_NO_CODE;
+   c->slots[oldest].next     = NULL;
+   return &c->slots[oldest];
+}
 
-   i                    = font_shared_drv_count++;
-   font_shared_src[i]   = backend;
-   font_shared_drv[i]   = *backend;
-   font_shared_drv[i].free = font_shared_free_fn[i];
-   return &font_shared_drv[i];
+static void font_cache_dirty_cell(struct font_atlas *atlas,
+      unsigned x, unsigned y, unsigned w, unsigned h)
+{
+   if (!atlas->dirty)
+   {
+      atlas->dirty_x0 = x;
+      atlas->dirty_y0 = y;
+      atlas->dirty_x1 = x + w;
+      atlas->dirty_y1 = y + h;
+      atlas->dirty    = true;
+   }
+   else
+   {
+      if (x < atlas->dirty_x0)
+         atlas->dirty_x0 = x;
+      if (y < atlas->dirty_y0)
+         atlas->dirty_y0 = y;
+      if (x + w > atlas->dirty_x1)
+         atlas->dirty_x1 = x + w;
+      if (y + h > atlas->dirty_y1)
+         atlas->dirty_y1 = y + h;
+   }
+}
+
+static const struct font_glyph *font_cache_miss(font_cache_t *c,
+      uint32_t code)
+{
+   unsigned gi                   = c->rast->glyph_index(c->face, code);
+   const font_rasterizer_t *rast = c->rast;
+   void *face                    = c->face;
+   font_cache_slot_t *slot;
+   unsigned cell_w, cell_h;
+   size_t   esz;
+   uint8_t *dst;
+
+   if (!gi)
+   {
+      int id = font_fallback_for(code);
+      if (id >= 0)
+      {
+         bool pending                     = false;
+         const font_rasterizer_t *fb_rast = NULL;
+         void *fb_face = font_cache_fallback_face(c, id, &fb_rast,
+               &pending);
+         unsigned fb_gi;
+
+         if (pending)
+            return &c->pending_glyph;
+         if (fb_face && (fb_gi = fb_rast->glyph_index(fb_face, code)))
+         {
+            rast = fb_rast;
+            face = fb_face;
+            gi   = fb_gi;
+         }
+      }
+   }
+
+   slot   = font_cache_take_slot(c);
+   cell_w = VIDEO_SCALE_W(c->cell_dims);
+   cell_h = VIDEO_SCALE_H(c->cell_dims);
+   esz    = (c->atlas.format == FONT_ATLAS_FORMAT_A16)
+      ? sizeof(uint16_t) : sizeof(uint8_t);
+   dst    = c->atlas.buffer
+      + ((size_t)slot->glyph.atlas_offset_x
+      +  (size_t)slot->glyph.atlas_offset_y * c->atlas.width) * esz;
+
+   if (!rast->render_glyph(face, code, gi, dst, c->atlas.width,
+            cell_w, cell_h, c->atlas.format, &slot->glyph))
+   {
+      /* Nothing to draw: the cell goes back as the oldest there is */
+      slot->last_used = c->usage_counter - 0x80000000u;
+      return NULL;
+   }
+
+   slot->charcode               = code;
+   slot->next                   = c->map[FONT_CACHE_HASH(code)];
+   c->map[FONT_CACHE_HASH(code)] = slot;
+   slot->last_used              = c->usage_counter++;
+   font_cache_dirty_cell(&c->atlas, slot->glyph.atlas_offset_x,
+         slot->glyph.atlas_offset_y, cell_w, cell_h);
+   return &slot->glyph;
+}
+
+static const struct font_glyph *font_cache_get_glyph(void *data,
+      uint32_t code)
+{
+   font_cache_t      *c = (font_cache_t*)data;
+   font_cache_slot_t *slot;
+
+   if (!c)
+      return NULL;
+
+   for (slot = c->map[FONT_CACHE_HASH(code)]; slot; slot = slot->next)
+   {
+      if (slot->charcode == code)
+      {
+         slot->last_used = c->usage_counter++;
+         return &slot->glyph;
+      }
+   }
+
+   return font_cache_miss(c, code);
+}
+
+static struct font_atlas *font_cache_get_atlas(void *data)
+{
+   font_cache_t *c = (font_cache_t*)data;
+   return c ? &c->atlas : NULL;
+}
+
+static void font_cache_get_line_metrics(void *data,
+      struct font_line_metrics **metrics)
+{
+   font_cache_t *c = (font_cache_t*)data;
+   if (c)
+      *metrics = &c->metrics;
+}
+
+static void font_cache_free(void *data)
+{
+   unsigned i;
+   font_cache_t *c = (font_cache_t*)data;
+
+   if (!c)
+      return;
+
+   for (i = 0; i < FONT_FALLBACK_COUNT; i++)
+      if (c->fallback_face[i])
+         c->fallback_rast[i]->free(c->fallback_face[i]);
+   if (c->face)
+      c->rast->free(c->face);
+   if (c->ref)
+   {
+      FONT_FILE_LOCK();
+      font_file_ref_release(c->ref);
+      FONT_FILE_UNLOCK();
+   }
+   free(c->atlas.buffer);
+   free(c);
+}
+
+/* What the video drivers' fonts draw through */
+static const font_renderer_driver_t font_cache_driver = {
+   NULL,
+   font_cache_get_atlas,
+   font_cache_get_glyph,
+   font_cache_free,
+   NULL,
+   "font_cache",
+   font_cache_get_line_metrics,
+   true
+};
+
+/* Builds the cache around an opened face; takes @face and @ref */
+static font_cache_t *font_cache_new(const font_rasterizer_t *rast,
+      void *face, font_file_ref_t *ref, float font_size,
+      enum font_atlas_format fmt)
+{
+   unsigned x, y, i;
+   unsigned cell_w, cell_h;
+   font_cache_t *c = (font_cache_t*)calloc(1, sizeof(*c));
+
+   if (!c)
+      goto error;
+
+   c->rast      = rast;
+   c->face      = face;
+   c->ref       = ref;
+   c->font_size = font_size;
+   c->cell_dims = rast->cell_dims(face);
+   cell_w       = VIDEO_SCALE_W(c->cell_dims);
+   cell_h       = VIDEO_SCALE_H(c->cell_dims);
+
+   /* The rasterizers bound their cells; the atlas stays within common
+    * texture limits and its size cannot overflow */
+   if (!cell_w || !cell_h || cell_w > 255 || cell_h > 255)
+      goto error;
+
+   c->atlas.width  = (cell_w + FONT_CACHE_PADDING) * FONT_CACHE_COLS;
+   c->atlas.height = (cell_h + FONT_CACHE_PADDING) * FONT_CACHE_ROWS;
+   c->atlas.format = fmt;
+   if (!(c->atlas.buffer = (uint8_t*)calloc(c->atlas.height,
+               (size_t)c->atlas.width
+               * ((fmt == FONT_ATLAS_FORMAT_A16) ? 2 : 1))))
+      goto error;
+
+   for (i = 0, y = 0; y < FONT_CACHE_ROWS; y++)
+   {
+      for (x = 0; x < FONT_CACHE_COLS; x++, i++)
+      {
+         c->slots[i].charcode             = FONT_CACHE_NO_CODE;
+         c->slots[i].glyph.atlas_offset_x = x * (cell_w + FONT_CACHE_PADDING);
+         c->slots[i].glyph.atlas_offset_y = y * (cell_h + FONT_CACHE_PADDING);
+      }
+   }
+
+   rast->get_line_metrics(face, &c->metrics);
+   c->pending_glyph.advance_x = (int)cell_w;
+
+   /* Printable ASCII up front; control characters are never drawn */
+   for (i = 32; i < 127; i++)
+      font_cache_get_glyph(c, i);
+
+   return c;
+
+error:
+   if (c)
+   {
+      free(c->atlas.buffer);
+      free(c);
+   }
+   rast->free(face);
+   if (ref)
+   {
+      FONT_FILE_LOCK();
+      font_file_ref_release(ref);
+      FONT_FILE_UNLOCK();
+   }
+   return NULL;
 }
 
 /* Monotonic counter incremented whenever any font instance is
@@ -438,6 +796,15 @@ void font_driver_set_language_font(font_data_t *font,
 {
    if (!font)
       return;
+
+   /* The fallback fonts live beside the language fonts */
+   if (pkg_dir && *pkg_dir)
+   {
+      FONT_FILE_LOCK();
+      strlcpy(font_fallback_pkg_dir, pkg_dir,
+            sizeof(font_fallback_pkg_dir));
+      FONT_FILE_UNLOCK();
+   }
 
    free(font->lang_pkg_dir);
    free(font->lang_default_path);
@@ -590,14 +957,14 @@ int font_renderer_create_default(
       void **handle, const char *font_path, unsigned font_size,
       enum font_atlas_format fmt)
 {
-   static const font_renderer_driver_t *font_backends[] = {
+   static const font_rasterizer_t *font_backends[] = {
 #ifdef HAVE_FREETYPE
-      &freetype_font_renderer,
+      &freetype_font_rasterizer,
 #endif
 #if defined(__APPLE__) && defined(HAVE_CORETEXT)
-      &coretext_font_renderer,
+      &coretext_font_rasterizer,
 #endif
-      &stb_font_renderer,
+      &stb_font_rasterizer,
       NULL
    };
    unsigned i;
@@ -609,13 +976,14 @@ int font_renderer_create_default(
       int64_t          len   = 0;
       unsigned         face  = 0;
       font_file_ref_t *entry = NULL;
+      void            *f;
 
-      /* Ask the renderer where to look. It gets the requested path so
+      /* Ask the rasterizer where to look. It gets the requested path so
        * it can resolve against it - freetype hands it to fontconfig,
        * which answers with a system font when a fallback was asked
        * for - and returns NULL to accept the request as it stands.
        * Doing the lookup and the read here is what keeps file I/O out
-       * of the renderers entirely. */
+       * of the rasterizers entirely. */
       {
          const char * const *cand = font_backends[i]->get_default_fonts
             ? font_backends[i]->get_default_fonts(font_path, &face)
@@ -623,7 +991,7 @@ int font_renderer_create_default(
 
          for (; cand && *cand; cand++)
          {
-            /* An empty entry means the renderer has an internal or
+            /* An empty entry means the rasterizer has an internal or
              * system source and wants no file. */
             if (!**cand || path_is_valid(*cand))
             {
@@ -639,10 +1007,10 @@ int font_renderer_create_default(
       }
 
       /* One read per path, however many fonts are built from it.  A
-       * renderer that borrows gets the shared buffer and the
-       * reference is held for as long as its handle lives; one that
+       * rasterizer that borrows gets the shared buffer and the cache
+       * holds the reference for as long as the font lives; one that
        * takes ownership gets a copy and the reference is dropped
-       * here, so its teardown is exactly as it was. */
+       * here. */
       if (path && *path)
       {
          if ((entry = font_file_ref_acquire(path)))
@@ -667,24 +1035,19 @@ int font_renderer_create_default(
          }
       }
 
-      /* A renderer that takes ownership does so the moment init() is
-       * called, not when it succeeds: stb stores the buffer, then
-       * rejects a malformed font and frees it on the way out. Freeing
-       * here as well was a double free on any unreadable or truncated
-       * font file. A borrowing renderer frees nothing, so the
-       * reference is dropped below on either outcome. */
-      *handle = font_backends[i]->init(data, (size_t)len, face,
-            font_size, fmt);
-      if (*handle)
+      /* A rasterizer that takes ownership does so the moment init() is
+       * called, not when it succeeds, so nothing is freed here on its
+       * behalf. A borrowing one frees nothing, so the reference is
+       * dropped below when it fails. */
+      if ((f = font_backends[i]->init(data, (size_t)len, face,
+                  (float)font_size)))
       {
-         /* Recorded even when no file was involved - a built-in or
-          * system font still has to reach the backend's own free
-          * through the wrapper below. */
-         FONT_FILE_LOCK();
-         font_file_use_add(*handle, entry,
-               font_backends[i]->free);
-         FONT_FILE_UNLOCK();
-         *drv = font_renderer_shared_driver(font_backends[i]);
+         font_cache_t *c = font_cache_new(font_backends[i], f, entry,
+               (float)font_size, fmt);
+         if (!c)
+            break;
+         *handle = c;
+         *drv    = &font_cache_driver;
          return 1;
       }
 
@@ -693,7 +1056,6 @@ int font_renderer_create_default(
          FONT_FILE_LOCK();
          font_file_ref_release(entry);
          FONT_FILE_UNLOCK();
-         entry = NULL;
       }
    }
 

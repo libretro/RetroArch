@@ -56,7 +56,7 @@ video_driver_state_t *video_state_get_ptr(void) { return &vst; }
  * stb renderer, so font_driver.c's reference to it needs satisfying.
  * The create test links stb.c itself and defines it for real. */
 #ifndef FONT_TEST_REAL_STB
-font_renderer_driver_t stb_font_renderer;
+const font_rasterizer_t stb_font_rasterizer;
 #endif
 
 #ifdef HAVE_THREADS
@@ -154,6 +154,11 @@ void slock_free(slock_t *l)
 }
 void slock_lock(slock_t *l)   { pthread_mutex_lock((pthread_mutex_t*)l); }
 void slock_unlock(slock_t *l) { pthread_mutex_unlock((pthread_mutex_t*)l); }
+/* No fallback font is read here: a thread that cannot be made leaves
+ * font_driver.c drawing the missing-glyph mark, as without fallbacks. */
+sthread_t *sthread_create(void (*fn)(void*), void *userdata)
+{ (void)fn; (void)userdata; return NULL; }
+int sthread_detach(sthread_t *thread) { (void)thread; return 0; }
 #endif
 
 /* font_driver.c sends gfx_display's batch out before it draws text,
