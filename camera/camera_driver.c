@@ -112,7 +112,14 @@ bool driver_camera_start(void)
       if (camera_allow)
       {
          bool ok = camera_st->driver->start(camera_st->data);
-         runloop_frame_work_set(RUNLOOP_WORK_CAMERA, ok);
+         /* The bit means "poll this every frame": up only when the
+          * driver can be polled and the core gave it somewhere to
+          * deliver. Everything the iterate used to re-test lives
+          * here, once, at the edge. */
+         runloop_frame_work_set(RUNLOOP_WORK_CAMERA,
+                  ok
+               && camera_st->driver->poll
+               && camera_st->cb.caps);
          return ok;
       }
 

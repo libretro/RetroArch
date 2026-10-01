@@ -6067,6 +6067,13 @@ bool command_event(enum event_command cmd, void *data)
                      &runloop_st->fastmotion_override.current));
          }
          break;
+      case CMD_EVENT_CAMERA_ALLOW_APPLY:
+         /* Allowing again does nothing by itself: the core has to call
+          * start() for the camera to come up, and that start raises
+          * the bit. Disallowing stops a camera that is running. */
+         if (!settings->bools.camera_allow)
+            driver_camera_stop();
+         break;
       case CMD_EVENT_DISCORD_INIT:
 #ifdef HAVE_DISCORD
          {

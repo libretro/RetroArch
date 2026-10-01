@@ -8645,12 +8645,10 @@ int runloop_iterate(void)
       autosave_lock();
 #endif
 
-   if (     (runloop_st->frame_work & RUNLOOP_WORK_CAMERA)
-         && settings->bools.camera_allow
-         && camera_st->cb.caps
-         && camera_st->driver
-         && camera_st->driver->poll
-         && camera_st->data)
+   /* driver_camera_start() raised the bit only with a pollable
+    * driver and registered caps; stop, teardown and a camera_allow
+    * change drop it. */
+   if (runloop_st->frame_work & RUNLOOP_WORK_CAMERA)
       camera_st->driver->poll(camera_st->data,
             camera_st->cb.frame_raw_framebuffer,
             camera_st->cb.frame_opengl_texture);

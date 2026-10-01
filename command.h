@@ -284,6 +284,9 @@ enum event_command
    CMD_EVENT_CONTROLLER_INIT,
    CMD_EVENT_DISCORD_INIT,
    CMD_EVENT_PRESENCE_UPDATE,
+   /* camera_allow changed: a running camera the user just disallowed
+    * is stopped here, so the frame path tests only its frame_work bit */
+   CMD_EVENT_CAMERA_ALLOW_APPLY,
    CMD_EVENT_OVERLAY_NEXT,
    CMD_EVENT_OSK_TOGGLE,
    CMD_EVENT_RELOAD_CONFIG,
