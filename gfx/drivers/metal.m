@@ -3926,106 +3926,6 @@ static INLINE void write_quad6(SpriteVertex *pv,
    }
 }
 
-- (void)_renderLine:(const char *)msg
-             length:(NSUInteger)length
-              scale:(float)scale
-              color:(vector_float4)color
-               posX:(float)posX
-               posY:(float)posY
-            aligned:(unsigned)aligned
-{
-   const struct font_glyph* glyph_q;
-   const char  *msg_end;
-   int                x;
-   int                y;
-   int          delta_x;
-   int          delta_y;
-   float inv_tex_size_x;
-   float inv_tex_size_y;
-   float inv_win_width;
-   float inv_win_height;
-   float rgba[4];
-   uint64_t packed;
-
-   if (!_font_driver || !_font_data)
-      return;
-
-   rgba[0]          = color.x;
-   rgba[1]          = color.y;
-   rgba[2]          = color.z;
-   rgba[3]          = color.w;
-   packed           = rgba16_pack(rgba);
-   msg_end          = msg + length;
-   x                = (int)roundf(posX * VIDEO_SCALE_W(_driver.viewport->full_dims));
-   y                = (int)roundf((1.0f - posY) * VIDEO_SCALE_H(_driver.viewport->full_dims));
-   delta_x          = 0;
-   delta_y          = 0;
-   inv_tex_size_x   = 1.0f / _texture.width;
-   inv_tex_size_y   = 1.0f / _texture.height;
-   inv_win_width    = 1.0f / VIDEO_SCALE_W(_driver.viewport->full_dims);
-   inv_win_height   = 1.0f / VIDEO_SCALE_H(_driver.viewport->full_dims);
-
-   switch (aligned)
-   {
-      case TEXT_ALIGN_RIGHT:
-         x -= [self getWidthForMessage:msg length:length scale:scale];
-         break;
-
-      case TEXT_ALIGN_CENTER:
-         x -= [self getWidthForMessage:msg length:length scale:scale] / 2;
-         break;
-
-      default:
-         break;
-   }
-
-   SpriteVertex *v = (SpriteVertex *)_range.data;
-   v              += _vertices;
-   glyph_q         = _font_driver->get_glyph(_font_data, '?');
-   /* Pair the fallback-glyph lookup with an update like every other
-    * lookup, in case '?' was just (re)rasterized after eviction. */
-   if (glyph_q)
-      [self updateGlyph:glyph_q];
-
-   while (msg < msg_end)
-   {
-      int off_x, off_y, tex_x, tex_y, width, height;
-      const struct font_glyph *glyph;
-      unsigned code = utf8_walk(&msg);
-
-      /* Do something smarter here .. */
-      if (!(glyph = _font_driver->get_glyph(_font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      [self updateGlyph:glyph];
-
-      off_x  = glyph->draw_offset_x;
-      off_y  = glyph->draw_offset_y;
-      tex_x  = glyph->atlas_offset_x;
-      tex_y  = glyph->atlas_offset_y;
-      width  = glyph->width;
-      height = glyph->height;
-
-      write_quad6(v,
-            (x + (off_x + delta_x) * scale) * inv_win_width,
-            (y + (off_y + delta_y) * scale) * inv_win_height,
-            width * scale * inv_win_width,
-            height * scale * inv_win_height,
-            tex_x * inv_tex_size_x,
-            tex_y * inv_tex_size_y,
-            width * inv_tex_size_x,
-            height * inv_tex_size_y,
-            packed);
-
-      _vertices += 6;
-      v         += 6;
-
-      delta_x   += glyph->advance_x;
-      delta_y   += glyph->advance_y;
-   }
-}
-
 - (void)_flush
 {
    if (_vertices == 0)
@@ -4046,7 +3946,12 @@ static INLINE void write_quad6(SpriteVertex *pv,
    _vertices = 0;
 }
 
+/* Lays a message out through gfx/font_layout.h, appending its glyph
+ * quads to the vertex range; every glyph lookup, the '?' stand-in's
+ * included, is paired with an update of that glyph's atlas cell, so a
+ * cell is never stranded when a later lookup clears the dirty flag. */
 - (void)renderMessage:(const char *)msg
+               length:(NSUInteger)msg_len
                height:(unsigned)height
                 scale:(float)scale
                 color:(vector_float4)color
@@ -4054,35 +3959,93 @@ static INLINE void write_quad6(SpriteVertex *pv,
                  posY:(float)posY
               aligned:(unsigned)aligned
 {
-   int lines = 0;
    float line_height;
+   float inv_tex_size_x;
+   float inv_tex_size_y;
+   float inv_win_width;
+   float inv_win_height;
+   float rgba[4];
+   uint64_t packed;
+   unsigned full_w;
+   unsigned full_h;
+   SpriteVertex *v;
    struct font_line_metrics *line_metrics = NULL;
+   const struct font_glyph *glyph_q       = NULL;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t);
+   void *font_data;
+   int x                                  = 0;
+   int y                                  = 0;
+
+   /* Validate font data before use - can become invalid during
+    * video context reset or if font was freed while in use */
    if (!_font_driver || !_font_data)
       return;
+
+   get_glyph        = _font_driver->get_glyph;
+   font_data        = _font_data;
    _font_driver->get_line_metrics(_font_data, &line_metrics);
-   line_height = line_metrics->height * scale / height;
-   for (;;)
-   {
-      const char *delim = msg;
-      while (*delim && *delim != '\n')
-         delim++;
-      size_t msg_len = (size_t)(delim - msg);
-      /* Draw the line */
-      [self _renderLine:msg
-                 length:msg_len
-                  scale:scale
-                  color:color
-                   posX:posX
-                   posY:posY - (float)lines * line_height
-                aligned:aligned];
-      if (!*delim)
-         break;
-      msg += msg_len + 1;
-      lines++;
-   }
+   line_height      = line_metrics->height * scale / height;
+
+   rgba[0]          = color.x;
+   rgba[1]          = color.y;
+   rgba[2]          = color.z;
+   rgba[3]          = color.w;
+   packed           = rgba16_pack(rgba);
+   full_w           = VIDEO_SCALE_W(_driver.viewport->full_dims);
+   full_h           = VIDEO_SCALE_H(_driver.viewport->full_dims);
+   inv_tex_size_x   = 1.0f / _texture.width;
+   inv_tex_size_y   = 1.0f / _texture.height;
+   inv_win_width    = 1.0f / full_w;
+   inv_win_height   = 1.0f / full_h;
+
+   glyph_q          = get_glyph(font_data, '?');
+   if (glyph_q)
+      [self updateGlyph:glyph_q];
+
+   v                = (SpriteVertex *)_range.data + _vertices;
+
+#define FONT_LAYOUT_ALIGNED (aligned == TEXT_ALIGN_RIGHT \
+      || aligned == TEXT_ALIGN_CENTER)
+#define FONT_LAYOUT_DIRTY(glyph) [self updateGlyph:(glyph)]
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+   do \
+   { \
+      (void)(count); \
+      x = (int)roundf(posX * full_w); \
+      y = (int)roundf((1.0f - (posY - (float)(line) * line_height)) \
+            * full_h); \
+      if (aligned == TEXT_ALIGN_RIGHT) \
+         x -= (int)((line_width) * scale); \
+      else if (aligned == TEXT_ALIGN_CENTER) \
+         x -= (int)((line_width) * scale) / 2; \
+   } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+   do \
+   { \
+      int off_x  = (glyph)->draw_offset_x; \
+      int off_y  = (glyph)->draw_offset_y; \
+      int tex_x  = (glyph)->atlas_offset_x; \
+      int tex_y  = (glyph)->atlas_offset_y; \
+      int g_w    = (glyph)->width; \
+      int g_h    = (glyph)->height; \
+      write_quad6(v, \
+            (x + (off_x + (pen_x)) * scale) * inv_win_width, \
+            (y + (off_y + (pen_y)) * scale) * inv_win_height, \
+            g_w * scale * inv_win_width, \
+            g_h * scale * inv_win_height, \
+            tex_x * inv_tex_size_x, \
+            tex_y * inv_tex_size_y, \
+            g_w * inv_tex_size_x, \
+            g_h * inv_tex_size_y, \
+            packed); \
+      _vertices += 6; \
+      v         += 6; \
+   } while (0)
+#include "../font_layout.h"
 }
 
 - (void)renderMessage:(const char *)msg
+               length:(NSUInteger)msg_len
                 width:(unsigned)width
                height:(unsigned)height
                params:(const struct font_params *)params
@@ -4164,6 +4127,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
          color_dark.w = color.w * drop_alpha;
 
          [self renderMessage:msg
+                      length:msg_len
                       height:height
                        scale:scale
                        color:color_dark
@@ -4173,6 +4137,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
       }
 
       [self renderMessage:msg
+                   length:msg_len
                    height:height
                     scale:scale
                     color:color
@@ -4229,7 +4194,8 @@ static void metal_raster_font_render_msg(
    video_viewport_t *vp = [d viewport];
    unsigned width       = VIDEO_SCALE_W(vp->full_dims);
    unsigned height      = VIDEO_SCALE_H(vp->full_dims);
-   [r renderMessage:msg width:width height:height params:params];
+   [r renderMessage:msg length:msg_len width:width height:height
+             params:params];
 }
 
 static const struct font_glyph *metal_raster_font_get_glyph(

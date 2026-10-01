@@ -1,0 +1,8 @@
+/* Stand-in for the macOS SDK's <AvailabilityMacros.h>, for the compile matrix's Metal lane */
+#define MAC_OS_X_VERSION_10_13 101300
+#define MAC_OS_X_VERSION_10_14 101400
+#define MAC_OS_X_VERSION_10_15 101500
+#define MAC_OS_X_VERSION_MIN_REQUIRED 101300
+#define MAC_OS_X_VERSION_MAX_ALLOWED 101500
+#define __MAC_OS_X_VERSION_MIN_REQUIRED 101300
+#define __MAC_OS_X_VERSION_MAX_ALLOWED 101500

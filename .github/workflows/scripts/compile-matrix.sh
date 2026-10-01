@@ -964,6 +964,28 @@ check "runahead: HAVE_DYLIB only"  "$RADEFS -DHAVE_DYLIB"               runahead
 check "runahead: HAVE_DYNAMIC"     "$RADEFS -DHAVE_DYNAMIC"             runahead.c
 check "runahead: both"             "$RADEFS -DHAVE_DYNAMIC -DHAVE_DYLIB" runahead.c
 
+# The Metal driver, as Objective-C against stand-ins for the parts of the
+# macOS SDK it uses (tools/platform_stubs/metal). No runner here has the
+# SDK, so the Apple jobs used to be the first to compile it. A selector
+# the stand-ins do not declare is an error: a new Metal call needs its
+# declaration added there.
+if command -v clang > /dev/null 2>&1; then
+   if ! out=$(clang -x objective-c -fobjc-runtime=macosx-10.13 -fblocks \
+         -fsyntax-only -Wall -Wno-unused-function -Werror=objc-method-access \
+         -Werror=unused-but-set-variable $HOSTOFF -D__APPLE__ -D__MACH__ \
+         -DHAVE_METAL -Itools/platform_stubs/metal $INC $BASE \
+         gfx/drivers/metal.m 2>&1); then
+      echo "FAIL  metal video (stubs)"
+      echo "      gfx/drivers/metal.m"
+      show_out "$out"
+      fail=1
+   else
+      echo "ok    metal video (stubs)"
+   fi
+else
+   echo "skip  metal video (stubs) (no clang)"
+fi
+
 # gfx/font_layout.h expands inside each driver's render function, and a
 # layout counter a driver has no use for is set but never read. GCC 15
 # and clang warn about that; the runner's GCC does not, so these lanes
