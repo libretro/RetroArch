@@ -171,6 +171,9 @@ struct channel {
 	int arpeggio_param, vol_slide_param, gvol_slide_param, pan_slide_param;
 	int fine_vslide_up_param, fine_vslide_down_param;
 	int vcol_slide_param;
+	/* IT S73-S76: the playing note's new-note action, overriding the
+	   instrument's; -1 when none is set. */
+	int nna_override;
 	int retrig_volume, retrig_ticks, tremor_on_ticks, tremor_off_ticks;
 	int vibrato_type, vibrato_phase, vibrato_speed, vibrato_depth;
 	int tremolo_type, tremolo_phase, tremolo_speed, tremolo_depth;
@@ -2246,6 +2249,7 @@ static void channel_init( struct channel *channel, struct replay *replay, int id
 	channel->flt_cutoff = 127;
 	channel->flt_env = 255;
 	channel->flt_key = -1;
+	channel->nna_override = -1;
 	channel->instrument = &replay->module->instruments[ 0 ];
 	channel->sample = &channel->instrument->samples[ 0 ];
 	/* Unsigned: the channel count comes from the file and is not
@@ -2465,7 +2469,8 @@ static void channel_capture_ghost( struct channel *channel ) {
 	if( porta ) {
 		return;
 	}
-	nna = channel->instrument->nna;
+	nna = channel->nna_override >= 0 ? channel->nna_override
+		: channel->instrument->nna;
 	if( nna < 1 || nna > 3 ) {
 		return;
 	}
@@ -2544,6 +2549,14 @@ static void channel_trigger( struct channel *channel ) {
 	int key, sam, porta, period, fine_tune, ins = channel->note.instrument;
 	struct sample *sample;
 	channel_capture_ghost( channel );
+	/* An override belongs to the note it was set on; a portamento
+	   keeps that note playing. */
+	if( channel->note.key >= 1 && channel->note.key <= 96
+			&& ( channel->note.volume & 0xF0 ) != 0xF0
+			&& channel->note.effect != 0x03 && channel->note.effect != 0x05
+			&& channel->note.effect != 0x87 && channel->note.effect != 0x8C ) {
+		channel->nna_override = -1;
+	}
 	if( ins > 0 && ins <= channel->replay->module->num_instruments ) {
 		channel->instrument = &channel->replay->module->instruments[ ins ];
 		key = channel->note.key < 97 ? channel->note.key : 0;
@@ -3248,6 +3261,31 @@ static void channel_row( struct channel *channel, struct note *note ) {
 				channel->vibrato_depth = channel->note.param & 0xF;
 			}
 			channel_vibrato( channel, 1 );
+			break;
+		case 0xF7: /* IT S7x: past-note actions and NNA override. */
+			if( channel->replay->module->it_effects ) {
+				int x = channel->note.param & 0xF;
+				if( x <= 2 && channel->replay->ghosts ) {
+					/* S70 cut, S71 off, S72 fade the notes this channel
+					   moved to the background; fade is approximated as a
+					   release, as for the new-note action. */
+					int g;
+					for( g = 0; g < RMT_NUM_GHOSTS; g++ ) {
+						struct channel *ghost = &channel->replay->ghosts[ g ];
+						if( !ghost->sample || ghost->id != channel->id ) {
+							continue;
+						}
+						if( x == 0 ) {
+							ghost->sample = NULL;
+						} else {
+							ghost->key_on = 0;
+						}
+					}
+				} else if( x >= 3 && x <= 6 ) {
+					/* S73 cut, S74 continue, S75 off, S76 fade. */
+					channel->nna_override = x - 3;
+				}
+			}
 			break;
 		case 0xFF: /* IT SFx: choose the macro Zxx 00-7F runs. */
 			if( channel->replay->module->it_effects ) {
