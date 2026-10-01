@@ -314,6 +314,43 @@ static void test_stale_nonce_recovers(http_transfer_data_t *challenge,
    }
 }
 
+/* The challenge is server input.  Each block is allocated to its exact
+ * size, so a parser reading past the end of the line is an ASan report,
+ * not a silent pass. */
+static bool parse_challenge(const char *line)
+{
+   http_transfer_data_t resp;
+   size_t n   = strlen(line);
+   char  *blk = (char*)malloc(n + 2);
+   bool   ok;
+   memcpy(blk, line, n + 1);
+   blk[n + 1] = '\0';
+   make_response(&resp, 401, blk, NULL, 0);
+   ok = webdav_needs_reauth(&resp);
+   webdav_cleanup_digest();
+   free(blk);
+   return ok;
+}
+
+static void test_malformed_challenges(void)
+{
+   CHECK(parse_challenge(digest_header),
+         "well-formed challenge: rejected");
+   CHECK(parse_challenge("WWW-Authenticate: Digest realm=\"dav\", "
+            "nonce=\"6f2a\", qop=\"auth-int, auth\", stale=FALSE"),
+         "qop list and a trailing unquoted parameter: rejected");
+   CHECK(!parse_challenge("WWW-Authenticate: Digest realm=\"dav"),
+         "realm without its closing quote: accepted");
+   CHECK(!parse_challenge("WWW-Authenticate: Digest realm=\"dav\", nonce=\"6f2a"),
+         "nonce without its closing quote: accepted");
+   CHECK(!parse_challenge("WWW-Authenticate: Digest realm=\"dav\", qop=\"auth"),
+         "qop without its closing quote: accepted");
+   CHECK(!parse_challenge("WWW-Authenticate: Digest realm=\"dav\", x=\"y"),
+         "unknown parameter without its closing quote: accepted");
+   CHECK(!parse_challenge("WWW-Authenticate: Digest realm=\"dav\", flag"),
+         "bare trailing token and no nonce: accepted");
+}
+
 int main(void)
 {
    settings_t           *settings  = config_get_ptr();
@@ -341,6 +378,7 @@ int main(void)
    test_move(&challenge);
    test_mkcol(&challenge);
    test_stale_nonce_recovers(&challenge, tmp);
+   test_malformed_challenges();
 
    stub_reset();
    webdav_cleanup_digest();

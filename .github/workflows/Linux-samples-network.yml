@@ -124,6 +124,9 @@ jobs:
           # be retried and succeed. A retried PUT must send the file:
           # it used to re-read it from the end the first attempt left
           # it at and upload uninitialised memory in place of the save.
+          # A malformed challenge (a value with no closing quote, a
+          # trailing unquoted parameter) must be refused, not crash the
+          # parser or send it reading past the end of the line.
           make clean all SANITIZER=address,undefined
           test -x webdav_reauth_test
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \

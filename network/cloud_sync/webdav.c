@@ -187,13 +187,38 @@ static char *webdav_create_ha1_hash(char *user, char *realm, char *pass)
    return hash;
 }
 
+/* The quoted value starting at @p (just past its opening quote), as a
+ * new string replacing *@out.  Returns the position after the closing
+ * quote, or NULL when there is no closing quote or no memory. */
+static const char *webdav_digest_quoted(const char *p, char **out)
+{
+   const char *q = strchr(p, '"');
+   size_t      n;
+   char       *v;
+
+   if (!q)
+      return NULL;
+   n = (size_t)(q - p);
+   if (!(v = (char*)malloc(n + 1)))
+      return NULL;
+   memcpy(v, p, n);
+   v[n] = '\0';
+   free(*out);
+   *out = v;
+   return q + 1;
+}
+
+/* Parse a "WWW-Authenticate: Digest ..." challenge into webdav_st.  The
+ * challenge comes from the server, so every scan is bounded by the end
+ * of the line: a value with no closing quote used to reach strchr() ==
+ * NULL and crash on the length computed from it, and an unknown
+ * unquoted parameter at the end of the line was skipped by a loop that
+ * never looked for the terminator and read on past it. */
 static bool webdav_create_digest_auth(const char *digest)
 {
-   size_t _len;
    webdav_state_t *webdav_st = webdav_state_get_ptr();
    settings_t     *settings  = config_get_ptr();
    const char     *ptr       = digest + (sizeof("WWW-Authenticate: Digest")-1);
-   const char     *end       = ptr + strlen(ptr);
 
    if (   !*settings->arrays.webdav_username
        && !*settings->arrays.webdav_password)
@@ -203,9 +228,9 @@ static bool webdav_create_digest_auth(const char *digest)
 
    webdav_st->username = settings->arrays.webdav_username;
 
-   while (ptr < end)
+   for (;;)
    {
-      while (*ptr == ' ' || *ptr == '\t' || *ptr == '\r' || *ptr == '\n')
+      while (*ptr == ' ' || *ptr == '\t' || *ptr == '\r' || *ptr == '\n' || *ptr == ',')
          ++ptr;
 
       if (!*ptr)
@@ -213,12 +238,10 @@ static bool webdav_create_digest_auth(const char *digest)
 
       if (string_starts_with(ptr, "realm=\""))
       {
-         ptr += (sizeof("realm=\"")-1);
-         _len = strchr(ptr, '"') + 1 - ptr;
-         webdav_st->realm = (char*)malloc(_len);
-         strlcpy(webdav_st->realm, ptr, _len);
-         ptr += _len;
-
+         if (!(ptr = webdav_digest_quoted(ptr + STRLEN_CONST("realm=\""),
+                     &webdav_st->realm)))
+            return false;
+         free(webdav_st->ha1hash);
          webdav_st->ha1hash = webdav_create_ha1_hash(
                webdav_st->username, webdav_st->realm,
                settings->arrays.webdav_password);
@@ -226,82 +249,77 @@ static bool webdav_create_digest_auth(const char *digest)
       else if (string_starts_with(ptr, "qop=\""))
       {
          const char *tail;
-         ptr += (sizeof("qop=\"")-1);
-         tail = strchr(ptr, '"');
+         ptr += STRLEN_CONST("qop=\"");
+         if (!(tail = strchr(ptr, '"')))
+            return false;
+         /* Any member of the list equal to "auth". */
          while (ptr < tail)
          {
-            if (    string_starts_with(ptr, "auth")
-                && (ptr[4] == ',' || ptr[4] == '"'))
-            {
-               webdav_st->qop_auth = true;
-               break;
-            }
-            while (*ptr != ',' && *ptr != '"' && *ptr != '\0')
+            const char *e = ptr;
+            while (e < tail && *e != ',')
+               e++;
+            while (ptr < e && (*ptr == ' ' || *ptr == '\t'))
                ptr++;
-            ptr++;
+            if (e - ptr == 4 && !strncmp(ptr, "auth", 4))
+               webdav_st->qop_auth = true;
+            ptr = (e < tail) ? e + 1 : e;
          }
          /* not even going to try for auth-int, sorry */
          if (!webdav_st->qop_auth)
             return false;
-         while (*ptr != ',' && *ptr != '"' && *ptr != '\0')
-            ptr++;
-         ptr++;
+         ptr = tail + 1;
       }
       else if (string_starts_with(ptr, "nonce=\""))
       {
-         ptr += (sizeof("nonce=\"")-1);
-         _len = strchr(ptr, '"') + 1 - ptr;
-         webdav_st->nonce = (char*)malloc(_len);
-         strlcpy(webdav_st->nonce, ptr, _len);
-         ptr += _len;
-      }
-      else if (string_starts_with(ptr, "algorithm="))
-      {
-         ptr += (sizeof("algorithm=")-1);
-         if (strchr(ptr, ','))
-         {
-            _len = strchr(ptr, ',') + 1 - ptr;
-            webdav_st->algo = (char*)malloc(_len);
-            strlcpy(webdav_st->algo, ptr, _len);
-            ptr += _len;
-         }
-         else
-         {
-            webdav_st->algo = strdup(ptr);
-            ptr += strlen(ptr);
-         }
+         if (!(ptr = webdav_digest_quoted(ptr + STRLEN_CONST("nonce=\""),
+                     &webdav_st->nonce)))
+            return false;
       }
       else if (string_starts_with(ptr, "opaque=\""))
       {
-         ptr += (sizeof("opaque=\"")-1);
-         _len = strchr(ptr, '"') + 1 - ptr;
-         webdav_st->opaque = (char*)malloc(_len);
-         strlcpy(webdav_st->opaque, ptr, _len);
-         ptr += _len;
+         if (!(ptr = webdav_digest_quoted(ptr + STRLEN_CONST("opaque=\""),
+                     &webdav_st->opaque)))
+            return false;
+      }
+      else if (string_starts_with(ptr, "algorithm=\""))
+      {
+         if (!(ptr = webdav_digest_quoted(ptr + STRLEN_CONST("algorithm=\""),
+                     &webdav_st->algo)))
+            return false;
+      }
+      else if (string_starts_with(ptr, "algorithm="))
+      {
+         const char *e;
+         size_t      n;
+         ptr += STRLEN_CONST("algorithm=");
+         for (e = ptr; *e && *e != ','; e++) { }
+         n = (size_t)(e - ptr);
+         free(webdav_st->algo);
+         if (!(webdav_st->algo = (char*)malloc(n + 1)))
+            return false;
+         memcpy(webdav_st->algo, ptr, n);
+         webdav_st->algo[n] = '\0';
+         ptr = e;
       }
       else
       {
-         while (*ptr != '=' && *ptr != '\0')
+         /* Unknown parameter: name=value or name="value", skipped. */
+         while (*ptr && *ptr != '=' && *ptr != ',')
             ptr++;
-         ptr++;
-         if (*ptr == '"')
+         if (*ptr == '=')
          {
             ptr++;
-            while (*ptr != '"' && *ptr != '\0')
+            if (*ptr == '"')
+            {
+               if (!(ptr = strchr(ptr + 1, '"')))
+                  return false;
                ptr++;
-            ptr++;
-         }
-         else
-         {
-            while (*ptr != ',' && *ptr != ',')
-               ptr++;
+            }
+            else
+               while (*ptr && *ptr != ',')
+                  ptr++;
          }
       }
-
-      while (*ptr == ' ' || *ptr == '\t' || *ptr == '\r' || *ptr == '\n')
-         ++ptr;
-      if (*ptr == ',')
-         ptr++;
    }
 
    if (!webdav_st->ha1hash || !webdav_st->nonce)
