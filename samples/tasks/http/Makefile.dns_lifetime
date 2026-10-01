@@ -18,7 +18,7 @@ endif
 
 all: $(TARGET)
 $(TARGET): http_dns_lifetime_test.c $(ROOT)/libretro-common/net/net_http.c
-	$(CC) $(CFLAGS) $< $(ROOT)/libretro-common/rthreads/rthreads.c $(ROOT)/libretro-common/rthreads/retro_eventcount.c $(LDFLAGS) $(LDLIBS) -o $@
+	$(CC) $(CFLAGS) $< $(ROOT)/libretro-common/rthreads/rthreads.c $(ROOT)/libretro-common/rthreads/retro_eventcount.c $(ROOT)/libretro-common/compat/compat_strl.c $(LDFLAGS) $(LDLIBS) -o $@
 check: $(TARGET)
 	./$(TARGET)
 clean:
