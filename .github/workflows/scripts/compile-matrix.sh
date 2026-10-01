@@ -1013,6 +1013,10 @@ if [ -d /usr/x86_64-w64-mingw32/include ]; then
    MINGW_CLANG="--target=x86_64-w64-mingw32 -isystemgfx/include/dxsdk -isystem /usr/x86_64-w64-mingw32/include"
    font_layout "font layout: d3d8" "$MINGW_CLANG" \
       "-DHAVE_D3D -DHAVE_RGUI -DHAVE_OVERLAY -DHAVE_D3D8" gfx/drivers/d3d8.c
+   font_layout "font layout: d3d9 hlsl" "$MINGW_CLANG" \
+      "-DHAVE_D3D -DHAVE_RGUI -DHAVE_OVERLAY -DHAVE_D3D9" gfx/drivers/d3d9hlsl.c
+   font_layout "font layout: d3d9 cg" "$MINGW_CLANG" \
+      "-DHAVE_D3D -DHAVE_RGUI -DHAVE_OVERLAY -DHAVE_D3D9" gfx/drivers/d3d9cg.c
    font_layout "font layout: d3d10" "$MINGW_CLANG" \
       "-DHAVE_D3D -DHAVE_RGUI -DHAVE_OVERLAY -DHAVE_D3D10" gfx/drivers/d3d10.c
    font_layout "font layout: d3d11" "$MINGW_CLANG" \
