@@ -2596,6 +2596,29 @@ static void channel_trigger( struct channel *channel ) {
 					channel->tremolo_phase = 0;
 				}
 				channel->retrig_count = channel->av_count = 0;
+				/* IT starts a new voice for every note, instrument
+				   column or not: the envelopes restart, the key goes
+				   down again, fadeout resets and the instrument's
+				   initial filter applies. Only the volume carries
+				   over. ( XM keeps all of these on a bare note, and an
+				   instrument-carrying note already did this above. ) */
+				if( channel->replay->module->it_effects
+						&& channel->note.instrument == 0 ) {
+					channel->vol_env_tick = channel->pan_env_tick = 0;
+					channel->pitch_env_tick = 0;
+					channel->fadeout_vol = 32768;
+					channel->key_on = 1;
+					channel->flt_env = 255;
+					if( channel->instrument->ifc & 0x80 ) {
+						channel->flt_cutoff = channel->instrument->ifc & 0x7F;
+					}
+					if( channel->instrument->ifr & 0x80 ) {
+						channel->flt_q = channel->instrument->ifr & 0x7F;
+					}
+					channel->flt_y1l = channel->flt_y2l = 0;
+					channel->flt_y1r = channel->flt_y2r = 0;
+					channel->flt_errl = channel->flt_errr = 0;
+				}
 			}
 		}
 	}
