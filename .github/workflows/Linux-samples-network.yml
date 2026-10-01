@@ -255,7 +255,10 @@ jobs:
           # the server closed while idle, and no replay once response
           # bytes have been seen. Each TLS backend's non-blocking send
           # must push a 12 MiB body past a server that stops reading for
-          # a second without ever blocking, and deliver every byte.
+          # a second without ever blocking, and deliver every byte; and
+          # net_http must send the same upload a slice per update, plain
+          # and over TLS - it used to go out in one blocking send, a call
+          # of a second or more (spinning at 100% CPU on a plain socket).
           make clean all SANITIZER=address,undefined
           test -x cheevos_login_test
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \

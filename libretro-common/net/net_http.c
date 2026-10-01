@@ -252,6 +252,18 @@ struct http_t
    bool err;
 
    struct conn_pool_entry *conn;
+   /* The request in flight, sent a slice per net_http_update() as the
+    * socket takes it (see net_http_send_request()).  out points at the
+    * bytes being sent - the head, the caller's postdata, or a source
+    * run in out_stage - and out_off at how far the transport got. */
+   char       *out_head;
+   char       *out_stage;
+   const char *out;
+   size_t      out_len;
+   size_t      out_off;
+   size_t      out_head_len;
+   size_t      body_queued;   /* body bytes handed to out so far */
+   int         send_phase;    /* enum net_http_send_phase */
    bool ssl;
    bool request_sent;
    /* The last net_http_update() stopped because the transport had
@@ -1756,6 +1768,8 @@ release:
  * @return true if the request has been rearmed and net_http_update()
  * should keep going, false if the failure stands.
  **/
+static void net_http_send_reset(struct http_t *state);
+
 static bool net_http_retry_fresh(struct http_t *state)
 {
    /* pos alone misses a status line that was consumed whole before
@@ -1784,6 +1798,7 @@ static bool net_http_retry_fresh(struct http_t *state)
    state->retried         = true;
    state->err             = false;
    state->request_sent    = false;
+   net_http_send_reset(state);
    state->fail_stage      = NULL;
    state->fail_code       = 0;
    state->response.part   = P_HEADER_TOP;
@@ -1793,173 +1808,268 @@ static bool net_http_retry_fresh(struct http_t *state)
    return true;
 }
 
-static void net_http_send_str(
-      struct http_t *state, const char *text, size_t text_size)
+enum net_http_send_phase
 {
-   if (state->err)
-      return;
+   SEND_NONE = 0,
+   SEND_HEAD,
+   SEND_BODY,
+   SEND_FLUSH
+};
+
+/* Bytes the request may move per net_http_update(), the send side of
+ * NET_HTTP_DRAIN_BUDGET and for the same reason: in an unthreaded build
+ * this runs on the video thread, and over TLS every byte is encrypted
+ * on the way.  The request used to go out in one blocking send, and
+ * net_http's sockets are non-blocking, so a body larger than the socket
+ * buffer spun on EAGAIN until the peer had taken all but the last
+ * buffer's worth: a 16 MiB PUT at 2 MB/s was one 6 s call at 100% CPU. */
+#define NET_HTTP_SEND_BUDGET ((size_t)256 * 1024)
+
+/* A streamed body is pulled from its source one run at a time. */
+#define NET_HTTP_SOURCE_RUN  (64 * 1024)
+
+static void net_http_send_reset(struct http_t *state)
+{
+   free(state->out_head);
+   state->out_head     = NULL;
+   state->out_head_len = 0;
+   state->out          = NULL;
+   state->out_len      = 0;
+   state->out_off      = 0;
+   state->body_queued  = 0;
+   state->send_phase   = SEND_NONE;
+}
+
+static size_t net_http_put(char *dst, size_t at, const char *src)
+{
+   size_t n = strlen(src);
+   memcpy(dst + at, src, n);
+   return at + n;
+}
+
+/* The request line and headers, byte for byte what the old sequence of
+ * blocking sends wrote, in one buffer: one send where there were a
+ * dozen. */
+static bool net_http_build_head(struct http_t *state)
+{
+   struct request *request = &state->request;
+   const char *method      = request->method ? request->method : "GET";
+   bool body_method        = request->method && request->method[0] == 'P';
+   size_t cap              = 192
+      + strlen(method) + strlen(request->path) + strlen(request->domain)
+      + (request->headers     ? strlen(request->headers)     : 0)
+      + (request->contenttype ? strlen(request->contenttype) : 0)
+      + (request->useragent   ? strlen(request->useragent)   : 0);
+   char  *h;
+   size_t n = 0;
+
+   if (!(h = (char*)malloc(cap)))
+      return false;
+   n = net_http_put(h, n, method);
+   n = net_http_put(h, n, " /");
+   n = net_http_put(h, n, request->path);
+   n = net_http_put(h, n, " HTTP/1.1\r\nHost: ");
+   n = net_http_put(h, n, request->domain);
+   if (request->port && request->port != 80 && request->port != 443)
+      n += (size_t)snprintf(h + n, cap - n, ":%i", request->port);
+   n = net_http_put(h, n, "\r\n");
+   /* Pre-formatted headers */
+   if (request->headers)
+      n = net_http_put(h, n, request->headers);
+   if (request->contenttype)
+   {
+      n = net_http_put(h, n, "Content-Type: ");
+      n = net_http_put(h, n, request->contenttype);
+      n = net_http_put(h, n, "\r\n");
+   }
+   if (body_method)
+   {
+      if (!request->headers && !request->contenttype)
+         n = net_http_put(h, n,
+               "Content-Type: application/x-www-form-urlencoded\r\n");
+#ifdef _WIN32
+      n += (size_t)snprintf(h + n, cap - n, "Content-Length: %" PRIuPTR "\r\n",
+            request->contentlength);
+#else
+      n += (size_t)snprintf(h + n, cap - n, "Content-Length: %llu\r\n",
+            (long long unsigned)request->contentlength);
+#endif
+   }
+   n = net_http_put(h, n, "User-Agent: ");
+   n = net_http_put(h, n, request->useragent ? request->useragent : "libretro");
+   n = net_http_put(h, n, "\r\n\r\n");
+
+   state->out_head     = h;
+   state->out_head_len = n;
+   return true;
+}
+
+/* As much of @len as the transport takes now: >0 taken, 0 full, -1
+ * failed. */
+static ssize_t net_http_send_some(struct http_t *state,
+      const void *data, size_t len)
+{
 #ifdef HAVE_SSL
    if (state->ssl)
    {
-      if (!ssl_socket_send_all_blocking(
-                  state->conn->ssl_ctx, text, text_size, true))
-      {
-         state->err = true;
+      ssize_t n = ssl_socket_send_all_nonblocking(state->conn->ssl_ctx,
+            data, len, true);
+      if (n < 0)
          net_http_log_transport_state(state, "ssl_send_failed", -1);
-      }
+      return n;
    }
-   else
 #endif
    {
-      if (!socket_send_all_blocking(
-                  state->conn->fd, text, text_size, true))
+      ssize_t n = socket_send_all_nonblocking(state->conn->fd, data, len,
+            true);
+      if (n < 0)
       {
          net_http_note_socket_error(state);
-         state->err = true;
          net_http_log_transport_state(state, "socket_send_failed", -1);
       }
+      return n;
    }
 }
 
-/* The body, pulled from the source one run at a time and sent as each
- * run arrives. The send is blocking like the rest of the request, so
- * one buffer is all that is ever held. The source has to deliver
- * exactly Content-Length bytes: the header has already promised them,
- * and a body that stops short would leave the server waiting. */
-#define NET_HTTP_SOURCE_RUN (64 * 1024)
-
-static void net_http_send_source(struct http_t *state)
-{
-   struct request *request = (struct request*)&state->request;
-   size_t sent  = 0;
-   size_t run   = request->contentlength < NET_HTTP_SOURCE_RUN
-      ? request->contentlength : NET_HTTP_SOURCE_RUN;
-   char  *buf   = (char*)malloc(run);
-
-   if (!buf)
-   {
-      state->err = true;
-      net_http_log_transport_state(state, "source_oom", -1);
-      return;
-   }
-
-   while (!state->err && sent < request->contentlength)
-   {
-      size_t  want = request->contentlength - sent;
-      int64_t got;
-      if (want > run)
-         want = run;
-      got = request->source(request->source_data, buf, want);
-      /* a callback claiming more than the buffer it was given would
-       * have us send past it */
-      if (got > (int64_t)want)
-         got = -1;
-      if (got <= 0)
-      {
-         state->err = true;
-         net_http_log_transport_state(state, "source_short", -1);
-         break;
-      }
-      net_http_send_str(state, buf, (size_t)got);
-      sent += (size_t)got;
-   }
-   free(buf);
-}
-
+/* Sends the request a slice at a time: as much as the socket takes,
+ * at most NET_HTTP_SEND_BUDGET per call, then returns.  Stopping on a
+ * full socket marks the transfer blocked, so net_http_wait() waits for
+ * it to become writable; stopping on the budget does not.  Sets
+ * request_sent once the last byte has left the TLS layer too.
+ *
+ * @return true on failure (state->err set), as before. */
 static bool net_http_send_request(struct http_t *state)
 {
-   struct request *request = (struct request*)&state->request;
+   struct request *request = &state->request;
+   size_t budget           = NET_HTTP_SEND_BUDGET;
+   size_t body_total       = (request->source || request->postdata)
+      ? request->contentlength : 0;
 
-   if (     request->method
-         && request->method[0] == 'P'
-         && request->method[1] == 'O' /* POST, not PUT */
-         && !request->postdata
-         && !request->source
-         && request->contentlength > 0)
+   if (state->send_phase == SEND_NONE)
    {
-      state->err = true;
-      net_http_log_transport_state(state, "post_without_payload", -1);
-      return true;
-   }
-
-   /* This is a bit lazy, but it works. */
-   if (request->method)
-   {
-      net_http_send_str(state, request->method, strlen(request->method));
-      net_http_send_str(state, " /", sizeof(" /")-1);
-   }
-   else
-      net_http_send_str(state, "GET /", sizeof("GET /")-1);
-   net_http_send_str(state, request->path, strlen(request->path));
-   net_http_send_str(state, " HTTP/1.1\r\n", sizeof(" HTTP/1.1\r\n")-1);
-   net_http_send_str(state, "Host: ", sizeof("Host: ")-1);
-   net_http_send_str(state, request->domain, strlen(request->domain));
-   if (request->port && request->port != 80 && request->port != 443)
-   {
-      char portstr[16];
-      size_t _len     = 0;
-      portstr[  _len] = ':';
-      portstr[++_len] = '\0';
-      _len           += snprintf(portstr + _len, sizeof(portstr) - _len,
-            "%i", request->port);
-      net_http_send_str(state, portstr, _len);
-   }
-   net_http_send_str(state, "\r\n", sizeof("\r\n")-1);
-   /* Pre-formatted headers */
-   if (request->headers)
-      net_http_send_str(state, request->headers, strlen(request->headers));
-   if (request->contenttype)
-   {
-      net_http_send_str(state, "Content-Type: ", sizeof("Content-Type: ")-1);
-      net_http_send_str(state, request->contenttype, strlen(request->contenttype));
-      net_http_send_str(state, "\r\n", sizeof("\r\n")-1);
-   }
-   if (request->method && request->method[0] == 'P')
-   {
-      size_t _len;
-      int    len;
-      if (!request->headers && !request->contenttype)
-         net_http_send_str(state,
-               "Content-Type: application/x-www-form-urlencoded\r\n",
-               sizeof("Content-Type: application/x-www-form-urlencoded\r\n")-1);
-      net_http_send_str(state, "Content-Length: ", sizeof("Content-Length: ")-1);
-      _len = request->contentlength;
-      /* Use a stack buffer -- the maximum decimal representation
-       * of a size_t is 20 digits (UINT64_MAX) + NUL, well within
-       * 32 bytes.  Pre-patch this was a malloc/snprintf pair
-       * whose malloc was never NULL-checked; a snprintf-into-NULL
-       * crash on OOM was the tail end of that sequence. */
+      if (     request->method
+            && request->method[0] == 'P'
+            && request->method[1] == 'O' /* POST, not PUT */
+            && !request->postdata
+            && !request->source
+            && request->contentlength > 0)
       {
-         char len_buf[32];
-#ifdef _WIN32
-         len = snprintf(len_buf, sizeof(len_buf), "%" PRIuPTR, _len);
-#else
-         len = snprintf(len_buf, sizeof(len_buf), "%llu",
-               (long long unsigned)_len);
-#endif
-         if (len < 0)
-            len = 0;
-         else if ((size_t)len >= sizeof(len_buf))
-            len = sizeof(len_buf) - 1;
-         len_buf[len] = '\0';
-         net_http_send_str(state, len_buf, (size_t)len);
+         state->err = true;
+         net_http_log_transport_state(state, "post_without_payload", -1);
+         return true;
       }
-      net_http_send_str(state, "\r\n", sizeof("\r\n")-1);
+      if (!net_http_build_head(state))
+      {
+         state->err = true;
+         net_http_log_transport_state(state, "request_oom", -1);
+         return true;
+      }
+      state->out         = state->out_head;
+      state->out_len     = state->out_head_len;
+      state->out_off     = 0;
+      state->body_queued = 0;
+      state->send_phase  = SEND_HEAD;
    }
-   net_http_send_str(state, "User-Agent: ", sizeof("User-Agent: ")-1);
-   if (request->useragent)
-      net_http_send_str(state, request->useragent, strlen(request->useragent));
-   else
-      net_http_send_str(state, "libretro", sizeof("libretro")-1);
-   net_http_send_str(state, "\r\n", sizeof("\r\n")-1);
-   net_http_send_str(state, "\r\n", sizeof("\r\n")-1);
-   if (request->source && request->contentlength)
-      net_http_send_source(state);
-   else if (request->postdata && request->contentlength)
-      net_http_send_str(state, (const char*)request->postdata,
-            request->contentlength);
-   state->request_sent = true;
-   return state->err;
+
+   for (;;)
+   {
+      ssize_t n;
+      size_t  want;
+
+      if (state->out_off == state->out_len)
+      {
+         if (state->send_phase == SEND_HEAD)
+            state->send_phase = SEND_BODY;
+
+         if (state->send_phase == SEND_BODY)
+         {
+            if (state->body_queued == body_total)
+               state->send_phase = SEND_FLUSH;
+            else if (request->source)
+            {
+               int64_t got;
+               size_t  run = body_total - state->body_queued;
+               if (run > NET_HTTP_SOURCE_RUN)
+                  run = NET_HTTP_SOURCE_RUN;
+               if (     !state->out_stage
+                     && !(state->out_stage = (char*)malloc(NET_HTTP_SOURCE_RUN)))
+               {
+                  state->err = true;
+                  net_http_log_transport_state(state, "source_oom", -1);
+                  return true;
+               }
+               got = request->source(request->source_data,
+                     state->out_stage, run);
+               /* The head promised exactly Content-Length bytes; a
+                * source that stops short, or claims more than the run
+                * it was given, cannot be sent. */
+               if (got <= 0 || got > (int64_t)run)
+               {
+                  state->err = true;
+                  net_http_log_transport_state(state, "source_short", -1);
+                  return true;
+               }
+               state->out          = state->out_stage;
+               state->out_len      = (size_t)got;
+               state->out_off      = 0;
+               state->body_queued += (size_t)got;
+               continue;
+            }
+            else
+            {
+               /* Postdata goes straight from the caller's buffer. */
+               state->out          = (const char*)request->postdata;
+               state->out_len      = body_total;
+               state->out_off      = 0;
+               state->body_queued  = body_total;
+               continue;
+            }
+         }
+
+         if (state->send_phase == SEND_FLUSH)
+         {
+#ifdef HAVE_SSL
+            if (state->ssl)
+            {
+               int r = ssl_socket_flush_nonblocking(state->conn->ssl_ctx);
+               if (r < 0)
+               {
+                  state->err = true;
+                  net_http_log_transport_state(state, "ssl_send_failed", -1);
+                  return true;
+               }
+               if (!r)
+               {
+                  state->blocked = true;
+                  return false;
+               }
+            }
+#endif
+            net_http_send_reset(state);
+            state->request_sent = true;
+            return false;
+         }
+      }
+
+      if (!budget)
+         return false;
+      want = state->out_len - state->out_off;
+      if (want > budget)
+         want = budget;
+      if ((n = net_http_send_some(state, state->out + state->out_off,
+                  want)) < 0)
+      {
+         state->err = true;
+         return true;
+      }
+      if (!n)
+      {
+         state->blocked = true;
+         return false;
+      }
+      state->out_off += (size_t)n;
+      budget         -= (size_t)n;
+   }
 }
 
 /**
@@ -2817,6 +2927,7 @@ static bool net_http_redirect(struct http_t *state, const char *location)
    state->request.port   = port;
    state->ssl            = ssl;
    state->request_sent       = false;
+   net_http_send_reset(state);
    state->retried            = false;
    state->response.part      = P_HEADER_TOP;
    state->response.status    = -1;
@@ -3077,7 +3188,6 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    {
       if (net_http_send_request(state) && net_http_retry_fresh(state))
          return false;
-      state->blocked = !state->err && !state->request_sent;
       return state->err;
    }
 
@@ -3502,6 +3612,8 @@ void net_http_delete(struct http_t *state)
 
    if (state->conn)
       net_http_conn_pool_remove(state->conn);
+   net_http_send_reset(state);
+   free(state->out_stage);
    /* Free whatever the caller never took ownership of.  Without this
     * the doc comment on this function ("Cleans up all memory") was
     * simply false for the response side. */

@@ -360,6 +360,77 @@ static int stats_connections(const char *base)
    return n;
 }
 
+/* A 12 MiB PUT to /upload, which stops reading for a second before it
+ * takes the body.  The request used to go out in one blocking send, so
+ * the net_http_update() that started it did not return until the
+ * server resumed: one call of a second or more, at 100% CPU. Sent a
+ * slice per call, no call may come anywhere near that.  Returns the
+ * longest single net_http_update() in microseconds, -1 on failure. */
+static size_t upload_pos;
+
+static int64_t upload_source(void *ud, void *buf, size_t len)
+{
+   size_t i;
+   (void)ud;
+   if (len > UPLOAD_LEN - upload_pos)
+      len = UPLOAD_LEN - upload_pos;
+   for (i = 0; i < len; i++)
+      ((unsigned char*)buf)[i] = (unsigned char)(upload_pos + i);
+   upload_pos += len;
+   return (int64_t)len;
+}
+
+static int64_t upload_worst_call(const char *url)
+{
+   struct http_connection_t *conn;
+   struct http_t *http;
+   int64_t worst = 0, deadline;
+   uint8_t *data;
+   size_t len = 0;
+   int ok;
+
+   if (!(conn = net_http_connection_new(url, "PUT", NULL)))
+      return -1;
+   net_http_connection_set_user_agent(conn, USER_AGENT);
+   while (!net_http_connection_iterate(conn)) { }
+   if (!net_http_connection_done(conn))
+   {
+      net_http_connection_free(conn);
+      return -1;
+   }
+   upload_pos = 0;
+   net_http_connection_set_content_source(conn, "application/octet-stream",
+         UPLOAD_LEN, upload_source, NULL, NULL);
+   http = net_http_new(conn);
+   net_http_connection_free(conn);
+   if (!http)
+      return -1;
+
+   deadline = now_us() + 60 * 1000000LL;
+   for (;;)
+   {
+      int64_t t0 = now_us(), dt;
+      bool done  = net_http_update(http, NULL, NULL);
+      dt         = now_us() - t0;
+      if (dt > worst)
+         worst = dt;
+      if (done || now_us() > deadline)
+         break;
+      net_http_wait(http, 50);
+   }
+
+   data = net_http_data(http, &len, false);
+   ok   = (net_http_status(http) == 200 && data
+         && len == 11 && !memcmp(data, "{\"ok\":true}", 11));
+   if (!ok)
+      printf("       upload: status=%d len=%lu\n", net_http_status(http),
+            (unsigned long)len);
+   free(data);
+   free(net_http_headers_take(http, true));
+   net_http_delete(http);
+   return ok ? worst : -1;
+}
+
 int main(int argc, char **argv)
 {
    char plain_base[256];
@@ -520,16 +591,31 @@ int main(int argc, char **argv)
    snprintf(url, sizeof(url), "%s/dorequest.php", plain_base);
    check(login_ok(url), "login still works after the failed transfer");
 
-   /* 6. The TLS backend's non-blocking send, behind a stalled reader. */
-#ifdef HAVE_SSL
+   /* 6. A large upload is sent a slice per update, plain and over TLS:
+    *    the server stops reading for a second, and no single update
+    *    may sit through that. */
    {
-      int64_t worst = tls_nonblocking_upload(tls_port);
+      int64_t worst;
+      snprintf(url, sizeof(url), "%s/upload", plain_base);
+      worst = upload_worst_call(url);
+      printf("       plain 12 MiB upload: longest update %ld ms\n",
+            (long)(worst / 1000));
+      check(worst >= 0 && worst < 250000,
+            "plain upload behind a stalled reader: no update blocks");
+#ifdef HAVE_SSL
+      snprintf(url, sizeof(url), "%s/upload", tls_base);
+      worst = upload_worst_call(url);
+      printf("       TLS 12 MiB upload: longest update %ld ms\n",
+            (long)(worst / 1000));
+      check(worst >= 0 && worst < 250000,
+            "TLS upload behind a stalled reader: no update blocks");
+      worst = tls_nonblocking_upload(tls_port);
       printf("       TLS backend non-blocking send: longest call %ld ms\n",
             (long)(worst / 1000));
       check(worst >= 0 && worst < 250000,
             "TLS backend non-blocking send: never blocks, delivers every byte");
-   }
 #endif
+   }
 
    /* 7. TLS 1.3 session tickets buffered ahead of the reply. */
 #ifdef HAVE_SSL
