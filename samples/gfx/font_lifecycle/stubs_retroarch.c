@@ -55,12 +55,12 @@ bool filestream_read_file(const char *path, void **buf, int64_t *len)
     * reads the lifecycle tests make are recorded */
    if (read_real_files)
    {
+      long  n;
       FILE *f = fopen(path, "rb");
       pthread_mutex_lock(&real_reads_lock);
       if (real_reads_n < (int)(sizeof(real_reads) / sizeof(real_reads[0])))
          strlcpy(real_reads[real_reads_n++], path, sizeof(real_reads[0]));
       pthread_mutex_unlock(&real_reads_lock);
-      long  n;
       *buf    = NULL;
       if (!f)
          return false;
