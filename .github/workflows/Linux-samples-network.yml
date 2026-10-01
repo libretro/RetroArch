@@ -323,6 +323,13 @@ jobs:
           # iteration, the legacy string_list accessor, and 64 header
           # lines costing no per-line allocations. Every case has a
           # deadline, so a hang fails the case instead of the job.
+          # net_http is lock-free by design (DNS cache and pool owned by
+          # the driving thread, resolvers publish with an atomic store);
+          # keep it that way.
+          if grep -nE '\b(slock|scond)_[a-z_]+\(' ../../../libretro-common/net/net_http.c; then
+             echo "::error title=net_http lock::net_http.c must not take locks"
+             exit 1
+          fi
           make clean all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \

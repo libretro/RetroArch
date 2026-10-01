@@ -6,8 +6,6 @@ static retro_time_t now;
 static unsigned freed_addresses, connect_calls;
 static bool connect_success, init_success;
 static struct addrinfo address;
-static bool nested_connect;
-static unsigned depth;
 
 retro_time_t cpu_features_get_time_usec(void) { return now; }
 void freeaddrinfo_retro(struct addrinfo *addr)
@@ -18,28 +16,16 @@ void freeaddrinfo_retro(struct addrinfo *addr)
 int socket_close(int fd) { (void)fd; return 0; }
 int socket_next(void **addr) { *addr = NULL; return -1; }
 
+/* No nested-connect case any more: it modelled a second transfer, on
+ * another thread, running the expiry sweep while this connect held the
+ * address, which a per-entry user count pinned.  Transfers are driven
+ * from one thread now, so that interleaving cannot happen and the pin
+ * is gone; what is left to check is that a connect, successful or not,
+ * leaves the entry to expire normally afterwards. */
 static bool attempt(void *addr)
 {
    assert(addr == &address);
    connect_calls++;
-   if (nested_connect && !depth)
-   {
-      struct http_t nested;
-      memset(&nested, 0, sizeof(nested));
-      nested.request.domain = "example.invalid";
-      nested.request.port = 80;
-      nested.conn = net_http_conn_pool_add(nested.request.domain, 80, 8, false);
-      assert(nested.conn);
-      depth++;
-      assert(net_http_connect(&nested));
-      depth--;
-      net_http_conn_pool_remove(nested.conn);
-   }
-   now += dns_cache_timeout + 1;
-   LOCK_DNS_CACHE();
-   net_http_dns_cache_remove_expired();
-   UNLOCK_DNS_CACHE();
-   assert(!freed_addresses);
    return connect_success;
 }
 bool socket_connect_with_timeout(int fd, void *addr, int timeout)
@@ -79,13 +65,11 @@ static void run_case(bool tls, bool success, bool initialize)
    assert(state.conn);
    assert(net_http_connect(&state) == success);
    if (!tls || initialize)
-      assert(connect_calls == (nested_connect ? 2 : 1));
+      assert(connect_calls == 1);
    if (state.conn)
       net_http_conn_pool_remove(state.conn);
    now += dns_cache_timeout + 1;
-   LOCK_DNS_CACHE();
    net_http_dns_cache_remove_expired();
-   UNLOCK_DNS_CACHE();
    assert(!dns_cache && freed_addresses == 1);
 }
 
@@ -102,25 +86,15 @@ static void test_missing_connection(void)
    assert(net_http_dns_cache_add(state.request.domain, 80, &address));
    assert(!net_http_connect(&state));
    now += dns_cache_timeout + 1;
-   LOCK_DNS_CACHE();
    net_http_dns_cache_remove_expired();
-   UNLOCK_DNS_CACHE();
    assert(!dns_cache && freed_addresses == 1);
 }
 #endif
 
 int main(void)
 {
-#ifdef HAVE_THREADS
-   dns_cache_lock = slock_new();
-   conn_pool_lock = slock_new();
-   assert(dns_cache_lock && conn_pool_lock);
-#endif
    run_case(false, true, true);
    run_case(false, false, true);
-   nested_connect = true;
-   run_case(false, true, true);
-   nested_connect = false;
 #ifdef HAVE_SSL
    run_case(true, true, true);
    run_case(true, false, true);
@@ -129,10 +103,6 @@ int main(void)
 #else
    /* Unsupported TLS must also release the cache entry. */
    run_case(true, false, false);
-#endif
-#ifdef HAVE_THREADS
-   slock_free(dns_cache_lock);
-   slock_free(conn_pool_lock);
 #endif
    puts("HTTP DNS connect lifetime tests passed");
    return 0;

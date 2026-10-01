@@ -63,12 +63,20 @@ void net_http_connection_set_headers(struct http_connection_t *conn, const char 
 /**
  * net_http_init:
  *
- * Creates the locks guarding the process-global DNS cache and
- * connection pool.  Call once at startup, before any thread can reach
- * net_http_update(); they were previously created lazily on first
- * use, which raced.  Nothing creates them anywhere else now: a
- * threaded program that skips this call runs unlocked.  Idempotent,
- * but not safe to call concurrently.
+ * Call once at startup, before the first transfer; it creates the
+ * eventcount a DNS wait parks on, and nothing creates it lazily.
+ * Idempotent, but not safe to call concurrently.
+ *
+ * Threading: net_http takes no locks.  The DNS cache and connection
+ * pool belong to the thread that drives transfers - every
+ * net_http_new/update/wait/delete sharing them must come from one
+ * thread at a time, and net_http_init()/net_http_deinit() run on it or
+ * while it is stopped.  Handing that role to another thread needs an
+ * ordering point in between (a thread join, a queue handoff).  DNS
+ * lookups run on threads of their own and publish into the cache with
+ * an atomic store.  Building connection objects
+ * (net_http_connection_*) touches no shared state and is fine from any
+ * thread.
  **/
 void net_http_init(void);
 

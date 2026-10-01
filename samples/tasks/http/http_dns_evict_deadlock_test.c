@@ -80,13 +80,16 @@
  *      inside getaddrinfo.
  *   2. Advance the clock past dns_cache_fail_timeout, so that entry
  *      now satisfies the expiry test while its thread is still live.
- *   3. Start a second transfer to the same host.  It takes the DNS
- *      cache lock and reaches net_http_dns_cache_remove_expired(),
- *      which finds the expired entry.
+ *   3. Start a second transfer to the same host.  It reaches
+ *      net_http_dns_cache_remove_expired(), which finds the expired
+ *      entry.
  *
- * Pre-fix, step 3 joins the parked resolver and never returns.
- * Post-fix, it skips entries whose resolver has not published yet
- * (entry->valid is still false) and leaves them for a later sweep.
+ * Under the old cache lock, step 3 joined the parked resolver and never
+ * returned, since the resolver took that lock to publish.  The cache is
+ * lock-free now, but joining an unpublished resolver would still block
+ * the driving thread for the whole lookup: the sweep skips entries
+ * whose resolver has not published yet (valid still clear) and leaves
+ * them for a later sweep.
  *
  * Because the failure mode is a hang rather than a wrong answer, the
  * driver runs step 3 on its own thread behind a watchdog: if it has

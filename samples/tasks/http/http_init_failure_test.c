@@ -125,14 +125,9 @@ int main(void)
    finish_case();
 #endif
 
-   net_http_init();
-   entry = net_http_dns_cache_add(state.request.domain, 80, NULL);
-   assert(entry);
-   fail_strdup = 1;
-   net_http_resolve(entry);
-   assert(entry->valid && !entry->addr && !resolver_calls);
-   assert(!net_http_new_socket(&state));
-   finish_case();
+   /* (The resolver no longer copies the domain before resolving - it
+    * reads it in place, see net_http_resolve() - so there is no
+    * allocation left in it to fail.) */
 
    /* A pool allocation failure must close the newly created socket. */
    for (i = 0; i < 2; i++)
@@ -150,7 +145,7 @@ int main(void)
    entry = net_http_dns_cache_add(state.request.domain, 80, NULL);
    assert(entry);
    net_http_resolve(entry);
-   assert(entry->valid && entry->addr && resolver_calls == 1);
+   assert(net_http_dns_entry_valid(entry) && entry->addr && resolver_calls == 1);
    closed_sockets = 0;
    assert(net_http_new_socket(&state));
    assert(state.conn && !closed_sockets);

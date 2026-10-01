@@ -40,8 +40,10 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
+#include <retro_atomic.h>
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #endif
 
 /* Maximum Content-Length we'll honour from a server, to bound the
@@ -124,15 +126,22 @@ struct conn_pool_entry
    struct conn_pool_entry *next;
 };
 
+/* Threading model.  The connection pool and the DNS cache belong to the
+ * one thread that drives transfers (net_http_new/update/wait/delete);
+ * all transfers sharing them must be driven from that thread, one call
+ * at a time, and net_http_init()/net_http_deinit() run on it or with it
+ * stopped.  In RetroArch that is the task queue's worker, or the main
+ * thread with threaded tasks off; switching between the two stops the
+ * queue first, so the handover is ordered by the thread join.
+ *
+ * The only other threads are the DNS resolvers.  Each touches exactly
+ * one cache entry, whose domain and port are fixed before it starts: it
+ * writes entry->addr, publishes entry->valid with a release store and
+ * does not touch the entry again.  The owner reads valid with an
+ * acquire load and frees or joins an entry only once it is set.  That
+ * replaces the cache lock, the pool lock and the condition variable
+ * the resolvers used to broadcast on: nothing here takes a lock. */
 static struct conn_pool_entry *conn_pool = NULL;
-#ifdef HAVE_THREADS
-static slock_t *conn_pool_lock = NULL;
-#define LOCK_POOL() slock_lock(conn_pool_lock)
-#define UNLOCK_POOL() slock_unlock(conn_pool_lock)
-#else
-#define LOCK_POOL()
-#define UNLOCK_POOL()
-#endif
 
 typedef struct response
 {
@@ -346,9 +355,10 @@ struct dns_cache_entry
    char *domain;
    int port;
    struct addrinfo *addr;
-   unsigned users; /* Connect attempts holding addr outside the lock. */
    retro_time_t timestamp;
-   bool valid;
+   /* Lookup finished and addr is final; the resolver's only store
+    * after creation.  Read through net_http_dns_entry_valid(). */
+   retro_atomic_int_t valid;
 #ifdef HAVE_THREADS
    sthread_t *thread;
 #endif
@@ -361,17 +371,17 @@ static const retro_time_t dns_cache_timeout = 1000 /* usec/ms */ * 1000 /* ms/s 
 /* only cache failures for 30 seconds */
 static const retro_time_t dns_cache_fail_timeout = 1000 /* usec/ms */ * 1000 /* ms/s */ * 30 /* s */;
 #ifdef HAVE_THREADS
-static slock_t *dns_cache_lock = NULL;
-/* Signalled by net_http_resolve() once an entry carries a result, so
+/* Notified by net_http_resolve() once an entry carries a result, so
  * that a caller with nothing else to wait on can wait for the lookup
  * rather than spin over it.  See net_http_wait_dns(). */
-static scond_t *dns_cache_cond = NULL;
-#define LOCK_DNS_CACHE() slock_lock(dns_cache_lock)
-#define UNLOCK_DNS_CACHE() slock_unlock(dns_cache_lock)
-#else
-#define LOCK_DNS_CACHE()
-#define UNLOCK_DNS_CACHE()
+static retro_eventcount_t dns_cache_ec;
+static bool               dns_cache_ec_ready = false;
 #endif
+
+static bool net_http_dns_entry_valid(struct dns_cache_entry *entry)
+{
+   return retro_atomic_load_acquire_int(&entry->valid) != 0;
+}
 
 /**
  * net_http_urlencode:
@@ -980,67 +990,62 @@ const char* net_http_connection_method(struct http_connection_t* conn)
    return conn->method;
 }
 
+/* Unlink and free @entry, @prev being the entry before it (NULL at the
+ * head).  Only for an entry net_http_dns_cache_evictable() accepts. */
+static void net_http_dns_cache_unlink(struct dns_cache_entry *prev,
+      struct dns_cache_entry *entry)
+{
+#ifdef HAVE_THREADS
+   /* The resolver has published (evictable() checked) and its last act
+    * after that is a notify on the global eventcount, so this join
+    * returns at once. */
+   if (entry->thread)
+   {
+      sthread_join(entry->thread);
+      entry->thread = NULL;
+   }
+#endif
+   if (prev)
+      prev->next = entry->next;
+   else
+      dns_cache = entry->next;
+   if (entry->addr)
+      freeaddrinfo_retro(entry->addr);
+   free(entry->domain);
+   free(entry);
+}
+
+/* An entry still being resolved stays: its thread reads entry->domain
+ * and writes entry->addr until it publishes valid.  Its addr is NULL the
+ * whole time, so it reads as a cached failure and its fail-timeout can
+ * pass while a lookup against a blackholed resolver is still running;
+ * the next sweep collects it.  (With the old cache lock, joining such a
+ * thread here deadlocked, since it took the same lock to publish.) */
+static bool net_http_dns_cache_evictable(struct dns_cache_entry *entry)
+{
+#ifdef HAVE_THREADS
+   if (entry->thread && !net_http_dns_entry_valid(entry))
+      return false;
+#endif
+   return true;
+}
+
 static void net_http_dns_cache_remove_expired(void)
 {
    struct dns_cache_entry *entry = dns_cache;
-   struct dns_cache_entry *prev = NULL;
+   struct dns_cache_entry *prev  = NULL;
+   /* One clock read for the whole walk, not two per entry. */
+   retro_time_t now              = cpu_features_get_time_usec();
    while (entry)
    {
-      if (!entry->users &&
-            ((entry->addr && (entry->timestamp + dns_cache_timeout < cpu_features_get_time_usec()))
-            || (!entry->addr && (entry->timestamp + dns_cache_fail_timeout < cpu_features_get_time_usec()))))
-      {
-#ifdef HAVE_THREADS
-         /* An entry whose resolver has not published a result yet
-          * cannot be evicted here.  This function only ever runs with
-          * the DNS cache lock held -- net_http_dns_cache_find() is
-          * called under it from both net_http_new_socket() and
-          * net_http_connect() -- and net_http_resolve() takes that
-          * same lock, both on entry and again on completion.
-          * sthread_join() on a thread blocked acquiring the lock we
-          * are holding deadlocks outright, taking the task thread
-          * with it (and in unthreaded builds, the frontend).
-          *
-          * The window is not theoretical.  entry->addr stays NULL for
-          * the whole resolution, so the fail-timeout arm above fires
-          * after dns_cache_fail_timeout (30s) -- and
-          * getaddrinfo_retro() against a blackholed resolver
-          * routinely blocks longer than that.  So the entry looks
-          * expired precisely while its thread is still running.
-          *
-          * entry->valid is set by the resolver under the lock
-          * immediately before it unlocks and returns, so once it is
-          * set nothing that thread does can block on us and the join
-          * below is safe.  Until then, leave the entry alone; the
-          * next sweep collects it. */
-         if (entry->thread && !entry->valid)
-         {
-            prev  = entry;
-            entry = entry->next;
-            continue;
-         }
-
-         if (entry->thread)
-         {
-            sthread_join(entry->thread);
-            entry->thread = NULL;
-         }
-#endif
-         if (prev)
-            prev->next = entry->next;
-         else
-            dns_cache = entry->next;
-         if (entry->addr)
-            freeaddrinfo_retro(entry->addr);
-         free(entry->domain);
-         free(entry);
-         entry = prev ? prev->next : dns_cache;
-      }
+      struct dns_cache_entry *next = entry->next;
+      if (     net_http_dns_cache_evictable(entry)
+            && entry->timestamp + (entry->addr
+               ? dns_cache_timeout : dns_cache_fail_timeout) < now)
+         net_http_dns_cache_unlink(prev, entry);
       else
-      {
          prev = entry;
-         entry = entry->next;
-      }
+      entry = next;
    }
 }
 
@@ -1056,16 +1061,20 @@ static struct dns_cache_entry *net_http_dns_cache_find(
    {
       if (port == entry->port && strcmp(entry->domain, domain) == 0)
       {
-#ifdef HAVE_THREADS
-         if (entry->thread && entry->valid)
+         /* addr belongs to the resolver until valid is published. */
+         if (net_http_dns_entry_valid(entry))
          {
-            sthread_join(entry->thread);
-            entry->thread = NULL;
-         }
+#ifdef HAVE_THREADS
+            if (entry->thread)
+            {
+               sthread_join(entry->thread);
+               entry->thread = NULL;
+            }
 #endif
-         /* don't bump timeestamp for failures */
-         if (entry->addr)
-            entry->timestamp = cpu_features_get_time_usec();
+            /* don't bump timestamp for failures */
+            if (entry->addr)
+               entry->timestamp = cpu_features_get_time_usec();
+         }
          return entry;
       }
       entry = entry->next;
@@ -1089,7 +1098,7 @@ static struct dns_cache_entry *net_http_dns_cache_add(
    entry->port = port;
    entry->addr = addr;
    entry->timestamp = cpu_features_get_time_usec();
-   entry->valid = (addr != NULL);
+   retro_atomic_int_init(&entry->valid, addr != NULL);
 #ifdef HAVE_THREADS
    entry->thread = NULL;
 #endif
@@ -1128,7 +1137,6 @@ static void net_http_conn_pool_remove(struct conn_pool_entry *entry)
    if (!entry)
       return;
 
-   LOCK_POOL();
    current = conn_pool;
    while (current)
    {
@@ -1139,16 +1147,13 @@ static void net_http_conn_pool_remove(struct conn_pool_entry *entry)
          else
             conn_pool = current->next;
          net_http_conn_pool_free(current);
-         UNLOCK_POOL();
          return;
       }
       prev = current;
       current = current->next;
    }
-   UNLOCK_POOL();
 }
 
-/* *NOT* thread safe, caller must lock */
 static void net_http_conn_pool_remove_expired(void)
 {
    fd_set fds;
@@ -1192,8 +1197,7 @@ static void net_http_conn_pool_remove_expired(void)
    }
 }
 
-/* if it's not already in the pool, will add to end.
-   *NOT* thread safe, caller must lock */
+/* if it's not already in the pool, will add to end. */
 static void net_http_conn_pool_move_to_end(struct conn_pool_entry *entry)
 {
    struct conn_pool_entry *prev    = NULL;
@@ -1234,7 +1238,6 @@ static struct conn_pool_entry *net_http_conn_pool_find(
 {
    struct conn_pool_entry *entry;
 
-   LOCK_POOL();
 
    net_http_conn_pool_remove_expired();
 
@@ -1247,12 +1250,10 @@ static struct conn_pool_entry *net_http_conn_pool_find(
       {
          entry->in_use = true;
          net_http_conn_pool_move_to_end(entry);
-         UNLOCK_POOL();
          return entry;
       }
       entry = entry->next;
    }
-   UNLOCK_POOL();
    return NULL;
 }
 
@@ -1273,9 +1274,7 @@ static struct conn_pool_entry *net_http_conn_pool_add(const char *domain, int po
    entry->in_use = true;
    entry->ssl = ssl;
    entry->connected = false;
-   LOCK_POOL();
    net_http_conn_pool_move_to_end(entry);
-   UNLOCK_POOL();
    return entry;
 }
 
@@ -1368,8 +1367,6 @@ struct http_t *net_http_new(struct http_connection_t *conn)
 
 static void net_http_resolve(void *data)
 {
-   int port;
-   char *domain;
    char port_buf[6];
    struct dns_cache_entry *entry = (struct dns_cache_entry*)data;
    struct addrinfo hints         = {0};
@@ -1384,38 +1381,23 @@ static void net_http_resolve(void *data)
    hints.ai_socktype             = SOCK_STREAM;
    hints.ai_flags               |= AI_NUMERICSERV;
 
-   LOCK_DNS_CACHE();
-   domain = strdup(entry->domain);
-   port = entry->port;
-   UNLOCK_DNS_CACHE();
-
-   if (!domain || !network_init())
+   /* domain and port were set before this thread was created and the
+    * owner leaves the entry alone until valid is published, so they are
+    * read in place; the strdup taken under the old lock was a copy of
+    * something nobody could change. */
+   if (network_init())
    {
-      LOCK_DNS_CACHE();
-      entry->valid = true;
-      entry->addr = NULL;
-#ifdef HAVE_THREADS
-      if (dns_cache_cond)
-         scond_broadcast(dns_cache_cond);
-#endif
-      UNLOCK_DNS_CACHE();
-      free(domain);
-      return;
+      snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)entry->port);
+      getaddrinfo_retro(entry->domain, port_buf, &hints, &addr);
    }
 
-   snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)port);
-
-   getaddrinfo_retro(domain, port_buf, &hints, &addr);
-   free(domain);
-
-   LOCK_DNS_CACHE();
-   entry->valid = true;
    entry->addr = addr;
+   /* The entry is the owner's from here on: not one more access. */
+   retro_atomic_store_release_int(&entry->valid, 1);
 #ifdef HAVE_THREADS
-   if (dns_cache_cond)
-      scond_broadcast(dns_cache_cond);
+   if (dns_cache_ec_ready)
+      retro_eventcount_notify(&dns_cache_ec);
 #endif
-   UNLOCK_DNS_CACHE();
 }
 
 static bool net_http_new_socket(struct http_t *state)
@@ -1423,23 +1405,15 @@ static bool net_http_new_socket(struct http_t *state)
    struct addrinfo *addr = NULL;
    struct dns_cache_entry *entry;
 
-   /* The locks come from net_http_init() only.  Creating them here on
-    * first use was an unsynchronised initialisation of the very lock
-    * meant to serialise the cache (see net_http_init()).  A program
-    * that never calls net_http_init() runs unlocked: slock_lock(NULL)
-    * is a no-op. */
-   LOCK_DNS_CACHE();
-
    entry = net_http_dns_cache_find(state->request.domain, state->request.port);
    if (entry)
    {
-      if (entry->valid)
+      if (net_http_dns_entry_valid(entry))
       {
          int fd;
          if (!entry->addr)
          {
             net_http_log_transport_state(state, "dns_lookup_failed", -1);
-            UNLOCK_DNS_CACHE();
             return false;
          }
          addr = entry->addr;
@@ -1460,13 +1434,11 @@ static bool net_http_new_socket(struct http_t *state)
             net_http_log_transport_state(state, "socket_create_failed", -1);
          }
          /* still waiting on thread */
-         UNLOCK_DNS_CACHE();
          return (fd >= 0);
       }
       else
       {
          /* still waiting on thread */
-         UNLOCK_DNS_CACHE();
          return true;
       }
    }
@@ -1475,7 +1447,6 @@ static bool net_http_new_socket(struct http_t *state)
       entry = net_http_dns_cache_add(state->request.domain, state->request.port, NULL);
       if (!entry)
       {
-         UNLOCK_DNS_CACHE();
          net_http_log_transport_state(state, "dns_cache_alloc_failed", -1);
          return false;
       }
@@ -1484,11 +1455,10 @@ static bool net_http_new_socket(struct http_t *state)
       entry->thread = sthread_create(net_http_resolve, entry);
       if (!entry->thread)
       {
-         /* The new head has not been exposed outside the lock. */
+         /* The new head never reached a resolver. */
          dns_cache = entry->next;
          free(entry->domain);
          free(entry);
-         UNLOCK_DNS_CACHE();
          net_http_log_transport_state(state, "dns_thread_create_failed", -1);
          return false;
       }
@@ -1496,8 +1466,6 @@ static bool net_http_new_socket(struct http_t *state)
       net_http_resolve(entry);
 #endif
    }
-
-   UNLOCK_DNS_CACHE();
 
    return true;
 }
@@ -1512,16 +1480,10 @@ static bool net_http_connect(struct http_t *state)
    bool timeout          = true;
 #endif
 
-   /* net_http_dns_cache_find() is not a read-only lookup: it calls
-    * net_http_dns_cache_remove_expired(), which unlinks entries,
-    * freeaddrinfo()s their addrinfo and free()s the entry, and it
-    * joins resolver threads and bumps timestamps.  Calling it here
-    * without the lock (as this function used to) let one download
-    * free a cache entry while another was walking the same list under
-    * the lock -- a use-after-free of the entry and its addrinfo, not
-    * merely a benign race.  ThreadSanitizer flags it as soon as two
-    * transfers overlap. */
-   LOCK_DNS_CACHE();
+   /* The cache is the driving thread's alone, so addr stays valid for
+    * the whole connect: nothing else can expire the entry meanwhile.
+    * (It used to be pinned with a user count, because another transfer
+    * on another thread could run the expiry sweep mid-connect.) */
    dns_entry = net_http_dns_cache_find(state->request.domain,
          state->request.port);
    /* Normally populated by net_http_new_socket() just above, but the
@@ -1530,14 +1492,11 @@ static bool net_http_connect(struct http_t *state)
     * dereferencing NULL here crashed. */
    if (!dns_entry)
    {
-      UNLOCK_DNS_CACHE();
       net_http_log_transport_state(state, "connect_missing_dns_entry", -1);
       state->err = true;
       return false;
    }
-   dns_entry->users++;
    addr = dns_entry->addr;
-   UNLOCK_DNS_CACHE();
 
 #ifndef HAVE_SSL
    if (state->ssl)
@@ -1615,9 +1574,6 @@ static bool net_http_connect(struct http_t *state)
       goto release;
    }
 release:
-   LOCK_DNS_CACHE();
-   dns_entry->users--;
-   UNLOCK_DNS_CACHE();
    return connected;
 }
 
@@ -2709,61 +2665,42 @@ fail:
 /**
  * net_http_init:
  *
- * Creates the locks guarding the process-global DNS cache and
- * connection pool.  Must be called once, before any thread can reach
- * net_http_update().
+ * Creates the eventcount net_http_wait() parks on while a name is being
+ * resolved.  Call once at startup, before the first transfer; nothing
+ * creates it lazily.  Idempotent, but not safe to call concurrently,
+ * and like everything here it belongs to the driving thread (see the
+ * threading model at the top of this file).
  *
- * These were created lazily on first use inside net_http_new_socket():
- *
- *     if (!dns_cache_lock) dns_cache_lock = slock_new();
- *
- * which is an unsynchronised first-use initialisation of the very
- * lock meant to serialise that cache.  Two threads arriving together
- * each create one, one store wins, and the loser goes on locking an
- * object nobody else holds -- so the cache is walked and mutated with
- * no mutual exclusion at all.  It does not reproduce once the locks
- * exist, which is why it survived a TSan run over concurrent
- * transfers; the window is only ever the first two requests of the
- * process.
- *
- * Idempotent, so callers that cannot easily order their startup can
- * call it more than once -- but not concurrently, which is the whole
- * point.
+ * This used to create the DNS cache and pool locks, which in turn had
+ * been created lazily on first use - an unsynchronised initialisation
+ * of the very lock meant to serialise the cache.  There are no locks
+ * left to create.
  **/
 void net_http_init(void)
 {
 #ifdef HAVE_THREADS
-   if (!dns_cache_lock)
-      dns_cache_lock = slock_new();
-   if (!dns_cache_cond)
-      dns_cache_cond = scond_new();
-   if (!conn_pool_lock)
-      conn_pool_lock = slock_new();
+   if (!dns_cache_ec_ready)
+      dns_cache_ec_ready = retro_eventcount_init(&dns_cache_ec);
 #endif
 }
 
 /**
  * net_http_deinit:
  *
- * Tears down the DNS cache and connection pool.  Nothing did this
- * before: pooled sockets (and their SSL contexts), cached addrinfo,
- * the strdup'd domains and both mutexes simply lived until the
- * process exited.
+ * Tears down the DNS cache and connection pool: pooled sockets (and
+ * their SSL contexts), cached addrinfo and the strdup'd domains.
  *
- * Both lists are detached under their lock and then drained with the
- * lock released.  That ordering matters for the DNS cache:
- * net_http_resolve() takes the same lock at the end of its run, so
- * joining a resolver thread while holding it deadlocks.
+ * Resolvers still running are joined.  None of them waits on anything
+ * this thread holds - they publish with a store and leave - so the join
+ * cannot deadlock; it lasts as long as an outstanding getaddrinfo().
  **/
 void net_http_deinit(void)
 {
-   struct conn_pool_entry *conns;
-   struct dns_cache_entry *entries;
+   struct conn_pool_entry *conns   = conn_pool;
+   struct dns_cache_entry *entries = dns_cache;
 
-   LOCK_POOL();
-   conns     = conn_pool;
    conn_pool = NULL;
-   UNLOCK_POOL();
+   dns_cache = NULL;
 
    while (conns)
    {
@@ -2771,18 +2708,6 @@ void net_http_deinit(void)
       net_http_conn_pool_free(conns);
       conns = next;
    }
-
-   LOCK_DNS_CACHE();
-   entries   = dns_cache;
-   dns_cache = NULL;
-#ifdef HAVE_THREADS
-   /* A waiter in net_http_wait_dns() re-reads the list on wake, so
-    * emptying it is what releases it; broadcast under the lock so it
-    * cannot miss the wake between the unlink and the wait. */
-   if (dns_cache_cond)
-      scond_broadcast(dns_cache_cond);
-#endif
-   UNLOCK_DNS_CACHE();
 
    while (entries)
    {
@@ -2799,20 +2724,11 @@ void net_http_deinit(void)
    }
 
 #ifdef HAVE_THREADS
-   if (dns_cache_cond)
+   /* Every resolver has been joined, so none can notify any more. */
+   if (dns_cache_ec_ready)
    {
-      scond_free(dns_cache_cond);
-      dns_cache_cond = NULL;
-   }
-   if (dns_cache_lock)
-   {
-      slock_free(dns_cache_lock);
-      dns_cache_lock = NULL;
-   }
-   if (conn_pool_lock)
-   {
-      slock_free(conn_pool_lock);
-      conn_pool_lock = NULL;
+      retro_eventcount_free(&dns_cache_ec);
+      dns_cache_ec_ready = false;
    }
 #endif
 }
@@ -2846,8 +2762,7 @@ void net_http_deinit(void)
  * needed, false when @timeout_ms elapsed first.
  **/
 #ifdef HAVE_THREADS
-/* Is a lookup for @domain:@port still outstanding? Caller holds the
- * DNS cache lock. */
+/* Is a lookup for @domain:@port still outstanding? */
 static bool net_http_dns_pending(const char *domain, int port)
 {
    struct dns_cache_entry *entry;
@@ -2855,54 +2770,51 @@ static bool net_http_dns_pending(const char *domain, int port)
    for (entry = dns_cache; entry; entry = entry->next)
    {
       if (port == entry->port && strcmp(entry->domain, domain) == 0)
-         return !entry->valid;
+         return !net_http_dns_entry_valid(entry);
    }
    return false;
 }
 
 /* The wait for a transfer that has no socket yet because its name is
  * still being resolved. There is nothing to select() on in that state,
- * so the wait is on the cache signal instead: the resolver publishes
- * its result under the cache lock and broadcasts, and until that lands
- * the caller costs nothing. Without it a threaded caller, which has
- * nothing else pacing it, spins between here and net_http_update() for
- * the whole lookup. */
+ * so the wait is on the eventcount the resolver notifies after
+ * publishing, and until that lands the caller costs nothing. Without it
+ * a threaded caller, which has nothing else pacing it, spins between
+ * here and net_http_update() for the whole lookup.
+ *
+ * The predicate is re-checked after registering, so a publish between
+ * the first check and the park is never missed. */
 static bool net_http_wait_dns(struct http_t *state, int timeout_ms)
 {
    retro_time_t deadline;
-   bool pending;
 
-   if (!dns_cache_lock || !dns_cache_cond)
+   if (!dns_cache_ec_ready)
       return true;
 
    deadline = cpu_features_get_time_usec() + (retro_time_t)timeout_ms * 1000;
 
-   LOCK_DNS_CACHE();
-
    for (;;)
    {
+      int key;
       retro_time_t now;
 
-      /* Re-read rather than hold an entry across the wait: the lock is
-       * released while waiting, and net_http_deinit() unlinks and frees
-       * every entry in that window. An emptied cache reads as not
-       * pending, which is the right answer - there is no lookup left to
-       * wait for. */
-      pending = net_http_dns_pending(state->request.domain,
-            state->request.port);
-      if (!pending)
-         break;
-
+      if (!net_http_dns_pending(state->request.domain, state->request.port))
+         return true;
+      key = retro_eventcount_prepare_wait(&dns_cache_ec);
+      if (!net_http_dns_pending(state->request.domain, state->request.port))
+      {
+         retro_eventcount_cancel_wait(&dns_cache_ec);
+         return true;
+      }
       now = cpu_features_get_time_usec();
       if (now >= deadline)
-         break;
-
-      scond_wait_timeout(dns_cache_cond, dns_cache_lock, deadline - now);
+      {
+         retro_eventcount_cancel_wait(&dns_cache_ec);
+         return false;
+      }
+      retro_eventcount_commit_wait_timeout(&dns_cache_ec, key,
+            (int64_t)(deadline - now));
    }
-
-   UNLOCK_DNS_CACHE();
-
-   return !pending;
 }
 #endif
 
@@ -3186,14 +3098,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    }
 
    if (state->conn)
-   {
-      /* net_http_conn_pool_remove_expired() reads in_use under the
-       * pool lock and feeds the fd to select(); writing it unlocked
-       * raced with that walk. */
-      LOCK_POOL();
       state->conn->in_use = false;
-      UNLOCK_POOL();
-   }
    state->conn = NULL;
 
    if (   response->status >= 300 && response->status < 400
