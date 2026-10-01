@@ -2697,11 +2697,12 @@ static void channel_update_envelopes( struct channel *channel ) {
 		struct envelope *env = &channel->instrument->vol_env;
 		int fade = !channel->key_on;
 		/* IT starts the fadeout as soon as a non-looping volume
-		   envelope reaches its final node, key on or not - a
-		   sustained envelope never reaches it while the key is held.
+		   envelope reaches its final node, key on or not. While the
+		   key is held a sustain loop keeps it from ending, even when
+		   the sustain point is the final node, so no fade then.
 		   XM holds the last node forever, so this is gated. */
 		if( !fade && channel->replay->module->it_effects
-				&& !env->looped && env->num_points > 0
+				&& !env->looped && !env->sustain && env->num_points > 0
 				&& channel->vol_env_tick
 					>= env->points_tick[ ( int ) env->num_points - 1 ] ) {
 			fade = 1;
