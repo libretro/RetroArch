@@ -700,6 +700,7 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
 	short *scratch;
 	int stereo_mode, default_pan, channel_map[ 32 ];
 	int sample_offset, sample_length, loop_start, loop_length;
+	unsigned int sam_length, sam_loop_start, sam_loop_end;
 	int pat_offset, note_offset, row, chan, token;
 	int key, ins, volume, effect, param, panning;
 	char *pattern_data;
@@ -783,9 +784,20 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
 			if( data_u8( data, inst_offset ) == 1 && data_u16le( data, inst_offset + 76 ) == 0x4353 ) {
 				sample_offset = ( data_u8( data, inst_offset + 13 ) << 20 )
 					+ ( data_u16le( data, inst_offset + 14 ) << 4 );
-				sample_length = data_u32le( data, inst_offset + 16 );
-				loop_start = data_u32le( data, inst_offset + 20 );
-				loop_length = data_u32le( data, inst_offset + 24 ) - loop_start;
+				/* Keep the header fields unsigned until they are bounded:
+				   read into ints, large values turn negative and pass the
+				   checks below, indexing before the sample buffer. The
+				   length limit matches the IT loader's. */
+				sam_length = data_u32le( data, inst_offset + 16 );
+				sam_loop_start = data_u32le( data, inst_offset + 20 );
+				sam_loop_end = data_u32le( data, inst_offset + 24 );
+				if( sam_length > 0x1000000 ) {
+					sam_length = 0;
+				}
+				if( sam_loop_end > sam_length ) {
+					sam_loop_end = sam_length;
+				}
+				sample_length = ( int ) sam_length;
 				sample->volume = data_u8( data, inst_offset + 28 );
 				pack = data_u8( data, inst_offset + 30 );
 				adpcm = pack == 4;
@@ -794,12 +806,12 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
 					dispose_module( module );
 					return NULL;
 				}
-				if( loop_start + loop_length > sample_length ) {
-					loop_length = sample_length - loop_start;
-				}
-				if( loop_length < 1 || !( data_u8( data, inst_offset + 31 ) & 0x1 ) ) {
+				if( sam_loop_start >= sam_loop_end || !( data_u8( data, inst_offset + 31 ) & 0x1 ) ) {
 					loop_start = sample_length;
 					loop_length = 0;
+				} else {
+					loop_start = ( int ) sam_loop_start;
+					loop_length = ( int ) ( sam_loop_end - sam_loop_start );
 				}
 				sample->loop_start = loop_start;
 				sample->loop_length = loop_length;
