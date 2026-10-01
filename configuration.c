@@ -7403,11 +7403,15 @@ static bool config_load_file(global_t *global,
    }
 
 #ifdef HAVE_SSL
-   /* Every settings load comes through here: startup, a per-core or
-    * per-game override, its unload, and the reload after saving one.
-    * Hand the TLS verification mode to the SSL backend each time, so
-    * an override that changes it applies now, not after a restart. */
-   ssl_socket_set_verify_mode(settings->uints.tls_verify_mode);
+   /* Every load of the live settings comes through here: startup, a
+    * per-core or per-game override, and its unload. Hand the TLS
+    * verification mode to the SSL backend each time, so an override
+    * that changes it applies now, not after a restart. Only for the
+    * live settings: config_save_overrides() loads the base config into
+    * a scratch copy to diff against, and its mode must not reach the
+    * backend while the override's stays on screen. */
+   if (settings == config_st)
+      ssl_socket_set_verify_mode(settings->uints.tls_verify_mode);
 #endif
 
    if (conf)
