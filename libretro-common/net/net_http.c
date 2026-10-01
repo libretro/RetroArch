@@ -1680,6 +1680,21 @@ static bool net_http_connect(struct http_t *state)
 #else
    if (state->ssl)
    {
+      /* The TLS layer gets the host as a server name, so an IPv6
+       * literal goes without the brackets the URL and the Host header
+       * need; the backend then checks the certificate against the
+       * address rather than as a name. */
+      char        tls_host[256];
+      const char *tls_host_src = state->request.domain;
+      size_t      dl           = strlen(tls_host_src);
+      if (     tls_host_src[0] == '[' && dl > 2 && tls_host_src[dl - 1] == ']'
+            && dl - 2 < sizeof(tls_host))
+      {
+         memcpy(tls_host, tls_host_src + 1, dl - 2);
+         tls_host[dl - 2] = '\0';
+      }
+      else
+         strlcpy(tls_host, tls_host_src, sizeof(tls_host));
       if (!conn)
       {
          net_http_log_transport_state(state, "connect_missing_dns_or_conn", -1);
@@ -1688,7 +1703,7 @@ static bool net_http_connect(struct http_t *state)
       for (next_addr = addr; next_addr && conn->fd >= 0;
             conn->fd = net_http_socket_next(&next_addr))
       {
-         if (!(conn->ssl_ctx = ssl_socket_init(conn->fd, state->request.domain)))
+         if (!(conn->ssl_ctx = ssl_socket_init(conn->fd, tls_host)))
          {
             net_http_log_transport_state(state, "ssl_init_failed", -1);
             socket_close(conn->fd);

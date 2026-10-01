@@ -885,7 +885,11 @@ static int tls_send_client_hello(struct ssl_state *s)
    const uint8_t *suites = crypto_aes_hw() ? suites_aes : suites_chacha;
    uint8_t *h;
    uint8_t *p;
-   size_t   dlen = s->domain ? strlen(s->domain) : 0;
+   uint8_t  iplit[16];
+   /* No server_name for an IP address: RFC 6066 3 allows host names
+    * only, and the certificate is checked against the address anyway. */
+   size_t   dlen = (s->domain && !x509_parse_ip(s->domain, iplit))
+      ? strlen(s->domain) : 0;
    size_t   ext_len;
    int      ret;
    const struct tls_session *cached;
@@ -2160,15 +2164,19 @@ void* ssl_socket_init(int fd, const char *domain)
    }
 #endif
    s->fd     = fd;
-   s->domain = domain;
+   /* A copy: the connection can outlive the caller's string - net_http
+    * pools it after the transfer that opened it is gone, and a TLS 1.3
+    * ticket arriving later is filed under this name. */
+   s->domain = domain ? strdup(domain) : NULL;
    s->rx     = (uint8_t*)malloc(TLS_RX_SIZE);
    s->hs     = (uint8_t*)malloc(TLS_HS_MAX);
    s->cork   = (uint8_t*)malloc(TLS_CORK_MAX);
-   if (!s->rx || !s->hs || !s->cork)
+   if (!s->rx || !s->hs || !s->cork || (domain && !s->domain))
    {
       free(s->cork);
       free(s->rx);
       free(s->hs);
+      free((char*)s->domain);
       free(s);
       return NULL;
    }
@@ -2454,6 +2462,7 @@ void ssl_socket_free(void *state_data)
    free(s->hs);
    free(s->cork);
    free(s->tx);
+   free((char*)s->domain);
    free(s);
 }
 

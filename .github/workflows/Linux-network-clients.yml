@@ -70,7 +70,9 @@ jobs:
           # net_socket_ssl_retro.c end to end: every cipher suite, both
           # curves, RSA / P-256 / P-384 certificates under a CA made on
           # the spot, verify required / optional / disabled, and the
-          # refusals that must happen (wrong hostname, untrusted CA).
+          # refusals that must happen (wrong hostname, untrusted CA). An
+          # IP address matches only an iPAddress SAN entry, never the
+          # same address written as a DNS name.
           samples/network/tls_retro/local_server_test.sh
           # The same tool cross-linked for Windows: the sample's link
           # line has to carry Winsock, which nothing on Linux checks.

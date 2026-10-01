@@ -37,6 +37,16 @@ mkleafx clientonly 'extendedKeyUsage=clientAuth\n'
 mkleafx codesign 'extendedKeyUsage=codeSigning\n'
 mkleafx serverauth 'extendedKeyUsage=serverAuth,clientAuth\nkeyUsage=digitalSignature,keyEncipherment\n'
 mkleafx nosign 'keyUsage=keyEncipherment,dataEncipherment\n'
+# IP addresses: matched against iPAddress SAN entries only. One leaf
+# carries IP:127.0.0.1, the other the same address as a DNS name, which
+# must not vouch for the address.
+mkleafip() { # name san
+   openssl req -newkey rsa:2048 -nodes -keyout $D/$1.key -out $D/$1.csr -subj "/CN=127.0.0.1" 2>/dev/null
+   printf 'subjectAltName=%s\nbasicConstraints=CA:FALSE\n' "$2" > $D/$1.ext
+   openssl x509 -req -in $D/$1.csr -CA $D/ca.pem -CAkey $D/ca.key -CAcreateserial -out $D/$1.pem -days 2 -extfile $D/$1.ext 2>/dev/null
+}
+mkleafip ipsan "IP:127.0.0.1"
+mkleafip ipdns "DNS:127.0.0.1"
 # a real-world shape: root -> intermediate CA -> leaf, the server sending
 # leaf + intermediate and the client trusting only the root; one with an
 # RSA intermediate, one with a P-384 intermediate under the RSA root
@@ -83,6 +93,8 @@ run "policy: clientAuth-only EKU is refused"              clientonly ECDHE-RSA-A
 run "policy: codeSigning-only EKU is refused"             codesign   ECDHE-RSA-AES128-GCM-SHA256 prime256v1 1 localhost 0 $D/ca.pem
 run "policy: serverAuth EKU with digitalSignature is fine" serverauth ECDHE-RSA-AES128-GCM-SHA256 prime256v1 0 localhost 0 $D/ca.pem
 run "policy: keyUsage without digitalSignature is refused" nosign    ECDHE-RSA-AES128-GCM-SHA256 prime256v1 1 localhost 0 $D/ca.pem
+run "IP address matches an iPAddress entry"            ipsan ECDHE-RSA-AES128-GCM-SHA256 prime256v1 0 127.0.0.1 0 $D/ca.pem
+run "IP address written as a DNS name is refused"      ipdns ECDHE-RSA-AES128-GCM-SHA256 prime256v1 1 127.0.0.1 0 $D/ca.pem
 run "chain: root -> RSA intermediate -> leaf"      viarsa  ECDHE-RSA-AES128-GCM-SHA256 prime256v1 0 localhost 0 $D/ca.pem
 run "chain: root -> P-384 intermediate -> leaf"    viap384 ECDHE-RSA-AES128-GCM-SHA256 prime256v1 0 localhost 0 $D/ca.pem
 run "chain: trusting the intermediate directly also works" viarsa ECDHE-RSA-AES128-GCM-SHA256 prime256v1 0 localhost 0 $D/irsa.pem

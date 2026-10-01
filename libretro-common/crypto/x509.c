@@ -682,10 +682,152 @@ static int x509_name_match(const uint8_t *pat, size_t pl, const char *host)
    return 0;
 }
 
+static int x509_hexval(int c)
+{
+   if (c >= '0' && c <= '9') return c - '0';
+   if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+   if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+   return -1;
+}
+
+/* Dotted IPv4 at @s up to @end into 4 bytes. */
+static int x509_parse_ipv4(const char *s, const char *end, uint8_t *out)
+{
+   int i;
+   for (i = 0; i < 4; i++)
+   {
+      unsigned v = 0;
+      int      digits = 0;
+      while (s < end && *s >= '0' && *s <= '9')
+      {
+         if (digits && v == 0)
+            return -1;            /* no leading zeros: not octal, not ambiguous */
+         v = v * 10 + (unsigned)(*s++ - '0');
+         if (++digits > 3 || v > 255)
+            return -1;
+      }
+      if (!digits)
+         return -1;
+      out[i] = (uint8_t)v;
+      if (i < 3)
+      {
+         if (s >= end || *s != '.')
+            return -1;
+         s++;
+      }
+   }
+   return s == end ? 0 : -1;
+}
+
+int x509_parse_ip(const char *host, uint8_t out[16])
+{
+   const char *end;
+   uint8_t     a[16];
+   int         n = 0, gap = -1;
+   const char *s;
+
+   if (!host || !*host)
+      return 0;
+   if (!strchr(host, ':'))
+      return x509_parse_ipv4(host, host + strlen(host), out) == 0 ? 4 : 0;
+
+   /* IPv6, with or without brackets; a zone ("%eth0") is not part of
+    * the address. */
+   s   = host + (*host == '[');
+   end = s + strcspn(s, "]%");
+   if (*host == '[' && !strchr(s, ']'))
+      return 0;
+   if (end - s >= 2 && s[0] == ':' && s[1] == ':')
+   {
+      gap = 0;
+      s  += 2;
+   }
+   else if (*s == ':')
+      return 0;
+   while (s < end)
+   {
+      unsigned v = 0;
+      int      digits = 0;
+      const char *start = s;
+      while (s < end && x509_hexval(*s) >= 0)
+      {
+         v = (v << 4) | (unsigned)x509_hexval(*s++);
+         if (++digits > 4)
+            return 0;
+      }
+      if (s < end && *s == '.')
+      {
+         /* trailing dotted IPv4: the last 32 bits */
+         if (n > 12 || x509_parse_ipv4(start, end, a + n) != 0)
+            return 0;
+         n += 4;
+         s  = end;
+         break;
+      }
+      if (!digits || n > 14)
+         return 0;
+      a[n++] = (uint8_t)(v >> 8);
+      a[n++] = (uint8_t)v;
+      if (s == end)
+         break;
+      if (*s++ != ':')
+         return 0;
+      if (s < end && *s == ':')
+      {
+         if (gap >= 0)
+            return 0;
+         gap = n;
+         s++;
+      }
+      else if (s == end)
+         return 0;                /* trailing single colon */
+   }
+   if (gap >= 0)
+   {
+      int fill = 16 - n;
+      if (fill < 2)
+         return 0;
+      memmove(a + gap + fill, a + gap, (size_t)(n - gap));
+      memset(a + gap, 0, (size_t)fill);
+      n = 16;
+   }
+   if (n != 16)
+      return 0;
+   memcpy(out, a, 16);
+   return 16;
+}
+
 int x509_match_hostname(const struct x509_cert *c, const char *host)
 {
+   uint8_t ip[16];
+   int     iplen;
+
    if (!host || !*host)
       return -1;
+
+   /* An IP address matches only an iPAddress entry, byte for byte; never
+    * a dNSName or the CN, which would let a name certificate whose CN
+    * happens to read "10.0.0.1" vouch for that address (RFC 6125 6.2.1,
+    * RFC 9525 6.3). */
+   if ((iplen = x509_parse_ip(host, ip)) != 0)
+   {
+      struct der san;
+      if (!c->san)
+         return -1;
+      san.p   = c->san;
+      san.end = c->san + c->san_len;
+      while (san.p < san.end)
+      {
+         const uint8_t *v;
+         size_t vl;
+         uint8_t tag = *san.p;
+         if (der_read(&san, tag, &v, &vl) != 0)
+            return -1;
+         if (tag == 0x87 && vl == (size_t)iplen && !memcmp(v, ip, vl))
+            return 0;
+      }
+      return -1;
+   }
 
    if (c->san)
    {
