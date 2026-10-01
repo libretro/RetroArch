@@ -66,6 +66,9 @@ struct envelope {
 struct instrument {
 	int num_samples, vol_fadeout;
 	char name[ 32 ], key_to_sample[ 97 ];
+	/* IT keyboard: semitones from the played key to the note the sample
+	   sounds at ( 0, calloc's default, everywhere else ). */
+	signed char key_shift[ 97 ];
 	/* IT new-note action: 0 cut (every other format's behaviour and
 	   calloc's default), 1 continue, 2 note off, 3 fade. dct/dca are
 	   the duplicate check type and action. */
@@ -93,6 +96,9 @@ struct module {
 	   diverge between ST3 and IT (Xxx panning). */
 	unsigned char *default_chan_vol;
 	char it_effects;
+	/* IT header flag 5: Gxx keeps its own memory instead of sharing
+	   Exx/Fxx's. */
+	char it_compat_gxx;
 	/* IT MIDI macros reduced to the filter controls the engine has:
 	   per SFx slot the parameter Zxx 00-7F sets (IT_MACRO_*), and per
 	   Z80-ZFF the parameter in the high byte and its fixed value in
@@ -1757,6 +1763,7 @@ static struct module* module_load_it( struct data *data, char *message ) {
 	   the XM linear period table already uses. Otherwise IT slides
 	   Amiga-style. */
 	module->linear_periods = ( flags & 0x08 ) ? 1 : 0;
+	module->it_compat_gxx = ( flags & 0x20 ) ? 1 : 0;
 	it_load_macros( module, data, data_u16le( data, 0x2E ),
 		ofs + ins_num * 4 + smp_num * 4 + pat_num * 4 );
 	module->default_chan_vol = calloc( module->num_channels,
@@ -1887,6 +1894,10 @@ static struct module* module_load_it( struct data *data, char *message ) {
 							}
 						}
 						instrument->key_to_sample[ kb_note ] = ( char ) want;
+						/* The keyboard's note byte: IT plays the sample at that
+						   note instead of the key pressed. */
+						instrument->key_shift[ kb_note ] = ( signed char )
+							( ( data_u8( data, iofs + 0x40 + idx * 2 ) % 120 ) - idx );
 					}
 				}
 			}
@@ -2001,12 +2012,16 @@ static struct module* module_load_it( struct data *data, char *message ) {
 					volume = 0x70 | ( entry - 85 );  /* vol slide up */
 				} else if( entry <= 104 ) {
 					volume = 0x60 | ( entry - 95 );  /* vol slide down */
+				} else if( entry <= 114 ) {
+					volume = 0x01 + ( entry - 105 ); /* pitch slide down */
+				} else if( entry <= 124 ) {
+					volume = 0x51 + ( entry - 115 ); /* pitch slide up */
 				} else if( entry >= 128 && entry <= 192 ) {
 					entry = ( entry - 128 ) >> 2;
 					volume = 0xC0 | ( entry > 15 ? 15 : entry );
 				} else if( entry >= 193 && entry <= 202 ) {
-					/* Tone porta; IT's rate table is coarser than the
-					   nibble this passes, an approximation. */
+					/* Tone porta; the playback side turns the nibble into
+					   IT's speed table. */
 					volume = 0xF0 | ( entry - 193 );
 				} else if( entry >= 203 && entry <= 212 ) {
 					volume = 0xB0 | ( entry - 203 );  /* vibrato depth */
@@ -2589,6 +2604,23 @@ static void channel_retrig_vol_slide( struct channel *channel ) {
    arriving note's instrument asks for a new-note action other than
    cut. Runs at trigger entry, before the trigger overwrites the old
    instrument and envelope state. */
+/* Whether this row's note is a portamento target rather than a new
+   note. IT plays a tone portamento as an ordinary note when the
+   channel has nothing sounding to slide from. */
+static int channel_note_porta( struct channel *channel ) {
+	struct sample *sample = channel->sample;
+	int porta = ( channel->note.volume & 0xF0 ) == 0xF0 ||
+		channel->note.effect == 0x03 || channel->note.effect == 0x05 ||
+		channel->note.effect == 0x87 || channel->note.effect == 0x8C;
+	if( porta && channel->replay->module->it_effects
+			&& ( !sample || channel->period <= 0 || channel->fadeout_vol <= 0
+				|| ( sample->loop_length <= 1
+					&& channel->sample_idx >= sample->loop_start ) ) ) {
+		porta = 0;
+	}
+	return porta;
+}
+
 static void channel_capture_ghost( struct channel *channel ) {
 	struct replay *replay = channel->replay;
 	struct channel *ghost;
@@ -2599,9 +2631,7 @@ static void channel_capture_ghost( struct channel *channel ) {
 	if( channel->note.key < 1 || channel->note.key > 96 ) {
 		return;
 	}
-	porta = ( channel->note.volume & 0xF0 ) == 0xF0 ||
-		channel->note.effect == 0x03 || channel->note.effect == 0x05 ||
-		channel->note.effect == 0x87 || channel->note.effect == 0x8C;
+	porta = channel_note_porta( channel );
 	if( porta ) {
 		return;
 	}
@@ -2667,6 +2697,18 @@ static void channel_capture_ghost( struct channel *channel ) {
 	}
 }
 
+/* IT's pitch-slide memory: Exx and Fxx share one value, and Gxx shares
+   it too unless the song asks for compatible Gxx. */
+static void channel_it_slide_memory( struct channel *channel, int param,
+		int is_tone_porta ) {
+	if( is_tone_porta || !channel->replay->module->it_compat_gxx ) {
+		channel->tone_porta_param = param;
+	}
+	if( !is_tone_porta || !channel->replay->module->it_compat_gxx ) {
+		channel->porta_up_param = channel->porta_down_param = param;
+	}
+}
+
 /* The amount of a volume-column volume slide. IT's four slides ( fine
    up/down, up/down ) share one memory that a 0 recalls; XM's have none. */
 static int channel_vcol_amount( struct channel *channel ) {
@@ -2682,15 +2724,14 @@ static int channel_vcol_amount( struct channel *channel ) {
 }
 
 static void channel_trigger( struct channel *channel ) {
-	int key, sam, porta, period, fine_tune, ins = channel->note.instrument;
+	int key, sam, period, fine_tune, ins = channel->note.instrument;
+	/* Decided on the channel as it stands, before this row changes it. */
+	int porta = channel_note_porta( channel );
 	struct sample *sample;
 	channel_capture_ghost( channel );
 	/* An override belongs to the note it was set on; a portamento
 	   keeps that note playing. */
-	if( channel->note.key >= 1 && channel->note.key <= 96
-			&& ( channel->note.volume & 0xF0 ) != 0xF0
-			&& channel->note.effect != 0x03 && channel->note.effect != 0x05
-			&& channel->note.effect != 0x87 && channel->note.effect != 0x8C ) {
+	if( channel->note.key >= 1 && channel->note.key <= 96 && !porta ) {
 		channel->nna_override = -1;
 	}
 	if( ins > 0 && ins <= channel->replay->module->num_instruments ) {
@@ -2735,8 +2776,17 @@ static void channel_trigger( struct channel *channel ) {
 		channel->sample_off = ( channel->offset_param << 8 )
 			+ channel->high_offset;
 	}
-	if( channel->note.volume >= 0x10 && channel->note.volume < 0x60 ) {
+	if( channel->note.volume >= 0x10 && channel->note.volume < 0x60
+			&& !( channel->replay->module->it_effects && channel->note.volume > 0x50 ) ) {
 		channel->volume = channel->note.volume < 0x50 ? channel->note.volume - 0x10 : 64;
+	}
+	if( channel->replay->module->it_effects ) {
+		/* IT volume-column Ex / Fx ( 0x01.. / 0x51.. ): a pitch slide of
+		   x * 4, sharing the Exx / Fxx memory; 0 recalls it. */
+		int v = channel->note.volume;
+		if( ( v >= 0x02 && v <= 0x0A ) || ( v >= 0x52 && v <= 0x5A ) ) {
+			channel_it_slide_memory( channel, ( ( v & 0xF ) - 1 ) * 4, 0 );
+		}
 	}
 	switch( channel->note.volume & 0xF0 ) {
 		case 0x60: case 0x70: /* Vol Slide: the row only sets the memory. */
@@ -2770,7 +2820,16 @@ static void channel_trigger( struct channel *channel ) {
 			break;
 		case 0xF0: /* Tone Porta.*/
 			if( ( channel->note.volume & 0xF ) > 0 ) {
-				channel->tone_porta_param = channel->note.volume & 0xF;
+				if( channel->replay->module->it_effects ) {
+					/* IT's volume-column Gx picks a speed from a table and
+					   shares Gxx's memory. */
+					static const unsigned char it_vcol_porta[ 10 ] =
+						{ 0, 1, 4, 8, 16, 32, 64, 96, 128, 255 };
+					channel_it_slide_memory( channel,
+						it_vcol_porta[ channel->note.volume & 0xF ], 1 );
+				} else {
+					channel->tone_porta_param = channel->note.volume & 0xF;
+				}
 			}
 			break;
 	}
@@ -2783,9 +2842,6 @@ static void channel_trigger( struct channel *channel ) {
 				channel->volume = 0;
 			}
 		} else {
-			porta = ( channel->note.volume & 0xF0 ) == 0xF0 ||
-				channel->note.effect == 0x03 || channel->note.effect == 0x05 ||
-				channel->note.effect == 0x87 || channel->note.effect == 0x8C;
 			if( !porta ) {
 				ins = channel->instrument->key_to_sample[ channel->note.key ];
 				channel->sample = &channel->instrument->samples[ ins ];
@@ -2795,14 +2851,16 @@ static void channel_trigger( struct channel *channel ) {
 				/* Set Fine Tune. */
 				fine_tune = ( ( channel->note.param & 0xF ) << 4 ) - 128;
 			}
-			key = channel->note.key + channel->sample->rel_note;
-			if( key < 1 ) {
-				key = 1;
+			key = channel->note.key + channel->instrument->key_shift[ channel->note.key ]
+				+ channel->sample->rel_note;
+			/* IT notes reach down to C-0, eleven below the engine's key 1. */
+			if( key < ( channel->replay->module->it_effects ? -11 : 1 ) ) {
+				key = channel->replay->module->it_effects ? -11 : 1;
 			}
 			if( key > 120 ) {
 				key = 120;
 			}
-			period = ( key << 6 ) + ( fine_tune >> 1 );
+			period = key * 64 + ( fine_tune >> 1 );
 			if( channel->replay->module->linear_periods ) {
 				channel->porta_period = 7744 - period;
 			} else {
@@ -2971,8 +3029,12 @@ static void channel_calculate_freq( struct channel *channel ) {
 	int per = channel->period + channel->vibrato_add;
 	if( channel->replay->module->linear_periods ) {
 		per = per - ( channel->arpeggio_add << 6 ) - channel->pitch_env_ofs;
-		if( per < 28 || per > 7680 ) {
-			per = 7680;
+		{
+			/* the lowest note: IT's keys reach C-0, eleven below key 1 */
+			int lowest = channel->replay->module->it_effects ? 8448 : 7680;
+			if( per < 28 || per > lowest ) {
+				per = lowest;
+			}
 		}
 		/* FP_ONE is 1 << FP_SHIFT, so this is the same value for a
 		 * non-negative operand and defined for a negative one - and
@@ -2987,8 +3049,8 @@ static void channel_calculate_freq( struct channel *channel ) {
 				+ ( ( ( c2 & 15 ) * e ) >> 4 ) ) >> ( FP_SHIFT - 4 );
 		}
 	} else {
-		if( per > 29021 ) {
-			per = 29021;
+		if( per > ( channel->replay->module->it_effects ? 58042 : 29021 ) ) {
+			per = channel->replay->module->it_effects ? 58042 : 29021;
 		}
 		/* per is only clamped from above here; vibrato can carry it
 		 * below zero, and the "per < 28" guard underneath runs after
@@ -3038,6 +3100,17 @@ static void channel_tick( struct channel *channel ) {
 	channel->fx_count++;
 	channel->retrig_count++;
 	if( !( channel->note.effect == 0x7D && channel->fx_count <= channel->note.param ) ) {
+		if( channel->replay->module->it_effects ) {
+			int v = channel->note.volume;
+			if( v >= 0x01 && v <= 0x0A && channel->period > 0 ) {
+				channel->period += channel->porta_down_param << 2;
+			} else if( v >= 0x51 && v <= 0x5A ) {
+				channel->period -= channel->porta_up_param << 2;
+				if( channel->period < 0 ) {
+					channel->period = 0;
+				}
+			}
+		}
 		switch( channel->note.volume & 0xF0 ) {
 			case 0x60: /* Vol Slide Down.*/
 				channel->volume -= channel_vcol_amount( channel );
@@ -3212,19 +3285,31 @@ static void channel_row( struct channel *channel, struct note *note ) {
 	switch( channel->note.effect ) {
 		case 0x01: case 0x86: /* Porta Up. */
 			if( channel->note.param > 0 ) {
-				channel->porta_up_param = channel->note.param;
+				if( channel->replay->module->it_effects ) {
+					channel_it_slide_memory( channel, channel->note.param, 0 );
+				} else {
+					channel->porta_up_param = channel->note.param;
+				}
 			}
 			channel_porta_up( channel, channel->porta_up_param );
 			break;
 		case 0x02: case 0x85: /* Porta Down. */
 			if( channel->note.param > 0 ) {
-				channel->porta_down_param = channel->note.param;
+				if( channel->replay->module->it_effects ) {
+					channel_it_slide_memory( channel, channel->note.param, 0 );
+				} else {
+					channel->porta_down_param = channel->note.param;
+				}
 			}
 			channel_porta_down( channel, channel->porta_down_param );
 			break;
 		case 0x03: case 0x87: /* Tone Porta. */
 			if( channel->note.param > 0 ) {
-				channel->tone_porta_param = channel->note.param;
+				if( channel->replay->module->it_effects ) {
+					channel_it_slide_memory( channel, channel->note.param, 1 );
+				} else {
+					channel->tone_porta_param = channel->note.param;
+				}
 			}
 			break;
 		case 0x04: case 0x88: /* Vibrato. */
