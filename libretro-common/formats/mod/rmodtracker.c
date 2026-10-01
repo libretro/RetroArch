@@ -431,6 +431,7 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 	int delta_env, offset, next_offset, idx, entry;
 	int num_rows, num_notes, pat_data_len, pat_data_offset;
 	int sam, sam_head_offset, sam_data_bytes, sam_data_samples;
+	int sam_data_avail;
 	int num_samples, sam_loop_start, sam_loop_length, amp;
 	uint32_t sample_bytes, loop_start, loop_length;
 	int note, flags, key, ins, vol, fxc, fxp;
@@ -642,6 +643,21 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 				adpcm = data_u8( data, sam_head_offset + 17 ) == 0xAD && !sixteen_bit;
 				data_ascii( data, sam_head_offset + 18, 22, sample->name );
 				sam_head_offset += 40;
+				/* Limit the sample to the data left in the file. A size
+				   the file cannot hold would cost a huge allocation for
+				   silence, and overflow the end-of-data checks in the
+				   sample readers and the offset sum below. */
+				sam_data_avail = ( offset >= 0 && offset < data->length )
+					? data->length - offset : 0;
+				if( adpcm ) {
+					/* 16-byte table, then two samples a byte. */
+					sam_data_avail = sam_data_avail > 16 ? sam_data_avail - 16 : 0;
+					if( ( sam_data_bytes + 1 ) >> 1 > sam_data_avail ) {
+						sam_data_bytes = sam_data_avail * 2;
+					}
+				} else if( sam_data_bytes > sam_data_avail ) {
+					sam_data_bytes = sam_data_avail;
+				}
 				sam_data_samples = sam_data_bytes;
 				if( sixteen_bit ) {
 					sam_data_samples = sam_data_samples >> 1;
