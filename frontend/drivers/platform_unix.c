@@ -27,6 +27,7 @@
 #include <fcntl.h>
 #include <sys/utsname.h>
 #include <sys/resource.h>
+#include <sys/wait.h>
 
 #ifdef __linux__
 #include <linux/version.h>
@@ -146,7 +147,12 @@ static char unix_cpu_model_name[64]      = {0};
 
 
 #if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
-static int speak_pid                     = 0;
+/* The narrator is a direct child, reaped with waitpid(WNOHANG): SIGCHLD
+ * keeps its default action, so every other child stays waitable. */
+static pid_t speak_pid                   = 0;
+/* Narrators sent SIGTERM that had not exited yet: reaped on later calls. */
+#define NARRATOR_STOPPING_MAX 4
+static pid_t speak_stopping[NARRATOR_STOPPING_MAX];
 #endif
 
 /* Counts SIGINT/SIGTERM. Written by the signal handler and read by
@@ -4102,9 +4108,47 @@ enum retro_language frontend_unix_get_user_language(void)
 }
 
 #if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
+static void narrator_reap_stopping_unix(void)
+{
+   unsigned i;
+   for (i = 0; i < NARRATOR_STOPPING_MAX; i++)
+      if (speak_stopping[i] > 0 && waitpid(speak_stopping[i], NULL, WNOHANG) != 0)
+         speak_stopping[i] = 0;
+}
+
+/* Running while waitpid finds it unfinished; once it has exited it is
+ * reaped here, so a finished narrator never reads as running and its
+ * pid is never kept past its exit. */
 static bool is_narrator_running_unix(void)
 {
-   return (kill(speak_pid, 0) == 0);
+   narrator_reap_stopping_unix();
+   if (speak_pid <= 0)
+      return false;
+   if (waitpid(speak_pid, NULL, WNOHANG) == 0)
+      return true;
+   speak_pid = 0;
+   return false;
+}
+
+/* SIGTERM to the running narrator, reaped now if it has gone, else kept
+ * to reap on a later call: nothing here waits. */
+static void narrator_stop_unix(void)
+{
+   unsigned i;
+   if (speak_pid <= 0)
+      return;
+   kill(speak_pid, SIGTERM);
+   if (waitpid(speak_pid, NULL, WNOHANG) == 0)
+   {
+      narrator_reap_stopping_unix();
+      for (i = 0; i < NARRATOR_STOPPING_MAX; i++)
+         if (speak_stopping[i] <= 0)
+         {
+            speak_stopping[i] = speak_pid;
+            break;
+         }
+   }
+   speak_pid = 0;
 }
 
 static const char* accessibility_unix_language_code(const char* language)
@@ -4243,19 +4287,11 @@ static bool accessibility_speak_unix(int speed,
    speed_out[2] = '\0';
    strlcat(speed_out, speeds[speed-1], 6);
 
-   if (priority < 10 && speak_pid > 0)
-   {
-      /* check if old pid is running */
-      if (is_narrator_running_unix())
-         goto end;
-   }
+   /* a lower-priority message waits for the running narrator */
+   if (priority < 10 && is_narrator_running_unix())
+      goto end;
 
-   if (speak_pid > 0)
-   {
-      /* Kill the running narrator */
-      kill(speak_pid, SIGTERM);
-      speak_pid = 0;
-   }
+   narrator_stop_unix();
 
    pid = fork();
    switch (pid)
@@ -4301,12 +4337,10 @@ static bool accessibility_speak_unix(int speed,
          RARCH_ERR("Could not fork for narrator.\n");
       default:
          {
-            /* parent process */
-            speak_pid = pid;
-
-            /* Tell the system that we'll ignore the exit status of the child
-             * process.  This prevents zombie processes. */
-            signal(SIGCHLD, SIG_IGN);
+            /* parent process: the narrator is reaped by
+             * is_narrator_running_unix() and narrator_stop_unix() */
+            if (pid > 0)
+               speak_pid = pid;
          }
    }
 
