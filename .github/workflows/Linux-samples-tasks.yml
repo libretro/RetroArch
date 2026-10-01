@@ -1648,6 +1648,30 @@ jobs:
           make -f Makefile.transport_fail clean
           echo "[pass] http_transport_failure_test (TSan)"
 
+      - name: Build and run http_resume_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/http
+        run: |
+          set -eu
+          # An interrupted download to a file (task_push_http_download_file,
+          # as the core updater and thumbnails use) resumes with
+          # "Range: bytes=N-" and If-Range on the first response's strong
+          # ETag. A 206 from the right offset continues the file; a 200
+          # (resource changed) starts it over; a 206 from the wrong offset,
+          # a first response without Accept-Ranges or a validator, and a
+          # connection that keeps dropping (more than three resumes) fail
+          # and remove the partial file. Every interrupted download used
+          # to fail outright.
+          make -f Makefile.resume clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 300 \
+             ./http_resume_test
+          echo "[pass] http_resume_test (ASan)"
+          make -f Makefile.resume clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./http_resume_test
+          make -f Makefile.resume clean
+          echo "[pass] http_resume_test (TSan)"
+
       - name: Build and run HTTP initialization failure test
         shell: bash
         working-directory: samples/tasks/http

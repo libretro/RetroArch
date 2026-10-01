@@ -3503,6 +3503,13 @@ size_t net_http_headers_compact(char *raw)
    return (size_t)(w - raw);
 }
 
+const char *net_http_header(struct http_t *state, const char *name)
+{
+   if (!state || state->response.status < 0 || !state->response.hdr)
+      return NULL;
+   return net_http_header_value(state->response.hdr, name);
+}
+
 char *net_http_headers_take(struct http_t *state, bool accept_err)
 {
    const char *h = net_http_headers_block(state, accept_err);

@@ -57,10 +57,21 @@ struct http_handle
     * entry point. */
    RFILE *sink_file;
    char  *sink_path;
+   /* Resume of an interrupted sink download (see task_http_resume()).
+    * validator is the first response's strong ETag or Last-Modified,
+    * owned; sink_written is the file's length so far; attempt_base is
+    * where the current attempt started writing. */
+   char    *validator;
+   uint64_t sink_written;
+   uint64_t attempt_base;
+   uint64_t expected_total;    /* 0: unknown */
+   unsigned resumes;
    enum http_status_enum status;
    bool error;
    bool headers_accept_err;
    bool sink_failed;
+   bool attempt_started;       /* first body bytes of this attempt seen */
+   bool resumable;             /* the first response allows a Range resume */
    /* Full request URL, owned.  This was a char[NAME_MAX_LENGTH]
     * filled by strlcpy, but task_http_finder() compares the stored
     * copy against the raw candidate URL -- so truncation on the
@@ -104,6 +115,99 @@ static char *task_http_failure_string(struct http_t *handle)
    return strdup(buf);
 }
 
+/* Decimal digits at *@v as a uint64_t, *@v left after them; false on
+ * none or overflow.  By hand rather than strtoull(), which older MSVC
+ * runtimes lack. */
+static bool task_http_parse_u64(const char **v, uint64_t *out)
+{
+   const char *p = *v;
+   uint64_t    n = 0;
+   if (*p < '0' || *p > '9')
+      return false;
+   for (; *p >= '0' && *p <= '9'; p++)
+   {
+      if (n > (UINT64_MAX - 9) / 10)
+         return false;
+      n = n * 10 + (uint64_t)(*p - '0');
+   }
+   *v   = p;
+   *out = n;
+   return true;
+}
+
+/* @n in decimal into @buf (at least 21 bytes). */
+static void task_http_u64_str(char *buf, uint64_t n)
+{
+   char tmp[21];
+   size_t i = 0, j = 0;
+   do
+   {
+      tmp[i++] = (char)('0' + (int)(n % 10));
+      n       /= 10;
+   } while (n);
+   while (i)
+      buf[j++] = tmp[--i];
+   buf[j] = '\0';
+}
+
+/* Does "bytes START-END/TOTAL" start at @start? */
+static bool task_http_range_starts_at(const char *v, uint64_t start)
+{
+   uint64_t n;
+   if (!v || strncmp(v, "bytes ", 6))
+      return false;
+   v += 6;
+   return task_http_parse_u64(&v, &n) && *v == '-' && n == start;
+}
+
+/* The first body bytes of an attempt: decide what the response means for
+ * the file.  On the first attempt, note whether a resume will be possible
+ * later.  On a resume, a 206 must continue exactly where the file ends;
+ * a 200 means the server sent the whole resource again (it ignored the
+ * range, or If-Range found it changed), so the file starts over. */
+static bool task_http_attempt_begin(http_handle_t *http)
+{
+   int status = net_http_status(http->handle);
+
+   http->attempt_started = true;
+   if (!http->resumes)
+   {
+      const char *ranges = net_http_header(http->handle, "Accept-Ranges");
+      const char *etag   = net_http_header(http->handle, "ETag");
+      const char *lm     = net_http_header(http->handle, "Last-Modified");
+      const char *len    = net_http_header(http->handle, "Content-Length");
+      /* A weak ETag cannot validate a byte range (RFC 9110 13.1.5). */
+      const char *v      = (etag && strncmp(etag, "W/", 2)) ? etag : lm;
+      if (     status == 200 && ranges && !strncmp(ranges, "bytes", 5)
+            && v && *v && !strpbrk(v, "\r\n"))
+      {
+         free(http->validator);
+         if ((http->validator = strdup(v)))
+            http->resumable = true;
+      }
+      if (len && !task_http_parse_u64(&len, &http->expected_total))
+         http->expected_total = 0;
+      return true;
+   }
+   if (status == 206)
+      return task_http_range_starts_at(
+            net_http_header(http->handle, "Content-Range"),
+            http->attempt_base);
+   if (status == 200)
+   {
+      const char *len = net_http_header(http->handle, "Content-Length");
+      if (     filestream_seek(http->sink_file, 0, RETRO_VFS_SEEK_POSITION_START) != 0
+            || filestream_truncate(http->sink_file, 0) != 0)
+         return false;
+      http->sink_written = http->attempt_base = 0;
+      if (!len || !task_http_parse_u64(&len, &http->expected_total))
+         http->expected_total = 0;
+      return true;
+   }
+   /* Anything else (416, an error page) is not the rest of this file. */
+   return false;
+}
+
 /* Sink callback: append the run of decoded body bytes to the output
  * file.  Returning false aborts the transfer, which is how a full
  * disk surfaces as a failed download rather than a truncated core. */
@@ -112,11 +216,59 @@ static bool task_http_file_sink(void *userdata, const void *data, size_t len)
    http_handle_t *http = (http_handle_t*)userdata;
    if (!http->sink_file)
       return false;
+   if (!http->attempt_started && !task_http_attempt_begin(http))
+   {
+      http->sink_failed = true;
+      return false;
+   }
    if (filestream_write(http->sink_file, data, (int64_t)len) != (int64_t)len)
    {
       http->sink_failed = true;
       return false;
    }
+   http->sink_written += len;
+   return true;
+}
+
+/* An interrupted download to a file picks up where it stopped: a new
+ * request for the rest, "Range: bytes=N-" with the first response's
+ * validator in If-Range, so a resource that changed in between comes
+ * back whole (200) instead of being spliced.  Only for a transport
+ * failure mid-body - an HTTP error, a full disk or a cancel is final -
+ * on a first response that advertised byte ranges and a strong
+ * validator; at most three times, and only after progress. */
+#define TASK_HTTP_MAX_RESUMES 3
+
+static bool task_http_resume(http_handle_t *http, uint8_t flg)
+{
+   struct http_connection_t *conn;
+   char headers[512];
+   char offset[21];
+
+   if (     !http->sink_file || http->sink_failed || http->error
+         || (flg & RETRO_TASK_FLG_CANCELLED)
+         || !http->handle || net_http_status(http->handle) >= 0
+         || !http->resumable || !http->connection_url
+         || http->resumes >= TASK_HTTP_MAX_RESUMES
+         || http->sink_written <= http->attempt_base
+         || (http->expected_total && http->sink_written >= http->expected_total))
+      return false;
+
+   if (!(conn = net_http_connection_new(http->connection_url, "GET", NULL)))
+      return false;
+   task_http_u64_str(offset, http->sink_written);
+   snprintf(headers, sizeof(headers), "Range: bytes=%s-\r\nIf-Range: %s\r\n",
+         offset, http->validator);
+   net_http_connection_set_headers(conn, headers);
+   net_http_connection_set_sink(conn, task_http_file_sink, http);
+
+   net_http_delete(http->handle);
+   http->handle            = NULL;
+   http->connection.handle = conn;
+   http->status            = HTTP_STATUS_CONNECTION_TRANSFER;
+   http->attempt_base      = http->sink_written;
+   http->attempt_started   = false;
+   http->resumes++;
    return true;
 }
 
@@ -214,6 +366,12 @@ static int task_http_iterate_transfer(retro_task_t *task)
 
    if (!net_http_update(http->handle, &pos, &tot))
    {
+      /* A resumed attempt reports its own slice; show the whole file. */
+      if (http->resumes && http->expected_total)
+      {
+         pos += (size_t)http->attempt_base;
+         tot  = (size_t)http->expected_total;
+      }
       if (tot == 0)
          task_set_progress(task, -1);
       else if (pos < (((size_t)-1) / 100))
@@ -249,7 +407,11 @@ static void task_http_transfer_handler(retro_task_t *task)
          break;
       case HTTP_STATUS_TRANSFER:
          if (!task_http_iterate_transfer(task))
+         {
+            if (task_http_resume(http, flg))
+               break;
             goto task_finished;
+         }
          break;
       default:
          break;
@@ -312,6 +474,10 @@ task_finished:
             data->len     = _len;
             data->headers = net_http_headers_take(http->handle, http->headers_accept_err);
             data->status  = net_http_status(http->handle);
+            /* A resumed download that completed delivered the whole
+             * file; callers expect the status of a whole response. */
+            if (http->resumes && data->status == 206)
+               data->status = 200;
 
             task_set_data(task, data);
 
@@ -325,7 +491,9 @@ task_finished:
              * callback computes `data && (!err || !*err)`, which a
              * failed DNS lookup satisfied, so an unreachable host
              * looked like a successfully downloaded empty core list. */
-            if (net_http_error(http->handle))
+            /* A failed download to a file already set the error when
+             * its sink was closed; setting it again leaked that one. */
+            if (net_http_error(http->handle) && !task_get_error(task))
                task_set_error(task, task_http_failure_string(http->handle));
          }
       }
@@ -383,7 +551,12 @@ static void task_http_transfer_cleanup(retro_task_t *task)
        * `false` covers the path where the handler never ran, where
        * a partial file must not be left behind. */
       task_http_sink_close(http, false);
+      /* Cancelled before the connection was turned into a transfer -
+       * including a resume's fresh connection. */
+      if (http->connection.handle)
+         net_http_connection_free(http->connection.handle);
       free(http->connection_url);
+      free(http->validator);
       free(http);
    }
 }
@@ -451,6 +624,13 @@ static void *task_push_http_transfer_generic_titled(
    http->sink_file           = NULL;
    http->sink_path           = NULL;
    http->sink_failed         = false;
+   http->validator           = NULL;
+   http->sink_written        = 0;
+   http->attempt_base        = 0;
+   http->expected_total      = 0;
+   http->resumes             = 0;
+   http->attempt_started     = false;
+   http->resumable           = false;
    http->connection_url      = strdup(url);
 
    /* Streaming to disk: open the output now, so a bad path fails the
@@ -506,6 +686,7 @@ error:
    {
       task_http_sink_close(http, false);
       free(http->connection_url);
+      free(http->validator);
       free(http);
    }
 

@@ -267,6 +267,18 @@ const char *net_http_header_next(const char *headers, const char *line);
 const char *net_http_header_value(const char *headers, const char *name);
 
 /**
+ * net_http_header:
+ *
+ * The value of response header @name, looked up without taking the
+ * block: usable mid-transfer, from a sink callback, once the status line
+ * and headers are in.  Points into the handle's own storage, valid until
+ * the handle follows a redirect, is deleted, or its headers are taken.
+ * NULL before the headers arrive, after a transport failure, or when the
+ * field is absent.
+ **/
+const char *net_http_header(struct http_t *state, const char *name);
+
+/**
  * net_http_headers:
  *
  * Legacy: the headers as a newly built string_list, owned by the
