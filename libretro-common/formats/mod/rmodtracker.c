@@ -76,6 +76,9 @@ struct instrument {
 	/* IT initial filter cutoff/resonance (bit 7 = set) and the third
 	   envelope, which flag bit 7 repurposes as a filter envelope. */
 	char ifc, ifr, pitch_is_filter;
+	/* IT default pan + 1 ( 0, calloc's default: none ) and pitch-pan
+	   separation / centre. */
+	char def_pan, pps, pps_center;
 	struct envelope pitch_env;
 	char vib_type, vib_sweep, vib_depth, vib_rate;
 	struct envelope vol_env, pan_env;
@@ -182,6 +185,9 @@ struct channel {
 	int nna_override;
 	/* The pitch envelope's offset, in 1/768ths of an octave. */
 	int pitch_env_ofs;
+	/* IT: the playing note's own pan ( -1: the channel's ), valid while
+	   the channel pan is still voice_pan_of. */
+	int voice_pan, voice_pan_of;
 	int retrig_volume, retrig_ticks, tremor_on_ticks, tremor_off_ticks;
 	int vibrato_type, vibrato_phase, vibrato_speed, vibrato_depth;
 	int tremolo_type, tremolo_phase, tremolo_speed, tremolo_depth;
@@ -1906,12 +1912,19 @@ static struct module* module_load_it( struct data *data, char *message ) {
 				continue;
 			}
 			it_load_envelope( data, iofs + 0x130, &instrument->vol_env, 0 );
-			it_load_envelope( data, iofs + 0x182, &instrument->pan_env, 0 );
+			/* Pan nodes are signed, -32 left .. 32 right, like pitch. */
+			it_load_envelope( data, iofs + 0x182, &instrument->pan_env, 32 );
 			it_load_envelope( data, iofs + 0x1D4, &instrument->pitch_env, 32 );
 			instrument->pitch_is_filter
 				= ( char ) ( ( data_u8( data, iofs + 0x1D4 ) & 0x80 ) >> 7 );
 			instrument->ifc = ( char ) data_u8( data, iofs + 0x3A );
 			instrument->ifr = ( char ) data_u8( data, iofs + 0x3B );
+			if( !( data_u8( data, iofs + 0x19 ) & 0x80 ) ) {
+				int dp = data_u8( data, iofs + 0x19 ) & 0x7F;
+				instrument->def_pan = ( char ) ( ( dp > 64 ? 32 : dp ) + 1 );
+			}
+			instrument->pps = ( char ) data_s8( data, iofs + 0x16 );
+			instrument->pps_center = ( char ) data_u8( data, iofs + 0x17 );
 		}
 	} else {
 		for( ins = 1; ins <= module->num_instruments; ins++ ) {
@@ -2401,6 +2414,7 @@ static void channel_init( struct channel *channel, struct replay *replay, int id
 	channel->flt_env = 255;
 	channel->flt_key = -1;
 	channel->nna_override = -1;
+	channel->voice_pan = -1;
 	channel->instrument = &replay->module->instruments[ 0 ];
 	channel->sample = &channel->instrument->samples[ 0 ];
 	/* Unsigned: the channel count comes from the file and is not
@@ -2709,6 +2723,27 @@ static void channel_it_slide_memory( struct channel *channel, int param,
 	}
 }
 
+/* IT gives every new note its own pan, leaving the channel's alone:
+   the instrument's default pan if set, else the channel's; the
+   sample's default pan over either; then pitch-pan separation moves
+   it by ( note - centre ) * separation / 8. In IT's 0..64 units. */
+static void channel_it_voice_pan( struct channel *channel ) {
+	struct instrument *ins = channel->instrument;
+	int pan = ins->def_pan > 0 ? ins->def_pan - 1 : ( channel->panning + 2 ) >> 2;
+	int delta;
+	if( channel->sample && channel->sample->panning > 0 ) {
+		pan = ( channel->sample->panning - 1 + 2 ) >> 2;
+	}
+	if( ins->pps ) {
+		/* IT's arithmetic shift, spelled out for negative values */
+		delta = ( channel->note.key + 11 - ins->pps_center ) * ins->pps;
+		pan += delta >= 0 ? delta >> 3 : -( ( -delta + 7 ) >> 3 );
+	}
+	pan = pan < 0 ? 0 : pan > 64 ? 64 : pan;
+	channel->voice_pan = pan * 4 > 255 ? 255 : pan * 4;
+	channel->voice_pan_of = channel->panning;
+}
+
 /* The amount of a volume-column volume slide. IT's four slides ( fine
    up/down, up/down ) share one memory that a 0 recalls; XM's have none. */
 static int channel_vcol_amount( struct channel *channel ) {
@@ -2740,7 +2775,7 @@ static void channel_trigger( struct channel *channel ) {
 		sam = channel->instrument->key_to_sample[ key ];
 		sample = &channel->instrument->samples[ sam ];
 		channel->volume = sample->volume >= 64 ? 64 : sample->volume & 0x3F;
-		if( sample->panning > 0 ) {
+		if( sample->panning > 0 && !channel->replay->module->it_effects ) {
 			channel->panning = ( sample->panning - 1 ) & 0xFF;
 		}
 		if( channel->period > 0 && sample->loop_length > 1 ) {
@@ -2845,6 +2880,9 @@ static void channel_trigger( struct channel *channel ) {
 			if( !porta ) {
 				ins = channel->instrument->key_to_sample[ channel->note.key ];
 				channel->sample = &channel->instrument->samples[ ins ];
+				if( channel->replay->module->it_effects ) {
+					channel_it_voice_pan( channel );
+				}
 			}
 			fine_tune = channel->sample->fine_tune;
 			if( channel->note.effect == 0x75 || channel->note.effect == 0xF2 ) {
@@ -3091,8 +3129,20 @@ static void channel_calculate_ampl( struct channel *channel ) {
 	if( channel->instrument->pan_env.enabled ) {
 		env_pan = envelope_calculate_ampl( &channel->instrument->pan_env, channel->pan_env_tick );
 	}
-	range = ( channel->panning < 128 ) ? channel->panning : ( 255 - channel->panning );
-	channel->pann = channel->panning + ( range * ( env_pan - 32 ) >> 5 );
+	{
+		/* A pan effect sets the channel pan and, in IT, the playing
+		   note's with it, ending any note pan. */
+		int pan = channel->panning;
+		if( channel->voice_pan >= 0 ) {
+			if( channel->voice_pan_of == channel->panning ) {
+				pan = channel->voice_pan;
+			} else {
+				channel->voice_pan = -1;
+			}
+		}
+		range = ( pan < 128 ) ? pan : ( 255 - pan );
+		channel->pann = pan + ( range * ( env_pan - 32 ) >> 5 );
+	}
 }
 
 static void channel_tick( struct channel *channel ) {
