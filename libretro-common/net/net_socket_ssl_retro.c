@@ -870,10 +870,19 @@ static void tls13_empty_hash(size_t hlen, uint8_t *out);
 
 static int tls_send_client_hello(struct ssl_state *s)
 {
-   static const uint8_t suites[] = {
+   /* AES-GCM first where the CPU has AES instructions; ChaCha20-
+    * Poly1305 first where AES runs in software (3DS, Vita, older
+    * phones), as it costs several times less there. Servers that
+    * weigh the client's order pick accordingly. */
+   static const uint8_t suites_aes[] = {
       0x13, 0x01, 0x13, 0x03, 0x13, 0x02,              /* TLS 1.3 */
       0xc0, 0x2b, 0xc0, 0x2f, 0xcc, 0xa9, 0xcc, 0xa8, 0xc0, 0x2c, 0xc0, 0x30
    };
+   static const uint8_t suites_chacha[] = {
+      0x13, 0x03, 0x13, 0x01, 0x13, 0x02,              /* TLS 1.3 */
+      0xcc, 0xa9, 0xcc, 0xa8, 0xc0, 0x2b, 0xc0, 0x2f, 0xc0, 0x2c, 0xc0, 0x30
+   };
+   const uint8_t *suites = crypto_aes_hw() ? suites_aes : suites_chacha;
    uint8_t *h;
    uint8_t *p;
    size_t   dlen = s->domain ? strlen(s->domain) : 0;
@@ -951,8 +960,8 @@ static int tls_send_client_hello(struct ssl_state *s)
    }
    *p++ = (uint8_t)s->offered_sid_len;
    memcpy(p, s->offered_sid, s->offered_sid_len); p += s->offered_sid_len;
-   tls_put16(p, sizeof(suites)); p += 2;
-   memcpy(p, suites, sizeof(suites)); p += sizeof(suites);
+   tls_put16(p, sizeof(suites_aes)); p += 2;
+   memcpy(p, suites, sizeof(suites_aes)); p += sizeof(suites_aes);
    *p++ = 1; *p++ = 0;                             /* null compression */
 
    {
@@ -2172,6 +2181,14 @@ unsigned ssl_socket_retro_version(void *state_data)
    if (!s || !s->handshake_done)
       return 0;
    return s->v13 ? 0x0304 : 0x0303;
+}
+
+unsigned ssl_socket_retro_suite(void *state_data)
+{
+   const struct ssl_state *s = (const struct ssl_state*)state_data;
+   if (!s || !s->handshake_done)
+      return 0;
+   return s->suite;
 }
 
 int ssl_socket_retro_was_resumed(void *state_data)

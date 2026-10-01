@@ -90,6 +90,8 @@ int main(int argc, char **argv)
    printf("%s: %.*s%s%s\n", host, (int)(strcspn(buf, "\r\n")), buf,
          ssl_socket_retro_version(ssl) == 0x0304 ? " [TLS 1.3]" : " [TLS 1.2]",
          ssl_socket_retro_was_resumed(ssl) ? " (resumed)" : "");
+   if (getenv("TLS_FETCH_SUITE"))
+      printf("suite %04x\n", ssl_socket_retro_suite(ssl));
    /* every round after the first must resume: a 1.2 session or a 1.3 PSK */
    if (round > 0 && !ssl_socket_retro_was_resumed(ssl))
    {

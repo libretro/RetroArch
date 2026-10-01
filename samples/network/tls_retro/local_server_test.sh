@@ -145,6 +145,19 @@ SRV=$!; sleep 0.4
 set +e; $RUN ./tls_threads$EXE localhost 44331 $D/ca.pem > $D/thr.out 2>&1; rc=$?; set -e
 kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
 if [ $rc -eq 0 ]; then echo "ok:   concurrent first-use verification from six threads"; else echo "FAIL: threads: $(cat $D/thr.out)"; exit 1; fi
+# Without AES instructions the client offers ChaCha20-Poly1305 first,
+# which s_server, taking the client's order, then picks on both versions
+make -s tls_fetch_noaes
+noaes() { # label version-option expected-suite
+   openssl s_server -accept 44331 -cert $D/rsa.pem -key $D/rsa.key $2 -www >/dev/null 2>&1 &
+   SRV=$!; sleep 0.4
+   set +e; TLS_FETCH_SUITE=1 $RUN ./tls_fetch_noaes$EXE localhost 44331 0 $D/ca.pem > $D/noaes.out 2>&1; rc=$?; set -e
+   kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
+   if [ $rc -eq 0 ] && grep -q "^suite $3" $D/noaes.out; then echo "ok:   $1"
+   else echo "FAIL: $1 (rc=$rc): $(cat $D/noaes.out)"; exit 1; fi
+}
+noaes "no AES instructions: TLS 1.3 negotiates ChaCha20-Poly1305" -tls1_3 1303
+noaes "no AES instructions: TLS 1.2 negotiates ChaCha20-Poly1305" -tls1_2 cca8
 # RetroArch's HTTP client over the built-in TLS: net_http fetches a file
 # of 3 MiB and change, whose records straddle its read windows at odd
 # offsets, on both versions and both AEADs; the body must hash right.

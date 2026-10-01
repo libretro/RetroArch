@@ -164,6 +164,15 @@ void aes_decrypt_block(const struct aes_ctx *ctx,
  * @in and @out may alias. Partial trailing blocks are allowed but a
  * continuation must start on a block boundary.
  **/
+/**
+ * crypto_aes_hw:
+ *
+ * Returns: 1 when AES runs on instructions made for it here (AES-NI
+ * with PCLMULQDQ, or the ARMv8 AES and PMULL), 0 when it runs in
+ * software - where ChaCha20-Poly1305 is several times cheaper.
+ **/
+int crypto_aes_hw(void);
+
 void aes_ctr_crypt(const struct aes_ctx *ctx, uint8_t *counter,
       const uint8_t *in, uint8_t *out, size_t len);
 

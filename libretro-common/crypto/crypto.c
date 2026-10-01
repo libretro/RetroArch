@@ -936,6 +936,19 @@ static void aes_arm_ghash(const struct aes_gcm_ctx *ctx,
 }
 #endif
 
+int crypto_aes_hw(void)
+{
+#if defined(AES_HAVE_X86_PATH)
+   if (aes_x86_available())
+      return 1;
+#endif
+#if defined(AES_HAVE_ARM_PATH)
+   if (aes_arm_available())
+      return 1;
+#endif
+   return 0;
+}
+
 int aes_init(struct aes_ctx *ctx, const uint8_t *key, size_t key_len)
 {
    unsigned i;

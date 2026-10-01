@@ -91,6 +91,10 @@ int ssl_socket_retro_was_resumed(void *state_data);
 /* net_socket_ssl_retro.c only: 0x0304 for a TLS 1.3 connection,
  * 0x0303 for 1.2, 0 before the handshake. */
 unsigned ssl_socket_retro_version(void *state_data);
+/* net_socket_ssl_retro.c only: the negotiated cipher suite's IANA
+ * number (0x1303 is TLS_CHACHA20_POLY1305_SHA256), 0 before the
+ * handshake. */
+unsigned ssl_socket_retro_suite(void *state_data);
 
 RETRO_END_DECLS
 

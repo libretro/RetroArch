@@ -618,118 +618,6 @@ done:
  * same Montgomery-form field arithmetic the curves use. Scalars and
  * coordinates are little-endian on the wire; the scalar is clamped as
  * the RFC says and the top bit of a coordinate ignored. */
-#if !defined(__SIZEOF_INT128__) || defined(X25519_NO_128)
-#define X25519_K (256 / BN_WORD_BITS)
-
-static const uint8_t x25519_p_be[32] = {
-   0x7f,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
-   0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xed
-};
-
-static void x25519_cswap(bn_word swap, bn_word *a, bn_word *b)
-{
-   bn_word mask = (bn_word)0 - swap;
-   unsigned i;
-   for (i = 0; i < X25519_K; i++)
-   {
-      bn_word t = mask & (a[i] ^ b[i]);
-      a[i] ^= t;
-      b[i] ^= t;
-   }
-}
-
-static int x25519_bn(uint8_t *out, const uint8_t *scalar, const uint8_t *u_le)
-{
-   bn_word p[X25519_K], r2[X25519_K], one[X25519_K], a24[X25519_K];
-   bn_word x1[X25519_K], x2[X25519_K], z2[X25519_K], x3[X25519_K], z3[X25519_K];
-   bn_word A[X25519_K], AA[X25519_K], B[X25519_K], BB[X25519_K], E[X25519_K];
-   bn_word C[X25519_K], D[X25519_K], DA[X25519_K], CB[X25519_K], t[X25519_K];
-   bn_word tmp[BN_MONT_TMP_WORDS(X25519_K)];
-   bn_word n0, swap = 0;
-   uint8_t k[32], ube[32], pm2_be[32];
-   int i;
-
-   memcpy(k, scalar, 32);
-   k[0]  &= 248;
-   k[31] &= 127;
-   k[31] |= 64;
-   for (i = 0; i < 32; i++)
-      ube[i] = u_le[31 - i];
-   ube[0] &= 0x7f;
-
-   bn_from_be(p, X25519_K, x25519_p_be, 32);
-   n0 = bn_mont_n0(p);
-   bn_mont_r2(r2, p, X25519_K);
-   /* Montgomery forms of 1, 121665 and u */
-   bn_zero(t, X25519_K); t[0] = 1;
-   bn_mont_mul(one, t, r2, p, n0, X25519_K, tmp);
-   bn_zero(t, X25519_K); t[0] = 121665;
-   bn_mont_mul(a24, t, r2, p, n0, X25519_K, tmp);
-   bn_from_be(t, X25519_K, ube, 32);
-   if (bn_cmp(t, p, X25519_K) >= 0)
-      bn_sub(t, t, p, X25519_K);
-   bn_mont_mul(x1, t, r2, p, n0, X25519_K, tmp);
-
-   bn_copy(x2, one, X25519_K); bn_zero(z2, X25519_K);
-   bn_copy(x3, x1, X25519_K);  bn_copy(z3, one, X25519_K);
-
-   for (i = 254; i >= 0; i--)
-   {
-      bn_word bit = (bn_word)((k[i >> 3] >> (i & 7)) & 1);
-      swap ^= bit;
-      x25519_cswap(swap, x2, x3);
-      x25519_cswap(swap, z2, z3);
-      swap = bit;
-
-      bn_mod_add(A, x2, z2, p, X25519_K);
-      bn_mont_sqr(AA, A, p, n0, X25519_K, tmp);
-      bn_mod_sub(B, x2, z2, p, X25519_K);
-      bn_mont_sqr(BB, B, p, n0, X25519_K, tmp);
-      bn_mod_sub(E, AA, BB, p, X25519_K);
-      bn_mod_add(C, x3, z3, p, X25519_K);
-      bn_mod_sub(D, x3, z3, p, X25519_K);
-      bn_mont_mul(DA, D, A, p, n0, X25519_K, tmp);
-      bn_mont_mul(CB, C, B, p, n0, X25519_K, tmp);
-      bn_mod_add(t, DA, CB, p, X25519_K);
-      bn_mont_sqr(x3, t, p, n0, X25519_K, tmp);
-      bn_mod_sub(t, DA, CB, p, X25519_K);
-      bn_mont_sqr(t, t, p, n0, X25519_K, tmp);
-      bn_mont_mul(z3, x1, t, p, n0, X25519_K, tmp);
-      bn_mont_mul(x2, AA, BB, p, n0, X25519_K, tmp);
-      bn_mont_mul(t, a24, E, p, n0, X25519_K, tmp);
-      bn_mod_add(t, AA, t, p, X25519_K);
-      bn_mont_mul(z2, E, t, p, n0, X25519_K, tmp);
-   }
-   x25519_cswap(swap, x2, x3);
-   x25519_cswap(swap, z2, z3);
-
-   /* x2 / z2: z2^(p-2) by square-and-multiply, all in Montgomery form */
-   memcpy(pm2_be, x25519_p_be, 32);
-   pm2_be[31] -= 2;
-   bn_copy(A, one, X25519_K);
-   for (i = 254; i >= 0; i--)
-   {
-      bn_mont_sqr(A, A, p, n0, X25519_K, tmp);
-      if ((pm2_be[31 - (i >> 3)] >> (i & 7)) & 1)
-         bn_mont_mul(A, A, z2, p, n0, X25519_K, tmp);
-   }
-   bn_mont_mul(t, x2, A, p, n0, X25519_K, tmp);
-   /* out of Montgomery form: multiply by 1 */
-   bn_zero(A, X25519_K); A[0] = 1;
-   bn_mont_mul(t, t, A, p, n0, X25519_K, tmp);
-   bn_to_be(ube, 32, t, X25519_K);
-   for (i = 0; i < 32; i++)
-      out[i] = ube[31 - i];
-   crypto_memzero(k, sizeof(k));
-   /* all-zero output means a low-order point: refuse it */
-   {
-      uint8_t acc = 0;
-      for (i = 0; i < 32; i++)
-         acc |= out[i];
-      return acc ? 0 : -1;
-   }
-}
-#endif
 
 #if defined(__SIZEOF_INT128__) && !defined(X25519_NO_128)
 /* 64-bit machines: arithmetic mod 2^255 - 19 in five 51-bit limbs,
@@ -966,6 +854,355 @@ static int x25519_51(uint8_t *out, const uint8_t *scalar, const uint8_t *u_le)
       acc |= out[i];
    return acc ? 0 : -1;
 }
+#else
+/* Machines without a 128-bit integer (32-bit ones, MSVC): arithmetic
+ * mod 2^255 - 19 in ten limbs of 26 and 25 bits, at bit offsets 0, 26,
+ * 51, 77, 102, 128, 153, 179, 204 and 230. Limbs are 32-bit words and
+ * every product one 32x32->64 multiply. Limb i times limb j lands in
+ * limb i + j; when both are odd the offsets add to one more than that
+ * limb's, a factor 2, and past limb 9 the product wraps to limb
+ * i + j - 10 times 19 (2^255 = 19 mod p). Inputs to a multiply stay
+ * under 2^27 a limb, so 19 g and 2 f fit 32 bits and a column of ten
+ * products is under 2^63. All unsigned: no shift of a negative. */
+typedef uint32_t fe10[10];
+static const unsigned char fe10_off[10]  = { 0, 26, 51, 77, 102, 128, 153, 179, 204, 230 };
+static const unsigned char fe10_bits[10] = { 26, 25, 26, 25, 26, 25, 26, 25, 26, 25 };
+/* 2p in this radix: 2(2^26 - 19), then 2(2^25 - 1), 2(2^26 - 1), ... */
+static const uint32_t fe10_2p[10] = {
+   0x7ffffdaU, 0x3fffffeU, 0x7fffffeU, 0x3fffffeU, 0x7fffffeU,
+   0x3fffffeU, 0x7fffffeU, 0x3fffffeU, 0x7fffffeU, 0x3fffffeU
+};
+
+/* r (column sums under 2^63) carried into limbs h */
+static void fe10_carry64(fe10 h, uint64_t *r)
+{
+   uint64_t c;
+   unsigned i;
+   for (i = 0; i < 9; i++)
+   {
+      c         = r[i] >> fe10_bits[i];
+      h[i]      = (uint32_t)r[i] & ((1U << fe10_bits[i]) - 1);
+      r[i + 1] += c;
+   }
+   c     = r[9] >> 25;
+   h[9]  = (uint32_t)r[9] & ((1U << 25) - 1);
+   c     = h[0] + 19 * c;
+   h[0]  = (uint32_t)c & ((1U << 26) - 1);
+   h[1] += (uint32_t)(c >> 26);
+}
+
+static void fe10_carry(fe10 h)
+{
+   uint64_t r[10];
+   unsigned i;
+   for (i = 0; i < 10; i++)
+      r[i] = h[i];
+   fe10_carry64(h, r);
+}
+
+static void fe10_frombytes(fe10 h, const uint8_t *s)
+{
+   uint64_t w[4];
+   unsigned i;
+   for (i = 0; i < 4; i++)
+      w[i] = (uint64_t)s[8 * i]            | ((uint64_t)s[8 * i + 1] << 8)
+           | ((uint64_t)s[8 * i + 2] << 16) | ((uint64_t)s[8 * i + 3] << 24)
+           | ((uint64_t)s[8 * i + 4] << 32) | ((uint64_t)s[8 * i + 5] << 40)
+           | ((uint64_t)s[8 * i + 6] << 48) | ((uint64_t)s[8 * i + 7] << 56);
+   for (i = 0; i < 10; i++)
+   {
+      /* the limb's bits from its offset, across two words at most */
+      unsigned word = fe10_off[i] >> 6, sh = fe10_off[i] & 63;
+      uint64_t v    = w[word] >> sh;
+      if (sh + fe10_bits[i] > 64)
+         v |= w[word + 1] << (64 - sh);
+      h[i] = (uint32_t)v & ((1U << fe10_bits[i]) - 1);
+   }
+   /* limb 9 is 25 bits from bit 230: bit 255 is left out */
+}
+
+/* The canonical value, 0 <= h < p, little-endian. */
+static void fe10_tobytes(uint8_t *s, const fe10 f)
+{
+   fe10     h;
+   uint64_t w[4];
+   uint32_t q;
+   unsigned i;
+   for (i = 0; i < 10; i++)
+      h[i] = f[i];
+   fe10_carry(h);
+   fe10_carry(h);
+   /* h < 2^255; q = 1 iff h + 19 >= 2^255, i.e. h >= p */
+   q = (h[0] + 19) >> 26;
+   for (i = 1; i < 10; i++)
+      q = (h[i] + q) >> fe10_bits[i];
+   h[0] += 19 * q;
+   for (i = 0; i < 9; i++)
+   {
+      h[i + 1] += h[i] >> fe10_bits[i];
+      h[i]     &= (1U << fe10_bits[i]) - 1;
+   }
+   h[9] &= (1U << 25) - 1;            /* drops the 2^255 the +19 made */
+   w[0] = w[1] = w[2] = w[3] = 0;
+   for (i = 0; i < 10; i++)
+   {
+      unsigned word = fe10_off[i] >> 6, sh = fe10_off[i] & 63;
+      w[word] |= (uint64_t)h[i] << sh;
+      if (sh + fe10_bits[i] > 64)
+         w[word + 1] |= (uint64_t)h[i] >> (64 - sh);
+   }
+   for (i = 0; i < 32; i++)
+      s[i] = (uint8_t)(w[i >> 3] >> (8 * (i & 7)));
+}
+
+static void fe10_add(fe10 h, const fe10 f, const fe10 g)
+{
+   unsigned i;
+   for (i = 0; i < 10; i++)
+      h[i] = f[i] + g[i];
+}
+
+static void fe10_sub(fe10 h, const fe10 f, const fe10 g)
+{
+   unsigned i;
+   for (i = 0; i < 10; i++)
+      h[i] = f[i] + fe10_2p[i] - g[i];
+   fe10_carry(h);
+}
+
+static void fe10_mul(fe10 h, const fe10 f, const fe10 g)
+{
+   uint32_t f2[10], g19[10];
+   uint64_t r[10];
+   unsigned i;
+   for (i = 0; i < 10; i++)
+   {
+      f2[i]  = 2 * f[i];
+      g19[i] = 19 * g[i];
+   }
+   r[0] = (uint64_t)f[0] * g[0]
+        + (uint64_t)f2[1] * g19[9]
+        + (uint64_t)f[2] * g19[8]
+        + (uint64_t)f2[3] * g19[7]
+        + (uint64_t)f[4] * g19[6]
+        + (uint64_t)f2[5] * g19[5]
+        + (uint64_t)f[6] * g19[4]
+        + (uint64_t)f2[7] * g19[3]
+        + (uint64_t)f[8] * g19[2]
+        + (uint64_t)f2[9] * g19[1];
+   r[1] = (uint64_t)f[0] * g[1]
+        + (uint64_t)f[1] * g[0]
+        + (uint64_t)f[2] * g19[9]
+        + (uint64_t)f[3] * g19[8]
+        + (uint64_t)f[4] * g19[7]
+        + (uint64_t)f[5] * g19[6]
+        + (uint64_t)f[6] * g19[5]
+        + (uint64_t)f[7] * g19[4]
+        + (uint64_t)f[8] * g19[3]
+        + (uint64_t)f[9] * g19[2];
+   r[2] = (uint64_t)f[0] * g[2]
+        + (uint64_t)f2[1] * g[1]
+        + (uint64_t)f[2] * g[0]
+        + (uint64_t)f2[3] * g19[9]
+        + (uint64_t)f[4] * g19[8]
+        + (uint64_t)f2[5] * g19[7]
+        + (uint64_t)f[6] * g19[6]
+        + (uint64_t)f2[7] * g19[5]
+        + (uint64_t)f[8] * g19[4]
+        + (uint64_t)f2[9] * g19[3];
+   r[3] = (uint64_t)f[0] * g[3]
+        + (uint64_t)f[1] * g[2]
+        + (uint64_t)f[2] * g[1]
+        + (uint64_t)f[3] * g[0]
+        + (uint64_t)f[4] * g19[9]
+        + (uint64_t)f[5] * g19[8]
+        + (uint64_t)f[6] * g19[7]
+        + (uint64_t)f[7] * g19[6]
+        + (uint64_t)f[8] * g19[5]
+        + (uint64_t)f[9] * g19[4];
+   r[4] = (uint64_t)f[0] * g[4]
+        + (uint64_t)f2[1] * g[3]
+        + (uint64_t)f[2] * g[2]
+        + (uint64_t)f2[3] * g[1]
+        + (uint64_t)f[4] * g[0]
+        + (uint64_t)f2[5] * g19[9]
+        + (uint64_t)f[6] * g19[8]
+        + (uint64_t)f2[7] * g19[7]
+        + (uint64_t)f[8] * g19[6]
+        + (uint64_t)f2[9] * g19[5];
+   r[5] = (uint64_t)f[0] * g[5]
+        + (uint64_t)f[1] * g[4]
+        + (uint64_t)f[2] * g[3]
+        + (uint64_t)f[3] * g[2]
+        + (uint64_t)f[4] * g[1]
+        + (uint64_t)f[5] * g[0]
+        + (uint64_t)f[6] * g19[9]
+        + (uint64_t)f[7] * g19[8]
+        + (uint64_t)f[8] * g19[7]
+        + (uint64_t)f[9] * g19[6];
+   r[6] = (uint64_t)f[0] * g[6]
+        + (uint64_t)f2[1] * g[5]
+        + (uint64_t)f[2] * g[4]
+        + (uint64_t)f2[3] * g[3]
+        + (uint64_t)f[4] * g[2]
+        + (uint64_t)f2[5] * g[1]
+        + (uint64_t)f[6] * g[0]
+        + (uint64_t)f2[7] * g19[9]
+        + (uint64_t)f[8] * g19[8]
+        + (uint64_t)f2[9] * g19[7];
+   r[7] = (uint64_t)f[0] * g[7]
+        + (uint64_t)f[1] * g[6]
+        + (uint64_t)f[2] * g[5]
+        + (uint64_t)f[3] * g[4]
+        + (uint64_t)f[4] * g[3]
+        + (uint64_t)f[5] * g[2]
+        + (uint64_t)f[6] * g[1]
+        + (uint64_t)f[7] * g[0]
+        + (uint64_t)f[8] * g19[9]
+        + (uint64_t)f[9] * g19[8];
+   r[8] = (uint64_t)f[0] * g[8]
+        + (uint64_t)f2[1] * g[7]
+        + (uint64_t)f[2] * g[6]
+        + (uint64_t)f2[3] * g[5]
+        + (uint64_t)f[4] * g[4]
+        + (uint64_t)f2[5] * g[3]
+        + (uint64_t)f[6] * g[2]
+        + (uint64_t)f2[7] * g[1]
+        + (uint64_t)f[8] * g[0]
+        + (uint64_t)f2[9] * g19[9];
+   r[9] = (uint64_t)f[0] * g[9]
+        + (uint64_t)f[1] * g[8]
+        + (uint64_t)f[2] * g[7]
+        + (uint64_t)f[3] * g[6]
+        + (uint64_t)f[4] * g[5]
+        + (uint64_t)f[5] * g[4]
+        + (uint64_t)f[6] * g[3]
+        + (uint64_t)f[7] * g[2]
+        + (uint64_t)f[8] * g[1]
+        + (uint64_t)f[9] * g[0];
+   fe10_carry64(h, r);
+}
+
+static void fe10_sq(fe10 h, const fe10 f)
+{
+   fe10_mul(h, f, f);
+}
+
+static void fe10_sqn(fe10 h, const fe10 f, unsigned n)
+{
+   fe10_sq(h, f);
+   while (--n)
+      fe10_sq(h, h);
+}
+
+static void fe10_mul_a24(fe10 h, const fe10 f)
+{
+   uint64_t r[10];
+   unsigned i;
+   for (i = 0; i < 10; i++)
+      r[i] = (uint64_t)f[i] * 121665;
+   fe10_carry64(h, r);
+}
+
+/* z^(2^255 - 21), the same addition chain as the 51-bit form */
+static void fe10_invert(fe10 out, const fe10 z)
+{
+   fe10 z2, z9, z11, z_5, z_10, z_20, z_50, z_100, t;
+   fe10_sq(z2, z);
+   fe10_sqn(t, z2, 2);
+   fe10_mul(z9, t, z);
+   fe10_mul(z11, z9, z2);
+   fe10_sq(t, z11);
+   fe10_mul(z_5, t, z9);
+   fe10_sqn(t, z_5, 5);
+   fe10_mul(z_10, t, z_5);
+   fe10_sqn(t, z_10, 10);
+   fe10_mul(z_20, t, z_10);
+   fe10_sqn(t, z_20, 20);
+   fe10_mul(t, t, z_20);
+   fe10_sqn(t, t, 10);
+   fe10_mul(z_50, t, z_10);
+   fe10_sqn(t, z_50, 50);
+   fe10_mul(z_100, t, z_50);
+   fe10_sqn(t, z_100, 100);
+   fe10_mul(t, t, z_100);
+   fe10_sqn(t, t, 50);
+   fe10_mul(t, t, z_50);
+   fe10_sqn(t, t, 5);
+   fe10_mul(out, t, z11);
+}
+
+static void fe10_cswap(uint32_t swap, fe10 a, fe10 b)
+{
+   uint32_t mask = (uint32_t)0 - swap;
+   unsigned i;
+   for (i = 0; i < 10; i++)
+   {
+      uint32_t t = mask & (a[i] ^ b[i]);
+      a[i] ^= t;
+      b[i] ^= t;
+   }
+}
+
+static int x25519_10(uint8_t *out, const uint8_t *scalar, const uint8_t *u_le)
+{
+   fe10     x1, x2, z2, x3, z3, A, AA, B, BB, E, C, D, DA, CB, t;
+   uint32_t swap = 0;
+   uint8_t  k[32];
+   uint8_t  acc = 0;
+   int      i;
+
+   memcpy(k, scalar, 32);
+   k[0]  &= 248;
+   k[31] &= 127;
+   k[31] |= 64;
+   fe10_frombytes(x1, u_le);
+   for (i = 0; i < 10; i++)
+   {
+      x2[i] = z2[i] = z3[i] = 0;
+      x3[i] = x1[i];
+   }
+   x2[0] = 1;
+   z3[0] = 1;
+
+   for (i = 254; i >= 0; i--)
+   {
+      uint32_t bit = (uint32_t)((k[i >> 3] >> (i & 7)) & 1);
+      swap ^= bit;
+      fe10_cswap(swap, x2, x3);
+      fe10_cswap(swap, z2, z3);
+      swap = bit;
+
+      fe10_add(A, x2, z2);
+      fe10_sq(AA, A);
+      fe10_sub(B, x2, z2);
+      fe10_sq(BB, B);
+      fe10_sub(E, AA, BB);
+      fe10_add(C, x3, z3);
+      fe10_sub(D, x3, z3);
+      fe10_mul(DA, D, A);
+      fe10_mul(CB, C, B);
+      fe10_add(t, DA, CB);
+      fe10_sq(x3, t);
+      fe10_sub(t, DA, CB);
+      fe10_sq(t, t);
+      fe10_mul(z3, x1, t);
+      fe10_mul(x2, AA, BB);
+      fe10_mul_a24(t, E);
+      fe10_add(t, AA, t);
+      fe10_mul(z2, E, t);
+   }
+   fe10_cswap(swap, x2, x3);
+   fe10_cswap(swap, z2, z3);
+
+   fe10_invert(t, z2);
+   fe10_mul(t, x2, t);
+   fe10_tobytes(out, t);
+   crypto_memzero(k, sizeof(k));
+   for (i = 0; i < 32; i++)
+      acc |= out[i];
+   return acc ? 0 : -1;
+}
 #endif
 
 int x25519(uint8_t *out, const uint8_t *scalar, const uint8_t *u_le)
@@ -973,7 +1210,7 @@ int x25519(uint8_t *out, const uint8_t *scalar, const uint8_t *u_le)
 #if defined(__SIZEOF_INT128__) && !defined(X25519_NO_128)
    return x25519_51(out, scalar, u_le);
 #else
-   return x25519_bn(out, scalar, u_le);
+   return x25519_10(out, scalar, u_le);
 #endif
 }
 
