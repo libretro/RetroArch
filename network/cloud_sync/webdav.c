@@ -187,13 +187,13 @@ static char *webdav_create_ha1_hash(char *user, char *realm, char *pass)
    return hash;
 }
 
-static bool webdav_create_digest_auth(char *digest)
+static bool webdav_create_digest_auth(const char *digest)
 {
    size_t _len;
    webdav_state_t *webdav_st = webdav_state_get_ptr();
    settings_t     *settings  = config_get_ptr();
-   char           *ptr       = digest + (sizeof("WWW-Authenticate: Digest")-1);
-   char           *end       = ptr + strlen(ptr);
+   const char     *ptr       = digest + (sizeof("WWW-Authenticate: Digest")-1);
+   const char     *end       = ptr + strlen(ptr);
 
    if (   !*settings->arrays.webdav_username
        && !*settings->arrays.webdav_password)
@@ -225,7 +225,7 @@ static bool webdav_create_digest_auth(char *digest)
       }
       else if (string_starts_with(ptr, "qop=\""))
       {
-         char *tail;
+         const char *tail;
          ptr += (sizeof("qop=\"")-1);
          tail = strchr(ptr, '"');
          while (ptr < tail)
