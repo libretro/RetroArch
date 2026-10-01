@@ -1647,7 +1647,9 @@ static struct module* module_load_it( struct data *data, char *message ) {
 			instrument->dca = ( char ) ( data_u8( data, iofs + 0x13 ) & 3 );
 			fade = data_u16le( data, iofs + 0x14 );
 			gbv = data_u8( data, iofs + 0x18 );
-			fade = fade * 64;
+			/* IT subtracts the fadeout from 1024 each tick; the engine
+			   fades from 32768, so the step scales by 32. */
+			fade = fade * 32;
 			instrument->vol_fadeout = fade > 32768 ? 32768 : fade;
 			/* Gather the samples this instrument's keyboard uses and
 			   give the instrument private copies of them. */
