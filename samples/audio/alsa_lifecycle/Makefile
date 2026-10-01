@@ -37,7 +37,9 @@ LDFLAGS += -Wl,--wrap=snd_pcm_hw_params_can_pause \
            -Wl,--wrap=snd_pcm_writei \
            -Wl,--wrap=snd_pcm_wait \
            -Wl,--wrap=snd_pcm_readi \
-           -Wl,--wrap=snd_pcm_recover
+           -Wl,--wrap=snd_pcm_recover \
+           -Wl,--wrap=snd_pcm_start \
+           -Wl,--wrap=snd_pcm_avail
 
 ifneq ($(SAN),)
    SANITIZER := $(SAN)

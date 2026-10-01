@@ -9141,8 +9141,9 @@ bool microphone_driver_start(void)
              * what if the player just unplugged their mic? */
          }
       }
-      /* The microphone was already created, so let's just unpause it */
-      else
+      /* The microphone was already created, so unpause it if the core
+       * had it on; microphone_driver_stop() leaves ENABLED as the core set it. */
+      else if (microphone->flags & MICROPHONE_FLAG_ENABLED)
       {
          microphone_driver_set_mic_state(microphone, true);
 

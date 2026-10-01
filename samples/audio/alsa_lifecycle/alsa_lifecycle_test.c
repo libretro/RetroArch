@@ -118,12 +118,42 @@ snd_pcm_sframes_t __wrap_snd_pcm_readi(snd_pcm_t *pcm, void *buffer, snd_pcm_ufr
    return scr_readi_rc;
 }
 
+/* Set to recover as an overrun really does: the stream comes back
+ * prepared, not running. */
+static int scr_recover_prepares;
+
 int __real_snd_pcm_recover(snd_pcm_t *pcm, int err, int silent);
 int __wrap_snd_pcm_recover(snd_pcm_t *pcm, int err, int silent)
 {
-   (void)pcm; (void)err; (void)silent;
+   (void)err; (void)silent;
    n_recover++;
+   if (scr_recover_prepares)
+      return __real_snd_pcm_prepare(pcm);
    return 0;
+}
+
+static unsigned n_start;
+
+int __real_snd_pcm_start(snd_pcm_t *pcm);
+int __wrap_snd_pcm_start(snd_pcm_t *pcm)
+{
+   n_start++;
+   return __real_snd_pcm_start(pcm);
+}
+
+/* Nonzero: the next avail returns it once. */
+static int scr_avail_rc;
+
+snd_pcm_sframes_t __real_snd_pcm_avail(snd_pcm_t *pcm);
+snd_pcm_sframes_t __wrap_snd_pcm_avail(snd_pcm_t *pcm)
+{
+   if (scr_avail_rc)
+   {
+      int rc       = scr_avail_rc;
+      scr_avail_rc = 0;
+      return rc;
+   }
+   return __real_snd_pcm_avail(pcm);
 }
 
 /* --- watchdog ---------------------------------------------------------- */
@@ -143,8 +173,10 @@ static void *watchdog(void *arg)
 static void reset_counts(void)
 {
    n_pause_on = n_pause_off = n_drop = n_prepare = 0;
-   n_writei = n_wait = n_recover = n_readi = 0;
+   n_writei = n_wait = n_recover = n_readi = n_start = 0;
    scr_readi_rc = -EAGAIN;
+   scr_recover_prepares = 0;
+   scr_avail_rc = 0;
    scr_writei_i = scr_writei_n = 0;
    scr_wait_rc = 1;
 }
@@ -314,6 +346,65 @@ static void s_blocking_read(void)
    microphone_alsa.free(drv);
 }
 
+/* The capture worker waits on the microphone whether or not the core
+ * has it on. A wait must not start a stream the core has off, or the
+ * host microphone records anyway (melonds-ds#252). A stream that
+ * overran must restart, or capture stops for good. */
+static void s_capture_start(void)
+{
+   void *drv, *mic;
+   uint8_t buf[2048];
+   unsigned new_rate = 0;
+   size_t   ready;
+   int      got;
+
+   printf("   capture waits start only a stream that overran\n");
+   reset_counts();
+   if (!(drv = microphone_alsa.init()))
+   {
+      CHECK(false, "the microphone driver did not initialize");
+      return;
+   }
+   if (!(mic = microphone_alsa.open_mic(drv, "null", 48000, 64, &new_rate)))
+   {
+      printf("      no capture device; skipped\n");
+      microphone_alsa.free(drv);
+      return;
+   }
+
+   /* Opened and never started: the core has it off. */
+   reset_counts();
+   scr_wait_rc = 0;
+   ready = microphone_alsa.wait_readable(drv, mic, sizeof(buf));
+   CHECK(ready == 0, "a microphone the core has off had %zu bytes ready", ready);
+   CHECK(n_start == 0, "a wait started a microphone the core has off (%u starts)", n_start);
+   CHECK(!microphone_alsa.mic_alive(drv, mic), "a wait left a microphone the core has off running");
+
+   /* On, and the wait finds an overrun: recovered and restarted. */
+   microphone_alsa.start_mic(drv, mic);
+   reset_counts();
+   scr_recover_prepares = 1;
+   scr_avail_rc         = -EPIPE;
+   ready = microphone_alsa.wait_readable(drv, mic, sizeof(buf));
+   CHECK(n_recover == 1 && n_start == 1,
+         "an overrun in the wait: %u recoveries, %u starts; wanted 1 and 1", n_recover, n_start);
+   CHECK(microphone_alsa.mic_alive(drv, mic), "a microphone that overran in the wait is not running");
+
+   /* On, and the read finds an overrun: the same. */
+   reset_counts();
+   scr_recover_prepares = 1;
+   scr_wait_rc          = 1;
+   scr_readi_rc         = -EPIPE;
+   got = microphone_alsa.read(drv, mic, buf, sizeof(buf));
+   CHECK(got >= 0, "an overrun in the read returned %d", got);
+   CHECK(n_recover == 1 && n_start == 1,
+         "an overrun in the read: %u recoveries, %u starts; wanted 1 and 1", n_recover, n_start);
+   CHECK(microphone_alsa.mic_alive(drv, mic), "a microphone that overran in the read is not running");
+
+   microphone_alsa.close_mic(drv, mic);
+   microphone_alsa.free(drv);
+}
+
 int main(void)
 {
    pthread_t wd;
@@ -327,6 +418,7 @@ int main(void)
    s_repeated();
    s_blocking_write();
    s_blocking_read();
+   s_capture_start();
 
    if (failures)
    {

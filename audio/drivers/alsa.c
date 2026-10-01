@@ -88,6 +88,19 @@ static bool alsa_microphone_start_mic(void *driver_context, void *mic_context);
  * capture must cost a dropped slice rather than a parked worker. */
 #define ALSA_WAIT_READABLE_LAPS 8
 
+/* snd_pcm_recover() leaves an overrun stream prepared, not running.
+ * Only a running stream overruns, so restart it here. Nowhere else:
+ * any other prepared stream is one the core has off. */
+static int alsa_microphone_recover(snd_pcm_t *pcm, int err)
+{
+   int rc = snd_pcm_recover(pcm, err, 1);
+   if (rc < 0)
+      return rc;
+   if (snd_pcm_state(pcm) == SND_PCM_STATE_PREPARED)
+      return snd_pcm_start(pcm);
+   return 0;
+}
+
 /* How long one capture wait may block: two periods, the time the device
  * takes to deliver what a read asks for, clamped so an unset or absurd
  * rate still leaves a usable bound. */
@@ -156,7 +169,7 @@ static int alsa_microphone_read(void *driver_context, void *mic_context, void *s
 
       if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
       {
-         if (snd_pcm_recover(mic->pcm, rc, 1) < 0)
+         if (alsa_microphone_recover(mic->pcm, rc) < 0)
             return -1;
          continue;
       }
@@ -165,7 +178,7 @@ static int alsa_microphone_read(void *driver_context, void *mic_context, void *s
 
       if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
       {
-         if (snd_pcm_recover(mic->pcm, frames, 1) < 0)
+         if (alsa_microphone_recover(mic->pcm, (int)frames) < 0)
             return -1;
 
          break;
@@ -273,8 +286,10 @@ static bool alsa_microphone_stop_mic(void *driver_context, void *mic_context)
 
 /* Sleeps until the microphone has samples, then says how many. The
  * counterpart of alsa_wait_writable(): snd_pcm_avail() on a capture
- * stream reports frames ready to read rather than room to write, and
- * snd_pcm_start() begins capture where it began playback. Bounded by
+ * stream reports frames ready to read rather than room to write.
+ * Unlike playback, it never starts a prepared stream: the capture
+ * worker calls this while the core has the microphone off, and
+ * starting it here would record anyway. Bounded by
  * two periods per wait and ALSA_WAIT_READABLE_LAPS waits, so a device
  * that has stopped delivering returns 0 and the caller retries later
  * rather than parking the capture thread. */
@@ -302,7 +317,7 @@ static size_t alsa_microphone_wait_readable(void *driver_context,
 
       if (avail == -EPIPE || avail == -ESTRPIPE || avail == -EINTR)
       {
-         if (snd_pcm_recover(mic->pcm, (int)avail, 1) < 0)
+         if (alsa_microphone_recover(mic->pcm, (int)avail) < 0)
             return 0;
          if (--laps < 0)
             return 0;
@@ -313,24 +328,12 @@ static size_t alsa_microphone_wait_readable(void *driver_context,
       if (avail >= want)
          return FRAMES_TO_BYTES(avail, mic->stream_info.frame_bits);
 
-      if (snd_pcm_state(mic->pcm) == SND_PCM_STATE_PREPARED)
-      {
-         rc = snd_pcm_start(mic->pcm);
-         if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
-         {
-            if (snd_pcm_recover(mic->pcm, rc, 1) < 0)
-               return 0;
-         }
-         else if (rc < 0)
-            return 0;
-      }
-
       rc = snd_pcm_wait(mic->pcm, timeout_ms);
       if (rc == 0)
          return 0;
       if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
       {
-         if (snd_pcm_recover(mic->pcm, rc, 1) < 0)
+         if (alsa_microphone_recover(mic->pcm, rc) < 0)
             return 0;
       }
       else if (rc < 0)
