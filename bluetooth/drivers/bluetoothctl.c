@@ -14,19 +14,52 @@
 
 #include <compat/strl.h>
 #include <configuration.h>
+#include <string.h>
 
 #include "../bluetooth_driver.h"
 #include "../../retroarch.h"
 
+#define BLUETOOTHCTL_MAX_DEVICES 256
+
 typedef struct
 {
-   bool bluetoothctl_cache[256];
-   unsigned bluetoothctl_counter[256];
+   bool bluetoothctl_cache[BLUETOOTHCTL_MAX_DEVICES];
+   unsigned bluetoothctl_counter[BLUETOOTHCTL_MAX_DEVICES];
    struct string_list* lines;
    char command[256];
    /* The running "scan on", between scan_begin and scan_end. */
    FILE *scan_pipe;
 } bluetoothctl_t;
+
+/* bluetoothctl prints "Device XX:XX:XX:XX:XX:XX <name>". An advertised
+ * name can contain newlines and produce forged output lines, so check
+ * each record before using its address in a shell command. */
+static bool bluetoothctl_device_address(const char *line, char address[18])
+{
+   size_t i;
+
+   if (!line || strncmp(line, "Device ", 7) != 0 || strlen(line) < 25 ||
+         line[24] != ' ')
+      return false;
+
+   for (i = 0; i < 17; i++)
+   {
+      unsigned char c = (unsigned char)line[7 + i];
+      if (i % 3 == 2)
+      {
+         if (c != ':')
+            return false;
+      }
+      else if (!((c >= '0' && c <= '9') ||
+                 (c >= 'A' && c <= 'F') ||
+                 (c >= 'a' && c <= 'f')))
+         return false;
+   }
+
+   memcpy(address, line + 7, 17);
+   address[17] = '\0';
+   return true;
+}
 
 static void *bluetoothctl_init(void)
 {
@@ -59,6 +92,7 @@ static void bluetoothctl_scan_begin(void *data)
 static void bluetoothctl_scan_end(void *data)
 {
    char line[512];
+   char address[18];
    const char *msg;
    union string_list_elem_attr attr;
    FILE *dev_file                   = NULL;
@@ -77,6 +111,9 @@ static void bluetoothctl_scan_end(void *data)
       free(btctl->lines);
    btctl->lines = string_list_new();
 
+   if (!btctl->lines)
+      return;
+
    msg = msg_hash_to_str(MSG_BLUETOOTH_SCAN_COMPLETE);
 
    runloop_msg_queue_push(msg, strlen(msg),
@@ -85,13 +122,18 @@ static void bluetoothctl_scan_end(void *data)
 
    dev_file = popen("bluetoothctl -- devices", "r");
 
+   if (!dev_file)
+      return;
+
    while (fgets(line, 512, dev_file))
    {
       size_t _len = strlen(line);
       if (_len > 0 && line[_len - 1] == '\n')
          line[--_len] = '\0';
 
-      string_list_append(btctl->lines, line, attr);
+      if (btctl->lines->size < BLUETOOTHCTL_MAX_DEVICES &&
+            bluetoothctl_device_address(line, address))
+         string_list_append(btctl->lines, line, attr);
    }
 
    pclose(dev_file);
@@ -105,7 +147,7 @@ static void bluetoothctl_get_devices(void *data, struct string_list* devices)
 
    attr.i = 0;
 
-   if (!btctl->lines)
+   if (!btctl->lines || !devices)
       return;
 
    for (i = 0; i < btctl->lines->size; i++)
@@ -117,7 +159,7 @@ static void bluetoothctl_get_devices(void *data, struct string_list* devices)
        * $ bluetoothctl devices
        *     'Device (mac address) (device name)'
        */
-      strlcpy(device, line+24, sizeof(device));
+      strlcpy(device, line + 25, sizeof(device));
       string_list_append(devices, device, attr);
    }
 }
@@ -127,31 +169,25 @@ static bool bluetoothctl_device_is_connected(void *data, unsigned i)
    bluetoothctl_t *btctl = (bluetoothctl_t*) data;
    char ln[512]          = {0};
    char device[18]       = {0};
-   const char *line      = btctl->lines->elems[i].data;
    FILE *command_file    = NULL;
+
+   if (!btctl->lines || i >= btctl->lines->size ||
+         i >= BLUETOOTHCTL_MAX_DEVICES ||
+         !bluetoothctl_device_address(btctl->lines->elems[i].data, device))
+      return false;
 
    if (btctl->bluetoothctl_counter[i] == 60)
    {
-      static struct string_list* list = NULL;
       btctl->bluetoothctl_counter[i]  = 0;
-      list                            = string_split(line, " ");
-      if (!list)
-         return false;
-
-      if (list->size == 0)
-      {
-         string_list_free(list);
-         return false;
-      }
-
-      strlcpy(device, list->elems[1].data, sizeof(device));
-      string_list_free(list);
 
       snprintf(btctl->command, sizeof(btctl->command), "\
             bluetoothctl -- info %s | grep 'Connected: yes'",
             device);
 
       command_file = popen(btctl->command, "r");
+
+      if (!command_file)
+         return false;
 
       while (fgets(ln, 512, command_file))
       {
@@ -172,28 +208,13 @@ static bool bluetoothctl_device_is_connected(void *data, unsigned i)
 
 static bool bluetoothctl_connect_device(void *data, unsigned idx)
 {
-   unsigned i;
    bluetoothctl_t *btctl               = (bluetoothctl_t*) data;
    char device[18]                     = {0};
-   const char *line                    = btctl->lines->elems[idx].data;
-   static struct string_list* list     = NULL;
 
-   /* bluetoothctl devices outputs lines of the format:
-    * $ bluetoothctl devices
-    *     'Device (mac address) (device name)'
-    */
-   list                                = string_split(line, " ");
-   if (!list)
+   if (!btctl->lines || idx >= btctl->lines->size ||
+         idx >= BLUETOOTHCTL_MAX_DEVICES ||
+         !bluetoothctl_device_address(btctl->lines->elems[idx].data, device))
       return false;
-
-   if (list->size == 0)
-   {
-      string_list_free(list);
-      return false;
-   }
-
-   strlcpy(device, list->elems[1].data, sizeof(device));
-   string_list_free(list);
 
    snprintf(btctl->command, sizeof(btctl->command), "\
          bluetoothctl -- pairable on");
@@ -224,28 +245,14 @@ static bool bluetoothctl_connect_device(void *data, unsigned idx)
 
 static bool bluetoothctl_remove_device(void *data, unsigned idx)
 {
-   unsigned i;
    const char *msg                     = NULL;
    bluetoothctl_t *btctl               = (bluetoothctl_t*) data;
    char device[18]                     = {0};
-   const char *line                    = btctl->lines->elems[idx].data;
-   static struct string_list* list     = NULL;
 
-   /* bluetoothctl devices outputs lines of the format:
-    * $ bluetoothctl devices
-    *     'Device (mac address) (device name)'
-    */
-   if (!(list = string_split(line, " ")))
+   if (!btctl->lines || idx >= btctl->lines->size ||
+         idx >= BLUETOOTHCTL_MAX_DEVICES ||
+         !bluetoothctl_device_address(btctl->lines->elems[idx].data, device))
       return false;
-
-   if (list->size == 0)
-   {
-      string_list_free(list);
-      return false;
-   }
-
-   strlcpy(device, list->elems[1].data, sizeof(device));
-   string_list_free(list);
 
    snprintf(btctl->command, sizeof(btctl->command), "\
          bluetoothctl -- disconnect %s",
@@ -273,12 +280,16 @@ static void bluetoothctl_device_get_sublabel(
       void *data, char *s, unsigned i, size_t len)
 {
    bluetoothctl_t *btctl = (bluetoothctl_t*) data;
-   /* bluetoothctl devices outputs lines of the format:
-    * $ bluetoothctl devices
-    *     'Device (mac address) (device name)'
-    */
-   const char      *line = btctl->lines->elems[i].data;
-   strlcpy(s, line+7, 18);
+   char address[18];
+
+   if (!s || !len)
+      return;
+   *s = '\0';
+   if (!btctl->lines || i >= btctl->lines->size ||
+         i >= BLUETOOTHCTL_MAX_DEVICES ||
+         !bluetoothctl_device_address(btctl->lines->elems[i].data, address))
+      return;
+   strlcpy(s, address, len);
 }
 
 bluetooth_driver_t bluetooth_bluetoothctl = {
