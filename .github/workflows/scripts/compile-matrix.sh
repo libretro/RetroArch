@@ -996,6 +996,12 @@ if command -v sdl2-config > /dev/null 2>&1; then
 else
    echo "skip  font layout: sdl2 (no sdl2-config)"
 fi
+if [ -f /usr/include/SDL3/SDL.h ]; then
+   font_layout "font layout: sdl3" "" "-DHAVE_SDL3 -I/usr/include/SDL3" \
+      gfx/drivers/sdl3_gfx.c
+else
+   echo "skip  font layout: sdl3 (no SDL3 headers)"
+fi
 font_layout "font layout: switch" "" \
    "-DHAVE_LIBNX -DSWITCH -D__SWITCH__ -I$STUBS/libnx" \
    gfx/drivers/switch_nx_gfx.c
