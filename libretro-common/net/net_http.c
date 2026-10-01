@@ -101,6 +101,14 @@
  * the least recently used evictable entry goes. */
 #define NET_HTTP_DNS_CACHE_MAX      32
 
+/* Idle keep-alive connections kept, and for how long.  A socket idle
+ * past the TTL is closed rather than reused: a NAT mapping or server
+ * keep-alive timer that expired silently leaves a socket select()
+ * never reports, and the reuse sends into a dead connection and waits
+ * out the transfer's timeout. */
+#define NET_HTTP_POOL_MAX_IDLE      8
+#define NET_HTTP_POOL_IDLE_TTL      ((retro_time_t)30 * 1000000)
+
 /* Redirects followed per request.  A server bouncing between two
  * URLs used to be followed forever. */
 #define NET_HTTP_MAX_REDIRECTS      8
@@ -124,6 +132,7 @@ enum bodytype
 struct conn_pool_entry
 {
    char *domain;
+   retro_time_t idle_since;
    int port;
    int fd;
    void *ssl_ctx;
@@ -1189,6 +1198,28 @@ static void net_http_conn_pool_remove_expired(void)
    struct conn_pool_entry *prev  = NULL;
    struct timeval tv             = { 0 };
    int max                       = 0;
+   retro_time_t now              = cpu_features_get_time_usec();
+
+   /* Idle past the TTL: closed without asking select(), which cannot
+    * see a connection that died silently. */
+   entry = conn_pool;
+   while (entry)
+   {
+      struct conn_pool_entry *next = entry->next;
+      if (!entry->in_use && entry->idle_since + NET_HTTP_POOL_IDLE_TTL < now)
+      {
+         if (prev)
+            prev->next = next;
+         else
+            conn_pool  = next;
+         net_http_conn_pool_free(entry);
+      }
+      else
+         prev = entry;
+      entry = next;
+   }
+   prev = NULL;
+
    FD_ZERO(&fds);
    entry = conn_pool;
    while (entry)
@@ -1283,6 +1314,38 @@ static struct conn_pool_entry *net_http_conn_pool_find(
       entry = entry->next;
    }
    return NULL;
+}
+
+/* A finished transfer hands its connection back.  Past
+ * NET_HTTP_POOL_MAX_IDLE idle sockets the longest-idle one is closed:
+ * that costs some later request a handshake, where keeping every
+ * socket a session ever opened costs descriptors and server slots. */
+static void net_http_conn_pool_release(struct conn_pool_entry *conn)
+{
+   struct conn_pool_entry *e, *p, *oldest = NULL, *oldest_prev = NULL;
+   unsigned idle = 0;
+
+   conn->in_use     = false;
+   conn->idle_since = cpu_features_get_time_usec();
+   for (p = NULL, e = conn_pool; e; p = e, e = e->next)
+   {
+      if (e->in_use)
+         continue;
+      idle++;
+      if (!oldest || e->idle_since < oldest->idle_since)
+      {
+         oldest      = e;
+         oldest_prev = p;
+      }
+   }
+   if (idle > NET_HTTP_POOL_MAX_IDLE && oldest)
+   {
+      if (oldest_prev)
+         oldest_prev->next = oldest->next;
+      else
+         conn_pool         = oldest->next;
+      net_http_conn_pool_free(oldest);
+   }
 }
 
 static struct conn_pool_entry *net_http_conn_pool_add(const char *domain, int port, int fd, bool ssl)
@@ -3126,7 +3189,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    }
 
    if (state->conn)
-      state->conn->in_use = false;
+      net_http_conn_pool_release(state->conn);
    state->conn = NULL;
 
    if (   response->status >= 300 && response->status < 400

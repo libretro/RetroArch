@@ -111,9 +111,59 @@ static void test_dns_cap(void)
    net_http_deinit();
 }
 
+/* ---- connection pool: idle cap and idle TTL ---- */
+
+static unsigned pool_idle(void)
+{
+   unsigned n = 0;
+   struct conn_pool_entry *e;
+   for (e = conn_pool; e; e = e->next)
+      n += !e->in_use;
+   return n;
+}
+
+static void test_pool_limits(void)
+{
+   int i;
+   struct conn_pool_entry *c;
+
+   net_http_init();
+   closed_sockets = 0;
+   for (i = 0; i < 20; i++)
+   {
+      now++;
+      c = net_http_conn_pool_add("example.invalid", 2000 + i, 100 + i, false);
+      assert(c);
+      net_http_conn_pool_release(c);
+   }
+   printf("  20 connections finished: %u idle in the pool\n", pool_idle());
+   check(pool_idle() == NET_HTTP_POOL_MAX_IDLE
+         && closed_sockets == 20 - NET_HTTP_POOL_MAX_IDLE,
+         "pool keeps at most 8 idle connections, closing the rest");
+   check(!net_http_conn_pool_find("example.invalid", 2000)
+         && (c = net_http_conn_pool_find("example.invalid", 2019)) != NULL,
+         "pool closes the longest-idle connection first");
+   net_http_conn_pool_release(c);
+
+   /* Within the TTL a connection is reused... */
+   now += NET_HTTP_POOL_IDLE_TTL / 2;
+   c = net_http_conn_pool_find("example.invalid", 2019);
+   check(c != NULL, "idle connection within the TTL is reused");
+   net_http_conn_pool_release(c);
+
+   /* ...past it, it is closed instead. */
+   closed_sockets = 0;
+   now += NET_HTTP_POOL_IDLE_TTL + 1;
+   check(!net_http_conn_pool_find("example.invalid", 2019)
+         && closed_sockets == NET_HTTP_POOL_MAX_IDLE && !conn_pool,
+         "idle connections past the TTL are closed, not reused");
+   net_http_deinit();
+}
+
 int main(void)
 {
    test_dns_cap();
+   test_pool_limits();
    if (failures)
    {
       printf("%d check(s) failed\n", failures);
