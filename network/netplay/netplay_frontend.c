@@ -64,6 +64,11 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../input/input_driver.h"
 
+#ifdef HAVE_CRYPTO
+#include <crypto/crypto.h>
+#include <crypto/kdf.h>
+#endif
+
 #ifdef HAVE_MENU
 #include "../../menu/menu_input.h"
 #include "../../menu/menu_driver.h"
@@ -924,6 +929,45 @@ static uint32_t simple_rand_uint32(unsigned long *simple_rand_next)
    return ((part0 << 30) + (part1 << 15) + part2);
 }
 
+/* A password challenge salt. From the platform entropy source where the
+ * crypto library has one: the LCG it replaced, seeded from time(NULL),
+ * let anyone who saw one salt predict every later one. Where there is
+ * no source, the LCG still serves, seeded from the microsecond clock and
+ * the connection's address rather than the wall-clock second. */
+static uint32_t netplay_password_salt(netplay_t *netplay,
+      const void *connection)
+{
+   uint32_t salt = 0;
+#ifdef HAVE_CRYPTO
+   if (crypto_random_bytes((uint8_t*)&salt, sizeof(salt)) != 0)
+#endif
+   {
+      if (netplay->simple_rand_next == 1)
+         netplay->simple_rand_next =
+              (unsigned long)cpu_features_get_time_usec()
+            ^ (unsigned long)(size_t)connection;
+      salt = simple_rand_uint32(&netplay->simple_rand_next);
+   }
+   return salt ? salt : 1;
+}
+
+/* The client's password hash against ours, in time that does not depend
+ * on where they first differ. */
+static bool netplay_password_hash_eq(const void *a, const void *b, size_t len)
+{
+#ifdef HAVE_CRYPTO
+   return crypto_memeq_ct(a, b, len) != 0;
+#else
+   const uint8_t *pa   = (const uint8_t*)a;
+   const uint8_t *pb   = (const uint8_t*)b;
+   uint8_t        diff = 0;
+   size_t         i;
+   for (i = 0; i < len; i++)
+      diff |= pa[i] ^ pb[i];
+   return diff == 0;
+#endif
+}
+
 static void netplay_send_cmd_netpacket(netplay_t *netplay, size_t conn_i,
       const void* buf, size_t len, uint16_t client_id);
 static void RETRO_CALLCONV netplay_netpacket_send_cb(int flags,
@@ -979,11 +1023,7 @@ static bool netplay_handshake_init_send(netplay_t *netplay,
             || *settings->paths.netplay_spectate_password)
       {
          /* Demand a password */
-         if (netplay->simple_rand_next == 1)
-            netplay->simple_rand_next = (unsigned long) time(NULL);
-         connection->salt = simple_rand_uint32(&netplay->simple_rand_next);
-         if (!connection->salt)
-            connection->salt = 1;
+         connection->salt = netplay_password_salt(netplay, connection);
          header[3] = htonl(connection->salt);
       }
       else
@@ -1735,7 +1775,7 @@ static bool netplay_handshake_pre_password(netplay_t *netplay,
          sizeof(password) - 8);
       sha256_hash(hash, (uint8_t *) password, strlen(password));
 
-      if (!memcmp(password_buf.password, hash, NETPLAY_PASS_HASH_LEN))
+      if (netplay_password_hash_eq(password_buf.password, hash, NETPLAY_PASS_HASH_LEN))
       {
          correct              = true;
          connection->flags   |= NETPLAY_CONN_FLAG_CAN_PLAY;
@@ -1748,7 +1788,7 @@ static bool netplay_handshake_pre_password(netplay_t *netplay,
          sizeof(password) - 8);
       sha256_hash(hash, (uint8_t *) password, strlen(password));
 
-      if (!memcmp(password_buf.password, hash, NETPLAY_PASS_HASH_LEN))
+      if (netplay_password_hash_eq(password_buf.password, hash, NETPLAY_PASS_HASH_LEN))
          correct = true;
    }
 
