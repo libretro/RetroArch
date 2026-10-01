@@ -984,7 +984,9 @@ font_layout() {
       echo "ok    $name"
    fi
 }
-font_layout "font layout: vulkan" "" "-DHAVE_VULKAN" gfx/drivers/vulkan.c
+# Vulkan from the Khronos headers the tree carries (gfx/include), as the
+# real builds use, so the lane runs on a runner without the SDK headers
+font_layout "font layout: vulkan" "" "-DHAVE_VULKAN -Igfx/include" gfx/drivers/vulkan.c
 font_layout "font layout: gl" "" "-DHAVE_OPENGL" gfx/drivers/gl2.c
 font_layout "font layout: gl1" "" "-DHAVE_OPENGL -DHAVE_OPENGL1" \
    gfx/drivers/gl1.c
