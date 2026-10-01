@@ -441,9 +441,34 @@ static struct smb2_context *smb_heal(struct smb2_context *ctx, struct smb_slot *
  * is pumped here off a context of its own.  srvsvc requires IPC$, which is a
  * different tree connect to the one the pool holds. */
 #ifndef HAVE_RETROSMB
+/* libsmb2 changed its share enumeration types in place (upstream
+ * 48e2461, 2026-10-01): the srvsvc_* structures, SHARE_INFO_1 and
+ * SRVSVC_SHARE_TYPE_* gave way to a flat smb2_share_enum_reply,
+ * SMB2_SHARE_INFO_1 and SMB2_SHARE_TYPE_*. The call and the level-1
+ * fields used here are the same in both, so map the names. */
+#ifdef SMB2_SHARE_TYPE_DISKTREE
+typedef struct smb2_share_enum_reply smb_share_rep_t;
+typedef struct smb2_share_info_1     smb_share_info1_t;
+#define SMB_SHARE_LEVEL_1         SMB2_SHARE_INFO_1
+#define SMB_STYPE_DISKTREE        SMB2_SHARE_TYPE_DISKTREE
+#define SMB_STYPE_HIDDEN          SMB2_SHARE_TYPE_HIDDEN
+#define SMB_STYPE_TEMPORARY       SMB2_SHARE_TYPE_TEMPORARY
+#define SMB_REP_COUNT(rep)        ((rep)->entries_read)
+#define SMB_REP_INFO1(rep)        ((rep)->share_info.info_1)
+#else
+typedef struct srvsvc_NetrShareEnum_rep smb_share_rep_t;
+typedef struct srvsvc_SHARE_INFO_1      smb_share_info1_t;
+#define SMB_SHARE_LEVEL_1         SHARE_INFO_1
+#define SMB_STYPE_DISKTREE        SRVSVC_SHARE_TYPE_DISKTREE
+#define SMB_STYPE_HIDDEN          SRVSVC_SHARE_TYPE_HIDDEN
+#define SMB_STYPE_TEMPORARY       SRVSVC_SHARE_TYPE_TEMPORARY
+#define SMB_REP_COUNT(rep)        ((rep)->ses.ShareEnum.Level1.EntriesRead)
+#define SMB_REP_INFO1(rep)        ((rep)->ses.ShareEnum.Level1.share_info_1)
+#endif
+
 struct smb_enum_state
 {
-   struct srvsvc_NetrShareEnum_rep *rep;
+   smb_share_rep_t *rep;
    int status;
    bool finished;
 };
@@ -456,7 +481,7 @@ static void smb_share_enum_cb(struct smb2_context *ctx, int status,
    (void)ctx;
 
    state->status   = status;
-   state->rep      = (struct srvsvc_NetrShareEnum_rep*)command_data;
+   state->rep      = (smb_share_rep_t*)command_data;
    state->finished = true;
 }
 
@@ -578,7 +603,8 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
    const struct smb_settings *smb_cfg = smb_cfg_get();
    struct smb_enum_state state;
    struct smb2_context *ctx;
-   struct srvsvc_SHARE_INFO_1_CONTAINER *level1;
+   const smb_share_info1_t *info1;
+   uint32_t entries;
    char **shares;
    unsigned count = 0;
    unsigned i;
@@ -628,7 +654,7 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
 
    memset(&state, 0, sizeof(state));
 
-   if (smb2_share_enum_async(ctx, SHARE_INFO_1,
+   if (smb2_share_enum_async(ctx, SMB_SHARE_LEVEL_1,
             smb_share_enum_cb, &state) != 0)
    {
       smb2_disconnect_share(ctx);
@@ -647,9 +673,10 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
       return false;
    }
 
-   level1 = &state.rep->ses.ShareEnum.Level1;
+   info1   = SMB_REP_INFO1(state.rep);
+   entries = SMB_REP_COUNT(state.rep);
 
-   if (!level1->share_info_1 || level1->EntriesRead == 0)
+   if (!info1 || entries == 0)
    {
       smb2_free_data(ctx, state.rep);
       smb2_disconnect_share(ctx);
@@ -657,7 +684,7 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
       return false;
    }
 
-   if (!(shares = (char**)calloc(level1->EntriesRead, sizeof(char*))))
+   if (!(shares = (char**)calloc(entries, sizeof(char*))))
    {
       smb2_free_data(ctx, state.rep);
       smb2_disconnect_share(ctx);
@@ -665,16 +692,16 @@ static bool smb_enum_shares(char ***out, unsigned *out_count)
       return false;
    }
 
-   for (i = 0; i < level1->EntriesRead; i++)
+   for (i = 0; i < entries; i++)
    {
-      const struct srvsvc_SHARE_INFO_1 *info = &level1->share_info_1[i];
+      const smb_share_info1_t *info = &info1[i];
       const char *name = info->netname;
 
       if (!name || !*name)
          continue;
-      if ((info->type & 3) != SRVSVC_SHARE_TYPE_DISKTREE)
+      if ((info->type & 3) != SMB_STYPE_DISKTREE)
          continue;
-      if (info->type & (SRVSVC_SHARE_TYPE_HIDDEN | SRVSVC_SHARE_TYPE_TEMPORARY))
+      if (info->type & (SMB_STYPE_HIDDEN | SMB_STYPE_TEMPORARY))
          continue;
       if (name[strlen(name) - 1] == '$')
          continue;
