@@ -161,6 +161,8 @@ struct channel {
 	int sfx_macro;
 	int flt_a, flt_b, flt_c;
 	int flt_y1l, flt_y2l, flt_y1r, flt_y2r;
+	/* The float path's own memory, in its buffer's units. */
+	float flt_fy1l, flt_fy2l, flt_fy1r, flt_fy2r;
 	int flt_errl, flt_errr;
 	int pitch_env_tick;
 	int period, porta_period, retrig_count, fx_count, av_count;
@@ -2508,6 +2510,8 @@ static void channel_trigger( struct channel *channel ) {
 		}
 		channel->flt_y1l = channel->flt_y2l = 0;
 		channel->flt_y1r = channel->flt_y2r = 0;
+		channel->flt_fy1l = channel->flt_fy2l = 0.0f;
+		channel->flt_fy1r = channel->flt_fy2r = 0.0f;
 		channel->flt_errl = channel->flt_errr = 0;
 	}
 	if( channel->note.effect == 0x09 || channel->note.effect == 0x8F ) {
@@ -2620,6 +2624,8 @@ static void channel_trigger( struct channel *channel ) {
 					}
 					channel->flt_y1l = channel->flt_y2l = 0;
 					channel->flt_y1r = channel->flt_y2r = 0;
+					channel->flt_fy1l = channel->flt_fy2l = 0.0f;
+					channel->flt_fy1r = channel->flt_fy2r = 0.0f;
 					channel->flt_errl = channel->flt_errr = 0;
 				}
 			}
@@ -3654,12 +3660,28 @@ static void downsample( int *buf, int count ) {
    with throwaway state. Products stay within 32 bits: inputs are
    clamped to 16 bits, a is at most 16384 and a stable filter keeps
    |b| under two in Q14, at the cost of seven low bits per term. */
+/* IT2 filters the raw sample, scaled to 15 bits, and clamps the
+   result to 16 bits before the voice volume applies, so a resonant
+   peak clips at twice the sample's full scale. Here the filter runs
+   after the volume: a full-scale sample reaches the buffer at the
+   side's gain, so the same clip sits at twice that. */
+static int channel_filter_limit( struct channel *channel, int right ) {
+	int gain = channel->ampl * ( right ? channel->pann : 255 - channel->pann ) >> 8;
+	return gain < 0 ? 0 : gain;
+}
+
 static void channel_filter_run( struct channel *channel, int *buf,
 		int commit, int total ) {
 	int i, x, y, acc;
 	int y1l = channel->flt_y1l, y2l = channel->flt_y2l;
 	int y1r = channel->flt_y1r, y2r = channel->flt_y2r;
 	int errl = channel->flt_errl, errr = channel->flt_errr;
+	/* The clip in the filter's domain ( the buffer >> 2 ), capped at
+	   the state's 15 bits. */
+	int liml = channel_filter_limit( channel, 0 ) >> 1;
+	int limr = channel_filter_limit( channel, 1 ) >> 1;
+	if( liml > 32767 ) liml = 32767;
+	if( limr > 32767 ) limr = 32767;
 	for( i = 0; i < total; i++ ) {
 		/* One 14-bit shift per sample with first-order error
 		   feedback: the truncated remainder is carried into the
@@ -3678,8 +3700,8 @@ static void channel_filter_run( struct channel *channel, int *buf,
 			+ y2l * channel->flt_c + errl;
 		y = acc >> 14;
 		errl = acc - y * 16384;
-		if( y > 32767 ) y = 32767;
-		if( y < -32768 ) y = -32768;
+		if( y > liml ) y = liml;
+		if( y < -liml ) y = -liml;
 		y2l = y1l;
 		y1l = y;
 		buf[ i * 2 ] = y * 4;
@@ -3688,8 +3710,8 @@ static void channel_filter_run( struct channel *channel, int *buf,
 			+ y2r * channel->flt_c + errr;
 		y = acc >> 14;
 		errr = acc - y * 16384;
-		if( y > 32767 ) y = 32767;
-		if( y < -32768 ) y = -32768;
+		if( y > limr ) y = limr;
+		if( y < -limr ) y = -limr;
 		y2r = y1r;
 		y1r = y;
 		buf[ i * 2 + 1 ] = y * 4;
@@ -3711,26 +3733,31 @@ static void channel_filter_run_f( struct channel *channel, float *buf,
 	float fa = ( float ) channel->flt_a * ( 1.0f / 16384.0f );
 	float fb = ( float ) channel->flt_b * ( 1.0f / 16384.0f );
 	float fc = ( float ) channel->flt_c * ( 1.0f / 16384.0f );
-	float y1l = channel->flt_y1l * ( 1.0f / 32768.0f );
-	float y2l = channel->flt_y2l * ( 1.0f / 32768.0f );
-	float y1r = channel->flt_y1r * ( 1.0f / 32768.0f );
-	float y2r = channel->flt_y2r * ( 1.0f / 32768.0f );
+	float y1l = channel->flt_fy1l, y2l = channel->flt_fy2l;
+	float y1r = channel->flt_fy1r, y2r = channel->flt_fy2r;
+	/* IT2's pre-volume clip, as in channel_filter_run. */
+	float liml = 2.0f * ( float ) channel_filter_limit( channel, 0 );
+	float limr = 2.0f * ( float ) channel_filter_limit( channel, 1 );
 	for( i = 0; i < total; i++ ) {
 		x = buf[ i * 2 ];
 		y = x * fa + y1l * fb + y2l * fc;
+		if( y > liml ) y = liml;
+		if( y < -liml ) y = -liml;
 		y2l = y1l;
 		y1l = y;
 		buf[ i * 2 ] = y;
 		x = buf[ i * 2 + 1 ];
 		y = x * fa + y1r * fb + y2r * fc;
+		if( y > limr ) y = limr;
+		if( y < -limr ) y = -limr;
 		y2r = y1r;
 		y1r = y;
 		buf[ i * 2 + 1 ] = y;
 		if( i == commit - 1 ) {
-			channel->flt_y1l = ( int ) ( y1l * 32768.0f );
-			channel->flt_y2l = ( int ) ( y2l * 32768.0f );
-			channel->flt_y1r = ( int ) ( y1r * 32768.0f );
-			channel->flt_y2r = ( int ) ( y2r * 32768.0f );
+			channel->flt_fy1l = y1l;
+			channel->flt_fy2l = y2l;
+			channel->flt_fy1r = y1r;
+			channel->flt_fy2r = y2r;
 		}
 	}
 }
