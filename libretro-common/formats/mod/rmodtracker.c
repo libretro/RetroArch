@@ -93,6 +93,12 @@ struct module {
 	   diverge between ST3 and IT (Xxx panning). */
 	unsigned char *default_chan_vol;
 	char it_effects;
+	/* IT MIDI macros reduced to the filter controls the engine has:
+	   per SFx slot the parameter Zxx 00-7F sets (IT_MACRO_*), and per
+	   Z80-ZFF the parameter in the high byte and its fixed value in
+	   the low byte. */
+	unsigned char it_sfx_macro[ 16 ];
+	unsigned short it_zxx_macro[ 128 ];
 	int default_gvol, default_speed, default_tempo, c2_rate, gain;
 	int linear_periods, fast_vol_slides;
 	unsigned char *default_panning, *sequence;
@@ -152,6 +158,7 @@ struct channel {
 	   (the filter is linear, so filtering after panning with one
 	   coefficient set equals IT2's pre-pan mono filtering). */
 	int flt_cutoff, flt_q, flt_env, flt_key, flt_on;
+	int sfx_macro;
 	int flt_a, flt_b, flt_c;
 	int flt_y1l, flt_y2l, flt_y1r, flt_y2r;
 	int flt_errl, flt_errr;
@@ -1370,6 +1377,97 @@ static void it_load_envelope( struct data *data, int offset,
 	}
 }
 
+#define IT_MACRO_NONE      0
+#define IT_MACRO_CUTOFF    1
+#define IT_MACRO_RESONANCE 2
+
+/* Reduces one 32-byte IT MIDI macro to a filter control. Only the
+   forms Impulse Tracker's own defaults use are recognised: "F0F000"
+   sets the cutoff and "F0F001" the resonance, followed by "z" (the
+   Zxx parameter) or two hex digits (a fixed value). Spaces are
+   ignored and case does not matter; anything else, including other
+   MIDI messages, is IT_MACRO_NONE. Returns the control, with the
+   fixed value in *value, or -1 there for "z". */
+static int it_parse_macro( struct data *data, int offset, int *value ) {
+	char macro[ 33 ];
+	int idx, len = 0, chr, hi, lo, type;
+	for( idx = 0; idx < 32; idx++ ) {
+		chr = data_u8( data, offset + idx );
+		if( chr == 0 ) {
+			break;
+		}
+		if( chr == ' ' ) {
+			continue;
+		}
+		if( chr >= 'a' && chr <= 'z' ) {
+			chr -= 'a' - 'A';
+		}
+		macro[ len++ ] = ( char ) chr;
+	}
+	macro[ len ] = 0;
+	*value = -1;
+	if( len < 7 || strncmp( macro, "F0F00", 5 ) != 0 ) {
+		return IT_MACRO_NONE;
+	}
+	if( macro[ 5 ] == '0' ) {
+		type = IT_MACRO_CUTOFF;
+	} else if( macro[ 5 ] == '1' ) {
+		type = IT_MACRO_RESONANCE;
+	} else {
+		return IT_MACRO_NONE;
+	}
+	if( len == 7 && macro[ 6 ] == 'Z' ) {
+		return type;
+	}
+	if( len == 8 ) {
+		hi = macro[ 6 ] <= '9' ? macro[ 6 ] - '0' : macro[ 6 ] - 'A' + 10;
+		lo = macro[ 7 ] <= '9' ? macro[ 7 ] - '0' : macro[ 7 ] - 'A' + 10;
+		if( hi >= 0 && hi < 16 && lo >= 0 && lo < 16 ) {
+			*value = ( ( hi << 4 ) | lo ) & 0x7F;
+			return type;
+		}
+	}
+	return IT_MACRO_NONE;
+}
+
+/* Fill the module's macro tables: Impulse Tracker's defaults (SF0
+   is the cutoff, Z80-Z8F set the resonance in steps of 8), or the
+   configuration the file embeds. The embedded block follows the
+   parapointers and the optional edit history: nine global macros,
+   then sixteen SFx and 128 Zxx macros of 32 bytes each. */
+static void it_load_macros( struct module *module, struct data *data,
+	int special, int ofs ) {
+	int idx, type, value;
+	memset( module->it_sfx_macro, 0, sizeof( module->it_sfx_macro ) );
+	memset( module->it_zxx_macro, 0, sizeof( module->it_zxx_macro ) );
+	if( !( special & 0x08 ) ) {
+		module->it_sfx_macro[ 0 ] = IT_MACRO_CUTOFF;
+		for( idx = 0; idx < 16; idx++ ) {
+			module->it_zxx_macro[ idx ] = ( unsigned short )
+				( ( IT_MACRO_RESONANCE << 8 ) | ( idx * 8 ) );
+		}
+		return;
+	}
+	if( special & 0x02 ) {
+		ofs += 2 + data_u16le( data, ofs ) * 8;
+	}
+	ofs += 9 * 32;
+	for( idx = 0; idx < 16; idx++ ) {
+		type = it_parse_macro( data, ofs + idx * 32, &value );
+		if( value < 0 ) {
+			module->it_sfx_macro[ idx ] = ( unsigned char ) type;
+		}
+	}
+	ofs += 16 * 32;
+	for( idx = 0; idx < 128; idx++ ) {
+		type = it_parse_macro( data, ofs + idx * 32, &value );
+		if( type != IT_MACRO_NONE && value >= 0 ) {
+			module->it_zxx_macro[ idx ] = ( unsigned short )
+				( ( type << 8 ) | value );
+		}
+	}
+}
+
 static struct module* module_load_it( struct data *data, char *message ) {
 	int ord_num, ins_num, smp_num, pat_num, flags, use_instruments;
 	int idx, sub, ofs, key, ins, volume, effect, param, chan;
@@ -1485,6 +1583,8 @@ static struct module* module_load_it( struct data *data, char *message ) {
 		return NULL;
 	}
 	module->it_effects = 1;
+	it_load_macros( module, data, data_u16le( data, 0x2E ),
+		ofs + ins_num * 4 + smp_num * 4 + pat_num * 4 );
 	module->default_chan_vol = calloc( module->num_channels,
 		sizeof( unsigned char ) );
 	for( idx = 0; idx < module->num_channels; idx++ ) {
@@ -3018,6 +3118,28 @@ static void channel_row( struct channel *channel, struct note *note ) {
 				channel->vibrato_depth = channel->note.param & 0xF;
 			}
 			channel_vibrato( channel, 1 );
+			break;
+		case 0xFF: /* IT SFx: choose the macro Zxx 00-7F runs. */
+			if( channel->replay->module->it_effects ) {
+				channel->sfx_macro = channel->note.param & 0xF;
+			}
+			break;
+		case 0x9A: /* IT Zxx: MIDI macro, here the filter controls. */
+			if( channel->replay->module->it_effects ) {
+				struct module *module = channel->replay->module;
+				int type, value = channel->note.param;
+				if( value < 0x80 ) {
+					type = module->it_sfx_macro[ channel->sfx_macro ];
+				} else {
+					type = module->it_zxx_macro[ value - 0x80 ] >> 8;
+					value = module->it_zxx_macro[ value - 0x80 ] & 0xFF;
+				}
+				if( type == IT_MACRO_CUTOFF ) {
+					channel->flt_cutoff = value;
+				} else if( type == IT_MACRO_RESONANCE ) {
+					channel->flt_q = value;
+				}
+			}
 			break;
 		case 0xFA: /* IT SAx: high sample offset, in 65536s. */
 			if( channel->replay->module->it_effects ) {
