@@ -1229,7 +1229,9 @@ static int it_load_sample( struct data *data, int offset,
 	if( c5speed < 1 ) {
 		c5speed = 8363;
 	}
-	tune = ( log_2( c5speed ) - log_2( 8363 ) ) * 12;
+	/* Rounded to the nearest 1/64 semitone, the step the period
+	   arithmetic keeps; truncating made every sample flat. */
+	tune = ( log_2( c5speed ) - log_2( 8363 ) ) * 12 + ( 1 << ( FP_SHIFT - 7 ) );
 	sample->rel_note = ( short ) ( tune >> FP_SHIFT );
 	sample->fine_tune = ( short ) ( ( tune & FP_MASK ) >> ( FP_SHIFT - 7 ) );
 	/* loop_start comes from a 32-bit field; a negative one passes
@@ -2843,8 +2845,15 @@ static void channel_calculate_freq( struct channel *channel ) {
 		/* FP_ONE is 1 << FP_SHIFT, so this is the same value for a
 		 * non-negative operand and defined for a negative one - and
 		 * 4608 - per is negative for any period above 4608. */
-		channel->freq = ( ( channel->replay->module->c2_rate >> 4 )
-			* exp_2( ( ( 4608 - per ) * FP_ONE ) / 768 ) ) >> ( FP_SHIFT - 4 );
+		/* c2_rate * 2^x in two parts to stay in 32 bits: dropping the
+		   low four bits of the rate outright ( 8363 -> 8352 ) left
+		   every linear-period note about 2.3 cents flat. */
+		{
+			int c2 = channel->replay->module->c2_rate;
+			int e  = exp_2( ( ( 4608 - per ) * FP_ONE ) / 768 );
+			channel->freq = ( ( c2 >> 4 ) * e
+				+ ( ( ( c2 & 15 ) * e ) >> 4 ) ) >> ( FP_SHIFT - 4 );
+		}
 	} else {
 		if( per > 29021 ) {
 			per = 29021;
