@@ -14,11 +14,15 @@
 
 #include <compat/strl.h>
 #include <encodings/base64.h>
+#include <features/features_cpu.h>
 #include <lists/string_list.h>
 #include <lrc_hash.h>
 #include <net/net_http.h>
 #include <time/rtime.h>
 #include <string/stdstring.h>
+#ifdef HAVE_CRYPTO
+#include <crypto/kdf.h>
+#endif
 
 #include "../cloud_sync_driver.h"
 #include "../../retroarch.h"
@@ -67,8 +71,8 @@ typedef struct
    char *nonce;
    char *algo;
    char *opaque;
-   const char *cnonce;
    unsigned nc;
+   char cnonce[33];
    bool qop_auth;
    bool dav_verified;
 } webdav_state_t;
@@ -160,6 +164,34 @@ static void webdav_cleanup_digest(void)
 
    webdav_st->qop_auth = false;
    webdav_st->nc = 1;
+}
+
+/* A new client nonce for each challenge, as 32 hex digits. The cnonce
+ * is the client's own input to the digest: with a fixed one, a hostile
+ * server (or anyone in the middle of plain HTTP) picks every other input
+ * and can test password guesses against tables computed in advance.
+ * From the platform entropy source where the crypto library has one,
+ * otherwise from the microsecond clock and a counter, which still
+ * differs per challenge but is not unpredictable. */
+static void webdav_create_cnonce(char *out)
+{
+   static unsigned counter = 0;
+   unsigned char   bytes[16];
+   size_t          i;
+#ifdef HAVE_CRYPTO
+   if (crypto_random_bytes(bytes, sizeof(bytes)) != 0)
+#endif
+   {
+      MD5_CTX  md5;
+      retro_time_t now = cpu_features_get_time_usec();
+      counter++;
+      MD5_Init(&md5);
+      MD5_Update(&md5, &now, sizeof(now));
+      MD5_Update(&md5, &counter, sizeof(counter));
+      MD5_Final(bytes, &md5);
+   }
+   for (i = 0; i < sizeof(bytes); i++)
+      snprintf(out + i * 2, 3, "%02x", bytes[i]);
 }
 
 static char *webdav_create_ha1_hash(char *user, char *realm, char *pass)
@@ -325,7 +357,7 @@ static bool webdav_create_digest_auth(const char *digest)
    if (!webdav_st->ha1hash || !webdav_st->nonce)
       return false;
 
-   webdav_st->cnonce = "1a2b3c4f";
+   webdav_create_cnonce(webdav_st->cnonce);
    webdav_st->basic = false;
 
    return true;
