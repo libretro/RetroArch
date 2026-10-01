@@ -1507,7 +1507,8 @@ static struct module* module_load_it( struct data *data, char *message ) {
 		pat_num = 255;
 	}
 	module->num_patterns = pat_num > 0 ? pat_num : 1;
-	module->default_gvol = ( gv > 128 ? 128 : gv ) >> 1;
+	/* IT keeps global volume in 0..128, as Vxx and Wxy use it. */
+	module->default_gvol = gv > 128 ? 128 : gv;
 	module->default_speed = tick_speed > 0 ? tick_speed : 6;
 	module->default_tempo = tempo > 31 ? tempo : 125;
 	module->c2_rate = 8363;
@@ -2785,7 +2786,8 @@ static void channel_calculate_ampl( struct channel *channel ) {
 		? channel->sample->glob_vol - 1 : 64 ) ) >> 6;
 	vol = ( vol * channel->replay->module->gain * FP_ONE ) >> 13;
 	vol = ( vol * channel->fadeout_vol ) >> 15;
-	channel->ampl = ( vol * channel->replay->global_vol * env_vol ) >> 12;
+	channel->ampl = ( vol * channel->replay->global_vol * env_vol )
+		>> ( channel->replay->module->it_effects ? 13 : 12 );
 	if( channel->instrument->pan_env.enabled ) {
 		env_pan = envelope_calculate_ampl( &channel->instrument->pan_env, channel->pan_env_tick );
 	}
@@ -2884,6 +2886,20 @@ static void channel_tick( struct channel *channel ) {
 			}
 			break;
 		case 0x11: case 0x97: /* Global Volume Slide. */
+			if( channel->replay->module->it_effects ) {
+				/* IT Wxy slides on the non-row ticks only for W0y and
+				   Wx0; WxF and WFy are fine slides, done on the row. */
+				int up = channel->gvol_slide_param >> 4;
+				int down = channel->gvol_slide_param & 0xF;
+				int gvol = channel->replay->global_vol;
+				if( up == 0 ) {
+					gvol -= down;
+				} else if( down == 0 ) {
+					gvol += up;
+				}
+				channel->replay->global_vol = gvol < 0 ? 0 : gvol > 128 ? 128 : gvol;
+				break;
+			}
 			channel->replay->global_vol = channel->replay->global_vol
 				+ ( channel->gvol_slide_param >> 4 )
 				- ( channel->gvol_slide_param & 0xF );
@@ -3017,7 +3033,11 @@ static void channel_row( struct channel *channel, struct note *note ) {
 			channel->volume = channel->note.param >= 64 ? 64 : channel->note.param & 0x3F;
 			break;
 		case 0x10: case 0x96: /* Set Global Volume. */
-			channel->replay->global_vol = channel->note.param >= 64 ? 64 : channel->note.param & 0x3F;
+			if( channel->replay->module->it_effects ) {
+				channel->replay->global_vol = channel->note.param > 128 ? 128 : channel->note.param;
+			} else {
+				channel->replay->global_vol = channel->note.param >= 64 ? 64 : channel->note.param & 0x3F;
+			}
 			break;
 		case 0x8D: /* IT Set Channel Volume. */
 			if( channel->note.param <= 64 ) {
@@ -3040,6 +3060,17 @@ static void channel_row( struct channel *channel, struct note *note ) {
 		case 0x11: case 0x97: /* Global Volume Slide. */
 			if( channel->note.param > 0 ) {
 				channel->gvol_slide_param = channel->note.param;
+			}
+			if( channel->replay->module->it_effects ) {
+				int up = channel->gvol_slide_param >> 4;
+				int down = channel->gvol_slide_param & 0xF;
+				int gvol = channel->replay->global_vol;
+				if( down == 0xF && up > 0 ) {
+					gvol += up;
+				} else if( up == 0xF && down > 0 ) {
+					gvol -= down;
+				}
+				channel->replay->global_vol = gvol < 0 ? 0 : gvol > 128 ? 128 : gvol;
 			}
 			break;
 		case 0x14: /* Key Off. */
