@@ -58,6 +58,7 @@
 #include "../../paths.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../frontend/drivers/platform_win32.h"
 
@@ -79,6 +80,40 @@
 static enum win32_browser_mode g_win32_browser_mode =
    WIN32_BROWSER_MODE_LOAD_CONTENT;
 #endif
+
+/* Menu-bar commands picked on a thread other than the main one.
+ *
+ * With threaded video the RetroArch window is created on the video
+ * thread, so its WM_COMMAND arrives there. The commands behind the
+ * menu bar are run-loop work - Window Scale reinits the drivers, which
+ * makes the video thread wait for itself to shut down and hangs the
+ * process (#19665) - so they are parked here and run by the main
+ * thread's pump. Each slot holds one command id or 0; ids are never 0.
+ * Clicks are seconds apart, so a handful of slots never fills; a full
+ * mailbox drops the click rather than run it on the wrong thread. */
+#define WIN32_MENU_DEFER_SLOTS 8
+static volatile LONG win32_menu_deferred[WIN32_MENU_DEFER_SLOTS];
+
+static bool win32_menu_defer(WPARAM mode)
+{
+   int i;
+   for (i = 0; i < WIN32_MENU_DEFER_SLOTS; i++)
+      if (InterlockedCompareExchange(&win32_menu_deferred[i],
+               (LONG)mode, 0) == 0)
+         return true;
+   return false;
+}
+
+static void win32_menu_run_deferred(void)
+{
+   int i;
+   for (i = 0; i < WIN32_MENU_DEFER_SLOTS; i++)
+   {
+      LONG mode = InterlockedExchange(&win32_menu_deferred[i], 0);
+      if (mode)
+         win32_menu_loop(main_window.hwnd, (WPARAM)mode);
+   }
+}
 
 static void* ui_application_win32_initialize(void)
 {
@@ -102,6 +137,11 @@ static void ui_application_win32_process_events(void)
 
    while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
       ui_application_win32_dispatch(&msg);
+
+   /* The video thread pumps through here too (win32_check_window);
+    * only the main thread may run the parked commands. */
+   if (task_is_on_main_thread())
+      win32_menu_run_deferred();
 }
 
 static ui_application_t ui_application_win32 = {
@@ -817,6 +857,14 @@ static bool win32_browser(
 LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 {
    WPARAM mode            = wparam & 0xffff;
+
+   if (!task_is_on_main_thread())
+   {
+      if (mode && !win32_menu_defer(mode))
+         RARCH_WARN("[Win32] Menu command %u dropped: too many pending.\n",
+               (unsigned)mode);
+      return 0L;
+   }
 
    switch (mode)
    {
