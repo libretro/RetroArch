@@ -2816,6 +2816,7 @@ bool core_info_database_supports_content_path(
 {
    char      *database           = NULL;
    const char      *new_path     = path_basename(database_path);
+   const char      *ext          = path_get_extension(path);
    core_info_state_t *p_coreinfo = NULL;
    if (!new_path || !*new_path)
       return false;
@@ -2837,11 +2838,12 @@ bool core_info_database_supports_content_path(
       {
          const core_info_t *info = &p_coreinfo->curr_list->list[i];
 
-         if (!string_list_find_elem(info->supported_extensions_list,
-                  path_get_extension(path)))
+         /* Runs per file, per database, per core: the shorter
+          * database list goes first, and both must match. */
+         if (!string_list_find_elem(info->databases_list, database))
             continue;
 
-         if (!string_list_find_elem(info->databases_list, database))
+         if (!string_list_find_elem(info->supported_extensions_list, ext))
             continue;
 
          CORE_INFO_LIST_UNLOCK();
