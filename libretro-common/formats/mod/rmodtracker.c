@@ -174,6 +174,8 @@ struct channel {
 	/* IT S73-S76: the playing note's new-note action, overriding the
 	   instrument's; -1 when none is set. */
 	int nna_override;
+	/* The pitch envelope's offset, in 1/768ths of an octave. */
+	int pitch_env_ofs;
 	int retrig_volume, retrig_ticks, tremor_on_ticks, tremor_off_ticks;
 	int vibrato_type, vibrato_phase, vibrato_speed, vibrato_depth;
 	int tremolo_type, tremolo_phase, tremolo_speed, tremolo_depth;
@@ -2749,13 +2751,15 @@ static void channel_filter_coeffs( struct channel *channel ) {
 	channel->flt_on = 1;
 }
 
-/* The per-tick work for the third envelope: as a pitch envelope it is
-   a cumulative linear slide of ( value * 32 ) / 768 octaves per tick,
-   folded into the period the engine recomputes pitch from; as a
-   filter envelope it scales the cutoff through flt_env ( value * 4,
-   0..255, 255 with the envelope off ). Values are stored biased +32.
-   Ghosts keep their filter envelopes running but their frequency is
-   frozen by design, so the pitch branch skips them. */
+/* The per-tick work for the third envelope: as a pitch envelope it
+   offsets the pitch by ( value * 32 ) / 768 octaves, up to 16
+   semitones either way, from the note's pitch each tick - IT resets
+   the frequency every tick and applies the envelope on top, it does
+   not accumulate it; as a filter envelope it scales the cutoff
+   through flt_env ( value * 4, 0..255, 255 with the envelope off ).
+   Values are stored biased +32. */
+static void channel_calculate_freq( struct channel *channel );
+
 static void channel_update_pitch_filter( struct channel *channel ) {
 	struct envelope *env = &channel->instrument->pitch_env;
 	int val, slide;
@@ -2766,16 +2770,18 @@ static void channel_update_pitch_filter( struct channel *channel ) {
 			channel->flt_env = val > 255 ? 255 : val;
 		} else if( channel->sample ) {
 			slide = ( val - 32 ) * 32;
-			if( slide != 0 && channel->period > 0 ) {
-				channel->period = ( channel->period * FP_ONE )
-					/ exp_2( ( slide * FP_ONE ) / 768 );
-				if( channel->period < 1 ) {
-					channel->period = 1;
-				}
+			if( slide != channel->pitch_env_ofs ) {
+				channel->pitch_env_ofs = slide;
+				channel_calculate_freq( channel );
 			}
 		}
 		channel->pitch_env_tick = envelope_next_tick( env,
 			channel->pitch_env_tick, channel->key_on );
+	}
+	if( ( !env->enabled || channel->instrument->pitch_is_filter )
+			&& channel->pitch_env_ofs ) {
+		channel->pitch_env_ofs = 0;
+		channel_calculate_freq( channel );
 	}
 	channel_filter_coeffs( channel );
 }
@@ -2830,7 +2836,7 @@ static void channel_auto_vibrato( struct channel *channel ) {
 static void channel_calculate_freq( struct channel *channel ) {
 	int per = channel->period + channel->vibrato_add;
 	if( channel->replay->module->linear_periods ) {
-		per = per - ( channel->arpeggio_add << 6 );
+		per = per - ( channel->arpeggio_add << 6 ) - channel->pitch_env_ofs;
 		if( per < 28 || per > 7680 ) {
 			per = 7680;
 		}
@@ -2847,6 +2853,9 @@ static void channel_calculate_freq( struct channel *channel ) {
 		 * below zero, and the "per < 28" guard underneath runs after
 		 * this line rather than before it. */
 		per = ( per * FP_ONE ) / exp_2( ( channel->arpeggio_add * FP_ONE ) / 12 );
+		if( channel->pitch_env_ofs ) {
+			per = ( per * FP_ONE ) / exp_2( ( channel->pitch_env_ofs * FP_ONE ) / 768 );
+		}
 		if( per < 28 ) {
 			per = 29021;
 		}
