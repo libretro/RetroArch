@@ -1280,18 +1280,23 @@ static void run_section_interim_framing(void)
    xfer_free(&a);
 }
 
-/* ---- followed redirect bodies ---- */
+/* ---- followed redirect bodies, and bytes past Content-Length ---- */
 
 static void run_section_body_edges(void)
 {
-   struct xfer a;
+   struct xfer a, b;
    static const struct step s_big302[] = {
       { "HTTP/1.1 302 Found\r\nLocation: /final\r\nContent-Length: 8388608\r\n\r\n",
         8388608, B_RAW, 0 },
       { OK_2, 0, B_NONE, 0 },
    };
+   static const struct step s_extra[] = {
+      { "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nokEXTRA-BYTES", 0, B_NONE, 0 },
+      { OK_2, 0, B_NONE, 0 },
+   };
 
    memset(&a, 0, sizeof(a));
+   memset(&b, 0, sizeof(b));
 
    /* A 302 with an 8 MiB body: read through and dropped, never held. */
    case_begin(s_big302, 2, 0);
@@ -1300,6 +1305,23 @@ static void run_section_body_edges(void)
    check(a.done && !a.err && body_is(&a, "ok") && realloc_max < 1048576,
          "followed 302 with an 8 MiB body: body dropped as it arrives, not buffered");
    check(second_reused(), "followed 302 with a body: socket reused for the redirect");
+   xfer_free(&a);
+
+   /* Content-Length 2, then more bytes: the body is complete. */
+   case_begin(s_extra, 2, 0);
+   xfer_run(&a, "/extra");
+   xfer_run(&b, "/next");
+   check(a.done && !a.err && a.status == 200 && body_is(&a, "ok"),
+         "bytes past Content-Length: body kept, transfer succeeds");
+   check(b.done && body_is(&b, "ok") && !second_reused(),
+         "bytes past Content-Length: socket not returned to the pool");
+   xfer_free(&a); xfer_free(&b);
+
+   case_begin(s_extra, 2, 0);
+   a.use_sink = 1;
+   xfer_run(&a, "/extra");
+   check(a.done && !a.err && sink_len == 2 && !memcmp(sink_buf, "ok", 2),
+         "bytes past Content-Length with a sink: exactly the body reaches it");
    xfer_free(&a);
 }
 

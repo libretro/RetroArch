@@ -2757,9 +2757,17 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
    {
       response->pos += newlen;
 
+      /* More than Content-Length arrived.  The body is complete; what
+       * follows it is garbage or a response nobody asked for, and the
+       * next request on this socket would read it first.  Keep the
+       * body, drop the rest and the connection - the transfer used to
+       * fail outright, with the whole body sitting in the buffer. */
       if (response->pos > response->len)
-         return false;
-      else if (response->pos == response->len)
+      {
+         response->pos        = response->len;
+         response->conn_close = true;
+      }
+      if (response->pos == response->len)
       {
          response->part = P_DONE;
          if (net_http_body_streams(state))

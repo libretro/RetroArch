@@ -338,7 +338,8 @@ jobs:
           # lines costing no per-line allocations. A Content-Length or
           # "chunked" on a 1xx block does not frame the final response.
           # A followed 3xx's body is dropped as it arrives, not
-          # buffered to its Content-Length.
+          # buffered to its Content-Length, and bytes past a body's
+          # Content-Length end the connection, not the transfer.
           # Every case has a
           # deadline, so a hang fails the case instead of the job.
           # net_http is lock-free by design (DNS cache and pool owned by
