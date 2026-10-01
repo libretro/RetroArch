@@ -756,6 +756,25 @@ static void test_blocking_exclusion(void)
    okf(file_size(second) == -1,
        "a second save is refused while one is in flight");
 
+   /* A load refused the same way leaves no load pending: left set, the
+    * flag held a content close and a movie recording waiting forever on
+    * a load that never comes. LeakSan covers what the refusal frees. */
+   {
+      const char *third = "sst_excl_c.state";
+      FILE       *f     = fopen(third, "wb");
+      bool        ok;
+      if (f)
+      {
+         fputs("not a state, never read", f);
+         fclose(f);
+      }
+      ok = content_load_state(third, false, false);
+      okf(!ok, "a load is refused while a save is in flight");
+      okf(!content_load_state_in_progress(NULL),
+          "the refused load is not left pending");
+      filestream_delete(third);
+   }
+
    pump(1000);
 
    okf(!queue_busy(), "the queue drains after the refusals");

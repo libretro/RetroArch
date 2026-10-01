@@ -36,8 +36,12 @@
       task->callback       = cb; \
       task->title          = strdup(msg_hash_to_str( \
                               message)); \
-      task_queue_push(task); \
-      return true; \
+      if (task_queue_push(task)) \
+         return true; \
+      /* Another blocking task is already active */ \
+      task_free_title(task); \
+      free(task); \
+      return false; \
    }
 
 static void task_wifi_scan_handler(retro_task_t *task)
@@ -128,8 +132,14 @@ bool task_push_wifi_connect(retro_task_callback_t cb, void *netptr)
       return false;
    }
    memcpy(task->user_data, netinfo, sizeof(*netinfo));
-   task_queue_push(task);
-   return true;
+   if (task_queue_push(task))
+      return true;
+
+   /* Another blocking task is already active */
+   free(task->user_data);
+   task_free_title(task);
+   free(task);
+   return false;
 }
 
 FUNC_PUSH_TASK(task_push_wifi_scan,       task_wifi_scan_handler,       MSG_SCANNING_WIRELESS_NETWORKS)

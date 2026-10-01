@@ -70,7 +70,11 @@ bool task_push_bluetooth_scan(retro_task_callback_t cb)
    task->title          = strdup(msg_hash_to_str(
                            MSG_SCANNING_BLUETOOTH_DEVICES));
 
-   task_queue_push(task);
+   if (task_queue_push(task))
+      return true;
 
-   return true;
+   /* Another blocking task is already active */
+   task_free_title(task);
+   free(task);
+   return false;
 }
