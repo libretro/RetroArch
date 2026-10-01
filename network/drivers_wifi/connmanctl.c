@@ -87,7 +87,7 @@ static bool connmanctl_valid_wifi_service_id(const char *id, size_t max_len)
           && (c < 'A' || c > 'Z')
           && (c < 'a' || c > 'z')
           && c != '_')
-         return false;
+         break;
    }
 
    return false;
