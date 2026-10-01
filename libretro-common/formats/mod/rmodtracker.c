@@ -181,7 +181,7 @@ struct channel {
    effects - so the amplitude model and both resamplers apply to it
    unchanged. The pool is global and the quietest voice is stolen
    when it fills. */
-#define RMT_NUM_GHOSTS 32
+#define RMT_NUM_GHOSTS 64
 
 struct replay {
 	int sample_rate, interpolation, global_vol;
