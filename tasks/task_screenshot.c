@@ -611,6 +611,9 @@ static bool screenshot_dump(
       {
          char new_screenshot_dir[DIR_MAX_LENGTH];
 
+         /* Read below whether or not screenshot_dir was set. */
+         new_screenshot_dir[0] = '\0';
+
          if (screenshot_dir && *screenshot_dir)
          {
             const char *content_dir = path_get(RARCH_PATH_BASENAME);
