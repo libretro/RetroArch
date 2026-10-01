@@ -1201,7 +1201,10 @@ static int it_load_sample( struct data *data, int offset,
 	tune = ( log_2( c5speed ) - log_2( 8363 ) ) * 12;
 	sample->rel_note = ( short ) ( tune >> FP_SHIFT );
 	sample->fine_tune = ( short ) ( ( tune & FP_MASK ) >> ( FP_SHIFT - 7 ) );
-	if( !( flg & 0x10 ) || loop_end <= loop_start || loop_end > frames ) {
+	/* loop_start comes from a 32-bit field; a negative one passes
+	   the other checks and indexes before the sample buffer. */
+	if( !( flg & 0x10 ) || loop_start < 0 || loop_end <= loop_start
+		|| loop_end > frames ) {
 		loop_start = frames;
 		loop_end = frames;
 	}
