@@ -3272,9 +3272,21 @@ static void channel_tick( struct channel *channel ) {
 			}
 			break;
 		case 0x19: case 0x90: /* Panning Slide. */
-			channel->panning = channel->panning
-				+ ( channel->pan_slide_param >> 4 )
-				- ( channel->pan_slide_param & 0xF );
+			if( channel->replay->module->it_effects ) {
+				/* IT Pxy, in its 0..64 units: Px0 slides left, P0y
+				   right; PxF and PFy are fine slides on the row. */
+				int hi = channel->pan_slide_param >> 4;
+				int lo = channel->pan_slide_param & 0xF;
+				if( lo == 0 ) {
+					channel->panning -= hi * 4;
+				} else if( hi == 0 ) {
+					channel->panning += lo * 4;
+				}
+			} else {
+				channel->panning = channel->panning
+					+ ( channel->pan_slide_param >> 4 )
+					- ( channel->pan_slide_param & 0xF );
+			}
 			if( channel->panning < 0 ) {
 				channel->panning = 0;
 			}
@@ -3455,6 +3467,17 @@ static void channel_row( struct channel *channel, struct note *note ) {
 		case 0x19: case 0x90: /* Panning Slide. */
 			if( channel->note.param > 0 ) {
 				channel->pan_slide_param = channel->note.param;
+			}
+			if( channel->replay->module->it_effects ) {
+				int hi = channel->pan_slide_param >> 4;
+				int lo = channel->pan_slide_param & 0xF;
+				if( lo == 0xF && hi > 0 ) {
+					channel->panning -= hi * 4;
+				} else if( hi == 0xF && lo > 0 ) {
+					channel->panning += lo * 4;
+				}
+				channel->panning = channel->panning < 0 ? 0
+					: channel->panning > 255 ? 255 : channel->panning;
 			}
 			break;
 		case 0x1B: case 0x91: /* Retrig + Vol Slide. */
