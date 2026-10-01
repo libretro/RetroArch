@@ -1510,6 +1510,87 @@ static void it_load_old_envelope( struct data *data, int iofs,
 	}
 }
 
+/* OpenMPT's song extension block ( "STPM" then fields of a 4-byte id
+   and a 16-bit size ) can store the mix-level mode ( "PMM." ) and
+   the sample pre-amp ( "SPA." ), which replaces the header's mix
+   volume. Sets whichever is present; ids are stored byte-reversed. */
+static void it_read_mpt_song_ext( struct data *data, int *mix_levels,
+		int *pre_amp ) {
+	int pos, id_ok, size, val, idx;
+	for( pos = data->length - 4; pos >= 0xC0; pos-- ) {
+		if( data->buffer[ pos ] == 'S' && data->buffer[ pos + 1 ] == 'T'
+				&& data->buffer[ pos + 2 ] == 'P' && data->buffer[ pos + 3 ] == 'M' ) {
+			break;
+		}
+	}
+	if( pos < 0xC0 ) {
+		return;
+	}
+	pos += 4;
+	while( pos + 6 <= data->length ) {
+		unsigned char *id = ( unsigned char * ) data->buffer + pos;
+		size = data_u16le( data, pos + 4 );
+		/* OpenMPT's own sanity test: printable ASCII, and it fits. */
+		id_ok = 1;
+		for( idx = 0; idx < 4; idx++ ) {
+			if( id[ idx ] & 0x80 ) {
+				id_ok = 0;
+			}
+		}
+		if( !id_ok || !( ( id[ 0 ] | id[ 1 ] | id[ 2 ] | id[ 3 ] ) & 0x60 )
+				|| ( id[ 0 ] == '2' && id[ 1 ] == '2' && id[ 2 ] == '8' )
+				|| pos + 6 + size > data->length ) {
+			break;
+		}
+		if( size >= 1 && size <= 4 ) {
+			val = 0;
+			for( idx = size - 1; idx >= 0; idx-- ) {
+				val = ( val << 8 ) | data_u8( data, pos + 6 + idx );
+			}
+			if( !memcmp( id, ".MMP", 4 ) ) {
+				*mix_levels = val;
+			} else if( !memcmp( id, ".APS", 4 ) ) {
+				*pre_amp = val;
+			}
+		}
+		pos += 6 + size;
+	}
+}
+
+/* Whether OpenMPT takes the file for one ModPlug Tracker ( or an old
+   OpenMPT in ModPlug mode ) wrote, from the header fields it uses. */
+static int it_modplug_made( struct data *data ) {
+	int cwt = data_u16le( data, 0x28 ), cmwt = data_u16le( data, 0x2A );
+	unsigned int reserved = data_u32le( data, 0x3C );
+	int highlight = data_u16le( data, 0x1E );
+	if( ( cwt & 0xF000 ) == 0x5000 ) {
+		return reserved == 0x54504D4F; /* "OMPT" */
+	}
+	if( cwt == 0x888 || cmwt == 0x888 ) {
+		return 1;
+	}
+	if( reserved != 0 ) {
+		return 0;
+	}
+	if( cwt == 0x217 && cmwt == 0x200 ) {
+		return 1;
+	}
+	if( cwt == 0x214 && cmwt == 0x202 ) {
+		return 1;
+	}
+	if( cwt == 0x300 && cmwt == 0x300 && data_u16le( data, 0x20 ) == 256
+			&& data_u8( data, 0x34 ) == 128 && data_u8( data, 0x35 ) == 0 ) {
+		return 1;
+	}
+	/* ModPlug 1.0 alpha / beta, but not an OpenSPC conversion */
+	if( cwt == 0x214 && cmwt == 0x200 && highlight == 0
+			&& !( data_u16le( data, 0x22 ) == 0 && data_u8( data, 0x31 ) == 100
+				&& data_u8( data, 0x32 ) == 1 ) ) {
+		return 1;
+	}
+	return 0;
+}
+
 static struct module* module_load_it( struct data *data, char *message ) {
 	int ord_num, ins_num, smp_num, pat_num, flags, use_instruments;
 	int idx, sub, ofs, key, ins, volume, effect, param, chan;
@@ -1619,6 +1700,51 @@ static struct module* module_load_it( struct data *data, char *message ) {
 		}
 	}
 	module->num_channels = max_chan + 1;
+	{
+		/* Match OpenMPT's mix levels. Files it takes for ModPlug's play
+		   at ModPlug's level, which pre-attenuates by a table of the
+		   channel count; files OpenMPT saved can name the mode. Levels
+		   are relative to OpenMPT's "compatible" mode, which this gain
+		   already matches ( measured against libopenmpt on 40 files ). */
+		static const unsigned char pre_amp_table[ 16 ] = {
+			0x60, 0x60, 0x60, 0x70, 0x80, 0x88, 0x90, 0x98,
+			0xA0, 0xA4, 0xA8, 0xAC, 0xB0, 0xB4, 0xB8, 0xBC };
+		int mix_levels = it_modplug_made( data ) ? 0 : 4, pre_amp = -1;
+		int nch = module->num_channels < 1 ? 1
+			: module->num_channels > 31 ? 31 : module->num_channels;
+		int atten = pre_amp_table[ nch / 2 ];
+		it_read_mpt_song_ext( data, &mix_levels, &pre_amp );
+		if( pre_amp > 0 ) {
+			module->gain = pre_amp > 255 ? 255 : pre_amp;
+		}
+		switch( mix_levels ) {
+			case 0: /* original ModPlug */
+				module->gain = module->gain * 64 / atten;
+				break;
+			case 1: /* 1.17RC1 */
+				module->gain = module->gain * 8 / atten;
+				break;
+			case 2: /* 1.17RC2 */
+				module->gain = module->gain * 128 / atten;
+				break;
+			case 3: /* 1.17RC3: no pre-amp, one less attenuation step */
+				module->gain = module->gain * 2;
+				break;
+			case 5: /* compatible, FT2 pre-amp */
+				module->gain = module->gain * 3 / 4;
+				break;
+			default:
+				break;
+		}
+		if( module->gain < 1 ) {
+			module->gain = 1;
+		}
+		/* 255 keeps channel_calculate_ampl's fadeout product inside 32
+		   bits ( 64 * 255 * 4 * 32768 < 2^31 ). */
+		if( module->gain > 255 ) {
+			module->gain = 255;
+		}
+	}
 	module->default_panning = calloc( module->num_channels,
 		sizeof( unsigned char ) );
 	if( !module->default_panning ) {
@@ -1800,7 +1926,8 @@ static struct module* module_load_it( struct data *data, char *message ) {
 		if( pofs > 0 ) {
 			pat_len = data_u16le( data, pofs );
 			num_rows = data_u16le( data, pofs + 2 );
-			if( num_rows < 1 || num_rows > 200 ) {
+			/* IT2 stops at 200 rows; OpenMPT writes up to 1024. */
+			if( num_rows < 1 || num_rows > 1024 ) {
 				num_rows = 64;
 			}
 		}
