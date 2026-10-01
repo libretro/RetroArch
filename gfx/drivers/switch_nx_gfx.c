@@ -104,6 +104,10 @@ static void *switch_font_init(void *data, const char *font_path,
    }
 
    font->atlas = font->font_driver->get_atlas(font->font_data);
+   /* The atlas may grow; glyphs are blitted from it in memory, so
+    * there is no texture to make again */
+   font->atlas->max_width  = 2048;
+   font->atlas->max_height = 2048;
 
    return font;
 }
@@ -218,6 +222,10 @@ static void switch_font_render_msg(
       return;
    if (!sw || !sw->out_buffer)
       return;
+
+   /* Asked for before anything is laid out: it may have grown */
+   if (font->font_driver && font->font_data)
+      font->atlas = font->font_driver->get_atlas(font->font_data);
 
    font_driver_resolve_params(params, &rp);
    x          = rp.x;

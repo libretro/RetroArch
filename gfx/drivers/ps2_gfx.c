@@ -176,6 +176,12 @@ static void* ps2_font_init(void* data, const char* font_path,
       clut32[j]        = 0x01010101 * j;
    font->texture->Clut = (u32 *)clut32;
 
+   /* The atlas may grow, kept small for the GS's 4 MB: the EE copy is
+    * made again at its size and the texture sent again, as the menu
+    * texture is when its size changes */
+   atlas->max_width    = 512;
+   atlas->max_height   = 512;
+
    return font;
 }
 
@@ -332,7 +338,27 @@ static void ps2_font_render_msg(
     * renderers is copied on the EE side; gsKit re-sends the whole
     * texture on invalidate, which it does for every other texture
     * as well. */
-   if (font->atlas->dirty && font->texture->Mem)
+   /* Asked for before anything is laid out: it may have grown, which
+    * marks all of it dirty */
+   font->atlas = font->font_driver->get_atlas(font->font_data);
+   if (     font->texture->Mem
+         && (   font->texture->Width  != font->atlas->width
+             || font->texture->Height != font->atlas->height))
+   {
+      void *mem = malloc(gsKit_texture_size_ee(font->atlas->width,
+               font->atlas->height, GS_PSM_T8));
+      if (mem)
+      {
+         free(font->texture->Mem);
+         font->texture->Mem    = (u32*)mem;
+         font->texture->Width  = font->atlas->width;
+         font->texture->Height = font->atlas->height;
+      }
+   }
+
+   if (     font->atlas->dirty && font->texture->Mem
+         && font->texture->Width  == font->atlas->width
+         && font->texture->Height == font->atlas->height)
    {
       unsigned j;
       uint8_t *tex8              = (uint8_t*)font->texture->Mem;

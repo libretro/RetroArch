@@ -201,6 +201,11 @@ typedef struct
 {
    vita_video_t *vita;
    gxm_texture_t *texture;
+   /* Textures the atlas outgrew: a frame in flight may still draw from
+    * them, and freeing one means waiting for the GPU, so they go when
+    * the font does - the atlas grows at most twice */
+   gxm_texture_t *retired[2];
+   unsigned retired_count;
    const font_renderer_driver_t *font_driver;
    void *font_data;
    struct font_atlas *atlas;
@@ -1626,14 +1631,44 @@ static void gfx_display_gxm_scissor_end(void *data, unsigned video_dims)
  * FONT DRIVER
  */
 
+/* A texture holding all of @atlas, at its size */
+static gxm_texture_t *gxm_font_make_texture(struct font_atlas *atlas)
+{
+   unsigned j, k;
+   unsigned stride;
+   uint8_t *tex32;
+   const uint8_t *frame32;
+   unsigned pitch;
+   gxm_texture_t *texture = gxm_create_empty_texture_format(
+         atlas->width,
+         atlas->height,
+         SCE_GXM_TEXTURE_FORMAT_U8_R111);
+
+   if (!texture)
+      return NULL;
+
+   gxm_texture_set_filters(texture,
+         SCE_GXM_TEXTURE_FILTER_POINT,
+         SCE_GXM_TEXTURE_FILTER_LINEAR);
+
+   stride  = gxm_texture_get_stride(texture);
+   tex32   = sceGxmTextureGetData(&texture->gxm_tex);
+   frame32 = atlas->buffer;
+   pitch   = atlas->width;
+
+   for (j = 0; j < atlas->height; j++)
+      for (k = 0; k < atlas->width; k++)
+         tex32[k + j * stride] = frame32[k + j * pitch];
+
+   atlas->dirty = false;
+   return texture;
+}
+
 static void *gxm_font_init(void *data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
-   unsigned int stride, pitch, j, k;
-   const uint8_t         *frame32 = NULL;
-   uint8_t                 *tex32 = NULL;
-   const struct font_atlas *atlas = NULL;
+   struct font_atlas *atlas = NULL;
    vita_font_t              *font = (vita_font_t*)calloc(1, sizeof(*font));
 
    if (!font)
@@ -1652,26 +1687,12 @@ static void *gxm_font_init(void *data,
    if (!atlas)
       goto error;
 
-   font->texture = gxm_create_empty_texture_format(
-         atlas->width,
-         atlas->height,
-         SCE_GXM_TEXTURE_FORMAT_U8_R111);
+   /* The atlas may grow; the texture follows it */
+   atlas->max_width  = 2048;
+   atlas->max_height = 2048;
 
-   if (!font->texture)
+   if (!(font->texture = gxm_font_make_texture(atlas)))
       goto error;
-
-   gxm_texture_set_filters(font->texture,
-         SCE_GXM_TEXTURE_FILTER_POINT,
-         SCE_GXM_TEXTURE_FILTER_LINEAR);
-
-   stride  = gxm_texture_get_stride(font->texture);
-   tex32   = sceGxmTextureGetData(&font->texture->gxm_tex);
-   frame32 = atlas->buffer;
-   pitch   = atlas->width;
-
-   for (j = 0; j < atlas->height; j++)
-      for (k = 0; k < atlas->width; k++)
-         tex32[k + j * stride] = frame32[k + j*pitch];
 
    font->atlas->dirty = false;
 
@@ -1694,6 +1715,11 @@ static void gxm_font_free(void *data, bool is_threaded)
    if (gxm_initialized)
       sceGxmFinish(gxm_context);
    gxm_free_texture(font->texture);
+   {
+      unsigned i;
+      for (i = 0; i < font->retired_count; i++)
+         gxm_free_texture(font->retired[i]);
+   }
 
    free(font);
 }
@@ -1815,6 +1841,24 @@ static void gxm_font_render_msg(
 
    if (!font || !msg || !*msg)
       return;
+
+   /* Asked for before anything is laid out: when it has grown, a
+    * texture at its size takes the old one's place */
+   if (font->font_driver && font->font_data)
+   {
+      font->atlas = font->font_driver->get_atlas(font->font_data);
+      if (     font->retired_count < 2
+            && (   sceGxmTextureGetWidth(&font->texture->gxm_tex)  != font->atlas->width
+                || sceGxmTextureGetHeight(&font->texture->gxm_tex) != font->atlas->height))
+      {
+         gxm_texture_t *texture = gxm_font_make_texture(font->atlas);
+         if (texture)
+         {
+            font->retired[font->retired_count++] = font->texture;
+            font->texture                        = texture;
+         }
+      }
+   }
 
    font_driver_resolve_params(params, &rp);
    x          = rp.x;

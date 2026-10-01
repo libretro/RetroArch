@@ -1807,6 +1807,10 @@ static void *gdi_font_init(void *data,
    }
 
    font->atlas = font->font_driver->get_atlas(font->font_data);
+   /* The atlas may grow; the DIB mirroring it is made again whenever
+    * its size changes */
+   font->atlas->max_width  = 2048;
+   font->atlas->max_height = 2048;
 
    /* The atlas DIB is created lazily on first render_msg, since
     * gdi->memDC may not exist yet at font init time (font_driver
@@ -2212,6 +2216,10 @@ static void gdi_font_render_msg(
    b          = rp.rgba[2];
    a               = rp.rgba[3];
 
+
+   /* Asked for first: it may have grown, which marks it dirty */
+   if (font->font_driver && font->font_data)
+      font->atlas = font->font_driver->get_atlas(font->font_data);
 
    /* Refresh the atlas if the backend reports new glyphs.  We do
     * this once per render_msg, before any line rendering, so the
