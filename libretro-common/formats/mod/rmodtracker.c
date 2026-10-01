@@ -1470,6 +1470,38 @@ static void it_load_macros( struct module *module, struct data *data,
 	}
 }
 
+/* The volume envelope of an Impulse Tracker 1.x instrument: flags and
+   loop/sustain nodes at 0x11-0x15 as in the 2.x layout, but up to 25
+   nodes of an 8-bit tick and an 8-bit value at 0x1F8, ended by 0xFFFF. */
+static void it_load_old_envelope( struct data *data, int iofs,
+		struct envelope *env ) {
+	int flg = data_u8( data, iofs + 0x11 );
+	int lpb = data_u8( data, iofs + 0x12 );
+	int lpe = data_u8( data, iofs + 0x13 );
+	int sle = data_u8( data, iofs + 0x15 );
+	int num = 0, val;
+	while( num < 16 && data_u16le( data, iofs + 0x1F8 + num * 2 ) != 0xFFFF ) {
+		val = data_u8( data, iofs + 0x1F8 + num * 2 + 1 );
+		env->points_tick[ num ] = ( short ) data_u8( data, iofs + 0x1F8 + num * 2 );
+		env->points_ampl[ num ] = ( short ) ( val > 64 ? 64 : val );
+		num++;
+	}
+	if( num < 1 ) {
+		return;
+	}
+	env->num_points = ( char ) num;
+	env->enabled = ( flg & 0x01 ) > 0;
+	env->looped = ( flg & 0x02 ) > 0 && lpe < num;
+	env->sustain = ( flg & 0x04 ) > 0 && sle < num;
+	if( env->looped ) {
+		env->loop_start_tick = env->points_tick[ lpb < num ? lpb : 0 ];
+		env->loop_end_tick = env->points_tick[ lpe ];
+	}
+	if( env->sustain ) {
+		env->sustain_tick = env->points_tick[ sle ];
+	}
+}
+
 static struct module* module_load_it( struct data *data, char *message ) {
 	int ord_num, ins_num, smp_num, pat_num, flags, use_instruments;
 	int idx, sub, ofs, key, ins, volume, effect, param, chan;
@@ -1638,17 +1670,30 @@ static struct module* module_load_it( struct data *data, char *message ) {
 		}
 	}
 	if( use_instruments ) {
+		/* Instruments saved for compatibility below 2.00 use the IT 1.x
+		   layout: NNA, DCT and fadeout ( in half the 2.x units ) sit
+		   elsewhere, and there is no DCA, global volume, filter, pan or
+		   pitch envelope. The name and keyboard are where 2.x has them. */
+		int old_ins = data_u16le( data, 0x2A ) < 0x200;
 		for( ins = 1; ins <= ins_num; ins++ ) {
 			int iofs = data_u32le( data, ofs + ( ins - 1 ) * 4 );
 			int fade, gbv, nos, local, want, kb_note, kb_smp;
 			int local_of[ 100 ];
 			instrument = &module->instruments[ ins ];
 			data_ascii( data, iofs + 0x20, 26, instrument->name );
-			instrument->nna = ( char ) ( data_u8( data, iofs + 0x11 ) & 3 );
-			instrument->dct = ( char ) ( data_u8( data, iofs + 0x12 ) & 3 );
-			instrument->dca = ( char ) ( data_u8( data, iofs + 0x13 ) & 3 );
-			fade = data_u16le( data, iofs + 0x14 );
-			gbv = data_u8( data, iofs + 0x18 );
+			if( old_ins ) {
+				instrument->nna = ( char ) ( data_u8( data, iofs + 0x1A ) & 3 );
+				instrument->dct = ( char ) ( data_u8( data, iofs + 0x1B ) & 3 );
+				instrument->dca = 0;
+				fade = data_u16le( data, iofs + 0x18 ) * 2;
+				gbv = 128;
+			} else {
+				instrument->nna = ( char ) ( data_u8( data, iofs + 0x11 ) & 3 );
+				instrument->dct = ( char ) ( data_u8( data, iofs + 0x12 ) & 3 );
+				instrument->dca = ( char ) ( data_u8( data, iofs + 0x13 ) & 3 );
+				fade = data_u16le( data, iofs + 0x14 );
+				gbv = data_u8( data, iofs + 0x18 );
+			}
 			/* IT subtracts the fadeout from 1024 each tick; the engine
 			   fades from 32768, so the step scales by 32. */
 			fade = fade * 32;
@@ -1705,6 +1750,10 @@ static struct module* module_load_it( struct data *data, char *message ) {
 						instrument->key_to_sample[ kb_note ] = ( char ) want;
 					}
 				}
+			}
+			if( old_ins ) {
+				it_load_old_envelope( data, iofs, &instrument->vol_env );
+				continue;
 			}
 			it_load_envelope( data, iofs + 0x130, &instrument->vol_env, 0 );
 			it_load_envelope( data, iofs + 0x182, &instrument->pan_env, 0 );
