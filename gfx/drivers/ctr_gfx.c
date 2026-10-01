@@ -241,6 +241,11 @@ typedef struct
    ctr_scale_vector_t scale_vector_bottom;
    const font_renderer_driver_t* font_driver;
    void* font_data;
+   /* Texture memory the atlas outgrew: a frame in flight may still
+    * draw from it, so it goes when the font does - the atlas grows at
+    * most twice */
+   void* retired[2];
+   unsigned retired_count;
 } ctr_font_t;
 
 /* An annoyance...
@@ -376,15 +381,67 @@ static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
  * FONT DRIVER
  */
 
+/* Swizzles the atlas's rectangle into the font texture, in place in
+ * the linear memory the GPU samples, and flushes it out of the cache */
+static void ctr_font_upload(ctr_font_t *font,
+      const struct font_atlas *atlas,
+      unsigned x0, unsigned y0, unsigned x1, unsigned y1)
+{
+   unsigned i, j;
+   uint8_t       *tex = (uint8_t*)font->texture.data;
+   const uint8_t *src = atlas->buffer;
+
+   if (x1 > atlas->width)
+      x1 = atlas->width;
+   if (y1 > atlas->height)
+      y1 = atlas->height;
+   if (x1 > font->texture.width)
+      x1 = font->texture.width;
+   if (y1 > font->texture.height)
+      y1 = font->texture.height;
+   for (j = y0; j < y1; j++)
+      for (i = x0; i < x1; i++)
+         tex[ctrgu_swizzle_coords(i, j, font->texture.width)] =
+            src[i + j * atlas->width];
+
+   GSPGPU_FlushDataCache(tex, font->texture.width * font->texture.height);
+}
+
+/* Texture memory holding all of @atlas, sized up to powers of two,
+ * with the scale vectors set for it; NULL if none can be had */
+static void *ctr_font_make_texture(ctr_font_t *font,
+      const struct font_atlas *atlas)
+{
+   unsigned width  = next_pow2(atlas->width);
+   unsigned height = next_pow2(atlas->height);
+   void    *data   = linearAlloc(width * height);
+
+   if (!data)
+      return NULL;
+   memset(data, 0, width * height);
+
+   font->texture.width  = width;
+   font->texture.height = height;
+   font->texture.data   = data;
+   ctr_font_upload(font, atlas, 0, 0, atlas->width, atlas->height);
+
+   CTR_SET_SCALE_VECTOR(
+         &font->scale_vector_top,
+         CTR_TOP_FRAMEBUFFER_WIDTH,
+         CTR_TOP_FRAMEBUFFER_HEIGHT,
+         width, height);
+   CTR_SET_SCALE_VECTOR(
+         &font->scale_vector_bottom,
+         CTR_BOTTOM_FRAMEBUFFER_WIDTH,
+         CTR_BOTTOM_FRAMEBUFFER_HEIGHT,
+         width, height);
+   return data;
+}
+
 static void* ctr_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
-   unsigned int i, j;
-   ctr_scale_vector_t *vec_top    = NULL;
-   ctr_scale_vector_t *vec_bottom = NULL;
-   const uint8_t*     src         = NULL;
-   uint8_t* tmp                   = NULL;
-   const struct font_atlas* atlas = NULL;
+   struct font_atlas* atlas       = NULL;
    ctr_font_t* font               = (ctr_font_t*)calloc(1, sizeof(*font));
    ctr_video_t* ctr               = (ctr_video_t*)data;
 
@@ -401,48 +458,16 @@ static void* ctr_font_init(void* data, const char* font_path,
    }
 
    atlas                = font->font_driver->get_atlas(font->font_data);
+   /* The atlas may grow, to the 3DS GPU's largest texture */
+   atlas->max_width     = 1024;
+   atlas->max_height    = 1024;
 
-   font->texture.width  = next_pow2(atlas->width);
-   font->texture.height = next_pow2(atlas->height);
-#if FONT_TEXTURE_IN_VRAM
-   font->texture.data   = vramAlloc(font->texture.width * font->texture.height);
-   tmp                  = linearAlloc(font->texture.width * font->texture.height);
-#else
-   font->texture.data   = linearAlloc(font->texture.width * font->texture.height);
-   tmp                  = font->texture.data;
-#endif
-
-   src                  = atlas->buffer;
-
-   for (j = 0; (j < atlas->height) && (j < font->texture.height); j++)
-      for (i = 0; (i < atlas->width) && (i < font->texture.width); i++)
-         tmp[ctrgu_swizzle_coords(i, j, font->texture.width)] = src[i + j * atlas->width];
-
-   GSPGPU_FlushDataCache(tmp, font->texture.width * font->texture.height);
-
-#if FONT_TEXTURE_IN_VRAM
-   ctrGuCopyImage(true, tmp, font->texture.width >> 2, font->texture.height, CTRGU_RGBA8, true,
-                  font->texture.data, font->texture.width >> 2, CTRGU_RGBA8,  true);
-
-   linearFree(tmp);
-#endif
-
-   vec_top    = &font->scale_vector_top;
-   vec_bottom = &font->scale_vector_bottom;
-
-   CTR_SET_SCALE_VECTOR(
-         vec_top,
-         CTR_TOP_FRAMEBUFFER_WIDTH,
-         CTR_TOP_FRAMEBUFFER_HEIGHT,
-         font->texture.width,
-         font->texture.height);
-
-   CTR_SET_SCALE_VECTOR(
-         vec_bottom,
-         CTR_BOTTOM_FRAMEBUFFER_WIDTH,
-         CTR_BOTTOM_FRAMEBUFFER_HEIGHT,
-         font->texture.width,
-         font->texture.height);
+   if (!(font->texture.data = ctr_font_make_texture(font, atlas)))
+   {
+      font->font_driver->free(font->font_data);
+      free(font);
+      return NULL;
+   }
 
    return font;
 }
@@ -457,11 +482,12 @@ static void ctr_font_free(void* data, bool is_threaded)
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
 
-#ifdef FONT_TEXTURE_IN_VRAM
-   vramFree(font->texture.data);
-#else
    linearFree(font->texture.data);
-#endif
+   {
+      unsigned i;
+      for (i = 0; i < font->retired_count; i++)
+         linearFree(font->retired[i]);
+   }
    free(font);
 }
 
@@ -625,6 +651,32 @@ static void ctr_font_render_msg(
 
    if (!font || !msg || !*msg)
       return;
+
+   /* Asked for before anything is laid out. Glyphs rasterized since
+    * the last message go up into the texture - before, only those
+    * there at init ever reached it - and an atlas that has grown gets
+    * texture memory of its size */
+   if (font->font_driver && font->font_data)
+   {
+      struct font_atlas *atlas = font->font_driver->get_atlas(font->font_data);
+      if (     font->retired_count < 2
+            && (   next_pow2(atlas->width)  != font->texture.width
+                || next_pow2(atlas->height) != font->texture.height))
+      {
+         void *old_data = font->texture.data;
+         if (ctr_font_make_texture(font, atlas))
+         {
+            font->retired[font->retired_count++] = old_data;
+            atlas->dirty = false;
+         }
+      }
+      if (atlas->dirty)
+      {
+         ctr_font_upload(font, atlas, atlas->dirty_x0, atlas->dirty_y0,
+               atlas->dirty_x1, atlas->dirty_y1);
+         atlas->dirty = false;
+      }
+   }
 
    font_driver_resolve_params(params, &rp);
    x          = rp.x;

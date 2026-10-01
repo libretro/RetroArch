@@ -269,6 +269,11 @@ typedef struct
    video_font_raster_block_t *block;
    u32 tex_width;
    u32 tex_height;
+   /* Texture memory the atlas outgrew: a frame in flight may still
+    * draw from it, and freeing it means waiting for the RSX, so it goes
+    * when the font does - the atlas grows at most twice */
+   u32 *retired[2];
+   unsigned retired_count;
    u32 fp_offset;
    u32 pos_offset;
    u32 uv_offset;
@@ -528,6 +533,11 @@ static void rsx_font_free(void *data,
 
    if (font->texture.data)
       rsxFree(font->texture.data);
+   {
+      unsigned i;
+      for (i = 0; i < font->retired_count; i++)
+         rsxFree(font->retired[i]);
+   }
    if (font->vertices)
       rsxFree(font->vertices);
 
@@ -635,6 +645,9 @@ static void *rsx_font_init(void *data,
          sizeof(rsx_vertex_t) * RSX_MAX_FONT_VERTICES);
    font->rsx->font_vert_idx = 0;
 
+   /* The atlas may grow; the texture follows it */
+   font->atlas->max_width   = 2048;
+   font->atlas->max_height  = 2048;
    font->tex_width          = font->atlas->width;
    font->tex_height         = font->atlas->height;
    font->texture.data       = (u32*)rsxMemalign(128, (font->tex_height * font->tex_width));
@@ -865,6 +878,32 @@ static void rsx_font_render_msg(
 
    if (!font || !msg || !*msg || !rsx)
       return;
+
+   /* Asked for before anything is laid out: when it has grown, texture
+    * memory of its size takes the old one's place, all of it to be
+    * uploaded at the next draw */
+   if (font->font_driver && font->font_data)
+   {
+      font->atlas = font->font_driver->get_atlas(font->font_data);
+      if (     font->retired_count < 2
+            && (   font->tex_width  != font->atlas->width
+                || font->tex_height != font->atlas->height))
+      {
+         u32 *data = (u32*)rsxMemalign(128,
+               font->atlas->width * font->atlas->height);
+         if (data)
+         {
+            font->retired[font->retired_count++] = font->texture.data;
+            font->texture.data     = data;
+            rsxAddressToOffset(font->texture.data, &font->texture.offset);
+            font->tex_width        = font->atlas->width;
+            font->tex_height       = font->atlas->height;
+            font->atlas->dirty_y0  = 0;
+            font->atlas->dirty_y1  = font->atlas->height;
+            font->atlas->dirty     = true;
+         }
+      }
+   }
 
    dims                             = VIDEO_SCALE_PACK(rsx->width,
          rsx->height);

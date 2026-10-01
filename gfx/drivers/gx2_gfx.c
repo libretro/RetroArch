@@ -180,6 +180,12 @@ typedef struct
    const font_renderer_driver_t* font_driver;
    void* font_data;
    struct font_atlas* atlas;
+   /* Images and texture-size blocks the atlas outgrew: a frame in
+    * flight may still draw from them, and freeing one means waiting for
+    * the GPU, so they go when the font does - the atlas grows at most
+    * twice */
+   void* retired[4];
+   unsigned retired_count;
 } gx2_font_t;
 
 /* Temporary workaround for GX2 not being able to poll flags during init */
@@ -640,10 +646,64 @@ static void gfx_display_wiiu_scissor_end(void *data, unsigned video_dims)
  * FONT DRIVER
  */
 
+/* The texture image and its size block, made at the atlas's size and
+ * filled with all of it: at init, and when the atlas has grown, the
+ * pair it replaces going to font->retired. False, with nothing
+ * changed, when MEM1 has no room. */
+static bool gx2_font_make_texture(gx2_font_t *font)
+{
+   unsigned i;
+   GX2Texture texture;
+   GX2_vec2 *ubo_tex;
+
+   memset(&texture, 0, sizeof(texture));
+   texture.surface.width    = font->atlas->width;
+   texture.surface.height   = font->atlas->height;
+   texture.surface.depth    = 1;
+   texture.surface.dim      = GX2_SURFACE_DIM_TEXTURE_2D;
+   texture.surface.tileMode = GX2_TILE_MODE_LINEAR_ALIGNED;
+   texture.viewNumSlices    = 1;
+   texture.surface.format   = GX2_SURFACE_FORMAT_UNORM_R8;
+   texture.compMap          = GX2_COMP_SEL(_1, _1, _1, _R);
+
+   GX2CalcSurfaceSizeAndAlignment(&texture.surface);
+   GX2InitTextureRegs(&texture);
+   if (!(texture.surface.image = MEM1_alloc(texture.surface.imageSize,
+               texture.surface.alignment)))
+      return false;
+   if (!(ubo_tex = (GX2_vec2*)MEM1_alloc(sizeof(*ubo_tex),
+               GX2_UNIFORM_BLOCK_ALIGNMENT)))
+   {
+      MEM1_free(texture.surface.image);
+      return false;
+   }
+
+   for (i = 0; (i < font->atlas->height) && (i < texture.surface.height); i++)
+      memcpy((uint8_t*)texture.surface.image
+            + (i * texture.surface.pitch),
+            font->atlas->buffer + (i * font->atlas->width),
+            font->atlas->width);
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE,
+         texture.surface.image, texture.surface.imageSize);
+
+   ubo_tex->width  = texture.surface.width;
+   ubo_tex->height = texture.surface.height;
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, ubo_tex,
+         sizeof(*ubo_tex));
+
+   if (font->texture.surface.image)
+      font->retired[font->retired_count++] = font->texture.surface.image;
+   if (font->ubo_tex)
+      font->retired[font->retired_count++] = font->ubo_tex;
+   font->texture      = texture;
+   font->ubo_tex      = ubo_tex;
+   font->atlas->dirty = false;
+   return true;
+}
+
 static void* gx2_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
-   uint32_t i;
    gx2_font_t* font = (gx2_font_t*)calloc(1, sizeof(*font));
 
    if (!font)
@@ -658,38 +718,15 @@ static void* gx2_font_init(void* data, const char* font_path,
    }
 
    font->atlas                       = font->font_driver->get_atlas(font->font_data);
-   font->texture.surface.width       = font->atlas->width;
-   font->texture.surface.height      = font->atlas->height;
-   font->texture.surface.depth       = 1;
-   font->texture.surface.dim         = GX2_SURFACE_DIM_TEXTURE_2D;
-   font->texture.surface.tileMode    = GX2_TILE_MODE_LINEAR_ALIGNED;
-   font->texture.viewNumSlices       = 1;
-
-   font->texture.surface.format      = GX2_SURFACE_FORMAT_UNORM_R8;
-   font->texture.compMap             = GX2_COMP_SEL(_1, _1, _1, _R);
-
-   GX2CalcSurfaceSizeAndAlignment(&font->texture.surface);
-   GX2InitTextureRegs(&font->texture);
-   font->texture.surface.image       = MEM1_alloc(
-         font->texture.surface.imageSize,
-         font->texture.surface.alignment);
-
-   for (i = 0; (i < font->atlas->height) && (i < font->texture.surface.height); i++)
-      memcpy((uint8_t*)font->texture.surface.image
-            + (i * font->texture.surface.pitch),
-            font->atlas->buffer + (i * font->atlas->width),
-            font->atlas->width);
-
-   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE,
-         font->texture.surface.image,
-         font->texture.surface.imageSize);
-
-   font->atlas->dirty    = false;
-   font->ubo_tex         = MEM1_alloc(sizeof(*font->ubo_tex), GX2_UNIFORM_BLOCK_ALIGNMENT);
-   font->ubo_tex->width  = font->texture.surface.width;
-   font->ubo_tex->height = font->texture.surface.height;
-   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, font->ubo_tex,
-                 sizeof(*font->ubo_tex));
+   /* The atlas may grow, kept modest for the 32 MB of MEM1 */
+   font->atlas->max_width            = 1024;
+   font->atlas->max_height           = 1024;
+   if (!gx2_font_make_texture(font))
+   {
+      font->font_driver->free(font->font_data);
+      free(font);
+      return NULL;
+   }
 
    return font;
 }
@@ -712,6 +749,11 @@ static void gx2_font_free(void* data, bool is_threaded)
       MEM1_free(font->texture.surface.image);
    if (font->ubo_tex)
       MEM1_free(font->ubo_tex);
+   {
+      unsigned i;
+      for (i = 0; i < font->retired_count; i++)
+         MEM1_free(font->retired[i]);
+   }
    free(font);
 }
 
@@ -856,6 +898,18 @@ static void gx2_font_render_msg(
 
    if (!font || !wiiu || !msg || !*msg)
       return;
+
+   /* Asked for before anything is laid out: when it has grown, an image
+    * of its size takes the old one's place */
+   if (font->font_driver && font->font_data)
+   {
+      font->atlas = font->font_driver->get_atlas(font->font_data);
+      if (     font->retired_count + 2 <= sizeof(font->retired)
+               / sizeof(font->retired[0])
+            && (   font->texture.surface.width  != font->atlas->width
+                || font->texture.surface.height != font->atlas->height))
+         gx2_font_make_texture(font);
+   }
 
    font_driver_resolve_params(params, &rp);
    x          = rp.x;
