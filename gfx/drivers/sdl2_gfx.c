@@ -1707,6 +1707,10 @@ static void sdl2_raster_font_render_message(
                           / (float)height;
    }
 
+   /* Looked up before the layout: a right or centred line is measured
+    * before its first glyph is drawn, and the stand-in counts there */
+   glyph_q = get_glyph(font_data, '?');
+
 #define FONT_LAYOUT_ALIGNED (align == TEXT_ALIGN_RIGHT \
       || align == TEXT_ALIGN_CENTER)
 #define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
@@ -1718,7 +1722,6 @@ static void sdl2_raster_font_render_message(
          break; \
       if (font->atlas_dirty || font->atlas->dirty) \
          sdl2_raster_font_upload_atlas(font); \
-      glyph_q = get_glyph(font_data, '?'); \
       x = pos_x * (float)width; \
       y = (1.0f - (pos_y - (float)(line) * line_height_norm)) \
          * (float)height; \
