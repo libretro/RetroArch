@@ -55,6 +55,11 @@
  *       not drawn at all - out of view, say - so that its glyphs are
  *       not even looked up.
  *
+ * fl_m, the first byte of the current line, may be read by these hooks:
+ * a driver that draws a line in passes of its own, a shadow run and then
+ * a text run, takes the line from FONT_LAYOUT_SKIP and has the block
+ * skip its own walk.
+ *
  * C89: the block declares its locals at its top, so it may appear
  * wherever a statement may. Its names all begin fl_. */
 
