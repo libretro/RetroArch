@@ -14,8 +14,7 @@
 
 int read_should_fail = 0;
 extern int  read_real_files;
-extern char real_reads[16][512];
-extern int  real_reads_n;
+int stub_real_read(const char *name);
 
 static int fails = 0;
 #define CHECK(c,m) do { if(!(c)) { printf("  FAIL: %s\n", m); fails++; } } while (0)
@@ -35,11 +34,7 @@ static int drawn(const font_renderer_driver_t *drv, void *h, uint32_t code)
 
 static int read_file(const char *name)
 {
-   int i;
-   for (i = 0; i < real_reads_n; i++)
-      if (strstr(real_reads[i], name))
-         return 1;
-   return 0;
+   return stub_real_read(name);
 }
 
 int main(void)

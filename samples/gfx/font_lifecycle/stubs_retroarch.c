@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdarg.h>
+#include <pthread.h>
 #include <boolean.h>
 #include <compat/strl.h>
 #include "gfx/font_driver.h"
@@ -30,10 +31,23 @@ settings_t *config_get_ptr(void) { return &test_settings; }
 const char *last_read_path = NULL;
 
 /* Set by the fallback tests, which read real fonts from disk, and the
- * files they read, in order */
+ * files they read, in order. Fallback files are read on threads of
+ * their own, so the record is kept under a lock. */
 int  read_real_files = 0;
-char real_reads[16][512];
-int  real_reads_n    = 0;
+static char real_reads[16][512];
+static int  real_reads_n = 0;
+static pthread_mutex_t real_reads_lock = PTHREAD_MUTEX_INITIALIZER;
+
+/* Whether a file whose path contains @name has been read */
+int stub_real_read(const char *name)
+{
+   int i, found = 0;
+   pthread_mutex_lock(&real_reads_lock);
+   for (i = 0; i < real_reads_n && !found; i++)
+      found = strstr(real_reads[i], name) != NULL;
+   pthread_mutex_unlock(&real_reads_lock);
+   return found;
+}
 
 bool filestream_read_file(const char *path, void **buf, int64_t *len)
 {
@@ -42,8 +56,10 @@ bool filestream_read_file(const char *path, void **buf, int64_t *len)
    if (read_real_files)
    {
       FILE *f = fopen(path, "rb");
+      pthread_mutex_lock(&real_reads_lock);
       if (real_reads_n < (int)(sizeof(real_reads) / sizeof(real_reads[0])))
          strlcpy(real_reads[real_reads_n++], path, sizeof(real_reads[0]));
+      pthread_mutex_unlock(&real_reads_lock);
       long  n;
       *buf    = NULL;
       if (!f)
