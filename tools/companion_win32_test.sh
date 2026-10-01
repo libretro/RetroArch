@@ -10,6 +10,9 @@
 #
 #   tools/companion_win32_test.sh
 set -eu
+# Wine names files in the Unix locale's charset: the test makes one named in
+# CJK, Hangul and Thai, so the locale has to be able to hold it.
+export LC_ALL=C.UTF-8
 cd "$(dirname "$0")/.."
 
 CC=${CC:-x86_64-w64-mingw32-gcc}
