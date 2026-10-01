@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 20
         run: |
-          pkgs="build-essential libusb-1.0-0-dev libx11-dev libxtst-dev libxi-dev xvfb"
+          pkgs="build-essential libusb-1.0-0-dev libx11-dev libxtst-dev libxi-dev xvfb gcc-mingw-w64-x86-64 wine64"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -241,11 +241,11 @@ jobs:
           # run under Wine: an absolute pointer report's position is
           # kept as one word, and every read must give back a position
           # a report carried, including a report that lands during poll.
-          if ! command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1 \
-                || ! command -v wine >/dev/null 2>&1; then
-             sudo apt-get install -y -qq gcc-mingw-w64-x86-64 wine64 \
-                -o Acquire::Retries=3 -o Acquire::http::Timeout=30
-          fi
+          # mingw-w64 and Wine come from "Install dependencies", whose
+          # download is bounded and retried; an unbounded install here
+          # stalled silently until the job timeout. Stop wineserver on
+          # exit so it cannot hold the step's output open.
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
           make clean all
           WINEDEBUG=-all timeout 300 make check
           make clean
