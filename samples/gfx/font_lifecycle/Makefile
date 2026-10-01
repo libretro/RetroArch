@@ -11,7 +11,7 @@ SRC     := $(RA)/gfx/font_driver.c \
            $(RA)/libretro-common/encodings/encoding_utf.c \
            $(RA)/libretro-common/lists/string_list.c \
            $(RA)/libretro-common/time/rtime.c
-all: lifecycle lifecycle-threaded create fallback chain
+all: lifecycle lifecycle-threaded create fallback chain frame
 lifecycle: font_lifecycle_test.c stubs_retroarch.c $(SRC)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 # Same tests with the marshalling branch compiled in, so a rebuild
@@ -34,12 +34,17 @@ chain: font_fallback_chain_test.c stubs_retroarch.c $(SRC) \
         $(RA)/libretro-common/rthreads/rthreads.c
 	$(CC) $(CFLAGS) -DHAVE_THREADS -DFONT_TEST_REAL_STB \
 	   -DFONT_TEST_REAL_THREADS -o $@ $^ -lm
+# Cells drawn from in a frame are kept for that frame
+frame: font_frame_test.c stubs_retroarch.c $(SRC) \
+        $(RA)/gfx/drivers_font_renderer/stb.c $(RA)/gfx/bitmapfont.c
+	$(CC) $(CFLAGS) -DFONT_TEST_REAL_STB -o $@ $^ -lm
 check: all
 	ASAN_OPTIONS=detect_leaks=1 ./lifecycle
 	ASAN_OPTIONS=detect_leaks=1 ./lifecycle-threaded
 	ASAN_OPTIONS=detect_leaks=1 ./create
 	ASAN_OPTIONS=detect_leaks=1 ./fallback
 	ASAN_OPTIONS=detect_leaks=1 ./chain
+	ASAN_OPTIONS=detect_leaks=1 ./frame
 clean:
-	rm -f lifecycle lifecycle-threaded create fallback chain
+	rm -f lifecycle lifecycle-threaded create fallback chain frame
 .PHONY: all check clean

@@ -7415,6 +7415,11 @@ void video_driver_frame(const void *data, unsigned width,
       else if (widgets_active && p_dispwidget->worker)
          gfx_widgets_status_text_to_frame(&video_info, status_text);
 #endif
+/* The text this frame draws is drawn inside the driver's frame -
+ * on the video thread when it is threaded, which marks the frame
+ * there instead */
+if (!VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
+   font_driver_frame_begin();
       if (vid->frame(
                video_st->data, data, dims,
                video_st->frame_count, (unsigned)pitch,

@@ -281,6 +281,8 @@ typedef struct font_cache_slot
    struct font_glyph glyph;
    uint32_t charcode;
    unsigned last_used;
+   /* font_frame_epoch when it was last looked up */
+   unsigned last_frame;
 } font_cache_slot_t;
 
 typedef struct font_cache
@@ -472,24 +474,45 @@ static void *font_cache_fallback_face(font_cache_t *c, int id,
 #endif
 }
 
-/* The least recently used cell, taken out of the hash */
+/* Advanced once a video frame by font_driver_frame_begin(). A cell
+ * looked up in the current frame may already have glyphs queued from
+ * it, so it is not handed to another codepoint until the frame is over:
+ * reusing it would draw the new glyph in the earlier one's place. 0
+ * until the first frame, which leaves plain LRU in place for a cache
+ * used outside the video loop. */
+static retro_atomic_int_t font_frame_epoch;
+
+void font_driver_frame_begin(void)
+{
+   retro_atomic_fetch_add_int(&font_frame_epoch, 1);
+}
+
+/* The least recently used cell not looked up in this frame, taken out
+ * of the hash; NULL when every cell is in use this frame */
 static font_cache_slot_t *font_cache_take_slot(font_cache_t *c)
 {
    unsigned i;
-   unsigned oldest     = 0;
-   /* Unsigned subtraction handles the counter wrapping */
-   unsigned oldest_age = c->usage_counter - c->slots[0].last_used;
+   unsigned frame      = (unsigned)retro_atomic_load_acquire_int(
+         &font_frame_epoch);
+   int      oldest     = -1;
+   unsigned oldest_age = 0;
    font_cache_slot_t **link;
 
-   for (i = 1; i < FONT_CACHE_SLOTS; i++)
+   for (i = 0; i < FONT_CACHE_SLOTS; i++)
    {
+      /* Unsigned subtraction handles the counter wrapping */
       unsigned age = c->usage_counter - c->slots[i].last_used;
-      if (age > oldest_age)
+      if (frame && c->slots[i].last_frame == frame)
+         continue;
+      if (oldest < 0 || age > oldest_age)
       {
          oldest_age = age;
-         oldest     = i;
+         oldest     = (int)i;
       }
    }
+
+   if (oldest < 0)
+      return NULL;
 
    if (c->slots[oldest].charcode != FONT_CACHE_NO_CODE)
    {
@@ -503,8 +526,9 @@ static font_cache_slot_t *font_cache_take_slot(font_cache_t *c)
          }
       }
    }
-   c->slots[oldest].charcode = FONT_CACHE_NO_CODE;
-   c->slots[oldest].next     = NULL;
+   c->slots[oldest].charcode   = FONT_CACHE_NO_CODE;
+   c->slots[oldest].next       = NULL;
+   c->slots[oldest].last_frame = frame;
    return &c->slots[oldest];
 }
 
@@ -569,7 +593,11 @@ static const struct font_glyph *font_cache_miss(font_cache_t *c,
       }
    }
 
-   slot   = font_cache_take_slot(c);
+   /* Every cell already holds a glyph drawn this frame: this one goes
+    * undrawn - the caller draws its stand-in - rather than overwrite
+    * one, and is drawn once a frame frees a cell */
+   if (!(slot = font_cache_take_slot(c)))
+      return NULL;
    cell_w = VIDEO_SCALE_W(c->cell_dims);
    cell_h = VIDEO_SCALE_H(c->cell_dims);
    esz    = (c->atlas.format == FONT_ATLAS_FORMAT_A16)
@@ -582,7 +610,8 @@ static const struct font_glyph *font_cache_miss(font_cache_t *c,
             cell_w, cell_h, c->atlas.format, &slot->glyph))
    {
       /* Nothing to draw: the cell goes back as the oldest there is */
-      slot->last_used = c->usage_counter - 0x80000000u;
+      slot->last_used  = c->usage_counter - 0x80000000u;
+      slot->last_frame--;
       return NULL;
    }
 
@@ -608,7 +637,9 @@ static const struct font_glyph *font_cache_get_glyph(void *data,
    {
       if (slot->charcode == code)
       {
-         slot->last_used = c->usage_counter++;
+         slot->last_used  = c->usage_counter++;
+         slot->last_frame = (unsigned)retro_atomic_load_acquire_int(
+               &font_frame_epoch);
          return &slot->glyph;
       }
    }

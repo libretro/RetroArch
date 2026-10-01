@@ -228,6 +228,11 @@ void font_driver_render_msg(void *data,
       const char *msg, size_t msg_len,
       const struct font_params *params, void *font_data);
 
+/* Marks the start of a video frame for the glyph caches: a cell looked
+ * up during a frame is not given to another codepoint before the next
+ * one begins. */
+void font_driver_frame_begin(void);
+
 /* What a video driver's font draws a message with: the caller's
  * font_params, or for the on-screen message (NULL params) the message
  * position and colour from the settings, left aligned and full screen,

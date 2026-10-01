@@ -2090,6 +2090,9 @@ static void video_thread_loop(void *data)
                   && video_info->shader_subframes <= 1;
 
                render_start = cpu_features_get_time_usec();
+               /* This thread draws the frame's text, so the glyph
+                * caches' frame begins here */
+               font_driver_frame_begin();
 #ifdef HAVE_GFX_WIDGETS
                /* This thread draws the widgets, so it advances and lays
                 * them out too, before the driver's frame asks whether
@@ -2728,6 +2731,7 @@ static bool video_thread_frame(void *data, const void *frame_,
          if (filter_bpp)
             video_thread_filter(thr, &frame_, &dims, &pitch);
 #endif
+         font_driver_frame_begin();
          return thr->driver->frame(thr->driver_data, frame_,
             dims, frame_count, pitch, msg, video_info);
       }
