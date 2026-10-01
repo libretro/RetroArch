@@ -258,6 +258,51 @@ assert_seen 'phys match configured in port 1' \
    "P8 same-second edit still rescanned"
 
 # ---------------------------------------------------------------
+say "-- P9: P1's cycle with every step queued before the first scan"
+# The null video driver is unpaced, so on a busy machine all five
+# steps of the cycle are queued before the task worker has scanned a
+# single profile: port 1 then holds connect A, disconnect and connect
+# C at once.  C must still be configured, and must be what port 1 is
+# left holding.  Several instances run side by side, twice as many as
+# there are cores, so the first scan is late on any runner; each has
+# a sandbox of its own, as they would otherwise share one index.
+P9_N=$(( $(nproc 2>/dev/null || echo 2) * 2 ))
+P9_PIDS=""
+i=1
+while [ "$i" -le "$P9_N" ]; do
+   P9_DIR="$WORK/p9_$i"
+   mkdir -p "$P9_DIR/home" "$P9_DIR/autoconf"
+   cp "$RATST_DIR"/autoconf/*.cfg "$P9_DIR/autoconf/"
+   cat > "$P9_DIR/retroarch.cfg" <<CFG
+input_driver = "test"
+input_joypad_driver = "test"
+joypad_autoconfig_dir = "$P9_DIR/autoconf"
+test_input_file_joypad = "$RATST_DIR/test_input_autoconf_cycle.ratst"
+video_driver = "null"
+audio_driver = "null"
+menu_driver = "null"
+network_cmd_enable = "false"
+CFG
+   HOME="$P9_DIR/home" timeout 25 "$RETROARCH" \
+      --config "$P9_DIR/retroarch.cfg" \
+      --verbose > "$P9_DIR/run.log" 2>&1 &
+   P9_PIDS="$P9_PIDS $!"
+   i=$((i + 1))
+done
+wait $P9_PIDS 2>/dev/null
+P9_MISSING=0
+i=1
+while [ "$i" -le "$P9_N" ]; do
+   LOG="$WORK/p9_$i/run.log"
+   assert_clean
+   grep -qE 'device C configured in port 1' "$LOG" || P9_MISSING=$((P9_MISSING + 1))
+   i=$((i + 1))
+done
+[ "$P9_MISSING" -eq 0 ] \
+   && pass "P9 connect queued behind a pending connect and disconnect is kept ($P9_N runs)" \
+   || fail "P9 device C not configured in $P9_MISSING of $P9_N contended runs"
+
+# ---------------------------------------------------------------
 rm -rf "$WORK"
 if [ "$FAILED" -eq 0 ]; then
    say "== autoconf regression suite: ALL PASS"; exit 0
