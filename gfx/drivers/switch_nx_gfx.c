@@ -207,49 +207,31 @@ static void switch_font_render_msg(
       const char *msg, size_t msg_len,
       const struct font_params *params)
 {
+   font_params_resolved_t rp;
    float x, y, scale;
    enum text_alignment text_align;
    unsigned color, r, g, b, alpha;
    switch_font_t *font              = (switch_font_t *)data;
    switch_video_t *sw               = (switch_video_t*)userdata;
-   settings_t *settings             = config_get_ptr();
-   float video_msg_color_r          = settings->floats.video_msg_color_r;
-   float video_msg_color_g          = settings->floats.video_msg_color_g;
-   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (!font || !msg || (msg && !*msg))
       return;
    if (!sw || !sw->out_buffer)
       return;
 
-   if (params)
-   {
-      x          = params->x;
-      y          = params->y;
-      scale      = params->scale;
-      text_align = params->text_align;
+   font_driver_resolve_params(params, &rp);
+   x          = rp.x;
+   y          = rp.y;
+   scale      = rp.scale;
+   text_align = rp.text_align;
+   r          = rp.rgba[0];
+   g          = rp.rgba[1];
+   b          = rp.rgba[2];
+   alpha      = rp.rgba[3];
+   /* The caller's colour as packed; the message colour in this
+    * driver's own order */
+   color      = params ? params->color : COLOR_ABGR(r, g, b, alpha);
 
-      r          = FONT_COLOR_GET_RED(params->color);
-      g          = FONT_COLOR_GET_GREEN(params->color);
-      b          = FONT_COLOR_GET_BLUE(params->color);
-      alpha      = FONT_COLOR_GET_ALPHA(params->color);
-
-      color      = params->color;
-   }
-   else
-   {
-      x          = 0.0f;
-      y          = 0.0f;
-      scale      = 1.0f;
-      text_align = TEXT_ALIGN_LEFT;
-
-      r          = (video_msg_color_r * 255);
-      g          = (video_msg_color_g * 255);
-      b          = (video_msg_color_b * 255);
-      alpha      = 255;
-      color      = COLOR_ABGR(r, g, b, alpha);
-
-   }
 
    switch_font_render_message(sw, font, msg, msg_len, scale,
          color, x, y, text_align);

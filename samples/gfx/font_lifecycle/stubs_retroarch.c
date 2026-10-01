@@ -7,6 +7,7 @@
 #include <boolean.h>
 #include "gfx/font_driver.h"
 #include "gfx/video_driver.h"
+#include "configuration.h"
 
 extern int read_should_fail;
 
@@ -20,6 +21,10 @@ void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 bool video_driver_is_hw_context(void) { return false; }
 
 bool path_is_valid(const char *path) { (void)path; return true; }
+
+/* font_driver_resolve_params() reads the on-screen message settings */
+static settings_t test_settings;
+settings_t *config_get_ptr(void) { return &test_settings; }
 
 const char *last_read_path = NULL;
 

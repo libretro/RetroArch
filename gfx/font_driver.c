@@ -26,6 +26,7 @@
 #include "../config.h"
 #endif
 
+#include "../configuration.h"
 #include "../msg_hash.h"
 #include "../verbosity.h"
 #include "font_driver.h"
@@ -1638,6 +1639,54 @@ void font_flush(
    if (renderer && renderer->flush)
       renderer->flush(video_dims, font_data->font->renderer_data);
    font_data->raster_block.carr.coords.vertices = 0;
+}
+
+void font_driver_resolve_params(const struct font_params *params,
+      font_params_resolved_t *out)
+{
+   if (params)
+   {
+      out->color_hp    = params->color_hp;
+      out->x           = params->x;
+      out->y           = params->y;
+      out->scale       = params->scale;
+      out->drop_mod    = params->drop_mod;
+      out->drop_alpha  = params->drop_alpha;
+      out->drop_x      = params->drop_x;
+      out->drop_y      = params->drop_y;
+      out->text_align  = params->text_align;
+      out->full_screen = params->full_screen;
+      out->rgba[0]     = FONT_COLOR_GET_RED(params->color);
+      out->rgba[1]     = FONT_COLOR_GET_GREEN(params->color);
+      out->rgba[2]     = FONT_COLOR_GET_BLUE(params->color);
+      out->rgba[3]     = FONT_COLOR_GET_ALPHA(params->color);
+      out->color[0]    = out->rgba[0] / 255.0f;
+      out->color[1]    = out->rgba[1] / 255.0f;
+      out->color[2]    = out->rgba[2] / 255.0f;
+      out->color[3]    = out->rgba[3] / 255.0f;
+   }
+   else
+   {
+      settings_t *settings = config_get_ptr();
+      out->color_hp    = NULL;
+      out->x           = settings->floats.video_msg_pos_x;
+      out->y           = settings->floats.video_msg_pos_y;
+      out->scale       = 1.0f;
+      out->drop_mod    = 0.3f;
+      out->drop_alpha  = 1.0f;
+      out->drop_x      = -2;
+      out->drop_y      = -2;
+      out->text_align  = TEXT_ALIGN_LEFT;
+      out->full_screen = true;
+      out->color[0]    = settings->floats.video_msg_color_r;
+      out->color[1]    = settings->floats.video_msg_color_g;
+      out->color[2]    = settings->floats.video_msg_color_b;
+      out->color[3]    = 1.0f;
+      out->rgba[0]     = (unsigned)(out->color[0] * 255);
+      out->rgba[1]     = (unsigned)(out->color[1] * 255);
+      out->rgba[2]     = (unsigned)(out->color[2] * 255);
+      out->rgba[3]     = 255;
+   }
 }
 
 int font_renderer_get_message_width(

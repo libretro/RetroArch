@@ -1786,6 +1786,7 @@ static void sdl2_raster_font_render_msg(
       const char *msg, size_t msg_len,
       const struct font_params *params)
 {
+   font_params_resolved_t rp;
    sdl2_raster_t *font = (sdl2_raster_t*)data;
    sdl2_video_t  *vid  = (sdl2_video_t*)userdata;
    SDL_Color      col;
@@ -1809,35 +1810,22 @@ static void sdl2_raster_font_render_msg(
       return;
    }
 
-   if (params)
-   {
-      x          = params->x;
-      y          = params->y;
-      scale      = params->scale;
-      align      = params->text_align;
-      drop_x     = params->drop_x;
-      drop_y     = params->drop_y;
-      drop_mod   = params->drop_mod;
-      drop_alpha = params->drop_alpha;
+   font_driver_resolve_params(params, &rp);
+   x          = rp.x;
+   y          = rp.y;
+   scale      = rp.scale;
+   align      = rp.text_align;
+   drop_x     = rp.drop_x;
+   drop_y     = rp.drop_y;
+   drop_mod   = rp.drop_mod;
+   drop_alpha = rp.drop_alpha;
+   col.r      = rp.rgba[0];
+   col.g      = rp.rgba[1];
+   col.b      = rp.rgba[2];
+   col.a      = rp.rgba[3];
+   if (col.a == 0)
+      col.a   = 255;
 
-      col.r = FONT_COLOR_GET_RED(params->color);
-      col.g = FONT_COLOR_GET_GREEN(params->color);
-      col.b = FONT_COLOR_GET_BLUE(params->color);
-      col.a = FONT_COLOR_GET_ALPHA(params->color);
-      if (col.a == 0)
-         col.a = 255;
-   }
-   else
-   {
-      x          = 0.0f;
-      y          = 0.0f;
-      scale      = 1.0f;
-      drop_x     = 0;
-      drop_y     = 0;
-      drop_mod   = 0.0f;
-      drop_alpha = 0.0f;
-      col.r = col.g = col.b = col.a = 255;
-   }
 
    if (drop_x || drop_y)
    {

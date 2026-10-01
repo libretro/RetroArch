@@ -4040,6 +4040,7 @@ static INLINE void write_quad6(SpriteVertex *pv,
                height:(unsigned)height
                params:(const struct font_params *)params
 {
+   font_params_resolved_t rp;
    float x, y, scale, drop_mod, drop_alpha;
    int drop_x, drop_y;
    enum text_alignment text_align;
@@ -4048,53 +4049,20 @@ static INLINE void write_quad6(SpriteVertex *pv,
    if (!msg || !*msg)
       return;
 
-   if (params)
+   font_driver_resolve_params(params, &rp);
+   x           = rp.x;
+   y           = rp.y;
+   scale       = rp.scale;
+   text_align  = rp.text_align;
+   drop_x      = rp.drop_x;
+   drop_y      = rp.drop_y;
+   drop_mod    = rp.drop_mod;
+   drop_alpha  = rp.drop_alpha;
    {
-      x          = params->x;
-      y          = params->y;
-      scale      = params->scale;
-      text_align = params->text_align;
-      drop_x     = params->drop_x;
-      drop_y     = params->drop_y;
-      drop_mod   = params->drop_mod;
-      drop_alpha = params->drop_alpha;
-
-      if (params->color_hp)
-         color   = simd_make_float4(
-               params->color_hp[0], params->color_hp[1],
-               params->color_hp[2], params->color_hp[3]);
-      else
-         color   = simd_make_float4(
-               FONT_COLOR_GET_RED(params->color) / 255.0f,
-               FONT_COLOR_GET_GREEN(params->color) / 255.0f,
-               FONT_COLOR_GET_BLUE(params->color) / 255.0f,
-               FONT_COLOR_GET_ALPHA(params->color) / 255.0f);
-
+      const float *c = rp.color_hp ? rp.color_hp : rp.color;
+      color          = simd_make_float4(c[0], c[1], c[2], c[3]);
    }
-   else
-   {
-      settings_t *settings     = config_get_ptr();
-      float video_msg_pos_x    = settings->floats.video_msg_pos_x;
-      float video_msg_pos_y    = settings->floats.video_msg_pos_y;
-      float video_msg_color_r  = settings->floats.video_msg_color_r;
-      float video_msg_color_g  = settings->floats.video_msg_color_g;
-      float video_msg_color_b  = settings->floats.video_msg_color_b;
-      x                        = video_msg_pos_x;
-      y                        = video_msg_pos_y;
-      scale                    = 1.0f;
-      text_align               = TEXT_ALIGN_LEFT;
 
-      color                    = simd_make_float4(
-            video_msg_color_r,
-            video_msg_color_g,
-            video_msg_color_b,
-            1.0f);
-
-      drop_x                   = -2;
-      drop_y                   = -2;
-      drop_mod                 = 0.3f;
-      drop_alpha               = 1.0f;
-   }
 
    @autoreleasepool
    {

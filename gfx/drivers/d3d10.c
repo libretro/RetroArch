@@ -969,6 +969,7 @@ static void d3d10_font_render_msg(
       const char* msg, size_t msg_len,
       const struct font_params *params)
 {
+   font_params_resolved_t rp;
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
    int drop_x, drop_y;
@@ -999,48 +1000,21 @@ static void d3d10_font_render_msg(
    if (!d3d10 || (!(d3d10->flags & D3D10_ST_FLAG_SPRITES_ENABLE)))
       return;
 
-   if (params)
-   {
-      x                        = params->x;
-      y                        = params->y;
-      scale                    = params->scale;
-      text_align               = params->text_align;
-      drop_x                   = params->drop_x;
-      drop_y                   = params->drop_y;
-      drop_mod                 = params->drop_mod;
-      drop_alpha               = params->drop_alpha;
+   font_driver_resolve_params(params, &rp);
+   x          = rp.x;
+   y          = rp.y;
+   scale      = rp.scale;
+   text_align = rp.text_align;
+   drop_x     = rp.drop_x;
+   drop_y     = rp.drop_y;
+   drop_mod   = rp.drop_mod;
+   drop_alpha = rp.drop_alpha;
+   r          = rp.rgba[0];
+   g          = rp.rgba[1];
+   b          = rp.rgba[2];
+   alpha           = rp.rgba[3];
+   color      = DXGI_COLOR_RGBA(r, g, b, alpha);
 
-      r                        = FONT_COLOR_GET_RED(params->color);
-      g                        = FONT_COLOR_GET_GREEN(params->color);
-      b                        = FONT_COLOR_GET_BLUE(params->color);
-      alpha                    = FONT_COLOR_GET_ALPHA(params->color);
-
-      color                    = DXGI_COLOR_RGBA(r, g, b, alpha);
-   }
-   else
-   {
-      settings_t *settings     = config_get_ptr();
-      float video_msg_pos_x    = settings->floats.video_msg_pos_x;
-      float video_msg_pos_y    = settings->floats.video_msg_pos_y;
-      float video_msg_color_r  = settings->floats.video_msg_color_r;
-      float video_msg_color_g  = settings->floats.video_msg_color_g;
-      float video_msg_color_b  = settings->floats.video_msg_color_b;
-      x                        = video_msg_pos_x;
-      y                        = video_msg_pos_y;
-      scale                    = 1.0f;
-      text_align               = TEXT_ALIGN_LEFT;
-
-      r                        = (video_msg_color_r * 255);
-      g                        = (video_msg_color_g * 255);
-      b                        = (video_msg_color_b * 255);
-      alpha                    = 255;
-      color                    = DXGI_COLOR_RGBA(r, g, b, alpha);
-
-      drop_x                   = -2;
-      drop_y                   = -2;
-      drop_mod                 = 0.3f;
-      drop_alpha               = 1.0f;
-   }
 
    glyph_q          = (font->font_driver)
       ? font->font_driver->get_glyph(font->font_data, '?') : NULL;

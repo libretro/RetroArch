@@ -987,6 +987,9 @@ else
 fi
 
 # gfx/font_layout.h expands inside each driver's render function, and a
+# hook that reads a value before declaring its own locals is C99 the C89
+# lane rejects, so these lanes reject it too (the PS2 and Wii U drivers,
+# built only by C99 toolchains, opt out). And a
 # layout counter a driver has no use for is set but never read. GCC 15
 # and clang warn about that; the runner's GCC does not, so these lanes
 # ask clang, with the warning made an error.
@@ -997,6 +1000,7 @@ font_layout() {
       return
    fi
    if ! out=$(clang $target -Werror=unused-but-set-variable \
+         -Werror=declaration-after-statement \
          $INC $BASE $defs -fsyntax-only "$tu" 2>&1); then
       echo "FAIL  $name"
       echo "      $tu"
@@ -1043,10 +1047,12 @@ font_layout "font layout: gxm" "" \
    "-DVITA -DRARCH_CONSOLE $HOSTOFF -Itools/platform_stubs/vita" \
    gfx/drivers/gxm_gfx.c
 font_layout "font layout: ps2" "" \
-   "-DPS2 -DRARCH_CONSOLE -DHAVE_WINDOW_OFFSET -DHAVE_RGUI $HOSTOFF -Itools/platform_stubs/ps2" \
+   "-DPS2 -DRARCH_CONSOLE -DHAVE_WINDOW_OFFSET -DHAVE_RGUI $HOSTOFF -Itools/platform_stubs/ps2 \
+    -Wno-declaration-after-statement" \
    gfx/drivers/ps2_gfx.c
 font_layout "font layout: gx2" "" \
-   "-DWIIU $HOSTOFF -Iwiiu/include -Iwiiu" gfx/drivers/gx2_gfx.c
+   "-DWIIU $HOSTOFF -Iwiiu/include -Iwiiu -Wno-declaration-after-statement" \
+   gfx/drivers/gx2_gfx.c
 font_layout "font layout: glcore" "" \
    "-DHAVE_OPENGL -DHAVE_OPENGL_CORE -DHAVE_SLANG" gfx/drivers/gl3.c
 if [ -d /usr/x86_64-w64-mingw32/include ]; then

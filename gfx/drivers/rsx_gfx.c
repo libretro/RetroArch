@@ -853,6 +853,7 @@ static void rsx_font_render_msg(
       const char *msg, size_t msg_len,
       const struct font_params *params)
 {
+   font_params_resolved_t rp;
    float color[4];
    int drop_x, drop_y;
    unsigned dims;
@@ -860,12 +861,6 @@ static void rsx_font_render_msg(
    enum text_alignment text_align   = TEXT_ALIGN_LEFT;
    bool full_screen                 = false;
    rsx_font_t *font                 = (rsx_font_t*)data;
-   settings_t *settings             = config_get_ptr();
-   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
-   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
-   float video_msg_color_r          = settings->floats.video_msg_color_r;
-   float video_msg_color_g          = settings->floats.video_msg_color_g;
-   float video_msg_color_b          = settings->floats.video_msg_color_b;
    rsx_t *rsx                       = (rsx_t*)userdata;
 
    if (!font || !msg || !*msg || !rsx)
@@ -874,45 +869,24 @@ static void rsx_font_render_msg(
    dims                             = VIDEO_SCALE_PACK(rsx->width,
          rsx->height);
 
-   if (params)
-   {
-      x           = params->x;
-      y           = params->y;
-      scale       = params->scale;
-      full_screen = params->full_screen;
-      text_align  = params->text_align;
-      drop_x      = params->drop_x;
-      drop_y      = params->drop_y;
-      drop_mod    = params->drop_mod;
-      drop_alpha  = params->drop_alpha;
+   font_driver_resolve_params(params, &rp);
+   x           = rp.x;
+   y           = rp.y;
+   scale       = rp.scale;
+   full_screen = rp.full_screen;
+   text_align  = rp.text_align;
+   drop_x      = rp.drop_x;
+   drop_y      = rp.drop_y;
+   drop_mod    = rp.drop_mod;
+   drop_alpha  = rp.drop_alpha;
+   color[0]    = rp.color[0];
+   color[1]    = rp.color[1];
+   color[2]    = rp.color[2];
+   color[3]    = rp.color[3];
+   /* If alpha is 0.0f, turn it into default 1.0f */
+   if (color[3] <= 0.0f)
+      color[3] = 1.0f;
 
-      color[0]    = FONT_COLOR_GET_RED(params->color)   / 255.0f;
-      color[1]    = FONT_COLOR_GET_GREEN(params->color) / 255.0f;
-      color[2]    = FONT_COLOR_GET_BLUE(params->color)  / 255.0f;
-      color[3]    = FONT_COLOR_GET_ALPHA(params->color) / 255.0f;
-
-      /* If alpha is 0.0f, turn it into default 1.0f */
-      if (color[3] <= 0.0f)
-         color[3] = 1.0f;
-   }
-   else
-   {
-      x                    = video_msg_pos_x;
-      y                    = video_msg_pos_y;
-      scale                = 1.0f;
-      full_screen          = true;
-      text_align           = TEXT_ALIGN_LEFT;
-
-      color[0]             = video_msg_color_r;
-      color[1]             = video_msg_color_g;
-      color[2]             = video_msg_color_b;
-      color[3]             = 1.0f;
-
-      drop_x               = -2;
-      drop_y               = -2;
-      drop_mod             = 0.3f;
-      drop_alpha           = 1.0f;
-   }
 
    if (font->block)
       font->block->fullscreen = full_screen;

@@ -1438,6 +1438,7 @@ static void gl3_raster_font_render_msg(
       const char *msg, size_t msg_len,
       const struct font_params *params)
 {
+   font_params_resolved_t rp;
    GLfloat color[4];
    int drop_x, drop_y;
    GLfloat x, y, scale, drop_mod, drop_alpha;
@@ -1446,67 +1447,38 @@ static void gl3_raster_font_render_msg(
    gl3_raster_t           *font     = (gl3_raster_t*)data;
    gl3_t *gl                        = (gl3_t*)userdata;
    unsigned dims                    = gl->video_dims;
-   settings_t *settings             = config_get_ptr();
-   float video_msg_pos_x            = settings->floats.video_msg_pos_x;
-   float video_msg_pos_y            = settings->floats.video_msg_pos_y;
-   float video_msg_color_r          = settings->floats.video_msg_color_r;
-   float video_msg_color_g          = settings->floats.video_msg_color_g;
-   float video_msg_color_b          = settings->floats.video_msg_color_b;
 
    if (!font || !msg || !*msg || !gl)
       return;
 
-   if (params)
+   font_driver_resolve_params(params, &rp);
+   x           = rp.x;
+   y           = rp.y;
+   scale       = rp.scale;
+   full_screen = rp.full_screen;
+   text_align  = rp.text_align;
+   drop_x      = rp.drop_x;
+   drop_y      = rp.drop_y;
+   drop_mod    = rp.drop_mod;
+   drop_alpha  = rp.drop_alpha;
+   if (rp.color_hp)
    {
-      x           = params->x;
-      y           = params->y;
-      scale       = params->scale;
-      full_screen = params->full_screen;
-      text_align  = params->text_align;
-      drop_x      = params->drop_x;
-      drop_y      = params->drop_y;
-      drop_mod    = params->drop_mod;
-      drop_alpha  = params->drop_alpha;
-
-      if (params->color_hp)
-      {
-         /* Full-precision colour supplied (deep-colour framebuffer): use it
-          * directly rather than the 8-bit packed 'color'. */
-         color[0]    = params->color_hp[0];
-         color[1]    = params->color_hp[1];
-         color[2]    = params->color_hp[2];
-         color[3]    = params->color_hp[3];
-      }
-      else
-      {
-         color[0]    = FONT_COLOR_GET_RED(params->color)   / 255.0f;
-         color[1]    = FONT_COLOR_GET_GREEN(params->color) / 255.0f;
-         color[2]    = FONT_COLOR_GET_BLUE(params->color)  / 255.0f;
-         color[3]    = FONT_COLOR_GET_ALPHA(params->color) / 255.0f;
-      }
-
-      /* If alpha is 0.0f, turn it into default 1.0f */
-      if (color[3] <= 0.0f)
-         color[3] = 1.0f;
+      color[0] = rp.color_hp[0];
+      color[1] = rp.color_hp[1];
+      color[2] = rp.color_hp[2];
+      color[3] = rp.color_hp[3];
    }
    else
    {
-      x                    = video_msg_pos_x;
-      y                    = video_msg_pos_y;
-      scale                = 1.0f;
-      full_screen          = true;
-      text_align           = TEXT_ALIGN_LEFT;
-
-      color[0]             = video_msg_color_r;
-      color[1]             = video_msg_color_g;
-      color[2]             = video_msg_color_b;
-      color[3]             = 1.0f;
-
-      drop_x               = -2;
-      drop_y               = -2;
-      drop_mod             = 0.3f;
-      drop_alpha           = 1.0f;
+      color[0] = rp.color[0];
+      color[1] = rp.color[1];
+      color[2] = rp.color[2];
+      color[3] = rp.color[3];
    }
+   /* If alpha is 0.0f, turn it into default 1.0f */
+   if (color[3] <= 0.0f)
+      color[3] = 1.0f;
+
 
    if (font->block)
       font->block->fullscreen = full_screen;

@@ -844,6 +844,7 @@ static void gx2_font_render_msg(
       const char* msg, size_t msg_len,
       const struct font_params *params)
 {
+   font_params_resolved_t rp;
    float x, y, scale, drop_mod, drop_alpha;
    int drop_x, drop_y;
    enum text_alignment text_align;
@@ -856,47 +857,23 @@ static void gx2_font_render_msg(
    if (!font || !wiiu || !msg || !*msg)
       return;
 
-   if (params)
-   {
-      x                       = params->x;
-      y                       = params->y;
-      scale                   = params->scale;
-      text_align              = params->text_align;
-      drop_x                  = params->drop_x;
-      drop_y                  = params->drop_y;
-      drop_mod                = params->drop_mod;
-      drop_alpha              = params->drop_alpha;
+   font_driver_resolve_params(params, &rp);
+   x          = rp.x;
+   y          = rp.y;
+   scale      = rp.scale;
+   text_align = rp.text_align;
+   drop_x     = rp.drop_x;
+   drop_y     = rp.drop_y;
+   drop_mod   = rp.drop_mod;
+   drop_alpha = rp.drop_alpha;
+   r          = rp.rgba[0];
+   g          = rp.rgba[1];
+   b          = rp.rgba[2];
+   alpha           = rp.rgba[3];
+   /* The caller's colour as packed; the message colour in the
+    * Wii U's own order */
+   color      = params ? params->color : COLOR_RGBA(r, g, b, alpha);
 
-      r                       = FONT_COLOR_GET_RED(params->color);
-      g                       = FONT_COLOR_GET_GREEN(params->color);
-      b                       = FONT_COLOR_GET_BLUE(params->color);
-      alpha                   = FONT_COLOR_GET_ALPHA(params->color);
-      color                   = params->color;
-   }
-   else
-   {
-      settings_t *settings    = config_get_ptr();
-      float video_msg_pos_x   = settings->floats.video_msg_pos_x;
-      float video_msg_pos_y   = settings->floats.video_msg_pos_y;
-      float video_msg_color_r = settings->floats.video_msg_color_r;
-      float video_msg_color_g = settings->floats.video_msg_color_g;
-      float video_msg_color_b = settings->floats.video_msg_color_b;
-      x                       = video_msg_pos_x;
-      y                       = video_msg_pos_y;
-      scale                   = 1.0f;
-      text_align              = TEXT_ALIGN_LEFT;
-
-      r                       = (video_msg_color_r * 255);
-      g                       = (video_msg_color_g * 255);
-      b                       = (video_msg_color_b * 255);
-      alpha                   = 255;
-      color                   = COLOR_RGBA(r, g, b, alpha);
-
-      drop_x                  = -2;
-      drop_y                  = -2;
-      drop_mod                = 0.3f;
-      drop_alpha              = 1.0f;
-   }
 
    if (drop_x || drop_y)
    {

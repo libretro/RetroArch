@@ -228,6 +228,30 @@ void font_driver_render_msg(void *data,
       const char *msg, size_t msg_len,
       const struct font_params *params, void *font_data);
 
+/* What a video driver's font draws a message with: the caller's
+ * font_params, or for the on-screen message (NULL params) the message
+ * position and colour from the settings, left aligned and full screen,
+ * opaque, under the shadow every driver used to fill in by hand (2 px
+ * down and left, at 0.3 of the colour). */
+typedef struct font_params_resolved
+{
+   const float *color_hp;  /* The caller's float colour, or NULL */
+   float x;
+   float y;
+   float scale;
+   float drop_mod;
+   float drop_alpha;
+   float color[4];         /* RGBA, 0..1, from the packed colour */
+   unsigned rgba[4];       /* The same, as bytes */
+   int drop_x;
+   int drop_y;
+   enum text_alignment text_align;
+   bool full_screen;
+} font_params_resolved_t;
+
+void font_driver_resolve_params(const struct font_params *params,
+      font_params_resolved_t *out);
+
 /* The width a video driver's font gives msg at scale, through the glyph
  * cache @renderer_data that @renderer created: what a driver's
  * get_message_width returns, unless it uploads atlas cells as glyphs

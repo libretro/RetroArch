@@ -1544,6 +1544,7 @@ static void sdl3_raster_font_render_msg(
       const char *msg, size_t msg_len,
       const struct font_params *params)
 {
+   font_params_resolved_t rp;
    sdl3_raster_t *font = (sdl3_raster_t*)data;
    sdl3_video_t *vid = (sdl3_video_t*)userdata;
    SDL_FColor col, col_drop;
@@ -1565,42 +1566,23 @@ static void sdl3_raster_font_render_msg(
       return;
    }
 
-   if (params)
-   {
-      x = params->x;
-      y = params->y;
-      scale = params->scale;
-      align = params->text_align;
-      drop_x = params->drop_x;
-      drop_y = params->drop_y;
-      drop_mod = params->drop_mod;
-      drop_alpha = params->drop_alpha;
+   font_driver_resolve_params(params, &rp);
+   x          = rp.x;
+   y          = rp.y;
+   scale      = rp.scale;
+   align      = rp.text_align;
+   drop_x     = rp.drop_x;
+   drop_y     = rp.drop_y;
+   drop_mod   = rp.drop_mod;
+   drop_alpha = rp.drop_alpha;
+   /* SDL_Vertex takes normalized float colors. */
+   col.r      = rp.color[0];
+   col.g      = rp.color[1];
+   col.b      = rp.color[2];
+   col.a      = rp.color[3];
+   if (col.a <= 0.0f)
+      col.a   = 1.0f;
 
-      /* SDL_Vertex takes normalized float colors. */
-      col.r = (float)FONT_COLOR_GET_RED(params->color)   / 255.0f;
-      col.g = (float)FONT_COLOR_GET_GREEN(params->color) / 255.0f;
-      col.b = (float)FONT_COLOR_GET_BLUE(params->color)  / 255.0f;
-      col.a = (float)FONT_COLOR_GET_ALPHA(params->color) / 255.0f;
-      if (col.a <= 0.0f)
-         col.a = 1.0f;
-   }
-   else
-   {
-      /* NULL params = legacy OSD message path; honor the user's
-       * message position/color settings (mirrors gl1). */
-      settings_t *settings = config_get_ptr();
-      x = settings->floats.video_msg_pos_x;
-      y = settings->floats.video_msg_pos_y;
-      scale = 1.0f;
-      drop_x = -2;
-      drop_y = -2;
-      drop_mod = 0.3f;
-      drop_alpha = 1.0f;
-      col.r = settings->floats.video_msg_color_r;
-      col.g = settings->floats.video_msg_color_g;
-      col.b = settings->floats.video_msg_color_b;
-      col.a = 1.0f;
-   }
 
    if (drop_x || drop_y)
    {
