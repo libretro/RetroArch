@@ -1402,23 +1402,10 @@ static int sdl3_raster_font_get_message_width(void *data, const char *msg,
       size_t msg_len, float scale)
 {
    sdl3_raster_t *font = (sdl3_raster_t*)data;
-   const char *msg_end = msg + msg_len;
-   int width = 0;
-
-   if (!font || !msg)
+   if (!font)
       return 0;
-
-   while (msg < msg_end)
-   {
-      uint32_t code = utf8_walk(&msg);
-      const struct font_glyph *glyph = font->font_driver->get_glyph(font->font_data, code);
-      if (!glyph)
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
-      if (glyph)
-         width += glyph->advance_x;
-   }
-
-   return (int)((float)width * scale);
+   return font_renderer_get_message_width(font->font_driver,
+         font->font_data, msg, msg_len, scale);
 }
 
 /* Lays the text out through gfx/font_layout.h, a line at a time, each

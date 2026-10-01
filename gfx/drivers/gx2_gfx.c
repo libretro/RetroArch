@@ -715,42 +715,14 @@ static void gx2_font_free(void* data, bool is_threaded)
    free(font);
 }
 
-static int gx2_font_get_message_width(void* data, const char* msg,
+static int gx2_font_get_message_width(void *data, const char *msg,
       size_t msg_len, float scale)
 {
-   int i;
-   int delta_x = 0;
-   void *font_data;
-   const struct font_glyph* (*get_glyph)(void*, uint32_t);
-   const struct font_glyph* glyph_q = NULL;
-   gx2_font_t                *font  = (gx2_font_t*)data;
-
+   gx2_font_t *font = (gx2_font_t*)data;
    if (!font)
       return 0;
-
-   get_glyph = font->font_driver->get_glyph;
-   font_data = font->font_data;
-   glyph_q   = get_glyph(font_data, '?');
-
-   for (i = 0; i < msg_len; i++)
-   {
-      const struct font_glyph* glyph;
-      const char* msg_tmp            = &msg[i];
-      unsigned code                  = utf8_walk(&msg_tmp);
-      unsigned skip                  = msg_tmp - &msg[i];
-
-      if (skip > 1)
-         i += skip - 1;
-
-      /* Do something smarter here ... */
-      if (!(glyph = get_glyph(font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      delta_x += glyph->advance_x;
-   }
-
-   return delta_x * scale;
+   return font_renderer_get_message_width(font->font_driver,
+         font->font_data, msg, msg_len, scale);
 }
 
 static void gx2_font_render_message(

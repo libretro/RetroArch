@@ -1459,37 +1459,14 @@ static void d3d9_font_free(void *data, bool is_threaded)
    free(font);
 }
 
-static int d3d9_font_get_message_width(void *data,
-      const char *msg, size_t msg_len, float scale)
+static int d3d9_font_get_message_width(void *data, const char *msg,
+      size_t msg_len, float scale)
 {
-   size_t i;
-   int delta_x = 0;
-   const struct font_glyph *glyph_q = NULL;
-   d3d9_font_t *font           = (d3d9_font_t*)data;
-
+   d3d9_font_t *font = (d3d9_font_t*)data;
    if (!font)
       return 0;
-
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
-
-   for (i = 0; i < msg_len; i++)
-   {
-      const struct font_glyph *glyph;
-      const char *msg_tmp = &msg[i];
-      unsigned    code    = utf8_walk(&msg_tmp);
-      unsigned    skip    = msg_tmp - &msg[i];
-
-      if (skip > 1)
-         i += skip - 1;
-
-      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      delta_x += glyph->advance_x;
-   }
-
-   return delta_x * scale;
+   return font_renderer_get_message_width(font->font_driver,
+         font->font_data, msg, msg_len, scale);
 }
 
 /* Emit a single glyph quad (6 vertices for two triangles)

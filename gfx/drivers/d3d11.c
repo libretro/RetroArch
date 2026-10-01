@@ -1222,40 +1222,14 @@ static void d3d11_font_free(void* data, bool is_threaded)
    free(font);
 }
 
-static int d3d11_font_get_message_width(void* data, const char* msg, size_t msg_len, float scale)
+static int d3d11_font_get_message_width(void *data, const char *msg,
+      size_t msg_len, float scale)
 {
-   size_t i;
-   int delta_x                      = 0;
-   const struct font_glyph* glyph_q = NULL;
-   d3d11_font_t* font               = (d3d11_font_t*)data;
-   const struct font_glyph* (*get_glyph)(void*, uint32_t)
-                                    = font->font_driver->get_glyph;
-   void *font_data                  = font->font_data;
-
+   d3d11_font_t *font = (d3d11_font_t*)data;
    if (!font)
       return 0;
-
-   glyph_q = get_glyph(font_data, '?');
-
-   for (i = 0; i < msg_len; i++)
-   {
-      const struct font_glyph *glyph;
-      const char* msg_tmp = &msg[i];
-      unsigned    code    = utf8_walk(&msg_tmp);
-      unsigned    skip    = msg_tmp - &msg[i];
-
-      if (skip > 1)
-         i += skip - 1;
-
-      /* Do something smarter here ... */
-      if (!(glyph = get_glyph(font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      delta_x += glyph->advance_x;
-   }
-
-   return delta_x * scale;
+   return font_renderer_get_message_width(font->font_driver,
+         font->font_data, msg, msg_len, scale);
 }
 
 /* Update only the atlas dirty rectangle of the A8 font texture:

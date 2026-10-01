@@ -3236,51 +3236,39 @@ error:
 static int vulkan_font_get_message_width(void *data, const char *msg,
       size_t msg_len, float scale)
 {
-   const struct font_glyph* glyph_q = NULL;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t);
+   const struct font_glyph* glyph_q;
+   void *font_data;
    vulkan_raster_t *font = (vulkan_raster_t*)data;
-   const char* msg_end   = msg + msg_len;
-   int delta_x           = 0;
-   const struct font_glyph* (*get_glyph)(void*, uint32_t)
-                         = font->font_driver->get_glyph;
-   void *font_data       = font->font_data;
+   int width             = 0;
 
    if (     !font
          || !font->font_driver
          || !font->font_data )
       return 0;
 
-   glyph_q = get_glyph(font_data, '?');
-   /* The fallback glyph can itself have just been rasterized (it is
-    * evicted like any other slot under atlas pressure); without this
-    * pairing its cell would be stranded once an unrelated glyph's
-    * update clears the dirty flag. */
-   if (glyph_q && font->atlas->dirty)
-   {
-      vulkan_font_update_glyph(font, glyph_q);
-      font->atlas->dirty = false;
-      font->needs_update = true;
-   }
-
-   while (msg < msg_end)
-   {
-      const struct font_glyph *glyph;
-      uint32_t code                  = utf8_walk(&msg);
-
-      /* Do something smarter here ... */
-      if (!(glyph = get_glyph(font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      if (font->atlas->dirty)
-      {
-         vulkan_font_update_glyph(font, glyph);
-         font->atlas->dirty = false;
-         font->needs_update = true;
-      }
-      delta_x += glyph->advance_x;
-   }
-
-   return delta_x * scale;
+   get_glyph = font->font_driver->get_glyph;
+   font_data = font->font_data;
+   glyph_q   = get_glyph(font_data, '?');
+   /* Every lookup, the fallback glyph's included (it is evicted like
+    * any other slot under atlas pressure), is paired with an upload of
+    * its cell, so no cell is stranded once an unrelated glyph's update
+    * clears the dirty flag. */
+#define FONT_MEASURE_DIRTY(glyph) \
+   do \
+   { \
+      if (font->atlas->dirty) \
+      { \
+         vulkan_font_update_glyph(font, (glyph)); \
+         font->atlas->dirty = false; \
+         font->needs_update = true; \
+      } \
+   } while (0)
+   if (glyph_q)
+      FONT_MEASURE_DIRTY(glyph_q);
+#define FONT_MEASURE_SUM width
+#include "../font_measure.h"
+   return (int)(width * scale);
 }
 
 /* Uploads the atlas rectangle dirtied since the last upload, on a

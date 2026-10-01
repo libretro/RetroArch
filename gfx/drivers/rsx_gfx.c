@@ -660,33 +660,11 @@ error:
 static int rsx_font_get_message_width(void *data, const char *msg,
       size_t msg_len, float scale)
 {
-   const struct font_glyph* glyph_q = NULL;
-   rsx_font_t *font    = (rsx_font_t*)data;
-   const char* msg_end = msg + msg_len;
-   int delta_x         = 0;
-
-   if (     !font
-         || !font->font_driver
-         || !font->font_data )
+   rsx_font_t *font = (rsx_font_t*)data;
+   if (!font)
       return 0;
-
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
-
-   while (msg < msg_end)
-   {
-      const struct font_glyph *glyph;
-      unsigned code = utf8_walk(&msg);
-
-      /* Do something smarter here ... */
-      if (!(glyph = font->font_driver->get_glyph(
-                  font->font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      delta_x += glyph->advance_x;
-   }
-
-   return delta_x * scale;
+   return font_renderer_get_message_width(font->font_driver,
+         font->font_data, msg, msg_len, scale);
 }
 
 static void rsx_font_draw_vertices(

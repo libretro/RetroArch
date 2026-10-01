@@ -1650,28 +1650,10 @@ static int sdl2_raster_font_get_message_width(void *data, const char *msg,
       size_t msg_len, float scale)
 {
    sdl2_raster_t *font = (sdl2_raster_t*)data;
-   const char    *cur  = msg;
-   const char    *end  = msg + msg_len;
-   int            width = 0;
-
-   if (!font || !msg)
+   if (!font)
       return 0;
-
-   /* Decode UTF-8 code points like every other raster font backend;
-    * byte-wise lookups turned multi-byte text into per-byte Latin-1
-    * glyph queries. */
-   while (cur < end && *cur)
-   {
-      uint32_t code = utf8_walk(&cur);
-      const struct font_glyph *glyph =
-         font->font_driver->get_glyph(font->font_data, code);
-      if (!glyph)
-         glyph = font->font_driver->get_glyph(font->font_data, '?');
-      if (glyph)
-         width += glyph->advance_x;
-   }
-
-   return (int)((float)width * scale);
+   return font_renderer_get_message_width(font->font_driver,
+         font->font_data, msg, msg_len, scale);
 }
 
 /* Lays the text out through gfx/font_layout.h, a line at a time, each

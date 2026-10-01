@@ -955,36 +955,11 @@ static void *gl2_raster_font_init(void *data,
 static int gl2_raster_font_get_message_width(void *data, const char *msg,
       size_t msg_len, float scale)
 {
-   void *font_data;
-   const struct font_glyph* (*get_glyph)(void*, uint32_t);
-   const struct font_glyph* glyph_q = NULL;
-   gl2_raster_t *font               = (gl2_raster_t*)data;
-   const char* msg_end              = msg + msg_len;
-   int delta_x                      = 0;
-
-   if (     !font
-         || !font->font_driver
-         || !font->font_data )
+   gl2_raster_t *font = (gl2_raster_t*)data;
+   if (!font)
       return 0;
-
-   get_glyph = font->font_driver->get_glyph;
-   font_data = font->font_data;
-   glyph_q   = get_glyph(font_data, '?');
-
-   while (msg < msg_end)
-   {
-      const struct font_glyph *glyph;
-      unsigned code                  = utf8_walk(&msg);
-
-      /* Do something smarter here ... */
-      if (!(glyph = get_glyph(font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      delta_x += glyph->advance_x;
-   }
-
-   return delta_x * scale;
+   return font_renderer_get_message_width(font->font_driver,
+         font->font_data, msg, msg_len, scale);
 }
 
 static void gl2_raster_font_draw_vertices(gl2_t *gl,

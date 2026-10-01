@@ -3842,40 +3842,30 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
 
 - (int)getWidthForMessage:(const char *)msg length:(NSUInteger)length scale:(float)scale
 {
-   const char *walk     = msg;
-   const char *walk_end = msg + length;
-   int delta_x          = 0;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t);
    const struct font_glyph* glyph_q;
+   void *font_data;
+   size_t msg_len = length;
+   int width      = 0;
 
    /* Validate font data before use - can become invalid during
     * video context reset or if font was freed while in use */
    if (!_font_driver || !_font_data)
       return 0;
 
-   glyph_q = _font_driver->get_glyph(_font_data, '?');
-   /* The fallback glyph can itself have just been rasterized after
-    * eviction; pair its lookup with an update like every other
-    * lookup so its cell is not stranded when an unrelated glyph
-    * clears the dirty flag. */
+   get_glyph = _font_driver->get_glyph;
+   font_data = _font_data;
+   glyph_q   = get_glyph(font_data, '?');
+   /* Every lookup, the fallback glyph's included (it can itself have
+    * just been rasterized after eviction), is paired with an update of
+    * its cell, so no cell is stranded when an unrelated glyph clears
+    * the dirty flag. */
    if (glyph_q)
       [self updateGlyph:glyph_q];
-
-   /* Decode UTF-8 exactly like the render path does; walking bytes
-    * here made the measured width of multi-byte text disagree with
-    * what is actually drawn, skewing right/center alignment. */
-   while (walk < walk_end)
-   {
-      const struct font_glyph *glyph;
-      uint32_t code = utf8_walk(&walk);
-      if (!(glyph = _font_driver->get_glyph(_font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      [self updateGlyph:glyph];
-      delta_x += glyph->advance_x;
-   }
-
-   return (int)(delta_x * scale);
+#define FONT_MEASURE_DIRTY(glyph) [self updateGlyph:(glyph)]
+#define FONT_MEASURE_SUM width
+#include "../font_measure.h"
+   return (int)(width * scale);
 }
 
 - (const struct font_glyph *)getGlyph:(uint32_t)code

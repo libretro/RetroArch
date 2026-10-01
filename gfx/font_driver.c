@@ -18,6 +18,7 @@
 #include <string.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
+#include <encodings/utf.h>
 #include <file/file_path.h>
 #include <math.h>
 
@@ -1637,6 +1638,25 @@ void font_flush(
    if (renderer && renderer->flush)
       renderer->flush(video_dims, font_data->font->renderer_data);
    font_data->raster_block.carr.coords.vertices = 0;
+}
+
+int font_renderer_get_message_width(
+      const font_renderer_driver_t *renderer, void *renderer_data,
+      const char *msg, size_t msg_len, float scale)
+{
+   const struct font_glyph *(*get_glyph)(void*, uint32_t);
+   const struct font_glyph *glyph_q;
+   void *font_data = renderer_data;
+   int width       = 0;
+
+   if (!renderer || !renderer_data || !msg)
+      return 0;
+
+   get_glyph = renderer->get_glyph;
+   glyph_q   = get_glyph(font_data, '?');
+#define FONT_MEASURE_SUM width
+#include "font_measure.h"
+   return (int)(width * scale);
 }
 
 int font_driver_get_message_width(void *font_data,

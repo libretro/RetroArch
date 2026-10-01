@@ -1832,31 +1832,14 @@ static void gdi_font_free(void *data, bool is_threaded)
    free(font);
 }
 
-static int gdi_font_get_message_width(void *data,
-      const char *msg, size_t msg_len, float scale)
+static int gdi_font_get_message_width(void *data, const char *msg,
+      size_t msg_len, float scale)
 {
-   const struct font_glyph *glyph_q = NULL;
    gdi_raster_t *font = (gdi_raster_t*)data;
-   const char *msg_end;
-   int delta_x = 0;
-
-   if (!font || !font->font_driver || !font->font_data || !msg)
+   if (!font)
       return 0;
-
-   msg_end = msg + msg_len;
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
-
-   while (msg < msg_end)
-   {
-      const struct font_glyph *glyph;
-      unsigned code = utf8_walk(&msg);
-      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-      delta_x += glyph->advance_x;
-   }
-
-   return (int)(delta_x * scale);
+   return font_renderer_get_message_width(font->font_driver,
+         font->font_data, msg, msg_len, scale);
 }
 
 static const struct font_glyph *gdi_font_get_glyph(

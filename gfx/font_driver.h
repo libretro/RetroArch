@@ -228,6 +228,14 @@ void font_driver_render_msg(void *data,
       const char *msg, size_t msg_len,
       const struct font_params *params, void *font_data);
 
+/* The width a video driver's font gives msg at scale, through the glyph
+ * cache @renderer_data that @renderer created: what a driver's
+ * get_message_width returns, unless it uploads atlas cells as glyphs
+ * are looked up (see gfx/font_measure.h). */
+int font_renderer_get_message_width(
+      const font_renderer_driver_t *renderer, void *renderer_data,
+      const char *msg, size_t msg_len, float scale);
+
 int font_driver_get_message_width(void *font_data, const char *msg, size_t len, float scale);
 
 /* Would rebuilding this font at this path and size produce the font
