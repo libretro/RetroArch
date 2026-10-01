@@ -695,6 +695,10 @@ int menu_driver_deferred_push_content_list(file_list_t *list);
 
 bool menu_driver_init(bool video_is_threaded);
 
+/* Rebuilds the menu driver's GPU-side context (textures, fonts) against
+ * the running video driver, releasing the old one first. */
+void menu_driver_context_rebuild(void);
+
 retro_time_t menu_driver_get_current_time(void);
 
 size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime, char *s, size_t len);

@@ -10174,14 +10174,8 @@ static void general_write_handler(rarch_setting_t *setting)
 #ifdef HAVE_XMB
       case MENU_ENUM_LABEL_XMB_ENTRY_ICONS:
 #endif
-         {
-            /* Reset wallpaper by menu context reset */
-            struct menu_state *menu_st = menu_state_get_ptr();
-
-            if (menu_st->driver_ctx && menu_st->driver_ctx->context_reset)
-               menu_st->driver_ctx->context_reset(menu_st->userdata,
-                     video_driver_is_threaded());
-         }
+         /* Reset wallpaper by menu context rebuild */
+         menu_driver_context_rebuild();
          break;
 #if HAVE_CLOUDSYNC
       case MENU_ENUM_LABEL_CLOUD_SYNC_DRIVER:

@@ -430,6 +430,10 @@ bool gfx_widgets_init(
 
 void gfx_widgets_deinit(bool widgets_persisting);
 
+/* Reloads the widgets' icons and fonts from the assets directory, for
+ * when the files there have changed under a running video driver. */
+void gfx_widgets_reload_assets(void);
+
 /* Main thread: move an existing widget to a task with no frontend data. */
 void gfx_widgets_task_transfer(retro_task_t *from, retro_task_t *to);
 

@@ -535,14 +535,11 @@ static int action_start_menu_wallpaper(
       unsigned type, size_t idx, size_t entry_idx)
 {
    settings_t *settings       = config_get_ptr();
-   struct menu_state *menu_st = menu_state_get_ptr();
 
    settings->paths.path_menu_wallpaper[0] = '\0';
 
-   /* Reset wallpaper by menu context reset */
-   if (menu_st->driver_ctx && menu_st->driver_ctx->context_reset)
-      menu_st->driver_ctx->context_reset(menu_st->userdata,
-            video_driver_is_threaded());
+   /* Reset wallpaper by menu context rebuild */
+   menu_driver_context_rebuild();
 
    return 0;
 }

@@ -56,6 +56,13 @@
 static dispgfx_widget_t dispwidget_st = {0};
 static uint64_t widget_icon_load_gen  = 0;
 
+/* Set by gfx_widgets_reload_assets() on the thread that asks; taken by
+ * the next layout pass on the thread that drives the widgets, which
+ * rebuilds every font even where path and size are unchanged - the
+ * file behind the path is what changed. */
+static retro_atomic_int_t widget_fonts_reload = RETRO_ATOMIC_INT_INITIALIZER(0);
+static bool               widget_fonts_force  = false;
+
 /* Recompute the layout variables that depend on whether widget icons
  * are loaded.  Called from gfx_widgets_layout() during context_reset,
  * and again from the async icon load callback when icons arrive. */
@@ -1042,7 +1049,8 @@ static void gfx_widgets_font_init(
     * usage_count is still cleared: it counts draws against the font
     * since the last layout pass, and the callers below expect a
     * layout to have reset it whether or not a rebuild happened. */
-   if (font_driver_matches(font_data->font, font_path, scaled_size))
+   if (     !widget_fonts_force
+         && font_driver_matches(font_data->font, font_path, scaled_size))
    {
       font_data->usage_count     = 0;
       return;
@@ -1251,16 +1259,20 @@ static INLINE void gfx_widgets_update_layout(
    if ((scale_factor != p_dispwidget->last_scale_factor) ||
        (dims         != p_dispwidget->last_video_dims) ||
        !string_is_equal(p_dispwidget->last_font_path,
-             font_path ? font_path : ""))
+             font_path ? font_path : "") ||
+       retro_atomic_load_acquire_int(&widget_fonts_reload))
    {
       gfx_widgets_state_lock();
       p_dispwidget->last_scale_factor = scale_factor;
       p_dispwidget->last_video_dims   = dims;
+      widget_fonts_force              = retro_atomic_cas_int(
+            &widget_fonts_reload, 1, 0);
 
       /* Note: We don't need a full context reset here
        * > Just rescale layout, and reset frame time counter */
       gfx_widgets_layout(p_disp, p_dispwidget,
             is_threaded, dir_assets, font_path);
+      widget_fonts_force              = false;
       video_driver_monitor_reset();
       gfx_widgets_state_unlock();
    }
@@ -2350,13 +2362,9 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
          &p_dispwidget->gfx_widget_fonts.msg_queue.raster_block.carr);
 }
 
-static void gfx_widgets_context_reset(
-      dispgfx_widget_t *p_dispwidget,
-      gfx_display_t *p_disp,
-      settings_t *settings,
-      bool is_threaded,
-      unsigned dims, bool fullscreen,
-      const char *dir_assets, char *font_path)
+/* Loads the message queue icons from the assets directory. Invalidates
+ * any load still in flight; the slots must be empty. */
+static void gfx_widgets_load_icons(dispgfx_widget_t *p_dispwidget)
 {
    /* Icons */
    static const char
@@ -2387,7 +2395,6 @@ static void gfx_widgets_context_reset(
     * non-zero textures and recomputes icon-dependent layout. */
    p_dispwidget->flags &= ~DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS;
 
-   /* Load icons */
    for (i = 0; i < MENU_WIDGETS_ICON_LAST; i++)
    {
       char texpath[PATH_MAX_LENGTH];
@@ -2399,6 +2406,19 @@ static void gfx_widgets_context_reset(
             &p_dispwidget->gfx_widgets_icons_textures[i],
             widget_icon_load_gen, &widget_icon_load_gen);
    }
+}
+
+static void gfx_widgets_context_reset(
+      dispgfx_widget_t *p_dispwidget,
+      gfx_display_t *p_disp,
+      settings_t *settings,
+      bool is_threaded,
+      unsigned dims, bool fullscreen,
+      const char *dir_assets, char *font_path)
+{
+   size_t i;
+
+   gfx_widgets_load_icons(p_dispwidget);
 
    for (i = 0; i < ARRAY_SIZE(widgets); i++)
    {
@@ -2426,6 +2446,64 @@ static void gfx_widgets_context_reset(
    gfx_widgets_layout(p_disp, p_dispwidget,
          is_threaded, dir_assets, font_path);
    video_driver_monitor_reset();
+}
+
+void gfx_widgets_reload_assets(void)
+{
+   dispgfx_widget_t *p_dispwidget = &dispwidget_st;
+   settings_t *settings           = config_get_ptr();
+   bool is_threaded               = false;
+   size_t i;
+
+   if (     !p_dispwidget->active
+         || !(p_dispwidget->flags & DISPGFX_WIDGET_FLAG_INITED))
+      return;
+
+   /* The icons, and the widgets that load their own from the assets
+    * directory, are reloaded here under the state lock, which a frame
+    * drawing the widgets holds: none is mid-draw while a slot changes.
+    * Under the wrapper an unload is retired behind the frames that may
+    * still name the texture. */
+#ifdef HAVE_THREADS
+   if (p_dispwidget->video_st)
+      is_threaded = ((video_driver_state_t*)
+            p_dispwidget->video_st)->thread_wrapper_active;
+#endif
+
+   gfx_widgets_state_lock();
+   for (i = 0; i < MENU_WIDGETS_ICON_LAST; i++)
+      video_driver_texture_unload(
+            &p_dispwidget->gfx_widgets_icons_textures[i]);
+   gfx_widgets_load_icons(p_dispwidget);
+
+   for (i = 0; i < ARRAY_SIZE(widgets); i++)
+   {
+      const gfx_widget_t *widget = widgets[i];
+
+      /* The others hold live state (popups, badges, a screenshot)
+       * that their context_destroy throws away. The load content
+       * animation is left out too: its reset loads the core icon
+       * synchronously, which under the wrapper waits on the video
+       * thread while this one holds the lock that thread draws the
+       * widgets under. It loads that icon again when it next runs. */
+      if (widget != &gfx_widget_volume)
+         continue;
+      if (widget->context_destroy)
+         widget->context_destroy();
+      if (widget->context_reset)
+         widget->context_reset(is_threaded,
+               p_dispwidget->last_video_dims,
+               settings->bools.video_fullscreen,
+               settings->paths.directory_assets,
+               settings->paths.path_font,
+               p_dispwidget->monochrome_png_path,
+               p_dispwidget->gfx_widgets_path);
+   }
+   gfx_widgets_state_unlock();
+
+   /* Fonts are rebuilt by the next layout pass, on the thread that
+    * drives the widgets, which retires the old ones */
+   retro_atomic_store_release_int(&widget_fonts_reload, 1);
 }
 
 bool gfx_widgets_init(
