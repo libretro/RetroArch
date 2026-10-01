@@ -707,64 +707,92 @@ static void aes_arm_decrypt_block(const struct aes_ctx *ctx,
    vst1q_u8(out, veorq_u8(b, aes_arm_rk(ctx, 0)));
 }
 
+/* CTR with eight blocks in flight, the round keys loaded once per
+ * call. The counter block is kept byte-reversed within each 32-bit
+ * lane, where its big-endian counter is lane 3 as a native word: one
+ * add steps it (mod 2^32, as GCM's inc32) and one vrev32 turns it back
+ * into a block - the other lanes reverse twice to themselves. */
 AES_TARGET_ARM
 static void aes_arm_ctr(const struct aes_ctx *ctx, uint8_t *counter,
       const uint8_t *in, uint8_t *out, size_t len)
 {
-   uint32_t   c    = crypto_load32_be(counter + 12);
-   uint8x16_t base = vld1q_u8(counter);
-   uint8x16_t ks;
+   const uint32x4_t z     = vdupq_n_u32(0);
+   const uint32x4_t one   = vsetq_lane_u32(1, z, 3);
+   const uint32x4_t two   = vsetq_lane_u32(2, z, 3);
+   const uint32x4_t four  = vsetq_lane_u32(4, z, 3);
+   const uint32x4_t eight = vsetq_lane_u32(8, z, 3);
+   uint32x4_t cv = vreinterpretq_u32_u8(vrev32q_u8(vld1q_u8(counter)));
+   uint8x16_t rk[15];
+   unsigned   r, nr = ctx->rounds;
 
-   while (len >= 64)
+   for (r = 0; r <= nr; r++)
+      rk[r] = aes_arm_rk(ctx, r);
+
+   while (len >= 128)
    {
-      uint8x16_t b0 = vreinterpretq_u8_u32(vsetq_lane_u32(__builtin_bswap32(c),     vreinterpretq_u32_u8(base), 3));
-      uint8x16_t b1 = vreinterpretq_u8_u32(vsetq_lane_u32(__builtin_bswap32(c + 1), vreinterpretq_u32_u8(base), 3));
-      uint8x16_t b2 = vreinterpretq_u8_u32(vsetq_lane_u32(__builtin_bswap32(c + 2), vreinterpretq_u32_u8(base), 3));
-      uint8x16_t b3 = vreinterpretq_u8_u32(vsetq_lane_u32(__builtin_bswap32(c + 3), vreinterpretq_u32_u8(base), 3));
-      unsigned r;
-      for (r = 0; r + 1 < ctx->rounds; r++)
+      uint32x4_t c1 = vaddq_u32(cv, one);
+      uint32x4_t c2 = vaddq_u32(cv, two);
+      uint32x4_t c3 = vaddq_u32(c1, two);
+      uint8x16_t b0 = vrev32q_u8(vreinterpretq_u8_u32(cv));
+      uint8x16_t b1 = vrev32q_u8(vreinterpretq_u8_u32(c1));
+      uint8x16_t b2 = vrev32q_u8(vreinterpretq_u8_u32(c2));
+      uint8x16_t b3 = vrev32q_u8(vreinterpretq_u8_u32(c3));
+      uint8x16_t b4 = vrev32q_u8(vreinterpretq_u8_u32(vaddq_u32(cv, four)));
+      uint8x16_t b5 = vrev32q_u8(vreinterpretq_u8_u32(vaddq_u32(c1, four)));
+      uint8x16_t b6 = vrev32q_u8(vreinterpretq_u8_u32(vaddq_u32(c2, four)));
+      uint8x16_t b7 = vrev32q_u8(vreinterpretq_u8_u32(vaddq_u32(c3, four)));
+      for (r = 0; r + 1 < nr; r++)
       {
-         uint8x16_t k = aes_arm_rk(ctx, r);
+         uint8x16_t k = rk[r];
          b0 = vaesmcq_u8(vaeseq_u8(b0, k)); b1 = vaesmcq_u8(vaeseq_u8(b1, k));
          b2 = vaesmcq_u8(vaeseq_u8(b2, k)); b3 = vaesmcq_u8(vaeseq_u8(b3, k));
+         b4 = vaesmcq_u8(vaeseq_u8(b4, k)); b5 = vaesmcq_u8(vaeseq_u8(b5, k));
+         b6 = vaesmcq_u8(vaeseq_u8(b6, k)); b7 = vaesmcq_u8(vaeseq_u8(b7, k));
       }
-      {
-         uint8x16_t k  = aes_arm_rk(ctx, r);
-         uint8x16_t kl = aes_arm_rk(ctx, r + 1);
-         b0 = veorq_u8(vaeseq_u8(b0, k), kl); b1 = veorq_u8(vaeseq_u8(b1, k), kl);
-         b2 = veorq_u8(vaeseq_u8(b2, k), kl); b3 = veorq_u8(vaeseq_u8(b3, k), kl);
-      }
-      vst1q_u8(out,      veorq_u8(b0, vld1q_u8(in)));
-      vst1q_u8(out + 16, veorq_u8(b1, vld1q_u8(in + 16)));
-      vst1q_u8(out + 32, veorq_u8(b2, vld1q_u8(in + 32)));
-      vst1q_u8(out + 48, veorq_u8(b3, vld1q_u8(in + 48)));
-      c   += 4;
-      in  += 64;
-      out += 64;
-      len -= 64;
+      vst1q_u8(out,       veorq_u8(veorq_u8(vaeseq_u8(b0, rk[nr - 1]), rk[nr]), vld1q_u8(in)));
+      vst1q_u8(out +  16, veorq_u8(veorq_u8(vaeseq_u8(b1, rk[nr - 1]), rk[nr]), vld1q_u8(in +  16)));
+      vst1q_u8(out +  32, veorq_u8(veorq_u8(vaeseq_u8(b2, rk[nr - 1]), rk[nr]), vld1q_u8(in +  32)));
+      vst1q_u8(out +  48, veorq_u8(veorq_u8(vaeseq_u8(b3, rk[nr - 1]), rk[nr]), vld1q_u8(in +  48)));
+      vst1q_u8(out +  64, veorq_u8(veorq_u8(vaeseq_u8(b4, rk[nr - 1]), rk[nr]), vld1q_u8(in +  64)));
+      vst1q_u8(out +  80, veorq_u8(veorq_u8(vaeseq_u8(b5, rk[nr - 1]), rk[nr]), vld1q_u8(in +  80)));
+      vst1q_u8(out +  96, veorq_u8(veorq_u8(vaeseq_u8(b6, rk[nr - 1]), rk[nr]), vld1q_u8(in +  96)));
+      vst1q_u8(out + 112, veorq_u8(veorq_u8(vaeseq_u8(b7, rk[nr - 1]), rk[nr]), vld1q_u8(in + 112)));
+      cv   = vaddq_u32(cv, eight);
+      in  += 128;
+      out += 128;
+      len -= 128;
    }
    while (len)
    {
-      size_t  n = (len < 16) ? len : 16;
-      size_t  i;
-      uint8_t tmp[16];
-      ks = aes_arm_encrypt(ctx, vreinterpretq_u8_u32(vsetq_lane_u32(__builtin_bswap32(c), vreinterpretq_u32_u8(base), 3)));
-      vst1q_u8(tmp, ks);
-      for (i = 0; i < n; i++)
-         out[i] = in[i] ^ tmp[i];
-      c++;
+      size_t     n = (len < 16) ? len : 16;
+      size_t     i;
+      uint8_t    tmp[16];
+      uint8x16_t x = vrev32q_u8(vreinterpretq_u8_u32(cv));
+      for (r = 0; r + 1 < nr; r++)
+         x = vaesmcq_u8(vaeseq_u8(x, rk[r]));
+      x = veorq_u8(vaeseq_u8(x, rk[nr - 1]), rk[nr]);
+      if (n == 16)
+         vst1q_u8(out, veorq_u8(x, vld1q_u8(in)));
+      else
+      {
+         vst1q_u8(tmp, x);
+         for (i = 0; i < n; i++)
+            out[i] = in[i] ^ tmp[i];
+      }
+      cv   = vaddq_u32(cv, one);
       in  += n;
       out += n;
       len -= n;
    }
-   crypto_store32_be(counter + 12, c);
+   vst1q_u8(counter, vrev32q_u8(vreinterpretq_u8_u32(cv)));
 }
 
 /* GHASH multiply on PMULL: the same byte-reversed-operand algorithm
  * as the x86 path, with the SSE lane shifts spelled as vext and the
  * word shifts as vshl / vshr. */
+/* The unreduced 256-bit product of a and b, as *lo / *hi. */
 AES_TARGET_ARM
-static uint8x16_t aes_arm_gfmul(uint8x16_t a, uint8x16_t b)
+static void aes_arm_clmul(uint8x16_t a, uint8x16_t b, uint8x16_t *lo, uint8x16_t *hi)
 {
    const uint8x16_t z = vdupq_n_u8(0);
    poly64x2_t pa = vreinterpretq_p64_u8(a);
@@ -773,14 +801,19 @@ static uint8x16_t aes_arm_gfmul(uint8x16_t a, uint8x16_t b)
    uint8x16_t t4 = vreinterpretq_u8_p128(vmull_p64((poly64_t)vgetq_lane_p64(pa, 0), (poly64_t)vgetq_lane_p64(pb, 1)));
    uint8x16_t t5 = vreinterpretq_u8_p128(vmull_p64((poly64_t)vgetq_lane_p64(pa, 1), (poly64_t)vgetq_lane_p64(pb, 0)));
    uint8x16_t t6 = vreinterpretq_u8_p128(vmull_high_p64(pa, pb));
-   uint8x16_t t7, t8, t9, t2;
-   uint32x4_t w;
+   t4  = veorq_u8(t4, t5);
+   *lo = veorq_u8(t3, vextq_u8(z, t4, 8));    /* slli_si128 8 */
+   *hi = veorq_u8(t6, vextq_u8(t4, z, 8));    /* srli_si128 8 */
+}
 
-   t4 = veorq_u8(t4, t5);
-   t5 = vextq_u8(z, t4, 8);            /* slli_si128 8 */
-   t4 = vextq_u8(t4, z, 8);            /* srli_si128 8 */
-   t3 = veorq_u8(t3, t5);
-   t6 = veorq_u8(t6, t4);
+/* The product reduced: one bit left and modulo x^128 + x^7 + x^2 +
+ * x + 1, both linear, so a sum of products reduces as one. */
+AES_TARGET_ARM
+static uint8x16_t aes_arm_reduce(uint8x16_t t3, uint8x16_t t6)
+{
+   const uint8x16_t z = vdupq_n_u8(0);
+   uint8x16_t t7, t8, t9, t2, t4, t5;
+   uint32x4_t w;
 
    w  = vreinterpretq_u32_u8(t3);
    t7 = vreinterpretq_u8_u32(vshrq_n_u32(w, 31));
@@ -817,6 +850,14 @@ static uint8x16_t aes_arm_gfmul(uint8x16_t a, uint8x16_t b)
 }
 
 AES_TARGET_ARM
+static uint8x16_t aes_arm_gfmul(uint8x16_t a, uint8x16_t b)
+{
+   uint8x16_t lo, hi;
+   aes_arm_clmul(a, b, &lo, &hi);
+   return aes_arm_reduce(lo, hi);
+}
+
+AES_TARGET_ARM
 static void aes_arm_ghash(const struct aes_gcm_ctx *ctx,
       uint64_t *y_hi, uint64_t *y_lo, const uint8_t *data, size_t len)
 {
@@ -829,6 +870,47 @@ static void aes_arm_ghash(const struct aes_gcm_ctx *ctx,
    crypto_store64_be(o,     *y_hi);
    crypto_store64_be(o + 8, *y_lo);
    y = vrev64q_u8(vextq_u8(vld1q_u8(o), vld1q_u8(o), 8));
+
+   /* eight blocks per reduction, each product by Karatsuba, the low,
+    * high and middle terms summed apart and folded once, as on x86 */
+   if (len >= 128)
+   {
+      const uint8x16_t z = vdupq_n_u8(0);
+      uint8x16_t hp[8], hk[8];
+      unsigned   j;
+      hp[0] = h;
+      for (j = 1; j < 8; j++)
+         hp[j] = aes_arm_gfmul(hp[j - 1], h);
+      for (j = 0; j < 8; j++)
+         hk[j] = veorq_u8(hp[j], vextq_u8(hp[j], hp[j], 8));
+      while (len >= 128)
+      {
+         uint8x16_t lo = z, hi = z, mid = z;
+         for (j = 0; j < 8; j++)
+         {
+            uint8x16_t d = vld1q_u8(data + 16 * j);
+            uint8x16_t dk;
+            poly64x2_t pd, pp, pdk, ppk;
+            d = vrev64q_u8(vextq_u8(d, d, 8));
+            if (!j)
+               d = veorq_u8(d, y);
+            dk  = veorq_u8(d, vextq_u8(d, d, 8));
+            pd  = vreinterpretq_p64_u8(d);
+            pp  = vreinterpretq_p64_u8(hp[7 - j]);
+            pdk = vreinterpretq_p64_u8(dk);
+            ppk = vreinterpretq_p64_u8(hk[7 - j]);
+            lo  = veorq_u8(lo,  vreinterpretq_u8_p128(vmull_p64((poly64_t)vgetq_lane_p64(pd, 0), (poly64_t)vgetq_lane_p64(pp, 0))));
+            hi  = veorq_u8(hi,  vreinterpretq_u8_p128(vmull_high_p64(pd, pp)));
+            mid = veorq_u8(mid, vreinterpretq_u8_p128(vmull_p64((poly64_t)vgetq_lane_p64(pdk, 0), (poly64_t)vgetq_lane_p64(ppk, 0))));
+         }
+         mid = veorq_u8(mid, veorq_u8(lo, hi));
+         lo  = veorq_u8(lo, vextq_u8(z, mid, 8));    /* slli_si128 8 */
+         hi  = veorq_u8(hi, vextq_u8(mid, z, 8));    /* srli_si128 8 */
+         y   = aes_arm_reduce(lo, hi);
+         data += 128;
+         len  -= 128;
+      }
+   }
 
    while (len >= 16)
    {
@@ -1639,14 +1721,86 @@ static size_t chacha20_x86_xor(const uint32_t *s, uint32_t counter,
 #undef CHACHA_ROTL
 #endif
 
+#if defined(__aarch64__) && defined(__ARM_NEON) && !defined(_MSC_VER) && !defined(CHACHA_NO_NEON)
+#include <arm_neon.h>
+#define CHACHA_HAVE_NEON 1
+/* rotl by 16 is a halfword swap; the others a shift and a shift-insert */
+#define CHACHA_NROT(v, n) vsriq_n_u32(vshlq_n_u32(v, n), v, 32 - (n))
+#define CHACHA_NQR(a, b, c, d)                                                \
+   a = vaddq_u32(a, b); d = vreinterpretq_u32_u16(vrev32q_u16(vreinterpretq_u16_u32(veorq_u32(d, a)))); \
+   c = vaddq_u32(c, d); b = CHACHA_NROT(veorq_u32(b, c), 12);                 \
+   a = vaddq_u32(a, b); d = CHACHA_NROT(veorq_u32(d, a), 8);                  \
+   c = vaddq_u32(c, d); b = CHACHA_NROT(veorq_u32(b, c), 7)
+
+/* Four blocks at once on NEON, which every AArch64 core has: one state
+ * word per vector and one block per lane, as on SSSE3. Whole groups of
+ * 256 octets; returns the octets done. */
+static size_t chacha20_neon_xor(const uint32_t *s, uint32_t counter,
+      const uint8_t *in, uint8_t *out, size_t len)
+{
+   static const uint32_t lane[4] = { 0, 1, 2, 3 };
+   size_t done = 0;
+
+   while (len - done >= 256)
+   {
+      uint32x4_t x[16], o[16];
+      unsigned   i, g;
+      for (i = 0; i < 16; i++)
+         o[i] = vdupq_n_u32(s[i]);
+      o[12] = vaddq_u32(vdupq_n_u32(counter), vld1q_u32(lane));
+      for (i = 0; i < 16; i++)
+         x[i] = o[i];
+      for (i = 0; i < 10; i++)
+      {
+         CHACHA_NQR(x[0], x[4], x[ 8], x[12]);
+         CHACHA_NQR(x[1], x[5], x[ 9], x[13]);
+         CHACHA_NQR(x[2], x[6], x[10], x[14]);
+         CHACHA_NQR(x[3], x[7], x[11], x[15]);
+         CHACHA_NQR(x[0], x[5], x[10], x[15]);
+         CHACHA_NQR(x[1], x[6], x[11], x[12]);
+         CHACHA_NQR(x[2], x[7], x[ 8], x[13]);
+         CHACHA_NQR(x[3], x[4], x[ 9], x[14]);
+      }
+      for (i = 0; i < 16; i++)
+         x[i] = vaddq_u32(x[i], o[i]);
+      /* each group of four words back into block order: a 4x4
+       * transpose, then XORed in */
+      for (g = 0; g < 4; g++)
+      {
+         uint32x4x2_t p = vtrnq_u32(x[4 * g],     x[4 * g + 1]);
+         uint32x4x2_t q = vtrnq_u32(x[4 * g + 2], x[4 * g + 3]);
+         uint32x4_t   r0 = vcombine_u32(vget_low_u32(p.val[0]),  vget_low_u32(q.val[0]));
+         uint32x4_t   r1 = vcombine_u32(vget_low_u32(p.val[1]),  vget_low_u32(q.val[1]));
+         uint32x4_t   r2 = vcombine_u32(vget_high_u32(p.val[0]), vget_high_u32(q.val[0]));
+         uint32x4_t   r3 = vcombine_u32(vget_high_u32(p.val[1]), vget_high_u32(q.val[1]));
+         const uint8_t *ip = in + done + 16 * g;
+         uint8_t       *op = out + done + 16 * g;
+         vst1q_u8(op,       veorq_u8(vreinterpretq_u8_u32(r0), vld1q_u8(ip)));
+         vst1q_u8(op +  64, veorq_u8(vreinterpretq_u8_u32(r1), vld1q_u8(ip +  64)));
+         vst1q_u8(op + 128, veorq_u8(vreinterpretq_u8_u32(r2), vld1q_u8(ip + 128)));
+         vst1q_u8(op + 192, veorq_u8(vreinterpretq_u8_u32(r3), vld1q_u8(ip + 192)));
+      }
+      counter += 4;
+      done    += 256;
+   }
+   return done;
+}
+#undef CHACHA_NQR
+#undef CHACHA_NROT
+#endif
+
 void chacha20_xor(const uint8_t *key, const uint8_t *nonce,
       uint32_t counter, const uint8_t *in, uint8_t *out, size_t len)
 {
    uint32_t w[16];
    unsigned i;
 
+#if defined(AES_HAVE_X86_PATH) || defined(CHACHA_HAVE_NEON)
 #if defined(AES_HAVE_X86_PATH)
    if (len >= 256 && chacha_x86_available())
+#else
+   if (len >= 256)
+#endif
    {
       uint32_t s[16];
       size_t   done;
@@ -1658,7 +1812,11 @@ void chacha20_xor(const uint8_t *key, const uint8_t *nonce,
       s[13] = crypto_load32_le(nonce);
       s[14] = crypto_load32_le(nonce + 4);
       s[15] = crypto_load32_le(nonce + 8);
+#if defined(AES_HAVE_X86_PATH)
       done     = chacha20_x86_xor(s, counter, in, out, len);
+#else
+      done     = chacha20_neon_xor(s, counter, in, out, len);
+#endif
       counter += (uint32_t)(done / 64);
       in      += done;
       out     += done;
