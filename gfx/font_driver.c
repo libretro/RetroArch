@@ -14,6 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* First: whether the VFS maps files depends on HAVE_MMAP, which
+ * vfs/vfs.h - pulled in by streams/file_stream.h - reads */
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <streams/file_stream.h>
@@ -22,9 +28,7 @@
 #include <file/file_path.h>
 #include <math.h>
 
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif
+#include <vfs/vfs.h>
 
 #include "../configuration.h"
 #include "../msg_hash.h"
@@ -61,6 +65,8 @@ typedef struct font_file_ref
    struct font_file_ref *next;
    char                 *path;
    uint8_t              *data;
+   /* The open file, when data is mapped from it rather than read */
+   RFILE                *mapped;
    size_t                len;
    unsigned              refs;
 } font_file_ref_t;
@@ -99,6 +105,22 @@ static retro_atomic_int_t font_file_lock_word;
 #define FONT_FILE_UNLOCK() do { } while (0)
 #endif
 
+/* Lets go of a face's bytes: closing the file unmaps them, or they were
+ * read into memory of their own. */
+static void font_file_data_free(RFILE *mapped, void *data)
+{
+#if defined(VFS_HAVE_FILE_MAPPING) && defined(HAVE_MMAP)
+   if (mapped)
+   {
+      filestream_close(mapped);
+      return;
+   }
+#else
+   (void)mapped;
+#endif
+   free(data);
+}
+
 /* Caller holds the lock. */
 static font_file_ref_t *font_file_ref_lookup(const char *path)
 {
@@ -122,8 +144,9 @@ static font_file_ref_t *font_file_ref_acquire(const char *path)
 {
    font_file_ref_t *entry;
    font_file_ref_t *raced;
-   void            *data = NULL;
-   int64_t          len  = 0;
+   RFILE           *mapped = NULL;
+   void            *data   = NULL;
+   int64_t          len    = 0;
 
    FONT_FILE_LOCK();
    entry = font_file_ref_lookup(path);
@@ -132,6 +155,36 @@ static font_file_ref_t *font_file_ref_acquire(const char *path)
    if (entry)
       return entry;
 
+#if defined(VFS_HAVE_FILE_MAPPING) && defined(HAVE_MMAP)
+   /* Mapped where there is mmap(): the pages of a face are only read in
+    * as its glyphs are drawn, and stay the file's, so a fallback font
+    * of megabytes costs what is used of it rather than all of it. Every
+    * rasterizer only reads the bytes; one that keeps them is handed a
+    * copy. The file has to be replaced rather than rewritten while it
+    * is mapped - archive extraction renames each file into place - as
+    * a mapping does not survive the file being truncated under it.
+    * Win32 is left reading: a mapped file there cannot be replaced at
+    * all, which would stop the assets updating. */
+   {
+      RFILE *f = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
+      if (f)
+      {
+         int64_t        map_len = 0;
+         int64_t        size    = filestream_get_size(f);
+         const uint8_t *map     = filestream_get_mapped_ptr(f, &map_len);
+         if (map && size > 0 && map_len == size)
+         {
+            mapped = f;
+            data   = (void*)map;
+            len    = size;
+         }
+         else
+            filestream_close(f);
+      }
+   }
+   if (!mapped)
+#endif
    if (!filestream_read_file(path, &data, &len) || len <= 0)
    {
       if (data)
@@ -141,7 +194,7 @@ static font_file_ref_t *font_file_ref_acquire(const char *path)
 
    if (!(entry = (font_file_ref_t*)calloc(1, sizeof(*entry))))
    {
-      free(data);
+      font_file_data_free(mapped, data);
       return NULL;
    }
    {
@@ -150,7 +203,7 @@ static font_file_ref_t *font_file_ref_acquire(const char *path)
       size_t path_len = strlen(path) + 1;
       if (!(entry->path = (char*)malloc(path_len)))
       {
-         free(data);
+         font_file_data_free(mapped, data);
          free(entry);
          return NULL;
       }
@@ -158,6 +211,7 @@ static font_file_ref_t *font_file_ref_acquire(const char *path)
    }
 
    entry->data    = (uint8_t*)data;
+   entry->mapped  = mapped;
    entry->len     = (size_t)len;
    entry->refs    = 1;
 
@@ -165,7 +219,7 @@ static font_file_ref_t *font_file_ref_acquire(const char *path)
    if ((raced = font_file_ref_lookup(path)))
    {
       FONT_FILE_UNLOCK();
-      free(entry->data);
+      font_file_data_free(entry->mapped, entry->data);
       free(entry->path);
       free(entry);
       return raced;
@@ -191,7 +245,7 @@ static void font_file_ref_release(font_file_ref_t *entry)
          break;
       }
 
-   free(entry->data);
+   font_file_data_free(entry->mapped, entry->data);
    free(entry->path);
    free(entry);
 }

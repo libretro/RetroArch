@@ -549,8 +549,14 @@ int file_archive_perform_mode_step(file_archive_transfer_t *state)
    if (ret == -1)
       return -1;
 
-   if (!filestream_write_file(state->pending_path,
-            state->pending_handle.data, state->pending_size))
+   /* Written beside the file and renamed over it: an update stopped
+    * part way leaves the old file whole, and whoever has the old file
+    * open or mapped keeps reading what was there. Where a file cannot
+    * be renamed into place, it is written in place as before. */
+   if (     !filestream_write_file_atomic(state->pending_path,
+               state->pending_handle.data, state->pending_size)
+         && !filestream_write_file(state->pending_path,
+               state->pending_handle.data, state->pending_size))
       return -1;
 
    return 1;
