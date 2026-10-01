@@ -228,6 +228,39 @@ static bool connmanctl_tether_status(connman_t *connman)
    return false;
 }
 
+/* Appends @arg to @s as one single-quoted shell word, writing each
+ * embedded ' as '\''. Returns the new length, or 0 if it does not fit. */
+static size_t connmanctl_append_quoted(char *s, size_t _len, size_t len,
+      const char *arg)
+{
+   if (_len + 1 >= len)
+      return 0;
+   s[_len++] = '\'';
+   for (; *arg; arg++)
+   {
+      if (*arg == '\'')
+      {
+         if (_len + 4 >= len)
+            return 0;
+         s[_len++] = '\'';
+         s[_len++] = '\\';
+         s[_len++] = '\'';
+         s[_len++] = '\'';
+      }
+      else
+      {
+         if (_len + 1 >= len)
+            return 0;
+         s[_len++] = *arg;
+      }
+   }
+   if (_len + 1 >= len)
+      return 0;
+   s[_len++] = '\'';
+   s[_len]   = '\0';
+   return _len;
+}
+
 static void connmanctl_tether_toggle(
       connman_t *connman, bool switch_on, char* ap_name, char *pass_key)
 {
@@ -239,11 +272,34 @@ static void connmanctl_tether_toggle(
    bool widgets_active  = connman->connmanctl_widgets_supported;
 #endif
 
-   snprintf(connman->command, sizeof(connman->command), "\
-         connmanctl tether wifi %s %s %s",
-         switch_on ? "on" : "off", ap_name, pass_key);
+   /* The AP name and password come from the user's tether config and
+    * may hold spaces or shell syntax, so pass each as one quoted word. */
+   if (switch_on)
+   {
+      size_t _len = strlcpy_lit(connman->command,
+            "connmanctl tether wifi on ", sizeof(connman->command));
+      if (   !(_len = connmanctl_append_quoted(connman->command, _len,
+                  sizeof(connman->command), ap_name))
+          || _len + 1 >= sizeof(connman->command))
+      {
+         RARCH_ERR("[CONNMANCTL] Tether toggle: AP name or password too long.\n");
+         return;
+      }
+      connman->command[_len++] = ' ';
+      connman->command[_len]   = '\0';
+      if (!connmanctl_append_quoted(connman->command, _len,
+                  sizeof(connman->command), pass_key))
+      {
+         RARCH_ERR("[CONNMANCTL] Tether toggle: AP name or password too long.\n");
+         return;
+      }
+   }
+   else
+      strlcpy_lit(connman->command, "connmanctl tether wifi off",
+            sizeof(connman->command));
 
-   command_file = popen(connman->command, "r");
+   if (!(command_file = popen(connman->command, "r")))
+      return;
 
    RARCH_LOG("[CONNMANCTL] Tether toggle: command: \"%s\"\n",
          connman->command);
