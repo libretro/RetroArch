@@ -81,12 +81,17 @@ static bool nmcli_exec(char *const argv[], bool quiet)
    return ret == pid && WIFEXITED(status) && WEXITSTATUS(status) == 0;
 }
 
+/* The argument vectors are filled in by assignment: C89 takes only
+ * constant expressions in an aggregate initializer. */
 static bool nmcli_profile_exists(const char *ssid)
 {
-   char *const argv[] = {
-      "nmcli", "connection", "show", "id", (char*)ssid, NULL
-   };
-
+   char *argv[6];
+   argv[0] = (char*)"nmcli";
+   argv[1] = (char*)"connection";
+   argv[2] = (char*)"show";
+   argv[3] = (char*)"id";
+   argv[4] = (char*)ssid;
+   argv[5] = NULL;
    return nmcli_exec(argv, true);
 }
 
@@ -216,17 +221,26 @@ static bool nmcli_connect_ssid(void *data,
 
    if (netinfo->saved_password)
    {
-      char *const argv[] = {
-         "nmcli", "connection", "up", "id", (char*)netinfo->ssid, NULL
-      };
+      char *argv[6];
+      argv[0] = (char*)"nmcli";
+      argv[1] = (char*)"connection";
+      argv[2] = (char*)"up";
+      argv[3] = (char*)"id";
+      argv[4] = (char*)netinfo->ssid;
+      argv[5] = NULL;
       connected = nmcli_exec(argv, false);
    }
    else
    {
-      char *const argv[] = {
-         "nmcli", "dev", "wifi", "connect", (char*)netinfo->ssid,
-         "password", (char*)netinfo->passphrase, NULL
-      };
+      char *argv[8];
+      argv[0] = (char*)"nmcli";
+      argv[1] = (char*)"dev";
+      argv[2] = (char*)"wifi";
+      argv[3] = (char*)"connect";
+      argv[4] = (char*)netinfo->ssid;
+      argv[5] = (char*)"password";
+      argv[6] = (char*)netinfo->passphrase;
+      argv[7] = NULL;
       connected = nmcli_exec(argv, false);
    }
 
@@ -247,12 +261,16 @@ static bool nmcli_disconnect_ssid(void *data,
       const wifi_network_info_t *netinfo)
 {
    nmcli_t *nmcli = (nmcli_t*)data;
-   char *const argv[] = {
-      "nmcli", "connection", "down", "id", (char*)netinfo->ssid, NULL
-   };
+   char *argv[6];
    unsigned int i = 0;
    bool disconnected;
 
+   argv[0] = (char*)"nmcli";
+   argv[1] = (char*)"connection";
+   argv[2] = (char*)"down";
+   argv[3] = (char*)"id";
+   argv[4] = (char*)netinfo->ssid;
+   argv[5] = NULL;
    disconnected = nmcli_exec(argv, false);
 
    for (i = 0; i < RBUF_LEN(nmcli->scan.net_list); i++)
