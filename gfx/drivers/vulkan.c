@@ -3628,8 +3628,7 @@ static void vulkan_font_render_msg(
    {
       uint64_t vk_color, vk_color_dark = 0;
       float fg_base_x, sh_base_x, sh_y_origin;
-      int line_num;
-      const char *m;
+      float fg_x = 0.0f, fg_y = 0.0f, sh_x = 0.0f, sh_y = 0.0f;
 
       vk_color         = rgba16_pack(color);
 
@@ -3651,144 +3650,71 @@ static void vulkan_font_render_msg(
          sh_y_origin     = y + scale * drop_y * inv_win_height;
       }
 
-      /* Single pass over the string: for each line, emit interleaved
-       * shadow + foreground quads from one glyph lookup.  This halves
-       * cache/TLB pressure on the glyph table compared to two separate
-       * passes, and shares tex-coord and glyph-size computations. */
-      m        = msg;
-      line_num = 0;
-
-      for (;;)
-      {
-         const char *delim       = m;
-         const char *line_start;
-         size_t line_len;
-         float align_ndc, fg_y, fg_x, sh_y, sh_x;
-         int delta_x, delta_y;
-
-         while (*delim != '\n' && *delim != '\0')
-            delim++;
-         line_start = m;
-         line_len   = (size_t)(delim - m);
-
-         /* Alignment: skip the width pre-scan for TEXT_ALIGN_LEFT,
-          * which is the overwhelmingly common case (OSD, notifications). */
-         align_ndc = 0.0f;
-         if (needs_align)
-         {
-            int width_accum  = 0;
-            const char *scan = line_start;
-            const char *scan_end = scan + line_len;
-            while (scan < scan_end)
-            {
-               const struct font_glyph *glyph;
-               uint32_t code = utf8_walk(&scan);
-               if (!(glyph = get_glyph(font_data, code)))
-                  if (!(glyph = glyph_q))
-                     continue;
-
-               if (font->atlas->dirty)
-               {
-                  vulkan_font_update_glyph(font, glyph);
-                  font->atlas->dirty = false;
-                  font->needs_update = true;
-               }
-
-               width_accum += glyph->advance_x;
-            }
-            {
-               float total = width_accum * scale_iww;
-               align_ndc   = (text_align == TEXT_ALIGN_RIGHT)
-                  ? total : total * 0.5f;
-            }
-         }
-
-         /* Per-line Y in NDC (pixel-snapped), X adjusted for alignment. */
-         {
-            float fg_pos_y = y - (float)line_num * line_height;
-            fg_y = roundf((1.0f - fg_pos_y) * VIDEO_SCALE_H(vk->vp.dims))
-               * inv_win_height;
-            fg_x = fg_base_x - align_ndc;
-         }
-
-         sh_y = 0.0f;
-         sh_x = 0.0f;
-         if (has_drop)
-         {
-            float sh_pos_y = sh_y_origin - (float)line_num * line_height;
-            sh_y = roundf((1.0f - sh_pos_y) * VIDEO_SCALE_H(vk->vp.dims))
-               * inv_win_height;
-            sh_x = sh_base_x - align_ndc;
-         }
-
-         /* Emit glyphs: 1 lookup → shadow quad + foreground quad.
-          * Tex coords and glyph dimensions are computed once and
-          * shared between both quads. */
-         delta_x = 0;
-         delta_y = 0;
-         {
-            const char *gm  = line_start;
-            const char *gme = gm + line_len;
-
-            while (gm < gme)
-            {
-               const struct font_glyph *glyph;
-               uint32_t code = utf8_walk(&gm);
-
-               if (!(glyph = get_glyph(font_data, code)))
-                  if (!(glyph = glyph_q))
-                     continue;
-
-               if (font->atlas->dirty)
-               {
-                  vulkan_font_update_glyph(font, glyph);
-                  font->atlas->dirty = false;
-                  font->needs_update = true;
-               }
-
-               {
-                  /* Texture coordinates — shared between shadow and fg. */
-                  float ftx = glyph->atlas_offset_x * inv_tex_size_x;
-                  float fty = glyph->atlas_offset_y * inv_tex_size_y;
-                  float ftw = glyph->width  * inv_tex_size_x;
-                  float fth = glyph->height * inv_tex_size_y;
-
-                  /* Pre-scaled glyph size and per-glyph offset. */
-                  float fw  = glyph->width  * scale_iww;
-                  float fh  = glyph->height * scale_iwh;
-                  float gox = (glyph->draw_offset_x + delta_x) * scale_iww;
-                  float goy = (glyph->draw_offset_y + delta_y) * scale_iwh;
-
-                  if (has_drop)
-                  {
-                     struct vk_vertex *pv = font->pv + font->vertices;
-                     VULKAN_WRITE_QUAD_VBO(pv,
-                           sh_x + gox, sh_y + goy,
-                           fw, fh, ftx, fty, ftw, fth,
-                           vk_color_dark);
-                     font->vertices += 4;
-                  }
-
-                  {
-                     struct vk_vertex *pv = font->pv + font->vertices;
-                     VULKAN_WRITE_QUAD_VBO(pv,
-                           fg_x + gox, fg_y + goy,
-                           fw, fh, ftx, fty, ftw, fth,
-                           vk_color);
-                     font->vertices += 4;
-                  }
-               }
-
-               delta_x += glyph->advance_x;
-               delta_y += glyph->advance_y;
-            }
-         }
-
-         if (*delim == '\0')
-            break;
-         m = delim + 1;
-         line_num++;
-      }
+      /* One pass over the string: each glyph is looked up once and
+       * emits its shadow quad and its foreground quad, sharing the
+       * texture coordinates and the glyph size between them. */
+#define FONT_LAYOUT_ALIGNED needs_align
+#define FONT_LAYOUT_DIRTY(glyph) \
+      do \
+      { \
+         if (font->atlas->dirty) \
+         { \
+            vulkan_font_update_glyph(font, (glyph)); \
+            font->atlas->dirty = false; \
+            font->needs_update = true; \
+         } \
+      } while (0)
+#define FONT_LAYOUT_LINE(line, width) \
+      do \
+      { \
+         /* Per-line Y in NDC (pixel-snapped), X adjusted for \
+          * alignment */ \
+         float align_ndc = 0.0f; \
+         if (needs_align) \
+         { \
+            float total = (width) * scale_iww; \
+            align_ndc   = (text_align == TEXT_ALIGN_RIGHT) \
+               ? total : total * 0.5f; \
+         } \
+         fg_y = roundf((1.0f - (y - (float)(line) * line_height)) \
+               * VIDEO_SCALE_H(vk->vp.dims)) * inv_win_height; \
+         fg_x = fg_base_x - align_ndc; \
+         if (has_drop) \
+         { \
+            sh_y = roundf((1.0f - (sh_y_origin \
+                        - (float)(line) * line_height)) \
+                  * VIDEO_SCALE_H(vk->vp.dims)) * inv_win_height; \
+            sh_x = sh_base_x - align_ndc; \
+         } \
+      } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+      do \
+      { \
+         /* Texture coordinates - shared between shadow and fg */ \
+         float ftx = (glyph)->atlas_offset_x * inv_tex_size_x; \
+         float fty = (glyph)->atlas_offset_y * inv_tex_size_y; \
+         float ftw = (glyph)->width  * inv_tex_size_x; \
+         float fth = (glyph)->height * inv_tex_size_y; \
+         /* Pre-scaled glyph size and per-glyph offset */ \
+         float fw  = (glyph)->width  * scale_iww; \
+         float fh  = (glyph)->height * scale_iwh; \
+         float gox = ((glyph)->draw_offset_x + (pen_x)) * scale_iww; \
+         float goy = ((glyph)->draw_offset_y + (pen_y)) * scale_iwh; \
+         if (has_drop) \
+         { \
+            struct vk_vertex *pv = font->pv + font->vertices; \
+            VULKAN_WRITE_QUAD_VBO(pv, sh_x + gox, sh_y + goy, \
+                  fw, fh, ftx, fty, ftw, fth, vk_color_dark); \
+            font->vertices += 4; \
+         } \
+         { \
+            struct vk_vertex *pv = font->pv + font->vertices; \
+            VULKAN_WRITE_QUAD_VBO(pv, fg_x + gox, fg_y + goy, \
+                  fw, fh, ftx, fty, ftw, fth, vk_color); \
+            font->vertices += 4; \
+         } \
+      } while (0)
+#include "../font_layout.h"
    }
 
    /* ── Flush: atlas upload + draw ─────────────────────────────────
