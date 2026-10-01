@@ -68,6 +68,31 @@ static void connmanctl_stop(void *data)
    (void)data;
 }
 
+/* ConnMan builds Wi-Fi service IDs from a hex address, an encoded SSID
+ * (or "hidden"), and ASCII mode/security names, joined by underscores. */
+static bool connmanctl_valid_wifi_service_id(const char *id, size_t max_len)
+{
+   size_t i;
+
+   if (!id || max_len <= 5 || strncmp(id, "wifi_", 5) != 0)
+      return false;
+
+   for (i = 5; i < max_len; i++)
+   {
+      unsigned char c = (unsigned char)id[i];
+
+      if (!c)
+         return i > 5;
+      if (   (c < '0' || c > '9')
+          && (c < 'A' || c > 'Z')
+          && (c < 'a' || c > 'z')
+          && c != '_')
+         return false;
+   }
+
+   return false;
+}
+
 static void connmanctl_refresh_services(connman_t *connman)
 {
    char line[512];
@@ -84,6 +109,8 @@ static void connmanctl_refresh_services(connman_t *connman)
       size_t _len              = strlen(line);
       if (_len > 0 && line[_len-1] == '\n')
                       line[--_len] = '\0';
+      if (_len < 5)
+         continue;
 
       /* Parse lines directly and store net info directly */
       memset(&entry, 0, sizeof(entry));
@@ -99,8 +126,19 @@ static void connmanctl_refresh_services(connman_t *connman)
       if (!(list = string_split(&line[4], " ")))
          break;
 
-      if (list->size == 0)
+      /* ConnMan prints network names without escaping newlines. Reject
+       * shell syntax in a forged service ID before storing it for later
+       * connect or disconnect commands. */
+      if (   list->size == 0
+          || !connmanctl_valid_wifi_service_id(
+               list->elems[list->size - 1].data, sizeof(entry.netid)))
+      {
+         string_list_free(list);
          continue;
+      }
+
+      strlcpy(entry.netid, list->elems[list->size - 1].data,
+            sizeof(entry.netid));
 
       /* Join ssid tokens with spaces via offset tracking; the prior
        * paired-strlcat form re-scanned entry.ssid from the start on
@@ -126,13 +164,9 @@ static void connmanctl_refresh_services(connman_t *connman)
          entry.ssid[ssid_off] = '\0';
       }
 
-      /* Store the connman network id here, for later */
-      strlcpy(entry.netid, list->elems[list->size-1].data, sizeof(entry.netid));
       string_list_free(list);
 
-      /* Filter only wifi nets */
-      if (!strncmp(entry.netid, "wifi_", 5))
-         RBUF_PUSH(connman->scan.net_list, entry);
+      RBUF_PUSH(connman->scan.net_list, entry);
    }
 
    pclose(serv_file);
@@ -319,6 +353,10 @@ static bool connmanctl_disconnect_ssid(void *data,
 {
    connman_t *connman = (connman_t*)data;
 
+   if (!netinfo || !connmanctl_valid_wifi_service_id(netinfo->netid,
+            sizeof(netinfo->netid)))
+      return false;
+
    /* TODO/FIXME: Check whether this network is actually connected */
 
    snprintf(connman->command, sizeof(connman->command),
@@ -348,6 +386,10 @@ static bool connmanctl_connect_ssid(
    bool widgets_active                 =
       connman->connmanctl_widgets_supported;
 #endif
+   if (!netinfo || !connmanctl_valid_wifi_service_id(netinfo->netid,
+            sizeof(netinfo->netid)))
+      return false;
+
    strlcpy(netid, netinfo->netid, sizeof(netid));
    fill_pathname_join_special(settings_dir, LAKKA_CONNMAN_DIR,
          netid, sizeof(settings_dir));
@@ -541,6 +583,9 @@ static size_t connmanctl_get_connected_servicename(
          RARCH_WARN("[CONNMANCTL] Service name empty.\n");
          continue;
       }
+
+      if (!connmanctl_valid_wifi_service_id(tmp, len))
+         continue;
 
       /* Here we test the found service for online | ready
        * status and count the lines. Expected results are
