@@ -170,6 +170,7 @@ struct channel {
 	int fine_porta_up_param, fine_porta_down_param, xfine_porta_param;
 	int arpeggio_param, vol_slide_param, gvol_slide_param, pan_slide_param;
 	int fine_vslide_up_param, fine_vslide_down_param;
+	int vcol_slide_param;
 	int retrig_volume, retrig_ticks, tremor_on_ticks, tremor_off_ticks;
 	int vibrato_type, vibrato_phase, vibrato_speed, vibrato_depth;
 	int tremolo_type, tremolo_phase, tremolo_speed, tremolo_depth;
@@ -2525,6 +2526,20 @@ static void channel_capture_ghost( struct channel *channel ) {
 	}
 }
 
+/* The amount of a volume-column volume slide. IT's four slides ( fine
+   up/down, up/down ) share one memory that a 0 recalls; XM's have none. */
+static int channel_vcol_amount( struct channel *channel ) {
+	int amount = channel->note.volume & 0xF;
+	if( channel->replay->module->it_effects ) {
+		if( amount > 0 ) {
+			channel->vcol_slide_param = amount;
+		} else {
+			amount = channel->vcol_slide_param;
+		}
+	}
+	return amount;
+}
+
 static void channel_trigger( struct channel *channel ) {
 	int key, sam, porta, period, fine_tune, ins = channel->note.instrument;
 	struct sample *sample;
@@ -2575,14 +2590,17 @@ static void channel_trigger( struct channel *channel ) {
 		channel->volume = channel->note.volume < 0x50 ? channel->note.volume - 0x10 : 64;
 	}
 	switch( channel->note.volume & 0xF0 ) {
+		case 0x60: case 0x70: /* Vol Slide: the row only sets the memory. */
+			channel_vcol_amount( channel );
+			break;
 		case 0x80: /* Fine Vol Down.*/
-			channel->volume -= channel->note.volume & 0xF;
+			channel->volume -= channel_vcol_amount( channel );
 			if( channel->volume < 0 ) {
 				channel->volume = 0;
 			}
 			break;
 		case 0x90: /* Fine Vol Up.*/
-			channel->volume += channel->note.volume & 0xF;
+			channel->volume += channel_vcol_amount( channel );
 			if( channel->volume > 64 ) {
 				channel->volume = 64;
 			}
@@ -2859,13 +2877,13 @@ static void channel_tick( struct channel *channel ) {
 	if( !( channel->note.effect == 0x7D && channel->fx_count <= channel->note.param ) ) {
 		switch( channel->note.volume & 0xF0 ) {
 			case 0x60: /* Vol Slide Down.*/
-				channel->volume -= channel->note.volume & 0xF;
+				channel->volume -= channel_vcol_amount( channel );
 				if( channel->volume < 0 ) {
 					channel->volume = 0;
 				}
 				break;
 			case 0x70: /* Vol Slide Up.*/
-				channel->volume += channel->note.volume & 0xF;
+				channel->volume += channel_vcol_amount( channel );
 				if( channel->volume > 64 ) {
 					channel->volume = 64;
 				}
