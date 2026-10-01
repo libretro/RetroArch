@@ -1154,6 +1154,35 @@ static void d3d11_font_update_atlas_region(
       D3D11DeviceContext ctx, d3d11_font_t *font,
       unsigned x0, unsigned y0, unsigned x1, unsigned y1);
 
+/* (Re)makes the font texture at the atlas's size and uploads all of
+ * it: at init, and when the atlas has grown. The context keeps a
+ * released texture alive for draws already recorded against it. */
+static void d3d11_font_make_texture(d3d11_video_t *d3d11,
+      d3d11_font_t *font)
+{
+   font->texture.sampler     = d3d11->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_BORDER];
+   font->texture.desc.Width  = font->atlas->width;
+   font->texture.desc.Height = font->atlas->height;
+   font->texture.desc.Format = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+         ? DXGI_FORMAT_R16_UNORM : DXGI_FORMAT_A8_UNORM;
+   d3d11_release_texture(&font->texture);
+   d3d11_init_texture(d3d11->device, &font->texture);
+   if (font->texture.staging)
+   {
+      if (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+         /* the generic path's conversion table does not cover R16;
+          * stage the whole atlas through the element-size-aware
+          * region helper instead */
+         d3d11_font_update_atlas_region(d3d11->context, font,
+               0, 0, font->atlas->width, font->atlas->height);
+      else
+         d3d11_update_texture(
+               d3d11->context, font->atlas->width, font->atlas->height, font->atlas->width,
+               DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
+   }
+   font->atlas->dirty = false;
+}
+
 static void * d3d11_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
@@ -1180,27 +1209,20 @@ static void * d3d11_font_init(void* data, const char* font_path,
 
    font->d3d11               = d3d11;
    font->atlas               = font->font_driver->get_atlas(font->font_data);
-   font->texture.sampler     = d3d11->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_BORDER];
-   font->texture.desc.Width  = font->atlas->width;
-   font->texture.desc.Height = font->atlas->height;
-   font->texture.desc.Format = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
-         ? DXGI_FORMAT_R16_UNORM : DXGI_FORMAT_A8_UNORM;
-   d3d11_release_texture(&font->texture);
-   d3d11_init_texture(d3d11->device, &font->texture);
-   if (font->texture.staging)
+   /* The atlas may grow, up to the largest 2D texture the feature
+    * level guarantees */
    {
-      if (font->atlas->format == FONT_ATLAS_FORMAT_A16)
-         /* the generic path's conversion table does not cover R16;
-          * stage the whole atlas through the element-size-aware
-          * region helper instead */
-         d3d11_font_update_atlas_region(d3d11->context, font,
-               0, 0, font->atlas->width, font->atlas->height);
-      else
-         d3d11_update_texture(
-               d3d11->context, font->atlas->width, font->atlas->height, font->atlas->width,
-               DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
+      unsigned max_tex = 2048;
+      if (d3d11->supportedFeatureLevel >= D3D_FEATURE_LEVEL_11_0)
+         max_tex = 16384;
+      else if (d3d11->supportedFeatureLevel >= D3D_FEATURE_LEVEL_10_0)
+         max_tex = 8192;
+      else if (d3d11->supportedFeatureLevel >= D3D_FEATURE_LEVEL_9_3)
+         max_tex = 4096;
+      font->atlas->max_width  = max_tex;
+      font->atlas->max_height = max_tex;
    }
-   font->atlas->dirty = false;
+   d3d11_font_make_texture(d3d11, font);
 
    return font;
 }
@@ -1319,6 +1341,16 @@ static void d3d11_font_render_msg(
       return;
    if (!(d3d11->flags & D3D11_ST_FLAG_SPRITES_ENABLE))
       return;
+
+   /* Asked for before anything is laid out: it may have grown, and the
+    * texture coordinates are taken from the texture's size */
+   if (font->font_driver && font->font_data)
+   {
+      font->atlas = font->font_driver->get_atlas(font->font_data);
+      if (     font->texture.desc.Width  != font->atlas->width
+            || font->texture.desc.Height != font->atlas->height)
+         d3d11_font_make_texture(d3d11, font);
+   }
 
    font_driver_resolve_params(params, &rp);
    x          = rp.x;

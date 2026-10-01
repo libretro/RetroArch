@@ -1371,6 +1371,18 @@ static void *sdl3_raster_font_init(void *data, const char *font_path,
    }
 
    font->atlas = font->font_driver->get_atlas(font->font_data);
+   /* The atlas may grow, up to the largest texture the renderer takes;
+    * the upload remakes the texture when the atlas's size changes */
+   {
+      Sint64 max_tex = SDL_GetNumberProperty(
+            SDL_GetRendererProperties(font->vid->renderer),
+            SDL_PROP_RENDERER_MAX_TEXTURE_SIZE_NUMBER, 0);
+      if (max_tex > 0)
+      {
+         font->atlas->max_width  = (unsigned)max_tex;
+         font->atlas->max_height = (unsigned)max_tex;
+      }
+   }
    sdl3_raster_font_upload_atlas(font);
 
    if (!font->tex)
@@ -1556,6 +1568,12 @@ static void sdl3_raster_font_render_msg(
 
    if (!font || !msg || !*msg || !vid)
       return;
+
+   /* Asked for before anything is laid out: it may have grown, which
+    * marks it dirty, and each line's upload remakes the texture at its
+    * size before its texture coordinates are taken */
+   if (font->font_driver && font->font_data)
+      font->atlas = font->font_driver->get_atlas(font->font_data);
 
    width  = VIDEO_SCALE_W(vid->vp.full_dims)  ? VIDEO_SCALE_W(vid->vp.full_dims)  : VIDEO_SCALE_W(vid->video.dims);
    height = VIDEO_SCALE_H(vid->vp.full_dims) ? VIDEO_SCALE_H(vid->vp.full_dims) : VIDEO_SCALE_H(vid->video.dims);

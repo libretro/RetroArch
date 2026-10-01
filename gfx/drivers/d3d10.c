@@ -865,6 +865,26 @@ void gfx_display_d3d10_scissor_end(void *data, unsigned video_dims)
  * FONT DRIVER
  */
 
+/* (Re)makes the font texture at the atlas's size and uploads all of
+ * it: at init, and when the atlas has grown. The device keeps a
+ * released texture alive for draws already issued against it. */
+static void d3d10_font_make_texture(d3d10_video_t *d3d10,
+      d3d10_font_t *font)
+{
+   font->texture.sampler     = d3d10->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_BORDER];
+   font->texture.desc.Width  = font->atlas->width;
+   font->texture.desc.Height = font->atlas->height;
+   font->texture.desc.Format = DXGI_FORMAT_A8_UNORM;
+   d3d10_release_texture(&font->texture);
+   d3d10_init_texture(d3d10->device, &font->texture);
+   if (font->texture.staging)
+      d3d10_update_texture(
+            d3d10->device,
+            font->atlas->width, font->atlas->height, font->atlas->width,
+            DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
+   font->atlas->dirty        = false;
+}
+
 static void *d3d10_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
@@ -882,18 +902,10 @@ static void *d3d10_font_init(void* data, const char* font_path,
    }
 
    font->atlas               = font->font_driver->get_atlas(font->font_data);
-   font->texture.sampler     = d3d10->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_BORDER];
-   font->texture.desc.Width  = font->atlas->width;
-   font->texture.desc.Height = font->atlas->height;
-   font->texture.desc.Format = DXGI_FORMAT_A8_UNORM;
-   d3d10_release_texture(&font->texture);
-   d3d10_init_texture(d3d10->device, &font->texture);
-   if (font->texture.staging)
-      d3d10_update_texture(
-            d3d10->device,
-            font->atlas->width, font->atlas->height, font->atlas->width,
-            DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
-   font->atlas->dirty        = false;
+   /* The atlas may grow, up to the largest 2D texture D3D10 has */
+   font->atlas->max_width    = D3D10_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+   font->atlas->max_height   = D3D10_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+   d3d10_font_make_texture(d3d10, font);
 
    return font;
 }
@@ -999,6 +1011,16 @@ static void d3d10_font_render_msg(
       return;
    if (!d3d10 || (!(d3d10->flags & D3D10_ST_FLAG_SPRITES_ENABLE)))
       return;
+
+   /* Asked for before anything is laid out: it may have grown, and the
+    * texture coordinates are taken from the texture's size */
+   if (font->font_driver && font->font_data)
+   {
+      font->atlas = font->font_driver->get_atlas(font->font_data);
+      if (     font->texture.desc.Width  != font->atlas->width
+            || font->texture.desc.Height != font->atlas->height)
+         d3d10_font_make_texture(d3d10, font);
+   }
 
    font_driver_resolve_params(params, &rp);
    x          = rp.x;
