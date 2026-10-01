@@ -6726,6 +6726,12 @@ static bool netplay_get_cmd(netplay_t *netplay,
                RARCH_ERR("[Netplay] NETPLAY_CMD_NETPACKET while core netpacket interface is not set.\n");
                return netplay_cmd_nak(netplay, connection);
             }
+            if (     (netplay->flags & NETPLAY_FLAG_IS_SERVER)
+                  && connection->mode != NETPLAY_CONNECTION_PLAYING)
+            {
+               RARCH_ERR("[Netplay] NETPLAY_CMD_NETPACKET from a non-playing client.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
             if (cmd_size > netplay->zbuffer_size)
             {
                RARCH_ERR("[Netplay] Received netpacket of unexpected size.\n");
@@ -10673,8 +10679,9 @@ static void RETRO_CALLCONV netplay_netpacket_send_cb(int flags,
    {
       if (!(netplay->flags & NETPLAY_FLAG_IS_SERVER))
       {
-         /* client always sends packet to host, host will relay it if needed */
-         netplay_send_cmd_netpacket(netplay, 0, buf, len, client_id);
+         /* Playing clients send packets to the host for relaying. */
+         if (netplay->self_mode == NETPLAY_CONNECTION_PLAYING)
+            netplay_send_cmd_netpacket(netplay, 0, buf, len, client_id);
       }
       else if (client_id == RETRO_NETPACKET_BROADCAST)
       {
