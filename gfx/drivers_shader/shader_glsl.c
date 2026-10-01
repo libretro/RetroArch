@@ -672,10 +672,7 @@ static void gl_glsl_reset_attrib(glsl_shader_data_t *glsl)
 
 /* Coords change from one draw to the next (each font flush, each menu
  * quad), so the buffer is re-specified many times a frame: GL_STREAM_DRAW
- * says so, and lets the driver keep it where the CPU writes it cheaply.
- * Measured on radeonsi with the font path's pattern (twelve ~6 KB
- * uploads and draws a frame): about 15% less time a frame than
- * GL_STATIC_DRAW. */
+ * says so, and lets the driver keep it where the CPU writes it cheaply. */
 static void gl_glsl_set_vbo(GLfloat **buffer, size_t *buffer_elems,
       const GLfloat *data, size_t elems)
 {
