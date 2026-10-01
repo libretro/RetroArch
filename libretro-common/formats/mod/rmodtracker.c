@@ -3677,22 +3677,22 @@ static void channel_filter_run( struct channel *channel, int *buf,
 		acc = x * channel->flt_a + y1l * channel->flt_b
 			+ y2l * channel->flt_c + errl;
 		y = acc >> 14;
-		errl = acc - ( y << 14 );
+		errl = acc - y * 16384;
 		if( y > 32767 ) y = 32767;
 		if( y < -32768 ) y = -32768;
 		y2l = y1l;
 		y1l = y;
-		buf[ i * 2 ] = y << 2;
+		buf[ i * 2 ] = y * 4;
 		x = buf[ i * 2 + 1 ] >> 2;
 		acc = x * channel->flt_a + y1r * channel->flt_b
 			+ y2r * channel->flt_c + errr;
 		y = acc >> 14;
-		errr = acc - ( y << 14 );
+		errr = acc - y * 16384;
 		if( y > 32767 ) y = 32767;
 		if( y < -32768 ) y = -32768;
 		y2r = y1r;
 		y1r = y;
-		buf[ i * 2 + 1 ] = y << 2;
+		buf[ i * 2 + 1 ] = y * 4;
 		if( i == commit - 1 ) {
 			channel->flt_y1l = y1l;
 			channel->flt_y2l = y2l;
