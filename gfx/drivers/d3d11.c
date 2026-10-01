@@ -1529,6 +1529,7 @@ static void d3d11_font_render_msg(
 #define FONT_LAYOUT_LINE(line, width, count, bytes) \
       do \
       { \
+         (void)(width); \
          line_ok = ((bytes) > 0 && (bytes) <= (unsigned)capacity); \
          fg_ly   = (int)roundf((1.0f - (y - (float)(line) * line_height)) \
                * height); \
@@ -1543,6 +1544,9 @@ static void d3d11_font_render_msg(
 #define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
       do \
       { \
+         /* This driver keeps its own truncating pen */ \
+         (void)(pen_x); \
+         (void)(pen_y); \
          if (!line_ok) \
             break; \
          if (!have_drop) \

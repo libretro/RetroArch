@@ -1067,6 +1067,7 @@ static void gl2_raster_font_render_message(gl2_t *gl,
 #define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
    do \
    { \
+      (void)(count); \
       x = roundf(pos_x * VIDEO_SCALE_W(gl->vp.dims)); \
       y = roundf((pos_y - (float)(line) * line_height) \
             * VIDEO_SCALE_H(gl->vp.dims)); \

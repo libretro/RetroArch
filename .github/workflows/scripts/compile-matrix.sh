@@ -964,4 +964,36 @@ check "runahead: HAVE_DYLIB only"  "$RADEFS -DHAVE_DYLIB"               runahead
 check "runahead: HAVE_DYNAMIC"     "$RADEFS -DHAVE_DYNAMIC"             runahead.c
 check "runahead: both"             "$RADEFS -DHAVE_DYNAMIC -DHAVE_DYLIB" runahead.c
 
+# gfx/font_layout.h expands inside each driver's render function, and a
+# layout counter a driver has no use for is set but never read. GCC 15
+# and clang warn about that; the runner's GCC does not, so these lanes
+# ask clang, with the warning made an error.
+font_layout() {
+   name="$1"; target="$2"; defs="$3"; tu="$4"
+   if ! command -v clang > /dev/null 2>&1; then
+      echo "skip  $name (no clang)"
+      return
+   fi
+   if ! out=$(clang $target -Werror=unused-but-set-variable \
+         $INC $BASE $defs -fsyntax-only "$tu" 2>&1); then
+      echo "FAIL  $name"
+      echo "      $tu"
+      show_out "$out"
+      fail=1
+   else
+      echo "ok    $name"
+   fi
+}
+font_layout "font layout: vulkan" "" "-DHAVE_VULKAN" gfx/drivers/vulkan.c
+font_layout "font layout: gl" "" "-DHAVE_OPENGL" gfx/drivers/gl2.c
+font_layout "font layout: glcore" "" \
+   "-DHAVE_OPENGL -DHAVE_OPENGL_CORE -DHAVE_SLANG" gfx/drivers/gl3.c
+if [ -d /usr/x86_64-w64-mingw32/include ]; then
+   MINGW_CLANG="--target=x86_64-w64-mingw32 -isystemgfx/include/dxsdk -isystem /usr/x86_64-w64-mingw32/include"
+   font_layout "font layout: d3d11" "$MINGW_CLANG" \
+      "-DHAVE_D3D -DHAVE_RGUI -DHAVE_OVERLAY -DHAVE_D3D11" gfx/drivers/d3d11.c
+else
+   echo "skip  font layout: d3d11 (no MinGW headers)"
+fi
+
 exit $fail

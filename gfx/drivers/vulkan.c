@@ -3667,6 +3667,7 @@ static void vulkan_font_render_msg(
 #define FONT_LAYOUT_LINE(line, width, count, bytes) \
       do \
       { \
+         (void)(count); \
          /* Per-line Y in NDC (pixel-snapped), X adjusted for \
           * alignment */ \
          float align_ndc = 0.0f; \

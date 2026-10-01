@@ -1394,6 +1394,7 @@ static void gl3_raster_font_render_message(
 #define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
    do \
    { \
+      (void)(count); \
       x = pre_x; \
       y = roundf((pos_y - (float)(line) * line_height) \
             * VIDEO_SCALE_H(gl->vp.dims)); \
