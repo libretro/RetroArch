@@ -1734,7 +1734,9 @@ static size_t chacha20_x86_xor(const uint32_t *s, uint32_t counter,
 #undef CHACHA_ROTL
 #endif
 
-#if defined(__aarch64__) && defined(__ARM_NEON) && !defined(_MSC_VER) && !defined(CHACHA_NO_NEON)
+/* every AArch64 core, and ARMv7 built for NEON (the Vita, 32-bit
+ * Android); older GCC spells the macro __ARM_NEON__ */
+#if (defined(__ARM_NEON) || defined(__ARM_NEON__)) && !defined(_MSC_VER) && !defined(CHACHA_NO_NEON)
 #include <arm_neon.h>
 #define CHACHA_HAVE_NEON 1
 /* rotl by 16 is a halfword swap; the others a shift and a shift-insert */
@@ -1745,9 +1747,9 @@ static size_t chacha20_x86_xor(const uint32_t *s, uint32_t counter,
    a = vaddq_u32(a, b); d = CHACHA_NROT(veorq_u32(d, a), 8);                  \
    c = vaddq_u32(c, d); b = CHACHA_NROT(veorq_u32(b, c), 7)
 
-/* Four blocks at once on NEON, which every AArch64 core has: one state
- * word per vector and one block per lane, as on SSSE3. Whole groups of
- * 256 octets; returns the octets done. */
+/* Four blocks at once on NEON: one state word per vector and one block
+ * per lane, as on SSSE3. Whole groups of 256 octets; returns the octets
+ * done. */
 static size_t chacha20_neon_xor(const uint32_t *s, uint32_t counter,
       const uint8_t *in, uint8_t *out, size_t len)
 {

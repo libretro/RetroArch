@@ -553,6 +553,23 @@ crypto-mips-check:
 	$(QEMU_MIPSEL) test/crypto/test_crypto_mipsel || exit 1; \
 	echo "ok:   crypto suite under qemu-mipsel (32-bit, strict alignment)"
 
+# 32-bit ARM in the two shapes the consoles take: ARMv7-A with NEON
+# (the Vita, 32-bit Android: the NEON ChaCha20) and ARMv6K with VFP only
+# (the 3DS: every portable path - software AES, the 32-bit X25519).
+ARMHF_CC  ?= arm-linux-gnueabihf-gcc
+QEMU_ARM  ?= qemu-arm
+crypto-arm-check:
+	@if ! command -v $(ARMHF_CC) >/dev/null 2>&1; then echo "skip: $(ARMHF_CC) not installed"; exit 0; fi; \
+	if ! command -v $(QEMU_ARM) >/dev/null 2>&1; then echo "skip: $(QEMU_ARM) not installed"; exit 0; fi; \
+	for shape in "armv7-a+neon:-march=armv7-a -mfpu=neon -mfloat-abi=hard" \
+	             "armv6k+vfp:-march=armv6k -mfpu=vfp -mfloat-abi=hard -marm"; do \
+	   name=$${shape%%:*}; flags=$${shape#*:}; \
+	   $(ARMHF_CC) -static -O2 $$flags -DCHECK_SHIM -Iinclude -Wall \
+	      $(TEST_CRYPTO_SRC) -o test/crypto/test_crypto_arm || exit 1; \
+	   $(QEMU_ARM) test/crypto/test_crypto_arm || exit 1; \
+	   echo "ok:   crypto suite under qemu-arm [$$name]"; \
+	done
+
 # The Windows builds actually run: the crypto and keychain suites as
 # MinGW binaries under Wine (RtlGenRandom, the MachineGuid identity, the
 # AES-NI dispatch through the Win32 cpu features), then the three network
@@ -574,7 +591,7 @@ win32-wine-check:
 	echo "ok:   keychain suite as a Windows binary under Wine"; \
 	rm -f test/crypto/test_crypto_win32.exe test/file/test_keychain_win32.exe
 
-all: unit-tests console-libc-check darwin-floor-check crypto-aarch64-check crypto-mips-check win32-wine-check
+all: unit-tests console-libc-check darwin-floor-check crypto-aarch64-check crypto-arm-check crypto-mips-check win32-wine-check
 	# vfs samples: file size, seek and EOF boundaries, mapped and not
 	$(MAKE) -f Makefile.test vfs-samples
 	# concurrency samples: nothing else here compiles retro_spsc.c,
@@ -601,7 +618,7 @@ all: unit-tests console-libc-check darwin-floor-check crypto-aarch64-check crypt
 clean:
 	rm -f *.gcda *.gcno
 	rm -f $(TEST_STDSTRING) $(TEST_UTILS) $(TEST_HASH) \
-	      $(TEST_CRYPTO) $(TEST_KEYCHAIN) test/crypto/test_crypto_aarch64 test/crypto/test_crypto_mipsel \
+	      $(TEST_CRYPTO) $(TEST_KEYCHAIN) test/crypto/test_crypto_aarch64 test/crypto/test_crypto_arm test/crypto/test_crypto_mipsel \
 	      $(TEST_LINKED_LIST) $(TEST_FILE_LIST) $(TEST_MEMPOOL) \
 	      $(TEST_MENU_STR) $(TEST_STRL) \
 	      $(TEST_GENERIC_QUEUE) \
