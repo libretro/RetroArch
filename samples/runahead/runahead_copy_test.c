@@ -115,6 +115,13 @@ static char *get_tmpdir_alloc(const char *override_dir)
 {
    return strdup(override_dir ? override_dir : "/tmpdir");
 }
+/* Whether the temp dir counts as ours alone; a case clears it. */
+static bool tmp_dir_private = true;
+static bool runahead_tmp_dir_private(const char *dir)
+{
+   (void)dir;
+   return tmp_dir_private;
+}
 
 /* The fragment, verbatim from runahead.c. */
 #include "runahead_copy_fragment.c"
@@ -370,6 +377,28 @@ static void t_stale_src(void)
    task_queue_deinit();
 }
 
+/* RETR-0006: a temp dir someone else could write to (a shared /tmp
+ * where another user made retroarch_temp first) is never copied into. */
+static void t_tmp_dir_not_private(void)
+{
+   char *out = NULL;
+   enum runahead_copy_status st;
+   printf("   tmp_dir_not_private: no copy into a temp dir others can write\n");
+   reset_fs();
+   task_queue_init(false, NULL);
+   tmp_dir_private = false;
+   runahead_copy_poll("/cores/c_libretro.so", "/tmpdir", &out);
+   run_copy_to_completion();
+   CHECK(dst_count == 0, "%u copies opened in a temp dir that is not private", dst_count);
+   st = runahead_copy_poll("/cores/c_libretro.so", "/tmpdir", &out);
+   CHECK(st != RUNAHEAD_COPY_READY, "a copy was reported ready");
+   tmp_dir_private = true;
+   if (out) free(out);
+   runahead_copy_reset(true);
+   run_copy_to_completion();
+   task_queue_deinit();
+}
+
 int main(void)
 {
    /* A stray 'return false' from a status-returning function must
@@ -385,6 +414,7 @@ int main(void)
    t_copy_protocol();
    t_generation_discard();
    t_stale_src();
+   t_tmp_dir_not_private();
    reset_fs();
    if (failures)
    {
