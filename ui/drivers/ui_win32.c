@@ -51,6 +51,7 @@
 #include <compat/strl.h>
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#include <retro_atomic.h>
 #endif
 
 #include "../ui_companion_driver.h"
@@ -92,14 +93,13 @@ static enum win32_browser_mode g_win32_browser_mode =
  * Clicks are seconds apart, so a handful of slots never fills; a full
  * mailbox drops the click rather than run it on the wrong thread. */
 #define WIN32_MENU_DEFER_SLOTS 8
-static volatile LONG win32_menu_deferred[WIN32_MENU_DEFER_SLOTS];
+static retro_atomic_int_t win32_menu_deferred[WIN32_MENU_DEFER_SLOTS];
 
 static bool win32_menu_defer(WPARAM mode)
 {
    int i;
    for (i = 0; i < WIN32_MENU_DEFER_SLOTS; i++)
-      if (InterlockedCompareExchange(&win32_menu_deferred[i],
-               (LONG)mode, 0) == 0)
+      if (retro_atomic_cas_int(&win32_menu_deferred[i], 0, (int)mode))
          return true;
    return false;
 }
@@ -109,7 +109,7 @@ static void win32_menu_run_deferred(void)
    int i;
    for (i = 0; i < WIN32_MENU_DEFER_SLOTS; i++)
    {
-      LONG mode = InterlockedExchange(&win32_menu_deferred[i], 0);
+      int mode = retro_atomic_exchange_int(&win32_menu_deferred[i], 0);
       if (mode)
          win32_menu_loop(main_window.hwnd, (WPARAM)mode);
    }
