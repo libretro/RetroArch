@@ -1670,7 +1670,9 @@ jobs:
           # recently used first, and never evicts a lookup still in
           # flight. The pool keeps at most 8 idle connections, closing
           # the longest-idle first, and closes rather than reuses one
-          # idle for more than 30 s.
+          # idle for more than 30 s. On a system without IPv6, an IPv6
+          # address listed first no longer fails the transfer, and one
+          # mid-list no longer hides the addresses after it.
           for threads in 1 0; do
             make -f Makefile.limits clean
             make -f Makefile.limits THREADS=$threads SANITIZER=address,undefined

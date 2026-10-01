@@ -29,10 +29,28 @@ int getaddrinfo_retro(const char *node, const char *service,
 void freeaddrinfo_retro(struct addrinfo *addr) { (void)addr; freed_addresses++; }
 int socket_close(int fd) { (void)fd; closed_sockets++; return 0; }
 
+/* A system without IPv6: socket() refuses the family, as it does on
+ * kernels and console stacks built without it. */
+static bool refuse_v6;
+static int  sockets_made;
+
 static int test_socket(int family, int type, int protocol)
 {
-   (void)family; (void)type; (void)protocol;
+   (void)type; (void)protocol;
+   if (refuse_v6 && family == AF_INET6)
+      return -1;
+   sockets_made++;
    return 7;
+}
+
+/* Connect fails for the address in fail_addr, succeeds otherwise, and
+ * records which address it was asked for. */
+static struct addrinfo *fail_addr, *last_connect;
+bool socket_connect_with_timeout(int fd, void *addr, int timeout)
+{
+   (void)fd; (void)timeout;
+   last_connect = (struct addrinfo*)addr;
+   return addr != fail_addr;
 }
 
 static void check(int ok, const char *what)
@@ -160,10 +178,77 @@ static void test_pool_limits(void)
    net_http_deinit();
 }
 
+/* ---- socket family fallback ---- */
+
+static struct sockaddr_in6 sa6;
+static struct sockaddr_in  sa4a, sa4b;
+static struct addrinfo     ai6, ai4a, ai4b;
+
+static void make_list(struct addrinfo *a, struct addrinfo *b, struct addrinfo *c)
+{
+   memset(&ai6, 0, sizeof(ai6));
+   memset(&ai4a, 0, sizeof(ai4a));
+   memset(&ai4b, 0, sizeof(ai4b));
+   ai6.ai_family   = AF_INET6;  ai6.ai_socktype  = SOCK_STREAM;
+   ai6.ai_addr     = (struct sockaddr*)&sa6;  ai6.ai_addrlen = sizeof(sa6);
+   ai4a.ai_family  = AF_INET;   ai4a.ai_socktype = SOCK_STREAM;
+   ai4a.ai_addr    = (struct sockaddr*)&sa4a; ai4a.ai_addrlen = sizeof(sa4a);
+   ai4b.ai_family  = AF_INET;   ai4b.ai_socktype = SOCK_STREAM;
+   ai4b.ai_addr    = (struct sockaddr*)&sa4b; ai4b.ai_addrlen = sizeof(sa4b);
+   a->ai_next = b;
+   b->ai_next = c;
+   c->ai_next = NULL;
+}
+
+static bool connect_via(struct addrinfo *head, struct addrinfo **used)
+{
+   struct http_t state;
+   bool ok = false;
+
+   memset(&state, 0, sizeof(state));
+   state.request.domain = "dualstack.invalid";
+   state.request.port   = 80;
+   net_http_init();
+   assert(net_http_dns_cache_add(state.request.domain, 80, head));
+   last_connect = NULL;
+   if (net_http_new_socket(&state) && state.conn)
+      ok = net_http_connect(&state);
+   *used = last_connect;
+   if (state.conn)
+      net_http_conn_pool_remove(state.conn);
+   net_http_deinit();
+   return ok;
+}
+
+static void test_family_fallback(void)
+{
+   struct addrinfo *used;
+
+   refuse_v6 = true;
+
+   /* IPv6 listed first, the system has none. */
+   make_list(&ai6, &ai4a, &ai4b);
+   fail_addr = NULL;
+   check(connect_via(&ai6, &used) && used == &ai4a,
+         "IPv6 first, no IPv6 support: connects over the IPv4 address");
+
+   /* IPv4, IPv6, IPv4: the first IPv4 address refuses the connection.
+    * The IPv6 one in between cannot even get a socket; the next IPv4
+    * address must still be tried. */
+   make_list(&ai4a, &ai6, &ai4b);
+   fail_addr = &ai4a;
+   check(connect_via(&ai4a, &used) && used == &ai4b,
+         "a refused family mid-list does not hide the addresses after it");
+
+   refuse_v6 = false;
+   fail_addr = NULL;
+}
+
 int main(void)
 {
    test_dns_cap();
    test_pool_limits();
+   test_family_fallback();
    if (failures)
    {
       printf("%d check(s) failed\n", failures);

@@ -135,6 +135,7 @@ struct conn_pool_entry
    retro_time_t idle_since;
    int port;
    int fd;
+   int family;   /* of the address fd was created for */
    void *ssl_ctx;
    bool ssl;
    bool connected;
@@ -1491,6 +1492,36 @@ static void net_http_resolve(void *data)
 #endif
 }
 
+/* A socket for *@addr, or for the first address after it the platform
+ * can create one for; *@addr is left on the address the descriptor
+ * belongs to.  socket() fails for a family the system lacks - IPv6 on a
+ * kernel or console stack built without it - and that used to end the
+ * attempt: on the first address it failed the transfer outright, and in
+ * the connect loop it hid every address after the failing one. */
+static int net_http_socket_for(struct addrinfo **addr)
+{
+   struct addrinfo *a;
+   for (a = *addr; a; a = a->ai_next)
+   {
+      int fd = socket(a->ai_family, a->ai_socktype, a->ai_protocol);
+      if (fd >= 0)
+      {
+         *addr = a;
+         return fd;
+      }
+   }
+   *addr = NULL;
+   return -1;
+}
+
+static int net_http_socket_next(struct addrinfo **addr)
+{
+   if (!*addr)
+      return -1;
+   *addr = (*addr)->ai_next;
+   return net_http_socket_for(addr);
+}
+
 static bool net_http_new_socket(struct http_t *state)
 {
    struct addrinfo *addr = NULL;
@@ -1508,11 +1539,13 @@ static bool net_http_new_socket(struct http_t *state)
             return false;
          }
          addr = entry->addr;
-         fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+         fd   = net_http_socket_for(&addr);
          if (fd >= 0)
          {
             state->conn = net_http_conn_pool_add(state->request.domain, state->request.port, fd, state->ssl);
-            if (!state->conn)
+            if (state->conn)
+               state->conn->family = addr->ai_family;
+            else
             {
                socket_close(fd);
                fd = -1;
@@ -1589,6 +1622,21 @@ static bool net_http_connect(struct http_t *state)
    }
    addr = dns_entry->addr;
 
+   /* Start at the address the socket was created for: earlier ones are
+    * of a family socket() refused.  An entry that expired and was
+    * re-resolved in between may not list that family at all, which is
+    * a failed connect like any other. */
+   if (conn)
+   {
+      while (addr && addr->ai_family != conn->family)
+         addr = addr->ai_next;
+      if (!addr && conn->fd >= 0)
+      {
+         socket_close(conn->fd);
+         conn->fd = -1;
+      }
+   }
+
 #ifndef HAVE_SSL
    if (state->ssl)
       goto release;
@@ -1600,7 +1648,8 @@ static bool net_http_connect(struct http_t *state)
          net_http_log_transport_state(state, "connect_missing_dns_or_conn", -1);
          goto release;
       }
-      for (next_addr = addr; conn->fd >= 0; conn->fd = socket_next((void**)&next_addr))
+      for (next_addr = addr; next_addr && conn->fd >= 0;
+            conn->fd = net_http_socket_next(&next_addr))
       {
          if (!(conn->ssl_ctx = ssl_socket_init(conn->fd, state->request.domain)))
          {
@@ -1645,7 +1694,8 @@ static bool net_http_connect(struct http_t *state)
    else
 #endif
    {
-      for (next_addr = addr; conn->fd >= 0; conn->fd = socket_next((void**)&next_addr))
+      for (next_addr = addr; next_addr && conn->fd >= 0;
+            conn->fd = net_http_socket_next(&next_addr))
       {
          if (socket_connect_with_timeout(conn->fd, next_addr, 5000))
          {
