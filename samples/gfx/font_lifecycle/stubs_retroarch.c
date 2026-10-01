@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include <boolean.h>
+#include <compat/strl.h>
 #include "gfx/font_driver.h"
 #include "gfx/video_driver.h"
 #include "configuration.h"
@@ -28,8 +29,11 @@ settings_t *config_get_ptr(void) { return &test_settings; }
 
 const char *last_read_path = NULL;
 
-/* Set by the fallback test, which reads a real font from disk */
-int read_real_files = 0;
+/* Set by the fallback tests, which read real fonts from disk, and the
+ * files they read, in order */
+int  read_real_files = 0;
+char real_reads[16][512];
+int  real_reads_n    = 0;
 
 bool filestream_read_file(const char *path, void **buf, int64_t *len)
 {
@@ -38,6 +42,8 @@ bool filestream_read_file(const char *path, void **buf, int64_t *len)
    if (read_real_files)
    {
       FILE *f = fopen(path, "rb");
+      if (real_reads_n < (int)(sizeof(real_reads) / sizeof(real_reads[0])))
+         strlcpy(real_reads[real_reads_n++], path, sizeof(real_reads[0]));
       long  n;
       *buf    = NULL;
       if (!f)

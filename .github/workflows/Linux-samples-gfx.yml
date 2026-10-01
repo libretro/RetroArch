@@ -1098,17 +1098,23 @@ jobs:
           # current on the main thread while the video thread holds it
           # is an X BadAccess. Nothing ran this sample, and it had the
           # older rule written into it.
+          # The fallback tests read DejaVu in place of the assets'
+          # fallback fonts: Sans for fallback-font.ttf, and Sans Mono
+          # and Sans as a general and a second face for the chain test.
+          sudo apt-get install -y -qq fonts-dejavu-core fonts-dejavu-mono \
+             > /dev/null 2>&1 || sudo apt-get install -y -qq fonts-dejavu-core > /dev/null
           make clean all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
           UBSAN_OPTIONS=print_stacktrace=1 timeout 120 make check SANITIZER=address,undefined
           make clean
           # A fallback font is read on a thread of its own while two
-          # fonts on two threads ask for it; DejaVu stands in for the
-          # assets' fallback-font.ttf.
-          sudo apt-get install -y -qq fonts-dejavu-core > /dev/null
-          make fallback SAN=thread
+          # fonts on two threads ask for it, and a second face behind
+          # the first.
+          make fallback chain SAN=thread
           TSAN_OPTIONS=halt_on_error=1 setarch "$(uname -m)" -R \
              timeout 120 ./fallback
+          TSAN_OPTIONS=halt_on_error=1 setarch "$(uname -m)" -R \
+             timeout 120 ./chain
           make clean
 
       - name: Build and run overlay_apng_test (ASan + UBSan, TSan)

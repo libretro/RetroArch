@@ -327,6 +327,31 @@ static int font_fallback_for(uint32_t code)
    return FONT_FALLBACK_GENERAL;
 }
 
+/* Where a codepoint goes when the fallback font_fallback_for() picked
+ * has no glyph for it, or -1. The ranges are those where, with the
+ * fallback fonts the assets ship, the other face draws what the picked
+ * one lacks - Hangul jamo and circled numbers in the CJK face, circled
+ * Hangul in the Korean one, and so on - so a codepoint no face has
+ * does not have every fallback font read in search of it. */
+static int font_fallback_next_for(uint32_t code)
+{
+   /* Hangul jamo and compatibility jamo; enclosed alphanumerics (①);
+    * vertical and small form variants */
+   if (     (code >= 0x1100 && code <= 0x11FF)
+         || (code >= 0x3130 && code <= 0x318F)
+         || (code >= 0x2460 && code <= 0x24FF)
+         || (code >= 0xFE10 && code <= 0xFE1F)
+         || (code >= 0xFE50 && code <= 0xFE6F))
+      return FONT_FALLBACK_CJK;
+   /* Enclosed CJK letters and months: circled Hangul */
+   if (code >= 0x3200 && code <= 0x32FF)
+      return FONT_FALLBACK_KOREAN;
+   /* Yijing hexagram symbols */
+   if (code >= 0x4DC0 && code <= 0x4DFF)
+      return FONT_FALLBACK_GENERAL;
+   return -1;
+}
+
 #ifdef FONT_FALLBACK_LOADS
 typedef struct font_fallback_load
 {
@@ -512,12 +537,15 @@ static const struct font_glyph *font_cache_miss(font_cache_t *c,
 
    if (!gi)
    {
-      int id = font_fallback_for(code);
-      if (id >= 0)
+      int ids[2];
+      int i;
+      ids[0] = font_fallback_for(code);
+      ids[1] = (ids[0] >= 0) ? font_fallback_next_for(code) : -1;
+      for (i = 0; i < 2 && ids[i] >= 0; i++)
       {
          bool pending                     = false;
          const font_rasterizer_t *fb_rast = NULL;
-         void *fb_face = font_cache_fallback_face(c, id, &fb_rast,
+         void *fb_face = font_cache_fallback_face(c, ids[i], &fb_rast,
                &pending);
          unsigned fb_gi;
 
@@ -528,6 +556,7 @@ static const struct font_glyph *font_cache_miss(font_cache_t *c,
             rast = fb_rast;
             face = fb_face;
             gi   = fb_gi;
+            break;
          }
       }
    }
