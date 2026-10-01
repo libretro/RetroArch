@@ -94,6 +94,13 @@
 #define NET_HTTP_DRAIN_BUDGET       ((size_t)256 * 1024)
 #define NET_HTTP_DRAIN_MAX_ITERS    256
 
+/* Process-global DNS cache entries.  Every distinct host:port added an
+ * entry that stayed for as long as it kept being hit; a session that
+ * touches many hosts (thumbnail mirrors, cloud sync, netplay lobbies)
+ * grew the list - walked on every connect - without bound.  Past this
+ * the least recently used evictable entry goes. */
+#define NET_HTTP_DNS_CACHE_MAX      32
+
 /* Redirects followed per request.  A server bouncing between two
  * URLs used to be followed forever. */
 #define NET_HTTP_MAX_REDIRECTS      8
@@ -1104,6 +1111,27 @@ static struct dns_cache_entry *net_http_dns_cache_add(
 #endif
    entry->next = dns_cache;
    dns_cache = entry;
+
+   /* Bound the cache.  Runs on insert only (a new host:port), never on
+    * a hit or per transfer; the new entry is at the head and is never
+    * the one evicted. */
+   {
+      struct dns_cache_entry *e, *p, *victim = NULL, *victim_prev = NULL;
+      unsigned count = 0;
+      for (p = NULL, e = dns_cache; e; p = e, e = e->next)
+      {
+         count++;
+         if (   e != entry
+             && net_http_dns_cache_evictable(e)
+             && (!victim || e->timestamp < victim->timestamp))
+         {
+            victim      = e;
+            victim_prev = p;
+         }
+      }
+      if (count > NET_HTTP_DNS_CACHE_MAX && victim)
+         net_http_dns_cache_unlink(victim_prev, victim);
+   }
    return entry;
 }
 

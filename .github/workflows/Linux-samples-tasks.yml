@@ -1659,6 +1659,24 @@ jobs:
           done
           make -f Makefile.init_failure clean
 
+      - name: Build and run http_limits_test (ASan + UBSan, threaded and not)
+        shell: bash
+        working-directory: samples/tasks/http
+        run: |
+          set -eu
+          # net_http.c included whole, with the clock and the socket
+          # calls stubbed. The DNS cache is capped (it grew by one entry
+          # per distinct host:port for the whole session), evicts least
+          # recently used first, and never evicts a lookup still in
+          # flight.
+          for threads in 1 0; do
+            make -f Makefile.limits clean
+            make -f Makefile.limits THREADS=$threads SANITIZER=address,undefined
+            ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 \
+               timeout 60 ./http_limits_test
+          done
+          make -f Makefile.limits clean
+
       - name: Build and run HTTP DNS connect lifetime test
         shell: bash
         working-directory: samples/tasks/http
