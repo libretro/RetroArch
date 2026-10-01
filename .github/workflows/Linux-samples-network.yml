@@ -253,7 +253,9 @@ jobs:
           # from a realistic messy CA bundle (BearSSL), keep-alive pool
           # reuse, one-shot replay of a request on a pooled connection
           # the server closed while idle, and no replay once response
-          # bytes have been seen.
+          # bytes have been seen. Each TLS backend's non-blocking send
+          # must push a 12 MiB body past a server that stops reading for
+          # a second without ever blocking, and deliver every byte.
           make clean all SANITIZER=address,undefined
           test -x cheevos_login_test
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
@@ -268,6 +270,12 @@ jobs:
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \
              make check SSL_BACKEND=mbed
           echo "[pass] cheevos_login_test (mbedTLS, ASan)"
+          # The built-in client, RetroArch's default backend.
+          make clean all SSL_BACKEND=retro SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \
+             make check SSL_BACKEND=retro
+          echo "[pass] cheevos_login_test (built-in TLS, ASan)"
           # The runner's libmbedtls-dev is 2.28, which has no TLS 1.3,
           # so the leg above cannot see either TLS 1.3 failure.  Mbed
           # TLS 3.6.0 is the one release that shows both: it fails

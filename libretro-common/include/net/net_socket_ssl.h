@@ -45,7 +45,18 @@ int ssl_socket_last_error(void *state_data);
 
 int ssl_socket_send_all_blocking(void *state_data, const void *data_, size_t len, bool no_signal);
 
+/* Takes as much of @data_ as the connection can accept without
+ * blocking and returns how much that was: 0 when the socket is full,
+ * -1 on error.  Bytes taken may still sit inside the TLS layer; once
+ * the last of them is taken, call ssl_socket_flush_nonblocking() until
+ * it reports 1.  After a 0, the next call must pass the same buffer,
+ * at least as long (mbedtls has to finish the record it began). */
 ssize_t ssl_socket_send_all_nonblocking(void *state_data, const void *data_, size_t len, bool no_signal);
+
+/* Moves bytes already taken by ssl_socket_send_all_nonblocking() on to
+ * the socket without blocking.  1: nothing left pending, 0: the socket
+ * is full (wait for it to be writable and call again), -1: error. */
+int ssl_socket_flush_nonblocking(void *state_data);
 
 int ssl_socket_receive_all_blocking(void *state_data, void *data_, size_t len);
 

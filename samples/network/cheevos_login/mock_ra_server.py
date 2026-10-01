@@ -25,6 +25,7 @@ import socket
 import ssl
 import sys
 import threading
+import time
 
 LOGIN_BODY = b"r=login2&u=testuser&p=testpass1234"
 LOGIN_REPLY = json.dumps({
@@ -47,6 +48,9 @@ class Listener:
         self.lock = threading.Lock()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # A small receive window, inherited by accepted sockets, so that
+        # /upload's pause backs up into the client's send buffer.
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 65536)
         self.sock.bind(("127.0.0.1", 0))
         self.sock.listen(16)
         self.port = self.sock.getsockname()[1]
@@ -94,11 +98,23 @@ class Listener:
                 k, v = line.split(":", 1)
                 headers[k.strip().lower()] = v.strip()
         clen = int(headers.get("content-length", "0"))
+        if path == "/upload":
+            # Stop reading for a second: a client that sends its body in
+            # one blocking call is stuck in it until we resume.
+            time.sleep(1.0)
+        body = bytearray(body)
         while len(body) < clen:
-            chunk = conn.recv(4096)
+            chunk = conn.recv(65536)
             if not chunk:
                 return False
             body += chunk
+        body = bytes(body)
+
+        if path == "/upload":
+            ok = (method == "PUT" and clen == len(body)
+                  and body == bytes(range(256)) * (clen // 256))
+            self.respond(conn, 200, b'{"ok":true}' if ok else b'{"ok":false}')
+            return True
 
         if path == "/partial":
             conn.sendall(b"HTTP/1.1 20")

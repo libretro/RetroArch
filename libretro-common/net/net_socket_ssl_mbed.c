@@ -104,6 +104,10 @@ struct ssl_state
   /* Last mbedtls return code that made init/connect fail; 0 when the
    * failure was not the library's. */
   int last_err;
+  /* Length of a non-blocking write that returned WANT_WRITE: mbedtls
+   * holds that record half-sent and must be called again with the same
+   * buffer and length to finish it. */
+  size_t wpend;
 };
 
 static void ssl_debug(void *ctx, int level,
@@ -535,18 +539,40 @@ int ssl_socket_send_all_blocking(void *state_data,
    return true;
 }
 
+/* Bytes written, 0 when the socket is full (the caller must come back
+ * with the same buffer, at least as long), -1 on error.  It used to
+ * treat WANT_WRITE as an error and report the whole length as written
+ * whatever mbedtls_ssl_write() had actually taken.  A positive return
+ * from mbedtls means those bytes' records are on the wire, so there is
+ * never anything left for ssl_socket_flush_nonblocking() to do. */
 ssize_t ssl_socket_send_all_nonblocking(void *state_data,
       const void *data_, size_t len, bool no_signal)
 {
    int ret;
-   ssize_t __len = len;
    struct ssl_state *state = (struct ssl_state*)state_data;
-   const uint8_t     *data = (const uint8_t*)data_;
+   (void)no_signal;
+
    mbedtls_net_set_nonblock(&state->net_ctx);
-   ret = mbedtls_ssl_write(&state->ctx, data, len);
-   if (ret <= 0)
-      return -1;
-   return __len;
+   if (state->wpend && len > state->wpend)
+      len = state->wpend;
+   ret = mbedtls_ssl_write(&state->ctx, (const unsigned char*)data_, len);
+   if (ret >= 0)
+   {
+      state->wpend = 0;
+      return ret;
+   }
+   if (ret == MBEDTLS_ERR_SSL_WANT_WRITE || ret == MBEDTLS_ERR_SSL_WANT_READ)
+   {
+      state->wpend = len;
+      return 0;
+   }
+   return -1;
+}
+
+int ssl_socket_flush_nonblocking(void *state_data)
+{
+   struct ssl_state *state = (struct ssl_state*)state_data;
+   return state->wpend ? 0 : 1;
 }
 
 void ssl_socket_close(void *state_data)

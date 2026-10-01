@@ -8,9 +8,9 @@ INCDIRS := -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR)
 CC      := $(compiler)
 flags   += -std=gnu99
 
-# SSL_BACKEND=bear (default, a system BearSSL: libbearssl-dev) or
-# mbed (a system mbedTLS) - the two library backends a build can be
-# configured with in place of the built-in client.
+# SSL_BACKEND=bear (default, a system BearSSL: libbearssl-dev), mbed
+# (a system mbedTLS), or retro (the built-in client, RetroArch's
+# default).
 SSL_BACKEND ?= bear
 
 SOURCES_C := \
@@ -42,6 +42,17 @@ ifeq ($(SSL_BACKEND),bear)
    SOURCES_C += bear_seed.c
    CFLAGS    += -DHAVE_BEARSSL -DTEST_SSL_BEAR
    LDFLAGS   += -lbearssl
+else ifeq ($(SSL_BACKEND),retro)
+   # The built-in client (RetroArch's default), trusting the test CA
+   # through ssl_socket_retro_set_trust_pem().
+   SOURCES_C += $(LIBRETRO_COMM_DIR)/net/net_socket_ssl_retro.c \
+		$(LIBRETRO_COMM_DIR)/crypto/crypto.c \
+		$(LIBRETRO_COMM_DIR)/crypto/kdf.c \
+		$(LIBRETRO_COMM_DIR)/crypto/pk.c \
+		$(LIBRETRO_COMM_DIR)/crypto/x509.c \
+		$(LIBRETRO_COMM_DIR)/hash/lrc_hash.c \
+		$(LIBRETRO_COMM_DIR)/utils/md5.c
+   CFLAGS    += -DHAVE_RETROSSL -DHAVE_CRYPTO -DTEST_SSL_RETRO
 else
    # mbed_seed.c #includes the real backend (see the file).
    SOURCES_C += mbed_seed.c

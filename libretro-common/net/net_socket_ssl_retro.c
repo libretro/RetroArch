@@ -269,6 +269,13 @@ struct ssl_state
    uint8_t *cork;
    size_t   cork_len;
    uint8_t  corked;
+   /* One sealed application-data record not yet fully on the wire,
+    * for ssl_socket_send_all_nonblocking(): bytes are sealed as they
+    * are accepted, and what the socket did not take waits here.
+    * Allocated on first use. */
+   uint8_t *tx;
+   size_t   tx_len;
+   size_t   tx_off;
    uint8_t  resumed;        /* this connection resumed a session */
    uint8_t  expect_ticket;  /* server said it will send a NewSessionTicket */
    uint8_t  offered_sid[32];
@@ -457,21 +464,17 @@ static int tls_uncork(struct ssl_state *s)
    return 0;
 }
 
-static int tls_send_record(struct ssl_state *s, uint8_t type,
-      const uint8_t *data, size_t len)
+/* Seal @len bytes of @type into @rec (room for 5 + len +
+ * TLS_REC_OVERHEAD), advancing the write sequence.  *@out_len is the
+ * record's length on the wire. */
+static int tls_seal_record(struct ssl_state *s, uint8_t type,
+      const uint8_t *data, size_t len, uint8_t *rec, size_t *out_len)
 {
-   uint8_t *rec;
    size_t   rec_len;
-   int      ok;
 
    if (len > TLS_REC_MAX)
       return -1;
 
-   if (!(rec = (uint8_t*)malloc(5 + len + TLS_REC_OVERHEAD)))
-   {
-      s->last_err = TLS_ERR_MEMORY;
-      return -1;
-   }
    rec[0] = type;
    rec[1] = 3;
    rec[2] = 3;
@@ -556,10 +559,62 @@ static int tls_send_record(struct ssl_state *s, uint8_t type,
       s->cseq++;
    }
 
+   *out_len = rec_len;
+   return 0;
+
+fail:
+   s->last_err = TLS_ERR_CIPHER;
+   return -1;
+}
+
+/* Put a pending non-blocking record on the wire before anything else
+ * goes out, so records leave in sequence order. */
+static int tls_tx_drain_blocking(struct ssl_state *s)
+{
+   if (s->tx_off >= s->tx_len)
+      return 0;
+   socket_set_block(s->fd, true);
+   if (!socket_send_all_blocking(s->fd, s->tx + s->tx_off,
+            s->tx_len - s->tx_off, true))
+   {
+      s->last_err = TLS_ERR_SOCKET;
+      return -1;
+   }
+   s->tx_off = s->tx_len = 0;
+   return 0;
+}
+
+static int tls_send_record(struct ssl_state *s, uint8_t type,
+      const uint8_t *data, size_t len)
+{
+   uint8_t *rec;
+   size_t   rec_len;
+   int      ok;
+
+   if (len > TLS_REC_MAX)
+      return -1;
+   if (!s->corked && tls_tx_drain_blocking(s) != 0)
+      return -1;
+
+   if (!(rec = (uint8_t*)malloc(5 + len + TLS_REC_OVERHEAD)))
+   {
+      s->last_err = TLS_ERR_MEMORY;
+      return -1;
+   }
+   if (tls_seal_record(s, type, data, len, rec, &rec_len) != 0)
+   {
+      free(rec);
+      return -1;
+   }
+
    if (s->corked)
    {
       if (s->cork_len + rec_len > TLS_CORK_MAX)
-         goto fail;
+      {
+         free(rec);
+         s->last_err = TLS_ERR_CIPHER;
+         return -1;
+      }
       memcpy(s->cork + s->cork_len, rec, rec_len);
       s->cork_len += rec_len;
       free(rec);
@@ -573,11 +628,6 @@ static int tls_send_record(struct ssl_state *s, uint8_t type,
       return -1;
    }
    return 0;
-
-fail:
-   free(rec);
-   s->last_err = TLS_ERR_CIPHER;
-   return -1;
 }
 
 /* Reads one record into s->rx, decrypting in place once the server
@@ -2288,6 +2338,8 @@ int ssl_socket_send_all_blocking(void *state_data, const void *data_,
    (void)no_signal;
 
    socket_set_block(s->fd, true);
+   if (tls_tx_drain_blocking(s) != 0)
+      return -1;
    while (len)
    {
       size_t n = len < TLS_REC_MAX ? len : TLS_REC_MAX;
@@ -2299,20 +2351,74 @@ int ssl_socket_send_all_blocking(void *state_data, const void *data_,
    return 1;
 }
 
+/* Push the pending record as far as the socket takes it now.
+ * 1: nothing left pending, 0: the socket is full, -1: error. */
+static int tls_tx_push(struct ssl_state *s)
+{
+   ssize_t n;
+   if (s->tx_off >= s->tx_len)
+      return 1;
+   socket_set_block(s->fd, false);
+   if ((n = socket_send_all_nonblocking(s->fd, s->tx + s->tx_off,
+               s->tx_len - s->tx_off, true)) < 0)
+   {
+      s->last_err = TLS_ERR_SOCKET;
+      return -1;
+   }
+   s->tx_off += (size_t)n;
+   return s->tx_off >= s->tx_len;
+}
+
 ssize_t ssl_socket_send_all_nonblocking(void *state_data, const void *data_,
       size_t len, bool no_signal)
 {
-   /* A record is written whole or not at all; the socket is blocking
-    * for the duration of the write, as the other backends do. */
-   if (ssl_socket_send_all_blocking(state_data, data_, len, no_signal) < 0)
+   struct ssl_state *s = (struct ssl_state*)state_data;
+   const uint8_t *data = (const uint8_t*)data_;
+   size_t taken        = 0;
+   (void)no_signal;
+
+   if (!s->tx && !(s->tx = (uint8_t*)malloc(5 + TLS_REC_MAX + TLS_REC_OVERHEAD)))
+   {
+      s->last_err = TLS_ERR_MEMORY;
       return -1;
-   return (ssize_t)len;
+   }
+
+   /* Seal a record only once the previous one is fully on the wire, so
+    * at most one record is ever held back; what is taken is sealed,
+    * and what the socket has not taken yet goes out on the next call
+    * or ssl_socket_flush_nonblocking(). */
+   for (;;)
+   {
+      size_t n;
+      int    r = tls_tx_push(s);
+      if (r < 0)
+         return -1;
+      if (!r || taken == len)
+         break;
+      n = len - taken;
+      if (n > TLS_REC_MAX)
+         n = TLS_REC_MAX;
+      if (tls_seal_record(s, TLS_CT_APPDATA, data + taken, n,
+               s->tx, &s->tx_len) != 0)
+         return -1;
+      s->tx_off = 0;
+      taken    += n;
+   }
+   return (ssize_t)taken;
+}
+
+int ssl_socket_flush_nonblocking(void *state_data)
+{
+   return tls_tx_push((struct ssl_state*)state_data);
 }
 
 void ssl_socket_close(void *state_data)
 {
    struct ssl_state *s = (struct ssl_state*)state_data;
-   if (s->handshake_done && !s->closed)
+   /* Not behind a half-sent record: the alert would have to wait for
+    * it, and a peer that stopped reading is exactly when a transfer is
+    * abandoned mid-upload. */
+   if (s->handshake_done && !s->closed && s->tx_off >= s->tx_len)
       tls_send_alert(s, 1, 0);   /* warning close_notify */
    socket_close(s->fd);
 }
@@ -2330,6 +2436,7 @@ void ssl_socket_free(void *state_data)
    free(s->rx);
    free(s->hs);
    free(s->cork);
+   free(s->tx);
    free(s);
 }
 
