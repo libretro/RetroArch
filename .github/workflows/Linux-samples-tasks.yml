@@ -1471,8 +1471,9 @@ jobs:
           # sits between two representations: RetroArch's raw
           # CRLF-delimited blob and the NULL-terminated key/value array
           # emscripten_fetch wants, plus the response blob that has to
-          # become the same "Name: Value" string_list net_http.c
-          # produces.  Neither conversion existed while the backend was
+          # become the same "Name: Value" header block net_http.c
+          # produces - through net_http_headers_compact(), which the test
+          # links rather than copies.  Neither conversion existed while the backend was
           # on emscripten_async_wget2_data, which has no header support
           # at all - the `headers` argument was accepted and dropped on
           # every entry point, so cloud sync could not authenticate.

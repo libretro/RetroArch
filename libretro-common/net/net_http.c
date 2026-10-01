@@ -3471,6 +3471,38 @@ static const char *net_http_headers_block(struct http_t *state,
    return state->response.hdr;
 }
 
+size_t net_http_headers_compact(char *raw)
+{
+   char *p = raw;
+   char *w = raw;
+
+   if (!raw)
+      return 0;
+   while (*p)
+   {
+      char *eol  = strchr(p, '\n');
+      char *end;
+      char *next;
+
+      if (!eol)
+         eol = p + strlen(p);
+      next = *eol ? eol + 1 : eol;
+      end  = eol;
+      while (end > p && (end[-1] == '\r' || end[-1] == ' '))
+         end--;
+      if (end > p)
+      {
+         size_t n = (size_t)(end - p);
+         memmove(w, p, n);
+         w   += n;
+         *w++ = '\0';
+      }
+      p = next;
+   }
+   *w = '\0';
+   return (size_t)(w - raw);
+}
+
 char *net_http_headers_take(struct http_t *state, bool accept_err)
 {
    const char *h = net_http_headers_block(state, accept_err);

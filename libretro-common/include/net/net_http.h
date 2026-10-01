@@ -230,6 +230,22 @@ const char *net_http_failure(struct http_t *state, int *code);
 char *net_http_headers_take(struct http_t *state, bool accept_err);
 
 /**
+ * net_http_headers_compact:
+ * @raw : header text, one "Name: value" line per LF or CRLF, NUL-terminated,
+ *        with one spare byte after the terminator
+ *
+ * Rewrites @raw in place into the block net_http_headers_take()
+ * returns: each line NUL-terminated, trailing CR and spaces trimmed,
+ * blank lines dropped, an empty line at the end.  Output never outgrows
+ * input, except for that closing NUL, which is what the spare byte is
+ * for.  For backends that get the headers as text from somewhere else
+ * (the browser, under Emscripten).
+ *
+ * Returns: the block's length, closing NUL excluded.
+ **/
+size_t net_http_headers_compact(char *raw);
+
+/**
  * net_http_header_next:
  *
  * The line after @line in the block @headers (the first line when

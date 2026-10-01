@@ -191,8 +191,9 @@ error:
  * "Name: Value" lines that net_http.c produces (each NUL-terminated,
  * an empty line at the end), so consumers such as
  * network/cloud_sync/webdav.c behave identically on both backends.
- * The lines are compacted in the buffer the browser filled: one
- * allocation, and the write cursor never passes the read cursor.
+ * The lines are compacted in the buffer the browser filled, by
+ * net_http_headers_compact(): one allocation, and the same code the
+ * native-side test exercises.
  *
  * Browsers normalise response header names to lower case, so these
  * arrive as "www-authenticate: Digest ..." where the native path
@@ -202,8 +203,6 @@ static char *http_response_headers(emscripten_fetch_t *fetch)
 {
    size_t  len;
    char   *raw;
-   char   *p;
-   char   *w;
 
    if (!(len = emscripten_fetch_get_response_headers_length(fetch)))
       return NULL;
@@ -214,32 +213,7 @@ static char *http_response_headers(emscripten_fetch_t *fetch)
 
    emscripten_fetch_get_response_headers(fetch, raw, len + 1);
    raw[len] = '\0';
-
-   p = w = raw;
-   while (*p)
-   {
-      char *eol = strchr(p, '\n');
-      char *end;
-      char *next;
-
-      if (!eol)
-         eol = p + strlen(p);
-      next = (*eol) ? eol + 1 : eol;
-      end  = eol;
-      while (end > p && (end[-1] == '\r' || end[-1] == ' '))
-         end--;
-
-      if (end > p)
-      {
-         size_t n = (size_t)(end - p);
-         memmove(w, p, n);
-         w   += n;
-         *w++ = '\0';
-      }
-
-      p = next;
-   }
-   *w = '\0';
+   net_http_headers_compact(raw);
    return raw;
 }
 
