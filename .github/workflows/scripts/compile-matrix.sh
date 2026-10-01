@@ -447,6 +447,17 @@ arm "win32"      win32      "-D_WIN32 -D_WIN32_WINNT=0x0600"
 arm "win32-old"  win32      "-D_WIN32 -D_WIN32_WINNT=0x0400"
 arm "macos"      apple      "-D__APPLE__"
 arm "ios"        apple      "-D__APPLE__ -DTARGET_OS_IPHONE=1"
+
+# The CoreText rasterizer and the font driver's Apple branch, against
+# stand-ins for the SDK headers it includes: no runner builds it but the
+# Apple jobs, so a change to the rasterizer interface reached them first.
+CORETEXT="$HOSTOFF -D__APPLE__ -D__MACH__ -DHAVE_CORETEXT"
+platform_video "macos coretext rasterizer" "$CORETEXT" "-I$STUBS/apple" \
+   gfx/drivers_font_renderer/coretext.c ""
+platform_video "ios coretext rasterizer" "$CORETEXT -DTARGET_OS_IPHONE=1" \
+   "-I$STUBS/apple" gfx/drivers_font_renderer/coretext.c ""
+platform_video "macos font driver" "$CORETEXT" "-I$STUBS/apple" \
+   gfx/font_driver.c ""
 arm "dos/djgpp"  ""         "-D__DJGPP__ -D__unix__"
 arm "linux"      ""         ""
 

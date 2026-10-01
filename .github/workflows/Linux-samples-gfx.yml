@@ -1102,6 +1102,14 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
           UBSAN_OPTIONS=print_stacktrace=1 timeout 120 make check SANITIZER=address,undefined
           make clean
+          # A fallback font is read on a thread of its own while two
+          # fonts on two threads ask for it; DejaVu stands in for the
+          # assets' fallback-font.ttf.
+          sudo apt-get install -y -qq fonts-dejavu-core > /dev/null
+          make fallback SAN=thread
+          TSAN_OPTIONS=halt_on_error=1 setarch "$(uname -m)" -R \
+             timeout 120 ./fallback
+          make clean
 
       - name: Build and run overlay_apng_test (ASan + UBSan, TSan)
         shell: bash

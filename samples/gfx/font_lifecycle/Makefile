@@ -11,7 +11,7 @@ SRC     := $(RA)/gfx/font_driver.c \
            $(RA)/libretro-common/encodings/encoding_utf.c \
            $(RA)/libretro-common/lists/string_list.c \
            $(RA)/libretro-common/time/rtime.c
-all: lifecycle lifecycle-threaded create
+all: lifecycle lifecycle-threaded create fallback
 lifecycle: font_lifecycle_test.c stubs_retroarch.c $(SRC)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 # Same tests with the marshalling branch compiled in, so a rebuild
@@ -21,10 +21,18 @@ lifecycle-threaded: font_lifecycle_test.c stubs_retroarch.c $(SRC)
 create: font_create_test.c stubs_retroarch.c $(SRC) \
         $(RA)/gfx/drivers_font_renderer/stb.c $(RA)/gfx/bitmapfont.c
 	$(CC) $(CFLAGS) -DFONT_TEST_REAL_STB -o $@ $^ -lm
+# The fallback font read on its own thread, against two fonts asking
+# at once: real stb, real rthreads.
+fallback: font_fallback_test.c stubs_retroarch.c $(SRC) \
+        $(RA)/gfx/drivers_font_renderer/stb.c $(RA)/gfx/bitmapfont.c \
+        $(RA)/libretro-common/rthreads/rthreads.c
+	$(CC) $(CFLAGS) -DHAVE_THREADS -DFONT_TEST_REAL_STB \
+	   -DFONT_TEST_REAL_THREADS -o $@ $^ -lm
 check: all
 	ASAN_OPTIONS=detect_leaks=1 ./lifecycle
 	ASAN_OPTIONS=detect_leaks=1 ./lifecycle-threaded
 	ASAN_OPTIONS=detect_leaks=1 ./create
+	ASAN_OPTIONS=detect_leaks=1 ./fallback
 clean:
-	rm -f lifecycle lifecycle-threaded create
+	rm -f lifecycle lifecycle-threaded create fallback
 .PHONY: all check clean
