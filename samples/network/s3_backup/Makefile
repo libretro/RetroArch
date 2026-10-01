@@ -10,10 +10,14 @@ flags   += -std=gnu99
 
 # The test includes network/cloud_sync/s3.c so it can drive the driver
 # as shipped; everything below is what that translation unit needs to
-# link.  The HTTP task layer is stubbed in stubs_retroarch.c.
+# link.  The HTTP task layer is stubbed in stubs_retroarch.c; net_http.c
+# is linked for the response header helpers the driver reads with.
 SOURCES_C := \
 	s3_backup_test.c \
 	stubs_retroarch.c \
+	$(LIBRETRO_COMM_DIR)/net/net_http.c \
+	$(LIBRETRO_COMM_DIR)/net/net_compat.c \
+	$(LIBRETRO_COMM_DIR)/net/net_socket.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \

@@ -204,22 +204,57 @@ bool net_http_error(struct http_t *state);
 const char *net_http_failure(struct http_t *state, int *code);
 
 /**
+ * net_http_headers_take:
+ * @accept_err : also return them when the transfer failed
+ *
+ * The response headers as one block: each "Name: value" line
+ * NUL-terminated, the block ending in an empty line ("\0\0" at its
+ * end; a response with no header lines is a single "\0").  Walk it
+ * with net_http_header_next(), or look a field up with
+ * net_http_header_value().
+ *
+ * Ownership moves to the caller, who frees it with free(); repeated
+ * calls return the same pointer.  NULL when no status line was parsed,
+ * and on a transport error unless @accept_err - headers are returned
+ * for any parsed response, HTTP error statuses such as 401 included
+ * (needed for auth challenges).
+ **/
+char *net_http_headers_take(struct http_t *state, bool accept_err);
+
+/**
+ * net_http_header_next:
+ *
+ * The line after @line in the block @headers (the first line when
+ * @line is NULL), or NULL at the end:
+ *
+ *    for (h = net_http_header_next(hdrs, NULL); h;
+ *         h = net_http_header_next(hdrs, h))
+ **/
+const char *net_http_header_next(const char *headers, const char *line);
+
+/**
+ * net_http_header_value:
+ *
+ * The value of the first field named @name (case-insensitive, whole
+ * name), leading whitespace skipped; NULL if there is none.  Points
+ * into @headers.  Fields that may repeat (WWW-Authenticate) want
+ * net_http_header_next() instead.
+ **/
+const char *net_http_header_value(const char *headers, const char *name);
+
+/**
  * net_http_headers:
  *
- * Leaf function.
- *
- * @return the response headers. The returned buffer is owned by the
- * caller of net_http_new; it is not freed by net_http_delete.
- * On a transport error, NULL is returned unless accept_error is true.
- * Headers are returned for any response that was parsed successfully,
- * including HTTP error statuses such as 401 (needed for auth challenges).
+ * Legacy: the headers as a newly built string_list, owned by the
+ * caller.  Costs an allocation per line; nothing in RetroArch uses it.
+ * Same NULL rules as net_http_headers_take().
  **/
 struct string_list *net_http_headers(struct http_t *state);
 struct string_list *net_http_headers_ex(struct http_t *state, bool accept_error);
 
 /**
  * net_http_body_is_framed:
- * @headers : response headers as net_http_headers() returns them
+ * @headers : header block as net_http_headers_take() returns it
  *
  * True when the response frames its body with Content-Length or
  * "Transfer-Encoding: chunked", tested exactly as the receiver picks
@@ -229,7 +264,7 @@ struct string_list *net_http_headers_ex(struct http_t *state, bool accept_error)
  * on a truncated body (writing a downloaded file over a local one)
  * check this first.
  **/
-bool net_http_body_is_framed(const struct string_list *headers);
+bool net_http_body_is_framed(const char *headers);
 
 /**
  * net_http_data:

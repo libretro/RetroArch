@@ -116,9 +116,9 @@ static int do_request(const char *url, const char *method,
    }
 
    status = net_http_status(http);
-   /* The response header list is owned by the caller of
-    * net_http_new(), same as task_http frees it. */
-   string_list_free(net_http_headers_ex(http, true));
+   /* The response header block is owned by the caller once taken,
+    * same as task_http frees it. */
+   free(net_http_headers_take(http, true));
    data   = net_http_data(http, &len, false);
    if (data && out)
    {

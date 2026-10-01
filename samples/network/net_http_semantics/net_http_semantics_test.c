@@ -62,12 +62,35 @@ static unsigned char pat(size_t i)
  * cases.  Linked with --wrap=realloc; only the client thread (this
  * one) reaches net_http's reallocs. */
 static size_t realloc_max = 0;
+static unsigned long allocs = 0;
 void *__real_realloc(void *p, size_t n);
 void *__wrap_realloc(void *p, size_t n)
 {
+   __atomic_fetch_add(&allocs, 1, __ATOMIC_RELAXED);
    if (n > realloc_max)
       realloc_max = n;
    return __real_realloc(p, n);
+}
+
+/* Every heap allocation made from the linked objects (the libc ones
+ * are not wrapped).  Atomic: the DNS resolver thread allocates too. */
+void *__real_malloc(size_t n);
+void *__wrap_malloc(size_t n)
+{
+   __atomic_fetch_add(&allocs, 1, __ATOMIC_RELAXED);
+   return __real_malloc(n);
+}
+void *__real_calloc(size_t n, size_t m);
+void *__wrap_calloc(size_t n, size_t m)
+{
+   __atomic_fetch_add(&allocs, 1, __ATOMIC_RELAXED);
+   return __real_calloc(n, m);
+}
+char *__real_strdup(const char *p);
+char *__wrap_strdup(const char *p)
+{
+   __atomic_fetch_add(&allocs, 1, __ATOMIC_RELAXED);
+   return __real_strdup(p);
 }
 
 /* ---- scripted server ---- */
@@ -437,7 +460,7 @@ struct xfer
    int status;
    size_t len;
    uint8_t *data;
-   struct string_list *headers;
+   char *headers;
 };
 
 static size_t source_pos = 0, source_total = 0;
@@ -478,8 +501,7 @@ static bool test_sink(void *ud, const void *data, size_t len)
 static void xfer_free(struct xfer *x)
 {
    free(x->data);
-   if (x->headers)
-      string_list_free(x->headers);
+   free(x->headers);
    x->data    = NULL;
    x->headers = NULL;
 }
@@ -544,11 +566,11 @@ static void xfer_run_url(struct xfer *x, const char *url)
    {
       /* headers_ex() without accept_err refuses exactly when the
        * transfer ended on an error, whatever the status. */
-      x->headers = net_http_headers_ex(h, false);
+      x->headers = net_http_headers_take(h, false);
       if (!x->headers)
       {
          x->err     = 1;
-         x->headers = net_http_headers_ex(h, true);
+         x->headers = net_http_headers_take(h, true);
       }
       d = net_http_data(h, &x->len, true);
       if (d)
@@ -590,11 +612,11 @@ static int body_is_pattern(const struct xfer *x, size_t n)
 
 static int has_header(const struct xfer *x, const char *prefix)
 {
-   size_t i, n = strlen(prefix);
-   if (!x->headers)
-      return 0;
-   for (i = 0; i < x->headers->size; i++)
-      if (!strncasecmp(x->headers->elems[i].data, prefix, n))
+   const char *h;
+   size_t n = strlen(prefix);
+   for (h = net_http_header_next(x->headers, NULL); h;
+         h = net_http_header_next(x->headers, h))
+      if (!strncasecmp(h, prefix, n))
          return 1;
    return 0;
 }
@@ -752,8 +774,6 @@ static void run_section_a1(void)
 static void run_section_a2(void)
 {
    struct xfer a, b;
-   struct string_list *l;
-   union string_list_elem_attr attr;
    static const struct step s_10[] = {
       { "HTTP/1.0 200 OK\r\nContent-Length: 2\r\n\r\nok", 0, B_NONE, 0 },
       { OK_2, 0, B_NONE, 0 },
@@ -827,12 +847,8 @@ static void run_section_a2(void)
          "Content-Length after Transfer-Encoding: chunked does not reframe the body");
    xfer_free(&a); xfer_free(&b);
 
-   l = string_list_new();
-   attr.i = 0;
-   string_list_append(l, "Transfer-Encoding: gzip, chunked", attr);
-   check(net_http_body_is_framed(l),
+   check(net_http_body_is_framed("X-A: 1\0Transfer-Encoding: gzip, chunked\0"),
          "net_http_body_is_framed: chunked as a list member counts");
-   string_list_free(l);
 }
 
 /* ---- A3: redirect policy ---- */
@@ -1152,6 +1168,89 @@ static void run_section_b2(void)
          "302 Location //host:port/path: network-path reference changes host");
 }
 
+/* ---- header block ---- */
+
+static char many_head[8192];
+
+static void run_section_headers(void)
+{
+   struct xfer a;
+   struct string_list *l;
+   struct http_connection_t *conn;
+   struct http_t *h;
+   const char *line;
+   unsigned long few, many;
+   size_t off, i;
+   int n;
+   char url[128];
+   struct step st[1];
+   static const struct step s_one[] = {
+      { "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok", 0, B_NONE, 0 },
+   };
+   static const struct step s_vals[] = {
+      { "HTTP/1.1 200 OK\r\nX-Multi: a\r\nETag:   \"v1\"\r\nX-Multi: b\r\n"
+        "X-Empty:\r\nContent-Length: 2\r\n\r\nok", 0, B_NONE, 0 },
+   };
+
+   memset(&a, 0, sizeof(a));
+
+   case_begin(s_vals, 1, 0);
+   xfer_run(&a, "/vals");
+   check(a.done && a.headers
+         && !strcmp(net_http_header_value(a.headers, "etag"), "\"v1\"")
+         && !strcmp(net_http_header_value(a.headers, "X-Empty"), "")
+         && !net_http_header_value(a.headers, "X-Mult")
+         && !net_http_header_value(a.headers, "Missing"),
+         "header_value: case-insensitive whole-name lookup, whitespace skipped");
+   for (n = 0, line = net_http_header_next(a.headers, NULL); line;
+         line = net_http_header_next(a.headers, line))
+      n += !strncmp(line, "X-Multi:", 8);
+   check(n == 2, "header_next: repeated fields all visited, in order");
+   xfer_free(&a);
+
+   /* Same request, 1 header line vs 64: the header block is one
+    * allocation that doubles, so the count barely moves. A string_list
+    * cost an allocation per line on top of its struct and array. */
+   case_begin(s_one, 1, 0);
+   allocs = 0;
+   xfer_run(&a, "/few");
+   few = __atomic_load_n(&allocs, __ATOMIC_RELAXED);
+   xfer_free(&a);
+
+   off = (size_t)snprintf(many_head, sizeof(many_head), "HTTP/1.1 200 OK\r\n");
+   for (i = 0; i < 64; i++)
+      off += (size_t)snprintf(many_head + off, sizeof(many_head) - off,
+            "X-Header-%02u: value number %u\r\n", (unsigned)i, (unsigned)i);
+   snprintf(many_head + off, sizeof(many_head) - off,
+         "Content-Length: 2\r\n\r\nok");
+   memset(st, 0, sizeof(st));
+   st[0].head = many_head;
+   case_begin(st, 1, 0);
+   allocs = 0;
+   xfer_run(&a, "/many");
+   many = __atomic_load_n(&allocs, __ATOMIC_RELAXED);
+   check(a.done && has_header(&a, "X-Header-63:") && many <= few + 3,
+         "64 header lines cost no per-line allocations");
+   xfer_free(&a);
+
+   /* Legacy string_list accessor, for code outside RetroArch. */
+   case_begin(s_vals, 1, 0);
+   snprintf(url, sizeof(url), "http://127.0.0.1:%d/legacy", srv_port);
+   conn = net_http_connection_new(url, "GET", NULL);
+   net_http_connection_iterate(conn);
+   net_http_connection_done(conn);
+   h = net_http_new(conn);
+   net_http_connection_free(conn);
+   while (h && !net_http_update(h, NULL, NULL))
+      net_http_wait(h, 20);
+   l = net_http_headers_ex(h, false);
+   check(l && l->size == 5 && !strcmp(l->elems[1].data, "ETag:   \"v1\""),
+         "net_http_headers_ex: legacy string_list still built from the block");
+   if (l)
+      string_list_free(l);
+   net_http_delete(h);
+}
+
 int main(void)
 {
    if (!network_init() || srv_start())
@@ -1169,6 +1268,7 @@ int main(void)
    run_section_a5();
    run_section_b1();
    run_section_b2();
+   run_section_headers();
 
    srv_shutdown();
    net_http_deinit();

@@ -307,7 +307,7 @@ struct raw_result
 {
    uint8_t            *strict;
    uint8_t            *accept;
-   struct string_list *headers;
+   char *headers;
    size_t              strict_len;
    size_t              accept_len;
    int                 status;
@@ -352,7 +352,7 @@ static void raw_transfer(const char *url, struct raw_result *out)
    out->err     = net_http_error(http) ? 1 : 0;
    out->strict  = net_http_data(http, &out->strict_len, false);
    out->accept  = net_http_data(http, &out->accept_len, true);
-   out->headers = net_http_headers_ex(http, true);
+   out->headers = net_http_headers_take(http, true);
    out->ran     = 1;
 
    net_http_delete(http);
@@ -366,8 +366,7 @@ static void raw_result_free(struct raw_result *r)
       free(r->accept);
    else if (r->strict)
       free(r->strict);
-   if (r->headers)
-      string_list_free(r->headers);
+   free(r->headers);
 }
 
 /* The contract every transport failure owes, wherever it died. */
@@ -396,7 +395,7 @@ static void assert_no_response(const char *label, struct raw_result *r)
          "%s: accept_err length %lu, expected 0", label,
          (unsigned long)r->accept_len);
    CHECK(!r->headers,
-         "%s: net_http_headers_ex(accept_err=true) returned a header "
+         "%s: net_http_headers_take(accept_err=true) returned a header "
          "list for a response that never arrived", label);
 }
 

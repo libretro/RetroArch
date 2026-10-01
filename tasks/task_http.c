@@ -310,7 +310,7 @@ task_finished:
          {
             data->data    = tmp;
             data->len     = _len;
-            data->headers = net_http_headers_ex(http->handle, http->headers_accept_err);
+            data->headers = net_http_headers_take(http->handle, http->headers_accept_err);
             data->status  = net_http_status(http->handle);
 
             task_set_data(task, data);
@@ -365,7 +365,7 @@ static void task_http_transfer_cleanup(retro_task_t *task)
 
    if (data)
    {
-      string_list_free(data->headers);
+      free(data->headers);
       if (data->data)
          free(data->data);
       free(data);

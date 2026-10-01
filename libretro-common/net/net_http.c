@@ -137,7 +137,7 @@ static slock_t *conn_pool_lock = NULL;
 typedef struct response
 {
    /* Ownership of data/headers transfers to the caller when it
-    * retrieves them via net_http_data() / net_http_headers_ex().
+    * retrieves them via net_http_data() / net_http_headers_take().
     * Until then this handle owns them and net_http_delete() frees
     * them.  Previously net_http_delete() freed neither, so any path
     * that did not retrieve both leaked -- which is every cancelled
@@ -147,7 +147,15 @@ typedef struct response
    bool owns_data;
    bool owns_headers;
    char *data;
-   struct string_list *headers;
+   /* Response header lines in one block: each "Name: value" line
+    * NUL-terminated, the block ending in an empty line.  One
+    * allocation for the whole set, grown by doubling and bounded by
+    * NET_HTTP_MAX_HEADER_BYTES; NULL until the first line.  This used
+    * to be a string_list - its struct, a 32-slot array and a strdup
+    * per line, for every transfer. */
+   char *hdr;
+   size_t hdr_len;   /* bytes used, final terminator excluded */
+   size_t hdr_cap;
    size_t pos;
    size_t len;
    size_t buflen;
@@ -169,10 +177,12 @@ typedef struct response
    enum response_part part;
    enum bodytype bodytype;
    /* Set during the header walk, while each line is in cache, so
-    * that nothing walks the list again at P_DONE.  location points
-    * into the string_list copy of the Location line, never into the
-    * receive buffer, which is memmove'd after the walk. */
-   const char *location;
+    * that nothing walks the block again at P_DONE.  location is the
+    * offset of the Location value in hdr, plus one (0: none); an
+    * offset because the block may move as it grows, and never a
+    * pointer into the receive buffer, which is memmove'd after the
+    * walk. */
+   size_t location;
    /* The connection cannot carry another request once this response
     * is done: Connection: close, HTTP/1.0 without keep-alive, a
     * close-delimited body, a 101, or bytes left over after a response
@@ -1321,7 +1331,6 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    state->response.content_len  = 0;
    state->response.buflen  = 64 * 1024;  /* Start with larger buffer to reduce reallocations */
    state->response.data    = (char*)malloc(state->response.buflen);
-   state->response.headers = string_list_new();
 
    /* Any of the strdup / malloc calls above can return NULL on OOM.
     * The dispatch path in net_http_update() dereferences
@@ -1329,15 +1338,11 @@ struct http_t *net_http_new(struct http_connection_t *conn)
     * the whole setup early here rather than stack up NULL derefs
     * later.
     *
-    * Note on cleanup order: net_http_delete() intentionally does not
-    * free response.data or response.headers because successful callers
-    * take ownership of response.data via net_http_data() and of
-    * response.headers via net_http_headers().  On the OOM failure path
-    * those ownership transfers never happen, so we free both here
-    * before calling net_http_delete() (which then cleans up the
-    * request.* fields and the state struct itself). */
+    * Note on cleanup order: response.data is freed here and nulled
+    * before net_http_delete() (which then cleans up the request.*
+    * fields and the state struct itself).  The header block does not
+    * exist yet; it is allocated with the first header line. */
    if (   !state->response.data
-       || !state->response.headers
        || !state->request.domain
        || !state->request.path
        || !state->request.method
@@ -1353,10 +1358,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
        * function. */
       if (state->response.data)
          free(state->response.data);
-      if (state->response.headers)
-         string_list_free(state->response.headers);
       state->response.data    = NULL;
-      state->response.headers = NULL;
       net_http_delete(state);
       return NULL;
    }
@@ -1858,17 +1860,10 @@ int net_http_fd(struct http_t *state)
  * not the final response's, and for a redirect. */
 static void net_http_headers_clear(struct response *response)
 {
-   size_t i;
-   struct string_list *list = response->headers;
-   for (i = 0; i < list->size; i++)
-   {
-      free(list->elems[i].data);
-      free(list->elems[i].userdata);
-      list->elems[i].data     = NULL;
-      list->elems[i].userdata = NULL;
-   }
-   list->size           = 0;
-   response->location   = NULL;
+   response->hdr_len    = 0;
+   if (response->hdr)
+      response->hdr[0]  = '\0';
+   response->location   = 0;
    response->discard    = false;
    response->conn_close = false;
    response->keep_alive = false;
@@ -2114,13 +2109,32 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
          }
 
          {
-            union string_list_elem_attr attr;
-            attr.i = 0;
-            if (   string_list_append(response->headers, scan, attr)
-                && location)
-               response->location =
-                    response->headers->elems[response->headers->size - 1].data
-                  + (location - scan);
+            /* Line, its NUL, and the block's closing NUL.  The header
+             * cap above bounds the growth. */
+            size_t n = (size_t)(lineend - scan);
+            if (n && !scan[n - 1])
+               n--;   /* the CR, already overwritten */
+            if (response->hdr_len + n + 2 > response->hdr_cap)
+            {
+               char  *tmp;
+               size_t want = response->hdr_cap ? response->hdr_cap * 2 : 1024;
+               while (want < response->hdr_len + n + 2)
+                  want *= 2;
+               if (!(tmp = (char*)realloc(response->hdr, want)))
+               {
+                  response->part = P_DONE;
+                  state->err     = true;
+                  return -1;
+               }
+               response->hdr     = tmp;
+               response->hdr_cap = want;
+            }
+            memcpy(response->hdr + response->hdr_len, scan, n + 1);
+            if (location)
+               response->location = response->hdr_len
+                  + (size_t)(location - scan) + 1;
+            response->hdr_len += n + 1;
+            response->hdr[response->hdr_len] = '\0';
          }
       }
 
@@ -3192,7 +3206,8 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
          return true;
       }
       state->redirects++;
-      return net_http_redirect(state, response->location);
+      return net_http_redirect(state,
+            response->hdr + response->location - 1);
    }
 
    return true;
@@ -3214,42 +3229,74 @@ int net_http_status(struct http_t *state)
    return state->response.status;
 }
 
-/**
- * net_http_headers:
- *
- * Leaf function.
- *
- * @return the response headers. The returned buffer is owned by the
- * caller of net_http_new; it is not freed by net_http_delete().
- * On a transport error, NULL is returned unless accept_err is true.
- * Headers are returned for any response that was parsed successfully,
- * including HTTP error statuses such as 401 (needed for auth challenges).
- **/
-struct string_list *net_http_headers_ex(struct http_t *state, bool accept_err)
+/* The header block, or NULL when the accessors must refuse: no
+ * status line was ever parsed (same predicate as net_http_data()), or
+ * the transfer failed and the caller does not accept that. */
+static const char *net_http_headers_block(struct http_t *state,
+      bool accept_err)
 {
-   if (!state)
-      return NULL;
-   /* Same predicate as net_http_data(): with no status line there is
-    * no header set, only the empty (or half-filled) list allocated by
-    * net_http_new(). */
-   if (state->response.status < 0)
+   if (!state || state->response.status < 0)
       return NULL;
    if (!accept_err && state->err)
       return NULL;
-   state->response.owns_headers = false;
-   return state->response.headers;
+   /* A response with no header lines still has a (empty) set; the
+    * callers read NULL as "no response". */
+   if (!state->response.hdr)
+   {
+      if (!(state->response.hdr = (char*)malloc(1)))
+         return NULL;
+      state->response.hdr[0]  = '\0';
+      state->response.hdr_cap = 1;
+   }
+   return state->response.hdr;
 }
 
-bool net_http_body_is_framed(const struct string_list *headers)
+char *net_http_headers_take(struct http_t *state, bool accept_err)
 {
-   size_t i;
+   const char *h = net_http_headers_block(state, accept_err);
+   if (!h)
+      return NULL;
+   /* Pointer left in place so repeated calls stay idempotent, as with
+    * net_http_data(); only ownership moves. */
+   state->response.owns_headers = false;
+   return (char*)h;
+}
+
+const char *net_http_header_next(const char *headers, const char *line)
+{
+   if (!headers)
+      return NULL;
+   line = line ? line + strlen(line) + 1 : headers;
+   return *line ? line : NULL;
+}
+
+const char *net_http_header_value(const char *headers, const char *name)
+{
+   const char *h;
+   size_t n;
+   if (!headers || !name)
+      return NULL;
+   n = strlen(name);
+   for (h = headers; *h; h += strlen(h) + 1)
+   {
+      if (!strncasecmp(h, name, n) && h[n] == ':')
+      {
+         const char *v = h + n + 1;
+         while (*v == ' ' || *v == '\t')
+            v++;
+         return v;
+      }
+   }
+   return NULL;
+}
+
+bool net_http_body_is_framed(const char *headers)
+{
+   const char *h;
    if (!headers)
       return false;
-   for (i = 0; i < headers->size; i++)
+   for (h = headers; *h; h += strlen(h) + 1)
    {
-      const char *h = headers->elems[i].data;
-      if (!h)
-         continue;
       /* Same two tests as the header parser above. */
       if (strncasecmp(h, "Content-Length:", STRLEN_CONST("Content-Length:")) == 0)
          return true;
@@ -3260,6 +3307,30 @@ bool net_http_body_is_framed(const struct string_list *headers)
          return true;
    }
    return false;
+}
+
+/* Legacy form, for code outside RetroArch that still takes the headers
+ * as a string_list.  Nothing in-tree calls it: it costs the per-line
+ * allocations net_http_headers_take() exists to avoid.  The list is a
+ * fresh copy each call, owned by the caller; the block stays with the
+ * handle. */
+struct string_list *net_http_headers_ex(struct http_t *state, bool accept_err)
+{
+   union string_list_elem_attr attr;
+   struct string_list *list;
+   const char *h = net_http_headers_block(state, accept_err);
+   if (!h || !(list = string_list_new()))
+      return NULL;
+   attr.i = 0;
+   for (; *h; h += strlen(h) + 1)
+   {
+      if (!string_list_append(list, h, attr))
+      {
+         string_list_free(list);
+         return NULL;
+      }
+   }
+   return list;
 }
 
 struct string_list *net_http_headers(struct http_t *state)
@@ -3344,8 +3415,8 @@ void net_http_delete(struct http_t *state)
     * simply false for the response side. */
    if (state->response.owns_data && state->response.data)
       free(state->response.data);
-   if (state->response.owns_headers && state->response.headers)
-      string_list_free(state->response.headers);
+   if (state->response.owns_headers)
+      free(state->response.hdr);
    if (state->request.domain)
       free(state->request.domain);
    if (state->request.path)

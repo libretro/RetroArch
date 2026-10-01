@@ -44,7 +44,6 @@
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
-#include <lists/string_list.h>
 #include <retro_timers.h>
 #include <retro_miscellaneous.h>
 
@@ -188,64 +187,60 @@ error:
    return NULL;
 }
 
-/* Turn the fetch's response headers into the same string_list of
- * "Name: Value" lines that net_http.c produces, so consumers such as
+/* Turn the fetch's response headers into the same header block of
+ * "Name: Value" lines that net_http.c produces (each NUL-terminated,
+ * an empty line at the end), so consumers such as
  * network/cloud_sync/webdav.c behave identically on both backends.
+ * The lines are compacted in the buffer the browser filled: one
+ * allocation, and the write cursor never passes the read cursor.
  *
  * Browsers normalise response header names to lower case, so these
  * arrive as "www-authenticate: Digest ..." where the native path
  * gives "WWW-Authenticate: ...".  Header names are case-insensitive
  * per RFC 9110, so the consumers were what needed fixing. */
-static struct string_list *http_response_headers(emscripten_fetch_t *fetch)
+static char *http_response_headers(emscripten_fetch_t *fetch)
 {
-   union string_list_elem_attr attr;
-   struct string_list *list;
    size_t  len;
    char   *raw;
    char   *p;
+   char   *w;
 
    if (!(len = emscripten_fetch_get_response_headers_length(fetch)))
       return NULL;
 
-   if (!(raw = (char*)malloc(len + 1)))
+   /* +2: the browser's terminator and room for the closing empty line */
+   if (!(raw = (char*)malloc(len + 2)))
       return NULL;
 
    emscripten_fetch_get_response_headers(fetch, raw, len + 1);
    raw[len] = '\0';
 
-   if (!(list = string_list_new()))
-   {
-      free(raw);
-      return NULL;
-   }
-
-   attr.i = 0;
-   p      = raw;
-
+   p = w = raw;
    while (*p)
    {
       char *eol = strchr(p, '\n');
       char *end;
+      char *next;
 
       if (!eol)
          eol = p + strlen(p);
-      end = eol;
+      next = (*eol) ? eol + 1 : eol;
+      end  = eol;
       while (end > p && (end[-1] == '\r' || end[-1] == ' '))
          end--;
 
       if (end > p)
       {
-         char save = *end;
-         *end      = '\0';
-         string_list_append(list, p, attr);
-         *end      = save;
+         size_t n = (size_t)(end - p);
+         memmove(w, p, n);
+         w   += n;
+         *w++ = '\0';
       }
 
-      p = (*eol) ? eol + 1 : eol;
+      p = next;
    }
-
-   free(raw);
-   return list;
+   *w = '\0';
+   return raw;
 }
 
 /* ------------------------------------------------------------------ */
@@ -292,7 +287,7 @@ task_finished:
    {
       if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
       {
-         string_list_free(http->response->headers);
+         free(http->response->headers);
          free(http->response->data);
          free(http->response);
          http->response = NULL;
@@ -340,7 +335,7 @@ static void task_http_transfer_cleanup(retro_task_t *task)
 
    if (data)
    {
-      string_list_free(data->headers);
+      free(data->headers);
       if (data->data)
          free(data->data);
       free(data);

@@ -36,8 +36,9 @@ SOURCES_C := \
 
 CFLAGS  += -Wall -std=gnu99 -O1 -g $(INCDIRS)
 CFLAGS  += -DHAVE_NETWORKING -DHAVE_THREADS -D_GNU_SOURCE
-# The buffer-growth cases read the largest realloc() net_http asks for.
-LDFLAGS += -Wl,--wrap=realloc -lpthread -lm
+# The buffer-growth cases read the largest realloc() net_http asks for,
+# the header cases count allocations.
+LDFLAGS += -Wl,--wrap=realloc,--wrap=malloc,--wrap=calloc,--wrap=strdup -lpthread -lm
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

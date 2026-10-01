@@ -88,7 +88,7 @@ static webdav_cb_state_t *new_cb_state(const char *path, const char *file,
 }
 
 static void make_response(http_transfer_data_t *resp, int status,
-      struct string_list *headers, char *body, size_t len)
+      char *headers, char *body, size_t len)
 {
    memset(resp, 0, sizeof(*resp));
    resp->status  = status;
@@ -283,13 +283,12 @@ static void test_stale_nonce_recovers(http_transfer_data_t *challenge,
    static char body[] = "server-copy";
    done_t done = {0};
    http_transfer_data_t ok;
-   struct string_list *ok_headers = string_list_new();
+   /* header block: NUL after each line, empty line at the end */
+   static char ok_headers[] = "Content-Length: 11\0";
    char got[32] = {0};
 
    /* A real 200 frames its body; the read callback refuses an unframed
     * one as possibly truncated (net_http_body_is_framed). */
-   string_list_append(ok_headers, "Content-Length: 11",
-         (union string_list_elem_attr){0});
    make_response(&ok, 200, ok_headers, body, sizeof(body) - 1);
 
    stub_reset();
@@ -313,14 +312,13 @@ static void test_stale_nonce_recovers(http_transfer_data_t *challenge,
       CHECK(!strcmp(got, body), "stale nonce: got \"%s\"", got);
       filestream_close(done.file);
    }
-   string_list_free(ok_headers);
 }
 
 int main(void)
 {
    settings_t           *settings  = config_get_ptr();
    webdav_state_t       *webdav_st = webdav_state_get_ptr();
-   struct string_list   *headers   = string_list_new();
+   static char           headers[512];
    http_transfer_data_t  challenge;
    char tmp[64];
 
@@ -332,8 +330,8 @@ int main(void)
          sizeof(settings->arrays.webdav_password));
    strlcpy(webdav_st->url, "http://127.0.0.1/dav/", sizeof(webdav_st->url));
 
-   string_list_append(headers, digest_header,
-         (union string_list_elem_attr){0});
+   /* one-line header block: the line, its NUL, the closing NUL */
+   strlcpy(headers, digest_header, sizeof(headers) - 1);
    make_response(&challenge, 401, headers, NULL, 0);
 
    test_options(&challenge);
@@ -346,7 +344,6 @@ int main(void)
 
    stub_reset();
    webdav_cleanup_digest();
-   string_list_free(headers);
    remove(tmp);
 
    if (failures)

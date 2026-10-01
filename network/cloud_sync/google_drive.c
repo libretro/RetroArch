@@ -197,12 +197,13 @@ static char *gdrive_get_headers(const char *extra)
 static void gdrive_log_http_failure(const char *context,
       http_transfer_data_t *data)
 {
-   size_t i;
+   const char *h;
    RARCH_WARN(GDPFX "Failed: %s: HTTP %d\n", context,
          data ? data->status : -1);
-   if (data && data->headers)
-      for (i = 0; i < data->headers->size; i++)
-         RARCH_WARN("%s\n", data->headers->elems[i].data);
+   if (data)
+      for (h = net_http_header_next(data->headers, NULL); h;
+            h = net_http_header_next(data->headers, h))
+         RARCH_WARN("%s\n", h);
    /* See webdav.c: data->data is sized exactly to data->len.
     * data->data[data->len] = 0 is a one-byte heap overflow. */
    if (data && data->data)

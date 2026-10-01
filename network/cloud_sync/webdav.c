@@ -513,7 +513,7 @@ static char *webdav_get_auth_header(const char *method, const char *url)
 static void webdav_log_http_failure(const char *path,
       http_transfer_data_t *data, const char *err)
 {
-    size_t i;
+    const char *h;
     size_t _len = 0;
     /* Cloud sync runs several transfers at once, so one RARCH_WARN per
      * header interleaves with the other tasks' output and produces logs
@@ -528,13 +528,13 @@ static void webdav_log_http_failure(const char *path,
      * which is the only clue a log on a console will carry. */
     if (data->status < 0 && err && *err && _len < sizeof(report) - 1)
        _len += snprintf(report + _len, sizeof(report) - _len, " (%s)", err);
-    for (i = 0; data->headers && i < data->headers->size; i++)
+    for (h = net_http_header_next(data->headers, NULL); h;
+          h = net_http_header_next(data->headers, h))
     {
        if (_len >= sizeof(report) - 1)
           break;
        report[_len++] = '\n';
-       _len += strlcpy(report + _len, data->headers->elems[i].data,
-             sizeof(report) - _len);
+       _len += strlcpy(report + _len, h, sizeof(report) - _len);
     }
     RARCH_WARN("%s\n", report);
     /* The buffer returned by net_http_data() is sized exactly to
@@ -552,24 +552,25 @@ static void webdav_log_http_failure(const char *path,
 
 static bool webdav_needs_reauth(http_transfer_data_t *data)
 {
-   size_t i;
+   const char *h;
 
    if (!data || data->status != 401 || !data->headers)
       return false;
 
-   for (i = 0; i < data->headers->size; i++)
+   for (h = net_http_header_next(data->headers, NULL); h;
+         h = net_http_header_next(data->headers, h))
    {
       /* Header names are case-insensitive (RFC 9110 5.1), and the
        * emscripten backend gets them from the browser, which
        * lower-cases them.  The offset skipped by
        * webdav_create_digest_auth() below is a fixed length, so
        * matching case-insensitively here stays correct. */
-      if (!string_starts_with_case_insensitive(data->headers->elems[i].data,
+      if (!string_starts_with_case_insensitive(h,
                "WWW-Authenticate: Digest "))
          continue;
 
       RARCH_DBG("[webdav] Found WWW-Authenticate: Digest header\n");
-      if (webdav_create_digest_auth(data->headers->elems[i].data))
+      if (webdav_create_digest_auth(h))
          return true;
       RARCH_WARN("[webdav] Failure creating WWW-Authenticate: Digest header\n");
    }
@@ -634,11 +635,11 @@ static bool webdav_allow_lists_method(const char *allow, const char *method)
 static void webdav_check_options(http_transfer_data_t *data,
       bool *dav, bool *allow_seen, bool *allow_dav_method)
 {
-   size_t i;
+   const char *hdr;
 
-   for (i = 0; data->headers && i < data->headers->size; i++)
+   for (hdr = net_http_header_next(data->headers, NULL); hdr;
+         hdr = net_http_header_next(data->headers, hdr))
    {
-      const char *hdr = data->headers->elems[i].data;
 
       if (string_starts_with_case_insensitive(hdr, "DAV:"))
          *dav = true;

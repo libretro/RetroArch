@@ -69,7 +69,10 @@ typedef struct
    bool     success;
 } run_t;
 
-static struct string_list *challenge_headers;
+/* header block: the line, its NUL, the closing NUL */
+static char challenge_headers[] =
+      "WWW-Authenticate: Digest realm=\"dav\", nonce=\"6f2a\", "
+      "qop=\"auth\", algorithm=MD5\0";
 
 static void on_done(void *user_data, const char *path, bool success,
       RFILE *file)
@@ -292,11 +295,6 @@ int main(void)
    strlcpy(webdav_st->url, BASE, sizeof(webdav_st->url));
    webdav_st->dav_verified = true;
 
-   challenge_headers = string_list_new();
-   string_list_append(challenge_headers,
-         "WWW-Authenticate: Digest realm=\"dav\", nonce=\"6f2a\", "
-         "qop=\"auth\", algorithm=MD5",
-         (union string_list_elem_attr){0});
 
    test_backup_then_put(tmp);
    test_nothing_to_back_up(tmp);
@@ -309,7 +307,6 @@ int main(void)
       string_list_free(webdav_st->dirs);
    webdav_st->dirs = NULL;
    webdav_cleanup_digest();
-   string_list_free(challenge_headers);
    remove(tmp);
 
    if (failures)

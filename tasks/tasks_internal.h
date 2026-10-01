@@ -100,7 +100,10 @@ void task_window_progress_cb(retro_task_t *task);
 typedef struct
 {
    char *data;
-   struct string_list *headers;
+   /* Response headers, one block of NUL-terminated "Name: value"
+    * lines ending in an empty line; walk with net_http_header_next().
+    * Owned here, freed with free(). */
+   char *headers;
    size_t len;
    int status;
 } http_transfer_data_t;

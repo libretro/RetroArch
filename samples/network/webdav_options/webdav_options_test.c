@@ -55,14 +55,21 @@ typedef struct
 static void run_probe(const char **hdrs, size_t n, probe_result_t *out)
 {
    http_transfer_data_t data;
-   struct string_list  *list = string_list_new();
-   size_t i;
+   static char block[4096];
+   size_t i, off = 0;
 
+   /* The header block net_http_headers_take() returns: each line
+    * NUL-terminated, an empty line at the end. */
    for (i = 0; i < n; i++)
-      string_list_append(list, hdrs[i], (union string_list_elem_attr){0});
+   {
+      size_t l = strlen(hdrs[i]) + 1;
+      memcpy(block + off, hdrs[i], l);
+      off += l;
+   }
+   block[off] = '\0';
 
    data.data    = NULL;
-   data.headers = list;
+   data.headers = block;
    data.len     = 0;
    data.status  = 200;
 
@@ -76,8 +83,6 @@ static void run_probe(const char **hdrs, size_t n, probe_result_t *out)
    /* Mirrors the decision in webdav_stat_cb(). */
    out->verified = out->dav || out->allow_dav_method;
    out->fatal    = (!out->verified && out->allow_seen);
-
-   string_list_free(list);
 }
 
 /* --- real-world header sets ------------------------------------------ */
@@ -284,7 +289,7 @@ int main(void)
       data.len     = 0;
       data.status  = 200;
       webdav_check_options(&data, &dav, &seen, &method);
-      CHECK(!dav && !seen && !method, "NULL header list: probe invented a result");
+      CHECK(!dav && !seen && !method, "NULL header block: probe invented a result");
    }
 
    test_begin_probes_regardless_of_credentials();

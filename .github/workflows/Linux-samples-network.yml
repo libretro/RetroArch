@@ -319,7 +319,9 @@ jobs:
           # net_http_url_join() and net_http_urldecode(), including
           # buffer bounds and in-place decoding; redirects resolved
           # through it ("../", "?q", "//host", fragments dropped,
-          # %20 left encoded). Every case has a
+          # %20 left encoded). The response header block: lookup and
+          # iteration, the legacy string_list accessor, and 64 header
+          # lines costing no per-line allocations. Every case has a
           # deadline, so a hang fails the case instead of the job.
           make clean all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \

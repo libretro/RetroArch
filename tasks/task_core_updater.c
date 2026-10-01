@@ -427,8 +427,7 @@ static void free_core_updater_list_handle(
          free(list_handle->http_data->data);
       /* the headers list task_http.c attaches is part of that
        * ownership */
-      if (list_handle->http_data->headers)
-         string_list_free(list_handle->http_data->headers);
+      free(list_handle->http_data->headers);
 
       free(list_handle->http_data);
    }
