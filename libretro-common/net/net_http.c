@@ -804,6 +804,15 @@ bool net_http_connection_iterate(struct http_connection_t *conn)
    if (!conn)
       return false;
 
+   /* An IPv6 literal is bracketed, and its colons are not the port's
+    * (RFC 3986 3.2.2).  An unterminated one runs to the end, and
+    * net_http_connection_done() refuses it. */
+   if (*conn->scan == '[')
+   {
+      char *close = strchr(conn->scan, ']');
+      conn->scan  = close ? close + 1 : conn->scan + strlen(conn->scan);
+   }
+
    while (*conn->scan != '/' && *conn->scan != ':' && *conn->scan != '\0')
       conn->scan++;
 
@@ -815,6 +824,11 @@ bool net_http_connection_done(struct http_connection_t *conn)
    int has_port = 0;
 
    if (!conn || !conn->domain || !*conn->domain)
+      return false;
+
+   /* "[" alone, "[::1" with no closing bracket, or "[::1]junk". */
+   if (    *conn->domain == '['
+       && (conn->scan < conn->domain + 3 || conn->scan[-1] != ']'))
       return false;
 
    if (*conn->scan == ':')
@@ -1479,8 +1493,19 @@ static void net_http_resolve(void *data)
     * something nobody could change. */
    if (network_init())
    {
+      /* The domain keeps the brackets of an IPv6 literal, since the
+       * Host header needs them; the resolver must not see them. */
+      const char *node = entry->domain;
+      char        literal[64];
+      size_t      n    = strlen(node);
+      if (node[0] == '[' && n > 2 && node[n - 1] == ']' && n - 2 < sizeof(literal))
+      {
+         memcpy(literal, node + 1, n - 2);
+         literal[n - 2] = '\0';
+         node           = literal;
+      }
       snprintf(port_buf, sizeof(port_buf), "%hu", (unsigned short)entry->port);
-      getaddrinfo_retro(entry->domain, port_buf, &hints, &addr);
+      getaddrinfo_retro(node, port_buf, &hints, &addr);
    }
 
    entry->addr = addr;
@@ -2738,8 +2763,22 @@ static bool net_http_redirect(struct http_t *state, const char *location)
    /* The fragment is the client's, never part of the request. */
    auth_end[strcspn(auth_end, "#")] = '\0';
 
-   colon    = (char*)memchr(host, ':', (size_t)(auth_end - host));
-   host_len = (size_t)((colon ? colon : auth_end) - host);
+   if (*host == '[')
+   {
+      /* IPv6 literal: the port colon, if any, follows the bracket. */
+      char *close = (char*)memchr(host, ']', (size_t)(auth_end - host));
+      if (!close || close == host + 1)
+         goto fail;
+      colon = (close + 1 < auth_end) ? close + 1 : NULL;
+      if (colon && *colon != ':')
+         goto fail;
+      host_len = (size_t)(close + 1 - host);
+   }
+   else
+   {
+      colon    = (char*)memchr(host, ':', (size_t)(auth_end - host));
+      host_len = (size_t)((colon ? colon : auth_end) - host);
+   }
    if (!host_len)
       goto fail;
    port = ssl ? 443 : 80;

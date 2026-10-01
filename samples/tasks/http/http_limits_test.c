@@ -1,6 +1,7 @@
-/* Bounds on net_http's DNS cache and connection pool, and the socket
- * family fallback, without network I/O: net_http.c is included whole
- * and the clock, the resolver and the socket calls are stubbed. */
+/* Bounds on net_http's DNS cache and connection pool, the socket family
+ * fallback and IPv6 literal handling, without network I/O: net_http.c is
+ * included whole and the clock, the resolver and the socket calls are
+ * stubbed. */
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -19,10 +20,12 @@ static int failures;
 
 retro_time_t cpu_features_get_time_usec(void) { return now; }
 bool network_init(void) { return true; }
+static char resolved_node[64];
 int getaddrinfo_retro(const char *node, const char *service,
       struct addrinfo *hints, struct addrinfo **res)
 {
-   (void)node; (void)service; (void)hints;
+   (void)service; (void)hints;
+   snprintf(resolved_node, sizeof(resolved_node), "%s", node);
    *res = NULL;
    return -1;
 }
@@ -244,11 +247,79 @@ static void test_family_fallback(void)
    fail_addr = NULL;
 }
 
+/* ---- IPv6 literals ---- */
+
+static bool split_url(const char *url, char *domain, size_t size, int *port,
+      char *path, size_t psize)
+{
+   struct http_connection_t *c = net_http_connection_new(url, "GET", NULL);
+   bool ok = false;
+   if (!c)
+      return false;
+   net_http_connection_iterate(c);
+   if (net_http_connection_done(c))
+   {
+      snprintf(domain, size, "%s", c->domain);
+      snprintf(path, psize, "%s", c->path);
+      *port = c->port;
+      ok    = true;
+   }
+   net_http_connection_free(c);
+   return ok;
+}
+
+static void test_ipv6_literals(void)
+{
+   char domain[64], path[64];
+   int  port = 0;
+   struct http_connection_t *conn;
+   struct http_t *h;
+   struct dns_cache_entry *e;
+
+   check(split_url("http://[::1]:8080/x?y", domain, sizeof(domain), &port,
+            path, sizeof(path))
+         && !strcmp(domain, "[::1]") && port == 8080 && !strcmp(path, "x?y"),
+         "http://[::1]:8080/x?y: host [::1], port 8080 (was split at the first colon)");
+   check(split_url("https://[fe80::1%25eth0]/", domain, sizeof(domain), &port,
+            path, sizeof(path))
+         && !strcmp(domain, "[fe80::1%25eth0]") && port == 443,
+         "bracketed literal without a port takes the scheme default");
+   check(!split_url("http://[::1/x", domain, sizeof(domain), &port, path, sizeof(path))
+         && !split_url("http://[::1]x/", domain, sizeof(domain), &port, path, sizeof(path))
+         && !split_url("http://[]/", domain, sizeof(domain), &port, path, sizeof(path)),
+         "unterminated, trailing-garbage and empty literals are refused");
+
+   /* The resolver gets the address without its brackets. */
+   net_http_init();
+   e = net_http_dns_cache_add("[::1]", 80, NULL);
+   resolved_node[0] = '\0';
+   net_http_resolve(e);
+   check(!strcmp(resolved_node, "::1"), "resolver is handed ::1, not [::1]");
+   net_http_deinit();
+
+   /* A redirect to a literal, through the join and the host split. */
+   net_http_init();
+   conn = net_http_connection_new("http://example.invalid/a", "GET", NULL);
+   net_http_connection_iterate(conn);
+   net_http_connection_done(conn);
+   h = net_http_new(conn);
+   net_http_connection_free(conn);
+   check(h && !net_http_redirect(h, "http://[::1]:8443/v6")
+         && !strcmp(h->request.domain, "[::1]") && h->request.port == 8443
+         && !strcmp(h->request.path, "v6"),
+         "redirect to http://[::1]:8443/v6: host [::1], port 8443");
+   check(h && net_http_redirect(h, "http://[::1/broken") && h->err,
+         "redirect to an unterminated literal fails cleanly");
+   net_http_delete(h);
+   net_http_deinit();
+}
+
 int main(void)
 {
    test_dns_cap();
    test_pool_limits();
    test_family_fallback();
+   test_ipv6_literals();
    if (failures)
    {
       printf("%d check(s) failed\n", failures);

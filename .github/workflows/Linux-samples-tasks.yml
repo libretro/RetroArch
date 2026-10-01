@@ -1672,7 +1672,9 @@ jobs:
           # the longest-idle first, and closes rather than reuses one
           # idle for more than 30 s. On a system without IPv6, an IPv6
           # address listed first no longer fails the transfer, and one
-          # mid-list no longer hides the addresses after it.
+          # mid-list no longer hides the addresses after it. Bracketed
+          # IPv6 literals ([::1]:8080) parse in URLs and redirects and
+          # reach the resolver without their brackets.
           for threads in 1 0; do
             make -f Makefile.limits clean
             make -f Makefile.limits THREADS=$threads SANITIZER=address,undefined
