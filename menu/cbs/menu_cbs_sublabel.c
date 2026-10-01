@@ -1204,6 +1204,7 @@ static int action_bind_sublabel_playlist_entry(
       char *s, size_t len)
 {
    size_t _len;
+   size_t core_name_len;
    struct menu_state    *menu_st             = menu_state_get_ptr();
    menu_list_t *menu_list                    = menu_st->entries.list;
    size_t list_size                          = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
@@ -1254,11 +1255,23 @@ static int action_bind_sublabel_playlist_entry(
       return 0;
 
    /* Add core name */
-   _len      = strlcpy(s,
+   if (!len)
+      return 0;
+
+   _len = strlcpy(s,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), len);
-   s[  _len] =  ' ';
-   s[++_len] =  '\0';
-   _len     += strlcpy(s + _len, entry->core_name, len - _len);
+   if (_len >= len - 1)
+      return 0;
+
+   s[_len++] = ' ';
+   s[_len]   = '\0';
+
+   /* strlcpy returns the source length even when the copy is truncated.
+    * Keep the offset within s before appending runtime information. */
+   core_name_len = strlcpy(s + _len, entry->core_name, len - _len);
+   if (core_name_len >= len - _len)
+      return 0;
+   _len += core_name_len;
 
    /* Get runtime info *if* required runtime log is enabled
     * *and* this is a valid playlist type */
