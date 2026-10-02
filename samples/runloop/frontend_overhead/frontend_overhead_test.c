@@ -56,8 +56,9 @@
  *     button by button, the way older cores do, and once as a single
  *     bitmask. The two readings must be the same frame for frame, and
  *     the whole sequence must match a recorded digest, under the
- *     default mapping, a remap, analog-to-d-pad, turbo and hold. This
- *     is the reference the frame-local view has to reproduce: it is
+ *     default mapping, a remap, analog-to-d-pad, the four turbo modes,
+ *     hold, and run-ahead; and a recording of the pattern must play
+ *     back as the same sequence. This is the reference the frame-local view has to reproduce: it is
  *     what the state path does today, pinned before that path changes.
  *
  * Nothing is stubbed. */
@@ -75,6 +76,7 @@
 #include <features/features_cpu.h>
 #include <time/rtime.h>
 #include "../../../runloop.h"
+#include "../../../runahead.h"
 #include "../../../retroarch.h"
 #include "../../../configuration.h"
 #include "../../../command.h"
@@ -197,6 +199,7 @@ static void lane_frame_path_heap(void)
 }
 
 static char core_path_g[512];
+static char harness_dir_g[400];
 static void (*core_input_measure)(unsigned, unsigned);
 static void (*core_input_stats)(unsigned long*, unsigned long long*,
       unsigned long long*, unsigned long long*);
@@ -664,6 +667,8 @@ static void lane_output_store(void)
 /* What a core sees of pad 1, frame by frame, from a synthetic pad. */
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
 #define VIEW_FRAMES 1200
+#define VIEW_SCENARIOS 9
+#define VIEW_REPLAY_SLACK 64
 
 static uint32_t              syn_buttons;   /* driver buttons 0-31 */
 static int16_t               syn_axes[4];   /* driver axes 0-3 */
@@ -804,12 +809,18 @@ static void lane_core_view(void)
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
    /* What the state path gives a core today, per scenario. A change
     * here is a change in what cores see: update it only on purpose. */
-   static const struct { const char *name; uint32_t digest; } golden[5] = {
-      { "default mapping",        0x9c5fa001u },
-      { "A and B swapped",        0x0a584cc9u },
-      { "left stick as d-pad",    0xe57635edu },
-      { "turbo",                  0x49496af0u },
-      { "hold",                   0x1c41ffe0u }
+   static const struct { const char *name; uint32_t digest; } golden[VIEW_SCENARIOS] = {
+      { "default mapping",          0x9c5fa001u },
+      { "A and B swapped",          0x0a584cc9u },
+      { "left stick as d-pad",      0xe57635edu },
+      { "turbo",                    0xf8656af0u },
+      { "hold",                     0x1c41ffe0u },
+      { "turbo, toggle",            0x10fe621fu },
+      { "turbo, single button",     0xf9115f00u },
+      { "turbo, single button hold", 0x288eb83au },
+      /* run-ahead replays the frame's input to the run it shows: the
+       * core must see what it sees without it */
+      { "run-ahead, one frame",     0x9c5fa001u }
    };
    static struct view_frame one_by_one[VIEW_FRAMES], as_mask[VIEW_FRAMES];
    input_driver_state_t *input_st = input_state_get_ptr();
@@ -817,6 +828,7 @@ static void lane_core_view(void)
    const input_device_driver_t *joypad_real;
    void (*trace)(int, int);
    void (*trace_last)(unsigned*, int*);
+   long (*runs)(void);
    struct retro_keybind saved_auto[8], saved_turbo, saved_hold;
    uint32_t digest_default = 0;
    void    *core;
@@ -826,6 +838,7 @@ static void lane_core_view(void)
    if (   !(core = dlopen(core_path_g, RTLD_NOW))
        || !(trace = (void (*)(int, int))dlsym(core, "harness_core_trace"))
        || !(trace_last = (void (*)(unsigned*, int*))dlsym(core, "harness_core_trace_last"))
+       || !(runs = (long (*)(void))dlsym(core, "harness_core_runs"))
        || !input_st->primary_joypad)
    {
       CHECK(false, "core view: the harness core's trace entry points or the joypad driver");
@@ -863,10 +876,11 @@ static void lane_core_view(void)
    run_loop_frames(5);
    trace(0, 0);
 
-   for (sc = 0; sc < 5; sc++)
+   for (sc = 0; sc < VIEW_SCENARIOS; sc++)
    {
       unsigned differ = 0, first = 0;
       uint32_t digest;
+      long     ran;
 
       /* the scenario */
       switch (sc)
@@ -887,11 +901,40 @@ static void lane_core_view(void)
             input_config_binds[0][RARCH_HOLD_ENABLE].joykey = 17;
             input_config_binds[0][RARCH_HOLD_ENABLE].attr  |= RETRO_KEYBIND_VALID_BIT;
             break;
+         case 5:
+         case 6:
+         case 7:
+            settings->bools.input_turbo_enable = true;
+            settings->uints.input_turbo_mode   =
+                 (sc == 5) ? INPUT_TURBO_MODE_CLASSIC_TOGGLE
+               : (sc == 6) ? INPUT_TURBO_MODE_SINGLEBUTTON
+               :             INPUT_TURBO_MODE_SINGLEBUTTON_HOLD;
+            input_config_binds[0][RARCH_TURBO_ENABLE].joykey = 16;
+            input_config_binds[0][RARCH_TURBO_ENABLE].attr  |= RETRO_KEYBIND_VALID_BIT;
+            break;
+         case 8:
+            /* the program's own main() makes run-ahead available at
+             * start-up; this harness replaces main() */
+            runahead_clear_variables(runloop_state_get_ptr());
+            settings->bools.run_ahead_enabled            = true;
+            settings->bools.run_ahead_secondary_instance = false;
+            settings->bools.run_ahead_hide_warnings      = true;
+            settings->uints.run_ahead_frames             = 1;
+            break;
       }
       run_loop_frames(5);
 
+      ran = runs();
       view_record(1, trace, trace_last, one_by_one);
+      ran = runs() - ran;
       view_record(2, trace, trace_last, as_mask);
+
+      /* run-ahead by one frame runs the core twice an iterate; if it
+       * did not, this scenario tested nothing */
+      if (sc == 8)
+         CHECK(ran >= 2 * VIEW_FRAMES - 4, "core view: run-ahead did not run");
+      else
+         CHECK(ran == VIEW_FRAMES, "core view: the core did not run once a frame");
 
       for (i = 0; i < VIEW_FRAMES; i++)
          if (memcmp(&one_by_one[i], &as_mask[i], sizeof(one_by_one[i])))
@@ -913,7 +956,7 @@ static void lane_core_view(void)
                one_by_one[first].buttons, as_mask[first].buttons);
       CHECK(!differ, "core view: reading button by button and reading the mask disagree");
       CHECK(digest == golden[sc].digest, "core view: what the core sees has changed");
-      if (sc > 0)
+      if (sc > 0 && golden[sc].digest != golden[0].digest)
          CHECK(digest != digest_default, "core view: a scenario changed nothing");
 
       /* back to the default mapping */
@@ -921,9 +964,58 @@ static void lane_core_view(void)
       settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_B] = RETRO_DEVICE_ID_JOYPAD_B;
       settings->uints.input_analog_dpad_mode[0] = ANALOG_DPAD_NONE;
       settings->bools.input_turbo_enable        = false;
+      settings->uints.input_turbo_mode          = INPUT_TURBO_MODE_CLASSIC;
+      settings->bools.run_ahead_enabled         = false;
       input_config_binds[0][RARCH_TURBO_ENABLE] = saved_turbo;
       input_config_binds[0][RARCH_HOLD_ENABLE]  = saved_hold;
    }
+
+#ifdef HAVE_BSV_MOVIE
+   /* Input recording: record the pattern, then play the recording
+    * back with the pad idle. The core must see what it saw. Recording
+    * and playback start through tasks, so the two do not begin on a
+    * frame the lane chooses: the played sequence is matched against
+    * the recorded one at whatever offset the start left. */
+   {
+      static struct view_frame played[VIEW_FRAMES + VIEW_REPLAY_SLACK];
+      char     path[512];
+      int      offset = -1;
+      unsigned f, d;
+
+      snprintf(path, sizeof(path), "%s/core_view.replay", harness_dir_g);
+
+      CHECK(movie_start_record(input_st, path), "core view: recording did not start");
+      run_loop_frames(10);
+      CHECK(BSV_MOVIE_IS_RECORDING(), "core view: not recording");
+      view_record(1, trace, trace_last, one_by_one);
+      run_loop_frames(5);
+      movie_stop(input_st);
+      run_loop_frames(10);
+
+      syn_buttons = 0;
+      memset(syn_axes, 0, sizeof(syn_axes));
+      CHECK(movie_start_playback(input_st, path), "core view: playback did not start");
+      trace(1, 1);
+      for (f = 0; f < VIEW_FRAMES + VIEW_REPLAY_SLACK; f++)
+      {
+         runloop_iterate();
+         task_queue_check();
+         trace_last(&played[f].buttons, played[f].axes);
+      }
+      trace(0, 0);
+      movie_stop(input_st);
+      run_loop_frames(10);
+
+      for (d = 0; d < VIEW_REPLAY_SLACK && offset < 0; d++)
+         if (!memcmp(&played[d], one_by_one, sizeof(one_by_one)))
+            offset = (int)d;
+
+      CHECK(offset >= 0, "core view: a recording played back is not what was recorded");
+      if (offset >= 0)
+         printf("[info] core view, recording: %u frames played back as"
+               " recorded (%d frames in)\n", (unsigned)VIEW_FRAMES, offset);
+   }
+#endif
 
    fast_forward(false);
    syn_buttons = 0;
@@ -935,8 +1027,8 @@ static void lane_core_view(void)
    input_st->primary_joypad = joypad_real;
    run_loop_frames(5);
    if (failures == had)
-      printf("[pass] core view: button by button and as a mask agree, and"
-            " match the recorded digests\n");
+      printf("[pass] core view: button by button and as a mask agree, match"
+            " the recorded digests, and play back from a recording\n");
 #else
    printf("[skip] core-view lane: need the test drivers and dlopen\n");
 #endif
@@ -1102,6 +1194,7 @@ int main(int argc, char *argv[])
    rarch_argv[rarch_argc++] = (char*)"-L";
    rarch_argv[rarch_argc++] = core_path;
    snprintf(core_path_g, sizeof(core_path_g), "%s", core_path);
+   snprintf(harness_dir_g, sizeof(harness_dir_g), "%s", dir);
    if (getenv("HARNESS_VERBOSE"))
       rarch_argv[rarch_argc++] = (char*)"-v";
 
