@@ -424,10 +424,11 @@ static char* s3_url_encode(const char *input)
 
       /* RFC 3986 unreserved characters: A-Z, a-z, 0-9, -, ., _, ~ */
       /* Path delimiters that should not be encoded: / */
-      /* Query parameter delimiters that should not be encoded: &, =, ? */
+      /* This encodes the object key only, so '&', '=' and '?' are
+       * key characters and must be encoded like any other. */
       if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
-          (c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_' || 
-          c == '~' || c == '/' || c == '&' || c == '=' || c == '?')
+          (c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_' ||
+          c == '~' || c == '/')
       {
          output[output_pos++] = c;
       }
