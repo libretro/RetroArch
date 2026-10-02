@@ -1602,7 +1602,17 @@ static void runahead_core_run_use_last_input(runloop_state_t *runloop_st)
    cbs->poll_cb                           = old_poll_function;
    cbs->state_cb                          = old_input_function;
 
-   runloop_st->current_core.retro_set_input_poll(cbs->poll_cb);
+   /* The core gets back the poll callback it was given at load, which
+    * polls only when the poll mode says the core's call is the one
+    * that does. cbs->poll_cb is not that: it is the frontend's own
+    * "poll now", input_driver_poll(). Handing it to the core made the
+    * core's input_poll an unconditional poll from the first frame of
+    * run-ahead on, so under late or early polling every frame polled
+    * twice - and went on doing so after run-ahead was switched off,
+    * until the core was reloaded. Turbo counts polls, so it ran at
+    * twice its rate. */
+   runloop_st->current_core.retro_set_input_poll(
+         runloop_st->input_poll_callback_original);
    runloop_st->current_core.retro_set_input_state(cbs->state_cb);
 }
 

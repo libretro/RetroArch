@@ -427,6 +427,9 @@ static void lane_device_registry(void)
    unsigned had  = failures;
    unsigned i, j;
 
+   /* thousands of frames to the scripted removal: do not pace them */
+   fast_forward(true);
+
    CHECK(pad_connected(7), "registry: the scripted pads are not connected");
    CHECK(input_registry_count(reg) == 8, "registry: eight connected pads are not eight devices");
    for (i = 0; i < 8; i++)
@@ -555,6 +558,7 @@ static void lane_device_registry(void)
             "registry: the lane did not leave the pads as it found them");
    }
 
+   fast_forward(false);
    if (failures == had)
       printf("[pass] registry: eight pads are eight devices; one pulled and"
             " plugged back in keeps its id; a driver restart puts each"
@@ -834,6 +838,9 @@ static void lane_output_store(void)
 #define VIEW_FRAMES 1200
 #define VIEW_SCENARIOS 9
 #define VIEW_REPLAY_SLACK 64
+/* Playback and netplay do not fast-forward: those two checks run at
+ * the core's frame rate, so they use a shorter stretch of the pattern. */
+#define VIEW_PACED_FRAMES 300
 
 static uint32_t              syn_buttons;   /* driver buttons 0-31 */
 static int16_t               syn_axes[4];   /* driver axes 0-3 */
@@ -933,7 +940,7 @@ struct view_frame
    int      axes[4];
 };
 
-static void view_record(int mode, void (*trace)(int, int),
+static void view_record(int mode, unsigned frames, void (*trace)(int, int),
       void (*trace_last)(unsigned*, int*), struct view_frame *out)
 {
    input_driver_state_t *input_st = input_state_get_ptr();
@@ -945,7 +952,7 @@ static void view_record(int mode, void (*trace)(int, int),
    memset(&input_st->hold_btns,  0, sizeof(input_st->hold_btns));
 
    trace(mode, 1);
-   for (f = 0; f < VIEW_FRAMES; f++)
+   for (f = 0; f < frames; f++)
    {
       syn_pattern(f, &rng);
       runloop_iterate();
@@ -1090,9 +1097,18 @@ static void lane_core_view(void)
       run_loop_frames(5);
 
       ran = runs();
-      view_record(1, trace, trace_last, one_by_one);
+      view_record(1, VIEW_FRAMES, trace, trace_last, one_by_one);
       ran = runs() - ran;
-      view_record(2, trace, trace_last, as_mask);
+      view_record(2, VIEW_FRAMES, trace, trace_last, as_mask);
+
+      /* Turbo counts polls, and the count was reset as the reading
+       * began: one poll a frame, run-ahead or not, and after run-ahead
+       * as before it. */
+      CHECK(input_st->turbo_btns.count == VIEW_FRAMES,
+            "core view: input was not polled once a frame");
+      if (input_st->turbo_btns.count != VIEW_FRAMES)
+         fprintf(stderr, "       %s: %u polls in %u frames\n", golden[sc].name,
+               (unsigned)input_st->turbo_btns.count, (unsigned)VIEW_FRAMES);
 
       /* run-ahead by one frame runs the core twice an iterate; if it
        * did not, this scenario tested nothing */
@@ -1142,7 +1158,7 @@ static void lane_core_view(void)
     * frame the lane chooses: the played sequence is matched against
     * the recorded one at whatever offset the start left. */
    {
-      static struct view_frame played[VIEW_FRAMES + VIEW_REPLAY_SLACK];
+      static struct view_frame played[VIEW_PACED_FRAMES + VIEW_REPLAY_SLACK];
       char     path[512];
       int      offset = -1;
       unsigned f, d;
@@ -1152,7 +1168,7 @@ static void lane_core_view(void)
       CHECK(movie_start_record(input_st, path), "core view: recording did not start");
       run_loop_frames(10);
       CHECK(BSV_MOVIE_IS_RECORDING(), "core view: not recording");
-      view_record(1, trace, trace_last, one_by_one);
+      view_record(1, VIEW_PACED_FRAMES, trace, trace_last, one_by_one);
       run_loop_frames(5);
       movie_stop(input_st);
       run_loop_frames(10);
@@ -1161,7 +1177,7 @@ static void lane_core_view(void)
       memset(syn_axes, 0, sizeof(syn_axes));
       CHECK(movie_start_playback(input_st, path), "core view: playback did not start");
       trace(1, 1);
-      for (f = 0; f < VIEW_FRAMES + VIEW_REPLAY_SLACK; f++)
+      for (f = 0; f < VIEW_PACED_FRAMES + VIEW_REPLAY_SLACK; f++)
       {
          runloop_iterate();
          task_queue_check();
@@ -1172,13 +1188,14 @@ static void lane_core_view(void)
       run_loop_frames(10);
 
       for (d = 0; d < VIEW_REPLAY_SLACK && offset < 0; d++)
-         if (!memcmp(&played[d], one_by_one, sizeof(one_by_one)))
+         if (!memcmp(&played[d], one_by_one,
+                  VIEW_PACED_FRAMES * sizeof(one_by_one[0])))
             offset = (int)d;
 
       CHECK(offset >= 0, "core view: a recording played back is not what was recorded");
       if (offset >= 0)
          printf("[info] core view, recording: %u frames played back as"
-               " recorded (%d frames in)\n", (unsigned)VIEW_FRAMES, offset);
+               " recorded (%d frames in)\n", (unsigned)VIEW_PACED_FRAMES, offset);
    }
 #endif
 
@@ -1190,7 +1207,7 @@ static void lane_core_view(void)
     * is matched at an offset. Nothing is announced and no client
     * connects: this is the local path only. */
    {
-      static struct view_frame hosted[VIEW_FRAMES + VIEW_REPLAY_SLACK];
+      static struct view_frame hosted[VIEW_PACED_FRAMES + VIEW_REPLAY_SLACK];
       uint32_t rng    = 0;
       int      offset = -1;
       unsigned f, d;
@@ -1223,10 +1240,10 @@ static void lane_core_view(void)
          memset(&input_st->turbo_btns, 0, sizeof(input_st->turbo_btns));
          memset(&input_st->hold_btns,  0, sizeof(input_st->hold_btns));
          trace(1, 1);
-         for (f = 0; f < VIEW_FRAMES + VIEW_REPLAY_SLACK; f++)
+         for (f = 0; f < VIEW_PACED_FRAMES + VIEW_REPLAY_SLACK; f++)
          {
             /* the pattern, then idle */
-            if (f < VIEW_FRAMES)
+            if (f < VIEW_PACED_FRAMES)
                syn_pattern(f, &rng);
             runloop_iterate();
             task_queue_check();
@@ -1239,18 +1256,18 @@ static void lane_core_view(void)
          run_loop_frames(10);
          CHECK(!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL),
                "core view: netplay did not stop");
-         view_record(1, trace, trace_last, one_by_one);
+         view_record(1, VIEW_PACED_FRAMES, trace, trace_last, one_by_one);
 
          for (d = 0; d < VIEW_REPLAY_SLACK && offset < 0; d++)
             if (!memcmp(&hosted[d], one_by_one,
-                     (VIEW_FRAMES - VIEW_REPLAY_SLACK) * sizeof(one_by_one[0])))
+                     (VIEW_PACED_FRAMES - VIEW_REPLAY_SLACK) * sizeof(one_by_one[0])))
                offset = (int)d;
 
          CHECK(offset >= 0, "core view: hosting netplay changes what the core sees");
          if (offset >= 0)
             printf("[info] core view, netplay host: %u frames as without"
                   " netplay (%d frames late)\n",
-                  (unsigned)(VIEW_FRAMES - VIEW_REPLAY_SLACK), offset);
+                  (unsigned)(VIEW_PACED_FRAMES - VIEW_REPLAY_SLACK), offset);
       }
 
       settings->bools.netplay_public_announce = saved_announce;
