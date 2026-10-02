@@ -286,6 +286,7 @@ struct bsv_movie
    uint32s_index_t *superblocks;
    uint32s_index_t *blocks;
    uint32_t *superblock_seq;
+   size_t superblock_seq_len;
    uint8_t commit_interval, commit_threshold;
 #endif
 

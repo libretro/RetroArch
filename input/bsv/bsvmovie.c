@@ -1631,15 +1631,20 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
          output_capacity);
    bool can_compare_saves = movie->cur_save_valid && movie->last_save
       && movie->last_save_size >= state_size;
-   if (movie->last_save_size < state_size)
+   /* A replay being played back may have sized the list for fewer
+    * superblocks. */
+   if (     movie->last_save_size < state_size
+         || movie->superblock_seq_len < superblock_count)
    {
       free(movie->superblock_seq);
-      movie->superblock_seq = NULL;
+      movie->superblock_seq     = NULL;
+      movie->superblock_seq_len = 0;
    }
    if (!movie->superblock_seq)
    {
-      movie->cur_save_valid = false;
-      movie->superblock_seq = (uint32_t*)calloc(superblock_count, sizeof(uint32_t));
+      movie->cur_save_valid     = false;
+      movie->superblock_seq     = (uint32_t*)calloc(superblock_count, sizeof(uint32_t));
+      movie->superblock_seq_len = movie->superblock_seq ? superblock_count : 0;
    }
    rmsgpack_write_int(out_stream, BSV_IFRAME_START_TOKEN);
    rmsgpack_write_int(out_stream, movie->frame_counter);
@@ -1769,10 +1774,17 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
    if (state_size > movie->last_save_size && movie->superblock_seq)
    {
       free(movie->superblock_seq);
-      movie->superblock_seq = NULL;
+      movie->superblock_seq     = NULL;
+      movie->superblock_seq_len = 0;
    }
    if (!movie->cur_save) {
       RARCH_ERR("[STATESTREAM] movie has no current serialized save\n");
+      goto exit;
+   }
+   /* The block layout comes from the replay header. */
+   if (!block_byte_size || !superblock_byte_size)
+   {
+      RARCH_ERR("[STATESTREAM] replay has no block layout\n");
       goto exit;
    }
    total_decode_count++;
@@ -1859,10 +1871,16 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
             if (item.val.array.len != movie->superblocks->object_size)
             {
                RARCH_ERR("[STATESTREAM] new superblock contents length is wrong\n");
+               rmsgpack_dom_value_free(&item);
                goto exit;
             }
             len        = movie->superblocks->object_size;
-            superblock = (uint32_t*)calloc(len, sizeof(uint32_t));
+            if (!(superblock = (uint32_t*)calloc(len, sizeof(uint32_t))))
+            {
+               RARCH_ERR("[STATESTREAM] out of memory for superblock\n");
+               rmsgpack_dom_value_free(&item);
+               goto exit;
+            }
 
             for (i = 0; i < len; i++)
             {
@@ -1889,8 +1907,24 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
                goto exit;
             }
             len = item.val.array.len;
-            if (!movie->superblock_seq)
-               movie->superblock_seq = (uint32_t*)calloc(len, sizeof(uint32_t));
+            /* The list is indexed by position in this sequence. */
+            if (movie->superblock_seq && movie->superblock_seq_len < len)
+            {
+               free(movie->superblock_seq);
+               movie->superblock_seq     = NULL;
+               movie->superblock_seq_len = 0;
+            }
+            if (!movie->superblock_seq && len)
+            {
+               if (!(movie->superblock_seq = (uint32_t*)calloc(len, sizeof(uint32_t))))
+               {
+                  RARCH_ERR("[STATESTREAM] out of memory for superblock seq\n");
+                  rmsgpack_dom_value_free(&item);
+                  goto exit;
+               }
+               movie->superblock_seq_len = len;
+               movie->cur_save_valid     = false;
+            }
             for (i = 0; i < len; i++)
             {
                size_t j;
@@ -1903,6 +1937,12 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
                if (movie->cur_save_valid && movie->cur_save && superblock_idx == movie->superblock_seq[i])
                {
                   superblock = uint32s_index_get(movie->superblocks, movie->superblock_seq[i]);
+                  if (!superblock)
+                  {
+                     RARCH_ERR("[STATESTREAM] superblock %u is not in the replay\n", superblock_idx);
+                     rmsgpack_dom_value_free(&item);
+                     goto exit;
+                  }
                   uint32s_index_bump_count(movie->superblocks, movie->superblock_seq[i]);
                   /* We do need to increment all the involved block counts though */
                   for (j = 0; j < movie->superblocks->object_size; j++)
@@ -1911,6 +1951,12 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
                }
                movie->superblock_seq[i] = superblock_idx;
                superblock = uint32s_index_get(movie->superblocks, superblock_idx);
+               if (!superblock)
+               {
+                  RARCH_ERR("[STATESTREAM] superblock %u is not in the replay\n", superblock_idx);
+                  rmsgpack_dom_value_free(&item);
+                  goto exit;
+               }
                uint32s_index_bump_count(movie->superblocks, superblock_idx);
                for (j = 0; j < movie->superblocks->object_size; j++)
                {
@@ -1922,6 +1968,12 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
                   if (block_end <= block_start)
                      break;
                   block = (uint8_t *)uint32s_index_get(movie->blocks, block_idx);
+                  if (!block)
+                  {
+                     RARCH_ERR("[STATESTREAM] block %u is not in the replay\n", block_idx);
+                     rmsgpack_dom_value_free(&item);
+                     goto exit;
+                  }
                   uint32s_index_bump_count(movie->blocks, block_idx);
                   memcpy(movie->cur_save+block_start, (uint8_t*)block, block_end-block_start);
                }
