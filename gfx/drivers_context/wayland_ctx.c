@@ -668,14 +668,13 @@ static void gfx_ctx_wl_swap_buffers(void *data)
       wl->frame_cb = cb;
    }
 
-   if (wl->present_clock)
-      wl_presentation_dispatch_pending(wl);
+   if (wl->present.clock)
+      wl_present_dispatch(&wl->present, wl->input.dpy);
 
    /* Skip presentation-time pacing and feedback while the surface is
     * suspended: the compositor is not scanning out the surface, so
     * there are no vblank events to track and requesting feedback for
-    * a frame that will not be displayed is wasteful.  Keep the event
-    * queue moving (dispatch above) so the resume configure is seen. */
+    * a frame that will not be displayed is wasteful. */
    if (!wl->suspended)
    {
       /* The EGL frame-callback throttle above already paces to the
@@ -683,10 +682,10 @@ static void gfx_ctx_wl_swap_buffers(void *data)
        * of it double-throttles the frame, so only pace here when that
        * throttle is not engaged (e.g. >2 max swapchain images). */
       if (!frame_throttle)
-         wait_for_next_frame(wl);
+         wl_present_wait(&wl->present, wl->swap_interval);
 
-      if (wl->present_clock)
-         wl_request_presentation_feedback(wl);
+      if (wl->present.clock)
+         wl_present_request(&wl->present, wl->surface);
    }
 
    egl_swap_buffers(&wl->egl);

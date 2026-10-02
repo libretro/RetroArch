@@ -32,6 +32,7 @@
    wl_display_prepare_read
    wl_display_read_events
    wl_display_cancel_read
+   wl_display_dispatch_queue_pending
 */
 
 /* Function pointers for dynamic dispatch */
@@ -46,6 +47,8 @@ static struct wl_proxy *(*real_wl_proxy_marshal_constructor_versioned)(
 static int (*real_wl_display_prepare_read)(struct wl_display *) = NULL;
 static int (*real_wl_display_read_events)(struct wl_display *) = NULL;
 static void (*real_wl_display_cancel_read)(struct wl_display *) = NULL;
+static int (*real_wl_display_dispatch_queue_pending)(struct wl_display *,
+      struct wl_event_queue *) = NULL;
 
 static bool wayland_init_done = false;
 
@@ -74,6 +77,8 @@ static void wayland_init_fallbacks(void)
          dlsym(wl_handle, "wl_display_read_events");
       real_wl_display_cancel_read =
          dlsym(wl_handle, "wl_display_cancel_read");
+      real_wl_display_dispatch_queue_pending =
+         dlsym(wl_handle, "wl_display_dispatch_queue_pending");
 
       dlclose(wl_handle);
    }
@@ -369,4 +374,16 @@ void WRAPPER_wl_display_cancel_read(struct wl_display *display)
       real_wl_display_cancel_read(display);
    else
       FALLBACK_wl_display_cancel_read(display);
+}
+
+/* Only presentation feedback uses a queue of its own, and webOS binds
+ * no wp_presentation, so there is nothing to fall back to. */
+int WRAPPER_wl_display_dispatch_queue_pending(struct wl_display *display,
+      struct wl_event_queue *queue)
+{
+   wayland_init_fallbacks();
+
+   if (real_wl_display_dispatch_queue_pending)
+      return real_wl_display_dispatch_queue_pending(display, queue);
+   return -1;
 }

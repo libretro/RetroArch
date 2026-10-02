@@ -254,8 +254,8 @@ static void gfx_ctx_wl_swap_buffers(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
-   if (wl->present_clock)
-      wl_presentation_dispatch_pending(wl);
+   if (wl->present.clock)
+      wl_present_dispatch(&wl->present, wl->input.dpy);
 
    /* While the compositor reports the surface suspended (occluded,
     * minimized, screen locked), skip presentation-time pacing,
@@ -283,8 +283,8 @@ static void gfx_ctx_wl_swap_buffers(void *data)
     * manual clock_nanosleep here would stack a second wait on top of
     * it.  Collect presentation feedback for timing data, but leave
     * pacing to the swapchain. */
-   if (wl->present_clock)
-      wl_request_presentation_feedback(wl);
+   if (wl->present.clock)
+      wl_present_request(&wl->present, wl->surface);
 
    if (wl->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
