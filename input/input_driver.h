@@ -696,7 +696,19 @@ typedef struct
     * armed outside input_keys_pressed() starts from the previous
     * frame's held set. */
    uint16_t wait_release_mask[MAX_USERS];
+
+   /* The frame's view of each port's RetroPad buttons, as a core is
+    * given them: after port mapping, remaps, turbo, hold, overlays and
+    * analog-to-d-pad.  Compiled when a core asks for the port's mask,
+    * or for a second button in the frame (frame_view_asked marks the
+    * first); from then on every button and mask query for the port
+    * reads this word.  Invalidated by input_driver_poll(), and when
+    * the core's first analog request changes analog-to-d-pad for the
+    * port. */
+   int16_t frame_view_joypad[MAX_USERS];
    bool    joypad_state_cache_valid[MAX_USERS];
+   bool    frame_view_valid[MAX_USERS];
+   bool    frame_view_asked[MAX_USERS];
 
    retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
    input_game_focus_state_t game_focus_state; /* bool alignment */

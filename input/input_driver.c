@@ -7853,6 +7853,10 @@ void input_driver_poll(void)
    /* Invalidate joypad state bitmask cache for the new frame */
    memset(input_st->joypad_state_cache_valid, 0,
          sizeof(input_st->joypad_state_cache_valid));
+   memset(input_st->frame_view_valid, 0,
+         sizeof(input_st->frame_view_valid));
+   memset(input_st->frame_view_asked, 0,
+         sizeof(input_st->frame_view_asked));
 
    /* Enable/disable sensors at the driver level based on demand
     * from shaders and/or core. Setting gates everything. */
@@ -8483,20 +8487,76 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
       *input_st                = &input_driver_st;
    settings_t *settings        = config_get_ptr();
    int16_t result              = 0;
+
+   /* The port comes from the core, and indexes per-port arrays here
+    * and below. */
+   if (port >= MAX_USERS)
+      return 0;
+
 #ifdef HAVE_BSV_MOVIE
    if (BSV_MOVIE_IS_PLAYBACK_ON())
      return bsv_movie_read_state(input_st, port, device, idx, id);
 #endif
 
-   /* Read input state */
-   result = input_state_internal(input_st, settings, port, device, idx, id);
+   /* Read input state.
+    *
+    * The RetroPad's buttons come from the frame's view of the port: a
+    * word holding all sixteen, compiled once through the mask path of
+    * input_state_internal().  After that a button or a mask query is
+    * a read of that word, however many a core makes and whichever way
+    * it asks.
+    *
+    * A core that reads button by button used to walk the port
+    * mapping, remaps, turbo, hold and overlay once per button.  The
+    * view is compiled on its second button of the frame, not its
+    * first: a core that reads a single button a frame keeps the cost
+    * it had, and one that reads more pays for the walk once.  A core
+    * that asks for the mask already got its buttons compiled this
+    * way.  samples/runloop/frontend_overhead holds the two readings
+    * to the same result, frame for frame. */
+   if (     (device & RETRO_DEVICE_MASK) == RETRO_DEVICE_JOYPAD
+         && idx == 0
+         && (   id <  RARCH_FIRST_CUSTOM_BIND
+             || id == RETRO_DEVICE_ID_JOYPAD_MASK))
+   {
+      if (     !input_st->frame_view_valid[port]
+            && (   id == RETRO_DEVICE_ID_JOYPAD_MASK
+                || input_st->frame_view_asked[port]))
+      {
+         input_st->frame_view_joypad[port] = input_state_internal(
+               input_st, settings, port, RETRO_DEVICE_JOYPAD, 0,
+               RETRO_DEVICE_ID_JOYPAD_MASK);
+         input_st->frame_view_valid[port]  = true;
+      }
+
+      if (!input_st->frame_view_valid[port])
+      {
+         /* the frame's first button for this port */
+         input_st->frame_view_asked[port] = true;
+         result = input_state_internal(input_st, settings,
+               port, device, idx, id);
+      }
+      else if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         result = input_st->frame_view_joypad[port];
+      else
+         result = ((uint16_t)input_st->frame_view_joypad[port] >> id) & 1;
+   }
+   else
+      result = input_state_internal(input_st, settings, port, device, idx, id);
 
    /* Register any analog stick input requests for
-    * this 'virtual' (core) port */
+    * this 'virtual' (core) port.  The first one switches
+    * analog-to-d-pad off for the port, which changes its buttons:
+    * the view is compiled again for the queries that follow. */
    if (     (device == RETRO_DEVICE_ANALOG)
        && ( (idx    == RETRO_DEVICE_INDEX_ANALOG_LEFT)
-       ||   (idx    == RETRO_DEVICE_INDEX_ANALOG_RIGHT)))
+       ||   (idx    == RETRO_DEVICE_INDEX_ANALOG_RIGHT))
+       && !input_st->analog_requested[port])
+   {
       input_st->analog_requested[port] = true;
+      input_st->frame_view_valid[port] = false;
+      input_st->frame_view_asked[port] = false;
+   }
 
 #ifdef HAVE_BSV_MOVIE
    if (BSV_MOVIE_IS_RECORDING())
