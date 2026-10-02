@@ -2267,15 +2267,22 @@ bool filestream_write_file_atomic(const char *path,
    }
 
    /* POSIX rename replaces the destination; the Win32 one refuses an
-    * existing destination, so it needs the target gone first. */
-   filestream_delete(path);
-   if (filestream_rename(temp_path, path) == 0)
+    * existing destination, so it needs the target gone first. Only
+    * when the temporary file is really there: a rename that failed
+    * because the source is missing must not cost the destination. */
+   if (filestream_exists(temp_path))
    {
-      free(temp_path);
-      return true;
+      filestream_delete(path);
+      if (filestream_rename(temp_path, path) == 0)
+      {
+         free(temp_path);
+         return true;
+      }
    }
 
-   filestream_delete(temp_path);
+   /* Keep the only complete copy if the destination is already gone. */
+   if (filestream_exists(path))
+      filestream_delete(temp_path);
    free(temp_path);
    return false;
 }
