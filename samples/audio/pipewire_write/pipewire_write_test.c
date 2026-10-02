@@ -4,7 +4,9 @@
  * take nothing, on every call: at a low latency setting a frame of audio
  * is longer than the mark, so the stream went silent and the log filled
  * at the frame rate. A write now takes what the ring has room for, in
- * whole frames, and blocking waits for the rest in parts.
+ * whole frames, and blocking waits for the rest in parts. The process
+ * callbacks, on the graph's thread, count a cycle with no buffer to
+ * take rather than logging it.
  *
  * The driver is this translation unit, built against the system's
  * PipeWire headers; the pw_* calls are stand-ins, and the loop wait is
@@ -140,6 +142,31 @@ int main(void)
    pipewire_loop_wait_ms(NULL, 0);
    w = pwire_write(g_audio, samples, 1027);
    CHECK(w % FRAME == 0, "a write takes whole frames", w, 1024);
+
+   /* The capture callback with no buffer to take: counted, not logged
+    * - it runs on the graph's thread. */
+   {
+      pipewire_microphone_t *mic = (pipewire_microphone_t*)calloc(1, sizeof(*mic));
+      if (mic)
+      {
+         mic->pw   = &core;
+         log_lines = 0;
+         pwire_capture_process_cb(mic);
+         CHECK(retro_atomic_load_acquire_size(&mic->xruns) == 1,
+               "a capture cycle with no buffer is counted",
+               retro_atomic_load_acquire_size(&mic->xruns), 1);
+         CHECK(log_lines == 0, "the capture callback logs nothing", log_lines, 0);
+         free(mic);
+      }
+   }
+
+   /* The playback callback with no buffer to take: counted too. */
+   log_lines = 0;
+   pwire_playback_process_cb(g_audio);
+   CHECK(retro_atomic_load_acquire_size(&g_audio->xruns) == 1,
+         "a playback cycle with no buffer is counted",
+         retro_atomic_load_acquire_size(&g_audio->xruns), 1);
+   CHECK(log_lines == 0, "the playback callback logs nothing", log_lines, 0);
 
    free(g_audio);
 

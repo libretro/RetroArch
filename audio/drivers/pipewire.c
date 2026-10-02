@@ -65,8 +65,8 @@ typedef struct pipewire_audio
     * for, so the whole buffer went out as silence. A short read is
     * not one: that hands the graph fewer frames, not silence. */
    retro_atomic_size_t underruns;
-   /* Capture only: process calls that found the ring's reader behind or
-    * overtaken. */
+   /* Process calls that found no buffer to take - and, capturing, a
+    * ring whose reader was behind or overtaken. */
    retro_atomic_size_t xruns;
 
    /* The device clock, fitted from the time report the graph already
@@ -185,9 +185,11 @@ static void pwire_capture_process_cb(void *data)
    uint32_t idx, offs, n_bytes;
    pipewire_microphone_t *mic = (pipewire_microphone_t*)data;
 
+   /* Out of buffers: counted with the overruns, on the graph's thread,
+    * and logged in the total when the microphone closes. */
    if (!(b = pw_stream_dequeue_buffer(mic->stream)))
    {
-      RARCH_ERR("[Microphone] [PipeWire] Out of buffers: %s.\n", strerror(errno));
+      retro_atomic_fetch_add_size(&mic->xruns, 1);
       pw_thread_loop_signal(mic->pw->thread_loop, false);
       return;
    }
@@ -301,7 +303,7 @@ static void pwire_microphone_close_mic(void *driver_context, void *mic_context)
       pw_thread_loop_unlock(pw->thread_loop);
       xruns = retro_atomic_load_acquire_size(&mic->xruns);
       if (xruns)
-         RARCH_WARN("[Microphone] [PipeWire] %lu capture overruns or underruns.\n",
+         RARCH_WARN("[Microphone] [PipeWire] %lu capture cycles overran, underran or found no buffer.\n",
                (unsigned long)xruns);
       free(mic);
    }
@@ -633,9 +635,11 @@ static void pwire_playback_process_cb(void *data)
    uint32_t idx, n_bytes;
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
 
+   /* Out of buffers: counted on the graph's thread and logged in the
+    * total when the driver is freed. */
    if ((b = pw_stream_dequeue_buffer(audio->stream)) == NULL)
    {
-      RARCH_WARN("[PipeWire] Out of buffers: %s.\n", strerror(errno));
+      retro_atomic_fetch_add_size(&audio->xruns, 1);
       pw_thread_loop_signal(audio->pw->thread_loop, false);
       return;
    }
@@ -1072,6 +1076,12 @@ static void pwire_free(void *data)
    else
       RARCH_LOG("[PipeWire] Graph clock: not enough usable time reports"
             " to fit one.\n");
+   {
+      size_t xruns = retro_atomic_load_acquire_size(&audio->xruns);
+      if (xruns)
+         RARCH_WARN("[PipeWire] %lu playback cycles found no buffer.\n",
+               (unsigned long)xruns);
+   }
 
    if (audio->stream)
    {
