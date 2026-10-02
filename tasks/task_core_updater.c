@@ -168,6 +168,26 @@ typedef struct core_updater_download_handle
    bool backup_enabled;
 } core_updater_download_handle_t;
 
+/* One installed core's CRC, against the file metadata it was
+ * hashed at (see 'Installed core CRC cache') */
+typedef struct
+{
+   char *name;      /* the core's listing filename */
+   int64_t size;
+   int64_t mtime;
+   uint32_t crc;
+   bool seen;       /* a core reached this run */
+} core_crc_cache_entry_t;
+
+typedef struct
+{
+   core_crc_cache_entry_t *entries;
+   char *path;      /* NULL: no cache */
+   size_t count;
+   size_t cap;
+   bool dirty;
+} core_crc_cache_t;
+
 /* Update installed cores */
 enum update_installed_cores_status
 {
@@ -184,6 +204,7 @@ typedef struct update_installed_cores_handle
    char *path_dir_libretro;
    char *path_dir_core_assets;
    core_updater_list_t* core_list;
+   core_crc_cache_t crc_cache;
    /* Completion of the child list fetch / core download this task
     * is waiting on, shared with the child's callback; NULL when
     * nothing is pending.  The child retro_task_t pointers are
@@ -1681,6 +1702,278 @@ void *task_push_core_updater_download(
          path_dir_core_assets, NULL);
 }
 
+/****************************/
+/* Installed core CRC cache */
+/****************************/
+
+/* Update Installed Cores compares each installed core's CRC with the
+ * buildbot's, and hashing every installed core on every run reads
+ * them all in full.  The CRC is cached per core against the size and
+ * modification time the libretro directory walk reports
+ * (core_updater_list_entry_t local_size/local_mtime), so a core whose
+ * file has not changed since it was last hashed is not read again.
+ * Anything else - no metadata, no cache, a corrupt one, a changed
+ * size or mtime - hashes the core as before, so the cache can only
+ * save work.
+ *
+ * The cache is a text file beside the core backups:
+ *   core_updater_crc 1
+ *   <crc, 8 hex digits> <size> <mtime> <listing filename>
+ * Cores not reached in a run are dropped when it is written. */
+
+#define CORE_CRC_CACHE_FILE   "core_updater.crc"
+#define CORE_CRC_CACHE_HEADER "core_updater_crc 1"
+
+static void core_crc_cache_free(core_crc_cache_t *cache)
+{
+   size_t i;
+   for (i = 0; i < cache->count; i++)
+      free(cache->entries[i].name);
+   free(cache->entries);
+   free(cache->path);
+   cache->entries = NULL;
+   cache->path    = NULL;
+   cache->count   = 0;
+   cache->cap     = 0;
+   cache->dirty   = false;
+}
+
+static core_crc_cache_entry_t *core_crc_cache_find(core_crc_cache_t *cache,
+      const char *name)
+{
+   size_t i;
+   for (i = 0; i < cache->count; i++)
+      if (string_is_equal(cache->entries[i].name, name))
+         return &cache->entries[i];
+   return NULL;
+}
+
+static core_crc_cache_entry_t *core_crc_cache_add(core_crc_cache_t *cache,
+      const char *name, int64_t size, int64_t mtime, uint32_t crc)
+{
+   core_crc_cache_entry_t *entry;
+
+   if (cache->count == cache->cap)
+   {
+      size_t cap = cache->cap ? cache->cap * 2 : 32;
+      core_crc_cache_entry_t *tmp = (core_crc_cache_entry_t*)
+            realloc(cache->entries, cap * sizeof(*tmp));
+      if (!tmp)
+         return NULL;
+      cache->entries = tmp;
+      cache->cap     = cap;
+   }
+
+   entry = &cache->entries[cache->count];
+   if (!(entry->name = strdup(name)))
+      return NULL;
+   entry->size  = size;
+   entry->mtime = mtime;
+   entry->crc   = crc;
+   entry->seen  = false;
+   cache->count++;
+   return entry;
+}
+
+/* Parses an unsigned decimal or hex field of @s up to @end into @out;
+ * returns the character after it, or NULL if there are no digits */
+static const char *core_crc_cache_parse_u64(const char *s, const char *end,
+      unsigned base, uint64_t *out)
+{
+   uint64_t v        = 0;
+   const char *start = s;
+   for (; s < end; s++)
+   {
+      unsigned d;
+      if (*s >= '0' && *s <= '9')
+         d = (unsigned)(*s - '0');
+      else if (base == 16 && *s >= 'a' && *s <= 'f')
+         d = (unsigned)(*s - 'a' + 10);
+      else if (base == 16 && *s >= 'A' && *s <= 'F')
+         d = (unsigned)(*s - 'A' + 10);
+      else
+         break;
+      v = v * base + d;
+   }
+   if (s == start)
+      return NULL;
+   *out = v;
+   return s;
+}
+
+static void core_crc_cache_load(core_crc_cache_t *cache)
+{
+   void *buf      = NULL;
+   int64_t len    = 0;
+   const char *p;
+   const char *end;
+   size_t hlen    = STRLEN_CONST(CORE_CRC_CACHE_HEADER);
+
+   if (!cache->path)
+      return;
+   if (!path_is_valid(cache->path))
+      return;
+   if (!filestream_read_file(cache->path, &buf, &len) || !buf)
+      return;
+
+   p   = (const char*)buf;
+   end = p + len;
+
+   /* An unknown version is ignored whole, and overwritten */
+   if (     (size_t)(end - p) < hlen
+         || strncmp(p, CORE_CRC_CACHE_HEADER, hlen)
+         || (p + hlen < end && p[hlen] != '\n' && p[hlen] != '\r'))
+   {
+      free(buf);
+      return;
+   }
+   p += hlen;
+
+   while (p < end)
+   {
+      uint64_t crc, size, mtime;
+      const char *line_end;
+      const char *name;
+      size_t name_len;
+      char name_buf[PATH_MAX_LENGTH];
+
+      /* To the next line */
+      while (p < end && (*p == '\n' || *p == '\r'))
+         p++;
+      if (p >= end)
+         break;
+      for (line_end = p; line_end < end && *line_end != '\n'; line_end++)
+         ;
+
+      /* Malformed lines are skipped, not trusted */
+      if (     !(p = core_crc_cache_parse_u64(p, line_end, 16, &crc))
+            || p >= line_end || *p++ != ' '
+            || !(p = core_crc_cache_parse_u64(p, line_end, 10, &size))
+            || p >= line_end || *p++ != ' '
+            || !(p = core_crc_cache_parse_u64(p, line_end, 10, &mtime))
+            || p >= line_end || *p++ != ' ')
+      {
+         p = line_end;
+         continue;
+      }
+
+      name     = p;
+      name_len = (size_t)(line_end - name);
+      if (name_len > 0 && name[name_len - 1] == '\r')
+         name_len--;
+      p        = line_end;
+
+      if (     name_len == 0
+            || name_len >= sizeof(name_buf)
+            || crc > 0xFFFFFFFFu
+            || crc == 0)
+         continue;
+
+      memcpy(name_buf, name, name_len);
+      name_buf[name_len] = '\0';
+
+      if (!core_crc_cache_find(cache, name_buf))
+         core_crc_cache_add(cache, name_buf,
+               (int64_t)size, (int64_t)mtime, (uint32_t)crc);
+   }
+
+   free(buf);
+}
+
+/* The cached CRC of @name, if its file still has @size and @mtime.
+ * Marks the entry as belonging to an installed core either way. */
+static bool core_crc_cache_lookup(core_crc_cache_t *cache, const char *name,
+      int64_t size, int64_t mtime, uint32_t *crc)
+{
+   core_crc_cache_entry_t *entry = core_crc_cache_find(cache, name);
+   if (!entry)
+      return false;
+   entry->seen = true;
+   if (entry->size != size || entry->mtime != mtime)
+      return false;
+   *crc = entry->crc;
+   return true;
+}
+
+static void core_crc_cache_store(core_crc_cache_t *cache, const char *name,
+      int64_t size, int64_t mtime, uint32_t crc)
+{
+   core_crc_cache_entry_t *entry = core_crc_cache_find(cache, name);
+
+   if (!cache->path)
+      return;
+   if (!entry && !(entry = core_crc_cache_add(cache, name, size, mtime, crc)))
+      return;
+
+   entry->size  = size;
+   entry->mtime = mtime;
+   entry->crc   = crc;
+   entry->seen  = true;
+   cache->dirty = true;
+}
+
+/* Writes the entries of cores reached this run, if anything changed */
+static void core_crc_cache_save(core_crc_cache_t *cache)
+{
+   size_t i;
+   size_t cap;
+   size_t _len;
+   char *text;
+   bool prune = false;
+   char dir[PATH_MAX_LENGTH];
+
+   if (!cache->path)
+      return;
+   for (i = 0; i < cache->count; i++)
+      if (!cache->entries[i].seen)
+         prune = true;
+   if (!cache->dirty && !prune)
+      return;
+
+   cap = STRLEN_CONST(CORE_CRC_CACHE_HEADER) + 2;
+   for (i = 0; i < cache->count; i++)
+      cap += strlen(cache->entries[i].name) + 64;
+   if (!(text = (char*)malloc(cap)))
+      return;
+
+   _len = strlcpy(text, CORE_CRC_CACHE_HEADER "\n", cap);
+   for (i = 0; i < cache->count; i++)
+   {
+      const core_crc_cache_entry_t *entry = &cache->entries[i];
+      if (!entry->seen)
+         continue;
+      _len += snprintf(text + _len, cap - _len,
+            "%08x " STRING_REP_INT64 " " STRING_REP_INT64 " %s\n",
+            (unsigned)entry->crc, entry->size, entry->mtime, entry->name);
+   }
+
+   fill_pathname_basedir(dir, cache->path, sizeof(dir));
+   if (path_is_directory(dir) || path_mkdir(dir))
+      filestream_write_file_atomic(cache->path, text, (int64_t)_len);
+
+   free(text);
+   cache->dirty = false;
+}
+
+/* Cache location: beside the core backups, in
+ * <core assets dir, else libretro dir>/core_backups */
+static char *core_crc_cache_path(const char *dir_libretro,
+      const char *dir_core_assets)
+{
+   char backups[PATH_MAX_LENGTH];
+   char path[PATH_MAX_LENGTH];
+   const char *base = (dir_core_assets && *dir_core_assets)
+         ? dir_core_assets : dir_libretro;
+
+   if (!base || !*base)
+      return NULL;
+   fill_pathname_join_special(backups, base, "core_backups",
+         sizeof(backups));
+   fill_pathname_join_special(path, backups, CORE_CRC_CACHE_FILE,
+         sizeof(path));
+   return strdup(path);
+}
+
 /**************************/
 /* Update installed cores */
 /**************************/
@@ -1712,6 +2005,8 @@ static void free_update_installed_cores_handle(
          update_installed_handle->download_done);
 
    core_updater_list_free(update_installed_handle->core_list);
+
+   core_crc_cache_free(&update_installed_handle->crc_cache);
 
    free(update_installed_handle);
    update_installed_handle = NULL;
@@ -1774,6 +2069,7 @@ static void task_update_installed_cores_scan(retro_task_t *task,
       /* UPDATE_INSTALLED_CORES_UPDATE_CORE */
       {
          uint32_t local_crc = 0;
+         bool cached        = false;
 
          if (!core_updater_list_get_index(handle->core_list,
                   handle->installed_index, &list_entry))
@@ -1786,6 +2082,17 @@ static void task_update_installed_cores_scan(retro_task_t *task,
           * from a previous tick has already passed it.  validate_path
           * is false because this may run off the main thread, and the
           * list provides sane core paths. */
+         if (!handle->crc_slice.active)
+         {
+            /* An unchanged file keeps the CRC it was last hashed to
+             * (the lookup also keeps a locked core's entry) */
+            if (list_entry->local_metadata)
+               cached = core_crc_cache_lookup(&handle->crc_cache,
+                     list_entry->remote_filename,
+                     list_entry->local_size, list_entry->local_mtime,
+                     &local_crc);
+         }
+
          if (     !handle->crc_slice.active
                && core_info_get_core_lock(list_entry->local_core_path, false))
          {
@@ -1799,9 +2106,21 @@ static void task_update_installed_cores_scan(retro_task_t *task,
          /* ITERATE established that the core exists; a core removed
           * since then fails the open and hashes as 0, which requests
           * the download the same as a mismatch. */
-         if (!task_core_updater_crc_step(&handle->crc_slice,
-                  list_entry->local_core_path, &local_crc, &budget))
-            break;
+         if (!cached)
+         {
+            if (!task_core_updater_crc_step(&handle->crc_slice,
+                     list_entry->local_core_path, &local_crc, &budget))
+               break;
+
+            /* Keyed on the metadata of the walk that preceded the
+             * hash: a file changed since then has other metadata
+             * next run, and is hashed again */
+            if (local_crc != 0 && list_entry->local_metadata)
+               core_crc_cache_store(&handle->crc_cache,
+                     list_entry->remote_filename,
+                     list_entry->local_size, list_entry->local_mtime,
+                     local_crc);
+         }
 
          if ((local_crc != 0) && (local_crc == list_entry->crc))
          {
@@ -1888,6 +2207,8 @@ static void task_update_installed_cores_handler(retro_task_t *task)
    switch (update_installed_handle->status)
    {
       case UPDATE_INSTALLED_CORES_BEGIN:
+         core_crc_cache_load(&update_installed_handle->crc_cache);
+
          /* Request buildbot core list
           * > The record must exist *before* the push: the
           *   child task can finish and fire its callback
@@ -1981,6 +2302,10 @@ static void task_update_installed_cores_handler(retro_task_t *task)
          break;
       case UPDATE_INSTALLED_CORES_END:
          {
+            /* Only a run that reached its end writes the cache: a
+             * cancelled one leaves the previous file standing */
+            core_crc_cache_save(&update_installed_handle->crc_cache);
+
             /* Set final task title */
             task_free_title(task);
 
@@ -2108,6 +2433,8 @@ void task_push_update_installed_cores(
    update_installed_handle->path_dir_core_assets     = (!path_dir_core_assets || !*path_dir_core_assets) ?
          NULL : strdup(path_dir_core_assets);
    update_installed_handle->core_list                = core_updater_list_init();
+   update_installed_handle->crc_cache.path           = core_crc_cache_path(
+         path_dir_libretro, path_dir_core_assets);
    update_installed_handle->list_done                = NULL;
    update_installed_handle->download_done            = NULL;
    update_installed_handle->list_size                = 0;

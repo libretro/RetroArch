@@ -64,9 +64,15 @@ typedef struct
    char *display_name;
    char *description;
    struct string_list *licenses_list;
+   /* Installed core's size and modification time, as the libretro
+    * directory walk of an installed-only parse saw them; valid only
+    * when local_metadata is set */
+   int64_t local_size;
+   int64_t local_mtime;
    core_updater_list_date_t date;   /* unsigned alignment */
    uint32_t crc;
    bool is_experimental;
+   bool local_metadata;
 } core_updater_list_entry_t;
 
 /* Prevent direct access to core_updater_list_t
@@ -151,7 +157,9 @@ bool core_updater_list_get_core(
 enum core_updater_list_parse_flags
 {
    /* Keep only cores installed in the libretro directory,
-    * and read core info for those alone */
+    * and read core info for those alone.  The directory is
+    * walked once, and each entry's local_size/local_mtime
+    * are filled from the walk. */
    CORE_UPDATER_LIST_PARSE_INSTALLED_ONLY = (1 << 0)
 };
 

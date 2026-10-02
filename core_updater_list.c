@@ -21,6 +21,7 @@
  */
 
 #include <file/file_path.h>
+#include <retro_dirent.h>
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 #include <net/net_http.h>
@@ -35,14 +36,28 @@
 #include "core_updater_list.h"
 
 /* Holds all entries in a core updater list */
+/* One file in the libretro directory, from the walk an
+ * installed-only parse makes instead of a stat per listing line */
+typedef struct
+{
+   char *name;
+   int64_t size;
+   int64_t mtime;
+   bool metadata;
+} core_updater_installed_t;
+
 struct core_updater_list
 {
    core_updater_list_entry_t *entries;
    /* Incremental buildbot parse: a NUL-terminated copy of the
     * listing and the offset of the next line to parse */
    char *parse_buf;
+   /* The libretro directory, walked once per installed-only
+    * parse and sorted by name */
+   core_updater_installed_t *installed;
    size_t parse_len;
    size_t parse_pos;
+   size_t num_installed;
    unsigned parse_flags;
    enum core_updater_list_type type;
 };
@@ -50,6 +65,10 @@ struct core_updater_list
 /* Internal parse_flags bit, above the public
  * core_updater_list_parse_flags: a listing line parsed */
 #define CORE_UPDATER_LIST_PARSE_WELL_FORMED (1u << 31)
+/* Internal parse_flags bit: the libretro directory has been walked
+ * (core_list->installed is the result; NULL with this bit set means
+ * the walk failed and lines fall back to a stat each) */
+#define CORE_UPDATER_LIST_PARSE_WALKED      (1u << 30)
 
 /* Cached ('global') core updater list */
 static core_updater_list_t *core_list_cached = NULL;
@@ -122,13 +141,142 @@ core_updater_list_t *core_updater_list_init(void)
 
    /* Initialise members */
    core_list->entries   = NULL;
-   core_list->parse_buf = NULL;
-   core_list->parse_len = 0;
-   core_list->parse_pos   = 0;
-   core_list->parse_flags = 0;
-   core_list->type        = CORE_UPDATER_LIST_TYPE_UNKNOWN;
+   core_list->parse_buf     = NULL;
+   core_list->installed     = NULL;
+   core_list->parse_len     = 0;
+   core_list->parse_pos     = 0;
+   core_list->num_installed = 0;
+   core_list->parse_flags   = 0;
+   core_list->type          = CORE_UPDATER_LIST_TYPE_UNKNOWN;
 
    return core_list;
+}
+
+/* Filenames compare without regard to ASCII case, as the
+ * case-insensitive filesystems most cores live on do; the walk is
+ * only a filter, and the scan still checks the exact path. */
+static int core_updater_list_name_cmp(const char *a, const char *b)
+{
+   for (;; a++, b++)
+   {
+      int ca = (unsigned char)*a;
+      int cb = (unsigned char)*b;
+      if (ca >= 'A' && ca <= 'Z')
+         ca += 'a' - 'A';
+      if (cb >= 'A' && cb <= 'Z')
+         cb += 'a' - 'A';
+      if (ca != cb || !ca)
+         return ca - cb;
+   }
+}
+
+static int core_updater_list_installed_qsort_cmp(const void *a, const void *b)
+{
+   return core_updater_list_name_cmp(
+         ((const core_updater_installed_t*)a)->name,
+         ((const core_updater_installed_t*)b)->name);
+}
+
+static void core_updater_list_free_installed(core_updater_list_t *core_list)
+{
+   size_t i;
+
+   if (!core_list->installed)
+      return;
+   for (i = 0; i < core_list->num_installed; i++)
+      free(core_list->installed[i].name);
+   free(core_list->installed);
+   core_list->installed     = NULL;
+   core_list->num_installed = 0;
+}
+
+/* One walk of @path_dir_libretro, recording each file's name, size
+ * and mtime: one directory read where the parse would otherwise stat
+ * every listing line, and the metadata the core updater's CRC cache
+ * is keyed on.  A directory that cannot be walked leaves
+ * core_list->installed NULL, and lines fall back to a stat each. */
+static void core_updater_list_walk_installed(core_updater_list_t *core_list,
+      const char *path_dir_libretro)
+{
+   struct RDIR *rdir;
+   size_t cap = 1;
+
+   core_list->parse_flags |= CORE_UPDATER_LIST_PARSE_WALKED;
+
+   if (!path_dir_libretro || !*path_dir_libretro)
+      return;
+   if (!(rdir = retro_opendir(path_dir_libretro)))
+      return;
+
+   /* An empty but readable directory still counts as walked */
+   if (!(core_list->installed = (core_updater_installed_t*)
+            malloc(cap * sizeof(*core_list->installed))))
+   {
+      retro_closedir(rdir);
+      return;
+   }
+
+   while (retro_readdir(rdir))
+   {
+      core_updater_installed_t *slot;
+      const char *name = retro_dirent_get_name(rdir);
+      int64_t size     = 0;
+      int64_t mtime    = 0;
+      int st;
+
+      if (!name || !*name || retro_dirent_is_dir(rdir, NULL))
+         continue;
+
+      if (core_list->num_installed == cap)
+      {
+         core_updater_installed_t *tmp = (core_updater_installed_t*)
+               realloc(core_list->installed, cap * 2 * sizeof(*tmp));
+         if (!tmp)
+            break;
+         core_list->installed = tmp;
+         cap                 *= 2;
+      }
+
+      slot = &core_list->installed[core_list->num_installed];
+      if (!(slot->name = strdup(name)))
+         break;
+      st             = retro_dirent_stat(rdir, &size, &mtime);
+      slot->size     = size;
+      slot->mtime    = mtime;
+      /* Backends that report no mtime (SMB, SAF) leave it at 0: no
+       * usable cache key, so those cores are always hashed */
+      slot->metadata = (st & RETRO_VFS_STAT_IS_VALID) && mtime > 0;
+      core_list->num_installed++;
+   }
+
+   retro_closedir(rdir);
+
+   if (core_list->num_installed > 1)
+      qsort(core_list->installed, core_list->num_installed,
+            sizeof(*core_list->installed),
+            core_updater_list_installed_qsort_cmp);
+}
+
+/* The walked file called @name, or NULL */
+static const core_updater_installed_t *core_updater_list_find_installed(
+      const core_updater_list_t *core_list, const char *name)
+{
+   size_t lo = 0;
+   size_t hi = core_list->num_installed;
+
+   while (lo < hi)
+   {
+      size_t mid = lo + (hi - lo) / 2;
+      int cmp    = core_updater_list_name_cmp(name,
+            core_list->installed[mid].name);
+      if (!cmp)
+         return &core_list->installed[mid];
+      if (cmp < 0)
+         hi = mid;
+      else
+         lo = mid + 1;
+   }
+   return NULL;
 }
 
 /* Resets (removes all entries of) specified core
@@ -153,6 +301,7 @@ void core_updater_list_reset(core_updater_list_t *core_list)
       free(core_list->parse_buf);
       core_list->parse_buf = NULL;
    }
+   core_updater_list_free_installed(core_list);
    core_list->parse_len   = 0;
    core_list->parse_pos   = 0;
    core_list->parse_flags = 0;
@@ -691,6 +840,11 @@ static bool core_updater_list_push_entry(
    /* Copy crc */
    list_entry->crc              = entry->crc;
 
+   /* Copy installed core metadata */
+   list_entry->local_size       = entry->local_size;
+   list_entry->local_mtime      = entry->local_mtime;
+   list_entry->local_metadata   = entry->local_metadata;
+
    /* Copy date */
    memcpy(&list_entry->date, &entry->date, sizeof(core_updater_list_date_t));
 
@@ -746,9 +900,30 @@ static bool core_updater_list_add_entry(
    well_formed = true;
 
    /* Not an error either: a core that is not installed is left
-    * out before its info file is read */
-   if (installed_only && !path_is_valid(entry.local_core_path))
-      goto error;
+    * out before its info file is read.  The walk of the libretro
+    * directory answers that, and gives the metadata the CRC cache
+    * is keyed on; a directory that could not be walked falls back
+    * to a stat. */
+   if (installed_only)
+   {
+      if (core_list->installed)
+      {
+         char local_name[PATH_MAX_LENGTH];
+         const core_updater_installed_t *installed;
+
+         strlcpy(local_name, filename_str, sizeof(local_name));
+         if (path_is_compressed_file(local_name))
+            path_remove_extension(local_name);
+         if (!(installed = core_updater_list_find_installed(
+                     core_list, local_name)))
+            goto error;
+         entry.local_size     = installed->size;
+         entry.local_mtime    = installed->mtime;
+         entry.local_metadata = installed->metadata;
+      }
+      else if (!path_is_valid(entry.local_core_path))
+         goto error;
+   }
 
    if (!core_updater_list_set_core_info(
          &entry,
@@ -873,6 +1048,16 @@ bool core_updater_list_parse_network_step(
 
    data_end = core_list->parse_buf + core_list->parse_len;
 
+   /* The directory walk is the first work item of an installed-only
+    * parse */
+   if (     (core_list->parse_flags & CORE_UPDATER_LIST_PARSE_INSTALLED_ONLY)
+         && !(core_list->parse_flags & CORE_UPDATER_LIST_PARSE_WALKED))
+   {
+      if (within_budget && !within_budget(budget, 0, 0))
+         return false;
+      core_updater_list_walk_installed(core_list, path_dir_libretro);
+   }
+
    while (core_list->parse_pos < core_list->parse_len)
    {
       char *line     = core_list->parse_buf + core_list->parse_pos;
@@ -960,6 +1145,7 @@ bool core_updater_list_parse_network_step(
    core_list->parse_len   = 0;
    core_list->parse_pos   = 0;
    core_list->parse_flags = 0;
+   core_updater_list_free_installed(core_list);
 
    core_updater_list_qsort(core_list);
 

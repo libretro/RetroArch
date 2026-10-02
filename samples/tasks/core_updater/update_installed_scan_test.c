@@ -80,7 +80,16 @@
  * The refused-download lane covers a core download whose transfer
  * cannot be started (task_push_http_download_file() is wrapped to
  * refuse it): the download must fail, and Update Installed Cores
- * finish, rather than wait for an extraction that never starts. */
+ * finish, rather than wait for an extraction that never starts.
+ *
+ * The CRC cache lane covers the hash itself.  Each installed core's
+ * CRC is cached against the size and mtime the libretro directory walk
+ * reports, so a repeat run reads no unchanged core.  Bytes hashed are
+ * counted at intfstream_crc_step() and core downloads refused as
+ * above: a first run hashes every core, a repeat hashes none, a
+ * touched core is hashed again, a core whose contents changed is
+ * hashed again *and* downloaded - the cache must never hide an
+ * update - and a corrupt cache falls back to hashing everything. */
 
 #include <stdio.h>
 #include <string.h>
@@ -99,6 +108,8 @@
 #include <streams/interface_stream.h>
 #include <file/file_path.h>
 #include <compat/strl.h>
+#include <sys/stat.h>
+#include <utime.h>
 
 #include "../../../configuration.h"
 #include "../../../core_updater_list.h"
@@ -174,8 +185,10 @@ void __wrap_task_set_title(retro_task_t *task, char *title)
    __real_task_set_title(task, title);
 }
 
-/* ---------------- core downloads -------------------------------- */
+/* ---------------- bytes hashed, core downloads ------------------- */
 
+
+static retro_atomic_int_t hashed_mb;     /* in units of 64 KiB */
 static retro_atomic_int_t core_downloads;
 /* Set for the lanes that only need the download decision */
 static retro_atomic_int_t refuse_downloads;
@@ -192,6 +205,15 @@ void *__wrap_task_push_http_download_file(const char *url, const char *path,
             cb, user_data);
    retro_atomic_fetch_add_int(&core_downloads, 1);
    return NULL;
+}
+
+int64_t __real_intfstream_crc_step(intfstream_t *s, uint32_t *acc, size_t c);
+int64_t __wrap_intfstream_crc_step(intfstream_t *s, uint32_t *acc, size_t c)
+{
+   int64_t r = __real_intfstream_crc_step(s, acc, c);
+   if (r > 0)
+      retro_atomic_fetch_add_int(&hashed_mb, (int)(r >> 16));
+   return r;
 }
 
 /* ---------------- the I/O window, forced to its floor ------------ */
@@ -316,7 +338,8 @@ static void server_stop(void)
 /* ---------------- fixture ---------------------------------------- */
 
 static char g_dir[] = "/tmp/update_installed_scan_XXXXXX";
-/* The first installed core, which the refused-download lane edits */
+/* The first installed core, which the refused-download and CRC
+ * cache lanes edit */
 static char g_core_a[PATH_MAX_LENGTH];
 
 /* Installed cores are sparse files: CRC work without disk use. */
@@ -442,6 +465,17 @@ static void run_lane(bool threaded)
 
 /* ---------------- refused-download lane --------------------------- */
 
+/* A same-size edit within the second the CRC cache last saw is, by
+ * design, invisible to it; the lanes move the mtime on explicitly */
+static void set_mtime(const char *path, time_t t)
+{
+   struct utimbuf ut;
+   ut.actime  = t;
+   ut.modtime = t;
+   utime(path, &ut);
+}
+
+
 static void run_refused_download_lane(void)
 {
    char url[128];
@@ -460,6 +494,11 @@ static void run_refused_download_lane(void)
    }
    fputc(0xa5, f);
    fclose(f);
+   {
+      struct stat st;
+      if (!stat(g_core_a, &st))
+         set_mtime(g_core_a, st.st_mtime + 5);
+   }
 
    task_queue_init(false, NULL);
    snprintf(url, sizeof(url), "http://127.0.0.1:%d", srv_port);
@@ -500,6 +539,120 @@ static void run_refused_download_lane(void)
       fputc(0x5a, f);
       fclose(f);
    }
+}
+
+/* ---------------- CRC cache lane --------------------------------- */
+
+static char g_cache_path[PATH_MAX_LENGTH];
+
+/* One unthreaded Update Installed Cores run; reports what it hashed,
+ * in 64 KiB units, and the core downloads it asked for */
+static void cache_run(int *hashed, int *downloads)
+{
+   char url[128];
+   task_finder_data_t find_data;
+   settings_t *settings = config_get_ptr();
+   long gathers;
+
+   task_queue_init(false, NULL);
+   snprintf(url, sizeof(url), "http://127.0.0.1:%d", srv_port);
+   get_list_test_set_buildbot_url(url);
+   strlcpy(settings->paths.directory_libretro, g_dir,
+         sizeof(settings->paths.directory_libretro));
+   strlcpy(settings->paths.path_libretro_info, g_dir,
+         sizeof(settings->paths.path_libretro_info));
+
+   retro_atomic_store_release_int(&hashed_mb, 0);
+   retro_atomic_store_release_int(&core_downloads, 0);
+   retro_atomic_store_release_int(&refuse_downloads, 1);
+   task_push_update_installed_cores(false, 0, g_dir, NULL);
+
+   find_data.func     = find_any;
+   find_data.userdata = NULL;
+   for (gathers = 0; gathers < 4 * NUM_ENTRIES; gathers++)
+   {
+      task_queue_check();
+      if (!task_queue_find(&find_data))
+         break;
+      retro_sleep(17);
+   }
+
+   retro_atomic_store_release_int(&refuse_downloads, 0);
+   *hashed    = retro_atomic_load_acquire_int(&hashed_mb);
+   *downloads = retro_atomic_load_acquire_int(&core_downloads);
+   printf("    hashed %d MiB, %d core download(s), %ld gathers%s\n",
+         *hashed / 16, *downloads, gathers,
+         gathers < 4 * NUM_ENTRIES ? "" : " (did not complete)");
+   CHECK(gathers < 4 * NUM_ENTRIES, "the run completed");
+
+   task_queue_deinit();
+   task_queue_unset_threaded();
+}
+
+static void run_cache_lane(void)
+{
+   const int one = CORE_SIZE >> 16;
+   const int all = NUM_INSTALLED * one;
+   int hashed, downloads;
+   struct stat st;
+   FILE *f;
+
+   printf("[lane: installed core CRC cache]\n");
+
+   fill_pathname_join_special(g_cache_path, g_dir,
+         "core_backups/core_updater.crc", sizeof(g_cache_path));
+   remove(g_cache_path);
+
+   printf("  first run\n");
+   cache_run(&hashed, &downloads);
+   CHECK(hashed == all, "a first run hashes every installed core");
+   CHECK(downloads == 0, "matching cores are not downloaded");
+   CHECK(path_is_valid(g_cache_path), "the cache was written");
+
+   printf("  repeat run\n");
+   cache_run(&hashed, &downloads);
+   CHECK(hashed == 0, "a repeat run hashes no unchanged core");
+   CHECK(downloads == 0, "unchanged cores are not downloaded");
+
+   /* Same contents, newer mtime */
+   stat(g_core_a, &st);
+   set_mtime(g_core_a, st.st_mtime + 10);
+   printf("  one core touched\n");
+   cache_run(&hashed, &downloads);
+   CHECK(hashed == one, "a touched core is hashed again, and only it");
+   CHECK(downloads == 0, "a touched but unchanged core is not downloaded");
+
+   /* Same size, new contents, newer mtime */
+   if ((f = fopen(g_core_a, "r+b")))
+   {
+      fputc(0xa5, f);
+      fclose(f);
+   }
+   stat(g_core_a, &st);
+   set_mtime(g_core_a, st.st_mtime + 20);
+   printf("  one core changed\n");
+   cache_run(&hashed, &downloads);
+   CHECK(hashed == one, "a changed core is hashed again");
+   CHECK(downloads == 1, "a changed core is downloaded: the cache hid an update");
+
+   /* Back to the listed contents (make_core's first byte) */
+   if ((f = fopen(g_core_a, "r+b")))
+   {
+      fputc(0x5a, f);
+      fclose(f);
+   }
+   stat(g_core_a, &st);
+   set_mtime(g_core_a, st.st_mtime + 30);
+
+   if ((f = fopen(g_cache_path, "wb")))
+   {
+      fputs("not a cache\n", f);
+      fclose(f);
+   }
+   printf("  corrupt cache\n");
+   cache_run(&hashed, &downloads);
+   CHECK(hashed == all, "a corrupt cache falls back to hashing every core");
+   CHECK(downloads == 0, "restored cores are not downloaded");
 }
 
 /* ---------------- status lanes ----------------------------------- */
@@ -795,6 +948,7 @@ int main(void)
       run_lane(false);
       run_lane(true);
       run_refused_download_lane();
+      run_cache_lane();
 
       snprintf(url, sizeof(url), "http://127.0.0.1:%d", srv_port);
       if (mkdtemp(empty_dir))

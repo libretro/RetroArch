@@ -542,6 +542,10 @@ jobs:
           # The refused-download lane refuses a changed core's transfer
           # and asserts the run still completes: a download that
           # cannot start fails instead of waiting on an extraction.
+          # The CRC cache lane counts bytes hashed at the link
+          # boundary: a repeat run hashes no unchanged core, a touched
+          # core is hashed again, a changed one is hashed and
+          # downloaded, and a corrupt cache falls back to hashing all.
           make -f Makefile.update_installed clean all
           test -x update_installed_scan_test
           timeout 600 ./update_installed_scan_test
