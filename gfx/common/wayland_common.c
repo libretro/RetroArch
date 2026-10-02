@@ -524,6 +524,15 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       wayland_seat_release(wl->seat);
    if (wl->xdg_shell)
       xdg_wm_base_destroy(wl->xdg_shell);
+   if (wl->data_device)
+   {
+      if (wl_data_device_get_version(wl->data_device)
+            >= WL_DATA_DEVICE_RELEASE_SINCE_VERSION)
+         wl_data_device_release(wl->data_device);
+      else
+         wl_data_device_destroy(wl->data_device);
+      wl->data_device = NULL;
+   }
    if (wl->data_device_manager)
       wl_data_device_manager_destroy (wl->data_device_manager);
    while (!wl_list_empty(&wl->current_outputs))
