@@ -349,7 +349,7 @@ bool bsv_movie_reset_playback(bsv_movie_t *handle)
 bool bsv_movie_reset_recording(bsv_movie_t *handle)
 {
    int64_t checkpoint_size;
-   size_t state_size, state_size_;
+   uint32_t state_size_;
    uint8_t compression   = handle->checkpoint_compression;
 #if HAVE_STATESTREAM
    uint8_t encoding      = REPLAY_CHECKPOINT2_ENCODING_STATESTREAM;
@@ -374,11 +374,12 @@ bool bsv_movie_reset_recording(bsv_movie_t *handle)
       RARCH_ERR("[Replay] Failed to write the initial checkpoint\n");
       return false;
    }
-   state_size = 2 + checkpoint_size;
    handle->min_file_pos = intfstream_tell(handle->file);
-   /* Have to write initial state size header too */
-   state_size_ = swap_if_big32(state_size);
-   intfstream_seek(handle->file, 3*sizeof(uint32_t), SEEK_SET);
+   /* The header's state size is the 32-bit field the reader takes:
+    * the compression and encoding bytes plus the checkpoint. */
+   state_size_ = swap_if_big32((uint32_t)(2 + checkpoint_size));
+   intfstream_seek(handle->file,
+         REPLAY_HEADER_STATE_SIZE_INDEX * sizeof(uint32_t), SEEK_SET);
    intfstream_write(handle->file, &state_size_, sizeof(uint32_t));
    intfstream_seek(handle->file, handle->min_file_pos, SEEK_SET);
    return true;
