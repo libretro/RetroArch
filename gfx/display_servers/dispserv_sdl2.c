@@ -419,5 +419,7 @@ const video_display_server_t dispserv_sdl2 = {
    sdl_display_server_modeline_flush,
    NULL, /* get_edid */
    sdl2_display_server_idle_wait,
-   "sdl2"
+   "sdl2",
+   /* get_refresh_rate already reads the window's display */
+   sdl_display_server_get_refresh_rate
 };

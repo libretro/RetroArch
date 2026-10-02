@@ -325,6 +325,8 @@ enum msg_hash_enums
    MSG_NETPLAY_CLIENT_DEVICES,
    MSG_NETPLAY_CHAT_SUPPORTED,
    MSG_NETPLAY_SLOWDOWNS_CAUSED,
+   MSG_MENU_FRAME_RATE_DISPLAY,
+   MSG_MENU_FRAME_RATE_CONTENT,
    MSG_RESAMPLER_QUALITY_LOWEST,
    MSG_RESAMPLER_QUALITY_LOWER,
    MSG_RESAMPLER_QUALITY_NORMAL,
@@ -17872,7 +17874,7 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_CONNECT_NETPLAY_LAN,
 
    MENU_LABEL(MENU_ENUM_LINEAR_FILTER),
-   /* GENERATED REGION: menu throttle setting enum rows (see settings/settings_def_menu_throttle.h). */
+   /* GENERATED REGION: menu frame rate setting enum rows (see settings/settings_def_menu_frame_rate.h). */
 #define SETTINGS_DEF_ENUM_PASS
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
@@ -17943,7 +17945,7 @@ enum msg_hash_enums
 #define S_FLOAT_EX_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
 #define S_ACTION_EX_H(T, n, sd, ok, rp, c, us, sub) MENU_LBL_H(T),
 #define S_ACTION_EX_NS_H(T, n, sd, ok, rp, c, us) MENU_LBL_H(T),
-#include "settings/settings_def_menu_throttle.h"
+#include "settings/settings_def_menu_frame_rate.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT
@@ -18006,7 +18008,6 @@ enum msg_hash_enums
 #undef S_FLOAT_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
-   MENU_LABEL(MENU_ENUM_THROTTLE_FRAMERATE),
    /* GENERATED REGION: main menu state group enum rows (see settings/settings_def_menu_main_state.h). */
 #define SETTINGS_DEF_ENUM_PASS
 #define SETTINGS_DEF_STRINGS_PASS

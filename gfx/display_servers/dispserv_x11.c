@@ -1913,7 +1913,10 @@ static uint32_t x11_display_server_get_flags(void *data)
 
 #ifdef HAVE_XRANDR
 /* The first connected output's current mode. */
-static float x11_display_server_read_refresh_rate(Display *dpy)
+/* The refresh rate of the first connected output, or with @at, of the
+ * output whose CRTC holds that point in root coordinates. */
+static float x11_display_server_read_refresh_rate_at(Display *dpy,
+      const XPoint *at)
 {
    float refresh_rate         = 0.0f;
    XRRScreenResources *screen = XRRGetScreenResources(dpy,
@@ -1933,6 +1936,17 @@ static float x11_display_server_read_refresh_rate(Display *dpy)
          {
             int j;
             XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, screen, info->crtc);
+
+            if (     at && crtc
+                  && (   at->x <  crtc->x
+                      || at->y <  crtc->y
+                      || at->x >= crtc->x + (int)crtc->width
+                      || at->y >= crtc->y + (int)crtc->height))
+            {
+               XRRFreeCrtcInfo(crtc);
+               XRRFreeOutputInfo(info);
+               continue;
+            }
 
             if (crtc && crtc->mode)
             {
@@ -2000,6 +2014,40 @@ static void x11_display_server_watch_randr(Display *dpy)
  * and answered from memory in between. A reader that raced a change
  * withdraws the rate it kept, so an old mode's rate never outlives the
  * change that replaced it. */
+static float x11_display_server_read_refresh_rate(Display *dpy)
+{
+   return x11_display_server_read_refresh_rate_at(dpy, NULL);
+}
+
+/* The refresh rate of the output under the middle of the window: on a
+ * desktop of several monitors the first output is not necessarily the
+ * one the window is on. Not cached: the window moves. */
+static float x11_display_server_get_window_refresh_rate(void *data)
+{
+   XWindowAttributes attr;
+   Window   child;
+   int      rx, ry;
+   XPoint   at;
+   float    rate              = 0.0f;
+   dispserv_x11_t *dispserv   = (dispserv_x11_t*)data;
+   Display *dpy;
+
+   if (!g_x11_win)
+      return 0.0f;
+   if (!(dpy = x11_display_server_open_display(dispserv)))
+      return 0.0f;
+   if (     XGetWindowAttributes(dpy, g_x11_win, &attr)
+         && XTranslateCoordinates(dpy, g_x11_win, attr.root,
+            attr.width / 2, attr.height / 2, &rx, &ry, &child))
+   {
+      at.x = (short)rx;
+      at.y = (short)ry;
+      rate = x11_display_server_read_refresh_rate_at(dpy, &at);
+   }
+   x11_display_server_close_display(dispserv, dpy);
+   return rate;
+}
+
 static float x11_display_server_get_refresh_rate(void *data)
 {
    union { float f; int i; } rate;
@@ -2467,5 +2515,10 @@ const video_display_server_t dispserv_x11 = {
 #endif
    x11_display_server_get_edid,
    x11_display_server_idle_wait,
-   "x11"
+   "x11",
+#ifdef HAVE_XRANDR
+   x11_display_server_get_window_refresh_rate
+#else
+   NULL  /* get_window_refresh_rate */
+#endif
 };

@@ -1172,7 +1172,6 @@ static const struct
    char s_136eaaf4[27];
    char s_8d3a8b68[6];
    char s_68d27147[12];
-   char s_f02f73fc[43];
    char s_b5721b90[32];
    char s_e5b971a0[7];
    char s_8f27c71e[21];
@@ -3087,7 +3086,6 @@ static const struct
    char s_193e1462[43];
    char s_6895dfd6[58];
    char s_788364f5[65];
-   char s_dd9ff22a[75];
    char s_ff7d19fe[168];
    char s_db495a9d[50];
    char s_ddc672a7[39];
@@ -5785,7 +5783,6 @@ static const struct
    "Deshabilita el mode Quiosc",
    "Men\303\272",
    "Mode Quiosc",
-   "Limita la velocitat de fotogrames al men\303\272",
    "Mostra les extensions de fitxer",
    "Sempre",
    "Nom\303\251s els duplicats",
@@ -8062,7 +8059,6 @@ static const struct
    "Mostra totes les opcions de configuraci\303\263.",
    "Controlador de men\303\272 que es far\303\240 servir (cal reiniciar).",
    "Protegeix la configuraci\303\263 amagant la configuraci\303\263 relacionada.",
-   "S\342\200\231assegura que la velocitat de fotogrames dins del men\303\272 est\303\240 limitada.",
    "Especifica si es mostren les extensions de fitxer quan es mostra el contingut. Les extensions de"
    " fitxer per shaders, superposicions i configuraci\303\263, sempre es mostren.",
    "Canvia la configuraci\303\263 del navegador de fitxers.",
@@ -9932,7 +9928,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (220347u
+      (sizeof(msg_hash_ca_blob) == (220229u
 #ifdef ANDROID
        + 281u
 #endif
@@ -11558,7 +11554,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_DUPLICATES_ONLY,
@@ -13466,7 +13461,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,

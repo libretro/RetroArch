@@ -159,6 +159,13 @@ typedef struct video_display_server
     * wait. */
    bool     (*idle_wait)(void *data, unsigned ms);
    const char *ident;
+   /* The refresh rate of the output the RetroArch window is on, or 0
+    * when the server cannot tell: on a desktop of several monitors at
+    * different rates, get_refresh_rate answers for one of them, not
+    * necessarily this one. Optional, and after ident so a server
+    * without it needs no entry; video_driver_get_window_refresh_rate()
+    * falls back to get_refresh_rate. */
+   float    (*get_window_refresh_rate)(void *data);
 } video_display_server_t;
 
 void* video_display_server_init(enum rarch_display_type type);

@@ -417,7 +417,6 @@ static const struct
    char s_e22edcd8[7];
    char s_9da5609f[15];
    char s_68d27147[23];
-   char s_f02f73fc[36];
    char s_3a0a3fef[24];
    char s_2696c793[57];
    char s_72898bf0[21];
@@ -986,7 +985,6 @@ static const struct
    char s_193e1462[64];
    char s_6895dfd6[59];
    char s_788364f5[101];
-   char s_dd9ff22a[84];
    char s_db495a9d[49];
    char s_4fe7b3d2[145];
    char s_e6535ec1[228];
@@ -1855,7 +1853,6 @@ static const struct
    "M\303\255dia",
    "Menu principal",
    "Ativar 'Modo quiosque'",
-   "Acelerar taxa de fotogramas do menu",
    "Explorador de ficheiros",
    "Introduza a palavra-passe para desativar o modo quiosque",
    "Propor\303\247\303\243o do ecr\303\243",
@@ -2485,7 +2482,6 @@ static const struct
    "Controlador de menu a utilizar. (\303\211 necess\303\241rio reiniciar)",
    "Protege o sistema atrav\303\251s da oculta\303\247\303\243o de todas as configura\303\247\303"
    "\265es relacionadas com defini\303\247\303\265es.",
-   "Certifique-se de que a taxa de fotogramas atingida enquanto estiver dentro do menu.",
    "Alterar defini\303\247\303\265es do explorador de ficheiros.",
    "Muda os bot\303\265es para OK/Cancelar. Esta op\303\247\303\243o encontra-se desativada na orien"
    "ta\303\247\303\243o de bot\303\243o em japon\303\252s e ativado na orienta\303\247\303\243o ocid"
@@ -2983,7 +2979,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_pt_blob_check[
-      (sizeof(msg_hash_pt_pt_blob) == (54654u
+      (sizeof(msg_hash_pt_pt_blob) == (54534u
 #ifdef HAVE_LAKKA
        + 17u
 #endif
@@ -3485,7 +3481,6 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
@@ -4053,7 +4048,6 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,

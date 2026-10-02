@@ -198,6 +198,10 @@ struct runloop
     * at 59.94 Hz, which the schedule would carry into every frame. */
    int64_t      frame_limit_minimum_time_ns;
    int64_t      frame_limit_anchor_ns;
+   /* When the core running behind the menu at Menu Frame Rate
+    * 'Display Rate' is next due a frame, on the content's own clock;
+    * 0 = not running it on that clock. */
+   int64_t      menu_core_due_ns;
    /* How early the gap limiter's sleep is asked to return, so the
     * remainder can be spun to the deadline: the sleep's observed
     * overshoot, tracked by runloop_pace_margin_update(). */
@@ -387,6 +391,10 @@ struct runloop
     * cross-thread race.  Both are main-thread only. */
    bool content_closing;
    bool content_switching;
+   /* The core running behind the menu was not due a frame this
+    * iteration (see menu_core_due_ns), so nothing that counts the
+    * core's frames - achievements - steps either. Main thread only. */
+   bool menu_core_skipped;
 };
 
 /* Frame pacing sources.
@@ -651,9 +659,9 @@ enum runloop_pace_fact
    PACE_FACT_PAUSED          = (1 << 4),  /* RUNLOOP_FLAG_PAUSED */
    PACE_FACT_FOCUSED         = (1 << 5),  /* RUNLOOP_FLAG_FOCUSED */
    PACE_FACT_MENU_ALIVE      = (1 << 6),
-   PACE_FACT_MENU_EARLY_EXIT = (1 << 7),  /* VRR on, menu throttle off: the
-                                             menu path returns before the
-                                             pace block */
+   PACE_FACT_MENU_CONTENT_RATE = (1 << 7),/* the menu is up over a paused
+                                             core with content loaded, at
+                                             Menu Frame Rate 'Content Rate' */
    PACE_FACT_VRR             = (1 << 8),  /* Sync to Exact Content Framerate */
    PACE_FACT_WRAPPER         = (1 << 9),  /* threaded video wrapper installed */
    PACE_FACT_DISPLAY_PACING  = (1 << 10), /* Threaded Video Display Pacing */
@@ -663,6 +671,8 @@ enum runloop_pace_fact
    PACE_FACT_SCANLINE_LOCKED = (1 << 13), /* a target scanline exists */
    PACE_FACT_RATE_CONTROL    = (1 << 14), /* audio rate control */
    PACE_FACT_PRESENTABLE     = (1 << 15), /* the context has a surface */
+   PACE_FACT_MENU_DISPLAY_RATE = (1 << 16),/* the menu is up at Menu Frame
+                                             Rate 'Display Rate' */
    PACE_FACT_FRAME_LIMIT     = (1 << 17)  /* frame_limit_minimum_time != 0 */
 };
 
@@ -670,8 +680,8 @@ typedef unsigned runloop_pace_facts_t;
 
 /* The pace decision as one pure function of those facts: which sources
  * hold the loop this iteration, as RUNLOOP_PACE_* bits. It reproduces,
- * bit for bit, what runloop_iterate() decides across its paths - the
- * menu path's early return included - so that the decision can be
+ * bit for bit, what runloop_iterate() decides across its paths, so
+ * that the decision can be
  * tested as a table (samples/runloop/pacing) and, once the paths defer
  * to it, made in one place. Until then runloop_iterate() computes
  * both and asserts they agree in debug builds. */
@@ -686,11 +696,6 @@ static INLINE unsigned runloop_pace_sources(runloop_pace_facts_t f)
                       && !(f & PACE_FACT_NONBLOCKING)
                       && !(f & PACE_FACT_FORCE_NONBLOCK);
 
-   /* The menu path's early return: vsync if it is blocking, nothing
-    * else, and no timer. */
-   if ((f & PACE_FACT_MENU_ALIVE) && (f & PACE_FACT_MENU_EARLY_EXIT))
-      return vsync_holds ? RUNLOOP_PACE_VSYNC : RUNLOOP_PACE_NONE;
-
    if (vsync_holds)
       pace |= RUNLOOP_PACE_VSYNC;
    if ((f & PACE_FACT_WRAPPER) && (f & PACE_FACT_DISPLAY_PACING)
@@ -703,11 +708,23 @@ static INLINE unsigned runloop_pace_sources(runloop_pace_facts_t f)
       pace |= RUNLOOP_PACE_SCANLINE;
    {
       bool display_paces = (pace & RUNLOOP_PACE_DISPLAY) != 0;
+      /* The menu at the content's rate is held there by audio when
+       * audio blocks, and by the timer at the content's period when it
+       * does not; never by both, which would be two clocks. At the
+       * display's rate behind the threaded video wrapper, vsync blocks
+       * the video thread and not this one, so without the display
+       * pacing hold the timer holds the menu to the display's period. */
+      bool menu_content  = (f & PACE_FACT_MENU_CONTENT_RATE) != 0;
       if ((f & PACE_FACT_FRAME_LIMIT)
-            && (   (f & PACE_FACT_VRR)
+            && (   ((f & PACE_FACT_VRR)
+                     && !(f & PACE_FACT_MENU_DISPLAY_RATE))
                 || (f & PACE_FACT_FASTMOTION)
-                || (!display_paces && (f & PACE_FACT_MENU_ALIVE)
-                    && (!(f & PACE_FACT_VSYNC) || !(f & PACE_FACT_FOCUSED)))
+                || (menu_content && !(pace & RUNLOOP_PACE_AUDIO))
+                || (!display_paces && !menu_content
+                    && (f & PACE_FACT_MENU_ALIVE)
+                    && (   !(f & PACE_FACT_VSYNC) || !(f & PACE_FACT_FOCUSED)
+                        || (   (f & PACE_FACT_MENU_DISPLAY_RATE)
+                            && (f & PACE_FACT_WRAPPER))))
                 || (!display_paces && (f & PACE_FACT_PAUSED))))
          pace |= RUNLOOP_PACE_TIMER;
    }
@@ -729,8 +746,6 @@ static INLINE bool runloop_pace_no_window(unsigned sources,
 static INLINE unsigned runloop_pace_decide(runloop_pace_facts_t f)
 {
    unsigned pace = runloop_pace_sources(f);
-   if ((f & PACE_FACT_MENU_ALIVE) && (f & PACE_FACT_MENU_EARLY_EXIT))
-      return pace;
    if (runloop_pace_no_window(pace, f))
       return pace | RUNLOOP_PACE_NOWINDOW;
    if (runloop_pace_gap_engages(pace,
@@ -857,6 +872,11 @@ size_t runloop_pace_string(char *s, size_t len);
 void runloop_set_frame_limit(
       const struct retro_system_av_info *av_info,
       float fastforward_ratio);
+
+/* Whether the menu is up at Menu Frame Rate 'Display Rate', where a
+ * core running behind it keeps its own clock rather than setting the
+ * menu's. */
+bool runloop_menu_display_rate(void);
 
 float runloop_get_fastforward_ratio(
       settings_t *settings,

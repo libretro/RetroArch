@@ -769,6 +769,13 @@ typedef struct
    retro_time_t avg_flush_delta;
    double avg_expected_delta;
 
+   /* The menu's silence at Menu Frame Rate 'Display Rate' is measured
+    * out by the clock rather than by the content's frame: when it was
+    * last fed (0 = not feeding by the clock), and the fraction of a
+    * frame the last feed left owing. */
+   retro_time_t menu_feed_last;
+   double menu_feed_frac;
+
    /* Rate-limit state for the DRC compute.
     *
     * The DRC ratio is updated approximately once per game-frame's worth
@@ -1409,7 +1416,18 @@ size_t audio_driver_sample_batch_rewind(
 #endif
 
 #ifdef HAVE_MENU
-void audio_driver_menu_sample(void);
+/**
+ * audio_driver_menu_sample:
+ * @by_clock : feed the silence the clock says has played since the last
+ *             feed, rather than one content frame of it.
+ *
+ * Feeds the device silence while the core is not running behind the
+ * menu, with the menu sounds, the mixer and thumbnail audio mixed in.
+ * One content frame per call holds a blocking writer to the content's
+ * rate; by the clock, with a non-blocking writer, the device is kept fed
+ * at whatever rate the menu runs.
+ **/
+void audio_driver_menu_sample(bool by_clock);
 #endif
 
 extern audio_driver_t audio_rsound;

@@ -1083,7 +1083,6 @@ static const struct
    char s_136eaaf4[26];
    char s_8d3a8b68[6];
    char s_68d27147[12];
-   char s_f02f73fc[34];
    char s_e5b971a0[7];
    char s_17615fcf[5];
    char s_3a0a3fef[17];
@@ -2877,7 +2876,6 @@ static const struct
    char s_193e1462[57];
    char s_6895dfd6[56];
    char s_788364f5[73];
-   char s_dd9ff22a[62];
    char s_db495a9d[35];
    char s_ddc672a7[55];
    char s_ccea261d[127];
@@ -5518,7 +5516,6 @@ static const struct
    "Kioszk m\303\263d kikapcsol\303\241sa",
    "Men\303\274",
    "Kioszk m\303\263d",
-   "Men\303\274 k\303\251psebess\303\251g korl\303\241toz\303\241sa",
    "Mindig",
    "Soha",
    "F\303\241jlb\303\266ng\303\251sz\305\221",
@@ -7801,8 +7798,6 @@ static const struct
    "\251ges)",
    "A konfigur\303\241ci\303\263 v\303\251delme minden \303\241ll\303\255t\303\241si lehet\305\221s"
    "\303\251g elrejt\303\251s\303\251vel.",
-   "A k\303\251psebess\303\251g fels\305\221 korl\303\241tja a men\303\274 haszn\303\241lata k\303"
-   "\266zben.",
    "A F\303\241jlb\303\266ng\303\251sz\305\221 be\303\241ll\303\255t\303\241sai.",
    "Az alap\303\251rtelmezett men\303\274h\303\241tt\303\251r \303\241tl\303\241tszatlans\303\241ga.",
    "A men\303\274 f\303\251nyereje cd/m2 (nit) egys\303\251gben HDR kijelz\305\221 haszn\303\241lata"
@@ -9797,7 +9792,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (188255u
+      (sizeof(msg_hash_hu_blob) == (188159u
 #ifdef ANDROID
        + 316u
 #endif
@@ -11309,7 +11304,6 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -13100,7 +13094,6 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,

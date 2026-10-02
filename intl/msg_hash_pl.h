@@ -1176,7 +1176,6 @@ static const struct
 #endif
    char s_136eaaf4[21];
    char s_68d27147[12];
-   char s_f02f73fc[34];
    char s_b5721b90[32];
    char s_e5b971a0[7];
    char s_8f27c71e[16];
@@ -3078,7 +3077,6 @@ static const struct
    char s_193e1462[55];
    char s_6895dfd6[46];
    char s_788364f5[73];
-   char s_dd9ff22a[56];
    char s_ff7d19fe[206];
    char s_db495a9d[41];
    char s_ddc672a7[51];
@@ -5797,7 +5795,6 @@ static const struct
 #endif
    "Wy\305\202\304\205cz tryb kiosku",
    "Tryb kiosku",
-   "D\305\202awienie szybko\305\233ci klatek menu",
    "Wy\305\233wietlanie rozszerze\305\204 pliku",
    "Zawsze",
    "Tylko duplikaty",
@@ -8076,7 +8073,6 @@ static const struct
    "Poka\305\274 wszystkie ustawienia zwi\304\205zane z konfiguracj\304\205.",
    "Sterownik menu do u\305\274ycia. (Wymagany restart)",
    "Chroni ustawienie, ukrywaj\304\205c wszystkie opcje zwi\304\205zane z konfiguracj\304\205.",
-   "Zapewnia ograniczenie liczby klatek na sekund\304\231 w menu.",
    "Okre\305\233l, kiedy wy\305\233wietla\304\207 rozszerzenia plik\303\263w podczas przegl\304\205d"
    "ania w poszukiwaniu tre\305\233ci. Wyb\303\263r plik\303\263w dla shader\303\263w, nak\305\202ad"
    "ek, konfiguracji i innych plik\303\263w ustawie\305\204 zawsze b\304\231dzie je pokazywa\304\207"
@@ -9982,7 +9978,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (197965u
+      (sizeof(msg_hash_pl_blob) == (197875u
 #ifdef ANDROID
        + 385u
 #endif
@@ -11618,7 +11614,6 @@ static const uint32_t msg_hash_pl_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_DUPLICATES_ONLY,
@@ -13516,7 +13511,6 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,

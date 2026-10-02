@@ -1901,12 +1901,41 @@ static void lane_display_pacing(void)
 #ifdef HAVE_MENU
    /* A core running under the menu is still content and keeps the
     * content's period; at the display's it ran at twice the speed on
-    * a 120 Hz panel. Only with the core stopped is a frame the menu's,
-    * at the display's rate. */
+    * a 120 Hz panel. At Menu Frame Rate 'Content Rate' the menu goes at
+    * the core's pace; at 'Display Rate' the menu's frames go out at
+    * the display's rate and the core keeps its own clock behind them,
+    * so it runs on half of them at 120 Hz. */
    {
-      bool saved_pause = settings->bools.menu_pause_libretro;
+      bool saved_pause      = settings->bools.menu_pause_libretro;
+      unsigned saved_rate   = settings->uints.menu_frame_rate;
+      dylib_t lib           = runloop_state_get_ptr()->lib_handle;
+      unsigned (*core_runs)(void) = lib
+         ? (unsigned (*)(void))dylib_proc(lib, "harness_core_runs") : NULL;
+      unsigned before;
+
       settings->bools.menu_pause_libretro = false;
-      display_pacing_measure(120.0f, 60, 60.0f, "menu, core running");
+
+      settings->uints.menu_frame_rate = MENU_FRAME_RATE_CONTENT;
+      display_pacing_measure(120.0f, 60, 60.0f,
+            "menu at content rate, core running");
+
+      settings->uints.menu_frame_rate = MENU_FRAME_RATE_DISPLAY;
+      CHECK(core_runs != NULL, "display-pacing lane: harness core has no run count");
+      before = core_runs ? core_runs() : 0;
+      display_pacing_measure(120.0f, 120, 120.0f,
+            "menu at display rate, core running");
+      if (core_runs)
+      {
+         /* 120 menu frames at 120 Hz is a second, with the six settle
+          * frames before it: the core's 60 a second, give or take the
+          * frames either side of the window */
+         unsigned ran = core_runs() - before;
+         CHECK(ran >= 50 && ran <= 75,
+               "menu at display rate: the core ran %u times in 126 menu "
+               "frames at 120 Hz, not ~63", ran);
+      }
+
+      settings->uints.menu_frame_rate     = saved_rate;
       settings->bools.menu_pause_libretro = saved_pause;
    }
    /* The quick menu over a paused core is the common case, and takes

@@ -1333,6 +1333,13 @@ typedef struct
     * VIDEO_DRIVER_ASPECT_RATIO() and video_driver_store_aspect_ratio(). */
    retro_atomic_int_t aspect_ratio_bits;
    float video_refresh_rate_original;
+   /* The refresh rate of the output the window is on, as
+    * video_driver_get_window_refresh_rate() last read it, and whether
+    * that reading still stands; main thread only. */
+   float window_refresh_rate;
+   /* The same, as a windowing system that follows the window from
+    * output to output by events reported it (Wayland); 0 = none */
+   float window_refresh_hint;
 
    enum retro_pixel_format pix_fmt;
    enum rarch_display_type display_type;
@@ -1417,6 +1424,7 @@ typedef struct
     * out of order cannot strand or steal it. */
    struct font_data *osd_font;
    void             *osd_font_owner;
+   bool              window_refresh_known;
 } video_driver_state_t;
 
 typedef struct video_frame_delay_auto
@@ -1994,6 +2002,27 @@ void video_shader_driver_set_parameter(struct video_shader *live_shader,
       unsigned index, float value);
 
 float video_driver_get_refresh_rate(void);
+
+/**
+ * video_driver_get_window_refresh_rate:
+ *
+ * The refresh rate of the output the window is on, or 0 when nothing
+ * can say. Read from the display server once and kept until
+ * video_driver_window_output_changed() says the window may be on
+ * another output, or at another mode. Main thread only.
+ **/
+float video_driver_get_window_refresh_rate(void);
+
+/* The window may have moved to another output, or its output changed
+ * mode: the next video_driver_get_window_refresh_rate() reads again.
+ * Main thread only. */
+void video_driver_window_output_changed(void);
+
+/* For a windowing system that is told which output the window is on
+ * rather than asked (Wayland: surface enter and leave): the refresh rate
+ * of that output, in hertz, or 0 when it is not known. Main thread
+ * only. */
+void video_driver_set_window_refresh_rate(float hz);
 
 bool video_context_driver_get_flags(gfx_ctx_flags_t *flags);
 

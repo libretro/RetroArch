@@ -2575,6 +2575,9 @@ void video_driver_free_internal(void)
 #endif
 
    command_event(CMD_EVENT_OVERLAY_UNLOAD, NULL);
+   /* The next driver's window may be on another output */
+   video_st->window_refresh_hint  = 0.0f;
+   video_st->window_refresh_known = false;
 #ifdef HAVE_OVERLAY
    /* The unload above parks the pack in the cache with its textures;
     * those are this driver's, which is about to go. */
@@ -5217,8 +5220,12 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->gpu_recording               = recording_state_get_ptr()->enable;
    video_info->core_running                = !(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
 #ifdef HAVE_MENU
+   /* At Menu Frame Rate 'Display Rate' a core running behind the menu
+    * is on a clock of its own and the presents are the menu's, so the
+    * display-pacing hold paces them as the menu's too. */
    if (     (menu_st->flags & MENU_ST_FLAG_ALIVE)
-         && settings->bools.menu_pause_libretro)
+         && (   settings->bools.menu_pause_libretro
+             || runloop_menu_display_rate()))
       video_info->core_running             = false;
 #endif
    video_info->runloop_is_slowmotion       = (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false;
@@ -5671,6 +5678,41 @@ bool video_shader_driver_get_current_shader(video_shader_ctx_t *shader)
       return false;
    shader->data = poke->get_current_shader(vid_data);
    return true;
+}
+
+float video_driver_get_window_refresh_rate(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   if (!video_st->window_refresh_known)
+   {
+      void *data;
+      float rate                      = 0.0f;
+      const video_display_server_t *s = video_display_server_modes(&data);
+      if (video_st->window_refresh_hint > 0.0f)
+         rate = video_st->window_refresh_hint;
+      else if (s && s->get_window_refresh_rate)
+         rate = s->get_window_refresh_rate(data);
+      if (!(rate > 0.0f))
+         rate = video_driver_get_refresh_rate();
+      /* Anything outside what a display runs at is a reading gone
+       * wrong, not a rate to pace by */
+      if (!(rate >= 10.0f && rate <= 1000.0f))
+         rate = 0.0f;
+      video_st->window_refresh_rate  = rate;
+      video_st->window_refresh_known = true;
+   }
+   return video_st->window_refresh_rate;
+}
+
+void video_driver_window_output_changed(void)
+{
+   video_driver_st.window_refresh_known = false;
+}
+
+void video_driver_set_window_refresh_rate(float hz)
+{
+   video_driver_st.window_refresh_hint  = hz;
+   video_driver_st.window_refresh_known = false;
 }
 
 float video_driver_get_refresh_rate(void)

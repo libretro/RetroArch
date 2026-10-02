@@ -2301,7 +2301,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
-#include "settings/settings_def_menu_throttle.h"
+#include "settings/settings_def_menu_frame_rate.h"
 #include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
@@ -3011,7 +3011,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
-#include "settings/settings_def_menu_throttle.h"
+#include "settings/settings_def_menu_frame_rate.h"
 #include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
@@ -3697,7 +3697,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
-#include "settings/settings_def_menu_throttle.h"
+#include "settings/settings_def_menu_frame_rate.h"
 #include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
@@ -4427,7 +4427,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
-#include "settings/settings_def_menu_throttle.h"
+#include "settings/settings_def_menu_frame_rate.h"
 #include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
@@ -5022,7 +5022,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
-#include "settings/settings_def_menu_throttle.h"
+#include "settings/settings_def_menu_frame_rate.h"
 #include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
@@ -7391,6 +7391,20 @@ static bool config_load_file(global_t *global,
    }
 #endif
 
+   /* Menu Frame Rate took over from Throttle Menu Framerate, which
+    * only acted with Sync to Exact Content Framerate on, where its
+    * default held the menu to the content's rate. A configuration
+    * written before carries that choice; keep it. */
+   if (     settings->bools.vrr_runloop_enable
+         && !config_get_entry(conf, MENU_ENUM_LABEL_MENU_FRAME_RATE_STR))
+   {
+      bool menu_throttle = true;
+      config_get_bool(conf, "menu_throttle_framerate", &menu_throttle);
+      if (menu_throttle)
+         configuration_set_uint(settings,
+               settings->uints.menu_frame_rate, MENU_FRAME_RATE_CONTENT);
+   }
+
 #ifdef HAVE_CHEEVOS
    if (*settings->arrays.cheevos_leaderboards_enable)
    {
@@ -9710,6 +9724,15 @@ bool config_save_file(const char *path)
    /* Remove unused "quit_press_twice" after migrating to "confirm_quit" */
    {
       const char *tmp_key = "quit_press_twice";
+      struct config_entry_list *tmp = config_get_entry(conf, tmp_key);
+      if (tmp)
+         config_unset(conf, tmp->key);
+   }
+
+   /* Remove unused "menu_throttle_framerate" after migrating to
+    * "menu_frame_rate" */
+   {
+      const char *tmp_key = "menu_throttle_framerate";
       struct config_entry_list *tmp = config_get_entry(conf, tmp_key);
       if (tmp)
          config_unset(conf, tmp->key);

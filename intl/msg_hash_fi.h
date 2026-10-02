@@ -915,7 +915,6 @@ static const struct
    char s_136eaaf4[30];
    char s_8d3a8b68[8];
    char s_68d27147[11];
-   char s_f02f73fc[30];
    char s_e5b971a0[5];
    char s_17615fcf[11];
    char s_3a0a3fef[15];
@@ -2475,7 +2474,6 @@ static const struct
    char s_193e1462[50];
    char s_6895dfd6[61];
    char s_788364f5[73];
-   char s_dd9ff22a[51];
    char s_db495a9d[34];
    char s_ddc672a7[46];
    char s_ccea261d[136];
@@ -4435,7 +4433,6 @@ static const struct
    "Poista kioskitila k\303\244yt\303\266st\303\244",
    "Valikko",
    "Kioskitila",
-   "Rajoita valikon kuvataajuutta",
    "Aina",
    "Ei koskaan",
    "Tiedostoselain",
@@ -6181,7 +6178,6 @@ static const struct
    "N\303\244yt\303\244 kaikki kokoonpanoon liittyv\303\244t asetukset.",
    "K\303\244ytett\303\244v\303\244 valikkoajuri. (Vaatii uudelleenk\303\244ynnistyksen)",
    "Suojaa asennusta piilottamalla kaikki kokoonpanoon liittyv\303\244t asetukset.",
-   "Varmistaa ett\303\244 valikon kuvataajuus on rajoitettu.",
    "Muuta tiedostoselaimen asetuksia.",
    "Muokkaa valikon oletustaustan peitt\303\244vyytt\303\244.",
    "Valikon kirkkaus, yksikk\303\266 cd/m2 (niti\303\244), k\303\244ytett\303\244ess\303\244 HDR-n"
@@ -7523,7 +7519,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123772u
+      (sizeof(msg_hash_fi_blob) == (123691u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -8762,7 +8758,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -10321,7 +10316,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,

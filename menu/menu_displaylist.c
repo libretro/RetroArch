@@ -13633,7 +13633,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_AUDIO_FASTFORWARD_CALLBACK,  PARSE_ONLY_BOOL,  true },
                {MENU_ENUM_LABEL_SLOWMOTION_RATIO,            PARSE_ONLY_FLOAT, true },
                {MENU_ENUM_LABEL_VRR_RUNLOOP_ENABLE,          PARSE_ONLY_BOOL,  true },
-               {MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE,     PARSE_ONLY_BOOL,  false},
+               {MENU_ENUM_LABEL_MENU_FRAME_RATE,             PARSE_ONLY_UINT,  true },
             };
 
 #ifdef HAVE_REWIND
@@ -13653,18 +13653,6 @@ unsigned menu_displaylist_build_list(
                }
             }
 #endif
-
-            for (i = 0; i < ARRAY_SIZE(build_list); i++)
-            {
-               switch (build_list[i].enum_idx)
-               {
-                  case MENU_ENUM_LABEL_MENU_THROTTLE_FRAMERATE:
-                     build_list[i].checked = settings->bools.vrr_runloop_enable;
-                     break;
-                  default:
-                     break;
-               }
-            }
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {

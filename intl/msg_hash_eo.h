@@ -1107,7 +1107,6 @@ static const struct
    char s_136eaaf4[29];
    char s_8d3a8b68[6];
    char s_68d27147[16];
-   char s_f02f73fc[35];
    char s_e5b971a0[6];
    char s_17615fcf[7];
    char s_3a0a3fef[16];
@@ -2963,7 +2962,6 @@ static const struct
    char s_193e1462[47];
    char s_6895dfd6[41];
    char s_788364f5[75];
-   char s_dd9ff22a[64];
    char s_db495a9d[41];
    char s_ddc672a7[52];
    char s_ccea261d[125];
@@ -5498,7 +5496,6 @@ static const struct
    "Malebligi envicigan re\304\235imon",
    "Menuo",
    "Publika re\304\235imo",
-   "Trafik-limigi menuan filmerrapidon",
    "\304\210iam",
    "Neniam",
    "Dosieresplorilo",
@@ -7561,7 +7558,6 @@ static const struct
    "Montri \304\211iujn agordojn rilatajn kun konfiguro.",
    "Menua pelilo uzota. Bezonas restartigon.",
    "Protektas la agorda\304\265on ka\305\235ante \304\211iujn agordojn rilatantajn al konfiguro.",
-   "Certigas, ke la filmerrapido estu limigita dum ene de la menuo.",
    "\305\234an\304\235i agordojn pri la dosieresplorilo.",
    "Modifi la maldiafanecon de la defa\305\255lta menua fono.",
    "Brilo de la menuo je cd/m\302\262 (nits) kiam uzante ekranon de HDR. Nur videbla kiam HDR estas "
@@ -9142,7 +9138,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (171855u
+      (sizeof(msg_hash_eo_blob) == (171756u
 #ifdef ANDROID
        + 312u
 #endif
@@ -10678,7 +10674,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -12533,7 +12528,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,

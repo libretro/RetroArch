@@ -523,6 +523,9 @@ static void check_window(sdl2_video_t *vid)
          case SDL_WINDOWEVENT:
             if (event.window.event == SDL_WINDOWEVENT_RESIZED)
                vid->flags |= SDL2_FLAG_SHOULD_RESIZE;
+            /* It may be on another display now */
+            else if (event.window.event == SDL_WINDOWEVENT_MOVED)
+               video_driver_window_output_changed();
             break;
          default:
             break;

@@ -292,6 +292,9 @@ static void sdl2_ctx_check_window(void *data, bool *quit,
                sdl->new_width  = event.window.data1;
                sdl->new_height = event.window.data2;
             }
+            /* It may be on another display now */
+            else if (event.window.event == SDL_WINDOWEVENT_MOVED)
+               video_driver_window_output_changed();
             break;
          default:
             break;

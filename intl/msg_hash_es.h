@@ -1195,7 +1195,6 @@ static const struct
    char s_136eaaf4[24];
    char s_8d3a8b68[6];
    char s_68d27147[13];
-   char s_f02f73fc[42];
    char s_b5721b90[31];
    char s_e5b971a0[8];
    char s_8f27c71e[16];
@@ -3137,7 +3136,6 @@ static const struct
    char s_193e1462[44];
    char s_6895dfd6[68];
    char s_788364f5[62];
-   char s_dd9ff22a[52];
    char s_ff7d19fe[235];
    char s_db495a9d[47];
    char s_ddc672a7[57];
@@ -5885,7 +5883,6 @@ static const struct
    "Desactivar modo quiosco",
    "Men\303\272",
    "Modo quiosco",
-   "Limitar velocidad de fotogramas del men\303\272",
    "Mostrar extensiones de archivo",
    "Siempre",
    "Solo duplicados",
@@ -8220,7 +8217,6 @@ static const struct
    "Muestra todos los elementos de los ajustes.",
    "Selecciona el controlador de men\303\272 a usar (es necesario reiniciar).",
    "Protege la configuraci\303\263n ocultando los ajustes relacionados.",
-   "Limita la velocidad de fotogramas dentro del men\303\272.",
    "Especifica cu\303\241ndo se deben mostrar las extensiones de los archivos al buscar contenidos. "
    "Los buscadores de archivos de shaders, superposiciones, archivos de configuraci\303\263n y archi"
    "vos de los ajustes siempre mostrar\303\241n sus extensiones.",
@@ -10129,7 +10125,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (230261u
+      (sizeof(msg_hash_es_blob) == (230167u
 #ifdef ANDROID
        + 329u
 #endif
@@ -11809,7 +11805,6 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_DUPLICATES_ONLY,
@@ -13743,7 +13738,6 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,

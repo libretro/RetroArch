@@ -465,6 +465,13 @@ RETRO_API void harness_core_use_framebuffer(int on) { harness_use_fb = on; }
  * the frame can be written. */
 static unsigned                harness_run_us;
 static retro_perf_get_time_usec_t harness_time_usec;
+/* How many times retro_run has run, for the lanes that check the core
+ * keeps its own rate under a menu running at another */
+RETRO_API unsigned harness_core_runs(void)
+{
+   return runs;
+}
+
 RETRO_API void harness_core_set_run_us(unsigned us)
 {
    struct retro_perf_callback perf;

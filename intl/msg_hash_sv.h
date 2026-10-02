@@ -1149,7 +1149,6 @@ static const struct
    char s_136eaaf4[22];
    char s_8d3a8b68[5];
    char s_68d27147[11];
-   char s_f02f73fc[26];
    char s_e5b971a0[7];
    char s_17615fcf[7];
    char s_3a0a3fef[13];
@@ -2986,7 +2985,6 @@ static const struct
    char s_193e1462[59];
    char s_6895dfd6[52];
    char s_788364f5[86];
-   char s_dd9ff22a[71];
    char s_db495a9d[42];
    char s_ddc672a7[48];
    char s_ccea261d[139];
@@ -5650,7 +5648,6 @@ static const struct
    "Inaktivera kioskl\303\244ge",
    "Meny",
    "Kioskl\303\244ge",
-   "Stryp menyns bildfrekvens",
    "Alltid",
    "Aldrig",
    "Filhanterare",
@@ -7881,8 +7878,6 @@ static const struct
    "Drivrutin f\303\266r meny att anv\303\244nda. (kr\303\244ver omstart)",
    "Skyddar installationen genom att d\303\266lja alla konfigurationsrelaterade inst\303\244llningar"
    ".",
-   "S\303\244kerst\303\244ller att bildfrekvensen begr\303\244nsas n\303\244r du \303\244r inne i me"
-   "nyn.",
    "\303\204ndra inst\303\244llningar f\303\266r filutforskare.",
    "\303\204ndra f\303\266rinst\303\244llda menybakgrundens opacitet.",
    "Ljusstyrka p\303\245 menyn i cd/m2 (nits) vid anv\303\244ndning av en HDR-sk\303\244rm. Endast s"
@@ -9718,7 +9713,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (193406u
+      (sizeof(msg_hash_sv_blob) == (193309u
 #ifdef ANDROID
        + 361u
 #endif
@@ -11320,7 +11315,6 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -13150,7 +13144,6 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,

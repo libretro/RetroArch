@@ -1071,7 +1071,6 @@ static const struct
 #endif
    char s_136eaaf4[29];
    char s_68d27147[24];
-   char s_f02f73fc[26];
    char s_e5b971a0[7];
    char s_17615fcf[4];
    char s_3a0a3fef[13];
@@ -2836,7 +2835,6 @@ static const struct
    char s_193e1462[59];
    char s_6895dfd6[51];
    char s_788364f5[89];
-   char s_dd9ff22a[61];
    char s_db495a9d[41];
    char s_ddc672a7[55];
    char s_ccea261d[151];
@@ -5310,7 +5308,6 @@ static const struct
 #endif
    "Disabilita modalit\303\240 chiosco",
    "Abilita modalit\303\240 Kiosk",
-   "Limita framerate del menu",
    "Sempre",
    "Mai",
    "Sfoglia file",
@@ -7261,7 +7258,6 @@ static const struct
    "Mostra tutte le impostazioni relative alla configurazione.",
    "Il driver del menu da usare. (Richiede il riavvio)",
    "Protegge l'installazione nascondendo tutte le impostazioni relative alla configurazione.",
-   "Permette che il framerate sia limitato all'interno del menu.",
    "Modificare le impostazioni sfoglia file.",
    "Modifica l'opacit\303\240 dello sfondo predefinito del menu.",
    "Luminosit\303\240 del menu in cd/m2 (nits) quando si utilizza un display HDR. Visibile solo quan"
@@ -8819,7 +8815,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (183324u
+      (sizeof(msg_hash_it_blob) == (183237u
 #ifdef ANDROID
        + 376u
 #endif
@@ -10320,7 +10316,6 @@ static const uint32_t msg_hash_it_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -12084,7 +12079,6 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,

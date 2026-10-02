@@ -1029,7 +1029,6 @@ static const struct
 #endif
    char s_136eaaf4[25];
    char s_68d27147[16];
-   char s_f02f73fc[37];
    char s_e5b971a0[6];
    char s_17615fcf[6];
    char s_3a0a3fef[18];
@@ -2628,7 +2627,6 @@ static const struct
    char s_193e1462[59];
    char s_6895dfd6[43];
    char s_788364f5[79];
-   char s_dd9ff22a[54];
    char s_db495a9d[42];
    char s_ddc672a7[50];
    char s_f754a0d3[68];
@@ -5080,7 +5078,6 @@ static const struct
 #endif
    "Zak\303\241zat re\305\276im Prodejna",
    "Re\305\276im prodejna",
-   "Omezen\303\255 sn\303\255mkov\303\251 frekvence v menu",
    "V\305\276dy",
    "Nikdy",
    "Spr\303\241vce soubor\305\257",
@@ -7085,7 +7082,6 @@ static const struct
    "Pou\305\276it\303\255 ovlada\304\215e menu. (nutn\303\275 restart)",
    "Chr\303\241n\303\255 nastaven\303\255 skryt\303\255m v\305\241ech nastaven\303\255 souvisej\303"
    "\255c\303\255ch s konfigurac\303\255.",
-   "Zaji\305\241\305\245uje omezen\303\255 sn\303\255mkov\303\251 frekvence v nab\303\255dce.",
    "Zm\304\233na nastaven\303\255 prohl\303\255\305\276e\304\215e soubor\305\257.",
    "\303\232prava nepr\305\257hlednosti v\303\275choz\303\255ho pozad\303\255 menu.",
    "Povolit horizont\303\241ln\303\255 animaci v menu. To bude m\303\255t vliv na v\303\275kon.",
@@ -8800,7 +8796,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (162574u
+      (sizeof(msg_hash_cs_blob) == (162483u
 #ifdef ANDROID
        + 390u
 #endif
@@ -10179,7 +10175,6 @@ static const uint32_t msg_hash_cs_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -11777,7 +11772,6 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,

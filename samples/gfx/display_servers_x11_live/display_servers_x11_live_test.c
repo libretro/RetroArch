@@ -159,6 +159,25 @@ static int test_head_selection(Display *dpy, video_modeline_ops_t *ops,
       return 1;
    }
 
+   /* The rate of the output under the window, which the menu paces by
+    * at 'Display Rate': the window is on the one head here, so it is
+    * that head's rate */
+   {
+      float win_hz  = dispserv_x11.get_window_refresh_rate
+         ? dispserv_x11.get_window_refresh_rate(data) : -1.0f;
+      float head_hz = dispserv_x11.get_refresh_rate
+         ? dispserv_x11.get_refresh_rate(data) : -1.0f;
+      if (!(win_hz > 0.0f) || win_hz - head_hz > 0.01f
+            || head_hz - win_hz > 0.01f)
+      {
+         fprintf(stderr, "FAIL: window refresh %.3f Hz, head %.3f Hz\n",
+               win_hz, head_hz);
+         return 1;
+      }
+      printf("[pass] window refresh: %.3f Hz, the rate of %s\n",
+            win_hz, under);
+   }
+
    memset(&ds, 0, sizeof(ds));
    strcpy(ds.screen, "auto");
    if (!ops->open(data, &ds))

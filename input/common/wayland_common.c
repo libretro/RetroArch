@@ -39,6 +39,7 @@
 #include "wayland_cursor.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../verbosity.h"
+#include "../../gfx/video_driver.h"
 
 #define DND_ACTION WL_DATA_DEVICE_MANAGER_DND_ACTION_MOVE
 #define FILE_MIME "text/uri-list"
@@ -585,6 +586,21 @@ static void wl_seat_handle_name(void *data,
 
 /* Surface callbacks. */
 
+/* The output the window counts as being on (the one whose scale it
+ * takes), compared by identity only, for the mode handler below */
+static output_info_t *wl_window_output;
+
+/* Tell the frontend the refresh rate of the output the window is on,
+ * which it paces the menu by on a desktop of several monitors */
+static void wl_report_window_output(gfx_ctx_wayland_data_t *wl)
+{
+   wl_window_output = wl->current_output;
+   video_driver_set_window_refresh_rate(
+         (wl->current_output && wl->current_output->refresh_rate > 0)
+         ? (float)wl->current_output->refresh_rate / 1000.0f
+         : 0.0f);
+}
+
 static bool wl_update_scale(gfx_ctx_wayland_data_t *wl)
 {
    surface_output_t *os;
@@ -686,6 +702,7 @@ static void wl_surface_enter(void *data, struct wl_surface *wl_surface,
 
    if (wl_current_outputs_add(wl, output))
       wl_update_scale(wl);
+   wl_report_window_output(wl);
 }
 
 static void wl_surface_leave(void *data, struct wl_surface *wl_surface, struct wl_output *output)
@@ -695,6 +712,7 @@ static void wl_surface_leave(void *data, struct wl_surface *wl_surface, struct w
 
    if (wl_current_outputs_remove(wl, output))
       wl_update_scale(wl);
+   wl_report_window_output(wl);
 }
 
 /* Shell surface callbacks. */
@@ -735,6 +753,9 @@ static void wl_output_handle_mode(void *data,
    output_info_t *oi = (output_info_t*)data;
    oi->dims          = VIDEO_SCALE_PACK(width, height);
    oi->refresh_rate  = refresh;
+   /* The window's output changed mode under it */
+   if (oi == wl_window_output && refresh > 0)
+      video_driver_set_window_refresh_rate((float)refresh / 1000.0f);
 }
 
 static void wl_output_handle_done(void *data, struct wl_output *output) { }

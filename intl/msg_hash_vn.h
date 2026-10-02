@@ -1199,7 +1199,6 @@ static const struct
 #endif
    char s_136eaaf4[26];
    char s_68d27147[20];
-   char s_f02f73fc[48];
    char s_b5721b90[38];
    char s_e5b971a0[12];
    char s_8f27c71e[29];
@@ -3172,7 +3171,6 @@ static const struct
    char s_193e1462[60];
    char s_6895dfd6[76];
    char s_788364f5[102];
-   char s_dd9ff22a[79];
    char s_ff7d19fe[238];
    char s_db495a9d[42];
    char s_ddc672a7[61];
@@ -6481,7 +6479,6 @@ static const struct
 #endif
    "T\341\272\257t ch\341\272\277 \304\221\341\273\231 Ki \341\273\221t",
    "Ch\341\272\277 \304\221\341\273\231 Ki \341\273\221t",
-   "Gi\341\273\233i h\341\272\241n t\341\273\221c \304\221\341\273\231 khung h\303\254nh trong Menu",
    "Hi\341\273\203n th\341\273\213 ph\341\272\247n m\341\273\237 r\341\273\231ng t\341\273\207p",
    "Lu\303\264n lu\303\264n",
    "Ch\341\273\211 hi\341\273\203n th\341\273\213 b\341\272\243n sao",
@@ -9927,8 +9924,6 @@ static const struct
    "B\341\272\243o v\341\273\207 thi\341\272\277t l\341\272\255p b\341\272\261ng c\303\241ch \341"
    "\272\251n t\341\272\245t c\341\272\243 c\303\241c c\303\240i \304\221\341\272\267t li\303\252n q"
    "uan \304\221\341\272\277n c\341\272\245u h\303\254nh.",
-   "\304\220\341\272\243m b\341\272\243o t\341\273\221c \304\221\341\273\231 khung h\303\254nh \304"
-   "\221\306\260\341\273\243c gi\341\273\233i h\341\272\241n khi \341\273\237 trong menu.",
    "Ch\341\273\215n th\341\273\235i \304\221i\341\273\203m hi\341\273\203n th\341\273\213 ph\341\272"
    "\247n m\341\273\237 r\341\273\231ng t\341\273\207p khi duy\341\273\207t n\341\273\231i dung. Tr"
    "\303\254nh ch\341\273\215n t\341\273\207p cho b\341\273\231 t\341\272\241o hi\341\273\207u \341"
@@ -13215,7 +13210,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (254200u
+      (sizeof(msg_hash_vn_blob) == (254073u
 #ifdef ANDROID
        + 373u
 #endif
@@ -14895,7 +14890,6 @@ static const uint32_t msg_hash_vn_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_DUPLICATES_ONLY,
@@ -16854,7 +16848,6 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,

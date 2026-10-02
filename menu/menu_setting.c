@@ -7305,6 +7305,22 @@ static int setting_action_crt_switch_write_edid(
 }
 #endif
 
+static size_t setting_get_string_representation_uint_menu_frame_rate(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case MENU_FRAME_RATE_DISPLAY:
+            return strlcpy(s, msg_hash_to_str(MSG_MENU_FRAME_RATE_DISPLAY), len);
+         case MENU_FRAME_RATE_CONTENT:
+            return strlcpy(s, msg_hash_to_str(MSG_MENU_FRAME_RATE_CONTENT), len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_video_sdl_display_server(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -12438,9 +12454,9 @@ static const setting_desc_t frame_throttli_desc_0[] = {
 #include "../settings/settings_def_frame_throttle_general.h"
 };
 
-static const setting_desc_t menu_thr_desc[] = {
-/* GENERATED: rows come from settings_def_menu_throttle.h in order. */
-#include "../settings/settings_def_menu_throttle.h"
+static const setting_desc_t menu_frame_rate_desc[] = {
+/* GENERATED: rows come from settings_def_menu_frame_rate.h in order. */
+#include "../settings/settings_def_menu_frame_rate.h"
 };
 
 static const setting_desc_t frame_throttli_desc_1[] = {
@@ -15672,7 +15688,7 @@ static void settings_build_frame_throttling(
 
             ADD_DESC(frame_throttli_desc_0);
 
-            ADD_DESC(menu_thr_desc);
+            ADD_DESC(menu_frame_rate_desc);
             ADD_DESC(frame_throttli_desc_1);
 
 #ifdef HAVE_RUNAHEAD
@@ -18469,7 +18485,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { runahead_frames_desc, (uint16_t)ARRAY_SIZE(runahead_frames_desc) },
 #endif
    { frame_throttli_desc_0, (uint16_t)ARRAY_SIZE(frame_throttli_desc_0) },
-   { menu_thr_desc, (uint16_t)ARRAY_SIZE(menu_thr_desc) },
+   { menu_frame_rate_desc, (uint16_t)ARRAY_SIZE(menu_frame_rate_desc) },
    { frame_throttli_desc_1, (uint16_t)ARRAY_SIZE(frame_throttli_desc_1) },
 #ifdef HAVE_RUNAHEAD
    { frame_throttli_desc_2, (uint16_t)ARRAY_SIZE(frame_throttli_desc_2) },

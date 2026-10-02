@@ -130,6 +130,7 @@ typedef char win32_dwm_timing_info_size_check[
 #include "../../verbosity.h"
 #include "../../paths.h"
 #include "../../retroarch.h"
+#include "../video_driver.h"
 #include "../../audio/audio_driver.h"
 #include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
@@ -910,6 +911,8 @@ static LRESULT CALLBACK wnd_proc_common(
          /* fall-through */
       case WM_MOVE:
          win32_save_position();
+         /* It may be on another monitor now */
+         video_driver_window_output_changed();
          break;
 #if !defined(_XBOX)
       case WM_ENTERSIZEMOVE:
@@ -1189,6 +1192,7 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
             if (mon)
                win32_resize_after_display_change(hwnd, mon);
          }
+         video_driver_window_output_changed();
          break;
    }
 
@@ -1298,6 +1302,7 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
             if (mon)
                win32_resize_after_display_change(hwnd, mon);
          }
+         video_driver_window_output_changed();
          break;
       case WM_DEVICECHANGE:
 #if !defined(_XBOX)
@@ -1537,6 +1542,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
             if (mon)
                win32_resize_after_display_change(hwnd, mon);
          }
+         video_driver_window_output_changed();
          break;
    }
 

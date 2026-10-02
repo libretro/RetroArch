@@ -1066,7 +1066,6 @@ static const struct
    char s_136eaaf4[34];
    char s_8d3a8b68[6];
    char s_68d27147[11];
-   char s_f02f73fc[28];
    char s_e5b971a0[6];
    char s_17615fcf[5];
    char s_3a0a3fef[20];
@@ -2753,7 +2752,6 @@ static const struct
    char s_193e1462[50];
    char s_6895dfd6[60];
    char s_788364f5[67];
-   char s_dd9ff22a[69];
    char s_db495a9d[42];
    char s_ddc672a7[66];
    char s_f754a0d3[82];
@@ -5297,7 +5295,6 @@ static const struct
    "Kiosk Kipini Devre D\304\261\305\237\304\261 B\304\261rak",
    "Men\303\274",
    "Kiosk Kipi",
-   "Men\303\274 Kare H\304\261z\304\261 S\304\261n\304\261r\304\261",
    "Daima",
    "Asla",
    "Dosya Taray\304\261c\304\261s\304\261",
@@ -7389,8 +7386,6 @@ static const struct
    "Kullan\304\261lacak men\303\274 s\303\274r\303\274c\303\274s\303\274. (Yeniden ba\305\237lat\304"
    "\261lmal\304\261)",
    "Yap\304\261land\304\261rmayla ilgili t\303\274m ayarlar\304\261 gizleyerek kurulumu korur.",
-   "Men\303\274n\303\274n i\303\247indeyken kare h\304\261z\304\261n\304\261n kapat\304\261ld\304"
-   "\261\304\237\304\261ndan emin olun.",
    "Dosya taray\304\261c\304\261 ayarlar\304\261n\304\261 de\304\237i\305\237tir.",
    "Varsay\304\261lan men\303\274 arka plan\304\261n\304\261n \305\237effafl\304\261\304\237\304\261"
    "n\304\261 de\304\237i\305\237tirin.",
@@ -9176,7 +9171,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (170370u
+      (sizeof(msg_hash_tr_blob) == (170273u
 #ifdef ANDROID
        + 340u
 #endif
@@ -10601,7 +10596,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -12287,7 +12281,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,

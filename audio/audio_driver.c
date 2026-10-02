@@ -9012,7 +9012,7 @@ bool audio_compute_buffer_statistics(audio_statistics_t *stats)
 }
 
 #ifdef HAVE_MENU
-void audio_driver_menu_sample(void)
+void audio_driver_menu_sample(bool by_clock)
 {
    static int16_t samples_buf[1024]       = {0};
    settings_t *settings                   = config_get_ptr();
@@ -9038,10 +9038,40 @@ void audio_driver_menu_sample(void)
          || info->sample_rate <= 0.0 || info->fps <= 0.0)
       return;
    frames = floor(info->sample_rate / info->fps);
+   if (by_clock)
+   {
+      /* What has played since the last feed, carrying the part of a
+       * frame that did not make a whole one. The first feed is one
+       * content frame; a gap longer than a tenth of a second is a
+       * stall or a return to the menu, not time to make up. */
+      retro_time_t now = cpu_features_get_time_usec();
+      if (audio_st->menu_feed_last)
+      {
+         retro_time_t elapsed = now - audio_st->menu_feed_last;
+         double       owed;
+         if (elapsed < 0)
+            elapsed = 0;
+         else if (elapsed > 100000)
+            elapsed = 100000;
+         owed                    = info->sample_rate
+            * (double)elapsed / 1000000.0 + audio_st->menu_feed_frac;
+         frames                  = floor(owed);
+         audio_st->menu_feed_frac = owed - frames;
+      }
+      audio_st->menu_feed_last   = now;
+   }
+   else
+   {
+      audio_st->menu_feed_last   = 0;
+      audio_st->menu_feed_frac   = 0.0;
+   }
    /* Validate before conversion and the stereo sample-count multiply. */
    if (!(frames >= 0.0 && frames <= UINT_MAX / 2))
       return;
    sample_count = (unsigned)frames * 2;
+   /* Less than a frame has played since the last feed */
+   if (by_clock && !sample_count)
+      return;
 
    if ((AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_SUSPENDED))
       check_flush                         = false;

@@ -113,6 +113,11 @@ void sdl3_pump_window_events(bool *quit, bool *resize)
 
       if (event.type == SDL_EVENT_WINDOW_RESIZED || event.type == SDL_EVENT_WINDOW_MOVED)
          sdl3_window_save_position(SDL_GetWindowFromID(event.window.windowID));
+
+      /* It may be on another display now */
+      if (     event.type == SDL_EVENT_WINDOW_MOVED
+            || event.type == SDL_EVENT_WINDOW_DISPLAY_CHANGED)
+         video_driver_window_output_changed();
    }
 
    while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_DISPLAY_FIRST, SDL_EVENT_DISPLAY_LAST) > 0)

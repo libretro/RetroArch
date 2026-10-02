@@ -1196,7 +1196,6 @@ static const struct
    char s_136eaaf4[25];
    char s_8d3a8b68[11];
    char s_68d27147[11];
-   char s_f02f73fc[34];
    char s_b5721b90[29];
    char s_e5b971a0[11];
    char s_8f27c71e[18];
@@ -3135,7 +3134,6 @@ static const struct
    char s_193e1462[63];
    char s_6895dfd6[58];
    char s_788364f5[85];
-   char s_dd9ff22a[87];
    char s_ff7d19fe[228];
    char s_db495a9d[40];
    char s_ddc672a7[63];
@@ -5960,7 +5958,6 @@ static const struct
    "D\303\255chumasaigh M\303\263d Ciosc",
    "Roghchl\303\241r",
    "M\303\263d Ciosc",
-   "R\303\241ta Fr\303\241ma Roghchl\303\241ir Throttle",
    "Taispe\303\241int Iarmh\303\255r Comhaid",
    "I gc\303\263na\303\255",
    "D\303\272blacha Amh\303\241in",
@@ -8475,8 +8472,6 @@ static const struct
    "il)",
    "Cosna\303\255onn s\303\251 an socr\303\272 tr\303\255 gach socr\303\272 a bhaineann leis an gcum"
    "ra\303\255ocht a cheilt.",
-   "Cinnt\303\255onn s\303\251 go bhfuil uasteorainn ar an r\303\241ta fr\303\241ma agus t\303\272 i"
-   "stigh sa roghchl\303\241r.",
    "Sonraigh cathain is ceart s\303\255neadh comhaid a thaispe\303\241int agus \303\241bhar \303\241"
    " bhrabhs\303\241il. Taispe\303\241nann na huirlis\303\255 roghnaithe comhad do sc\303\241th\303"
    "\263ir\303\255, forleaganacha, comhaid chumra\303\255ochta agus comhaid socruithe eile iad i gc"
@@ -10599,7 +10594,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (224557u
+      (sizeof(msg_hash_ga_blob) == (224436u
 #ifdef ANDROID
        + 390u
 #endif
@@ -12246,7 +12241,6 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_DUPLICATES_ONLY,
@@ -14178,7 +14172,6 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,

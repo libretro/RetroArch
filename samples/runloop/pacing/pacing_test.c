@@ -327,29 +327,32 @@ static void test_margin(void)
 
 /* The pace decision itself, as a table: what holds the loop in the
  * Quick Menu over a paused core, on a focused window, per combination
- * of the user's sync settings. Each row is a fact about the shipping
- * decision, not a wish; a row that changes is a behaviour change, and
- * should be a deliberate one. "Timer" as a setting is Sync to Exact
- * Content Framerate, with Menu Throttle Framerate at its default of
- * off, which is the menu path's early return. Audio never holds the
- * loop with the core paused: nothing writes blocking. */
-static runloop_pace_facts_t menu_facts(bool vsync, bool audio,
-      bool display, bool timer, bool scanline)
+ * of the user's sync settings and the Menu Frame Rate. Each row is a
+ * fact about the shipping decision, not a wish; a row that changes is a
+ * behaviour change, and should be a deliberate one. "VRR" is Sync to
+ * Exact Content Framerate. */
+enum menu_rate_row { AT_DISPLAY, AT_CONTENT };
+
+static runloop_pace_facts_t menu_facts(enum menu_rate_row rate,
+      bool vsync, bool audio, bool display, bool vrr, bool scanline)
 {
    /* A focused window, the menu up over a paused core (menu pause is
     * not RUNLOOP_FLAG_PAUSED), rate control on, a surface to present
     * to, and a frame limit - every menu path that reaches the block
-    * sets the refresh-rate one or leaves the content's from load.
-    * Audio never holds with the core paused: the menu writes silence,
-    * non-blocking. "Timer" is Sync to Exact Content Framerate with
-    * Menu Throttle Framerate off, the menu path's early return. */
+    * sets one: the display's period at 'Display Rate', the content's
+    * at 'Content Rate'. "Audio" is Audio Sync. At 'Display Rate' the
+    * menu's silence is written non-blocking and never holds; at
+    * 'Content Rate' it is written blocking when Audio Sync is on. */
    runloop_pace_facts_t f = PACE_FACT_FOCUSED | PACE_FACT_MENU_ALIVE
       | PACE_FACT_RATE_CONTROL | PACE_FACT_PRESENTABLE | PACE_FACT_FRAME_LIMIT;
+   f |= (rate == AT_DISPLAY) ? PACE_FACT_MENU_DISPLAY_RATE
+                             : PACE_FACT_MENU_CONTENT_RATE;
    if (vsync)    f |= PACE_FACT_VSYNC;
-   if (timer)    f |= PACE_FACT_VRR | PACE_FACT_MENU_EARLY_EXIT;
+   if (vrr)      f |= PACE_FACT_VRR;
    if (display)  f |= PACE_FACT_WRAPPER | PACE_FACT_DISPLAY_PACING;
    if (scanline) f |= PACE_FACT_SCANLINE_SYNC | PACE_FACT_SCANLINE_LOCKED;
-   (void)audio;
+   if (audio && rate == AT_CONTENT)
+      f |= PACE_FACT_AUDIO_HOLDING;
    return f;
 }
 
@@ -573,39 +576,61 @@ static void test_sync_plan(void)
                 * ARRAY_SIZE(multiples)));
 }
 
+#define MENU_ROW(rate, v, a, d, r, sc, want, what) \
+   check(runloop_pace_decide(menu_facts(rate, v, a, d, r, sc)) == (want), what)
+
 static void test_menu_table(void)
 {
-   {
-      check(runloop_pace_decide(menu_facts(false, false, true,  false, false)) == RUNLOOP_PACE_DISPLAY,
-            "menu: Display -> Display");
-      check(runloop_pace_decide(menu_facts(false, true,  true,  false, false)) == RUNLOOP_PACE_DISPLAY,
-            "menu: Display+Audio -> Display");
-      check(runloop_pace_decide(menu_facts(true,  false, true,  false, false)) == (RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_DISPLAY),
-            "menu: Display+VSync -> VSync+Display");
-      check(runloop_pace_decide(menu_facts(true,  false, false, false, false)) == RUNLOOP_PACE_VSYNC,
-            "menu: VSync -> VSync");
-      check(runloop_pace_decide(menu_facts(true,  true,  false, false, false)) == RUNLOOP_PACE_VSYNC,
-            "menu: VSync+Audio -> VSync");
-      check(runloop_pace_decide(menu_facts(true,  true,  false, true,  false)) == RUNLOOP_PACE_VSYNC,
-            "menu: VSync+Audio+Timer -> VSync (early return)");
-      check(runloop_pace_decide(menu_facts(true,  false, false, true,  false)) == RUNLOOP_PACE_VSYNC,
-            "menu: VSync+Timer -> VSync (early return)");
-      check(runloop_pace_decide(menu_facts(false, true,  false, false, false)) == RUNLOOP_PACE_TIMER,
-            "menu: Audio -> Timer (the menu's refresh-rate timer)");
-      check(runloop_pace_decide(menu_facts(false, true,  false, true,  false)) == RUNLOOP_PACE_NONE,
-            "menu: Audio+Timer -> None (early return, nothing holds)");
-      /* The menu's refresh-rate timer stands aside only for vsync,
-       * focus and display pacing, not for scanline: two clocks. A
-       * fact, not an endorsement. */
-      check(runloop_pace_decide(menu_facts(false, false, false, false, true)) == (RUNLOOP_PACE_SCANLINE | RUNLOOP_PACE_TIMER),
-            "menu: Scanline -> Scanline+Timer");
-      check(runloop_pace_decide(menu_facts(false, false, false, true,  false)) == RUNLOOP_PACE_NONE,
-            "menu: Timer -> None (early return, nothing holds)");
-      check(runloop_pace_decide(menu_facts(false, true,  false, true,  false)) == RUNLOOP_PACE_NONE,
-            "menu: Timer+Audio -> None (early return)");
-      check(runloop_pace_decide(menu_facts(false, false, true,  true,  false)) == RUNLOOP_PACE_NONE,
-            "menu: Timer+Display -> None (early return; the hold runs but is not counted)");
-   }
+   /* 'Display Rate': the display's own pace - vsync, the display
+    * pacing hold, or the timer at the display's period - and never
+    * audio, never the content's period. */
+   MENU_ROW(AT_DISPLAY, 1, 0, 0, 0, 0, RUNLOOP_PACE_VSYNC,
+         "display rate: VSync -> VSync");
+   MENU_ROW(AT_DISPLAY, 1, 1, 0, 0, 0, RUNLOOP_PACE_VSYNC,
+         "display rate: VSync+Audio -> VSync (the silence does not block)");
+   MENU_ROW(AT_DISPLAY, 1, 1, 0, 1, 0, RUNLOOP_PACE_VSYNC,
+         "display rate: VSync+Audio+VRR -> VSync (no content-rate timer)");
+   MENU_ROW(AT_DISPLAY, 0, 1, 0, 0, 0, RUNLOOP_PACE_TIMER,
+         "display rate: Audio -> Timer (the display's period)");
+   MENU_ROW(AT_DISPLAY, 0, 0, 0, 1, 0, RUNLOOP_PACE_TIMER,
+         "display rate: VRR -> Timer (the display's period)");
+   MENU_ROW(AT_DISPLAY, 0, 0, 1, 0, 0, RUNLOOP_PACE_DISPLAY,
+         "display rate: Display -> Display");
+   MENU_ROW(AT_DISPLAY, 1, 0, 1, 0, 0, RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_DISPLAY,
+         "display rate: Display+VSync -> VSync+Display");
+   MENU_ROW(AT_DISPLAY, 0, 1, 1, 1, 0, RUNLOOP_PACE_DISPLAY,
+         "display rate: Display+Audio+VRR -> Display");
+   /* Threaded video without the display pacing hold: vsync blocks the
+    * video thread, not the runloop, so the timer holds the menu to the
+    * display's period. */
+   check(runloop_pace_decide(menu_facts(AT_DISPLAY, 1, 1, 0, 0, 0)
+            | PACE_FACT_WRAPPER) == (RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_TIMER),
+         "display rate: VSync+Audio, threaded -> VSync+Timer");
+   /* The menu's refresh-rate timer stands aside only for vsync,
+    * focus and display pacing, not for scanline: two clocks. A fact,
+    * not an endorsement. */
+   MENU_ROW(AT_DISPLAY, 0, 0, 0, 0, 1, RUNLOOP_PACE_SCANLINE | RUNLOOP_PACE_TIMER,
+         "display rate: Scanline -> Scanline+Timer");
+
+   /* 'Content Rate': held to the content's period by audio when it
+    * blocks, by the timer when it does not - one or the other, never
+    * both, except under VRR, which times every frame to the content
+    * as it does in play. */
+   MENU_ROW(AT_CONTENT, 1, 1, 0, 0, 0, RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_AUDIO,
+         "content rate: VSync+Audio -> VSync+Audio");
+   MENU_ROW(AT_CONTENT, 1, 0, 0, 0, 0, RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_TIMER,
+         "content rate: VSync -> VSync+Timer (the content's period)");
+   MENU_ROW(AT_CONTENT, 0, 1, 0, 0, 0, RUNLOOP_PACE_AUDIO,
+         "content rate: Audio -> Audio");
+   MENU_ROW(AT_CONTENT, 0, 0, 0, 0, 0, RUNLOOP_PACE_TIMER,
+         "content rate: nothing -> Timer (the content's period)");
+   MENU_ROW(AT_CONTENT, 1, 1, 0, 1, 0,
+         RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_AUDIO | RUNLOOP_PACE_TIMER,
+         "content rate: VSync+Audio+VRR -> VSync+Audio+Timer, as in play");
+   MENU_ROW(AT_CONTENT, 0, 1, 1, 0, 0, RUNLOOP_PACE_AUDIO | RUNLOOP_PACE_DISPLAY,
+         "content rate: Display+Audio -> Audio+Display");
+   MENU_ROW(AT_CONTENT, 0, 0, 1, 0, 0, RUNLOOP_PACE_DISPLAY | RUNLOOP_PACE_TIMER,
+         "content rate: Display -> Display+Timer (the content's period)");
 }
 
 int main(void)

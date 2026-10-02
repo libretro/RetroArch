@@ -5076,8 +5076,11 @@ static void runloop_runtime_log_init(runloop_state_t *runloop_st)
 /* The facts the pace decision reads, from this iteration's state, as
  * one word. Read here, in one place, so every path sees the same
  * iteration. */
+static unsigned runloop_menu_rate(settings_t *settings,
+      runloop_state_t *runloop_st, bool menu_pause_libretro);
+
 static runloop_pace_facts_t runloop_pace_gather(settings_t *settings,
-      bool menu_early_exit)
+      bool menu_pause_libretro)
 {
    runloop_state_t *runloop_st    = &runloop_state;
    input_driver_state_t *input_st = input_state_get_ptr();
@@ -5093,7 +5096,7 @@ static runloop_pace_facts_t runloop_pace_gather(settings_t *settings,
 #ifdef HAVE_MENU
    if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)   f |= PACE_FACT_MENU_ALIVE;
 #endif
-   if (menu_early_exit)                                    f |= PACE_FACT_MENU_EARLY_EXIT;
+   f |= runloop_menu_rate(settings, runloop_st, menu_pause_libretro);
    if (settings->bools.vrr_runloop_enable)                 f |= PACE_FACT_VRR;
 #ifdef HAVE_THREADS
    if (video_st->thread_wrapper_active)                    f |= PACE_FACT_WRAPPER;
@@ -6375,6 +6378,116 @@ static INLINE bool runloop_is_libretro_running(runloop_state_t* runloop_st, bool
       &&    runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING);
 }
 
+/* Which Menu Frame Rate holds this iteration, as the pace fact that
+ * names it, or 0 when neither does: the menu is down; netplay is on,
+ * whose sessions keep the core's own pacing; or, at 'Content Rate', the
+ * core is running behind the menu, which then runs at the content's rate
+ * already, or there is no content rate to hold to. */
+static unsigned runloop_menu_rate(settings_t *settings,
+      runloop_state_t *runloop_st, bool menu_pause_libretro)
+{
+#ifdef HAVE_MENU
+   if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
+      return 0;
+#ifdef HAVE_NETWORKING
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+      return 0;
+#endif
+   if (settings->uints.menu_frame_rate != MENU_FRAME_RATE_CONTENT)
+      return PACE_FACT_MENU_DISPLAY_RATE;
+   if (     runloop_is_libretro_running(runloop_st, menu_pause_libretro)
+         || !(video_state_get_ptr()->av_info.timing.fps > 0.0))
+      return 0;
+   return PACE_FACT_MENU_CONTENT_RATE;
+#else
+   return 0;
+#endif
+}
+
+bool runloop_menu_display_rate(void)
+{
+   settings_t *settings = config_get_ptr();
+   return (runloop_menu_rate(settings, &runloop_state,
+            settings->bools.menu_pause_libretro)
+         & PACE_FACT_MENU_DISPLAY_RATE) != 0;
+}
+
+/* The display's rate as the frame limiter paces to it: the configured
+ * one (the original one, under a refresh rate switch) or, with @window,
+ * that of the monitor the window is on, where one is known - which on a
+ * desktop of several is the one that matters. */
+static float runloop_display_hz(video_driver_state_t *video_st,
+      settings_t *settings, bool window)
+{
+   float hz = 0.0f;
+   if (window)
+      hz = video_driver_get_window_refresh_rate();
+   if (!(hz > 0.0f))
+      hz = (video_st->video_refresh_rate_original)
+         ? video_st->video_refresh_rate_original
+         : settings->floats.video_refresh_rate;
+   /* A rate of nothing paces nothing; the frame time helpers take
+    * 60 Hz for it too */
+   return (hz > 0.0f) ? hz : 60.0f;
+}
+
+#ifdef HAVE_MENU
+/* Whether the core running behind the menu at 'Display Rate' is due a
+ * frame. It runs on the content's own clock - a period a frame, from
+ * when it was last due - while the menu runs at the display's, so a
+ * 60 fps core keeps its speed under a 240 Hz menu. A frame due within
+ * half a display period runs now: the next iteration would be half a
+ * period late, and holding to the nearest vblank keeps the cadence even
+ * where the display is a whole multiple of the content. */
+static bool runloop_menu_core_due(runloop_state_t *runloop_st,
+      video_driver_state_t *video_st, settings_t *settings,
+      retro_time_t now_us)
+{
+   float   refresh = runloop_display_hz(video_st, settings, true);
+   int64_t period  = runloop_content_frame_time_ns(
+         (float)video_st->av_info.timing.fps);
+   int64_t now     = (int64_t)now_us * 1000;
+   int64_t half    = (refresh > 0.0f)
+      ? (int64_t)(500000000.0 / (double)refresh) : 0;
+
+   if (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
+      period = (int64_t)((double)period * settings->floats.slowmotion_ratio);
+
+   /* The first frame under the menu, or after a stall of more than a
+    * few frames: due now, and the schedule restarts from here rather
+    * than catching up. */
+   if (     !runloop_st->menu_core_due_ns
+         || now - runloop_st->menu_core_due_ns > 4 * period)
+      runloop_st->menu_core_due_ns = now;
+
+   if (now + half < runloop_st->menu_core_due_ns)
+      return false;
+   runloop_st->menu_core_due_ns += period;
+   return true;
+}
+
+/* The menu's audio writes block only where the menu is held to the
+ * content's rate. At 'Display Rate' they never hold the loop: the
+ * silence it feeds is measured out by the clock and the core behind
+ * it, if running, writes what it makes. Brought back into line every
+ * menu iteration, so a setting changed in the menu, or a core started
+ * or stopped behind it, takes effect at once; leaving the menu restores
+ * the usual state through driver_set_nonblock_state(). */
+static void runloop_menu_audio_nonblock(settings_t *settings,
+      input_driver_state_t *input_st, audio_driver_state_t *audio_st,
+      bool display_rate)
+{
+   bool want = display_rate
+      || !settings->bools.audio_sync
+      || (input_st->flags & INP_FLAG_NONBLOCKING);
+   bool have = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK) != 0;
+   if (     want != have
+         && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
+         && audio_st->context_audio_data)
+      audio_driver_set_nonblock_state(want);
+}
+#endif
+
 static retro_atomic_int_t runloop_inited
    = RETRO_ATOMIC_INT_INITIALIZER(0);
 
@@ -7314,12 +7427,33 @@ static enum runloop_state_enum runloop_check_state(
       if (focused || !(runloop_st->flags & RUNLOOP_FLAG_IDLE))
       {
 #ifdef HAVE_NETWORKING
-         const bool libretro_running = runloop_is_libretro_running(runloop_st,
-               menu_pause_libretro && netplay_allow_pause);
+         const bool menu_pauses_core = menu_pause_libretro && netplay_allow_pause;
 #else
-         const bool libretro_running = runloop_is_libretro_running(runloop_st,
-               menu_pause_libretro);
+         const bool menu_pauses_core = menu_pause_libretro;
 #endif
+         const bool libretro_running = runloop_is_libretro_running(runloop_st,
+               menu_pauses_core);
+         const bool display_rate     = (runloop_menu_rate(settings,
+                  runloop_st, menu_pauses_core)
+               & PACE_FACT_MENU_DISPLAY_RATE) != 0;
+         /* At 'Display Rate' a core running behind the menu keeps its
+          * own clock (see runloop_menu_core_due()); fast-forward still
+          * runs it every iteration, as fast as the menu goes. */
+         bool core_due               = true;
+         runloop_st->menu_core_skipped = false;
+         if (     libretro_running
+               && display_rate
+               && !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
+         {
+            core_due = runloop_menu_core_due(runloop_st, video_st,
+                  settings, current_time);
+            runloop_st->menu_core_skipped = !core_due;
+         }
+         else
+            runloop_st->menu_core_due_ns = 0;
+
+         runloop_menu_audio_nonblock(settings, input_st, audio_st,
+               display_rate);
 
          /* menu_driver_iterate() above dispatches entry actions, which
           * can tear down and recreate the menu handle (menu driver
@@ -7361,9 +7495,11 @@ static enum runloop_state_enum runloop_check_state(
 
             if (      (menu_st->flags & MENU_ST_FLAG_ALIVE)
                   && !(runloop_st->flags & RUNLOOP_FLAG_IDLE))
+               /* A frame the core is not due presents the last one it
+                * made, with the menu over it */
                if (display_menu_libretro(runloop_st, input_st,
                         settings->floats.slowmotion_ratio,
-                        libretro_running, current_time))
+                        libretro_running && core_due, current_time))
                   video_driver_cached_frame();
 
             /* Core execution inside display_menu_libretro() can trigger
@@ -7388,7 +7524,7 @@ static enum runloop_state_enum runloop_check_state(
           * through audio_driver_flush(), which in the menu is driven only
           * from here. */
          if (!libretro_running)
-            audio_driver_menu_sample();
+            audio_driver_menu_sample(display_rate);
       }
 
       /* Note: 'old_input' is recorded earlier, immediately after
@@ -8573,60 +8709,78 @@ int runloop_iterate(void)
          if (runloop_st->frame_work & RUNLOOP_WORK_CHEEVOS)
          {
             if (runloop_is_libretro_running(runloop_st, menu_pause_libretro))
-               rcheevos_test();
+            {
+               if (!runloop_st->menu_core_skipped)
+                  rcheevos_test();
+            }
             else
                rcheevos_idle();
          }
 #endif
 
 #ifdef HAVE_MENU
-         /* Rely on vsync throttling unless VRR is enabled and menu throttle is disabled. */
-         if (vrr_runloop_enable && !settings->bools.menu_throttle_framerate)
          {
-            /* Returns before the pace block: record what holds this
-             * path - vsync if it is blocking, nothing otherwise. */
-            pace_facts       = runloop_pace_gather(settings, true);
-            runloop_st->pace = runloop_pace_decide(pace_facts);
-            AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_WROTE);
-            return 0;
-         }
-         /* When content is actively running behind the menu (menu_pause_libretro
-          * is off), core_run() -> audio_driver_write() already paces the iterate
-          * loop at the audio buffer's drain rate -- i.e. the core's natural fps.
-          * Layering the refresh-rate timer throttle below on top of that is
-          * redundant double-pacing: two clocks holding one loop drift
-          * against each other and the slower one wins, so the sleep lands
-          * after the audio low-water mark and stutters audio.  Defer
-          * pacing to the audio backpressure path. */
-         else if (   audio_sync
-                  && runloop_is_libretro_running(runloop_st, menu_pause_libretro))
-         {
-            /* Make sure no stale frame_limit_minimum_time from a prior
-             * iteration (e.g. just before menu_pause_libretro was toggled
-             * off) leaks into the sleep block below. */
-            runloop_st->frame_limit_minimum_time    = 0;
-            runloop_st->frame_limit_minimum_time_ns = 0;
-            goto end;
-         }
-         else if ((  (settings->bools.video_vsync)
-                  || (settings->bools.video_scanline_sync))
-               && (runloop_st->flags & RUNLOOP_FLAG_FOCUSED))
-            goto end;
+            unsigned menu_rate = runloop_menu_rate(settings, runloop_st,
+                  menu_pause_libretro);
+            /* Menu Frame Rate 'Content Rate', the core paused behind the
+             * menu: the content's period. The silence the menu feeds holds
+             * the loop there when audio blocks; when it does not, the
+             * timer does (see runloop_pace_sources()). */
+            if (menu_rate & PACE_FACT_MENU_CONTENT_RATE)
+            {
+               runloop_set_frame_limit(&video_st->av_info, 1.0f);
+               goto end;
+            }
+            /* When content is actively running behind the menu (menu_pause_libretro
+             * is off), core_run() -> audio_driver_write() already paces the iterate
+             * loop at the audio buffer's drain rate -- i.e. the core's natural fps.
+             * Layering the refresh-rate timer throttle below on top of that is
+             * redundant double-pacing: two clocks holding one loop drift
+             * against each other and the slower one wins, so the sleep lands
+             * after the audio low-water mark and stutters audio.  Defer
+             * pacing to the audio backpressure path. Not at Menu Frame Rate
+             * 'Display Rate': there the core runs on its own clock, its
+             * audio does not block, and the menu takes the display's pace
+             * below. */
+            else if (   audio_sync
+                     && !(menu_rate & PACE_FACT_MENU_DISPLAY_RATE)
+                     && runloop_is_libretro_running(runloop_st, menu_pause_libretro))
+            {
+               /* Make sure no stale frame_limit_minimum_time from a prior
+                * iteration (e.g. just before menu_pause_libretro was toggled
+                * off) leaks into the sleep block below. */
+               runloop_st->frame_limit_minimum_time    = 0;
+               runloop_st->frame_limit_minimum_time_ns = 0;
+               goto end;
+            }
+            else if ((  (settings->bools.video_vsync)
+                     || (settings->bools.video_scanline_sync))
+                  && (runloop_st->flags & RUNLOOP_FLAG_FOCUSED)
+#ifdef HAVE_THREADS
+                  /* Behind the threaded video wrapper vsync holds the
+                   * video thread, not this one: at 'Display Rate' the
+                   * timer below holds the menu instead */
+                  && !(   (menu_rate & PACE_FACT_MENU_DISPLAY_RATE)
+                       && video_st->thread_wrapper_active)
+#endif
+                  )
+               goto end;
 
-         /* Otherwise run menu in video refresh rate speed. */
-         if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
-         {
-            runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f /
-                     ((video_st->video_refresh_rate_original)
-                     ? video_st->video_refresh_rate_original
-                     : settings->floats.video_refresh_rate));
-            runloop_st->frame_limit_minimum_time_ns = runloop_content_frame_time_ns(
-                     (video_st->video_refresh_rate_original)
-                     ? video_st->video_refresh_rate_original
-                     : settings->floats.video_refresh_rate);
+            /* Otherwise run menu in video refresh rate speed. */
+            if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+            {
+               /* At 'Display Rate', the rate of the monitor the window
+                * is on */
+               float hz = runloop_display_hz(video_st, settings,
+                     (menu_rate & PACE_FACT_MENU_DISPLAY_RATE) != 0);
+               runloop_st->frame_limit_minimum_time = (retro_time_t)
+                  roundf(1000000.0f / hz);
+               runloop_st->frame_limit_minimum_time_ns =
+                  runloop_content_frame_time_ns(hz);
+            }
+            else
+               runloop_set_frame_limit(&video_st->av_info, settings->floats.fastforward_ratio);
          }
-         else
-            runloop_set_frame_limit(&video_st->av_info, settings->floats.fastforward_ratio);
 #endif
          goto end;
       case RUNLOOP_STATE_ITERATE:
@@ -8759,7 +8913,10 @@ end:
          runloop_set_frame_limit(&video_st->av_info,
                runloop_get_fastforward_ratio(settings,
                   &runloop_st->fastmotion_override.current));
-      else
+      /* The menu at Menu Frame Rate 'Display Rate' keeps the display's
+       * period the menu path set; the content's is for the content. */
+      else if (!(runloop_menu_rate(settings, runloop_st, menu_pause_libretro)
+               & PACE_FACT_MENU_DISPLAY_RATE))
          runloop_set_frame_limit(&video_st->av_info, 1.0f);
    }
 
@@ -8814,7 +8971,7 @@ end:
     * runloop_pace_decide() in runloop.h, and the table in
     * samples/runloop/pacing that pins it row by row. The audio write
     * flag is read by the gather and cleared here. */
-   pace_facts       = runloop_pace_gather(settings, false);
+   pace_facts       = runloop_pace_gather(settings, menu_pause_libretro);
    AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_WROTE);
    runloop_st->pace = runloop_pace_sources(pace_facts);
 

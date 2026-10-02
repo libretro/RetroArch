@@ -85,6 +85,13 @@ enum crt_switch_type
    CRT_SWITCH_LCD
 };
 
+/* The rate the menu runs at while content is loaded */
+enum menu_frame_rate_mode
+{
+   MENU_FRAME_RATE_DISPLAY = 0,
+   MENU_FRAME_RATE_CONTENT
+};
+
 enum video_sdl_display_server_mode
 {
    VIDEO_SDL_DISPLAY_SERVER_OFF = 0,
@@ -295,6 +302,7 @@ typedef struct settings
       unsigned accessibility_narrator_engine;
 
       unsigned menu_timedate_style;
+      unsigned menu_frame_rate;
       unsigned menu_timedate_date_separator;
       unsigned gfx_thumbnails;
       unsigned menu_left_thumbnails;
@@ -1024,7 +1032,6 @@ typedef struct settings
       bool rewind_enable;
       bool fastforward_frameskip;
       bool vrr_runloop_enable;
-      bool menu_throttle_framerate;
       bool apply_cheats_after_toggle;
       bool apply_cheats_after_load;
       bool run_ahead_enabled;

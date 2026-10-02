@@ -1688,6 +1688,9 @@
 /* Enable runloop for variable refresh rate screens. Force x1 speed while handling fast forward too. */
 #define DEFAULT_VRR_RUNLOOP_ENABLE false
 
+/* The menu runs at the display's refresh rate while content is loaded */
+#define DEFAULT_MENU_FRAME_RATE MENU_FRAME_RATE_DISPLAY
+
 /* Run core logic one or more frames ahead then load the state back to reduce perceived input lag. */
 #define DEFAULT_RUN_AHEAD_FRAMES 1
 

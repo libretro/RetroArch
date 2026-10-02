@@ -13580,14 +13580,6 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef S_UINT_AT_EX_H
 #undef S_UINT_AT_EX_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
-   "Throttle Menu Framerate"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
-   "Makes sure the framerate is capped while inside the menu."
-   )
 
 /* Settings > Frame Throttle > Rewind */
 
@@ -33339,6 +33331,14 @@ MSG_HASH(
    "RetroAchievements login expired. Please re-enter your password and reload the game."
    )
 MSG_HASH(
+   MSG_MENU_FRAME_RATE_DISPLAY,
+   "Display Rate"
+   )
+MSG_HASH(
+   MSG_MENU_FRAME_RATE_CONTENT,
+   "Content Rate"
+   )
+MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,
    "Lowest"
    )
@@ -36992,7 +36992,7 @@ MSG_HASH(
    "Browse the configured NFS export for content."
    )
 #endif
-/* GENERATED REGION: menu throttle setting (see settings_def_menu_throttle.h). */
+/* GENERATED REGION: menu frame rate setting (see settings_def_menu_frame_rate.h). */
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
@@ -37081,7 +37081,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #define S_ACTION_LV(T, TV, n, sd, ok, rp, c, us, sub) \
 MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #define S_ACTION_LV_NS(T, TV, n, sd, ok, rp, c, us)
-#include "../settings/settings_def_menu_throttle.h"
+#include "../settings/settings_def_menu_frame_rate.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_BOOL_H
