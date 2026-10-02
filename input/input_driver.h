@@ -1251,6 +1251,16 @@ bool input_key_pressed(int key, bool keyboard_pressed);
 bool input_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength);
 
+/* The device registry (input_registry.h): which controllers there are
+ * and which have been here before. It mirrors what the joypad drivers
+ * report; nothing is assigned from it yet. Main thread only. */
+const struct input_registry *input_driver_get_registry(void);
+
+/* A joypad driver's connect or disconnect has been applied to @slot. */
+void input_driver_registry_connect(unsigned slot, const char *provider,
+      const char *name, const char *phys, uint16_t vid, uint16_t pid);
+void input_driver_registry_disconnect(unsigned slot);
+
 /* Write the rumble strengths a core's calls left this frame. Main
  * thread, once the core has run. */
 void input_driver_flush_rumble(void);

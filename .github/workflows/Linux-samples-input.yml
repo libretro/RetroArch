@@ -311,6 +311,32 @@ jobs:
           make clean
           echo "[pass] output_store_test (ASan, TSan)"
 
+      - name: Build and run device_registry_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/device_registry
+        run: |
+          set -eu
+          # Which controllers there are, and which of them has been
+          # here before. A joypad driver knows a controller by its
+          # slot; the registry gives each one a device id that it keeps
+          # when it leaves and returns, and a handle that is good for
+          # one stay. Pins that a returning controller has its id and
+          # a new handle, that a handle stops resolving when the
+          # controller leaves, is reported again or loses its slot,
+          # that identical pads are told apart by where they are
+          # plugged in, then by slot, then by who left last, that a
+          # driver starting over costs nobody their id, that a full
+          # table gives up only a controller that has left, and -
+          # through 200000 arrivals and departures - that no two
+          # present controllers share a slot or an id. A handle that
+          # outlives its stay, the way a kept slot number does, is put
+          # back and asserted to be caught.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 120 ./device_registry_test
+          make clean
+          echo "[pass] device_registry_test (ASan)"
+
       - name: Build and run android_stylus_map_test (ASan + UBSan)
         shell: bash
         working-directory: samples/input/android_stylus_map

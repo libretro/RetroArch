@@ -49,6 +49,7 @@
 #include "input_remapping.h"
 #include "input_osk.h"
 #include "input_output_store.h"
+#include "input_registry.h"
 #include "input_types.h"
 
 #ifdef HAVE_MIST
@@ -5823,6 +5824,43 @@ static void input_sensor_update_rest_capture(settings_t *settings)
       input_st->sensor_accelerometer_rest[2] = input_st->rest_accum[2] / 30.0f;
       input_st->rest_capturing = false;
    }
+}
+
+/* The device registry, kept in step with what the joypad drivers
+ * report. A mirror for now: it names each controller and recognises
+ * one that comes back, and the log says which; ports are assigned as
+ * before. */
+static input_registry_t input_registry;
+
+const struct input_registry *input_driver_get_registry(void)
+{
+   return &input_registry;
+}
+
+void input_driver_registry_connect(unsigned slot, const char *provider,
+      const char *name, const char *phys, uint16_t vid, uint16_t pid)
+{
+   bool returned                    = false;
+   input_device_handle_t handle     = input_registry_connect(
+         &input_registry, provider, slot, name, phys, vid, pid, &returned);
+   const input_device_record_t *rec = input_registry_get(
+         &input_registry, handle);
+
+   if (rec)
+      RARCH_LOG("[Input] Device %u, \"%s\" (%04x:%04x, %s): %s slot %u.\n",
+            (unsigned)rec->id, rec->name, rec->vid, rec->pid, rec->provider,
+            returned ? "back, in" : "new, in", slot);
+}
+
+void input_driver_registry_disconnect(unsigned slot)
+{
+   const input_device_record_t *rec = input_registry_at_slot(
+         &input_registry, slot);
+
+   if (rec)
+      RARCH_LOG("[Input] Device %u, \"%s\": left slot %u.\n",
+            (unsigned)rec->id, rec->name, slot);
+   input_registry_disconnect(&input_registry, slot);
 }
 
 /* A core's rumble calls, held until the frame has run (see

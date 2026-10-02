@@ -1479,6 +1479,16 @@ static void cb_input_autoconfigure_connect(
          autoconfig_handle->device_info.pid,
          autoconfig_handle->device_info.name,
          autoconfig_handle->device_info.display_name);
+
+   /* The registry learns of the controller here, where the connect
+    * is applied, so it changes with the device table and on the main
+    * thread. */
+   input_driver_registry_connect(port,
+         autoconfig_handle->device_info.joypad_driver,
+         autoconfig_handle->device_info.name,
+         autoconfig_handle->device_info.phys,
+         autoconfig_handle->device_info.vid,
+         autoconfig_handle->device_info.pid);
 }
 
 static void input_autoconfigure_connect_handler(retro_task_t *task)
@@ -1947,6 +1957,8 @@ static void cb_input_autoconfigure_disconnect(
    input_config_set_device_pid(port, 0);
    input_config_set_device_autoconfigured(port, false);
    input_config_reset_autoconfig_binds(port);
+
+   input_driver_registry_disconnect(port);
 }
 
 static void input_autoconfigure_disconnect_handler(retro_task_t *task)

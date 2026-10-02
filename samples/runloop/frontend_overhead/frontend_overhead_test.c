@@ -61,6 +61,12 @@
  *     back as the same sequence. This is the reference the frame-local view has to reproduce: it is
  *     what the state path does today, pinned before that path changes.
  *
+ *   - The device registry (input plan, WP-02) follows the drivers.
+ *     Eight scripted pads connect; one is pulled and plugged back in.
+ *     The registry must show each pad in its slot with its own device
+ *     id, drop the pulled one, and give it the same id and a new
+ *     handle when it returns.
+ *
  * Nothing is stubbed. */
 #include <stdio.h>
 #include <stdlib.h>
@@ -84,6 +90,7 @@
 #include "../../../frontend/frontend_driver.h"
 #include "../../../gfx/video_driver.h"
 #include "../../../input/input_driver.h"
+#include "../../../input/input_registry.h"
 #include "../../../menu/menu_driver.h"
 
 #define FRAME_US_LIMIT   1000.0
@@ -101,6 +108,8 @@
  * POLL_EDGE_SPAN later, once under each poll mode. */
 #define POLL_MODE_FRAME  50000
 #define POLL_EDGE_SPAN   100
+/* the eighth pad is pulled at this frame and plugged back in 60 later */
+#define REGISTRY_FRAME   56000
 #define INPUT_FRAMES     4000
 /* Tripwires, not targets: CI runners vary. They catch a blocking call,
  * a sleep or a device open landing in poll or state. */
@@ -397,6 +406,68 @@ static void lane_input_poll_modes(void)
       printf("[pass] early, normal and late polling see each edge in the same frame\n");
 #else
    printf("[skip] poll-mode lane: need the test drivers and dlopen\n");
+#endif
+}
+
+/* The registry mirrors what the joypad driver reports. */
+static void lane_device_registry(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   const input_registry_t *reg = input_driver_get_registry();
+   input_device_handle_t handle7 = 0;
+   uint32_t id7  = 0;
+   unsigned had  = failures;
+   unsigned i, j;
+
+   CHECK(pad_connected(7), "registry: the scripted pads are not connected");
+   CHECK(input_registry_count(reg) == 8, "registry: eight connected pads are not eight devices");
+   for (i = 0; i < 8; i++)
+   {
+      const input_device_record_t *rec =
+         input_registry_at_slot((input_registry_t*)reg, i);
+      CHECK(rec != NULL, "registry: a connected pad has no device");
+      if (!rec)
+         continue;
+      CHECK(rec->vid == 0x045e && rec->pid == 0x028e && strstr(rec->name, "Harness pad"),
+            "registry: a device does not carry what its driver reported");
+      CHECK(input_registry_get(reg, rec->handle) == rec,
+            "registry: a present device's handle does not resolve");
+      for (j = i + 1; j < 8; j++)
+      {
+         const input_device_record_t *other =
+            input_registry_at_slot((input_registry_t*)reg, j);
+         CHECK(!other || other->id != rec->id, "registry: two pads share a device id");
+      }
+      if (i == 7)
+      {
+         handle7 = rec->handle;
+         id7     = rec->id;
+      }
+   }
+
+   /* pad 8 is pulled */
+   run_to_frame(REGISTRY_FRAME + 30);
+   CHECK(!pad_connected(7), "registry: the scripted pad was not removed");
+   CHECK(input_registry_count(reg) == 7, "registry: a removed pad is still a device");
+   CHECK(!input_registry_get(reg, handle7), "registry: a removed pad's handle still resolves");
+
+   /* and plugged back in */
+   run_to_frame(REGISTRY_FRAME + 200);
+   CHECK(pad_connected(7), "registry: the scripted pad did not come back");
+   {
+      const input_device_record_t *rec =
+         input_registry_at_slot((input_registry_t*)reg, 7);
+      CHECK(rec && rec->id == id7, "registry: a pad that came back has another device id");
+      CHECK(rec && rec->handle != handle7, "registry: a new stay has the old handle");
+      CHECK(!input_registry_get(reg, handle7), "registry: the old handle resolves again");
+   }
+   CHECK(input_registry_count(reg) == 8, "registry: not eight devices after the pad came back");
+
+   if (failures == had)
+      printf("[pass] registry: eight pads are eight devices; one pulled and"
+            " plugged back in keeps its id and gets a new handle\n");
+#else
+   printf("[skip] registry lane: need the test drivers\n");
 #endif
 }
 
@@ -1145,6 +1216,11 @@ int main(int argc, char *argv[])
                   ",{ \"action\": 32, \"param_num\": 1, \"frame\": %u }\n",
                   POLL_MODE_FRAME + 1000 * b,
                   POLL_MODE_FRAME + 1000 * b + POLL_EDGE_SPAN);
+         /* pad 8 leaves and comes back: action 2 removes */
+         fprintf(f, ",{ \"action\": 2, \"param_num\": 7, \"frame\": %u }\n"
+               ",{ \"action\": 1, \"param_num\": 7, "
+               "\"param_str\": \"(045e:028e) Harness pad\", \"frame\": %u }\n",
+               REGISTRY_FRAME, REGISTRY_FRAME + 60);
          fprintf(f, "]\n");
          fclose(f);
       }
@@ -1222,6 +1298,7 @@ int main(int argc, char *argv[])
       lane_frame_cost();
       lane_input_cost();
       lane_input_poll_modes();
+      lane_device_registry();
       lane_input_poll_sites(load_poll_name[load_poll]);
       lane_output_store();
       lane_core_view();
