@@ -137,9 +137,19 @@ jobs:
           # shipping translation unit against the real unthreaded
           # task queue, ZIP backend and shared per-frame I/O window,
           # with a virtual clock: a whole archive fits one window, an
-          # exhausted window still extracts one item per call.
+          # exhausted window still extracts one item per call.  A
+          # DEFLATE member larger than the backend's output window is
+          # written a window at a time, through a temporary file that
+          # a CRC failure or a cancel removes, leaving any previous
+          # file in place.
           timeout 60 ./decompress_window_test
           make clean >/dev/null
+          # The same lanes against the built-in inflater, which builds
+          # without HAVE_ZLIB use and which rebinds its output window
+          # differently from zlib.
+          make all BUILTIN_DEFLATE=1
+          timeout 60 ./decompress_window_test
+          make clean BUILTIN_DEFLATE=1 >/dev/null
           make all SANITIZER=address,undefined -j$(nproc)
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
           UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \

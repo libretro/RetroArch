@@ -17,6 +17,14 @@
  *   crc      - a member whose contents do not match its recorded CRC
  *              fails the task and is not written, whether it fails
  *              as it starts or after parking.
+ *   stream   - a DEFLATE member larger than the backend's output
+ *              window reaches the disk a window at a time, never as
+ *              one write of the whole member (writes are measured at
+ *              retro_vfs_file_write_impl), and no temporary file is
+ *              left beside it.
+ *   keep     - a member that fails its CRC, or whose extraction is
+ *              cancelled part way, leaves a file already at its path
+ *              as it was, and no temporary file beside it.
  *
  * Every lane checks the extracted bytes against the fixture.
  *
@@ -52,6 +60,20 @@ static unsigned failures = 0;
          failures++; \
       } \
    } while (0)
+
+/* Largest single write reaching the VFS */
+#define STREAM_WINDOW (256 * 1024)   /* archive_file_zlib.c */
+static int64_t max_write;
+
+int64_t __real_retro_vfs_file_write_impl(void *stream, const void *s,
+      uint64_t len);
+int64_t __wrap_retro_vfs_file_write_impl(void *stream, const void *s,
+      uint64_t len)
+{
+   if ((int64_t)len > max_write)
+      max_write = (int64_t)len;
+   return __real_retro_vfs_file_write_impl(stream, s, len);
+}
 
 /* Virtual clock */
 
@@ -505,6 +527,76 @@ int main(void)
          CHECK(checks != 0, "extraction with a bad CRC never completed");
          CHECK(!done_ok, "a member failing its CRC was not reported");
          CHECK(!path_is_valid(path), "a member failing its CRC was written");
+      }
+      corrupt_member = -1;
+   }
+
+   /* stream */
+   {
+      char path[PATH_MAX_LENGTH];
+      char tmp[PATH_MAX_LENGTH + 8];
+
+      if (!write_zip())
+         CHECK(false, "could not rewrite the fixture archive");
+      clear_outputs();
+      max_write = 0;
+      checks    = run_extract(STEP_UNBOUNDED, NULL, 1000, 0);
+      out_path(path, sizeof(path), BIG_NAME);
+      snprintf(tmp, sizeof(tmp), "%s.tmp", path);
+      printf("[stream]  largest write %ld bytes for a %u byte member\n",
+            (long)max_write, (unsigned)BIG_SIZE);
+      CHECK(done_ok, "extraction reported an error");
+      CHECK(file_matches(path, &members[N_SMALL]),
+            "streamed member differs from the archive");
+      CHECK(max_write <= STREAM_WINDOW,
+            "a member was written whole instead of a window at a time");
+      CHECK(!path_is_valid(tmp), "a temporary file was left behind");
+   }
+
+   /* keep: an earlier file at the big member's path survives a CRC
+    * failure and a cancel, each landing mid-member */
+   {
+      static const char old_contents[] = "the previous file";
+      char path[PATH_MAX_LENGTH];
+      char tmp[PATH_MAX_LENGTH + 8];
+      unsigned k;
+
+      out_path(path, sizeof(path), BIG_NAME);
+      snprintf(tmp, sizeof(tmp), "%s.tmp", path);
+
+      for (k = 0; k < 2; k++)
+      {
+         void *buf   = NULL;
+         int64_t len = 0;
+         bool kept;
+
+         corrupt_member = (k == 0) ? (int)N_SMALL : -1;
+         if (!write_zip())
+         {
+            CHECK(false, "could not rewrite the fixture archive");
+            break;
+         }
+         clear_outputs();
+         filestream_write_file(path, old_contents, sizeof(old_contents));
+
+         /* The cancel lands once the small members are out and the
+          * big one has parked */
+         if (k == 0)
+            run_extract(STEP_UNBOUNDED, NULL, 1000, 0);
+         else
+            run_extract(STEP_EXHAUSTED, NULL, 10 * n_members,
+                  N_SMALL + 3);
+
+         kept = filestream_read_file(path, &buf, &len)
+               && len == (int64_t)sizeof(old_contents)
+               && !memcmp(buf, old_contents, sizeof(old_contents));
+         free(buf);
+         printf("[keep]    %s mid-member: previous file %s\n",
+               k == 0 ? "bad CRC" : "cancel",
+               kept ? "kept" : "replaced");
+         CHECK(!done_ok, "a failed or cancelled extraction reported success");
+         CHECK(kept, "a member that did not complete replaced the previous file");
+         CHECK(!path_is_valid(tmp), "a temporary file was left behind");
       }
       corrupt_member = -1;
    }

@@ -2214,56 +2214,67 @@ bool filestream_write_file(const char *path, const void *data, int64_t size)
    return (ret == size);
 }
 
-bool filestream_write_file_atomic(const char *path,
-      const void *data, int64_t size)
+/* <path>.tmp, the sibling an atomic write goes through; NULL on OOM */
+static char *filestream_atomic_temp_path(const char *path)
 {
-   int64_t  ret       = 0;
-   size_t   path_len  = 0;
-   char    *temp_path = NULL;
-   RFILE   *file      = NULL;
-
-   if (!path || !*path)
-      return false;
-
-   path_len  = strlen(path);
-   temp_path = (char*)malloc(path_len + sizeof(".tmp"));
+   size_t path_len = strlen(path);
+   char *temp_path = (char*)malloc(path_len + sizeof(".tmp"));
    if (!temp_path)
-      return false;
+      return NULL;
    memcpy(temp_path, path, path_len);
    memcpy(temp_path + path_len, ".tmp", sizeof(".tmp"));
+   return temp_path;
+}
+
+RFILE *filestream_open_atomic(const char *path)
+{
+   RFILE *file;
+   char *temp_path;
+
+   if (!path || !*path)
+      return NULL;
+   if (!(temp_path = filestream_atomic_temp_path(path)))
+      return NULL;
 
    file = filestream_open(temp_path,
          RETRO_VFS_FILE_ACCESS_WRITE,
          RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
-   if (!file)
-   {
-      free(temp_path);
-      return false;
-   }
+   free(temp_path);
+   return file;
+}
 
-   ret = filestream_write(file, data, size);
+int filestream_commit_atomic(RFILE *file, const char *path, bool ok)
+{
+   char *temp_path;
+
+   if (!file)
+      return -1;
+   if (!path || !*path || !(temp_path = filestream_atomic_temp_path(path)))
+   {
+      if (filestream_close(file) != 0)
+         free(file);
+      return -1;
+   }
 
    /* A buffered write reports a full disk at close, not at write,
     * so both have to agree before the rename goes ahead. */
    if (filestream_close(file) != 0)
    {
       free(file);
-      filestream_delete(temp_path);
-      free(temp_path);
-      return false;
+      ok = false;
    }
 
-   if (ret != size)
+   if (!ok)
    {
       filestream_delete(temp_path);
       free(temp_path);
-      return false;
+      return -1;
    }
 
    if (filestream_rename(temp_path, path) == 0)
    {
       free(temp_path);
-      return true;
+      return 0;
    }
 
    /* The built-in rename replaces the destination on every platform,
@@ -2277,13 +2288,38 @@ bool filestream_write_file_atomic(const char *path,
       if (filestream_rename(temp_path, path) == 0)
       {
          free(temp_path);
-         return true;
+         return 0;
       }
    }
 
-   filestream_delete(temp_path);
    free(temp_path);
-   return false;
+   return 1;
+}
+
+bool filestream_write_file_atomic(const char *path,
+      const void *data, int64_t size)
+{
+   int ret;
+   RFILE *file = filestream_open_atomic(path);
+
+   if (!file)
+      return false;
+
+   ret = filestream_commit_atomic(file, path,
+         filestream_write(file, data, size) == size);
+
+   /* Written but not renamed into place */
+   if (ret == 1)
+   {
+      char *temp_path = filestream_atomic_temp_path(path);
+      if (temp_path)
+      {
+         filestream_delete(temp_path);
+         free(temp_path);
+      }
+   }
+
+   return ret == 0;
 }
 
 char *filestream_getline(RFILE *stream)

@@ -70,6 +70,10 @@
 #endif
 
 #define _READ_CHUNK_SIZE   (128*1024)   /* Read 128KiB compressed chunks */
+/* Output window a deflated member is inflated through when it goes
+ * to a file: written out each time it fills, instead of the whole
+ * member being held in memory and written in one go */
+#define ZIP_STREAM_WINDOW  (256*1024)
 
 enum file_archive_compression_mode
 {
@@ -99,8 +103,12 @@ typedef struct
 #endif
    uint8_t *tmpbuf;
    size_t   tmpbuf_len;
+   /* The whole member, or a ZIP_STREAM_WINDOW of it when streaming */
    uint8_t *decompressed_data;
+   uint32_t win_len;       /* size of decompressed_data */
+   uint32_t win_pos;       /* bytes of it filled (rinflate) */
    bool     inflating;     /* a DEFLATE member is in progress */
+   bool     streaming;     /* output goes to state->pending_sink */
 } zip_context_t;
 
 static INLINE uint32_t read_le(const uint8_t *data, size_t len)
@@ -149,6 +157,9 @@ static void zip_context_free_stream(
 static void zip_context_reset_member(zip_context_t *zip_context)
 {
    zip_context->inflating = false;
+   zip_context->streaming = false;
+   zip_context->win_len   = 0;
+   zip_context->win_pos   = 0;
 #ifndef ARCHIVE_HAVE_ZLIB
    zip_context->out_bound = 0;
 #endif
@@ -252,9 +263,18 @@ static bool zlib_stream_decompress_data_to_file_init(
    zip_context->out_off               = 0;
    zip_context->cmode                 = cmode;
 
+   /* A deflated member bound for a file is inflated through a window
+    * and written out as it goes; anything else is decoded whole */
+   zip_context->streaming = (cmode == ZIP_MODE_DEFLATED)
+         && state->pending_sink && (size > ZIP_STREAM_WINDOW);
+   zip_context->win_len   = zip_context->streaming
+         ? ZIP_STREAM_WINDOW : size;
+   zip_context->win_pos   = 0;
+
    /* NULL-check the decompressed_data malloc: the iterate step and
     * the inflate output binding below dereference it. */
-   if (!(zip_context->decompressed_data = (uint8_t*)malloc(size)))
+   if (!(zip_context->decompressed_data = (uint8_t*)malloc(
+               zip_context->win_len)))
       return false;
 
    if (cmode == ZIP_MODE_DEFLATED)
@@ -293,7 +313,7 @@ static bool zlib_stream_decompress_data_to_file_init(
       zip_context->zstream->next_in   = NULL;
       zip_context->zstream->avail_in  = 0;
       zip_context->zstream->next_out  = zip_context->decompressed_data;
-      zip_context->zstream->avail_out = size;
+      zip_context->zstream->avail_out = zip_context->win_len;
 #else
       /* The output buffer (the full decompressed_data) is bound once
        * on the first iterate call; only compressed input is fed
@@ -324,6 +344,30 @@ static bool zlib_stream_decompress_data_to_file_init(
    }
 #endif
 
+   return true;
+}
+
+/* Writes the filled part of a streaming member's window to the
+ * pending sink and empties the window */
+static bool zip_context_flush_window(zip_context_t *zip_context)
+{
+   uint32_t filled;
+#ifdef ARCHIVE_HAVE_ZLIB
+   filled = zip_context->win_len - zip_context->zstream->avail_out;
+#else
+   filled = zip_context->win_pos;
+#endif
+   if (filled && filestream_write(zip_context->state->pending_sink,
+            zip_context->decompressed_data, filled) != (int64_t)filled)
+      return false;
+#ifdef ARCHIVE_HAVE_ZLIB
+   zip_context->zstream->next_out  = zip_context->decompressed_data;
+   zip_context->zstream->avail_out = zip_context->win_len;
+#else
+   zip_context->win_pos = 0;
+   rinflate_set_out(zip_context->zstream,
+         zip_context->decompressed_data, zip_context->win_len);
+#endif
    return true;
 }
 
@@ -399,15 +443,44 @@ static int zlib_stream_decompress_data_to_file_iterate(
       zip_context->zstream->next_in   = dptr;
       zip_context->zstream->avail_in  = (uInt)rd;
 
+      for (;;)
       {
          /* The CRC runs over each slice's output while it is still
           * in cache. */
-         uint8_t *out = zip_context->zstream->next_out;
-         if (inflate(zip_context->zstream, 0) < 0)
+         int zret;
+         uint8_t *out;
+
+         /* A full window is written out before inflating more */
+         if (     zip_context->streaming
+               && zip_context->zstream->avail_out == 0
+               && !zip_context_flush_window(zip_context))
             return -1;
+
+         out  = zip_context->zstream->next_out;
+         zret = inflate(zip_context->zstream, 0);
          zip_context->crc     = encoding_crc32(zip_context->crc, out,
                (size_t)(zip_context->zstream->next_out - out));
          zip_context->out_off = (uint32_t)zip_context->zstream->total_out;
+
+         /* With the whole member as output, one call takes all the
+          * input */
+         if (!zip_context->streaming)
+         {
+            if (zret < 0)
+               return -1;
+            break;
+         }
+
+         /* Streaming: input used up and nothing more to drain */
+         if (zret == Z_BUF_ERROR && zip_context->zstream->avail_in == 0)
+            break;
+         if (zret < 0)
+            return -1;
+         if (zret == Z_STREAM_END)
+            break;
+         if (     zip_context->zstream->avail_in  == 0
+               && zip_context->zstream->avail_out != 0)
+            break;
       }
 #else
       /* Bind the output buffer once, then feed this compressed chunk.  The
@@ -416,21 +489,31 @@ static int zlib_stream_decompress_data_to_file_iterate(
       if (!zip_context->out_bound)
       {
          rinflate_set_out(zip_context->zstream,
-               zip_context->decompressed_data, zip_context->usize);
+               zip_context->decompressed_data, zip_context->win_len);
          zip_context->out_bound = 1;
+         zip_context->win_pos   = 0;
       }
       rinflate_set_in(zip_context->zstream, dptr, (size_t)rd);
 
       for (;;)
       {
          size_t got_in = 0, got_out = 0;
-         int    st     = rinflate_process(zip_context->zstream,
-               &got_in, &got_out);
+         int    st;
+
+         /* A full window is written out before inflating more; the
+          * decoder keeps its own back-reference history */
+         if (     zip_context->streaming
+               && zip_context->win_pos == zip_context->win_len
+               && !zip_context_flush_window(zip_context))
+            return -1;
+
+         st = rinflate_process(zip_context->zstream, &got_in, &got_out);
          if (st == RDEFLATE_PROCESS_ERROR)
             return -1;
          zip_context->crc      = encoding_crc32(zip_context->crc,
-               zip_context->decompressed_data + zip_context->out_off,
+               zip_context->decompressed_data + zip_context->win_pos,
                got_out);
+         zip_context->win_pos += (uint32_t)got_out;
          zip_context->out_off += (uint32_t)got_out;
          /* END: stream finished.  NEXT with no further progress means this
           * input chunk is drained; fetch the next one on the outer loop. */
@@ -450,6 +533,15 @@ static int zlib_stream_decompress_data_to_file_iterate(
          if (     zip_context->out_off != zip_context->usize
                || zip_context->crc     != zip_context->expect_crc)
             return -1;
+
+         /* A streamed member is already in the sink, whole */
+         if (zip_context->streaming)
+         {
+            if (!zip_context_flush_window(zip_context))
+               return -1;
+            handle->data = NULL;
+            return 1;
+         }
 
          handle->data = zip_context->decompressed_data;
          return 1;

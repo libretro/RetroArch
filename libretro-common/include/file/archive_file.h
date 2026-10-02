@@ -93,6 +93,12 @@ typedef struct file_archive_transfer
     * pending_active is what makes this visible to the iterate loop;
     * everything else is the state that call needs to resume. */
    file_archive_file_handle_t pending_handle;
+   /* The member's output, opened beside pending_path and renamed over
+    * it when the member completes (filestream_open_atomic()).  A
+    * backend that can produce output a piece at a time writes it here
+    * as it goes and leaves pending_handle.data NULL; any other fills
+    * pending_handle.data, which is written here at the end. */
+   struct RFILE *pending_sink;
    char     pending_path[PATH_MAX_LENGTH];
    uint32_t pending_size;
    bool     pending_active;

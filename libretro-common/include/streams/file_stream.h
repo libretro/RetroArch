@@ -310,6 +310,34 @@ bool filestream_write_file(const char *path, const void *data, int64_t size);
 bool filestream_write_file_atomic(const char *path, const void *data, int64_t size);
 
 /**
+ * Opens the sibling temporary file an atomic write of \c path goes
+ * through (\c path with ".tmp" appended), for a writer that produces
+ * the contents a piece at a time.  Finish with
+ * filestream_commit_atomic(), which closes it either way.
+ *
+ * @param path Path of the file that will be replaced.
+ * @return The temporary file, open for writing, or \c NULL on error.
+ */
+RFILE *filestream_open_atomic(const char *path);
+
+/**
+ * Closes a file from filestream_open_atomic() and, if \c ok and the
+ * close succeeded, renames it over \c path, exactly as
+ * filestream_write_file_atomic() does.
+ *
+ * @param file The file returned by filestream_open_atomic(); always
+ * closed and freed.
+ * @param path The same path it was opened for.
+ * @param ok Whether the caller wrote everything it meant to.
+ * @return 0 if \c path now holds the new contents; -1 if the write or
+ * close failed, in which case the temporary file is deleted and \c path
+ * is left as it was; 1 if the contents are complete in the temporary
+ * file but could not be renamed into place, in which case the temporary
+ * file is left for the caller to copy or delete.
+ */
+int filestream_commit_atomic(RFILE *file, const char *path, bool ok);
+
+/**
  * Writes a single character to the given file.
  *
  * @param stream The file to write to.
