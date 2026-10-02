@@ -118,10 +118,13 @@ enum core_updater_download_status
  * cancelled mid-wait, or a sub-task retired before the handler's
  * next tick.  A waiter that lets go while the sub-task still writes
  * into a list it owns hands the list over in orphan_list, and the
- * last reference frees it with the record. */
+ * last reference frees it with the record.  The callback copies the
+ * error the sub-task finished with, if any, into 'error' before it
+ * publishes 'complete'. */
 typedef struct
 {
    core_updater_list_t *orphan_list;
+   char *error;
    retro_atomic_int_t refs;
    retro_atomic_int_t complete;
 } core_updater_sub_task_done_t;
@@ -246,7 +249,12 @@ typedef struct play_feature_delivery_switch_cores_handle
    char *path_libretro_info;
    char *err_msg;
    core_updater_list_t* core_list;
-   retro_task_t *install_task;
+   /* Completion of the install task this task is waiting on, shared
+    * with its callback; NULL when nothing is pending.  The install
+    * retro_task_t is deliberately not retained: the queue frees a
+    * finished task in the same gather pass that retires it, so a
+    * stored pointer can dangle before this task is stepped again. */
+   core_updater_sub_task_done_t *install_done;
    size_t list_size;
    size_t list_index;
    size_t installed_index;
@@ -398,6 +406,7 @@ static void core_updater_sub_task_done_release(
    if (done && retro_atomic_fetch_sub_int(&done->refs, 1) == 1)
    {
       core_updater_list_free(done->orphan_list);
+      free(done->error);
       free(done);
    }
 }
@@ -411,16 +420,21 @@ static core_updater_sub_task_done_t *core_updater_sub_task_done_new(void)
    if (done)
    {
       done->orphan_list = NULL;
+      done->error       = NULL;
       retro_atomic_int_init(&done->refs, 2);
       retro_atomic_int_init(&done->complete, 0);
    }
    return done;
 }
 
-/* Completion for the callback side of a parent waiting on it */
+/* Completion for the callback side of a parent waiting on it,
+ * with the error the sub-task finished with (NULL or empty for
+ * none) */
 static void core_updater_sub_task_done_signal(
-      core_updater_sub_task_done_t *done)
+      core_updater_sub_task_done_t *done, const char *err)
 {
+   if (err && *err)
+      done->error = strdup(err);
    retro_atomic_store_release_int(&done->complete, 1);
    core_updater_sub_task_done_release(done);
 }
@@ -432,7 +446,7 @@ static void cb_task_core_updater_backup(
       void *user_data, const char *err)
 {
    core_updater_sub_task_done_signal(
-         (core_updater_sub_task_done_t*)user_data);
+         (core_updater_sub_task_done_t*)user_data, err);
 }
 
 /*************************/
@@ -741,7 +755,7 @@ static void cb_task_core_updater_get_list(
 #endif
 
    if (list_done)
-      core_updater_sub_task_done_signal(list_done);
+      core_updater_sub_task_done_signal(list_done, err);
 }
 
 /* The push with the three paths as values: reads no live settings,
@@ -878,7 +892,7 @@ static void cb_task_core_updater_download(
     * it is retired, and it may itself be gone: completion
     * goes through the record the two share */
    if (download_done)
-      core_updater_sub_task_done_signal(download_done);
+      core_updater_sub_task_done_signal(download_done, err);
 
    command_event(CMD_EVENT_CORE_INFO_INIT, &refresh);
 
@@ -2371,17 +2385,23 @@ task_finished:
       free_play_feature_delivery_install_handle(pfd_install_handle);
 }
 
+/* An install that has finished is no longer downloading, even while
+ * it waits to be retired: the switch task pushes the next install as
+ * soon as the previous one reports completion, which its callback
+ * does while the task is still findable. */
 static bool task_play_feature_delivery_core_install_finder(
       retro_task_t *task, void *user_data)
 {
-   return (task && task->handler ==
-         task_play_feature_delivery_core_install_handler);
+   return (   task
+           && task->handler == task_play_feature_delivery_core_install_handler
+           && !(task_get_flags(task) & RETRO_TASK_FLG_FINISHED));
 }
 
-void *task_push_play_feature_delivery_core_install(
+static void *task_push_play_feature_delivery_core_install_internal(
       core_updater_list_t* core_list,
       const char *filename,
-      bool mute)
+      bool mute,
+      core_updater_sub_task_done_t *install_done)
 {
    size_t _len;
    task_finder_data_t find_data;
@@ -2440,6 +2460,7 @@ void *task_push_play_feature_delivery_core_install(
    task->progress         = 0;
    task->progress_cb      = task_window_progress_cb;
    task->callback         = cb_task_core_updater_download;
+   task->user_data        = (void*)install_done;
    task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
    if (mute)
       task->flags        |=  RETRO_TASK_FLG_MUTE;
@@ -2474,6 +2495,15 @@ error:
    return NULL;
 }
 
+void *task_push_play_feature_delivery_core_install(
+      core_updater_list_t* core_list,
+      const char *filename,
+      bool mute)
+{
+   return task_push_play_feature_delivery_core_install_internal(
+         core_list, filename, mute, NULL);
+}
+
 /************************************************/
 /* Play feature delivery switch installed cores */
 /************************************************/
@@ -2489,6 +2519,12 @@ static void free_play_feature_delivery_switch_cores_handle(
 
    if (pfd_switch_cores_handle->err_msg)
       free(pfd_switch_cores_handle->err_msg);
+
+   /* Cancelled while an install runs: its callback holds the other
+    * reference and frees the record when it runs.  The install keeps
+    * no reference into core_list. */
+   core_updater_sub_task_done_release(
+         pfd_switch_cores_handle->install_done);
 
    core_updater_list_free(pfd_switch_cores_handle->core_list);
 
@@ -2641,17 +2677,27 @@ static void task_play_feature_delivery_switch_cores_handler(
 
             /* Existing core is not installed via
              * play feature delivery
-             * > Request installation/replacement */
-            pfd_switch_cores_handle->install_task = (retro_task_t*)
-                  task_push_play_feature_delivery_core_install(
+             * > Request installation/replacement
+             * > The record must exist *before* the push: the
+             *   install task can finish and fire its callback
+             *   before this returns */
+            if (     (pfd_switch_cores_handle->install_done =
+                        core_updater_sub_task_done_new())
+                  && !task_push_play_feature_delivery_core_install_internal(
                         pfd_switch_cores_handle->core_list,
                         list_entry->remote_filename,
-                        true);
+                        true,
+                        pfd_switch_cores_handle->install_done))
+            {
+               /* No task, so no callback: both references are ours */
+               free(pfd_switch_cores_handle->install_done);
+               pfd_switch_cores_handle->install_done = NULL;
+            }
 
             /* Again, if an error occurred, just return to
              * PLAY_FEATURE_DELIVERY_SWITCH_CORES_ITERATE
              * state */
-            if (!pfd_switch_cores_handle->install_task)
+            if (!pfd_switch_cores_handle->install_done)
                pfd_switch_cores_handle->status =
                      PLAY_FEATURE_DELIVERY_SWITCH_CORES_ITERATE;
             else
@@ -2679,44 +2725,35 @@ static void task_play_feature_delivery_switch_cores_handler(
          break;
       case PLAY_FEATURE_DELIVERY_SWITCH_CORES_WAIT_INSTALL:
          {
-            bool install_complete = false;
-            const char* err_msg   = NULL;
+            /* Wait for the install task's callback to trigger.
+             * The install task itself must not be polled: it is
+             * retired and freed in the same gather pass that
+             * marks it finished, so this task may only ever see
+             * freed memory there */
+            core_updater_sub_task_done_t *install_done =
+                  pfd_switch_cores_handle->install_done;
 
-            /* > If task is running, check 'is finished' status
-             * > If task is NULL, then it is finished by
-             *   definition */
-            if (pfd_switch_cores_handle->install_task)
-            {
-               uint8_t _flg   = task_get_flags(pfd_switch_cores_handle->install_task);
-               err_msg        = task_get_error(
-                     pfd_switch_cores_handle->install_task);
-               if ((_flg & RETRO_TASK_FLG_FINISHED) > 0)
-                  install_complete = true;
-            }
-            else
-               install_complete = true;
+            if (!retro_atomic_load_acquire_int(&install_done->complete))
+               break;
 
             /* Check for installation errors
              * > These should be considered 'serious', and
-             *   will trigger the task to end early */
-            if (err_msg && *err_msg)
+             *   will trigger the task to end early
+             * > Otherwise, return to
+             *   PLAY_FEATURE_DELIVERY_SWITCH_CORES_ITERATE */
+            if (install_done->error)
             {
-               pfd_switch_cores_handle->err_msg      = strdup(err_msg);
-               pfd_switch_cores_handle->install_task = NULL;
-               pfd_switch_cores_handle->status       =
+               pfd_switch_cores_handle->err_msg = install_done->error;
+               install_done->error              = NULL;
+               pfd_switch_cores_handle->status  =
                      PLAY_FEATURE_DELIVERY_SWITCH_CORES_END;
-               break;
             }
-
-            /* If installation is complete, return to
-             * PLAY_FEATURE_DELIVERY_SWITCH_CORES_ITERATE
-             * state */
-            if (install_complete)
-            {
-               pfd_switch_cores_handle->install_task = NULL;
-               pfd_switch_cores_handle->status       =
+            else
+               pfd_switch_cores_handle->status  =
                      PLAY_FEATURE_DELIVERY_SWITCH_CORES_ITERATE;
-            }
+
+            core_updater_sub_task_done_release(install_done);
+            pfd_switch_cores_handle->install_done = NULL;
          }
          break;
       case PLAY_FEATURE_DELIVERY_SWITCH_CORES_END:
@@ -2803,7 +2840,7 @@ void task_push_play_feature_delivery_switch_installed_cores(
    pfd_switch_cores_handle->path_libretro_info = strdup(path_libretro_info);
    pfd_switch_cores_handle->err_msg            = NULL;
    pfd_switch_cores_handle->core_list          = core_updater_list_init();
-   pfd_switch_cores_handle->install_task       = NULL;
+   pfd_switch_cores_handle->install_done       = NULL;
    pfd_switch_cores_handle->list_size          = 0;
    pfd_switch_cores_handle->list_index         = 0;
    pfd_switch_cores_handle->installed_index    = 0;

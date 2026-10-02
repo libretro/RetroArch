@@ -564,6 +564,37 @@ jobs:
           make -f Makefile.download_backup clean
           echo "[pass] download_backup_wait_test (TSan)"
 
+      - name: Build and run pfd_switch_cores_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/core_updater
+        run: |
+          set -eu
+          # Regression lane for the Play Feature Delivery 'switch
+          # installed cores' task in tasks/task_core_updater.c, built
+          # with ANDROID defined against stand-ins for the five
+          # play_feature_delivery_* calls.  The switch task learns of
+          # each install's completion and error from the install's
+          # callback rather than by reading the task, which the queue
+          # frees as it retires it; with the threaded queue, a wait
+          # that reads the task moves on before the install is retired
+          # and the next push is refused, skipping cores.  The other
+          # lanes end the switch on a failed install, and cancel the
+          # switch while an install runs.
+          make -f Makefile.pfd_switch clean all
+          test -x pfd_switch_cores_test
+          timeout 600 ./pfd_switch_cores_test
+          echo "[pass] pfd_switch_cores_test"
+          make -f Makefile.pfd_switch clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 600 \
+             ./pfd_switch_cores_test
+          echo "[pass] pfd_switch_cores_test (ASan)"
+          make -f Makefile.pfd_switch clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 600 \
+             ./pfd_switch_cores_test
+          make -f Makefile.pfd_switch clean
+          echo "[pass] pfd_switch_cores_test (TSan)"
+
       - name: Build and run core_backup_io_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/core_backup
