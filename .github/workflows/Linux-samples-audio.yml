@@ -430,6 +430,22 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./qsa_test
           echo "[pass] qsa_test (ASan)"
 
+      - name: Build and run ctr_csnd_test (the 3DS CSND driver against a scripted system tick)
+        shell: bash
+        working-directory: samples/audio/ctr_csnd
+        run: |
+          set -eu
+          # audio/drivers/ctr_csnd_audio.c is built against a stand-in
+          # <3ds.h> whose system tick is the device: buffer_size() and
+          # write_avail() must be in bytes of what write() takes, the
+          # room shrinking by the bytes written and growing by the
+          # bytes played.
+          make clean && make -j$(nproc) all
+          ./ctr_csnd_test
+          make clean && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./ctr_csnd_test
+          echo "[pass] ctr_csnd_test (ASan)"
+
       - name: Build and run live_drivers_test (a live PulseAudio server, a null ALSA PCM)
         shell: bash
         working-directory: samples/audio/live_drivers
