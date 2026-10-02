@@ -7677,77 +7677,46 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    audio_mixer_stop_cb_t stop_cb = audio_mixer_play_stop_cb;
 
    bool looped                   = (params->state == AUDIO_STREAM_STATE_PLAYING_LOOPED);
+   bool use_s16;
    void *buf                     = NULL;
 
-   audio_driver_state_lock();
    /* Ownership of params->buf_owner transfers on this call in every
     * outcome: each failure return releases it. */
    if (params->out_slot)
       *params->out_slot = -1;
+
+   if (     params->stream_type == AUDIO_STREAM_TYPE_NONE
+         || params->state       == AUDIO_STREAM_STATE_NONE
+         || (     params->slot_selection_type == AUDIO_MIXER_SLOT_SELECTION_MANUAL
+               && params->slot_selection_idx  >= AUDIO_MIXER_MAX_SYSTEM_STREAMS))
+   {
+      if (params->buf_owner)
+         params->buf_owner_free(params->buf_owner);
+      return false;
+   }
+
    /* Outside the mixer's init..done window - a mixer load task
     * retiring after audio teardown at shutdown, or any stream pushed
     * during a session whose audio driver failed to initialize -
     * claiming a voice would write into a subsystem whose voice locks
     * audio_mixer_done() already freed. Refuse; ownership is released
-    * as on every other failure path. */
+    * as on every other failure path. The sample format the sound is
+    * built in is taken here too: the audio thread records it. */
+   audio_driver_state_lock();
    if (!(AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_MIXER_INITED))
    {
+      audio_driver_state_unlock();
       if (params->buf_owner)
          params->buf_owner_free(params->buf_owner);
-      audio_driver_state_unlock();
       return false;
    }
-   if (params->stream_type == AUDIO_STREAM_TYPE_NONE)
-   {
-      if (params->buf_owner)
-         params->buf_owner_free(params->buf_owner);
-      audio_driver_state_unlock();
-      return false;
-   }
+   use_s16 = audio_driver_mixer_use_s16(audio_driver_st.stat_core_is_float);
+   audio_driver_state_unlock();
 
-   switch (params->slot_selection_type)
-   {
-      case AUDIO_MIXER_SLOT_SELECTION_MANUAL:
-         free_slot = params->slot_selection_idx;
-
-         /* The unlocked internals below index the array directly, so
-          * the range the public entry points check is checked here. */
-         if (free_slot >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
-         {
-            if (params->buf_owner)
-               params->buf_owner_free(params->buf_owner);
-            audio_driver_state_unlock();
-            return false;
-         }
-
-         /* If we are using a manually specified
-          * slot, must free any existing stream
-          * before assigning the new one. The lock is already
-          * held here, so the unlocked internals are what run. */
-         audio_driver_mixer_stop_stream_locked(free_slot);
-         audio_driver_mixer_remove_stream_locked(free_slot);
-         break;
-      case AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC:
-      default:
-         if (!audio_driver_mixer_get_free_stream_slot(
-                  &free_slot, params->stream_type))
-         {
-            if (params->buf_owner)
-               params->buf_owner_free(params->buf_owner);
-            audio_driver_state_unlock();
-            return false;
-         }
-         break;
-   }
-
-   if (params->state == AUDIO_STREAM_STATE_NONE)
-   {
-      if (params->buf_owner)
-         params->buf_owner_free(params->buf_owner);
-      audio_driver_state_unlock();
-      return false;
-   }
-
+   /* The sound is built without the lock: a WAV is converted and
+    * resampled whole here, and the audio thread mixes on meanwhile.
+    * Everything else it reads - the resampler and the mixer's rate -
+    * is set by audio init, on this thread. */
    if (params->buf_owner)
       /* borrowed: the sound reads straight out of the owner's bytes,
        * and destroy hands them back - no copy is made */
@@ -7755,10 +7724,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    else
    {
       if (!(buf = malloc(params->bufsize)))
-      {
-         audio_driver_state_unlock();
          return false;
-      }
       memcpy(buf, params->buf, params->bufsize);
    }
 
@@ -7768,8 +7734,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
          handle = audio_mixer_load_wav(buf, params->bufsize,
                audio_driver_st.resampler_ident,
                audio_driver_st.resampler_quality,
-               audio_driver_mixer_use_s16(
-                     audio_driver_st.stat_core_is_float));
+               use_s16);
          /* WAV is a special case - input buffer is not
           * free()'d when sound playback is complete (it is
           * converted to a PCM buffer, which is free()'d instead),
@@ -7844,7 +7809,6 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
       }
       else
          free(buf);
-      audio_driver_state_unlock();
       return false;
    }
 
@@ -7861,6 +7825,44 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    if (params->avail)
       audio_mixer_sound_set_avail(handle, params->avail);
 
+   if (params->buf_owner && buf)
+      /* the sound holds the borrowed bytes for its lifetime; destroy
+       * hands the owner back */
+      audio_mixer_sound_set_data_owner(handle,
+            params->buf_owner, params->buf_owner_free);
+
+   /* Claim the slot and start the voice. */
+   audio_driver_state_lock();
+   if (!(AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_MIXER_INITED))
+   {
+      audio_driver_state_unlock();
+      audio_mixer_destroy(handle);
+      return false;
+   }
+
+   switch (params->slot_selection_type)
+   {
+      case AUDIO_MIXER_SLOT_SELECTION_MANUAL:
+         free_slot = params->slot_selection_idx;
+         /* If we are using a manually specified
+          * slot, must free any existing stream
+          * before assigning the new one. The lock is already
+          * held here, so the unlocked internals are what run. */
+         audio_driver_mixer_stop_stream_locked(free_slot);
+         audio_driver_mixer_remove_stream_locked(free_slot);
+         break;
+      case AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC:
+      default:
+         if (!audio_driver_mixer_get_free_stream_slot(
+                  &free_slot, params->stream_type))
+         {
+            audio_driver_state_unlock();
+            audio_mixer_destroy(handle);
+            return false;
+         }
+         break;
+   }
+
    switch (params->state)
    {
       case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:
@@ -7868,7 +7870,7 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
          /* fall-through */
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
       case AUDIO_STREAM_STATE_PLAYING:
-         if (audio_driver_mixer_use_s16(audio_driver_st.stat_core_is_float))
+         if (use_s16)
             voice = audio_mixer_play_s16(handle, looped,
                   GAIN_TO_Q16(params->volume),
                   audio_driver_st.resampler_ident,
@@ -7881,12 +7883,6 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
       default:
          break;
    }
-
-   if (params->buf_owner && buf)
-      /* the sound holds the borrowed bytes for its lifetime; destroy
-       * hands the owner back */
-      audio_mixer_sound_set_data_owner(handle,
-            params->buf_owner, params->buf_owner_free);
 
    AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_MIXER_ACTIVE);
 

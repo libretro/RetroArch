@@ -72,9 +72,16 @@ struct menu_state *menu_state_get_ptr(void) { return &menu_st; }
 struct audio_mixer_sound { void *owned_data; };
 struct audio_mixer_voice { int tag; };
 
+/* Called by every load stub, which is where a sound is built: the test
+ * looks at whether the state lock is held while it is. */
+void (*stub_load_hook)(void) = NULL;
+
 static audio_mixer_sound_t *new_sound_owning(void *data)
 {
-   audio_mixer_sound_t *s = (audio_mixer_sound_t*)calloc(1, sizeof(*s));
+   audio_mixer_sound_t *s;
+   if (stub_load_hook)
+      stub_load_hook();
+   s = (audio_mixer_sound_t*)calloc(1, sizeof(*s));
    if (s)
       s->owned_data = data;
    return s;
