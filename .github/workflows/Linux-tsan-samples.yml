@@ -34,7 +34,10 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 20
         run: |
-          pkgs="build-essential zlib1g-dev libasound2-dev libsdl1.2-dev libsdl2-dev libwayland-dev"
+          # ffmpeg (with libx264 and libx265): formats/h264/rh264_lossless_test
+          # and formats/h265/rh265_lossless_test build their corpora and
+          # their reference decodes with it.
+          pkgs="build-essential zlib1g-dev libasound2-dev libsdl1.2-dev libsdl2-dev libwayland-dev ffmpeg"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
