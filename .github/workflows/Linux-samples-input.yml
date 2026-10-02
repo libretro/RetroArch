@@ -238,6 +238,25 @@ jobs:
           make clean
           echo "[pass] android_stylus_map_test (ASan)"
 
+      - name: Build and run linux_not_joystick_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/linux_not_joystick
+        run: |
+          set -eu
+          # Devices Linux tags as joysticks that are not controllers.
+          # Pins issue #19674: a Microsoft 2.4GHz Transceiver, the
+          # receiver of a wireless keyboard and mouse, took port 1
+          # through its "System Control" node and left the real
+          # controller on port 2. Checks that receiver, the same node
+          # on unknown devices and the listed ids are dropped, and that
+          # real controllers - a pad named "Wireless", a pedal set with
+          # no buttons - are kept.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./linux_not_joystick_test
+          make clean
+          echo "[pass] linux_not_joystick_test (ASan)"
+
       - name: Build and run overlay_textures_test (plain, ASan + UBSan, threaded)
         shell: bash
         working-directory: samples/input/overlay_textures
