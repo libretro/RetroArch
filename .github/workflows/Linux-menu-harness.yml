@@ -163,6 +163,23 @@ jobs:
           ./samples/runloop/content_closing/content_closing_test
           make -C samples/runloop/content_closing clean
 
+      - name: Build and run cloudsync_unload_test
+        shell: bash
+        run: |
+          set -eu
+          # Closing content with Cloud Sync in automatic mode asks for
+          # a sync; it has to start once the content's save RAM is on
+          # disk and no core owns the file, which a close from the
+          # menu reaches a frame or more later.  The real retroarch.c,
+          # a core with save RAM, and task_push_cloud_sync wrapped at
+          # link time to record what the save file held when the sync
+          # was asked for.  No server is contacted.
+          #
+          # Shares the non-Qt build made above.
+          samples/runloop/cloudsync_unload/build.sh
+          ./samples/runloop/cloudsync_unload/cloudsync_unload_test
+          make -C samples/runloop/cloudsync_unload clean
+
       - name: Build and run menu_playlist_nav_test
         shell: bash
         run: |

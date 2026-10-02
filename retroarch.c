@@ -4276,9 +4276,17 @@ bool command_event(enum event_command cmd, void *data)
                content_clear_subsystem();
             }
 #ifdef HAVE_CLOUDSYNC
-            /* Sync on core unload if in automatic mode */
+            /* Sync on core unload if in automatic mode.  With content
+             * running, its save RAM reaches disk, and stops belonging
+             * to a core, only when its deinit finishes, a frame or more
+             * from now; the sync is pushed from there. */
             if (settings->uints.cloud_sync_sync_mode == CLOUD_SYNC_MODE_AUTOMATIC)
-               task_push_cloud_sync();
+            {
+               if (flags & CONTENT_ST_FLAG_IS_INITED)
+                  rarch_st.flags |= RARCH_FLAGS_CLOUD_SYNC_ON_DEINIT;
+               else
+                  task_push_cloud_sync();
+            }
 #endif
          }
 
@@ -9362,6 +9370,18 @@ void retroarch_main_deinit_finish(void)
    path_deinit_savefile();
 
    runloop_is_inited_clear();
+
+#ifdef HAVE_CLOUDSYNC
+   /* The save RAM is on disk and no core owns it.  On the way out
+    * the task queue has already been drained, so a sync is not
+    * started there. */
+   if (rarch_st.flags & RARCH_FLAGS_CLOUD_SYNC_ON_DEINIT)
+   {
+      rarch_st.flags &= ~RARCH_FLAGS_CLOUD_SYNC_ON_DEINIT;
+      if (!(runloop_state_get_ptr()->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
+         task_push_cloud_sync();
+   }
+#endif
 }
 
 bool retroarch_ctl(enum rarch_ctl_state state, void *data)
