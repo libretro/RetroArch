@@ -56,7 +56,7 @@ extern struct wl_proxy *WEBOS_wl_proxy_marshal_constructor(
    const struct wl_interface *interface,
    ...);
 
-extern struct wl_proxy *WRAPPER__wl_proxy_marshal_constructor_versioned(
+extern struct wl_proxy *WRAPPER_wl_proxy_marshal_constructor_versioned(
    struct wl_proxy *proxy,
    uint32_t opcode,
    const struct wl_interface *interface,
