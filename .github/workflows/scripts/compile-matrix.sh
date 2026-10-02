@@ -723,9 +723,9 @@ check "emscripten: rwebcam"    "$HOSTOFF -Itools/platform_stubs/emscripten -D__E
 # only griffin includes and which nothing defines HAVE_S3 for, and the
 # Lakka wifi driver, which needs HAVE_LAKKA. Both had a mixed
 # declaration. The C89 build cannot see either, because neither is in
-# its object list.
+# its object list, so S3 is held to the full C89 lane here.
 NETDEFS="-DHAVE_NETWORKING -DHAVE_CONFIGFILE -DHAVE_OVERLAY -DHAVE_CHEATS"
-check "cloudsync: s3"          "$NETDEFS -DHAVE_CLOUDSYNC -DHAVE_S3 $CDECL" network/cloud_sync/s3.c
+check "cloudsync: s3, C89"     "$NETDEFS -DHAVE_CLOUDSYNC -DHAVE_S3 $C89" network/cloud_sync/s3.c
 check "lakka: connmanctl"      "$NETDEFS -DHAVE_LAKKA -DHAVE_WIFI $CDECL" network/drivers_wifi/connmanctl.c
 
 # The salamander launchers link a hand-picked subset of libretro-common

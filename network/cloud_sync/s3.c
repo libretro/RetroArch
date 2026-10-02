@@ -485,7 +485,10 @@ static uint8_t* s3_hmac_sha256_bin(const uint8_t *key, size_t key_len, const cha
       /* Convert hex to binary */
       for (i = 0; i < 32; i++)
       {
-         char hex_byte[3] = {temp_hash[i*2], temp_hash[i*2+1], 0};
+         char hex_byte[3];
+         hex_byte[0] = temp_hash[i*2];
+         hex_byte[1] = temp_hash[i*2+1];
+         hex_byte[2] = '\0';
          key_hash[i] = (uint8_t)strtol(hex_byte, NULL, 16);
       }
       key = key_hash;
@@ -530,7 +533,10 @@ static uint8_t* s3_hmac_sha256_bin(const uint8_t *key, size_t key_len, const cha
 
    for (i = 0; i < 32; i++)
    {
-      char hex_byte[3] = {inner_hash_hex[i*2], inner_hash_hex[i*2+1], 0};
+      char hex_byte[3];
+      hex_byte[0] = inner_hash_hex[i*2];
+      hex_byte[1] = inner_hash_hex[i*2+1];
+      hex_byte[2] = '\0';
       inner_hash_bin[i] = (uint8_t)strtol(hex_byte, NULL, 16);
    }
 
@@ -556,7 +562,10 @@ static uint8_t* s3_hmac_sha256_bin(const uint8_t *key, size_t key_len, const cha
    /* Convert final result to binary */
    for (i = 0; i < 32; i++)
    {
-      char hex_byte[3] = {final_hash_hex[i*2], final_hash_hex[i*2+1], 0};
+      char hex_byte[3];
+      hex_byte[0] = final_hash_hex[i*2];
+      hex_byte[1] = final_hash_hex[i*2+1];
+      hex_byte[2] = '\0';
       output[i] = (uint8_t)strtol(hex_byte, NULL, 16);
    }
 
