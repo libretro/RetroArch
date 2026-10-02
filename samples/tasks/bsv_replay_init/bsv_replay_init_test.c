@@ -83,6 +83,13 @@
  *             pauses once, flags clear.
  *  stray      MOVIE_END set with no movie active (any future init
  *             path that forgets to clear it): movie_stop() clears it.
+ *  checkpoint damaged uncompressed checkpoints fed straight to
+ *             bsv_movie_load_checkpoint(), whose read lands in
+ *             cur_save itself: one cut short, one whose stored length
+ *             exceeds its state size, one whose decoded length does,
+ *             one skipped with a larger declared size.  Each must fail or skip without freeing,
+ *             overrunning or over-reporting cur_save; run under the
+ *             sweep's ASan build to catch the memory errors.
  */
 
 #include <stdio.h>
@@ -93,7 +100,9 @@
 
 #include <boolean.h>
 #include <libretro.h>
+#include <retro_endianness.h>
 #include <streams/file_stream.h>
+#include <streams/interface_stream.h>
 #include <file/file_path.h>
 #include <queues/task_queue.h>
 
@@ -408,6 +417,92 @@ static void lane_stray(void)
    lane_done("stray", NULL);
 }
 
+void bsv_movie_free(bsv_movie_t *handle);   /* tasks/task_movie.c */
+
+/* One checkpoint body: the three size words, then @payload_len bytes. */
+static bsv_movie_t *checkpoint_handle(uint8_t *buf, uint32_t size,
+      uint32_t encoded_size, uint32_t stored_size, size_t payload_len)
+{
+   bsv_movie_t *h = (bsv_movie_t*)calloc(1, sizeof(*h));
+   uint32_t words[3];
+   size_t i;
+   words[0] = swap_if_big32(size);
+   words[1] = swap_if_big32(encoded_size);
+   words[2] = swap_if_big32(stored_size);
+   memcpy(buf, words, sizeof(words));
+   for (i = 0; i < payload_len; i++)
+      buf[sizeof(words) + i] = (uint8_t)i;
+   h->file = intfstream_open_memory(buf, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE, sizeof(words) + payload_len);
+   return h;
+}
+
+static void lane_checkpoint(void)
+{
+   static uint8_t buf[12 + 4096];
+   bsv_movie_t *h;
+   bool ret;
+
+   reset_counters();
+
+   /* Cut short: 64 bytes declared, 10 present.  The read lands in
+    * cur_save, which must still be the handle's to free afterwards. */
+   input_st.bsv_movie_state.flags = 0;
+   h   = checkpoint_handle(buf, 64, 64, 64, 10);
+   ret = bsv_movie_load_checkpoint(h, REPLAY_CHECKPOINT2_COMPRESSION_NONE,
+         REPLAY_CHECKPOINT2_ENCODING_RAW, REPLAY_CPBEHAVIOR_DESERIALIZE);
+   CHECK(!ret, "short checkpoint loaded");
+   CHECK(input_st.bsv_movie_state.flags & BSV_FLAG_MOVIE_END,
+         "short checkpoint did not end the movie");
+   CHECK(!h->checkpoint_ready, "short checkpoint marked ready");
+   bsv_movie_free(h);
+
+   /* A 16-byte state stored as 4096 bytes: there is no room for it. */
+   input_st.bsv_movie_state.flags = 0;
+   h   = checkpoint_handle(buf, 16, 16, 4096, 4096);
+   ret = bsv_movie_load_checkpoint(h, REPLAY_CHECKPOINT2_COMPRESSION_NONE,
+         REPLAY_CHECKPOINT2_ENCODING_RAW, REPLAY_CPBEHAVIOR_DESERIALIZE);
+   CHECK(!ret, "oversized checkpoint loaded");
+   CHECK(!h->checkpoint_ready, "oversized checkpoint marked ready");
+   bsv_movie_free(h);
+
+   /* Stored at its state's size, but claiming to decode to 4096. */
+   input_st.bsv_movie_state.flags = 0;
+   h   = checkpoint_handle(buf, 16, 4096, 16, 16);
+   ret = bsv_movie_load_checkpoint(h, REPLAY_CHECKPOINT2_COMPRESSION_NONE,
+         REPLAY_CHECKPOINT2_ENCODING_RAW, REPLAY_CPBEHAVIOR_DESERIALIZE);
+   CHECK(!ret, "checkpoint decoding past its state loaded");
+   CHECK(h->cur_save_size <= 16, "cur_save_size %u for a 16-byte buffer",
+         (unsigned)h->cur_save_size);
+   bsv_movie_free(h);
+
+   /* Skipping a checkpoint allocates nothing, so the 16-byte buffer
+    * must not come out claiming the skipped one's 4096. */
+   input_st.bsv_movie_state.flags = 0;
+   h   = checkpoint_handle(buf, 4096, 4096, 4, 4);
+   h->cur_save      = (uint8_t*)calloc(16, 1);
+   h->cur_save_size = 16;
+   bsv_movie_load_checkpoint(h, REPLAY_CHECKPOINT2_COMPRESSION_NONE,
+         REPLAY_CHECKPOINT2_ENCODING_RAW, REPLAY_CPBEHAVIOR_SKIP);
+   CHECK(h->cur_save_size <= 16, "cur_save_size %u for a 16-byte buffer",
+         (unsigned)h->cur_save_size);
+   bsv_movie_free(h);
+
+   /* And an intact one still loads, in place. */
+   input_st.bsv_movie_state.flags = 0;
+   h   = checkpoint_handle(buf, 64, 64, 64, 64);
+   ret = bsv_movie_load_checkpoint(h, REPLAY_CHECKPOINT2_COMPRESSION_NONE,
+         REPLAY_CHECKPOINT2_ENCODING_RAW, REPLAY_CPBEHAVIOR_DESERIALIZE);
+   CHECK(ret, "intact checkpoint failed to load");
+   CHECK(h->checkpoint_ready, "intact checkpoint not ready");
+   CHECK(h->cur_save && h->cur_save_size == 64
+         && !memcmp(h->cur_save, buf + 12, 64), "intact checkpoint contents");
+   bsv_movie_free(h);
+
+   input_st.bsv_movie_state.flags = 0;
+   lane_done("checkpoint", NULL);
+}
+
 int main(int argc, char **argv)
 {
    const char *path = "bsv_replay_init_test.replay";
@@ -422,6 +517,7 @@ int main(int argc, char **argv)
    lane_truncated(path);
    lane_empty(path);
    lane_stray();
+   lane_checkpoint();
 
    filestream_delete(path);
    task_queue_deinit();

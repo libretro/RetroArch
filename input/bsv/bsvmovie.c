@@ -574,6 +574,18 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
       handle->cur_save_valid = false;
    }
 
+   /* Zero-copy below reads straight into cur_save, so a damaged file
+    * must not say it holds more than cur_save can take. */
+   if (     compression == REPLAY_CHECKPOINT2_COMPRESSION_NONE
+         && encoding == REPLAY_CHECKPOINT2_ENCODING_RAW
+         && compressed_encoded_size > handle->cur_save_size)
+   {
+      RARCH_ERR("[Replay] Checkpoint larger than its state, terminating movie\n");
+      input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+      ret = false;
+      goto exit;
+   }
+
    if (  compression == REPLAY_CHECKPOINT2_COMPRESSION_NONE
          && encoding == REPLAY_CHECKPOINT2_ENCODING_RAW)
       compressed_data = handle->cur_save;
@@ -636,6 +648,13 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
    switch (encoding)
    {
       case REPLAY_CHECKPOINT2_ENCODING_RAW:
+         if (encoded_size > handle->cur_save_size)
+         {
+            RARCH_ERR("[Replay] Checkpoint larger than its state, terminating movie\n");
+            input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+            ret = false;
+            goto exit;
+         }
          size = encoded_size;
          /* If decompression wasn't zerocopy, need to copy here;
             otherwise decoding is also free */
@@ -663,12 +682,17 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
       goto exit;
    handle->checkpoint_ready = true;
  exit:
-   handle->cur_save_size = size;
+   /* Never above what the buffer holds: a skipped checkpoint
+    * allocates nothing. */
+   if (size <= handle->cur_save_size)
+      handle->cur_save_size = size;
    handle->last_save_size = handle->cur_save_size;
 
-   if (compressed_data)
+   /* On the zero-copy path these alias cur_save, which the handle
+    * still owns. */
+   if (compressed_data && compressed_data != handle->cur_save)
       free(compressed_data);
-   if (encoded_data)
+   if (encoded_data && encoded_data != handle->cur_save)
       free(encoded_data);
    return ret;
 }
