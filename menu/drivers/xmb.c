@@ -2154,7 +2154,12 @@ static void xmb_set_thumbnail_content(void *data, const char *s)
       menu_entry_t entry;
       menu_list_t *menu_list     = menu_st->entries.list;
       file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_list, 0);
-      xmb_node_t *node           = (xmb_node_t*)selection_buf->list[selection].userdata;
+      /* selection_ptr can exceed the list size when the list is
+       * rebuilt before the navigation pointer is re-clamped
+       * (cf. #18797). */
+      xmb_node_t *node           = (selection < selection_buf->size)
+         ? (xmb_node_t*)selection_buf->list[selection].userdata
+         : NULL;
 
       if (node)
       {
