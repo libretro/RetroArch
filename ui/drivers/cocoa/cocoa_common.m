@@ -53,6 +53,7 @@
 #endif
 
 #include "../../configuration.h"
+#include "../../gfx/video_driver.h"
 #include "../../content.h"
 #include "../../core_info.h"
 #include "../../defaults.h"
@@ -1299,29 +1300,27 @@ float cocoa_screen_get_native_scale(void)
  * still need a registered function.
  * --------------------------------------------------------------------- */
 
-float cocoa_get_refresh_rate(void)
-{
 #if TARGET_OS_OSX
+/* The refresh rate of one display's current mode, or 0 when it does not
+ * say - which most built-in LCDs do not. */
+static float cocoa_display_mode_refresh_rate(CGDirectDisplayID id)
+{
 #ifdef RARCH_HAS_CGDISPLAYMODE_API
    /* macOS 10.6+: CGDisplayMode API. */
-   CGDirectDisplayID main_id = CGMainDisplayID();
-   CGDisplayModeRef  mode    = CGDisplayCopyDisplayMode(main_id);
+   CGDisplayModeRef  mode    = CGDisplayCopyDisplayMode(id);
    float             rate    = 0.0f;
    if (mode)
    {
       rate = (float)CGDisplayModeGetRefreshRate(mode);
       CFRelease(mode);
    }
-   /* CGDisplayModeGetRefreshRate returns 0 on most built-in LCDs;
-    * hand the caller a sane fallback instead of 0 Hz. */
-   return (rate > 0.0f) ? rate : 60.0f;
+   return rate;
 #else
    /* macOS 10.5 Leopard: CGDisplayCopyDisplayMode doesn't exist.
     * CGDisplayCurrentMode returns a borrowed CFDictionaryRef
     * (do NOT CFRelease) carrying kCGDisplayRefreshRate.  Deprecated
     * in 10.6 but the only option on the 10.5 SDK. */
-   CGDirectDisplayID main_id = CGMainDisplayID();
-   CFDictionaryRef   mode    = CGDisplayCurrentMode(main_id);
+   CFDictionaryRef   mode    = CGDisplayCurrentMode(id);
    double            rate    = 0.0;
    if (mode)
    {
@@ -1330,8 +1329,18 @@ float cocoa_get_refresh_rate(void)
       if (n)
          CFNumberGetValue(n, kCFNumberDoubleType, &rate);
    }
-   return (rate > 0.0) ? (float)rate : 60.0f;
+   return (rate > 0.0) ? (float)rate : 0.0f;
 #endif
+}
+#endif
+
+float cocoa_get_refresh_rate(void)
+{
+#if TARGET_OS_OSX
+   float rate = cocoa_display_mode_refresh_rate(CGMainDisplayID());
+   /* CGDisplayModeGetRefreshRate returns 0 on most built-in LCDs;
+    * hand the caller a sane fallback instead of 0 Hz. */
+   return (rate > 0.0f) ? rate : 60.0f;
 #else /* iOS / tvOS */
    /* Prefer the panel's own capability over the CADisplayLink's
     * preferred rate.
@@ -1391,6 +1400,97 @@ float cocoa_get_refresh_rate(void)
       return [UIScreen mainScreen].maximumFramesPerSecond;
 #endif
    return 60.0f;
+#endif
+}
+
+/* The refresh rate of the screen the RetroArch window is on, which on a
+ * Mac with several displays, or an iPad driving an external one, is not
+ * necessarily the main screen; 0 when there is no window yet or the
+ * screen does not say. The view is read without +get, which would make
+ * one. */
+float cocoa_get_window_refresh_rate(void)
+{
+   CocoaView *view = (BRIDGE CocoaView*)nsview_get_ptr();
+#if TARGET_OS_OSX
+   NSWindow *window = view ? [view window] : nil;
+   NSScreen *screen = window ? [window screen] : nil;
+   NSNumber *number;
+   float     rate   = 0.0f;
+
+   if (!screen)
+      return 0.0f;
+   number = [[screen deviceDescription] objectForKey:@"NSScreenNumber"];
+   if (number)
+      rate = cocoa_display_mode_refresh_rate(
+            (CGDirectDisplayID)[number unsignedIntValue]);
+   if (rate > 0.0f)
+      return rate;
+   /* A built-in panel, whose mode carries no rate: the screen's own
+    * figure, which is its current rate on a fixed panel and its top
+    * rate on a ProMotion one */
+#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120000
+   if (apple_runtime_available(APPLE_RUNTIME_VER(12, 0, 0), 0, 0))
+   {
+      NSInteger max_fps = [screen maximumFramesPerSecond];
+      if (max_fps > 0)
+         return (float)max_fps;
+   }
+#endif
+   return 0.0f;
+#else /* iOS / tvOS */
+   UIScreen *screen = (view && view.view.window) ? view.view.window.screen : nil;
+
+   if (!screen)
+      return 0.0f;
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100300 || __TV_OS_VERSION_MAX_ALLOWED >= 100200
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 3, 0), APPLE_RUNTIME_VER(10, 2, 0)))
+   {
+      NSInteger max_fps = [screen maximumFramesPerSecond];
+      if (max_fps > 0)
+         return (float)max_fps;
+   }
+#endif
+   return 0.0f;
+#endif
+}
+
+/* Tells the frontend when the window may be on another screen, or its
+ * screen has changed mode, so the next reading of its refresh rate is
+ * taken afresh (see video_driver_window_output_changed()). Posted on
+ * the main thread, which is the one that reads it. */
+@interface RAWindowOutputObserver : NSObject
+- (void)outputChanged:(NSNotification *)notification;
+@end
+
+@implementation RAWindowOutputObserver
+- (void)outputChanged:(NSNotification *)notification
+{
+   video_driver_window_output_changed();
+}
+@end
+
+void cocoa_watch_window_output(void)
+{
+   /* Process lifetime: never removed, so never released */
+   static RAWindowOutputObserver *observer = nil;
+   NSNotificationCenter *center;
+
+   if (observer)
+      return;
+   observer = [[RAWindowOutputObserver alloc] init];
+   center   = [NSNotificationCenter defaultCenter];
+#if TARGET_OS_OSX
+   [center addObserver:observer selector:@selector(outputChanged:)
+                  name:NSWindowDidChangeScreenNotification object:nil];
+   [center addObserver:observer selector:@selector(outputChanged:)
+                  name:NSApplicationDidChangeScreenParametersNotification object:nil];
+#else
+   [center addObserver:observer selector:@selector(outputChanged:)
+                  name:UIScreenModeDidChangeNotification object:nil];
+   [center addObserver:observer selector:@selector(outputChanged:)
+                  name:UIScreenDidConnectNotification object:nil];
+   [center addObserver:observer selector:@selector(outputChanged:)
+                  name:UIScreenDidDisconnectNotification object:nil];
 #endif
 }
 

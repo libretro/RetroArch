@@ -619,6 +619,9 @@ static void *apple_display_server_init(void)
    if (!apple)
       return NULL;
 
+   /* Re-read the window's screen rate when the window or screen changes */
+   cocoa_watch_window_output();
+
 #if TARGET_OS_OSX && defined(RARCH_HAS_CGDISPLAYMODE_API)
    /* Store original display mode for restoration */
    apple->display_id = CGMainDisplayID();
@@ -704,6 +707,11 @@ static void apple_display_server_destroy(void *data)
 static float apple_display_server_get_refresh_rate(void *data)
 {
    return cocoa_get_refresh_rate();
+}
+
+static float apple_display_server_get_window_refresh_rate(void *data)
+{
+   return cocoa_get_window_refresh_rate();
 }
 
 static void apple_display_server_get_video_output_size(void *data,
@@ -1483,5 +1491,6 @@ const video_display_server_t dispserv_apple = {
    NULL, /* get_edid */
 #endif
    apple_display_server_idle_wait,
-   "apple"
+   "apple",
+   apple_display_server_get_window_refresh_rate
 };

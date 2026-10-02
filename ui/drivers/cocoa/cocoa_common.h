@@ -188,6 +188,12 @@ bool cocoa_get_metrics(
  * funnel here so there is only one implementation per platform. */
 float cocoa_get_refresh_rate(void);
 
+/* The refresh rate of the screen the window is on, or 0 when unknown,
+ * for the display server's get_window_refresh_rate; and the observer
+ * that has the frontend read it again when that screen changes. */
+float cocoa_get_window_refresh_rate(void);
+void  cocoa_watch_window_output(void);
+
 void  cocoa_get_video_output_size(unsigned *dims,
       char *desc, size_t desc_len);
 
