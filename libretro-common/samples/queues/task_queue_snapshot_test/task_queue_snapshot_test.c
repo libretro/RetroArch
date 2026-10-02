@@ -94,13 +94,16 @@ static void test_suppressed_completion(bool threaded)
          completion_updates = 0;
          task_queue_push_progress(&task);
          assert(completion_updates == 0);
+         /* Finished, with or without anything attached: the frontend
+          * owns that link and is the one to read it, so the empty
+          * retirement push goes out either way */
          task.flags |= RETRO_TASK_FLG_FINISHED;
          task.frontend_userdata = NULL;
          task_queue_push_progress(&task);
-         assert(completion_updates == 0);
+         assert(completion_updates == 1);
          task.frontend_userdata = &task;
          task_queue_push_progress(&task);
-         assert(completion_updates == 1);
+         assert(completion_updates == 2);
       }
    task_queue_deinit();
 }

@@ -219,9 +219,12 @@ static void task_queue_push_progress(retro_task_t *task)
 #endif
 
    /* Retirement must reach an attached frontend even when text is
-    * suppressed or a replacement title allocation failed. */
-   if (impl_current->msg_push &&
-         (have_msg || (finished && task->frontend_userdata)))
+    * suppressed or a replacement title allocation failed. Whether one
+    * is attached is the frontend's to read: frontend_userdata is its
+    * link, cleared on whatever thread it frees its side on, so a
+    * finished task always pushes and the frontend ignores an empty
+    * message with nothing attached. */
+   if (impl_current->msg_push && (have_msg || finished))
       impl_current->msg_push(task, buf, 1, 60, flush);
 }
 

@@ -416,7 +416,9 @@ static void gfx_widgets_msg_queue_push_state(
       {
          const char *msg_title                  = msg;
 
-         if (task && !snapshot->title)
+         /* A task with no title, or a retirement push with no text
+          * for a task nothing was showing, spawns nothing */
+         if (task && (!snapshot->title || !len))
             return;
 
          msg_widget                             = (disp_widget_msg_t*)malloc(sizeof(*msg_widget));
