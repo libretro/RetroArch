@@ -655,6 +655,11 @@ static void retro_task_threaded_run_main(unsigned due);
 static unsigned retro_task_threaded_due_main(retro_task_t *task,
       retro_time_t *now);
 
+/* The running tasks gather() reports on after dropping running_lock;
+ * main thread only, grown as needed and freed at deinit. */
+static retro_task_t **task_report    = NULL;
+static unsigned       task_report_cap = 0;
+
 static void retro_task_threaded_gather(void)
 {
    retro_task_t *task = NULL;
@@ -667,17 +672,42 @@ static void retro_task_threaded_gather(void)
       return;
 
    {
-      /* One pass under the lock: publish progress, and count the
-       * main-thread tasks that are due. */
-      retro_time_t now = 0;
-      unsigned     due = 0;
+      /* One pass under the lock counts the main-thread tasks that are
+       * due and takes down which tasks to report on; the reports -
+       * formatting, and the push into the frontend's message path -
+       * are made after it, so a worker picking up or settling a task
+       * never waits on them. A task in the running list is freed only
+       * by a retire on this thread, so the pointers stay good until
+       * the retire below. The list they are taken down in grows to the
+       * number running, before the lock; a task pushed in between
+       * waits for the next pass. */
+      retro_time_t now     = 0;
+      unsigned     due     = 0;
+      unsigned     reports = 0;
+      unsigned     want    = (unsigned)retro_atomic_load_acquire_int(
+            &tasks_running_count) + 8;
+      unsigned     i;
+      if (want > task_report_cap)
+      {
+         retro_task_t **grown = (retro_task_t**)realloc(task_report,
+               want * sizeof(*grown));
+         if (grown)
+         {
+            task_report     = grown;
+            task_report_cap = want;
+         }
+      }
       slock_lock(running_lock);
       for (task = tasks_running.front; task; task = task->next)
       {
-         task_queue_push_progress(task);
+         if (reports < task_report_cap)
+            task_report[reports++] = task;
          due += retro_task_threaded_due_main(task, &now);
       }
       slock_unlock(running_lock);
+
+      for (i = 0; i < reports; i++)
+         task_queue_push_progress(task_report[i]);
 
       if (due)
          retro_task_threaded_run_main(due);
@@ -1310,6 +1340,9 @@ static void retro_task_threaded_deinit(void)
                   TASK_WORKER_IN_HANDLER, TASK_WORKER_ORPHANED))
          {
             retro_task_threaded_orphan_worker(task);
+            free(task_report);
+            task_report     = NULL;
+            task_report_cap = 0;
             return;
          }
       }
@@ -1327,6 +1360,10 @@ static void retro_task_threaded_deinit(void)
 
    worker_thread   = NULL;
    worker_self     = NULL;
+
+   free(task_report);
+   task_report     = NULL;
+   task_report_cap = 0;
 }
 
 static struct retro_task_impl impl_threaded = {
