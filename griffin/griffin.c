@@ -1612,6 +1612,8 @@ MENU
 #include "../menu/cbs/menu_cbs_cancel.c"
 #include "../menu/cbs/menu_cbs_select.c"
 #include "../menu/cbs/menu_cbs_start.c"
+#include "../menu/cbs/menu_cbs_drag.c"
+#include "../menu/cbs/menu_cbs_drop.c"
 #include "../menu/cbs/menu_cbs_info.c"
 #include "../menu/cbs/menu_cbs_left.c"
 #include "../menu/cbs/menu_cbs_right.c"

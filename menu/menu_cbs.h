@@ -340,6 +340,12 @@ int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
 int menu_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
+int menu_cbs_init_bind_drag(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx);
+
+int menu_cbs_init_bind_drop(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx);
+
 int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
       const char *path,
       const char *label, size_t lbl_len,

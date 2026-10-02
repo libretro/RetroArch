@@ -1033,6 +1033,8 @@ ifeq ($(HAVE_MENU_COMMON), 1)
           menu/cbs/menu_cbs_cancel.o \
           menu/cbs/menu_cbs_select.o \
           menu/cbs/menu_cbs_start.o \
+          menu/cbs/menu_cbs_drag.o \
+          menu/cbs/menu_cbs_drop.o \
           menu/cbs/menu_cbs_info.o \
           menu/cbs/menu_cbs_left.o \
           menu/cbs/menu_cbs_right.o \

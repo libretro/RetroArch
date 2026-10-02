@@ -2767,6 +2767,14 @@ static void menu_cbs_init(
    menu_cbs_init_bind_start(cbs, path, label, type, idx);
 
    /* It will try to find a corresponding callback function inside
+    * menu_cbs_drag.c, then map this callback to the entry. */
+   menu_cbs_init_bind_drag(cbs, path, label, type, idx);
+
+   /* It will try to find a corresponding callback function inside
+    * menu_cbs_drop.c, then map this callback to the entry. */
+   menu_cbs_init_bind_drop(cbs, path, label, type, idx);
+
+   /* It will try to find a corresponding callback function inside
     * menu_cbs_select.c, then map this callback to the entry. */
    menu_cbs_init_bind_select(cbs, path, label, type, idx);
 
@@ -4336,6 +4344,45 @@ int menu_entry_action(menu_entry_t *entry, size_t i, enum menu_action action)
    return -1;
 }
 
+static struct item_file *menu_entry_drag_drop_item(size_t i,
+      const char *payload)
+{
+   menu_list_t *menu_list     = menu_driver_state.entries.list;
+   file_list_t *selection_buf = menu_list
+         ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
+
+   if (     !selection_buf
+         || i >= selection_buf->size
+         || string_is_empty(payload)
+         || !selection_buf->list[i].actiondata)
+      return NULL;
+   return &selection_buf->list[i];
+}
+
+int menu_entry_drag(size_t i, const char *payload)
+{
+   struct item_file *item    = menu_entry_drag_drop_item(i, payload);
+   menu_file_list_cbs_t *cbs = item
+         ? (menu_file_list_cbs_t*)item->actiondata : NULL;
+
+   if (!cbs || !cbs->action_drag)
+      return -1;
+   return cbs->action_drag(item->path, item->label, item->type,
+         i, item->entry_idx, payload);
+}
+
+int menu_entry_drop(size_t i, const char *payload)
+{
+   struct item_file *item    = menu_entry_drag_drop_item(i, payload);
+   menu_file_list_cbs_t *cbs = item
+         ? (menu_file_list_cbs_t*)item->actiondata : NULL;
+
+   if (!cbs || !cbs->action_drop)
+      return -1;
+   return cbs->action_drop(item->path, item->label, item->type,
+         i, item->entry_idx, payload);
+}
+
 bool menu_entries_append(
       file_list_t *list,
       const char *path,
@@ -4421,6 +4468,8 @@ bool menu_entries_append(
    cbs->action_cancel              = NULL;
    cbs->action_scan                = NULL;
    cbs->action_start               = NULL;
+   cbs->action_drag                = NULL;
+   cbs->action_drop                = NULL;
    cbs->action_info                = NULL;
    cbs->action_left                = NULL;
    cbs->action_right               = NULL;
@@ -4509,6 +4558,8 @@ void menu_entries_prepend(file_list_t *list,
    cbs->action_cancel              = NULL;
    cbs->action_scan                = NULL;
    cbs->action_start               = NULL;
+   cbs->action_drag                = NULL;
+   cbs->action_drop                = NULL;
    cbs->action_info                = NULL;
    cbs->action_left                = NULL;
    cbs->action_right               = NULL;
