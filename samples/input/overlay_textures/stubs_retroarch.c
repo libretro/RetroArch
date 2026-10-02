@@ -126,6 +126,8 @@ bool stub_thread_wins_race;
 
 static video_thread_async_load_t *stub_in_head,  *stub_in_tail;
 static video_thread_async_load_t *stub_out_head, *stub_out_tail;
+/* The node's list link, which the wrapper keeps first in the node. */
+#define STUB_NEXT(n) (*(video_thread_async_load_t**)&(n)->link.next)
 
 bool video_driver_thread_wrapper_active(void) { return stub_thread_active; }
 
@@ -136,7 +138,7 @@ unsigned stub_video_thread_run(void)
    stub_in_head = stub_in_tail  = NULL;
    while (n)
    {
-      video_thread_async_load_t *next = n->next;
+      video_thread_async_load_t *next = STUB_NEXT(n);
       /* This is where the video thread reads the poster's pixels. */
       if (n->kind == VIDEO_THREAD_ASYNC_LOAD)
       {
@@ -146,9 +148,9 @@ unsigned stub_video_thread_run(void)
       }
       else if (!video_driver_texture_update(n->handle, n->img))
          n->handle    = 0;
-      n->next = NULL;
+      STUB_NEXT(n) = NULL;
       if (stub_out_tail)
-         stub_out_tail->next = n;
+         STUB_NEXT(stub_out_tail) = n;
       else
          stub_out_head       = n;
       stub_out_tail          = n;
@@ -162,10 +164,10 @@ bool video_thread_async_post(video_thread_async_load_t *n)
 {
    if (!stub_thread_active || !n)
       return false;
-   n->next         = NULL;
+   STUB_NEXT(n)    = NULL;
    n->caller_owned = 1;
    if (stub_in_tail)
-      stub_in_tail->next = n;
+      STUB_NEXT(stub_in_tail) = n;
    else
       stub_in_head       = n;
    stub_in_tail          = n;
@@ -180,7 +182,7 @@ void video_thread_async_poll(void)
    stub_out_head = stub_out_tail = NULL;
    while (n)
    {
-      video_thread_async_load_t *next = n->next;
+      video_thread_async_load_t *next = STUB_NEXT(n);
       if (n->done)
          n->done(n->user, n->handle);
       n = next;

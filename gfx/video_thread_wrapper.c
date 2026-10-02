@@ -195,6 +195,48 @@ static void *video_thread_init_never_call(const video_info_t *video,
    return NULL;
 }
 
+/* The async lists. On the volatile atomic backend, which has no pointer
+ * atomics, a push and a take are made under 'lock' instead. */
+#define VIDEO_THREAD_ASYNC_NEXT(n) \
+   ((video_thread_async_load_t*)(n)->link.next)
+
+static void video_thread_async_push(thread_video_t *thr, mpsc_stack_t *list,
+      video_thread_async_load_t *n)
+{
+#ifndef RETRO_ATOMIC_HAS_PTR
+   slock_lock(thr->lock);
+#endif
+   mpsc_stack_push(list, &n->link);
+#ifndef RETRO_ATOMIC_HAS_PTR
+   slock_unlock(thr->lock);
+#endif
+}
+
+/* The whole list, oldest first. */
+static video_thread_async_load_t *video_thread_async_take(
+      thread_video_t *thr, mpsc_stack_t *list)
+{
+   mpsc_stack_node_t *l;
+   mpsc_stack_node_t *oldest = NULL;
+   if (mpsc_stack_empty(list))
+      return NULL;
+#ifndef RETRO_ATOMIC_HAS_PTR
+   slock_lock(thr->lock);
+#endif
+   l = mpsc_stack_drain(list);
+#ifndef RETRO_ATOMIC_HAS_PTR
+   slock_unlock(thr->lock);
+#endif
+   while (l)
+   {
+      mpsc_stack_node_t *next = l->next;
+      l->next = oldest;
+      oldest  = l;
+      l       = next;
+   }
+   return (video_thread_async_load_t*)oldest;
+}
+
 /* thread -> user */
 static void video_thread_reply(thread_video_t *thr, const thread_packet_t *pkt)
 {
@@ -694,10 +736,14 @@ static bool video_thread_handle_packet(
           * texture goes back to the driver here. An update names the
           * poster's own texture and is left alone. */
          {
-            video_thread_async_load_t *n;
-            slock_lock(thr->lock);
-            for (n = thr->async.out_head; n; n = n->next)
+            /* Taken off the list and put back in the same order, for
+             * the main thread's delivery; this thread is out's only
+             * producer. */
+            video_thread_async_load_t *n = video_thread_async_take(thr,
+                  &thr->async.out);
+            while (n)
             {
+               video_thread_async_load_t *next = VIDEO_THREAD_ASYNC_NEXT(n);
                if (     n->kind != VIDEO_THREAD_ASYNC_UPDATE
                      && n->handle
                      && thr->poke && thr->poke->unload_texture
@@ -705,8 +751,9 @@ static bool video_thread_handle_packet(
                   thr->poke->unload_texture(thr->driver_data, false,
                         n->handle);
                n->handle = 0;
+               video_thread_async_push(thr, &thr->async.out, n);
+               n = next;
             }
-            slock_unlock(thr->lock);
          }
          /* The hardware ring's fences belong to the device. */
          video_thread_hw_free(thr);
@@ -1210,20 +1257,17 @@ static void video_thread_async_run(thread_video_t *thr)
    void                         *driver_data;
 
    /* Nearly every pass has nothing posted */
-   if (!retro_atomic_load_acquire_int(&thr->async.in_ready))
+   if (!(n = video_thread_async_take(thr, &thr->async.in)))
       return;
 
    slock_lock(thr->lock);
-   n                 = thr->async.in_head;
-   thr->async.in_head = thr->async.in_tail = NULL;
-   retro_atomic_store_release_int(&thr->async.in_ready, 0);
    poke              = thr->poke;
    driver_data       = thr->driver_data;
    slock_unlock(thr->lock);
 
    while (n)
    {
-      video_thread_async_load_t *next = n->next;
+      video_thread_async_load_t *next = VIDEO_THREAD_ASYNC_NEXT(n);
       if (n->kind == VIDEO_THREAD_ASYNC_UPDATE)
       {
          /* The handle is the poster's texture; it comes back as the
@@ -1253,16 +1297,8 @@ static void video_thread_async_run(thread_video_t *thr)
       if (n->release)
          n->release(n->img);
       n->img  = NULL;
-      n->next = NULL;
 
-      slock_lock(thr->lock);
-      if (thr->async.out_tail)
-         thr->async.out_tail->next = n;
-      else
-         thr->async.out_head       = n;
-      thr->async.out_tail          = n;
-      retro_atomic_store_release_int(&thr->async.out_ready, 1);
-      slock_unlock(thr->lock);
+      video_thread_async_push(thr, &thr->async.out, n);
 
       n = next;
    }
@@ -1276,21 +1312,15 @@ static void video_thread_async_deliver(thread_video_t *thr)
    video_thread_async_load_t *n;
 
    /* Nearly every frame has nothing to deliver */
-   if (!retro_atomic_load_acquire_int(&thr->async.out_ready))
+   if (!(n = video_thread_async_take(thr, &thr->async.out)))
       return;
-
-   slock_lock(thr->lock);
-   n                   = thr->async.out_head;
-   thr->async.out_head = thr->async.out_tail = NULL;
-   retro_atomic_store_release_int(&thr->async.out_ready, 0);
-   slock_unlock(thr->lock);
 
    while (n)
    {
-      video_thread_async_load_t *next = n->next;
+      video_thread_async_load_t *next = VIDEO_THREAD_ASYNC_NEXT(n);
       bool caller_owned                = n->caller_owned;
       /* done() may repost a caller-owned node at once, which rewrites
-       * n->next: nothing of the node is read after the call. */
+       * its link: nothing of the node is read after the call. */
       GFX_INSTR_INC(GFX_INSTR_ASYNC_DONE);
       if (n->done)
          n->done(n->user, n->handle);
@@ -1305,10 +1335,11 @@ static void video_thread_async_deliver(thread_video_t *thr)
  * since any real one died with the driver. */
 static void video_thread_async_drop_all(thread_video_t *thr)
 {
-   video_thread_async_load_t *n = thr->async.in_head;
+   video_thread_async_load_t *n = video_thread_async_take(thr,
+         &thr->async.in);
    while (n)
    {
-      video_thread_async_load_t *next = n->next;
+      video_thread_async_load_t *next = VIDEO_THREAD_ASYNC_NEXT(n);
       bool caller_owned                = n->caller_owned;
       if (n->release && n->img)
          n->release(n->img);
@@ -1318,10 +1349,10 @@ static void video_thread_async_drop_all(thread_video_t *thr)
          free(n);
       n = next;
    }
-   n = thr->async.out_head;
+   n = video_thread_async_take(thr, &thr->async.out);
    while (n)
    {
-      video_thread_async_load_t *next = n->next;
+      video_thread_async_load_t *next = VIDEO_THREAD_ASYNC_NEXT(n);
       bool caller_owned                = n->caller_owned;
       if (n->done)
          n->done(n->user, 0);
@@ -1329,10 +1360,6 @@ static void video_thread_async_drop_all(thread_video_t *thr)
          free(n);
       n = next;
    }
-   thr->async.in_head  = thr->async.in_tail  = NULL;
-   thr->async.out_head = thr->async.out_tail = NULL;
-   retro_atomic_store_release_int(&thr->async.in_ready, 0);
-   retro_atomic_store_release_int(&thr->async.out_ready, 0);
 }
 
 bool video_thread_texture_load_async(void *img,
@@ -1365,21 +1392,13 @@ bool video_thread_texture_load_async(void *img,
    GFX_INSTR_INC(GFX_INSTR_ASYNC_POST);
    GFX_INSTR_INC(GFX_INSTR_ASYNC_POST_ALLOC);
 
-   slock_lock(thr->lock);
    if (!(retro_atomic_load_acquire_int(&thr->win_flags)
             & VIDEO_THREAD_WIN_ALIVE))
    {
-      slock_unlock(thr->lock);
       free(n);
       return false;
    }
-   if (thr->async.in_tail)
-      thr->async.in_tail->next = n;
-   else
-      thr->async.in_head       = n;
-   thr->async.in_tail          = n;
-   retro_atomic_store_release_int(&thr->async.in_ready, 1);
-   slock_unlock(thr->lock);
+   video_thread_async_push(thr, &thr->async.in, n);
    retro_eventcount_notify(&thr->work);
    return true;
 }
@@ -1397,24 +1416,13 @@ bool video_thread_async_post(video_thread_async_load_t *n)
    if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id())
       return false;
 
-   n->next         = NULL;
    n->caller_owned = 1;
    GFX_INSTR_INC(GFX_INSTR_ASYNC_POST);
 
-   slock_lock(thr->lock);
    if (!(retro_atomic_load_acquire_int(&thr->win_flags)
             & VIDEO_THREAD_WIN_ALIVE))
-   {
-      slock_unlock(thr->lock);
       return false;
-   }
-   if (thr->async.in_tail)
-      thr->async.in_tail->next = n;
-   else
-      thr->async.in_head       = n;
-   thr->async.in_tail          = n;
-   retro_atomic_store_release_int(&thr->async.in_ready, 1);
-   slock_unlock(thr->lock);
+   video_thread_async_push(thr, &thr->async.in, n);
    retro_eventcount_notify(&thr->work);
    return true;
 }
@@ -1877,7 +1885,7 @@ static bool video_thread_work_due(thread_video_t *thr, int st,
 {
    if (     retro_atomic_load_acquire_int(&thr->send_cmd) != CMD_VIDEO_NONE
          || VIDEO_THREAD_RING_PENDING_OF(st)
-         || retro_atomic_load_acquire_int(&thr->async.in_ready)
+         || !mpsc_stack_empty(&thr->async.in)
          || retro_atomic_load_acquire_int(&thr->deferred_head)
             != retro_atomic_load_acquire_int(&thr->deferred_tail))
       return true;
@@ -3178,8 +3186,8 @@ static bool video_thread_init(thread_video_t *thr,
    thr->deferred = (thread_packet_t*)calloc(VIDEO_THREAD_DEFERRED_MAX,
          sizeof(*thr->deferred));
    retro_atomic_int_init(&thr->scale_packed, 0);
-   retro_atomic_int_init(&thr->async.in_ready, 0);
-   retro_atomic_int_init(&thr->async.out_ready, 0);
+   mpsc_stack_init(&thr->async.in);
+   mpsc_stack_init(&thr->async.out);
    retro_atomic_int_init(&thr->send_cmd, CMD_VIDEO_NONE);
    retro_atomic_int_init(&thr->repeat_request, 0);
    retro_atomic_int_init(&thr->repeat_group, 0);

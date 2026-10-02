@@ -208,7 +208,9 @@ enum video_thread_async_kind
 
 typedef struct video_thread_async_load
 {
-   struct video_thread_async_load *next;
+   /* The wrapper's list link, first so a node and its link share an
+    * address; the wrapper's from post until done(). */
+   mpsc_stack_node_t link;
    void *img;                      /* struct texture_image*, ours until released */
    void *user;
    video_thread_async_done_t    done;
@@ -343,12 +345,11 @@ typedef struct thread_video
    /* Asynchronous texture uploads, see video_thread_texture_load_async(). */
    struct
    {
-      video_thread_async_load_t *in_head,  *in_tail;   /* to upload */
-      video_thread_async_load_t *out_head, *out_tail;  /* to deliver */
-      /* Set with an entry on the matching list, so each side looks for
-       * work without taking 'lock' when there is none */
-      retro_atomic_int_t in_ready;
-      retro_atomic_int_t out_ready;
+      /* Any thread posts to in and this thread takes it whole; this
+       * thread puts each finished node on out and the main thread
+       * takes that whole. Neither takes 'lock'. */
+      mpsc_stack_t in;                                 /* to upload */
+      mpsc_stack_t out;                                /* to deliver */
    } async;
    /* Presenter state, all owned by the video thread. present_period
     * is one display period in usec, taken from the refresh rate of the
