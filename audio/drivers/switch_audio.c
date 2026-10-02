@@ -26,96 +26,22 @@
 #endif
 
 #ifdef HAVE_LIBNX
-
-/* libnx definitions */
-
-/* threading */
-typedef Mutex compat_mutex;
-typedef Thread compat_thread;
-typedef CondVar compat_condvar;
-
-#define compat_thread_create(thread, func, data, stack_size, prio, cpu) \
-   threadCreate(thread, func, data, NULL, stack_size, prio, cpu)
-#define compat_thread_start(thread) \
-   threadStart(thread)
-#define compat_thread_join(thread) \
-   threadWaitForExit(thread)
-#define compat_thread_close(thread) \
-   threadClose(thread)
-#define compat_mutex_create(mutex) \
-   mutexInit(mutex)
-#define compat_mutex_lock(mutex) \
-   mutexLock(mutex)
-#define compat_mutex_unlock(mutex) \
-   mutexUnlock(mutex)
-#define compat_condvar_create(condvar) \
-   condvarInit(condvar)
-#define compat_condvar_wait(condvar, mutex) \
-   condvarWait(condvar, mutex)
-/* Timed wait; ns is the bound in nanoseconds. */
-#define compat_condvar_wait_timeout(condvar, mutex, ns) \
-   condvarWaitTimeout(condvar, mutex, ns)
-#define compat_condvar_wake_all(condvar) \
-   condvarWakeAll(condvar)
-
-/* audio */
 typedef AudioOutBuffer compat_audio_out_buffer;
 #define switch_audio_ipc_init audoutInitialize
 #define switch_audio_ipc_finalize audoutExit
-#define switch_audio_ipc_output_get_released_buffer(a, b) audoutGetReleasedAudioOutBuffer(&a->current_buffer, &b)
+/* One released buffer into *out, or none; num says which. */
+#define switch_audio_ipc_output_get_released_buffer(a, out, num) audoutGetReleasedAudioOutBuffer(out, &num)
 #define switch_audio_ipc_output_append_buffer(a, b) audoutAppendAudioOutBuffer(b)
 #define switch_audio_ipc_output_stop(a) audoutStopAudioOut()
 #define switch_audio_ipc_output_start(a) audoutStartAudioOut()
-
-#ifndef UINT64_MAX
-#define UINT64_MAX U64_MAX
-#endif
-
 #else
-
-/* libtransistor definitions */
-
-typedef result_t Result;
-#define R_FAILED(r) ((r) != RESULT_OK)
-
-/* threading */
-typedef trn_mutex_t compat_mutex;
-typedef trn_thread_t compat_thread;
-typedef trn_condvar_t compat_condvar;
-
-#define compat_thread_create(thread, func, data, stack_size, prio, cpu) \
-   trn_thread_create(thread, func, data, prio, cpu, stack_size, NULL)
-#define compat_thread_start(thread) \
-   trn_thread_start(thread)
-#define compat_thread_join(thread) \
-   trn_thread_join(thread, -1)
-#define compat_thread_close(thread) \
-   trn_thread_destroy(thread)
-#define compat_mutex_create(mutex) \
-   trn_mutex_create(mutex)
-#define compat_mutex_lock(mutex) \
-   trn_mutex_lock(mutex)
-#define compat_mutex_unlock(mutex) \
-   trn_mutex_unlock(mutex)
-#define compat_condvar_create(condvar) \
-   trn_condvar_create(condvar)
-#define compat_condvar_wait(condvar, mutex) \
-   trn_condvar_wait(condvar, mutex, -1)
-/* Timed wait; ns is the bound in nanoseconds. */
-#define compat_condvar_wait_timeout(condvar, mutex, ns) \
-   trn_condvar_wait(condvar, mutex, (ns))
-#define compat_condvar_wake_all(condvar) \
-   trn_condvar_signal(condvar, -1)
-
-/* audio */
 typedef audio_output_buffer_t compat_audio_out_buffer;
 #define switch_audio_ipc_init audio_ipc_init
 #define switch_audio_ipc_finalize audio_ipc_finalize
-#define switch_audio_ipc_output_get_released_buffer(a, b) audio_ipc_output_get_released_buffer(&a->output, &b, &a->current_buffer)
+#define switch_audio_ipc_output_get_released_buffer(a, out, num) audio_ipc_output_get_released_buffer(&a->output, &num, out)
 #define switch_audio_ipc_output_append_buffer(a, b) audio_ipc_output_append_buffer(&a->output, b)
 #define switch_audio_ipc_output_stop(a) audio_ipc_output_stop(&a->output)
 #define switch_audio_ipc_output_start(a) audio_ipc_output_start(&a->output)
-
 #endif
 
 #include "../audio_driver.h"
@@ -129,22 +55,27 @@ typedef audio_output_buffer_t compat_audio_out_buffer;
 
 #define SAMPLE_RATE 48000
 #define NUM_CHANNELS 2
+#define FRAME_BYTES (NUM_CHANNELS * sizeof(int16_t))
 
 #define SAMPLE_BUFFER_SIZE (((SAMPLE_RATE * NUM_CHANNELS * sizeof(uint16_t)) + 0xfff) & ~0xfff)
 
 typedef struct
 {
-   bool blocking;
-   bool is_paused;
-   uint64_t last_append;
-   unsigned latency;
    compat_audio_out_buffer buffers[BUFFER_COUNT];
+   /* Buffers the service has played out and released, taken back
+    * without waiting; the next writes fill them. */
+   compat_audio_out_buffer *free_buffers[BUFFER_COUNT];
    compat_audio_out_buffer *current_buffer;
-
 #ifndef HAVE_LIBNX
    audio_output_t output;
    handle_t event;
 #endif
+   /* Bytes a buffer carries when it is appended: the latency setting
+    * spread across the buffers, in whole frames. */
+   size_t chunk;
+   unsigned free_count;
+   bool blocking;
+   bool is_paused;
 } switch_audio_t;
 
 #ifdef HAVE_LIBNX
@@ -161,7 +92,8 @@ static uint32_t switch_audio_data_size(void)
 }
 #endif
 
-static size_t switch_audio_buffer_size(void *data)
+/* The capacity of one service buffer, in bytes. */
+static size_t switch_audio_capacity(void)
 {
 #ifdef HAVE_LIBNX
    return (switch_audio_data_size() + 0xfff) & ~0xfff;
@@ -170,73 +102,95 @@ static size_t switch_audio_buffer_size(void *data)
 #endif
 }
 
-/* Makes swa->current_buffer the next released buffer, waiting for one
- * to be played out when block is set. Returns 1 with a buffer in hand,
- * 0 when none was available and block was not set, -1 on error. The
- * buffer stays current across calls until a write fills and appends
- * it, so a wait that acquires one hands it to the write that follows. */
+/* Takes back every buffer the service has released, without waiting.
+ * Returns -1 when the service could not be asked. */
+static int switch_audio_reap(switch_audio_t *swa)
+{
+   unsigned n;
+
+   for (n = 0; n < BUFFER_COUNT; n++)
+   {
+      compat_audio_out_buffer *released = NULL;
+      uint32_t num                      = 0;
+
+      if (switch_audio_ipc_output_get_released_buffer(swa, &released, num) != 0)
+         return -1;
+      if (num < 1 || !released)
+         break;
+      if (swa->free_count < BUFFER_COUNT)
+         swa->free_buffers[swa->free_count++] = released;
+   }
+
+   return 0;
+}
+
+/* Bytes the driver takes now without waiting: the released buffers,
+ * and the rest of the one being filled. */
+static size_t switch_audio_room(const switch_audio_t *swa)
+{
+   size_t room = (size_t)swa->free_count * swa->chunk;
+   if (swa->current_buffer && swa->current_buffer->data_size < swa->chunk)
+      room += swa->chunk - swa->current_buffer->data_size;
+   return room;
+}
+
 /* Bound on a wait for the service to release a buffer: one wait, in
  * nanoseconds, and how many before the write is skipped. */
 #define SWITCH_AUDIO_WAIT_NS   100000000ULL
 #define SWITCH_AUDIO_WAIT_LAPS 8
 
+/* Makes swa->current_buffer a released buffer, waiting for one to be
+ * played out when block is set. Returns 1 with a buffer in hand, 0 when
+ * none was available and block was not set, -1 on error. The buffer
+ * stays current across calls until a write fills and appends it. */
 static int switch_audio_acquire_buffer(switch_audio_t *swa, bool block)
 {
-   uint32_t num;
+   /* The service releases a buffer as it finishes playing one; a
+    * service that has stopped - the device change, the console on its
+    * way to sleep - releases none. Each wait is bounded and the loop is
+    * capped; with no buffer in hand after that, the write is skipped
+    * this call. */
+   int laps = SWITCH_AUDIO_WAIT_LAPS;
 
    if (swa->current_buffer)
       return 1;
 
-   if (switch_audio_ipc_output_get_released_buffer(swa, num) != 0)
+   if (switch_audio_reap(swa) != 0)
    {
       RARCH_ERR("[Switch audio] Failed to get released buffer.\n");
       return -1;
    }
 
-   if (num < 1)
-   swa->current_buffer = NULL;
-
-   if (!swa->current_buffer)
+   while (!swa->free_count)
    {
-      /* The service releases a buffer as it finishes playing one; a
-       * service that has stopped - the device change, the console on
-       * its way to sleep - releases none, and this waited for it with
-       * no end. Each wait is bounded and the loop is capped; with no
-       * buffer in hand after that, the write is skipped this call. */
-      int laps = SWITCH_AUDIO_WAIT_LAPS;
-
-      if (!block)
+      if (!block || --laps < 0)
          return 0;
-
-      while (!swa->current_buffer)
-      {
-#ifndef HAVE_LIBNX
-         uint32_t handle_idx = 0;
-#endif
-         num                 = 0;
-
 #ifdef HAVE_LIBNX
-         if (audoutWaitPlayFinish(&swa->current_buffer, &num,
-                  SWITCH_AUDIO_WAIT_NS) != 0)
-            swa->current_buffer = NULL;
+      {
+         compat_audio_out_buffer *released = NULL;
+         uint32_t num                      = 0;
+         if (     audoutWaitPlayFinish(&released, &num, SWITCH_AUDIO_WAIT_NS) == 0
+               && num >= 1 && released)
+            swa->free_buffers[swa->free_count++] = released;
+      }
 #else
+      {
+         uint32_t handle_idx = 0;
          svcWaitSynchronization(&handle_idx, &swa->event, 1, SWITCH_AUDIO_WAIT_NS);
          svcResetSignal(swa->event);
-
-         if (switch_audio_ipc_output_get_released_buffer(swa, num) != 0)
+         if (switch_audio_reap(swa) != 0)
             return -1;
-#endif
-         if (!swa->current_buffer && --laps < 0)
-            return 0;
       }
+#endif
    }
 
+   swa->current_buffer            = swa->free_buffers[--swa->free_count];
    swa->current_buffer->data_size = 0;
    return 1;
 }
 
-/* Waits until a buffer is in hand and returns the room left in it; a
- * buffer's whole capacity is at least a frame of audio, so this always
+/* Waits until a buffer is in hand and returns the room the driver has
+ * then; a buffer carries at least a frame of audio, so this always
  * makes progress whatever len is. Returns 0 on error. */
 static size_t switch_audio_wait_writable(void *data, size_t len)
 {
@@ -247,46 +201,55 @@ static size_t switch_audio_wait_writable(void *data, size_t len)
       return 0;
    if (switch_audio_acquire_buffer(swa, true) <= 0)
       return 0;
-   return switch_audio_buffer_size(NULL) - swa->current_buffer->data_size;
+   return switch_audio_room(swa);
 }
 
+/* Fills buffers a chunk at a time and appends each one full, until the
+ * caller's audio is taken or no buffer is free; non-blocking, that is
+ * exactly what write_avail() reported. */
 static ssize_t switch_audio_write(void *data, const void *s, size_t len)
 {
-   size_t _len = len;
-	switch_audio_t *swa = (switch_audio_t*)data;
+   size_t written      = 0;
+   switch_audio_t *swa = (switch_audio_t*)data;
 
    if (!swa)
       return -1;
 
+   while (written < len)
    {
+      size_t _len;
       int r = switch_audio_acquire_buffer(swa, swa->blocking);
       if (r < 0)
-         return -1;
+         return written ? (ssize_t)written : -1;
       if (r == 0)
-         return 0;
-   }
+         break;
 
-	if (_len > switch_audio_buffer_size(NULL) - swa->current_buffer->data_size)
-		_len = switch_audio_buffer_size(NULL) - swa->current_buffer->data_size;
+      _len = swa->chunk - swa->current_buffer->data_size;
+      if (_len > len - written)
+         _len = len - written;
 
 #ifndef HAVE_LIBNX
-   memcpy(((uint8_t*) swa->current_buffer->sample_data) + swa->current_buffer->data_size, s, _len);
+      memcpy(((uint8_t*)swa->current_buffer->sample_data)
+            + swa->current_buffer->data_size,
+            (const uint8_t*)s + written, _len);
 #else
-   memcpy(((uint8_t*) swa->current_buffer->buffer) + swa->current_buffer->data_size, s, _len);
+      memcpy(((uint8_t*)swa->current_buffer->buffer)
+            + swa->current_buffer->data_size,
+            (const uint8_t*)s + written, _len);
 #endif
-	swa->current_buffer->data_size   += _len;
-	swa->current_buffer->buffer_size  = switch_audio_buffer_size(NULL);
+      swa->current_buffer->data_size += _len;
+      written                        += _len;
 
-	if (swa->current_buffer->data_size > (48000 * swa->latency) / 1000)
-   {
+      if (swa->current_buffer->data_size >= swa->chunk)
+      {
+         swa->current_buffer->buffer_size = switch_audio_capacity();
          if (switch_audio_ipc_output_append_buffer(swa, swa->current_buffer) != 0)
             return -1;
-		swa->current_buffer = NULL;
-	}
+         swa->current_buffer = NULL;
+      }
+   }
 
-	swa->last_append = svcGetSystemTick();
-
-	return _len;
+   return (ssize_t)written;
 }
 
 static bool switch_audio_stop(void *data)
@@ -357,20 +320,24 @@ static void switch_audio_free(void *data)
  * refuses anything else. Float is not something this service offers. */
 static bool switch_audio_use_float(void *data) { return false; }
 
-/* Room left in the buffer being filled. Without one in hand there is
- * no room to report: acquiring one may block, which this may not. */
+/* The released buffers, taken back without waiting, and the rest of
+ * the one being filled. */
 static size_t switch_audio_write_avail(void *data)
 {
-   size_t size;
    switch_audio_t *swa = (switch_audio_t*)data;
 
-   if (!swa || !swa->current_buffer)
+   if (!swa)
       return 0;
+   switch_audio_reap(swa);
+   return switch_audio_room(swa);
+}
 
-   size = switch_audio_buffer_size(NULL);
-   if (swa->current_buffer->data_size >= size)
-      return 0;
-   return size - swa->current_buffer->data_size;
+/* Every buffer carrying its chunk: what the driver holds between
+ * write() returning and the service playing it. */
+static size_t switch_audio_buffer_size(void *data)
+{
+   switch_audio_t *swa = (switch_audio_t*)data;
+   return swa ? (size_t)BUFFER_COUNT * swa->chunk : 0;
 }
 
 static void switch_audio_set_nonblock_state(void *data, bool state)
@@ -440,23 +407,23 @@ static void *switch_audio_init(const char *device,
 
    for (i = 0; i < BUFFER_COUNT; i++)
    {
-      swa->buffers[i].buffer_size = switch_audio_buffer_size(NULL);
+      swa->buffers[i].buffer_size = switch_audio_capacity();
       swa->buffers[i].data_size   = switch_audio_data_size();
 
 #ifdef HAVE_LIBNX
       swa->buffers[i].next        = NULL; /* Unused */
       swa->buffers[i].data_offset = 0;
-      swa->buffers[i].buffer      = memalign(0x1000, switch_audio_buffer_size(NULL));
+      swa->buffers[i].buffer      = memalign(0x1000, switch_audio_capacity());
 
       if (!swa->buffers[i].buffer)
          goto fail_audio_output;
 
-      memset(swa->buffers[i].buffer, 0, switch_audio_buffer_size(NULL));
+      memset(swa->buffers[i].buffer, 0, switch_audio_capacity());
 #else
       swa->buffers[i].ptr         = &swa->buffers[i].sample_data;
       swa->buffers[i].unknown     = 0;
       swa->buffers[i].sample_data = alloc_pages(SAMPLE_BUFFER_SIZE,
-            switch_audio_buffer_size(NULL), NULL);
+            switch_audio_capacity(), NULL);
 
       if (!swa->buffers[i].sample_data)
 	      goto fail_audio_output;
@@ -473,8 +440,20 @@ static void *switch_audio_init(const char *device,
 #endif
 
    swa->current_buffer = NULL;
-   swa->latency        = latency;
-   swa->last_append    = svcGetSystemTick();
+   swa->free_count     = 0;
+
+   {
+      /* The latency setting, spread across the buffers, so that all of
+       * them queued hold about that much: whole frames, at least a
+       * period's worth, never past a buffer's capacity. */
+      size_t capacity = switch_audio_capacity() - switch_audio_capacity() % FRAME_BYTES;
+      swa->chunk      = (size_t)*new_rate * latency / 1000 * FRAME_BYTES / BUFFER_COUNT;
+      swa->chunk     -= swa->chunk % FRAME_BYTES;
+      if (swa->chunk < 64 * FRAME_BYTES)
+         swa->chunk = 64 * FRAME_BYTES;
+      if (swa->chunk > capacity)
+         swa->chunk = capacity;
+   }
 
    /* Blocking until the frontend says otherwise. This used to be
     * assigned block_frames - a frame count into a bool, so any block
