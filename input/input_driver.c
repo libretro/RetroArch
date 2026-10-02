@@ -2133,10 +2133,12 @@ static int16_t input_state_device(
                /* Clear underlying button to prevent duplicates. */
                if (input_st->turbo_btns.frame_enable[port])
                {
-                  int      turbo_bind = settings->ints.input_turbo_bind;
-                  unsigned remap_bind = settings->uints.input_remap_ids[port][turbo_bind];
+                  /* The empty Turbo Bind uses the port's turbo hotkey,
+                   * which has no RetroPad button to clear. */
+                  int turbo_bind = settings->ints.input_turbo_bind;
 
-                  if (id == remap_bind)
+                  if (     turbo_bind >= 0
+                        && id == settings->uints.input_remap_ids[port][turbo_bind])
                      res = 0;
                }
 
@@ -2314,10 +2316,13 @@ static int16_t input_state_device(
                         else if (settings->uints.input_remap_ids[port][offset + 1] != (offset+1))
                            reset_state = true;
 
-                        if (input_st->turbo_btns.frame_enable[port])
+                        /* The empty Turbo Bind has no RetroPad button
+                         * to clear. */
+                        if (     input_st->turbo_btns.frame_enable[port]
+                              && settings->ints.input_turbo_bind >= 0)
                         {
-                           int      turbo_bind = settings->ints.input_turbo_bind;
-                           unsigned remap_bind = settings->uints.input_remap_ids[port][turbo_bind];
+                           unsigned remap_bind = settings->uints.input_remap_ids
+                              [port][settings->ints.input_turbo_bind];
 
                            if (offset == remap_bind || offset + 1 == remap_bind)
                            {
