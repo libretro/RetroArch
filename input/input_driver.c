@@ -572,10 +572,10 @@ static input_driver_state_t input_driver_st = {0}; /* double alignment */
  * the loop every driver has, run against the copy. Rumble, sensors,
  * names and the poll itself still go to the real driver.
  *
- * This is the legacy bridge of the input plan (WP-03, WP-05), and it
- * is off: a driver is switched over when it has been checked - that
- * its get_buttons says what its button() says, and its state() is the
- * common loop - and none has been yet. */
+ * This is the legacy bridge of the input plan (WP-03, WP-05). A driver
+ * is switched over when it has been checked - that its get_buttons
+ * says what its button() says, and its state() is the common loop -
+ * and the rest read their drivers as before. */
 #define INPUT_SNAPSHOT_AXES 16
 #define INPUT_SNAPSHOT_HATS 4
 
@@ -603,11 +603,46 @@ void input_driver_set_snapshot_bridge(bool on)
    input_snapshot_forced = on;
 }
 
-/* Drivers checked for the bridge. None yet. */
-static bool input_snapshot_driver_checked(const char *ident)
+/* Drivers checked for the bridge: that get_buttons() says what
+ * button() says for every plain button, that hats and axes answer
+ * through button() and axis() alone, and that state() is the common
+ * loop over the binds.
+ *
+ * - xinput (xinput_hybrid_joypad.c, the Windows driver with XInput and
+ *   DirectInput pads). Its state() compares an axis against the
+ *   threshold as integers where the common loop divides; the two agree
+ *   for every threshold below 1.0, and at 1.0 the driver's own wraps
+ *   and reads every bound axis as pressed, which the bridge does not.
+ *   The XInput-only driver of the same name has no get_buttons() and
+ *   stays as it was.
+ *
+ * Asked several times a frame, so the answer is kept with the driver
+ * it was for. */
+static bool input_snapshot_driver_checked(const input_device_driver_t *drv)
 {
-   (void)ident;
-   return false;
+   static const input_device_driver_t *asked;
+   static bool                         answer;
+
+   if (drv != asked)
+   {
+      asked  = drv;
+      answer = drv->ident && string_is_equal(drv->ident, "xinput");
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+      /* While drivers are being switched over: RETROARCH_INPUT_SNAPSHOT=0
+       * in the environment reads the driver directly, so a problem can
+       * be tried with and without the bridge on one build. */
+      if (answer)
+      {
+         const char *env = getenv("RETROARCH_INPUT_SNAPSHOT");
+         if (env && env[0] == '0')
+            answer = false;
+      }
+#endif
+      if (answer && drv->get_buttons && drv->button && drv->axis)
+         RARCH_LOG("[Input] Controllers of the \"%s\" driver are read"
+               " through a snapshot taken once a poll.\n", drv->ident);
+   }
+   return answer;
 }
 
 static void input_snapshot_fetch_axis(const input_device_driver_t *real,
@@ -795,7 +830,7 @@ static const input_device_driver_t *input_snapshot_for(
       ? 1 : 0;
    input_snapshot_bridge_t *bridge = &input_snapshot_bridge[b];
 
-   if (!input_snapshot_forced && !input_snapshot_driver_checked(drv->ident))
+   if (!input_snapshot_forced && !input_snapshot_driver_checked(drv))
       return NULL;
    /* the bridge reads through all three */
    if (!drv->get_buttons || !drv->button || !drv->axis)

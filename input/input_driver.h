@@ -1277,8 +1277,7 @@ void input_driver_registry_restart(void);
 
 /* Read controllers through a snapshot taken once a poll, in place of
  * calls into the joypad driver, whatever the driver. For the harness:
- * drivers are switched over one at a time as each is checked, and none
- * has been yet. */
+ * drivers are switched over one at a time as each is checked. */
 void input_driver_set_snapshot_bridge(bool on);
 
 /* The pad index to write to the config file for @port: what the user

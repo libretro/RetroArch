@@ -1088,6 +1088,45 @@ static int32_t xinput_joypad_button(unsigned port, uint16_t joykey)
    return xinput_joypad_button_state(xuser, btn_word, port, joykey);
 }
 
+/* Every plain button of the pad at once: bit i is what
+ * xinput_joypad_button(port, i) answers. Hats are not buttons here;
+ * they are asked for by their own keys. The snapshot bridge in
+ * input_driver.c copies a pad through this once a poll. */
+static void xinput_joypad_get_buttons(unsigned port, input_bits_t *state)
+{
+   unsigned i;
+   int xuser;
+
+   BIT256_CLEAR_ALL_PTR(state);
+   if (port >= MAX_USERS)
+      return;
+
+   xuser = PAD_INDEX_TO_XUSER_INDEX(port);
+   if (xuser == -1)
+   {
+      /* a DirectInput pad */
+      const struct dinput_joypad_data *pad = &g_pads[port];
+
+      if (!pad->joypad)
+         return;
+      for (i = 0; i < ARRAY_SIZE_RGB_BUTTONS; i++)
+         if (pad->joy_state.rgbButtons[i])
+            BIT256_SET_PTR(state, i);
+   }
+   else
+   {
+      const xinput_joypad_state *xstate = &g_xinput_states[xuser];
+      uint16_t btn_word;
+
+      if (!xstate->connected)
+         return;
+      btn_word = xstate->xstate.Gamepad.wButtons;
+      for (i = 0; i < g_xinput_num_buttons; i++)
+         if (btn_word & button_index_to_bitmap_code[i])
+            BIT256_SET_PTR(state, i);
+   }
+}
+
 static int16_t xinput_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    int xuser                  = PAD_INDEX_TO_XUSER_INDEX(port);
@@ -1353,7 +1392,7 @@ input_device_driver_t xinput_joypad = {
    xinput_joypad_destroy,
    xinput_joypad_button,
    xinput_joypad_state_func,
-   NULL,
+   xinput_joypad_get_buttons,
    xinput_joypad_axis,
    xinput_joypad_poll,
    xinput_joypad_rumble,
