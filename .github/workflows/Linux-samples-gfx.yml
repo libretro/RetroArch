@@ -986,6 +986,22 @@ jobs:
              timeout 60 ./wayland_resize_test
           echo "[pass] wayland_resize_test"
 
+      - name: Build and run hub75_frames_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/gfx/hub75_frames
+        run: |
+          set -eu
+          # gfx/drivers/hub75_frames.h, the HUB75 driver's three canvases
+          # between its video thread and its panel refresh thread: no
+          # scan sees a canvas being drawn into, the panel ends on the
+          # last frame, and a handover never waits on a scan.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 120 ./hub75_frames_test
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./hub75_frames_test
+          echo "[pass] hub75_frames_test"
+
       - name: Build and run video_mode_select_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/video_mode_select
