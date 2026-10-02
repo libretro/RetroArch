@@ -208,10 +208,9 @@ bool task_push_load_content_with_current_core_from_companion_ui(
 
 bool task_push_start_current_core(content_ctx_info_t *ci) { (void)ci; stub_calls_start_core++; return true; }
 
-bool task_push_dbscan(const char *playlist_dir, const char *content_db,
-      const char *path, bool directory, bool show_hidden, retro_task_callback_t cb)
+bool task_push_dbscan(const char *path, retro_task_callback_t cb)
 {
-   (void)playlist_dir; (void)content_db; (void)directory; (void)show_hidden; (void)cb;
+   (void)cb;
    stub_calls_dbscan++;
    strlcpy(stub_last_scan_dir, path ? path : "", sizeof(stub_last_scan_dir));
    return true;

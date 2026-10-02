@@ -2334,16 +2334,9 @@ static bool manual_scan_end_flush_tick(
 }
 
 #ifdef HAVE_LIBRETRODB
-bool task_push_dbscan(
-      const char *playlist_directory, /* always from settings */
-      const char *content_database,   /* always from settings */
-      const char *fullpath,
-      bool directory,
-      bool db_dir_show_hidden_files,  /* always from settings */
-      retro_task_callback_t cb)
+bool task_push_dbscan(const char *fullpath, retro_task_callback_t cb)
 {
    manual_content_scan_set_menu_content_dir(fullpath);
-   /*manual_content_scan_set_menu_scan_method(MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);*/
    return task_push_manual_content_scan(false, cb);
 }
 

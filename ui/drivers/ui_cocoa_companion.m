@@ -4083,8 +4083,7 @@ static const char *cc_thumb_subdir(int t)
    if (response != 1 || !path)
       return;
 
-   if (companion_core_request_scan(wimp->core, [path UTF8String], true,
-            companion_core_pref_show_hidden_files(wimp->core)))
+   if (companion_core_request_scan(wimp->core, [path UTF8String]))
       [self setStatus:"Scanning..."];
    else
       [self setStatus:"Scanning is not available in this build."];

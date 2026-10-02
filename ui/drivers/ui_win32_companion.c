@@ -4411,8 +4411,7 @@ static void cw_scan_directory(ui_companion_win32_wimp_t *w)
    if (!cw_pick_folder(w->hwnd, "Select a directory to scan for content",
             dir, sizeof(dir)))
       return;
-   if (companion_core_request_scan(w->core, dir, true,
-            companion_core_pref_show_hidden_files(w->core)))
+   if (companion_core_request_scan(w->core, dir))
       cw_status_set(w, "Scanning...");
    else
       cw_status_set(w, "Scanning is not available in this build.");

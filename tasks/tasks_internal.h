@@ -291,12 +291,10 @@ bool task_push_icon_load(const char *fullpath,
       uint64_t *generation_ptr);
 
 #ifdef HAVE_LIBRETRODB
-bool task_push_dbscan(
-      const char *playlist_directory,
-      const char *content_database,
-      const char *fullpath,
-      bool directory, bool show_hidden_files,
-      retro_task_callback_t cb);
+/* Scans @fullpath, a directory or a single file, against the content
+ * databases; the database and playlist directories come from the
+ * settings. */
+bool task_push_dbscan(const char *fullpath, retro_task_callback_t cb);
 #endif
 
 bool task_push_manual_content_scan(

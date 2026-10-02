@@ -8408,9 +8408,6 @@ static bool retroarch_parse_input_and_config(
 #ifdef HAVE_LIBRETRODB
                {
                   settings_t *settings           = config_get_ptr();
-                  bool show_hidden_files         = settings->bools.show_hidden_files;
-                  const char *directory_playlist = settings->paths.directory_playlist;
-                  const char *path_content_db    = settings->paths.path_content_database;
                   int reinit_flags               = DRIVERS_CMD_ALL &
                         ~(DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK | DRIVER_MICROPHONE_MASK | DRIVER_INPUT_MASK | DRIVER_MIDI_MASK);
 
@@ -8422,12 +8419,7 @@ static bool retroarch_parse_input_and_config(
                      cb_task_dbscan = handle_dbscan_finished;
 #endif
 
-                  task_push_dbscan(
-                        directory_playlist,
-                        path_content_db,
-                        optarg, path_is_directory(optarg),
-                        show_hidden_files,
-                        cb_task_dbscan);
+                  task_push_dbscan(optarg, cb_task_dbscan);
 
                   if (!explicit_menu)
                   {

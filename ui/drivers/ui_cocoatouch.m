@@ -1451,13 +1451,7 @@ bool cocoa_audio_session_begin_record(unsigned preferred_rate,
             [manager copyItemAtPath:[url path] toPath:destination error:&error];
       [url stopAccessingSecurityScopedResource];
    }
-   task_push_dbscan(
-      settings->paths.directory_playlist,
-      settings->paths.path_content_database,
-      fullpath,
-      false,
-      false,
-      NULL);
+   task_push_dbscan(fullpath, NULL);
    return true;
 }
 

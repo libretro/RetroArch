@@ -1715,26 +1715,17 @@ static void companion_core_scan_finished(retro_task_t *task,
 }
 #endif
 
-bool companion_core_request_scan(companion_core_t *core, const char *path,
-      bool directory, bool show_hidden_files)
+bool companion_core_request_scan(companion_core_t *core, const char *path)
 {
 #ifdef HAVE_LIBRETRODB
-   settings_t *settings = config_get_ptr();
-
    if (!core || string_is_empty(path))
       return false;
 
    companion_core_scan_owner = core;
-   return task_push_dbscan(
-         settings->paths.directory_playlist,
-         settings->paths.path_content_database,
-         path, directory, show_hidden_files,
-         companion_core_scan_finished);
+   return task_push_dbscan(path, companion_core_scan_finished);
 #else
    (void)core;
    (void)path;
-   (void)directory;
-   (void)show_hidden_files;
    return false;
 #endif
 }
@@ -1775,11 +1766,6 @@ const char *companion_core_pref_initial_playlist(companion_core_t *core)
 bool companion_core_pref_suggest_loaded_core_first(companion_core_t *core)
 {
    return core && config_get_ptr()->bools.desktop_menu_suggest_loaded_core_first;
-}
-
-bool companion_core_pref_show_hidden_files(companion_core_t *core)
-{
-   return core && config_get_ptr()->bools.show_hidden_files;
 }
 
 int companion_core_pref_last_tab(companion_core_t *core)

@@ -439,14 +439,13 @@ static void msgq_push(retro_task_t *task, const char *msg,
 
 /* Returns false if the scan could not be started; otherwise waits for
  * it, and scan_completed says whether it finished in time. */
-static bool run_scan(const char *pl_dir, const char *db_dir,
-      const char *dir)
+static bool run_scan(const char *dir)
 {
    time_t started;
 
    loop_active    = true;
    scan_completed = false;
-   if (!task_push_dbscan(pl_dir, db_dir, dir, true, false, scan_cb))
+   if (!task_push_dbscan(dir, scan_cb))
       return false;
 
    started = time(NULL);
@@ -462,15 +461,14 @@ static bool run_scan(const char *pl_dir, const char *db_dir,
 
 /* As run_scan(), but counts the checks the scan took.  Meaningful on
  * the regular queue, where every check runs the handler once. */
-static unsigned run_scan_counted(const char *pl_dir, const char *db_dir,
-      const char *dir)
+static unsigned run_scan_counted(const char *dir)
 {
    unsigned gathers = 0;
    time_t   started;
 
    loop_active    = true;
    scan_completed = false;
-   if (!task_push_dbscan(pl_dir, db_dir, dir, true, false, scan_cb))
+   if (!task_push_dbscan(dir, scan_cb))
       return 0;
 
    started = time(NULL);
@@ -655,7 +653,7 @@ int main(int argc, char **argv)
             MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR, NULL))
       check(0, "system name", "could not be set");
 
-   if (!run_scan(pl_dir, db_dir, in_dir))
+   if (!run_scan(in_dir))
    {
       check(0, "scan started", "task_push_dbscan refused");
       goto done;
@@ -724,7 +722,7 @@ int main(int argc, char **argv)
          { check(0, "fixture", "crc forcing failed"); goto done; }
       }
 
-      if (!run_scan(pl_dir, db_dir, pad_dir))
+      if (!run_scan(pad_dir))
       {
          check(0, "full list scan started", "task_push_dbscan refused");
          goto done;
@@ -741,7 +739,7 @@ int main(int argc, char **argv)
       path_mkdir(empty_dir);
 
       invalid_content_pushed = false;
-      if (!run_scan(pl_dir, db_dir, empty_dir))
+      if (!run_scan(empty_dir))
       {
          check(0, "empty folder scan started", "task_push_dbscan refused");
          goto done;
@@ -777,7 +775,7 @@ int main(int argc, char **argv)
       fprintf(f, "1\n1 0 4 2352 self.gdi 0\n");
       fclose(f);
 
-      if (!run_scan(pl_dir, db_dir, self_dir))
+      if (!run_scan(self_dir))
       {
          check(0, "self-naming sheet scan started", "task_push_dbscan refused");
          goto done;
@@ -824,7 +822,7 @@ int main(int argc, char **argv)
             sizeof(config_get_ptr()->paths.path_content_database));
       task_queue_deinit();
       task_queue_init(false, msgq_push);
-      gathers = run_scan_counted(pl_dir, many_db, many_in);
+      gathers = run_scan_counted(many_in);
       strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
             sizeof(config_get_ptr()->paths.path_content_database));
       printf("  info  checks for %u files over %u databases: %u\n",

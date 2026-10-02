@@ -58,10 +58,6 @@ int action_scan_file(const char *path,
 #endif
    char fullpath[PATH_MAX_LENGTH];
    const char *menu_path          = NULL;
-   settings_t *settings           = config_get_ptr();
-   bool show_hidden_files         = settings->bools.show_hidden_files;
-   const char *directory_playlist = settings->paths.directory_playlist;
-   const char *path_content_db    = settings->paths.path_content_database;
 
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
@@ -72,12 +68,7 @@ int action_scan_file(const char *path,
 
    fill_pathname_join_special(fullpath, menu_path, path, sizeof(fullpath));
 
-   task_push_dbscan(
-         directory_playlist,
-         path_content_db,
-         fullpath, false,
-         show_hidden_files,
-         handle_dbscan_finished);
+   task_push_dbscan(fullpath, handle_dbscan_finished);
 
    return 0;
 }
@@ -91,10 +82,6 @@ int action_scan_directory(const char *path,
 #endif
    char fullpath[PATH_MAX_LENGTH];
    const char *menu_path          = NULL;
-   settings_t *settings           = config_get_ptr();
-   bool show_hidden_files         = settings->bools.show_hidden_files;
-   const char *directory_playlist = settings->paths.directory_playlist;
-   const char *path_content_db    = settings->paths.path_content_database;
 
    menu_entries_get_last_stack(&menu_path, NULL, NULL, NULL, NULL);
 
@@ -108,12 +95,7 @@ int action_scan_directory(const char *path,
    else
       strlcpy(fullpath, menu_path, sizeof(fullpath));
 
-   task_push_dbscan(
-         directory_playlist,
-         path_content_db,
-         fullpath, true,
-         show_hidden_files,
-         handle_dbscan_finished);
+   task_push_dbscan(fullpath, handle_dbscan_finished);
 
    return 0;
 }
