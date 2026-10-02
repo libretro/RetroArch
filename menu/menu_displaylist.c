@@ -401,6 +401,31 @@ static void menu_file_browser_prepare_extensions(
    free(stems);
 }
 
+/* True when Parent Directory from @dir would land on the filesystem
+ * root while the drive list does not offer it (webOS, Play Store
+ * Android).  Going up then stops at the drive list - reached with
+ * Back - rather than listing a root the platform keeps out of reach.
+ * Decided by the frontend's drive list, not by platform here. */
+static bool filebrowser_parent_is_hidden_root(const char *dir)
+{
+   size_t _len;
+   const char *slash;
+
+   if (!dir || dir[0] != '/')
+      return false;
+   if (frontend_driver_root_in_drive_list())
+      return false;
+
+   _len = strlen(dir);
+   while (_len > 1 && dir[_len - 1] == '/')
+      _len--;
+   /* "/" itself, or a direct child of it ("/tmp", "/media/"). */
+   for (slash = dir + _len; slash > dir; slash--)
+      if (slash[-1] == '/')
+         break;
+   return slash - 1 == dir;
+}
+
 static int filebrowser_parse(
       file_list_t *info_list,
       const char *path,
@@ -783,6 +808,9 @@ static int filebrowser_parse(
 #undef RESOLVE_SUBSYSTEM
 
 end:
+   if (allow_parent_directory && filebrowser_parent_is_hidden_root(full_path))
+      allow_parent_directory = false;
+
    if (!path_is_compressed && allow_parent_directory)
       menu_entries_prepend(info_list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),

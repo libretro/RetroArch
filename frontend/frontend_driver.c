@@ -285,6 +285,15 @@ int frontend_driver_parse_drive_list(void *data, bool load_content)
    return -1;
 }
 
+bool frontend_driver_root_in_drive_list(void)
+{
+   frontend_state_t *frontend_st   = &frontend_driver_st;
+   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+   if (frontend && frontend->root_in_drive_list)
+      return frontend->root_in_drive_list();
+   return true;
+}
+
 void frontend_driver_content_loaded(void)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;

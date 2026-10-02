@@ -102,6 +102,10 @@ typedef struct frontend_ctx_driver
    const char *ident;
 
    const struct video_driver *(*get_video_driver)(void);
+   /* Whether the drive list offers the filesystem root; NULL means
+    * it does.  The file browser stops Parent Directory short of a
+    * root the drive list does not offer. */
+   bool (*root_in_drive_list)(void);
 } frontend_ctx_driver_t;
 
 typedef struct
@@ -131,6 +135,8 @@ frontend_ctx_driver_t *frontend_get_ptr(void);
 frontend_ctx_driver_t *frontend_ctx_init_first(void);
 
 int frontend_driver_parse_drive_list(void *data, bool load_content);
+
+bool frontend_driver_root_in_drive_list(void);
 
 void frontend_driver_content_loaded(void);
 

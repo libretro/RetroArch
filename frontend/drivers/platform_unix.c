@@ -4481,5 +4481,10 @@ frontend_ctx_driver_t frontend_ctx_unix = {
 #else
    "unix",                       /* ident               */
 #endif
-   NULL                          /* get_video_driver    */
+   NULL,                         /* get_video_driver    */
+#ifdef HAVE_MENU
+   frontend_unix_root_in_drive_list /* root_in_drive_list */
+#else
+   NULL                          /* root_in_drive_list  */
+#endif
 };
