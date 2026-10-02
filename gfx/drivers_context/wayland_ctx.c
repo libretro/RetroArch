@@ -488,14 +488,16 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    unsigned width  = VIDEO_SCALE_W(dims);
    unsigned height = VIDEO_SCALE_H(dims);
    gfx_ctx_wayland_data_t *wl   = (gfx_ctx_wayland_data_t*)data;
+#ifdef HAVE_EGL
+   EGLint egl_attribs[16];
+   EGLint *attr;
+#endif
 
    if (!gfx_ctx_wl_set_video_mode_common_size(wl, width, height, fullscreen))
       goto error;
 
 #ifdef HAVE_EGL
-   EGLint egl_attribs[16];
-   EGLint *attr              = egl_fill_attribs(
-         (gfx_ctx_wayland_data_t*)data, egl_attribs);
+   attr                      = egl_fill_attribs(wl, egl_attribs);
 
    /* Set buffer scale before creating wl_egl_window.
     * Fixes incorrect size/offset on HiDPI/fullscreen. */
@@ -698,6 +700,8 @@ static void gfx_ctx_wl_swap_buffers(void *data)
 
       while (!wl->swap_complete)
       {
+         uint64_t remaining_time;
+         int ret;
          uint64_t current_time = cpu_features_get_time_usec();
          if (current_time >= deadline)
          {
@@ -706,8 +710,8 @@ static void gfx_ctx_wl_swap_buffers(void *data)
             wl->frame_cb = NULL;
             return;
          }
-         uint64_t remaining_time = deadline - current_time;
-         int ret = (wl_display_dispatch_pending(wl->input.dpy));
+         remaining_time = deadline - current_time;
+         ret            = wl_display_dispatch_pending(wl->input.dpy);
          if (ret == 0)
          {
             ret = wl_display_prepare_read(wl->input.dpy);
