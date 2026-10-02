@@ -15,6 +15,8 @@ ifneq (,$(findstring mingw,$(CC))$(findstring MINGW,$(MSYSTEM))$(findstring Wind
    LDLIBS += -lws2_32 -liphlpapi
 endif
 
+all: tls_fetch tls_http tls_threads
+
 tls_fetch: $(SRC)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $(LDLIBS) -o $@
 # the same tool with no AES instructions to use, as on a 3DS or a Vita
@@ -36,4 +38,4 @@ tls_threads: $(THR_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_THREADS $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@
 clean:
 	rm -f tls_fetch_noaes tls_fetch_noaes.exe tls_http tls_http.exe tls_fetch tls_fetch.exe tls_bench tls_bench.exe tls_keyupdate tls_keyupdate.exe tls_threads tls_threads.exe
-.PHONY: clean
+.PHONY: all clean

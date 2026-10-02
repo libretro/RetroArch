@@ -131,25 +131,18 @@ static struct tls_session tls_cache[TLS_CACHE_SLOTS];
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #include <retro_atomic.h>
-static retro_atomic_ptr_t tls_cache_lock_ptr;
-static slock_t *tls_cache_lock_get(void)
+/* A flag, not an slock: every section it guards is a lookup, a few
+ * copies and at most one allocation, nothing that waits on another
+ * thread, and with no lock object to make there is none that can fail
+ * to be made. */
+static retro_atomic_int_t tls_cache_busy;
+static void tls_cache_lock(void)
 {
-   slock_t *l = (slock_t*)retro_atomic_load_acquire_ptr(&tls_cache_lock_ptr);
-   if (!l)
-   {
-      slock_t *fresh = slock_new();
-      if (retro_atomic_cas_ptr(&tls_cache_lock_ptr, NULL, fresh))
-         l = fresh;
-      else
-      {
-         slock_free(fresh);
-         l = (slock_t*)retro_atomic_load_acquire_ptr(&tls_cache_lock_ptr);
-      }
-   }
-   return l;
+   while (!retro_atomic_cas_int(&tls_cache_busy, 0, 1))
+      sthread_yield();
 }
-#define TLS_CACHE_LOCK()   slock_lock(tls_cache_lock_get())
-#define TLS_CACHE_UNLOCK() slock_unlock(tls_cache_lock_get())
+#define TLS_CACHE_LOCK()   tls_cache_lock()
+#define TLS_CACHE_UNLOCK() retro_atomic_store_release_int(&tls_cache_busy, 0)
 #else
 #define TLS_CACHE_LOCK()   do { } while (0)
 #define TLS_CACHE_UNLOCK() do { } while (0)
