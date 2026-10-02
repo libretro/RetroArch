@@ -133,6 +133,21 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 600 ./thread_handshake_test
           echo "[pass] thread_handshake_test (TSan)"
 
+      - name: Build and run mmdevice_active_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/audio/mmdevice_active
+        run: |
+          set -eu
+          # The open-endpoint table the WASAPI notifications consult,
+          # set from two threads and matched from a third, none of
+          # which has touched it before.
+          make clean && make -j$(nproc) all SANITIZER=address,undefined
+          timeout 300 ./mmdevice_active_test
+          echo "[pass] mmdevice_active_test (ASan)"
+          make clean && make -j$(nproc) all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./mmdevice_active_test
+          echo "[pass] mmdevice_active_test (TSan)"
+
       - name: Build and run graph_clock_test (ASan + UBSan)
         shell: bash
         working-directory: samples/audio/graph_clock
