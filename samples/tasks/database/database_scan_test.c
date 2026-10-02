@@ -460,6 +460,35 @@ static bool run_scan(const char *pl_dir, const char *db_dir,
    return true;
 }
 
+/* As run_scan(), but counts the checks the scan took.  Meaningful on
+ * the regular queue, where every check runs the handler once. */
+static unsigned run_scan_counted(const char *pl_dir, const char *db_dir,
+      const char *dir)
+{
+   unsigned gathers = 0;
+   time_t   started;
+
+   loop_active    = true;
+   scan_completed = false;
+   if (!task_push_dbscan(pl_dir, db_dir, dir, true, false, scan_cb))
+      return 0;
+
+   started = time(NULL);
+   while (loop_active)
+   {
+      task_queue_check();
+      gathers++;
+      if (difftime(time(NULL), started) > SCAN_TIMEOUT_SECONDS)
+         break;
+   }
+   return gathers;
+}
+
+/* Databases no core claims, and files that match nothing, in the
+ * lane below. */
+#define UNCLAIMED_DBS   48
+#define UNMATCHED_FILES 4
+
 int main(int argc, char **argv)
 {
    const char *root = (argc > 1) ? argv[1] : "/tmp";
@@ -755,6 +784,56 @@ int main(int argc, char **argv)
       }
       check(scan_completed, "self-naming cue and gdi scanned",
             scan_completed ? "callback fired" : "timed out");
+   }
+
+   /* A database no core claims costs nothing per file: the step that
+    * refuses one passes over every refused database, so on the
+    * regular queue, which runs the handler once per check, a file
+    * takes a check per database it can match plus a fixed few - not
+    * one per database in the directory. */
+   {
+      char many_db[512], many_in[512];
+      unsigned i, gathers;
+
+      sprintf(many_db, "%s/scan_db_many", root);
+      sprintf(many_in, "%s/scan_unmatched", root);
+      path_mkdir(many_db);
+      path_mkdir(many_in);
+
+      sprintf(p, "%s/Test Alpha.rdb", many_db);
+      if (!write_db(p, "Alpha The Game", crc_a, sz_a))
+      { check(0, "fixture", "could not write database"); goto done; }
+      /* Never opened: the gate refuses them before any read. */
+      for (i = 0; i < UNCLAIMED_DBS; i++)
+      {
+         FILE *f;
+         sprintf(p, "%s/Unclaimed %02u.rdb", many_db, i);
+         if (!(f = fopen(p, "wb")))
+         { check(0, "fixture", "could not write database"); goto done; }
+         fclose(f);
+      }
+      for (i = 0; i < UNMATCHED_FILES; i++)
+      {
+         sprintf(p, "%s/none_%02u.bin", many_in, i);
+         if (!write_content(p, 0x3C000000u + i, 1024))
+         { check(0, "fixture", "crc forcing failed"); goto done; }
+      }
+
+      /* The scanner reads its database directory from the settings. */
+      strlcpy(config_get_ptr()->paths.path_content_database, many_db,
+            sizeof(config_get_ptr()->paths.path_content_database));
+      task_queue_deinit();
+      task_queue_init(false, msgq_push);
+      gathers = run_scan_counted(pl_dir, many_db, many_in);
+      strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
+            sizeof(config_get_ptr()->paths.path_content_database));
+      printf("  info  checks for %u files over %u databases: %u\n",
+            UNMATCHED_FILES, UNCLAIMED_DBS + 1, gathers);
+      check(scan_completed, "scan over unclaimed databases completed",
+            scan_completed ? "callback fired" : "timed out");
+      check(gathers && gathers < UNMATCHED_FILES * 8 + 32,
+            "unclaimed databases passed over in one step",
+            "checks bounded by files, not databases");
    }
 
 done:

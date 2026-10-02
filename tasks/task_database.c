@@ -1530,15 +1530,26 @@ static enum scan_verdict task_database_iterate_crc_lookup(
     * shipped database directory.  Ask the cheap question first. */
    if (!(_db->flags & DB_HANDLE_FLAG_SCAN_WITHOUT_CORE_MATCH))
    {
-      if (!string_list_find_elem(
-            db_state->claim_exts[db_state->list_index],
-            path_get_extension(name)))
-         return database_info_list_iterate_next(db_state);
+      /* Every database the gate refuses is passed over in this one
+       * step, so a file costs a handler call per database it can
+       * match rather than one per database in the directory - under
+       * the regular task queue that is a frame each. */
+      const char *ext = path_get_extension(name);
+      bool skipped    = false;
 
-      if (   !path_contains_compressed_file
-          && (db_state->flags[db_state->list_index]
-             & DB_STATE_FLAG_ARCHIVE_MEMBER))
-         return database_info_list_iterate_next(db_state);
+      while (   db_state->list_index < db_state->list->size
+             && (   !string_list_find_elem(
+                        db_state->claim_exts[db_state->list_index], ext)
+                 || (   !path_contains_compressed_file
+                     && (db_state->flags[db_state->list_index]
+                        & DB_STATE_FLAG_ARCHIVE_MEMBER))))
+      {
+         database_info_list_iterate_next(db_state);
+         skipped = true;
+      }
+
+      if (skipped)
+         return SCAN_VERDICT_CONTINUE;
    }
 
    /* If size boundaries are not filled for this DB, run the queries */
