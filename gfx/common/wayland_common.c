@@ -897,15 +897,22 @@ static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
  * every proxy still hands its listener a live context. */
 static gfx_ctx_wayland_data_t *wl_kept = NULL;
 
+static void gfx_ctx_wl_destroy(gfx_ctx_wayland_data_t *wl)
+{
+#ifdef WEBOS
+   gfx_ctx_wl_destroy_resources_webos(wl);
+#else
+   gfx_ctx_wl_destroy_resources_common(wl);
+#endif
+   free(wl);
+}
+
 void gfx_ctx_wl_release_kept(void)
 {
    gfx_ctx_wayland_data_t *wl = wl_kept;
    wl_kept                    = NULL;
    if (wl)
-   {
-      gfx_ctx_wl_destroy_resources_common(wl);
-      free(wl);
-   }
+      gfx_ctx_wl_destroy(wl);
 }
 
 void gfx_ctx_wl_free_common(gfx_ctx_wayland_data_t *wl, bool may_keep)
@@ -934,8 +941,7 @@ void gfx_ctx_wl_free_common(gfx_ctx_wayland_data_t *wl, bool may_keep)
       return;
    }
 
-   gfx_ctx_wl_destroy_resources_common(wl);
-   free(wl);
+   gfx_ctx_wl_destroy(wl);
 }
 
 static void gfx_ctx_wl_adopt(gfx_ctx_wayland_data_t *wl,
@@ -960,12 +966,26 @@ static void gfx_ctx_wl_adopt(gfx_ctx_wayland_data_t *wl,
    wl->ignore_configuration     = false;
 
    frontend_driver_destroy_signal_handler_state();
+#ifndef WEBOS
    video_driver_display_type_set(RARCH_DISPLAY_WAYLAND);
+#endif
    frontend_driver_install_signal_handler();
    /* Video uninit forgot which output the window is on */
    if (wl->current_output && wl->current_output->refresh_rate > 0)
       video_driver_set_window_refresh_rate(
             (float)wl->current_output->refresh_rate / 1000.0f);
+}
+
+gfx_ctx_wayland_data_t *gfx_ctx_wl_take_kept(
+      driver_configure_handler_t driver_configure_handler)
+{
+   gfx_ctx_wayland_data_t *wl = wl_kept;
+   if (!wl)
+      return NULL;
+   wl_kept = NULL;
+   gfx_ctx_wl_adopt(wl, driver_configure_handler);
+   RARCH_LOG("[Wayland] Took back the kept window.\n");
+   return wl;
 }
 
 bool gfx_ctx_wl_init_common(
@@ -979,14 +999,8 @@ bool gfx_ctx_wl_init_common(
 
    /* Whichever Wayland context comes next takes back the kept window:
     * the previous one took its EGL window or Vulkan surface with it. */
-   if (wl_kept)
-   {
-      *wwl    = wl_kept;
-      wl_kept = NULL;
-      gfx_ctx_wl_adopt(*wwl, driver_configure_handler);
-      RARCH_LOG("[Wayland] Took back the kept window.\n");
+   if ((*wwl = gfx_ctx_wl_take_kept(driver_configure_handler)))
       return true;
-   }
 
    *wwl                         = calloc(1, sizeof(gfx_ctx_wayland_data_t));
    wl                           = *wwl;

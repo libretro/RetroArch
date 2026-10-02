@@ -74,8 +74,9 @@
 #include "../gfx/gfx_widgets.h"
 #endif
 
-#if defined(HAVE_WAYLAND) && defined(WEBOS)
-#include "../input/common/wayland_common_webos.h"
+#ifdef HAVE_WAYLAND
+/* gfx/common/wayland_common.c */
+void gfx_ctx_wl_release_kept(void);
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -2331,11 +2332,11 @@ static void content_load_step(struct content_load_job *job,
              * unstaged failure leaves them. */
             if (job->staged)
                driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
-#if defined(HAVE_WAYLAND) && defined(WEBOS)
-            /* Nothing is coming for the surface kept across the
+#ifdef HAVE_WAYLAND
+            /* Nothing is coming for the window kept across the
              * reinit: hand it back, and webOS returns to its
              * dashboard rather than a window nothing draws into. */
-            gfx_ctx_wl_webos_release_kept_surface();
+            gfx_ctx_wl_release_kept();
 #endif
             content_load_finish(job, p_content);
             break;
