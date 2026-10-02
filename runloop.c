@@ -2185,13 +2185,13 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_LANGUAGE:
-#ifdef HAVE_LANGEXTRA
+         /* Builds without HAVE_LANGEXTRA have no language setting and
+          * hold English here, which is what their menus show. */
          {
             unsigned user_lang = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
             *(unsigned *)data  = user_lang;
             RARCH_LOG("[Environ] GET_LANGUAGE: \"%u\".\n", user_lang);
          }
-#endif
          break;
 
       case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT:
