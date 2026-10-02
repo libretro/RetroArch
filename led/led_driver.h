@@ -41,6 +41,10 @@ void led_driver_free(void);
 
 void led_driver_set_led(int led, int value);
 
+/* Write the LED states a core's calls left this frame. Main thread,
+ * once the core has run. */
+void led_driver_flush(void);
+
 extern const led_driver_t overlay_led_driver;
 extern const led_driver_t rpi_led_driver;
 extern const led_driver_t keyboard_led_driver;

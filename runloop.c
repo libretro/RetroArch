@@ -4694,6 +4694,11 @@ void runloop_event_deinit_core(void)
 #endif
    }
 
+   /* A core may turn its LEDs or motors off as it unloads; no frame
+    * follows to write that. */
+   input_driver_flush_rumble();
+   led_driver_flush();
+
    /* retro_deinit() may call
     * RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE
     * (i.e. to ensure that fastforwarding is
@@ -8894,6 +8899,13 @@ int runloop_iterate(void)
    if (runloop_st->frame_work & RUNLOOP_WORK_CHEATS)
       cheat_manager_apply_retro_cheats();
 #endif
+
+   /* The core's rumble and LED calls stored what it asked for; write
+    * the frame's last values now that it is off the stack. After the
+    * cheats, which can rumble too. One load and a compare each when
+    * nothing was set. */
+   input_driver_flush_rumble();
+   led_driver_flush();
 #ifdef HAVE_PRESENCE
    /* "In a game" does not change at the core rate; the sinks
     * (Discord at 10 Hz, Steam) are written on the same cadence. */
@@ -9578,6 +9590,11 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
       game_loaded = runloop_st->current_core.retro_load_game(load_info->info);
    else if (content_get_flags() & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT)
       game_loaded = runloop_st->current_core.retro_load_game(NULL);
+
+   /* Whatever the core set while loading: its first frame may be some
+    * way off, behind the menu or a pause. */
+   input_driver_flush_rumble();
+   led_driver_flush();
 
    if (game_loaded)
    {

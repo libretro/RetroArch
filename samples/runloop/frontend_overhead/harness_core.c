@@ -53,6 +53,29 @@ volatile int harness_core_in_input;
 static void (*in_probe)(int point);
 void harness_core_set_probe(void (*probe)(int point)) { in_probe = probe; }
 
+/* Rumble: @calls set_rumble_state calls a frame on port 0's strong
+ * motor, the last with strength @calls * 100, and one on the weak
+ * motor with strength 50. 0 stops. */
+static struct retro_rumble_interface rumble;
+static unsigned      rumble_calls;
+static unsigned long rumble_made;
+static unsigned long rumble_true;
+
+void harness_core_rumble(unsigned calls)
+{
+   rumble_calls = calls;
+   rumble_made  = 0;
+   rumble_true  = 0;
+}
+
+/* The calls made since harness_core_rumble(), and how many of them the
+ * frontend answered true. */
+void harness_core_rumble_stats(unsigned long *made, unsigned long *answered_true)
+{
+   *made          = rumble_made;
+   *answered_true = rumble_true;
+}
+
 static unsigned long long now_ns(void)
 {
    struct timespec ts;
@@ -111,7 +134,11 @@ void retro_set_audio_sample(retro_audio_sample_t cb)        { (void)cb; }
 void retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { audio_cb = cb; }
 void retro_set_input_poll(retro_input_poll_t cb)            { poll_cb = cb; }
 void retro_set_input_state(retro_input_state_t cb)          { state_cb = cb; }
-void retro_init(void) { }
+void retro_init(void)
+{
+   if (environ_cb)
+      environ_cb(RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE, &rumble);
+}
 void retro_deinit(void) { }
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }
 void retro_get_system_info(struct retro_system_info *info)
@@ -191,6 +218,19 @@ void retro_run(void)
       in_first_ns += first_ns;
       in_state_ns += t2 - tf;
       in_frames++;
+      if (rumble_calls && rumble.set_rumble_state)
+      {
+         unsigned i;
+         for (i = 1; i <= rumble_calls; i++)
+         {
+            rumble_made++;
+            if (rumble.set_rumble_state(0, RETRO_RUMBLE_STRONG, (uint16_t)(i * 100)))
+               rumble_true++;
+         }
+         rumble_made++;
+         if (rumble.set_rumble_state(0, RETRO_RUMBLE_WEAK, 50))
+            rumble_true++;
+      }
       if (in_probe)
          in_probe(3);
    }

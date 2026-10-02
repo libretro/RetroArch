@@ -43,6 +43,13 @@
  *     poll left was the one after retro_run() and the core read input
  *     a frame old.
  *
+ *   - A core's rumble calls are stored, not written (input plan,
+ *     section 10: the core's call does no device I/O). The harness
+ *     core sets the strong motor several times a frame and the weak
+ *     one once; the joypad driver's set_rumble is counted inside
+ *     retro_run() and after it. None may happen inside, and after it
+ *     there is one per motor, carrying the last strength the core set.
+ *
  * Nothing is stubbed. */
 #include <stdio.h>
 #include <stdlib.h>
@@ -521,6 +528,129 @@ static void lane_input_poll_sites(const char *loaded_with)
 #endif
 }
 
+/* A core's rumble calls: stored during retro_run(), written after it. */
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+static unsigned long         rumble_writes;
+static unsigned long         rumble_mark;
+static unsigned long         rumble_in_run;
+static unsigned              rumble_last[2];
+static input_device_driver_t rumble_joypad;
+
+static bool counting_set_rumble(unsigned pad,
+      enum retro_rumble_effect effect, uint16_t strength)
+{
+   rumble_writes++;
+   if (pad == 0 && (unsigned)effect < 2)
+      rumble_last[effect] = strength;
+   return true;
+}
+
+/* Called by the harness core as retro_run() ends. */
+static void rumble_probe(int point)
+{
+   if (point == 3)
+   {
+      rumble_in_run += rumble_writes - rumble_mark;
+      rumble_mark    = rumble_writes;
+   }
+}
+#endif
+
+#define RUMBLE_CALLS  5
+#define RUMBLE_FRAMES 300
+
+static void lane_output_store(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   input_driver_state_t *input_st = input_state_get_ptr();
+   const input_device_driver_t *joypad_real;
+   void (*set_probe)(void (*)(int));
+   void (*measure)(unsigned, unsigned);
+   void (*rumble)(unsigned);
+   void (*rumble_stats)(unsigned long*, unsigned long*);
+   unsigned long made, answered_true, after_run = 0;
+   void    *core;
+   unsigned had = failures;
+   unsigned i;
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(set_probe = (void (*)(void (*)(int)))dlsym(core, "harness_core_set_probe"))
+       || !(measure = (void (*)(unsigned, unsigned))dlsym(core, "harness_core_input_measure"))
+       || !(rumble = (void (*)(unsigned))dlsym(core, "harness_core_rumble"))
+       || !(rumble_stats = (void (*)(unsigned long*, unsigned long*))
+             dlsym(core, "harness_core_rumble_stats"))
+       || !input_st->primary_joypad)
+   {
+      CHECK(false, "output store: the harness core's rumble entry points or the joypad driver");
+      return;
+   }
+
+   /* the test joypad has no motors: give it one that counts */
+   joypad_real              = input_st->primary_joypad;
+   rumble_joypad            = *joypad_real;
+   rumble_joypad.set_rumble = counting_set_rumble;
+   input_st->primary_joypad = &rumble_joypad;
+
+   fast_forward(true);
+   measure(16, 1);
+   set_probe(rumble_probe);
+   rumble(RUMBLE_CALLS);
+
+   rumble_writes = rumble_in_run = 0;
+   for (i = 0; i < RUMBLE_FRAMES; i++)
+   {
+      rumble_mark = rumble_writes;
+      runloop_iterate();
+      after_run  += rumble_writes - rumble_mark;
+      task_queue_check();
+   }
+   rumble_stats(&made, &answered_true);
+
+   CHECK(made == (unsigned long)RUMBLE_FRAMES * (RUMBLE_CALLS + 1),
+         "output store: the core did not make its rumble calls");
+   CHECK(rumble_in_run == 0,
+         "output store: the driver was written from inside retro_run()");
+   CHECK(after_run == (unsigned long)RUMBLE_FRAMES * 2,
+         "output store: not one driver write per motor per frame");
+   CHECK(   rumble_last[RETRO_RUMBLE_STRONG] == RUMBLE_CALLS * 100
+         && rumble_last[RETRO_RUMBLE_WEAK]   == 50,
+         "output store: the driver was not given the last strength the core set");
+   CHECK(answered_true == made,
+         "output store: a rumble call was answered false with a driver that rumbles");
+   if (failures != had)
+      fprintf(stderr, "       %lu rumble calls over %u frames: %lu driver writes"
+            " inside retro_run, %lu after it; last strong %u, weak %u;"
+            " %lu answered true\n",
+            made, (unsigned)RUMBLE_FRAMES, rumble_in_run, after_run,
+            rumble_last[RETRO_RUMBLE_STRONG], rumble_last[RETRO_RUMBLE_WEAK],
+            answered_true);
+
+   /* stopping writes zeros now and leaves nothing behind for later */
+   rumble(0);
+   rumble_mark = rumble_writes;
+   command_event(CMD_EVENT_RUMBLE_STOP, NULL);
+   CHECK(rumble_writes > rumble_mark, "output store: a stop wrote nothing");
+   CHECK(   rumble_last[RETRO_RUMBLE_STRONG] == 0
+         && rumble_last[RETRO_RUMBLE_WEAK]   == 0,
+         "output store: a stop left a motor running");
+   rumble_mark = rumble_writes;
+   run_loop_frames(10);
+   CHECK(rumble_writes == rumble_mark,
+         "output store: a driver write with no rumble call behind it");
+
+   set_probe(NULL);
+   measure(0, 1);
+   fast_forward(false);
+   input_st->primary_joypad = joypad_real;
+   if (failures == had)
+      printf("[pass] rumble: %u calls a frame, no driver write inside retro_run,"
+            " one per motor after it with the last strength\n",
+            (unsigned)RUMBLE_CALLS + 1);
+#else
+   printf("[skip] output-store lane: need the test drivers and dlopen\n");
+#endif
+}
+
 static void lane_frame_cost(void)
 {
    unsigned had = failures;
@@ -709,6 +839,7 @@ int main(int argc, char *argv[])
       lane_input_cost();
       lane_input_poll_modes();
       lane_input_poll_sites(load_poll_name[load_poll]);
+      lane_output_store();
    }
 
    if (failures)

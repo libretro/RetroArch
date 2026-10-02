@@ -1238,6 +1238,13 @@ bool input_key_pressed(int key, bool keyboard_pressed);
 bool input_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength);
 
+/* Write the rumble strengths a core's calls left this frame. Main
+ * thread, once the core has run. */
+void input_driver_flush_rumble(void);
+
+/* Stop every motor now and drop what was waiting to be written. */
+void input_driver_stop_rumble(void);
+
 bool input_set_rumble_gain(unsigned gain);
 
 float input_get_sensor_state(unsigned port, unsigned id);

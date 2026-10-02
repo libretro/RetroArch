@@ -48,6 +48,7 @@
 #include "input_keymaps.h"
 #include "input_remapping.h"
 #include "input_osk.h"
+#include "input_output_store.h"
 #include "input_types.h"
 
 #ifdef HAVE_MIST
@@ -5633,8 +5634,12 @@ const char *joypad_driver_name(unsigned i)
    return input_driver_st.primary_joypad->name(i);
 }
 
+static void input_rumble_forget(void);
+
 void joypad_driver_reinit(void *data, const char *joypad_driver_name)
 {
+   input_rumble_forget();
+
    if (input_driver_st.primary_joypad)
    {
       const input_device_driver_t *tmp  = input_driver_st.primary_joypad;
@@ -5815,34 +5820,117 @@ static void input_sensor_update_rest_capture(settings_t *settings)
    }
 }
 
+/* A core's rumble calls, held until the frame has run (see
+ * input_output_store.h). One slot per port and motor. */
+#define INPUT_RUMBLE_SLOT(port, effect) ((port) * 2 + (unsigned)(effect))
+
+static output_store_t     input_rumble_store;
+/* What the driver answered the last time a slot was written: 0 not
+ * written yet, 1 false, 2 true. */
+static retro_atomic_int_t input_rumble_answer[MAX_USERS * 2];
+
+static void input_rumble_write(unsigned slot, int value, void *userdata)
+{
+   settings_t *settings = (settings_t*)userdata;
+   unsigned port        = slot / 2;
+   bool ok              = input_driver_set_rumble(port,
+         settings->uints.input_joypad_index[port],
+         (enum retro_rumble_effect)(slot & 1), (uint16_t)value);
+
+   retro_atomic_store_release_int(&input_rumble_answer[slot], ok ? 2 : 1);
+}
+
 /**
  * Sets the rumble state. Used by RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE.
+ *
+ * The strength is stored, not written: a core calls this from inside
+ * retro_run(), often every frame and sometimes several times in one,
+ * and each call used to be a driver write on the core's own stack.
+ * input_driver_flush_rumble() writes the frame's last value once the
+ * core has run.
  *
  * @param port      User number.
  * @param effect    Rumble effect.
  * @param strength  Strength of rumble effect.
  *
- * @return true if the rumble state has been successfully set
+ * @return what the driver answered the last time this motor was
+ * written; before the first write, whether a driver could take it.
  **/
 bool input_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
+   const input_device_driver_t *primary_joypad;
+   const input_device_driver_t *sec_joypad;
    settings_t *settings     = config_get_ptr();
-   unsigned joy_idx         = settings->uints.input_joypad_index[port];
    uint16_t scaled_strength = strength;
+   unsigned slot;
+   int answer;
+
+   /* Both come from the core. */
+   if (     port >= MAX_USERS
+         || (     effect != RETRO_RUMBLE_STRONG
+               && effect != RETRO_RUMBLE_WEAK))
+      return false;
+
+   primary_joypad = input_driver_st.primary_joypad;
+   sec_joypad     = input_driver_st.secondary_joypad;
 
    /* If gain setting is not supported, do software gain control */
-   if (input_driver_st.primary_joypad)
+   if (primary_joypad)
    {
-      if (!input_driver_st.primary_joypad->set_rumble_gain)
+      if (!primary_joypad->set_rumble_gain)
       {
          unsigned rumble_gain = settings->uints.input_rumble_gain;
          scaled_strength      = (rumble_gain * strength) / 100.0;
       }
    }
 
-   return input_driver_set_rumble(
-      port, joy_idx, effect, scaled_strength);
+   slot = INPUT_RUMBLE_SLOT(port, effect);
+   output_store_post(&input_rumble_store, slot, scaled_strength);
+
+   answer = retro_atomic_load_acquire_int(&input_rumble_answer[slot]);
+   if (answer)
+      return answer == 2;
+   return    (primary_joypad && primary_joypad->set_rumble)
+          || (sec_joypad     && sec_joypad->set_rumble);
+}
+
+/* Write what the core's rumble calls left this frame: one driver call
+ * for each motor it set, with the last strength. Main thread, with the
+ * core off the stack. */
+void input_driver_flush_rumble(void)
+{
+   if (output_store_pending(&input_rumble_store))
+      output_store_take(&input_rumble_store, input_rumble_write,
+            config_get_ptr());
+}
+
+/* Stop every motor now, and forget what was waiting to be written.
+ * Used by CMD_EVENT_RUMBLE_STOP. */
+void input_driver_stop_rumble(void)
+{
+   unsigned i;
+   settings_t *settings = config_get_ptr();
+
+   output_store_drop(&input_rumble_store);
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      unsigned joy_idx = settings->uints.input_joypad_index[i];
+      input_driver_set_rumble(i, joy_idx, RETRO_RUMBLE_STRONG, 0);
+      input_driver_set_rumble(i, joy_idx, RETRO_RUMBLE_WEAK, 0);
+   }
+}
+
+/* The joypad driver is going away: nothing stored is for the next
+ * one, and its answers are not the next one's either. */
+static void input_rumble_forget(void)
+{
+   unsigned i;
+
+   output_store_drop(&input_rumble_store);
+   for (i = 0; i < MAX_USERS * 2; i++)
+      retro_atomic_store_release_int(&input_rumble_answer[i], 0);
 }
 
 /**

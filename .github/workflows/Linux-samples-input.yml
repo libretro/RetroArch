@@ -285,6 +285,32 @@ jobs:
           make clean
           echo "[pass] android_key_state_test (ASan)"
 
+      - name: Build and run output_store_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/input/output_store
+        run: |
+          set -eu
+          # What a core asks of a rumble motor or an LED, between the
+          # core's call and the frontend's write to the device. Those
+          # calls used to be driver writes on the core's own stack, as
+          # many a frame as the core made; they now post into a store
+          # that the frame loop takes once the core has run. Pins that
+          # a post writes nothing, that an output set many times in a
+          # frame is written once with the last value, that one set to
+          # the value it already had is still written, that a drop
+          # forgets, and - with three threads posting while the frame
+          # loop takes - that every output ends on the last value
+          # posted to it. A take that sees the posts and writes
+          # nothing, the shape of a stop that never reaches the motor,
+          # is put back and asserted to be caught.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 120 ./output_store_test
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./output_store_test
+          make clean
+          echo "[pass] output_store_test (ASan, TSan)"
+
       - name: Build and run android_stylus_map_test (ASan + UBSan)
         shell: bash
         working-directory: samples/input/android_stylus_map

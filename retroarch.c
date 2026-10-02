@@ -5856,15 +5856,7 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_RUMBLE_STOP:
-         {
-            unsigned i;
-            for (i = 0; i < MAX_USERS; i++)
-            {
-               unsigned joy_idx = settings->uints.input_joypad_index[i];
-               input_driver_set_rumble(i, joy_idx, RETRO_RUMBLE_STRONG, 0);
-               input_driver_set_rumble(i, joy_idx, RETRO_RUMBLE_WEAK, 0);
-            }
-         }
+         input_driver_stop_rumble();
          break;
       case CMD_EVENT_TURBO_FIRE_TOGGLE:
          configuration_set_bool(settings,
