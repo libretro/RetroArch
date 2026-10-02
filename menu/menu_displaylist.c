@@ -8397,7 +8397,6 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
             || t == (unsigned)DISPLAYLIST_SYSTEM_INFO
             || t == (unsigned)DISPLAYLIST_DISPLAY_INFO
             || t == (unsigned)DISPLAYLIST_DISPLAY_EDID_INFO
-            || t == (unsigned)DISPLAYLIST_HELP_SCREEN_LIST
             /* The core-content family reaches for the network and
              * blocks headless; nothing deterministic lives there. */
             || (t >= (unsigned)DISPLAYLIST_CORE_CONTENT
@@ -8435,7 +8434,6 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
             || t == (unsigned)DISPLAYLIST_SYSTEM_INFO
             || t == (unsigned)DISPLAYLIST_DISPLAY_INFO
             || t == (unsigned)DISPLAYLIST_DISPLAY_EDID_INFO
-            || t == (unsigned)DISPLAYLIST_HELP_SCREEN_LIST
             /* The core-content family reaches for the network and
              * blocks headless; nothing deterministic lives there. */
             || (t >= (unsigned)DISPLAYLIST_CORE_CONTENT
@@ -8474,7 +8472,6 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
             || t == (unsigned)DISPLAYLIST_SYSTEM_INFO
             || t == (unsigned)DISPLAYLIST_DISPLAY_INFO
             || t == (unsigned)DISPLAYLIST_DISPLAY_EDID_INFO
-            || t == (unsigned)DISPLAYLIST_HELP_SCREEN_LIST
             || (t >= (unsigned)DISPLAYLIST_CORE_CONTENT
                   && t <= (unsigned)DISPLAYLIST_CORE_SYSTEM_FILES))
       {
@@ -12147,7 +12144,6 @@ unsigned menu_displaylist_build_list(
 #endif
                {MENU_ENUM_LABEL_MENU_SHOW_INFORMATION,                                 PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_CONFIGURATIONS,                              PARSE_ONLY_BOOL, true  },
-               {MENU_ENUM_LABEL_MENU_SHOW_HELP,                                        PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_SHOW_WIMP,                                             PARSE_ONLY_UINT, true  },
 #if !TARGET_OS_IPHONE
                {MENU_ENUM_LABEL_MENU_SHOW_QUIT_RETROARCH,                              PARSE_ONLY_BOOL, true  },
@@ -16483,7 +16479,6 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_MICROPHONE_SETTINGS_LIST:
 #endif
          case DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
-         case DISPLAYLIST_HELP_SCREEN_LIST:
          case DISPLAYLIST_INFORMATION_LIST:
          case DISPLAYLIST_EXPLORE:
          case DISPLAYLIST_SCAN_DIRECTORY_LIST:

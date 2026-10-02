@@ -12283,11 +12283,6 @@ static void materialui_list_insert(void *userdata,
                node->icon_texture_index = MUI_TEXTURE_HISTORY;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
-            else if (string_is_equal(label, MENU_ENUM_LABEL_HELP_LIST_STR))
-            {
-               node->icon_texture_index = MUI_TEXTURE_HELP;
-               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
-            }
             else if (string_is_equal(label, MENU_ENUM_LABEL_RESTART_CONTENT_STR))
             {
                node->icon_texture_index = MUI_TEXTURE_RESTART;

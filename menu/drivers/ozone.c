@@ -2211,8 +2211,6 @@ static uintptr_t ozone_entries_icon_get_texture(
             return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_CORE];
       case MENU_ENUM_LABEL_CURSOR_MANAGER_LIST:
             return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_CURSOR];
-      case MENU_ENUM_LABEL_HELP_LIST:
-            return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_HELP];
       case MENU_ENUM_LABEL_QUIT_RETROARCH:
             return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_EXIT];
 

@@ -250,7 +250,6 @@ GENERIC_DEFERRED_PUSH(deferred_push_accounts_twitch_list,           DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_accounts_youtube_list,          DISPLAYLIST_ACCOUNTS_YOUTUBE_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_accounts_facebook_list,         DISPLAYLIST_ACCOUNTS_FACEBOOK_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_accounts_kick_list,             DISPLAYLIST_ACCOUNTS_KICK_LIST)
-GENERIC_DEFERRED_PUSH(deferred_push_help,                           DISPLAYLIST_HELP_SCREEN_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_rdb_entry_detail,               DISPLAYLIST_DATABASE_ENTRY)
 GENERIC_DEFERRED_PUSH(deferred_push_rpl_entry_actions,              DISPLAYLIST_HORIZONTAL_CONTENT_ACTIONS)
 GENERIC_DEFERRED_PUSH(deferred_push_core_list_deferred,             DISPLAYLIST_CORES_SUPPORTED)
@@ -750,7 +749,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_CORE_OPTION_OVERRIDE_LIST, deferred_push_core_option_override_list},
       {MENU_ENUM_LABEL_NETWORK_INFORMATION, deferred_push_network_information},
       {MENU_ENUM_LABEL_ONLINE_UPDATER, deferred_push_options},
-      {MENU_ENUM_LABEL_HELP_LIST, deferred_push_help},
       {MENU_ENUM_LABEL_INFORMATION_LIST, deferred_push_information_list},
       {MENU_ENUM_LABEL_INFORMATION, deferred_push_information},
       {MENU_ENUM_LABEL_SHADER_OPTIONS, deferred_push_shader_options},
@@ -901,7 +899,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          { MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL, deferred_push_load_content_special },
          { MENU_ENUM_LABEL_INFORMATION_LIST, deferred_push_information_list },
          { MENU_ENUM_LABEL_INFORMATION, deferred_push_information },
-         { MENU_ENUM_LABEL_HELP_LIST, deferred_push_help },
          { MENU_ENUM_LABEL_DEFERRED_CORE_LIST, deferred_push_core_list_deferred },
          { MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET, deferred_push_core_collection_list_deferred },
          { MENU_ENUM_LABEL_DEFERRED_VIDEO_FILTER, deferred_push_video_filter },
