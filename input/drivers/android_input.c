@@ -45,6 +45,7 @@
 #include "../../frontend/drivers/platform_unix.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
 #include "android_kbd_route.h"
+#include "android_stylus_map.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../performance_counters.h"
 
@@ -204,8 +205,7 @@ typedef struct android_input
     * quick-tap emulation is suppressed. */
    bool    stylus_proximity_active;
    int64_t stylus_proximity_until_ns;
-   bool    stylus_contact_active;      /* Tip has touched since the last UP */
-   bool    stylus_press_active;        /* The pen holds pointer 0 pressed */
+   android_stylus_state_t stylus;      /* What the pen is holding (android_stylus_map.h) */
    state_device_t pad_states[MAX_USERS];        /* int alignment */
    int mouse_x, mouse_y;
    int16_t mouse_x_viewport_screen, mouse_y_viewport_screen;
@@ -1361,8 +1361,8 @@ static void *android_input_init(const char *joypad_driver)
    android->quick_tap_time = 0;
    android->stylus_proximity_active = false;
    android->stylus_proximity_until_ns = 0;
-   android->stylus_contact_active = false;
-   android->stylus_press_active = false;
+   android->stylus.contact_active = false;
+   android->stylus.press_active   = false;
 
    input_keymaps_init_keyboard_lut(rarch_key_map_android);
 
@@ -1542,24 +1542,6 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    android->mouse_y = y;
 }
 
-/* How a pen maps onto the libretro devices this driver already
- * reports. Nothing here is pen-specific to a core:
- *
- * - Position: pointer 0. While hovering it moves without being
- *   pressed (input_stylus_hover_moves_pointer).
- * - Press: pointer 0 pressed, pointer count 1. The tip pressing
- *   harder than input_stylus_pressure_sensitivity allows is a press;
- *   with input_stylus_require_contact_for_click off, so is the barrel
- *   button, touching or hovering.
- * - Barrel button: the right mouse button.
- *
- * Pointer indices keep their meaning: index N is the Nth touch. A pen
- * is one touch, so it never occupies more than index 0. Reporting the
- * tip and the barrel button as further "touches" would read as a
- * two- and three-finger touch to everything that counts pointers,
- * this driver's own lightgun mapping included (two pointers are
- * turbo, three are reload). */
-
 /* The pen's position, written to pointer 0. */
 static void android_stylus_set_position(android_input_t *android,
       float x, float y)
@@ -1584,21 +1566,25 @@ static void android_stylus_set_position(android_input_t *android,
          &android->pointer[0].full_y);
 }
 
-/* Press or release pointer 0 for the pen. pointer_count is shared
- * with the touchscreen. A pressing pen takes it, as a touchscreen
- * event does, and says so on every event so a finger lifting in
- * between cannot leave it released. A pen that is not pressing leaves
- * it alone, apart from letting go of its own press: a hover event
- * must not release a finger. */
-static void android_stylus_set_pressed(android_input_t *android,
-      bool pressed)
+/* One pen event: the decision is android_stylus_map.h's, and this
+ * applies it to the pointer and mouse state. */
+static void android_stylus_event(android_input_t *android,
+      const android_stylus_cfg_t *cfg, enum android_stylus_event event,
+      bool side_pressed, float pressure, float distance,
+      float x, float y)
 {
-   if (pressed)
-      android->pointer_count    = 1;
-   else if (android->stylus_press_active)
-      android->pointer_count    = 0;
+   android_stylus_result_t res;
 
-   android->stylus_press_active = pressed;
+   android_stylus_map(&android->stylus, cfg, event, side_pressed,
+         pressure, distance, &res);
+
+   if (res.set_position)
+      android_stylus_set_position(android, x, y);
+
+   android->mouse_r = res.mouse_r;
+
+   if (res.pointer_count != ANDROID_STYLUS_COUNT_KEEP)
+      android->pointer_count = res.pointer_count;
 }
 
 static INLINE void android_input_poll_event_type_motion(
@@ -1612,9 +1598,9 @@ static INLINE void android_input_poll_event_type_motion(
    int32_t tool_type;
    bool is_stylus, is_finger, is_hover_action;
    settings_t *settings;
-   bool require_contact, tip_down, stylus_pressed;
-   bool side_pressed, tip_touching;
-   float pressure, distance, pressure_threshold;
+   android_stylus_cfg_t stylus_cfg;
+   bool side_pressed;
+   float pressure, distance;
    int buttons;
    bool keyup;
 
@@ -1672,7 +1658,13 @@ static INLINE void android_input_poll_event_type_motion(
        * who has disabled S-Pen support. */
       g_android_stylus_last_event_ns = (int64_t)cpu_features_get_time_usec() * 1000;
 
-      require_contact = settings->bools.input_stylus_require_contact_for_click;
+      stylus_cfg.require_contact      =
+         settings->bools.input_stylus_require_contact_for_click;
+      stylus_cfg.hover_moves_pointer  =
+         settings->bools.input_stylus_hover_moves_pointer;
+      stylus_cfg.pressure_sensitivity =
+         settings->uints.input_stylus_pressure_sensitivity;
+
       buttons         = p_AMotionEvent_getButtonState ?
          AMotionEvent_getButtonState(event) : 0;
       /* Which of the two the barrel button reports varies by device. */
@@ -1680,7 +1672,7 @@ static INLINE void android_input_poll_event_type_motion(
                                   | AMOTION_EVENT_BUTTON_STYLUS_SECONDARY)) != 0;
 
       /* The barrel button is the pen's secondary button: report it
-       * the way a mouse's is (see the mapping above). */
+       * the way a mouse's is (see android_stylus_map.h). */
       android->mouse_r = side_pressed;
 
       switch (action)
@@ -1698,34 +1690,18 @@ static INLINE void android_input_poll_event_type_motion(
                AMotionEvent_getEventTime(event) + 120000000; /* 120ms */
             android->quick_tap_time            = 0;
 
-            if (action == AMOTION_EVENT_ACTION_HOVER_EXIT)
-            {
-               /* Out of range: nothing the pen held stays held. */
-               android->mouse_r = false;
-               android_stylus_set_pressed(android, false);
-               return;
-            }
-
-            /* A hovering pen presses only when the user allowed a click
-             * without contact and holds the barrel button. */
-            stylus_pressed = !require_contact && side_pressed;
-
-            if (     stylus_pressed
-                  || settings->bools.input_stylus_hover_moves_pointer)
-               android_stylus_set_position(android, x, y);
-
-            android_stylus_set_pressed(android, stylus_pressed);
+            android_stylus_event(android, &stylus_cfg,
+                  (action == AMOTION_EVENT_ACTION_HOVER_EXIT)
+                  ? ANDROID_STYLUS_HOVER_EXIT : ANDROID_STYLUS_HOVER,
+                  side_pressed, 0.0f, 1.0f, x, y);
             return;
 
          case AMOTION_EVENT_ACTION_UP:
          case AMOTION_EVENT_ACTION_CANCEL:
-            /* A lifted pen keeps reporting its barrel button through
-             * the hover events that follow; a cancelled gesture has
-             * none coming. */
-            if (action == AMOTION_EVENT_ACTION_CANCEL)
-               android->mouse_r            = false;
-            android->stylus_contact_active = false;
-            android_stylus_set_pressed(android, false);
+            android_stylus_event(android, &stylus_cfg,
+                  (action == AMOTION_EVENT_ACTION_CANCEL)
+                  ? ANDROID_STYLUS_CANCEL : ANDROID_STYLUS_UP,
+                  side_pressed, 0.0f, 0.0f, x, y);
 #ifdef DEBUG_ANDROID_INPUT
             RARCH_LOG("[Stylus] UP - pointer released\n");
 #endif
@@ -1747,39 +1723,14 @@ static INLINE void android_input_poll_event_type_motion(
                distance = AMotionEvent_getAxisValue(event,
                   AMOTION_EVENT_AXIS_DISTANCE, motion_ptr);
 
-            /* Contact is distance-based (instant, no pressure needed);
-             * click is pressure-based against a user-configurable threshold. */
-            tip_touching = (distance <= 0.0f);
-
-            /* Map sensitivity 1..100 to threshold 0.02475..0.0 (higher = more
-             * sensitive; 100 = instant click on any pressure > 0). */
-            {
-               unsigned sens = settings->uints.input_stylus_pressure_sensitivity;
-               if (sens > 100)
-                  sens = 100;
-               pressure_threshold = (100 - (int)sens) * 0.00025f;
-            }
-            tip_down       = tip_touching && (pressure > pressure_threshold);
-            stylus_pressed = tip_down || (!require_contact && side_pressed);
-
 #ifdef DEBUG_ANDROID_INPUT
-            RARCH_LOG("[RA Input] S Pen contact - req_contact:%s tip_down:%s "
-                      "side:%s pressed:%s p=%.3f d=%.3f\n",
-                      require_contact ? "Y" : "N", tip_down ? "Y" : "N",
-                      side_pressed ? "Y" : "N", stylus_pressed ? "Y" : "N",
-                      pressure, distance);
+            RARCH_LOG("[RA Input] S Pen contact - side:%s p=%.3f d=%.3f\n",
+                      side_pressed ? "Y" : "N", pressure, distance);
 #endif
 
-            if (tip_touching)
-               android->stylus_contact_active = true;
-
-            /* Before the tip has touched, a DOWN or MOVE that still
-             * reports distance is a hover: the position stays where the
-             * last contact left it, so the cursor does not jump. */
-            if (android->stylus_contact_active || stylus_pressed)
-               android_stylus_set_position(android, x, y);
-
-            android_stylus_set_pressed(android, stylus_pressed);
+            android_stylus_event(android, &stylus_cfg,
+                  ANDROID_STYLUS_CONTACT,
+                  side_pressed, pressure, distance, x, y);
             return;
 
          default:

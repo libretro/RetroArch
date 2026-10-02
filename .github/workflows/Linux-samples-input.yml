@@ -217,6 +217,27 @@ jobs:
           make clean
           echo "[pass] android_kbd_keys_test (ASan)"
 
+      - name: Build and run android_stylus_map_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/android_stylus_map
+        run: |
+          set -eu
+          # An Android pen, through the mapping that turns its events
+          # into pointer and mouse state. Pins that a pen is one touch:
+          # the tip pressing is pointer 0 pressed and the barrel button
+          # is the right mouse button, where the first version raised
+          # the pointer count to 2 and 3 and read as a two- and
+          # three-finger touch (turbo and reload to the driver's own
+          # lightgun mapping). Also that a hover does not release a
+          # finger, that the barrel button is let go with the pen, and
+          # that the two click settings decide what a press is. The old
+          # pointer counts are put back and asserted to be caught.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./android_stylus_map_test
+          make clean
+          echo "[pass] android_stylus_map_test (ASan)"
+
       - name: Build and run overlay_textures_test (plain, ASan + UBSan, threaded)
         shell: bash
         working-directory: samples/input/overlay_textures
