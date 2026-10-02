@@ -119,7 +119,6 @@ static struct
    const char *name;
 } gx_devices[GX_DEVICE_END];
 
-static slock_t *gx_device_mutex          = NULL;
 static slock_t *gx_device_cond_mutex     = NULL;
 static scond_t *gx_device_cond           = NULL;
 static sthread_t *gx_device_thread       = NULL;
@@ -133,8 +132,6 @@ static void gx_devthread(void *a)
 
    while (!gx_stop_dev_thread)
    {
-      slock_lock(gx_device_mutex);
-
       for (i = 0; i < GX_DEVICE_END; i++)
       {
          if (gx_devices[i].mounted)
@@ -153,7 +150,6 @@ static void gx_devthread(void *a)
             gx_devices[i].mounted = fatMountSimple(gx_devices[i].name, gx_devices[i].interface);
       }
 
-      slock_unlock(gx_device_mutex);
       scond_wait_timeout(gx_device_cond, gx_device_cond_mutex, 1000000);
    }
 
@@ -398,7 +394,6 @@ static void frontend_gx_init(void *data)
 
    gx_device_cond_mutex = slock_new();
    gx_device_cond       = scond_new();
-   gx_device_mutex      = slock_new();
    gx_device_thread     = sthread_create(gx_devthread, NULL);
 #endif
 }
@@ -414,11 +409,9 @@ static void frontend_gx_deinit(void *data)
 
    /* Release the sync primitives allocated in frontend_gx_init.
     * Without this, a frontend re-init (e.g. CMD_EVENT_QUIT followed
-    * by relaunch) leaks one mutex+cond+mutex triple every cycle. */
-   slock_free(gx_device_mutex);
+    * by relaunch) leaks a mutex and a cond every cycle. */
    slock_free(gx_device_cond_mutex);
    scond_free(gx_device_cond);
-   gx_device_mutex      = NULL;
    gx_device_cond_mutex = NULL;
    gx_device_cond       = NULL;
    gx_device_thread     = NULL;
