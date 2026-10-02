@@ -9576,10 +9576,13 @@ bool config_save_file(const char *path)
       else
          config_unset(conf, cfg);
 
+      /* What the user configured, which is not what the setting holds
+       * while a driver restart has put controllers back on their
+       * ports. */
       strlcpy_lit(cfg + _len, "_joypad_index",      sizeof(cfg) - _len);
       if (   !minimal
-          || settings->uints.input_joypad_index[i] != defaults->uints.input_joypad_index[i])
-         config_set_int(conf, cfg, settings->uints.input_joypad_index[i]);
+          || input_config_get_saved_joypad_index(i) != defaults->uints.input_joypad_index[i])
+         config_set_int(conf, cfg, input_config_get_saved_joypad_index(i));
       else
          config_unset(conf, cfg);
 
@@ -10172,12 +10175,14 @@ int8_t config_save_overrides(enum override_type type,
             RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_mouse_index[i]);
          }
 
+         /* The live value is what the user configured, not a port a
+          * driver restart handed back. */
          if (settings->uints.input_joypad_index[i]
-               != overrides->uints.input_joypad_index[i])
+               != input_config_get_saved_joypad_index(i))
          {
             strlcpy_lit(cfg + _len, "_joypad_index",  sizeof(cfg) - _len);
-            config_set_int(conf, cfg, overrides->uints.input_joypad_index[i]);
-            RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_joypad_index[i]);
+            config_set_int(conf, cfg, input_config_get_saved_joypad_index(i));
+            RARCH_DBG("[Override] %s = \"%u\"\n", cfg, input_config_get_saved_joypad_index(i));
          }
 
          if (settings->uints.input_device_reservation_type[i]

@@ -53,9 +53,22 @@
  * be told apart by this; they keep two ids between them, and which
  * gets which after both have left is the slot's and the order's doing.
  *
+ * A driver that starts over is the one case where the registry also
+ * says which port a controller belongs on. Nobody has plugged or
+ * unplugged anything: the driver was torn down and brought back, on a
+ * content load for one, and it reports its controllers again in
+ * whatever order it finds them. input_registry_restart() notes who was
+ * there and on which port; when every one of them has been reported
+ * again, and nothing else has happened in between, each can be put
+ * back on its port (input_registry_restore_ports()). If a controller
+ * is missing, a new one turns up, or one leaves, that is no longer a
+ * restart with the same controllers and ports are left to be assigned
+ * the way they always were.
+ *
  * This is the first piece of the device registry in the input plan
- * (WP-02). It mirrors what the drivers report and decides nothing yet:
- * ports are still assigned as before.
+ * (WP-02). Beyond the restart above it mirrors what the drivers report
+ * and decides nothing: a controller plugged in by hand goes where it
+ * always went.
  *
  * One thread. The frontend calls it from the callbacks that apply a
  * connect or a disconnect, which run on the main thread. No allocation
@@ -78,7 +91,10 @@ typedef struct
    uint16_t vid;
    uint16_t pid;
    uint8_t  slot;       /* the driver slot it sits in, or last sat in */
+   uint8_t  port;       /* the port it was on when its driver restarted */
    bool     present;
+   bool     expected;   /* was here at the restart, not reported since */
+   bool     restore;    /* reported again since: owed its port back */
    char     provider[32];
    char     name[128];
    char     phys[64];   /* where it is plugged in; "" if not known */
@@ -89,7 +105,11 @@ typedef struct input_registry
    input_device_record_t records[INPUT_REGISTRY_RECORDS];
    uint32_t next_id; /* the last device id given out */
    uint32_t clock;   /* bumped by every arrival and departure */
+   unsigned expected_left; /* controllers a restart is still waiting for */
+   bool     restarting;    /* between a restart and its last controller */
 } input_registry_t;
+
+#define INPUT_REGISTRY_NO_PORT 0xff
 
 static INLINE void input_registry_init(input_registry_t *reg)
 {
@@ -158,17 +178,119 @@ static INLINE unsigned input_registry_count(const input_registry_t *reg)
    return n;
 }
 
-/* The controller in @slot has left. Returns false if none was there. */
-static INLINE bool input_registry_disconnect(input_registry_t *reg,
+/* A restart is over, or is no longer one: nobody is owed a port. */
+static INLINE void input_registry_restart_cancel(input_registry_t *reg)
+{
+   unsigned i;
+   for (i = 0; i < INPUT_REGISTRY_RECORDS; i++)
+   {
+      reg->records[i].expected = false;
+      reg->records[i].restore  = false;
+   }
+   reg->expected_left = 0;
+   reg->restarting    = false;
+}
+
+static INLINE bool input_registry_leave_(input_registry_t *reg,
       unsigned slot)
 {
    input_device_record_t *rec = input_registry_at_slot(reg, slot);
    if (!rec)
       return false;
    rec->present = false;
+   rec->restore = false;
    rec->handle  = 0;
    rec->seen    = ++reg->clock;
    return true;
+}
+
+/* The controller in @slot has left. Returns false if none was there.
+ * A controller leaving in the middle of a restart ends it. */
+static INLINE bool input_registry_disconnect(input_registry_t *reg,
+      unsigned slot)
+{
+   if (!input_registry_leave_(reg, slot))
+      return false;
+   if (reg->restarting)
+      input_registry_restart_cancel(reg);
+   return true;
+}
+
+/* The driver is about to start over and report its controllers again.
+ * Every controller present is taken as gone, to be recognised when it
+ * is reported, and is expected back. @port_of_slot says which port
+ * each driver slot is mapped to now (INPUT_REGISTRY_NO_PORT for none);
+ * a controller already owed its port by an earlier restart that has
+ * not finished keeps the port it had then. */
+static INLINE void input_registry_restart(input_registry_t *reg,
+      const uint8_t *port_of_slot, unsigned slots)
+{
+   unsigned i;
+
+   reg->expected_left = 0;
+   for (i = 0; i < INPUT_REGISTRY_RECORDS; i++)
+   {
+      input_device_record_t *rec = &reg->records[i];
+
+      if (rec->present)
+      {
+         if (!rec->restore)
+            rec->port  = (rec->slot < slots)
+               ? port_of_slot[rec->slot] : INPUT_REGISTRY_NO_PORT;
+         rec->present  = false;
+         rec->restore  = false;
+         rec->handle   = 0;
+         rec->seen     = ++reg->clock;
+         rec->expected = true;
+      }
+      if (rec->expected)
+         reg->expected_left++;
+   }
+   reg->restarting = (reg->expected_left > 0);
+}
+
+/* Every controller that was there at the restart has been reported
+ * again, and nothing else has come or gone. */
+static INLINE bool input_registry_restart_complete(
+      const input_registry_t *reg)
+{
+   return reg->restarting && reg->expected_left == 0;
+}
+
+/* Put every controller of a completed restart back on the port it had.
+ * @index maps a port to the driver slot it reads, one entry per port,
+ * and stays a one-to-one mapping: two entries are exchanged for each
+ * controller that is not where it was. Returns how many were moved.
+ * The restart is over afterwards. */
+static INLINE unsigned input_registry_restore_ports(input_registry_t *reg,
+      unsigned *index, unsigned ports)
+{
+   unsigned i, q;
+   unsigned moved = 0;
+
+   if (!input_registry_restart_complete(reg))
+      return 0;
+
+   for (i = 0; i < INPUT_REGISTRY_RECORDS; i++)
+   {
+      const input_device_record_t *rec = &reg->records[i];
+
+      if (!rec->present || !rec->restore || rec->port >= ports)
+         continue;
+
+      for (q = 0; q < ports; q++)
+         if (index[q] == rec->slot)
+            break;
+      if (q == ports || q == rec->port)
+         continue;
+
+      index[q]         = index[rec->port];
+      index[rec->port] = rec->slot;
+      moved++;
+   }
+
+   input_registry_restart_cancel(reg);
+   return moved;
 }
 
 /* A driver reports a controller in @slot. Returns the handle for this
@@ -197,7 +319,7 @@ static INLINE input_device_handle_t input_registry_connect(
    if (slot > 0xff)
       return 0;
 
-   input_registry_disconnect(reg, slot);
+   input_registry_leave_(reg, slot);
 
    for (i = 0; i < INPUT_REGISTRY_RECORDS; i++)
    {
@@ -264,12 +386,28 @@ static INLINE input_device_handle_t input_registry_connect(
          memset(rec, 0, sizeof(*rec));
          rec->generation     = generation;
       }
-      rec->id  = ++reg->next_id;
-      rec->key = key;
-      rec->vid = vid;
-      rec->pid = pid;
+      rec->id   = ++reg->next_id;
+      rec->key  = key;
+      rec->vid  = vid;
+      rec->pid  = pid;
+      rec->port = INPUT_REGISTRY_NO_PORT;
       input_registry_copy(rec->provider, sizeof(rec->provider), provider);
       input_registry_copy(rec->name,     sizeof(rec->name),     name);
+   }
+
+   /* During a restart, a controller that was there before it is one
+    * fewer to wait for. Anything else means this is not the same set
+    * of controllers coming back. */
+   if (reg->restarting)
+   {
+      if (rec->expected)
+      {
+         rec->expected = false;
+         rec->restore  = true;
+         reg->expected_left--;
+      }
+      else
+         input_registry_restart_cancel(reg);
    }
 
    input_registry_copy(rec->phys, sizeof(rec->phys), phys);

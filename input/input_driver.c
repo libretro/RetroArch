@@ -5668,7 +5668,10 @@ void joypad_driver_reinit(void *data, const char *joypad_driver_name)
    }
 #endif
    if (!input_driver_st.primary_joypad)
+   {
+      input_driver_registry_restart();
       input_driver_st.primary_joypad    = input_joypad_init_driver(joypad_driver_name, data);
+   }
 }
 
 /**
@@ -5841,19 +5844,120 @@ const struct input_registry *input_driver_get_registry(void)
    return &input_registry;
 }
 
+/* Ports put back after a driver restart are a runtime matter. The
+ * setting they are written to, input_joypad_index, is also what the
+ * config file saves, and a saved exchange would outlive the session
+ * that needed it: the next start enumerates afresh and the players
+ * would come up exchanged. So what the user configured is kept beside
+ * the setting, and the config file is given that.
+ *
+ * input_ports_runtime is the setting as the last restore left it. If
+ * the setting no longer matches, something else has written it since -
+ * the menu, a reserved device - and what it holds is the user's again. */
+static unsigned input_ports_configured[MAX_USERS];
+static unsigned input_ports_runtime[MAX_USERS];
+static bool     input_ports_runtime_active;
+
+/* A driver reports its controllers again as it starts, or within a
+ * moment of it. One that turns up long afterwards was plugged in or
+ * woken by somebody, and moving players around then - perhaps an hour
+ * into a game - is not putting things back, it is a surprise. */
+#define INPUT_REGISTRY_RESTART_USEC 10000000
+static retro_time_t input_registry_restart_time;
+
+unsigned input_config_get_saved_joypad_index(unsigned port)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (port >= MAX_USERS)
+      return 0;
+   if (     input_ports_runtime_active
+         && !memcmp(settings->uints.input_joypad_index,
+               input_ports_runtime, sizeof(input_ports_runtime)))
+      return input_ports_configured[port];
+   return settings->uints.input_joypad_index[port];
+}
+
+void input_driver_registry_restart(void)
+{
+   unsigned i;
+   uint8_t port_of_slot[MAX_USERS];
+   settings_t *settings = config_get_ptr();
+
+   memset(port_of_slot, INPUT_REGISTRY_NO_PORT, sizeof(port_of_slot));
+   for (i = 0; i < MAX_USERS; i++)
+      if (settings->uints.input_joypad_index[i] < MAX_USERS)
+         port_of_slot[settings->uints.input_joypad_index[i]] = (uint8_t)i;
+
+   input_registry_restart(&input_registry, port_of_slot, MAX_USERS);
+   input_registry_restart_time = cpu_features_get_time_usec();
+}
+
+/* Every controller the driver had before it restarted is back. */
+static void input_driver_registry_restore_ports(void)
+{
+   unsigned i;
+   unsigned moved;
+   settings_t *settings = config_get_ptr();
+
+   /* A reserved device is the user's own word on who goes where, and
+    * it is applied on every connect. Leave ports to it. */
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      if (settings->uints.input_device_reservation_type[i]
+            != INPUT_DEVICE_RESERVATION_NONE)
+      {
+         input_registry_restart_cancel(&input_registry);
+         return;
+      }
+   }
+
+   /* The mapping has to be one-to-one for exchanges to keep it so. */
+   input_config_sanitize_joypad_indices();
+
+   if (     !input_ports_runtime_active
+         || memcmp(settings->uints.input_joypad_index,
+               input_ports_runtime, sizeof(input_ports_runtime)))
+      memcpy(input_ports_configured, settings->uints.input_joypad_index,
+            sizeof(input_ports_configured));
+
+   moved = input_registry_restore_ports(&input_registry,
+         settings->uints.input_joypad_index, MAX_USERS);
+
+   memcpy(input_ports_runtime, settings->uints.input_joypad_index,
+         sizeof(input_ports_runtime));
+   input_ports_runtime_active = memcmp(input_ports_runtime,
+         input_ports_configured, sizeof(input_ports_runtime)) != 0;
+
+   if (moved)
+      RARCH_LOG("[Input] The joypad driver restarted and reported its"
+            " controllers in other slots: each is back on the port it"
+            " had.\n");
+}
+
 void input_driver_registry_connect(unsigned slot, const char *provider,
       const char *name, const char *phys, uint16_t vid, uint16_t pid)
 {
    bool returned                    = false;
-   input_device_handle_t handle     = input_registry_connect(
+   input_device_handle_t handle;
+   const input_device_record_t *rec;
+
+   if (     input_registry.restarting
+         && cpu_features_get_time_usec() - input_registry_restart_time
+               > INPUT_REGISTRY_RESTART_USEC)
+      input_registry_restart_cancel(&input_registry);
+
+   handle = input_registry_connect(
          &input_registry, provider, slot, name, phys, vid, pid, &returned);
-   const input_device_record_t *rec = input_registry_get(
-         &input_registry, handle);
+   rec    = input_registry_get(&input_registry, handle);
 
    if (rec)
       RARCH_LOG("[Input] Device %u, \"%s\" (%04x:%04x, %s): %s slot %u.\n",
             (unsigned)rec->id, rec->name, rec->vid, rec->pid, rec->provider,
             returned ? "back, in" : "new, in", slot);
+
+   if (input_registry_restart_complete(&input_registry))
+      input_driver_registry_restore_ports();
 }
 
 void input_driver_registry_disconnect(unsigned slot)
@@ -6005,9 +6109,13 @@ void input_driver_init_joypads(void)
 {
    settings_t                   *settings    = config_get_ptr();
    if (!input_driver_st.primary_joypad)
+   {
+      /* the driver reports its controllers afresh from here */
+      input_driver_registry_restart();
       input_driver_st.primary_joypad        = input_joypad_init_driver(
          settings->arrays.input_joypad_driver,
          input_driver_st.current_data);
+   }
 }
 
 bool input_key_pressed(int key, bool keyboard_pressed)

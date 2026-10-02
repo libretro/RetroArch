@@ -66,7 +66,10 @@
  *     Eight scripted pads connect; one is pulled and plugged back in.
  *     The registry must show each pad in its slot with its own device
  *     id, drop the pulled one, and give it the same id and a new
- *     handle when it returns.
+ *     handle when it returns. Then the joypad driver "starts over" and
+ *     reports two of its controllers in each other's slots: each must
+ *     be back on the port it had, and the config file must still be
+ *     given what the user configured.
  *
  * Nothing is stubbed. */
 #include <stdio.h>
@@ -95,6 +98,7 @@
 #include "../../../gfx/video_driver.h"
 #include "../../../input/input_driver.h"
 #include "../../../input/input_registry.h"
+#include "../../../tasks/tasks_internal.h"
 #include "../../../menu/menu_driver.h"
 
 #define FRAME_US_LIMIT   1000.0
@@ -467,9 +471,95 @@ static void lane_device_registry(void)
    }
    CHECK(input_registry_count(reg) == 8, "registry: not eight devices after the pad came back");
 
+   /* A driver restart that reports the same controllers in other
+    * slots. Two distinct controllers take slots 0 and 1 first. */
+   {
+      settings_t *settings = config_get_ptr();
+      const input_device_record_t *red, *blue;
+      uint32_t id_red, id_blue;
+      char     path[512];
+      char     line[256];
+      bool     saved_as_configured = false, saved_swapped = false;
+      FILE    *f;
+
+      input_autoconfigure_connect("Red pad",  NULL, NULL, "test", 0, 0x1111, 0x0001);
+      input_autoconfigure_connect("Blue pad", NULL, NULL, "test", 1, 0x1111, 0x0002);
+      run_loop_frames(20);
+      red     = input_registry_at_slot((input_registry_t*)reg, 0);
+      blue    = input_registry_at_slot((input_registry_t*)reg, 1);
+      id_red  = red  ? red->id  : 0;
+      id_blue = blue ? blue->id : 0;
+      CHECK(id_red && id_blue && id_red != id_blue, "registry: the two controllers were not registered");
+      CHECK(   settings->uints.input_joypad_index[0] == 0
+            && settings->uints.input_joypad_index[1] == 1,
+            "registry: ports are not on their own slots to begin with");
+
+      /* the driver starts over and finds them the other way round */
+      input_driver_registry_restart();
+      CHECK(input_registry_count(reg) == 0, "registry: a restart left controllers present");
+      input_autoconfigure_connect("Blue pad", NULL, NULL, "test", 0, 0x1111, 0x0002);
+      input_autoconfigure_connect("Red pad",  NULL, NULL, "test", 1, 0x1111, 0x0001);
+      for (i = 2; i < 8; i++)
+         input_autoconfigure_connect("Harness pad", NULL, NULL,
+               "test", i, 0x045e, 0x028e);
+      run_loop_frames(30);
+
+      red  = input_registry_at_slot((input_registry_t*)reg, 1);
+      blue = input_registry_at_slot((input_registry_t*)reg, 0);
+      CHECK(red && red->id == id_red && blue && blue->id == id_blue,
+            "registry: the controllers were not recognised in their new slots");
+      CHECK(   settings->uints.input_joypad_index[0] == 1
+            && settings->uints.input_joypad_index[1] == 0,
+            "registry: a controller is not back on its port after the driver restarted");
+      for (i = 2; i < 8; i++)
+         CHECK(settings->uints.input_joypad_index[i] == i,
+               "registry: a controller that did not move changed port");
+
+      /* the config file is given what the user configured */
+      CHECK(   input_config_get_saved_joypad_index(0) == 0
+            && input_config_get_saved_joypad_index(1) == 1,
+            "registry: a restored port would be saved to the config");
+      snprintf(path, sizeof(path), "%s/saved.cfg", harness_dir_g);
+      CHECK(config_save_file(path), "registry: the config could not be saved");
+      if ((f = fopen(path, "rb")))
+      {
+         while (fgets(line, sizeof(line), f))
+         {
+            if (strstr(line, "input_player1_joypad_index = \"0\""))
+               saved_as_configured = true;
+            if (strstr(line, "input_player1_joypad_index = \"1\""))
+               saved_swapped = true;
+         }
+         fclose(f);
+      }
+      CHECK(saved_as_configured && !saved_swapped,
+            "registry: the saved config has the restored port, not the configured one");
+
+      /* once the user changes the mapping, what they see is what is saved */
+      settings->uints.input_joypad_index[6] = 7;
+      settings->uints.input_joypad_index[7] = 6;
+      CHECK(   input_config_get_saved_joypad_index(0) == 1
+            && input_config_get_saved_joypad_index(6) == 7,
+            "registry: a mapping the user changed is not what would be saved");
+
+      /* back to the pads and the mapping the other lanes expect */
+      for (i = 0; i < MAX_USERS; i++)
+         settings->uints.input_joypad_index[i] = i;
+      input_driver_registry_restart();
+      for (i = 0; i < 8; i++)
+         input_autoconfigure_connect("Harness pad", NULL, NULL,
+               "test", i, 0x045e, 0x028e);
+      run_loop_frames(30);
+      CHECK(pad_connected(0) && settings->uints.input_joypad_index[0] == 0
+            && settings->uints.input_joypad_index[1] == 1,
+            "registry: the lane did not leave the pads as it found them");
+   }
+
    if (failures == had)
       printf("[pass] registry: eight pads are eight devices; one pulled and"
-            " plugged back in keeps its id and gets a new handle\n");
+            " plugged back in keeps its id; a driver restart puts each"
+            " controller back on its port and the config keeps what the"
+            " user set\n");
 #else
    printf("[skip] registry lane: need the test drivers\n");
 #endif

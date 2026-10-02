@@ -1269,6 +1269,16 @@ void input_driver_registry_connect(unsigned slot, const char *provider,
       const char *name, const char *phys, uint16_t vid, uint16_t pid);
 void input_driver_registry_disconnect(unsigned slot);
 
+/* The joypad driver is about to start over and report its controllers
+ * again. If it reports the ones it had, each goes back to the port it
+ * was on. */
+void input_driver_registry_restart(void);
+
+/* The pad index to write to the config file for @port: what the user
+ * configured, which is not what the setting holds while controllers
+ * have been put back on their ports after a driver restart. */
+unsigned input_config_get_saved_joypad_index(unsigned port);
+
 /* Write the rumble strengths a core's calls left this frame. Main
  * thread, once the core has run. */
 void input_driver_flush_rumble(void);

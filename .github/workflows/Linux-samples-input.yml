@@ -328,7 +328,11 @@ jobs:
           # driver starting over costs nobody their id, that a full
           # table gives up only a controller that has left, and -
           # through 200000 arrivals and departures - that no two
-          # present controllers share a slot or an id. A handle that
+          # present controllers share a slot or an id. And that a
+          # driver which starts over and reports the controllers it
+          # had, in any order and any slots, has each put back on its
+          # port - but only then: one missing, a new one, or one
+          # leaving again, and nothing is moved. A handle that
           # outlives its stay, the way a kept slot number does, is put
           # back and asserted to be caught.
           make clean all SANITIZER=address,undefined

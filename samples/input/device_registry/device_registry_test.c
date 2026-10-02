@@ -29,6 +29,14 @@
  *      current stay resolves to its controller, and no handle from an
  *      ended stay resolves at all.
  *
+ *   9. A driver that starts over and reports the controllers it had,
+ *      in any order and in any slots, has each one put back on the
+ *      port it was on, and the port mapping stays one-to-one.
+ *  10. That happens only for the same controllers: if one is missing,
+ *      a new one turns up, or one leaves again, nothing is moved.
+ *  11. A driver that starts over twice before reporting still puts
+ *      everyone back where they were before the first.
+ *
  * The registry is the frontend's own, from input_registry.h. A
  * sabotage mode lets a handle outlive its stay, the way a kept slot
  * number does, and is asserted to be caught. */
@@ -326,6 +334,181 @@ static void lane_storm(void)
    CHECK(n_ended > 1000, "the storm ended too few stays to mean anything");
 }
 
+/* 9, 10, 11 */
+#define PORTS 8
+
+static void ports_identity(unsigned *index, uint8_t *port_of_slot)
+{
+   unsigned i;
+   for (i = 0; i < PORTS; i++)
+   {
+      index[i]        = i;
+      port_of_slot[i] = (uint8_t)i;
+   }
+}
+
+static bool ports_one_to_one(const unsigned *index)
+{
+   unsigned i, j;
+   for (i = 0; i < PORTS; i++)
+   {
+      if (index[i] >= PORTS)
+         return false;
+      for (j = i + 1; j < PORTS; j++)
+         if (index[i] == index[j])
+            return false;
+   }
+   return true;
+}
+
+/* three different pads on ports 1 to 3, in slots 0 to 2 */
+static void three_pads(input_registry_t *reg, uint32_t *id)
+{
+   static const char *const name[3] = { "Red", "Green", "Blue" };
+   unsigned i;
+   input_registry_init(reg);
+   for (i = 0; i < 3; i++)
+      id[i] = id_of(reg, input_registry_connect(reg, "x", i, name[i],
+               "", 3, (uint16_t)i, NULL));
+}
+
+static unsigned port_of(const input_registry_t *reg, const unsigned *index,
+      uint32_t id)
+{
+   unsigned i, q;
+   for (i = 0; i < INPUT_REGISTRY_RECORDS; i++)
+      if (reg->records[i].present && reg->records[i].id == id)
+         for (q = 0; q < PORTS; q++)
+            if (index[q] == reg->records[i].slot)
+               return q;
+   return PORTS;
+}
+
+static void lane_restart_ports(void)
+{
+   static input_registry_t reg;
+   unsigned index[PORTS];
+   uint8_t  port_of_slot[PORTS];
+   uint32_t id[3];
+
+   /* 9: the same three, reported in other slots and another order */
+   three_pads(&reg, id);
+   ports_identity(index, port_of_slot);
+   input_registry_restart(&reg, port_of_slot, PORTS);
+   CHECK(input_registry_count(&reg) == 0, "a restart left a controller present");
+   CHECK(!input_registry_restart_complete(&reg), "a restart is complete before anyone is back");
+
+   input_registry_connect(&reg, "x", 1, "Blue",  "", 3, 2, NULL);
+   CHECK(!input_registry_restart_complete(&reg), "a restart is complete with two still out");
+   CHECK(input_registry_restore_ports(&reg, index, PORTS) == 0 && index[0] == 0,
+         "ports were moved before the restart was complete");
+   input_registry_connect(&reg, "x", 2, "Red",   "", 3, 0, NULL);
+   input_registry_connect(&reg, "x", 0, "Green", "", 3, 1, NULL);
+   CHECK(input_registry_restart_complete(&reg), "a restart is not complete with everyone back");
+
+   CHECK(input_registry_restore_ports(&reg, index, PORTS) > 0, "nobody was put back");
+   CHECK(ports_one_to_one(index), "the port mapping is no longer one-to-one");
+   CHECK(   port_of(&reg, index, id[0]) == 0
+         && port_of(&reg, index, id[1]) == 1
+         && port_of(&reg, index, id[2]) == 2,
+         "a controller is not on the port it had before the restart");
+   CHECK(!input_registry_restart_complete(&reg), "a restart is still pending after ports were restored");
+   CHECK(input_registry_restore_ports(&reg, index, PORTS) == 0, "ports were restored twice");
+
+   /* same slots, same order: nothing to move */
+   three_pads(&reg, id);
+   ports_identity(index, port_of_slot);
+   input_registry_restart(&reg, port_of_slot, PORTS);
+   input_registry_connect(&reg, "x", 0, "Red",   "", 3, 0, NULL);
+   input_registry_connect(&reg, "x", 1, "Green", "", 3, 1, NULL);
+   input_registry_connect(&reg, "x", 2, "Blue",  "", 3, 2, NULL);
+   CHECK(input_registry_restore_ports(&reg, index, PORTS) == 0 && index[0] == 0
+         && index[1] == 1 && index[2] == 2, "ports moved when nothing had");
+
+   /* identical pads told apart by where they are plugged in */
+   input_registry_init(&reg);
+   id[0] = id_of(&reg, input_registry_connect(&reg, "x", 0, "Twin", "usb-1", 1, 2, NULL));
+   id[1] = id_of(&reg, input_registry_connect(&reg, "x", 1, "Twin", "usb-2", 1, 2, NULL));
+   ports_identity(index, port_of_slot);
+   input_registry_restart(&reg, port_of_slot, PORTS);
+   input_registry_connect(&reg, "x", 0, "Twin", "usb-2", 1, 2, NULL);
+   input_registry_connect(&reg, "x", 1, "Twin", "usb-1", 1, 2, NULL);
+   input_registry_restore_ports(&reg, index, PORTS);
+   CHECK(   port_of(&reg, index, id[0]) == 0
+         && port_of(&reg, index, id[1]) == 1,
+         "identical pads at known sockets swapped ports over a restart");
+
+   /* 10: one is missing */
+   three_pads(&reg, id);
+   ports_identity(index, port_of_slot);
+   input_registry_restart(&reg, port_of_slot, PORTS);
+   input_registry_connect(&reg, "x", 0, "Blue", "", 3, 2, NULL);
+   input_registry_connect(&reg, "x", 1, "Red",  "", 3, 0, NULL);
+   CHECK(!input_registry_restart_complete(&reg), "a restart is complete with a controller missing");
+   CHECK(input_registry_restore_ports(&reg, index, PORTS) == 0
+         && index[0] == 0 && index[1] == 1 && index[2] == 2,
+         "ports were moved with a controller missing");
+
+   /* 10: a new one turns up */
+   three_pads(&reg, id);
+   ports_identity(index, port_of_slot);
+   input_registry_restart(&reg, port_of_slot, PORTS);
+   input_registry_connect(&reg, "x", 0, "Blue",     "", 3, 2, NULL);
+   input_registry_connect(&reg, "x", 3, "Stranger", "", 3, 9, NULL);
+   input_registry_connect(&reg, "x", 1, "Red",      "", 3, 0, NULL);
+   input_registry_connect(&reg, "x", 2, "Green",    "", 3, 1, NULL);
+   CHECK(!input_registry_restart_complete(&reg)
+         && input_registry_restore_ports(&reg, index, PORTS) == 0,
+         "ports were moved though a new controller turned up");
+
+   /* 10: one that came back leaves again */
+   three_pads(&reg, id);
+   ports_identity(index, port_of_slot);
+   input_registry_restart(&reg, port_of_slot, PORTS);
+   input_registry_connect(&reg, "x", 0, "Blue", "", 3, 2, NULL);
+   input_registry_disconnect(&reg, 0);
+   input_registry_connect(&reg, "x", 0, "Blue",  "", 3, 2, NULL);
+   input_registry_connect(&reg, "x", 1, "Red",   "", 3, 0, NULL);
+   input_registry_connect(&reg, "x", 2, "Green", "", 3, 1, NULL);
+   CHECK(input_registry_restore_ports(&reg, index, PORTS) == 0,
+         "ports were moved though a controller left during the restart");
+
+   /* a disconnect for a slot nobody is in does not end the restart:
+    * drivers report their old slots empty as they shut down */
+   three_pads(&reg, id);
+   ports_identity(index, port_of_slot);
+   input_registry_restart(&reg, port_of_slot, PORTS);
+   input_registry_disconnect(&reg, 2);
+   input_registry_connect(&reg, "x", 1, "Blue",  "", 3, 2, NULL);
+   input_registry_connect(&reg, "x", 0, "Green", "", 3, 1, NULL);
+   input_registry_connect(&reg, "x", 3, "Red",   "", 3, 0, NULL);
+   CHECK(input_registry_restore_ports(&reg, index, PORTS) > 0
+         && port_of(&reg, index, id[0]) == 0
+         && port_of(&reg, index, id[1]) == 1
+         && port_of(&reg, index, id[2]) == 2
+         && ports_one_to_one(index),
+         "an empty slot's disconnect stopped a restart from restoring ports");
+
+   /* 11: two restarts before anyone is reported */
+   three_pads(&reg, id);
+   ports_identity(index, port_of_slot);
+   input_registry_restart(&reg, port_of_slot, PORTS);
+   input_registry_connect(&reg, "x", 2, "Red", "", 3, 0, NULL);
+   {
+      /* the second restart sees Red in slot 2, which the mapping calls
+       * port 3; Red is owed port 1 from the first */
+      input_registry_restart(&reg, port_of_slot, PORTS);
+   }
+   input_registry_connect(&reg, "x", 0, "Blue",  "", 3, 2, NULL);
+   input_registry_connect(&reg, "x", 1, "Red",   "", 3, 0, NULL);
+   input_registry_connect(&reg, "x", 2, "Green", "", 3, 1, NULL);
+   CHECK(input_registry_restore_ports(&reg, index, PORTS) > 0
+         && port_of(&reg, index, id[0]) == 0
+         && port_of(&reg, index, id[1]) == 1
+         && port_of(&reg, index, id[2]) == 2,
+         "a second restart lost the ports from before the first");
+}
+
 static void all_lanes(void)
 {
    lane_one_pad();
@@ -333,6 +516,7 @@ static void all_lanes(void)
    lane_driver_restart();
    lane_full_table();
    lane_storm();
+   lane_restart_ports();
 }
 
 int main(void)
