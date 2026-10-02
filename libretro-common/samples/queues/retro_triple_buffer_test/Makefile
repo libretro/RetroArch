@@ -1,11 +1,11 @@
-# gfx/drivers/hub75_frames.h: the HUB75 driver's frame handoff between
-# its video thread and its panel refresh thread.
+# queues/retro_triple_buffer.h: a frame handoff between a producer and
+# a consumer that never wait for each other.
 
-TARGET    := hub75_frames_test
-REPO_ROOT := ../../..
+TARGET    := retro_triple_buffer_test
+CORE_DIR  := ../../..
 
-SOURCES := hub75_frames_test.c
-CFLAGS  += -Wall -std=gnu99 -g -O1 -I$(REPO_ROOT) -I$(REPO_ROOT)/libretro-common/include
+SOURCES := retro_triple_buffer_test.c
+CFLAGS  += -Wall -std=gnu99 -g -O1 -I$(CORE_DIR)/include
 LDFLAGS += -lpthread
 OBJS    := $(SOURCES:.c=.o)
 ifneq ($(SANITIZER),)

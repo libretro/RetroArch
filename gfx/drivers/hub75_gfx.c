@@ -33,7 +33,7 @@
 #endif
 
 #include "../video_driver.h"
-#include "hub75_frames.h"
+#include <queues/retro_triple_buffer.h>
 #include "../../configuration.h"
 #include "../../driver.h"
 #include "../../frontend/frontend_driver.h"
@@ -119,7 +119,7 @@ typedef struct hub75
    /* The canvas the video thread draws into: frames' back canvas. */
    hub75_color_t *pixels;
    hub75_color_t *canvas[3];
-   hub75_frames_t frames;
+   retro_triple_buffer_t frames;
    volatile uint32_t *rp1_map;
    hub75_gpio_ctrl_t *gpio_regs;
    volatile uint32_t *pad_regs;
@@ -393,7 +393,7 @@ static void *hub75_refresh_main(void *data)
     * never waits for one to end. */
    while (retro_atomic_load_acquire_int(&hub75->refresh_running))
       hub75_refresh_once(hub75,
-            (const hub75_color_t*)hub75_frames_front(&hub75->frames));
+            (const hub75_color_t*)retro_triple_buffer_front(&hub75->frames));
    return NULL;
 }
 
@@ -529,9 +529,9 @@ static void *hub75_init(const video_info_t *video,
          return NULL;
       }
    }
-   hub75_frames_init(&hub75->frames,
+   retro_triple_buffer_init(&hub75->frames,
          hub75->canvas[0], hub75->canvas[1], hub75->canvas[2]);
-   hub75->pixels = (hub75_color_t*)hub75_frames_back(&hub75->frames);
+   hub75->pixels = (hub75_color_t*)retro_triple_buffer_back(&hub75->frames);
 
    value = hub75_env_int("HUB75_PWM_BITS", 1, 8);
    hub75->pwm_bits = value ? (unsigned)value : 8;
@@ -882,8 +882,8 @@ static void hub75_render(hub75_t *hub75, const void *frame,
    (void)render_overlays;
 #endif
 
-   hub75_frames_publish(&hub75->frames);
-   hub75->pixels = (hub75_color_t*)hub75_frames_back(&hub75->frames);
+   retro_triple_buffer_publish(&hub75->frames);
+   hub75->pixels = (hub75_color_t*)retro_triple_buffer_back(&hub75->frames);
 }
 
 static bool hub75_frame(void *data, const void *frame,

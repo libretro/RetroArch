@@ -1,5 +1,6 @@
-/* gfx/drivers/hub75_frames.h, the three canvases between the HUB75
- * driver's video thread and its panel refresh thread.
+/* queues/retro_triple_buffer.h, as the HUB75 driver uses it between
+ * its video thread and its panel refresh thread, and the ffmpeg camera
+ * between its decode thread and the core's poll.
  *
  * The refresh thread scans a frame onto the panel continuously, and a
  * scan of a large chain is long next to a frame. What is asserted:
@@ -16,7 +17,7 @@
 #include <pthread.h>
 #include <time.h>
 
-#include "gfx/drivers/hub75_frames.h"
+#include <queues/retro_triple_buffer.h>
 
 #define WORDS   (128 * 64)
 #define FRAMES  3000
@@ -27,7 +28,7 @@ static unsigned failures;
         printf(__VA_ARGS__); printf("\n"); failures++; } } while (0)
 
 static uint32_t canvas[3][WORDS];
-static hub75_frames_t frames;
+static retro_triple_buffer_t frames;
 static retro_atomic_int_t running;
 static retro_atomic_int_t scans;
 static unsigned torn, backwards;
@@ -47,7 +48,7 @@ static void *refresh_main(void *arg)
    while (retro_atomic_load_acquire_int(&running))
    {
       const volatile uint32_t *px =
-            (const volatile uint32_t*)hub75_frames_front(&frames);
+            (const volatile uint32_t*)retro_triple_buffer_front(&frames);
       uint32_t first = px[0];
       unsigned i;
       for (i = 0; i < WORDS; i++)
@@ -79,18 +80,18 @@ int main(void)
    uint64_t worst = 0;
    int settle;
 
-   hub75_frames_init(&frames, canvas[0], canvas[1], canvas[2]);
+   retro_triple_buffer_init(&frames, canvas[0], canvas[1], canvas[2]);
    retro_atomic_store_release_int(&running, 1);
    pthread_create(&thread, NULL, refresh_main, NULL);
 
    for (f = 1; f <= FRAMES; f++)
    {
-      uint32_t *px = (uint32_t*)hub75_frames_back(&frames);
+      uint32_t *px = (uint32_t*)retro_triple_buffer_back(&frames);
       uint64_t t0;
       for (i = 0; i < WORDS; i++)
          px[i] = f;
       t0 = now_ns();
-      hub75_frames_publish(&frames);
+      retro_triple_buffer_publish(&frames);
       t0 = now_ns() - t0;
       if (t0 > worst)
          worst = t0;
@@ -123,7 +124,7 @@ int main(void)
       printf("%u failure(s)\n", failures);
       return 1;
    }
-   printf("[pass] hub75_frames_test (%d scans over %u frames, slowest handover %llu ns)\n",
+   printf("[pass] retro_triple_buffer_test (%d scans over %u frames, slowest handover %llu ns)\n",
          retro_atomic_load_acquire_int(&scans), FRAMES,
          (unsigned long long)worst);
    return 0;
