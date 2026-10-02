@@ -712,6 +712,14 @@ static bool screenshot_dump(
    {
       retro_task_t *task = task_init();
 
+      if (!task)
+      {
+         if (state->out_buffer)
+            free(state->out_buffer);
+         free(state);
+         return false;
+      }
+
       task->type         = TASK_TYPE_BLOCKING;
       task->state        = state;
       task->handler      = task_screenshot_handler;

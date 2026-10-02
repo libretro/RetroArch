@@ -86,6 +86,8 @@ void uint32s_bucket_expand(struct uint32s_bucket *bucket, uint32_t idx)
    else if (bucket->len == 3)
    {
       uint32_t *idxs = (uint32_t*)calloc(8, sizeof(uint32_t));
+      if (!idxs)
+         return;
       memcpy(idxs, bucket->contents.idxs, 3*sizeof(uint32_t));
       bucket->contents.vec.cap  = 8;
       bucket->contents.vec.idxs = idxs;
@@ -95,8 +97,13 @@ void uint32s_bucket_expand(struct uint32s_bucket *bucket, uint32_t idx)
       bucket->contents.vec.idxs[bucket->len] = idx;
    else /* bucket->len == bucket->contents.vec.cap */
    {
-      bucket->contents.vec.cap *= 2;
-      bucket->contents.vec.idxs = (uint32_t*)realloc(bucket->contents.vec.idxs, bucket->contents.vec.cap * sizeof(uint32_t));
+      uint32_t  new_cap = bucket->contents.vec.cap * 2;
+      uint32_t *tmp     = (uint32_t*)realloc(bucket->contents.vec.idxs,
+            new_cap * sizeof(uint32_t));
+      if (!tmp)
+         return;
+      bucket->contents.vec.cap  = new_cap;
+      bucket->contents.vec.idxs = tmp;
       bucket->contents.vec.idxs[bucket->len] = idx;
    }
    bucket->len++;
