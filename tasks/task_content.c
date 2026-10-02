@@ -3346,7 +3346,7 @@ static bool task_content_defer_menu_load(content_state_t *p_content,
     * off, nothing is shown and no progress is reported.
     *
     * Widgets persist across the driver reinit the load performs
-    * (DISPGFX_WIDGET_FLAG_PERSISTING), so the card started here
+    * (dispgfx_widget_t.persisting), so the card started here
     * survives into the loaded core. */
    {
       settings_t *settings = config_get_ptr();

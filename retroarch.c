@@ -1636,7 +1636,7 @@ void drivers_init(
    bool menu_enable_widgets       = settings->bools.menu_enable_widgets;
    dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
    /* By default, we want display widgets to persist through driver reinits. */
-   p_dispwidget->flags           |= DISPGFX_WIDGET_FLAG_PERSISTING;
+   p_dispwidget->persisting       = true;
 #endif
 #ifdef HAVE_MENU
    /* By default, we want the menu to persist through driver reinits. */
@@ -1934,7 +1934,7 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
     * (e.g. Vulkan) will segfault */
    if (p_dispwidget->flags & DISPGFX_WIDGET_FLAG_INITED)
    {
-      gfx_widgets_deinit(p_dispwidget->flags & DISPGFX_WIDGET_FLAG_PERSISTING);
+      gfx_widgets_deinit(p_dispwidget->persisting);
       p_dispwidget->active = false;
    }
 #endif
@@ -2069,8 +2069,7 @@ static void retroarch_deinit_drivers(struct retro_callbacks *cbs)
    dispgfx_widget_t *p_dispwidget  = dispwidget_get_ptr();
    if (p_dispwidget->flags & DISPGFX_WIDGET_FLAG_INITED)
    {
-      gfx_widgets_deinit(
-            p_dispwidget->flags & DISPGFX_WIDGET_FLAG_PERSISTING);
+      gfx_widgets_deinit(p_dispwidget->persisting);
       p_dispwidget->active         = false;
    }
 #endif
@@ -4313,7 +4312,7 @@ bool command_event(enum event_command cmd, void *data)
 
 #if defined(HAVE_GFX_WIDGETS)
          /* Remove stale notifications after reinit */
-         dispwidget_get_ptr()->flags &= ~DISPGFX_WIDGET_FLAG_PERSISTING;
+         dispwidget_get_ptr()->persisting = false;
 #endif
 
 #else
@@ -6503,7 +6502,7 @@ void main_exit(void *args)
          video_thread_wait_idle();
    }
 #endif
-   dispwidget_get_ptr()->flags &= ~DISPGFX_WIDGET_FLAG_PERSISTING;
+   dispwidget_get_ptr()->persisting = false;
 #endif
 #ifdef HAVE_MENU
    /* Do not want menu context to live any more. */

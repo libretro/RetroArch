@@ -2672,7 +2672,7 @@ static void gfx_widgets_context_destroy(dispgfx_widget_t *p_dispwidget)
  *
  * Must run before p_dispwidget->active goes false and progress pushes
  * stop reaching us. Display widgets persist across driver reinits by
- * default (DISPGFX_WIDGET_FLAG_PERSISTING), so a task that finishes
+ * default (dispgfx_widget_t.persisting), so a task that finishes
  * while we are inactive gets retired and free()d with the widget still
  * holding a task_ptr to it, and DISPWIDG_FLAG_TASK_FINISHED never set
  * to warn us off. This is the last point at which the link can be

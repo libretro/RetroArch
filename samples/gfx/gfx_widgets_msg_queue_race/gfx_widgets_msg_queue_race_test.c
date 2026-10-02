@@ -20,6 +20,11 @@
  * race on the slot array; the value checks show a lost or reordered
  * pointer.  halt_on_error=1 fails the run on the first race.
  *
+ * It also pins that the main thread's 'persisting' and the drawing
+ * thread's flags are separate memory: closing content clears the
+ * former while a message animation ends on the video thread and
+ * clears DISPGFX_WIDGET_FLAG_MOVING in the latter.
+ *
  * Build:  make  (SANITIZER=thread for the checked run)
  * Run:    ./gfx_widgets_msg_queue_race_test
  */
@@ -68,6 +73,17 @@ static void producer(void *data)
 
 /* Takes every pointer the ring holds, checking the sequence; returns
  * false at the first hole */
+static void animation_ends(void *data)
+{
+   unsigned i;
+   (void)data;
+   for (i = 0; i < STRESS_ITERS; i++)
+   {
+      dispwidget_st.flags |= DISPGFX_WIDGET_FLAG_MOVING;
+      gfx_widgets_move_end(NULL);
+   }
+}
+
 static bool drain(uint32_t *expect)
 {
    disp_widget_msg_t *w;
@@ -169,6 +185,22 @@ int main(void)
    else
       printf("ok:   %u pointers crossed in order (%u refusals on full)\n",
             popped, refused);
+
+   /* The video thread ends animations while the main thread closes
+    * content and reinits drivers */
+   p = sthread_create(animation_ends, NULL);
+   if (!p)
+      return 1;
+   for (i = 0; i < STRESS_ITERS; i++)
+      dispwidget_st.persisting = !(i & 1);
+   sthread_join(p);
+   if (dispwidget_st.flags & DISPGFX_WIDGET_FLAG_MOVING)
+   {
+      printf("FAIL: an ended animation left the queue moving\n");
+      test_fails++;
+   }
+   else
+      printf("ok:   persisting and the drawing thread's flags do not race\n");
 
    free(pool);
 

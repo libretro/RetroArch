@@ -138,7 +138,6 @@ enum disp_widget_flags_enum
 enum dispgfx_widget_flags
 {
    DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS = (1 << 0),
-   DISPGFX_WIDGET_FLAG_PERSISTING          = (1 << 1),
    DISPGFX_WIDGET_FLAG_MOVING              = (1 << 2),
    DISPGFX_WIDGET_FLAG_INITED              = (1 << 3)
 };
@@ -307,6 +306,10 @@ typedef struct dispgfx_widget
     * reclaimed.  Its address is taken as an opaque animation tag in
     * retroarch.c -- only uniqueness matters there, not the value. */
    bool active;
+   /* Whether the widgets survive a driver reinit. Not in 'flags':
+    * the main thread sets it while the video thread is writing
+    * there. */
+   bool persisting;
 
    char gfx_widgets_status_text[NAME_MAX_LENGTH];
    /* Cached strlen of gfx_widgets_status_text, written by the
