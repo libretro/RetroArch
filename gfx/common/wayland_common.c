@@ -269,7 +269,16 @@ static void libdecor_frame_handle_configure(struct libdecor_frame *frame,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    if (wl->ignore_configuration)
+   {
+      /* Committing the configuration is what acknowledges it; an
+       * unacknowledged one leaves the frame's state stale and the
+       * compositor waiting. Keep the current size. */
+      struct libdecor_state *state = wl->libdecor_state_new(
+            VIDEO_SCALE_W(wl->dims), VIDEO_SCALE_H(wl->dims));
+      wl->libdecor_frame_commit(frame, state, configuration);
+      wl->libdecor_state_free(state);
       return;
+   }
    libdecor_frame_handle_configure_common(frame, configuration, wl);
    if (wl->driver_configure_handler)
       wl->driver_configure_handler(wl);
@@ -1110,8 +1119,8 @@ static void gfx_ctx_wl_adopt(gfx_ctx_wayland_data_t *wl,
 #endif
    wl->gl_gpu_list              = NULL;
    wl->driver_configure_handler = driver_configure_handler;
-   /* As after a cold init, until the first frame replaces what is up */
-   wl->ignore_configuration     = true;
+   /* Unlike a cold init there is no splash to protect */
+   wl->ignore_configuration     = false;
 
    frontend_driver_destroy_signal_handler_state();
    video_driver_display_type_set(RARCH_DISPLAY_WAYLAND);
@@ -1479,6 +1488,8 @@ bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
    {
       unsigned bw              = VIDEO_SCALE_W(wl->buffer_dims);
       unsigned bh              = VIDEO_SCALE_H(wl->buffer_dims);
+      /* What a configure leaving the size to us restores */
+      wl->floating_dims        = wl->dims;
       wl->buffer_scale         = wl->pending_buffer_scale;
       wl->fractional_scale_num = wl->pending_fractional_scale_num;
       wl->buffer_dims          = VIDEO_SCALE_PACK(
@@ -1514,14 +1525,15 @@ bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
 
 #define FULLSCREEN_CONFIGURE_TIMEOUT_MS 500
 
-static void gfx_ctx_wl_wait_for_fullscreen(gfx_ctx_wayland_data_t *wl)
+static void gfx_ctx_wl_wait_for_fullscreen(gfx_ctx_wayland_data_t *wl,
+      bool fullscreen)
 {
    struct timespec start, now;
    int remaining = FULLSCREEN_CONFIGURE_TIMEOUT_MS;
 
    clock_gettime(CLOCK_MONOTONIC, &start);
 
-   while (!wl->fullscreen && remaining > 0)
+   while (wl->fullscreen != fullscreen && remaining > 0)
    {
 #ifdef HAVE_LIBDECOR_H
       if (wl->libdecor)
@@ -1540,7 +1552,7 @@ static void gfx_ctx_wl_wait_for_fullscreen(gfx_ctx_wayland_data_t *wl)
          int ret;
 
          flush_wayland_fd(&wl->input);
-         if (wl->fullscreen)
+         if (wl->fullscreen == fullscreen)
             break;
 
          fd.fd      = wl->input.fd;
@@ -1562,8 +1574,9 @@ static void gfx_ctx_wl_wait_for_fullscreen(gfx_ctx_wayland_data_t *wl)
             + (now.tv_nsec - start.tv_nsec) / 1000000);
    }
 
-   if (!wl->fullscreen)
-      RARCH_WARN("[Wayland] No fullscreen configure received; continuing.\n");
+   if (wl->fullscreen != fullscreen)
+      RARCH_WARN("[Wayland] No %s configure received; continuing.\n",
+            fullscreen ? "fullscreen" : "windowed");
 }
 
 bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
@@ -1620,7 +1633,18 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
 
       /* Map only once fullscreen, or window managers such as tiling
        * scripts place the window as a normal one first. */
-      gfx_ctx_wl_wait_for_fullscreen(wl);
+      gfx_ctx_wl_wait_for_fullscreen(wl, true);
+   }
+   else if (wl->fullscreen)
+   {
+      /* A window kept across the reinit is still fullscreen */
+#ifdef HAVE_LIBDECOR_H
+      if (wl->libdecor)
+         wl->libdecor_frame_unset_fullscreen(wl->libdecor_frame);
+      else
+#endif
+         xdg_toplevel_unset_fullscreen(wl->xdg_toplevel);
+      gfx_ctx_wl_wait_for_fullscreen(wl, false);
    }
 
    flush_wayland_fd(&wl->input);
