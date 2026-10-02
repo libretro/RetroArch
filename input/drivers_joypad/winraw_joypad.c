@@ -90,9 +90,29 @@
 #define HID_USAGE_GENERIC_X         0x30
 #endif
 
+#ifndef HID_USAGE_GENERIC_SLIDER
+#define HID_USAGE_GENERIC_SLIDER    0x36
+#endif
+
 #ifndef HID_USAGE_GENERIC_DIAL
 #define HID_USAGE_GENERIC_DIAL      0x37
 #endif
+
+/* Axis slots follow DirectInput's DIJOYSTATE2 layout - lX, lY, lZ,
+ * lRx, lRy, lRz, then rglSlider[0..1] - so a dinput autoconfig
+ * profile binds the same physical axes under this driver. X..Rz take
+ * their fixed slot; Slider and Dial share the two slider slots in
+ * value-cap order. *sliders counts the slider slots handed out so far
+ * and must start at zero for each walk of val_caps[]. Returns -1 for
+ * an axis left without a slot. Only called on axis usages. */
+static INLINE int winraw_joypad_axis_slot(USAGE usage, unsigned *sliders)
+{
+   if (usage < HID_USAGE_GENERIC_SLIDER)
+      return (int)(usage - HID_USAGE_GENERIC_X);
+   if (*sliders < 2)
+      return 6 + (int)(*sliders)++;
+   return -1;
+}
 
 static INLINE bool winraw_joypad_is_axis_usage(const HIDP_VALUE_CAPS *vcap)
 {
@@ -465,7 +485,8 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
                   pad->preparsed) == HIDP_STATUS_SUCCESS)
          {
             unsigned i;
-            unsigned axis_idx = 0;
+            unsigned num_axes = 0;
+            unsigned sliders  = 0;
             unsigned hat_idx  = 0;
             for (i = 0; i < num_val_caps; i++)
             {
@@ -480,12 +501,13 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
                }
                else if (winraw_joypad_is_axis_usage(&pad->val_caps[i]))
                {
-                  if (axis_idx < RAWINPUT_MAX_AXES)
-                     axis_idx++;
+                  int slot_idx = winraw_joypad_axis_slot(usage, &sliders);
+                  if (slot_idx >= 0 && (unsigned)slot_idx >= num_axes)
+                     num_axes = (unsigned)slot_idx + 1;
                }
                /* else: unknown/vendor value cap — skip */
             }
-            pad->num_axes = (uint16_t)axis_idx;
+            pad->num_axes = (uint16_t)num_axes;
             pad->num_hats = (uint16_t)hat_idx;
          }
       }
@@ -606,7 +628,7 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
    if (pad->val_caps)
    {
       USHORT num_val_caps = pad->caps.NumberInputValueCaps;
-      unsigned axis_idx   = 0;
+      unsigned sliders    = 0;
       unsigned hat_idx    = 0;
       unsigned max_axes   = pad->num_axes;
       unsigned max_hats   = pad->num_hats;
@@ -619,20 +641,24 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
                      : pad->val_caps[i].NotRange.Usage;
          bool  is_hat  = (usage == HID_USAGE_GENERIC_HATSWITCH);
          bool  is_axis = !is_hat && winraw_joypad_is_axis_usage(&pad->val_caps[i]);
-         unsigned slot_idx;
+         int   slot_idx;
 
-         /* Assign the destination index from the position of this
-          * cap in val_caps[], matching how num_hats/num_axes were
-          * counted at enumeration time. Deriving it from a running
-          * counter that only advances on a successful read would
-          * shift every subsequent value by one whenever a usage is
-          * missing from the current report. */
+         /* Hats take their index from the position of this cap in
+          * val_caps[], axes their DirectInput slot, both matching
+          * how num_hats/num_axes were counted at enumeration time.
+          * Deriving either from a running counter that only advances
+          * on a successful read would shift every subsequent value
+          * by one whenever a usage is missing from the current
+          * report. */
          if (is_hat)
-            slot_idx = hat_idx++;
+            slot_idx = (int)hat_idx++;
          else if (is_axis)
-            slot_idx = axis_idx++;
+            slot_idx = winraw_joypad_axis_slot(usage, &sliders);
          else
             continue; /* unknown/vendor value cap */
+
+         if (slot_idx < 0)
+            continue;
 
          /* HidP_GetUsageValue() returns HIDP_STATUS_INCOMPATIBLE_REPORT_ID
           * when the arriving report does not carry this usage, which is
@@ -647,7 +673,7 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
 
          if (is_hat)
          {
-            if (slot_idx < max_hats)
+            if ((unsigned)slot_idx < max_hats)
                pad->hats[slot_idx] = winraw_joypad_hat_value_to_bitmask(
                      (LONG)value,
                      pad->val_caps[i].LogicalMin,
@@ -655,7 +681,7 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
          }
          else
          {
-            if (slot_idx < max_axes)
+            if ((unsigned)slot_idx < max_axes)
             {
                LONG signed_value = (pad->val_caps[i].LogicalMin < 0)
                   ? winraw_joypad_sign_extend(value, pad->val_caps[i].BitSize)
