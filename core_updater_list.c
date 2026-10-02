@@ -43,8 +43,13 @@ struct core_updater_list
    char *parse_buf;
    size_t parse_len;
    size_t parse_pos;
+   unsigned parse_flags;
    enum core_updater_list_type type;
 };
+
+/* Internal parse_flags bit, above the public
+ * core_updater_list_parse_flags: a listing line parsed */
+#define CORE_UPDATER_LIST_PARSE_WELL_FORMED (1u << 31)
 
 /* Cached ('global') core updater list */
 static core_updater_list_t *core_list_cached = NULL;
@@ -119,8 +124,9 @@ core_updater_list_t *core_updater_list_init(void)
    core_list->entries   = NULL;
    core_list->parse_buf = NULL;
    core_list->parse_len = 0;
-   core_list->parse_pos = 0;
-   core_list->type      = CORE_UPDATER_LIST_TYPE_UNKNOWN;
+   core_list->parse_pos   = 0;
+   core_list->parse_flags = 0;
+   core_list->type        = CORE_UPDATER_LIST_TYPE_UNKNOWN;
 
    return core_list;
 }
@@ -147,8 +153,9 @@ void core_updater_list_reset(core_updater_list_t *core_list)
       free(core_list->parse_buf);
       core_list->parse_buf = NULL;
    }
-   core_list->parse_len = 0;
-   core_list->parse_pos = 0;
+   core_list->parse_len   = 0;
+   core_list->parse_pos   = 0;
+   core_list->parse_flags = 0;
 
    core_list->type = CORE_UPDATER_LIST_TYPE_UNKNOWN;
 }
@@ -692,25 +699,33 @@ static bool core_updater_list_push_entry(
 
 /* Parses the contents of a single buildbot
  * core listing and adds it to the specified
- * core updater list */
-static void core_updater_list_add_entry(
+ * core updater list.  Returns true for a
+ * well-formed listing, whether or not it was
+ * added: a duplicate, or a core left out as not
+ * installed, still shows the listing is real. */
+static bool core_updater_list_add_entry(
       core_updater_list_t *core_list,
       const char *path_dir_libretro,
       const char *path_libretro_info,
       const char *network_buildbot_url,
       const char *date_str,
       const char *crc_str,
-      const char *filename_str)
+      const char *filename_str,
+      bool installed_only)
 {
    const core_updater_list_entry_t *search_entry = NULL;
    core_updater_list_entry_t entry               = {0};
+   bool well_formed                              = false;
 
    /* Check whether core file is already included
     * in the list (this is *not* an error condition,
     * it just means we can skip the current listing) */
    if (core_updater_list_get_filename(core_list,
          filename_str, &search_entry))
+   {
+      well_formed = true;
       goto error;
+   }
 
    /* Parse individual listing strings */
    if (!core_updater_list_set_date(&entry, date_str))
@@ -728,6 +743,13 @@ static void core_updater_list_add_entry(
             CORE_UPDATER_LIST_TYPE_BUILDBOT))
       goto error;
 
+   well_formed = true;
+
+   /* Not an error either: a core that is not installed is left
+    * out before its info file is read */
+   if (installed_only && !path_is_valid(entry.local_core_path))
+      goto error;
+
    if (!core_updater_list_set_core_info(
          &entry,
          entry.local_info_path,
@@ -738,7 +760,7 @@ static void core_updater_list_add_entry(
    if (!core_updater_list_push_entry(core_list, &entry))
       goto error;
 
-   return;
+   return true;
 
 error:
    /* This is not a *fatal* error - it just
@@ -757,6 +779,7 @@ error:
     * want the whole fetch to fail because of a
     * trivial glitch...) */
    core_updater_list_free_entry(&entry);
+   return well_formed;
 }
 
 /* Core updater list qsort helper function */
@@ -793,7 +816,7 @@ static void core_updater_list_qsort(core_updater_list_t *core_list)
  * freed @data either way. */
 bool core_updater_list_parse_network_take(
       core_updater_list_t *core_list,
-      char *data, size_t len)
+      char *data, size_t len, unsigned flags)
 {
    char *buf;
 
@@ -817,10 +840,11 @@ bool core_updater_list_parse_network_take(
       return false;
    }
 
-   buf[len]             = '\0';
-   core_list->parse_buf = buf;
-   core_list->parse_len = len;
-   core_list->parse_pos = 0;
+   buf[len]               = '\0';
+   core_list->parse_buf   = buf;
+   core_list->parse_len   = len;
+   core_list->parse_pos   = 0;
+   core_list->parse_flags = flags;
 
    return true;
 }
@@ -913,26 +937,31 @@ bool core_updater_list_parse_network_step(
        *   [date] [crc] [filename] */
       if (     (elem0 && *elem0)
             && (elem1 && *elem1)
-            && (elem2 && *elem2))
-         core_updater_list_add_entry(
+            && (elem2 && *elem2)
+            && core_updater_list_add_entry(
                core_list,
                path_dir_libretro,
                path_libretro_info,
                network_buildbot_url,
-               elem0, elem1, elem2);
+               elem0, elem1, elem2,
+               (core_list->parse_flags
+                & CORE_UPDATER_LIST_PARSE_INSTALLED_ONLY) != 0))
+         core_list->parse_flags |= CORE_UPDATER_LIST_PARSE_WELL_FORMED;
    }
 
-   /* Listing exhausted */
-   free(core_list->parse_buf);
-   core_list->parse_buf = NULL;
-   core_list->parse_len = 0;
-   core_list->parse_pos = 0;
-
-   if (RBUF_LEN(core_list->entries) > 0)
-   {
-      core_updater_list_qsort(core_list);
+   /* Listing exhausted.  A listing with any well-formed line is a
+    * buildbot list even when every core was left out as not
+    * installed, so an empty result still reads as a successful
+    * fetch. */
+   if (core_list->parse_flags & CORE_UPDATER_LIST_PARSE_WELL_FORMED)
       core_list->type = CORE_UPDATER_LIST_TYPE_BUILDBOT;
-   }
+   free(core_list->parse_buf);
+   core_list->parse_buf   = NULL;
+   core_list->parse_len   = 0;
+   core_list->parse_pos   = 0;
+   core_list->parse_flags = 0;
+
+   core_updater_list_qsort(core_list);
 
    return true;
 }
@@ -956,7 +985,7 @@ bool core_updater_list_parse_network_data(
       return false;
    memcpy(copy, data, len);
 
-   if (!core_updater_list_parse_network_take(core_list, copy, len))
+   if (!core_updater_list_parse_network_take(core_list, copy, len, 0))
       return false;
 
    core_updater_list_parse_network_step(core_list,

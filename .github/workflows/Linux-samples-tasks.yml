@@ -519,6 +519,11 @@ jobs:
           # per gather into a private list, while the caller's list -
           # read by the Core Downloader's menu callbacks every frame -
           # only ever holds its old contents or the complete new ones.
+          # The scan lanes also count core info reads at the link
+          # boundary: Update Installed Cores' fetch reads info for its
+          # installed cores alone.  The status lanes pin that a fetch
+          # finding no installed cores still ends in 'all cores
+          # updated' and a failed fetch in 'core list failed'.
           make -f Makefile.update_installed clean all
           test -x update_installed_scan_test
           timeout 600 ./update_installed_scan_test

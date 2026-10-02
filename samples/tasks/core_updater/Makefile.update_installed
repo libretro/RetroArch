@@ -56,6 +56,10 @@ LIBS    += -lpthread -lm
 LDFLAGS += -Wl,--wrap=path_is_valid
 # The get-list lane forces the I/O window to its one-item floor.
 LDFLAGS += -Wl,--wrap=task_nbio_slice_within_budget
+# Core info reads are counted, and the parent's final title is
+# recognised, at the link boundary.
+LDFLAGS += -Wl,--wrap=core_info_get_core_updater_info \
+           -Wl,--wrap=msg_hash_to_str -Wl,--wrap=task_set_title
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) $(CFLAGS)

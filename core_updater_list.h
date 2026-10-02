@@ -147,15 +147,24 @@ bool core_updater_list_get_core(
 /* Setters */
 /***********/
 
+/* core_updater_list_parse_network_take() flags */
+enum core_updater_list_parse_flags
+{
+   /* Keep only cores installed in the libretro directory,
+    * and read core info for those alone */
+   CORE_UPDATER_LIST_PARSE_INSTALLED_ONLY = (1 << 0)
+};
+
 /* Starts an incremental parse of a buildbot core
  * listing into @core_list, which is emptied first.
  * Takes ownership of @data, a heap buffer of @len
  * bytes (not necessarily NUL-terminated), and frees
- * it even on failure.  Returns false on a missing
- * listing or OOM. */
+ * it even on failure.  @flags is a mask of
+ * core_updater_list_parse_flags.  Returns false on a
+ * missing listing or OOM. */
 bool core_updater_list_parse_network_take(
       core_updater_list_t *core_list,
-      char *data, size_t len);
+      char *data, size_t len, unsigned flags);
 
 /* Parses listing lines, one per work item, while
  * @within_budget(@budget, 0, 0) allows (NULL: to the

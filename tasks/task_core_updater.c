@@ -86,6 +86,9 @@ typedef struct core_updater_list_handle
     * here.  The last reference frees the handle. */
    retro_atomic_int_t refs;
    bool refresh_menu;
+   /* Update Installed Cores' fetch: keep installed cores only, and
+    * read core info for those alone */
+   bool installed_only;
    /* Set by the HTTP callback on the main thread, polled by the
     * worker: a release store after the payload (http_data,
     * http_task_success) and an acquire load before reading it. */
@@ -202,6 +205,9 @@ typedef struct update_installed_cores_handle
    unsigned num_locked;
    enum update_installed_cores_status status;
    bool auto_backup;
+   /* The buildbot listing arrived and parsed.  core_list holds only
+    * the installed cores in it, so an empty list is no failure. */
+   bool list_fetched;
    /* The task title currently reads 'Scanning cores' */
    bool title_scanning;
    /* Captured on the main thread when this task is pushed: its
@@ -614,7 +620,10 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
                      && core_updater_list_parse_network_take(
                            list_handle->parse_list,
                            (char*)list_handle->http_data->data,
-                           list_handle->http_data->len))
+                           list_handle->http_data->len,
+                           list_handle->installed_only
+                              ? CORE_UPDATER_LIST_PARSE_INSTALLED_ONLY
+                              : 0))
                   list_handle->status = CORE_UPDATER_LIST_PARSE;
                else
                   list_handle->status = CORE_UPDATER_LIST_END;
@@ -763,6 +772,7 @@ static void cb_task_core_updater_get_list(
  * handler can call it with its own push-time captures. */
 static void *task_push_get_core_updater_list_captured(
       core_updater_list_t* core_list, bool mute, bool refresh_menu,
+      bool installed_only,
       core_updater_sub_task_done_t *list_done,
       const char *dir_libretro, const char *path_libretro_info,
       const char *network_buildbot_url)
@@ -790,6 +800,7 @@ static void *task_push_get_core_updater_list_captured(
    retro_atomic_int_init(&list_handle->refs, 1);
    list_handle->core_list          = core_list;
    list_handle->refresh_menu       = refresh_menu;
+   list_handle->installed_only     = installed_only;
    list_handle->http_task          = NULL;
    retro_atomic_store_release_int(&list_handle->http_task_complete, 0);
    list_handle->http_task_success  = false;
@@ -858,7 +869,7 @@ static void *task_push_get_core_updater_list_internal(
 {
    settings_t *settings = config_get_ptr();
    return task_push_get_core_updater_list_captured(
-         core_list, mute, refresh_menu, NULL,
+         core_list, mute, refresh_menu, false, NULL,
          settings->paths.directory_libretro,
          settings->paths.path_libretro_info,
          settings->paths.network_buildbot_url);
@@ -1884,7 +1895,7 @@ static void task_update_installed_cores_handler(retro_task_t *task)
          {
             if (!task_push_get_core_updater_list_captured(
                      update_installed_handle->core_list,
-                     true, false, update_installed_handle->list_done,
+                     true, false, true, update_installed_handle->list_done,
                      update_installed_handle->dir_libretro,
                      update_installed_handle->path_libretro_info,
                      update_installed_handle->network_buildbot_url))
@@ -1912,9 +1923,10 @@ static void task_update_installed_cores_handler(retro_task_t *task)
             bool list_available = retro_atomic_load_acquire_int(
                   &update_installed_handle->list_done->complete) != 0;
 
-            /* If list is available, make sure it isn't empty
-             * (error will message will be displayed when
-             * final task title is set) */
+            /* If list is available, check that it was fetched
+             * and that it holds any installed cores (an error
+             * message is displayed when the final task title
+             * is set) */
             if (list_available)
             {
                /* The child is done with core_list, which stays
@@ -1923,6 +1935,9 @@ static void task_update_installed_cores_handler(retro_task_t *task)
                      update_installed_handle->list_done);
                update_installed_handle->list_done = NULL;
 
+               update_installed_handle->list_fetched =
+                     core_updater_list_get_type(update_installed_handle->core_list)
+                  == CORE_UPDATER_LIST_TYPE_BUILDBOT;
                update_installed_handle->list_size =
                      core_updater_list_size(update_installed_handle->core_list);
                RARCH_DBG("[Core Updater] Updater list size from buildbot: %d.\n",
@@ -1966,7 +1981,7 @@ static void task_update_installed_cores_handler(retro_task_t *task)
 
             /* > Check whether core list was fetched
              *   successfully */
-            if (update_installed_handle->list_size > 0)
+            if (update_installed_handle->list_fetched)
             {
                char task_title[128];
                size_t _len = strlcpy(task_title,
@@ -2096,6 +2111,7 @@ void task_push_update_installed_cores(
    update_installed_handle->num_updated              = 0;
    update_installed_handle->num_locked               = 0;
    update_installed_handle->title_scanning           = false;
+   update_installed_handle->list_fetched             = false;
    update_installed_handle->status                   = UPDATE_INSTALLED_CORES_BEGIN;
 
    if (!update_installed_handle->core_list)

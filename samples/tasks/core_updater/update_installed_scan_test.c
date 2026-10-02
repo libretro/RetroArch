@@ -67,7 +67,15 @@
  * parse must take a gather per line, and the caller's list - which
  * the Core Downloader's menu callbacks read every frame - must read
  * either its old contents or the complete new ones after every
- * gather, never an emptied or half-built list. */
+ * gather, never an emptied or half-built list.
+ *
+ * Update Installed Cores fetches the listing for its installed cores
+ * alone: the parse leaves out every core that is not installed before
+ * reading its info file.  The scan lanes count core info reads at the
+ * link boundary and assert one per installed core.  The status lanes
+ * pin what that must not change: a fetch that finds no installed
+ * cores still ends in 'all cores updated', and a fetch that fails
+ * still ends in 'core list failed'. */
 
 #include <stdio.h>
 #include <string.h>
@@ -89,6 +97,7 @@
 
 #include "../../../configuration.h"
 #include "../../../core_updater_list.h"
+#include "../../../msg_hash.h"
 #include "../../../tasks/tasks_internal.h"
 
 #define NUM_ENTRIES   512
@@ -123,6 +132,41 @@ bool __wrap_path_is_valid(const char *path)
 {
    retro_atomic_fetch_add_int(&n_path_is_valid, 1);
    return __real_path_is_valid(path);
+}
+
+/* ---------------- core info reads and final status --------------- */
+
+static retro_atomic_int_t n_info_reads;
+/* 0 none yet, 1 all cores updated, 2 core list failed */
+static retro_atomic_int_t final_status;
+
+core_updater_info_t *__real_core_info_get_core_updater_info(
+      const char *info_path);
+core_updater_info_t *__wrap_core_info_get_core_updater_info(
+      const char *info_path)
+{
+   retro_atomic_fetch_add_int(&n_info_reads, 1);
+   return __real_core_info_get_core_updater_info(info_path);
+}
+
+const char *__real_msg_hash_to_str(enum msg_hash_enums msg);
+const char *__wrap_msg_hash_to_str(enum msg_hash_enums msg)
+{
+   if (msg == MSG_ALL_CORES_UPDATED)
+      return "<all cores updated>";
+   if (msg == MSG_CORE_LIST_FAILED)
+      return "<core list failed>";
+   return __real_msg_hash_to_str(msg);
+}
+
+void __real_task_set_title(retro_task_t *task, char *title);
+void __wrap_task_set_title(retro_task_t *task, char *title)
+{
+   if (title && !strncmp(title, "<all cores updated>", 19))
+      retro_atomic_store_release_int(&final_status, 1);
+   else if (title && !strcmp(title, "<core list failed>"))
+      retro_atomic_store_release_int(&final_status, 2);
+   __real_task_set_title(task, title);
 }
 
 /* ---------------- the I/O window, forced to its floor ------------ */
@@ -332,6 +376,7 @@ static void run_lane(bool threaded)
          sizeof(settings->paths.path_libretro_info));
 
    retro_atomic_store_release_int(&n_path_is_valid, 0);
+   retro_atomic_store_release_int(&n_info_reads, 0);
    task_push_update_installed_cores(false, 0, g_dir, NULL);
 
    find_data.func     = find_any;
@@ -357,6 +402,57 @@ static void run_lane(bool threaded)
    }
    CHECK(stats <= NUM_ENTRIES + NUM_INSTALLED,
          "at most one stat per entry plus one per installed core");
+   printf("  %d core info reads\n",
+         retro_atomic_load_acquire_int(&n_info_reads));
+   CHECK(retro_atomic_load_acquire_int(&n_info_reads) == NUM_INSTALLED,
+         "core info read for the installed cores alone");
+
+   task_queue_deinit();
+   task_queue_unset_threaded();
+}
+
+/* ---------------- status lanes ----------------------------------- */
+
+/* Update Installed Cores against @dir_libretro and @url, to its final
+ * title */
+static void status_lane(bool threaded, const char *label,
+      const char *dir_libretro, const char *url, int expected)
+{
+   task_finder_data_t find_data;
+   settings_t *settings = config_get_ptr();
+   long gathers;
+
+   printf("[lane threaded=%d: %s]\n", (int)threaded, label);
+
+   task_queue_init(threaded, NULL);
+
+   get_list_test_set_buildbot_url(url);
+   strlcpy(settings->paths.directory_libretro, dir_libretro,
+         sizeof(settings->paths.directory_libretro));
+   strlcpy(settings->paths.path_libretro_info, g_dir,
+         sizeof(settings->paths.path_libretro_info));
+
+   retro_atomic_store_release_int(&final_status, 0);
+   retro_atomic_store_release_int(&n_info_reads, 0);
+   task_push_update_installed_cores(false, 0, dir_libretro, NULL);
+
+   find_data.func     = find_any;
+   find_data.userdata = NULL;
+   for (gathers = 0; gathers < 4 * NUM_ENTRIES; gathers++)
+   {
+      task_queue_check();
+      if (!task_queue_find(&find_data))
+         break;
+      retro_sleep(17);
+   }
+
+   CHECK(gathers < 4 * NUM_ENTRIES, "update installed cores completed");
+   CHECK(retro_atomic_load_acquire_int(&final_status) == expected,
+         expected == 1
+         ? "ended in 'all cores updated'"
+         : "ended in 'core list failed'");
+   CHECK(retro_atomic_load_acquire_int(&n_info_reads) == 0,
+         "no core info read");
 
    task_queue_deinit();
    task_queue_unset_threaded();
@@ -602,8 +698,22 @@ int main(void)
    {
       int mode;
       run_get_list_lane();
+      char url[128];
+      char empty_dir[] = "/tmp/update_installed_empty_XXXXXX";
+
       run_lane(false);
       run_lane(true);
+
+      snprintf(url, sizeof(url), "http://127.0.0.1:%d", srv_port);
+      if (mkdtemp(empty_dir))
+      {
+         status_lane(false, "no installed cores", empty_dir, url, 1);
+         status_lane(true,  "no installed cores", empty_dir, url, 1);
+         rmdir(empty_dir);
+      }
+      /* Nothing listens on port 1 */
+      status_lane(false, "fetch fails", g_dir, "http://127.0.0.1:1", 2);
+      status_lane(true,  "fetch fails", g_dir, "http://127.0.0.1:1", 2);
       for (mode = RESET_IN_WAIT_LIST; mode <= CANCEL_IN_WAIT_DOWNLOAD; mode++)
       {
          cancel_lane(false, (enum cancel_mode)mode);
