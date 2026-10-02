@@ -781,8 +781,7 @@ realpath:
 size_t config_file_add_reference(config_file_t *conf, char *path)
 {
    size_t _len;
-   /* It is expected that the conf has it's path already set */
-   char short_path[NAME_MAX_LENGTH];
+   char *short_path;
    if (!conf->references)
    {
       conf->references       = (struct path_linked_list*)malloc(sizeof(*conf->references));
@@ -810,10 +809,18 @@ size_t config_file_add_reference(config_file_t *conf, char *path)
     * reference path verbatim - the same resolution fallback the
     * '#include' handler adopted for pathless configs. */
    if (!conf->path)
-      _len = strlcpy(short_path, path, sizeof(short_path));
-   else
-      _len = fill_pathname_abbreviated_or_relative(short_path, conf->path, path, sizeof(short_path));
+   {
+      path_linked_list_add_path(conf->references, path);
+      return strlen(path);
+   }
+   /* Staged on the heap at full path size: a reference can be longer
+    * than one path component, and the list keeps its own copy */
+   if (!(short_path = (char*)malloc(PATH_MAX_LENGTH)))
+      return 0;
+   _len = fill_pathname_abbreviated_or_relative(short_path,
+         conf->path, path, PATH_MAX_LENGTH);
    path_linked_list_add_path(conf->references, short_path);
+   free(short_path);
    return _len;
 }
 
