@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 20
         run: |
-          pkgs="build-essential libasound2-dev libsdl2-dev libopenal-dev"
+          pkgs="build-essential libasound2-dev libsdl2-dev libopenal-dev libpipewire-0.3-dev"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -493,6 +493,22 @@ jobs:
           make clean && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./audioworklet_test
           echo "[pass] audioworklet_test (ASan)"
+
+      - name: Build and run pipewire_write_test (the PipeWire driver's write against its own ring)
+        shell: bash
+        working-directory: samples/audio/pipewire_write
+        run: |
+          set -eu
+          # audio/drivers/pipewire.c, #included by the test and built
+          # against the system's PipeWire headers, with the graph as a
+          # loop wait that plays a quantum: a write longer than the
+          # ring's mark takes what fits, or blocking goes in parts, in
+          # whole frames, and the write path logs nothing.
+          make clean && make -j$(nproc) all
+          ./pipewire_write_test
+          make clean && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./pipewire_write_test
+          echo "[pass] pipewire_write_test (ASan)"
 
       - name: Build and run live_drivers_test (a live PulseAudio server, a null ALSA PCM)
         shell: bash
