@@ -2191,6 +2191,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             *(unsigned *)data  = user_lang;
             RARCH_LOG("[Environ] GET_LANGUAGE: \"%u\".\n", user_lang);
          }
+#else
+         /* No language setting to report; libretro.h has cores
+          * fall back to the OS language or English. */
+         return false;
 #endif
          break;
 
