@@ -3253,6 +3253,15 @@ static void frontend_unix_get_env(int *argc,
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], base_path,
          "temp", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
    }
+
+#ifdef WEBOS
+   /* Start Load Content on the TV's shared storage, where users put
+    * their content. Only a fresh config picks this up; an existing
+    * retroarch.cfg keeps its saved rgui_browser_directory. */
+   if (path_is_directory("/media/internal"))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT], "/media/internal",
+            sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT]));
+#endif
 #endif
 
 #ifndef IS_SALAMANDER
