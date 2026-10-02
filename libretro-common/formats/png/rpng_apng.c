@@ -288,7 +288,8 @@ static bool apng_index(rpng_apng_stream_t *s)
 
       if (!memcmp(typ, "IHDR", 4))
       {
-         if (clen != 13)
+         /* Keep the canvas fixed for all subsequent frame bounds checks. */
+         if (clen != 13 || s->ihdr || p != 8)
             return false;
          s->ihdr       = s->buf + p;      /* at the length field */
          s->ihdr_total = 8 + chunk_total; /* signature + IHDR    */
@@ -317,7 +318,7 @@ static bool apng_index(rpng_apng_stream_t *s)
       }
       else if (!memcmp(typ, "acTL", 4))
       {
-         if (clen != 8)
+         if (clen != 8 || !s->ihdr || s->frames)
             return false;
          s->num_frames = (int)apng_be32(pay + 0);
          s->loop_count = (int)apng_be32(pay + 4);
@@ -346,9 +347,12 @@ static bool apng_index(rpng_apng_stream_t *s)
          f->delay_den = apng_be16(pay + 22);
          f->dispose   = pay[24];
          f->blend     = pay[25];
+         /* Compare against the remaining canvas space to avoid
+          * overflowing when adding a frame offset and dimension. */
          if (f->width == 0 || f->height == 0
-               || f->x_off + f->width  > ihdr_w
-               || f->y_off + f->height > ihdr_h)
+               || f->width > ihdr_w || f->height > ihdr_h
+               || f->x_off > ihdr_w - f->width
+               || f->y_off > ihdr_h - f->height)
             return false;
       }
       else if (!memcmp(typ, "IDAT", 4))
