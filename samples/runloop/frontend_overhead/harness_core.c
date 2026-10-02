@@ -53,6 +53,27 @@ volatile int harness_core_in_input;
 static void (*in_probe)(int point);
 void harness_core_set_probe(void (*probe)(int point)) { in_probe = probe; }
 
+/* Trace: what the core sees of pad 1 each frame. @mode 1 reads the
+ * sixteen buttons one by one, the way older cores do; 2 reads them as
+ * one bitmask; 0 stops. With @analog the two sticks are read too. */
+static int      trace_mode;
+static int      trace_analog;
+static unsigned trace_buttons;
+static int      trace_axes[4];
+
+void harness_core_trace(int mode, int analog)
+{
+   trace_mode   = mode;
+   trace_analog = analog;
+}
+
+/* What the last frame saw. */
+void harness_core_trace_last(unsigned *buttons, int *axes)
+{
+   *buttons = trace_buttons;
+   memcpy(axes, trace_axes, sizeof(trace_axes));
+}
+
 /* Rumble: @calls set_rumble_state calls a frame on port 0's strong
  * motor, the last with strength @calls * 100, and one on the weak
  * motor with strength 50. 0 stops. */
@@ -168,7 +189,33 @@ void retro_run(void)
     * frame as a duplicate. */
    frame[runs % (W * H)] ^= 0xffff;
    runs++;
-   if (!in_queries)
+   if (trace_mode)
+   {
+      unsigned i;
+      unsigned b = 0;
+      poll_cb();
+      if (trace_mode == 2)
+         b = (unsigned)state_cb(0, RETRO_DEVICE_JOYPAD, 0,
+               RETRO_DEVICE_ID_JOYPAD_MASK) & 0xffff;
+      else
+         for (i = 0; i < 16; i++)
+            if (state_cb(0, RETRO_DEVICE_JOYPAD, 0, i))
+               b |= 1u << i;
+      trace_buttons = b;
+      memset(trace_axes, 0, sizeof(trace_axes));
+      if (trace_analog)
+      {
+         trace_axes[0] = state_cb(0, RETRO_DEVICE_ANALOG,
+               RETRO_DEVICE_INDEX_ANALOG_LEFT,  RETRO_DEVICE_ID_ANALOG_X);
+         trace_axes[1] = state_cb(0, RETRO_DEVICE_ANALOG,
+               RETRO_DEVICE_INDEX_ANALOG_LEFT,  RETRO_DEVICE_ID_ANALOG_Y);
+         trace_axes[2] = state_cb(0, RETRO_DEVICE_ANALOG,
+               RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X);
+         trace_axes[3] = state_cb(0, RETRO_DEVICE_ANALOG,
+               RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_Y);
+      }
+   }
+   else if (!in_queries)
    {
       poll_cb();
       state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A);

@@ -50,6 +50,16 @@
  *     retro_run() and after it. None may happen inside, and after it
  *     there is one per motor, carrying the last strength the core set.
  *
+ *   - What a core sees (input plan, Phase 0: golden traces). A
+ *     synthetic pad plays a fixed pattern of buttons and stick
+ *     movement, and the harness core reads pad 1 every frame - once
+ *     button by button, the way older cores do, and once as a single
+ *     bitmask. The two readings must be the same frame for frame, and
+ *     the whole sequence must match a recorded digest, under the
+ *     default mapping, a remap, analog-to-d-pad, turbo and hold. This
+ *     is the reference the frame-local view has to reproduce: it is
+ *     what the state path does today, pinned before that path changes.
+ *
  * Nothing is stubbed. */
 #include <stdio.h>
 #include <stdlib.h>
@@ -651,6 +661,287 @@ static void lane_output_store(void)
 #endif
 }
 
+/* What a core sees of pad 1, frame by frame, from a synthetic pad. */
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+#define VIEW_FRAMES 1200
+
+static uint32_t              syn_buttons;   /* driver buttons 0-31 */
+static int16_t               syn_axes[4];   /* driver axes 0-3 */
+static input_device_driver_t syn_joypad;
+
+static int32_t syn_button(unsigned pad, uint16_t joykey)
+{
+   if (pad != 0 || joykey >= 32)
+      return 0;
+   return (syn_buttons >> joykey) & 1;
+}
+
+static int16_t syn_axis(unsigned pad, uint32_t joyaxis)
+{
+   if (pad != 0)
+      return 0;
+   if (AXIS_NEG_GET(joyaxis) < 4)
+   {
+      int16_t v = syn_axes[AXIS_NEG_GET(joyaxis)];
+      return (v < 0) ? v : 0;
+   }
+   if (AXIS_POS_GET(joyaxis) < 4)
+   {
+      int16_t v = syn_axes[AXIS_POS_GET(joyaxis)];
+      return (v > 0) ? v : 0;
+   }
+   return 0;
+}
+
+static void syn_get_buttons(unsigned pad, input_bits_t *state)
+{
+   unsigned i;
+   BIT256_CLEAR_ALL_PTR(state);
+   if (pad != 0)
+      return;
+   for (i = 0; i < 32; i++)
+      if (syn_buttons & (1u << i))
+         BIT256_SET_PTR(state, i);
+}
+
+/* The RetroPad mask from the binds, as every joypad driver builds it. */
+static int16_t syn_state(rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds, unsigned port)
+{
+   unsigned i;
+   int16_t  ret = 0;
+   uint16_t pad = joypad_info->joy_idx;
+
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
+         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      if ((uint16_t)joykey != NO_BTN && syn_button(pad, (uint16_t)joykey))
+         ret |= (1 << i);
+      else if (joyaxis != AXIS_NONE
+            && ((float)abs(syn_axis(pad, joyaxis)) / 0x8000)
+               > joypad_info->axis_threshold)
+         ret |= (1 << i);
+   }
+   return ret;
+}
+
+/* The pattern: a fixed walk over the sixteen buttons and four axes,
+ * with the turbo (16) and hold (17) modifiers held for stretches. */
+static void syn_pattern(unsigned frame, uint32_t *rng)
+{
+   static const int16_t level[8] = {
+      0, 32767, -32768, 12000, -9000, 3000, 20000, -20000 };
+
+   if (frame == 0)
+   {
+      *rng        = 0x1234abcdu;
+      syn_buttons = 0;
+      memset(syn_axes, 0, sizeof(syn_axes));
+   }
+   *rng = *rng * 1664525u + 1013904223u;
+
+   if (frame % 3 == 0)
+      syn_buttons ^= 1u << ((*rng >> 8) & 15);
+   if (frame % 5 == 0)
+      syn_axes[(*rng >> 16) & 3] = level[(*rng >> 20) & 7];
+   if (frame % 97 == 0)
+      syn_buttons &= ~0xffffu;      /* everything up, now and then */
+
+   syn_buttons &= ~(3u << 16);
+   if ((frame / 40) & 1)
+      syn_buttons |= 1u << 16;      /* turbo modifier */
+   if ((frame / 55) % 3 == 1)
+      syn_buttons |= 1u << 17;      /* hold modifier */
+}
+
+struct view_frame
+{
+   unsigned buttons;
+   int      axes[4];
+};
+
+static void view_record(int mode, void (*trace)(int, int),
+      void (*trace_last)(unsigned*, int*), struct view_frame *out)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   uint32_t rng = 0;
+   unsigned f;
+
+   /* both readings start from the same turbo and hold state */
+   memset(&input_st->turbo_btns, 0, sizeof(input_st->turbo_btns));
+   memset(&input_st->hold_btns,  0, sizeof(input_st->hold_btns));
+
+   trace(mode, 1);
+   for (f = 0; f < VIEW_FRAMES; f++)
+   {
+      syn_pattern(f, &rng);
+      runloop_iterate();
+      task_queue_check();
+      trace_last(&out[f].buttons, out[f].axes);
+   }
+   trace(0, 0);
+}
+
+static uint32_t view_digest(const struct view_frame *v)
+{
+   uint32_t h = 2166136261u;
+   unsigned f, i;
+   for (f = 0; f < VIEW_FRAMES; f++)
+   {
+      h = (h ^ (v[f].buttons & 0xffff)) * 16777619u;
+      for (i = 0; i < 4; i++)
+         h = (h ^ (uint32_t)(v[f].axes[i] & 0xffff)) * 16777619u;
+   }
+   return h;
+}
+#endif
+
+static void lane_core_view(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   /* What the state path gives a core today, per scenario. A change
+    * here is a change in what cores see: update it only on purpose. */
+   static const struct { const char *name; uint32_t digest; } golden[5] = {
+      { "default mapping",        0x9c5fa001u },
+      { "A and B swapped",        0x0a584cc9u },
+      { "left stick as d-pad",    0xe57635edu },
+      { "turbo",                  0x49496af0u },
+      { "hold",                   0x1c41ffe0u }
+   };
+   static struct view_frame one_by_one[VIEW_FRAMES], as_mask[VIEW_FRAMES];
+   input_driver_state_t *input_st = input_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   const input_device_driver_t *joypad_real;
+   void (*trace)(int, int);
+   void (*trace_last)(unsigned*, int*);
+   struct retro_keybind saved_auto[8], saved_turbo, saved_hold;
+   uint32_t digest_default = 0;
+   void    *core;
+   unsigned had = failures;
+   unsigned sc, i;
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(trace = (void (*)(int, int))dlsym(core, "harness_core_trace"))
+       || !(trace_last = (void (*)(unsigned*, int*))dlsym(core, "harness_core_trace_last"))
+       || !input_st->primary_joypad)
+   {
+      CHECK(false, "core view: the harness core's trace entry points or the joypad driver");
+      return;
+   }
+   CHECK(pad_connected(0), "core view: the scripted pad is not connected");
+
+   /* the synthetic pad: the test driver's connection and name, with
+    * buttons and axes the lane sets frame by frame */
+   joypad_real              = input_st->primary_joypad;
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+
+   /* the sticks on axes 0-3; turbo and hold on buttons 16 and 17 */
+   memcpy(saved_auto, &input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS],
+         sizeof(saved_auto));
+   for (i = 0; i < 4; i++)
+   {
+      input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + 2 * i].joyaxis     = AXIS_POS(i);
+      input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + 2 * i + 1].joyaxis = AXIS_NEG(i);
+   }
+   saved_turbo = input_config_binds[0][RARCH_TURBO_ENABLE];
+   saved_hold  = input_config_binds[0][RARCH_HOLD_ENABLE];
+
+   fast_forward(true);
+
+   /* A core's first analog read switches analog-to-d-pad off for that
+    * port from the next query on. Get that behind us, so both readings
+    * start from the same place. */
+   trace(1, 1);
+   run_loop_frames(5);
+   trace(0, 0);
+
+   for (sc = 0; sc < 5; sc++)
+   {
+      unsigned differ = 0, first = 0;
+      uint32_t digest;
+
+      /* the scenario */
+      switch (sc)
+      {
+         case 1:
+            settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_A] = RETRO_DEVICE_ID_JOYPAD_B;
+            settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_B] = RETRO_DEVICE_ID_JOYPAD_A;
+            break;
+         case 2:
+            settings->uints.input_analog_dpad_mode[0] = ANALOG_DPAD_LSTICK_FORCED;
+            break;
+         case 3:
+            settings->bools.input_turbo_enable = true;
+            input_config_binds[0][RARCH_TURBO_ENABLE].joykey = 16;
+            input_config_binds[0][RARCH_TURBO_ENABLE].attr  |= RETRO_KEYBIND_VALID_BIT;
+            break;
+         case 4:
+            input_config_binds[0][RARCH_HOLD_ENABLE].joykey = 17;
+            input_config_binds[0][RARCH_HOLD_ENABLE].attr  |= RETRO_KEYBIND_VALID_BIT;
+            break;
+      }
+      run_loop_frames(5);
+
+      view_record(1, trace, trace_last, one_by_one);
+      view_record(2, trace, trace_last, as_mask);
+
+      for (i = 0; i < VIEW_FRAMES; i++)
+         if (memcmp(&one_by_one[i], &as_mask[i], sizeof(one_by_one[i])))
+         {
+            if (!differ)
+               first = i;
+            differ++;
+         }
+      digest = view_digest(one_by_one);
+      if (sc == 0)
+         digest_default = digest;
+
+      printf("[info] core view, %s: digest %08x over %u frames\n",
+            golden[sc].name, (unsigned)digest, (unsigned)VIEW_FRAMES);
+      if (differ)
+         fprintf(stderr, "       %s: %u frame(s) differ between the two"
+               " readings; frame %u read %04x button by button and %04x"
+               " as a mask\n", golden[sc].name, differ, first,
+               one_by_one[first].buttons, as_mask[first].buttons);
+      CHECK(!differ, "core view: reading button by button and reading the mask disagree");
+      CHECK(digest == golden[sc].digest, "core view: what the core sees has changed");
+      if (sc > 0)
+         CHECK(digest != digest_default, "core view: a scenario changed nothing");
+
+      /* back to the default mapping */
+      settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_A] = RETRO_DEVICE_ID_JOYPAD_A;
+      settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_B] = RETRO_DEVICE_ID_JOYPAD_B;
+      settings->uints.input_analog_dpad_mode[0] = ANALOG_DPAD_NONE;
+      settings->bools.input_turbo_enable        = false;
+      input_config_binds[0][RARCH_TURBO_ENABLE] = saved_turbo;
+      input_config_binds[0][RARCH_HOLD_ENABLE]  = saved_hold;
+   }
+
+   fast_forward(false);
+   syn_buttons = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   memset(&input_st->turbo_btns, 0, sizeof(input_st->turbo_btns));
+   memset(&input_st->hold_btns,  0, sizeof(input_st->hold_btns));
+   memcpy(&input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS], saved_auto,
+         sizeof(saved_auto));
+   input_st->primary_joypad = joypad_real;
+   run_loop_frames(5);
+   if (failures == had)
+      printf("[pass] core view: button by button and as a mask agree, and"
+            " match the recorded digests\n");
+#else
+   printf("[skip] core-view lane: need the test drivers and dlopen\n");
+#endif
+}
+
 static void lane_frame_cost(void)
 {
    unsigned had = failures;
@@ -840,6 +1131,7 @@ int main(int argc, char *argv[])
       lane_input_poll_modes();
       lane_input_poll_sites(load_poll_name[load_poll]);
       lane_output_store();
+      lane_core_view();
    }
 
    if (failures)
