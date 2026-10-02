@@ -1310,36 +1310,31 @@ static struct ec_curve ec_p384 = { {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0},
    384 / BN_WORD_BITS, 384, 48, 0 };
 
 /* The curve constants are computed on first use. Two threads making
- * their first connections at once both get here; without a lock one
- * can publish the flag while the other is still rewriting the same
- * fields, and a third reads a half-written constant. The flag is an
- * acquire load on the fast path, the computation runs under a lock,
- * and the flag is stored with release once every field is in place. */
+ * their first connections at once both get here; the one that moves
+ * ready from 0 to EC_BUSY computes, the other yields until it reads
+ * EC_READY, stored with release once every field is in place. */
+#define EC_BUSY  1
+#define EC_READY 2
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
-static retro_atomic_ptr_t ec_lock_ptr;
-static slock_t *ec_lock_get(void)
-{
-   slock_t *l = (slock_t*)retro_atomic_load_acquire_ptr(&ec_lock_ptr);
-   if (!l)
-   {
-      slock_t *fresh = slock_new();
-      if (retro_atomic_cas_ptr(&ec_lock_ptr, NULL, fresh))
-         l = fresh;
-      else
-      {
-         slock_free(fresh);
-         l = (slock_t*)retro_atomic_load_acquire_ptr(&ec_lock_ptr);
-      }
-   }
-   return l;
-}
-#define EC_LOCK()   slock_lock(ec_lock_get())
-#define EC_UNLOCK() slock_unlock(ec_lock_get())
-#else
-#define EC_LOCK()   do { } while (0)
-#define EC_UNLOCK() do { } while (0)
 #endif
+
+/* Nonzero when the caller is the one to compute the constants. */
+static int ec_claim(struct ec_curve *cv)
+{
+#ifdef HAVE_THREADS
+   for (;;)
+   {
+      if (retro_atomic_load_acquire_int(&cv->ready) == EC_READY)
+         return 0;
+      if (retro_atomic_cas_int(&cv->ready, 0, EC_BUSY))
+         return 1;
+      sthread_yield();
+   }
+#else
+   return retro_atomic_load_acquire_int(&cv->ready) != EC_READY;
+#endif
+}
 
 static void ec_init(struct ec_curve *cv)
 {
@@ -1347,14 +1342,8 @@ static void ec_init(struct ec_curve *cv)
    bn_word two[EC_MAX_K];
    const unsigned k = cv->k;
 
-   if (retro_atomic_load_acquire_int(&cv->ready))
+   if (!ec_claim(cv))
       return;
-   EC_LOCK();
-   if (retro_atomic_load_acquire_int(&cv->ready))
-   {
-      EC_UNLOCK();
-      return;
-   }
 
    bn_from_be(cv->p, k, cv->p_be, cv->bytes);
    bn_from_be(cv->n, k, cv->n_be, cv->bytes);
@@ -1380,8 +1369,7 @@ static void ec_init(struct ec_curve *cv)
    bn_mont_mul(cv->g.y, cv->g.y, cv->r2p, cv->p, cv->n0p, k, tmp);
    bn_copy(cv->g.z, cv->one, k);
 
-   retro_atomic_store_release_int(&cv->ready, 1);
-   EC_UNLOCK();
+   retro_atomic_store_release_int(&cv->ready, EC_READY);
 }
 
 /* Field helpers, all in the Montgomery domain. */

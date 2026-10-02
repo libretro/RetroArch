@@ -7,10 +7,13 @@ SRC = bench.c $(COMMON)/crypto/crypto.c $(COMMON)/crypto/kdf.c $(COMMON)/crypto/
       $(COMMON)/file/file_path.c $(COMMON)/string/rstrtod.c $(COMMON)/file/file_path_io.c \
       $(COMMON)/features/features_cpu.c $(COMMON)/compat/compat_strl.c $(COMMON)/time/rtime.c \
       $(COMMON)/string/stdstring.c $(COMMON)/encodings/encoding_utf.c
+
+all: bench
+
 bench: $(SRC)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) -lmbedcrypto -o $@
 run: bench
 	./bench
 clean:
 	rm -f bench
-.PHONY: run clean
+.PHONY: all run clean

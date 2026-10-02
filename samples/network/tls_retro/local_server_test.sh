@@ -150,13 +150,17 @@ else
    echo "FAIL: KeyUpdate: $(cat $D/ku.client) / server saw: $(grep '^ack' $D/ku.out | tr '\n' ' ')"; exit 1
 fi
 # concurrent first use: six threads verify against a store none of them
-# has built yet; under TSan when the tools are built with it
+# has built yet, and with an ECDSA server compute the curve constants
+# none of them has computed yet; under TSan when the tools are built
+# with it
 make -s tls_threads
-openssl s_server -accept 44331 -cert $D/rsa.pem -key $D/rsa.key -www >/dev/null 2>&1 &
-SRV=$!; sleep 0.4
-set +e; $RUN ./tls_threads$EXE localhost 44331 $D/ca.pem > $D/thr.out 2>&1; rc=$?; set -e
-kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
-if [ $rc -eq 0 ]; then echo "ok:   concurrent first-use verification from six threads"; else echo "FAIL: threads: $(cat $D/thr.out)"; exit 1; fi
+for key in rsa p256; do
+   openssl s_server -accept 44331 -cert $D/$key.pem -key $D/$key.key -www >/dev/null 2>&1 &
+   SRV=$!; sleep 0.4
+   set +e; $RUN ./tls_threads$EXE localhost 44331 $D/ca.pem > $D/thr.out 2>&1; rc=$?; set -e
+   kill $SRV 2>/dev/null; wait $SRV 2>/dev/null || true
+   if [ $rc -eq 0 ]; then echo "ok:   concurrent first-use verification from six threads ($key)"; else echo "FAIL: threads ($key): $(cat $D/thr.out)"; exit 1; fi
+done
 # Without AES instructions the client offers ChaCha20-Poly1305 first,
 # which s_server, taking the client's order, then picks on both versions
 make -s tls_fetch_noaes

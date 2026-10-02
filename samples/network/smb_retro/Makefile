@@ -10,6 +10,8 @@ SRC = smb_test.c $(COMMON)/net/net_smb2.c $(COMMON)/net/net_krb5.c $(COMMON)/net
 ifneq (,$(findstring mingw,$(CC))$(findstring MINGW,$(MSYSTEM))$(findstring Windows,$(OS)))
    LDLIBS += -lws2_32 -liphlpapi
 endif
+all: smb_test vfs_test smb_idle_test vfs_threads_test
+
 smb_test: $(SRC)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SRC) $(LDLIBS) -o $@
 
@@ -39,4 +41,4 @@ vfs_threads_test_libsmb2: vfs_threads_test.c $(L2_SRC)
 
 clean:
 	rm -f smb_idle_test smb_idle_test.exe smb_idle_test_libsmb2 smb_test smb_test.exe vfs_test vfs_test.exe vfs_threads_test vfs_threads_test.exe vfs_test_libsmb2 vfs_threads_test_libsmb2
-.PHONY: clean
+.PHONY: all clean
