@@ -37,6 +37,10 @@
  *    requests, commits and dispatches, frame after frame; under TSan
  *    any feedback event dispatched on the main thread is a race on
  *    the feedback list and the timing.
+ * 6. The GL context's frame-callback wait works the same way: done is
+ *    left alone by the default queue, ends the wait when it comes, and
+ *    a wait that times out leaves no callback behind for another
+ *    thread to destroy again.
  */
 
 #include <stdio.h>
@@ -54,6 +58,7 @@
 #include "presentation-time-server-protocol.h"
 #include "gfx/common/wayland_present.h"
 #include "gfx/common/wayland/presentation-time.h"
+#include <features/features_cpu.h>
 
 #define LOG_FN(name) \
    void name(const char *fmt, ...) \
@@ -82,6 +87,8 @@ struct comp_feedback
 
 static struct wl_display *sdpy;
 static struct wl_list     comp_feedbacks;
+static struct wl_list     comp_frames;
+static int                comp_hold_frames;
 static pthread_mutex_t    comp_lock = PTHREAD_MUTEX_INITIALIZER;
 static int                comp_stop;
 static int                comp_answer;
@@ -112,7 +119,13 @@ static void s_surface_attach(struct wl_client *c, struct wl_resource *r,
 static void s_surface_damage(struct wl_client *c, struct wl_resource *r,
       int32_t x, int32_t y, int32_t w, int32_t h) { }
 static void s_surface_frame(struct wl_client *c, struct wl_resource *r,
-      uint32_t id) { }
+      uint32_t id)
+{
+   struct comp_feedback *fb = (struct comp_feedback*)calloc(1, sizeof(*fb));
+   fb->res = wl_resource_create(c, &wl_callback_interface, 1, id);
+   wl_resource_set_implementation(fb->res, NULL, fb, s_feedback_gone);
+   wl_list_insert(comp_frames.prev, &fb->link);
+}
 static void s_surface_region(struct wl_client *c, struct wl_resource *r,
       struct wl_resource *region) { }
 
@@ -124,7 +137,10 @@ static void s_surface_commit(struct wl_client *c, struct wl_resource *r)
    uint64_t ust;
    uint32_t refresh;
 
+   int      hold;
+
    pthread_mutex_lock(&comp_lock);
+   hold    = comp_hold_frames;
    answer  = comp_answer;
    ust     = comp_ust ? comp_ust : now_ns();
    refresh = comp_refresh;
@@ -142,6 +158,12 @@ static void s_surface_commit(struct wl_client *c, struct wl_resource *r)
          wp_presentation_feedback_send_discarded(fb->res);
       wl_resource_destroy(fb->res);
    }
+   if (!hold)
+      wl_list_for_each_safe(fb, tmp, &comp_frames, link)
+      {
+         wl_callback_send_done(fb->res, 0);
+         wl_resource_destroy(fb->res);
+      }
 }
 
 static const struct wl_surface_interface s_surface_impl = {
@@ -230,6 +252,8 @@ static void comp_set(int answer, uint64_t ust, uint32_t refresh)
 static struct wl_display    *cdpy;
 static struct wl_compositor *compositor;
 static wl_present_t          present;
+static wl_frame_t            frame;
+static unsigned              frames_done;
 static int                   input_stop;
 
 static void c_global(void *data, struct wl_registry *reg, uint32_t name,
@@ -289,8 +313,11 @@ static void *video_thread(void *data)
       wl_present_dispatch(&present, cdpy);
       wl_present_wait(&present, 1);
       wl_present_request(&present, surface);
+      wl_frame_request(&frame, cdpy, surface);
       wl_surface_commit(surface);
       wl_display_flush(cdpy);
+      if (wl_frame_wait(&frame, cdpy, cpu_features_get_time_usec() + 50000))
+         frames_done++;
       /* A frame per answer, as vsync would pace it */
       while (!wl_list_empty(&present.feedbacks))
       {
@@ -314,6 +341,7 @@ int main(void)
    uint64_t t0;
 
    wl_list_init(&comp_feedbacks);
+   wl_list_init(&comp_frames);
    sdpy = wl_display_create();
    wl_global_create(sdpy, &wl_compositor_interface, 1, NULL,
          s_bind_compositor);
@@ -380,6 +408,29 @@ int main(void)
          "a discard changed the timing");
    printf("ok:   a discarded frame frees its feedback\n");
 
+   /* 6. The frame callback waits for the presenting thread too */
+   wl_frame_request(&frame, cdpy, surface);
+   wl_surface_commit(surface);
+   wl_display_roundtrip(cdpy);
+   input_poll();
+   CHECK(!frame.done && frame.cb, "the default queue dispatched done");
+   CHECK(wl_frame_wait(&frame, cdpy, cpu_features_get_time_usec() + 50000),
+         "the wait missed done");
+   CHECK(!frame.cb, "done left the callback");
+   pthread_mutex_lock(&comp_lock);
+   comp_hold_frames = 1;
+   pthread_mutex_unlock(&comp_lock);
+   wl_frame_request(&frame, cdpy, surface);
+   wl_surface_commit(surface);
+   wl_display_flush(cdpy);
+   CHECK(!wl_frame_wait(&frame, cdpy, cpu_features_get_time_usec() + 20000),
+         "a held callback reported done");
+   CHECK(!frame.cb, "a timed-out wait left its callback");
+   pthread_mutex_lock(&comp_lock);
+   comp_hold_frames = 0;
+   pthread_mutex_unlock(&comp_lock);
+   printf("ok:   frame callbacks wait for the presenting thread\n");
+
    /* 5. Input on one thread, frames on another */
    comp_set(ANSWER_PRESENT, 0, 100000u);
    pthread_create(&input, NULL, input_thread, NULL);
@@ -393,6 +444,7 @@ int main(void)
    wl_present_dispatch(&present, cdpy);
    CHECK(wl_list_empty(&present.feedbacks), "feedbacks left unanswered");
    CHECK(present.presented, "no frame was presented");
+   CHECK(frames_done == THREADED_FRAMES, "a frame callback was missed");
    printf("ok:   %u frames with input dispatched on another thread\n",
          THREADED_FRAMES);
 
@@ -400,6 +452,9 @@ int main(void)
    wl_present_request(&present, surface);
    wl_present_destroy(&present);
    CHECK(!present.presentation && !present.queue, "not reset");
+   wl_frame_request(&frame, cdpy, surface);
+   wl_frame_destroy(&frame);
+   CHECK(!frame.cb && !frame.queue, "frame not reset");
 
    wl_surface_destroy(surface);
    wl_compositor_destroy(compositor);

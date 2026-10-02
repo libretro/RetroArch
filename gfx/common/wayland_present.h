@@ -19,6 +19,7 @@
 #include <time.h>
 #include <boolean.h>
 #include <retro_common_api.h>
+#include <libretro.h>
 
 #ifdef HAVE_WAYLAND_BACKPORT
 #include "wayland_common_backport.h"
@@ -61,6 +62,27 @@ void wl_present_dispatch(wl_present_t *present, struct wl_display *dpy);
 void wl_present_wait(wl_present_t *present, int swap_interval);
 
 void wl_present_destroy(wl_present_t *present);
+
+/* A frame callback to wait on, on its own queue like the feedback. */
+typedef struct wl_frame
+{
+   struct wl_event_queue *queue;
+   struct wl_callback    *cb;
+   bool                   done;
+} wl_frame_t;
+
+/* Asks for a frame callback on the next commit of 'surface'. */
+void wl_frame_request(wl_frame_t *frame, struct wl_display *dpy,
+      struct wl_surface *surface);
+
+/* Waits for it until 'deadline' (cpu_features_get_time_usec); true if
+ * it came. Nothing is left pending either way. */
+bool wl_frame_wait(wl_frame_t *frame, struct wl_display *dpy,
+      retro_time_t deadline);
+
+void wl_frame_cancel(wl_frame_t *frame);
+
+void wl_frame_destroy(wl_frame_t *frame);
 
 RETRO_END_DECLS
 

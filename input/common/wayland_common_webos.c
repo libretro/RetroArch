@@ -372,11 +372,7 @@ void gfx_ctx_wl_get_video_size_webos(void *data, unsigned *dims)
 
 void gfx_ctx_wl_destroy_resources_webos(gfx_ctx_wayland_data_t *wl)
 {
-   if (wl->frame_cb)
-   {
-      wl_callback_destroy(wl->frame_cb);
-      wl->frame_cb = NULL;
-   }
+   wl_frame_destroy(&wl->frame);
 
    if (wl->cursor.theme)
       wl_cursor_theme_destroy(wl->cursor.theme);

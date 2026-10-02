@@ -1047,9 +1047,10 @@ jobs:
         run: |
           set -eu
           # gfx/common/wayland_present.c against an in-process
-          # compositor: presentation feedback lives on its own event
-          # queue, so the main thread dispatching input never runs it
-          # while the video thread requests, paces and frees feedback.
+          # compositor: presentation feedback and the GL frame callback
+          # live on their own event queues, so the main thread
+          # dispatching input never runs them while the video thread
+          # requests, waits on and frees them.
           # TSan catches a feedback event dispatched off that thread;
           # ASan the feedback left behind at teardown.
           make clean all SANITIZER=thread

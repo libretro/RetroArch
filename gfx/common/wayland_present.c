@@ -18,6 +18,9 @@
 
 #include <stdlib.h>
 #include <time.h>
+#include <poll.h>
+
+#include <features/features_cpu.h>
 
 #include "wayland_present.h"
 #include "wayland/presentation-time.h"
@@ -203,4 +206,76 @@ void wl_present_destroy(wl_present_t *present)
    present->queue            = NULL;
    present->clock            = false;
    present->presented        = false;
+}
+
+static void wl_frame_done(void *data, struct wl_callback *cb, uint32_t time)
+{
+   wl_frame_t *frame = (wl_frame_t*)data;
+   frame->done       = true;
+   if (frame->cb == cb)
+      frame->cb      = NULL;
+   wl_callback_destroy(cb);
+}
+
+static const struct wl_callback_listener wl_frame_listener = {
+   wl_frame_done,
+};
+
+void wl_frame_request(wl_frame_t *frame, struct wl_display *dpy,
+      struct wl_surface *surface)
+{
+   wl_frame_cancel(frame);
+   frame->done = false;
+   if (!frame->queue && !(frame->queue = wl_display_create_queue(dpy)))
+      return;
+   if (!(frame->cb = wl_surface_frame(surface)))
+      return;
+   /* As with the feedback: done only follows the next commit */
+   wl_proxy_set_queue((struct wl_proxy*)frame->cb, frame->queue);
+   wl_callback_add_listener(frame->cb, &wl_frame_listener, frame);
+}
+
+bool wl_frame_wait(wl_frame_t *frame, struct wl_display *dpy,
+      retro_time_t deadline)
+{
+   struct pollfd pfd;
+   pfd.fd     = wl_display_get_fd(dpy);
+   pfd.events = POLLIN;
+
+   while (frame->cb)
+   {
+      retro_time_t now = cpu_features_get_time_usec();
+      if (now >= deadline)
+         break;
+      if (wl_display_dispatch_queue_pending(dpy, frame->queue) != 0)
+         continue;
+      if (wl_display_prepare_read_queue(dpy, frame->queue) == -1)
+         continue;
+      pfd.revents = 0;
+      if (poll(&pfd, 1, (int)((deadline - now) / 1000)) <= 0)
+      {
+         wl_display_cancel_read(dpy);
+         break;
+      }
+      wl_display_read_events(dpy);
+   }
+
+   wl_frame_cancel(frame);
+   return frame->done;
+}
+
+void wl_frame_cancel(wl_frame_t *frame)
+{
+   if (frame->cb)
+      wl_callback_destroy(frame->cb);
+   frame->cb = NULL;
+}
+
+void wl_frame_destroy(wl_frame_t *frame)
+{
+   wl_frame_cancel(frame);
+   if (frame->queue)
+      wl_event_queue_destroy(frame->queue);
+   frame->queue = NULL;
+   frame->done  = false;
 }

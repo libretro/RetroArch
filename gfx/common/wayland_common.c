@@ -564,6 +564,7 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    if (wl->fractional_scale_manager)
       wp_fractional_scale_manager_v1_destroy(wl->fractional_scale_manager);
    wl_present_destroy(&wl->present);
+   wl_frame_destroy(&wl->frame);
    if (wl->compositor)
       wl_compositor_destroy(wl->compositor);
    if (wl->registry)
@@ -927,9 +928,7 @@ void gfx_ctx_wl_free_common(gfx_ctx_wayland_data_t *wl, bool may_keep)
          && wl->surface
          && !(runloop_get_flags() & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
    {
-      if (wl->frame_cb)
-         wl_callback_destroy(wl->frame_cb);
-      wl->frame_cb        = NULL;
+      wl_frame_cancel(&wl->frame);
       /* The next context puts its own on the surface */
       if (wl->tearing_control)
          wp_tearing_control_v1_destroy(wl->tearing_control);

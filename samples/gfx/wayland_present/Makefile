@@ -14,7 +14,9 @@ GENERATED := presentation-time-server-protocol.h \
 
 SOURCES := wayland_present_test.c \
            presentation-time-protocol.c \
-           $(REPO_ROOT)/gfx/common/wayland_present.c
+           $(REPO_ROOT)/gfx/common/wayland_present.c \
+           $(LRC)/features/features_cpu.c \
+           $(LRC)/compat/compat_strl.c
 
 CFLAGS  += -Wall -std=gnu89 -g -O1 \
            -DRARCH_INTERNAL -DHAVE_WAYLAND -D_GNU_SOURCE \

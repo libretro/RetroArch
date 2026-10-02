@@ -288,6 +288,7 @@ typedef struct gfx_ctx_wayland_data
    /* The compositor's colour management, for an HDR GL surface */
    wl_color_t color;
    wl_present_t present;
+   wl_frame_t frame;
    /* The GPUs the GL GPU index chooses from, as published to the menu */
    struct string_list *gl_gpu_list;
    struct wl_keyboard *wl_keyboard;
@@ -396,10 +397,6 @@ typedef struct gfx_ctx_wayland_data
    } cfg_pending;
    bool activated;
    bool reported_display_size;
-   bool swap_complete;
-   /* The in-flight frame callback, cancelled when the window is kept
-    * or torn down. */
-   struct wl_callback *frame_cb;
 } gfx_ctx_wayland_data_t;
 
 #ifdef HAVE_XKBCOMMON

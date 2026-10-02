@@ -33,6 +33,7 @@
    wl_display_read_events
    wl_display_cancel_read
    wl_display_dispatch_queue_pending
+   wl_display_prepare_read_queue
 */
 
 /* Function pointers for dynamic dispatch */
@@ -48,6 +49,8 @@ static int (*real_wl_display_prepare_read)(struct wl_display *) = NULL;
 static int (*real_wl_display_read_events)(struct wl_display *) = NULL;
 static void (*real_wl_display_cancel_read)(struct wl_display *) = NULL;
 static int (*real_wl_display_dispatch_queue_pending)(struct wl_display *,
+      struct wl_event_queue *) = NULL;
+static int (*real_wl_display_prepare_read_queue)(struct wl_display *,
       struct wl_event_queue *) = NULL;
 
 static bool wayland_init_done = false;
@@ -79,6 +82,8 @@ static void wayland_init_fallbacks(void)
          dlsym(wl_handle, "wl_display_cancel_read");
       real_wl_display_dispatch_queue_pending =
          dlsym(wl_handle, "wl_display_dispatch_queue_pending");
+      real_wl_display_prepare_read_queue =
+         dlsym(wl_handle, "wl_display_prepare_read_queue");
 
       dlclose(wl_handle);
    }
@@ -376,14 +381,38 @@ void WRAPPER_wl_display_cancel_read(struct wl_display *display)
       FALLBACK_wl_display_cancel_read(display);
 }
 
-/* Only presentation feedback uses a queue of its own, and webOS binds
- * no wp_presentation, so there is nothing to fall back to. */
+/* Without a way to read and dispatch one queue alone, proxies stay on
+ * the default queue and the queue calls work on that. */
+static bool wayland_has_queue_reads(void)
+{
+   wayland_init_fallbacks();
+   return real_wl_display_dispatch_queue_pending
+      && real_wl_display_prepare_read_queue;
+}
+
 int WRAPPER_wl_display_dispatch_queue_pending(struct wl_display *display,
       struct wl_event_queue *queue)
 {
-   wayland_init_fallbacks();
-
-   if (real_wl_display_dispatch_queue_pending)
+   if (wayland_has_queue_reads())
       return real_wl_display_dispatch_queue_pending(display, queue);
-   return -1;
+   return wl_display_dispatch_pending(display);
+}
+
+int WRAPPER_wl_display_prepare_read_queue(struct wl_display *display,
+      struct wl_event_queue *queue)
+{
+   if (wayland_has_queue_reads())
+      return real_wl_display_prepare_read_queue(display, queue);
+   return WRAPPER_wl_display_prepare_read(display);
+}
+
+#undef wl_proxy_set_queue
+extern void wl_proxy_set_queue(struct wl_proxy *proxy,
+      struct wl_event_queue *queue);
+
+void WRAPPER_wl_proxy_set_queue(struct wl_proxy *proxy,
+      struct wl_event_queue *queue)
+{
+   if (wayland_has_queue_reads())
+      wl_proxy_set_queue(proxy, queue);
 }
