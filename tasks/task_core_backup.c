@@ -139,6 +139,40 @@ typedef struct core_backup_handle
 /* Utility functions */
 /*********************/
 
+/* Closes the files and drops the buffers a finished task no longer
+ * needs.  Done by the handler as it finishes, so the callback (a
+ * restore reloads core info from the file just written) sees them
+ * closed; the strings stay until cleanup, since finders read
+ * core_path for as long as the task is findable. */
+static void core_backup_handle_release_io(core_backup_handle_t *backup_handle)
+{
+   if (backup_handle->core_file)
+   {
+      intfstream_close(backup_handle->core_file);
+      free(backup_handle->core_file);
+      backup_handle->core_file = NULL;
+   }
+
+   if (backup_handle->backup_file)
+   {
+      intfstream_close(backup_handle->backup_file);
+      free(backup_handle->backup_file);
+      backup_handle->backup_file = NULL;
+   }
+
+   if (backup_handle->backup_list)
+   {
+      core_backup_list_free(backup_handle->backup_list);
+      backup_handle->backup_list = NULL;
+   }
+
+   if (backup_handle->buffer)
+   {
+      free(backup_handle->buffer);
+      backup_handle->buffer = NULL;
+   }
+}
+
 static void free_core_backup_handle(core_backup_handle_t *backup_handle)
 {
    if (!backup_handle)
@@ -168,34 +202,19 @@ static void free_core_backup_handle(core_backup_handle_t *backup_handle)
       backup_handle->backup_path = NULL;
    }
 
-   if (backup_handle->core_file)
-   {
-      intfstream_close(backup_handle->core_file);
-      free(backup_handle->core_file);
-      backup_handle->core_file = NULL;
-   }
-
-   if (backup_handle->backup_file)
-   {
-      intfstream_close(backup_handle->backup_file);
-      free(backup_handle->backup_file);
-      backup_handle->backup_file = NULL;
-   }
-
-   if (backup_handle->backup_list)
-   {
-      core_backup_list_free(backup_handle->backup_list);
-      backup_handle->backup_list = NULL;
-   }
-
-   if (backup_handle->buffer)
-   {
-      free(backup_handle->buffer);
-      backup_handle->buffer = NULL;
-   }
+   core_backup_handle_release_io(backup_handle);
 
    free(backup_handle);
    backup_handle = NULL;
+}
+
+/* Runs at retirement, on the thread that retires the queue, after the
+ * callback and once the task can no longer be found: the first point
+ * at which no finder can still be reading task->state. */
+static void task_core_backup_cleanup(retro_task_t *task)
+{
+   free_core_backup_handle((core_backup_handle_t*)task->state);
+   task->state = NULL;
 }
 
 /* Forward declarations, required for task_core_backup_finder() */
@@ -685,11 +704,12 @@ static void task_core_backup_handler(retro_task_t *task)
 
 task_finished:
    /* Menu refresh happens in the task's callback: the main
-    * thread, where menu flags are written. */
+    * thread, where menu flags are written.  The handle itself is
+    * released by task_core_backup_cleanup(). */
+   if (backup_handle)
+      core_backup_handle_release_io(backup_handle);
    if (task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
-
-   free_core_backup_handle(backup_handle);
 }
 
 /* Note 1: If CRC is set to 0, CRC of core_path file will
@@ -786,6 +806,7 @@ void *task_push_core_backup(
    /* Configure task */
    task->handler          = task_core_backup_handler;
    task->callback         = cb_task_core_backup;
+   task->cleanup          = task_core_backup_cleanup;
    task->state            = backup_handle;
    task->title            = strdup(task_title);
    task->progress         = 0;
@@ -1268,11 +1289,11 @@ static void task_core_restore_handler(retro_task_t *task)
    return;
 
 task_finished:
-
+   /* The handle itself is released by task_core_backup_cleanup() */
+   if (backup_handle)
+      core_backup_handle_release_io(backup_handle);
    if (task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
-
-   free_core_backup_handle(backup_handle);
 }
 
 bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
@@ -1415,6 +1436,7 @@ bool task_push_core_restore(const char *backup_path, const char *dir_libretro,
    task->progress         = 0;
    task->progress_cb      = task_window_progress_cb;
    task->callback         = cb_task_core_restore;
+   task->cleanup          = task_core_backup_cleanup;
    task->flags           |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;
 
    /* If core to be restored is currently loaded, must

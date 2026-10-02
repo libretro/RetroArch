@@ -98,6 +98,7 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 #include <queues/task_queue.h>
+#include <retro_timers.h>
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>
@@ -197,7 +198,10 @@ retro_time_t __real_cpu_features_get_time_usec(void);
 retro_time_t __wrap_cpu_features_get_time_usec(void)
 {
    retro_time_t now = g_clock_now;
-   g_clock_now += g_clock_step;
+   /* A step of 0 writes nothing, so the threaded lane's worker can
+    * read the clock without racing the main thread. */
+   if (g_clock_step)
+      g_clock_now += g_clock_step;
    return now;
 }
 
@@ -809,6 +813,82 @@ static void test_restore_round_trip(void)
    free(payload);
 }
 
+/* A finished task stays findable until the queue retires it, and
+ * task_push_core_backup() refuses a second backup of the same core by
+ * running task_core_backup_finder(), which reads core_path through
+ * task->state.  So the handle has to live exactly as long as the task
+ * is findable: a handler that frees it as it finishes leaves the
+ * finder reading freed memory for the whole stretch between the
+ * worker finishing the task and the main thread retiring it.  The
+ * lane opens that stretch deliberately - threaded queue, no
+ * task_queue_check() - and pushes the duplicate into it; ASan is the
+ * assertion for the read, and the push must be refused while the
+ * first backup is still findable and accepted once it is retired. */
+static bool finished_task_finder(retro_task_t *task, void *user_data)
+{
+   (void)user_data;
+   return (task_get_flags(task) & RETRO_TASK_FLG_FINISHED) != 0;
+}
+
+static void test_finished_task_stays_findable(void)
+{
+   task_finder_data_t find_data;
+   uint8_t *payload;
+   size_t core_size = 256 * 1024;
+   int i;
+
+   printf("  finished backup stays findable until retired\n");
+
+   if (!(payload = make_payload(core_size)))
+   {
+      printf("    SKIP: out of memory\n");
+      return;
+   }
+   if (!write_file_bytes(g_core_path, payload, core_size))
+   {
+      printf("    SKIP: could not write fixture core\n");
+      free(payload);
+      return;
+   }
+   free(payload);
+
+   g_clock_now  = 1000000;
+   g_clock_step = 0;
+
+   task_queue_init(true, NULL);
+
+   if (!task_push_core_backup(g_core_path, "Test Core", 0,
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true))
+   {
+      printf("    SKIP: task_push_core_backup returned NULL\n");
+      task_queue_deinit();
+      task_queue_unset_threaded();
+      return;
+   }
+
+   /* Wait for the worker to finish the task; nothing retires it,
+    * since this thread does not call task_queue_check(). */
+   find_data.func     = finished_task_finder;
+   find_data.userdata = NULL;
+   for (i = 0; i < 10000 && !task_queue_find(&find_data); i++)
+      retro_sleep(1);
+   CHECK(i < 10000, "backup task did not finish");
+
+   CHECK(!task_push_core_backup(g_core_path, "Test Core", 0,
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true),
+         "duplicate backup accepted while the first is still findable");
+
+   task_queue_wait(NULL, NULL);
+
+   CHECK(task_push_core_backup(g_core_path, "Test Core", 0,
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true) != NULL,
+         "backup refused after the first one retired");
+   task_queue_wait(NULL, NULL);
+
+   task_queue_deinit();
+   task_queue_unset_threaded();
+}
+
 int main(int argc, char **argv)
 {
    (void)argc; (void)argv;
@@ -851,6 +931,9 @@ int main(int argc, char **argv)
 
    printf("\n[restore]\n");
    test_restore_round_trip();
+
+   printf("\n[task lifetime]\n");
+   test_finished_task_stays_findable();
 
    printf("\n%s (%d check%s, %d failure%s)\n",
          failures ? "FAILED" : "PASSED",
