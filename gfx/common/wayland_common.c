@@ -1607,14 +1607,6 @@ static void shm_buffer_handle_release(void *data,
    shm_buffer_free(buffer);
 }
 
-#if 0
-static void xdg_surface_handle_configure(void *data,
-      struct xdg_surface *surface, uint32_t serial)
-{
-   xdg_surface_ack_configure(surface, serial);
-}
-#endif
-
 const struct wl_buffer_listener shm_buffer_listener = {
    shm_buffer_handle_release,
 };
