@@ -35,6 +35,11 @@ tpool_worker                     1
 tpool_help                       1
 # Only at teardown, waiting for the threads to leave.
 tpool_wait                       1
+# The recorder's pushes and its encoder hand frames over through
+# retro_spsc rings and sleep on eventcounts; nothing here.
+ffmpeg_push_video                0
+ffmpeg_push_audio                0
+ffmpeg_thread                    0
 video_driver_frame               0
 audio_driver_sample_batch        0
 runloop_iterate                  0

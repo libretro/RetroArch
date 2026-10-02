@@ -25,6 +25,7 @@
 #include <boolean.h>
 #include <retro_spsc.h>
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #include <retro_atomic.h>
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
@@ -219,15 +220,13 @@ typedef struct ffmpeg
 
    AVPacket *pkt;
 
-   scond_t *cond;
-   slock_t *cond_lock;
    /* The three queues to the encoder thread.  Single producer (the
     * main thread in ffmpeg_push_video / ffmpeg_push_audio), single
     * consumer (ffmpeg_thread), so lock-free retro_spsc rings: the
     * push of a frame - up to MAX_FRAMES frames of fb_dims in
     * video_fifo - and the encoder's read of one no
     * longer exclude each other, where before both copied the whole
-    * frame under one lock.  cond/cond_lock stay for the sleeps.
+    * frame under one lock.
     * After deinit_thread() has joined the encoder, the main thread
     * drains them alone (ffmpeg_flush_buffers). */
    retro_spsc_t audio_fifo;
@@ -240,13 +239,20 @@ typedef struct ffmpeg
     * thread's loop condition and the push paths' bail-out.  Was a
     * volatile bool, which TSan flagged against the clear. */
    retro_atomic_int_t alive;
-   /* Whether the encoder thread may sleep when it finds the queues
-    * empty. Every access is under cond_lock, or - the one in
-    * init_thread() - before the thread it is read by exists, so the
-    * lock is what protects it. It carried a volatile, which says the
-    * opposite: that it is a flag crossing threads without one. */
-   bool can_sleep;
+   /* The sleeps, neither with a lock: the encoder waits on data, which
+    * a push notifies after writing, and a push that finds no room
+    * waits on space, which the encoder notifies after each read.
+    * deinit_thread() notifies both once alive is clear. */
+   retro_eventcount_t data;
+   retro_eventcount_t space;
+   bool data_init;
+   bool space_init;
 } ffmpeg_t;
+
+/* How long a push waits for room before looking at alive again. The
+ * encoder notifies space on every read and deinit_thread() on the way
+ * out, so this only bounds a wake that never comes. */
+#define FFMPEG_PUSH_WAIT_US 100000
 
 AVFormatContext *ctx;
 
@@ -1037,8 +1043,17 @@ static void ffmpeg_thread(void *data);
 
 static bool init_thread(ffmpeg_t *handle)
 {
-   handle->cond_lock  = slock_new();
-   handle->cond       = scond_new();
+   handle->data_init  = retro_eventcount_init(&handle->data);
+   handle->space_init = retro_eventcount_init(&handle->space);
+   if (!handle->data_init || !handle->space_init)
+   {
+      if (handle->data_init)
+         retro_eventcount_free(&handle->data);
+      if (handle->space_init)
+         retro_eventcount_free(&handle->space);
+      handle->data_init = handle->space_init = false;
+      return false;
+   }
    /* fifo_new() was never checked; a ring that fails to init fails
     * the recorder now.  (retro_spsc rounds each capacity up to a
     * power of two, so they hold at least what the fifos did; the
@@ -1057,11 +1072,13 @@ static bool init_thread(ffmpeg_t *handle)
       retro_spsc_free(&handle->audio_fifo);
       retro_spsc_free(&handle->attr_fifo);
       retro_spsc_free(&handle->video_fifo);
+      retro_eventcount_free(&handle->data);
+      retro_eventcount_free(&handle->space);
+      handle->data_init = handle->space_init = false;
       return false;
    }
 
    retro_atomic_store_release_int(&handle->alive, 1);
-   handle->can_sleep = true;
    handle->thread    = sthread_create(ffmpeg_thread, handle);
 
    return true;
@@ -1072,16 +1089,14 @@ static void deinit_thread(ffmpeg_t *handle)
    if (!handle->thread)
       return;
 
-   slock_lock(handle->cond_lock);
    retro_atomic_store_release_int(&handle->alive, 0);
-   handle->can_sleep = false;
-   slock_unlock(handle->cond_lock);
-
-   scond_signal(handle->cond);
+   retro_eventcount_notify(&handle->data);
+   retro_eventcount_notify(&handle->space);
    sthread_join(handle->thread);
 
-   slock_free(handle->cond_lock);
-   scond_free(handle->cond);
+   retro_eventcount_free(&handle->data);
+   retro_eventcount_free(&handle->space);
+   handle->data_init = handle->space_init = false;
 
    handle->thread = NULL;
 }
@@ -1283,6 +1298,7 @@ static bool ffmpeg_push_video(void *data,
        * only asked the attr fifo, relying on the two being sized in
        * step; the rings are sized independently now (power-of-two
        * rounding), so ask both. */
+      int key;
       if (!retro_atomic_load_acquire_int(&handle->alive))
          return false;
 
@@ -1291,17 +1307,15 @@ static bool ffmpeg_push_video(void *data,
                   >= (size_t)rows * attr_data.pitch)
          break;
 
-      slock_lock(handle->cond_lock);
-      if (handle->can_sleep)
-      {
-         handle->can_sleep = false;
-         scond_wait(handle->cond, handle->cond_lock);
-         handle->can_sleep = true;
-      }
+      key = retro_eventcount_prepare_wait(&handle->space);
+      if (     !retro_atomic_load_acquire_int(&handle->alive)
+            || (  retro_spsc_write_avail(&handle->attr_fifo) >= sizeof(attr_data)
+               && retro_spsc_write_avail(&handle->video_fifo)
+                     >= (size_t)rows * attr_data.pitch))
+         retro_eventcount_cancel_wait(&handle->space);
       else
-         scond_signal(handle->cond);
-
-      slock_unlock(handle->cond_lock);
+         retro_eventcount_commit_wait_timeout(&handle->space, key,
+               FFMPEG_PUSH_WAIT_US);
    }
 
    /* Frame first, attr last: the encoder takes the attr as the
@@ -1312,7 +1326,7 @@ static bool ffmpeg_push_video(void *data,
             (const uint8_t*)vid->data + offset, attr_data.pitch);
 
    retro_spsc_write(&handle->attr_fifo, &attr_data, sizeof(attr_data));
-   scond_signal(handle->cond);
+   retro_eventcount_notify(&handle->data);
 
    return true;
 }
@@ -1321,6 +1335,7 @@ static bool ffmpeg_push_audio(void *data,
       const struct record_audio_data *audio_data)
 {
    ffmpeg_t *handle = (ffmpeg_t*)data;
+   size_t need;
 
    if (!handle || !audio_data)
       return false;
@@ -1328,31 +1343,28 @@ static bool ffmpeg_push_audio(void *data,
    if (!handle->config.audio_enable)
       return true;
 
+   need = audio_data->frames * handle->params.channels * sizeof(int16_t);
+
    for (;;)
    {
+      int key;
       if (!retro_atomic_load_acquire_int(&handle->alive))
          return false;
 
-      if (retro_spsc_write_avail(&handle->audio_fifo)
-            >= audio_data->frames * handle->params.channels * sizeof(int16_t))
+      if (retro_spsc_write_avail(&handle->audio_fifo) >= need)
          break;
 
-      slock_lock(handle->cond_lock);
-      if (handle->can_sleep)
-      {
-         handle->can_sleep = false;
-         scond_wait(handle->cond, handle->cond_lock);
-         handle->can_sleep = true;
-      }
+      key = retro_eventcount_prepare_wait(&handle->space);
+      if (     !retro_atomic_load_acquire_int(&handle->alive)
+            || retro_spsc_write_avail(&handle->audio_fifo) >= need)
+         retro_eventcount_cancel_wait(&handle->space);
       else
-         scond_signal(handle->cond);
-
-      slock_unlock(handle->cond_lock);
+         retro_eventcount_commit_wait_timeout(&handle->space, key,
+               FFMPEG_PUSH_WAIT_US);
    }
 
-   retro_spsc_write(&handle->audio_fifo, audio_data->data,
-         audio_data->frames * handle->params.channels * sizeof(int16_t));
-   scond_signal(handle->cond);
+   retro_spsc_write(&handle->audio_fifo, audio_data->data, need);
+   retro_eventcount_notify(&handle->data);
 
    return true;
 }
@@ -1963,17 +1975,15 @@ static void ffmpeg_thread(void *data)
 
       if (!avail_video && !avail_audio)
       {
-         slock_lock(ff->cond_lock);
-         if (ff->can_sleep)
-         {
-            ff->can_sleep = false;
-            scond_wait(ff->cond, ff->cond_lock);
-            ff->can_sleep = true;
-         }
+         int key = retro_eventcount_prepare_wait(&ff->data);
+         if (     !retro_atomic_load_acquire_int(&ff->alive)
+               || retro_spsc_read_avail(&ff->attr_fifo) >= sizeof(attr_buf)
+               || (  ff->config.audio_enable
+                  && retro_spsc_read_avail(&ff->audio_fifo) >= audio_buf_size))
+            retro_eventcount_cancel_wait(&ff->data);
          else
-            scond_signal(ff->cond);
-
-         slock_unlock(ff->cond_lock);
+            retro_eventcount_commit_wait(&ff->data, key);
+         continue;
       }
 
       if (avail_video && video_buf)
@@ -1981,7 +1991,7 @@ static void ffmpeg_thread(void *data)
          retro_spsc_read(&ff->attr_fifo, &attr_buf, sizeof(attr_buf));
          retro_spsc_read(&ff->video_fifo, video_buf,
                VIDEO_SCALE_H(attr_buf.dims) * attr_buf.pitch);
-         scond_signal(ff->cond);
+         retro_eventcount_notify(&ff->space);
 
          attr_buf.data = video_buf;
          ffmpeg_push_video_thread(ff, &attr_buf);
@@ -1992,7 +2002,7 @@ static void ffmpeg_thread(void *data)
          struct record_audio_data aud = {0};
 
          retro_spsc_read(&ff->audio_fifo, audio_buf, audio_buf_size);
-         scond_signal(ff->cond);
+         retro_eventcount_notify(&ff->space);
 
          aud.frames = ff->audio.codec->frame_size;
          aud.data   = audio_buf;
