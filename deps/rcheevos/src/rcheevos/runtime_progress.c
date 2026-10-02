@@ -27,6 +27,10 @@ typedef struct rc_runtime_progress_t {
   uint8_t* buffer;
   uint32_t buffer_size;
 
+  /* Bounds for reads while deserializing the current chunk. */
+  uint32_t read_limit;
+  int read_error;
+
   uint32_t chunk_size_offset;
 } rc_runtime_progress_t;
 
@@ -58,10 +62,18 @@ static void rc_runtime_progress_write_uint(rc_runtime_progress_t* progress, uint
 
 static uint32_t rc_runtime_progress_read_uint(rc_runtime_progress_t* progress)
 {
-  uint32_t value = progress->buffer[progress->offset + 0] |
-      (progress->buffer[progress->offset + 1] << 8) |
-      (progress->buffer[progress->offset + 2] << 16) |
-      (progress->buffer[progress->offset + 3] << 24);
+  uint32_t value;
+
+  if (progress->offset > progress->read_limit ||
+      progress->read_limit - progress->offset < 4) {
+    progress->read_error = 1;
+    return 0;
+  }
+
+  value = (uint32_t)progress->buffer[progress->offset + 0] |
+      ((uint32_t)progress->buffer[progress->offset + 1] << 8) |
+      ((uint32_t)progress->buffer[progress->offset + 2] << 16) |
+      ((uint32_t)progress->buffer[progress->offset + 3] << 24);
 
   progress->offset += 4;
   return value;
@@ -78,6 +90,13 @@ static void rc_runtime_progress_write_md5(rc_runtime_progress_t* progress, uint8
 static int rc_runtime_progress_match_md5(rc_runtime_progress_t* progress, uint8_t* md5)
 {
   int result = 0;
+
+  if (progress->offset > progress->read_limit ||
+      progress->read_limit - progress->offset < 16) {
+    progress->read_error = 1;
+    return 0;
+  }
+
   if (progress->buffer)
     result = (memcmp(&progress->buffer[progress->offset], md5, 16) == 0);
 
@@ -239,6 +258,9 @@ static int rc_runtime_progress_read_memrefs(rc_runtime_progress_t* progress)
   /* re-read the chunk size to determine how many memrefs are present */
   progress->offset -= 4;
   entries = rc_runtime_progress_read_uint(progress) / RC_RUNTIME_SERIALIZED_MEMREF_SIZE;
+
+  if (entries && unmatched_memref_list->count == 0)
+    return RC_INVALID_STATE;
 
   while (entries != 0) {
     address = rc_runtime_progress_read_uint(progress);
@@ -544,8 +566,10 @@ static int rc_runtime_progress_read_variables(rc_runtime_progress_t* progress)
   }
 
   result = RC_OK;
-  for (; serialized_count > 0 && result == RC_OK; --serialized_count) {
+  for (; serialized_count > 0 && result == RC_OK && !progress->read_error; --serialized_count) {
     uint32_t djb2 = rc_runtime_progress_read_uint(progress);
+    if (progress->read_error)
+      break;
     for (i = (int32_t)count - 1; i >= 0; --i) {
       if (pending_variables[i].djb2 == djb2) {
         value = pending_variables[i].variable;
@@ -965,6 +989,7 @@ int rc_runtime_deserialize_progress_sized(rc_runtime_t* runtime, const uint8_t* 
 
   rc_runtime_progress_init(&progress, runtime);
   progress.buffer = (uint8_t*)serialized;
+  progress.read_limit = serialized_size;
 
   if (rc_runtime_progress_read_uint(&progress) != RC_RUNTIME_MARKER) {
     rc_runtime_reset(runtime);
@@ -996,19 +1021,20 @@ int rc_runtime_deserialize_progress_sized(rc_runtime_t* runtime, const uint8_t* 
   }
 
   do {
-    if (progress.offset + 8 >= serialized_size) {
+    if (progress.offset >= serialized_size ||
+        serialized_size - progress.offset <= 8) {
       result = RC_INSUFFICIENT_BUFFER;
       break;
     }
 
     chunk_id = rc_runtime_progress_read_uint(&progress);
     chunk_size = rc_runtime_progress_read_uint(&progress);
-    next_chunk_offset = progress.offset + chunk_size;
-
-    if (next_chunk_offset > serialized_size) {
+    if (chunk_size > serialized_size - progress.offset) {
       result = RC_INSUFFICIENT_BUFFER;
       break;
     }
+    next_chunk_offset = progress.offset + chunk_size;
+    progress.read_limit = next_chunk_offset;
 
     switch (chunk_id) {
       case RC_RUNTIME_CHUNK_MEMREFS:
@@ -1046,7 +1072,11 @@ int rc_runtime_deserialize_progress_sized(rc_runtime_t* runtime, const uint8_t* 
         break;
     }
 
+    if (progress.read_error)
+      result = RC_INSUFFICIENT_BUFFER;
+
     progress.offset = next_chunk_offset;
+    progress.read_limit = serialized_size;
   } while (result == RC_OK && chunk_id != RC_RUNTIME_CHUNK_DONE);
 
   if (result != RC_OK) {
