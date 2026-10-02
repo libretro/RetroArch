@@ -579,7 +579,11 @@ jobs:
           # that reads the task moves on before the install is retired
           # and the next push is refused, skipping cores.  The other
           # lanes end the switch on a failed install, and cancel the
-          # switch while an install runs.
+          # switch while an install runs.  The recovery lanes leave
+          # the <core>.bak an interrupted install moves the core to,
+          # with the core missing: the next install must put it back
+          # if it fails and drop it if it succeeds or play feature
+          # delivery already installed the core.
           make -f Makefile.pfd_switch clean all
           test -x pfd_switch_cores_test
           timeout 600 ./pfd_switch_cores_test
@@ -646,6 +650,15 @@ jobs:
           # while the suite reported PASSED.  Both refusal paths are
           # now CHECK failures: a fixture this test builds itself
           # cannot legitimately be unavailable to it.
+          #
+          # The interrupted-restore lanes stop a restore one quantum
+          # in, by cancelling it (as the exit drain does) and by
+          # failing its writes (a full disk), and require the
+          # installed core to be byte-identical afterwards with no
+          # temporary left: the restore writes beside the core and
+          # renames over it only once complete.  The symlink lane
+          # requires a core reached through a link to keep the link
+          # and have its target replaced.
           make clean all
           test -x core_backup_io_test
           timeout 600 ./core_backup_io_test

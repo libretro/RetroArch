@@ -39,7 +39,15 @@
  *   - a failing install ends the switch early, with its error;
  *   - the switch task cancelled while an install runs: the install's
  *     callback fires after the switch's handle is gone (LeakSan
- *     covers a record nobody frees). */
+ *     covers a record nobody frees).
+ *
+ * The recovery lanes drive the install task alone.  An install moves
+ * an existing core aside to <core>.bak for the duration and puts it
+ * back if the install fails; one interrupted part-way (crash, quit)
+ * leaves the core missing and the .bak beside it.  The next install
+ * of that core must treat the .bak as its backup - restored if it
+ * fails, dropped if it succeeds - and an install play feature delivery
+ * already completed must drop it too. */
 
 #include <stdio.h>
 #include <string.h>
@@ -57,6 +65,7 @@
 
 #include "../../../configuration.h"
 #include "../../../retroarch.h"
+#include "../../../core_updater_list.h"
 #include "../../../play_feature_delivery/play_feature_delivery.h"
 #include "../../../tasks/tasks_internal.h"
 
@@ -67,6 +76,10 @@
 void task_push_play_feature_delivery_switch_installed_cores(
       const char *path_dir_libretro,
       const char *path_libretro_info);
+void *task_push_play_feature_delivery_core_install(
+      core_updater_list_t* core_list,
+      const char *filename,
+      bool mute);
 
 static int checks   = 0;
 static int failures = 0;
@@ -91,6 +104,8 @@ static int failures = 0;
 static retro_atomic_int_t pfd_downloads;
 static retro_atomic_int_t pfd_fail;
 static retro_atomic_int_t pfd_hold;
+/* Reported as already installed via play feature delivery */
+static retro_atomic_int_t pfd_installed;
 
 bool play_feature_delivery_enabled(void) { return true; }
 
@@ -114,7 +129,7 @@ struct string_list *play_feature_delivery_available_cores(void)
 bool play_feature_delivery_core_installed(const char *core_file)
 {
    (void)core_file;
-   return false;
+   return retro_atomic_load_acquire_int(&pfd_installed) != 0;
 }
 
 bool play_feature_delivery_download(const char *core_file)
@@ -214,6 +229,7 @@ static void lane_begin(bool threaded, const char *name)
    retro_atomic_store_release_int(&pfd_downloads, 0);
    retro_atomic_store_release_int(&pfd_fail, 0);
    retro_atomic_store_release_int(&pfd_hold, 0);
+   retro_atomic_store_release_int(&pfd_installed, 0);
    task_queue_init(threaded, NULL);
 }
 
@@ -322,6 +338,98 @@ static void lane_cancel_during_install(bool threaded)
    lane_end();
 }
 
+/* ---------------- recovery lanes --------------------------------- */
+
+enum recovery_outcome
+{
+   INSTALL_FAILS = 0,
+   INSTALL_SUCCEEDS,
+   ALREADY_INSTALLED
+};
+
+static const char *recovery_name[] =
+{
+   "leftover backup, install fails",
+   "leftover backup, install succeeds",
+   "leftover backup, already installed via pfd"
+};
+
+#define RECOVERY_CORE "pfd00_libretro_android.so"
+static const char recovery_contents[] = "the user's core, moved aside";
+
+static void lane_recovery(bool threaded, enum recovery_outcome outcome)
+{
+   char core_path[PATH_MAX_LENGTH];
+   char bak_path[PATH_MAX_LENGTH + sizeof(".bak")];
+   struct string_list *cores = NULL;
+   core_updater_list_t *list = NULL;
+   FILE *f;
+   int i;
+
+   lane_begin(threaded, recovery_name[outcome]);
+
+   /* No cores installed at all, then the one an interrupted install
+    * moved aside */
+   for (i = 0; i < NUM_CORES; i++)
+   {
+      char name[64];
+      snprintf(name, sizeof(name), "pfd%02d_libretro_android.so", i);
+      fill_pathname_join_special(core_path, g_dir, name, sizeof(core_path));
+      if (path_is_valid(core_path))
+         remove(core_path);
+   }
+   fill_pathname_join_special(core_path, g_dir, RECOVERY_CORE,
+         sizeof(core_path));
+   snprintf(bak_path, sizeof(bak_path), "%s.bak", core_path);
+   if ((f = fopen(bak_path, "wb")))
+   {
+      fputs(recovery_contents, f);
+      fclose(f);
+   }
+
+   cores = play_feature_delivery_available_cores();
+   if (     !path_is_valid(bak_path)
+         || !cores
+         || !(list = core_updater_list_init())
+         || !core_updater_list_parse_pfd_data(list, g_dir, g_dir, cores))
+   {
+      printf("  SKIP: could not create fixture\n");
+      string_list_free(cores);
+      core_updater_list_free(list);
+      lane_end();
+      return;
+   }
+   string_list_free(cores);
+
+   if (outcome == INSTALL_FAILS)
+      retro_atomic_store_release_int(&pfd_fail, 1);
+   else if (outcome == ALREADY_INSTALLED)
+      retro_atomic_store_release_int(&pfd_installed, 1);
+
+   CHECK(task_push_play_feature_delivery_core_install(list, RECOVERY_CORE,
+            true) != NULL, "install pushed");
+   CHECK(pump_until_idle(5000), "install completed");
+
+   if (outcome == INSTALL_FAILS)
+   {
+      char buf[sizeof(recovery_contents)];
+      size_t n = 0;
+      memset(buf, 0, sizeof(buf));
+      if ((f = fopen(core_path, "rb")))
+      {
+         n = fread(buf, 1, sizeof(buf) - 1, f);
+         fclose(f);
+      }
+      CHECK(     n == sizeof(recovery_contents) - 1
+              && !memcmp(buf, recovery_contents, n),
+            "failed install put the user's core back");
+   }
+   CHECK(!path_is_valid(bak_path), "no backup left behind");
+
+   core_updater_list_free(list);
+   lane_end();
+}
+
 int main(void)
 {
    char cmd[128];
@@ -341,6 +449,9 @@ int main(void)
       lane_switch_all(threaded != 0);
       lane_install_error(threaded != 0);
       lane_cancel_during_install(threaded != 0);
+      lane_recovery(threaded != 0, INSTALL_FAILS);
+      lane_recovery(threaded != 0, INSTALL_SUCCEEDS);
+      lane_recovery(threaded != 0, ALREADY_INSTALLED);
    }
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", g_dir);

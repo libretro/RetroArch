@@ -90,6 +90,8 @@
 #define _GNU_SOURCE
 
 #include <stdio.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -140,9 +142,18 @@ int64_t __wrap_retro_vfs_file_read_impl(void *st, void *s, uint64_t len)
    return r;
 }
 
+/* Non-zero: every write fails once this many bytes have been written
+ * while recording - a full disk part-way through a restore */
+static long long g_io_fail_writes_after;
+
 int64_t __wrap_retro_vfs_file_write_impl(void *st, const void *s, uint64_t len)
 {
-   int64_t r = __real_retro_vfs_file_write_impl(st, s, len);
+   int64_t r;
+   if (     g_io_recording
+         && g_io_fail_writes_after
+         && g_io_write_bytes >= g_io_fail_writes_after)
+      return -1;
+   r = __real_retro_vfs_file_write_impl(st, s, len);
    if (g_io_recording && r > 0)
       g_io_write_bytes += r;
    return r;
@@ -814,7 +825,212 @@ static void test_restore_round_trip(void)
    else
       CHECK(false, "restored core file could not be read");
 
+   {
+      char tmp_path[1024];
+      snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", g_core_path);
+      CHECK(!path_is_valid(tmp_path),
+            "restore left its temporary behind: %s", tmp_path);
+   }
+
    free(payload);
+}
+
+/* The restore writes a temporary beside the core and renames it over
+ * the core only once complete, so a restore that stops part-way leaves
+ * the installed core as it was.  Writing the core in place instead
+ * leaves it truncated: these lanes stop one after its first quantum
+ * has been written, by cancelling it (as the exit drain does) and by
+ * failing its writes (a full disk), and compare the core byte for
+ * byte against what was installed before. */
+#define INSTALLED_CORE_SIZE (300 * 1024)
+
+static uint8_t *make_installed_core(void)
+{
+   uint8_t *p = (uint8_t*)malloc(INSTALLED_CORE_SIZE);
+   if (p)
+      memset(p, 0x5a, INSTALLED_CORE_SIZE);
+   return p;
+}
+
+static bool restore_finder(retro_task_t *task, void *user_data)
+{
+   *(retro_task_t**)user_data = task;
+   return true;
+}
+
+static void check_core_untouched(const uint8_t *installed, const char *lane)
+{
+   char tmp_path[1024];
+   uint8_t *now;
+   size_t len = 0;
+
+   if ((now = read_file_bytes(g_core_path, &len)))
+   {
+      CHECK(     len == INSTALLED_CORE_SIZE
+              && memcmp(now, installed, len) == 0,
+            "%s: installed core was changed (%lu bytes, expected %lu)",
+            lane, (unsigned long)len, (unsigned long)INSTALLED_CORE_SIZE);
+      free(now);
+   }
+   else
+      CHECK(false, "%s: installed core is gone", lane);
+
+   snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", g_core_path);
+   CHECK(!path_is_valid(tmp_path),
+         "%s: partial temporary left behind", lane);
+}
+
+static void test_restore_stopped_part_way(bool cancel)
+{
+   const char *lane = cancel ? "cancelled" : "write error";
+   retro_task_t *task = NULL;
+   task_finder_data_t find_data;
+   uint8_t *installed;
+   bool core_loaded   = false;
+   struct run_stats st;
+   long ticks;
+
+   printf("  restore %s part-way leaves the installed core intact\n",
+         cancel ? "cancelled" : "failing to write");
+
+   if (!*g_last_backup)
+   {
+      CHECK(0, "no backup produced by an earlier lane");
+      return;
+   }
+   if (!(installed = make_installed_core()))
+   {
+      printf("    SKIP: out of memory\n");
+      return;
+   }
+   if (!write_file_bytes(g_core_path, installed, INSTALLED_CORE_SIZE))
+   {
+      printf("    SKIP: could not write installed core\n");
+      free(installed);
+      return;
+   }
+
+   /* One quantum per tick, so the copy spans several ticks */
+   g_clock_now  = 1000000;
+   g_clock_step = BACKUP_TICK_BUDGET_US * 2;
+
+   task_queue_init(false, NULL);
+   if (!task_push_core_restore(g_last_backup, g_tmpdir, &core_loaded))
+   {
+      CHECK(0, "%s: task_push_core_restore refused", lane);
+      task_queue_deinit();
+      free(installed);
+      return;
+   }
+
+   io_reset();
+   if (!cancel)
+      g_io_fail_writes_after = CORE_BACKUP_QUANTUM;
+
+   find_data.func     = restore_finder;
+   find_data.userdata = &task;
+   for (ticks = 0; ticks < 64; ticks++)
+   {
+      task_queue_check();
+      task = NULL;
+      if (!task_queue_find(&find_data) || g_io_write_bytes > 0)
+         break;
+   }
+   CHECK(task && g_io_write_bytes > 0,
+         "%s: restore never started writing", lane);
+
+   if (cancel && task)
+      task_queue_cancel_task(task);
+
+   find_data.func     = backup_task_finder;
+   find_data.userdata = NULL;
+   drive(&st, 64);
+   CHECK(st.completed, "%s: restore did not retire", lane);
+
+   io_stop();
+   g_io_fail_writes_after = 0;
+   task_queue_deinit();
+
+   check_core_untouched(installed, lane);
+   free(installed);
+}
+
+/* The rename swaps a directory entry, so a core reached through a
+ * symbolic link is resolved first: the link must survive and the file
+ * it points to must take the restored contents. */
+static void test_restore_through_symlink(void)
+{
+   const size_t backup_size = 512 * 1024;
+   char real_dir[600];
+   char real_core[700];
+   struct stat sb;
+   struct run_stats st;
+   uint8_t *payload;
+   uint8_t *installed;
+   uint8_t *restored;
+   size_t rlen      = 0;
+   bool core_loaded = false;
+
+   printf("  restore through a symbolic link replaces its target\n");
+
+   if (!*g_last_backup)
+   {
+      CHECK(0, "no backup produced by an earlier lane");
+      return;
+   }
+
+   snprintf(real_dir,  sizeof(real_dir),  "%s/real", g_tmpdir);
+   snprintf(real_core, sizeof(real_core), "%s/testcore_libretro.so",
+         real_dir);
+   if (     !path_mkdir(real_dir)
+         || !(installed = make_installed_core()))
+   {
+      printf("    SKIP: could not create fixture\n");
+      return;
+   }
+   if (     !write_file_bytes(real_core, installed, INSTALLED_CORE_SIZE)
+         || (unlink(g_core_path) != 0 && path_is_valid(g_core_path))
+         || symlink(real_core, g_core_path) != 0)
+   {
+      printf("    SKIP: could not create symbolic link fixture\n");
+      free(installed);
+      return;
+   }
+   free(installed);
+
+   g_clock_now  = 1000000;
+   g_clock_step = 0;
+
+   task_queue_init(false, NULL);
+   if (!task_push_core_restore(g_last_backup, g_tmpdir, &core_loaded))
+      CHECK(0, "symlink: task_push_core_restore refused");
+   else
+   {
+      drive(&st, 64);
+      CHECK(st.completed, "symlink: restore did not retire");
+   }
+   task_queue_deinit();
+
+   CHECK(     lstat(g_core_path, &sb) == 0
+           && S_ISLNK(sb.st_mode),
+         "symlink: the link was replaced by a regular file");
+
+   if ((payload = make_payload(backup_size)))
+   {
+      if ((restored = read_file_bytes(real_core, &rlen)))
+      {
+         CHECK(     rlen == backup_size
+                 && memcmp(restored, payload, rlen) == 0,
+               "symlink: link target does not hold the restored core");
+         free(restored);
+      }
+      else
+         CHECK(false, "symlink: link target could not be read");
+      free(payload);
+   }
+
+   /* Later lanes write the core in place */
+   unlink(g_core_path);
 }
 
 /* A finished task stays findable until the queue retires it, and
@@ -961,6 +1177,9 @@ int main(int argc, char **argv)
 
    printf("\n[restore]\n");
    test_restore_round_trip();
+   test_restore_stopped_part_way(true);
+   test_restore_stopped_part_way(false);
+   test_restore_through_symlink();
 
    printf("\n[task lifetime]\n");
    test_finished_task_stays_findable();

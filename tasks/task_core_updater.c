@@ -2183,11 +2183,31 @@ static void task_play_feature_delivery_core_install_handler(
    {
       case PLAY_FEATURE_DELIVERY_INSTALL_BEGIN:
          {
+            size_t _len;
+            char backup_core_path[PATH_MAX_LENGTH];
+
+            /* Backup file name: an existing core is moved aside
+             * here for the duration of the install
+             * > Note: since only one install task can run at
+             *   a time, a UID is not required */
+            _len = strlcpy(backup_core_path,
+                  pfd_install_handle->local_core_path,
+                  sizeof(backup_core_path));
+            strlcpy(backup_core_path + _len,
+                  FILE_PATH_BACKUP_EXTENSION,
+                  sizeof(backup_core_path) - _len);
+
             /* Check whether core has already been
              * installed via play feature delivery */
             if (play_feature_delivery_core_installed(
                   pfd_install_handle->core_filename))
             {
+               /* A backup left by an interrupted install that
+                * play feature delivery went on to complete is
+                * superseded, as on a successful install */
+               if (path_is_valid(backup_core_path))
+                  filestream_delete(backup_core_path);
+
                pfd_install_handle->success                = true;
                pfd_install_handle->core_already_installed = true;
                pfd_install_handle->status                 =
@@ -2200,51 +2220,36 @@ static void task_play_feature_delivery_core_install_handler(
              * play feature delivery transaction */
             if (path_is_valid(pfd_install_handle->local_core_path))
             {
-               size_t _len;
-               char backup_core_path[PATH_MAX_LENGTH];
-               bool backup_successful = false;
+               int ret;
 
                /* Have to create a backup, in case install
                 * process fails
-                * > Note: since only one install task can
-                *   run at a time, a UID is not required */
+                * > If an old backup file exists (i.e. leftovers
+                *   from a mid-task crash/user exit), delete it:
+                *   the core it was taken from is still here */
+               if (path_is_valid(backup_core_path))
+                  filestream_delete(backup_core_path);
 
-               /* Generate backup file name */
-               _len = strlcpy(backup_core_path,
+               /* Attempt to rename core file */
+               ret = filestream_rename(
                      pfd_install_handle->local_core_path,
-                     sizeof(backup_core_path));
-               strlcpy(backup_core_path + _len,
-                     FILE_PATH_BACKUP_EXTENSION,
-                     sizeof(backup_core_path) - _len);
+                     backup_core_path);
 
-               if (*backup_core_path)
-               {
-                  int ret;
-
-                  /* If an old backup file exists (i.e. leftovers
-                   * from a mid-task crash/user exit), delete it */
-                  if (path_is_valid(backup_core_path))
-                     filestream_delete(backup_core_path);
-
-                  /* Attempt to rename core file */
-                  ret = filestream_rename(
-                        pfd_install_handle->local_core_path,
-                        backup_core_path);
-
-                  if (!ret)
-                  {
-                     /* Success - cache backup file name */
-                     pfd_install_handle->backup_core_path = strdup(backup_core_path);
-                     backup_successful                    = true;
-                  }
-               }
-
+               /* Success - cache backup file name */
+               if (!ret)
+                  pfd_install_handle->backup_core_path = strdup(backup_core_path);
                /* If backup failed, all we can do is delete
                 * the existing core file... */
-               if (!backup_successful &&
-                   path_is_valid(pfd_install_handle->local_core_path))
+               else if (path_is_valid(pfd_install_handle->local_core_path))
                   filestream_delete(pfd_install_handle->local_core_path);
             }
+            /* No core, but the backup an interrupted install
+             * (crash, quit) moved it to: that is the user's
+             * core, so it becomes this install's backup - put
+             * back if this install fails, dropped if it
+             * succeeds - rather than being left behind */
+            else if (path_is_valid(backup_core_path))
+               pfd_install_handle->backup_core_path = strdup(backup_core_path);
 
             /* Start download */
             if (play_feature_delivery_download(

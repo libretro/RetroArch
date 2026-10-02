@@ -112,6 +112,11 @@ typedef struct core_backup_handle
    char *core_path;
    char *core_name;
    char *backup_path;
+   /* Restore only: the file the core is written to - core_path with
+    * any symbolic link resolved - and the temporary beside it that
+    * the restore writes and then renames over it */
+   char *core_target_path;
+   char *core_tmp_path;
    intfstream_t *core_file;
    intfstream_t *backup_file;
    /* Transfer buffer, allocated once.  CORE_BACKUP_CHUNK_SIZE is far
@@ -205,10 +210,45 @@ static void free_core_backup_handle(core_backup_handle_t *backup_handle)
       backup_handle->backup_path = NULL;
    }
 
+   free(backup_handle->core_target_path);
+   backup_handle->core_target_path = NULL;
+   free(backup_handle->core_tmp_path);
+   backup_handle->core_tmp_path    = NULL;
+
    core_backup_handle_release_io(backup_handle);
 
    free(backup_handle);
    backup_handle = NULL;
+}
+
+/* The restore writes a temporary beside the core and renames it over
+ * the core only once every byte is written, so a restore that fails
+ * part-way - a write error, a full disk, the task cancelled on quit -
+ * leaves the installed core intact instead of truncated.  The rename
+ * swaps the directory entry, so a core reached through a symbolic link
+ * is resolved first: the link stays and the file it points to is
+ * replaced, as a write through the link did before.  When resolution
+ * is unavailable or fails, the path is used as given.  Heap buffers:
+ * the handler may run on the task thread's small stack. */
+static bool core_restore_set_write_paths(core_backup_handle_t *backup_handle)
+{
+   size_t _len;
+
+   if (!(backup_handle->core_target_path = (char*)malloc(PATH_MAX_LENGTH)))
+      return false;
+   strlcpy(backup_handle->core_target_path, backup_handle->core_path,
+         PATH_MAX_LENGTH);
+   path_resolve_realpath(backup_handle->core_target_path,
+         PATH_MAX_LENGTH, true);
+
+   _len = strlen(backup_handle->core_target_path);
+   if (!(backup_handle->core_tmp_path = (char*)malloc(
+               _len + sizeof(".tmp"))))
+      return false;
+   memcpy(backup_handle->core_tmp_path,
+         backup_handle->core_target_path, _len);
+   memcpy(backup_handle->core_tmp_path + _len, ".tmp", sizeof(".tmp"));
+   return true;
 }
 
 /* Runs at retirement, on the thread that retires the queue, after the
@@ -1129,15 +1169,24 @@ static void task_core_restore_handler(retro_task_t *task)
                }
             }
 #endif
-            /* Open core file for writing */
-            backup_handle->core_file = intfstream_open_file(
-                  backup_handle->core_path, RETRO_VFS_FILE_ACCESS_WRITE,
-                  RETRO_VFS_FILE_ACCESS_HINT_NONE);
+            /* Open the temporary beside the core for writing; a
+             * stale one left by an interrupted restore goes first */
+            if (core_restore_set_write_paths(backup_handle))
+            {
+               if (path_is_valid(backup_handle->core_tmp_path))
+                  filestream_delete(backup_handle->core_tmp_path);
+               backup_handle->core_file = intfstream_open_file(
+                     backup_handle->core_tmp_path,
+                     RETRO_VFS_FILE_ACCESS_WRITE,
+                     RETRO_VFS_FILE_ACCESS_HINT_NONE);
+            }
 
             if (!backup_handle->core_file)
             {
                RARCH_ERR("[Core Restore] Failed to open core file: \"%s\".\n",
-                     backup_handle->core_path);
+                     backup_handle->core_tmp_path
+                     ? backup_handle->core_tmp_path
+                     : backup_handle->core_path);
                task_free_error(task);
                task_set_error(task, strdup("Failed to open core file."));
                backup_handle->status = CORE_RESTORE_END;
@@ -1245,6 +1294,18 @@ static void task_core_restore_handler(retro_task_t *task)
                free(backup_handle->core_file);
                backup_handle->core_file   = NULL;
 
+               /* Complete: only now does it replace the core */
+               if (filestream_rename(backup_handle->core_tmp_path,
+                        backup_handle->core_target_path) != 0)
+               {
+                  RARCH_ERR("[Core Restore] Failed to replace core file: \"%s\".\n",
+                        backup_handle->core_target_path);
+                  task_free_error(task);
+                  task_set_error(task, strdup("Failed to replace core file."));
+                  backup_handle->status = CORE_RESTORE_END;
+                  break;
+               }
+
                backup_handle->success = true;
                backup_handle->status  = CORE_RESTORE_END;
                break;
@@ -1301,7 +1362,16 @@ static void task_core_restore_handler(retro_task_t *task)
 task_finished:
    /* The handle itself is released by task_core_backup_cleanup() */
    if (backup_handle)
+   {
       core_backup_handle_release_io(backup_handle);
+
+      /* Failed or cancelled part-way: the core was never touched,
+       * and the partial temporary (closed above) goes */
+      if (     !backup_handle->success
+            && backup_handle->core_tmp_path
+            && path_is_valid(backup_handle->core_tmp_path))
+         filestream_delete(backup_handle->core_tmp_path);
+   }
    if (task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
