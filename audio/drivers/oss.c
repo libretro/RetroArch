@@ -353,16 +353,15 @@ static void oss_free(void *data)
    free(data);
 }
 
+/* No room when the device cannot say: a device that has gone away
+ * fails this every frame, so it is not logged here. */
 static size_t oss_write_avail(void *data)
 {
    audio_buf_info info;
    oss_audio_t *ossaudio  = (oss_audio_t*)data;
 
    if (ioctl(ossaudio->fd, SNDCTL_DSP_GETOSPACE, &info) < 0)
-   {
-      RARCH_ERR("[OSS] SNDCTL_DSP_GETOSPACE failed.\n");
       return 0;
-   }
 
    return info.bytes;
 }
@@ -372,11 +371,10 @@ static size_t oss_buffer_size(void *data)
    audio_buf_info info;
    oss_audio_t *ossaudio  = (oss_audio_t*)data;
 
+   /* Zero when the device cannot say, which turns rate control off for
+    * the session, as audio_driver.h has it; the frontend logs that. */
    if (ioctl(ossaudio->fd, SNDCTL_DSP_GETOSPACE, &info) < 0)
-   {
-      RARCH_ERR("[OSS] SNDCTL_DSP_GETOSPACE failed.\n");
-      return 1; /* Return something non-zero to avoid SIGFPE. */
-   }
+      return 0;
 
    return info.fragsize * info.fragstotal;
 }
