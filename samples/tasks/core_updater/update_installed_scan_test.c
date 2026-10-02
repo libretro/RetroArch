@@ -41,7 +41,23 @@
  *
  * Gathers are paced 17 ms apart, as frames are: the window refills
  * once per 16.67 ms period, and pumping faster would only measure the
- * one-item floor. */
+ * one-item floor.
+ *
+ * The cancel lanes retire the parent task while a child it waits on
+ * is still pending - the loopback server holds the child's HTTP
+ * response - and only then let the child finish:
+ *
+ *   - reset in WAIT_LIST: task_queue_reset(), as the exit path's
+ *     retroarch_drain_tasks_for_exit() does, with the list fetch in
+ *     flight;
+ *   - cancel in WAIT_LIST: the parent alone, so the list task goes on
+ *     to parse into the core list the parent was waiting for;
+ *   - cancel in WAIT_DOWNLOAD: the parent alone, with a core download
+ *     in flight.
+ *
+ * A child callback or list parse that reaches the parent's freed
+ * handle is a heap-use-after-free under ASan; LeakSan covers the
+ * other direction - a completion record or list nobody frees. */
 
 #include <stdio.h>
 #include <string.h>
@@ -102,6 +118,19 @@ bool __wrap_path_is_valid(const char *path)
 
 static char *srv_body       = NULL;
 static size_t srv_body_len  = 0;
+/* The cancel lanes' index: one installed core whose CRC does not
+ * match, so the scan pushes a download.  The download fetches the
+ * same bytes, which is all the transfer needs. */
+#define CANCEL_CORE "cancel_libretro.so"
+static const char srv_small_body[] =
+   "2026-10-01 1234abcd " CANCEL_CORE ".zip\n";
+static retro_atomic_int_t srv_use_small;
+/* The request numbered srv_hold_at (from 1) is answered only once
+ * srv_hold clears; 0 holds nothing. */
+static retro_atomic_int_t srv_requests;
+static retro_atomic_int_t srv_answered;
+static retro_atomic_int_t srv_hold_at;
+static retro_atomic_int_t srv_hold;
 static retro_atomic_int_t srv_fd;
 static sthread_t *srv_thread = NULL;
 static volatile int srv_port = 0;
@@ -128,12 +157,28 @@ static void server_thread(void *unused)
          if (strstr(rbuf, "\r\n\r\n"))
             break;
       }
-      snprintf(head, sizeof(head),
-            "HTTP/1.1 200 OK\r\nContent-Length: %u\r\n"
-            "Connection: close\r\n\r\n", (unsigned)srv_body_len);
-      send(cfd, head, strlen(head), 0);
-      send(cfd, srv_body, srv_body_len, 0);
+      if (     retro_atomic_fetch_add_int(&srv_requests, 1) + 1
+            == retro_atomic_load_acquire_int(&srv_hold_at))
+         while (     retro_atomic_load_acquire_int(&srv_hold)
+                  && retro_atomic_load_acquire_int(&srv_fd) >= 0)
+            retro_sleep(1);
+      {
+         const char *body = srv_body;
+         size_t body_len  = srv_body_len;
+         if (retro_atomic_load_acquire_int(&srv_use_small))
+         {
+            body     = srv_small_body;
+            body_len = sizeof(srv_small_body) - 1;
+         }
+         snprintf(head, sizeof(head),
+               "HTTP/1.1 200 OK\r\nContent-Length: %u\r\n"
+               "Connection: close\r\n\r\n", (unsigned)body_len);
+         /* A cancelled transfer has closed its end by now */
+         send(cfd, head, strlen(head), MSG_NOSIGNAL);
+         send(cfd, body, body_len, MSG_NOSIGNAL);
+      }
       socket_close(cfd);
+      retro_atomic_fetch_add_int(&srv_answered, 1);
    }
 }
 
@@ -292,6 +337,151 @@ static void run_lane(bool threaded)
    task_queue_unset_threaded();
 }
 
+/* ---------------- cancel lanes ----------------------------------- */
+
+enum cancel_mode
+{
+   RESET_IN_WAIT_LIST = 0,
+   CANCEL_IN_WAIT_LIST,
+   CANCEL_IN_WAIT_DOWNLOAD
+};
+
+static const char *cancel_mode_name[] =
+{
+   "reset in WAIT_LIST",
+   "cancel in WAIT_LIST",
+   "cancel in WAIT_DOWNLOAD"
+};
+
+/* The parent is the one task the core updater pushes unmuted: the
+ * list fetch, the downloads and their HTTP transfers are all muted. */
+static bool find_parent(retro_task_t *task, void *user_data)
+{
+   if (task_get_flags(task) & RETRO_TASK_FLG_MUTE)
+      return false;
+   *(retro_task_t**)user_data = task;
+   return true;
+}
+
+static bool find_task(retro_task_t *task, void *user_data)
+{
+   return task == (retro_task_t*)user_data;
+}
+
+static bool write_cancel_core(void)
+{
+   char path[PATH_MAX_LENGTH];
+   FILE *f;
+   fill_pathname_join_special(path, g_dir, CANCEL_CORE, sizeof(path));
+   if (!(f = fopen(path, "wb")))
+      return false;
+   fputs("not the buildbot's core", f);
+   fclose(f);
+   return true;
+}
+
+static void cancel_lane(bool threaded, enum cancel_mode mode)
+{
+   char url[128];
+   task_finder_data_t find_data;
+   settings_t *settings  = config_get_ptr();
+   retro_task_t *parent  = NULL;
+   int hold_at           = (mode == CANCEL_IN_WAIT_DOWNLOAD) ? 2 : 1;
+   bool child_pending    = false;
+   int i;
+
+   printf("[lane threaded=%d: %s]\n", (int)threaded,
+         cancel_mode_name[mode]);
+
+   if (!write_cancel_core())
+   {
+      printf("  SKIP: could not create fixture\n");
+      return;
+   }
+
+   retro_atomic_store_release_int(&srv_use_small, 1);
+   retro_atomic_store_release_int(&srv_requests, 0);
+   retro_atomic_store_release_int(&srv_answered, 0);
+   retro_atomic_store_release_int(&srv_hold, 1);
+   retro_atomic_store_release_int(&srv_hold_at, hold_at);
+
+   task_queue_init(threaded, NULL);
+
+   snprintf(url, sizeof(url), "http://127.0.0.1:%d", srv_port);
+   get_list_test_set_buildbot_url(url);
+   strlcpy(settings->paths.directory_libretro, g_dir,
+         sizeof(settings->paths.directory_libretro));
+   strlcpy(settings->paths.path_libretro_info, g_dir,
+         sizeof(settings->paths.path_libretro_info));
+
+   task_push_update_installed_cores(false, 0, g_dir, NULL);
+
+   /* Run until the server holds the child's request: the list
+    * fetch's for WAIT_LIST, the download's for WAIT_DOWNLOAD */
+   for (i = 0; i < 5000
+         && retro_atomic_load_acquire_int(&srv_requests) < hold_at; i++)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+   CHECK(i < 5000, "child request held by the server");
+
+   find_data.func     = find_parent;
+   find_data.userdata = &parent;
+   task_queue_find(&find_data);
+   CHECK(parent != NULL, "parent task found");
+
+   if (mode == RESET_IN_WAIT_LIST)
+      task_queue_reset();
+   else if (parent)
+      task_queue_cancel_task(parent);
+
+   /* Retire the parent; once it is no longer findable the queue has
+    * freed it, and its handle with it */
+   find_data.func     = find_task;
+   find_data.userdata = parent;
+   for (i = 0; i < 5000; i++)
+   {
+      task_queue_check();
+      if (!parent || !task_queue_find(&find_data))
+         break;
+      retro_sleep(1);
+   }
+   CHECK(i < 5000, "cancelled parent retired");
+
+   find_data.func     = find_any;
+   find_data.userdata = NULL;
+   child_pending      = task_queue_find(&find_data);
+   if (mode != RESET_IN_WAIT_LIST)
+      CHECK(child_pending, "child still pending after the parent retired");
+
+   /* Now let the child finish: its parse and its callback run after
+    * the parent's handle is gone */
+   retro_atomic_store_release_int(&srv_hold, 0);
+   for (i = 0; i < 10000; i++)
+   {
+      task_queue_check();
+      if (!task_queue_find(&find_data))
+         break;
+      retro_sleep(1);
+   }
+   CHECK(i < 10000, "children completed after the parent");
+
+   task_queue_deinit();
+   task_queue_unset_threaded();
+
+   /* The server answers the held request only once it sees the
+    * release; the next lane must not re-arm the hold before that */
+   for (i = 0; i < 5000
+         &&    retro_atomic_load_acquire_int(&srv_answered)
+             < retro_atomic_load_acquire_int(&srv_requests); i++)
+      retro_sleep(1);
+   CHECK(i < 5000, "server answered every request");
+
+   retro_atomic_store_release_int(&srv_hold_at, 0);
+   retro_atomic_store_release_int(&srv_use_small, 0);
+}
+
 int main(void)
 {
    char cmd[128];
@@ -314,8 +504,14 @@ int main(void)
       printf("SKIP: could not start loopback server\n");
    else
    {
+      int mode;
       run_lane(false);
       run_lane(true);
+      for (mode = RESET_IN_WAIT_LIST; mode <= CANCEL_IN_WAIT_DOWNLOAD; mode++)
+      {
+         cancel_lane(false, (enum cancel_mode)mode);
+         cancel_lane(true,  (enum cancel_mode)mode);
+      }
       server_stop();
    }
 

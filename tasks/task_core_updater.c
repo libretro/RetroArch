@@ -75,6 +75,11 @@ typedef struct core_updater_list_handle
    retro_task_t *http_task;
    http_transfer_data_t *http_data;
    enum core_updater_list_status status;
+   /* One reference for the task, one for the HTTP callback while a
+    * transfer is pushed: a task cancelled mid-transfer retires before
+    * the transfer does, and the callback still writes the payload
+    * here.  The last reference frees the handle. */
+   retro_atomic_int_t refs;
    bool refresh_menu;
    /* Set by the HTTP callback on the main thread, polled by the
     * worker: a release store after the payload (http_data,
@@ -104,11 +109,14 @@ enum core_updater_download_status
 
 /* Completion of a sub-task that reports through a callback, shared
  * between the handler waiting on it and that callback.  Each holds a
- * reference, so it outlives whichever side lets go first: a download
- * task cancelled mid-wait, or a sub-task retired before the handler's
- * next tick. */
+ * reference, so it outlives whichever side lets go first: a task
+ * cancelled mid-wait, or a sub-task retired before the handler's
+ * next tick.  A waiter that lets go while the sub-task still writes
+ * into a list it owns hands the list over in orphan_list, and the
+ * last reference frees it with the record. */
 typedef struct
 {
+   core_updater_list_t *orphan_list;
    retro_atomic_int_t refs;
    retro_atomic_int_t complete;
 } core_updater_sub_task_done_t;
@@ -131,6 +139,11 @@ typedef struct core_updater_download_handle
    uint32_t local_crc;
    uint32_t remote_crc;
    enum core_updater_download_status status;
+   /* One reference for the task, one each for the HTTP and
+    * decompress callbacks while those tasks are pushed: a download
+    * cancelled mid-transfer retires first, and the callbacks still
+    * write here.  The last reference frees the handle. */
+   retro_atomic_int_t refs;
    /* Set by the HTTP and decompress callbacks on the main thread,
     * polled by the worker: release stores, acquire loads. */
    retro_atomic_int_t http_task_complete;
@@ -160,6 +173,18 @@ typedef struct update_installed_cores_handle
    char *path_dir_libretro;
    char *path_dir_core_assets;
    core_updater_list_t* core_list;
+   /* Completion of the child list fetch / core download this task
+    * is waiting on, shared with the child's callback; NULL when
+    * nothing is pending.  The child retro_task_t pointers are
+    * deliberately *not* retained: task_queue frees a finished task
+    * in the same gather pass that ran its handler, so a stored
+    * pointer can dangle before this task is stepped again.  The
+    * callbacks run on the main thread at retirement while this
+    * handler polls from the worker: a release store in the
+    * callback, an acquire load here, which also publishes the core
+    * list the list task filled in. */
+   core_updater_sub_task_done_t *list_done;
+   core_updater_sub_task_done_t *download_done;
    size_t auto_backup_history_size;
    size_t list_size;
    size_t list_index;
@@ -168,19 +193,6 @@ typedef struct update_installed_cores_handle
    unsigned num_updated;
    unsigned num_locked;
    enum update_installed_cores_status status;
-   /* Set from the child task callbacks. The child
-    * retro_task_t pointers are deliberately *not*
-    * retained: task_queue frees a finished task in the
-    * same gather pass that ran its handler, so a stored
-    * pointer can dangle before this task is stepped
-    * again (see UPDATE_INSTALLED_CORES_WAIT_LIST).
-    * The callbacks run on the main thread at retirement
-    * while this task's handler polls from the worker, so
-    * both are atomics: a release store in the callback,
-    * an acquire load in the handler, which also publishes
-    * the core list the child filled in. */
-   retro_atomic_int_t list_task_complete;
-   retro_atomic_int_t download_task_complete;
    bool auto_backup;
    /* The task title currently reads 'Scanning cores' */
    bool title_scanning;
@@ -379,7 +391,33 @@ static void core_updater_sub_task_done_release(
       core_updater_sub_task_done_t *done)
 {
    if (done && retro_atomic_fetch_sub_int(&done->refs, 1) == 1)
+   {
+      core_updater_list_free(done->orphan_list);
       free(done);
+   }
+}
+
+/* One reference for the waiting handler, one for the sub-task's
+ * callback, which may run before the push returns. */
+static core_updater_sub_task_done_t *core_updater_sub_task_done_new(void)
+{
+   core_updater_sub_task_done_t *done =
+         (core_updater_sub_task_done_t*)malloc(sizeof(*done));
+   if (done)
+   {
+      done->orphan_list = NULL;
+      retro_atomic_int_init(&done->refs, 2);
+      retro_atomic_int_init(&done->complete, 0);
+   }
+   return done;
+}
+
+/* Completion for the callback side of a parent waiting on it */
+static void core_updater_sub_task_done_signal(
+      core_updater_sub_task_done_t *done)
+{
+   retro_atomic_store_release_int(&done->complete, 1);
+   core_updater_sub_task_done_release(done);
 }
 
 /* The backup task's completion, at its retirement: before the task
@@ -388,46 +426,13 @@ static void cb_task_core_updater_backup(
       retro_task_t *task, void *task_data,
       void *user_data, const char *err)
 {
-   core_updater_sub_task_done_t *done =
-         (core_updater_sub_task_done_t*)user_data;
-   retro_atomic_store_release_int(&done->complete, 1);
-   core_updater_sub_task_done_release(done);
+   core_updater_sub_task_done_signal(
+         (core_updater_sub_task_done_t*)user_data);
 }
 
 /*************************/
 /* Get core updater list */
 /*************************/
-
-static void cb_http_task_core_updater_get_list(
-      retro_task_t *task, void *task_data,
-      void *user_data, const char *err)
-{
-   file_transfer_t *transf    = (file_transfer_t*)user_data;
-   http_transfer_data_t *data = (http_transfer_data_t*)task_data;
-   bool ret                   = data && (!err || !*err);
-
-   if (transf)
-   {
-      core_updater_list_handle_t *list_handle = NULL;
-      if ((list_handle = (core_updater_list_handle_t*)transf->user_data))
-      {
-         task_set_data(task, NULL); /* going to pass ownership to list_handle */
-
-         list_handle->http_data         = data;
-         list_handle->http_task_success = ret;
-         retro_atomic_store_release_int(&list_handle->http_task_complete, 1);
-      }
-   }
-
-   /* Log any error messages */
-   if (!ret)
-      RARCH_ERR("[Core Updater] Download of core list \"%s\" failed: %s.\n",
-            (transf ? transf->path: "unknown"),
-            (err ? err : "unknown"));
-
-   if (transf)
-      free(transf);
-}
 
 static void free_core_updater_list_handle(
       core_updater_list_handle_t *list_handle)
@@ -446,6 +451,48 @@ static void free_core_updater_list_handle(
 
    free(list_handle);
    list_handle = NULL;
+}
+
+static void core_updater_list_handle_release(
+      core_updater_list_handle_t *list_handle)
+{
+   if (     list_handle
+         && retro_atomic_fetch_sub_int(&list_handle->refs, 1) == 1)
+      free_core_updater_list_handle(list_handle);
+}
+
+static void cb_http_task_core_updater_get_list(
+      retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   file_transfer_t *transf    = (file_transfer_t*)user_data;
+   http_transfer_data_t *data = (http_transfer_data_t*)task_data;
+   core_updater_list_handle_t *list_handle = NULL;
+   bool ret                   = data && (!err || !*err);
+
+   if (transf)
+   {
+      if ((list_handle = (core_updater_list_handle_t*)transf->user_data))
+      {
+         task_set_data(task, NULL); /* going to pass ownership to list_handle */
+
+         list_handle->http_data         = data;
+         list_handle->http_task_success = ret;
+         retro_atomic_store_release_int(&list_handle->http_task_complete, 1);
+      }
+   }
+
+   /* Log any error messages */
+   if (!ret)
+      RARCH_ERR("[Core Updater] Download of core list \"%s\" failed: %s.\n",
+            (transf ? transf->path: "unknown"),
+            (err ? err : "unknown"));
+
+   if (transf)
+      free(transf);
+
+   /* Last: the list task may have retired already */
+   core_updater_list_handle_release(list_handle);
 }
 
 static void task_core_updater_get_list_handler(retro_task_t *task)
@@ -506,11 +553,20 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             strlcpy(transf->path, buildbot_url, sizeof(transf->path));
             transf->user_data = (void*)list_handle;
 
-            /* Push HTTP transfer task */
-            list_handle->http_task = (retro_task_t*)
-               task_push_http_transfer_file(
-                  buildbot_url, true, NULL,
-                  cb_http_task_core_updater_get_list, transf);
+            /* Push HTTP transfer task
+             * > The callback's reference is taken before the
+             *   push, which it may outrun; a failed push runs no
+             *   callback, so it is dropped again here along with
+             *   the transfer object */
+            retro_atomic_fetch_add_int(&list_handle->refs, 1);
+            if (!(list_handle->http_task = (retro_task_t*)
+                     task_push_http_transfer_file(
+                        buildbot_url, true, NULL,
+                        cb_http_task_core_updater_get_list, transf)))
+            {
+               free(transf);
+               retro_atomic_fetch_sub_int(&list_handle->refs, 1);
+            }
 
             /* Start waiting for HTTP transfer to complete */
             list_handle->status = CORE_UPDATER_LIST_WAIT;
@@ -585,14 +641,12 @@ task_finished:
  * a task the worker has already marked FINISHED.  The task stays
  * visible to retro_task_threaded_find() until it is retired, so the
  * handle it exposes has to stay alive exactly that long, and this
- * cleanup is the first point past both users. */
+ * cleanup is the first point past both users.  A transfer still in
+ * flight (the task was cancelled) holds the other reference. */
 static void task_core_updater_get_list_cleanup(retro_task_t *task)
 {
-   core_updater_list_handle_t *list_handle =
-         (core_updater_list_handle_t*)task->state;
-
-   if (list_handle)
-      free_core_updater_list_handle(list_handle);
+   core_updater_list_handle_release(
+         (core_updater_list_handle_t*)task->state);
    task->state = NULL;
 }
 
@@ -613,7 +667,10 @@ static bool task_core_updater_get_list_finder(retro_task_t *task, void *user_dat
 }
 
 /* Signals completion of the core list fetch to a parent
- * 'update installed cores' task, if there is one. The
+ * 'update installed cores' task, if there is one, through
+ * the completion record the two share - never through the
+ * parent's handle, which a cancelled parent has already
+ * freed by the time this runs. The
  * parent must never poll task_get_flags() on the child
  * instead: a finished task is retired and freed inside the
  * same task_queue gather pass that ran its handler, so with
@@ -623,8 +680,8 @@ static void cb_task_core_updater_get_list(
       retro_task_t *task, void *task_data,
       void *user_data, const char *err)
 {
-   update_installed_cores_handle_t *update_installed_handle =
-         (update_installed_cores_handle_t*)user_data;
+   core_updater_sub_task_done_t *list_done =
+         (core_updater_sub_task_done_t*)user_data;
 
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
    /* The main thread, at task retrieval: menu flags are a plain
@@ -644,9 +701,8 @@ static void cb_task_core_updater_get_list(
    }
 #endif
 
-   if (update_installed_handle)
-      retro_atomic_store_release_int(
-            &update_installed_handle->list_task_complete, 1);
+   if (list_done)
+      core_updater_sub_task_done_signal(list_done);
 }
 
 /* The push with the three paths as values: reads no live settings,
@@ -654,7 +710,7 @@ static void cb_task_core_updater_get_list(
  * handler can call it with its own push-time captures. */
 static void *task_push_get_core_updater_list_captured(
       core_updater_list_t* core_list, bool mute, bool refresh_menu,
-      update_installed_cores_handle_t *update_installed_handle,
+      core_updater_sub_task_done_t *list_done,
       const char *dir_libretro, const char *path_libretro_info,
       const char *network_buildbot_url)
 {
@@ -675,6 +731,7 @@ static void *task_push_get_core_updater_list_captured(
       goto error;
 
    /* Configure handle */
+   retro_atomic_int_init(&list_handle->refs, 1);
    list_handle->core_list          = core_list;
    list_handle->refresh_menu       = refresh_menu;
    list_handle->http_task          = NULL;
@@ -710,7 +767,7 @@ static void *task_push_get_core_updater_list_captured(
    task->progress         = 0;
    task->progress_cb      = task_window_progress_cb;
    task->callback         = cb_task_core_updater_get_list;
-   task->user_data        = (void*)update_installed_handle;
+   task->user_data        = (void*)list_done;
    task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
    if (mute)
       task->flags        |=  RETRO_TASK_FLG_MUTE;
@@ -741,12 +798,11 @@ error:
 /* The live push: main-thread callers, reading the settings at the
  * moment of the push. */
 static void *task_push_get_core_updater_list_internal(
-      core_updater_list_t* core_list, bool mute, bool refresh_menu,
-      update_installed_cores_handle_t *update_installed_handle)
+      core_updater_list_t* core_list, bool mute, bool refresh_menu)
 {
    settings_t *settings = config_get_ptr();
    return task_push_get_core_updater_list_captured(
-         core_list, mute, refresh_menu, update_installed_handle,
+         core_list, mute, refresh_menu, NULL,
          settings->paths.directory_libretro,
          settings->paths.path_libretro_info,
          settings->paths.network_buildbot_url);
@@ -756,7 +812,7 @@ void *task_push_get_core_updater_list(
       core_updater_list_t* core_list, bool mute, bool refresh_menu)
 {
    return task_push_get_core_updater_list_internal(
-         core_list, mute, refresh_menu, NULL);
+         core_list, mute, refresh_menu);
 }
 
 /*****************/
@@ -770,17 +826,17 @@ static void cb_task_core_updater_download(
    /* Reload core info files
     * > This must be done on the main thread
     * > Forced: a core file changed on disk */
-   bool refresh                                            = true;
-   update_installed_cores_handle_t *update_installed_handle =
-         (update_installed_cores_handle_t*)user_data;
+   bool refresh                            = true;
+   core_updater_sub_task_done_t *download_done =
+         (core_updater_sub_task_done_t*)user_data;
 
    /* Signal completion to the parent 'update installed
     * cores' task, if there is one - it cannot safely poll
     * this task's flags, since the task is freed as soon as
-    * it is retired */
-   if (update_installed_handle)
-      retro_atomic_store_release_int(
-            &update_installed_handle->download_task_complete, 1);
+    * it is retired, and it may itself be gone: completion
+    * goes through the record the two share */
+   if (download_done)
+      core_updater_sub_task_done_signal(download_done);
 
    command_event(CMD_EVENT_CORE_INFO_INIT, &refresh);
 
@@ -789,6 +845,9 @@ static void cb_task_core_updater_download(
    menu_contentless_cores_free();
 #endif
 }
+
+static void core_updater_download_handle_release(
+      core_updater_download_handle_t *download_handle);
 
 static void cb_decompress_task_core_updater_download(
       retro_task_t *task, void *task_data,
@@ -799,10 +858,14 @@ static void cb_decompress_task_core_updater_download(
    core_updater_download_handle_t *download_handle =
          (core_updater_download_handle_t*)user_data;
 
-   /* Signal that decompression task is complete */
+   /* Signal that decompression task is complete; the download task
+    * may have retired already, so this is the last touch */
    if (download_handle)
+   {
       retro_atomic_store_release_int(
             &download_handle->decompress_task_complete, 1);
+      core_updater_download_handle_release(download_handle);
+   }
 
    /* Remove original archive file */
    if (decompress_data)
@@ -831,13 +894,19 @@ void cb_http_task_core_updater_download(
    core_updater_download_handle_t *download_handle = NULL;
    char output_dir[DIR_MAX_LENGTH];
 
-   if (!data || !transf)
+   /* Resolved before any bail-out: the handle's reference for this
+    * callback is dropped at the end on every path */
+   if (!transf)
       goto finish;
-   if (!*transf->path)
-      goto finish;
-
    if (!(download_handle = (core_updater_download_handle_t*)transf->user_data))
       goto finish;
+
+   if (!data || !*transf->path)
+   {
+      if (!err || !*err)
+         err = "Download failed.";
+      goto finish;
+   }
 
    /* The body was streamed to transf->path as it arrived, so
     * data->data is NULL by design and there is nothing to write here.
@@ -867,6 +936,9 @@ void cb_http_task_core_updater_download(
     * in such a way that this cannot happen... */
    if (path_is_compressed_file(transf->path))
    {
+      /* The decompress callback's reference, taken before the push,
+       * which it may outrun; a failed push runs no callback */
+      retro_atomic_fetch_add_int(&download_handle->refs, 1);
       if (!(download_handle->decompress_task = (retro_task_t*)task_push_decompress(
             transf->path, output_dir,
             NULL, NULL, NULL,
@@ -874,6 +946,7 @@ void cb_http_task_core_updater_download(
             (void*)download_handle,
             NULL, true)))
       {
+         retro_atomic_fetch_sub_int(&download_handle->refs, 1);
          err = msg_hash_to_str(MSG_DECOMPRESSION_FAILED);
          goto finish;
       }
@@ -887,8 +960,8 @@ finish:
       RARCH_ERR("[Core Updater] Download of \"%s\" failed: %s.\n",
             (transf ? transf->path: "unknown"), err);
       /* download_handle is still NULL on the early bail-outs above
-       * (no data, no transfer, no user_data), so it cannot be
-       * dereferenced unconditionally here. */
+       * (no transfer, no user_data), so it cannot be dereferenced
+       * unconditionally here. */
       if (download_handle)
          download_handle->http_task_error = true;
    }
@@ -906,6 +979,9 @@ finish:
        * decompress flag above are the payload the worker reads once
        * it acquires this. */
       retro_atomic_store_release_int(&download_handle->http_task_complete, 1);
+
+      /* The download task may have retired already */
+      core_updater_download_handle_release(download_handle);
    }
 }
 
@@ -942,6 +1018,14 @@ static void free_core_updater_download_handle(core_updater_download_handle_t *do
 
    free(download_handle);
    download_handle = NULL;
+}
+
+static void core_updater_download_handle_release(
+      core_updater_download_handle_t *download_handle)
+{
+   if (     download_handle
+         && retro_atomic_fetch_sub_int(&download_handle->refs, 1) == 1)
+      free_core_updater_download_handle(download_handle);
 }
 
 static void task_core_updater_download_handler(retro_task_t *task)
@@ -1020,16 +1104,11 @@ static void task_core_updater_download_handler(retro_task_t *task)
       case CORE_UPDATER_DOWNLOAD_START_BACKUP:
          {
             core_updater_sub_task_done_t *done =
-                  (core_updater_sub_task_done_t*)malloc(sizeof(*done));
+                  core_updater_sub_task_done_new();
 
-            /* Request core backup
-             * > One reference for this handler, one for the
-             *   backup's callback, which may run before the push
-             *   returns */
+            /* Request core backup */
             if (done)
             {
-               retro_atomic_int_init(&done->refs, 2);
-               retro_atomic_int_init(&done->complete, 0);
                if (!(download_handle->backup_task = (retro_task_t*)
                         task_push_core_backup(
                            download_handle->local_core_path,
@@ -1162,10 +1241,21 @@ static void task_core_updater_download_handler(retro_task_t *task)
             strlcpy_append(http_title, sizeof(http_title), &_tlen,
                   transf->path);
 
-            /* Push HTTP transfer task */
-            download_handle->http_task = (retro_task_t*)task_push_http_download_file(
-                  download_handle->remote_core_path, transf->path, true,
-                  http_title, cb_http_task_core_updater_download, transf);
+            /* Push HTTP transfer task
+             * > The callback's reference is taken before the
+             *   push, which it may outrun; a failed push runs no
+             *   callback, so it is dropped again here along with
+             *   the transfer object */
+            retro_atomic_fetch_add_int(&download_handle->refs, 1);
+            if (!(download_handle->http_task = (retro_task_t*)
+                     task_push_http_download_file(
+                        download_handle->remote_core_path, transf->path,
+                        true, http_title,
+                        cb_http_task_core_updater_download, transf)))
+            {
+               free(transf);
+               retro_atomic_fetch_sub_int(&download_handle->refs, 1);
+            }
 
             /* Update task title */
             task_free_title(task);
@@ -1334,8 +1424,9 @@ task_finished:
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
    }
 
-   if (download_handle)
-      free_core_updater_download_handle(download_handle);
+   /* Cancelled mid-transfer: the HTTP or decompress callback still
+    * holds a reference and frees the handle when it runs */
+   core_updater_download_handle_release(download_handle);
 }
 
 static bool task_core_updater_download_finder(retro_task_t *task, void *user_data)
@@ -1355,7 +1446,7 @@ static void *task_push_core_updater_download_internal(
       bool auto_backup, size_t auto_backup_history_size,
       const char *path_dir_libretro,
       const char *path_dir_core_assets,
-      update_installed_cores_handle_t *update_installed_handle)
+      core_updater_sub_task_done_t *download_done)
 {
    size_t _len;
    task_finder_data_t find_data;
@@ -1448,6 +1539,7 @@ static void *task_push_core_updater_download_internal(
    download_handle->backup_task              = NULL;
    download_handle->backup_done              = NULL;
    download_handle->status                   = CORE_UPDATER_DOWNLOAD_BEGIN;
+   retro_atomic_int_init(&download_handle->refs, 1);
 
    /* Concurrent downloads of the same file are not allowed */
    find_data.func     = task_core_updater_download_finder;
@@ -1473,7 +1565,7 @@ static void *task_push_core_updater_download_internal(
    task->progress         = 0;
    task->progress_cb      = task_window_progress_cb;
    task->callback         = cb_task_core_updater_download;
-   task->user_data        = (void*)update_installed_handle;
+   task->user_data        = (void*)download_done;
    task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
    if (mute)
       task->flags        |=  RETRO_TASK_FLG_MUTE;
@@ -1526,6 +1618,23 @@ static void free_update_installed_cores_handle(
 
    if (update_installed_handle->path_dir_core_assets)
       free(update_installed_handle->path_dir_core_assets);
+
+   /* A child still pending - this task was cancelled while waiting
+    * on it - keeps running and retires later.  Its callback holds
+    * the other reference, so letting go here leaves the record to
+    * the callback.  A list fetch also still parses into core_list:
+    * the list goes with the record and dies with its last
+    * reference. */
+   if (update_installed_handle->list_done)
+   {
+      update_installed_handle->list_done->orphan_list =
+            update_installed_handle->core_list;
+      update_installed_handle->core_list = NULL;
+      core_updater_sub_task_done_release(
+            update_installed_handle->list_done);
+   }
+   core_updater_sub_task_done_release(
+         update_installed_handle->download_done);
 
    core_updater_list_free(update_installed_handle->core_list);
 
@@ -1627,10 +1736,13 @@ static void task_update_installed_cores_scan(retro_task_t *task,
             continue;
          }
 
-         /* Flag must be cleared *before* the push, since the child
+         /* The record exists *before* the push, since the child
           * task can complete before it returns */
-         retro_atomic_store_release_int(
-               &handle->download_task_complete, 0);
+         if (!(handle->download_done = core_updater_sub_task_done_new()))
+         {
+            handle->status = UPDATE_INSTALLED_CORES_ITERATE;
+            continue;
+         }
 
          if (!task_push_core_updater_download_internal(
                      handle->core_list,
@@ -1640,9 +1752,12 @@ static void task_update_installed_cores_scan(retro_task_t *task,
                      handle->auto_backup_history_size,
                      handle->path_dir_libretro,
                      handle->path_dir_core_assets,
-                     handle))
+                     handle->download_done))
          {
-            handle->status = UPDATE_INSTALLED_CORES_ITERATE;
+            /* No task, so no callback: both references are ours */
+            free(handle->download_done);
+            handle->download_done = NULL;
+            handle->status        = UPDATE_INSTALLED_CORES_ITERATE;
             continue;
          }
 
@@ -1699,24 +1814,29 @@ static void task_update_installed_cores_handler(retro_task_t *task)
    {
       case UPDATE_INSTALLED_CORES_BEGIN:
          /* Request buildbot core list
-          * > Must be cleared *before* the push: the child
-          *   task can finish and fire its callback before
-          *   this returns */
-         retro_atomic_store_release_int(
-               &update_installed_handle->list_task_complete, 0);
-
-         /* If push failed, go to end
-          * (error will message will be displayed when
-          * final task title is set) */
-         if (!task_push_get_core_updater_list_captured(
-                  update_installed_handle->core_list,
-                  true, false, update_installed_handle,
-                  update_installed_handle->dir_libretro,
-                  update_installed_handle->path_libretro_info,
-                  update_installed_handle->network_buildbot_url))
-            update_installed_handle->status = UPDATE_INSTALLED_CORES_END;
-         else
-            update_installed_handle->status = UPDATE_INSTALLED_CORES_WAIT_LIST;
+          * > The record must exist *before* the push: the
+          *   child task can finish and fire its callback
+          *   before this returns
+          * > If push failed, go to end (the error message
+          *   is shown when the final task title is set) */
+         update_installed_handle->status = UPDATE_INSTALLED_CORES_END;
+         if ((update_installed_handle->list_done =
+                  core_updater_sub_task_done_new()))
+         {
+            if (!task_push_get_core_updater_list_captured(
+                     update_installed_handle->core_list,
+                     true, false, update_installed_handle->list_done,
+                     update_installed_handle->dir_libretro,
+                     update_installed_handle->path_libretro_info,
+                     update_installed_handle->network_buildbot_url))
+            {
+               /* No task, so no callback: both references are ours */
+               free(update_installed_handle->list_done);
+               update_installed_handle->list_done = NULL;
+            }
+            else
+               update_installed_handle->status = UPDATE_INSTALLED_CORES_WAIT_LIST;
+         }
          break;
       case UPDATE_INSTALLED_CORES_WAIT_LIST:
          {
@@ -1731,13 +1851,19 @@ static void task_update_installed_cores_handler(retro_task_t *task)
              * this task stuck on 'Fetching core list...'
              * forever */
             bool list_available = retro_atomic_load_acquire_int(
-                  &update_installed_handle->list_task_complete) != 0;
+                  &update_installed_handle->list_done->complete) != 0;
 
             /* If list is available, make sure it isn't empty
              * (error will message will be displayed when
              * final task title is set) */
             if (list_available)
             {
+               /* The child is done with core_list, which stays
+                * ours: let go of the record */
+               core_updater_sub_task_done_release(
+                     update_installed_handle->list_done);
+               update_installed_handle->list_done = NULL;
+
                update_installed_handle->list_size =
                      core_updater_list_size(update_installed_handle->core_list);
                RARCH_DBG("[Core Updater] Updater list size from buildbot: %d.\n",
@@ -1761,12 +1887,17 @@ static void task_update_installed_cores_handler(retro_task_t *task)
              * UPDATE_INSTALLED_CORES_WAIT_LIST, so the child
              * task's flags are deliberately not polled */
             bool download_complete = retro_atomic_load_acquire_int(
-                  &update_installed_handle->download_task_complete) != 0;
+                  &update_installed_handle->download_done->complete) != 0;
 
             /* If download is complete, return to
              * UPDATE_INSTALLED_CORES_ITERATE state */
             if (download_complete)
+            {
+               core_updater_sub_task_done_release(
+                     update_installed_handle->download_done);
+               update_installed_handle->download_done = NULL;
                update_installed_handle->status = UPDATE_INSTALLED_CORES_ITERATE;
+            }
          }
          break;
       case UPDATE_INSTALLED_CORES_END:
@@ -1898,8 +2029,8 @@ void task_push_update_installed_cores(
    update_installed_handle->path_dir_core_assets     = (!path_dir_core_assets || !*path_dir_core_assets) ?
          NULL : strdup(path_dir_core_assets);
    update_installed_handle->core_list                = core_updater_list_init();
-   retro_atomic_int_init(&update_installed_handle->list_task_complete, 0);
-   retro_atomic_int_init(&update_installed_handle->download_task_complete, 0);
+   update_installed_handle->list_done                = NULL;
+   update_installed_handle->download_done            = NULL;
    update_installed_handle->list_size                = 0;
    update_installed_handle->list_index               = 0;
    update_installed_handle->installed_index          = 0;
