@@ -107,19 +107,22 @@ jobs:
           # format set to libavfilter, a filter graph is the device and
           # the whole pipeline runs with no camera attached - avformat
           # opens the source, the poll thread reads, the decoder
-          # decodes, swscale converts and poll() takes the frame out
-          # under the buffer's lock.
+          # decodes, swscale converts and poll() takes the newest
+          # finished frame.
           #
           # The cases are the ones the threading has to get right and
           # that no eyeball on a webcam would show: start and stop
           # repeatedly, stop while the thread is mid-frame, free
-          # without stopping, poll before starting, and a source that
-          # does not exist.
+          # without stopping, poll before starting, a source that
+          # does not exist, a poll that must show the last frame
+          # decoded, and a slow poll the thread must not wait on. Leak
+          # checking is on: a packet or plane kept per frame or per
+          # start is a leak report.
           make clean all
           ./ffmpeg_live_test
           echo "[pass] ffmpeg_live_test"
           make clean all SANITIZER=address,undefined
-          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 600 ./ffmpeg_live_test
           echo "[pass] ffmpeg_live_test (ASan)"
           make clean all SANITIZER=thread

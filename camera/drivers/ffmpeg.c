@@ -24,6 +24,7 @@
 #include <retro_assert.h>
 #include <rthreads/rthreads.h>
 #include <retro_atomic.h>
+#include <queues/retro_triple_buffer.h>
 #include <lists/string_list.h>
 #include <string/stdstring.h>
 
@@ -98,18 +99,15 @@ typedef struct ffmpeg_camera
     * See https://ffmpeg.org/ffmpeg-devices.html#Input-Devices for details. */
    char url[512];
 
-   uint8_t *target_buffers[2];
+   /* Converted frames, from the poll thread to the core's poll: the
+    * thread fills one, the core reads the newest finished one, and
+    * neither waits for the other. */
+   uint8_t *target_buffers[3];
+   retro_triple_buffer_t frames;
    size_t target_buffer_length;
-   slock_t *target_buffer_lock;
    /* The poll thread's loop condition: the main thread sets it in
-    * stop(), the thread reads it every turn, and nothing else is
-    * held on either side - target_buffer_lock covers the frame, not
-    * this. It was a volatile bool, which is not a synchronisation
-    * primitive: it stops the compiler caching the load and orders
-    * nothing, so the thread has no guarantee of seeing what the main
-    * thread wrote before it. */
+    * stop(), the thread reads it every turn. */
    retro_atomic_int_t done;
-   uint8_t *active_buffer;
 } ffmpeg_camera_t;
 
 static void ffmpeg_camera_free(void *data);
@@ -452,6 +450,7 @@ static bool ffmpeg_camera_start(void *data)
    AVDictionary *options      = NULL;
    const AVDictionaryEntry *e = NULL;
    int target_buffer_length   = 0;
+   unsigned i;
 
    /* TODO: Check the actual format context, not just the pointer */
    if (ffmpeg->format_context)
@@ -587,10 +586,11 @@ static bool ffmpeg_camera_start(void *data)
 
    /* target buffer aligned to 4 bytes because it's exposed to the core as a uint32_t[] */
    ffmpeg->target_buffer_length = target_buffer_length;
-   ffmpeg->target_buffers[0]    = (uint8_t*)memalign_alloc(4, target_buffer_length);
-   ffmpeg->target_buffers[1]    = (uint8_t*)memalign_alloc(4, target_buffer_length);
-   ffmpeg->active_buffer = ffmpeg->target_buffers[0];
-   if (!ffmpeg->target_buffers[0] || !ffmpeg->target_buffers[1])
+   for (i = 0; i < 3; i++)
+      if ((ffmpeg->target_buffers[i] = (uint8_t*)memalign_alloc(4, target_buffer_length)))
+         /* black until the first frame is in */
+         memset(ffmpeg->target_buffers[i], 0, target_buffer_length);
+   if (!ffmpeg->target_buffers[0] || !ffmpeg->target_buffers[1] || !ffmpeg->target_buffers[2])
    {
       RARCH_ERR("[FFMPEG] Failed to allocate target %d-byte buffer for %dx%d %s-formatted video data.\n",
          target_buffer_length,
@@ -624,12 +624,8 @@ static bool ffmpeg_camera_start(void *data)
       goto error;
    }
 
-   ffmpeg->target_buffer_lock = slock_new();
-   if (!ffmpeg->target_buffer_lock)
-   {
-      RARCH_ERR("[FFMPEG] Failed to create target buffer lock.\n");
-      goto error;
-   }
+   retro_triple_buffer_init(&ffmpeg->frames, ffmpeg->target_buffers[0],
+         ffmpeg->target_buffers[1], ffmpeg->target_buffers[2]);
 
    ffmpeg->poll_thread = sthread_create(ffmpeg_camera_poll_thread, ffmpeg);
    if (!ffmpeg->poll_thread)
@@ -648,6 +644,7 @@ error:
 static void ffmpeg_camera_stop(void *data)
 {
    ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
+   unsigned i;
 
    /* The thread first. It is the other user of the decoder - it sends
     * every packet it reads and receives every frame - and an
@@ -675,22 +672,21 @@ static void ffmpeg_camera_stop(void *data)
    /* these functions are noops for NULL pointers */
    ffmpeg->poll_thread = NULL;
 
-   slock_free(ffmpeg->target_buffer_lock);
-   ffmpeg->target_buffer_lock = NULL;
-
    sws_freeContext(ffmpeg->scale_context);
    ffmpeg->scale_context = NULL;
 
-   memalign_free(ffmpeg->target_buffers[0]);
-   memalign_free(ffmpeg->target_buffers[1]);
-   ffmpeg->active_buffer = NULL;
-   ffmpeg->target_buffers[0] = NULL;
-   ffmpeg->target_buffers[1] = NULL;
+   for (i = 0; i < 3; i++)
+   {
+      memalign_free(ffmpeg->target_buffers[i]);
+      ffmpeg->target_buffers[i] = NULL;
+   }
+   /* a poll between stop and start is handed no frame */
+   retro_triple_buffer_init(&ffmpeg->frames, NULL, NULL, NULL);
+   av_freep(&ffmpeg->target_planes[0]);
    ffmpeg->target_buffer_length = 0;
    ffmpeg->target_dims = 0;
 
    av_frame_free(&ffmpeg->camera_frame);
-   av_freep(&ffmpeg->target_buffers[0]);
    memset(ffmpeg->target_linesizes, 0, sizeof(ffmpeg->target_linesizes));
 
    av_packet_free(&ffmpeg->packet);
@@ -774,9 +770,8 @@ static void ffmpeg_camera_poll_thread(void *data)
          goto done_loop;
       }
 
-      slock_lock(ffmpeg->target_buffer_lock);
       ret = av_image_copy_to_buffer(
-         ffmpeg->active_buffer,
+         (uint8_t*)retro_triple_buffer_back(&ffmpeg->frames),
          ffmpeg->target_buffer_length,
          (const uint8_t *const *)ffmpeg->target_planes,
          ffmpeg->target_linesizes,
@@ -786,8 +781,7 @@ static void ffmpeg_camera_poll_thread(void *data)
          1
       );
       if (ret >= 0)
-         ffmpeg->active_buffer = ffmpeg->active_buffer == ffmpeg->target_buffers[0] ? ffmpeg->target_buffers[1] : ffmpeg->target_buffers[0];
-      slock_unlock(ffmpeg->target_buffer_lock);
+         retro_triple_buffer_publish(&ffmpeg->frames);
       if (ret < 0)
       {
          char msg[AV_ERROR_MAX_STRING_SIZE];
@@ -796,7 +790,9 @@ static void ffmpeg_camera_poll_thread(void *data)
          goto done_loop;
       }
    done_loop:
-      /* must be called when we're done with it */
+      /* av_read_frame() fills the packet afresh each turn and does not
+       * release what it held */
+      av_packet_unref(ffmpeg->packet);
       av_frame_unref(ffmpeg->camera_frame);
    }
 
@@ -822,11 +818,9 @@ static bool ffmpeg_camera_poll(void *data,
       return false;
    }
 
-   slock_lock(ffmpeg->target_buffer_lock);
-   frame_raw_cb((uint32_t*)ffmpeg->active_buffer,
+   frame_raw_cb((uint32_t*)retro_triple_buffer_front(&ffmpeg->frames),
          VIDEO_SCALE_W(ffmpeg->target_dims), VIDEO_SCALE_H(ffmpeg->target_dims),
          ffmpeg->target_linesizes[0]);
-   slock_unlock(ffmpeg->target_buffer_lock);
 
    return true;
 }
