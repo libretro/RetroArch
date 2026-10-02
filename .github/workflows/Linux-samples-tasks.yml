@@ -396,6 +396,14 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
              timeout 120 ./bsv_statestream_test
           echo "[pass] bsv_statestream_test (ASan + UBSan)"
+          # Again with every object hashing alike (constant_hash.h),
+          # so inserts share buckets and the oom lanes also fail the
+          # buckets' own growth.
+          make clean all SANITIZER=address,undefined \
+             EXTRA_CFLAGS='-include $(CURDIR)/constant_hash.h'
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+             timeout 120 ./bsv_statestream_test
+          echo "[pass] bsv_statestream_test (colliding hash)"
 
       - name: Build and run bps_patch_bounds_test (ASan)
         shell: bash
