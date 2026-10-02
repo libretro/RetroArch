@@ -724,6 +724,15 @@ clear:
    wl->buffer_dims   = 0;
 }
 
+/* webOS keeps its window through its own stash in the teardown above. */
+void gfx_ctx_wl_free_webos(gfx_ctx_wayland_data_t *wl, bool may_keep)
+{
+   if (!wl)
+      return;
+   gfx_ctx_wl_destroy_resources_webos(wl);
+   free(wl);
+}
+
 void gfx_ctx_wl_update_title_webos(void *data)
 {
    char title[128];

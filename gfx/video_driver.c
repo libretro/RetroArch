@@ -165,6 +165,11 @@ static void video_driver_read_vp_params(struct video_vp_param_snap *ps);
 
 #define FRAME_DELAY_AUTO_DEBUG 0
 
+#ifdef HAVE_WAYLAND
+/* gfx/common/wayland_common.c */
+void gfx_ctx_wl_release_kept(void);
+#endif
+
 /* Forward declarations */
 VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state_t *video_st, uint16_t frame_time_target, uint16_t core_run_time);
 VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_t *video_st, uint16_t frame_time_target, uint16_t core_run_time);
@@ -6120,6 +6125,9 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
             video);
       if (!ret)
       {
+#ifdef HAVE_WAYLAND
+         gfx_ctx_wl_release_kept();
+#endif
          RARCH_ERR("[Video] Cannot open threaded video driver. Exiting...\n");
          return false;
       }
@@ -6130,6 +6138,12 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
             &video,
             &input_state_get_ptr()->current_driver,
             (void**)&input_state_get_ptr()->current_data);
+
+#ifdef HAVE_WAYLAND
+   /* A Wayland window kept across the reinit that this driver did not
+    * take back goes now that the new one is up. */
+   gfx_ctx_wl_release_kept();
+#endif
 
    if (!video_st->data)
    {

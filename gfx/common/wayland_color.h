@@ -106,6 +106,10 @@ bool wl_color_attach_luminances(wl_color_t *color,
  * false where the compositor has no colour management. */
 bool wl_color_query_output(wl_color_t *color, struct wl_output *output);
 
+/* Drops the surface's tagging, keeping the manager and what it learnt
+ * about the output, so another context can tag the surface again. */
+void wl_color_detach(wl_color_t *color);
+
 /* Destroys every colour-management object; call before the surface. */
 void wl_color_destroy(wl_color_t *color);
 

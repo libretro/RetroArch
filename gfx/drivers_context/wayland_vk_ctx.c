@@ -51,7 +51,6 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
    if (!wl)
       return;
    vulkan_context_destroy(&wl->vk, wl->surface);
-   gfx_ctx_wl_destroy_resources_common(wl);
 }
 
 static void gfx_ctx_wl_check_window(void *data, bool *quit,
@@ -109,9 +108,7 @@ static void *gfx_ctx_wl_init(void *data)
 
 error:
    gfx_ctx_wl_destroy_resources(wl);
-
-   if (wl)
-      free(wl);
+   gfx_ctx_wl_free_common(wl, false);
 
    return NULL;
 }
@@ -130,7 +127,7 @@ static void gfx_ctx_wl_destroy(void *data)
       slock_free(wl->vk.context.queue_lock);
 #endif
 
-   free(wl);
+   gfx_ctx_wl_free_common(wl, true);
 }
 
 static void gfx_ctx_wl_set_swap_interval(void *data, int swap_interval)

@@ -332,6 +332,18 @@ bool wl_color_attach_scrgb(wl_color_t *color, struct wl_surface *surface)
    return true;
 }
 
+void wl_color_detach(wl_color_t *color)
+{
+   if (color->scrgb)
+      wp_image_description_v1_destroy(color->scrgb);
+   if (color->surface)
+      wp_color_management_surface_v1_destroy(color->surface);
+   color->scrgb   = NULL;
+   color->surface = NULL;
+   color->flags &= ~(WL_COLOR_TAGGED | WL_COLOR_TAGGED_PARAMETRIC
+         | WL_COLOR_FAILED | WL_COLOR_FP16);
+}
+
 void wl_color_destroy(wl_color_t *color)
 {
    if (color->output_desc)

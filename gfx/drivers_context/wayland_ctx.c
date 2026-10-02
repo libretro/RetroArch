@@ -62,6 +62,7 @@ extern bool gfx_ctx_wl_set_video_mode_common_size_webos(gfx_ctx_wayland_data_t*,
 extern bool gfx_ctx_wl_set_video_mode_common_fullscreen_webos(gfx_ctx_wayland_data_t*, bool);
 extern bool gfx_ctx_wl_suppress_screensaver_webos(void*, bool);
 extern void gfx_ctx_wl_check_window_webos(gfx_ctx_wayland_data_t*, void (*)(void*, unsigned*), bool*, bool*, unsigned*);
+extern void gfx_ctx_wl_free_webos(gfx_ctx_wayland_data_t*, bool);
 
 #define gfx_ctx_wl_get_video_size_common gfx_ctx_wl_get_video_size_webos
 #define gfx_ctx_wl_destroy_resources_common gfx_ctx_wl_destroy_resources_webos
@@ -71,6 +72,7 @@ extern void gfx_ctx_wl_check_window_webos(gfx_ctx_wayland_data_t*, void (*)(void
 #define gfx_ctx_wl_set_video_mode_common_fullscreen gfx_ctx_wl_set_video_mode_common_fullscreen_webos
 #define gfx_ctx_wl_suppress_screensaver gfx_ctx_wl_suppress_screensaver_webos
 #define gfx_ctx_wl_check_window_common gfx_ctx_wl_check_window_webos
+#define gfx_ctx_wl_free_common gfx_ctx_wl_free_webos
 #endif
 
 static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
@@ -111,11 +113,6 @@ static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 
    if (wl->win)
       wl_egl_window_destroy(wl->win);
-#endif
-
-   gfx_ctx_wl_destroy_resources_common(wl);
-
-#ifdef HAVE_EGL
    wl->win          = NULL;
 #endif
 }
@@ -371,8 +368,7 @@ static void *gfx_ctx_wl_init(void *data)
    return wl;
 error:
    gfx_ctx_wl_destroy_resources(wl);
-   if (wl)
-      free(wl);
+   gfx_ctx_wl_free_common(wl, false);
    return NULL;
 }
 
@@ -464,8 +460,7 @@ static void gfx_ctx_wl_destroy(void *data)
          | VIDEO_FLAG_HDR10_SUPPORT
          | VIDEO_FLAG_SCRGB_SUPPORT);
    gfx_ctx_wl_destroy_resources(wl);
-
-   free(wl);
+   gfx_ctx_wl_free_common(wl, true);
 }
 
 static void gfx_ctx_wl_set_swap_interval(void *data, int swap_interval)

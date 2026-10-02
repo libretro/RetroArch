@@ -29,6 +29,7 @@
 #include "../gfx/video_driver.h"
 #include "../../frontend/frontend_driver.h"
 #include "../../verbosity.h"
+#include "../../runloop.h"
 
 #include "dbus_common.h"
 
@@ -1035,6 +1036,81 @@ static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
 }
 #endif
 
+/* A window kept across a video reinit. The whole context is kept, so
+ * every proxy still hands its listener a live context. */
+static gfx_ctx_wayland_data_t *wl_kept = NULL;
+
+void gfx_ctx_wl_release_kept(void)
+{
+   gfx_ctx_wayland_data_t *wl = wl_kept;
+   wl_kept                    = NULL;
+   if (wl)
+   {
+      gfx_ctx_wl_destroy_resources_common(wl);
+      free(wl);
+   }
+}
+
+void gfx_ctx_wl_free_common(gfx_ctx_wayland_data_t *wl, bool may_keep)
+{
+   if (!wl)
+      return;
+
+   gfx_ctx_wl_release_kept();
+
+   /* A content load reinits video without shutting the runloop down */
+   if (     may_keep
+         && wl->surface
+         && !(runloop_get_flags() & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
+   {
+      if (wl->frame_cb)
+         wl_callback_destroy(wl->frame_cb);
+      wl->frame_cb        = NULL;
+      /* The next context puts its own on the surface */
+      if (wl->tearing_control)
+         wp_tearing_control_v1_destroy(wl->tearing_control);
+      wl->tearing_control = NULL;
+      wl_color_detach(&wl->color);
+      wl_display_flush(wl->input.dpy);
+      wl_kept = wl;
+      RARCH_LOG("[Wayland] Keeping the window across the video reinit.\n");
+      return;
+   }
+
+   gfx_ctx_wl_destroy_resources_common(wl);
+   free(wl);
+}
+
+static void gfx_ctx_wl_adopt(gfx_ctx_wayland_data_t *wl,
+      driver_configure_handler_t driver_configure_handler)
+{
+#ifdef HAVE_EGL
+   static const egl_ctx_data_t egl_zero = {0};
+#endif
+#ifdef HAVE_VULKAN
+   static const gfx_ctx_vulkan_data_t vk_zero = {0};
+#endif
+
+#ifdef HAVE_EGL
+   wl->egl                      = egl_zero;
+#endif
+#ifdef HAVE_VULKAN
+   wl->vk                       = vk_zero;
+#endif
+   wl->gl_gpu_list              = NULL;
+   wl->driver_configure_handler = driver_configure_handler;
+   /* As after a cold init, until the first frame replaces what is up */
+   wl->ignore_configuration     = true;
+
+   frontend_driver_destroy_signal_handler_state();
+   video_driver_display_type_set(RARCH_DISPLAY_WAYLAND);
+   frontend_driver_install_signal_handler();
+   /* Video uninit forgot which output the window is on */
+   if (wl->current_output && wl->current_output->refresh_rate > 0)
+      video_driver_set_window_refresh_rate(
+            (float)wl->current_output->refresh_rate / 1000.0f);
+}
+
 bool gfx_ctx_wl_init_common(
       driver_configure_handler_t driver_configure_handler,
       gfx_ctx_wayland_data_t **wwl)
@@ -1043,6 +1119,17 @@ bool gfx_ctx_wl_init_common(
    gfx_ctx_wayland_data_t *wl;
    settings_t *settings         = config_get_ptr();
    unsigned video_monitor_index = settings->uints.video_monitor_index;
+
+   /* The context driver that kept the window takes it back */
+   if (wl_kept && wl_kept->driver_configure_handler == driver_configure_handler)
+   {
+      *wwl    = wl_kept;
+      wl_kept = NULL;
+      gfx_ctx_wl_adopt(*wwl, driver_configure_handler);
+      RARCH_LOG("[Wayland] Took back the kept window.\n");
+      return true;
+   }
+   gfx_ctx_wl_release_kept();
 
    *wwl                         = calloc(1, sizeof(gfx_ctx_wayland_data_t));
    wl                           = *wwl;
