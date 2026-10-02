@@ -562,6 +562,7 @@ int main(int argc, char **argv) { QApplication a(argc, argv); return 0; }' \
    if [ "$HAVE_QT" != yes ]; then
       die : 'Notice: Qt support disabled, required libraries were not found.'
    fi
+   moc_start
 
    check_pkgconf OPENSSL openssl 1.0.0 '' '' nopkg
    check_nopkg '' OPENSSL '-lssl -lcrypto' '' \

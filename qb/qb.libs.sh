@@ -299,7 +299,7 @@ check_header()
 	printf %s\\n "int main(void) { return 0; }" >> "$TEMP_CODE"
 	answer='no'
 	printf %s "Checking presence of header file $CHECKHEADER ... "
-	$COMPILER -o "$TEMP_EXE" "$TEMP_CODE" \
+	$COMPILER -c -o "$TEMP_EXE" "$TEMP_CODE" \
 		$BUILD_DIRS $FLAGS $LDFLAGS >>config.log 2>&1 &&
 		answer='yes'
 	eval "HAVE_$val=\"$answer\""
@@ -335,7 +335,7 @@ EOF
 	val="$1"
 	macro="$2"
 	printf %s "Checking presence of predefined macro $macro$ECHOBUF ... "
-	$CC -o "$TEMP_EXE" "$TEMP_C" \
+	$CC -c -o "$TEMP_EXE" "$TEMP_C" \
 		$BUILD_DIRS $CFLAGS $LDFLAGS >>config.log 2>&1 &&
 		answer='yes'
 	eval "HAVE_$val=\"$answer\""
@@ -489,6 +489,61 @@ nopkg_qmake()
 		esac
 	done
 	return 1
+}
+
+# moc_probe:
+# Finds a moc that works with the Qt found and the C++ compiler. Writes
+# its log to stdout and the moc it settled on to $TEMP_MOC_RES, and
+# returns 0 when that moc works.
+moc_probe()
+{	moc_works=1
+	if [ "$MOC" ]; then
+		QT_SELECT="$QT_VERSION" \
+		"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" 2>&1 &&
+			$CXX -o "$TEMP_MOC_OBJ" \
+			$QT_FLAGS -fPIC -c "$TEMP_CPP" 2>&1 &&
+		moc_works=0
+	else
+		if [ "$QT_VERSION" = "qt6" ]; then
+			QMAKE="$(exists qmake6)" || QMAKE="qmake"
+			$QMAKE -query QT_HOST_LIBEXECS 2>&1 && QT_HOST_LIBEXECS="$($QMAKE -query QT_HOST_LIBEXECS)/"
+		fi
+		for moc in "${QT_HOST_LIBEXECS}moc-$QT_VERSION" "${QT_HOST_LIBEXECS}moc"; do
+			MOC="$(exists "$moc")" || MOC=""
+			if [ "$MOC" ]; then
+				QT_SELECT="$QT_VERSION" \
+				"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" 2>&1 ||
+					continue
+				if $CXX -o "$TEMP_MOC_OBJ" \
+						$QT_FLAGS -fPIC -c \
+						"$TEMP_CPP" 2>&1; then
+					moc_works=0
+					break
+				fi
+			fi
+		done
+	fi
+	printf %s\\n "$MOC" > "$TEMP_MOC_RES"
+	return $moc_works
+}
+
+# moc_start:
+# Starts the moc check in the background once Qt is settled, so it runs
+# alongside the checks that follow. qb.moc.sh collects the answer and
+# adds its log to config.log where the check is reported.
+moc_start()
+{	[ "$HAVE_QT" = 'yes' ] || return 0
+	. qb/config.moc.sh
+	MOC_SIG="$CXX|$QT_VERSION|$QT_FLAGS"
+	printf %s\\n '#include <QTimeZone>' \
+		'class Test : public QObject' \
+		'{' \
+		'public:' \
+		'   Q_OBJECT' \
+		'   QTimeZone tz;' \
+		'};' > "$TEMP_MOC"
+	moc_probe > "$TEMP_MOC_LOG" 2>&1 < /dev/null &
+	MOC_PID=$!
 }
 
 check_val()

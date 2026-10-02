@@ -3,9 +3,21 @@
 TEMP_C=.tmp.c
 TEMP_CXX=.tmp.cxx
 TEMP_EXE=.tmp
+TEMP_MOC=.moc.h
+TEMP_CPP=.moc.cpp
+TEMP_MOC_OBJ=.moc.o
+TEMP_MOC_LOG=.moc.log
+TEMP_MOC_RES=.moc.res
+MOC_PID=''
 
-# The checks rewrite these files each time; remove them once on exit.
-trap 'rm -f -- "$TEMP_C" "$TEMP_CXX" "$TEMP_EXE"' EXIT
+# The checks rewrite these files each time; remove them once on exit,
+# after a check still running in the background has finished.
+qb_cleanup()
+{	[ -z "$MOC_PID" ] || wait "$MOC_PID"
+	rm -f -- "$TEMP_C" "$TEMP_CXX" "$TEMP_EXE" "$TEMP_MOC" "$TEMP_CPP" \
+		"$TEMP_MOC_OBJ" "$TEMP_MOC_LOG" "$TEMP_MOC_RES"
+}
+trap qb_cleanup EXIT
 
 CC="${CC:-}"
 CXX="${CXX:-}"
