@@ -202,9 +202,12 @@ bool core_info_find(const char *core_path,
 
 bool core_info_load(const char *core_path);
 
-bool core_info_database_supports_content_path(const char *database_path, const char *path);
-
-bool core_info_database_match_archive_member(const char *database_path);
+/* The extensions of every core that claims the database at
+ * 'database_path', merged into one list the caller frees, or NULL
+ * when no core claims it. 'match_archive_member' is set when any of
+ * those cores matches archive members. */
+struct string_list *core_info_database_claim(
+      const char *database_path, bool *match_archive_member);
 
 void core_info_qsort(core_info_list_t *core_info_list, enum core_info_list_qsort_type qsort_type);
 

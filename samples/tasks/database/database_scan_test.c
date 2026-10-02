@@ -480,6 +480,11 @@ int main(int argc, char **argv)
     * "archive#member" path for the entry. */
    const uint32_t crc_d = 0xD15CD15Cu;
    const uint32_t sz_d  = 2048;
+   /* Claimed by a second core that supports only ".gam", so the
+    * databases' claims differ and have to stay paired with their
+    * database when a match moves it to the front of the list. */
+   const uint32_t crc_g = 0x6A3A6A3Au;
+   const uint32_t sz_g  = 3072;
 
    setvbuf(stdout, NULL, _IONBF, 0);
    crc_init();
@@ -507,6 +512,19 @@ int main(int argc, char **argv)
    sprintf(p, "%s/Test Zip.rdb", db_dir);
    if (!write_db(p, "Zipped The Game", crc_d, sz_d))
    { check(0, "fixture", "could not write database"); return 1; }
+   sprintf(p, "%s/Test Gamma.rdb", db_dir);
+   if (!write_db(p, "Gamma The Game", crc_g, sz_g))
+   { check(0, "fixture", "could not write database"); return 1; }
+
+   /* A ".gam" file carrying the Gamma record, and one carrying the
+    * Alpha record: no core claiming Test Alpha supports ".gam", so
+    * the second must not land anywhere. */
+   sprintf(p, "%s/05_gamma.gam", in_dir);
+   if (!write_content(p, crc_g, sz_g))
+   { check(0, "fixture", "crc forcing failed"); return 1; }
+   sprintf(p, "%s/06_cross.gam", in_dir);
+   if (!write_content(p, crc_a, sz_a))
+   { check(0, "fixture", "crc forcing failed"); return 1; }
 
    sprintf(p, "%s/02_alpha.bin", in_dir);
    if (!write_content(p, crc_a, sz_a))
@@ -551,7 +569,7 @@ int main(int argc, char **argv)
 
    /* The scanner skips any database no installed core claims, so the
     * core info has to name both databases as well as the extension -
-    * see core_info_database_supports_content_path().  Without the
+    * see core_info_database_claim().  Without the
     * database line the scan reports no match for content whose crc is
     * certainly present, which is easy to mistake for a lookup bug. */
    sprintf(p, "%s/test_libretro.info", info_dir);
@@ -567,6 +585,20 @@ int main(int argc, char **argv)
       fclose(f);
    }
    sprintf(p, "%s/test_libretro.so", core_dir);
+   { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
+   sprintf(p, "%s/gamma_libretro.info", info_dir);
+   {
+      FILE *f = fopen(p, "w");
+      if (!f)
+      { check(0, "fixture", "could not write core info"); return 1; }
+      fprintf(f,
+            "display_name = \"Gamma Test\"\n"
+            "corename = \"GammaTest\"\n"
+            "supported_extensions = \"gam\"\n"
+            "database = \"Test Gamma\"\n");
+      fclose(f);
+   }
+   sprintf(p, "%s/gamma_libretro.so", core_dir);
    { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
 
 #ifdef HAVE_THREADS
@@ -636,6 +668,16 @@ int main(int argc, char **argv)
          "cue resolved through its track", "Disc The Game");
    check(file_contains(p, ".cue"),
          "playlist records the sheet, not the track", "path ends .cue");
+
+   /* Test Gamma is visited after four databases have been moved to
+    * the front of the list; its claim has to have travelled with it. */
+   sprintf(p, "%s/Test Gamma.lpl", pl_dir);
+   check(file_contains(p, "05_gamma.gam"),
+         "database claimed by a second core matched", "05_gamma.gam");
+   sprintf(p, "%s/Test Alpha.lpl", pl_dir);
+   check(!file_contains(p, "06_cross.gam"),
+         "extension of a core not claiming the database refused",
+         "no 06_cross.gam in Alpha");
 
    /* A strict scan hands every file to DATABASE_SCAN_ITERATE_NEXT.  32
     * files fill string_list_new()'s initial capacity, so ASan catches a
