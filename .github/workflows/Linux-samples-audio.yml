@@ -956,3 +956,12 @@ jobs:
         working-directory: samples/audio/resampler_options
         run: |
           make -j$(nproc) check SANITIZER=address,undefined
+
+      - name: Build and run CoreMIDI input queue test (ASan + UBSan, TSan)
+        working-directory: samples/midi/coremidi_queue
+        run: |
+          # midi/drivers/coremidi_queue.h is the macOS driver's lock-free
+          # input queue; it builds and runs anywhere.
+          make check SANITIZER=address,undefined
+          make clean
+          make check SANITIZER=thread
