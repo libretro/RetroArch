@@ -35,6 +35,7 @@
 #include <compat/strl.h>
 
 #include "../../config.def.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../input_driver.h"
 #include "../../tasks/tasks_internal.h"
@@ -48,6 +49,8 @@
 
 #define JOYPAD_TEST_COMMAND_ADD_CONTROLLER          1
 #define JOYPAD_TEST_COMMAND_REMOVE_CONTROLLER       2
+/* Save Controller Profile for the port in param_num, as the menu does */
+#define JOYPAD_TEST_COMMAND_SAVE_PROFILE            3
 #define JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST     16
 #define JOYPAD_TEST_COMMAND_BUTTON_PRESS_LAST      31
 #define JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST   32
@@ -456,6 +459,24 @@ static void test_joypad_poll(void)
          else if (input_test_steps[i].action == JOYPAD_TEST_COMMAND_REMOVE_CONTROLLER)
          {
             test_joypad_autodetect_remove(input_test_steps[i].param_num);
+            input_test_steps[i].handled = true;
+         }
+         else if (input_test_steps[i].action == JOYPAD_TEST_COMMAND_SAVE_PROFILE)
+         {
+#ifdef HAVE_CONFIGFILE
+            unsigned port        = input_test_steps[i].param_num;
+            settings_t *settings = config_get_ptr();
+            if (port < MAX_USERS)
+            {
+               unsigned dev     = settings->uints.input_joypad_index[port];
+               const char *name = (dev < MAX_USERS)
+                  ? input_config_get_device_name(dev) : NULL;
+               RARCH_LOG("[Test joypad] Save profile for port %u: %s.\n",
+                     port + 1,
+                     (name && *name && config_save_autoconf_profile(name, port))
+                     ? "saved" : "failed");
+            }
+#endif
             input_test_steps[i].handled = true;
          }
          else if (   input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST

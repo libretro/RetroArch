@@ -46,7 +46,7 @@ assert_absent() {
    else pass "$2"; fi
 }
 assert_clean() {
-   if grep -qE "(ERROR|WARNING): (Address|Leak|Undefined|Thread)Sanitizer|runtime error:|Segmentation fault" "$LOG"; then
+   if grep -qE "(ERROR|WARNING): (Address|Leak|Undefined|Thread)Sanitizer|runtime error:|Segmentation fault|free\(\): " "$LOG"; then
       fail "sanitizer/crash output in log"
       grep -E "(ERROR|WARNING): (Address|Leak|Undefined|Thread)Sanitizer|runtime error:" "$LOG" | head -3
    fi
@@ -301,6 +301,65 @@ done
 [ "$P9_MISSING" -eq 0 ] \
    && pass "P9 connect queued behind a pending connect and disconnect is kept ($P9_N runs)" \
    || fail "P9 device C not configured in $P9_MISSING of $P9_N contended runs"
+
+# ---------------------------------------------------------------
+say "-- P10: Save Controller Profile"
+# Port 1's binds for the up/down/left/right/B set the save requires.
+port1_binds() {
+   cat >> "$HOME_DIR/.config/retroarch/retroarch.cfg" <<CFG
+input_player1_b_btn = "0"
+input_player1_up_btn = "4"
+input_player1_down_btn = "5"
+input_player1_left_btn = "6"
+input_player1_right_btn = "7"
+CFG
+}
+
+# Saved twice from a profile with button labels: the first save hands
+# the labels to the port, the second must not free them again.
+setup test_input_autoconf_save.ratst
+cat > "$AUTOCONF/TestpadL_labels.cfg" <<CFG
+input_driver = "test"
+input_device = "Test joypad device L"
+input_b_btn = "0"
+input_b_btn_label = "Cross"
+input_up_btn = "4"
+input_down_btn = "5"
+input_left_btn = "6"
+input_right_btn = "7"
+CFG
+run
+[ "$(grep -c 'Save profile for port 1: saved' "$LOG")" -eq 2 ] \
+   && pass "P10 labelled profile saved twice" \
+   || fail "P10 labelled profile not saved twice"
+grep -q 'input_b_btn_label = "Cross"' "$AUTOCONF/Test joypad device L.cfg" 2>/dev/null \
+   && pass "P10 label written to the saved profile" \
+   || fail "P10 label missing from the saved profile"
+
+# Port 1 driven by the second device: port 1's binds, second device's name.
+setup test_input_autoconf_save_mapped.ratst
+port1_binds
+cat >> "$HOME_DIR/.config/retroarch/retroarch.cfg" <<CFG
+input_player1_joypad_index = "1"
+input_player2_joypad_index = "0"
+CFG
+run
+assert_seen 'Save profile for port 1: saved' "P10 port mapped to another device index saves"
+P10_FILE="$AUTOCONF/Save second pad.cfg"
+grep -q 'input_device = "Save second pad"' "$P10_FILE" 2>/dev/null \
+   && grep -q 'input_b_btn = "0"' "$P10_FILE" \
+   && pass "P10 profile carries the port's binds under its device's name" \
+   || fail "P10 profile for the port's device missing or wrong"
+
+# No autoconfig directory yet, as on a fresh install.
+setup test_input_autoconf_save_mapped.ratst
+port1_binds
+rm -rf "$AUTOCONF"
+run
+assert_seen 'Save profile for port 1: saved' "P10 save creates a missing autoconfig directory"
+[ -s "$AUTOCONF/Save first pad.cfg" ] \
+   && pass "P10 profile written into the created directory" \
+   || fail "P10 profile missing from the created directory"
 
 # ---------------------------------------------------------------
 rm -rf "$WORK"

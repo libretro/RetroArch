@@ -2795,13 +2795,13 @@ static int setting_action_ok_bind_all_save_autoconfig(
 
    if (      name
          && *name
-         && config_save_autoconf_profile(name, map))
+         && config_save_autoconf_profile(name, index_offset))
    {
       int i;
       size_t _len;
       char buf[128];
       char msg[NAME_MAX_LENGTH];
-      struct retro_keybind *target = &input_config_binds[map][0];
+      struct retro_keybind *target = &input_config_binds[index_offset][0];
 
       config_get_autoconf_profile_filename(name, map, buf, sizeof(buf));
       _len = snprintf(msg, sizeof(msg),

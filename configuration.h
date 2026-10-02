@@ -1558,8 +1558,9 @@ void config_get_autoconf_profile_filename(
 /**
  * config_save_autoconf_profile:
  * @device_name       : Input device name
- * @user              : Controller number to save
- * Writes a controller autoconf file to disk.
+ * @user              : Port whose binds are saved
+ * Writes a controller autoconf file to disk for the
+ * device assigned to @user.
  **/
 bool config_save_autoconf_profile(const char *device_name, unsigned user);
 

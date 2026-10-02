@@ -8656,12 +8656,14 @@ void config_get_autoconf_profile_filename(
 /**
  * config_save_autoconf_profile:
  * @device_name       : Input device name
- * @user              : Controller number to save
- * Writes a controller autoconf file to disk.
+ * @user              : Port whose binds are saved
+ * Writes a controller autoconf file to disk for the
+ * device assigned to @user.
  **/
 bool config_save_autoconf_profile(const char *device_name, unsigned user)
 {
    unsigned i;
+   unsigned dev;
    char buf[PATH_MAX_LENGTH];
    char autoconf_file[PATH_MAX_LENGTH];
    const char *a = NULL;
@@ -8675,11 +8677,17 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    const char *joypad_driver_fallback   = settings->arrays.input_joypad_driver;
    const char *joypad_driver            = NULL;
 
-   if (!device_name || !*device_name)
+   if (!device_name || !*device_name || user >= MAX_USERS)
+      return false;
+
+   /* Binds and their labels are per port; the device's
+    * driver, identity and autoconf binds are per device */
+   dev = settings->uints.input_joypad_index[user];
+   if (dev >= MAX_USERS)
       return false;
 
    /* Get currently set joypad driver */
-   joypad_driver = input_config_get_device_joypad_driver(user);
+   joypad_driver = input_config_get_device_joypad_driver(dev);
    if (!joypad_driver || !*joypad_driver)
    {
       /* This cannot happen, but if we reach this
@@ -8692,8 +8700,18 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    }
 
    /* Generate autoconfig file path */
-   config_get_autoconf_profile_filename(device_name, user, buf, sizeof(buf));
+   config_get_autoconf_profile_filename(device_name, dev, buf, sizeof(buf));
    fill_pathname_join_special(autoconf_file, autoconf_dir, buf, sizeof(autoconf_file));
+
+   /* The directory only exists once profiles have been
+    * downloaded or bundled */
+   if (     *autoconf_dir
+         && !path_is_directory(autoconf_dir)
+         && !path_mkdir(autoconf_dir))
+   {
+      RARCH_ERR("[Autoconf] Failed creating directory \"%s\".\n", autoconf_dir);
+      return false;
+   }
 
    /* Open config file */
    if (     !(conf = config_file_new_from_path_to_string(autoconf_file))
@@ -8709,9 +8727,9 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    for (i = 0; i < RARCH_ANALOG_BIND_LIST_END; i++)
    {
       struct retro_keybind *bind      = &input_config_binds[user][i];
-      struct retro_keybind *auto_bind = &input_autoconf_binds[user][i];
+      struct retro_keybind *auto_bind = &input_autoconf_binds[dev][i];
       struct input_bind_label *lbl    = &input_config_bind_labels[user][i];
-      struct input_bind_label *albl   = &input_autoconf_bind_labels[user][i];
+      struct input_bind_label *albl   = &input_autoconf_bind_labels[dev][i];
 
       if (bind->joykey == NO_BTN && auto_bind->joykey != NO_BTN)
       {
@@ -8761,16 +8779,13 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    config_set_string(conf, "input_driver",
          joypad_driver);
    config_set_string(conf, "input_device",
-         input_config_get_device_name(settings->uints.input_joypad_index[user]));
-   a =
-input_config_get_device_display_name(settings->uints.input_joypad_index[user]);
+         input_config_get_device_name(dev));
+   a = input_config_get_device_display_name(dev);
    config_set_string(conf, "input_device_display_name",
-         (a && *a)
-            ? a
-            : input_config_get_device_name(settings->uints.input_joypad_index[user]));
+         (a && *a) ? a : input_config_get_device_name(dev));
 
-   pid_user = input_config_get_device_pid(settings->uints.input_joypad_index[user]);
-   vid_user = input_config_get_device_vid(settings->uints.input_joypad_index[user]);
+   pid_user = input_config_get_device_pid(dev);
+   vid_user = input_config_get_device_vid(dev);
 
    if (pid_user && vid_user)
    {
@@ -8802,12 +8817,14 @@ input_config_get_device_display_name(settings->uints.input_joypad_index[user]);
          {
             save_keybind_joykey_label(conf, "input", input_config_bind_map_get_base(id), lbl);
             free(lbl->joykey);
+            lbl->joykey = NULL;
          }
 
          if (lbl->joyaxis && *lbl->joyaxis)
          {
             save_keybind_axis_label(conf, "input", input_config_bind_map_get_base(id), lbl);
             free(lbl->joyaxis);
+            lbl->joyaxis = NULL;
          }
       }
    }
