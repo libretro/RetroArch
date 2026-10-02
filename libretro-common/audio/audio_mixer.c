@@ -234,9 +234,11 @@ struct audio_mixer_voice
    retro_atomic_int_t type;
    /* volume drives the float pipeline, gain the s16 one. They are held
     * separately rather than converted on demand so that an s16 voice
-    * never needs a float operation on the audio thread. */
-   float    volume;
-   int32_t  gain;
+    * never needs a float operation on the audio thread. Atomic, so a
+    * caller sets or reads either with no lock while the voice mixes:
+    * volume holds the float's bits, gain the Q16.16 value. */
+   retro_atomic_int_t volume;
+   retro_atomic_int_t gain;
    bool     repeat;
    bool     is_s16;
 #ifdef HAVE_THREADS
@@ -249,6 +251,20 @@ static struct audio_mixer_voice s_voices[AUDIO_MIXER_MAX_VOICES] = {0};
 static unsigned s_rate = 0;
 
 static void audio_mixer_release(audio_mixer_voice_t* voice);
+
+static INLINE int audio_mixer_float_bits(float f)
+{
+   int i;
+   memcpy(&i, &f, sizeof(i));
+   return i;
+}
+
+static INLINE float audio_mixer_bits_float(int i)
+{
+   float f;
+   memcpy(&f, &i, sizeof(f));
+   return f;
+}
 
 #ifdef AUDIO_MIXER_HAS_STREAM
 /* ---- folding a multichannel stream to the stereo a voice mixes ------
@@ -2129,7 +2145,8 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
    if (res)
    {
       voice->repeat   = repeat;
-      voice->volume   = volume;
+      retro_atomic_store_relaxed_int(&voice->volume,
+            audio_mixer_float_bits(volume));
       voice->sound    = sound;
       voice->stop_cb  = stop_cb;
       AUDIO_MIXER_UNLOCK(voice);
@@ -2255,7 +2272,7 @@ audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
    if (res)
    {
       voice->repeat   = repeat;
-      voice->gain     = gain;
+      retro_atomic_store_relaxed_int(&voice->gain, (int)gain);
       voice->sound    = sound;
       voice->stop_cb  = stop_cb;
       AUDIO_MIXER_UNLOCK(voice);
@@ -2765,7 +2782,9 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
          continue;
       }
 
-      volume = (override) ? volume_override : voice->volume;
+      volume = (override) ? volume_override
+         : audio_mixer_bits_float(
+               retro_atomic_load_relaxed_int(&voice->volume));
 
       switch (retro_atomic_load_relaxed_int(&voice->type))
       {
@@ -2861,7 +2880,8 @@ void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
       /* Already Q16 on both sides, so nothing is computed here. This
        * used to convert a float per voice per mix call, on the audio
        * thread, in the pipeline that exists to avoid float. */
-      gain_q16 = (override) ? gain_override : voice->gain;
+      gain_q16 = (override) ? gain_override
+         : (int32_t)retro_atomic_load_relaxed_int(&voice->gain);
 
       switch (retro_atomic_load_relaxed_int(&voice->type))
       {
@@ -2928,7 +2948,8 @@ float audio_mixer_voice_get_volume(audio_mixer_voice_t *voice)
    if (!voice)
       return 0.0f;
 
-   return voice->volume;
+   return audio_mixer_bits_float(
+         retro_atomic_load_relaxed_int(&voice->volume));
 }
 
 /* Whether any active voice would be handled by audio_mixer_mix (float) /
@@ -2962,7 +2983,7 @@ int32_t audio_mixer_voice_get_gain(audio_mixer_voice_t *voice)
    if (!voice)
       return 0;
 
-   return voice->gain;
+   return (int32_t)retro_atomic_load_relaxed_int(&voice->gain);
 }
 
 void audio_mixer_voice_set_gain(audio_mixer_voice_t *voice, int32_t gain)
@@ -2970,9 +2991,7 @@ void audio_mixer_voice_set_gain(audio_mixer_voice_t *voice, int32_t gain)
    if (!voice)
       return;
 
-   AUDIO_MIXER_LOCK(voice);
-   voice->gain = gain;
-   AUDIO_MIXER_UNLOCK(voice);
+   retro_atomic_store_relaxed_int(&voice->gain, (int)gain);
 }
 
 void audio_mixer_voice_set_volume(audio_mixer_voice_t *voice, float val)
@@ -2980,11 +2999,11 @@ void audio_mixer_voice_set_volume(audio_mixer_voice_t *voice, float val)
    if (!voice)
       return;
 
-   AUDIO_MIXER_LOCK(voice);
-   voice->volume = val;
+   retro_atomic_store_relaxed_int(&voice->volume,
+         audio_mixer_float_bits(val));
    /* Keep the s16 gain in step, so a caller that only knows the float
     * form still drives an s16 voice. The conversion happens here, on
     * the control path, and not on the audio thread. */
-   voice->gain   = (int32_t)(val * 65536.0f + 0.5f);
-   AUDIO_MIXER_UNLOCK(voice);
+   retro_atomic_store_relaxed_int(&voice->gain,
+         (int)(int32_t)(val * 65536.0f + 0.5f));
 }

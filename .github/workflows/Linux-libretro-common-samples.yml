@@ -219,6 +219,10 @@ jobs:
             memshm_area_test
             msg_fifo_queue_test
             audio_mixer_loop_test
+            # Voice volume and gain set and read from two threads while
+            # a third mixes: every read and every block one of the
+            # values set.
+            audio_mixer_voice_threads_test
             audio_mixer_rate_guard_test
             # The AC-3 / E-AC-3 frame layer against ffmpeg's streams:
             # ffmpeg is in the package list above for it.
@@ -550,6 +554,21 @@ jobs:
           CC=clang make all SANITIZER=thread
 
           TSAN_OPTIONS=halt_on_error=1 ./retro_triple_buffer_test
+
+      - name: Run audio_mixer_voice_threads_test under Clang + ThreadSanitizer
+        shell: bash
+        working-directory: libretro-common/samples/audio/audio_mixer_voice_threads
+        run: |
+          # A voice's volume and gain are atomics the caller sets and
+          # reads with no lock while the audio thread mixes the voice;
+          # TSan reports any field the three threads share unordered.
+          set -u
+          set -o pipefail
+
+          make clean
+          CC=clang make all SANITIZER=thread
+
+          TSAN_OPTIONS=halt_on_error=1 ./audio_mixer_voice_threads_test
 
       - name: Run mpsc_stack_test under Clang + ThreadSanitizer
         shell: bash
