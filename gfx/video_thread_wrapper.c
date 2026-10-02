@@ -607,18 +607,19 @@ void video_thread_call_on_waiter(void (*fn)(void *data), void *data)
 static void thread_update_driver_state(thread_video_t *thr)
 {
 #ifdef HAVE_MENU
-   if (thr->texture.frame_updated)
    {
-      if (thr->driver_data && thr->poke && thr->poke->set_texture_frame)
+      const struct video_thread_menu_texture *t =
+         (const struct video_thread_menu_texture*)
+         retro_triple_buffer_take(&thr->texture.frames);
+      int enable = retro_atomic_load_acquire_int(&thr->texture.enable);
+      if (t && thr->driver_data && thr->poke && thr->poke->set_texture_frame)
          thr->poke->set_texture_frame(thr->driver_data,
-               thr->texture.frame, thr->texture.rgb32,
-               thr->texture.dims, thr->texture.alpha);
-      thr->texture.frame_updated = false;
+               t->frame, t->rgb32, t->dims, t->alpha);
+      if (thr->driver_data && thr->poke && thr->poke->set_texture_enable)
+         thr->poke->set_texture_enable(thr->driver_data,
+               (enable & VIDEO_THREAD_TEXTURE_ENABLE) != 0,
+               (enable & VIDEO_THREAD_TEXTURE_FULL_SCREEN) != 0);
    }
-
-   if (thr->driver_data && thr->poke && thr->poke->set_texture_enable)
-      thr->poke->set_texture_enable(thr->driver_data,
-            thr->texture.enable, thr->texture.full_screen);
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -647,11 +648,10 @@ static void thread_update_driver_state(thread_video_t *thr)
    }
 #endif
 
-   if (thr->apply_state_changes)
+   if (retro_atomic_exchange_int(&thr->apply_state_changes, 0))
    {
       if (thr->driver_data && thr->poke && thr->poke->apply_state_changes)
          thr->poke->apply_state_changes(thr->driver_data);
-      thr->apply_state_changes = false;
    }
 }
 
@@ -2032,27 +2032,13 @@ static void video_thread_loop(void *data)
          vp.dims                  = 0;
          vp.full_dims             = 0;
 
-         /* Only the handoff needs the lock. The driver takes the menu
-          * texture's pixels inside its own set_texture_frame() - it
-          * uploads or copies them there and does not keep the pointer -
-          * so once the update returns, the staging buffer is free and
-          * the render below needs nothing this lock guards.
-          *
-          * What this is worth is narrower than it looks. On the menu
-          * path it buys nothing measurable: video_thread_frame() waits
-          * for the ring to drain whenever the menu texture is enabled,
-          * so the worker is already idle when the next iteration's
-          * set_texture_frame() arrives and the lock was never
-          * contended. It is the main thread's other callers -
-          * apply_state_changes() and set_texture_enable(), which arrive
-          * on a user action rather than with a push behind them - that
-          * were waiting out a render, and holding a lock across a
-          * render and its swap is not a shape to keep either way.
-          * samples/gfx/threaded_video's menu-texture lane pins the
-          * drain, because it is the drain that keeps this uncontended. */
-         slock_lock(thr->frame.lock);
+         /* The menu texture, its enable flags and a requested state
+          * apply arrive through a triple buffer and atomics, so the
+          * main thread's setters never wait on this thread. The driver
+          * copies the texture's pixels inside set_texture_frame() and
+          * keeps no pointer, so the slot taken here is free again by
+          * the next take. */
          thread_update_driver_state(thr);
-         slock_unlock(thr->frame.lock);
 
          if (thr->driver_data && thr->driver)
          {
@@ -3068,7 +3054,8 @@ static bool video_thread_frame(void *data, const void *frame_,
             dropped);
 
 #ifdef HAVE_MENU
-   if (thr->texture.enable)
+   if (retro_atomic_load_relaxed_int(&thr->texture.enable)
+         & VIDEO_THREAD_TEXTURE_ENABLE)
    {
       /* Unbounded wait that may run on the main thread; the worker can
        * marshal main-thread-only work (e.g. Vulkan swapchain recreation
@@ -3126,8 +3113,8 @@ static bool video_thread_init(thread_video_t *thr,
    video_thread_thr_capture = thr;
    if (!(thr->lock        = slock_new()))
       return false;
-   if (!(thr->frame.lock  = slock_new()))
-      return false;
+   retro_triple_buffer_init(&thr->texture.frames, &thr->texture.slot[0],
+         &thr->texture.slot[1], &thr->texture.slot[2]);
    if (!(thr->waiter_call.cond = scond_new()))
       return false;
    if (!(thr->cond_reply  = scond_new()))
@@ -3377,7 +3364,9 @@ static void video_thread_free(void *data)
       free(thr->deferred);
       thr->deferred = NULL;
 
-      free(thr->texture.frame);
+      free(thr->texture.slot[0].frame);
+      free(thr->texture.slot[1].frame);
+      free(thr->texture.slot[2].frame);
 #ifdef _3DS
       linearFree(thr->frame.slot[0].buffer);
       linearFree(thr->frame.slot[1].buffer);
@@ -3391,7 +3380,6 @@ static void video_thread_free(void *data)
       free((void*)thr->alpha_mod);
       free(thr->alpha_applied);
 
-      slock_free(thr->frame.lock);
       slock_free(thr->lock);
       scond_free(thr->cond_reply);
       scond_free(thr->waiter_call.cond);
@@ -3745,36 +3733,30 @@ static void thread_set_texture_frame(void *data, const void *frame,
       bool rgb32, unsigned dims, float alpha)
 {
    thread_video_t *thr = (thread_video_t*)data;
+   struct video_thread_menu_texture *t;
    size_t required     = VIDEO_SCALE_AREA(dims) *
       (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t));
 
    if (!thr)
       return;
 
-   slock_lock(thr->frame.lock);
-
-   if (!thr->texture.frame || required > thr->texture.frame_cap)
+   /* The back slot is the main thread's alone until it is published. */
+   t = (struct video_thread_menu_texture*)
+      retro_triple_buffer_back(&thr->texture.frames);
+   if (!t->frame || required > t->frame_cap)
    {
-      void *tmp_frame = realloc(thr->texture.frame, required);
-
+      void *tmp_frame = realloc(t->frame, required);
       if (!tmp_frame)
-      {
-         slock_unlock(thr->frame.lock);
          return;
-      }
-
-      thr->texture.frame     = tmp_frame;
-      thr->texture.frame_cap = required;
+      t->frame     = tmp_frame;
+      t->frame_cap = required;
    }
 
-   memcpy(thr->texture.frame, frame, required);
-
-   thr->texture.rgb32         = rgb32;
-   thr->texture.dims          = dims;
-   thr->texture.alpha         = alpha;
-   thr->texture.frame_updated = true;
-
-   slock_unlock(thr->frame.lock);
+   memcpy(t->frame, frame, required);
+   t->rgb32 = rgb32;
+   t->dims  = dims;
+   t->alpha = alpha;
+   retro_triple_buffer_publish(&thr->texture.frames);
 }
 
 /* The spare buffer, allocated the first time a loan needs it. Sized and
@@ -3867,10 +3849,9 @@ static void thread_set_texture_enable(void *data, bool state, bool full_screen)
 
    if (thr)
    {
-      slock_lock(thr->frame.lock);
-      thr->texture.enable      = state;
-      thr->texture.full_screen = full_screen;
-      slock_unlock(thr->frame.lock);
+      retro_atomic_store_release_int(&thr->texture.enable,
+              (state       ? VIDEO_THREAD_TEXTURE_ENABLE      : 0)
+            | (full_screen ? VIDEO_THREAD_TEXTURE_FULL_SCREEN : 0));
    }
 }
 
@@ -3974,9 +3955,7 @@ static void thread_apply_state_changes(void *data)
 
    if (thr)
    {
-      slock_lock(thr->frame.lock);
-      thr->apply_state_changes = true;
-      slock_unlock(thr->frame.lock);
+      retro_atomic_store_release_int(&thr->apply_state_changes, 1);
    }
 }
 

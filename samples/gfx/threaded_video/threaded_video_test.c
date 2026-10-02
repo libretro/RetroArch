@@ -1474,13 +1474,11 @@ static void lane_display_phase(void)
 /* ------------------------------------------------------------------ */
 /* Lane: the menu texture handoff and the drain that protects it       */
 /*   RGUI pushes a menu texture through the wrapper on every frame the */
-/*   software menu is up, and the worker hands it to the driver from    */
-/*   thread_update_driver_state() under frame.lock. What keeps that     */
-/*   lock uncontended is not the lock itself: video_thread_frame()      */
-/*   waits for the ring to drain whenever the menu texture is enabled,  */
-/*   so the worker is idle again before the next iteration's push.      */
-/*   Take that wait away and every menu frame's push starts racing a    */
-/*   render for the lock, which is why it is pinned here.               */
+/*   software menu is up, and the worker hands the newest one to the    */
+/*   driver from thread_update_driver_state(), taken from a triple      */
+/*   buffer. video_thread_frame() waits for the ring to drain whenever  */
+/*   the menu texture is enabled, so the menu frame on screen is the    */
+/*   one just pushed; that wait is pinned here.                         */
 /*                                                                     */
 /*   Two things are asserted, neither of which the null driver can show */
 /*   on its own because it has no set_texture_frame at all - so this    */

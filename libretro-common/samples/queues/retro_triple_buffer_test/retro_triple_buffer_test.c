@@ -9,7 +9,8 @@
  *  - scans never go back to an older frame,
  *  - the last frame drawn is the one the panel ends up showing,
  *  - the video thread never waits on a scan: handing a frame over
- *    while a long scan is in progress returns at once. */
+ *    while a long scan is in progress returns at once,
+ *  - take() hands out a frame once per publish and NULL otherwise. */
 
 #include <stdio.h>
 #include <stdint.h>
@@ -79,6 +80,21 @@ int main(void)
    unsigned f, i;
    uint64_t worst = 0;
    int settle;
+
+   /* take(): a frame only when one was published since the last */
+   retro_triple_buffer_init(&frames, canvas[0], canvas[1], canvas[2]);
+   CHECK(retro_triple_buffer_take(&frames) == NULL,
+         "a take before any publish handed out a frame");
+   {
+      void *b = retro_triple_buffer_back(&frames);
+      retro_triple_buffer_publish(&frames);
+      CHECK(retro_triple_buffer_take(&frames) == b,
+            "a take after a publish did not hand out the published frame");
+      CHECK(retro_triple_buffer_take(&frames) == NULL,
+            "a second take handed out the same frame again");
+      CHECK(retro_triple_buffer_front(&frames) == b,
+            "front() after the take is not the frame taken");
+   }
 
    retro_triple_buffer_init(&frames, canvas[0], canvas[1], canvas[2]);
    retro_atomic_store_release_int(&running, 1);

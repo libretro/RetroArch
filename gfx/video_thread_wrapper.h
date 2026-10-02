@@ -26,6 +26,7 @@
 #include <retro_miscellaneous.h>
 #include <rthreads/retro_eventcount.h>
 #include <queues/mpsc_stack.h>
+#include <queues/retro_triple_buffer.h>
 
 #include "font_driver.h"
 
@@ -339,6 +340,20 @@ enum video_thread_vp_slot
    ((int)(((tail) & 1) | ((pending) << VIDEO_THREAD_RING_PENDING_SHIFT) \
         | ((busy) ? VIDEO_THREAD_RING_BUSY : 0)))
 
+#define VIDEO_THREAD_TEXTURE_ENABLE      1
+#define VIDEO_THREAD_TEXTURE_FULL_SCREEN 2
+
+/* One menu texture frame, owned by whichever side of the triple
+ * buffer holds it. */
+struct video_thread_menu_texture
+{
+   void *frame;
+   size_t frame_cap;
+   unsigned dims;
+   float alpha;
+   bool rgb32;
+};
+
 typedef struct thread_video
 {
    retro_time_t last_time;
@@ -540,16 +555,17 @@ typedef struct thread_video
     * at every apply. */
    int *alpha_applied;
 
+   /* The menu texture: the main thread copies each frame into the
+    * triple buffer's back slot and publishes it, the video thread takes
+    * the newest at its next apply and hands it to the driver, which
+    * copies the pixels there and keeps no pointer. Neither waits on the
+    * other. 'enable' carries the enable and full-screen flags, written
+    * by the main thread, read at every apply. */
    struct
    {
-      void *frame;
-      size_t frame_cap;
-      unsigned dims;
-      float alpha;
-      bool frame_updated;
-      bool rgb32;
-      bool enable;
-      bool full_screen;
+      struct video_thread_menu_texture slot[3];
+      retro_triple_buffer_t frames;
+      retro_atomic_int_t enable;     /* VIDEO_THREAD_TEXTURE_* */
    } texture;
 
    unsigned hit_count;
@@ -626,21 +642,6 @@ typedef struct thread_video
        * completes a slot. Any number of waiters, each re-testing its
        * own predicate against 'state'. */
       retro_eventcount_t ring;
-      /* Protects the menu texture / apply_state_changes handoff and
-       * nothing beyond it: the video thread takes it only for the
-       * thread_update_driver_state() that applies them, and the render
-       * that follows runs without it. The driver takes the texture's
-       * pixels inside its own set_texture_frame(), uploading or copying
-       * them there, so the staging buffer is free again as soon as the
-       * update returns.
-       *
-       * It is close to uncontended on the path that uses it most:
-       * video_thread_frame() drains the ring whenever the menu texture
-       * is enabled, so the worker is idle before the next menu frame's
-       * push. The callers it does keep off a render are the ones with
-       * no push behind them - set_texture_enable() and
-       * apply_state_changes(). Not the ring: 'lock' guards that. */
-      slock_t *lock;
       /* A third buffer of buffer_size bytes, outside the ring, lent to
        * the core when both slots are taken (one queued, one being
        * rendered - a driver whose present blocks until vblank keeps
@@ -738,7 +739,8 @@ typedef struct thread_video
       uint64_t zero_copy_count;
    } frame;
 
-   bool apply_state_changes;
+   /* Set by the main thread, taken by the video thread's apply. */
+   retro_atomic_int_t apply_state_changes;
    /* Video thread only: the driver was handed a page since the last
     * apply, so it holds none of alpha_applied - the next apply sets
     * every image. */

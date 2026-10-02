@@ -67,14 +67,24 @@ static INLINE void retro_triple_buffer_publish(retro_triple_buffer_t *f)
    f->back = old & 3;
 }
 
+/* Consumer: a frame finished since the last take, the consumer's until
+ * its next call, or NULL when none has been. Only the producer sets
+ * FRESH and only the consumer clears it, so once it is seen the
+ * exchange takes a buffer at least that new. */
+static INLINE void *retro_triple_buffer_take(retro_triple_buffer_t *f)
+{
+   if (!(retro_atomic_load_acquire_int(&f->mid) & RETRO_TRIPLE_BUFFER_FRESH))
+      return NULL;
+   f->front = retro_atomic_exchange_int(&f->mid, f->front) & 3;
+   return f->buf[f->front];
+}
+
 /* Consumer: the newest finished frame, the consumer's until its next
- * call. Only the producer sets FRESH and only this clears it, so once
- * it is seen the exchange takes a buffer at least that new. Before the
- * first publish it is the third buffer, as initialised. */
+ * call. Before the first publish it is the third buffer, as
+ * initialised. */
 static INLINE void *retro_triple_buffer_front(retro_triple_buffer_t *f)
 {
-   if (retro_atomic_load_acquire_int(&f->mid) & RETRO_TRIPLE_BUFFER_FRESH)
-      f->front = retro_atomic_exchange_int(&f->mid, f->front) & 3;
+   retro_triple_buffer_take(f);
    return f->buf[f->front];
 }
 
