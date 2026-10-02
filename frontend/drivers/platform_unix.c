@@ -4021,7 +4021,11 @@ static void frontend_unix_sighandler(int sig)
       retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
 #endif
    }
-   if (quit == 2) exit(1);
+   /* _exit, not exit: exit() runs atexit handlers and frees memory,
+    * which deadlocks on the allocator's lock when this signal lands
+    * inside free() - as it does during a slow shutdown, the very case
+    * a second Ctrl+C is meant to force. */
+   if (quit == 2) _exit(1);
    /* in case there's a second deadlock in a C++ destructor or something */
    if (quit >= 3) abort();
 }
