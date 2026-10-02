@@ -821,6 +821,14 @@ void win32_sizemove_tick(void)
    video_driver_cached_frame();
 }
 
+/* Older SDK headers stop short of the resume notification. */
+#ifndef WM_POWERBROADCAST
+#define WM_POWERBROADCAST 0x0218
+#endif
+#ifndef PBT_APMRESUMEAUTOMATIC
+#define PBT_APMRESUMEAUTOMATIC 0x0012
+#endif
+
 #ifdef HAVE_DINPUT
 /* dinput_joypad.c; also set and cleared by xinput_hybrid_joypad.c */
 extern volatile bool g_dinput_enum_inflight;
@@ -922,6 +930,20 @@ static LRESULT CALLBACK wnd_proc_common(
       case WM_EXITSIZEMOVE:
       case WM_EXITMENULOOP:
          win32_sizemove_exit(hwnd);
+         break;
+      case WM_POWERBROADCAST:
+         /* The system has woken from sleep or hibernation. A
+          * controller can come back from that with its handle dead
+          * and no device-change notification to say so: a DirectInput
+          * pad then reports itself lost, is dropped, and nothing
+          * brings it back short of replugging it. Look for
+          * controllers again the way a device change does - through
+          * the same settle timer, so the reinit runs once and after
+          * the bus has had a moment to come back. A device that
+          * takes longer still announces itself with a device change
+          * of its own. */
+         if (wparam == PBT_APMRESUMEAUTOMATIC)
+            win32_hotplug_arm();
          break;
       case WM_TIMER:
          /* A hotplug timer reaching here was armed by an input driver
@@ -1163,6 +1185,7 @@ static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
       case WM_ENTERMENULOOP:
       case WM_EXITMENULOOP:
       case WM_TIMER:
+      case WM_POWERBROADCAST:
 #endif
       case WM_GETMINMAXINFO:
       case WM_COMMAND:
@@ -1265,6 +1288,7 @@ static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
       case WM_EXITSIZEMOVE:
       case WM_ENTERMENULOOP:
       case WM_EXITMENULOOP:
+      case WM_POWERBROADCAST:
 #endif
       case WM_GETMINMAXINFO:
       case WM_COMMAND:
@@ -1497,6 +1521,7 @@ static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
       case WM_EXITSIZEMOVE:
       case WM_ENTERMENULOOP:
       case WM_EXITMENULOOP:
+      case WM_POWERBROADCAST:
 #endif
       case WM_GETMINMAXINFO:
       case WM_COMMAND:
