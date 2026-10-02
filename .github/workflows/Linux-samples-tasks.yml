@@ -283,6 +283,28 @@ jobs:
           timeout 60 ./input_remap_bounds_test
           echo "[pass] input_remap_bounds_test"
 
+      - name: Build and run turbo_bind_bounds_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/tasks/turbo_bind
+        run: |
+          set -eu
+          # Turbo Bind and Turbo Button hold a RetroPad ID that indexes
+          # input_config_bind_order[24] in the menu's left/right
+          # handlers and input_remap_ids[port][] in the turbo paths of
+          # input_driver.c.  The test walks both settings in both
+          # directions with wrap-around on and off, feeds them values
+          # from outside their range, checks the load-time clamp in
+          # configuration.c and the empty-bind guard on the turbo
+          # clear, with the tables at their exact sizes so either
+          # sanitizer reports an index past an end.  If
+          # menu_setting.c, configuration.c or input_driver.c change
+          # those functions, the copies in turbo_bind_bounds_test.c
+          # must follow.
+          make clean all SANITIZER=address,undefined
+          test -x turbo_bind_bounds_test
+          UBSAN_OPTIONS=halt_on_error=1 timeout 60 ./turbo_bind_bounds_test
+          echo "[pass] turbo_bind_bounds_test"
+
       - name: Build and run bsv_replay_bounds_test (ASan)
         shell: bash
         working-directory: samples/tasks/bsv_replay
