@@ -1049,12 +1049,12 @@ static int16_t winraw_joypad_joypad_state(
     * axis_threshold is in [0.0 .. 1.0]; scale to [0 .. 0x8000]. */
    int32_t threshold;
 
-   if (port >= MAX_USERS)
-      return 0;
-
-   pad = &winraw_joypad_pads[port];
-   if (!pad->connected)
-      return 0;
+   /* The pad is the one the player's Device Index names, joy_idx, and
+    * only that one: @port is the player. Looking at the slot with the
+    * player's own number first, and giving up if it was empty, left a
+    * player whose Device Index points at another slot with no buttons
+    * whenever that slot of their own held no pad. */
+   (void)port;
 
    joy_idx   = joypad_info->joy_idx;
    threshold = (int32_t)(joypad_info->axis_threshold * 0x8000);
@@ -1062,13 +1062,9 @@ static int16_t winraw_joypad_joypad_state(
    if (joy_idx >= MAX_USERS)
       return 0;
 
-   /* If joy_idx differs from port, we need that pad instead */
-   if (joy_idx != port)
-   {
-      pad = &winraw_joypad_pads[joy_idx];
-      if (!pad->connected)
-         return 0;
-   }
+   pad = &winraw_joypad_pads[joy_idx];
+   if (!pad->connected)
+      return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {

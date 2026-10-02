@@ -616,6 +616,11 @@ void input_driver_set_snapshot_bridge(bool on)
  *   The XInput-only driver of the same name has no get_buttons() and
  *   stays as it was.
  *
+ * - winraw_joypad (winraw_joypad.c, the Windows RawInput driver). Its
+ *   state() is the common loop with the button and axis reads written
+ *   out in place, and compares an axis against the threshold as 32-bit
+ *   integers, which agrees with the common loop at every threshold.
+ *
  * Asked several times a frame, so the answer is kept with the driver
  * it was for. */
 static bool input_snapshot_driver_checked(const input_device_driver_t *drv)
@@ -626,7 +631,9 @@ static bool input_snapshot_driver_checked(const input_device_driver_t *drv)
    if (drv != asked)
    {
       asked  = drv;
-      answer = drv->ident && string_is_equal(drv->ident, "xinput");
+      answer = drv->ident
+         && (   string_is_equal(drv->ident, "xinput")
+             || string_is_equal(drv->ident, "winraw_joypad"));
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
       /* While drivers are being switched over: RETROARCH_INPUT_SNAPSHOT=0
        * in the environment reads the driver directly, so a problem can
