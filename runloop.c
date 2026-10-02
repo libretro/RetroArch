@@ -6727,24 +6727,25 @@ static enum runloop_state_enum runloop_check_state(
       }
 
 #if defined(ANDROID)
-      /* Auto-hide the on-screen overlay while an S-Pen / stylus is active.
-       * Always fully unload (not soft-hide) — a loaded overlay with
-       * input_overlay_pointer_enable=true intercepts RETRO_DEVICE_POINTER
-       * queries from its own touch tracker and breaks the count-independent
-       * hover contract that stylus-aware cores (e.g. snes9x stylus) rely on. */
-      if (settings->bools.input_stylus_enable)
+      /* Hide the on-screen overlay while a stylus is in use, and bring
+       * it back once the pen has been idle for a moment (the window is
+       * android_input.c's). The overlay is hidden, not unloaded:
+       * unloading and reloading a pack is file and texture work, and a
+       * pen leaving and returning would trigger it over and over while
+       * a core runs. While hidden it takes no touches and answers no
+       * pointer queries (INPUT_OVERLAY_STYLUS_HIDDEN), so the pen
+       * reaches the core through the input driver whether or not the
+       * overlay is set up as a pointing device.
+       * Level-triggered, like the gamepad soft-hide above: the overlay
+       * can be replaced at any time, so the flag is set on whichever
+       * one is current this frame. */
+      if (input_st->overlay_ptr)
       {
-         static bool last_stylus_hidden = false;
-         bool stylus_hidden             = android_input_stylus_recently_active();
-
-         if (stylus_hidden != last_stylus_hidden)
-         {
-            if (stylus_hidden)
-               input_overlay_unload();
-            else
-               input_overlay_init();
-            last_stylus_hidden = stylus_hidden;
-         }
+         if (     settings->bools.input_stylus_enable
+               && android_input_stylus_recently_active())
+            input_st->overlay_ptr->flags |=  INPUT_OVERLAY_STYLUS_HIDDEN;
+         else
+            input_st->overlay_ptr->flags &= ~INPUT_OVERLAY_STYLUS_HIDDEN;
       }
 #endif
 

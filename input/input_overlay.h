@@ -124,7 +124,12 @@ enum INPUT_OVERLAY_FLAGS
    INPUT_OVERLAY_TEXTURES_DECLINED = (1 << 5),
    /* The pack names its LED images (overlayN_descM_led): the overlay
     * LED driver shows and hides those, and ledN_map is not used. */
-   INPUT_OVERLAY_HAS_LEDS = (1 << 6)
+   INPUT_OVERLAY_HAS_LEDS = (1 << 6),
+   /* A stylus is in use: the overlay stays loaded but is not drawn,
+    * takes no touches and answers no pointer queries, so the pen
+    * reaches the core through the input driver. Level-triggered from
+    * the run loop. */
+   INPUT_OVERLAY_STYLUS_HIDDEN = (1 << 7)
 };
 
 enum OVERLAY_FLAGS
