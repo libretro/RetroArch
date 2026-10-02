@@ -42,6 +42,7 @@
 #include "../../command.h"
 #include "../../frontend/drivers/platform_unix.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
+#include "android_kbd_route.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../performance_counters.h"
 
@@ -2387,6 +2388,21 @@ static void engine_handle_touchpad(
    }
 }
 
+/* True for a key event that belongs to the system keyboard's text
+ * field (see android_kbd_route.h): the caller finishes it unhandled
+ * and keeps it out of the key state and the line editor. An event
+ * from the soft keyboard carries AKEY_EVENT_FLAG_SOFT_KEYBOARD, the
+ * virtual keyboard's device id (-1), or both, depending on how the
+ * IME built it. */
+static bool android_kbd_takes_key(AInputEvent *event, int keycode)
+{
+   return android_kbd_key_goes_to_ime(
+         retro_atomic_load_relaxed_int(&android_kbd_open) != 0,
+            (AKeyEvent_getFlags(event) & AKEY_EVENT_FLAG_SOFT_KEYBOARD)
+         || AInputEvent_getDeviceId(event) == -1,
+         keycode == AKEYCODE_BACK);
+}
+
 static void android_input_poll_input_gingerbread(
       android_input_t *android)
 {
@@ -2439,6 +2455,9 @@ static void android_input_poll_input_gingerbread(
                int keycode = AKeyEvent_getKeyCode(event);
 
                if (!keycode)
+                  break;
+
+               if (android_kbd_takes_key(event, keycode))
                   break;
 
                if (android_is_keyboard_id(id))
@@ -2521,6 +2540,12 @@ static void android_input_poll_input_default(android_input_t *android)
 
                   if (!keycode)
                      break;
+
+                  if (android_kbd_takes_key(event, keycode))
+                  {
+                     handled = 0;
+                     break;
+                  }
 
                   if (android_is_keyboard_id(id))
                   {

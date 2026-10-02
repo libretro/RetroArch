@@ -200,6 +200,23 @@ jobs:
           make clean
           echo "[pass] android_lifecycle_flush_test (ASan, TSan)"
 
+      - name: Build and run android_kbd_keys_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/android_kbd_keys
+        run: |
+          set -eu
+          # Key events from the Android system keyboard, through the
+          # native input queue to the text field that owns the menu
+          # line. Pins that a Backspace the soft keyboard sends as a
+          # key event is handed back to the field instead of being
+          # consumed natively - consumed, the field kept the
+          # characters and the next snapshot put them back on the line.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./android_kbd_keys_test
+          make clean
+          echo "[pass] android_kbd_keys_test (ASan)"
+
       - name: Build and run overlay_textures_test (plain, ASan + UBSan, threaded)
         shell: bash
         working-directory: samples/input/overlay_textures
