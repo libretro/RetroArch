@@ -73,17 +73,15 @@ static bool ctx_open(sdl3_audio_t *ctx, int channels)
    ctx->spec.channels = channels;
    ctx->spec.freq     = OUT_RATE;
    ctx->stream        = SDL_CreateAudioStream(&ctx->spec, &ctx->spec);
-   ctx->lock          = SDL_CreateMutex();
-   ctx->cond          = SDL_CreateCondition();
+   ctx->park_init     = retro_eventcount_init(&ctx->park);
    ctx->buffer_size   = 1u << 20;
-   return ctx->stream && ctx->lock && ctx->cond;
+   return ctx->stream && ctx->park_init;
 }
 
 static void ctx_close(sdl3_audio_t *ctx)
 {
    SDL_DestroyAudioStream(ctx->stream);
-   SDL_DestroyCondition(ctx->cond);
-   SDL_DestroyMutex(ctx->lock);
+   retro_eventcount_free(&ctx->park);
 }
 
 /* What each callback does to the count, driven directly. */
