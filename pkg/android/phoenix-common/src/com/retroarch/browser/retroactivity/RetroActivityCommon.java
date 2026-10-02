@@ -921,6 +921,9 @@ public class RetroActivityCommon extends NativeActivity
     closeUsbConnection(deviceId);
     mUsbPermissionPending.remove(Integer.valueOf(deviceId));
     invalidateDeviceCaches(deviceId);
+    /* Tell the native input driver: no input event marks a removal, so
+     * this callback is the only way it learns that a pad is gone. */
+    inputDeviceRemoved(deviceId);
   }
 
   /** Drops every cached per-device lookup for an input device id. */
@@ -1848,6 +1851,13 @@ public class RetroActivityCommon extends NativeActivity
    * @param finished true when the user confirmed (Done/Enter) or cancelled.
    */
   public native void onSystemKeyboardInput(String text, boolean finished);
+
+  /**
+   * Tells the native input driver that Android removed an input device.
+   *
+   * @param deviceId The id the device had.
+   */
+  public native void inputDeviceRemoved(int deviceId);
 
 
 
