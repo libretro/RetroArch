@@ -860,78 +860,84 @@ struct x509_anchor
    struct x509_cert cert;
 };
 
-static struct x509_anchor *x509_anchors      = NULL;
-static unsigned            x509_anchor_count = 0;
-static const char         *x509_anchor_src   = NULL;
-static size_t              x509_anchor_src_len = 0;
-static unsigned            x509_anchor_cap   = 0;   /* x509_anchors' room */
+/* The anchors loaded from one source. A store is never changed once
+ * published: a reload builds a new one and swaps it in, and the old one
+ * is freed by whoever drops the last reference to it, so a chain walk
+ * runs over its own reference with no lock held. */
+struct x509_store
+{
+   struct x509_anchor *anchors;
+   unsigned count;
+   unsigned cap;
+   const char *src;       /* the source it was loaded from */
+   size_t src_len;
+   unsigned refs;         /* under the lock: the published slot's + walks' */
+};
+
+static struct x509_store *x509_store_cur = NULL;
 
 /* The store is process-wide and TLS handshakes run on several threads
- * (updater, achievements, cloud sync), the first of them building it:
- * one lock covers building, freeing and every chain walk over it, so
- * a rebuild can never race a verification and two first uses build it
- * once. Chain walks are a few milliseconds and rare, so serialising
- * them costs nothing measurable. */
+ * (updater, achievements, cloud sync), the first of them building it.
+ * A store is built with no lock held; a flag guards only swapping one
+ * in and taking or dropping a reference, a few loads and stores, so a
+ * reload never frees a store a walk is still reading and there is no
+ * lock object to create on first use. */
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #include <retro_atomic.h>
-static retro_atomic_ptr_t x509_lock_ptr;
-static slock_t *x509_lock_get(void)
+static retro_atomic_int_t x509_store_busy;
+static void x509_store_lock(void)
 {
-   slock_t *l = (slock_t*)retro_atomic_load_acquire_ptr(&x509_lock_ptr);
-   if (!l)
-   {
-      slock_t *fresh = slock_new();
-      if (retro_atomic_cas_ptr(&x509_lock_ptr, NULL, fresh))
-         l = fresh;
-      else
-      {
-         slock_free(fresh);
-         l = (slock_t*)retro_atomic_load_acquire_ptr(&x509_lock_ptr);
-      }
-   }
-   return l;
+   while (!retro_atomic_cas_int(&x509_store_busy, 0, 1))
+      sthread_yield();
 }
-#define X509_LOCK()   slock_lock(x509_lock_get())
-#define X509_UNLOCK() slock_unlock(x509_lock_get())
+#define X509_LOCK()   x509_store_lock()
+#define X509_UNLOCK() retro_atomic_store_release_int(&x509_store_busy, 0)
 #else
 #define X509_LOCK()   do { } while (0)
 #define X509_UNLOCK() do { } while (0)
 #endif
 
-static void x509_trust_free_locked(void)
+static void x509_store_free(struct x509_store *st)
 {
    unsigned i;
-   for (i = 0; i < x509_anchor_count; i++)
-      free(x509_anchors[i].der);
-   free(x509_anchors);
-   x509_anchors        = NULL;
-   x509_anchor_count   = 0;
-   x509_anchor_src     = NULL;
-   x509_anchor_src_len = 0;
-   x509_anchor_cap     = 0;
+   if (!st)
+      return;
+   for (i = 0; i < st->count; i++)
+      free(st->anchors[i].der);
+   free(st->anchors);
+   free(st);
+}
+
+/* Under the lock. Nonzero when that was the last reference. */
+static int x509_store_unref_locked(struct x509_store *st)
+{
+   return st && --st->refs == 0;
+}
+
+/* Under the lock: @st (NULL: none) replaces the published store. The
+ * old one comes back to be freed outside the lock, or NULL while a walk
+ * still holds it. */
+static struct x509_store *x509_store_publish_locked(struct x509_store *st)
+{
+   struct x509_store *old = x509_store_cur;
+   if (st)
+      st->refs = 1;
+   x509_store_cur = st;
+   return x509_store_unref_locked(old) ? old : NULL;
 }
 
 void x509_trust_free(void)
 {
+   struct x509_store *old;
    X509_LOCK();
-   x509_trust_free_locked();
+   old = x509_store_publish_locked(NULL);
    X509_UNLOCK();
+   x509_store_free(old);
 }
 
-static int x509_trust_load_pem_locked(const char *pem, size_t len);
-
-int x509_trust_load_pem(const char *pem, size_t len)
-{
-   int n;
-   X509_LOCK();
-   n = x509_trust_load_pem_locked(pem, len);
-   X509_UNLOCK();
-   return n;
-}
-
-/* Every certificate in @pem added to the anchors loaded so far. */
-static int x509_trust_append_pem_locked(const char *pem, size_t len)
+/* Every certificate in @pem added to @st's anchors. */
+static int x509_store_append_pem(struct x509_store *st, const char *pem, size_t len)
 {
    static const char begin[] = "-----BEGIN CERTIFICATE-----";
    static const char end_[]  = "-----END CERTIFICATE-----";
@@ -983,20 +989,20 @@ static int x509_trust_append_pem_locked(const char *pem, size_t len)
          continue;
       }
 
-      if (x509_anchor_count == x509_anchor_cap)
+      if (st->count == st->cap)
       {
          struct x509_anchor *grown;
-         unsigned cap = x509_anchor_cap ? x509_anchor_cap * 2 : 64;
-         grown = (struct x509_anchor*)realloc(x509_anchors, cap * sizeof(*grown));
+         unsigned cap = st->cap ? st->cap * 2 : 64;
+         grown = (struct x509_anchor*)realloc(st->anchors, cap * sizeof(*grown));
          if (!grown)
          {
             free(der);
             return -1;
          }
-         x509_anchors    = grown;
-         x509_anchor_cap = cap;
+         st->anchors = grown;
+         st->cap     = cap;
       }
-      a          = &x509_anchors[x509_anchor_count];
+      a          = &st->anchors[st->count];
       a->der     = der;
       a->der_len = (size_t)der_len;
       if (x509_parse(&a->cert, der, (size_t)der_len) != 0
@@ -1007,48 +1013,72 @@ static int x509_trust_append_pem_locked(const char *pem, size_t len)
          free(der);
          continue;
       }
-      x509_anchor_count++;
+      st->count++;
    }
-   return (int)x509_anchor_count;
+   return (int)st->count;
 }
 
-static int x509_trust_load_pem_locked(const char *pem, size_t len)
+/* The anchors in @parts, built into a new published store unless the
+ * one published was loaded from the same source already - the path
+ * every handshake after the first takes. Two first uses at once both
+ * build; the second to finish keeps the first's. A single PEM is a
+ * source of one part; @src and @src_len name the source. */
+static int x509_store_is(const struct x509_store *st, const char *src,
+      size_t src_len)
 {
-   /* the same source is already loaded: nothing to do - this is the
-    * path every handshake after the first takes */
-   if (pem == x509_anchor_src && len == x509_anchor_src_len && x509_anchors)
-      return (int)x509_anchor_count;
-   x509_trust_free_locked();
-   if (x509_trust_append_pem_locked(pem, len) < 0)
-      return -1;
-   x509_anchor_src     = pem;
-   x509_anchor_src_len = len;
-   return (int)x509_anchor_count;
+   return st && st->src == src && st->src_len == src_len && st->anchors;
+}
+
+static int x509_trust_load(const char *const *parts, const size_t *lens,
+      unsigned count, const char *src, size_t src_len)
+{
+   struct x509_store *st, *old;
+   unsigned i;
+   int      n = 0;
+
+   X509_LOCK();
+   if (x509_store_is(x509_store_cur, src, src_len))
+      n = (int)x509_store_cur->count;
+   X509_UNLOCK();
+   if (n)
+      return n;
+
+   if (!(st = (struct x509_store*)calloc(1, sizeof(*st))))
+      n = -1;
+   for (i = 0; i < count && n >= 0; i++)
+      n = x509_store_append_pem(st, parts[i], lens[i]);
+
+   X509_LOCK();
+   if (n >= 0 && x509_store_is(x509_store_cur, src, src_len))
+   {
+      n   = (int)x509_store_cur->count;
+      old = NULL;   /* another caller's build won; ours goes */
+   }
+   else if (n >= 0)
+   {
+      st->src     = src;
+      st->src_len = src_len;
+      old         = x509_store_publish_locked(st);
+      st          = NULL;
+   }
+   else
+      old         = x509_store_publish_locked(NULL);
+   X509_UNLOCK();
+   x509_store_free(old);
+   x509_store_free(st);
+   return n;
+}
+
+int x509_trust_load_pem(const char *pem, size_t len)
+{
+   return x509_trust_load(&pem, &len, 1, pem, len);
 }
 
 int x509_trust_load_pem_parts(const char *const *parts, const size_t *lens,
       unsigned count)
 {
-   unsigned i;
-   int      n = 0;
-   X509_LOCK();
    /* the part table is the source: loaded once, as a single one is */
-   if (     (const char*)parts == x509_anchor_src && count == x509_anchor_src_len
-         && x509_anchors)
-      n = (int)x509_anchor_count;
-   else
-   {
-      x509_trust_free_locked();
-      for (i = 0; i < count && n >= 0; i++)
-         n = x509_trust_append_pem_locked(parts[i], lens[i]);
-      if (n >= 0)
-      {
-         x509_anchor_src     = (const char*)parts;
-         x509_anchor_src_len = count;
-      }
-   }
-   X509_UNLOCK();
-   return n;
+   return x509_trust_load(parts, lens, count, (const char*)parts, count);
 }
 
 /* ---- chain -------------------------------------------------------- */
@@ -1072,6 +1102,7 @@ int x509_verify_chain(const uint8_t **ders, const size_t *lens, unsigned n,
     * server may send a dozen. */
    struct x509_cert *certs;
    const struct x509_cert *cur;
+   struct x509_store *st = NULL;
    unsigned i, depth;
    unsigned used = 0;   /* bitmask of chain certs already on the path */
    int ret = -1;
@@ -1083,7 +1114,6 @@ int x509_verify_chain(const uint8_t **ders, const size_t *lens, unsigned n,
    }
    if (!(certs = (struct x509_cert*)malloc(n * sizeof(*certs))))
       return -1;
-   X509_LOCK();
 
    for (i = 0; i < n; i++)
       if (x509_parse(&certs[i], ders[i], lens[i]) != 0)
@@ -1118,6 +1148,13 @@ int x509_verify_chain(const uint8_t **ders, const size_t *lens, unsigned n,
       goto done;
    }
 
+   /* The walk reads the store through its own reference: a reload
+    * meanwhile swaps in a new one and leaves this one to the walk. */
+   X509_LOCK();
+   if ((st = x509_store_cur))
+      st->refs++;
+   X509_UNLOCK();
+
    cur  = &certs[0];
    used = 1;
    for (depth = 0; depth < 16; depth++)
@@ -1150,9 +1187,9 @@ int x509_verify_chain(const uint8_t **ders, const size_t *lens, unsigned n,
       }
 
       /* A trust anchor issuing this one ends the walk. */
-      for (j = 0; j < x509_anchor_count; j++)
+      for (j = 0; st && j < st->count; j++)
       {
-         const struct x509_cert *a = &x509_anchors[j].cert;
+         const struct x509_cert *a = &st->anchors[j].cert;
          if (x509_name_eq(a, cur) && x509_verify_signature(cur, a) == 0)
          {
             ret = 0;
@@ -1175,7 +1212,7 @@ int x509_verify_chain(const uint8_t **ders, const size_t *lens, unsigned n,
       }
       if (!issuer)
       {
-         x509_info(info, info_len, x509_anchor_count
+         x509_info(info, info_len, (st && st->count)
                ? "issuer not found or signature invalid"
                : "no trust anchors loaded");
          goto done;
@@ -1185,7 +1222,15 @@ int x509_verify_chain(const uint8_t **ders, const size_t *lens, unsigned n,
    x509_info(info, info_len, "chain too long");
 
 done:
-   X509_UNLOCK();
+   if (st)
+   {
+      int last;
+      X509_LOCK();
+      last = x509_store_unref_locked(st);
+      X509_UNLOCK();
+      if (last)
+         x509_store_free(st);
+   }
    free(certs);
    return ret;
 }
