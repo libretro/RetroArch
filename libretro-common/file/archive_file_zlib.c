@@ -86,6 +86,10 @@ typedef struct
    uint8_t *directory_end;
    uint64_t fdoffset;
    uint32_t boffset, csize, usize;
+   uint32_t entry_crc;     /* central-directory CRC of the entry in hand */
+   uint32_t expect_crc;    /* CRC the member in progress has to match */
+   uint32_t crc;           /* CRC of the output produced so far */
+   uint32_t out_off;       /* bytes of output produced so far */
    unsigned cmode;
 #ifdef ARCHIVE_HAVE_ZLIB
    z_stream *zstream;      /* kept across members */
@@ -243,6 +247,9 @@ static bool zlib_stream_decompress_data_to_file_init(
    zip_context->usize                 = size;
    zip_context->csize                 = csize;
    zip_context->boffset               = 0;
+   zip_context->expect_crc            = zip_context->entry_crc;
+   zip_context->crc                   = 0;
+   zip_context->out_off               = 0;
    zip_context->cmode                 = cmode;
 
    /* NULL-check the decompressed_data malloc: the iterate step and
@@ -346,6 +353,10 @@ static int zlib_stream_decompress_data_to_file_iterate(
             return -1;
       }
 
+      if (encoding_crc32(0, zip_context->decompressed_data,
+               zip_context->usize) != zip_context->expect_crc)
+         return -1;
+
       handle->data = zip_context->decompressed_data;
       return 1;
    }
@@ -388,8 +399,16 @@ static int zlib_stream_decompress_data_to_file_iterate(
       zip_context->zstream->next_in   = dptr;
       zip_context->zstream->avail_in  = (uInt)rd;
 
-      if (inflate(zip_context->zstream, 0) < 0)
-         return -1;
+      {
+         /* The CRC runs over each slice's output while it is still
+          * in cache. */
+         uint8_t *out = zip_context->zstream->next_out;
+         if (inflate(zip_context->zstream, 0) < 0)
+            return -1;
+         zip_context->crc     = encoding_crc32(zip_context->crc, out,
+               (size_t)(zip_context->zstream->next_out - out));
+         zip_context->out_off = (uint32_t)zip_context->zstream->total_out;
+      }
 #else
       /* Bind the output buffer once, then feed this compressed chunk.  The
        * decoder keeps its own output cursor across calls, so set_out is only
@@ -409,6 +428,10 @@ static int zlib_stream_decompress_data_to_file_iterate(
                &got_in, &got_out);
          if (st == RDEFLATE_PROCESS_ERROR)
             return -1;
+         zip_context->crc      = encoding_crc32(zip_context->crc,
+               zip_context->decompressed_data + zip_context->out_off,
+               got_out);
+         zip_context->out_off += (uint32_t)got_out;
          /* END: stream finished.  NEXT with no further progress means this
           * input chunk is drained; fetch the next one on the outer loop. */
          if (st == RDEFLATE_PROCESS_END)
@@ -424,6 +447,9 @@ static int zlib_stream_decompress_data_to_file_iterate(
 #ifndef ARCHIVE_HAVE_ZLIB
          zip_context->out_bound = 0;
 #endif
+         if (     zip_context->out_off != zip_context->usize
+               || zip_context->crc     != zip_context->expect_crc)
+            return -1;
 
          handle->data = zip_context->decompressed_data;
          return 1;
@@ -462,7 +488,10 @@ static int zlib_stream_decompress_data_to_file_iterate(
                != RZSTD_PROCESS_END);
       }
 
-      if (zerr)
+      if (     zerr
+            || result != zip_context->usize
+            || encoding_crc32(0, zip_context->decompressed_data,
+               zip_context->usize) != zip_context->expect_crc)
          return -1;
 
       /* A whole-member buffer is not kept past its member. */
@@ -722,6 +751,10 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
 #endif
    zip_context->tmpbuf            = NULL;
    zip_context->tmpbuf_len        = 0;
+   zip_context->entry_crc         = 0;
+   zip_context->expect_crc        = 0;
+   zip_context->crc               = 0;
+   zip_context->out_off           = 0;
    zip_context->decompressed_data = NULL;
    zip_context->inflating         = false;
    zip_context->fdoffset          = 0;
@@ -859,6 +892,7 @@ static int zip_parse_file_iterate_step(void *context,
 
    userdata->crc  = checksum;
    userdata->size = size;
+   zip_context->entry_crc = checksum;
 
    if (file_cb && !file_cb(userdata->current_file_path, valid_exts, cdata, cmode,
             csize, size, checksum, userdata))

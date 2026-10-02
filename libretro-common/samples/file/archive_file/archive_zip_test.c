@@ -69,6 +69,7 @@
 #include <encodings/crc32.h>
 #include <encodings/deflate.h>
 #include <streams/file_stream.h>
+#include <file/file_path.h>
 
 static int failures = 0;
 
@@ -703,7 +704,8 @@ static void test_missing_backend_reports_failure(void)
  * keeps its inflate stream and read buffer from member to member: a
  * DEFLATE member spanning several 128 KiB input slices is followed by
  * small DEFLATE and STORED ones, and every member must come out
- * byte-exact. */
+ * byte-exact.  Run again with every recorded CRC wrong, every member
+ * must be refused and none written. */
 #define SEQ_MEMBERS 6
 
 typedef struct
@@ -756,14 +758,13 @@ static int seq_extract_cb(const char *name, const char *valid_exts,
    unsigned *n = (unsigned*)userdata->cb_data;
 
    snprintf(out, sizeof(out), "rarch_zip_seq_out_%s", name);
-   if (!file_archive_perform_mode(out, valid_exts, cdata, cmode,
+   if (file_archive_perform_mode(out, valid_exts, cdata, cmode,
             csize, size, checksum, userdata))
-      return 0;
-   (*n)++;
+      (*n)++;
    return 1;
 }
 
-static void test_member_sequence_reuse(void)
+static void member_sequence(bool corrupt)
 {
    static const unsigned methods[SEQ_MEMBERS] = { 8, 0, 8, 8, 0, 8 };
    static const uint32_t sizes[SEQ_MEMBERS]   =
@@ -801,6 +802,8 @@ static void test_member_sequence_reuse(void)
             : (uint8_t)('a' + ((lcg >> 16) % 7) + i);
       }
       m[i].crc = encoding_crc32(0, m[i].data, m[i].size);
+      if (corrupt)
+         m[i].crc ^= 1;
       if (m[i].method == 8)
       {
          if (!seq_deflate(&m[i]))
@@ -873,7 +876,7 @@ static void test_member_sequence_reuse(void)
 
       remove(tmp_path);
 
-      if (extracted != SEQ_MEMBERS)
+      if (extracted != (corrupt ? 0 : SEQ_MEMBERS))
          ok = false;
 
       for (i = 0; i < SEQ_MEMBERS; i++)
@@ -883,7 +886,16 @@ static void test_member_sequence_reuse(void)
          int64_t gotlen = 0;
 
          snprintf(out, sizeof(out), "rarch_zip_seq_out_m%u.bin", i);
-         if (     !filestream_read_file(out, &got, &gotlen)
+         if (corrupt)
+         {
+            if (path_is_valid(out))
+            {
+               printf("FAIL  member sequence: m%u.bin (method %u) "
+                      "written despite a wrong CRC\n", i, m[i].method);
+               ok = false;
+            }
+         }
+         else if (!filestream_read_file(out, &got, &gotlen)
                || gotlen != (int64_t)m[i].size
                || memcmp(got, m[i].data, m[i].size))
          {
@@ -907,13 +919,26 @@ static void test_member_sequence_reuse(void)
 
    if (!ok)
    {
-      printf("FAIL  member sequence: %u of %u members extracted, "
-             "contents as reported above\n", extracted, SEQ_MEMBERS);
+      printf("FAIL  member sequence%s: %u of %u members extracted, "
+             "contents as reported above\n",
+             corrupt ? " (wrong CRCs)" : "", extracted, SEQ_MEMBERS);
       failures++;
    }
+   else if (corrupt)
+      printf("ok    members failing their recorded CRC are refused\n");
    else
       printf("ok    mixed DEFLATE/STORED members extract intact through "
              "one transfer\n");
+}
+
+static void test_member_sequence_reuse(void)
+{
+   member_sequence(false);
+}
+
+static void test_member_crc_mismatch(void)
+{
+   member_sequence(true);
 }
 
 int main(void)
@@ -928,6 +953,7 @@ int main(void)
    test_missing_member_terminates();
    test_missing_backend_reports_failure();
    test_member_sequence_reuse();
+   test_member_crc_mismatch();
 
    if (failures)
    {

@@ -14,6 +14,9 @@
  *              and resumes inside the window.
  *   subdir   - the subdir handler variant is windowed the same way.
  *   cancel   - cancelling part way releases everything (LSan).
+ *   crc      - a member whose contents do not match its recorded CRC
+ *              fails the task and is not written, whether it fails
+ *              as it starts or after parking.
  *
  * Every lane checks the extracted bytes against the fixture.
  *
@@ -186,6 +189,7 @@ static bool deflate_raw(const uint8_t *in, uint32_t in_len,
 }
 
 static uint32_t big_csize;
+static int      corrupt_member = -1;   /* member given a wrong CRC */
 
 /* Stored members, then the DEFLATE one last. */
 static bool write_zip(void)
@@ -219,6 +223,8 @@ static bool write_zip(void)
       unsigned nl   = (unsigned)strlen(m->name);
 
       crcs[i]       = encoding_crc32(0, m->data, m->size);
+      if ((int)i == corrupt_member)
+         crcs[i]   ^= 1;
       csizes[i]     = deflated ? big_csize : m->size;
       offsets[i]    = (uint32_t)ftell(f);
 
@@ -475,6 +481,33 @@ int main(void)
    CHECK(!done_ok, "cancelled extraction reported success");
    CHECK(count_present() < n_members,
          "cancel did not stop the extraction");
+
+   /* crc: a small member, then the DEFLATE one that parks */
+   {
+      static const unsigned bad[2] = { 5, N_SMALL };
+      unsigned k;
+
+      for (k = 0; k < 2; k++)
+      {
+         char path[PATH_MAX_LENGTH];
+
+         corrupt_member = (int)bad[k];
+         if (!write_zip())
+         {
+            CHECK(false, "could not rewrite the fixture archive");
+            break;
+         }
+         clear_outputs();
+         checks = run_extract(STEP_UNBOUNDED, NULL, 1000, 0);
+         out_path(path, sizeof(path), members[bad[k]].name);
+         printf("[crc]     bad CRC on %s: %s\n", members[bad[k]].name,
+               done_ok ? "accepted" : "rejected");
+         CHECK(checks != 0, "extraction with a bad CRC never completed");
+         CHECK(!done_ok, "a member failing its CRC was not reported");
+         CHECK(!path_is_valid(path), "a member failing its CRC was written");
+      }
+      corrupt_member = -1;
+   }
 
    clear_outputs();
    filestream_delete(FIXTURE_ZIP);

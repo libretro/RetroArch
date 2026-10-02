@@ -301,22 +301,29 @@ static void task_decompress_cleanup(retro_task_t *task)
 }
 
 /* Steps the archive under the shared per-frame I/O window: as many
- * members as fit, at least one. */
+ * members as fit, at least one.  A walk that ends on a failure the
+ * member callback did not report - a member that fails to decode or
+ * to write after it was started - is reported here. */
 static int task_decompress_iterate(decompress_state_t *dec,
-      bool *retdec, file_archive_file_cb file_cb)
+      file_archive_file_cb file_cb)
 {
    nbio_budget_t b;
    int ret = 0;
+   bool ok = true;
 
    task_nbio_slice_open(&b);
    while (task_nbio_slice_within_budget(&b, 0, 0))
    {
       if ((ret = file_archive_parse_file_iterate(&dec->archive,
-               retdec, dec->source_file,
+               &ok, dec->source_file,
                dec->valid_ext, file_cb, dec->userdata)) != 0)
          break;
    }
    task_nbio_slice_close(&b);
+
+   if (!ok && !dec->callback_error)
+      dec->callback_error = strdup(
+            msg_hash_to_str(MSG_DECOMPRESSION_FAILED));
 
    return ret;
 }
@@ -325,14 +332,13 @@ static void task_decompress_handler(retro_task_t *task)
 {
    int ret;
    uint8_t flg;
-   bool retdec                   = false;
    decompress_state_t *dec       = (decompress_state_t*)task->state;
 
    dec->userdata->dec            = dec;
    strlcpy(dec->userdata->archive_path,
          dec->source_file, sizeof(dec->userdata->archive_path));
 
-   ret = task_decompress_iterate(dec, &retdec, file_decompressed);
+   ret = task_decompress_iterate(dec, file_decompressed);
 
    task_set_progress(task,
          file_archive_parse_file_progress(&dec->archive));
@@ -356,14 +362,12 @@ static void task_decompress_handler_target_file(retro_task_t *task)
 {
    int ret;
    uint8_t flg;
-   bool retdec;
    decompress_state_t *dec    = (decompress_state_t*)task->state;
 
    strlcpy(dec->userdata->archive_path,
          dec->source_file, sizeof(dec->userdata->archive_path));
 
-   ret = task_decompress_iterate(dec, &retdec,
-         file_decompressed_target_file);
+   ret = task_decompress_iterate(dec, file_decompressed_target_file);
 
    task_set_progress(task,
          file_archive_parse_file_progress(&dec->archive));
@@ -387,7 +391,6 @@ static void task_decompress_handler_subdir(retro_task_t *task)
 {
    int ret;
    uint8_t flg;
-   bool retdec;
    decompress_state_t *dec = (decompress_state_t*)task->state;
 
    dec->userdata->dec      = dec;
@@ -395,8 +398,7 @@ static void task_decompress_handler_subdir(retro_task_t *task)
          dec->source_file,
          sizeof(dec->userdata->archive_path));
 
-   ret = task_decompress_iterate(dec, &retdec,
-         file_decompressed_subdir);
+   ret = task_decompress_iterate(dec, file_decompressed_subdir);
 
    task_set_progress(task,
          file_archive_parse_file_progress(&dec->archive));
