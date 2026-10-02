@@ -378,6 +378,11 @@ int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx);
 #endif
 
+/* Loads menu->scratch2_buf (directory) + menu->scratch_buf (file),
+ * detecting the core. */
+int action_ok_load_archive_detect_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx);
+
 int action_ok_core_option_dropdown_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);
 

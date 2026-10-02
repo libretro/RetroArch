@@ -30,6 +30,7 @@
 #include <streams/file_stream.h>
 #include <time/rtime.h>
 #include <memory/mempool.h>
+#include <retro_atomic.h>
 
 #include "menu_str.h"
 
@@ -4345,7 +4346,7 @@ int menu_entry_action(menu_entry_t *entry, size_t i, enum menu_action action)
 }
 
 static struct item_file *menu_entry_drag_drop_item(size_t i,
-      const char *payload)
+      const struct string_list *payload)
 {
    menu_list_t *menu_list     = menu_driver_state.entries.list;
    file_list_t *selection_buf = menu_list
@@ -4353,13 +4354,14 @@ static struct item_file *menu_entry_drag_drop_item(size_t i,
 
    if (     !selection_buf
          || i >= selection_buf->size
-         || string_is_empty(payload)
+         || !payload
+         || !payload->size
          || !selection_buf->list[i].actiondata)
       return NULL;
    return &selection_buf->list[i];
 }
 
-int menu_entry_drag(size_t i, const char *payload)
+int menu_entry_drag(size_t i, const struct string_list *payload)
 {
    struct item_file *item    = menu_entry_drag_drop_item(i, payload);
    menu_file_list_cbs_t *cbs = item
@@ -4371,7 +4373,7 @@ int menu_entry_drag(size_t i, const char *payload)
          i, item->entry_idx, payload);
 }
 
-int menu_entry_drop(size_t i, const char *payload)
+int menu_entry_drop(size_t i, const struct string_list *payload)
 {
    struct item_file *item    = menu_entry_drag_drop_item(i, payload);
    menu_file_list_cbs_t *cbs = item
@@ -4381,6 +4383,75 @@ int menu_entry_drop(size_t i, const char *payload)
       return -1;
    return cbs->action_drop(item->path, item->label, item->type,
          i, item->entry_idx, payload);
+}
+
+#ifdef RETRO_ATOMIC_HAS_PTR
+/* Platform drop callbacks may run on the video thread; the menu takes
+ * the payload on the main thread in menu_driver_iterate(). */
+static retro_atomic_ptr_t menu_drop_pending;
+static retro_atomic_int_t menu_drop_accept;
+#endif
+
+bool menu_driver_drop(struct string_list *payload)
+{
+#ifdef RETRO_ATOMIC_HAS_PTR
+   if (     payload
+         && payload->size
+         && retro_atomic_load_acquire_int(&menu_drop_accept))
+   {
+      string_list_free((struct string_list*)
+            retro_atomic_exchange_ptr(&menu_drop_pending, payload));
+      return true;
+   }
+#endif
+   string_list_free(payload);
+   return false;
+}
+
+bool menu_driver_drop_uri_list(char *list)
+{
+   union string_list_elem_attr attr;
+   struct string_list *files = string_list_new();
+   char *line                = list;
+
+   if (!files)
+      return false;
+   attr.i = 0;
+
+   while (line && *line)
+   {
+      char *next = strchr(line, '\n');
+      if (next)
+         *next++ = '\0';
+      line[strcspn(line, "\r")] = '\0';
+
+      if (     *line != '#'
+            && string_starts_with_size(line, "file://",
+                  STRLEN_CONST("file://")))
+      {
+         /* Skip the authority, normally empty or "localhost". */
+         char *path = strchr(line + STRLEN_CONST("file://"), '/');
+         if (     path
+               && string_percent_decode(path, strlen(path) + 1, path) > 0
+               && !string_list_append(files, path, attr))
+         {
+            string_list_free(files);
+            return false;
+         }
+      }
+      line = next;
+   }
+   return menu_driver_drop(files);
+}
+
+static void menu_driver_drop_accept(bool accept)
+{
+#ifdef RETRO_ATOMIC_HAS_PTR
+   retro_atomic_store_release_int(&menu_drop_accept, accept ? 1 : 0);
+   if (!accept)
+      string_list_free((struct string_list*)
+            retro_atomic_exchange_ptr(&menu_drop_pending, NULL));
+#endif
 }
 
 bool menu_entries_append(
@@ -7033,6 +7104,7 @@ void retroarch_menu_running(void)
          menu->driver_ctx->toggle(menu->userdata, true);
 
       menu_st->flags |= MENU_ST_FLAG_ALIVE;
+      menu_driver_drop_accept(true);
       menu_driver_toggle(
             video_st->current_video,
             video_st->data,
@@ -7106,6 +7178,7 @@ void retroarch_menu_running_finished(bool quit)
          menu->driver_ctx->toggle(menu->userdata, false);
 
       menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
+      menu_driver_drop_accept(false);
       /* Ramp the core's first frames back up. Not when quitting - nothing
        * is coming back. Not gated on menu_pause_libretro: the setting can be
        * turned off from inside the menu it paused, and a resume with no
@@ -7298,6 +7371,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             /* Every list is gone, so every cbs has come back to the
              * pool; the chunks behind them go back to libc here. */
             menu_cbs_pool_deinit();
+            menu_driver_drop_accept(false);
             /* Same point in teardown: every node has been released, so
              * nothing is still sharing a fullpath. */
             menu_str_cache_flush();
@@ -8659,6 +8733,19 @@ bool menu_driver_iterate(
       retro_time_t current_time)
 {
    menu_driver_pump_pending(menu_st, settings);
+
+#ifdef RETRO_ATOMIC_HAS_PTR
+   if (retro_atomic_load_relaxed_ptr(&menu_drop_pending))
+   {
+      struct string_list *files = (struct string_list*)
+            retro_atomic_exchange_ptr(&menu_drop_pending, NULL);
+      if (files)
+      {
+         menu_entry_drop(menu_st->selection_ptr, files);
+         string_list_free(files);
+      }
+   }
+#endif
 
    return ( menu_st->driver_data
          && generic_menu_iterate(

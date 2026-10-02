@@ -8515,8 +8515,6 @@ static int action_ok_state_slot_run(const char *path,
    return 0;
 }
 
-static int action_ok_load_archive_detect_core(const char *path,
-      const char *label, unsigned type, size_t idx, size_t entry_idx);
 
 static int action_ok_load_archive(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -8550,7 +8548,7 @@ static int action_ok_load_archive(const char *path,
          CORE_TYPE_PLAIN);
 }
 
-static int action_ok_load_archive_detect_core(const char *path,
+int action_ok_load_archive_detect_core(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char new_core_path[PATH_MAX_LENGTH];

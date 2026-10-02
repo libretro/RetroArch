@@ -626,16 +626,32 @@ void rarch_stop_draw_observer(void)
 
 - (BOOL)performDragOperation:(id<NSDraggingInfo>)sender
 {
-#if 0
-    NSPasteboard *pboard = [sender draggingPasteboard];
+#ifdef HAVE_MENU
+    id files = [[sender draggingPasteboard]
+          propertyListForType:RARCH_PBOARD_TYPE_FILENAMES];
 
-    if ( [[pboard types] containsObject:NSURLPboardType])
+    if ([files isKindOfClass:[NSArray class]])
     {
-        NSURL *fileURL = [NSURL URLFromPasteboard:pboard];
-        NSString    *s = [fileURL path];
+        NSUInteger i;
+        union string_list_elem_attr attr;
+        struct string_list *list = string_list_new();
+        attr.i                   = 0;
+
+        for (i = 0; list && i < [files count]; i++)
+        {
+            id file = [files objectAtIndex:i];
+            if (     [file isKindOfClass:[NSString class]]
+                  && !string_list_append(list, [file UTF8String], attr))
+            {
+                string_list_free(list);
+                list = NULL;
+            }
+        }
+        if (list && menu_driver_drop(list))
+            return YES;
     }
 #endif
-    return YES;
+    return NO;
 }
 
 - (void)draggingExited:(id <NSDraggingInfo>)sender { [self setNeedsDisplay: YES]; }

@@ -703,9 +703,31 @@ bool win32_load_content_from_gui(const char *szFilename)
 #ifdef LEGACY_WIN32
 bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
 {
-   if (DragQueryFile((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
+   UINT count = DragQueryFile((HDROP)wparam, 0xFFFFFFFF, NULL, 0);
+   if (count)
    {
       char szFilename[1024];
+#ifdef HAVE_MENU
+      UINT i;
+      char utf8[1024];
+      union string_list_elem_attr attr;
+      struct string_list *files = string_list_new();
+      attr.i                    = 0;
+
+      for (i = 0; files && i < count; i++)
+      {
+         szFilename[0] = '\0';
+         DragQueryFile((HDROP)wparam, i, szFilename, sizeof(szFilename));
+         if (     local_to_utf8_string(szFilename, utf8, sizeof(utf8))
+               && !string_list_append(files, utf8, attr))
+         {
+            string_list_free(files);
+            files = NULL;
+         }
+      }
+      if (files && menu_driver_drop(files))
+         return true;
+#endif
       szFilename[0]    = '\0';
       DragQueryFile((HDROP)wparam, 0, szFilename, sizeof(szFilename));
       return win32_load_content_from_gui(szFilename);
@@ -715,11 +737,37 @@ bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
 #else
 bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
 {
-   if (DragQueryFileW((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
+   UINT count = DragQueryFileW((HDROP)wparam, 0xFFFFFFFF, NULL, 0);
+   if (count)
    {
       wchar_t wszFilename[4096];
       bool ret        = false;
       char *szFilename = NULL;
+#ifdef HAVE_MENU
+      UINT i;
+      union string_list_elem_attr attr;
+      struct string_list *files = string_list_new();
+      attr.i                    = 0;
+
+      for (i = 0; files && i < count; i++)
+      {
+         wszFilename[0] = L'\0';
+         DragQueryFileW((HDROP)wparam, i, wszFilename,
+               sizeof(wszFilename) / sizeof(wszFilename[0]));
+         if ((szFilename = utf16_to_utf8_string_alloc(wszFilename)))
+         {
+            bool appended = string_list_append(files, szFilename, attr);
+            free(szFilename);
+            if (!appended)
+            {
+               string_list_free(files);
+               files = NULL;
+            }
+         }
+      }
+      if (files && menu_driver_drop(files))
+         return true;
+#endif
       wszFilename[0]   = L'\0';
 
       DragQueryFileW((HDROP)wparam, 0, wszFilename,

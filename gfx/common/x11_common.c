@@ -57,6 +57,10 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #define _NET_WM_STATE_ADD                    1
 #define MOVERESIZE_GRAVITY_CENTER            5
 #define MOVERESIZE_X_SHIFT                   8
@@ -95,6 +99,26 @@ static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
 static Atom XA_NET_MOVERESIZE_WINDOW;
 static Atom g_x11_quit_atom;
+#ifdef HAVE_MENU
+enum x11_dnd_atom
+{
+   X11_DND_AWARE = 0,
+   X11_DND_ENTER,
+   X11_DND_POSITION,
+   X11_DND_STATUS,
+   X11_DND_LEAVE,
+   X11_DND_DROP,
+   X11_DND_FINISHED,
+   X11_DND_SELECTION,
+   X11_DND_TYPE_LIST,
+   X11_DND_ACTION_COPY,
+   X11_DND_URI_LIST,
+   X11_DND_ATOM_LAST
+};
+static Atom   g_x11_dnd_atoms[X11_DND_ATOM_LAST];
+static Window g_x11_dnd_source              = None;
+static bool   g_x11_dnd_accept              = false;
+#endif
 static XIM g_x11_xim;
 static XIC g_x11_xic;
 
@@ -802,6 +826,115 @@ static void x11_handle_key_event(unsigned keycode, XEvent *event,
             chars[i], mod, RETRO_DEVICE_KEYBOARD);
 }
 
+#ifdef HAVE_MENU
+static void x11_dnd_send(Atom type, long l1, long l2, long l4)
+{
+   XEvent xev                 = {0};
+   xev.xclient.type           = ClientMessage;
+   xev.xclient.display        = g_x11_dpy;
+   xev.xclient.window         = g_x11_dnd_source;
+   xev.xclient.message_type   = type;
+   xev.xclient.format         = 32;
+   xev.xclient.data.l[0]      = (long)g_x11_win;
+   xev.xclient.data.l[1]      = l1;
+   xev.xclient.data.l[2]      = l2;
+   xev.xclient.data.l[4]      = l4;
+   XSendEvent(g_x11_dpy, g_x11_dnd_source, False, NoEventMask, &xev);
+}
+
+static bool x11_dnd_offers_uri_list(const XClientMessageEvent *m)
+{
+   int i;
+   Atom uri_list = g_x11_dnd_atoms[X11_DND_URI_LIST];
+
+   /* More than three types: the rest are on the source's type list. */
+   if (m->data.l[1] & 1)
+   {
+      Atom type;
+      int format;
+      unsigned long n, after;
+      unsigned char *data = NULL;
+      bool found          = false;
+
+      if (     XGetWindowProperty(g_x11_dpy, (Window)m->data.l[0],
+                  g_x11_dnd_atoms[X11_DND_TYPE_LIST], 0, 1024, False,
+                  XA_ATOM, &type, &format, &n, &after, &data) == Success
+            && data)
+      {
+         unsigned long j;
+         for (j = 0; j < n && !found; j++)
+            found = ((Atom*)data)[j] == uri_list;
+      }
+      if (data)
+         XFree(data);
+      return found;
+   }
+
+   for (i = 2; i < 5; i++)
+      if ((Atom)m->data.l[i] == uri_list)
+         return true;
+   return false;
+}
+
+static void x11_dnd_client_message(const XClientMessageEvent *m)
+{
+   const Atom *a = g_x11_dnd_atoms;
+
+   if (m->message_type == a[X11_DND_ENTER])
+   {
+      g_x11_dnd_source = (Window)m->data.l[0];
+      g_x11_dnd_accept = x11_dnd_offers_uri_list(m);
+   }
+   else if ((Window)m->data.l[0] != g_x11_dnd_source)
+      return;
+   else if (m->message_type == a[X11_DND_POSITION])
+      x11_dnd_send(a[X11_DND_STATUS], g_x11_dnd_accept ? 1 : 0, 0,
+            g_x11_dnd_accept ? (long)a[X11_DND_ACTION_COPY] : None);
+   else if (m->message_type == a[X11_DND_LEAVE])
+      g_x11_dnd_source = None;
+   else if (m->message_type == a[X11_DND_DROP])
+   {
+      if (g_x11_dnd_accept)
+         XConvertSelection(g_x11_dpy, a[X11_DND_SELECTION],
+               a[X11_DND_URI_LIST], a[X11_DND_SELECTION], g_x11_win,
+               (Time)m->data.l[2]);
+      else
+      {
+         x11_dnd_send(a[X11_DND_FINISHED], 0, None, 0);
+         g_x11_dnd_source = None;
+      }
+   }
+}
+
+static void x11_dnd_selection(const XSelectionEvent *s)
+{
+   bool dropped = false;
+
+   if (s->property != None)
+   {
+      Atom type;
+      int format;
+      unsigned long n, after;
+      unsigned char *data = NULL;
+
+      /* Xlib terminates format 8 data with an extra NUL. */
+      if (     XGetWindowProperty(g_x11_dpy, g_x11_win, s->property,
+                  0, 65536, True, AnyPropertyType,
+                  &type, &format, &n, &after, &data) == Success
+            && data
+            && format == 8)
+         dropped = menu_driver_drop_uri_list((char*)data);
+      if (data)
+         XFree(data);
+   }
+
+   if (g_x11_dnd_source != None)
+      x11_dnd_send(g_x11_dnd_atoms[X11_DND_FINISHED], dropped ? 1 : 0,
+            dropped ? (long)g_x11_dnd_atoms[X11_DND_ACTION_COPY] : None, 0);
+   g_x11_dnd_source = None;
+}
+#endif
+
 bool x11_alive(void *data)
 {
 #ifdef HAVE_XRANDR
@@ -848,7 +981,20 @@ bool x11_alive(void *data)
             if (        event.xclient.window    == g_x11_win &&
                   (Atom)event.xclient.data.l[0] == g_x11_quit_atom)
                frontend_driver_set_signal_handler_state(1);
+#ifdef HAVE_MENU
+            else if (event.xclient.window == g_x11_win)
+               x11_dnd_client_message(&event.xclient);
+#endif
             break;
+
+#ifdef HAVE_MENU
+         case SelectionNotify:
+            if (     event.xselection.requestor == g_x11_win
+                  && event.xselection.selection
+                     == g_x11_dnd_atoms[X11_DND_SELECTION])
+               x11_dnd_selection(&event.xselection);
+            break;
+#endif
 
          case DestroyNotify:
             if (event.xdestroywindow.window == g_x11_win)
@@ -1150,6 +1296,21 @@ void x11_install_quit_atom(void)
          "WM_DELETE_WINDOW", False);
    if (g_x11_quit_atom)
       XSetWMProtocols(g_x11_dpy, g_x11_win, &g_x11_quit_atom, 1);
+#ifdef HAVE_MENU
+   {
+      static char *names[X11_DND_ATOM_LAST] = {
+         "XdndAware", "XdndEnter", "XdndPosition", "XdndStatus",
+         "XdndLeave", "XdndDrop", "XdndFinished", "XdndSelection",
+         "XdndTypeList", "XdndActionCopy", "text/uri-list" };
+      Atom version = 5;
+      g_x11_dnd_source = None;
+      if (XInternAtoms(g_x11_dpy, names, X11_DND_ATOM_LAST, False,
+               g_x11_dnd_atoms))
+         XChangeProperty(g_x11_dpy, g_x11_win,
+               g_x11_dnd_atoms[X11_DND_AWARE], XA_ATOM, 32,
+               PropModeReplace, (unsigned char*)&version, 1);
+   }
+#endif
 }
 
 static Bool x11_wait_notify(Display *d, XEvent *e, char *arg)

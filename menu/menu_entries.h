@@ -24,6 +24,7 @@
 #include <retro_miscellaneous.h>
 
 #include <lists/file_list.h>
+#include <lists/string_list.h>
 
 #include "menu_setting.h"
 #include "menu_input.h"
@@ -140,12 +141,13 @@ typedef struct menu_file_list_cbs
          size_t idx);
    int (*action_start)(const char *path, const char *label, unsigned type,
          size_t idx, size_t entry_idx);
-   /* @payload is a local path. 0 accepts, -1 refuses.
-    * action_drag only reports a hover; it must not act on @payload. */
+   /* @payload holds one or more local paths, one drop. 0 accepts,
+    * -1 refuses. action_drag only reports a hover; it must not act
+    * on @payload. */
    int (*action_drag)(const char *path, const char *label, unsigned type,
-         size_t idx, size_t entry_idx, const char *payload);
+         size_t idx, size_t entry_idx, const struct string_list *payload);
    int (*action_drop)(const char *path, const char *label, unsigned type,
-         size_t idx, size_t entry_idx, const char *payload);
+         size_t idx, size_t entry_idx, const struct string_list *payload);
    int (*action_info)(unsigned type,  const char *label);
    int (*action_left)(unsigned type, const char *label, bool wraparound);
    int (*action_right)(unsigned type, const char *label, bool wraparound);
@@ -245,9 +247,9 @@ int menu_entry_action(
 
 /* Main thread only, outside platform event dispatch:
  * a drop may reinitialise the drivers. */
-int menu_entry_drag(size_t i, const char *payload);
+int menu_entry_drag(size_t i, const struct string_list *payload);
 
-int menu_entry_drop(size_t i, const char *payload);
+int menu_entry_drop(size_t i, const struct string_list *payload);
 
 RETRO_END_DECLS
 

@@ -737,6 +737,16 @@ void menu_driver_set_pending_selection(const char *pending_selection);
 
 struct menu_state *menu_state_get_ptr(void);
 
+/* Hands @payload (local UTF-8 paths) to the selected menu entry on
+ * the next menu frame. Any thread; takes ownership of @payload.
+ * Returns false when the menu is not open, so the caller can fall
+ * back to its own handling. */
+bool menu_driver_drop(struct string_list *payload);
+
+/* As menu_driver_drop(), for the file:// entries of a text/uri-list.
+ * Decodes @list in place. */
+bool menu_driver_drop_uri_list(char *list);
+
 int generic_menu_entry_action(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
 
 void menu_entries_build_scroll_indices(

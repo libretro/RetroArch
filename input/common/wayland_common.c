@@ -41,6 +41,10 @@
 #include "../../verbosity.h"
 #include "../../gfx/video_driver.h"
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+
 #define DND_ACTION WL_DATA_DEVICE_MANAGER_DND_ACTION_MOVE
 #define FILE_MIME "text/uri-list"
 #define TEXT_MIME "text/plain;charset=utf-8"
@@ -1132,14 +1136,8 @@ static void wl_data_device_handle_motion(void *data,
 static void wl_data_device_handle_drop(void *data,
       struct wl_data_device *data_device)
 {
-   FILE *stream;
-   int pipefd[2];
-   void *buffer;
-   size_t __len, _len         = 0;
-   ssize_t read               = 0;
-   char *line                 = NULL;
-   char file_list[512][512]   = { 0 };
-   char file_list_i           = 0;
+   size_t _len                = 0;
+   char *buffer               = NULL;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    data_offer_ctx *offer_data = wl->current_drag_offer;
 
@@ -1147,13 +1145,8 @@ static void wl_data_device_handle_drop(void *data,
       return;
 
    offer_data->dropped        = true;
-
-   pipe(pipefd);
-
-   buffer = wayland_data_offer_receive(wl->input.dpy, offer_data->offer, &__len, FILE_MIME, false);
-
-   close(pipefd[1]);
-   close(pipefd[0]);
+   buffer                     = (char*)wayland_data_offer_receive(
+         wl->input.dpy, offer_data->offer, &_len, FILE_MIME, true);
 
    wl->current_drag_offer = NULL;
    if (wl_data_offer_get_version(offer_data->offer) >= WL_DATA_OFFER_FINISH_SINCE_VERSION)
@@ -1161,30 +1154,10 @@ static void wl_data_device_handle_drop(void *data,
    wl_data_offer_destroy(offer_data->offer);
    free(offer_data);
 
-   if (!(stream = fmemopen(buffer, __len, "r")))
-   {
-      RARCH_WARN("[Wayland] Failed to open DnD buffer.\n");
-      free(buffer);
-      return;
-   }
-
-   RARCH_WARN("[Wayland] Files opp:\n");
-   while ((read = getline(&line,  &_len, stream)) != -1)
-   {
-      line[strcspn(line, "\r\n")] = 0;
-      RARCH_DBG("[Wayland] > \"%s\".\n", line);
-
-      /* TODO/FIXME: Convert from file:// URI, Implement file loading
-       * Drag and Drop */
-#if 0
-      if (wayland_load_content_from_drop(g_filename_from_uri(line, NULL, NULL)))
-         RARCH_WARN("----- wayland_load_content_from_drop success\n");
+#ifdef HAVE_MENU
+   if (buffer)
+      menu_driver_drop_uri_list(buffer);
 #endif
-   }
-
-   /* getline allocates line on the first call and reuses it. */
-   free(line);
-   fclose(stream);
    free(buffer);
 }
 
