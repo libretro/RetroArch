@@ -248,7 +248,6 @@ enum
    MUI_TEXTURE_MUSIC,
    MUI_TEXTURE_VIDEO,
    MUI_TEXTURE_QUIT,
-   MUI_TEXTURE_HELP,
    MUI_TEXTURE_HISTORY,
    MUI_TEXTURE_INFO,
    MUI_TEXTURE_ADD,
@@ -2205,8 +2204,6 @@ static const char *materialui_texture_path(unsigned id)
          return "archive.png";
       case MUI_TEXTURE_QUIT:
          return "quit.png";
-      case MUI_TEXTURE_HELP:
-         return "help.png";
       case MUI_TEXTURE_NETPLAY:
          return "netplay.png";
       case MUI_TEXTURE_CORES:

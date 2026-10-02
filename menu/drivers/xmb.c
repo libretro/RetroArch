@@ -217,7 +217,6 @@ enum
    XMB_TEXTURE_EXIT,
    XMB_TEXTURE_FRAMESKIP,
    XMB_TEXTURE_INFO,
-   XMB_TEXTURE_HELP,
    XMB_TEXTURE_NETWORK,
    XMB_TEXTURE_POWER,
    XMB_TEXTURE_SAVING,
@@ -7543,8 +7542,6 @@ static const char *xmb_texture_path(unsigned id)
          return "menu_exit.png";
       case XMB_TEXTURE_FRAMESKIP:
          return "menu_frameskip.png";
-      case XMB_TEXTURE_HELP:
-         return "menu_help.png";
       case XMB_TEXTURE_INFO:
          return "menu_info.png";
       case XMB_TEXTURE_INPUT_SETTINGS:

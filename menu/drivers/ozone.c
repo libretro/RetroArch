@@ -297,7 +297,6 @@ enum
    OZONE_ENTRIES_ICONS_TEXTURE_EXIT,
    OZONE_ENTRIES_ICONS_TEXTURE_FRAMESKIP,
    OZONE_ENTRIES_ICONS_TEXTURE_INFO,
-   OZONE_ENTRIES_ICONS_TEXTURE_HELP,
    OZONE_ENTRIES_ICONS_TEXTURE_NETWORK,
    OZONE_ENTRIES_ICONS_TEXTURE_POWER,
    OZONE_ENTRIES_ICONS_TEXTURE_SAVING,
@@ -2911,8 +2910,6 @@ static const char *ozone_entries_icon_texture_path(unsigned id)
          return "menu_exit.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_FRAMESKIP:
          return "menu_frameskip.png";
-      case OZONE_ENTRIES_ICONS_TEXTURE_HELP:
-         return "menu_help.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INFO:
          return "menu_info.png";
       case OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS:
