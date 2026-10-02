@@ -75,7 +75,12 @@
  * link boundary and assert one per installed core.  The status lanes
  * pin what that must not change: a fetch that finds no installed
  * cores still ends in 'all cores updated', and a fetch that fails
- * still ends in 'core list failed'. */
+ * still ends in 'core list failed'.
+ *
+ * The refused-download lane covers a core download whose transfer
+ * cannot be started (task_push_http_download_file() is wrapped to
+ * refuse it): the download must fail, and Update Installed Cores
+ * finish, rather than wait for an extraction that never starts. */
 
 #include <stdio.h>
 #include <string.h>
@@ -167,6 +172,26 @@ void __wrap_task_set_title(retro_task_t *task, char *title)
    else if (title && !strcmp(title, "<core list failed>"))
       retro_atomic_store_release_int(&final_status, 2);
    __real_task_set_title(task, title);
+}
+
+/* ---------------- core downloads -------------------------------- */
+
+static retro_atomic_int_t core_downloads;
+/* Set for the lanes that only need the download decision */
+static retro_atomic_int_t refuse_downloads;
+
+void *__real_task_push_http_download_file(const char *url, const char *path,
+      bool mute, const char *title, retro_task_callback_t cb, void *user_data);
+void *__wrap_task_push_http_download_file(const char *url, const char *path,
+      bool mute, const char *title, retro_task_callback_t cb, void *user_data)
+{
+   /* Counted and refused where a lane needs the decision, not the
+    * core; the cancel lanes need the real transfer */
+   if (!retro_atomic_load_acquire_int(&refuse_downloads))
+      return __real_task_push_http_download_file(url, path, mute, title,
+            cb, user_data);
+   retro_atomic_fetch_add_int(&core_downloads, 1);
+   return NULL;
 }
 
 /* ---------------- the I/O window, forced to its floor ------------ */
@@ -291,6 +316,8 @@ static void server_stop(void)
 /* ---------------- fixture ---------------------------------------- */
 
 static char g_dir[] = "/tmp/update_installed_scan_XXXXXX";
+/* The first installed core, which the refused-download lane edits */
+static char g_core_a[PATH_MAX_LENGTH];
 
 /* Installed cores are sparse files: CRC work without disk use. */
 static bool make_core(const char *path, uint32_t *crc)
@@ -337,6 +364,8 @@ static bool build_fixture(void)
          fill_pathname_join_special(path, g_dir, name, sizeof(path));
          if (!make_core(path, &crc))
             return false;
+         if (!*g_core_a)
+            strlcpy(g_core_a, path, sizeof(g_core_a));
       }
 
       len += snprintf(srv_body + len, cap - len,
@@ -409,6 +438,68 @@ static void run_lane(bool threaded)
 
    task_queue_deinit();
    task_queue_unset_threaded();
+}
+
+/* ---------------- refused-download lane --------------------------- */
+
+static void run_refused_download_lane(void)
+{
+   char url[128];
+   task_finder_data_t find_data;
+   settings_t *settings = config_get_ptr();
+   long gathers;
+   FILE *f;
+
+   printf("[lane: a core download that cannot start]\n");
+
+   /* Same size, new contents: the CRC no longer matches */
+   if (!(f = fopen(g_core_a, "r+b")))
+   {
+      printf("  SKIP: could not open the fixture core\n");
+      return;
+   }
+   fputc(0xa5, f);
+   fclose(f);
+
+   task_queue_init(false, NULL);
+   snprintf(url, sizeof(url), "http://127.0.0.1:%d", srv_port);
+   get_list_test_set_buildbot_url(url);
+   strlcpy(settings->paths.directory_libretro, g_dir,
+         sizeof(settings->paths.directory_libretro));
+   strlcpy(settings->paths.path_libretro_info, g_dir,
+         sizeof(settings->paths.path_libretro_info));
+
+   retro_atomic_store_release_int(&core_downloads, 0);
+   retro_atomic_store_release_int(&refuse_downloads, 1);
+   task_push_update_installed_cores(false, 0, g_dir, NULL);
+
+   find_data.func     = find_any;
+   find_data.userdata = NULL;
+   for (gathers = 0; gathers < 4 * NUM_ENTRIES; gathers++)
+   {
+      task_queue_check();
+      if (!task_queue_find(&find_data))
+         break;
+      retro_sleep(17);
+   }
+   retro_atomic_store_release_int(&refuse_downloads, 0);
+
+   printf("  %ld gathers, %d core download(s) requested\n", gathers,
+         retro_atomic_load_acquire_int(&core_downloads));
+   CHECK(retro_atomic_load_acquire_int(&core_downloads) == 1,
+         "the changed core's download was requested");
+   CHECK(gathers < 4 * NUM_ENTRIES,
+         "update installed cores completed with the download refused");
+
+   task_queue_deinit();
+   task_queue_unset_threaded();
+
+   /* Back to the listed contents (make_core's first byte) */
+   if ((f = fopen(g_core_a, "r+b")))
+   {
+      fputc(0x5a, f);
+      fclose(f);
+   }
 }
 
 /* ---------------- status lanes ----------------------------------- */
@@ -703,6 +794,7 @@ int main(void)
 
       run_lane(false);
       run_lane(true);
+      run_refused_download_lane();
 
       snprintf(url, sizeof(url), "http://127.0.0.1:%d", srv_port);
       if (mkdtemp(empty_dir))

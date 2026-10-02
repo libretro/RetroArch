@@ -1315,7 +1315,11 @@ static void task_core_updater_download_handler(retro_task_t *task)
              * > The callback's reference is taken before the
              *   push, which it may outrun; a failed push runs no
              *   callback, so it is dropped again here along with
-             *   the transfer object */
+             *   the transfer object
+             * > A failed push is a failed download: with no
+             *   callback, nothing would ever start the extraction
+             *   WAIT_DECOMPRESS waits for.  No callback also means
+             *   nothing else writes http_task_error. */
             retro_atomic_fetch_add_int(&download_handle->refs, 1);
             if (!(download_handle->http_task = (retro_task_t*)
                      task_push_http_download_file(
@@ -1325,6 +1329,7 @@ static void task_core_updater_download_handler(retro_task_t *task)
             {
                free(transf);
                retro_atomic_fetch_sub_int(&download_handle->refs, 1);
+               download_handle->http_task_error = true;
             }
 
             /* Update task title */

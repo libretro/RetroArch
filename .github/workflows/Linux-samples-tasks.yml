@@ -539,6 +539,9 @@ jobs:
           # installed cores alone.  The status lanes pin that a fetch
           # finding no installed cores still ends in 'all cores
           # updated' and a failed fetch in 'core list failed'.
+          # The refused-download lane refuses a changed core's transfer
+          # and asserts the run still completes: a download that
+          # cannot start fails instead of waiting on an extraction.
           make -f Makefile.update_installed clean all
           test -x update_installed_scan_test
           timeout 600 ./update_installed_scan_test

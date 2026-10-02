@@ -59,7 +59,8 @@ LDFLAGS += -Wl,--wrap=task_nbio_slice_within_budget
 # Core info reads are counted, and the parent's final title is
 # recognised, at the link boundary.
 LDFLAGS += -Wl,--wrap=core_info_get_core_updater_info \
-           -Wl,--wrap=msg_hash_to_str -Wl,--wrap=task_set_title
+           -Wl,--wrap=msg_hash_to_str -Wl,--wrap=task_set_title \
+           -Wl,--wrap=task_push_http_download_file
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) $(CFLAGS)
