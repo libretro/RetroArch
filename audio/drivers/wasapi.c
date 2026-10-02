@@ -1197,6 +1197,17 @@ typedef struct wasapi_microphone
    bool nonblock;
 } wasapi_microphone_t;
 
+/* The shared-mode capture FIFO, in bytes: the length the user set, but
+ * never less than the engine buffer. A packet goes into the FIFO whole
+ * or waits; one larger than the whole FIFO could never go in, and the
+ * microphone delivered nothing for the rest of the session. */
+static size_t wasapi_microphone_fifo_bytes(size_t frames, size_t frame_size,
+      size_t engine_bytes)
+{
+   size_t bytes = frames * frame_size;
+   return bytes < engine_bytes ? engine_bytes : bytes;
+}
+
 static void wasapi_microphone_close_mic(void *driver_context, void *mic_context)
 {
    DWORD ir;
@@ -1576,13 +1587,18 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
           * Doubling it seems to work okay. Dunno why. */
       }
 
-      mic->buffer = fifo_new(sh_buffer_length * mic->frame_size);
-      if (!mic->buffer)
-         goto error;
+      {
+         size_t fifo_bytes = wasapi_microphone_fifo_bytes(sh_buffer_length,
+               mic->frame_size, mic->engine_buffer_size);
+         size_t fifo_frames = fifo_bytes / mic->frame_size;
 
-      RARCH_LOG("[WASAPI] Intermediate shared-mode capture buffer length is %u frames (%.1fms, %u bytes).\n",
-                sh_buffer_length, (double)sh_buffer_length * 1000.0 / rate,
-                sh_buffer_length * mic->frame_size);
+         if (!(mic->buffer = fifo_new(fifo_bytes)))
+            goto error;
+
+         RARCH_LOG("[WASAPI] Intermediate shared-mode capture buffer length is %u frames (%.1fms, %u bytes).\n",
+                   (unsigned)fifo_frames, (double)fifo_frames * 1000.0 / rate,
+                   (unsigned)fifo_bytes);
+      }
    }
 
    if (!(mic->read_event = CreateEventA(NULL, FALSE, FALSE, NULL)))

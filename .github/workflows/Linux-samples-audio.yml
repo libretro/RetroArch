@@ -510,6 +510,21 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./pipewire_write_test
           echo "[pass] pipewire_write_test (ASan)"
 
+      - name: Build and run wasapi_mic_test (the WASAPI microphone's fetch against a scripted capture client)
+        shell: bash
+        working-directory: samples/audio/wasapi_mic
+        run: |
+          set -eu
+          # audio/drivers/wasapi.c's text against the shared fake WASAPI
+          # with a capture client added: a shared-mode FIFO set shorter
+          # than one engine packet still takes every packet, and a
+          # packet with no room waits for the FIFO to be read.
+          make clean && make -j$(nproc) all
+          ./wasapi_mic_test
+          make clean && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./wasapi_mic_test
+          echo "[pass] wasapi_mic_test (ASan)"
+
       - name: Build and run live_drivers_test (a live PulseAudio server, a null ALSA PCM)
         shell: bash
         working-directory: samples/audio/live_drivers
