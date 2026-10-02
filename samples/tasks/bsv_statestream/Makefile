@@ -40,6 +40,8 @@ CFLAGS  += -Wall -std=gnu99 -g -O1 \
            -I$(LIBRETRO_COMM_DIR)/include
 
 LDFLAGS += -lpthread -lm
+# The oom lane fails chosen allocations; GNU ld only, as on the CI runner.
+LDFLAGS += -Wl,--wrap=malloc -Wl,--wrap=calloc -Wl,--wrap=realloc
 
 CFLAGS += $(EXTRA_CFLAGS)
 

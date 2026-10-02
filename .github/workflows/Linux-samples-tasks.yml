@@ -383,8 +383,11 @@ jobs:
           # then feeds sequences naming undefined superblocks and
           # blocks, a sequence longer than the superblock list, a
           # recording after a short sequence, and a header with no
-          # block layout.  Each lane takes its name as an argument to
-          # run alone.
+          # block layout.  The oom and oomload lanes fail each
+          # allocation of a checkpoint write and of a load in turn
+          # (malloc, calloc and realloc are wrapped at link time) and
+          # need every one to fail cleanly, with no leak.  Each lane
+          # takes its name as an argument to run alone.
           make clean all
           test -x bsv_statestream_test
           timeout 120 ./bsv_statestream_test

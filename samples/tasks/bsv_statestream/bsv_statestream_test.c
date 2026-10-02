@@ -39,6 +39,11 @@
  *  record after  recording a checkpoint on a handle whose superblock
  *                list a short sequence sized does not write past it.
  *  no layout     a replay whose header gives no block size is refused.
+ *  oom           recording a checkpoint with the Nth allocation failing,
+ *                for every N until one gets through, fails the
+ *                checkpoint cleanly or writes one that decodes.
+ *  oom load      decoding a recorded checkpoint with the Nth allocation
+ *                failing, likewise, refuses it or decodes it whole.
  *
  * The block and superblock sizes are small so a state spans many
  * superblocks.  Run under ASan + UBSan, an out-of-bounds access, a
@@ -119,6 +124,43 @@ bool core_unserialize(retro_ctx_serialize_info_t *info)
       return false;
    memcpy(core_state, info->data_const, STATE_SIZE);
    return true;
+}
+
+/* ---- allocation failure ------------------------------------------- */
+
+/* Every malloc, calloc and realloc the linked units make goes through
+ * these (-Wl,--wrap).  While armed, the call that brings the count to
+ * zero fails, once. */
+static long fail_countdown = -1;
+static unsigned n_failed_allocs = 0;
+
+void *__real_malloc(size_t size);
+void *__real_calloc(size_t n, size_t size);
+void *__real_realloc(void *ptr, size_t size);
+
+static bool alloc_fails(void)
+{
+   if (fail_countdown < 0)
+      return false;
+   if (fail_countdown-- == 0)
+   {
+      n_failed_allocs++;
+      return true;
+   }
+   return false;
+}
+
+void *__wrap_malloc(size_t size)
+{
+   return alloc_fails() ? NULL : __real_malloc(size);
+}
+void *__wrap_calloc(size_t n, size_t size)
+{
+   return alloc_fails() ? NULL : __real_calloc(n, size);
+}
+void *__wrap_realloc(void *ptr, size_t size)
+{
+   return alloc_fails() ? NULL : __real_realloc(ptr, size);
 }
 
 /* ---- fixtures ------------------------------------------------------ */
@@ -314,6 +356,83 @@ static void lane_no_layout(void)
    puts("[ok] no layout");
 }
 
+static void lane_oom(void)
+{
+   long nth;
+   unsigned clean_failures = 0;
+   for (nth = 0; nth < 100000; nth++)
+   {
+      bsv_movie_t *w = movie_new(BLOCK_BYTES, SUPERBLOCK_LEN);
+      bsv_movie_t *r;
+      size_t n;
+      bool failed;
+      fill_state(5);
+      movie_set_stream(w, stream_buf, STREAM_CAP);
+      n_failed_allocs = 0;
+      fail_countdown  = nth;
+      n = (size_t)(bsv_movie_write_checkpoint(w,
+               REPLAY_CHECKPOINT2_COMPRESSION_NONE,
+               REPLAY_CHECKPOINT2_ENCODING_STATESTREAM) > 0
+            ? intfstream_tell(w->file) : 0);
+      fail_countdown  = -1;
+      failed          = n_failed_allocs != 0;
+      if (!failed)
+      {
+         /* Nothing failed: the checkpoint must be whole. */
+         r = movie_new(BLOCK_BYTES, SUPERBLOCK_LEN);
+         CHECK(n > 12 && load(r, stream_buf, n)
+               && !memcmp(r->cur_save, core_state, STATE_SIZE),
+               "oom: checkpoint after %ld allocations decodes", nth);
+         movie_free(r);
+         movie_free(w);
+         break;
+      }
+      if (!n)
+         clean_failures++;
+      movie_free(w);
+   }
+   CHECK(clean_failures > 0, "oom: some allocation failure fails the checkpoint");
+   printf("[ok] oom (%ld allocations, %u failed the checkpoint)\n", nth, clean_failures);
+}
+
+static void lane_oom_load(void)
+{
+   long nth;
+   unsigned refused = 0;
+   size_t n;
+   bsv_movie_t *w = movie_new(BLOCK_BYTES, SUPERBLOCK_LEN);
+   fill_state(6);
+   n = record(w, stream_buf);
+   CHECK(n > 12, "oom load: checkpoint written");
+   for (nth = 0; nth < 100000; nth++)
+   {
+      bsv_movie_t *r = movie_new(BLOCK_BYTES, SUPERBLOCK_LEN);
+      bool ok;
+      movie_set_stream(r, stream_buf, n);
+      n_failed_allocs = 0;
+      fail_countdown  = nth;
+      ok = bsv_movie_load_checkpoint(r, REPLAY_CHECKPOINT2_COMPRESSION_NONE,
+            REPLAY_CHECKPOINT2_ENCODING_STATESTREAM, REPLAY_CPBEHAVIOR_DESERIALIZE);
+      fail_countdown  = -1;
+      if (!n_failed_allocs)
+      {
+         CHECK(ok && !memcmp(r->cur_save, core_state, STATE_SIZE),
+               "oom load: checkpoint after %ld allocations decodes", nth);
+         movie_free(r);
+         break;
+      }
+      if (ok)
+         CHECK(!memcmp(r->cur_save, core_state, STATE_SIZE),
+               "oom load: a checkpoint loaded despite a failed allocation is whole");
+      else
+         refused++;
+      movie_free(r);
+   }
+   movie_free(w);
+   CHECK(refused > 0, "oom load: some allocation failure refuses the checkpoint");
+   printf("[ok] oom load (%ld allocations, %u refused)\n", nth, refused);
+}
+
 /* With an argument, runs only the lane of that name. */
 int main(int argc, char **argv)
 {
@@ -329,6 +448,10 @@ int main(int argc, char **argv)
       lane_record_after();
    if (!only || !strcmp(only, "layout"))
       lane_no_layout();
+   if (!only || !strcmp(only, "oom"))
+      lane_oom();
+   if (!only || !strcmp(only, "oomload"))
+      lane_oom_load();
    if (n_fail)
    {
       fprintf(stderr, "bsv_statestream_test: %u check(s) failed\n", n_fail);

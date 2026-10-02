@@ -28,11 +28,27 @@
 #define HASHMAP_CAP 65536
 #define uint32s_hash_bytes(bytes, len) XXH32(bytes,len,0)
 
+/* Room for one more object in every per-object list, so the pushes
+ * that record it cannot fail half way. */
+static bool uint32s_index_reserve(uint32s_index_t *index)
+{
+   return RBUF_TRYFIT(index->objects,   RBUF_LEN(index->objects)   + 1)
+       && RBUF_TRYFIT(index->counts,    RBUF_LEN(index->counts)    + 1)
+       && RBUF_TRYFIT(index->hashes,    RBUF_LEN(index->hashes)    + 1)
+       && RBUF_TRYFIT(index->additions, RBUF_LEN(index->additions) + 1);
+}
+
 uint32s_index_t *uint32s_index_new(size_t object_size,
       uint8_t commit_interval, uint8_t commit_threshold)
 {
-   uint32_t *zeros         = (uint32_t*)calloc(object_size, sizeof(uint32_t));
+   uint32_t *zeros         = (uint32_t*)calloc(object_size ? object_size : 1, sizeof(uint32_t));
    uint32s_index_t *index  = (uint32s_index_t *)malloc(sizeof(uint32s_index_t));
+   if (!zeros || !index)
+   {
+      free(zeros);
+      free(index);
+      return NULL;
+   }
    index->object_size      = object_size;
    index->index            = NULL;
    RHMAP_FIT(index->index, HASHMAP_CAP);
@@ -43,7 +59,12 @@ uint32s_index_t *uint32s_index_new(size_t object_size,
    index->commit_interval  = commit_interval;
    index->commit_threshold = commit_threshold;
    /* transfers ownership of zero buffer */
-   uint32s_index_insert_exact(index, 0, zeros, 0);
+   if (!index->index || !uint32s_index_insert_exact(index, 0, zeros, 0))
+   {
+      free(zeros);
+      uint32s_index_free(index);
+      return NULL;
+   }
    RBUF_CLEAR(index->additions); /* scrap first addition, we never want to delete 0s during rewind */
    return index;
 }
@@ -161,7 +182,12 @@ uint32s_insert_result_t uint32s_index_insert(uint32s_index_t *index, uint32_t *o
          RARCH_LOG("[STATESTREAM] accessed collected index %d\n",result.index);
       }
       idx  = RBUF_LEN(index->objects);
-      copy = (uint32_t*)malloc(size_bytes);
+      if (     !uint32s_index_reserve(index)
+            || !(copy = (uint32_t*)malloc(size_bytes)))
+      {
+         result.index = UINT32S_INDEX_NONE;
+         return result;
+      }
       memcpy(copy, object, size_bytes);
       RBUF_PUSH(index->objects, copy);
       RBUF_PUSH(index->counts, 1);
@@ -174,7 +200,12 @@ uint32s_insert_result_t uint32s_index_insert(uint32s_index_t *index, uint32_t *o
    {
       struct uint32s_bucket new_bucket;
       idx  = RBUF_LEN(index->objects);
-      copy = (uint32_t*)malloc(size_bytes);
+      if (     !uint32s_index_reserve(index)
+            || !(copy = (uint32_t*)malloc(size_bytes)))
+      {
+         result.index = UINT32S_INDEX_NONE;
+         return result;
+      }
       memcpy(copy, object, size_bytes);
       RBUF_PUSH(index->objects, copy);
       RBUF_PUSH(index->counts, 1);
@@ -203,7 +234,7 @@ bool uint32s_index_insert_exact(uint32s_index_t *index, uint32_t idx, uint32_t *
    uint32_t hash;
    size_t size_bytes;
    uint32_t additions_len;
-   if (idx != RBUF_LEN(index->objects))
+   if (idx != RBUF_LEN(index->objects) || !uint32s_index_reserve(index))
       return false;
    size_bytes = index->object_size * sizeof(uint32_t);
    hash = uint32s_hash_bytes((uint8_t *)object, size_bytes);
