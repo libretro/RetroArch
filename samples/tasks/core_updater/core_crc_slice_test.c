@@ -92,7 +92,7 @@
 #include <streams/file_stream.h>
 #include <retro_common_api.h>
 
-/* Mirrors task_core_updater.c */
+/* Mirrors task_core_updater.c and the window in task_nbio_slice.c */
 #define CORE_CRC_CHUNK           (256 * 1024)
 #define CORE_CRC_TICK_BUDGET_US  4000
 
@@ -249,34 +249,59 @@ static void slice_reset(core_crc_slice_t *slice)
    slice->active      = false;
 }
 
+/* Mirrors the threaded-queue grant of task_nbio_slice_open(): a whole
+ * window per call, with a floor of one work item.  The unthreaded
+ * share of the window only ever shrinks the allowance, down to that
+ * same floor, which the exhausted-budget lane already covers. */
+typedef struct
+{
+   int64_t start;
+   int64_t allowance;
+   uint8_t floor;
+} slice_budget_t;
+
+static bool slice_within_budget(slice_budget_t *b)
+{
+   if (b->floor)
+   {
+      b->floor = 0;
+      return true;
+   }
+   return __wrap_cpu_features_get_time_usec() - b->start < b->allowance;
+}
+
 static bool slice_step(core_crc_slice_t *slice, const char *core_path,
       uint32_t *crc)
 {
-   int64_t deadline;
+   slice_budget_t budget;
 
-   if (!slice->active)
+   budget.start     = __wrap_cpu_features_get_time_usec();
+   budget.allowance = CORE_CRC_TICK_BUDGET_US;
+   budget.floor     = 1;
+
+   while (slice_within_budget(&budget))
    {
-      slice->accumulator = 0;
-      if (!(slice->file = open_ro(core_path)))
+      int64_t hashed;
+
+      if (!slice->active)
       {
-         *crc = 0;
-         return true;
+         slice->accumulator = 0;
+         if (!(slice->file = open_ro(core_path)))
+         {
+            *crc = 0;
+            return true;
+         }
+         intfstream_rewind(slice->file);
+         slice->active = true;
       }
-      intfstream_rewind(slice->file);
-      slice->active = true;
-   }
 
-   deadline = __wrap_cpu_features_get_time_usec() + CORE_CRC_TICK_BUDGET_US;
-   do
-   {
-      int64_t hashed = intfstream_crc_step(slice->file,
-            &slice->accumulator, CORE_CRC_CHUNK);
-      if (hashed > 0)
+      if ((hashed = intfstream_crc_step(slice->file,
+                  &slice->accumulator, CORE_CRC_CHUNK)) > 0)
          continue;
       *crc = (hashed == 0) ? slice->accumulator : 0;
       slice_reset(slice);
       return true;
-   } while (__wrap_cpu_features_get_time_usec() < deadline);
+   }
 
    return false;
 }

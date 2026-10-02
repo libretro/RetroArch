@@ -29,7 +29,6 @@
 #include <net/net_http.h>
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
-#include <features/features_cpu.h>
 
 #include "task_file_transfer.h"
 #include "tasks_internal.h"
@@ -51,14 +50,9 @@
 #include "../menu/menu_driver.h"
 #endif
 
-/* Bytes hashed per step.  Matches the read size inside
- * intfstream_crc_step(). */
+/* Bytes hashed per work item of the shared I/O window.  Matches the
+ * read size inside intfstream_crc_step(). */
 #define CORE_CRC_CHUNK      (256 * 1024)
-
-/* Time budget per tick.  Deliberately well under a 60Hz frame: the
- * handler still has its own work to do, and the caller may be the
- * video thread. */
-#define CORE_CRC_TICK_BUDGET_US 4000
 
 typedef struct
 {
@@ -163,6 +157,8 @@ typedef struct update_installed_cores_handle
    unsigned num_locked;
    enum update_installed_cores_status status;
    bool auto_backup;
+   /* The task title currently reads 'Scanning cores' */
+   bool title_scanning;
    /* Set from the child task callbacks. The child
     * retro_task_t pointers are deliberately *not*
     * retained: task_queue frees a finished task in the
@@ -230,32 +226,17 @@ typedef struct play_feature_delivery_switch_cores_handle
 
 /* Sliced CRC32 of a core file.
  *
- * Sliced, because a blocking intfstream_get_crc() over the whole
- * file inside a task handler tick makes the cost of that tick a
- * function of core size and nothing else --
- * unbounded from the frontend's point of view.  Measured cold on
- * NVMe: 43ms for a 40MB core, 112ms for a 260MB one, i.e. 3 to 7
- * dropped frames per core.  RetroArch's SD-card and spinning-disk
- * targets read an order of magnitude slower, which turns the same
- * work into seconds.
+ * Each CORE_CRC_CHUNK is one work item of the shared per-frame I/O
+ * window (task_nbio_slice_*), so hashing a core of any size costs a
+ * tick no more than the window allows, and shares that window with
+ * every other budgeted task in the same gather.
  *
- * It matters most on the bulk path.  update_installed_cores hashes
- * every installed core to find out which ones changed, so a 40-core
- * set is 601MB read (measured) before anything is downloaded -- and
- * on a repeat run, where nothing has changed, all of it is read
- * again to learn exactly that.
- *
- * The work is now spread across ticks against a time budget, the
- * same shape the save-state transfer loops in tasks/task_save.c use.
- * Total work is unchanged; what changes is that no single tick can
- * exceed the budget regardless of file size.
- *
- * Not done here: caching the result keyed by (path, size, mtime) so
- * a repeat "update installed cores" skips the read entirely.  That
- * is the larger win, but the libretro VFS exposes no mtime, and size
- * alone is not a safe invalidation key -- a rebuilt core of identical
- * size would be silently skipped, which is a worse failure than a
- * slow one.  It wants a VFS extension first. */
+ * update_installed_cores hashes every installed core to find out
+ * which ones changed, so a repeat run where nothing has changed still
+ * reads every installed core once.  Skipping that read needs a
+ * (path, size, mtime) cache, which needs an mtime from the libretro
+ * VFS first; size alone is not a safe key, since a rebuilt core of
+ * identical size would be silently skipped. */
 
 static void task_core_updater_crc_reset(core_crc_slice_t *slice)
 {
@@ -269,52 +250,47 @@ static void task_core_updater_crc_reset(core_crc_slice_t *slice)
    slice->active      = false;
 }
 
-/* Advance the CRC of @core_path by one tick's worth of work.
+/* Advance the CRC of @core_path within @budget, an open slice of the
+ * shared I/O window.
  *
  * Returns true when the CRC is complete, writing it to @crc; false
- * means "call me again next tick".  An unreadable file completes
- * immediately with a CRC of 0, which is what the blocking version
- * returned and what the callers already treat as "no local core to
- * compare against". */
+ * means the window is spent and the caller resumes next tick.  An
+ * unreadable file completes with a CRC of 0, which callers treat as
+ * "no local core to compare against". */
 static bool task_core_updater_crc_step(core_crc_slice_t *slice,
-      const char *core_path, uint32_t *crc)
+      const char *core_path, uint32_t *crc, nbio_budget_t *budget)
 {
-   retro_time_t deadline;
-
-   if (!slice->active)
+   while (task_nbio_slice_within_budget(budget, 0, 0))
    {
-      slice->accumulator = 0;
-      /* FREQUENT_ACCESS: mapped where the VFS can, and each
-       * crc_step() then folds from the mapping without a read. */
-      if (!(slice->file = intfstream_open_file(core_path,
-                  RETRO_VFS_FILE_ACCESS_READ,
-                  RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)))
+      int64_t hashed;
+
+      if (!slice->active)
       {
-         *crc = 0;
-         return true;
+         slice->accumulator = 0;
+         /* FREQUENT_ACCESS: mapped where the VFS can, and each
+          * crc_step() then folds from the mapping without a read. */
+         if (!(slice->file = intfstream_open_file(core_path,
+                     RETRO_VFS_FILE_ACCESS_READ,
+                     RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)))
+         {
+            *crc = 0;
+            return true;
+         }
+         intfstream_rewind(slice->file);
+         slice->active = true;
       }
-      intfstream_rewind(slice->file);
-      slice->active = true;
-   }
 
-   /* do/while, so a device slow enough that one chunk exceeds the
-    * budget still makes progress rather than spinning forever. */
-   deadline = cpu_features_get_time_usec() + CORE_CRC_TICK_BUDGET_US;
-   do
-   {
-      int64_t hashed = intfstream_crc_step(slice->file,
-            &slice->accumulator, CORE_CRC_CHUNK);
-
-      if (hashed > 0)
+      if ((hashed = intfstream_crc_step(slice->file,
+                  &slice->accumulator, CORE_CRC_CHUNK)) > 0)
          continue;
 
       /* 0 is end of stream, negative is a read error; a partial
-       * hash is not a usable CRC, so both yield 0 like the old
+       * hash is not a usable CRC, so both yield 0 like the
        * open-failure path. */
       *crc = (hashed == 0) ? slice->accumulator : 0;
       task_core_updater_crc_reset(slice);
       return true;
-   } while (cpu_features_get_time_usec() < deadline);
+   }
 
    return false;
 }
@@ -956,13 +932,21 @@ static void task_core_updater_download_handler(retro_task_t *task)
                   download_handle->local_core_path;
                if (
                        (local_core_path && *local_core_path)
-                     && path_is_valid  (local_core_path)
+                     && (     download_handle->crc_slice.active
+                           || path_is_valid(local_core_path))
                   )
                {
+                  bool done;
                   uint32_t crc = 0;
-                  if (!task_core_updater_crc_step(
-                           &download_handle->crc_slice,
-                           local_core_path, &crc))
+                  nbio_budget_t budget;
+
+                  task_nbio_slice_open(&budget);
+                  done = task_core_updater_crc_step(
+                        &download_handle->crc_slice,
+                        local_core_path, &crc, &budget);
+                  task_nbio_slice_close(&budget);
+
+                  if (!done)
                      break; /* resume next tick */
                   download_handle->local_crc = crc;
                }
@@ -1505,6 +1489,153 @@ static void free_update_installed_cores_handle(
    update_installed_handle = NULL;
 }
 
+/* Walks the core list and checks each installed core against the
+ * buildbot CRC.  Every list entry and every CORE_CRC_CHUNK hashed is
+ * one work item of the shared I/O window, so a single call covers as
+ * much of the list as the window allows: entries that are not
+ * installed cost a stat each, not a tick each.  Returns with the
+ * status left at ITERATE or UPDATE_CORE when the window is spent,
+ * WAIT_DOWNLOAD after pushing a download, or END. */
+static void task_update_installed_cores_scan(retro_task_t *task,
+      update_installed_cores_handle_t *handle)
+{
+   nbio_budget_t budget;
+
+   task_nbio_slice_open(&budget);
+
+   for (;;)
+   {
+      const core_updater_list_entry_t *list_entry = NULL;
+
+      if (handle->status == UPDATE_INSTALLED_CORES_ITERATE)
+      {
+         if (handle->list_index >= handle->list_size)
+         {
+            handle->status = UPDATE_INSTALLED_CORES_END;
+            break;
+         }
+
+         if (!task_nbio_slice_within_budget(&budget, 0, 0))
+            break;
+
+         if (     core_updater_list_get_index(handle->core_list,
+                     handle->list_index, &list_entry)
+               && path_is_valid(list_entry->local_core_path))
+         {
+            size_t _len;
+            char task_title[128];
+
+            handle->installed_index = handle->list_index;
+            handle->status          = UPDATE_INSTALLED_CORES_UPDATE_CORE;
+            RARCH_LOG("[Core Updater] Checking: \"%s\"...\n",
+                  list_entry->local_core_path);
+
+            _len = strlcpy(task_title, msg_hash_to_str(MSG_CHECKING_CORE),
+                  sizeof(task_title));
+            strlcpy(task_title + _len, list_entry->display_name,
+                  sizeof(task_title) - _len);
+            task_free_title(task);
+            task_set_title(task, strdup(task_title));
+            handle->title_scanning = false;
+         }
+
+         handle->list_index++;
+         continue;
+      }
+
+      /* UPDATE_INSTALLED_CORES_UPDATE_CORE */
+      {
+         uint32_t local_crc = 0;
+
+         if (!core_updater_list_get_index(handle->core_list,
+                  handle->installed_index, &list_entry))
+         {
+            handle->status = UPDATE_INSTALLED_CORES_ITERATE;
+            continue;
+         }
+
+         /* Lock check once per core, on reaching it; a CRC resumed
+          * from a previous tick has already passed it.  validate_path
+          * is false because this may run off the main thread, and the
+          * list provides sane core paths. */
+         if (     !handle->crc_slice.active
+               && core_info_get_core_lock(list_entry->local_core_path, false))
+         {
+            RARCH_LOG("[Core Updater] Skipping locked core: \"%s\".\n",
+                  list_entry->display_name);
+            handle->num_locked++;
+            handle->status = UPDATE_INSTALLED_CORES_ITERATE;
+            continue;
+         }
+
+         /* ITERATE established that the core exists; a core removed
+          * since then fails the open and hashes as 0, which requests
+          * the download the same as a mismatch. */
+         if (!task_core_updater_crc_step(&handle->crc_slice,
+                  list_entry->local_core_path, &local_crc, &budget))
+            break;
+
+         if ((local_crc != 0) && (local_crc == list_entry->crc))
+         {
+            RARCH_LOG("[Core Updater] Core \"%s\" is already at latest version.\n",
+                  list_entry->display_name);
+            handle->status = UPDATE_INSTALLED_CORES_ITERATE;
+            continue;
+         }
+
+         /* Flag must be cleared *before* the push, since the child
+          * task can complete before it returns */
+         handle->download_task_complete = false;
+
+         if (!task_push_core_updater_download_internal(
+                     handle->core_list,
+                     list_entry->remote_filename,
+                     local_crc, true,
+                     handle->auto_backup,
+                     handle->auto_backup_history_size,
+                     handle->path_dir_libretro,
+                     handle->path_dir_core_assets,
+                     handle))
+         {
+            handle->status = UPDATE_INSTALLED_CORES_ITERATE;
+            continue;
+         }
+
+         {
+            size_t _len;
+            char task_title[128];
+
+            _len = strlcpy(task_title, msg_hash_to_str(MSG_UPDATING_CORE),
+                  sizeof(task_title));
+            strlcpy(task_title + _len, list_entry->display_name,
+                  sizeof(task_title) - _len);
+            task_free_title(task);
+            task_set_title(task, strdup(task_title));
+            handle->title_scanning = false;
+         }
+
+         handle->num_updated++;
+         handle->status = UPDATE_INSTALLED_CORES_WAIT_DOWNLOAD;
+         RARCH_LOG("[Core Updater] Downloading: \"%s\"...\n",
+               list_entry->display_name);
+         break;
+      }
+   }
+
+   task_nbio_slice_close(&budget);
+
+   /* Mid-list with no core in hand: show the scan, once */
+   if (     handle->status == UPDATE_INSTALLED_CORES_ITERATE
+         && !handle->title_scanning)
+   {
+      task_free_title(task);
+      task_set_title(task, strdup(msg_hash_to_str(MSG_SCANNING_CORES)));
+      handle->title_scanning = true;
+   }
+
+   task_set_progress(task, (handle->list_index * 100) / handle->list_size);
+}
+
 static void task_update_installed_cores_handler(retro_task_t *task)
 {
    uint8_t flg;
@@ -1573,176 +1704,8 @@ static void task_update_installed_cores_handler(retro_task_t *task)
          }
          break;
       case UPDATE_INSTALLED_CORES_ITERATE:
-         {
-            const core_updater_list_entry_t *list_entry = NULL;
-            bool core_installed                         = false;
-
-            /* Check whether we have reached the end
-             * of the list */
-            if (update_installed_handle->list_index >= update_installed_handle->list_size)
-            {
-               update_installed_handle->status = UPDATE_INSTALLED_CORES_END;
-               break;
-            }
-
-            /* Check whether current core is installed */
-            if (core_updater_list_get_index(
-                  update_installed_handle->core_list,
-                  update_installed_handle->list_index,
-                  &list_entry))
-            {
-               if (path_is_valid(list_entry->local_core_path))
-               {
-                  core_installed                           = true;
-                  update_installed_handle->installed_index =
-                        update_installed_handle->list_index;
-                  update_installed_handle->status          =
-                        UPDATE_INSTALLED_CORES_UPDATE_CORE;
-                  RARCH_LOG("[Core Updater] Checking: \"%s\"...\n",
-                        list_entry->local_core_path);
-               }
-            }
-
-            /* Update progress display */
-            task_free_title(task);
-
-            if (core_installed)
-            {
-               char task_title[128];
-               size_t _len = strlcpy(
-                     task_title, msg_hash_to_str(MSG_CHECKING_CORE),
-                     sizeof(task_title));
-               strlcpy(task_title + _len, list_entry->display_name,
-                     sizeof(task_title) - _len);
-
-               task_set_title(task, strdup(task_title));
-            }
-            else
-               task_set_title(task, strdup(msg_hash_to_str(MSG_SCANNING_CORES)));
-
-            task_set_progress(task,
-                  (update_installed_handle->list_index * 100) /
-                        update_installed_handle->list_size);
-
-            /* Increment list index */
-            update_installed_handle->list_index++;
-         }
-         break;
       case UPDATE_INSTALLED_CORES_UPDATE_CORE:
-         {
-            const core_updater_list_entry_t *list_entry = NULL;
-            uint32_t local_crc                          = 0;
-
-            /* Get list entry
-             * > In the event of an error, just return
-             *   to UPDATE_INSTALLED_CORES_ITERATE state */
-            if (!core_updater_list_get_index(
-                  update_installed_handle->core_list,
-                  update_installed_handle->installed_index,
-                  &list_entry))
-            {
-               update_installed_handle->status = UPDATE_INSTALLED_CORES_ITERATE;
-               break;
-            }
-
-            /* Check whether core is locked
-             * > Have to set validate_path to 'false' here,
-             *   since this does not run on the main thread
-             * > Validation is not required anyway, since core
-             *   updater list provides 'sane' core paths */
-            if (core_info_get_core_lock(list_entry->local_core_path, false))
-            {
-               RARCH_LOG("[Core Updater] Skipping locked core: \"%s\".\n",
-                     list_entry->display_name);
-
-               /* Core update is disabled
-                * > Just increment 'locked cores' counter and
-                *   return to UPDATE_INSTALLED_CORES_ITERATE state */
-               update_installed_handle->num_locked++;
-               update_installed_handle->status = UPDATE_INSTALLED_CORES_ITERATE;
-               break;
-            }
-
-            /* Get CRC of existing core.
-             *
-             * Sliced across ticks.  This is the site that matters
-             * most: it runs once per installed core, so a 40-core
-             * set hashes 601MB (measured) before a single byte is
-             * downloaded, and on a repeat run where nothing has
-             * changed it reads all of it again to establish that.
-             * Slicing does not reduce that total -- it stops any one
-             * tick from carrying an arbitrary share of it. */
-            {
-               const char *local_core_path = list_entry->local_core_path;
-               if (
-                       (local_core_path && *local_core_path)
-                     && path_is_valid  (local_core_path)
-                  )
-               {
-                  uint32_t crc = 0;
-                  if (!task_core_updater_crc_step(
-                           &update_installed_handle->crc_slice,
-                           local_core_path, &crc))
-                     break; /* resume next tick */
-                  local_crc = crc;
-               }
-            }
-
-            /* Check whether existing core and remote core
-             * have the same CRC
-             * > If CRC matches, then core is already the most
-             *   recent version - just return to
-             *   UPDATE_INSTALLED_CORES_ITERATE state */
-            if ((local_crc != 0) && (local_crc == list_entry->crc))
-            {
-               update_installed_handle->status = UPDATE_INSTALLED_CORES_ITERATE;
-               RARCH_LOG("[Core Updater] Core \"%s\" is already at latest version.\n",
-                     list_entry->display_name);
-               break;
-            }
-
-            /* Existing core is not the most recent version
-             * > Request download
-             * > Flag must be cleared *before* the push, since
-             *   the child task can complete before it returns */
-            update_installed_handle->download_task_complete = false;
-
-            /* Again, if an error occurred, just return to
-             * UPDATE_INSTALLED_CORES_ITERATE state */
-            if (!task_push_core_updater_download_internal(
-                        update_installed_handle->core_list,
-                        list_entry->remote_filename,
-                        local_crc, true,
-                        update_installed_handle->auto_backup,
-                        update_installed_handle->auto_backup_history_size,
-                        update_installed_handle->path_dir_libretro,
-                        update_installed_handle->path_dir_core_assets,
-                        update_installed_handle))
-               update_installed_handle->status = UPDATE_INSTALLED_CORES_ITERATE;
-            else
-            {
-               size_t _len;
-               char task_title[128];
-               /* Update task title */
-               task_free_title(task);
-
-               _len = strlcpy(
-                     task_title, msg_hash_to_str(MSG_UPDATING_CORE),
-                     sizeof(task_title));
-               strlcpy(task_title + _len, list_entry->display_name,
-                     sizeof(task_title) - _len);
-
-               task_set_title(task, strdup(task_title));
-
-               /* Increment 'updated cores' counter */
-               update_installed_handle->num_updated++;
-
-               /* Wait for download to complete */
-               update_installed_handle->status = UPDATE_INSTALLED_CORES_WAIT_DOWNLOAD;
-               RARCH_LOG("[Core Updater] Downloading: \"%s\"...\n",
-                     list_entry->display_name);
-            }
-         }
+         task_update_installed_cores_scan(task, update_installed_handle);
          break;
       case UPDATE_INSTALLED_CORES_WAIT_DOWNLOAD:
          {
@@ -1895,6 +1858,7 @@ void task_push_update_installed_cores(
    update_installed_handle->installed_index          = 0;
    update_installed_handle->num_updated              = 0;
    update_installed_handle->num_locked               = 0;
+   update_installed_handle->title_scanning           = false;
    update_installed_handle->status                   = UPDATE_INSTALLED_CORES_BEGIN;
 
    if (!update_installed_handle->core_list)

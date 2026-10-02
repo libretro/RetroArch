@@ -500,6 +500,36 @@ jobs:
           make -f Makefile.refresh_flags clean
           echo "[pass] get_list_refresh_flags_test (TSan)"
 
+      - name: Build and run update_installed_scan_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/core_updater
+        run: |
+          set -eu
+          # Regression lane for the Update Installed Cores scan in
+          # tasks/task_core_updater.c, against the shipping task, list
+          # parser, HTTP task and task queue.  Every list entry and
+          # every CRC chunk is a work item of the shared per-frame I/O
+          # window (task_nbio_slice_*), so with the unthreaded queue a
+          # 512-entry list finishes in a few dozen frames rather than
+          # one frame per entry; a CRC resumed on a later tick does not
+          # repeat the per-core stats.  Both are asserted: the gather
+          # count, and path_is_valid() calls counted at the link
+          # boundary.
+          make -f Makefile.update_installed clean all
+          test -x update_installed_scan_test
+          timeout 600 ./update_installed_scan_test
+          echo "[pass] update_installed_scan_test"
+          make -f Makefile.update_installed clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 600 \
+             ./update_installed_scan_test
+          echo "[pass] update_installed_scan_test (ASan)"
+          make -f Makefile.update_installed clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 600 \
+             ./update_installed_scan_test
+          make -f Makefile.update_installed clean
+          echo "[pass] update_installed_scan_test (TSan)"
+
       - name: Build and run core_backup_io_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/core_backup
