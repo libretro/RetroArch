@@ -4489,23 +4489,29 @@ static retro_time_t runloop_core_runtime_tick(
       float slowmotion_ratio,
       retro_time_t current_time)
 {
-   uint32_t flags = runloop_st->flags;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   uint32_t flags                 = runloop_st->flags;
+   double fps                     = video_st->av_info.timing.fps;
+   retro_time_t frame_time        = 0;
 
-   /* Account for slow motion — no need to touch video state */
-   if (flags & RUNLOOP_FLAG_SLOWMOTION)
+   /* A core that reports no frame rate - the dummy core, or one that
+    * has not set its timing yet - has no frame time to count, and
+    * neither has a rate so small that one frame outlasts a day.
+    * Any other rate is counted exactly as it always was. */
+   if (fps > 0.0)
    {
-      video_driver_state_t *video_st = video_state_get_ptr();
-      retro_time_t frame_time        =
-         (retro_time_t)((1.0 / video_st->av_info.timing.fps) * 1000000.0);
-      return (retro_time_t)(frame_time * slowmotion_ratio);
+      double frame_usec = (1.0 / fps) * 1000000.0;
+      if (frame_usec < 86400000000.0)
+         frame_time = (retro_time_t)frame_usec;
    }
+
+   /* Account for slow motion */
+   if (flags & RUNLOOP_FLAG_SLOWMOTION)
+      return (retro_time_t)(frame_time * slowmotion_ratio);
 
    /* Account for fast forward */
    if (flags & RUNLOOP_FLAG_FASTMOTION)
    {
-      video_driver_state_t *video_st = video_state_get_ptr();
-      retro_time_t frame_time        =
-         (retro_time_t)((1.0 / video_st->av_info.timing.fps) * 1000000.0);
       retro_time_t potential_frame_time = current_time
          - runloop_st->core_runtime_last;
       runloop_st->core_runtime_last     = current_time;
@@ -4516,10 +4522,7 @@ static retro_time_t runloop_core_runtime_tick(
       return frame_time;
    }
 
-   {
-      video_driver_state_t *video_st = video_state_get_ptr();
-      return (retro_time_t)((1.0 / video_st->av_info.timing.fps) * 1000000.0);
-   }
+   return frame_time;
 }
 
 static bool core_unload_game(void)
