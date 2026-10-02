@@ -6532,9 +6532,9 @@ MENU_NOINLINE static int menu_input_post_iterate(
          /* Normal menu input */
          else
          {
-            if (menu_input->pointer.type != MENU_POINTER_TOUCHSCREEN)
-               point.gesture = MENU_INPUT_GESTURE_NONE;
-            else if (!(menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED))
+            /* Detect gesture type. A mouse goes through here as well:
+             * its left click is the tap. */
+            if (!(menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED))
             {
                /* Pointer hasn't moved - check press duration */
                if (menu_input->pointer.press_duration
