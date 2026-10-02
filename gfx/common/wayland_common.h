@@ -31,7 +31,7 @@ void gfx_ctx_wl_get_video_size_common(void *data, unsigned *dims);
 void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl);
 
 /* Frees a context, or on a video reinit (@may_keep) keeps its window
- * for the next init_common of the same context driver to adopt. */
+ * for the next init_common to adopt. */
 void gfx_ctx_wl_free_common(gfx_ctx_wayland_data_t *wl, bool may_keep);
 
 /* Destroys a kept window no context adopted. */

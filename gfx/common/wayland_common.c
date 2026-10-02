@@ -1140,8 +1140,9 @@ bool gfx_ctx_wl_init_common(
    settings_t *settings         = config_get_ptr();
    unsigned video_monitor_index = settings->uints.video_monitor_index;
 
-   /* The context driver that kept the window takes it back */
-   if (wl_kept && wl_kept->driver_configure_handler == driver_configure_handler)
+   /* Whichever Wayland context comes next takes back the kept window:
+    * the previous one took its EGL window or Vulkan surface with it. */
+   if (wl_kept)
    {
       *wwl    = wl_kept;
       wl_kept = NULL;
@@ -1149,7 +1150,6 @@ bool gfx_ctx_wl_init_common(
       RARCH_LOG("[Wayland] Took back the kept window.\n");
       return true;
    }
-   gfx_ctx_wl_release_kept();
 
    *wwl                         = calloc(1, sizeof(gfx_ctx_wayland_data_t));
    wl                           = *wwl;
