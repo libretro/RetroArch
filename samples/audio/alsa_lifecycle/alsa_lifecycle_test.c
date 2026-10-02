@@ -11,7 +11,9 @@
  * scripted so the harness can count how often the driver waits, hand
  * it EAGAIN, and hand it an XRUN, and assert that the write returns.
  * The capture read runs against the same scripted wait, since it is
- * the same contract on the other stream. Every wait the driver makes
+ * the same contract on the other stream. Its stream state can be
+ * scripted too - an overrun, a suspend, a pause - with snd_pcm_start
+ * refusing a stream that is not prepared, as libasound does. Every wait the driver makes
  * passes through the wrap, which fails the run on an unbounded one,
  * and a watchdog thread turns a hang into an abort. */
 
@@ -118,11 +120,44 @@ snd_pcm_sframes_t __wrap_snd_pcm_readi(snd_pcm_t *pcm, void *buffer, snd_pcm_ufr
    return scr_readi_rc;
 }
 
+/* The stream state, scripted: -1 is the real one. snd_pcm_recover()
+ * prepares an overrun or suspended stream - or, when a resume is
+ * scripted, takes a suspended one straight back to running - and
+ * snd_pcm_start() refuses anything that is not prepared. */
+static int      scr_state = -1;
+static int      scr_resume_running;
+static unsigned n_start;
+
+snd_pcm_state_t __real_snd_pcm_state(snd_pcm_t *pcm);
+snd_pcm_state_t __wrap_snd_pcm_state(snd_pcm_t *pcm)
+{
+   if (scr_state >= 0)
+      return (snd_pcm_state_t)scr_state;
+   return __real_snd_pcm_state(pcm);
+}
+
+int __real_snd_pcm_start(snd_pcm_t *pcm);
+int __wrap_snd_pcm_start(snd_pcm_t *pcm)
+{
+   n_start++;
+   if (scr_state < 0)
+      return __real_snd_pcm_start(pcm);
+   if (scr_state != SND_PCM_STATE_PREPARED)
+      return -EBADFD;
+   scr_state = SND_PCM_STATE_RUNNING;
+   return 0;
+}
+
 int __real_snd_pcm_recover(snd_pcm_t *pcm, int err, int silent);
 int __wrap_snd_pcm_recover(snd_pcm_t *pcm, int err, int silent)
 {
    (void)pcm; (void)err; (void)silent;
    n_recover++;
+   if (scr_state == SND_PCM_STATE_XRUN)
+      scr_state = SND_PCM_STATE_PREPARED;
+   else if (scr_state == SND_PCM_STATE_SUSPENDED)
+      scr_state = scr_resume_running ? SND_PCM_STATE_RUNNING
+                                     : SND_PCM_STATE_PREPARED;
    return 0;
 }
 
@@ -143,7 +178,9 @@ static void *watchdog(void *arg)
 static void reset_counts(void)
 {
    n_pause_on = n_pause_off = n_drop = n_prepare = 0;
-   n_writei = n_wait = n_recover = n_readi = 0;
+   n_writei = n_wait = n_recover = n_readi = n_start = 0;
+   scr_state = -1;
+   scr_resume_running = 0;
    scr_readi_rc = -EAGAIN;
    scr_writei_i = scr_writei_n = 0;
    scr_wait_rc = 1;
@@ -314,6 +351,78 @@ static void s_blocking_read(void)
    microphone_alsa.free(drv);
 }
 
+/* A capture the caller did not read in time overruns and stops; a
+ * suspend stops it too. The read has to bring it back - recover, then
+ * start - rather than call snd_pcm_start() on it, which refuses, and
+ * fail every read from then on. A stream the frontend paused is left
+ * alone. */
+static void s_stopped_capture(void)
+{
+   void *drv, *mic;
+   uint8_t buf[2048];
+   unsigned new_rate = 0;
+   int      got;
+
+   printf("   a capture stopped by an overrun or a suspend\n");
+   reset_counts();
+   if (!(drv = microphone_alsa.init()))
+   {
+      CHECK(false, "the microphone driver did not initialize");
+      return;
+   }
+   if (!(mic = microphone_alsa.open_mic(drv, "null", 48000, 64, &new_rate)))
+   {
+      printf("      no capture device; skipped\n");
+      microphone_alsa.free(drv);
+      return;
+   }
+   microphone_alsa.start_mic(drv, mic);
+
+   /* Overrun: recovered, started, and the read delivers. */
+   reset_counts();
+   scr_state    = SND_PCM_STATE_XRUN;
+   scr_wait_rc  = 1;
+   scr_readi_rc = 0;
+   got = microphone_alsa.read(drv, mic, buf, sizeof(buf));
+   CHECK(got == (int)sizeof(buf), "after an overrun: read returned %d", got);
+   CHECK(n_recover == 1 && n_start == 1,
+         "after an overrun: %u recover(s), %u start(s)", n_recover, n_start);
+
+   /* And the next read is an ordinary one. */
+   n_recover = n_start = 0;
+   got = microphone_alsa.read(drv, mic, buf, sizeof(buf));
+   CHECK(got == (int)sizeof(buf) && n_recover == 0 && n_start == 0,
+         "the read after: returned %d, %u recover(s), %u start(s)", got, n_recover, n_start);
+
+   /* Suspended, prepared on recovery: started. */
+   reset_counts();
+   scr_state    = SND_PCM_STATE_SUSPENDED;
+   scr_readi_rc = 0;
+   got = microphone_alsa.read(drv, mic, buf, sizeof(buf));
+   CHECK(got == (int)sizeof(buf) && n_start == 1,
+         "after a suspend: read returned %d, %u start(s)", got, n_start);
+
+   /* Suspended, resumed straight to running: not started again. */
+   reset_counts();
+   scr_state          = SND_PCM_STATE_SUSPENDED;
+   scr_resume_running = 1;
+   scr_readi_rc       = 0;
+   got = microphone_alsa.read(drv, mic, buf, sizeof(buf));
+   CHECK(got == (int)sizeof(buf) && n_start == 0,
+         "after a suspend and a resume: read returned %d, %u start(s)", got, n_start);
+
+   /* Paused by the frontend: the read leaves it paused. */
+   reset_counts();
+   scr_state = SND_PCM_STATE_PAUSED;
+   got = microphone_alsa.read(drv, mic, buf, sizeof(buf));
+   CHECK(got < 0 && n_start == 0 && n_recover == 0,
+         "a paused capture: read returned %d, %u start(s)", got, n_start);
+
+   reset_counts();
+   microphone_alsa.close_mic(drv, mic);
+   microphone_alsa.free(drv);
+}
+
 int main(void)
 {
    pthread_t wd;
@@ -327,6 +436,7 @@ int main(void)
    s_repeated();
    s_blocking_write();
    s_blocking_read();
+   s_stopped_capture();
 
    if (failures)
    {

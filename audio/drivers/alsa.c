@@ -119,22 +119,28 @@ static int alsa_microphone_read(void *driver_context, void *mic_context, void *s
 
    size        = BYTES_TO_FRAMES(len, mic->stream_info.frame_bits);
 
+   /* A capture the caller has not read in time overruns and stops; one
+    * the system suspended stops too. Either is prepared again by
+    * snd_pcm_recover() before it can start - snd_pcm_start() refuses
+    * it otherwise. A stream the frontend paused, or one that is gone,
+    * is not this read's to start. Nothing is logged: this is the
+    * frame's read, and the frontend counts the reads that fail. */
    state = snd_pcm_state(mic->pcm);
    if (state != SND_PCM_STATE_RUNNING)
    {
-      RARCH_WARN("[ALSA] Expected microphone \"%s\" to be in state RUNNING, was in state %s.\n",
-                 snd_pcm_name(mic->pcm),
-                 snd_pcm_state_name(state));
-
-      errnum = snd_pcm_start(mic->pcm);
-      if (errnum < 0)
-      {
-         RARCH_ERR("[ALSA] Failed to start microphone \"%s\": %s.\n",
-                   snd_pcm_name(mic->pcm),
-                   snd_strerror(errnum));
-
+      if (state == SND_PCM_STATE_XRUN)
+         errnum = snd_pcm_recover(mic->pcm, -EPIPE, 1);
+      else if (state == SND_PCM_STATE_SUSPENDED)
+         errnum = snd_pcm_recover(mic->pcm, -ESTRPIPE, 1);
+      else if (state != SND_PCM_STATE_PREPARED)
          return -1;
-      }
+
+      /* A resume can bring it straight back to RUNNING; only a
+       * prepared stream is started. */
+      if (errnum >= 0 && snd_pcm_state(mic->pcm) == SND_PCM_STATE_PREPARED)
+         errnum = snd_pcm_start(mic->pcm);
+      if (errnum < 0)
+         return -1;
    }
 
    timeout_ms = alsa_microphone_wait_ms(mic);
