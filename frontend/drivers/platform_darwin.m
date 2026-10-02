@@ -855,17 +855,17 @@ static bool accessibility_speak_macos(int speed,
       if (language_speaker && language_speaker[0] != '\0')
       {
          char* cmd[] = {"say", "-v", NULL,
-                        NULL, "-r", NULL, NULL};
+                        "-r", NULL, "--", NULL, NULL};
          cmd[2]      = language_speaker;
-         cmd[3]      = (char *) speak_text;
-         cmd[5]      = speeds[speed-1];
+         cmd[4]      = speeds[speed-1];
+         cmd[6]      = (char *) speak_text;
          execvp("say", cmd);
       }
       else
       {
-         char* cmd[] = {"say", NULL, "-r", NULL,  NULL};
-         cmd[1]      = (char*) speak_text;
-         cmd[3]      = speeds[speed-1];
+         char* cmd[] = {"say", "-r", NULL, "--", NULL, NULL};
+         cmd[2]      = speeds[speed-1];
+         cmd[4]      = (char*) speak_text;
          execvp("say",cmd);
       }
    }
