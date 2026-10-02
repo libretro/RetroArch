@@ -463,6 +463,22 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./switch_audio_test
           echo "[pass] switch_audio_test (ASan)"
 
+      - name: Build and run xenon360_test (the libxenon driver against a scripted sound queue)
+        shell: bash
+        working-directory: samples/audio/xenon360
+        run: |
+          set -eu
+          # audio/drivers/xenon360_audio.c against stand-in libxenon
+          # headers: buffer_size() is the latency setting, write_avail()
+          # what a write takes, the queue never past it, and a write
+          # longer than the staging buffer goes in passes - ASan is what
+          # sees a pass overrun it.
+          make clean && make -j$(nproc) all
+          ./xenon360_test
+          make clean && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./xenon360_test
+          echo "[pass] xenon360_test (ASan)"
+
       - name: Build and run live_drivers_test (a live PulseAudio server, a null ALSA PCM)
         shell: bash
         working-directory: samples/audio/live_drivers
