@@ -102,6 +102,17 @@ enum core_updater_download_status
    CORE_UPDATER_DOWNLOAD_END
 };
 
+/* Completion of a sub-task that reports through a callback, shared
+ * between the handler waiting on it and that callback.  Each holds a
+ * reference, so it outlives whichever side lets go first: a download
+ * task cancelled mid-wait, or a sub-task retired before the handler's
+ * next tick. */
+typedef struct
+{
+   retro_atomic_int_t refs;
+   retro_atomic_int_t complete;
+} core_updater_sub_task_done_t;
+
 typedef struct core_updater_download_handle
 {
    char *path_dir_libretro;
@@ -114,6 +125,7 @@ typedef struct core_updater_download_handle
    retro_task_t *http_task;
    retro_task_t *decompress_task;
    retro_task_t *backup_task;
+   core_updater_sub_task_done_t *backup_done;
    size_t auto_backup_history_size;
    core_crc_slice_t crc_slice;
    uint32_t local_crc;
@@ -356,6 +368,25 @@ static bool core_updater_sub_task_running(retro_task_t *sub_task,
 
    *progress = probe.progress;
    return true;
+}
+
+static void core_updater_sub_task_done_release(
+      core_updater_sub_task_done_t *done)
+{
+   if (done && retro_atomic_fetch_sub_int(&done->refs, 1) == 1)
+      free(done);
+}
+
+/* The backup task's completion, at its retirement: before the task
+ * is freed, so a handler that sees 'complete' never reads it again. */
+static void cb_task_core_updater_backup(
+      retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   core_updater_sub_task_done_t *done =
+         (core_updater_sub_task_done_t*)user_data;
+   retro_atomic_store_release_int(&done->complete, 1);
+   core_updater_sub_task_done_release(done);
 }
 
 /*************************/
@@ -877,6 +908,10 @@ static void free_core_updater_download_handle(core_updater_download_handle_t *do
     * open intfstream; without this it leaks the handle and the fd. */
    task_core_updater_crc_reset(&download_handle->crc_slice);
 
+   /* Cancelled mid-wait: the backup's callback still holds its own
+    * reference and frees the record when it runs. */
+   core_updater_sub_task_done_release(download_handle->backup_done);
+
    if (download_handle->path_dir_libretro)
       free(download_handle->path_dir_libretro);
 
@@ -977,13 +1012,29 @@ static void task_core_updater_download_handler(retro_task_t *task)
          break;
       case CORE_UPDATER_DOWNLOAD_START_BACKUP:
          {
-            /* Request core backup */
-            download_handle->backup_task = (retro_task_t*)task_push_core_backup(
-                  download_handle->local_core_path,
-                  download_handle->display_name,
-                  download_handle->local_crc, CORE_BACKUP_MODE_AUTO,
-                  download_handle->auto_backup_history_size,
-                  download_handle->path_dir_core_assets, true);
+            core_updater_sub_task_done_t *done =
+                  (core_updater_sub_task_done_t*)malloc(sizeof(*done));
+
+            /* Request core backup
+             * > One reference for this handler, one for the
+             *   backup's callback, which may run before the push
+             *   returns */
+            if (done)
+            {
+               retro_atomic_int_init(&done->refs, 2);
+               retro_atomic_int_init(&done->complete, 0);
+               if (!(download_handle->backup_task = (retro_task_t*)
+                        task_push_core_backup(
+                           download_handle->local_core_path,
+                           download_handle->display_name,
+                           download_handle->local_crc, CORE_BACKUP_MODE_AUTO,
+                           download_handle->auto_backup_history_size,
+                           download_handle->path_dir_core_assets, true,
+                           cb_task_core_updater_backup, done)))
+                  free(done); /* no task, so no callback */
+               else
+                  download_handle->backup_done = done;
+            }
 
             if (download_handle->backup_task)
             {
@@ -1016,42 +1067,27 @@ static void task_core_updater_download_handler(retro_task_t *task)
          }
          break;
       case CORE_UPDATER_DOWNLOAD_WAIT_BACKUP:
+         /* Completion is read from the callback's flag, never from
+          * the backup task: a retired task is freed, and the flag is
+          * set before that happens.  Progress is only copied while
+          * the flag is clear, through the same probe the HTTP wait
+          * uses. */
+         if (retro_atomic_load_acquire_int(
+                  &download_handle->backup_done->complete))
          {
-            bool backup_complete = false;
-
-            /* > If task is running, check 'is finished'
-             *   status
-             * > If task is NULL, then it is finished
-             *   by definition */
-            if (download_handle->backup_task)
-            {
-               uint8_t _flg    = task_get_flags(download_handle->backup_task);
-
-               if ((_flg & RETRO_TASK_FLG_FINISHED) > 0)
-                  backup_complete = true;
-               else
-                  backup_complete = false;
-
-               /* If backup task is running, copy current
-                * progress value to *this* task */
-               if (!backup_complete)
-               {
-                  /* Backup accounts for first third of
-                   * task progress */
-                  int8_t progress = task_get_progress(download_handle->backup_task);
-
-                  task_set_progress(task, (int8_t)(((float)progress * (1.0f / 3.0f)) + 0.5f));
-               }
-            }
-            else
-               backup_complete = true;
-
-            /* If backup is complete, initialise download */
-            if (backup_complete)
-            {
-               download_handle->backup_task = NULL;
-               download_handle->status      = CORE_UPDATER_DOWNLOAD_START_TRANSFER;
-            }
+            core_updater_sub_task_done_release(download_handle->backup_done);
+            download_handle->backup_done = NULL;
+            download_handle->backup_task = NULL;
+            download_handle->status      = CORE_UPDATER_DOWNLOAD_START_TRANSFER;
+         }
+         else
+         {
+            int8_t progress;
+            /* Backup accounts for first third of task progress */
+            if (core_updater_sub_task_running(
+                     download_handle->backup_task, &progress))
+               task_set_progress(task,
+                     (int8_t)(((float)progress * (1.0f / 3.0f)) + 0.5f));
          }
          break;
       case CORE_UPDATER_DOWNLOAD_START_TRANSFER:
@@ -1403,6 +1439,7 @@ static void *task_push_core_updater_download_internal(
          &download_handle->decompress_task_complete, 0);
    download_handle->backup_enabled           = false;
    download_handle->backup_task              = NULL;
+   download_handle->backup_done              = NULL;
    download_handle->status                   = CORE_UPDATER_DOWNLOAD_BEGIN;
 
    /* Concurrent downloads of the same file are not allowed */

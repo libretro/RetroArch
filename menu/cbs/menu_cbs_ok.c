@@ -9013,7 +9013,8 @@ static int action_ok_core_create_backup(const char *path,
    if (!core_path || !*core_path)
       return -1;
    task_push_core_backup(core_path, NULL, 0, CORE_BACKUP_MODE_MANUAL,
-         (size_t)auto_backup_history_size, dir_core_assets, false);
+         (size_t)auto_backup_history_size, dir_core_assets, false,
+         NULL, NULL);
    return 0;
 }
 

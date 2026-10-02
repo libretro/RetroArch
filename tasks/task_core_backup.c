@@ -123,6 +123,9 @@ typedef struct core_backup_handle
    uint32_t crc_accumulator;
    bool crc_active;
    core_backup_list_t *backup_list;
+   /* The pusher's completion callback, chained from
+    * cb_task_core_backup() */
+   retro_task_callback_t done_cb;
    size_t auto_backup_history_size;
    size_t num_auto_backups_to_remove;
    size_t backup_index;
@@ -227,12 +230,16 @@ static void cb_task_core_backup(
       retro_task_t *task, void *task_data,
       void *user_data, const char *err)
 {
+   /* Still attached: task_core_backup_cleanup() runs after this */
+   core_backup_handle_t *backup_handle = (core_backup_handle_t*)task->state;
 #ifdef HAVE_MENU
    struct menu_state *menu_st = menu_state_get_ptr();
    if (menu_st)
       menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                       | MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
+   if (backup_handle && backup_handle->done_cb)
+      backup_handle->done_cb(task, task_data, user_data, err);
 }
 
 static void task_core_restore_handler(retro_task_t *task);
@@ -723,7 +730,8 @@ void *task_push_core_backup(
       const char *core_path, const char *core_display_name,
       uint32_t crc, enum core_backup_mode backup_mode,
       size_t auto_backup_history_size,
-      const char *dir_core_assets, bool mute)
+      const char *dir_core_assets, bool mute,
+      retro_task_callback_t cb, void *user_data)
 {
    size_t _len;
    task_finder_data_t find_data;
@@ -790,6 +798,7 @@ void *task_push_core_backup(
    backup_handle->core_file                  = NULL;
    backup_handle->backup_file                = NULL;
    backup_handle->backup_list                = NULL;
+   backup_handle->done_cb                    = cb;
    backup_handle->status                     = CORE_BACKUP_BEGIN;
 
    /* Create task */
@@ -807,6 +816,7 @@ void *task_push_core_backup(
    task->handler          = task_core_backup_handler;
    task->callback         = cb_task_core_backup;
    task->cleanup          = task_core_backup_cleanup;
+   task->user_data        = user_data;
    task->state            = backup_handle;
    task->title            = strdup(task_title);
    task->progress         = 0;

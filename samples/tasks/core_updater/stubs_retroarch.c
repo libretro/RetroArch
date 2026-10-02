@@ -7,6 +7,8 @@
 
 #include <string.h>
 #include <boolean.h>
+#include <retro_atomic.h>
+#include <queues/task_queue.h>
 
 #include "../../../configuration.h"
 #include "../../../msg_hash.h"
@@ -109,16 +111,44 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
    return false;
 }
 
+/* A stand-in backup task with the shipping contract: a real task on
+ * the real queue, which finishes once stub_backup_hold is clear and
+ * whose callback reaches @cb with @user_data at retirement.  The
+ * pushed task is published in stub_backup_task for the thread that
+ * pushed it, and counted in stub_backup_pushes for any other. */
+retro_atomic_int_t stub_backup_hold;
+retro_atomic_int_t stub_backup_pushes;
+retro_task_t *volatile stub_backup_task = NULL;
+
+static void stub_backup_handler(retro_task_t *task)
+{
+   if (retro_atomic_load_acquire_int(&stub_backup_hold))
+      return;
+   task_set_progress(task, 100);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
 void *task_push_core_backup(
       const char *core_path, const char *core_display_name,
       uint32_t crc, enum core_backup_mode backup_mode,
       size_t auto_backup_history_size,
-      const char *dir_core_assets, bool mute)
+      const char *dir_core_assets, bool mute,
+      retro_task_callback_t cb, void *user_data)
 {
+   retro_task_t *task = task_init();
    (void)core_path; (void)core_display_name; (void)crc;
    (void)backup_mode; (void)auto_backup_history_size;
    (void)dir_core_assets; (void)mute;
-   return NULL;
+   if (!task)
+      return NULL;
+   task->handler    = stub_backup_handler;
+   task->callback   = cb;
+   task->user_data  = user_data;
+   task->flags     |= RETRO_TASK_FLG_MUTE;
+   stub_backup_task = task;
+   retro_atomic_fetch_add_int(&stub_backup_pushes, 1);
+   task_queue_push(task);
+   return task;
 }
 
 void menu_contentless_cores_free(void)

@@ -407,7 +407,8 @@ static void test_backup_throughput(size_t core_size, retro_time_t step,
    task_queue_init(false, NULL);
 
    if (!task_push_core_backup(g_core_path, "Test Core", 0,
-            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true))
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true,
+            NULL, NULL))
    {
       printf("    SKIP: task_push_core_backup returned NULL\n");
       task_queue_deinit();
@@ -569,7 +570,8 @@ static void test_read_amplification(void)
    task_queue_init(false, NULL);
    io_reset();
    if (!task_push_core_backup(g_core_path, "Test Core", 0,
-            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true))
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true,
+            NULL, NULL))
    {
       printf("    SKIP: task_push_core_backup returned NULL\n");
       io_stop();
@@ -624,7 +626,8 @@ static void test_read_amplification(void)
    task_queue_init(false, NULL);
    io_reset();
    if (!task_push_core_backup(g_core_path, "Test Core", crc,
-            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true))
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true,
+            NULL, NULL))
    {
       printf("    SKIP: task_push_core_backup returned NULL\n");
       io_stop();
@@ -682,7 +685,8 @@ static void test_crc_is_sliced(void)
    task_queue_init(false, NULL);
    /* crc == 0 is what forces the handler to compute it. */
    if (!task_push_core_backup(g_core_path, "Test Core", 0,
-            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true))
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true,
+            NULL, NULL))
    {
       printf("    SKIP: task_push_core_backup returned NULL\n");
       task_queue_deinit();
@@ -830,6 +834,19 @@ static bool finished_task_finder(retro_task_t *task, void *user_data)
    return (task_get_flags(task) & RETRO_TASK_FLG_FINISHED) != 0;
 }
 
+/* task_push_core_backup()'s completion callback: once per task, at
+ * retirement, with the pusher's user_data. */
+static int g_done_calls;
+static void *g_done_user_data;
+
+static void count_done_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   (void)task; (void)task_data; (void)err;
+   g_done_calls++;
+   g_done_user_data = user_data;
+}
+
 static void test_finished_task_stays_findable(void)
 {
    task_finder_data_t find_data;
@@ -855,10 +872,14 @@ static void test_finished_task_stays_findable(void)
    g_clock_now  = 1000000;
    g_clock_step = 0;
 
+   g_done_calls     = 0;
+   g_done_user_data = NULL;
+
    task_queue_init(true, NULL);
 
    if (!task_push_core_backup(g_core_path, "Test Core", 0,
-            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true))
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true,
+            count_done_cb, &g_done_calls))
    {
       printf("    SKIP: task_push_core_backup returned NULL\n");
       task_queue_deinit();
@@ -875,13 +896,22 @@ static void test_finished_task_stays_findable(void)
    CHECK(i < 10000, "backup task did not finish");
 
    CHECK(!task_push_core_backup(g_core_path, "Test Core", 0,
-            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true),
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true,
+            NULL, NULL),
          "duplicate backup accepted while the first is still findable");
+
+   CHECK(g_done_calls == 0, "completion callback ran before retirement");
 
    task_queue_wait(NULL, NULL);
 
+   CHECK(g_done_calls == 1, "completion callback ran %d times, expected once",
+         g_done_calls);
+   CHECK(g_done_user_data == &g_done_calls,
+         "completion callback did not receive the pusher's user_data");
+
    CHECK(task_push_core_backup(g_core_path, "Test Core", 0,
-            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true) != NULL,
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true,
+            NULL, NULL) != NULL,
          "backup refused after the first one retired");
    task_queue_wait(NULL, NULL);
 
