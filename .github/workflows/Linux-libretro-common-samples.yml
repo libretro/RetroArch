@@ -122,6 +122,7 @@ jobs:
             config_file_test
             path_resolve_realpath_test
             fill_pathname_test
+            path_mkdir_test
             rpng
             rzip_chunk_size_test
             rzip_matches_buf_test
