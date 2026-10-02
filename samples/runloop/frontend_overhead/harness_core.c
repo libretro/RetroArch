@@ -36,6 +36,12 @@ static unsigned long long in_state_ns;    /* the rest */
 static unsigned long      in_frames;
 static volatile int16_t   in_sink;
 
+/* The run in which pad 1's B was first seen pressed, then released,
+ * since the last harness_core_input_measure() (-1: not yet). */
+static long in_press_run  = -1;
+static long in_release_run = -1;
+static int  in_b_last;
+
 /* Set while the core is inside input_poll / input_state, so the
  * harness can count heap calls in those alone. */
 volatile int harness_core_in_input;
@@ -54,10 +60,22 @@ void harness_core_input_measure(unsigned queries, unsigned ports)
 {
    in_queries  = queries;
    in_ports    = ports ? ports : 1;
+   in_press_run   = -1;
+   in_release_run = -1;
+   in_b_last      = 0;
    in_poll_ns  = 0;
    in_first_ns = 0;
    in_state_ns = 0;
    in_frames   = 0;
+}
+
+/* The runs so far, and the runs in which pad 1's B changed since the
+ * last harness_core_input_measure(). */
+long harness_core_runs(void) { return (long)runs; }
+void harness_core_input_edges(long *press_run, long *release_run)
+{
+   *press_run   = in_press_run;
+   *release_run = in_release_run;
 }
 
 /* What was measured since: frames, and nanoseconds in input_poll, in
@@ -132,6 +150,12 @@ void retro_run(void)
       t1 = now_ns();
       acc = state_cb(0, RETRO_DEVICE_JOYPAD, 0, 0);
       tf = now_ns();
+      /* pad 1's B (the first query): the run its edges arrive in */
+      if (acc && !in_b_last && in_press_run < 0)
+         in_press_run = (long)runs;
+      if (!acc && in_b_last && in_release_run < 0)
+         in_release_run = (long)runs;
+      in_b_last = acc != 0;
       /* the way a core reads a pad: button by button, port by port */
       for (q = 1; q < in_queries; q++)
          acc |= state_cb(q % in_ports, RETRO_DEVICE_JOYPAD, 0,

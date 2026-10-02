@@ -40,6 +40,7 @@
 #include <dlfcn.h>
 #endif
 #include <queues/task_queue.h>
+#include "../../../core.h"
 #include <file/file_path.h>
 #include <boolean.h>
 #include <features/features_cpu.h>
@@ -65,6 +66,10 @@
  * window may span one. */
 #define PAD1_FRAME       30000
 #define PADS8_FRAME      40000
+/* Pad 1's B is pressed at POLL_MODE_FRAME + 1000 * mode and released
+ * POLL_EDGE_SPAN later, once under each poll mode. */
+#define POLL_MODE_FRAME  50000
+#define POLL_EDGE_SPAN   100
 #define INPUT_FRAMES     4000
 /* Tripwires, not targets: CI runners vary. They catch a blocking call,
  * a sleep or a device open landing in poll or state. */
@@ -166,6 +171,8 @@ static char core_path_g[512];
 static void (*core_input_measure)(unsigned, unsigned);
 static void (*core_input_stats)(unsigned long*, unsigned long long*,
       unsigned long long*, unsigned long long*);
+static long (*core_runs)(void);
+static void (*core_input_edges)(long*, long*);
 
 /* The main loop's pass: iterate, then the task queue, as retroarch.c
  * runs them. The input lanes need the queue - a pad's autoconfig is a
@@ -254,7 +261,9 @@ static void lane_input_cost(void)
        || !(core_input_measure = (void (*)(unsigned, unsigned))
              dlsym(core, "harness_core_input_measure"))
        || !(core_input_stats = (void (*)(unsigned long*, unsigned long long*,
-             unsigned long long*))dlsym(core, "harness_core_input_stats")))
+             unsigned long long*, unsigned long long*))dlsym(core, "harness_core_input_stats"))
+       || !(core_runs = (long (*)(void))dlsym(core, "harness_core_runs"))
+       || !(core_input_edges = (void (*)(long*, long*))dlsym(core, "harness_core_input_edges")))
    {
       CHECK(false, "input lanes: the harness core's measuring entry points");
       return;
@@ -299,6 +308,63 @@ static void lane_input_cost(void)
 #endif
    if (failures == had)
       printf("[pass] input poll and state: no heap, under the tripwires, flat per query\n");
+#endif
+}
+
+/* The same scripted press and release under early, normal and late
+ * polling: each mode's poll cost as the core sees it, and the run in
+ * which the core first sees each edge, which must be the same in every
+ * mode - no poll mode adds a frame between the device and the core. */
+static void lane_input_poll_modes(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   static const char *const name[3] = { "early", "normal", "late" };
+   long     press_at[3], release_at[3];
+   unsigned had = failures;
+   unsigned m;
+
+   if (!core_runs || !core_input_edges)
+   {
+      CHECK(false, "poll modes: the harness core's edge entry points");
+      return;
+   }
+   fast_forward(true);
+   for (m = 0; m < 3; m++)
+   {
+      unsigned long      frames;
+      unsigned long long poll_ns, first_ns, state_ns;
+      uint64_t press = POLL_MODE_FRAME + 1000 * m;
+      long     lag;
+
+      core_set_poll_type(m);
+      run_to_frame(press - 200);
+      core_input_measure(16, 1);
+      /* frames and runs advance together: their gap turns a script
+       * frame into the run that polls it */
+      lag = (long)video_state_get_ptr()->frame_count - core_runs();
+      run_to_frame(press + POLL_EDGE_SPAN + 200);
+      core_input_edges(&press_at[m], &release_at[m]);
+      core_input_stats(&frames, &poll_ns, &first_ns, &state_ns);
+      core_input_measure(0, 1);
+      press_at[m]   = press_at[m]   < 0 ? -1 : press_at[m]   + lag - (long)press;
+      release_at[m] = release_at[m] < 0 ? -1 : release_at[m] + lag - (long)(press + POLL_EDGE_SPAN);
+      printf("[info] input, %s poll: input_poll %.2f us, first input_state %.2f us;"
+            " press seen %ld frame(s), release %ld frame(s) after the script\n",
+            name[m],
+            frames ? (double)poll_ns / frames / 1000.0 : 0.0,
+            frames ? (double)first_ns / frames / 1000.0 : 0.0,
+            press_at[m], release_at[m]);
+      CHECK(press_at[m] >= 0 && release_at[m] >= 0, "poll modes: a scripted edge never reached the core");
+   }
+   core_set_poll_type(POLL_TYPE_LATE);
+   fast_forward(false);
+   CHECK(   press_at[0] == press_at[1] && press_at[1] == press_at[2]
+         && release_at[0] == release_at[1] && release_at[1] == release_at[2],
+         "poll modes: an edge reaches the core in a different frame under some poll mode");
+   if (failures == had)
+      printf("[pass] early, normal and late polling see each edge in the same frame\n");
+#else
+   printf("[skip] poll-mode lane: need the test drivers and dlopen\n");
 #endif
 }
 
@@ -388,6 +454,13 @@ int main(int argc, char *argv[])
             fprintf(f, "%s{ \"action\": 1, \"param_num\": %u, "
                   "\"param_str\": \"(045e:028e) Harness pad\", \"frame\": %u }\n",
                   port ? "," : "", port, port ? PADS8_FRAME : PAD1_FRAME);
+         /* pad 1's B (button 0, mask 1) pressed and released once per
+          * poll mode: action 16 + pad presses, 32 + pad releases */
+         for (b = 0; b < 3; b++)
+            fprintf(f, ",{ \"action\": 16, \"param_num\": 1, \"frame\": %u }\n"
+                  ",{ \"action\": 32, \"param_num\": 1, \"frame\": %u }\n",
+                  POLL_MODE_FRAME + 1000 * b,
+                  POLL_MODE_FRAME + 1000 * b + POLL_EDGE_SPAN);
          fprintf(f, "]\n");
          fclose(f);
       }
@@ -456,6 +529,7 @@ int main(int argc, char *argv[])
    lane_frame_path_heap();
    lane_frame_cost();
    lane_input_cost();
+   lane_input_poll_modes();
 
    if (failures)
    {
