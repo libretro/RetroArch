@@ -1,0 +1,90 @@
+# End-to-end test of the staged core install: a core update with
+# 'Compress Automatic Core Backups' off moves the replaced core into the
+# backups instead of compressing a copy.  Links the real updater,
+# decompress, archive, rzip and core backup code; serves real deflated
+# zips from a loopback server.
+#
+#   make -f Makefile.staged_install check
+#   make -f Makefile.staged_install check SANITIZER=address,undefined
+#   make -f Makefile.staged_install check SANITIZER=thread
+
+TARGET  := staged_install_test
+CORE_DIR := ../../..
+LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
+
+SOURCES := \
+	staged_install_test.c \
+	$(CORE_DIR)/tasks/task_decompress.c \
+	$(CORE_DIR)/tasks/task_core_backup.c \
+	$(CORE_DIR)/core_backup.c \
+	$(LIBRETRO_COMM_DIR)/file/archive_file.c \
+	$(LIBRETRO_COMM_DIR)/file/archive_file_zlib.c \
+	$(LIBRETRO_COMM_DIR)/streams/rzip_stream.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
+	$(LIBRETRO_COMM_DIR)/lists/dir_list.c \
+	stubs_retroarch.c \
+	$(CORE_DIR)/tasks/task_core_updater.c \
+	$(CORE_DIR)/tasks/task_nbio_slice.c \
+	$(CORE_DIR)/core_updater_list.c \
+	$(CORE_DIR)/tasks/task_http.c \
+	$(LIBRETRO_COMM_DIR)/queues/task_queue.c \
+	$(LIBRETRO_COMM_DIR)/net/net_http.c \
+	$(LIBRETRO_COMM_DIR)/net/net_compat.c \
+	$(LIBRETRO_COMM_DIR)/net/net_socket.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strldup.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
+	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
+	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
+	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
+	$(LIBRETRO_COMM_DIR)/file/file_path.c \
+	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
+	$(LIBRETRO_COMM_DIR)/file/retro_dirent.c \
+	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
+	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
+	$(LIBRETRO_COMM_DIR)/utils/md5.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \
+	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
+	$(LIBRETRO_COMM_DIR)/time/rtime.c
+
+OBJS := $(SOURCES:.c=.o)
+
+CFLAGS  += -Wall -std=gnu99 -g -O1 -fno-omit-frame-pointer \
+           -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) -I$(CORE_DIR)/deps \
+           -DHAVE_THREADS -DHAVE_NETWORKING -DRARCH_INTERNAL -DHAVE_MENU -DHAVE_UPDATE_CORES -DHAVE_ONLINE_UPDATER \
+           -DHAVE_COMPRESSION -DHAVE_ZLIB -DSTUBS_REAL_CORE_BACKUP
+LIBS    += -lz -lpthread -lm
+# filestream_rename is wrapped so lanes can make a move fail.
+LDFLAGS += -Wl,--wrap=filestream_rename
+
+ifneq ($(SANITIZER),)
+   CFLAGS  := -fsanitize=$(SANITIZER) $(CFLAGS)
+   LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
+
+all: $(TARGET)
+
+%.o: %.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(TARGET): $(OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
+
+check: $(TARGET)
+	./$(TARGET)
+
+clean:
+	rm -f $(TARGET) $(OBJS)
+
+.PHONY: all check clean

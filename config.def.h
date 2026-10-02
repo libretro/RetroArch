@@ -1728,6 +1728,9 @@
  * (oldest backup will be deleted when creating
  * a new one) */
 #define DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE 1
+/* Store automatic core backups compressed (off: the
+ * replaced core is moved into the backups as it is) */
+#define DEFAULT_CORE_UPDATER_AUTO_BACKUP_COMPRESS true
 
 #define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS false
 

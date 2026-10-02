@@ -951,6 +951,7 @@ typedef struct settings
       bool network_buildbot_show_experimental_cores;
       bool network_on_demand_thumbnails;
       bool core_updater_auto_backup;
+      bool core_updater_auto_backup_compress;
 
       /* UI */
       bool ui_menubar_enable;

@@ -117,6 +117,10 @@ typedef struct core_backup_handle
     * the restore writes and then renames over it */
    char *core_target_path;
    char *core_tmp_path;
+   /* Install mode only: the new core, extracted beside core_path,
+    * which this task moves into place once the old core is backed up
+    * (task_push_core_backup_install()) */
+   char *staged_path;
    intfstream_t *core_file;
    intfstream_t *backup_file;
    /* Transfer buffer, allocated once.  CORE_BACKUP_CHUNK_SIZE is far
@@ -127,6 +131,8 @@ typedef struct core_backup_handle
     * ticks instead of consuming a whole stream in one call. */
    uint32_t crc_accumulator;
    bool crc_active;
+   /* Install mode: staged_path has been moved over core_path */
+   bool installed;
    core_backup_list_t *backup_list;
    /* The pusher's completion callback, chained from
     * cb_task_core_backup() */
@@ -214,6 +220,8 @@ static void free_core_backup_handle(core_backup_handle_t *backup_handle)
    backup_handle->core_target_path = NULL;
    free(backup_handle->core_tmp_path);
    backup_handle->core_tmp_path    = NULL;
+   free(backup_handle->staged_path);
+   backup_handle->staged_path      = NULL;
 
    core_backup_handle_release_io(backup_handle);
 
@@ -480,6 +488,51 @@ static void task_core_backup_handler(retro_task_t *task)
 
             backup_handle->backup_path = strdup(backup_path);
 
+            /* Install mode: the old core is about to be replaced, so it
+             * becomes the backup as it is - moved, not read, compressed
+             * and written.  The rzip reader takes an uncompressed file
+             * as it stands, and the CRC is in the name.  Only if either
+             * move fails is the old core put back and copied below. */
+            if (backup_handle->staged_path)
+            {
+               /* An open file cannot be renamed everywhere */
+               if (backup_handle->core_file)
+               {
+                  intfstream_close(backup_handle->core_file);
+                  free(backup_handle->core_file);
+                  backup_handle->core_file = NULL;
+               }
+
+               if (filestream_rename(backup_handle->core_path,
+                        backup_handle->backup_path) == 0)
+               {
+                  if (filestream_rename(backup_handle->staged_path,
+                           backup_handle->core_path) == 0)
+                  {
+                     backup_handle->installed = true;
+                     backup_handle->success   = true;
+                     backup_handle->status    =
+                           (backup_handle->backup_mode == CORE_BACKUP_MODE_AUTO)
+                           ? CORE_BACKUP_CHECK_HISTORY : CORE_BACKUP_END;
+                     break;
+                  }
+                  filestream_rename(backup_handle->backup_path,
+                        backup_handle->core_path);
+               }
+
+               RARCH_LOG("[Core Backup] Cannot move \"%s\" into the backups; copying it instead.\n",
+                     backup_handle->core_path);
+
+               if (!(backup_handle->core_file = intfstream_open_file(
+                           backup_handle->core_path,
+                           RETRO_VFS_FILE_ACCESS_READ,
+                           RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+               {
+                  backup_handle->status = CORE_BACKUP_END;
+                  break;
+               }
+            }
+
             /* Open backup file */
 #if defined(HAVE_COMPRESSION)
             backup_handle->backup_file = intfstream_open_rzip_file(
@@ -718,6 +771,30 @@ static void task_core_backup_handler(retro_task_t *task)
          {
             size_t _len;
             char task_title[128];
+
+            /* Install mode: the new core goes in whatever happened to
+             * the backup - an identical backup already existing, the
+             * copy, or no backup at all - unless the task was
+             * cancelled.  Here the task's error means the install
+             * failed, and nothing else. */
+            if (backup_handle->staged_path && !backup_handle->installed)
+            {
+               core_backup_handle_release_io(backup_handle);
+               task_free_error(task);
+               if (     !(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED)
+                     && filestream_rename(backup_handle->staged_path,
+                           backup_handle->core_path) == 0)
+                  backup_handle->installed = true;
+               else
+               {
+                  RARCH_ERR("[Core Backup] Failed to install core: \"%s\".\n",
+                        backup_handle->core_path);
+                  task_set_error(task, strdup("Failed to install core."));
+               }
+            }
+            else if (backup_handle->staged_path)
+               task_free_error(task);
+
             /* Set final task title */
             task_free_title(task);
 
@@ -766,8 +843,9 @@ task_finished:
  * > core_display_name *must* be set to a non-empty
  *   string if task_push_core_backup() is *not* called
  *   on the main thread */
-void *task_push_core_backup(
-      const char *core_path, const char *core_display_name,
+static void *task_push_core_backup_internal(
+      const char *core_path, const char *staged_path,
+      const char *core_display_name,
       uint32_t crc, enum core_backup_mode backup_mode,
       size_t auto_backup_history_size,
       const char *dir_core_assets, bool mute,
@@ -839,6 +917,9 @@ void *task_push_core_backup(
    backup_handle->backup_file                = NULL;
    backup_handle->backup_list                = NULL;
    backup_handle->done_cb                    = cb;
+   backup_handle->staged_path                = (staged_path && *staged_path)
+         ? strdup(staged_path) : NULL;
+   backup_handle->installed                  = false;
    backup_handle->status                     = CORE_BACKUP_BEGIN;
 
    /* Create task */
@@ -886,6 +967,32 @@ error:
    free_core_backup_handle(backup_handle);
 
    return NULL;
+}
+
+void *task_push_core_backup(
+      const char *core_path, const char *core_display_name,
+      uint32_t crc, enum core_backup_mode backup_mode,
+      size_t auto_backup_history_size,
+      const char *dir_core_assets, bool mute,
+      retro_task_callback_t cb, void *user_data)
+{
+   return task_push_core_backup_internal(core_path, NULL,
+         core_display_name, crc, backup_mode, auto_backup_history_size,
+         dir_core_assets, mute, cb, user_data);
+}
+
+void *task_push_core_backup_install(
+      const char *core_path, const char *staged_path,
+      const char *core_display_name, uint32_t crc,
+      size_t auto_backup_history_size,
+      const char *dir_core_assets, bool mute,
+      retro_task_callback_t cb, void *user_data)
+{
+   if (!staged_path || !*staged_path || !path_is_valid(staged_path))
+      return NULL;
+   return task_push_core_backup_internal(core_path, staged_path,
+         core_display_name, crc, CORE_BACKUP_MODE_AUTO,
+         auto_backup_history_size, dir_core_assets, mute, cb, user_data);
 }
 
 /****************/

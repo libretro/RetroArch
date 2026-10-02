@@ -91,6 +91,8 @@ int retro_vfs_stat_64_impl(const char *path, int64_t *size);
 
 int retro_vfs_mkdir_impl(const char *dir);
 
+int retro_vfs_rmdir_impl(const char *dir);
+
 /**
  * retro_vfs_restrict_permissions_impl:
  * @path : file to restrict

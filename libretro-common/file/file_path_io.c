@@ -200,6 +200,22 @@ int64_t path_get_size(const char *path)
 }
 
 /**
+ * path_rmdir:
+ * @dir                : directory path.
+ *
+ * Removes the empty directory @dir.  There is no libretro VFS entry
+ * for this, so it always goes through the built-in implementation.
+ *
+ * @return true if the directory was removed, otherwise false -
+ * including a directory that is not empty, and platforms with no
+ * directory removal, where an empty directory is simply left.
+ **/
+bool path_rmdir(const char *dir)
+{
+   return retro_vfs_rmdir_impl(dir) == 0;
+}
+
+/**
  * path_mkdir:
  * @dir                : directory
  *

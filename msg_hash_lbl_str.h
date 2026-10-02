@@ -1101,6 +1101,7 @@
 #define MENU_ENUM_LABEL_CORE_SETTINGS_STR "core_settings"
 #define MENU_ENUM_LABEL_CORE_SUGGEST_ALWAYS_STR "core_suggest_always"
 #define MENU_ENUM_LABEL_CORE_UPDATER_AUTO_BACKUP_STR "core_updater_auto_backup"
+#define MENU_ENUM_LABEL_CORE_UPDATER_AUTO_BACKUP_COMPRESS_STR "core_updater_auto_backup_compress"
 #define MENU_ENUM_LABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE_STR "core_updater_auto_extract_archive"
 #define MENU_ENUM_LABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES_STR "core_updater_show_experimental_cores"
 #define MENU_ENUM_LABEL_CPU_PERFPOWER_STR "cpu_perfpower_list"

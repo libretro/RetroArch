@@ -236,6 +236,19 @@ void *task_push_core_backup(
       const char *dir_core_assets, bool mute,
       retro_task_callback_t cb, void *user_data);
 
+/* An automatic backup that also installs a new core: @staged_path,
+ * extracted on the same volume as @core_path, replaces @core_path,
+ * and the core it replaces is moved into the backups as it is rather
+ * than compressed into them; where it cannot be moved it is copied as
+ * task_push_core_backup() would.  @cb gets an error exactly when the
+ * new core could not be installed. */
+void *task_push_core_backup_install(
+      const char *core_path, const char *staged_path,
+      const char *core_display_name, uint32_t crc,
+      size_t auto_backup_history_size,
+      const char *dir_core_assets, bool mute,
+      retro_task_callback_t cb, void *user_data);
+
 /* NOTE: If 'core_loaded' is true, menu stack should be
  * flushed if task_push_core_restore() returns true */
 bool task_push_core_restore(const char *backup_path,

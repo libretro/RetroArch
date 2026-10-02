@@ -2714,6 +2714,69 @@ int retro_vfs_mkdir_impl(const char *dir)
    }
 }
 
+/* Removes the empty directory @dir.  0 on success, -1 otherwise -
+ * including a directory that is not empty, and platforms with no
+ * directory removal here, where an empty directory is simply left. */
+int retro_vfs_rmdir_impl(const char *dir)
+{
+   if (!dir || !*dir)
+      return -1;
+#if defined(ANDROID) && defined(HAVE_SAF)
+   if (path_is_saf(dir))
+   {
+      int ret;
+      struct libretro_vfs_implementation_saf_path_split_result saf_split_result;
+      if (!retro_vfs_path_split_saf(&saf_split_result, dir))
+         return -1;
+      ret = retro_vfs_file_remove_saf(saf_split_result.tree,
+            saf_split_result.path);
+      free(saf_split_result.path);
+      free(saf_split_result.tree);
+      return ret == 0 ? 0 : -1;
+   }
+#endif
+   {
+#if defined(_WIN32) && !defined(_XBOX)
+#if defined(LEGACY_WIN32_RUNTIME)
+      int ret = -1;
+
+      if (win32_needs_local_encoding())
+         ret  = _rmdir(dir);
+      else
+      {
+         wchar_t *dir_w = utf8_to_utf16_string_alloc(dir);
+         if (dir_w)
+         {
+            ret = _wrmdir(dir_w);
+            free(dir_w);
+         }
+      }
+#elif defined(LEGACY_WIN32)
+      int ret = _rmdir(dir);
+#else
+      int ret        = -1;
+      wchar_t *dir_w = utf8_to_utf16_string_alloc(dir);
+
+      if (dir_w)
+      {
+         ret = _wrmdir(dir_w);
+         free(dir_w);
+      }
+#endif
+#elif defined(VITA)
+      int ret = sceIoRmdir(dir);
+#elif defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
+   || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__DragonFly__) \
+   || defined(__HAIKU__) || defined(__QNX__) || defined(__EMSCRIPTEN__)
+      int ret = rmdir(dir);
+#else
+      /* No directory removal wired up for this platform yet */
+      int ret = -1;
+#endif
+      return ret < 0 ? -1 : 0;
+   }
+}
+
 #if defined(_WIN32)
 /* Worst-case UTF-8 for a find-data name, terminator included.
  *

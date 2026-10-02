@@ -662,6 +662,18 @@ size_t fill_pathname_home_dir(char *s, size_t len);
 bool path_mkdir(const char *dir);
 
 /**
+ * path_rmdir:
+ * @dir                : directory path.
+ *
+ * Removes the empty directory @dir.
+ *
+ * @return true if the directory was removed, otherwise false -
+ * including a directory that is not empty, and platforms with no
+ * directory removal, where an empty directory is simply left.
+ **/
+bool path_rmdir(const char *dir);
+
+/**
  * path_is_directory:
  * @path               : path
  *

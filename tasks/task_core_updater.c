@@ -111,6 +111,8 @@ enum core_updater_download_status
    CORE_UPDATER_DOWNLOAD_START_TRANSFER,
    CORE_UPDATER_DOWNLOAD_WAIT_TRANSFER,
    CORE_UPDATER_DOWNLOAD_WAIT_DECOMPRESS,
+   CORE_UPDATER_DOWNLOAD_START_INSTALL,
+   CORE_UPDATER_DOWNLOAD_WAIT_INSTALL,
    CORE_UPDATER_DOWNLOAD_ERROR,
    CORE_UPDATER_DOWNLOAD_END
 };
@@ -140,6 +142,11 @@ typedef struct core_updater_download_handle
    char *remote_core_path;
    char *local_download_path;
    char *local_core_path;
+   /* Staged install only: the core's own staging directory beside the
+    * cores, and the new core extracted into it until the backup task
+    * moves the old one out and it in */
+   char *staging_dir;
+   char *staged_core_path;
    char *display_name;
    retro_task_t *http_task;
    retro_task_t *decompress_task;
@@ -165,6 +172,9 @@ typedef struct core_updater_download_handle
     * on seeing it, so only the worker ever writes status. */
    bool http_task_error;
    bool auto_backup;
+   /* 'Compress Automatic Core Backups'; off stages the install so the
+    * replaced core can be moved into the backups instead */
+   bool backup_compress;
    bool backup_enabled;
 } core_updater_download_handle_t;
 
@@ -226,6 +236,8 @@ typedef struct update_installed_cores_handle
    unsigned num_locked;
    enum update_installed_cores_status status;
    bool auto_backup;
+   /* 'Compress Automatic Core Backups', captured at the push */
+   bool auto_backup_compress;
    /* The buildbot listing arrived and parsed.  core_list holds only
     * the installed cores in it, so an empty list is no failure. */
    bool list_fetched;
@@ -1078,6 +1090,23 @@ finish:
 
 static void free_core_updater_download_handle(core_updater_download_handle_t *download_handle)
 {
+   /* The staging directory is this download's alone (concurrent
+    * downloads of one core are refused), and the HTTP and decompress
+    * callbacks have let go by now: whatever is left in it - an archive
+    * or core from a download that failed or was cancelled - goes, and
+    * so does the directory */
+   if (download_handle->staging_dir)
+   {
+      if (     download_handle->staged_core_path
+            && path_is_valid(download_handle->staged_core_path))
+         filestream_delete(download_handle->staged_core_path);
+      if (     download_handle->local_download_path
+            && path_is_valid(download_handle->local_download_path))
+         filestream_delete(download_handle->local_download_path);
+      path_rmdir(download_handle->staging_dir);
+      free(download_handle->staging_dir);
+   }
+
    /* A task cancelled part-way through the sliced CRC still holds an
     * open intfstream; without this it leaks the handle and the fd. */
    task_core_updater_crc_reset(&download_handle->crc_slice);
@@ -1104,6 +1133,10 @@ static void free_core_updater_download_handle(core_updater_download_handle_t *do
    if (download_handle->local_core_path)
       free(download_handle->local_core_path);
 
+
+   if (download_handle->staged_core_path)
+      free(download_handle->staged_core_path);
+
    if (download_handle->display_name)
       free(download_handle->display_name);
 
@@ -1117,6 +1150,88 @@ static void core_updater_download_handle_release(
    if (     download_handle
          && retro_atomic_fetch_sub_int(&download_handle->refs, 1) == 1)
       free_core_updater_download_handle(download_handle);
+}
+
+/* Staged install: the new core is downloaded and extracted into its
+ * own staging directory beside the cores, on the same volume, instead of
+ * over the installed core, so the backup task can then move the old
+ * core into the backups as it is and the new one into place - two
+ * renames, with an installed core present throughout the download
+ * and the extraction.  Only where the file the extraction would
+ * replace is the installed core itself (no symbolic link between
+ * them, which a move would back up instead of the core).  Returns
+ * false, leaving the handle as it was, where that does not hold. */
+/* .<core filename>.staging: one per core, so each has exactly one
+ * owner and can be removed when that download is done */
+#define CORE_UPDATER_STAGING_EXT ".staging"
+
+static bool core_updater_download_stage(
+      core_updater_download_handle_t *download_handle)
+{
+   bool staged = false;
+   char *buf   = (char*)malloc(3 * PATH_MAX_LENGTH);
+   char *member;
+   char *installed;
+   char *staging;
+
+   if (!buf)
+      return false;
+   member    = buf;
+   installed = buf +     PATH_MAX_LENGTH;
+   staging   = buf + 2 * PATH_MAX_LENGTH;
+
+   strlcpy(member, download_handle->remote_filename, PATH_MAX_LENGTH);
+   if (path_is_compressed_file(member))
+      path_remove_extension(member);
+   fill_pathname_join_special(installed,
+         download_handle->path_dir_libretro, member, PATH_MAX_LENGTH);
+
+   if (string_is_equal(installed, download_handle->local_core_path))
+   {
+      char *download_path = NULL;
+      char *staged_core   = NULL;
+      char *staging_dir   = NULL;
+      size_t _len;
+
+      /* .<member>.staging, in the libretro directory ('installed' is
+       * free again as scratch) */
+      installed[0] = '.';
+      _len  = 1 + strlcpy(installed + 1, member, PATH_MAX_LENGTH - 1);
+      if (_len >= PATH_MAX_LENGTH)
+      {
+         free(buf);
+         return false;
+      }
+      strlcpy(installed + _len, CORE_UPDATER_STAGING_EXT,
+            PATH_MAX_LENGTH - _len);
+      fill_pathname_join_special(staging,
+            download_handle->path_dir_libretro, installed, PATH_MAX_LENGTH);
+      staging_dir   = strdup(staging);
+      fill_pathname_join_special(installed, staging,
+            download_handle->remote_filename, PATH_MAX_LENGTH);
+      download_path = strdup(installed);
+      fill_pathname_join_special(installed, staging, member,
+            PATH_MAX_LENGTH);
+      staged_core   = strdup(installed);
+
+      if (download_path && staged_core && staging_dir)
+      {
+         free(download_handle->local_download_path);
+         download_handle->local_download_path = download_path;
+         download_handle->staged_core_path    = staged_core;
+         download_handle->staging_dir         = staging_dir;
+         staged                               = true;
+      }
+      else
+      {
+         free(download_path);
+         free(staged_core);
+         free(staging_dir);
+      }
+   }
+
+   free(buf);
+   return staged;
 }
 
 static void task_core_updater_download_handler(retro_task_t *task)
@@ -1187,9 +1302,18 @@ static void task_core_updater_download_handler(retro_task_t *task)
             download_handle->backup_enabled = download_handle->auto_backup &&
                   path_is_valid(download_handle->local_core_path);
 
-            download_handle->status = download_handle->backup_enabled ?
-                  CORE_UPDATER_DOWNLOAD_START_BACKUP :
-                        CORE_UPDATER_DOWNLOAD_START_TRANSFER;
+            /* With 'Compress Automatic Core Backups' off, the backup
+             * is taken after the extraction instead, by moving the
+             * replaced core; where the install cannot be staged it is
+             * compressed beforehand as usual */
+            if (     download_handle->backup_enabled
+                  && !download_handle->backup_compress
+                  && core_updater_download_stage(download_handle))
+               download_handle->status = CORE_UPDATER_DOWNLOAD_START_TRANSFER;
+            else
+               download_handle->status = download_handle->backup_enabled ?
+                     CORE_UPDATER_DOWNLOAD_START_BACKUP :
+                           CORE_UPDATER_DOWNLOAD_START_TRANSFER;
          }
          break;
       case CORE_UPDATER_DOWNLOAD_START_BACKUP:
@@ -1458,7 +1582,85 @@ static void task_core_updater_download_handler(retro_task_t *task)
             /* Wait for task_push_decompress()
              * callback to trigger */
             if (complete)
-               download_handle->status = CORE_UPDATER_DOWNLOAD_END;
+               download_handle->status = download_handle->staged_core_path
+                     ? CORE_UPDATER_DOWNLOAD_START_INSTALL
+                     : CORE_UPDATER_DOWNLOAD_END;
+         }
+         break;
+      case CORE_UPDATER_DOWNLOAD_START_INSTALL:
+         {
+            core_updater_sub_task_done_t *done = NULL;
+
+            /* An extraction that failed left nothing staged */
+            if (!path_is_valid(download_handle->staged_core_path))
+            {
+               download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
+               break;
+            }
+
+            /* The backup task moves the replaced core into the
+             * backups, the staged one into place, and prunes the
+             * backup history; the record is created before the push,
+             * which the callback may outrun */
+            if ((done = core_updater_sub_task_done_new()))
+            {
+               if (!(download_handle->backup_task = (retro_task_t*)
+                        task_push_core_backup_install(
+                           download_handle->local_core_path,
+                           download_handle->staged_core_path,
+                           download_handle->display_name,
+                           download_handle->local_crc,
+                           download_handle->auto_backup_history_size,
+                           download_handle->path_dir_core_assets, true,
+                           cb_task_core_updater_backup, done)))
+                  free(done); /* no task, so no callback */
+               else
+                  download_handle->backup_done = done;
+            }
+
+            if (download_handle->backup_task)
+            {
+               size_t _len;
+               char task_title[128];
+
+               task_free_title(task);
+               _len = strlcpy(task_title,
+                     msg_hash_to_str(MSG_BACKING_UP_CORE),
+                     sizeof(task_title));
+               strlcpy(task_title + _len, download_handle->display_name,
+                     sizeof(task_title) - _len);
+               task_set_title(task, strdup(task_title));
+
+               download_handle->status = CORE_UPDATER_DOWNLOAD_WAIT_INSTALL;
+            }
+            /* No backup task: install without the backup, as the
+             * extraction would have */
+            else
+            {
+               RARCH_ERR("[Core Updater] Failed to backup core: \"%s\".\n",
+                     download_handle->local_core_path);
+               download_handle->status =
+                     (filestream_rename(download_handle->staged_core_path,
+                           download_handle->local_core_path) == 0)
+                     ? CORE_UPDATER_DOWNLOAD_END
+                     : CORE_UPDATER_DOWNLOAD_ERROR;
+            }
+         }
+         break;
+      case CORE_UPDATER_DOWNLOAD_WAIT_INSTALL:
+         /* As WAIT_BACKUP: completion from the callback's record,
+          * never from the retired task.  The record carries an error
+          * exactly when the new core could not be installed. */
+         if (retro_atomic_load_acquire_int(
+                  &download_handle->backup_done->complete))
+         {
+            bool failed = (download_handle->backup_done->error != NULL);
+            core_updater_sub_task_done_release(download_handle->backup_done);
+            download_handle->backup_done = NULL;
+            download_handle->backup_task = NULL;
+            download_handle->status      = failed
+                  ? CORE_UPDATER_DOWNLOAD_ERROR
+                  : CORE_UPDATER_DOWNLOAD_END;
          }
          break;
       case CORE_UPDATER_DOWNLOAD_ERROR:
@@ -1468,6 +1670,12 @@ static void task_core_updater_download_handler(retro_task_t *task)
 
             /* Set final task title */
             task_free_title(task);
+
+            /* A staged core that was not installed goes; the installed
+             * core was never touched */
+            if (     download_handle->staged_core_path
+                  && path_is_valid(download_handle->staged_core_path))
+               filestream_delete(download_handle->staged_core_path);
 
             _len = strlcpy(task_title, msg_hash_to_str(MSG_CORE_INSTALL_FAILED), sizeof(task_title));
             strlcpy(task_title + _len, download_handle->display_name,
@@ -1539,7 +1747,8 @@ static bool task_core_updater_download_finder(retro_task_t *task, void *user_dat
 static void *task_push_core_updater_download_internal(
       core_updater_list_t* core_list,
       const char *filename, uint32_t crc, bool mute,
-      bool auto_backup, size_t auto_backup_history_size,
+      bool auto_backup, bool backup_compress,
+      size_t auto_backup_history_size,
       const char *path_dir_libretro,
       const char *path_dir_core_assets,
       core_updater_sub_task_done_t *download_done)
@@ -1614,6 +1823,7 @@ static void *task_push_core_updater_download_internal(
 
    /* Configure handle */
    download_handle->auto_backup              = auto_backup;
+   download_handle->backup_compress          = backup_compress;
    download_handle->auto_backup_history_size = auto_backup_history_size;
    download_handle->path_dir_libretro        = strdup(path_dir_libretro);
    download_handle->path_dir_core_assets     = (path_dir_core_assets && *path_dir_core_assets) ? strdup(path_dir_core_assets) : NULL ;
@@ -1696,8 +1906,10 @@ void *task_push_core_updater_download(
       const char *path_dir_libretro,
       const char *path_dir_core_assets)
 {
+   settings_t *settings = config_get_ptr();
    return task_push_core_updater_download_internal(
          core_list, filename, crc, mute, auto_backup,
+         settings->bools.core_updater_auto_backup_compress,
          auto_backup_history_size, path_dir_libretro,
          path_dir_core_assets, NULL);
 }
@@ -2143,6 +2355,7 @@ static void task_update_installed_cores_scan(retro_task_t *task,
                      list_entry->remote_filename,
                      local_crc, true,
                      handle->auto_backup,
+                     handle->auto_backup_compress,
                      handle->auto_backup_history_size,
                      handle->path_dir_libretro,
                      handle->path_dir_core_assets,
@@ -2414,6 +2627,8 @@ void task_push_update_installed_cores(
 
    /* Configure handle */
    update_installed_handle->auto_backup              = auto_backup;
+   update_installed_handle->auto_backup_compress     =
+         config_get_ptr()->bools.core_updater_auto_backup_compress;
    update_installed_handle->auto_backup_history_size = auto_backup_history_size;
    /* Captured here, on the main thread: the handler pushes the list
     * task from the worker with these. */

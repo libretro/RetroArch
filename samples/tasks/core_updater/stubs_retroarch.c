@@ -11,6 +11,7 @@
 #include <queues/task_queue.h>
 
 #include "../../../configuration.h"
+#include "../../../config.def.h"
 #include "../../../msg_hash.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../verbosity.h"
@@ -19,6 +20,14 @@ static settings_t stub_settings;
 
 settings_t *config_get_ptr(void)
 {
+   /* The shipping defaults the harnesses rely on */
+   static bool init = false;
+   if (!init)
+   {
+      init = true;
+      stub_settings.bools.core_updater_auto_backup_compress =
+            DEFAULT_CORE_UPDATER_AUTO_BACKUP_COMPRESS;
+   }
    return &stub_settings;
 }
 
@@ -111,6 +120,7 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
    return false;
 }
 
+#ifndef STUBS_REAL_CORE_BACKUP
 /* A stand-in backup task with the shipping contract: a real task on
  * the real queue, which finishes once stub_backup_hold is clear and
  * whose callback reaches @cb with @user_data at retirement.  The
@@ -150,6 +160,22 @@ void *task_push_core_backup(
    task_queue_push(task);
    return task;
 }
+
+/* Install mode, as the stand-in above: the staged core is not moved,
+ * the harnesses using these stubs never stage one */
+void *task_push_core_backup_install(
+      const char *core_path, const char *staged_path,
+      const char *core_display_name, uint32_t crc,
+      size_t auto_backup_history_size,
+      const char *dir_core_assets, bool mute,
+      retro_task_callback_t cb, void *user_data)
+{
+   (void)staged_path;
+   return task_push_core_backup(core_path, core_display_name, crc,
+         CORE_BACKUP_MODE_AUTO, auto_backup_history_size,
+         dir_core_assets, mute, cb, user_data);
+}
+#endif
 
 void menu_contentless_cores_free(void)
 {

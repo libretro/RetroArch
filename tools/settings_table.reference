@@ -233,6 +233,7 @@ bool	audio_headphone_virtual_surround	1	0
 bool	network_cmd_enable	1	0
 bool	menu_use_preferred_system_color_theme	1	0
 bool	core_updater_auto_backup	1	0
+bool	core_updater_auto_backup_compress	1	1
 bool	core_updater_show_experimental_cores	1	0
 bool	core_updater_auto_extract_archive	1	1
 bool	sustained_performance_mode	1	0
@@ -904,6 +905,7 @@ bool	audio_headphone_virtual_surround	1	0
 bool	network_cmd_enable	1	0
 bool	menu_use_preferred_system_color_theme	1	0
 bool	core_updater_auto_backup	1	0
+bool	core_updater_auto_backup_compress	1	1
 bool	core_updater_show_experimental_cores	1	0
 bool	core_updater_auto_extract_archive	1	1
 bool	sustained_performance_mode	1	0
@@ -1576,6 +1578,7 @@ bool	audio_headphone_virtual_surround	1	0
 bool	network_cmd_enable	1	0
 bool	menu_use_preferred_system_color_theme	1	0
 bool	core_updater_auto_backup	1	0
+bool	core_updater_auto_backup_compress	1	1
 bool	core_updater_show_experimental_cores	1	0
 bool	core_updater_auto_extract_archive	1	1
 bool	sustained_performance_mode	1	0
