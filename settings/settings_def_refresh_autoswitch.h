@@ -4,6 +4,11 @@
  * matches SDESC_<kind>_ROW; row order is menu display order;
  * h2json.py parses these rows for the Crowdin source upload. */
 
+S_BOOL(video_refresh_rate_polled_auto, VIDEO_REFRESH_RATE_POLLED_AUTO,
+      "video_refresh_rate_polled_auto",
+      DEFAULT_VIDEO_REFRESH_RATE_POLLED_AUTO, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      "Automatically Set Display-Reported Refresh Rate",
+      "Automatically set the Vertical Refresh Rate to the display-reported value. If Automatic Refresh Rate Switch is enabled, it takes precedence when using compatible fullscreen modes.")
 S_UINT_EX(video_autoswitch_refresh_rate, VIDEO_AUTOSWITCH_REFRESH_RATE,
       "video_autoswitch_refresh_rate",
       DEFAULT_AUTOSWITCH_REFRESH_RATE, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, AUTOSWITCH_REFRESH_RATE_LAST - 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_video_autoswitch_refresh_rate, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
