@@ -123,6 +123,7 @@
 #include "../../../input/bsv/bsvmovie.h"
 #ifdef HAVE_STATESTREAM
 #include "../../../input/bsv/uint32s_index.h"
+#include <array/rbuf.h>
 #endif
 
 /* The checkpoint lane asks for more memory than exists and expects
@@ -685,6 +686,36 @@ static void lane_statestream(void)
    input_st.bsv_movie_state.flags = 0;
    lane_done("statestream", NULL);
 }
+
+/* Looking up a block the index has garbage collected walks the
+ * additions log to report the frame the block came from.  The walk
+ * must stay inside the log. */
+static void lane_index_gc(void)
+{
+   uint32s_index_t *idx = uint32s_index_new(1, 2, 2);
+   uint64_t frame;
+   uint32_t obj;
+
+   reset_counters();
+
+   /* One new object a frame, each used once, below the threshold of 2:
+    * commit collects each one a frame later.  Stop when the log is
+    * full, so a read one past its end lands past its allocation. */
+   for (frame = 1; frame < 1000; frame++)
+   {
+      obj = (uint32_t)frame;
+      uint32s_index_insert(idx, &obj, frame);
+      uint32s_index_commit(idx);
+      if (idx->objects[1] == NULL
+            && RBUF_LEN(idx->additions) == RBUF_CAP(idx->additions))
+         break;
+   }
+   CHECK(frame < 1000, "additions log never filled with block 1 collected");
+   CHECK(!uint32s_index_get(idx, 1), "collected block 1 returned");
+
+   uint32s_index_free(idx);
+   lane_done("index_gc", NULL);
+}
 #endif
 
 int main(int argc, char **argv)
@@ -704,6 +735,7 @@ int main(int argc, char **argv)
    lane_checkpoint();
 #ifdef HAVE_STATESTREAM
    lane_statestream();
+   lane_index_gc();
 #endif
 
    filestream_delete(path);
