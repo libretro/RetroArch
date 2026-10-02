@@ -2405,6 +2405,7 @@ static int16_t input_state_device(
 #ifdef HAVE_OVERLAY
          if (     (input_st->overlay_ptr)
                && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ENABLE)
+               && !(input_st->overlay_ptr->flags & INPUT_OVERLAY_STYLUS_HIDDEN)
                && (settings->bools.input_overlay_pointer_enable))
             res = input_overlay_pointing_device_state(
                   settings->ints.input_overlay_lightgun_port,
@@ -4433,8 +4434,14 @@ INPUT_NOINLINE static void input_poll_overlay(
    /* input_data is dereferenced by the driver's pointer paths, so a
     * NULL current_data (mid driver teardown/reinit, e.g. Android
     * surface recreation) must skip driver input for this frame
-    * instead of faulting inside the input driver. */
-   if (input->input_state && input_data)
+    * instead of faulting inside the input driver.
+    *
+    * A stylus-hidden overlay reads no touches either: with none, the
+    * rest of this poll releases whatever a finger was holding (button,
+    * key, pointing device) the same way lifting it would. */
+   if (     input->input_state
+         && input_data
+         && !(ol->flags & INPUT_OVERLAY_STYLUS_HIDDEN))
    {
       rarch_joypad_info_t joypad_info;
       unsigned device                 = (ol->active->flags & OVERLAY_FULL_SCREEN)
@@ -4723,8 +4730,11 @@ INPUT_NOINLINE static void input_poll_overlay(
          (input_overlay_show_inputs == OVERLAY_SHOW_INPUT_TOUCHED),
          input_overlay_show_inputs_port);
 
-   /* Block other touchscreen input as needed. */
-   if (     button_pressed
+   /* Block other touchscreen input as needed. A stylus-hidden overlay
+    * blocks nothing: the pen's pointer state has to reach the core. */
+   if (ol->flags & INPUT_OVERLAY_STYLUS_HIDDEN)
+      input_st->flags &= ~INP_FLAG_BLOCK_POINTER_INPUT;
+   else if (button_pressed
 #if TARGET_OS_IPHONE
          || (ptr_state->device_mask & (1 << RETRO_DEVICE_LIGHTGUN))
          || (ol->flags & INPUT_OVERLAY_BLOCKED))

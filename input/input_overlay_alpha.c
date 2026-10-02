@@ -133,7 +133,8 @@ void input_overlay_alpha_pass(input_overlay_t *ol, float mod,
    if (!ol || !ol->active || !ol->iface->set_alpha)
       return;
 
-   if (ol->flags & INPUT_OVERLAY_GAMEPAD_HIDDEN)
+   if (ol->flags & (INPUT_OVERLAY_GAMEPAD_HIDDEN
+                  | INPUT_OVERLAY_STYLUS_HIDDEN))
       mod  = 0.0f;
    n       = ol->active->load_images_size;
    want    = (ol->alpha_want && n <= ol->alpha_cap) ? ol->alpha_want : NULL;

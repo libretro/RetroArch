@@ -103,6 +103,7 @@
 #if defined(ANDROID)
 #include "play_feature_delivery/play_feature_delivery.h"
 #include "frontend/drivers/platform_unix.h"
+#include "input/drivers/android_input.h"
 #endif
 
 #if defined(ANDROID) && defined(HAVE_SAF)
@@ -6724,6 +6725,29 @@ static enum runloop_state_enum runloop_check_state(
 
          last_controller_connected = controller_connected;
       }
+
+#if defined(ANDROID)
+      /* Hide the on-screen overlay while a stylus is in use, and bring
+       * it back once the pen has been idle for a moment (the window is
+       * android_input.c's). The overlay is hidden, not unloaded:
+       * unloading and reloading a pack is file and texture work, and a
+       * pen leaving and returning would trigger it over and over while
+       * a core runs. While hidden it takes no touches and answers no
+       * pointer queries (INPUT_OVERLAY_STYLUS_HIDDEN), so the pen
+       * reaches the core through the input driver whether or not the
+       * overlay is set up as a pointing device.
+       * Level-triggered, like the gamepad soft-hide above: the overlay
+       * can be replaced at any time, so the flag is set on whichever
+       * one is current this frame. */
+      if (input_st->overlay_ptr)
+      {
+         if (     settings->bools.input_stylus_enable
+               && android_input_stylus_recently_active())
+            input_st->overlay_ptr->flags |=  INPUT_OVERLAY_STYLUS_HIDDEN;
+         else
+            input_st->overlay_ptr->flags &= ~INPUT_OVERLAY_STYLUS_HIDDEN;
+      }
+#endif
 
       /* Check next overlay hotkey */
       HOTKEY_CHECK(RARCH_OVERLAY_NEXT, CMD_EVENT_OVERLAY_NEXT, true, &check_next_rotation);
