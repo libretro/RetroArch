@@ -41,6 +41,90 @@
   <project_license>GPL-3.0</project_license>
   <metadata_license>CC0-1.0</metadata_license>
   <releases>
+    <release version="1.22.2" date="2025-11-20">
+      <url>https://github.com/libretro/RetroArch/releases/tag/v1.22.2</url>
+      <description>
+        <p>Maintenance release. See GitHub release notes.</p>
+      </description>
+    </release>
+    <release version="1.22.1" date="2025-11-15">
+      <url>https://github.com/libretro/RetroArch/releases/tag/v1.22.1</url>
+      <description>
+        <p>Maintenance release. See GitHub release notes.</p>
+      </description>
+    </release>
+    <release version="1.22.0" date="2025-11-14">
+      <url>https://github.com/libretro/RetroArch/releases/tag/v1.22.0</url>
+      <description>
+        <ul>
+          <li>ANDROID: Storage Access Framework support, mounting internal storage, SD cards and document providers</li>
+          <li>3DS: Add 800px mode for New 3DS models</li>
+          <li>APPLE: AppIntents for Siri and Shortcuts; option to control Metal argument buffers; allow multitasking on iPad</li>
+          <li>AUDIO: New Microphone CoreAudio driver for iOS and macOS</li>
+          <li>CHEEVOS: Upgrade to rcheevos 12.1 with RVZ hashing support</li>
+          <li>CLOUDSYNC: WebDAV support for Android, iCloud Drive backend on macOS/iOS, faster Apple cloudsync</li>
+          <li>EMSCRIPTEN: Core switching, suspend screensaver, accelerometer/gyroscope and rumble support, rewritten audio driver</li>
+          <li>INPUT/BSV/REPLAY: Replay format v2 with checkpoint compression, incremental statestream encoding, seek hotkeys</li>
+          <li>INPUT: Turbo fire saved to remaps, hotkeys can share keys with menu toggle, lightgun Start/Select default binds</li>
+          <li>INTL: Add Irish Gaelic language</li>
+          <li>MENU: Common Thumbnail Background option for all menu drivers; configurable startup page; play count in runtime log</li>
+          <li>MENU: Shader menu rework with combined save/remove menus and parameter hotkeys</li>
+          <li>NETWORK: Push room info to lobby; command interface enabled on Android, iOS, tvOS</li>
+          <li>OTHER: ZStandard compression support and libchdr update for createdvd CHDs</li>
+          <li>VIDEO/VULKAN: Add VK_EXT_full_screen_exclusive support on Windows; xdg-toplevel-icon-v1 on Wayland</li>
+          <li>VITA: Touchscreen support; sharper RGUI framebuffer</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.21.0" date="2025-05-01">
+      <url>https://github.com/libretro/RetroArch/releases/tag/v1.21.0</url>
+      <description>
+        <ul>
+          <li>3DS: Enable TLS/SSL; fix UI freeze with threaded rendering and crash on load content</li>
+          <li>APPLE: CoreMIDI and CoreLocation drivers for iOS/macOS; Vulkan emulated mailbox</li>
+          <li>AUDIO: Option to mute on rewind</li>
+          <li>AUDIO/PIPEWIRE: Fix latency, microphone handling and threaded video speedup</li>
+          <li>CAMERA: Add PipeWire and ffmpeg camera drivers</li>
+          <li>CHEEVOS: Include achievement state in netplay states</li>
+          <li>CLOUDSYNC: Fix Windows path issues, duplicated requests and 301 redirects</li>
+          <li>EMSCRIPTEN: New AudioWorklet audio driver and modernized web player</li>
+          <li>GENERAL: Asset directory and other directory overrides via environment variables</li>
+          <li>INPUT: Analog-to-digital refactor; turbo fire overhaul</li>
+          <li>LINUX/X11: XInput2 multi-mouse support</li>
+          <li>MENU/GLUI: Save state thumbnails, fullscreen thumbnail browsing, tab navigation parity</li>
+          <li>MENU/PLAYLISTS: Random selection / shuffle function</li>
+          <li>NETWORK: net_http refactor with redirect following and faster failed-DNS expiry</li>
+          <li>VIDEO/SHADERS: Exact refresh rate sync with shader subframes; shader wildcard fix</li>
+          <li>VIDEO/V4L2: Resolution picker and ALSA audio device enumeration</li>
+        </ul>
+      </description>
+    </release>
+    <release version="1.20.0" date="2025-01-05">
+      <url>https://github.com/libretro/RetroArch/releases/tag/v1.20.0</url>
+      <description>
+        <ul>
+          <li>AUDIO/PIPEWIRE: New PipeWire audio and microphone drivers</li>
+          <li>CHEEVOS: Update to rcheevos 11.6; rarity, points and rank in unlock widgets; translated achievement messages</li>
+          <li>CLOUDSYNC: New iCloud driver; parallel upload/download; opt-in saves, configs, thumbnails and system dir; CloudSync on Android and Windows</li>
+          <li>GENERAL: Automatic Frame Delay refactor (Frame Rest removed)</li>
+          <li>GENERAL: Auto save state when new content is loaded; CHD hashing on Switch and DOS</li>
+          <li>HAIKU: Restore Haiku build</li>
+          <li>INPUT: Reserved device per player; remaps applied per specific connected controller</li>
+          <li>INPUT/LINUX: Illuminance sensor support across linuxraw, sdl2, udev and x11 drivers</li>
+          <li>INPUT/WAYLAND: Horizontal scroll, mouse buttons 4/5, lightgun simulation, cursor-shape-v1</li>
+          <li>iOS: Better physical mouse and Magic Keyboard trackpad handling; vibration enabled by default; iOS 12 compilation restored</li>
+          <li>MACOS: New display server with ProMotion 120Hz V-Sync; App Store build</li>
+          <li>MENU: Local thumbnails in jpg, bmp and tga in addition to png; firmware presence icons on core info</li>
+          <li>MENU/XMB: Per-playlist icons via Named_Logos directory</li>
+          <li>MENU/OZONE: New Selenium theme; touch-sensitive Resume button; touchscreen improvements</li>
+          <li>NETPLAY: East Asian relay server</li>
+          <li>QT: Build with Qt6</li>
+          <li>RECORDING: New WAV audio-only recording driver</li>
+          <li>VIDEO: Pixel-perfect integer scaling improvements with axis options and smart mode; viewport bias offset</li>
+          <li>VIDEO/VULKAN: Prefer IMMEDIATE mode without vsync; fix freezes on suboptimal swapchain</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.9.11" date="2021-10-09">
       <url>https://github.com/libretro/RetroArch/releases/tag/v1.9.11</url>
       <description>
