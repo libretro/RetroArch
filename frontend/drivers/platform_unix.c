@@ -3582,6 +3582,23 @@ static void frontend_unix_init(void *data)
 #endif
 }
 
+/* Whether the drive list offers the filesystem root.  Play Store
+ * Android builds cannot read it under scoped storage, and on webOS
+ * the jailed root is not user storage - listing it has frozen the
+ * file browser - so both offer only their real storage locations. */
+#ifdef HAVE_MENU
+static bool frontend_unix_root_in_drive_list(void)
+{
+#if defined(ANDROID)
+   return !g_android->is_play_store_build;
+#elif defined(WEBOS)
+   return false;
+#else
+   return true;
+#endif
+}
+#endif
+
 static int frontend_unix_parse_drive_list(void *data, bool load_content)
 {
 #ifdef HAVE_MENU
@@ -3802,11 +3819,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    }
 #endif
 
-#ifdef ANDROID
-   if (!g_android->is_play_store_build)
-#else
-   if (1)
-#endif
+   if (frontend_unix_root_in_drive_list())
    {
       menu_entries_append(list, "/",
             MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
