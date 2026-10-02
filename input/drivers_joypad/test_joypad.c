@@ -466,6 +466,14 @@ static void test_joypad_poll(void)
 #ifdef HAVE_CONFIGFILE
             unsigned port        = input_test_steps[i].param_num;
             settings_t *settings = config_get_ptr();
+            /* A controller added by an earlier step is only there
+             * once its autoconfig task has been applied, and frames
+             * do not wait for that.  The menu has no entry to save
+             * until then, so neither does the script: the step stays
+             * due and is taken on the first poll after, and the steps
+             * behind it wait their turn. */
+            if (input_autoconfigure_pending())
+               break;
             if (port < MAX_USERS)
             {
                unsigned dev     = settings->uints.input_joypad_index[port];

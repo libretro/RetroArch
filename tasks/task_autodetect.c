@@ -1687,6 +1687,28 @@ static bool autoconfigure_port_finder(retro_task_t *task, void *user_data)
    return false;
 }
 
+#ifdef HAVE_TEST_DRIVERS
+static bool autoconfigure_any_finder(retro_task_t *task, void *user_data)
+{
+   return task
+      && (   task->handler == input_autoconfigure_connect_handler
+          || task->handler == input_autoconfigure_disconnect_handler);
+}
+
+/* Whether a connect or disconnect on any port has yet to be applied.
+ * task_queue_find() reports a task until its callback has run, so
+ * 'false' means every port's device table is what the driver last
+ * reported.  For the test joypad driver, whose scripted steps run on
+ * a frame count that the task queue does not follow. */
+bool input_autoconfigure_pending(void)
+{
+   task_finder_data_t find_data;
+   find_data.func     = autoconfigure_any_finder;
+   find_data.userdata = NULL;
+   return task_queue_find(&find_data);
+}
+#endif
+
 bool input_autoconfigure_connect(
       const char *name,
       const char *display_name,

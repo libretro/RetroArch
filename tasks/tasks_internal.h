@@ -426,6 +426,9 @@ bool input_autoconfigure_connect_ex(
 bool input_autoconfigure_disconnect(
       unsigned port, const char *name);
 bool input_autoconfigure_reconnect(unsigned port);
+#ifdef HAVE_TEST_DRIVERS
+bool input_autoconfigure_pending(void);
+#endif
 
 void set_save_state_in_background(bool state);
 void set_save_state_disable_undo(bool disable);
