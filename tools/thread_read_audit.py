@@ -26,7 +26,10 @@ about that function, reviewed like the allowlist pairs.
 
 Entries are found in the source (sthread_create/pthread_create argument
 symbols, task->handler assignments, task_set_handler calls) so a new
-thread or handler is audited the day it lands; the call graph comes
+thread or handler is audited the day it lands. A handler assigned in a
+function that also sets RETRO_TASK_FLG_MAIN_THREAD on the task runs on
+the main thread and is not an entry, unless its file ever clears that
+flag or the same handler is also assigned without it; the call graph comes
 from `objdump -d` of the binary, so what is audited is what ships in
 that configuration.  Functions the configuration compiles out are not
 seen: run against the fullest builds available.
@@ -67,6 +70,14 @@ PTHREAD_RE = re.compile(
 HANDLER_RE = re.compile(
     r"(?:task->handler\s*=\s*|task_set_handler\s*\([^,]+,\s*)"
     r"([a-z_][a-z_0-9]*)")
+MAIN_SET_RE = re.compile(
+    r"flags\s*\|=[^;]*\bRETRO_TASK_FLG_MAIN_THREAD\b"
+    r"|task_set_flags\s*\([^;]*\bRETRO_TASK_FLG_MAIN_THREAD\b[^;]*,"
+    r"\s*true\s*\)")
+MAIN_CLEAR_RE = re.compile(
+    r"&=\s*~[^;]*\bRETRO_TASK_FLG_MAIN_THREAD\b"
+    r"|task_set_flags\s*\([^;]*\bRETRO_TASK_FLG_MAIN_THREAD\b[^;]*,"
+    r"\s*false\s*\)")
 SKIP_DIRS = {".git", "deps", "obj-unix", "pkg", "media", "samples"}
 CALLBACK_ENTRIES = ("audio_driver_callback",)
 # Driver frame-context functions: under the threaded wrapper these run
@@ -153,8 +164,18 @@ def iter_sources(root):
                 yield os.path.join(base, f)
 
 
-def source_entries(root):
+def enclosing_function(text, pos):
+    """The body of the function containing pos: from the column-0 brace
+    that opens it to the column-0 brace that closes it."""
+    start = text.rfind("\n{", 0, pos)
+    end = text.find("\n}", pos)
+    return text[start if start >= 0 else 0:end if end >= 0 else len(text)]
+
+
+def source_entries(root, main_thread=None):
     entries = {}
+    # handler name -> [path, every assignment flagged main-thread]
+    handlers = {}
     for path in iter_sources(root):
         rel = os.path.relpath(path, root)
         try:
@@ -177,8 +198,18 @@ def source_entries(root):
                          text):
                 continue
             entries.setdefault(m.group(1), rel)
+        clears = MAIN_CLEAR_RE.search(text) is not None
         for m in HANDLER_RE.finditer(text):
-            entries.setdefault(m.group(1), rel)
+            main = (not clears and MAIN_SET_RE.search(
+                enclosing_function(text, m.start())) is not None)
+            site = handlers.setdefault(m.group(1), [rel, True])
+            site[1] = site[1] and main
+    for name, (rel, main) in handlers.items():
+        if main:
+            if main_thread is not None:
+                main_thread[name] = rel
+        else:
+            entries.setdefault(name, rel)
     for name in CALLBACK_ENTRIES:
         entries.setdefault(name, "(pipeline callback)")
     for name in DEVICE_CALLBACK_ENTRIES:
@@ -263,7 +294,8 @@ def load_allow(path):
 
 def run(binary, root, allow_path, list_unaudited=False,
         objdump="objdump"):
-    entries = source_entries(root)
+    main_thread = {}
+    entries = source_entries(root, main_thread)
     try:
         out = subprocess.run([objdump, "-d", binary],
                              capture_output=True, text=True, check=True)
@@ -291,18 +323,34 @@ def run(binary, root, allow_path, list_unaudited=False,
         for e in absent:
             print("  %s  (%s)" % (e, entries[e]))
     print("thread read audit: %d entr%s in binary, %d finding(s), "
-          "%d allowlisted pair(s), %d boundar%s"
+          "%d allowlisted pair(s), %d boundar%s, "
+          "%d main-thread task handler(s) not entries"
           % (audited, "y" if audited == 1 else "ies",
              len(findings), len(allow),
-             len(boundaries), "y" if len(boundaries) == 1 else "ies"),
+             len(boundaries), "y" if len(boundaries) == 1 else "ies",
+             len(main_thread)),
           file=sys.stderr)
     return 1 if findings else 0
 
 
 FIXTURE = """
 #include <pthread.h>
+#define RETRO_TASK_FLG_MAIN_THREAD (1 << 5)
+typedef struct retro_task retro_task_t;
+struct retro_task { void (*handler)(retro_task_t *task); unsigned flags; };
 void *config_get_ptr(void) { static int s; return &s; }
 static void leaf_reads(void) { config_get_ptr(); }
+static void main_handler(retro_task_t *task) { (void)task; leaf_reads(); }
+static void pool_handler(retro_task_t *task) { (void)task; leaf_reads(); }
+static void push_main(retro_task_t *task)
+{
+   task->handler = main_handler;
+   task->flags  |= RETRO_TASK_FLG_MAIN_THREAD;
+}
+static void push_pool(retro_task_t *task)
+{
+   task->handler = pool_handler;
+}
 static void *bad_worker(void *p) { leaf_reads(); return p; }
 static void crossing(void) { leaf_reads(); }
 static void *deferring_worker(void *p) { crossing(); return p; }
@@ -310,6 +358,11 @@ static void *good_worker(void *p) { return p; }
 int main(void)
 {
    pthread_t a, b, c;
+   retro_task_t m = {0, 0}, w = {0, 0};
+   push_main(&m);
+   push_pool(&w);
+   m.handler(&m);
+   w.handler(&w);
    pthread_create(&a, 0, bad_worker, 0);
    pthread_create(&b, 0, good_worker, 0);
    pthread_create(&c, 0, deferring_worker, 0);
@@ -331,6 +384,20 @@ def selftest():
             f.write("void *ghost_worker(void *p);\n"
                     "void ghost_spawn(void *t)\n"
                     "{ pthread_create(t, 0, ghost_worker, 0); }\n")
+        # A main-thread task whose file clears the flag again: it may
+        # run on a worker, so its handler stays an entry.
+        with open(os.path.join(td, "unpin.c"), "w") as f:
+            f.write("static void flip_handler(retro_task_t *task);\n"
+                    "static void push_flip(retro_task_t *task)\n"
+                    "{\n"
+                    "   task->handler = flip_handler;\n"
+                    "   task->flags  |= RETRO_TASK_FLG_MAIN_THREAD;\n"
+                    "}\n"
+                    "static void unpin(retro_task_t *task)\n"
+                    "{\n"
+                    "   task_set_flags(task, RETRO_TASK_FLG_MAIN_THREAD,"
+                    " false);\n"
+                    "}\n")
         if subprocess.run(["gcc", "-O0", src, "-o", binp,
                            "-lpthread"]).returncode:
             print("selftest: fixture build failed")
@@ -340,9 +407,12 @@ def selftest():
                              capture_output=True, text=True, check=True)
         calls, defined = call_graph(out.stdout.splitlines())
         findings, audited = audit(calls, defined, entries, set())
-        ok = (audited == 3
+        ok = (audited == 4
               and any(e == "bad_worker" and r == "config_get_ptr"
                       for e, _, r in findings)
+              and any(e == "pool_handler" for e, _, _ in findings)
+              and "main_handler" not in entries
+              and "flip_handler" in entries
               and any(e == "deferring_worker" for e, _, _ in findings)
               and not any(e == "good_worker" for e, _, _ in findings)
               and "ghost_worker" in entries
@@ -351,7 +421,8 @@ def selftest():
             print("selftest: FAIL entries=%d findings=%r"
                   % (audited, findings))
             return 1
-        allow = {("bad_worker", "config_get_ptr")}
+        allow = {("bad_worker", "config_get_ptr"),
+                 ("pool_handler", "config_get_ptr")}
         findings, _ = audit(calls, defined, entries, allow,
                             {"crossing"})
         if findings:
