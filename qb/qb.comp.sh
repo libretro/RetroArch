@@ -4,6 +4,9 @@ TEMP_C=.tmp.c
 TEMP_CXX=.tmp.cxx
 TEMP_EXE=.tmp
 
+# The checks rewrite these files each time; remove them once on exit.
+trap 'rm -f -- "$TEMP_C" "$TEMP_CXX" "$TEMP_EXE"' EXIT
+
 CC="${CC:-}"
 CXX="${CXX:-}"
 PKG_CONF_PATH="${PKG_CONF_PATH:-}"
@@ -23,14 +26,14 @@ test_compiler ()
 {
 	compiler=
 
-	for comp in $(printf %s "$1"); do
+	for comp in $1; do
 		if ! next "$comp"; then
 			compiler="${compiler} $(exists "${comp}")" ||
 				return 1
 		fi
 	done
 
-	$(printf %s "$1") -o "$TEMP_EXE" "$2" >/dev/null 2>&1 || return 1
+	$1 -o "$TEMP_EXE" "$2" >/dev/null 2>&1 || return 1
 
 	compiler="${compiler# }"
 	return 0

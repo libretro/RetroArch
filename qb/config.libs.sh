@@ -438,8 +438,8 @@ if [ "$HAVE_PIPEWIRE_STABLE" = 'yes' ] && [ "$PKG_CONF_PATH" = 'none' ]; then
       '#endif' \
       'int main(void) { return 0; }' > "$TEMP_C"
    printf %s 'Checking PipeWire headers >= 1.0.0 ... '
-   if $(printf %s "$CC") -o "$TEMP_EXE" "$TEMP_C" \
-         $(printf %s "$BUILD_DIRS $CFLAGS $PIPEWIRE_STABLE_CFLAGS $LDFLAGS") \
+   if $CC -o "$TEMP_EXE" "$TEMP_C" \
+         $BUILD_DIRS $CFLAGS $PIPEWIRE_STABLE_CFLAGS $LDFLAGS \
          >>config.log 2>&1; then
       printf %s\\n 'yes'
    else

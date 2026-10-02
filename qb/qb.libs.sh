@@ -59,10 +59,10 @@ check_compiler()
 # if neither of the above, it's an error
 check_enabled()
 {	add_opt "$2"
-	setval="$(eval "printf %s \"\$HAVE_$2\"")"
+	eval "setval=\${HAVE_$2}"
 
-	for val in $(printf %s "$1"); do
-		tmpvar="$(eval "printf %s \"\$HAVE_$val\"")"
+	for val in $1; do
+		eval "tmpvar=\${HAVE_$val}"
 		if [ "$tmpvar" != 'no' ]; then
 			if [ "$setval" != 'no' ] && match "${5:-}" true user; then
 				eval "HAVE_$2=yes"
@@ -71,7 +71,7 @@ check_enabled()
 		fi
 	done
 
-	tmpval="$(eval "printf %s \"\$USER_$2\"")"
+	eval "tmpval=\${USER_$2}"
 
 	if [ "$tmpval" != 'yes' ]; then
 		if [ "$setval" != 'no' ]; then
@@ -95,14 +95,14 @@ check_enabled()
 # $4 = enable feature when 'true', disable errors with 'user' [checked only if non-empty]
 check_platform()
 {	add_opt "$2"
-	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
+	eval "tmpval=\${HAVE_$2}"
 	[ "$tmpval" = 'no' ] && return 0
 
 	error=
 	newval=
-	setval="$(eval "printf %s \"\$USER_$2\"")"
+	eval "setval=\${USER_$2}"
 
-	for platform in $(printf %s "$1"); do
+	for platform in $1; do
 		if [ "$setval" = 'yes' ]; then
 			if [ "$error" != 'no' ] && [ "${4:-}" != 'user' ] &&
 					{ { [ "$platform" != "$OS" ] &&
@@ -145,7 +145,7 @@ check_platform()
 # $8 = critical error message [checked only if non-empty]
 check_lib()
 {	add_opt "$2"
-	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
+	eval "tmpval=\${HAVE_$2}"
 	[ "$tmpval" = 'no' ] && return 0
 
 	check_compiler "$1" "$4"
@@ -169,17 +169,17 @@ check_lib()
 
 	printf %s "$MSG $lib ... "
 
-	$(printf %s "$COMPILER") -o "$TEMP_EXE" "$TEMP_CODE" \
-		$(printf %s "$BUILD_DIRS $5 $FLAGS $LDFLAGS $lib") \
+	$COMPILER -o "$TEMP_EXE" "$TEMP_CODE" \
+		$BUILD_DIRS $5 $FLAGS $LDFLAGS $lib \
 		>>config.log 2>&1 && answer='yes'
 
 	printf %s\\n "$answer"
 
 	if [ "$answer" = 'yes' ] && [ "$include" ]; then
 		incflags=''
-		for inc in $(printf %s "$include"); do
+		for inc in $include; do
 			answer='no'
-			for dir in $(printf %s "$INCLUDES"); do
+			for dir in $INCLUDES; do
 				[ "$answer" = 'yes' ] && break
 				printf %s "Checking existence of /$dir/$inc ... "
 				if [ -d "/$dir/$inc" ]; then
@@ -194,11 +194,10 @@ check_lib()
 	fi
 
 	eval "HAVE_$2=\"$answer\""
-	rm -f -- "$TEMP_CODE" "$TEMP_EXE"
 
 	if [ "$answer" = 'no' ]; then
 		[ "$error" ] && die 1 "$error"
-		setval="$(eval "printf %s \"\$USER_$2\"")"
+		eval "setval=\${USER_$2}"
 		if [ "$setval" = 'yes' ]; then
 			die 1 "Forced to build with library $lib, but cannot locate. Exiting ..."
 		fi
@@ -219,7 +218,7 @@ check_lib()
 # $5 = force check_lib when true [checked only if non-empty, set by check_val]
 check_pkgconf()
 {	add_opt "$1"
-	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
+	eval "tmpval=\${HAVE_$1}"
 	eval "TMP_$1=\$tmpval"
 	[ "$tmpval" = 'no' ] && return 0
 
@@ -236,8 +235,9 @@ check_pkgconf()
 		# A package asked for by name is an error without pkg-config
 		# too, unless something that can still find it follows: a
 		# library check, or a check_nopkg probe.
+		eval "setval=\${USER_$1}"
 		if [ "${5:-}" != 'true' ] && [ "${6:-}" != 'nopkg' ] && \
-		   [ "$(eval "printf %s \"\$USER_$1\"")" = 'yes' ]; then
+		   [ "$setval" = 'yes' ]; then
 			die 1 "Forced to build with package $pkg, but pkg-config was not found. Exiting ..."
 		fi
 		return 0
@@ -249,10 +249,10 @@ check_pkgconf()
 	answer='no'
 	version='no'
 
-	for pkgnam in $(printf %s "${2#* }"); do
+	for pkgnam in ${2#* }; do
 		[ "$answer" = 'yes' ] && break
 		printf %s "$MSG $pkgnam$ECHOBUF ... "
-		for pkgver in $(printf %s "$ver"); do
+		for pkgver in $ver; do
 			if "$PKG_CONF_PATH" --atleast-version="$pkgver" "$pkgnam"; then
 				answer='yes'
 				version="$("$PKG_CONF_PATH" --modversion "$pkgnam")"
@@ -270,7 +270,7 @@ check_pkgconf()
 	if [ "$answer" = 'no' ]; then
 		[ "$lib" != 'true' ] || return 0
 		[ "$err" ] && die 1 "$err"
-		setval="$(eval "printf %s \"\$USER_$1\"")"
+		eval "setval=\${USER_$1}"
 		if [ "$setval" = 'yes' ]; then
 			die 1 "Forced to build with package $pkg, but cannot locate. Exiting ..."
 		fi
@@ -286,9 +286,9 @@ check_pkgconf()
 check_header()
 {	add_opt "$2"
 	check_compiler "$1" ''
-	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
+	eval "tmpval=\${HAVE_$2}"
 	[ "$tmpval" = 'no' ] && return 0
-	rm -f -- "$TEMP_C"
+	: > "$TEMP_CODE"
 	val="$2"
 	header="$3"
 	shift 2
@@ -299,13 +299,12 @@ check_header()
 	printf %s\\n "int main(void) { return 0; }" >> "$TEMP_CODE"
 	answer='no'
 	printf %s "Checking presence of header file $CHECKHEADER ... "
-	$(printf %s "$COMPILER") -o "$TEMP_EXE" "$TEMP_CODE" \
-		$(printf %s "$BUILD_DIRS $FLAGS $LDFLAGS") >>config.log 2>&1 &&
+	$COMPILER -o "$TEMP_EXE" "$TEMP_CODE" \
+		$BUILD_DIRS $FLAGS $LDFLAGS >>config.log 2>&1 &&
 		answer='yes'
 	eval "HAVE_$val=\"$answer\""
 	printf %s\\n "$answer"
-	rm -f -- "$TEMP_C" "$TEMP_EXE"
-	setval="$(eval "printf %s \"\$USER_$val\"")"
+	eval "setval=\${USER_$val}"
 	if [ "$setval" = 'yes' ] && [ "$answer" = 'no' ]; then
 		die 1 "Build assumed that $header exists, but cannot locate. Exiting ..."
 	fi
@@ -317,7 +316,7 @@ check_header()
 # $3 = header name [included only if non-empty]
 check_macro()
 {	add_opt "$1"
-	tmpval="$(eval "printf %s \"\$HAVE_$1\"")"
+	eval "tmpval=\${HAVE_$1}"
 	[ "$tmpval" = 'no' ] && return 0
 	header_include=''
 	ECHOBUF=''
@@ -336,13 +335,12 @@ EOF
 	val="$1"
 	macro="$2"
 	printf %s "Checking presence of predefined macro $macro$ECHOBUF ... "
-	$(printf %s "$CC") -o "$TEMP_EXE" "$TEMP_C" \
-		$(printf %s "$BUILD_DIRS $CFLAGS $LDFLAGS") >>config.log 2>&1 &&
+	$CC -o "$TEMP_EXE" "$TEMP_C" \
+		$BUILD_DIRS $CFLAGS $LDFLAGS >>config.log 2>&1 &&
 		answer='yes'
 	eval "HAVE_$val=\"$answer\""
 	printf %s\\n "$answer"
-	rm -f -- "$TEMP_C" "$TEMP_EXE"
-	setval="$(eval "printf %s \"\$USER_$val\"")"
+	eval "setval=\${USER_$val}"
 	if [ "$setval" = 'yes' ] && [ "$answer" = 'no' ]; then
 		die 1 "Build assumed that $macro is defined, but it's not. Exiting ..."
 	fi
@@ -360,12 +358,11 @@ check_switch()
 	printf %s\\n 'int main(void) { return 0; }' > "$TEMP_CODE"
 	answer='no'
 	printf %s "Checking for availability of switch $3 in $COMPILER ... "
-	$(printf %s "$COMPILER") -o "$TEMP_EXE" "$TEMP_CODE" \
-		$(printf %s "$BUILD_DIRS $CFLAGS $3 -Werror $LDFLAGS") \
+	$COMPILER -o "$TEMP_EXE" "$TEMP_CODE" \
+		$BUILD_DIRS $CFLAGS $3 -Werror $LDFLAGS \
 		>>config.log 2>&1 && answer='yes'
 	eval "HAVE_$2=\"$answer\""
 	printf %s\\n "$answer"
-	rm -f -- "$TEMP_CODE" "$TEMP_EXE"
 	if [ "$answer" = 'yes' ]; then
 		eval "${2}_CFLAGS=\"$3\""
 		PKG_CONF_USED="$PKG_CONF_USED $2"
@@ -402,8 +399,10 @@ check_switch()
 # $6 = extra compiler flags for the probe only (optional)
 check_nopkg()
 {	[ "$PKG_CONF_PATH" = 'none' ] || return 0
-	[ "$(eval "printf %s \"\$TMP_$2\"")" = 'no' ] && return 0
-	[ "$(eval "printf %s \"\$HAVE_$2\"")" = 'yes' ] && return 0
+	eval "tmpval=\${TMP_$2}"
+	[ "$tmpval" = 'no' ] && return 0
+	eval "tmpval=\${HAVE_$2}"
+	[ "$tmpval" = 'yes' ] && return 0
 
 	check_compiler "$1" ''
 	nopkg_flags=''
@@ -411,7 +410,7 @@ check_nopkg()
 	nopkg_dirs="$INCLUDES${nopkg_triplet:+ usr/lib/$nopkg_triplet} usr/lib64 usr/lib usr/local/lib64 usr/local/lib"
 	answer='yes'
 
-	for nopkg_inc in $(printf %s "$4"); do
+	for nopkg_inc in $4; do
 		case "$nopkg_inc" in
 			-* )
 				nopkg_flags="${nopkg_flags:+$nopkg_flags }$nopkg_inc"
@@ -425,7 +424,7 @@ check_nopkg()
 			;;
 			* )
 				nopkg_found=''
-				for nopkg_dir in $(printf %s "$nopkg_dirs"); do
+				for nopkg_dir in $nopkg_dirs; do
 					if [ -d "/$nopkg_dir/$nopkg_inc" ]; then
 						nopkg_found="-I/$nopkg_dir/$nopkg_inc"
 						break
@@ -445,10 +444,9 @@ check_nopkg()
 	if [ "$answer" = 'yes' ]; then
 		printf %s\\n "$5" > "$TEMP_CODE"
 		answer='no'
-		$(printf %s "$COMPILER") -o "$TEMP_EXE" "$TEMP_CODE" \
-			$(printf %s "$BUILD_DIRS ${6:-} $nopkg_flags $FLAGS $LDFLAGS $3") \
+		$COMPILER -o "$TEMP_EXE" "$TEMP_CODE" \
+			$BUILD_DIRS ${6:-} $nopkg_flags $FLAGS $LDFLAGS $3 \
 			>>config.log 2>&1 && answer='yes'
-		rm -f -- "$TEMP_CODE" "$TEMP_EXE"
 	fi
 	printf %s\\n "$answer"
 
@@ -457,7 +455,10 @@ check_nopkg()
 		eval "${2}_CFLAGS=\"$nopkg_flags\""
 		eval "${2}_LIBS=\"$3\""
 		PKG_CONF_USED="$PKG_CONF_USED $2"
-	elif [ "$(eval "printf %s \"\$USER_$2\"")" = 'yes' ]; then
+		return 0
+	fi
+	eval "setval=\${USER_$2}"
+	if [ "$setval" = 'yes' ]; then
 		die 1 "Forced to build with $2, but it cannot be found without pkg-config. Exiting ..."
 	fi
 	return 0
@@ -499,8 +500,8 @@ check_val()
 		check_pkgconf "$2" "$5" "${6:-}" "${7:-}" "${8:-}"
 	fi
 	[ "$PKG_CONF_PATH" = "none" ] || [ "${8:-}" = true ] || return 0
-	tmpval="$(eval "printf %s \"\$HAVE_$2\"")"
-	oldval="$(eval "printf %s \"\$TMP_$2\"")"
+	eval "tmpval=\${HAVE_$2}"
+	eval "oldval=\${TMP_$2}"
 	if [ "$tmpval" = 'no' ] && [ "$oldval" != 'no' ]; then
 		eval "HAVE_$2=auto"
 		check_lib "$1" "$2" "$3" '' '' '' "${4:-}" "${7:-}"
@@ -517,11 +518,12 @@ create_config_header()
 			"#define PACKAGE_NAME \"$PACKAGE_NAME\""
 
 		while [ $# -gt 0 ]; do
-			case "$(eval "printf %s \"\$HAVE_$1\"")" in
+			eval "have=\${HAVE_$1}"
+			case "$have" in
 				'yes')
 					n='0'
-					c89_build="$(eval "printf %s \"\$C89_$1\"")"
-					cxx_build="$(eval "printf %s \"\$CXX_$1\"")"
+					eval "c89_build=\${C89_$1}"
+					eval "cxx_build=\${CXX_$1}"
 
 					if [ "$c89_build" = 'no' ]; then
 						n=$(($n+1))
@@ -545,7 +547,7 @@ create_config_header()
 			shift
 		done
 
-		for VAR in $(printf %s "$CONFIG_DEFINES"); do
+		for VAR in $CONFIG_DEFINES; do
 			printf %s\\n "#define ${VAR%%=*} ${VAR#*=}"
 		done
 
@@ -585,14 +587,16 @@ create_config_make()
 			"PREFIX = $PREFIX"
 
 		while [ $# -gt 0 ]; do
-			case "$(eval "printf %s \"\$HAVE_$1\"")" in
+			eval "have=\${HAVE_$1}"
+			case "$have" in
 				'yes')
 					n='0'
 					c89_build="C89_$1"
 					cxx_build="CXX_$1"
 
 					for build in "$c89_build" "$cxx_build"; do
-						if [ "$(eval "printf %s \"\$$build\"")" = 'no' ]; then
+						eval "bval=\${$build}"
+						if [ "$bval" = 'no' ]; then
 							n=$(($n+1))
 							printf %s\\n "ifneq (\$(${build%%_*}_BUILD),1)"
 						fi
@@ -610,8 +614,8 @@ create_config_make()
 
 			case "$PKG_CONF_USED" in
 				*$1*)
-					FLAG="$(eval "printf %s \"\$$1_CFLAGS\"")"
-					LIBS="$(eval "printf %s \"\$$1_LIBS\"")"
+					eval "FLAG=\${$1_CFLAGS}"
+					eval "LIBS=\${$1_LIBS}"
 					[ "${FLAG}" ] && printf %s\\n "$1_CFLAGS = ${FLAG%"${FLAG##*[! ]}"}"
 					[ "${LIBS}" ] && printf %s\\n "$1_LIBS = ${LIBS%"${LIBS##*[! ]}"}"
 				;;
@@ -619,7 +623,7 @@ create_config_make()
 			shift
 		done
 
-		for VAR in $(printf %s "$MAKEFILE_DEFINES"); do
+		for VAR in $MAKEFILE_DEFINES; do
 			printf %s\\n "${VAR%%=*} = ${VAR#*=}"
 		done
 

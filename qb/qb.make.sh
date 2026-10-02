@@ -9,5 +9,5 @@ while [ $# -gt 0 ]; do
 	vars="${vars} $var"
 done
 VARS="$(printf %s "$vars" | tr ' ' '\n' | $SORT)"
-create_config_make config.mk $(printf %s "$VARS")
-create_config_header config.h $(printf %s "$VARS")
+create_config_make config.mk $VARS
+create_config_header config.h $VARS
