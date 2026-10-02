@@ -493,21 +493,29 @@ bool play_feature_delivery_download(const char *core_file)
          core_file, core_name, sizeof(core_name)))
       return false;
 
-   /* Lock mutex */
+   /* We only support one download at a time: claim it under the
+    * lock, then ask Java with the lock released. The status callbacks
+    * take the same lock, and one that came back on this thread, or
+    * one Java's own thread delivers while this call waits on it,
+    * would otherwise wait on a lock this thread is holding. */
 #ifdef HAVE_THREADS
    slock_lock(state->status_lock);
 #endif
-
-   /* We only support one download at a time */
    if (!state->active)
    {
-      /* Update status */
       state->download_progress = 0;
       state->last_status       = PLAY_FEATURE_DELIVERY_PENDING;
       state->active            = true;
       strlcpy(state->last_core_name, core_name,
             sizeof(state->last_core_name));
+      ret                      = true;
+   }
+#ifdef HAVE_THREADS
+   slock_unlock(state->status_lock);
+#endif
 
+   if (ret)
+   {
       /* Convert core name to a Java-style string */
       core_name_jni = (*env)->NewStringUTF(env, core_name);
 
@@ -517,14 +525,7 @@ bool play_feature_delivery_download(const char *core_file)
 
       /* Free core_name_jni reference */
       (*env)->DeleteLocalRef(env, core_name_jni);
-
-      ret = true;
    }
-
-   /* Unlock mutex */
-#ifdef HAVE_THREADS
-   slock_unlock(state->status_lock);
-#endif
 
    return ret;
 }
