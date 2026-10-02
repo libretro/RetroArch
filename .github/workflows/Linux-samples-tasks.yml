@@ -301,7 +301,9 @@ jobs:
           timeout 120 ./bsv_replay_init_test
           echo "[pass] bsv_replay_init_test"
           make clean all SANITIZER=address,undefined
-          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+          # allocator_may_return_null: the test feeds a checkpoint too big
+          # to allocate and expects malloc to return NULL.
+          ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 UBSAN_OPTIONS=print_stacktrace=1 \
              timeout 120 ./bsv_replay_init_test
           echo "[pass] bsv_replay_init_test (ASan + UBSan)"
 
