@@ -579,6 +579,13 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
       compressed_data = handle->cur_save;
    else
       compressed_data = (uint8_t*)malloc(compressed_encoded_size);
+   if (!handle->cur_save || !compressed_data)
+   {
+      RARCH_ERR("[Replay] Out of memory for checkpoint, terminating movie\n");
+      input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+      ret = false;
+      goto exit;
+   }
    if (intfstream_read(handle->file, compressed_data,
        compressed_encoded_size) != (int64_t)compressed_encoded_size)
    {
@@ -598,7 +605,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
          {
             uLongf uncompressed_size_zlib = encoded_size;
             encoded_data = (uint8_t*)calloc(encoded_size, sizeof(uint8_t));
-            if (uncompress(encoded_data, &uncompressed_size_zlib,
+            if (!encoded_data || uncompress(encoded_data, &uncompressed_size_zlib,
                 compressed_data, compressed_encoded_size) != Z_OK)
             {
                ret = false;
@@ -618,7 +625,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
                calling the function that takes the compressed frames as
                an input?  */
             encoded_data          = (uint8_t*)calloc(encoded_size, sizeof(uint8_t));
-            if (rzstd_decode(encoded_data, encoded_size,
+            if (!encoded_data || rzstd_decode(encoded_data, encoded_size,
                      compressed_data, compressed_encoded_size,
                      &uncompressed_size_big) != RZSTD_PROCESS_END)
                {

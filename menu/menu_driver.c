@@ -4842,8 +4842,12 @@ static bool menu_driver_init_internal(
          menu_st->driver_data               = (menu_handle_t*)
             menu_st->driver_ctx->init(&menu_st->userdata,
                   video_is_threaded);
-         menu_st->driver_data->userdata     = menu_st->userdata;
-         menu_st->driver_data->driver_ctx   = menu_st->driver_ctx;
+         /* init returns NULL on failure; the check below handles it. */
+         if (menu_st->driver_data)
+         {
+            menu_st->driver_data->userdata   = menu_st->userdata;
+            menu_st->driver_data->driver_ctx = menu_st->driver_ctx;
+         }
       }
    }
 
