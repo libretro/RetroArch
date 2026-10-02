@@ -326,6 +326,24 @@ jobs:
           timeout 60 ./bsv_replay_bounds_test
           echo "[pass] bsv_replay_bounds_test"
 
+      - name: Build and run bsv_checkpoint_bounds_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/tasks/bsv_checkpoint
+        run: |
+          set -eu
+          # A checkpoint in a .bsv replay carries its state, encoded
+          # and compressed sizes, all from the file.  The test feeds
+          # bsv_movie_load_checkpoint() checkpoints whose sizes
+          # disagree, truncated ones and skipped ones, with buffers at
+          # their exact sizes, so an overflow, a double free or a
+          # leak is reported.  If input/bsv/bsvmovie.c changes that
+          # function, the verbatim copy in
+          # bsv_checkpoint_bounds_test.c must follow.
+          make clean all SANITIZER=address,undefined
+          test -x bsv_checkpoint_bounds_test
+          UBSAN_OPTIONS=halt_on_error=1 timeout 60 ./bsv_checkpoint_bounds_test
+          echo "[pass] bsv_checkpoint_bounds_test"
+
       - name: Build and run bsv_replay_init_test (plain, ASan + UBSan)
         shell: bash
         working-directory: samples/tasks/bsv_replay_init

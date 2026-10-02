@@ -554,6 +554,20 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
    size         = swap_if_big32(size);
    encoded_size = swap_if_big32(encoded_size);
    compressed_encoded_size = swap_if_big32(compressed_encoded_size);
+   /* The three sizes come from the file.  Uncompressed data is read
+    * straight into its decode buffer, and a raw state is copied into
+    * cur_save, which holds 'size' bytes, so both must match what the
+    * writer produces. */
+   if (     (compression == REPLAY_CHECKPOINT2_COMPRESSION_NONE
+         && compressed_encoded_size != encoded_size)
+         || (encoding == REPLAY_CHECKPOINT2_ENCODING_RAW
+         && encoded_size != size))
+   {
+      RARCH_ERR("[Replay] Checkpoint sizes do not agree, terminating movie\n");
+      input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+      ret = false;
+      goto exit;
+   }
    if (       checkpoint_behavior == REPLAY_CPBEHAVIOR_SKIP
          || ((checkpoint_behavior == REPLAY_CPBEHAVIOR_UPDATE)
          &&    encoding == REPLAY_CHECKPOINT2_ENCODING_RAW))
@@ -666,16 +680,18 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
          ret = false;
          goto exit;
    }
+   /* cur_save now holds this checkpoint's state. */
+   handle->cur_save_size  = size;
+   handle->last_save_size = handle->cur_save_size;
    if (checkpoint_behavior != REPLAY_CPBEHAVIOR_DESERIALIZE)
       goto exit;
    handle->checkpoint_ready = true;
  exit:
-   handle->cur_save_size = size;
-   handle->last_save_size = handle->cur_save_size;
-
-   if (compressed_data)
+   /* Uncompressed raw data is read into cur_save itself, which the
+    * handle keeps. */
+   if (compressed_data && compressed_data != handle->cur_save)
       free(compressed_data);
-   if (encoded_data)
+   if (encoded_data && encoded_data != handle->cur_save)
       free(encoded_data);
    return ret;
 }
