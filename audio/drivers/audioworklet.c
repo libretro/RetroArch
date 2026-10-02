@@ -72,6 +72,10 @@ typedef struct audioworklet_data
     * here and not said: this is the render callback, and a line from
     * it costs part of the quantum it is reporting on. */
    retro_atomic_size_t underruns;
+   /* Frames a write could not get into the ring and gave up on. Counted
+    * on the write and logged as one total when the driver is freed: a
+    * line per write is a line per frame, on the audio path. */
+   retro_atomic_size_t dropped;
    bool ring_init;
    unsigned rate;
    unsigned latency;
@@ -318,6 +322,7 @@ static void *audioworklet_init(const char *device, unsigned rate,
    if (!audioworklet->ring_init)
       audioworklet->init_error = true;
    retro_atomic_size_init(&audioworklet->underruns, 0);
+   retro_atomic_size_init(&audioworklet->dropped, 0);
    emscripten_lock_init(&audioworklet->buffer_lock);
 #ifdef PROXY_TO_PTHREAD
    emscripten_lock_init(&audioworklet->trywrite_lock);
@@ -403,7 +408,7 @@ static ssize_t audioworklet_write(void *data, const void *s, size_t ss)
          retro_spsc_write(&audioworklet->ring, samples, to_write_bytes);
          num_frames -= to_write_frames;
          samples    += (to_write_frames * 2);
-         _len       += to_write_frames;
+         _len       += to_write_bytes;
       }
 
 #ifdef EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
@@ -416,7 +421,7 @@ static ssize_t audioworklet_write(void *data, const void *s, size_t ss)
       }
 #endif
       if (num_frames && !audioworklet->nonblock)
-         RARCH_WARN("[AudioWorklet] Dropping %lu frames.\n", num_frames);
+         retro_atomic_fetch_add_size(&audioworklet->dropped, num_frames);
       break;
 #endif
       if (audioworklet->nonblock || !num_frames)
@@ -429,8 +434,7 @@ static ssize_t audioworklet_write(void *data, const void *s, size_t ss)
        * page's, and holding it froze the tab. */
       if (--laps < 0)
       {
-         RARCH_WARN("[AudioWorklet] Dropping %lu frames: the context is not taking audio.\n",
-               (unsigned long)num_frames);
+         retro_atomic_fetch_add_size(&audioworklet->dropped, num_frames);
          break;
       }
 #if defined(PROXY_TO_PTHREAD)
@@ -595,6 +599,12 @@ static void audioworklet_free(void *data)
    audioworklet->driver_running = false;
    if (audioworklet->ring_init)
       retro_spsc_free(&audioworklet->ring);
+   {
+      size_t dropped = retro_atomic_load_acquire_size(&audioworklet->dropped);
+      if (dropped)
+         RARCH_WARN("[AudioWorklet] %lu frames dropped: the context did not take them.\n",
+               (unsigned long)dropped);
+   }
    audioworklet->ring_init = false;
    emscripten_lock_release(&audioworklet->buffer_lock);
    MAIN_THREAD_ASYNC_EM_ASM({
