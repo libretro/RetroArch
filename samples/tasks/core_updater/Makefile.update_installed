@@ -54,6 +54,8 @@ CFLAGS  += -Wall -std=gnu99 -g -O1 -fno-omit-frame-pointer \
 LIBS    += -lpthread -lm
 # path_is_valid() is counted at the link boundary; see the test.
 LDFLAGS += -Wl,--wrap=path_is_valid
+# The get-list lane forces the I/O window to its one-item floor.
+LDFLAGS += -Wl,--wrap=task_nbio_slice_within_budget
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) $(CFLAGS)

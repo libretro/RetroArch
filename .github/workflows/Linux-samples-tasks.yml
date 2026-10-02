@@ -514,7 +514,11 @@ jobs:
           # one frame per entry; a CRC resumed on a later tick does not
           # repeat the per-core stats.  Both are asserted: the gather
           # count, and path_is_valid() calls counted at the link
-          # boundary.
+          # boundary.  The get-list lane forces the window to its
+          # one-item floor and asserts the listing is parsed a line
+          # per gather into a private list, while the caller's list -
+          # read by the Core Downloader's menu callbacks every frame -
+          # only ever holds its old contents or the complete new ones.
           make -f Makefile.update_installed clean all
           test -x update_installed_scan_test
           timeout 600 ./update_installed_scan_test

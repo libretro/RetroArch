@@ -66,12 +66,17 @@ enum core_updater_list_status
 {
    CORE_UPDATER_LIST_BEGIN = 0,
    CORE_UPDATER_LIST_WAIT,
+   CORE_UPDATER_LIST_PARSE,
    CORE_UPDATER_LIST_END
 };
 
 typedef struct core_updater_list_handle
 {
    core_updater_list_t* core_list;
+   /* The list is built here, across ticks, and swapped into
+    * core_list by the task's callback on the main thread, so
+    * nothing reading core_list ever sees it half-built */
+   core_updater_list_t* parse_list;
    retro_task_t *http_task;
    http_transfer_data_t *http_data;
    enum core_updater_list_status status;
@@ -449,6 +454,8 @@ static void free_core_updater_list_handle(
       free(list_handle->http_data);
    }
 
+   core_updater_list_free(list_handle->parse_list);
+
    free(list_handle);
    list_handle = NULL;
 }
@@ -517,9 +524,6 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
             file_transfer_t *transf = NULL;
             const char *net_buildbot_url;
 
-            /* Reset core updater list */
-            core_updater_list_reset(list_handle->core_list);
-
             /* Get core listing URL from the push-time capture */
             net_buildbot_url = list_handle->network_buildbot_url;
 
@@ -587,7 +591,31 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
              * callback to trigger */
             if (retro_atomic_load_acquire_int(
                      &list_handle->http_task_complete))
-               list_handle->status = CORE_UPDATER_LIST_END;
+            {
+               /* Hand the response body to the private list to
+                * parse in place; a failed transfer, or one with
+                * nothing in it, publishes an empty list */
+               if (     list_handle->http_task_success
+                     && list_handle->http_data
+                     && core_updater_list_parse_network_take(
+                           list_handle->parse_list,
+                           (char*)list_handle->http_data->data,
+                           list_handle->http_data->len))
+                  list_handle->status = CORE_UPDATER_LIST_PARSE;
+               else
+                  list_handle->status = CORE_UPDATER_LIST_END;
+
+               if (list_handle->http_data)
+                  list_handle->http_data->data = NULL; /* taken */
+
+               if (!list_handle->http_task_success)
+               {
+                  /* Notify user of error via task title */
+                  task_free_title(task);
+                  task_set_title(task,
+                        strdup(msg_hash_to_str(MSG_CORE_LIST_FAILED)));
+               }
+            }
             /* If HTTP task is running, copy current
              * progress value to *this* task */
             else if (core_updater_sub_task_running(
@@ -595,31 +623,29 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
                task_set_progress(task, progress);
          }
          break;
-      case CORE_UPDATER_LIST_END:
+      case CORE_UPDATER_LIST_PARSE:
          {
-            /* Check whether HTTP task was successful */
-            if (list_handle->http_task_success)
-            {
-               /* Parse HTTP transfer data */
-               if (list_handle->http_data)
-                  core_updater_list_parse_network_data(
-                        list_handle->core_list,
-                        list_handle->dir_libretro,
-                        list_handle->path_libretro_info,
-                        list_handle->network_buildbot_url,
-                        list_handle->http_data->data,
-                        list_handle->http_data->len);
-            }
-            else
-            {
-               /* Notify user of error via task title */
-               task_free_title(task);
-               task_set_title(task, strdup(msg_hash_to_str(MSG_CORE_LIST_FAILED)));
-            }
+            /* One listing line per work item of the shared I/O
+             * window: each costs a stat and a core info read */
+            bool done;
+            nbio_budget_t budget;
 
-            /* Menu refresh happens in the task's callback: the
-             * main thread, where menu flags are written. */
+            task_nbio_slice_open(&budget);
+            done = core_updater_list_parse_network_step(
+                  list_handle->parse_list,
+                  list_handle->dir_libretro,
+                  list_handle->path_libretro_info,
+                  list_handle->network_buildbot_url,
+                  task_nbio_slice_within_budget, &budget);
+            task_nbio_slice_close(&budget);
+
+            if (done)
+               list_handle->status = CORE_UPDATER_LIST_END;
          }
+         break;
+      case CORE_UPDATER_LIST_END:
+         /* The list is published, and the menu refreshed, by the
+          * task's callback: the main thread. */
          /* fall-through */
       default:
          task_set_progress(task, 100);
@@ -682,14 +708,27 @@ static void cb_task_core_updater_get_list(
 {
    core_updater_sub_task_done_t *list_done =
          (core_updater_sub_task_done_t*)user_data;
+   core_updater_list_handle_t *list_handle =
+         (core_updater_list_handle_t*)task->state;
+
+   /* Publish the list built on the worker.  Only a parse that ran
+    * to the end is published as is; a fetch that failed, was
+    * cancelled or stopped part-way publishes an empty list.  This
+    * runs before the parent is signalled, and a cancelled parent's
+    * core_list stays alive in list_done until then. */
+   if (list_handle)
+   {
+      if (list_handle->status != CORE_UPDATER_LIST_END)
+         core_updater_list_reset(list_handle->parse_list);
+      core_updater_list_swap(list_handle->core_list,
+            list_handle->parse_list);
+   }
 
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
    /* The main thread, at task retrieval: menu flags are a plain
     * read-modify-write, so every writer must be here, racing
     * nothing. */
    {
-      core_updater_list_handle_t *list_handle =
-            (core_updater_list_handle_t*)task->state;
       struct menu_state *menu_st = menu_state_get_ptr();
       if (list_handle && menu_st)
       {
@@ -728,6 +767,9 @@ static void *task_push_get_core_updater_list_captured(
 
    /* Sanity check */
    if (!core_list || !list_handle)
+      goto error;
+
+   if (!(list_handle->parse_list = core_updater_list_init()))
       goto error;
 
    /* Configure handle */
@@ -1625,9 +1667,9 @@ static void free_update_installed_cores_handle(
    /* A child still pending - this task was cancelled while waiting
     * on it - keeps running and retires later.  Its callback holds
     * the other reference, so letting go here leaves the record to
-    * the callback.  A list fetch also still parses into core_list:
-    * the list goes with the record and dies with its last
-    * reference. */
+    * the callback.  A list fetch's callback also still publishes
+    * into core_list: the list goes with the record and dies with
+    * its last reference. */
    if (update_installed_handle->list_done)
    {
       update_installed_handle->list_done->orphan_list =

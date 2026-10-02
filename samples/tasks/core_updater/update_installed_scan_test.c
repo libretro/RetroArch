@@ -51,13 +51,23 @@
  *     retroarch_drain_tasks_for_exit() does, with the list fetch in
  *     flight;
  *   - cancel in WAIT_LIST: the parent alone, so the list task goes on
- *     to parse into the core list the parent was waiting for;
+ *     to publish into the core list the parent was waiting for;
  *   - cancel in WAIT_DOWNLOAD: the parent alone, with a core download
  *     in flight.
  *
  * A child callback or list parse that reaches the parent's freed
  * handle is a heap-use-after-free under ASan; LeakSan covers the
- * other direction - a completion record or list nobody frees. */
+ * other direction - a completion record or list nobody frees.
+ *
+ * The get-list lane covers the fetch that precedes the scan.  The
+ * listing is parsed one line per work item of the same window into a
+ * list private to the task, and published into the caller's list by
+ * the task's callback on the main thread.  With the window forced to
+ * its one-item floor (task_nbio_slice_within_budget is wrapped) the
+ * parse must take a gather per line, and the caller's list - which
+ * the Core Downloader's menu callbacks read every frame - must read
+ * either its old contents or the complete new ones after every
+ * gather, never an emptied or half-built list. */
 
 #include <stdio.h>
 #include <string.h>
@@ -78,6 +88,7 @@
 #include <compat/strl.h>
 
 #include "../../../configuration.h"
+#include "../../../core_updater_list.h"
 #include "../../../tasks/tasks_internal.h"
 
 #define NUM_ENTRIES   512
@@ -112,6 +123,20 @@ bool __wrap_path_is_valid(const char *path)
 {
    retro_atomic_fetch_add_int(&n_path_is_valid, 1);
    return __real_path_is_valid(path);
+}
+
+/* ---------------- the I/O window, forced to its floor ------------ */
+
+static retro_atomic_int_t force_floor;
+
+bool __real_task_nbio_slice_within_budget(void *ud, size_t avail, size_t len);
+bool __wrap_task_nbio_slice_within_budget(void *ud, size_t avail, size_t len)
+{
+   bool floor = ((nbio_budget_t*)ud)->floor != 0;
+   bool ret   = __real_task_nbio_slice_within_budget(ud, avail, len);
+   if (retro_atomic_load_acquire_int(&force_floor))
+      return floor;
+   return ret;
 }
 
 /* ---------------- loopback server: serves .index-extended -------- */
@@ -482,6 +507,77 @@ static void cancel_lane(bool threaded, enum cancel_mode mode)
    retro_atomic_store_release_int(&srv_use_small, 0);
 }
 
+static bool find_any_task(retro_task_t *task, void *user_data)
+{
+   (void)task;
+   (void)user_data;
+   return true;
+}
+
+static void run_get_list_lane(void)
+{
+   static const char old_listing[] =
+      "2026-09-01 1234abcd old0_libretro.so.zip\n"
+      "2026-09-01 1234abcd old1_libretro.so.zip\n";
+   char url[128];
+   char name[128];
+   task_finder_data_t find_data;
+   settings_t *settings      = config_get_ptr();
+   core_updater_list_t *list = core_updater_list_init();
+   long gathers              = 0;
+   bool torn                 = false;
+
+   printf("[lane get-list: one line per gather, published whole]\n");
+
+   snprintf(url, sizeof(url), "http://127.0.0.1:%d", srv_port);
+   get_list_test_set_buildbot_url(url);
+   strlcpy(settings->paths.directory_libretro, g_dir,
+         sizeof(settings->paths.directory_libretro));
+   strlcpy(settings->paths.path_libretro_info, g_dir,
+         sizeof(settings->paths.path_libretro_info));
+
+   core_updater_list_parse_network_data(list, g_dir, g_dir, url,
+         old_listing, sizeof(old_listing) - 1);
+   CHECK(core_updater_list_size(list) == 2, "old list in place");
+
+   task_queue_init(false, NULL);
+   retro_atomic_store_release_int(&force_floor, 1);
+
+   task_push_get_core_updater_list(list, true, false);
+
+   find_data.func     = find_any_task;
+   find_data.userdata = NULL;
+   for (gathers = 0; gathers < 8 * NUM_ENTRIES; gathers++)
+   {
+      size_t n;
+      task_queue_check();
+      n = core_updater_list_size(list);
+      if (n != 2 && n != NUM_ENTRIES)
+         torn = true;
+      if (!task_queue_find(&find_data))
+         break;
+      /* The loopback transfer runs in real time on the server
+       * thread */
+      retro_sleep(1);
+   }
+
+   retro_atomic_store_release_int(&force_floor, 0);
+
+   printf("  %ld gathers for %d listing lines\n", gathers, NUM_ENTRIES);
+   CHECK(gathers < 8 * NUM_ENTRIES, "get-list completed");
+   CHECK(!torn, "the caller's list was never seen emptied or half-built");
+   CHECK(core_updater_list_size(list) == NUM_ENTRIES,
+         "the fetched list replaced the old one");
+   snprintf(name, sizeof(name),
+         "the parse took a gather per line with the window at its floor "
+         "(at least %d)", NUM_ENTRIES);
+   CHECK(gathers >= NUM_ENTRIES, name);
+
+   task_queue_deinit();
+   task_queue_unset_threaded();
+   core_updater_list_free(list);
+}
+
 int main(void)
 {
    char cmd[128];
@@ -505,6 +601,7 @@ int main(void)
    else
    {
       int mode;
+      run_get_list_lane();
       run_lane(false);
       run_lane(true);
       for (mode = RESET_IN_WAIT_LIST; mode <= CANCEL_IN_WAIT_DOWNLOAD; mode++)

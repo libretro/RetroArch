@@ -38,6 +38,11 @@
 struct core_updater_list
 {
    core_updater_list_entry_t *entries;
+   /* Incremental buildbot parse: a NUL-terminated copy of the
+    * listing and the offset of the next line to parse */
+   char *parse_buf;
+   size_t parse_len;
+   size_t parse_pos;
    enum core_updater_list_type type;
 };
 
@@ -111,8 +116,11 @@ core_updater_list_t *core_updater_list_init(void)
       return NULL;
 
    /* Initialise members */
-   core_list->entries = NULL;
-   core_list->type    = CORE_UPDATER_LIST_TYPE_UNKNOWN;
+   core_list->entries   = NULL;
+   core_list->parse_buf = NULL;
+   core_list->parse_len = 0;
+   core_list->parse_pos = 0;
+   core_list->type      = CORE_UPDATER_LIST_TYPE_UNKNOWN;
 
    return core_list;
 }
@@ -134,7 +142,28 @@ void core_updater_list_reset(core_updater_list_t *core_list)
       RBUF_FREE(core_list->entries);
    }
 
+   if (core_list->parse_buf)
+   {
+      free(core_list->parse_buf);
+      core_list->parse_buf = NULL;
+   }
+   core_list->parse_len = 0;
+   core_list->parse_pos = 0;
+
    core_list->type = CORE_UPDATER_LIST_TYPE_UNKNOWN;
+}
+
+/* Exchanges the contents of two core updater lists */
+void core_updater_list_swap(core_updater_list_t *a, core_updater_list_t *b)
+{
+   core_updater_list_t tmp;
+
+   if (!a || !b)
+      return;
+
+   tmp = *a;
+   *a  = *b;
+   *b  = tmp;
 }
 
 /* Frees specified core updater list */
@@ -756,70 +785,100 @@ static void core_updater_list_qsort(core_updater_list_t *core_list)
                core_updater_list_qsort_func);
 }
 
-/* Reads the contents of a buildbot core list
- * network request into the specified
- * core_updater_list_t object.
- * Returns false in the event of an error. */
-bool core_updater_list_parse_network_data(
+/* Starts an incremental parse of a buildbot core listing into
+ * @core_list, which is emptied first.  Takes ownership of @data, a
+ * heap buffer of @len bytes that need not be NUL-terminated: it is
+ * grown by one byte for the terminator, normally in place, and freed
+ * by the list.  Returns false on a missing listing or OOM, having
+ * freed @data either way. */
+bool core_updater_list_parse_network_take(
+      core_updater_list_t *core_list,
+      char *data, size_t len)
+{
+   char *buf;
+
+   if (!core_list)
+   {
+      free(data);
+      return false;
+   }
+
+   core_updater_list_reset(core_list);
+
+   if (!data || (len < 1) || !*data)
+   {
+      free(data);
+      return false;
+   }
+
+   if (!(buf = (char*)realloc(data, len + 1)))
+   {
+      free(data);
+      return false;
+   }
+
+   buf[len]             = '\0';
+   core_list->parse_buf = buf;
+   core_list->parse_len = len;
+   core_list->parse_pos = 0;
+
+   return true;
+}
+
+/* Parses listing lines into @core_list, one line per work item,
+ * while @within_budget(@budget, 0, 0) allows - a NULL
+ * @within_budget parses to the end.  Each line costs a stat and a
+ * core info file read, so a listing of hundreds of cores is paced
+ * by the caller rather than parsed in one go.  Returns true once
+ * the listing is exhausted, at which point the list is sorted,
+ * typed, and holds whatever lines parsed (possibly none). */
+bool core_updater_list_parse_network_step(
       core_updater_list_t *core_list,
       const char *path_dir_libretro,
       const char *path_libretro_info,
       const char *network_buildbot_url,
-      const char *data, size_t len)
+      bool (*within_budget)(void *budget, size_t avail, size_t len),
+      void *budget)
 {
-   char *data_buf     = NULL;
-   char *line         = NULL;
-   char *data_end     = NULL;
+   char *data_end;
 
-   /* Sanity check */
-   if (!core_list || !data || !*data || (len < 1))
-      return false;
+   if (!core_list)
+      return true;
+   if (!core_list->parse_buf)
+      return true;
 
-   /* We're populating a list 'from scratch' - remove
-    * any existing entries */
-   core_updater_list_reset(core_list);
+   data_end = core_list->parse_buf + core_list->parse_len;
 
-   /* Input data string is not terminated - have
-    * to copy it to a temporary buffer... */
-   if (!(data_buf = (char*)malloc((len + 1) * sizeof(char))))
-      return false;
-
-   memcpy(data_buf, data, len * sizeof(char));
-   data_buf[len] = '\0';
-
-   data_end = data_buf + len;
-
-   /* Parse each line from the network data */
-   for (line = data_buf; line < data_end; )
+   while (core_list->parse_pos < core_list->parse_len)
    {
+      char *line     = core_list->parse_buf + core_list->parse_pos;
       char *line_end;
       char *p;
-      char *elem0 = NULL; /* date     */
-      char *elem1 = NULL; /* crc      */
-      char *elem2 = NULL; /* filename */
+      char *elem0    = NULL; /* date     */
+      char *elem1    = NULL; /* crc      */
+      char *elem2    = NULL; /* filename */
+
+      if (within_budget && !within_budget(budget, 0, 0))
+         return false;
 
       /* Find end of current line and terminate it */
       for (line_end = line; line_end < data_end && *line_end != '\n'; line_end++)
          ;
       *line_end = '\0';
+      core_list->parse_pos = (size_t)(line_end - core_list->parse_buf) + 1;
 
       /* Skip empty lines */
-      if (!line || !*line)
-      {
-         line = line_end + 1;
+      if (!*line)
          continue;
-      }
 
       p = line;
 
       /* --- elem0: date --- */
-      /* Skip leading spaces */
       while (*p == ' ')
          p++;
       if (*p != '\0')
       {
          elem0 = p;
-         /* Advance to next space and terminate */
          while (*p != ' ' && *p != '\0')
             p++;
          if (*p == ' ')
@@ -850,8 +909,6 @@ bool core_updater_list_parse_network_data(
             *p = '\0';
       }
 
-      /* Parse listings info and add to core updater
-       * list */
       /* > Listings must have 3 entries:
        *   [date] [crc] [filename] */
       if (     (elem0 && *elem0)
@@ -863,25 +920,50 @@ bool core_updater_list_parse_network_data(
                path_libretro_info,
                network_buildbot_url,
                elem0, elem1, elem2);
-
-      /* Advance to next line */
-      line = line_end + 1;
    }
 
-   /* Temporary data buffer is no longer required */
-   free(data_buf);
+   /* Listing exhausted */
+   free(core_list->parse_buf);
+   core_list->parse_buf = NULL;
+   core_list->parse_len = 0;
+   core_list->parse_pos = 0;
 
-   /* Sanity check */
-   if (RBUF_LEN(core_list->entries) < 1)
-      return false;
-
-   /* Sort completed list */
-   core_updater_list_qsort(core_list);
-
-   /* Set list type */
-   core_list->type = CORE_UPDATER_LIST_TYPE_BUILDBOT;
+   if (RBUF_LEN(core_list->entries) > 0)
+   {
+      core_updater_list_qsort(core_list);
+      core_list->type = CORE_UPDATER_LIST_TYPE_BUILDBOT;
+   }
 
    return true;
+}
+
+/* Reads the contents of a buildbot core list
+ * network request into the specified
+ * core_updater_list_t object in one go.
+ * Returns false in the event of an error. */
+bool core_updater_list_parse_network_data(
+      core_updater_list_t *core_list,
+      const char *path_dir_libretro,
+      const char *path_libretro_info,
+      const char *network_buildbot_url,
+      const char *data, size_t len)
+{
+   char *copy;
+
+   if (!data || (len < 1))
+      return false;
+   if (!(copy = (char*)malloc(len)))
+      return false;
+   memcpy(copy, data, len);
+
+   if (!core_updater_list_parse_network_take(core_list, copy, len))
+      return false;
+
+   core_updater_list_parse_network_step(core_list,
+         path_dir_libretro, path_libretro_info, network_buildbot_url,
+         NULL, NULL);
+
+   return RBUF_LEN(core_list->entries) > 0;
 }
 
 /* Parses a single play feature delivery core
