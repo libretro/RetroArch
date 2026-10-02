@@ -200,6 +200,9 @@ jobs:
             # microsecond clock; the late bound is loose for a loaded
             # runner.
             retro_sleep_until_test
+            # localtime() from four threads, before rtime_init() as
+            # well as after: each must get its own fields back.
+            rtime_localtime_test
             # Runs its natural tier only here; procbarrier-tiers.yml
             # forces every tier on Linux, Windows and macOS runners.
             retro_procbarrier_test
@@ -514,6 +517,21 @@ jobs:
           CC=clang make all SANITIZER=thread
 
           TSAN_OPTIONS=halt_on_error=1 ./retro_atomic_test
+
+      - name: Run rtime_localtime_test under Clang + ThreadSanitizer
+        shell: bash
+        working-directory: libretro-common/samples/time/rtime_localtime_test
+        run: |
+          # rtime_localtime() guards the one struct localtime() fills;
+          # two callers let in together race on it, which TSan reports
+          # even on runs where neither hands back the other's fields.
+          set -u
+          set -o pipefail
+
+          make clean
+          CC=clang make all SANITIZER=thread
+
+          TSAN_OPTIONS=halt_on_error=1 ./rtime_localtime_test
 
       - name: Run mpsc_stack_test under Clang + ThreadSanitizer
         shell: bash

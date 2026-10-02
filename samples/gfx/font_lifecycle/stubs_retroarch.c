@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include <pthread.h>
+#include <sched.h>
 #include <boolean.h>
 #include <compat/strl.h>
 #include "gfx/font_driver.h"
@@ -216,6 +217,8 @@ void slock_unlock(slock_t *l) { pthread_mutex_unlock((pthread_mutex_t*)l); }
 sthread_t *sthread_create(void (*fn)(void*), void *userdata)
 { (void)fn; (void)userdata; return NULL; }
 int sthread_detach(sthread_t *thread) { (void)thread; return 0; }
+/* rtime_localtime()'s guard yields while another caller holds it. */
+void sthread_yield(void) { sched_yield(); }
 #endif
 #endif
 

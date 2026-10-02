@@ -31,9 +31,23 @@
 #include <retro_atomic.h>
 #include <time/rtime.h>
 
-#ifdef HAVE_THREADS
-/* TODO/FIXME - global */
-slock_t *rtime_localtime_lock = NULL;
+/* localtime() fills one static struct: a flag lets one caller at a
+ * time fill and copy it. With no lock object to make, it works before
+ * rtime_init() and after rtime_deinit() alike. */
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_CAS)
+static retro_atomic_int_t rtime_localtime_busy;
+#define RTIME_LOCALTIME_LOCK() \
+   while (!retro_atomic_cas_int(&rtime_localtime_busy, 0, 1)) \
+      sthread_yield()
+#define RTIME_LOCALTIME_UNLOCK() \
+   retro_atomic_store_release_int(&rtime_localtime_busy, 0)
+#elif defined(HAVE_THREADS)
+static slock_t *rtime_localtime_lock = NULL;
+#define RTIME_LOCALTIME_LOCK()   slock_lock(rtime_localtime_lock)
+#define RTIME_LOCALTIME_UNLOCK() slock_unlock(rtime_localtime_lock)
+#else
+#define RTIME_LOCALTIME_LOCK()   do { } while (0)
+#define RTIME_LOCALTIME_UNLOCK() do { } while (0)
 #endif
 
 #if defined(__APPLE__) && defined(__MACH__)
@@ -422,7 +436,7 @@ static void rtime_sleep_deinit(void)
 void rtime_init(void)
 {
    rtime_deinit();
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(RETRO_ATOMIC_HAS_CAS)
    if (!rtime_localtime_lock)
       rtime_localtime_lock = slock_new();
 #endif
@@ -434,7 +448,7 @@ void rtime_deinit(void)
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    rtime_sleep_deinit();
 #endif
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(RETRO_ATOMIC_HAS_CAS)
    if (rtime_localtime_lock)
    {
       slock_free(rtime_localtime_lock);
@@ -448,19 +462,11 @@ struct tm *rtime_localtime(const time_t *timep, struct tm *result)
 {
    struct tm *time_info = NULL;
 
-   /* Lock mutex */
-#ifdef HAVE_THREADS
-   slock_lock(rtime_localtime_lock);
-#endif
-
+   RTIME_LOCALTIME_LOCK();
    time_info = localtime(timep);
    if (time_info)
       memcpy(result, time_info, sizeof(struct tm));
-
-   /* Unlock mutex */
-#ifdef HAVE_THREADS
-   slock_unlock(rtime_localtime_lock);
-#endif
+   RTIME_LOCALTIME_UNLOCK();
 
    return result;
 }
