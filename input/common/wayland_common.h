@@ -460,7 +460,6 @@ extern const struct wl_surface_listener wl_surface_listener;
 
 extern const struct xdg_wm_base_listener xdg_shell_listener;
 
-extern const struct xdg_surface_listener xdg_surface_listener;
 
 extern const struct wl_output_listener output_listener;
 
