@@ -23,6 +23,7 @@ on:
       - 'tasks/task_content*'
       - 'samples/menu/playlist_nav/**'
       - 'samples/menu/nav_repeat_stall/**'
+      - 'samples/menu/mouse_click/**'
       - 'runloop.c'
       - 'samples/menu/network_settings/**'
       - 'intl/msg_hash_lbl.h'
@@ -40,6 +41,7 @@ on:
       - 'tasks/task_content*'
       - 'samples/menu/playlist_nav/**'
       - 'samples/menu/nav_repeat_stall/**'
+      - 'samples/menu/mouse_click/**'
       - 'runloop.c'
       - 'samples/menu/network_settings/**'
       - 'intl/msg_hash_lbl.h'
@@ -199,6 +201,25 @@ jobs:
           samples/menu/nav_repeat_stall/build.sh
           ./samples/menu/nav_repeat_stall/menu_nav_repeat_stall_test
           make -C samples/menu/nav_repeat_stall clean
+
+      - name: Build and run menu_mouse_click_test
+        shell: bash
+        run: |
+          set -eu
+          # A left click in the menu has to select the entry under the
+          # pointer. The pen support gave every pointer that is not a
+          # touchscreen no gesture on release, and a mouse's left click
+          # reaches the menu drivers as a tap gesture, so the click was
+          # thrown away in every menu driver while movement, the wheel
+          # and the right button kept working. Drives the real runloop
+          # with a scripted mouse: points at Settings by asking the menu
+          # which entry is under the pointer, opens it with a left
+          # click, scrolls its list with the wheel, goes back with a
+          # right click, and checks a long press is not a click. Shares
+          # the non-Qt build made above.
+          samples/menu/mouse_click/build.sh
+          ./samples/menu/mouse_click/menu_mouse_click_test
+          make -C samples/menu/mouse_click clean
 
       - name: Build and run menu_network_settings_test
         shell: bash
