@@ -43,6 +43,13 @@ struct fake_hw
 static struct fake_hw       g_hw;
 static retro_atomic_int_t   g_mirror;
 static retro_atomic_int_t   g_stop;
+/* SET_HW_RENDERs begun and teardowns published, counted. NONE stands
+ * for a finished teardown only while every set begun has been torn
+ * down: once the next set begins it may fill the struct before it
+ * publishes its type, and a reader that saw NONE from before is
+ * looking at that fill, not at a broken teardown. */
+static retro_atomic_int_t   g_sets;
+static retro_atomic_int_t   g_torn;
 
 /* sabotage hook: 1 = release the mirror BEFORE the memset, breaking
  * the ordering claim */
@@ -56,6 +63,8 @@ static void main_thread_sim(void *arg)
    {
       int type = 1 + (cyc % 7);
       /* SET_HW_RENDER: fill, then publish. */
+      retro_atomic_fetch_add_int(&g_sets, 1);
+      retro_atomic_thread_fence_seq_cst();
       memset(&g_hw, (unsigned char)type, sizeof(g_hw));
       retro_atomic_store_release_int(&g_mirror, type);
 
@@ -65,14 +74,20 @@ static void main_thread_sim(void *arg)
        * mid-memset stall gives an incorrectly early release a
        * window a reader lands in. */
       if (g_sabotage_early_release)
+      {
+         retro_atomic_fetch_add_int(&g_torn, 1);
          retro_atomic_store_release_int(&g_mirror, CTX_NONE);
+      }
       memset(g_hw.blob, 0, sizeof(g_hw.blob) / 2);
       if ((cyc & 127) == 0)
          sleep_us(250);
       memset(g_hw.blob + sizeof(g_hw.blob) / 2, 0,
             sizeof(g_hw.blob) - sizeof(g_hw.blob) / 2);
       if (!g_sabotage_early_release)
+      {
+         retro_atomic_fetch_add_int(&g_torn, 1);
          retro_atomic_store_release_int(&g_mirror, CTX_NONE);
+      }
    }
    retro_atomic_store_release_int(&g_stop, 1);
 }
@@ -92,17 +107,22 @@ int main(void)
    {
       if (retro_atomic_load_acquire_int(&g_mirror) == CTX_NONE)
       {
+         int torn = retro_atomic_load_acquire_int(&g_torn);
+         int sets = retro_atomic_load_acquire_int(&g_sets);
          size_t i;
          int bad = 0;
-         for (i = 0; i < sizeof(g_hw.blob); i++)
-            if (g_hw.blob[i])
-               bad = 1;
-         /* A non-zero byte here is only valid if a NEW set landed
-          * since our load; re-check the mirror to discount it. */
-         if (bad
-             && retro_atomic_load_acquire_int(&g_mirror) == CTX_NONE)
-            dirty++;
-         none_seen++;
+         if (torn == sets)
+         {
+            for (i = 0; i < sizeof(g_hw.blob); i++)
+               if (g_hw.blob[i])
+                  bad = 1;
+            /* A non-zero byte is only valid if a NEW set began since
+             * the count was read; reading it again discounts that. */
+            retro_atomic_thread_fence_acquire();
+            if (bad && retro_atomic_load_acquire_int(&g_sets) == sets)
+               dirty++;
+            none_seen++;
+         }
       }
       sleep_us(70);
    }
