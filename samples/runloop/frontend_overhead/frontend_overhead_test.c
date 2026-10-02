@@ -1208,6 +1208,45 @@ static void lane_core_view(void)
          bridged ? "through the snapshot bridge" : "read from the driver",
          frames_run ? (double)(syn_calls_state + syn_calls_other) / frames_run : 0.0);
    if (bridged)
+   {
+      /* Something reads every axis for a few frames, as the bind
+       * screen does. Once it stops, the copy must go back to what the
+       * binds use and not keep fetching sixteen axes a frame. */
+      const input_device_driver_t *reader;
+      unsigned long before, during, after;
+      unsigned a;
+
+      trace(1, 1);
+      run_loop_frames(5);
+      syn_calls_other = 0;
+      run_loop_frames(20);
+      before = syn_calls_other;
+
+      syn_calls_other = 0;
+      for (i = 0; i < 20; i++)
+      {
+         runloop_iterate();
+         task_queue_check();
+         reader = input_driver_joypad_for_read(input_st->primary_joypad);
+         for (a = 0; a < 16; a++)
+            reader->axis(0, AXIS_POS(a));
+      }
+      during = syn_calls_other;
+
+      run_loop_frames(5);
+      syn_calls_other = 0;
+      run_loop_frames(20);
+      after = syn_calls_other;
+      trace(0, 0);
+
+      CHECK(during > before, "core view: scanning every axis did not reach the driver");
+      CHECK(after == before,
+            "core view: the snapshot kept copying axes nobody reads any more");
+      if (after != before)
+         fprintf(stderr, "       driver calls over 20 frames: %lu before the"
+               " scan, %lu during, %lu after\n", before, during, after);
+   }
+   if (bridged)
       CHECK(syn_calls_state == 0,
             "core view: the driver's state() was called through the snapshot bridge");
    else

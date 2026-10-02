@@ -564,8 +564,9 @@ static input_driver_state_t input_driver_st = {0}; /* double alignment */
  * and the axes and hats readers have asked for before. Every read
  * after that, until the next poll, is served from the copy. A control
  * nobody has asked for yet is fetched from the driver the first time
- * and is part of the copy from then on, so what is copied settles on
- * what the binds use, without anyone having to say when binds change.
+ * and is part of the next copy; one that was not read out of a copy is
+ * left out of the next. So what is copied follows what the binds use,
+ * without anyone having to say when binds change.
  *
  * It is a joypad driver as far as readers can tell: the real driver's
  * table with button, axis, state and get_buttons replaced. state() is
@@ -583,9 +584,11 @@ typedef struct
 {
    input_bits_t buttons;
    int16_t      axes[INPUT_SNAPSHOT_AXES];
-   uint16_t     axes_known; /* axes a reader has asked for */
+   uint16_t     axes_known; /* axes in the copy */
+   uint16_t     axes_used;  /* axes read since the copy was taken */
    uint16_t     hats;       /* four bits a hat: up, down, left, right */
    uint8_t      hats_known;
+   uint8_t      hats_used;
 } input_pad_snapshot_t;
 
 typedef struct
@@ -687,6 +690,15 @@ static input_pad_snapshot_t *input_snapshot_pad(unsigned b, unsigned pad)
    {
       unsigned i;
 
+      /* Copy what was read out of the last copy, and no more: a
+       * control that has stopped being read - the bind screen scans
+       * every axis, a remap drops a stick - leaves the copy a frame
+       * later, and one that is read again comes back the same way. */
+      snap->axes_known = snap->axes_used;
+      snap->hats_known = snap->hats_used;
+      snap->axes_used  = 0;
+      snap->hats_used  = 0;
+
       bridge->real->get_buttons(pad, &snap->buttons);
       for (i = 0; i < INPUT_SNAPSHOT_AXES; i++)
          if (snap->axes_known & (1 << i))
@@ -731,6 +743,7 @@ static int32_t input_snapshot_button(unsigned b, unsigned pad, uint16_t joykey)
          input_snapshot_fetch_hat(real, snap, pad, h);
          snap->hats_known |= (1 << h);
       }
+      snap->hats_used |= (1 << h);
       return (snap->hats >> (h * 4 + bit)) & 1;
    }
 
@@ -759,6 +772,7 @@ static int16_t input_snapshot_axis(unsigned b, unsigned pad, uint32_t joyaxis)
       input_snapshot_fetch_axis(real, snap, pad, i);
       snap->axes_known |= (1 << i);
    }
+   snap->axes_used |= (1 << i);
    value = snap->axes[i];
    if (negative)
       return (value < 0) ? value : 0;
