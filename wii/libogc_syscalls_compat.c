@@ -4,29 +4,28 @@
  * time-of-day handlers into newlib's __syscalls dispatch table at
  * SYS_Init (system.c), and the devkitPPC libsysbase of its era routed
  * everything through that table.  devkitPPC r38 and later removed the
- * table: libsysbase now dispatches through per-symbol weak
- * __syscall_* hooks instead, so the internal-libogc link fails on the
- * undefined __syscalls -- and merely defining storage for it would be
- * worse than the link error, because libsysbase's default sbrk would
- * place the heap by linker symbols instead of libogc's MEM1 arena,
- * colliding with SYS_GetArena1Lo allocations, and malloc would run
- * unlocked under lwp threads.
+ * table: libsysbase dispatches through per-symbol weak __syscall_*
+ * hooks instead, and later releases dropped the sbrk hook as well,
+ * leaving a weak _sbrk_r that places the heap by linker symbols
+ * instead of libogc's MEM1 arena, colliding with SYS_GetArena1Lo
+ * allocations.
  *
- * This file defines the table the prebuilt SYS_Init writes into and
- * provides strong __syscall_* hooks that forward to it, so the modern
- * libsysbase routes exactly where the old one did.  The table layout
- * is fixed by the prebuilt binary, not by any header we control:
- * SYS_Init stores its nine handlers at offsets 0..32 in declaration
- * order (verified against the archive's relocations), so the slots are
- * mirrored here, with the old libsysbase's pre-SYS_Init behaviour kept
- * for NULL slots.  Compiled only for EXTERNAL_LIBOGC=0 GameCube/Wii
- * builds; external libogc pairs with its own toolchain's libsysbase
- * and never sees this file. */
+ * This file defines the table the prebuilt SYS_Init writes into, a
+ * strong _sbrk_r and strong __syscall_* hooks that forward to it, so
+ * the modern libsysbase routes exactly where the old one did.  The
+ * table layout is fixed by the prebuilt binary, not by any header we
+ * control: SYS_Init stores its nine handlers at offsets 0..32 in
+ * declaration order (verified against the archive's relocations), so
+ * the slots are mirrored here, with the old libsysbase's pre-SYS_Init
+ * behaviour kept for NULL slots.  Compiled only for EXTERNAL_LIBOGC=0
+ * GameCube/Wii builds; external libogc pairs with its own toolchain's
+ * libsysbase and never sees this file. */
 
 #ifdef INTERNAL_LIBOGC
 
 #include <stddef.h>
 #include <errno.h>
+#include <ctype.h>
 #include <reent.h>
 #include <sys/time.h>
 
@@ -50,7 +49,7 @@ struct __syscalls_compat
 
 struct __syscalls_compat __syscalls;
 
-void *__syscall_sbrk_r(struct _reent *r, ptrdiff_t incr)
+void *_sbrk_r(struct _reent *r, ptrdiff_t incr)
 {
    if (__syscalls.sbrk_r)
       return __syscalls.sbrk_r(r, incr);
@@ -112,5 +111,16 @@ void __syscall_exit(int rc)
    for (;;)
       ;
 }
+
+/* The prebuilt Wii ipc.o calls the ctype accessor newlib exports only
+ * with __HAVE_LOCALE_INFO__; elsewhere ctype.h makes it a macro over
+ * the C locale table. */
+#ifdef __locale_ctype_ptr
+#undef __locale_ctype_ptr
+const char *__locale_ctype_ptr(void)
+{
+   return _ctype_;
+}
+#endif
 
 #endif /* INTERNAL_LIBOGC */
