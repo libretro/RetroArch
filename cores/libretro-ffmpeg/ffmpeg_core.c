@@ -394,16 +394,36 @@ static void video_buffer_finish_slot(
    slock_unlock(video_buffer->lock);
 }
 
-static bool video_buffer_wait_for_finished_slot(video_buffer_t *video_buffer)
+/* Waits for the slot at the tail to be finished, or for the decode
+ * thread to be gone - it ends at the end of the file, and a slot it
+ * never claimed is never finished. Says whether the slot is. */
+static bool video_buffer_wait_for_finished_slot(video_buffer_t *video_buffer,
+      retro_atomic_int_t *thread_dead)
 {
+   bool finished;
+
    slock_lock(video_buffer->lock);
 
-   while (video_buffer->status[video_buffer->tail] != KB_FINISHED)
+   while (     video_buffer->status[video_buffer->tail] != KB_FINISHED
+         && !retro_atomic_load_acquire_int(thread_dead))
       scond_wait(video_buffer->finished_cond, video_buffer->lock);
+   finished = video_buffer->status[video_buffer->tail] == KB_FINISHED;
 
    slock_unlock(video_buffer->lock);
 
-   return true;
+   return finished;
+}
+
+/* The decode thread is gone: wake a wait for a finished slot. Taken
+ * under the buffer's lock, so a waiter that read the thread as alive
+ * is already asleep and gets the broadcast. */
+static void video_buffer_wake_finished(video_buffer_t *video_buffer)
+{
+   if (!video_buffer)
+      return;
+   slock_lock(video_buffer->lock);
+   scond_broadcast(video_buffer->finished_cond);
+   slock_unlock(video_buffer->lock);
 }
 
 /* Waits up to timeout_us for a slot to open, and says whether one
@@ -2550,7 +2570,8 @@ void CORE_PREFIX(retro_run)(void)
                break;
 
             if (!DECODE_THREAD_DEAD_STR)
-               video_buffer_wait_for_finished_slot(VIDEO_BUFFER_STR);
+               video_buffer_wait_for_finished_slot(VIDEO_BUFFER_STR,
+                     &g_ctx.decode_thread_dead);
 
             if (!DECODE_THREAD_DEAD_STR)
             {
@@ -2682,7 +2703,8 @@ void CORE_PREFIX(retro_run)(void)
             }
 
             if (!DECODE_THREAD_DEAD_STR)
-               video_buffer_wait_for_finished_slot(VIDEO_BUFFER_STR);
+               video_buffer_wait_for_finished_slot(VIDEO_BUFFER_STR,
+                     &g_ctx.decode_thread_dead);
 
             if (!DECODE_THREAD_DEAD_STR)
             {
@@ -3582,6 +3604,18 @@ static bool earlier_or_close_enough(double p1, double p2)
    return (p1 <= p2 || (p1-p2) < (1.0 / MEDIA_STR.interpolate_fps) );
 }
 
+/* The decode thread's last act: everything the main thread may be
+ * waiting on - the fifo's condition and a finished video slot - hears
+ * that it is gone. */
+static void decode_thread_mark_dead(void)
+{
+   slock_lock(FIFO_LOCK_STR);
+   DECODE_THREAD_DEAD_SET(1);
+   scond_signal(FIFO_COND_STR);
+   slock_unlock(FIFO_LOCK_STR);
+   video_buffer_wake_finished(VIDEO_BUFFER_STR);
+}
+
 static void decode_thread(void *data)
 {
    unsigned i;
@@ -3822,10 +3856,7 @@ static void decode_thread(void *data)
    av_frame_free(&aud_frame);
    av_freep(&audio_buffer);
 
-   slock_lock(FIFO_LOCK_STR);
-   DECODE_THREAD_DEAD_SET(1);
-   scond_signal(FIFO_COND_STR);
-   slock_unlock(FIFO_LOCK_STR);
+   decode_thread_mark_dead();
 }
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)

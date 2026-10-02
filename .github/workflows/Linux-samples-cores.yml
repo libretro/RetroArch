@@ -157,6 +157,22 @@ jobs:
              timeout 900 ./ffmpeg_sweep_test
           echo "[pass] ffmpeg_sweep_test (TSan)"
 
+      - name: Build and run ffmpeg_finished_wait_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/cores/ffmpeg_finished_wait
+        run: |
+          set -eu
+          # The main thread's wait for a finished video slot ends when
+          # the decode thread does, at the end of a clip, instead of
+          # holding retro_run() on a slot nothing will finish.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 60 ./ffmpeg_finished_wait_test
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1:suppressions=../ffmpeg_audio_pipe/tsan.supp \
+             timeout 60 ./ffmpeg_finished_wait_test
+          echo "[pass] ffmpeg_finished_wait_test"
+
       - name: Build and run ffmpeg_audio_pipe_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/cores/ffmpeg_audio_pipe
