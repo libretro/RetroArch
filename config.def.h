@@ -89,6 +89,8 @@
 
 #define DEFAULT_TOUCH_SCALE 1
 
+#define DEFAULT_INPUT_STYLUS_PRESSURE_SENSITIVITY 70
+
 #if defined(RARCH_MOBILE) || defined(HAVE_LIBNX) || defined(__WINRT__) || defined(__EMSCRIPTEN__) || defined (VITA)
 #define DEFAULT_POINTER_ENABLE true
 #else
