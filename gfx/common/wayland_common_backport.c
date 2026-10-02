@@ -181,6 +181,7 @@ struct wl_proxy *FALLBACK_wl_proxy_marshal_constructor(
 {
    va_list ap;
    void *varargs[WL_CLOSURE_MAX_ARGS];
+   int i;
    int num_args;
    int new_id_index = -1;
    struct wl_interface *proxy_interface;
@@ -204,7 +205,7 @@ struct wl_proxy *FALLBACK_wl_proxy_marshal_constructor(
 
    memset(varargs, 0, sizeof(varargs));
    va_start(ap, interface);
-   for (int i = 0; i < num_args; i++)
+   for (i = 0; i < num_args; i++)
       varargs[i] = va_arg(ap, void *);
    va_end(ap);
 
@@ -229,6 +230,7 @@ struct wl_proxy *FALLBACK_wl_proxy_marshal_constructor_versioned(
 {
    va_list ap;
    void *varargs[WL_CLOSURE_MAX_ARGS];
+   int i;
    int num_args;
    int new_id_index = -1;
    struct wl_interface *proxy_interface;
@@ -254,7 +256,7 @@ struct wl_proxy *FALLBACK_wl_proxy_marshal_constructor_versioned(
 
    memset(varargs, 0, sizeof(varargs));
    va_start(ap, version);
-   for (int i = 0; i < num_args; i++)
+   for (i = 0; i < num_args; i++)
       varargs[i] = va_arg(ap, void *);
    va_end(ap);
 
