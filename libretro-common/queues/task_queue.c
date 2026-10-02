@@ -908,11 +908,14 @@ static void retro_task_threaded_retrieve(task_retriever_data_t *data)
    slock_unlock(running_lock);
 }
 
-static bool task_worker_prefer_fast_cores;
+/* Set on the main thread, read by the worker as it starts */
+static retro_atomic_int_t task_worker_prefer_fast_cores =
+   RETRO_ATOMIC_INT_INITIALIZER(0);
 
 void task_queue_set_prefer_fast_cores(bool prefer)
 {
-   task_worker_prefer_fast_cores = prefer;
+   retro_atomic_store_release_int(&task_worker_prefer_fast_cores,
+         prefer ? 1 : 0);
 }
 
 /* Main-thread tasks are run by retro_task_threaded_gather(), never by
@@ -1069,7 +1072,7 @@ static void threaded_worker(void *userdata)
    struct task_worker *self = (struct task_worker*)userdata;
 
    sthread_setname("ra-task");
-   if (task_worker_prefer_fast_cores)
+   if (retro_atomic_load_acquire_int(&task_worker_prefer_fast_cores))
       sthread_prefer_fast_cores();
 
    for (;;)
