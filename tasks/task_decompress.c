@@ -300,6 +300,27 @@ static void task_decompress_cleanup(retro_task_t *task)
    free(dec);
 }
 
+/* Steps the archive under the shared per-frame I/O window: as many
+ * members as fit, at least one. */
+static int task_decompress_iterate(decompress_state_t *dec,
+      bool *retdec, file_archive_file_cb file_cb)
+{
+   nbio_budget_t b;
+   int ret = 0;
+
+   task_nbio_slice_open(&b);
+   while (task_nbio_slice_within_budget(&b, 0, 0))
+   {
+      if ((ret = file_archive_parse_file_iterate(&dec->archive,
+               retdec, dec->source_file,
+               dec->valid_ext, file_cb, dec->userdata)) != 0)
+         break;
+   }
+   task_nbio_slice_close(&b);
+
+   return ret;
+}
+
 static void task_decompress_handler(retro_task_t *task)
 {
    int ret;
@@ -311,10 +332,7 @@ static void task_decompress_handler(retro_task_t *task)
    strlcpy(dec->userdata->archive_path,
          dec->source_file, sizeof(dec->userdata->archive_path));
 
-   ret                     = file_archive_parse_file_iterate(
-         &dec->archive,
-         &retdec, dec->source_file,
-         dec->valid_ext, file_decompressed, dec->userdata);
+   ret = task_decompress_iterate(dec, &retdec, file_decompressed);
 
    task_set_progress(task,
          file_archive_parse_file_progress(&dec->archive));
@@ -344,9 +362,8 @@ static void task_decompress_handler_target_file(retro_task_t *task)
    strlcpy(dec->userdata->archive_path,
          dec->source_file, sizeof(dec->userdata->archive_path));
 
-   ret = file_archive_parse_file_iterate(&dec->archive,
-         &retdec, dec->source_file,
-         dec->valid_ext, file_decompressed_target_file, dec->userdata);
+   ret = task_decompress_iterate(dec, &retdec,
+         file_decompressed_target_file);
 
    task_set_progress(task,
          file_archive_parse_file_progress(&dec->archive));
@@ -378,9 +395,8 @@ static void task_decompress_handler_subdir(retro_task_t *task)
          dec->source_file,
          sizeof(dec->userdata->archive_path));
 
-   ret                     = file_archive_parse_file_iterate(
-         &dec->archive, &retdec, dec->source_file,
-         dec->valid_ext, file_decompressed_subdir, dec->userdata);
+   ret = task_decompress_iterate(dec, &retdec,
+         file_decompressed_subdir);
 
    task_set_progress(task,
          file_archive_parse_file_progress(&dec->archive));

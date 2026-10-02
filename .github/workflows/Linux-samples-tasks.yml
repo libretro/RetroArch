@@ -119,7 +119,7 @@ jobs:
           fi
           echo "[pass] database_task no-args exit=$rc (expected non-zero)"
 
-      - name: Build and run archive_name_safety_test
+      - name: Build and run archive_name_safety_test, decompress_window_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/decompress
         run: |
@@ -133,6 +133,21 @@ jobs:
           # ever amends the predicate, the copy here must follow.
           timeout 60 ./archive_name_safety_test
           echo "[pass] archive_name_safety_test"
+          # Oracle for the extraction task's pacing, compiled from the
+          # shipping translation unit against the real unthreaded
+          # task queue, ZIP backend and shared per-frame I/O window,
+          # with a virtual clock: a whole archive fits one window, an
+          # exhausted window still extracts one item per call.
+          timeout 60 ./decompress_window_test
+          make clean >/dev/null
+          make all SANITIZER=address,undefined -j$(nproc)
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            timeout 120 ./decompress_window_test
+          make clean >/dev/null
+          make all SANITIZER=thread -j$(nproc)
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./decompress_window_test
+          make clean >/dev/null
 
       - name: Build and run cloudsync_path_safety_test
         shell: bash
