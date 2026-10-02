@@ -18,6 +18,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <android/native_window.h>
 #include <sys/system_properties.h>
 
@@ -27,6 +28,7 @@
 #include "../video_display_server.h"
 #include "../video_driver.h"
 #include "../../frontend/drivers/platform_unix.h"
+#include "edid_sysfs.h"
 
 /* FORWARD DECLARATIONS */
 int system_property_get(const char *cmd, const char *args,
@@ -572,6 +574,86 @@ static bool android_display_server_idle_wait(void *data, unsigned ms)
    return true;
 }
 
+/* The EDID of the display in use, where Android lets an app see it.
+ *
+ * There is no API for the block. SurfaceFlinger holds it, but hands
+ * it only to system code, and what the SDK publishes -
+ * Display.getDeviceProductInfo(), API 31 - is the identity alone,
+ * with no timings, chromaticity or extension blocks for the decoder
+ * to show. Assembling a block from that would mean inventing the
+ * timings, which the menu would then present as read from the
+ * display.
+ *
+ * What remains is the copy the kernel driver keeps in sysfs, on the
+ * devices whose kernel and SELinux policy leave it readable. Those
+ * are the devices this matters on - a TV box or console driving an
+ * external display over HDMI - and there are two layouts:
+ *
+ *   /sys/class/drm/<card>-<connector>/edid
+ *      a DRM/KMS display driver; the same reader the Linux servers
+ *      use, first enabled connector, raw bytes
+ *   /sys/class/amhdmitx/amhdmitx0/rawedid
+ *      the vendor Amlogic HDMI driver most Android TV boxes ship,
+ *      which prints the block as text
+ *
+ * A phone or tablet panel has neither, and the menu says why there is
+ * nothing to show. Called from the menu only, never on a frame path:
+ * both nodes return what the driver cached at hotplug, so nothing
+ * here touches the DDC bus. */
+static const uint8_t android_edid_header[8] =
+   { 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00 };
+
+/* rawedid is one unbroken run of "%02x", every block the driver read,
+ * then a newline. With no display attached it prints the zeroed
+ * buffer, which the header test turns away. */
+static int android_display_server_edid_amhdmitx(uint8_t *out, size_t max)
+{
+   size_t n = 0;
+   int hi   = -1;
+   int c;
+   FILE *f  = fopen("/sys/class/amhdmitx/amhdmitx0/rawedid", "rb");
+
+   if (!f)
+      return -1;
+   while (n < max && (c = getc(f)) != EOF)
+   {
+      int v;
+      if (c >= '0' && c <= '9')
+         v = c - '0';
+      else if (c >= 'a' && c <= 'f')
+         v = c - 'a' + 10;
+      else if (c >= 'A' && c <= 'F')
+         v = c - 'A' + 10;
+      else
+         break;
+      if (hi < 0)
+         hi       = v;
+      else
+      {
+         out[n++] = (uint8_t)((hi << 4) | v);
+         hi       = -1;
+      }
+   }
+   fclose(f);
+   /* whole blocks only */
+   n -= n % 128;
+   if (!n || memcmp(out, android_edid_header, sizeof(android_edid_header)))
+      return -1;
+   return (int)n;
+}
+
+static int android_display_server_get_edid(void *data,
+      uint8_t *out, size_t max)
+{
+   int n;
+   (void)data;
+   if (!out || max < 128)
+      return -1;
+   if ((n = edid_sysfs_read(NULL, out, max)) > 0)
+      return n;
+   return android_display_server_edid_amhdmitx(out, max);
+}
+
 const video_display_server_t dispserv_android = {
    android_display_server_init,
    android_display_server_destroy,
@@ -601,7 +683,7 @@ const video_display_server_t dispserv_android = {
    NULL, /* modeline_delete */
    NULL, /* modeline_set */
    NULL, /* modeline_flush */
-   NULL, /* get_edid */
+   android_display_server_get_edid,
    android_display_server_idle_wait,
    "android"
 };

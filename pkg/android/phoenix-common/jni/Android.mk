@@ -20,6 +20,11 @@ HAVE_KEYCHAIN := 1
 HAVE_RETROSSL := 1
 HAVE_RETROSMB := 1
 HAVE_RETRONFS := 1
+# The video modeline engine, as on the desktop builds. Android drives
+# no modelines (its display server does not advertise DISPSERV_CTX_
+# MODELINE, so the CRT SwitchRes menu stays hidden); this is for the
+# EDID reader behind Information > Display Information > EDID.
+HAVE_MODELINE := 1
 
 INCFLAGS    :=
 DEFINES     :=
@@ -91,6 +96,10 @@ ifeq ($(HAVE_CRYPTO),1)
    ifeq ($(HAVE_RETROSMB),1)
       DEFINES += -DHAVE_SMBCLIENT -DHAVE_RETROSMB
    endif
+endif
+
+ifeq ($(HAVE_MODELINE),1)
+   DEFINES += -DHAVE_MODELINE
 endif
 
 ifeq ($(HAVE_LOGGER), 1)
