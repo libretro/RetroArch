@@ -2,13 +2,14 @@ TARGET := tpool_parallel_test
 
 LIBRETRO_COMM_DIR := ../../..
 
-# tpool.c depends on rthreads.c.  Both are self-contained at the
-# libretro-common layer (rthreads.c is the platform abstraction over
-# pthreads / Win32 / etc.) so we just compile them in directly --
-# no other libretro-common sources are needed.
+# tpool.c depends on rthreads.c and retro_eventcount.c.  All three are
+# self-contained at the libretro-common layer (rthreads.c is the
+# platform abstraction over pthreads / Win32 / etc.) so we just compile
+# them in directly -- no other libretro-common sources are needed.
 SOURCES := \
 	tpool_parallel_test.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/tpool.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c
 
