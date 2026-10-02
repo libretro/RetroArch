@@ -72,8 +72,9 @@ int snd_pcm_channel_params(snd_pcm_t *pcm, snd_pcm_channel_params_t *params)
 int snd_pcm_channel_setup(snd_pcm_t *pcm, snd_pcm_channel_setup_t *setup)
 {
    (void)pcm;
+   /* what the parameters settled on: the queue the device holds */
    setup->buf.block.frag_size = g_max_fragment;
-   setup->buf.block.frags     = 8;
+   setup->buf.block.frags     = (int)(g_capacity / (size_t)g_max_fragment);
    return EOK;
 }
 
@@ -90,6 +91,8 @@ int snd_pcm_channel_status(snd_pcm_t *pcm, snd_pcm_channel_status_t *status)
 {
    (void)pcm;
    status->status = g_status;
+   status->count  = (int)g_queued;
+   status->free   = (int)(g_capacity - g_queued);
    return EOK;
 }
 

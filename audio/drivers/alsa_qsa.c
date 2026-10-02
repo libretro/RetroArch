@@ -35,21 +35,22 @@
 
 typedef struct alsa
 {
-   uint8_t **buffer;
    snd_pcm_t *pcm;
-   uint8_t *buffer_chunk;
-   unsigned buffer_index;
-   unsigned buffer_ptr;
-
-   unsigned buf_size;
-   unsigned buf_count;
-   unsigned rate;
+   /* One block of the caller's audio, handed to the device whole:
+    * snd_pcm_write copies it, so the block is free again on return. */
+   uint8_t *buffer;
+   /* The device's own queue, in bytes, as the channel setup reported
+    * it: fragment size times fragments. */
+   size_t queue_size;
    /* Times the device reported it had run out of audio. Counted where
     * the status says so, on the write path, which is why it is counted
     * and not said: a log line there costs part of the margin it is
     * reporting on. The frontend shows it and logs the total once at
     * teardown. */
    retro_atomic_size_t underruns;
+   unsigned buffer_ptr;
+   unsigned buf_size;
+   unsigned rate;
    bool nonblock;
    bool has_float;
    bool can_pause;
@@ -62,7 +63,7 @@ static void *alsa_qsa_init(const char *device,
       unsigned rate, unsigned latency, 
       unsigned *new_rate)
 {
-   int err, card, dev, i;
+   int err, card, dev;
    snd_pcm_channel_info_t pi;
    snd_pcm_channel_params_t params = {0};
    snd_pcm_channel_setup_t setup   = {0};
@@ -151,16 +152,17 @@ static void *alsa_qsa_init(const char *device,
    if (!alsa->buf_size)
       alsa->buf_size = 256;
 
-   alsa->buf_count = (latency * 4 * alsa->rate + 500) / 1000;
-   alsa->buf_count = (alsa->buf_count + alsa->buf_size / 2) / alsa->buf_size;
-   /* Two at least: the write hands one block to the device and fills
-    * the next, and a count of zero made the allocations below empty
-    * and every write index a read past them. */
-   if (alsa->buf_count < 2)
-      alsa->buf_count = 2;
+   /* The queue the device settled on; what the parameters asked for
+    * when the setup does not say. */
+   if (setup.buf.block.frag_size > 0 && setup.buf.block.frags > 0)
+      alsa->queue_size = (size_t)setup.buf.block.frag_size
+            * (size_t)setup.buf.block.frags;
+   else
+      alsa->queue_size = (size_t)params.buf.block.frag_size
+            * (size_t)params.buf.block.frags_max;
 
-   RARCH_LOG("[ALSA QSA] Buffer: %u blocks of %u bytes at %u Hz.\n",
-         alsa->buf_count, alsa->buf_size, alsa->rate);
+   RARCH_LOG("[ALSA QSA] Buffer: a block of %u bytes, a device queue of %u bytes at %u Hz.\n",
+         alsa->buf_size, (unsigned)alsa->queue_size, alsa->rate);
 
    if ((err = snd_pcm_channel_prepare(alsa->pcm,
                SND_PCM_CHANNEL_PLAYBACK)) < 0)
@@ -170,16 +172,9 @@ static void *alsa_qsa_init(const char *device,
       goto error;
    }
 
-   alsa->buffer = (uint8_t**)calloc(sizeof(uint8_t*), alsa->buf_count);
+   alsa->buffer = (uint8_t*)calloc(1, alsa->buf_size);
    if (!alsa->buffer)
       goto error;
-
-   alsa->buffer_chunk = (uint8_t*)calloc(alsa->buf_count, alsa->buf_size);
-   if (!alsa->buffer_chunk)
-      goto error;
-
-   for (i = 0; i < alsa->buf_count; i++)
-      alsa->buffer[i] = alsa->buffer_chunk + i * alsa->buf_size;
 
    alsa->has_float = false;
    retro_atomic_size_init(&alsa->underruns, 0);
@@ -196,7 +191,6 @@ error:
    if (alsa->pcm)
       snd_pcm_close(alsa->pcm);
    free(alsa->buffer);
-   free(alsa->buffer_chunk);
    free(alsa);
    return NULL;
 }
@@ -277,8 +271,7 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t len)
 
       if (avail_write)
       {
-         memcpy(alsa->buffer[alsa->buffer_index] +
-               alsa->buffer_ptr, buf, avail_write);
+         memcpy(alsa->buffer + alsa->buffer_ptr, buf, avail_write);
 
          alsa->buffer_ptr   += avail_write;
          buf                 = (void*)((uint8_t*)buf + avail_write);
@@ -289,7 +282,7 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t len)
       if (alsa->buffer_ptr >= alsa->buf_size)
       {
          snd_pcm_sframes_t frames = snd_pcm_write(alsa->pcm,
-               alsa->buffer[alsa->buffer_index], alsa->buf_size);
+               alsa->buffer, alsa->buf_size);
 
          if (frames <= 0)
          {
@@ -327,7 +320,6 @@ static ssize_t alsa_qsa_write(void *data, const void *buf, size_t len)
             continue;
          }
 
-         alsa->buffer_index = (alsa->buffer_index + 1) % alsa->buf_count;
          alsa->buffer_ptr   = 0;
          retries            = 0;
       }
@@ -414,25 +406,40 @@ static void alsa_qsa_free(void *data)
          alsa->pcm = NULL;
       }
       free(alsa->buffer);
-      free(alsa->buffer_chunk);
       free(alsa);
    }
 }
 
-/* Room in the driver's own staging, which is what it can take now
- * without waiting on the device. buffered_blocks counted blocks a
- * thread had yet to write and there is no such thread - it was never
- * assigned, so this reported a constant. */
+/* What a non-blocking write takes now: the rest of the staging block,
+ * and as many whole blocks as the device queue has room for - a block
+ * goes to the device whole or not at all. A paused device takes
+ * nothing, so only the staging counts then. */
 static size_t alsa_qsa_write_avail(void *data)
 {
+   snd_pcm_channel_status_t status;
    alsa_qsa_t *alsa = (alsa_qsa_t*)data;
-   return alsa->buf_size - alsa->buffer_ptr;
+   size_t      room = alsa->buf_size - alsa->buffer_ptr;
+
+   if (alsa->is_paused)
+      return room;
+
+   memset(&status, 0, sizeof(status));
+   status.channel = SND_PCM_CHANNEL_PLAYBACK;
+   if (snd_pcm_channel_status(alsa->pcm, &status) == 0 && status.free > 0)
+   {
+      size_t free_bytes = ((size_t)status.free < alsa->queue_size)
+            ? (size_t)status.free : alsa->queue_size;
+      room += free_bytes - free_bytes % alsa->buf_size;
+   }
+   return room;
 }
 
+/* The staging block and the device queue: everything between write()
+ * returning and the device playing it. */
 static size_t alsa_qsa_buffer_size(void *data)
 {
    alsa_qsa_t *alsa = (alsa_qsa_t*)data;
-   return alsa->buf_size * alsa->buf_count;
+   return alsa->buf_size + alsa->queue_size;
 }
 
 static size_t alsa_qsa_underruns(void *data)
