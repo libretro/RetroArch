@@ -46,9 +46,9 @@ assert_absent() {
    else pass "$2"; fi
 }
 assert_clean() {
-   if grep -qE "ERROR: (Address|Leak|Undefined|Thread)Sanitizer|runtime error:|Segmentation fault" "$LOG"; then
+   if grep -qE "(ERROR|WARNING): (Address|Leak|Undefined|Thread)Sanitizer|runtime error:|Segmentation fault" "$LOG"; then
       fail "sanitizer/crash output in log"
-      grep -E "ERROR: (Address|Leak|Undefined|Thread)Sanitizer|runtime error:" "$LOG" | head -3
+      grep -E "(ERROR|WARNING): (Address|Leak|Undefined|Thread)Sanitizer|runtime error:" "$LOG" | head -3
    fi
 }
 

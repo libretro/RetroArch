@@ -21,9 +21,22 @@ concurrency:
 
 jobs:
   autoconf-tests:
-    name: Build and run the autoconfig regression suite
+    name: Build and run the autoconfig regression suite (${{ matrix.lane }})
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: ${{ matrix.sanitizer == '' && 15 || 40 }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # The suite fails on any sanitizer report in any run, so the
+        # sanitized lanes hold the whole frontend it drives - runloop,
+        # task queue, autodetect - to the same bar as the assertions.
+        include:
+          - lane: plain
+            sanitizer: ''
+          - lane: ASan + UBSan
+            sanitizer: address,undefined
+          - lane: TSan
+            sanitizer: thread
 
     steps:
       - name: Install dependencies
@@ -76,11 +89,22 @@ jobs:
           grep -q '^HAVE_TEST_DRIVERS = 1' config.mk
 
       - name: Build
-        run: make -j"$(nproc)"
+        run: |
+          if [ -n "${{ matrix.sanitizer }}" ]; then
+            make -j"$(nproc)" SANITIZER=${{ matrix.sanitizer }} DEBUG=1
+          else
+            make -j"$(nproc)"
+          fi
 
       - name: Run autoconfig regression suite
         shell: bash
         run: |
           set -eu
           test -x ./retroarch
-          ./tests-other/test_autoconf.sh ./retroarch
+          if [ "${{ matrix.sanitizer }}" = thread ]; then
+            # TSan cannot map its shadow under the runner's ASLR
+            # entropy; setarch -R carries to every child the suite runs.
+            setarch "$(uname -m)" -R ./tests-other/test_autoconf.sh ./retroarch
+          else
+            ./tests-other/test_autoconf.sh ./retroarch
+          fi
