@@ -17,6 +17,7 @@
  */
 
 #include <errno.h>
+#include <limits.h>
 #include <unistd.h>
 #include <dlfcn.h>
 #include <math.h>
@@ -376,6 +377,58 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
       free(stale);
 }
 
+/* --- Input devices the OS has removed ----------------------------------
+ *
+ * Android reports a controller going away (switched off, out of range,
+ * unplugged) to the activity's InputManager listener, on the UI thread.
+ * Nothing on the native side heard of it: no input event marks a
+ * removal, so a pad stayed "connected" for as long as the app ran. Its
+ * port kept its device name (so an overlay hidden while a controller is
+ * connected never came back), the buttons it was holding stayed held,
+ * and pausing on disconnect could not happen.
+ *
+ * The listener hands the removed device's id to
+ * inputDeviceRemoved() below, which leaves it in a small mailbox; the
+ * input thread takes it out at its next poll and reports the
+ * disconnect. Each slot holds an id plus one, zero meaning empty, and
+ * is claimed with a compare-and-swap, so it does not matter which
+ * thread the listener runs on. A flag saves the poll from looking at
+ * the slots when nothing is waiting: a producer fills a slot and then
+ * raises the flag, the poll lowers the flag and then empties the slots,
+ * so an id that lands behind the poll's back leaves the flag raised for
+ * the next one. If all slots are full the removal is dropped, which
+ * leaves that pad where every removed pad was before this existed. */
+#define ANDROID_REMOVED_SLOTS 8
+
+/* What pad_states[].id holds once its device has been removed. No
+ * device has this id (-1, the obvious choice, is the virtual
+ * keyboard's). The slot keeps its name, so the same device finds its
+ * old port again when it returns. */
+#define ANDROID_PAD_ID_REMOVED INT_MIN
+
+static retro_atomic_int_t android_removed_ids[ANDROID_REMOVED_SLOTS];
+static retro_atomic_int_t android_removed_pending;
+
+/* Called by Java (RetroActivityCommon.onInputDeviceRemoved). */
+JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCommon_inputDeviceRemoved(
+      JNIEnv *env, jobject this_obj, jint device_id)
+{
+   unsigned i;
+
+   /* Ids below zero are not physical devices. */
+   if (device_id < 0 || device_id == INT_MAX)
+      return;
+
+   for (i = 0; i < ANDROID_REMOVED_SLOTS; i++)
+   {
+      if (retro_atomic_cas_int(&android_removed_ids[i], 0, (int)device_id + 1))
+      {
+         retro_atomic_store_release_int(&android_removed_pending, 1);
+         return;
+      }
+   }
+}
+
 bool android_keyboard_start(char **buffer_ptr, size_t *size_ptr,
       size_t *ptr_ptr, const char *label,
       input_keyboard_line_complete_t cb, void *userdata)
@@ -700,6 +753,8 @@ bool android_input_can_be_keyboard(void *data, int port)
 
     state_device_t *device = &android->pad_states[port];
     if (!device->id && !*device->name)
+        return false;
+    if (device->id == ANDROID_PAD_ID_REMOVED)
         return false;
 
     return android_input_can_be_keyboard_jni(device->id);
@@ -2199,11 +2254,36 @@ static int android_input_recover_port(android_input_t *android, int id)
    int vendorId          = 0;
    int productId         = 0;
    int ret               = -1;
+   unsigned i;
    settings_t *settings  = config_get_ptr();
 
    if (!engine_lookup_name(device_name, &vendorId,
 			   &productId, sizeof(device_name), id))
        return -1;
+
+   /* A pad the OS reported as removed comes back to the slot it left,
+    * whatever id it returns under. Its disconnect was reported to the
+    * frontend, so its return is reported too. A removed slot is looked
+    * for first: of two identical controllers, the one that went away
+    * must not be taken for the one still connected. */
+   for (i = 0; i < android->pads_connected; i++)
+   {
+      if (     android->pad_states[i].id == ANDROID_PAD_ID_REMOVED
+            && string_is_equal(device_name, android->pad_states[i].name))
+      {
+         android->pad_states[i].id = id;
+         g_android->id[i]          = id;
+         input_autoconfigure_connect(
+               android->pad_states[i].name,
+               NULL, NULL,
+               android_joypad.ident,
+               i,
+               vendorId,
+               productId);
+         return (int)i;
+      }
+   }
+
    ret = android_input_get_id_index_from_name(android, device_name);
    if (ret < 0)
        return -1;
@@ -3049,6 +3129,69 @@ static void android_input_reinit(void)
 
 /* Handle all events.
  */
+/* The OS removed input device 'id': report the pad it was as
+ * disconnected. */
+static void android_input_pad_removed(android_input_t *android,
+      struct android_app *android_app, int id)
+{
+   unsigned port;
+   char name[256];
+   int vendor_id  = 0;
+   int product_id = 0;
+
+   /* The poll does not run while the app is in the background, so a
+    * removal can be read long after it happened. If the id resolves
+    * again, the device came back under it in the meantime and there is
+    * nothing to report. */
+   name[0] = '\0';
+   if (engine_lookup_name(name, &vendor_id, &product_id, sizeof(name), id))
+      return;
+
+   /* A slot's index is its port (android_input_get_id_port). */
+   for (port = 0; port < android->pads_connected; port++)
+   {
+      if (android->pad_states[port].id != id)
+         continue;
+
+      /* Nothing it held stays held: no release will arrive from a
+       * device that is gone. */
+      if (port < DEFAULT_MAX_PADS)
+      {
+         memset(android_key_state[port], 0,
+               sizeof(android_key_state[port]));
+         memset(android_app->analog_state[port], 0,
+               sizeof(android_app->analog_state[port]));
+         memset(android_app->hat_state[port], 0,
+               sizeof(android_app->hat_state[port]));
+      }
+
+      android->pad_states[port].id = ANDROID_PAD_ID_REMOVED;
+      android_app->id[port]        = 0;
+
+      input_autoconfigure_disconnect(port, android->pad_states[port].name);
+      return;
+   }
+}
+
+/* Take the removals the UI thread left since the last poll. */
+static void android_input_poll_removed(android_input_t *android,
+      struct android_app *android_app)
+{
+   unsigned i;
+
+   if (!retro_atomic_load_acquire_int(&android_removed_pending))
+      return;
+
+   retro_atomic_store_release_int(&android_removed_pending, 0);
+
+   for (i = 0; i < ANDROID_REMOVED_SLOTS; i++)
+   {
+      int v = retro_atomic_exchange_int(&android_removed_ids[i], 0);
+      if (v)
+         android_input_pad_removed(android, android_app, v - 1);
+   }
+}
+
 static void android_input_poll(void *data)
 {
    int ident;
@@ -3059,6 +3202,10 @@ static void android_input_poll(void *data)
 
    /* Apply any text staged by the native (IME) keyboard. */
    android_keyboard_poll();
+
+   /* Report the pads the OS has removed since the last poll. */
+   if (android && android_app)
+      android_input_poll_removed(android, android_app);
 
    /* Backgrounded (APP_CMD_PAUSE/STOP set RUNLOOP_FLAG_IDLE): there is
     * nothing to do until the OS delivers the next command, and the
