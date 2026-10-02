@@ -504,6 +504,9 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
        WL_SURFACE_SET_BUFFER_SCALE_SINCE_VERSION)
       wl_surface_set_buffer_scale(wl->surface, wl->buffer_scale);
 
+   /* A configure handled before this may have made one already */
+   if (wl->win)
+      wl_egl_window_destroy(wl->win);
    wl->win = wl_egl_window_create(wl->surface,
       VIDEO_SCALE_W(wl->buffer_dims),
       VIDEO_SCALE_H(wl->buffer_dims));
