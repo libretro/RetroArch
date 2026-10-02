@@ -3,6 +3,12 @@
 #
 # Only needed when check_enabled ($2), check_platform, check_lib, check_pkgconf,
 # check_header, check_macro and check_switch are not used.
+#
+# This file also runs once ahead of time in a subshell with QB_DRY set, to
+# find the compiles it will run (see qb_compile). Commands that act on
+# anything outside the shell, other than the check helpers, are skipped
+# when QB_DRY is set, and nothing here exports variables, since a compile
+# that ran ahead saw the environment configure started with.
 
 check_switch '' C99 -std=gnu99 ''
 
@@ -432,21 +438,15 @@ fi
 # Without pkg-config the library check above cannot see the version, so
 # PIPEWIRE_STABLE takes it from the headers instead.
 if [ "$HAVE_PIPEWIRE_STABLE" = 'yes' ] && [ "$PKG_CONF_PATH" = 'none' ]; then
-   printf %s\\n '#include <pipewire/version.h>' \
-      '#if !PW_CHECK_VERSION(1, 0, 0)' \
-      '#error PipeWire older than 1.0.0' \
-      '#endif' \
-      'int main(void) { return 0; }' > "$TEMP_C"
    printf %s 'Checking PipeWire headers >= 1.0.0 ... '
-   if $CC -o "$TEMP_EXE" "$TEMP_C" \
-         $BUILD_DIRS $CFLAGS $PIPEWIRE_STABLE_CFLAGS $LDFLAGS \
-         >>config.log 2>&1; then
+   if qb_compile "$TEMP_C" "#include <pipewire/version.h>$NL#if !PW_CHECK_VERSION(1, 0, 0)$NL#error PipeWire older than 1.0.0$NL#endif${NL}int main(void) { return 0; }$NL" \
+         $CC -o "$TEMP_EXE" "$TEMP_C" \
+         $BUILD_DIRS $CFLAGS $PIPEWIRE_STABLE_CFLAGS $LDFLAGS; then
       printf %s\\n 'yes'
    else
       printf %s\\n 'no'
       HAVE_PIPEWIRE_STABLE=no
    fi
-   rm -f -- "$TEMP_C" "$TEMP_EXE"
 fi
 check_val '' SDL -lSDL SDL sdl 1.2.10 '' true
 check_val '' SDL2 -lSDL2 SDL2 sdl2 2.0.0 '' true
@@ -845,7 +845,7 @@ fi
 if [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
    [ "$HAVE_WAYLAND_CURSOR" = yes ] &&
    [ "$HAVE_WAYLAND" = yes ]; then
-      ./gfx/common/wayland/generate_wayland_protos.sh \
+      [ "$QB_DRY" ] || ./gfx/common/wayland/generate_wayland_protos.sh \
          -c "$WAYLAND_SCANNER_VERSION" \
          -p "$HAVE_WAYLAND_PROTOS" \
          -s "$SHARE_DIR" ||

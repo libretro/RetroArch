@@ -3,6 +3,12 @@ INCLUDE_DIRS=''
 LIBRARY_DIRS=''
 MAKEFILE_DEFINES=''
 PKG_CONF_USED=''
+NL='
+'
+QB_DRY=''
+QB_PF_N=0
+QB_PF_NEXT=1
+QB_PF_PIDS=''
 
 ASFLAGS="${ASFLAGS:-}"
 CFLAGS="${CFLAGS:-}"
@@ -46,6 +52,187 @@ check_compiler()
 		TEMP_CODE="$TEMP_C"
 		TEST_C="void $2(void); int main(void) { $2(); return 0; }"
 	fi
+}
+
+# Check compiles run ahead of the checks.
+#
+# Before config.libs.sh runs, qb_prefetch runs it once in a subshell with
+# QB_DRY set. There qb_compile records each compile the checks would run
+# and reports success without running it, and nothing else that run does
+# is kept. Background workers then run the recorded compiles while
+# config.libs.sh runs for real, in order. A real check uses a background
+# result only when its command and test program are exactly the recorded
+# ones and compiles in place otherwise, so the dry run decides how much
+# work runs ahead and never what configure finds. Anything config.libs.sh
+# does other than through the check helpers is skipped when QB_DRY is set.
+#
+# QB_JOBS sets how many processors to use; 1 runs every check in place.
+
+# qb_quote:
+# Sets qb_q to $1 quoted for eval.
+qb_quote()
+{	qb_q=''
+	qb_r="$1"
+	while :; do
+		case "$qb_r" in
+			*\'* )
+				qb_h="${qb_r%%\'*}"
+				qb_q="$qb_q$qb_h'\\''"
+				qb_r="${qb_r#*\'}"
+			;;
+			* )
+				qb_q="'$qb_q$qb_r'"
+				return 0
+			;;
+		esac
+	done
+}
+
+# qb_compile:
+# Runs a check's compile, adding its output to config.log.
+# $1 = test program file
+# $2 = test program, written to $1
+# $@ = the rest: the compile command, naming $1 and $TEMP_EXE
+qb_compile()
+{	qb_file="$1"
+	qb_text="$2"
+	shift 2
+	qb_key="$*"
+	for qb_w do
+		case "$qb_w" in
+			*' '*|*'	'*|*"$NL"* ) qb_key=''; break ;;
+		esac
+	done
+
+	if [ "$QB_DRY" ]; then
+		[ "$qb_key" ] || return 0
+		QB_PF_N=$(($QB_PF_N + 1))
+		qb_quote "$qb_key"
+		qb_k="$qb_q"
+		qb_quote "$qb_text"
+		printf %s\\n "QB_PF_FILE_$QB_PF_N=$qb_file" \
+			"QB_PF_CMD_$QB_PF_N=$qb_k" \
+			"QB_PF_SRC_$QB_PF_N=$qb_q" \
+			"QB_PF_N=$QB_PF_N" >> "$QB_PF_SPEC"
+		return 0
+	fi
+
+	if [ "$qb_key" ] && [ "$QB_PF_N" -gt 0 ]; then
+		qb_c=0
+		qb_i="$QB_PF_NEXT"
+		while [ "$qb_c" -lt "$QB_PF_N" ]; do
+			[ "$qb_i" -le "$QB_PF_N" ] || qb_i=1
+			eval "qb_k=\${QB_PF_CMD_$qb_i} qb_f=\${QB_PF_FILE_$qb_i}"
+			if [ "$qb_k" = "$qb_key" ] && [ "$qb_f" = "$qb_file" ]; then
+				eval "qb_t=\${QB_PF_SRC_$qb_i}"
+				[ "$qb_t" = "$qb_text" ] && break
+			fi
+			qb_i=$(($qb_i + 1))
+			qb_c=$(($qb_c + 1))
+		done
+		if [ "$qb_c" -lt "$QB_PF_N" ]; then
+			QB_PF_NEXT=$(($qb_i + 1))
+			# Take it if no worker has. If one has, run compiles no one
+			# has taken yet until its answer is in, as long as that
+			# worker is still running.
+			set -C
+			{ printf %s\\n 0 > ".qb.$qb_i.claim"; } 2>/dev/null && qb_c=''
+			set +C
+			qb_j="$QB_PF_NEXT"
+			while [ "$qb_c" ] && [ ! -s ".qb.$qb_i.rc" ]; do
+				qb_wk=''
+				read -r qb_wk < ".qb.$qb_i.claim"
+				[ "$qb_wk" ] || continue
+				[ "$qb_wk" != 0 ] || break
+				eval "qb_p=\${QB_PF_PID_$qb_wk}"
+				kill -0 "$qb_p" 2>/dev/null || break
+				while [ "$qb_j" -le "$QB_PF_N" ] && [ -e ".qb.$qb_j.claim" ]; do
+					qb_j=$(($qb_j + 1))
+				done
+				[ "$qb_j" -le "$QB_PF_N" ] && qb_pf_run "$qb_j" 0
+			done
+			if [ "$qb_c" ] && [ -s ".qb.$qb_i.rc" ]; then
+				read -r qb_rc < ".qb.$qb_i.rc"
+				[ -s ".qb.$qb_i.log" ] && cat ".qb.$qb_i.log" >> config.log
+				return "$qb_rc"
+			fi
+		fi
+	fi
+
+	printf %s "$qb_text" > "$qb_file"
+	"$@" >> config.log 2>&1
+}
+
+# qb_pf_run:
+# Runs recorded compile $1 in a subshell unless someone has taken it.
+# $1 = recorded compile
+# $2 = who takes it: a worker number, or 0 for the checks themselves
+qb_pf_run()
+{	(	set -f -C
+		{ printf %s\\n "$2" > ".qb.$1.claim"; } 2>/dev/null || exit 0
+		eval "qb_key=\${QB_PF_CMD_$1} qb_file=\${QB_PF_FILE_$1} qb_text=\${QB_PF_SRC_$1}"
+		qb_src=".qb.$1.${qb_file##*.}"
+		qb_n="$1"
+		printf %s "$qb_text" >| "$qb_src"
+		set --
+		for qb_w in $qb_key; do
+			case "$qb_w" in
+				"$qb_file" ) qb_w="$qb_src" ;;
+				"$TEMP_EXE" ) qb_w=".qb.$qb_n.out" ;;
+			esac
+			set -- "$@" "$qb_w"
+		done
+		"$@" >| ".qb.$qb_n.log" 2>&1
+		printf %s "$?" >| ".qb.$qb_n.rc"
+	)
+}
+
+# qb_worker:
+# Runs the recorded compiles no one has taken yet, in order.
+# $1 = worker number
+qb_worker()
+{	qb_i=1
+	while [ "$qb_i" -le "$QB_PF_N" ] && [ ! -e .qb.stop ]; do
+		[ -e ".qb.$qb_i.claim" ] || qb_pf_run "$qb_i" "$1"
+		qb_i=$(($qb_i + 1))
+	done
+}
+
+# qb_prefetch:
+# Records the compiles config.libs.sh will run and starts the workers.
+qb_prefetch()
+{	qb_jobs="${QB_JOBS:-${NUMBER_OF_PROCESSORS:-}}"
+	[ "$qb_jobs" ] || qb_jobs="$(getconf _NPROCESSORS_ONLN 2>/dev/null || :)"
+	case "$qb_jobs" in
+		''|*[!0-9]* ) qb_jobs=1 ;;
+	esac
+	qb_jobs=$(($qb_jobs - 1))
+	[ "$qb_jobs" -gt 0 ] || return 0
+
+	QB_PF_SPEC=.qb.spec
+	rm -f -- .qb.*
+	printf '' > "$QB_PF_SPEC"
+	( QB_DRY=1; . qb/config.libs.sh ) </dev/null >/dev/null 2>&1
+	. ./"$QB_PF_SPEC"
+
+	[ "$qb_jobs" -le "$QB_PF_N" ] || qb_jobs="$QB_PF_N"
+	while [ "$qb_jobs" -gt 0 ]; do
+		qb_worker "$qb_jobs" </dev/null >/dev/null 2>&1 &
+		QB_PF_PIDS="$QB_PF_PIDS $!"
+		eval "QB_PF_PID_$qb_jobs=\$!"
+		qb_jobs=$(($qb_jobs - 1))
+	done
+}
+
+# qb_prefetch_stop:
+# Stops the workers once the checks are done and waits for them.
+qb_prefetch_stop()
+{	[ "$QB_PF_PIDS" ] || return 0
+	printf '' > .qb.stop
+	for qb_p in $QB_PF_PIDS; do
+		wait "$qb_p"
+	done
+	QB_PF_PIDS=''
 }
 
 # check_enabled:
@@ -153,13 +340,13 @@ check_lib()
 	if [ "$4" ]; then
 		MSG="Checking function $4 in"
 		if [ "$6" ]; then
-			printf %s\\n "$6" "int main(void) { void *p = (void*)$4; return 0; }" > "$TEMP_CODE"
+			qb_code="$6${NL}int main(void) { void *p = (void*)$4; return 0; }$NL"
 		else
-			printf %s\\n "$TEST_C" > "$TEMP_CODE"
+			qb_code="$TEST_C$NL"
 		fi
 	else
 		MSG='Checking existence of'
-		printf %s\\n 'int main(void) { return 0; }' > "$TEMP_CODE"
+		qb_code="int main(void) { return 0; }$NL"
 	fi
 
 	lib="${3% }"
@@ -169,9 +356,8 @@ check_lib()
 
 	printf %s "$MSG $lib ... "
 
-	$COMPILER -o "$TEMP_EXE" "$TEMP_CODE" \
-		$BUILD_DIRS $5 $FLAGS $LDFLAGS $lib \
-		>>config.log 2>&1 && answer='yes'
+	qb_compile "$TEMP_CODE" "$qb_code" $COMPILER -o "$TEMP_EXE" "$TEMP_CODE" \
+		$BUILD_DIRS $5 $FLAGS $LDFLAGS $lib && answer='yes'
 
 	printf %s\\n "$answer"
 
@@ -243,6 +429,11 @@ check_pkgconf()
 		return 0
 	}
 
+	if [ "$QB_DRY" ]; then
+		eval "HAVE_$1=yes"
+		return 0
+	fi
+
 	ver="${3:-0.0}"
 	err="${4:-}"
 	lib="${5:-}"
@@ -288,20 +479,19 @@ check_header()
 	check_compiler "$1" ''
 	eval "tmpval=\${HAVE_$2}"
 	[ "$tmpval" = 'no' ] && return 0
-	: > "$TEMP_CODE"
 	val="$2"
 	header="$3"
 	shift 2
+	qb_code=''
 	for head do
 		CHECKHEADER="$head"
-		printf %s\\n "#include <$head>" >> "$TEMP_CODE"
+		qb_code="$qb_code#include <$head>$NL"
 	done
-	printf %s\\n "int main(void) { return 0; }" >> "$TEMP_CODE"
+	qb_code="${qb_code}int main(void) { return 0; }$NL"
 	answer='no'
 	printf %s "Checking presence of header file $CHECKHEADER ... "
-	$COMPILER -c -o "$TEMP_EXE" "$TEMP_CODE" \
-		$BUILD_DIRS $FLAGS $LDFLAGS >>config.log 2>&1 &&
-		answer='yes'
+	qb_compile "$TEMP_CODE" "$qb_code" $COMPILER -c -o "$TEMP_EXE" "$TEMP_CODE" \
+		$BUILD_DIRS $FLAGS $LDFLAGS && answer='yes'
 	eval "HAVE_$val=\"$answer\""
 	printf %s\\n "$answer"
 	eval "setval=\${USER_$val}"
@@ -324,20 +514,13 @@ check_macro()
 		header_include="#include <$3>"
 		ECHOBUF=" in $3"
 	fi
-	cat << EOF > "$TEMP_C"
-$header_include
-#ifndef $2
-#error $2 is not defined
-#endif
-int main(void) { return 0; }
-EOF
+	qb_code="$header_include$NL#ifndef $2$NL#error $2 is not defined$NL#endif${NL}int main(void) { return 0; }$NL"
 	answer='no'
 	val="$1"
 	macro="$2"
 	printf %s "Checking presence of predefined macro $macro$ECHOBUF ... "
-	$CC -c -o "$TEMP_EXE" "$TEMP_C" \
-		$BUILD_DIRS $CFLAGS $LDFLAGS >>config.log 2>&1 &&
-		answer='yes'
+	qb_compile "$TEMP_C" "$qb_code" $CC -c -o "$TEMP_EXE" "$TEMP_C" \
+		$BUILD_DIRS $CFLAGS $LDFLAGS && answer='yes'
 	eval "HAVE_$val=\"$answer\""
 	printf %s\\n "$answer"
 	eval "setval=\${USER_$val}"
@@ -355,12 +538,11 @@ check_switch()
 {	add_opt "$2"
 	check_compiler "$1" ''
 
-	printf %s\\n 'int main(void) { return 0; }' > "$TEMP_CODE"
 	answer='no'
 	printf %s "Checking for availability of switch $3 in $COMPILER ... "
-	$COMPILER -o "$TEMP_EXE" "$TEMP_CODE" \
-		$BUILD_DIRS $CFLAGS $3 -Werror $LDFLAGS \
-		>>config.log 2>&1 && answer='yes'
+	qb_compile "$TEMP_CODE" "int main(void) { return 0; }$NL" \
+		$COMPILER -o "$TEMP_EXE" "$TEMP_CODE" \
+		$BUILD_DIRS $CFLAGS $3 -Werror $LDFLAGS && answer='yes'
 	eval "HAVE_$2=\"$answer\""
 	printf %s\\n "$answer"
 	if [ "$answer" = 'yes' ]; then
@@ -442,11 +624,9 @@ check_nopkg()
 
 	printf %s "Checking for $2 without pkg-config ... "
 	if [ "$answer" = 'yes' ]; then
-		printf %s\\n "$5" > "$TEMP_CODE"
 		answer='no'
-		$COMPILER -o "$TEMP_EXE" "$TEMP_CODE" \
-			$BUILD_DIRS ${6:-} $nopkg_flags $FLAGS $LDFLAGS $3 \
-			>>config.log 2>&1 && answer='yes'
+		qb_compile "$TEMP_CODE" "$5$NL" $COMPILER -o "$TEMP_EXE" "$TEMP_CODE" \
+			$BUILD_DIRS ${6:-} $nopkg_flags $FLAGS $LDFLAGS $3 && answer='yes'
 	fi
 	printf %s\\n "$answer"
 
@@ -532,7 +712,7 @@ moc_probe()
 # alongside the checks that follow. qb.moc.sh collects the answer and
 # adds its log to config.log where the check is reported.
 moc_start()
-{	[ "$HAVE_QT" = 'yes' ] || return 0
+{	[ "$HAVE_QT" = 'yes' ] && [ -z "$QB_DRY" ] || return 0
 	. qb/config.moc.sh
 	MOC_SIG="$CXX|$QT_VERSION|$QT_FLAGS"
 	printf %s\\n '#include <QTimeZone>' \
@@ -685,4 +865,6 @@ create_config_make()
 	} > "$outfile"
 }
 
+qb_prefetch
 . qb/config.libs.sh
+qb_prefetch_stop
