@@ -152,7 +152,15 @@ static void run(uint32_t version)
    bool takes_scale = version >= WL_SURFACE_SET_BUFFER_SCALE_SINCE_VERSION;
 
    comp.dpy = wl_display_create();
-   socket   = wl_display_add_socket_auto(comp.dpy);
+   socket   = comp.dpy ? wl_display_add_socket_auto(comp.dpy) : NULL;
+   /* The in-process compositor's socket lives in XDG_RUNTIME_DIR */
+   CHECK(socket != NULL, "no compositor socket (is XDG_RUNTIME_DIR set?)");
+   if (!socket)
+   {
+      if (comp.dpy)
+         wl_display_destroy(comp.dpy);
+      return;
+   }
    wl_global_create(comp.dpy, &wl_compositor_interface, (int)version,
          NULL, bind_compositor);
    pthread_create(&thread, NULL, compositor_run, NULL);
