@@ -1744,15 +1744,6 @@ static INLINE void android_input_poll_event_type_motion(
       }
    }
 
-   /* Drop hover events from touchscreen processing so they can't drive clicks. */
-   if (is_hover_action)
-   {
-#ifdef DEBUG_ANDROID_INPUT
-      RARCH_LOG("[Android Input] Blocking hover event from touchscreen processing - action:%d source:0x%X\n", action, source);
-#endif
-      return;
-   }
-
    keyup = (action == AMOTION_EVENT_ACTION_UP ||
             action == AMOTION_EVENT_ACTION_CANCEL ||
             action == AMOTION_EVENT_ACTION_POINTER_UP);
@@ -1797,6 +1788,18 @@ static INLINE void android_input_poll_event_type_motion(
       }
 
       android_mouse_calculate_deltas(android,event,motion_ptr,source);
+      return;
+   }
+
+   /* Drop hover events from touchscreen processing so they can't drive
+    * clicks. This has to come after the mouse branch above: a mouse
+    * moved with no button held reports its motion as hover events, and
+    * dropping those first would leave it unable to move. */
+   if (is_hover_action)
+   {
+#ifdef DEBUG_ANDROID_INPUT
+      RARCH_LOG("[Android Input] Blocking hover event from touchscreen processing - action:%d source:0x%X\n", action, source);
+#endif
       return;
    }
 
