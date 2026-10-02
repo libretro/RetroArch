@@ -2266,13 +2266,19 @@ bool filestream_write_file_atomic(const char *path,
       return true;
    }
 
-   /* POSIX rename replaces the destination; the Win32 one refuses an
-    * existing destination, so it needs the target gone first. */
-   filestream_delete(path);
-   if (filestream_rename(temp_path, path) == 0)
+   /* The built-in rename replaces the destination on every platform,
+    * and puts it back when its replacement cannot be moved in, so a
+    * failure there leaves the old file as it was.  A frontend's
+    * rename may refuse an existing destination, as the libretro VFS
+    * API allows, so that one needs the target gone first. */
+   if (filestream_rename_cb)
    {
-      free(temp_path);
-      return true;
+      filestream_delete(path);
+      if (filestream_rename(temp_path, path) == 0)
+      {
+         free(temp_path);
+         return true;
+      }
    }
 
    filestream_delete(temp_path);

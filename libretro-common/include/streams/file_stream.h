@@ -296,9 +296,9 @@ bool filestream_write_file(const char *path, const void *data, int64_t size);
  * length or checksum of its own, where a truncated file is worse than
  * an absent one.
  *
- * On targets whose rename refuses an existing destination, the target
- * is removed first and the rename retried, so on those the replacement
- * is not atomic.
+ * Under a frontend VFS whose rename refuses an existing destination,
+ * the target is removed first and the rename retried, so there the
+ * replacement is not atomic.
  *
  * @param path Path to the file that will be written to.
  * @param data The buffer to write to \c path.
