@@ -1859,6 +1859,19 @@ static bool android_is_keyboard_id(int id)
    return false;
 }
 
+/* Whether an event is handled the way a keyboard's is: its keys go to
+ * the keyboard row and its device gets no pad slot. True for a
+ * registered keyboard, and for a television's remote over HDMI-CEC,
+ * which is told by its source (see android_kbd_route.h). */
+static bool android_input_event_is_keyboard(const android_input_t *android,
+      int id, int source)
+{
+   if (android_is_keyboard_id(id))
+      return true;
+   return     android_key_source_is_cec(source)
+           && android_cec_remote_is_keyboard(android->device_model);
+}
+
 /* Resolves the printable Unicode codepoint produced by a hardware-key
  * press, honouring the active keyboard layout and modifier (shift, caps
  * lock, ...) state via the device's KeyCharacterMap - this mirrors what
@@ -2760,6 +2773,7 @@ static void android_input_poll_input_gingerbread(
    if (AInputQueue_getEvent(android_app->inputQueue, &event) >= 0)
    {
       int source, type_event, id, port;
+      bool is_keyboard;
       int32_t   handled = 0;
       if (AInputQueue_preDispatchEvent(android_app->inputQueue, event))
          return;
@@ -2767,11 +2781,12 @@ static void android_input_poll_input_gingerbread(
       type_event        = AInputEvent_getType(event);
       id                = android_input_get_id(event);
       port              = android_input_get_id_port(android, id, source);
+      is_keyboard       = android_input_event_is_keyboard(android, id, source);
 
-      if (port < 0 && !android_is_keyboard_id(id))
+      if (port < 0 && !is_keyboard)
          port = android_input_recover_port(android, id);
 
-      if (port < 0 && !android_is_keyboard_id(id))
+      if (port < 0 && !is_keyboard)
          handle_hotplug(android, android_app,
          &port, id, source);
 
@@ -2799,7 +2814,7 @@ static void android_input_poll_input_gingerbread(
                if (android_kbd_takes_key(event, keycode))
                   break;
 
-               if (android_is_keyboard_id(id))
+               if (is_keyboard)
                {
                   android_input_poll_event_type_keyboard(
                         event, keycode, &handled);
@@ -2838,6 +2853,7 @@ static void android_input_poll_input_default(android_input_t *android)
       {
          int32_t handled;
          int source, type_event, id, port;
+         bool is_keyboard;
 
          /* A pre-dispatched event belongs to the IME from here on and
           * reappears in the queue if it goes unconsumed, so it can be
@@ -2851,11 +2867,12 @@ static void android_input_poll_input_default(android_input_t *android)
          type_event = AInputEvent_getType(event);
          id         = android_input_get_id(event);
          port       = android_input_get_id_port(android, id, source);
+         is_keyboard = android_input_event_is_keyboard(android, id, source);
 
-         if (port < 0 && !android_is_keyboard_id(id))
+         if (port < 0 && !is_keyboard)
             port = android_input_recover_port(android, id);
 
-         if (port < 0 && !android_is_keyboard_id(id))
+         if (port < 0 && !is_keyboard)
             handle_hotplug(android, android_app,
                   &port, id, source);
 
@@ -2886,7 +2903,7 @@ static void android_input_poll_input_default(android_input_t *android)
                      break;
                   }
 
-                  if (android_is_keyboard_id(id))
+                  if (is_keyboard)
                   {
                      android_input_poll_event_type_keyboard(
                            event, keycode, &handled);

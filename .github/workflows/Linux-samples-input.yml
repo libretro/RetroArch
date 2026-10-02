@@ -240,6 +240,27 @@ jobs:
           make clean
           echo "[pass] android_kbd_keys_test (ASan)"
 
+      - name: Build and run android_cec_remote_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/android_cec_remote
+        run: |
+          set -eu
+          # A television's remote over HDMI-CEC. Android delivers its
+          # keys with no device behind them (id -1, source HDMI), and
+          # the driver took the event for a new gamepad: the remote
+          # became an unconfigured pad called "Virtual" on the next
+          # free port (issue #19249). Pins that such an event registers
+          # no pad and lands on the keyboard row, that only the HDMI
+          # source is taken for a remote, that a controller - one
+          # reporting id -1 included - still gets its pad, and that the
+          # SHIELD keeps its own CEC mapping. Ignoring the source, as
+          # the driver did, is put back and asserted to be caught.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./android_cec_remote_test
+          make clean
+          echo "[pass] android_cec_remote_test (ASan)"
+
       - name: Build and run android_stylus_map_test (ASan + UBSan)
         shell: bash
         working-directory: samples/input/android_stylus_map
