@@ -9,8 +9,10 @@
  * What these lanes pin, through filestream_write_file_atomic():
  *
  *   fresh     - a new file lands with one stat and one rename.
- *   overwrite - the old file is replaced and nothing is left beside
- *               it.
+ *   overwrite - the old file is replaced, nothing is left beside it,
+ *               and no name that does not exist is removed: on these
+ *               filesystems that is a lookup scanning the whole
+ *               directory, paid per file of a bulk extraction.
  *   leftover  - an aside file left by an interrupted run does not
  *               stop the replacement and is gone afterwards.
  *   refused   - when the replacement cannot be renamed into place,
@@ -206,6 +208,8 @@ int main(void)
    CHECK(content_is(TARGET, v2), "overwrite content wrong");
    CHECK(!exists(ASIDE) && !exists(TEMP),
          "overwrite left a file beside the target");
+   CHECK(n_remove_missing == 0,
+         "overwrite removed a name that did not exist");
 
    /* leftover aside from an interrupted run */
    put(ASIDE, "stale");

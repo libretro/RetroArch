@@ -2207,8 +2207,11 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
       memcpy(aside + _len, ".old", sizeof(".old"));
 
       ret = -1;
-      sceIoRemove(aside);              /* a leftover from an earlier run */
-      if (sceIoRename(new_path, aside) >= 0)
+      /* A leftover aside from an earlier run is removed only when it
+       * is in the way: a lookup of a missing name scans the directory. */
+      if (     sceIoRename(new_path, aside) >= 0
+            || (     sceIoRemove(aside) >= 0
+                  && sceIoRename(new_path, aside) >= 0))
       {
          if (sceIoRename(old_path, new_path) >= 0)
          {
@@ -2252,8 +2255,11 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path)
       memcpy(aside + _len, ".old", sizeof(".old"));
 
       ret = -1;
-      remove(aside);                   /* a leftover from an earlier run */
-      if (rename(new_path, aside) == 0)
+      /* A leftover aside from an earlier run is removed only when it
+       * is in the way: a lookup of a missing name scans the directory. */
+      if (     rename(new_path, aside) == 0
+            || (     remove(aside) == 0
+                  && rename(new_path, aside) == 0))
       {
          if (rename(old_path, new_path) == 0)
          {
