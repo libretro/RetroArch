@@ -46,6 +46,13 @@ static int  in_b_last;
  * harness can count heap calls in those alone. */
 volatile int harness_core_in_input;
 
+/* A probe the harness may set. While measuring, retro_run() calls it at
+ * four points - 0 on entry, 1 after input_poll, 2 after the frame's
+ * first input_state, 3 before it returns - so the harness can tell
+ * where in the frame the frontend polled. Kept out of the timings. */
+static void (*in_probe)(int point);
+void harness_core_set_probe(void (*probe)(int point)) { in_probe = probe; }
+
 static unsigned long long now_ns(void)
 {
    struct timespec ts;
@@ -144,12 +151,29 @@ void retro_run(void)
       unsigned q;
       int16_t  acc = 0;
       unsigned long long t0, t1, tf, t2;
+      unsigned long long first_ns;
+      if (in_probe)
+         in_probe(0);
       harness_core_in_input = 1;
       t0 = now_ns();
       poll_cb();
       t1 = now_ns();
-      acc = state_cb(0, RETRO_DEVICE_JOYPAD, 0, 0);
-      tf = now_ns();
+      if (in_probe)
+      {
+         unsigned long long t;
+         in_probe(1);
+         t   = now_ns();
+         acc = state_cb(0, RETRO_DEVICE_JOYPAD, 0, 0);
+         first_ns = now_ns() - t;
+         in_probe(2);
+         tf  = now_ns();
+      }
+      else
+      {
+         acc = state_cb(0, RETRO_DEVICE_JOYPAD, 0, 0);
+         tf  = now_ns();
+         first_ns = tf - t1;
+      }
       /* pad 1's B (the first query): the run its edges arrive in */
       if (acc && !in_b_last && in_press_run < 0)
          in_press_run = (long)runs;
@@ -164,9 +188,11 @@ void retro_run(void)
       harness_core_in_input = 0;
       in_sink      = acc;
       in_poll_ns  += t1 - t0;
-      in_first_ns += tf - t1;
+      in_first_ns += first_ns;
       in_state_ns += t2 - tf;
       in_frames++;
+      if (in_probe)
+         in_probe(3);
    }
    video_cb(frame, W, H, W * 2);
    audio_cb(audio, AUDIO_FRAMES);

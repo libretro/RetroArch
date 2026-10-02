@@ -31,6 +31,18 @@
  *     (each input_state call should cost the same however many a frame
  *     makes).
  *
+ *   - Where each poll mode polls (input plan, section 10). Early
+ *     polls before retro_run(), normal inside input_poll, late inside
+ *     the frame's first input_state - once a frame, and nowhere else.
+ *     The joypad driver's poll is counted between four points of the
+ *     core's retro_run() and the ends of the iterate. This is checked
+ *     for each mode the core can be switched to, and the harness is
+ *     run once for each mode it can be loaded with (HARNESS_LOAD_POLL):
+ *     a core loaded with normal or early polling and switched to late
+ *     used to keep a state callback with no poll in it, so the only
+ *     poll left was the one after retro_run() and the core read input
+ *     a frame old.
+ *
  * Nothing is stubbed. */
 #include <stdio.h>
 #include <stdlib.h>
@@ -368,6 +380,147 @@ static void lane_input_poll_modes(void)
 #endif
 }
 
+/* Where in a frame the frontend polls. The joypad driver's poll is
+ * counted, and the count is read at four points of the core's
+ * retro_run() and at both ends of the iterate. */
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+enum
+{
+   SITE_BEFORE_RUN = 0, /* before retro_run(): the early poll */
+   SITE_INPUT_POLL,     /* inside input_poll: the normal poll */
+   SITE_FIRST_STATE,    /* inside the first input_state: the late poll */
+   SITE_REST_OF_RUN,    /* later in retro_run(): nobody's */
+   SITE_AFTER_RUN,      /* after retro_run(): the fallback, too late */
+   SITE_COUNT
+};
+static const char *const site_name[SITE_COUNT] = {
+   "before retro_run", "in input_poll", "in the first input_state",
+   "later in retro_run", "after retro_run" };
+
+static unsigned long         poll_calls;
+static unsigned long         site_mark;
+static unsigned long         site_polls[SITE_COUNT];
+static unsigned long         site_runs;
+static input_device_driver_t counting_joypad;
+static void                (*joypad_poll_real)(void);
+
+static void counting_joypad_poll(void)
+{
+   poll_calls++;
+   joypad_poll_real();
+}
+
+static void site_take(unsigned site)
+{
+   site_polls[site] += poll_calls - site_mark;
+   site_mark         = poll_calls;
+}
+
+/* Called by the harness core from inside retro_run(). */
+static void poll_probe(int point)
+{
+   switch (point)
+   {
+      case 0: site_take(SITE_BEFORE_RUN);  break;
+      case 1: site_take(SITE_INPUT_POLL);  break;
+      case 2: site_take(SITE_FIRST_STATE); break;
+      case 3: site_take(SITE_REST_OF_RUN); site_runs++; break;
+   }
+}
+
+static void run_sited_frames(unsigned n)
+{
+   unsigned i;
+   for (i = 0; i < n; i++)
+   {
+      site_mark = poll_calls;
+      runloop_iterate();
+      site_take(SITE_AFTER_RUN);
+      task_queue_check();
+   }
+}
+#endif
+
+static void lane_input_poll_sites(const char *loaded_with)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   static const char *const name[3] = { "early", "normal", "late" };
+   static const unsigned    home[3] = {
+      SITE_BEFORE_RUN, SITE_INPUT_POLL, SITE_FIRST_STATE };
+   input_driver_state_t *input_st = input_state_get_ptr();
+   const input_device_driver_t *joypad_real;
+   void (*set_probe)(void (*)(int));
+   void (*measure)(unsigned, unsigned);
+   void    *core;
+   unsigned had = failures;
+   unsigned m, s;
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(set_probe = (void (*)(void (*)(int)))dlsym(core, "harness_core_set_probe"))
+       || !(measure = (void (*)(unsigned, unsigned))dlsym(core, "harness_core_input_measure"))
+       || !input_st->primary_joypad
+       || !input_st->primary_joypad->poll)
+   {
+      CHECK(false, "poll sites: the harness core's probe or the joypad driver's poll");
+      return;
+   }
+
+   /* count the joypad driver's poll: input_driver_poll() calls it once */
+   joypad_real              = input_st->primary_joypad;
+   counting_joypad          = *joypad_real;
+   joypad_poll_real         = counting_joypad.poll;
+   counting_joypad.poll     = counting_joypad_poll;
+   input_st->primary_joypad = &counting_joypad;
+
+   fast_forward(true);
+   measure(16, 1);
+   set_probe(poll_probe);
+
+   for (m = 0; m < 3; m++)
+   {
+      bool ok = true;
+
+      core_set_poll_type(m);
+      /* let the switch settle, then count */
+      run_sited_frames(50);
+      memset(site_polls, 0, sizeof(site_polls));
+      site_runs = 0;
+      run_sited_frames(300);
+
+      for (s = 0; s < SITE_COUNT; s++)
+         if (site_polls[s] != (s == home[m] ? site_runs : 0))
+            ok = false;
+
+      if (!ok)
+      {
+         fprintf(stderr, "       loaded with %s polling, switched to %s:"
+               " over %lu frames the frontend polled",
+               loaded_with, name[m], site_runs);
+         for (s = 0; s < SITE_COUNT; s++)
+            if (site_polls[s])
+               fprintf(stderr, " %lu time(s) %s;", site_polls[s], site_name[s]);
+         fprintf(stderr, " expected once a frame %s and nowhere else\n",
+               site_name[home[m]]);
+      }
+      CHECK(site_runs >= 300, "poll sites: the core did not run");
+      CHECK(ok, "poll sites: a poll mode does not poll where it should");
+   }
+
+   set_probe(NULL);
+   measure(0, 1);
+   core_set_poll_type(POLL_TYPE_LATE);
+   fast_forward(false);
+   input_st->primary_joypad = joypad_real;
+   if (failures == had)
+      printf("[pass] loaded with %s polling: early polls before retro_run,"
+            " normal in input_poll, late in the first input_state\n",
+            loaded_with);
+#else
+   (void)loaded_with;
+   printf("[skip] poll-site lane: need the test drivers and dlopen\n");
+#endif
+}
+
 static void lane_frame_cost(void)
 {
    unsigned had = failures;
@@ -397,7 +550,24 @@ int main(int argc, char *argv[])
    char *rarch_argv[8] = {0};
    int rarch_argc = 0;
    FILE *cfg;
+   /* HARNESS_LOAD_POLL=early|normal|late: the poll mode the core is
+    * loaded with. The state callback used to be chosen then. */
+   static const char *const load_poll_name[3] = { "early", "normal", "late" };
+   const char *load_poll_env = getenv("HARNESS_LOAD_POLL");
+   unsigned    load_poll     = POLL_TYPE_LATE;
    (void)argc;
+
+   if (load_poll_env)
+   {
+      for (load_poll = 0; load_poll < 3; load_poll++)
+         if (!strcmp(load_poll_env, load_poll_name[load_poll]))
+            break;
+      if (load_poll == 3)
+      {
+         fprintf(stderr, "HARNESS_LOAD_POLL: early, normal or late\n");
+         return 1;
+      }
+   }
 
    {
       const char *tmp = getenv("TMPDIR");
@@ -438,6 +608,7 @@ int main(int argc, char *argv[])
       fprintf(cfg, "config_save_on_exit = \"false\"\n");
       fprintf(cfg, "threaded_data_runloop_enable = \"%s\"\n",
             getenv("HARNESS_THREADED_TASKS") ? "true" : "false");
+      fprintf(cfg, "input_poll_type_behavior = \"%u\"\n", load_poll);
       fclose(cfg);
    }
 
@@ -526,10 +697,19 @@ int main(int argc, char *argv[])
    if (failures)
       return 1;
 
-   lane_frame_path_heap();
-   lane_frame_cost();
-   lane_input_cost();
-   lane_input_poll_modes();
+   /* Loaded with another poll mode than the default, only the lane
+    * that depends on it runs: the rest was measured in the default
+    * run. */
+   if (load_poll_env)
+      lane_input_poll_sites(load_poll_name[load_poll]);
+   else
+   {
+      lane_frame_path_heap();
+      lane_frame_cost();
+      lane_input_cost();
+      lane_input_poll_modes();
+      lane_input_poll_sites(load_poll_name[load_poll]);
+   }
 
    if (failures)
    {

@@ -5270,37 +5270,54 @@ static bool core_verify_api_version(runloop_state_t *runloop_st)
    return true;
 }
 
-static int16_t core_input_state_poll_late(unsigned port,
+/* The poll mode in force: the core's override if it has set one, the
+ * user's setting otherwise. */
+static INLINE enum poll_type core_poll_type_current(void)
+{
+   const enum poll_type_override_t
+      core_poll_type_override  = runloop_state.core_poll_type_override;
+   return (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
+      ? (enum poll_type)(core_poll_type_override - 1)
+      : (enum poll_type)(runloop_state.current_core.poll_type);
+}
+
+/* The core's input_state callback, in every poll mode.
+ *
+ * Under late polling the frame's first query polls. Whether late
+ * polling is in force is read here, at the call, and not when the
+ * callback is given to the core. The callback used to be chosen once,
+ * at load, between this one and a plain one with no poll in it; the
+ * mode, though, can change afterwards - Poll Type Behavior in the menu,
+ * or a core's override. A core loaded with normal or early polling and
+ * switched to late kept the plain callback: nothing polled during the
+ * frame, the only poll left was the fallback after retro_run(), and
+ * the core read input sampled before the previous frame's pacing wait,
+ * up to a frame older than late polling is for.
+ *
+ * RETRO_CORE_FLAG_INPUT_POLLED is set by whichever poll the mode calls
+ * for - before retro_run() (early), in input_poll (normal), or here
+ * (late) - so past the frame's poll a query costs one test in every
+ * mode. */
+static int16_t core_input_state_cb(unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   if (!(runloop_state.current_core.flags & RETRO_CORE_FLAG_INPUT_POLLED))
+   if (     !(runloop_state.current_core.flags & RETRO_CORE_FLAG_INPUT_POLLED)
+         && core_poll_type_current() == POLL_TYPE_LATE)
+   {
       input_driver_poll();
-   runloop_state.current_core.flags |= RETRO_CORE_FLAG_INPUT_POLLED;
+      runloop_state.current_core.flags |= RETRO_CORE_FLAG_INPUT_POLLED;
+   }
 
    return input_driver_state_wrapper(port, device, idx, id);
 }
 
 static void core_input_state_poll_maybe(void)
 {
-   const enum poll_type_override_t
-      core_poll_type_override  = runloop_state.core_poll_type_override;
-   enum poll_type new_poll_type = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
-      ? (enum poll_type)(core_poll_type_override - 1)
-      : (enum poll_type)(runloop_state.current_core.poll_type);
-   if (new_poll_type == POLL_TYPE_NORMAL)
+   if (core_poll_type_current() == POLL_TYPE_NORMAL)
+   {
       input_driver_poll();
-}
-
-static retro_input_state_t core_input_state_poll_return_cb(void)
-{
-   const enum poll_type_override_t
-      core_poll_type_override  = runloop_state.core_poll_type_override;
-   enum poll_type new_poll_type = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
-      ? (enum poll_type)(core_poll_type_override - 1)
-      : (enum poll_type)(runloop_state.current_core.poll_type);
-   if (new_poll_type == POLL_TYPE_LATE)
-      return core_input_state_poll_late;
-   return input_driver_state_wrapper;
+      runloop_state.current_core.flags |= RETRO_CORE_FLAG_INPUT_POLLED;
+   }
 }
 
 
@@ -5314,7 +5331,7 @@ static retro_input_state_t core_input_state_poll_return_cb(void)
 static void core_init_libretro_cbs(runloop_state_t *runloop_st,
       struct retro_callbacks *cbs)
 {
-   retro_input_state_t state_cb = core_input_state_poll_return_cb();
+   retro_input_state_t state_cb = core_input_state_cb;
 
    runloop_st->current_core.retro_set_video_refresh(video_driver_frame);
    runloop_st->current_core.retro_set_audio_sample(audio_driver_sample);
@@ -9348,7 +9365,7 @@ void runloop_set_current_core_type(
 bool core_set_default_callbacks(void *data)
 {
    struct retro_callbacks *cbs  = (struct retro_callbacks*)data;
-   retro_input_state_t state_cb = core_input_state_poll_return_cb();
+   retro_input_state_t state_cb = core_input_state_cb;
 
    cbs->frame_cb                = video_driver_frame;
    cbs->sample_cb               = audio_driver_sample;
@@ -9741,9 +9758,15 @@ void core_run(void)
    }
 #endif
 
+   /* The flag says whether this frame's poll has happened. Early
+    * polling polls here; normal and late start the frame without it,
+    * and input_poll or the first input_state sets it. */
    if (early_polling)
+   {
       input_driver_poll();
-   else if (late_polling)
+      current_core->flags |=  RETRO_CORE_FLAG_INPUT_POLLED;
+   }
+   else
       current_core->flags &= ~RETRO_CORE_FLAG_INPUT_POLLED;
 
    /* Content can be marked CORE_RUNNING after a failed/partial load
