@@ -89,7 +89,10 @@ typedef struct
  || defined(VITA) \
  || defined(_3DS) \
  || defined(WIIU) \
- || defined(__SWITCH__)
+ || defined(__SWITCH__) \
+ || defined(GEKKO) \
+ || defined(PSP) \
+ || defined(PS2)
 #define VFS_HAVE_DESCRIPTOR_IO 1
 #endif
 #endif
@@ -108,7 +111,7 @@ typedef struct
  * directory lookup, so a bulk extraction pays for all of it per
  * member. */
 #ifndef VFS_HAVE_DESCRIPTOR_WRITE
-#if defined(VITA)
+#if defined(VITA) || defined(GEKKO) || defined(PSP) || defined(PS2)
 #define VFS_HAVE_DESCRIPTOR_WRITE 1
 #endif
 #endif
