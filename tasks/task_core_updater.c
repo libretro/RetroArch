@@ -168,17 +168,22 @@ typedef struct update_installed_cores_handle
    unsigned num_updated;
    unsigned num_locked;
    enum update_installed_cores_status status;
-   bool auto_backup;
-   /* The task title currently reads 'Scanning cores' */
-   bool title_scanning;
    /* Set from the child task callbacks. The child
     * retro_task_t pointers are deliberately *not*
     * retained: task_queue frees a finished task in the
     * same gather pass that ran its handler, so a stored
     * pointer can dangle before this task is stepped
-    * again (see UPDATE_INSTALLED_CORES_WAIT_LIST). */
-   bool list_task_complete;
-   bool download_task_complete;
+    * again (see UPDATE_INSTALLED_CORES_WAIT_LIST).
+    * The callbacks run on the main thread at retirement
+    * while this task's handler polls from the worker, so
+    * both are atomics: a release store in the callback,
+    * an acquire load in the handler, which also publishes
+    * the core list the child filled in. */
+   retro_atomic_int_t list_task_complete;
+   retro_atomic_int_t download_task_complete;
+   bool auto_backup;
+   /* The task title currently reads 'Scanning cores' */
+   bool title_scanning;
    /* Captured on the main thread when this task is pushed: its
     * handler runs on the worker and pushes the list task from
     * there, so the list task's captures come from here, not from
@@ -640,7 +645,8 @@ static void cb_task_core_updater_get_list(
 #endif
 
    if (update_installed_handle)
-      update_installed_handle->list_task_complete = true;
+      retro_atomic_store_release_int(
+            &update_installed_handle->list_task_complete, 1);
 }
 
 /* The push with the three paths as values: reads no live settings,
@@ -773,7 +779,8 @@ static void cb_task_core_updater_download(
     * this task's flags, since the task is freed as soon as
     * it is retired */
    if (update_installed_handle)
-      update_installed_handle->download_task_complete = true;
+      retro_atomic_store_release_int(
+            &update_installed_handle->download_task_complete, 1);
 
    command_event(CMD_EVENT_CORE_INFO_INIT, &refresh);
 
@@ -1622,7 +1629,8 @@ static void task_update_installed_cores_scan(retro_task_t *task,
 
          /* Flag must be cleared *before* the push, since the child
           * task can complete before it returns */
-         handle->download_task_complete = false;
+         retro_atomic_store_release_int(
+               &handle->download_task_complete, 0);
 
          if (!task_push_core_updater_download_internal(
                      handle->core_list,
@@ -1694,7 +1702,8 @@ static void task_update_installed_cores_handler(retro_task_t *task)
           * > Must be cleared *before* the push: the child
           *   task can finish and fire its callback before
           *   this returns */
-         update_installed_handle->list_task_complete = false;
+         retro_atomic_store_release_int(
+               &update_installed_handle->list_task_complete, 0);
 
          /* If push failed, go to end
           * (error will message will be displayed when
@@ -1721,7 +1730,8 @@ static void task_update_installed_cores_handler(retro_task_t *task)
              * observe on the next tick but freed memory, and
              * this task stuck on 'Fetching core list...'
              * forever */
-            bool list_available = update_installed_handle->list_task_complete;
+            bool list_available = retro_atomic_load_acquire_int(
+                  &update_installed_handle->list_task_complete) != 0;
 
             /* If list is available, make sure it isn't empty
              * (error will message will be displayed when
@@ -1750,8 +1760,8 @@ static void task_update_installed_cores_handler(retro_task_t *task)
              * trigger - same lifetime hazard as
              * UPDATE_INSTALLED_CORES_WAIT_LIST, so the child
              * task's flags are deliberately not polled */
-            bool download_complete =
-                  update_installed_handle->download_task_complete;
+            bool download_complete = retro_atomic_load_acquire_int(
+                  &update_installed_handle->download_task_complete) != 0;
 
             /* If download is complete, return to
              * UPDATE_INSTALLED_CORES_ITERATE state */
@@ -1888,8 +1898,8 @@ void task_push_update_installed_cores(
    update_installed_handle->path_dir_core_assets     = (!path_dir_core_assets || !*path_dir_core_assets) ?
          NULL : strdup(path_dir_core_assets);
    update_installed_handle->core_list                = core_updater_list_init();
-   update_installed_handle->list_task_complete       = false;
-   update_installed_handle->download_task_complete   = false;
+   retro_atomic_int_init(&update_installed_handle->list_task_complete, 0);
+   retro_atomic_int_init(&update_installed_handle->download_task_complete, 0);
    update_installed_handle->list_size                = 0;
    update_installed_handle->list_index               = 0;
    update_installed_handle->installed_index          = 0;
