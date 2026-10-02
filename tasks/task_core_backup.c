@@ -27,7 +27,6 @@
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
 #include <streams/rzip_stream.h>
-#include <features/features_cpu.h>
 
 #include "../retroarch.h"
 #include "../paths.h"
@@ -67,20 +66,13 @@
    as SAVE_STATE_CHUNK in tasks/task_save.c. */
 #define CORE_BACKUP_CHUNK_SIZE (100 * 1024)
 
-/* Wall-clock budget for one backup/restore tick, in microseconds.
-   The handler keeps transferring quanta until this is exhausted, then
-   yields.  ~12% of a 60Hz frame.
-
-   A time rather than a byte count, because the quantity that must be
-   bounded is the stall the user sees, and only a clock measures that;
-   a byte count is a guess about device speed that is wrong by two
-   orders of magnitude across the range of devices RetroArch runs on.
-
-   The loop is do/while, so exactly one quantum is always transferred.
-   On a device slow enough that one quantum exceeds the budget the
-   behaviour is therefore byte-for-byte what it was before this budget
-   existed - there is no worst case to regress. */
-#define CORE_BACKUP_TICK_BUDGET_US 2000
+/* Every CRC step and every transfer quantum of a backup or restore is
+   a work item of the shared per-frame I/O window (task_nbio_slice_*),
+   so a backup shares one frame's I/O allowance with every other
+   budgeted task instead of carrying a deadline of its own.  The
+   window's floor grants one item per tick, so a device slow enough
+   that one quantum exceeds the window still makes progress, exactly
+   as when a tick was hardcoded to one quantum. */
 
 /* Bytes hashed per step.  Matches the read size inside
    intfstream_crc_step(). */
@@ -392,8 +384,8 @@ static void task_core_backup_handler(retro_task_t *task)
              * spinning-disk targets, and an automatic backup runs on
              * every core update.  Same treatment
              * tasks/task_core_updater.c already applies. */
-            int64_t hashed;
-            retro_time_t crc_deadline;
+            int64_t hashed = 1;
+            nbio_budget_t budget;
 
             if (!backup_handle->crc_active)
             {
@@ -402,9 +394,8 @@ static void task_core_backup_handler(retro_task_t *task)
                intfstream_rewind(backup_handle->core_file);
             }
 
-            crc_deadline = cpu_features_get_time_usec()
-                  + CORE_BACKUP_TICK_BUDGET_US;
-            do
+            task_nbio_slice_open(&budget);
+            while (task_nbio_slice_within_budget(&budget, 0, 0))
             {
                hashed = intfstream_crc_step(backup_handle->core_file,
                      &backup_handle->crc_accumulator,
@@ -418,10 +409,13 @@ static void task_core_backup_handler(retro_task_t *task)
                   task_set_error(task, strdup("Failed to determine CRC of core file."));
                   backup_handle->crc_active = false;
                   backup_handle->status     = CORE_BACKUP_END;
+                  task_nbio_slice_close(&budget);
                   return;
                }
-            } while (hashed > 0
-                  && cpu_features_get_time_usec() < crc_deadline);
+               if (hashed == 0)
+                  break;
+            }
+            task_nbio_slice_close(&budget);
 
             /* Not finished: resume on the next tick. */
             if (hashed > 0)
@@ -569,7 +563,7 @@ static void task_core_backup_handler(retro_task_t *task)
          {
             int64_t data_written = 0;
             int64_t data_read    = 0;
-            retro_time_t deadline;
+            nbio_budget_t budget;
             bool failed_read     = false;
             bool failed_write    = false;
 
@@ -586,13 +580,9 @@ static void task_core_backup_handler(retro_task_t *task)
                }
             }
 
-            /* Transfer quanta until the tick budget is spent.
-             * do/while, so a device slow enough that one quantum
-             * exceeds the budget behaves exactly as it did when a
-             * tick was hardcoded to one quantum. */
-            deadline = cpu_features_get_time_usec()
-                  + CORE_BACKUP_TICK_BUDGET_US;
-            do
+            /* Transfer quanta while the shared I/O window allows */
+            task_nbio_slice_open(&budget);
+            while (task_nbio_slice_within_budget(&budget, 0, 0))
             {
                data_read = intfstream_read(backup_handle->core_file,
                      backup_handle->buffer, CORE_BACKUP_CHUNK_SIZE);
@@ -616,7 +606,8 @@ static void task_core_backup_handler(retro_task_t *task)
                   failed_write = true;
                   break;
                }
-            } while (cpu_features_get_time_usec() < deadline);
+            }
+            task_nbio_slice_close(&budget);
 
             if (failed_read)
             {
@@ -1039,8 +1030,8 @@ static void task_core_restore_handler(retro_task_t *task)
             /* Get CRC value, a bounded slice per tick; see the
              * matching comment in CORE_BACKUP_CHECK_CRC. */
             {
-               int64_t hashed;
-               retro_time_t crc_deadline;
+               int64_t hashed = 1;
+               nbio_budget_t budget;
 
                if (!backup_handle->crc_active)
                {
@@ -1065,9 +1056,8 @@ static void task_core_restore_handler(retro_task_t *task)
                   intfstream_rewind(backup_handle->core_file);
                }
 
-               crc_deadline = cpu_features_get_time_usec()
-                     + CORE_BACKUP_TICK_BUDGET_US;
-               do
+               task_nbio_slice_open(&budget);
+               while (task_nbio_slice_within_budget(&budget, 0, 0))
                {
                   hashed = intfstream_crc_step(backup_handle->core_file,
                         &backup_handle->crc_accumulator,
@@ -1081,10 +1071,13 @@ static void task_core_restore_handler(retro_task_t *task)
                      task_set_error(task, strdup("Failed to determine CRC of core file."));
                      backup_handle->crc_active = false;
                      backup_handle->status     = CORE_RESTORE_END;
+                     task_nbio_slice_close(&budget);
                      return;
                   }
-               } while (hashed > 0
-                     && cpu_features_get_time_usec() < crc_deadline);
+                  if (hashed == 0)
+                     break;
+               }
+               task_nbio_slice_close(&budget);
 
                /* Not finished: resume on the next tick.  The core
                 * file stays open across ticks, which is what the
@@ -1117,8 +1110,8 @@ static void task_core_restore_handler(retro_task_t *task)
          if (core_backup_get_backup_type(backup_handle->backup_path)
                == CORE_BACKUP_TYPE_LIB)
          {
-            int64_t hashed;
-            retro_time_t crc_deadline;
+            int64_t hashed = 1;
+            nbio_budget_t budget;
 
             if (!backup_handle->crc_active)
             {
@@ -1139,9 +1132,8 @@ static void task_core_restore_handler(retro_task_t *task)
                intfstream_rewind(backup_handle->backup_file);
             }
 
-            crc_deadline = cpu_features_get_time_usec()
-                  + CORE_BACKUP_TICK_BUDGET_US;
-            do
+            task_nbio_slice_open(&budget);
+            while (task_nbio_slice_within_budget(&budget, 0, 0))
             {
                hashed = intfstream_crc_step(backup_handle->backup_file,
                      &backup_handle->crc_accumulator,
@@ -1158,10 +1150,13 @@ static void task_core_restore_handler(retro_task_t *task)
                   task_free_error(task);
                   task_set_error(task, strdup("Failed to determine CRC of core backup file."));
                   backup_handle->status = CORE_RESTORE_END;
+                  task_nbio_slice_close(&budget);
                   return;
                }
-            } while (hashed > 0
-                  && cpu_features_get_time_usec() < crc_deadline);
+               if (hashed == 0)
+                  break;
+            }
+            task_nbio_slice_close(&budget);
 
             /* Not finished: resume on the next tick. */
             if (hashed > 0)
@@ -1320,7 +1315,7 @@ static void task_core_restore_handler(retro_task_t *task)
          {
             int64_t data_read    = 0;
             int64_t data_written = 0;
-            retro_time_t deadline;
+            nbio_budget_t budget;
             bool failed_read     = false;
             bool failed_write    = false;
 
@@ -1337,11 +1332,9 @@ static void task_core_restore_handler(retro_task_t *task)
                }
             }
 
-            /* Same budgeted-quanta scheme as the backup handler; see
-             * the comment on CORE_BACKUP_TICK_BUDGET_US. */
-            deadline = cpu_features_get_time_usec()
-                  + CORE_BACKUP_TICK_BUDGET_US;
-            do
+            /* Same windowed quanta as the backup handler */
+            task_nbio_slice_open(&budget);
+            while (task_nbio_slice_within_budget(&budget, 0, 0))
             {
                data_read = intfstream_read(backup_handle->backup_file,
                      backup_handle->buffer, CORE_BACKUP_CHUNK_SIZE);
@@ -1365,7 +1358,8 @@ static void task_core_restore_handler(retro_task_t *task)
                   failed_write = true;
                   break;
                }
-            } while (cpu_features_get_time_usec() < deadline);
+            }
+            task_nbio_slice_close(&budget);
 
             if (failed_read)
             {

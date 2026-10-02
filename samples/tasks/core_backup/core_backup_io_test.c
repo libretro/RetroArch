@@ -132,13 +132,17 @@ int64_t __real_retro_vfs_file_write_impl(void *st, const void *s, uint64_t len);
 
 static int       g_io_recording;
 static long long g_io_read_bytes;
+static long g_io_read_calls;
 static long long g_io_write_bytes;
 
 int64_t __wrap_retro_vfs_file_read_impl(void *st, void *s, uint64_t len)
 {
    int64_t r = __real_retro_vfs_file_read_impl(st, s, len);
    if (g_io_recording && r > 0)
+   {
       g_io_read_bytes += r;
+      g_io_read_calls++;
+   }
    return r;
 }
 
@@ -168,7 +172,9 @@ static void io_reset(void)
 
 static void io_stop(void) { g_io_recording = 0; }
 
-/* Mirrors CORE_BACKUP_TICK_BUDGET_US in tasks/task_core_backup.c. */
+/* Half the shared I/O window's allowance (NBIO_XFER_TICK_USEC in
+ * tasks/task_nbio_slice.c): a clock step of twice this spends the
+ * whole window on its first observation, leaving only the floor */
 #define BACKUP_TICK_BUDGET_US 2000
 
 /* Mirrors CORE_BACKUP_CHUNK_SIZE in tasks/task_core_backup.c. */
@@ -381,6 +387,110 @@ static void drive(struct run_stats *st, long cap)
          break;
       }
    }
+}
+
+
+/* The backup's CRC steps and quanta are work items of the shared
+ * per-frame I/O window, not of a deadline of its own.  A hog task,
+ * pushed first so it runs ahead of the backup in every gather, spends
+ * the whole window each tick; the backup must then do exactly the
+ * floor - one read per tick - and still finish without error.  A
+ * backup on a private budget does several per tick here. */
+static bool g_hog_stop;
+static bool g_window_done;
+static const char *g_window_err;
+
+static void hog_handler(retro_task_t *task)
+{
+   nbio_budget_t budget;
+   task_nbio_slice_open(&budget);
+   while (task_nbio_slice_within_budget(&budget, 0, 0))
+      ;
+   task_nbio_slice_close(&budget);
+   if (g_hog_stop)
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void window_done_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   (void)task; (void)task_data; (void)user_data;
+   g_window_done = true;
+   g_window_err  = err;
+}
+
+static void test_shared_window(void)
+{
+   retro_task_t *hog;
+   uint8_t *payload;
+   size_t core_size  = 1024 * 1024;
+   long max_reads    = 0;
+   long ticks        = 0;
+
+   printf("  backup behind a task that spends the whole window\n");
+
+   if (!(payload = make_payload(core_size)))
+   {
+      printf("    SKIP: out of memory\n");
+      return;
+   }
+   if (!write_file_bytes(g_core_path, payload, core_size))
+   {
+      printf("    SKIP: could not write fixture core\n");
+      free(payload);
+      return;
+   }
+   free(payload);
+
+   g_clock_now      = 1000000;
+   g_clock_step     = 500;
+   g_hog_stop       = false;
+   g_window_done    = false;
+   g_window_err     = NULL;
+
+   task_queue_init(false, NULL);
+
+   if (!(hog = task_init()))
+   {
+      task_queue_deinit();
+      return;
+   }
+   hog->handler = hog_handler;
+   hog->flags  |= RETRO_TASK_FLG_MUTE;
+   task_queue_push(hog);
+
+   if (!task_push_core_backup(g_core_path, "Test Core", 0,
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true,
+            window_done_cb, NULL))
+   {
+      printf("    SKIP: task_push_core_backup returned NULL\n");
+      g_hog_stop = true;
+      task_queue_wait(NULL, NULL);
+      task_queue_deinit();
+      return;
+   }
+
+   io_reset();
+   while (!g_window_done && ticks < 100000)
+   {
+      long before = g_io_read_calls;
+      task_queue_check();
+      if (g_io_read_calls - before > max_reads)
+         max_reads = g_io_read_calls - before;
+      ticks++;
+   }
+   io_stop();
+
+   g_hog_stop = true;
+   task_queue_wait(NULL, NULL);
+   task_queue_deinit();
+
+   printf("    %ld ticks, at most %ld read(s) in one tick\n", ticks, max_reads);
+   CHECK(g_window_done, "backup behind the hog did not finish");
+   CHECK(!g_window_err, "backup behind the hog reported an error");
+   CHECK(max_reads == 1,
+         "backup did %ld reads in one tick with the shared window spent",
+         max_reads);
 }
 
 /* ================================================================= */
@@ -1171,6 +1281,9 @@ int main(int argc, char **argv)
 
    printf("\n[read amplification]\n");
    test_read_amplification();
+
+   printf("\n[shared window]\n");
+   test_shared_window();
 
    printf("\n[sliced CRC]\n");
    test_crc_is_sliced();

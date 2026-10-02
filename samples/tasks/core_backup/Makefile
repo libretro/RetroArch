@@ -17,6 +17,7 @@ LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 SOURCES := \
 	core_backup_io_test.c \
 	$(CORE_DIR)/tasks/task_core_backup.c \
+	$(CORE_DIR)/tasks/task_nbio_slice.c \
 	$(CORE_DIR)/core_backup.c \
 	$(LIBRETRO_COMM_DIR)/queues/task_queue.c \
 	$(LIBRETRO_COMM_DIR)/lists/dir_list.c \
