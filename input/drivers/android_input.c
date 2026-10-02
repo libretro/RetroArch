@@ -46,6 +46,7 @@
 #include "android_pad_removed.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
 #include "android_kbd_route.h"
+#include "android_key_state.h"
 #include "android_stylus_map.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../performance_counters.h"
@@ -2061,70 +2062,38 @@ static INLINE void android_input_poll_event_type_keyboard(
       *handled = 0;
 }
 
+/* The keycodes and sources android_key_state.h spells out are the
+ * NDK's. */
+typedef char android_key_state_codes_check[
+   (     ANDROID_KEY_BACK            == AKEYCODE_BACK
+      && ANDROID_KEY_DPAD_CENTER     == AKEYCODE_DPAD_CENTER
+      && ANDROID_KEY_X               == AKEYCODE_X
+      && ANDROID_KEY_ENTER           == AKEYCODE_ENTER
+      && ANDROID_KEY_SOURCE_GAMEPAD  == AINPUT_SOURCE_GAMEPAD
+      && ANDROID_KEY_SOURCE_JOYSTICK == AINPUT_SOURCE_JOYSTICK) ? 1 : -1];
+
 static INLINE void android_input_poll_event_type_key(
       struct android_app *android_app,
       AInputEvent *event, int port, int keycode, int source,
       int type_event, int *handled)
 {
-   uint8_t *buf;
-   int action           = AKeyEvent_getAction(event);
-   int keysym           = keycode;
-   bool alias_back_as_x =
-         (source & AINPUT_SOURCE_GAMEPAD)  != AINPUT_SOURCE_GAMEPAD
-      && (source & AINPUT_SOURCE_JOYSTICK) != AINPUT_SOURCE_JOYSTICK;
+   int action = AKeyEvent_getAction(event);
 
    /* android_key_state[] has one row per pad slot plus the
     * dedicated keyboard row at ANDROID_KEYBOARD_PORT. */
    if (port < 0 || port > ANDROID_KEYBOARD_PORT)
       return;
-   buf           = android_key_state[port];
 
-   /* Handle 'duplicate' inputs that correspond to the same RETROK_*
-    * key. rarch_key_map_android can only map RETROK_RETURN to one
-    * keycode, so DPAD_CENTER is folded into ENTER - but only on the
-    * keyboard row, which is read through rarch_keysym_lut. Pad rows
-    * are read by raw keycode against joypad binds, and remotes/pads
-    * autoconfigure their OK/Center button as "23" (e.g. Amazon Fire
-    * TV Remote), so rewriting it there makes that bind dead. */
-   if (     port    == ANDROID_KEYBOARD_PORT
-         && keycode == AKEYCODE_DPAD_CENTER)
-      keysym = AKEYCODE_ENTER;
-   /* Rows are MAX_KEYS bytes wide and readers bound their lookups at
-    * LAST_KEYCODE (android_joypad_button_state). Keycodes arrive
-    * straight from the platform and are not confined to that range:
-    * public codes run well past AKEYCODE_ASSIST (AKEYCODE_WAKEUP is
-    * 224, AKEYCODE_PROFILE_SWITCH 288) and vendor codes are
-    * unbounded, so an unguarded BIT_SET writes past the row - and
-    * past the array itself for ANDROID_KEYBOARD_PORT, which is the
-    * last one - corrupting whatever the linker placed next to it.
-    * Nothing above LAST_KEYCODE is bindable, so drop it. */
-   if (keysym >= 0 && keysym < LAST_KEYCODE)
-   {
-      /* some controllers send both the up and down events at once
-       * when the button is released for "special" buttons, like menu buttons
-       * work around that by only using down events for meta keys (which get
-       * cleared every poll anyway)
-       */
-      switch (action)
-      {
-         case AKEY_EVENT_ACTION_UP:
-            BIT_CLEAR(buf, keysym);
-            if (keysym == AKEYCODE_BACK && alias_back_as_x)
-            {
-               BIT_CLEAR(buf, AKEYCODE_X); /* alias BACK on remote */
-               BIT_CLEAR(android_key_state[ANDROID_KEYBOARD_PORT], AKEYCODE_X);
-            }
-            break;
-         case AKEY_EVENT_ACTION_DOWN:
-            BIT_SET(buf, keysym);
-            if (keysym == AKEYCODE_BACK && alias_back_as_x)
-            {
-               BIT_SET(buf, AKEYCODE_X);
-               BIT_SET(android_key_state[ANDROID_KEYBOARD_PORT], AKEYCODE_X);
-            }
-            break;
-      }
-   }
+   /* What a press sets and a release clears is decided in
+    * android_key_state.h, in one place, so the two cannot drift
+    * apart again. */
+   if (     action == AKEY_EVENT_ACTION_DOWN
+         || action == AKEY_EVENT_ACTION_UP)
+      android_key_state_write(
+            android_key_state[port],
+            android_key_state[ANDROID_KEYBOARD_PORT],
+            LAST_KEYCODE, keycode, source,
+            action == AKEY_EVENT_ACTION_DOWN);
 
    if ((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN))
       *handled = 0;
@@ -3074,8 +3043,8 @@ static void android_input_pad_removed(android_input_t *android,
     * device that is gone. */
    if (port < DEFAULT_MAX_PADS)
    {
-      memset(android_key_state[port], 0,
-            sizeof(android_key_state[port]));
+      android_key_state_release_row(android_key_state[port],
+            android_key_state[ANDROID_KEYBOARD_PORT], LAST_KEYCODE);
       memset(android_app->analog_state[port], 0,
             sizeof(android_app->analog_state[port]));
       memset(android_app->hat_state[port], 0,

@@ -261,6 +261,30 @@ jobs:
           make clean
           echo "[pass] android_cec_remote_test (ASan)"
 
+      - name: Build and run android_key_state_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/android_key_state
+        run: |
+          set -eu
+          # Key presses and releases, through the code that writes them
+          # into the Android driver's key state. For nine days a press
+          # of Back set X on the keyboard row and nothing cleared it; X
+          # is RetroPad A by default, and the frontend drops all
+          # controller input after a menu toggle until every button is
+          # up, so the menu went deaf to the controller while touch
+          # kept working (issue #19436). Pins that whatever a press
+          # sets its release clears - every keycode, every source,
+          # every row, and any interleaving - that keycodes outside the
+          # rows are dropped, that Center stays keycode 23 on a pad row
+          # (issue #18819), and that a pad removed while holding Back
+          # leaves nothing behind. The missing clear is put back and
+          # asserted to be caught.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./android_key_state_test
+          make clean
+          echo "[pass] android_key_state_test (ASan)"
+
       - name: Build and run android_stylus_map_test (ASan + UBSan)
         shell: bash
         working-directory: samples/input/android_stylus_map
