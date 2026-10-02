@@ -717,6 +717,7 @@ typedef struct
       uint16_t joypad_cache;
       uint16_t view;
       uint16_t asked;
+      uint16_t snapshot[2]; /* pads snapshotted: primary, secondary driver */
    } frame_valid;
 
    retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
@@ -1273,6 +1274,12 @@ void input_driver_registry_disconnect(unsigned slot);
  * again. If it reports the ones it had, each goes back to the port it
  * was on. */
 void input_driver_registry_restart(void);
+
+/* Read controllers through a snapshot taken once a poll, in place of
+ * calls into the joypad driver, whatever the driver. For the harness:
+ * drivers are switched over one at a time as each is checked, and none
+ * has been yet. */
+void input_driver_set_snapshot_bridge(bool on);
 
 /* The pad index to write to the config file for @port: what the user
  * configured, which is not what the setting holds while controllers

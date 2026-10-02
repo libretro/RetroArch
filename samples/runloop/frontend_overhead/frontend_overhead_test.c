@@ -59,7 +59,10 @@
  *     default mapping, a remap, analog-to-d-pad, the four turbo modes,
  *     hold, and run-ahead; a recording of the pattern must play back
  *     as the same sequence; and hosting netplay with nobody connected
- *     must not change it. This is the reference the frame-local view has to reproduce: it is
+ *     must not change it. The mappings are run twice, reading the
+ *     driver directly and reading it through the snapshot bridge
+ *     (input plan, WP-03 and WP-05), and must give the same digests
+ *     both ways. This is the reference the frame-local view has to reproduce: it is
  *     what the state path does today, pinned before that path changes.
  *
  *   - The device registry (input plan, WP-02) follows the drivers.
@@ -836,7 +839,7 @@ static void lane_output_store(void)
 /* What a core sees of pad 1, frame by frame, from a synthetic pad. */
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
 #define VIEW_FRAMES 1200
-#define VIEW_SCENARIOS 9
+#define VIEW_SCENARIOS 10
 #define VIEW_REPLAY_SLACK 64
 /* Playback and netplay do not fast-forward: those two checks run at
  * the core's frame rate, so they use a shorter stretch of the pattern. */
@@ -844,17 +847,27 @@ static void lane_output_store(void)
 
 static uint32_t              syn_buttons;   /* driver buttons 0-31 */
 static int16_t               syn_axes[4];   /* driver axes 0-3 */
+static unsigned              syn_hat;       /* hat 0: HAT_*_MASK bits */
 static input_device_driver_t syn_joypad;
+/* calls into the driver, to see who reads it */
+static unsigned long         syn_calls_state;
+static unsigned long         syn_calls_other;
 
 static int32_t syn_button(unsigned pad, uint16_t joykey)
 {
-   if (pad != 0 || joykey >= 32)
+   syn_calls_other++;
+   if (pad != 0)
+      return 0;
+   if (GET_HAT_DIR(joykey))
+      return (GET_HAT(joykey) == 0 && (syn_hat & GET_HAT_DIR(joykey))) ? 1 : 0;
+   if (joykey >= 32)
       return 0;
    return (syn_buttons >> joykey) & 1;
 }
 
 static int16_t syn_axis(unsigned pad, uint32_t joyaxis)
 {
+   syn_calls_other++;
    if (pad != 0)
       return 0;
    if (AXIS_NEG_GET(joyaxis) < 4)
@@ -873,6 +886,7 @@ static int16_t syn_axis(unsigned pad, uint32_t joyaxis)
 static void syn_get_buttons(unsigned pad, input_bits_t *state)
 {
    unsigned i;
+   syn_calls_other++;
    BIT256_CLEAR_ALL_PTR(state);
    if (pad != 0)
       return;
@@ -889,6 +903,7 @@ static int16_t syn_state(rarch_joypad_info_t *joypad_info,
    int16_t  ret = 0;
    uint16_t pad = joypad_info->joy_idx;
 
+   syn_calls_state++;
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
       const uint64_t joykey  = (binds[i].joykey != NO_BTN)
@@ -916,6 +931,7 @@ static void syn_pattern(unsigned frame, uint32_t *rng)
    {
       *rng        = 0x1234abcdu;
       syn_buttons = 0;
+      syn_hat     = 0;
       memset(syn_axes, 0, sizeof(syn_axes));
    }
    *rng = *rng * 1664525u + 1013904223u;
@@ -926,6 +942,13 @@ static void syn_pattern(unsigned frame, uint32_t *rng)
       syn_axes[(*rng >> 16) & 3] = level[(*rng >> 20) & 7];
    if (frame % 97 == 0)
       syn_buttons &= ~0xffffu;      /* everything up, now and then */
+   if (frame % 7 == 0)
+   {
+      static const unsigned hat[8] = {
+         0, HAT_UP_MASK, HAT_DOWN_MASK, HAT_LEFT_MASK, HAT_RIGHT_MASK,
+         HAT_UP_MASK | HAT_LEFT_MASK, HAT_DOWN_MASK | HAT_RIGHT_MASK, 0 };
+      syn_hat = hat[(*rng >> 24) & 7];
+   }
 
    syn_buttons &= ~(3u << 16);
    if ((frame / 40) & 1)
@@ -992,7 +1015,8 @@ static void lane_core_view(void)
       { "turbo, single button hold", 0x288eb83au },
       /* run-ahead replays the frame's input to the run it shows: the
        * core must see what it sees without it */
-      { "run-ahead, one frame",     0x9c5fa001u }
+      { "run-ahead, one frame",     0x9c5fa001u },
+      { "d-pad on a hat",           0xaaea8cb1u }
    };
    static struct view_frame one_by_one[VIEW_FRAMES], as_mask[VIEW_FRAMES];
    input_driver_state_t *input_st = input_state_get_ptr();
@@ -1001,11 +1025,11 @@ static void lane_core_view(void)
    void (*trace)(int, int);
    void (*trace_last)(unsigned*, int*);
    long (*runs)(void);
-   struct retro_keybind saved_auto[8], saved_turbo, saved_hold;
+   struct retro_keybind saved_auto[8], saved_dpad[4], saved_turbo, saved_hold;
    uint32_t digest_default = 0;
    void    *core;
    unsigned had = failures;
-   unsigned sc, i;
+   unsigned sc, i, bridged;
 
    if (   !(core = dlopen(core_path_g, RTLD_NOW))
        || !(trace = (void (*)(int, int))dlsym(core, "harness_core_trace"))
@@ -1036,6 +1060,8 @@ static void lane_core_view(void)
       input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + 2 * i].joyaxis     = AXIS_POS(i);
       input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + 2 * i + 1].joyaxis = AXIS_NEG(i);
    }
+   memcpy(saved_dpad, &input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_UP],
+         sizeof(saved_dpad));
    saved_turbo = input_config_binds[0][RARCH_TURBO_ENABLE];
    saved_hold  = input_config_binds[0][RARCH_HOLD_ENABLE];
 
@@ -1047,6 +1073,17 @@ static void lane_core_view(void)
    trace(1, 1);
    run_loop_frames(5);
    trace(0, 0);
+
+   /* Everything twice: read from the driver, as shipped, and read
+    * through the snapshot bridge. The core must see the same. */
+   for (bridged = 0; bridged < 2; bridged++)
+   {
+   unsigned long frames_run = 0;
+
+   input_driver_set_snapshot_bridge(bridged != 0);
+   run_loop_frames(5);
+   syn_calls_state = 0;
+   syn_calls_other = 0;
 
    for (sc = 0; sc < VIEW_SCENARIOS; sc++)
    {
@@ -1084,6 +1121,12 @@ static void lane_core_view(void)
             input_config_binds[0][RARCH_TURBO_ENABLE].joykey = 16;
             input_config_binds[0][RARCH_TURBO_ENABLE].attr  |= RETRO_KEYBIND_VALID_BIT;
             break;
+         case 9:
+            input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = HAT_MAP(0, HAT_UP_MASK);
+            input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  = HAT_MAP(0, HAT_DOWN_MASK);
+            input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = HAT_MAP(0, HAT_LEFT_MASK);
+            input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = HAT_MAP(0, HAT_RIGHT_MASK);
+            break;
          case 8:
             /* the program's own main() makes run-ahead available at
              * start-up; this harness replaces main() */
@@ -1107,7 +1150,8 @@ static void lane_core_view(void)
       CHECK(input_st->turbo_btns.count == VIEW_FRAMES,
             "core view: input was not polled once a frame");
       if (input_st->turbo_btns.count != VIEW_FRAMES)
-         fprintf(stderr, "       %s: %u polls in %u frames\n", golden[sc].name,
+         fprintf(stderr, "       %s%s: %u polls in %u frames\n", golden[sc].name,
+               bridged ? ", through the snapshot bridge" : "",
                (unsigned)input_st->turbo_btns.count, (unsigned)VIEW_FRAMES);
 
       /* run-ahead by one frame runs the core twice an iterate; if it
@@ -1128,8 +1172,13 @@ static void lane_core_view(void)
       if (sc == 0)
          digest_default = digest;
 
-      printf("[info] core view, %s: digest %08x over %u frames\n",
-            golden[sc].name, (unsigned)digest, (unsigned)VIEW_FRAMES);
+      frames_run += 2 * VIEW_FRAMES;
+      if (!bridged)
+         printf("[info] core view, %s: digest %08x over %u frames\n",
+               golden[sc].name, (unsigned)digest, (unsigned)VIEW_FRAMES);
+      if (bridged && digest != golden[sc].digest)
+         fprintf(stderr, "       %s, through the snapshot bridge: digest %08x\n",
+               golden[sc].name, (unsigned)digest);
       if (differ)
          fprintf(stderr, "       %s: %u frame(s) differ between the two"
                " readings; frame %u read %04x button by button and %04x"
@@ -1147,9 +1196,26 @@ static void lane_core_view(void)
       settings->bools.input_turbo_enable        = false;
       settings->uints.input_turbo_mode          = INPUT_TURBO_MODE_CLASSIC;
       settings->bools.run_ahead_enabled         = false;
+      memcpy(&input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_UP], saved_dpad,
+            sizeof(saved_dpad));
       input_config_binds[0][RARCH_TURBO_ENABLE] = saved_turbo;
       input_config_binds[0][RARCH_HOLD_ENABLE]  = saved_hold;
    }
+
+   /* Who read the driver. Through the bridge its state() is not called
+    * at all, and what is called is the copy being taken. */
+   printf("[info] core view, %s: %.1f calls into the driver a frame\n",
+         bridged ? "through the snapshot bridge" : "read from the driver",
+         frames_run ? (double)(syn_calls_state + syn_calls_other) / frames_run : 0.0);
+   if (bridged)
+      CHECK(syn_calls_state == 0,
+            "core view: the driver's state() was called through the snapshot bridge");
+   else
+      CHECK(syn_calls_state > 0,
+            "core view: the driver's state() was not called without the bridge");
+   }
+   input_driver_set_snapshot_bridge(false);
+   run_loop_frames(5);
 
 #ifdef HAVE_BSV_MOVIE
    /* Input recording: record the pattern, then play the recording
@@ -1288,8 +1354,9 @@ static void lane_core_view(void)
    run_loop_frames(5);
    if (failures == had)
       printf("[pass] core view: button by button and as a mask agree, match"
-            " the recorded digests, play back from a recording, and are the"
-            " same under netplay\n");
+            " the recorded digests read from the driver and through the"
+            " snapshot bridge, play back from a recording, and are the same"
+            " under netplay\n");
 #else
    printf("[skip] core-view lane: need the test drivers and dlopen\n");
 #endif
@@ -1476,6 +1543,11 @@ int main(int argc, char *argv[])
    CHECK(!menu_is_up(), "menu up after starting a core");
    if (failures)
       return 1;
+
+   /* HARNESS_SNAPSHOT=1 runs every lane through the snapshot bridge,
+    * to see what it costs; the core-view lane does both regardless. */
+   if (getenv("HARNESS_SNAPSHOT"))
+      input_driver_set_snapshot_bridge(true);
 
    /* Loaded with another poll mode than the default, only the lane
     * that depends on it runs: the rest was measured in the default
