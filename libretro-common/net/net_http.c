@@ -703,60 +703,14 @@ overflow:
    return -1;
 }
 
-static int net_http_hexval(char c)
-{
-   if (c >= '0' && c <= '9')
-      return c - '0';
-   if (c >= 'a' && c <= 'f')
-      return c - 'a' + 10;
-   if (c >= 'A' && c <= 'F')
-      return c - 'A' + 10;
-   return -1;
-}
-
-/* Shared by both decoders.  The two digits are read into locals
- * before anything is written, so w == r (in place) is safe; the 2018
- * version rewrote the source nibbles themselves. */
-static int net_http_urldecode_core(char *w, size_t cap, const char *r)
-{
-   size_t len = 0;
-   while (*r)
-   {
-      char c = *r;
-      if (c == '%')
-      {
-         int hi = net_http_hexval(r[1]);
-         int lo = (hi >= 0) ? net_http_hexval(r[2]) : -1;
-         if (lo >= 0)
-         {
-            c  = (char)((hi << 4) | lo);
-            r += 2;
-         }
-      }
-      if (len + 1 >= cap)
-      {
-         w[len] = '\0';
-         return -1;
-      }
-      w[len++] = c;
-      r++;
-   }
-   w[len] = '\0';
-   return (int)len;
-}
-
 int net_http_urldecode(char *dst, size_t dst_size, const char *src)
 {
-   if (!dst || !dst_size || !src)
-      return -1;
-   return net_http_urldecode_core(dst, dst_size, src);
+   return string_percent_decode(dst, dst_size, src);
 }
 
 int net_http_urldecode_inplace(char *s)
 {
-   if (!s)
-      return -1;
-   return net_http_urldecode_core(s, (size_t)-1, s);
+   return string_percent_decode(s, (size_t)-1, s);
 }
 
 struct http_connection_t *net_http_connection_new(const char *url,
