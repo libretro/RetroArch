@@ -200,6 +200,29 @@ jobs:
           make clean
           echo "[pass] android_lifecycle_flush_test (ASan, TSan)"
 
+      - name: Build and run android_pad_removed_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/input/android_pad_removed
+        run: |
+          set -eu
+          # A controller Android has removed, from the listener that
+          # hears of it to the port it comes back to. Pins that no
+          # removal is lost or delivered twice with three threads
+          # posting into the mailbox while the input thread polls, that
+          # a full box refuses and keeps what it holds, and that a
+          # returning pad gets its old port back - of two identical
+          # pads, the one that left. Emptying a removed slot's name, as
+          # the first version of the change did, is put back and
+          # asserted to be caught: it moved a pad to the next free port
+          # on every reconnect.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 120 ./android_pad_removed_test
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./android_pad_removed_test
+          make clean
+          echo "[pass] android_pad_removed_test (ASan, TSan)"
+
       - name: Build and run android_kbd_keys_test (ASan + UBSan)
         shell: bash
         working-directory: samples/input/android_kbd_keys
