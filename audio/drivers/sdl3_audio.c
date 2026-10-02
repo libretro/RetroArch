@@ -1230,10 +1230,11 @@ static int sdl3_microphone_read(void *driver_context, void *mic_context,
       if (SDL_GetAtomicInt(&mic->device_removed))
          break;
 
+      /* A stream that fails fails every frame; the frontend counts
+       * the reads that come back empty, so nothing is logged here. */
       got = SDL_GetAudioStreamData(mic->stream, (char*)s + size, (int)(len - size));
       if (got < 0)
       {
-         RARCH_ERR("[SDL3 audio] Failed to read from microphone stream: %s.\n", SDL_GetError());
          if (size == 0)
             return -1;
          break;

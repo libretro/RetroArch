@@ -15,9 +15,12 @@
 #include "../../../libretro-common/rthreads/rthreads.c"
 #include "../../../libretro-common/rthreads/retro_eventcount.c"
 
-void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
-void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
-void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
+/* Counted: the capture read is asked every frame and is to say
+ * nothing, even failing. */
+static unsigned log_lines;
+void RARCH_ERR(const char *fmt, ...) { (void)fmt; log_lines++; }
+void RARCH_LOG(const char *fmt, ...) { (void)fmt; log_lines++; }
+void RARCH_WARN(const char *fmt, ...) { (void)fmt; log_lines++; }
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
 settings_t *config_get_ptr(void) { static settings_t settings; return &settings; }
 
@@ -155,6 +158,21 @@ int main(void)
    t0 = SDL_GetTicks();
    CHECK(sdl3_microphone_wait_readable(NULL, &slow, WORKER_SLICE) == 0);
    CHECK(SDL_GetTicks() - t0 < 50);
+
+   /* A stream that fails: every read comes back -1, and a second of
+    * frames asking says nothing. */
+   {
+      sdl3_audio_t broken;
+      int16_t      frame[PERIOD_SHORT];
+      int          dummy_driver, i, rc = 0;
+      memset(&broken, 0, sizeof(broken));
+      broken.stream = NULL;   /* SDL_GetAudioStreamData fails on it */
+      log_lines     = 0;
+      for (i = 0; i < 60; i++)
+         rc |= sdl3_microphone_read(&dummy_driver, &broken, frame, sizeof(frame)) != -1;
+      CHECK(rc == 0);
+      CHECK(log_lines == 0);
+   }
 
    mic_close(&slow);
    mic_close(&mic);
