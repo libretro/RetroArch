@@ -448,11 +448,11 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
 #endif
 
    if (wl->wl_keyboard)
-      wl_keyboard_destroy(wl->wl_keyboard);
+      wayland_keyboard_release(wl->wl_keyboard);
    if (wl->wl_pointer)
-      wl_pointer_destroy(wl->wl_pointer);
+      wayland_pointer_release(wl->wl_pointer);
    if (wl->wl_touch)
-      wl_touch_destroy(wl->wl_touch);
+      wayland_touch_release(wl->wl_touch);
 
    if (wl->cursor.surface)
       wl_surface_destroy(wl->cursor.surface);
@@ -520,7 +520,7 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    if (wl->single_pixel_manager)
       wp_single_pixel_buffer_manager_v1_destroy (wl->single_pixel_manager);
    if (wl->seat)
-      wl_seat_destroy(wl->seat);
+      wayland_seat_release(wl->seat);
    if (wl->xdg_shell)
       xdg_wm_base_destroy(wl->xdg_shell);
    if (wl->data_device_manager)
@@ -535,7 +535,7 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    {
       display_output_t *od = wl_container_of(wl->all_outputs.next, od, link);
       output_info_t    *oi = od->output;
-      wl_output_destroy(oi->output);
+      wayland_output_release(oi->output);
       wl_list_remove(&od->link);
       free(oi);
       free(od);

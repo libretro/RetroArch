@@ -348,6 +348,26 @@ static void wl_pointer_handle_button(void *data,
    }
 }
 
+static void wl_pointer_scroll(gfx_ctx_wayland_data_t *wl,
+      uint32_t axis, int direction)
+{
+   switch (axis)
+   {
+      case WL_POINTER_AXIS_VERTICAL_SCROLL:
+         if (direction < 0)
+            wl->input.mouse.wu = true;
+         else if (direction > 0)
+            wl->input.mouse.wd = true;
+         break;
+      case WL_POINTER_AXIS_HORIZONTAL_SCROLL:
+         if (direction < 0)
+            wl->input.mouse.wl = true;
+         else if (direction > 0)
+            wl->input.mouse.wr = true;
+         break;
+   }
+}
+
 static void wl_pointer_handle_axis(void *data,
       struct wl_pointer *wl_pointer,
       uint32_t time,
@@ -355,23 +375,108 @@ static void wl_pointer_handle_axis(void *data,
       wl_fixed_t value)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   double d_value             = wl_fixed_to_double(value);
-   switch (axis)
+
+   if (axis > WL_POINTER_AXIS_HORIZONTAL_SCROLL)
+      return;
+#ifdef WL_POINTER_FRAME_SINCE_VERSION
+   /* From v5 the axis events of one frame land together in frame. */
+   if (wl_pointer_get_version(wl_pointer) >= WL_POINTER_FRAME_SINCE_VERSION)
    {
-      case WL_POINTER_AXIS_VERTICAL_SCROLL:
-         if (d_value < 0)
-            wl->input.mouse.wu = true;
-         else if (d_value > 0)
-            wl->input.mouse.wd = true;
-         break;
-      case WL_POINTER_AXIS_HORIZONTAL_SCROLL:
-         if (d_value < 0)
-            wl->input.mouse.wl = true;
-         else if (d_value > 0)
-            wl->input.mouse.wr = true;
-         break;
+      wl->input.mouse.axis_value[axis] += value;
+      return;
    }
+#endif
+   wl_pointer_scroll(wl, axis, (value > 0) - (value < 0));
 }
+
+#ifdef WL_POINTER_FRAME_SINCE_VERSION
+static void wl_pointer_handle_frame(void *data,
+      struct wl_pointer *wl_pointer)
+{
+   uint32_t axis;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   /* A wheel scrolls by its notches; touchpads and the like by the
+    * sign of the motion, as before frames existed. */
+   bool by_notch              =
+            wl->input.mouse.axis_discrete
+         && wl->input.mouse.axis_source != WL_POINTER_AXIS_SOURCE_FINGER
+         && wl->input.mouse.axis_source != WL_POINTER_AXIS_SOURCE_CONTINUOUS;
+
+   for (axis = 0; axis < 2; axis++)
+   {
+      int ticks       = wl->input.mouse.axis_ticks[axis];
+      wl_fixed_t v    = wl->input.mouse.axis_value[axis];
+      wl_pointer_scroll(wl, axis, by_notch
+            ? (ticks > 0) - (ticks < 0)
+            : (v > 0) - (v < 0));
+      wl->input.mouse.axis_ticks[axis] = 0;
+      wl->input.mouse.axis_value[axis] = 0;
+   }
+   wl->input.mouse.axis_source   = WL_POINTER_AXIS_SOURCE_WHEEL;
+   wl->input.mouse.axis_discrete = false;
+}
+
+static void wl_pointer_handle_axis_source(void *data,
+      struct wl_pointer *wl_pointer, uint32_t axis_source)
+{
+   gfx_ctx_wayland_data_t *wl  = (gfx_ctx_wayland_data_t*)data;
+   wl->input.mouse.axis_source = axis_source;
+}
+
+static void wl_pointer_handle_axis_stop(void *data,
+      struct wl_pointer *wl_pointer, uint32_t time, uint32_t axis)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   if (axis <= WL_POINTER_AXIS_HORIZONTAL_SCROLL)
+      wl->input.mouse.axis_120[axis] = 0;
+}
+
+static void wl_pointer_handle_axis_discrete(void *data,
+      struct wl_pointer *wl_pointer, uint32_t axis, int32_t discrete)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   if (axis > WL_POINTER_AXIS_HORIZONTAL_SCROLL)
+      return;
+   wl->input.mouse.axis_ticks[axis] += discrete;
+   wl->input.mouse.axis_discrete     = true;
+}
+#endif
+
+#ifdef WL_POINTER_AXIS_VALUE120_SINCE_VERSION
+/* v8 replaces axis_discrete; high-resolution wheels send fractions of
+ * a notch (120), which add up to one. */
+static void wl_pointer_handle_axis_value120(void *data,
+      struct wl_pointer *wl_pointer, uint32_t axis, int32_t value120)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   int *acc;
+   if (axis > WL_POINTER_AXIS_HORIZONTAL_SCROLL)
+      return;
+   acc   = &wl->input.mouse.axis_120[axis];
+   /* A reversal starts a new notch. */
+   if ((*acc > 0 && value120 < 0) || (*acc < 0 && value120 > 0))
+      *acc = 0;
+   *acc += value120;
+   for (; *acc >= 120;  *acc -= 120)
+      wl->input.mouse.axis_ticks[axis]++;
+   for (; *acc <= -120; *acc += 120)
+      wl->input.mouse.axis_ticks[axis]--;
+   wl->input.mouse.axis_discrete     = true;
+}
+#endif
+
+#ifdef WL_POINTER_AXIS_RELATIVE_DIRECTION_SINCE_VERSION
+static void wl_pointer_handle_axis_relative_direction(void *data,
+      struct wl_pointer *wl_pointer, uint32_t axis, uint32_t direction) { }
+#endif
+
+#ifdef WL_TOUCH_SHAPE_SINCE_VERSION
+static void wl_touch_handle_shape(void *data, struct wl_touch *wl_touch,
+      int32_t id, wl_fixed_t major, wl_fixed_t minor) { }
+
+static void wl_touch_handle_orientation(void *data,
+      struct wl_touch *wl_touch, int32_t id, wl_fixed_t orientation) { }
+#endif
 
 static void wl_touch_handle_down(void *data,
       struct wl_touch *wl_touch,
@@ -546,7 +651,7 @@ static void wl_seat_handle_capabilities(void *data,
    }
    else if (!(caps & WL_SEAT_CAPABILITY_KEYBOARD) && wl->wl_keyboard)
    {
-      wl_keyboard_destroy(wl->wl_keyboard);
+      wayland_keyboard_release(wl->wl_keyboard);
       wl->wl_keyboard = NULL;
    }
    if ((caps & WL_SEAT_CAPABILITY_POINTER) && !wl->wl_pointer)
@@ -570,7 +675,7 @@ static void wl_seat_handle_capabilities(void *data,
    }
    else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && wl->wl_pointer)
    {
-      wl_pointer_destroy(wl->wl_pointer);
+      wayland_pointer_release(wl->wl_pointer);
       wl->wl_pointer = NULL;
    }
    if ((caps & WL_SEAT_CAPABILITY_TOUCH) && !wl->wl_touch)
@@ -580,7 +685,7 @@ static void wl_seat_handle_capabilities(void *data,
    }
    else if (!(caps & WL_SEAT_CAPABILITY_TOUCH) && wl->wl_touch)
    {
-      wl_touch_destroy(wl->wl_touch);
+      wayland_touch_release(wl->wl_touch);
       wl->wl_touch = NULL;
    }
 }
@@ -623,7 +728,9 @@ static bool wl_update_scale(gfx_ctx_wayland_data_t *wl)
    if (new_output && wl->current_output != new_output)
    {
       wl->current_output       = new_output;
-      wl->pending_buffer_scale = new_output->scale;
+      /* The compositor's own choice wins once it has made one. */
+      wl->pending_buffer_scale = wl->preferred_buffer_scale
+            ? wl->preferred_buffer_scale : new_output->scale;
       return true;
    }
 
@@ -719,6 +826,21 @@ static void wl_surface_leave(void *data, struct wl_surface *wl_surface, struct w
    wl_report_window_output(wl);
 }
 
+#ifdef WL_SURFACE_PREFERRED_BUFFER_SCALE_SINCE_VERSION
+static void wl_surface_preferred_buffer_scale(void *data,
+      struct wl_surface *wl_surface, int32_t factor)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   if (factor < 1)
+      return;
+   wl->preferred_buffer_scale = (unsigned)factor;
+   wl->pending_buffer_scale   = (unsigned)factor;
+}
+
+static void wl_surface_preferred_buffer_transform(void *data,
+      struct wl_surface *wl_surface, uint32_t transform) { }
+#endif
+
 /* Shell surface callbacks. */
 static void xdg_shell_ping(
       void *data, struct xdg_wm_base *shell, uint32_t serial)
@@ -764,6 +886,14 @@ static void wl_output_handle_mode(void *data,
 
 static void wl_output_handle_done(void *data, struct wl_output *output) { }
 
+#ifdef WL_OUTPUT_NAME_SINCE_VERSION
+static void wl_output_handle_name(void *data,
+      struct wl_output *output, const char *name) { }
+
+static void wl_output_handle_description(void *data,
+      struct wl_output *output, const char *description) { }
+#endif
+
 static void wl_output_handle_scale(void *data,
       struct wl_output *output,
       int32_t factor)
@@ -800,7 +930,9 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
 
    if (string_is_equal(interface, wl_compositor_interface.name) && found++)
       wl->compositor = (struct wl_compositor*)wl_registry_bind(reg,
-            id, &wl_compositor_interface, MIN(version, 4));
+            id, &wl_compositor_interface, MIN(version, MIN(
+               WL_COMPOSITOR_VERSION_MAX,
+               (uint32_t)wl_compositor_interface.version)));
    else if (string_is_equal(interface, wp_viewporter_interface.name) && found++)
       wl->viewporter = (struct wp_viewporter*)wl_registry_bind(reg,
             id, &wp_viewporter_interface, MIN(version, 1));
@@ -836,7 +968,9 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
          od->output    = oi;
          oi->global_id = id;
          oi->output    = (struct wl_output*)wl_registry_bind(reg,
-               id, &wl_output_interface, MIN(version, 2));
+               id, &wl_output_interface, MIN(version, MIN(
+                  WL_OUTPUT_VERSION_MAX,
+                  (uint32_t)wl_output_interface.version)));
          wl_output_add_listener(oi->output, &output_listener, oi);
          wl_list_insert(&wl->all_outputs, &od->link);
       }
@@ -848,7 +982,9 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       wl->shm = (struct wl_shm*)wl_registry_bind(reg, id, &wl_shm_interface, MIN(version, 1));
    else if (string_is_equal(interface, wl_seat_interface.name) && found++)
    {
-      wl->seat = (struct wl_seat*)wl_registry_bind(reg, id, &wl_seat_interface, MIN(version, 2));
+      wl->seat = (struct wl_seat*)wl_registry_bind(reg, id,
+            &wl_seat_interface, MIN(version, MIN(WL_SEAT_VERSION_MAX,
+               (uint32_t)wl_seat_interface.version)));
       wl_seat_add_listener(wl->seat, &seat_listener, wl);
       wl_setup_data_device(wl);
    }
@@ -939,7 +1075,7 @@ static void wl_registry_handle_global_remove(void *data,
           * every hotplug.  The teardown in
           * gfx/common/wayland_common.c does destroy it. */
          if (od->output->output)
-            wl_output_destroy(od->output->output);
+            wayland_output_release(od->output->output);
          free(od->output);
          free(od);
          break;
@@ -1196,6 +1332,10 @@ const struct wl_output_listener output_listener = {
    wl_output_handle_mode,
    wl_output_handle_done,
    wl_output_handle_scale,
+#ifdef WL_OUTPUT_NAME_SINCE_VERSION
+   wl_output_handle_name,
+   wl_output_handle_description,
+#endif
 };
 
 const struct xdg_wm_base_listener xdg_shell_listener = {
@@ -1213,6 +1353,10 @@ const struct wp_fractional_scale_v1_listener wp_fractional_scale_v1_listener = {
 const struct wl_surface_listener wl_surface_listener = {
     wl_surface_enter,
     wl_surface_leave,
+#ifdef WL_SURFACE_PREFERRED_BUFFER_SCALE_SINCE_VERSION
+    wl_surface_preferred_buffer_scale,
+    wl_surface_preferred_buffer_transform,
+#endif
 };
 
 const struct wl_seat_listener seat_listener = {
@@ -1226,6 +1370,10 @@ const struct wl_touch_listener touch_listener = {
    wl_touch_handle_motion,
    wl_touch_handle_frame,
    wl_touch_handle_cancel,
+#ifdef WL_TOUCH_SHAPE_SINCE_VERSION
+   wl_touch_handle_shape,
+   wl_touch_handle_orientation,
+#endif
 };
 
 const struct wl_keyboard_listener keyboard_listener = {
@@ -1247,6 +1395,18 @@ const struct wl_pointer_listener pointer_listener = {
    wl_pointer_handle_motion,
    wl_pointer_handle_button,
    wl_pointer_handle_axis,
+#ifdef WL_POINTER_FRAME_SINCE_VERSION
+   wl_pointer_handle_frame,
+   wl_pointer_handle_axis_source,
+   wl_pointer_handle_axis_stop,
+   wl_pointer_handle_axis_discrete,
+#endif
+#ifdef WL_POINTER_AXIS_VALUE120_SINCE_VERSION
+   wl_pointer_handle_axis_value120,
+#endif
+#ifdef WL_POINTER_AXIS_RELATIVE_DIRECTION_SINCE_VERSION
+   wl_pointer_handle_axis_relative_direction,
+#endif
 };
 
 const struct wl_data_device_listener data_device_listener = {

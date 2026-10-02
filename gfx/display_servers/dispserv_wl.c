@@ -244,7 +244,14 @@ static void wl_display_server_destroy(void *data)
    kwin_outputs_destroy(&serv->kwin);
    wlr_outputs_destroy(&serv->wlr);
    if (serv->output)
-      wl_output_destroy(serv->output);
+   {
+#ifdef WL_OUTPUT_RELEASE_SINCE_VERSION
+      if (wl_output_get_version(serv->output) >= WL_OUTPUT_RELEASE_SINCE_VERSION)
+         wl_output_release(serv->output);
+      else
+#endif
+         wl_output_destroy(serv->output);
+   }
    if (serv->registry)
       wl_registry_destroy(serv->registry);
    if (serv->dpy)

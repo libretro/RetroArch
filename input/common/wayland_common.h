@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <boolean.h>
+#include <retro_inline.h>
 
 /* Button and key codes (BTN_LEFT, KEY_ENTER, ...).  FreeBSD ships them in
  * base under dev/evdev/ - do not require the evdev-proto port for them. */
@@ -34,6 +35,91 @@
 
 #include <wayland-client.h>
 #include <wayland-cursor.h>
+
+/* Seat v5 headers from scanners that emit no event macros still have
+ * the v5 pointer events; its release request gives them away. */
+#if !defined(WL_POINTER_FRAME_SINCE_VERSION) && defined(WL_SEAT_RELEASE_SINCE_VERSION)
+#define WL_POINTER_FRAME_SINCE_VERSION 5
+#endif
+
+/* Highest version of each core global whose events the listeners here
+ * handle, limited to what the libwayland headers declare. The bind
+ * also caps at the runtime library's own interface version. */
+#if defined(WL_POINTER_AXIS_RELATIVE_DIRECTION_SINCE_VERSION)
+#define WL_SEAT_VERSION_MAX       9
+#elif defined(WL_POINTER_AXIS_VALUE120_SINCE_VERSION)
+#define WL_SEAT_VERSION_MAX       8
+#elif defined(WL_TOUCH_SHAPE_SINCE_VERSION)
+#define WL_SEAT_VERSION_MAX       7
+#elif defined(WL_POINTER_FRAME_SINCE_VERSION)
+#define WL_SEAT_VERSION_MAX       5
+#else
+#define WL_SEAT_VERSION_MAX       4
+#endif
+
+#if defined(WL_OUTPUT_NAME_SINCE_VERSION)
+#define WL_OUTPUT_VERSION_MAX     4
+#elif defined(WL_OUTPUT_RELEASE_SINCE_VERSION)
+#define WL_OUTPUT_VERSION_MAX     3
+#else
+#define WL_OUTPUT_VERSION_MAX     2
+#endif
+
+#if defined(WL_SURFACE_PREFERRED_BUFFER_SCALE_SINCE_VERSION)
+#define WL_COMPOSITOR_VERSION_MAX 6
+#elif defined(WL_SURFACE_OFFSET_SINCE_VERSION)
+#define WL_COMPOSITOR_VERSION_MAX 5
+#elif defined(WL_SURFACE_DAMAGE_BUFFER_SINCE_VERSION)
+#define WL_COMPOSITOR_VERSION_MAX 4
+#else
+#define WL_COMPOSITOR_VERSION_MAX 3
+#endif
+
+/* Release where the bound version has it, so the compositor frees its
+ * side too; destroy otherwise. */
+static INLINE void wayland_pointer_release(struct wl_pointer *p)
+{
+   if (wl_pointer_get_version(p) >= WL_POINTER_RELEASE_SINCE_VERSION)
+      wl_pointer_release(p);
+   else
+      wl_pointer_destroy(p);
+}
+
+static INLINE void wayland_keyboard_release(struct wl_keyboard *k)
+{
+   if (wl_keyboard_get_version(k) >= WL_KEYBOARD_RELEASE_SINCE_VERSION)
+      wl_keyboard_release(k);
+   else
+      wl_keyboard_destroy(k);
+}
+
+static INLINE void wayland_touch_release(struct wl_touch *t)
+{
+   if (wl_touch_get_version(t) >= WL_TOUCH_RELEASE_SINCE_VERSION)
+      wl_touch_release(t);
+   else
+      wl_touch_destroy(t);
+}
+
+static INLINE void wayland_output_release(struct wl_output *o)
+{
+#ifdef WL_OUTPUT_RELEASE_SINCE_VERSION
+   if (wl_output_get_version(o) >= WL_OUTPUT_RELEASE_SINCE_VERSION)
+      wl_output_release(o);
+   else
+#endif
+      wl_output_destroy(o);
+}
+
+static INLINE void wayland_seat_release(struct wl_seat *s)
+{
+#ifdef WL_SEAT_RELEASE_SINCE_VERSION
+   if (wl_seat_get_version(s) >= WL_SEAT_RELEASE_SINCE_VERSION)
+      wl_seat_release(s);
+   else
+#endif
+      wl_seat_destroy(s);
+}
 
 #include "../input_driver.h"
 
@@ -147,6 +233,12 @@ typedef struct input_ctx_wayland_data
       int last_x, last_y;
       int x, y;
       int delta_x, delta_y;
+      /* Scroll of the current wl_pointer frame (seat v5+) */
+      int axis_120[2];
+      int axis_ticks[2];
+      wl_fixed_t axis_value[2];
+      uint32_t axis_source;
+      bool axis_discrete;
       bool last_valid;
       bool focus;
       bool left, right, middle, side, extra;
@@ -276,6 +368,7 @@ typedef struct gfx_ctx_wayland_data
    unsigned last_buffer_scale;
    unsigned pending_buffer_scale;
    unsigned buffer_scale;
+   unsigned preferred_buffer_scale; /* wl_surface v6; 0 until sent */
    unsigned last_fractional_scale_num;
    unsigned pending_fractional_scale_num;
    unsigned fractional_scale_num;
