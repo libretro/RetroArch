@@ -305,6 +305,10 @@ static const input_device_driver_t idle_joypad = {
    "idle",
 };
 
+/* input_driver_state_t::frame_valid keeps a bit per port in 16-bit
+ * words. */
+typedef char input_frame_valid_fits_ports[(MAX_USERS <= 16) ? 1 : -1];
+
 #define INPUT_JOYPAD_FOR_READ(st, drv) \
    (((drv) && ((st)->flags & INP_FLAG_JOYPAD_UNFOCUSED)) ? &idle_joypad : (drv))
 
@@ -1001,7 +1005,7 @@ static int32_t input_state_wrap(
          input_driver_state_t *input_st = &input_driver_st;
 
          if (_port < MAX_USERS
-               && !input_st->joypad_state_cache_valid[_port])
+               && !(input_st->frame_valid.joypad_cache & (1 << _port)))
          {
             int32_t cached = 0;
             if (joypad)
@@ -1015,7 +1019,7 @@ static int32_t input_state_wrap(
                      _port, RETRO_DEVICE_JOYPAD, 0,
                      RETRO_DEVICE_ID_JOYPAD_MASK);
             input_st->joypad_state_cache[_port]       = cached;
-            input_st->joypad_state_cache_valid[_port]  = true;
+            input_st->frame_valid.joypad_cache        |= (1 << _port);
          }
 
          if (    _port < MAX_USERS
@@ -1098,10 +1102,10 @@ static int32_t input_state_wrap(
         && _port  <  MAX_USERS)
    {
       input_driver_state_t *input_st = &input_driver_st;
-      if (!input_st->joypad_state_cache_valid[_port])
+      if (!(input_st->frame_valid.joypad_cache & (1 << _port)))
       {
          input_st->joypad_state_cache[_port]       = ret;
-         input_st->joypad_state_cache_valid[_port]  = true;
+         input_st->frame_valid.joypad_cache        |= (1 << _port);
       }
    }
 
@@ -7889,12 +7893,7 @@ void input_driver_poll(void)
    sec_joypad                     = INPUT_JOYPAD_FOR_READ(input_st, sec_joypad);
 
    /* Invalidate joypad state bitmask cache for the new frame */
-   memset(input_st->joypad_state_cache_valid, 0,
-         sizeof(input_st->joypad_state_cache_valid));
-   memset(input_st->frame_view_valid, 0,
-         sizeof(input_st->frame_view_valid));
-   memset(input_st->frame_view_asked, 0,
-         sizeof(input_st->frame_view_asked));
+   memset(&input_st->frame_valid, 0, sizeof(input_st->frame_valid));
 
    /* Enable/disable sensors at the driver level based on demand
     * from shaders and/or core. Setting gates everything. */
@@ -8557,20 +8556,22 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
          && (   id <  RARCH_FIRST_CUSTOM_BIND
              || id == RETRO_DEVICE_ID_JOYPAD_MASK))
    {
-      if (     !input_st->frame_view_valid[port]
+      const uint16_t port_bit = (uint16_t)(1 << port);
+
+      if (     !(input_st->frame_valid.view & port_bit)
             && (   id == RETRO_DEVICE_ID_JOYPAD_MASK
-                || input_st->frame_view_asked[port]))
+                || (input_st->frame_valid.asked & port_bit)))
       {
          input_st->frame_view_joypad[port] = input_state_internal(
                input_st, settings, port, RETRO_DEVICE_JOYPAD, 0,
                RETRO_DEVICE_ID_JOYPAD_MASK);
-         input_st->frame_view_valid[port]  = true;
+         input_st->frame_valid.view       |= port_bit;
       }
 
-      if (!input_st->frame_view_valid[port])
+      if (!(input_st->frame_valid.view & port_bit))
       {
          /* the frame's first button for this port */
-         input_st->frame_view_asked[port] = true;
+         input_st->frame_valid.asked |= port_bit;
          result = input_state_internal(input_st, settings,
                port, device, idx, id);
       }
@@ -8592,8 +8593,8 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
        && !input_st->analog_requested[port])
    {
       input_st->analog_requested[port] = true;
-      input_st->frame_view_valid[port] = false;
-      input_st->frame_view_asked[port] = false;
+      input_st->frame_valid.view      &= ~(1 << port);
+      input_st->frame_valid.asked     &= ~(1 << port);
    }
 
 #ifdef HAVE_BSV_MOVIE

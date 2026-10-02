@@ -701,15 +701,23 @@ typedef struct
    /* The frame's view of each port's RetroPad buttons, as a core is
     * given them: after port mapping, remaps, turbo, hold, overlays and
     * analog-to-d-pad.  Compiled when a core asks for the port's mask,
-    * or for a second button in the frame (frame_view_asked marks the
-    * first); from then on every button and mask query for the port
-    * reads this word.  Invalidated by input_driver_poll(), and when
-    * the core's first analog request changes analog-to-d-pad for the
-    * port. */
+    * or for a second button in the frame; from then on every button
+    * and mask query for the port reads this word.  Invalidated by
+    * input_driver_poll(), and when the core's first analog request
+    * changes analog-to-d-pad for the port. */
    int16_t frame_view_joypad[MAX_USERS];
-   bool    joypad_state_cache_valid[MAX_USERS];
-   bool    frame_view_valid[MAX_USERS];
-   bool    frame_view_asked[MAX_USERS];
+
+   /* What input_driver_poll() invalidates, a bit per port in each
+    * word, kept together so that invalidating all of it is one store:
+    *   joypad_cache - joypad_state_cache[port] holds this frame's mask
+    *   view         - frame_view_joypad[port] has been compiled
+    *   asked        - the port's first button of the frame was read */
+   struct
+   {
+      uint16_t joypad_cache;
+      uint16_t view;
+      uint16_t asked;
+   } frame_valid;
 
    retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
    input_game_focus_state_t game_focus_state; /* bool alignment */
