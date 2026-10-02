@@ -203,10 +203,8 @@ typedef struct android_input
     * quick-tap emulation is suppressed. */
    bool    stylus_proximity_active;
    int64_t stylus_proximity_until_ns;
-   bool    stylus_side_button_active;
-   size_t  stylus_side_button_ptr;
-   bool    stylus_contact_active;      /* Latched between DOWN..UP (distance-based) */
-   bool    stylus_press_active;        /* Latched between DOWN..UP (pressure-based) */
+   bool    stylus_contact_active;      /* Tip has touched since the last UP */
+   bool    stylus_press_active;        /* The pen holds pointer 0 pressed */
    state_device_t pad_states[MAX_USERS];        /* int alignment */
    int mouse_x, mouse_y;
    int16_t mouse_x_viewport_screen, mouse_y_viewport_screen;
@@ -1308,8 +1306,6 @@ static void *android_input_init(const char *joypad_driver)
    android->quick_tap_time = 0;
    android->stylus_proximity_active = false;
    android->stylus_proximity_until_ns = 0;
-   android->stylus_side_button_active = false;
-   android->stylus_side_button_ptr = 0;
    android->stylus_contact_active = false;
    android->stylus_press_active = false;
 
@@ -1491,6 +1487,65 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    android->mouse_y = y;
 }
 
+/* How a pen maps onto the libretro devices this driver already
+ * reports. Nothing here is pen-specific to a core:
+ *
+ * - Position: pointer 0. While hovering it moves without being
+ *   pressed (input_stylus_hover_moves_pointer).
+ * - Press: pointer 0 pressed, pointer count 1. The tip pressing
+ *   harder than input_stylus_pressure_sensitivity allows is a press;
+ *   with input_stylus_require_contact_for_click off, so is the barrel
+ *   button, touching or hovering.
+ * - Barrel button: the right mouse button.
+ *
+ * Pointer indices keep their meaning: index N is the Nth touch. A pen
+ * is one touch, so it never occupies more than index 0. Reporting the
+ * tip and the barrel button as further "touches" would read as a
+ * two- and three-finger touch to everything that counts pointers,
+ * this driver's own lightgun mapping included (two pointers are
+ * turbo, three are reload). */
+
+/* The pen's position, written to pointer 0. */
+static void android_stylus_set_position(android_input_t *android,
+      float x, float y)
+{
+   struct video_viewport vp = {0};
+
+   /* The same pair of calls the touchscreen path makes: the confined
+    * variant for the pointer query, the plain one for the true
+    * offscreen value. */
+   video_driver_translate_coord_viewport_confined_wrap(
+         &vp, x, y,
+         &android->pointer[0].confined_x,
+         &android->pointer[0].confined_y,
+         &android->pointer[0].full_x,
+         &android->pointer[0].full_y);
+
+   video_driver_translate_coord_viewport_wrap(
+         &vp, x, y,
+         &android->pointer[0].x,
+         &android->pointer[0].y,
+         &android->pointer[0].full_x,
+         &android->pointer[0].full_y);
+}
+
+/* Press or release pointer 0 for the pen. pointer_count is shared
+ * with the touchscreen. A pressing pen takes it, as a touchscreen
+ * event does, and says so on every event so a finger lifting in
+ * between cannot leave it released. A pen that is not pressing leaves
+ * it alone, apart from letting go of its own press: a hover event
+ * must not release a finger. */
+static void android_stylus_set_pressed(android_input_t *android,
+      bool pressed)
+{
+   if (pressed)
+      android->pointer_count    = 1;
+   else if (android->stylus_press_active)
+      android->pointer_count    = 0;
+
+   android->stylus_press_active = pressed;
+}
+
 static INLINE void android_input_poll_event_type_motion(
       android_input_t *android, AInputEvent *event,
       int port, int source)
@@ -1502,7 +1557,7 @@ static INLINE void android_input_poll_event_type_motion(
    int32_t tool_type;
    bool is_stylus, is_finger, is_hover_action;
    settings_t *settings;
-   bool require_contact, tip_down, side_primary, side_secondary, stylus_pressed;
+   bool require_contact, tip_down, stylus_pressed;
    bool side_pressed, tip_touching;
    float pressure, distance, pressure_threshold;
    int buttons;
@@ -1563,6 +1618,15 @@ static INLINE void android_input_poll_event_type_motion(
       g_android_stylus_last_event_ns = (int64_t)cpu_features_get_time_usec() * 1000;
 
       require_contact = settings->bools.input_stylus_require_contact_for_click;
+      buttons         = p_AMotionEvent_getButtonState ?
+         AMotionEvent_getButtonState(event) : 0;
+      /* Which of the two the barrel button reports varies by device. */
+      side_pressed    = (buttons & (AMOTION_EVENT_BUTTON_STYLUS_PRIMARY
+                                  | AMOTION_EVENT_BUTTON_STYLUS_SECONDARY)) != 0;
+
+      /* The barrel button is the pen's secondary button: report it
+       * the way a mouse's is (see the mapping above). */
+      android->mouse_r = side_pressed;
 
       switch (action)
       {
@@ -1579,131 +1643,47 @@ static INLINE void android_input_poll_event_type_motion(
                AMotionEvent_getEventTime(event) + 120000000; /* 120ms */
             android->quick_tap_time            = 0;
 
-            if (settings->bools.input_stylus_hover_moves_pointer &&
-                (action == AMOTION_EVENT_ACTION_HOVER_MOVE || action == AMOTION_EVENT_ACTION_HOVER_ENTER))
+            if (action == AMOTION_EVENT_ACTION_HOVER_EXIT)
             {
-               struct video_viewport vp = {0};
-               video_driver_translate_coord_viewport_confined_wrap(
-                     &vp, x, y,
-                     &android->pointer[0].confined_x,
-                     &android->pointer[0].confined_y,
-                     &android->pointer[0].full_x,
-                     &android->pointer[0].full_y);
-
-               video_driver_translate_coord_viewport_wrap(
-                     &vp, x, y,
-                     &android->pointer[0].x,
-                     &android->pointer[0].y,
-                     &android->pointer[0].full_x,
-                     &android->pointer[0].full_y);
+               /* Out of range: nothing the pen held stays held. */
+               android->mouse_r = false;
+               android_stylus_set_pressed(android, false);
+               return;
             }
 
-            /* Side button drives an independent drag, regardless of the
-             * contact-required setting. */
-            {
-               buttons = p_AMotionEvent_getButtonState ?
-                  AMotionEvent_getButtonState(event) : 0;
-               side_primary   = (buttons & AMOTION_EVENT_BUTTON_STYLUS_PRIMARY)   != 0;
-               side_secondary = (buttons & AMOTION_EVENT_BUTTON_STYLUS_SECONDARY) != 0;
-               side_pressed   = side_primary || side_secondary;
+            /* A hovering pen presses only when the user allowed a click
+             * without contact and holds the barrel button. */
+            stylus_pressed = !require_contact && side_pressed;
 
+            if (     stylus_pressed
+                  || settings->bools.input_stylus_hover_moves_pointer)
+               android_stylus_set_position(android, x, y);
+
+            android_stylus_set_pressed(android, stylus_pressed);
+            return;
+
+         case AMOTION_EVENT_ACTION_UP:
+         case AMOTION_EVENT_ACTION_CANCEL:
+            /* A lifted pen keeps reporting its barrel button through
+             * the hover events that follow; a cancelled gesture has
+             * none coming. */
+            if (action == AMOTION_EVENT_ACTION_CANCEL)
+               android->mouse_r            = false;
+            android->stylus_contact_active = false;
+            android_stylus_set_pressed(android, false);
 #ifdef DEBUG_ANDROID_INPUT
-            if (buttons != 0)
-               RARCH_LOG("[Stylus Btn] state=0x%x primary=%d secondary=%d\n",
-                         buttons, !!side_primary, !!side_secondary);
+            RARCH_LOG("[Stylus] UP - pointer released\n");
 #endif
-
-               if (side_pressed && !android->stylus_side_button_active)
-               {
-                  struct video_viewport vp = {0};
-
-                  video_driver_translate_coord_viewport_confined_wrap(
-                        &vp, x, y,
-                        &android->pointer[motion_ptr].confined_x,
-                        &android->pointer[motion_ptr].confined_y,
-                        &android->pointer[motion_ptr].full_x,
-                        &android->pointer[motion_ptr].full_y);
-
-                  video_driver_translate_coord_viewport_wrap(
-                        &vp, x, y,
-                        &android->pointer[motion_ptr].x,
-                        &android->pointer[motion_ptr].y,
-                        &android->pointer[motion_ptr].full_x,
-                        &android->pointer[motion_ptr].full_y);
-
-                  if (android->pointer_count < (int)motion_ptr + 1)
-                     android->pointer_count = (int)motion_ptr + 1;
-
-                  android->stylus_side_button_active = true;
-                  android->stylus_side_button_ptr = motion_ptr;
-
-#ifdef DEBUG_ANDROID_INPUT
-                  RARCH_LOG("[Stylus] POINTER DOWN @ (%.1f, %.1f) idx=%zu cnt=%d (side button start)\n",
-                            x, y, motion_ptr, android->pointer_count);
-#endif
-                  return;
-               }
-               else if (side_pressed && android->stylus_side_button_active)
-               {
-                  struct video_viewport vp = {0};
-                  size_t ptr_idx = android->stylus_side_button_ptr;
-
-                  video_driver_translate_coord_viewport_confined_wrap(
-                        &vp, x, y,
-                        &android->pointer[ptr_idx].confined_x,
-                        &android->pointer[ptr_idx].confined_y,
-                        &android->pointer[ptr_idx].full_x,
-                        &android->pointer[ptr_idx].full_y);
-
-                  video_driver_translate_coord_viewport_wrap(
-                        &vp, x, y,
-                        &android->pointer[ptr_idx].x,
-                        &android->pointer[ptr_idx].y,
-                        &android->pointer[ptr_idx].full_x,
-                        &android->pointer[ptr_idx].full_y);
-
-#ifdef DEBUG_ANDROID_INPUT
-                  RARCH_LOG("[Stylus] POINTER MOVE @ (%.1f, %.1f) idx=%zu (side button drag)\n",
-                            x, y, ptr_idx);
-#endif
-                  return;
-               }
-               else if (!side_pressed && android->stylus_side_button_active)
-               {
-                  size_t ptr_idx = android->stylus_side_button_ptr;
-
-                  if (ptr_idx < MAX_TOUCH - 1)
-                  {
-                     memmove(android->pointer + ptr_idx,
-                             android->pointer + ptr_idx + 1,
-                             (MAX_TOUCH - ptr_idx - 1) * sizeof(android->pointer[0]));
-                  }
-                  if (android->pointer_count > 0)
-                     android->pointer_count--;
-
-                  android->stylus_side_button_active = false;
-
-#ifdef DEBUG_ANDROID_INPUT
-                  RARCH_LOG("[Stylus] POINTER UP   idx=%zu cnt=%d (side button end)\n",
-                            ptr_idx, android->pointer_count);
-#endif
-                  return;
-               }
-            }
-
             return;
 
          case AMOTION_EVENT_ACTION_DOWN:
          case AMOTION_EVENT_ACTION_MOVE:
-         case AMOTION_EVENT_ACTION_UP:
             if (action == AMOTION_EVENT_ACTION_DOWN)
             {
                g_hover_guard_active             = false;
                android->stylus_proximity_active = false;
             }
 
-            require_contact =
-               settings->bools.input_stylus_require_contact_for_click;
             pressure = p_AMotionEvent_getPressure ?
                AMotionEvent_getPressure(event, motion_ptr) : 1.0f;
             distance = 0.0f;
@@ -1714,7 +1694,7 @@ static INLINE void android_input_poll_event_type_motion(
 
             /* Contact is distance-based (instant, no pressure needed);
              * click is pressure-based against a user-configurable threshold. */
-            tip_touching = (action != AMOTION_EVENT_ACTION_UP) && (distance <= 0.0f);
+            tip_touching = (distance <= 0.0f);
 
             /* Map sensitivity 1..100 to threshold 0.02475..0.0 (higher = more
              * sensitive; 100 = instant click on any pressure > 0). */
@@ -1724,109 +1704,27 @@ static INLINE void android_input_poll_event_type_motion(
                   sens = 100;
                pressure_threshold = (100 - (int)sens) * 0.00025f;
             }
-            tip_down = tip_touching && (pressure > pressure_threshold);
-
-            buttons = p_AMotionEvent_getButtonState ?
-               AMotionEvent_getButtonState(event) : 0;
-            side_primary   = (buttons & AMOTION_EVENT_BUTTON_STYLUS_PRIMARY)   != 0;
-            side_secondary = (buttons & AMOTION_EVENT_BUTTON_STYLUS_SECONDARY) != 0;
-
-            stylus_pressed = require_contact
-                ? tip_down
-                : (tip_down || side_primary);
+            tip_down       = tip_touching && (pressure > pressure_threshold);
+            stylus_pressed = tip_down || (!require_contact && side_pressed);
 
 #ifdef DEBUG_ANDROID_INPUT
             RARCH_LOG("[RA Input] S Pen contact - req_contact:%s tip_down:%s "
-                      "side1:%s pressed:%s p=%.3f d=%.3f\n",
+                      "side:%s pressed:%s p=%.3f d=%.3f\n",
                       require_contact ? "Y" : "N", tip_down ? "Y" : "N",
-                      side_primary ? "Y" : "N", stylus_pressed ? "Y" : "N",
+                      side_pressed ? "Y" : "N", stylus_pressed ? "Y" : "N",
                       pressure, distance);
 #endif
 
-            if (action == AMOTION_EVENT_ACTION_DOWN || action == AMOTION_EVENT_ACTION_MOVE)
-            {
-               if (tip_touching)
-                  android->stylus_contact_active = true;
-               if (stylus_pressed)
-                  android->stylus_press_active   = true;
+            if (tip_touching)
+               android->stylus_contact_active = true;
 
-               if (android->stylus_contact_active)
-               {
-                  struct video_viewport vp = {0};
+            /* Before the tip has touched, a DOWN or MOVE that still
+             * reports distance is a hover: the position stays where the
+             * last contact left it, so the cursor does not jump. */
+            if (android->stylus_contact_active || stylus_pressed)
+               android_stylus_set_position(android, x, y);
 
-                  video_driver_translate_coord_viewport_confined_wrap(
-                        &vp, x, y,
-                        &android->pointer[motion_ptr].confined_x,
-                        &android->pointer[motion_ptr].confined_y,
-                        &android->pointer[motion_ptr].full_x,
-                        &android->pointer[motion_ptr].full_y);
-
-                  video_driver_translate_coord_viewport_wrap(
-                        &vp, x, y,
-                        &android->pointer[motion_ptr].x,
-                        &android->pointer[motion_ptr].y,
-                        &android->pointer[motion_ptr].full_x,
-                        &android->pointer[motion_ptr].full_y);
-
-                  if (!android->mouse_activated)
-                  {
-                     RARCH_LOG("[Android Input] S-Pen activated menu mouse mode.\n");
-                     android->mouse_activated = true;
-                  }
-
-                  android->mouse_x_viewport = android->pointer[motion_ptr].x;
-                  android->mouse_y_viewport = android->pointer[motion_ptr].y;
-
-                  /* Semantic pointer indices for libretro cores:
-                   * 0 = cursor position, 1 = tip contact, 2 = barrel button. */
-                  android->pointer[0].confined_x = android->pointer[motion_ptr].confined_x;
-                  android->pointer[0].confined_y = android->pointer[motion_ptr].confined_y;
-                  android->pointer[0].full_x     = android->pointer[motion_ptr].full_x;
-                  android->pointer[0].full_y     = android->pointer[motion_ptr].full_y;
-                  android->pointer[0].x          = android->pointer[motion_ptr].x;
-                  android->pointer[0].y          = android->pointer[motion_ptr].y;
-                  android->pointer_count         = 1;
-
-                  if (tip_down)
-                  {
-                     android->pointer[1]    = android->pointer[motion_ptr];
-                     android->pointer_count = 2;
-                  }
-                  if (side_primary)
-                  {
-                     android->pointer[2]    = android->pointer[motion_ptr];
-                     android->pointer_count = 3;
-                  }
-
-#ifdef DEBUG_ANDROID_INPUT
-                  if (action == AMOTION_EVENT_ACTION_DOWN)
-                     RARCH_LOG("[Stylus] POINTER DOWN @ (%.1f, %.1f) tip=%d[idx1] barrel=%d[idx2] cnt=%d\n",
-                               x, y, tip_down, side_primary, android->pointer_count);
-#endif
-               }
-               else
-               {
-                  /* Hover: keep coordinates as they were on last contact so the
-                   * menu cursor doesn't jump around the screen. */
-#ifdef DEBUG_ANDROID_INPUT
-                  RARCH_LOG("[Stylus] HOVER (no coord update) @ (%.1f, %.1f) p=%.3f d=%.3f\n",
-                            x, y, pressure, distance);
-#endif
-               }
-               return;
-            }
-
-            if (action == AMOTION_EVENT_ACTION_UP)
-            {
-               android->stylus_contact_active = false;
-               android->stylus_press_active   = false;
-               android->pointer_count         = 0;
-#ifdef DEBUG_ANDROID_INPUT
-               RARCH_LOG("[Stylus] POINTER UP - cleared all virtual pointers\n");
-#endif
-               return;
-            }
-
+            android_stylus_set_pressed(android, stylus_pressed);
             return;
 
          default:
