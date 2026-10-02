@@ -488,6 +488,25 @@ int retro_vfs_mkdir_impl(const char* dir)
     return uwp_mkdir_impl(std::filesystem::path(dir));
 }
 
+/* Removes the empty directory @dir: 0 on success, -1 otherwise,
+ * including a directory that is not empty */
+int retro_vfs_rmdir_impl(const char *dir)
+{
+   BOOL ret;
+   wchar_t *dir_wide;
+
+   if (!dir || !*dir)
+      return -1;
+
+   if (!(dir_wide = utf8_to_utf16_string_alloc(dir)))
+      return -1;
+   windowsize_path(dir_wide);
+
+   ret = RemoveDirectoryFromAppW(dir_wide);
+   free(dir_wide);
+   return ret ? 0 : -1;
+}
+
 int retro_vfs_restrict_permissions_impl(const char* path)
 {
     /* UWP app data is already private to the package; there is no
