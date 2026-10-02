@@ -21,7 +21,9 @@
  *              window reaches the disk a window at a time, never as
  *              one write of the whole member (writes are measured at
  *              retro_vfs_file_write_impl), and no temporary file is
- *              left beside it.
+ *              left beside it.  Its back-references reach across
+ *              window boundaries, so a decoder that loses its history
+ *              when the window is rebound fails the member's CRC.
  *   keep     - a member that fails its CRC, or whose extraction is
  *              cancelled part way, leaves a file already at its path
  *              as it was, and no temporary file beside it.
@@ -120,6 +122,7 @@ typedef struct
 
 static member_t members[N_SMALL + 1];
 static unsigned n_members;
+static bool     big_opens_window;
 
 static uint32_t lcg_state = 12345;
 
@@ -149,6 +152,114 @@ static void member_name(char *s, size_t len, unsigned i)
    strlcpy(s + _len, num, len - _len);
 }
 
+static bool deflate_raw(const uint8_t *in, uint32_t in_len,
+      uint8_t **out, uint32_t *out_len);
+
+/* @prefix random bytes, then runs that are random, copied from up to
+ * 32 KiB back, or short repeats */
+static void fill_big(uint8_t *d, uint32_t size, uint32_t prefix)
+{
+   uint32_t j;
+
+   for (j = 0; j < prefix; j++)
+      d[j] = (uint8_t)lcg();
+   while (j < size)
+   {
+      uint32_t k;
+      uint32_t run = 16 + lcg() % 512;
+      unsigned op  = lcg() % 4;
+      if (run > size - j)
+         run = size - j;
+      if (op < 2)
+         for (k = 0; k < run; k++)
+            d[j + k] = (uint8_t)lcg();
+      else if (op == 2)
+      {
+         uint32_t dist = 1 + lcg() % (j < 32768 ? j : 32768);
+         for (k = 0; k < run; k++)
+            d[j + k] = d[j + k - dist];
+      }
+      else
+      {
+         uint32_t period = 1 + lcg() % 7;
+         for (k = 0; k < run; k++)
+            d[j + k] = (k < period) ? (uint8_t)lcg() : d[j + k - period];
+      }
+      j += run;
+   }
+}
+
+/* Whether inflating @c in READ_SLICE pieces ends a piece within the
+ * first 32 KiB of an output window other than the first: the next
+ * piece then starts with back-references into the previous window,
+ * which only the decoder's own history can still resolve. */
+#define READ_SLICE (128 * 1024)   /* archive_file_zlib.c */
+static bool slice_edge_opens_window(const uint8_t *c, uint32_t c_len,
+      uint32_t size)
+{
+   z_stream z;
+   uint8_t *out = (uint8_t*)malloc(size);
+   uint32_t off = 0;
+   bool hit     = false;
+
+   memset(&z, 0, sizeof(z));
+   if (!out || inflateInit2(&z, -MAX_WBITS) != Z_OK)
+   {
+      free(out);
+      return false;
+   }
+   z.next_out  = out;
+   z.avail_out = size;
+   while (off < c_len && !hit)
+   {
+      uint32_t n  = c_len - off < READ_SLICE ? c_len - off : READ_SLICE;
+      uint32_t at;
+      z.next_in   = (Bytef*)(c + off);
+      z.avail_in  = n;
+      off        += n;
+      if (inflate(&z, 0) < 0)
+         break;
+      at  = (uint32_t)z.total_out;
+      hit = off < c_len && at > STREAM_WINDOW
+            && at % STREAM_WINDOW >= 1024
+            && at % STREAM_WINDOW <= 16384;
+   }
+   inflateEnd(&z);
+   free(out);
+   return hit;
+}
+
+/* The DEFLATE member spans several input slices, so it parks, and the
+ * random prefix is sized so that one slice ends just inside an output
+ * window: the stream lane then fails its CRC on a decoder that loses
+ * its history when the window is rebound. */
+static void build_big(member_t *m)
+{
+   uint32_t prefix;
+   uint32_t seed = lcg_state;
+
+   m->size = BIG_SIZE;
+   m->data = (uint8_t*)malloc(m->size);
+   for (prefix = 2 * READ_SLICE; prefix < BIG_SIZE / 2; prefix += 1024)
+   {
+      uint8_t *c = NULL;
+      uint32_t c_len;
+      bool hit;
+
+      lcg_state = seed;
+      fill_big(m->data, m->size, prefix);
+      if (!deflate_raw(m->data, m->size, &c, &c_len))
+         break;
+      hit = slice_edge_opens_window(c, c_len, m->size);
+      free(c);
+      if (hit)
+      {
+         big_opens_window = true;
+         return;
+      }
+   }
+}
+
 static void build_members(void)
 {
    unsigned i;
@@ -164,17 +275,8 @@ static void build_members(void)
       member_name(m->name, sizeof(m->name), i);
    }
 
-   /* Incompressible, so the DEFLATE member spans several 128 KiB
-    * input slices and has to park. */
-   {
-      uint32_t j;
-      member_t *m = &members[N_SMALL];
-      m->size     = BIG_SIZE;
-      m->data     = (uint8_t*)malloc(m->size);
-      for (j = 0; j < m->size; j++)
-         m->data[j] = (uint8_t)lcg();
-      strlcpy(m->name, BIG_NAME, sizeof(m->name));
-   }
+   build_big(&members[N_SMALL]);
+   strlcpy(members[N_SMALL].name, BIG_NAME, sizeof(members[N_SMALL].name));
 
    n_members = N_SMALL + 1;
 }
@@ -458,6 +560,8 @@ int main(void)
    }
    CHECK(big_csize > 2 * 128 * 1024,
          "DEFLATE member does not span several input slices");
+   CHECK(big_opens_window,
+         "no input slice of the DEFLATE member ends inside an output window");
 
    /* window */
    clear_outputs();

@@ -395,10 +395,13 @@ struct rinflate
                              * length/distance symbol group           */
    int            bitcnt;
 
-   /* 32KB sliding window for back-references */
+   /* 32KB sliding window for back-references: the last bytes produced,
+    * ending with out[0..wcur) of the current output buffer */
    uint8_t        window[32768];
    uint32_t       whave;   /* how many bytes are valid in the ring       */
    uint32_t       wnext;   /* next write position in the ring            */
+   uint32_t       wprior;  /* of those, how many precede out[0]          */
+   uint32_t       wcur;    /* out[0..wcur) is already in the ring        */
 
    /* Container: RINF_WRAP_RAW / RINF_WRAP_ZLIB / RINF_WRAP_GZIP.  Kept as
     * `wrapped' meaning "has a checksummed wrapper" wherever the value
@@ -731,12 +734,12 @@ static int rinf_emit(struct rinflate *s, uint8_t b)
 
 /* Fetch one already-produced byte that lies `dist` bytes behind the current
  * output position, consulting the current output buffer first and then the
- * ring window of previously-flushed output. */
+ * ring window of output that precedes it.  The ring ends at out[wcur]. */
 static uint8_t rinf_back(struct rinflate *s, uint32_t dist)
 {
    if (dist > s->out_pos)
    {
-      uint32_t back = dist - (uint32_t)s->out_pos; /* into prior output */
+      uint32_t back = dist - (uint32_t)s->out_pos + s->wcur;
       uint32_t idx  = (s->wnext + 32768 - back) & 32767;
       return s->window[idx];
    }
@@ -744,22 +747,22 @@ static uint8_t rinf_back(struct rinflate *s, uint32_t dist)
 }
 
 
-/* Snapshot the tail of the just-produced output into the ring window so the
- * next call's back-references into prior output resolve correctly.  Called
- * once per process() invocation rather than per byte. */
+/* Append the output produced since the last commit, out[wcur..out_pos),
+ * to the ring window, so back-references into it still resolve once the
+ * caller binds another output buffer.  Called once per process()
+ * invocation rather than per byte; a caller may keep one buffer bound
+ * across many calls, so only the new bytes go in. */
 static void rinf_window_commit(struct rinflate *s)
 {
-   size_t n = s->out_pos;
-   const uint8_t *src;
+   size_t n = s->out_pos - s->wcur;
+   const uint8_t *src = s->out + s->wcur;
    if (n == 0)
       return;
    if (n > 32768)
    {
-      src = s->out + (n - 32768);
-      n   = 32768;
+      src += n - 32768;
+      n    = 32768;
    }
-   else
-      src = s->out;
    /* Append n bytes into the ring at wnext, in at most two memcpys.
     * n is bounded by the ring size above, so the copy wraps at most
     * once.  This runs once per process() call over the whole slice -
@@ -781,6 +784,8 @@ static void rinf_window_commit(struct rinflate *s)
    }
    s->whave += (uint32_t)n;
    if (s->whave > 32768) s->whave = 32768;
+   s->wcur   = (uint32_t)s->out_pos;
+   s->wprior = (s->whave > s->wcur) ? s->whave - s->wcur : 0;
 }
 
 void *rinflate_new(int window_bits)
@@ -807,9 +812,9 @@ void rinflate_reset(void *data, int window_bits)
    /* Restore the state rinflate_new hands back, without re-zeroing the
     * 32 KiB back-reference window or the ~9 KiB of huffman tables.
     *
-    * The window is safe to leave dirty because whave is cleared here:
+    * The window is safe to leave dirty because wprior is cleared here:
     * a back-reference is only resolved out of the ring after a bounds
-    * check against out_pos + whave, so with whave 0 no stale byte is
+    * check against out_pos + wprior, so with wprior 0 no stale byte is
     * reachable, exactly as for a fresh instance whose window happens
     * to be zeroed. The tables are safe because have_tables and
     * fixed_loaded are cleared, so any stream must rebuild them before
@@ -841,6 +846,8 @@ void rinflate_reset(void *data, int window_bits)
 
    s->whave            = 0;
    s->wnext            = 0;
+   s->wprior           = 0;
+   s->wcur             = 0;
 
    s->bfinal           = 0;
    s->btype            = 0;
@@ -888,6 +895,9 @@ void rinflate_set_out(void *data, uint8_t *out, size_t size)
 {
    struct rinflate *s = (struct rinflate*)data;
    s->out = out; s->out_size = size; s->out_pos = 0;
+   /* Everything produced so far is in the ring and precedes out[0] */
+   s->wcur   = 0;
+   s->wprior = s->whave;
 }
 
 /* Prime the back-reference window with the tail of @dict, for resuming
@@ -907,8 +917,10 @@ void rinflate_set_dictionary(void *data, const uint8_t *dict, size_t len)
       len   = 32768;
    }
    memcpy(s->window, dict, len);
-   s->whave = (uint32_t)len;
-   s->wnext = (uint32_t)(len & 32767);
+   s->whave  = (uint32_t)len;
+   s->wnext  = (uint32_t)(len & 32767);
+   s->wcur   = 0;
+   s->wprior = (uint32_t)len;
 }
 
 /* zran-style indexed access primitives: report deflate block
@@ -1569,7 +1581,7 @@ fast_again:
                            }
                         }
                      }
-                     if (dist > out_pos + s->whave)
+                     if (dist > out_pos + s->wprior)
                      {
                         s->error   = 1;
                         s->out_pos = out_pos;
@@ -1735,7 +1747,7 @@ fast_again:
                      while (s->copy_len > 0)
                      {
                         uint8_t b;
-                        if (s->copy_dist > s->out_pos + s->whave)
+                        if (s->copy_dist > s->out_pos + s->wprior)
                            { s->error = 1; goto error; }
                         b = rinf_back(s, s->copy_dist);
                         if (!rinf_emit(s, b)) goto suspend;
