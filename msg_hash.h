@@ -9302,6 +9302,12 @@ enum msg_hash_enums
 #undef S_ACTION_EX_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
+   /* Retired: the 'Show Help' main menu toggle (menu_show_help) was
+    * removed, but the generated intl tables still name these ids
+    * until the next Crowdin fetch regenerates them without the
+    * strings. Delete these two rows after that fetch lands. */
+   MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
+   MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    /* GENERATED REGION: restart visibility setting enum rows (see settings/settings_def_menu_show_restart.h). */
 #define SETTINGS_DEF_ENUM_PASS
 #define SETTINGS_DEF_STRINGS_PASS

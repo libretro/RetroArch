@@ -890,7 +890,6 @@
 #endif
 #define DEFAULT_MENU_SHOW_INFORMATION true
 #define DEFAULT_MENU_SHOW_CONFIGURATIONS true
-#define DEFAULT_MENU_SHOW_HELP true
 #if defined(ANDROID)
 /* Android's navigation model expects the user to leave via Home or the
  * task switcher rather than an in-app control, and the Android TV

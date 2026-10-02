@@ -1313,7 +1313,6 @@
 #define MENU_ENUM_LABEL_MENU_SHOW_DUMP_DISC_STR "menu_show_dump_disc"
 #define MENU_ENUM_LABEL_MENU_SHOW_EJECT_DISC_STR "menu_show_eject_disc"
 #define MENU_ENUM_LABEL_MENU_SHOW_FULL_PATHS_STR "menu_show_full_paths"
-#define MENU_ENUM_LABEL_MENU_SHOW_HELP_STR "menu_show_help"
 #define MENU_ENUM_LABEL_MENU_SHOW_INFORMATION_STR "menu_show_information"
 #define MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_STR "menu_show_load_content"
 #define MENU_ENUM_LABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION_STR "menu_show_load_content_animation"

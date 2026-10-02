@@ -804,7 +804,6 @@ typedef struct settings
 #endif
       bool menu_show_information;
       bool menu_show_configurations;
-      bool menu_show_help;
       bool menu_show_quit_retroarch;
       bool menu_show_restart_retroarch;
       bool menu_show_reboot;

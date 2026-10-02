@@ -313,7 +313,6 @@ bool	menu_show_load_core	1	1
 bool	menu_show_load_content	1	1
 bool	menu_show_information	1	1
 bool	menu_show_configurations	1	1
-bool	menu_show_help	1	1
 bool	quick_menu_show_take_screenshot	1	1
 bool	quick_menu_show_savestate_submenu	1	1
 bool	quick_menu_show_save_load_state	1	1
@@ -980,7 +979,6 @@ bool	menu_show_load_core	1	1
 bool	menu_show_load_content	1	1
 bool	menu_show_information	1	1
 bool	menu_show_configurations	1	1
-bool	menu_show_help	1	1
 bool	quick_menu_show_take_screenshot	1	1
 bool	quick_menu_show_savestate_submenu	1	1
 bool	quick_menu_show_save_load_state	1	1
@@ -1654,7 +1652,6 @@ bool	menu_show_load_core	1	1
 bool	menu_show_load_content	1	1
 bool	menu_show_information	1	1
 bool	menu_show_configurations	1	1
-bool	menu_show_help	1	1
 bool	quick_menu_show_take_screenshot	1	1
 bool	quick_menu_show_savestate_submenu	1	1
 bool	quick_menu_show_save_load_state	1	1
