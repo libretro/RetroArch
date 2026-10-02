@@ -2984,7 +2984,9 @@ static int setting_action_left_retropad_bind(
 
    value = *setting->value.target.integer;
 
-   if (value < 0)
+   /* A value past the setting's range (e.g. from a hand-edited
+    * config) would index input_config_bind_order out of bounds. */
+   if (value < 0 || value > (int)setting->max)
       overflowed = true;
    else if (input_config_bind_order[value] == 0)
       *setting->value.target.integer = -1;
@@ -3040,7 +3042,10 @@ static int setting_action_right_retropad_bind(
       {
          if ((int)input_config_bind_order[i] == value)
          {
-            *setting->value.target.integer = input_config_bind_order[i + step];
+            /* Stop at the last entry; the wraparound block below
+             * handles the wrap. */
+            if (i + step <= (int)setting->max)
+               *setting->value.target.integer = input_config_bind_order[i + step];
             break;
          }
       }
