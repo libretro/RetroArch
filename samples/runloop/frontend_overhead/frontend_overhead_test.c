@@ -57,8 +57,9 @@
  *     bitmask. The two readings must be the same frame for frame, and
  *     the whole sequence must match a recorded digest, under the
  *     default mapping, a remap, analog-to-d-pad, the four turbo modes,
- *     hold, and run-ahead; and a recording of the pattern must play
- *     back as the same sequence. This is the reference the frame-local view has to reproduce: it is
+ *     hold, and run-ahead; a recording of the pattern must play back
+ *     as the same sequence; and hosting netplay with nobody connected
+ *     must not change it. This is the reference the frame-local view has to reproduce: it is
  *     what the state path does today, pinned before that path changes.
  *
  *   - The device registry (input plan, WP-02) follows the drivers.
@@ -83,6 +84,9 @@
 #include <time/rtime.h>
 #include "../../../runloop.h"
 #include "../../../runahead.h"
+#ifdef HAVE_NETWORKING
+#include "../../../network/netplay/netplay.h"
+#endif
 #include "../../../retroarch.h"
 #include "../../../configuration.h"
 #include "../../../command.h"
@@ -1088,6 +1092,84 @@ static void lane_core_view(void)
    }
 #endif
 
+#ifdef HAVE_NETWORKING
+   /* Netplay, hosting with nobody connected. The host's own input goes
+    * through netplay's poll and its state callback before the core
+    * reads it; the core must see what it sees without netplay. The
+    * host may hold input back by its latency setting, so the sequence
+    * is matched at an offset. Nothing is announced and no client
+    * connects: this is the local path only. */
+   {
+      static struct view_frame hosted[VIEW_FRAMES + VIEW_REPLAY_SLACK];
+      uint32_t rng    = 0;
+      int      offset = -1;
+      unsigned f, d;
+      bool     up;
+
+      bool     saved_announce = settings->bools.netplay_public_announce;
+      bool     saved_nat      = settings->bools.netplay_nat_traversal;
+      bool     saved_mitm     = settings->bools.netplay_use_mitm_server;
+      unsigned saved_port     = settings->uints.netplay_port;
+
+      settings->bools.netplay_public_announce = false;
+      settings->bools.netplay_nat_traversal   = false;
+      settings->bools.netplay_use_mitm_server = false;
+      settings->uints.netplay_port            = 51963;
+
+      netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
+      command_event(CMD_EVENT_NETPLAY_INIT, NULL);
+      run_loop_frames(10);
+      up = netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL);
+
+      /* Hosting needs a listening socket. Where the machine will not
+       * give one, that is not this lane's finding. */
+      if (!up)
+      {
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
+         printf("[skip] core view, netplay host: could not host on this machine\n");
+      }
+      else
+      {
+         memset(&input_st->turbo_btns, 0, sizeof(input_st->turbo_btns));
+         memset(&input_st->hold_btns,  0, sizeof(input_st->hold_btns));
+         trace(1, 1);
+         for (f = 0; f < VIEW_FRAMES + VIEW_REPLAY_SLACK; f++)
+         {
+            /* the pattern, then idle */
+            if (f < VIEW_FRAMES)
+               syn_pattern(f, &rng);
+            runloop_iterate();
+            task_queue_check();
+            trace_last(&hosted[f].buttons, hosted[f].axes);
+         }
+         trace(0, 0);
+
+         /* the reference: the same pattern with netplay off */
+         command_event(CMD_EVENT_NETPLAY_DISCONNECT, NULL);
+         run_loop_frames(10);
+         CHECK(!netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_DATA_INITED, NULL),
+               "core view: netplay did not stop");
+         view_record(1, trace, trace_last, one_by_one);
+
+         for (d = 0; d < VIEW_REPLAY_SLACK && offset < 0; d++)
+            if (!memcmp(&hosted[d], one_by_one,
+                     (VIEW_FRAMES - VIEW_REPLAY_SLACK) * sizeof(one_by_one[0])))
+               offset = (int)d;
+
+         CHECK(offset >= 0, "core view: hosting netplay changes what the core sees");
+         if (offset >= 0)
+            printf("[info] core view, netplay host: %u frames as without"
+                  " netplay (%d frames late)\n",
+                  (unsigned)(VIEW_FRAMES - VIEW_REPLAY_SLACK), offset);
+      }
+
+      settings->bools.netplay_public_announce = saved_announce;
+      settings->bools.netplay_nat_traversal   = saved_nat;
+      settings->bools.netplay_use_mitm_server = saved_mitm;
+      settings->uints.netplay_port            = saved_port;
+   }
+#endif
+
    fast_forward(false);
    syn_buttons = 0;
    memset(syn_axes, 0, sizeof(syn_axes));
@@ -1099,7 +1181,8 @@ static void lane_core_view(void)
    run_loop_frames(5);
    if (failures == had)
       printf("[pass] core view: button by button and as a mask agree, match"
-            " the recorded digests, and play back from a recording\n");
+            " the recorded digests, play back from a recording, and are the"
+            " same under netplay\n");
 #else
    printf("[skip] core-view lane: need the test drivers and dlopen\n");
 #endif
