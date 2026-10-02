@@ -175,6 +175,13 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t len)
    const uint16_t          *src = buf;
    ctr_csnd_audio_t        *ctr = (ctr_csnd_audio_t*)data;
 
+   /* Half the ring a call at most, in whole frames: the room the waits
+    * below hold out for, where a longer write overwrote its own audio
+    * before it played. */
+   if (len > CTR_CSND_AUDIO_COUNT / 2 * CTR_CSND_AUDIO_FRAME_BYTES)
+      len = CTR_CSND_AUDIO_COUNT / 2 * CTR_CSND_AUDIO_FRAME_BYTES;
+   len &= ~(size_t)3;
+
    ctr_csnd_audio_update_playpos(ctr);
 
    if (  (((ctr->playpos  - ctr->pos)     & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 2))

@@ -1,4 +1,4 @@
-TARGET := ctr_csnd_test
+TARGET := ctr_audio_test
 
 LIBRETRO_COMM_DIR := ../../../libretro-common
 # The stand-in <3ds.h> is found here, ahead of any other.
@@ -12,7 +12,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-OBJS := ctr_csnd_test.o csnd_mock.o ctr_csnd_audio.o
+OBJS := ctr_audio_test.o ctr_mock.o ctr_csnd_audio.o ctr_dsp_audio.o stubs_retroarch.o
 
 all: $(TARGET)
 
@@ -23,6 +23,9 @@ $(TARGET): $(OBJS)
 # on a 64-bit host that cast is the mock's business, not a defect.
 ctr_csnd_audio.o: ../../../audio/drivers/ctr_csnd_audio.c
 	$(CC) $(CFLAGS) -Wno-int-to-pointer-cast -c -o $@ $<
+
+ctr_dsp_audio.o: ../../../audio/drivers/ctr_dsp_audio.c
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
