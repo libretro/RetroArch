@@ -282,6 +282,8 @@ typedef struct settings
       unsigned video_overscan_correction_bottom;
 #endif
       unsigned video_shader_delay;
+      unsigned video_shader_simulated_input_resolution_width;
+      unsigned video_shader_simulated_input_resolution_height;
 #ifdef HAVE_SCREENSHOTS
       unsigned notification_show_screenshot_duration;
       unsigned notification_show_screenshot_flash;
@@ -608,6 +610,7 @@ typedef struct settings
       bool video_dingux_ipu_keep_aspect;
       bool video_scale_integer;
       bool video_shader_enable;
+      bool video_shader_simulated_input_resolution;
       bool video_shader_deferred_loading;
       bool video_shader_watch_files;
       bool video_shader_remember_last_dir;

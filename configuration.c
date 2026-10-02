@@ -2332,6 +2332,7 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
 #include "settings/settings_def_black_frame_insertion.h"
 #include "settings/settings_def_shader_delay.h"
+#include "settings/settings_def_shader_simulated_resolution.h"
 #include "settings/settings_def_screen_brightness.h"
 #include "settings/settings_def_video_rotation.h"
 #include "settings/settings_def_video_monitor_index.h"
@@ -3042,6 +3043,7 @@ static struct config_float_setting *populate_settings_float(
 #endif
 #include "settings/settings_def_black_frame_insertion.h"
 #include "settings/settings_def_shader_delay.h"
+#include "settings/settings_def_shader_simulated_resolution.h"
 #include "settings/settings_def_screen_brightness.h"
 #include "settings/settings_def_video_rotation.h"
 #include "settings/settings_def_video_monitor_index.h"
@@ -3720,6 +3722,7 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
 #include "settings/settings_def_black_frame_insertion.h"
 #include "settings/settings_def_shader_delay.h"
+#include "settings/settings_def_shader_simulated_resolution.h"
 #include "settings/settings_def_screen_brightness.h"
 #include "settings/settings_def_video_rotation.h"
 #include "settings/settings_def_video_monitor_index.h"
@@ -4450,6 +4453,7 @@ static struct config_int_setting *populate_settings_int(
 #endif
 #include "settings/settings_def_black_frame_insertion.h"
 #include "settings/settings_def_shader_delay.h"
+#include "settings/settings_def_shader_simulated_resolution.h"
 #include "settings/settings_def_screen_brightness.h"
 #include "settings/settings_def_video_rotation.h"
 #include "settings/settings_def_video_monitor_index.h"
@@ -5045,6 +5049,7 @@ static struct config_int_setting *populate_settings_int(
 #endif
 #include "settings/settings_def_black_frame_insertion.h"
 #include "settings/settings_def_shader_delay.h"
+#include "settings/settings_def_shader_simulated_resolution.h"
 #include "settings/settings_def_screen_brightness.h"
 #include "settings/settings_def_video_rotation.h"
 #include "settings/settings_def_video_monitor_index.h"

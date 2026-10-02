@@ -3809,8 +3809,20 @@ static void slang_pass_build_semantic_texture(struct slang_pass *pass,
       VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
       unsigned *write_count)
 {
-   slang_pass_build_semantic_texture_vec4(pass, buffer, semantic,
-         texture->texture.dims);
+   unsigned dims = texture->texture.dims;
+
+   if (semantic == SLANG_TEXTURE_SEMANTIC_SOURCE)
+   {
+      settings_t *settings = config_get_ptr();
+      if (settings->bools.video_shader_simulated_input_resolution)
+      {
+         unsigned width  = settings->uints.video_shader_simulated_input_resolution_width;
+         unsigned height = settings->uints.video_shader_simulated_input_resolution_height;
+         dims            = VIDEO_SCALE_PACK(width, height);
+      }
+   }
+
+   slang_pass_build_semantic_texture_vec4(pass, buffer, semantic, dims);
    slang_pass_set_semantic_texture(pass, set, semantic, texture,
          image_infos, writes, write_count);
 }
