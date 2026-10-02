@@ -856,6 +856,9 @@ static void wl_output_handle_geometry(void *data,
       int transform)
 {
    output_info_t *oi   = (output_info_t*)data;
+   /* Sent again whenever the output changes */
+   free(oi->make);
+   free(oi->model);
    oi->make            = strdup(make);
    oi->model           = strdup(model);
 }
@@ -1067,6 +1070,8 @@ static void wl_registry_handle_global_remove(void *data,
           * gfx/common/wayland_common.c does destroy it. */
          if (od->output->output)
             wayland_output_release(od->output->output);
+         free(od->output->make);
+         free(od->output->model);
          free(od->output);
          free(od);
          break;

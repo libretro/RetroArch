@@ -547,6 +547,8 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       output_info_t    *oi = od->output;
       wayland_output_release(oi->output);
       wl_list_remove(&od->link);
+      free(oi->make);
+      free(oi->model);
       free(oi);
       free(od);
    }
