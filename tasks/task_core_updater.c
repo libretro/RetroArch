@@ -849,6 +849,8 @@ static void cb_task_core_updater_download(
 static void core_updater_download_handle_release(
       core_updater_download_handle_t *download_handle);
 
+/* Pushed only by an archive download */
+#if defined(HAVE_COMPRESSION)
 static void cb_decompress_task_core_updater_download(
       retro_task_t *task, void *task_data,
       void *user_data, const char *err)
@@ -884,6 +886,7 @@ static void cb_decompress_task_core_updater_download(
    if (err && *err)
       RARCH_ERR("[Core Updater] %s", err);
 }
+#endif
 
 void cb_http_task_core_updater_download(
       retro_task_t *task, void *task_data,
