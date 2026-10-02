@@ -41,6 +41,15 @@ CFLAGS  += -Wall -std=gnu99 -g -O1 \
 
 LDFLAGS += -lpthread -lm
 
+# STATESTREAM=1 adds the deduplicating checkpoint encoding, the default
+# on desktop builds.
+ifeq ($(STATESTREAM),1)
+   SOURCES += $(REPO_ROOT)/input/bsv/uint32s_index.c \
+              $(REPO_ROOT)/libretro-db/rmsgpack.c \
+              $(REPO_ROOT)/libretro-db/rmsgpack_dom.c
+   CFLAGS  += -DHAVE_STATESTREAM -I$(REPO_ROOT)/deps
+endif
+
 CFLAGS += $(EXTRA_CFLAGS)
 
 OBJS := $(SOURCES:.c=.o)
@@ -58,10 +67,17 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+# allocator_may_return_null lets a too-large allocation fail the way it
+# does outside ASan, so the test sees the NULL.
+SWEEP_ASAN := ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
+              UBSAN_OPTIONS=print_stacktrace=1
+
 sweep:
 	$(MAKE) clean && $(MAKE) && ./$(TARGET)
 	$(MAKE) clean && $(MAKE) SANITIZER=address,undefined && \
-	   ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 ./$(TARGET)
+	   $(SWEEP_ASAN) ./$(TARGET)
+	$(MAKE) clean && $(MAKE) STATESTREAM=1 SANITIZER=address,undefined && \
+	   $(SWEEP_ASAN) ./$(TARGET)
 	@echo "sweep clean"
 
 clean:

@@ -86,10 +86,18 @@
  *  checkpoint damaged uncompressed checkpoints fed straight to
  *             bsv_movie_load_checkpoint(), whose read lands in
  *             cur_save itself: one cut short, one whose stored length
- *             exceeds its state size, one whose decoded length does,
+ *             exceeds its state size, one whose zstd-decoded length does,
  *             one skipped with a larger declared size.  Each must fail or skip without freeing,
  *             overrunning or over-reporting cur_save; run under the
- *             sweep's ASan build to catch the memory errors.
+ *             sweep's ASan build to catch the memory errors.  Also: a
+ *             header cut short records no size (valgrind shows the
+ *             uninitialised read), a load leaves last_save_size describing last_save, and a
+ *             legacy checkpoint frame too large to allocate ends the
+ *             movie without reading into a NULL buffer.
+ *  statestream  (STATESTREAM=1 builds only) damaged deduplicated
+ *             checkpoints: an encoded length past the stored bytes, a
+ *             superblock sequence longer than the previous one, and
+ *             a superblock or block index that was never defined.
  */
 
 #include <stdio.h>
@@ -105,6 +113,7 @@
 #include <streams/interface_stream.h>
 #include <file/file_path.h>
 #include <queues/task_queue.h>
+#include <encodings/rzstd.h>
 
 #include "../../../configuration.h"
 #include "../../../runloop.h"
@@ -112,6 +121,9 @@
 #include "../../../msg_hash.h"
 #include "../../../input/input_driver.h"
 #include "../../../input/bsv/bsvmovie.h"
+#ifdef HAVE_STATESTREAM
+#include "../../../input/bsv/uint32s_index.h"
+#endif
 
 /* ---- stub frontend ------------------------------------------------ */
 
@@ -134,6 +146,7 @@ static unsigned n_fail           = 0;
 void RARCH_LOG(const char *fmt, ...)  { va_list ap; va_start(ap, fmt); vfprintf(stderr, fmt, ap); va_end(ap); }
 void RARCH_WARN(const char *fmt, ...) { va_list ap; va_start(ap, fmt); vfprintf(stderr, fmt, ap); va_end(ap); }
 void RARCH_ERR(const char *fmt, ...)  { va_list ap; va_start(ap, fmt); vfprintf(stderr, fmt, ap); va_end(ap); }
+void RARCH_DBG(const char *fmt, ...)  { (void)fmt; }
 
 settings_t *config_get_ptr(void) { return &settings; }
 runloop_state_t *runloop_state_get_ptr(void) { return &runloop_st; }
@@ -466,15 +479,32 @@ static void lane_checkpoint(void)
    CHECK(!h->checkpoint_ready, "oversized checkpoint marked ready");
    bsv_movie_free(h);
 
-   /* Stored at its state's size, but claiming to decode to 4096. */
-   input_st.bsv_movie_state.flags = 0;
-   h   = checkpoint_handle(buf, 16, 4096, 16, 16);
-   ret = bsv_movie_load_checkpoint(h, REPLAY_CHECKPOINT2_COMPRESSION_NONE,
-         REPLAY_CHECKPOINT2_ENCODING_RAW, REPLAY_CPBEHAVIOR_DESERIALIZE);
-   CHECK(!ret, "checkpoint decoding past its state loaded");
-   CHECK(h->cur_save_size <= 16, "cur_save_size %u for a 16-byte buffer",
-         (unsigned)h->cur_save_size);
-   bsv_movie_free(h);
+   /* A 16-byte state whose stored data really does decode to 4096:
+    * Zstandard, so the decoded copy into cur_save is not in place. */
+   {
+      static const uint8_t zeros[4096];
+      size_t packed = 0;
+      size_t bound  = rzstd_compress_bound(sizeof(zeros));
+      uint8_t *pack = (uint8_t*)malloc(bound);
+      CHECK(pack && rzstd_encode(pack, bound, zeros, sizeof(zeros),
+               3, &packed) == RZSTD_PROCESS_END && packed <= sizeof(buf) - 12,
+            "zstd fixture");
+      memcpy(buf + 12, pack, packed);
+      free(pack);
+      input_st.bsv_movie_state.flags = 0;
+      /* Writes the size words only; the packed bytes follow them. */
+      h   = checkpoint_handle(buf, 16, 4096, (uint32_t)packed, 0);
+      intfstream_close(h->file);
+      free(h->file);
+      h->file = intfstream_open_memory(buf, RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE, 12 + packed);
+      ret = bsv_movie_load_checkpoint(h, REPLAY_CHECKPOINT2_COMPRESSION_ZSTD,
+            REPLAY_CHECKPOINT2_ENCODING_RAW, REPLAY_CPBEHAVIOR_DESERIALIZE);
+      CHECK(!ret, "checkpoint decoding past its state loaded");
+      CHECK(h->cur_save_size <= 16, "cur_save_size %u for a 16-byte buffer",
+            (unsigned)h->cur_save_size);
+      bsv_movie_free(h);
+   }
 
    /* Skipping a checkpoint allocates nothing, so the 16-byte buffer
     * must not come out claiming the skipped one's 4096. */
@@ -499,9 +529,144 @@ static void lane_checkpoint(void)
          && !memcmp(h->cur_save, buf + 12, 64), "intact checkpoint contents");
    bsv_movie_free(h);
 
+   /* Cut short inside its size words: no size was read, so none may be
+    * recorded.  Run under valgrind to see the uninitialised read. */
+   input_st.bsv_movie_state.flags = 0;
+   h   = checkpoint_handle(buf, 8, 8, 8, 0);
+   intfstream_close(h->file);
+   free(h->file);
+   h->file = intfstream_open_memory(buf, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE, 2);
+   h->cur_save      = (uint8_t*)calloc(16, 1);
+   h->cur_save_size = 16;
+   ret = bsv_movie_load_checkpoint(h, REPLAY_CHECKPOINT2_COMPRESSION_NONE,
+         REPLAY_CHECKPOINT2_ENCODING_RAW, REPLAY_CPBEHAVIOR_DESERIALIZE);
+   CHECK(!ret, "checkpoint with a cut-short header loaded");
+   CHECK(h->cur_save_size == 16, "cur_save_size %u after a cut-short header",
+         (unsigned)h->cur_save_size);
+   bsv_movie_free(h);
+
+   /* Loading resizes cur_save only; last_save_size must go on
+    * describing last_save, which the recorder later swaps back in. */
+   input_st.bsv_movie_state.flags = 0;
+   h   = checkpoint_handle(buf, 4096, 4096, 4096, 4096);
+   h->last_save      = (uint8_t*)calloc(16, 1);
+   h->last_save_size = 16;
+   ret = bsv_movie_load_checkpoint(h, REPLAY_CHECKPOINT2_COMPRESSION_NONE,
+         REPLAY_CHECKPOINT2_ENCODING_RAW, REPLAY_CPBEHAVIOR_DESERIALIZE);
+   CHECK(ret, "4096-byte checkpoint failed to load");
+   CHECK(h->last_save_size <= 16, "last_save_size %u for a 16-byte buffer",
+         (unsigned)h->last_save_size);
+   bsv_movie_free(h);
+
+   /* A legacy checkpoint frame asking for more memory than exists:
+    * the allocation fails, and nothing may be read into it. */
+   {
+      static uint8_t legacy[1 + 1 + 8 + 16];
+      uint64_t huge = swap_if_big64((uint64_t)1 << 62);
+      legacy[0] = 0;                              /* no key events */
+      legacy[1] = REPLAY_TOKEN_CHECKPOINT_FRAME;
+      memcpy(legacy + 2, &huge, sizeof(huge));
+      input_st.bsv_movie_state.flags = 0;
+      h       = (bsv_movie_t*)calloc(1, sizeof(*h));
+      h->file = intfstream_open_memory(legacy, RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE, sizeof(legacy));
+      ret = bsv_movie_read_next_events(h, REPLAY_CPBEHAVIOR_DESERIALIZE, true);
+      CHECK(!ret, "unallocatable legacy checkpoint loaded");
+      CHECK(input_st.bsv_movie_state.flags & BSV_FLAG_MOVIE_END,
+            "unallocatable legacy checkpoint did not end the movie");
+      CHECK(!h->cur_save && h->cur_save_size == 0,
+            "cur_save_size %u with no buffer", (unsigned)h->cur_save_size);
+      bsv_movie_free(h);
+   }
+
    input_st.bsv_movie_state.flags = 0;
    lane_done("checkpoint", NULL);
 }
+
+#ifdef HAVE_STATESTREAM
+/* Point @h at a statestream checkpoint for a 64-byte state: four
+ * 16-byte blocks in two superblocks.  A new handle's index tables hold
+ * only entry 0, the all-zero block and superblock. */
+static bsv_movie_t *statestream_handle(bsv_movie_t *h, uint8_t *buf,
+      const uint8_t *payload, size_t payload_len, uint32_t encoded_size)
+{
+   uint32_t words[3];
+   words[0] = swap_if_big32(64);
+   words[1] = swap_if_big32(encoded_size);
+   words[2] = swap_if_big32((uint32_t)payload_len);
+   memcpy(buf, words, sizeof(words));
+   memcpy(buf + sizeof(words), payload, payload_len);
+   if (!h)
+   {
+      h              = (bsv_movie_t*)calloc(1, sizeof(*h));
+      h->blocks      = uint32s_index_new(4, 4, 2);
+      h->superblocks = uint32s_index_new(2, 4, 2);
+   }
+   else
+   {
+      intfstream_close(h->file);
+      free(h->file);
+   }
+   h->file = intfstream_open_memory(buf, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE, sizeof(words) + payload_len);
+   return h;
+}
+
+static bool load_statestream(bsv_movie_t *h)
+{
+   return bsv_movie_load_checkpoint(h, REPLAY_CHECKPOINT2_COMPRESSION_NONE,
+         REPLAY_CHECKPOINT2_ENCODING_STATESTREAM, REPLAY_CPBEHAVIOR_DESERIALIZE);
+}
+
+static void lane_statestream(void)
+{
+   /* msgpack: start token, frame 0, then a superblock sequence. */
+   static const uint8_t seq1[]     = { 0x00, 0x00, 0x03, 0x91, 0x00 };
+   static const uint8_t seq2[]     = { 0x00, 0x00, 0x03, 0x92, 0x00, 0x00 };
+   static const uint8_t headonly[] = { 0x00, 0x00 };
+   static const uint8_t no_sb[]    = { 0x00, 0x00, 0x03, 0x91, 0x05 };
+   /* Superblock 1 is blocks 7 and 7, which were never defined. */
+   static const uint8_t no_block[] = { 0x00, 0x00, 0x02, 0x01, 0x92, 0x07,
+      0x07, 0x03, 0x91, 0x01 };
+   static uint8_t buf[12 + 64];
+   bsv_movie_t *h;
+
+   reset_counters();
+
+   /* Uncompressed, so the stored bytes are the encoded ones: a damaged
+    * encoded length must not send the decoder past the two bytes held. */
+   input_st.bsv_movie_state.flags = 0;
+   h = statestream_handle(NULL, buf, headonly, sizeof(headonly), 4096);
+   CHECK(!load_statestream(h), "encoded length past the stored bytes loaded");
+   bsv_movie_free(h);
+
+   /* A one-entry sequence, then a two-entry one on the same handle:
+    * the second must not write past what the first allocated. */
+   input_st.bsv_movie_state.flags = 0;
+   h = statestream_handle(NULL, buf, seq1, sizeof(seq1), sizeof(seq1));
+   CHECK(load_statestream(h), "one-entry sequence failed to load");
+   statestream_handle(h, buf, seq2, sizeof(seq2), sizeof(seq2));
+   CHECK(load_statestream(h), "two-entry sequence failed to load");
+   CHECK(h->cur_save && h->cur_save[0] == 0 && h->cur_save[63] == 0,
+         "two-entry sequence contents");
+   bsv_movie_free(h);
+
+   /* Indexes a damaged file never defined. */
+   input_st.bsv_movie_state.flags = 0;
+   h = statestream_handle(NULL, buf, no_sb, sizeof(no_sb), sizeof(no_sb));
+   CHECK(!load_statestream(h), "sequence naming an unknown superblock loaded");
+   bsv_movie_free(h);
+
+   input_st.bsv_movie_state.flags = 0;
+   h = statestream_handle(NULL, buf, no_block, sizeof(no_block), sizeof(no_block));
+   CHECK(!load_statestream(h), "superblock naming an unknown block loaded");
+   bsv_movie_free(h);
+
+   input_st.bsv_movie_state.flags = 0;
+   lane_done("statestream", NULL);
+}
+#endif
 
 int main(int argc, char **argv)
 {
@@ -518,6 +683,9 @@ int main(int argc, char **argv)
    lane_empty(path);
    lane_stray();
    lane_checkpoint();
+#ifdef HAVE_STATESTREAM
+   lane_statestream();
+#endif
 
    filestream_delete(path);
    task_queue_deinit();

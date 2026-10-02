@@ -526,6 +526,8 @@ bool bsv_movie_handle_read_input_event(bsv_movie_t *movie,
 bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
       uint8_t encoding,replay_checkpoint_behavior checkpoint_behavior)
 {
+   /* exit: records size only once the whole header has been read;
+    * a short read can leave part of it filled in. */
    uint32_t compressed_encoded_size, encoded_size, size;
    input_driver_state_t *input_st = input_state_get_ptr();
    uint8_t *compressed_data = NULL, *encoded_data = NULL;
@@ -534,6 +536,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
                sizeof(uint32_t)) != sizeof(uint32_t))
    {
       RARCH_ERR("[Replay] Replay truncated before uncompressed unencoded size\n");
+      size = 0;
       ret = false;
       goto exit;
    }
@@ -541,6 +544,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
                sizeof(uint32_t)) != sizeof(uint32_t))
    {
       RARCH_ERR("[Replay] Replay truncated before uncompressed encoded size\n");
+      size = 0;
       ret = false;
       goto exit;
    }
@@ -548,6 +552,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
                sizeof(uint32_t)) != sizeof(uint32_t))
    {
       RARCH_ERR("[Replay] Replay truncated before compressed encoded size\n");
+      size = 0;
       ret = false;
       goto exit;
    }
@@ -602,6 +607,15 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
    switch (compression)
    {
       case REPLAY_CHECKPOINT2_COMPRESSION_NONE:
+         /* The stored bytes are the encoded ones, so a damaged file
+          * must not say they decode to more than was read. */
+         if (encoded_size > compressed_encoded_size)
+         {
+            RARCH_ERR("[Replay] Checkpoint larger than its stored data, terminating movie\n");
+            input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+            ret = false;
+            goto exit;
+         }
          encoded_data = compressed_data;
          compressed_data = NULL;
          break;
@@ -684,9 +698,10 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
  exit:
    /* Never above what the buffer holds: a skipped checkpoint
     * allocates nothing. */
-   if (size <= handle->cur_save_size)
+   if (size && size <= handle->cur_save_size)
       handle->cur_save_size = size;
-   handle->last_save_size = handle->cur_save_size;
+   /* last_save_size stays: it describes last_save, which loading
+    * does not touch and the recorder later swaps back in. */
 
    /* On the zero-copy path these alias cur_save, which the handle
     * still owns. */
@@ -974,8 +989,18 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
             {
                if (handle->cur_save)
                   free(handle->cur_save);
-               handle->cur_save      = (uint8_t*)malloc(size);
-               handle->cur_save_size = size;
+               /* The size is the file's; it may not fit a size_t, or
+                * memory. */
+               handle->cur_save      = ((uint64_t)(size_t)size == size)
+                  ? (uint8_t*)malloc((size_t)size) : NULL;
+               handle->cur_save_size = handle->cur_save ? size : 0;
+               if (!handle->cur_save)
+               {
+                  RARCH_ERR("[Replay] Failed to allocate checkpoint\n");
+                  if (end_movie)
+                     input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+                  return false;
+               }
             }
             if (intfstream_read(handle->file, handle->cur_save, size) != (int64_t)size)
             {
@@ -983,7 +1008,8 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
                if (end_movie)
                   input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
                free(handle->cur_save);
-               handle->cur_save = NULL;
+               handle->cur_save      = NULL;
+               handle->cur_save_size = 0;
                return false;
             }
             handle->cur_save_size = size;
@@ -1630,18 +1656,16 @@ int64_t bsv_movie_write_deduped_state(bsv_movie_t *movie, uint8_t *state,
    intfstream_t *out_stream    = intfstream_open_memory(output,
          RETRO_VFS_FILE_ACCESS_READ_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE,
          output_capacity);
-   bool can_compare_saves = movie->cur_save_valid && movie->last_save
-      && movie->last_save_size >= state_size;
-   if (movie->last_save_size < state_size)
+   bool can_compare_saves;
+   if (!movie->superblock_seq || movie->superblock_seq_len < superblock_count)
    {
       free(movie->superblock_seq);
-      movie->superblock_seq = NULL;
+      movie->cur_save_valid     = false;
+      movie->superblock_seq     = (uint32_t*)calloc(superblock_count, sizeof(uint32_t));
+      movie->superblock_seq_len = movie->superblock_seq ? superblock_count : 0;
    }
-   if (!movie->superblock_seq)
-   {
-      movie->cur_save_valid = false;
-      movie->superblock_seq = (uint32_t*)calloc(superblock_count, sizeof(uint32_t));
-   }
+   can_compare_saves = movie->cur_save_valid && movie->last_save
+      && movie->last_save_size >= state_size;
    rmsgpack_write_int(out_stream, BSV_IFRAME_START_TOKEN);
    rmsgpack_write_int(out_stream, movie->frame_counter);
    for (superblock = 0; superblock < superblock_count; superblock++)
@@ -1767,11 +1791,6 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
       RARCH_ERR("[STATESTREAM] failed to allocate reader state\n");
       goto exit;
    }
-   if (state_size > movie->last_save_size && movie->superblock_seq)
-   {
-      free(movie->superblock_seq);
-      movie->superblock_seq = NULL;
-   }
    if (!movie->cur_save) {
       RARCH_ERR("[STATESTREAM] movie has no current serialized save\n");
       goto exit;
@@ -1890,8 +1909,21 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
                goto exit;
             }
             len = item.val.array.len;
-            if (!movie->superblock_seq)
-               movie->superblock_seq = (uint32_t*)calloc(len, sizeof(uint32_t));
+            /* A damaged file's sequence may be longer than the one
+             * this array was sized for. */
+            if (!movie->superblock_seq || movie->superblock_seq_len < len)
+            {
+               free(movie->superblock_seq);
+               movie->cur_save_valid     = false;
+               movie->superblock_seq     = (uint32_t*)calloc(len, sizeof(uint32_t));
+               movie->superblock_seq_len = movie->superblock_seq ? len : 0;
+               if (!movie->superblock_seq)
+               {
+                  RARCH_ERR("[STATESTREAM] failed to allocate superblock seq\n");
+                  rmsgpack_dom_value_free(&item);
+                  goto exit;
+               }
+            }
             for (i = 0; i < len; i++)
             {
                size_t j;
@@ -1901,17 +1933,24 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
                /* Superblock indices are 32-bit */
                uint32_t superblock_idx = (uint32_t)inner_item.val.uint_;
                /* if this superblock is the same as last time, no need to scan the blocks. */
-               if (movie->cur_save_valid && movie->cur_save && superblock_idx == movie->superblock_seq[i])
+               if (     movie->cur_save_valid && movie->cur_save
+                     && superblock_idx == movie->superblock_seq[i]
+                     && (superblock = uint32s_index_get(movie->superblocks, superblock_idx)))
                {
-                  superblock = uint32s_index_get(movie->superblocks, movie->superblock_seq[i]);
                   uint32s_index_bump_count(movie->superblocks, movie->superblock_seq[i]);
                   /* We do need to increment all the involved block counts though */
                   for (j = 0; j < movie->superblocks->object_size; j++)
                      uint32s_index_bump_count(movie->blocks, superblock[j]);
                   continue;
                }
+               /* A damaged file can name a superblock it never defined. */
+               if (!(superblock = uint32s_index_get(movie->superblocks, superblock_idx)))
+               {
+                  RARCH_ERR("[STATESTREAM] unknown superblock %u\n", superblock_idx);
+                  rmsgpack_dom_value_free(&item);
+                  goto exit;
+               }
                movie->superblock_seq[i] = superblock_idx;
-               superblock = uint32s_index_get(movie->superblocks, superblock_idx);
                uint32s_index_bump_count(movie->superblocks, superblock_idx);
                for (j = 0; j < movie->superblocks->object_size; j++)
                {
@@ -1922,7 +1961,13 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
                   /* This (==) can only happen in the last superblock, if it was padded with extra blocks. */
                   if (block_end <= block_start)
                      break;
-                  block = (uint8_t *)uint32s_index_get(movie->blocks, block_idx);
+                  /* ...or a block. */
+                  if (!(block = (uint8_t *)uint32s_index_get(movie->blocks, block_idx)))
+                  {
+                     RARCH_ERR("[STATESTREAM] unknown block %u\n", block_idx);
+                     rmsgpack_dom_value_free(&item);
+                     goto exit;
+                  }
                   uint32s_index_bump_count(movie->blocks, block_idx);
                   memcpy(movie->cur_save+block_start, (uint8_t*)block, block_end-block_start);
                }
@@ -1945,6 +1990,8 @@ exit:
    if (!ret)
    {
       RARCH_ERR("[STATESTREAM] made it to end without superblock seq\n");
+      /* A failed decode can leave superblock_seq ahead of cur_save. */
+      movie->cur_save_valid = false;
       return false;
    }
    total_decode_micros += cpu_features_get_time_usec() - start;
