@@ -5699,9 +5699,22 @@ bool command_event(enum event_command cmd, void *data)
             if (ra_is_forced_fs)
                video_driver_modify_disp_flags(0, VIDEO_FLAG_FORCE_FULLSCREEN);
 
-            /* If we go fullscreen we drop all drivers and
-             * reinitialize to be safe. */
-            command_event(CMD_EVENT_REINIT, NULL);
+            /* Where the window can change state in place - borderless
+             * fullscreen on a context that says so - that is all a
+             * toggle is: the window is restyled and the video driver
+             * sees a resize. Device, shaders, audio and input drivers
+             * stay as they are.
+             *
+             * Otherwise (exclusive fullscreen, which changes the
+             * display mode, or a context without the means) all
+             * drivers are dropped and reinitialised, as before. */
+            if (     !settings->bools.video_windowed_fullscreen
+                  || !video_driver_test_all_flags(
+                        GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE)
+                  || !video_driver_set_video_mode(
+                        video_driver_window_dims(new_fullscreen_state),
+                        new_fullscreen_state))
+               command_event(CMD_EVENT_REINIT, NULL);
             if (video_fullscreen)
             {
                if (     video_st->poke

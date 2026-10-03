@@ -5747,111 +5747,21 @@ const char* video_driver_get_gpu_api_version_string(void)
    return video_st->gpu_api_version_string;
 }
 
-bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
+/* The size the video driver asks its window for: the configured
+ * fullscreen size, or for a window the saved or custom size, else the
+ * core's geometry times the window scale, kept within the largest
+ * window allowed. Used when the driver starts and when a fullscreen
+ * toggle changes the window it already has. */
+static void video_driver_window_size(settings_t *settings,
+      video_driver_state_t *video_st, bool fullscreen,
+      unsigned *out_width, unsigned *out_height)
 {
-   video_info_t video;
-   unsigned max_dim, scale, width, height;
-   video_viewport_settings_t *custom_vp            = NULL;
-   input_driver_t *tmp                    = NULL;
-   static uint16_t dummy_pixels[32]       = {0};
-   runloop_state_t *runloop_st            = runloop_state_get_ptr();
-   settings_t       *settings             = config_get_ptr();
+   struct retro_game_geometry *geom = &video_st->av_info.geometry;
+   unsigned int rotation            = retroarch_get_rotation();
+   unsigned width                   = 0;
+   unsigned height                  = 0;
 
-   input_driver_state_t *input_st         = input_state_get_ptr();
-   video_driver_state_t *video_st         = &video_driver_st;
-   struct retro_game_geometry *geom       = &video_st->av_info.geometry;
-   const enum retro_pixel_format
-      video_driver_pix_fmt                = video_st->pix_fmt;
-   unsigned int rotation                  = retroarch_get_rotation();
-#ifdef HAVE_VIDEO_FILTER
-   const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
-#endif
-
-#ifdef HAVE_VIDEO_FILTER
-   /* Bound before any driver or wrapper exists: under threaded video
-    * the OSD fonts live on the video thread, and the font driver
-    * reaches ra-video state through this capture, not the getter. */
-   font_driver_bind_video_state(video_state_get_ptr());
-
-   /* Init video filter only when game is running */
-   if ((     runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED)
-         && (path_softfilter_plugin && *path_softfilter_plugin))
-      video_driver_init_filter(video_driver_pix_fmt, settings);
-#endif
-
-#if defined(HAVE_THREADS) && !defined(FRAME_CACHE_HAZARDS)
-   /* Lazily allocate the cached-frame tuple lock on first video
-    * driver init.  Kept across video driver reinits (HDR toggle,
-    * fullscreen change) and for the rest of the process: the cache is
-    * still invalidated from retroarch_deinit_drivers() after the video
-    * driver itself is gone, so there is no point at which freeing
-    * this would be safe. */
-   if (!cached_frame_lock)
-      cached_frame_lock = slock_new();
-#endif
-
-   max_dim   = MAX(geom->max_width, geom->max_height);
-   scale     = next_pow2(max_dim) / RARCH_SCALE_BASE;
-   scale     = MAX(scale, 1);
-
-#ifdef HAVE_VIDEO_FILTER
-   if (video_st->state_filter)
-      scale  = video_st->state_scale;
-#endif
-
-   strlcpy(aspectratio_lut[ASPECT_RATIO_CONFIG].name,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG),
-         sizeof(aspectratio_lut[ASPECT_RATIO_CONFIG].name));
-   strlcpy(aspectratio_lut[ASPECT_RATIO_CORE].name,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED),
-         sizeof(aspectratio_lut[ASPECT_RATIO_CORE].name));
-   strlcpy(aspectratio_lut[ASPECT_RATIO_CUSTOM].name,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM),
-         sizeof(aspectratio_lut[ASPECT_RATIO_CUSTOM].name));
-   strlcpy(aspectratio_lut[ASPECT_RATIO_FULL].name,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL),
-         sizeof(aspectratio_lut[ASPECT_RATIO_FULL].name));
-
-   /* Update core-dependent aspect ratio values. */
-   video_driver_set_viewport_square_pixel(geom, rotation);
-   video_driver_set_viewport_core();
-   video_driver_set_viewport_config(geom,
-         settings->floats.video_aspect_ratio,
-         settings->bools.video_aspect_ratio_auto);
-
-   /* Update CUSTOM viewport. */
-   custom_vp = &settings->video_vp_custom;
-
-   if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
-   {
-      float default_aspect = aspectratio_lut[ASPECT_RATIO_CORE].value;
-      aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
-         (custom_vp->dims
-          && VIDEO_SCALE_W(custom_vp->dims)
-          && VIDEO_SCALE_H(custom_vp->dims))
-         ? (float)VIDEO_SCALE_W(custom_vp->dims)
-               / VIDEO_SCALE_H(custom_vp->dims) : default_aspect;
-   }
-
-   {
-      /* Guard against aspect ratio index possibly being out of bounds */
-      unsigned new_aspect_idx = settings->uints.video_aspect_ratio_idx;
-      if (new_aspect_idx > ASPECT_RATIO_END)
-         new_aspect_idx       = settings->uints.video_aspect_ratio_idx = 0;
-      video_driver_aspect_ratio_put(&video_st->aspect_ratio_bits,
-            aspectratio_lut[new_aspect_idx].value);
-   }
-
-   /* Seed the viewport-parameter snapshot before the driver's init
-    * runs: drivers call video_driver_update_viewport() from inside
-    * init. This must come after the aspect ratio above is stored -
-    * published any earlier, the snapshot carries the previous (on a
-    * cold start, zero) aspect, and init-time viewports come out
-    * 0 pixels wide until the first frame republishes. */
-   video_driver_publish_vp_params();
-
-   if (     settings->bools.video_fullscreen
-         || ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_FORCE_FULLSCREEN))
+   if (fullscreen)
    {
       width  = settings->uints.video_fullscreen_x;
       height = settings->uints.video_fullscreen_y;
@@ -5987,6 +5897,127 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
          }
       }
    }
+
+   *out_width  = width;
+   *out_height = height;
+}
+
+unsigned video_driver_window_dims(bool fullscreen)
+{
+   unsigned width  = 0;
+   unsigned height = 0;
+   video_driver_window_size(config_get_ptr(), &video_driver_st,
+         fullscreen, &width, &height);
+   return VIDEO_SCALE_PACK(width, height);
+}
+
+bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
+{
+   video_info_t video;
+   unsigned max_dim, scale, width, height;
+   video_viewport_settings_t *custom_vp            = NULL;
+   input_driver_t *tmp                    = NULL;
+   static uint16_t dummy_pixels[32]       = {0};
+   runloop_state_t *runloop_st            = runloop_state_get_ptr();
+   settings_t       *settings             = config_get_ptr();
+
+   input_driver_state_t *input_st         = input_state_get_ptr();
+   video_driver_state_t *video_st         = &video_driver_st;
+   struct retro_game_geometry *geom       = &video_st->av_info.geometry;
+   const enum retro_pixel_format
+      video_driver_pix_fmt                = video_st->pix_fmt;
+   unsigned int rotation                  = retroarch_get_rotation();
+#ifdef HAVE_VIDEO_FILTER
+   const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
+#endif
+
+#ifdef HAVE_VIDEO_FILTER
+   /* Bound before any driver or wrapper exists: under threaded video
+    * the OSD fonts live on the video thread, and the font driver
+    * reaches ra-video state through this capture, not the getter. */
+   font_driver_bind_video_state(video_state_get_ptr());
+
+   /* Init video filter only when game is running */
+   if ((     runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED)
+         && (path_softfilter_plugin && *path_softfilter_plugin))
+      video_driver_init_filter(video_driver_pix_fmt, settings);
+#endif
+
+#if defined(HAVE_THREADS) && !defined(FRAME_CACHE_HAZARDS)
+   /* Lazily allocate the cached-frame tuple lock on first video
+    * driver init.  Kept across video driver reinits (HDR toggle,
+    * fullscreen change) and for the rest of the process: the cache is
+    * still invalidated from retroarch_deinit_drivers() after the video
+    * driver itself is gone, so there is no point at which freeing
+    * this would be safe. */
+   if (!cached_frame_lock)
+      cached_frame_lock = slock_new();
+#endif
+
+   max_dim   = MAX(geom->max_width, geom->max_height);
+   scale     = next_pow2(max_dim) / RARCH_SCALE_BASE;
+   scale     = MAX(scale, 1);
+
+#ifdef HAVE_VIDEO_FILTER
+   if (video_st->state_filter)
+      scale  = video_st->state_scale;
+#endif
+
+   strlcpy(aspectratio_lut[ASPECT_RATIO_CONFIG].name,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG),
+         sizeof(aspectratio_lut[ASPECT_RATIO_CONFIG].name));
+   strlcpy(aspectratio_lut[ASPECT_RATIO_CORE].name,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED),
+         sizeof(aspectratio_lut[ASPECT_RATIO_CORE].name));
+   strlcpy(aspectratio_lut[ASPECT_RATIO_CUSTOM].name,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM),
+         sizeof(aspectratio_lut[ASPECT_RATIO_CUSTOM].name));
+   strlcpy(aspectratio_lut[ASPECT_RATIO_FULL].name,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL),
+         sizeof(aspectratio_lut[ASPECT_RATIO_FULL].name));
+
+   /* Update core-dependent aspect ratio values. */
+   video_driver_set_viewport_square_pixel(geom, rotation);
+   video_driver_set_viewport_core();
+   video_driver_set_viewport_config(geom,
+         settings->floats.video_aspect_ratio,
+         settings->bools.video_aspect_ratio_auto);
+
+   /* Update CUSTOM viewport. */
+   custom_vp = &settings->video_vp_custom;
+
+   if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_CUSTOM)
+   {
+      float default_aspect = aspectratio_lut[ASPECT_RATIO_CORE].value;
+      aspectratio_lut[ASPECT_RATIO_CUSTOM].value =
+         (custom_vp->dims
+          && VIDEO_SCALE_W(custom_vp->dims)
+          && VIDEO_SCALE_H(custom_vp->dims))
+         ? (float)VIDEO_SCALE_W(custom_vp->dims)
+               / VIDEO_SCALE_H(custom_vp->dims) : default_aspect;
+   }
+
+   {
+      /* Guard against aspect ratio index possibly being out of bounds */
+      unsigned new_aspect_idx = settings->uints.video_aspect_ratio_idx;
+      if (new_aspect_idx > ASPECT_RATIO_END)
+         new_aspect_idx       = settings->uints.video_aspect_ratio_idx = 0;
+      video_driver_aspect_ratio_put(&video_st->aspect_ratio_bits,
+            aspectratio_lut[new_aspect_idx].value);
+   }
+
+   /* Seed the viewport-parameter snapshot before the driver's init
+    * runs: drivers call video_driver_update_viewport() from inside
+    * init. This must come after the aspect ratio above is stored -
+    * published any earlier, the snapshot carries the previous (on a
+    * cold start, zero) aspect, and init-time viewports come out
+    * 0 pixels wide until the first frame republishes. */
+   video_driver_publish_vp_params();
+
+   video_driver_window_size(settings, video_st,
+            settings->bools.video_fullscreen
+         || ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_FORCE_FULLSCREEN),
+         &width, &height);
 
    if (width && height)
       RARCH_LOG("[Video] Set video size to: %ux%u.\n", width, height);

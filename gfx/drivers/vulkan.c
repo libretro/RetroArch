@@ -7035,9 +7035,15 @@ static void vulkan_set_video_mode(void *data,
       bool fullscreen)
 {
    vk_t *vk               = (vk_t*)data;
-   if (vk->ctx_driver->set_video_mode)
-      vk->ctx_driver->set_video_mode(vk->ctx_data,
-            dims, fullscreen);
+   if (     vk->ctx_driver->set_video_mode
+         && vk->ctx_driver->set_video_mode(vk->ctx_data,
+               dims, fullscreen))
+   {
+      if (fullscreen)
+         vk->flags |=  VK_FLAG_FULLSCREEN;
+      else
+         vk->flags &= ~VK_FLAG_FULLSCREEN;
+   }
 }
 
 static void vulkan_set_viewport(void *data, unsigned dims,

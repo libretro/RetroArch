@@ -218,6 +218,21 @@ static bool gfx_ctx_w_vk_set_video_mode(void *data,
       unsigned dims,
       bool fullscreen)
 {
+   /* With a window already up this is a fullscreen toggle on it: the
+    * window is restyled where it stands, and the swapchain follows
+    * when the resize reaches check_window, as for any resize. Where
+    * that is refused - exclusive fullscreen - this goes on as it
+    * always has. */
+   if (     win32_get_window()
+         && win32_window_set_fullscreen(dims, fullscreen))
+   {
+      if (fullscreen)
+         win32_vk.flags |=  VK_DATA_FLAG_FULLSCREEN;
+      else
+         win32_vk.flags &= ~VK_DATA_FLAG_FULLSCREEN;
+      return true;
+   }
+
    if (fullscreen)
       win32_vk.flags |=  VK_DATA_FLAG_FULLSCREEN;
    else
@@ -293,6 +308,8 @@ static uint32_t gfx_ctx_w_vk_get_flags(void *data)
    if (retro_atomic_load_acquire_int(
             &win32_vk.context.supports_adaptive_vsync))
       BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);

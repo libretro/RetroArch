@@ -2693,3 +2693,7 @@
 == 20 fullscreen toggles
  windows made 20, inited 20, gone again 20
  window objects left behind: no
+== 20 fullscreen toggles on one window
+ same window 20, right style 20, right size 20, resize seen 20
+ exclusive fullscreen left to a restart: yes
+ destroyed: window gone

@@ -1681,6 +1681,11 @@ void video_driver_shader_deferred_tick(void);
 
 bool video_driver_set_rotation(unsigned rotation);
 
+/* The size, packed with VIDEO_SCALE_PACK, the video driver would ask
+ * its window for in the given state; what a fullscreen toggle on the
+ * existing window resizes it to. */
+unsigned video_driver_window_dims(bool fullscreen);
+
 bool video_driver_set_video_mode(unsigned dims, bool fullscreen);
 
 /* Appends printf-formatted text at @len to a statistics buffer of

@@ -2138,6 +2138,104 @@ bool win32_set_video_mode(void *data,
 
    return true;
 }
+
+/* Takes the window that is already there between windowed and
+ * borderless fullscreen: its style, position and size change, and it
+ * stays the same window.
+ *
+ * A fullscreen toggle used to mean a full driver restart - window,
+ * video device, shaders, audio, input drivers, controllers detected
+ * again - because the only way to a window of the other kind was to
+ * destroy this one and create another. For a borderless fullscreen
+ * window nothing but the window differs. The size it ends up with
+ * reaches the video driver as any resize does, through WM_SIZE.
+ *
+ * Not for exclusive fullscreen, which changes the display mode: that
+ * answers false and is left to the restart.
+ *
+ * Has to run on the thread that owns the window; a video driver's
+ * set_video_mode does. */
+bool win32_window_set_fullscreen(unsigned dims, bool fullscreen)
+{
+   DWORD style;
+   RECT mon_rect;
+   RECT rect;
+   MONITORINFOEX current_mon;
+   int x, y;
+   unsigned width       = VIDEO_SCALE_W(dims);
+   unsigned height      = VIDEO_SCALE_H(dims);
+   unsigned mon_id      = 0;
+   HMONITOR hm_to_use   = NULL;
+   HWND hwnd            = main_window.hwnd;
+   settings_t *settings = config_get_ptr();
+   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+   /* where the window stood before it last went fullscreen */
+   static RECT windowed_rect;
+   static HWND windowed_rect_of;
+
+   if (!hwnd || !settings->bools.video_windowed_fullscreen)
+      return false;
+
+   /* fullscreen on the monitor the window is on, as a restart has it */
+   win32_monitor_last = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+   win32_monitor_info(&current_mon, &hm_to_use, &mon_id);
+   mon_rect           = current_mon.rcMonitor;
+
+   rect.left          = 0;
+   rect.top           = 0;
+   rect.right         = 0;
+   rect.bottom        = 0;
+
+   if (fullscreen && !(GetWindowLongPtr(hwnd, GWL_STYLE) & WS_POPUP))
+   {
+      GetWindowRect(hwnd, &windowed_rect);
+      windowed_rect_of = hwnd;
+   }
+
+   win32_set_style(&current_mon, &hm_to_use, &width, &height,
+         fullscreen, true, &rect, &mon_rect, &style);
+
+   if (fullscreen)
+   {
+      /* the menu bar belongs to the windowed state */
+      HMENU menu = GetMenu(hwnd);
+      if (menu)
+      {
+         SetMenu(hwnd, NULL);
+         DestroyMenu(menu);
+      }
+      x = mon_rect.left;
+      y = mon_rect.top;
+   }
+   else if (g_win32->pos_set)
+   {
+      x = VIDEO_POS_X(g_win32->pos);
+      y = VIDEO_POS_Y(g_win32->pos);
+   }
+   else if (windowed_rect_of == hwnd)
+   {
+      x = windowed_rect.left;
+      y = windowed_rect.top;
+   }
+   else
+   {
+      /* never windowed yet: the middle of its monitor */
+      x = mon_rect.left + ((mon_rect.right  - mon_rect.left) - (int)width)  / 2;
+      y = mon_rect.top  + ((mon_rect.bottom - mon_rect.top)  - (int)height) / 2;
+      if (x < mon_rect.left)
+         x = mon_rect.left;
+      if (y < mon_rect.top)
+         y = mon_rect.top;
+   }
+
+   SetWindowLongPtr(hwnd, GWL_STYLE, style | WS_VISIBLE);
+   SetWindowPos(hwnd, HWND_TOP, x, y, width, height,
+         SWP_FRAMECHANGED | SWP_NOOWNERZORDER);
+
+   win32_set_window(&width, &height, fullscreen, true, &rect);
+
+   return true;
+}
 #endif
 
 bool win32_get_client_rect(RECT* rect)

@@ -371,7 +371,11 @@ enum display_flags
    /* Set by a context driver whose default framebuffer is 10-bit
     * Rec.2020 PQ (HDR10, e.g. a KMS scanout with HDR metadata): the
     * video driver encodes its frame to PQ instead of scRGB. */
-   GFX_CTX_FLAGS_HDR10_FRAMEBUFFER
+   GFX_CTX_FLAGS_HDR10_FRAMEBUFFER,
+   /* The window can go between windowed and borderless fullscreen where
+    * it stands, through set_video_mode, with the driver seeing only a
+    * resize: a fullscreen toggle need not restart the drivers. */
+   GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE
 };
 
 enum shader_uniform_type

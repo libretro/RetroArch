@@ -190,6 +190,10 @@ ui_companion_driver_t ui_companion_win32;
 
 void stubs_init(void)
 {
+   /* a core's geometry: the window limits its size to twenty times
+    * it, and with none the limit is too small to hold a window */
+   stub_video_st.av_info.geometry.base_width  = 320;
+   stub_video_st.av_info.geometry.base_height = 240;
    stub_application.process_events = stub_process_events;
    ui_companion_win32.application  = &stub_application;
    ui_companion_win32.window       = &stub_window;

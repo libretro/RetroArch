@@ -105,6 +105,11 @@ bool win32_set_video_mode(void *data,
       unsigned dims,
       bool fullscreen);
 
+/* Takes the existing window between windowed and borderless fullscreen
+ * without destroying it. False if there is no window, or fullscreen is
+ * the exclusive kind. Call on the thread that owns the window. */
+bool win32_window_set_fullscreen(unsigned dims, bool fullscreen);
+
 bool win32_suspend_screensaver(void *data, bool enable);
 
 void win32_show_cursor(void *data, bool state);

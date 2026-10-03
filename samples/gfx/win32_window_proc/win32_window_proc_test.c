@@ -289,6 +289,93 @@ int main(int argc, char **argv)
             (objects_last > objects_first) ? "yes" : "no");
    }
 
+#ifndef W32T_OLD
+   /* The same toggles on one window: win32_window_set_fullscreen()
+    * takes the window between windowed and borderless fullscreen where
+    * it stands. It has to stay the same window, wear the right style,
+    * end up the right size, and tell the video driver through a
+    * resize. (The twelve old procedures had no such thing: these lines
+    * of the expected trace are this function's own.) */
+   {
+      WNDCLASSEX wndclass;
+      HWND hwnd;
+      MONITORINFO mon;
+      int cycle, same = 0, styled = 0, sized = 0, resized = 0;
+      const int cycles = 20;
+      bool refused;
+
+      strlcpy(settings->arrays.input_driver, "raw",
+            sizeof(settings->arrays.input_driver));
+      settings->bools.video_fullscreen = false;
+      trace_on = false;
+
+      win32_window_reset();
+      win32_monitor_init();
+      memset(&wndclass, 0, sizeof(wndclass));
+      wndclass.lpfnWndProc = proc_for(FAM_VK, IN_WINRAW);
+      if (     win32_window_init(&wndclass, true, NULL)
+            && win32_set_video_mode(NULL, VIDEO_SCALE_PACK(640, 480), false))
+      {
+         hwnd = win32_get_window();
+         pump();
+
+         memset(&mon, 0, sizeof(mon));
+         mon.cbSize = sizeof(mon);
+         GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST), &mon);
+
+         for (cycle = 0; cycle < cycles; cycle++)
+         {
+            RECT client;
+            bool fullscreen = !(cycle & 1);
+            bool popup;
+
+            win32_window_reset();
+            settings->bools.video_fullscreen = fullscreen;
+            if (!win32_window_set_fullscreen(VIDEO_SCALE_PACK(640, 480), fullscreen))
+               break;
+            pump();
+
+            if (win32_get_window() == hwnd && IsWindow(hwnd))
+               same++;
+            popup = (GetWindowLongPtr(hwnd, GWL_STYLE) & WS_POPUP) != 0;
+            if (popup == fullscreen && IsWindowVisible(hwnd))
+               styled++;
+            GetClientRect(hwnd, &client);
+            if (fullscreen
+                  ? (   client.right  == mon.rcMonitor.right  - mon.rcMonitor.left
+                     && client.bottom == mon.rcMonitor.bottom - mon.rcMonitor.top)
+                  : (client.right == 640 && client.bottom == 480))
+               sized++;
+            if (win32_get_flags() & WIN32_CMN_FLAG_RESIZED)
+               resized++;
+         }
+
+         /* exclusive fullscreen changes the display mode: not done in
+          * place, left to the driver restart */
+         settings->bools.video_windowed_fullscreen = false;
+         refused = !win32_window_set_fullscreen(VIDEO_SCALE_PACK(640, 480), true);
+         settings->bools.video_windowed_fullscreen = true;
+
+         win32_monitor_from_window();
+         win32_destroy_window();
+         pump();
+
+         trace_on = true;
+         trace("== %d fullscreen toggles on one window\n", cycles);
+         trace(" same window %d, right style %d, right size %d, resize seen %d\n",
+               same, styled, sized, resized);
+         trace(" exclusive fullscreen left to a restart: %s\n",
+               refused ? "yes" : "no");
+         trace(" destroyed: window %s\n", IsWindow(hwnd) ? "still there" : "gone");
+      }
+      else
+      {
+         trace_on = true;
+         trace("== fullscreen toggles on one window: no window\n");
+      }
+   }
+#endif
+
    out = fopen(argc > 1 ? argv[1] : "trace.txt", "wb");
    if (!out)
       return 2;
