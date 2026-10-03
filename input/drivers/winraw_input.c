@@ -804,7 +804,8 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
  * reports in 7679 reads, one read an iteration, none taken by the
  * pump. The old path's two calls a report would have been 19428. */
 
-extern void winraw_joypad_take_hid(HANDLE device, const BYTE *data, DWORD size);
+extern void winraw_joypad_take_hid(HANDLE device, const BYTE *data,
+      DWORD report_size, DWORD count);
 
 /* The thread whose raw input queue the poll reads in bulk, and how
  * many windows on it are read that way: this driver's, and
@@ -1006,7 +1007,7 @@ static void winraw_drain(winraw_input_t *wr)
             if (wr)
                wr->drained_hid++;
             winraw_joypad_take_hid(ri->header.hDevice, hid->bRawData,
-                  hid->dwSizeHid * hid->dwCount);
+                  hid->dwSizeHid, hid->dwCount);
          }
          /* no keyboard and mouse driver: nothing is registered for
           * them, and there is nothing to take them */

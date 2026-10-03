@@ -548,3 +548,23 @@ jobs:
           WINEDEBUG=-all timeout 300 make check
           make clean
           echo "[pass] winraw_joypad_poll_test (wine)"
+
+      - name: Build and run winraw_joypad_newest_test (mingw + Wine)
+        shell: bash
+        working-directory: samples/input/winraw_joypad_newest
+        run: |
+          set -eu
+          # winraw_joypad parses only the newest report of each report
+          # ID per controller out of a bulk read, not every report. The
+          # driver, with its HID calls routed to a fake controller that
+          # splits its state across report IDs: twenty thousand random
+          # bursts of reports - any IDs and values, several reports in
+          # a record, reports too big to hold, more IDs than are held -
+          # go to one controller through the holding path and to a
+          # second one report at a time, and after every burst the two
+          # must read the same buttons, axes and hats.
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          make clean all
+          WINEDEBUG=-all timeout 300 make check
+          make clean
+          echo "[pass] winraw_joypad_newest_test (wine)"

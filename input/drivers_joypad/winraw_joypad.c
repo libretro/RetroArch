@@ -177,6 +177,26 @@ static bool     winraw_joypad_by_poll            = false;
 static DWORD    winraw_joypad_window_tid         = 0;
 static bool     winraw_joypad_window_failed      = false;
 
+/* Reports read in bulk and not parsed yet: for each controller, the
+ * newest report of each report ID. See winraw_joypad_take_hid(). */
+#define WINRAW_JOYPAD_HELD_IDS   4
+#define WINRAW_JOYPAD_HELD_BYTES 128
+
+typedef struct
+{
+   uint8_t  count;                              /* report IDs held */
+   uint8_t  order[WINRAW_JOYPAD_HELD_IDS];      /* their slots, the newest last */
+   uint16_t size[WINRAW_JOYPAD_HELD_IDS];
+   BYTE     data[WINRAW_JOYPAD_HELD_IDS][WINRAW_JOYPAD_HELD_BYTES];
+} winraw_joypad_held_t;
+
+static winraw_joypad_held_t winraw_joypad_held[MAX_USERS];
+
+/* Reports handed over by bulk reads, and reports parsed: logged when
+ * the driver is destroyed. */
+static unsigned long winraw_joypad_reports_taken;
+static unsigned long winraw_joypad_reports_parsed;
+
 /* winraw_input.c */
 extern bool winraw_raw_input_polled(void);
 extern void winraw_queue_read(void);
@@ -564,6 +584,7 @@ static void winraw_joypad_remove_device(HANDLE hDevice)
 
       memset(pad, 0, sizeof(*pad));
       /* pad->connected is now false from the memset */
+      winraw_joypad_held[slot].count = 0;
    }
 
    /* Recalculate pad_count so it reflects the highest connected slot + 1.
@@ -597,6 +618,7 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
    if (!pad || !pad->preparsed || !raw_data || raw_data_size == 0)
       return;
 
+   winraw_joypad_reports_parsed++;
    num_buttons = pad->num_buttons;
 
    /* --- Buttons --- */
@@ -708,17 +730,102 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
    }
 }
 
-/* A report for one of this driver's controllers that was read in bulk
+/* Reports for one of this driver's controllers that were read in bulk
  * by the keyboard and mouse driver (winraw_input.c, "Read by the
  * poll"): a bulk read takes every raw input report waiting on its
- * thread, and when this driver's window is on that thread, its
- * reports with them. Same as the WM_INPUT case below from here on. */
-void winraw_joypad_take_hid(HANDLE device, const BYTE *data, DWORD size)
+ * thread, and this driver's with them.
+ *
+ * They are not parsed here. A controller sends its whole state in
+ * every report, and one that reports a thousand times a second has
+ * eight to seventeen of them waiting at each poll; parsing each is a
+ * dozen calls into the HID parser, to write a state that the next
+ * report overwrites before anything reads it. What the poll leaves
+ * behind is the same whether every report is parsed or only the last,
+ * so only the last is: it is kept here, and
+ * winraw_joypad_parse_held() parses it once the read is done.
+ *
+ * "The last" is per report ID - the report's first byte - because a
+ * device may split its state across several, and an axis that one ID
+ * carries is not rewritten by a report with another. The newest of
+ * each ID is kept, and they are parsed in the order their newest
+ * arrived, which leaves buttons, hats and axes exactly as parsing
+ * every report in turn would. A report too big to keep, or a fifth ID,
+ * is not guessed about: what is held is parsed first, then it.
+ *
+ * @data is @count reports of @report_size bytes each. */
+static void winraw_joypad_parse_held_slot(int slot)
 {
-   int slot = winraw_joypad_find_pad(device);
-   if (slot >= 0)
+   unsigned i;
+   winraw_joypad_held_t *held = &winraw_joypad_held[slot];
+
+   for (i = 0; i < held->count; i++)
+   {
+      unsigned k = held->order[i];
       winraw_joypad_parse_hid_report(&winraw_joypad_pads[slot],
-            data, size);
+            held->data[k], held->size[k]);
+   }
+   held->count = 0;
+}
+
+static void winraw_joypad_parse_held(void)
+{
+   unsigned slot;
+   for (slot = 0; slot < MAX_USERS; slot++)
+      if (winraw_joypad_held[slot].count)
+         winraw_joypad_parse_held_slot((int)slot);
+}
+
+static void winraw_joypad_hold_report(int slot, const BYTE *report, DWORD size)
+{
+   unsigned i, k;
+   winraw_joypad_held_t *held = &winraw_joypad_held[slot];
+
+   if (size == 0)
+      return;
+
+   if (size > WINRAW_JOYPAD_HELD_BYTES)
+   {
+      winraw_joypad_parse_held_slot(slot);
+      winraw_joypad_parse_hid_report(&winraw_joypad_pads[slot], report, size);
+      return;
+   }
+
+   for (i = 0; i < held->count; i++)
+      if (held->data[held->order[i]][0] == report[0])
+         break;
+
+   if (i < held->count)
+   {
+      /* this ID again: it takes the older one's place, and is now the
+       * newest of them all */
+      k = held->order[i];
+      for (; i + 1 < held->count; i++)
+         held->order[i] = held->order[i + 1];
+      held->order[held->count - 1] = (uint8_t)k;
+   }
+   else
+   {
+      if (held->count == WINRAW_JOYPAD_HELD_IDS)
+         winraw_joypad_parse_held_slot(slot);
+      /* order[] holds 0..count-1 in some order, so count is free */
+      k                            = held->count;
+      held->order[held->count++]   = (uint8_t)k;
+   }
+
+   memcpy(held->data[k], report, size);
+   held->size[k] = (uint16_t)size;
+}
+
+void winraw_joypad_take_hid(HANDLE device, const BYTE *data,
+      DWORD report_size, DWORD count)
+{
+   DWORD i;
+   int slot = winraw_joypad_find_pad(device);
+   if (slot < 0 || report_size == 0)
+      return;
+   winraw_joypad_reports_taken += count;
+   for (i = 0; i < count; i++)
+      winraw_joypad_hold_report(slot, data + i * report_size, report_size);
 }
 
 /* ------------------------------------------------------------------ */
@@ -765,6 +872,10 @@ static LRESULT CALLBACK winraw_joypad_joypad_wndproc(
          slot = winraw_joypad_find_pad(raw->header.hDevice);
          if (slot < 0)
             break;
+
+         /* older reports still held from a bulk read come first */
+         if (winraw_joypad_held[slot].count)
+            winraw_joypad_parse_held_slot(slot);
 
          winraw_joypad_parse_hid_report(&winraw_joypad_pads[slot],
                raw->data.hid.bRawData,
@@ -891,7 +1002,10 @@ static void *winraw_joypad_joypad_init(void *data)
    unsigned i;
 
    memset(winraw_joypad_pads, 0, sizeof(winraw_joypad_pads));
-   winraw_joypad_pad_count = 0;
+   memset(winraw_joypad_held, 0, sizeof(winraw_joypad_held));
+   winraw_joypad_pad_count      = 0;
+   winraw_joypad_reports_taken  = 0;
+   winraw_joypad_reports_parsed = 0;
 
    /* Read by the poll: the window is made by the first poll, so that
     * it is the polling thread's. This runs on whichever thread starts
@@ -945,6 +1059,7 @@ static void winraw_joypad_joypad_destroy(void)
    }
 
    memset(winraw_joypad_pads, 0, sizeof(winraw_joypad_pads));
+   memset(winraw_joypad_held, 0, sizeof(winraw_joypad_held));
    winraw_joypad_pad_count = 0;
 
    if (winraw_joypad_msg_window)
@@ -966,6 +1081,10 @@ static void winraw_joypad_joypad_destroy(void)
 
    winraw_joypad_initialised = false;
 
+   if (winraw_joypad_by_poll)
+      RARCH_DBG("[RawInput Joypad] Read by the poll: %lu reports read in bulk,"
+            " %lu parsed.\n",
+            winraw_joypad_reports_taken, winraw_joypad_reports_parsed);
    RARCH_LOG("[RawInput Joypad] Destroyed.\n");
 }
 
@@ -1199,7 +1318,9 @@ static int16_t winraw_joypad_joypad_state(
  * poll"), the window is made by the first poll, on the polling
  * thread, and the reports waiting are read in bulk when the poll
  * asks: the state is what the controller had sent at that moment, and
- * a frame's reports cost one call instead of two each. The read is
+ * a frame's reports cost one call instead of two each - and one
+ * parse, of the newest, instead of one each
+ * (winraw_joypad_take_hid()). The read is
  * the keyboard and mouse driver's own - one read takes everything
  * waiting on the thread, and hands this driver its share through
  * winraw_joypad_take_hid() - so the two drivers make one read between
@@ -1243,6 +1364,8 @@ static void winraw_joypad_joypad_poll(void)
       }
 
       winraw_queue_read();
+      /* the newest report of each controller, once */
+      winraw_joypad_parse_held();
 
       if (winraw_joypad_msg_window)
          while (PeekMessageA(&msg, winraw_joypad_msg_window,

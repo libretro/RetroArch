@@ -120,11 +120,12 @@ uint16_t win32_get_keyboard_mods(void) { return published_mods; }
 /* the controller driver's entry for reports read in bulk */
 static unsigned hid_taken;
 static DWORD    hid_taken_size;
-void winraw_joypad_take_hid(HANDLE device, const BYTE *data, DWORD size)
+void winraw_joypad_take_hid(HANDLE device, const BYTE *data,
+      DWORD report_size, DWORD count)
 {
    (void)device; (void)data;
    hid_taken++;
-   hid_taken_size = size;
+   hid_taken_size = report_size * count;
 }
 
 static unsigned failures;
@@ -488,7 +489,7 @@ int main(void)
       hid->dwCount   = 2;
       hid_taken      = 0;
       winraw_joypad_take_hid(rec.ri.header.hDevice, hid->bRawData,
-            hid->dwSizeHid * hid->dwCount);
+            hid->dwSizeHid, hid->dwCount);
       CHECK(hid_taken == 1 && hid_taken_size == 14, "a controller report of 2 x 7 bytes: %u, %lu",
             hid_taken, (unsigned long)hid_taken_size);
    }
