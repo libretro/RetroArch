@@ -4120,6 +4120,37 @@ static void d3d10_set_video_mode(void *data, unsigned dims, bool fullscreen)
 }
 #endif
 
+/* The vblank the most recent present went out on, for display pacing.
+ * The swapchain's statistics say so only while they describe that
+ * present: a present made with sync interval 0 is on no vblank, and
+ * leaves them at the last one that was. Then, and whenever the
+ * statistics cannot be had, the compositor's own last vblank, as the
+ * D3D11, D3D12 and Vulkan drivers read it. */
+static retro_time_t d3d10_get_last_present_time(void *data)
+{
+   DXGI_FRAME_STATISTICS stats;
+   UINT last_present    = 0;
+   static LARGE_INTEGER freq;
+   d3d10_video_t *d3d10 = (d3d10_video_t*)data;
+
+   if (!d3d10 || !d3d10->swapChain)
+      return 0;
+   if (     SUCCEEDED(d3d10->swapChain->lpVtbl->GetFrameStatistics(
+               d3d10->swapChain, &stats))
+         && SUCCEEDED(d3d10->swapChain->lpVtbl->GetLastPresentCount(
+               d3d10->swapChain, &last_present))
+         && stats.PresentCount == last_present
+         && stats.SyncQPCTime.QuadPart
+         && (freq.QuadPart || QueryPerformanceFrequency(&freq)))
+      return (stats.SyncQPCTime.QuadPart / freq.QuadPart * 1000000)
+           + (stats.SyncQPCTime.QuadPart % freq.QuadPart * 1000000 / freq.QuadPart);
+#if !defined(__WINRT__) && !defined(_XBOX)
+   return win32_dwm_last_vblank_time();
+#else
+   return 0;
+#endif
+}
+
 static const video_poke_interface_t d3d10_poke_interface = {
    d3d10_get_flags,
    d3d10_gfx_load_texture,
@@ -4169,7 +4200,7 @@ static const video_poke_interface_t d3d10_poke_interface = {
    d3d10_gfx_supports_texture_format,
    d3d10_gfx_load_texture_compressed,
    NULL, /* present_last */
-   NULL, /* get_last_present_time */
+   d3d10_get_last_present_time,
    NULL, /* hw_ring_install */
    NULL, /* hw_ring_fence_new */
    NULL, /* hw_ring_fence_free */

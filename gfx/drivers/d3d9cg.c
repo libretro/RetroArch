@@ -4642,6 +4642,21 @@ static unsigned d3d9_cg_get_swap_interval_cap(void *data)
    return 4;
 }
 
+/* The vblank the most recent present went out on, for display pacing:
+ * Direct3D 9 has no frame statistics to say, so the compositor's own
+ * last vblank, as the other Windows drivers read it when theirs do not.
+ * 0 where there is no compositor to ask, and the presenter keeps its
+ * own clock. */
+static retro_time_t d3d9_cg_get_last_present_time(void *data)
+{
+   (void)data;
+#if !defined(__WINRT__) && !defined(_XBOX)
+   return win32_dwm_last_vblank_time();
+#else
+   return 0;
+#endif
+}
+
 static const video_poke_interface_t d3d9_cg_poke_interface = {
    d3d9_cg_get_flags,
    d3d9_cg_load_texture,
@@ -4677,7 +4692,7 @@ static const video_poke_interface_t d3d9_cg_poke_interface = {
    d3d9_supports_texture_format,
    d3d9_load_texture_compressed,
    NULL, /* present_last */
-   NULL, /* get_last_present_time */
+   d3d9_cg_get_last_present_time,
    NULL, /* hw_ring_install */
    NULL, /* hw_ring_fence_new */
    NULL, /* hw_ring_fence_free */
