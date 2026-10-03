@@ -29,6 +29,9 @@
 #include "../../config.def.h"
 
 #include "../input_driver.h"
+#ifdef HW_RVL
+#include "../../gfx/video_driver.h"
+#endif
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 
@@ -101,16 +104,53 @@ static void on_reset(void *data) { (void)data; reset_pressed = 1; }
 static void on_power(void *data) { (void)data; power_pressed = 1; }
 
 #ifdef HW_RVL
-/* There is no pointer yet; gx_input asks. */
-bool gxpad_mousevalid(unsigned port) { (void)port; return false; }
+/* Where each port's remote points, for gx_input's mouse and lightgun:
+ * pixels of the full viewport, and its buttons as those devices number
+ * them (B the trigger or left button, then A, 1, 2, + and -). */
+static struct
+{
+   int      x, y;
+   uint32_t buttons;
+   uint8_t  valid;
+} pointer[DEFAULT_MAX_PADS];
+
+bool gxpad_mousevalid(unsigned port)
+{
+   return port < DEFAULT_MAX_PADS && pointer[port].valid;
+}
 
 void gx_joypad_read_mouse(unsigned port, int *irx, int *iry,
       uint32_t *button)
 {
-   (void)port;
-   *irx    = 0;
-   *iry    = 0;
-   *button = 0;
+   if (port >= DEFAULT_MAX_PADS)
+   {
+      *irx    = 0;
+      *iry    = 0;
+      *button = 0;
+      return;
+   }
+   *irx    = pointer[port].x;
+   *iry    = pointer[port].y;
+   *button = pointer[port].buttons;
+}
+
+static void pointer_state(unsigned port, const gk_wiimote_t *w,
+      const struct video_viewport *vp)
+{
+   static const uint16_t mask[6] = {
+      GK_WM_B, GK_WM_A, GK_WM_ONE, GK_WM_TWO, GK_WM_PLUS, GK_WM_MINUS };
+   unsigned i;
+   int fw = VIDEO_SCALE_W(vp->full_dims), fh = VIDEO_SCALE_H(vp->full_dims);
+   pointer[port].buttons = 0;
+   for (i = 0; i < 6; i++)
+      if (w->buttons & mask[i])
+         pointer[port].buttons |= 1u << (i + 2);
+   pointer[port].valid = w->ir_valid;
+   if (w->ir_dots && fw > 1 && fh > 1)
+   {
+      pointer[port].x = (int)(((int32_t)w->ir_x + 32767) * (fw - 1) / 65534);
+      pointer[port].y = (int)(((int32_t)w->ir_y + 32767) * (fh - 1) / 65534);
+   }
 }
 #endif
 
@@ -306,6 +346,9 @@ static void hotplug(unsigned port, uint8_t kind)
 static void gekko_joypad_poll(void)
 {
    gk_pad_t pads[GK_PAD_PORTS];
+#ifdef HW_RVL
+   struct video_viewport vp = {0};
+#endif
    uint64_t menu_keys;
    unsigned port, i, j;
 
@@ -317,12 +360,19 @@ static void gekko_joypad_poll(void)
    }
 
    gk_pad_read(pads);
+#ifdef HW_RVL
+   video_driver_get_viewport_info(&vp);
+#endif
 
    for (port = 0; port < DEFAULT_MAX_PADS; port++)
    {
       uint8_t kind = KIND_NONE;
       pad_state[port] = 0;
       memset(analog_state[port], 0, sizeof(analog_state[port]));
+#ifdef HW_RVL
+      pointer[port].valid   = 0;
+      pointer[port].buttons = 0;
+#endif
 
       if (port < GK_PAD_PORTS && pads[port].connected)
       {
@@ -338,6 +388,9 @@ static void gekko_joypad_poll(void)
             wiimote_state(port, &w);
             kind = w.ext == GK_WM_EXT_NUNCHUK ? KIND_NUNCHUK
                : w.ext == GK_WM_EXT_CLASSIC ? KIND_CLASSIC : KIND_WIIMOTE;
+            /* Not with the Classic Controller in hand. */
+            if (kind != KIND_CLASSIC)
+               pointer_state(port, &w, &vp);
          }
       }
 #endif

@@ -12,7 +12,9 @@
 # $ATTACH names a file loaded with it, whose address and length follow
 # them.
 # $PADS names a file of pipe commands (e.g. "PRESS A", "RELEASE A")
-# fed to the GameCube pad on port 1, one line per $PADSTEP seconds.
+# fed to the GameCube pad on port 1, one line per $PADSTEP seconds;
+# $WMPADS one for remote 1, whose pointer follows the MAIN axes
+# ("SET MAIN 1 0.5" points right, 0.5 0.5 at the centre).
 # $KEEP keeps Dolphin's user directory and log, and prints its path.
 # Exits 0 when the test says PASSED.
 ELF=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
@@ -52,6 +54,16 @@ if [ -n "$PADS" ]; then
 fi
 printf '[Wiimote1]\nSource = 1\nExtension = %s\n' "${WIIEXT:-Nunchuk}" \
    > "$USERDIR/Config/WiimoteNew.ini"
+if [ -n "$WMPADS" ]; then
+   mkdir -p "$USERDIR/Pipes"
+   mkfifo "$USERDIR/Pipes/wm"
+   {
+      printf 'Device = Pipe/0/wm\n'
+      printf 'Buttons/A = `Button A`\nButtons/B = `Button B`\n'
+      printf 'IR/Up = `Axis MAIN Y -`\nIR/Down = `Axis MAIN Y +`\n'
+      printf 'IR/Left = `Axis MAIN X -`\nIR/Right = `Axis MAIN X +`\n'
+   } >> "$USERDIR/Config/WiimoteNew.ini"
+fi
 set -- -u "$USERDIR" -p headless \
    -C Dolphin.Interface.DebugModeEnabled=True \
    -C Logger.Logs.OSREPORT_HLE=True \
@@ -79,17 +91,20 @@ else
 fi
 timeout "$SECS" "$DOLPHIN" "$@" -e "$ELF" > "$LOG" 2>&1 &
 PID=$!
-if [ -n "$PADS" ]; then
+# Commands from $1 into the pipe $2, one per $PADSTEP seconds.
+feed() {
    (
-      exec 3> "$USERDIR/Pipes/pad"
+      exec 3> "$USERDIR/Pipes/$2"
       while IFS= read -r cmd; do
          sleep "${PADSTEP:-1}"
          printf '%s\n' "$cmd" >&3
-      done < "$PADS"
+      done < "$1"
       sleep "$SECS"
    ) &
-   FEED=$!
-fi
+   FEED="$FEED $!"
+}
+[ -n "$PADS" ] && feed "$PADS" pad
+[ -n "$WMPADS" ] && feed "$WMPADS" wm
 # Stop as soon as the test has reported its verdict.
 while kill -0 $PID 2>/dev/null; do
    if grep -aqE "OSREPORT_HLE.*(PASSED|FAILED) \(" "$LOG"; then
@@ -100,6 +115,7 @@ while kill -0 $PID 2>/dev/null; do
    sleep 1
 done
 wait $PID 2>/dev/null
+# shellcheck disable=SC2086
 [ -n "$FEED" ] && kill $FEED 2>/dev/null
 sed -n 's/.*OSREPORT_HLE\]: [0-9a-f]*->[0-9a-f]*| //p' "$LOG"
 grep -aq "OSREPORT_HLE.*PASSED (" "$LOG"

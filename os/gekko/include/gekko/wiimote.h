@@ -60,11 +60,15 @@ typedef struct gk_wiimote
    uint16_t buttons;
    uint16_t ext_buttons;
    uint16_t accel[3];       /* 10 bits, about 512 at rest */
+   int16_t  ir_x;           /* where it points: -32767..32767 left to */
+   int16_t  ir_y;           /* right, top to bottom; held at the edge */
    int8_t   stick[2][2];    /* x, y: -128..127, up positive */
    uint8_t  trigger[2];     /* Classic L and R, 0..255 */
    uint8_t  connected;
    uint8_t  ext;            /* enum gk_wiimote_ext */
    uint8_t  battery;        /* 0..255 */
+   uint8_t  ir_dots;        /* sensor bar dots the camera sees, 0..4 */
+   uint8_t  ir_valid;       /* the pointer is on the screen */
 } gk_wiimote_t;
 
 /* Start Bluetooth and listen for remotes; 0 or a negative errno. */

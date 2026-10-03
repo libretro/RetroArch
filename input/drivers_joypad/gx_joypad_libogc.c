@@ -67,7 +67,7 @@ struct gx_mousedata
 };
 
 /* TODO/FIXME - static global */
-static struct gx_mousedata gx_mouse[2];
+static struct gx_mousedata gx_mouse[DEFAULT_MAX_PADS];
 #endif
 
 enum

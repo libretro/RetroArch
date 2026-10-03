@@ -187,3 +187,19 @@ int gk_conf_video(void)
       return GK_CONF_VIDEO_PAL;
    return -1;
 }
+
+int gk_conf_sensor_bar_top(void)
+{
+   int v = sysconf_byte("BT.BAR");
+   return v < 0 ? -1 : v != 0;
+}
+
+int gk_conf_ir_sensitivity(void)
+{
+   unsigned size;
+   const uint8_t *p;
+   load();
+   if (!(p = sysconf_item("BT.SENS", &size)) || size != 4)
+      return -1;
+   return p[3];
+}

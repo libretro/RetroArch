@@ -2,7 +2,9 @@
  * remote 1 has a Nunchuk (or with WIIEXT=Classic a Classic
  * Controller): the remote connects over Bluetooth to slot 0, reports
  * continuously with the accelerometer at rest, the extension is found
- * with its sticks centred, and the remote goes when dropped. */
+ * with its sticks centred, the pointer follows the remote (run with
+ * WMPADS=wiimote-ir.pipe, which turns it right and up), and the remote
+ * goes when dropped. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -78,6 +80,22 @@ int main(int argc, char **argv)
          && abs(st.stick[1][0]) < 16 && abs(st.stick[1][1]) < 16
          && st.trigger[0] < 16 && st.trigger[1] < 16 && !st.ext_buttons,
          what);
+
+   /* The pointer, at the centre and then where WMPADS turns it. */
+   WAIT(3000, st.ir_dots >= 2);
+   snprintf(what, sizeof(what), "IR: %u dots, pointer %d %d, %s",
+         st.ir_dots, st.ir_x, st.ir_y, st.ir_valid ? "on screen" : "off");
+   CHECK(st.ir_dots >= 2 && st.ir_valid && abs(st.ir_x) < 2000
+         && abs(st.ir_y) < 2000, what);
+   WAIT(15000, st.ir_x > 16000 && abs(st.ir_y) < 4000);
+   snprintf(what, sizeof(what), "IR: pointed right, %d %d", st.ir_x,
+         st.ir_y);
+   CHECK(st.ir_x > 16000 && abs(st.ir_y) < 4000, what);
+   WAIT(10000, st.ir_y < -16000 && abs(st.ir_x) < 4000);
+   snprintf(what, sizeof(what), "IR: pointed up, %d %d", st.ir_x, st.ir_y);
+   CHECK(st.ir_y < -16000 && abs(st.ir_x) < 4000, what);
+   WAIT(10000, abs(st.ir_x) < 2000 && abs(st.ir_y) < 2000);
+   CHECK(abs(st.ir_x) < 2000 && abs(st.ir_y) < 2000, "IR: back at the centre");
 
    gk_wiimote_rumble(0, 1);
    gk_sleep_us(100000);
