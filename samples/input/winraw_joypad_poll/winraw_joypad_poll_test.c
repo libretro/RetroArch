@@ -12,7 +12,8 @@
  * - read by the poll: init makes no window; the first poll does, on
  *   the polling thread, and marks that thread as one whose pump leaves
  *   raw input alone; every poll makes one bulk read;
- * - an arrival or removal waiting for the window is taken by the poll;
+ * - an arrival or removal waiting for the window is taken within eight
+ *   polls, the window's messages being looked for every eighth;
  * - destroy on the polling thread takes the window down at once;
  *   destroy from another thread - a controller plugged in restarts the
  *   driver from the main window's thread - has it gone once its own
@@ -162,12 +163,36 @@ int main(void)
    /* ---- an arrival or removal waiting for the window ------------- */
    /* a removal of a device the driver does not have: taken, and
     * nothing to do */
-   PostMessageA(w, WM_INPUT_DEVICE_CHANGE, GIDC_REMOVAL, (LPARAM)0x1234);
-   pump_leaving_raw_input();
-   winraw_joypad_joypad_poll();
-   CHECK(!PeekMessageA(&probe, w, WM_INPUT_DEVICE_CHANGE, WM_INPUT_DEVICE_CHANGE, PM_NOREMOVE),
-         "the poll left a device change waiting");
-   printf("   ok   a device change waiting for the window is taken by the poll\n");
+   /* The window's messages are looked for every eighth poll: within
+    * eight polls it is taken, and not by every poll. */
+   {
+      unsigned polls = 0, taken_at = 0, i;
+      unsigned reads0 = queue_reads;
+      PostMessageA(w, WM_INPUT_DEVICE_CHANGE, GIDC_REMOVAL, (LPARAM)0x1234);
+      pump_leaving_raw_input();
+      for (i = 1; i <= 8; i++)
+      {
+         winraw_joypad_joypad_poll();
+         polls++;
+         if (!taken_at && !PeekMessageA(&probe, w, WM_INPUT_DEVICE_CHANGE,
+                  WM_INPUT_DEVICE_CHANGE, PM_NOREMOVE))
+            taken_at = i;
+      }
+      CHECK(taken_at >= 1, "eight polls left a device change waiting");
+      CHECK(queue_reads - reads0 == polls, "the bulk read is not made by every poll (%u in %u)",
+            queue_reads - reads0, polls);
+      /* and the one after a look does not look: a second message waits */
+      PostMessageA(w, WM_INPUT_DEVICE_CHANGE, GIDC_REMOVAL, (LPARAM)0x1234);
+      winraw_joypad_joypad_poll();
+      if (taken_at == 8)
+         CHECK(PeekMessageA(&probe, w, WM_INPUT_DEVICE_CHANGE, WM_INPUT_DEVICE_CHANGE, PM_NOREMOVE),
+               "the poll straight after a look looked again");
+      for (i = 0; i < 8; i++)
+         winraw_joypad_joypad_poll();
+      CHECK(!PeekMessageA(&probe, w, WM_INPUT_DEVICE_CHANGE, WM_INPUT_DEVICE_CHANGE, PM_NOREMOVE),
+            "the second device change was never taken");
+      printf("   ok   a device change waiting for the window is taken within eight polls, not looked for by every one\n");
+   }
 
    /* ---- destroy from another thread ------------------------------ */
    on_other_thread(do_destroy);

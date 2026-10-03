@@ -179,6 +179,8 @@ static bool     winraw_joypad_initialised        = false;
 static bool     winraw_joypad_by_poll            = false;
 static DWORD    winraw_joypad_window_tid         = 0;
 static bool     winraw_joypad_window_failed      = false;
+/* Polls since the window's own messages were last looked for. */
+static unsigned winraw_joypad_polls_since_look   = 0;
 
 /* Reports read in bulk and not parsed yet: for each controller, the
  * newest report of each report ID. See winraw_joypad_take_hid(). */
@@ -1366,9 +1368,9 @@ static int16_t winraw_joypad_joypad_state(
  * Arrivals and removals stay messages. They come through the raw
  * input queue, which a range without WM_INPUT in it does not look at,
  * so the thread's pump - which leaves raw input alone - does not see
- * them, and they are taken here. The range also lets through a report
- * that arrived since the read; the window procedure takes that as it
- * always did.
+ * them, and they are taken here, every eighth poll. The range also
+ * lets through a report that arrived since the read; the window
+ * procedure takes that as it always did.
  *
  * RETROARCH_RAWINPUT_POLL=0 puts both drivers back as they were. */
 static bool winraw_joypad_poll_window_up(void)
@@ -1383,6 +1385,9 @@ static bool winraw_joypad_poll_window_up(void)
    }
    winraw_joypad_window_tid = GetCurrentThreadId();
    winraw_queue_claim_thread(true);
+   /* the controllers already plugged in are announced to the new
+    * window straight away: look at the first poll */
+   winraw_joypad_polls_since_look = 7;
    return true;
 }
 
@@ -1414,10 +1419,24 @@ static void winraw_joypad_joypad_poll(void)
       /* the newest report of each controller, once */
       winraw_joypad_parse_held();
 
-      if (winraw_joypad_msg_window)
+      /* Arrivals and removals: looked for every eighth poll, not
+       * every one. A controller plugged in is noticed at most seven
+       * polls later - some 60 ms at 120 polls a second - and seven
+       * polls in eight are a call shorter. The range has to have WM_INPUT in
+       * it for the raw input queue to be looked at at all, so the look
+       * can also hand over a report - and under Wine it hands over the
+       * keyboard's and the mouse's, whichever window is asked for,
+       * which is where their reports "taken as messages" came from
+       * with video not threaded. Either way the window procedures take
+       * what they are given. */
+      if (     winraw_joypad_msg_window
+            && ++winraw_joypad_polls_since_look >= 8)
+      {
+         winraw_joypad_polls_since_look = 0;
          while (PeekMessageA(&msg, winraw_joypad_msg_window,
                   WM_INPUT_DEVICE_CHANGE, WM_INPUT, PM_REMOVE))
             DispatchMessageA(&msg);
+      }
       return;
    }
 
