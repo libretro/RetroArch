@@ -28,15 +28,16 @@ KERNEL := $(GK)/boot/crt0.S $(GK)/cpu/exception.S $(GK)/cpu/cache.S \
           $(GK)/kernel/sched.c $(GK)/kernel/newlib.c $(GK)/kernel/power.c \
           $(GK)/kernel/vi.c $(GK)/kernel/console.c $(GK)/kernel/gx.c \
           $(GK)/kernel/audio.c $(GK)/kernel/pad.c $(GK)/kernel/exi.c \
-          $(GK)/disk/sdspi.c $(GK)/disk/sdgecko.c \
+          $(GK)/disk/sdspi.c $(GK)/disk/sdgecko.c $(GK)/disk/usbmsc.c \
           $(GK)/fs/fat.c $(GK)/fs/fat_devoptab.c \
           $(ROOT)/gfx/bitmapfont.c
 
 TESTS := kernel_test vi_test gx_test io_test exi_test
 ifeq ($(PLATFORM),rvl)
    KERNEL += $(GK)/rvl/ipc.c $(GK)/rvl/stm.c $(GK)/rvl/es.c $(GK)/rvl/conf.c \
-             $(GK)/rvl/ave.c $(GK)/rvl/sdio.c
-   TESTS  += ios_test sd_test
+             $(GK)/rvl/ave.c $(GK)/rvl/sdio.c $(GK)/rvl/usb.c \
+             $(GK)/rvl/usbstorage.c
+   TESTS  += ios_test sd_test usb_test
 endif
 
 all: $(addsuffix _$(PLATFORM).elf,$(TESTS))

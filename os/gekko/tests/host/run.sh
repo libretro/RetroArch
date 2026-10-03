@@ -1,6 +1,7 @@
 #!/bin/sh
 # fs/fat.c against images made and checked by dosfstools and mtools,
-# and disk/sdspi.c against a model SD card.
+# and disk/sdspi.c and disk/usbmsc.c against a model SD card and USB
+# drive.
 # Needs a C compiler, mkfs.fat, fsck.fat, mtools and python3.
 set -e
 cd "$(dirname "$0")"
@@ -13,7 +14,11 @@ ${CC:-cc} -O1 -g -Wall -Wextra -fsanitize=address,undefined \
 ${CC:-cc} -O1 -g -Wall -Wextra -fsanitize=address,undefined \
    -I../../include -o "$work/sdspi_test" sdspi_test.c ../../disk/sdspi.c \
    ../../fs/fat.c
+${CC:-cc} -O1 -g -Wall -Wextra -fsanitize=address,undefined \
+   -I../../include -o "$work/usbmsc_test" usbmsc_test.c ../../disk/usbmsc.c \
+   ../../fs/fat.c
 "$work/sdspi_test"
+"$work/usbmsc_test"
 
 pattern() { # seed size file
    python3 -c "import sys
@@ -110,6 +115,11 @@ mcopy -i "$work/spi.img" "$work/hello.txt" ::/hello.txt
 fsck "$work/spi.img" 0
 [ "$(mtype -i "$work/spi.img" ::/spi.txt)" = "over spi" ] ||
    { echo "FAIL spi.txt"; exit 1; }
+cp "$work/spi.img" "$work/usb.img"
+"$work/usbmsc_test" "$work/usb.img"
+fsck "$work/usb.img" 0
+[ "$(mtype -i "$work/usb.img" ::/usb.txt)" = "over usb" ] ||
+   { echo "FAIL usb.txt"; exit 1; }
 
 one fat12 "-F 12" 4
 one fat16 "-F 16" 64
