@@ -500,7 +500,8 @@ jobs:
         run: |
           set -eu
           # input/drivers/winraw_input.c with its keyboard and mouse
-          # read in bulk by the poll (RETROARCH_RAWINPUT_POLL). The real
+          # read in bulk by the poll (the default;
+          # RETROARCH_RAWINPUT_POLL=0 turns it off). The real
           # driver under Wine on a virtual display, with the focused
           # window made and pumped by a second thread as the video
           # thread does, and the driver started from that thread. With
@@ -516,7 +517,10 @@ jobs:
           # the messages below WM_INPUT and above it, as the
           # frontend's does on that thread, dispatches the ordinary
           # ones and leaves the reports for one bulk read; free takes
-          # the window down, twenty restarts each do the same.
+          # the window down, twenty restarts each do the same; and
+          # with the window, the pump and the poll all on one thread,
+          # as without threaded video, the reports are read in bulk
+          # the same.
           trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
           make clean all
           WINEDEBUG=-all timeout 300 make check

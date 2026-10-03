@@ -1,5 +1,5 @@
-/* winraw: the keyboard and mouse read in bulk by the poll
- * (RETROARCH_RAWINPUT_POLL).
+/* winraw: the keyboard and mouse read in bulk by the poll (the
+ * default; RETROARCH_RAWINPUT_POLL=0 turns it off).
  *
  * The real driver, cross-built with mingw-w64 and run under Wine on a
  * virtual display. The window that has the focus is made and pumped
@@ -31,7 +31,9 @@
  *   the lock keys' toggles from the published value;
  * - background input is refused, unless registered as a sink with the
  *   main window focused;
- * - free takes the window down, and twenty restarts each do the same.
+ * - free takes the window down, and twenty restarts each do the same;
+ * - with everything on one thread, as without threaded video, the
+ *   same holds.
  *
  * What it cannot check is the thing only Windows can answer: whether
  * Windows, like Wine, gives raw input to a window whose thread does
@@ -248,7 +250,7 @@ int main(void)
       printf("   note no display for a window: injected input is not checked\n");
 
    /* ---- the switch off: as it was -------------------------------- */
-   _putenv("RETROARCH_RAWINPUT_POLL=");
+   _putenv("RETROARCH_RAWINPUT_POLL=0");
    wr = (winraw_input_t*)init_on_video_thread();
    CHECK(wr != NULL, "init with the switch off");
    if (!wr)
@@ -265,15 +267,16 @@ int main(void)
    PostMessageA(raw_window, WM_CLOSE, 0, 0);
    wr->window = NULL;
    winraw_free(wr);
-   printf("   ok   switch off: the window is made by init on init's thread, nothing read in bulk\n");
+   printf("   ok   =0: the window is made by init on init's thread, nothing read in bulk\n");
 
    /* ---- the switch on -------------------------------------------- */
-   _putenv("RETROARCH_RAWINPUT_POLL=1");
+   /* unset: on is the default */
+   _putenv("RETROARCH_RAWINPUT_POLL=");
    wr = (winraw_input_t*)init_on_video_thread();
-   CHECK(wr != NULL, "init with the switch on");
+   CHECK(wr != NULL, "init with nothing set");
    if (!wr)
       return 1;
-   CHECK(wr->poll_drain && !wr->sink, "not reading in bulk with the switch on");
+   CHECK(wr->poll_drain && !wr->sink, "not reading in bulk by default");
    CHECK(!wr->window, "init made the window");
    winraw_poll(wr);
    raw_window = wr->window;
@@ -283,7 +286,7 @@ int main(void)
          "the window belongs to thread %lu; the poll's is %lu, init's %lu",
          (unsigned long)GetWindowThreadProcessId(raw_window, NULL),
          (unsigned long)main_tid, (unsigned long)vt_tid);
-   printf("   ok   switch on: init makes no window; the first poll does, on the polling thread\n");
+   printf("   ok   by default: init makes no window; the first poll does, on the polling thread\n");
 
    /* ---- injected keys, read in bulk by one poll ------------------ */
    if (vt_window)
@@ -525,6 +528,53 @@ int main(void)
 
    SetEvent(vt_quit);
    WaitForSingleObject(vt, 5000);
+
+   /* ---- video not threaded: everything on the one thread ---------- */
+   /* The focused window, the driver's start, the pump and the poll are
+    * all this thread's, as they are without threaded video. */
+   {
+      WNDCLASSA wc;
+      HWND top;
+
+      memset(&wc, 0, sizeof(wc));
+      wc.lpfnWndProc   = plain_proc;
+      wc.hInstance     = GetModuleHandleA(NULL);
+      wc.lpszClassName = "winraw-poll-test-same";
+      RegisterClassA(&wc);
+      top = CreateWindowExA(0, wc.lpszClassName, "t",
+            WS_OVERLAPPEDWINDOW | WS_VISIBLE, 10, 10, 200, 100,
+            NULL, NULL, wc.hInstance, NULL);
+      wr  = (winraw_input_t*)winraw_init("null");
+      CHECK(wr != NULL, "init on the polling thread");
+      if (top && wr && raw_arrives)
+      {
+         SetForegroundWindow(top);
+         SetFocus(top);
+         pump_leaving_raw_input();
+         winraw_poll(wr);
+         CHECK(wr->window && GetWindowThreadProcessId(wr->window, NULL) == main_tid,
+               "the window is not this thread's");
+         seen_n = 0;
+         key(0x1E, true);
+         key(0x1E, false);
+         PostMessageA(top, WM_APP, 0, 0);
+         Sleep(150);
+         pump_leaving_raw_input();
+         CHECK(wr->by_message == 0 && wr->drained == 0,
+               "the pump took raw input on the one thread");
+         winraw_poll(wr);
+         CHECK(wr->drained == 2 && wr->by_message == 0 && seen_n == 2
+               && seen[0].down && seen[0].code == 0x1E && !seen[1].down,
+               "on the one thread: %lu read in bulk, %lu as messages, %u events",
+               wr->drained, wr->by_message, seen_n);
+         seen_n = 0;
+         printf("   ok   video not threaded: window, pump and poll on one thread, reports read in bulk\n");
+      }
+      if (wr)
+         winraw_free(wr);
+      if (top)
+         DestroyWindow(top);
+   }
 
    if (failures)
    {

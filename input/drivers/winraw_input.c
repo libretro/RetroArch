@@ -48,9 +48,10 @@ extern "C" {
 
 /* Threading model
  * ---------------
- * (As it is by default. With RETROARCH_RAWINPUT_POLL the window is
- * the polling thread's and the reports are read in bulk by the poll:
- * see "Read by the poll" further down.)
+ * (This is how the driver was, and is with RETROARCH_RAWINPUT_POLL=0
+ * in the environment. By default the window is the polling thread's
+ * and the reports are read in bulk by the poll: see "Read by the
+ * poll" further down.)
  *
  * On every Windows video driver that can actually use this input
  * driver, it is built by the video context driver's input_driver
@@ -716,12 +717,14 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
 
 /* Read by the poll
  * ----------------
- * With RETROARCH_RAWINPUT_POLL set in the environment, the keyboard
- * and mouse window is made by the first winraw_poll(), on the thread
- * that polls, and the reports waiting for it are read in bulk - one
- * GetRawInputBuffer() for all of them - at the start of every poll.
+ * The keyboard and mouse window is made by the first winraw_poll(),
+ * on the thread that polls, and the reports waiting for it are read
+ * in bulk - one GetRawInputBuffer() for all of them - at the start of
+ * every poll. RETROARCH_RAWINPUT_POLL=0 in the environment turns this
+ * off and leaves the driver as the threading note at the top has it,
+ * should something need telling apart from it.
  *
- * As it is otherwise (the threading note at the top), the window is
+ * As it was (the threading note at the top), the window is
  * made on whichever thread runs the video driver's init, and each
  * report is a WM_INPUT message taken when that thread pumps: a
  * PeekMessage() and a GetRawInputData() per report, once per video
@@ -787,13 +790,17 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
  *   - the pump got to it before a poll did - is read from its message
  *   first, as it always was, and only then is the rest read in bulk.
  *
- * RETROARCH_RAWINPUT_POLL=2 also registers as a sink. Raw input goes
- * to a window only while its application is in the foreground, and
- * the expectation is that Windows judges that by process, so that a
- * window on a thread that does not have the focus still gets it. If
- * it judges by thread, nothing would arrive with =1 under threaded
- * video; as a sink everything arrives, and the main window's focus
- * (winraw_focus) decides whether it is taken. */
+ * Raw input goes to a window only while its application is in the
+ * foreground, and under threaded video this window's thread is not
+ * the one with the focus. Windows judges the foreground by process,
+ * not by thread: tried on Windows with threaded video, the reports
+ * arrive. RETROARCH_RAWINPUT_POLL=2 is kept for a system where they
+ * do not: it registers as a sink, so that everything arrives, and
+ * the main window's focus (winraw_focus) decides whether it is taken.
+ *
+ * Measured there, a minute of play with a 1000 Hz mouse in use: 9714
+ * reports in 7679 reads, one read an iteration, none taken by the
+ * pump. The old path's two calls a report would have been 19428. */
 
 extern void winraw_joypad_take_hid(HANDLE device, const BYTE *data, DWORD size);
 
@@ -1101,12 +1108,13 @@ static bool winraw_poll_window_up(winraw_input_t *wr)
    return false;
 }
 
-/* RETROARCH_RAWINPUT_POLL: 1, or 2 to register as a sink as well. */
+/* On, unless RETROARCH_RAWINPUT_POLL=0. 2 registers as a sink as
+ * well. */
 static bool winraw_poll_wanted(bool *sink)
 {
    const char *env = getenv("RETROARCH_RAWINPUT_POLL");
    *sink           = (env && env[0] == '2');
-   return env && (env[0] == '1' || env[0] == '2');
+   return !(env && env[0] == '0');
 }
 
 static void *winraw_init(const char *joypad_driver)
@@ -1756,7 +1764,7 @@ static void winraw_free(void *data)
             PostMessageA(wr->window, WM_CLOSE, 0, 0);
       }
       winraw_drain_tid = 0;
-      RARCH_LOG("[WinRaw] Read by the poll: %lu reports in %lu bulk reads"
+      RARCH_DBG("[WinRaw] Read by the poll: %lu reports in %lu bulk reads"
             " and %lu as messages; %lu reads found nothing waiting"
             " (%lu key events dropped).\n",
             wr->drained, wr->drain_reads, wr->by_message, wr->drain_empty,
