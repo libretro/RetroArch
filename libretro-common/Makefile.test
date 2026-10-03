@@ -588,10 +588,17 @@ crypto-arm-check:
 # the Win32 thread backend). Skips when MinGW or Wine is not installed.
 MINGW_CC ?= x86_64-w64-mingw32-gcc
 WINE     ?= wine
+# Wine makes a prefix that is not there, but not under a directory that
+# belongs to someone else: with WINEPREFIX=/tmp/wineprefix, as CI sets
+# it, the first tool stops at "wine: '/tmp' is not owned by you, refusing
+# to create a configuration directory there". A directory that exists
+# and is ours it takes, so it is made before the first tool runs.
+WINE_PREFIX_DIR = if [ -n "$${WINEPREFIX:-}" ]; then mkdir -p "$$WINEPREFIX" || exit 1; fi
 win32-wine-check:
 	@if ! command -v $(MINGW_CC) >/dev/null 2>&1; then echo "skip: $(MINGW_CC) not installed"; exit 0; fi; \
 	if ! command -v $(WINE) >/dev/null 2>&1; then echo "skip: $(WINE) not installed"; exit 0; fi; \
 	export WINEDEBUG=-all; \
+	$(WINE_PREFIX_DIR); \
 	$(MINGW_CC) -static -O2 -DCHECK_SHIM -Iinclude -Wall $(TEST_CRYPTO_SRC) compat/fopen_utf8.c \
 	   -lws2_32 -liphlpapi -o test/crypto/test_crypto_win32.exe || exit 1; \
 	$(WINE) test/crypto/test_crypto_win32.exe || exit 1; \
@@ -613,6 +620,7 @@ win32-waits-check:
 	@if ! command -v $(MINGW_CC) >/dev/null 2>&1; then echo "skip: $(MINGW_CC) not installed"; exit 0; fi; \
 	if ! command -v $(WINE) >/dev/null 2>&1; then echo "skip: $(WINE) not installed"; exit 0; fi; \
 	export WINEDEBUG=-all; \
+	$(WINE_PREFIX_DIR); \
 	$(MINGW_CC) -static -O1 -DHAVE_THREADS -Iinclude -Wall \
 	   samples/rthreads/retro_eventcount_test/retro_eventcount_test.c \
 	   rthreads/retro_eventcount.c $(WIN32_WAITS_SRC) \
