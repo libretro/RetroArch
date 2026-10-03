@@ -256,7 +256,10 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
          break;
 #ifdef HAVE_STATESTREAM
       case REPLAY_CHECKPOINT2_ENCODING_STATESTREAM:
-         if (!bsv_movie_read_deduped_state(handle, encoded_data, encoded_size))
+         /* A version-1 header builds no indexes, but a CHECKPOINT2
+          * frame may still name this encoding. */
+         if (     !handle->blocks || !handle->superblocks
+               || !bsv_movie_read_deduped_state(handle, encoded_data, encoded_size))
          {
             RARCH_ERR("[STATESTREAM] Couldn't load incremental checkpoint");
             ret = false;
@@ -269,9 +272,10 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
          ret = false;
          goto exit;
    }
-   /* cur_save now holds this checkpoint's state. */
+   /* cur_save now holds this checkpoint's state.  last_save_size stays:
+    * it describes last_save, which loading does not touch and the
+    * recorder later swaps back in. */
    handle->cur_save_size  = size;
-   handle->last_save_size = handle->cur_save_size;
    if (checkpoint_behavior != REPLAY_CPBEHAVIOR_DESERIALIZE)
       goto exit;
    handle->checkpoint_ready = true;
