@@ -806,6 +806,11 @@ check_nothreads "no threads: video_driver" "$GLINC"               gfx/video_driv
 check_nothreads "no threads: retroarch"    "$GLINC -DHAVE_COMMAND -DHAVE_STDIN_CMD" retroarch.c
 check_nothreads "no threads: audio_driver" "$GLINC"               audio/audio_driver.c
 check_nothreads "no threads: linux input"  "$GLINC"               input/common/linux_common.c
+# input_driver.c's keyboard lane is HAVE_THREADS only, and what it shares
+# with the rest of the file has to be declared outside it: a forward
+# declaration left inside broke the Emscripten build, the one job that
+# compiles this file without threads.
+check_nothreads "no threads: input_driver" "$GLINC"               input/input_driver.c
 check_nothreads "no threads: widget state lock stand-ins" \
    "$GLINC -DHAVE_GFX_WIDGETS" \
    gfx/gfx_widgets.c gfx/widgets/gfx_widget_volume.c gfx/video_driver.c runloop.c

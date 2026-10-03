@@ -10119,6 +10119,9 @@ static const char *accessibility_lut_name(char key)
  * through a flag; in practice there is one, the video thread. Sixty-
  * four events between two polls is more than a keyboard sends; past
  * that the newest are dropped, counted and said. */
+static void input_keyboard_event_now(bool down, unsigned code,
+      uint32_t character, uint16_t mod, unsigned device);
+
 #ifdef HAVE_THREADS
 #define INPUT_KEY_LANE_SIZE 64 /* a power of two */
 
@@ -10165,9 +10168,6 @@ static void input_key_lane_push(bool down, unsigned code,
 
    retro_atomic_store_release_int(&input_key_lane.writing, 0);
 }
-
-static void input_keyboard_event_now(bool down, unsigned code,
-      uint32_t character, uint16_t mod, unsigned device);
 
 /* The poll's: every event that has come since the last one. */
 static void input_key_lane_take(void)
@@ -10216,11 +10216,6 @@ void input_keyboard_event(bool down, unsigned code,
 #endif
    input_keyboard_event_now(down, code, character, mod, device);
 }
-
-#ifndef HAVE_THREADS
-static void input_keyboard_event_now(bool down, unsigned code,
-      uint32_t character, uint16_t mod, unsigned device);
-#endif
 
 static void input_keyboard_event_now(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
