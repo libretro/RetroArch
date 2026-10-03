@@ -3,15 +3,17 @@
  *
  *  create      a mesh is refused for bad indices, a triangle count
  *              that is not a whole number of triangles, or no
- *              vertices; GFX_MESH_FLAG_DISPCA fills the coordinate
- *              array the effect pipelines read, once.
+ *              vertices; GFX_MESH_FLAG_POSITIONS keeps each vertex's
+ *              x and y as plain pairs, and nothing else does.
  *  cpu         a plain program on a driver that does not draw meshes:
  *              positions through the MVP into 0..1 display space,
  *              texture coordinates and tinted colours, triangles as
  *              five strip vertices each, strips as they are, triangles
  *              behind the eye dropped, the white texture for COLORED.
  *  effects     each effect program reaches the driver's pipeline code
- *              under its pipeline id, over the background's state.
+ *              under its pipeline id, over the background's state,
+ *              with the effect coordinates naming the mesh it is
+ *              drawn over; a mesh with no positions draws no effect.
  *  quads-only  a driver that takes no strips is handed nothing. */
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,18 +29,6 @@ static int fails = 0;
 
 /* ---- what gfx_display.c reaches outside itself -------------------- */
 
-static unsigned appended_vertices = 0, append_calls = 0;
-static float    appended_first[2];
-bool video_coord_array_append(video_coord_array_t *ca,
-      const video_coords_t *coords, unsigned count)
-{
-   (void)ca;
-   append_calls++;
-   appended_vertices = count;
-   appended_first[0] = coords->vertex[0];
-   appended_first[1] = coords->vertex[1];
-   return true;
-}
 void video_coord_array_free(video_coord_array_t *ca) { (void)ca; }
 void RARCH_LOG(const char *f, ...)  { (void)f; }
 void RARCH_WARN(const char *f, ...) { (void)f; }
@@ -63,12 +53,17 @@ static void rec_draw(gfx_display_ctx_draw_t *d, void *data, unsigned vd)
    if (d->coords && d->coords->color && rec_vertices <= 2048)
       memcpy(rec_col, d->coords->color, rec_vertices * 4 * sizeof(float));
 }
+static const float *rec_effect_vertex;
+static unsigned     rec_effect_vertices;
 static void rec_pipeline(gfx_display_ctx_draw_t *d, gfx_display_t *p,
       void *data, unsigned vd)
 {
-   (void)p; (void)data; (void)vd;
+   struct video_coords *ec = gfx_display_effect_coords(p);
+   (void)data; (void)vd;
    rec_pipeline_calls++;
-   rec_pipeline_id = d->pipeline_id;
+   rec_pipeline_id     = d->pipeline_id;
+   rec_effect_vertex   = ec ? ec->vertex : NULL;
+   rec_effect_vertices = ec ? ec->vertices : 0;
 }
 static const float def_vert[8] = { 0, 0, 1, 0, 0, 1, 1, 1 };
 static const float def_tex[8]  = { 0, 1, 1, 1, 0, 0, 1, 0 };
@@ -131,15 +126,16 @@ int main(void)
       CHECK(!make(v, 4, bad, 3, GFX_MESH_TRIANGLES, 0), "an index past the vertices is refused");
       CHECK(!make(v, 4, good, 5, GFX_MESH_TRIANGLES, 0), "a part triangle is refused");
       CHECK(!make(v, 0, NULL, 0, GFX_MESH_TRIANGLE_STRIP, 0), "no vertices is refused");
-      append_calls = 0;
-      mesh = make(v, 4, NULL, 0, GFX_MESH_TRIANGLE_STRIP, GFX_MESH_FLAG_DISPCA);
-      CHECK(mesh && append_calls == 1 && appended_vertices == 4
-            && appended_first[0] == -1 && appended_first[1] == -1,
-            "GFX_MESH_FLAG_DISPCA fills the coordinate array once, x and y");
+      mesh = make(v, 4, NULL, 0, GFX_MESH_TRIANGLE_STRIP, GFX_MESH_FLAG_POSITIONS);
+      CHECK(mesh && mesh->positions
+            && mesh->positions[0] == -1 && mesh->positions[1] == -1
+            && mesh->positions[6] ==  1 && mesh->positions[7] ==  1,
+            "GFX_MESH_FLAG_POSITIONS keeps x and y as pairs");
       gfx_display_mesh_free(mesh);
-      append_calls = 0;
       mesh = make(v, 4, good, 6, GFX_MESH_TRIANGLES, 0);
-      CHECK(mesh && append_calls == 0, "and nothing else does");
+      CHECK(mesh && !mesh->positions, "and nothing else does");
+      CHECK(gfx_display_mesh_fullscreen()->positions != NULL,
+            "the full-screen quad has its positions");
    }
 
    /* cpu: two indexed triangles, identity transform */
@@ -223,7 +219,17 @@ int main(void)
          gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
          CHECK(rec_pipeline_calls == 1 && rec_pipeline_id == map[i].id && rec_draws == 1,
                "an effect reaches the pipeline under its id, then draws");
+         CHECK(rec_effect_vertex == gfx_display_mesh_fullscreen()->positions
+               && rec_effect_vertices == 4,
+               "the effect coordinates are the mesh it is drawn over");
       }
+      CHECK(gfx_display_effect_coords(p_disp) == NULL,
+            "and there are none outside the draw");
+      reset();
+      md.program = GFX_MESH_PROGRAM_RIBBON;
+      gfx_display_mesh_draw(p_disp, NULL, vd, mesh, &md);
+      CHECK(rec_pipeline_calls == 0 && rec_draws == 0,
+            "a mesh with no positions draws no effect");
       CHECK(NEAR(white[3], 1.0f), "the effect leaves the colour's alpha as it was");
    }
 

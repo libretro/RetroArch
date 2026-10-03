@@ -10383,7 +10383,7 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
    desc.vertex_count = vertices_total;
    desc.index_count  = 0;
    desc.topology     = GFX_MESH_TRIANGLE_STRIP;
-   desc.flags        = GFX_MESH_FLAG_DISPCA;
+   desc.flags        = GFX_MESH_FLAG_POSITIONS;
    xmb->ribbon_mesh  = gfx_display_mesh_create(&desc);
 
    free(vertices);

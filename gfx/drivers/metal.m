@@ -3226,9 +3226,8 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
       {
-         gfx_display_t *p_disp   = disp_get_ptr();
-         video_coord_array_t *ca = &p_disp->dispca;
-         draw->coords            = (struct video_coords *)&ca->coords;
+         if (!(draw->coords = gfx_display_effect_coords(disp_get_ptr())))
+            return;
          break;
       }
 

@@ -723,8 +723,12 @@ static gfx_display_mesh_vertex_t gfx_display_mesh_fs_vertices[4] = {
    { -1.0f,  1.0f, 0.0f,     0,     0, { 255, 255, 255, 255 } },
    {  1.0f,  1.0f, 0.0f, 65535,     0, { 255, 255, 255, 255 } }
 };
+static float gfx_display_mesh_fs_positions[8] = {
+   -1.0f, -1.0f,  1.0f, -1.0f,  -1.0f, 1.0f,  1.0f, 1.0f
+};
 static gfx_display_mesh_t gfx_display_mesh_fs = {
-   gfx_display_mesh_fs_vertices, NULL, 4, 0, GFX_MESH_TRIANGLE_STRIP, 1
+   gfx_display_mesh_fs_vertices, NULL, 4, 0, GFX_MESH_TRIANGLE_STRIP, 1,
+   gfx_display_mesh_fs_positions
 };
 /* Mesh ids: 1 is the full-screen quad's, and none is ever reused */
 static uint32_t gfx_display_mesh_next_id = 2;
@@ -738,7 +742,7 @@ static size_t  gfx_display_mesh_scratch_cap = 0;
 gfx_display_mesh_t *gfx_display_mesh_create(const gfx_display_mesh_desc_t *desc)
 {
    gfx_display_mesh_t *mesh;
-   size_t vbytes, ibytes;
+   size_t vbytes, ibytes, pbytes;
    unsigned i;
 
    if (     !desc || !desc->vertices || !desc->vertex_count
@@ -755,11 +759,17 @@ gfx_display_mesh_t *gfx_display_mesh_create(const gfx_display_mesh_desc_t *desc)
 
    vbytes = (size_t)desc->vertex_count * sizeof(gfx_display_mesh_vertex_t);
    ibytes = desc->indices ? (size_t)desc->index_count * sizeof(uint16_t) : 0;
-   /* One allocation: the header, then the vertices, then the indices */
-   if (!(mesh = (gfx_display_mesh_t*)malloc(sizeof(*mesh) + vbytes + ibytes)))
+   pbytes = (desc->flags & GFX_MESH_FLAG_POSITIONS)
+      ? 2 * sizeof(float) * (size_t)desc->vertex_count : 0;
+   /* One allocation: the header, the vertices, the positions, then the
+    * indices - in that order, which keeps each aligned for its type */
+   if (!(mesh = (gfx_display_mesh_t*)malloc(sizeof(*mesh)
+               + vbytes + pbytes + ibytes)))
       return NULL;
    mesh->vertices     = (gfx_display_mesh_vertex_t*)(mesh + 1);
-   mesh->indices      = ibytes ? (uint16_t*)((uint8_t*)mesh->vertices + vbytes) : NULL;
+   mesh->positions    = pbytes ? (float*)((uint8_t*)mesh->vertices + vbytes) : NULL;
+   mesh->indices      = ibytes
+      ? (uint16_t*)((uint8_t*)mesh->vertices + vbytes + pbytes) : NULL;
    mesh->vertex_count = desc->vertex_count;
    mesh->index_count  = desc->indices ? desc->index_count : 0;
    mesh->topology     = desc->topology;
@@ -768,27 +778,12 @@ gfx_display_mesh_t *gfx_display_mesh_create(const gfx_display_mesh_desc_t *desc)
    if (ibytes)
       memcpy(mesh->indices, desc->indices, ibytes);
 
-   if (desc->flags & GFX_MESH_FLAG_DISPCA)
-   {
-      gfx_display_t *p_disp = disp_get_ptr();
-      float *xy             = (float*)malloc(2 * sizeof(float) * desc->vertex_count);
-      if (xy)
+   if (mesh->positions)
+      for (i = 0; i < desc->vertex_count; i++)
       {
-         video_coords_t coords;
-         for (i = 0; i < desc->vertex_count; i++)
-         {
-            xy[2 * i]     = desc->vertices[i].x;
-            xy[2 * i + 1] = desc->vertices[i].y;
-         }
-         coords.color         = NULL;
-         coords.vertex        = xy;
-         coords.tex_coord     = NULL;
-         coords.lut_tex_coord = NULL;
-         coords.vertices      = desc->vertex_count;
-         video_coord_array_append(&p_disp->dispca, &coords, coords.vertices);
-         free(xy);
+         mesh->positions[2 * i]     = desc->vertices[i].x;
+         mesh->positions[2 * i + 1] = desc->vertices[i].y;
       }
-   }
    return mesh;
 }
 
@@ -800,6 +795,20 @@ void gfx_display_mesh_free(gfx_display_mesh_t *mesh)
 const gfx_display_mesh_t *gfx_display_mesh_fullscreen(void)
 {
    return &gfx_display_mesh_fs;
+}
+
+struct video_coords *gfx_display_effect_coords(gfx_display_t *p_disp)
+{
+   static struct video_coords coords;
+   const gfx_display_mesh_t *mesh = p_disp ? p_disp->effect_mesh : NULL;
+   if (!mesh || !mesh->positions)
+      return NULL;
+   coords.vertex        = mesh->positions;
+   coords.tex_coord     = NULL;
+   coords.color         = NULL;
+   coords.lut_tex_coord = NULL;
+   coords.vertices      = mesh->vertex_count;
+   return &coords;
 }
 
 /* An effect, drawn the way the driver draws its menu pipelines: over
@@ -821,7 +830,8 @@ static void gfx_display_mesh_draw_effect(gfx_display_t *p_disp,
    draw.tex_coord    = NULL;
    draw.vertex_count = 4;
    draw.pipeline_id  = 0;
-   if (!md->color)
+   /* The drivers that stream an effect's geometry read its positions */
+   if (!md->color || !mesh->positions)
       return;
    /* The colour keeps the alpha it carries */
    gfx_display_draw_bg(p_disp, &draw, &coords, userdata, true,
@@ -1795,7 +1805,6 @@ void gfx_display_init_white_texture(void)
 void gfx_display_free(void)
 {
    gfx_display_t *p_disp       = &dispgfx_st;
-   video_coord_array_free(&p_disp->dispca);
    free(gfx_display_mesh_scratch);
    gfx_display_mesh_scratch     = NULL;
    gfx_display_mesh_scratch_cap = 0;
@@ -1819,13 +1828,11 @@ void gfx_display_free(void)
 void gfx_display_init(void)
 {
    gfx_display_t *p_disp         = &dispgfx_st;
-   video_coord_array_t *p_dispca = &p_disp->dispca;
 
    if (video_driver_has_windowed())
       p_disp->flags             |=  GFX_DISP_FLAG_HAS_WINDOWED;
    else
       p_disp->flags             &= ~GFX_DISP_FLAG_HAS_WINDOWED;
-   p_dispca->allocated           =  0;
    {
       unsigned i;
       for (i = 0; i < GFX_DISPLAY_STAT_LAST; i++)

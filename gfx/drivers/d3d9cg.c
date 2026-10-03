@@ -1052,20 +1052,24 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp,
       void *data, unsigned video_dims)
 {
-   video_coord_array_t *ca               = NULL;
+   struct video_coords *ca               = NULL;
    d3d9_video_t *d3d                     = (d3d9_video_t*)data;
 
    if (!d3d || !draw)
       return;
 
-   ca                                    = &p_disp->dispca;
+   ca                                    = gfx_display_effect_coords(p_disp);
+
+   if (!ca)
+
+      return;
 
    draw->pos                             = VIDEO_POS_PACK(0, 0);
    draw->coords                          = NULL;
    draw->matrix_data                     = NULL;
 
    if (ca)
-      draw->coords                       = (struct video_coords*)&ca->coords;
+      draw->coords                       = ca;
 
    switch (draw->pipeline_id)
    {
@@ -1074,11 +1078,11 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
       {
          /* Create a pipeline vertex buffer from the coordinate
           * array data if it doesn't already exist. */
-         if (!d3d9_cg_menu_pipeline_vbo && ca->coords.vertices)
+         if (!d3d9_cg_menu_pipeline_vbo && ca->vertices)
          {
             unsigned i;
             Vertex *verts    = NULL;
-            unsigned vcount  = ca->coords.vertices;
+            unsigned vcount  = ca->vertices;
 
             {
                void *_vbuf = NULL;
@@ -1101,8 +1105,8 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
                {
                   for (i = 0; i < vcount; i++)
                   {
-                     verts[i].x     = ca->coords.vertex[i * 2 + 0];
-                     verts[i].y     = ca->coords.vertex[i * 2 + 1];
+                     verts[i].x     = ca->vertex[i * 2 + 0];
+                     verts[i].y     = ca->vertex[i * 2 + 1];
                      verts[i].z     = 0.5f;
                      verts[i].u     = 0.0f;
                      verts[i].v     = 0.0f;
@@ -1122,7 +1126,7 @@ static void gfx_display_d3d9_cg_draw_pipeline(gfx_display_ctx_draw_t *draw,
                   0, sizeof(Vertex));
          }
 
-         draw->coords->vertices = ca->coords.vertices;
+         draw->coords->vertices = ca->vertices;
 
          /* Set pipeline blend state — ribbon uses multiplicative blend
           * (DESTCOLOR + ONE) matching D3D11's blend_pipeline. */

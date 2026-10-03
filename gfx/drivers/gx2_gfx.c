@@ -556,7 +556,7 @@ static void gfx_display_wiiu_draw_pipeline(
       gfx_display_t *p_disp,
       void *data, unsigned video_dims)
 {
-   video_coord_array_t *ca        = NULL;
+   struct video_coords *ca        = NULL;
    wiiu_video_t             *wiiu = (wiiu_video_t*)data;
 
    if (!wiiu || !draw)
@@ -566,16 +566,17 @@ static void gfx_display_wiiu_draw_pipeline(
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
-         ca = &p_disp->dispca;
+         if (!(ca = gfx_display_effect_coords(p_disp)))
+            return;
          if (!wiiu->menu_shader_vbo)
          {
-            wiiu->menu_shader_vbo = MEM2_alloc(ca->coords.vertices * 2 * sizeof(float), GX2_VERTEX_BUFFER_ALIGNMENT);
-            memcpy(wiiu->menu_shader_vbo, ca->coords.vertex, ca->coords.vertices * 2 * sizeof(float));
-            GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->menu_shader_vbo, ca->coords.vertices * 2 * sizeof(float));
+            wiiu->menu_shader_vbo = MEM2_alloc(ca->vertices * 2 * sizeof(float), GX2_VERTEX_BUFFER_ALIGNMENT);
+            memcpy(wiiu->menu_shader_vbo, ca->vertex, ca->vertices * 2 * sizeof(float));
+            GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->menu_shader_vbo, ca->vertices * 2 * sizeof(float));
          }
 
          draw->coords->vertex             = wiiu->menu_shader_vbo;
-         draw->coords->vertices           = ca->coords.vertices;
+         draw->coords->vertices           = ca->vertices;
          GX2SetAttribBuffer(0,
                draw->coords->vertices * 2 * sizeof(float),
                2 * sizeof(float), wiiu->menu_shader_vbo);

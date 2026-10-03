@@ -787,7 +787,6 @@ static void gfx_display_gl3_draw_pipeline(
 #ifdef HAVE_SHADERPIPELINE
    float t                       = p_disp ? p_disp->effect_time : 0.0f;
    float yflip                   = 0.0f;
-   video_coord_array_t *ca       = &p_disp->dispca;
    gl3_t *gl                 = (gl3_t*)data;
 
    if (!gl || !draw)
@@ -800,7 +799,8 @@ static void gfx_display_gl3_draw_pipeline(
    {
       struct uniform_info uniform_param;
 
-      draw->coords = (struct video_coords*)(&ca->coords);
+      if (!(draw->coords = gfx_display_effect_coords(p_disp)))
+         return;
 
       switch (draw->pipeline_id)
       {
@@ -873,7 +873,8 @@ static void gfx_display_gl3_draw_pipeline(
          default:
          case VIDEO_SHADER_MENU:
          case VIDEO_SHADER_MENU_2:
-            draw->coords                     = (struct video_coords*)&ca->coords;
+            if (!(draw->coords = gfx_display_effect_coords(p_disp)))
+               return;
             draw->backend_data               = ubo_scratch_data;
             draw->backend_data_size          = 2 * sizeof(float);
 

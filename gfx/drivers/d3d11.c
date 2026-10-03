@@ -401,7 +401,6 @@ typedef struct
    D3D11BlendState       blend_enable;
    D3D11BlendState       blend_disable;
    D3D11BlendState       blend_pipeline;
-   D3D11Buffer           menu_pipeline_vbo;
    /* gfx_display meshes: the shader and constant buffer they draw with,
     * and each mesh's own buffers by mesh id. The one drawn longest ago
     * gives way when all are taken; the runtime keeps a released buffer
@@ -1201,43 +1200,8 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
                NULL, D3D11_DEFAULT_SAMPLE_MASK);
          break;
       }
-      else
-      {
-         video_coord_array_t* ca   = &p_disp->dispca;
-
-         if (!d3d11->menu_pipeline_vbo)
-         {
-            D3D11_BUFFER_DESC desc;
-            desc.Usage               = D3D11_USAGE_IMMUTABLE;
-            desc.ByteWidth           = ca->coords.vertices * 2 * sizeof(float);
-            desc.BindFlags           = D3D11_BIND_VERTEX_BUFFER;
-            desc.CPUAccessFlags      = 0;
-            desc.MiscFlags           = 0;
-            desc.StructureByteStride = 0;
-
-            {
-               D3D11_SUBRESOURCE_DATA vertex_data;
-               vertex_data.pSysMem          = ca->coords.vertex;
-               vertex_data.SysMemPitch      = 0;
-               vertex_data.SysMemSlicePitch = 0;
-               d3d11->device->lpVtbl->CreateBuffer(
-                     d3d11->device, &desc, &vertex_data,
-                     &d3d11->menu_pipeline_vbo);
-            }
-         }
-         {
-            UINT stride = 2 * sizeof(float);
-            UINT offset = 0;
-            d3d11->context->lpVtbl->IASetVertexBuffers(
-                  d3d11->context, 0, 1,
-                  &d3d11->menu_pipeline_vbo, &stride, &offset);
-         }
-         draw->coords->vertices = ca->coords.vertices;
-         d3d11->context->lpVtbl->OMSetBlendState(
-               d3d11->context, d3d11->blend_pipeline,
-               NULL, D3D11_DEFAULT_SAMPLE_MASK);
-         break;
-      }
+      /* Nothing to draw it from */
+      return;
 
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
@@ -3339,7 +3303,6 @@ static void d3d11_gfx_free(void* data)
    for (i = 0; i < GFX_MAX_SHADERS; i++)
       d3d11_release_shader(&d3d11->shaders[i]);
 
-   Release(d3d11->menu_pipeline_vbo);
    d3d11_release_shader(&d3d11->mesh_shader);
    Release(d3d11->mesh_ubo);
    for (i = 0; i < (int)ARRAY_SIZE(d3d11->meshes); i++)

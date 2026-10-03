@@ -1108,20 +1108,24 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
       void *data, unsigned video_dims)
 {
    static float t                        = 0.0f;
-   video_coord_array_t *ca               = NULL;
+   struct video_coords *ca               = NULL;
    d3d9_video_t *d3d                     = (d3d9_video_t*)data;
 
    if (!d3d || !draw)
       return;
 
-   ca                                    = &p_disp->dispca;
+   ca                                    = gfx_display_effect_coords(p_disp);
+
+   if (!ca)
+
+      return;
 
    draw->pos                             = VIDEO_POS_PACK(0, 0);
    draw->coords                          = NULL;
    draw->matrix_data                     = NULL;
 
    if (ca)
-      draw->coords                       = (struct video_coords*)&ca->coords;
+      draw->coords                       = ca;
 
    switch (draw->pipeline_id)
    {
@@ -1131,11 +1135,11 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
          /* Create a pipeline vertex buffer from the coordinate
           * array data if it doesn't already exist.
           * Adapted from d3d10 gfx_display_d3d10_draw_pipeline. */
-         if (!d3d9_hlsl_menu_pipeline_vbo && ca->coords.vertices)
+         if (!d3d9_hlsl_menu_pipeline_vbo && ca->vertices)
          {
             unsigned i;
             Vertex *verts    = NULL;
-            unsigned vcount  = ca->coords.vertices;
+            unsigned vcount  = ca->vertices;
 
             d3d9_hlsl_menu_pipeline_vbo = NULL;
                   if (!SUCCEEDED(IDirect3DDevice9_CreateVertexBuffer(
@@ -1156,8 +1160,8 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
                {
                   for (i = 0; i < vcount; i++)
                   {
-                     verts[i].x     = ca->coords.vertex[i * 2 + 0];
-                     verts[i].y     = ca->coords.vertex[i * 2 + 1];
+                     verts[i].x     = ca->vertex[i * 2 + 0];
+                     verts[i].y     = ca->vertex[i * 2 + 1];
                      verts[i].z     = 0.5f;
                      verts[i].u     = 0.0f;
                      verts[i].v     = 0.0f;
@@ -1177,7 +1181,7 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
                   0, sizeof(Vertex));
          }
 
-         draw->coords->vertices = ca->coords.vertices;
+         draw->coords->vertices = ca->vertices;
 
          /* Set pipeline blend state — ribbon uses multiplicative blend
           * (DESTCOLOR + ONE) matching D3D11's blend_pipeline. */
@@ -1240,7 +1244,7 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
          }
 
          /* Use separate coords to avoid mutating the shared
-          * ca->coords.vertices (which ribbon needs at 8064). */
+          * ca->vertices (which ribbon needs at 8064). */
          blank_coords.vertices = 4;
          draw->coords          = &blank_coords;
 

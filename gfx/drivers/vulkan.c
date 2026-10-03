@@ -2659,7 +2659,6 @@ static void gfx_display_vk_draw_pipeline(
    float t                          = p_disp ? p_disp->effect_time : 0.0f;
    float output_size[2];
    float yflip                      = 1.0f;
-   video_coord_array_t *ca          = NULL;
    vk_t *vk                         = (vk_t*)data;
 
    if (!vk || !draw)
@@ -2686,16 +2685,10 @@ static void gfx_display_vk_draw_pipeline(
             float ribbon_yflip            = -yflip;
             /* Drawn from the mesh's own buffer; the count is all
              * the draw takes from here */
-            if (p_disp && p_disp->effect_mesh)
-            {
-               mesh_coords.vertices       = p_disp->effect_mesh->vertex_count;
-               draw->coords               = &mesh_coords;
-            }
-            else
-            {
-               ca                         = &p_disp->dispca;
-               draw->coords               = (struct video_coords*)&ca->coords;
-            }
+            if (!p_disp || !p_disp->effect_mesh)
+               return;
+            mesh_coords.vertices          = p_disp->effect_mesh->vertex_count;
+            draw->coords                  = &mesh_coords;
             draw->backend_data            = ubo_scratch_data;
             draw->backend_data_size       = 3 * sizeof(float);
 

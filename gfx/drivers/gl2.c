@@ -660,14 +660,10 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
 #endif
 
    /* Default the absent streams into a local copy rather than back
-    * into the caller's struct.  For the XMB ribbon pipeline
-    * draw->coords aliases &p_disp->dispca.coords, whose four stream
-    * pointers are heap-owned and free()d by
-    * video_coord_array_free(); writing a static array's address into
-    * one of them there is a free() of .rodata waiting to happen.  It
-    * cannot fire today only because dispca always has all four
-    * streams allocated -- which is exactly the property anyone
-    * making them optional would remove. */
+    * into the caller's struct. For the effect pipelines draw->coords
+    * is gfx_display's effect coordinates, which point into the effect
+    * mesh and are shared by every effect draw; a default written into
+    * them would stay there for the next one. */
    coords = *draw->coords;
 
    if (!coords.vertex)
@@ -705,10 +701,11 @@ static void gfx_display_gl2_draw_pipeline(
    /* The effects' clock, one step ahead, as this driver has always
     * drawn them */
    float t                          = p_disp->effect_time + 0.01f;
-   video_coord_array_t *ca          = &p_disp->dispca;
 
    draw->pos                        = VIDEO_POS_PACK(0, 0);
-   draw->coords                     = (struct video_coords*)(&ca->coords);
+   draw->coords                     = gfx_display_effect_coords(p_disp);
+   if (!draw->coords)
+      return;
    draw->matrix_data                = NULL;
 
    switch (draw->pipeline_id)

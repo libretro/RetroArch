@@ -236,7 +236,6 @@ typedef struct gfx_display_stats
 struct gfx_display
 {
    gfx_display_ctx_driver_t *dispctx;
-   video_coord_array_t dispca; /* ptr alignment */
 
    /* Pitch of the display framebuffer, and both its axes in one word
     * in VIDEO_SCALE_PACK's layout */
@@ -391,10 +390,10 @@ enum gfx_display_mesh_topology
 
 enum gfx_display_mesh_flags
 {
-   /* While drivers draw the effects from gfx_display's coordinate
-    * array, a mesh made with this also fills it, as the menu driver
-    * that drew the ribbon used to. */
-   GFX_MESH_FLAG_DISPCA = (1 << 0)
+   /* Keep the positions as plain x,y pairs too, for the drivers whose
+    * effect pipelines read them that way (see
+    * gfx_display_effect_coords) */
+   GFX_MESH_FLAG_POSITIONS = (1 << 0)
 };
 
 /* 20 bytes: position, texture coordinates in 1/65535ths, colour */
@@ -427,6 +426,8 @@ struct gfx_display_mesh
    unsigned index_count;
    enum gfx_display_mesh_topology topology;
    uint32_t id;
+   /* x,y of each vertex, for GFX_MESH_FLAG_POSITIONS; else NULL */
+   float *positions;
 };
 typedef struct gfx_display_mesh gfx_display_mesh_t;
 
@@ -444,8 +445,14 @@ typedef struct gfx_display_mesh_draw
 
 gfx_display_mesh_t *gfx_display_mesh_create(const gfx_display_mesh_desc_t *desc);
 void gfx_display_mesh_free(gfx_display_mesh_t *mesh);
-/* The quad covering the screen, which the per-pixel effects draw over */
+/* The quad covering the screen, which the per-pixel effects draw over.
+ * An effect is drawn over this or over a mesh made with
+ * GFX_MESH_FLAG_POSITIONS, and not drawn over any other. */
 const gfx_display_mesh_t *gfx_display_mesh_fullscreen(void);
+/* While a driver's pipeline code draws an effect: the effect mesh's
+ * positions as coordinates, for drivers that stream them; NULL when
+ * the mesh keeps none. Drawing thread only. */
+struct video_coords *gfx_display_effect_coords(gfx_display_t *p_disp);
 void gfx_display_mesh_draw(gfx_display_t *p_disp, void *userdata,
       unsigned video_dims, const gfx_display_mesh_t *mesh,
       const gfx_display_mesh_draw_t *draw);

@@ -560,8 +560,6 @@ typedef struct
    D3D12_GPU_DESCRIPTOR_HANDLE     samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
    math_matrix_4x4                 mvp, mvp_no_rot, identity;
    struct video_viewport           vp;
-   D3D12Resource                   menu_pipeline_vbo;
-   D3D12_VERTEX_BUFFER_VIEW        menu_pipeline_vbo_view;
    /* gfx_display meshes the effects draw from, by mesh id, in upload
     * buffers of their own. One that gives way is retired until the
     * frame that last drew it has, as the font atlas's are. */
@@ -1541,35 +1539,8 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
             draw->coords->vertices = mesh->vertex_count;
             break;
          }
-         else
-         {
-            video_coord_array_t* ca   = &p_disp->dispca;
-
-            if (!d3d12->menu_pipeline_vbo)
-            {
-               D3D12_RANGE read_range;
-               void*       vertex_data_begin;
-
-               d3d12->menu_pipeline_vbo_view.StrideInBytes  = 2 * sizeof(float);
-               d3d12->menu_pipeline_vbo_view.SizeInBytes    =
-                  ca->coords.vertices * d3d12->menu_pipeline_vbo_view.StrideInBytes;
-               d3d12->menu_pipeline_vbo_view.BufferLocation = d3d12_create_buffer(
-                     d3d12->device, d3d12->menu_pipeline_vbo_view.SizeInBytes,
-                     &d3d12->menu_pipeline_vbo);
-
-               read_range.Begin           = 0;
-               read_range.End             = 0;
-               D3D12Map(d3d12->menu_pipeline_vbo, 0,
-                     &read_range, &vertex_data_begin);
-               memcpy(vertex_data_begin, ca->coords.vertex,
-                     d3d12->menu_pipeline_vbo_view.SizeInBytes);
-               D3D12Unmap(d3d12->menu_pipeline_vbo, 0, NULL);
-            }
-            cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1,
-                  &d3d12->menu_pipeline_vbo_view);
-            draw->coords->vertices = ca->coords.vertices;
-            break;
-         }
+         /* Nothing to draw it from */
+         return;
 
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
@@ -4208,7 +4179,6 @@ static void d3d12_gfx_free(void* data)
    d3d12_free_shader_preset(d3d12);
 
    Release(d3d12->sprites.vbo);
-   Release(d3d12->menu_pipeline_vbo);
    {
       unsigned m;
       for (m = 0; m < ARRAY_SIZE(d3d12->meshes); m++)

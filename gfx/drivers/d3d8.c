@@ -867,7 +867,7 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
       /* Default to opaque white when caller provides no color
        * array — matches the behaviour of the d3d9/d3d10/d3d11
        * gfx_display drivers and avoids dereferencing NULL on
-       * pipeline/dispca-driven draws. */
+       * pipeline-driven draws over the effect coordinates. */
       static const float default_color[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
       color     = &default_color[0];
    }
@@ -1011,7 +1011,7 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
  * for d3d8 we deliberately skip programmable shading entirely and
  * only do the work that *can* be done in fixed function:
  *
- *   - Hand the dispca coordinate array to the caller via
+ *   - Hand the effect mesh's coordinates to the caller via
  *     draw->coords so the subsequent gfx_display_d3d8_draw call
  *     has geometry to render.
  *   - Set the per-pipeline blend mode so the geometry composites
@@ -1028,13 +1028,17 @@ static void gfx_display_d3d8_draw_pipeline(
       gfx_display_t *p_disp,
       void *data, unsigned video_dims)
 {
-   video_coord_array_t *ca;
+   struct video_coords *ca;
    d3d8_video_t *d3d = (d3d8_video_t*)data;
 
    if (!d3d || !draw || !p_disp)
       return;
 
-   ca                = &p_disp->dispca;
+   ca                = gfx_display_effect_coords(p_disp);
+
+   if (!ca)
+
+      return;
 
    /* Position the geometry at the origin and clear any inherited
     * MVP — gfx_display_d3d8_draw will fall back to identity. */
@@ -1042,7 +1046,7 @@ static void gfx_display_d3d8_draw_pipeline(
    draw->matrix_data = NULL;
 
    if (ca)
-      draw->coords   = (struct video_coords*)&ca->coords;
+      draw->coords   = ca;
 
    switch (draw->pipeline_id)
    {
@@ -1064,7 +1068,7 @@ static void gfx_display_d3d8_draw_pipeline(
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
          /* Snow / bokeh / snowflake: standard alpha blend. The
-          * dispca geometry alone won't produce a particle effect
+          * the effect geometry alone won't produce a particle effect
           * without the pixel shader, but at least the blend mode
           * is consistent so any text/icons drawn afterwards don't
           * inherit a stale state. */

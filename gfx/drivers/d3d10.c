@@ -212,7 +212,6 @@ typedef struct
    D3D10BlendState       blend_enable;
    D3D10BlendState       blend_disable;
    D3D10BlendState       blend_pipeline;
-   D3D10Buffer           menu_pipeline_vbo;
    /* gfx_display meshes: the shader and constant buffer they draw with,
     * and each mesh's own buffers by mesh id. The one drawn longest ago
     * gives way when all are taken; the runtime keeps a released buffer
@@ -931,38 +930,8 @@ static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
                NULL, D3D10_DEFAULT_SAMPLE_MASK);
          break;
       }
-      else
-      {
-         video_coord_array_t* ca   = &p_disp->dispca;
-
-         if (!d3d10->menu_pipeline_vbo)
-         {
-            D3D10_BUFFER_DESC desc;
-            D3D10_SUBRESOURCE_DATA vertex_data;
-
-            desc.ByteWidth               = ca->coords.vertices * 2 * sizeof(float);
-            desc.Usage                   = D3D10_USAGE_IMMUTABLE;
-            desc.BindFlags               = D3D10_BIND_VERTEX_BUFFER;
-            desc.CPUAccessFlags          = 0;
-            desc.MiscFlags               = 0;
-
-            vertex_data.pSysMem          = ca->coords.vertex;
-            vertex_data.SysMemPitch      = 0;
-            vertex_data.SysMemSlicePitch = 0;
-            d3d10->device->lpVtbl->CreateBuffer(d3d10->device, &desc,
-                  &vertex_data, &d3d10->menu_pipeline_vbo);
-         }
-         stride = 2 * sizeof(float);
-         d3d10->device->lpVtbl->IASetVertexBuffers(
-               d3d10->device, 0, 1,
-               (D3D10Buffer* const)&d3d10->menu_pipeline_vbo,
-               &stride, &offset);
-         draw->coords->vertices = ca->coords.vertices;
-         d3d10->device->lpVtbl->OMSetBlendState(d3d10->device,
-               d3d10->blend_pipeline,
-               NULL, D3D10_DEFAULT_SAMPLE_MASK);
-         break;
-      }
+      /* Nothing to draw it from */
+      return;
 
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
@@ -2333,7 +2302,6 @@ static void d3d10_gfx_free(void* data)
    for (i = 0; i < GFX_MAX_SHADERS; i++)
       d3d10_release_shader(&d3d10->shaders[i]);
 
-   Release(d3d10->menu_pipeline_vbo);
    d3d10_release_shader(&d3d10->mesh_shader);
    Release(d3d10->mesh_ubo);
    {
