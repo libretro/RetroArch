@@ -109,6 +109,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 500M
+          ccache -z
+
       - name: Configure (no menu, no discord/cheevos/networking, sdl2 on)
         # Trim the build surface for the first iteration so any
         # sanitizer hit is a RetroArch-internal bug rather than noise
