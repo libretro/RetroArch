@@ -292,13 +292,33 @@ static void frontend_gekko_deinit(void *data)
 
 /* Where RetroArch lives: the directory of the program the loader
  * started, else retroarch on the first volume mounted. */
+/* A loader's path on this program's volumes: some (WiiFlow) number
+ * the USB drive, "usb1:". */
+static void loader_path(char *s, size_t len, const char *path)
+{
+   const char *p = path;
+   if (!strncmp(p, "usb", 3))
+   {
+      for (p += 3; *p >= '0' && *p <= '9'; p++)
+         ;
+      if (*p == ':' && p > path + 3)
+      {
+         size_t _len = strlcpy(s, "usb", len);
+         if (_len < len)
+            strlcpy(s + _len, p, len - _len);
+         return;
+      }
+   }
+   strlcpy(s, path, len);
+}
+
 static void base_dir(int argc, char *argv[], char *s, size_t len)
 {
    unsigned i;
    if (argc >= 1 && argv && argv[0] && strstr(argv[0], ":/"))
    {
       char *slash;
-      strlcpy(s, argv[0], len);
+      loader_path(s, len, argv[0]);
       if ((slash = strrchr(s, '/')))
          *slash = '\0';
       return;
@@ -348,7 +368,9 @@ static void frontend_gekko_get_env(int *argc, char *argv[],
        * as two arguments; options (netplay's) are RetroArch's to
        * parse. */
       static char path[PATH_MAX_LENGTH];
-      fill_pathname_join(path, argv[1], argv[2], sizeof(path));
+      char dir[PATH_MAX_LENGTH];
+      loader_path(dir, sizeof(dir), argv[1]);
+      fill_pathname_join(path, dir, argv[2], sizeof(path));
       params->content_path  = path;
       params->sram_path     = NULL;
       params->state_path    = NULL;
@@ -425,7 +447,7 @@ static void frontend_gekko_get_env(int *argc, char *argv[],
    /* Content a loader passed goes on to the core. */
    if (*argc > 2 && argv && argv[1] && *argv[1] && argv[2] && *argv[2])
    {
-      strlcpy(content_dir,  argv[1], sizeof(content_dir));
+      loader_path(content_dir, sizeof(content_dir), argv[1]);
       strlcpy(content_file, argv[2], sizeof(content_file));
    }
 #else
