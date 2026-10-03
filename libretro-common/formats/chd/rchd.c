@@ -349,11 +349,14 @@ struct rchd
    rlzma_dec_t       *lzma;
 #endif
 
-   /* Three lookup tables and one channel of samples, for A/V hunks.
-    * Made on first use, so an image that is not audio/video pays
-    * nothing for them. */
+   /* Three lookup tables, one channel of samples and the Huffman
+    * decoders, for A/V hunks. The decoders are heap-held because the
+    * five of them come to ~10 KiB, which overruns an 8 KiB thread
+    * stack. All made on first use, so an image that is not
+    * audio/video pays nothing for them. */
    uint16_t          *av_lookup;
    int16_t           *av_samples;
+   struct rchd_av_scratch *av_scratch;
 
    /* One decoded hunk, kept so a range spanning several hunks, or two
     * reads inside one, decode each hunk once. */
@@ -1096,6 +1099,7 @@ void rchd_free(rchd_t *chd)
    free(chd->sec_frame);
    free(chd->av_lookup);
    free(chd->av_samples);
+   free(chd->av_scratch);
    free(chd);
 }
 
@@ -1410,6 +1414,15 @@ typedef struct rchd_av_plane
    uint32_t    run;
 } rchd_av_plane_t;
 
+/* The decoders one A/V hunk uses: a tree per video plane, and the two
+ * trees Huffman-coded audio deltas are split across. */
+typedef struct rchd_av_scratch
+{
+   rchd_av_plane_t plane[3];
+   rhuff_dec_t     hi;
+   rhuff_dec_t     lo;
+} rchd_av_scratch_t;
+
 static uint8_t rchd_av_next(rchd_av_plane_t *p, rhuff_bits_t *b)
 {
    uint32_t sym;
@@ -1435,7 +1448,8 @@ static uint8_t rchd_av_next(rchd_av_plane_t *p, rhuff_bits_t *b)
 static int rchd_decode_avhuff(rchd_t *chd, const uint8_t *src,
       uint32_t src_len, uint8_t *dst, uint32_t dst_len)
 {
-   rchd_av_plane_t plane[3];
+   rchd_av_scratch_t *s;
+   rchd_av_plane_t   *plane;
    rhuff_bits_t    bits;
    rflac_format_t  fmt;
    uint32_t        metasize;
@@ -1462,6 +1476,15 @@ static int rchd_decode_avhuff(rchd_t *chd, const uint8_t *src,
 
    if (!channels || channels > RCHD_AV_MAX_CHANNELS || (width & 1))
       return RCHD_ERROR_DATA;
+
+   if (!chd->av_scratch)
+   {
+      chd->av_scratch = (rchd_av_scratch_t*)malloc(sizeof(rchd_av_scratch_t));
+      if (!chd->av_scratch)
+         return RCHD_ERROR_MEM;
+   }
+   s     = chd->av_scratch;
+   plane = s->plane;
 
    hdr_len = 10 + channels * 2;
    if (src_len < hdr_len)
@@ -1584,8 +1607,6 @@ static int rchd_decode_avhuff(rchd_t *chd, const uint8_t *src,
           * whole of what separates this codec from the one versions 1
           * to 4 use, whose images are the ones that would exercise it. */
          uint32_t treesize = mode;
-         rhuff_dec_t hi;
-         rhuff_dec_t lo;
          rhuff_bits_t tb;
 
          if (treesize)
@@ -1601,16 +1622,16 @@ static int rchd_decode_avhuff(rchd_t *chd, const uint8_t *src,
             if ((uint64_t)treesize > (uint64_t)(src + src_len - p))
                return RCHD_ERROR_DATA;
             rhuff_bits_init(&tb, p, treesize);
-            if (rhuff_dec_init(&hi, 256, RCHD_AV_MAX_BITS, chd->av_lookup,
+            if (rhuff_dec_init(&s->hi, 256, RCHD_AV_MAX_BITS, chd->av_lookup,
                      RHUFF_LOOKUP_ENTRIES(RCHD_AV_MAX_BITS)) != RHUFF_OK
-                  || rhuff_read_tree_rle(&hi, &tb) != RHUFF_OK)
+                  || rhuff_read_tree_rle(&s->hi, &tb) != RHUFF_OK)
                return RCHD_ERROR_DATA;
             rhuff_bits_flush(&tb);
-            if (rhuff_dec_init(&lo, 256, RCHD_AV_MAX_BITS,
+            if (rhuff_dec_init(&s->lo, 256, RCHD_AV_MAX_BITS,
                      chd->av_lookup
                         + RHUFF_LOOKUP_ENTRIES(RCHD_AV_MAX_BITS),
                      RHUFF_LOOKUP_ENTRIES(RCHD_AV_MAX_BITS)) != RHUFF_OK
-                  || rhuff_read_tree_rle(&lo, &tb) != RHUFF_OK)
+                  || rhuff_read_tree_rle(&s->lo, &tb) != RHUFF_OK)
                return RCHD_ERROR_DATA;
             p += treesize;
          }
@@ -1644,8 +1665,8 @@ static int rchd_decode_avhuff(rchd_t *chd, const uint8_t *src,
                rhuff_bits_init(&ab, p, clen);
                for (k = 0; k < samples; k++)
                {
-                  uint32_t d = rhuff_dec_decode_one(&hi, &ab) << 8;
-                  d |= rhuff_dec_decode_one(&lo, &ab);
+                  uint32_t d = rhuff_dec_decode_one(&s->hi, &ab) << 8;
+                  d |= rhuff_dec_decode_one(&s->lo, &ab);
                   prev = (prev + d) & 0xffff;
                   out[k * 2]     = (uint8_t)(prev >> 8);
                   out[k * 2 + 1] = (uint8_t)prev;
