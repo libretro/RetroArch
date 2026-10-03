@@ -1,0 +1,115 @@
+/* Kernel internals shared by the C and assembly sides. */
+
+#ifndef GEKKO_KERNEL_H
+#define GEKKO_KERNEL_H
+
+/* Register frame offsets; the C structs below are checked against
+ * these at compile time. */
+#define CTX_GPR(n)   ((n) * 4)
+#define CTX_CR       128
+#define CTX_LR       132
+#define CTX_CTR      136
+#define CTX_XER      140
+#define CTX_SRR0     144
+#define CTX_SRR1     148
+#define CTX_SIZE     160
+
+/* Floating-point frame: ps0 as doubles, both halves as singles, then
+ * FPSCR (stored by stfd, low word). */
+#define FPX_FPR(n)   ((n) * 8)
+#define FPX_PS(n)    (256 + (n) * 8)
+#define FPX_FPSCR    512
+#define FPX_SIZE     520
+
+/* Thread layout: register frame, then the FP frame. */
+#define THR_FP       CTX_SIZE
+
+/* Per-processor scratch the vector stubs reach in real mode. */
+#define SCR_R3       0
+#define SCR_R4       4
+#define SCR_R5       8
+#define SCR_CR       12
+#define SCR_SRR0     16
+#define SCR_SRR1     20
+
+#define MSR_KERNEL   0x00001032   /* ME | IR | DR | RI */
+
+#ifndef __ASSEMBLER__
+
+#include <stddef.h>
+#include <stdint.h>
+#include <reent.h>
+
+#include <gekko/thread.h>
+#include <gekko/irq.h>
+
+struct gk_fpctx
+{
+   double   fpr[32];
+   float    ps[32][2];
+   double   fpscr;
+};
+
+enum gk_tstate
+{
+   GK_T_READY = 0,
+   GK_T_RUNNING,
+   GK_T_BLOCKED,
+   GK_T_DEAD
+};
+
+struct gk_thread
+{
+   struct gk_ctx      ctx;          /* must stay first */
+   struct gk_fpctx    fp;           /* must follow ctx */
+   uint64_t           wake_at;      /* timeout deadline, ticks */
+   struct _reent      reent;
+   struct gk_thread  *next;         /* run queue or futex queue */
+   struct gk_thread  *prev;
+   struct gk_thread  *tnext;        /* timeout list */
+   struct gk_thread  *joiner;
+   struct gk_thread  *all_next;
+   volatile uint32_t *wait_addr;    /* futex word slept on */
+   void              *stack;        /* allocation to free, if ours */
+   uint32_t          *stack_lo;     /* canary at the bottom */
+   void              *ret;
+   gk_thread_fn       fn;
+   void              *arg;
+   void              *tls[GK_TLS_SLOTS];
+   int                wait_result;
+   uint8_t            prio;
+   uint8_t            state;
+   uint8_t            timed;        /* on the timeout list */
+   uint8_t            fp_valid;     /* fp holds this thread's state */
+   uint8_t            detached;
+   uint8_t            exited;
+};
+
+extern struct gk_thread *gk_cur;      /* running thread */
+extern struct gk_thread *gk_fp_owner; /* whose state the FPRs hold */
+extern uint32_t          gk_in_exception;
+extern uint32_t          gk_scratch[8];
+extern uint8_t           gk_irq_stack_top[];
+
+/* Assembly. */
+void gk_vectors_install(void);
+void gk_syscall_resched(void);   /* 'sc': let the scheduler run */
+
+/* C side of the exception path: returns the thread to resume. */
+struct gk_thread *gk_exception_dispatch(unsigned vector,
+      struct gk_thread *t);
+
+/* Scheduler, all with interrupts off. */
+void gk_sched_init(void *main_stack_lo);
+struct gk_thread *gk_sched_main(void);
+struct gk_thread *gk_sched_switch(struct gk_thread *t);
+void gk_timer_tick(uint64_t now);
+void gk_timer_program(uint64_t now);
+void gk_irq_init(void);
+void gk_irq_dispatch(void);
+void gk_newlib_init(void);
+void gk_arena_init(void);
+void gk_tls_run_dtors(struct gk_thread *t);
+
+#endif
+#endif
