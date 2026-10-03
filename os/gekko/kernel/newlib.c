@@ -273,7 +273,8 @@ void gk_tls_run_dtors(struct gk_thread *t)
 
 /* ---- time ---- */
 
-static uint64_t rtc_base_s;   /* wall-clock seconds at tick 0 */
+static uint64_t     rtc_base_s;   /* wall-clock seconds at tick 0 */
+static volatile int wall_set;     /* from the clock chip or settime */
 
 void gk_set_wall_clock(uint64_t unix_seconds)
 {
@@ -288,6 +289,12 @@ static void ticks_to_ts(uint64_t t, struct timespec *ts)
 
 int __syscall_clock_gettime(clockid_t clock_id, struct timespec *tp)
 {
+   if (clock_id == CLOCK_REALTIME && !wall_set)
+   {
+      /* The clock chip, on the first wall-clock read. */
+      wall_set = 1;
+      gk_rtc_sync();
+   }
    ticks_to_ts(gk_ticks(), tp);
    if (clock_id == CLOCK_REALTIME)
       tp->tv_sec += (time_t)rtc_base_s;
@@ -298,6 +305,7 @@ int __syscall_clock_settime(clockid_t clock_id, const struct timespec *tp)
 {
    if (clock_id != CLOCK_REALTIME)
       return EINVAL;
+   wall_set = 1;
    gk_set_wall_clock((uint64_t)tp->tv_sec);
    return 0;
 }

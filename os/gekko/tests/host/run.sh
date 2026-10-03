@@ -1,5 +1,6 @@
 #!/bin/sh
-# fs/fat.c against images made and checked by dosfstools and mtools.
+# fs/fat.c against images made and checked by dosfstools and mtools,
+# and disk/sdspi.c against a model SD card.
 # Needs a C compiler, mkfs.fat, fsck.fat, mtools and python3.
 set -e
 cd "$(dirname "$0")"
@@ -9,6 +10,10 @@ mkdir -p "$work"
 export MTOOLS_SKIP_CHECK=1 LC_ALL=C.UTF-8
 ${CC:-cc} -O1 -g -Wall -Wextra -fsanitize=address,undefined \
    -I../../include -o "$work/fat_test" fat_test.c ../../fs/fat.c
+${CC:-cc} -O1 -g -Wall -Wextra -fsanitize=address,undefined \
+   -I../../include -o "$work/sdspi_test" sdspi_test.c ../../disk/sdspi.c \
+   ../../fs/fat.c
+"$work/sdspi_test"
 
 pattern() { # seed size file
    python3 -c "import sys
@@ -96,6 +101,15 @@ f.write(struct.pack('<B3sB3sII',0,b'\\0'*3,0x0c,b'\\0'*3,off,n-off)+bytes(48)+b'
    fi
    echo "$name: ok"
 }
+
+truncate -s 64M "$work/spi.img"
+mkfs.fat -F 32 -s 1 "$work/spi.img" > /dev/null
+printf 'hello\n' > "$work/hello.txt"
+mcopy -i "$work/spi.img" "$work/hello.txt" ::/hello.txt
+"$work/sdspi_test" "$work/spi.img"
+fsck "$work/spi.img" 0
+[ "$(mtype -i "$work/spi.img" ::/spi.txt)" = "over spi" ] ||
+   { echo "FAIL spi.txt"; exit 1; }
 
 one fat12 "-F 12" 4
 one fat16 "-F 16" 64

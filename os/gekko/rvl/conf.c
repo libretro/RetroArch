@@ -135,6 +135,17 @@ static int sysconf_byte(const char *name)
    return p[0];
 }
 
+int gk_conf_counter_bias(uint32_t *bias)
+{
+   unsigned size;
+   const uint8_t *p;
+   load();
+   if (!(p = sysconf_item("IPL.CB", &size)) || size != 4)
+      return -1;
+   *bias = ((uint32_t)p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
+   return 0;
+}
+
 int gk_conf_wide(void)
 {
    int v = sysconf_byte("IPL.AR");

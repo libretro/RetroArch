@@ -18,5 +18,7 @@ int gk_conf_progressive(void);   /* 480p chosen in the settings */
 int gk_conf_eurgb60(void);       /* PAL60 allowed */
 int gk_conf_video(void);         /* enum gk_conf_video */
 int gk_conf_display_offset_h(void);   /* -32..32; 0 if unset */
+/* Seconds the clock chip's counter is behind local time. */
+int gk_conf_counter_bias(uint32_t *bias);
 
 #endif

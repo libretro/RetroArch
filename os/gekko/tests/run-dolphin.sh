@@ -5,6 +5,7 @@
 # renderer (headless through surfaceless EGL, e.g. Mesa) and writes XFB
 # copies to memory, for tests that read back what the GPU drew; frames
 # are copied to $DUMP if it is set.  $SDIMG is the Wii's SD card image.
+# The clock chip reads 1790000000 (2026-09-21 14:13:20) at the start.
 # Exits 0 when the test says PASSED.
 ELF=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
 SECS=${2:-60}
@@ -19,7 +20,9 @@ set -- -u "$USERDIR" -p headless \
    -C Dolphin.Interface.DebugModeEnabled=True \
    -C Logger.Logs.OSREPORT_HLE=True \
    -C Logger.Options.WriteToConsole=True \
-   -C Logger.Options.Verbosity=5
+   -C Logger.Options.Verbosity=5 \
+   -C Dolphin.Core.EnableCustomRTC=True \
+   -C Dolphin.Core.CustomRTCValue=1790000000
 if [ -n "$SDIMG" ]; then
    set -- "$@" -C "Dolphin.General.WiiSDCardPath=$(cd "$(dirname "$SDIMG")" && pwd)/$(basename "$SDIMG")" \
       -C Dolphin.Core.WiiSDCard=True -C Dolphin.Core.WiiSDCardAllowWrites=True

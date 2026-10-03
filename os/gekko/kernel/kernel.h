@@ -113,6 +113,8 @@ void gk_tls_run_dtors(struct gk_thread *t);
 void gk_console_show_now(void);
 void gk_exit_after_crash(void);
 void gk_irq_block_current(volatile uint32_t *addr);
+void gk_set_wall_clock(uint64_t unix_seconds);
+void gk_rtc_sync(void);
 
 #endif
 #endif

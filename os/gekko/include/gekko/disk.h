@@ -26,6 +26,11 @@ void gk_fat_unmount(const char *name);
 /* Write everything cached to the device. */
 int  gk_fat_sync(const char *name);
 
+/* An SD card adapter on the external interface: memory card slot A
+ * (0) or B (1), or serial port 2 (2).  NULL without a card. */
+gk_blockdev_t *gk_sdgecko_open(unsigned ch);
+void           gk_sdgecko_close(unsigned ch);
+
 #ifdef HW_RVL
 /* The front SD slot; NULL without a card. */
 gk_blockdev_t *gk_sd_open(void);
