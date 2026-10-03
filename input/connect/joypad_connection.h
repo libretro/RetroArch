@@ -155,6 +155,12 @@ bool pad_connection_has_interface(joypad_connection_t *joyconn,
 
 int pad_connection_find_vacant_pad(joypad_connection_t *joyconn);
 
+/* The slot, held for calls into its pad until pad_connection_release();
+ * false, holding nothing, when it is not live. For a driver that calls
+ * the pad's interface itself rather than through the calls here. */
+bool pad_connection_acquire(joypad_connection_t *joyconn);
+void pad_connection_release(joypad_connection_t *joyconn);
+
 bool pad_connection_rumble(joypad_connection_t *s,
    unsigned pad, enum retro_rumble_effect effect, uint16_t strength);
 

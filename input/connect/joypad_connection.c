@@ -29,9 +29,7 @@
 #include <rthreads/rthreads.h>
 #endif
 
-/* The slot, held for a call into its pad until slot_release(); false,
- * holding nothing, when it is not live. */
-static bool slot_acquire(joypad_connection_t *joyconn)
+bool pad_connection_acquire(joypad_connection_t *joyconn)
 {
    (void)retro_atomic_fetch_add_seq_cst_int(&joyconn->users, 1);
    retro_atomic_thread_fence_seq_cst();
@@ -41,7 +39,7 @@ static bool slot_acquire(joypad_connection_t *joyconn)
    return false;
 }
 
-static void slot_release(joypad_connection_t *joyconn)
+void pad_connection_release(joypad_connection_t *joyconn)
 {
    (void)retro_atomic_fetch_sub_int(&joyconn->users, 1);
 }
@@ -488,25 +486,25 @@ void pad_connection_pad_deinit(joypad_connection_t *joyconn,
 void pad_connection_packet(joypad_connection_t *joyconn, uint32_t pad,
       uint8_t* data, uint32_t length)
 {
-   if (!joyconn || !slot_acquire(joyconn))
+   if (!joyconn || !pad_connection_acquire(joyconn))
       return;
    if (     joyconn->connection
          && joyconn->iface
          && joyconn->iface->packet_handler)
       joyconn->iface->packet_handler(joyconn->connection, data, length);
-   slot_release(joyconn);
+   pad_connection_release(joyconn);
 }
 
 void pad_connection_get_buttons(joypad_connection_t *joyconn,
       unsigned pad, input_bits_t *state)
 {
-   if (joyconn && slot_acquire(joyconn))
+   if (joyconn && pad_connection_acquire(joyconn))
    {
       if (joyconn->iface)
          joyconn->iface->get_buttons(joyconn->connection, state);
       else
          BIT256_CLEAR_ALL_PTR( state );
-      slot_release(joyconn);
+      pad_connection_release(joyconn);
    }
    else
       BIT256_CLEAR_ALL_PTR( state );
@@ -516,11 +514,11 @@ int16_t pad_connection_get_axis(joypad_connection_t *joyconn,
    unsigned idx, unsigned i)
 {
    int16_t val = 0;
-   if (joyconn && slot_acquire(joyconn))
+   if (joyconn && pad_connection_acquire(joyconn))
    {
       if (joyconn->iface)
          val = joyconn->iface->get_axis(joyconn->connection, i);
-      slot_release(joyconn);
+      pad_connection_release(joyconn);
    }
    return val;
 }
@@ -529,10 +527,10 @@ bool pad_connection_has_interface(joypad_connection_t *joyconn,
       unsigned pad)
 {
    bool ret = false;
-   if (joyconn && pad < MAX_USERS && slot_acquire(&joyconn[pad]))
+   if (joyconn && pad < MAX_USERS && pad_connection_acquire(&joyconn[pad]))
    {
       ret = joyconn[pad].iface != NULL;
-      slot_release(&joyconn[pad]);
+      pad_connection_release(&joyconn[pad]);
    }
    return ret;
 }
@@ -551,14 +549,14 @@ bool pad_connection_rumble(joypad_connection_t *joyconn,
    unsigned pad, enum retro_rumble_effect effect, uint16_t strength)
 {
    bool ret = false;
-   if (!slot_acquire(joyconn))
+   if (!pad_connection_acquire(joyconn))
       return false;
    if (joyconn->iface && joyconn->iface->set_rumble)
    {
       joyconn->iface->set_rumble(joyconn->connection, effect, strength);
       ret = true;
    }
-   slot_release(joyconn);
+   pad_connection_release(joyconn);
    return ret;
 }
 
@@ -566,11 +564,11 @@ const char* pad_connection_get_name(joypad_connection_t *joyconn,
       unsigned pad)
 {
    const char *name = NULL;
-   if (joyconn && slot_acquire(joyconn))
+   if (joyconn && pad_connection_acquire(joyconn))
    {
       if (joyconn->iface && joyconn->iface->get_name)
          name = joyconn->iface->get_name(joyconn->connection);
-      slot_release(joyconn);
+      pad_connection_release(joyconn);
    }
    return name;
 }

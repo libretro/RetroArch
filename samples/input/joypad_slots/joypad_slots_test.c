@@ -7,6 +7,10 @@
  * in the pad's deinit. The slot must not be deinitialised while a
  * reader is inside it, and a reader that comes after must not go in.
  *
+ * The same for the register/deregister pair, where the driver frees
+ * the pad once it is deregistered, and for a driver that calls the
+ * pad's interface itself under pad_connection_acquire().
+ *
  * The fake pad poisons its data in deinit before freeing it, and every
  * call checks it: a call into a pad already torn down counts, and
  * under ASan is a use-after-free. Its calls linger a little, to give
@@ -118,6 +122,13 @@ static void reader(void *unused)
       pad_connection_get_name(&slots[0], 0);
       pad_connection_has_interface(slots, 0);
       pad_connection_packet(&slots[0], 0, pkt, 4);
+      /* a driver that calls the pad itself, as the Wii U one does */
+      if (pad_connection_acquire(&slots[0]))
+      {
+         if (slots[0].iface && slots[0].connection)
+            slots[0].iface->get_buttons(slots[0].connection, &state);
+         pad_connection_release(&slots[0]);
+      }
    }
 }
 
@@ -159,6 +170,19 @@ int main(void)
       pad_connection_pad_deinit(&slots[0], 0);
    }
 
+   /* The register/deregister pair: the pad is the driver's own data,
+    * freed by the driver once deregistered. */
+   for (i = 0; i < CYCLES && !failures; i++)
+   {
+      fake_pad_t *pad = (fake_pad_t*)fake_init(NULL, 0, NULL);
+      pad_connection_pad_register(slots, &fake_iface, pad, NULL, NULL,
+            SLOT_AUTO);
+      if (i & 1)
+         usleep(20);
+      pad_connection_pad_deregister(slots, &fake_iface, pad);
+      fake_deinit(pad);
+   }
+
    retro_atomic_store_release_int(&reading, 0);
    sthread_join(r[0]);
    sthread_join(r[1]);
@@ -185,7 +209,7 @@ int main(void)
    }
    if (failures)
       return 1;
-   printf("[pass] joypad_slots_test: %u plug cycles, %d calls into live pads\n",
+   printf("[pass] joypad_slots_test: %u plug cycles each way, %d calls into live pads\n",
          CYCLES, retro_atomic_load_acquire_int(&calls));
    return 0;
 }
