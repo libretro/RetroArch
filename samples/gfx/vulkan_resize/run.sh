@@ -26,6 +26,21 @@
 # - where the Vulkan validation layers are installed, they have
 #   nothing to say about either run.
 #
+# Then both again with a shader preset of two passes, written here: a
+# first pass at half the viewport's size, which draws squares eight of
+# its own pixels wide - so the picture says what size its framebuffer
+# is - and a second that reads the first's last frame as feedback. The
+# shader chain used to rebuild itself whole on every swapchain change,
+# reflecting and compiling every pass again; a pass brings its
+# framebuffer to size as it draws, so for a change of size there is
+# nothing to rebuild. Checked as well:
+#
+# - as it is, the passes were built once, when the preset was loaded,
+#   and the chain was kept at each of the four size changes; with the
+#   switch they were built again each time;
+# - the shader's picture after each resize is, pixel for pixel, the
+#   one the full rebuild draws.
+#
 # The screenshots with the menu open are not compared: resized under
 # the menu, the full rebuild loses the core's last frame (the texture
 # it is in is one of the things rebuilt) and shows whatever the new
@@ -71,7 +86,85 @@ config_save_on_exit = "false"
 frontend_log_level = "0"
 confirm_quit = "false"
 video_window_save_positions = "false"
+video_shader_enable = "true"
 CFG
+
+# the shader preset
+mkdir -p "$work/sh"
+cat > "$work/sh/pass0.slang" <<'SLANG'
+#version 450
+layout(std140, set = 0, binding = 0) uniform UBO
+{
+   mat4 MVP;
+   vec4 SourceSize;
+   vec4 OutputSize;
+} global;
+
+#pragma stage vertex
+layout(location = 0) in vec4 Position;
+layout(location = 1) in vec2 TexCoord;
+layout(location = 0) out vec2 vTexCoord;
+void main()
+{
+   gl_Position = global.MVP * Position;
+   vTexCoord   = TexCoord;
+}
+
+#pragma stage fragment
+layout(location = 0) in vec2 vTexCoord;
+layout(location = 0) out vec4 FragColor;
+layout(set = 0, binding = 2) uniform sampler2D Source;
+void main()
+{
+   /* squares eight of this pass's own pixels wide: the picture says
+    * what size this pass's framebuffer is */
+   vec2 cell   = floor(vTexCoord * global.OutputSize.xy / 8.0);
+   float check = mod(cell.x + cell.y, 2.0);
+   FragColor   = vec4(texture(Source, vTexCoord).rgb * (0.5 + 0.5 * check), 1.0);
+}
+SLANG
+cat > "$work/sh/pass1.slang" <<'SLANG'
+#version 450
+layout(std140, set = 0, binding = 0) uniform UBO
+{
+   mat4 MVP;
+   vec4 SourceSize;
+   vec4 OutputSize;
+} global;
+
+#pragma stage vertex
+layout(location = 0) in vec4 Position;
+layout(location = 1) in vec2 TexCoord;
+layout(location = 0) out vec2 vTexCoord;
+void main()
+{
+   gl_Position = global.MVP * Position;
+   vTexCoord   = TexCoord;
+}
+
+#pragma stage fragment
+layout(location = 0) in vec2 vTexCoord;
+layout(location = 0) out vec4 FragColor;
+layout(set = 0, binding = 2) uniform sampler2D Source;
+layout(set = 0, binding = 3) uniform sampler2D PassFeedback0;
+void main()
+{
+   /* the first pass's last frame is asked for, so that it keeps a
+    * feedback buffer; a steady picture makes it equal to this frame */
+   vec3 now  = texture(Source, vTexCoord).rgb;
+   vec3 then = texture(PassFeedback0, vTexCoord).rgb;
+   FragColor = vec4(0.5 * (now + then), 1.0);
+}
+SLANG
+cat > "$work/sh/test.slangp" <<'SLANGP'
+shaders = 2
+shader0 = pass0.slang
+scale_type0 = viewport
+scale0 = 0.5
+filter_linear0 = false
+shader1 = pass1.slang
+filter_linear1 = false
+SLANGP
 
 layers=
 if ls /usr/share/vulkan/explicit_layer.d/*khronos_validation* >/dev/null 2>&1; then
@@ -86,10 +179,11 @@ hold() {
    sleep 0.7
 }
 
-play() {  # $1: name. Returns 0 if RetroArch quit by itself.
+play() {  # $1: name, $2: a shader preset, or nothing. Returns 0 if RetroArch quit by itself.
    local name=$1 wid= app i
    ( cd "$root" && VK_INSTANCE_LAYERS=$layers \
         exec ./retroarch --verbose -c "$work/retroarch.cfg" \
+        ${2:+--set-shader "$2"} \
         -L "$work/smoke_core.so" ) > "$work/$name.log" 2>&1 &
    app=$!
    for i in $(seq 1 80); do
@@ -133,8 +227,11 @@ def pixels(path):
     h = struct.unpack('>25I', d[:100])
     return d[h[0] + h[19] * 12:]
 a, b = pixels(sys.argv[1]), pixels(sys.argv[2])
-# and not a black screen: the core's picture is in it
-sys.exit(0 if a == b and a.count(b'\x40\x30\x20') > 1000 else 1)
+# and not a black screen: the core's picture is in it, in its own
+# colour or, through the shader, half as bright in the dark squares
+core = a.count(b'\x40\x30\x20') + a.count(b'\x20\x18\x10') \
+     + a.count(b'\x30\x20\x40') + a.count(b'\x18\x10\x20')
+sys.exit(0 if a == b and core > 1000 else 1)
 PY
 }
 
@@ -158,19 +255,46 @@ check() {  # $1 name, $2 how play ended, $3 want size-only, $4 want everything
    fi
 }
 
+# the shader chain: $1 name, $2 passes built (want), $3 chain kept (want)
+check_chain() {
+   local name=$1 built kept
+   built=$(count "$work/$name.log" 'Building pass #0')
+   kept=$(count "$work/$name.log" 'Shader chain kept')
+   if [ "$built" = "$2" ] && [ "$kept" = "$3" ]; then
+      echo "[pass] $name: the preset's passes were built $built time(s), the chain kept at $kept size change(s)"
+   else
+      echo "[FAIL] $name: the preset's passes were built $built time(s) (want $2)," \
+           "the chain kept at $kept size change(s) (want $3)"
+      sed 's/\x1b\[[0-9;]*m//g' "$work/$name.log" | grep -a 'Slang\]\|Building pass\|chain' | tail -20
+      failures=$((failures + 1))
+   fi
+}
+
+compare() {  # $1, $2: the two runs
+   local n
+   for n in 1 2; do
+      if same_picture "$work/$1.$n.xwd" "$work/$2.$n.xwd"; then
+         echo "[pass] $1, screenshot $n: the picture is the one the full rebuild draws"
+      else
+         echo "[FAIL] $1, screenshot $n: the picture differs from the full rebuild's, or is not there"
+         failures=$((failures + 1))
+      fi
+   done
+}
+
 play "size only"; rc=$?
 check "size only" $rc 4 0
 RETROARCH_VULKAN_REBUILD_ALL=1 play "everything rebuilt"; rc=$?
 check "everything rebuilt" $rc 0 4
+compare "size only" "everything rebuilt"
 
-for n in 1 2; do
-   if same_picture "$work/size only.$n.xwd" "$work/everything rebuilt.$n.xwd"; then
-      echo "[pass] screenshot $n: the picture is the one the full rebuild draws"
-   else
-      echo "[FAIL] screenshot $n: the picture differs from the full rebuild's, or is not there"
-      failures=$((failures + 1))
-   fi
-done
+play "shader, size only" "$work/sh/test.slangp"; rc=$?
+check "shader, size only" $rc 4 0
+check_chain "shader, size only" 1 4
+RETROARCH_VULKAN_REBUILD_ALL=1 play "shader, everything rebuilt" "$work/sh/test.slangp"; rc=$?
+check "shader, everything rebuilt" $rc 0 4
+check_chain "shader, everything rebuilt" 5 0
+compare "shader, size only" "shader, everything rebuilt"
 
 if [ "$failures" != 0 ]; then
    echo "FAIL vulkan_resize: $failures"

@@ -11,8 +11,11 @@ name: CI Linux Vulkan resize
 # textures it used to destroy and build again each time. This holds
 # that every size change takes that path, that the picture afterwards
 # is pixel for pixel the one a full rebuild draws, and that the
-# Vulkan validation layers have nothing to say about either. See
-# samples/gfx/vulkan_resize/run.sh.
+# Vulkan validation layers have nothing to say about either. Then
+# the same with a two-pass shader preset: the shader chain, which used
+# to reflect and compile every pass again on each swapchain change, is
+# kept when only the size changed, and its picture is the one a full
+# rebuild draws. See samples/gfx/vulkan_resize/run.sh.
 
 on:
   push:

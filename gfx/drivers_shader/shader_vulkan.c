@@ -1614,10 +1614,59 @@ static void slang_chain_notify_sync_index(struct vulkan_filter_chain *chain,
       slang_pass_notify_sync_index(chain->passes[i], index);
 }
 
+/* The chain told of a new swapchain.
+ *
+ * It used to rebuild itself whole each time: every pass's descriptor
+ * pool, set layout, pipeline layout and pipeline destroyed, its
+ * framebuffer made again, its SPIR-V reflected again and its pipeline
+ * compiled again, then the uniform buffer, the history and the
+ * feedback buffers. For a preset of a dozen passes that is a dozen
+ * pipeline compiles on every resize of the window.
+ *
+ * What a pass builds is made from the render pass it draws to and its
+ * format, and from the number of sync indices (its descriptor sets
+ * and its share of the uniform buffer, one of each an index). None of
+ * it is made from the swapchain's size: viewport and scissor are
+ * dynamic state, and a pass whose framebuffer follows the viewport
+ * already brings it to size as it draws, each frame, from the
+ * viewport it is given then (slang_pass_build_commands()).
+ *
+ * So when the render pass, the format and the index count are what
+ * the chain was built for, and every pass is built, there is nothing
+ * to do but note the new viewport. Anything else is the rebuild it
+ * always was. RETROARCH_VULKAN_REBUILD_ALL=1 in the environment
+ * rebuilds every time, as before. */
 static bool slang_chain_update_swapchain_info(struct vulkan_filter_chain *chain,
-      
       const vulkan_filter_chain_swapchain_info info)
 {
+   unsigned i;
+   static int rebuild_all = -1;
+
+   if (rebuild_all < 0)
+   {
+      const char *env = getenv("RETROARCH_VULKAN_REBUILD_ALL");
+      rebuild_all     = (env && env[0] == '1') ? 1 : 0;
+   }
+
+   if (     !rebuild_all
+         && chain->pass_count
+         && chain->alias_initialized
+         && chain->swapchain_info.render_pass == info.render_pass
+         && chain->swapchain_info.format      == info.format
+         && chain->swapchain_info.num_indices == info.num_indices)
+   {
+      for (i = 0; i < chain->pass_count; i++)
+         if (chain->passes[i]->pipeline == VK_NULL_HANDLE)
+            break;
+      if (i == chain->pass_count)
+      {
+         chain->swapchain_info = info;
+         RARCH_DBG("[Vulkan] Shader chain kept: the swapchain changed in"
+               " size only.\n");
+         return true;
+      }
+   }
+
    slang_chain_flush(chain);
    slang_chain_set_swapchain_info(chain, info);
    return slang_chain_init(chain);
