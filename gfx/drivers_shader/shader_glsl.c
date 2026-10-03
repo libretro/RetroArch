@@ -60,6 +60,14 @@ struct cache_vbo
    size_t len_secondary;
    GLfloat *buffer_primary;
    GLfloat *buffer_secondary;
+   /* The static vertex array vbo_primary holds, for the ribbon
+    * pipelines: its address, length and first and last floats, so a
+    * rebuilt array at the same address is not taken for it. NULL when
+    * the buffer holds anything else. */
+   const GLfloat *static_src;
+   size_t static_vertices;
+   GLfloat static_head[4];
+   GLfloat static_tail[4];
 };
 
 struct shader_program_glsl_data
@@ -1682,6 +1690,7 @@ static bool gl_glsl_set_coords(void *shader_data,
    size_t               attribs_size = 0;
    size_t                       size = 0;
    GLfloat *buffer                   = short_buffer;
+   const GLfloat *static_src         = NULL;
    glsl_shader_data_t          *glsl = (glsl_shader_data_t*)shader_data;
    const struct shader_uniforms *uni = glsl
       ? &glsl->uniforms[glsl->active_idx] : NULL;
@@ -1728,6 +1737,46 @@ static bool gl_glsl_set_coords(void *shader_data,
    }
 #endif
 
+#ifdef HAVE_SHADERPIPELINE
+   /* The ribbon pipelines draw one grid the menu driver builds once and
+    * hands back every frame, as their only attribute. When the buffer
+    * already holds that array, bind it as it is: no copy into the
+    * scratch, no comparison against the last upload. */
+   if (     (  glsl->active_idx == VIDEO_SHADER_MENU
+            || glsl->active_idx == VIDEO_SHADER_MENU_2)
+         && uni->vertex_coord >= 0 && coords->vertex && coords->vertices >= 4
+         && (uni->tex_coord     < 0 || !coords->tex_coord)
+         && (uni->color         < 0 || !coords->color)
+         && (uni->lut_tex_coord < 0 || !coords->lut_tex_coord))
+   {
+      struct cache_vbo *cache = &glsl->vbo[glsl->active_idx];
+      const GLfloat *tail     = coords->vertex + 2 * coords->vertices - 4;
+
+      if (     cache->static_src      == coords->vertex
+            && cache->static_vertices == coords->vertices
+            && !memcmp(cache->static_head, coords->vertex,
+               sizeof(cache->static_head))
+            && !memcmp(cache->static_tail, tail,
+               sizeof(cache->static_tail)))
+      {
+         if (glsl->attribs_index < ARRAY_SIZE(glsl->attribs_elems))
+         {
+            glBindBuffer(GL_ARRAY_BUFFER, cache->vbo_primary);
+            glEnableVertexAttribArray(uni->vertex_coord);
+            glVertexAttribPointer(uni->vertex_coord, 2, GL_FLOAT,
+                  GL_FALSE, 0, (const GLvoid*)0);
+            glsl->attribs_elems[glsl->attribs_index++] = uni->vertex_coord;
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+         }
+         return true;
+      }
+
+      /* Uploaded the usual way below, then known by its address */
+      static_src = coords->vertex;
+   }
+#endif
+
+
    if (uni->tex_coord >= 0 && coords->tex_coord)
    {
       gl_glsl_set_coord_array(attribs, uni->tex_coord,
@@ -1763,6 +1812,19 @@ static bool gl_glsl_set_coords(void *shader_data,
             &glsl->vbo[glsl->active_idx].len_primary,
             buffer, size,
             attribs, attribs_size);
+
+   {
+      /* Whatever went in last is what the buffer holds now */
+      struct cache_vbo *cache = &glsl->vbo[glsl->active_idx];
+      cache->static_src       = static_src;
+      if (static_src)
+      {
+         cache->static_vertices = coords->vertices;
+         memcpy(cache->static_head, static_src, sizeof(cache->static_head));
+         memcpy(cache->static_tail, static_src + 2 * coords->vertices - 4,
+               sizeof(cache->static_tail));
+      }
+   }
 
    return true;
 }
