@@ -23,6 +23,7 @@
 #include <libretro.h>
 #include <retro_miscellaneous.h>
 #include <retro_endianness.h>
+#include <retro_atomic.h>
 #include "../input_driver.h"
 
 /* Gekko (NGC/Wii) has PID/VID already swapped by USB_GetDescriptors from libogc, so skip bigendian byteswap */
@@ -60,12 +61,20 @@
 #define PID_KADE          SWAP_IF_BIG(0x82c0)
 #define PID_DRAGONRISE    SWAP_IF_BIG(0x0006)
 
+/* A slot is set up and torn down on the HID driver's own thread - its
+ * event or hotplug thread - and read on the frontend's every frame.
+ * The pad_connection_* calls that reach into the pad do so only while
+ * the slot is 'live', counted in 'users'; pad_connection_pad_deinit()
+ * takes 'live' away and waits for 'users' to drain before the pad's
+ * deinit frees what they would read. */
 struct joypad_connection
 {
     struct pad_connection_interface *iface;
     input_device_driver_t *input_driver;
     void* data;
     void* connection;
+    retro_atomic_int_t live;
+    retro_atomic_int_t users;
     bool connected;
 };
 

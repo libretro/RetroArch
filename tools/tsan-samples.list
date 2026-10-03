@@ -80,3 +80,4 @@ samples/tasks/progress_push task_progress_push_test
 samples/frontend/android_lifecycle android_lifecycle_test
 samples/ui/companion_thumbs_handoff companion_thumbs_test
 samples/midi/fmsynth_queue fmsynth_queue_test
+samples/input/joypad_slots joypad_slots_test
