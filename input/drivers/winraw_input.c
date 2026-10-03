@@ -223,6 +223,16 @@ typedef struct
    bool sink;
    bool window_failed;
    DWORD window_tid;   /* the thread that made the window */
+   /* the "disable Windows keys" setting the keyboard is registered
+    * with; registered again when the setting changes */
+   bool nowinkey;
+   /* A report came from a mouse that is not in the list: the list is
+    * made again at the end of the poll (winraw_mice_refresh()). */
+   bool   mouse_unknown_seen;
+   HANDLE mouse_unknown;
+   /* a handle that was still not a listed mouse after a refresh */
+   HANDLE mouse_not_listed;
+   DWORD  mouse_refresh_tick;
    /* Key events of the reports read so far, handed on at the end of
     * the poll. One thread's. */
    unsigned kev_n;
@@ -961,6 +971,17 @@ static bool winraw_take(winraw_input_t *wr, DWORD type, HANDLE device,
                break;
             }
          }
+         /* From a mouse the list does not have: one plugged in since
+          * the list was made. (No handle at all is input something
+          * injected, not a device.) */
+         if (     i == wr->mouse_cnt
+               && wr->poll_drain
+               && device
+               && device != wr->mouse_not_listed)
+         {
+            wr->mouse_unknown      = device;
+            wr->mouse_unknown_seen = true;
+         }
          break;
    }
    return true;
@@ -1143,7 +1164,8 @@ static bool winraw_poll_window_up(winraw_input_t *wr)
    rid[0].hwndTarget  = wr->window;
    rid[0].usUsagePage = 0x01; /* Generic desktop */
    rid[0].usUsage     = 0x06; /* Keyboard */
-   if (config_get_ptr()->bools.input_nowinkey_enable)
+   wr->nowinkey       = config_get_ptr()->bools.input_nowinkey_enable;
+   if (wr->nowinkey)
       rid[0].dwFlags |= RIDEV_NOHOTKEYS; /* Disable win keys while focused */
 
    rid[1].dwFlags     = base;
@@ -1176,6 +1198,85 @@ static bool winraw_poll_wanted(bool *sink)
    const char *env = getenv("RETROARCH_RAWINPUT_POLL");
    *sink           = (env && env[0] == '2');
    return winraw_raw_input_polled();
+}
+
+/* Two things the driver used to pick up only by being started again,
+ * which it was at every video driver restart - a content load, a
+ * change of video setting. Read by the poll it has no need of the
+ * restart, and these are done when they come up instead.
+ *
+ * The list of mice is made when the driver starts, and a report from
+ * a mouse that is not on it was dropped: a mouse plugged in while
+ * RetroArch ran did nothing until something restarted the drivers.
+ * Such a report now has the list made again at the end of the poll,
+ * as a restart would make it - same order, same names task - with the
+ * mice that were already there keeping their position, buttons and
+ * device type. Not more than once a second, and a handle that is
+ * still not a listed mouse afterwards is not asked about again. */
+static void winraw_mice_refresh(winraw_input_t *wr)
+{
+   unsigned i, j;
+   bool found               = false;
+   winraw_mouse_t *new_all  = NULL;
+   winraw_mouse_t *new_snap = NULL;
+   unsigned new_cnt         = 0;
+   DWORD now                = GetTickCount();
+
+   wr->mouse_unknown_seen   = false;
+   if (wr->mouse_refresh_tick && now - wr->mouse_refresh_tick < 1000)
+      return;
+   wr->mouse_refresh_tick   = now ? now : 1;
+
+   if (!winraw_init_devices(&new_all, &new_cnt))
+      return;
+   if (new_cnt && !(new_snap = (winraw_mouse_t*)
+            malloc(new_cnt * sizeof(winraw_mouse_t))))
+   {
+      free(new_all);
+      return;
+   }
+
+   for (i = 0; i < new_cnt; i++)
+   {
+      for (j = 0; j < wr->mouse_cnt; j++)
+      {
+         if (new_all[i].hnd == g_mice[j].hnd)
+         {
+            new_all[i] = g_mice[j];
+            break;
+         }
+      }
+      if (new_all[i].hnd == wr->mouse_unknown)
+         found = true;
+   }
+   if (new_cnt)
+      memcpy(new_snap, new_all, new_cnt * sizeof(winraw_mouse_t));
+
+   free(g_mice);
+   free(wr->mice);
+   g_mice        = new_all;
+   wr->mice      = new_snap;
+   wr->mouse_cnt = new_cnt;
+
+   if (!found)
+      wr->mouse_not_listed = wr->mouse_unknown;
+   RARCH_LOG("[WinRaw] Mouse list made again: %u.\n", new_cnt);
+}
+
+/* The "disable Windows keys" setting is part of how the keyboard is
+ * registered. It took effect at the driver's next start; now the
+ * keyboard is registered again when the setting is seen to have
+ * changed. */
+static void winraw_nowinkey_apply(winraw_input_t *wr, bool enable)
+{
+   RAWINPUTDEVICE rid;
+   rid.dwFlags     = (wr->sink ? RIDEV_INPUTSINK : 0)
+                   | (enable   ? RIDEV_NOHOTKEYS : 0);
+   rid.hwndTarget  = wr->window;
+   rid.usUsagePage = 0x01; /* Generic desktop */
+   rid.usUsage     = 0x06; /* Keyboard */
+   if (RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE)))
+      wr->nowinkey = enable;
 }
 
 static void *winraw_init(const char *joypad_driver)
@@ -1448,7 +1549,17 @@ static void winraw_poll(void *data)
    }
 
    if (wr->poll_drain)
+   {
+      if (wr->mouse_unknown_seen)
+         winraw_mice_refresh(wr);
+      if (wr->window)
+      {
+         bool nowinkey = config_get_ptr()->bools.input_nowinkey_enable;
+         if (nowinkey != wr->nowinkey)
+            winraw_nowinkey_apply(wr, nowinkey);
+      }
       winraw_kev_deliver(wr);
+   }
 }
 
 static int16_t winraw_input_state(
