@@ -247,6 +247,13 @@
 #define DEFAULT_GAMMA 0
 #endif
 
+/* Wii and Xbox: soften the picture (on the Wii, the composite
+ * video trap filter). */
+#define DEFAULT_SOFT_FILTER false
+
+/* Xbox: flicker filter strength, 0 (off) to 5. */
+#define DEFAULT_FLICKER_FILTER 0
+
 /* Windowed
  * Real x resolution = aspect * base_size * x scale
  * Real y resolution = base_size * y scale

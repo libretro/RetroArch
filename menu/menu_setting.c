@@ -11921,6 +11921,13 @@ static const setting_desc_t vid_desc_1[] = {
 #include "../settings/settings_def_video_monitor_index.h"
 };
 
+#if defined(GEKKO) || defined(_XBOX1) || defined(_XBOX360)
+static const setting_desc_t vid_console_desc[] = {
+/* GENERATED: rows come from settings_def_video_console_screen.h in order. */
+#include "../settings/settings_def_video_console_screen.h"
+};
+#endif
+
 #if defined(ANDROID) || TARGET_OS_IOS
 static const setting_desc_t vid_desc_2[] = {
 /* GENERATED: rows come from settings_def_video_notch.h in order. */
@@ -14787,8 +14794,9 @@ static void settings_build_video(
          START_SUB_GROUP(list, list_info, "Platform-specific", &group_info,
                &subgroup_info, parent_group);
 
-         video_driver_menu_settings((void**)list, (void*)list_info,
-               (void*)&group_info, (void*)&subgroup_info, parent_group);
+#if defined(GEKKO) || defined(_XBOX1) || defined(_XBOX360)
+            ADD_DESC(vid_console_desc);
+#endif
 
          END_SUB_GROUP(list, list_info, parent_group);
          START_SUB_GROUP(list, list_info, "Monitor", &group_info, &subgroup_info, parent_group);
@@ -18388,6 +18396,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { vid_desc_0, (uint16_t)ARRAY_SIZE(vid_desc_0) },
 #endif
    { vid_desc_1, (uint16_t)ARRAY_SIZE(vid_desc_1) },
+#if defined(GEKKO) || defined(_XBOX1) || defined(_XBOX360)
+   { vid_console_desc, (uint16_t)ARRAY_SIZE(vid_console_desc) },
+#endif
 #if defined(ANDROID) || TARGET_OS_IOS
    { vid_desc_2, (uint16_t)ARRAY_SIZE(vid_desc_2) },
 #endif
@@ -19297,84 +19308,3 @@ rarch_setting_t *menu_setting_new(void)
    return token;
 }
 
-void video_driver_menu_settings(void **list_data, void *list_info_data,
-      void *group_data, void *subgroup_data, const char *parent_group)
-{
-#ifdef HAVE_MENU
-   rarch_setting_t **list                    = (rarch_setting_t**)list_data;
-   rarch_setting_info_t *list_info           = (rarch_setting_info_t*)list_info_data;
-   rarch_setting_group_info_t *group_info    = (rarch_setting_group_info_t*)group_data;
-   rarch_setting_group_info_t *subgroup_info = (rarch_setting_group_info_t*)subgroup_data;
-   global_t                        *global   = global_get_ptr();
-
-   (void)list;
-   (void)list_info;
-   (void)group_info;
-   (void)subgroup_info;
-   (void)global;
-
-#if defined(GEKKO) || defined(_XBOX360)
-   /* Descriptor holdout: value target outside settings_t. */
-   CONFIG_UINT(
-         list, list_info,
-         &global->console.screen.gamma_correction,
-         MENU_ENUM_LABEL_VIDEO_GAMMA,
-         MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
-         0,
-         group_info,
-         subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
-         list,
-         list_info,
-         CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-   menu_settings_list_current_add_range(
-         list,
-         list_info,
-         0,
-         MAX_GAMMA_SETTING,
-         1,
-         true,
-         true);
-   SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info,
-         SD_FLAG_CMD_APPLY_AUTO|SD_FLAG_ADVANCED);
-#endif
-#if defined(_XBOX1) || defined(HW_RVL)
-   CONFIG_BOOL(
-         list, list_info,
-         &global->console.softfilter_enable,
-         MENU_ENUM_LABEL_VIDEO_SOFT_FILTER,
-         MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
-         false,
-         MENU_ENUM_LABEL_VALUE_OFF,
-         MENU_ENUM_LABEL_VALUE_ON,
-         group_info,
-         subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler,
-         SD_FLAG_NONE);
-   MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
-         list,
-         list_info,
-         CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
-#endif
-#ifdef _XBOX1
-   CONFIG_UINT(
-         list, list_info,
-         &global->console.screen.flicker_filter_index,
-         MENU_ENUM_LABEL_VIDEO_FILTER_FLICKER,
-         MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
-         0,
-         group_info,
-         subgroup_info,
-         parent_group,
-         general_write_handler,
-         general_read_handler);
-   menu_settings_list_current_add_range(list, list_info,
-         0, 5, 1, true, true);
-#endif
-#endif
-}

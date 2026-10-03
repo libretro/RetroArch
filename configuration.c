@@ -2827,6 +2827,9 @@ static struct config_bool_setting *populate_settings_bool(
 #undef S_UINT_AT_EX_NS_H
    SETTING_BOOL("video_scanline_sync",           &settings->bools.video_scanline_sync, true, DEFAULT_SCANLINE_SYNC, false);
    SETTING_BOOL("video_notch_write_over_enable", &settings->bools.video_notch_write_over_enable, true, DEFAULT_NOTCH_WRITE_OVER_ENABLE, false);
+#if defined(_XBOX1) || defined(HW_RVL)
+   SETTING_BOOL("soft_filter_enable",            &settings->bools.video_soft_filter, true, DEFAULT_SOFT_FILTER, false);
+#endif
 #if defined(__APPLE__) && defined(HAVE_VULKAN)
    SETTING_BOOL("video_use_metal_arg_buffers",   &settings->bools.video_use_metal_arg_buffers, true, config_metal_arg_buffers_default(), false);
 #endif
@@ -3631,6 +3634,12 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
 #ifdef GEKKO
    SETTING_UINT("video_viwidth",                    &settings->uints.video_viwidth, true, DEFAULT_VIDEO_VI_WIDTH, false);
+#endif
+#if defined(GEKKO) || defined(_XBOX360)
+   SETTING_UINT("gamma_correction",                 &settings->uints.video_gamma, true, DEFAULT_GAMMA, false);
+#endif
+#ifdef _XBOX1
+   SETTING_UINT("flicker_filter_index",             &settings->uints.video_flicker_filter, true, DEFAULT_FLICKER_FILTER, false);
 #endif
    /* GENERATED: single-source setting rows (uint kind emits here) */
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub)
@@ -5588,10 +5597,6 @@ static void video_driver_default_settings(global_t *global)
    if (!global)
       return;
 
-   global->console.screen.gamma_correction       = DEFAULT_GAMMA;
-   global->console.flickerfilter_enable          = false;
-   global->console.softfilter_enable             = false;
-
    global->console.screen.resolutions.current.id = 0;
 }
 
@@ -6576,28 +6581,9 @@ static config_file_t *open_default_config_file(void)
 static void video_driver_load_settings(global_t *global,
       config_file_t *conf)
 {
-   bool               tmp_bool = false;
-
-   CONFIG_GET_INT_BASE(conf, global,
-         console.screen.gamma_correction, "gamma_correction");
-
-   if (config_get_bool(conf, "flicker_filter_enable",
-         &tmp_bool))
-      global->console.flickerfilter_enable = tmp_bool;
-
-   if (config_get_bool(conf, "soft_filter_enable",
-         &tmp_bool))
-      global->console.softfilter_enable = tmp_bool;
-
-   CONFIG_GET_INT_BASE(conf, global,
-         console.screen.soft_filter_index,
-         "soft_filter_index");
    CONFIG_GET_INT_BASE(conf, global,
          console.screen.resolutions.current.id,
          "current_resolution_id");
-   CONFIG_GET_INT_BASE(conf, global,
-         console.screen.flicker_filter_index,
-         "flicker_filter_index");
 }
 #endif
 
@@ -8214,62 +8200,6 @@ static void config_parse_file(global_t *global)
 static void video_driver_save_settings(global_t *global, config_file_t *conf,
       bool minimal, global_t *defaults_global)
 {
-   /* gamma_correction */
-   if (   !minimal
-       || global->console.screen.gamma_correction !=
-          (defaults_global ? defaults_global->console.screen.gamma_correction : DEFAULT_GAMMA))
-   {
-      config_set_int(conf, "gamma_correction",
-            global->console.screen.gamma_correction);
-   }
-   else
-   {
-      config_unset(conf, "gamma_correction");
-   }
-
-   /* flicker_filter_enable */
-   if (   !minimal
-       || global->console.flickerfilter_enable !=
-          (defaults_global ? defaults_global->console.flickerfilter_enable : false))
-   {
-      config_set_string(conf, "flicker_filter_enable",
-              global->console.flickerfilter_enable
-            ? "true"
-            : "false");
-   }
-   else
-   {
-      config_unset(conf, "flicker_filter_enable");
-   }
-
-   /* soft_filter_enable */
-   if (   !minimal
-       || global->console.softfilter_enable !=
-          (defaults_global ? defaults_global->console.softfilter_enable : false))
-   {
-      config_set_string(conf, "soft_filter_enable",
-              global->console.softfilter_enable
-            ? "true"
-            : "false");
-   }
-   else
-   {
-      config_unset(conf, "soft_filter_enable");
-   }
-
-   /* soft_filter_index */
-   if (   !minimal
-       || global->console.screen.soft_filter_index !=
-          (defaults_global ? defaults_global->console.screen.soft_filter_index : 0))
-   {
-      config_set_int(conf, "soft_filter_index",
-            global->console.screen.soft_filter_index);
-   }
-   else
-   {
-      config_unset(conf, "soft_filter_index");
-   }
-
    /* current_resolution_id */
    if (   !minimal
        || global->console.screen.resolutions.current.id !=
@@ -8281,19 +8211,6 @@ static void video_driver_save_settings(global_t *global, config_file_t *conf,
    else
    {
       config_unset(conf, "current_resolution_id");
-   }
-
-   /* flicker_filter_index */
-   if (   !minimal
-       || global->console.screen.flicker_filter_index !=
-          (defaults_global ? defaults_global->console.screen.flicker_filter_index : 0))
-   {
-      config_set_int(conf, "flicker_filter_index",
-            global->console.screen.flicker_filter_index);
-   }
-   else
-   {
-      config_unset(conf, "flicker_filter_index");
    }
 }
 

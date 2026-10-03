@@ -810,7 +810,7 @@ static void gx_resize(gx_video_t *gx,
    Mtx44 m1, m2;
    float top = 1, bottom = -1, left = -1, right = 1;
    int x = 0, y = 0;
-   const global_t           *global = global_get_ptr();
+   const settings_t       *settings = config_get_ptr();
    unsigned width                   = VIDEO_SCALE_W(gx->vp.full_dims);
    unsigned height                  = VIDEO_SCALE_H(gx->vp.full_dims);
 
@@ -818,13 +818,13 @@ static void gx_resize(gx_video_t *gx,
       return;
 
 #ifdef HW_RVL
-   VIDEO_SetTrapFilter(global->console.softfilter_enable);
-   gamma = global->console.screen.gamma_correction;
+   VIDEO_SetTrapFilter(settings->bools.video_soft_filter);
+   gamma = settings->uints.video_gamma;
    if (gamma == 0)
       gamma = 10; /* default 1.0 gamma value */
    VIDEO_SetGamma(gamma);
 #else
-	gamma = global->console.screen.gamma_correction;
+	gamma = settings->uints.video_gamma;
 	GX_SetDispCopyGamma(MAX(0,MIN(2,gamma)));
 #endif
 

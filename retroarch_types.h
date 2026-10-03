@@ -284,16 +284,9 @@ typedef struct global
                unsigned id; /* current_resolution_id */
             } current;
          } resolutions;
-         unsigned      gamma_correction;
-         unsigned int  flicker_filter_index;
-         unsigned char soft_filter_index;
          bool pal_enable;
          bool pal60_enable;
       } screen;
-
-      bool flickerfilter_enable;
-      bool softfilter_enable;
-
    } console;
 
    char error_string[NAME_MAX_LENGTH];

@@ -271,6 +271,8 @@ typedef struct settings
       unsigned video_hard_sync_frames;
       unsigned video_frame_delay;
       unsigned video_viwidth;
+      unsigned video_gamma;
+      unsigned video_flicker_filter;
       unsigned video_aspect_ratio_idx;
       unsigned video_rotation;
       unsigned video_fse_negotiation;
@@ -620,6 +622,7 @@ typedef struct settings
       bool video_hard_sync;
       bool video_waitable_swapchains;
       bool video_vfilter;
+      bool video_soft_filter;
       bool video_smooth;
       bool video_ctx_scaling;
       bool video_force_aspect;

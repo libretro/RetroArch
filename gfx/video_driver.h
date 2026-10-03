@@ -1778,9 +1778,6 @@ static INLINE void video_driver_aspect_ratio_put(
 #define VIDEO_DRIVER_ASPECT_RATIO(video_st) \
    video_driver_aspect_ratio_of(&(video_st)->aspect_ratio_bits)
 
-void video_driver_menu_settings(void **list_data, void *list_info_data,
-      void *group_data, void *subgroup_data, const char *parent_group);
-
 /**
  * video_viewport_get_scaled_aspect2:
  * @vp            : Viewport handle. Fields x, y, width, height will be written, and full_width or full_height might be read.

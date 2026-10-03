@@ -311,13 +311,13 @@ static void setup_gx(gekko_video_t *gx)
 static void viewport_resize(gekko_video_t *gx, unsigned overscan_top,
       unsigned overscan_bottom)
 {
-   const global_t *global = global_get_ptr();
+   const settings_t *settings = config_get_ptr();
    unsigned width  = VIDEO_SCALE_W(gx->vp.full_dims);
    unsigned height = VIDEO_SCALE_H(gx->vp.full_dims);
+   unsigned gamma  = settings->uints.video_gamma;
    int x = 0, y = 0;
-   int gamma = global->console.screen.gamma_correction;
 
-   gk_gx_copy_gamma((unsigned)MAX(0, MIN(2, gamma)));
+   gk_gx_copy_gamma(MIN(2, gamma));
 
    /* Below 192 lines is a custom mode: as it is. */
    if (gx->efb_lines >= 192)

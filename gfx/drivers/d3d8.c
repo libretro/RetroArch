@@ -470,9 +470,9 @@ static void d3d8_blit_to_texture(
    LPDIRECT3DDEVICE8 d3dr     = (LPDIRECT3DDEVICE8)chain->dev;
    LPDIRECT3DTEXTURE8 tex     = (LPDIRECT3DTEXTURE8)chain->tex;
 #ifdef _XBOX
-   global_t        *global    = global_get_ptr();
-   D3DDevice_SetFlickerFilter(global->console.screen.flicker_filter_index);
-   D3DDevice_SetSoftDisplayFilter(global->console.softfilter_enable);
+   settings_t      *settings  = config_get_ptr();
+   D3DDevice_SetFlickerFilter(settings->uints.video_flicker_filter);
+   D3DDevice_SetSoftDisplayFilter(settings->bools.video_soft_filter);
 #endif
 
    if (chain->last_dims != VIDEO_SCALE_PACK(width, height))
