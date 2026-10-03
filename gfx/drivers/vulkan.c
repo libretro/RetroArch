@@ -270,6 +270,8 @@ typedef struct vk
 #ifdef VULKAN_HDR_SWAPCHAIN
    VkRenderPass readback_render_pass;
    struct vk_image offscreen_buffer;
+   /* the size offscreen_buffer and readback_image were made at */
+   unsigned hdr_buffers_dims;
    /* Copy of the last presented backbuffer, taken at the end of a
     * frame() that asked for it (retain_output), sized to the swapchain
     * it was copied from. Lives in TRANSFER_SRC_OPTIMAL between uses. */
@@ -6207,13 +6209,28 @@ static void vulkan_hdr_buffers_init(vk_t *vk, unsigned fallback_dims)
    if (!VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
       dims       = fallback_dims;
 
+   /* Already there, at this size: they are left alone. This is called
+    * from every place the swapchain may have changed, and more than
+    * one of them runs for one change - a resize reaches it from the
+    * end of the frame and again from vulkan_check_swapchain() - so
+    * without this two full-size render targets were made, thrown away
+    * and made again each time. */
+   if (     vk->offscreen_buffer.image != VK_NULL_HANDLE
+         && vk->readback_image.image   != VK_NULL_HANDLE
+         && vk->hdr_buffers_dims       == dims)
+      return;
+
+   /* frames in flight may still draw into the old ones */
+   vulkan_wait_own_submissions(vk);
    vulkan_destroy_hdr_buffer(vk->context->device, &vk->offscreen_buffer);
    vulkan_destroy_hdr_buffer(vk->context->device, &vk->readback_image);
+   vulkan_retained_free(vk);
 
    vulkan_init_render_target(&vk->offscreen_buffer, dims,
          VK_FORMAT_B8G8R8A8_UNORM, vk->sdr_render_pass, vk->context);
    vulkan_init_render_target(&vk->readback_image, dims,
          VK_FORMAT_B8G8R8A8_UNORM, vk->readback_render_pass, vk->context);
+   vk->hdr_buffers_dims = dims;
 }
 #endif
 
@@ -9139,14 +9156,11 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif /* VULKAN_HDR_SWAPCHAIN */
    {
 #ifdef VULKAN_HDR_SWAPCHAIN
+      /* The off-screen buffers are not thrown away here any more:
+       * vulkan_hdr_buffers_init() below remakes them if the swapchain
+       * that comes out of this has another size, and only then. */
       if (video_hdr_enable)
-      {
          vk->context->flags |= VK_CTX_FLAG_HDR_ENABLE;
-         vulkan_wait_own_submissions(vk);
-         vulkan_destroy_hdr_buffer(vk->context->device, &vk->offscreen_buffer);
-         vulkan_destroy_hdr_buffer(vk->context->device, &vk->readback_image);
-         vulkan_retained_free(vk);
-      }
       else
          vk->context->flags &= ~VK_CTX_FLAG_HDR_ENABLE;
 
