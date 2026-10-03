@@ -131,13 +131,15 @@ static void ui_application_win32_dispatch(MSG *msg)
    }
 }
 
+/* Raw input is Windows XP's: a build for anything older has no driver
+ * for it and, with the SDKs of that time, no WM_INPUT either, so what
+ * names it below is compiled only where the driver is. */
 #if defined(HAVE_WINRAWINPUT) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
 extern bool winraw_poll_owns_thread(void);
 extern void winraw_pump_done(void);
-#define WIN32_RAW_INPUT_IS_POLLED() winraw_poll_owns_thread()
+#define WIN32_RAW_INPUT_PUMP
 #define WIN32_RAW_INPUT_PUMP_DONE() winraw_pump_done()
 #else
-#define WIN32_RAW_INPUT_IS_POLLED() false
 #define WIN32_RAW_INPUT_PUMP_DONE() ((void)0)
 #endif
 
@@ -145,7 +147,8 @@ static void ui_application_win32_process_events(void)
 {
    MSG msg;
 
-   if (WIN32_RAW_INPUT_IS_POLLED())
+#ifdef WIN32_RAW_INPUT_PUMP
+   if (winraw_poll_owns_thread())
    {
       /* The raw input driver reads this thread's reports in bulk when
        * it polls (winraw_input.c, "Read by the poll"). Taking them out
@@ -172,6 +175,7 @@ static void ui_application_win32_process_events(void)
       }
    }
    else
+#endif
    {
       while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
          ui_application_win32_dispatch(&msg);

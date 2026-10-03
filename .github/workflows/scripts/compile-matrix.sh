@@ -367,6 +367,33 @@ d3d_video() {
    fi
 }
 
+# The window and message pump files as the MSVC 2005 job sees them: it
+# builds for _WIN32_WINNT 0x0400 against an SDK that declares what came
+# with Windows XP only from 0x0501 up. mingw-w64 declares some of that
+# regardless - WM_INPUT is one - so a use outside a _WIN32_WINNT check
+# passes every other lane and breaks that job, which is not GitHub's.
+# tools/platform_stubs/win32_old/old_sdk.h takes those names away again.
+win32_old() {
+   name="$1"; tu="$2"
+   if ! command -v "$MINGW_CC" > /dev/null 2>&1; then
+      echo "skip  $name (no $MINGW_CC)"
+      return
+   fi
+   if ! out=$($MINGW_CC $WARN $INC -Igfx/include $BASE -D_WIN32 \
+         -D_WIN32_WINNT=0x0400 -DHAVE_DINPUT \
+         -include tools/platform_stubs/win32_old/old_sdk.h \
+         -fsyntax-only "$tu" 2>&1); then
+      echo "FAIL  $name"
+      echo "      $tu"
+      show_out "$out"
+      fail=1
+   else
+      echo "ok    $name"
+   fi
+}
+win32_old "win32-old: ui_win32"      ui/drivers/ui_win32.c
+win32_old "win32-old: win32_common"  gfx/common/win32_common.c
+
 D3DDEFS="-DHAVE_D3D -DHAVE_RGUI -DHAVE_OVERLAY"
 d3d_video "d3d8 video"    "$D3DDEFS -DHAVE_D3D8"  gfx/drivers/d3d8.c
 d3d_video "d3d9 video, Cg"   "$D3DDEFS -DHAVE_D3D9"  gfx/drivers/d3d9cg.c
