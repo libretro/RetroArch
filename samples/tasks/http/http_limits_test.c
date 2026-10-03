@@ -314,12 +314,58 @@ static void test_ipv6_literals(void)
    net_http_deinit();
 }
 
+static struct http_t *https_state(void)
+{
+   struct http_t *h;
+   struct http_connection_t *conn =
+      net_http_connection_new("https://example.invalid/a", "GET", NULL);
+   net_http_connection_iterate(conn);
+   net_http_connection_done(conn);
+   h = net_http_new(conn);
+   net_http_connection_free(conn);
+   return h;
+}
+
+/* A redirect may not leave TLS: the scheme rule alone, since the same
+ * request with an https Location is followed. */
+static void test_redirect_scheme(void)
+{
+   struct http_t *h;
+
+   net_http_init();
+   h = https_state();
+   check(h && h->ssl && net_http_redirect(h, "http://example.invalid/b")
+         && h->err,
+         "https request redirected to http:// ends in error");
+   net_http_delete(h);
+
+   h = https_state();
+   check(h && net_http_redirect(h, "HTTP://example.invalid/b") && h->err,
+         "the scheme test is case-insensitive");
+   net_http_delete(h);
+
+   h = https_state();
+   check(h && !net_http_redirect(h, "https://other.invalid/c")
+         && !h->err && h->ssl
+         && !strcmp(h->request.domain, "other.invalid")
+         && !strcmp(h->request.path, "c"),
+         "https request redirected to another https host is followed");
+   net_http_delete(h);
+
+   h = https_state();
+   check(h && !net_http_redirect(h, "/d") && !h->err && h->ssl,
+         "a relative Location keeps https");
+   net_http_delete(h);
+   net_http_deinit();
+}
+
 int main(void)
 {
    test_dns_cap();
    test_pool_limits();
    test_family_fallback();
    test_ipv6_literals();
+   test_redirect_scheme();
    if (failures)
    {
       printf("%d check(s) failed\n", failures);
