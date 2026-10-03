@@ -81,7 +81,10 @@ enum platform_win32_flags
    PLAT_WIN32_FLAG_USE_NVDA_BRAILLE         = (1 << 2),
    PLAT_WIN32_FLAG_DWM_COMPOSITION_DISABLED = (1 << 3),
    PLAT_WIN32_FLAG_CONSOLE_NEEDS_FREE       = (1 << 4),
-   PLAT_WIN32_FLAG_PROCESS_INSTANCE_SET     = (1 << 5)
+   PLAT_WIN32_FLAG_PROCESS_INSTANCE_SET     = (1 << 5),
+   /* which C streams attach_console() put on the console */
+   PLAT_WIN32_FLAG_CONSOLE_HAS_STDOUT       = (1 << 6),
+   PLAT_WIN32_FLAG_CONSOLE_HAS_STDERR       = (1 << 7)
 };
 
 #ifdef HAVE_SAPI
@@ -912,10 +915,10 @@ static void frontend_win32_attach_console(void)
 
       SetConsoleTitle("Log Console");
 
-      if (need_stdout)
-         freopen("CONOUT$", "w", stdout);
-      if (need_stderr)
-         freopen("CONOUT$", "w", stderr);
+      if (need_stdout && freopen("CONOUT$", "w", stdout))
+         g_plat_win32_flags |= PLAT_WIN32_FLAG_CONSOLE_HAS_STDOUT;
+      if (need_stderr && freopen("CONOUT$", "w", stderr))
+         g_plat_win32_flags |= PLAT_WIN32_FLAG_CONSOLE_HAS_STDERR;
 
       g_plat_win32_flags |= PLAT_WIN32_FLAG_CONSOLE_NEEDS_FREE;
    }
@@ -929,11 +932,39 @@ static void frontend_win32_detach_console(void)
 #ifdef _WIN32_WINNT_WINXP
    if (g_plat_win32_flags & PLAT_WIN32_FLAG_CONSOLE_NEEDS_FREE)
    {
-      /* We don't reconnect stdout/stderr to anything here,
-       * because by definition, they weren't connected to
-       * anything in the first place. */
+      /* Since Windows 8 a console's handles are real handles, and
+       * FreeConsole() closes none of them: the C streams that
+       * attach_console() opened on CONOUT$ and the standard handles
+       * AllocConsole() gave the process all still refer to the
+       * console afterwards, and its window stays up for as long as
+       * they do - turning logging off left the log window open. So
+       * they are let go of first. The streams go to NUL rather than
+       * being closed: the log writes to stderr, and must have
+       * somewhere to write until logging is turned on again. */
+      static const DWORD ids[3] = {
+         STD_INPUT_HANDLE, STD_OUTPUT_HANDLE, STD_ERROR_HANDLE };
+      unsigned i;
+
+      if (g_plat_win32_flags & PLAT_WIN32_FLAG_CONSOLE_HAS_STDOUT)
+         freopen("NUL", "w", stdout);
+      if (g_plat_win32_flags & PLAT_WIN32_FLAG_CONSOLE_HAS_STDERR)
+         freopen("NUL", "w", stderr);
+      for (i = 0; i < 3; i++)
+      {
+         DWORD mode;
+         HANDLE h = GetStdHandle(ids[i]);
+         /* only a handle that is a console's */
+         if (     h && h != INVALID_HANDLE_VALUE
+               && GetConsoleMode(h, &mode))
+         {
+            SetStdHandle(ids[i], NULL);
+            CloseHandle(h);
+         }
+      }
       FreeConsole();
-      g_plat_win32_flags &= ~PLAT_WIN32_FLAG_CONSOLE_NEEDS_FREE;
+      g_plat_win32_flags &= ~(  PLAT_WIN32_FLAG_CONSOLE_NEEDS_FREE
+                              | PLAT_WIN32_FLAG_CONSOLE_HAS_STDOUT
+                              | PLAT_WIN32_FLAG_CONSOLE_HAS_STDERR);
    }
 #endif
 #endif
