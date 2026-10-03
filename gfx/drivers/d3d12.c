@@ -4434,20 +4434,22 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->chain.renderTargets[1]);
 
 #if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
-   /* The window is left up for the next D3D12 driver, where it can be
-    * (win32_window_keep()). DXGI makes no second flip-model swap chain
-    * on a window that still has one, so then this one has to go - and
-    * it never did: the Release() further down has been compiled out
-    * for years with a note that it crashes eventually. It is done
-    * here instead, in the order that should be safe: the queue was
-    * drained at the top, the back buffers were let go of just above,
-    * the swap chain is told it is windowed (it always is; releasing
-    * one that is not is an error), and it is released while the
-    * queue it was made on is still there. Only when the window is
-    * kept: with RETROARCH_WINDOW_KEEP=0, or on the way out of the
-    * program, nothing here runs and the driver frees as it did. */
+   /* The swap chain goes here. For years it was not released at all:
+    * the Release() that used to sit after the queue's was compiled
+    * out under a note that it crashed eventually, and every driver
+    * that was freed left its swap chain behind. It is released in the
+    * order that has been seen to hold: the queue was drained at the
+    * top of this function, the back buffers were let go of just
+    * above, the swap chain is told it is windowed (it always is;
+    * releasing one that is not is an error), and it is released while
+    * the queue it was made on is still there.
+    *
+    * It has to go for the window to be kept: DXGI makes no second
+    * flip-model swap chain on a window that still has one, and the
+    * window is left up for the next D3D12 driver where it can be
+    * (win32_window_keep()). */
    window_kept = win32_window_keep();
-   if (window_kept && d3d12->chain.handle)
+   if (d3d12->chain.handle)
    {
       d3d12->chain.handle->lpVtbl->SetFullscreenState(
             d3d12->chain.handle, FALSE, NULL);
@@ -4464,11 +4466,14 @@ static void d3d12_gfx_free(void* data)
    if (d3d12->queue.fenceEvent)
       CloseHandle(d3d12->queue.fenceEvent);
 
+#if !(defined(HAVE_WINDOW) && defined(HAVE_MONITOR))
 #if 0
    /* Releasing this will crash eventually (?!)
-    * (It is released above, before the queue, when the window is
-    * kept for the next driver - which needs it gone.) */
+    * (On a build with a window it is released above, before the
+    * queue; this is what is left for the builds without - UWP -
+    * where that order has not been run.) */
    Release(d3d12->chain.handle);
+#endif
 #endif
 
    Release(d3d12->factory);
