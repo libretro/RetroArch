@@ -20,6 +20,8 @@
 - COMMAND: Only allow pause when there is a core running
 - CHEEVOS: Update to rcheevos 12.3
 - CHEEVOS: Download badges on demand only
+- CHEEVOS: Add Achievement List settings for highlight groups and Locked/Unlocked order
+- CHEEVOS: Add an option to show achievement screenshots in achievement lists
 - CHEEVOS: Fix for PS2/PSP CHD hashing with RetroAchievements
 - CLOUDSYNC: Google Drive cloud sync driver
 - CONFIG: Fix saving main configuration after load configuration

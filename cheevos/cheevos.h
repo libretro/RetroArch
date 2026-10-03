@@ -59,6 +59,9 @@ bool rcheevos_get_support_cheevos(void);
 const char* rcheevos_get_hash(void);
 int rcheevos_get_richpresence(char *s, size_t len);
 int rcheevos_get_game_badge_url(char *s, size_t len);
+/* take_screenshot appends ".png" to this. */
+int rcheevos_get_screenshot_name_base(char *s, size_t len,
+      unsigned achievement_id);
 
 void rcheevos_get_local_badge_filename(char badge_file[], size_t badge_file_size, const char* badge, bool locked);
 /* A texture handle, or 0 while the badge is on its way (or missing

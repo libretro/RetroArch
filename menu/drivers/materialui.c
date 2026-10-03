@@ -644,7 +644,7 @@ typedef struct materialui_handle
 
    struct
    {
-      gfx_thumbnail_t savestate;   /* uintptr_t alignment */
+      gfx_thumbnail_t entry;   /* uintptr_t alignment */
    } thumbnails;
 
    size_t (*word_wrap)(
@@ -745,6 +745,7 @@ typedef struct materialui_handle
    int16_t pointer_start_x;
    int16_t pointer_start_y;
    bool transition_alpha_lock;
+   bool is_achievement_list;
    /* Set when a pending MUI_FLAG_NEED_COMPUTE was raised by something that
     * did not change the list contents - only entry geometry. The compute
     * pass then keeps the user's scroll position instead of re-deriving it
@@ -766,7 +767,7 @@ typedef struct materialui_handle
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
    char sysicons_path[PATH_MAX_LENGTH];
    char icons_path[PATH_MAX_LENGTH];
-   char savestate_thumbnail_file_path[PATH_MAX_LENGTH];
+   char entry_thumbnail_file_path[PATH_MAX_LENGTH];
 } materialui_handle_t;
 
 static void hex32_to_rgba_normalized(uint32_t hex, float* rgba, float alpha)
@@ -2538,7 +2539,7 @@ static void materialui_update_fullscreen_thumbnail_label(
          NULL);
 }
 
-static void materialui_update_savestate_thumbnail_path(void *data, unsigned i)
+static void materialui_update_entry_thumbnail_path(void *data, unsigned i)
 {
    /* Off the frame: two paths and a menu_entry_t came to 8008 bytes
     * where this tree allows four thousand. This runs when the selection
@@ -2569,9 +2570,25 @@ static void materialui_update_savestate_thumbnail_path(void *data, unsigned i)
     * mirrors is itself a fixed-size char array) and avoids the leak
     * + potential NULL-deref of the previous strdup-before-NULL-check
     * construction. */
-   strlcpy(old_path, mui->savestate_thumbnail_file_path, PATH_MAX_LENGTH);
+   strlcpy(old_path, mui->entry_thumbnail_file_path, PATH_MAX_LENGTH);
 
-   mui->savestate_thumbnail_file_path[0] = '\0';
+   mui->entry_thumbnail_file_path[0] = '\0';
+
+#ifdef HAVE_CHEEVOS
+   if (mui->is_achievement_list)
+   {
+      if (settings->bools.cheevos_screenshot_previews_enable)
+         rcheevos_menu_get_screenshot_path(i,
+               mui->entry_thumbnail_file_path,
+               sizeof(mui->entry_thumbnail_file_path));
+
+      if (!string_is_equal(old_path, mui->entry_thumbnail_file_path))
+         gfx_thumbnail_reset(&mui->thumbnails.entry);
+
+      free(scratch);
+      return;
+   }
+#endif
 
    if (savestate_thumbnail)
    {
@@ -2605,11 +2622,11 @@ static void materialui_update_savestate_thumbnail_path(void *data, unsigned i)
             /* Must let invalid be empty here as opposed to other drivers
              * in order to see the missing image placeholder in normal list */
             if (path_is_valid(path))
-               strlcpy(mui->savestate_thumbnail_file_path, path,
-                     sizeof(mui->savestate_thumbnail_file_path));
+               strlcpy(mui->entry_thumbnail_file_path, path,
+                     sizeof(mui->entry_thumbnail_file_path));
 
-            if (!string_is_equal(old_path, mui->savestate_thumbnail_file_path))
-               gfx_thumbnail_reset(&mui->thumbnails.savestate);
+            if (!string_is_equal(old_path, mui->entry_thumbnail_file_path))
+               gfx_thumbnail_reset(&mui->thumbnails.entry);
 
             materialui_update_fullscreen_thumbnail_label(mui);
          }
@@ -2618,7 +2635,7 @@ static void materialui_update_savestate_thumbnail_path(void *data, unsigned i)
    free(scratch);
 }
 
-static void materialui_update_savestate_thumbnail_image(void *data)
+static void materialui_update_entry_thumbnail_image(void *data)
 {
    materialui_handle_t *mui   = (materialui_handle_t*)data;
 
@@ -2626,20 +2643,23 @@ static void materialui_update_savestate_thumbnail_image(void *data)
       return;
 
    /* If path is empty, just reset thumbnail */
-   if (!*mui->savestate_thumbnail_file_path)
+   if (!*mui->entry_thumbnail_file_path)
    {
-      gfx_thumbnail_reset(&mui->thumbnails.savestate);
+      gfx_thumbnail_reset(&mui->thumbnails.entry);
       /* Allow showing missing thumbnail placeholder */
-      mui->thumbnails.savestate.status = GFX_THUMBNAIL_STATUS_MISSING;
-      mui->thumbnails.savestate.alpha  = 1.0f;
+      if (!mui->is_achievement_list)
+      {
+         mui->thumbnails.entry.status = GFX_THUMBNAIL_STATUS_MISSING;
+         mui->thumbnails.entry.alpha  = 1.0f;
+      }
    }
-   else if (mui->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+   else if (mui->thumbnails.entry.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
       gfx_thumbnail_request_file(
-            mui->savestate_thumbnail_file_path,
-            &mui->thumbnails.savestate,
+            mui->entry_thumbnail_file_path,
+            &mui->thumbnails.entry,
             config_get_ptr()->uints.gfx_thumbnail_upscale_threshold);
 
-   mui->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT | GFX_THUMB_FLAG_BG_ONLY;
+   mui->thumbnails.entry.flags |= GFX_THUMB_FLAG_CORE_ASPECT | GFX_THUMB_FLAG_BG_ONLY;
 }
 
 static void materialui_context_reset_textures(materialui_handle_t *mui)
@@ -5873,6 +5893,14 @@ static void materialui_render_menu_entry_savestate_list(
          && (!(mui->flags & MUI_FLAG_COL_DIVIDER_IS_LIST_BG))
          && ((divider_y + (mui->entry_divider_width * 2)) <
                (video_height - VIDEO_SCALE_H(mui->nav_bar_layout_dims) - mui->status_bar.height));
+#ifdef HAVE_CHEEVOS
+   static const float color_white[16] = {
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f,
+   };
+#endif
 
    if (p_disp->dispctx && !p_disp->dispctx->handles_transform)
    {
@@ -5902,6 +5930,39 @@ static void materialui_render_menu_entry_savestate_list(
       case MUI_ICON_TYPE_INTERNAL:
          icon_texture = mui->textures.list[node->icon_texture_index];
          break;
+#ifdef HAVE_CHEEVOS
+      case MUI_ICON_TYPE_ACHIEVEMENT:
+         icon_texture = rcheevos_menu_get_badge_texture(node->icon_texture_index);
+         if (icon_texture)
+         {
+            /* Badges are drawn untinted. */
+            materialui_draw_icon(
+                  userdata, p_disp,
+                  video_dims,
+                  mui->icon_size,
+                  (uintptr_t)icon_texture,
+                  entry_x + (int)mui->landscape_optimization.entry_margin,
+                  entry_y + (node->entry_height / 2.0f) - (mui->icon_size / 2.0f),
+                  0,
+                  1,
+                  color_white,
+                  &mymat);
+
+            entry_margin += mui->icon_size;
+            usable_width -= mui->icon_size;
+
+            icon_texture = 0;
+         }
+         else
+         {
+            char buffer[64];
+            if (!rcheevos_menu_get_state(node->icon_texture_index, buffer, sizeof(buffer)))
+               icon_texture = mui->textures.list[MUI_TEXTURE_INFO];
+            else
+               icon_texture = mui->textures.list[MUI_TEXTURE_IMAGE];
+         }
+         break;
+#endif
       default:
          break;
    }
@@ -6396,10 +6457,12 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
    }
 }
 
-static bool materialui_is_savestate_list(materialui_handle_t *mui)
+static bool materialui_is_entry_thumbnail_list(materialui_handle_t *mui)
 {
    struct menu_state *menu_st         = menu_state_get_ptr();
    menu_entry_t entry;
+   if (mui->is_achievement_list)
+      return *mui->entry_thumbnail_file_path != '\0';
    MENU_ENTRY_INITIALIZE(entry);
    entry.flags |= MENU_ENTRY_FLAG_LABEL_ENABLED;
    menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
@@ -6521,9 +6584,9 @@ static void materialui_render_selected_entry_aux_savestate_list(
    /* Draw thumbnails */
    if (node)
    {
-      gfx_thumbnail_t *thumbnail = &mui->thumbnails.savestate;
+      gfx_thumbnail_t *thumbnail = &mui->thumbnails.entry;
 
-      if (!materialui_is_savestate_slot(mui) && !materialui_is_savestate_list(mui))
+      if (!materialui_is_savestate_slot(mui) && !materialui_is_entry_thumbnail_list(mui))
          return;
 
       /* Draw primary */
@@ -7702,7 +7765,7 @@ static bool materialui_get_selected_thumbnails(
    *secondary_thumbnail = &node->thumbnails.secondary;
 
    if (mui->flags & MUI_FLAG_IS_SAVESTATE_LIST)
-      *primary_thumbnail = &mui->thumbnails.savestate;
+      *primary_thumbnail = &mui->thumbnails.entry;
 
    return true;
 }
@@ -9709,7 +9772,7 @@ static void *materialui_init(void **userdata, bool video_is_threaded)
    mui->fullscreen_thumbnail_label[0]          = '\0';
 
    /* Savestate thumbnail empty */
-   mui->savestate_thumbnail_file_path[0]       = '\0';
+   mui->entry_thumbnail_file_path[0]       = '\0';
 
    /* Ensure status bar has sane initial values */
    mui->status_bar.height                      = 0;
@@ -9801,7 +9864,7 @@ static void materialui_reset_thumbnails(materialui_handle_t *mui)
       gfx_thumbnail_reset(&node->thumbnails.secondary);
    }
 
-   gfx_thumbnail_reset(&mui->thumbnails.savestate);
+   gfx_thumbnail_reset(&mui->thumbnails.entry);
 }
 
 static void materialui_context_destroy(void *data)
@@ -9985,8 +10048,8 @@ static void materialui_navigation_set(void *data, bool scroll)
    /* Update savestate thumbnail */
    if (mui->flags & MUI_FLAG_IS_SAVESTATE_LIST)
    {
-      materialui_update_savestate_thumbnail_path(mui, (unsigned)selection);
-      materialui_update_savestate_thumbnail_image(mui);
+      materialui_update_entry_thumbnail_path(mui, (unsigned)selection);
+      materialui_update_entry_thumbnail_image(mui);
    }
 
    if (show_sublabels && current_sel_only)
@@ -10442,15 +10505,20 @@ static void materialui_populate_entries(void *data, const char *path,
          menu_st->selection_ptr = mui->settings_selection_ptr;
    }
 
-   if (     settings->bools.savestate_thumbnail_enable
+   mui->is_achievement_list =
+            string_is_equal(label, MENU_ENUM_LABEL_ACHIEVEMENT_LIST_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_ACHIEVEMENTS_SUBMENU_LIST_STR);
+
+   if (     (mui->is_achievement_list && settings->bools.cheevos_screenshot_previews_enable)
+         || (settings->bools.savestate_thumbnail_enable
          && (  string_is_equal(label, MENU_ENUM_LABEL_SAVESTATE_LIST_STR)
             || string_is_equal(label, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR)
-            || string_to_unsigned(path) == MENU_ENUM_LABEL_STATE_SLOT))
+            || string_to_unsigned(path) == MENU_ENUM_LABEL_STATE_SLOT)))
    {
       mui->flags |= MUI_FLAG_IS_SAVESTATE_LIST;
-      materialui_update_savestate_thumbnail_path(mui,
+      materialui_update_entry_thumbnail_path(mui,
          (unsigned)menu_st->selection_ptr);
-      materialui_update_savestate_thumbnail_image(mui);
+      materialui_update_entry_thumbnail_image(mui);
    }
    else
       mui->flags &= ~MUI_FLAG_IS_SAVESTATE_LIST;
@@ -10597,8 +10665,8 @@ static void materialui_context_reset(void *data, bool is_threaded)
       materialui_context_reset_playlist_icons(mui);
    menu_screensaver_context_destroy(mui->screensaver);
 
-   if (path_is_valid(mui->savestate_thumbnail_file_path))
-      materialui_update_savestate_thumbnail_image(mui);
+   if (path_is_valid(mui->entry_thumbnail_file_path))
+      materialui_update_entry_thumbnail_image(mui);
 
    video_driver_monitor_reset();
 }
@@ -12630,6 +12698,7 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_ACHIEVEMENT_LIST_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_CHEEVOS_ACHIEVEMENT_LIST_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_ACCOUNTS_TWITCH_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_ACCOUNTS_FACEBOOK_STR)
@@ -12879,8 +12948,8 @@ static void materialui_toggle(void *userdata, bool menu_on)
    /* Have to reset this, otherwise savestate
     * thumbnail won't update after selecting
     * 'save state' option */
-   if (*mui->savestate_thumbnail_file_path)
-      gfx_thumbnail_reset(&mui->thumbnails.savestate);
+   if (*mui->entry_thumbnail_file_path)
+      gfx_thumbnail_reset(&mui->thumbnails.entry);
 }
 
 menu_ctx_driver_t menu_ctx_mui = {
@@ -12922,8 +12991,8 @@ menu_ctx_driver_t menu_ctx_mui = {
    NULL,
    gfx_display_osk_ptr_at_pos,
    materialui_osk_pointer_over_textbox,
-   materialui_update_savestate_thumbnail_path,
-   materialui_update_savestate_thumbnail_image,
+   materialui_update_entry_thumbnail_path,
+   materialui_update_entry_thumbnail_image,
    materialui_pointer_down,
    materialui_pointer_up,
    materialui_menu_entry_action,

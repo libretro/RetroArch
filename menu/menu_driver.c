@@ -343,8 +343,8 @@ static menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* set_thumbnail_content */
   NULL,  /* osk_ptr_at_pos */
   NULL,  /* osk_pointer_over_textbox */
-  NULL,  /* update_savestate_thumbnail_path */
-  NULL,  /* update_savestate_thumbnail_image */
+  NULL,  /* update_entry_thumbnail_path */
+  NULL,  /* update_entry_thumbnail_image */
   NULL,  /* pointer_down */
   NULL,  /* pointer_up   */
   NULL   /* entry_action */
