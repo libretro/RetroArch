@@ -397,6 +397,19 @@ typedef LONG (WINAPI *ec_nt_wait_alert_t)(volatile void*, LARGE_INTEGER*);
 typedef LONG (WINAPI *ec_nt_alert_tid_t)(HANDLE);
 typedef LONG (WINAPI *ec_nt_keyed_t)(HANDLE, void*, BOOLEAN, LARGE_INTEGER*);
 typedef LONG (WINAPI *ec_nt_create_keyed_t)(HANDLE*, ULONG, void*, ULONG);
+typedef HANDLE (WINAPI *ec_create_timer_ex_t)(LPSECURITY_ATTRIBUTES, LPCWSTR,
+      DWORD, DWORD);
+/* The APC routine and its argument are always NULL here, so they are
+ * typed as LPVOID rather than depending on PTIMERAPCROUTINE */
+typedef BOOL (WINAPI *ec_set_timer_t)(HANDLE, const LARGE_INTEGER*, LONG,
+      LPVOID, LPVOID, BOOL);
+
+#ifndef EC_TIMER_HIGH_RESOLUTION
+#define EC_TIMER_HIGH_RESOLUTION 0x00000002 /* CREATE_WAITABLE_TIMER_HIGH_RESOLUTION */
+#endif
+#ifndef EC_TIMER_ALL_ACCESS
+#define EC_TIMER_ALL_ACCESS      0x001F0003 /* TIMER_ALL_ACCESS */
+#endif
 
 enum
 {
@@ -413,6 +426,16 @@ static struct
    ec_nt_keyed_t      release_keyed;
    HANDLE             keyed;
    DWORD              tls_event;
+   /* Bounded waits: a kernel timeout ends on the system timer's tick,
+    * 15.6 ms unless something in the process has lowered it, so a
+    * bounded wait also sleeps on a high resolution waitable timer, one
+    * per thread, together with the thread's event. Unset where the
+    * timer cannot be had (before Windows 10 1803): the kernel timeout
+    * then bounds the wait, as before. */
+   ec_create_timer_ex_t create_timer_ex;
+   ec_set_timer_t       set_timer;
+   DWORD                tls_timer;
+   bool                 hires;
    retro_atomic_int_t state;
    unsigned           spin;   /* 0 on a single processor */
    int                sleep;
@@ -518,6 +541,42 @@ static void ec_win32_resolve(void)
          ec_g.sleep = 0;
    }
 
+   /* The high resolution timer for bounded waits, on every tier that
+    * parks on the waiter list. It needs the thread's event to wait on
+    * beside it, so that slot is taken here on the tiers that do not
+    * otherwise use one. Probed rather than version-checked: the flag is
+    * refused before Windows 10 1803. */
+   ec_g.hires     = false;
+   ec_g.tls_timer = TLS_OUT_OF_INDEXES;
+   /* RETRO_EVENTCOUNT_HIRES=0 keeps the kernel timeout alone, for
+    * measuring against it */
+   if (     ec_g.sleep
+         && !((force = getenv("RETRO_EVENTCOUNT_HIRES")) && !strcmp(force, "0")))
+   {
+      HMODULE k32 = GetModuleHandleA("kernel32.dll");
+      if (k32)
+      {
+         ec_g.create_timer_ex = (ec_create_timer_ex_t)(void (*)(void))
+            GetProcAddress(k32, "CreateWaitableTimerExW");
+         ec_g.set_timer       = (ec_set_timer_t)(void (*)(void))
+            GetProcAddress(k32, "SetWaitableTimer");
+      }
+      if (ec_g.create_timer_ex && ec_g.set_timer)
+      {
+         HANDLE probe = ec_g.create_timer_ex(NULL, NULL,
+               EC_TIMER_HIGH_RESOLUTION, EC_TIMER_ALL_ACCESS);
+         if (probe)
+         {
+            CloseHandle(probe);
+            if (ec_g.sleep != EC_SLEEP_EVENT)
+               ec_g.tls_event = TlsAlloc();
+            ec_g.tls_timer = TlsAlloc();
+            ec_g.hires     = ec_g.tls_event != TLS_OUT_OF_INDEXES
+                          && ec_g.tls_timer != TLS_OUT_OF_INDEXES;
+         }
+      }
+   }
+
    /* Spinning before the kernel wait only pays where the thread being
     * waited for can run at the same time.  On one processor it is pure
     * delay, so the spin is skipped entirely there -- the same gate
@@ -608,6 +667,76 @@ static bool ec_sleep(struct ec_waiter *w, LARGE_INTEGER *timeout)
    }
 }
 
+/* This thread's event and high resolution timer, made on first use and
+ * kept for the thread's life, as the event tier keeps its event. NULL
+ * when either cannot be had, and the wait falls back to the kernel
+ * timeout. */
+static HANDLE ec_thread_event(void)
+{
+   HANDLE event = (HANDLE)TlsGetValue(ec_g.tls_event);
+   if (!event)
+   {
+      if (!(event = CreateEvent(NULL, FALSE, FALSE, NULL)))
+         return NULL;
+      if (!TlsSetValue(ec_g.tls_event, event))
+      {
+         CloseHandle(event);
+         return NULL;
+      }
+   }
+   return event;
+}
+
+static HANDLE ec_thread_timer(void)
+{
+   HANDLE timer = (HANDLE)TlsGetValue(ec_g.tls_timer);
+   if (!timer)
+   {
+      if (!(timer = ec_g.create_timer_ex(NULL, NULL,
+                  EC_TIMER_HIGH_RESOLUTION, EC_TIMER_ALL_ACCESS)))
+         return NULL;
+      if (!TlsSetValue(ec_g.tls_timer, timer))
+      {
+         CloseHandle(timer);
+         return NULL;
+      }
+   }
+   return timer;
+}
+
+/* A bounded sleep on the waiter's event and the high resolution timer:
+ * false when the timer fired first. Setting the timer clears whatever
+ * an earlier wait left signalled on it. */
+static bool ec_sleep_hires(struct ec_waiter *w, HANDLE timer,
+      int64_t timeout_us)
+{
+   HANDLE        handles[2];
+   LARGE_INTEGER due;
+   DWORD         rc;
+
+   due.QuadPart = -(LONGLONG)timeout_us * 10;
+   if (!ec_g.set_timer(timer, &due, 0, NULL, NULL, FALSE))
+   {
+      LONGLONG ms = (timeout_us + 999) / 1000;
+      rc = WaitForSingleObject(w->event,
+            ms >= (LONGLONG)INFINITE ? INFINITE - 1 : (DWORD)ms);
+      return rc != WAIT_TIMEOUT;
+   }
+   handles[0] = w->event;
+   handles[1] = timer;
+   /* The timer is set and will fire; the bound is only there so a
+    * timer that somehow does not cannot make this wait forever */
+   rc = WaitForMultipleObjects(2, handles, FALSE,
+         (DWORD)(timeout_us / 1000) + 100);
+   if (rc == WAIT_OBJECT_0)
+      return true;
+   if (rc == WAIT_OBJECT_0 + 1 || rc == WAIT_TIMEOUT)
+      return false;
+   /* An unusable handle: as ec_sleep, a wake after a millisecond */
+   Sleep(1);
+   return true;
+}
+
 static void ec_wake_one(struct ec_waiter *w)
 {
    /* copies taken first: the waiter may leave as soon as it sees WOKEN */
@@ -617,6 +746,14 @@ static void ec_wake_one(struct ec_waiter *w)
 
    if (!(prev & EC_W_ASLEEP))
       return;   /* still spinning: it sees the flag, no syscall */
+
+   /* A waiter that sleeps on its event - every waiter on the event
+    * tier, and bounded ones on the others - is woken through it */
+   if (event)
+   {
+      SetEvent(event);
+      return;
+   }
 
    switch (ec_g.sleep)
    {
@@ -1041,6 +1178,7 @@ static bool ec_win32_park(retro_eventcount_t *ec, int key, bool bounded,
 {
    struct ec_waiter w;
    LARGE_INTEGER    timeout;
+   HANDLE           timer = NULL;
    bool             woken = true;
    unsigned         i;
 
@@ -1049,7 +1187,18 @@ static bool ec_win32_park(retro_eventcount_t *ec, int key, bool bounded,
    w.tid   = GetCurrentThreadId();
    retro_atomic_int_init(&w.flags, 0);
 
-   if (ec_g.sleep == EC_SLEEP_EVENT)
+   /* A bounded wait sleeps on the thread's event and its high
+    * resolution timer, whatever the tier, so it ends when it should
+    * rather than on the system timer's tick. Decided before the block
+    * is listed: the waker reads w.event to know how to wake it. */
+   if (     bounded && timeout_us > 0 && ec_g.hires
+         && (timer = ec_thread_timer()))
+   {
+      if (!(w.event = ec_thread_event()))
+         timer = NULL;
+   }
+
+   if (!w.event && ec_g.sleep == EC_SLEEP_EVENT)
    {
       if (!(w.event = (HANDLE)TlsGetValue(ec_g.tls_event)))
       {
@@ -1101,15 +1250,22 @@ static bool ec_win32_park(retro_eventcount_t *ec, int key, bool bounded,
    if (bounded)
       timeout.QuadPart = -(LONGLONG)timeout_us * 10;
 
-   if (!ec_sleep(&w, bounded ? &timeout : NULL))
+   if (timer ? !ec_sleep_hires(&w, timer, timeout_us)
+             : !ec_sleep(&w, bounded ? &timeout : NULL))
    {
       /* timed out, unless a waker already took the block, in which case
-       * its wake is in flight and has to be consumed */
+       * its wake is in flight and has to be consumed - on the event,
+       * where the block slept on one */
       ec_list_lock(ec);
       woken = !ec_list_unlink(ec, &w);
       ec_list_unlock(ec);
       if (woken)
-         ec_sleep(&w, NULL);
+      {
+         if (timer)
+            WaitForSingleObject(w.event, INFINITE);
+         else
+            ec_sleep(&w, NULL);
+      }
    }
 
    return woken;

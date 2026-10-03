@@ -31,9 +31,14 @@ LDFLAGS += -lrt
 #   x86_64-w64-mingw32-gcc -o ec.exe retro_eventcount_test.c \
 #       ../../../rthreads/retro_eventcount.c \
 #       ../../../rthreads/rthreads.c \
+#       ../../../features/features_cpu.c ../../../time/rtime.c \
 #       -Wall -W -std=gnu99 -O1 -DHAVE_THREADS -I../../../include
-#   for t in alert keyed event none; do \
-#       RETRO_EVENTCOUNT_WIN32=$$t wine64 ./ec.exe; done
+#   for h in 1 0; do for t in alert keyed event none; do \
+#       RETRO_EVENTCOUNT_HIRES=$$h RETRO_EVENTCOUNT_WIN32=$$t \
+#       wine64 ./ec.exe; done; done
+#
+# RETRO_EVENTCOUNT_HIRES=0 bounds timed waits with the kernel timeout
+# alone rather than the high resolution timer, to compare against it.
 #
 # RETRO_EVENTCOUNT_WIN32 pins the sleep tier.  'none' pins the case
 # where no tier is available at all, which otherwise needs the process
