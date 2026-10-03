@@ -495,7 +495,9 @@ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
 
    newpath[0]                  = '\0';
 
-   if (!list || !list->size)
+   /* i is usually selection_ptr, which can run past a list rebuilt
+    * shorter before the selection is re-clamped (cf. #18797). */
+   if (!list || i >= list->size)
       return;
 
    path_enabled               = (entry_flags & MENU_ENTRY_FLAG_PATH_ENABLED) ? true : false;

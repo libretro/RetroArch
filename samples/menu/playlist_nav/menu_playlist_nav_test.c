@@ -345,6 +345,27 @@ static void lane_never_empty(void)
             (unsigned)n);
 }
 
+/* A selection past the end of the list - a list rebuilt shorter
+ * before the selection is re-clamped - reads nothing. */
+static void lane_entry_past_end(void)
+{
+   unsigned had     = failures;
+   file_list_t *buf = selection_buf();
+   menu_entry_t entry;
+
+   CHECK(buf && buf->size > 0, "no entry list to read past");
+   if (buf && buf->size > 0)
+   {
+      MENU_ENTRY_INITIALIZE(entry);
+      menu_entry_get(&entry, 0, buf->size, NULL, true);
+      CHECK(entry.idx == 0,
+            "menu_entry_get filled entry %u of a %u-entry list",
+            entry.idx, (unsigned)buf->size);
+   }
+   if (failures == had)
+      fprintf(stderr, "[pass] entry-past-end lane\n");
+}
+
 /* Report 3: a read that yields must finish on frames alone, with no
  * input at all. */
 static void lane_frames_alone_finish_the_read(void)
@@ -627,6 +648,7 @@ int main(int argc, char *argv[])
    saf_vfs_install();
 
    lane_never_empty();
+   lane_entry_past_end();
    lane_frames_alone_finish_the_read();
    lane_switch_shows_requested();
    lane_based_playlist_loads_once();
