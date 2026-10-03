@@ -170,6 +170,18 @@ static unsigned winraw_joypad_pad_count          = 0;
 static HWND     winraw_joypad_msg_window         = NULL;
 static bool     winraw_joypad_initialised        = false;
 
+/* Read by the poll (see the note above winraw_joypad_joypad_poll()):
+ * whether it is, the thread the window was then made on, and whether
+ * making it failed. */
+static bool     winraw_joypad_by_poll            = false;
+static DWORD    winraw_joypad_window_tid         = 0;
+static bool     winraw_joypad_window_failed      = false;
+
+/* winraw_input.c */
+extern bool winraw_raw_input_polled(void);
+extern void winraw_queue_read(void);
+extern void winraw_queue_claim_thread(bool claim);
+
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
@@ -881,14 +893,23 @@ static void *winraw_joypad_joypad_init(void *data)
    memset(winraw_joypad_pads, 0, sizeof(winraw_joypad_pads));
    winraw_joypad_pad_count = 0;
 
-   if (!winraw_joypad_create_msg_window())
-      return NULL;
+   /* Read by the poll: the window is made by the first poll, so that
+    * it is the polling thread's. This runs on whichever thread starts
+    * the input driver - the video thread, under threaded video. */
+   winraw_joypad_by_poll       = winraw_raw_input_polled();
+   winraw_joypad_window_failed = false;
 
-   if (!winraw_joypad_register_devices())
+   if (!winraw_joypad_by_poll)
    {
-      DestroyWindow(winraw_joypad_msg_window);
-      winraw_joypad_msg_window = NULL;
-      return NULL;
+      if (!winraw_joypad_create_msg_window())
+         return NULL;
+
+      if (!winraw_joypad_register_devices())
+      {
+         DestroyWindow(winraw_joypad_msg_window);
+         winraw_joypad_msg_window = NULL;
+         return NULL;
+      }
    }
 
    winraw_joypad_enumerate_devices();
@@ -928,7 +949,18 @@ static void winraw_joypad_joypad_destroy(void)
 
    if (winraw_joypad_msg_window)
    {
-      DestroyWindow(winraw_joypad_msg_window);
+      /* A window is destroyed by the thread that made it. Read by the
+       * poll, that is the polling thread - and this can be another:
+       * a controller plugged in restarts the driver from the main
+       * window's thread. The window is then asked to close, and goes
+       * when its own thread next pumps. */
+      if (     winraw_joypad_by_poll
+            && GetCurrentThreadId() != winraw_joypad_window_tid)
+         PostMessageA(winraw_joypad_msg_window, WM_CLOSE, 0, 0);
+      else
+         DestroyWindow(winraw_joypad_msg_window);
+      if (winraw_joypad_by_poll)
+         winraw_queue_claim_thread(false);
       winraw_joypad_msg_window = NULL;
    }
 
@@ -1151,9 +1183,74 @@ static int16_t winraw_joypad_joypad_state(
    return ret;
 }
 
+/* Read by the poll
+ * ----------------
+ * A controller's reports used to be taken wherever this driver's
+ * window happened to be pumped. The window was made by init, on the
+ * thread that starts the input driver; under threaded video that is
+ * the video thread, so the PeekMessage() below, called from the main
+ * thread, found nothing, and the reports were taken by the video
+ * thread's pump: once per video frame, a PeekMessage() and a
+ * GetRawInputData() apiece, and not at all while that thread waited
+ * in a present. The poll then read whatever state that had left - a
+ * stick or a button up to a frame old.
+ *
+ * Now, as for the keyboard and mouse (winraw_input.c, "Read by the
+ * poll"), the window is made by the first poll, on the polling
+ * thread, and the reports waiting are read in bulk when the poll
+ * asks: the state is what the controller had sent at that moment, and
+ * a frame's reports cost one call instead of two each. The read is
+ * the keyboard and mouse driver's own - one read takes everything
+ * waiting on the thread, and hands this driver its share through
+ * winraw_joypad_take_hid() - so the two drivers make one read between
+ * them. With another input driver this is the only reader.
+ *
+ * Arrivals and removals stay messages. They come through the raw
+ * input queue, which a range without WM_INPUT in it does not look at,
+ * so the thread's pump - which leaves raw input alone - does not see
+ * them, and they are taken here. The range also lets through a report
+ * that arrived since the read; the window procedure takes that as it
+ * always did.
+ *
+ * RETROARCH_RAWINPUT_POLL=0 puts both drivers back as they were. */
+static bool winraw_joypad_poll_window_up(void)
+{
+   if (!winraw_joypad_create_msg_window())
+      return false;
+   if (!winraw_joypad_register_devices())
+   {
+      DestroyWindow(winraw_joypad_msg_window);
+      winraw_joypad_msg_window = NULL;
+      return false;
+   }
+   winraw_joypad_window_tid = GetCurrentThreadId();
+   winraw_queue_claim_thread(true);
+   return true;
+}
+
 static void winraw_joypad_joypad_poll(void)
 {
    MSG msg;
+
+   if (winraw_joypad_by_poll)
+   {
+      if (     !winraw_joypad_msg_window
+            && !winraw_joypad_window_failed
+            && !winraw_joypad_poll_window_up())
+      {
+         winraw_joypad_window_failed = true;
+         RARCH_ERR("[RawInput Joypad] Could not make the window to read through.\n");
+      }
+
+      winraw_queue_read();
+
+      if (winraw_joypad_msg_window)
+         while (PeekMessageA(&msg, winraw_joypad_msg_window,
+                  WM_INPUT_DEVICE_CHANGE, WM_INPUT, PM_REMOVE))
+            DispatchMessageA(&msg);
+      return;
+   }
+
    /* Drain all pending messages for our hidden window.
     * TranslateMessage is omitted — we only handle WM_INPUT and
     * WM_INPUT_DEVICE_CHANGE, neither of which needs key translation. */

@@ -526,3 +526,25 @@ jobs:
           WINEDEBUG=-all timeout 300 make check
           make clean
           echo "[pass] winraw_poll_test (wine)"
+
+      - name: Build and run winraw_joypad_poll_test (mingw + Wine)
+        shell: bash
+        working-directory: samples/input/winraw_joypad_poll
+        run: |
+          set -eu
+          # input/drivers_joypad/winraw_joypad.c with its controllers
+          # read by the poll. The real driver under Wine, started from
+          # a second thread as it is from the video thread: with
+          # RETROARCH_RAWINPUT_POLL=0 init makes the window as it
+          # always did; otherwise init makes none and the first poll
+          # does, on the polling thread, marking it as one whose pump
+          # leaves raw input alone, with one bulk read a poll; a device
+          # change waiting for the window is taken by the poll;
+          # destroy from another thread - what a controller plugged in
+          # causes - has the window gone once its own thread pumps; a
+          # restart and a poll make a new one.
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          make clean all
+          WINEDEBUG=-all timeout 300 make check
+          make clean
+          echo "[pass] winraw_joypad_poll_test (wine)"

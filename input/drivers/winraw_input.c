@@ -222,12 +222,14 @@ typedef struct
     * decides what is taken. */
    bool sink;
    bool window_failed;
+   DWORD window_tid;   /* the thread that made the window */
    /* Key events of the reports read so far, handed on at the end of
     * the poll. One thread's. */
    unsigned kev_n;
    uint32_t kev[WINRAW_KEV_SIZE];
    /* Counts, logged when the driver is freed. */
    unsigned long drained;        /* reports read in bulk */
+   unsigned long drained_hid;    /* controllers' reports among the reads */
    unsigned long drain_reads;    /* in this many reads */
    unsigned long drain_empty;    /* reads that found nothing waiting */
    unsigned long by_message;     /* reports that came as a message */
@@ -804,9 +806,19 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
 
 extern void winraw_joypad_take_hid(HANDLE device, const BYTE *data, DWORD size);
 
-/* The thread the bulk-read window was made on, and so the only one
- * that can destroy it. */
-static DWORD winraw_drain_tid;
+/* The thread whose raw input queue the poll reads in bulk, and how
+ * many windows on it are read that way: this driver's, and
+ * winraw_joypad's (winraw_queue_claim_thread()). */
+static DWORD              winraw_drain_tid;
+static retro_atomic_int_t winraw_drain_claims;
+/* This driver, for a bulk read that winraw_joypad's poll starts: one
+ * thread's, the polling thread's. */
+static void              *winraw_drain_wr;
+/* Set by a bulk read made on winraw_joypad's behalf, which comes just
+ * before this driver's poll: that poll does not then read again. */
+static bool               winraw_queue_was_read;
+
+void winraw_queue_claim_thread(bool claim);
 
 /* 8 when this is a 32-bit process on 64-bit Windows: a bulk read's
  * records are then laid out for 64 bits, the payload eight bytes
@@ -974,28 +986,38 @@ static void winraw_drain(winraw_input_t *wr)
        * left to arrive as a message */
       if (n == 0 || n == (UINT)-1)
       {
-         wr->drain_empty++;
+         if (wr)
+            wr->drain_empty++;
          break;
       }
-      wr->drain_reads++;
+      if (wr)
+         wr->drain_reads++;
 
       for (i = 0; i < n; i++)
       {
          RAWINPUT *ri  = (RAWINPUT*)p;
          BYTE *payload = (BYTE*)&ri->data + shift;
 
-         wr->drained++;
          if (ri->header.dwType == RIM_TYPEHID)
          {
             /* a controller's, for winraw_joypad's window on this
              * thread */
             RAWHID *hid = (RAWHID*)payload;
+            if (wr)
+               wr->drained_hid++;
             winraw_joypad_take_hid(ri->header.hDevice, hid->bRawData,
                   hid->dwSizeHid * hid->dwCount);
          }
-         /* as a sink, background input arrives as well */
-         else if (!wr->sink || winraw_focus)
-            winraw_take(wr, ri->header.dwType, ri->header.hDevice, payload);
+         /* no keyboard and mouse driver: nothing is registered for
+          * them, and there is nothing to take them */
+         else if (wr)
+         {
+            wr->drained++;
+            /* as a sink, background input arrives as well */
+            if (!wr->sink || winraw_focus)
+               winraw_take(wr, ri->header.dwType, ri->header.hDevice,
+                     payload);
+         }
 
          p += (ri->header.dwSize + align - 1) & ~(align - 1);
       }
@@ -1007,13 +1029,49 @@ static void winraw_drain(winraw_input_t *wr)
    }
 }
 
+/* For winraw_joypad, whose window is on the polling thread too when
+ * raw input is read by the poll. A bulk read takes every report
+ * waiting on the thread, its controllers' and this driver's alike, so
+ * there is one read for both: winraw_joypad's poll, which
+ * input_driver_poll() calls first, makes it through here, and
+ * winraw_poll() then finds it made. With an input driver that is not
+ * this one there is no winraw_poll(), and this is the only read. */
+void winraw_queue_read(void)
+{
+   winraw_drain((winraw_input_t*)winraw_drain_wr);
+   winraw_queue_was_read = true;
+}
+
+/* A window on the calling thread is to have its raw input read by the
+ * poll, or no longer: the thread's pump leaves raw input in the queue
+ * while any is (winraw_poll_owns_thread()). */
+void winraw_queue_claim_thread(bool claim)
+{
+   if (claim)
+   {
+      winraw_drain_tid = GetCurrentThreadId();
+      retro_atomic_fetch_add_int(&winraw_drain_claims, 1);
+   }
+   else
+      retro_atomic_fetch_add_int(&winraw_drain_claims, -1);
+}
+
+/* Whether raw input is read by the poll at all: on, unless
+ * RETROARCH_RAWINPUT_POLL=0. */
+bool winraw_raw_input_polled(void)
+{
+   const char *env = getenv("RETROARCH_RAWINPUT_POLL");
+   return !(env && env[0] == '0');
+}
+
 /* For a thread's pump (ui_application_win32_process_events()): true
  * on the thread whose raw input the poll reads in bulk. The pump then
  * leaves raw input where it is - in the queue, for the poll - instead
  * of taking it out one message at a time. */
 bool winraw_poll_owns_thread(void)
 {
-   return winraw_drain_tid && GetCurrentThreadId() == winraw_drain_tid;
+   return retro_atomic_load_relaxed_int(&winraw_drain_claims) > 0
+      && GetCurrentThreadId() == winraw_drain_tid;
 }
 
 /* Input that came while the application was in the background is not
@@ -1095,9 +1153,11 @@ static bool winraw_poll_window_up(winraw_input_t *wr)
    if (     RegisterRawInputDevices(&rid[0], 1, sizeof(RAWINPUTDEVICE))
          && RegisterRawInputDevices(&rid[1], 1, sizeof(RAWINPUTDEVICE)))
    {
-      winraw_drain_tid = GetCurrentThreadId();
+      wr->window_tid  = GetCurrentThreadId();
+      winraw_drain_wr = wr;
+      winraw_queue_claim_thread(true);
       RARCH_LOG("[WinRaw] Keyboard and mouse are read in bulk by the poll"
-            " (thread %lu)%s.\n", (unsigned long)winraw_drain_tid,
+            " (thread %lu)%s.\n", (unsigned long)wr->window_tid,
             wr->sink ? ", registered as a sink" : "");
       return true;
    }
@@ -1114,7 +1174,7 @@ static bool winraw_poll_wanted(bool *sink)
 {
    const char *env = getenv("RETROARCH_RAWINPUT_POLL");
    *sink           = (env && env[0] == '2');
-   return !(env && env[0] == '0');
+   return winraw_raw_input_polled();
 }
 
 static void *winraw_init(const char *joypad_driver)
@@ -1250,8 +1310,11 @@ static void winraw_poll(void *data)
          wr->window_failed = true;
          RARCH_ERR("[WinRaw] Could not make the keyboard and mouse window.\n");
       }
-      if (wr->window)
+      /* winraw_joypad's poll, just before this one, has already made
+       * the read for both when it is the joypad driver */
+      if (wr->window && !winraw_queue_was_read)
          winraw_drain(wr);
+      winraw_queue_was_read = false;
    }
 
    /* Fix coordinates after a resolution change. Runs here rather than
@@ -1755,20 +1818,22 @@ static void winraw_free(void *data)
           * the polling thread, which is also the one that frees the
           * driver; if it ever is not, the window is asked to close
           * and goes when its own thread next pumps. */
-         if (GetCurrentThreadId() == winraw_drain_tid)
+         if (GetCurrentThreadId() == wr->window_tid)
          {
             DestroyWindow(wr->window);
             UnregisterClassA("winraw-input", NULL);
          }
          else
             PostMessageA(wr->window, WM_CLOSE, 0, 0);
+         winraw_queue_claim_thread(false);
       }
-      winraw_drain_tid = 0;
-      RARCH_DBG("[WinRaw] Read by the poll: %lu reports in %lu bulk reads"
-            " and %lu as messages; %lu reads found nothing waiting"
-            " (%lu key events dropped).\n",
-            wr->drained, wr->drain_reads, wr->by_message, wr->drain_empty,
-            wr->kev_dropped);
+      if (winraw_drain_wr == wr)
+         winraw_drain_wr = NULL;
+      RARCH_DBG("[WinRaw] Read by the poll: %lu keyboard and mouse reports"
+            " and %lu of controllers in %lu bulk reads, %lu as messages;"
+            " %lu reads found nothing waiting (%lu key events dropped).\n",
+            wr->drained, wr->drained_hid, wr->drain_reads, wr->by_message,
+            wr->drain_empty, wr->kev_dropped);
       free(g_mice);
       free(wr->mice);
       free(data);

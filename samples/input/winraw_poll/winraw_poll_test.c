@@ -22,6 +22,9 @@
  *   message carries and reads the rest in bulk, in order, and their
  *   key events still wait for the poll;
  * - with nothing waiting, a poll makes one read and a pump makes none;
+ * - a read made for the controller driver, whose poll comes first, is
+ *   not repeated by this driver's poll, which still delivers what it
+ *   took;
  * - a pump that asks for the messages below WM_INPUT and above it, as
  *   the frontend's does on this thread, leaves the reports in the
  *   queue, and the next poll reads them all in one;
@@ -282,7 +285,7 @@ int main(void)
    raw_window = wr->window;
    CHECK(raw_window && IsWindow(raw_window), "the first poll made no window");
    CHECK(GetWindowThreadProcessId(raw_window, NULL) == main_tid
-         && main_tid != vt_tid && winraw_drain_tid == main_tid,
+         && main_tid != vt_tid && winraw_poll_owns_thread(),
          "the window belongs to thread %lu; the poll's is %lu, init's %lu",
          (unsigned long)GetWindowThreadProcessId(raw_window, NULL),
          (unsigned long)main_tid, (unsigned long)vt_tid);
@@ -401,6 +404,35 @@ int main(void)
             printf("   ok   nothing waiting: a poll makes one read, a pump makes none\n");
          }
 
+         /* ---- one read for both drivers --------------------------- */
+         /* winraw_joypad's poll comes first and makes the read through
+          * winraw_queue_read(); this driver's poll must not make a
+          * second, and still hands on what the first one took. */
+         {
+            unsigned long total0;
+            wr->drained = wr->by_message = 0;
+            key(0x21, true);
+            key(0x21, false);
+            Sleep(150);
+            total0 = wr->drain_reads + wr->drain_empty;
+            winraw_queue_read();
+            CHECK(wr->drained == 2 && wr->kb_keys[0x21] == 0 && seen_n == 0,
+                  "the read made for the controller driver took %lu reports, delivered %u events",
+                  wr->drained, seen_n);
+            winraw_poll(wr);
+            CHECK(wr->drain_reads + wr->drain_empty - total0 == 1,
+                  "the two polls made %lu reads between them, not one",
+                  wr->drain_reads + wr->drain_empty - total0);
+            CHECK(seen_n == 2 && seen[0].down && seen[0].code == 0x21 && !seen[1].down,
+                  "the poll did not hand on what that read took (%u events)", seen_n);
+            seen_n = 0;
+            total0 = wr->drain_reads + wr->drain_empty;
+            winraw_poll(wr);
+            CHECK(wr->drain_reads + wr->drain_empty - total0 == 1,
+                  "the next poll, on its own, did not make its read");
+            printf("   ok   one read for both drivers: made for the controller driver, not repeated by this poll\n");
+         }
+
          /* ---- the frontend's pump on this thread ----------------- */
          {
             unsigned long reads0;
@@ -497,8 +529,12 @@ int main(void)
    /* ---- free ----------------------------------------------------- */
    winraw_free(wr);
    CHECK(!IsWindow(raw_window), "free left the window");
-   CHECK(winraw_drain_tid == 0, "free left the bulk-read thread set");
-   printf("   ok   free: the window is gone\n");
+   CHECK(!winraw_poll_owns_thread(), "free left the thread marked as read by the poll");
+   /* a read made for the controller driver with no keyboard and mouse
+    * driver there: nothing to take, nothing to touch */
+   winraw_queue_read();
+   winraw_queue_was_read = false;
+   printf("   ok   free: the window is gone, the thread's mark with it\n");
 
    /* ---- restarted, as it is with every video driver restart ------ */
    {
