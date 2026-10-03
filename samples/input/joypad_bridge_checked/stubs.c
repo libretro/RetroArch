@@ -26,6 +26,9 @@ void *dylib_proc(void *lib, const char *proc) { (void)lib; (void)proc; return NU
 void dylib_close(void *lib) { (void)lib; }
 
 #define CMD(name) int name(void) { return 0; }
+CMD(input_autoconfigure_connect_ex)
+CMD(fill_pathname_join)
+CMD(filestream_read_file)
 CMD(command_audio_reinit) CMD(command_close_content) CMD(command_drivers_reinit)
 CMD(command_get_config_param) CMD(command_get_playlist) CMD(command_get_status)
 CMD(command_help) CMD(command_list_cores) CMD(command_list_playlists)

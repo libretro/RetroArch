@@ -455,6 +455,28 @@ static int32_t sdl3_joypad_button(unsigned port, uint16_t joykey)
    return sdl3_joypad_button_state(&sdl3_joypads[port], joykey);
 }
 
+/* Every plain button of the pad at once, as sdl3_joypad_button()
+ * gives them one by one; hats are read through sdl3_joypad_button()
+ * with a hat key. This is what lets the frontend copy the pad once a
+ * poll (the snapshot bridge in input_driver.c): a read in this driver
+ * is a call into SDL, and this is the one walk of the buttons a poll. */
+static void sdl3_joypad_get_buttons(unsigned port, input_bits_t *state)
+{
+   unsigned i, n;
+   sdl3_joypad_t *pad;
+
+   BIT256_CLEAR_ALL_PTR(state);
+   if (port >= MAX_USERS)
+      return;
+   pad = &sdl3_joypads[port];
+   if (!pad->joypad)
+      return;
+   n = (pad->num_buttons < 256) ? pad->num_buttons : 256;
+   for (i = 0; i < n; i++)
+      if (sdl3_joypad_get_button(pad, i))
+         BIT256_SET_PTR(state, i);
+}
+
 static int16_t sdl3_joypad_axis_state(sdl3_joypad_t *pad, uint32_t joyaxis)
 {
    if (AXIS_NEG_GET(joyaxis) < pad->num_axes)
@@ -706,7 +728,7 @@ input_device_driver_t sdl3_joypad = {
    sdl3_joypad_destroy,
    sdl3_joypad_button,
    sdl3_joypad_state,
-   NULL, /* get_buttons */
+   sdl3_joypad_get_buttons,
    sdl3_joypad_axis,
    sdl3_joypad_poll,
    sdl3_joypad_set_rumble,

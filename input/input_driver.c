@@ -641,17 +641,18 @@ void input_driver_set_snapshot_bridge(bool on)
  *   over sixteen of the thirty-two buttons button() reads; it hands
  *   over all of them now. No hats; state() is the common loop.
  *
- * - sdl2 (sdl2_joypad.c). It had no get_buttons() and has one, a walk
- *   of the pad's buttons through the call button() makes. state() is
- *   the common loop. With this driver a read is a call into SDL, so
- *   here the copy also saves those.
+ * - sdl2 (sdl2_joypad.c) and sdl3 (sdl3_joypad.c). Neither had a
+ *   get_buttons(); each has one now, a walk of the pad's buttons
+ *   through the call button() makes. state() is the common loop.
+ *   With these drivers a read is a call into SDL, so here the copy
+ *   also saves those.
  *
  * - xinput, the XInput-only driver (xinput_joypad.c: UWP, Xbox, and
  *   builds without DirectInput). It has a get_buttons() now, so it is
  *   served like the hybrid driver of the same name.
  *
  * samples/input/joypad_bridge_checked holds udev, dinput, linuxraw,
- * sdl2 and the XInput-only driver to that: for random pads, binds
+ * sdl2, sdl3 and the XInput-only driver to that: for random pads, binds
  * and thresholds, what the bridge would make of the driver's answers
  * is what the driver's own state() says.
  *
@@ -671,7 +672,8 @@ static bool input_snapshot_driver_checked(const input_device_driver_t *drv)
              || string_is_equal(drv->ident, "udev")
              || string_is_equal(drv->ident, "dinput")
              || string_is_equal(drv->ident, "linuxraw")
-             || string_is_equal(drv->ident, "sdl2"));
+             || string_is_equal(drv->ident, "sdl2")
+             || string_is_equal(drv->ident, "sdl3"));
       /* While drivers are being switched over: RETROARCH_INPUT_SNAPSHOT=0
        * in the environment reads the driver directly, so a problem can
        * be tried with and without the bridge on one build. */
