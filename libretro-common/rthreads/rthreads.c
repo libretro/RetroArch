@@ -56,7 +56,7 @@
 #endif
 #include <windows.h>
 #endif
-#elif defined(GEKKO)
+#elif defined(GEKKO) && !defined(GEKKO_NATIVE)
 #define USE_GX_THREADS
 #include <gccore.h>
 #include <ogc/lwp.h>
@@ -1274,6 +1274,8 @@ static sthread_t *sthread_create_ex(void (*thread_func)(void*),
 #ifdef HAVE_THREAD_ATTR
    pthread_attr_init(&thread_attr);
 
+   /* devkitPPC's pthreads have no scheduling policy to set. */
+#ifndef GEKKO_NATIVE
    if ((thread_priority >= 1) && (thread_priority <= 100))
    {
       struct sched_param sp;
@@ -1284,6 +1286,7 @@ static sthread_t *sthread_create_ex(void (*thread_func)(void*),
 
       thread_attr_needed = true;
    }
+#endif
 
 #if defined(__APPLE__)
    /* Default stack size on Apple is 512Kb;

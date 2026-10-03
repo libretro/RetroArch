@@ -23,27 +23,19 @@ CFLAGS  := -O2 -Wall -Wextra -Wno-unused-parameter -std=gnu89 $(MACHDEP) \
            -I$(GK)/include -I$(ROOT)/libretro-common/include
 LDFLAGS := $(MACHDEP) -T $(GK)/boot/$(PLATFORM).ld -L$(GK)/boot -Wl,--gc-sections
 
-KERNEL := $(GK)/boot/crt0.S $(GK)/cpu/exception.S $(GK)/cpu/cache.S \
-          $(GK)/kernel/boot.c $(GK)/kernel/exception.c $(GK)/kernel/irq.c \
-          $(GK)/kernel/sched.c $(GK)/kernel/newlib.c $(GK)/kernel/power.c \
-          $(GK)/kernel/vi.c $(GK)/kernel/console.c $(GK)/kernel/gx.c \
-          $(GK)/kernel/audio.c $(GK)/kernel/pad.c $(GK)/kernel/exi.c \
-          $(GK)/disk/sdspi.c $(GK)/disk/sdgecko.c $(GK)/disk/usbmsc.c \
-          $(GK)/fs/fat.c $(GK)/fs/fat_devoptab.c \
-          $(ROOT)/gfx/bitmapfont.c
+GEKKO_DIR      := $(GK)
+GEKKO_PLATFORM := $(PLATFORM)
+include $(GK)/gekko.mk
+KERNEL := $(GEKKO_SOURCES) $(ROOT)/gfx/bitmapfont.c
 
 TESTS := kernel_test vi_test gx_test io_test exi_test
 ifeq ($(PLATFORM),rvl)
-   KERNEL += $(GK)/rvl/ipc.c $(GK)/rvl/stm.c $(GK)/rvl/es.c $(GK)/rvl/conf.c \
-             $(GK)/rvl/ave.c $(GK)/rvl/sdio.c $(GK)/rvl/iobuf.c \
-             $(GK)/rvl/usb.c $(GK)/rvl/usbstorage.c $(GK)/rvl/bt.c \
-             $(GK)/rvl/wiimote.c
    TESTS  += ios_test sd_test usb_test wiimote_test
 endif
 
 all: $(addsuffix _$(PLATFORM).elf,$(TESTS))
 
-%_$(PLATFORM).elf: %.c $(KERNEL) $(wildcard $(GK)/include/gekko/*.h $(GK)/kernel/*.h $(GK)/fs/*.h $(GK)/disk/*.h) Makefile
+%_$(PLATFORM).elf: %.c $(KERNEL) $(wildcard $(GK)/include/gekko/*.h $(GK)/kernel/*.h $(GK)/fs/*.h $(GK)/disk/*.h) Makefile $(GK)/gekko.mk
 	$(CC) $(CFLAGS) $(LDFLAGS) $< $(KERNEL) -lm -o $@
 
 host:

@@ -628,7 +628,7 @@ VIDEO DRIVER
 #include "../gfx/common/dxgi_common.c"
 #endif
 
-#if defined(GEKKO)
+#if defined(GEKKO) && defined(HAVE_LIBOGC)
 #ifdef HW_RVL
 #include "../gfx/drivers/gx_gfx_vi_encoder_libogc.c"
 #include "../libretro-common/memory/mem2_manager_libogc.c"
@@ -705,8 +705,13 @@ VIDEO DRIVER
 #include "../gfx/drivers/rsx_gfx.c"
 #elif defined(GEKKO)
 #include "../gfx/display_servers/dispserv_gx_modes.c"
+#ifdef HAVE_LIBOGC
 #include "../gfx/display_servers/dispserv_gx_libogc.c"
 #include "../gfx/drivers/gx_gfx_libogc.c"
+#else
+#include "../gfx/display_servers/dispserv_gekko.c"
+#include "../gfx/drivers/gekko_gfx.c"
+#endif
 #elif defined(PSP)
 #include "../gfx/drivers/psp1_gfx.c"
 #elif defined(PS2)
@@ -803,7 +808,11 @@ INPUT
 #include "../input/drivers_joypad/ctr_joypad.c"
 #elif defined(GEKKO)
 #include "../input/drivers/gx_input.c"
+#ifdef HAVE_LIBOGC
 #include "../input/drivers_joypad/gx_joypad_libogc.c"
+#else
+#include "../input/drivers_joypad/gekko_joypad.c"
+#endif
 #elif defined(__wiiu__)
 #include "../input/common/hid/hid_device_driver.c"
 #include "../input/common/hid/device_wiiu_gca.c"
@@ -1040,8 +1049,10 @@ AUDIO
 #include "../audio/drivers/ps3_audio.c"
 #elif defined(XENON)
 #include "../audio/drivers/xenon360_audio.c"
-#elif defined(GEKKO)
+#elif defined(GEKKO) && defined(HAVE_LIBOGC)
 #include "../audio/drivers/gx_audio_libogc.c"
+#elif defined(GEKKO)
+#include "../audio/drivers/gekko_audio.c"
 #elif defined(__wiiu__)
 #include "../audio/drivers/wiiu_audio.c"
 #elif defined(HAVE_RWEBAUDIO)
@@ -1360,11 +1371,13 @@ FRONTEND
 #include "../frontend/drivers/platform_xdk.c"
 #endif
 
-#if defined(GEKKO)
+#if defined(GEKKO) && defined(HAVE_LIBOGC)
 #include "../frontend/drivers/platform_gx_libogc.c"
 #ifdef HW_RVL
 #include "../frontend/drivers/platform_wii_libogc.c"
 #endif
+#elif defined(GEKKO)
+#include "../frontend/drivers/platform_gekko.c"
 #elif defined(__wiiu__)
 #include "../frontend/drivers/platform_wiiu.c"
 #elif defined(PS2)

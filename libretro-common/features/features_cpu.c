@@ -97,7 +97,9 @@ extern long syscall(long number, ...);
 #include <sys/sys_time.h>
 #endif
 
-#ifdef GEKKO
+#if defined(GEKKO_NATIVE)
+#include <gekko/gekko.h>
+#elif defined(GEKKO)
 #include <ogc/lwp_watchdog.h>
 #endif
 
@@ -198,6 +200,8 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
       QueryPerformanceCounter(&c);
       time_ticks = (retro_perf_tick_t)c.QuadPart;
    }
+#elif defined(GEKKO_NATIVE)
+   time_ticks = gk_ticks();
 #elif defined(GEKKO)
    time_ticks = gettime();
 #elif !defined(__MACH__) && !defined(__FreeBSD__) && (defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__) || defined(__PSL1GHT__) || defined(__PPC64__) || defined(__powerpc64__))
@@ -245,6 +249,8 @@ retro_time_t cpu_features_get_time_usec(void)
    return sysGetSystemTime();
 #elif !defined(__PSL1GHT__) && defined(__PS3__)
    return sys_time_get_system_time();
+#elif defined(GEKKO_NATIVE)
+   return gk_ticks_to_us(gk_ticks());
 #elif defined(GEKKO)
    return ticks_to_microsecs(gettime());
 #elif defined(WIIU)

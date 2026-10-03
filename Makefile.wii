@@ -58,9 +58,14 @@ endif
 
 LIBS               := $(WHOLE_START) $(LIB_CORE) $(WHOLE_END)
 
-libogc_platform    := 1
-
+# HAVE_LIBOGC=1 builds on libogc (EXTERNAL_LIBOGC=1: devkitPro's, else
+# the copy in wii/libogc); HAVE_LIBOGC=0 on RetroArch's own system layer,
+# os/gekko.
+HAVE_LIBOGC       ?= 1
 EXTERNAL_LIBOGC   ?= 0
+ifeq ($(HAVE_LIBOGC), 1)
+libogc_platform    := 1
+endif
 HAVE_OGG_OGC      ?= 0
 CC                 = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
 CXX                = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
@@ -77,14 +82,18 @@ endif
 
 INCLUDE += -I.
 
-ifeq ($(EXTERNAL_LIBOGC), 1)
-   CFLAGS   += -DEXTERNAL_LIBOGC
-   CXXFLAGS += -DEXTERNAL_LIBOGC
+ifeq ($(HAVE_LIBOGC), 0)
+   CFLAGS   += -DGEKKO_NATIVE
+   CXXFLAGS += -DGEKKO_NATIVE
+   INCLUDE  += -Ios/gekko/include
+else ifeq ($(EXTERNAL_LIBOGC), 1)
+   CFLAGS   += -DHAVE_LIBOGC -DEXTERNAL_LIBOGC
+   CXXFLAGS += -DHAVE_LIBOGC -DEXTERNAL_LIBOGC
    LIBDIRS += -L$(DEVKITPRO)/libogc/lib/wii
    INCLUDE +=  -I$(DEVKITPRO)/libogc/include
 else
-   CFLAGS   += -DINTERNAL_LIBOGC
-   CXXFLAGS += -DINTERNAL_LIBOGC
+   CFLAGS   += -DHAVE_LIBOGC -DINTERNAL_LIBOGC
+   CXXFLAGS += -DHAVE_LIBOGC -DINTERNAL_LIBOGC
    LIBDIRS += -Lwii/libogc/libs/wii
    INCLUDE += -Iwii/libogc/include
 endif
@@ -95,16 +104,23 @@ MACHDEP := -DHW_RVL -mrvl
 LIBDIRS += -L.
 MACHDEP += -DGEKKO -mcpu=750 -meabi -mhard-float
 
+ifeq ($(HAVE_LIBOGC), 1)
 LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size
 
 ifeq ($(BIG_STACK), 1)
    LDFLAGS += -T bootstrap/gx/rvl.ld
+endif
+else
+# os/gekko's heap runs from MEM1 into MEM2 by itself.
+LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map \
+           -T os/gekko/boot/rvl.ld -Los/gekko/boot
 endif
 
 ifeq ($(HAVE_OGG_OGC), 1)
    LIBS += -L$(DEVKITPRO)/portlibs/ppc/lib -lvorbisfile -lvorbis -logg
 endif
 
+ifeq ($(HAVE_LIBOGC), 1)
 ifeq ($(EXTERNAL_LIBOGC), 1)
    LIBS += -lfat
 endif
@@ -120,6 +136,7 @@ ifeq ($(HAVE_LOGGER), 1)
 endif
 
 LIBS += -logc
+endif
 
 CFLAGS += -DGEKKO -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 
@@ -155,20 +172,33 @@ HAVE_STATIC_AUDIO_FILTERS := 1
 HAVE_STATIC_VIDEO_FILTERS := 1
 
 #HAVE_LANGEXTRA          := 1
-HAVE_WIIUSB_HID          := 1
-HAVE_HID                 := 1
-HAVE_RARCH_EXEC          := 1
 HAVE_RSOUND              := 0
 HAVE_XMB                 := 0
 HAVE_OZONE               := 0
 HAVE_RGUI                := 1
 HAVE_MATERIALUI          := 0
+
+ifeq ($(HAVE_LIBOGC), 1)
+HAVE_WIIUSB_HID          := 1
+HAVE_HID                 := 1
+HAVE_RARCH_EXEC          := 1
 HAVE_CHEEVOS             := 1
 
 CFLAGS      += -DHAVE_SOCKET_LEGACY -DHAVE_CHEEVOS
 
 APP_BOOTER_DIR = wii/app_booter
 PLATOBJS := $(APP_BOOTER_DIR)/app_booter.binobj
+else
+# Not on os/gekko yet: networking, USB HID pads, and starting another
+# program (a core switch needs it).
+HAVE_NETWORKING          := 0
+HAVE_IFINFO              := 0
+HAVE_WIIUSB_HID          := 0
+HAVE_HID                 := 0
+HAVE_RARCH_EXEC          := 0
+HAVE_CHEEVOS             := 0
+PLATOBJS :=
+endif
 
 ifeq ($(USBGECKO), 1)
    CFLAGS += -DUSBGECKO
@@ -179,9 +209,16 @@ INCLUDE += -I./libretro-common/include \
 	   -Ideps/rcheevos/include
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
 
+ifeq ($(HAVE_LIBOGC), 1)
 OBJ =  $(PLATOBJS) audio/drivers/gx_audio_libogc.o gfx/drivers/gx_gfx_libogc.o gfx/display_servers/dispserv_gx_libogc.o gfx/display_servers/dispserv_gx_modes.o input/drivers/gx_input.o frontend/drivers/platform_gx_libogc.o input/drivers_joypad/gx_joypad_libogc.o libretro-common/memory/mem2_manager_libogc.o gfx/drivers/gx_gfx_vi_encoder_libogc.o frontend/drivers/platform_wii_libogc.o input/drivers_hid/wiiusb_hid_libogc.o
+else
+GEKKO_DIR      := os/gekko
+GEKKO_PLATFORM := rvl
+include os/gekko/gekko.mk
+OBJ =  audio/drivers/gekko_audio.o gfx/drivers/gekko_gfx.o gfx/display_servers/dispserv_gekko.o gfx/display_servers/dispserv_gx_modes.o input/drivers/gx_input.o frontend/drivers/platform_gekko.o input/drivers_joypad/gekko_joypad.o $(addsuffix .o,$(basename $(GEKKO_SOURCES)))
+endif
 
-ifeq ($(EXTERNAL_LIBOGC), 0)
+ifeq ($(HAVE_LIBOGC)$(EXTERNAL_LIBOGC), 10)
    # Bridge the prebuilt in-tree libogc's __syscalls table onto the
    # per-symbol __syscall_* hooks modern devkitPPC libsysbase dispatches
    # through (see wii/libogc_syscalls_compat.c).
@@ -320,7 +357,9 @@ clean:
 	$(Q)rm -f $(EXT_TARGET)
 	$(Q)rm -f $(EXT_INTER_TARGET)
 	$(Q)rm -f $(OBJ)
+ifeq ($(HAVE_LIBOGC), 1)
 	$(Q)$(MAKE) -C $(APP_BOOTER_DIR) clean
+endif
 
 .PHONY: clean
 

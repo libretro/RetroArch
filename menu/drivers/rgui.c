@@ -70,7 +70,11 @@
 /* Required for the Wii build, since we have
  * to query the hardware for the actual display
  * aspect ratio... */
+#if defined(HAVE_LIBOGC)
 #include <ogc/conf.h>
+#elif defined(HW_RVL)
+#include <gekko/conf.h>
+#endif
 
 /* When running on the Wii, need to round down the
  * frame buffer width value such that the last two
@@ -6818,10 +6822,14 @@ static void rgui_update_menu_viewport(
        * widescreen. The display aspect ratio cannot therefore
        * be determined simply by dividing viewport width by height */
       float delta;
-#ifdef HW_RVL
+#if defined(HW_RVL) && defined(HAVE_LIBOGC)
       float device_aspect  = (CONF_GetAspectRatio() == CONF_ASPECT_4_3)
             ? (4.0f / 3.0f)
             : (16.0f / 9.0f);
+#elif defined(HW_RVL)
+      float device_aspect  = gk_conf_wide() > 0
+            ? (16.0f / 9.0f)
+            : (4.0f / 3.0f);
 #else
       float device_aspect  = (4.0f / 3.0f);
 #endif

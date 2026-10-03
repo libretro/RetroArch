@@ -13,6 +13,7 @@
 #include <sys/lock.h>
 #include <sys/time.h>
 
+#include <gekko/console.h>
 #include <gekko/power.h>
 
 #include "kernel.h"
@@ -369,6 +370,50 @@ void __syscall_assert_func(const char *file, int line, const char *func,
          func ? func : "");
 }
 
+/* ---- stdout and stderr: lines to the debug channel ---- */
+
+void OSReport(const char *fmt, ...);
+
+static char     out_line[256];
+static unsigned out_len;
+
+static void out_flush(void)
+{
+   out_line[out_len] = '\0';
+   OSReport("%s\n", out_line);
+   gk_console_write(out_line, out_len);
+   gk_console_write("\n", 1);
+   out_len = 0;
+}
+
+static ssize_t out_write(struct _reent *r, void *fd, const char *p,
+      size_t len)
+{
+   size_t i;
+   uint32_t level = gk_irq_disable();
+   (void)r;
+   (void)fd;
+   for (i = 0; i < len; i++)
+   {
+      if (p[i] == '\n')
+         out_flush();
+      else
+      {
+         out_line[out_len++] = p[i];
+         if (out_len == sizeof(out_line) - 1)
+            out_flush();
+      }
+   }
+   gk_irq_restore(level);
+   return (ssize_t)len;
+}
+
+static devoptab_t dotab_out;
+
 void gk_newlib_init(void)
 {
+   dotab_out.name         = "stdout";
+   dotab_out.write_r      = out_write;
+   devoptab_list[STD_OUT] = &dotab_out;
+   devoptab_list[STD_ERR] = &dotab_out;
 }

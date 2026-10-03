@@ -46,6 +46,8 @@
  * a different arm's code. */
 #if defined(_3DS)
 #define MEM_STATS_CTR         1
+#elif defined(GEKKO_NATIVE)
+#define MEM_STATS_GEKKO       1
 #elif defined(GEKKO)
 #define MEM_STATS_GX          1
 #elif defined(VITA)
@@ -75,6 +77,13 @@
 #include <3ds.h>
 /* osGetMemRegionSize/Free and MEMREGION_ALL are declared here */
 #include <3ds/os.h>
+#elif defined(MEM_STATS_GEKKO)
+/* os/gekko's heap grows through MEM1 and then (Wii) MEM2; what is not
+ * yet the heap is what the arenas still hold. */
+#include <malloc.h>
+#include <gekko/gekko.h>
+#define GEKKO_MEM1_SIZE 0x01800000u
+#define GEKKO_MEM2_SIZE 0x04000000u
 #elif defined(MEM_STATS_GX)
 /* SYSMEM1_SIZE is RetroArch's own, not the SDK's - platform_gx_libogc.c and
  * gx_gfx_libogc.c both take it from here.  SYS_GetArena1Size is gccore's. */
@@ -295,6 +304,12 @@ uint64_t mem_stats_total(void)
 {
 #if defined(MEM_STATS_CTR)
    return osGetMemRegionSize(MEMREGION_ALL);
+#elif defined(MEM_STATS_GEKKO)
+#ifdef HW_RVL
+   return GEKKO_MEM1_SIZE + GEKKO_MEM2_SIZE;
+#else
+   return GEKKO_MEM1_SIZE;
+#endif
 #elif defined(MEM_STATS_GX)
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
    return SYSMEM1_SIZE + gx_mem2_total();
@@ -411,6 +426,12 @@ uint64_t mem_stats_free(void)
 {
 #if defined(MEM_STATS_CTR)
    return osGetMemRegionFree(MEMREGION_ALL);
+#elif defined(MEM_STATS_GEKKO)
+   {
+      struct mallinfo mi = mallinfo();
+      return (uint64_t)(gk_mem1.hi - gk_mem1.lo)
+         + (uint64_t)(gk_mem2.hi - gk_mem2.lo) + (uint64_t)mi.fordblks;
+   }
 #elif defined(MEM_STATS_GX)
    {
       /* SYS_GetArena1Size() reports remaining MEM1 directly. */

@@ -77,6 +77,13 @@ extern uint32_t gk_tb_hz;
 #define GK_US_TO_TICKS(us) ((uint64_t)(us) * gk_tb_hz / 1000000u)
 #define GK_TICKS_TO_US(t)  ((uint64_t)(t) * 1000000u / gk_tb_hz)
 
+/* Ticks to microseconds for any span, uptime included: the short
+ * form above overflows after a few days of ticks. */
+static INLINE uint64_t gk_ticks_to_us(uint64_t t)
+{
+   return t / gk_tb_hz * 1000000u + t % gk_tb_hz * 1000000u / gk_tb_hz;
+}
+
 /* Cache maintenance over [p, p + len). */
 void gk_dcache_flush(const void *p, size_t len);
 void gk_dcache_store(const void *p, size_t len);
