@@ -1685,9 +1685,8 @@ void win32_window_proc_setup(enum win32_window_family family)
  *
  * For the Vulkan and the GDI families, for now - the ones whose
  * window sets up nothing a second driver of the same family cannot
- * set up again on the same window - and only with
- * RETROARCH_WINDOW_KEEP=1 in the environment until it has been run on
- * Windows. Never when the program is shutting down. */
+ * set up again on the same window. Never when the program is shutting
+ * down. RETROARCH_WINDOW_KEEP=0 in the environment turns it off. */
 static bool win32_window_family_keeps(void)
 {
    return win32_wnd_family == WIN32_WINDOW_VULKAN
@@ -1706,16 +1705,16 @@ static void win32_window_destroy_kept(HWND hwnd)
    win32_retiring_hwnd = NULL;
 }
 
-/* RETROARCH_WINDOW_KEEP: 1 leaves the window up and takes it back; 2
- * leaves it up and then does not take it, so that the way out for a
- * window nothing takes can be run (the tests do); anything else, or
- * nothing, destroys it with the driver as before. */
+/* 1, the default: the window is left up and taken back. With
+ * RETROARCH_WINDOW_KEEP=0 it is destroyed with the driver, as it used
+ * to be; with =2 it is left up and then not taken, so that the way
+ * out for a window nothing takes can be run (the tests do). */
 static int win32_window_keep_mode(void)
 {
    const char *env = getenv("RETROARCH_WINDOW_KEEP");
-   if (env && (env[0] == '1' || env[0] == '2'))
+   if (env && (env[0] == '0' || env[0] == '2'))
       return env[0] - '0';
-   return 0;
+   return 1;
 }
 
 /* the hook of video_thread_host_hold(): the video thread is ending

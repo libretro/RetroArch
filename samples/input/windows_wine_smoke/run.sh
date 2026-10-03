@@ -43,11 +43,14 @@
 #                               can get, with its joypad driver:
 #                               started by the same code, restarted
 #                               with the video driver, works.
-#   RETROARCH_WINDOW_KEEP=1     the window is left up across both
-#                               restarts and taken back by the driver
-#                               that comes next, with threaded video
-#                               (where the video thread is held for
-#                               it) and without.
+#
+# And the window. In every scenario above it is left up across both
+# restarts and taken back by the driver that comes next - with
+# threaded video, where the video thread is held for it, and without.
+# Two more:
+#
+#   RETROARCH_WINDOW_KEEP=0     the window is destroyed with the driver
+#                               and a new one made, as it used to be.
 #   RETROARCH_WINDOW_KEEP=2     the window is left up and then not
 #                               taken: it is destroyed, a new one is
 #                               made, and RetroArch does not take the
@@ -199,7 +202,7 @@ scenario() {
       # the old path measures the wait the new one removes; the new
       # one has nothing to measure
       win="$(count "$log" 'window is left up') $(count "$log" 'Took the window left up') $(count "$log" 'not one this driver takes')"
-      [ "$win" = "${WANT_WINDOW:-0 0 0}" ] || ok=no
+      [ "$win" = "${WANT_WINDOW:-2 2 0}" ] || ok=no
       stale=$(count "$log" "Taken by the window's thread: at the poll")
       if [ "$name" = "RETROARCH_RAWINPUT_POLL=0" ]; then
          [ "$stale" = 3 ] || ok=no
@@ -218,7 +221,7 @@ scenario() {
            "video driver started $video (want 3), input driver by the poll $bulk (want $want_bulk)," \
            "joypad driver started $joy (want $want_joy);" \
            "lines on how old the state was at the poll: $stale;" \
-           "window left up, taken, not taken: $win (want ${WANT_WINDOW:-0 0 0});" \
+           "window left up, taken, not taken: $win (want ${WANT_WINDOW:-2 2 0});" \
            "the core saw B pressed $b_down and released $b_up (want 2 and 2), J: ${j_seq:-nothing}(want down up down up)" \
            "$([ "$nomsg" = nomsg ] && echo ", driver instances with reports taken as messages: $msg (want 0)")"
       sed 's/\x1b\[[0-9;]*m//g' "$log" | tr -d '\r' | grep -av "ALSA lib\|Playlist\]" | tail -25
@@ -231,8 +234,7 @@ RETROARCH_INPUT_KEEP=0 scenario "RETROARCH_INPUT_KEEP=0" true 3 3 nomsg
 scenario "video not threaded" false 1 1 any
 RETROARCH_RAWINPUT_POLL=0 scenario "RETROARCH_RAWINPUT_POLL=0" true 0 3 any
 scenario "DirectInput" true 0 3 any dinput dinput
-WANT_WINDOW="2 2 0" RETROARCH_WINDOW_KEEP=1 scenario "window kept" true 1 1 nomsg
-WANT_WINDOW="2 2 0" RETROARCH_WINDOW_KEEP=1 scenario "window kept, video not threaded" false 1 1 any
+WANT_WINDOW="0 0 0" RETROARCH_WINDOW_KEEP=0 scenario "RETROARCH_WINDOW_KEEP=0" true 1 1 nomsg
 WANT_WINDOW="2 0 2" RETROARCH_WINDOW_KEEP=2 scenario "window left up and not taken" true 1 1 nomsg
 
 if [ "$failures" != 0 ]; then

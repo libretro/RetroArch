@@ -15,9 +15,9 @@ name: CI Windows raw input under Wine
 # (the default); restarted with the video driver
 # (RETROARCH_INPUT_KEEP=0); threaded video off; the raw driver as it
 # was before any of this (RETROARCH_RAWINPUT_POLL=0); and DirectInput.
-# Three more are about the window: left up across both restarts and
-# taken back, with threaded video and without
-# (RETROARCH_WINDOW_KEEP=1), and left up and then not taken (=2).
+# In all of those the window is left up across both restarts and
+# taken back; two more destroy it with the driver as before
+# (RETROARCH_WINDOW_KEEP=0) and leave it up without taking it (=2).
 # See samples/input/windows_wine_smoke/run.sh.
 #
 # Wine is not Windows: what this holds is that the frontend, the pump,
