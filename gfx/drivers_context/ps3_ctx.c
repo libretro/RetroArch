@@ -120,7 +120,6 @@ static void *gfx_ctx_ps3_init(void *video_driver)
    PSGLinitOptions options;
    unsigned dims;
 #endif
-   global_t        *global  = global_get_ptr();
    gfx_ctx_ps3_data_t *ps3  = (gfx_ctx_ps3_data_t*)
       calloc(1, sizeof(gfx_ctx_ps3_data_t));
 
@@ -151,17 +150,11 @@ static void *gfx_ctx_ps3_init(void *video_driver)
       params.enable        |= PSGL_DEVICE_PARAMETERS_WIDTH_HEIGHT;
       params.width          = VIDEO_SCALE_W(dims);
       params.height         = VIDEO_SCALE_H(dims);
-
-      global->console.screen.pal_enable = false;
-
-      if (params.width == 720 && params.height == 576)
-      {
-         RARCH_LOG("[PSGL Context] 720x576 resolution detected, setting MODE_VIDEO_PAL_ENABLE.\n");
-         global->console.screen.pal_enable = true;
-      }
    }
 
-   if (global->console.screen.pal60_enable)
+   /* PAL60 converts 720x576 output only */
+   if (     dims == VIDEO_SCALE_PACK(720, 576)
+         && config_get_ptr()->bools.video_pal60_enable)
    {
       RARCH_LOG("[PSGL Context] Setting temporal PAL60 mode.\n");
       params.enable             |= PSGL_DEVICE_PARAMETERS_RESC_PAL_TEMPORAL_MODE;
@@ -175,11 +168,6 @@ static void *gfx_ctx_ps3_init(void *video_driver)
    psglMakeCurrent(ps3->gl_context, ps3->gl_device);
    psglResetCurrentContext();
 #endif
-
-   global->console.screen.pal_enable =
-      cellVideoOutGetResolutionAvailability(
-            CELL_VIDEO_OUT_PRIMARY, CELL_VIDEO_OUT_RESOLUTION_576,
-            CELL_VIDEO_OUT_ASPECT_AUTO, 0);
 
    return ps3;
 }

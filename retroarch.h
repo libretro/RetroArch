@@ -114,7 +114,20 @@ enum rarch_state_flags
    RARCH_FLAGS_HAS_SET_OVERLAY_PRESET       = (1 << 17),
    /* An unload asked for a cloud sync, which waits for the content's
     * deinit to finish. */
-   RARCH_FLAGS_CLOUD_SYNC_ON_DEINIT         = (1 << 18)
+   RARCH_FLAGS_CLOUD_SYNC_ON_DEINIT         = (1 << 18),
+   /* Initialisation failed; the menu goes to the dummy core rather
+    * than back to content on exit. */
+   RARCH_FLAGS_ERR_ON_INIT                  = (1 << 19),
+   RARCH_FLAGS_LAUNCHED_FROM_CLI            = (1 << 20),
+   RARCH_FLAGS_CLI_LOAD_MENU_ON_ERR         = (1 << 21),
+   /* Set on entry to retroarch_main_init (right after its setjmp
+    * is established) and cleared on every exit. retroarch_fail
+    * checks this flag before longjmp'ing - the jmp_buf is only
+    * valid while retroarch_main_init is on the stack; calling
+    * retroarch_fail from any other context (e.g. a reinit-time
+    * drivers_init invoked via command_event_reinit) with the flag
+    * clear means the longjmp would land in stale stack memory. */
+   RARCH_FLAGS_INIT_IN_PROGRESS             = (1 << 22)
 };
 
 bool retroarch_ctl(enum rarch_ctl_state state, void *data);
@@ -170,8 +183,6 @@ bool retroarch_main_init_drivers(bool staged,
       bool verbosity_enabled);
 
 bool retroarch_main_quit(void);
-
-global_t *global_get_ptr(void);
 
 content_state_t *content_state_get_ptr(void);
 

@@ -628,6 +628,7 @@ typedef struct settings
       bool video_waitable_swapchains;
       bool video_vfilter;
       bool video_soft_filter;
+      bool video_pal60_enable;
       bool video_smooth;
       bool video_ctx_scaling;
       bool video_force_aspect;
@@ -1614,7 +1615,7 @@ bool config_metal_arg_buffers_default(void);
 
 void config_set_defaults(settings_t *target);
 
-void config_load(void *data);
+void config_load(void);
 
 #if !defined(HAVE_DYNAMIC)
 /* Salamander config file contains a single

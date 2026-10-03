@@ -1,7 +1,6 @@
 #ifndef _RETROARCH_TYPES_H
 #define _RETROARCH_TYPES_H
 
-#include <setjmp.h>
 #include <boolean.h>
 #include <retro_inline.h>
 #include <retro_common_api.h>
@@ -65,6 +64,8 @@ enum rarch_ctl_state
    RARCH_CTL_UNSET_UPS_PREF,
    RARCH_CTL_UNSET_IPS_PREF,
    RARCH_CTL_UNSET_XDELTA_PREF,
+
+   RARCH_CTL_UNSET_LAUNCHED_FROM_CLI,
 
 #ifdef HAVE_CONFIGFILE
    /* Block config read */
@@ -249,42 +250,6 @@ struct rarch_main_wrap
    int argc;
    uint8_t flags;
 };
-
-/* All run-time- / command line flag-related globals go here. */
-enum global_flags
-{
-   GLOB_FLG_ERR_ON_INIT          = (1 << 0),
-   GLOB_FLG_LAUNCHED_FROM_CLI    = (1 << 1),
-   GLOB_FLG_CLI_LOAD_MENU_ON_ERR = (1 << 2),
-   /* Set on entry to retroarch_main_init (right after its setjmp
-    * is established) and cleared on every exit. retroarch_fail
-    * checks this flag before longjmp'ing - the error_sjlj_context
-    * jmp_buf is only valid while retroarch_main_init is on the
-    * stack; calling retroarch_fail from any other context (e.g.
-    * a reinit-time drivers_init invoked via command_event_reinit)
-    * with the flag clear means the longjmp would land in stale
-    * stack memory. */
-   GLOB_FLG_INIT_IN_PROGRESS     = (1 << 3)
-};
-
-typedef struct global
-{
-   jmp_buf error_sjlj_context; /* 4-byte alignment, put it right before long */
-
-   /* Settings and/or global state that is specific to
-    * a console-style implementation. */
-   struct
-   {
-      struct
-      {
-         bool pal_enable;
-         bool pal60_enable;
-      } screen;
-   } console;
-
-   char error_string[NAME_MAX_LENGTH];
-   uint8_t flags;
-} global_t;
 
 typedef struct content_file_override
 {

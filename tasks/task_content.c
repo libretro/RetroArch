@@ -3547,7 +3547,6 @@ bool task_push_load_content_with_new_core_from_companion_ui(
       retro_task_callback_t cb,
       void *user_data)
 {
-   global_t *global            = global_get_ptr();
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    content_state_t  *p_content = content_state_get_ptr();
 
@@ -3569,7 +3568,7 @@ bool task_push_load_content_with_new_core_from_companion_ui(
    command_event(CMD_EVENT_LOAD_CORE, NULL);
 #endif
 
-   global->flags &= ~GLOB_FLG_LAUNCHED_FROM_CLI;
+   retroarch_ctl(RARCH_CTL_UNSET_LAUNCHED_FROM_CLI, NULL);
 
    if (label)
       strlcpy(runloop_st->name.label, label, sizeof(runloop_st->name.label));

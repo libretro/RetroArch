@@ -51,6 +51,7 @@
 #include "input/common/wayland_common_webos.h"
 #endif
 
+#include <setjmp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -351,6 +352,10 @@ extern const bluetooth_driver_t *bluetooth_drivers[];
 /* MAIN GLOBAL VARIABLES */
 struct rarch_state
 {
+   /* retroarch_fail() lands here while retroarch_main_init runs
+    * (RARCH_FLAGS_INIT_IN_PROGRESS) */
+   jmp_buf error_sjlj_context;
+
    char *connect_host; /* Netplay hostname passed from CLI */
    char *connect_mitm_id; /* Netplay MITM address from CLI */
 
@@ -359,6 +364,7 @@ struct rarch_state
    unsigned perf_ptr_rarch;
    uint32_t flags;
 
+   char error_string[NAME_MAX_LENGTH];
    char launch_arguments[4096];
    char path_default_shader_preset[PATH_MAX_LENGTH];
    char path_content[PATH_MAX_LENGTH];
@@ -382,7 +388,6 @@ void libnx_apply_overclock(void);
 static struct rarch_state rarch_st        = {0};
 
 static access_state_t access_state_st     = {0};
-static struct global global_driver_st     = {0}; /* retro_time_t alignment */
 
 static void retro_frame_null(const void *data, unsigned width,
       unsigned height, size_t pitch) { }
@@ -2240,12 +2245,6 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
 access_state_t *access_state_get_ptr(void)
 {
    return &access_state_st;
-}
-
-/* GLOBAL POINTER GETTERS */
-global_t *global_get_ptr(void)
-{
-   return &global_driver_st;
 }
 
 uint32_t retroarch_get_flags(void)
@@ -4670,7 +4669,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_RELOAD_CONFIG:
-         config_load(global_get_ptr());
+         config_load();
          break;
       case CMD_EVENT_DSP_FILTER_INIT:
 #ifdef HAVE_DSP_FILTER
@@ -6409,7 +6408,6 @@ static void retroarch_override_setting_free_state(void)
 
 static void global_free(struct rarch_state *p_rarch)
 {
-   global_t            *global = NULL;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
 
    content_deinit();
@@ -6443,7 +6441,6 @@ static void global_free(struct rarch_state *p_rarch)
    runloop_st->current_core.flags &= ~(RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS
                                      | RETRO_CORE_FLAG_HAS_SET_SUBSYSTEMS);
 
-   global                                = global_get_ptr();
    path_clear_all();
    dir_clear_all();
 
@@ -6460,8 +6457,12 @@ static void global_free(struct rarch_state *p_rarch)
    *runloop_st->name.cheatfile           = '\0';
    *runloop_st->name.label               = '\0';
 
-   if (global)
-      memset(global, 0, sizeof(struct global));
+   p_rarch->flags                       &= ~(
+                          RARCH_FLAGS_ERR_ON_INIT
+                        | RARCH_FLAGS_LAUNCHED_FROM_CLI
+                        | RARCH_FLAGS_CLI_LOAD_MENU_ON_ERR
+                        | RARCH_FLAGS_INIT_IN_PROGRESS);
+   *p_rarch->error_string                = '\0';
    retroarch_override_setting_free_state();
 }
 
@@ -6562,7 +6563,7 @@ void main_exit(void *args)
 
    p_rarch->flags                  &= ~RARCH_FLAGS_HAS_SET_USERNAME;
    runloop_is_inited_clear();
-   global_get_ptr()->flags         &= ~GLOB_FLG_ERR_ON_INIT;
+   rarch_st.flags         &= ~RARCH_FLAGS_ERR_ON_INIT;
 #ifdef HAVE_CONFIGFILE
    p_rarch->flags                  &= ~RARCH_FLAGS_BLOCK_CONFIG_READ;
 #endif
@@ -7742,7 +7743,6 @@ void handle_dbscan_finished(retro_task_t *task,
  **/
 static bool retroarch_parse_input_and_config(
       struct rarch_state *p_rarch,
-      global_t *global,
       int argc, char *argv[])
 {
    unsigned i;
@@ -7892,7 +7892,7 @@ static bool retroarch_parse_input_and_config(
 #ifdef HAVE_CONFIGFILE
    runloop_st->flags              &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
 #endif
-   global->flags                  &= ~GLOB_FLG_CLI_LOAD_MENU_ON_ERR;
+   rarch_st.flags                  &= ~RARCH_FLAGS_CLI_LOAD_MENU_ON_ERR;
 
    /* Make sure we can call retroarch_parse_input several times ... */
    optind                          = 0;
@@ -8053,7 +8053,7 @@ static bool retroarch_parse_input_and_config(
 #if !defined(HAVE_DYNAMIC)
       config_load_file_salamander();
 #endif
-      config_load(global_get_ptr());
+      config_load();
       /* The network clients took their settings before the file was
        * read (the string fields point at the live buffers, the numeric
        * ones were copied); hand them the loaded values. */
@@ -8423,7 +8423,7 @@ static bool retroarch_parse_input_and_config(
 #endif
                break;
             case RA_OPT_LOAD_MENU_ON_ERROR:
-               global->flags |= GLOB_FLG_CLI_LOAD_MENU_ON_ERR;
+               rarch_st.flags |= RARCH_FLAGS_CLI_LOAD_MENU_ON_ERR;
                break;
             case 'e':
                {
@@ -8547,9 +8547,9 @@ static bool retroarch_parse_input_and_config(
    /* Update global 'content launched from command
     * line' status flag */
    if (cli_active && (cli_core_set || cli_content_set))
-      global->flags |=  (GLOB_FLG_LAUNCHED_FROM_CLI);
+      rarch_st.flags |=  (RARCH_FLAGS_LAUNCHED_FROM_CLI);
    else
-      global->flags &= ~(GLOB_FLG_LAUNCHED_FROM_CLI);
+      rarch_st.flags &= ~(RARCH_FLAGS_LAUNCHED_FROM_CLI);
 
    /* Copy SRM/state dirs used, so they can be reused on reentrancy. */
    if (retroarch_override_setting_is_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL) &&
@@ -8615,11 +8615,11 @@ static bool retroarch_core_info_savestate_probe(void)
 
 /* What a failed phase leaves behind: no core, no session, and the
  * jmp_buf retroarch_fail() would land in dead. */
-static bool retroarch_main_init_fail(global_t *global)
+static bool retroarch_main_init_fail(void)
 {
    command_event(CMD_EVENT_CORE_DEINIT, NULL);
    runloop_is_inited_clear();
-   global->flags &= ~GLOB_FLG_INIT_IN_PROGRESS;
+   rarch_st.flags &= ~RARCH_FLAGS_INIT_IN_PROGRESS;
    return false;
 }
 
@@ -8717,7 +8717,6 @@ bool retroarch_main_init_core(int argc, char *argv[],
    input_driver_state_t
       *input_st                  = input_state_get_ptr();
    settings_t *settings          = config_get_ptr();
-   global_t            *global   = global_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
    access_state_t *access_st     = access_state_get_ptr();
    bool accessibility_enable     = false;
@@ -8741,27 +8740,27 @@ bool retroarch_main_init_core(int argc, char *argv[],
       AUDIO_FLAGS_SET(audio_state_get_ptr(), AUDIO_FLAG_ACTIVE);
    }
 
-   if (setjmp(global->error_sjlj_context) > 0)
+   if (setjmp(rarch_st.error_sjlj_context) > 0)
    {
       RARCH_ERR("%s: \"%s\"\n",
             msg_hash_to_str(MSG_FATAL_ERROR_RECEIVED_IN),
-            global_get_ptr()->error_string);
-      return retroarch_main_init_fail(global);
+            rarch_st.error_string);
+      return retroarch_main_init_fail();
    }
 
    /* Mark error_sjlj_context as live. retroarch_fail checks this
     * before longjmp'ing; reinit-time driver_init failures that
     * reach retroarch_fail outside this function will log and
     * return rather than landing in a stale jmp_buf. */
-   global->flags |= GLOB_FLG_INIT_IN_PROGRESS;
+   rarch_st.flags |= RARCH_FLAGS_INIT_IN_PROGRESS;
 
-   global->flags |= GLOB_FLG_ERR_ON_INIT;
+   rarch_st.flags |= RARCH_FLAGS_ERR_ON_INIT;
 
    /* Have to initialise non-file logging once at the start... */
    retro_main_log_file_init(NULL, false);
 
    verbosity_enabled = retroarch_parse_input_and_config(p_rarch,
-         global_get_ptr(), argc, argv);
+         argc, argv);
 
 #if defined(HAVE_SSL) && defined(HAVE_NETWORKING)
    /* Apply the persisted TLS certificate-verification policy to the active
@@ -9012,8 +9011,8 @@ bool retroarch_main_init_core(int argc, char *argv[],
    {
 #ifdef HAVE_DYNAMIC
       /* Check if menu was active prior to core initialization */
-      if (   (!(global->flags & GLOB_FLG_LAUNCHED_FROM_CLI))
-          ||   (global->flags & GLOB_FLG_CLI_LOAD_MENU_ON_ERR)
+      if (   (!(rarch_st.flags & RARCH_FLAGS_LAUNCHED_FROM_CLI))
+          ||   (rarch_st.flags & RARCH_FLAGS_CLI_LOAD_MENU_ON_ERR)
 #ifdef HAVE_MENU
           ||  (menu_st->flags & MENU_ST_FLAG_ALIVE)
 #endif
@@ -9052,11 +9051,11 @@ bool retroarch_main_init_core(int argc, char *argv[],
          /* Attempt initializing dummy core */
          runloop_st->current_core_type = CORE_TYPE_DUMMY;
          if (!command_event(CMD_EVENT_CORE_INIT, &runloop_st->current_core_type))
-            return retroarch_main_init_fail(global);
+            return retroarch_main_init_fail();
       }
 #ifdef HAVE_DYNAMIC
       else /* Fall back to regular error handling */
-         return retroarch_main_init_fail(global);
+         return retroarch_main_init_fail();
 #endif
    }
 
@@ -9073,7 +9072,7 @@ bool retroarch_main_init_core(int argc, char *argv[],
          );
 #endif
    /* The jmp_buf dies with this frame; the next phase arms its own. */
-   global->flags &= ~GLOB_FLG_INIT_IN_PROGRESS;
+   rarch_st.flags &= ~RARCH_FLAGS_INIT_IN_PROGRESS;
    *verbosity     = verbosity_enabled;
    return true;
 }
@@ -9086,16 +9085,15 @@ bool retroarch_main_init_drivers(bool staged,
       *input_st                  = input_state_get_ptr();
    settings_t *settings          = config_get_ptr();
    recording_state_t *rec_st     = recording_state_get_ptr();
-   global_t            *global   = global_get_ptr();
 
-   if (setjmp(global->error_sjlj_context) > 0)
+   if (setjmp(rarch_st.error_sjlj_context) > 0)
    {
       RARCH_ERR("%s: \"%s\"\n",
             msg_hash_to_str(MSG_FATAL_ERROR_RECEIVED_IN),
-            global_get_ptr()->error_string);
-      return retroarch_main_init_fail(global);
+            rarch_st.error_string);
+      return retroarch_main_init_fail();
    }
-   global->flags |= GLOB_FLG_INIT_IN_PROGRESS;
+   rarch_st.flags |= RARCH_FLAGS_INIT_IN_PROGRESS;
 
    if (staged)
    {
@@ -9143,7 +9141,7 @@ bool retroarch_main_init_drivers(bool staged,
 
    command_event(CMD_EVENT_SET_PER_GAME_RESOLUTION, NULL);
 
-   global->flags                   &= ~GLOB_FLG_ERR_ON_INIT;
+   rarch_st.flags                   &= ~RARCH_FLAGS_ERR_ON_INIT;
    runloop_is_inited_set();
 
 #ifdef HAVE_DISCORD
@@ -9184,7 +9182,7 @@ bool retroarch_main_init_drivers(bool staged,
    game_ai_init();
 #endif
 
-   global->flags &= ~GLOB_FLG_INIT_IN_PROGRESS;
+   rarch_st.flags &= ~RARCH_FLAGS_INIT_IN_PROGRESS;
    return true;
 }
 
@@ -9450,6 +9448,9 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          break;
 #endif /* HAVE_XDELTA */
 #endif /* HAVE_PATCH */
+      case RARCH_CTL_UNSET_LAUNCHED_FROM_CLI:
+         p_rarch->flags &= ~RARCH_FLAGS_LAUNCHED_FROM_CLI;
+         break;
       case RARCH_CTL_IS_DUMMY_CORE:
          return runloop_st->current_core_type == CORE_TYPE_DUMMY;
       case RARCH_CTL_IS_CORE_LOADED:
@@ -9814,9 +9815,8 @@ size_t retroarch_get_capabilities(enum rarch_capabilities type,
 
 void retroarch_fail(int err_code, const char *err)
 {
-   global_t *global                = global_get_ptr();
-   strlcpy(global->error_string, err,
-         sizeof(global->error_string));
+   strlcpy(rarch_st.error_string, err,
+         sizeof(rarch_st.error_string));
 
    /* Only longjmp if retroarch_main_init's setjmp is still live.
     * Outside that scope (e.g. when drivers_init runs from
@@ -9833,8 +9833,8 @@ void retroarch_fail(int err_code, const char *err)
     * than crashing. The caller (drivers_init) will see the
     * subsystem fail to init and that subsystem's downstream code
     * is expected to NULL-check its driver pointers. */
-   if (global->flags & GLOB_FLG_INIT_IN_PROGRESS)
-      longjmp(global->error_sjlj_context, err_code);
+   if (rarch_st.flags & RARCH_FLAGS_INIT_IN_PROGRESS)
+      longjmp(rarch_st.error_sjlj_context, err_code);
 
    RARCH_ERR("[Core] retroarch_fail outside retroarch_main_init: %s\n",
          err);
@@ -9845,10 +9845,9 @@ bool should_quit_on_close(void)
 {
 #ifdef HAVE_MENU
    settings_t *settings   = config_get_ptr();
-   global_t   *global     = global_get_ptr();
    if (       ((settings->uints.quit_on_close_content ==
                QUIT_ON_CLOSE_CONTENT_CLI)
-            && (global->flags & GLOB_FLG_LAUNCHED_FROM_CLI))
+            && (rarch_st.flags & RARCH_FLAGS_LAUNCHED_FROM_CLI))
             || (settings->uints.quit_on_close_content ==
                QUIT_ON_CLOSE_CONTENT_ENABLED)
       )

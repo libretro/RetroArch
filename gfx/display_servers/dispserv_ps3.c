@@ -44,7 +44,6 @@ typedef CellVideoOutState ps3_video_state_t;
 #include "dispserv_ps3.h"
 #include "../../command.h"
 #include "../../configuration.h"
-#include "../../retroarch.h"
 #include "../../verbosity.h"
 
 /* Nothing to keep; any non-NULL pointer marks the server as up */
@@ -121,7 +120,6 @@ static bool ps3_display_server_set_resolution(void *data,
    int id;
    bool in_use;
    settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
 
    /* No dims is a refresh rate change on its own, which the video
     * output cannot make without changing the mode */
@@ -142,13 +140,6 @@ static bool ps3_display_server_set_resolution(void *data,
    settings->uints.video_fullscreen_y = VIDEO_SCALE_H(dims);
    if (in_use)
       return true;
-
-   /* PAL60 temporal conversion only applies to 576 (PSGL) */
-   if (dims != VIDEO_SCALE_PACK(720, 576))
-   {
-      global->console.screen.pal_enable   = false;
-      global->console.screen.pal60_enable = false;
-   }
 
    /* The output is configured at video init, with the frame buffers
     * sized for it */

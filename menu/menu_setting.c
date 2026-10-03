@@ -8416,7 +8416,7 @@ static const enum settings_list_type settings_list_build_order[] =
       SETTINGS_LIST_MANUAL_CONTENT_SCAN
    };
 
-static bool setting_append_list(settings_t *settings, global_t *global,
+static bool setting_append_list(settings_t *settings,
       enum settings_list_type type, rarch_setting_t **list,
       rarch_setting_info_t *list_info, const char *parent_group);
 
@@ -9966,13 +9966,21 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
 #endif
       case MENU_ENUM_LABEL_PAL60_ENABLE:
-         if (*setting->value.target.boolean && global_get_ptr()->console.screen.pal_enable)
-            rarch_cmd = CMD_EVENT_REINIT;
-         else
          {
-            *setting->value.target.boolean = false;
-            if (setting->actions->change)
-               setting->actions->change(setting);
+            /* Only 720x576 output converts */
+            unsigned dims = 0;
+            char desc[64];
+            if (     *setting->value.target.boolean
+                  && video_driver_get_video_output_size(&dims, desc,
+                     sizeof(desc))
+                  && dims == VIDEO_SCALE_PACK(720, 576))
+               rarch_cmd = CMD_EVENT_REINIT;
+            else
+            {
+               *setting->value.target.boolean = false;
+               if (setting->actions->change)
+                  setting->actions->change(setting);
+            }
          }
          break;
       case MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE:
@@ -12037,7 +12045,7 @@ static const setting_desc_t vid_desc_1[] = {
 #include "../settings/settings_def_video_monitor_index.h"
 };
 
-#if defined(GEKKO) || defined(_XBOX1) || defined(_XBOX360)
+#if defined(GEKKO) || defined(_XBOX1) || defined(_XBOX360) || defined(HAVE_PSGL)
 static const setting_desc_t vid_console_desc[] = {
 /* GENERATED: rows come from settings_def_video_console_screen.h in order. */
 #include "../settings/settings_def_video_console_screen.h"
@@ -13455,7 +13463,7 @@ static const setting_desc_t smbclient_desc_1[] = {
  * registry entry. */
 
 static void settings_build_main_menu(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -13464,7 +13472,7 @@ static void settings_build_main_menu(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       START_GROUP(list, list_info, &group_info, MENU_ENUM_LABEL_MAIN_MENU_STR, parent_group);
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info, MENU_ENUM_LABEL_MAIN_MENU);
@@ -13595,7 +13603,7 @@ static void settings_build_main_menu(
 }
 
 static void settings_build_drivers(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -13603,7 +13611,7 @@ static void settings_build_drivers(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
 
          unsigned i, j = 0;
@@ -13809,7 +13817,7 @@ static void settings_build_drivers(
 }
 
 static void settings_build_core(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -13817,7 +13825,7 @@ static void settings_build_core(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
 
          unsigned i, listing = 0;
@@ -13950,7 +13958,7 @@ static void settings_build_core(
 }
 
 static void settings_build_configuration(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -13958,7 +13966,7 @@ static void settings_build_configuration(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
 
          uint8_t i, listing = 0;
@@ -14078,7 +14086,7 @@ static void settings_build_configuration(
 }
 
 static void settings_build_logging(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -14086,7 +14094,7 @@ static void settings_build_logging(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
 
          bool *tmp_b = NULL;
@@ -14149,7 +14157,7 @@ ADD_DESC(logging_desc_0);
 }
 
 static void settings_build_saving(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -14157,7 +14165,7 @@ static void settings_build_saving(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
 
          uint8_t i, listing = 0;
@@ -14291,7 +14299,7 @@ static void settings_build_saving(
 }
 
 static void settings_build_cloud_sync(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -14299,7 +14307,7 @@ static void settings_build_cloud_sync(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
 #ifdef HAVE_CLOUDSYNC
       GROUP_STATE(MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS, MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS);
@@ -14337,7 +14345,7 @@ static void settings_build_cloud_sync(
 
 
 static void settings_build_rewind(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -14345,7 +14353,7 @@ static void settings_build_rewind(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS), parent_group);
 
@@ -14379,7 +14387,7 @@ static void settings_build_rewind(
 
 
 static void settings_build_cheat_details(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -14387,7 +14395,7 @@ static void settings_build_cheat_details(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
 #ifdef HAVE_CHEATS
       {
@@ -14647,7 +14655,7 @@ static void settings_build_cheat_details(
 }
 
 static void settings_build_cheat_search(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -14655,7 +14663,7 @@ static void settings_build_cheat_search(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
 #ifdef HAVE_CHEATS
       if (!cheat_manager_state.cheats)
@@ -14883,7 +14891,7 @@ static void settings_build_cheat_search(
 }
 
 static void settings_build_video(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -14891,7 +14899,7 @@ static void settings_build_video(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
 
          START_GROUP(list, list_info, &group_info,
@@ -14910,7 +14918,7 @@ static void settings_build_video(
          START_SUB_GROUP(list, list_info, "Platform-specific", &group_info,
                &subgroup_info, parent_group);
 
-#if defined(GEKKO) || defined(_XBOX1) || defined(_XBOX360)
+#if defined(GEKKO) || defined(_XBOX1) || defined(_XBOX360) || defined(HAVE_PSGL)
             ADD_DESC(vid_console_desc);
 #endif
 
@@ -15291,7 +15299,7 @@ static void settings_build_video(
 
 
 static void settings_build_audio(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -15299,7 +15307,7 @@ static void settings_build_audio(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       START_GROUP(list, list_info, &group_info,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS), parent_group);
@@ -15416,7 +15424,7 @@ ADD_DESC(audio_skew_desc);
 
 #ifdef HAVE_MICROPHONE
 static void settings_build_microphone(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -15424,7 +15432,7 @@ static void settings_build_microphone(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       START_GROUP(list, list_info, &group_info,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS), parent_group);
@@ -15473,7 +15481,7 @@ static void settings_build_microphone(
 #endif
 
 static void settings_build_input(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -15481,7 +15489,7 @@ static void settings_build_input(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
 
 
@@ -15730,7 +15738,7 @@ static void settings_build_input(
 
 
 static void settings_build_recording(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -15739,7 +15747,7 @@ static void settings_build_recording(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
          GROUP_STATE(MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS, MENU_ENUM_LABEL_RECORDING_SETTINGS);
 
@@ -15813,7 +15821,7 @@ static void settings_build_recording(
 }
 
 static void settings_build_input_hotkey(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -15821,7 +15829,7 @@ static void settings_build_input_hotkey(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
 
          unsigned i;
@@ -15862,7 +15870,7 @@ static void settings_build_input_hotkey(
 }
 
 static void settings_build_frame_throttling(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -15870,7 +15878,7 @@ static void settings_build_frame_throttling(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       GROUP_STATE(MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS, MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS);
 
@@ -15931,7 +15939,7 @@ ADD_DESC(frame_throttli_desc_2);
 }
 
 static void settings_build_onscreen_notifications(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -15939,7 +15947,7 @@ static void settings_build_onscreen_notifications(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       START_GROUP(list, list_info, &group_info,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS),
@@ -15987,7 +15995,7 @@ static void settings_build_onscreen_notifications(
 }
 
 static void settings_build_overlay(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -15995,7 +16003,7 @@ static void settings_build_overlay(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
 #ifdef HAVE_OVERLAY
       START_GROUP(list, list_info, &group_info,
@@ -16051,7 +16059,7 @@ static void settings_build_overlay(
 }
 
 static void settings_build_osk_overlay(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -16059,7 +16067,7 @@ static void settings_build_osk_overlay(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
 #ifdef HAVE_OVERLAY
       START_GROUP(list, list_info, &group_info,
@@ -16080,7 +16088,7 @@ static void settings_build_osk_overlay(
 
 
 static void settings_build_menu(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -16088,7 +16096,7 @@ static void settings_build_menu(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       START_GROUP(list, list_info, &group_info,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MENU_SETTINGS),
@@ -16430,7 +16438,7 @@ static void settings_build_menu(
 
 
 static void settings_build_power_management(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -16438,7 +16446,7 @@ static void settings_build_power_management(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       GROUP_STATE(MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS, MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS);
 
@@ -16461,7 +16469,7 @@ static void settings_build_power_management(
 
 
 static void settings_build_ai_service(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -16469,7 +16477,7 @@ static void settings_build_ai_service(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
 #ifdef HAVE_TRANSLATE
       GROUP_STATE(MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS, MENU_ENUM_LABEL_AI_SERVICE_SETTINGS);
@@ -16519,7 +16527,7 @@ static void settings_build_ai_service(
 }
 
 static void settings_build_user_interface(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -16527,7 +16535,7 @@ static void settings_build_user_interface(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       GROUP_STATE(MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS, MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS);
 
@@ -16669,7 +16677,7 @@ ADD_DESC(ui_desc_13);
 }
 
 static void settings_build_playlist(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -16677,7 +16685,7 @@ static void settings_build_playlist(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       START_GROUP(list, list_info, &group_info,
             MENU_ENUM_LABEL_PLAYLIST_SETTINGS_BEGIN_STR,
@@ -16722,7 +16730,7 @@ static void settings_build_playlist(
 }
 
 static void settings_build_cheevos(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -16730,7 +16738,7 @@ static void settings_build_cheevos(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
 #ifdef HAVE_CHEEVOS
       GROUP_STATE(MENU_ENUM_LABEL_VALUE_CHEEVOS_SETTINGS, MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS);
@@ -16780,7 +16788,7 @@ static void settings_build_cheevos(
 }
 
 static void settings_build_cheevos_appearance(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -16788,7 +16796,7 @@ static void settings_build_cheevos_appearance(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
 #ifdef HAVE_CHEEVOS
       GROUP_STATE(MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS, MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS);
@@ -16868,7 +16876,7 @@ static void settings_build_cheevos_appearance(
 }
 
 static void settings_build_cheevos_visibility(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -16876,7 +16884,7 @@ static void settings_build_cheevos_visibility(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
 #ifdef HAVE_CHEEVOS
       GROUP_STATE(MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS, MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_SETTINGS);
@@ -16908,7 +16916,7 @@ static void settings_build_cheevos_visibility(
 }
 
 static void settings_build_core_updater(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -16916,7 +16924,7 @@ static void settings_build_core_updater(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       GROUP_STATE(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS, MENU_ENUM_LABEL_UPDATER_SETTINGS);
 #ifdef HAVE_NETWORKING
@@ -17001,7 +17009,7 @@ static void settings_build_core_updater(
 }
 
 static void settings_build_netplay(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -17009,7 +17017,7 @@ static void settings_build_netplay(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       START_GROUP(list, list_info, &group_info,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS),
@@ -17212,7 +17220,7 @@ static void settings_build_netplay(
 }
 
 static void settings_build_lakka_services(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -17220,7 +17228,7 @@ static void settings_build_lakka_services(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
 
 #if defined(HAVE_LAKKA)
@@ -17344,7 +17352,7 @@ static void settings_build_lakka_services(
 
 #ifdef HAVE_LAKKA_SWITCH
 static void settings_build_lakka_switch_options(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -17352,7 +17360,7 @@ static void settings_build_lakka_switch_options(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
 
          START_GROUP(list, list_info, &group_info,
@@ -17419,7 +17427,7 @@ static void settings_build_lakka_switch_options(
 #endif
 
 static void settings_build_user(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -17427,7 +17435,7 @@ static void settings_build_user(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       GROUP_STATE(MENU_ENUM_LABEL_VALUE_USER_SETTINGS, MENU_ENUM_LABEL_USER_SETTINGS);
 
@@ -17472,7 +17480,7 @@ static void settings_build_user(
 }
 
 static void settings_build_user_accounts(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -17480,7 +17488,7 @@ static void settings_build_user_accounts(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       GROUP_STATE(MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST_END, MENU_ENUM_LABEL_SETTINGS);
 
@@ -17497,7 +17505,7 @@ static void settings_build_user_accounts(
 }
 
 static void settings_build_user_accounts_youtube(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -17505,7 +17513,7 @@ static void settings_build_user_accounts_youtube(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       GROUP_STATE(MENU_ENUM_LABEL_VALUE_ACCOUNTS_YOUTUBE, MENU_ENUM_LABEL_SETTINGS);
 
@@ -17531,7 +17539,7 @@ static void settings_build_user_accounts_youtube(
 }
 
 static void settings_build_user_accounts_twitch(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -17539,7 +17547,7 @@ static void settings_build_user_accounts_twitch(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       GROUP_STATE(MENU_ENUM_LABEL_VALUE_ACCOUNTS_TWITCH, MENU_ENUM_LABEL_SETTINGS);
 
@@ -17564,7 +17572,7 @@ static void settings_build_user_accounts_twitch(
 }
 
 static void settings_build_user_accounts_facebook(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -17572,7 +17580,7 @@ static void settings_build_user_accounts_facebook(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       GROUP_STATE(MENU_ENUM_LABEL_VALUE_ACCOUNTS_FACEBOOK, MENU_ENUM_LABEL_SETTINGS);
 
@@ -17597,7 +17605,7 @@ static void settings_build_user_accounts_facebook(
 }
 
 static void settings_build_user_accounts_kick(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -17605,7 +17613,7 @@ static void settings_build_user_accounts_kick(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       GROUP_STATE(MENU_ENUM_LABEL_VALUE_ACCOUNTS_KICK, MENU_ENUM_LABEL_SETTINGS);
 
@@ -17631,7 +17639,7 @@ static void settings_build_user_accounts_kick(
 
 
 static void settings_build_directory(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -17640,7 +17648,7 @@ static void settings_build_directory(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       START_GROUP(list, list_info, &group_info,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS),
@@ -17727,7 +17735,7 @@ static void settings_build_directory(
 }
 
 static void settings_build_privacy(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -17735,7 +17743,7 @@ static void settings_build_privacy(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       START_GROUP(list, list_info, &group_info,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS), parent_group);
@@ -17763,7 +17771,7 @@ static void settings_build_privacy(
 }
 
 static void settings_build_midi(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -17771,7 +17779,7 @@ static void settings_build_midi(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       START_GROUP(list, list_info, &group_info,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MIDI_SETTINGS), parent_group);
@@ -17792,7 +17800,7 @@ static void settings_build_midi(
 }
 
 static void settings_build_manual_content_scan(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -17800,7 +17808,7 @@ static void settings_build_manual_content_scan(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       START_GROUP(list, list_info, &group_info,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST), parent_group);
@@ -17974,7 +17982,7 @@ static void settings_build_manual_content_scan(
 
 #ifdef HAVE_SMBCLIENT
 static void settings_build_smbclient(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -17982,7 +17990,7 @@ static void settings_build_smbclient(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   (void)settings; (void)group_info; (void)subgroup_info;
    {
       GROUP_STATE(MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS, MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS);
 
@@ -18099,7 +18107,7 @@ static void settings_build_smbclient(
 /* Descriptor holdouts: the strings take free input, the uints are
  * plain ranges. */
 static void settings_build_nfsclient(
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -18107,7 +18115,6 @@ static void settings_build_nfsclient(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)global;
    {
       GROUP_STATE(MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SETTINGS, MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS);
       NFS_STRING(nfs_server, NFS_CLIENT_SERVER);
@@ -18132,7 +18139,7 @@ static void settings_build_nfsclient(
 typedef struct settings_build_entry
 {
    enum settings_list_type type;
-   void (*build)(settings_t *settings, global_t *global,
+   void (*build)(settings_t *settings,
          rarch_setting_t **list, rarch_setting_info_t *list_info,
          const char *parent_group);
    /* Data-driven groups: when build is NULL the generic builder runs
@@ -18146,7 +18153,7 @@ typedef struct settings_build_entry
 
 static void settings_build_desc_group(
       const settings_build_entry_t *e,
-      settings_t *settings, global_t *global,
+      settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
       const char *parent_group)
 {
@@ -18154,7 +18161,6 @@ static void settings_build_desc_group(
    rarch_setting_group_info_t subgroup_info;
    group_info.name    = NULL;
    subgroup_info.name = NULL;
-   (void)global;
    START_GROUP(list, list_info, &group_info,
          msg_hash_to_str(e->value_label), parent_group);
    if (e->idx_label)
@@ -18302,7 +18308,6 @@ static const settings_build_entry_t settings_build_registry[] = {
 
 static bool setting_append_list(
       settings_t *settings,
-      global_t *global,
       enum settings_list_type type,
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -18314,11 +18319,11 @@ static bool setting_append_list(
       if (settings_build_registry[i].type != type)
          continue;
       if (settings_build_registry[i].build)
-         settings_build_registry[i].build(settings, global,
+         settings_build_registry[i].build(settings,
                list, list_info, parent_group);
       else
          settings_build_desc_group(&settings_build_registry[i],
-               settings, global, list, list_info, parent_group);
+               settings, list, list_info, parent_group);
       return true;
    }
    return true;
@@ -18394,7 +18399,6 @@ void menu_setting_free(rarch_setting_t *setting)
 static rarch_setting_t *settings_lazy_get(unsigned k)
 {
    settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
    rarch_setting_t *sl       = NULL;
    rarch_setting_t **lp      = NULL;
    rarch_setting_info_t li;
@@ -18412,7 +18416,7 @@ static rarch_setting_t *settings_lazy_get(unsigned k)
    {
       MENU_SETTING_INITIALIZE((&sl)[0], j);
    }
-   if (!setting_append_list(settings, global,
+   if (!setting_append_list(settings,
          settings_list_build_order[k], &sl, &li,
          MENU_ENUM_LABEL_MAIN_MENU_STR))
    {
@@ -18512,7 +18516,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { vid_desc_0, (uint16_t)ARRAY_SIZE(vid_desc_0) },
 #endif
    { vid_desc_1, (uint16_t)ARRAY_SIZE(vid_desc_1) },
-#if defined(GEKKO) || defined(_XBOX1) || defined(_XBOX360)
+#if defined(GEKKO) || defined(_XBOX1) || defined(_XBOX360) || defined(HAVE_PSGL)
    { vid_console_desc, (uint16_t)ARRAY_SIZE(vid_console_desc) },
 #endif
 #if defined(ANDROID) || TARGET_OS_IOS
@@ -18998,7 +19002,6 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
    unsigned i;
    rarch_setting_t* resized_list        = NULL;
       settings_t *settings                 = config_get_ptr();
-   global_t   *global                   = global_get_ptr();
    const char *root                     = NULL;
    rarch_setting_t **list_ptr           = NULL;
    rarch_setting_t *list                = (rarch_setting_t*)
@@ -19017,7 +19020,7 @@ static rarch_setting_t *menu_setting_new_internal(rarch_setting_info_t *list_inf
    for (i = 0; i < ARRAY_SIZE(settings_list_build_order); i++)
    {
       if (!setting_append_list(
-               settings, global,
+               settings,
                settings_list_build_order[i], &list, list_info, root))
       {
          free(list);

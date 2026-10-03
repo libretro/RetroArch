@@ -34592,10 +34592,6 @@ MSG_HASH(
    "Enabling Linux GameMode can improve latency, fix audio crackling issues and maximize overall performance by automatically configuring your CPU and GPU for best performance.\nThe GameMode software needs to be installed for this to work. See https://github.com/FeralInteractive/gamemode for information on how to install GameMode."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   "Use PAL60 Mode"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
    "Restart RetroArch"
    )

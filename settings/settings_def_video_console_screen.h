@@ -1,13 +1,14 @@
-/* Single-source definitions: console screen filters and gamma.
+/* Single-source definitions: console screen filters, gamma and PS3
+ * PAL60.
  * Grammar identical to settings_def_video_sync.h plus S_FLOAT and
  * the _NS no-sublabel variants; the descriptor argument span
  * matches SDESC_<kind>_ROW; row order is menu display order;
  * h2json.py parses these rows for the Crowdin source upload. */
 
 /* Descriptor rows follow the consoles that have each setting; the
- * string tables always carry them via the strings pass.  The config
+ * string tables always carry them via the strings pass.  Most config
  * keys differ from the label strings, so the configuration.c rows
- * stay literal. */
+ * stay literal for all of them. */
 #ifndef SETTINGS_DEF_CONFIG_PASS
 #if defined(GEKKO) || defined(_XBOX360) || defined(SETTINGS_DEF_STRINGS_PASS)
 S_UINT_NS(video_gamma, VIDEO_GAMMA,
@@ -20,6 +21,12 @@ S_BOOL_NS(video_soft_filter, VIDEO_SOFT_FILTER,
       "soft_filter",
       DEFAULT_SOFT_FILTER, SD_FLAG_NONE, 0, CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
       "Soft Filter")
+#endif
+#if defined(HAVE_PSGL) || defined(SETTINGS_DEF_STRINGS_PASS)
+S_BOOL_NS(video_pal60_enable, PAL60_ENABLE,
+      "pal60_enable",
+      DEFAULT_PAL60_ENABLE, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      "Use PAL60 Mode")
 #endif
 #if defined(_XBOX1) || defined(SETTINGS_DEF_STRINGS_PASS)
 S_UINT_NS(video_flicker_filter, VIDEO_FILTER_FLICKER,

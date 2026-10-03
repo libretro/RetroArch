@@ -27856,7 +27856,6 @@ enum msg_hash_enums
 #undef SETTINGS_DEF_ENUM_PASS
    MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
    MENU_LABEL(VIDEO_FILTER_REMOVE),
-   MENU_LABEL(PAL60_ENABLE),
 
 
    /* GENERATED REGION: user directories group enum rows (see settings/settings_def_dir_user.h). */

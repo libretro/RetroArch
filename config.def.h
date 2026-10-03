@@ -251,6 +251,9 @@
  * video trap filter). */
 #define DEFAULT_SOFT_FILTER false
 
+/* PS3: 720x576 output converted to 60 Hz. */
+#define DEFAULT_PAL60_ENABLE false
+
 /* Xbox: flicker filter strength, 0 (off) to 5. */
 #define DEFAULT_FLICKER_FILTER 0
 

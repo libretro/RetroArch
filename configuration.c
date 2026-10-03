@@ -1016,7 +1016,7 @@ struct config_path_setting
 
 /* Forward declarations */
 #ifdef HAVE_CONFIGFILE
-static void config_parse_file(global_t *global);
+static void config_parse_file(void);
 static size_t config_get_credentials_path(char *s, size_t len);
 static bool config_save_credentials(
       config_file_t *main_conf,
@@ -2827,6 +2827,9 @@ static struct config_bool_setting *populate_settings_bool(
 #undef S_UINT_AT_EX_NS_H
    SETTING_BOOL("video_scanline_sync",           &settings->bools.video_scanline_sync, true, DEFAULT_SCANLINE_SYNC, false);
    SETTING_BOOL("video_notch_write_over_enable", &settings->bools.video_notch_write_over_enable, true, DEFAULT_NOTCH_WRITE_OVER_ENABLE, false);
+#ifdef HAVE_PSGL
+   SETTING_BOOL("pal60_enable",                  &settings->bools.video_pal60_enable, true, DEFAULT_PAL60_ENABLE, false);
+#endif
 #if defined(_XBOX1) || defined(HW_RVL)
    SETTING_BOOL("soft_filter_enable",            &settings->bools.video_soft_filter, true, DEFAULT_SOFT_FILTER, false);
 #endif
@@ -6325,12 +6328,11 @@ void config_set_defaults(settings_t *target)
  * Loads a config file and reads all the values into memory.
  *
  */
-void config_load(void *data)
+void config_load(void)
 {
-   global_t *global = (global_t*)data;
    config_set_defaults(config_st);
 #ifdef HAVE_CONFIGFILE
-   config_parse_file(global);
+   config_parse_file();
 #endif
 }
 
@@ -6633,8 +6635,7 @@ static void config_sanitize_turbo_binds(settings_t *settings)
  * Loads a config file and reads all the values into memory.
  *
  */
-static bool config_load_file(global_t *global,
-      const char *path, settings_t *settings)
+static bool config_load_file(const char *path, settings_t *settings)
 {
    unsigned i;
    char tmp_str[PATH_MAX_LENGTH];
@@ -7799,7 +7800,7 @@ bool config_load_override(void *data)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
 
-   if (!config_load_file(global_get_ptr(), path_get(RARCH_PATH_CONFIG), settings))
+   if (!config_load_file(path_get(RARCH_PATH_CONFIG), settings))
       return false;
 
    a = path_get(RARCH_PATH_CONFIG_OVERRIDE);
@@ -7844,7 +7845,7 @@ bool config_load_override_file(const char *config_path)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
 
-   if (!config_load_file(global_get_ptr(), path_get(RARCH_PATH_CONFIG), settings))
+   if (!config_load_file(path_get(RARCH_PATH_CONFIG), settings))
       return false;
 
    if (settings->bools.notification_show_config_override_load)
@@ -7984,7 +7985,7 @@ bool config_unload_override(void)
          input_autoconf_state_restore(&bkp);
    }
 
-   if (!config_load_file(global_get_ptr(),
+   if (!config_load_file(
             path_get(RARCH_PATH_CONFIG), config_st))
       return false;
 
@@ -8169,11 +8170,11 @@ success:
  * Loads a config file and reads all the values into memory.
  *
  */
-static void config_parse_file(global_t *global)
+static void config_parse_file(void)
 {
    const char *config_path = path_get(RARCH_PATH_CONFIG);
 
-   if (!config_load_file(global, config_path, config_st))
+   if (!config_load_file(config_path, config_st))
    {
       RARCH_ERR("[Config] Config not found at: \"%s\".\n",
             config_path);
@@ -9822,7 +9823,7 @@ int8_t config_save_overrides(enum override_type type,
    memcpy(input_override_binds, input_config_binds, sizeof(input_config_binds));
 
    /* Load the original config file in memory */
-   config_load_file(global_get_ptr(),
+   config_load_file(
          "without-overrides", settings);
 
    bool_settings       = populate_settings_bool(settings,   &bool_settings_size);

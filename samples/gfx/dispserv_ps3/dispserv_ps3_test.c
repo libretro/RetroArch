@@ -95,11 +95,9 @@ int32_t videoGetResolutionAvailability(uint32_t videoOut, uint32_t resolutionId,
 
 /* ---- stubbed RetroArch ---- */
 
-static global_t   g_global;
 static settings_t g_settings;
 static unsigned   reinits;
 
-global_t   *global_get_ptr(void) { return &g_global; }
 settings_t *config_get_ptr(void) { return &g_settings; }
 
 static void store(unsigned dims)

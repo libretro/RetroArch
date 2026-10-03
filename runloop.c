@@ -8683,7 +8683,7 @@ int runloop_iterate(void)
    switch ((enum runloop_state_enum)runloop_check_state(
             input_st, audio_st, video_st,
             uico_st,
-            ((global_get_ptr()->flags & GLOB_FLG_ERR_ON_INIT) > 0),
+            ((retroarch_get_flags() & RARCH_FLAGS_ERR_ON_INIT) > 0),
             settings, current_time, netplay_allow_pause,
             netplay_allow_timeskip))
    {
