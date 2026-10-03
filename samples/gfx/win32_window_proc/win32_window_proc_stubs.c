@@ -68,6 +68,7 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)   { return ""; }
 void RARCH_LOG(const char *fmt, ...)  { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 void RARCH_ERR(const char *fmt, ...)  { (void)fmt; }
+void RARCH_DBG(const char *fmt, ...)  { (void)fmt; }
 
 /* ---- input ---- */
 volatile bool g_dinput_enum_inflight = false;
