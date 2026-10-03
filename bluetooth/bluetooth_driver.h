@@ -38,7 +38,13 @@ typedef struct bluetooth_driver
 
    void (*free)(void *data);
 
-   void (*scan)(void *data);
+   /* A scan is two calls, BLUETOOTH_SCAN_WINDOW_US apart: begin
+    * starts discovery and returns, end stops it and reads what was
+    * found. Neither waits out the window; whoever drives the scan
+    * does, without holding a thread (the scan task reschedules
+    * itself). end is always called once after a begin. */
+   void (*scan_begin)(void *data);
+   void (*scan_end)(void *data);
    void (*get_devices)(void *data, struct string_list *list);
    bool (*device_is_connected)(void *data, unsigned i);
    void (*device_get_sublabel)(void *data, char *s, unsigned i, size_t len);
@@ -69,7 +75,14 @@ typedef struct
  **/
 const char* config_get_bluetooth_driver_options(void);
 
-void driver_bluetooth_scan(void);
+/* How long discovery runs between scan_begin and scan_end.
+ * Overridable for tests. */
+#ifndef BLUETOOTH_SCAN_WINDOW_US
+#define BLUETOOTH_SCAN_WINDOW_US 10000000
+#endif
+
+void driver_bluetooth_scan_begin(void);
+void driver_bluetooth_scan_end(void);
 
 void driver_bluetooth_get_devices(struct string_list *list);
 

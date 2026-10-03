@@ -42,6 +42,8 @@
 #include <gfx/video_frame.h>
 #include <string/stdstring.h>
 
+#include <encodings/utf.h>
+
 #include "../font_driver.h"
 #include "../../verbosity.h"
 
@@ -78,8 +80,8 @@ typedef struct omapfb_data
   int fd;
   int num_pages;
   unsigned fb_framesize;
-  /* native screen size */
-  unsigned nat_w, nat_h;
+  /* native screen size, VIDEO_SCALE_PACK's layout */
+  unsigned nat_dims;
   /* bytes per pixel */
   unsigned bpp;
   bool sync;
@@ -286,8 +288,7 @@ static int omapfb_detect_screen(omapfb_data_t *pdata)
    RARCH_LOG("[Omap] Detected %dx%d '%s' (%d) display attached to fb %d and overlay %d.\n",
          w, h, display_name, display_id, fb_id, overlay_id);
 
-   pdata->nat_w = w;
-   pdata->nat_h = h;
+   pdata->nat_dims = VIDEO_SCALE_PACK(w, h);
 
    return 0;
 }
@@ -496,8 +497,10 @@ static int omapfb_setup_screeninfo(omapfb_data_t *pdata, int width, int height)
 
 static float omapfb_scaling(omapfb_data_t *pdata, int width, int height)
 {
-   const float w_factor = (float)pdata->nat_w / (float)width;
-   const float h_factor = (float)pdata->nat_h / (float)height;
+   const float w_factor = (float)VIDEO_SCALE_W(pdata->nat_dims)
+      / (float)width;
+   const float h_factor = (float)VIDEO_SCALE_H(pdata->nat_dims)
+      / (float)height;
 
    return (w_factor < h_factor ? w_factor : h_factor);
 }
@@ -512,8 +515,8 @@ static int omapfb_setup_plane(omapfb_data_t *pdata, int width, int height)
 
    RARCH_LOG("[Omap] Scaling %dx%d to %dx%d.\n", width, height, w, h);
 
-   x = pdata->nat_w / 2 - w / 2;
-   y = pdata->nat_h / 2 - h / 2;
+   x = (int)VIDEO_SCALE_W(pdata->nat_dims) / 2 - w / 2;
+   y = (int)VIDEO_SCALE_H(pdata->nat_dims) / 2 - h / 2;
 
    if (width * height * pdata->bpp * pdata->num_pages > pdata->current_state->mi.size)
    {
@@ -783,9 +786,8 @@ typedef struct omap_video
 
    unsigned bytes_per_pixel;
 
-   /* current dimensions */
-   unsigned width;
-   unsigned height;
+   /* current dimensions, VIDEO_SCALE_PACK's layout */
+   unsigned dims;
 
    struct
    {
@@ -833,6 +835,14 @@ static void omap_init_font(omap_video_t *vid)
       RARCH_ERR("[Omap] Font init failed.\n");
       return;
    }
+   /* The atlas may grow when a message needs more glyphs than it holds;
+    * the glyphs are blitted from it in memory, so there is no texture
+    * to make again */
+   {
+      struct font_atlas *grow = vid->font_driver->get_atlas(vid->font);
+      grow->max_width  = 2048;
+      grow->max_height = 2048;
+   }
 
    r = msg_color_r * 255;
    g = msg_color_g * 255;
@@ -853,74 +863,89 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
    settings_t *settings = config_get_ptr();
    float msg_pos_x      = settings->floats.video_msg_pos_x;
    float msg_pos_y      = settings->floats.video_msg_pos_y;
-   int msg_base_x       = msg_pos_x * vid->width;
-   int msg_base_y       = (1.0 - msg_pos_y) * vid->height;
+   unsigned vid_width   = VIDEO_SCALE_W(vid->dims);
+   unsigned vid_height  = VIDEO_SCALE_H(vid->dims);
+   int msg_base_x       = msg_pos_x * vid_width;
+   int msg_base_y       = (1.0 - msg_pos_y) * vid_height;
 
    if (!vid->font)
       return;
 
    atlas = vid->font_driver->get_atlas(vid->font);
 
-   for (; *msg; msg++)
    {
-      int base_x, base_y;
-      int glyph_width, glyph_height;
-      int max_width, max_height;
-      const uint8_t *src = NULL;
-      const struct font_glyph *glyph =
-         vid->font_driver->get_glyph(vid->font, (uint8_t)*msg);
+      const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                             = vid->font_driver->get_glyph;
+      void *font_data                        = vid->font;
+      const struct font_glyph *glyph_q       = get_glyph(font_data, '?');
+      struct font_line_metrics *line_metrics = NULL;
+      size_t msg_len                         = strlen(msg);
+      int line_h                             = 0;
+      int line_x                             = msg_base_x;
+      int line_y                             = msg_base_y;
 
-      if (!glyph)
-         continue;
+      vid->font_driver->get_line_metrics(font_data, &line_metrics);
+      if (line_metrics)
+         line_h = (int)line_metrics->height;
 
-      base_x               = msg_base_x + glyph->draw_offset_x;
-      base_y               = msg_base_y + glyph->draw_offset_y;
-      max_width            = vid->width - base_x;
-      max_height           = vid->height - base_y;
-
-      glyph_width          = glyph->width;
-      glyph_height         = glyph->height;
-
-      src                  = atlas->buffer + glyph->atlas_offset_x +
-         glyph->atlas_offset_y * atlas->width;
-
-      if (base_x < 0)
-      {
-         src         -= base_x;
-         glyph_width += base_x;
-         base_x       = 0;
-      }
-
-      if (base_y < 0)
-      {
-         src          -= base_y * (int)atlas->width;
-         glyph_height += base_y;
-         base_y        = 0;
-      }
-
-      if (max_width <= 0 || max_height <= 0)
-         continue;
-
-      if (glyph_width > max_width)
-         glyph_width = max_width;
-      if (glyph_height > max_height)
-         glyph_height = max_height;
-
-      if (vid->bytes_per_pixel == 2)
-      {
-         omapfb_blend_glyph_rgb565(vid->omap, src, vid->font_rgb,
-               glyph_width, glyph_height,
-               atlas->width, base_x, base_y);
-      }
-      else
-      {
-         omapfb_blend_glyph_argb8888(vid->omap, src, vid->font_rgb,
-               glyph_width, glyph_height,
-               atlas->width, base_x, base_y);
-      }
-
-      msg_base_x += glyph->advance_x;
-      msg_base_y += glyph->advance_y;
+      /* UTF-8, each line one line height below the last */
+#define FONT_LAYOUT_ALIGNED 0
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+      do \
+      { \
+         (void)(line_width); \
+         (void)(count); \
+         (void)(bytes); \
+         line_x = msg_base_x; \
+         line_y = msg_base_y + (line) * line_h; \
+      } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+      do \
+      { \
+         int base_x, base_y; \
+         int glyph_width, glyph_height; \
+         int max_width, max_height; \
+         const uint8_t *src = NULL; \
+         base_x               = (line_x + (pen_x)) + glyph->draw_offset_x; \
+         base_y               = (line_y + (pen_y)) + glyph->draw_offset_y; \
+         max_width            = vid_width  - base_x; \
+         max_height           = vid_height - base_y; \
+         glyph_width          = glyph->width; \
+         glyph_height         = glyph->height; \
+         src                  = atlas->buffer + glyph->atlas_offset_x + \
+            glyph->atlas_offset_y * atlas->width; \
+         if (base_x < 0) \
+         { \
+            src         -= base_x; \
+            glyph_width += base_x; \
+            base_x       = 0; \
+         } \
+         if (base_y < 0) \
+         { \
+            src          -= base_y * (int)atlas->width; \
+            glyph_height += base_y; \
+            base_y        = 0; \
+         } \
+         if (max_width <= 0 || max_height <= 0) \
+            break; \
+         if (glyph_width > max_width) \
+            glyph_width = max_width; \
+         if (glyph_height > max_height) \
+            glyph_height = max_height; \
+         if (vid->bytes_per_pixel == 2) \
+         { \
+            omapfb_blend_glyph_rgb565(vid->omap, src, vid->font_rgb, \
+                  glyph_width, glyph_height, \
+                  atlas->width, base_x, base_y); \
+         } \
+         else \
+         { \
+            omapfb_blend_glyph_argb8888(vid->omap, src, vid->font_rgb, \
+                  glyph_width, glyph_height, \
+                  atlas->width, base_x, base_y); \
+         } \
+      } while (0)
+#include "../font_layout.h"
    }
 }
 
@@ -948,10 +973,9 @@ static void *omap_init(const video_info_t *video,
       goto fail_omapfb;
 
    /* set some initial mode for the menu */
-   vid->width  = 320;
-   vid->height = 240;
+   vid->dims   = VIDEO_SCALE_PACK(320, 240);
 
-   if (omapfb_set_mode(vid->omap, vid->width, vid->height) != 0)
+   if (omapfb_set_mode(vid->omap, 320, 240) != 0)
       goto fail_omapfb;
 
    if (input && input_data)
@@ -959,7 +983,7 @@ static void *omap_init(const video_info_t *video,
 
    omap_init_font(vid);
 
-   vid->menu.frame = calloc(vid->width * vid->height, vid->bytes_per_pixel);
+   vid->menu.frame = calloc(VIDEO_SCALE_AREA(vid->dims), vid->bytes_per_pixel);
    if (!vid->menu.frame)
       goto fail_omapfb;
 
@@ -978,10 +1002,12 @@ fail:
    return NULL;
 }
 
-static bool omap_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
+static bool omap_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    omap_video_t  *vid = (omap_video_t*)data;
 #ifdef HAVE_MENU
    bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
@@ -992,7 +1018,7 @@ static bool omap_frame(void *data, const void *frame, unsigned width,
 
    if (     (width  > 4)
          && (height > 4)
-         && (width != vid->width || height != vid->height))
+         && (dims != vid->dims))
    {
       RARCH_LOG("[Omap] Mode set (resolution changed by core).\n");
 
@@ -1002,12 +1028,11 @@ static bool omap_frame(void *data, const void *frame, unsigned width,
          return false;
       }
 
-      vid->width  = width;
-      vid->height = height;
+      vid->dims   = dims;
    }
 
    omapfb_prepare(vid->omap);
-   omapfb_blit_frame(vid->omap, frame, vid->height, pitch);
+   omapfb_blit_frame(vid->omap, frame, VIDEO_SCALE_H(vid->dims), pitch);
 
 #ifdef HAVE_MENU
    menu_driver_frame(menu_is_alive, video_info);
@@ -1046,10 +1071,9 @@ static void omap_viewport_info(void *data, struct video_viewport *vp)
    if (!vid)
       return;
 
-   vp->x = vp->y     = 0;
+   vp->pos = VIDEO_POS_PACK(0, 0);
 
-   vp->width         = vp->full_width  = vid->width;
-   vp->height        = vp->full_height = vid->height;
+   vp->dims          = vp->full_dims   = vid->dims;
 }
 
 static bool omap_suppress_screensaver(void *data, bool enable) { return false; }
@@ -1059,22 +1083,23 @@ static bool omap_set_shader(void *data,
       enum rarch_shader_type type, const char *path) { return false; }
 
 static void omap_set_texture_frame(void *data, const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    omap_video_t          *vid = (omap_video_t*)data;
    enum scaler_pix_fmt format = rgb32 ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGBA4444;
+   unsigned        vid_width  = VIDEO_SCALE_W(vid->dims);
 
    video_frame_scale(
          &vid->menu.scaler,
          vid->menu.frame,
          frame,
          format,
-         vid->width,
-         vid->height,
-         vid->width * vid->bytes_per_pixel,
-         width,
-         height,
-         width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));
+         vid_width,
+         VIDEO_SCALE_H(vid->dims),
+         vid_width * vid->bytes_per_pixel,
+         VIDEO_SCALE_W(dims),
+         VIDEO_SCALE_H(dims),
+         VIDEO_SCALE_W(dims) * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t)));
 }
 
 static void omap_set_texture_enable(void *data, bool state, bool full_screen)
@@ -1143,7 +1168,6 @@ video_driver_t video_omap = {
    NULL, /* set_rotation */
    omap_viewport_info,
    NULL, /* read_viewport  */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL, /* get_overlay_interface */
 #endif

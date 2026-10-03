@@ -90,6 +90,8 @@
 #define _GNU_SOURCE
 
 #include <stdio.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -98,6 +100,7 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 #include <queues/task_queue.h>
+#include <retro_timers.h>
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
 #include <file/file_path.h>
@@ -129,19 +132,32 @@ int64_t __real_retro_vfs_file_write_impl(void *st, const void *s, uint64_t len);
 
 static int       g_io_recording;
 static long long g_io_read_bytes;
+static long g_io_read_calls;
 static long long g_io_write_bytes;
 
 int64_t __wrap_retro_vfs_file_read_impl(void *st, void *s, uint64_t len)
 {
    int64_t r = __real_retro_vfs_file_read_impl(st, s, len);
    if (g_io_recording && r > 0)
+   {
       g_io_read_bytes += r;
+      g_io_read_calls++;
+   }
    return r;
 }
 
+/* Non-zero: every write fails once this many bytes have been written
+ * while recording - a full disk part-way through a restore */
+static long long g_io_fail_writes_after;
+
 int64_t __wrap_retro_vfs_file_write_impl(void *st, const void *s, uint64_t len)
 {
-   int64_t r = __real_retro_vfs_file_write_impl(st, s, len);
+   int64_t r;
+   if (     g_io_recording
+         && g_io_fail_writes_after
+         && g_io_write_bytes >= g_io_fail_writes_after)
+      return -1;
+   r = __real_retro_vfs_file_write_impl(st, s, len);
    if (g_io_recording && r > 0)
       g_io_write_bytes += r;
    return r;
@@ -156,11 +172,16 @@ static void io_reset(void)
 
 static void io_stop(void) { g_io_recording = 0; }
 
-/* Mirrors CORE_BACKUP_TICK_BUDGET_US in tasks/task_core_backup.c. */
+/* Half the shared I/O window's allowance (NBIO_XFER_TICK_USEC in
+ * tasks/task_nbio_slice.c): a clock step of twice this spends the
+ * whole window on its first observation, leaving only the floor */
 #define BACKUP_TICK_BUDGET_US 2000
 
 /* Mirrors CORE_BACKUP_CHUNK_SIZE in tasks/task_core_backup.c. */
 #define CORE_BACKUP_QUANTUM   (100 * 1024)
+
+/* Mirrors CORE_BACKUP_CRC_CHUNK in tasks/task_core_backup.c. */
+#define CORE_BACKUP_CRC_QUANTUM (256 * 1024)
 
 static int failures;
 static int checks;
@@ -194,7 +215,10 @@ retro_time_t __real_cpu_features_get_time_usec(void);
 retro_time_t __wrap_cpu_features_get_time_usec(void)
 {
    retro_time_t now = g_clock_now;
-   g_clock_now += g_clock_step;
+   /* A step of 0 writes nothing, so the threaded lane's worker can
+    * read the clock without racing the main thread. */
+   if (g_clock_step)
+      g_clock_now += g_clock_step;
    return now;
 }
 
@@ -255,7 +279,7 @@ bool core_info_get_core_lock(const char *core_path, bool validate_path)
  * silently while the suite still reported PASSED. */
 bool frontend_driver_get_core_extension(char *s, size_t len)
 {
-   strlcpy(s, "so", len);
+   strlcpy_lit(s, "so", len);
    return true;
 }
 
@@ -312,7 +336,7 @@ static uint8_t *read_file_bytes(const char *path, size_t *out_len)
 
 static int setup_tmpdir(void)
 {
-   strlcpy(g_tmpdir, "/tmp/ra_core_backup_XXXXXX", sizeof(g_tmpdir));
+   strlcpy_lit(g_tmpdir, "/tmp/ra_core_backup_XXXXXX", sizeof(g_tmpdir));
    if (!mkdtemp(g_tmpdir))
       return 0;
    snprintf(g_core_path, sizeof(g_core_path), "%s/testcore_libretro.so",
@@ -331,12 +355,15 @@ struct run_stats
    int  completed;
 };
 
+static retro_task_t *g_found_task;
+
 /* Drive the task queue until the pushed task retires, counting ticks.
  * Non-threaded, so one task_queue_check() is exactly one handler
  * invocation -- which is what makes the tick count meaningful. */
 static bool backup_task_finder(retro_task_t *task, void *user_data)
 {
-   (void)task; (void)user_data;
+   (void)user_data;
+   g_found_task = task;
    return true;
 }
 
@@ -360,6 +387,110 @@ static void drive(struct run_stats *st, long cap)
          break;
       }
    }
+}
+
+
+/* The backup's CRC steps and quanta are work items of the shared
+ * per-frame I/O window, not of a deadline of its own.  A hog task,
+ * pushed first so it runs ahead of the backup in every gather, spends
+ * the whole window each tick; the backup must then do exactly the
+ * floor - one read per tick - and still finish without error.  A
+ * backup on a private budget does several per tick here. */
+static bool g_hog_stop;
+static bool g_window_done;
+static const char *g_window_err;
+
+static void hog_handler(retro_task_t *task)
+{
+   nbio_budget_t budget;
+   task_nbio_slice_open(&budget);
+   while (task_nbio_slice_within_budget(&budget, 0, 0))
+      ;
+   task_nbio_slice_close(&budget);
+   if (g_hog_stop)
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void window_done_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   (void)task; (void)task_data; (void)user_data;
+   g_window_done = true;
+   g_window_err  = err;
+}
+
+static void test_shared_window(void)
+{
+   retro_task_t *hog;
+   uint8_t *payload;
+   size_t core_size  = 1024 * 1024;
+   long max_reads    = 0;
+   long ticks        = 0;
+
+   printf("  backup behind a task that spends the whole window\n");
+
+   if (!(payload = make_payload(core_size)))
+   {
+      printf("    SKIP: out of memory\n");
+      return;
+   }
+   if (!write_file_bytes(g_core_path, payload, core_size))
+   {
+      printf("    SKIP: could not write fixture core\n");
+      free(payload);
+      return;
+   }
+   free(payload);
+
+   g_clock_now      = 1000000;
+   g_clock_step     = 500;
+   g_hog_stop       = false;
+   g_window_done    = false;
+   g_window_err     = NULL;
+
+   task_queue_init(false, NULL);
+
+   if (!(hog = task_init()))
+   {
+      task_queue_deinit();
+      return;
+   }
+   hog->handler = hog_handler;
+   hog->flags  |= RETRO_TASK_FLG_MUTE;
+   task_queue_push(hog);
+
+   if (!task_push_core_backup(g_core_path, "Test Core", 0,
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true,
+            window_done_cb, NULL))
+   {
+      printf("    SKIP: task_push_core_backup returned NULL\n");
+      g_hog_stop = true;
+      task_queue_wait(NULL, NULL);
+      task_queue_deinit();
+      return;
+   }
+
+   io_reset();
+   while (!g_window_done && ticks < 100000)
+   {
+      long before = g_io_read_calls;
+      task_queue_check();
+      if (g_io_read_calls - before > max_reads)
+         max_reads = g_io_read_calls - before;
+      ticks++;
+   }
+   io_stop();
+
+   g_hog_stop = true;
+   task_queue_wait(NULL, NULL);
+   task_queue_deinit();
+
+   printf("    %ld ticks, at most %ld read(s) in one tick\n", ticks, max_reads);
+   CHECK(g_window_done, "backup behind the hog did not finish");
+   CHECK(!g_window_err, "backup behind the hog reported an error");
+   CHECK(max_reads == 1,
+         "backup did %ld reads in one tick with the shared window spent",
+         max_reads);
 }
 
 /* ================================================================= */
@@ -397,7 +528,8 @@ static void test_backup_throughput(size_t core_size, retro_time_t step,
    task_queue_init(false, NULL);
 
    if (!task_push_core_backup(g_core_path, "Test Core", 0,
-            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true))
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true,
+            NULL, NULL))
    {
       printf("    SKIP: task_push_core_backup returned NULL\n");
       task_queue_deinit();
@@ -559,7 +691,8 @@ static void test_read_amplification(void)
    task_queue_init(false, NULL);
    io_reset();
    if (!task_push_core_backup(g_core_path, "Test Core", 0,
-            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true))
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true,
+            NULL, NULL))
    {
       printf("    SKIP: task_push_core_backup returned NULL\n");
       io_stop();
@@ -614,7 +747,8 @@ static void test_read_amplification(void)
    task_queue_init(false, NULL);
    io_reset();
    if (!task_push_core_backup(g_core_path, "Test Core", crc,
-            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true))
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true,
+            NULL, NULL))
    {
       printf("    SKIP: task_push_core_backup returned NULL\n");
       io_stop();
@@ -672,7 +806,8 @@ static void test_crc_is_sliced(void)
    task_queue_init(false, NULL);
    /* crc == 0 is what forces the handler to compute it. */
    if (!task_push_core_backup(g_core_path, "Test Core", 0,
-            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true))
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true,
+            NULL, NULL))
    {
       printf("    SKIP: task_push_core_backup returned NULL\n");
       task_queue_deinit();
@@ -703,14 +838,16 @@ static void test_crc_is_sliced(void)
  * 4096-bytes-per-tick cap as the backup loop. */
 static void test_restore_round_trip(void)
 {
-   const size_t core_size = 1024 * 1024;
+   const size_t backup_size      = 512 * 1024;
+   const size_t current_core_size = 8 * CORE_BACKUP_CRC_QUANTUM;
    uint8_t *payload;
+   uint8_t *current_core;
    uint8_t *restored;
    size_t rlen = 0;
    struct run_stats st;
    bool core_loaded = false;
 
-   printf("  restore: round-trips byte for byte\n");
+   printf("  restore: multi-tick current-core CRC and byte-identical round trip\n");
 
    if (!*g_last_backup)
    {
@@ -721,25 +858,31 @@ static void test_restore_round_trip(void)
 
    /* Recreate the source the previous lane backed up, then clobber
     * the installed core so a successful restore is observable. */
-   if (!(payload = make_payload(512 * 1024)))
+   if (!(payload = make_payload(backup_size)))
    {
       printf("    SKIP: out of memory\n");
       return;
    }
-   (void)core_size;
+   if (!(current_core = make_payload(current_core_size)))
    {
-      uint8_t junk[4096];
-      memset(junk, 0xA5, sizeof(junk));
-      if (!write_file_bytes(g_core_path, junk, sizeof(junk)))
-      {
-         printf("    SKIP: could not clobber fixture core\n");
-         free(payload);
-         return;
-      }
+      printf("    SKIP: out of memory\n");
+      free(payload);
+      return;
    }
+   if (!write_file_bytes(g_core_path, current_core, current_core_size))
+   {
+      printf("    SKIP: could not write current-core CRC fixture\n");
+      free(current_core);
+      free(payload);
+      return;
+   }
+   free(current_core);
 
    g_clock_now  = 1000000;
-   g_clock_step = 0;
+   /* Exhaust the 2ms budget after each 256KiB CRC quantum.  The 2MiB
+    * installed core therefore requires at least eight restore ticks
+    * before the backup CRC phase can begin. */
+   g_clock_step = BACKUP_TICK_BUDGET_US * 2;
 
    task_queue_init(false, NULL);
    if (!task_push_core_restore(g_last_backup, g_tmpdir, &core_loaded))
@@ -760,19 +903,31 @@ static void test_restore_round_trip(void)
       free(payload);
       return;
    }
-   drive(&st, 4000000L);
+   g_found_task = NULL;
+   drive(&st, 32);
+   if (!st.completed && g_found_task)
+   {
+      /* The pre-fix handler stays in the current-core CRC phase.  Stop
+       * it through the normal cancellation path so its open stream and
+       * task state are released before the oracle exits. */
+      task_queue_cancel_task(g_found_task);
+      task_queue_check();
+   }
    task_queue_wait(NULL, NULL);
    task_queue_deinit();
 
-   CHECK(st.completed, "restore task did not retire within the tick cap");
-   printf("    %ld ticks\n", st.ticks);
+   CHECK(st.completed,
+         "restore did not retire within 32 ticks; the 2MiB current-core "
+         "CRC must span at least eight ticks and then reach the restore loop");
+   printf("    %ld ticks (current-core CRC requires at least %lu)\n",
+         st.ticks, (unsigned long)(current_core_size / CORE_BACKUP_CRC_QUANTUM));
 
    if ((restored = read_file_bytes(g_core_path, &rlen)))
    {
-      CHECK(rlen == 512 * 1024,
+      CHECK(rlen == backup_size,
             "restored core is %lu bytes, expected %lu",
-            (unsigned long)rlen, (unsigned long)(512 * 1024));
-      if (rlen == 512 * 1024)
+            (unsigned long)rlen, (unsigned long)backup_size);
+      if (rlen == backup_size)
          CHECK(memcmp(restored, payload, rlen) == 0,
                "restored core does not match the backed-up source");
       free(restored);
@@ -780,7 +935,314 @@ static void test_restore_round_trip(void)
    else
       CHECK(false, "restored core file could not be read");
 
+   {
+      char tmp_path[1024];
+      snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", g_core_path);
+      CHECK(!path_is_valid(tmp_path),
+            "restore left its temporary behind: %s", tmp_path);
+   }
+
    free(payload);
+}
+
+/* The restore writes a temporary beside the core and renames it over
+ * the core only once complete, so a restore that stops part-way leaves
+ * the installed core as it was.  Writing the core in place instead
+ * leaves it truncated: these lanes stop one after its first quantum
+ * has been written, by cancelling it (as the exit drain does) and by
+ * failing its writes (a full disk), and compare the core byte for
+ * byte against what was installed before. */
+#define INSTALLED_CORE_SIZE (300 * 1024)
+
+static uint8_t *make_installed_core(void)
+{
+   uint8_t *p = (uint8_t*)malloc(INSTALLED_CORE_SIZE);
+   if (p)
+      memset(p, 0x5a, INSTALLED_CORE_SIZE);
+   return p;
+}
+
+static bool restore_finder(retro_task_t *task, void *user_data)
+{
+   *(retro_task_t**)user_data = task;
+   return true;
+}
+
+static void check_core_untouched(const uint8_t *installed, const char *lane)
+{
+   char tmp_path[1024];
+   uint8_t *now;
+   size_t len = 0;
+
+   if ((now = read_file_bytes(g_core_path, &len)))
+   {
+      CHECK(     len == INSTALLED_CORE_SIZE
+              && memcmp(now, installed, len) == 0,
+            "%s: installed core was changed (%lu bytes, expected %lu)",
+            lane, (unsigned long)len, (unsigned long)INSTALLED_CORE_SIZE);
+      free(now);
+   }
+   else
+      CHECK(false, "%s: installed core is gone", lane);
+
+   snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", g_core_path);
+   CHECK(!path_is_valid(tmp_path),
+         "%s: partial temporary left behind", lane);
+}
+
+static void test_restore_stopped_part_way(bool cancel)
+{
+   const char *lane = cancel ? "cancelled" : "write error";
+   retro_task_t *task = NULL;
+   task_finder_data_t find_data;
+   uint8_t *installed;
+   bool core_loaded   = false;
+   struct run_stats st;
+   long ticks;
+
+   printf("  restore %s part-way leaves the installed core intact\n",
+         cancel ? "cancelled" : "failing to write");
+
+   if (!*g_last_backup)
+   {
+      CHECK(0, "no backup produced by an earlier lane");
+      return;
+   }
+   if (!(installed = make_installed_core()))
+   {
+      printf("    SKIP: out of memory\n");
+      return;
+   }
+   if (!write_file_bytes(g_core_path, installed, INSTALLED_CORE_SIZE))
+   {
+      printf("    SKIP: could not write installed core\n");
+      free(installed);
+      return;
+   }
+
+   /* One quantum per tick, so the copy spans several ticks */
+   g_clock_now  = 1000000;
+   g_clock_step = BACKUP_TICK_BUDGET_US * 2;
+
+   task_queue_init(false, NULL);
+   if (!task_push_core_restore(g_last_backup, g_tmpdir, &core_loaded))
+   {
+      CHECK(0, "%s: task_push_core_restore refused", lane);
+      task_queue_deinit();
+      free(installed);
+      return;
+   }
+
+   io_reset();
+   if (!cancel)
+      g_io_fail_writes_after = CORE_BACKUP_QUANTUM;
+
+   find_data.func     = restore_finder;
+   find_data.userdata = &task;
+   for (ticks = 0; ticks < 64; ticks++)
+   {
+      task_queue_check();
+      task = NULL;
+      if (!task_queue_find(&find_data) || g_io_write_bytes > 0)
+         break;
+   }
+   CHECK(task && g_io_write_bytes > 0,
+         "%s: restore never started writing", lane);
+
+   if (cancel && task)
+      task_queue_cancel_task(task);
+
+   find_data.func     = backup_task_finder;
+   find_data.userdata = NULL;
+   drive(&st, 64);
+   CHECK(st.completed, "%s: restore did not retire", lane);
+
+   io_stop();
+   g_io_fail_writes_after = 0;
+   task_queue_deinit();
+
+   check_core_untouched(installed, lane);
+   free(installed);
+}
+
+/* The rename swaps a directory entry, so a core reached through a
+ * symbolic link is resolved first: the link must survive and the file
+ * it points to must take the restored contents. */
+static void test_restore_through_symlink(void)
+{
+   const size_t backup_size = 512 * 1024;
+   char real_dir[600];
+   char real_core[700];
+   struct stat sb;
+   struct run_stats st;
+   uint8_t *payload;
+   uint8_t *installed;
+   uint8_t *restored;
+   size_t rlen      = 0;
+   bool core_loaded = false;
+
+   printf("  restore through a symbolic link replaces its target\n");
+
+   if (!*g_last_backup)
+   {
+      CHECK(0, "no backup produced by an earlier lane");
+      return;
+   }
+
+   snprintf(real_dir,  sizeof(real_dir),  "%s/real", g_tmpdir);
+   snprintf(real_core, sizeof(real_core), "%s/testcore_libretro.so",
+         real_dir);
+   if (     !path_mkdir(real_dir)
+         || !(installed = make_installed_core()))
+   {
+      printf("    SKIP: could not create fixture\n");
+      return;
+   }
+   if (     !write_file_bytes(real_core, installed, INSTALLED_CORE_SIZE)
+         || (unlink(g_core_path) != 0 && path_is_valid(g_core_path))
+         || symlink(real_core, g_core_path) != 0)
+   {
+      printf("    SKIP: could not create symbolic link fixture\n");
+      free(installed);
+      return;
+   }
+   free(installed);
+
+   g_clock_now  = 1000000;
+   g_clock_step = 0;
+
+   task_queue_init(false, NULL);
+   if (!task_push_core_restore(g_last_backup, g_tmpdir, &core_loaded))
+      CHECK(0, "symlink: task_push_core_restore refused");
+   else
+   {
+      drive(&st, 64);
+      CHECK(st.completed, "symlink: restore did not retire");
+   }
+   task_queue_deinit();
+
+   CHECK(     lstat(g_core_path, &sb) == 0
+           && S_ISLNK(sb.st_mode),
+         "symlink: the link was replaced by a regular file");
+
+   if ((payload = make_payload(backup_size)))
+   {
+      if ((restored = read_file_bytes(real_core, &rlen)))
+      {
+         CHECK(     rlen == backup_size
+                 && memcmp(restored, payload, rlen) == 0,
+               "symlink: link target does not hold the restored core");
+         free(restored);
+      }
+      else
+         CHECK(false, "symlink: link target could not be read");
+      free(payload);
+   }
+
+   /* Later lanes write the core in place */
+   unlink(g_core_path);
+}
+
+/* A finished task stays findable until the queue retires it, and
+ * task_push_core_backup() refuses a second backup of the same core by
+ * running task_core_backup_finder(), which reads core_path through
+ * task->state.  So the handle has to live exactly as long as the task
+ * is findable: a handler that frees it as it finishes leaves the
+ * finder reading freed memory for the whole stretch between the
+ * worker finishing the task and the main thread retiring it.  The
+ * lane opens that stretch deliberately - threaded queue, no
+ * task_queue_check() - and pushes the duplicate into it; ASan is the
+ * assertion for the read, and the push must be refused while the
+ * first backup is still findable and accepted once it is retired. */
+static bool finished_task_finder(retro_task_t *task, void *user_data)
+{
+   (void)user_data;
+   return (task_get_flags(task) & RETRO_TASK_FLG_FINISHED) != 0;
+}
+
+/* task_push_core_backup()'s completion callback: once per task, at
+ * retirement, with the pusher's user_data. */
+static int g_done_calls;
+static void *g_done_user_data;
+
+static void count_done_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   (void)task; (void)task_data; (void)err;
+   g_done_calls++;
+   g_done_user_data = user_data;
+}
+
+static void test_finished_task_stays_findable(void)
+{
+   task_finder_data_t find_data;
+   uint8_t *payload;
+   size_t core_size = 256 * 1024;
+   int i;
+
+   printf("  finished backup stays findable until retired\n");
+
+   if (!(payload = make_payload(core_size)))
+   {
+      printf("    SKIP: out of memory\n");
+      return;
+   }
+   if (!write_file_bytes(g_core_path, payload, core_size))
+   {
+      printf("    SKIP: could not write fixture core\n");
+      free(payload);
+      return;
+   }
+   free(payload);
+
+   g_clock_now  = 1000000;
+   g_clock_step = 0;
+
+   g_done_calls     = 0;
+   g_done_user_data = NULL;
+
+   task_queue_init(true, NULL);
+
+   if (!task_push_core_backup(g_core_path, "Test Core", 0,
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true,
+            count_done_cb, &g_done_calls))
+   {
+      printf("    SKIP: task_push_core_backup returned NULL\n");
+      task_queue_deinit();
+      task_queue_unset_threaded();
+      return;
+   }
+
+   /* Wait for the worker to finish the task; nothing retires it,
+    * since this thread does not call task_queue_check(). */
+   find_data.func     = finished_task_finder;
+   find_data.userdata = NULL;
+   for (i = 0; i < 10000 && !task_queue_find(&find_data); i++)
+      retro_sleep(1);
+   CHECK(i < 10000, "backup task did not finish");
+
+   CHECK(!task_push_core_backup(g_core_path, "Test Core", 0,
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true,
+            NULL, NULL),
+         "duplicate backup accepted while the first is still findable");
+
+   CHECK(g_done_calls == 0, "completion callback ran before retirement");
+
+   task_queue_wait(NULL, NULL);
+
+   CHECK(g_done_calls == 1, "completion callback ran %d times, expected once",
+         g_done_calls);
+   CHECK(g_done_user_data == &g_done_calls,
+         "completion callback did not receive the pusher's user_data");
+
+   CHECK(task_push_core_backup(g_core_path, "Test Core", 0,
+            CORE_BACKUP_MODE_MANUAL, 0, g_assets_dir, true,
+            NULL, NULL) != NULL,
+         "backup refused after the first one retired");
+   task_queue_wait(NULL, NULL);
+
+   task_queue_deinit();
+   task_queue_unset_threaded();
 }
 
 int main(int argc, char **argv)
@@ -820,11 +1282,20 @@ int main(int argc, char **argv)
    printf("\n[read amplification]\n");
    test_read_amplification();
 
+   printf("\n[shared window]\n");
+   test_shared_window();
+
    printf("\n[sliced CRC]\n");
    test_crc_is_sliced();
 
    printf("\n[restore]\n");
    test_restore_round_trip();
+   test_restore_stopped_part_way(true);
+   test_restore_stopped_part_way(false);
+   test_restore_through_symlink();
+
+   printf("\n[task lifetime]\n");
+   test_finished_task_stays_findable();
 
    printf("\n%s (%d check%s, %d failure%s)\n",
          failures ? "FAILED" : "PASSED",

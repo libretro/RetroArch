@@ -19,6 +19,7 @@ SOURCES_C := 	\
 	$(CORE_DIR)/rpng_test.c \
 	$(LIBRETRO_PNG_DIR)/rpng.c \
 	$(LIBRETRO_PNG_DIR)/rpng_encode.c \
+	$(LIBRETRO_COMM_DIR)/file/rpng_file.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
@@ -26,16 +27,12 @@ SOURCES_C := 	\
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_intf.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_linux.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_windowsmmap.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file_zlib.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
@@ -63,13 +60,14 @@ TEST_SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
 
 # The round-trip regression test writes with rpng_encode and reads
-# back with rpng, so it needs the full file/nbio/stream stack.
+# back with rpng, so it needs the full file/stream stack.
 # Sources intentionally mirror $(SOURCES_C) minus the demo's
 # rpng_test.c entry point, plus the new test entry point.
 TEST2_SOURCES_C := \
 	$(CORE_DIR)/rpng_roundtrip_test.c \
 	$(LIBRETRO_PNG_DIR)/rpng.c \
 	$(LIBRETRO_PNG_DIR)/rpng_encode.c \
+	$(LIBRETRO_COMM_DIR)/file/rpng_file.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
@@ -77,16 +75,12 @@ TEST2_SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_intf.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_stdio.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_linux.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_unixmmap.c \
-	$(LIBRETRO_COMM_DIR)/file/nbio/nbio_windowsmmap.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file_zlib.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \

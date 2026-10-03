@@ -31,7 +31,16 @@
 #include "../../configuration.h"
 #include "../../retroarch.h"
 
+#ifdef HAVE_MENU
+#include "../../menu/menu_input.h"
+#endif
+
 #include "../../gfx/common/sdl3_common.h"
+
+#ifdef WEBOS
+#include <dlfcn.h>
+#include "../../gfx/common/sdl3_common_webos.h"
+#endif
 
 /* OVERLAY_MAX_TOUCH */
 #define SDL3_MAX_TOUCH 16
@@ -75,7 +84,97 @@ typedef struct sdl3_input
       float x;
       float y;
    } touches[SDL3_MAX_TOUCH];
+
+   /* Pen/stylus state, handled through SDL_EVENT_PEN_*. */
+   bool pen_in_proximity;
+   bool pen_down;
+   /* Barrel buttons, ORed into the right/middle mouse buttons. */
+   bool pen_b1;
+   bool pen_b2;
+   /* Last reported position in window coordinates (points). */
+   float pen_raw_x;
+   float pen_raw_y;
+   /* Position in output pixels, matching mouse_abs_*. */
+   float pen_abs_x;
+   float pen_abs_y;
+
+   /* The SDL_Window input is read against. */
+   SDL_Window *window;
+
+   /* Sensors. Used if the SDL3 joypad driver isn't active. */
+   SDL_Sensor *accel;
+   SDL_Sensor *gyro;
+   bool sensors_init;
 } sdl3_input_t;
+
+#ifdef WEBOS
+enum sdl_webos_special_key
+{
+   sdl_webos_spkey_back,
+   sdl_webos_spkey_return,
+   sdl_webos_spkey_up,
+   sdl_webos_spkey_down,
+   sdl_webos_spkey_left,
+   sdl_webos_spkey_right,
+   sdl_webos_spkey_size,
+};
+
+static uint8_t sdl_webos_special_keymap[sdl_webos_spkey_size] = {0};
+
+/* Set after a real typing key while the OSK/line editor is open. Magic
+ * Remote arrows/OK/digits must leave this false so the OSK grid stays
+ * under remote control. */
+static bool sdl_webos_phys_kbd_typing = false;
+
+/* One-shot sticky keys: webOS often delivers KEYDOWN+KEYUP in the same
+ * poll, so SDL_GetKeyboardState is already clear when the menu reads input. */
+static bool sdl_webos_sticky_pressed(enum sdl_webos_special_key slot)
+{
+   if (sdl_webos_special_keymap[slot])
+   {
+      sdl_webos_special_keymap[slot] = 0;
+      return true;
+   }
+   return false;
+}
+
+static bool sdl_webos_is_remote_nav_scancode(SDL_Scancode scancode)
+{
+   switch ((int)scancode)
+   {
+      case SDL_SCANCODE_UP:
+      case SDL_SCANCODE_DOWN:
+      case SDL_SCANCODE_LEFT:
+      case SDL_SCANCODE_RIGHT:
+      case SDL_SCANCODE_RETURN:
+      case SDL_SCANCODE_ESCAPE:
+      case SDL_SCANCODE_PAGEUP:
+      case SDL_SCANCODE_PAGEDOWN:
+      case SDL_SCANCODE_WEBOS_BACK:
+      case SDL_SCANCODE_WEBOS_RED:
+      case SDL_SCANCODE_WEBOS_GREEN:
+      case SDL_SCANCODE_WEBOS_YELLOW:
+      case SDL_SCANCODE_WEBOS_BLUE:
+      case SDL_SCANCODE_WEBOS_EXIT:
+         return true;
+      default:
+         return false;
+   }
+}
+
+/* Keys that mean a physical BT keyboard is in use (not Magic Remote). */
+static bool sdl_webos_scancode_enables_phys_kbd(SDL_Scancode scancode)
+{
+   if (sdl_webos_is_remote_nav_scancode(scancode))
+      return false;
+
+   /* Remote digit row inserts text but must not switch to caret mode. */
+   if (scancode >= SDL_SCANCODE_1 && scancode <= SDL_SCANCODE_0)
+      return false;
+
+   return true;
+}
+#endif
 
 /* Rebuilt on SDL_EVENT_KEYMAP_CHANGED (e.g. system layout switch). */
 static void sdl3_build_scancode_lut(sdl3_input_t *sdl)
@@ -117,10 +216,57 @@ static void *sdl3_input_init(const char *joypad_driver)
 
 static bool sdl3_key_pressed(sdl3_input_t *sdl, int key)
 {
+   SDL_Scancode sym = 0;
+
+   if (!key)
+      return false;
+
+#ifdef WEBOS
+   if (key == RETROK_BACKSPACE
+         && sdl_webos_sticky_pressed(sdl_webos_spkey_back))
+      return true;
+   /* Sticky pulse (Magic Remote) → OSK grid / OK. Held BT keys must not
+    * also report as menu joypad while the line editor owns them. */
+   if (key == RETROK_RETURN
+         || key == RETROK_UP
+         || key == RETROK_DOWN
+         || key == RETROK_LEFT
+         || key == RETROK_RIGHT)
+   {
+      enum sdl_webos_special_key slot = sdl_webos_spkey_return;
+
+      if (key == RETROK_UP)
+         slot = sdl_webos_spkey_up;
+      else if (key == RETROK_DOWN)
+         slot = sdl_webos_spkey_down;
+      else if (key == RETROK_LEFT)
+         slot = sdl_webos_spkey_left;
+      else if (key == RETROK_RIGHT)
+         slot = sdl_webos_spkey_right;
+
+      if (sdl_webos_sticky_pressed(slot))
+         return true;
+
+      if (input_state_get_ptr()
+            && (input_state_get_ptr()->flags & INP_FLAG_KB_MAPPING_BLOCKED))
+         return false;
+   }
+   if (key == RETROK_F1 && sdl->kb_state[SDL_SCANCODE_WEBOS_EXIT])
+      return true;
+   if (key == RETROK_x && sdl->kb_state[SDL_SCANCODE_WEBOS_RED])
+      return true;
+   if (key == RETROK_z && sdl->kb_state[SDL_SCANCODE_WEBOS_GREEN])
+      return true;
+   if (key == RETROK_s && sdl->kb_state[SDL_SCANCODE_WEBOS_YELLOW])
+      return true;
+   if (key == RETROK_a && sdl->kb_state[SDL_SCANCODE_WEBOS_BLUE])
+      return true;
+#endif
+
    /* The keyboard state array is refreshed by SDL while pumping
     * window events - it stays empty until a focused SDL3 window
     * exists (i.e. the SDL3 video driver is running). */
-   SDL_Scancode sym = sdl->key_scancode_lut[key];
+   sym = sdl->key_scancode_lut[key];
 
    if ((int)sym >= sdl->kb_num_keys)
       return false;
@@ -183,10 +329,10 @@ static int16_t sdl3_input_state(
             {
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if (binds[port][i].valid)
+                  if (RETRO_KEYBIND_VALID(&binds[port][i]))
                   {
-                     if ((binds[port][i].key && binds[port][i].key < RETROK_LAST)
-                           && sdl3_key_pressed(sdl, binds[port][i].key))
+                     if ((RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
+                           && sdl3_key_pressed(sdl, RETRO_KEYBIND_KEY(&binds[port][i])))
                         ret |= (1 << i);
                   }
                }
@@ -197,10 +343,10 @@ static int16_t sdl3_input_state(
 
          if (id < RARCH_BIND_LIST_END)
          {
-            if (binds[port][id].valid)
+            if (RETRO_KEYBIND_VALID(&binds[port][id]))
             {
-               if ((binds[port][id].key && binds[port][id].key < RETROK_LAST)
-                     && sdl3_key_pressed(sdl, binds[port][id].key)
+               if ((RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
+                     && sdl3_key_pressed(sdl, RETRO_KEYBIND_KEY(&binds[port][id]))
                      && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
                   )
                   return 1;
@@ -218,10 +364,10 @@ static int16_t sdl3_input_state(
 
             input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
-            id_minus_valid = binds[port][id_minus].valid;
-            id_plus_valid = binds[port][id_plus].valid;
-            id_minus_key = binds[port][id_minus].key;
-            id_plus_key = binds[port][id_plus].key;
+            id_minus_valid = RETRO_KEYBIND_VALID(&binds[port][id_minus]);
+            id_plus_valid = RETRO_KEYBIND_VALID(&binds[port][id_plus]);
+            id_minus_key = RETRO_KEYBIND_KEY(&binds[port][id_minus]);
+            id_plus_key = RETRO_KEYBIND_KEY(&binds[port][id_plus]);
 
             if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
             {
@@ -245,14 +391,35 @@ static int16_t sdl3_input_state(
                   return sdl->mouse_l;
                case RETRO_DEVICE_ID_MOUSE_RIGHT:
                   return sdl->mouse_r;
+#ifdef WEBOS
+               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+                  /* Note: webOS wheel is reversed */
+                  if (sdl->mouse_wd != 0)
+                  {
+                      sdl->mouse_wd = 0;
+                      return 1;
+                  }
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+                  if (sdl->mouse_wu != 0)
+                  {
+                      sdl->mouse_wu = 0;
+                      return 1;
+                  }
+                  break;
+               case RETRO_DEVICE_ID_MOUSE_X:
+                  /* MOUSE_SCREEN must be absolute (menu/OSK hit-test);
+                   * RETRO_DEVICE_MOUSE stays relative for cores. */
+                  return (device == RARCH_DEVICE_MOUSE_SCREEN)
+                        ? sdl->mouse_abs_x : sdl->mouse_x;
+               case RETRO_DEVICE_ID_MOUSE_Y:
+                  return (device == RARCH_DEVICE_MOUSE_SCREEN)
+                        ? sdl->mouse_abs_y : sdl->mouse_y;
+#else
                case RETRO_DEVICE_ID_MOUSE_WHEELUP:
                   return sdl->mouse_wu;
                case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
                   return sdl->mouse_wd;
-               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-                  return sdl->mouse_wr;
-               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-                  return sdl->mouse_wl;
                case RETRO_DEVICE_ID_MOUSE_X:
                   if (device == RARCH_DEVICE_MOUSE_SCREEN)
                      return (int16_t)sdl->mouse_abs_x;
@@ -261,6 +428,11 @@ static int16_t sdl3_input_state(
                   if (device == RARCH_DEVICE_MOUSE_SCREEN)
                      return (int16_t)sdl->mouse_abs_y;
                   return sdl->mouse_y;
+#endif
+               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+                  return sdl->mouse_wr;
+               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+                  return sdl->mouse_wl;
                case RETRO_DEVICE_ID_MOUSE_MIDDLE:
                   return sdl->mouse_m;
                case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
@@ -284,7 +456,13 @@ static int16_t sdl3_input_state(
             int16_t pressed = 0;
 
             if (id == RETRO_DEVICE_ID_POINTER_COUNT)
-               return sdl->num_touches ? sdl->num_touches : (sdl->mouse_l ? 1 : 0);
+            {
+               if (sdl->num_touches)
+                  return sdl->num_touches;
+               if (sdl->pen_in_proximity)
+                  return sdl->pen_down ? 1 : 0;
+               return sdl->mouse_l ? 1 : 0;
+            }
 
             if (!video_driver_get_viewport_info(&vp))
                break;
@@ -297,9 +475,21 @@ static int16_t sdl3_input_state(
             {
                if ((int)idx >= sdl->num_touches)
                   return 0;
-               abs_x = (int)(sdl->touches[idx].x * (float)vp.full_width);
-               abs_y = (int)(sdl->touches[idx].y * (float)vp.full_height);
+               abs_x = (int)(sdl->touches[idx].x * (float)VIDEO_SCALE_W(vp.full_dims));
+               abs_y = (int)(sdl->touches[idx].y * (float)VIDEO_SCALE_H(vp.full_dims));
                pressed = 1;
+            }
+            else if (sdl->pen_in_proximity)
+            {
+               /* Reading the pen ahead of the mouse fallback dedups
+                * the mouse state SDL synthesizes from the pen; a real
+                * mouse click during pen hover is indistinguishable
+                * from that and reads as unpressed. */
+               if (idx != 0)
+                  return 0;
+               abs_x = (int)sdl->pen_abs_x;
+               abs_y = (int)sdl->pen_abs_y;
+               pressed = sdl->pen_down;
             }
             else
             {
@@ -336,6 +526,11 @@ static int16_t sdl3_input_state(
          }
          break;
       case RETRO_DEVICE_KEYBOARD:
+         /* While a text box is open, Ctrl is the clipboard-paste
+          * modifier (see sdl3_paste_clipboard), so ignore acting
+          * on it here. */
+         if ((id == RETROK_LCTRL || id == RETROK_RCTRL) && input_state_get_ptr()->keyboard_line.enabled)
+            return 0;
          return (id && id < RETROK_LAST) && sdl3_key_pressed(sdl, id);
       case RETRO_DEVICE_LIGHTGUN:
          switch (id)
@@ -395,7 +590,7 @@ static int16_t sdl3_input_state(
                   const uint32_t joyaxis          = (bind_joyaxis != AXIS_NONE)
                         ? bind_joyaxis : autobind_joyaxis;
 
-                  if (binds[port][new_id].valid)
+                  if (RETRO_KEYBIND_VALID(&binds[port][new_id]))
                   {
                      if ((uint16_t)joykey != NO_BTN && joypad->button(
                               joyport, (uint16_t)joykey))
@@ -404,9 +599,9 @@ static int16_t sdl3_input_state(
                            ((float)abs(joypad->axis(joyport, joyaxis))
                             / 0x8000) > axis_threshold)
                         return 1;
-                     else if ((binds[port][new_id].key && binds[port][new_id].key < RETROK_LAST)
+                     else if ((RETRO_KEYBIND_KEY(&binds[port][new_id]) && RETRO_KEYBIND_KEY(&binds[port][new_id]) < RETROK_LAST)
                            && !keyboard_mapping_blocked
-                           && sdl3_key_pressed(sdl, binds[port][new_id].key)
+                           && sdl3_key_pressed(sdl, RETRO_KEYBIND_KEY(&binds[port][new_id]))
                         )
                         return 1;
                      else if (sdl3_mouse_button_pressed(sdl,
@@ -445,20 +640,91 @@ static void sdl3_input_free(void *data)
    SDL_FlushEvents(SDL_EVENT_FINGER_DOWN,      SDL_EVENT_FINGER_CANCELED);
    SDL_FlushEvents(SDL_EVENT_PEN_PROXIMITY_IN, SDL_EVENT_PEN_AXIS);
 
+   if (sdl->accel)
+      SDL_CloseSensor(sdl->accel);
+   if (sdl->gyro)
+      SDL_CloseSensor(sdl->gyro);
+   if (sdl->sensors_init)
+      SDL_QuitSubSystem(SDL_INIT_SENSOR);
+
+   /* Nothing polls after this point, so the flags would stay raised
+    * across a runtime driver switch. */
+   input_state_get_ptr()->flags &=
+      ~(INP_FLAG_NATIVE_KB_SHOWN | INP_FLAG_NATIVE_KB_AVAIL);
+
    SDL_QuitSubSystem(SDL_INIT_EVENTS);
    free(sdl);
 }
 
+/* Opens the first sensor of the given type. */
+static SDL_Sensor *sdl3_open_sensor(SDL_SensorType type)
+{
+   int i;
+   int num_sensors = 0;
+   SDL_Sensor *sensor = NULL;
+   SDL_SensorID *sensors = SDL_GetSensors(&num_sensors);
+
+   if (!sensors)
+      return NULL;
+
+   for (i = 0; i < num_sensors; i++)
+   {
+      if (SDL_GetSensorTypeForID(sensors[i]) == type)
+      {
+         sensor = SDL_OpenSensor(sensors[i]);
+         break;
+      }
+   }
+
+   SDL_free(sensors);
+   return sensor;
+}
+
+/* Enables the accelerometer/gyroscope. */
 static bool sdl3_set_sensor_state(void *data, unsigned port,
       enum retro_sensor_action action, unsigned rate)
 {
-   /* Sensors are not exposed through the SDL3 keyboard/mouse driver.
-    * Gamepad gyro/accel are handled by the SDL3 joypad driver. */
+   sdl3_input_t *sdl = (sdl3_input_t*)data;
+
+   /* The host device's sensors only ever map to port 0. */
+   if (port != 0)
+      return false;
+
    switch (action)
    {
-      case RETRO_SENSOR_ILLUMINANCE_DISABLE:
-      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
+      case RETRO_SENSOR_GYROSCOPE_ENABLE:
+         {
+            bool accelerometer = action == RETRO_SENSOR_ACCELEROMETER_ENABLE;
+            SDL_Sensor **sensor = accelerometer ? &sdl->accel : &sdl->gyro;
+
+            if (*sensor)
+               return true;
+
+            /* Make sure the Sensor subsystem is available. */
+            if (!sdl->sensors_init)
+            {
+               if (!SDL_InitSubSystem(SDL_INIT_SENSOR))
+                  return false;
+               sdl->sensors_init = true;
+            }
+
+            return (*sensor = sdl3_open_sensor(accelerometer ? SDL_SENSOR_ACCEL : SDL_SENSOR_GYRO)) != NULL;
+         }
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+         {
+            SDL_Sensor **sensor = action == RETRO_SENSOR_ACCELEROMETER_DISABLE
+                  ? &sdl->accel : &sdl->gyro;
+
+            if (*sensor)
+            {
+               SDL_CloseSensor(*sensor);
+               *sensor = NULL;
+            }
+            return true;
+         }
+      case RETRO_SENSOR_ILLUMINANCE_DISABLE:
          /* Disabling an unsupported sensor shouldn't fail. */
          return true;
       default:
@@ -468,23 +734,50 @@ static bool sdl3_set_sensor_state(void *data, unsigned port,
    return false;
 }
 
-/* Gets the SDL_Window, if it exists. */
-static SDL_Window *sdl3_input_window(void)
+/* SDL reports mouse and pen coordinates in window coordinates,
+ * while the video driver's viewport metrics are in output
+ * pixels. */
+static float sdl3_window_pixel_density(sdl3_input_t *sdl)
 {
-   sdl3_video_t *video_ptr;
+   if (sdl->window)
+   {
+      float density = SDL_GetWindowPixelDensity(sdl->window);
+      if (density > 0.0f)
+         return density;
+   }
 
-   if (string_is_not_equal(video_driver_get_ident(), "sdl3"))
-      return NULL;
+   return 1.0f;
+}
 
-   if ((video_ptr = (sdl3_video_t*)video_driver_get_ptr()))
-      return video_ptr->window;
 
-   return NULL;
+static float sdl3_get_sensor_input(void *data, unsigned port, unsigned id)
+{
+   sdl3_input_t *sdl = (sdl3_input_t*)data;
+   float v[3];
+
+   /* The host device's sensors only ever map to port 0. */
+   if (port != 0)
+      return 0.0f;
+
+   /* Acceleration is m/s^2, though libretro expects gravity. The
+    * gyroscope uses radians per second. */
+   if (id <= RETRO_SENSOR_ACCELEROMETER_Z)
+   {
+      if (sdl->accel && SDL_GetSensorData(sdl->accel, v, 3))
+         return v[id - RETRO_SENSOR_ACCELEROMETER_X] / SDL_STANDARD_GRAVITY;
+   }
+   else if (id >= RETRO_SENSOR_GYROSCOPE_X && id <= RETRO_SENSOR_GYROSCOPE_Z)
+   {
+      if (sdl->gyro && SDL_GetSensorData(sdl->gyro, v, 3))
+         return v[id - RETRO_SENSOR_GYROSCOPE_X];
+   }
+
+   return 0.0f;
 }
 
 static void sdl3_poll_mouse(sdl3_input_t *sdl)
 {
-   SDL_Window *win;
+   float density;
    float dx = 0.0f;
    float dy = 0.0f;
    SDL_MouseButtonFlags btn = SDL_GetMouseState(&sdl->mouse_abs_x, &sdl->mouse_abs_y);
@@ -506,20 +799,9 @@ static void sdl3_poll_mouse(sdl3_input_t *sdl)
    sdl->mouse_rel_x -= (float)sdl->mouse_x;
    sdl->mouse_rel_y -= (float)sdl->mouse_y;
 
-   /* SDL reports mouse coordinates in window coordinates (points),
-    * while the video driver's viewport metrics are in output pixels. */
-   if (!(win = sdl3_input_window()))
-      win = SDL_GetMouseFocus();
-
-   if (win)
-   {
-      float density = SDL_GetWindowPixelDensity(win);
-      if (density > 0.0f && density != 1.0f)
-      {
-         sdl->mouse_abs_x *= density;
-         sdl->mouse_abs_y *= density;
-      }
-   }
+   density = sdl3_window_pixel_density(sdl);
+   sdl->mouse_abs_x *= density;
+   sdl->mouse_abs_y *= density;
 
    sdl->mouse_l = (SDL_BUTTON_MASK(SDL_BUTTON_LEFT) & btn) != 0;
    sdl->mouse_r = (SDL_BUTTON_MASK(SDL_BUTTON_RIGHT) & btn) != 0;
@@ -561,6 +843,10 @@ static void sdl3_poll_touch(sdl3_input_t *sdl)
       int j, num_fingers = 0;
       SDL_Finger **fingers;
 
+      /* Pen events are read elsewhere. */
+      if (devices[i] == SDL_PEN_TOUCHID)
+         continue;
+
       /* Only SDL_TOUCH_DEVICE_DIRECT is a touchscreen. The two indirect
        * types are trackpads, whose fingers are device or cursor-relative. */
       if (SDL_GetTouchDeviceType(devices[i]) != SDL_TOUCH_DEVICE_DIRECT)
@@ -591,6 +877,65 @@ static void sdl3_poll_touch(sdl3_input_t *sdl)
    sdl->num_touch_devices = num_direct;
 }
 
+/* Polls the pen events. */
+static void sdl3_poll_pen(sdl3_input_t *sdl)
+{
+   SDL_Event event;
+   float density;
+
+   while (SDL_PeepEvents(&event, 1, SDL_GETEVENT,
+         SDL_EVENT_PEN_PROXIMITY_IN, SDL_EVENT_PEN_AXIS) > 0)
+   {
+      switch (event.type)
+      {
+         case SDL_EVENT_PEN_PROXIMITY_IN:
+            sdl->pen_in_proximity = true;
+            break;
+         case SDL_EVENT_PEN_PROXIMITY_OUT:
+            sdl->pen_in_proximity = false;
+            sdl->pen_down = false;
+            sdl->pen_b1 = false;
+            sdl->pen_b2 = false;
+            break;
+         case SDL_EVENT_PEN_DOWN:
+         case SDL_EVENT_PEN_UP:
+            sdl->pen_in_proximity = true;
+            sdl->pen_raw_x = event.ptouch.x;
+            sdl->pen_raw_y = event.ptouch.y;
+            sdl->pen_down = event.ptouch.down;
+            break;
+         case SDL_EVENT_PEN_MOTION:
+            sdl->pen_in_proximity = true;
+            sdl->pen_raw_x = event.pmotion.x;
+            sdl->pen_raw_y = event.pmotion.y;
+            break;
+         case SDL_EVENT_PEN_BUTTON_DOWN:
+         case SDL_EVENT_PEN_BUTTON_UP:
+            sdl->pen_in_proximity = true;
+            if (event.pbutton.button == 1)
+               sdl->pen_b1 = event.pbutton.down;
+            else if (event.pbutton.button == 2)
+               sdl->pen_b2 = event.pbutton.down;
+            break;
+      }
+   }
+
+   /* Barrel buttons act as the right/middle mouse buttons (the
+    * usual OS mapping). sdl3_poll_mouse has already run, so this
+    * ORs on top of the polled state. */
+   sdl->mouse_r |= sdl->pen_b1;
+   sdl->mouse_m |= sdl->pen_b2;
+
+   /* If the pen isn't in proximity, skip calculating its position. */
+   if (!sdl->pen_in_proximity)
+      return;
+
+   density = sdl3_window_pixel_density(sdl);
+   sdl->pen_abs_x = sdl->pen_raw_x * density;
+   sdl->pen_abs_y = sdl->pen_raw_y * density;
+}
+
+/* Translates an SDL_Keymod to a RETROKMOD. */
 static uint16_t sdl3_translate_mod(SDL_Keymod smod)
 {
    uint16_t mod = 0;
@@ -613,6 +958,147 @@ static uint16_t sdl3_translate_mod(SDL_Keymod smod)
    return mod;
 }
 
+/* On devices where SDL_StartTextInput() brings up the system
+ * keyboard, hold it back until a menu dialog actually wants text and
+ * the user has opted in. On desktop, text input stays quietly enabled
+ * in the background, ensuring normal keyboard controls work.
+ *
+ * Also publishes INP_FLAG_NATIVE_KB_SHOWN for the frontend: this runs
+ * once per poll on the main thread, so consumers on the video thread
+ * (gfx_display_draw_keyboard) read a plain flag instead of calling
+ * into SDL from a thread SDL does not expect. */
+static void sdl3_manage_text_input(void)
+{
+   bool want                    = false;
+   bool shown                   = false;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   SDL_Window *win;
+
+   if (!sdl3_uses_screen_keyboard() || !(win = sdl3_get_window()))
+   {
+      input_st->flags &= ~(INP_FLAG_NATIVE_KB_SHOWN | INP_FLAG_NATIVE_KB_AVAIL);
+      return;
+   }
+
+   input_st->flags |= INP_FLAG_NATIVE_KB_AVAIL;
+
+#ifdef HAVE_MENU
+   want = menu_input_dialog_get_display_kb()
+       && config_get_ptr()->bools.input_sdl3_system_keyboard;
+#endif
+
+   if (want == SDL_TextInputActive(win))
+      goto publish;
+
+   if (want)
+   {
+      int w, h;
+      SDL_Rect area;
+      SDL_TextInputType type = SDL_TEXTINPUT_TYPE_TEXT;
+      SDL_PropertiesID props = SDL_CreateProperties();
+
+#ifdef HAVE_MENU
+      switch (menu_input_dialog_get_kb_text_type())
+      {
+         case MENU_INPUT_DIALOG_KB_TYPE_PASSWORD:
+            type = SDL_TEXTINPUT_TYPE_TEXT_PASSWORD_HIDDEN;
+            break;
+         case MENU_INPUT_DIALOG_KB_TYPE_NUMBER:
+            type = SDL_TEXTINPUT_TYPE_NUMBER;
+            break;
+         default:
+            break;
+      }
+#endif
+
+      /* Menu drivers draw the dialog's entry field in the top half of
+       * the screen, so keep the system keyboard/IME from covering it.
+       * Uses window coordinates, not pixels. */
+      SDL_GetWindowSize(win, &w, &h);
+      area.x = 0;
+      area.y = 0;
+      area.w = w;
+      area.h = h / 2;
+      SDL_SetTextInputArea(win, &area, 0);
+
+      SDL_SetNumberProperty(props, SDL_PROP_TEXTINPUT_TYPE_NUMBER, type);
+      SDL_StartTextInputWithProperties(win, props);
+      SDL_DestroyProperties(props);
+   }
+   else
+      SDL_StopTextInput(win);
+
+publish:
+   /* SDL_StartTextInput() only asks; the panel can take a frame to
+    * appear and the user can dismiss it behind our back. Report what
+    * is actually on screen. */
+   shown = SDL_ScreenKeyboardShown(win);
+   if (shown)
+      input_st->flags |=  INP_FLAG_NATIVE_KB_SHOWN;
+   else
+      input_st->flags &= ~INP_FLAG_NATIVE_KB_SHOWN;
+}
+
+/* Translates control/modifier keys into their ASCII character counterpart. */
+static uint32_t sdl3_translate_control_key(unsigned code, uint16_t mod)
+{
+   switch (code)
+   {
+      case RETROK_BACKSPACE:
+      case RETROK_TAB:
+      case RETROK_RETURN:
+      case RETROK_ESCAPE:
+      case RETROK_DELETE:
+      case RETROK_KP_ENTER:
+         return input_keymaps_translate_rk_to_ascii((enum retro_key)code, (enum retro_mod)mod);
+      default:
+         break;
+   }
+
+   return 0;
+}
+
+/* Grabs text from the clipboard, and passes it as keyboard input. */
+static void sdl3_paste_clipboard(void)
+{
+   char *text = SDL_GetClipboardText();
+   const char *ptr = text;
+
+   if (!text)
+      return;
+
+   while (*ptr)
+   {
+      uint32_t c = utf8_walk(&ptr);
+
+      /* Skip newline and backspace characters, since those would
+       * negatively affect the input. */
+      if (c >= 0x20 && c != 0x7f)
+         input_keyboard_event(true, RETROK_UNKNOWN, c, 0, RETRO_DEVICE_KEYBOARD);
+   }
+
+   SDL_free(text);
+}
+
+#ifdef WEBOS
+bool SDL_webOSCursorVisibility(bool visible)
+{
+   static bool (*fn)(bool visible) = NULL;
+   static bool dlsym_called                = false;
+   if (!dlsym_called)
+   {
+      fn                                   = dlsym(RTLD_NEXT, "SDL_webOSCursorVisibility");
+      dlsym_called                         = true;
+   }
+   if (!fn)
+   {
+      SDL_ShowCursor();
+      return true;
+   }
+   return fn(visible);
+}
+#endif
+
 static void sdl3_input_poll(void *data)
 {
    SDL_Event event;
@@ -624,8 +1110,19 @@ static void sdl3_input_poll(void *data)
     * never updates. */
    SDL_PumpEvents();
 
+   /* Find the SDL window, so that window coordinates can be calculated
+    * properly. */
+   if (!(sdl->window = sdl3_get_window()))
+      sdl->window = SDL_GetMouseFocus();
+
+   sdl3_manage_text_input();
+
    sdl3_poll_mouse(sdl);
    sdl3_poll_touch(sdl);
+
+   /* SDL_UpdateSensors works without a focused window. */
+   if (sdl->accel || sdl->gyro)
+      SDL_UpdateSensors();
 
    sdl->mouse_wu = false;
    sdl->mouse_wd = false;
@@ -637,16 +1134,111 @@ static void sdl3_input_poll(void *data)
       if (     event.type == SDL_EVENT_KEY_DOWN
             || event.type == SDL_EVENT_KEY_UP)
       {
-         uint16_t mod  = sdl3_translate_mod(event.key.mod);
-         unsigned code = input_keymaps_translate_keysym_to_rk(
+         uint16_t mod        = sdl3_translate_mod(event.key.mod);
+         unsigned code       = input_keymaps_translate_keysym_to_rk(
                event.key.key);
+         uint32_t character  = 0;
 
-         /* Character 0: typed characters are delivered separately
-          * through SDL_EVENT_TEXT_INPUT below (mirroring the win32
-          * WM_KEYDOWN / WM_CHAR split), so don't also synthesize one
-          * from the keycode or text entry would double up. */
+#ifdef WEBOS
+         input_driver_state_t *input_st = input_state_get_ptr();
+         bool osk_active = input_st && (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
+
+         if (!osk_active)
+            sdl_webos_phys_kbd_typing = false;
+
+         switch ((int) event.key.scancode)
+         {
+            case SDL_SCANCODE_WEBOS_BACK:
+               /* Because webOS is sending DOWN/UP at the same time,
+                  we save this flag for later */
+               sdl_webos_special_keymap[sdl_webos_spkey_back] |= event.type == SDL_EVENT_KEY_DOWN;
+               code = RETROK_BACKSPACE;
+               break;
+            case SDL_SCANCODE_WEBOS_RED:
+               code = RETROK_x;
+               break;
+            case SDL_SCANCODE_WEBOS_GREEN:
+               code = RETROK_z;
+               break;
+            case SDL_SCANCODE_WEBOS_YELLOW:
+               code = RETROK_s;
+               break;
+            case SDL_SCANCODE_WEBOS_BLUE:
+               code = RETROK_a;
+               break;
+            case SDL_SCANCODE_WEBOS_EXIT:
+               code = RETROK_F1;
+               break;
+            case SDL_SCANCODE_UP:
+            case SDL_SCANCODE_DOWN:
+            case SDL_SCANCODE_LEFT:
+            case SDL_SCANCODE_RIGHT:
+               /* Default: Magic Remote → OSK grid. After BT typing keys,
+                * ←/→ move the caret and ↑/↓ act as home/end. */
+               if (osk_active && !sdl_webos_phys_kbd_typing)
+               {
+                  if (event.type == SDL_EVENT_KEY_DOWN)
+                  {
+                     if (event.key.scancode == SDL_SCANCODE_UP)
+                        sdl_webos_special_keymap[sdl_webos_spkey_up] = 1;
+                     else if (event.key.scancode == SDL_SCANCODE_DOWN)
+                        sdl_webos_special_keymap[sdl_webos_spkey_down] = 1;
+                     else if (event.key.scancode == SDL_SCANCODE_LEFT)
+                        sdl_webos_special_keymap[sdl_webos_spkey_left] = 1;
+                     else
+                        sdl_webos_special_keymap[sdl_webos_spkey_right] = 1;
+                  }
+                  continue;
+               }
+               break;
+            case SDL_SCANCODE_RETURN:
+               /* Default: remote OK → OSK select. After BT typing → save. */
+               if (osk_active && !sdl_webos_phys_kbd_typing)
+               {
+                  if (event.type == SDL_EVENT_KEY_DOWN)
+                     sdl_webos_special_keymap[sdl_webos_spkey_return] = 1;
+                  continue;
+               }
+               break;
+            default:
+               break;
+         }
+
+         /* Letters / numpad / backspace / punctuation ⇒ BT keyboard session.
+          * Remote digit row is excluded (see sdl_webos_scancode_enables_phys_kbd). */
+         if (osk_active
+               && event.type == SDL_EVENT_KEY_DOWN
+               && sdl_webos_scancode_enables_phys_kbd(event.key.scancode))
+            sdl_webos_phys_kbd_typing = true;
+
+         /* Disable cursor when using the buttons */
+         if (code && code != RETROK_RETURN)
+            SDL_webOSCursorVisibility(false);
+
+#endif
+         /* Allow pasting the clipboard. */
+         if (     event.type == SDL_EVENT_KEY_DOWN
+               && event.key.key == SDLK_V
+               && (event.key.mod & SDL_KMOD_CTRL)
+               && input_state_get_ptr()->keyboard_line.enabled)
+         {
+            sdl3_paste_clipboard();
+            continue;
+         }
+
+         character = sdl3_translate_control_key(code, mod);
+#ifdef WEBOS
+         if (code == RETROK_RETURN || code == RETROK_KP_ENTER)
+            character = '\r';
+
+         /* Numpad Enter is never sent by the Magic Remote; always save. */
+         if (code == RETROK_KP_ENTER)
+            sdl_webos_phys_kbd_typing = true;
+#endif
+
          input_keyboard_event(event.type == SDL_EVENT_KEY_DOWN,
-               code, 0, mod, RETRO_DEVICE_KEYBOARD);
+               code, character, mod,
+               RETRO_DEVICE_KEYBOARD);
       }
       else if (event.type == SDL_EVENT_TEXT_INPUT)
       {
@@ -678,22 +1270,30 @@ static void sdl3_input_poll(void *data)
          sdl3_build_scancode_lut(sdl);
    }
 
-   /* Neither range is consumed anywhere: sdl3_poll_touch reads finger
-    * state by polling instead of by event, and pens aren't wired up at
-    * all. Both fire at device rate for as long as there's contact, so
-    * left in the queue they grow until SDL's queue fills and starts
-    * refusing pushes - at which point the events that do matter (quit,
-    * keys) get dropped along with them. */
-   SDL_FlushEvents(SDL_EVENT_FINGER_DOWN,      SDL_EVENT_FINGER_CANCELED);
-   SDL_FlushEvents(SDL_EVENT_PEN_PROXIMITY_IN, SDL_EVENT_PEN_AXIS);
+   /* Fingers are reported as pointer input from polled state
+    * (sdl3_poll_touch / SDL_GetTouchFingers), rather than these
+    * events, so flush the finger events. */
+   SDL_FlushEvents(SDL_EVENT_FINGER_DOWN, SDL_EVENT_FINGER_CANCELED);
+
+   sdl3_poll_pen(sdl);
+
+   /* Sensor updates arrive at device rate and are read by polling
+    * above (SDL_GetSensorData), so flush the events. */
+   if (sdl->sensors_init)
+      SDL_FlushEvent(SDL_EVENT_SENSOR_UPDATE);
 }
 
 static void sdl3_grab_mouse(void *data, bool state)
 {
-   SDL_Window *win = sdl3_input_window();
+   SDL_Window *win = sdl3_get_window();
 
    if (win)
+   {
       SDL_SetWindowMouseGrab(win, state);
+      /* Relative mouse mode matches the game-focus behaviour of
+       * the other desktop input drivers (winraw/x11/udev). */
+      SDL_SetWindowRelativeMouseMode(win, state);
+   }
 }
 
 static uint64_t sdl3_get_capabilities(void *data)
@@ -712,7 +1312,7 @@ input_driver_t input_sdl3 = {
    sdl3_input_state,
    sdl3_input_free,
    sdl3_set_sensor_state,
-   NULL,                   /* get_sensor_input */
+   sdl3_get_sensor_input,
    sdl3_get_capabilities,
    "sdl3",
    sdl3_grab_mouse,

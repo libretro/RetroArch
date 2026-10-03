@@ -6,7 +6,7 @@ CONSOLE_LOG             = 0
 BUILD_3DSX              = 1
 BUILD_3DS               = 0
 BUILD_CIA               = 1
-USE_CTRULIB_2          ?= 0
+USE_CTRULIB_2 ?= $(if $(shell grep -sl gspPresentBuffer $(or $(CTRULIB),$(DEVKITPRO)/libctru)/include/3ds/services/gspgpu.h),1,0)
 
 APP_TITLE            = RetroArch 3DS
 APP_DESCRIPTION      = RetroArch 3DS
@@ -31,6 +31,7 @@ OBJ := ctr/ctr_system.o \
 		 libretro-common/compat/fopen_utf8.o \
 		 libretro-common/file/file_path.o \
 		 libretro-common/file/file_path_io.o \
+		 libretro-common/string/rstrtod.o \
 		 libretro-common/string/stdstring.o \
 		 libretro-common/lists/string_list.o \
 		 libretro-common/lists/dir_list.o \

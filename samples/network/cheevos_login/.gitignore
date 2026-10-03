@@ -1,0 +1,4 @@
+*.o
+cheevos_login_test
+fixtures/
+mock_ra_server.ready

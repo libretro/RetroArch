@@ -23,6 +23,8 @@
 #include <string/stdstring.h>
 #include <file/file_path.h>
 
+#include <compat/strl.h>
+
 #include "paths.h"
 #include "retroarch.h"
 #include "verbosity.h"

@@ -28,6 +28,12 @@
 #ifdef HAVE_RJPEG
 #include <formats/rjpeg.h>
 #endif
+#ifdef HAVE_RTGA
+#include <formats/rtga.h>
+#endif
+#ifdef HAVE_RBMP
+#include <formats/rbmp.h>
+#endif
 #include <formats/image.h>
 #include <gfx/scaler/scaler.h>
 #include <compat/strl.h>
@@ -39,6 +45,7 @@
 
 #include "../configuration.h"
 #include "../gfx/video_driver.h"
+#include "../gfx/gfx_surface.h"
 #include "../gfx/gfx_display.h"
 
 enum image_status_enum
@@ -163,12 +170,11 @@ static int cb_image_upload_generic(void *data, size_t len)
    return 0;
 }
 
-static int task_image_process(
-      struct nbio_image_handle *image,
-      unsigned *width,
-      unsigned *height)
+static int task_image_process(struct nbio_image_handle *image)
 {
    int retval;
+   unsigned width  = 0;
+   unsigned height = 0;
 
    if (!image_transfer_is_valid(image->handle, image->type))
       return IMAGE_PROCESS_ERROR;
@@ -176,12 +182,12 @@ static int task_image_process(
    if ((retval = image_transfer_process(
          image->handle,
          image->type,
-         &image->ti.pixels, image->size, width, height,
+         &image->ti.pixels, image->size, &width, &height,
          image->ti.supports_rgba)) == IMAGE_PROCESS_ERROR)
       return IMAGE_PROCESS_ERROR;
 
-   image->ti.width  = *width;
-   image->ti.height = *height;
+   image->ti.width  = width;
+   image->ti.height = height;
    image->ti.pix10  = image_transfer_is_10bit(image->handle, image->type);
 
    return retval;
@@ -189,11 +195,9 @@ static int task_image_process(
 
 static int cb_image_thumbnail(void *data, size_t len)
 {
-   unsigned width                   = 0;
-   unsigned height                  = 0;
    nbio_handle_t        *nbio       = (nbio_handle_t*)data;
    struct nbio_image_handle *image  = (struct nbio_image_handle*)nbio->data;
-   int retval                       = image ? task_image_process(image, &width, &height) : IMAGE_PROCESS_ERROR;
+   int retval                       = image ? task_image_process(image) : IMAGE_PROCESS_ERROR;
 
    if (   (retval == IMAGE_PROCESS_ERROR)
        || (retval == IMAGE_PROCESS_ERROR_END)
@@ -216,16 +220,13 @@ static int cb_image_thumbnail(void *data, size_t len)
 static int task_image_iterate_process_transfer(struct nbio_image_handle *image)
 {
    int retval                      = 0;
-   unsigned width                  = 0;
-   unsigned height                 = 0;
    retro_time_t start_time;
    retro_time_t allowance          = task_image_decode_slice_open(
          image->frame_duration, &start_time);
 
    do
    {
-      if ((retval = task_image_process(image, &width, &height)) 
-          != IMAGE_PROCESS_NEXT)
+      if ((retval = task_image_process(image)) != IMAGE_PROCESS_NEXT)
          break;
    }while (cpu_features_get_time_usec() - start_time < allowance);
    task_image_decode_slice_close(start_time);
@@ -338,24 +339,33 @@ static int task_image_thumbnail_setup(nbio_handle_t *nbio, bool partial)
       image_transfer_set_avail(image->handle, image->type, done);
    }
 
-   /* Ask video thumbnail decoders for native 10-bit output, but only when the
-    * active video driver can sample a 10-bit texture; otherwise the decoded
-    * buffer would just be narrowed again at upload for no benefit. */
-   if (video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE))
-      image_transfer_set_want_10bit(image->handle, image->type, 1);
-
    /* Set image size */
    image->size                     = len;
 
    /* The decoders bake the output channel order from supports_rgba.
-    * It was captured when this load was queued, but VIDEO_FLAG_USE_RGBA
-    * is cleared on every video reinit (core start/stop), so a value
+    * It was captured when this load was queued, but the driver's
+    * wanted order is reset on every video reinit (core start/stop),
+    * so a value
     * sampled in that window can disagree with the driver's actual upload
     * format and yield R/B-swapped images.  Re-sample it here, once, at
-    * decode start (after any reinit has settled) - not in the per-chunk
-    * decode loop, where it would lock display_lock on every iteration. */
-   image->ti.supports_rgba = (video_driver_get_disp_flags()
-         & VIDEO_FLAG_USE_RGBA) ? true : false;
+    * decode start (after any reinit has settled) - not in the
+    * per-chunk decode loop, where even the one atomic read per
+    * iteration would buy nothing: the value cannot change mid-decode. */
+   {
+      gfx_surface_requirements_t req;
+      gfx_surface_query_requirements(0, &req);
+      image->ti.supports_rgba = req.rgba;
+      /* Native 10-bit output is worth asking the decoder for only
+       * when the driver can sample it; otherwise the buffer would be
+       * narrowed again at upload for nothing. Same answer, same
+       * moment, one place. */
+      /* The decoders emit 8-bit or 10-bit today, so a driver that
+       * takes something wider still gets 10-bit from here - asking
+       * for the widest the producer can actually emit, rather than
+       * assuming the driver's preference is reachable. */
+      if (req.formats & GFX_SURFACE_PIXFMT_2101010)
+         image_transfer_set_want_10bit(image->handle, image->type, 1);
+   }
 
    /* Hand the byte order to the transfer layer now: the JPEG fused
     * iterate+resample emits final pixels during transfer, before any
@@ -422,7 +432,7 @@ static bool upscale_image(
    size_t total_pixels;
 
    /* Sanity check */
-   if ((scale_factor < 1) || !image_src || !image_dst)
+   if ((scale_factor < 2) || !image_src || !image_dst)
       return false;
 
    if (!image_src->pixels || (image_src->width < 1) || (image_src->height < 1))
@@ -439,18 +449,33 @@ static bool upscale_image(
    if (!(image_dst->pixels = (uint32_t*)malloc(total_pixels * sizeof(uint32_t))))
       return false;
 
-   /* Interpolate rather than duplicate.  This used to expand each
-    * source pixel into a scale_factor-wide run and memcpy the row
-    * scale_factor times, which does not improve the picture - it
-    * only makes it bigger, every pixel repeated with a hard step
-    * between runs.  At 4x that leaves 77% of pixels identical to
-    * their left neighbour and edges stepping 5 levels at once,
-    * against 28% and 2 through the scaler.
+   /* Duplicate rather than interpolate.
     *
-    * Bilinear rather than sinc: the source is by definition below
-    * the upscale threshold, so it is small, and sinc costs twice as
-    * much for a result that is no better on an image with no high
-    * frequency detail left to reconstruct. */
+    * This looks like the wrong choice in isolation - at 4x, point
+    * sampling leaves 75% of pixels identical to their left neighbour
+    * and steps edges 4 levels at once, where interpolation would step
+    * 1 - and it was changed to bilinear on that reasoning.  But this
+    * texture is not what anyone sees.  The menu hands it to the GPU,
+    * which samples it bilinearly into a thumbnail box that is a
+    * different size again, so whatever softening happens here happens
+    * a second time on top.  Interpolating twice is measurably worse
+    * than the GPU interpolating once, which makes upscaling actively
+    * harmful: an Amiga save state screenshot drawn into a 960px box
+    * came out 3.7% softer with the upscaler on than with it off, and
+    * boxart the same way to a lesser degree.  The setting existed to
+    * sharpen thumbnails and was blurring them.
+    *
+    * Duplication survives the GPU's pass instead of compounding with
+    * it.  The hard steps land on texel boundaries the bilinear sample
+    * then softens by exactly one output pixel, which is the crisp
+    * look the setting is for - the same screenshot comes out 12.5%
+    * sharper than with no upscaling at all, against -3.7% for
+    * bilinear.  It is also the only faithful option for 10-bit, where
+    * point sampling copies the packed words untouched.
+    *
+    * This is why the factor has to stay a whole number: at a
+    * fractional ratio the runs come out uneven, some source pixels
+    * doubled and some tripled, which is worse than either. */
    memset(&ctx, 0, sizeof(ctx));
    ctx.in_width    = image_src->width;
    ctx.in_height   = image_src->height;
@@ -461,7 +486,7 @@ static bool upscale_image(
    ctx.in_fmt      = image_src->pix10
          ? SCALER_FMT_XRGB2101010 : SCALER_FMT_ARGB8888;
    ctx.out_fmt     = ctx.in_fmt;
-   ctx.scaler_type = SCALER_TYPE_BILINEAR;
+   ctx.scaler_type = SCALER_TYPE_POINT;
 
    if (!scaler_ctx_gen_filter(&ctx))
    {
@@ -477,25 +502,24 @@ static bool upscale_image(
 }
 
 static uint32_t *downscale_box(const uint32_t *src,
-      unsigned sw, unsigned sh, unsigned f, bool pix10,
-      unsigned *dw, unsigned *dh)
+      unsigned src_dims, unsigned f, bool pix10, unsigned *out_dims)
 {
    unsigned x, y, i, j;
    unsigned n  = f * f;
+   unsigned sw = VIDEO_SCALE_W(src_dims);
+   unsigned dw = sw / f;
+   unsigned dh = VIDEO_SCALE_H(src_dims) / f;
    uint32_t *d;
 
-   *dw = sw / f;
-   *dh = sh / f;
-
-   if ((*dw < 1) || (*dh < 1))
+   if ((dw < 1) || (dh < 1))
       return NULL;
 
-   if (!(d = (uint32_t*)malloc((size_t)*dw * *dh * sizeof(uint32_t))))
+   if (!(d = (uint32_t*)malloc((size_t)dw * dh * sizeof(uint32_t))))
       return NULL;
 
-   for (y = 0; y < *dh; y++)
+   for (y = 0; y < dh; y++)
    {
-      for (x = 0; x < *dw; x++)
+      for (x = 0; x < dw; x++)
       {
          unsigned a = 0, r = 0, g = 0, b = 0;
 
@@ -527,15 +551,16 @@ static uint32_t *downscale_box(const uint32_t *src,
          }
 
          if (pix10)
-            d[(size_t)y * *dw + x] = 0xc0000000u
+            d[(size_t)y * dw + x] = 0xc0000000u
                   | ((r / n) << 20) | ((g / n) << 10) | (b / n);
          else
-            d[(size_t)y * *dw + x] =
+            d[(size_t)y * dw + x] =
                   ((a / n) << 24) | ((r / n) << 16)
                 | ((g / n) <<  8) |  (b / n);
       }
    }
 
+   *out_dims = VIDEO_SCALE_PACK(dw, dh);
    return d;
 }
 
@@ -590,15 +615,16 @@ static bool downscale_image(unsigned cap, struct texture_image *img)
     * tap. */
    for (f = 1; (sw / (f * 2)) >= dw; f *= 2) ;
 
-   if (f > 1)
+   if (f > 1 && VIDEO_SCALE_FITS(sw, sh))
    {
-      unsigned bw, bh;
+      unsigned box_dims;
 
-      if ((mid = downscale_box(src, sw, sh, f, img->pix10, &bw, &bh)))
+      if ((mid = downscale_box(src, VIDEO_SCALE_PACK(sw, sh), f,
+                  img->pix10, &box_dims)))
       {
          src = mid;
-         sw  = bw;
-         sh  = bh;
+         sw  = VIDEO_SCALE_W(box_dims);
+         sh  = VIDEO_SCALE_H(box_dims);
       }
    }
 
@@ -658,8 +684,8 @@ bool task_image_load_handler(retro_task_t *task)
       bool is_video = (image->type == IMAGE_TYPE_WEBM)
                    || (image->type == IMAGE_TYPE_MP4);
       /* Types whose decoders decode against a growing buffer with a
-       * resident-frontier wall: video stills, and (avail-aware) PNG and
-       * JPEG.  Their avail must be raised each tick as the read
+       * resident-frontier wall: video stills, and (avail-aware) PNG,
+       * JPEG, TGA and BMP.  Their avail must be raised each tick as the read
        * advances.  WEBP is excluded - it has no wall and instead starts
        * only once its still chunk is wholly resident. */
       bool is_prefix = is_video
@@ -668,6 +694,12 @@ bool task_image_load_handler(retro_task_t *task)
 #endif
 #ifdef HAVE_RJPEG
                     || (image->type == IMAGE_TYPE_JPEG)
+#endif
+#ifdef HAVE_RTGA
+                    || (image->type == IMAGE_TYPE_TGA)
+#endif
+#ifdef HAVE_RBMP
+                    || (image->type == IMAGE_TYPE_BMP)
 #endif
                     ;
 
@@ -727,6 +759,21 @@ bool task_image_load_handler(retro_task_t *task)
                    * whole-buffer as before. */
                   if (!ready && image->type == IMAGE_TYPE_JPEG)
                      ready = rjpeg_header_ready(
+                           nbio_xfer_ptr(nbio, NULL), done);
+#endif
+#ifdef HAVE_RTGA
+                  /* TGA starts once the header, id field and colour
+                   * map are resident; rows are then painted from the
+                   * prefix, walling at the resident frontier. */
+                  if (!ready && image->type == IMAGE_TYPE_TGA)
+                     ready = rtga_header_ready(
+                           nbio_xfer_ptr(nbio, NULL), done);
+#endif
+#ifdef HAVE_RBMP
+                  /* BMP starts once bfOffBits is resident, i.e. the
+                   * DIB header, masks and palette have all arrived. */
+                  if (!ready && image->type == IMAGE_TYPE_BMP)
+                     ready = rbmp_header_ready(
                            nbio_xfer_ptr(nbio, NULL), done);
 #endif
                }
@@ -816,26 +863,62 @@ bool task_image_load_handler(retro_task_t *task)
             {
                unsigned min_size = (image->ti.width < image->ti.height)
                                   ? image->ti.width : image->ti.height;
+               unsigned max_size = (image->ti.width > image->ti.height)
+                                  ? image->ti.width : image->ti.height;
                unsigned scale_factor_int = ((image->upscale_threshold 
                + min_size - 1) / min_size);
-               struct texture_image img_resampled = {
-                  NULL,
-                  0,
-                  0,
-                  false
-               };
 
-               /* 10-bit needs no special case here: upscale_image()
-                * selects the packed format for the scaler and filters
-                * it natively. */
-               if (upscale_image(scale_factor_int, &image->ti, &img_resampled))
+               /* The factor is chosen from the *shorter* side, so the
+                * longer one lands at the threshold times the aspect
+                * ratio - and on anything wider than 1:1 that can
+                * overshoot the cap the image is about to be reduced
+                * to anyway.  A 720x256 Amiga state screenshot at a
+                * threshold of 960 scales x4 to 2880x1024, which a
+                * 1080p cap then sincs straight back down to 1920x682:
+                * a megapixel and a half is filtered into existence
+                * and immediately filtered away again, and the sinc
+                * pass that undoes it costs more than the upscale that
+                * caused it.
+                *
+                * So take the largest whole factor that stays under
+                * the cap instead.  Whole, not fractional - see
+                * upscale_image(); aiming exactly at the cap would fit
+                * a few more pixels in but would make the duplication
+                * runs uneven, which defeats the point of doing this
+                * at all. */
+               if (image->downscale_cap > 0)
                {
-                  image->ti.width  = img_resampled.width;
-                  image->ti.height = img_resampled.height;
+                  unsigned cap_factor = image->downscale_cap / max_size;
 
-                  if (image->ti.pixels)
-                     free(image->ti.pixels);
-                  image->ti.pixels = img_resampled.pixels;
+                  if (scale_factor_int > cap_factor)
+                     scale_factor_int = cap_factor;
+               }
+
+               /* Nothing to gain below 2x: the source is already as
+                * large as the cap allows, so leave it for
+                * downscale_image(). */
+               if (scale_factor_int > 1)
+               {
+                  struct texture_image img_resampled = {
+                     NULL,
+                     0,
+                     0,
+                     false
+                  };
+
+                  /* 10-bit needs no special case here: upscale_image()
+                   * selects the packed format for the scaler and
+                   * samples it natively. */
+                  if (upscale_image(scale_factor_int,
+                           &image->ti, &img_resampled))
+                  {
+                     image->ti.width  = img_resampled.width;
+                     image->ti.height = img_resampled.height;
+
+                     if (image->ti.pixels)
+                        free(image->ti.pixels);
+                     image->ti.pixels = img_resampled.pixels;
+                  }
                }
             }
          }
@@ -917,6 +1000,45 @@ bool task_image_detach_video_stream(retro_task_t *task,
    return true;
 }
 
+int task_image_png_probe(retro_task_t *task)
+{
+#ifdef HAVE_RPNG
+   nbio_handle_t *nbio;
+   struct nbio_image_handle *image;
+   const uint8_t *buf;
+   size_t len = 0;
+   int   more = 0;
+
+   if (!task || !(nbio = (nbio_handle_t*)task->state))
+      return -1;
+   if (!BIT32_GET(nbio->status_flags, NBIO_FLAG_IMAGE_TASK))
+      return -1;
+   if (!(image = (struct nbio_image_handle*)nbio->data))
+      return -1;
+   if (image->type != IMAGE_TYPE_PNG)
+      return -1;
+   /* Only a completed read is a verdict: rpng_is_apng_ex over a
+    * partial buffer can only say "not yet", and "not yet" from here
+    * would be mistaken for "still".  A short or detached transfer
+    * reports unknown and the caller probes the file, as it always
+    * did. */
+   if (!nbio->xfer || !data_transfer_complete(nbio->xfer))
+      return -1;
+   if (!(buf = nbio_xfer_ptr(nbio, &len)) || !len)
+      return -1;
+   if (rpng_is_apng_ex(buf, len, &more))
+      return 1;
+   /* The walk saw the whole file, so there is no acTL to find past
+    * a window: conclusively a still PNG.  (need_more cannot ask for
+    * bytes beyond a complete buffer; a truncated file with no acTL
+    * in what exists decodes as a still anyway.) */
+   return 0;
+#else
+   (void)task;
+   return -1;
+#endif
+}
+
 bool task_push_image_load(const char *fullpath,
       bool supports_rgba, unsigned upscale_threshold,
       unsigned downscale_cap,
@@ -938,7 +1060,6 @@ bool task_push_image_load(const char *fullpath,
    nbio->type          = NBIO_TYPE_NONE;
    nbio->is_finished   = false;
    nbio->status        = NBIO_STATUS_INIT;
-   nbio->pos_increment = 0;
    nbio->status_flags  = 0;
    nbio->data          = NULL;
    nbio->xfer          = NULL;
@@ -1055,6 +1176,40 @@ typedef struct
    uint64_t  *generation_ptr;  /* pointer to the STATIC gen counter      */
 } icon_load_tag_t;
 
+static void icon_image_release(void *img)
+{
+   struct texture_image *ti = (struct texture_image*)img;
+   if (ti)
+   {
+      image_texture_free(ti);
+      free(ti);
+   }
+}
+
+/* Main thread, when the upload has a handle (or failed with 0). The
+ * generation check lives here, not at queue time: the target may have
+ * been freed while the upload was in flight. A stale result, or one
+ * for a target that already got a newer handle, is unloaded rather
+ * than leaked. */
+static void icon_load_done(void *user, uintptr_t handle)
+{
+   icon_load_tag_t *tag = (icon_load_tag_t*)user;
+   if (!tag)
+      return;
+   if (tag->generation != *tag->generation_ptr)
+   {
+      if (handle)
+         video_driver_texture_unload(&handle);
+   }
+   else if (handle)
+   {
+      if (*tag->target)
+         video_driver_texture_unload(tag->target);
+      *tag->target = handle;
+   }
+   free(tag);
+}
+
 static void cb_task_icon_load(retro_task_t *task,
       void *task_data, void *user_data, const char *error)
 {
@@ -1074,8 +1229,15 @@ static void cb_task_icon_load(retro_task_t *task,
    if (!img || img->width < 1 || img->height < 1 || !img->pixels)
       goto end;
 
-   video_driver_texture_load(img, gfx_display_texture_filter(),
-         tag->target);
+   /* Under threaded video the upload goes to the video thread's
+    * queue and the handle comes back through icon_load_done() at a
+    * later frame - never a blocking round trip to the video thread
+    * per icon, which costs up to one present each, on the main
+    * thread, dozens of times at startup; img and tag are theirs
+    * now. */
+   if (video_driver_texture_load_async(img, gfx_display_texture_filter(),
+            icon_load_done, tag, icon_image_release))
+      return;
 
 end:
    if (img)

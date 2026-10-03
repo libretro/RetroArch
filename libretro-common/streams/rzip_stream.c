@@ -25,16 +25,30 @@
 
 #include <streams/file_stream.h>
 #include <streams/trans_stream.h>
+#ifdef HAVE_RZSTD
+#include <encodings/rzstd.h>
+#endif
 
 #include <streams/rzip_stream.h>
 
 #ifdef HAVE_THREADS
+#include <retro_atomic.h>
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #include <features/features_cpu.h>
 #endif
 
-/* Current RZIP file format version */
-#define RZIP_VERSION 1
+/* RZIP file format versions: 1 is chunks of deflate, 2 chunks of
+ * Zstandard frames. The container is the same otherwise, and a reader
+ * takes either where its codec is compiled in. */
+#define RZIP_VERSION_DEFLATE 1
+#define RZIP_VERSION_ZSTD    2
+#define RZIP_VERSION RZIP_VERSION_DEFLATE
+/* The Zstandard level. The built-in encoder runs at one speed
+ * whatever the level today, about a fifth faster than deflate at
+ * level 6 and a seventh larger; its decoder is seven times faster
+ * than inflate, which is what a load pays. */
+#define RZIP_ZSTD_LEVEL 3
 
 /* Compression level
  * > zlib default of 6 provides the best
@@ -55,6 +69,41 @@
 #define RZIP_HEADER_SIZE 20
 #define RZIP_CHUNK_HEADER_SIZE 4
 
+/* The codec every writer opened from here uses. Zstandard where the
+ * codec is compiled in - several times deflate's speed at the same
+ * size - and deflate otherwise; the frontend's setting changes it. A
+ * reader takes either, from the file. */
+static enum rzip_codec rzip_write_codec =
+#ifdef HAVE_RZSTD
+      RZIP_CODEC_ZSTD;
+#else
+      RZIP_CODEC_DEFLATE;
+#endif
+
+void rzipstream_set_write_codec(enum rzip_codec codec)
+{
+#ifndef HAVE_RZSTD
+   codec = RZIP_CODEC_DEFLATE;
+#endif
+   rzip_write_codec = codec;
+}
+
+enum rzip_codec rzipstream_get_write_codec(void)
+{
+   return rzip_write_codec;
+}
+
+bool rzipstream_codec_available(enum rzip_codec codec)
+{
+   if (codec == RZIP_CODEC_DEFLATE)
+      return true;
+#ifdef HAVE_RZSTD
+   if (codec == RZIP_CODEC_ZSTD)
+      return true;
+#endif
+   return false;
+}
+
 /* Holds all metadata for an RZIP file stream */
 #ifdef HAVE_THREADS
 /* Maximum number of worker threads used for
@@ -70,14 +119,21 @@ enum rzip_slot_status
 };
 
 /* One in-flight compression job. Each slot is
- * statically owned by one worker thread */
+ * statically owned by one worker thread, so it is
+ * a two-party handshake: the writer publishes
+ * in/in_size under a release store of READY, the
+ * worker publishes out_size under a release store
+ * of DONE or ERROR, and each side acquire-loads
+ * status before touching the other's fields. No
+ * lock is involved; 'wake' parks the worker */
 typedef struct rzip_par_slot
 {
+   retro_eventcount_t wake;
    const uint8_t *in;
    uint8_t *out;
    uint32_t in_size;
    uint32_t out_size;
-   enum rzip_slot_status status;
+   retro_atomic_int_t status;
 } rzip_par_slot_t;
 
 struct rzip_par;
@@ -93,13 +149,14 @@ typedef struct rzip_par_worker
 
 typedef struct rzip_par
 {
-   slock_t *lock;
-   scond_t *cond;
+   /* Parks the writer while the oldest slot is
+    * still in flight; notified by every worker */
+   retro_eventcount_t drain;
    rzip_par_slot_t slots[RZIP_MAX_THREADS];
    rzip_par_worker_t workers[RZIP_MAX_THREADS];
    uint32_t out_buf_size;
    unsigned num_threads;
-   bool shutdown;
+   retro_atomic_int_t shutdown;
 } rzip_par_t;
 #endif
 
@@ -128,6 +185,9 @@ struct rzipstream
    uint32_t out_buf_ptr;
    uint32_t out_buf_occupancy;
    uint32_t chunk_size;
+   /* RZIP_VERSION_DEFLATE or RZIP_VERSION_ZSTD: read from the header,
+    * or chosen at open for a writer. */
+   uint8_t  version;
 #ifdef HAVE_THREADS
    rzip_par_t *par;
    bool par_attempted;
@@ -173,7 +233,11 @@ static bool rzipstream_read_file_header(rzipstream_t *stream)
        || (header_bytes[3] !=           73)  /* I */
        || (header_bytes[4] !=           80)  /* P */
        || (header_bytes[5] !=          118)  /* v */
-       || (header_bytes[6] != RZIP_VERSION)  /* file format version number */
+       || (   header_bytes[6] != RZIP_VERSION_DEFLATE
+#ifdef HAVE_RZSTD
+           && header_bytes[6] != RZIP_VERSION_ZSTD
+#endif
+          )                                  /* file format version number */
        || (header_bytes[7] !=           35)) /* # */
    {
       /* Reset file to start */
@@ -183,6 +247,8 @@ static bool rzipstream_read_file_header(rzipstream_t *stream)
       stream->is_compressed = false;
       return true;
    }
+
+   stream->version = header_bytes[6];
 
    /* Get uncompressed chunk size - next 4 bytes */
    if ((stream->chunk_size = (
@@ -237,7 +303,7 @@ static bool rzipstream_write_file_header(rzipstream_t *stream)
    header_bytes[3]    =        73;    /* I */
    header_bytes[4]    =        80;    /* P */
    header_bytes[5]    =       118;    /* v */
-   header_bytes[6]    = RZIP_VERSION; /* file format version number */
+   header_bytes[6]    = stream->version; /* file format version number */
    header_bytes[7]    =        35;    /* # */
 
    /* > Uncompressed chunk size - next 4 bytes */
@@ -334,29 +400,46 @@ static bool rzipstream_init_stream(
     * and determine associated buffer sizes */
    if (stream->is_writing)
    {
-      /* Compression */
-      if (!(stream->deflate_backend = trans_stream_get_zlib_deflate_backend()))
-         return false;
+      /* Compression: the backend the stream's version names */
+#ifdef HAVE_RZSTD
+      if (stream->version == RZIP_VERSION_ZSTD)
+      {
+         if (!(stream->deflate_backend = trans_stream_get_rzstd_encode_backend()))
+            return false;
+         if (!(stream->deflate_stream = stream->deflate_backend->stream_new()))
+            return false;
+         if (!stream->deflate_backend->define(
+               stream->deflate_stream, "level", RZIP_ZSTD_LEVEL))
+            return false;
+         stream->in_buf_size  = stream->chunk_size;
+         stream->out_buf_size = (uint32_t)rzstd_compress_bound(stream->chunk_size);
+      }
+      else
+#endif
+      {
+         if (!(stream->deflate_backend = trans_stream_get_zlib_deflate_backend()))
+            return false;
 
-      if (!(stream->deflate_stream = stream->deflate_backend->stream_new()))
-         return false;
+         if (!(stream->deflate_stream = stream->deflate_backend->stream_new()))
+            return false;
 
-      /* Set compression level */
-      if (!stream->deflate_backend->define(
-            stream->deflate_stream, "level", RZIP_COMPRESSION_LEVEL))
-         return false;
+         /* Set compression level */
+         if (!stream->deflate_backend->define(
+               stream->deflate_stream, "level", RZIP_COMPRESSION_LEVEL))
+            return false;
 
-      /* Buffers
-       * > Input: uncompressed
-       * > Output: compressed */
-      stream->in_buf_size  = stream->chunk_size;
-      stream->out_buf_size = stream->chunk_size * 2;
-      /* > Account for minimum zlib overhead
-       *   of 11 bytes... */
-      stream->out_buf_size =
-            (stream->out_buf_size < (stream->in_buf_size + 11)) ?
-                  stream->out_buf_size + 11 :
-                  stream->out_buf_size;
+         /* Buffers
+          * > Input: uncompressed
+          * > Output: compressed */
+         stream->in_buf_size  = stream->chunk_size;
+         stream->out_buf_size = stream->chunk_size * 2;
+         /* > Account for minimum zlib overhead
+          *   of 11 bytes... */
+         stream->out_buf_size =
+               (stream->out_buf_size < (stream->in_buf_size + 11)) ?
+                     stream->out_buf_size + 11 :
+                     stream->out_buf_size;
+      }
 
       /* Redundant safety check */
       if (   (stream->in_buf_size  == 0)
@@ -367,7 +450,15 @@ static bool rzipstream_init_stream(
     * stream (or buffers) if source file is uncompressed */
    else if (stream->is_compressed)
    {
-      /* Decompression */
+      /* Decompression: the backend the file's version names */
+#ifdef HAVE_RZSTD
+      if (stream->version == RZIP_VERSION_ZSTD)
+      {
+         if (!(stream->inflate_backend = trans_stream_get_rzstd_decode_backend()))
+            return false;
+      }
+      else
+#endif
       if (!(stream->inflate_backend = trans_stream_get_zlib_inflate_backend()))
          return false;
 
@@ -503,6 +594,13 @@ rzipstream_t* rzipstream_open(const char *path, unsigned mode)
    stream->out_buf_size    = 0;
    stream->out_buf_ptr     = 0;
    stream->out_buf_occupancy = 0;
+   /* A writer's version is the codec chosen for writing; a reader's
+    * comes from the file's header. */
+   stream->version         = RZIP_VERSION_DEFLATE;
+#ifdef HAVE_RZSTD
+   if (rzip_write_codec == RZIP_CODEC_ZSTD)
+      stream->version      = RZIP_VERSION_ZSTD;
+#endif
 
    /* Initialise stream */
    if (!rzipstream_init_stream(
@@ -785,7 +883,7 @@ bool rzipstream_matches_buf(const char *path, const void *data, size_t len)
       /* RZIPSTREAM_MATCHES_BUF_CHUNK, sized by the stack rather than
        * by the decompressor: this is libretro-common API, so a caller
        * can be on a spawned thread, and GEKKO threads get 8 KiB
-       * (STACKSIZE in rthreads/gx_pthread.h).  See the same
+       * (the GEKKO STACKSIZE in rthreads.c).  See the same
        * ceiling and its measured cost in filestream_matches_buf(). */
       uint8_t chunk[RZIPSTREAM_MATCHES_BUF_CHUNK];
       size_t  off = 0;
@@ -969,16 +1067,30 @@ static void rzipstream_par_worker(void *data)
       uint32_t deflate_written = 0;
       bool ok                  = false;
 
-      slock_lock(par->lock);
-      while ((slot->status != RZIP_SLOT_READY) && !par->shutdown)
-         scond_wait(par->cond, par->lock);
-
-      if (par->shutdown)
+      /* Park until the writer publishes READY or
+       * shutdown. The re-check between prepare and
+       * commit is what makes the sleep safe against
+       * a notify racing the first check */
+      for (;;)
       {
-         slock_unlock(par->lock);
-         return;
+         int key;
+
+         if (retro_atomic_load_acquire_int(&par->shutdown))
+            return;
+         if (retro_atomic_load_acquire_int(&slot->status) == RZIP_SLOT_READY)
+            break;
+
+         key = retro_eventcount_prepare_wait(&slot->wake);
+
+         if (   retro_atomic_load_acquire_int(&par->shutdown)
+             || (retro_atomic_load_acquire_int(&slot->status)
+                   == RZIP_SLOT_READY))
+         {
+            retro_eventcount_cancel_wait(&slot->wake);
+            continue;
+         }
+         retro_eventcount_commit_wait(&slot->wake, key);
       }
-      slock_unlock(par->lock);
 
       /* Compress assigned chunk with this worker's
        * private deflate state. Each chunk is an
@@ -1001,11 +1113,10 @@ static void rzipstream_par_worker(void *data)
             ok = false;
       }
 
-      slock_lock(par->lock);
       slot->out_size = deflate_written;
-      slot->status   = ok ? RZIP_SLOT_DONE : RZIP_SLOT_ERROR;
-      scond_broadcast(par->cond);
-      slock_unlock(par->lock);
+      retro_atomic_store_release_int(&slot->status,
+            ok ? RZIP_SLOT_DONE : RZIP_SLOT_ERROR);
+      retro_eventcount_notify(&par->drain);
    }
 }
 
@@ -1018,15 +1129,11 @@ static void rzipstream_par_free(rzipstream_t *stream)
    if (!par)
       return;
 
-   if (par->lock && par->cond)
-   {
-      slock_lock(par->lock);
-      par->shutdown = true;
-      scond_broadcast(par->cond);
-      slock_unlock(par->lock);
-   }
-
+   retro_atomic_store_release_int(&par->shutdown, 1);
    for (i = 0; i < par->num_threads; i++)
+      retro_eventcount_notify(&par->slots[i].wake);
+
+   for (i = 0; i < RZIP_MAX_THREADS; i++)
    {
       if (par->workers[i].thread)
          sthread_join(par->workers[i].thread);
@@ -1039,12 +1146,11 @@ static void rzipstream_par_free(rzipstream_t *stream)
       if (par->slots[i].out)
          free(par->slots[i].out);
       par->slots[i].out = NULL;
+
+      retro_eventcount_free(&par->slots[i].wake);
    }
 
-   if (par->cond)
-      scond_free(par->cond);
-   if (par->lock)
-      slock_free(par->lock);
+   retro_eventcount_free(&par->drain);
 
    free(par);
    stream->par = NULL;
@@ -1076,10 +1182,9 @@ static bool rzipstream_par_init(rzipstream_t *stream)
       return false;
 
    par->out_buf_size = stream->out_buf_size;
+   retro_atomic_int_init(&par->shutdown, 0);
 
-   if (!(par->lock = slock_new()))
-      goto error;
-   if (!(par->cond = scond_new()))
+   if (!retro_eventcount_init(&par->drain))
       goto error;
 
    for (i = 0; i < num_threads; i++)
@@ -1089,15 +1194,24 @@ static bool rzipstream_par_init(rzipstream_t *stream)
       worker->par     = par;
       worker->index   = i;
 
-      if (!(worker->backend = trans_stream_get_zlib_deflate_backend()))
+      worker->backend = stream->deflate_backend;
+      if (!worker->backend)
          goto error;
       if (!(worker->stream = worker->backend->stream_new()))
          goto error;
       if (!worker->backend->define(
-            worker->stream, "level", RZIP_COMPRESSION_LEVEL))
+            worker->stream, "level",
+#ifdef HAVE_RZSTD
+            stream->version == RZIP_VERSION_ZSTD ? RZIP_ZSTD_LEVEL :
+#endif
+            RZIP_COMPRESSION_LEVEL))
          goto error;
 
       if (!(par->slots[i].out = (uint8_t*)malloc(par->out_buf_size)))
+         goto error;
+
+      retro_atomic_int_init(&par->slots[i].status, RZIP_SLOT_EMPTY);
+      if (!retro_eventcount_init(&par->slots[i].wake))
          goto error;
 
       if (!(worker->thread = sthread_create(
@@ -1136,6 +1250,7 @@ static bool rzipstream_write_chunks_parallel(rzipstream_t *stream,
           || (!failed && (dispatched < num_chunks)))
    {
       rzip_par_slot_t *slot = NULL;
+      int st                = RZIP_SLOT_EMPTY;
 
       /* Dispatch until the slot window is full */
       if (   !failed
@@ -1144,30 +1259,43 @@ static bool rzipstream_write_chunks_parallel(rzipstream_t *stream,
       {
          slot = &par->slots[dispatched % num_slots];
 
-         slock_lock(par->lock);
          slot->in       = data + (size_t)dispatched * chunk_size;
          slot->in_size  = chunk_size;
          slot->out_size = 0;
-         slot->status   = RZIP_SLOT_READY;
-         scond_broadcast(par->cond);
-         slock_unlock(par->lock);
+         retro_atomic_store_release_int(&slot->status, RZIP_SLOT_READY);
+         retro_eventcount_notify(&slot->wake);
 
          dispatched++;
          continue;
       }
 
-      /* Drain oldest in-flight chunk (in-order emission) */
+      /* Drain oldest in-flight chunk (in-order emission).
+       * Park on the pool's drain eventcount; any worker
+       * finishing notifies it, and the re-check between
+       * prepare and commit closes the lost-wakeup window */
       slot = &par->slots[drained % num_slots];
 
-      slock_lock(par->lock);
-      while (   (slot->status != RZIP_SLOT_DONE)
-             && (slot->status != RZIP_SLOT_ERROR))
-         scond_wait(par->cond, par->lock);
+      for (;;)
+      {
+         int key;
 
-      if (slot->status == RZIP_SLOT_ERROR)
+         st = retro_atomic_load_acquire_int(&slot->status);
+         if ((st == RZIP_SLOT_DONE) || (st == RZIP_SLOT_ERROR))
+            break;
+
+         key = retro_eventcount_prepare_wait(&par->drain);
+         st  = retro_atomic_load_acquire_int(&slot->status);
+         if ((st == RZIP_SLOT_DONE) || (st == RZIP_SLOT_ERROR))
+         {
+            retro_eventcount_cancel_wait(&par->drain);
+            break;
+         }
+         retro_eventcount_commit_wait(&par->drain, key);
+      }
+
+      if (st == RZIP_SLOT_ERROR)
          failed = true;
-      slot->status = RZIP_SLOT_EMPTY;
-      slock_unlock(par->lock);
+      retro_atomic_store_relaxed_int(&slot->status, RZIP_SLOT_EMPTY);
 
       if (!failed)
       {

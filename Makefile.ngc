@@ -11,6 +11,14 @@ PC_DEVELOPMENT_UDP_PORT    = 3490
 RARCH_CONSOLE              = 0
 USBGECKO                   = 0
 HAVE_STATIC_DUMMY ?= 0
+# GameCube has no salamander / exec support, so in-menu core
+# switching is impossible: each core dol is launched directly
+# from the loader. If core info matching fails (missing or
+# mismatched info files, stale core_info.cache), a strict
+# core-info gate would leave content loading with no options at
+# all. Default to offering the statically linked, currently
+# running core as a fallback in that case.
+LOAD_WITHOUT_CORE_INFO    ?= 1
 
 SPACE      :=
 SPACE      := $(SPACE) $(SPACE)
@@ -55,11 +63,15 @@ endif
 
 LIBS               := $(WHOLE_START) $(LIB_CORE) $(WHOLE_END)
 
-libogc_platform    := 1
-
+# HAVE_LIBOGC=1 builds on libogc (EXTERNAL_LIBOGC=1: devkitPro's, else
+# the copy in wii/libogc); HAVE_LIBOGC=0 on RetroArch's own system layer,
+# os/gekko.
+HAVE_LIBOGC       ?= 1
 EXTERNAL_LIBOGC   ?= 0
+ifeq ($(HAVE_LIBOGC), 1)
+libogc_platform    := 1
+endif
 HAVE_OGG_OGC      ?= 0
-GX_PTHREAD_LEGACY ?= 1
 CC                 = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
 CXX                = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
 LD                 = $(DEVKITPPC)/bin/powerpc-eabi-ld$(EXE_EXT)
@@ -75,22 +87,22 @@ endif
 
 INCLUDE += -I.
 
-ifeq ($(EXTERNAL_LIBOGC), 1)
-   CFLAGS   += -DEXTERNAL_LIBOGC
-   CXXFLAGS += -DEXTERNAL_LIBOGC
+ifeq ($(HAVE_LIBOGC), 0)
+   CFLAGS   += -DGEKKO_NATIVE
+   CXXFLAGS += -DGEKKO_NATIVE
+   INCLUDE  += -Ios/gekko/include
+else ifeq ($(EXTERNAL_LIBOGC), 1)
+   CFLAGS   += -DHAVE_LIBOGC -DEXTERNAL_LIBOGC
+   CXXFLAGS += -DHAVE_LIBOGC -DEXTERNAL_LIBOGC
    LIBDIRS += -L$(DEVKITPRO)/libogc/lib/cube
    INCLUDE += -I$(DEVKITPRO)/libogc/include
 else
-   CFLAGS   += -DINTERNAL_LIBOGC
-   CXXFLAGS += -DINTERNAL_LIBOGC
+   CFLAGS   += -DHAVE_LIBOGC -DINTERNAL_LIBOGC
+   CXXFLAGS += -DHAVE_LIBOGC -DINTERNAL_LIBOGC
    LIBDIRS += -Lwii/libogc/libs/cube
    INCLUDE += -Iwii/libogc/include
 endif
 
-ifeq ($(GX_PTHREAD_LEGACY), 1)
-   CFLAGS   += -DGX_PTHREAD_LEGACY
-   CXXFLAGS += -DGX_PTHREAD_LEGACY
-endif
 
 MACHDEP := -DHW_DOL -mogc
 
@@ -99,7 +111,9 @@ MACHDEP += -DGEKKO -mcpu=750 -meabi -mhard-float
 
 LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map
 
-ifeq ($(BIG_STACK), 1)
+ifeq ($(HAVE_LIBOGC), 0)
+   LDFLAGS += -T os/gekko/boot/dol.ld -Los/gekko/boot
+else ifeq ($(BIG_STACK), 1)
    LDFLAGS += -T bootstrap/gx/ogc.ld
 endif
 
@@ -107,6 +121,7 @@ ifeq ($(HAVE_OGG_OGC), 1)
    LIBS += -L$(DEVKITPRO)/portlibs/ppc/lib -lvorbisfile -lvorbis -logg
 endif
 
+ifeq ($(HAVE_LIBOGC), 1)
 ifeq ($(EXTERNAL_LIBOGC), 1)
    LIBS += -lfat
 endif
@@ -116,23 +131,34 @@ ifeq ($(HAVE_LOGGER), 1)
 endif
 
 LIBS += -logc
+endif
 
 CFLAGS += -DGEKKO -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 
-HAVE_RUNAHEAD            := 1
+# 24 MB of MEM1 makes resident code weight count, so features that cannot
+# do their job on this hardware are compiled out: runahead (the second
+# savestate never fits beside a running core), the webp/dds thumbnail
+# decoders, the mod/s3m/xm tracker, 7z (LZMA dictionaries alone outsize
+# the console's free RAM, so 7z archives could never extract anyway) and
+# libretrodb (defaulted on by Makefile.common; database scanning is
+# impractical here, and the explore menu goes with it).  Together these
+# return about 640 KB of MEM1 to content.
+HAVE_LIBRETRODB          := 0
+HAVE_RUNAHEAD            := 0
 HAVE_DSP_FILTER          := 1
 HAVE_VIDEO_FILTER        := 1
 HAVE_FILTERS_BUILTIN     := 1
 HAVE_THREADS             := 1
 HAVE_RPNG                := 1
-HAVE_RWEBP               := 1
-HAVE_RDDS                := 1
+HAVE_RWEBP               := 0
+HAVE_RDDS                := 0
 HAVE_RJPEG               := 1
 HAVE_RBMP                := 1
 HAVE_RTGA                := 1
-HAVE_RMODTRACKER                := 1
+HAVE_RMODTRACKER         := 0
 HAVE_OVERLAY             := 1
-HAVE_7ZIP                := 1
+HAVE_7ZIP                := 0
+HAVE_RZSTD               := 1
 HAVE_CONFIGFILE          := 1
 HAVE_PATCH               := 1
 HAVE_XDELTA              := 0 # disabled because <lzma.h> isn't available (or we haven't figured out how to install it)
@@ -157,9 +183,20 @@ INCLUDE += -I./libretro-common/include \
            -Ideps
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
 
-OBJ =  $(PLATOBJS) audio/drivers/gx_audio.o gfx/drivers/gx_gfx.o input/drivers/gx_input.o frontend/drivers/platform_gx.o input/drivers_joypad/gx_joypad.o
+ifeq ($(HAVE_LIBOGC), 1)
+OBJ =  $(PLATOBJS) audio/drivers/gx_audio_libogc.o gfx/drivers/gx_gfx_libogc.o gfx/display_servers/dispserv_gx_libogc.o gfx/display_servers/dispserv_gx_modes.o input/drivers/gx_input.o frontend/drivers/platform_gx_libogc.o input/drivers_joypad/gx_joypad_libogc.o
+else
+GEKKO_DIR      := os/gekko
+GEKKO_PLATFORM := dol
+include os/gekko/gekko.mk
+OBJ =  audio/drivers/gekko_audio.o gfx/drivers/gekko_gfx.o gfx/display_servers/dispserv_gekko.o gfx/display_servers/dispserv_gx_modes.o input/drivers/gx_input.o frontend/drivers/platform_gekko.o input/drivers_joypad/gekko_joypad.o $(addsuffix .o,$(basename $(GEKKO_SOURCES)))
+endif
 
-ifeq ($(EXTERNAL_LIBOGC), 0)
+ifeq ($(HAVE_LIBOGC)$(EXTERNAL_LIBOGC), 10)
+   # Bridge the prebuilt in-tree libogc's __syscalls table onto the
+   # per-symbol __syscall_* hooks modern devkitPPC libsysbase dispatches
+   # through (see wii/libogc_syscalls_compat.c).
+   OBJ += wii/libogc_syscalls_compat.o
    OBJ += wii/libogc/libfat/libfat.o wii/libogc/libfat/fatfile.o wii/libogc/libfat/file_allocation_table.o wii/libogc/libfat/cache.o wii/libogc/libfat/fatdir.o wii/libogc/libfat/partition.o wii/libogc/libfat/directory.o wii/libogc/libfat/filetime.o wii/libogc/libfat/disc.o
 endif
 
@@ -176,8 +213,8 @@ ifeq ($(HAVE_LOGGER), 1)
    CFLAGS      += -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
 endif
 
-ifeq ($(HAVE_KERNEL_PRX), 1)
-   CFLAGS      += -DHAVE_KERNEL_PRX
+ifeq ($(HAVE_THREADS), 1)
+   CFLAGS      += -DHAVE_THREADS
 endif
 
 ifeq ($(HAVE_WIIUSB_HID), 1)
@@ -231,6 +268,10 @@ ifeq ($(DEBUG), 1)
    CFLAGS += -O0 -g -DDEBUG
 else
    CFLAGS += -O3
+endif
+
+ifeq ($(LOAD_WITHOUT_CORE_INFO),1)
+   CFLAGS += -DLOAD_WITHOUT_CORE_INFO
 endif
 
 ifneq ($(V),1)

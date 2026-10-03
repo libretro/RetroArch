@@ -64,11 +64,13 @@
 #include <stdint.h>
 #include <string.h>
 #include <boolean.h>
+#include <features/features_cpu.h>
 
 #include "../../../gfx/gfx_widgets.h"
 #include "../../../gfx/gfx_display.h"
 #include "../../../gfx/gfx_animation.h"
 #include "../../../retroarch.h"
+#include "../../../configuration.h"
 #include "../../../msg_hash.h"
 
 /* --- singletons --- */
@@ -118,32 +120,92 @@ void font_driver_bind_block(void *font_data, void *block)
 { (void)font_data; (void)block; }
 void font_driver_free(font_data_t *font) { (void)font; }
 
+/* Retiring a font for a deferred release. No frame clock here and
+ * nothing owning a GPU atlas, so this is the same no-op as the free
+ * above. */
+void font_driver_free_deferred(font_data_t *font) { (void)font; }
+
+/* Whether the font already loaded is the one being asked for.
+ * gfx_display_font_file() below never produces one, so the honest
+ * answer is always no, which keeps gfx_widgets_font_init() on the
+ * build path these tests exercise. */
+bool font_driver_matches(const font_data_t *font,
+      const char *path, float size)
+{ (void)font; (void)path; (void)size; return false; }
+
 /* --- display: signatures copied from gfx/gfx_display.h --- */
 void gfx_display_draw_quad(gfx_display_t *p_disp, void *data,
-      unsigned video_width, unsigned video_height,
-      int x, int y, unsigned w, unsigned h,
-      unsigned width, unsigned height, float *color, uintptr_t *texture)
-{ (void)p_disp; (void)data; (void)video_width; (void)video_height;
+      unsigned video_dims,
+      int x, int y, unsigned dims,
+      unsigned ref_dims, float *color, uintptr_t *texture)
+{
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
+   unsigned w            = VIDEO_SCALE_W(dims);
+   unsigned h            = VIDEO_SCALE_H(dims);
+   unsigned width        = VIDEO_SCALE_W(ref_dims);
+   unsigned height       = VIDEO_SCALE_H(ref_dims);
+ (void)p_disp; (void)data; (void)video_width; (void)video_height;
   (void)x; (void)y; (void)w; (void)h; (void)width; (void)height;
   (void)color; (void)texture; }
 
 void gfx_display_draw_text(const font_data_t *font, const char *text,
-      float x, float y, int width, int height, uint32_t color,
+      float x, float y, unsigned dims, uint32_t color,
       enum text_alignment text_align, float scale,
       bool shadows_enable, float shadow_offset, bool draw_outside)
-{ (void)font; (void)text; (void)x; (void)y; (void)width; (void)height;
+{ (void)font; (void)text; (void)x; (void)y; (void)dims;
   (void)color; (void)text_align; (void)scale; (void)shadows_enable;
   (void)shadow_offset; (void)draw_outside; }
+
+/* gfx_widgets_draw_icon() reaches this through the display driver's
+ * own draw entry point, which the widget layer calls directly rather
+ * than through one of the helpers above.
+ *
+ * The size a draw asks for is recorded here: it travels to every
+ * display driver as one packed word, and a store and a load that
+ * disagree on which half holds which axis give every backend a
+ * transposed quad. Nothing renders in this suite, so the descriptor
+ * itself is what gets checked. */
+unsigned stub_draw_dims;
+unsigned stub_draw_count;
+
+void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
+      gfx_display_ctx_draw_t *draw, void *data,
+      unsigned video_dims)
+{
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
+   if (draw)
+   {
+      stub_draw_dims = draw->dims;
+      stub_draw_count++;
+   }
+   (void)dispctx; (void)data;
+   (void)video_width; (void)video_height;
+}
+
+/* The widgets turn blending on and off through gfx_display now, and
+ * send its batch out at the end of their frame. None of that draws
+ * anything here. */
+static gfx_display_t stub_disp;
+gfx_display_t *disp_get_ptr(void) { return &stub_disp; }
+
+void gfx_display_flush_batch(gfx_display_t *p_disp) { (void)p_disp; }
+
+void gfx_display_blend_begin(gfx_display_ctx_driver_t *dispctx, void *data)
+{ (void)dispctx; (void)data; }
+
+void gfx_display_blend_end(gfx_display_ctx_driver_t *dispctx, void *data)
+{ (void)dispctx; (void)data; }
 
 void gfx_display_rotate_z(gfx_display_t *p_disp, math_matrix_4x4 *matrix,
       float cosine, float sine, void *data)
 { (void)p_disp; (void)matrix; (void)cosine; (void)sine; (void)data; }
 
 void gfx_display_scissor_begin(gfx_display_t *p_disp, void *userdata,
-      unsigned video_width, unsigned video_height,
-      int x, int y, unsigned width, unsigned height)
-{ (void)p_disp; (void)userdata; (void)video_width; (void)video_height;
-  (void)x; (void)y; (void)width; (void)height; }
+      unsigned video_dims, int x, int y, unsigned dims)
+{ (void)p_disp; (void)userdata; (void)video_dims;
+  (void)x; (void)y; (void)dims; }
 
 enum texture_filter_type gfx_display_texture_filter(void)
 { return TEXTURE_FILTER_LINEAR; }
@@ -157,21 +219,19 @@ bool gfx_display_init_first_driver(gfx_display_t *p_disp,
 { (void)p_disp; (void)video_is_threaded; return true; }
 
 float gfx_display_get_dpi_scale(gfx_display_t *p_disp, void *settings_data,
-      unsigned width, unsigned height, bool fullscreen, bool is_widget)
-{ (void)p_disp; (void)settings_data; (void)width; (void)height;
+      unsigned dims, bool fullscreen, bool is_widget)
+{ (void)p_disp; (void)settings_data; (void)dims;
   (void)fullscreen; (void)is_widget; return 1.0f; }
 
 bool gfx_display_reset_textures_list_buffer(uintptr_t *item,
       enum texture_filter_type filter_type, void *buffer,
       unsigned buffer_len, enum image_type_enum image_type,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    (void)item; (void)filter_type; (void)buffer; (void)buffer_len;
    (void)image_type;
-   if (width)
-      *width = 0;
-   if (height)
-      *height = 0;
+   if (dims)
+      *dims = 0;
    return false;
 }
 
@@ -187,12 +247,23 @@ font_data_t *gfx_display_font_file(gfx_display_t *p_disp, char *fontpath,
   return NULL; }
 
 /* --- animation --- */
-bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
+bool gfx_animation_push_widget(gfx_animation_ctx_entry_t *entry)
 { (void)entry; return true; }
-bool gfx_animation_kill_by_tag(uintptr_t *tag) { (void)tag; return true; }
-void gfx_animation_timer_start(float *timer,
+bool gfx_animation_kill_widget_by_tag(uintptr_t *tag) { (void)tag; return true; }
+void gfx_animation_timer_start_widget(float *timer,
       gfx_timer_ctx_entry_t *timer_entry)
 { (void)timer_entry; if (timer) *timer = 0.0f; }
+void gfx_animation_widgets_own(bool worker) { (void)worker; }
+void gfx_animation_update_widgets(retro_time_t current_time,
+      float ticker_speed, unsigned video_dims)
+{ (void)current_time; (void)ticker_speed; (void)video_dims; }
+
+/* --- the threaded video worker's widget step and its text handoff,
+ *     which no test here drives --- */
+static settings_t s_settings;
+settings_t *config_get_ptr(void) { return &s_settings; }
+retro_time_t cpu_features_get_time_usec(void) { return 0; }
+void video_thread_status_text(const char *s) { (void)s; }
 
 /* --- video driver --- */
 uint32_t video_driver_get_disp_flags(void) { return 0; }
@@ -215,3 +286,11 @@ STUB_WIDGET(gfx_widget_achievement_popup);
 STUB_WIDGET(gfx_widget_leaderboard_display);
 STUB_WIDGET(gfx_widget_netplay_chat);
 STUB_WIDGET(gfx_widget_netplay_ping);
+
+/* Producers ask the surface layer what the driver wants before they
+ * decode; with no driver here the answer is what a software path
+ * takes: ARGB words. */
+bool gfx_surface_wants_rgba(void)
+{
+   return false;
+}

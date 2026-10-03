@@ -13,10 +13,16 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 # lets the test drive the animation open directly - upstream of the
 # task queue, downstream of the request plumbing.
 UUT_SRC := $(REPO_ROOT)/gfx/gfx_thumbnail.c
+ANIM_PREVIEW_SRC := $(REPO_ROOT)/gfx/gfx_anim_preview.c
 UUT_OBJ := gfx_thumbnail_uut.o
+# The streaming surface the animation frames go through, real: its
+# video-thread edge (the post) is stubbed and parked like the loads.
+SURFACE_SRC := $(REPO_ROOT)/gfx/gfx_surface.c
+SURFACE_OBJ := gfx_surface_uut.o
 
 SOURCES := gfx_thumbnail_anim_test.c \
            stubs_retroarch.c \
+           $(REPO_ROOT)/gfx/gfx_instrument.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strldup.c \
@@ -36,13 +42,20 @@ SOURCES := gfx_thumbnail_anim_test.c \
            $(LIBRETRO_COMM_DIR)/memory/mem_stats.c \
            $(LIBRETRO_COMM_DIR)/queues/task_queue.c \
            $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+           $(LIBRETRO_COMM_DIR)/rthreads/tpool.c \
+           $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
            $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+           $(LIBRETRO_COMM_DIR)/string/rstrtod.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c \
            $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
+# The counters are what lane 4 reads; a tree built without
+# HAVE_GFX_INSTRUMENT has none of them, which is the point of the
+# define, so the sample names it for itself.
 CFLAGS  += -Wall -std=gnu99 -g -O1 \
            -DHAVE_RWEBP -DHAVE_THREADS -DHAVE_MMAP -D_GNU_SOURCE \
+           -DHAVE_GFX_INSTRUMENT \
            -I$(REPO_ROOT) \
            -I$(LIBRETRO_COMM_DIR)/include
 
@@ -74,7 +87,16 @@ $(UUT_OBJ): $(UUT_SRC)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(TARGET): $(OBJS) $(UUT_OBJ)
+# The preview session gfx_thumbnail now drives its window feeder and
+# audio through; built with the UUT's flags (same stubs surface).
+ANIM_PREVIEW_OBJ := gfx_anim_preview_uut.o
+$(ANIM_PREVIEW_OBJ): $(ANIM_PREVIEW_SRC)
+	$(CC) -c -o $@ $< $(UUT_CFLAGS)
+
+$(SURFACE_OBJ): $(SURFACE_SRC)
+	$(CC) -c -o $@ $< $(UUT_CFLAGS)
+
+$(TARGET): $(OBJS) $(UUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 # ASan and TSan are mutually exclusive, hence separate passes.
@@ -88,6 +110,6 @@ sweep:
 	@echo "sweep clean"
 
 clean:
-	rm -f $(TARGET) $(OBJS) $(UUT_OBJ)
+	rm -f $(TARGET) $(OBJS) $(UUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ)
 
 .PHONY: all sweep clean

@@ -51,6 +51,7 @@ static void RH265_FN(intra_pred)(rh265_dec *d, int x0, int y0, int log2_size,
    RH265_PEL ref[4 * RH265_MAX_TB + 1];
    uint8_t avail[4 * RH265_MAX_TB + 1];
    RH265_PEL left[2 * RH265_MAX_TB + 1];
+   int cip = d->pps->constrained_intra_pred;
    RH265_PEL *top;
    int n4 = 4 * size;
    int i, x, y;
@@ -66,6 +67,15 @@ static void RH265_FN(intra_pred)(rh265_dec *d, int x0, int y0, int log2_size,
        * left-shifting a negative value is undefined behaviour. */
       avail[i] = (uint8_t)rh265_avail(d,
             x0 + sx * (1 << shift), y0 + sy * (1 << shift), cur);
+      /* 8.4.4.2.2: under constrained_intra_pred_flag a sample of a
+       * CU that is not intra-coded is not available either; the
+       * motion field's pred is 0 for an intra CU */
+      if (avail[i] && cip)
+      {
+         int lx = x0 + sx * (1 << shift), ly = y0 + sy * (1 << shift);
+         if (d->mvf[(ly >> 2) * d->w4 + (lx >> 2)].pred != 0)
+            avail[i] = 0;
+      }
       if (avail[i])
       {
          ref[i] = ((const RH265_PEL*)d->pl[c_idx])
@@ -485,6 +495,16 @@ static void RH265_FN(mc_pu)(rh265_dec *d, int x0, int y0, int w, int h,
    }
    if ((mv->pred & RH265_PF_L0) && !r0) return;
    if ((mv->pred & RH265_PF_L1) && !r1) return;
+   /* The rows the reads reach must be final: the block's last line
+    * displaced by the vector, and the eight-tap filter's four lines
+    * past it (chroma's four-tap at half resolution reaches no
+    * further). */
+   if (r0)
+      rh265_ref_wait_rows(d, r0, (y0 + h - 1 + (mv->mv[0].y >> 2) + 4)
+            >> d->sps->log2_ctb);
+   if (r1)
+      rh265_ref_wait_rows(d, r1, (y0 + h - 1 + (mv->mv[1].y >> 2) + 4)
+            >> d->sps->log2_ctb);
 
    /* luma */
    if (r0)
@@ -655,21 +675,68 @@ static int RH265_FN(deblock_chroma_tc)(rh265_dec *d, int qp_y, int c_idx)
 /* Deblock the whole picture: all marked TU/PU edges on the 8x8 luma grid
  * carry bS 2 in an intra picture.  Vertical edges over the full picture
  * first, then horizontal edges (8.7.2.1). */
-static void RH265_FN(deblock_frame)(rh265_dec *d)
+/* An edge with a transquant-bypass CU on one side or both (8.7.2.5.7:
+ * nDp / nDq are 0 for such a CU): the filter runs as for any edge, and
+ * the samples of the bypass side are put back. @pix is the first
+ * sample on the q side of the first line, @xs the step across the
+ * edge, @ys the step along it; @n samples either side over 4 lines. */
+static void RH265_FN(edge_keep_save)(const RH265_PEL *pix, int xs, int ys,
+      int n, int keep_p, int keep_q, RH265_PEL *save)
+{
+   int j, k;
+   for (j = 0; j < 4; j++)
+   {
+      const RH265_PEL *l = pix + j * ys;
+      for (k = 0; k < n; k++)
+      {
+         save[(j * 2) * n + k]     = keep_p ? l[-(k + 1) * xs] : 0;
+         save[(j * 2 + 1) * n + k] = keep_q ? l[k * xs] : 0;
+      }
+   }
+}
+
+static void RH265_FN(edge_keep_restore)(RH265_PEL *pix, int xs, int ys,
+      int n, int keep_p, int keep_q, const RH265_PEL *save)
+{
+   int j, k;
+   for (j = 0; j < 4; j++)
+   {
+      RH265_PEL *l = pix + j * ys;
+      for (k = 0; k < n; k++)
+      {
+         if (keep_p) l[-(k + 1) * xs] = save[(j * 2) * n + k];
+         if (keep_q) l[k * xs]        = save[(j * 2 + 1) * n + k];
+      }
+   }
+}
+
+/* Deblock the luma lines [y_lo, y_hi) - y_lo a multiple of 8 - and
+ * the chroma under them: the vertical edges of those lines, then the
+ * horizontal edges at and below y_lo, the one at y_lo included. Done
+ * band by band from the top this is the picture's filter to the
+ * sample: a horizontal edge reads only lines whose vertical edges the
+ * band, or the one above it, has already filtered, and a band's
+ * horizontal edges reach no line the band below still has to filter
+ * vertically. */
+static void RH265_FN(deblock_rows)(rh265_dec *d, int y_lo, int y_hi)
 {
    const rh265_sps *sps = d->sps;
    /* the div2 offsets are se(v) values in -6..6; scale by
     * multiplication, not by a shift of a possibly negative value */
    int beta_off = d->sh.beta_offset_div2 * 2;
    int tc_off   = d->sh.tc_offset_div2 * 2;
+   int byp      = d->pps->transquant_bypass_enabled;
+   RH265_PEL keep[4 * 2 * 3];
    int x, y, bs;
 
    if (d->sh.deblocking_filter_disabled)
       return;
+   if (y_hi > sps->height)
+      y_hi = sps->height;
 
    /* vertical edges */
    for (x = 8; x < sps->width; x += 8)
-      for (y = 0; y < sps->height; y += 4)
+      for (y = y_lo; y < y_hi; y += 4)
       {
          bs = d->vedge[(y >> 2) * d->w4 + (x >> 2)];
          if (!bs)
@@ -694,25 +761,38 @@ static void RH265_FN(deblock_frame)(rh265_dec *d)
                   qp + beta_off)] << (RH265_BD - 8);
             int tc = rh265_tctable[rh265_clip3(0, 53,
                   qp + 2 * (bs - 1) + tc_off)] << (RH265_BD - 8);
-            RH265_FN(filter_luma_edge)((RH265_PEL*)d->pl[0]
-                  + y * d->strd[0] + x, 1, d->strd[0], beta, tc);
+            RH265_PEL *pix = (RH265_PEL*)d->pl[0] + y * d->strd[0] + x;
+            int kp = byp && d->bypm[(y >> 3) * d->w8 + ((x - 1) >> 3)];
+            int kq = byp && d->bypm[(y >> 3) * d->w8 + (x >> 3)];
+            if (kp || kq)
+               RH265_FN(edge_keep_save)(pix, 1, d->strd[0], 3, kp, kq, keep);
+            RH265_FN(filter_luma_edge)(pix, 1, d->strd[0], beta, tc);
+            if (kp || kq)
+               RH265_FN(edge_keep_restore)(pix, 1, d->strd[0], 3, kp, kq, keep);
          }
          if (bs == 2 && (x & 15) == 0 && (y & 7) == 0 &&
              (y >> 1) + 4 <= d->ph[1])
          {
             int qp = (d->qpy[(y >> 3) * d->w8 + ((x - 1) >> 3)]
                     + d->qpy[(y >> 3) * d->w8 + (x >> 3)] + 1) >> 1;
-            RH265_FN(filter_chroma_edge)(
-                  (RH265_PEL*)d->pl[1] + (y >> 1) * d->strd[1] + (x >> 1),
-                  1, d->strd[1], RH265_FN(deblock_chroma_tc)(d, qp, 1));
-            RH265_FN(filter_chroma_edge)(
-                  (RH265_PEL*)d->pl[2] + (y >> 1) * d->strd[2] + (x >> 1),
-                  1, d->strd[2], RH265_FN(deblock_chroma_tc)(d, qp, 2));
+            int kp = byp && d->bypm[(y >> 3) * d->w8 + ((x - 1) >> 3)];
+            int kq = byp && d->bypm[(y >> 3) * d->w8 + (x >> 3)];
+            int c;
+            for (c = 1; c <= 2; c++)
+            {
+               RH265_PEL *pix = (RH265_PEL*)d->pl[c] + (y >> 1) * d->strd[c] + (x >> 1);
+               if (kp || kq)
+                  RH265_FN(edge_keep_save)(pix, 1, d->strd[c], 1, kp, kq, keep);
+               RH265_FN(filter_chroma_edge)(pix, 1, d->strd[c],
+                     RH265_FN(deblock_chroma_tc)(d, qp, c));
+               if (kp || kq)
+                  RH265_FN(edge_keep_restore)(pix, 1, d->strd[c], 1, kp, kq, keep);
+            }
          }
       }
 
    /* horizontal edges */
-   for (y = 8; y < sps->height; y += 8)
+   for (y = (y_lo < 8) ? 8 : y_lo; y < y_hi; y += 8)
       for (x = 0; x < sps->width; x += 4)
       {
          bs = d->hedge[(y >> 2) * d->w4 + (x >> 2)];
@@ -735,26 +815,47 @@ static void RH265_FN(deblock_frame)(rh265_dec *d)
                   qp + beta_off)] << (RH265_BD - 8);
             int tc = rh265_tctable[rh265_clip3(0, 53,
                   qp + 2 * (bs - 1) + tc_off)] << (RH265_BD - 8);
-            RH265_FN(filter_luma_edge)((RH265_PEL*)d->pl[0]
-                  + y * d->strd[0] + x, d->strd[0], 1, beta, tc);
+            RH265_PEL *pix = (RH265_PEL*)d->pl[0] + y * d->strd[0] + x;
+            int kp = byp && d->bypm[((y - 1) >> 3) * d->w8 + (x >> 3)];
+            int kq = byp && d->bypm[(y >> 3) * d->w8 + (x >> 3)];
+            if (kp || kq)
+               RH265_FN(edge_keep_save)(pix, d->strd[0], 1, 3, kp, kq, keep);
+            RH265_FN(filter_luma_edge)(pix, d->strd[0], 1, beta, tc);
+            if (kp || kq)
+               RH265_FN(edge_keep_restore)(pix, d->strd[0], 1, 3, kp, kq, keep);
          }
          if (bs == 2 && (y & 15) == 0 && (x & 7) == 0 &&
              (x >> 1) + 4 <= d->pw[1])
          {
             int qp = (d->qpy[((y - 1) >> 3) * d->w8 + (x >> 3)]
                     + d->qpy[(y >> 3) * d->w8 + (x >> 3)] + 1) >> 1;
-            RH265_FN(filter_chroma_edge)(
-                  (RH265_PEL*)d->pl[1] + (y >> 1) * d->strd[1] + (x >> 1),
-                  d->strd[1], 1, RH265_FN(deblock_chroma_tc)(d, qp, 1));
-            RH265_FN(filter_chroma_edge)(
-                  (RH265_PEL*)d->pl[2] + (y >> 1) * d->strd[2] + (x >> 1),
-                  d->strd[2], 1, RH265_FN(deblock_chroma_tc)(d, qp, 2));
+            int kp = byp && d->bypm[((y - 1) >> 3) * d->w8 + (x >> 3)];
+            int kq = byp && d->bypm[(y >> 3) * d->w8 + (x >> 3)];
+            int c;
+            for (c = 1; c <= 2; c++)
+            {
+               RH265_PEL *pix = (RH265_PEL*)d->pl[c] + (y >> 1) * d->strd[c] + (x >> 1);
+               if (kp || kq)
+                  RH265_FN(edge_keep_save)(pix, d->strd[c], 1, 1, kp, kq, keep);
+               RH265_FN(filter_chroma_edge)(pix, d->strd[c], 1,
+                     RH265_FN(deblock_chroma_tc)(d, qp, c));
+               if (kp || kq)
+                  RH265_FN(edge_keep_restore)(pix, d->strd[c], 1, 1, kp, kq, keep);
+            }
          }
       }
 }
 
+static void RH265_FN(deblock_frame)(rh265_dec *d)
+{
+   RH265_FN(deblock_rows)(d, 0, d->sps->height);
+}
+
+/* @src holds the deblocked, pre-SAO samples from picture row @src_y0
+ * down, at @src_stride: a band of one CTB row with a line above and
+ * below, not a copy of the picture. */
 static void RH265_FN(sao_ctb)(rh265_dec *d, const RH265_PEL *src,
-      int src_stride,
+      int src_stride, int src_y0,
       int c_idx, int rx, int ry)
 {
    const rh265_sao_params *sao = &d->sao[ry * d->sps->ctb_w + rx];
@@ -766,8 +867,9 @@ static void RH265_FN(sao_ctb)(rh265_dec *d, const RH265_PEL *src,
    int h = rh265_min(ctb, d->ph[c_idx] - y0);
    RH265_PEL *dst = (RH265_PEL*)d->pl[c_idx]
          + y0 * d->strd[c_idx] + x0;
-   const RH265_PEL *s = src + y0 * src_stride + x0;
+   const RH265_PEL *s = src + (y0 - src_y0) * src_stride + x0;
    int x, y;
+   int byp = d->pps->transquant_bypass_enabled;
 
    if (sao->type_idx[c_idx] == 1)
    {
@@ -779,8 +881,13 @@ static void RH265_FN(sao_ctb)(rh265_dec *d, const RH265_PEL *src,
          band[(sao->band_pos[c_idx] + k) & 31] = sao->off[c_idx][k];
       for (y = 0; y < h; y++)
          for (x = 0; x < w; x++)
+         {
+            if (byp && d->bypm[(((y0 + y) << shift) >> 3) * d->w8
+                     + (((x0 + x) << shift) >> 3)])
+               continue;               /* a transquant-bypass CU's sample */
             dst[y * d->strd[c_idx] + x] = RH265_FN(clip_pel)(
                   s[y * src_stride + x] + band[s[y * src_stride + x] >> (RH265_BD - 5)]);
+         }
    }
    else if (sao->type_idx[c_idx] == 2)
    {
@@ -793,6 +900,8 @@ static void RH265_FN(sao_ctb)(rh265_dec *d, const RH265_PEL *src,
          {
             int px = x0 + x, py = y0 + y;
             int a, b, cval, edge;
+            if (byp && d->bypm[((py << shift) >> 3) * d->w8 + ((px << shift) >> 3)])
+               continue;               /* a transquant-bypass CU's sample */
             if (px + dx < 0 || px + dx >= d->pw[c_idx] ||
                 py + dy < 0 || py + dy >= d->ph[c_idx] ||
                 px - dx < 0 || px - dx >= d->pw[c_idx] ||
@@ -835,11 +944,73 @@ static void RH265_FN(sao_ctb)(rh265_dec *d, const RH265_PEL *src,
    }
 }
 
+/* SAO over CTB row @ry. Rows go in order from the top, each after the
+ * deblocking of the row below it has run, since the row's last line
+ * reads the line under it as deblocked. The band buffers are sized
+ * on the first row. */
+static int RH265_FN(sao_row)(rh265_dec *d, int ry)
+{
+   const rh265_sps *sps = d->sps;
+   int c_idx, rx;
+   /* SAO reads the deblocked samples around each one and writes in
+    * place, so the CTB row being filtered - and the line above, which
+    * the previous row's pass has already changed, and the line below,
+    * which the next row's has not - is read from a band copied ahead
+    * of the pass: one CTB row and two lines, kept with the decoder,
+    * rather than the whole picture copied and freed per picture. The
+    * line above comes from the previous band, where it is still
+    * pre-SAO; the rest from the picture. */
+   for (c_idx = 0; c_idx < 3; c_idx++)
+   {
+      int shift  = c_idx ? 1 : 0;
+      int ctb    = 1 << (sps->log2_ctb - shift);
+      size_t row = (size_t)d->strd[c_idx] * sizeof(RH265_PEL);
+      size_t cap = row * (size_t)(ctb + 2);
+      if (d->sao_band_cap[c_idx] < cap)
+      {
+         void *b = realloc(d->sao_band[c_idx], cap);
+         if (!b)
+            return -1;
+         d->sao_band[c_idx]     = b;
+         d->sao_band_cap[c_idx] = cap;
+      }
+   }
+   {
+      for (c_idx = 0; c_idx < 3; c_idx++)
+      {
+         int shift  = c_idx ? 1 : 0;
+         int ctb    = 1 << (sps->log2_ctb - shift);
+         int y0     = ry << (sps->log2_ctb - shift);
+         int h      = rh265_min(ctb, d->ph[c_idx] - y0);
+         int below  = (y0 + h < d->ph[c_idx]) ? 1 : 0;
+         size_t row = (size_t)d->strd[c_idx] * sizeof(RH265_PEL);
+         uint8_t *band = (uint8_t*)d->sao_band[c_idx];
+         const uint8_t *pic = d->pl[c_idx];
+         if (ry > 0)
+         {
+            /* the line above: the previous band's last CTB line,
+             * still as deblocked */
+            int hp = rh265_min(ctb, d->ph[c_idx] - (y0 - ctb));
+            memmove(band, band + (size_t)hp * row, row);
+         }
+         memcpy(band + row, pic + (size_t)y0 * row, row * (size_t)(h + below));
+      }
+      for (rx = 0; rx < sps->ctb_w; rx++)
+         for (c_idx = 0; c_idx < 3; c_idx++)
+         {
+            int shift = c_idx ? 1 : 0;
+            int y0    = ry << (sps->log2_ctb - shift);
+            RH265_FN(sao_ctb)(d, (const RH265_PEL*)d->sao_band[c_idx],
+                  d->strd[c_idx], y0 - 1, c_idx, rx, ry);
+         }
+   }
+   return 0;
+}
+
 static int RH265_FN(sao_frame)(rh265_dec *d)
 {
    const rh265_sps *sps = d->sps;
-   int c_idx, rx, ry;
-   RH265_PEL *copy[3];
+   int rx, ry;
    int need = 0;
    for (ry = 0; ry < sps->ctb_h && !need; ry++)
       for (rx = 0; rx < sps->ctb_w && !need; rx++)
@@ -850,27 +1021,10 @@ static int RH265_FN(sao_frame)(rh265_dec *d)
       }
    if (!need)
       return 0;
-   for (c_idx = 0; c_idx < 3; c_idx++)
-   {
-      copy[c_idx] = (RH265_PEL*)malloc((size_t)d->strd[c_idx]
-            * d->ph[c_idx] * sizeof(RH265_PEL));
-      if (!copy[c_idx])
-      {
-         while (c_idx--) free(copy[c_idx]);
-         return -1;
-      }
-      memcpy(copy[c_idx], d->pl[c_idx], (size_t)d->strd[c_idx]
-            * d->ph[c_idx] * sizeof(RH265_PEL));
-   }
    for (ry = 0; ry < sps->ctb_h; ry++)
-      for (rx = 0; rx < sps->ctb_w; rx++)
-         for (c_idx = 0; c_idx < 3; c_idx++)
-            RH265_FN(sao_ctb)(d, copy[c_idx], d->strd[c_idx],
-                  c_idx, rx, ry);
-   for (c_idx = 0; c_idx < 3; c_idx++)
-      free(copy[c_idx]);
+      if (RH265_FN(sao_row)(d, ry) < 0)
+         return -1;
    return 0;
 }
-
 #undef RH265_PIX_MAX
 #undef RH265_HALF

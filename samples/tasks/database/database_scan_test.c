@@ -37,6 +37,7 @@
 #include <time.h>
 
 #include <queues/task_queue.h>
+#include <file/file_path.h>
 #include <lists/dir_list.h>
 #include <retro_timers.h>
 #include <streams/file_stream.h>
@@ -55,8 +56,8 @@
  * in.  The real definitions live in intl/msg_hash_us.c and
  * configuration.c, but those files transitively require RARCH_INTERNAL
  * which drags in the entire frontend subsystem.  This sample only
- * exercises task_push_dbscan; none of these symbols are actually
- * invoked on the path through task_push_dbscan / task_queue_check.
+ * exercises task_push_dbscan, and msg_hash_to_str_us() is the one stub
+ * a check depends on: it names the invalid content message.
  *
  * These take enum msg_hash_enums now that configuration.h - included
  * for settings_t - brings msg_hash.h with it.  They used to be
@@ -72,7 +73,8 @@ int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 
 const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 {
-   (void)msg;
+   if (msg == MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT)
+      return "invalid content";
    return "";
 }
 
@@ -100,16 +102,20 @@ settings_t *config_get_ptr(void)
    return &settings;
 }
 
-/* Additional stubs for retroarch-core symbols referenced transitively.
- * None of these are exercised on the dbscan path; they're link-time
- * stubs to avoid pulling in retroarch.c, runloop.c, frontend drivers,
- * and the UI/video subsystems. */
+static bool invalid_content_pushed = false;
+
+/* Additional stubs for retroarch-core symbols referenced transitively,
+ * to avoid pulling in retroarch.c, runloop.c, frontend drivers, and the
+ * UI/video subsystems.  runloop_msg_queue_push() also records the
+ * invalid content message. */
 void runloop_msg_queue_push(const char *msg, size_t len,
       unsigned prio, unsigned duration,
       bool flush, char *title, unsigned icon, unsigned category)
 {
-   (void)msg; (void)len; (void)prio; (void)duration;
+   (void)len; (void)prio; (void)duration;
    (void)flush; (void)title; (void)icon; (void)category;
+   if (msg && !strcmp(msg, "invalid content"))
+      invalid_content_pushed = true;
 }
 
 bool retroarch_override_setting_is_set(unsigned enum_idx, void *data)
@@ -431,6 +437,56 @@ static void msgq_push(retro_task_t *task, const char *msg,
    (void)task; (void)msg; (void)prio; (void)duration; (void)flush;
 }
 
+/* Returns false if the scan could not be started; otherwise waits for
+ * it, and scan_completed says whether it finished in time. */
+static bool run_scan(const char *dir)
+{
+   time_t started;
+
+   loop_active    = true;
+   scan_completed = false;
+   if (!task_push_dbscan(dir, scan_cb))
+      return false;
+
+   started = time(NULL);
+   while (loop_active)
+   {
+      task_queue_check();
+      if (difftime(time(NULL), started) > SCAN_TIMEOUT_SECONDS)
+         break;
+      retro_sleep(1);
+   }
+   return true;
+}
+
+/* As run_scan(), but counts the checks the scan took.  Meaningful on
+ * the regular queue, where every check runs the handler once. */
+static unsigned run_scan_counted(const char *dir)
+{
+   unsigned gathers = 0;
+   time_t   started;
+
+   loop_active    = true;
+   scan_completed = false;
+   if (!task_push_dbscan(dir, scan_cb))
+      return 0;
+
+   started = time(NULL);
+   while (loop_active)
+   {
+      task_queue_check();
+      gathers++;
+      if (difftime(time(NULL), started) > SCAN_TIMEOUT_SECONDS)
+         break;
+   }
+   return gathers;
+}
+
+/* Databases no core claims, and files that match nothing, in the
+ * lane below. */
+#define UNCLAIMED_DBS   48
+#define UNMATCHED_FILES 4
+
 int main(int argc, char **argv)
 {
    const char *root = (argc > 1) ? argv[1] : "/tmp";
@@ -451,6 +507,11 @@ int main(int argc, char **argv)
     * "archive#member" path for the entry. */
    const uint32_t crc_d = 0xD15CD15Cu;
    const uint32_t sz_d  = 2048;
+   /* Claimed by a second core that supports only ".gam", so the
+    * databases' claims differ and have to stay paired with their
+    * database when a match moves it to the front of the list. */
+   const uint32_t crc_g = 0x6A3A6A3Au;
+   const uint32_t sz_g  = 3072;
 
    setvbuf(stdout, NULL, _IONBF, 0);
    crc_init();
@@ -478,6 +539,19 @@ int main(int argc, char **argv)
    sprintf(p, "%s/Test Zip.rdb", db_dir);
    if (!write_db(p, "Zipped The Game", crc_d, sz_d))
    { check(0, "fixture", "could not write database"); return 1; }
+   sprintf(p, "%s/Test Gamma.rdb", db_dir);
+   if (!write_db(p, "Gamma The Game", crc_g, sz_g))
+   { check(0, "fixture", "could not write database"); return 1; }
+
+   /* A ".gam" file carrying the Gamma record, and one carrying the
+    * Alpha record: no core claiming Test Alpha supports ".gam", so
+    * the second must not land anywhere. */
+   sprintf(p, "%s/05_gamma.gam", in_dir);
+   if (!write_content(p, crc_g, sz_g))
+   { check(0, "fixture", "crc forcing failed"); return 1; }
+   sprintf(p, "%s/06_cross.gam", in_dir);
+   if (!write_content(p, crc_a, sz_a))
+   { check(0, "fixture", "crc forcing failed"); return 1; }
 
    sprintf(p, "%s/02_alpha.bin", in_dir);
    if (!write_content(p, crc_a, sz_a))
@@ -522,7 +596,7 @@ int main(int argc, char **argv)
 
    /* The scanner skips any database no installed core claims, so the
     * core info has to name both databases as well as the extension -
-    * see core_info_database_supports_content_path().  Without the
+    * see core_info_database_claim().  Without the
     * database line the scan reports no match for content whose crc is
     * certainly present, which is easy to mistake for a lookup bug. */
    sprintf(p, "%s/test_libretro.info", info_dir);
@@ -533,11 +607,25 @@ int main(int argc, char **argv)
       fprintf(f,
             "display_name = \"Scan Test\"\n"
             "corename = \"ScanTest\"\n"
-            "supported_extensions = \"bin|cue|zip\"\n"
+            "supported_extensions = \"bin|cue|gdi|zip\"\n"
             "database = \"Test Alpha|Test Beta|Test Disc|Test Zip\"\n");
       fclose(f);
    }
    sprintf(p, "%s/test_libretro.so", core_dir);
+   { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
+   sprintf(p, "%s/gamma_libretro.info", info_dir);
+   {
+      FILE *f = fopen(p, "w");
+      if (!f)
+      { check(0, "fixture", "could not write core info"); return 1; }
+      fprintf(f,
+            "display_name = \"Gamma Test\"\n"
+            "corename = \"GammaTest\"\n"
+            "supported_extensions = \"gam\"\n"
+            "database = \"Test Gamma\"\n");
+      fclose(f);
+   }
+   sprintf(p, "%s/gamma_libretro.so", core_dir);
    { FILE *f = fopen(p, "wb"); if (f) { fputs("\177ELF", f); fclose(f); } }
 
 #ifdef HAVE_THREADS
@@ -565,21 +653,10 @@ int main(int argc, char **argv)
             MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR, NULL))
       check(0, "system name", "could not be set");
 
-   if (!task_push_dbscan(pl_dir, db_dir, in_dir, true, false, scan_cb))
+   if (!run_scan(in_dir))
    {
       check(0, "scan started", "task_push_dbscan refused");
       goto done;
-   }
-
-   {
-      time_t started = time(NULL);
-      while (loop_active)
-      {
-         task_queue_check();
-         if (difftime(time(NULL), started) > SCAN_TIMEOUT_SECONDS)
-            break;
-         retro_sleep(1);
-      }
    }
    check(scan_completed, "scan ran to completion",
          scan_completed ? "callback fired" : "timed out");
@@ -618,6 +695,144 @@ int main(int argc, char **argv)
          "cue resolved through its track", "Disc The Game");
    check(file_contains(p, ".cue"),
          "playlist records the sheet, not the track", "path ends .cue");
+
+   /* Test Gamma is visited after four databases have been moved to
+    * the front of the list; its claim has to have travelled with it. */
+   sprintf(p, "%s/Test Gamma.lpl", pl_dir);
+   check(file_contains(p, "05_gamma.gam"),
+         "database claimed by a second core matched", "05_gamma.gam");
+   sprintf(p, "%s/Test Alpha.lpl", pl_dir);
+   check(!file_contains(p, "06_cross.gam"),
+         "extension of a core not claiming the database refused",
+         "no 06_cross.gam in Alpha");
+
+   /* A strict scan hands every file to DATABASE_SCAN_ITERATE_NEXT.  32
+    * files fill string_list_new()'s initial capacity, so ASan catches a
+    * read past the last entry. */
+   {
+      char pad_dir[512];
+      uint32_t i;
+
+      sprintf(pad_dir, "%s/scan_pad", root);
+      path_mkdir(pad_dir);
+      for (i = 0; i < 32; i++)
+      {
+         sprintf(p, "%s/pad_%02u.bin", pad_dir, (unsigned)i);
+         if (!write_content(p, 0x7AD00000u + i, 1024))
+         { check(0, "fixture", "crc forcing failed"); goto done; }
+      }
+
+      if (!run_scan(pad_dir))
+      {
+         check(0, "full list scan started", "task_push_dbscan refused");
+         goto done;
+      }
+      check(scan_completed, "scan of a full content list completed",
+            scan_completed ? "callback fired" : "timed out");
+   }
+
+   /* An empty folder has no entry to start iterating from. */
+   {
+      char empty_dir[512];
+
+      sprintf(empty_dir, "%s/scan_empty", root);
+      path_mkdir(empty_dir);
+
+      invalid_content_pushed = false;
+      if (!run_scan(empty_dir))
+      {
+         check(0, "empty folder scan started", "task_push_dbscan refused");
+         goto done;
+      }
+      check(scan_completed && invalid_content_pushed,
+            "empty folder reported as invalid content",
+            !scan_completed ? "timed out"
+            : invalid_content_pushed ? "message pushed" : "no message");
+   }
+
+   /* A sheet that names itself is still the entry being scanned, so
+    * pruning its tracks must not free it.  Only ASan sees the
+    * use-after-free. */
+   {
+      char self_dir[512];
+      FILE *f;
+
+      sprintf(self_dir, "%s/scan_self", root);
+      path_mkdir(self_dir);
+
+      sprintf(p, "%s/self.cue", self_dir);
+      if (!(f = fopen(p, "w")))
+      { check(0, "fixture", "could not write cue"); goto done; }
+      fprintf(f,
+            "FILE \"self.cue\" BINARY\n"
+            "  TRACK 01 MODE1/2352\n"
+            "    INDEX 01 00:00:00\n");
+      fclose(f);
+
+      sprintf(p, "%s/self.gdi", self_dir);
+      if (!(f = fopen(p, "w")))
+      { check(0, "fixture", "could not write gdi"); goto done; }
+      fprintf(f, "1\n1 0 4 2352 self.gdi 0\n");
+      fclose(f);
+
+      if (!run_scan(self_dir))
+      {
+         check(0, "self-naming sheet scan started", "task_push_dbscan refused");
+         goto done;
+      }
+      check(scan_completed, "self-naming cue and gdi scanned",
+            scan_completed ? "callback fired" : "timed out");
+   }
+
+   /* A database no core claims costs nothing per file: the step that
+    * refuses one passes over every refused database, so on the
+    * regular queue, which runs the handler once per check, a file
+    * takes a check per database it can match plus a fixed few - not
+    * one per database in the directory. */
+   {
+      char many_db[512], many_in[512];
+      unsigned i, gathers;
+
+      sprintf(many_db, "%s/scan_db_many", root);
+      sprintf(many_in, "%s/scan_unmatched", root);
+      path_mkdir(many_db);
+      path_mkdir(many_in);
+
+      sprintf(p, "%s/Test Alpha.rdb", many_db);
+      if (!write_db(p, "Alpha The Game", crc_a, sz_a))
+      { check(0, "fixture", "could not write database"); goto done; }
+      /* Never opened: the gate refuses them before any read. */
+      for (i = 0; i < UNCLAIMED_DBS; i++)
+      {
+         FILE *f;
+         sprintf(p, "%s/Unclaimed %02u.rdb", many_db, i);
+         if (!(f = fopen(p, "wb")))
+         { check(0, "fixture", "could not write database"); goto done; }
+         fclose(f);
+      }
+      for (i = 0; i < UNMATCHED_FILES; i++)
+      {
+         sprintf(p, "%s/none_%02u.bin", many_in, i);
+         if (!write_content(p, 0x3C000000u + i, 1024))
+         { check(0, "fixture", "crc forcing failed"); goto done; }
+      }
+
+      /* The scanner reads its database directory from the settings. */
+      strlcpy(config_get_ptr()->paths.path_content_database, many_db,
+            sizeof(config_get_ptr()->paths.path_content_database));
+      task_queue_deinit();
+      task_queue_init(false, msgq_push);
+      gathers = run_scan_counted(many_in);
+      strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
+            sizeof(config_get_ptr()->paths.path_content_database));
+      printf("  info  checks for %u files over %u databases: %u\n",
+            UNMATCHED_FILES, UNCLAIMED_DBS + 1, gathers);
+      check(scan_completed, "scan over unclaimed databases completed",
+            scan_completed ? "callback fired" : "timed out");
+      check(gathers && gathers < UNMATCHED_FILES * 8 + 32,
+            "unclaimed databases passed over in one step",
+            "checks bounded by files, not databases");
+   }
 
 done:
    printf("\n%d checks, %d failures\n", checks, failures);

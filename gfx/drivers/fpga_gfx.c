@@ -131,7 +131,7 @@ static void fpga_create(fpga_t *fpga)
 }
 
 static void *fpga_init(const video_info_t *video,
-      const input_driver_t **input, void **input_data)
+      input_driver_t **input, void **input_data)
 {
    fpga_t *fpga                         = (fpga_t*)calloc(1, sizeof(*fpga));
 
@@ -141,16 +141,16 @@ static void *fpga_init(const video_info_t *video,
    *input                               = NULL;
    *input_data                          = NULL;
 
-   fpga->frame_width                    = video->width;
-   fpga->frame_height                   = video->height;
+   fpga->frame_width                    = VIDEO_SCALE_W(video->dims);
+   fpga->frame_height                   = VIDEO_SCALE_H(video->dims);
    fpga->rgb32                          = video->rgb32;
 
    fpga->frame_bits                     = video->rgb32 ? 32 : 16;
 
    if (video->rgb32)
-      fpga->frame_pitch = video->width * 4;
+      fpga->frame_pitch = VIDEO_SCALE_W(video->dims) * 4;
    else
-      fpga->frame_pitch = video->width * 2;
+      fpga->frame_pitch = VIDEO_SCALE_W(video->dims) * 2;
 
    fpga_create(fpga);
 
@@ -158,9 +158,11 @@ static void *fpga_init(const video_info_t *video,
 }
 
 static bool fpga_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    const void *frame_to_copy = frame;
    unsigned width            = 0;
    unsigned height           = 0;
@@ -231,7 +233,10 @@ static bool fpga_frame(void *data, const void *frame,
                   /* scale incoming frame to fit the screen */
                   unsigned scaled_x    = (width * x) / FB_WIDTH;
                   unsigned scaled_y    = (height * y) / FB_HEIGHT;
-                  unsigned short pixel = ((unsigned short*)frame_to_copy)[width * scaled_y + scaled_x];
+                  /* Rows are pitch bytes apart, not width pixels. */
+                  unsigned short pixel = ((const unsigned short*)
+                        ((const unsigned char*)frame_to_copy
+                         + pitch * scaled_y))[scaled_x];
 
                   /* convert RGBX444 to XRGB8888 */
                   unsigned r = ((pixel & 0xF000) >> 12);
@@ -254,7 +259,10 @@ static bool fpga_frame(void *data, const void *frame,
                   /* scale incoming frame to fit the screen */
                   unsigned scaled_x    = (width * x) / FB_WIDTH;
                   unsigned scaled_y    = (height * y) / FB_HEIGHT;
-                  unsigned short pixel = ((unsigned short*)frame_to_copy)[width * scaled_y + scaled_x];
+                  /* Rows are pitch bytes apart, not width pixels. */
+                  unsigned short pixel = ((const unsigned short*)
+                        ((const unsigned char*)frame_to_copy
+                         + pitch * scaled_y))[scaled_x];
 
                   /* convert RGB565 to XRBG8888 */
                   unsigned r = ((pixel & 0xF800) >> 11);
@@ -303,17 +311,17 @@ static void fpga_set_rotation(void *data,
       unsigned rotation) { }
 
 static void fpga_set_texture_frame(void *data,
-      const void *frame, bool rgb32, unsigned width, unsigned height,
+      const void *frame, bool rgb32, unsigned dims,
       float alpha)
 {
    fpga_t  *fpga    = (fpga_t*)data;
-   unsigned pitch   = width * (rgb32 ? 4 : 2);
+   unsigned pitch   = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
    size_t   required;
 
-   if (!frame || !width || !height || !pitch)
+   if (!frame || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims) || !pitch)
       return;
 
-   required = (size_t)pitch * (size_t)height;
+   required = (size_t)pitch * (size_t)VIDEO_SCALE_H(dims);
 
    if (required > fpga->menu_frame_cap)
    {
@@ -326,8 +334,8 @@ static void fpga_set_texture_frame(void *data,
    }
 
    memcpy(fpga->menu_frame, frame, required);
-   fpga->menu_width  = width;
-   fpga->menu_height = height;
+   fpga->menu_width  = VIDEO_SCALE_W(dims);
+   fpga->menu_height = VIDEO_SCALE_H(dims);
    fpga->menu_pitch  = pitch;
    fpga->menu_bits   = rgb32 ? 32 : 16;
 }
@@ -336,10 +344,10 @@ static void fpga_set_texture_frame(void *data,
 static void fpga_set_osd_msg(void *data, const char *msg, size_t msg_len,
       const struct font_params *params, void *font) { }
 static void fpga_get_video_output_size(void *data,
-      unsigned *width, unsigned *height, char *desc, size_t desc_len) { }
+      unsigned *dims, char *desc, size_t desc_len) { }
 static void fpga_get_video_output_prev(void *data) { }
 static void fpga_get_video_output_next(void *data) { }
-static void fpga_set_video_mode(void *data, unsigned width, unsigned height,
+static void fpga_set_video_mode(void *data, unsigned dims,
       bool fullscreen) { }
 
 static const video_poke_interface_t fpga_poke_interface = {
@@ -386,8 +394,8 @@ static void fpga_get_poke_interface(void *data,
 }
 
 /* TODO/FIXME - implement */
-static void fpga_set_viewport(void *data, unsigned vp_width,
-      unsigned vp_height, bool force_full, bool allow_rotate) { }
+static void fpga_set_viewport(void *data, unsigned dims,
+      bool force_full, bool allow_rotate) { }
 
 video_driver_t video_fpga = {
    fpga_init,
@@ -404,7 +412,6 @@ video_driver_t video_fpga = {
    fpga_set_rotation,
    NULL, /* viewport_info */
    NULL, /* read_viewport */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL, /* get_overlay_interface */
 #endif

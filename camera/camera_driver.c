@@ -38,7 +38,7 @@
 #endif
 
 static void *nullcamera_init(const char *device, uint64_t caps,
-      unsigned width, unsigned height) { return (void*)-1; }
+      unsigned dims) { return (void*)-1; }
 static void nullcamera_free(void *data) { }
 static void nullcamera_stop(void *data) { }
 static bool nullcamera_start(void *data) { return true; }
@@ -110,7 +110,18 @@ bool driver_camera_start(void)
       settings_t *settings = config_get_ptr();
       bool camera_allow    = settings->bools.camera_allow;
       if (camera_allow)
-         return camera_st->driver->start(camera_st->data);
+      {
+         bool ok = camera_st->driver->start(camera_st->data);
+         /* The bit means "poll this every frame": up only when the
+          * driver can be polled and the core gave it somewhere to
+          * deliver. Everything the iterate used to re-test lives
+          * here, once, at the edge. */
+         runloop_frame_work_set(RUNLOOP_WORK_CAMERA,
+                  ok
+               && camera_st->driver->poll
+               && camera_st->cb.caps);
+         return ok;
+      }
 
       runloop_msg_queue_push(
             "Camera is explicitly disabled.\n",
@@ -128,6 +139,7 @@ void driver_camera_stop(void)
          && camera_st->driver->stop
          && camera_st->data)
       camera_st->driver->stop(camera_st->data);
+   runloop_frame_work_set(RUNLOOP_WORK_CAMERA, false);
 }
 
 bool camera_driver_find_driver(const char *prefix,

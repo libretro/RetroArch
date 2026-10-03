@@ -81,7 +81,10 @@ enum platform_win32_flags
    PLAT_WIN32_FLAG_USE_NVDA_BRAILLE         = (1 << 2),
    PLAT_WIN32_FLAG_DWM_COMPOSITION_DISABLED = (1 << 3),
    PLAT_WIN32_FLAG_CONSOLE_NEEDS_FREE       = (1 << 4),
-   PLAT_WIN32_FLAG_PROCESS_INSTANCE_SET     = (1 << 5)
+   PLAT_WIN32_FLAG_PROCESS_INSTANCE_SET     = (1 << 5),
+   /* which C streams attach_console() put on the console */
+   PLAT_WIN32_FLAG_CONSOLE_HAS_STDOUT       = (1 << 6),
+   PLAT_WIN32_FLAG_CONSOLE_HAS_STDERR       = (1 << 7)
 };
 
 #ifdef HAVE_SAPI
@@ -460,7 +463,7 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
        * so use build number to insert version label */
       if (!server && vi.dwMajorVersion == 10 && vi.dwBuildNumber == 10240
             && !*display_version && !*release_id)
-         strlcpy(release_id, "1507", sizeof(release_id));
+         strlcpy_lit(release_id, "1507", sizeof(release_id));
    }
 
    /* Detect Windows version from build number, NT version, or platform ID.
@@ -475,15 +478,15 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
          if (server)
          {
             if (vi.dwBuildNumber >= 26040)
-               _len = strlcpy(s, "Windows Server 2025", len);
+               _len = strlcpy_lit(s, "Windows Server 2025", len);
             else if (vi.dwBuildNumber >= 20201)
-               _len = strlcpy(s, "Windows Server 2022", len);
+               _len = strlcpy_lit(s, "Windows Server 2022", len);
             else if (vi.dwBuildNumber >= 17623)
-               _len = strlcpy(s, "Windows Server 2019", len);
+               _len = strlcpy_lit(s, "Windows Server 2019", len);
             /* Early Server 2016 preview builds shared build numbers with
              * Windows 10 previews, so 10074 is used as a safe cutoff here */
             else if (vi.dwBuildNumber >= 10074)
-               _len = strlcpy(s, "Windows Server 2016", len);
+               _len = strlcpy_lit(s, "Windows Server 2016", len);
             else
                _len = snprintf(s, len, "Windows Server NT kernel %lu.%lu",
                      (unsigned long)vi.dwMajorVersion, (unsigned long)vi.dwMinorVersion);
@@ -492,10 +495,10 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
          {
             /* Detect Windows 11 starting from an early leaked preview build */
             if (vi.dwBuildNumber >= 21996)
-               _len = strlcpy(s, "Windows 11", len);
+               _len = strlcpy_lit(s, "Windows 11", len);
             /* Detect Windows 10 from the first NT 10.0-based preview build */
             else if (vi.dwBuildNumber >= 9888)
-               _len = strlcpy(s, "Windows 10", len);
+               _len = strlcpy_lit(s, "Windows 10", len);
             else
                _len = snprintf(s, len, "Windows NT kernel %lu.%lu",
                      (unsigned long)vi.dwMajorVersion, (unsigned long)vi.dwMinorVersion);
@@ -540,22 +543,22 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
             case 2:
                if (server || win32_is_server_from_registry())
                {
-                  _len = strlcpy(s, "Windows Server 2003", len);
+                  _len = strlcpy_lit(s, "Windows Server 2003", len);
                   if (GetSystemMetrics(SM_SERVERR2))
-                     _len += strlcpy(s + _len, " R2", len - _len);
+                     _len += strlcpy_lit(s + _len, " R2", len - _len);
                }
                else
                {
                   /* XP "x64 Edition" is NT 5.2 (XP is 5.1) and only ever had one
                    * edition, making it safe to use the full product name here */
-                  _len = strlcpy(s, "Windows XP Professional x64 Edition", len);
+                  _len = strlcpy_lit(s, "Windows XP Professional x64 Edition", len);
                }
                break;
             case 1:
-               _len = strlcpy(s, "Windows XP", len);
+               _len = strlcpy_lit(s, "Windows XP", len);
                break;
             case 0:
-               _len = strlcpy(s, "Windows 2000", len);
+               _len = strlcpy_lit(s, "Windows 2000", len);
                break;
             default:
                _len = snprintf(s, len, "Windows NT kernel %lu.%lu",
@@ -569,24 +572,24 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
          {
             case 0:
                if (vi.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
-                  _len = strlcpy(s, "Windows 95", len);
+                  _len = strlcpy_lit(s, "Windows 95", len);
                else if (vi.dwPlatformId == VER_PLATFORM_WIN32_NT)
-                  _len = strlcpy(s, "Windows NT 4.0", len);
+                  _len = strlcpy_lit(s, "Windows NT 4.0", len);
                else
-                  _len = strlcpy(s, "Unknown", len);
+                  _len = strlcpy_lit(s, "Unknown", len);
                break;
             case 90:
                /* Apparently it's not "ME". Official naming always uses "Me" */
-               _len = strlcpy(s, "Windows Me", len);
+               _len = strlcpy_lit(s, "Windows Me", len);
                break;
             case 10:
             {
                DWORD win98_build;
                win98_build = (DWORD)(LOWORD(vi.dwBuildNumber));
-               _len = strlcpy(s, "Windows 98", len);
+               _len = strlcpy_lit(s, "Windows 98", len);
                /* 98/98 SE are both Win9x 4.10, so detect SE by build number */
                if (win98_build >= 2222)
-                  _len += strlcpy(s + _len, " Second Edition", len - _len);
+                  _len += strlcpy_lit(s + _len, " Second Edition", len - _len);
                break;
             }
             default:
@@ -612,15 +615,15 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
    {
       if (*display_version)
       {
-         _len += strlcpy(s + _len, " (", len - _len);
+         _len += strlcpy_lit(s + _len, " (", len - _len);
          _len += strlcpy(s + _len, display_version, len - _len);
-         _len += strlcpy(s + _len, ")", len - _len);
+         _len += strlcpy_lit(s + _len, ")", len - _len);
       }
       else if (*release_id)
       {
-         _len += strlcpy(s + _len, " (", len - _len);
+         _len += strlcpy_lit(s + _len, " (", len - _len);
          _len += strlcpy(s + _len, release_id, len - _len);
-         _len += strlcpy(s + _len, ")", len - _len);
+         _len += strlcpy_lit(s + _len, ")", len - _len);
       }
    }
    /* Hide x86/x64 for XP x64 ("x64" is already shown in the OS name) 
@@ -630,16 +633,16 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
              (vi.dwMajorVersion == 5 && vi.dwMinorVersion >= 1))
          && !(vi.dwMajorVersion == 5 && vi.dwMinorVersion == 2))
    {
-      _len += strlcpy(s + _len, " ",  len - _len);
+      _len += strlcpy_lit(s + _len, " ",  len - _len);
       _len += strlcpy(s + _len, arch, len - _len);
    }
 
-   _len += strlcpy(s + _len, " - Build ", len - _len);
+   _len += strlcpy_lit(s + _len, " - Build ", len - _len);
    _len += strlcpy(s + _len, build_str, len - _len);
 
    if (*vi.szCSDVersion)
    {
-      _len += strlcpy(s + _len, " ", len - _len);
+      _len += strlcpy_lit(s + _len, " ", len - _len);
       strlcpy(s + _len, vi.szCSDVersion, len - _len);
    }
 
@@ -724,13 +727,10 @@ enum frontend_architecture frontend_win32_get_arch(void)
    {
       case PROCESSOR_ARCHITECTURE_AMD64:
          return FRONTEND_ARCH_X86_64;
-         break;
       case PROCESSOR_ARCHITECTURE_INTEL:
          return FRONTEND_ARCH_X86;
-         break;
       case PROCESSOR_ARCHITECTURE_ARM:
          return FRONTEND_ARCH_ARM;
-         break;
       default:
          break;
    }
@@ -915,10 +915,10 @@ static void frontend_win32_attach_console(void)
 
       SetConsoleTitle("Log Console");
 
-      if (need_stdout)
-         freopen("CONOUT$", "w", stdout);
-      if (need_stderr)
-         freopen("CONOUT$", "w", stderr);
+      if (need_stdout && freopen("CONOUT$", "w", stdout))
+         g_plat_win32_flags |= PLAT_WIN32_FLAG_CONSOLE_HAS_STDOUT;
+      if (need_stderr && freopen("CONOUT$", "w", stderr))
+         g_plat_win32_flags |= PLAT_WIN32_FLAG_CONSOLE_HAS_STDERR;
 
       g_plat_win32_flags |= PLAT_WIN32_FLAG_CONSOLE_NEEDS_FREE;
    }
@@ -932,11 +932,39 @@ static void frontend_win32_detach_console(void)
 #ifdef _WIN32_WINNT_WINXP
    if (g_plat_win32_flags & PLAT_WIN32_FLAG_CONSOLE_NEEDS_FREE)
    {
-      /* We don't reconnect stdout/stderr to anything here,
-       * because by definition, they weren't connected to
-       * anything in the first place. */
+      /* Since Windows 8 a console's handles are real handles, and
+       * FreeConsole() closes none of them: the C streams that
+       * attach_console() opened on CONOUT$ and the standard handles
+       * AllocConsole() gave the process all still refer to the
+       * console afterwards, and its window stays up for as long as
+       * they do - turning logging off left the log window open. So
+       * they are let go of first. The streams go to NUL rather than
+       * being closed: the log writes to stderr, and must have
+       * somewhere to write until logging is turned on again. */
+      static const DWORD ids[3] = {
+         STD_INPUT_HANDLE, STD_OUTPUT_HANDLE, STD_ERROR_HANDLE };
+      unsigned i;
+
+      if (g_plat_win32_flags & PLAT_WIN32_FLAG_CONSOLE_HAS_STDOUT)
+         freopen("NUL", "w", stdout);
+      if (g_plat_win32_flags & PLAT_WIN32_FLAG_CONSOLE_HAS_STDERR)
+         freopen("NUL", "w", stderr);
+      for (i = 0; i < 3; i++)
+      {
+         DWORD mode;
+         HANDLE h = GetStdHandle(ids[i]);
+         /* only a handle that is a console's */
+         if (     h && h != INVALID_HANDLE_VALUE
+               && GetConsoleMode(h, &mode))
+         {
+            SetStdHandle(ids[i], NULL);
+            CloseHandle(h);
+         }
+      }
       FreeConsole();
-      g_plat_win32_flags &= ~PLAT_WIN32_FLAG_CONSOLE_NEEDS_FREE;
+      g_plat_win32_flags &= ~(  PLAT_WIN32_FLAG_CONSOLE_NEEDS_FREE
+                              | PLAT_WIN32_FLAG_CONSOLE_HAS_STDOUT
+                              | PLAT_WIN32_FLAG_CONSOLE_HAS_STDERR);
    }
 #endif
 #endif
@@ -1313,8 +1341,6 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_detach_console,   /* detach_console           */
    NULL,                            /* get_lakka_version        */
    NULL,                            /* set_screen_brightness    */
-   NULL,                            /* watch_path_for_changes   */
-   NULL,                            /* check_for_path_changes   */
    NULL,                            /* set_sustained_performance_mode */
    frontend_win32_get_cpu_model_name,
    frontend_win32_get_user_language,

@@ -80,7 +80,11 @@ typedef __int64 ssize_t;
 typedef int ssize_t;
 #endif
 #endif
-#elif defined(__MACH__) && defined(__APPLE__)
+#elif defined(__unix__) || (defined(__MACH__) && defined(__APPLE__)) \
+      || defined(__HAIKU__)
+/* POSIX home of ssize_t; <stdio.h> carries it only for a profile asking
+ * for the BSD or POSIX.1-2008 set. Console toolchains keep the arms
+ * above, as they do not define __unix__. */
 #include <sys/types.h>
 #endif
 

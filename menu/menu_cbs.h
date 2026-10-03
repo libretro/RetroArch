@@ -39,6 +39,7 @@ enum
    ACTION_OK_DL_DROPDOWN_BOX_LIST,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_SPECIAL,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_RESOLUTION,
+   ACTION_OK_DL_DROPDOWN_BOX_LIST_CRT_SUPER_RESOLUTION,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_AUDIO_DEVICE,
    ACTION_OK_DL_DROPDOWN_BOX_LIST_MIDI_DEVICE,
 #ifdef HAVE_MICROPHONE
@@ -183,7 +184,6 @@ enum
    ACTION_OK_DL_BROWSE_URL_LIST,
    ACTION_OK_DL_CORE_CONTENT_LIST,
    ACTION_OK_DL_CORE_CONTENT_DIRS_LIST,
-   ACTION_OK_DL_CORE_CONTENT_DIRS_SUBDIR_LIST,
    ACTION_OK_DL_CORE_SYSTEM_FILES_LIST,
    ACTION_OK_DL_DEFERRED_LOAD_DISC_LIST,
    ACTION_OK_DL_DEFERRED_DUMP_DISC_LIST,
@@ -209,6 +209,9 @@ enum
 #ifdef HAVE_SMBCLIENT
    ACTION_OK_DL_SMB_CLIENT_SETTINGS_LIST,
 #endif
+#ifdef HAVE_NFSCLIENT
+   ACTION_OK_DL_NFS_CLIENT_SETTINGS_LIST,
+#endif
    ACTION_OK_DL_ACCESSIBILITY_SETTINGS_LIST,
    ACTION_OK_DL_USER_INTERFACE_SETTINGS_LIST,
    ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST,
@@ -219,7 +222,7 @@ enum
    ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST,
    ACTION_OK_DL_CHEEVOS_APPEARANCE_SETTINGS_LIST,
    ACTION_OK_DL_CHEEVOS_VISIBILITY_SETTINGS_LIST,
-   ACTION_OK_DL_ACHIEVEMENTS_HARDCORE_PAUSE_LIST,
+   ACTION_OK_DL_ACHIEVEMENTS_SUBMENU_LIST,
    ACTION_OK_DL_UPDATER_SETTINGS_LIST,
    ACTION_OK_DL_BLUETOOTH_SETTINGS_LIST,
    ACTION_OK_DL_WIFI_SETTINGS_LIST,
@@ -318,6 +321,15 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
 int menu_cbs_init_bind_label(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
+/* The sublabel a menu entry with this enum would show, for a caller
+ * that has no file list: the desktop companions use it for tooltips
+ * on settings widgets. Resolves table-driven sublabels (which the bound
+ * callback can only read back through a list) and function-driven
+ * ones that do not need the list. Returns the length written, 0 when
+ * the entry has none. */
+size_t menu_cbs_sublabel_for_enum(enum msg_hash_enums enum_idx,
+      unsigned type, size_t size, char *s, size_t len);
+
 int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, size_t lbl_len,
       unsigned type, size_t idx);
@@ -326,6 +338,12 @@ int menu_cbs_init_bind_info(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_start(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx);
+
+int menu_cbs_init_bind_drag(menu_file_list_cbs_t *cbs,
+      const char *path, const char *label, unsigned type, size_t idx);
+
+int menu_cbs_init_bind_drop(menu_file_list_cbs_t *cbs,
       const char *path, const char *label, unsigned type, size_t idx);
 
 int menu_cbs_init_bind_cancel(menu_file_list_cbs_t *cbs,
@@ -359,6 +377,11 @@ int action_scan_directory(const char *path,
 int action_scan_file(const char *path,
       const char *label, unsigned type, size_t idx);
 #endif
+
+/* Loads menu->scratch2_buf (directory) + menu->scratch_buf (file),
+ * detecting the core. */
+int action_ok_load_archive_detect_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx);
 
 int action_ok_core_option_dropdown_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx);

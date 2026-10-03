@@ -201,40 +201,14 @@ static void *dinput_init(const char *joypad_driver)
    return di;
 }
 
-static uint16_t dinput_get_active_keyboard_mods()
-{
-   uint16_t mod = 0;
-   if (GetKeyState(VK_SHIFT)   & 0x80)
-      mod |= RETROKMOD_SHIFT;
-   if (GetKeyState(VK_CONTROL) & 0x80)
-      mod |= RETROKMOD_CTRL;
-   if (GetKeyState(VK_MENU)    & 0x80)
-      mod |= RETROKMOD_ALT;
-   if (GetKeyState(VK_CAPITAL) & 0x81)
-      mod |= RETROKMOD_CAPSLOCK;
-   if (GetKeyState(VK_SCROLL)  & 0x81)
-      mod |= RETROKMOD_SCROLLOCK;
-   if (GetKeyState(VK_NUMLOCK) & 0x81)
-      mod |= RETROKMOD_NUMLOCK;
-   if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & 0x80)
-      mod |= RETROKMOD_META;
-   return mod;
-}
-
 static void dinput_poll(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
-   uint8_t *kb_state       = NULL;
 
    if (!di)
       return;
 
-   kb_state                = &di->state[0];
-
-   for (
-         ; kb_state < di->state + 256
-         ; kb_state++)
-      *kb_state = 0;
+   memset(di->state, 0, sizeof(di->state));
 
    if (di->keyboard)
    {
@@ -242,14 +216,13 @@ static void dinput_poll(void *data)
                   di->keyboard, sizeof(di->state), di->state)))
       {
          IDirectInputDevice8_Acquire(di->keyboard);
+         /* Clear again: GetDeviceState() does not promise to leave the
+          * buffer untouched when it fails, and a partial write would
+          * otherwise be read as live key state. dinput_joypad_poll()
+          * does the same for its own device state. */
          if (FAILED(IDirectInputDevice8_GetDeviceState(
                      di->keyboard, sizeof(di->state), di->state)))
-         {
-            for (
-                  ; kb_state < di->state + 256
-                  ; kb_state++)
-               *kb_state = 0;
-         }
+            memset(di->state, 0, sizeof(di->state));
       }
       else
       {
@@ -259,31 +232,31 @@ static void dinput_poll(void *data)
 
       /* If both shift keys are pressed simultaneously, the OS will not issue
        * a WM_KEYUP for the first one. That up event will be issued here. */
-      if ((di->flags & DINP_FLAG_SHIFT_L) && !(GetAsyncKeyState(VK_LSHIFT) >> 1))
+      if ((di->flags & DINP_FLAG_SHIFT_L) && !(di->state[DIK_LSHIFT] & 0x80))
       {
          input_keyboard_event(false, RETROK_LSHIFT, 0,
-               dinput_get_active_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
+               win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
          di->flags &= ~DINP_FLAG_SHIFT_L;
       }
-      if ((di->flags & DINP_FLAG_SHIFT_R) && !(GetAsyncKeyState(VK_RSHIFT) >> 1))
+      if ((di->flags & DINP_FLAG_SHIFT_R) && !(di->state[DIK_RSHIFT] & 0x80))
       {
          input_keyboard_event(false, RETROK_RSHIFT, 0,
-               dinput_get_active_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
+               win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
          di->flags &= ~DINP_FLAG_SHIFT_R;
       }
 
       /* When using alt-tab, the alt key won't get a WM_KEYUP message from the
        * OS. Instead we issue it here when ALT isn't pressed down anymore. */
-      if ((di->flags & DINP_FLAG_ALT_L) && !(GetAsyncKeyState(VK_LMENU) >> 1))
+      if ((di->flags & DINP_FLAG_ALT_L) && !(di->state[DIK_LMENU]  & 0x80))
       {
          input_keyboard_event(false, RETROK_LALT, 0,
-               dinput_get_active_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
+               win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
          di->flags &= ~DINP_FLAG_ALT_L;
       }
-      if ((di->flags & DINP_FLAG_ALT_R) && !(GetAsyncKeyState(VK_RMENU) >> 1))
+      if ((di->flags & DINP_FLAG_ALT_R) && !(di->state[DIK_RMENU]  & 0x80))
       {
          input_keyboard_event(false, RETROK_RALT, 0,
-               dinput_get_active_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
+               win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
          di->flags &= ~DINP_FLAG_ALT_R;
       }
    }
@@ -294,6 +267,7 @@ static void dinput_poll(void *data)
       DIMOUSESTATE2 mouse_state;
       BYTE *rgb_buttons_ptr     = &mouse_state.rgbButtons[0];
       bool swap_mouse_buttons   = (g_win32_flags & WIN32_CMN_FLAG_SWAP_MOUSE_BTNS) ? true : false;
+      bool acquired             = true;
 
       point.x                   = 0;
       point.y                   = 0;
@@ -321,6 +295,7 @@ static void dinput_poll(void *data)
                   ; rgb_buttons_ptr < mouse_state.rgbButtons + 8
                   ; rgb_buttons_ptr++)
                *rgb_buttons_ptr = 0;
+            acquired = false;
          }
       }
 
@@ -384,11 +359,22 @@ static void dinput_poll(void *data)
          di->flags    &= ~DINP_FLAG_MOUSE_B5_BTN;
 
       /* No simple way to get absolute coordinates
-       * for RETRO_DEVICE_POINTER. Just use Win32 APIs. */
-      GetCursorPos(&point);
-      ScreenToClient((HWND)video_driver_window_get(), &point);
-      di->mouse_x = point.x;
-      di->mouse_y = point.y;
+       * for RETRO_DEVICE_POINTER. Just use Win32 APIs.
+       *
+       * Only do so while the DirectInput mouse is acquired. The device
+       * is opened with DISCL_FOREGROUND, so acquisition fails whenever
+       * the window is not in the foreground (minimized, another window
+       * on top, the Qt desktop menu focused). GetCursorPos() does not
+       * care about focus, so without this gate the menu kept tracking
+       * the desktop cursor through an unfocused window and fired hover
+       * sounds while buttons and keyboard were correctly blocked. */
+      if (acquired)
+      {
+         GetCursorPos(&point);
+         ScreenToClient((HWND)video_driver_window_get(), &point);
+         di->mouse_x = point.x;
+         di->mouse_y = point.y;
+      }
 
       /* Ignore application focusing mouse clicks */
       if (di->flags & DINP_FLAG_MOUSE_IGNORE)
@@ -535,7 +521,7 @@ static int16_t dinput_input_state(
                   {
                      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                      {
-                        if (binds[port][i].valid)
+                        if (RETRO_KEYBIND_VALID(&binds[port][i]))
                         {
                            if (dinput_mouse_button_pressed(di, port, binds[port][i].mbutton))
                               ret |= (1 << i);
@@ -547,10 +533,10 @@ static int16_t dinput_input_state(
                   {
                      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                      {
-                        if (binds[port][i].valid)
+                        if (RETRO_KEYBIND_VALID(&binds[port][i]))
                         {
-                           if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
-                                 && di->state[rarch_keysym_lut[(enum retro_key)binds[port][i].key]] & 0x80)
+                           if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
+                                 && di->state[rarch_keysym_lut[RETRO_KEYBIND_KEY(&binds[port][i])]] & 0x80)
                               ret |= (1 << i);
                         }
                      }
@@ -561,10 +547,10 @@ static int16_t dinput_input_state(
 
                if (id < RARCH_BIND_LIST_END)
                {
-                  if (binds[port][id].valid)
+                  if (RETRO_KEYBIND_VALID(&binds[port][id]))
                   {
-                     if (     binds[port][id].key && binds[port][id].key < RETROK_LAST
-                           && (di->state[rarch_keysym_lut[(enum retro_key)binds[port][id].key]] & 0x80)
+                     if (     RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST
+                           && (di->state[rarch_keysym_lut[RETRO_KEYBIND_KEY(&binds[port][id])]] & 0x80)
                            && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
                         )
                         return 1;
@@ -591,10 +577,10 @@ static int16_t dinput_input_state(
 
                input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
 
-               id_minus_valid        = binds[port][id_minus].valid;
-               id_plus_valid         = binds[port][id_plus].valid;
-               id_minus_key          = binds[port][id_minus].key;
-               id_plus_key           = binds[port][id_plus].key;
+               id_minus_valid        = RETRO_KEYBIND_VALID(&binds[port][id_minus]);
+               id_plus_valid         = RETRO_KEYBIND_VALID(&binds[port][id_plus]);
+               id_minus_key          = RETRO_KEYBIND_KEY(&binds[port][id_minus]);
+               id_plus_key           = RETRO_KEYBIND_KEY(&binds[port][id_plus]);
 
                if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
                {
@@ -772,7 +758,7 @@ static int16_t dinput_input_state(
                      const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
                         ? bind_joyaxis : autobind_joyaxis;
 
-                     if (binds[port][new_id].valid)
+                     if (RETRO_KEYBIND_VALID(&binds[port][new_id]))
                      {
                         if ((uint16_t)joykey != NO_BTN && joypad->button(
                                  joyport, (uint16_t)joykey))
@@ -781,9 +767,9 @@ static int16_t dinput_input_state(
                               ((float)abs(joypad->axis(joyport, joyaxis))
                                / 0x8000) > axis_threshold)
                            return 1;
-                        else if ((binds[port][new_id].key && binds[port][new_id].key < RETROK_LAST)
+                        else if ((RETRO_KEYBIND_KEY(&binds[port][new_id]) && RETRO_KEYBIND_KEY(&binds[port][new_id]) < RETROK_LAST)
                               && !keyboard_mapping_blocked
-                              && di->state[rarch_keysym_lut[(enum retro_key)binds[port][new_id].key]] & 0x80)
+                              && di->state[rarch_keysym_lut[RETRO_KEYBIND_KEY(&binds[port][new_id])]] & 0x80)
                            return 1;
                         else
                         {
@@ -957,12 +943,21 @@ bool dinput_handle_message(void *data,
          {
             PDEV_BROADCAST_HDR pHdr = (PDEV_BROADCAST_HDR)lParam;
             /* TODO/FIXME: Don't destroy everything, let's just
-             * handle new devices gracefully */
+             * handle new devices gracefully. Until then, one reinit
+             * per burst: see WIN32_HOTPLUG_TIMER_ID. */
             if (pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
-               joypad_driver_reinit(di, di->joypad_drv_name);
+               win32_hotplug_arm();
          }
 #endif
          break;
+#ifndef _XBOX
+      case WM_TIMER:
+         if (wParam != WIN32_HOTPLUG_TIMER_ID)
+            break;
+         if (win32_hotplug_due())
+            joypad_driver_reinit(di, di->joypad_drv_name);
+         return true;
+#endif
       case WM_MOUSEWHEEL:
          if (((short) HIWORD(wParam))/120 > 0)
             di->flags |= DINP_FLAG_MOUSE_WU_BTN;

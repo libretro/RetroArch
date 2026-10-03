@@ -47,7 +47,6 @@ class QLabel;
 class QLayout;
 class QPaintEvent;
 class QResizeEvent;
-class QSettings;
 class QVBoxLayout;
 /* Forward decls kept unconditional so that callers holding bare
  * pointers to these (e.g. ui_qt.h's QPointer<ShaderParamsDialog>
@@ -365,7 +364,6 @@ private slots:
 private:
    void populate(double min, double max);
    rarch_setting_t *m_setting;
-   unsigned *m_value;
    QHash<unsigned, QString> m_hash;
 };
 
@@ -380,7 +378,6 @@ private slots:
    void paintEvent(QPaintEvent *event);
 private:
    rarch_setting_t *m_setting;
-   unsigned *m_target;
    unsigned m_value;
 };
 
@@ -396,7 +393,6 @@ private slots:
    void onButtonClicked(int id);
 private:
    rarch_setting_t *m_setting;
-   unsigned *m_value;
    QButtonGroup *m_buttonGroup;
 };
 
@@ -411,7 +407,6 @@ private slots:
    void paintEvent(QPaintEvent *event);
 private:
    rarch_setting_t *m_setting;
-   unsigned *m_value;
 };
 
 class SizeSpinBox : public QSpinBox
@@ -439,7 +434,6 @@ private slots:
    void paintEvent(QPaintEvent *event);
 private:
    rarch_setting_t *m_setting;
-   int *m_value;
 };
 
 class FloatSpinBox : public QDoubleSpinBox
@@ -682,6 +676,7 @@ protected:
    void setSelection(const QRect &rect, QFlags<QItemSelectionModel::SelectionFlag> flags);
    void paintEvent(QPaintEvent*);
    void resizeEvent(QResizeEvent*);
+   void showEvent(QShowEvent*);
 
 private:
    QRectF viewportRectForRow(int row) const;
@@ -689,6 +684,9 @@ private:
    void refresh();
 
    int m_size = 255;
+public:
+   int gridSize() const { return m_size; }
+private:
    int m_spacing = DEFAULT_GRID_SPACING;
    QVector<QModelIndex> m_visibleIndexes;
    ViewMode m_viewMode = Centered;
@@ -741,8 +739,14 @@ protected:
  * and HAVE_CG/GLSL/SLANG/HLSL in the .cpp; gate the declarations to
  * match so moc does not emit metaobject code for a class that has
  * no defined methods. Forward declarations above keep external
- * pointer-typed members valid. */
-#ifdef HAVE_MENU
+ * pointer-typed members valid.
+ *
+ * The shader-preset editor also needs a shader stack: its definitions
+ * in ui_qt_widgets.cpp are under the same test, and so must this
+ * declaration be, or moc emits metaobject code that references methods
+ * no translation unit defines (a Qt build with no OpenGL/Vulkan dev
+ * packages - the CI Qt companion job - failed to link this way). */
+#if defined(HAVE_MENU) && (defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL))
 
 class ShaderPass
 {
@@ -815,7 +819,7 @@ protected:
    void paintEvent(QPaintEvent *event);
 };
 
-#endif /* HAVE_MENU - shader-preset editor */
+#endif /* HAVE_MENU + shader stack - shader-preset editor */
 
 class ViewOptionsWidget : public QWidget
 {
@@ -834,10 +838,9 @@ private:
    void showOrHideHighlightColor();
 
    MainWindow *m_mainwindow;
-   QSettings *m_settings;
    QCheckBox *m_saveGeometryCheckBox;
-   QCheckBox *m_saveDockPositionsCheckBox;
    QCheckBox *m_saveLastTabCheckBox;
+   QCheckBox *m_saveDockPositionsCheckBox;
    QCheckBox *m_showHiddenFilesCheckBox;
    QComboBox *m_themeComboBox;
    QSpinBox *m_thumbnailCacheSpinBox;
@@ -865,7 +868,15 @@ public slots:
    void hideDialog();
 private slots:
    void onRejected();
+protected:
+   /* The dialog's own geometry rides in desktop_menu_options_window
+    * ("x,y,w,h"), kept live like the main window's, when Remember Window
+    * Geometry is on. */
+   void resizeEvent(QResizeEvent *event);
+   void moveEvent(QMoveEvent *event);
 private:
+   void persistGeometry();
+   void restoreGeometry();
 #ifdef HAVE_MENU
    void addCategory(QWidget *widget, QString name, QString icon);
    void addCategory(OptionsCategory *category);
@@ -901,7 +912,6 @@ private:
    void loadPlaylistOptions();
 
    MainWindow *m_mainwindow;
-   QSettings *m_settings;
    QLineEdit *m_nameLineEdit;
    QLineEdit *m_pathLineEdit;
    QLineEdit *m_extensionsLineEdit;

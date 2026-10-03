@@ -36,16 +36,19 @@
 
 #include "x11_common.h"
 
+#ifdef HAVE_XRANDR
+#include <X11/extensions/randr.h>
+#endif
+
 #ifdef HAVE_XF86VM
 #include <X11/extensions/xf86vmode.h>
 #endif
 
 #include <encodings/utf.h>
+#include <retro_atomic.h>
 #include <compat/strl.h>
 
-#ifdef HAVE_DBUS
 #include "dbus_common.h"
-#endif
 
 #include "../../frontend/frontend_driver.h"
 #include "../../input/input_driver.h"
@@ -53,6 +56,10 @@
 #include "../../input/common/input_x11_common.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
 
 #define _NET_WM_STATE_ADD                    1
 #define MOVERESIZE_GRAVITY_CENTER            5
@@ -62,7 +69,16 @@
 #define V_DBLSCAN                            0x20
 
 /* TODO/FIXME - globals */
-bool g_x11_entered                          = false;
+/* Whether the pointer is inside the window. Written by the event pump
+ * in x11_alive(), which runs on the video thread under the threaded
+ * wrapper, and read by the input driver's poll on the runloop thread. */
+retro_atomic_int_t g_x11_entered;
+/* Keyboard focus on the window itself, from FocusIn/FocusOut. */
+static retro_atomic_int_t g_x11_focused;
+/* The window's size as VIDEO_SCALE_PACK, 0 while unknown. Written by
+ * the event pump and read by the input driver's poll on the runloop
+ * thread, so it is one word. */
+retro_atomic_int_t g_x11_size;
 Display *g_x11_dpy                          = NULL;
 unsigned g_x11_screen                       = 0;
 Window   g_x11_win                          = None;
@@ -73,13 +89,36 @@ Colormap g_x11_cmap;
 static XF86VidModeModeInfo desktop_mode;
 #endif
 static bool xdg_screensaver_available       = true;
-static bool g_x11_has_focus                 = false;
+/* Whether the window is mapped - the compositor or WM has it on
+ * screen. Written only by MapNotify and UnmapNotify below, and once at
+ * input-context creation; nothing to do with keyboard focus, which
+ * is g_x11_focused. */
+static bool g_x11_mapped                    = false;
 static bool g_x11_true_full                 = false;
-static XConfigureEvent g_x11_xce            = {0};
 static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
 static Atom XA_NET_MOVERESIZE_WINDOW;
 static Atom g_x11_quit_atom;
+#ifdef HAVE_MENU
+enum x11_dnd_atom
+{
+   X11_DND_AWARE = 0,
+   X11_DND_ENTER,
+   X11_DND_POSITION,
+   X11_DND_STATUS,
+   X11_DND_LEAVE,
+   X11_DND_DROP,
+   X11_DND_FINISHED,
+   X11_DND_SELECTION,
+   X11_DND_TYPE_LIST,
+   X11_DND_ACTION_COPY,
+   X11_DND_URI_LIST,
+   X11_DND_ATOM_LAST
+};
+static Atom   g_x11_dnd_atoms[X11_DND_ATOM_LAST];
+static Window g_x11_dnd_source              = None;
+static bool   g_x11_dnd_accept              = false;
+#endif
 static XIM g_x11_xim;
 static XIC g_x11_xic;
 
@@ -234,12 +273,9 @@ static bool xss_screensaver_inhibit(Display *dpy, bool enable)
      * file-scope g_x11_dpy here stays at its initial NULL --
      * it's only assigned in the xvideo / GL / X11-direct init
      * paths.  libX11's XQueryExtension() then SEGVs at a tiny
-     * offset off the NULL display pointer.  Most desktop builds
-     * never hit this because HAVE_DBUS is on and
-     * dbus_suspend_screensaver() short-circuits before this
-     * line; surfaced by the ASan+UBSan CI workflow's headless
-     * SDL2 smoke (b9777c8 + d967813), where dbus-1 isn't
-     * apt-installed but libXss is. */
+     * offset off the NULL display pointer.  Surfaced by the
+     * ASan+UBSan CI workflow's headless SDL2 smoke (b9777c8 +
+     * d967813), where dbus-1 isn't apt-installed but libXss is. */
     if (!dpy)
        return false;
     if (       !XScreenSaverQueryExtension(dpy, &dummy, &dummy)
@@ -255,6 +291,72 @@ static bool xss_screensaver_inhibit(Display *dpy, bool enable)
 static bool xss_screensaver_inhibit(Display *dpy, bool enable) { return false; }
 #endif
 
+enum xdg_screensaver_de
+{
+   XDG_SCREENSAVER_DE_OTHER = 0,
+   XDG_SCREENSAVER_DE_KDE,
+   XDG_SCREENSAVER_DE_GNOME
+};
+
+/* The desktop xdg-screensaver will pick, read from the environment the
+ * way it reads it: the first XDG_CURRENT_DESKTOP entry it knows, then
+ * the classic session variables. Anything it would settle by asking a
+ * session bus, or an override, reads as OTHER. */
+static enum xdg_screensaver_de xdg_screensaver_desktop(void)
+{
+   static const struct
+   {
+      const char *name;
+      enum xdg_screensaver_de de;
+   } known[] =
+   {
+      { "KDE",           XDG_SCREENSAVER_DE_KDE   },
+      { "GNOME",         XDG_SCREENSAVER_DE_GNOME },
+      { "Cinnamon",      XDG_SCREENSAVER_DE_OTHER },
+      { "X-Cinnamon",    XDG_SCREENSAVER_DE_OTHER },
+      { "ENLIGHTENMENT", XDG_SCREENSAVER_DE_OTHER },
+      { "DEEPIN",        XDG_SCREENSAVER_DE_OTHER },
+      { "Deepin",        XDG_SCREENSAVER_DE_OTHER },
+      { "deepin",        XDG_SCREENSAVER_DE_OTHER },
+      { "DDE",           XDG_SCREENSAVER_DE_OTHER },
+      { "LXDE",          XDG_SCREENSAVER_DE_OTHER },
+      { "LXQt",          XDG_SCREENSAVER_DE_OTHER },
+      { "MATE",          XDG_SCREENSAVER_DE_OTHER },
+      { "XFCE",          XDG_SCREENSAVER_DE_OTHER },
+      { "Budgie",        XDG_SCREENSAVER_DE_OTHER },
+      { "X-Generic",     XDG_SCREENSAVER_DE_OTHER }
+   };
+   const char *env;
+   const char *cur;
+
+   if (     ((env = getenv("XDG_UTILS_OVERRIDE_DE")) && *env)
+         || ((env = getenv("XDG_UTILS_SCREENSAVER_OVERRIDE_DE")) && *env)
+         || access("/run/.toolboxenv", F_OK) == 0)
+      return XDG_SCREENSAVER_DE_OTHER;
+
+   if ((cur = getenv("XDG_CURRENT_DESKTOP")))
+   {
+      while (*cur)
+      {
+         size_t i;
+         size_t _len = strcspn(cur, ":");
+         for (i = 0; i < sizeof(known) / sizeof(known[0]); i++)
+            if (     strlen(known[i].name) == _len
+                  && !strncmp(cur, known[i].name, _len))
+               return known[i].de;
+         cur += _len;
+         if (*cur == ':')
+            cur++;
+      }
+   }
+
+   if ((env = getenv("KDE_FULL_SESSION")) && *env)
+      return XDG_SCREENSAVER_DE_KDE;
+   if ((env = getenv("GNOME_DESKTOP_SESSION_ID")) && *env)
+      return XDG_SCREENSAVER_DE_GNOME;
+   return XDG_SCREENSAVER_DE_OTHER;
+}
+
 /* Probe once for xdg-screensaver and its xset backend dependency.
  * xdg-screensaver's "X11" backend shells out to xset; if xset is missing
  * (common on minimal installs / containers / some WMs without
@@ -263,15 +365,45 @@ static bool xss_screensaver_inhibit(Display *dpy, bool enable) { return false; }
  * Check up front so we can silently no-op instead. */
 static bool xdg_screensaver_probe(void)
 {
+   const char *env;
+   int ret;
    /* Both are needed: xdg-screensaver itself, and xset which it execs.
     * `command -v` is a POSIX shell builtin so this works under /bin/sh
     * on every platform that has system(). Redirecting both streams
     * keeps the probe silent. */
-   int ret = system("command -v xdg-screensaver >/dev/null 2>&1 && "
+   ret = system("command -v xdg-screensaver >/dev/null 2>&1 && "
                 "command -v xset >/dev/null 2>&1");
    if (ret == -1 || WEXITSTATUS(ret) != 0)
    {
       RARCH_LOG("[X11] xdg-screensaver or xset not available; screensaver suspension disabled.\n");
+      return false;
+   }
+
+   /* On KDE 4 and later and on GNOME 3, "suspend" hands the inhibit to
+    * a Perl helper that talks D-Bus through Net::DBus and X11::Protocol.
+    * It runs detached, so a missing module fails it on stderr while
+    * xdg-screensaver itself still exits 0. */
+   switch (xdg_screensaver_desktop())
+   {
+      case XDG_SCREENSAVER_DE_KDE:
+         if (!(env = getenv("KDE_SESSION_VERSION")) || !*env)
+            return true;
+         ret = system("perl -MNet::DBus -MX11::Protocol -e 1 "
+                      ">/dev/null 2>&1");
+         break;
+      case XDG_SCREENSAVER_DE_GNOME:
+         /* GNOME 2 is told apart by this tool and has its own backend. */
+         ret = system("command -v gnome-default-applications-properties "
+                      ">/dev/null 2>&1 || "
+                      "perl -MNet::DBus -MX11::Protocol -e 1 "
+                      ">/dev/null 2>&1");
+         break;
+      default:
+         return true;
+   }
+   if (ret == -1 || WEXITSTATUS(ret) != 0)
+   {
+      RARCH_LOG("[X11] xdg-screensaver needs Perl's Net::DBus and X11::Protocol on this desktop; screensaver suspension disabled.\n");
       return false;
    }
    return true;
@@ -296,7 +428,7 @@ static void xdg_screensaver_inhibit(Window wnd)
        * the same, as if there's no title at all. */
       size_t title_len = video_driver_get_window_title(title, sizeof(title));
       if (title_len == 0)
-         title_len = strlcpy(title, " ", sizeof(title));
+         title_len = strlcpy_lit(title, " ", sizeof(title));
       XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
             8, PropModeReplace, (const unsigned char*) title, title_len);
 
@@ -328,7 +460,7 @@ static void xdg_screensaver_inhibit(Window wnd)
 #endif
    }
 
-   _len = strlcpy(cmd, "xdg-screensaver suspend 0x", sizeof(cmd));
+   _len = strlcpy_lit(cmd, "xdg-screensaver suspend 0x", sizeof(cmd));
    snprintf(cmd + _len, sizeof(cmd) - _len, "%x", (int)wnd);
 
    if ((ret = system(cmd)) == -1)
@@ -343,33 +475,58 @@ static void xdg_screensaver_inhibit(Window wnd)
    }
 }
 
+/* xdg-screensaver, the last resort: its suspend lasts as long as the
+ * window, so it is only started when nothing else holds the
+ * screensaver. */
+static void x11_xdg_screensaver_fallback(Window wnd)
+{
+   static bool probed = false;
+   if (!xdg_screensaver_available)
+      return;
+   if (!probed)
+   {
+      xdg_screensaver_available = xdg_screensaver_probe();
+      probed = true;
+   }
+   if (xdg_screensaver_available)
+      xdg_screensaver_inhibit(wnd);
+}
+
+#ifdef RARCH_HAVE_DBUS_SCREENSAVER
+/* Set while the D-Bus worker has not yet said whether it inhibited the
+ * screensaver and nothing else holds it; x11_check_window() then starts
+ * the xdg-screensaver fallback once D-Bus is known to have failed. */
+static bool g_x11_xdg_deferred = false;
+#endif
+
 bool x11_suspend_screensaver(void *data, bool enable)
 {
    Window wnd;
+   bool dbus_asked = false;
    if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
       return false;
    wnd = video_driver_window_get();
-#ifdef HAVE_DBUS
-    if (dbus_suspend_screensaver(enable))
-       return true;
+#ifdef RARCH_HAVE_DBUS_SCREENSAVER
+   /* D-Bus answers on its own worker; XScreenSaver is a request on this
+    * thread's display, so it is asked alongside rather than after. */
+   dbus_asked         = dbus_suspend_screensaver(enable);
+   g_x11_xdg_deferred = false;
 #endif
-    if (!xss_screensaver_inhibit(g_x11_dpy, enable) && enable)
-    {
-       if (xdg_screensaver_available)
-       {
-          static bool probed = false;
-          if (!probed)
-          {
-             xdg_screensaver_available = xdg_screensaver_probe();
-             probed = true;
-          }
-          if (!xdg_screensaver_available)
-             return true;
-          xdg_screensaver_inhibit(wnd);
-          return xdg_screensaver_available;
-       }
-    }
-    return true;
+   if (!xss_screensaver_inhibit(g_x11_dpy, enable) && enable)
+   {
+#ifdef RARCH_HAVE_DBUS_SCREENSAVER
+      if (dbus_asked)
+      {
+         if (dbus_screensaver_state() == DBUS_SCREENSAVER_FAILED)
+            x11_xdg_screensaver_fallback(wnd);
+         else if (dbus_screensaver_state() == DBUS_SCREENSAVER_PENDING)
+            g_x11_xdg_deferred = true;
+         return true;
+      }
+#endif
+      x11_xdg_screensaver_fallback(wnd);
+   }
+   return true;
 }
 
 #ifdef HAVE_XF86VM
@@ -390,7 +547,15 @@ float x11_get_refresh_rate(void *data)
    screen = attr.screen;
    screenid = XScreenNumberOfScreen(screen);
 
-   XF86VidModeGetModeLine(g_x11_dpy, screenid, &dotclock, &modeline);
+   /* A server without the extension (Xvfb, some nested and remote
+    * servers) leaves the modeline unset, and a zero total made this
+    * a NaN or an infinity that the callers then paced by. Unknown is
+    * 0, as the other paths here report it. */
+   dotclock = 0;
+   memset(&modeline, 0, sizeof(modeline));
+   if (!XF86VidModeGetModeLine(g_x11_dpy, screenid, &dotclock, &modeline)
+         || !modeline.htotal || !modeline.vtotal || !dotclock)
+      return 0.0f;
 
    /* non-native modes like 1080p on a 4K display might use DoubleScan */
    if (modeline.flags & V_DBLSCAN)
@@ -543,7 +708,7 @@ static bool x11_create_input_context(Display *dpy,
    x11_destroy_input_context(xim, xic);
    x11_init_keyboard_lut();
 
-   g_x11_has_focus = true;
+   g_x11_mapped = true;
 
    if (!(*xim = XOpenIM(dpy, NULL, NULL, NULL)))
    {
@@ -661,8 +826,129 @@ static void x11_handle_key_event(unsigned keycode, XEvent *event,
             chars[i], mod, RETRO_DEVICE_KEYBOARD);
 }
 
+#ifdef HAVE_MENU
+static void x11_dnd_send(Atom type, long l1, long l2, long l4)
+{
+   XEvent xev                 = {0};
+   xev.xclient.type           = ClientMessage;
+   xev.xclient.display        = g_x11_dpy;
+   xev.xclient.window         = g_x11_dnd_source;
+   xev.xclient.message_type   = type;
+   xev.xclient.format         = 32;
+   xev.xclient.data.l[0]      = (long)g_x11_win;
+   xev.xclient.data.l[1]      = l1;
+   xev.xclient.data.l[2]      = l2;
+   xev.xclient.data.l[4]      = l4;
+   XSendEvent(g_x11_dpy, g_x11_dnd_source, False, NoEventMask, &xev);
+}
+
+static bool x11_dnd_offers_uri_list(const XClientMessageEvent *m)
+{
+   int i;
+   Atom uri_list = g_x11_dnd_atoms[X11_DND_URI_LIST];
+
+   /* More than three types: the rest are on the source's type list. */
+   if (m->data.l[1] & 1)
+   {
+      Atom type;
+      int format;
+      unsigned long n, after;
+      unsigned char *data = NULL;
+      bool found          = false;
+
+      if (     XGetWindowProperty(g_x11_dpy, (Window)m->data.l[0],
+                  g_x11_dnd_atoms[X11_DND_TYPE_LIST], 0, 1024, False,
+                  XA_ATOM, &type, &format, &n, &after, &data) == Success
+            && data)
+      {
+         unsigned long j;
+         for (j = 0; j < n && !found; j++)
+            found = ((Atom*)data)[j] == uri_list;
+      }
+      if (data)
+         XFree(data);
+      return found;
+   }
+
+   for (i = 2; i < 5; i++)
+      if ((Atom)m->data.l[i] == uri_list)
+         return true;
+   return false;
+}
+
+static void x11_dnd_client_message(const XClientMessageEvent *m)
+{
+   const Atom *a = g_x11_dnd_atoms;
+
+   if (m->message_type == a[X11_DND_ENTER])
+   {
+      g_x11_dnd_source = (Window)m->data.l[0];
+      g_x11_dnd_accept = x11_dnd_offers_uri_list(m);
+   }
+   else if ((Window)m->data.l[0] != g_x11_dnd_source)
+      return;
+   else if (m->message_type == a[X11_DND_POSITION])
+      x11_dnd_send(a[X11_DND_STATUS], g_x11_dnd_accept ? 1 : 0, 0,
+            g_x11_dnd_accept ? (long)a[X11_DND_ACTION_COPY] : None);
+   else if (m->message_type == a[X11_DND_LEAVE])
+      g_x11_dnd_source = None;
+   else if (m->message_type == a[X11_DND_DROP])
+   {
+      if (g_x11_dnd_accept)
+         XConvertSelection(g_x11_dpy, a[X11_DND_SELECTION],
+               a[X11_DND_URI_LIST], a[X11_DND_SELECTION], g_x11_win,
+               (Time)m->data.l[2]);
+      else
+      {
+         x11_dnd_send(a[X11_DND_FINISHED], 0, None, 0);
+         g_x11_dnd_source = None;
+      }
+   }
+}
+
+static void x11_dnd_selection(const XSelectionEvent *s)
+{
+   bool dropped = false;
+
+   if (s->property != None)
+   {
+      Atom type;
+      int format;
+      unsigned long n, after;
+      unsigned char *data = NULL;
+
+      /* Xlib terminates format 8 data with an extra NUL. */
+      if (     XGetWindowProperty(g_x11_dpy, g_x11_win, s->property,
+                  0, 65536, True, AnyPropertyType,
+                  &type, &format, &n, &after, &data) == Success
+            && data
+            && format == 8)
+         dropped = menu_driver_drop_uri_list((char*)data);
+      if (data)
+         XFree(data);
+   }
+
+   if (g_x11_dnd_source != None)
+      x11_dnd_send(g_x11_dnd_atoms[X11_DND_FINISHED], dropped ? 1 : 0,
+            dropped ? (long)g_x11_dnd_atoms[X11_DND_ACTION_COPY] : None, 0);
+   g_x11_dnd_source = None;
+}
+#endif
+
 bool x11_alive(void *data)
 {
+#ifdef HAVE_XRANDR
+   int randr   = retro_atomic_load_acquire_int(&g_x11_randr_state);
+   int rr_base = randr & X11_RANDR_BASE_MASK;
+   /* From here on every RandR change reaches the kept refresh rate
+    * through this pump. */
+   if (rr_base && !(randr & X11_RANDR_PUMPED))
+   {
+      retro_atomic_fetch_or_int(&g_x11_randr_state, X11_RANDR_PUMPED);
+      x11_refresh_invalidate();
+   }
+#endif
+
    while (XPending(g_x11_dpy))
    {
       XEvent event;
@@ -671,6 +957,18 @@ bool x11_alive(void *data)
 
       /* Can get events from older windows. Check this. */
       XNextEvent(g_x11_dpy, &event);
+
+#ifdef HAVE_XRANDR
+      /* Screen, crtc or output change, selected on the root window by
+       * the X display server. */
+      if (     rr_base
+            && event.type >= rr_base + RRScreenChangeNotify
+            && event.type <= rr_base + RRNotify)
+      {
+         x11_refresh_invalidate();
+         continue;
+      }
+#endif
 
       /* IMPORTANT - Get keycode before XFilterEvent
          because the event is localizated after the call */
@@ -683,7 +981,20 @@ bool x11_alive(void *data)
             if (        event.xclient.window    == g_x11_win &&
                   (Atom)event.xclient.data.l[0] == g_x11_quit_atom)
                frontend_driver_set_signal_handler_state(1);
+#ifdef HAVE_MENU
+            else if (event.xclient.window == g_x11_win)
+               x11_dnd_client_message(&event.xclient);
+#endif
             break;
+
+#ifdef HAVE_MENU
+         case SelectionNotify:
+            if (     event.xselection.requestor == g_x11_win
+                  && event.xselection.selection
+                     == g_x11_dnd_atoms[X11_DND_SELECTION])
+               x11_dnd_selection(&event.xselection);
+            break;
+#endif
 
          case DestroyNotify:
             if (event.xdestroywindow.window == g_x11_win)
@@ -692,17 +1003,38 @@ bool x11_alive(void *data)
 
          case MapNotify:
             if (event.xmap.window == g_x11_win)
-               g_x11_has_focus = true;
+               g_x11_mapped = true;
             break;
 
          case UnmapNotify:
             if (event.xunmap.window == g_x11_win)
-               g_x11_has_focus = false;
+               g_x11_mapped = false;
             break;
 
          case ConfigureNotify:
             if (event.xconfigure.window == g_x11_win)
-               g_x11_xce = event.xconfigure;
+               retro_atomic_store_relaxed_int(&g_x11_size,
+                     (int)VIDEO_SCALE_PACK(event.xconfigure.width,
+                        event.xconfigure.height));
+            break;
+
+         /* Grabs leave the focus where it was. */
+         case FocusIn:
+            if (     event.xfocus.window == g_x11_win
+                  && event.xfocus.mode   != NotifyGrab
+                  && event.xfocus.mode   != NotifyUngrab
+                  && (   event.xfocus.detail == NotifyAncestor
+                      || event.xfocus.detail == NotifyInferior
+                      || event.xfocus.detail == NotifyNonlinear))
+               retro_atomic_store_relaxed_int(&g_x11_focused, 1);
+            break;
+
+         case FocusOut:
+            if (     event.xfocus.window == g_x11_win
+                  && event.xfocus.mode   != NotifyGrab
+                  && event.xfocus.mode   != NotifyUngrab
+                  && event.xfocus.detail != NotifyPointer)
+               retro_atomic_store_relaxed_int(&g_x11_focused, 0);
             break;
 
          case ButtonPress:
@@ -728,11 +1060,11 @@ bool x11_alive(void *data)
             break;
 
          case EnterNotify:
-            g_x11_entered = true;
+            retro_atomic_store_relaxed_int(&g_x11_entered, 1);
             break;
 
          case LeaveNotify:
-            g_x11_entered = false;
+            retro_atomic_store_relaxed_int(&g_x11_entered, 0);
             break;
 
          case ButtonRelease:
@@ -770,17 +1102,26 @@ bool x11_alive(void *data)
 }
 
 void x11_check_window(void *data, bool *quit,
-   bool *resize, unsigned *width, unsigned *height)
+   bool *resize, unsigned *dims)
 {
-   unsigned new_width  = *width;
-   unsigned new_height = *height;
-
-   x11_get_video_size(data, &new_width, &new_height);
-
-   if (new_width != *width || new_height != *height)
+   unsigned new_dims  = *dims;
+#ifdef RARCH_HAVE_DBUS_SCREENSAVER
+   if (g_x11_xdg_deferred)
    {
-      *width  = new_width;
-      *height = new_height;
+      enum dbus_screensaver_state st = dbus_screensaver_state();
+      if (st != DBUS_SCREENSAVER_PENDING)
+      {
+         g_x11_xdg_deferred = false;
+         if (st == DBUS_SCREENSAVER_FAILED)
+            x11_xdg_screensaver_fallback(video_driver_window_get());
+      }
+   }
+#endif
+   x11_get_video_size(data, &new_dims);
+
+   if (new_dims != *dims)
+   {
+      *dims  = new_dims;
       *resize = true;
    }
 
@@ -789,53 +1130,57 @@ void x11_check_window(void *data, bool *quit,
    *quit = (bool)frontend_driver_get_signal_handler_state();
 }
 
-void x11_get_video_size(void *data, unsigned *width, unsigned *height)
+void x11_get_video_size(void *data, unsigned *dims)
 {
    if (!g_x11_dpy || g_x11_win == None)
    {
       Display *dpy = (Display*)XOpenDisplay(NULL);
-      *width       = 0;
-      *height      = 0;
+      *dims = VIDEO_SCALE_PACK(0, 0);
 
       if (dpy)
       {
          int screen = DefaultScreen(dpy);
-         *width     = DisplayWidth(dpy, screen);
-         *height    = DisplayHeight(dpy, screen);
+         *dims = VIDEO_SCALE_PACK(DisplayWidth(dpy, screen),
+               DisplayHeight(dpy, screen));
          XCloseDisplay(dpy);
       }
    }
    else
    {
-      if (g_x11_xce.width != 0 && g_x11_xce.height != 0)
-      {
-         *width  = g_x11_xce.width;
-         *height = g_x11_xce.height;
-      }
+      unsigned size = (unsigned)retro_atomic_load_relaxed_int(&g_x11_size);
+      if (VIDEO_SCALE_W(size) && VIDEO_SCALE_H(size))
+         *dims = size;
       else
       {
          XWindowAttributes target;
          XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
 
-         *width  = target.width;
-         *height = target.height;
+         *dims = VIDEO_SCALE_PACK(target.width, target.height);
       }
    }
 }
 
 bool x11_has_focus_internal(void *data)
 {
-   return g_x11_has_focus;
+   return g_x11_mapped;
+}
+
+/* Nothing to present to while the window is unmapped - minimised, on
+ * another workspace, or withdrawn. The X server discards the drawing
+ * and neither glXSwapBuffers nor a Vulkan present blocks, so with the
+ * display as the only pacing the loop would spin. Unfocused is not
+ * unmapped and is deliberately not tested here: a visible window that
+ * happens not to have the keyboard must keep running at full rate. */
+bool x11_presentable(void *data)
+{
+   return g_x11_mapped;
 }
 
 bool x11_has_focus(void *data)
 {
-   Window win;
-   int rev;
-
-   XGetInputFocus(g_x11_dpy, &win, &rev);
-
-   return (win == g_x11_win && g_x11_has_focus) || g_x11_true_full;
+   return (   retro_atomic_load_relaxed_int(&g_x11_focused)
+           && g_x11_mapped)
+      || g_x11_true_full;
 }
 
 bool x11_connect(void)
@@ -848,11 +1193,12 @@ bool x11_connect(void)
       if (!(g_x11_dpy = XOpenDisplay(NULL)))
          return false;
 
-#ifdef HAVE_DBUS
+#ifdef RARCH_HAVE_DBUS_SCREENSAVER
    dbus_ensure_connection();
 #endif
 
-   memset(&g_x11_xce, 0, sizeof(XConfigureEvent));
+   retro_atomic_store_relaxed_int(&g_x11_size, 0);
+   retro_atomic_store_relaxed_int(&g_x11_focused, 0);
 
    return true;
 }
@@ -926,10 +1272,12 @@ void x11_window_destroy(bool fullscreen)
    if (!fullscreen)
       XDestroyWindow(g_x11_dpy, g_x11_win);
    g_x11_win = None;
+   retro_atomic_store_relaxed_int(&g_x11_size, 0);
+   retro_atomic_store_relaxed_int(&g_x11_focused, 0);
 
-#ifdef HAVE_DBUS
-    dbus_screensaver_uninhibit();
-    dbus_close_connection();
+#ifdef RARCH_HAVE_DBUS_SCREENSAVER
+   g_x11_xdg_deferred = false;
+   dbus_close_connection();
 #endif
 }
 
@@ -948,6 +1296,21 @@ void x11_install_quit_atom(void)
          "WM_DELETE_WINDOW", False);
    if (g_x11_quit_atom)
       XSetWMProtocols(g_x11_dpy, g_x11_win, &g_x11_quit_atom, 1);
+#ifdef HAVE_MENU
+   {
+      static char *names[X11_DND_ATOM_LAST] = {
+         "XdndAware", "XdndEnter", "XdndPosition", "XdndStatus",
+         "XdndLeave", "XdndDrop", "XdndFinished", "XdndSelection",
+         "XdndTypeList", "XdndActionCopy", "text/uri-list" };
+      Atom version = 5;
+      g_x11_dnd_source = None;
+      if (XInternAtoms(g_x11_dpy, names, X11_DND_ATOM_LAST, False,
+               g_x11_dnd_atoms))
+         XChangeProperty(g_x11_dpy, g_x11_win,
+               g_x11_dnd_atoms[X11_DND_AWARE], XA_ATOM, 32,
+               PropModeReplace, (unsigned char*)&version, 1);
+   }
+#endif
 }
 
 static Bool x11_wait_notify(Display *d, XEvent *e, char *arg)
@@ -955,9 +1318,14 @@ static Bool x11_wait_notify(Display *d, XEvent *e, char *arg)
    return e->type == MapNotify && e->xmap.window == g_x11_win;
 }
 
+/* Without a window manager no ConfigureNotify follows the map. */
 void x11_event_queue_check(XEvent *event)
 {
+   XWindowAttributes target;
    XIfEvent(g_x11_dpy, event, x11_wait_notify, NULL);
+   if (XGetWindowAttributes(g_x11_dpy, g_x11_win, &target))
+      retro_atomic_store_relaxed_int(&g_x11_size,
+            (int)VIDEO_SCALE_PACK(target.width, target.height));
 }
 
 static bool x11_check_atom_supported(Display *dpy, Atom atom)

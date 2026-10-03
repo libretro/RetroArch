@@ -179,8 +179,12 @@ static void salamander_init(char *s, size_t len)
          if (config)
          {
             config_set_path(config, "libretro_path", s);
-            config_file_write(config, config_path, false);
-            RARCH_DBG("Salamander config file written to \"%s\".\n", config_path);
+            if (config_file_write(config, config_path, false))
+               RARCH_DBG("Salamander config file written to \"%s\".\n", config_path);
+            else
+               RARCH_ERR("Failed to write salamander config file to \"%s\" - "
+                     "the core will have to be located again next boot.\n",
+                     config_path);
             config_file_free(config);
          }
       }

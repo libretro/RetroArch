@@ -686,12 +686,9 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
       center_y                 = 565.0f;
    }
 
-   vp.x                        = 0;
-   vp.y                        = 0;
-   vp.width                    = 0;
-   vp.height                   = 0;
-   vp.full_width               = 0;
-   vp.full_height              = 0;
+   vp.pos                      = VIDEO_POS_PACK(0, 0);
+   vp.dims                     = 0;
+   vp.full_dims                = 0;
 
    /* tracking mode 1: laser pointer mode (this is closest 
       to actual lightgun behavior) */
@@ -807,10 +804,10 @@ static int16_t ps3_input_state(
 
                for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                {
-                  if (binds[port][i].valid)
+                  if (RETRO_KEYBIND_VALID(&binds[port][i]))
                   {
                      if (ps3_keyboard_port_input_pressed(
-                              ps3, binds[port][i].key))
+                              ps3, RETRO_KEYBIND_KEY(&binds[port][i])))
                         ret |= (1 << i);
                   }
                }
@@ -818,10 +815,10 @@ static int16_t ps3_input_state(
                return ret;
             }
 
-            if (binds[port][id].valid)
+            if (RETRO_KEYBIND_VALID(&binds[port][id]))
             {
                if (ps3_keyboard_port_input_pressed(
-                        ps3, binds[port][id].key))
+                        ps3, RETRO_KEYBIND_KEY(&binds[port][id])))
                   return 1;
             }
 	    break;

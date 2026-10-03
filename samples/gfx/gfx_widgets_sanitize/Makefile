@@ -6,17 +6,15 @@ TARGET := gfx_widgets_sanitize_test
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
-# gfx_widgets.c reaches for 59 symbols outside itself.  Eight resolve
-# to real libretro-common sources and are linked; the rest are in
-# stubs_retroarch.c, including dummies for the ten gfx_widget_t
-# instances that live in gfx/widgets/.
+# Link the real widget and task snapshot implementations; remaining
+# frontend dependencies are supplied by stubs_retroarch.c.
 SOURCES := gfx_widgets_sanitize_test.c \
            stubs_retroarch.c \
            $(REPO_ROOT)/gfx/gfx_widgets.c \
+           $(LIBRETRO_COMM_DIR)/queues/task_queue.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
-           $(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
            $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
            $(LIBRETRO_COMM_DIR)/file/file_path.c \
            $(LIBRETRO_COMM_DIR)/lists/string_list.c \

@@ -18,23 +18,47 @@
 #ifndef __VIDEO_DISPLAY_SERVER__H
 #define __VIDEO_DISPLAY_SERVER__H
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include <retro_common_api.h>
 #include <boolean.h>
 
 #include "video_defines.h"
+#include "modeline/modeline_core.h"
 
 RETRO_BEGIN_DECLS
 
 enum display_server_flags
 {
    DISPSERV_CTX_FLAGS_NONE = 0,
-   DISPSERV_CTX_CRT_SWITCHRES
+   /* The server can apply a video_modeline_t through its modeline_*
+    * ops (the bit the CRT consumer and the menu look for). */
+   DISPSERV_CTX_MODELINE,
+   /* The server has resolution list callbacks but nothing to list them
+    * from right now (the Wayland server away from GNOME): the menu and
+    * the refresh rate autoswitch treat it as having none. */
+   DISPSERV_CTX_NO_RESOLUTION_LIST
 };
+
+/* One-cycle alias for the bit's previous name. */
+#define DISPSERV_CTX_CRT_SWITCHRES DISPSERV_CTX_MODELINE
+
+/* One physical output as the display server sees it, for the
+ * monitor-index mapping and a future per-head selection. */
+typedef struct video_output_info
+{
+   int  id;             /* server-specific handle (XRandR output index,
+                           EnumDisplayMonitors index, DRM connector id) */
+   int  x, y;           /* placement in desktop coordinates */
+   unsigned dims;
+   bool primary;
+   char name[64];       /* connector name (DVI-0, \\.\DISPLAY1, HDMI-A-1) */
+} video_output_info_t;
 
 typedef struct video_display_config
 {
-   unsigned width;
-   unsigned height;
+   unsigned dims;
    unsigned bpp;
    unsigned refreshrate;
    unsigned idx;
@@ -51,8 +75,8 @@ typedef struct video_display_server
    bool (*set_window_opacity)(void *data, unsigned opacity);
    bool (*set_window_progress)(void *data, int progress, bool finished);
    bool (*set_window_decorations)(void *data, bool on);
-   bool (*set_resolution)(void *data, unsigned width,
-         unsigned height, int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust );
+   bool (*set_resolution)(void *data, unsigned dims,
+         int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust);
    void *(*get_resolution_list)(void *data,
          unsigned *size);
    const char *(*get_output_options)(void *data);
@@ -60,13 +84,88 @@ typedef struct video_display_server
    enum rotation (*get_screen_orientation)(void *data);
    float (*get_refresh_rate)(void *data);
    void (*get_video_output_size)(void *data,
-         unsigned *width, unsigned *height, char *s, size_t len);
+         unsigned *dims, char *s, size_t len);
    void (*get_video_output_prev)(void *data);
    void (*get_video_output_next)(void *data);
    bool (*get_metrics)(void *data, enum display_metric_types type,
          float *value);
    uint32_t (*get_flags)(void *data);
+   /* Display scanout timing, for Scanline Sync.
+    *
+    * get_scanline returns the current beam position in scanlines, or a
+    * negative value if unavailable. wait_vblank blocks until the next
+    * vertical blank and returns false if it cannot.
+    *
+    * Both are optional and a server may implement one without the
+    * other, but Scanline Sync needs get_scanline: it calibrates the
+    * total line count from the peak value and targets a specific line.
+    * A server offering only wait_vblank cannot drive it.
+    *
+    * Only win32 implements these today, through D3DKMT. The equivalents
+    * elsewhere are drmWaitVBlank on KMS and glXWaitForMscOML on X11 -
+    * both vblank waits, neither exposing a live scanout position -
+    * while Wayland's presentation-time protocol reports after the fact
+    * rather than blocking. None of them are wired up. */
+   int  (*get_scanline)(void *data);
+   bool (*wait_vblank)(void *data);
+
+   /* Video modeline application. The engine in gfx/modeline/ generates
+    * a full video_modeline_t; these ops put it on the wire. A server
+    * that cannot program timings leaves them NULL and the consumer
+    * generates only.
+    *
+    * open picks the screen and the vendor path (win32: PowerStrip if
+    * asked, else ATI legacy or ADL from the PCI id; x11: XRandR
+    * output). close restores the desktop and releases it. caps
+    * reports MODELINE_CAPS_* for what the path can do: XRandR adds
+    * modes, ADL and PowerStrip rewrite listed ones. enum fills the
+    * OS's mode list with the desktop entry tagged MODELINE_DESKTOP
+    * and returns the count, or -1. add/update/delete stage a change
+    * to one mode and may store a handle in platform_data; flush
+    * commits what was staged (ADL's list refresh and monitor resync
+    * happen once here rather than per mode). set switches to a mode
+    * that is already in the list.
+    *
+    * list_outputs enumerates the heads the server can drive and
+    * returns the count (or -1); open binds one of them through
+    * ds->screen ("auto", an index, or a connector name), which is
+    * where the RetroArch monitor index lands. */
+   int      (*modeline_list_outputs)(void *data, video_output_info_t *out, int max);
+   bool     (*modeline_open)(void *data, const video_modeline_disp_t *ds);
+   void     (*modeline_close)(void *data);
+   unsigned (*modeline_caps)(void *data);
+   int      (*modeline_enum)(void *data, video_modeline_t *modes, int max);
+   bool     (*modeline_add)(void *data, video_modeline_t *mode);
+   bool     (*modeline_update)(void *data, video_modeline_t *mode);
+   bool     (*modeline_delete)(void *data, video_modeline_t *mode);
+   bool     (*modeline_set)(void *data, video_modeline_t *mode);
+   bool     (*modeline_flush)(void *data);
+
+   /* The EDID of the display the RetroArch window is on, copied into
+    * out (at most max bytes, whole 128-byte blocks) and its length
+    * returned, or -1 when the server has no way to read one: KMS
+    * reads the connector's EDID property, X11 the XRandR output
+    * property with the DRM sysfs node as fallback, Wayland the sysfs
+    * node for the wl_output name, Win32 the PnP monitor's registry
+    * key, VideoCore the HDMI DDC through tvservice. Optional; the menu shows "not available" for NULL. */
+   int      (*get_edid)(void *data, uint8_t *out, size_t max);
+   /* Block the calling thread until the windowing system's event
+    * transport has something readable, or @ms milliseconds pass,
+    * whichever comes first - and dispatch nothing: the next input
+    * poll consumes as it always did. Returns false when this server
+    * has no waitable source, and the caller sleeps instead. A server
+    * whose host drives the main loop itself (an OS run loop calling
+    * into us) returns true without waiting; the host's loop is the
+    * wait. */
+   bool     (*idle_wait)(void *data, unsigned ms);
    const char *ident;
+   /* The refresh rate of the output the RetroArch window is on, or 0
+    * when the server cannot tell: on a desktop of several monitors at
+    * different rates, get_refresh_rate answers for one of them, not
+    * necessarily this one. Optional, and after ident so a server
+    * without it needs no entry; video_driver_get_window_refresh_rate()
+    * falls back to get_refresh_rate. */
+   float    (*get_window_refresh_rate)(void *data);
 } video_display_server_t;
 
 void* video_display_server_init(enum rarch_display_type type);
@@ -75,14 +174,21 @@ void video_display_server_destroy(void);
 
 bool video_display_server_get_flags(gfx_ctx_flags_t *flags);
 
+int  video_display_server_get_scanline(void);
+bool video_display_server_wait_vblank(void);
+
 bool video_display_server_set_window_opacity(unsigned opacity);
+
+/* The idle wait through the current display server; false when
+ * there is none or it has no waitable source. */
+bool video_display_server_idle_wait(unsigned ms);
 
 bool video_display_server_set_window_progress(int progress, bool finished);
 
 bool video_display_server_set_window_decorations(bool on);
 
 bool video_display_server_set_resolution(
-      unsigned width, unsigned height,
+      unsigned dims,
       int int_hz, float hz, int center, int monitor_index, int xoffset, int padjust);
 
 void *video_display_server_get_resolution_list(unsigned *size);
@@ -95,8 +201,10 @@ void video_display_server_set_screen_orientation(enum rotation rotation);
 
 float video_display_server_get_refresh_rate(void);
 
+unsigned video_display_server_get_swap_interval_cap(void);
+
 bool video_display_server_get_video_output_size(
-      unsigned *width, unsigned *height, char *s, size_t len);
+      unsigned *dims, char *s, size_t len);
 
 bool video_display_server_get_video_output_prev(void);
 
@@ -119,13 +227,40 @@ void video_display_server_restore_refresh_rate(void);
 
 enum rotation video_display_server_get_screen_orientation(void);
 
+/* The current server's modeline ops as an engine ops table, with data
+ * bound. Returns false and leaves ops untouched when the server has
+ * no modeline application path. */
+struct video_modeline_ops;
+bool video_display_server_get_modeline_ops(struct video_modeline_ops *ops);
+
+/* True when an SDL2 or SDL3 video driver or context owns the window,
+ * so the matching SDL display server can switch among its listed
+ * modes. */
+bool video_display_server_sdl_available(void);
+
+/* The heads the mode server can drive; count, or -1 without a list. */
+int video_display_server_list_outputs(video_output_info_t *out, int max);
+
+/* The active display's EDID through the current server's get_edid;
+ * length copied, or -1 when unsupported or unreadable. */
+int video_display_server_get_edid(uint8_t *out, size_t max);
+
 extern const video_display_server_t dispserv_win32;
 extern const video_display_server_t dispserv_uwp;
 extern const video_display_server_t dispserv_x11;
 extern const video_display_server_t dispserv_wl;
+/* Starts the Wayland display server's DRM lease report - a log line,
+ * worked out on a thread of its own - once per instance. Called where
+ * the log is on to show it. */
+void wl_display_server_report_lease(void *data);
 extern const video_display_server_t dispserv_kms;
+extern const video_display_server_t dispserv_videocore;
 extern const video_display_server_t dispserv_android;
 extern const video_display_server_t dispserv_apple;
+extern const video_display_server_t dispserv_sdl2;
+extern const video_display_server_t dispserv_sdl3;
+extern const video_display_server_t dispserv_gx;
+extern const video_display_server_t dispserv_ps3;
 
 RETRO_END_DECLS
 

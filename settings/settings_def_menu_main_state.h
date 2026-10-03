@@ -4,19 +4,29 @@
  * matches SDESC_<kind>_ROW; row order is menu display order;
  * h2json.py parses these rows for the Crowdin source upload. */
 
+/* The configuration table registers this row by hand in
+ * configuration.c because it carries no default there; the
+ * generated row is for the other passes. */
+#ifndef SETTINGS_DEF_CONFIG_PASS
 S_INT_EX(state_slot, STATE_SLOT,
       "state_slot",
       0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, -1, 999, 1, -1, setting_action_ok_uint, setting_get_string_representation_state_slot, NULL, NULL, NULL, NULL, 0,
       "State Slot",
       "Change the currently selected state slot.")
+#endif
 /* Descriptor and configuration rows are #ifdef HAVE_BSV_MOVIE; the string
  * tables always carry this row via the strings pass. */
 #if defined(HAVE_BSV_MOVIE) || defined(SETTINGS_DEF_STRINGS_PASS)
+/* The configuration table registers this row by hand in
+ * configuration.c because it carries no default there; the
+ * generated row is for the other passes. */
+#ifndef SETTINGS_DEF_CONFIG_PASS
 S_INT_EX(replay_slot, REPLAY_SLOT,
       "replay_slot",
       0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, -1, 999, 1, -1, setting_action_ok_uint, setting_get_string_representation_state_slot, NULL, NULL, NULL, NULL, 0,
       "Replay Slot",
       "Change the currently selected state slot.")
+#endif
 #endif
 S_ACTION(START_CORE,
       "start_core",

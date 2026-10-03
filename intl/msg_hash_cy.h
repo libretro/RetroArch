@@ -60,6 +60,7 @@ static const struct
    char s_f0ce97f7[21];
    char s_b92166cd[12];
    char s_5d29b870[18];
+   char s_690efede[5];
    char s_10342503[15];
    char s_d31f6d88[26];
    char s_f03e9c42[20];
@@ -332,6 +333,7 @@ static const struct
    "Rheolwr Cronfa Ddata",
    "Cyfeiriadur",
    "Gwybodaeth y Disc",
+   "Iawn",
    "Lawrlwythiadau",
    "Llwytho \342\200\230Core\342\200\231 i Lawr",
    "Lawrlwythwr Cynnwys",
@@ -567,7 +569,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cy_blob_check[
-      (sizeof(msg_hash_cy_blob) == (5208u
+      (sizeof(msg_hash_cy_blob) == (5213u
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
        + 77u
@@ -624,6 +626,7 @@ static const uint32_t msg_hash_cy_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,

@@ -17,6 +17,8 @@
 #ifndef __VIDEO_SHADER_PARSE_H
 #define __VIDEO_SHADER_PARSE_H
 
+#include <stdint.h>
+#include <stddef.h>
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
@@ -138,6 +140,7 @@ struct rarch_dir_shader_list
 {
    struct string_list *shader_list;
    char *directory;
+   char *failed_apply_loaded_path;
    size_t selection;
    bool shader_loaded;
    bool remember_last_preset_dir;
@@ -200,6 +203,15 @@ struct video_shader
     * with the #reference directive, then this will be different
     * than the path */
    char loaded_preset_path[PATH_MAX_LENGTH];
+
+   /* Identifies the pass sources 'parameters' was resolved from: one
+    * entry per pass that has a source, in pass order. Appended rather
+    * than placed by alignment, so that it leaves every offset ahead of
+    * it where it was. */
+   int64_t  param_src_mtime[GFX_MAX_SHADERS];
+   int64_t  param_src_size[GFX_MAX_SHADERS];
+   uint32_t param_src_hash[GFX_MAX_SHADERS];
+   unsigned param_src_count;
 };
 
 /**
@@ -209,6 +221,11 @@ struct video_shader
  *
  * Resolves all shader parameters belonging to shaders
  * from the #pragma parameter lines in the shader for each pass.
+ *
+ * The sources are walked when the set of pass sources, or any of the
+ * files behind it, differs from the one the parameters currently held
+ * came from. Otherwise those parameters stand, reset to their initial
+ * values as a walk would leave them.
  **/
 void video_shader_resolve_parameters(struct video_shader *shader);
 
@@ -232,6 +249,13 @@ bool video_shader_load_current_parameter_values(config_file_t *conf, struct vide
  *
  * Returns: true (1) if successful, otherwise false (0).
  **/
+/* Struct copy of a driver's loaded shader for menu use: everything
+ * but the driver-owned pass source strings, which are cleared in
+ * the copy. Replaces a full re-parse of the preset chain when the
+ * driver has already done it. */
+void video_shader_copy_for_menu(struct video_shader *dst,
+      const struct video_shader *src);
+
 bool video_shader_load_preset_into_shader(const char *path, struct video_shader *shader);
 
 /**
@@ -284,6 +308,17 @@ bool video_shader_combine_preset_and_apply(
       bool prepend,
       bool message);
 
+/**
+ * video_shader_get_display_name:
+ * @preset_path          : Path to a shader preset
+ * @shader_dir           : Video shaders directory
+ *
+ * Returns: path of @preset_path relative to @shader_dir if it lies
+ * inside it, otherwise its file name, or NULL if @preset_path is empty.
+ **/
+const char *video_shader_get_display_name(const char *preset_path,
+      const char *shader_dir);
+
 bool video_shader_apply_shader(
       settings_t *settings,
       enum rarch_shader_type type,
@@ -292,6 +327,106 @@ bool video_shader_apply_shader(
 const char *video_shader_get_preset_extension(enum rarch_shader_type type);
 
 void video_shader_toggle(settings_t *settings, bool write);
+
+/**
+ * video_shader_source_read:
+ * @ident  : what names the source - a path, as presets carry them
+ * @buf    : receives the bytes, NUL terminated, for the caller to free
+ * @len    : receives their length, not counting the terminator
+ *
+ * Hands a shader driver the bytes it is to compile. The drivers under
+ * gfx/drivers_shader ask for a source by name and are given it; where
+ * those bytes live, and how the name resolves, is decided here and not
+ * by them. The caller owns what comes back, as it did when it read the
+ * file itself.
+ *
+ * Returns: true if the source was found and read.
+ **/
+bool video_shader_source_read(const char *ident, char **buf, int64_t *len);
+
+/**
+ * video_shader_source_resolve:
+ * @parent : what named the source doing the referring, or NULL
+ * @name   : the reference, as it was written in the source
+ * @s      : receives what to ask for with video_shader_source_read()
+ * @len    : size of @s
+ *
+ * Turns a reference inside one source into a name for another. A
+ * shader driver hands back what it read out of an #include line and
+ * gets a name it can ask for; how that resolves - relative to the
+ * referring file, or otherwise - is decided here.
+ *
+ * Returns: true when the reference resolved.
+ **/
+bool video_shader_source_resolve(const char *parent, const char *name,
+      char *s, size_t len);
+
+/**
+ * video_shader_source_ident_name:
+ * @ident : a name video_shader_source_read() would take
+ *
+ * The short name of a source, for the #line directives a preprocessor
+ * writes into what it hands the compiler. Points into @ident.
+ **/
+const char *video_shader_source_ident_name(const char *ident);
+
+/**
+ * video_shader_source_ident_is_slang:
+ * @ident : a name video_shader_source_read() would take
+ *
+ * Whether a source is a slang one, which a preprocessor checks the
+ * #version line of.
+ **/
+bool video_shader_source_ident_is_slang(const char *ident);
+
+/* What a shader driver keeps between runs, by key: the SPIR-V the
+ * slang compiler produced, or a console's precompiled shader binary.
+ * Where it lives is decided here, not by the driver. */
+enum video_shader_cache_kind
+{
+   VIDEO_SHADER_CACHE_SPIRV = 0,
+   VIDEO_SHADER_CACHE_ORBIS_BINARY
+};
+
+/* A cache entry's bytes, read-only, until video_shader_cache_unmap() */
+typedef struct video_shader_cache_view
+{
+   const uint8_t *data;
+   int64_t        len;
+   void          *mapped;   /* the file, while its pages are mapped */
+   void          *heap;     /* the copy, where they are read instead */
+} video_shader_cache_view_t;
+
+/**
+ * video_shader_cache_map:
+ * @kind : which cache
+ * @key  : the entry, letters and digits only
+ * @view : receives the bytes
+ *
+ * Hands a shader driver an entry it stored before, mapped where the
+ * platform maps files and read in one go where it does not.
+ *
+ * Returns: true when there is such an entry; then release @view with
+ * video_shader_cache_unmap().
+ **/
+bool video_shader_cache_map(enum video_shader_cache_kind kind,
+      const char *key, video_shader_cache_view_t *view);
+
+void video_shader_cache_unmap(video_shader_cache_view_t *view);
+
+/**
+ * video_shader_cache_write:
+ * @kind : which cache
+ * @key  : the entry, letters and digits only
+ * @data : the bytes, @len of them
+ *
+ * Stores an entry whole, replacing the one there: it is written beside
+ * it and renamed into place, so a reader never sees part of one.
+ *
+ * Returns: true when it was stored.
+ **/
+bool video_shader_cache_write(enum video_shader_cache_kind kind,
+      const char *key, const void *data, size_t len);
 
 RETRO_END_DECLS
 

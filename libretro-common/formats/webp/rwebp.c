@@ -189,7 +189,7 @@ static int vh_build(vh *h, const uint8_t *lens, int ns, int root)
    int count[VH_MAXCL + 1], offset[VH_MAXCL + 1];
    /* Symbol scratch, heap rather than stack.  As int sorted[4096] this
     * was 16 KiB in one frame - twice the 8 KiB a GEKKO thread gets
-    * (STACKSIZE in rthreads/gx_pthread.h) - and it is reachable from
+    * (the GEKKO STACKSIZE in rthreads.c) - and it is reachable from
     * a task handler, so it runs on a worker rather than the main
     * thread whenever the task queue is threaded:
     * task_file_load_handler -> task_image_load_handler ->
@@ -1411,8 +1411,21 @@ struct rwebp_anim_stream
 {
    const uint8_t *buf;    /* borrowed; must outlive the stream */
    size_t         len;
+   /* Progressive scan state.  The container is indexed chunk header by
+    * chunk header from scan_pos, never reading at or past 'avail' (the
+    * caller's readable bound: exact, and lowered by a windowing feeder
+    * when it takes pages back).  Frame payloads are only read by next()
+    * once they lie wholly below the wall.  A stream opened over a
+    * complete buffer has avail == len and scans everything at open. */
+   size_t    avail;
+   size_t    scan_pos;    /* next chunk header to index */
+   size_t    media_floor; /* offset of the first ANMF chunk header */
+   int       scan_done;   /* nothing left to index */
+   int       have_vp8x;
+   int       vp8x_flags;
    struct rwebp_anmf_ent *anmf; /* ANMF payload offsets */
    int       num_anmf;
+   int       cap_anmf;
    int       cursor;      /* next ANMF index to try */
    int       emitted;     /* frames emitted since open/rewind */
    int       canvas_w, canvas_h;
@@ -1441,61 +1454,208 @@ void rwebp_anim_stream_close(rwebp_anim_stream_t *s)
    free(s);
 }
 
-rwebp_anim_stream_t *rwebp_anim_stream_open(const uint8_t *buf, size_t len)
+/* Index chunks from scan_pos as far as the wall allows.  Only the
+ * 8-byte chunk headers (and the 10/6-byte VP8X/ANIM bodies) are read,
+ * so a frame is indexed as soon as its header is resident; its payload
+ * is checked against the wall when it is decoded.  Stops at the wall
+ * (resumed by the next set_avail/next), at the end of the file, or at
+ * the first chunk whose declared size runs past the file. */
+static void rwebp_anim_scan(rwebp_anim_stream_t *s)
+{
+   const uint8_t *buf = s->buf;
+   size_t p           = s->scan_pos;
+
+   while (!s->scan_done)
+   {
+      uint32_t tag, sz;
+      size_t   body;
+
+      if (p + 8 > s->len)
+      {
+         s->scan_done = 1;
+         break;
+      }
+      if (p + 8 > s->avail)
+         break;                          /* header past the wall */
+
+      tag  = rw32(buf + p);
+      sz   = rw32(buf + p + 4);
+      body = p + 8;
+      if ((size_t)sz > s->len - body)
+      {
+         /* chunk runs past the file: truncated - nothing after it is
+          * addressable, and the chunk itself can never be decoded */
+         s->scan_done = 1;
+         break;
+      }
+
+      if (tag == RW_CC('V','P','8','X'))
+      {
+         if (sz < 10)
+         {
+            s->scan_done = 1;            /* malformed */
+            break;
+         }
+         if (body + 10 > s->avail)
+            break;                       /* body past the wall */
+         if (!s->have_vp8x)
+         {
+            const uint8_t *d = buf + body;
+            s->have_vp8x  = 1;
+            s->vp8x_flags = (int)d[0];
+            s->canvas_w   = (int)(((uint32_t)d[4] | ((uint32_t)d[5]<<8)
+                  | ((uint32_t)d[6]<<16)) + 1);
+            s->canvas_h   = (int)(((uint32_t)d[7] | ((uint32_t)d[8]<<8)
+                  | ((uint32_t)d[9]<<16)) + 1);
+         }
+      }
+      else if (tag == RW_CC('A','N','I','M') && sz >= 6)
+      {
+         const uint8_t *d = buf + body;
+         if (body + 6 > s->avail)
+            break;
+         s->loop_count = (int)((uint32_t)d[4] | ((uint32_t)d[5]<<8));
+      }
+      else if (tag == RW_CC('A','N','M','F') && sz >= 16)
+      {
+         if (s->num_anmf >= s->cap_anmf)
+         {
+            struct rwebp_anmf_ent *na;
+            int ncap = s->cap_anmf ? s->cap_anmf * 2 : 16;
+            na = (struct rwebp_anmf_ent*)realloc(s->anmf,
+                  (size_t)ncap * sizeof(*s->anmf));
+            if (!na)
+               break;                    /* retry on a later call */
+            s->anmf     = na;
+            s->cap_anmf = ncap;
+         }
+         if (s->num_anmf == 0)
+            s->media_floor = p;
+         s->anmf[s->num_anmf].off = body;
+         s->anmf[s->num_anmf].sz  = sz;
+         s->num_anmf++;
+      }
+      /* Per RIFF every chunk body is padded to an even length; the
+       * padding is skipped arithmetically, never read. */
+      p           = body + (size_t)sz + (size_t)(sz & 1);
+      s->scan_pos = p;
+   }
+}
+
+rwebp_anim_stream_t *rwebp_anim_stream_open_avail(const uint8_t *buf,
+      size_t len, size_t avail, int *need_more)
 {
    rwebp_anim_stream_t *s;
-   int cw = 0, ch = 0, loop = 0, cap = 0;
-   size_t p;
 
-   if (len < 12 || rw32(buf) != RW_CC('R','I','F','F')
+   if (need_more)
+      *need_more = 0;
+   if (avail > len)
+      avail = len;
+   if (len < 12)
+      return NULL;
+   if (avail < 12)
+   {
+      if (need_more)
+         *need_more = 1;
+      return NULL;
+   }
+   if (rw32(buf) != RW_CC('R','I','F','F')
        || rw32(buf+8) != RW_CC('W','E','B','P'))
       return NULL;
 
    s = (rwebp_anim_stream_t*)calloc(1, sizeof(*s));
-   if (!s) return NULL;
-   s->buf = buf; s->len = len;
+   if (!s)
+      return NULL;
+   s->buf      = buf;
+   s->len      = len;
+   s->avail    = avail;
+   s->scan_pos = 12;
+   rwebp_anim_scan(s);
 
-   for (p = 12; p + 8 <= len; )
+   if (s->scan_pos == 12 && !s->scan_done)
    {
-      uint32_t tag = rw32(buf+p), sz = rw32(buf+p+4);
-      const uint8_t *d = buf + p + 8;
-      if (p + 8 + sz > len) break;
-      if (tag == RW_CC('V','P','8','X') && sz >= 10)
-      {
-         cw = (int)(((uint32_t)d[4] | ((uint32_t)d[5]<<8) | ((uint32_t)d[6]<<16)) + 1);
-         ch = (int)(((uint32_t)d[7] | ((uint32_t)d[8]<<8) | ((uint32_t)d[9]<<16)) + 1);
-      }
-      else if (tag == RW_CC('A','N','I','M') && sz >= 6)
-         loop = (int)((uint32_t)d[4] | ((uint32_t)d[5]<<8));
-      else if (tag == RW_CC('A','N','M','F') && sz >= 16)
-      {
-         if (s->num_anmf >= cap)
-         {
-            struct rwebp_anmf_ent *na;
-            int ncap = cap ? cap * 2 : 16;
-            na = (struct rwebp_anmf_ent*)realloc(s->anmf,
-                  (size_t)ncap * sizeof(*s->anmf));
-            if (!na) goto ofail;
-            s->anmf = na; cap = ncap;
-         }
-         s->anmf[s->num_anmf].off = p + 8;
-         s->anmf[s->num_anmf].sz  = sz;
-         s->num_anmf++;
-      }
-      p += 8 + ((sz+1) & ~(size_t)1);
+      /* not even the first chunk is resident */
+      if (need_more)
+         *need_more = 1;
+      goto ofail;
+   }
+   /* VP8X, when present, is the first chunk; a file that opens with
+    * anything else is a simple (still) WebP.  An extended file without
+    * the animation flag is a still too: ANMF chunks may only appear
+    * when the flag is set, so neither verdict needs the rest of the
+    * file. */
+   if (!s->have_vp8x || !(s->vp8x_flags & 0x02))
+      goto ofail;
+   if (   s->canvas_w <= 0 || s->canvas_h <= 0
+       || s->canvas_w > 16384 || s->canvas_h > 16384)
+      goto ofail;
+   /* Two indexed headers mean the first frame lies wholly below the
+    * wall and there is a second one behind it.  With the whole file
+    * scanned one frame is accepted as it always was; a partial prefix
+    * that has shown only one asks for more, so the verdict on a
+    * single-frame file is the same either way. */
+   if (s->num_anmf < 2 && !(s->num_anmf == 1 && s->scan_done))
+   {
+      if (!s->scan_done && s->avail < s->len && need_more)
+         *need_more = 1;
+      goto ofail;
    }
 
-   if (cw <= 0 || ch <= 0 || cw > 16384 || ch > 16384 || s->num_anmf == 0)
+   s->canvas = (uint32_t*)calloc((size_t)s->canvas_w * s->canvas_h,
+         sizeof(uint32_t));
+   if (!s->canvas)
       goto ofail;
-
-   s->canvas_w = cw; s->canvas_h = ch; s->loop_count = loop;
-   s->canvas   = (uint32_t*)calloc((size_t)cw * ch, sizeof(uint32_t));
-   if (!s->canvas) goto ofail;
    return s;
 
 ofail:
    rwebp_anim_stream_close(s);
    return NULL;
+}
+
+rwebp_anim_stream_t *rwebp_anim_stream_open(const uint8_t *buf, size_t len)
+{
+   return rwebp_anim_stream_open_avail(buf, len, len, NULL);
+}
+
+void rwebp_anim_stream_set_avail(rwebp_anim_stream_t *s, size_t avail)
+{
+   if (!s)
+      return;
+   if (avail > s->len)
+      avail = s->len;
+   s->avail = avail;
+   /* Index whatever headers the new bound exposes now, so num_frames
+    * and next_span are current before the next decode. */
+   rwebp_anim_scan(s);
+}
+
+size_t rwebp_anim_stream_media_floor(const rwebp_anim_stream_t *s)
+{
+   return s ? s->media_floor : 0;
+}
+
+size_t rwebp_anim_stream_consumed(const rwebp_anim_stream_t *s)
+{
+   if (!s)
+      return 0;
+   if (s->cursor < s->num_anmf)
+      return s->anmf[s->cursor].off - 8;
+   return s->scan_done ? s->len : s->scan_pos;
+}
+
+void rwebp_anim_stream_next_span(const rwebp_anim_stream_t *s,
+      size_t *lo, size_t *hi)
+{
+   if (lo)
+      *lo = 0;
+   if (hi)
+      *hi = 0;
+   if (!s || s->cursor >= s->num_anmf)
+      return;
+   if (lo)
+      *lo = s->anmf[s->cursor].off - 8;
+   if (hi)
+      *hi = s->anmf[s->cursor].off + (size_t)s->anmf[s->cursor].sz;
 }
 
 void rwebp_anim_stream_get_info(const rwebp_anim_stream_t *s,
@@ -1554,21 +1714,42 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *s,
    if (!s) return NULL;
    cw = s->canvas_w; ch = s->canvas_h;
 
-   while (s->cursor < s->num_anmf)
+   for (;;)
    {
-      const uint8_t *d = s->buf + s->anmf[s->cursor].off;
-      uint32_t sz      = s->anmf[s->cursor].sz;
-      int fx = (int)(((uint32_t)d[0] | ((uint32_t)d[1]<<8) | ((uint32_t)d[2]<<16)) * 2);
-      int fy = (int)(((uint32_t)d[3] | ((uint32_t)d[4]<<8) | ((uint32_t)d[5]<<16)) * 2);
-      int fw = (int)(((uint32_t)d[6] | ((uint32_t)d[7]<<8) | ((uint32_t)d[8]<<16)) + 1);
-      int fh = (int)(((uint32_t)d[9] | ((uint32_t)d[10]<<8) | ((uint32_t)d[11]<<16)) + 1);
-      int dur = (int)((uint32_t)d[12] | ((uint32_t)d[13]<<8) | ((uint32_t)d[14]<<16));
-      int disp_bg  = (d[15] & 1) ? 1 : 0;
-      int no_blend = (d[15] & 2) ? 1 : 0;
+      const uint8_t *d;
+      size_t   off;
+      uint32_t sz;
+      int fx, fy, fw, fh, dur, disp_bg, no_blend;
       unsigned sub_w = 0, sub_h = 0;
       uint32_t *sub;
       int is_key, x, y;
       int sub_opaque = 0;
+
+      if (s->cursor >= s->num_anmf)
+      {
+         /* Every indexed frame is out: index more if the wall has
+          * moved, else this is the end of the pass (or the wall). */
+         if (s->scan_done)
+            return NULL;
+         rwebp_anim_scan(s);
+         if (s->cursor >= s->num_anmf)
+            return NULL;
+      }
+      off = s->anmf[s->cursor].off;
+      sz  = s->anmf[s->cursor].sz;
+      /* The frame's bytes must lie wholly below the wall: a windowed
+       * caller's pages past it are not there to read.  Nothing is
+       * consumed; the caller retries after raising the bound. */
+      if (off > s->avail || (size_t)sz > s->avail - off)
+         return NULL;
+      d        = s->buf + off;
+      fx       = (int)(((uint32_t)d[0] | ((uint32_t)d[1]<<8) | ((uint32_t)d[2]<<16)) * 2);
+      fy       = (int)(((uint32_t)d[3] | ((uint32_t)d[4]<<8) | ((uint32_t)d[5]<<16)) * 2);
+      fw       = (int)(((uint32_t)d[6] | ((uint32_t)d[7]<<8) | ((uint32_t)d[8]<<16)) + 1);
+      fh       = (int)(((uint32_t)d[9] | ((uint32_t)d[10]<<8) | ((uint32_t)d[11]<<16)) + 1);
+      dur      = (int)((uint32_t)d[12] | ((uint32_t)d[13]<<8) | ((uint32_t)d[14]<<16));
+      disp_bg  = (d[15] & 1) ? 1 : 0;
+      no_blend = (d[15] & 2) ? 1 : 0;
 
       s->cursor++;
 
@@ -1635,7 +1816,6 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *s,
       if (duration_ms) *duration_ms = dur;
       return s->canvas;
    }
-   return NULL;
 }
 
 /* ---- Eager decode: collect every frame from a stream. ---- */
@@ -1904,6 +2084,28 @@ int rwebp_process_image(rwebp_t *rwebp, void **buf_data,
 
    }
    return IMAGE_PROCESS_ERROR;
+}
+
+bool rwebp_is_animated_ex(const uint8_t *buf, size_t len, int *need_more)
+{
+   if (need_more) *need_more = 0;
+   if (len < 12)
+   {
+      if (need_more) *need_more = 1;
+      return false;
+   }
+   if (rw32(buf) != RW_CC('R','I','F','F') || rw32(buf+8) != RW_CC('W','E','B','P'))
+      return false;
+   if (len < 21)
+   {
+      if (need_more) *need_more = 1;
+      return false;
+   }
+   /* VP8X is the first chunk when present; its first payload byte
+    * carries the flags, bit 1 the animation */
+   if (rw32(buf+12) != RW_CC('V','P','8','X'))
+      return false;
+   return (buf[20] & 0x02) != 0;
 }
 
 bool rwebp_still_ready(const void *buf, size_t avail)

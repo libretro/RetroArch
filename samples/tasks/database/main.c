@@ -214,11 +214,9 @@ int main(int argc, char *argv[])
             &cache_supported);
    }
 
-   /* task_push_dbscan() ignores its playlist_directory and
-    * content_database arguments - both are marked "always from
-    * settings" and the scan reads them from there.  Passing them and
-    * not setting the settings left the database path empty, so the
-    * scan had nothing to match against and never produced a result:
+   /* The scan reads its playlist and database directories from the
+    * settings.  Left unset, the database path is empty, the scan has
+    * nothing to match against and never produces a result:
     *
     *   [Scanner] ""...
     *
@@ -241,8 +239,7 @@ int main(int argc, char *argv[])
 
    /* The return value matters: false means no task exists, so nothing
     * will ever call main_db_cb and the loop below would never end. */
-   if (!task_push_dbscan(playlist_dir, db_dir, input_dir, true,
-            true, main_db_cb))
+   if (!task_push_dbscan(input_dir, main_db_cb))
    {
       fprintf(stderr, "task_push_dbscan refused to start a scan\n");
       goto done;

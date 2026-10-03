@@ -61,6 +61,7 @@ HAVE_STDIN_CMD           := 1
 HAVE_CMD                 := 1
 HAVE_CHEEVOS = 0
 HAVE_CHD = 1
+HAVE_RCHD = 1
 HAVE_RVORBIS = 1
 HAVE_RMODTRACKER = 1
 HAVE_CORE_INFO_CACHE = 1
@@ -77,6 +78,7 @@ OBJ := frontend/frontend_salamander.o \
 		 frontend/drivers/platform_dos.o \
 		 libretro-common/file/file_path.o \
 		 libretro-common/file/file_path_io.o \
+		 libretro-common/string/rstrtod.o \
 		 libretro-common/string/stdstring.o \
 		 libretro-common/lists/string_list.o \
 		 libretro-common/lists/dir_list.o \

@@ -24,6 +24,55 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
+/* The device's channel map as AUDIO_SPEAKER_ positions, in the order
+ * the device takes them. 0 when the map is unknown or has a position
+ * the frontend has no bit for. A map whose positions are not in the
+ * frontend's ascending-bit order is reported as 0 too: the frontend
+ * lays frames out in that order and does not permute. */
+static uint32_t alsa_layout_of_chmap(snd_pcm_t *pcm, unsigned channels)
+{
+   snd_pcm_chmap_t *map = snd_pcm_get_chmap(pcm);
+   uint32_t layout = 0, last = 0;
+   unsigned i;
+   if (!map)
+      return 0;
+   if (map->channels != channels)
+   {
+      free(map);
+      return 0;
+   }
+   for (i = 0; i < map->channels; i++)
+   {
+      uint32_t bit;
+      switch (map->pos[i])
+      {
+         case SND_CHMAP_FL:  bit = AUDIO_SPEAKER_FRONT_LEFT;    break;
+         case SND_CHMAP_FR:  bit = AUDIO_SPEAKER_FRONT_RIGHT;   break;
+         case SND_CHMAP_FC:  bit = AUDIO_SPEAKER_FRONT_CENTER;  break;
+         case SND_CHMAP_LFE: bit = AUDIO_SPEAKER_LOW_FREQUENCY; break;
+         case SND_CHMAP_RL:  bit = AUDIO_SPEAKER_BACK_LEFT;     break;
+         case SND_CHMAP_RR:  bit = AUDIO_SPEAKER_BACK_RIGHT;    break;
+         case SND_CHMAP_RC:  bit = AUDIO_SPEAKER_BACK_CENTER;   break;
+         case SND_CHMAP_SL:  bit = AUDIO_SPEAKER_SIDE_LEFT;     break;
+         case SND_CHMAP_SR:  bit = AUDIO_SPEAKER_SIDE_RIGHT;    break;
+         case SND_CHMAP_FLC: bit = AUDIO_SPEAKER_FRONT_LEFT_OF_CENTER;  break;
+         case SND_CHMAP_FRC: bit = AUDIO_SPEAKER_FRONT_RIGHT_OF_CENTER; break;
+         default:
+            free(map);
+            return 0;
+      }
+      if (bit <= last)
+      {
+         free(map);
+         return 0;
+      }
+      layout |= bit;
+      last    = bit;
+   }
+   free(map);
+   return layout;
+}
+
 int alsa_init_pcm(snd_pcm_t **pcm,
    const char* device,
    snd_pcm_stream_t stream,
@@ -40,7 +89,6 @@ int alsa_init_pcm(snd_pcm_t **pcm,
    snd_pcm_sw_params_t *sw_params = NULL;
    unsigned latency_usec          = latency * 1000;
    unsigned periods               = 4;
-   unsigned orig_rate             = rate;
    const char *alsa_dev           = device ? device : "default";
    int errnum                     = 0;
 
@@ -104,7 +152,6 @@ int alsa_init_pcm(snd_pcm_t **pcm,
 
       goto error;
    }
-   stream_info->frame_bits = snd_pcm_format_physical_width(format) * channels;
 
    if ((errnum = snd_pcm_hw_params_set_format(*pcm, params, format)) < 0)
    {
@@ -117,7 +164,21 @@ int alsa_init_pcm(snd_pcm_t **pcm,
       goto error;
    }
 
-   if ((errnum = snd_pcm_hw_params_set_channels(*pcm, params, channels)) < 0)
+   /* A wider count than stereo is a request: a device that will not
+    * take it gets stereo, and the caller learns the count from
+    * stream_info->channels. Stereo itself is required. */
+   if (channels > 2
+         && (errnum = snd_pcm_hw_params_set_channels(*pcm, params, channels)) < 0)
+   {
+      RARCH_WARN("[ALSA] %s device \"%s\" would not open with %u channels (%s); opening stereo.\n",
+            snd_pcm_stream_name(stream),
+            snd_pcm_name(*pcm),
+            channels,
+            snd_strerror(errnum));
+      channels = 2;
+   }
+   if (channels <= 2
+         && (errnum = snd_pcm_hw_params_set_channels(*pcm, params, channels)) < 0)
    {
       RARCH_ERR("[ALSA] Failed to set %u-channel audio for %s device \"%s\": %s.\n",
             channels,
@@ -127,6 +188,9 @@ int alsa_init_pcm(snd_pcm_t **pcm,
 
       goto error;
    }
+   stream_info->frame_bits = snd_pcm_format_physical_width(format) * channels;
+   stream_info->channels   = channels;
+   stream_info->layout     = 0;
 
    /* Don't allow rate resampling when probing for the default rate (but ignore if this call fails) */
    if ((errnum = snd_pcm_hw_params_set_rate_resample(*pcm, params, false)) < 0)
@@ -186,6 +250,18 @@ int alsa_init_pcm(snd_pcm_t **pcm,
       goto error;
    }
 
+   /* Wider than stereo: what the device says its channels are. */
+   if (channels > 2)
+   {
+      stream_info->layout = alsa_layout_of_chmap(*pcm, channels);
+      if (stream_info->layout)
+         RARCH_LOG("[ALSA] %s device \"%s\" opened with %u channels, layout 0x%03x from its channel map.\n",
+               snd_pcm_stream_name(stream), snd_pcm_name(*pcm), channels, stream_info->layout);
+      else
+         RARCH_LOG("[ALSA] %s device \"%s\" opened with %u channels; no usable channel map, the requested layout is assumed.\n",
+               snd_pcm_stream_name(stream), snd_pcm_name(*pcm), channels);
+   }
+
    /* Shouldn't have to bother with this,
     * but some drivers are apparently broken. */
    if ((errnum = snd_pcm_hw_params_get_period_size(params, &stream_info->period_frames, NULL)) < 0)
@@ -206,13 +282,22 @@ int alsa_init_pcm(snd_pcm_t **pcm,
       }
    }
 
-   stream_info->period_size = snd_pcm_frames_to_bytes(*pcm, stream_info->period_frames);
-   if (stream_info->period_size < 0)
+   /* snd_pcm_frames_to_bytes returns a signed count and a negative
+    * value is its error; the field it is stored in is unsigned, so
+    * the test has to be on the return value. It was made after the
+    * store, where it could never be true, and a failure would have
+    * been carried on as an enormous size. The error's message came
+    * from the frame count too, not from the return. */
    {
-      RARCH_ERR("[ALSA] Failed to convert a period size of %lu frames to bytes: %s.\n",
-            stream_info->period_frames,
-            snd_strerror(stream_info->period_frames));
-      goto error;
+      ssize_t bytes = snd_pcm_frames_to_bytes(*pcm, stream_info->period_frames);
+      if (bytes < 0)
+      {
+         RARCH_ERR("[ALSA] Failed to convert a period size of %lu frames to bytes: %s.\n",
+               (unsigned long)stream_info->period_frames,
+               snd_strerror((int)bytes));
+         goto error;
+      }
+      stream_info->period_size = (size_t)bytes;
    }
 
    RARCH_LOG("[ALSA] Period: %u periods per buffer (%lu frames, %lu bytes).\n",
@@ -239,15 +324,19 @@ int alsa_init_pcm(snd_pcm_t **pcm,
    }
 
 
-   stream_info->buffer_size = snd_pcm_frames_to_bytes(*pcm, buffer_size);
-   if (stream_info->buffer_size < 0)
    {
-      RARCH_ERR("[ALSA] Failed to convert a buffer size of %lu frames to bytes: %s.\n",
-            buffer_size,
-            snd_strerror(buffer_size));
-      goto error;
+      ssize_t bytes = snd_pcm_frames_to_bytes(*pcm, buffer_size);
+      if (bytes < 0)
+      {
+         RARCH_ERR("[ALSA] Failed to convert a buffer size of %lu frames to bytes: %s.\n",
+               (unsigned long)buffer_size,
+               snd_strerror((int)bytes));
+         goto error;
+      }
+      stream_info->buffer_size = (size_t)bytes;
    }
-   RARCH_LOG("[ALSA] Buffer size: %lu frames (%lu bytes).\n", buffer_size, stream_info->buffer_size);
+   RARCH_LOG("[ALSA] Buffer size: %lu frames (%lu bytes).\n",
+         (unsigned long)buffer_size, (unsigned long)stream_info->buffer_size);
 
    stream_info->can_pause = snd_pcm_hw_params_can_pause(params);
 

@@ -58,6 +58,7 @@
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../font_driver.h"
+#include "../gfx_instrument.h"
 #include "../common/win32_common.h"
 #include "../../performance_counters.h"
 #include "../../menu/menu_driver.h"
@@ -70,6 +71,7 @@
 #include "../common/dxgi_common.h"
 #include <libretro.h>
 #include <libretro_d3d12.h>
+#include "../common/d3d12_hw_interface.h"
 #include "../common/d3dcompiler_common.h"
 /* slang_process.h is self-contained - it only defines types and
  * constants used by pass state.  The actual slang_process() call
@@ -81,6 +83,7 @@
 
 #ifdef __WINRT__
 #include "../../uwp/uwp_func.h"
+#include <compat/strl.h>
 #endif
 
 #define D3D12_MAX_GPU_COUNT 16
@@ -115,7 +118,6 @@ enum d3d12_video_flags
    D3D12_ST_FLAG_WAITABLE_SWAPCHAINS   = (1 << 13),
    D3D12_ST_FLAG_HW_IFACE_ENABLE       = (1 << 14),
    D3D12_ST_FLAG_FRAME_DUPE_LOCK       = (1 << 15),
-   D3D12_ST_FLAG_SW_FRAMEBUFFER_READY  = (1 << 16),
    /* The core's frames are already PQ-encoded Rec.2020 at absolute
     * luminance (RETRO_PIXEL_FORMAT_HDR10_2101010), so the HDR composition
     * must pass them through rather than encode them a second time. */
@@ -172,6 +174,11 @@ typedef ID3D12DeviceRemovedExtendedDataSettings*  D3D12DeviceRemovedExtendedData
 #endif /* DEVICE_DEBUG */
 #endif
 typedef ID3D12InfoQueue*                          D3D12InfoQueue;
+
+/* Constant slots for plain mesh draws: 256 bytes each, the alignment a
+ * constant buffer view needs */
+#define D3D12_MESH_CB_SIZE  256
+#define D3D12_MESH_CB_SLOTS 256
 
 typedef struct
 {
@@ -239,6 +246,11 @@ typedef struct
     * overrides the SRV component mapping (see d3d12_init_texture) */
    UINT                               srv_mapping;
    bool                               dirty;
+   /* The queue fence value the frame that last copied from the upload
+    * buffer signals when it is done (d3d12_upload_texture); 0 when
+    * nothing was ever copied. An in-place update writes the buffer
+    * only past that value. */
+   UINT64                             upload_fence;
 } d3d12_texture_t;
 
 typedef struct ALIGN(16)
@@ -275,6 +287,57 @@ typedef struct
    struct retro_hw_render_interface_d3d12 hw_iface;
    D3D12Resource hw_render_texture;
    DXGI_FORMAT hw_render_texture_format;
+   /* The threaded wrapper's hardware ring: a copy of the core's texture
+    * per slot, captured on the core's thread with this list and
+    * allocator, which are the main thread's own. See the hw_ring pokes
+    * in video_poke_interface_t. */
+   struct
+   {
+      D3D12Resource            texture[3];
+      DXGI_FORMAT              format[3];
+      unsigned                 width[3];
+      unsigned                 height[3];
+      D3D12CommandAllocator    allocator;
+      D3D12GraphicsCommandList cmd;
+      D3D12Fence               capture_fence;
+      HANDLE                   capture_event;
+      UINT64                   capture_value;
+   } hw_ring;
+   /* libretro_d3d12.h version 2, served by the driver itself (no
+    * threaded wrapper in front). The frame is consumed inside
+    * video_refresh, so there is one sync index; `done` is signalled
+    * behind the frame that read the core's texture, and is what
+    * wait_sync_index waits. */
+   struct
+   {
+      D3D12Fence done;
+      HANDLE     done_event;
+      UINT64     done_value;     /* last value queued for signal    */
+      bool       frame_took_texture;
+   } hw_v2;
+   /* Interface version 2, no shader preset: the frame is drawn straight
+    * from the core's texture, where the driver used to copy it into
+    * frame.texture[0] first and draw from that. A version 2 core keeps a
+    * texture per sync index and leaves one alone until the frontend is
+    * done with it, which is what makes this safe. A descriptor per
+    * texture is made once and found again; four are kept, with the
+    * resources they are of, until another wants the place. `eligible` is
+    * set by whoever handed the frame's texture over; `current` is what
+    * the frame on screen is drawn from, repeats of it included, until a
+    * frame arrives another way. */
+   struct
+   {
+      struct
+      {
+         D3D12Resource               resource;
+         D3D12_CPU_DESCRIPTOR_HANDLE cpu;
+         D3D12_GPU_DESCRIPTOR_HANDLE gpu;
+      } cache[4];
+      unsigned                    next;
+      D3D12Resource               current;
+      D3D12_GPU_DESCRIPTOR_HANDLE current_gpu;
+      bool                        eligible;
+   } hw_direct;
 
    IDXGIAdapter1 *adapters[D3D12_MAX_GPU_COUNT];
    struct string_list *gpu_list;
@@ -287,6 +350,10 @@ typedef struct
       D3D12Fence               fence;
       HANDLE                   fenceEvent;
       UINT64                   fenceValue;
+      /* fenceValue the present signals once its frame's command list
+       * has executed: the frame in flight is done when the fence has
+       * reached it. */
+      UINT64                   frameSignal;
    } queue;
 
    struct
@@ -304,6 +371,15 @@ typedef struct
       HANDLE                      frameLatencyWaitableObject;
       DXGISwapChain               handle;
       D3D12Resource               renderTargets[2];
+      /* Copy of the last presented backbuffer, taken before the present
+       * of a frame() that asked for it (retain_output), kept in
+       * COPY_SOURCE between uses, and the group that frame put on
+       * screen for present_last() to replay. */
+      D3D12Resource               retained;
+      /* The back buffer size the copy was made at, packed. */
+      unsigned                    retained_dims;
+      unsigned                    retained_light;
+      unsigned                    retained_dark;
 #ifdef HAVE_DXGI_HDR
       d3d12_texture_t             back_buffer;
       DXGI_FORMAT                 current_rt_format;
@@ -355,8 +431,8 @@ typedef struct
       D3D12_PLACED_SUBRESOURCE_FOOTPRINT  layout;
       void                               *mapped;
       UINT64                              total_bytes;
-      UINT                                width;
-      UINT                                height;
+      /* The size the buffer was laid out for, packed. */
+      unsigned                            dims;
       DXGI_FORMAT                         format;
    } sw_fb;
 
@@ -413,8 +489,24 @@ typedef struct
    {
       D3D12Resource            vbo;
       D3D12_VERTEX_BUFFER_VIEW vbo_view;
-      d3d12_texture_t*         textures;
+      /* What the page draws from, one per sprite: into textures[] for
+       * a page made by load(), or the overlay pack's own
+       * d3d12_texture_t for a page of load_textures. The pack's, not
+       * copies of them: dirty, upload_fence and the upload buffer are
+       * state of the one texture, and a copy goes stale the first
+       * time either side uploads. */
+      d3d12_texture_t**        refs;
+      d3d12_texture_t*         textures;     /* owned; NULL when borrowed */
+      /* The page's sprites as the setters leave them, vbo_capacity of
+       * them; copied whole into the buffer by the draw when dirty, so
+       * a setter is a store and a frame is at most one map. */
+      d3d12_sprite_t*          shadow;
       int                      count;
+      int                      vbo_capacity; /* sprites the vbo holds */
+      /* refs are the overlay pack's (load_textures): drawn from,
+       * never released here. */
+      bool                     borrowed;
+      bool                     dirty;
    } overlays;
 #endif
 
@@ -436,6 +528,7 @@ typedef struct
       uint32_t                        rotation;
       uint32_t                        total_subframes;
       uint32_t                        current_subframe;
+      uint32_t                        swap_count;
       float                           core_aspect;
       float                           core_aspect_rot;
 #ifdef HAVE_DXGI_HDR
@@ -472,15 +565,91 @@ typedef struct
    D3D12_GPU_DESCRIPTOR_HANDLE     samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
    math_matrix_4x4                 mvp, mvp_no_rot, identity;
    struct video_viewport           vp;
-   D3D12Resource                   menu_pipeline_vbo;
-   D3D12_VERTEX_BUFFER_VIEW        menu_pipeline_vbo_view;
+   /* gfx_display meshes the effects draw from, by mesh id, in upload
+    * buffers of their own. One that gives way is retired until the
+    * frame that last drew it has, as the font atlas's are. */
+   struct
+   {
+      D3D12Resource            vbo;
+      D3D12_VERTEX_BUFFER_VIEW view;
+      D3D12_INDEX_BUFFER_VIEW  ibo_view;
+      uint64_t                 last_draw;
+      uint32_t                 id;
+   } meshes[4];
+   /* Plain meshes: their pipeline, and a ring of constant slots in an
+    * upload buffer kept mapped, each tagged with the fence value of the
+    * frame that last used it */
+   D3D12PipelineState              mesh_pipe;
+   /* The pipeline state the menu effects are made from when first
+    * drawn, and which of them have been tried, one bit each */
+   D3D12_GRAPHICS_PIPELINE_STATE_DESC effect_desc;
+   bool                            effect_desc_valid;
+   unsigned                        effects_tried;
+   D3D12Resource                   mesh_cb;
+   uint8_t                        *mesh_cb_mapped;
+   D3D12_GPU_VIRTUAL_ADDRESS       mesh_cb_va;
+   UINT64                          mesh_cb_fence[D3D12_MESH_CB_SLOTS];
+   unsigned                        mesh_cb_next;
+   struct
+   {
+      D3D12Resource vbo;
+      UINT64        fence;
+   } meshes_retired[4];
+   unsigned                        meshes_retired_count;
+   uint64_t                        mesh_draws;
 
 #if defined(DEBUG) && !defined(__MINGW32__) && !defined(__MINGW64__)
    D3D12Debug debugController;
 #endif
    uint32_t flags;
+   /* settings->uints.video_swapchain_bit_depth, seeded at init and
+    * refreshed in apply_state_changes (a blocking command, so the
+    * settings read inside it cannot race main): the frame's resize
+    * handling consumes this instead of live settings on the video
+    * thread. */
+   unsigned swapchain_bit_depth_latched;
    int8_t wait_for_vblank;
+
+   /* Streamed recording readback. While recording, every frame's
+    * command list copies the back buffer into the next readback buffer
+    * of this ring, a fence value is signalled behind the list, and
+    * read_viewport maps the buffer copied D3D12_RECORD_RING frames ago
+    * once its fence has passed - never waiting on the GPU. Before this
+    * the recorder re-rendered the frame, drained the queue, created a
+    * fresh readback buffer and copied into it, every frame. */
+#define D3D12_RECORD_RING 3
+   struct
+   {
+      D3D12Resource readback[D3D12_RECORD_RING];
+      UINT64        fence[D3D12_RECORD_RING];
+      bool          valid[D3D12_RECORD_RING];
+      unsigned      index;
+      unsigned      dims;
+      DXGI_FORMAT   format;
+      D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
+      UINT64        total_bytes;
+      bool          enable;
+      /* Set by the capture recorded into a frame's list, consumed by
+       * the signal after that list is executed. */
+      bool          pending;
+      /* Rings taken out of use - recording stopped, or the swapchain
+       * changed size or format - whose buffers a command list still
+       * in flight may name. Each is released once the queue fence has
+       * passed the last capture recorded into it, never before.
+       * Generations pile up only under a storm of resizes; when the
+       * table is full the oldest is waited for, bounded. */
+#define D3D12_RECORD_RETIRED 4
+      struct
+      {
+         D3D12Resource readback[D3D12_RECORD_RING];
+         UINT64        fence;
+      } retired[D3D12_RECORD_RETIRED];
+      unsigned      retired_count;
+   } record;
 } d3d12_video_t;
+
+static void d3d12_record_free(d3d12_video_t *d3d12);
+static void d3d12_record_teardown(d3d12_video_t *d3d12);
 
 #define D3D12_ROLLING_SCANLINE_SIMULATION
 
@@ -491,6 +660,12 @@ typedef struct
    void*                         font_data;
    struct font_atlas*            atlas;
    d3d12_video_t*                d3d12; /* For GPU sync on free */
+   /* Glyph sprites gathered while a raster block is bound, drawn as
+    * one batch by d3d12_font_flush_block(). */
+   d3d12_sprite_t*               acc;
+   video_font_raster_block_t*    block;
+   unsigned                      acc_count;
+   unsigned                      acc_cap;
    /* Pending atlas dirty rectangle, staged to the upload buffer on
     * the CPU and awaiting the boxed GPU copy at draw time */
    unsigned                      region_x0;
@@ -498,6 +673,14 @@ typedef struct
    unsigned                      region_x1;
    unsigned                      region_y1;
    bool                          region_pending;
+   /* Textures the atlas outgrew, and the queue fence value past which
+    * no command list still names them; released then, not waited for */
+   struct
+   {
+      d3d12_texture_t            texture;
+      UINT64                     fence;
+   }                             retired[2];
+   unsigned                      retired_count;
 } d3d12_font_t;
 
 static D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc = {
@@ -688,6 +871,45 @@ static D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_slot_alloc(d3d12_descri
    return handle;
 }
 
+/* Waits for the queue to drain, bounded.
+ *
+ * The GPU signals the fence when the work submitted before this point
+ * has retired. A GPU that has been reset or removed never signals, and
+ * waiting without a bound here freezes the frontend thread rather than
+ * the renderer - so the wait gives up, says so once, and returns. The
+ * caller then proceeds on the assumption the work is done, which is
+ * wrong, but a device in that state is not going to read the resources
+ * either. */
+#define D3D12_FENCE_WAIT_MS 2000
+
+static void d3d12_queue_drain(d3d12_video_t *d3d12)
+{
+   D3D12Fence fence = d3d12->queue.fence;
+
+   /* A driver whose start-up failed before it had a queue is freed
+    * through d3d12_gfx_free() like any other, which begins by
+    * draining: with no device there is no queue and no fence, and
+    * this used to call through both. Nothing was queued; nothing to
+    * wait for. */
+   if (!d3d12->queue.handle || !fence)
+      return;
+
+   d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence,
+         ++d3d12->queue.fenceValue);
+
+   if (fence->lpVtbl->GetCompletedValue(fence) >= d3d12->queue.fenceValue)
+      return;
+
+   fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue,
+         d3d12->queue.fenceEvent);
+
+   if (WaitForSingleObject(d3d12->queue.fenceEvent, D3D12_FENCE_WAIT_MS)
+         != WAIT_OBJECT_0)
+      RARCH_ERR("[D3D12] The GPU did not signal its fence within %u ms;"
+            " the device is most likely lost.\n",
+            (unsigned)D3D12_FENCE_WAIT_MS);
+}
+
 static void d3d12_release_texture(d3d12_texture_t* texture)
 {
    if (!texture->handle)
@@ -746,13 +968,14 @@ static void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
    if (   !(texture->desc.Width  >> (texture->desc.MipLevels - 1))
          && !(texture->desc.Height >> (texture->desc.MipLevels - 1)))
    {
-      unsigned width                   = texture->desc.Width  >> 5;
-      unsigned height                  = texture->desc.Height >> 5;
+      /* Either axis above 1 is a bit above bit 0 in their OR, so
+       * the two halve together as one word. */
+      unsigned span                    = (unsigned)
+         ((texture->desc.Width | texture->desc.Height) >> 5);
       texture->desc.MipLevels          = 1;
-      while ((width > 1) || (height > 1))
+      while (span > 1)
       {
-         width  >>= 1;
-         height >>= 1;
+         span >>= 1;
          texture->desc.MipLevels++;
       }
    }
@@ -890,14 +1113,27 @@ static void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
    texture->size_data.w = 1.0f / texture->desc.Height;
 }
 
-static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
-      d3d12_texture_t* texture, void *userdata)
+/* Copy @texture's pixels in from @upload_buffer laid out as @layout:
+ * the texture's own upload buffer, or the driver's lent framebuffer.
+ * @src_box, when given, is the part of that footprint to copy - a
+ * window into a loan - and the texture is its size. */
+static void d3d12_upload_texture_from(D3D12GraphicsCommandList cmd,
+      d3d12_texture_t* texture, void *userdata,
+      D3D12Resource upload_buffer,
+      const D3D12_PLACED_SUBRESOURCE_FOOTPRINT *layout,
+      const D3D12_BOX *src_box)
 {
    D3D12_TEXTURE_COPY_LOCATION src, dst;
+   d3d12_video_t* d3d12_ = (d3d12_video_t*)userdata;
 
-   src.pResource        = texture->upload_buffer;
+   /* The copy goes into the command list of the frame being recorded,
+    * which signals the next fence value at its end. */
+   if (d3d12_)
+      texture->upload_fence = d3d12_->queue.fenceValue + 1;
+
+   src.pResource        = upload_buffer;
    src.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-   src.PlacedFootprint  = texture->layout;
+   src.PlacedFootprint  = *layout;
 
    dst.pResource        = texture->handle;
    dst.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
@@ -909,7 +1145,7 @@ static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
          D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
          D3D12_RESOURCE_STATE_COPY_DEST);
 
-   cmd->lpVtbl->CopyTextureRegion(cmd, &dst, 0, 0, 0, &src, NULL);
+   cmd->lpVtbl->CopyTextureRegion(cmd, &dst, 0, 0, 0, &src, src_box);
 
    D3D12_RESOURCE_TRANSITION(
          cmd,
@@ -977,6 +1213,13 @@ static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
    }
 
    texture->dirty = false;
+}
+
+static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
+      d3d12_texture_t* texture, void *userdata)
+{
+   d3d12_upload_texture_from(cmd, texture, userdata,
+         texture->upload_buffer, &texture->layout, NULL);
 }
 
 static void d3d12_update_texture(
@@ -1058,8 +1301,121 @@ static void gfx_display_d3d12_blend_end(void *data)
    cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
 }
 
+static void d3d12_init_pipeline(
+      D3D12Device                         device,
+      D3DBlob                             vs_code,
+      D3DBlob                             ps_code,
+      D3DBlob                             gs_code,
+      D3D12_GRAPHICS_PIPELINE_STATE_DESC* desc,
+      D3D12PipelineState*                 out);
+
+/* A menu effect's pipeline, made the first time the effect is drawn
+ * rather than all six at start: at most one is ever on screen, and the
+ * effects are no longer XMB's alone. False when it cannot be had, and
+ * the effect is not drawn; one that will not compile is not tried again
+ * until the driver is. */
+static bool d3d12_effect_pipe(d3d12_video_t *d3d12, unsigned pipeline_id)
+{
+   static const D3D12_INPUT_ELEMENT_DESC ribbon_desc[] = {
+      { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0,
+         D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+   };
+   static const D3D12_INPUT_ELEMENT_DESC quad_desc[] = {
+      { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, position),
+         D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+      { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
+         D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+   };
+   static const char ribbon[] =
+#include "d3d_shaders/ribbon_sm4.hlsl.h"
+      ;
+   static const char ribbon_simple[] =
+#include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
+      ;
+   static const char simple_snow[] =
+#include "d3d_shaders/simple_snow_sm4.hlsl.h"
+      ;
+   static const char snow[] =
+#include "d3d_shaders/snow_sm4.hlsl.h"
+      ;
+   static const char bokeh[] =
+#include "d3d_shaders/bokeh_sm4.hlsl.h"
+      ;
+   static const char snowflake[] =
+#include "d3d_shaders/snowflake_sm4.hlsl.h"
+      ;
+   D3D12_GRAPHICS_PIPELINE_STATE_DESC desc;
+   D3DBlob vs_code  = NULL;
+   D3DBlob ps_code  = NULL;
+   const char *src  = NULL;
+   size_t size      = 0;
+   bool ribbons     = false;
+   unsigned bit;
+
+   switch (pipeline_id)
+   {
+      case VIDEO_SHADER_MENU:
+         src = ribbon;        size = sizeof(ribbon);        bit = 1 << 0; ribbons = true;
+         break;
+      case VIDEO_SHADER_MENU_2:
+         src = ribbon_simple; size = sizeof(ribbon_simple); bit = 1 << 1; ribbons = true;
+         break;
+      case VIDEO_SHADER_MENU_3:
+         src = simple_snow;   size = sizeof(simple_snow);   bit = 1 << 2;
+         break;
+      case VIDEO_SHADER_MENU_4:
+         src = snow;          size = sizeof(snow);          bit = 1 << 3;
+         break;
+      case VIDEO_SHADER_MENU_5:
+         src = bokeh;         size = sizeof(bokeh);         bit = 1 << 4;
+         break;
+      case VIDEO_SHADER_MENU_6:
+         src = snowflake;     size = sizeof(snowflake);     bit = 1 << 5;
+         break;
+      default:
+         return false;
+   }
+   if (d3d12->pipes[pipeline_id])
+      return true;
+   if ((d3d12->effects_tried & bit) || !d3d12->effect_desc_valid)
+      return false;
+   d3d12->effects_tried |= bit;
+
+   desc                       = d3d12->effect_desc;
+   desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+   if (ribbons)
+   {
+      /* The ribbons multiply what is under them */
+      desc.BlendState.RenderTarget[0].SrcBlend  = D3D12_BLEND_DEST_COLOR;
+      desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+      desc.InputLayout.pInputElementDescs       = ribbon_desc;
+      desc.InputLayout.NumElements              = countof(ribbon_desc);
+   }
+   else
+   {
+      /* Standard alpha blending for snow, bokeh and snowflake: the
+       * ribbons' multiplicative blend would make white snowflakes
+       * vanish against coloured backgrounds */
+      desc.BlendState.RenderTarget[0].SrcBlend       = D3D12_BLEND_SRC_ALPHA;
+      desc.BlendState.RenderTarget[0].DestBlend      = D3D12_BLEND_INV_SRC_ALPHA;
+      desc.BlendState.RenderTarget[0].BlendOp        = D3D12_BLEND_OP_ADD;
+      desc.BlendState.RenderTarget[0].SrcBlendAlpha  = D3D12_BLEND_SRC_ALPHA;
+      desc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
+      desc.BlendState.RenderTarget[0].BlendOpAlpha   = D3D12_BLEND_OP_ADD;
+      desc.InputLayout.pInputElementDescs            = quad_desc;
+      desc.InputLayout.NumElements                   = countof(quad_desc);
+   }
+   if (     d3d_compile(src, size, NULL, "VSMain", "vs_5_0", &vs_code)
+         && d3d_compile(src, size, NULL, "PSMain", "ps_5_0", &ps_code))
+      d3d12_init_pipeline(d3d12->device, vs_code, ps_code, NULL, &desc,
+            &d3d12->pipes[pipeline_id]);
+   Release(vs_code);
+   Release(ps_code);
+   return d3d12->pipes[pipeline_id] != NULL;
+}
+
 static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
    D3D12GraphicsCommandList cmd;
    int vertex_count     = 1;
@@ -1078,6 +1434,9 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
+         /* Made by the pipeline call before this, or not at all */
+         if (!d3d12->pipes[draw->pipeline_id])
+            return;
          cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->pipes[draw->pipeline_id]);
          cmd->lpVtbl->DrawInstanced(cmd, draw->coords->vertices, 1, 0, 0);
          cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
@@ -1107,12 +1466,12 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
       if (vertex_count == 1)
       {
 
-         sprite->pos.x    = draw->x      / (float)d3d12->chain.viewport.Width;
+         sprite->pos.x    = VIDEO_POS_X(draw->pos)      / (float)d3d12->chain.viewport.Width;
          sprite->pos.y    =
-            (d3d12->chain.viewport.Height - draw->y - draw->height) /
+            (d3d12->chain.viewport.Height - VIDEO_POS_Y(draw->pos) - VIDEO_SCALE_H(draw->dims)) /
             (float)d3d12->chain.viewport.Height;
-         sprite->pos.w    = draw->width  / (float)d3d12->chain.viewport.Width;
-         sprite->pos.h    = draw->height / (float)d3d12->chain.viewport.Height;
+         sprite->pos.w    = VIDEO_SCALE_W(draw->dims)  / (float)d3d12->chain.viewport.Width;
+         sprite->pos.h    = VIDEO_SCALE_H(draw->dims) / (float)d3d12->chain.viewport.Height;
 
          sprite->coords.u = 0.0f;
          sprite->coords.v = 0.0f;
@@ -1216,9 +1575,189 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
    }
 }
 
+/* The slot whose buffer holds @mesh's vertices, made the first time it
+ * is drawn. A slot that gives way to it is retired until the GPU has
+ * finished the frame being recorded; -1 when there is no slot to be had
+ * this frame, and the effect is not drawn. */
+static int d3d12_mesh_slot(d3d12_video_t *d3d12,
+      const gfx_display_mesh_t *mesh)
+{
+   D3D12_RANGE read_range;
+   void *mapped    = NULL;
+   uint64_t oldest = (uint64_t)-1;
+   UINT64 done     = d3d12->queue.fence->lpVtbl->GetCompletedValue(
+         d3d12->queue.fence);
+   int slot        = -1;
+   unsigned i, kept;
+
+   for (i = 0, kept = 0; i < d3d12->meshes_retired_count; i++)
+   {
+      if (done >= d3d12->meshes_retired[i].fence)
+         Release(d3d12->meshes_retired[i].vbo);
+      else
+         d3d12->meshes_retired[kept++] = d3d12->meshes_retired[i];
+   }
+   d3d12->meshes_retired_count = kept;
+
+   for (i = 0; i < ARRAY_SIZE(d3d12->meshes); i++)
+   {
+      if (d3d12->meshes[i].vbo && d3d12->meshes[i].id == mesh->id)
+         return (int)i;
+      if (!d3d12->meshes[i].vbo)
+      {
+         if (slot < 0 || d3d12->meshes[slot].vbo)
+            slot = (int)i;
+      }
+      else if ((slot < 0 || d3d12->meshes[slot].vbo)
+            && d3d12->meshes[i].last_draw < oldest)
+      {
+         oldest = d3d12->meshes[i].last_draw;
+         slot   = (int)i;
+      }
+   }
+   if (slot < 0)
+      return -1;
+   if (d3d12->meshes[slot].vbo)
+   {
+      if (d3d12->meshes_retired_count >= ARRAY_SIZE(d3d12->meshes_retired))
+         return -1;
+      /* This frame's command list may already name it; it signals the
+       * next fence value when it is done */
+      d3d12->meshes_retired[d3d12->meshes_retired_count].vbo   =
+         d3d12->meshes[slot].vbo;
+      d3d12->meshes_retired[d3d12->meshes_retired_count].fence =
+         d3d12->queue.fenceValue + 1;
+      d3d12->meshes_retired_count++;
+      d3d12->meshes[slot].vbo = NULL;
+      d3d12->meshes[slot].id  = 0;
+   }
+
+   /* Vertices, then any indices, in the one upload buffer */
+   d3d12->meshes[slot].view.StrideInBytes  = sizeof(gfx_display_mesh_vertex_t);
+   d3d12->meshes[slot].view.SizeInBytes    = mesh->vertex_count
+      * sizeof(gfx_display_mesh_vertex_t);
+   d3d12->meshes[slot].ibo_view.SizeInBytes = mesh->index_count
+      * sizeof(uint16_t);
+   d3d12->meshes[slot].ibo_view.Format      = DXGI_FORMAT_R16_UINT;
+   d3d12->meshes[slot].view.BufferLocation = d3d12_create_buffer(
+         d3d12->device, d3d12->meshes[slot].view.SizeInBytes
+         + d3d12->meshes[slot].ibo_view.SizeInBytes,
+         &d3d12->meshes[slot].vbo);
+   d3d12->meshes[slot].ibo_view.BufferLocation =
+      d3d12->meshes[slot].view.BufferLocation
+      + d3d12->meshes[slot].view.SizeInBytes;
+   if (!d3d12->meshes[slot].vbo)
+      return -1;
+   read_range.Begin = 0;
+   read_range.End   = 0;
+   if (FAILED(D3D12Map(d3d12->meshes[slot].vbo, 0, &read_range, &mapped))
+         || !mapped)
+   {
+      Release(d3d12->meshes[slot].vbo);
+      return -1;
+   }
+   memcpy(mapped, mesh->vertices, d3d12->meshes[slot].view.SizeInBytes);
+   if (mesh->indices)
+      memcpy((uint8_t*)mapped + d3d12->meshes[slot].view.SizeInBytes,
+            mesh->indices, d3d12->meshes[slot].ibo_view.SizeInBytes);
+   D3D12Unmap(d3d12->meshes[slot].vbo, 0, NULL);
+   d3d12->meshes[slot].id = mesh->id;
+   return slot;
+}
+
+/* The next of the mesh constant slots, unless the GPU may still read it:
+ * each is tagged with the fence value of the frame that used it, and
+ * the ring is not waited on - a draw that finds the next slot busy is
+ * streamed instead */
+static bool d3d12_mesh_cb_slot(d3d12_video_t *d3d12, unsigned *slot)
+{
+   UINT64 done = d3d12->queue.fence->lpVtbl->GetCompletedValue(
+         d3d12->queue.fence);
+   unsigned s  = d3d12->mesh_cb_next;
+   if (d3d12->mesh_cb_fence[s] > done)
+      return false;
+   d3d12->mesh_cb_fence[s] = d3d12->queue.fenceValue + 1;
+   d3d12->mesh_cb_next     = (s + 1) % D3D12_MESH_CB_SLOTS;
+   *slot                   = s;
+   return true;
+}
+
+static bool gfx_display_d3d12_mesh_draw(void *data, unsigned video_dims,
+      const gfx_display_mesh_t *mesh, const float *mvp,
+      uintptr_t texture, const float *tint)
+{
+   /* The vertex stage's constant buffer: a float4x4, then a float4 */
+   struct
+   {
+      math_matrix_4x4 mvp;
+      float tint[4];
+   } ubo;
+   math_matrix_4x4 user;
+   D3D12GraphicsCommandList cmd;
+   d3d12_video_t *d3d12  = (d3d12_video_t*)data;
+   d3d12_texture_t *tex  = (d3d12_texture_t*)texture;
+   unsigned cb;
+   int slot;
+
+   (void)video_dims;
+   if (     !d3d12 || !mesh || !tex || !d3d12->mesh_pipe
+         || !d3d12->mesh_cb_mapped)
+      return false;
+#ifdef HAVE_DXGI_HDR
+   /* Built for the swapchain's own format: an HDR target streams */
+   if (     (d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM)
+         || (d3d12->chain.current_rt_format == DXGI_FORMAT_R16G16B16A16_FLOAT))
+      return false;
+#endif
+   if ((slot = d3d12_mesh_slot(d3d12, mesh)) < 0)
+      return false;
+   if (!d3d12_mesh_cb_slot(d3d12, &cb))
+      return false;
+   d3d12->meshes[slot].last_draw = ++d3d12->mesh_draws;
+   cmd = d3d12->queue.cmd;
+
+   /* Through the same MVP the quads go through, so the display's 0..1
+    * space lands where theirs does */
+   memcpy(user.data, mvp, sizeof(user.data));
+   matrix_4x4_multiply(ubo.mvp, d3d12->ubo_values.mvp, user);
+   memcpy(ubo.tint, tint, sizeof(ubo.tint));
+   memcpy(d3d12->mesh_cb_mapped + (size_t)cb * D3D12_MESH_CB_SIZE,
+         &ubo, sizeof(ubo));
+
+   if (tex->dirty)
+      d3d12_upload_texture(cmd, tex, d3d12);
+   cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->mesh_pipe);
+   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_UBO,
+         d3d12->mesh_cb_va + (D3D12_GPU_VIRTUAL_ADDRESS)cb * D3D12_MESH_CB_SIZE);
+   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
+         tex->gpu_descriptor[0]);
+   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
+         tex->sampler);
+   cmd->lpVtbl->IASetPrimitiveTopology(cmd,
+         mesh->topology == GFX_MESH_TRIANGLE_STRIP
+         ? D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP
+         : D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+   cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->meshes[slot].view);
+   if (mesh->indices)
+   {
+      cmd->lpVtbl->IASetIndexBuffer(cmd, &d3d12->meshes[slot].ibo_view);
+      cmd->lpVtbl->DrawIndexedInstanced(cmd, mesh->index_count, 1, 0, 0, 0);
+   }
+   else
+      cmd->lpVtbl->DrawInstanced(cmd, mesh->vertex_count, 1, 0, 0);
+
+   /* Back to what the quads after this one draw with */
+   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_UBO,
+         d3d12->ubo_view.BufferLocation);
+   cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
+   cmd->lpVtbl->IASetPrimitiveTopology(cmd, D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+   cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->sprites.vbo_view);
+   return true;
+}
+
 static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp,
-      void *data, unsigned video_width, unsigned video_height)
+      void *data, unsigned video_dims)
 {
    D3D12GraphicsCommandList cmd;
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
@@ -1226,40 +1765,30 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
    if (!d3d12 || !draw)
       return;
 
+   /* Before anything is bound for it */
+   if (!d3d12_effect_pipe(d3d12, draw->pipeline_id))
+      return;
    cmd                  = d3d12->queue.cmd;
 
    switch (draw->pipeline_id)
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
+         if (p_disp->effect_mesh)
          {
-            video_coord_array_t* ca   = &p_disp->dispca;
-
-            if (!d3d12->menu_pipeline_vbo)
-            {
-               D3D12_RANGE read_range;
-               void*       vertex_data_begin;
-
-               d3d12->menu_pipeline_vbo_view.StrideInBytes  = 2 * sizeof(float);
-               d3d12->menu_pipeline_vbo_view.SizeInBytes    =
-                  ca->coords.vertices * d3d12->menu_pipeline_vbo_view.StrideInBytes;
-               d3d12->menu_pipeline_vbo_view.BufferLocation = d3d12_create_buffer(
-                     d3d12->device, d3d12->menu_pipeline_vbo_view.SizeInBytes,
-                     &d3d12->menu_pipeline_vbo);
-
-               read_range.Begin           = 0;
-               read_range.End             = 0;
-               D3D12Map(d3d12->menu_pipeline_vbo, 0,
-                     &read_range, &vertex_data_begin);
-               memcpy(vertex_data_begin, ca->coords.vertex,
-                     d3d12->menu_pipeline_vbo_view.SizeInBytes);
-               D3D12Unmap(d3d12->menu_pipeline_vbo, 0, NULL);
-            }
+            /* From the ribbon mesh's own buffer, its position only */
+            const gfx_display_mesh_t *mesh = p_disp->effect_mesh;
+            int slot = d3d12_mesh_slot(d3d12, mesh);
+            if (slot < 0)
+               return;
+            d3d12->meshes[slot].last_draw = ++d3d12->mesh_draws;
             cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1,
-                  &d3d12->menu_pipeline_vbo_view);
-            draw->coords->vertices = ca->coords.vertices;
+                  &d3d12->meshes[slot].view);
+            draw->coords->vertices = mesh->vertex_count;
             break;
          }
+         /* Nothing to draw it from */
+         return;
 
       case VIDEO_SHADER_MENU_3:
       case VIDEO_SHADER_MENU_4:
@@ -1274,12 +1803,9 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
    cmd->lpVtbl->IASetPrimitiveTopology(cmd,
          D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-   d3d12->ubo_values.time  += 0.01f;
-   /* Wrap at 65536 to keep fp32 increments precise. 0.01 stays
-    * exactly representable up to t ~ 167772 (where 0.5*ulp first
-    * exceeds 0.01), so 65536 has wide margin and wraps roughly
-    * every 30 h of cumulative menu time, making the discontinuity
-    * effectively unobservable. */
+   /* The effects' clock, one step ahead, as this driver has always
+    * drawn them */
+   d3d12->ubo_values.time   = p_disp->effect_time + 0.01f;
    if (d3d12->ubo_values.time > 65536.0f)
       d3d12->ubo_values.time -= 65536.0f;
    d3d12->ubo_values.alpha  = draw->color ? draw->color[3] : 1.0f;
@@ -1298,10 +1824,11 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
          d3d12->ubo_view.BufferLocation);
 }
 
-static void gfx_display_d3d12_scissor_begin(void *data,
-      unsigned video_width, unsigned video_height,
-      int x, int y, unsigned width, unsigned height)
+static void gfx_display_d3d12_scissor_begin(void *data, unsigned video_dims,
+      int x, int y, unsigned dims)
 {
+   unsigned width        = VIDEO_SCALE_W(dims);
+   unsigned height       = VIDEO_SCALE_H(dims);
    D3D12_RECT rect;
    D3D12GraphicsCommandList cmd;
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
@@ -1319,10 +1846,10 @@ static void gfx_display_d3d12_scissor_begin(void *data,
    cmd->lpVtbl->RSSetScissorRects(cmd, 1, &rect);
 }
 
-static void gfx_display_d3d12_scissor_end(void *data,
-      unsigned video_width,
-      unsigned video_height)
+static void gfx_display_d3d12_scissor_end(void *data, unsigned video_dims)
 {
+   unsigned video_width  = VIDEO_SCALE_W(video_dims);
+   unsigned video_height = VIDEO_SCALE_H(video_dims);
    D3D12_RECT rect;
    D3D12GraphicsCommandList cmd;
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
@@ -1400,6 +1927,86 @@ static void d3d12_font_update_atlas_region(d3d12_font_t *font,
 }
 
 
+/* Makes the font texture at the atlas's size and stages all of it for
+ * the copy at first draw: at init, and when the atlas has grown. */
+static void d3d12_font_make_texture(d3d12_video_t *d3d12,
+      d3d12_font_t *font)
+{
+   font->texture.sampler     = d3d12->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_BORDER];
+   font->texture.desc.Width  = font->atlas->width;
+   font->texture.desc.Height = font->atlas->height;
+   if (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+   {
+      /* 16-bit coverage: sample alpha from the R16 channel so the
+       * A8 pixel shader entry keeps working unchanged */
+      font->texture.desc.Format = DXGI_FORMAT_R16_UNORM;
+      font->texture.srv_mapping = D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(
+            D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0,
+            D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0,
+            D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0,
+            D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0);
+   }
+   else
+      font->texture.desc.Format = DXGI_FORMAT_A8_UNORM;
+   font->texture.srv_heap    = &d3d12->desc.srv_heap;
+   d3d12_init_texture(d3d12->device, &font->texture);
+   if (font->texture.upload_buffer)
+   {
+      if (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+         /* stage the whole atlas; the boxed copy at first draw
+          * transfers it (the generic path's conversion table does
+          * not cover R16) */
+         d3d12_font_update_atlas_region(font,
+               0, 0, font->atlas->width, font->atlas->height);
+      else
+         d3d12_update_texture(
+               font->atlas->width, font->atlas->height,
+               font->atlas->width, DXGI_FORMAT_A8_UNORM,
+               font->atlas->buffer, &font->texture);
+   }
+   font->atlas->dirty = false;
+}
+
+/* Releases the textures the fence has passed */
+static void d3d12_font_reap(d3d12_video_t *d3d12, d3d12_font_t *font)
+{
+   unsigned i, kept = 0;
+   UINT64 done = d3d12->queue.fence->lpVtbl->GetCompletedValue(
+         d3d12->queue.fence);
+   for (i = 0; i < font->retired_count; i++)
+   {
+      if (done >= font->retired[i].fence)
+         d3d12_release_texture(&font->retired[i].texture);
+      else
+         font->retired[kept++] = font->retired[i];
+   }
+   font->retired_count = kept;
+}
+
+/* The atlas grew: a texture at its new size, the old one retired until
+ * the frames still drawing from it are done - this frame's command
+ * list, which signals the next fence value at its end, names only the
+ * new one. With both retirement slots taken the old one stays, and
+ * the atlas's new cells wait for a later frame. */
+static void d3d12_font_follow_atlas(d3d12_video_t *d3d12,
+      d3d12_font_t *font)
+{
+   d3d12_font_reap(d3d12, font);
+   if (     font->texture.desc.Width  == font->atlas->width
+         && font->texture.desc.Height == font->atlas->height)
+      return;
+   if (font->retired_count >= sizeof(font->retired)
+         / sizeof(font->retired[0]))
+      return;
+   font->retired[font->retired_count].texture = font->texture;
+   font->retired[font->retired_count].fence   =
+      d3d12->queue.fenceValue + 1;
+   font->retired_count++;
+   memset(&font->texture, 0, sizeof(font->texture));
+   font->region_pending = false;
+   d3d12_font_make_texture(d3d12, font);
+}
+
 static void * d3d12_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
@@ -1429,40 +2036,11 @@ static void * d3d12_font_init(void* data, const char* font_path,
 
    font->d3d12               = d3d12;
    font->atlas               = font->font_driver->get_atlas(font->font_data);
-   font->texture.sampler     = d3d12->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_BORDER];
-   font->texture.desc.Width  = font->atlas->width;
-   font->texture.desc.Height = font->atlas->height;
-   if (font->atlas->format == FONT_ATLAS_FORMAT_A16)
-   {
-      /* 16-bit coverage: sample alpha from the R16 channel so the
-       * A8 pixel shader entry keeps working unchanged */
-      font->texture.desc.Format = DXGI_FORMAT_R16_UNORM;
-      font->texture.srv_mapping = D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(
-            D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0,
-            D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0,
-            D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0,
-            D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0);
-   }
-   else
-      font->texture.desc.Format = DXGI_FORMAT_A8_UNORM;
-   font->texture.srv_heap    = &d3d12->desc.srv_heap;
+   /* The atlas may grow, up to the largest 2D texture D3D12 has */
+   font->atlas->max_width    = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+   font->atlas->max_height   = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
    d3d12_release_texture(&font->texture);
-   d3d12_init_texture(d3d12->device, &font->texture);
-   if (font->texture.upload_buffer)
-   {
-      if (font->atlas->format == FONT_ATLAS_FORMAT_A16)
-         /* stage the whole atlas; the boxed copy at first draw
-          * transfers it (the generic path's conversion table does
-          * not cover R16) */
-         d3d12_font_update_atlas_region(font,
-               0, 0, font->atlas->width, font->atlas->height);
-      else
-         d3d12_update_texture(
-               font->atlas->width, font->atlas->height,
-               font->atlas->width, DXGI_FORMAT_A8_UNORM,
-               font->atlas->buffer, &font->texture);
-   }
-   font->atlas->dirty = false;
+   d3d12_font_make_texture(d3d12, font);
 
    return font;
 }
@@ -1481,59 +2059,31 @@ static void d3d12_font_free(void* data, bool is_threaded)
    if (font->d3d12)
    {
       d3d12_video_t *d3d12 = font->d3d12;
-      D3D12Fence     fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
 
    d3d12_release_texture(&font->texture);
+   {
+      unsigned i;
+      for (i = 0; i < font->retired_count; i++)
+         d3d12_release_texture(&font->retired[i].texture);
+   }
 
+   free(font->acc);
    free(font);
 }
 
-static int d3d12_font_get_message_width(void* data,
-      const char* msg, size_t msg_len, float scale)
+static int d3d12_font_get_message_width(void *data, const char *msg,
+      size_t msg_len, float scale)
 {
-   size_t i;
-   int delta_x                      = 0;
-   const struct font_glyph* glyph_q = NULL;
-   d3d12_font_t* font               = (d3d12_font_t*)data;
-   const struct font_glyph* (*get_glyph)(void*, uint32_t);
-   void *font_data;
-
+   d3d12_font_t *font = (d3d12_font_t*)data;
    if (!font)
       return 0;
-
-   get_glyph = font->font_driver->get_glyph;
-   font_data = font->font_data;
-   glyph_q   = get_glyph(font_data, '?');
-
-   for (i = 0; i < msg_len; i++)
-   {
-      const struct font_glyph* glyph;
-      const char *msg_tmp = &msg[i];
-      unsigned    code    = utf8_walk(&msg_tmp);
-      unsigned    skip    = msg_tmp - &msg[i];
-
-      if (skip > 1)
-         i += skip - 1;
-
-      /* Do something smarter here ... */
-      if (!(glyph = get_glyph(font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      delta_x            += glyph->advance_x;
-   }
-
-   return delta_x * scale;
+   return font_renderer_get_message_width(font->font_driver,
+         font->font_data, msg, msg_len, scale);
 }
 
 /* Issue the boxed copy for the staged rectangle */
@@ -1576,12 +2126,16 @@ static void d3d12_font_upload_region(D3D12GraphicsCommandList cmd,
    font->region_pending = false;
 }
 
+static void d3d12_font_draw_sprites(d3d12_video_t *d3d12,
+      d3d12_font_t *font, unsigned total_count);
+
 static void d3d12_font_render_msg(
       void *userdata,
       void* data,
       const char* msg, size_t msg_len,
       const struct font_params *params)
 {
+   font_params_resolved_t rp;
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
    float                     x, y, scale, drop_mod, drop_alpha;
@@ -1593,7 +2147,6 @@ static void d3d12_font_render_msg(
    d3d12_font_t*             font   = (d3d12_font_t*)data;
    unsigned                  width;
    unsigned                  height;
-   D3D12GraphicsCommandList  cmd;
    D3D12_RANGE               range;
    d3d12_sprite_t           *vbo_start = NULL;
    d3d12_sprite_t           *v         = NULL;
@@ -1613,51 +2166,32 @@ static void d3d12_font_render_msg(
    if (!d3d12 || (!(d3d12->flags & D3D12_ST_FLAG_SPRITES_ENABLE)))
       return;
 
-   width  = d3d12->vp.full_width;
-   height = d3d12->vp.full_height;
-   cmd    = d3d12->queue.cmd;
-
-   if (params)
+   /* Asked for before anything is laid out: it may have grown, and the
+    * texture coordinates are taken from the texture's size */
+   if (font->font_driver && font->font_data)
    {
-      x          = params->x;
-      y          = params->y;
-      scale      = params->scale;
-      text_align = params->text_align;
-      drop_x     = params->drop_x;
-      drop_y     = params->drop_y;
-      drop_mod   = params->drop_mod;
-      drop_alpha = params->drop_alpha;
-
-      r          = FONT_COLOR_GET_RED(params->color);
-      g          = FONT_COLOR_GET_GREEN(params->color);
-      b          = FONT_COLOR_GET_BLUE(params->color);
-      alpha      = FONT_COLOR_GET_ALPHA(params->color);
-      color      = DXGI_COLOR_RGBA(r, g, b, alpha);
+      font->atlas = font->font_driver->get_atlas(font->font_data);
+      d3d12_font_follow_atlas(d3d12, font);
    }
-   else
-   {
-      settings_t *settings      = config_get_ptr();
-      float video_msg_pos_x     = settings->floats.video_msg_pos_x;
-      float video_msg_pos_y     = settings->floats.video_msg_pos_y;
-      float video_msg_color_r   = settings->floats.video_msg_color_r;
-      float video_msg_color_g   = settings->floats.video_msg_color_g;
-      float video_msg_color_b   = settings->floats.video_msg_color_b;
-      x                         = video_msg_pos_x;
-      y                         = video_msg_pos_y;
-      scale                     = 1.0f;
-      text_align                = TEXT_ALIGN_LEFT;
 
-      r                         = (video_msg_color_r * 255);
-      g                         = (video_msg_color_g * 255);
-      b                         = (video_msg_color_b * 255);
-      alpha                     = 255;
-      color                     = DXGI_COLOR_RGBA(r, g, b, alpha);
+   width  = VIDEO_SCALE_W(d3d12->vp.full_dims);
+   height = VIDEO_SCALE_H(d3d12->vp.full_dims);
 
-      drop_x                    = -2;
-      drop_y                    = -2;
-      drop_mod                  = 0.3f;
-      drop_alpha                = 1.0f;
-   }
+   font_driver_resolve_params(params, &rp);
+   x          = rp.x;
+   y          = rp.y;
+   scale      = rp.scale;
+   text_align = rp.text_align;
+   drop_x     = rp.drop_x;
+   drop_y     = rp.drop_y;
+   drop_mod   = rp.drop_mod;
+   drop_alpha = rp.drop_alpha;
+   r          = rp.rgba[0];
+   g          = rp.rgba[1];
+   b          = rp.rgba[2];
+   alpha           = rp.rgba[3];
+   color      = DXGI_COLOR_RGBA(r, g, b, alpha);
+
 
    glyph_q          = (font->font_driver)
       ? font->font_driver->get_glyph(font->font_data, '?') : NULL;
@@ -1706,163 +2240,164 @@ static void d3d12_font_render_msg(
    if (has_shadow)
       total_len *= 2;
 
-   if (d3d12->sprites.offset + total_len > (unsigned)d3d12->sprites.capacity)
-      d3d12->sprites.offset = 0;
+   if (font->block)
+   {
+      /* Gather into the block; the draw happens at flush */
+      unsigned want = font->acc_count + (unsigned)total_len;
+      if (want > font->acc_cap)
+      {
+         unsigned cap = font->acc_cap ? font->acc_cap : 512;
+         d3d12_sprite_t *acc;
+         while (cap < want)
+            cap *= 2;
+         if (!(acc = (d3d12_sprite_t*)realloc(font->acc,
+                     cap * sizeof(*acc))))
+            return;
+         font->acc     = acc;
+         font->acc_cap = cap;
+      }
+      vbo_start = font->acc;
+      v         = font->acc + font->acc_count;
+   }
+   else
+   {
+      if (d3d12->sprites.offset + total_len > (unsigned)d3d12->sprites.capacity)
+         d3d12->sprites.offset = 0;
 
-   range.Begin = 0;
-   range.End   = 0;
-   D3D12Map(d3d12->sprites.vbo, 0, &range, (void**)&vbo_start);
+      range.Begin = 0;
+      range.End   = 0;
+      D3D12Map(d3d12->sprites.vbo, 0, &range, (void**)&vbo_start);
 
-   v              = vbo_start + d3d12->sprites.offset;
+      v           = vbo_start + d3d12->sprites.offset;
+   }
    v_batch_start  = v;
    range.Begin    = (uintptr_t)v - (uintptr_t)vbo_start;
 
-   /* ---- Single fused pass: shadow + foreground per glyph ----
-    *
-    * Walk the message once. For each glyph, emit the foreground sprite
-    * and (if active) its shadow sprite immediately after.  This halves
-    * UTF-8 decode + glyph lookup cost compared to separate passes.
-    *
-    * For right/center alignment the retroactive shift must adjust both
-    * shadow and foreground sprites.  We track per-line start pointers
-    * for both sets.
-    *
-    * Shadow sprites are emitted *before* the foreground sprite so that
-    * the GPU draws them first (painter's order within the same draw
-    * call). */
+   /* One pass over the message: each glyph is looked up once and
+    * written as its shadow sprite (if any) and then its foreground
+    * sprite, so the shadow draws first. Right and centred lines are
+    * shifted, shadows and all, once their advance is known. */
    {
-      const char     *line_start = msg;
-      int             line_idx   = 0;
-      int             xi         = roundf(x * width);
+      d3d12_sprite_t *line_v_first = v;
+      bool line_ok                 = false;
+      int xi                       = roundf(x * width);
+      int lx                       = 0;
+      int ly                       = 0;
+      size_t line_cap              = font->block
+         ? (size_t)(font->acc_cap - font->acc_count)
+         : (size_t)d3d12->sprites.capacity;
 
-      while (*line_start)
-      {
-         const char        *p;
-         size_t             line_len;
-         size_t             i;
-         int                lx, ly;
-         d3d12_sprite_t    *line_v_first;
+#define FONT_LAYOUT_ALIGNED 0
+      /* A line too long for the sprite buffer is not looked up either */
+#define FONT_LAYOUT_SKIP(line, bytes) ((bytes) > line_cap)
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+      do \
+      { \
+         (void)(line_width); \
+         (void)(count); \
+         line_ok      = ((bytes) <= line_cap); \
+         lx           = xi; \
+         ly           = roundf((1.0f - (y - (float)(line) * line_height)) \
+               * height); \
+         line_v_first = v; \
+      } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+      do \
+      { \
+         float gx, gy, gw, gh, gu, gv, gtw, gth; \
+         /* This driver keeps its own truncating pen */ \
+         (void)(pen_x); \
+         (void)(pen_y); \
+         if (!line_ok) \
+            break; \
+         /* Position and texcoord once, shared with the shadow */ \
+         gx  = (lx + ((glyph)->draw_offset_x * scale)) * inv_vp_w; \
+         gy  = (ly + ((glyph)->draw_offset_y * scale)) * inv_vp_h; \
+         gw  = (glyph)->width  * scale * inv_vp_w; \
+         gh  = (glyph)->height * scale * inv_vp_h; \
+         gu  = (glyph)->atlas_offset_x * inv_tex_w; \
+         gv  = (glyph)->atlas_offset_y * inv_tex_h; \
+         gtw = (glyph)->width          * inv_tex_w; \
+         gth = (glyph)->height         * inv_tex_h; \
+         if (has_shadow) \
+         { \
+            v->pos.x           = gx + shadow_dx; \
+            v->pos.y           = gy + shadow_dy; \
+            v->pos.w           = gw; \
+            v->pos.h           = gh; \
+            v->coords.u        = gu; \
+            v->coords.v        = gv; \
+            v->coords.w        = gtw; \
+            v->coords.h        = gth; \
+            v->params.scaling  = 1; \
+            v->params.rotation = 0; \
+            v->colors[0]       = color_dark; \
+            v->colors[1]       = color_dark; \
+            v->colors[2]       = color_dark; \
+            v->colors[3]       = color_dark; \
+            v++; \
+         } \
+         v->pos.x           = gx; \
+         v->pos.y           = gy; \
+         v->pos.w           = gw; \
+         v->pos.h           = gh; \
+         v->coords.u        = gu; \
+         v->coords.v        = gv; \
+         v->coords.w        = gtw; \
+         v->coords.h        = gth; \
+         v->params.scaling  = 1; \
+         v->params.rotation = 0; \
+         v->colors[0]       = color; \
+         v->colors[1]       = color; \
+         v->colors[2]       = color; \
+         v->colors[3]       = color; \
+         v++; \
+         lx                += (glyph)->advance_x * scale; \
+         ly                += (glyph)->advance_y * scale; \
+      } while (0)
+#define FONT_LAYOUT_LINE_END() \
+      do \
+      { \
+         if (line_ok && text_align != TEXT_ALIGN_LEFT) \
+         { \
+            int total_advance = lx - xi; \
+            float shift; \
+            d3d12_sprite_t *s; \
+            if (text_align == TEXT_ALIGN_RIGHT) \
+               shift = (float)total_advance * inv_vp_w; \
+            else \
+               shift = (float)(total_advance / 2) * inv_vp_w; \
+            for (s = line_v_first; s < v; s++) \
+               s->pos.x -= shift; \
+         } \
+      } while (0)
+#include "../font_layout.h"
+   }
 
-         for (p = line_start; *p && *p != '\n'; p++)
-            ;
-         line_len = (size_t)(p - line_start);
+   total_count = v - v_batch_start;
 
-         if (line_len > (size_t)d3d12->sprites.capacity)
-            goto next_line;
-
-         lx          = xi;
-         ly          = roundf((1.0f - (y - (float)line_idx * line_height)) * height);
-         line_v_first = v;
-
-         for (i = 0; i < line_len; i++)
-         {
-            const struct font_glyph *glyph;
-            const char *msg_tmp = &line_start[i];
-            unsigned    code    = utf8_walk(&msg_tmp);
-            unsigned    skip    = msg_tmp - &line_start[i];
-
-            float       gx, gy, gw, gh;
-            float       gu, gv, gtw, gth;
-
-            if (skip > 1)
-               i += skip - 1;
-
-            if (!(glyph = get_glyph(font_data, code)))
-               if (!(glyph = glyph_q))
-                  continue;
-
-            /* Compute position and texcoord once, reuse for shadow. */
-            gx  = (lx + (glyph->draw_offset_x * scale)) * inv_vp_w;
-            gy  = (ly + (glyph->draw_offset_y * scale)) * inv_vp_h;
-            gw  = glyph->width  * scale * inv_vp_w;
-            gh  = glyph->height * scale * inv_vp_h;
-
-            gu  = glyph->atlas_offset_x * inv_tex_w;
-            gv  = glyph->atlas_offset_y * inv_tex_h;
-            gtw = glyph->width          * inv_tex_w;
-            gth = glyph->height         * inv_tex_h;
-
-            /* Shadow sprite (emitted first for correct draw order). */
-            if (has_shadow)
-            {
-               v->pos.x           = gx + shadow_dx;
-               v->pos.y           = gy + shadow_dy;
-               v->pos.w           = gw;
-               v->pos.h           = gh;
-
-               v->coords.u        = gu;
-               v->coords.v        = gv;
-               v->coords.w        = gtw;
-               v->coords.h        = gth;
-
-               v->params.scaling  = 1;
-               v->params.rotation = 0;
-
-               v->colors[0]       = color_dark;
-               v->colors[1]       = color_dark;
-               v->colors[2]       = color_dark;
-               v->colors[3]       = color_dark;
-
-               v++;
-            }
-
-            /* Foreground sprite. */
-            v->pos.x           = gx;
-            v->pos.y           = gy;
-            v->pos.w           = gw;
-            v->pos.h           = gh;
-
-            v->coords.u        = gu;
-            v->coords.v        = gv;
-            v->coords.w        = gtw;
-            v->coords.h        = gth;
-
-            v->params.scaling  = 1;
-            v->params.rotation = 0;
-
-            v->colors[0]       = color;
-            v->colors[1]       = color;
-            v->colors[2]       = color;
-            v->colors[3]       = color;
-
-            v++;
-
-            lx                += glyph->advance_x * scale;
-            ly                += glyph->advance_y * scale;
-         }
-
-         /* Retroactive alignment shift — adjusts both shadow and
-          * foreground sprites since they are interleaved. */
-         if (text_align != TEXT_ALIGN_LEFT)
-         {
-            int             total_advance = lx - xi;
-            float           shift;
-            d3d12_sprite_t *s;
-
-            if (text_align == TEXT_ALIGN_RIGHT)
-               shift = (float)total_advance * inv_vp_w;
-            else
-               shift = (float)(total_advance / 2) * inv_vp_w;
-
-            for (s = line_v_first; s < v; s++)
-               s->pos.x -= shift;
-         }
-
-next_line:
-         if (!*p)
-            break;
-         line_start = p + 1;
-         line_idx++;
-      }
+   if (font->block)
+   {
+      font->acc_count                  += total_count;
+      font->block->carr.coords.vertices = font->acc_count;
+      return;
    }
 
    range.End = (uintptr_t)v - (uintptr_t)vbo_start;
    D3D12Unmap(d3d12->sprites.vbo, 0, &range);
 
-   total_count = v - v_batch_start;
-
    if (!total_count)
       return;
+
+   d3d12_font_draw_sprites(d3d12, font, total_count);
+}
+
+/* Draws total_count glyph sprites already in the sprite ring at
+ * sprites.offset with the atlas bound, and advances the ring. */
+static void d3d12_font_draw_sprites(d3d12_video_t *d3d12,
+      d3d12_font_t *font, unsigned total_count)
+{
+   D3D12GraphicsCommandList cmd = d3d12->queue.cmd;
 
    if (font->texture.dirty)
       d3d12_upload_texture(cmd, &font->texture, d3d12);
@@ -1885,6 +2420,51 @@ next_line:
    cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
 
    d3d12->sprites.offset += total_count;
+}
+
+static void d3d12_font_bind_block(void *data, void *userdata)
+{
+   d3d12_font_t *font = (d3d12_font_t*)data;
+   if (font)
+      font->block = (video_font_raster_block_t*)userdata;
+}
+
+static void d3d12_font_flush_block(unsigned dims, void *data)
+{
+   D3D12_RANGE range;
+   d3d12_sprite_t *vbo_start = NULL;
+   d3d12_font_t *font        = (d3d12_font_t*)data;
+   d3d12_video_t *d3d12;
+   unsigned count;
+
+   if (!font || !font->block || !font->acc_count)
+      return;
+   d3d12 = font->d3d12;
+   if (!d3d12 || !(d3d12->flags & D3D12_ST_FLAG_SPRITES_ENABLE))
+   {
+      font->acc_count = 0;
+      return;
+   }
+
+   count = font->acc_count;
+   if (count > (unsigned)d3d12->sprites.capacity)
+      count = (unsigned)d3d12->sprites.capacity;
+   if (d3d12->sprites.offset + count > (unsigned)d3d12->sprites.capacity)
+      d3d12->sprites.offset = 0;
+
+   range.Begin = 0;
+   range.End   = 0;
+   D3D12Map(d3d12->sprites.vbo, 0, &range, (void**)&vbo_start);
+   if (vbo_start)
+   {
+      memcpy(vbo_start + d3d12->sprites.offset, font->acc,
+            count * sizeof(d3d12_sprite_t));
+      range.Begin = d3d12->sprites.offset * sizeof(d3d12_sprite_t);
+      range.End   = range.Begin + count * sizeof(d3d12_sprite_t);
+      D3D12Unmap(d3d12->sprites.vbo, 0, &range);
+      d3d12_font_draw_sprites(d3d12, font, count);
+   }
+   font->acc_count = 0;
 }
 
 static const struct font_glyph* d3d12_font_get_glyph(
@@ -1915,6 +2495,12 @@ static uint32_t d3d12_get_flags(void *data)
 {
    uint32_t flags = 0;
 
+#if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
+   /* a borderless fullscreen toggle restyles the window; see
+    * d3d12_set_video_mode() */
+   if (win32_fullscreen_in_place())
+      BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
+#endif
    BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_FRAME_LATENCY);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
@@ -1930,134 +2516,76 @@ static uint32_t d3d12_get_flags(void *data)
 }
 
 #ifdef HAVE_OVERLAY
+/* The page goes, the sprite buffer stays for the next one
+ * (d3d12_overlay_sprites_begin). Textures this driver made are still
+ * the GPU's to read until the frame in flight is done - the queue is
+ * drained at the top of a frame, not at the end of one - so they are
+ * waited out before they are released; a borrowed page releases
+ * nothing and waits for nothing. */
+static void d3d12_free_overlay_page(d3d12_video_t* d3d12)
+{
+   size_t i;
+   if (     !d3d12->overlays.borrowed
+         && d3d12->overlays.textures
+         && d3d12->overlays.count)
+   {
+      d3d12_queue_drain(d3d12);
+      for (i = 0; i < (unsigned)d3d12->overlays.count; i++)
+         d3d12_release_texture(&d3d12->overlays.textures[i]);
+   }
+   free(d3d12->overlays.textures);
+   free(d3d12->overlays.refs);
+   d3d12->overlays.textures     = NULL;
+   d3d12->overlays.refs         = NULL;
+   d3d12->overlays.count        = 0;
+   d3d12->overlays.borrowed     = false;
+}
+
 static void d3d12_free_overlays(d3d12_video_t* d3d12)
 {
-   size_t i;
-   for (i = 0; i < (unsigned)d3d12->overlays.count; i++)
-      d3d12_release_texture(&d3d12->overlays.textures[i]);
-
+   d3d12_free_overlay_page(d3d12);
+   if (d3d12->overlays.vbo)
+      d3d12_queue_drain(d3d12);
    Release(d3d12->overlays.vbo);
+   free(d3d12->overlays.shadow);
+   d3d12->overlays.vbo          = NULL;
+   d3d12->overlays.shadow       = NULL;
+   d3d12->overlays.vbo_capacity = 0;
 }
 
-   static void
-d3d12_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w, float h)
+/* A page's sprite buffer and its copy: reused across pages while big
+ * enough, else made anew behind a drain of the frame that may still
+ * read the old one. @num sprites reset to the whole screen in white;
+ * the draw copies them in. */
+static bool d3d12_overlay_sprites_begin(d3d12_video_t *d3d12,
+      unsigned num)
 {
-   D3D12_RANGE range;
-   d3d12_sprite_t* sprites = NULL;
-   d3d12_video_t*  d3d12   = (d3d12_video_t*)data;
+   unsigned i;
+   d3d12_sprite_t *sprites;
 
-   if (!d3d12)
-      return;
-
-   range.Begin             = 0;
-   range.End               = 0;
-   D3D12Map(d3d12->overlays.vbo, 0, &range, (void**)&sprites);
-
-   sprites[index].pos.x    = x;
-   sprites[index].pos.y    = y;
-   sprites[index].pos.w    = w;
-   sprites[index].pos.h    = h;
-
-   range.Begin             = index * sizeof(*sprites);
-   range.End               = range.Begin + sizeof(*sprites);
-   D3D12Unmap(d3d12->overlays.vbo, 0, &range);
-}
-
-static void d3d12_overlay_tex_geom(void* data, unsigned index, float u, float v, float w, float h)
-{
-   D3D12_RANGE range;
-   d3d12_sprite_t* sprites = NULL;
-   d3d12_video_t*  d3d12   = (d3d12_video_t*)data;
-
-   if (!d3d12)
-      return;
-
-   range.Begin             = 0;
-   range.End               = 0;
-   D3D12Map(d3d12->overlays.vbo, 0, &range, (void**)&sprites);
-
-   sprites[index].coords.u = u;
-   sprites[index].coords.v = v;
-   sprites[index].coords.w = w;
-   sprites[index].coords.h = h;
-
-   range.Begin             = index * sizeof(*sprites);
-   range.End               = range.Begin + sizeof(*sprites);
-   D3D12Unmap(d3d12->overlays.vbo, 0, &range);
-}
-
-static void d3d12_overlay_set_alpha(void* data, unsigned index, float mod)
-{
-   D3D12_RANGE range;
-   d3d12_sprite_t* sprites  = NULL;
-   d3d12_video_t*  d3d12    = (d3d12_video_t*)data;
-
-   if (!d3d12)
-      return;
-
-   range.Begin              = 0;
-   range.End                = 0;
-   D3D12Map(d3d12->overlays.vbo, 0, &range, (void**)&sprites);
-
-   sprites[index].colors[0] = DXGI_COLOR_RGBA(0xFF, 0xFF, 0xFF, mod * 0xFF);
-   sprites[index].colors[1] = sprites[index].colors[0];
-   sprites[index].colors[2] = sprites[index].colors[0];
-   sprites[index].colors[3] = sprites[index].colors[0];
-
-   range.Begin              = index * sizeof(*sprites);
-   range.End                = range.Begin + sizeof(*sprites);
-   D3D12Unmap(d3d12->overlays.vbo, 0, &range);
-}
-
-static bool d3d12_overlay_load(void* data, const void* image_data, unsigned num_images)
-{
-   size_t i;
-   D3D12_RANGE range;
-   d3d12_sprite_t*             sprites = NULL;
-   d3d12_video_t*              d3d12   = (d3d12_video_t*)data;
-   const struct texture_image* images  = (const struct texture_image*)image_data;
-
-   if (!d3d12)
-      return false;
-
+   if (!d3d12->overlays.vbo || d3d12->overlays.vbo_capacity < (int)num)
    {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
+      Release(d3d12->overlays.vbo);
+      free(d3d12->overlays.shadow);
+      d3d12->overlays.vbo                     = NULL;
+      d3d12->overlays.vbo_capacity            = 0;
+      if (!(d3d12->overlays.shadow = (d3d12_sprite_t*)malloc(
+                  num * sizeof(d3d12_sprite_t))))
+         return false;
+      d3d12->overlays.vbo_view.SizeInBytes    = sizeof(d3d12_sprite_t) * num;
+      d3d12->overlays.vbo_view.StrideInBytes  = sizeof(d3d12_sprite_t);
+      d3d12->overlays.vbo_view.BufferLocation = d3d12_create_buffer(
+            d3d12->device, d3d12->overlays.vbo_view.SizeInBytes,
+            &d3d12->overlays.vbo);
+      if (!d3d12->overlays.vbo)
+         return false;
+      d3d12->overlays.vbo_capacity            = num;
    }
 
-   d3d12_free_overlays(d3d12);
-   d3d12->overlays.textures = (d3d12_texture_t*)calloc(num_images, sizeof(d3d12_texture_t));
-
-   d3d12->overlays.count                   = num_images;
-   d3d12->overlays.vbo_view.SizeInBytes    = sizeof(d3d12_sprite_t) * num_images;
-   d3d12->overlays.vbo_view.StrideInBytes  = sizeof(d3d12_sprite_t);
-   d3d12->overlays.vbo_view.BufferLocation = d3d12_create_buffer(
-         d3d12->device, d3d12->overlays.vbo_view.SizeInBytes, &d3d12->overlays.vbo);
-
-   range.Begin                             = 0;
-   range.End                               = 0;
-   D3D12Map(d3d12->overlays.vbo, 0, &range, (void**)&sprites);
-
-   for (i = 0; i < num_images; i++)
+   sprites = d3d12->overlays.shadow;
+   for (i = 0; i < num; i++)
    {
-      d3d12->overlays.textures[i].desc.Width  = images[i].width;
-      d3d12->overlays.textures[i].desc.Height = images[i].height;
-      d3d12->overlays.textures[i].desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-      d3d12->overlays.textures[i].srv_heap    = &d3d12->desc.srv_heap;
-
-      d3d12_release_texture(&d3d12->overlays.textures[i]);
-      d3d12_init_texture(d3d12->device, &d3d12->overlays.textures[i]);
-      if (d3d12->overlays.textures[i].upload_buffer)
-         d3d12_update_texture(
-               images[i].width, images[i].height,
-               0, DXGI_FORMAT_B8G8R8A8_UNORM, images[i].pixels,
-               &d3d12->overlays.textures[i]);
-
       sprites[i].pos.x           = 0.0f;
       sprites[i].pos.y           = 0.0f;
       sprites[i].pos.w           = 1.0f;
@@ -2076,7 +2604,143 @@ static bool d3d12_overlay_load(void* data, const void* image_data, unsigned num_
       sprites[i].colors[2]       = sprites[i].colors[0];
       sprites[i].colors[3]       = sprites[i].colors[0];
    }
-   D3D12Unmap(d3d12->overlays.vbo, 0, NULL);
+   d3d12->overlays.dirty = true;
+   return true;
+}
+
+/* Sprite @index of the page, to be written - or NULL when there is no
+ * such sprite: no page loaded, a page whose load failed, an index off
+ * the end of it. The setters are called whenever the frontend likes,
+ * not only after a load that worked. */
+static d3d12_sprite_t *d3d12_overlay_sprite(d3d12_video_t *d3d12,
+      unsigned index)
+{
+   if (     !d3d12
+         || !d3d12->overlays.shadow
+         || (int)index >= d3d12->overlays.count)
+      return NULL;
+   d3d12->overlays.dirty = true;
+   return &d3d12->overlays.shadow[index];
+}
+
+static void
+d3d12_overlay_vertex_geom(void* data, unsigned index, float x, float y, float w, float h)
+{
+   d3d12_sprite_t* sprite = d3d12_overlay_sprite((d3d12_video_t*)data, index);
+
+   if (!sprite)
+      return;
+
+   sprite->pos.x = x;
+   sprite->pos.y = y;
+   sprite->pos.w = w;
+   sprite->pos.h = h;
+}
+
+static void d3d12_overlay_tex_geom(void* data, unsigned index, float u, float v, float w, float h)
+{
+   d3d12_sprite_t* sprite = d3d12_overlay_sprite((d3d12_video_t*)data, index);
+
+   if (!sprite)
+      return;
+
+   sprite->coords.u = u;
+   sprite->coords.v = v;
+   sprite->coords.w = w;
+   sprite->coords.h = h;
+}
+
+static void d3d12_overlay_set_alpha(void* data, unsigned index, float mod)
+{
+   d3d12_sprite_t* sprite = d3d12_overlay_sprite((d3d12_video_t*)data, index);
+
+   if (!sprite)
+      return;
+
+   sprite->colors[0] = DXGI_COLOR_RGBA(0xFF, 0xFF, 0xFF, VIDEO_ALPHA_BYTE(mod));
+   sprite->colors[1] = sprite->colors[0];
+   sprite->colors[2] = sprite->colors[0];
+   sprite->colors[3] = sprite->colors[0];
+}
+
+static bool d3d12_overlay_load(void* data, const void* image_data, unsigned num_images)
+{
+   size_t i;
+   d3d12_video_t*              d3d12   = (d3d12_video_t*)data;
+   const struct texture_image* images  = (const struct texture_image*)image_data;
+
+   if (!d3d12)
+      return false;
+
+   d3d12_free_overlay_page(d3d12);
+   if (!num_images)
+      return true;
+   d3d12->overlays.textures = (d3d12_texture_t*)calloc(num_images, sizeof(d3d12_texture_t));
+   d3d12->overlays.refs     = (d3d12_texture_t**)calloc(num_images, sizeof(d3d12_texture_t*));
+   /* No sprites, no page: not a count the draw and the setters would
+    * take at its word against a buffer that is not there. */
+   if (     !d3d12->overlays.textures
+         || !d3d12->overlays.refs
+         || !d3d12_overlay_sprites_begin(d3d12, num_images))
+   {
+      d3d12_free_overlay_page(d3d12);
+      return false;
+   }
+   d3d12->overlays.count    = num_images;
+
+   for (i = 0; i < num_images; i++)
+   {
+      d3d12->overlays.refs[i]                 = &d3d12->overlays.textures[i];
+      d3d12->overlays.textures[i].desc.Width  = images[i].width;
+      d3d12->overlays.textures[i].desc.Height = images[i].height;
+      d3d12->overlays.textures[i].desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+      d3d12->overlays.textures[i].srv_heap    = &d3d12->desc.srv_heap;
+
+      d3d12_release_texture(&d3d12->overlays.textures[i]);
+      d3d12_init_texture(d3d12->device, &d3d12->overlays.textures[i]);
+      if (d3d12->overlays.textures[i].upload_buffer)
+         d3d12_update_texture(
+               images[i].width, images[i].height,
+               0, DXGI_FORMAT_B8G8R8A8_UNORM, images[i].pixels,
+               &d3d12->overlays.textures[i]);
+   }
+
+   return true;
+}
+
+/* A page of the pack's textures: d3d12_gfx_load_texture's own
+ * d3d12_texture_t per image, drawn from in place. A texture still
+ * marked dirty has its upload recorded by the first draw, once, for
+ * every page it is on; an animated image's next frame marks the same
+ * struct dirty and the draw sees it. The sprite buffer is reused and
+ * reset, nothing is uploaded or made, and nothing is released or
+ * waited for unless the page going away was one load() made. */
+static bool d3d12_overlay_load_textures(void* data,
+      const uintptr_t* textures, unsigned num_textures)
+{
+   size_t i;
+   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
+
+   if (!d3d12)
+      return false;
+
+   d3d12_free_overlay_page(d3d12);
+   if (!num_textures)
+      return true;
+   for (i = 0; i < num_textures; i++)
+      if (!textures[i])
+         return false;
+   d3d12->overlays.refs = (d3d12_texture_t**)calloc(num_textures, sizeof(d3d12_texture_t*));
+   if (     !d3d12->overlays.refs
+         || !d3d12_overlay_sprites_begin(d3d12, num_textures))
+   {
+      d3d12_free_overlay_page(d3d12);
+      return false;
+   }
+   d3d12->overlays.count    = num_textures;
+   d3d12->overlays.borrowed = true;
+   for (i = 0; i < num_textures; i++)
+      d3d12->overlays.refs[i] = (d3d12_texture_t*)textures[i];
 
    return true;
 }
@@ -2111,8 +2775,9 @@ static void d3d12_overlay_full_screen(void* data, bool enable)
 static void d3d12_get_overlay_interface(void* data, const video_overlay_interface_t** iface)
 {
    static const video_overlay_interface_t overlay_interface = {
-      d3d12_overlay_enable,      d3d12_overlay_load,        d3d12_overlay_tex_geom,
-      d3d12_overlay_vertex_geom, d3d12_overlay_full_screen, d3d12_overlay_set_alpha,
+      d3d12_overlay_enable,      d3d12_overlay_load,        d3d12_overlay_load_textures,
+      d3d12_overlay_tex_geom,    d3d12_overlay_vertex_geom, d3d12_overlay_full_screen,
+      d3d12_overlay_set_alpha,
    };
 
    *iface = &overlay_interface;
@@ -2135,8 +2800,39 @@ static void d3d12_render_overlay(d3d12_video_t *d3d12)
 
    }
 
+   /* What the setters changed since the last frame, in one map. */
+   if (d3d12->overlays.dirty && d3d12->overlays.count > 0)
+   {
+      D3D12_RANGE range;
+      void *sprites = NULL;
+      range.Begin   = 0;
+      range.End     = 0;
+      if (     SUCCEEDED(D3D12Map(d3d12->overlays.vbo, 0, &range, &sprites))
+            && sprites)
+      {
+         memcpy(sprites, d3d12->overlays.shadow,
+               d3d12->overlays.count * sizeof(d3d12_sprite_t));
+         D3D12Unmap(d3d12->overlays.vbo, 0, NULL);
+         d3d12->overlays.dirty = false;
+      }
+   }
+
    cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->overlays.vbo_view);
-   cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend);
+   /* The overlay is drawn onto the swapchain's back buffer, which under
+    * HDR is R10G10B10A2 or R16G16B16A16_FLOAT. pipe_blend is built for
+    * an R8G8B8A8 target, and a draw whose pipeline disagrees with the
+    * bound render target is invalid: the debug layer reports
+    * RENDER_TARGET_FORMAT_MISMATCH_PIPELINE_STATE for every overlay
+    * image of every frame, and without it the result is undefined.
+    * Every other sprite draw in this file already picks the _hdr
+    * pipeline by the same test. */
+#ifdef HAVE_DXGI_HDR
+   if (     (d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM)
+         || (d3d12->chain.current_rt_format == DXGI_FORMAT_R16G16B16A16_FLOAT))
+      cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend_hdr);
+   else
+#endif
+      cmd->lpVtbl->SetPipelineState(cmd, d3d12->sprites.pipe_blend);
 
    cmd->lpVtbl->SetGraphicsRootDescriptorTable(
          cmd, ROOT_ID_SAMPLER_T,
@@ -2144,14 +2840,12 @@ static void d3d12_render_overlay(d3d12_video_t *d3d12)
 
    for (i = 0; i < (unsigned)d3d12->overlays.count; i++)
    {
-      if (d3d12->overlays.textures[i].dirty)
-         d3d12_upload_texture(cmd,
-               &d3d12->overlays.textures[i],
-               d3d12);
+      d3d12_texture_t *tex = d3d12->overlays.refs[i];
+      if (tex->dirty)
+         d3d12_upload_texture(cmd, tex, d3d12);
 
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(
-            cmd, ROOT_ID_TEXTURE_T,
-            d3d12->overlays.textures[i].gpu_descriptor[0]);
+            cmd, ROOT_ID_TEXTURE_T, tex->gpu_descriptor[0]);
       cmd->lpVtbl->DrawInstanced(cmd, 1, 1, i, 0);
    }
 }
@@ -2170,9 +2864,10 @@ static void d3d12_set_hdr_paper_white_nits(void* data, float paper_white_nits)
 
    d3d12->hdr.ubo_values.paper_white_nits = paper_white_nits;
 
-   if(d3d12->shader_preset)
+   if (d3d12->shader_preset)
    {
-      for (unsigned i = 0; i < d3d12->shader_preset->passes; i++)
+      unsigned i;
+      for (i = 0; i < d3d12->shader_preset->passes; i++)
       {
          d3d12->pass[i].paper_white_nits     = paper_white_nits;
       }
@@ -2185,9 +2880,10 @@ static void d3d12_set_hdr_expand_gamut(void* data, unsigned expand_gamut)
 
    d3d12->hdr.ubo_values.expand_gamut     = expand_gamut;
 
-   if(d3d12->shader_preset)
+   if (d3d12->shader_preset)
    {
-      for (unsigned i = 0; i < d3d12->shader_preset->passes; i++)
+      unsigned i;
+      for (i = 0; i < d3d12->shader_preset->passes; i++)
       {
          d3d12->pass[i].expand_gamut     = expand_gamut;
       }
@@ -2200,9 +2896,10 @@ static void d3d12_set_hdr_scanlines(void* data, bool scanlines)
 
    d3d12->hdr.ubo_values.scanlines        = scanlines ? 1.0f : 0.0f;
 
-   if(d3d12->shader_preset)
+   if (d3d12->shader_preset)
    {
-      for (unsigned i = 0; i < d3d12->shader_preset->passes; i++)
+      unsigned i;
+      for (i = 0; i < d3d12->shader_preset->passes; i++)
       {
          d3d12->pass[i].scanlines     = scanlines ? 1.0f : 0.0f;
       }
@@ -2215,9 +2912,10 @@ static void d3d12_set_hdr_subpixel_layout(void* data, unsigned subpixel_layout)
 
    d3d12->hdr.ubo_values.subpixel_layout  = subpixel_layout;
 
-   if(d3d12->shader_preset)
+   if (d3d12->shader_preset)
    {
-      for (unsigned i = 0; i < d3d12->shader_preset->passes; i++)
+      unsigned i;
+      for (i = 0; i < d3d12->shader_preset->passes; i++)
       {
          d3d12->pass[i].subpixel_layout     = subpixel_layout;
       }
@@ -2228,9 +2926,10 @@ static void d3d12_set_hdr_inverse_tonemap(d3d12_video_t* d3d12, bool inverse_ton
 {
    d3d12->hdr.ubo_values.inverse_tonemap  = inverse_tonemap ? 1.0f : 0.0f;
 
-   if(d3d12->shader_preset)
+   if (d3d12->shader_preset)
    {
-      for (unsigned i = 0; i < d3d12->shader_preset->passes; i++)
+      unsigned i;
+      for (i = 0; i < d3d12->shader_preset->passes; i++)
       {
          d3d12->pass[i].inverse_tonemap     = inverse_tonemap ? 1.0f : 0.0f;
       }
@@ -2241,9 +2940,10 @@ static void d3d12_set_hdr10(d3d12_video_t* d3d12, bool hdr10)
 {
    d3d12->hdr.ubo_values.hdr10            = hdr10 ? 1.0f : 0.0f;
 
-   if(d3d12->shader_preset)
+   if (d3d12->shader_preset)
    {
-      for (unsigned i = 0; i < d3d12->shader_preset->passes; i++)
+      unsigned i;
+      for (i = 0; i < d3d12->shader_preset->passes; i++)
       {
          d3d12->pass[i].hdr10             = hdr10 ? 1.0f : 0.0f;
       }
@@ -2282,13 +2982,7 @@ static void d3d12_gfx_set_rotation(void* data, unsigned rotation)
       return;
 
    {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
    d3d12->frame.rotation = rotation;
 
@@ -2313,28 +3007,28 @@ static void d3d12_update_viewport(d3d12_video_t *d3d12, bool force_full)
    video_driver_update_viewport(&d3d12->vp, force_full,
          (d3d12->flags & D3D12_ST_FLAG_KEEP_ASPECT) ? true : false, true);
 
-   d3d12->frame.viewport.TopLeftX = d3d12->vp.x;
-   d3d12->frame.viewport.TopLeftY = d3d12->vp.y;
-   d3d12->frame.viewport.Width    = d3d12->vp.width;
-   d3d12->frame.viewport.Height   = d3d12->vp.height;
+   d3d12->frame.viewport.TopLeftX = VIDEO_POS_X(d3d12->vp.pos);
+   d3d12->frame.viewport.TopLeftY = VIDEO_POS_Y(d3d12->vp.pos);
+   d3d12->frame.viewport.Width    = VIDEO_SCALE_W(d3d12->vp.dims);
+   d3d12->frame.viewport.Height   = VIDEO_SCALE_H(d3d12->vp.dims);
    d3d12->frame.viewport.MinDepth = 0.0f;
    d3d12->frame.viewport.MaxDepth = 1.0f;
 
    /* Needed for UWP to be happy */
-   d3d12->frame.scissorRect.top    = d3d12->vp.y;
-   d3d12->frame.scissorRect.left   = d3d12->vp.x;
-   d3d12->frame.scissorRect.right  = d3d12->vp.x + d3d12->vp.width;
-   d3d12->frame.scissorRect.bottom = d3d12->vp.y + d3d12->vp.height;
+   d3d12->frame.scissorRect.top    = VIDEO_POS_Y(d3d12->vp.pos);
+   d3d12->frame.scissorRect.left   = VIDEO_POS_X(d3d12->vp.pos);
+   d3d12->frame.scissorRect.right  = VIDEO_POS_X(d3d12->vp.pos) + VIDEO_SCALE_W(d3d12->vp.dims);
+   d3d12->frame.scissorRect.bottom = VIDEO_POS_Y(d3d12->vp.pos) + VIDEO_SCALE_H(d3d12->vp.dims);
 
    if (d3d12->shader_preset
-         && (  d3d12->frame.output_size.x != d3d12->vp.width
-            || d3d12->frame.output_size.y != d3d12->vp.height))
+         && (  d3d12->frame.output_size.x != VIDEO_SCALE_W(d3d12->vp.dims)
+            || d3d12->frame.output_size.y != VIDEO_SCALE_H(d3d12->vp.dims)))
       d3d12->flags           |= D3D12_ST_FLAG_RESIZE_RTS;
 
-   d3d12->frame.output_size.x = d3d12->vp.width;
-   d3d12->frame.output_size.y = d3d12->vp.height;
-   d3d12->frame.output_size.z = 1.0f / d3d12->vp.width;
-   d3d12->frame.output_size.w = 1.0f / d3d12->vp.height;
+   d3d12->frame.output_size.x = VIDEO_SCALE_W(d3d12->vp.dims);
+   d3d12->frame.output_size.y = VIDEO_SCALE_H(d3d12->vp.dims);
+   d3d12->frame.output_size.z = 1.0f / VIDEO_SCALE_W(d3d12->vp.dims);
+   d3d12->frame.output_size.w = 1.0f / VIDEO_SCALE_H(d3d12->vp.dims);
 
    d3d12->flags              &= ~D3D12_ST_FLAG_RESIZE_VIEWPORT;
 }
@@ -2666,6 +3360,7 @@ static bool d3d12_shader_load_step(void *data,
                &d3d12->pass[i].core_aspect_rot,
                &d3d12->pass[i].total_subframes,
                &d3d12->pass[i].current_subframe,
+               &d3d12->pass[i].swap_count,
 #ifdef HAVE_DXGI_HDR
                &d3d12->pass[i].hdr_mode,
                &d3d12->pass[i].paper_white_nits,
@@ -2712,10 +3407,10 @@ static bool d3d12_shader_load_step(void *data,
                ds->shader_preset->pass[i].source.string.fragment;
             size_t _len = strlcpy(_path, slang_path, sizeof(_path));
 
-            strlcpy(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
+            strlcpy_lit(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
             d3d_compile(vs_src, 0, _path, "main", "vs_5_0", &vs_code);
 
-            strlcpy(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
+            strlcpy_lit(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
             d3d_compile(ps_src, 0, _path, "main", "ps_5_0", &ps_code);
 
             desc.BlendState.RenderTarget[0].RenderTargetWriteMask =
@@ -2783,12 +3478,7 @@ static bool d3d12_shader_load_step(void *data,
 
    {
       D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
    d3d12_free_shader_preset(d3d12);
 
@@ -2948,12 +3638,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
    {
       D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
    d3d12_free_shader_preset(d3d12);
 
@@ -3036,6 +3721,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
             &d3d12->pass[i].core_aspect_rot, /* OriginalAspectRotated */
             &d3d12->pass[i].total_subframes, /* TotalSubFrames */
             &d3d12->pass[i].current_subframe,/* CurrentSubFrame */
+            &d3d12->pass[i].swap_count, /* SwapCount */
 #ifdef HAVE_DXGI_HDR
             &d3d12->pass[i].hdr_mode,       /* HDRMode */
             &d3d12->pass[i].paper_white_nits,/* BrightnessNits */
@@ -3070,11 +3756,11 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          const char *vs_src     = d3d12->shader_preset->pass[i].source.string.vertex;
          const char *ps_src     = d3d12->shader_preset->pass[i].source.string.fragment;
          size_t _len            = strlcpy(_path, slang_path, sizeof(_path));
-         strlcpy(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
+         strlcpy_lit(_path + _len, ".vs.hlsl", sizeof(_path) - _len);
          /* TODO/FIXME - add error handling? */
          d3d_compile(vs_src, 0, _path, "main", "vs_5_0", &vs_code);
 
-         strlcpy(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
+         strlcpy_lit(_path + _len, ".ps.hlsl", sizeof(_path) - _len);
          /* TODO/FIXME - add error handling? */
          d3d_compile(ps_src, 0, _path, "main", "ps_5_0", &ps_code);
 
@@ -3444,7 +4130,16 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
 #endif
 
    desc.BlendState.RenderTarget[0] = d3d12_blend_enable_desc;
-   desc.RTVFormats[0]              = DXGI_FORMAT_R8G8B8A8_UNORM;
+   /* The format these draw into, not an assumption about it. Every
+    * pipeline below targets the swapchain, and the swapchain is not
+    * always 8-bit: with HDR off and video_swapchain_bit_depth set to
+    * 10, chain.bit_depth is DXGI_SWAPCHAIN_BIT_DEPTH_10 and the back
+    * buffer is R10G10B10A2. Hardcoding R8G8B8A8 here made every stock
+    * draw disagree with its render target, which D3D12 rejects - the
+    * frame is dropped and the screen stays black while audio and input
+    * carry on. The HDR pipes have always been built from the real
+    * format a few lines down; these now are too. */
+   desc.RTVFormats[0]              = d3d12->chain.formats[d3d12->chain.bit_depth];
 
    {
       static const char shader[] =
@@ -3483,6 +4178,49 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       Release(ps_code);
       vs_code = NULL;
       ps_code = NULL;
+   }
+   /* gfx_display meshes, read as stored: three floats, then two 16-bit
+    * and four 8-bit normalised integers. Without the pipeline or its
+    * constant ring meshes are streamed through draw() instead. */
+   {
+      static const char shader[] =
+#include "d3d_shaders/mesh_sm4.hlsl.h"
+         ;
+      static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
+         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,
+            D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "TEXCOORD", 0, DXGI_FORMAT_R16G16_UNORM, 0, 12,
+            D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 16,
+            D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+      };
+      if (     d3d_compile(shader, sizeof(shader), NULL, "VSMain", "vs_5_0", &vs_code)
+            && d3d_compile(shader, sizeof(shader), NULL, "PSMain", "ps_5_0", &ps_code))
+      {
+         desc.BlendState.RenderTarget[0]     = d3d12_blend_enable_desc;
+         desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+         desc.InputLayout.pInputElementDescs = inputElementDesc;
+         desc.InputLayout.NumElements        = countof(inputElementDesc);
+         d3d12_init_pipeline(
+               d3d12->device, vs_code, ps_code, NULL, &desc,
+               &d3d12->mesh_pipe);
+      }
+      Release(vs_code);
+      Release(ps_code);
+      vs_code = NULL;
+      ps_code = NULL;
+      if (d3d12->mesh_pipe)
+      {
+         D3D12_RANGE read_range;
+         void *mapped = NULL;
+         d3d12->mesh_cb_va = d3d12_create_buffer(d3d12->device,
+               D3D12_MESH_CB_SIZE * D3D12_MESH_CB_SLOTS, &d3d12->mesh_cb);
+         read_range.Begin  = 0;
+         read_range.End    = 0;
+         if (     d3d12->mesh_cb
+               && SUCCEEDED(D3D12Map(d3d12->mesh_cb, 0, &read_range, &mapped)))
+            d3d12->mesh_cb_mapped = (uint8_t*)mapped;
+      }
    }
    {
       static const char shader[] =
@@ -3544,144 +4282,11 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       gs_code = NULL;
    }
 
-   if (string_is_equal(settings->arrays.menu_driver, "xmb"))
-   {
-      {
-         static const char ribbon[] =
-#include "d3d_shaders/ribbon_sm4.hlsl.h"
-            ;
-         static const char ribbon_simple[] =
-#include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
-            ;
-
-         D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
-            { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0,
-               D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-         };
-
-         desc.BlendState.RenderTarget[0].SrcBlend  = D3D12_BLEND_DEST_COLOR;
-         desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
-         desc.PrimitiveTopologyType                = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-         desc.InputLayout.pInputElementDescs       = inputElementDesc;
-         desc.InputLayout.NumElements              = countof(inputElementDesc);
-
-         if (!d3d_compile(ribbon, sizeof(ribbon), NULL, "VSMain", "vs_5_0", &vs_code))
-            goto error;
-         if (!d3d_compile(ribbon, sizeof(ribbon), NULL, "PSMain", "ps_5_0", &ps_code))
-            goto error;
-
-         d3d12_init_pipeline(
-               d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU]);
-
-         Release(vs_code);
-         Release(ps_code);
-         vs_code = NULL;
-         ps_code = NULL;
-
-         if (!d3d_compile(ribbon_simple, sizeof(ribbon_simple), NULL, "VSMain", "vs_5_0", &vs_code))
-            goto error;
-         if (!d3d_compile(ribbon_simple, sizeof(ribbon_simple), NULL, "PSMain", "ps_5_0", &ps_code))
-            goto error;
-
-         d3d12_init_pipeline(
-               d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_2]);
-
-         Release(vs_code);
-         Release(ps_code);
-         vs_code = NULL;
-         ps_code = NULL;
-      }
-
-      {
-         static const char simple_snow[] =
-#include "d3d_shaders/simple_snow_sm4.hlsl.h"
-            ;
-         static const char snow[] =
-#include "d3d_shaders/snow_sm4.hlsl.h"
-            ;
-         static const char bokeh[] =
-#include "d3d_shaders/bokeh_sm4.hlsl.h"
-            ;
-         static const char snowflake[] =
-#include "d3d_shaders/snowflake_sm4.hlsl.h"
-            ;
-
-         D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
-            { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, position),
-               D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
-               D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-         };
-
-         desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-         desc.InputLayout.pInputElementDescs = inputElementDesc;
-         desc.InputLayout.NumElements        = countof(inputElementDesc);
-
-         /* Reset blend state to standard alpha blending for snow/bokeh/snowflake
-          * pipelines.  The ribbon shaders above set SrcBlend = DEST_COLOR /
-          * DestBlend = ONE which is a multiplicative blend unsuitable for
-          * additive particle effects — white snowflakes become invisible
-          * against coloured backgrounds. */
-         desc.BlendState.RenderTarget[0].SrcBlend       = D3D12_BLEND_SRC_ALPHA;
-         desc.BlendState.RenderTarget[0].DestBlend      = D3D12_BLEND_INV_SRC_ALPHA;
-         desc.BlendState.RenderTarget[0].BlendOp        = D3D12_BLEND_OP_ADD;
-         desc.BlendState.RenderTarget[0].SrcBlendAlpha  = D3D12_BLEND_SRC_ALPHA;
-         desc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
-         desc.BlendState.RenderTarget[0].BlendOpAlpha   = D3D12_BLEND_OP_ADD;
-
-         if (!d3d_compile(simple_snow, sizeof(simple_snow), NULL, "VSMain", "vs_5_0", &vs_code))
-            goto error;
-         if (!d3d_compile(simple_snow, sizeof(simple_snow), NULL, "PSMain", "ps_5_0", &ps_code))
-            goto error;
-
-         d3d12_init_pipeline(
-               d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_3]);
-
-         Release(vs_code);
-         Release(ps_code);
-         vs_code = NULL;
-         ps_code = NULL;
-
-         if (!d3d_compile(snow, sizeof(snow), NULL, "VSMain", "vs_5_0", &vs_code))
-            goto error;
-         if (!d3d_compile(snow, sizeof(snow), NULL, "PSMain", "ps_5_0", &ps_code))
-            goto error;
-
-         d3d12_init_pipeline(
-               d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_4]);
-
-         Release(vs_code);
-         Release(ps_code);
-         vs_code = NULL;
-         ps_code = NULL;
-
-         if (!d3d_compile(bokeh, sizeof(bokeh), NULL, "VSMain", "vs_5_0", &vs_code))
-            goto error;
-         if (!d3d_compile(bokeh, sizeof(bokeh), NULL, "PSMain", "ps_5_0", &ps_code))
-            goto error;
-
-         d3d12_init_pipeline(
-               d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_5]);
-
-         Release(vs_code);
-         Release(ps_code);
-         vs_code = NULL;
-         ps_code = NULL;
-
-         if (!d3d_compile(snowflake, sizeof(snowflake), NULL, "VSMain", "vs_5_0", &vs_code))
-            goto error;
-         if (!d3d_compile(snowflake, sizeof(snowflake), NULL, "PSMain", "ps_5_0", &ps_code))
-            goto error;
-
-         d3d12_init_pipeline(
-               d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_6]);
-
-         Release(vs_code);
-         Release(ps_code);
-         vs_code = NULL;
-         ps_code = NULL;
-      }
-   }
+   /* The menu effects are made from this when first drawn; see
+    * d3d12_effect_pipe */
+   d3d12->effect_desc       = desc;
+   d3d12->effect_desc_valid = true;
+   d3d12->effects_tried     = 0;
 
    {
       static const char shader[] =
@@ -3709,26 +4314,27 @@ error:
    return false;
 }
 
+static void d3d12_hw_ring_free(d3d12_video_t *d3d12);
+
 static void d3d12_gfx_free(void* data)
 {
    unsigned       i;
+   bool window_kept     = false;
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
    if (!d3d12)
       return;
 
    {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
    if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
       CloseHandle(d3d12->chain.frameLatencyWaitableObject);
+   Release(d3d12->chain.retained);
+   d3d12->chain.retained = NULL;
+   d3d12_hw_ring_free(d3d12);
+   d3d12_record_teardown(d3d12);
 
 
 #ifdef HAVE_OVERLAY
@@ -3738,7 +4344,20 @@ static void d3d12_gfx_free(void* data)
    d3d12_free_shader_preset(d3d12);
 
    Release(d3d12->sprites.vbo);
-   Release(d3d12->menu_pipeline_vbo);
+   Release(d3d12->mesh_pipe);
+   Release(d3d12->mesh_cb);
+   d3d12->mesh_cb_mapped = NULL;
+   {
+      unsigned m;
+      for (m = 0; m < ARRAY_SIZE(d3d12->meshes); m++)
+      {
+         Release(d3d12->meshes[m].vbo);
+         d3d12->meshes[m].id = 0;
+      }
+      for (m = 0; m < d3d12->meshes_retired_count; m++)
+         Release(d3d12->meshes_retired[m].vbo);
+      d3d12->meshes_retired_count = 0;
+   }
 
    /* Cached SW framebuffer upload buffer (lazily allocated by
     * d3d12_sw_fb_ensure on first GET_CURRENT_SOFTWARE_FRAMEBUFFER
@@ -3752,7 +4371,7 @@ static void d3d12_gfx_free(void* data)
        * takes the cached-frame lifetime lock, ensuring no
        * off-thread consumer is mid-read on the mapped pages when
        * we Unmap and Release. */
-      video_driver_cached_frame_invalidate();
+      video_driver_cached_frame_retire();
       if (d3d12->sw_fb.mapped)
       {
          d3d12->sw_fb.buffer->lpVtbl->Unmap(d3d12->sw_fb.buffer, 0, NULL);
@@ -3814,6 +4433,31 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->chain.renderTargets[0]);
    Release(d3d12->chain.renderTargets[1]);
 
+#if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
+   /* The swap chain goes here. For years it was not released at all:
+    * the Release() that used to sit after the queue's was compiled
+    * out under a note that it crashed eventually, and every driver
+    * that was freed left its swap chain behind. It is released in the
+    * order that has been seen to hold: the queue was drained at the
+    * top of this function, the back buffers were let go of just
+    * above, the swap chain is told it is windowed (it always is;
+    * releasing one that is not is an error), and it is released while
+    * the queue it was made on is still there.
+    *
+    * It has to go for the window to be kept: DXGI makes no second
+    * flip-model swap chain on a window that still has one, and the
+    * window is left up for the next D3D12 driver where it can be
+    * (win32_window_keep()). */
+   window_kept = win32_window_keep();
+   if (d3d12->chain.handle)
+   {
+      d3d12->chain.handle->lpVtbl->SetFullscreenState(
+            d3d12->chain.handle, FALSE, NULL);
+      Release(d3d12->chain.handle);
+      d3d12->chain.handle = NULL;
+   }
+#endif
+
    Release(d3d12->queue.fence);
    Release(d3d12->queue.cmd);
    Release(d3d12->queue.allocator);
@@ -3822,9 +4466,14 @@ static void d3d12_gfx_free(void* data)
    if (d3d12->queue.fenceEvent)
       CloseHandle(d3d12->queue.fenceEvent);
 
+#if !(defined(HAVE_WINDOW) && defined(HAVE_MONITOR))
 #if 0
-   /* Releasing this will crash eventually (?!) */
+   /* Releasing this will crash eventually (?!)
+    * (On a build with a window it is released above, before the
+    * queue; this is what is left for the builds without - UWP -
+    * where that order has not been run.) */
    Release(d3d12->chain.handle);
+#endif
 #endif
 
    Release(d3d12->factory);
@@ -3845,15 +4494,18 @@ static void d3d12_gfx_free(void* data)
    }
 
 #ifdef HAVE_DXGI_HDR
-   video_driver_set_disp_flags(video_driver_get_disp_flags() & ~(VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT));
+   video_driver_modify_disp_flags(0, VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT);
 #endif
 
+   if (!window_kept)
+   {
 #ifdef HAVE_MONITOR
-   win32_monitor_from_window();
+      win32_monitor_from_window();
 #endif
 #ifdef HAVE_WINDOW
-   win32_destroy_window();
+      win32_destroy_window();
 #endif
+   }
 
    free(d3d12);
 }
@@ -3899,6 +4551,7 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
        * profiles, aperture grilles) without pulling in the HDR
        * pipeline.  Opt-in; G22/P709 is correct for both depths. */
       settings_t *settings     = config_get_ptr();
+      d3d12->swapchain_bit_depth_latched = settings->uints.video_swapchain_bit_depth;
       d3d12->chain.bit_depth   = (settings->uints.video_swapchain_bit_depth == 2)
          ? DXGI_SWAPCHAIN_BIT_DEPTH_10 : DXGI_SWAPCHAIN_BIT_DEPTH_8;
    }
@@ -4043,10 +4696,10 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
    d3d12->chain.viewport.Width                     = width;
    d3d12->chain.viewport.Height                    = height;
 
-   d3d12->chain.scissorRect.left                   = d3d12->vp.x;
-   d3d12->chain.scissorRect.top                    = d3d12->vp.y;
-   d3d12->chain.scissorRect.right                  = d3d12->vp.x + width;
-   d3d12->chain.scissorRect.bottom                 = d3d12->vp.y + height;
+   d3d12->chain.scissorRect.left                   = VIDEO_POS_X(d3d12->vp.pos);
+   d3d12->chain.scissorRect.top                    = VIDEO_POS_Y(d3d12->vp.pos);
+   d3d12->chain.scissorRect.right                  = VIDEO_POS_X(d3d12->vp.pos) + width;
+   d3d12->chain.scissorRect.bottom                 = VIDEO_POS_Y(d3d12->vp.pos) + height;
 
    return true;
 }
@@ -4112,6 +4765,11 @@ static void d3d12_init_base(d3d12_video_t* d3d12)
       }
 
       video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D12_API, d3d12->gpu_list);
+
+      /* The device the index was chosen as, wherever the list now
+       * puts it */
+      gpu_index = video_driver_gpu_index_resolve(GFX_CTX_DIRECT3D12_API,
+            gpu_index, d3d12->gpu_list);
 
       if (0 <= gpu_index && gpu_index <= i && gpu_index < D3D12_MAX_GPU_COUNT)
       {
@@ -4452,6 +5110,138 @@ static void d3d12_set_hw_render_texture(void* data, ID3D12Resource* texture, DXG
    d3d12->hw_render_texture_format = format;
 }
 
+/* --- drawing a version 2 core's texture without copying it ------------ */
+
+static void d3d12_hw_direct_slot_free(d3d12_video_t *d3d12, unsigned i)
+{
+   d3d12_descriptor_heap_t *heap = &d3d12->desc.srv_heap;
+   if (d3d12->hw_direct.cache[i].cpu.ptr)
+   {
+      unsigned slot   = (unsigned)((d3d12->hw_direct.cache[i].cpu.ptr
+               - heap->cpu.ptr) / heap->stride);
+      heap->map[slot] = false;
+      if (heap->start > (int)slot)
+         heap->start  = (int)slot;
+   }
+   if (d3d12->hw_direct.current == d3d12->hw_direct.cache[i].resource)
+   {
+      d3d12->hw_direct.current         = NULL;
+      d3d12->hw_direct.current_gpu.ptr = 0;
+   }
+   Release(d3d12->hw_direct.cache[i].resource);
+   memset(&d3d12->hw_direct.cache[i], 0, sizeof(d3d12->hw_direct.cache[i]));
+}
+
+/* The descriptor to draw the core's texture through, in the driver's
+ * own heap. False if there is none to be had; the frame is copied then. */
+static bool d3d12_hw_direct_lookup(d3d12_video_t *d3d12,
+      D3D12Resource resource, DXGI_FORMAT format,
+      D3D12_GPU_DESCRIPTOR_HANDLE *gpu)
+{
+   unsigned i;
+   D3D12_SHADER_RESOURCE_VIEW_DESC desc;
+   D3D12_CPU_DESCRIPTOR_HANDLE cpu;
+   d3d12_descriptor_heap_t *heap = &d3d12->desc.srv_heap;
+
+   for (i = 0; i < countof(d3d12->hw_direct.cache); i++)
+   {
+      if (d3d12->hw_direct.cache[i].resource == resource)
+      {
+         *gpu = d3d12->hw_direct.cache[i].gpu;
+         return true;
+      }
+   }
+
+   i = d3d12->hw_direct.next;
+   if (d3d12->hw_direct.cache[i].resource)
+   {
+      /* The place is taken: a core's textures changed, which is a change
+       * of resolution. Work recorded with the old descriptor may still be
+       * on the queue, and it is about to be written over. */
+      d3d12_queue_drain(d3d12);
+      d3d12_hw_direct_slot_free(d3d12, i);
+   }
+
+   cpu = d3d12_descriptor_heap_slot_alloc(heap);
+   if (!cpu.ptr)
+      return false;
+
+   memset(&desc, 0, sizeof(desc));
+   desc.Format                  = format;
+   desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+   desc.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
+   desc.Texture2D.MipLevels     = 1;
+   d3d12->device->lpVtbl->CreateShaderResourceView(d3d12->device,
+         resource, &desc, cpu);
+
+   resource->lpVtbl->AddRef(resource);
+   d3d12->hw_direct.cache[i].resource = resource;
+   d3d12->hw_direct.cache[i].cpu      = cpu;
+   d3d12->hw_direct.cache[i].gpu.ptr  = cpu.ptr - heap->cpu.ptr + heap->gpu.ptr;
+   d3d12->hw_direct.next              = (i + 1) % countof(d3d12->hw_direct.cache);
+   *gpu = d3d12->hw_direct.cache[i].gpu;
+   return true;
+}
+
+static void d3d12_hw_direct_free(d3d12_video_t *d3d12)
+{
+   unsigned i;
+   for (i = 0; i < countof(d3d12->hw_direct.cache); i++)
+      d3d12_hw_direct_slot_free(d3d12, i);
+   memset(&d3d12->hw_direct, 0, sizeof(d3d12->hw_direct));
+}
+
+/* --- libretro_d3d12.h version 2, without the threaded wrapper ---------
+ *
+ * The driver's frame runs inside video_refresh and reads the core's
+ * texture there, so one sync index is all there is, and the texture is
+ * the core's again once the frame that read it has executed. */
+
+static unsigned d3d12_hw_v2_get_sync_index(void *data)
+{
+   (void)data;
+   return 0;
+}
+
+static unsigned d3d12_hw_v2_get_sync_index_mask(void *data)
+{
+   (void)data;
+   return 1;
+}
+
+static void d3d12_hw_v2_wait_sync_index(void *data)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   D3D12Fence fence;
+   if (!d3d12 || !(fence = d3d12->hw_v2.done) || !d3d12->hw_v2.done_value)
+      return;
+   if (fence->lpVtbl->GetCompletedValue(fence) >= d3d12->hw_v2.done_value)
+      return;
+   fence->lpVtbl->SetEventOnCompletion(fence, d3d12->hw_v2.done_value,
+         d3d12->hw_v2.done_event);
+   if (WaitForSingleObject(d3d12->hw_v2.done_event, D3D12_FENCE_WAIT_MS)
+         != WAIT_OBJECT_0)
+      RARCH_ERR("[D3D12] The frame that read the core's texture did not"
+            " finish within %u ms; the device is most likely lost.\n",
+            (unsigned)D3D12_FENCE_WAIT_MS);
+}
+
+/* The wait for the core's work goes onto the queue here, ahead of the
+ * frame's command list, which is submitted later in this same
+ * video_refresh: a wait on the GPU's timeline, none on this thread. */
+static void d3d12_hw_v2_set_texture_fenced(void *data, ID3D12Resource *texture,
+      DXGI_FORMAT format, ID3D12Fence *fence, UINT64 value)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   if (!d3d12)
+      return;
+   d3d12->hw_render_texture        = texture;
+   d3d12->hw_render_texture_format = format;
+   d3d12->hw_direct.eligible       = texture != NULL;
+   if (texture && fence)
+      d3d12->queue.handle->lpVtbl->Wait(d3d12->queue.handle, fence, value);
+}
+
 static void *d3d12_gfx_init(const video_info_t* video,
       input_driver_t** input, void** input_data)
 {
@@ -4471,33 +5261,31 @@ static void *d3d12_gfx_init(const video_info_t* video,
 #endif
 #ifdef HAVE_MONITOR
    win32_monitor_init();
-   wndclass.lpfnWndProc = wnd_proc_d3d_common;
-#ifdef HAVE_DINPUT
-   if (string_is_equal(settings->arrays.input_driver, "dinput"))
-      wndclass.lpfnWndProc = wnd_proc_d3d_dinput;
-#endif
-#ifdef HAVE_WINRAWINPUT
-   if (string_is_equal(settings->arrays.input_driver, "raw"))
-      wndclass.lpfnWndProc = wnd_proc_d3d_winraw;
-#endif
+   /* one window procedure for every video and input driver; the
+    * family says what creating the window sets up */
+   wndclass.lpfnWndProc = win32_window_proc;
+   win32_window_proc_setup(WIN32_WINDOW_D3D);
 #ifdef HAVE_WINDOW
+   /* the window may be left up for the next D3D12 driver, and taken
+    * from the last: d3d12_gfx_free() and the swap chain's creation
+    * below do what that needs */
+   win32_window_tag("d3d12");
    win32_window_init(&wndclass, true, NULL);
 #endif
 
    win32_monitor_info(&current_mon, &hm_to_use, &d3d12->cur_mon_id);
 #endif
 
-   d3d12->vp.full_width  = video->width;
-   d3d12->vp.full_height = video->height;
+   d3d12->vp.full_dims   = video->dims;
 
 #ifdef HAVE_MONITOR
-   if (!d3d12->vp.full_width)
-      d3d12->vp.full_width = current_mon.rcMonitor.right - current_mon.rcMonitor.left;
-   if (!d3d12->vp.full_height)
-      d3d12->vp.full_height = current_mon.rcMonitor.bottom - current_mon.rcMonitor.top;
+   if (!VIDEO_SCALE_W(d3d12->vp.full_dims))
+      VIDEO_SCALE_PUT_W(d3d12->vp.full_dims, current_mon.rcMonitor.right - current_mon.rcMonitor.left);
+   if (!VIDEO_SCALE_H(d3d12->vp.full_dims))
+      VIDEO_SCALE_PUT_H(d3d12->vp.full_dims, current_mon.rcMonitor.bottom - current_mon.rcMonitor.top);
 #endif
 
-   if (!win32_set_video_mode(d3d12, d3d12->vp.full_width, d3d12->vp.full_height, video->fullscreen))
+   if (!win32_set_video_mode(d3d12, d3d12->vp.full_dims, video->fullscreen))
    {
       RARCH_ERR("[D3D12] win32_set_video_mode failed.\n");
       goto error;
@@ -4524,8 +5312,9 @@ static void *d3d12_gfx_init(const video_info_t* video,
    else
       d3d12->flags &= ~D3D12_ST_FLAG_VSYNC;
 
-   d3d_input_driver(settings->arrays.input_driver,
-         settings->arrays.input_joypad_driver, input, input_data);
+   /* no input driver of this driver's own: the frontend starts the
+    * one that goes with a Windows window */
+   input_driver_left_to_frontend(INPUT_WINDOW_WINDOWS, input, input_data);
 
    d3d12_init_base(d3d12);
 
@@ -4540,11 +5329,25 @@ static void *d3d12_gfx_init(const video_info_t* video,
    d3d12_init_queue(d3d12);
 
 #ifdef __WINRT__
-   if (!d3d12_init_swapchain(d3d12, d3d12->vp.full_width, d3d12->vp.full_height, uwp_get_corewindow()))
+   if (!d3d12_init_swapchain(d3d12, VIDEO_SCALE_W(d3d12->vp.full_dims), VIDEO_SCALE_H(d3d12->vp.full_dims), uwp_get_corewindow()))
       goto error;
 #else
-   if (!d3d12_init_swapchain(d3d12, d3d12->vp.full_width, d3d12->vp.full_height, main_window.hwnd))
-      goto error;
+   if (!d3d12_init_swapchain(d3d12, VIDEO_SCALE_W(d3d12->vp.full_dims), VIDEO_SCALE_H(d3d12->vp.full_dims), main_window.hwnd))
+   {
+#if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
+      /* On a window the last driver left up, DXGI may refuse a swap
+       * chain - something of the old one is still alive on it. Then
+       * the window is not worth having: a new one, and once more. */
+      if (     !win32_window_was_taken()
+            || !win32_window_remake(d3d12, d3d12->vp.full_dims,
+                  video->fullscreen)
+            || !d3d12_init_swapchain(d3d12,
+                  VIDEO_SCALE_W(d3d12->vp.full_dims),
+                  VIDEO_SCALE_H(d3d12->vp.full_dims),
+                  main_window.hwnd))
+#endif
+         goto error;
+   }
 #endif
 
 #ifdef HAVE_DXGI_HDR
@@ -4655,9 +5458,9 @@ static void *d3d12_gfx_init(const video_info_t* video,
    matrix_4x4_identity(d3d12->identity);
 
    d3d12_gfx_set_rotation(d3d12, 0);
-   video_driver_set_output_size(d3d12->vp.full_width, d3d12->vp.full_height);
-   d3d12->chain.viewport.Width  = d3d12->vp.full_width;
-   d3d12->chain.viewport.Height = d3d12->vp.full_height;
+   video_driver_set_output_dims(d3d12->vp.full_dims);
+   d3d12->chain.viewport.Width  = VIDEO_SCALE_W(d3d12->vp.full_dims);
+   d3d12->chain.viewport.Height = VIDEO_SCALE_H(d3d12->vp.full_dims);
 
    d3d12->flags                |=  D3D12_ST_FLAG_RESIZE_VIEWPORT;
 
@@ -4700,6 +5503,26 @@ static void *d3d12_gfx_init(const video_info_t* video,
       d3d12->hw_iface.required_state    = D3D12_RESOURCE_STATE_COPY_SOURCE;
       d3d12->hw_iface.set_texture       = d3d12_set_hw_render_texture;
       d3d12->hw_iface.D3DCompile        = D3DCompile;
+      /* Version 2 only for a core that asked for it; every other core
+       * compares interface_version against 1 and refuses anything else. */
+      if (d3d12_hw_interface_negotiated_version()
+            >= RETRO_HW_RENDER_INTERFACE_D3D12_VERSION_2)
+      {
+         if (     !d3d12->hw_v2.done
+               && SUCCEEDED(d3d12->device->lpVtbl->CreateFence(d3d12->device, 0,
+                     D3D12_FENCE_FLAG_NONE, uuidof(ID3D12Fence),
+                     (void**)&d3d12->hw_v2.done)))
+            d3d12->hw_v2.done_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+         if (d3d12->hw_v2.done && d3d12->hw_v2.done_event)
+         {
+            d3d12->hw_iface.interface_version   = RETRO_HW_RENDER_INTERFACE_D3D12_VERSION_2;
+            d3d12->hw_iface.get_sync_index      = d3d12_hw_v2_get_sync_index;
+            d3d12->hw_iface.get_sync_index_mask = d3d12_hw_v2_get_sync_index_mask;
+            d3d12->hw_iface.wait_sync_index     = d3d12_hw_v2_wait_sync_index;
+            d3d12->hw_iface.set_texture_fenced  = d3d12_hw_v2_set_texture_fenced;
+            RARCH_LOG("[D3D12] Hardware render interface version 2.\n");
+         }
+      }
    }
 
    return d3d12;
@@ -4750,7 +5573,7 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               width = d3d12->vp.width * pass->fbo.scale_x;
+               width = VIDEO_SCALE_W(d3d12->vp.dims) * pass->fbo.scale_x;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -4762,7 +5585,7 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
          }
 
          if (!width)
-            width = d3d12->vp.width;
+            width = VIDEO_SCALE_W(d3d12->vp.dims);
 
          switch (pass->fbo.type_y)
          {
@@ -4771,7 +5594,7 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               height = d3d12->vp.height * pass->fbo.scale_y;
+               height = VIDEO_SCALE_H(d3d12->vp.dims) * pass->fbo.scale_y;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -4783,28 +5606,28 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
          }
 
          if (!height)
-            height = d3d12->vp.height;
+            height = VIDEO_SCALE_H(d3d12->vp.dims);
       }
       else if (i == (d3d12->shader_preset->passes - 1))
       {
-         width  = d3d12->vp.width;
-         height = d3d12->vp.height;
+         width  = VIDEO_SCALE_W(d3d12->vp.dims);
+         height = VIDEO_SCALE_H(d3d12->vp.dims);
       }
 
       RARCH_DBG("[D3D12] Updating framebuffer size %ux%u.\n", width, height);
 
       if (i == (d3d12->shader_preset->passes - 1))
       {
-         d3d12->pass[i].viewport.TopLeftX    = d3d12->vp.x;
-         d3d12->pass[i].viewport.TopLeftY    = d3d12->vp.y;
+         d3d12->pass[i].viewport.TopLeftX    = VIDEO_POS_X(d3d12->vp.pos);
+         d3d12->pass[i].viewport.TopLeftY    = VIDEO_POS_Y(d3d12->vp.pos);
          d3d12->pass[i].viewport.Width       = width;
          d3d12->pass[i].viewport.Height      = height;
          d3d12->pass[i].viewport.MinDepth    = 0.0f;
          d3d12->pass[i].viewport.MaxDepth    = 1.0f;
-         d3d12->pass[i].scissorRect.left     = d3d12->vp.x;
-         d3d12->pass[i].scissorRect.top      = d3d12->vp.y;
-         d3d12->pass[i].scissorRect.right    = d3d12->vp.x + width;
-         d3d12->pass[i].scissorRect.bottom   = d3d12->vp.y + height;
+         d3d12->pass[i].scissorRect.left     = VIDEO_POS_X(d3d12->vp.pos);
+         d3d12->pass[i].scissorRect.top      = VIDEO_POS_Y(d3d12->vp.pos);
+         d3d12->pass[i].scissorRect.right    = VIDEO_POS_X(d3d12->vp.pos) + width;
+         d3d12->pass[i].scissorRect.bottom   = VIDEO_POS_Y(d3d12->vp.pos) + height;
       }
       else
       {
@@ -4821,8 +5644,8 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
       }
 
       if (     (i != (d3d12->shader_preset->passes - 1))
-            || (width  != d3d12->vp.width)
-            || (height != d3d12->vp.height))
+            || (width  != VIDEO_SCALE_W(d3d12->vp.dims))
+            || (height != VIDEO_SCALE_H(d3d12->vp.dims)))
       {
          d3d12->pass[i].rt.desc.Width      = width;
          d3d12->pass[i].rt.desc.Height     = height;
@@ -4843,8 +5666,8 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
       }
       else
       {
-         width = retroarch_get_rotation() % 2 ? height : width;
-         height = retroarch_get_rotation() % 2 ? width : height;
+         width = video_driver_get_rotation_snapshot() % 2 ? height : width;
+         height = video_driver_get_rotation_snapshot() % 2 ? width : height;
 
          d3d12->pass[i].rt.size_data.x = width;
          d3d12->pass[i].rt.size_data.y = height;
@@ -4858,18 +5681,414 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
    d3d12->flags &= ~D3D12_ST_FLAG_RESIZE_RTS;
 }
 
+static void dx12_inject_black_frame(d3d12_video_t* d3d12);
+
+/* Records a copy of the backbuffer (in PRESENT) into the retained
+ * texture, creating that texture to the swapchain's size and format
+ * when it does not match. Left in COPY_SOURCE for present_last(). The
+ * desc comes from the swapchain, not ID3D12Resource::GetDesc, which the
+ * C vtable declares struct-by-value and mingw cannot call as declared. */
+/* Releases the retired rings the GPU has finished with. Called every
+ * frame; a no-op when nothing is retired. */
+static void d3d12_record_reclaim(d3d12_video_t *d3d12)
+{
+   UINT64 done;
+   unsigned n = 0, g;
+   if (!d3d12->record.retired_count)
+      return;
+   done = d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence);
+   for (g = 0; g < d3d12->record.retired_count; g++)
+   {
+      if (d3d12->record.retired[g].fence <= done)
+      {
+         unsigned i;
+         for (i = 0; i < D3D12_RECORD_RING; i++)
+            Release(d3d12->record.retired[g].readback[i]);
+      }
+      else
+         d3d12->record.retired[n++] = d3d12->record.retired[g];
+   }
+   d3d12->record.retired_count = n;
+}
+
+/* Takes the ring out of use. Its buffers are not released here: the
+ * copies into them were recorded into command lists the queue may not
+ * have executed yet, and D3D12 requires a resource to outlive every
+ * list that names it. They go onto the retired table behind the
+ * highest fence a capture into this ring was signalled with, and
+ * d3d12_record_reclaim() releases them once the GPU has passed it. A
+ * ring no capture was ever signalled into has nothing in flight and is
+ * released at once. */
+static void d3d12_record_free(d3d12_video_t *d3d12)
+{
+   unsigned i;
+   UINT64 last = 0;
+   bool any    = false;
+
+   for (i = 0; i < D3D12_RECORD_RING; i++)
+   {
+      if (d3d12->record.readback[i])
+         any = true;
+      if (d3d12->record.fence[i] > last)
+         last = d3d12->record.fence[i];
+   }
+
+   if (any && last)
+   {
+      if (d3d12->record.retired_count == D3D12_RECORD_RETIRED)
+      {
+         /* Table full: wait for the oldest generation, bounded as the
+          * queue drain is, then release it to make room. */
+         D3D12Fence fence = d3d12->queue.fence;
+         UINT64     value = d3d12->record.retired[0].fence;
+         if (fence->lpVtbl->GetCompletedValue(fence) < value)
+         {
+            fence->lpVtbl->SetEventOnCompletion(fence, value,
+                  d3d12->queue.fenceEvent);
+            if (WaitForSingleObject(d3d12->queue.fenceEvent,
+                     D3D12_FENCE_WAIT_MS) != WAIT_OBJECT_0)
+               RARCH_ERR("[D3D12] The GPU did not signal its fence within "
+                     "%u ms; the device is most likely lost.\n",
+                     (unsigned)D3D12_FENCE_WAIT_MS);
+         }
+         for (i = 0; i < D3D12_RECORD_RING; i++)
+            Release(d3d12->record.retired[0].readback[i]);
+         memmove(&d3d12->record.retired[0], &d3d12->record.retired[1],
+               (D3D12_RECORD_RETIRED - 1) * sizeof(d3d12->record.retired[0]));
+         d3d12->record.retired_count--;
+      }
+      for (i = 0; i < D3D12_RECORD_RING; i++)
+         d3d12->record.retired[d3d12->record.retired_count].readback[i]
+            = d3d12->record.readback[i];
+      d3d12->record.retired[d3d12->record.retired_count].fence = last;
+      d3d12->record.retired_count++;
+   }
+   else
+   {
+      for (i = 0; i < D3D12_RECORD_RING; i++)
+         Release(d3d12->record.readback[i]);
+   }
+
+   for (i = 0; i < D3D12_RECORD_RING; i++)
+   {
+      d3d12->record.readback[i] = NULL;
+      d3d12->record.valid[i]    = false;
+      d3d12->record.fence[i]    = 0;
+   }
+   d3d12->record.index   = 0;
+   d3d12->record.dims    = 0;
+   d3d12->record.enable  = false;
+   d3d12->record.pending = false;
+}
+
+/* Final teardown, after d3d12_queue_drain() has waited (bounded) for
+ * the queue: nothing is in flight any more, so the ring and every
+ * retired generation are released outright. */
+static void d3d12_record_teardown(d3d12_video_t *d3d12)
+{
+   unsigned g, i;
+   d3d12_record_free(d3d12);
+   for (g = 0; g < d3d12->record.retired_count; g++)
+      for (i = 0; i < D3D12_RECORD_RING; i++)
+         Release(d3d12->record.retired[g].readback[i]);
+   d3d12->record.retired_count = 0;
+}
+
+/* Record a copy of this frame's back buffer into the ring, into the
+ * frame's own command list, with the back buffer already transitioned
+ * to PRESENT. Recreates the ring when the swapchain changes size or
+ * format. The fence for the slot is signalled by d3d12_record_signal()
+ * once the list is executed. */
+static void d3d12_record_capture(d3d12_video_t *d3d12, D3D12GraphicsCommandList cmd)
+{
+   DXGI_SWAP_CHAIN_DESC1 sc;
+   D3D12Resource back_buffer = d3d12->chain.renderTargets[d3d12->chain.frame_index];
+   D3D12_TEXTURE_COPY_LOCATION src_loc;
+   D3D12_TEXTURE_COPY_LOCATION dst_loc;
+   D3D12_BOX src_box;
+   unsigned dims;
+
+   if (!back_buffer)
+      return;
+   if (FAILED(d3d12->chain.handle->lpVtbl->GetDesc1(d3d12->chain.handle, &sc)))
+      return;
+   dims = VIDEO_SCALE_PACK(sc.Width, sc.Height);
+
+   if (     !d3d12->record.enable
+         || d3d12->record.dims   != dims
+         || d3d12->record.format != sc.Format)
+   {
+      D3D12_RESOURCE_DESC   tex_desc;
+      D3D12_HEAP_PROPERTIES heap_props;
+      D3D12_RESOURCE_DESC   buf_desc;
+      UINT   num_rows        = 0;
+      UINT64 row_size_bytes  = 0;
+      unsigned i;
+
+      d3d12_record_free(d3d12);
+
+      memset(&tex_desc, 0, sizeof(tex_desc));
+      tex_desc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+      tex_desc.Width              = sc.Width;
+      tex_desc.Height             = sc.Height;
+      tex_desc.DepthOrArraySize   = 1;
+      tex_desc.MipLevels          = 1;
+      tex_desc.Format             = sc.Format;
+      tex_desc.SampleDesc.Count   = 1;
+      tex_desc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+      tex_desc.Flags              = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+      d3d12->device->lpVtbl->GetCopyableFootprints(d3d12->device,
+            &tex_desc, 0, 1, 0, &d3d12->record.footprint, &num_rows,
+            &row_size_bytes, &d3d12->record.total_bytes);
+
+      heap_props.Type                 = D3D12_HEAP_TYPE_READBACK;
+      heap_props.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+      heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+      heap_props.CreationNodeMask     = 1;
+      heap_props.VisibleNodeMask      = 1;
+      memset(&buf_desc, 0, sizeof(buf_desc));
+      buf_desc.Dimension              = D3D12_RESOURCE_DIMENSION_BUFFER;
+      buf_desc.Alignment              = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+      buf_desc.Width                  = d3d12->record.total_bytes;
+      buf_desc.Height                 = 1;
+      buf_desc.DepthOrArraySize       = 1;
+      buf_desc.MipLevels              = 1;
+      buf_desc.Format                 = DXGI_FORMAT_UNKNOWN;
+      buf_desc.SampleDesc.Count       = 1;
+      buf_desc.Layout                 = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+      buf_desc.Flags                  = D3D12_RESOURCE_FLAG_NONE;
+      for (i = 0; i < D3D12_RECORD_RING; i++)
+      {
+         if (FAILED(d3d12->device->lpVtbl->CreateCommittedResource(d3d12->device,
+                     &heap_props, D3D12_HEAP_FLAG_NONE,
+                     &buf_desc, D3D12_RESOURCE_STATE_COPY_DEST, NULL,
+                     uuidof(ID3D12Resource), (void**)&d3d12->record.readback[i])))
+         {
+            RARCH_ERR("[D3D12] Recording readback buffer failed.\n");
+            d3d12_record_free(d3d12);
+            return;
+         }
+      }
+      d3d12->record.dims   = dims;
+      d3d12->record.format = sc.Format;
+      d3d12->record.enable = true;
+   }
+
+   D3D12_RESOURCE_TRANSITION(cmd, back_buffer,
+         D3D12_RESOURCE_STATE_PRESENT,
+         D3D12_RESOURCE_STATE_COPY_SOURCE);
+   src_loc.pResource        = back_buffer;
+   src_loc.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+   src_loc.SubresourceIndex = 0;
+   dst_loc.pResource        = d3d12->record.readback[d3d12->record.index];
+   dst_loc.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+   dst_loc.PlacedFootprint  = d3d12->record.footprint;
+   src_box.left   = 0;
+   src_box.top    = 0;
+   src_box.front  = 0;
+   src_box.right  = (UINT)sc.Width;
+   src_box.bottom = sc.Height;
+   src_box.back   = 1;
+   cmd->lpVtbl->CopyTextureRegion(cmd, &dst_loc, 0, 0, 0, &src_loc, &src_box);
+   D3D12_RESOURCE_TRANSITION(cmd, back_buffer,
+         D3D12_RESOURCE_STATE_COPY_SOURCE,
+         D3D12_RESOURCE_STATE_PRESENT);
+   d3d12->record.pending = true;
+}
+
+/* After the list carrying the capture is executed: a signal behind it
+ * marks the slot readable once the queue reaches it. */
+static void d3d12_record_signal(d3d12_video_t *d3d12)
+{
+   unsigned slot;
+   if (!d3d12->record.pending)
+      return;
+   d3d12->record.pending = false;
+   slot = d3d12->record.index;
+   d3d12->record.fence[slot] = ++d3d12->queue.fenceValue;
+   d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
+         d3d12->queue.fence, d3d12->record.fence[slot]);
+   d3d12->record.valid[slot] = true;
+   d3d12->record.index = (slot + 1) % D3D12_RECORD_RING;
+}
+
+static void d3d12_retain_backbuffer(d3d12_video_t *d3d12,
+      D3D12GraphicsCommandList cmd)
+{
+   DXGI_SWAP_CHAIN_DESC1 sc;
+   D3D12Resource backbuffer = d3d12->chain.renderTargets[d3d12->chain.frame_index];
+
+   if (!backbuffer)
+      return;
+   if (FAILED(d3d12->chain.handle->lpVtbl->GetDesc1(d3d12->chain.handle, &sc)))
+      return;
+
+   if (     !d3d12->chain.retained
+         || d3d12->chain.retained_dims != VIDEO_SCALE_PACK(sc.Width,
+               sc.Height))
+   {
+      D3D12_HEAP_PROPERTIES heap_props;
+      D3D12_RESOURCE_DESC   desc;
+
+      Release(d3d12->chain.retained);
+      d3d12->chain.retained = NULL;
+
+      heap_props.Type                 = D3D12_HEAP_TYPE_DEFAULT;
+      heap_props.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+      heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+      heap_props.CreationNodeMask     = 1;
+      heap_props.VisibleNodeMask      = 1;
+
+      desc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+      desc.Alignment          = 0;
+      desc.Width              = sc.Width;
+      desc.Height             = sc.Height;
+      desc.DepthOrArraySize   = 1;
+      desc.MipLevels          = 1;
+      desc.Format             = sc.Format;
+      desc.SampleDesc.Count   = 1;
+      desc.SampleDesc.Quality = 0;
+      desc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+      desc.Flags              = D3D12_RESOURCE_FLAG_NONE;
+
+      /* Created in COPY_DEST: the transition below expects it there. */
+      if (FAILED(d3d12->device->lpVtbl->CreateCommittedResource(
+                  d3d12->device, &heap_props, D3D12_HEAP_FLAG_NONE, &desc,
+                  D3D12_RESOURCE_STATE_COPY_DEST, NULL,
+                  uuidof(ID3D12Resource), (void**)&d3d12->chain.retained)))
+      {
+         d3d12->chain.retained = NULL;
+         return;
+      }
+      d3d12->chain.retained_dims   = VIDEO_SCALE_PACK(sc.Width,
+            sc.Height);
+   }
+   else
+      D3D12_RESOURCE_TRANSITION(cmd, d3d12->chain.retained,
+            D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+
+   D3D12_RESOURCE_TRANSITION(cmd, backbuffer,
+         D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_COPY_SOURCE);
+   cmd->lpVtbl->CopyResource(cmd, d3d12->chain.retained, backbuffer);
+   D3D12_RESOURCE_TRANSITION(cmd, backbuffer,
+         D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PRESENT);
+   D3D12_RESOURCE_TRANSITION(cmd, d3d12->chain.retained,
+         D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COPY_SOURCE);
+}
+
+/* One swap of the retained image: the same list dx12_inject_black_frame()
+ * records, with a copy where the clear is. */
+static bool d3d12_present_retained_once(d3d12_video_t *d3d12)
+{
+   D3D12GraphicsCommandList cmd = d3d12->queue.cmd;
+   D3D12Resource backbuffer;
+
+   {
+      d3d12_queue_drain(d3d12);
+   }
+
+   if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
+      WaitForSingleObjectEx(d3d12->chain.frameLatencyWaitableObject, 1000, true);
+
+   d3d12->queue.allocator->lpVtbl->Reset(d3d12->queue.allocator);
+   cmd->lpVtbl->Reset(cmd, d3d12->queue.allocator,
+         d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+
+   d3d12->chain.frame_index = DXGIGetCurrentBackBufferIndex(d3d12->chain.handle);
+   backbuffer = d3d12->chain.renderTargets[d3d12->chain.frame_index];
+   if (!backbuffer)
+   {
+      cmd->lpVtbl->Close(cmd);
+      return false;
+   }
+
+   D3D12_RESOURCE_TRANSITION(cmd, backbuffer,
+         D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_COPY_DEST);
+   cmd->lpVtbl->CopyResource(cmd, backbuffer, d3d12->chain.retained);
+   D3D12_RESOURCE_TRANSITION(cmd, backbuffer,
+         D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PRESENT);
+
+   cmd->lpVtbl->Close(cmd);
+   d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
+         (ID3D12CommandList* const*)&d3d12->queue.cmd);
+   DXGIPresent(d3d12->chain.handle, d3d12->chain.swap_interval, 0);
+   return true;
+}
+
+/* Replays the group the retaining frame made: its light presents, then
+ * its dark ones, so BFI keeps its strobe pattern through a repeat. */
+static unsigned d3d12_present_last(void *data)
+{
+   unsigned i;
+   unsigned done        = 0;
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   DXGI_SWAP_CHAIN_DESC1 sc;
+
+   if (!d3d12 || !d3d12->chain.retained || !d3d12->chain.handle)
+      return 0;
+   if (FAILED(d3d12->chain.handle->lpVtbl->GetDesc1(d3d12->chain.handle, &sc)))
+      return 0;
+   if (d3d12->chain.retained_dims != VIDEO_SCALE_PACK(sc.Width, sc.Height))
+      return 0;
+
+   for (i = 0; i < d3d12->chain.retained_light; i++)
+   {
+      if (!d3d12_present_retained_once(d3d12))
+         return done;
+      done++;
+   }
+   for (i = 0; i < d3d12->chain.retained_dark; i++)
+   {
+      if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
+         WaitForSingleObjectEx(d3d12->chain.frameLatencyWaitableObject, 1000, true);
+      dx12_inject_black_frame(d3d12);
+      done++;
+   }
+   return done;
+}
+
+/* The display timestamp of the most recent present, from DXGI's frame
+ * statistics, on the QPC clock cpu_features_get_time_usec() keeps on
+ * Windows. 0 when the swapchain cannot say. */
+/* The vblank the most recent present went out on, for display pacing.
+ * The swapchain's statistics say so only while they describe that
+ * present: a present made with sync interval 0, tearing allowed, is on
+ * no vblank, and leaves them at the last one that was - a time the
+ * presenter would step forward by a rounded period, drifting off the
+ * display's grid the longer it stays. Then, and whenever the statistics
+ * cannot be had, the compositor's own last vblank, as the Vulkan
+ * driver reads it on Windows. */
+static retro_time_t d3d12_get_last_present_time(void *data)
+{
+   DXGI_FRAME_STATISTICS stats;
+   UINT last_present    = 0;
+   static LARGE_INTEGER freq;
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+
+   if (!d3d12 || !d3d12->chain.handle)
+      return 0;
+   if (     SUCCEEDED(d3d12->chain.handle->lpVtbl->GetFrameStatistics(
+               d3d12->chain.handle, &stats))
+         && SUCCEEDED(d3d12->chain.handle->lpVtbl->GetLastPresentCount(
+               d3d12->chain.handle, &last_present))
+         && stats.PresentCount == last_present
+         && stats.SyncQPCTime.QuadPart
+         && (freq.QuadPart || QueryPerformanceFrequency(&freq)))
+      return (stats.SyncQPCTime.QuadPart / freq.QuadPart * 1000000)
+           + (stats.SyncQPCTime.QuadPart % freq.QuadPart * 1000000 / freq.QuadPart);
+#if !defined(__WINRT__) && !defined(_XBOX)
+   return win32_dwm_last_vblank_time();
+#else
+   return 0;
+#endif
+}
+
 static void dx12_inject_black_frame(d3d12_video_t* d3d12)
 {
    D3D12GraphicsCommandList cmd   = d3d12->queue.cmd;
 
    {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
    d3d12->queue.allocator->lpVtbl->Reset(d3d12->queue.allocator);
@@ -4903,6 +6122,13 @@ static void dx12_inject_black_frame(d3d12_video_t* d3d12)
    cmd->lpVtbl->Close(cmd);
    d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
          (ID3D12CommandList* const*)&d3d12->queue.cmd);
+   /* A signal behind the frame, not waited on here: what the frame
+    * copied from its upload buffers is known to be done when the fence
+    * reaches it, which is what an in-place texture update between
+    * frames asks (d3d12_gfx_update_texture). */
+   d3d12->queue.frameSignal = ++d3d12->queue.fenceValue;
+   d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
+         d3d12->queue.fence, d3d12->queue.frameSignal);
    DXGIPresent(d3d12->chain.handle, d3d12->chain.swap_interval, 0);
 
 }
@@ -4918,16 +6144,59 @@ static INLINE void d3d12_wait_for_vblank(d3d12_video_t* d3d12)
    }
 }
 
+/* Where a pushed frame lies in the lent framebuffer.
+ *
+ * True, with the box to copy, when @frame at @pitch with the size
+ * @width x @height is inside d3d12->sw_fb's mapping, on its row pitch
+ * and whole: the whole loan pushed back, or a window into it. The
+ * same test the Vulkan driver and the threaded wrapper make. */
+static bool d3d12_sw_fb_window(d3d12_video_t *d3d12,
+      const void *frame, unsigned width, unsigned height,
+      unsigned pitch, D3D12_BOX *box)
+{
+   uintptr_t base, p;
+   size_t off, row, bytes;
+   unsigned bpp, x, y;
+   unsigned row_pitch;
+
+   if (!d3d12->sw_fb.buffer || !d3d12->sw_fb.mapped)
+      return false;
+   base      = (uintptr_t)d3d12->sw_fb.mapped + d3d12->sw_fb.layout.Offset;
+   p         = (uintptr_t)frame;
+   bytes     = (size_t)(d3d12->sw_fb.total_bytes - d3d12->sw_fb.layout.Offset);
+   row_pitch = d3d12->sw_fb.layout.Footprint.RowPitch;
+   if (p < base || p - base >= bytes || pitch != row_pitch)
+      return false;
+   bpp       = (d3d12->sw_fb.format == DXGI_FORMAT_B8G8R8X8_UNORM) ? 4 : 2;
+   off       = (size_t)(p - base);
+   row       = off % row_pitch;
+   if (row % bpp)
+      return false;
+   y         = (unsigned)(off / row_pitch);
+   x         = (unsigned)(row / bpp);
+   if (     x + width  > d3d12->sw_fb.layout.Footprint.Width
+         || y + height > d3d12->sw_fb.layout.Footprint.Height)
+      return false;
+   box->left   = x;
+   box->top    = y;
+   box->front  = 0;
+   box->right  = x + width;
+   box->bottom = y + height;
+   box->back   = 1;
+   return true;
+}
+
 static bool d3d12_gfx_frame(
       void*               data,
       const void*         frame,
-      unsigned            width,
-      unsigned            height,
+      unsigned dims,
       uint64_t            frame_count,
       unsigned            pitch,
       const char*         msg,
       video_frame_info_t* video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    unsigned i, k, m;
    d3d12_texture_t* texture       = NULL;
    d3d12_video_t*   d3d12         = (d3d12_video_t*)data;
@@ -4935,14 +6204,15 @@ static bool d3d12_gfx_frame(
    unsigned present_flags         = (vsync) ? 0 : DXGI_PRESENT_ALLOW_TEARING;
    const char *stat_text          = video_info->stat_text;
    bool statistics_show           = video_info->statistics_show;
-   unsigned video_width           = video_info->width;
-   unsigned video_height          = video_info->height;
+   unsigned video_width           = VIDEO_SCALE_W(video_info->dims);
+   unsigned video_height          = VIDEO_SCALE_H(video_info->dims);
    struct font_params *osd_params = (struct font_params*)
       &video_info->osd_stat_params;
    bool menu_is_alive             = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
    bool overlay_behind_menu       = video_info->overlay_behind_menu;
    D3D12GraphicsCommandList cmd;
    bool message_visible;
+   bool draw_direct               = false;
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_visible;
 #endif
@@ -4952,9 +6222,6 @@ static bool d3d12_gfx_frame(
    bool nonblock_state            = video_info->input_driver_nonblock_state;
    bool runloop_is_slowmotion     = video_info->runloop_is_slowmotion;
    bool runloop_is_paused         = video_info->runloop_is_paused;
-   /* Cache settings pointer once per frame to avoid repeated
-    * config_get_ptr() calls in the shader pass loop. */
-   settings_t *frame_settings     = config_get_ptr();
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active            = video_info->widgets_active;
 #endif
@@ -5027,13 +6294,7 @@ static bool d3d12_gfx_frame(
             true);
 
    {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
 #ifdef HAVE_DXGI_HDR
@@ -5050,9 +6311,8 @@ static bool d3d12_gfx_frame(
           * whenever it disagrees with the current depth, so it has
           * to honour the setting the creation path already honours,
           * or a 10-bit SDR chain is torn straight back down. */
-         settings_t *settings = config_get_ptr();
          desired_bit_depth    =
-            (settings->uints.video_swapchain_bit_depth == 2)
+            (d3d12->swapchain_bit_depth_latched == 2)
             ? DXGI_SWAPCHAIN_BIT_DEPTH_10 : DXGI_SWAPCHAIN_BIT_DEPTH_8;
       }
 
@@ -5127,8 +6387,8 @@ static bool d3d12_gfx_frame(
 
             d3d12->chain.scissorRect.left       = 0;
             d3d12->chain.scissorRect.top        = 0;
-            d3d12->chain.scissorRect.right      = d3d12->vp.full_width;
-            d3d12->chain.scissorRect.bottom     = d3d12->vp.full_height;
+            d3d12->chain.scissorRect.right      = VIDEO_SCALE_W(d3d12->vp.full_dims);
+            d3d12->chain.scissorRect.bottom     = VIDEO_SCALE_H(d3d12->vp.full_dims);
 
             d3d12->ubo_values.OutputSize.width  = d3d12->chain.viewport.Width;
             d3d12->ubo_values.OutputSize.height = d3d12->chain.viewport.Height;
@@ -5136,7 +6396,7 @@ static bool d3d12_gfx_frame(
             d3d12->flags                       &= ~D3D12_ST_FLAG_RESIZE_CHAIN;
             d3d12->flags                       |=  D3D12_ST_FLAG_RESIZE_VIEWPORT;
 
-            video_driver_set_output_size(video_width, video_height);
+            video_driver_set_output_dims(VIDEO_SCALE_PACK(video_width, video_height));
 
 #ifdef HAVE_DXGI_HDR
 #ifdef __WINRT__
@@ -5310,10 +6570,9 @@ static bool d3d12_gfx_frame(
             /* History rotation moves texture[0] to a history slot,
              * but the SW framebuffer the core wrote into lives in
              * the separate d3d12->sw_fb buffer, not in any of the
-             * rotated d3d12_texture_t slots.  Rotation therefore
-             * leaves SW_FRAMEBUFFER_READY validly set, and the GPU
-             * upload below sources from sw_fb.buffer regardless of
-             * which physical texture is in the front slot. */
+             * rotated d3d12_texture_t slots, so the GPU upload below
+             * sources from sw_fb.buffer regardless of which physical
+             * texture is in the front slot. */
          }
       }
 
@@ -5324,6 +6583,7 @@ static bool d3d12_gfx_frame(
          d3d12->frame.texture[0].desc.Width  = width;
          d3d12->frame.texture[0].desc.Height = height;
          d3d12->frame.texture[0].srv_heap    = &d3d12->desc.srv_heap;
+         GFX_INSTR_INC(GFX_INSTR_FRAME_TEX_CREATE);
          d3d12_release_texture(&d3d12->frame.texture[0]);
          d3d12_init_texture(d3d12->device, &d3d12->frame.texture[0]);
 
@@ -5356,7 +6616,29 @@ static bool d3d12_gfx_frame(
          }
       }
 
-      if (frame == RETRO_HW_FRAME_BUFFER_VALID)
+      /* A frame that arrives any other way is drawn from
+       * frame.texture[0] as always. */
+      d3d12->hw_direct.current         = NULL;
+      d3d12->hw_direct.current_gpu.ptr = 0;
+      if (     frame == RETRO_HW_FRAME_BUFFER_VALID
+            && d3d12->hw_direct.eligible
+            && d3d12->hw_render_texture
+            && !(d3d12->shader_preset && video_info->shader_active)
+            && d3d12_hw_direct_lookup(d3d12, d3d12->hw_render_texture,
+               d3d12->hw_render_texture_format,
+               &d3d12->hw_direct.current_gpu))
+         d3d12->hw_direct.current      = d3d12->hw_render_texture;
+      d3d12->hw_direct.eligible        = false;
+
+      if (frame == RETRO_HW_FRAME_BUFFER_VALID && d3d12->hw_direct.current)
+      {
+         /* Version 2, nothing between the core's texture and the screen
+          * but the draw further down: no copy. The draw is what reads
+          * the texture, so it is what the core waits for. */
+         d3d12->hw_v2.frame_took_texture = true;
+         d3d12->hw_render_texture        = NULL;
+      }
+      else if (frame == RETRO_HW_FRAME_BUFFER_VALID)
       {
          D3D12_BOX src_box;
          D3D12_TEXTURE_COPY_LOCATION src, dst;
@@ -5384,6 +6666,7 @@ static bool d3d12_gfx_frame(
 
          cmd->lpVtbl->CopyTextureRegion(
                cmd, &dst, 0, 0, 0, &src, &src_box);
+         d3d12->hw_v2.frame_took_texture = true;
 
          D3D12_RESOURCE_TRANSITION(
                cmd,
@@ -5395,28 +6678,25 @@ static bool d3d12_gfx_frame(
       }
       else
       {
-         if (d3d12->flags & D3D12_ST_FLAG_SW_FRAMEBUFFER_READY)
+         D3D12_BOX window;
+         /* A frame the core rendered into the lent framebuffer
+          * (d3d12->sw_fb) is read out of it by the GPU. Decided by
+          * where the pushed pointer lies, not by whether the loan was
+          * asked for: a core may ask and then push its own buffer, or
+          * a dupe, and a core that crops overscan by offset pushes a
+          * pointer partway into the loan with the window's size
+          * (beetle-psx does) - the copy takes that window. */
+         if (d3d12_sw_fb_window(d3d12, frame, width, height, pitch,
+                  &window))
          {
-            /* Core wrote directly into the cached SW FB buffer
-             * (d3d12->sw_fb).  GPU-copy from there into the front
-             * frame texture by temporarily pointing texture[0]'s
-             * upload_buffer / layout at sw_fb's, calling the
-             * standard upload helper, then restoring -- this reuses
-             * the existing CopyTextureRegion + mipmap-generate
-             * plumbing without a signature change. */
-            D3D12Resource                       saved_buf
-               = d3d12->frame.texture[0].upload_buffer;
-            D3D12_PLACED_SUBRESOURCE_FOOTPRINT  saved_layout
-               = d3d12->frame.texture[0].layout;
-            d3d12->frame.texture[0].upload_buffer = d3d12->sw_fb.buffer;
-            d3d12->frame.texture[0].layout        = d3d12->sw_fb.layout;
-            d3d12_upload_texture(cmd, &d3d12->frame.texture[0], d3d12);
-            d3d12->frame.texture[0].upload_buffer = saved_buf;
-            d3d12->frame.texture[0].layout        = saved_layout;
-            d3d12->flags &= ~D3D12_ST_FLAG_SW_FRAMEBUFFER_READY;
+            GFX_INSTR_INC(GFX_INSTR_FRAME_LENT_WINDOW);
+            d3d12_upload_texture_from(cmd, &d3d12->frame.texture[0],
+                  d3d12, d3d12->sw_fb.buffer, &d3d12->sw_fb.layout,
+                  &window);
          }
          else
          {
+            GFX_INSTR_INC(GFX_INSTR_FRAME_COPY_HOST);
             if (d3d12->frame.texture[0].upload_buffer)
                d3d12_update_texture(width, height, pitch, d3d12->format,
                      frame, &d3d12->frame.texture[0]);
@@ -5449,7 +6729,7 @@ static bool d3d12_gfx_frame(
       {
          uint32_t pass_frame_time_delta = (uint32_t)video_driver_get_frame_time_delta_usec();
          float    pass_original_fps     = video_driver_get_original_fps();
-         uint32_t pass_rotation         = retroarch_get_rotation();
+         uint32_t pass_rotation         = video_driver_get_rotation_snapshot();
          float    pass_core_aspect      = video_driver_get_core_aspect();
          float    pass_core_aspect_rot  = pass_core_aspect;
 #ifdef HAVE_REWIND
@@ -5459,10 +6739,13 @@ static bool d3d12_gfx_frame(
 #endif
 #ifdef HAVE_DXGI_HDR
          unsigned pass_hdr_mode           = video_info->hdr_mode;
-         float    pass_paper_white_nits   = frame_settings->floats.video_hdr_paper_white_nits;
-         float    pass_hdr_scanlines      = frame_settings->bools.video_hdr_scanlines ? 1.0f : 0.0f;
-         unsigned pass_subpixel_layout    = frame_settings->uints.video_hdr_subpixel_layout;
-         unsigned pass_expand_gamut       = frame_settings->uints.video_hdr_expand_gamut;
+         /* From the driver's latches - the HDR pokes store into
+          * hdr.ubo_values and init seeds them - never live settings
+          * on the video thread. */
+         float    pass_paper_white_nits   = d3d12->hdr.ubo_values.paper_white_nits;
+         float    pass_hdr_scanlines      = d3d12->hdr.ubo_values.scanlines;
+         unsigned pass_subpixel_layout    = d3d12->hdr.ubo_values.subpixel_layout;
+         unsigned pass_expand_gamut       = d3d12->hdr.ubo_values.expand_gamut;
 #endif
 
          /* OriginalAspectRotated: return 1 / aspect for 90 and 270 rotated content */
@@ -5502,6 +6785,7 @@ static bool d3d12_gfx_frame(
                   d3d12->pass[i].total_subframes = video_info->shader_subframes;
 
                d3d12->pass[i].current_subframe = 1;
+           d3d12->pass[i].swap_count       = (uint32_t)video_info->swap_count;
             }
 
 #ifdef HAVE_DXGI_HDR   
@@ -5754,7 +7038,9 @@ static bool d3d12_gfx_frame(
             d3d12->hdr.ubo_values.output_size.width   = d3d12->frame.output_size.x;
             d3d12->hdr.ubo_values.output_size.height  = d3d12->frame.output_size.y;
 
-            d3d12->hdr.ubo_values.scanlines           = frame_settings->bools.video_hdr_scanlines ? 1.0f : 0.0f;
+            /* Already in ubo_values via the poke or the menu
+             * suppression around this frame; the settings re-read
+             * was redundant and a live read. */
 
             if (video_info->hdr_mode == 2) /* scRGB */
             {
@@ -5793,9 +7079,24 @@ static bool d3d12_gfx_frame(
                d3d12->frame.ubo_view.BufferLocation);
       }
 
+      /* The core's own texture when the frame was handed over that way
+       * and no shader pass has put another in its place; SDR and HDR
+       * draw the frame through this one binding alike. */
+      draw_direct = d3d12->hw_direct.current
+         && texture == d3d12->frame.texture;
+      /* A dupe (video_refresh(NULL)) draws the core's texture again
+       * without going through the handoff above, which is where the
+       * flag is otherwise set. wait_sync_index promises the core that
+       * the frontend is done with every use of the texture, so the
+       * done fence must be signalled behind this list too, or the core
+       * writes the texture while this draw still reads it. */
+      if (draw_direct)
+         d3d12->hw_v2.frame_took_texture = true;
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd,
             ROOT_ID_TEXTURE_T,
-            d3d12->frame.texture[0].gpu_descriptor[0]);
+            draw_direct
+            ? d3d12->hw_direct.current_gpu
+            : d3d12->frame.texture[0].gpu_descriptor[0]);
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd,
             ROOT_ID_SAMPLER_T,
             d3d12->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
@@ -5870,13 +7171,43 @@ static bool d3d12_gfx_frame(
       cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->frame.scissorRect);
    }
 
+   /* The core leaves its texture in required_state, which is
+    * COPY_SOURCE, and expects to find it there. It is made readable for
+    * this one draw and put back, on every frame that draws from it,
+    * repeats included. */
+   if (draw_direct)
+      D3D12_RESOURCE_TRANSITION(
+            cmd,
+            d3d12->hw_direct.current,
+            D3D12_RESOURCE_STATE_COPY_SOURCE,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
    cmd->lpVtbl->DrawInstanced(cmd, 4, 1, 0, 0);
+
+   if (draw_direct)
+      D3D12_RESOURCE_TRANSITION(
+            cmd,
+            d3d12->hw_direct.current,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+            D3D12_RESOURCE_STATE_COPY_SOURCE);
 
 #ifdef HAVE_DXGI_HDR
    /* Copy over back buffer to swap chain render targets */
    if ((d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) && use_back_buffer)
    {
-      cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_HDR]);
+      /* Opaque. This is the core's frame going onto a swapchain image
+       * that was cleared a few lines down; there is nothing under it to
+       * blend with, and the alpha it carries is whatever the core left
+       * in its texture. STOCK_HDR blends with source alpha, and the HDR
+       * shader passes the sampled alpha through, so a hardware core
+       * whose render target holds the guest's alpha was composited
+       * at that alpha over the clear colour: a black picture with HDR
+       * on, with the widgets and overlay drawn over it as usual. A
+       * software frame is XRGB and reads as opaque, which is why only
+       * hardware cores showed it, and only once something (a menu, an
+       * overlay) had put the frame through the back buffer. The SDR
+       * path has always drawn the frame with blending off. */
+      cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_NOBLEND_HDR]);
 
       D3D12_RESOURCE_TRANSITION(
             cmd,
@@ -6224,15 +7555,18 @@ static bool d3d12_gfx_frame(
             d3d12->hdr.ubo_values.hdr10            = 0.0f;
             d3d12->hdr.ubo_values.hdr_mode         = 2;
          }
-         else /* HDR10: the back buffer is already PQ-encoded (the stock HDR
-               * pass wrote it), so pass it straight through. Re-encoding it
-               * here (inverse_tonemap/hdr10) is a second PQ encode and drives
-               * the whole menu background to black. This mirrors the
-               * non-menu game-frame composite above. The menu glyphs are
-               * drawn separately as SDR sprites and are unaffected. */
+         else /* HDR10: the back buffer was cleared to transparent black
+               * before the UI drew into it, so by this pass it holds only
+               * the SDR UI -- the game reached the swapchain through the
+               * back-buffer pass above and this pass alpha-blends the UI
+               * over it.  Encode the UI at menu_nits, exactly as the d3d11
+               * driver does.  Passing it through instead lands SDR code
+               * values raw in the PQ swapchain, where code 1.0 means
+               * 10000 nits: menu brightness pinned at maximum and the
+               * (HDR) Menu Brightness setting inert. */
          {
-            d3d12->hdr.ubo_values.inverse_tonemap  = 0.0f;
-            d3d12->hdr.ubo_values.hdr10            = 0.0f;
+            d3d12->hdr.ubo_values.inverse_tonemap  = 1.0f;
+            d3d12->hdr.ubo_values.hdr10            = 1.0f;
             d3d12->hdr.ubo_values.hdr_mode         = 0;
          }
 
@@ -6281,9 +7615,42 @@ static bool d3d12_gfx_frame(
          D3D12_RESOURCE_STATE_RENDER_TARGET,
          D3D12_RESOURCE_STATE_PRESENT);
 
+   /* Recorded into this frame's list, so it executes with it. Not
+    * from the BFI light dupes, which recurse in here with the dupe
+    * lock held and would only copy the same image again. */
+   if (     video_info->retain_output
+         && !(d3d12->flags & D3D12_ST_FLAG_FRAME_DUPE_LOCK))
+   {
+      d3d12_retain_backbuffer(d3d12, cmd);
+      d3d12->chain.retained_light = 1;
+      d3d12->chain.retained_dark  = 0;
+   }
+
+   /* The recorder's copy of this frame, in this frame's list; the
+    * fence behind the list tells read_viewport when it can be read.
+    * Torn down when recording stops. */
+   d3d12_record_reclaim(d3d12);
+   if (video_info->gpu_recording
+         && !(d3d12->flags & D3D12_ST_FLAG_FRAME_DUPE_LOCK))
+      d3d12_record_capture(d3d12, cmd);
+   else if (!video_info->gpu_recording && d3d12->record.enable)
+      d3d12_record_free(d3d12);
+
    cmd->lpVtbl->Close(cmd);
    d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
          (ID3D12CommandList* const*)&d3d12->queue.cmd);
+   d3d12_record_signal(d3d12);
+
+   /* Version 2: the core's texture is the core's again once this list,
+    * which copied from it, has executed. Signalled on the queue, behind
+    * the list; wait_sync_index is what waits. */
+   if (d3d12->hw_v2.frame_took_texture)
+   {
+      d3d12->hw_v2.frame_took_texture = false;
+      if (d3d12->hw_v2.done)
+         d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
+               d3d12->hw_v2.done, ++d3d12->hw_v2.done_value);
+   }
 
    if (vsync && d3d12->wait_for_vblank < 0)
    {
@@ -6317,7 +7684,7 @@ static bool d3d12_gfx_frame(
          d3d12->flags |= D3D12_ST_FLAG_FRAME_DUPE_LOCK;
          while (bfi_light_frames > 0)
          {
-            if (!(d3d12_gfx_frame(d3d12, NULL, 0, 0, frame_count, 0, msg, video_info)))
+            if (!(d3d12_gfx_frame(d3d12, NULL, 0, frame_count, 0, msg, video_info)))
             {
                d3d12->flags &= ~D3D12_ST_FLAG_FRAME_DUPE_LOCK;
                return false;
@@ -6333,6 +7700,15 @@ static bool d3d12_gfx_frame(
          {
             dx12_inject_black_frame(d3d12);
          }
+      }
+
+      /* The group this frame made, for present_last() to replay. */
+      if (     video_info->retain_output
+            && !(d3d12->flags & D3D12_ST_FLAG_FRAME_DUPE_LOCK))
+      {
+         d3d12->chain.retained_light = 1 + (video_info->black_frame_insertion
+               - video_info->bfi_dark_frames);
+         d3d12->chain.retained_dark  = video_info->bfi_dark_frames;
       }
    }
 
@@ -6360,8 +7736,9 @@ static bool d3d12_gfx_frame(
             {
                d3d12->pass[m].total_subframes = video_info->shader_subframes;
                d3d12->pass[m].current_subframe = k+1;
+               d3d12->pass[m].swap_count       = (uint32_t)(video_info->swap_count + k);
             }
-         if (!d3d12_gfx_frame(d3d12, NULL, 0, 0, frame_count, 0, msg,
+         if (!d3d12_gfx_frame(d3d12, NULL, 0, frame_count, 0, msg,
                   video_info))
          {
             d3d12->flags &= ~D3D12_ST_FLAG_FRAME_DUPE_LOCK;
@@ -6398,11 +7775,7 @@ static bool d3d12_gfx_alive(void* data)
    bool resize_chain    = false;
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
-   win32_check_window(NULL,
-         &quit,
-         &resize_chain,
-         &d3d12->vp.full_width,
-         &d3d12->vp.full_height);
+   win32_check_window(NULL, &quit, &resize_chain, &d3d12->vp.full_dims);
 
    if (resize_chain)
       d3d12->flags |=  D3D12_ST_FLAG_RESIZE_CHAIN;
@@ -6410,9 +7783,9 @@ static bool d3d12_gfx_alive(void* data)
       d3d12->flags &= ~D3D12_ST_FLAG_RESIZE_CHAIN;
 
    if (     (d3d12->flags & D3D12_ST_FLAG_RESIZE_CHAIN)
-         && (d3d12->vp.full_width  != 0)
-         && (d3d12->vp.full_height != 0))
-      video_driver_set_output_size(d3d12->vp.full_width, d3d12->vp.full_height);
+         && (VIDEO_SCALE_W(d3d12->vp.full_dims)  != 0)
+         && (VIDEO_SCALE_H(d3d12->vp.full_dims) != 0))
+      video_driver_set_output_dims(d3d12->vp.full_dims);
 
    return !quit;
 }
@@ -6429,344 +7802,6 @@ static struct video_shader* d3d12_gfx_get_current_shader(void* data)
 
    return d3d12->shader_preset;
 }
-
-#ifdef HAVE_DXGI_HDR
-/* GPU path for HDR screenshot readback in D3D12.
- *
- * Same idea as the D3D11 equivalent: sample the captured HDR backbuffer
- * through a PSMainToSDR tonemap pass into a B8G8R8A8_UNORM render
- * target, copy that to a CPU-readable buffer, and unswizzle into BGR24.
- * Runs on the GPU so the per-pixel decode cost does not happen on the
- * CPU.  Returns false on any failure so the caller can fall back to the
- * CPU decoder in dxgi_hdr_readback_to_bgr24(). */
-static bool d3d12_gpu_hdr_readback_to_bgr24(
-      d3d12_video_t* d3d12,
-      DXGI_FORMAT    src_format,
-      unsigned       full_width,
-      unsigned       full_height,
-      unsigned       vp_x, unsigned vp_y,
-      unsigned       vp_w, unsigned vp_h,
-      uint8_t*       buffer)
-{
-   D3D12GraphicsCommandList cmd;
-   d3d12_texture_t hdr_src  = { 0 };
-   d3d12_texture_t sdr_rt   = { 0 };
-   D3D12Resource   readback = NULL;
-   D3D12Resource   back_buffer;
-   D3D12_HEAP_PROPERTIES heap_props;
-   D3D12_RESOURCE_DESC   buf_desc;
-   D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
-   D3D12_TEXTURE_COPY_LOCATION src_loc, dst_loc;
-   D3D12_BOX            src_box;
-   D3D12_VIEWPORT       vp;
-   D3D12_RECT           sc;
-   D3D12_RANGE          read_range;
-   UINT64               total_bytes    = 0;
-   UINT                 num_rows       = 0;
-   UINT64               row_size_bytes = 0;
-   uint8_t*             mapped         = NULL;
-   unsigned             hdr_mode;
-   unsigned             y, x;
-   bool                 ret            = false;
-
-   /* Resolve the UBO-side mode selector. */
-   if (src_format == DXGI_FORMAT_R10G10B10A2_UNORM)
-      hdr_mode = 1;
-   else if (src_format == DXGI_FORMAT_R16G16B16A16_FLOAT)
-      hdr_mode = 2;
-   else
-      return false;
-
-   /* Lazy-compile PSMainToSDR into a cached PSO on first use. */
-   if (!d3d12->hdr.pso_readback)
-   {
-      static const char shader_src[] =
-#include "d3d_shaders/hdr_sm5.hlsl.h"
-         ;
-      static const D3D12_INPUT_ELEMENT_DESC input_desc[] = {
-         { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, position),
-              D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-         { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
-              D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-         { "COLOR",    0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(d3d12_vertex_t, color),
-              D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-      };
-      D3DBlob vs_code = NULL, ps_code = NULL;
-      D3D12_GRAPHICS_PIPELINE_STATE_DESC pso_desc = { d3d12->desc.rootSignature };
-
-      if (   !d3d_compile(shader_src, sizeof(shader_src), NULL,
-                  "VSMain", "vs_5_0", &vs_code)
-          || !d3d_compile(shader_src, sizeof(shader_src), NULL,
-                  "PSMainToSDR", "ps_5_0", &ps_code))
-      {
-         RARCH_ERR("[D3D12] Failed to compile PSMainToSDR for HDR readback.\n");
-         Release(vs_code);
-         Release(ps_code);
-         return false;
-      }
-
-      pso_desc.RTVFormats[0]                = DXGI_FORMAT_B8G8R8A8_UNORM;
-      pso_desc.PrimitiveTopologyType        = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-      pso_desc.InputLayout.pInputElementDescs = input_desc;
-      pso_desc.InputLayout.NumElements      = countof(input_desc);
-      pso_desc.BlendState.RenderTarget[0]   = d3d12_blend_disable_desc;
-
-      d3d12_init_pipeline(d3d12->device, vs_code, ps_code, NULL,
-            &pso_desc, &d3d12->hdr.pso_readback);
-
-      Release(vs_code);
-      Release(ps_code);
-
-      if (!d3d12->hdr.pso_readback)
-      {
-         RARCH_ERR("[D3D12] Failed to create PSO for HDR readback.\n");
-         return false;
-      }
-   }
-
-   /* HDR-format intermediate: shader-readable copy of the swapchain
-    * backbuffer (the swapchain itself has no SRV bind flag). */
-   hdr_src.desc.Width     = full_width;
-   hdr_src.desc.Height    = full_height;
-   hdr_src.desc.Format    = src_format;
-   hdr_src.srv_heap       = &d3d12->desc.srv_heap;
-   d3d12_init_texture(d3d12->device, &hdr_src);
-   if (!hdr_src.handle)
-      goto cleanup;
-
-   /* SDR render target: takes the tonemapped output. */
-   sdr_rt.desc.Width     = full_width;
-   sdr_rt.desc.Height    = full_height;
-   sdr_rt.desc.Format    = DXGI_FORMAT_B8G8R8A8_UNORM;
-   sdr_rt.desc.Flags     = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-   sdr_rt.srv_heap       = &d3d12->desc.srv_heap;
-   /* Use the dedicated RTV slot reserved at heap init time; see the
-    * rtv_heap.desc.NumDescriptors computation upstream. */
-   sdr_rt.rt_view.ptr    = d3d12->desc.rtv_heap.cpu.ptr
-         + (size_t)(countof(d3d12->chain.renderTargets) + GFX_MAX_SHADERS * 2)
-         * d3d12->desc.rtv_heap.stride;
-   d3d12_init_texture(d3d12->device, &sdr_rt);
-   if (!sdr_rt.handle)
-      goto cleanup;
-
-   /* Describe the readback buffer layout for an SDR-RT-sized copy. */
-   {
-      D3D12_RESOURCE_DESC rt_desc;
-      memset(&rt_desc, 0, sizeof(rt_desc));
-      rt_desc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-      rt_desc.Width              = full_width;
-      rt_desc.Height             = full_height;
-      rt_desc.DepthOrArraySize   = 1;
-      rt_desc.MipLevels          = 1;
-      rt_desc.Format             = DXGI_FORMAT_B8G8R8A8_UNORM;
-      rt_desc.SampleDesc.Count   = 1;
-      rt_desc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-      rt_desc.Flags              = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-
-      d3d12->device->lpVtbl->GetCopyableFootprints(d3d12->device,
-            &rt_desc, 0, 1, 0, &footprint, &num_rows,
-            &row_size_bytes, &total_bytes);
-   }
-
-   /* Create the readback buffer. */
-   heap_props.Type                 = D3D12_HEAP_TYPE_READBACK;
-   heap_props.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-   heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-   heap_props.CreationNodeMask     = 1;
-   heap_props.VisibleNodeMask      = 1;
-   buf_desc.Dimension              = D3D12_RESOURCE_DIMENSION_BUFFER;
-   buf_desc.Alignment              = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-   buf_desc.Width                  = total_bytes;
-   buf_desc.Height                 = 1;
-   buf_desc.DepthOrArraySize       = 1;
-   buf_desc.MipLevels              = 1;
-   buf_desc.Format                 = DXGI_FORMAT_UNKNOWN;
-   buf_desc.SampleDesc.Count       = 1;
-   buf_desc.SampleDesc.Quality     = 0;
-   buf_desc.Layout                 = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-   buf_desc.Flags                  = D3D12_RESOURCE_FLAG_NONE;
-   if (FAILED(d3d12->device->lpVtbl->CreateCommittedResource(d3d12->device,
-               &heap_props, D3D12_HEAP_FLAG_NONE, &buf_desc,
-               D3D12_RESOURCE_STATE_COPY_DEST, NULL,
-               uuidof(ID3D12Resource), (void**)&readback)))
-      goto cleanup;
-
-   /* Write the readback UBO. */
-   {
-      const float    prev_it = d3d12->hdr.ubo_values.inverse_tonemap;
-      const float    prev_h  = d3d12->hdr.ubo_values.hdr10;
-      const unsigned prev_m  = d3d12->hdr.ubo_values.hdr_mode;
-      const float    prev_sc = d3d12->hdr.ubo_values.scanlines;
-      dxgi_hdr_uniform_t* mapped_ubo;
-      D3D12_RANGE zero_range;
-
-      d3d12->hdr.ubo_values.inverse_tonemap = 0.0f;
-      d3d12->hdr.ubo_values.hdr10           = 0.0f;
-      d3d12->hdr.ubo_values.hdr_mode        = hdr_mode;
-      d3d12->hdr.ubo_values.scanlines       = 0.0f;
-
-      zero_range.Begin = 0;
-      zero_range.End   = 0;
-      if (SUCCEEDED(d3d12->hdr.ubo_post->lpVtbl->Map(
-                  d3d12->hdr.ubo_post, 0, &zero_range, (void**)&mapped_ubo)))
-      {
-         *mapped_ubo = d3d12->hdr.ubo_values;
-         d3d12->hdr.ubo_post->lpVtbl->Unmap(d3d12->hdr.ubo_post, 0, NULL);
-      }
-
-      d3d12->hdr.ubo_values.inverse_tonemap = prev_it;
-      d3d12->hdr.ubo_values.hdr10           = prev_h;
-      d3d12->hdr.ubo_values.hdr_mode        = prev_m;
-      d3d12->hdr.ubo_values.scanlines       = prev_sc;
-   }
-
-   /* Reset the command allocator and record the tonemap pass + copy. */
-   d3d12->queue.allocator->lpVtbl->Reset(d3d12->queue.allocator);
-   cmd = d3d12->queue.cmd;
-   cmd->lpVtbl->Reset(cmd, d3d12->queue.allocator,
-         d3d12->hdr.pso_readback);
-
-   back_buffer = d3d12->chain.renderTargets[d3d12->chain.frame_index];
-
-   /* Copy swapchain backbuffer (PRESENT) -> hdr_src (COPY_DEST). */
-   D3D12_RESOURCE_TRANSITION(cmd, back_buffer,
-         D3D12_RESOURCE_STATE_PRESENT,
-         D3D12_RESOURCE_STATE_COPY_SOURCE);
-   D3D12_RESOURCE_TRANSITION(cmd, hdr_src.handle,
-         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-         D3D12_RESOURCE_STATE_COPY_DEST);
-   cmd->lpVtbl->CopyResource(cmd, hdr_src.handle, back_buffer);
-
-   /* Transition hdr_src back to shader-readable and back_buffer back
-    * to PRESENT so the swapchain stays legal for the next frame. */
-   D3D12_RESOURCE_TRANSITION(cmd, hdr_src.handle,
-         D3D12_RESOURCE_STATE_COPY_DEST,
-         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-   D3D12_RESOURCE_TRANSITION(cmd, back_buffer,
-         D3D12_RESOURCE_STATE_COPY_SOURCE,
-         D3D12_RESOURCE_STATE_PRESENT);
-
-   /* Bind descriptor heaps so the SRV/sampler tables resolve. */
-   {
-      D3D12DescriptorHeap heaps[] =
-      {
-         d3d12->desc.srv_heap.handle,
-         d3d12->desc.sampler_heap.handle,
-      };
-      cmd->lpVtbl->SetDescriptorHeaps(cmd, countof(heaps), heaps);
-   }
-
-   /* Bind RT, root signature, descriptor tables, UBO. */
-   cmd->lpVtbl->OMSetRenderTargets(cmd, 1, &sdr_rt.rt_view, FALSE, NULL);
-   cmd->lpVtbl->SetGraphicsRootSignature(cmd, d3d12->desc.rootSignature);
-#ifdef HAVE_DXGI_HDR
-   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_PC,
-         d3d12->hdr.ubo_sprites_view.BufferLocation);
-#endif
-   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
-         hdr_src.gpu_descriptor[0]);
-   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
-         d3d12->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
-   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_UBO,
-         d3d12->hdr.ubo_post_view.BufferLocation);
-
-   /* Fullscreen quad from the existing frame VBO (verts 0..3). */
-   cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->frame.vbo_view);
-   cmd->lpVtbl->IASetPrimitiveTopology(cmd, D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-   vp.TopLeftX = 0.0f;
-   vp.TopLeftY = 0.0f;
-   vp.Width    = (float)full_width;
-   vp.Height   = (float)full_height;
-   vp.MinDepth = 0.0f;
-   vp.MaxDepth = 1.0f;
-   sc.left     = 0;
-   sc.top      = 0;
-   sc.right    = (LONG)full_width;
-   sc.bottom   = (LONG)full_height;
-   cmd->lpVtbl->RSSetViewports(cmd, 1, &vp);
-   cmd->lpVtbl->RSSetScissorRects(cmd, 1, &sc);
-
-   cmd->lpVtbl->DrawInstanced(cmd, 4, 1, 0, 0);
-
-   /* Transition the SDR RT to COPY_SOURCE and copy it into the readback
-    * buffer using the footprint we computed. */
-   D3D12_RESOURCE_TRANSITION(cmd, sdr_rt.handle,
-         D3D12_RESOURCE_STATE_RENDER_TARGET,
-         D3D12_RESOURCE_STATE_COPY_SOURCE);
-
-   src_loc.pResource        = sdr_rt.handle;
-   src_loc.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-   src_loc.SubresourceIndex = 0;
-
-   dst_loc.pResource        = readback;
-   dst_loc.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-   dst_loc.PlacedFootprint  = footprint;
-
-   src_box.left   = 0;
-   src_box.top    = 0;
-   src_box.front  = 0;
-   src_box.right  = (UINT)full_width;
-   src_box.bottom = full_height;
-   src_box.back   = 1;
-   cmd->lpVtbl->CopyTextureRegion(cmd, &dst_loc, 0, 0, 0, &src_loc, &src_box);
-
-   cmd->lpVtbl->Close(cmd);
-   d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
-         (ID3D12CommandList* const*)&d3d12->queue.cmd);
-
-   /* Wait for the GPU before mapping the readback buffer. */
-   {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence,
-            ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence,
-               d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
-   }
-
-   read_range.Begin = 0;
-   read_range.End   = (SIZE_T)total_bytes;
-   if (FAILED(readback->lpVtbl->Map(readback, 0, &read_range, (void**)&mapped)))
-      goto cleanup;
-
-   /* Unswizzle BGRA8 (from the sRGB OETF in the shader) to BGR24
-    * bottom-up, clamped to the viewport. */
-   {
-      const uint8_t* src_row = mapped + footprint.Offset
-            + (size_t)footprint.Footprint.RowPitch * vp_y;
-      for (y = 0; y < vp_h; y++, src_row += footprint.Footprint.RowPitch)
-      {
-         uint8_t* dst = buffer + 3 * (size_t)(vp_h - y - 1) * vp_w;
-         for (x = 0; x < vp_w; x++)
-         {
-            dst[3 * x + 0] = src_row[4 * (x + vp_x) + 0];
-            dst[3 * x + 1] = src_row[4 * (x + vp_x) + 1];
-            dst[3 * x + 2] = src_row[4 * (x + vp_x) + 2];
-         }
-      }
-   }
-   {
-      D3D12_RANGE zero_write = { 0, 0 };
-      readback->lpVtbl->Unmap(readback, 0, &zero_write);
-   }
-   ret = true;
-
-cleanup:
-   if (readback)
-      readback->lpVtbl->Release(readback);
-   /* d3d12_release_texture() frees the SRV descriptor slot and the
-    * handle.  The RTV slot on sdr_rt is the fixed reserved one at the
-    * end of the rtv_heap; it is not managed by the bitmap allocator so
-    * there's nothing to free for it. */
-   d3d12_release_texture(&sdr_rt);
-   d3d12_release_texture(&hdr_src);
-   return ret;
-}
-#endif /* HAVE_DXGI_HDR */
 
 #ifdef HAVE_DXGI_HDR
 /* Native HDR screenshot read-back: copies the presented HDR backbuffer
@@ -6830,15 +7865,7 @@ static bool d3d12_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
    /* Ensure the cached_frame submission has finished before reusing the
     * command allocator. */
    {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence,
-            ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence,
-               d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
    back_buffer = d3d12->chain.renderTargets[d3d12->chain.frame_index];
@@ -6924,15 +7951,7 @@ static bool d3d12_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
          d3d12->queue.handle, 1, (ID3D12CommandList* const*)&cmd);
 
    {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence,
-            ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence,
-               d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
    read_range.Begin = 0;
@@ -6947,12 +7966,15 @@ static bool d3d12_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
 
    src_pixels = mapped + footprint.Offset;
 
-   vp_x = (d3d12->vp.x > 0) ? d3d12->vp.x : 0;
-   vp_y = (d3d12->vp.y > 0) ? d3d12->vp.y : 0;
-   vp_w = (d3d12->vp.width  > d3d12->vp.full_width)
-         ? d3d12->vp.full_width  : d3d12->vp.width;
-   vp_h = (d3d12->vp.height > d3d12->vp.full_height)
-         ? d3d12->vp.full_height : d3d12->vp.height;
+   vp_x = (VIDEO_POS_X(d3d12->vp.pos) > 0) ? VIDEO_POS_X(d3d12->vp.pos) : 0;
+   vp_y = (VIDEO_POS_Y(d3d12->vp.pos) > 0) ? VIDEO_POS_Y(d3d12->vp.pos) : 0;
+   vp_w = (VIDEO_SCALE_W(d3d12->vp.dims)  > VIDEO_SCALE_W(d3d12->vp.full_dims))
+         ? VIDEO_SCALE_W(d3d12->vp.full_dims)  : VIDEO_SCALE_W(d3d12->vp.dims);
+   vp_h = (VIDEO_SCALE_H(d3d12->vp.dims) > VIDEO_SCALE_H(d3d12->vp.full_dims))
+         ? VIDEO_SCALE_H(d3d12->vp.full_dims) : VIDEO_SCALE_H(d3d12->vp.dims);
+   dxgi_readback_clamp_window(
+         (unsigned)tex_desc.Width, (unsigned)tex_desc.Height,
+         &vp_x, &vp_y, &vp_w, &vp_h);
 
    if (!dxgi_hdr_readback_to_rgb16(fmt, src_pixels,
             footprint.Footprint.RowPitch, vp_x, vp_y, vp_w, vp_h,
@@ -6980,75 +8002,40 @@ static bool d3d12_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
 
 static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 {
-   d3d12_video_t*            d3d12      = (d3d12_video_t*)data;
-   D3D12GraphicsCommandList  cmd;
-   D3D12Resource             back_buffer = NULL;
-   D3D12Resource             readback    = NULL;
-   D3D12_RESOURCE_DESC       tex_desc;
-   D3D12_HEAP_PROPERTIES     heap_props;
-   D3D12_RESOURCE_DESC       buf_desc;
-   D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
-   D3D12_TEXTURE_COPY_LOCATION src_loc;
-   D3D12_TEXTURE_COPY_LOCATION dst_loc;
-   D3D12_BOX                 src_box;
-   D3D12_RANGE               read_range;
-   UINT64                    total_bytes    = 0;
-   UINT                      num_rows       = 0;
-   UINT64                    row_size_bytes = 0;
-   const uint8_t*            src_pixels     = NULL;
-   uint8_t*                  mapped         = NULL;
-   unsigned                  vp_x, vp_y, vp_w, vp_h, y, x;
+   d3d12_video_t*  d3d12    = (d3d12_video_t*)data;
+   D3D12Resource   readback = NULL;
+   D3D12_RANGE     read_range;
+   const uint8_t*  src_pixels = NULL;
+   uint8_t*        mapped     = NULL;
+   unsigned        slot, vp_x, vp_y, vp_w, vp_h, y, x;
    enum { READBACK_RGBA8, READBACK_BGRA8, READBACK_HDR10, READBACK_SCRGB }
-                             readback_mode;
+                   readback_mode;
+   bool            ret = true;
+   const D3D12_PLACED_SUBRESOURCE_FOOTPRINT *footprint;
+
+   (void)is_idle;
 
    if (!d3d12)
       return false;
 
-   if (!is_idle)
-      video_driver_cached_frame();
-
-   /* Ensure the cached_frame submission above has finished on the GPU
-    * before we reuse the command allocator. */
-   {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence,
-            ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence,
-               d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
-   }
-
-   /* cached_frame rendered into chain.renderTargets[chain.frame_index]
-    * and Present'd it without updating frame_index afterwards, so that
-    * slot still refers to the buffer we want to read back. */
-   back_buffer = d3d12->chain.renderTargets[d3d12->chain.frame_index];
-   if (!back_buffer)
+   /* Nothing captured yet: the frame after recording starts records
+    * the first copy, and the ring fills over the next few frames. The
+    * recorder treats false as "not this frame" and tries again. */
+   if (!d3d12->record.enable)
       return false;
 
-   /* We intentionally don't call ID3D12Resource::GetDesc here: the
-    * Windows SDK version takes an out-param while the MinGW header
-    * returns the struct by value, which breaks cross-toolchain builds.
-    * The only fields we need are Format / Width / Height, which we
-    * already know from the swapchain state. */
-   memset(&tex_desc, 0, sizeof(tex_desc));
-   tex_desc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-   tex_desc.Alignment          = 0;
-   tex_desc.Width              = (UINT64)d3d12->chain.viewport.Width;
-   tex_desc.Height             = (UINT)  d3d12->chain.viewport.Height;
-   tex_desc.DepthOrArraySize   = 1;
-   tex_desc.MipLevels          = 1;
-   tex_desc.Format             = d3d12->chain.formats[d3d12->chain.bit_depth];
-   tex_desc.SampleDesc.Count   = 1;
-   tex_desc.SampleDesc.Quality = 0;
-   tex_desc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-   tex_desc.Flags              = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+   slot     = d3d12->record.index; /* the oldest: copied RING frames ago */
+   readback = d3d12->record.readback[slot];
+   if (!d3d12->record.valid[slot] || !readback)
+      return false;
 
-   /* Classify the source format so we know how to decode it CPU-side
-    * after the readback copy completes. */
-   switch (tex_desc.Format)
+   /* Not executed yet: read on a later frame, never waited for. */
+   if (d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence)
+         < d3d12->record.fence[slot])
+      return false;
+   d3d12->record.valid[slot] = false;
+
+   switch (d3d12->record.format)
    {
       case DXGI_FORMAT_R8G8B8A8_UNORM:
       case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
@@ -7060,156 +8047,51 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
          break;
 #ifdef HAVE_DXGI_HDR
       case DXGI_FORMAT_R10G10B10A2_UNORM:
-         /* HDR10: ST.2084 PQ, BT.2020 primaries. */
          readback_mode = READBACK_HDR10;
          break;
       case DXGI_FORMAT_R16G16B16A16_FLOAT:
-         /* scRGB: linear BT.709, FP16, 1.0 == 80 nits. */
          readback_mode = READBACK_SCRGB;
          break;
 #endif
       default:
          RARCH_ERR("[D3D12] Unexpected swapchain format %u.\n",
-               (unsigned)tex_desc.Format);
+               (unsigned)d3d12->record.format);
          return false;
    }
 
-   /* Compute the viewport clamp once so both the GPU HDR path (below)
-    * and the CPU swizzle loops (at the end) can use it. */
-   vp_x = (d3d12->vp.x > 0) ? d3d12->vp.x : 0;
-   vp_y = (d3d12->vp.y > 0) ? d3d12->vp.y : 0;
-   vp_w = (d3d12->vp.width  > d3d12->vp.full_width)
-         ? d3d12->vp.full_width  : d3d12->vp.width;
-   vp_h = (d3d12->vp.height > d3d12->vp.full_height)
-         ? d3d12->vp.full_height : d3d12->vp.height;
+   vp_x = (VIDEO_POS_X(d3d12->vp.pos) > 0) ? VIDEO_POS_X(d3d12->vp.pos) : 0;
+   vp_y = (VIDEO_POS_Y(d3d12->vp.pos) > 0) ? VIDEO_POS_Y(d3d12->vp.pos) : 0;
+   vp_w = (VIDEO_SCALE_W(d3d12->vp.dims)  > VIDEO_SCALE_W(d3d12->vp.full_dims))
+         ? VIDEO_SCALE_W(d3d12->vp.full_dims)  : VIDEO_SCALE_W(d3d12->vp.dims);
+   vp_h = (VIDEO_SCALE_H(d3d12->vp.dims) > VIDEO_SCALE_H(d3d12->vp.full_dims))
+         ? VIDEO_SCALE_H(d3d12->vp.full_dims) : VIDEO_SCALE_H(d3d12->vp.dims);
+   dxgi_readback_clamp_window(
+         VIDEO_SCALE_W(d3d12->record.dims), VIDEO_SCALE_H(d3d12->record.dims),
+         &vp_x, &vp_y, &vp_w, &vp_h);
 
-#ifdef HAVE_DXGI_HDR
-   /* HDR fast path: try the GPU tonemap.  On success we're done and
-    * return before allocating the SDR readback buffer.  On failure we
-    * fall through — the CPU decoder will still work against the raw
-    * readback of the swapchain backbuffer. */
-   if (readback_mode == READBACK_HDR10 || readback_mode == READBACK_SCRGB)
-   {
-      if (d3d12_gpu_hdr_readback_to_bgr24(
-               d3d12, tex_desc.Format,
-               (unsigned)tex_desc.Width, (unsigned)tex_desc.Height,
-               vp_x, vp_y, vp_w, vp_h, buffer))
-         return true;
-      RARCH_WARN("[D3D12] GPU HDR readback failed, falling back to CPU.\n");
-   }
-#endif
-
-   /* Ask the device what layout a readback copy of this texture needs.
-    * D3D12 requires 256-byte row pitches and 512-byte base offsets in
-    * readback buffers, so we can't just pick arbitrary dimensions. */
-   d3d12->device->lpVtbl->GetCopyableFootprints(d3d12->device,
-         &tex_desc, 0, 1, 0, &footprint, &num_rows,
-         &row_size_bytes, &total_bytes);
-
-   /* Create a readback heap buffer large enough for the footprint. */
-   heap_props.Type                 = D3D12_HEAP_TYPE_READBACK;
-   heap_props.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-   heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-   heap_props.CreationNodeMask     = 1;
-   heap_props.VisibleNodeMask      = 1;
-
-   buf_desc.Dimension              = D3D12_RESOURCE_DIMENSION_BUFFER;
-   buf_desc.Alignment              = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-   buf_desc.Width                  = total_bytes;
-   buf_desc.Height                 = 1;
-   buf_desc.DepthOrArraySize       = 1;
-   buf_desc.MipLevels              = 1;
-   buf_desc.Format                 = DXGI_FORMAT_UNKNOWN;
-   buf_desc.SampleDesc.Count       = 1;
-   buf_desc.SampleDesc.Quality     = 0;
-   buf_desc.Layout                 = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-   buf_desc.Flags                  = D3D12_RESOURCE_FLAG_NONE;
-
-   if (FAILED(d3d12->device->lpVtbl->CreateCommittedResource(d3d12->device,
-               &heap_props, D3D12_HEAP_FLAG_NONE,
-               &buf_desc, D3D12_RESOURCE_STATE_COPY_DEST, NULL,
-               uuidof(ID3D12Resource), (void**)&readback)))
-   {
-      RARCH_ERR("[D3D12] Failed to create readback buffer.\n");
-      return false;
-   }
-
-   /* Record a tiny command list that transitions the backbuffer to
-    * COPY_SOURCE, copies it into the readback buffer, and transitions
-    * it back to PRESENT so Present on the next frame stays legal. */
-   d3d12->queue.allocator->lpVtbl->Reset(d3d12->queue.allocator);
-   cmd = d3d12->queue.cmd;
-   cmd->lpVtbl->Reset(cmd, d3d12->queue.allocator,
-         d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
-
-   D3D12_RESOURCE_TRANSITION(cmd, back_buffer,
-         D3D12_RESOURCE_STATE_PRESENT,
-         D3D12_RESOURCE_STATE_COPY_SOURCE);
-
-   src_loc.pResource        = back_buffer;
-   src_loc.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-   src_loc.SubresourceIndex = 0;
-
-   dst_loc.pResource        = readback;
-   dst_loc.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-   dst_loc.PlacedFootprint  = footprint;
-
-   src_box.left   = 0;
-   src_box.top    = 0;
-   src_box.front  = 0;
-   src_box.right  = (UINT)tex_desc.Width;
-   src_box.bottom = tex_desc.Height;
-   src_box.back   = 1;
-
-   cmd->lpVtbl->CopyTextureRegion(cmd, &dst_loc, 0, 0, 0, &src_loc, &src_box);
-
-   D3D12_RESOURCE_TRANSITION(cmd, back_buffer,
-         D3D12_RESOURCE_STATE_COPY_SOURCE,
-         D3D12_RESOURCE_STATE_PRESENT);
-
-   cmd->lpVtbl->Close(cmd);
-   d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
-         (ID3D12CommandList* const*)&d3d12->queue.cmd);
-
-   /* Wait for the copy to complete before mapping. */
-   {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence,
-            ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence,
-               d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
-   }
-
+   footprint        = &d3d12->record.footprint;
    read_range.Begin = 0;
-   read_range.End   = (SIZE_T)total_bytes;
+   read_range.End   = (SIZE_T)d3d12->record.total_bytes;
    if (FAILED(readback->lpVtbl->Map(readback, 0, &read_range,
                (void**)&mapped)))
    {
-      Release(readback);
       RARCH_ERR("[D3D12] Failed to map readback buffer.\n");
       return false;
    }
+   src_pixels = mapped + footprint->Offset;
 
-   src_pixels = mapped + footprint.Offset;
-
-   /* (vp_x/y/w/h were already computed above for the GPU HDR attempt.) */
    switch (readback_mode)
    {
       case READBACK_RGBA8:
       case READBACK_BGRA8:
-         src_pixels += (size_t)footprint.Footprint.RowPitch * vp_y;
+         src_pixels += (size_t)footprint->Footprint.RowPitch * vp_y;
          /* Unswizzle into the caller's BGR24 bottom-up output buffer,
           * clamped to the current viewport. */
-         for (y = 0; y < vp_h; y++, src_pixels += footprint.Footprint.RowPitch)
+         for (y = 0; y < vp_h; y++, src_pixels += footprint->Footprint.RowPitch)
          {
             uint8_t* dst = buffer + 3 * (vp_h - y - 1) * vp_w;
             if (readback_mode == READBACK_BGRA8)
             {
-               /* BGRA source -> BGR dst: drop alpha, keep channel order. */
                for (x = 0; x < vp_w; x++)
                {
                   dst[3 * x + 0] = src_pixels[4 * (x + vp_x) + 0];
@@ -7219,7 +8101,6 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
             }
             else
             {
-               /* RGBA source -> BGR dst: swap R and B. */
                for (x = 0; x < vp_w; x++)
                {
                   dst[3 * x + 0] = src_pixels[4 * (x + vp_x) + 2];
@@ -7233,15 +8114,17 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 #ifdef HAVE_DXGI_HDR
       case READBACK_HDR10:
       case READBACK_SCRGB:
-         /* HDR10 PQ or scRGB: hand off to the CPU HDR decoder.
-          * It undoes the forward HDR encoding using paper_white_nits
-          * and writes sRGB-encoded BGR24 bottom-up. */
-         dxgi_hdr_readback_to_bgr24(
-               tex_desc.Format,
-               src_pixels, (unsigned)footprint.Footprint.RowPitch,
+         /* HDR10 PQ or scRGB, decoded on the CPU from the readback
+          * copy. The GPU tonemap pass renders from the live back
+          * buffer and waits for the result; the screenshot path keeps
+          * it, this streamed path does not wait on the GPU. */
+         if (!dxgi_hdr_readback_to_bgr24(
+               d3d12->record.format,
+               src_pixels, (unsigned)footprint->Footprint.RowPitch,
                vp_x, vp_y, vp_w, vp_h,
                d3d12->hdr.ubo_values.paper_white_nits,
-               buffer);
+               buffer))
+            ret = false;
          break;
 #endif
    }
@@ -7250,9 +8133,7 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
       D3D12_RANGE empty_write = { 0, 0 };
       readback->lpVtbl->Unmap(readback, 0, &empty_write);
    }
-
-   Release(readback);
-   return true;
+   return ret;
 }
 
 static void d3d12_gfx_viewport_info(void* data, struct video_viewport* vp)
@@ -7264,8 +8145,10 @@ static void d3d12_gfx_viewport_info(void* data, struct video_viewport* vp)
 
 static void d3d12_set_menu_texture_frame(
       void* data, const void* frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    d3d12_video_t* d3d12    = (d3d12_video_t*)data;
    settings_t*    settings = config_get_ptr();
    int            pitch    = width *
@@ -7341,7 +8224,14 @@ static void d3d12_gfx_apply_state_changes(void* data)
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
    if (d3d12)
+   {
+      settings_t *settings = config_get_ptr();
+      /* Blocking command: main is parked, so this settings read
+       * cannot race, and the frame's resize path reads the latch. */
+      d3d12->swapchain_bit_depth_latched =
+            settings->uints.video_swapchain_bit_depth;
       d3d12->flags |= D3D12_ST_FLAG_RESIZE_VIEWPORT;
+   }
 }
 
 static void d3d12_gfx_set_osd_msg(
@@ -7433,13 +8323,7 @@ static void d3d12_gfx_unload_texture_internal(
 
    if (d3d12)
    {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
    d3d12_release_texture(texture);
@@ -7498,6 +8382,68 @@ static uintptr_t d3d12_gfx_load_texture(
    return d3d12_gfx_load_texture_internal(d3d12, image, filter_type);
 }
 
+/* Same-size contents into a texture d3d12_gfx_load_texture made: the
+ * upload buffer it kept is rewritten and the texture marked dirty,
+ * so the next draw that samples it records the copy - the same path
+ * the menu texture streams through. The queue is drained at the top
+ * of every frame, so the buffer is not being read when this writes
+ * it between frames. */
+static bool d3d12_gfx_update_texture_internal(d3d12_video_t *d3d12,
+      uintptr_t handle, const struct texture_image *image)
+{
+   d3d12_texture_t *texture = (d3d12_texture_t*)handle;
+   if (     !texture || !texture->upload_buffer
+         || texture->desc.Width  != image->width
+         || texture->desc.Height != image->height
+         || texture->desc.MipLevels > 1)
+      return false;
+   /* A copy from the upload buffer recorded by a frame that has not
+    * finished is still the GPU's to read: this frame is dropped and
+    * the texture keeps what it shows. A texture still marked dirty
+    * has had no copy recorded since its last write, so its buffer is
+    * free to write again. */
+   if (     !texture->dirty && texture->upload_fence && d3d12
+         && d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence)
+            < texture->upload_fence)
+      return true;
+   d3d12_update_texture(image->width, image->height, 0,
+         texture->desc.Format, image->pixels, texture);
+   return true;
+}
+
+#ifdef HAVE_THREADS
+static uintptr_t d3d12_texture_update_wrap(void *data)
+{
+   d3d12_texture_cmd_t *cmd = (d3d12_texture_cmd_t*)data;
+   cmd->handle = d3d12_gfx_update_texture_internal(cmd->d3d12,
+         cmd->handle, cmd->image) ? cmd->handle : 0;
+   return 0;
+}
+#endif
+
+static bool d3d12_gfx_update_texture(void *video_data, uintptr_t id,
+      const struct texture_image *ti, bool threaded)
+{
+   if (!id || !ti || !ti->pixels)
+      return false;
+
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      d3d12_texture_cmd_t cmd;
+      cmd.d3d12       = (d3d12_video_t*)video_data;
+      cmd.image       = (struct texture_image*)ti;
+      cmd.filter_type = TEXTURE_FILTER_LINEAR;
+      cmd.handle      = id;
+      video_thread_texture_handle(&cmd, d3d12_texture_update_wrap);
+      return cmd.handle != 0;
+   }
+#endif
+
+   return d3d12_gfx_update_texture_internal((d3d12_video_t*)video_data,
+         id, ti);
+}
+
 static void d3d12_gfx_unload_texture(void* data,
       bool threaded, uintptr_t handle)
 {
@@ -7522,6 +8468,279 @@ static void d3d12_gfx_unload_texture(void* data,
 #endif
 
    d3d12_gfx_unload_texture_internal(d3d12, handle);
+}
+
+/* --- the threaded wrapper's hardware ring ------------------------------ */
+
+typedef struct
+{
+   D3D12Fence fence;
+   HANDLE     event;
+   UINT64     value;
+} d3d12_ring_fence_t;
+
+static bool d3d12_hw_ring_fence_new(void *data, void **out)
+{
+   d3d12_video_t *d3d12   = (d3d12_video_t*)data;
+   d3d12_ring_fence_t *f;
+   if (!d3d12 || !d3d12->device || !out)
+      return false;
+   if (!(f = (d3d12_ring_fence_t*)calloc(1, sizeof(*f))))
+      return false;
+   if (FAILED(d3d12->device->lpVtbl->CreateFence(d3d12->device, 0,
+               D3D12_FENCE_FLAG_NONE, uuidof(ID3D12Fence), (void**)&f->fence)))
+   {
+      free(f);
+      return false;
+   }
+   f->event = CreateEvent(NULL, FALSE, FALSE, NULL);
+   *out     = f;
+   return true;
+}
+
+static void d3d12_hw_ring_fence_free(void *data, void *fence)
+{
+   d3d12_ring_fence_t *f = (d3d12_ring_fence_t*)fence;
+   (void)data;
+   if (!f)
+      return;
+   Release(f->fence);
+   if (f->event)
+      CloseHandle(f->event);
+   free(f);
+}
+
+/* Queue-side signal: completes after every submission before it. */
+static void d3d12_hw_ring_fence_signal(void *data, void *fence)
+{
+   d3d12_video_t *d3d12  = (d3d12_video_t*)data;
+   d3d12_ring_fence_t *f = (d3d12_ring_fence_t*)fence;
+   if (!d3d12 || !f)
+      return;
+   d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, f->fence, ++f->value);
+}
+
+static bool d3d12_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_us)
+{
+   d3d12_ring_fence_t *f = (d3d12_ring_fence_t*)fence;
+   (void)data;
+   if (!f || !f->value)
+      return true;
+   if (f->fence->lpVtbl->GetCompletedValue(f->fence) < f->value)
+   {
+      f->fence->lpVtbl->SetEventOnCompletion(f->fence, f->value, f->event);
+      if (WaitForSingleObject(f->event, timeout_us == HW_RING_WAIT_FOREVER
+               ? INFINITE : (timeout_us + 999) / 1000) != WAIT_OBJECT_0)
+         return false;
+   }
+   return true;
+}
+
+static bool d3d12_hw_ring_prepare(d3d12_video_t *d3d12)
+{
+   if (d3d12->hw_ring.cmd)
+      return true;
+   if (FAILED(d3d12->device->lpVtbl->CreateCommandAllocator(d3d12->device,
+               D3D12_COMMAND_LIST_TYPE_DIRECT, uuidof(ID3D12CommandAllocator),
+               (void**)&d3d12->hw_ring.allocator)))
+      return false;
+   if (FAILED(d3d12->device->lpVtbl->CreateCommandList(d3d12->device, 0,
+               D3D12_COMMAND_LIST_TYPE_DIRECT, d3d12->hw_ring.allocator, NULL,
+               uuidof(ID3D12GraphicsCommandList), (void**)&d3d12->hw_ring.cmd)))
+      return false;
+   d3d12->hw_ring.cmd->lpVtbl->Close(d3d12->hw_ring.cmd);
+   if (FAILED(d3d12->device->lpVtbl->CreateFence(d3d12->device, 0,
+               D3D12_FENCE_FLAG_NONE, uuidof(ID3D12Fence),
+               (void**)&d3d12->hw_ring.capture_fence)))
+      return false;
+   d3d12->hw_ring.capture_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+   return true;
+}
+
+/* Main thread. Copies the core's texture - left in required_state, which
+ * is COPY_SOURCE - into the slot's own texture and submits the copy, so
+ * it is queued before the core's next frame touches its texture. The
+ * capture list is one; its previous use must have executed before the
+ * allocator is reset, and a copy is short. */
+static bool d3d12_hw_ring_capture(void *data, unsigned slot,
+      const void *texture, unsigned format)
+{
+   D3D12_TEXTURE_COPY_LOCATION src, dst;
+   D3D12_RESOURCE_DESC        desc;
+   D3D12GraphicsCommandList   cmd;
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   D3D12Resource  core  = (D3D12Resource)texture;
+   unsigned width, height;
+
+   if (!d3d12 || !core || slot >= 3 || !d3d12_hw_ring_prepare(d3d12))
+      return false;
+
+   /* ID3D12Resource::GetDesc is struct-by-value in the C vtable and
+    * mingw cannot call it as declared; the size arrives with the
+    * texture the same way the driver's own frame path learns it. */
+   width  = d3d12->hw_ring.width[slot];
+   height = d3d12->hw_ring.height[slot];
+   {
+      D3D12_RESOURCE_DESC *(STDMETHODCALLTYPE *get_desc)(ID3D12Resource*, D3D12_RESOURCE_DESC*) =
+         (D3D12_RESOURCE_DESC *(STDMETHODCALLTYPE *)(ID3D12Resource*, D3D12_RESOURCE_DESC*))
+         core->lpVtbl->GetDesc;
+      get_desc(core, &desc);
+      width  = (unsigned)desc.Width;
+      height = desc.Height;
+   }
+
+   if (     !d3d12->hw_ring.texture[slot]
+         || d3d12->hw_ring.width[slot]  != width
+         || d3d12->hw_ring.height[slot] != height
+         || d3d12->hw_ring.format[slot] != (DXGI_FORMAT)format)
+   {
+      D3D12_HEAP_PROPERTIES heap_props;
+      D3D12_RESOURCE_DESC   tdesc;
+      Release(d3d12->hw_ring.texture[slot]);
+      d3d12->hw_ring.texture[slot] = NULL;
+      heap_props.Type                 = D3D12_HEAP_TYPE_DEFAULT;
+      heap_props.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+      heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+      heap_props.CreationNodeMask     = 1;
+      heap_props.VisibleNodeMask      = 1;
+      tdesc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+      tdesc.Alignment          = 0;
+      tdesc.Width              = width;
+      tdesc.Height             = height;
+      tdesc.DepthOrArraySize   = 1;
+      tdesc.MipLevels          = 1;
+      tdesc.Format             = (DXGI_FORMAT)format;
+      tdesc.SampleDesc.Count   = 1;
+      tdesc.SampleDesc.Quality = 0;
+      tdesc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+      tdesc.Flags              = D3D12_RESOURCE_FLAG_NONE;
+      /* Created in COPY_SOURCE: the driver's frame reads the slot in
+       * required_state as it would the core's own texture; the capture
+       * below transitions in and out. */
+      if (FAILED(d3d12->device->lpVtbl->CreateCommittedResource(d3d12->device,
+                  &heap_props, D3D12_HEAP_FLAG_NONE, &tdesc,
+                  D3D12_RESOURCE_STATE_COPY_SOURCE, NULL,
+                  uuidof(ID3D12Resource), (void**)&d3d12->hw_ring.texture[slot])))
+      {
+         d3d12->hw_ring.texture[slot] = NULL;
+         return false;
+      }
+      d3d12->hw_ring.width[slot]  = width;
+      d3d12->hw_ring.height[slot] = height;
+      d3d12->hw_ring.format[slot] = (DXGI_FORMAT)format;
+   }
+
+   /* The previous capture must be done with the allocator. */
+   if (d3d12->hw_ring.capture_value
+         && d3d12->hw_ring.capture_fence->lpVtbl->GetCompletedValue(
+            d3d12->hw_ring.capture_fence) < d3d12->hw_ring.capture_value)
+   {
+      d3d12->hw_ring.capture_fence->lpVtbl->SetEventOnCompletion(
+            d3d12->hw_ring.capture_fence, d3d12->hw_ring.capture_value,
+            d3d12->hw_ring.capture_event);
+      if (WaitForSingleObject(d3d12->hw_ring.capture_event,
+               D3D12_FENCE_WAIT_MS) != WAIT_OBJECT_0)
+         RARCH_ERR("[D3D12] The capture fence did not signal within"
+               " %u ms; the device is most likely lost.\n",
+               (unsigned)D3D12_FENCE_WAIT_MS);
+   }
+
+   cmd = d3d12->hw_ring.cmd;
+   d3d12->hw_ring.allocator->lpVtbl->Reset(d3d12->hw_ring.allocator);
+   cmd->lpVtbl->Reset(cmd, d3d12->hw_ring.allocator, NULL);
+
+   src.pResource        = core;
+   src.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+   src.SubresourceIndex = 0;
+   dst.pResource        = d3d12->hw_ring.texture[slot];
+   dst.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+   dst.SubresourceIndex = 0;
+
+   D3D12_RESOURCE_TRANSITION(cmd, d3d12->hw_ring.texture[slot],
+         D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
+   cmd->lpVtbl->CopyTextureRegion(cmd, &dst, 0, 0, 0, &src, NULL);
+   D3D12_RESOURCE_TRANSITION(cmd, d3d12->hw_ring.texture[slot],
+         D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COPY_SOURCE);
+   cmd->lpVtbl->Close(cmd);
+   d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
+         (ID3D12CommandList* const*)&d3d12->hw_ring.cmd);
+   d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
+         d3d12->hw_ring.capture_fence, ++d3d12->hw_ring.capture_value);
+   return true;
+}
+
+/* Video thread: the frame reads the slot's copy exactly as it would the
+ * core's texture. */
+static bool d3d12_hw_ring_present_slot(void *data, unsigned slot)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   if (!d3d12 || slot >= 3 || !d3d12->hw_ring.texture[slot])
+      return false;
+   d3d12->hw_render_texture        = d3d12->hw_ring.texture[slot];
+   d3d12->hw_render_texture_format = d3d12->hw_ring.format[slot];
+   return true;
+}
+
+/* Video thread, version 2: the frame reads the core's own texture. The
+ * wait for the core's work is queued here, ahead of the frame's list;
+ * the wrapper signals the slot's fence behind that list, and that is
+ * what the core waits before it draws into this texture again. Nothing
+ * was copied on the core's thread to get here, which is the point. */
+static bool d3d12_hw_ring_install(void *data, const void *image,
+      const void *semaphores, unsigned num_semaphores,
+      unsigned src_queue_family, const void *cmd, unsigned num_cmd)
+{
+   d3d12_video_t *d3d12               = (d3d12_video_t*)data;
+   const d3d12_hw_ring_frame_t *frame = (const d3d12_hw_ring_frame_t*)image;
+   (void)semaphores; (void)num_semaphores; (void)src_queue_family;
+   (void)cmd; (void)num_cmd;
+   if (!d3d12 || !frame || !frame->texture)
+      return false;
+   d3d12->hw_render_texture        = frame->texture;
+   d3d12->hw_render_texture_format = frame->format;
+   d3d12->hw_direct.eligible       = true;
+   if (frame->fence)
+      d3d12->queue.handle->lpVtbl->Wait(d3d12->queue.handle,
+            frame->fence, frame->value);
+   return true;
+}
+
+static void d3d12_hw_ring_free(d3d12_video_t *d3d12)
+{
+   unsigned i;
+   if (d3d12->hw_ring.capture_value && d3d12->hw_ring.capture_fence
+         && d3d12->hw_ring.capture_fence->lpVtbl->GetCompletedValue(
+            d3d12->hw_ring.capture_fence) < d3d12->hw_ring.capture_value)
+   {
+      d3d12->hw_ring.capture_fence->lpVtbl->SetEventOnCompletion(
+            d3d12->hw_ring.capture_fence, d3d12->hw_ring.capture_value,
+            d3d12->hw_ring.capture_event);
+      if (WaitForSingleObject(d3d12->hw_ring.capture_event,
+               D3D12_FENCE_WAIT_MS) != WAIT_OBJECT_0)
+         RARCH_ERR("[D3D12] The capture fence did not signal within"
+               " %u ms; the device is most likely lost.\n",
+               (unsigned)D3D12_FENCE_WAIT_MS);
+   }
+   for (i = 0; i < 3; i++)
+   {
+      Release(d3d12->hw_ring.texture[i]);
+      d3d12->hw_ring.texture[i] = NULL;
+   }
+   Release(d3d12->hw_ring.cmd);
+   Release(d3d12->hw_ring.allocator);
+   Release(d3d12->hw_ring.capture_fence);
+   if (d3d12->hw_ring.capture_event)
+      CloseHandle(d3d12->hw_ring.capture_event);
+   memset(&d3d12->hw_ring, 0, sizeof(d3d12->hw_ring));
+
+   d3d12_hw_direct_free(d3d12);
+
+   /* Version 2's done-fence goes with the rest of the hardware handoff.
+    * The caller has drained the queue, so nothing is left to signal it. */
+   Release(d3d12->hw_v2.done);
+   if (d3d12->hw_v2.done_event)
+      CloseHandle(d3d12->hw_v2.done_event);
+   memset(&d3d12->hw_v2, 0, sizeof(d3d12->hw_v2));
 }
 
 static bool d3d12_get_hw_render_interface(
@@ -7562,8 +8781,7 @@ static bool d3d12_sw_fb_ensure(d3d12_video_t* d3d12,
    HRESULT                            hr;
 
    if (     d3d12->sw_fb.buffer
-         && d3d12->sw_fb.width  == width
-         && d3d12->sw_fb.height == height
+         && d3d12->sw_fb.dims   == VIDEO_SCALE_PACK(width, height)
          && d3d12->sw_fb.format == format)
       return true;
 
@@ -7582,7 +8800,7 @@ static bool d3d12_sw_fb_ensure(d3d12_video_t* d3d12,
        * Cost is one mutex acquire on a code path that already
        * does a full GPU fence-wait (the caller's responsibility),
        * so the lock cost is below noise. */
-      video_driver_cached_frame_invalidate();
+      video_driver_cached_frame_retire();
       Release(d3d12->sw_fb.buffer);
       d3d12->sw_fb.buffer = NULL;
       d3d12->sw_fb.mapped = NULL;
@@ -7661,8 +8879,7 @@ static bool d3d12_sw_fb_ensure(d3d12_video_t* d3d12,
    memset(d3d12->sw_fb.mapped, 0, (size_t)total_bytes);
 
    d3d12->sw_fb.total_bytes = total_bytes;
-   d3d12->sw_fb.width       = width;
-   d3d12->sw_fb.height      = height;
+   d3d12->sw_fb.dims        = VIDEO_SCALE_PACK(width, height);
    d3d12->sw_fb.format      = format;
    return true;
 }
@@ -7706,15 +8923,7 @@ static bool d3d12_get_current_software_framebuffer(
     * d3d12_gfx_frame; the subsequent fence wait there will see
     * the fence already satisfied and skip without blocking. */
    {
-      D3D12Fence fence = d3d12->queue.fence;
-      d3d12->queue.handle->lpVtbl->Signal(
-            d3d12->queue.handle, fence, ++d3d12->queue.fenceValue);
-      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
-      {
-         fence->lpVtbl->SetEventOnCompletion(
-               fence, d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
 
    fb->data         = (uint8_t *)d3d12->sw_fb.mapped
@@ -7729,10 +8938,10 @@ static bool d3d12_get_current_software_framebuffer(
     * to its own staging buffer. */
    fb->memory_flags = RETRO_MEMORY_TYPE_CACHED;
 
-   /* Signal d3d12_gfx_frame that the core wrote directly into
-    * the cached SW FB buffer; the GPU copy at upload time should
-    * source from there instead of texture[0].upload_buffer. */
-   d3d12->flags    |= D3D12_ST_FLAG_SW_FRAMEBUFFER_READY;
+   /* d3d12_gfx_frame() recognises a frame pushed from this buffer
+    * by its pointer (d3d12_sw_fb_window) and has the GPU read it
+    * from here; nothing is flagged, so a core that asks and then
+    * pushes its own buffer, or a dupe, is served as it pushed. */
 
    return true;
 }
@@ -7909,15 +9118,7 @@ static uintptr_t d3d12_gfx_load_texture_compressed(void* video_data,
       D3D12CommandList lists[1];
       lists[0] = (D3D12CommandList)cmd;
       d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1, lists);
-      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
-            d3d12->queue.fence, ++d3d12->queue.fenceValue);
-      if (d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence)
-            < d3d12->queue.fenceValue)
-      {
-         d3d12->queue.fence->lpVtbl->SetEventOnCompletion(d3d12->queue.fence,
-               d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
-         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
-      }
+      d3d12_queue_drain(d3d12);
    }
    Release(cmd);
    Release(alloc);
@@ -7946,11 +9147,42 @@ static uintptr_t d3d12_gfx_load_texture_compressed(void* video_data,
    return (uintptr_t)texture;
 }
 
+/* DXGI carries the present interval as the SyncInterval argument of
+ * Present, whose largest value is four, so this driver holds a frame
+ * for at most four display intervals. */
+static unsigned d3d12_get_swap_interval_cap(void *data)
+{
+   (void)data;
+   return 4;
+}
+
+/* A borderless fullscreen toggle. It used to restart every driver:
+ * this one freed its device, queue, pipelines, shaders, swap chain and
+ * every texture and made them all again, the audio driver stopped and
+ * started, and a hardware-rendered core was told its context was gone
+ * - for a change of the window's style and size. The window is
+ * restyled where it stands instead (win32_window_set_fullscreen());
+ * the size change reaches the driver through check_window like any
+ * resize, and the swap chain's buffers are resized as they are when
+ * the window's edge is dragged. Nothing else is touched.
+ * RETROARCH_FULLSCREEN_IN_PLACE=0 turns it off. */
+#if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
+static void d3d12_set_video_mode(void *data, unsigned dims, bool fullscreen)
+{
+   (void)data;
+   win32_window_set_fullscreen(dims, fullscreen);
+}
+#endif
+
 static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_get_flags,
    d3d12_gfx_load_texture,
    d3d12_gfx_unload_texture,
+#if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
+   d3d12_set_video_mode,
+#else
    NULL, /* set_video_mode */
+#endif
 #ifdef __WINRT__
    /* UWP does not expose this information easily */
    NULL,
@@ -7993,7 +9225,21 @@ static const video_poke_interface_t d3d12_poke_interface = {
    NULL, /* set_hdr_subpixel_layout */
 #endif
    d3d12_gfx_supports_texture_format,
-   d3d12_gfx_load_texture_compressed
+   d3d12_gfx_load_texture_compressed,
+   d3d12_present_last,
+   d3d12_get_last_present_time,
+   d3d12_hw_ring_install, /* version 2 frames; see d3d12_hw_ring_frame_t */
+   d3d12_hw_ring_fence_new,
+   d3d12_hw_ring_fence_free,
+   d3d12_hw_ring_fence_signal,
+   d3d12_hw_ring_fence_wait,
+   d3d12_hw_ring_capture,
+   d3d12_hw_ring_present_slot,
+   NULL, /* hw_ring_context_new */
+   NULL, /* hw_ring_context_free */
+   NULL, /* hw_ring_framebuffer */
+   d3d12_gfx_update_texture,
+   d3d12_get_swap_interval_cap
 };
 
 static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)
@@ -8011,8 +9257,8 @@ static font_renderer_t d3d12_font = {
    d3d12_font_render_msg,
    "d3d12",
    d3d12_font_get_glyph,
-   NULL, /* bind_block */
-   NULL, /* flush */
+   d3d12_font_bind_block,
+   d3d12_font_flush_block,
    d3d12_font_get_message_width,
    d3d12_font_get_line_metrics
 };
@@ -8032,7 +9278,6 @@ video_driver_t video_d3d12 = {
    d3d12_gfx_set_rotation,
    d3d12_gfx_viewport_info,
    d3d12_gfx_read_viewport,
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    d3d12_get_overlay_interface,
 #endif
@@ -8064,6 +9309,8 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d12 = {
    GFX_VIDEO_DRIVER_DIRECT3D12,
    "d3d12",
    true,
+   true,
    gfx_display_d3d12_scissor_begin,
-   gfx_display_d3d12_scissor_end
+   gfx_display_d3d12_scissor_end,
+   gfx_display_d3d12_mesh_draw
 };

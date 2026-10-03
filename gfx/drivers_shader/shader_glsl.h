@@ -23,4 +23,12 @@
 
 void gl_glsl_set_context_type(bool core_profile, unsigned major, unsigned minor);
 
+/* Draws a gfx_display mesh from @vbo (and @ibo, when not 0: @count is
+ * then indices, else vertices) with the texture bound to unit 0, under
+ * @mvp and @tint, through a program of its own; the program the
+ * caller had stays bound afterwards. False when that program could not
+ * be made, and nothing was drawn. */
+bool gl_glsl_draw_mesh(void *shader_data, unsigned vbo, unsigned ibo,
+      unsigned count, bool strip, const float *mvp, const float *tint);
+
 #endif

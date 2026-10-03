@@ -1,5 +1,10 @@
 #!/bin/sh
 
+# Under zsh, split unquoted expansions as a POSIX sh does.
+if [ -n "${ZSH_VERSION+set}" ] && (emulate sh) >/dev/null 2>&1; then
+	emulate sh
+fi
+
 PACKAGE_NAME=retroarch
 
 . qb/qb.init.sh

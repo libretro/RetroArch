@@ -27,7 +27,7 @@ S_BOOL(cloud_sync_destructive, CLOUD_SYNC_DESTRUCTIVE,
 #if defined(HAVE_CLOUDSYNC) || defined(SETTINGS_DEF_STRINGS_PASS)
 S_BOOL(cloud_sync_sync_saves, CLOUD_SYNC_SYNC_SAVES,
       "cloud_sync_sync_saves",
-      false, SD_FLAG_NONE, 0, 0,
+      true, SD_FLAG_NONE, 0, 0,
       "Sync: Saves/States",
       "When enabled, saves/states will be synced to cloud.")
 #endif
@@ -36,7 +36,7 @@ S_BOOL(cloud_sync_sync_saves, CLOUD_SYNC_SYNC_SAVES,
 #if defined(HAVE_CLOUDSYNC) || defined(SETTINGS_DEF_STRINGS_PASS)
 S_BOOL(cloud_sync_sync_configs, CLOUD_SYNC_SYNC_CONFIGS,
       "cloud_sync_sync_configs",
-      false, SD_FLAG_NONE, 0, 0,
+      true, SD_FLAG_NONE, 0, 0,
       "Sync: Configuration Files",
       "When enabled, configuration files will be synced to cloud.")
 #endif

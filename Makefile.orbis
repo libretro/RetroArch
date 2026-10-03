@@ -19,7 +19,7 @@ AUTH_INFO = 000000000000000000000000001C004000FF00000000008000000000000000000000
 OBJ += deps/xxHash/xxhash.o \
 # 	input/drivers/ps4_input.o \
 # 	input/drivers_joypad/ps4_joypad.o \
-# 	audio/drivers/psp_audio.o \
+# 	audio/drivers/ps4_audio.o \
 # 	gfx/drivers_context/orbis_ctx.o \
 # 	frontend/drivers/platform_orbis.o
 
@@ -53,6 +53,7 @@ else
 	HAVE_RTGA							:= 1
 	HAVE_OVERLAY					:= 1
 	HAVE_7ZIP							:= 1
+	HAVE_RZSTD							:= 1
 	HAVE_EGL 							:= 1
 	HAVE_GFX_WIDGETS 			:= 1
 	HAVE_GLSL      				:= 1
@@ -88,6 +89,7 @@ else
 	HAVE_UPDATE_CORE_INFO 		:= 1
 	HAVE_CONFIGFILE 			:= 1
 	HAVE_CHD 							:= 1
+HAVE_RCHD = 1
 	HAVE_STATIC_VIDEO_FILTERS = 1
 	HAVE_STATIC_AUDIO_FILTERS = 1
 	HAVE_CORE_INFO_CACHE	:= 1

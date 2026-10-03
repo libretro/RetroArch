@@ -41,11 +41,60 @@ typedef struct font_renderer
 
    const struct font_glyph *(*get_glyph)(void *data, uint32_t code);
    void (*bind_block)(void *data, void *block);
-   void (*flush)(unsigned width, unsigned height, void *data);
+   void (*flush)(unsigned dims, void *data);
 
    int (*get_message_width)(void *data, const char *msg, size_t msg_len, float scale);
    bool (*get_line_metrics)(void* data, struct font_line_metrics **metrics);
 } font_renderer_t;
+
+/* A font rasterizer: one face, drawn one glyph at a time into a cell
+ * it is handed. The glyph cache, the atlas, eviction and fallback faces
+ * are font_driver.c's; a rasterizer keeps none of them and does no file
+ * I/O. */
+typedef struct font_rasterizer
+{
+   /* Opens a face on @data, the bytes of the chosen font, at @font_size
+    * pixels to the em. A rasterizer with borrows_font_data set only
+    * reads the bytes, which outlive the face; one without owns them
+    * from the moment init() is called, success or not. NULL @data means
+    * no file was found: use an internal or system source if there is
+    * one (stb's built-in glyphs, the WiiU shared font), or fail. */
+   void *(*init)(uint8_t *data, size_t len, unsigned face_index,
+         float font_size);
+
+   void (*free)(void *face);
+
+   /* Nonzero when the face has a glyph for @code, 0 when it has none.
+    * The value is the face's own and is passed back to render_glyph. */
+   unsigned (*glyph_index)(void *face, uint32_t code);
+
+   /* Draws glyph @gi (for codepoint @code; 0 asks for the face's
+    * missing-glyph mark) into the @cell_w x @cell_h cell at @dst,
+    * whose rows are @pitch samples apart, covering the whole cell, and
+    * fills width, height, draw_offset_x/y and advance_x/y of @glyph,
+    * leaving its atlas offsets alone. Returns false when nothing can
+    * be drawn for @gi; the cell is then left as it was. */
+   bool (*render_glyph)(void *face, uint32_t code, unsigned gi,
+         uint8_t *dst, unsigned pitch, unsigned cell_w, unsigned cell_h,
+         enum font_atlas_format fmt, struct font_glyph *glyph);
+
+   /* The cell every glyph of this face is drawn into, packed with
+    * VIDEO_SCALE_PACK. */
+   unsigned (*cell_dims)(void *face);
+
+   void (*get_line_metrics)(void *face, struct font_line_metrics *metrics);
+
+   /* Candidate paths for the requested font, best first, NULL
+    * terminated; NULL to take the request as it stands. An empty entry
+    * means the rasterizer needs no file. @face_index is written with
+    * the face to use within whichever candidate is taken. */
+   const char * const *(*get_default_fonts)(const char *requested,
+         unsigned *face_index);
+
+   const char *ident;
+
+   bool borrows_font_data;
+} font_rasterizer_t;
 
 /* NOTE: All functions are required to be implemented for font_renderer_driver */
 
@@ -63,7 +112,9 @@ typedef struct font_renderer_driver
     * within a collection. Renderers do no file I/O and are not given a
     * path: a NULL font_data means nothing usable was found and the
     * renderer should fall back to whatever internal or system source
-    * it has. On success the renderer takes ownership of font_data. */
+    * it has. On success a renderer with borrows_font_data set only
+    * reads font_data and never frees it; one without takes
+    * ownership, as the field below explains. */
    void *(*init)(uint8_t *font_data, size_t font_data_len,
          unsigned face_index,
          float font_size, enum font_atlas_format fmt);
@@ -92,6 +143,19 @@ typedef struct font_renderer_driver
    const char *ident;
 
    void (*get_line_metrics)(void* data, struct font_line_metrics **metrics);
+
+   /* True when the renderer only reads the bytes it is handed and
+    * never frees them.  font_renderer_create_default() can then give
+    * the same buffer to every font built from one path and free it
+    * once the last of them is gone - which is what turns nine reads
+    * of a menu face into one.
+    *
+    * False means the renderer takes the bytes and disposes of them on
+    * a schedule of its own, so it gets a private copy.  coretext is
+    * the case: it hands the buffer to CGDataProviderCreateWithData
+    * and CoreGraphics calls the release callback when it is finished,
+    * which is not necessarily when the font is freed. */
+   bool borrows_font_data;
 } font_renderer_driver_t;
 
 typedef struct font_data
@@ -112,6 +176,11 @@ typedef struct font_data
    char *lang_pkg_dir;
    char *lang_default_path;
    bool is_threaded;
+   /* A raster block is bound: text is gathered and drawn at flush */
+   bool block_bound;
+   /* The threading_hint font_driver_init_first() was called with, so
+    * a rebuild reaches the backend on the same thread as creation. */
+   bool threading_hint;
    /* Line metrics, read from the renderer once when the font is
     * created. Renderers fill these at init and never change them, so
     * callers can use them directly instead of asking again - which
@@ -159,15 +228,101 @@ void font_driver_render_msg(void *data,
       const char *msg, size_t msg_len,
       const struct font_params *params, void *font_data);
 
+/* Marks the start of a video frame for the glyph caches: a cell looked
+ * up during a frame is not given to another codepoint before the next
+ * one begins. */
+void font_driver_frame_begin(void);
+
+/* What a video driver's font draws a message with: the caller's
+ * font_params, or for the on-screen message (NULL params) the message
+ * position and colour from the settings, left aligned and full screen,
+ * opaque, under the shadow every driver used to fill in by hand (2 px
+ * down and left, at 0.3 of the colour). */
+typedef struct font_params_resolved
+{
+   const float *color_hp;  /* The caller's float colour, or NULL */
+   float x;
+   float y;
+   float scale;
+   float drop_mod;
+   float drop_alpha;
+   float color[4];         /* RGBA, 0..1, from the packed colour */
+   unsigned rgba[4];       /* The same, as bytes */
+   int drop_x;
+   int drop_y;
+   enum text_alignment text_align;
+   bool full_screen;
+} font_params_resolved_t;
+
+void font_driver_resolve_params(const struct font_params *params,
+      font_params_resolved_t *out);
+
+/* The width a video driver's font gives msg at scale, through the glyph
+ * cache @renderer_data that @renderer created: what a driver's
+ * get_message_width returns, unless it uploads atlas cells as glyphs
+ * are looked up (see gfx/font_measure.h). */
+int font_renderer_get_message_width(
+      const font_renderer_driver_t *renderer, void *renderer_data,
+      const char *msg, size_t msg_len, float scale);
+
 int font_driver_get_message_width(void *font_data, const char *msg, size_t len, float scale);
 
+/* Would rebuilding this font at this path and size produce the font
+ * that is already there? Lets a caller skip a rebuild that would
+ * rasterise an identical atlas and re-upload an identical texture,
+ * which is most of what a layout pass asks for: the things that
+ * trigger one — padding, thumbnail scale, a nav bar toggle — mostly
+ * do not move any font size.
+ *
+ * False for a NULL handle, and for one that is no longer live, so a
+ * context reset that cleared or released its fonts always rebuilds.
+ * Conservative in both directions: it answers no whenever it cannot
+ * be sure, and a wrong no only costs the work that would have been
+ * done anyway. Callers must pass the same size they would pass to the
+ * font builder, after any clamping of their own. */
+bool font_driver_matches(const font_data_t *font,
+      const char *path, float size);
+
 void font_driver_free(font_data_t *font);
+
+/* Release a font whose replacement has already been built, once the
+ * frames that could still be reading its atlas have gone out.
+ *
+ * For callers that rebuild a font from a render path, which runs
+ * before the video driver's frame function in the same iteration: a
+ * plain font_driver_free() there can release an atlas a command list
+ * still references, which drivers with deferred submission do not
+ * survive. Build the replacement first, retire the old handle with
+ * this, and keep drawing.
+ *
+ * The handle must not be used again after this call. */
+void font_driver_free_deferred(font_data_t *font);
+
+/* Age the deferred queue by one frame, releasing whatever has come
+ * due. Called once per frame from video_driver_frame() after the
+ * frame has been handed to the driver. With flush set, everything is
+ * released immediately, for teardown paths where there is no later
+ * frame to wait for. */
+void font_driver_free_pending(bool flush);
 
 /* Rebuild every live font from its current path, in place. Used when
  * the menu language changes and the fonts must follow, without tearing
  * down the video driver to do it. Fonts whose path is unchanged are
  * left alone. Returns the number rebuilt. */
 unsigned font_driver_reload_fonts(void);
+
+/* Rebuild the shared OSD font in place against a path and a size. An
+ * empty or NULL font_path means "let the renderer choose", as at
+ * creation.
+ *
+ * Returns false only where there is no shared OSD font to rebuild:
+ * video is not up, or the driver keeps its font privately (sdl, sdl2,
+ * xvideo, vg, omap, oga, exynos) and needs a driver reinit to pick
+ * the change up. That is for the caller to handle, not an error.
+ *
+ * A rebuild that fails returns true and keeps the working font: the
+ * setting does not take, but the text survives. */
+bool font_driver_reinit_osd(const char *font_path, float font_size);
 
 /* The font file the current menu language needs, relative to the
  * assets pkg directory, or NULL when it has no special requirement
@@ -197,9 +352,12 @@ uint32_t font_driver_get_generation(void);
 void font_driver_sync_impl(font_data_impl_t *font_data);
 
 void font_flush(
-      unsigned video_width,
-      unsigned video_height,
+      unsigned video_dims,
       font_data_impl_t *font_data);
+
+/* Main thread, at video init before the wrapper spawns; see the
+ * capture in font_driver.c. */
+void font_driver_bind_video_state(void *video_st);
 
 font_data_t *font_driver_init_first(
       void *video_data,
@@ -220,9 +378,9 @@ void font_driver_init_osd(
  * next init. */
 void font_driver_free_osd_for(void *video_data);
 
-extern font_renderer_driver_t stb_font_renderer;
-extern font_renderer_driver_t freetype_font_renderer;
-extern font_renderer_driver_t coretext_font_renderer;
+extern const font_rasterizer_t stb_font_rasterizer;
+extern const font_rasterizer_t freetype_font_rasterizer;
+extern const font_rasterizer_t coretext_font_rasterizer;
 
 RETRO_END_DECLS
 

@@ -182,7 +182,7 @@ bool socket_set_block(int fd, bool block)
    int i = !block;
 
    return !setsockopt(fd, SOL_SOCKET, SO_NBIO, &i, sizeof(i));
-#elif defined(GEKKO)
+#elif defined(GEKKO) && !defined(GEKKO_NATIVE)
    u32 i = !block;
 
    return !net_ioctl(fd, FIONBIO, &i);
@@ -371,7 +371,72 @@ done:
 int socket_poll(struct pollfd *fds, unsigned nfds, int timeout)
 {
 #if defined(_WIN32)
-   return WSAPoll(fds, nfds, timeout);
+   /* select() exists on 9x, XP, Vista+, and Xbox XTL. WSAPoll does not. */
+   fd_set rfds, wfds, efds;
+   struct timeval tv, *ptv = NULL;
+   unsigned i;
+   int ret;
+   int nready = 0;
+
+   if (nfds && !fds)
+      return -1;
+
+   FD_ZERO(&rfds);
+   FD_ZERO(&wfds);
+   FD_ZERO(&efds);
+
+   for (i = 0; i < nfds; i++)
+   {
+      SOCKET s = (SOCKET)fds[i].fd;
+
+      fds[i].revents = 0;
+
+      if (s == INVALID_SOCKET)
+      {
+         fds[i].revents = POLLNVAL;
+         nready++;
+         continue;
+      }
+
+      if (fds[i].events & (POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI))
+         FD_SET(s, &rfds);
+      if (fds[i].events & (POLLOUT | POLLWRNORM | POLLWRBAND))
+         FD_SET(s, &wfds);
+      FD_SET(s, &efds);
+   }
+
+   if (timeout >= 0)
+   {
+      tv.tv_sec  = (long)timeout / 1000;
+      tv.tv_usec = ((long)timeout % 1000) * 1000;
+      ptv = &tv;
+   }
+
+   /* Winsock ignores nfds and walks the fd_set. */
+   ret = socket_select(0, &rfds, &wfds, &efds, ptv);
+   if (ret < 0)
+      return ret;
+
+   for (i = 0; i < nfds; i++)
+   {
+      SOCKET s = (SOCKET)fds[i].fd;
+
+      if (fds[i].revents & POLLNVAL)
+         continue;
+
+      if (FD_ISSET(s, &rfds))
+         fds[i].revents |= (short)(fds[i].events &
+               (POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI));
+      if (FD_ISSET(s, &wfds))
+         fds[i].revents |= (short)(fds[i].events &
+               (POLLOUT | POLLWRNORM | POLLWRBAND));
+      if (FD_ISSET(s, &efds))
+         fds[i].revents |= POLLERR;
+      if (fds[i].revents)
+         nready++;
+   }
+
+   return nready;
 #elif defined(VITA)
    int i, j;
    int epoll_fd;
@@ -491,7 +556,7 @@ done:
    return ret;
 #undef TIMEOUT_DIVISOR
 
-#elif defined(GEKKO)
+#elif defined(GEKKO) && !defined(GEKKO_NATIVE)
    return net_poll(fds, nfds, timeout);
 #else
    return poll(fds, nfds, timeout);
@@ -708,6 +773,25 @@ int socket_connect(int fd, void *data)
    return connect(fd, addr->ai_addr, addr->ai_addrlen);
 }
 
+/* Where the platform keeps socket errors in errno (or WSAGetLastError
+ * on Windows), a failed socket_connect_with_timeout() leaves the reason
+ * there too, so callers can report it.  A non-blocking connect reports
+ * a refused or unreachable peer through SO_ERROR rather than errno, and
+ * a timeout through nothing at all, so both are copied over by hand. */
+#if defined(_WIN32) || (!defined(__PS3__) && !defined(VITA) \
+      && !defined(WIIU) && !(defined(GEKKO) && !defined(GEKKO_NATIVE)) \
+      && !defined(_3DS))
+#define SOCKET_CONNECT_SETS_ERROR
+static void socket_set_last_error(int err)
+{
+#ifdef _WIN32
+   WSASetLastError(err);
+#else
+   errno = err;
+#endif
+}
+#endif
+
 bool socket_connect_with_timeout(int fd, void *data, int timeout)
 {
    int res;
@@ -739,6 +823,7 @@ bool socket_connect_with_timeout(int fd, void *data, int timeout)
    if (res)
    {
       bool ready = true;
+      bool waited;
 
       if (!isinprogress(res) && !isagain(res))
          return false;
@@ -746,17 +831,39 @@ bool socket_connect_with_timeout(int fd, void *data, int timeout)
       if (timeout <= 0)
          timeout = 5000;
 
-      if (!socket_wait(fd, NULL, &ready, timeout) || !ready)
+      waited = socket_wait(fd, NULL, &ready, timeout);
+      if (!waited || !ready)
+      {
+#ifdef SOCKET_CONNECT_SETS_ERROR
+         int       err   = 0;
+         socklen_t errsz = sizeof(err);
+         getsockopt(fd, SOL_SOCKET, SO_ERROR, (char*)&err, &errsz);
+         if (err)
+            socket_set_last_error(err);
+         /* Poll/select succeeded but the socket never became writable:
+          * that is the timeout.  A failed poll/select already left its
+          * own errno. */
+         else if (waited && !ready)
+         {
+#if defined(_WIN32)
+            socket_set_last_error(WSAETIMEDOUT);
+#elif defined(ETIMEDOUT)
+            socket_set_last_error(ETIMEDOUT);
+#endif
+         }
+#endif
          return false;
+      }
    }
 
-#if defined(GEKKO)
+#if defined(GEKKO) && !defined(GEKKO_NATIVE)
    /* libogc does not have getsockopt implemented */
    res = connect(fd, addr->ai_addr, addr->ai_addrlen);
    if (res < 0 && -res != EISCONN)
       return false;
-#elif defined(_3DS)
-   /* libctru getsockopt does not return expected value */
+#elif defined(_3DS) || defined(GEKKO_NATIVE)
+   /* libctru getsockopt does not return expected value; on the Wii,
+    * connecting again is what works under emulation too */
    if ((connect(fd, addr->ai_addr, addr->ai_addrlen) < 0) && errno != EISCONN)
       return false;
 #elif defined(WIIU)
@@ -772,7 +879,12 @@ bool socket_connect_with_timeout(int fd, void *data, int timeout)
 
       getsockopt(fd, SOL_SOCKET, SO_ERROR, (char*)&err, &errsz);
       if (err)
+      {
+#ifdef SOCKET_CONNECT_SETS_ERROR
+         socket_set_last_error(err);
+#endif
          return false;
+      }
    }
 #endif
 

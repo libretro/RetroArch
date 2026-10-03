@@ -129,7 +129,8 @@ static bool image_texture_load_internal(
       enum image_type_enum type,
       void *ptr,
       size_t len,
-      struct texture_image *out_img)
+      struct texture_image *out_img,
+      bool (*should_abort)(void *ud), void *abort_ud)
 {
    int ret;
    void *img;
@@ -142,19 +143,35 @@ static bool image_texture_load_internal(
 
    image_transfer_set_buffer_ptr(img, type, (uint8_t*)ptr, len);
 
+   /* A caller that wants the extra precision says so through
+    * ->pix10; the decoders that have a 10-bit path (PNG 16-bit, and
+    * the video stills) then emit XRGB2101010 and report what they
+    * actually produced. A decoder or a file without one leaves the
+    * flag clear and the caller gets the ordinary 8-bit image. */
+   if (out_img->pix10)
+      image_transfer_set_want_10bit(img, type, 1);
+
    if (!image_transfer_start(img, type))
    {
       image_transfer_free(img, type);
       return false;
    }
 
-   while (image_transfer_iterate(img, type));
+   /* Chunk by chunk, with the abort hook between chunks. */
+   while (image_transfer_iterate(img, type))
+      if (should_abort && should_abort(abort_ud))
+      {
+         image_transfer_free(img, type);
+         return false;
+      }
 
    if (!image_transfer_is_valid(img, type))
    {
       image_transfer_free(img, type);
       return false;
    }
+
+   out_img->pix10 = image_transfer_is_10bit(img, type);
 
    /* GPU-native fast path: if the loader can hand back BCn blocks for
     * direct upload, copy the source (so the mip pointers survive the
@@ -206,6 +223,14 @@ static bool image_texture_load_internal(
       ret = image_transfer_process(img, type,
             (uint32_t**)&out_img->pixels, len, &out_img->width,
             &out_img->height, out_img->supports_rgba);
+      /* Pass by pass (inflate + unfilter), the abort hook between. */
+      if (ret == IMAGE_PROCESS_NEXT && should_abort && should_abort(abort_ud))
+      {
+         free(out_img->pixels);
+         out_img->pixels = NULL;
+         image_transfer_free(img, type);
+         return false;
+      }
    } while (ret == IMAGE_PROCESS_NEXT);
 
    if (ret == IMAGE_PROCESS_ERROR || ret == IMAGE_PROCESS_ERROR_END)
@@ -216,6 +241,11 @@ static bool image_texture_load_internal(
 
    image_transfer_free(img, type);
    return true;
+}
+
+bool image_texture_load(struct texture_image *out_img, const char *path)
+{
+   return image_texture_load_ex(out_img, path, NULL, NULL);
 }
 
 void image_texture_free(struct texture_image *img)
@@ -320,7 +350,7 @@ bool image_texture_load_buffer(struct texture_image *out_img,
    if (type != IMAGE_TYPE_NONE)
    {
       if (image_texture_load_internal(
-         type, buffer, buffer_len, out_img))
+         type, buffer, buffer_len, out_img, NULL, NULL))
          return true;
    }
 
@@ -333,8 +363,8 @@ bool image_texture_load_buffer(struct texture_image *out_img,
    return false;
 }
 
-bool image_texture_load(struct texture_image *out_img,
-      const char *path)
+bool image_texture_load_ex(struct texture_image *out_img,
+      const char *path, bool (*should_abort)(void *ud), void *ud)
 {
    enum image_type_enum type  = image_texture_get_type(path);
 
@@ -358,7 +388,7 @@ bool image_texture_load(struct texture_image *out_img,
          if (data_transfer_complete(dt) && ptr && file_len
                && image_texture_load_internal(
                      type,
-                     (void*)ptr, file_len, out_img))
+                     (void*)ptr, file_len, out_img, should_abort, ud))
          {
             data_transfer_free(dt);
             return true;
@@ -372,6 +402,7 @@ bool image_texture_load(struct texture_image *out_img,
    out_img->width         = 0;
    out_img->height        = 0;
    out_img->compressed    = NULL;
+   out_img->pix10         = false;
 
    return false;
 }

@@ -71,6 +71,7 @@
 #include <xf86drmMode.h>
 
 #include "../../../gfx/video_display_server.h"
+#include "../../../gfx/video_driver.h"
 #include "../../../command.h"
 
 extern const video_display_server_t dispserv_kms;
@@ -99,10 +100,109 @@ void video_monitor_set_refresh_rate(float hz) { (void)hz; }
 
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
 
-bool video_driver_set_video_mode(unsigned width, unsigned height,
+int g_drm_fd = -1;
+
+/* The connector property walk get_edid does: one fabricated
+ * property list holding a non-blob, a blob that is not the EDID,
+ * and the EDID blob itself, so the reader has to check both the
+ * flag and the name. s_edid_blob_len 0 models a connector without
+ * DDC (property present, blob empty). */
+static uint8_t  s_edid_blob[512];
+static uint32_t s_edid_blob_len;
+static uint32_t s_edid_props[3]      = { 11, 12, 13 };
+static uint64_t s_edid_prop_vals[3]  = { 1, 77, 78 };
+static drmModeObjectProperties s_edid_propset;
+static drmModePropertyRes      s_edid_propres[3];
+static drmModePropertyBlobRes  s_edid_blobres;
+static unsigned s_edid_frees_prop, s_edid_frees_blob, s_edid_frees_set;
+
+drmModeObjectPropertiesPtr drmModeObjectGetProperties(int fd,
+      uint32_t object_id, uint32_t object_type)
+{
+   if (fd < 0 || object_type != DRM_MODE_OBJECT_CONNECTOR
+         || !g_drm_connector || object_id != g_drm_connector->connector_id)
+      return NULL;
+   s_edid_propset.count_props  = 3;
+   s_edid_propset.props        = s_edid_props;
+   s_edid_propset.prop_values  = s_edid_prop_vals;
+   return &s_edid_propset;
+}
+
+void drmModeFreeObjectProperties(drmModeObjectPropertiesPtr ptr)
+{
+   if (ptr == &s_edid_propset)
+      s_edid_frees_set++;
+}
+
+drmModePropertyPtr drmModeGetProperty(int fd, uint32_t propertyId)
+{
+   drmModePropertyRes *r;
+   (void)fd;
+   if (propertyId < 11 || propertyId > 13)
+      return NULL;
+   r = &s_edid_propres[propertyId - 11];
+   memset(r, 0, sizeof(*r));
+   r->prop_id = propertyId;
+   switch (propertyId)
+   {
+      case 11: r->flags = DRM_MODE_PROP_ENUM; strcpy(r->name, "DPMS"); break;
+      case 12: r->flags = DRM_MODE_PROP_BLOB; strcpy(r->name, "PATH"); break;
+      default: r->flags = DRM_MODE_PROP_BLOB; strcpy(r->name, "EDID"); break;
+   }
+   return r;
+}
+
+void drmModeFreeProperty(drmModePropertyPtr ptr)
+{
+   if (ptr >= s_edid_propres && ptr < s_edid_propres + 3)
+      s_edid_frees_prop++;
+}
+
+drmModePropertyBlobPtr drmModeGetPropertyBlob(int fd, uint32_t blob_id)
+{
+   (void)fd;
+   if (blob_id == 77)
+   {
+      fprintf(stderr, "FAIL: get_edid fetched a blob that is not the EDID\n");
+      exit(1);
+   }
+   if (blob_id != 78)
+      return NULL;
+   s_edid_blobres.id     = 78;
+   s_edid_blobres.length = s_edid_blob_len;
+   s_edid_blobres.data   = s_edid_blob;
+   return &s_edid_blobres;
+}
+
+void drmModeFreePropertyBlob(drmModePropertyBlobPtr ptr)
+{
+   if (ptr == &s_edid_blobres)
+      s_edid_frees_blob++;
+}
+
+/* The modeline path: set copies the timing into the CRT consumer's
+ * drmModeModeInfo mirror in the video state, then asks the video
+ * driver for a mode set of the mode's size. The DRM context reads
+ * the mirror on that set. */
+static video_driver_state_t s_video_st;
+static unsigned s_set_video_mode_calls;
+static unsigned s_set_video_mode_w, s_set_video_mode_h;
+static bool     s_set_video_mode_fs;
+
+video_driver_state_t *video_state_get_ptr(void)
+{
+   return &s_video_st;
+}
+
+bool video_driver_set_video_mode(unsigned dims,
       bool fullscreen)
 {
-   (void)width; (void)height; (void)fullscreen;
+   unsigned width  = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
+   s_set_video_mode_calls++;
+   s_set_video_mode_w  = width;
+   s_set_video_mode_h  = height;
+   s_set_video_mode_fs = fullscreen;
    return true;
 }
 
@@ -279,8 +379,8 @@ static int test_all_modes_reported(void)
    {
       int found = 0;
       for (j = 0; j < n; j++)
-         if (     list[j].width  == specs[i].w
-               && list[j].height == specs[i].h)
+         if (     VIDEO_SCALE_W(list[j].dims)  == specs[i].w
+               && VIDEO_SCALE_H(list[j].dims) == specs[i].h)
             found++;
       if (found != 1)
       {
@@ -337,14 +437,14 @@ static int test_list_is_sorted(void)
 
    for (i = 1; i < n; i++)
    {
-      if (list[i - 1].width <= list[i].width)
+      if (VIDEO_SCALE_W(list[i - 1].dims) <= VIDEO_SCALE_W(list[i].dims))
          continue;
       fprintf(stderr,
             "FAIL: entry %d (%ux%u) sorts after entry %d (%ux%u);"
             " the list came back in connector order, so the qsort"
             " ran over the wrong element count\n",
-            i - 1, list[i - 1].width, list[i - 1].height,
-            i,     list[i].width,     list[i].height);
+            i - 1, VIDEO_SCALE_W(list[i - 1].dims), VIDEO_SCALE_H(list[i - 1].dims),
+            i,     VIDEO_SCALE_W(list[i].dims),     VIDEO_SCALE_H(list[i].dims));
       free(list);
       return 1;
    }
@@ -395,10 +495,10 @@ static int test_current_mode_flagged(void)
       if (list[i].current)
       {
          current++;
-         if (list[i].width != specs[1].w || list[i].height != specs[1].h)
+         if (VIDEO_SCALE_W(list[i].dims) != specs[1].w || VIDEO_SCALE_H(list[i].dims) != specs[1].h)
          {
             fprintf(stderr, "FAIL: %ux%u flagged current, want %ux%u\n",
-                  list[i].width, list[i].height, specs[1].w, specs[1].h);
+                  VIDEO_SCALE_W(list[i].dims), VIDEO_SCALE_H(list[i].dims), specs[1].w, specs[1].h);
             free(list);
             free_connector(g_drm_connector);
             g_drm_connector = NULL;
@@ -422,9 +522,296 @@ static int test_current_mode_flagged(void)
    return 0;
 }
 
+/* ------------------------------------------------------------------
+ * The modeline ops: KMS generates freely (caps ADD, nothing listed),
+ * add/update/delete succeed without touching anything, set mirrors
+ * the timing for the DRM context and requests one mode set.
+ * ------------------------------------------------------------------ */
+
+static int test_modeline_ops(void)
+{
+   void *data;
+   video_modeline_disp_t ds;
+   video_modeline_t mode;
+   video_modeline_t listed[4];
+   video_output_info_t outputs[4];
+   videocrt_switch_t *mirror = &s_video_st.crt_switch_st;
+   const mode_spec_t specs[] = { { 1920, 1080, 60 } };
+
+   g_drm_connector = make_connector(specs, 1);
+   if (!g_drm_connector)
+      return 1;
+   g_drm_connector->connector_id = 77;
+   g_drm_mode = &g_drm_connector->modes[0];
+   memset(&s_video_st, 0, sizeof(s_video_st));
+   s_set_video_mode_calls = 0;
+
+   data = dispserv_kms.init();
+   memset(&ds, 0, sizeof(ds));
+   strcpy(ds.screen, "dummy");
+
+   if (dispserv_kms.modeline_list_outputs(data, outputs, 4) != 1
+         || outputs[0].id != 77 || VIDEO_SCALE_W(outputs[0].dims) != 1920 || !outputs[0].primary)
+   {
+      fprintf(stderr, "FAIL: list_outputs did not report the live connector\n");
+      goto fail;
+   }
+   if (!dispserv_kms.modeline_open(data, &ds))
+   {
+      fprintf(stderr, "FAIL: modeline_open\n");
+      goto fail;
+   }
+   if (dispserv_kms.modeline_caps(data) != MODELINE_CAPS_ADD)
+   {
+      fprintf(stderr, "FAIL: KMS caps must be ADD only\n");
+      goto fail;
+   }
+   /* The connector's own modes, whole timing included, so the engine
+    * can score one of them when generation is off (#19619) */
+   if (dispserv_kms.modeline_enum(data, listed, 4) != 1)
+   {
+      fprintf(stderr, "FAIL: KMS must list the connector's modes\n");
+      goto fail;
+   }
+   {
+      const drmModeModeInfo *dm = &g_drm_connector->modes[0];
+      if (     VIDEO_SCALE_W(listed[0].dims) != 1920
+            || VIDEO_SCALE_H(listed[0].dims) != 1080
+            || listed[0].pclock  != (uint64_t)dm->clock * 1000
+            || listed[0].hactive != dm->hdisplay
+            || listed[0].hbegin  != dm->hsync_start
+            || listed[0].hend    != dm->hsync_end
+            || listed[0].htotal  != dm->htotal
+            || listed[0].vactive != dm->vdisplay
+            || listed[0].vbegin  != dm->vsync_start
+            || listed[0].vend    != dm->vsync_end
+            || listed[0].vtotal  != dm->vtotal)
+      {
+         fprintf(stderr, "FAIL: the listed mode is not the connector's timing\n");
+         goto fail;
+      }
+      /* It is g_drm_mode, so it is the desktop mode, and its timing
+       * came from DRM */
+      if (     !(listed[0].type & MODELINE_TIMING_DRMKMS)
+            || !(listed[0].type & MODELINE_DESKTOP))
+      {
+         fprintf(stderr, "FAIL: the listed mode is not tagged DRM/KMS desktop (type 0x%x)\n",
+               listed[0].type);
+         goto fail;
+      }
+   }
+
+   /* Between a context teardown and the reinit there is no connector:
+    * an empty list, not a failure, so a generated mode still goes
+    * through */
+   {
+      drmModeConnector *saved = g_drm_connector;
+      g_drm_connector         = NULL;
+      if (dispserv_kms.modeline_enum(data, listed, 4) != 0)
+      {
+         g_drm_connector = saved;
+         fprintf(stderr, "FAIL: no connector must list nothing\n");
+         goto fail;
+      }
+      g_drm_connector = saved;
+   }
+
+   /* A generated 15 kHz timing */
+   memset(&mode, 0, sizeof(mode));
+   mode.pclock     = 6514560;
+   mode.dims       = VIDEO_SCALE_PACK(320, 240);
+   mode.hactive    = 320;
+   mode.hbegin     = 333;
+   mode.hend       = 364;
+   mode.htotal     = 416;
+   mode.vactive    = 240;
+   mode.vbegin     = 242;
+   mode.vend       = 245;
+   mode.vtotal     = 261;
+   mode.vfreq      = 60.0;
+   mode.refresh    = 60;
+   mode.hsync      = 0;
+   mode.vsync      = 1;
+   mode.interlace  = 0;
+   mode.doublescan = 1;
+   mode.type       = MODELINE_ADD;
+
+   if (!dispserv_kms.modeline_add(data, &mode)
+         || !dispserv_kms.modeline_update(data, &mode)
+         || !dispserv_kms.modeline_delete(data, &mode)
+         || !dispserv_kms.modeline_flush(data))
+   {
+      fprintf(stderr, "FAIL: KMS add/update/delete/flush must be no-op successes\n");
+      goto fail;
+   }
+   if (!(mode.type & MODELINE_TIMING_DRMKMS))
+   {
+      fprintf(stderr, "FAIL: add did not tag the mode as a DRM timing\n");
+      goto fail;
+   }
+   if (s_set_video_mode_calls != 0 || mirror->vdisplay != 0)
+   {
+      fprintf(stderr, "FAIL: staging touched the mirror or the driver\n");
+      goto fail;
+   }
+
+   if (!dispserv_kms.modeline_set(data, &mode))
+   {
+      fprintf(stderr, "FAIL: modeline_set\n");
+      goto fail;
+   }
+   /* The mirror carries the timing the way drmModeModeInfo wants it:
+    * clock in kHz, sync counts as given, flags as separate ints */
+   if (mirror->clock != 6514 || mirror->hdisplay != 320
+         || mirror->hsync_start != 333 || mirror->hsync_end != 364 || mirror->htotal != 416
+         || mirror->vdisplay != 240 || mirror->vsync_start != 242
+         || mirror->vsync_end != 245 || mirror->vtotal != 261
+         || mirror->vrefresh != 60 || mirror->hskew != 0 || mirror->vscan != 0
+         || mirror->interlace != 0 || mirror->doublescan != 1
+         || mirror->hsync != 0 || mirror->vsync != 1)
+   {
+      fprintf(stderr, "FAIL: mirror %u %u %u %u %u %u %u %u %u @%u i%d d%d h%d v%d\n",
+            mirror->clock, mirror->hdisplay, mirror->hsync_start, mirror->hsync_end,
+            mirror->htotal, mirror->vdisplay, mirror->vsync_start, mirror->vsync_end,
+            mirror->vtotal, mirror->vrefresh, mirror->interlace, mirror->doublescan,
+            mirror->hsync, mirror->vsync);
+      goto fail;
+   }
+   if (s_set_video_mode_calls != 1 || s_set_video_mode_w != 320
+         || s_set_video_mode_h != 240 || !s_set_video_mode_fs)
+   {
+      fprintf(stderr, "FAIL: set made %u mode set(s), last %ux%u fs=%d\n",
+            s_set_video_mode_calls, s_set_video_mode_w, s_set_video_mode_h,
+            s_set_video_mode_fs);
+      goto fail;
+   }
+
+   /* A second set: the mirror is rewritten, never REINIT'd around */
+   mode.interlace = 1;
+   mode.vactive   = 480;
+   mode.dims      = VIDEO_SCALE_PACK(VIDEO_SCALE_W(mode.dims), 480);
+   mode.vbegin    = 483;
+   mode.vend      = 489;
+   mode.vtotal    = 523;
+   mode.pclock    = 13038390;
+   if (!dispserv_kms.modeline_set(data, &mode) || mirror->clock != 13038
+         || mirror->vdisplay != 480 || mirror->interlace != 1
+         || s_set_video_mode_calls != 2)
+   {
+      fprintf(stderr, "FAIL: second set did not rewrite the mirror\n");
+      goto fail;
+   }
+
+   dispserv_kms.modeline_close(data);
+   dispserv_kms.destroy(data);
+   free_connector(g_drm_connector);
+   g_drm_connector = NULL;
+   g_drm_mode      = NULL;
+
+   printf("[pass] modeline set mirrors the timing for the DRM context and requests one mode set\n");
+   return 0;
+
+fail:
+   /* So a failing check reports itself rather than a leak behind it */
+   dispserv_kms.destroy(data);
+   free_connector(g_drm_connector);
+   g_drm_connector = NULL;
+   g_drm_mode      = NULL;
+   return 1;
+}
+
+/* ------------------------------------------------------------------
+ * get_edid: the connector's EDID property, whole blocks only, and
+ * every libdrm object it took is released.
+ * ------------------------------------------------------------------ */
+
+static int test_get_edid(void)
+{
+   uint8_t out[512];
+   int n;
+   unsigned i;
+   const mode_spec_t specs[] = { { 640, 480, 60 } };
+
+   /* No fd, no connector: -1 unless the box has DRM sysfs, where the
+    * fallback may legitimately return a real block */
+   g_drm_fd        = -1;
+   g_drm_connector = NULL;
+   n = dispserv_kms.get_edid(NULL, out, sizeof(out));
+   if (n != -1 && (n < 128 || (n % 128) != 0))
+   {
+      fprintf(stderr, "FAIL: get_edid without a connector returned %d\n", n);
+      return 1;
+   }
+
+   g_drm_fd        = 3;
+   g_drm_connector = make_connector(specs, 1);
+   g_drm_connector->connector_id = 42;
+
+   /* Two blocks plus 17 stray bytes: the copy stops at the block */
+   s_edid_blob_len = 256 + 17;
+   for (i = 0; i < sizeof(s_edid_blob); i++)
+      s_edid_blob[i] = (uint8_t)(i * 7 + 3);
+   memset(out, 0xee, sizeof(out));
+   s_edid_frees_prop = s_edid_frees_blob = s_edid_frees_set = 0;
+   n = dispserv_kms.get_edid(NULL, out, sizeof(out));
+   if (n != 256)
+   {
+      fprintf(stderr, "FAIL: get_edid returned %d, want 256\n", n);
+      return 1;
+   }
+   if (memcmp(out, s_edid_blob, 256) || out[256] != 0xee)
+   {
+      fprintf(stderr, "FAIL: get_edid copied the wrong bytes\n");
+      return 1;
+   }
+   if (s_edid_frees_prop != 3 || s_edid_frees_blob != 1 || s_edid_frees_set != 1)
+   {
+      fprintf(stderr, "FAIL: get_edid leaked libdrm objects (%u/%u/%u)\n",
+            s_edid_frees_prop, s_edid_frees_blob, s_edid_frees_set);
+      return 1;
+   }
+
+   /* A caller buffer smaller than the blob: whole blocks that fit */
+   n = dispserv_kms.get_edid(NULL, out, 200);
+   if (n != 128)
+   {
+      fprintf(stderr, "FAIL: get_edid into 200 bytes returned %d, want 128\n", n);
+      return 1;
+   }
+
+   /* Too small for one block */
+   n = dispserv_kms.get_edid(NULL, out, 100);
+   if (n != -1)
+   {
+      fprintf(stderr, "FAIL: get_edid into 100 bytes returned %d\n", n);
+      return 1;
+   }
+
+   /* No DDC: the property exists but the blob is empty. Without a
+    * DRM sysfs on the box that is -1; with one, a block from the
+    * first enabled connector is also acceptable */
+   s_edid_blob_len = 0;
+   n = dispserv_kms.get_edid(NULL, out, sizeof(out));
+   if (n != -1 && (n < 128 || (n % 128) != 0))
+   {
+      fprintf(stderr, "FAIL: get_edid with an empty blob returned %d\n", n);
+      return 1;
+   }
+
+   free_connector(g_drm_connector);
+   g_drm_connector = NULL;
+   g_drm_fd        = -1;
+   puts("[pass] get_edid copies the connector's EDID blob in whole blocks and frees what it took");
+   return 0;
+}
+
 int main(void)
 {
+   if (test_get_edid())
+      return 1;
    if (test_null_connector())
+      return 1;
+   if (test_modeline_ops())
       return 1;
    if (test_connector_without_modes())
       return 1;

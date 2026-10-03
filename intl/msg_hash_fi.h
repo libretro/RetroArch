@@ -172,13 +172,13 @@ static const struct
    char s_35a1323d[9];
    char s_f72667c9[11];
    char s_adce4374[24];
+   char s_5984f4f9[5];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[52];
 #endif
    char s_4e447c6c[38];
    char s_d9a51d02[19];
    char s_12e77e8f[10];
-   char s_af6007a1[14];
    char s_da068369[6];
    char s_daead8a5[7];
    char s_48c208ee[19];
@@ -210,6 +210,7 @@ static const struct
    char s_e5aeacf9[27];
    char s_24976a5b[18];
    char s_5209cc72[30];
+   char s_e2eedfe1[14];
    char s_e66b1cb9[38];
    char s_1bf49fce[51];
    char s_11e34db0[47];
@@ -509,11 +510,14 @@ static const struct
    char s_15f24ff4[12];
    char s_ec7e8026[6];
    char s_5d29b870[13];
+   char s_6996339b[7];
    char s_08e9410c[16];
    char s_d95824aa[21];
    char s_639f529e[15];
    char s_4927597c[21];
    char s_77b74366[21];
+   char s_ab49119c[11];
+   char s_ddf679b9[9];
    char s_3b7e9d77[7];
    char s_10342503[10];
    char s_d31f6d88[11];
@@ -911,7 +915,8 @@ static const struct
    char s_136eaaf4[30];
    char s_8d3a8b68[8];
    char s_68d27147[11];
-   char s_f02f73fc[30];
+   char s_e5b971a0[5];
+   char s_17615fcf[11];
    char s_3a0a3fef[15];
    char s_1b6ed818[22];
    char s_89a75c21[22];
@@ -1013,9 +1018,7 @@ static const struct
    char s_b201bb70[46];
    char s_b66840e9[28];
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    char s_f0db2883[21];
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -1236,7 +1239,6 @@ static const struct
    char s_1cdff4ac[19];
    char s_012938fb[32];
    char s_2f169651[20];
-   char s_73674a86[17];
    char s_705eee28[47];
    char s_62af62ac[50];
    char s_12b25a4b[49];
@@ -1359,7 +1361,6 @@ static const struct
    char s_74b77b4a[14];
    char s_7534cfc9[6];
    char s_36259b63[22];
-   char s_37368130[10];
    char s_d51f54a2[14];
    char s_b35f573c[10];
    char s_1cad7751[11];
@@ -1693,17 +1694,39 @@ static const struct
    char s_01a73130[24];
    char s_44ebca0d[24];
    char s_608ac5a1[18];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_3839f91d[17];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_86b07599[16];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_8d5f85ee[22];
    char s_9b023eee[33];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_ccae82ba[13];
    char s_ad6e88de[13];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_c7bc8298[20];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_e63b035a[14];
    char s_d21d875b[9];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b12ae22e[17];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_b2d073c7[22];
    char s_1cbc2657[15];
 #endif
@@ -1763,6 +1786,8 @@ static const struct
    char s_519cd5f8[22];
    char s_43ac80a0[11];
    char s_6959ce80[13];
+   char s_886631ec[18];
+   char s_aa628249[10];
    char s_ebe994b4[12];
    char s_1c62c301[14];
    char s_a8bb35b6[9];
@@ -2085,6 +2110,7 @@ static const struct
    char s_f9dd6e61[12];
    char s_25e89959[7];
    char s_a7468d68[27];
+   char s_b1d6fea6[9];
    char s_aa0659db[22];
    char s_49757b91[22];
    char s_660eb9c4[22];
@@ -2259,7 +2285,6 @@ static const struct
    char s_9831f77b[167];
    char s_79b8ce4a[92];
    char s_a1a8257e[114];
-   char s_d5231783[100];
    char s_a68d6d11[60];
    char s_74022c02[90];
    char s_8abad013[72];
@@ -2362,8 +2387,6 @@ static const struct
    char s_16ee5cf4[35];
    char s_d9153542[51];
    char s_8e48ec69[39];
-   char s_cd46e260[97];
-   char s_cd482ffe[96];
    char s_e92351d4[125];
    char s_8e22cdce[53];
    char s_86477a78[55];
@@ -2451,7 +2474,6 @@ static const struct
    char s_193e1462[50];
    char s_6895dfd6[61];
    char s_788364f5[73];
-   char s_dd9ff22a[51];
    char s_db495a9d[34];
    char s_ddc672a7[46];
    char s_ccea261d[136];
@@ -2587,6 +2609,9 @@ static const struct
    char s_a5ffd3d0[39];
 #ifdef _3DS
    char s_0d834bc5[66];
+#endif
+#ifdef HAVE_NFSCLIENT
+   char s_3487ce71[39];
 #endif
    char s_d2ae640b[85];
    char s_8e5bac99[60];
@@ -2792,11 +2817,19 @@ static const struct
    char s_4b009af3[37];
    char s_46c57dde[41];
    char s_7eb20ecf[60];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_a0d1a85c[61];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_907ef7cc[39];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b0a46506[37];
    char s_f6492edc[49];
+#endif
 #endif
    char s_f3bfa8b9[101];
    char s_5fe2cee5[83];
@@ -2922,10 +2955,8 @@ static const struct
    char s_261210b3[69];
    char s_3a4b246c[98];
    char s_2ceab671[132];
-   char s_977f8e82[113];
    char s_5b059407[141];
    char s_7e96b5ce[36];
-   char s_3547866d[130];
    char s_8010a29e[97];
    char s_81120e85[87];
    char s_47ae341f[86];
@@ -3657,13 +3688,13 @@ static const struct
    "Puhetila",
    "Kohdekieli",
    "Teko\303\244lypalvelun osoite",
+   "Aina",
 #ifndef HAVE_DYNAMIC
    "Lataa ydin aina uudelleen kun sis\303\244lt\303\266 suoritetaan",
 #endif
    "Android-yhteyden katkaisun kiertotapa",
    "Sovelluksen kuvake",
    "Resurssit",
-   "Est\303\244 kuvissa",
    "Laite",
    "\303\204\303\244ni",
    "DSP-liit\303\244nn\303\244inen",
@@ -3695,6 +3726,7 @@ static const struct
    "WASAPI-eksklusiivinen tila",
    "WASAPI-liukumuoto",
    "WASAPI-jaetun puskurin pituus",
+   "Automaattinen",
    "Lataa ohitustiedostot automaattisesti",
    "Lataa uudelleenm\303\244\303\244ritystiedostot automaattisesti",
    "Lataa varjostimen esiasetukset automaattisesti",
@@ -3995,11 +4027,14 @@ static const struct
    "Keskeytetty",
    "Pelaa",
    "Levyn tiedot",
+   "\303\204\303\244ni",
    "Lataa uusi levy",
    "Nykyinen levyindeksi",
    "Levyn hallinta",
    "Poista levy asemasta",
    "Sy\303\266t\303\244 levy asemaan",
+   "Tavallinen",
+   "Ulostulo",
    "Oletus",
    "Lataukset",
    "Lataa ydin",
@@ -4398,7 +4433,8 @@ static const struct
    "Poista kioskitila k\303\244yt\303\266st\303\244",
    "Valikko",
    "Kioskitila",
-   "Rajoita valikon kuvataajuutta",
+   "Aina",
+   "Ei koskaan",
    "Tiedostoselain",
    "Fontin v\303\244ri: sininen",
    "Fontin v\303\244ri: vihre\303\244",
@@ -4500,9 +4536,7 @@ static const struct
    "Otsikon marginaalin vaakasuuntainen siirtym\303\244",
    "Pystysuora h\303\244ivytyskerroin",
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    "Mikrofonin estokuvat",
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -4723,7 +4757,6 @@ static const struct
    "N\303\244yt\303\244 sivupalkki",
    "Esikatselukuvan skaalauskerroin",
    "K\303\244yt\303\244 PAL60-tilaa",
-   "Yl\303\244tason kansio",
    "Keskeyt\303\244 sis\303\244lt\303\266 kun valikko on aktiivisena",
    "Keskeyt\303\244 sis\303\244lt\303\266, kun ikkuna ei ole aktiivinen",
    "Keskeyt\303\244 sis\303\244lt\303\266 kun yhteys ohjaimeen katkeaa",
@@ -4846,7 +4879,6 @@ static const struct
    "&Vapauta ydin",
    "&Ohje",
    "Tietoja RetroArchista",
-   "Avustajat",
    "Dokumentaatio",
    "Tyhjenn\303\244",
    "&Ty\303\266kalut",
@@ -5188,17 +5220,39 @@ static const struct
    "Asenna tai palauta ydin",
    "Ytimen asennus onnistui",
    "Hidastuksen tahti",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "SMB-todennustila",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Selaa SMB-jakoa",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "K\303\244yt\303\244 SMB-asiakasta",
    "SMB-yhteyksien enimm\303\244ism\303\244\303\244r\303\244",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "SMB-salasana",
    "SMB-palvelin",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "SMB-verkkoasetukset",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "SMB-jaon nimi",
    "SMB-jako",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "SMB-aikakatkaisu",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "SMB-k\303\244ytt\303\244j\303\244tunnus",
    "SMB-ty\303\266ryhm\303\244",
 #endif
@@ -5258,6 +5312,8 @@ static const struct
    "K\303\244ytt\303\266j\303\244rjestelm\303\244",
    "Git-versio",
    "Lakka-versio",
+   "MoltenVK:n versio",
+   "Tahdistus",
    "Virtal\303\244hde",
    "Akku t\303\244ynn\303\244",
    "Latautuu",
@@ -5582,6 +5638,7 @@ static const struct
    "Kuvaketeema",
    "Kyll\303\244",
    "YouTube-suoratoiston avain",
+   "HDR-tila",
    "Varjostimen esiasetus",
    "Varjostimen esiasetus",
    "Varjostimen esiasetus",
@@ -5826,8 +5883,6 @@ static const struct
    "i CRT-n\303\244ytt\303\266jen kanssa.",
    "Vaihda korkean resoluution tilaan k\303\244ytett\303\244v\303\244ksi korkean resoluution valikos"
    "sa, kun sis\303\244lt\303\266\303\244 ei ole ladattu.",
-   "Vain CRT-n\303\244yt\303\266ille. Yritt\303\244\303\244 k\303\244ytt\303\244\303\244 samaa resol"
-   "uutiota ja virkistystaajuutta kuin ydin/peli.",
    "Vaihda natiivin ja ultraleve\303\244n superresoluution v\303\244lill\303\244.",
    "K\303\244yt\303\244 tarvittaessa mukautettua kokoonpanotiedostossa m\303\244\303\244ritetty\303"
    "\244 virkistystaajuutta.",
@@ -5977,10 +6032,6 @@ static const struct
    "Vaihtaa edell\303\244ajon p\303\244\303\244lle/pois.",
    "Tallenna tila t\303\244ll\303\244 hetkell\303\244 valittuun lohkoon.",
    "Ottaa kuvan nykyisest\303\244 sis\303\244ll\303\266st\303\244.",
-   "Lataa ja k\303\244yt\303\244 seuraavaa varjostimen esiasetetustiedostoa \"Videovarjostimet\"-kan"
-   "sion juuressa.",
-   "Lataa ja k\303\244yt\303\244 edellist\303\244 varjostimen esiasetustiedostoa \"Videovarjostimet"
-   "\"-kansion juuressa.",
    "Ottaa hidastuksen k\303\244ytt\303\266\303\266n, kun pidet\303\244\303\244n pohjassa. Sis\303"
    "\244lt\303\266 py\303\266rii normaalilla nopeudella, kun n\303\244pp\303\244in vapautetaan.",
    "Vaihtaa hidastuksen ja normaalin nopeuden v\303\244lill\303\244.",
@@ -6127,7 +6178,6 @@ static const struct
    "N\303\244yt\303\244 kaikki kokoonpanoon liittyv\303\244t asetukset.",
    "K\303\244ytett\303\244v\303\244 valikkoajuri. (Vaatii uudelleenk\303\244ynnistyksen)",
    "Suojaa asennusta piilottamalla kaikki kokoonpanoon liittyv\303\244t asetukset.",
-   "Varmistaa ett\303\244 valikon kuvataajuus on rajoitettu.",
    "Muuta tiedostoselaimen asetuksia.",
    "Muokkaa valikon oletustaustan peitt\303\244vyytt\303\244.",
    "Valikon kirkkaus, yksikk\303\266 cd/m2 (niti\303\244), k\303\244ytett\303\244ess\303\244 HDR-n"
@@ -6354,6 +6404,9 @@ static const struct
    "Vaihda palvelimen ja verkon asetuksia.",
 #ifdef _3DS
    "Ota k\303\244ytt\303\266\303\266n New3DS:n kellotaajuus (804 MHz) / L2-v\303\244limuisti.",
+#endif
+#ifdef HAVE_NFSCLIENT
+   "Palvelimen IP-osoite tai is\303\244nt\303\244nimi.",
 #endif
    "N\303\244yt\303\244 n\303\244yt\303\266ll\303\244 ilmoitus viesti, kun sy\303\266tt\303\266laitt"
    "eita yhdistet\303\244\303\244n/irrotetaan.",
@@ -6669,11 +6722,19 @@ static const struct
    "Avaa perinteinen ty\303\266p\303\266yt\303\244valikko.",
    "Asenna tai palauta ydin latauskansiosta.",
    "Nopeus jolla sis\303\244lt\303\266 py\303\266rii kun k\303\244ytet\303\244\303\244n hidastusta.",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Valitse suurin mahdollinen yhteysm\303\244\303\244r\303\244 ymp\303\244rist\303\266ss\303\244si.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Palvelimen IP-osoite tai is\303\244nt\303\244nimi.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "M\303\244\303\244rit\303\244 SMB-verkkojaon asetukset.",
    "Valitse oletusarvoinen aikakatkaisu sekunneissa.",
+#endif
 #endif
    "Lajittele tallennustiedostot kansioihin, jotka on nimetty kansion mukaan, jossa sis\303\244lt"
    "\303\266 sijaitsee.",
@@ -6876,13 +6937,9 @@ static const struct
    "tiedostoille.",
    "Tallenna varjostimen esiasetus, jolla on linkki alkuper\303\244iseen esiasetukseen ja joka sis"
    "\303\244lt\303\244\303\244 vain tekem\303\244si parametrimuutokset.",
-   "Tiedostoselain avautuu viimeksi k\303\244ytetyss\303\244 hakemistossa ladattaessa varjostinasetu"
-   "ksia ja suoritusyksik\303\266it\303\244.",
    "Antaa laitteistorender\303\266iville ytimille oman yksityisen kontekstinsa. N\303\244in v\303"
    "\244ltet\303\244\303\244n laitteiston tilamuutosten arvailu kuvien v\303\244liss\303\244.",
    "Muuta videon synkronointiasetuksia.",
-   "Parantaa suorituskyky\303\244 viiveen kustannuksella ja lis\303\244\303\244 videon nykimist\303"
-   "\244. K\303\244yt\303\244 vain, jos t\303\244ytt\303\244 nopeutta ei saada muuten.",
    "Mukautettu ikkunan korkeus mit\303\244 k\303\244ytet\303\244\303\244n, jos kuvasuhde on asetettu"
    " 'Mukautettu kuvasuhde'.",
    "Mukautettu ikkunan leveys mit\303\244 k\303\244ytet\303\244\303\244n, jos Kuvasuhde on 'Mukautet"
@@ -7462,7 +7519,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (124250u
+      (sizeof(msg_hash_fi_blob) == (123691u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -7519,9 +7576,7 @@ typedef char msg_hash_fi_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
        + 21u
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -7555,17 +7610,39 @@ typedef char msg_hash_fi_blob_check[
        + 77u
 #endif
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 17u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 16u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 22u
        + 33u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 13u
        + 13u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 20u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 14u
        + 9u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 17u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 22u
        + 15u
 #endif
@@ -7684,6 +7761,9 @@ typedef char msg_hash_fi_blob_check[
 #ifdef _3DS
        + 66u
 #endif
+#ifdef HAVE_NFSCLIENT
+       + 39u
+#endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
        + 125u
@@ -7693,11 +7773,19 @@ typedef char msg_hash_fi_blob_check[
        + 42u
        + 51u
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 61u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 39u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 37u
        + 49u
+#endif
 #endif
 #ifdef HAVE_LAKKA
        + 45u
@@ -7927,13 +8015,13 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
@@ -7965,6 +8053,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
@@ -8264,11 +8353,14 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
@@ -8666,7 +8758,8 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
@@ -8768,9 +8861,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -8991,7 +9082,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_SHOW_SIDEBAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
@@ -9114,7 +9204,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
@@ -9447,17 +9536,39 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
 #endif
@@ -9517,6 +9628,8 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -9839,6 +9952,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
@@ -10013,7 +10127,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
@@ -10116,8 +10229,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
@@ -10205,7 +10316,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
@@ -10341,6 +10451,9 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
 #ifdef _3DS
    (uint32_t)MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
+#endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
@@ -10546,11 +10659,19 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
@@ -10676,10 +10797,8 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,

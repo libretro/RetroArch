@@ -327,6 +327,7 @@ public final class VfsImplementationSaf
       private Cursor cursor = null;
       private String direntName = null;
       private boolean direntIsDirectory = false;
+      private boolean[] batchIsDir = new boolean[0];
 
       /**
        * Open a Storage Access Framework directory to list its contents.
@@ -395,6 +396,54 @@ public final class VfsImplementationSaf
             close();
             return false;
          }
+      }
+
+      /**
+       * Drain up to max children into arrays, so the native side can walk a
+       * whole batch without a JNI round trip per entry. Returns the names;
+       * getBatchIsDirectory() returns the parallel directory flags for the
+       * same batch. A zero-length result means the directory is exhausted.
+       *
+       * readdir()/getDirentName()/getDirentIsDirectory() remain for callers
+       * that step one entry at a time.
+       */
+      public String[] readdirBatch(int max)
+      {
+         int n = 0;
+         String[] names;
+
+         if (max <= 0)
+            max = 1;
+
+         names        = new String[max];
+         batchIsDir   = new boolean[max];
+
+         while (n < max && readdir())
+         {
+            names[n]      = direntName;
+            batchIsDir[n] = direntIsDirectory;
+            ++n;
+         }
+
+         if (n < max)
+         {
+            String[] shrunkNames  = new String[n];
+            boolean[] shrunkFlags = new boolean[n];
+            System.arraycopy(names, 0, shrunkNames, 0, n);
+            System.arraycopy(batchIsDir, 0, shrunkFlags, 0, n);
+            names      = shrunkNames;
+            batchIsDir = shrunkFlags;
+         }
+
+         return names;
+      }
+
+      /**
+       * Directory flags for the batch returned by the last readdirBatch().
+       */
+      public boolean[] getBatchIsDirectory()
+      {
+         return batchIsDir;
       }
 
       /**

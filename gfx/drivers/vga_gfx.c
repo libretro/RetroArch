@@ -79,7 +79,10 @@ static void *vga_font_init(void *data,
    if (!font_renderer_create_default(
             &font->font_driver,
             &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
+   {
+      free(font);
       return NULL;
+   }
 
    return font;
 }
@@ -186,18 +189,18 @@ static void *vga_gfx_init(const video_info_t *video,
    *input              = NULL;
    *input_data         = NULL;
 
-   vga->vga_frame_width    = video->width;
-   vga->vga_frame_height   = video->height;
+   vga->vga_frame_width    = VIDEO_SCALE_W(video->dims);
+   vga->vga_frame_height   = VIDEO_SCALE_H(video->dims);
    vga->vga_rgb32          = video->rgb32;
 
    if (video->rgb32)
    {
-      vga->vga_frame_pitch = video->width * 4;
+      vga->vga_frame_pitch = VIDEO_SCALE_W(video->dims) * 4;
       vga->vga_frame_bits  = 32;
    }
    else
    {
-      vga->vga_frame_pitch = video->width * 2;
+      vga->vga_frame_pitch = VIDEO_SCALE_W(video->dims) * 2;
       vga->vga_frame_bits  = 16;
    }
 
@@ -210,9 +213,11 @@ static void *vga_gfx_init(const video_info_t *video,
 }
 
 static bool vga_gfx_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    unsigned width, height, bits;
    const void *frame_to_copy = frame;
    bool draw                 = true;
@@ -285,7 +290,10 @@ static bool vga_gfx_frame(void *data, const void *frame,
                   /* scale incoming frame to fit the screen */
                   unsigned    scaled_x = (width * x) / VGA_WIDTH;
                   unsigned    scaled_y = (height * y) / VGA_HEIGHT;
-                  uint32_t pixel = ((uint32_t*)frame_to_copy)[width * scaled_y + scaled_x];
+                  /* Rows are pitch bytes apart, not width pixels. */
+                  uint32_t pixel = ((const uint32_t*)
+                        ((const unsigned char*)frame_to_copy
+                         + pitch * scaled_y))[scaled_x];
 
                   /* convert RGB888 to BGR332 */
                   unsigned r = ((pixel & 0xFF0000) >> 21);
@@ -309,7 +317,10 @@ static bool vga_gfx_frame(void *data, const void *frame,
                   /* scale incoming frame to fit the screen */
                   unsigned    scaled_x = (width * x) / VGA_WIDTH;
                   unsigned    scaled_y = (height * y) / VGA_HEIGHT;
-                  unsigned short pixel = ((unsigned short*)frame_to_copy)[width * scaled_y + scaled_x];
+                  /* Rows are pitch bytes apart, not width pixels. */
+                  unsigned short pixel = ((const unsigned short*)
+                        ((const unsigned char*)frame_to_copy
+                         + pitch * scaled_y))[scaled_x];
 
                   /* convert RGB565 to BGR332 */
                   unsigned r = ((pixel & 0xF800) >> 13);
@@ -337,7 +348,7 @@ static void vga_gfx_set_nonblock_state(void *a, bool b, bool c, unsigned d) { }
 static bool vga_gfx_alive(void *data)
 {
    /* Publish the actual VGA framebuffer dimensions as the output
-    * size, not the core's frame size.  video_driver_set_output_size
+    * size, not the core's frame size.  video_driver_set_output_dims
     * feeds the value used by menu drivers, the CRT switcher and the
     * input subsystem to size their output and absolute-coordinate
     * ranges; passing the core's frame dimensions would lie to all
@@ -345,7 +356,7 @@ static bool vga_gfx_alive(void *data)
     * VGA_HEIGHT (320x200 mode 13h); the core's frame is scaled
     * into that fixed-size framebuffer per-pixel in vga_gfx_frame. */
    (void)data;
-   video_driver_set_output_size(VGA_WIDTH, VGA_HEIGHT);
+   video_driver_set_output_dims(VIDEO_SCALE_PACK(VGA_WIDTH, VGA_HEIGHT));
    return true;
 }
 
@@ -391,13 +402,13 @@ static bool vga_gfx_set_shader(void *data,
 }
 
 static void vga_set_texture_frame(void *data,
-      const void *frame, bool rgb32, unsigned width, unsigned height,
+      const void *frame, bool rgb32, unsigned dims,
       float alpha)
 {
    vga_t     *vga = (vga_t*)data;
-   unsigned pitch = width * (rgb32 ? 4 : 2);
+   unsigned pitch = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
 
-   if (!frame || !width || !height || !pitch)
+   if (!frame || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims) || !pitch)
       return;
 
    /* vga_menu_frame is always VGA_WIDTH*VGA_HEIGHT regardless of the
@@ -425,9 +436,9 @@ static void vga_set_texture_frame(void *data,
             for (x = 0; x < VGA_WIDTH; x++)
             {
                /* scale incoming frame to fit the screen */
-               unsigned scaled_x    = (width * x) / VGA_WIDTH;
-               unsigned scaled_y    = (height * y) / VGA_HEIGHT;
-               unsigned short pixel = video_frame[width * scaled_y + scaled_x];
+               unsigned scaled_x    = (VIDEO_SCALE_W(dims) * x) / VGA_WIDTH;
+               unsigned scaled_y    = (VIDEO_SCALE_H(dims) * y) / VGA_HEIGHT;
+               unsigned short pixel = video_frame[VIDEO_SCALE_W(dims) * scaled_y + scaled_x];
                unsigned r           = ((pixel & 0xF000) >> 13);
                unsigned g           = ((pixel & 0xF00) >> 9);
                unsigned b           = ((pixel & 0xF0) >> 6);
@@ -435,12 +446,29 @@ static void vga_set_texture_frame(void *data,
             }
          }
       }
-      /* FIXME: rgb32 path does not populate vga_menu_frame - leaves
-       * stale/uninitialized content for the renderer.  Separate pre-
-       * existing bug, not fixed here. */
+      else
+      {
+         const uint32_t *video_frame = (const uint32_t*)frame;
 
-      vga->vga_menu_width  = width;
-      vga->vga_menu_height = height;
+         for (y = 0; y < VGA_HEIGHT; y++)
+         {
+            for (x = 0; x < VGA_WIDTH; x++)
+            {
+               /* scale incoming frame to fit the screen */
+               unsigned scaled_x    = (VIDEO_SCALE_W(dims) * x) / VGA_WIDTH;
+               unsigned scaled_y    = (VIDEO_SCALE_H(dims) * y) / VGA_HEIGHT;
+               uint32_t pixel       = video_frame[VIDEO_SCALE_W(dims) * scaled_y + scaled_x];
+               /* ARGB8888 to BGR332, as the core frame path does */
+               unsigned r           = ((pixel & 0xFF0000) >> 21);
+               unsigned g           = ((pixel & 0x00FF00) >> 13);
+               unsigned b           = ((pixel & 0x0000FF) >> 6);
+               vga->vga_menu_frame[VGA_WIDTH * y + x] = (b << 6) | (g << 3) | r;
+            }
+         }
+      }
+
+      vga->vga_menu_width  = VIDEO_SCALE_W(dims);
+      vga->vga_menu_height = VIDEO_SCALE_H(dims);
       vga->vga_menu_pitch  = pitch;
       vga->vga_menu_bits   = rgb32 ? 32 : 16;
    }
@@ -479,16 +507,15 @@ static const video_poke_interface_t vga_poke_interface = {
 
 static void vga_gfx_get_poke_interface(void *data,
       const video_poke_interface_t **iface) { *iface = &vga_poke_interface; }
-void vga_gfx_set_viewport(void *data, unsigned vp_width,
-      unsigned vp_height, bool force_full, bool allow_rotate) { }
+void vga_gfx_set_viewport(void *data, unsigned dims,
+      bool force_full, bool allow_rotate) { }
 
 static void vga_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
 
-   vp->x = vp->y = 0;
+   vp->pos = VIDEO_POS_PACK(0, 0);
 
-   vp->width  = vp->full_width  = VGA_WIDTH;
-   vp->height = vp->full_height = VGA_HEIGHT;
+   vp->dims   = vp->full_dims   = VIDEO_SCALE_PACK(VGA_WIDTH, VGA_HEIGHT);
 }
 
 static font_renderer_t vga_font = {
@@ -518,7 +545,6 @@ video_driver_t video_vga = {
    NULL, /* set_rotation */
    vga_gfx_viewport_info,
    NULL, /* read_viewport */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL, /* get_overlay_interface */
 #endif

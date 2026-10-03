@@ -1,0 +1,54 @@
+# Lock acquisitions allowed inside each function's own block, as
+# tools/lock_acquire_budget.sh counts them off the release objects.
+# Measured with gcc -O3 on x86-64. A count here is a ceiling, not a
+# target: the ones that are not zero are the passes that genuinely have
+# something to coordinate.
+#
+# function                       allowed
+video_thread_presenter_stats     0
+video_thread_latency_stats       0
+video_thread_pacing_stats        0
+video_thread_swap_count          0
+thread_get_refresh_rate          0
+# The write that keeps read_vp following the viewport it reports, so
+# CMD_READ_VIEWPORT's compare stays truthful. Skipped on the polls
+# where the viewport has not changed, which is all of them but a
+# resize.
+video_thread_viewport_info       1
+# The handoff runs on the ring word and eventcounts; nothing here.
+video_thread_frame               0
+# The video thread's pass: the command copy, the driver snapshot for a
+# batch of uploads, and the menu-texture handoff, each behind a test
+# that is false on a pass with only a frame to draw. The upload lists
+# themselves are mpsc stacks.
+video_thread_loop                2
+# Parks and handshakes ride an eventcount and atomic words; nothing here.
+audio_thread_loop                0
+# Taken once it has something to retire; returns on two atomic loads
+# before any of them on a frame with nothing in flight.  The progress
+# walk also counts the due main-thread tasks; picking and settling one
+# (inlined here) takes the lock only when such a task is due.
+retro_task_threaded_gather       8
+# The pool lock guards the queue only: one take per item to dequeue it.
+# Finishing an item retires it on the outstanding count and wakes
+# tpool_wait() through an eventcount, without the lock.
+tpool_worker                     1
+tpool_help                       1
+# Only at teardown, waiting for the threads to leave.
+tpool_wait                       1
+# The recorder's pushes and its encoder hand frames over through
+# retro_spsc rings and sleep on eventcounts; nothing here.
+ffmpeg_push_video                0
+ffmpeg_push_audio                0
+ffmpeg_thread                    0
+video_driver_frame               0
+audio_driver_sample_batch        0
+runloop_iterate                  0
+# The emulated mailbox's acquire thread: atomic words and eventcounts.
+vulkan_emulated_mailbox_loop     0
+# queue_lock around vkQueuePresentKHR, dropped when it returns.
+vulkan_present                   1
+# None on a frame. The one is queue_lock around the submission that
+# empties a full stale-acquire list (vulkan_consume_stale_acquires,
+# inlined here).
+vulkan_acquire_next_image        1

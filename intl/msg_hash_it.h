@@ -206,7 +206,6 @@ static const struct
    char s_9834febe[489];
    char s_93805cc8_0[500];
    char s_93805cc8_1[134];
-   char s_b495662b[161];
    char s_9953f4e2[258];
    char s_79e212bd[6];
    char s_6342700c[10];
@@ -255,13 +254,13 @@ static const struct
    char s_35a1323d[17];
    char s_f72667c9[23];
    char s_adce4374[20];
+   char s_5984f4f9[7];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[52];
 #endif
    char s_4e447c6c[31];
    char s_d9a51d02[10];
    char s_12e77e8f[14];
-   char s_af6007a1[14];
    char s_da068369[18];
    char s_48c208ee[17];
    char s_a38cafbb[19];
@@ -610,11 +609,31 @@ static const struct
    char s_15f24ff4[9];
    char s_ec7e8026[13];
    char s_5d29b870[23];
+   char s_3cc9b420[18];
+   char s_bdea22f3[21];
+   char s_558faf3a[12];
+   char s_5fb85af7[11];
+   char s_5fbcf86a[13];
+   char s_575c05fd[21];
+   char s_9104dbe7[13];
+   char s_b4e9520b[29];
+   char s_12bd74ce[17];
+   char s_12c0a864[22];
+   char s_bfba8cdb[13];
    char s_08e9410c[19];
    char s_d95824aa[21];
    char s_639f529e[20];
    char s_4927597c[14];
    char s_77b74366[15];
+   char s_ab49119c[7];
+   char s_dfa3c8c3[6];
+   char s_a3825f18[14];
+   char s_ef2d0a03[24];
+   char s_ad17a194[13];
+   char s_ddf679b9[7];
+   char s_7137e7c2[24];
+   char s_f9fe3b9c[12];
+   char s_e62892df[18];
    char s_3b7e9d77[12];
    char s_10342503[10];
    char s_d31f6d88[16];
@@ -784,6 +803,7 @@ static const struct
    char s_56e1b336[22];
    char s_313d15c0[9];
    char s_e9f0dd82[38];
+   char s_0bebb490[12];
    char s_72765a06[14];
    char s_72765a07[14];
    char s_72765a08[14];
@@ -1051,7 +1071,8 @@ static const struct
 #endif
    char s_136eaaf4[29];
    char s_68d27147[24];
-   char s_f02f73fc[26];
+   char s_e5b971a0[7];
+   char s_17615fcf[4];
    char s_3a0a3fef[13];
    char s_1e09db79[9];
    char s_0d2d8eef[12];
@@ -1151,9 +1172,7 @@ static const struct
    char s_b201bb70[43];
    char s_b66840e9[33];
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    char s_f0db2883[23];
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -1384,7 +1403,6 @@ static const struct
    char s_012938fb[30];
    char s_a747cdc9[41];
    char s_2f169651[20];
-   char s_73674a86[21];
    char s_705eee28[53];
    char s_62af62ac[46];
    char s_12b25a4b[61];
@@ -1504,7 +1522,6 @@ static const struct
    char s_74b77b4a[14];
    char s_7534cfc9[7];
    char s_36259b63[26];
-   char s_37368130[14];
    char s_d51f54a2[15];
    char s_b35f573c[9];
    char s_1cad7751[11];
@@ -1834,8 +1851,10 @@ static const struct
    char s_b160f7a1[32];
    char s_cd5ff0f5[23];
    char s_8b92e740[21];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_e2415d78[20];
+#endif
 #endif
    char s_aeef8db2[15];
    char s_14d20957[16];
@@ -1862,18 +1881,39 @@ static const struct
    char s_01a73130[30];
    char s_44ebca0d[32];
    char s_608ac5a1[23];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_3839f91d[29];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_86b07599[25];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_8d5f85ee[19];
    char s_9b023eee[31];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_ccae82ba[13];
    char s_ad6e88de[11];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_c7bc8298[25];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_e63b035a[22];
    char s_d21d875b[17];
-   char s_ae86fed0[32];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b12ae22e[12];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_b2d073c7[16];
    char s_1cbc2657[21];
 #endif
@@ -1910,7 +1950,9 @@ static const struct
    char s_52e94a24[17];
    char s_d748f469[46];
    char s_9f006f5c[22];
+   char s_773482e7[10];
    char s_7fec5ca7[13];
+   char s_f05bb3b5[9];
    char s_9374b989[15];
    char s_7943e750[22];
    char s_cec8f66d[38];
@@ -1943,6 +1985,8 @@ static const struct
    char s_519cd5f8[28];
    char s_43ac80a0[13];
    char s_6959ce80[15];
+   char s_886631ec[18];
+   char s_aa628249[6];
    char s_ebe994b4[23];
    char s_1c62c301[9];
    char s_a8bb35b6[12];
@@ -2510,7 +2554,6 @@ static const struct
    char s_79b8ce4a[75];
    char s_a1a8257e[123];
    char s_282f7955[124];
-   char s_d5231783[108];
    char s_a68d6d11[64];
    char s_74022c02[105];
    char s_8abad013[83];
@@ -2522,6 +2565,8 @@ static const struct
    char s_fe3fb37b[54];
    char s_7b51019e[61];
    char s_aa6534cc[31];
+   char s_f43bec66[118];
+   char s_d814ec71[88];
    char s_f2a19576[64];
    char s_b2a8d230[52];
    char s_11c7fa0c[97];
@@ -2645,8 +2690,6 @@ static const struct
    char s_d9153542[63];
    char s_8e48ec69[48];
    char s_cd43c108[91];
-   char s_cd46e260[106];
-   char s_cd482ffe[108];
    char s_49336383[54];
    char s_e92351d4[154];
    char s_8e22cdce[67];
@@ -2792,7 +2835,6 @@ static const struct
    char s_193e1462[59];
    char s_6895dfd6[51];
    char s_788364f5[89];
-   char s_dd9ff22a[61];
    char s_db495a9d[41];
    char s_ddc672a7[55];
    char s_ccea261d[151];
@@ -2945,6 +2987,9 @@ static const struct
    char s_a5ffd3d0[48];
 #ifdef _3DS
    char s_0d834bc5[61];
+#endif
+#ifdef HAVE_NFSCLIENT
+   char s_3487ce71[37];
 #endif
    char s_d2ae640b[96];
    char s_8e5bac99[100];
@@ -3193,8 +3238,10 @@ static const struct
    char s_bce9b94f[52];
    char s_d32f5a63[43];
    char s_9177176e[41];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_a1fdf4a6[37];
+#endif
 #endif
    char s_97d77020[35];
    char s_59f05605[30];
@@ -3210,19 +3257,27 @@ static const struct
    char s_4b009af3[35];
    char s_46c57dde[58];
    char s_7eb20ecf[73];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[56];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_69c0e487[51];
-   char s_706ff4dc[202];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_a0d1a85c[67];
-   char s_b5966528[31];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_907ef7cc[37];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b0a46506[57];
-   char s_04624c88[48];
-   char s_91976dbe[49];
    char s_f6492edc[45];
-   char s_9bb85635[34];
-   char s_22a05685[37];
+#endif
 #endif
    char s_f3bfa8b9[101];
    char s_5fe2cee5[88];
@@ -3373,7 +3428,6 @@ static const struct
    char s_eec252b5[127];
    char s_f4e4e921[193];
    char s_7968f59d[43];
-   char s_8cee3615[184];
    char s_58c80718[320];
    char s_67d549fd[43];
    char s_afac733c[34];
@@ -3398,13 +3452,11 @@ static const struct
    char s_261210b3[79];
    char s_3a4b246c[114];
    char s_2ceab671[148];
-   char s_977f8e82[122];
    char s_3c679f0a[320];
    char s_5b059407[131];
    char s_36033606[214];
    char s_2e69508b[361];
    char s_7e96b5ce[50];
-   char s_3547866d[157];
    char s_c2314d30[218];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[190];
@@ -4389,8 +4441,6 @@ static const struct
    "a frequenza esatta del contenu",
    "to. \303\210 possibile lasciare attivo il VRR (frequenza di aggiornamento variabile) di sistema,"
    " purch\303\251 non si attivi questa impostazione.",
-   "Usa driver video multithread. Il suo utilizzo potrebbe migliorare le prestazioni, al costo di un"
-   "a possibile latenza maggiore e di un aumento degli scatti video.",
    "Sincronizza con Esact Content Framerate. Questa opzione equivale a forzare la velocit\303\240 di"
    " x1 pur consentendo un rapido avanzamento. Nessuna deviazione dalla frequenza di aggiornamento r"
    "ichiesta dal core, nessun controllo della velocit\303\240 dinamica del suono.",
@@ -4441,13 +4491,13 @@ static const struct
    "Modalit\303\240 vocale",
    "Lingua di destinazione",
    "URL del servizio IA",
+   "Sempre",
 #ifndef HAVE_DYNAMIC
    "Ricarica sempre il Core in esecuzione dei contenuti",
 #endif
    "Disconnetti Android workaround",
    "Icona App",
    "Risorse/Asset",
-   "Blocchi Frame",
    "Dispositivo audio",
    "Plugin Audio DSP",
    "Rimuovi plugin DSP",
@@ -4796,11 +4846,31 @@ static const struct
    "In Pausa",
    "Riproduzione",
    "Informazioni sul disco",
+   "Disco Genuino: %s",
+   "Data di rilascio: %s",
+   "Sistema: %s",
+   "Titolo: %s",
+   "Traccia: %d:",
+   "Numero di tracce: %d",
+   "Modalit\303\240 %d",
+   " - Lunghezza: %02d:%02d.%02d",
+   " - Modalit\303\240: %s",
+   " - Dimensioni: %.1fMb",
+   "Versione: %s",
    "Carica nuovo disco",
    "Indice disco attuale",
    "Controllo del disco",
    "Espelli Disco",
    "Inserire disco",
+   "Grezzo",
+   "Leggi",
+   "Versione EDID",
+   "Visualizza Informazioni",
+   "Orientamento",
+   "Uscita",
+   "Frequenza Aggiornamento",
+   "Risoluzione",
+   "Visualizza Server",
    "Predefinito",
    "Scaricati",
    "Scarica un core",
@@ -4970,6 +5040,7 @@ static const struct
    "Pulsante Y (sinistro)",
    "Tasto %s",
    "Tipo di Mappatura controller tastiera",
+   "Tastiera %s",
    "Aux A Pistola",
    "Aux B Pistola",
    "Aux C Pistola",
@@ -5237,7 +5308,8 @@ static const struct
 #endif
    "Disabilita modalit\303\240 chiosco",
    "Abilita modalit\303\240 Kiosk",
-   "Limita framerate del menu",
+   "Sempre",
+   "Mai",
    "Sfoglia file",
    "Opacit\303\240",
    "Luminosit\303\240",
@@ -5337,9 +5409,7 @@ static const struct
    "Scostamento Margine del Titolo Orizzontale",
    "Fattore Di Dissolvenza Verticale",
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    "Frame blocco microfono",
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -5570,7 +5640,6 @@ static const struct
    "Fattore scala delle copertine",
    "Tronca nomi scaletta (Riavvio richiesto)",
    "Usa modalit\303\240 PAL60",
-   "Directory principale",
    "Metti in pausa il contenuto quando il menu \303\250 attivo",
    "Metti in pausa il contenuto quando non attivo",
    "Metti il contenuto in pausa quando il controller si scollega",
@@ -5690,7 +5759,6 @@ static const struct
    "&Scarica Core",
    "&Aiuto",
    "Informazioni Su RetroArch",
-   "Collaboratori",
    "Documentazione",
    "Cancella",
    "&Strumenti",
@@ -6026,8 +6094,10 @@ static const struct
    "Mostra 'Gestione Alimentazione'",
    "Mostra 'Registrazione'",
    "Mostra 'Salvataggio'",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Mostra 'SMB Client'",
+#endif
 #endif
    "Mostra 'Steam'",
    "Mostra 'Utente'",
@@ -6054,18 +6124,39 @@ static const struct
    "Installa o ripristina un core",
    "Installazione centrale riuscita",
    "Velocit\303\240 Rallentatore",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Modalit\303\240 Autenticazione SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Sfoglia Condivisione SMB",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Abilita Client SMB",
    "Numero massimo connessioni SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Password SMB",
    "Server SMB",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Impostazioni di Rete SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Nome Condivisione SMB",
    "Condivisione SMB",
-   "Sottocartelle SMB (facoltativo)",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Timeout SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Nome Utente SMB",
    "Gruppo Di Lavoro SMB",
 #endif
@@ -6102,7 +6193,9 @@ static const struct
    "Url trasmissione",
    "Configurazione di trasmissione personalizzata",
    "Contenuto attuale: %s",
+   "Carica %s",
    "Sottosistemi",
+   "Avvia %s",
    "Core Suggeriti",
    "Sospendi salvaschermo",
    "Modalit\303\240 delle Prestazioni Sostenute",
@@ -6135,6 +6228,8 @@ static const struct
    "Sistema operativo front-end",
    "Versione Git",
    "Versione Lakka",
+   "Versione MoltenVK",
+   "Ritmo",
    "Fonte di alimentazione",
    "Caricato",
    "Caricamento",
@@ -6775,8 +6870,6 @@ static const struct
    " viene caricato alcun contenuto.",
    "Scorri queste opzioni per regolare le impostazioni della dimensione orizzontale o per cambiare l"
    "a dimensione dell'immagine.",
-   "Solo per schermi CRT. Tenta di utilizzare la risoluzione core/gioco e la frequenza di aggiorname"
-   "nto esatte.",
    "Passa dalle risoluzioni native a risoluzioni super ultralarghe.",
    "Utilizza una frequenza di ricarica personalizzata specificata nel file di configurazione, se nec"
    "essario.",
@@ -6789,6 +6882,9 @@ static const struct
    "Modifica le directory predefinite per questo sistema.",
    "Visualizza le informazioni sui dischi multimediali inseriti.",
    "Gestione delle immagini disco.",
+   "Visualizza l'EDID nella visualizzazione dei report: identit\303\240, capacit\303\240, timings su"
+   "pportati e blocchi di estensione.",
+   "Visualizza il server, l'output, la modalit\303\240 e la dimensione fisica del display in uso.",
    "Scarica e installa un core dal sistema di aggiornamento online.",
    "Scarica contenuti gratuiti per il core selezionato.",
    "Scarica i file ausiliari di sistema necessari per un funzionamento corretto e ottimale del core.",
@@ -6957,10 +7053,6 @@ static const struct
    "Salva il salvataggio rapido allo slot attualmente selezionato.",
    "Acquisisce una schermata del contenuto attuale.",
    "Tieni premuto lo shader attualmente selezionato/disattivato mentre il tasto viene premuto.",
-   "Carica e applica il prossimo file di preimpostazione shader nella radice della directory 'Video "
-   "Shaders'.",
-   "Carica e applica il precedente file di preimpostazione shader nella radice della directory 'Vide"
-   "o Shaders'.",
    "Attiva o disattiva lo shader attualmente selezionato.",
    "Attiva la riproduzione al rallentatore quando si tiene premuto il tasto. Il contenuto \303\250 r"
    "iprodotto a velocit\303\240 normale quando il tasto viene rilasciato.",
@@ -7166,7 +7258,6 @@ static const struct
    "Mostra tutte le impostazioni relative alla configurazione.",
    "Il driver del menu da usare. (Richiede il riavvio)",
    "Protegge l'installazione nascondendo tutte le impostazioni relative alla configurazione.",
-   "Permette che il framerate sia limitato all'interno del menu.",
    "Modificare le impostazioni sfoglia file.",
    "Modifica l'opacit\303\240 dello sfondo predefinito del menu.",
    "Luminosit\303\240 del menu in cd/m2 (nits) quando si utilizza un display HDR. Visibile solo quan"
@@ -7401,6 +7492,9 @@ static const struct
    "Cambia le impostazioni del server e della rete.",
 #ifdef _3DS
    "Abilita la velocit\303\240 di clock New3DS (804MHz) e la cache L2.",
+#endif
+#ifdef HAVE_NFSCLIENT
+   "Indirizzo IP del server o nome host.",
 #endif
    "Visualizza un messaggio sullo schermo quando si collegano/disconnettono i dispositivi di input.",
    "Visualizza un messaggio sullo schermo quando i dispositivi di input non possono essere configura"
@@ -7758,8 +7852,10 @@ static const struct
    "Mostra le impostazioni di 'Gestione Alimentazione'.",
    "Mostra le impostazioni di 'Registrazione'.",
    "Mostra le impostazioni di 'salvataggio'.",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Mostra le impostazioni 'SMB Client'.",
+#endif
 #endif
    "Mostra le impostazioni di 'Steam'.",
    "Mostra impostazioni 'Utente'.",
@@ -7776,21 +7872,27 @@ static const struct
    "Apre il menu desktop tradizionale.",
    "Installa o ripristina un core dalla cartella 'Downloads'.",
    "La velocit\303\240 che il contenuto riprodurr\303\240 quando si usa il rallentatore.",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Seleziona l'autenticazione utilizzata nel tuo ambiente.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Sfoglia i file sulla condivisione SMB configurata.",
-   "Abilita l'accesso alla condivisione di rete SMB. \303\210 fortemente consigliata una connessione"
-   " cablata per maggiore affidabilit\303\240. Nota: la modifica di queste impostazioni richiede un "
-   "riavvio di RetroArch.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Seleziona il numero di connessioni massime usate nel tuo ambiente.",
-   "Password per l'autenticazione.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Indirizzo IP del server o nome host.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Configurare le impostazioni di condivisione di rete SMB.",
-   "Nome della condivisione di rete a cui accedere.",
-   "Percorso delle sottocartelle della condivisione.",
    "Seleziona il timeout predefinito in secondi.",
-   "Nome utente per l'autenticazione.",
-   "Nome del gruppo di lavoro o dominio.",
+#endif
 #endif
    "Ordina i file di salvataggio nelle cartelle denominate dalla directory in cui si trova il conten"
    "uto.",
@@ -8013,8 +8115,6 @@ static const struct
    "Arrotonda o fino al prossimo numero intero. 'Smart' scende in sottoscala quando l'immagine viene"
    " ritagliata troppo, e infine cade a scala non-interi se i margini sottoscala sono troppo grandi.",
    "Cambia le impostazioni per l'uscita video.",
-   "Sincronizza la presentazione del video con la posizione della scanline. Riduce la latenza al cos"
-   "to di un pi\303\271 elevato rischio di tearing dell'immagine. VSync deve essere disabilitato.",
    "ATTENZIONE: Il lampeggiamento rapido pu\303\262 causare persistenza dell'immagine su alcuni sche"
    "rmi. Utilizzare a proprio rischio. // Simula una semplice linea di scansione a scorrimento su pi"
    "\303\271 sub-fotogrammi, suddividendo verticalmente lo schermo e renderizzando ciascuna parte in"
@@ -8050,8 +8150,6 @@ static const struct
    "ntenuto corrente.",
    "Salva una preimpostazione shader che ha un collegamento alla preimpostazione originale caricata "
    "e include solo le modifiche apportate ai parametri.",
-   "Aprire l'esplorazione file all'ultima directory usata durante il caricamento delle preimpostazio"
-   "ni e dei passaggi shader.",
    "ATTENZIONE: Il lampeggiamento rapido pu\303\262 causare persistenza dell'immagine su alcuni sche"
    "rmi. Utilizzare a proprio rischio. // Simula una semplice linea di scansione a scorrimento su pi"
    "\303\271 sub-fotogrammi, suddividendo verticalmente lo schermo e renderizzando ciascuna parte in"
@@ -8066,8 +8164,6 @@ static const struct
    "-reported, fornendo un miglioramento del ritmo dei frame quando si esegue e.. contenuto di 30 fp"
    "s su un display a 60 Hz o un contenuto di 60 fps su un display a 120 Hz.",
    "Cambia le impostazioni di sincronizzazione video.",
-   "Migliora le prestazioni al costo della latenza e di una maggiore incisione video. Usalo solo se "
-   "altrimenti non \303\250 possibile ottenere una velocit\303\240 maggiore.",
    "Tenta di migliorare le prestazioni usando i buffer di argomenti di Metal. Alcuni core potrebbero"
    " richiederli. Potrebbe compromettere alcuni shader, specialmente su hardware o versioni di siste"
    "ma operativo pi\303\271 datati.",
@@ -8719,7 +8815,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (183725u
+      (sizeof(msg_hash_it_blob) == (183237u
 #ifdef ANDROID
        + 376u
 #endif
@@ -8803,9 +8899,7 @@ typedef char msg_hash_it_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
        + 23u
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -8844,19 +8938,40 @@ typedef char msg_hash_it_blob_check[
 #ifdef HAVE_LAKKA
        + 14u
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 20u
        + 29u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 25u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 19u
        + 31u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 13u
        + 11u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 25u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 22u
        + 17u
-       + 32u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 12u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 16u
        + 21u
 #endif
@@ -9024,6 +9139,9 @@ typedef char msg_hash_it_blob_check[
 #ifdef _3DS
        + 61u
 #endif
+#ifdef HAVE_NFSCLIENT
+       + 37u
+#endif
 #ifdef HAVE_GAME_AI
        + 29u
 #endif
@@ -9039,20 +9157,28 @@ typedef char msg_hash_it_blob_check[
        + 62u
        + 52u
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 37u
        + 56u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 51u
-       + 202u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 67u
-       + 31u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 37u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 57u
-       + 48u
-       + 49u
        + 45u
-       + 34u
-       + 37u
+#endif
 #endif
 #ifdef HAVE_LAKKA
        + 60u
@@ -9325,7 +9451,6 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
@@ -9374,13 +9499,13 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
@@ -9729,11 +9854,31 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_GENUINE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_RELEASE_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_SYSTEM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACKS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_DATA_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SOURCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_RESOLUTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
@@ -9903,6 +10048,7 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
@@ -10170,7 +10316,8 @@ static const uint32_t msg_hash_it_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
@@ -10270,9 +10417,7 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -10503,7 +10648,6 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
@@ -10623,7 +10767,6 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
@@ -10952,8 +11095,10 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
@@ -10980,18 +11125,39 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
 #endif
@@ -11028,7 +11194,9 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_LOAD_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_START_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
@@ -11061,6 +11229,8 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -11628,7 +11798,6 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
@@ -11640,6 +11809,8 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_DISC_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_OPTIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISPLAY_EDID_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISPLAY_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
@@ -11763,8 +11934,6 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
@@ -11910,7 +12079,6 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
@@ -12063,6 +12231,9 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
 #ifdef _3DS
    (uint32_t)MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
+#endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
@@ -12311,8 +12482,10 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -12328,19 +12501,27 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
+#endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
@@ -12491,7 +12672,6 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
@@ -12516,13 +12696,11 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,

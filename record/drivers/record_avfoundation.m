@@ -14,6 +14,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#include "../../apple_runtime.h"
 #import <AVFoundation/AVFoundation.h>
 #import <CoreVideo/CoreVideo.h>
 #import <CoreMedia/CoreMedia.h>
@@ -192,8 +193,8 @@ static void *avfoundation_record_init(const struct record_params *params)
       {
          unsigned scale = params->video_record_scale_factor > 0
                         ? params->video_record_scale_factor : 1;
-         handle->width  = params->out_width  * scale;
-         handle->height = params->out_height * scale;
+         handle->width  = VIDEO_SCALE_W(params->out_dims) * scale;
+         handle->height = VIDEO_SCALE_H(params->out_dims) * scale;
          /* H.264 requires even dimensions */
          handle->width  = (handle->width  + 1) & ~1;
          handle->height = (handle->height + 1) & ~1;
@@ -260,7 +261,7 @@ static void *avfoundation_record_init(const struct record_params *params)
       NSString *videoCodec = AVVideoCodecTypeH264;
       bool useHEVC         = false;
 #if defined(MAC_OS_X_VERSION_10_13) || defined(__IPHONE_11_0)
-      if (@available(macOS 10.13, iOS 11.0, tvOS 11.0, *))
+      if (apple_runtime_available(APPLE_RUNTIME_VER(10, 13, 0), APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(11, 0, 0)))
       {
          if (params->preset == RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY
                || params->preset == RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY)
@@ -331,9 +332,22 @@ static void *avfoundation_record_init(const struct record_params *params)
       {
          AudioChannelLayout channelLayout;
          memset(&channelLayout, 0, sizeof(channelLayout));
-         channelLayout.mChannelLayoutTag = handle->channels == 1
-                                         ? kAudioChannelLayoutTag_Mono
-                                         : kAudioChannelLayoutTag_Stereo;
+         /* the frames arrive in the WAV order - FL FR FC LFE BL BR
+          * SL SR - which is the channel bitmap's ascending order, so
+          * a wider layout is named by its bitmap rather than a tag
+          * whose order might differ (the MPEG 7.1 tags put the pairs
+          * the other way about) */
+         switch (handle->channels)
+         {
+            case 1:  channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_Mono; break;
+            case 4:  channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_UseChannelBitmap;
+                     channelLayout.mChannelBitmap    = 0x33; break;
+            case 6:  channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_UseChannelBitmap;
+                     channelLayout.mChannelBitmap    = 0x3F; break;
+            case 8:  channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_UseChannelBitmap;
+                     channelLayout.mChannelBitmap    = 0x63F; break;
+            default: channelLayout.mChannelLayoutTag = kAudioChannelLayoutTag_Stereo; break;
+         }
 
          NSData *channelLayoutData = [NSData dataWithBytes:&channelLayout
                                                     length:sizeof(channelLayout)];
@@ -487,23 +501,25 @@ static bool avfoundation_record_push_video(void *data,
       void  *baseAddress = CVPixelBufferGetBaseAddress(pixelBuffer);
       size_t bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer);
 
+      unsigned src_w = VIDEO_SCALE_W(video_data->dims);
+      unsigned src_h = VIDEO_SCALE_H(video_data->dims);
+
       /* Clamp destination to source size (like ffmpeg does) */
-      unsigned dst_w = video_data->width < handle->width
-                     ? video_data->width : handle->width;
-      unsigned dst_h = video_data->height < handle->height
-                     ? video_data->height : handle->height;
-      bool shrunk    = dst_w < video_data->width
-                     || dst_h < video_data->height;
+      unsigned dst_w = src_w < handle->width
+                     ? src_w : handle->width;
+      unsigned dst_h = src_h < handle->height
+                     ? src_h : handle->height;
+      bool shrunk    = dst_w < src_w || dst_h < src_h;
 
       /* Regenerate scaler filter when input dimensions change */
-      if (   handle->scaler_in_width  != video_data->width
-          || handle->scaler_in_height != video_data->height)
+      if (   handle->scaler_in_width  != src_w
+          || handle->scaler_in_height != src_h)
       {
          struct scaler_ctx *scaler = &handle->scaler;
          scaler_ctx_gen_reset(scaler);
 
-         scaler->in_width   = video_data->width;
-         scaler->in_height  = video_data->height;
+         scaler->in_width   = src_w;
+         scaler->in_height  = src_h;
          scaler->in_stride  = abs(video_data->pitch);
          scaler->out_width  = dst_w;
          scaler->out_height = dst_h;
@@ -534,8 +550,8 @@ static bool avfoundation_record_push_video(void *data,
             return false;
          }
 
-         handle->scaler_in_width  = video_data->width;
-         handle->scaler_in_height = video_data->height;
+         handle->scaler_in_width  = src_w;
+         handle->scaler_in_height = src_h;
       }
 
       {
@@ -548,7 +564,7 @@ static bool avfoundation_record_push_video(void *data,
           * so the scaler can read forward without overrunning the buffer. */
          if (flip)
             frame_data = (const uint8_t*)video_data->data
-                       + (int)video_data->pitch * ((int)video_data->height - 1);
+                       + (int)video_data->pitch * ((int)src_h - 1);
 
          scaler->in_stride  = abs(video_data->pitch);
          scaler->out_stride = (int)bytesPerRow;

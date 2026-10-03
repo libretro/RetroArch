@@ -38,6 +38,7 @@
 #include "../input_driver.h"
 #define BUILDING_BTDYNAMIC
 #include "../connect/joypad_connection.h"
+#include "../../verbosity.h"
 
 /* Length of a Bluetooth device address. */
 #define BD_ADDR_LEN        6
@@ -747,6 +748,17 @@ static sthread_t *btstack_thread;
 
 #ifdef __APPLE__
 static CFRunLoopSourceRef btstack_quit_source;
+/* The btstack thread's run loop, for waking it: signalling a source
+ * marks it ready but does not wake a run loop that is asleep, so the
+ * stop request used to sit there until something else woke it. */
+static CFRunLoopRef btstack_run_loop;
+/* Armed when power-off is requested, so the thread ends even if the
+ * daemon never reports the power state that closes the connections
+ * and stops the loop. */
+static CFRunLoopTimerRef btstack_stop_timer;
+
+/* How long power-off is given before the thread stops regardless. */
+#define BTSTACK_POWER_OFF_TIMEOUT_S 2.0
 #endif
 
 static void *btstack_get_handle(void)
@@ -1260,7 +1272,7 @@ static bool btstack_try_load(void)
    }
 #endif
 
-#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
+#if defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
    run_loop_init_ptr(RUN_LOOP_COCOA);
 #else
    run_loop_init_ptr(RUN_LOOP_POSIX);
@@ -1272,10 +1284,28 @@ static bool btstack_try_load(void)
    return true;
 }
 
+#ifdef __APPLE__
+static void btstack_thread_stop_timeout(CFRunLoopTimerRef timer, void *info)
+{
+   RARCH_WARN("[BTstack] No power-off report; stopping the thread anyway.\n");
+   CFRunLoopStop(CFRunLoopGetCurrent());
+}
+#endif
+
 static void btstack_thread_stop(void *data)
 {
    (void)data;
    bt_send_cmd_ptr(btstack_set_power_mode_ptr, HCI_POWER_OFF);
+#ifdef __APPLE__
+   /* The power-off report closes the connections and stops the loop;
+    * this stops it after a bound if that report never comes. */
+   btstack_stop_timer = CFRunLoopTimerCreate(NULL,
+         CFAbsoluteTimeGetCurrent() + BTSTACK_POWER_OFF_TIMEOUT_S,
+         0, 0, 0, btstack_thread_stop_timeout, NULL);
+   if (btstack_stop_timer)
+      CFRunLoopAddTimer(CFRunLoopGetCurrent(), btstack_stop_timer,
+            kCFRunLoopCommonModes);
+#endif
 }
 
 static void btstack_thread_func(void* data)
@@ -1287,6 +1317,8 @@ static void btstack_thread_func(void* data)
 
 #ifdef __APPLE__
    CFRunLoopSourceContext ctx = { 0, 0, 0, 0, 0, 0, 0, 0, 0, btstack_thread_stop };
+   /* Before the source: whoever sees the source can wake this loop. */
+   btstack_run_loop    = CFRunLoopGetCurrent();
    btstack_quit_source = CFRunLoopSourceCreate(0, 0, &ctx);
    CFRunLoopAddSource(CFRunLoopGetCurrent(), btstack_quit_source, kCFRunLoopCommonModes);
 #endif
@@ -1302,8 +1334,16 @@ static void btstack_thread_func(void* data)
    RARCH_LOG("[BTstack] Thread done.\n");
 
 #ifdef __APPLE__
+   if (btstack_stop_timer)
+   {
+      CFRunLoopTimerInvalidate(btstack_stop_timer);
+      CFRelease(btstack_stop_timer);
+      btstack_stop_timer = NULL;
+   }
    CFRunLoopSourceInvalidate(btstack_quit_source);
    CFRelease(btstack_quit_source);
+   btstack_quit_source = NULL;
+   btstack_run_loop    = NULL;
 #endif
 }
 
@@ -1318,6 +1358,7 @@ static void btstack_set_poweron(bool on)
    {
 #ifdef __APPLE__
       CFRunLoopSourceSignal(btstack_quit_source);
+      CFRunLoopWakeUp(btstack_run_loop);
 #endif
       sthread_join(btstack_thread);
       btstack_thread = NULL;

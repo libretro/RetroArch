@@ -1749,7 +1749,7 @@ struct string_list* cdrom_get_available_drives(void)
          if (*drive_model)
             strlcpy(drive_string, drive_model, sizeof(drive_string));
          else
-            strlcpy(drive_string, "Unknown Drive", sizeof(drive_string));
+            strlcpy_lit(drive_string, "Unknown Drive", sizeof(drive_string));
 
          string_list_append(list, drive_string, attr);
       }
@@ -1850,7 +1850,7 @@ struct string_list* cdrom_get_available_drives(void)
          if (*drive_model)
             strlcpy(drive_string, drive_model, sizeof(drive_string));
          else
-            strlcpy(drive_string, "Unknown Drive", sizeof(drive_string));
+            strlcpy_lit(drive_string, "Unknown Drive", sizeof(drive_string));
 
          string_list_append(list, drive_string, attr);
       }
@@ -1891,7 +1891,7 @@ struct string_list* cdrom_get_available_drives(void)
          if (*drive_model)
             strlcpy(drive_string, drive_model, sizeof(drive_string));
          else
-            strlcpy(drive_string, "Unknown Drive", sizeof(drive_string));
+            strlcpy_lit(drive_string, "Unknown Drive", sizeof(drive_string));
 
          string_list_append(list, drive_string, attr);
       }
@@ -2100,20 +2100,20 @@ size_t cdrom_device_fillpath(char *s, size_t len, char drive, unsigned char trac
       if (is_cue)
       {
 #ifdef _WIN32
-         size_t _len = strlcpy(s, "cdrom://", len);
+         size_t _len = strlcpy_lit(s, "cdrom://", len);
          if (len > _len)
             s[_len++] = drive;
-         _len += strlcpy(s + _len, ":/drive.cue", len - _len);
+         _len += strlcpy_lit(s + _len, ":/drive.cue", len - _len);
          return _len;
 #else
 #if defined(__linux__) || defined(__APPLE__)
-         size_t _len = strlcpy(s, "cdrom://drive", len);
+         size_t _len = strlcpy_lit(s, "cdrom://drive", len);
          if (len > _len + 1)
          {
             s[_len++] = drive;
             s[_len]   = '\0';
          }
-         _len += strlcpy(s + _len, ".cue", len - _len);
+         _len += strlcpy_lit(s + _len, ".cue", len - _len);
          return _len;
 #endif
 #endif
@@ -2121,7 +2121,7 @@ size_t cdrom_device_fillpath(char *s, size_t len, char drive, unsigned char trac
       else
       {
 #ifdef _WIN32
-         size_t _len = strlcpy(s, "cdrom://", len);
+         size_t _len = strlcpy_lit(s, "cdrom://", len);
          if (len > _len + 1)
          {
             s[_len++] = drive;
@@ -2131,7 +2131,7 @@ size_t cdrom_device_fillpath(char *s, size_t len, char drive, unsigned char trac
          return _len;
 #else
 #if defined(__linux__) || defined(__APPLE__)
-         size_t _len = strlcpy(s, "cdrom://drive", len);
+         size_t _len = strlcpy_lit(s, "cdrom://drive", len);
          if (len > _len)
             s[_len++] = drive;
          _len += snprintf(s + _len, len - _len, "-track%02d.bin", track);

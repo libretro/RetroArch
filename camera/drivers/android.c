@@ -33,7 +33,7 @@ typedef struct android_camera
 } androidcamera_t;
 
 static void *android_camera_init(const char *device, uint64_t caps,
-      unsigned width, unsigned height)
+      unsigned dims)
 {
    jclass class;
    androidcamera_t *androidcamera  = NULL;
@@ -41,8 +41,7 @@ static void *android_camera_init(const char *device, uint64_t caps,
    struct android_app *android_app = (struct android_app*)g_android;
 
    (void)device;
-   (void)width;
-   (void)height;
+   (void)dims;
 
    if ((caps & (UINT64_C(1) << RETRO_CAMERA_BUFFER_OPENGL_TEXTURE)) == 0)
    {

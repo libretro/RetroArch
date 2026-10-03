@@ -8,6 +8,7 @@ layout(set = 0, binding = 0, std140) uniform UBO
    mat4 MVP;
    /* See hdr_scrgb.frag; layout must match. */
    vec4 hdr_params;
+   vec4 hdr_out;
 } global;
 
 void main()

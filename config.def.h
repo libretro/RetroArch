@@ -89,6 +89,8 @@
 
 #define DEFAULT_TOUCH_SCALE 1
 
+#define DEFAULT_INPUT_STYLUS_PRESSURE_SENSITIVITY 70
+
 #if defined(RARCH_MOBILE) || defined(HAVE_LIBNX) || defined(__WINRT__) || defined(__EMSCRIPTEN__) || defined (VITA)
 #define DEFAULT_POINTER_ENABLE true
 #else
@@ -167,11 +169,18 @@
 /* Play the audio track of animated WebM thumbnails (menu preview). */
 #define DEFAULT_MENU_THUMBNAIL_PREVIEW_AUDIO false
 
+/* Threads converting each frame of an animated WebM/MP4 thumbnail to
+ * pixels; 1 keeps the conversion on the decode thread. */
+#define DEFAULT_MENU_THUMBNAIL_PREVIEW_THREADS 1
+
 #define DEFAULT_SCREEN_BRIGHTNESS 100
 
 #define DEFAULT_CRT_SWITCH_RESOLUTION CRT_SWITCH_NONE
 
 #define DEFAULT_CRT_SWITCH_RESOLUTION_SUPER 2560
+
+/* SDL display server: 0 never, 1 only when the native server cannot switch modes, 2 always */
+#define DEFAULT_VIDEO_SDL_DISPLAY_SERVER VIDEO_SDL_DISPLAY_SERVER_AUTO
 
 #define DEFAULT_CRT_SWITCH_CENTER_ADJUST 0
 
@@ -207,7 +216,7 @@
 #define DEFAULT_BLUETOOTH_ERTM false
 #endif
 
-#if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !defined(IOS)) || defined(__EMSCRIPTEN__)
+#if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !TARGET_OS_IPHONE) || defined(__EMSCRIPTEN__)
 #define DEFAULT_MOUSE_ENABLE true
 #else
 #define DEFAULT_MOUSE_ENABLE false
@@ -238,6 +247,13 @@
 #define DEFAULT_GAMMA 0
 #endif
 
+/* Wii and Xbox: soften the picture (on the Wii, the composite
+ * video trap filter). */
+#define DEFAULT_SOFT_FILTER false
+
+/* Xbox: flicker filter strength, 0 (off) to 5. */
+#define DEFAULT_FLICKER_FILTER 0
+
 /* Windowed
  * Real x resolution = aspect * base_size * x scale
  * Real y resolution = base_size * y scale
@@ -263,6 +279,10 @@
 #else
 #define DEFAULT_WINDOWED_FULLSCREEN true
 #endif
+
+/* Not platform-specific: how hard to push for exclusive fullscreen
+ * where the platform lets the application decide. */
+#define DEFAULT_VIDEO_FSE_NEGOTIATION VIDEO_FSE_RELAXED
 
 /* Enable automatic switching of the screen refresh rate when using the specified screen mode(s),
  * based on running core/content */
@@ -403,6 +423,13 @@
 /* GL specific */
 #define DEFAULT_ADAPTIVE_VSYNC false
 
+/* Hands SPIR-V shaders straight to the driver through GL_ARB_gl_spirv
+ * rather than cross compiling them to GLSL. Off by default: the win is
+ * on a cold driver shader cache, and at least one implementation caches
+ * the cross compiled path far more effectively than the SPIR-V one, so
+ * this is opt-in until there is per-driver data to key off. */
+#define DEFAULT_VIDEO_GL_DIRECT_SPIRV false
+
 /* Attempts to hard-synchronize CPU and GPU.
  * Can reduce latency at cost of performance. */
 #define DEFAULT_HARD_SYNC false
@@ -437,6 +464,11 @@
  * load never enter the buffer in the first place), at the cost
  * of slower convergence after content load. */
 #define DEFAULT_FRAME_TIME_SAMPLE_GATED false
+
+/* Measure the refresh-rate estimate from the display's reported present
+ * times rather than the frame loop. Off: the estimate keeps measuring
+ * exactly what it always has. */
+#define DEFAULT_FRAME_TIME_SAMPLE_FROM_DISPLAY false
 
 /* When true, drains the 'Estimated Screen Refresh Rate' sample
  * buffer after fast-forward, save state, or load state -- events
@@ -481,14 +513,49 @@
  */
 #define DEFAULT_SWAP_INTERVAL 1
 
-/* Threaded video. Will possibly increase performance significantly
- * at the cost of worse synchronization and latency.
+/* The range a swap interval may take, whether the user picks one or
+ * 'Auto' derives it from the display/content ratio. The ceiling covers
+ * the highest whole multiple a panel presents content at: 480 Hz
+ * against 30 fps is 16, 360 Hz against 24 fps is 15.
+ * runloop_video_swap_interval_for() reads it too, so the range offered
+ * and the range derived cannot drift apart.
  */
-#if defined(HAVE_LIBNX)
+#define MINIMUM_SWAP_INTERVAL 1
+#define MAXIMUM_SWAP_INTERVAL 16
+
+/* Worker threads a CPU video filter runs on; 0 (Automatic) uses one
+ * per detected CPU core. */
+#define DEFAULT_VIDEO_FILTER_THREADS 0
+#define MAXIMUM_VIDEO_FILTER_THREADS 16
+
+/* Threaded video: the core runs on one thread and the video driver
+ * presents on another. Off by default, as it has always been; the
+ * Switch and Android keep their own default. When it is on,
+ * hardware-rendered cores follow it on every API that has a ring,
+ * with no setting of their own. */
+#if defined(HAVE_LIBNX) || defined(ANDROID)
 #define DEFAULT_VIDEO_THREADED true
 #else
 #define DEFAULT_VIDEO_THREADED false
 #endif
+
+/* Pace repeated frames from the display's own report of when a present
+ * reached it, where the driver or context can say. Off falls back to the
+ * frontend clock, which is also what happens with no reporter. */
+#define DEFAULT_VIDEO_PRESENT_TIMING_FROM_DISPLAY true
+
+/* With threaded video, keep presenting the last frame at the display's
+ * cadence while the core is late, instead of leaving the last present
+ * on screen for longer. Needs a driver that can repeat a frame cheaply
+ * (poke->present_last); ignored under BFI and shader sub-frames. */
+#define DEFAULT_VIDEO_THREADED_PRESENT_REPEAT false
+
+/* With threaded video, pace the core from the display: start each frame
+ * as late as the next refresh allows given measured core and render
+ * times. Off: the fixed-timer pacing threaded video always had. */
+#define DEFAULT_VIDEO_THREADED_DISPLAY_PACING false
+
+
 
 #if defined(HAVE_THREADS)
 #if defined(GEKKO) || defined(PSP) || defined(PS2)
@@ -500,6 +567,11 @@
 #else
 #define DEFAULT_THREADED_DATA_RUNLOOP_ENABLE false
 #endif
+
+/* Off everywhere: pinning the main and audio threads to the fast
+ * cores of a mixed-core part trades battery for latency, so it is
+ * the user's call. */
+#define DEFAULT_THREAD_PREFER_FAST_CORES false
 
 /* Set to true if HW render cores should get their private context. */
 #define DEFAULT_VIDEO_SHARED_CONTEXT false
@@ -563,6 +635,11 @@
  * roughly what mid-range HDR panels reach, so it is a safe default for a value
  * the frontend cannot query - no platform exposes it portably. */
 #define DEFAULT_VIDEO_HDR_MAX_NITS 1000.0f
+/* Off: the Peak Brightness setting is used as set, as it always was */
+#define DEFAULT_VIDEO_HDR_USE_DISPLAY_PEAK false
+/* Off: the Wayland compositor is told the frame is Windows-scRGB and
+ * maps it as it always has */
+#define DEFAULT_VIDEO_HDR_SEND_LUMINANCE false
 
 /* Should we expand the colour gamut when using hdr */
 #define DEFAULT_VIDEO_HDR_EXPAND_GAMUT 0
@@ -714,8 +791,11 @@
 #endif
 
 #include "runtime_file_defines.h"
-#ifdef HAVE_MENU
+/* Outside the HAVE_MENU gate: the single-source setting rows in
+ * configuration.c are expanded in every build, so the enums their
+ * defaults name have to be visible without the menu too. */
 #include "menu/menu_defines.h"
+#ifdef HAVE_MENU
 
 #ifdef HAVE_LIBNX
 #define DEFAULT_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME true
@@ -724,8 +804,7 @@
 #endif
 
 #ifdef HAVE_OZONE
-/* Ozone colour theme: 1 == Basic Black */
-#define DEFAULT_OZONE_COLOR_THEME 1
+#define DEFAULT_OZONE_COLOR_THEME "basic_black"
 #define DEFAULT_OZONE_PADDING_FACTOR 1.0f
 #define DEFAULT_OZONE_HEADER_ICON 1
 #define DEFAULT_OZONE_HEADER_SEPARATOR 1
@@ -820,8 +899,18 @@
 #endif
 #define DEFAULT_MENU_SHOW_INFORMATION true
 #define DEFAULT_MENU_SHOW_CONFIGURATIONS true
-#define DEFAULT_MENU_SHOW_HELP true
+#if defined(ANDROID)
+/* Android's navigation model expects the user to leave via Home or the
+ * task switcher rather than an in-app control, and the Android TV
+ * guidelines state outright that an exit item should not appear in the
+ * menu. Default the entry off; the toggle stays available under
+ * Settings -> User Interface -> Menu Item Visibility for anyone who
+ * wants it back, and existing configs that already set the key are
+ * left untouched. */
+#define DEFAULT_MENU_SHOW_QUIT false
+#else
 #define DEFAULT_MENU_SHOW_QUIT true
+#endif
 #define DEFAULT_MENU_SHOW_RESTART true
 #define DEFAULT_MENU_SHOW_REBOOT true
 #define DEFAULT_MENU_SHOW_SHUTDOWN true
@@ -829,6 +918,7 @@
 #define DEFAULT_MENU_SHOW_CORE_MANAGER_STEAM true
 #endif
 #define DEFAULT_MENU_SHOW_SUBLABELS true
+#define DEFAULT_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY false
 #define DEFAULT_MENU_SHOW_CONFIRM true
 #define DEFAULT_MENU_DYNAMIC_WALLPAPER_ENABLE true
 #define DEFAULT_MENU_SCROLL_FAST false
@@ -1016,7 +1106,7 @@
 #define DEFAULT_INPUT_BACKTOUCH_TOGGLE false
 #endif
 
-#if defined(ANDROID) || defined(IOS)
+#if defined(ANDROID) || TARGET_OS_IPHONE
 #define DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED true
 #else
 #define DEFAULT_OVERLAY_ENABLE_AUTOPREFERRED false
@@ -1072,7 +1162,7 @@
 
 /* Color of the message.
  * RGB hex value. */
-#define DEFAULT_MESSAGE_COLOR 0xffff00
+#define DEFAULT_MESSAGE_COLOR 0xffffff
 
 #define DEFAULT_MESSAGE_BGCOLOR_ENABLE false
 #define DEFAULT_MESSAGE_BGCOLOR_RED 0
@@ -1097,8 +1187,10 @@
 #define DEFAULT_VIDEO_SHADER_WATCH_FILES false
 
 /* Initialise file browser with last used directory
- * when selecting shader presets/passes via the menu */
-#define DEFAULT_VIDEO_SHADER_REMEMBER_LAST_DIR false
+ * when selecting shader presets/passes via the menu,
+ * and step the next/prev shader hotkeys from the
+ * loaded preset instead of the shader directory root */
+#define DEFAULT_VIDEO_SHADER_REMEMBER_LAST_DIR true
 
 /* OSD-messages. */
 #define DEFAULT_FONT_ENABLE true
@@ -1259,6 +1351,15 @@
 #endif
 
 /* Audio device (e.g. hw:0,0 or /dev/audio). If NULL, will use defaults. */
+/* The floor applied to the audio latency setting before any driver
+ * sees it, in milliseconds. Eight is what it was fixed at, and the
+ * reason it existed: zero used to reach the drivers and each handled
+ * it differently. Lower it and an exclusive-mode driver - WASAPI,
+ * ASIO, WDM-KS - will negotiate a shorter period with the device
+ * where the device allows one; a driver that cannot goes no lower
+ * than its own hardware floor either way. */
+#define DEFAULT_AUDIO_LATENCY_FLOOR 8
+
 #define DEFAULT_AUDIO_DEVICE NULL
 
 /* Desired audio latency in milliseconds. Might not be honored
@@ -1274,6 +1375,34 @@
 
 /* Will sync audio. (recommended) */
 #define DEFAULT_AUDIO_SYNC true
+
+/* Run the audio pipeline (convert, DSP, resample, volume) on the audio
+ * thread instead of inside the frame.
+ *
+ * On wherever there are threads to run it on. The latency is the same
+ * as the frame-synchronous path at any Audio Latency setting - the
+ * pipeline moves off the frame, it does not add a buffer - while rate
+ * control gets measured at the device's own pace instead of once a
+ * frame, and the resampler leaves the frame budget.
+ *
+ * Nothing here forces it on a driver that cannot take it: audio_driver
+ * requires wait_writable() and no core audio callback, and falls back
+ * to the inline path with a log line otherwise, so this is the default
+ * for the drivers that can and a no-op for the rest. */
+#if defined(HAVE_THREADS)
+#define DEFAULT_AUDIO_THREADED_PIPELINE true
+#else
+#define DEFAULT_AUDIO_THREADED_PIPELINE false
+#endif
+
+/* Ask the OS to schedule the audio thread ahead of the rest of the
+ * frontend. Best effort: a system that refuses keeps the default
+ * priority. On wherever there is an audio thread to raise. */
+#if defined(HAVE_THREADS)
+#define DEFAULT_AUDIO_THREAD_PRIORITY true
+#else
+#define DEFAULT_AUDIO_THREAD_PRIORITY false
+#endif
 
 /* Audio rate control. */
 #if !defined(RARCH_CONSOLE)
@@ -1313,6 +1442,10 @@
 #define DEFAULT_AUDIO_FASTFORWARD_MUTE false
 /* Speed up audio to match fast forward speed up. */
 #define DEFAULT_AUDIO_FASTFORWARD_SPEEDUP false
+/* Apply fast-forward audio handling to cores that render audio
+ * through their own callback. Off keeps their audio at real time,
+ * as stable RetroArch always did. */
+#define DEFAULT_AUDIO_FASTFORWARD_CALLBACK false
 /* When a core outputs 16-bit integer audio, the deterministic
  * fixed-point (int16) resampler variant of the selected backend
  * (sinc, nearest, or CC) can be preferred over the float one for any
@@ -1323,6 +1456,15 @@
  * AUDIO_FORMAT_NEGOTIATION_INT16 (0) or AUDIO_FORMAT_NEGOTIATION_FLOAT (1).
  * Float by default, matching RetroArch's historical driver behaviour. */
 #define DEFAULT_AUDIO_FORMAT_NEGOTIATION AUDIO_FORMAT_NEGOTIATION_FLOAT
+
+/* Speaker layout to open the output device with: 0 stereo, the
+ * pipeline as it always was; 1 quad, 2 5.1, 3 5.1 with the rear pair
+ * at the sides, 4 7.1 - upmixed from the stereo mix. */
+#define DEFAULT_AUDIO_OUTPUT_LAYOUT 0
+
+/* Headphone virtual surround on a stereo device: off; it is for
+ * headphones and narrows the stereo on speakers. */
+#define DEFAULT_AUDIO_HEADPHONE_VIRTUAL_SURROUND false
 /* Automatically mute audio when rewind is enabled. */
 #define DEFAULT_AUDIO_REWIND_MUTE false
 
@@ -1358,6 +1500,7 @@
 
 /* Enables displaying various timing statistics. */
 #define DEFAULT_STATISTICS_SHOW false
+#define DEFAULT_STATISTICS_HIDE_IN_MENU true
 
 /* Enables displaying the current netplay room ping. */
 #define DEFAULT_NETPLAY_PING_SHOW false
@@ -1398,7 +1541,7 @@
 
 /* Saves non-volatile SRAM at a regular interval.
  * It is measured in seconds. A value of 0 disables autosave. */
-#if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || defined(OSX) || defined(ANDROID) || defined(IOS) || defined(DINGUX)
+#if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || TARGET_OS_OSX || defined(ANDROID) || TARGET_OS_IPHONE || defined(DINGUX)
 /* Flush to file every 10 seconds on modern platforms by default */
 #define DEFAULT_AUTOSAVE_INTERVAL 10
 #else
@@ -1447,6 +1590,11 @@
 
 #define DEFAULT_NETPLAY_SHARE_DIGITAL RARCH_NETPLAY_SHARE_DIGITAL_NO_SHARING
 #define DEFAULT_NETPLAY_SHARE_ANALOG  RARCH_NETPLAY_SHARE_ANALOG_NO_SHARING
+
+/* TLS certificate-verification policy - 0 == TLS_VERIFY_REQUIRED (the safe,
+ * fail-closed default; see network/tls_config.h). Literal here so config.def.h
+ * needn't pull in a network header. */
+#define DEFAULT_TLS_VERIFY_MODE 0
 #endif
 
 /* On save state load, block SRAM from being overwritten.
@@ -1501,7 +1649,7 @@
 
 /* Automatically saves a savestate at a regular interval.
  * It is measured in seconds. A value of 0 disables automatic savestate saving. */
-#if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || defined(OSX) || defined(ANDROID) || defined(IOS) || defined(DINGUX)
+#if defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || TARGET_OS_OSX || defined(ANDROID) || TARGET_OS_IPHONE || defined(DINGUX)
 /* Disabled by default but can be enabled by user */
 #define DEFAULT_SAVESTATE_AUTOMATIC_INTERVAL 0
 #else
@@ -1528,6 +1676,14 @@
 #define DEFAULT_SAVESTATE_FILE_COMPRESSION true
 #endif
 
+/* The codec compressed saves are written with: 0 deflate, 1
+ * Zstandard. Zstandard where the built-in codec is compiled in. */
+#ifdef HAVE_RZSTD
+#define DEFAULT_SAVE_COMPRESSION_CODEC 1
+#else
+#define DEFAULT_SAVE_COMPRESSION_CODEC 0
+#endif
+
 /* Slowmotion ratio. */
 #define DEFAULT_SLOWMOTION_RATIO 3.0f
 
@@ -1541,6 +1697,9 @@
 /* Enable runloop for variable refresh rate screens. Force x1 speed while handling fast forward too. */
 #define DEFAULT_VRR_RUNLOOP_ENABLE false
 
+/* The menu runs at the display's refresh rate while content is loaded */
+#define DEFAULT_MENU_FRAME_RATE MENU_FRAME_RATE_DISPLAY
+
 /* Run core logic one or more frames ahead then load the state back to reduce perceived input lag. */
 #define DEFAULT_RUN_AHEAD_FRAMES 1
 
@@ -1553,6 +1712,10 @@
 /* Enable stdin/network command interface. */
 #define DEFAULT_NETWORK_CMD_ENABLE false
 #define DEFAULT_NETWORK_CMD_PORT 55355
+
+/* The MCP server: off, and only on this machine, unless chosen. */
+#define DEFAULT_MCP_SERVER_ENABLE false
+#define DEFAULT_MCP_SERVER_PORT 55357
 #define DEFAULT_NETWORK_REMOTE_BASE_PORT 55400
 #define DEFAULT_STDIN_CMD_ENABLE false
 
@@ -1563,7 +1726,7 @@
  * updated via the online updater
  * > Enable by default on all modern platforms with
  *   online updater support */
-#if defined(HAVE_ONLINE_UPDATER) && (defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || defined(OSX) || defined(ANDROID) || defined(IOS))
+#if defined(HAVE_ONLINE_UPDATER) && (defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(__x86_64__) || defined(_M_X64) || defined(_WIN32) || TARGET_OS_OSX || defined(ANDROID) || TARGET_OS_IPHONE)
 #define DEFAULT_CORE_UPDATER_AUTO_BACKUP true
 #else
 #define DEFAULT_CORE_UPDATER_AUTO_BACKUP false
@@ -1572,6 +1735,9 @@
  * (oldest backup will be deleted when creating
  * a new one) */
 #define DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE 1
+/* Store automatic core backups compressed (off: the
+ * replaced core is moved into the backups as it is) */
+#define DEFAULT_CORE_UPDATER_AUTO_BACKUP_COMPRESS true
 
 #define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS false
 
@@ -1703,6 +1869,10 @@
 #define DEFAULT_INPUT_AUTO_MOUSE_GRAB false
 #endif
 
+/* Take controller input while RetroArch is not the active window.
+ * On by default: one controller can drive several instances. */
+#define DEFAULT_INPUT_JOYPAD_BACKGROUND true
+
 #if TARGET_OS_IPHONE
 #define DEFAULT_INPUT_KEYBOARD_GAMEPAD_ENABLE false
 #else
@@ -1718,10 +1888,24 @@
 #define DEFAULT_INPUT_SENSORS_ENABLE true
 
 /* Use the Android system (IME) keyboard for menu text entry instead of
- * the built-in on-screen keyboard. Off by default so gamepad-only
- * and no-touch devices keep the navigable on-screen keyboard at
- * all times. */
-#define DEFAULT_INPUT_ANDROID_SYSTEM_KEYBOARD false
+ * the built-in on-screen keyboard. On by default: it is the keyboard
+ * the device's users already know, and it brings clipboard paste and
+ * password managers. Gamepad-only and no-touch devices whose input
+ * method cannot be driven from a pad can turn it off to get the
+ * navigable on-screen keyboard back. */
+#define DEFAULT_INPUT_ANDROID_SYSTEM_KEYBOARD true
+
+/* Use the system screen keyboard for menu text entry on SDL3
+ * platforms that provide one. Off by default so gamepad-only
+ * devices such as TVs keep the navigable on-screen keyboard.
+ *
+ * webOS is the exception: its own panel is the one the remote is
+ * built to drive, and the built-in OSK is the awkward option there. */
+#ifdef WEBOS
+#define DEFAULT_INPUT_SDL3_SYSTEM_KEYBOARD true
+#else
+#define DEFAULT_INPUT_SDL3_SYSTEM_KEYBOARD false
+#endif
 
 /* Automatically enable game focus when running or
  * resuming content */
@@ -1770,7 +1954,7 @@
 #else
 #define DEFAULT_MENU_TIMEDATE_ENABLE true
 #endif
-#define DEFAULT_MENU_TIMEDATE_STYLE          MENU_TIMEDATE_STYLE_DDMM_HM
+#define DEFAULT_MENU_TIMEDATE_STYLE          MENU_TIMEDATE_STYLE_YMD_HM
 #define DEFAULT_MENU_TIMEDATE_DATE_SEPARATOR MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN
 #define DEFAULT_MENU_REMEMBER_SELECTION      MENU_REMEMBER_SELECTION_ALWAYS
 #define DEFAULT_MENU_STARTUP_PAGE            MENU_STARTUP_PAGE_MAIN_MENU
@@ -1780,7 +1964,7 @@
 
 #define DEFAULT_XMB_THUMBNAIL_SCALE_FACTOR 100
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
 #define DEFAULT_UI_COMPANION_START_ON_BOOT false
 #else
 #define DEFAULT_UI_COMPANION_START_ON_BOOT true
@@ -1792,6 +1976,25 @@
 
 /* Only init the WIMP UI for this session if this is enabled */
 #define DEFAULT_DESKTOP_MENU_ENABLE true
+
+/* Desktop companion presentation settings, shared by the Qt, Win32 and
+ * Cocoa companions. */
+#define DEFAULT_DESKTOP_MENU_VIEW_TYPE 0            /* 0 list, 1 icons */
+#define DEFAULT_DESKTOP_MENU_THUMBNAIL_TYPE 0       /* 0 boxart, 1 screenshot, 2 title, 3 logo */
+#define DEFAULT_DESKTOP_MENU_SUGGEST_LOADED_CORE_FIRST false
+#define DEFAULT_DESKTOP_MENU_SAVE_LAST_TAB false
+#define DEFAULT_DESKTOP_MENU_LAST_TAB 0
+#define DEFAULT_DESKTOP_MENU_SAVE_GEOMETRY false
+#define DEFAULT_DESKTOP_MENU_SAVE_DOCK_POSITIONS false
+#define DEFAULT_DESKTOP_MENU_SHOW_WELCOME_SCREEN true
+#define DEFAULT_DESKTOP_MENU_SCAN_FINISH_CONFIRM true
+#define DEFAULT_DESKTOP_MENU_THUMBNAIL_CACHE_LIMIT 500
+#define DEFAULT_DESKTOP_MENU_THUMBNAIL_MAX_SIZE 0   /* 0 = unlimited */
+#define DEFAULT_DESKTOP_MENU_THUMBNAIL_QUALITY 0     /* 0 = default */
+#define DEFAULT_DESKTOP_MENU_ICON_VIEW_ZOOM 50
+#define DEFAULT_DESKTOP_MENU_ALL_PLAYLISTS_LIST_MAX_COUNT 0
+#define DEFAULT_DESKTOP_MENU_ALL_PLAYLISTS_GRID_MAX_COUNT 0
+#define DEFAULT_DESKTOP_MENU_THEME 0                 /* 0 system, 1 dark, 2 custom */
 
 /* Keep track of how long each core+content has been running for over time */
 
@@ -1809,7 +2012,7 @@
 
 #define DEFAULT_UI_MENUBAR_ENABLE true
 
-#if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || (defined(__MACH__) && defined(IOS)) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON__) || defined(__PS3__)
+#if defined(__QNX__) || defined(_XBOX1) || defined(_XBOX360) || (defined(__MACH__) && TARGET_OS_IPHONE) || defined(ANDROID) || defined(WIIU) || defined(HAVE_NEON) || defined(GEKKO) || defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(__PS3__)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWER
 #elif defined(PSP) || defined(_3DS) || defined(VITA) || defined(PS2) || defined(DINGUX)
 #define DEFAULT_AUDIO_RESAMPLER_QUALITY_LEVEL RESAMPLER_QUALITY_LOWEST
@@ -1834,13 +2037,13 @@
 /* Only applies to Android 7.0 (API 24) and up */
 #define DEFAULT_SUSTAINED_PERFORMANCE_MODE false
 
-#if defined(ANDROID) || defined(IOS)
+#if defined(ANDROID) || TARGET_OS_IPHONE
 #define DEFAULT_VIBRATE_ON_KEYPRESS true
 #else
 #define DEFAULT_VIBRATE_ON_KEYPRESS false
 #endif
 
-#if defined(IOS)
+#if TARGET_OS_IPHONE
 #define DEFAULT_ENABLE_DEVICE_VIBRATION true
 #else
 #define DEFAULT_ENABLE_DEVICE_VIBRATION false
@@ -1856,6 +2059,11 @@
 
 #ifdef HAVE_VULKAN
 #define DEFAULT_VULKAN_GPU_INDEX 0
+#endif
+
+#ifdef HAVE_EGL
+/* 0: the EGL implementation chooses, as before a GPU could be picked */
+#define DEFAULT_GL_GPU_INDEX 0
 #endif
 
 #ifdef HAVE_D3D10
@@ -1898,9 +2106,9 @@
 #endif
 #elif defined(__QNX__)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/blackberry/latest/"
-#elif defined(IOS)
+#elif TARGET_OS_IPHONE
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/apple/ios/latest/"
-#elif defined(OSX)
+#elif TARGET_OS_OSX
 #if defined(__x86_64__)
 #if defined(HAVE_SSL)
 #define DEFAULT_BUILDBOT_SERVER_URL "https://buildbot.libretro.com/nightly/apple/osx/x86_64/latest/"
@@ -2016,6 +2224,7 @@
 #endif
 
 #define DEFAULT_FILTER_BY_CURRENT_CORE false
+#define DEFAULT_MENU_FILE_BROWSER_EXTENSION_DISPLAY MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS
 
 #endif
 
@@ -2024,5 +2233,23 @@
 #define DEFAULT_SMB_CLIENT_NUM_CONTEXTS 4
 #define DEFAULT_SMB_CLIENT_MAX_CONTEXTS 20
 #define DEFAULT_SMB_CLIENT_TIMEOUT 5
-#define DEFAULT_SMB_CLIENT_MAX_TIMEOUT 20
+#define DEFAULT_SMB_CLIENT_MAX_TIMEOUT 60
+/* Read-ahead window per open file, KiB: small sequential reads are
+ * served from one pipelined fetch of this size. */
+#define DEFAULT_SMB_CLIENT_READAHEAD 0
+#define DEFAULT_SMB_CLIENT_MAX_READAHEAD 16384
 #endif
+
+/* NFS client (nfs://): pool size, timeout in seconds, and the NFS and
+ * MOUNT ports, 0 meaning ask the server's portmapper. */
+#define DEFAULT_NFS_NUM_CONTEXTS 4
+#define DEFAULT_NFS_TIMEOUT 5
+#define DEFAULT_NFS_PORT 0
+#define DEFAULT_NFS_MOUNT_PORT 0
+
+/* NFS protocol version for nfs://: 3 (default) or 4. Version 4 needs
+ * no portmapper or MOUNT service and takes the export as the server's
+ * pseudo-filesystem path. */
+#define DEFAULT_NFS_VERSION 3
+#define DEFAULT_NFS_READAHEAD 0
+#define DEFAULT_NFS_MAX_READAHEAD 16384

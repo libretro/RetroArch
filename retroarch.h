@@ -111,7 +111,10 @@ enum rarch_state_flags
    RARCH_FLAGS_CLI_DATABASE_SCAN            = (1 << 14),
    RARCH_FLAGS_HAS_SET_XDELTA_PREF          = (1 << 15),
    RARCH_FLAGS_XDELTA_PREF                  = (1 << 16),
-   RARCH_FLAGS_HAS_SET_OVERLAY_PRESET       = (1 << 17)
+   RARCH_FLAGS_HAS_SET_OVERLAY_PRESET       = (1 << 17),
+   /* An unload asked for a cloud sync, which waits for the content's
+    * deinit to finish. */
+   RARCH_FLAGS_CLOUD_SYNC_ON_DEINIT         = (1 << 18)
 };
 
 bool retroarch_ctl(enum rarch_ctl_state state, void *data);
@@ -127,6 +130,11 @@ bool retroarch_override_setting_is_set(enum rarch_override_setting enum_idx, voi
 
 const char* video_shader_get_current_shader_preset(void);
 
+/* Cancels and drains the task queue (bounded) so in-flight tasks
+ * retire while the subsystems their callbacks reach are alive.
+ * main_exit() runs it first; exposed for the exit-drain harness. */
+void retroarch_drain_tasks_for_exit(void);
+
 /**
  * retroarch_main_init:
  * @argc                 : Count of (commandline) arguments.
@@ -137,6 +145,29 @@ const char* video_shader_get_current_shader_preset(void);
  * @return true on success, otherwise false if there was an error.
  **/
 bool retroarch_main_init(int argc, char *argv[]);
+
+/**
+ * retroarch_main_init_core:
+ * retroarch_main_init_drivers:
+ *
+ * retroarch_main_init() in two phases, for the staged content load:
+ * the first parses the configuration and brings the core up (dlopen,
+ * retro_init, the content read, retro_load_game), the second finds
+ * and initializes the drivers and finishes the session.  The staged
+ * load runs the first behind the drivers of the previous session
+ * (find_drivers false); the second phase (staged) then frees those,
+ * carrying the new core's hardware-render request around the
+ * teardown, and finds the drivers with the previous session's no
+ * longer in the way.  Startup runs both back to back with the find
+ * in the first phase, ahead of the core, as it always has.
+ *
+ * Both phases report a failure that retroarch_fail() raised; the
+ * verbosity the first phase parsed is handed to the second.
+ **/
+bool retroarch_main_init_core(int argc, char *argv[],
+      bool find_drivers, bool *verbosity_enabled);
+bool retroarch_main_init_drivers(bool staged,
+      bool verbosity_enabled);
 
 bool retroarch_main_quit(void);
 
@@ -195,6 +226,24 @@ unsigned int retroarch_get_core_requested_rotation(void);
 unsigned int retroarch_get_rotation(void);
 
 void retroarch_init_task_queue(void);
+
+/* Applies the task-queue settings to the running queue. */
+void retroarch_task_queue_configure(void);
+
+/**
+ * retroarch_main_deinit_begin:
+ * retroarch_main_deinit_pending:
+ * retroarch_main_deinit_finish:
+ *
+ * RARCH_CTL_MAIN_DEINIT in two halves around the wait for a save or
+ * load state task still inside the core.  RARCH_CTL_MAIN_DEINIT waits
+ * between them; the staged content load returns to the frame loop
+ * between them and asks pending() each frame, then finishes.  begin
+ * returns false when there is no session to close.
+ **/
+bool retroarch_main_deinit_begin(void);
+bool retroarch_main_deinit_pending(void);
+void retroarch_main_deinit_finish(void);
 
 /* Creates folder and core options stub file for subsequent runs */
 bool core_options_create_override(bool game_specific);

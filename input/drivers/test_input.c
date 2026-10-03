@@ -24,6 +24,9 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <formats/rjson.h>
+#include <formats/rjson_stream.h>
+
+#include <compat/strl.h>
 
 #include "../input_driver.h"
 #include "../input_keymaps.h"
@@ -186,33 +189,35 @@ static bool input_test_file_read(const char* file_path)
 {
    bool success            = false;
    KTifJSONContext context = {0};
-   RFILE *file             = NULL;
+   uint8_t *file_buf       = NULL;
+   int64_t file_len        = 0;
    rjson_t* parser;
 
    /* Sanity check */
-   if (    (!file_path || !*file_path)
-       || !path_is_valid(file_path)
-      )
+   if (!file_path || !*file_path)
    {
       RARCH_DBG("[Test input] No test input file supplied.\n");
       return false;
    }
 
-   /* Attempt to open test input file */
-   file = filestream_open(
-         file_path,
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!file)
+   /* Read the whole file in one operation: it is tiny and always
+    * parsed in full, so a single open/size/read/close beats a
+    * pre-open stat plus the chunked callback path (which itself
+    * sizes the stream with an extra fstat).  The stat below runs
+    * only to classify a failure. */
+   if (!filestream_read_file(file_path,
+         (void**)&file_buf, &file_len))
    {
-      RARCH_ERR("[Test input] Failed to open test input file: \"%s\".\n",
-            file_path);
+      if (!path_is_valid(file_path))
+         RARCH_DBG("[Test input] No test input file supplied.\n");
+      else
+         RARCH_ERR("[Test input] Failed to open test input file: \"%s\".\n",
+               file_path);
       return false;
    }
 
    /* Initialise JSON parser */
-   if (!(parser = rjson_open_rfile(file)))
+   if (!(parser = rjson_open_buffer(file_buf, (size_t)file_len)))
    {
       RARCH_ERR("[Test input] Failed to create JSON parser.\n");
       goto end;
@@ -257,8 +262,8 @@ end:
    if (context.param_str)
       free(context.param_str);
 
-   /* Close log file */
-   filestream_close(file);
+   /* Release file contents */
+   free(file_buf);
 
    if (last_test_step >= MAX_TEST_STEPS)
    {
@@ -326,10 +331,10 @@ static int16_t test_input_state(
                {
                   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                   {
-                     if (binds[port][i].valid)
+                     if (RETRO_KEYBIND_VALID(&binds[port][i]))
                      {
-                        if (     (binds[port][i].key && binds[port][i].key < RETROK_LAST)
-                              && test_key_state[DEFAULT_MAX_PADS][binds[port][id].key])
+                        if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
+                              && test_key_state[DEFAULT_MAX_PADS][RETRO_KEYBIND_KEY(&binds[port][id])])
                            ret |= (1 << i);
                      }
                   }
@@ -339,10 +344,10 @@ static int16_t test_input_state(
 
             if (id < RARCH_BIND_LIST_END)
             {
-               if (binds[port][id].valid)
+               if (RETRO_KEYBIND_VALID(&binds[port][id]))
                {
-                  if (     (binds[port][id].key && binds[port][id].key < RETROK_LAST)
-                        && test_key_state[DEFAULT_MAX_PADS][binds[port][id].key]
+                  if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
+                        && test_key_state[DEFAULT_MAX_PADS][RETRO_KEYBIND_KEY(&binds[port][id])]
                         && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
                      )
                      return 1;
@@ -420,8 +425,7 @@ static float test_input_unsigned_to_float_lux(unsigned i)
 
 static void test_input_poll(void *data)
 {
-   video_driver_state_t *video_st = video_state_get_ptr();
-   uint64_t curr_frame            = video_st->frame_count;
+   uint64_t curr_frame            = video_driver_get_frame_count();
    unsigned i;
 
    for (i=0; i<last_test_step; i++)

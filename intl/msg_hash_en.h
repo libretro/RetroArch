@@ -67,6 +67,7 @@ static const struct
    char s_ba582576[31];
    char s_eb66d46b[20];
    char s_da7a38eb[20];
+   char s_690efede[5];
    char s_5cb15718[13];
    char s_1e1182e5[21];
    char s_e645f7ac[24];
@@ -108,7 +109,6 @@ static const struct
    char s_a72ca64c[10];
    char s_8d566802[11];
    char s_911d0106[15];
-   char s_f02f73fc[25];
    char s_df92f5b5[37];
    char s_d264a13e[20];
    char s_1193e37b[34];
@@ -339,7 +339,6 @@ static const struct
    char s_7e88336d[109];
    char s_cfb4dee1[118];
    char s_e0217ae7[44];
-   char s_dd9ff22a[59];
    char s_4fe7b3d2[156];
    char s_039b790e[65];
    char s_0bd86aec[49];
@@ -614,6 +613,7 @@ static const struct
    "Serialised (Save/Load, Rewind)",
    "Build-bot Cores URL",
    "Horizontal Centring",
+   "Okay",
    "By Art Style",
    "Initialising list...",
    "Fast-Forward Frame-Skip",
@@ -655,7 +655,6 @@ static const struct
    "Grey Dark",
    "Grey Light",
    "Solarised Dark",
-   "Throttle Menu Frame Rate",
    "\"Load Content\" Start-up Notification",
    "Enable 'Okay' Sound",
    "Use Preferred System Colour Theme",
@@ -919,7 +918,6 @@ static const struct
    "Automatically move the navigation bar to the right-hand side of the screen when using landscape "
    "display orientations.",
    "Select a different background colour theme.",
-   "Makes sure the frame rate is capped while inside the menu.",
    "Swap buttons for Okay/Cancel. When disabled, the Japanese button orientation is on by default, w"
    "hen this is enabled, it is the western orientation instead.",
    "Increase coarseness of the menu background chequerboard pattern.",
@@ -1152,7 +1150,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_en_blob_check[
-      (sizeof(msg_hash_en_blob) == (26756u
+      (sizeof(msg_hash_en_blob) == (26677u
 #ifdef HAVE_LAKKA
        + 176u
 #endif
@@ -1290,6 +1288,7 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ARTSTYLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
@@ -1331,7 +1330,6 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_DARK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_LIGHT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
@@ -1561,7 +1559,6 @@ static const uint32_t msg_hash_en_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_RGUI,
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,

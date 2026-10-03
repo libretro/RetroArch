@@ -78,8 +78,3 @@ S_BOOL(menu_show_rewind, CONTENT_SHOW_REWIND,
       "Show 'Rewind'",
       "Show the 'Rewind' option.")
 #endif
-S_BOOL(menu_show_help, MENU_SHOW_HELP,
-      "menu_show_help",
-      DEFAULT_MENU_SHOW_HELP, SD_FLAG_LAKKA_ADVANCED, 0, 0,
-      "Show 'Help'",
-      "Show the 'Help' option in the Main Menu.")

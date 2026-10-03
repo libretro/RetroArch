@@ -27,7 +27,7 @@
 #include <unistd.h>
 #endif
 
-#ifdef OSX
+#if TARGET_OS_OSX
 #include <CoreFoundation/CoreFoundation.h>
 #endif
 
@@ -99,7 +99,7 @@ bool fill_pathname_application_data(char *s, size_t len)
    }
 #endif
 
-#elif defined(OSX)
+#elif TARGET_OS_OSX
    CFStringRef parent_path;
    CFURLRef bundle_url, parent_url;
    CFBundleRef bundle = CFBundleGetMainBundle();

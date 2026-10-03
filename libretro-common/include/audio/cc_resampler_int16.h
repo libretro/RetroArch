@@ -43,11 +43,17 @@ extern "C" {
  * architectures.
  *
  * As with the float driver, bandwidth_mod selects the down- or up-sampling
- * variant at init (< 0.75 -> downsample). */
+ * variant at init (< 0.75 -> downsample).
+ * Returns NULL if the nominal ratio is not one this resampler can serve:
+ * it must be positive, and no larger than a pair of sample rates can
+ * name.  process() holds the same range per call. */
 void *cc_resampler_int16_init(double bandwidth_mod);
 
 void  cc_resampler_int16_process(void *re,
       struct resampler_data_int16 *data);
+
+/* Restore fresh-stream history without allocation or configuration changes. */
+void  cc_resampler_int16_reset(void *re);
 
 void  cc_resampler_int16_free(void *re);
 

@@ -46,6 +46,8 @@
  * a different arm's code. */
 #if defined(_3DS)
 #define MEM_STATS_CTR         1
+#elif defined(GEKKO_NATIVE)
+#define MEM_STATS_GEKKO       1
 #elif defined(GEKKO)
 #define MEM_STATS_GX          1
 #elif defined(VITA)
@@ -75,9 +77,16 @@
 #include <3ds.h>
 /* osGetMemRegionSize/Free and MEMREGION_ALL are declared here */
 #include <3ds/os.h>
+#elif defined(MEM_STATS_GEKKO)
+/* os/gekko's heap grows through MEM1 and then (Wii) MEM2; what is not
+ * yet the heap is what the arenas still hold. */
+#include <malloc.h>
+#include <gekko/gekko.h>
+#define GEKKO_MEM1_SIZE 0x01800000u
+#define GEKKO_MEM2_SIZE 0x04000000u
 #elif defined(MEM_STATS_GX)
-/* SYSMEM1_SIZE is RetroArch's own, not the SDK's - platform_gx.c and
- * gx_gfx.c both take it from here.  SYS_GetArena1Size is gccore's. */
+/* SYSMEM1_SIZE is RetroArch's own, not the SDK's - platform_gx_libogc.c and
+ * gx_gfx_libogc.c both take it from here.  SYS_GetArena1Size is gccore's. */
 #include <defines/gx_defines.h>
 #include <gccore.h>
 #include <ogcsys.h>
@@ -256,10 +265,51 @@ static void mem_stats_proc_meminfo(uint64_t *total, uint64_t *avail)
 
 #endif
 
+#if defined(MEM_STATS_PS2)
+/* Retail has 32MB, a TOOL devkit has 128MB, and a retail unit switched
+ * into 64MiB mode has something in between; the kernel knows which, and
+ * has since the first BIOS, so ask it rather than assume the common
+ * case.  The literal is only a fallback for a kernel that answers with
+ * nothing - assuming retail understates a bigger machine, which is the
+ * safe direction for a caller sizing an allocation against it. */
+#define MEM_STATS_PS2_RAM_FALLBACK  (32 * 1024 * 1024)
+/* Three grabs, as before.  Each takes the largest block still inside
+ * the budget, so what a fourth would find is fragmentation rather than
+ * memory. */
+#define MEM_STATS_PS2_PROBES        3
+
+/* ps2sdk's kernel.h declares this, but that header is the whole EE
+ * kernel API and this file wants one prototype out of it - and it is a
+ * header no runner has, so taking it costs the tree the one platform arm
+ * that could be syntax checked anywhere.  The function itself is four
+ * instructions in libkernel, which every EE build already links for
+ * crt0: li $3, __NR_GetMemorySize (0x7f); syscall; jr $ra; nop.  s32 is
+ * int on this target, so this is that declaration and nothing else. */
+extern int GetMemorySize(void);
+
+static uint64_t mem_stats_ps2_ram(void)
+{
+   static uint64_t cached = 0;
+   if (!cached)
+   {
+      int size = GetMemorySize();
+      cached   = (size > 0) ? (uint64_t)size
+                            : (uint64_t)MEM_STATS_PS2_RAM_FALLBACK;
+   }
+   return cached;
+}
+#endif
+
 uint64_t mem_stats_total(void)
 {
 #if defined(MEM_STATS_CTR)
    return osGetMemRegionSize(MEMREGION_ALL);
+#elif defined(MEM_STATS_GEKKO)
+#ifdef HW_RVL
+   return GEKKO_MEM1_SIZE + GEKKO_MEM2_SIZE;
+#else
+   return GEKKO_MEM1_SIZE;
+#endif
 #elif defined(MEM_STATS_GX)
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
    return SYSMEM1_SIZE + gx_mem2_total();
@@ -316,7 +366,7 @@ uint64_t mem_stats_total(void)
     * "total" that means anything in a wasm process. */
    return (uint64_t)emscripten_get_heap_max();
 #elif defined(MEM_STATS_PS2)
-   return 32 * 1024 * 1024;
+   return mem_stats_ps2_ram();
 #elif defined(MEM_STATS_APPLE)
 #if !TARGET_OS_IPHONE
    {
@@ -376,6 +426,12 @@ uint64_t mem_stats_free(void)
 {
 #if defined(MEM_STATS_CTR)
    return osGetMemRegionFree(MEMREGION_ALL);
+#elif defined(MEM_STATS_GEKKO)
+   {
+      struct mallinfo mi = mallinfo();
+      return (uint64_t)(gk_mem1.hi - gk_mem1.lo)
+         + (uint64_t)(gk_mem2.hi - gk_mem2.lo) + (uint64_t)mi.fordblks;
+   }
 #elif defined(MEM_STATS_GX)
    {
       /* SYS_GetArena1Size() reports remaining MEM1 directly. */
@@ -454,31 +510,44 @@ uint64_t mem_stats_free(void)
     * poll it. */
    {
       static uint64_t cached = 0;
-      uint64_t free_mem;
-      size_t s0;
-      void *p1 = NULL, *p2 = NULL, *p3 = NULL;
+      static int      probed = 0;
+      uint64_t free_mem      = 0;
+      uint64_t budget        = mem_stats_ps2_ram();
+      void    *held[MEM_STATS_PS2_PROBES];
+      size_t   s0;
+      int      i;
 
-      if (cached)
+      if (probed)
          return cached;
-      s0 = 32 * 1024 * 1024;
-      while (s0 && (p1 = malloc(s0)) == NULL)
-         s0 >>= 1;
-      free_mem = s0;
-      s0 = 32 * 1024 * 1024;
-      while (s0 && (p2 = malloc(s0)) == NULL)
-         s0 >>= 1;
-      free_mem += s0;
-      s0 = 32 * 1024 * 1024;
-      while (s0 && (p3 = malloc(s0)) == NULL)
-         s0 >>= 1;
-      free_mem += s0;
-      if (p1)
-         free(p1);
-      if (p2)
-         free(p2);
-      if (p3)
-         free(p3);
+
+      for (i = 0; i < MEM_STATS_PS2_PROBES; i++)
+         held[i] = NULL;
+
+      /* Each grab starts from what is left of the budget rather than
+       * from the full 32MB.  Restarting every grab at the total was
+       * what let three of them add up to 96MB - three times the figure
+       * mem_stats_total() reports - and a caller doing the obvious
+       * total-minus-free then underflowed its unsigned arithmetic into
+       * an enormous number. */
+      for (i = 0; i < MEM_STATS_PS2_PROBES && budget; i++)
+      {
+         s0 = (size_t)budget;
+         while (s0 && (held[i] = malloc(s0)) == NULL)
+            s0 >>= 1;
+         if (!s0)
+            break;
+         free_mem += (uint64_t)s0;
+         budget   -= (uint64_t)s0;
+      }
+
+      for (i = 0; i < MEM_STATS_PS2_PROBES; i++)
+      {
+         if (held[i])
+            free(held[i]);
+      }
+
       cached = free_mem;
+      probed = 1;
       return cached;
    }
 #elif defined(MEM_STATS_APPLE)

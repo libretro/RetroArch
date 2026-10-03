@@ -197,7 +197,7 @@ retry:
                else if (event->mask & (IN_CREATE | IN_ATTRIB))
                {
                   char path[256];
-                  size_t _len = strlcpy(path, "/dev/input/", sizeof(path));
+                  size_t _len = strlcpy_lit(path, "/dev/input/", sizeof(path));
                   strlcpy(path + _len, event->name, sizeof(path) - _len);
                   RARCH_DBG("[LinuxRaw] Reconnecting \"%s\".\n",path);
 
@@ -233,7 +233,7 @@ static void *linuxraw_joypad_init(void *data)
       return NULL;
 
    linuxraw_epoll = fd;
-   _len           = strlcpy(path, "/dev/input/js", sizeof(path));
+   _len           = strlcpy_lit(path, "/dev/input/js", sizeof(path));
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -323,7 +323,9 @@ static void linuxraw_joypad_get_buttons(unsigned port, input_bits_t *state)
 
 	if (pad)
    {
-		BITS_COPY16_PTR(state, pad->buttons);
+		/* all thirty-two: button() reads that many, and this copied
+		 * sixteen - buttons 16 to 31 were not in what it handed over */
+		BITS_COPY32_PTR(state, pad->buttons);
 	}
    else
 		BIT256_CLEAR_ALL_PTR(state);

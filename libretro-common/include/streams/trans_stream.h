@@ -107,6 +107,13 @@ bool trans_stream_trans_full(
 
 const struct trans_stream_backend* trans_stream_get_zlib_deflate_backend(void);
 const struct trans_stream_backend* trans_stream_get_zlib_inflate_backend(void);
+
+/* The built-in Zstandard codec, where it is compiled in: one frame per
+ * flushed transform. */
+#ifdef HAVE_RZSTD
+const struct trans_stream_backend* trans_stream_get_rzstd_encode_backend(void);
+const struct trans_stream_backend* trans_stream_get_rzstd_decode_backend(void);
+#endif
 const struct trans_stream_backend* trans_stream_get_pipe_backend(void);
 
 extern const struct trans_stream_backend zlib_deflate_backend;

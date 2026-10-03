@@ -37,6 +37,11 @@ static retro_vfs_readdir_t dirent_readdir_cb                 = NULL;
 static retro_vfs_dirent_get_name_t dirent_dirent_get_name_cb = NULL;
 static retro_vfs_dirent_is_dir_t dirent_dirent_is_dir_cb     = NULL;
 static retro_vfs_closedir_t dirent_closedir_cb               = NULL;
+static retro_vfs_dirent_stat_t dirent_dirent_stat_cb         = NULL;
+/* Set when a frontend older than VFS API v5 owns the directory
+ * handles: the local _impl cannot be used on a foreign handle, so
+ * retro_dirent_stat() reports "unavailable" instead. */
+static bool dirent_stat_unavailable                          = false;
 
 void dirent_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 {
@@ -47,6 +52,8 @@ void dirent_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    dirent_dirent_get_name_cb = NULL;
    dirent_dirent_is_dir_cb   = NULL;
    dirent_closedir_cb        = NULL;
+   dirent_dirent_stat_cb     = NULL;
+   dirent_stat_unavailable   = false;
 
    vfs_iface                 = vfs_info->iface;
 
@@ -60,6 +67,14 @@ void dirent_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    dirent_dirent_get_name_cb = vfs_iface->dirent_get_name;
    dirent_dirent_is_dir_cb   = vfs_iface->dirent_is_dir;
    dirent_closedir_cb        = vfs_iface->closedir;
+
+   /* A frontend that negotiated v5 but left the member NULL is treated
+    * like an older one: the local _impl must not touch its handles. */
+   if (vfs_info->required_interface_version >= DIRENT_STAT_REQUIRED_VFS_VERSION
+         && vfs_iface->dirent_stat)
+      dirent_dirent_stat_cb  = vfs_iface->dirent_stat;
+   else
+      dirent_stat_unavailable = true;
 }
 
 struct RDIR *retro_opendir_include_hidden(
@@ -111,6 +126,17 @@ bool retro_dirent_is_dir(struct RDIR *rdir, const char *unused)
    if (dirent_dirent_is_dir_cb)
       return dirent_dirent_is_dir_cb((struct retro_vfs_dir_handle *)rdir);
    return retro_vfs_dirent_is_dir_impl((struct retro_vfs_dir_handle *)rdir);
+}
+
+int retro_dirent_stat(struct RDIR *rdir, int64_t *size, int64_t *mtime)
+{
+   if (!rdir)
+      return 0;
+   if (dirent_dirent_stat_cb)
+      return dirent_dirent_stat_cb((struct retro_vfs_dir_handle *)rdir, size, mtime);
+   if (dirent_stat_unavailable)
+      return 0;
+   return retro_vfs_dirent_stat_impl((struct retro_vfs_dir_handle *)rdir, size, mtime);
 }
 
 void retro_closedir(struct RDIR *rdir)

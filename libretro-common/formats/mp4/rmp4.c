@@ -1166,8 +1166,16 @@ void rmp4_set_avail(rmp4_t *m, size_t avail)
       return;
    if (avail > m->len)
       avail = m->len;
-   if (avail > m->avail)   /* monotonic: bytes never un-arrive */
-      m->avail = avail;
+   /* An exact store, not a raise.  "Bytes never un-arrive" was a
+    * growing-buffer model; a windowed caller's bound is "readable
+    * right now", and its bytes do un-arrive - the feeder decommits
+    * behind the consumer and rewinds the window at a loop.  Refusing
+    * to lower left the bound at its high-water mark, admitting reads
+    * of pages the window had taken back: the bound would then wave
+    * through a packet on unpopulated pages, and the decoder faulted
+    * inside its bitstream reader.  A caller with a growth-only source
+    * simply never lowers, so it loses nothing here. */
+   m->avail = avail;
 }
 
 void rmp4_close(rmp4_t *m)
@@ -1225,10 +1233,34 @@ int64_t rmp4_duration_ns(const rmp4_t *m)
 void rmp4_rewind(rmp4_t *m)
 {
    int i;
+   uint64_t next = 0;
+   int      have = 0;
    if (!m)
       return;
    for (i = 0; i < m->num_tracks; i++)
       m->trk[i].cursor = 0;
+   /* rmp4_consumed is "the compressed frontier a feeder needs" - where
+    * the next read lands.  Leaving media_max_end at its high-water
+    * mark froze that frontier at the file end across a loop: the
+    * feeder kept its window parked on the tail, the rewound decoder
+    * walked the head into pages the window had decommitted behind
+    * itself, and playback after the first lap degenerated into a
+    * stutter-loop of however much stayed resident (audio and video
+    * both - this is the byte_tell under each).  The frontier after a
+    * rewind is the merged next sample offset, the same merge
+    * rmp4_read_packet does. */
+   for (i = 0; i < m->num_tracks; i++)
+   {
+      rmp4_itrack *t = &m->trk[i];
+      if (!t->count)
+         continue;
+      if (!have || t->off[0] < next)
+      {
+         next = t->off[0];
+         have = 1;
+      }
+   }
+   m->media_max_end = have ? next : 0;
 }
 
 int rmp4_read_packet(rmp4_t *m, rmp4_packet *pkt)

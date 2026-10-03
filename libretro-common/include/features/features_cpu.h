@@ -61,6 +61,19 @@ retro_perf_tick_t cpu_features_get_perf_counter(void);
 retro_time_t cpu_features_get_time_usec(void);
 
 /**
+ * retro_sleep_until_us:
+ * @deadline : an instant on cpu_features_get_time_usec()'s clock.
+ *
+ * Sleeps until that clock reads at least @deadline. Absolute where the
+ * platform offers it (clock_nanosleep TIMER_ABSTIME on Linux and
+ * Android, mach_wait_until on Darwin), a re-armed high-resolution
+ * relative wait elsewhere. Never early against that clock; may be
+ * late, as every sleep may. Not available to the salamander launchers,
+ * which do not link features_cpu.c.
+ **/
+void retro_sleep_until_us(retro_time_t deadline);
+
+/**
  * Returns the available features (mostly SIMD extensions)
  * supported by this CPU.
  *
@@ -87,10 +100,44 @@ void x86_cpuid(uint32_t func, int32_t flags[4]);
 #endif
 
 /**
- * @return The number of CPU cores available,
- * or 1 if the number of cores could not be determined.
+ * @return The number of logical processors available -- hardware
+ * threads rather than physical cores, so an SMT part reports both of
+ * each core -- or 1 if it could not be determined.
+ *
+ * @see cpu_features_get_core_amount_physical
  */
 unsigned cpu_features_get_core_amount(void);
+
+/**
+ * The count to size work by where a thread wants a core to itself,
+ * rather than the thread count cpu_features_get_core_amount() returns.
+ *
+ * @return The number of physical cores available, or the value
+ * cpu_features_get_core_amount() gives where the distinction cannot be
+ * drawn, which is never larger and so stays a safe answer.
+ */
+unsigned cpu_features_get_core_amount_physical(void);
+
+/**
+ * Order the processors best-first, for a caller pinning a thread that
+ * wants the strongest processor still free.
+ *
+ * Entries are operating system processor identifiers, the numbering an
+ * affinity mask is built from, ordered by descending core performance
+ * (the fast class first, then the larger last-level cache, then the
+ * higher clock) and with an SMT sibling placed after the processor it
+ * shares a core with. Processors outside the calling thread's affinity
+ * mask are left out. Where the platform publishes no topology the order is simply
+ * ascending, which names every processor exactly once and so remains
+ * usable, just unranked.
+ *
+ * @param s   Receives the identifiers.
+ * @param len Number of entries @s has room for.
+ * @return The number of entries written, which is 0 where no
+ * identifiers could be established and the caller should leave
+ * affinity alone.
+ */
+size_t cpu_features_get_processor_order(unsigned *s, size_t len);
 
 /**
  * Returns the name of the CPU model.

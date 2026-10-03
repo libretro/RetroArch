@@ -6,7 +6,7 @@
 
 /* Descriptor and configuration rows are #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__); the string
  * tables always carry this row via the strings pass. */
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) || defined(SETTINGS_DEF_STRINGS_PASS)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) || defined(SETTINGS_DEF_STRINGS_PASS) || defined(SETTINGS_DEF_CONFIG_PASS)
 S_BOOL(ui_menubar_enable, UI_MENUBAR_ENABLE,
       "ui_menubar_enable",
       DEFAULT_UI_MENUBAR_ENABLE, SD_FLAG_NONE, 0, CMD_EVENT_REINIT,

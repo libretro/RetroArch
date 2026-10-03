@@ -89,7 +89,10 @@ static void *caca_font_init(void *data,
    if (!font_renderer_create_default(
             &font->font_driver,
             &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
+   {
+      free(font);
       return NULL;
+   }
 
    return font;
 }
@@ -198,13 +201,11 @@ static void caca_create(caca_t *caca)
             0xF800, 0x7E0, 0x1F, 0x0);
 
    /* Publish the canvas (terminal grid) size as the surface size,
-    * not the core's frame size.  video_driver_set_output_size feeds the
+    * not the core's frame size.  video_driver_set_output_dims feeds the
     * value used by menu drivers, the CRT switcher and the input
     * subsystem to size their output; passing the core's frame
     * dimensions instead would lie to all of them. */
-   video_driver_set_output_size(
-         caca_get_canvas_width(caca->cv),
-         caca_get_canvas_height(caca->cv));
+   video_driver_set_output_dims(VIDEO_SCALE_PACK(caca_get_canvas_width(caca->cv), caca_get_canvas_height(caca->cv)));
 }
 
 static void *caca_init(const video_info_t *video,
@@ -218,14 +219,14 @@ static void *caca_init(const video_info_t *video,
    *input               = NULL;
    *input_data          = NULL;
 
-   caca->frame_width    = video->width;
-   caca->frame_height   = video->height;
+   caca->frame_width    = VIDEO_SCALE_W(video->dims);
+   caca->frame_height   = VIDEO_SCALE_H(video->dims);
    caca->rgb32          = video->rgb32;
 
    if (video->rgb32)
-      caca->frame_pitch = video->width * 4;
+      caca->frame_pitch = VIDEO_SCALE_W(video->dims) * 4;
    else
-      caca->frame_pitch = video->width * 2;
+      caca->frame_pitch = VIDEO_SCALE_W(video->dims) * 2;
 
    caca_create(caca);
 
@@ -240,9 +241,11 @@ static void *caca_init(const video_info_t *video,
 }
 
 static bool caca_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    size_t _len               = 0;
    void *buffer              = NULL;
    const void *frame_to_copy = frame;
@@ -327,9 +330,7 @@ static bool caca_alive(void *data)
 {
    caca_t *caca              = (caca_t*)data;
    /* Canvas size, not core frame size -- see comment in caca_create. */
-   video_driver_set_output_size(
-         caca_get_canvas_width(caca->cv),
-         caca_get_canvas_height(caca->cv));
+   video_driver_set_output_dims(VIDEO_SCALE_PACK(caca_get_canvas_width(caca->cv), caca_get_canvas_height(caca->cv)));
    return true;
 }
 
@@ -361,17 +362,17 @@ static bool caca_set_shader(void *data,
 static void caca_set_rotation(void *a, unsigned b) { }
 
 static void caca_set_texture_frame(void *data,
-      const void *frame, bool rgb32, unsigned width, unsigned height,
+      const void *frame, bool rgb32, unsigned dims,
       float alpha)
 {
    caca_t  *caca    = (caca_t*)data;
-   unsigned pitch   = width * (rgb32 ? 4 : 2);
+   unsigned pitch   = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
    size_t   required;
 
-   if (!frame || !width || !height || !pitch)
+   if (!frame || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims) || !pitch)
       return;
 
-   required = (size_t)pitch * (size_t)height;
+   required = (size_t)pitch * (size_t)VIDEO_SCALE_H(dims);
 
    if (required > caca->menu_frame_cap)
    {
@@ -384,8 +385,8 @@ static void caca_set_texture_frame(void *data,
    }
 
    memcpy(caca->menu_frame, frame, required);
-   caca->menu_width  = width;
-   caca->menu_height = height;
+   caca->menu_width  = VIDEO_SCALE_W(dims);
+   caca->menu_height = VIDEO_SCALE_H(dims);
    caca->menu_pitch  = pitch;
 }
 
@@ -420,8 +421,8 @@ static const video_poke_interface_t caca_poke_interface = {
 
 static void caca_get_poke_interface(void *data,
       const video_poke_interface_t **iface) { *iface = &caca_poke_interface; }
-static void caca_set_viewport(void *data, unsigned vp_width,
-      unsigned vp_height, bool force_full, bool allow_rotate) { }
+static void caca_set_viewport(void *data, unsigned dims,
+      bool force_full, bool allow_rotate) { }
 
 static font_renderer_t caca_font = {
    caca_font_init,
@@ -451,7 +452,6 @@ video_driver_t video_caca = {
    caca_set_rotation,
    NULL, /* viewport_info */
    NULL, /* read_viewport */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL, /* overlay_interface */
 #endif

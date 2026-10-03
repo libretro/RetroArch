@@ -90,8 +90,10 @@ static uint32_t id_to_scaler_format(uint32_t id)
 }
 
 static int build_format(struct spa_pod_builder *b, const struct spa_pod **params,
-      uint32_t width, uint32_t height)
+      unsigned dims)
 {
+   uint32_t width  = VIDEO_SCALE_W(dims);
+   uint32_t height = VIDEO_SCALE_H(dims);
    struct spa_pod_frame frame[2];
 
    /* make an object of type SPA_TYPE_OBJECT_Format and id SPA_PARAM_EnumFormat.
@@ -312,7 +314,7 @@ static const struct pw_stream_events stream_events = {
       .process = NULL,
 };
 
-static void pipewire_stop(void *data)
+static void pwire_camera_stop(void *data)
 {
    pipewire_camera_t *camera = (pipewire_camera_t*)data;
    const char         *error = NULL;
@@ -325,7 +327,7 @@ static void pipewire_stop(void *data)
       pipewire_stream_set_active(camera->pw->thread_loop, camera->stream, false);
 }
 
-static bool pipewire_start(void *data)
+static bool pwire_camera_start(void *data)
 {
    pipewire_camera_t *camera = (pipewire_camera_t*)data;
    const char         *error = NULL;
@@ -340,7 +342,7 @@ static bool pipewire_start(void *data)
    return pipewire_stream_set_active(camera->pw->thread_loop, camera->stream, true);
 }
 
-static void pipewire_free(void *data)
+static void pwire_camera_free(void *data)
 {
    pipewire_camera_t *camera = (pipewire_camera_t*)data;
 
@@ -364,8 +366,8 @@ static void pipewire_free(void *data)
    free(camera);
 }
 
-static void *pipewire_init(const char *device, uint64_t caps,
-      unsigned width, unsigned height)
+static void *pwire_camera_init(const char *device, uint64_t caps,
+      unsigned dims)
 {
    int               res, n_params;
    const struct spa_pod *params[3];
@@ -399,7 +401,7 @@ static void *pipewire_init(const char *device, uint64_t caps,
    /* build the extra parameters to connect with. To connect, we can provide
     * a list of supported formats. We use a builder that writes the param
     * object to the stack. */
-   n_params = build_format(&b, params, width, height);
+   n_params = build_format(&b, params, dims);
    {
       struct spa_pod_frame f;
       struct spa_dict_item items[1];
@@ -430,11 +432,11 @@ static void *pipewire_init(const char *device, uint64_t caps,
 
 error:
    RARCH_ERR("[Camera] [PipeWire] Failed to initialize camera.\n");
-   pipewire_free(camera);
+   pwire_camera_free(camera);
    return NULL;
 }
 
-static bool pipewire_poll(void *data,
+static bool pwire_camera_poll(void *data,
       retro_camera_frame_raw_framebuffer_t frame_raw_cb,
       retro_camera_frame_opengl_texture_t frame_gl_cb)
 {
@@ -457,10 +459,10 @@ static bool pipewire_poll(void *data,
 }
 
 camera_driver_t camera_pipewire = {
-      pipewire_init,
-      pipewire_free,
-      pipewire_start,
-      pipewire_stop,
-      pipewire_poll,
+      pwire_camera_init,
+      pwire_camera_free,
+      pwire_camera_start,
+      pwire_camera_stop,
+      pwire_camera_poll,
       "pipewire",
 };

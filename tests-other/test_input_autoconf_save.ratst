@@ -1,0 +1,24 @@
+[
+{
+  "comment": "Save Controller Profile for port 1 twice on a device whose profile carries button labels. The labels are copied onto the port's binds by the first save, which must not leave them dangling for the second.",
+  "action": 1,
+  "param_num": 0,
+  "param_str": "Test joypad device L",
+  "frame": 0
+},
+{
+  "action": 3,
+  "param_num": 0,
+  "frame": 90
+},
+{
+  "action": 3,
+  "param_num": 0,
+  "frame": 150
+},
+{
+  "action": 4,
+  "param_num": 0,
+  "frame": 150
+}
+]

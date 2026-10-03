@@ -82,6 +82,22 @@ typedef struct rzipstream rzipstream_t;
  *   or uncompressed data
  * Returns NULL if arguments are invalid, file
  * is invalid or an IO error occurs */
+/* The codec an RZIP file is written with. Version 1 of the container
+ * holds deflate chunks, version 2 Zstandard frames; a reader takes
+ * either where its codec is compiled in. */
+enum rzip_codec
+{
+   RZIP_CODEC_DEFLATE = 0,
+   RZIP_CODEC_ZSTD
+};
+
+/* The codec every writer opened after this uses: Zstandard by default
+ * where it is compiled in, deflate otherwise. Asking for a codec the
+ * build lacks leaves deflate. */
+void rzipstream_set_write_codec(enum rzip_codec codec);
+enum rzip_codec rzipstream_get_write_codec(void);
+bool rzipstream_codec_available(enum rzip_codec codec);
+
 rzipstream_t* rzipstream_open(const char *path, unsigned mode);
 
 /* File Read */

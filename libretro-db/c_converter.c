@@ -651,6 +651,7 @@ dat_converter_rdb_mappings_t rdb_mappings[] =
    {"name",           "name",           DAT_CONVERTER_RDB_TYPE_STRING},
    {"description",    "description",    DAT_CONVERTER_RDB_TYPE_STRING},
    {"genre",          "genre",          DAT_CONVERTER_RDB_TYPE_STRING},
+   {"tags",           "tags",           DAT_CONVERTER_RDB_TYPE_STRING},
 
    {"achievements",       "achievements",       DAT_CONVERTER_RDB_TYPE_UINT},
    {"category",           "category",           DAT_CONVERTER_RDB_TYPE_STRING},

@@ -279,30 +279,14 @@ typedef struct global
       {
          struct
          {
-            uint32_t *list;
-            unsigned count;
             struct
             {
-               unsigned idx;
-               unsigned id;
+               unsigned id; /* current_resolution_id */
             } current;
-            struct
-            {
-               unsigned idx;
-               unsigned id;
-            } initial;
-            bool check;
          } resolutions;
-         unsigned      gamma_correction;
-         unsigned int  flicker_filter_index;
-         unsigned char soft_filter_index;
          bool pal_enable;
          bool pal60_enable;
       } screen;
-
-      bool flickerfilter_enable;
-      bool softfilter_enable;
-
    } console;
 
    char error_string[NAME_MAX_LENGTH];

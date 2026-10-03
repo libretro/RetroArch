@@ -1,0 +1,84 @@
+# Threaded sample suites that no other CI lane runs under ThreadSanitizer,
+# run by tools/tsan-samples.sh.  One test per line: the suite's
+# directory, then the binary its Makefile builds.  The rest of the line,
+# if any, is passed to the binary.
+#
+# Left out: benches (retro_spsc_bench, retro_eventcount_bench), suites
+# that need hardware or a session bus (live_drivers, mutter_displayconfig,
+# vulkan_validation), the SDL3 suites (no SDL3 package on the runner),
+# stretch_epoch_test / stretch_pipeline_test, which take the better part
+# of an hour each under TSan, and faulthandler_test, whose recovery
+# jumps out of a signal handler by design - TSan reports what runs after
+# it as still inside the handler.
+libretro-common/samples/formats/h264 rh264_lossless_test
+libretro-common/samples/formats/h265 rh265_lossless_test
+libretro-common/samples/formats/image_blit_bands_test image_blit_bands_test
+libretro-common/samples/queues/retro_waitable_spsc_test retro_waitable_spsc_test
+libretro-common/samples/queues/task_queue_budget_test task_queue_budget_test
+libretro-common/samples/queues/task_queue_detach_test task_queue_detach_test
+libretro-common/samples/queues/task_queue_init_failure_test task_queue_init_failure_test
+libretro-common/samples/queues/task_queue_main_thread_test task_queue_main_thread_test
+libretro-common/samples/queues/task_queue_snapshot_test task_queue_snapshot_test
+libretro-common/samples/queues/task_queue_title_error_test task_queue_title_error_test
+libretro-common/samples/rthreads/fast_cores_test fast_cores_test
+libretro-common/samples/rthreads/retro_asym_eventcount_test retro_asym_eventcount_test
+libretro-common/samples/rthreads/retro_procbarrier_test retro_procbarrier_test
+libretro-common/samples/rthreads/sthread_ex_test sthread_ex_test
+libretro-common/samples/rthreads/tpool_parallel_test tpool_parallel_test
+libretro-common/samples/rthreads/tpool_wait_test tpool_wait_test
+samples/audio/device_list_driver device_list_driver_test
+samples/audio/discrete_multichannel discrete_multichannel_test
+samples/audio/ealsa ealsa_test
+samples/audio/embedded_alsa abi_check
+samples/audio/embedded_alsa embedded_alsa_test
+samples/audio/mic_handshake mic_handshake_test
+samples/audio/mixer_wfeed mixer_wfeed_test
+samples/audio/pipeline_clocked pipeline_clocked_test
+samples/audio/pipeline_fade_mark pipeline_fade_mark_test
+samples/audio/pipeline_format pipeline_format_test
+samples/audio/pipeline_layout pipeline_layout_test
+samples/audio/pipeline_wakeups pipeline_wakeups_test
+samples/audio/ps3_ring ps3_ring_test
+samples/audio/psp_ring psp_ring_test
+samples/audio/qsa qsa_test
+samples/audio/rate_control_bounds rate_control_bounds_test
+samples/audio/sdl1_counters sdl1_counters_test
+samples/audio/sdl_lost_wakeup sdl_lost_wakeup_test
+samples/audio/sink_rate sink_rate_test
+samples/audio/stretch stretch_filter_test
+samples/audio/stretch stretch_search_test
+samples/audio/stretch resampler_reset_test
+samples/audio/stretch stretch_src_test
+samples/audio/stretch stretch_test
+samples/audio/stretch stretch_canonical_test
+samples/cheevos/badge_cache badge_cache_test
+samples/frontend/play_feature_delivery play_feature_delivery_test
+samples/frontend/thread_elevation thread_elevation_test
+samples/gfx/achievement_popup_mpsc achievement_popup_mpsc_test
+samples/gfx/cached_frame_hazard cached_frame_hazard_test
+samples/gfx/crt_switch_modeline crt_switch_modeline_test
+samples/gfx/hw_context_mirror hw_context_mirror_test
+samples/gfx/leaderboard_cmd_mpsc leaderboard_cmd_mpsc_test
+samples/gfx/overlay_alpha_flag overlay_alpha_flag_test
+samples/gfx/overlay_vp_seqlock overlay_vp_seqlock_test
+samples/gfx/psp1_gfx_contracts psp1_gfx_contracts_test
+samples/gfx/wayland_color_management wayland_color_management_test
+samples/gfx/wayland_drm_lease wayland_drm_lease_test
+samples/gfx/wayland_kwin_output wayland_kwin_output_test
+samples/gfx/wayland_resize wayland_resize_test
+samples/gfx/wayland_wlr_output wayland_wlr_output_test
+samples/gfx/window_title_mailbox window_title_mailbox_test
+samples/input/android_kbd_mailbox android_kbd_mailbox_test
+samples/input/overlay_textures overlay_textures_test
+samples/runahead runahead_copy_test
+samples/runloop/core_status_defer core_status_defer_test
+samples/state_rewind state_rewind_test
+samples/tasks/bsv_replay_init bsv_replay_init_test
+samples/tasks/image_decode_slice image_decode_slice_test
+samples/tasks/netplay_nat nat_task_serialisation_test
+samples/tasks/progress_push task_progress_push_test
+samples/frontend/android_lifecycle android_lifecycle_test
+samples/ui/companion_thumbs_handoff companion_thumbs_test
+samples/midi/fmsynth_queue fmsynth_queue_test
+samples/input/joypad_slots joypad_slots_test
+samples/audio/rsound_thread rsound_thread_test

@@ -49,6 +49,15 @@ enum audio_mixer_type
    AUDIO_MIXER_TYPE_M4A,
    AUDIO_MIXER_TYPE_OPUS,
    AUDIO_MIXER_TYPE_WEBA, /* resolves to OPUS or OGG at load */
+   AUDIO_MIXER_TYPE_AC3,  /* a .ac3 file of syncframes (rac3); up to
+                           * 5.1, folded to stereo like the others */
+   AUDIO_MIXER_TYPE_LPCM, /* a .lpcm or .pcm file of samples (rlpcm).
+                           * A buffer opening with a DVD or Blu-ray
+                           * header says its own shape; raw samples do
+                           * not, so those are taken as 16-bit stereo
+                           * at 48 kHz, little-endian, which is what a
+                           * file with no header and no other word on
+                           * the matter most often is                 */
    /* A WAV played as a stream: decoded a chunk at a time out of the
     * source buffer rather than converted whole at load, so its cost
     * is the source and not the source plus a decoded copy, and its
@@ -76,21 +85,28 @@ void audio_mixer_done(void);
  * mixer's current mode will play.  The other format derives on
  * demand at the first mode-mismatched play (see the derivation notes
  * in the implementation), so a WAV holds one PCM copy, not two. */
-audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
+audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, size_t size,
       const char *resampler_ident, enum resampler_quality quality,
       bool want_s16);
 audio_mixer_sound_t* audio_mixer_load_wav_stream(void *buffer,
-      int32_t size);
-audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size);
-audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, int32_t size);
-audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, int32_t size);
-audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, int32_t size);
-audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, int32_t size);
-audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, int32_t size);
+      size_t size);
+audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, size_t size);
+audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, size_t size);
+audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, size_t size);
+audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, size_t size);
+audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, size_t size);
+audio_mixer_sound_t* audio_mixer_load_ac3(void *buffer, size_t size);
+audio_mixer_sound_t* audio_mixer_load_lpcm(void *buffer, size_t size);
+audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, size_t size);
 /* WebM audio (.weba): identifies the track's codec and returns a sound
  * of the matching existing type (OPUS or OGG), or NULL when the
  * container carries no supported track. */
-audio_mixer_sound_t* audio_mixer_load_weba(void *buffer, int32_t size);
+audio_mixer_sound_t* audio_mixer_load_weba(void *buffer, size_t size);
+/* As above, but the codec sniff reads no further than 'avail' bytes.
+ * A windowed caller must use this: the plain form walks the segment
+ * with the file's whole length, which is not resident. */
+audio_mixer_sound_t* audio_mixer_load_weba_avail(void *buffer, size_t size,
+      size_t avail);
 
 /* Compressed-byte read position of a stream voice's decoder (0 when
  * not a live buffer-mode stream voice).  Thread-safe. */
@@ -162,7 +178,9 @@ bool audio_mixer_has_float_voices(void);
 bool audio_mixer_has_s16_voices(void);
 
 audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
-      bool repeat, int32_t gain, enum resampler_quality quality,
+      bool repeat, int32_t gain,
+      const char *resampler_ident,
+      enum resampler_quality quality,
       audio_mixer_stop_cb_t stop_cb);
 
 RETRO_END_DECLS

@@ -28,7 +28,10 @@ void steam_init(void)
    MistResult result = mist_subprocess_init();
 
    if (MIST_IS_SUCCESS(result))
+   {
       mist_initialized = true;
+      runloop_frame_work_set(RUNLOOP_WORK_PRESENCE, true);
+   }
    else
       RARCH_ERR("[Steam] Failed to initialize mist subprocess (%d-%d).\n", MIST_UNPACK_RESULT(result));
 }
@@ -343,7 +346,8 @@ bool steam_open_osk(void)
 {
    bool                     shown = false;
    bool                   on_deck = false;
-   video_driver_state_t *video_st = video_state_get_ptr();
+   unsigned           output_size = VIDEO_DRIVER_OUTPUT_DIMS(
+         video_state_get_ptr());
 
    /* Only open the Steam OSK if running on a Steam Deck,
       as currently the Big Picture OSK seems to be semi-broken */
@@ -355,8 +359,8 @@ bool steam_open_osk(void)
       MistFloatingGamepadTextInputMode_SingleLine,
       0,
       0,
-      video_st->width,
-      video_st->height / 2,
+      VIDEO_SCALE_W(output_size),
+      VIDEO_SCALE_H(output_size) / 2,
       &shown
    );
 
@@ -519,7 +523,12 @@ void steam_deinit(void)
       steam_core_dlc_list_free(mist_dlc_list);
 
    if (MIST_IS_SUCCESS(result))
+   {
       mist_initialized = false;
+#ifndef HAVE_DISCORD
+      runloop_frame_work_set(RUNLOOP_WORK_PRESENCE, false);
+#endif
+   }
    else
       RARCH_ERR("[Steam] Failed to deinitialize mist subprocess (%d-%d).\n", MIST_UNPACK_RESULT(result));
 }

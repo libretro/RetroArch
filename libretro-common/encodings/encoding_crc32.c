@@ -49,14 +49,28 @@
 /* Baseline already has the instructions, so use them unconditionally. */
 #define CRC32_HAVE_ARM_PATH 1
 #elif (defined(__aarch64__) || defined(_M_ARM64)) \
-   && (defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9))
+   && ((defined(__clang__) && __clang_major__ >= 16) \
+      || (!defined(__clang__) && defined(__GNUC__) && __GNUC__ >= 9))
 /* Baseline does not, but the toolchain can build the instructions into
  * one function without raising the ISA for the translation unit, so
  * compile them in and choose at runtime.  This is the common case: of
- * everything in tree only Makefile.libnx passes +crc explicitly, and
- * arm64 macOS gets it from the compiler default, which leaves Android,
- * Linux ARM, iOS and tvOS on the table path despite every one of those
- * CPUs from ARMv8.1 onwards having the instructions. */
+ * everything in tree only Makefile.libnx passes +crc explicitly and
+ * arm64 macOS gets it from the compiler default, so without this
+ * branch Android, Linux ARM, iOS and tvOS would take the table path
+ * despite having the instructions.  Whether they get it is a property
+ * of the compiler, not the target: NDK r27c (clang 18) compiles this
+ * branch in for aarch64-linux-android, an older clang fails the
+ * predicate below and falls back.
+ *
+ * The version predicates are about the ACLE header, not codegen:
+ * target("crc") lets the compiler emit the instructions, but __crc32b()
+ * and friends still have to be declared.  GCC's aarch64 arm_acle.h has
+ * declared them behind '#pragma GCC target ("+nothing+crc")' since GCC 8.
+ * Clang gated them on __ARM_FEATURE_CRC32 alone through 15.x, which a
+ * plain armv8-a baseline does not set, so older clang fails on
+ * -Werror=implicit-function-declaration; 16.x added '|| __ARM_64BIT_STATE'.
+ * Apple numbers __clang_major__ its own way, so this also drops Xcode 15
+ * to the table path, which is the safe direction. */
 #define CRC32_HAVE_ARM_PATH     1
 #define CRC32_ARM_NEEDS_TARGET  1
 #define CRC32_ARM_DISPATCH      1

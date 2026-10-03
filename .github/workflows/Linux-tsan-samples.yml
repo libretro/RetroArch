@@ -1,0 +1,76 @@
+name: CI Linux TSan [sample suites]
+
+# The threaded sample suites no other lane runs under ThreadSanitizer.
+# Their own steps build them under ASan, which cannot see a race: an
+# unordered access between two threads passes there and is only found
+# by a developer running TSan by hand. tools/tsan-samples.sh builds each
+# suite in tools/tsan-samples.list with SANITIZER=thread and runs it with
+# halt_on_error, so any report fails the job; the list says what is left
+# out and why.
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  linux-tsan-samples:
+    name: TSan, the threaded sample suites
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: |
+          # ffmpeg (with libx264 and libx265): formats/h264/rh264_lossless_test
+          # and formats/h265/rh265_lossless_test build their corpora and
+          # their reference decodes with it.
+          pkgs="build-essential zlib1g-dev libasound2-dev libsdl1.2-dev libsdl2-dev libwayland-dev ffmpeg"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Build and run each suite under TSan
+        run: tools/tsan-samples.sh

@@ -20,6 +20,7 @@
 #include <retro_common_api.h>
 #include <retro_inline.h>
 
+#include "glslang_compile.h"
 #include "../video_shader_parse.h"
 
 typedef enum glslang_format
@@ -122,7 +123,13 @@ typedef enum glslang_filter_chain_address
    GLSLANG_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT      = 1,
    GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE        = 2,
    GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER      = 3,
-   GLSLANG_FILTER_CHAIN_ADDRESS_MIRROR_CLAMP_TO_EDGE = 4,
+   /* One entry per wrap mode a preset can name (rarch_wrap_to_address
+    * below), and no more: the Vulkan filter chain creates a sampler for
+    * every entry. A fifth, mirror-clamp-to-edge, stood here with no
+    * wrap mode mapping to it; its samplers were never bound, and
+    * creating them is invalid on a device without
+    * VK_KHR_sampler_mirror_clamp_to_edge - which is every device a
+    * core creates for itself through create_device. */
    GLSLANG_FILTER_CHAIN_ADDRESS_COUNT
 } glslang_filter_chain_address;
 
@@ -155,6 +162,7 @@ struct shader_line_buf
 };
 
 RETRO_BEGIN_DECLS
+
 
 static INLINE enum glslang_filter_chain_address rarch_wrap_to_address(
       enum gfx_wrap_type type)
@@ -196,6 +204,14 @@ enum glslang_format glslang_find_format(const char *fmt);
 void *glslang_include_cache_new(void);
 
 void glslang_include_cache_free(void *cache);
+
+/* Expand @path but keep only its '#pragma' lines, following '#include'
+ * as usual.  glslang_parse_meta() reads nothing else, so a caller after
+ * shader metadata gets the same lines in the same order without the
+ * flattened source around them - a 12-pass pack emits hundreds of lines
+ * this way rather than a hundred thousand.  Not for compilation. */
+bool glslang_read_shader_pragmas_cached(const char *path,
+      struct shader_line_buf *output, void *cache);
 
 /* As glslang_read_shader_file(), but reads through @cache. */
 bool glslang_read_shader_file_cached(const char *path,

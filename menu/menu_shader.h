@@ -57,6 +57,13 @@ bool menu_shader_manager_init(void);
  *
  * Sets shader preset.
  **/
+/* Menu shader from the driver's loaded struct, no disk re-parse;
+ * see the definition for why this also removes an index-mapping
+ * hazard between reflection-built and parse-built parameter lists. */
+bool menu_shader_manager_set_preset_from_live(
+      struct video_shader *menu_shader,
+      const struct video_shader *live_shader);
+
 bool menu_shader_manager_set_preset(
       struct video_shader *menu_shader,
       enum rarch_shader_type type,

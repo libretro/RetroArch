@@ -19,21 +19,27 @@
 #include <string.h>
 #include <limits.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <poll.h>
 #include <libudev.h>
-#ifdef __linux__
+#if defined(__linux__)
 #include <linux/types.h>
-#endif
 #include <linux/input.h>
+#elif defined(__FreeBSD__)
+#include <dev/evdev/input.h>
+#else
+#include <linux/input.h>
+#endif
 
 #include <retro_inline.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
 #include "../input_driver.h"
+#include "../common/linux_not_joystick.h"
 
 #include "../../configuration.h"
 #include "../../config.def.h"
@@ -71,20 +77,29 @@
 
 struct udev_joypad
 {
-   dev_t device;  /* TODO/FIXME - unsure of alignment */
-   struct input_absinfo absinfo[NUM_AXES]; /* TODO/FIXME - unsure of alignment */
-
+   /* Everything the per-frame poll and the per-query button and axis
+    * reads touch comes first, so a connected pad's live state sits in
+    * the leading two cache lines of its slot: the descriptor, the
+    * button bitmask, the hats, the axes and the trigger-range flags.
+    * The absinfo table is next (read on every axis event), and the
+    * identification strings, the keycode maps and the sensor state -
+    * touched at hotplug and on the rare sensor read - trail behind. */
+   int fd;
    uint64_t buttons;
+   int8_t hats[NUM_HATS][2];
+   int16_t axes[NUM_AXES];
+   /* Deal with analog triggers that report -32767 to 32767 */
+   bool neg_trigger[NUM_AXES];
+
+   struct input_absinfo absinfo[NUM_AXES]; /* TODO/FIXME - unsure of alignment */
+   dev_t device;  /* TODO/FIXME - unsure of alignment */
 
    char *path;
 
-   int fd;
    int num_effects;
    int effects[2]; /* [0] - strong, [1] - weak  */
    int32_t vid;
    int32_t pid;
-   int16_t axes[NUM_AXES];
-   int8_t hats[NUM_HATS][2];
    /* Maps keycodes -> button/axes */
    uint8_t button_bind[KEY_MAX];
    uint8_t axes_bind[ABS_MAX];
@@ -95,8 +110,6 @@ struct udev_joypad
    char ident[NAME_MAX_LENGTH];
    char phys[NAME_MAX_LENGTH];
    bool has_set_ff[2];
-   /* Deal with analog triggers that report -32767 to 32767 */
-   bool neg_trigger[NUM_AXES];
 
    /* Sensor (IMU) support: sibling evdev node for accelerometer/gyroscope */
    int sensor_fd;
@@ -120,6 +133,19 @@ struct joypad_udev_entry
 static struct udev *udev_joypad_fd             = NULL;
 static struct udev_monitor *udev_joypad_mon    = NULL;
 static struct udev_joypad udev_pads[MAX_USERS];
+/* One bit per slot with an open descriptor, kept in step with fd by
+ * udev_pad_set_fd(); the poll walks only these instead of reading fd
+ * out of all MAX_USERS slots - a cache line apiece - every frame. */
+static uint32_t udev_pads_active;
+
+static void udev_pad_set_fd(unsigned p, int fd)
+{
+   udev_pads[p].fd = fd;
+   if (fd >= 0)
+      udev_pads_active |=  (1u << p);
+   else
+      udev_pads_active &= ~(1u << p);
+}
 
 static INLINE int16_t udev_compute_axis(const struct input_absinfo *info, int value)
 {
@@ -150,7 +176,10 @@ static int udev_open_joystick(const char *path)
    int fd = open(path, O_RDWR | O_NONBLOCK);
 
    if (fd < 0)
+   {
+      RARCH_DBG("[udev] Could not open \"%s\": %s.\n", path, strerror(errno));
       return fd;
+   }
 
    if (  (ioctl(fd, EVIOCGBIT(0,      sizeof(evbit)),  evbit)  < 0) ||
          (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keybit)), keybit) < 0) ||
@@ -475,6 +504,17 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
       pad->vid = inputid.vendor;
       pad->pid = inputid.product;
    }
+
+   /* Not a controller, whatever udev says: leave the slot free. */
+   if (linux_input_is_not_joystick(pad->ident, pad->vid, pad->pid))
+   {
+      RARCH_LOG("[udev] Ignoring \"%s\" (%04x:%04x, %s): tagged as a"
+            " joystick, but it is not one.\n",
+            pad->ident, pad->vid, pad->pid, path);
+      pad->ident[0] = '\0';
+      pad->vid      = pad->pid = 0;
+      return -2;
+   }
    if (ioctl(fd, EVIOCGPHYS(sizeof(pad->phys)), pad->phys) < 0)
       pad->phys[0] = '\0';  /* Clear if unavailable */
    else
@@ -540,7 +580,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    }
 
    pad->device = st.st_rdev;
-   pad->fd     = fd;
+   udev_pad_set_fd(p, fd);
    pad->path   = strdup(path);
 
    /* Look for a sibling sensor (IMU) evdev node under the same HID parent */
@@ -614,9 +654,12 @@ static void udev_check_device(struct udev_device *dev, const char *path)
    if ((fd = udev_open_joystick(path)) < 0)
       return;
 
-   if (udev_add_pad(dev, pad, fd, path) == -1)
+   /* -1: could not be read. -2: read, and found not to be a
+    * controller. Neither keeps the descriptor. */
+   if ((ret = udev_add_pad(dev, pad, fd, path)) < 0)
    {
-      RARCH_ERR("[udev] Failed to add pad: %s.\n", path);
+      if (ret == -1)
+         RARCH_ERR("[udev] Failed to add pad: %s.\n", path);
       close(fd);
    }
 }
@@ -638,7 +681,7 @@ static void udev_free_pad(unsigned pad)
 
    memset(&udev_pads[pad], 0, sizeof(udev_pads[pad]));
 
-   udev_pads[pad].fd        = -1;
+   udev_pad_set_fd(pad, -1);
    udev_pads[pad].sensor_fd = -1;
 }
 
@@ -887,7 +930,7 @@ static void udev_joypad_poll(void)
       struct input_event events[32];
       struct udev_joypad *pad = &udev_pads[p];
 
-      if (pad->fd < 0)
+      if (!(udev_pads_active & (1u << p)))
          continue;
 
       while ((_len = read(pad->fd, events, sizeof(events))) > 0)
@@ -1013,7 +1056,7 @@ static void *udev_joypad_init(void *data)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      udev_pads[i].fd        = -1;
+      udev_pad_set_fd(i, -1);
       udev_pads[i].sensor_fd = -1;
    }
 

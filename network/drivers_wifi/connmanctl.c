@@ -68,6 +68,31 @@ static void connmanctl_stop(void *data)
    (void)data;
 }
 
+/* ConnMan builds Wi-Fi service IDs from a hex address, an encoded SSID
+ * (or "hidden"), and ASCII mode/security names, joined by underscores. */
+static bool connmanctl_valid_wifi_service_id(const char *id, size_t max_len)
+{
+   size_t i;
+
+   if (!id || max_len <= 5 || strncmp(id, "wifi_", 5) != 0)
+      return false;
+
+   for (i = 5; i < max_len; i++)
+   {
+      unsigned char c = (unsigned char)id[i];
+
+      if (!c)
+         return i > 5;
+      if (   (c < '0' || c > '9')
+          && (c < 'A' || c > 'Z')
+          && (c < 'a' || c > 'z')
+          && c != '_')
+         break;
+   }
+
+   return false;
+}
+
 static void connmanctl_refresh_services(connman_t *connman)
 {
    char line[512];
@@ -84,6 +109,8 @@ static void connmanctl_refresh_services(connman_t *connman)
       size_t _len              = strlen(line);
       if (_len > 0 && line[_len-1] == '\n')
                       line[--_len] = '\0';
+      if (_len < 5)
+         continue;
 
       /* Parse lines directly and store net info directly */
       memset(&entry, 0, sizeof(entry));
@@ -99,8 +126,19 @@ static void connmanctl_refresh_services(connman_t *connman)
       if (!(list = string_split(&line[4], " ")))
          break;
 
-      if (list->size == 0)
+      /* ConnMan prints network names without escaping newlines. Reject
+       * shell syntax in a forged service ID before storing it for later
+       * connect or disconnect commands. */
+      if (   list->size == 0
+          || !connmanctl_valid_wifi_service_id(
+               list->elems[list->size - 1].data, sizeof(entry.netid)))
+      {
+         string_list_free(list);
          continue;
+      }
+
+      strlcpy(entry.netid, list->elems[list->size - 1].data,
+            sizeof(entry.netid));
 
       /* Join ssid tokens with spaces via offset tracking; the prior
        * paired-strlcat form re-scanned entry.ssid from the start on
@@ -126,13 +164,9 @@ static void connmanctl_refresh_services(connman_t *connman)
          entry.ssid[ssid_off] = '\0';
       }
 
-      /* Store the connman network id here, for later */
-      strlcpy(entry.netid, list->elems[list->size-1].data, sizeof(entry.netid));
       string_list_free(list);
 
-      /* Filter only wifi nets */
-      if (!strncmp(entry.netid, "wifi_", 5))
-         RBUF_PUSH(connman->scan.net_list, entry);
+      RBUF_PUSH(connman->scan.net_list, entry);
    }
 
    pclose(serv_file);
@@ -194,6 +228,39 @@ static bool connmanctl_tether_status(connman_t *connman)
    return false;
 }
 
+/* Appends @arg to @s as one single-quoted shell word, writing each
+ * embedded ' as '\''. Returns the new length, or 0 if it does not fit. */
+static size_t connmanctl_append_quoted(char *s, size_t _len, size_t len,
+      const char *arg)
+{
+   if (_len + 1 >= len)
+      return 0;
+   s[_len++] = '\'';
+   for (; *arg; arg++)
+   {
+      if (*arg == '\'')
+      {
+         if (_len + 4 >= len)
+            return 0;
+         s[_len++] = '\'';
+         s[_len++] = '\\';
+         s[_len++] = '\'';
+         s[_len++] = '\'';
+      }
+      else
+      {
+         if (_len + 1 >= len)
+            return 0;
+         s[_len++] = *arg;
+      }
+   }
+   if (_len + 1 >= len)
+      return 0;
+   s[_len++] = '\'';
+   s[_len]   = '\0';
+   return _len;
+}
+
 static void connmanctl_tether_toggle(
       connman_t *connman, bool switch_on, char* ap_name, char *pass_key)
 {
@@ -205,11 +272,34 @@ static void connmanctl_tether_toggle(
    bool widgets_active  = connman->connmanctl_widgets_supported;
 #endif
 
-   snprintf(connman->command, sizeof(connman->command), "\
-         connmanctl tether wifi %s %s %s",
-         switch_on ? "on" : "off", ap_name, pass_key);
+   /* The AP name and password come from the user's tether config and
+    * may hold spaces or shell syntax, so pass each as one quoted word. */
+   if (switch_on)
+   {
+      size_t _len = strlcpy_lit(connman->command,
+            "connmanctl tether wifi on ", sizeof(connman->command));
+      if (   !(_len = connmanctl_append_quoted(connman->command, _len,
+                  sizeof(connman->command), ap_name))
+          || _len + 1 >= sizeof(connman->command))
+      {
+         RARCH_ERR("[CONNMANCTL] Tether toggle: AP name or password too long.\n");
+         return;
+      }
+      connman->command[_len++] = ' ';
+      connman->command[_len]   = '\0';
+      if (!connmanctl_append_quoted(connman->command, _len,
+                  sizeof(connman->command), pass_key))
+      {
+         RARCH_ERR("[CONNMANCTL] Tether toggle: AP name or password too long.\n");
+         return;
+      }
+   }
+   else
+      strlcpy_lit(connman->command, "connmanctl tether wifi off",
+            sizeof(connman->command));
 
-   command_file = popen(connman->command, "r");
+   if (!(command_file = popen(connman->command, "r")))
+      return;
 
    RARCH_LOG("[CONNMANCTL] Tether toggle: command: \"%s\"\n",
          connman->command);
@@ -319,6 +409,10 @@ static bool connmanctl_disconnect_ssid(void *data,
 {
    connman_t *connman = (connman_t*)data;
 
+   if (!netinfo || !connmanctl_valid_wifi_service_id(netinfo->netid,
+            sizeof(netinfo->netid)))
+      return false;
+
    /* TODO/FIXME: Check whether this network is actually connected */
 
    snprintf(connman->command, sizeof(connman->command),
@@ -348,6 +442,10 @@ static bool connmanctl_connect_ssid(
    bool widgets_active                 =
       connman->connmanctl_widgets_supported;
 #endif
+   if (!netinfo || !connmanctl_valid_wifi_service_id(netinfo->netid,
+            sizeof(netinfo->netid)))
+      return false;
+
    strlcpy(netid, netinfo->netid, sizeof(netid));
    fill_pathname_join_special(settings_dir, LAKKA_CONNMAN_DIR,
          netid, sizeof(settings_dir));
@@ -402,7 +500,7 @@ static bool connmanctl_connect_ssid(
       connmanctl_tether_toggle(connman, false, "", "");
    }
 
-   strlcpy(connman->command, "connmanctl connect ", sizeof(connman->command));
+   strlcpy_lit(connman->command, "connmanctl connect ", sizeof(connman->command));
    strlcat(connman->command, netinfo->netid,        sizeof(connman->command));
 
    pclose(popen(connman->command, "r"));
@@ -507,7 +605,8 @@ static size_t connmanctl_get_connected_servicename(
    if (len < 1)
       return 0;
 
-   tmp = (char*)malloc(sizeof(char) * len);
+   if (!(tmp = (char*)malloc(sizeof(char) * len)))
+      return 0;
 
    /* Following command lists all stored services in
     * connman settings folder, which are then used in
@@ -541,6 +640,9 @@ static size_t connmanctl_get_connected_servicename(
          RARCH_WARN("[CONNMANCTL] Service name empty.\n");
          continue;
       }
+
+      if (!connmanctl_valid_wifi_service_id(tmp, len))
+         continue;
 
       /* Here we test the found service for online | ready
        * status and count the lines. Expected results are
@@ -582,6 +684,7 @@ static size_t connmanctl_get_connected_servicename(
    }
 
    pclose(command_file);
+   free(tmp);
    return 0;
 }
 
@@ -642,8 +745,8 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
          RARCH_LOG("[CONNMANCTL] Tether start stop: creating new config \"%s\"\n",
                configfile);
 
-         strlcpy(ap_name, "LakkaAccessPoint", sizeof(ap_name));
-         strlcpy(pass_key, "RetroArch",       sizeof(pass_key));
+         strlcpy_lit(ap_name, "LakkaAccessPoint", sizeof(ap_name));
+         strlcpy_lit(pass_key, "RetroArch",       sizeof(pass_key));
 
          fprintf(command_file, "APNAME=%s\nPASSWORD=%s", ap_name, pass_key);
 
@@ -654,6 +757,8 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
       }
       else
       {
+         int i = 0;
+
          fclose(command_file);
 
          RARCH_LOG("[CONNMANCTL] Tether start stop: config \"%s\" exists, reading it\n",
@@ -665,8 +770,6 @@ static void connmanctl_tether_start_stop(void *data, bool start, char* configfil
                configfile, configfile);
 
          command_file = popen(connman->command, "r");
-
-         int i = 0;
 
          RARCH_LOG("[CONNMANCTL] Tether start stop: parsing command: \"%s\"\n",
                connman->command);

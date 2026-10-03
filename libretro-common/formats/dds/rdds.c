@@ -193,19 +193,25 @@ static void rdds_bcdec__smooth_alpha_block(const void* compressedBlock, void* de
 
     if (alpha[0] > alpha[1]) {
         /* 6 interpolated alpha values. */
-        alpha[2] = (6 * alpha[0] +     alpha[1]) / 7;   /* 6/7*alpha_0 + 1/7*alpha_1 */
-        alpha[3] = (5 * alpha[0] + 2 * alpha[1]) / 7;   /* 5/7*alpha_0 + 2/7*alpha_1 */
-        alpha[4] = (4 * alpha[0] + 3 * alpha[1]) / 7;   /* 4/7*alpha_0 + 3/7*alpha_1 */
-        alpha[5] = (3 * alpha[0] + 4 * alpha[1]) / 7;   /* 3/7*alpha_0 + 4/7*alpha_1 */
-        alpha[6] = (2 * alpha[0] + 5 * alpha[1]) / 7;   /* 2/7*alpha_0 + 5/7*alpha_1 */
-        alpha[7] = (    alpha[0] + 6 * alpha[1]) / 7;   /* 1/7*alpha_0 + 6/7*alpha_1 */
+        /* Round to nearest, not truncate: the numerator is non-negative
+         * and the divisor odd, so adding half of it before the division
+         * is exactly round-half-up. This is what the D3D reference (a
+         * real-arithmetic decoder rounded once) produces, and measured
+         * against it the ramp is exact where truncation was off by one
+         * on a quarter of the values. */
+        alpha[2] = (6 * alpha[0] +     alpha[1] + 3) / 7;   /* 6/7*alpha_0 + 1/7*alpha_1 */
+        alpha[3] = (5 * alpha[0] + 2 * alpha[1] + 3) / 7;   /* 5/7*alpha_0 + 2/7*alpha_1 */
+        alpha[4] = (4 * alpha[0] + 3 * alpha[1] + 3) / 7;   /* 4/7*alpha_0 + 3/7*alpha_1 */
+        alpha[5] = (3 * alpha[0] + 4 * alpha[1] + 3) / 7;   /* 3/7*alpha_0 + 4/7*alpha_1 */
+        alpha[6] = (2 * alpha[0] + 5 * alpha[1] + 3) / 7;   /* 2/7*alpha_0 + 5/7*alpha_1 */
+        alpha[7] = (    alpha[0] + 6 * alpha[1] + 3) / 7;   /* 1/7*alpha_0 + 6/7*alpha_1 */
     }
     else {
         /* 4 interpolated alpha values. */
-        alpha[2] = (4 * alpha[0] +     alpha[1]) / 5;   /* 4/5*alpha_0 + 1/5*alpha_1 */
-        alpha[3] = (3 * alpha[0] + 2 * alpha[1]) / 5;   /* 3/5*alpha_0 + 2/5*alpha_1 */
-        alpha[4] = (2 * alpha[0] + 3 * alpha[1]) / 5;   /* 2/5*alpha_0 + 3/5*alpha_1 */
-        alpha[5] = (    alpha[0] + 4 * alpha[1]) / 5;   /* 1/5*alpha_0 + 4/5*alpha_1 */
+        alpha[2] = (4 * alpha[0] +     alpha[1] + 2) / 5;   /* 4/5*alpha_0 + 1/5*alpha_1 */
+        alpha[3] = (3 * alpha[0] + 2 * alpha[1] + 2) / 5;   /* 3/5*alpha_0 + 2/5*alpha_1 */
+        alpha[4] = (2 * alpha[0] + 3 * alpha[1] + 2) / 5;   /* 2/5*alpha_0 + 3/5*alpha_1 */
+        alpha[5] = (    alpha[0] + 4 * alpha[1] + 2) / 5;   /* 1/5*alpha_0 + 4/5*alpha_1 */
         alpha[6] = 0x00;
         alpha[7] = 0xFF;
     }
@@ -2708,3 +2714,9 @@ rdds_t *rdds_alloc(void)
       return NULL;
    return rdds;
 }
+
+/* The block decoders, public: see rdds.h. */
+void rdds_decode_block_bc1(const void *block, void *out, int pitch) { rdds_bcdec_bc1(block, out, pitch); }
+void rdds_decode_block_bc2(const void *block, void *out, int pitch) { rdds_bcdec_bc2(block, out, pitch); }
+void rdds_decode_block_bc3(const void *block, void *out, int pitch) { rdds_bcdec_bc3(block, out, pitch); }
+void rdds_decode_block_bc7(const void *block, void *out, int pitch) { rdds_bcdec_bc7(block, out, pitch); }

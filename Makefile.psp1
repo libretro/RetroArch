@@ -41,6 +41,7 @@ RARCH_DEFINES = -DPSP \
 		-DHAVE_DSP_FILTER \
 		-DHAVE_VIDEO_FILTER \
 		-DHAVE_7ZIP \
+		-DHAVE_RZSTD \
 		-DHAVE_CC_RESAMPLER \
 		-DHAVE_CORE_INFO_CACHE
 
@@ -52,7 +53,7 @@ ifeq ($(HAVE_STATIC_DUMMY),1)
 else
   LIBS += -lretro_psp1
 endif
-LIBS += -lstdc++ -lpspgu -lpspgum -lpspaudio -lpspfpu -lpsppower -lpsprtc -lpthread
+LIBS += -lstdc++ -lpspgu -lpspgum -lpspaudio -lpspfpu -lpsppower -lpsprtc
 
 ifeq ($(HAVE_THREADS), 1)
 RARCH_DEFINES += -DHAVE_THREADS

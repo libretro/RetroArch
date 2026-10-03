@@ -533,8 +533,10 @@ void TParseContextBase::parseSwizzleSelector(const TSourceLoc& loc, const TStrin
         }
     }
 
-    // Additional error checking.
-    for (int i = 0; i < selector.size(); ++i) {
+    // Additional error checking.  The selector never holds more than
+    // size entries; bounding by size as well lets the compiler see that
+    // every index stays inside the MaxSwizzleSelectors arrays.
+    for (int i = 0; i < selector.size() && i < size; ++i) {
         if (selector[i] >= vecSize) {
             error(loc, "vector swizzle selection out of range",  compString.c_str(), "");
             selector.resize(i);

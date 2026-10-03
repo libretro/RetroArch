@@ -89,7 +89,9 @@ static void ntsc_process_line(const struct filter_data *filt,
       int r, g, b, Y, I, Q;
       if (filt->in_fmt == SOFTFILTER_FMT_RGB565) {
          uint16_t p = ((uint16_t*)thr->in_data)[y * (thr->in_pitch/2) + x];
-         r = ((p >> 11) & 0x1f) << 3; g = ((p >> 5) & 0x3f) << 2; b = (p & 0x1f) << 3;
+         r = (p >> 11) & 0x1f; g = (p >> 5) & 0x3f; b = p & 0x1f;
+         /* Widen with the top bits copied down, so full scale is 255. */
+         r = (r << 3) | (r >> 2); g = (g << 2) | (g >> 4); b = (b << 3) | (b >> 2);
       } else {
          uint32_t p = ((uint32_t*)thr->in_data)[y * (thr->in_pitch/4) + x];
          r = (p >> 16) & 0xFF; g = (p >> 8) & 0xFF; b = p & 0xFF;

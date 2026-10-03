@@ -30,6 +30,9 @@
 #include "../connect/joypad_connection.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 typedef struct apple_input_rec
 {
@@ -52,7 +55,7 @@ struct iohidmanager_hid_adapter
    /* pad_connection_pad_init() returns int32_t and can return -1 on
     * allocation failure.  Storing the return in uint32_t compiles
     * but makes the `slot == -1` check at the call site a signed/
-    * unsigned comparison GCC warns about.  Matches wiiusb_hid.c's
+    * unsigned comparison GCC warns about.  Matches wiiusb_hid_libogc.c's
     * adapter struct which got this right. */
    int32_t slot;
    IOHIDDeviceRef handle;
@@ -692,7 +695,7 @@ static void iohidmanager_hid_device_add(IOHIDDeviceRef device, iohidmanager_hid_
    IOHIDDeviceScheduleWithRunLoop(device, CFRunLoopGetCurrent(),
          kCFRunLoopCommonModes);
 
-#ifndef IOS
+#if !TARGET_OS_IPHONE
    iohidmanager_hid_device_get_product_string(device, adapter->name,
          sizeof(adapter->name));
 #endif

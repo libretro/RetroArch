@@ -79,6 +79,15 @@ typedef struct sdl_dingux_video
    bool was_in_menu;
    bool quitting;
    bool mode_valid;
+   /* What the last frame said the IPU filter should be: set_filtering()
+    * runs on the video thread under the threaded wrapper, and reading
+    * the setting there races the menu writing it. */
+   unsigned frame_ipu_filter_type;
+   /* What the last frame said these should be: apply_state_changes()
+    * is run by the video thread from thread_update_driver_state(), and
+    * reading the settings there races the menu writing them. */
+   bool frame_ipu_keep_aspect;
+   bool frame_integer_scaling;
 } sdl_dingux_video_t;
 
 static void sdl_dingux_init_font_color(sdl_dingux_video_t *vid)
@@ -367,11 +376,16 @@ static void sdl_dingux_input_driver_init(
 #if defined(HAVE_SDL) || defined(HAVE_SDL2)
    if (string_is_equal(input_drv_name, "sdl"))
    {
-      *input_data = input_driver_init_wrap(&input_sdl,
+#ifdef HAVE_SDL2
+      input_driver_t *sdl_drv = &input_sdl2;
+#else
+      input_driver_t *sdl_drv = &input_sdl1;
+#endif
+      *input_data = input_driver_init_wrap(sdl_drv,
             joypad_drv_name);
 
       if (*input_data)
-         *input = &input_sdl;
+         *input = sdl_drv;
 
       return;
    }
@@ -746,12 +760,23 @@ static void sdl_dingux_blit_frame32(sdl_dingux_video_t *vid,
 }
 
 static bool sdl_dingux_gfx_frame(void *data, const void *frame,
-      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    sdl_dingux_video_t* vid = (sdl_dingux_video_t*)data;
 #ifdef HAVE_MENU
    bool menu_is_alive      = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
+
+   /* Travels with the frame, for set_filtering() to read rather than
+    * the setting the menu writes */
+   if (vid)
+   {
+      vid->frame_ipu_filter_type = video_info->dingux_ipu_filter_type;
+      vid->frame_ipu_keep_aspect = video_info->dingux_ipu_keep_aspect;
+      vid->frame_integer_scaling = video_info->scale_integer;
+   }
 #endif
 
    /* Return early if:
@@ -871,18 +896,18 @@ static void sdl_dingux_set_texture_enable(void *data, bool state, bool full_scre
 }
 
 static void sdl_dingux_set_texture_frame(void *data, const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    sdl_dingux_video_t *vid = (sdl_dingux_video_t*)data;
 
    if (unlikely(
            !vid
          || rgb32
-         || (width > SDL_DINGUX_MENU_WIDTH)
-         || (height > SDL_DINGUX_MENU_HEIGHT)))
+         || (VIDEO_SCALE_W(dims) > SDL_DINGUX_MENU_WIDTH)
+         || (VIDEO_SCALE_H(dims) > SDL_DINGUX_MENU_HEIGHT)))
       return;
 
-   memcpy(vid->menu_texture, frame, width * height * sizeof(uint16_t));
+   memcpy(vid->menu_texture, frame, VIDEO_SCALE_AREA(dims) * sizeof(uint16_t));
 }
 
 static void sdl_dingux_gfx_set_nonblock_state(void *data, bool toggle,
@@ -971,10 +996,9 @@ static void sdl_dingux_gfx_viewport_info(void *data, struct video_viewport *vp)
    if (unlikely(!vid))
       return;
 
-   vp->x      = 0;
-   vp->y      = 0;
-   vp->width  = vp->full_width  = vid->frame_width;
-   vp->height = vp->full_height = vid->frame_height;
+   vp->pos    = VIDEO_POS_PACK(0, 0);
+   vp->dims   = vp->full_dims   = VIDEO_SCALE_PACK(vid->frame_width,
+         vid->frame_height);
 }
 
 static float sdl_dingux_get_refresh_rate(void *data)
@@ -1000,12 +1024,13 @@ static float sdl_dingux_get_refresh_rate(void *data)
 static void sdl_dingux_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
 {
    sdl_dingux_video_t *vid                     = (sdl_dingux_video_t*)data;
-   settings_t *settings                        = config_get_ptr();
-   enum dingux_ipu_filter_type ipu_filter_type = (settings) ?
-         (enum dingux_ipu_filter_type)settings->uints.video_dingux_ipu_filter_type :
+   /* What the last frame carried, not what the setting says now: this
+    * runs on the video thread under the threaded wrapper. */
+   enum dingux_ipu_filter_type ipu_filter_type = (vid) ?
+         (enum dingux_ipu_filter_type)vid->frame_ipu_filter_type :
          DINGUX_IPU_FILTER_BICUBIC;
 
-   if (!vid || !settings)
+   if (!vid)
       return;
 
    /* Update IPU filter setting, if required */
@@ -1019,11 +1044,12 @@ static void sdl_dingux_set_filtering(void *data, unsigned index, bool smooth, bo
 static void sdl_dingux_apply_state_changes(void *data)
 {
    sdl_dingux_video_t *vid  = (sdl_dingux_video_t*)data;
-   settings_t *settings     = config_get_ptr();
-   bool ipu_keep_aspect     = (settings) ? settings->bools.video_dingux_ipu_keep_aspect : true;
-   bool ipu_integer_scaling = (settings) ? settings->bools.video_scale_integer : false;
+   /* What the last frame carried, not what the settings say now: the
+    * video thread runs this from thread_update_driver_state(). */
+   bool ipu_keep_aspect     = (vid) ? vid->frame_ipu_keep_aspect : true;
+   bool ipu_integer_scaling = (vid) ? vid->frame_integer_scaling : false;
 
-   if (!vid || !settings)
+   if (!vid)
       return;
 
    /* Update IPU scaling mode, if required */
@@ -1112,7 +1138,6 @@ video_driver_t video_sdl_dingux = {
    NULL, /* set_rotation */
    sdl_dingux_gfx_viewport_info,
    NULL, /* read_viewport  */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL, /* get_overlay_interface */
 #endif

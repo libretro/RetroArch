@@ -1,0 +1,56 @@
+compiler     := gcc
+TARGET       := thread_handshake_test
+
+CORE_DIR = ../../..
+LIBRETRO_COMM_DIR = $(CORE_DIR)/libretro-common
+INCDIRS := -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) -I$(CORE_DIR)/deps
+
+CC      := $(compiler)
+flags   += -std=gnu99
+
+SOURCES_C := \
+	thread_handshake_test.c \
+	../../../audio/audio_upmix.c \
+	../../../audio/audio_binaural.c \
+	stubs_retroarch.c \
+	$(CORE_DIR)/audio/audio_thread_wrapper.c \
+	$(CORE_DIR)/frontend/thread_elevation.c \
+	$(CORE_DIR)/frontend/thread_elevation/eevdf.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
+	$(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
+	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c
+
+CFLAGS += -Wall $(INCDIRS)
+CFLAGS += -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_CONFIGFILE -DHAVE_MENU \
+	-D_GNU_SOURCE
+LDFLAGS += -lm -lpthread
+
+ifneq ($(SAN),)
+   SANITIZER := $(SAN)
+endif
+ifneq ($(SANITIZER),)
+   CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g $(CFLAGS)
+   LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
+
+OBJS := $(SOURCES_C:.c=.o)
+
+all: $(TARGET)
+
+%.o: %.c
+	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<
+
+$(TARGET): $(OBJS)
+	$(CC) -o$@ $(OBJS) $(LDFLAGS)
+
+check: $(TARGET)
+	./$(TARGET)
+
+clean:
+	rm -f $(OBJS)
+	rm -f $(TARGET)
+
+.PHONY: clean all check

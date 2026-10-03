@@ -149,7 +149,7 @@
 #if defined(HAVE_FLAC) || defined(HAVE_RFLAC)
 #define HAVE_RCHD_FLAC    1
 #endif
-#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#ifdef HAVE_RZSTD
 #define HAVE_RCHD_ZSTD    1
 #endif
 #endif
@@ -349,11 +349,14 @@ struct rchd
    rlzma_dec_t       *lzma;
 #endif
 
-   /* Three lookup tables and one channel of samples, for A/V hunks.
-    * Made on first use, so an image that is not audio/video pays
-    * nothing for them. */
+   /* Three lookup tables, one channel of samples and the Huffman
+    * decoders, for A/V hunks. The decoders are heap-held because the
+    * five of them come to ~10 KiB, which overruns an 8 KiB thread
+    * stack. All made on first use, so an image that is not
+    * audio/video pays nothing for them. */
    uint16_t          *av_lookup;
    int16_t           *av_samples;
+   struct rchd_av_scratch *av_scratch;
 
    /* One decoded hunk, kept so a range spanning several hunks, or two
     * reads inside one, decode each hunk once. */
@@ -1096,6 +1099,7 @@ void rchd_free(rchd_t *chd)
    free(chd->sec_frame);
    free(chd->av_lookup);
    free(chd->av_samples);
+   free(chd->av_scratch);
    free(chd);
 }
 
@@ -1410,6 +1414,15 @@ typedef struct rchd_av_plane
    uint32_t    run;
 } rchd_av_plane_t;
 
+/* The decoders one A/V hunk uses: a tree per video plane, and the two
+ * trees Huffman-coded audio deltas are split across. */
+typedef struct rchd_av_scratch
+{
+   rchd_av_plane_t plane[3];
+   rhuff_dec_t     hi;
+   rhuff_dec_t     lo;
+} rchd_av_scratch_t;
+
 static uint8_t rchd_av_next(rchd_av_plane_t *p, rhuff_bits_t *b)
 {
    uint32_t sym;
@@ -1435,7 +1448,8 @@ static uint8_t rchd_av_next(rchd_av_plane_t *p, rhuff_bits_t *b)
 static int rchd_decode_avhuff(rchd_t *chd, const uint8_t *src,
       uint32_t src_len, uint8_t *dst, uint32_t dst_len)
 {
-   rchd_av_plane_t plane[3];
+   rchd_av_scratch_t *s;
+   rchd_av_plane_t   *plane;
    rhuff_bits_t    bits;
    rflac_format_t  fmt;
    uint32_t        metasize;
@@ -1462,6 +1476,15 @@ static int rchd_decode_avhuff(rchd_t *chd, const uint8_t *src,
 
    if (!channels || channels > RCHD_AV_MAX_CHANNELS || (width & 1))
       return RCHD_ERROR_DATA;
+
+   if (!chd->av_scratch)
+   {
+      chd->av_scratch = (rchd_av_scratch_t*)malloc(sizeof(rchd_av_scratch_t));
+      if (!chd->av_scratch)
+         return RCHD_ERROR_MEM;
+   }
+   s     = chd->av_scratch;
+   plane = s->plane;
 
    hdr_len = 10 + channels * 2;
    if (src_len < hdr_len)
@@ -1584,8 +1607,6 @@ static int rchd_decode_avhuff(rchd_t *chd, const uint8_t *src,
           * whole of what separates this codec from the one versions 1
           * to 4 use, whose images are the ones that would exercise it. */
          uint32_t treesize = mode;
-         rhuff_dec_t hi;
-         rhuff_dec_t lo;
          rhuff_bits_t tb;
 
          if (treesize)
@@ -1601,16 +1622,16 @@ static int rchd_decode_avhuff(rchd_t *chd, const uint8_t *src,
             if ((uint64_t)treesize > (uint64_t)(src + src_len - p))
                return RCHD_ERROR_DATA;
             rhuff_bits_init(&tb, p, treesize);
-            if (rhuff_dec_init(&hi, 256, RCHD_AV_MAX_BITS, chd->av_lookup,
+            if (rhuff_dec_init(&s->hi, 256, RCHD_AV_MAX_BITS, chd->av_lookup,
                      RHUFF_LOOKUP_ENTRIES(RCHD_AV_MAX_BITS)) != RHUFF_OK
-                  || rhuff_read_tree_rle(&hi, &tb) != RHUFF_OK)
+                  || rhuff_read_tree_rle(&s->hi, &tb) != RHUFF_OK)
                return RCHD_ERROR_DATA;
             rhuff_bits_flush(&tb);
-            if (rhuff_dec_init(&lo, 256, RCHD_AV_MAX_BITS,
+            if (rhuff_dec_init(&s->lo, 256, RCHD_AV_MAX_BITS,
                      chd->av_lookup
                         + RHUFF_LOOKUP_ENTRIES(RCHD_AV_MAX_BITS),
                      RHUFF_LOOKUP_ENTRIES(RCHD_AV_MAX_BITS)) != RHUFF_OK
-                  || rhuff_read_tree_rle(&lo, &tb) != RHUFF_OK)
+                  || rhuff_read_tree_rle(&s->lo, &tb) != RHUFF_OK)
                return RCHD_ERROR_DATA;
             p += treesize;
          }
@@ -1644,8 +1665,8 @@ static int rchd_decode_avhuff(rchd_t *chd, const uint8_t *src,
                rhuff_bits_init(&ab, p, clen);
                for (k = 0; k < samples; k++)
                {
-                  uint32_t d = rhuff_dec_decode_one(&hi, &ab) << 8;
-                  d |= rhuff_dec_decode_one(&lo, &ab);
+                  uint32_t d = rhuff_dec_decode_one(&s->hi, &ab) << 8;
+                  d |= rhuff_dec_decode_one(&s->lo, &ab);
                   prev = (prev + d) & 0xffff;
                   out[k * 2]     = (uint8_t)(prev >> 8);
                   out[k * 2 + 1] = (uint8_t)prev;
@@ -2975,4 +2996,186 @@ int rchd_decode_av_for_test(const uint8_t *src, uint32_t src_len,
    rchd_free(c);
    return e;
 }
+
 #endif
+/* =====================================================================
+ * Writing: uncompressed version 5
+ *
+ * No I/O here, for the same reason the decoder has none: the caller owns
+ * the destination. Bytes leave through a positioned-write callback, and
+ * the header and map -- which are only known once every hunk has landed
+ * -- are emitted at offset zero at the end.
+ *
+ * The layout follows what rchd_map_v5_raw reads: an uncompressed v5 map
+ * is a flat array of hunk INDICES, and a hunk's offset is index *
+ * hunk_bytes. So the file is a sequence of hunk-sized blocks, the header
+ * and map occupy the first few, and hunk data starts after them. Index
+ * zero is reserved -- the reader reads it as a hole rather than an
+ * offset -- which is also how an all-zero hunk is stored.
+ * ===================================================================== */
+
+#define RCHD_V5_HEADER_BYTES 124
+
+struct rchd_writer
+{
+   rchd_write_fn sink;
+   void         *ctx;
+   uint32_t     *map;           /* one block index per hunk */
+   uint8_t      *pad;           /* zero padding, one hunk */
+   uint64_t      logical_bytes;
+   uint32_t      hunk_bytes;
+   uint32_t      unit_bytes;
+   uint32_t      hunk_count;    /* hunks the logical size needs */
+   uint32_t      written;       /* hunks written so far */
+   uint32_t      first_block;   /* first block holding hunk data */
+   uint32_t      next_block;    /* next free block */
+};
+
+static void rchd_wr32(uint8_t *p, uint32_t v)
+{
+   p[0] = (uint8_t)(v >> 24); p[1] = (uint8_t)(v >> 16);
+   p[2] = (uint8_t)(v >> 8);  p[3] = (uint8_t)v;
+}
+
+static void rchd_wr64(uint8_t *p, uint64_t v)
+{
+   rchd_wr32(p,     (uint32_t)(v >> 32));
+   rchd_wr32(p + 4, (uint32_t)v);
+}
+
+rchd_writer_t *rchd_write_new(uint64_t logical_bytes, uint32_t hunk_bytes,
+      uint32_t unit_bytes, rchd_write_fn sink, void *ctx)
+{
+   rchd_writer_t *w;
+   uint64_t       hunks;
+   uint64_t       map_bytes;
+
+   if (!sink || !logical_bytes || !hunk_bytes || !unit_bytes)
+      return NULL;
+   if (hunk_bytes % unit_bytes)
+      return NULL;
+
+   hunks = (logical_bytes + hunk_bytes - 1) / hunk_bytes;
+   if (hunks > 0xffffffffu)
+      return NULL;
+
+   w = (rchd_writer_t*)calloc(1, sizeof(*w));
+   if (!w)
+      return NULL;
+
+   w->sink          = sink;
+   w->ctx           = ctx;
+   w->logical_bytes = logical_bytes;
+   w->hunk_bytes    = hunk_bytes;
+   w->unit_bytes    = unit_bytes;
+   w->hunk_count    = (uint32_t)hunks;
+
+   w->map = (uint32_t*)calloc(w->hunk_count, sizeof(uint32_t));
+   w->pad = (uint8_t*)calloc(1, hunk_bytes);
+   if (!w->map || !w->pad)
+   {
+      rchd_write_free(w);
+      return NULL;
+   }
+
+   map_bytes      = (uint64_t)w->hunk_count * 4;
+   w->first_block = (uint32_t)((RCHD_V5_HEADER_BYTES + map_bytes
+            + hunk_bytes - 1) / hunk_bytes);
+   if (w->first_block == 0)
+      w->first_block = 1;   /* index zero means "hole", so data cannot live there */
+   w->next_block  = w->first_block;
+
+   return w;
+}
+
+uint64_t rchd_write_prefix_size(const rchd_writer_t *w)
+{
+   if (!w)
+      return 0;
+   return (uint64_t)w->first_block * w->hunk_bytes;
+}
+
+int rchd_write_hunk(rchd_writer_t *w, const uint8_t *data, uint32_t len)
+{
+   uint64_t offset;
+   uint32_t i;
+   int      all_zero = 1;
+
+   if (!w || !data || len > w->hunk_bytes)
+      return RCHD_ERROR_DATA;
+   if (w->written >= w->hunk_count)
+      return RCHD_ERROR_DATA;
+
+   for (i = 0; i < len; i++)
+   {
+      if (data[i])
+      {
+         all_zero = 0;
+         break;
+      }
+   }
+
+   if (all_zero)
+   {
+      w->map[w->written++] = 0;   /* a hole: nothing stored */
+      return RCHD_OK;
+   }
+
+   offset = (uint64_t)w->next_block * w->hunk_bytes;
+   if (!w->sink(w->ctx, offset, data, len))
+      return RCHD_ERROR_STATE;
+   if (len < w->hunk_bytes)
+   {
+      if (!w->sink(w->ctx, offset + len, w->pad, w->hunk_bytes - len))
+         return RCHD_ERROR_STATE;
+   }
+
+   w->map[w->written++] = w->next_block++;
+   return RCHD_OK;
+}
+
+int rchd_write_finish(rchd_writer_t *w)
+{
+   uint8_t  hdr[RCHD_V5_HEADER_BYTES];
+   uint8_t  entry[4];
+   uint32_t n;
+
+   if (!w)
+      return RCHD_ERROR_DATA;
+   if (w->written != w->hunk_count)
+      return RCHD_ERROR_DATA;
+
+   memset(hdr, 0, sizeof(hdr));
+   memcpy(hdr, "MComprHD", 8);
+   rchd_wr32(hdr + 8,  RCHD_V5_HEADER_BYTES);
+   rchd_wr32(hdr + 12, 5);
+   /* compressors[0..3] stay zero: an uncompressed file. */
+   rchd_wr64(hdr + 32, w->logical_bytes);
+   rchd_wr64(hdr + 40, RCHD_V5_HEADER_BYTES);   /* map offset */
+   rchd_wr64(hdr + 48, 0);                      /* no metadata */
+   rchd_wr32(hdr + 56, w->hunk_bytes);
+   rchd_wr32(hdr + 60, w->unit_bytes);
+   /* raw/combined/parent SHA-1 stay zero: the reader parses and exposes
+    * them but does not verify, and a zero parent means "no parent". */
+
+   if (!w->sink(w->ctx, 0, hdr, sizeof(hdr)))
+      return RCHD_ERROR_STATE;
+
+   for (n = 0; n < w->hunk_count; n++)
+   {
+      rchd_wr32(entry, w->map[n]);
+      if (!w->sink(w->ctx, RCHD_V5_HEADER_BYTES + (uint64_t)n * 4, entry, 4))
+         return RCHD_ERROR_STATE;
+   }
+
+   return RCHD_OK;
+}
+
+void rchd_write_free(rchd_writer_t *w)
+{
+   if (!w)
+      return;
+   free(w->map);
+   free(w->pad);
+   free(w);
+}

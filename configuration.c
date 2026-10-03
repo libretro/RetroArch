@@ -26,9 +26,14 @@
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
+#include <streams/rzip_stream.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
+#ifdef HAVE_SSL
+#include <net/net_socket_ssl.h>
 #endif
 
 #include "file_path_special.h"
@@ -53,8 +58,24 @@
 #include "gfx/gfx_animation.h"
 
 #include "tasks/task_content.h"
+
+/* The keychain seals values with libretro-common/crypto, which the
+ * small consoles leave out; without it the file stays in the clear. */
+#if defined(HAVE_KEYCHAIN) && !defined(HAVE_CRYPTO)
+#undef HAVE_KEYCHAIN
+#endif
+#if defined(HAVE_CONFIGFILE) && defined(HAVE_KEYCHAIN)
+#include <file/keychain.h>
+#endif
 #include "tasks/tasks_internal.h"
 #include "accessibility.h"
+#ifdef ANDROID
+/* Defined in frontend/drivers/platform_unix.c; declared here rather
+ * than via platform_unix.h, whose JNI includes host-side tooling
+ * cannot preprocess. */
+void android_app_set_window_settings(bool notch_write_over,
+      bool auto_mouse_grab);
+#endif
 
 #include "list_special.h"
 
@@ -66,7 +87,6 @@
 
 #ifdef HAVE_LAKKA_SWITCH
 #include "lakka-switch.h"
-   }
 #endif
 
 #if defined(HAVE_LIBNX)
@@ -76,9 +96,13 @@
 #if __APPLE__
 #include "ui/drivers/cocoa/apple_platform.h"
 #endif
+#include "ui/ui_companion_driver.h"
 
 #ifdef HAVE_LAKKA
 #include <time.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 #endif
 
 /* Compile-time upper bounds for setting array sizes.
@@ -143,7 +167,6 @@ enum audio_driver_enum
    AUDIO_AUDIOIO,
    AUDIO_OSS,
    AUDIO_ALSA,
-   AUDIO_ALSATHREAD,
    AUDIO_TINYALSA,
    AUDIO_ROAR,
    AUDIO_AL,
@@ -151,13 +174,13 @@ enum audio_driver_enum
    AUDIO_JACK,
    AUDIO_SDL,
    AUDIO_SDL2,
+   AUDIO_SDL3,
    AUDIO_XAUDIO,
    AUDIO_PULSE,
    AUDIO_EXT,
    AUDIO_DSOUND,
    AUDIO_WASAPI,
    AUDIO_COREAUDIO,
-   AUDIO_COREAUDIO3,
    AUDIO_PS3,
    AUDIO_XENON360,
    AUDIO_WII,
@@ -175,8 +198,8 @@ enum audio_driver_enum
 enum microphone_driver_enum
 {
    MICROPHONE_ALSA = AUDIO_NULL + 1,
-   MICROPHONE_ALSATHREAD,
    MICROPHONE_SDL2,
+   MICROPHONE_SDL3,
    MICROPHONE_WASAPI,
    MICROPHONE_PIPEWIRE,
    MICROPHONE_COREAUDIO,
@@ -489,12 +512,12 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_CTR;
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SWITCH;
 #elif defined(HAVE_XVIDEO)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XVIDEO;
+#elif defined(HAVE_SDL3)
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL3;
 #elif defined(HAVE_SDL) && !defined(HAVE_SDL_DINGUX)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL;
 #elif defined(HAVE_SDL2)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL2;
-#elif defined(HAVE_SDL3)
-static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL3;
 #elif defined(HAVE_SDL_DINGUX)
 #if defined(RS90) || defined(MIYOO)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL_RS90;
@@ -539,9 +562,10 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_AL;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PULSE;
 #elif defined(HAVE_PIPEWIRE)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_PIPEWIRE;
-#elif defined(HAVE_ALSA) && defined(HAVE_THREADS)
-static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ALSATHREAD;
 #elif defined(HAVE_ALSA)
+/* Was AUDIO_ALSATHREAD when built with threads. That driver is gone and
+ * the threaded pipeline, on by default, does what it did from the audio
+ * thread - and more, since the resampler moves off the frame too. */
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ALSA;
 #elif defined(HAVE_TINYALSA)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_TINYALSA;
@@ -551,8 +575,6 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_AUDIOIO;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_OSS;
 #elif defined(HAVE_JACK)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_JACK;
-#elif defined(HAVE_COREAUDIO3)
-static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO3;
 #elif defined(HAVE_COREAUDIO)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_COREAUDIO;
 #elif defined(HAVE_WASAPI)
@@ -569,6 +591,8 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SL;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_AUDIOWORKLET;
 #elif defined(HAVE_RWEBAUDIO)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_RWEBAUDIO;
+#elif defined(HAVE_SDL3)
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SDL3;
 #elif defined(HAVE_SDL)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SDL;
 #elif defined(HAVE_SDL2)
@@ -587,15 +611,18 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_NULL;
 #if defined(HAVE_WASAPI)
 /* The default mic driver on Windows is WASAPI if it's available. */
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_WASAPI;
-#elif defined(HAVE_ALSA) && defined(HAVE_THREADS)
-/* The default mic driver on Linux is the threaded ALSA driver, if available. */
-static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_ALSATHREAD;
 #elif defined(HAVE_ALSA)
+/* Was MICROPHONE_ALSATHREAD when built with threads. That driver is
+ * gone: the frontend's threaded capture, on by default, does what its
+ * worker did - and for every microphone driver that can wait on its
+ * device, not just this one. */
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_ALSA;
 #elif defined(HAVE_PIPEWIRE)
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_PIPEWIRE;
 #elif defined(HAVE_COREAUDIO)
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_COREAUDIO;
+#elif defined(HAVE_SDL3)
+static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_SDL3;
 #elif defined(HAVE_SDL2)
 /* The default fallback driver is SDL2, if available. */
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_SDL2;
@@ -642,6 +669,8 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_ANDROID;
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
 #elif defined(WEBOS) && defined(HAVE_SDL2)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
+#elif defined(WEBOS) && defined(HAVE_SDL3)
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL3;
 #elif defined(WEBOS) && defined(HAVE_WAYLAND)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WAYLAND;
 #elif defined(__EMSCRIPTEN__)
@@ -676,7 +705,7 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_UDEV;
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_LINUXRAW;
 #elif defined(HAVE_WAYLAND)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WAYLAND;
-#elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA_METAL)
+#elif defined(HAVE_COCOA) || defined(HAVE_COCOATOUCH)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_COCOA;
 #elif defined(__QNX__)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_QNX;
@@ -786,7 +815,7 @@ static const enum location_driver_enum LOCATION_DEFAULT_DRIVER = LOCATION_NULL;
 
 #if (defined(_3DS) || defined(DINGUX)) && defined(HAVE_RGUI)
 static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_RGUI;
-#elif defined(IOS) && !TARGET_OS_TV
+#elif TARGET_OS_IPHONE && !TARGET_OS_TV
 #define MENU_DEFAULT_DRIVER (ios_running_on_ipad() ? MENU_OZONE : MENU_MATERIALUI)
 #elif defined(HAVE_MATERIALUI) && defined(RARCH_MOBILE)
 static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_MATERIALUI;
@@ -804,7 +833,8 @@ static const enum menu_driver_enum MENU_DEFAULT_DRIVER = MENU_NULL;
 enum config_bool_flags
 {
    CFG_BOOL_FLG_DEF_ENABLE = (1 << 0),
-   CFG_BOOL_FLG_HANDLE     = (1 << 1)
+   CFG_BOOL_FLG_HANDLE     = (1 << 1),
+   CFG_BOOL_FLG_SENSITIVE  = (1 << 2)
 };
 
 struct config_bool_setting
@@ -823,6 +853,10 @@ struct config_int_setting
    int def;
    enum rarch_override_setting override;
    uint8_t flags;
+   /* CFG_HALF_*: when set, ptr addresses a packed word and this row
+    * is one half of it. The config file keeps a key per half either
+    * way, so a file written before the pair was packed still loads. */
+   uint8_t half;
 };
 
 struct config_uint_setting
@@ -832,7 +866,55 @@ struct config_uint_setting
    unsigned def;
    enum rarch_override_setting override;
    uint8_t flags;
+   uint8_t half;   /* CFG_HALF_*, as for config_int_setting */
 };
+
+#define CFG_HALF_NONE 0
+#define CFG_HALF_HI   1
+#define CFG_HALF_LO   2
+
+/* A row's value, whole word or half of one. The signed pair rides
+ * VIDEO_POS_PACK's layout and the unsigned pair VIDEO_SCALE_PACK's,
+ * so the halves come back out through the same macros the rest of
+ * the tree reads them with. */
+static INLINE unsigned cfg_uint_get(const struct config_uint_setting *s)
+{
+   if (s->half == CFG_HALF_HI)
+      return VIDEO_SCALE_W(*s->ptr);
+   if (s->half == CFG_HALF_LO)
+      return VIDEO_SCALE_H(*s->ptr);
+   return *s->ptr;
+}
+
+static INLINE void cfg_uint_set(const struct config_uint_setting *s,
+      unsigned v)
+{
+   if (s->half == CFG_HALF_HI)
+      VIDEO_SCALE_PUT_W(*s->ptr, v);
+   else if (s->half == CFG_HALF_LO)
+      VIDEO_SCALE_PUT_H(*s->ptr, v);
+   else
+      *s->ptr = v;
+}
+
+static INLINE int cfg_int_get(const struct config_int_setting *s)
+{
+   if (s->half == CFG_HALF_HI)
+      return VIDEO_POS_X(*s->ptr);
+   if (s->half == CFG_HALF_LO)
+      return VIDEO_POS_Y(*s->ptr);
+   return *s->ptr;
+}
+
+static INLINE void cfg_int_set(const struct config_int_setting *s, int v)
+{
+   if (s->half == CFG_HALF_HI)
+      VIDEO_POS_PUT_X(*s->ptr, v);
+   else if (s->half == CFG_HALF_LO)
+      VIDEO_POS_PUT_Y(*s->ptr, v);
+   else
+      *s->ptr = v;
+}
 
 struct config_size_setting
 {
@@ -895,6 +977,20 @@ struct config_path_setting
 #define SETTING_UINT(key, configval, default_enable, default_setting, handle_setting) \
    GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_uint_setting, handle_setting)
 
+/* A row that is one half of a packed word: 'which' is CFG_HALF_HI or
+ * CFG_HALF_LO and configval addresses the whole word. */
+#define SETTING_UINT_HALF(key, configval, which, default_enable, default_setting, handle_setting) \
+{ \
+   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_uint_setting, handle_setting) \
+   tmp[count - 1].half = (which); \
+}
+
+#define SETTING_INT_HALF(key, configval, which, default_enable, default_setting, handle_setting) \
+{ \
+   GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_int_setting, handle_setting) \
+   tmp[count - 1].half = (which); \
+}
+
 #define SETTING_SIZE(key, configval, default_enable, default_setting, handle_setting) \
    GENERAL_SETTING(key, configval, default_enable, default_setting, struct config_size_setting, handle_setting)
 
@@ -907,9 +1003,193 @@ struct config_path_setting
 #define SETTING_OVERRIDE(override_setting) \
    tmp[count-1].override = override_setting
 
+#define SETTING_SENSITIVE() \
+   tmp[count-1].flags |= CFG_BOOL_FLG_SENSITIVE
+
+#define SETTING_ARRAY_SENSITIVE(key, configval, default_enable, default_setting, handle_setting) \
+   SETTING_ARRAY(key, configval, default_enable, default_setting, handle_setting) \
+   SETTING_SENSITIVE()
+
+#define SETTING_PATH_SENSITIVE(key, configval, default_enable, default_setting, handle_setting) \
+   SETTING_PATH(key, configval, default_enable, default_setting, handle_setting) \
+   SETTING_SENSITIVE()
+
 /* Forward declarations */
 #ifdef HAVE_CONFIGFILE
 static void config_parse_file(global_t *global);
+static size_t config_get_credentials_path(char *s, size_t len);
+static bool config_save_credentials(
+      config_file_t *main_conf,
+      const struct config_array_setting *array_settings,
+      int array_settings_size,
+      const struct config_path_setting *path_settings,
+      int path_settings_size);
+
+/* Every ident that is marked SETTING_*_SENSITIVE in any build.
+ * Kept unconditional so a build without a feature still moves
+ * that feature's secrets out of retroarch.cfg instead of
+ * carrying them over as unknown entries. */
+static const char *config_sensitive_keys[] = {
+   "cheevos_username",
+   "cheevos_password",
+   "cheevos_token",
+   "webdav_username",
+   "webdav_password",
+   "google_drive_refresh_token",
+   "access_key_id",
+   "secret_access_key",
+   "youtube_stream_key",
+   "twitch_stream_key",
+   "facebook_stream_key",
+   "kick_stream_key",
+   "smb_client_username",
+   "smb_client_password",
+   "mcp_server_token",
+   "netplay_password",
+   "netplay_spectate_password",
+   "kiosk_mode_password",
+   "content_show_settings_password"
+};
+
+#ifdef HAVE_KEYCHAIN
+/**
+ * config_keychain_init:
+ *
+ * Derives the keychain master key from the per-install key file that
+ * sits beside retroarch.cfg. Idempotent. Logging is left to the
+ * callers: the first config load runs before file logging is up.
+ *
+ * Returns: true when sealed values can be opened and written.
+ **/
+static bool config_keychain_init(void)
+{
+   char keyfile_path[PATH_MAX_LENGTH];
+   char config_directory[DIR_MAX_LENGTH];
+
+   if (keychain_is_ready())
+      return true;
+   if (path_is_empty(RARCH_PATH_CONFIG))
+      return false;
+
+   fill_pathname_basedir(config_directory,
+         path_get(RARCH_PATH_CONFIG), sizeof(config_directory));
+   fill_pathname_join_special(keyfile_path, config_directory,
+         "retroarch-keychain.key", sizeof(keyfile_path));
+   return keychain_init(keyfile_path);
+}
+
+/**
+ * config_keychain_open_entries:
+ *
+ * Replaces every sealed sensitive value in @conf with its plaintext so
+ * the rest of the loader reads it like any other setting. A value that
+ * cannot be opened (sealed on another machine or install, tampered)
+ * is left in place: the loader ignores it as an unknown value and the
+ * next save carries it through untouched, so nothing is destroyed by
+ * a key file that is temporarily out of reach.
+ *
+ * Returns: number of values that could not be opened.
+ **/
+/* Bit i set: config_sensitive_keys[i] was sealed and could not be
+ * opened at the last load. Only those are carried through a save
+ * untouched; any other empty value really is empty, and clearing a
+ * password has to reach the file. */
+static uint32_t config_keychain_unopened = 0;
+/* one bit per sensitive key: fails to compile past 32 of them */
+typedef char config_sensitive_keys_fit_mask[
+   (sizeof(config_sensitive_keys) / sizeof(config_sensitive_keys[0]) <= 32) ? 1 : -1];
+
+static int config_sensitive_key_index(const char *key)
+{
+   unsigned i;
+   for (i = 0; i < ARRAY_SIZE(config_sensitive_keys); i++)
+      if (string_is_equal(config_sensitive_keys[i], key))
+         return (int)i;
+   return -1;
+}
+
+static unsigned config_keychain_open_entries(config_file_t *conf)
+{
+   unsigned i;
+   unsigned failed = 0;
+
+   for (i = 0; i < ARRAY_SIZE(config_sensitive_keys); i++)
+   {
+      char *plain;
+      const char *key = config_sensitive_keys[i];
+      struct config_entry_list *entry = config_get_entry(conf, key);
+      config_keychain_unopened &= ~((uint32_t)1 << i);
+      if (!entry || !keychain_value_is_sealed(entry->value))
+         continue;
+      if (!(plain = keychain_open_alloc(key, entry->value)))
+      {
+         config_keychain_unopened |= (uint32_t)1 << i;
+         /* Drop it from what the loader sees, or the blob itself
+          * would be read as the setting's value. The file on disk
+          * still has it; config_keychain_set() keeps it there. */
+         config_unset(conf, key);
+         failed++;
+         continue;
+      }
+      config_set_string(conf, key, plain);
+      free(plain);
+   }
+   return failed;
+}
+
+/* Sealed values the last save carried through unopened. */
+static unsigned config_keychain_carried = 0;
+/* Values set while the keychain was locked, left out of the save. */
+static unsigned config_keychain_withheld = 0;
+
+/**
+ * config_keychain_set:
+ *
+ * Writes @value for @key into the keychain file being built, sealed
+ * when the keychain is ready. An empty @value does not overwrite a
+ * sealed blob already in the file: that is the value this machine
+ * could not open at load time, and it belongs to whoever can.
+ **/
+static void config_keychain_set(config_file_t *conf,
+      const char *key, const char *value, bool from_settings)
+{
+   char *sealed;
+   const struct config_entry_list *have = config_get_entry(conf, key);
+
+   if (string_is_empty(value) && have
+         && keychain_value_is_sealed(have->value))
+   {
+      int idx = config_sensitive_key_index(key);
+      if (idx >= 0 && (config_keychain_unopened & ((uint32_t)1 << idx)))
+      {
+         config_keychain_carried++;
+         return;
+      }
+   }
+
+   /* A locked keychain (wrapped on another machine, passphrase not
+    * yet given) can seal nothing. A value set here in the meantime is
+    * not written in the clear; it is left out until the keychain is
+    * unlocked, and whatever the file held for it stays. Plaintext
+    * carried over from retroarch.cfg was already in the clear. */
+   if (from_settings && keychain_is_locked())
+   {
+      if (!string_is_empty(value))
+         config_keychain_withheld++;
+      return;
+   }
+
+   if (keychain_is_ready() && (sealed = keychain_seal_alloc(key, value)))
+   {
+      config_set_string(conf, key, sealed);
+      free(sealed);
+   }
+   else
+      config_set_string(conf, key, value);
+}
+#else
+#define config_keychain_set(conf, key, value, from_settings) config_set_string(conf, key, value)
+#endif
 #endif
 
 struct defaults g_defaults;
@@ -942,16 +1222,12 @@ const char *config_get_default_audio(void)
          return "oss";
       case AUDIO_ALSA:
          return "alsa";
-      case AUDIO_ALSATHREAD:
-         return "alsathread";
       case AUDIO_TINYALSA:
          return "tinyalsa";
       case AUDIO_ROAR:
          return "roar";
       case AUDIO_COREAUDIO:
          return "coreaudio";
-      case AUDIO_COREAUDIO3:
-         return "coreaudio3";
       case AUDIO_AL:
          return "openal";
       case AUDIO_SL:
@@ -960,6 +1236,8 @@ const char *config_get_default_audio(void)
          return "sdl";
       case AUDIO_SDL2:
          return "sdl2";
+      case AUDIO_SDL3:
+         return "sdl3";
       case AUDIO_DSOUND:
          return "dsound";
       case AUDIO_WASAPI:
@@ -994,7 +1272,10 @@ const char *config_get_default_audio(void)
          return "dsp";
       case AUDIO_SWITCH:
 #if defined(HAVE_LIBNX)
-         return "switch_audren_thread";
+         /* Was "switch_audren_thread". That driver is gone and this one
+          * reaches the same decoupling through the threaded pipeline,
+          * which also takes the resampler off the frame. */
+         return "switch_audren";
 #else
          return "switch";
 #endif
@@ -1027,14 +1308,14 @@ const char *config_get_default_microphone(void)
    {
       case MICROPHONE_ALSA:
          return "alsa";
-      case MICROPHONE_ALSATHREAD:
-         return "alsathread";
       case MICROPHONE_PIPEWIRE:
          return "pipewire";
       case MICROPHONE_WASAPI:
          return "wasapi";
       case MICROPHONE_SDL2:
          return "sdl2";
+      case MICROPHONE_SDL3:
+         return "sdl3";
       case MICROPHONE_COREAUDIO:
          return "coreaudio";
       case MICROPHONE_NULL:
@@ -1580,6 +1861,18 @@ static struct config_array_setting *populate_settings_array(
 
    /* Arrays */
    SETTING_ARRAY("audio_driver",                 settings->arrays.audio_driver, false, NULL, true);
+#ifdef HAVE_COMPANION_WIMP
+   SETTING_ARRAY("desktop_menu_dock_search",     settings->arrays.desktop_menu_dock_search, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_dock_playlists",  settings->arrays.desktop_menu_dock_playlists, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_dock_core",       settings->arrays.desktop_menu_dock_core, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_dock_boxart",     settings->arrays.desktop_menu_dock_boxart, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_dock_title",      settings->arrays.desktop_menu_dock_title, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_dock_screenshot", settings->arrays.desktop_menu_dock_screenshot, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_dock_logo",       settings->arrays.desktop_menu_dock_logo, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_dock_core_info",  settings->arrays.desktop_menu_dock_core_info, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_dock_log",        settings->arrays.desktop_menu_dock_log, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_options_window",  settings->arrays.desktop_menu_options_window, false, NULL, true);
+#endif
    SETTING_ARRAY("audio_device",                 settings->arrays.audio_device, false, NULL, true);
    SETTING_ARRAY("audio_resampler",              settings->arrays.audio_resampler, false, NULL, true);
 #ifdef HAVE_MICROPHONE
@@ -1588,6 +1881,9 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("microphone_resampler",         settings->arrays.microphone_resampler, false, NULL, true);
 #endif
    SETTING_ARRAY("midi_driver",                  settings->arrays.midi_driver, false, NULL, true);
+   SETTING_ARRAY("ui_companion_driver",          settings->arrays.ui_companion_driver, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_hidden_playlists", settings->arrays.desktop_menu_hidden_playlists, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_highlight_color",  settings->arrays.desktop_menu_highlight_color, false, NULL, true);
    SETTING_ARRAY("midi_input",                   settings->arrays.midi_input, true, DEFAULT_MIDI_INPUT, true);
    SETTING_ARRAY("midi_output",                  settings->arrays.midi_output, true, DEFAULT_MIDI_OUTPUT, true);
    SETTING_ARRAY("ai_service_backend",           settings->arrays.ai_service_backend, false, NULL, true);
@@ -1608,15 +1904,18 @@ static struct config_array_setting *populate_settings_array(
       static char reserved_keys[MAX_USERS][32];
       for (i = 0; i < MAX_USERS; i++)
       {
-         size_t _len  = strlcpy(reserved_keys[i], "input_player", sizeof(reserved_keys[i]));
+         size_t _len  = strlcpy_lit(reserved_keys[i], "input_player", sizeof(reserved_keys[i]));
          _len += snprintf(reserved_keys[i] + _len, sizeof(reserved_keys[i]) - _len, "%u", i + 1);
-         strlcpy(reserved_keys[i] + _len, "_reserved_device", sizeof(reserved_keys[i]) - _len);
+         strlcpy_lit(reserved_keys[i] + _len, "_reserved_device", sizeof(reserved_keys[i]) - _len);
          SETTING_ARRAY(reserved_keys[i], settings->arrays.input_reserved_devices[i], false, NULL, true);
       }
    }
 
 #ifdef HAVE_MENU
    SETTING_ARRAY("menu_driver",                  settings->arrays.menu_driver, false, NULL, true);
+#ifdef HAVE_OZONE
+   SETTING_ARRAY("ozone_menu_color_theme",       settings->arrays.menu_ozone_color_theme, false, NULL, false);
+#endif
 #endif
 
    SETTING_ARRAY("record_driver",                settings->arrays.record_driver, false, NULL, true);
@@ -1629,41 +1928,59 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("cloud_sync_driver",            settings->arrays.cloud_sync_driver, false, NULL, true);
 
 #ifdef HAVE_CHEEVOS
-   SETTING_ARRAY("cheevos_custom_host",          settings->arrays.cheevos_custom_host, false, NULL, true);
-   SETTING_ARRAY("cheevos_username",             settings->arrays.cheevos_username, false, NULL, true);
-   SETTING_ARRAY("cheevos_password",             settings->arrays.cheevos_password, false, NULL, true);
-   SETTING_ARRAY("cheevos_token",                settings->arrays.cheevos_token, false, NULL, true);
-   SETTING_ARRAY("cheevos_leaderboards_enable",  settings->arrays.cheevos_leaderboards_enable, true, "", true); /* deprecated */
+   SETTING_ARRAY("cheevos_custom_host",                   settings->arrays.cheevos_custom_host, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("cheevos_username",            settings->arrays.cheevos_username, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("cheevos_password",            settings->arrays.cheevos_password, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("cheevos_token",               settings->arrays.cheevos_token, false, NULL, true);
+   SETTING_ARRAY("cheevos_leaderboards_enable",           settings->arrays.cheevos_leaderboards_enable, true, "", true); /* deprecated */
 #endif
 
 #ifdef HAVE_NETWORKING
-   SETTING_ARRAY("netplay_mitm_server",          settings->arrays.netplay_mitm_server, false, NULL, true);
+   SETTING_ARRAY("network_cmd_bind_address",              settings->arrays.network_cmd_bind_address, false, NULL, true);
+   SETTING_ARRAY("mcp_server_bind_address",               settings->arrays.mcp_server_bind_address, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("mcp_server_token",            settings->arrays.mcp_server_token, false, NULL, true);
+   SETTING_ARRAY("netplay_mitm_server",                   settings->arrays.netplay_mitm_server, false, NULL, true);
 #ifdef HAVE_CLOUDSYNC
-   SETTING_ARRAY("webdav_url",                   settings->arrays.webdav_url, false, NULL, true);
-   SETTING_ARRAY("webdav_username",              settings->arrays.webdav_username, false, NULL, true);
-   SETTING_ARRAY("webdav_password",              settings->arrays.webdav_password, false, NULL, true);
-   SETTING_ARRAY("google_drive_refresh_token",   settings->arrays.google_drive_refresh_token, false, NULL, true);
+   SETTING_ARRAY("webdav_url",                            settings->arrays.webdav_url, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("webdav_username",             settings->arrays.webdav_username, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("webdav_password",             settings->arrays.webdav_password, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("google_drive_refresh_token",  settings->arrays.google_drive_refresh_token, false, NULL, true);
 #ifdef HAVE_S3
-   SETTING_ARRAY("s3_url",                       settings->arrays.s3_url, false, NULL, true);
-   SETTING_ARRAY("access_key_id",                settings->arrays.access_key_id, false, NULL, true);
-   SETTING_ARRAY("secret_access_key",            settings->arrays.secret_access_key, false, NULL, true);
+   SETTING_ARRAY("s3_url",                                settings->arrays.s3_url, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("access_key_id",               settings->arrays.access_key_id, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("secret_access_key",           settings->arrays.secret_access_key, false, NULL, true);
 #endif
 #endif
-   SETTING_ARRAY("youtube_stream_key",           settings->arrays.youtube_stream_key, true, NULL, true);
-   SETTING_ARRAY("twitch_stream_key",            settings->arrays.twitch_stream_key, true, NULL, true);
-   SETTING_ARRAY("facebook_stream_key",          settings->arrays.facebook_stream_key, true, NULL, true);
-   SETTING_ARRAY("kick_stream_key",              settings->arrays.kick_stream_key, true, NULL, true);
-   SETTING_ARRAY("discord_app_id",               settings->arrays.discord_app_id, true, DEFAULT_DISCORD_APP_ID, true);
-   SETTING_ARRAY("ai_service_url",               settings->arrays.ai_service_url, true, DEFAULT_AI_SERVICE_URL, true);
+   SETTING_ARRAY_SENSITIVE("youtube_stream_key",          settings->arrays.youtube_stream_key, true, NULL, true);
+   SETTING_ARRAY_SENSITIVE("twitch_stream_key",           settings->arrays.twitch_stream_key, true, NULL, true);
+   SETTING_ARRAY_SENSITIVE("facebook_stream_key",         settings->arrays.facebook_stream_key, true, NULL, true);
+   SETTING_ARRAY_SENSITIVE("kick_stream_key",             settings->arrays.kick_stream_key, true, NULL, true);
+   SETTING_ARRAY("video_gpu_name_vulkan",                 settings->arrays.video_gpu_name_vulkan, false, NULL, true);
+   SETTING_ARRAY("video_gpu_name_gl",                     settings->arrays.video_gpu_name_gl, false, NULL, true);
+   SETTING_ARRAY("video_gpu_name_d3d10",                  settings->arrays.video_gpu_name_d3d10, false, NULL, true);
+   SETTING_ARRAY("video_gpu_name_d3d11",                  settings->arrays.video_gpu_name_d3d11, false, NULL, true);
+   SETTING_ARRAY("video_gpu_name_d3d12",                  settings->arrays.video_gpu_name_d3d12, false, NULL, true);
+   SETTING_ARRAY("video_gpu_name_metal",                  settings->arrays.video_gpu_name_metal, false, NULL, true);
+   SETTING_ARRAY("discord_app_id",                        settings->arrays.discord_app_id, true, DEFAULT_DISCORD_APP_ID, true);
+   SETTING_ARRAY("ai_service_url",                        settings->arrays.ai_service_url, true, DEFAULT_AI_SERVICE_URL, true);
 #endif
 
 #ifdef HAVE_SMBCLIENT
-   SETTING_ARRAY("smb_client_server_address", settings->arrays.smb_client_server_address, false, NULL, true);
-   SETTING_ARRAY("smb_client_share", settings->arrays.smb_client_share, false, NULL, true);
-   SETTING_ARRAY("smb_client_subdir", settings->arrays.smb_client_subdir, false, NULL, true);
-   SETTING_ARRAY("smb_client_username", settings->arrays.smb_client_username, false, NULL, true);
-   SETTING_ARRAY("smb_client_password", settings->arrays.smb_client_password, false, NULL, true);
-   SETTING_ARRAY("smb_client_workgroup", settings->arrays.smb_client_workgroup, false, NULL, true);
+   SETTING_ARRAY("smb_client_server_address",             settings->arrays.smb_client_server_address, false, NULL, true);
+   SETTING_ARRAY("smb_client_share",                      settings->arrays.smb_client_share, false, NULL, true);
+   SETTING_ARRAY("smb_client_subdir",                     settings->arrays.smb_client_subdir, false, NULL, true);
+#endif
+#ifdef HAVE_NFSCLIENT
+   SETTING_ARRAY("nfs_server",                            settings->arrays.nfs_server, false, NULL, true);
+   SETTING_ARRAY("nfs_export",                            settings->arrays.nfs_export, false, NULL, true);
+   SETTING_ARRAY("nfs_subdir",                            settings->arrays.nfs_subdir, false, NULL, true);
+#endif
+#ifdef HAVE_SMBCLIENT
+   SETTING_ARRAY_SENSITIVE("smb_client_username",         settings->arrays.smb_client_username, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("smb_client_password",         settings->arrays.smb_client_password, false, NULL, true);
+   SETTING_ARRAY("smb_client_workgroup",                  settings->arrays.smb_client_workgroup, false, NULL, true);
+   SETTING_ARRAY("smb_client_realm",                      settings->arrays.smb_client_realm, false, NULL, true);
+   SETTING_ARRAY("smb_client_kdc",                        settings->arrays.smb_client_kdc, false, NULL, true);
 #endif
 
 #ifdef HAVE_LAKKA
@@ -1687,9 +2004,13 @@ static struct config_path_setting *populate_settings_path(
       return NULL;
 
    /* Paths */
+#if !defined(ANDROID)
+   /* On Android the bundle asset paths come from the launch intent
+    * (see platform_unix.c) and are not user configuration. */
    SETTING_PATH("bundle_assets_src_path",        settings->paths.bundle_assets_src, false, NULL, true);
    SETTING_PATH("bundle_assets_dst_path",        settings->paths.bundle_assets_dst, false, NULL, true);
    SETTING_PATH("bundle_assets_dst_path_subdir", settings->paths.bundle_assets_dst_subdir, false, NULL, true);
+#endif
    SETTING_PATH("core_updater_buildbot_cores_url",  settings->paths.network_buildbot_url, false, NULL, true);
    SETTING_PATH("core_updater_buildbot_assets_url", settings->paths.network_buildbot_assets_url, false, NULL, true);
    SETTING_PATH("libretro_directory",            settings->paths.directory_libretro, false, NULL, false);
@@ -1724,6 +2045,8 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("content_database_path",           settings->paths.path_content_database, false, NULL, true);
    SETTING_PATH("content_favorites_path",          settings->paths.path_content_favorites, false, NULL, true);
    SETTING_PATH("content_history_path",            settings->paths.path_content_history, false, NULL, true);
+   SETTING_PATH("desktop_menu_initial_playlist",    settings->paths.desktop_menu_initial_playlist, false, NULL, true);
+   SETTING_PATH("desktop_menu_custom_theme",        settings->paths.desktop_menu_custom_theme, false, NULL, true);
    SETTING_PATH("content_image_history_path",      settings->paths.path_content_image_history, false, NULL, true);
    SETTING_PATH("content_music_history_path",      settings->paths.path_content_music_history, false, NULL, true);
    SETTING_PATH("content_video_history_path",      settings->paths.path_content_video_history, false, NULL, true);
@@ -1734,8 +2057,8 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("content_video_directory",         settings->paths.directory_content_video_history, true, NULL, true);
 
 #ifdef HAVE_MENU
-   SETTING_PATH("content_show_settings_password", settings->paths.menu_content_show_settings_password, false, NULL, true);
-   SETTING_PATH("kiosk_mode_password",           settings->paths.kiosk_mode_password, false, NULL, true);
+   SETTING_PATH_SENSITIVE("content_show_settings_password", settings->paths.menu_content_show_settings_password, false, NULL, true);
+   SETTING_PATH_SENSITIVE("kiosk_mode_password", settings->paths.kiosk_mode_password, false, NULL, true);
    SETTING_PATH("menu_wallpaper",                settings->paths.path_menu_wallpaper, false, NULL, true);
 #ifdef HAVE_RGUI
    SETTING_PATH("rgui_menu_theme_preset",        settings->paths.path_rgui_theme_preset, false, NULL, true);
@@ -1759,11 +2082,11 @@ static struct config_path_setting *populate_settings_path(
 #endif
 
 #ifdef HAVE_NETWORKING
-   SETTING_PATH("netplay_ip_address",            settings->paths.netplay_server, false, NULL, true);
-   SETTING_PATH("netplay_custom_mitm_server",    settings->paths.netplay_custom_mitm_server, false, NULL, true);
-   SETTING_PATH("netplay_nickname",              settings->paths.username, false, NULL, true);
-   SETTING_PATH("netplay_password",              settings->paths.netplay_password, false, NULL, true);
-   SETTING_PATH("netplay_spectate_password",     settings->paths.netplay_spectate_password, false, NULL, true);
+   SETTING_PATH("netplay_ip_address",                     settings->paths.netplay_server, false, NULL, true);
+   SETTING_PATH("netplay_custom_mitm_server",             settings->paths.netplay_custom_mitm_server, false, NULL, true);
+   SETTING_PATH("netplay_nickname",                       settings->paths.username, false, NULL, true);
+   SETTING_PATH_SENSITIVE("netplay_password",             settings->paths.netplay_password, false, NULL, true);
+   SETTING_PATH_SENSITIVE("netplay_spectate_password",    settings->paths.netplay_spectate_password, false, NULL, true);
 #endif
 
 #ifdef _3DS
@@ -1891,6 +2214,21 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("video_force_aspect",            &settings->bools.video_force_aspect, true, DEFAULT_FORCE_ASPECT, false);
    SETTING_BOOL("video_threaded",                video_driver_get_threaded(), true, DEFAULT_VIDEO_THREADED, false);
    SETTING_BOOL("video_shared_context",          &settings->bools.video_shared_context, true, DEFAULT_VIDEO_SHARED_CONTEXT, false);
+   /* Rows with no default in the configuration table. The generated
+    * grammar always applies a default, so these are registered here
+    * instead and excluded from the configuration pass in their
+    * settings/ def file, the same as accessibility_enable. */
+   SETTING_BOOL("rgui_show_start_screen",        &settings->bools.menu_show_start_screen, false, DEFAULT_MENU_SHOW_START_SCREEN, false);
+#ifdef HAVE_NETWORKING
+   SETTING_BOOL("netplay_start_as_spectator",    &settings->bools.netplay_start_as_spectator, false, DEFAULT_NETPLAY_START_AS_SPECTATOR, false);
+#endif
+#ifdef HAVE_NETWORKGAMEPAD
+   SETTING_BOOL("network_remote_enable",         &settings->bools.network_remote_enable, false, false, false);
+#endif
+#ifdef HAVE_COMPANION_WIMP
+   SETTING_BOOL("ui_companion_toggle",           &settings->bools.ui_companion_toggle, false, DEFAULT_UI_COMPANION_TOGGLE, false);
+   SETTING_BOOL("desktop_menu_save_dock_positions", &settings->bools.desktop_menu_save_dock_positions, true, DEFAULT_DESKTOP_MENU_SAVE_DOCK_POSITIONS, false);
+#endif
    /* GENERATED: single-source setting rows (bool kind emits here) */
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
    SETTING_BOOL(n, &settings->bools.f, true, d, false);
@@ -1940,18 +2278,19 @@ static struct config_bool_setting *populate_settings_bool(
 #define S_INT_AT_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us)
-#include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
+#include "settings/settings_def_video_fullscreen.h"
 #include "settings/settings_def_video_sync.h"
 #ifdef HAVE_GAME_AI
 #include "settings/settings_def_game_ai.h"
 #endif
 #include "settings/settings_def_services_actions.h"
 #include "settings/settings_def_video_driver_actions.h"
-#include "settings/settings_def_gpu_index_vulkan.h"
-#include "settings/settings_def_gpu_index_gl.h"
+#include "settings/settings_def_gpu_index_metal.h"
 #include "settings/settings_def_gpu_index_d3d12.h"
 #include "settings/settings_def_gpu_index_d3d11.h"
+#include "settings/settings_def_gpu_index_d3d10.h"
+#include "settings/settings_def_gpu_index_egl_gl.h"
 #include "settings/settings_def_aspect_ratio.h"
 #include "settings/settings_def_viewport_size.h"
 #include "settings/settings_def_quit_visibility.h"
@@ -1962,7 +2301,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
-#include "settings/settings_def_menu_throttle.h"
+#include "settings/settings_def_menu_frame_rate.h"
 #include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
@@ -2010,6 +2349,7 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
+#include "settings/settings_def_video_sdl_display_server.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
 #include "settings/settings_def_desktop_menu.h"
@@ -2268,7 +2608,7 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_online_updater_view.h"
 #endif
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_MENU) && defined(HAVE_SMBCLIENT)
 #include "settings/settings_def_settings_show_smb.h"
 #endif
 #ifdef HAVE_MENU
@@ -2352,6 +2692,7 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
 #include "settings/settings_def_video_frame_time_sample.h"
 #include "settings/settings_def_video_adaptive_vsync.h"
+#include "settings/settings_def_video_gl_direct_spirv.h"
 #include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
@@ -2486,6 +2827,9 @@ static struct config_bool_setting *populate_settings_bool(
 #undef S_UINT_AT_EX_NS_H
    SETTING_BOOL("video_scanline_sync",           &settings->bools.video_scanline_sync, true, DEFAULT_SCANLINE_SYNC, false);
    SETTING_BOOL("video_notch_write_over_enable", &settings->bools.video_notch_write_over_enable, true, DEFAULT_NOTCH_WRITE_OVER_ENABLE, false);
+#if defined(_XBOX1) || defined(HW_RVL)
+   SETTING_BOOL("soft_filter_enable",            &settings->bools.video_soft_filter, true, DEFAULT_SOFT_FILTER, false);
+#endif
 #if defined(__APPLE__) && defined(HAVE_VULKAN)
    SETTING_BOOL("video_use_metal_arg_buffers",   &settings->bools.video_use_metal_arg_buffers, true, config_metal_arg_buffers_default(), false);
 #endif
@@ -2501,11 +2845,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_disable_right_analog",     &settings->bools.menu_disable_right_analog, true, false, false);
    SETTING_BOOL("menu_scroll_fast",              &settings->bools.menu_scroll_fast, true, DEFAULT_MENU_SCROLL_FAST, false);
    SETTING_BOOL("menu_ignore_missing_assets",    &settings->bools.menu_ignore_missing_assets, true, DEFAULT_MENU_IGNORE_MISSING_ASSETS, false);
-
-
-
-#ifdef HAVE_CDROM
-#endif /* HAVE_CDROM */
 
    /* Actually Quick Menu items, but too late to change without breaking old confs */
    SETTING_BOOL("menu_show_latency",             &settings->bools.menu_show_latency, true, DEFAULT_QUICK_MENU_SHOW_LATENCY, false);
@@ -2550,6 +2889,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_swap_scroll_buttons",      &settings->bools.input_menu_swap_scroll_buttons, true, DEFAULT_MENU_SWAP_SCROLL_BUTTONS, false);
 #endif
    SETTING_BOOL("input_android_system_keyboard", &settings->bools.input_android_system_keyboard, true, DEFAULT_INPUT_ANDROID_SYSTEM_KEYBOARD, false);
+   SETTING_BOOL("input_sdl3_system_keyboard",    &settings->bools.input_sdl3_system_keyboard, true, DEFAULT_INPUT_SDL3_SYSTEM_KEYBOARD, false);
 
 
 
@@ -2576,6 +2916,11 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("netplay_request_device_p16",    &settings->bools.netplay_request_devices[15], true, false, false);
 #endif
 
+#ifdef ANDROID
+   SETTING_BOOL("input_stylus_enable", &settings->bools.input_stylus_enable, true, true, false);
+   SETTING_BOOL("input_stylus_require_contact_for_click", &settings->bools.input_stylus_require_contact_for_click, true, true, false);
+   SETTING_BOOL("input_stylus_hover_moves_pointer", &settings->bools.input_stylus_hover_moves_pointer, true, true, false);
+#endif
 
 #ifdef _3DS
    SETTING_BOOL("new3ds_speedup_enable",         &settings->bools.new3ds_speedup_enable, true, DEFAULT_NEW_3DS_SPEEDUP_ENABLE,      false);
@@ -2651,18 +2996,19 @@ static struct config_float_setting *populate_settings_float(
 #define S_INT_AT_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us)
-#include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
+#include "settings/settings_def_video_fullscreen.h"
 #include "settings/settings_def_video_sync.h"
 #ifdef HAVE_GAME_AI
 #include "settings/settings_def_game_ai.h"
 #endif
 #include "settings/settings_def_services_actions.h"
 #include "settings/settings_def_video_driver_actions.h"
-#include "settings/settings_def_gpu_index_vulkan.h"
-#include "settings/settings_def_gpu_index_gl.h"
+#include "settings/settings_def_gpu_index_metal.h"
 #include "settings/settings_def_gpu_index_d3d12.h"
 #include "settings/settings_def_gpu_index_d3d11.h"
+#include "settings/settings_def_gpu_index_d3d10.h"
+#include "settings/settings_def_gpu_index_egl_gl.h"
 #include "settings/settings_def_aspect_ratio.h"
 #include "settings/settings_def_viewport_size.h"
 #include "settings/settings_def_quit_visibility.h"
@@ -2673,7 +3019,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
-#include "settings/settings_def_menu_throttle.h"
+#include "settings/settings_def_menu_frame_rate.h"
 #include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
@@ -2721,6 +3067,7 @@ static struct config_float_setting *populate_settings_float(
 #endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
+#include "settings/settings_def_video_sdl_display_server.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
 #include "settings/settings_def_desktop_menu.h"
@@ -2979,7 +3326,7 @@ static struct config_float_setting *populate_settings_float(
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_online_updater_view.h"
 #endif
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_MENU) && defined(HAVE_SMBCLIENT)
 #include "settings/settings_def_settings_show_smb.h"
 #endif
 #ifdef HAVE_MENU
@@ -3063,6 +3410,7 @@ static struct config_float_setting *populate_settings_float(
 #endif
 #include "settings/settings_def_video_frame_time_sample.h"
 #include "settings/settings_def_video_adaptive_vsync.h"
+#include "settings/settings_def_video_gl_direct_spirv.h"
 #include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
@@ -3232,6 +3580,14 @@ static struct config_uint_setting *populate_settings_uint(
       return NULL;
 
    SETTING_UINT("frontend_log_level",            &settings->uints.frontend_log_level, true, DEFAULT_FRONTEND_LOG_LEVEL, false);
+#ifdef HAVE_NFSCLIENT
+   SETTING_UINT("nfs_timeout",                   &settings->uints.nfs_timeout, true, DEFAULT_NFS_TIMEOUT, false);
+   SETTING_UINT("nfs_num_contexts",              &settings->uints.nfs_num_contexts, true, DEFAULT_NFS_NUM_CONTEXTS, false);
+   SETTING_UINT("nfs_port",                      &settings->uints.nfs_port, true, DEFAULT_NFS_PORT, false);
+   SETTING_UINT("nfs_mount_port",                &settings->uints.nfs_mount_port, true, DEFAULT_NFS_MOUNT_PORT, false);
+   SETTING_UINT("nfs_version",                   &settings->uints.nfs_version, true, DEFAULT_NFS_VERSION, false);
+   SETTING_UINT("nfs_readahead",                 &settings->uints.nfs_readahead, true, DEFAULT_NFS_READAHEAD, false);
+#endif
    SETTING_UINT("core_updater_auto_backup_history_size", &settings->uints.core_updater_auto_backup_history_size, true, DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE, false);
    SETTING_UINT("run_ahead_frames",              &settings->uints.run_ahead_frames, true, DEFAULT_RUN_AHEAD_FRAMES,  false);
 #ifdef HAVE_MENU
@@ -3249,6 +3605,7 @@ static struct config_uint_setting *populate_settings_uint(
 
    SETTING_UINT("audio_out_rate",                &settings->uints.audio_output_sample_rate, true, DEFAULT_OUTPUT_RATE, false);
    SETTING_UINT("audio_latency",                 &settings->uints.audio_latency, false, 0 /* TODO */, false);
+   SETTING_UINT("audio_latency_floor",           &settings->uints.audio_latency_floor, true, DEFAULT_AUDIO_LATENCY_FLOOR, false);
 
 
 #ifdef HAVE_MICROPHONE
@@ -3256,21 +3613,33 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("microphone_rate",               &settings->uints.microphone_sample_rate, true, DEFAULT_INPUT_RATE, false);
 #endif
 
-   SETTING_UINT("custom_viewport_width",         &settings->video_vp_custom.width, false, 0 /* TODO */, false);
-   SETTING_UINT("custom_viewport_height",        &settings->video_vp_custom.height, false, 0 /* TODO */, false);
-   SETTING_UINT("custom_viewport_x",             (unsigned*)&settings->video_vp_custom.x, false, 0 /* TODO */, false);
-   SETTING_UINT("custom_viewport_y",             (unsigned*)&settings->video_vp_custom.y, false, 0 /* TODO */, false);
-   SETTING_UINT("video_windowed_position_x",     &settings->uints.window_position_x,    true, 0, false);
-   SETTING_UINT("video_windowed_position_y",     &settings->uints.window_position_y,    true, 0, false);
-   SETTING_UINT("video_windowed_position_width", &settings->uints.window_position_width,    true, DEFAULT_WINDOW_WIDTH, false);
-   SETTING_UINT("video_windowed_position_height",&settings->uints.window_position_height,    true, DEFAULT_WINDOW_HEIGHT, false);
-#ifdef __WINRT__
-#else
-   SETTING_UINT("video_fullscreen_x",            &settings->uints.video_fullscreen_x, true, DEFAULT_FULLSCREEN_X, false);
-   SETTING_UINT("video_fullscreen_y",            &settings->uints.video_fullscreen_y, true, DEFAULT_FULLSCREEN_Y, false);
+   SETTING_UINT_HALF("custom_viewport_width",    &settings->video_vp_custom.dims, CFG_HALF_HI, false, 0 /* TODO */, false);
+   SETTING_UINT_HALF("custom_viewport_height",   &settings->video_vp_custom.dims, CFG_HALF_LO, false, 0 /* TODO */, false);
+   SETTING_UINT_HALF("video_windowed_position_width",  &settings->uints.window_position_dims, CFG_HALF_HI, true, DEFAULT_WINDOW_WIDTH, false);
+   SETTING_UINT_HALF("video_windowed_position_height", &settings->uints.window_position_dims, CFG_HALF_LO, true, DEFAULT_WINDOW_HEIGHT, false);
+   /* The auto-resize ceiling was config-bound through the S_UINT pass,
+    * which binds &settings->uints.<field> by name; its pair is one
+    * word now, so these two rows are literal like the pair above. */
+   SETTING_UINT_HALF("video_window_auto_width_max",  &settings->uints.window_auto_dims_max, CFG_HALF_HI, true, DEFAULT_WINDOW_AUTO_WIDTH_MAX, false);
+   SETTING_UINT_HALF("video_window_auto_height_max", &settings->uints.window_auto_dims_max, CFG_HALF_LO, true, DEFAULT_WINDOW_AUTO_HEIGHT_MAX, false);
+#if (defined(HAVE_QT) || defined(HAVE_COCOA) || (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)))
+   /* The desktop companion's saved geometry, bound through the
+    * S_UINT_EX pass until its two pairs became two words. The four
+    * keys are unchanged -- tools/companion_qt_persist_test.sh reads
+    * them out of the written retroarch.cfg by name. */
+   SETTING_UINT_HALF("desktop_menu_window_x",      &settings->uints.desktop_menu_window_pos,  CFG_HALF_HI, true, 0, false);
+   SETTING_UINT_HALF("desktop_menu_window_y",      &settings->uints.desktop_menu_window_pos,  CFG_HALF_LO, true, 0, false);
+   SETTING_UINT_HALF("desktop_menu_window_width",  &settings->uints.desktop_menu_window_dims, CFG_HALF_HI, true, 0, false);
+   SETTING_UINT_HALF("desktop_menu_window_height", &settings->uints.desktop_menu_window_dims, CFG_HALF_LO, true, 0, false);
 #endif
 #ifdef GEKKO
    SETTING_UINT("video_viwidth",                    &settings->uints.video_viwidth, true, DEFAULT_VIDEO_VI_WIDTH, false);
+#endif
+#if defined(GEKKO) || defined(_XBOX360)
+   SETTING_UINT("gamma_correction",                 &settings->uints.video_gamma, true, DEFAULT_GAMMA, false);
+#endif
+#ifdef _XBOX1
+   SETTING_UINT("flicker_filter_index",             &settings->uints.video_flicker_filter, true, DEFAULT_FLICKER_FILTER, false);
 #endif
    /* GENERATED: single-source setting rows (uint kind emits here) */
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub)
@@ -3319,18 +3688,19 @@ static struct config_uint_setting *populate_settings_uint(
 #define S_INT_AT_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us)
-#include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
+#include "settings/settings_def_video_fullscreen.h"
 #include "settings/settings_def_video_sync.h"
 #ifdef HAVE_GAME_AI
 #include "settings/settings_def_game_ai.h"
 #endif
 #include "settings/settings_def_services_actions.h"
 #include "settings/settings_def_video_driver_actions.h"
-#include "settings/settings_def_gpu_index_vulkan.h"
-#include "settings/settings_def_gpu_index_gl.h"
+#include "settings/settings_def_gpu_index_metal.h"
 #include "settings/settings_def_gpu_index_d3d12.h"
 #include "settings/settings_def_gpu_index_d3d11.h"
+#include "settings/settings_def_gpu_index_d3d10.h"
+#include "settings/settings_def_gpu_index_egl_gl.h"
 #include "settings/settings_def_aspect_ratio.h"
 #include "settings/settings_def_viewport_size.h"
 #include "settings/settings_def_quit_visibility.h"
@@ -3341,7 +3711,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
-#include "settings/settings_def_menu_throttle.h"
+#include "settings/settings_def_menu_frame_rate.h"
 #include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
@@ -3389,6 +3759,7 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
+#include "settings/settings_def_video_sdl_display_server.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
 #include "settings/settings_def_desktop_menu.h"
@@ -3647,7 +4018,7 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_online_updater_view.h"
 #endif
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_MENU) && defined(HAVE_SMBCLIENT)
 #include "settings/settings_def_settings_show_smb.h"
 #endif
 #ifdef HAVE_MENU
@@ -3731,6 +4102,7 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
 #include "settings/settings_def_video_frame_time_sample.h"
 #include "settings/settings_def_video_adaptive_vsync.h"
+#include "settings/settings_def_video_gl_direct_spirv.h"
 #include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
@@ -3875,9 +4247,10 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
 
 #ifdef ANDROID
-   SETTING_UINT("input_sensor_orientation", &settings->uints.input_sensor_orientation, true, 0, false);
+   SETTING_UINT("input_stylus_pressure_sensitivity", &settings->uints.input_stylus_pressure_sensitivity, true, DEFAULT_INPUT_STYLUS_PRESSURE_SENSITIVITY, false);
+   SETTING_UINT("input_sensor_orientation",          &settings->uints.input_sensor_orientation, true, 0, false);
 #else
-   SETTING_UINT("input_sensor_orientation", &settings->uints.input_sensor_orientation, true, 1, false);
+   SETTING_UINT("input_sensor_orientation",          &settings->uints.input_sensor_orientation, true, 1, false);
 #endif
 
 #if defined(HAVE_OVERLAY)
@@ -3916,7 +4289,7 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef HAVE_LANGEXTRA
    SETTING_UINT("user_language",                 msg_hash_get_uint(MSG_HASH_USER_LANGUAGE), true, frontend_driver_get_user_language(), false);
 #endif
-#ifndef __APPLE__
+#if !defined(__APPLE__) && !defined(ANDROID)
    SETTING_UINT("bundle_assets_extract_version_current", &settings->uints.bundle_assets_extract_version_current, true, 0, false);
 #endif
    SETTING_UINT("bundle_assets_extract_last_version",    &settings->uints.bundle_assets_extract_last_version, true, 0, false);
@@ -3974,9 +4347,31 @@ static struct config_int_setting *populate_settings_int(
 
 
 
+   /* The custom viewport's origin. Signed, so it rides
+    * VIDEO_POS_PACK's layout in one word with its partner axis and
+    * the half accessors sign-extend it back out; a uint row would
+    * clamp a negative x to zero. */
+   SETTING_INT_HALF("custom_viewport_x", (int*)&settings->video_vp_custom.pos,
+         CFG_HALF_HI, false, 0, false);
+   SETTING_INT_HALF("custom_viewport_y", (int*)&settings->video_vp_custom.pos,
+         CFG_HALF_LO, false, 0, false);
+   /* The window's origin, signed for the same reason: a display
+    * left of or above the primary one puts an axis negative. */
+   SETTING_INT_HALF("video_windowed_position_x",
+         (int*)&settings->uints.window_position_pos,
+         CFG_HALF_HI, true, 0, false);
+   SETTING_INT_HALF("video_windowed_position_y",
+         (int*)&settings->uints.window_position_pos,
+         CFG_HALF_LO, true, 0, false);
    SETTING_INT("crt_switch_center_adjust",       &settings->ints.crt_switch_center_adjust, false, DEFAULT_CRT_SWITCH_CENTER_ADJUST, false);
    SETTING_INT("crt_switch_porch_adjust",        &settings->ints.crt_switch_porch_adjust, false, DEFAULT_CRT_SWITCH_PORCH_ADJUST, false);
    SETTING_INT("crt_switch_vertical_adjust",     &settings->ints.crt_switch_vertical_adjust, false, DEFAULT_CRT_SWITCH_VERTICAL_ADJUST, false);
+   /* Rows with no default in the configuration table; see the note in
+    * populate_settings_bool(). */
+   SETTING_INT("state_slot",                     &settings->ints.state_slot, false, 0, false);
+#ifdef HAVE_BSV_MOVIE
+   SETTING_INT("replay_slot",                    &settings->ints.replay_slot, false, 0, false);
+#endif
    /* GENERATED: single-source setting rows (int kind emits here) */
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub)
 #define S_BOOL_NS(f, T, n, d, sd, df, c, us)
@@ -4024,18 +4419,19 @@ static struct config_int_setting *populate_settings_int(
 #define S_INT_AT_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us)
-#include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
+#include "settings/settings_def_video_fullscreen.h"
 #include "settings/settings_def_video_sync.h"
 #ifdef HAVE_GAME_AI
 #include "settings/settings_def_game_ai.h"
 #endif
 #include "settings/settings_def_services_actions.h"
 #include "settings/settings_def_video_driver_actions.h"
-#include "settings/settings_def_gpu_index_vulkan.h"
-#include "settings/settings_def_gpu_index_gl.h"
+#include "settings/settings_def_gpu_index_metal.h"
 #include "settings/settings_def_gpu_index_d3d12.h"
 #include "settings/settings_def_gpu_index_d3d11.h"
+#include "settings/settings_def_gpu_index_d3d10.h"
+#include "settings/settings_def_gpu_index_egl_gl.h"
 #include "settings/settings_def_aspect_ratio.h"
 #include "settings/settings_def_viewport_size.h"
 #include "settings/settings_def_quit_visibility.h"
@@ -4046,7 +4442,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
-#include "settings/settings_def_menu_throttle.h"
+#include "settings/settings_def_menu_frame_rate.h"
 #include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
@@ -4094,6 +4490,7 @@ static struct config_int_setting *populate_settings_int(
 #endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
+#include "settings/settings_def_video_sdl_display_server.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
 #include "settings/settings_def_desktop_menu.h"
@@ -4352,7 +4749,7 @@ static struct config_int_setting *populate_settings_int(
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_online_updater_view.h"
 #endif
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_MENU) && defined(HAVE_SMBCLIENT)
 #include "settings/settings_def_settings_show_smb.h"
 #endif
 #ifdef HAVE_MENU
@@ -4436,6 +4833,7 @@ static struct config_int_setting *populate_settings_int(
 #endif
 #include "settings/settings_def_video_frame_time_sample.h"
 #include "settings/settings_def_video_adaptive_vsync.h"
+#include "settings/settings_def_video_gl_direct_spirv.h"
 #include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
@@ -4616,18 +5014,19 @@ static struct config_int_setting *populate_settings_int(
 #define S_INT_AT_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us)
 #define S_UINT_AT_EX(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub)
 #define S_UINT_AT_EX_NS(offs, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us)
-#include "settings/settings_def_video_fullscreen.h"
 #define SETTINGS_DEF_CONFIG_PASS
+#include "settings/settings_def_video_fullscreen.h"
 #include "settings/settings_def_video_sync.h"
 #ifdef HAVE_GAME_AI
 #include "settings/settings_def_game_ai.h"
 #endif
 #include "settings/settings_def_services_actions.h"
 #include "settings/settings_def_video_driver_actions.h"
-#include "settings/settings_def_gpu_index_vulkan.h"
-#include "settings/settings_def_gpu_index_gl.h"
+#include "settings/settings_def_gpu_index_metal.h"
 #include "settings/settings_def_gpu_index_d3d12.h"
 #include "settings/settings_def_gpu_index_d3d11.h"
+#include "settings/settings_def_gpu_index_d3d10.h"
+#include "settings/settings_def_gpu_index_egl_gl.h"
 #include "settings/settings_def_aspect_ratio.h"
 #include "settings/settings_def_viewport_size.h"
 #include "settings/settings_def_quit_visibility.h"
@@ -4638,7 +5037,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
-#include "settings/settings_def_menu_throttle.h"
+#include "settings/settings_def_menu_frame_rate.h"
 #include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
@@ -4686,6 +5085,7 @@ static struct config_int_setting *populate_settings_int(
 #endif
 #include "settings/settings_def_menu_entry_display.h"
 #include "settings/settings_def_crt_switchres.h"
+#include "settings/settings_def_video_sdl_display_server.h"
 #include "settings/settings_def_audio_state.h"
 #include "settings/settings_def_analog_deadzone.h"
 #include "settings/settings_def_desktop_menu.h"
@@ -4944,7 +5344,7 @@ static struct config_int_setting *populate_settings_int(
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_online_updater_view.h"
 #endif
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_MENU) && defined(HAVE_SMBCLIENT)
 #include "settings/settings_def_settings_show_smb.h"
 #endif
 #ifdef HAVE_MENU
@@ -5028,6 +5428,7 @@ static struct config_int_setting *populate_settings_int(
 #endif
 #include "settings/settings_def_video_frame_time_sample.h"
 #include "settings/settings_def_video_adaptive_vsync.h"
+#include "settings/settings_def_video_gl_direct_spirv.h"
 #include "settings/settings_def_video_smooth.h"
 #include "settings/settings_def_frame_time_counter.h"
 #include "settings/settings_def_menu_filebrowser.h"
@@ -5173,6 +5574,9 @@ static struct config_int_setting *populate_settings_int(
 #ifdef HAVE_VULKAN
    SETTING_INT("vulkan_gpu_index",               &settings->ints.vulkan_gpu_index, true, DEFAULT_VULKAN_GPU_INDEX, false);
 #endif
+#ifdef HAVE_EGL
+   SETTING_INT("gl_gpu_index",                   &settings->ints.gl_gpu_index, true, DEFAULT_GL_GPU_INDEX, false);
+#endif
 #ifdef HAVE_METAL
    SETTING_INT("metal_gpu_index",                &settings->ints.metal_gpu_index, true, DEFAULT_METAL_GPU_INDEX, false);
 #endif
@@ -5192,10 +5596,6 @@ static void video_driver_default_settings(global_t *global)
 {
    if (!global)
       return;
-
-   global->console.screen.gamma_correction       = DEFAULT_GAMMA;
-   global->console.flickerfilter_enable          = false;
-   global->console.softfilter_enable             = false;
 
    global->console.screen.resolutions.current.id = 0;
 }
@@ -5235,14 +5635,14 @@ static void video_driver_default_settings(global_t *global)
  *
  * Set 'default' configuration values.
  **/
-void config_set_defaults(void *data)
+void config_set_defaults(void *data, settings_t *target)
 {
    size_t i;
 #ifdef HAVE_MENU
    static bool first_initialized   = true;
 #endif
    global_t *global                 = (global_t*)data;
-   settings_t *settings             = config_st;
+   settings_t *settings             = target;
    recording_state_t *recording_st  = recording_state_get_ptr();
    int bool_settings_size           = SETTINGS_BOOL_COUNT_MAX;
    int float_settings_size          = SETTINGS_FLOAT_COUNT_MAX;
@@ -5261,6 +5661,7 @@ void config_set_defaults(void *data)
    const char *def_menu             = config_get_default_menu();
 #endif
    const char *def_camera           = config_get_default_camera();
+   const char *def_ui_companion     = config_get_default_ui_companion();
    const char *def_bluetooth        = config_get_default_bluetooth();
    const char *def_wifi             = config_get_default_wifi();
    const char *def_led              = config_get_default_led();
@@ -5272,7 +5673,7 @@ void config_set_defaults(void *data)
    const char *def_ai_service_backend = config_get_default_ai_service_backend();
 #endif
    const char *def_mitm             = DEFAULT_NETPLAY_MITM_SERVER;
-   struct video_viewport *custom_vp = &settings->video_vp_custom;
+   video_viewport_settings_t *custom_vp = &settings->video_vp_custom;
    struct config_float_setting      *float_settings = populate_settings_float (settings, &float_settings_size);
    struct config_bool_setting       *bool_settings  = populate_settings_bool  (settings, &bool_settings_size);
    struct config_int_setting        *int_settings   = populate_settings_int   (settings, &int_settings_size);
@@ -5295,7 +5696,7 @@ void config_set_defaults(void *data)
       for (i = 0; i < (unsigned)int_settings_size; i++)
       {
          if (int_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
-            *int_settings[i].ptr = int_settings[i].def;
+            cfg_int_set(&int_settings[i], int_settings[i].def);
       }
 
       free(int_settings);
@@ -5306,7 +5707,7 @@ void config_set_defaults(void *data)
       for (i = 0; i < (unsigned)uint_settings_size; i++)
       {
          if (uint_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
-            *uint_settings[i].ptr = uint_settings[i].def;
+            cfg_uint_set(&uint_settings[i], uint_settings[i].def);
       }
 
       free(uint_settings);
@@ -5338,6 +5739,10 @@ void config_set_defaults(void *data)
       configuration_set_string(settings,
             settings->arrays.camera_driver,
             def_camera);
+   if (def_ui_companion)
+      configuration_set_string(settings,
+            settings->arrays.ui_companion_driver,
+            def_ui_companion);
    if (def_bluetooth)
       configuration_set_string(settings,
             settings->arrays.bluetooth_driver,
@@ -5406,6 +5811,11 @@ void config_set_defaults(void *data)
       configuration_set_string(settings,
             settings->arrays.netplay_mitm_server,
             def_mitm);
+   /* Empty: bind on every interface, as before the setting existed. */
+   *settings->arrays.network_cmd_bind_address = '\0';
+   strlcpy(settings->arrays.mcp_server_bind_address, "127.0.0.1",
+         sizeof(settings->arrays.mcp_server_bind_address));
+   *settings->arrays.mcp_server_token = '\0';
 #ifdef HAVE_MENU
    if (def_menu)
       configuration_set_string(settings,
@@ -5416,6 +5826,9 @@ void config_set_defaults(void *data)
 #endif
 #ifdef HAVE_OZONE
    *settings->paths.path_menu_ozone_font          = '\0';
+   configuration_set_string(settings,
+         settings->arrays.menu_ozone_color_theme,
+         DEFAULT_OZONE_COLOR_THEME);
 #endif
 
    configuration_set_string(settings,
@@ -5453,9 +5866,17 @@ void config_set_defaults(void *data)
       g_defaults.settings_out_latency          = DEFAULT_OUT_LATENCY;
 
    settings->uints.audio_latency               = g_defaults.settings_out_latency;
+   settings->uints.audio_latency_floor         = DEFAULT_AUDIO_LATENCY_FLOOR;
 
    if (!g_defaults.settings_in_latency)
       g_defaults.settings_in_latency          = DEFAULT_IN_LATENCY;
+
+   /* Device-optimal audio parameters supplied by the frontend.
+    * Values saved in the config file still override these on
+    * load. */
+   if (g_defaults.settings_out_sample_rate > 0)
+      settings->uints.audio_output_sample_rate =
+            (unsigned)g_defaults.settings_out_sample_rate;
 
 
    audio_set_float(AUDIO_ACTION_VOLUME_GAIN, settings->floats.audio_volume);
@@ -5538,10 +5959,8 @@ void config_set_defaults(void *data)
       settings->uints.input_mouse_index[i] = (unsigned)i;
    }
 
-   custom_vp->width  = 0;
-   custom_vp->height = 0;
-   custom_vp->x      = 0;
-   custom_vp->y      = 0;
+   custom_vp->dims   = 0;
+   custom_vp->pos    = 0;
 
    /* Make sure settings from other configs carry over into defaults
     * for another config. */
@@ -5591,7 +6010,7 @@ void config_set_defaults(void *data)
    *settings->paths.path_content_music_history   = '\0';
    *settings->paths.path_content_video_history   = '\0';
    *settings->paths.path_cheat_settings          = '\0';
-#if !defined(__APPLE__)
+#if !defined(__APPLE__) && !defined(ANDROID)
    *settings->paths.bundle_assets_src            = '\0';
    *settings->paths.bundle_assets_dst            = '\0';
    *settings->paths.bundle_assets_dst_subdir     = '\0';
@@ -5802,7 +6221,7 @@ void config_set_defaults(void *data)
          path_mkdir(new_path);
 
       if (!*settings->paths.path_content_favorites)
-         strlcpy(settings->paths.directory_content_favorites, "default",
+         strlcpy_lit(settings->paths.directory_content_favorites, "default",
                sizeof(settings->paths.directory_content_favorites));
 
       if (     !*settings->paths.directory_content_favorites
@@ -5820,7 +6239,7 @@ void config_set_defaults(void *data)
                sizeof(settings->paths.path_content_favorites));
 
       if (!*settings->paths.path_content_history)
-         strlcpy(settings->paths.directory_content_history, "default",
+         strlcpy_lit(settings->paths.directory_content_history, "default",
                sizeof(settings->paths.directory_content_history));
 
       if (     !*settings->paths.directory_content_history
@@ -5838,7 +6257,7 @@ void config_set_defaults(void *data)
                sizeof(settings->paths.path_content_history));
 
       if (!*settings->paths.path_content_image_history)
-         strlcpy(settings->paths.directory_content_image_history, "default",
+         strlcpy_lit(settings->paths.directory_content_image_history, "default",
                sizeof(settings->paths.directory_content_image_history));
 
       if (     !*settings->paths.directory_content_image_history
@@ -5856,7 +6275,7 @@ void config_set_defaults(void *data)
                sizeof(settings->paths.path_content_image_history));
 
       if (!*settings->paths.path_content_music_history)
-         strlcpy(settings->paths.directory_content_music_history, "default",
+         strlcpy_lit(settings->paths.directory_content_music_history, "default",
                sizeof(settings->paths.directory_content_music_history));
 
       if (     !*settings->paths.directory_content_music_history
@@ -5874,7 +6293,7 @@ void config_set_defaults(void *data)
                sizeof(settings->paths.path_content_music_history));
 
       if (!*settings->paths.path_content_video_history)
-         strlcpy(settings->paths.directory_content_video_history, "default",
+         strlcpy_lit(settings->paths.directory_content_video_history, "default",
                sizeof(settings->paths.directory_content_video_history));
 
       if (     !*settings->paths.directory_content_video_history
@@ -5914,7 +6333,7 @@ void config_set_defaults(void *data)
 void config_load(void *data)
 {
    global_t *global = (global_t*)data;
-   config_set_defaults(global);
+   config_set_defaults(global, config_st);
 #ifdef HAVE_CONFIGFILE
    config_parse_file(global);
 #endif
@@ -6046,7 +6465,7 @@ static config_file_t *open_default_config_file(void)
 
       RARCH_LOG("[Config] Created new config file in: \"%s\".\n", conf_path);
    }
-#elif defined(OSX)
+#elif TARGET_OS_OSX
    if (!fill_pathname_application_data(application_data,
             sizeof(application_data)))
    {
@@ -6162,28 +6581,9 @@ static config_file_t *open_default_config_file(void)
 static void video_driver_load_settings(global_t *global,
       config_file_t *conf)
 {
-   bool               tmp_bool = false;
-
-   CONFIG_GET_INT_BASE(conf, global,
-         console.screen.gamma_correction, "gamma_correction");
-
-   if (config_get_bool(conf, "flicker_filter_enable",
-         &tmp_bool))
-      global->console.flickerfilter_enable = tmp_bool;
-
-   if (config_get_bool(conf, "soft_filter_enable",
-         &tmp_bool))
-      global->console.softfilter_enable = tmp_bool;
-
-   CONFIG_GET_INT_BASE(conf, global,
-         console.screen.soft_filter_index,
-         "soft_filter_index");
    CONFIG_GET_INT_BASE(conf, global,
          console.screen.resolutions.current.id,
          "current_resolution_id");
-   CONFIG_GET_INT_BASE(conf, global,
-         console.screen.flicker_filter_index,
-         "flicker_filter_index");
 }
 #endif
 
@@ -6224,6 +6624,19 @@ static void check_verbosity_settings(config_file_t *conf,
             verbosity_disable();
       }
    }
+}
+
+/* Turbo Bind and Turbo Button index the remap and bind tables
+ * directly, so a value read from a config or remap file has to stay
+ * inside their menu ranges: Turbo Bind is -1 (empty) or a RetroPad
+ * ID up to the analog binds, Turbo Button a digital RetroPad ID. */
+static void config_sanitize_turbo_binds(settings_t *settings)
+{
+   if (     settings->ints.input_turbo_bind < -1
+         || settings->ints.input_turbo_bind >= RARCH_ANALOG_BIND_LIST_END)
+      settings->ints.input_turbo_bind     = DEFAULT_TURBO_BIND;
+   if (settings->uints.input_turbo_button >= RARCH_FIRST_CUSTOM_BIND)
+      settings->uints.input_turbo_button  = DEFAULT_TURBO_BUTTON;
 }
 
 /**
@@ -6317,6 +6730,57 @@ static bool config_load_file(global_t *global,
          RARCH_LOG("[Config] Loading default config.\n");
       else
          RARCH_LOG("[Config] Loading config: \"%s\".\n", path);
+   }
+
+   /* Merge credentials from separate file.
+    * Credentials are stored in retroarch-keychain.cfg alongside
+    * the main config to keep sensitive data (passwords,
+    * tokens, keys) out of retroarch.cfg.
+    * Merged before any --appendconfig files so that an
+    * explicit override on the command line still wins. */
+   {
+      char credentials_path[PATH_MAX_LENGTH];
+      credentials_path[0] = '\0';
+      config_get_credentials_path(credentials_path,
+            sizeof(credentials_path));
+      if (!string_is_empty(credentials_path)
+            && path_is_valid(credentials_path))
+      {
+         bool result = config_append_file(conf, credentials_path);
+#ifdef HAVE_KEYCHAIN
+         bool     keychain_ok = result && config_keychain_init();
+         /* Run whether or not the keychain is ready: with no key to
+          * open them, sealed values are still taken out of what the
+          * loader sees, or a setting would take the blob itself as its
+          * value (a locked keychain would log in with it). */
+         unsigned unopened    = result
+            ? config_keychain_open_entries(conf) : 0;
+#endif
+         /* The first load runs before file logging is up; logging
+          * here would go to the console. Same gate as the append
+          * blocks below. */
+         if (!first_load)
+         {
+            RARCH_LOG("[Config] Merging credentials from \"%s\".\n",
+                  credentials_path);
+            if (!result)
+               RARCH_ERR("[Config] Failed to merge credentials from \"%s\".\n",
+                     credentials_path);
+#ifdef HAVE_KEYCHAIN
+            else if (!keychain_ok && keychain_is_locked())
+               RARCH_WARN("[Config] Keychain was moved from another machine "
+                     "and is locked; enter its passphrase under "
+                     "Settings > User.\n");
+            else if (!keychain_ok)
+               RARCH_WARN("[Config] Keychain key file unavailable, "
+                     "credentials stay in the clear.\n");
+            else if (unopened)
+               RARCH_WARN("[Config] %u credential(s) were sealed on another "
+                     "machine or install and could not be opened.\n",
+                     unopened);
+#endif
+         }
+      }
    }
 
    if (!path_is_empty(RARCH_PATH_CONFIG_APPEND))
@@ -6429,10 +6893,29 @@ static bool config_load_file(global_t *global,
          *bool_settings[i].ptr = tmp;
    }
 
+   /* audio_threaded_pipeline briefly held off/automatic/on rather than
+    * a plain bool, and wrote that as a number. A bool is always saved
+    * as "true" or "false", so a numeric value here is that older
+    * three-way one: automatic (1) means the pipeline was never asked
+    * for and reads as the default, on (2) means it was. The value is
+    * rewritten in the settings, so the next save records it as a
+    * bool and this stops applying. */
+   {
+      const struct config_entry_list *entry =
+            (const struct config_entry_list*)config_get_entry(conf,
+                  "audio_threaded_pipeline");
+
+      if (entry && entry->value[0] >= '0' && entry->value[0] <= '9'
+            && entry->value[1] == '\0')
+         configuration_set_bool(settings,
+               settings->bools.audio_threaded_pipeline,
+               (entry->value[0] == '2'));
+   }
+
 #ifdef HAVE_NETWORKGAMEPAD
    {
       char tmp[64];
-      size_t _len = strlcpy(tmp, "network_remote_enable_user_p", sizeof(tmp));
+      size_t _len = strlcpy_lit(tmp, "network_remote_enable_user_p", sizeof(tmp));
       for (i = 0; i < MAX_USERS; i++)
       {
          bool tmp_bool = false;
@@ -6450,14 +6933,14 @@ static bool config_load_file(global_t *global,
    {
       int tmp = 0;
       if (config_get_int(conf, int_settings[i].ident, &tmp))
-         *int_settings[i].ptr = tmp;
+         cfg_int_set(&int_settings[i], tmp);
    }
 
    for (i = 0; i < (unsigned)uint_settings_size; i++)
    {
       int tmp = 0;
       if (config_get_int(conf, uint_settings[i].ident, &tmp))
-         *uint_settings[i].ptr = tmp;
+         cfg_uint_set(&uint_settings[i], (unsigned)tmp);
    }
 
    for (i = 0; i < (unsigned)size_settings_size; i++)
@@ -6480,23 +6963,23 @@ static bool config_load_file(global_t *global,
 
    {
       char prefix[64];
-      size_t _len    = strlcpy(prefix, "input_player", sizeof(prefix));
+      size_t _len    = strlcpy_lit(prefix, "input_player", sizeof(prefix));
       size_t old_len = _len;
       for (i = 0; i < MAX_USERS; i++)
       {
          _len  = old_len;
          _len += snprintf(prefix + _len, sizeof(prefix) - _len, "%u", i + 1);
 
-         strlcpy(prefix + _len, "_mouse_index", sizeof(prefix) - _len);
+         strlcpy_lit(prefix + _len, "_mouse_index", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_mouse_index[i], prefix);
 
-         strlcpy(prefix + _len, "_joypad_index", sizeof(prefix) - _len);
+         strlcpy_lit(prefix + _len, "_joypad_index", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_joypad_index[i], prefix);
 
-         strlcpy(prefix + _len, "_analog_dpad_mode", sizeof(prefix) - _len);
+         strlcpy_lit(prefix + _len, "_analog_dpad_mode", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], prefix);
 
-         strlcpy(prefix + _len, "_device_reservation_type", sizeof(prefix) - _len);
+         strlcpy_lit(prefix + _len, "_device_reservation_type", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_device_reservation_type[i], prefix);
       }
 
@@ -6557,7 +7040,7 @@ static bool config_load_file(global_t *global,
          strlcpy(path_settings[i].ptr, tmp_str, PATH_MAX_LENGTH);
    }
 
-#if !IOS
+#if !TARGET_OS_IPHONE
    if (config_get_path(conf, "libretro_directory", tmp_str, sizeof(tmp_str)))
       configuration_set_string(settings,
             settings->paths.directory_libretro, tmp_str);
@@ -6665,7 +7148,7 @@ static bool config_load_file(global_t *global,
          path_mkdir(new_path);
 
       if (!*settings->paths.path_content_favorites)
-         strlcpy(settings->paths.directory_content_favorites, "default",
+         strlcpy_lit(settings->paths.directory_content_favorites, "default",
                sizeof(settings->paths.directory_content_favorites));
 
       if (     !*settings->paths.directory_content_favorites
@@ -6682,7 +7165,7 @@ static bool config_load_file(global_t *global,
                sizeof(settings->paths.path_content_favorites));
 
       if (!*settings->paths.path_content_history)
-         strlcpy(settings->paths.directory_content_history, "default",
+         strlcpy_lit(settings->paths.directory_content_history, "default",
                sizeof(settings->paths.directory_content_history));
 
       if (     !*settings->paths.directory_content_history
@@ -6699,7 +7182,7 @@ static bool config_load_file(global_t *global,
                sizeof(settings->paths.path_content_history));
 
       if (!*settings->paths.path_content_image_history)
-         strlcpy(settings->paths.directory_content_image_history, "default",
+         strlcpy_lit(settings->paths.directory_content_image_history, "default",
                sizeof(settings->paths.directory_content_image_history));
 
       if (     !*settings->paths.directory_content_image_history
@@ -6716,7 +7199,7 @@ static bool config_load_file(global_t *global,
                sizeof(settings->paths.path_content_image_history));
 
       if (*settings->paths.path_content_music_history)
-         strlcpy(settings->paths.directory_content_music_history, "default",
+         strlcpy_lit(settings->paths.directory_content_music_history, "default",
                sizeof(settings->paths.directory_content_music_history));
 
       if (     !*settings->paths.directory_content_music_history
@@ -6733,7 +7216,7 @@ static bool config_load_file(global_t *global,
                sizeof(settings->paths.path_content_music_history));
 
       if (!*settings->paths.path_content_video_history)
-         strlcpy(settings->paths.directory_content_video_history, "default",
+         strlcpy_lit(settings->paths.directory_content_video_history, "default",
                sizeof(settings->paths.directory_content_video_history));
 
       if (     !*settings->paths.directory_content_video_history
@@ -6761,7 +7244,7 @@ static bool config_load_file(global_t *global,
       }
    }
 
-#if defined(__APPLE__) && defined(OSX)
+#if defined(__APPLE__) && TARGET_OS_OSX
    if (     ((frontend_driver_get_cpu_architecture() == FRONTEND_ARCH_X86_64) &&
             string_ends_with(settings->paths.network_buildbot_url, "/arm64/latest/"))
          || ((frontend_driver_get_cpu_architecture() == FRONTEND_ARCH_ARMV8) &&
@@ -6877,6 +7360,57 @@ static bool config_load_file(global_t *global,
     * and up (with 0 being skipped) */
    if (settings->floats.fastforward_ratio < 0.0f)
       configuration_set_float(settings, settings->floats.fastforward_ratio, 0.0f);
+
+#ifdef HAVE_OZONE
+   /* Convert legacy numeric values of Ozone color themes to string identifiers.
+    * Necessary to avoid breaking existing configs. */
+   {
+      static const char *legacy_ozone_color_themes[] = {
+         "basic_white",
+         "basic_black",
+         "nord",
+         "gruvbox_dark",
+         "boysenberry",
+         "hacking_the_kernel",
+         "twilight_zone",
+         "dracula",
+         "solarized_dark",
+         "solarized_light",
+         "gray_dark",
+         "gray_light",
+         "purple_rain",
+         "selenium",
+         "evergarden"
+      };
+      unsigned color_theme;
+
+      config_get_array(conf, MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME_STR,
+            settings->arrays.menu_ozone_color_theme,
+            sizeof(settings->arrays.menu_ozone_color_theme));
+
+      if (   config_get_uint(conf, MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME_STR, &color_theme)
+          && color_theme < ARRAY_SIZE(legacy_ozone_color_themes))
+         configuration_set_string(settings,
+               settings->arrays.menu_ozone_color_theme,
+               legacy_ozone_color_themes[color_theme]);
+   }
+#endif
+
+   config_sanitize_turbo_binds(settings);
+
+   /* Menu Frame Rate took over from Throttle Menu Framerate, which
+    * only acted with Sync to Exact Content Framerate on, where its
+    * default held the menu to the content's rate. A configuration
+    * written before carries that choice; keep it. */
+   if (     settings->bools.vrr_runloop_enable
+         && !config_get_entry(conf, MENU_ENUM_LABEL_MENU_FRAME_RATE_STR))
+   {
+      bool menu_throttle = true;
+      config_get_bool(conf, "menu_throttle_framerate", &menu_throttle);
+      if (menu_throttle)
+         configuration_set_uint(settings,
+               settings->uints.menu_frame_rate, MENU_FRAME_RATE_CONTENT);
+   }
 
 #ifdef HAVE_CHEEVOS
    if (*settings->arrays.cheevos_leaderboards_enable)
@@ -7025,9 +7559,19 @@ static bool config_load_file(global_t *global,
       fprintf(f, "0\n");
       fclose(f);
    }
+   }
 #endif
 
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
+#ifdef HAVE_COMPRESSION
+   rzipstream_set_write_codec(settings->uints.save_compression_codec == 1
+         ? RZIP_CODEC_ZSTD : RZIP_CODEC_DEFLATE);
+#endif
+#ifdef ANDROID
+   android_app_set_window_settings(
+         settings->bools.video_notch_write_over_enable,
+         settings->bools.input_auto_mouse_grab);
+#endif
    recording_driver_update_streaming_url();
 
    if (!config_get_entry(conf, "user_language"))
@@ -7072,6 +7616,18 @@ static bool config_load_file(global_t *global,
                tmp->key, tmp->value);
       }
    }
+
+#ifdef HAVE_SSL
+   /* Every load of the live settings comes through here: startup, a
+    * per-core or per-game override, and its unload. Hand the TLS
+    * verification mode to the SSL backend each time, so an override
+    * that changes it applies now, not after a restart. Only for the
+    * live settings: config_save_overrides() loads the base config into
+    * a scratch copy to diff against, and its mode must not reach the
+    * backend while the override's stays on screen. */
+   if (settings == config_st)
+      ssl_socket_set_verify_mode(settings->uints.tls_verify_mode);
+#endif
 
    if (conf)
       config_file_free(conf);
@@ -7440,7 +7996,7 @@ bool config_unload_override(void)
    {
       input_autoconf_backup_t bkp;
       bool have_bkp = input_autoconf_state_save(&bkp);
-      config_set_defaults(global_get_ptr());
+      config_set_defaults(global_get_ptr(), config_st);
       if (have_bkp)
          input_autoconf_state_restore(&bkp);
    }
@@ -7644,62 +8200,6 @@ static void config_parse_file(global_t *global)
 static void video_driver_save_settings(global_t *global, config_file_t *conf,
       bool minimal, global_t *defaults_global)
 {
-   /* gamma_correction */
-   if (   !minimal
-       || global->console.screen.gamma_correction !=
-          (defaults_global ? defaults_global->console.screen.gamma_correction : DEFAULT_GAMMA))
-   {
-      config_set_int(conf, "gamma_correction",
-            global->console.screen.gamma_correction);
-   }
-   else
-   {
-      config_unset(conf, "gamma_correction");
-   }
-
-   /* flicker_filter_enable */
-   if (   !minimal
-       || global->console.flickerfilter_enable !=
-          (defaults_global ? defaults_global->console.flickerfilter_enable : false))
-   {
-      config_set_string(conf, "flicker_filter_enable",
-              global->console.flickerfilter_enable
-            ? "true"
-            : "false");
-   }
-   else
-   {
-      config_unset(conf, "flicker_filter_enable");
-   }
-
-   /* soft_filter_enable */
-   if (   !minimal
-       || global->console.softfilter_enable !=
-          (defaults_global ? defaults_global->console.softfilter_enable : false))
-   {
-      config_set_string(conf, "soft_filter_enable",
-              global->console.softfilter_enable
-            ? "true"
-            : "false");
-   }
-   else
-   {
-      config_unset(conf, "soft_filter_enable");
-   }
-
-   /* soft_filter_index */
-   if (   !minimal
-       || global->console.screen.soft_filter_index !=
-          (defaults_global ? defaults_global->console.screen.soft_filter_index : 0))
-   {
-      config_set_int(conf, "soft_filter_index",
-            global->console.screen.soft_filter_index);
-   }
-   else
-   {
-      config_unset(conf, "soft_filter_index");
-   }
-
    /* current_resolution_id */
    if (   !minimal
        || global->console.screen.resolutions.current.id !=
@@ -7711,19 +8211,6 @@ static void video_driver_save_settings(global_t *global, config_file_t *conf,
    else
    {
       config_unset(conf, "current_resolution_id");
-   }
-
-   /* flicker_filter_index */
-   if (   !minimal
-       || global->console.screen.flicker_filter_index !=
-          (defaults_global ? defaults_global->console.screen.flicker_filter_index : 0))
-   {
-      config_set_int(conf, "flicker_filter_index",
-            global->console.screen.flicker_filter_index);
-   }
-   else
-   {
-      config_unset(conf, "flicker_filter_index");
    }
 }
 
@@ -7738,16 +8225,16 @@ static void save_keybind_hat(config_file_t *conf, const char *key,
    switch (GET_HAT_DIR(bind->joykey))
    {
       case HAT_UP_MASK:
-         strlcpy(s + _len, "up", sizeof(s) - _len);
+         strlcpy_lit(s + _len, "up", sizeof(s) - _len);
          break;
       case HAT_DOWN_MASK:
-         strlcpy(s + _len, "down", sizeof(s) - _len);
+         strlcpy_lit(s + _len, "down", sizeof(s) - _len);
          break;
       case HAT_LEFT_MASK:
-         strlcpy(s + _len, "left", sizeof(s) - _len);
+         strlcpy_lit(s + _len, "left", sizeof(s) - _len);
          break;
       case HAT_RIGHT_MASK:
-         strlcpy(s + _len, "right", sizeof(s) - _len);
+         strlcpy_lit(s + _len, "right", sizeof(s) - _len);
          break;
       default:
          break;
@@ -7765,7 +8252,7 @@ static void save_keybind_joykey(config_file_t *conf,
    char key[64];
    size_t _len = fill_pathname_join_delim(key, prefix,
          base, '_', sizeof(key));
-   strlcpy(key + _len, "_btn", sizeof(key) - _len);
+   strlcpy_lit(key + _len, "_btn", sizeof(key) - _len);
 
    if (bind->joykey == NO_BTN)
    {
@@ -7786,10 +8273,10 @@ static void save_keybind_joykey_label(config_file_t *conf,
    char key[64];
    size_t _len = fill_pathname_join_delim(key, prefix,
          base, '_', sizeof(key));
-   _len += strlcpy(key + _len, "_btn", sizeof(key) - _len);
+   _len += strlcpy_lit(key + _len, "_btn", sizeof(key) - _len);
    if (label->joykey && *label->joykey)
    {
-      strlcpy(key + _len, "_label", sizeof(key) - _len);
+      strlcpy_lit(key + _len, "_label", sizeof(key) - _len);
       config_set_string(conf, key, label->joykey);
    }
 }
@@ -7803,7 +8290,7 @@ static void save_keybind_axis(config_file_t *conf,
    char key[64];
    char config[16];
    size_t _len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
-   strlcpy(key + _len, "_axis", sizeof(key) - _len);
+   strlcpy_lit(key + _len, "_axis", sizeof(key) - _len);
 
    if (bind->joyaxis == AXIS_NONE)
    {
@@ -7832,10 +8319,10 @@ static void save_keybind_axis_label(config_file_t *conf,
 {
    char key[64];
    size_t _len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
-   _len += strlcpy(key + _len, "_axis", sizeof(key) - _len);
+   _len += strlcpy_lit(key + _len, "_axis", sizeof(key) - _len);
    if (label->joyaxis && *label->joyaxis)
    {
-      strlcpy(key + _len, "_label", sizeof(key) - _len);
+      strlcpy_lit(key + _len, "_label", sizeof(key) - _len);
       config_set_string(conf, key, label->joyaxis);
    }
 }
@@ -7848,7 +8335,7 @@ static void save_keybind_mbutton(config_file_t *conf,
    char key[64];
    size_t _len = fill_pathname_join_delim(key, prefix,
       base, '_', sizeof(key));
-   strlcpy(key + _len, "_mbtn", sizeof(key) - _len);
+   strlcpy_lit(key + _len, "_mbtn", sizeof(key) - _len);
 
    switch (bind->mbutton)
    {
@@ -7892,7 +8379,7 @@ void input_config_get_prefix(char *s, char len, char user, bool meta)
    {
       /* Meta binds are only for the first user. */
       if (user == 0)
-         strlcpy(s, "input", len);
+         strlcpy_lit(s, "input", len);
    }
    else
       snprintf(s, len, "input_player%u", user + 1);
@@ -7922,7 +8409,7 @@ static void input_config_save_keybinds_user(config_file_t *conf, unsigned user)
       prefix[0]                            = '\0';
       input_config_get_prefix(prefix, sizeof(prefix), user, meta);
 
-      if (!*prefix || !bind->valid || !keybind)
+      if (!*prefix || !RETRO_KEYBIND_VALID(bind) || !keybind)
          continue;
 
       base                                 = keybind->base;
@@ -7930,7 +8417,7 @@ static void input_config_save_keybinds_user(config_file_t *conf, unsigned user)
 
       fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
 
-      input_keymaps_translate_rk_to_str(bind->key, btn, sizeof(btn));
+      input_keymaps_translate_rk_to_str(RETRO_KEYBIND_KEY(bind), btn, sizeof(btn));
 
       config_set_string(conf, key, btn);
       save_keybind_joykey (conf, prefix, base, bind, true);
@@ -7969,7 +8456,7 @@ static void input_config_save_keybinds_user_override(config_file_t *conf,
       prefix[0]                            = '\0';
       input_config_get_prefix(prefix, sizeof(prefix), user, meta);
 
-      if (!*prefix || !bind->valid || !keybind)
+      if (!*prefix || !RETRO_KEYBIND_VALID(bind) || !keybind)
          return;
 
       base                                 = keybind->base;
@@ -7977,7 +8464,7 @@ static void input_config_save_keybinds_user_override(config_file_t *conf,
 
       fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
 
-      input_keymaps_translate_rk_to_str(override_bind->key, btn, sizeof(btn));
+      input_keymaps_translate_rk_to_str(RETRO_KEYBIND_KEY(override_bind), btn, sizeof(btn));
 
       config_set_string(conf, key, btn);
 
@@ -8021,14 +8508,14 @@ static void input_config_save_keybinds_user_minimal(config_file_t *conf,
       prefix[0]                            = '\0';
       input_config_get_prefix(prefix, sizeof(prefix), user, meta);
 
-      if (!*prefix || !bind->valid || !keybind)
+      if (!*prefix || !RETRO_KEYBIND_VALID(bind) || !keybind)
          continue;
 
       base                                 = keybind->base;
       btn[0]                               = '\0';
 
       /* Check if any component differs from default */
-      differs_from_default = (bind->key     != def_bind->key)
+      differs_from_default = (RETRO_KEYBIND_KEY(bind)     != RETRO_KEYBIND_KEY(def_bind))
                           || (bind->joykey  != def_bind->joykey)
                           || (bind->joyaxis != def_bind->joyaxis)
                           || (bind->mbutton != def_bind->mbutton);
@@ -8038,7 +8525,7 @@ static void input_config_save_keybinds_user_minimal(config_file_t *conf,
       if (differs_from_default)
       {
          /* Save the current bind */
-         input_keymaps_translate_rk_to_str(bind->key, btn, sizeof(btn));
+         input_keymaps_translate_rk_to_str(RETRO_KEYBIND_KEY(bind), btn, sizeof(btn));
          config_set_string(conf, key, btn);
          save_keybind_joykey (conf, prefix, base, bind, false);
          save_keybind_axis   (conf, prefix, base, bind, false);
@@ -8095,18 +8582,20 @@ void config_get_autoconf_profile_filename(
    }
    /* Generate autoconfig file path */
    _len = strlcpy(s, sanitised_name, len);
-   strlcpy(s + _len, ".cfg", len - _len);
+   strlcpy_lit(s + _len, ".cfg", len - _len);
 }
 
 /**
  * config_save_autoconf_profile:
  * @device_name       : Input device name
- * @user              : Controller number to save
- * Writes a controller autoconf file to disk.
+ * @user              : Port whose binds are saved
+ * Writes a controller autoconf file to disk for the
+ * device assigned to @user.
  **/
 bool config_save_autoconf_profile(const char *device_name, unsigned user)
 {
    unsigned i;
+   unsigned dev;
    char buf[PATH_MAX_LENGTH];
    char autoconf_file[PATH_MAX_LENGTH];
    const char *a = NULL;
@@ -8120,11 +8609,17 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    const char *joypad_driver_fallback   = settings->arrays.input_joypad_driver;
    const char *joypad_driver            = NULL;
 
-   if (!device_name || !*device_name)
+   if (!device_name || !*device_name || user >= MAX_USERS)
+      return false;
+
+   /* Binds and their labels are per port; the device's
+    * driver, identity and autoconf binds are per device */
+   dev = settings->uints.input_joypad_index[user];
+   if (dev >= MAX_USERS)
       return false;
 
    /* Get currently set joypad driver */
-   joypad_driver = input_config_get_device_joypad_driver(user);
+   joypad_driver = input_config_get_device_joypad_driver(dev);
    if (!joypad_driver || !*joypad_driver)
    {
       /* This cannot happen, but if we reach this
@@ -8137,8 +8632,18 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    }
 
    /* Generate autoconfig file path */
-   config_get_autoconf_profile_filename(device_name, user, buf, sizeof(buf));
+   config_get_autoconf_profile_filename(device_name, dev, buf, sizeof(buf));
    fill_pathname_join_special(autoconf_file, autoconf_dir, buf, sizeof(autoconf_file));
+
+   /* The directory only exists once profiles have been
+    * downloaded or bundled */
+   if (     *autoconf_dir
+         && !path_is_directory(autoconf_dir)
+         && !path_mkdir(autoconf_dir))
+   {
+      RARCH_ERR("[Autoconf] Failed creating directory \"%s\".\n", autoconf_dir);
+      return false;
+   }
 
    /* Open config file */
    if (     !(conf = config_file_new_from_path_to_string(autoconf_file))
@@ -8154,9 +8659,9 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    for (i = 0; i < RARCH_ANALOG_BIND_LIST_END; i++)
    {
       struct retro_keybind *bind      = &input_config_binds[user][i];
-      struct retro_keybind *auto_bind = &input_autoconf_binds[user][i];
+      struct retro_keybind *auto_bind = &input_autoconf_binds[dev][i];
       struct input_bind_label *lbl    = &input_config_bind_labels[user][i];
-      struct input_bind_label *albl   = &input_autoconf_bind_labels[user][i];
+      struct input_bind_label *albl   = &input_autoconf_bind_labels[dev][i];
 
       if (bind->joykey == NO_BTN && auto_bind->joykey != NO_BTN)
       {
@@ -8206,16 +8711,13 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    config_set_string(conf, "input_driver",
          joypad_driver);
    config_set_string(conf, "input_device",
-         input_config_get_device_name(settings->uints.input_joypad_index[user]));
-   a =
-input_config_get_device_display_name(settings->uints.input_joypad_index[user]);
+         input_config_get_device_name(dev));
+   a = input_config_get_device_display_name(dev);
    config_set_string(conf, "input_device_display_name",
-         (a && *a)
-            ? a
-            : input_config_get_device_name(settings->uints.input_joypad_index[user]));
+         (a && *a) ? a : input_config_get_device_name(dev));
 
-   pid_user = input_config_get_device_pid(settings->uints.input_joypad_index[user]);
-   vid_user = input_config_get_device_vid(settings->uints.input_joypad_index[user]);
+   pid_user = input_config_get_device_pid(dev);
+   vid_user = input_config_get_device_vid(dev);
 
    if (pid_user && vid_user)
    {
@@ -8228,7 +8730,7 @@ input_config_get_device_display_name(settings->uints.input_joypad_index[user]);
       unsigned id                      = input_config_bind_order[i];
       const struct retro_keybind *bind = &input_config_binds[user][id];
 
-      if (bind->valid)
+      if (RETRO_KEYBIND_VALID(bind))
       {
          save_keybind_joykey(conf, "input", input_config_bind_map_get_base(id), bind, false);
          save_keybind_axis(conf, "input", input_config_bind_map_get_base(id), bind, false);
@@ -8241,18 +8743,20 @@ input_config_get_device_display_name(settings->uints.input_joypad_index[user]);
       const struct retro_keybind *bind = &input_config_binds[user][id];
       struct input_bind_label *lbl     = &input_config_bind_labels[user][id];
 
-      if (bind->valid)
+      if (RETRO_KEYBIND_VALID(bind))
       {
          if (lbl->joykey && *lbl->joykey)
          {
             save_keybind_joykey_label(conf, "input", input_config_bind_map_get_base(id), lbl);
             free(lbl->joykey);
+            lbl->joykey = NULL;
          }
 
          if (lbl->joyaxis && *lbl->joyaxis)
          {
             save_keybind_axis_label(conf, "input", input_config_bind_map_get_base(id), lbl);
             free(lbl->joyaxis);
+            lbl->joyaxis = NULL;
          }
       }
    }
@@ -8307,6 +8811,162 @@ static void config_path_strip_trailing_slash(char *s)
 }
 
 /**
+ * config_get_credentials_path:
+ *
+ * Builds the path to the credentials config file.
+ * Uses the same directory as the main config file.
+ *
+ * Returns: length of the string written to @s.
+ **/
+static size_t config_get_credentials_path(char *s, size_t len)
+{
+   char config_directory[DIR_MAX_LENGTH];
+   config_directory[0] = '\0';
+
+   if (path_is_empty(RARCH_PATH_CONFIG))
+   {
+      s[0] = '\0';
+      return 0;
+   }
+
+   fill_pathname_basedir(config_directory,
+         path_get(RARCH_PATH_CONFIG),
+         sizeof(config_directory));
+
+   return fill_pathname_join_special(s, config_directory,
+         "retroarch-keychain.cfg", len);
+}
+
+/**
+ * config_save_credentials:
+ * @main_conf           : loaded retroarch.cfg, source for secrets the
+ *                        current build has no setting for
+ * @array_settings      : string settings table (from populate_settings_array)
+ * @array_settings_size : number of entries in @array_settings
+ * @path_settings       : path settings table (from populate_settings_path)
+ * @path_settings_size  : number of entries in @path_settings
+ *
+ * Writes only sensitive settings (passwords, tokens, keys)
+ * to a separate retroarch-keychain.cfg file. The tables are the ones
+ * config_save_file() has already built, so nothing is
+ * re-populated here.
+ *
+ * Returns: true (1) on success, otherwise returns false (0).
+ **/
+static bool config_save_credentials(
+      config_file_t *main_conf,
+      const struct config_array_setting *array_settings,
+      int array_settings_size,
+      const struct config_path_setting *path_settings,
+      int path_settings_size)
+{
+   unsigned i;
+   bool ret                                          = false;
+   char credentials_path[PATH_MAX_LENGTH];
+   config_file_t                   *conf             = NULL;
+
+   credentials_path[0] = '\0';
+   config_get_credentials_path(credentials_path, sizeof(credentials_path));
+
+   if (string_is_empty(credentials_path))
+      return false;
+
+   conf = config_file_new_from_path_to_string(credentials_path);
+   if (!conf)
+      conf = config_file_new_alloc();
+   if (!conf)
+      return false;
+
+#ifdef HAVE_KEYCHAIN
+   config_keychain_carried  = 0;
+   config_keychain_withheld = 0;
+   if (config_keychain_init())
+      config_set_int(conf, "keychain_version", 1);
+   else if (keychain_is_locked())
+      RARCH_WARN("[Config] Keychain is locked: enter its passphrase under "
+            "Settings > User to open the saved credentials.\n");
+   else
+      RARCH_WARN("[Config] Keychain key file unavailable, "
+            "credentials are written in the clear.\n");
+#endif
+
+   if (array_settings && (array_settings_size > 0))
+   {
+      for (i = 0; i < (unsigned)array_settings_size; i++)
+      {
+         if (!(array_settings[i].flags & CFG_BOOL_FLG_SENSITIVE))
+            continue;
+         config_keychain_set(conf,
+               array_settings[i].ident,
+               array_settings[i].ptr, true);
+      }
+   }
+
+   if (path_settings && (path_settings_size > 0))
+   {
+      for (i = 0; i < (unsigned)path_settings_size; i++)
+      {
+         if (!(path_settings[i].flags & CFG_BOOL_FLG_SENSITIVE))
+            continue;
+         config_keychain_set(conf,
+               path_settings[i].ident,
+               path_settings[i].ptr, true);
+      }
+   }
+
+   /* Secrets for features compiled out of this build have no
+    * settings entry above; carry them over from retroarch.cfg
+    * as-is so they are not lost when it is stripped. Anything
+    * already sealed in the keychain file (opened or not) is kept
+    * sealed; only plaintext still in retroarch.cfg gets sealed on
+    * its way over. */
+   if (main_conf)
+   {
+      for (i = 0; i < ARRAY_SIZE(config_sensitive_keys); i++)
+      {
+         const struct config_entry_list *entry;
+         const char *key = config_sensitive_keys[i];
+         if (config_get_entry(conf, key))
+            continue;
+         entry = config_get_entry(main_conf, key);
+         if (entry && entry->value)
+            config_keychain_set(conf, key, entry->value, false);
+      }
+   }
+
+   ret = config_file_write(conf, credentials_path, true);
+   config_file_free(conf);
+
+#ifdef HAVE_KEYCHAIN
+   /* Load-time logging is not up yet for the first config, so this
+    * is where the user hears about it. */
+   if (ret && config_keychain_carried)
+      RARCH_WARN("[Config] %u credential(s) in \"%s\" were sealed on "
+            "another machine or install, could not be opened here and "
+            "were kept as they are.\n",
+            config_keychain_carried, credentials_path);
+   if (ret && config_keychain_withheld)
+      RARCH_WARN("[Config] %u credential(s) set while the keychain was "
+            "locked were not saved; unlock it and set them again.\n",
+            config_keychain_withheld);
+#endif
+
+   if (ret)
+   {
+      /* Sealed or not, make the file owner-only. Not fatal on
+       * failure (e.g. FAT/exFAT media), the write itself succeeded. */
+      if (!path_set_private(credentials_path))
+         RARCH_WARN("[Config] Could not restrict permissions on \"%s\".\n",
+               credentials_path);
+      RARCH_LOG("[Config] Saved credentials to \"%s\".\n", credentials_path);
+   }
+   else
+      RARCH_ERR("[Config] Failed to save credentials to \"%s\".\n", credentials_path);
+
+   return ret;
+}
+
+/**
  * config_save_file:
  * @path            : Path that shall be written to.
  *
@@ -8314,12 +8974,75 @@ static void config_path_strip_trailing_slash(char *s)
  *
  * Returns: true (1) on success, otherwise returns false (0).
  **/
+#ifdef HAVE_KEYCHAIN
+/**
+ * config_keychain_reapply:
+ *
+ * After the keychain is unlocked, opens the credentials that were
+ * sealed on another machine and puts them into the running settings,
+ * so accounts work without a restart. Settings the credentials file
+ * does not hold are left as they are.
+ *
+ * Returns: number of credentials put back.
+ **/
+unsigned config_keychain_reapply(void)
+{
+   char credentials_path[PATH_MAX_LENGTH];
+   settings_t                  *settings = config_st;
+   config_file_t               *conf;
+   struct config_array_setting *arrays;
+   struct config_path_setting  *paths;
+   int      arrays_size = 0;
+   int      paths_size  = 0;
+   int      i;
+   unsigned applied     = 0;
+
+   if (!keychain_is_ready())
+      return 0;
+   credentials_path[0] = '\0';
+   config_get_credentials_path(credentials_path, sizeof(credentials_path));
+   if (string_is_empty(credentials_path)
+         || !(conf = config_file_new_from_path_to_string(credentials_path)))
+      return 0;
+   config_keychain_open_entries(conf);
+
+   if ((arrays = populate_settings_array(settings, &arrays_size)))
+   {
+      for (i = 0; i < arrays_size; i++)
+         if ((arrays[i].flags & CFG_BOOL_FLG_SENSITIVE)
+               && config_get_entry(conf, arrays[i].ident)
+               && config_get_array(conf, arrays[i].ident,
+                     arrays[i].ptr, PATH_MAX_LENGTH))
+            applied++;
+      free(arrays);
+   }
+   if ((paths = populate_settings_path(settings, &paths_size)))
+   {
+      for (i = 0; i < paths_size; i++)
+      {
+         char tmp[PATH_MAX_LENGTH];
+         if ((paths[i].flags & CFG_BOOL_FLG_SENSITIVE)
+               && config_get_entry(conf, paths[i].ident)
+               && config_get_path(conf, paths[i].ident, tmp, sizeof(tmp)))
+         {
+            strlcpy(paths[i].ptr, tmp, PATH_MAX_LENGTH);
+            applied++;
+         }
+      }
+      free(paths);
+   }
+   config_file_free(conf);
+   return applied;
+}
+#endif
+
 bool config_save_file(const char *path)
 {
    float msg_color;
    unsigned i                                        = 0;
    bool ret                                          = false;
    bool minimal                                      = false;
+   bool credentials_saved                            = false;
    settings_t                     *defaults          = NULL;
    retro_keybind_set              *defaults_binds    = NULL;
    struct config_bool_setting     *bool_settings     = NULL;
@@ -8373,7 +9096,6 @@ bool config_save_file(const char *path)
    if (minimal)
    {
       int tmp_int;
-      settings_t *saved_config_st = config_st;
 
       /* Allocate fresh settings struct for defaults */
       defaults = (settings_t*)calloc(1, sizeof(settings_t));
@@ -8422,15 +9144,13 @@ bool config_save_file(const char *path)
 
             have_autoconf_bkp = input_autoconf_state_save(&autoconf_bkp);
 
-            /* Temporarily set config_st to defaults struct so config_set_defaults populates it */
-            config_st = defaults;
-            config_set_defaults(global);  /* This calls input_config_reset() which sets default keybinds */
+            /* Populate the local defaults struct directly: config_st
+             * stays what every other thread's config_get_ptr() returns.
+             * input_config_reset() inside sets the default keybinds. */
+            config_set_defaults(global, defaults);
 
             /* Capture default keybinds (set by input_config_reset() in config_set_defaults) */
             memcpy(defaults_binds, input_config_binds, MAX_USERS * sizeof(retro_keybind_set));
-
-            /* Restore original config_st */
-            config_st = saved_config_st;
 
             /* Restore input_config_binds */
             if (saved_binds)
@@ -8483,6 +9203,23 @@ bool config_save_file(const char *path)
       }
    }
 
+   /* Save credentials to a separate file.
+    * Only strip sensitive fields from retroarch.cfg
+    * when retroarch-keychain.cfg was written successfully. */
+   credentials_saved = config_save_credentials(conf,
+         array_settings, array_settings_size,
+         path_settings,  path_settings_size);
+   if (credentials_saved)
+   {
+      /* Strip by key name, not by settings table, so entries
+       * belonging to features this build lacks go too. */
+      for (i = 0; i < ARRAY_SIZE(config_sensitive_keys); i++)
+         config_unset(conf, config_sensitive_keys[i]);
+   }
+   else
+      RARCH_WARN("[Config] Credentials save failed, "
+            "keeping sensitive fields in main config.\n");
+
    /* Path settings */
    if (path_settings && (path_settings_size > 0))
    {
@@ -8492,6 +9229,12 @@ bool config_save_file(const char *path)
          char default_buf[PATH_MAX_LENGTH];
          const char *value         = path_settings[i].ptr;
          const char *default_value = path_defaults ? path_defaults[i].ptr : NULL;
+
+         /* Sensitive settings live in retroarch-keychain.cfg and
+          * were already stripped from conf by key name. */
+         if (   credentials_saved
+             && (path_settings[i].flags & CFG_BOOL_FLG_SENSITIVE))
+            continue;
 
          if (path_settings[i].flags & CFG_BOOL_FLG_DEF_ENABLE)
          {
@@ -8578,6 +9321,11 @@ bool config_save_file(const char *path)
    {
       for (i = 0; i < (unsigned)array_settings_size; i++)
       {
+         /* Sensitive settings live in retroarch-keychain.cfg and
+          * were already stripped from conf by key name. */
+         if (   credentials_saved
+             && (array_settings[i].flags & CFG_BOOL_FLG_SENSITIVE))
+            continue;
          if (   !array_settings[i].override
              || !retroarch_override_setting_is_set(array_settings[i].override, NULL))
          {
@@ -8633,11 +9381,12 @@ bool config_save_file(const char *path)
          {
             /* In minimal mode, only save if value differs from default */
             if (   !minimal
-                || *int_settings[i].ptr != *int_defaults[i].ptr)
+                || cfg_int_get(&int_settings[i])
+                      != cfg_int_get(&int_defaults[i]))
             {
                config_set_int(conf,
                      int_settings[i].ident,
-                     *int_settings[i].ptr);
+                     cfg_int_get(&int_settings[i]));
             }
             else
             {
@@ -8670,7 +9419,7 @@ bool config_save_file(const char *path)
                }
                else
                {
-                  default_val = *uint_defaults[i].ptr;
+                  default_val = cfg_uint_get(&uint_defaults[i]);
                   has_default = true;
                }
             }
@@ -8678,11 +9427,11 @@ bool config_save_file(const char *path)
             /* In minimal mode, only save if value differs from default */
             if (   !minimal
                 || !has_default
-                || *uint_settings[i].ptr != default_val)
+                || cfg_uint_get(&uint_settings[i]) != default_val)
             {
                config_set_int(conf,
                      uint_settings[i].ident,
-                     *uint_settings[i].ptr);
+                     cfg_uint_get(&uint_settings[i]));
             }
             else
             {
@@ -8726,7 +9475,7 @@ bool config_save_file(const char *path)
 
       snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
 
-      _len = strlcpy(cfg, "input_device_p",     sizeof(cfg));
+      _len = strlcpy_lit(cfg, "input_device_p",     sizeof(cfg));
       strlcpy(cfg + _len, formatted_number,     sizeof(cfg) - _len);
       if (   !minimal
           || settings->uints.input_device[i] != defaults->uints.input_device[i])
@@ -8734,31 +9483,34 @@ bool config_save_file(const char *path)
       else
          config_unset(conf, cfg);
 
-      _len  = strlcpy(cfg, "input_player",          sizeof(cfg));
+      _len  = strlcpy_lit(cfg, "input_player",          sizeof(cfg));
       _len += strlcpy(cfg + _len, formatted_number, sizeof(cfg) - _len);
 
-      strlcpy(cfg + _len, "_mouse_index",       sizeof(cfg) - _len);
+      strlcpy_lit(cfg + _len, "_mouse_index",       sizeof(cfg) - _len);
       if (   !minimal
           || settings->uints.input_mouse_index[i] != defaults->uints.input_mouse_index[i])
          config_set_int(conf, cfg, settings->uints.input_mouse_index[i]);
       else
          config_unset(conf, cfg);
 
-      strlcpy(cfg + _len, "_joypad_index",      sizeof(cfg) - _len);
+      /* What the user configured, which is not what the setting holds
+       * while a driver restart has put controllers back on their
+       * ports. */
+      strlcpy_lit(cfg + _len, "_joypad_index",      sizeof(cfg) - _len);
       if (   !minimal
-          || settings->uints.input_joypad_index[i] != defaults->uints.input_joypad_index[i])
-         config_set_int(conf, cfg, settings->uints.input_joypad_index[i]);
+          || input_config_get_saved_joypad_index(i) != defaults->uints.input_joypad_index[i])
+         config_set_int(conf, cfg, input_config_get_saved_joypad_index(i));
       else
          config_unset(conf, cfg);
 
-      strlcpy(cfg + _len, "_analog_dpad_mode",  sizeof(cfg) - _len);
+      strlcpy_lit(cfg + _len, "_analog_dpad_mode",  sizeof(cfg) - _len);
       if (   !minimal
           || settings->uints.input_analog_dpad_mode[i] != defaults->uints.input_analog_dpad_mode[i])
          config_set_int(conf, cfg, settings->uints.input_analog_dpad_mode[i]);
       else
          config_unset(conf, cfg);
 
-      strlcpy(cfg + _len, "_device_reservation_type",  sizeof(cfg) - _len);
+      strlcpy_lit(cfg + _len, "_device_reservation_type",  sizeof(cfg) - _len);
       if (   !minimal
           || settings->uints.input_device_reservation_type[i] != defaults->uints.input_device_reservation_type[i])
          config_set_int(conf, cfg, settings->uints.input_device_reservation_type[i]);
@@ -8794,7 +9546,7 @@ bool config_save_file(const char *path)
 #ifdef HAVE_NETWORKGAMEPAD
    {
       char tmp[64];
-      size_t _len = strlcpy(tmp, "network_remote_enable_user_p", sizeof(tmp));
+      size_t _len = strlcpy_lit(tmp, "network_remote_enable_user_p", sizeof(tmp));
       for (i = 0; i < MAX_USERS; i++)
       {
          snprintf(tmp + _len, sizeof(tmp) - _len, "%u", i + 1);
@@ -8930,6 +9682,15 @@ bool config_save_file(const char *path)
    /* Remove unused "quit_press_twice" after migrating to "confirm_quit" */
    {
       const char *tmp_key = "quit_press_twice";
+      struct config_entry_list *tmp = config_get_entry(conf, tmp_key);
+      if (tmp)
+         config_unset(conf, tmp->key);
+   }
+
+   /* Remove unused "menu_throttle_framerate" after migrating to
+    * "menu_frame_rate" */
+   {
+      const char *tmp_key = "menu_throttle_framerate";
       struct config_entry_list *tmp = config_get_entry(conf, tmp_key);
       if (tmp)
          config_unset(conf, tmp->key);
@@ -9190,12 +9951,13 @@ int8_t config_save_overrides(enum override_type type,
          if (string_starts_with(int_settings[i].ident, "state_slot"))
             continue;
 
-         if ((*int_settings[i].ptr) != (*int_overrides[i].ptr))
+         if (cfg_int_get(&int_settings[i])
+               != cfg_int_get(&int_overrides[i]))
          {
             config_set_int(conf, int_overrides[i].ident,
-                  (*int_overrides[i].ptr));
+                  cfg_int_get(&int_overrides[i]));
             RARCH_DBG("[Override] %s = \"%d\"\n",
-                  int_overrides[i].ident, *int_overrides[i].ptr);
+                  int_overrides[i].ident, cfg_int_get(&int_overrides[i]));
          }
       }
       for (i = 0; i < (unsigned)uint_settings_size; i++)
@@ -9203,12 +9965,14 @@ int8_t config_save_overrides(enum override_type type,
          if (string_starts_with(uint_settings[i].ident, "input_turbo"))
             continue;
 
-         if ((*uint_settings[i].ptr) != (*uint_overrides[i].ptr))
+         if (cfg_uint_get(&uint_settings[i])
+               != cfg_uint_get(&uint_overrides[i]))
          {
             config_set_int(conf, uint_overrides[i].ident,
-                  (*uint_overrides[i].ptr));
+                  cfg_uint_get(&uint_overrides[i]));
             RARCH_DBG("[Override] %s = \"%d\"\n",
-                  uint_overrides[i].ident, *uint_overrides[i].ptr);
+                  uint_overrides[i].ident,
+                  cfg_uint_get(&uint_overrides[i]));
          }
       }
       for (i = 0; i < (unsigned)size_settings_size; i++)
@@ -9236,22 +10000,14 @@ int8_t config_save_overrides(enum override_type type,
       {
          if (!string_is_equal(array_settings[i].ptr, array_overrides[i].ptr))
          {
-#ifdef HAVE_CHEEVOS
-            /* As authentication doesn't occur until after content is loaded,
-             * the achievement authentication token might only exist in the
-             * override set, and therefore differ from the master config set.
-             * Storing the achievement authentication token in an override
-             * is a recipe for disaster. If it expires and the user generates
-             * a new token, then the override will be out of date and the
-             * user will have to reauthenticate for each override (and also
-             * remember to update each override). Also exclude the username
-             * as it's directly tied to the token and password.
-             */
-            if (   string_is_equal(array_settings[i].ident, "cheevos_token")
-                || string_is_equal(array_settings[i].ident, "cheevos_password")
-                || string_is_equal(array_settings[i].ident, "cheevos_username"))
+            /* Authentication tokens stored in overrides become stale
+             * when they expire and get regenerated in the master
+             * config, forcing users to reauthenticate per override.
+             * Originally applied to cheevos credentials, now
+             * generalized to all sensitive settings via
+             * retroarch-keychain.cfg. */
+            if (array_settings[i].flags & CFG_BOOL_FLG_SENSITIVE)
                continue;
-#endif
             config_set_string(conf, array_overrides[i].ident,
                   array_overrides[i].ptr);
             RARCH_DBG("[Override] %s = \"%s\"\n",
@@ -9264,6 +10020,10 @@ int8_t config_save_overrides(enum override_type type,
          const char *cur  = path_overrides[i].ptr;
          const char *base = path_settings[i].ptr;
          char        cur_buf[PATH_MAX_LENGTH];
+
+         /* Sensitive settings are managed via retroarch-keychain.cfg */
+         if (path_settings[i].flags & CFG_BOOL_FLG_SENSITIVE)
+            continue;
 
          /* savefile_directory / savestate_directory alias a global
           * buffer, so path_settings[] and path_overrides[] point at the
@@ -9292,7 +10052,7 @@ int8_t config_save_overrides(enum override_type type,
 
          if (!string_is_equal(base, cur))
          {
-#if IOS
+#if TARGET_OS_IPHONE
             if (string_is_equal(path_settings[i].ident, "libretro_directory"))
                continue;
 #endif
@@ -9315,35 +10075,37 @@ int8_t config_save_overrides(enum override_type type,
          if (settings->uints.input_device[i]
                != overrides->uints.input_device[i])
          {
-            size_t _len = strlcpy(cfg, "input_device_p", sizeof(cfg));
+            size_t _len = strlcpy_lit(cfg, "input_device_p", sizeof(cfg));
             strlcpy(cfg + _len, formatted_number, sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_device[i]);
             RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_device[i]);
          }
 
-         _len  = strlcpy(cfg, "input_player",          sizeof(cfg));
+         _len  = strlcpy_lit(cfg, "input_player",          sizeof(cfg));
          _len += strlcpy(cfg + _len, formatted_number, sizeof(cfg) - _len);
 
          if (settings->uints.input_mouse_index[i]
                != overrides->uints.input_mouse_index[i])
          {
-            strlcpy(cfg + _len, "_mouse_index",   sizeof(cfg) - _len);
+            strlcpy_lit(cfg + _len, "_mouse_index",   sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_mouse_index[i]);
             RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_mouse_index[i]);
          }
 
+         /* The live value is what the user configured, not a port a
+          * driver restart handed back. */
          if (settings->uints.input_joypad_index[i]
-               != overrides->uints.input_joypad_index[i])
+               != input_config_get_saved_joypad_index(i))
          {
-            strlcpy(cfg + _len, "_joypad_index",  sizeof(cfg) - _len);
-            config_set_int(conf, cfg, overrides->uints.input_joypad_index[i]);
-            RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_joypad_index[i]);
+            strlcpy_lit(cfg + _len, "_joypad_index",  sizeof(cfg) - _len);
+            config_set_int(conf, cfg, input_config_get_saved_joypad_index(i));
+            RARCH_DBG("[Override] %s = \"%u\"\n", cfg, input_config_get_saved_joypad_index(i));
          }
 
          if (settings->uints.input_device_reservation_type[i]
                != overrides->uints.input_device_reservation_type[i])
          {
-            strlcpy(cfg + _len, "_device_reservation_type", sizeof(cfg) - _len);
+            strlcpy_lit(cfg + _len, "_device_reservation_type", sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_device_reservation_type[i]);
             RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_device_reservation_type[i]);
          }
@@ -9355,7 +10117,7 @@ int8_t config_save_overrides(enum override_type type,
 
             if (     config_bind->joyaxis != override_bind->joyaxis
                   || config_bind->joykey  != override_bind->joykey
-                  || config_bind->key     != override_bind->key
+                  || RETRO_KEYBIND_KEY(config_bind)     != RETRO_KEYBIND_KEY(override_bind)
                   || config_bind->mbutton != override_bind->mbutton
                )
                input_config_save_keybinds_user_override(conf, i, j, override_bind);
@@ -9551,14 +10313,14 @@ bool input_remapping_load_file(void *data, const char *path)
       char formatted_number[4];
       formatted_number[0] = '\0';
       snprintf(formatted_number, sizeof(formatted_number), "%u", i + 1);
-      _len       = strlcpy(prefix, "input_player",   sizeof(prefix));
+      _len       = strlcpy_lit(prefix, "input_player",   sizeof(prefix));
       strlcpy(prefix + _len, formatted_number, sizeof(prefix) - _len);
       _len       = strlcpy(s1, prefix, sizeof(s1));
-      strlcpy(s1 + _len, "_btn", sizeof(s1) - _len);
+      strlcpy_lit(s1 + _len, "_btn", sizeof(s1) - _len);
       _len       = strlcpy(s2, prefix, sizeof(s2));
-      strlcpy(s2 + _len, "_key", sizeof(s2) - _len);
+      strlcpy_lit(s2 + _len, "_key", sizeof(s2) - _len);
       _len       = strlcpy(s3, prefix, sizeof(s3));
-      strlcpy(s3 + _len, "_stk", sizeof(s3) - _len);
+      strlcpy_lit(s3 + _len, "_stk", sizeof(s3) - _len);
 
       for (j = 0; j < RARCH_ANALOG_BIND_LIST_END; j++)
       {
@@ -9643,15 +10405,15 @@ bool input_remapping_load_file(void *data, const char *path)
          }
       }
 
-      _len = strlcpy(s1, "input_libretro_device_p", sizeof(s1));
+      _len = strlcpy_lit(s1, "input_libretro_device_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_libretro_device[i], s1);
 
       _len = strlcpy(s1, prefix, sizeof(s1));
-      strlcpy(s1 + _len, "_analog_dpad_mode", sizeof(s1) - _len);
+      strlcpy_lit(s1 + _len, "_analog_dpad_mode", sizeof(s1) - _len);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_analog_dpad_mode[i], s1);
 
-      _len = strlcpy(s1, "input_remap_port_p", sizeof(s1));
+      _len = strlcpy_lit(s1, "input_remap_port_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_remap_ports[i], s1);
    }
@@ -9664,6 +10426,7 @@ bool input_remapping_load_file(void *data, const char *path)
    CONFIG_GET_INT_BASE(conf, settings, uints.input_turbo_button, "input_turbo_button");
    CONFIG_GET_INT_BASE(conf, settings, uints.input_turbo_period, "input_turbo_period");
    CONFIG_GET_INT_BASE(conf, settings, uints.input_turbo_duty_cycle, "input_turbo_duty_cycle");
+   config_sanitize_turbo_binds(settings);
 
    input_remapping_update_port_map();
 
@@ -9757,14 +10520,14 @@ bool input_remapping_save_file(const char *path)
          RARCH_ERR("[Config] Unexpectedly high number of users.");
          break;
       }
-      _len       = strlcpy(prefix, "input_player",   sizeof(prefix));
+      _len       = strlcpy_lit(prefix, "input_player",   sizeof(prefix));
       strlcpy(prefix + _len, formatted_number, sizeof(prefix) - _len);
       _len       = strlcpy(s1, prefix, sizeof(s1));
-      strlcpy(s1 + _len, "_btn", sizeof(s1) - _len);
+      strlcpy_lit(s1 + _len, "_btn", sizeof(s1) - _len);
       _len       = strlcpy(s2, prefix, sizeof(s2));
-      strlcpy(s2 + _len, "_key", sizeof(s2) - _len);
+      strlcpy_lit(s2 + _len, "_key", sizeof(s2) - _len);
       _len       = strlcpy(s3, prefix, sizeof(s3));
-      strlcpy(s3 + _len, "_stk", sizeof(s3) - _len);
+      strlcpy_lit(s3 + _len, "_stk", sizeof(s3) - _len);
 
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
       {
@@ -9844,15 +10607,15 @@ bool input_remapping_save_file(const char *path)
                   settings->uints.input_keymapper_ids[i][j]);
       }
 
-      _len = strlcpy(s1, "input_libretro_device_p", sizeof(s1));
+      _len = strlcpy_lit(s1, "input_libretro_device_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       config_set_int(conf, s1, input_config_get_device(i));
 
       _len = strlcpy(s1, prefix, sizeof(s1));
-      strlcpy(s1 + _len, "_analog_dpad_mode", sizeof(s1) - _len);
+      strlcpy_lit(s1 + _len, "_analog_dpad_mode", sizeof(s1) - _len);
       config_set_int(conf, s1, settings->uints.input_analog_dpad_mode[i]);
 
-      _len = strlcpy(s1, "input_remap_port_p", sizeof(s1));
+      _len = strlcpy_lit(s1, "input_remap_port_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       config_set_int(conf, s1, settings->uints.input_remap_ports[i]);
    }
@@ -10036,7 +10799,7 @@ void input_config_reset_autoconfig_binds(unsigned port)
    {
       input_autoconf_binds[port][i].joykey  = NO_BTN;
       input_autoconf_binds[port][i].joyaxis = AXIS_NONE;
-      input_autoconf_binds[port][i].valid   = false;
+      RETRO_KEYBIND_SET_VALID(&input_autoconf_binds[port][i], false);
 
       if (input_autoconf_bind_labels[port][i].joykey)
       {
@@ -10227,7 +10990,7 @@ void input_config_parse_joy_axis(char *s,
          else
             bind->joyaxis = AXIS_NEG(i_axis);
 
-         bind->valid = true;
+         RETRO_KEYBIND_SET_VALID(bind, true);
       }
    }
 
@@ -10318,7 +11081,7 @@ void input_config_parse_joy_button(
          }
          else
             bind->joykey = strtoull(tmp, NULL, 0);
-         bind->valid = true;
+         RETRO_KEYBIND_SET_VALID(bind, true);
       }
    }
    fill_pathname_join_delim(key, s,
@@ -10337,6 +11100,9 @@ void retroarch_config_deinit(void)
    if (config_st)
       free(config_st);
    config_st = NULL;
+#if defined(HAVE_CONFIGFILE) && defined(HAVE_KEYCHAIN)
+   keychain_deinit();
+#endif
 }
 
 void retroarch_config_init(void)

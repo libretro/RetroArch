@@ -92,7 +92,9 @@ static const struct
    char s_f0ce97f7[27];
    char s_b92166cd[13];
    char s_5d29b870[20];
+   char s_6996339b[5];
    char s_4927597c[12];
+   char s_ddf679b9[6];
    char s_10342503[9];
    char s_d31f6d88[15];
    char s_f03e9c42[21];
@@ -256,6 +258,7 @@ static const struct
    char s_8fe41f79[25];
    char s_519cd5f8[14];
    char s_43ac80a0[12];
+   char s_aa628249[6];
    char s_ebe994b4[16];
    char s_d9b00fbd[24];
    char s_95cbebbd[18];
@@ -350,7 +353,6 @@ static const struct
    char s_48e88dc4[156];
    char s_79b8ce4a[78];
    char s_a1a8257e[102];
-   char s_d5231783[97];
    char s_a68d6d11[56];
    char s_74022c02[89];
    char s_8abad013[71];
@@ -447,7 +449,6 @@ static const struct
    char s_67d549fd[34];
    char s_3aaf6bf1[141];
    char s_7e96b5ce[42];
-   char s_3547866d[119];
    char s_8010a29e[101];
    char s_81120e85[102];
    char s_3c13e61f[103];
@@ -549,7 +550,9 @@ static const struct
    "Upravljanje bazom podataka",
    "Direktorijum",
    "Informacije o disku",
+   "Zvuk",
    "Izvadi disk",
+   "Izlaz",
    "Preuzeto",
    "Preuzmi jezgro",
    "Preuzima\304\215 sadr\305\276aja",
@@ -713,6 +716,7 @@ static const struct
    "Identifikator frontend-a",
    "OS frontend-a",
    "Git verzija",
+   "Tempo",
    "Izvor napajanja",
    "Drajver video konteksta",
    "A\305\276uriraj resurse",
@@ -812,8 +816,6 @@ static const struct
    "Koristi prirodni, nisko-rezolucioni video izlaz, za upotrebu sa CRT ekranima.",
    "Uklju\304\215i visoko-rezolucioni mod za upotrebu sa visoko-rezolucionim menijem ako sadr\305"
    "\276aj nije u\304\215itan.",
-   "Samo za CRT ekrane. Poku\305\241aj da koristi\305\241 preciznu rezoluciju i brzinu osve\305\276a"
-   "vanja jezgra/igre.",
    "Biraj izme\304\221u prirodne i ultra\305\241iroke super rezolucije.",
    "Prilagodi brzinu osve\305\276avanja specificiranu u konfiguracionoj datoteci, ako je potrebno.",
    "Pro\304\221i kroz ove opcije ako slika nije pravilno centrirana na displeju.",
@@ -929,8 +931,6 @@ static const struct
    "Odlo\305\276i automatsko u\304\215itavanje \305\241ejdera (u milisekundama). Mo\305\276e pomo"
    "\304\207i kod grafi\304\215kih gre\305\241aka kada se koristi softver za snimanje ekrana.",
    "Izmeni pode\305\241avanja video sinhronizacije.",
-   "Pove\304\207ava performanse po cenu odziva i glatko\304\207e videa. Koristi samo ako nije mogu"
-   "\304\207e druga\304\215ije dosti\304\207i punu brzinu.",
    "Postavi visinu prozora prikaza ako je opcija odnos ekrana postavljena na 'Specifi\304\215an odno"
    "s ekrana'.",
    "Postavi \305\241irinu prozora prikaza ako je opcija odnos ekrana postavljena na 'Specifi\304\215"
@@ -962,7 +962,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sr_blob_check[
-      (sizeof(msg_hash_sr_blob) == (12324u
+      (sizeof(msg_hash_sr_blob) == (12125u
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 12u
@@ -1109,7 +1109,9 @@ static const uint32_t msg_hash_sr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -1273,6 +1275,7 @@ static const uint32_t msg_hash_sr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
@@ -1367,7 +1370,6 @@ static const uint32_t msg_hash_sr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
@@ -1464,7 +1466,6 @@ static const uint32_t msg_hash_sr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,

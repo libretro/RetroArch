@@ -39,7 +39,7 @@ RETRO_BEGIN_DECLS
  * @param buffer <tt>fifo_buffer_t *</tt>. The FIFO queue to check.
  * @return The number of bytes available for reading from \c buffer.
  */
-#define FIFO_READ_AVAIL(buffer) (((buffer)->end + (((buffer)->end < (buffer)->first) ? (buffer)->size : 0)) - (buffer)->first)
+#define FIFO_READ_AVAIL(buffer) fifo_read_avail_of(buffer)
 
 /**
  * Returns the available space in \c buffer for writing.
@@ -47,7 +47,7 @@ RETRO_BEGIN_DECLS
  * @param buffer <tt>fifo_buffer_t *</tt>. The FIFO queue to check.
  * @return The number of bytes that \c buffer can accept.
  */
-#define FIFO_WRITE_AVAIL(buffer) (((buffer)->size - 1) - (((buffer)->end + (((buffer)->end < (buffer)->first) ? (buffer)->size : 0)) - (buffer)->first))
+#define FIFO_WRITE_AVAIL(buffer) fifo_write_avail_of(buffer)
 
 /**
  * Returns the available data in \c buffer for reading.
@@ -55,7 +55,7 @@ RETRO_BEGIN_DECLS
  * @param buffer \c fifo_buffer_t. The FIFO queue to check.
  * @return The number of bytes available for reading from \c buffer.
  */
-#define FIFO_READ_AVAIL_NONPTR(buffer) (((buffer).end + (((buffer).end < (buffer).first) ? (buffer).size : 0)) - (buffer).first)
+#define FIFO_READ_AVAIL_NONPTR(buffer) fifo_read_avail_of(&(buffer))
 
 /**
  * Returns the available space in \c buffer for writing.
@@ -63,7 +63,7 @@ RETRO_BEGIN_DECLS
  * @param buffer \c fifo_buffer_t. The FIFO queue to check.
  * @return The number of bytes that \c buffer can accept.
  */
-#define FIFO_WRITE_AVAIL_NONPTR(buffer) (((buffer).size - 1) - (((buffer).end + (((buffer).end < (buffer).first) ? (buffer).size : 0)) - (buffer).first))
+#define FIFO_WRITE_AVAIL_NONPTR(buffer) fifo_write_avail_of(&(buffer))
 
 /** @copydoc fifo_buffer_t */
 struct fifo_buffer
@@ -77,10 +77,38 @@ struct fifo_buffer
 /**
  * A bounded FIFO byte queue implemented as a ring buffer.
  *
- * Useful for communication between threads,
- * although the caller is responsible for synchronization.
+ * The caller synchronises it, and every use in the tree does so with
+ * a lock. It is not lock-free: the producer's and the consumer's
+ * indices sit together, and read with no lock they bounce a cache
+ * line between threads. For one producer and one consumer with no
+ * lock, retro_spsc_t is the type.
+ *
+ * The ring is one byte larger than the capacity asked for, and full
+ * is one byte short of it - so size is never a power of two, and the
+ * wrap is a compare and a subtract rather than a mask. Rounding the
+ * allocation up to a power of two would change the capacity a caller
+ * asked for; a mask wants a ring with a count instead of a wasted
+ * slot, which changes what the availability means, and is a different
+ * type.
  */
 typedef struct fifo_buffer fifo_buffer_t;
+
+/* The availability, from one load each of first, end and size: the
+ * argument is evaluated once, and a reader without the caller's lock
+ * sees one snapshot rather than several. Inline, so a driver's
+ * write_avail(), which rate control samples every frame, pays a few
+ * instructions. */
+static INLINE size_t fifo_read_avail_of(const fifo_buffer_t *buffer)
+{
+   size_t first = buffer->first;
+   size_t end   = buffer->end;
+   return (end < first) ? end + buffer->size - first : end - first;
+}
+
+static INLINE size_t fifo_write_avail_of(const fifo_buffer_t *buffer)
+{
+   return (buffer->size - 1) - fifo_read_avail_of(buffer);
+}
 
 /**
  * Creates a new FIFO queue with \c size bytes of memory.
@@ -130,6 +158,11 @@ static INLINE void fifo_clear(fifo_buffer_t *buffer)
  * @param in_buf The buffer to read bytes from.
  * @param size The length of \c in_buf, in bytes.
  */
+/* Unchecked: len must be at most FIFO_WRITE_AVAIL() for a write and
+ * FIFO_READ_AVAIL() for a read, which the caller has established under
+ * whatever synchronisation it owns; the ring is never locked here. A
+ * length past that is a copy past the ring. The checked calls below
+ * clamp and report instead. */
 void fifo_write(fifo_buffer_t *buffer, const void *in_buf, size_t len);
 
 /**
@@ -141,6 +174,11 @@ void fifo_write(fifo_buffer_t *buffer, const void *in_buf, size_t len);
  * @post Upon return, \c buffer will have up to \c size more bytes of space available for writing.
  */
 void fifo_read(fifo_buffer_t *buffer, void *in_buf, size_t len);
+
+/* Checked: copy at most what is available and return how much moved.
+ * A length of zero, or nothing available, moves nothing. */
+size_t fifo_write_checked(fifo_buffer_t *buffer, const void *in_buf, size_t len);
+size_t fifo_read_checked(fifo_buffer_t *buffer, void *in_buf, size_t len);
 
 /**
  * Releases \c buffer and its contents.

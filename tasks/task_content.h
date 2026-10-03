@@ -73,6 +73,17 @@ bool task_push_start_current_core(content_ctx_info_t *content_info);
 
 bool task_push_start_dummy_core(content_ctx_info_t *content_info);
 
+/* True for the task of a content load stage that runs the core's own
+ * load or unload, or the driver rebuild - work no slicing can shorten
+ * (the slow-handler watchdog does not count it).  The close's wait
+ * for a state task is not one: it only polls. */
+bool task_content_is_load_stage(const retro_task_t *task);
+
+/* Every task_push_load_* entry point below (the CLI one excepted, which
+ * is startup itself and loads in one go) starts the load as a chain of
+ * main-thread tasks of the frontend's queue and returns; the load is
+ * done when runloop_is_content_switching() reads false again. */
+
 bool task_push_load_content_with_new_core_from_companion_ui(
       const char *core_path,
       const char *fullpath,
@@ -92,13 +103,6 @@ bool task_push_load_content_with_new_core_from_menu(
       retro_task_callback_t cb,
       void *user_data);
 
-#ifdef HAVE_DYNAMIC
-/* Performs the parked remainder of a deferred (prefetched) menu
- * load, if one is ready.  Called once per frame from
- * runloop_iterate(); content_load() reinitializes the task queue,
- * so this must run outside the task system's dispatch. */
-void task_content_deferred_load_check(void);
-#endif
 
 bool task_push_load_content_from_playlist_from_menu(
       const char *core_path,
@@ -121,6 +125,7 @@ bool task_push_load_content_with_core(
 
 bool task_push_load_subsystem_with_core(
       const char *fullpath,
+      const char *label,
       content_ctx_info_t *content_info,
       enum rarch_core_type type,
       retro_task_callback_t cb,

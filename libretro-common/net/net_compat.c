@@ -29,6 +29,10 @@
 
 #include <net/net_compat.h>
 
+#ifdef GEKKO_NATIVE
+#include <gekko/net.h>
+#endif
+
 #if defined(_WIN32) && !defined(_XBOX)
 #if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600
 const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
@@ -211,7 +215,7 @@ done:
    return ret;
 }
 
-#elif defined(GEKKO)
+#elif defined(GEKKO) && !defined(GEKKO_NATIVE)
 const char *inet_ntop(int af, const void *src, char *dst, socklen_t size)
 {
    const char *addr_str = inet_ntoa(*(struct in_addr*)src);
@@ -550,6 +554,9 @@ failure:
    }
 
    return true;
+#elif defined(GEKKO_NATIVE)
+   /* Waits for an address as long as libogc's if_config did. */
+   return gk_net_init(10000) == 0;
 #elif defined(GEKKO)
    static bool initialized = false;
 

@@ -1,0 +1,2700 @@
+== d3d window, sdl2 input
+ created: window yes, inited yes, creation step: none
+ -- the input driver passes on what it is offered
+ WM_KEYDOWN return w=0xd
+  keyboard_event down=1 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYUP return w=0xd
+  keyboard_event down=0 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  keyboard_event down=1 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYUP lshift w=0x10
+  keyboard_event down=0 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  keyboard_event down=1 code=1205 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  keyboard_event down=1 code=1197 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  keyboard_event down=1 code=1069 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  keyboard_event down=1 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  keyboard_event down=0 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  keyboard_event down=1 code=1184 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  keyboard_event down=1 code=1068 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  keyboard_event down=1 code=1054 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  keyboard_event down=1 code=1030 char=0x0 device=3
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  window_output_changed
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  -> 0
+ WM_KILLFOCUS w=0x0
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ -- the input driver takes what it is offered
+ WM_KEYDOWN return w=0xd
+  keyboard_event down=1 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYUP return w=0xd
+  keyboard_event down=0 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  keyboard_event down=1 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYUP lshift w=0x10
+  keyboard_event down=0 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  keyboard_event down=1 code=1205 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  keyboard_event down=1 code=1197 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  keyboard_event down=1 code=1069 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  keyboard_event down=1 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  keyboard_event down=0 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  keyboard_event down=1 code=1184 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  keyboard_event down=1 code=1068 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  keyboard_event down=1 code=1054 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  keyboard_event down=1 code=1030 char=0x0 device=3
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  window_output_changed
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  -> 0
+ WM_KILLFOCUS w=0x0
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ destroyed: window gone
+== d3d window, dinput input
+ created: window yes, inited yes, creation step: none
+ -- the input driver passes on what it is offered
+ WM_KEYDOWN return w=0xd
+  keyboard_event down=1 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYUP return w=0xd
+  keyboard_event down=0 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  dinput_handle_message msg=0x0100 wparam=0x10 -> 0
+  keyboard_event down=1 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYUP lshift w=0x10
+  dinput_handle_message msg=0x0101 wparam=0x10 -> 0
+  keyboard_event down=0 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  keyboard_event down=1 code=1205 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  keyboard_event down=1 code=1197 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  keyboard_event down=1 code=1069 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  dinput_handle_message msg=0x0104 wparam=0x12 -> 0
+  keyboard_event down=1 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  dinput_handle_message msg=0x0105 wparam=0x12 -> 0
+  keyboard_event down=0 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  dinput_handle_message msg=0x0104 wparam=0x12 -> 0
+  keyboard_event down=1 code=1184 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  keyboard_event down=1 code=1068 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  dinput_handle_message msg=0x0104 wparam=0xa1 -> 0
+  keyboard_event down=1 code=1054 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  keyboard_event down=1 code=1030 char=0x0 device=3
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  dinput_handle_message msg=0x0200 wparam=0x0 -> 0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  dinput_handle_message msg=0x020a wparam=0x780000 -> 0
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  dinput_handle_message msg=0x020e wparam=0x780000 -> 0
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  dinput_handle_message msg=0x0245 wparam=0x0 -> 0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  dinput_handle_message msg=0x00a3 wparam=0x0 -> 0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  dinput_handle_message msg=0x0219 wparam=0x7 -> 0
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  dinput_handle_message msg=0x0113 wparam=0x5242 -> 0
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  dinput_handle_message msg=0x0003 wparam=0x5242 -> 0
+  window_output_changed
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  dinput_handle_message msg=0x0007 wparam=0x0 -> 0
+  -> 0
+ WM_KILLFOCUS w=0x0
+  dinput_handle_message msg=0x0008 wparam=0x0 -> 0
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  keyboard_event down=1 code=1 char=0x80000000 device=3
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ -- the input driver takes what it is offered
+ WM_KEYDOWN return w=0xd
+  keyboard_event down=1 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYUP return w=0xd
+  keyboard_event down=0 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  dinput_handle_message msg=0x0100 wparam=0x10 -> 1
+  -> 0
+ WM_KEYUP lshift w=0x10
+  dinput_handle_message msg=0x0101 wparam=0x10 -> 1
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  keyboard_event down=1 code=1205 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  keyboard_event down=1 code=1197 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  keyboard_event down=1 code=1069 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  dinput_handle_message msg=0x0104 wparam=0x12 -> 1
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  dinput_handle_message msg=0x0105 wparam=0x12 -> 1
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  dinput_handle_message msg=0x0104 wparam=0x12 -> 1
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  keyboard_event down=1 code=1068 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  dinput_handle_message msg=0x0104 wparam=0xa1 -> 1
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  keyboard_event down=1 code=1030 char=0x0 device=3
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  dinput_handle_message msg=0x0200 wparam=0x0 -> 1
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  dinput_handle_message msg=0x020a wparam=0x780000 -> 1
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  dinput_handle_message msg=0x020e wparam=0x780000 -> 1
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  dinput_handle_message msg=0x0245 wparam=0x0 -> 1
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  dinput_handle_message msg=0x00a3 wparam=0x0 -> 1
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  dinput_handle_message msg=0x0219 wparam=0x7 -> 1
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  dinput_handle_message msg=0x0113 wparam=0x5242 -> 1
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  dinput_handle_message msg=0x0003 wparam=0x5242 -> 1
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  dinput_handle_message msg=0x0007 wparam=0x0 -> 1
+  -> 0
+ WM_KILLFOCUS w=0x0
+  dinput_handle_message msg=0x0008 wparam=0x0 -> 1
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  keyboard_event down=1 code=1 char=0x80000000 device=3
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ destroyed: window gone
+== d3d window, raw input
+ created: window yes, inited yes, creation step: none
+ -- the input driver passes on what it is offered
+ WM_KEYDOWN return w=0xd
+  -> 0
+ WM_KEYUP return w=0xd
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  -> 0
+ WM_KEYUP lshift w=0x10
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  winraw_handle_message msg=0x0219 wparam=0x7 -> 0
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  winraw_handle_message msg=0x0113 wparam=0x5242 -> 0
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  winraw_handle_message msg=0x0003 wparam=0x5242 -> 0
+  window_output_changed
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  winraw_handle_message msg=0x0007 wparam=0x0 -> 0
+  -> 0
+ WM_KILLFOCUS w=0x0
+  winraw_handle_message msg=0x0008 wparam=0x0 -> 0
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ -- the input driver takes what it is offered
+ WM_KEYDOWN return w=0xd
+  -> 0
+ WM_KEYUP return w=0xd
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  -> 0
+ WM_KEYUP lshift w=0x10
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  winraw_handle_message msg=0x0219 wparam=0x7 -> 1
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  winraw_handle_message msg=0x0113 wparam=0x5242 -> 1
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  winraw_handle_message msg=0x0003 wparam=0x5242 -> 1
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  winraw_handle_message msg=0x0007 wparam=0x0 -> 1
+  -> 0
+ WM_KILLFOCUS w=0x0
+  winraw_handle_message msg=0x0008 wparam=0x0 -> 1
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ destroyed: window gone
+== wgl window, sdl2 input
+ created: window yes, inited yes, creation step: GL context
+ -- the input driver passes on what it is offered
+ WM_KEYDOWN return w=0xd
+  keyboard_event down=1 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYUP return w=0xd
+  keyboard_event down=0 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  keyboard_event down=1 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYUP lshift w=0x10
+  keyboard_event down=0 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  keyboard_event down=1 code=1205 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  keyboard_event down=1 code=1197 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  keyboard_event down=1 code=1069 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  keyboard_event down=1 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  keyboard_event down=0 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  keyboard_event down=1 code=1184 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  keyboard_event down=1 code=1068 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  keyboard_event down=1 code=1054 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  keyboard_event down=1 code=1030 char=0x0 device=3
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  window_output_changed
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  -> 0
+ WM_KILLFOCUS w=0x0
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ -- the input driver takes what it is offered
+ WM_KEYDOWN return w=0xd
+  keyboard_event down=1 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYUP return w=0xd
+  keyboard_event down=0 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  keyboard_event down=1 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYUP lshift w=0x10
+  keyboard_event down=0 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  keyboard_event down=1 code=1205 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  keyboard_event down=1 code=1197 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  keyboard_event down=1 code=1069 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  keyboard_event down=1 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  keyboard_event down=0 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  keyboard_event down=1 code=1184 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  keyboard_event down=1 code=1068 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  keyboard_event down=1 code=1054 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  keyboard_event down=1 code=1030 char=0x0 device=3
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  window_output_changed
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  -> 0
+ WM_KILLFOCUS w=0x0
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ destroyed: window gone
+== wgl window, dinput input
+ created: window yes, inited yes, creation step: GL context
+ -- the input driver passes on what it is offered
+ WM_KEYDOWN return w=0xd
+  keyboard_event down=1 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYUP return w=0xd
+  keyboard_event down=0 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  dinput_handle_message msg=0x0100 wparam=0x10 -> 0
+  keyboard_event down=1 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYUP lshift w=0x10
+  dinput_handle_message msg=0x0101 wparam=0x10 -> 0
+  keyboard_event down=0 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  keyboard_event down=1 code=1205 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  keyboard_event down=1 code=1197 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  keyboard_event down=1 code=1069 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  dinput_handle_message msg=0x0104 wparam=0x12 -> 0
+  keyboard_event down=1 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  dinput_handle_message msg=0x0105 wparam=0x12 -> 0
+  keyboard_event down=0 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  dinput_handle_message msg=0x0104 wparam=0x12 -> 0
+  keyboard_event down=1 code=1184 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  keyboard_event down=1 code=1068 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  dinput_handle_message msg=0x0104 wparam=0xa1 -> 0
+  keyboard_event down=1 code=1054 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  keyboard_event down=1 code=1030 char=0x0 device=3
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  dinput_handle_message msg=0x0200 wparam=0x0 -> 0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  dinput_handle_message msg=0x020a wparam=0x780000 -> 0
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  dinput_handle_message msg=0x020e wparam=0x780000 -> 0
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  dinput_handle_message msg=0x0245 wparam=0x0 -> 0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  dinput_handle_message msg=0x00a3 wparam=0x0 -> 0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  dinput_handle_message msg=0x0219 wparam=0x7 -> 0
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  dinput_handle_message msg=0x0113 wparam=0x5242 -> 0
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  dinput_handle_message msg=0x0003 wparam=0x5242 -> 0
+  window_output_changed
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  dinput_handle_message msg=0x0007 wparam=0x0 -> 0
+  -> 0
+ WM_KILLFOCUS w=0x0
+  dinput_handle_message msg=0x0008 wparam=0x0 -> 0
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  keyboard_event down=1 code=1 char=0x80000000 device=3
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ -- the input driver takes what it is offered
+ WM_KEYDOWN return w=0xd
+  keyboard_event down=1 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYUP return w=0xd
+  keyboard_event down=0 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  dinput_handle_message msg=0x0100 wparam=0x10 -> 1
+  -> 0
+ WM_KEYUP lshift w=0x10
+  dinput_handle_message msg=0x0101 wparam=0x10 -> 1
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  keyboard_event down=1 code=1205 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  keyboard_event down=1 code=1197 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  keyboard_event down=1 code=1069 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  dinput_handle_message msg=0x0104 wparam=0x12 -> 1
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  dinput_handle_message msg=0x0105 wparam=0x12 -> 1
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  dinput_handle_message msg=0x0104 wparam=0x12 -> 1
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  keyboard_event down=1 code=1068 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  dinput_handle_message msg=0x0104 wparam=0xa1 -> 1
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  keyboard_event down=1 code=1030 char=0x0 device=3
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  dinput_handle_message msg=0x0200 wparam=0x0 -> 1
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  dinput_handle_message msg=0x020a wparam=0x780000 -> 1
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  dinput_handle_message msg=0x020e wparam=0x780000 -> 1
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  dinput_handle_message msg=0x0245 wparam=0x0 -> 1
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  dinput_handle_message msg=0x00a3 wparam=0x0 -> 1
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  dinput_handle_message msg=0x0219 wparam=0x7 -> 1
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  dinput_handle_message msg=0x0113 wparam=0x5242 -> 1
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  dinput_handle_message msg=0x0003 wparam=0x5242 -> 1
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  dinput_handle_message msg=0x0007 wparam=0x0 -> 1
+  -> 0
+ WM_KILLFOCUS w=0x0
+  dinput_handle_message msg=0x0008 wparam=0x0 -> 1
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  keyboard_event down=1 code=1 char=0x80000000 device=3
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ destroyed: window gone
+== wgl window, raw input
+ created: window yes, inited yes, creation step: GL context
+ -- the input driver passes on what it is offered
+ WM_KEYDOWN return w=0xd
+  -> 0
+ WM_KEYUP return w=0xd
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  -> 0
+ WM_KEYUP lshift w=0x10
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  winraw_handle_message msg=0x0219 wparam=0x7 -> 0
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  winraw_handle_message msg=0x0113 wparam=0x5242 -> 0
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  winraw_handle_message msg=0x0003 wparam=0x5242 -> 0
+  window_output_changed
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  winraw_handle_message msg=0x0007 wparam=0x0 -> 0
+  -> 0
+ WM_KILLFOCUS w=0x0
+  winraw_handle_message msg=0x0008 wparam=0x0 -> 0
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ -- the input driver takes what it is offered
+ WM_KEYDOWN return w=0xd
+  -> 0
+ WM_KEYUP return w=0xd
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  -> 0
+ WM_KEYUP lshift w=0x10
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  winraw_handle_message msg=0x0219 wparam=0x7 -> 1
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  winraw_handle_message msg=0x0113 wparam=0x5242 -> 1
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  winraw_handle_message msg=0x0003 wparam=0x5242 -> 1
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  winraw_handle_message msg=0x0007 wparam=0x0 -> 1
+  -> 0
+ WM_KILLFOCUS w=0x0
+  winraw_handle_message msg=0x0008 wparam=0x0 -> 1
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ destroyed: window gone
+== vulkan window, sdl2 input
+ created: window yes, inited yes, creation step: Vulkan surface
+ -- the input driver passes on what it is offered
+ WM_KEYDOWN return w=0xd
+  keyboard_event down=1 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYUP return w=0xd
+  keyboard_event down=0 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  keyboard_event down=1 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYUP lshift w=0x10
+  keyboard_event down=0 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  keyboard_event down=1 code=1205 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  keyboard_event down=1 code=1197 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  keyboard_event down=1 code=1069 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  keyboard_event down=1 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  keyboard_event down=0 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  keyboard_event down=1 code=1184 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  keyboard_event down=1 code=1068 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  keyboard_event down=1 code=1054 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  keyboard_event down=1 code=1030 char=0x0 device=3
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  window_output_changed
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  -> 0
+ WM_KILLFOCUS w=0x0
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ -- the input driver takes what it is offered
+ WM_KEYDOWN return w=0xd
+  keyboard_event down=1 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYUP return w=0xd
+  keyboard_event down=0 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  keyboard_event down=1 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYUP lshift w=0x10
+  keyboard_event down=0 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  keyboard_event down=1 code=1205 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  keyboard_event down=1 code=1197 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  keyboard_event down=1 code=1069 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  keyboard_event down=1 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  keyboard_event down=0 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  keyboard_event down=1 code=1184 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  keyboard_event down=1 code=1068 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  keyboard_event down=1 code=1054 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  keyboard_event down=1 code=1030 char=0x0 device=3
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  window_output_changed
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  -> 0
+ WM_KILLFOCUS w=0x0
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ destroyed: window gone
+== vulkan window, dinput input
+ created: window yes, inited yes, creation step: Vulkan surface
+ -- the input driver passes on what it is offered
+ WM_KEYDOWN return w=0xd
+  keyboard_event down=1 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYUP return w=0xd
+  keyboard_event down=0 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  dinput_handle_message msg=0x0100 wparam=0x10 -> 0
+  keyboard_event down=1 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYUP lshift w=0x10
+  dinput_handle_message msg=0x0101 wparam=0x10 -> 0
+  keyboard_event down=0 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  keyboard_event down=1 code=1205 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  keyboard_event down=1 code=1197 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  keyboard_event down=1 code=1069 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  dinput_handle_message msg=0x0104 wparam=0x12 -> 0
+  keyboard_event down=1 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  dinput_handle_message msg=0x0105 wparam=0x12 -> 0
+  keyboard_event down=0 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  dinput_handle_message msg=0x0104 wparam=0x12 -> 0
+  keyboard_event down=1 code=1184 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  keyboard_event down=1 code=1068 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  dinput_handle_message msg=0x0104 wparam=0xa1 -> 0
+  keyboard_event down=1 code=1054 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  keyboard_event down=1 code=1030 char=0x0 device=3
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  dinput_handle_message msg=0x0200 wparam=0x0 -> 0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  dinput_handle_message msg=0x020a wparam=0x780000 -> 0
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  dinput_handle_message msg=0x020e wparam=0x780000 -> 0
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  dinput_handle_message msg=0x0245 wparam=0x0 -> 0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  dinput_handle_message msg=0x00a3 wparam=0x0 -> 0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  dinput_handle_message msg=0x0219 wparam=0x7 -> 0
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  dinput_handle_message msg=0x0113 wparam=0x5242 -> 0
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  dinput_handle_message msg=0x0003 wparam=0x5242 -> 0
+  window_output_changed
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  dinput_handle_message msg=0x0007 wparam=0x0 -> 0
+  -> 0
+ WM_KILLFOCUS w=0x0
+  dinput_handle_message msg=0x0008 wparam=0x0 -> 0
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  keyboard_event down=1 code=1 char=0x80000000 device=3
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ -- the input driver takes what it is offered
+ WM_KEYDOWN return w=0xd
+  keyboard_event down=1 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYUP return w=0xd
+  keyboard_event down=0 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  dinput_handle_message msg=0x0100 wparam=0x10 -> 1
+  -> 0
+ WM_KEYUP lshift w=0x10
+  dinput_handle_message msg=0x0101 wparam=0x10 -> 1
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  keyboard_event down=1 code=1205 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  keyboard_event down=1 code=1197 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  keyboard_event down=1 code=1069 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  dinput_handle_message msg=0x0104 wparam=0x12 -> 1
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  dinput_handle_message msg=0x0105 wparam=0x12 -> 1
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  dinput_handle_message msg=0x0104 wparam=0x12 -> 1
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  keyboard_event down=1 code=1068 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  dinput_handle_message msg=0x0104 wparam=0xa1 -> 1
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  keyboard_event down=1 code=1030 char=0x0 device=3
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  dinput_handle_message msg=0x0200 wparam=0x0 -> 1
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  dinput_handle_message msg=0x020a wparam=0x780000 -> 1
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  dinput_handle_message msg=0x020e wparam=0x780000 -> 1
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  dinput_handle_message msg=0x0245 wparam=0x0 -> 1
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  dinput_handle_message msg=0x00a3 wparam=0x0 -> 1
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  dinput_handle_message msg=0x0219 wparam=0x7 -> 1
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  dinput_handle_message msg=0x0113 wparam=0x5242 -> 1
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  dinput_handle_message msg=0x0003 wparam=0x5242 -> 1
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  dinput_handle_message msg=0x0007 wparam=0x0 -> 1
+  -> 0
+ WM_KILLFOCUS w=0x0
+  dinput_handle_message msg=0x0008 wparam=0x0 -> 1
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  keyboard_event down=1 code=1 char=0x80000000 device=3
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ destroyed: window gone
+== vulkan window, raw input
+ created: window yes, inited yes, creation step: Vulkan surface
+ -- the input driver passes on what it is offered
+ WM_KEYDOWN return w=0xd
+  -> 0
+ WM_KEYUP return w=0xd
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  -> 0
+ WM_KEYUP lshift w=0x10
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  winraw_handle_message msg=0x0219 wparam=0x7 -> 0
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  winraw_handle_message msg=0x0113 wparam=0x5242 -> 0
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  winraw_handle_message msg=0x0003 wparam=0x5242 -> 0
+  window_output_changed
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  winraw_handle_message msg=0x0007 wparam=0x0 -> 0
+  -> 0
+ WM_KILLFOCUS w=0x0
+  winraw_handle_message msg=0x0008 wparam=0x0 -> 0
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ -- the input driver takes what it is offered
+ WM_KEYDOWN return w=0xd
+  -> 0
+ WM_KEYUP return w=0xd
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  -> 0
+ WM_KEYUP lshift w=0x10
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  winraw_handle_message msg=0x0219 wparam=0x7 -> 1
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  winraw_handle_message msg=0x0113 wparam=0x5242 -> 1
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  winraw_handle_message msg=0x0003 wparam=0x5242 -> 1
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  winraw_handle_message msg=0x0007 wparam=0x0 -> 1
+  -> 0
+ WM_KILLFOCUS w=0x0
+  winraw_handle_message msg=0x0008 wparam=0x0 -> 1
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ destroyed: window gone
+== gdi window, sdl2 input
+ created: window yes, inited yes, creation step: none
+ -- the input driver passes on what it is offered
+ WM_KEYDOWN return w=0xd
+  keyboard_event down=1 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYUP return w=0xd
+  keyboard_event down=0 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  keyboard_event down=1 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYUP lshift w=0x10
+  keyboard_event down=0 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  keyboard_event down=1 code=1205 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  keyboard_event down=1 code=1197 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  keyboard_event down=1 code=1069 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  keyboard_event down=1 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  keyboard_event down=0 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  keyboard_event down=1 code=1184 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  keyboard_event down=1 code=1068 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  keyboard_event down=1 code=1054 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  keyboard_event down=1 code=1030 char=0x0 device=3
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  window_output_changed
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  -> 0
+ WM_KILLFOCUS w=0x0
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ -- the input driver takes what it is offered
+ WM_KEYDOWN return w=0xd
+  keyboard_event down=1 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYUP return w=0xd
+  keyboard_event down=0 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  keyboard_event down=1 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYUP lshift w=0x10
+  keyboard_event down=0 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  keyboard_event down=1 code=1205 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  keyboard_event down=1 code=1197 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  keyboard_event down=1 code=1069 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  keyboard_event down=1 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  keyboard_event down=0 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  keyboard_event down=1 code=1184 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  keyboard_event down=1 code=1068 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  keyboard_event down=1 code=1054 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  keyboard_event down=1 code=1030 char=0x0 device=3
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  window_output_changed
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  -> 0
+ WM_KILLFOCUS w=0x0
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ destroyed: window gone
+== gdi window, dinput input
+ created: window yes, inited yes, creation step: none
+ -- the input driver passes on what it is offered
+ WM_KEYDOWN return w=0xd
+  keyboard_event down=1 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYUP return w=0xd
+  keyboard_event down=0 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  dinput_handle_message msg=0x0100 wparam=0x10 -> 0
+  keyboard_event down=1 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYUP lshift w=0x10
+  dinput_handle_message msg=0x0101 wparam=0x10 -> 0
+  keyboard_event down=0 code=1042 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  keyboard_event down=1 code=1205 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  keyboard_event down=1 code=1197 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  keyboard_event down=1 code=1069 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  dinput_handle_message msg=0x0104 wparam=0x12 -> 0
+  keyboard_event down=1 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  dinput_handle_message msg=0x0105 wparam=0x12 -> 0
+  keyboard_event down=0 code=1056 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  dinput_handle_message msg=0x0104 wparam=0x12 -> 0
+  keyboard_event down=1 code=1184 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  keyboard_event down=1 code=1068 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  dinput_handle_message msg=0x0104 wparam=0xa1 -> 0
+  keyboard_event down=1 code=1054 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  keyboard_event down=1 code=1030 char=0x0 device=3
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  dinput_handle_message msg=0x0200 wparam=0x0 -> 0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  dinput_handle_message msg=0x020a wparam=0x780000 -> 0
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  dinput_handle_message msg=0x020e wparam=0x780000 -> 0
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  dinput_handle_message msg=0x0245 wparam=0x0 -> 0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  dinput_handle_message msg=0x00a3 wparam=0x0 -> 0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  dinput_handle_message msg=0x0219 wparam=0x7 -> 0
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  dinput_handle_message msg=0x0113 wparam=0x5242 -> 0
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  dinput_handle_message msg=0x0003 wparam=0x5242 -> 0
+  window_output_changed
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  dinput_handle_message msg=0x0007 wparam=0x0 -> 0
+  -> 0
+ WM_KILLFOCUS w=0x0
+  dinput_handle_message msg=0x0008 wparam=0x0 -> 0
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  keyboard_event down=1 code=1 char=0x80000000 device=3
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ -- the input driver takes what it is offered
+ WM_KEYDOWN return w=0xd
+  keyboard_event down=1 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYUP return w=0xd
+  keyboard_event down=0 code=1028 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  dinput_handle_message msg=0x0100 wparam=0x10 -> 1
+  -> 0
+ WM_KEYUP lshift w=0x10
+  dinput_handle_message msg=0x0101 wparam=0x10 -> 1
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  keyboard_event down=1 code=1205 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  keyboard_event down=1 code=1197 char=0x0 device=3
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  keyboard_event down=1 code=1069 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  dinput_handle_message msg=0x0104 wparam=0x12 -> 1
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  dinput_handle_message msg=0x0105 wparam=0x12 -> 1
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  dinput_handle_message msg=0x0104 wparam=0x12 -> 1
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  keyboard_event down=1 code=1068 char=0x0 device=3
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  dinput_handle_message msg=0x0104 wparam=0xa1 -> 1
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  keyboard_event down=1 code=1030 char=0x0 device=3
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  dinput_handle_message msg=0x0200 wparam=0x0 -> 1
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  dinput_handle_message msg=0x020a wparam=0x780000 -> 1
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  dinput_handle_message msg=0x020e wparam=0x780000 -> 1
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  dinput_handle_message msg=0x0245 wparam=0x0 -> 1
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  dinput_handle_message msg=0x00a3 wparam=0x0 -> 1
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  dinput_handle_message msg=0x0219 wparam=0x7 -> 1
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  dinput_handle_message msg=0x0113 wparam=0x5242 -> 1
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  dinput_handle_message msg=0x0003 wparam=0x5242 -> 1
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  dinput_handle_message msg=0x0007 wparam=0x0 -> 1
+  -> 0
+ WM_KILLFOCUS w=0x0
+  dinput_handle_message msg=0x0008 wparam=0x0 -> 1
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  keyboard_event down=1 code=1 char=0x80000000 device=3
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ destroyed: window gone
+== gdi window, raw input
+ created: window yes, inited yes, creation step: none
+ -- the input driver passes on what it is offered
+ WM_KEYDOWN return w=0xd
+  -> 0
+ WM_KEYUP return w=0xd
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  -> 0
+ WM_KEYUP lshift w=0x10
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  winraw_handle_message msg=0x0219 wparam=0x7 -> 0
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  winraw_handle_message msg=0x0113 wparam=0x5242 -> 0
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  winraw_handle_message msg=0x0003 wparam=0x5242 -> 0
+  window_output_changed
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  winraw_handle_message msg=0x0007 wparam=0x0 -> 0
+  -> 0
+ WM_KILLFOCUS w=0x0
+  winraw_handle_message msg=0x0008 wparam=0x0 -> 0
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ -- the input driver takes what it is offered
+ WM_KEYDOWN return w=0xd
+  -> 0
+ WM_KEYUP return w=0xd
+  -> 0
+ WM_KEYDOWN lshift w=0x10
+  -> 0
+ WM_KEYUP lshift w=0x10
+  -> 0
+ WM_KEYDOWN right ext w=0x27
+  -> 0
+ WM_KEYDOWN pause w=0x13
+  -> 0
+ WM_KEYDOWN numlock w=0x90
+  -> 0
+ WM_SYSKEYDOWN alt w=0x12
+  -> 0
+ WM_SYSKEYUP alt w=0x12
+  -> 0
+ WM_SYSKEYDOWN ralt w=0x12
+  -> 0
+ WM_SYSKEYDOWN f10 w=0x79
+  -> 0
+ WM_SYSKEYDOWN rshift w=0xa1
+  -> 0
+ WM_SYSKEYDOWN a w=0x41
+  -> 0
+ WM_CHAR x w=0x78
+  keyboard_event down=1 code=0 char=0x78 device=3
+  -> 1
+ WM_MOUSEMOVE w=0x0
+  -> 0
+ WM_MOUSEWHEEL w=0x780000
+  -> 0
+ WM_MOUSEHWHEEL w=0x780000
+  -> 0
+ WM_POINTERUPDATE w=0x0
+  -> 0
+ WM_NCLBUTTONDBLCLK w=0x0
+  -> 0
+ WM_DEVICECHANGE w=0x7
+  winraw_handle_message msg=0x0219 wparam=0x7 -> 1
+  -> 0
+ WM_TIMER hotplug w=0x5242
+  winraw_handle_message msg=0x0113 wparam=0x5242 -> 1
+  -> 0
+ WM_TIMER other w=0x1
+  -> 0
+ WM_MOVE hotplug id w=0x5242
+  winraw_handle_message msg=0x0003 wparam=0x5242 -> 1
+  -> 0
+ WM_MOVE w=0x0
+  window_output_changed
+  -> 0
+ WM_SIZE w=0x0
+  -> 0
+ WM_SETFOCUS w=0x0
+  winraw_handle_message msg=0x0007 wparam=0x0 -> 1
+  -> 0
+ WM_KILLFOCUS w=0x0
+  winraw_handle_message msg=0x0008 wparam=0x0 -> 1
+  -> 0
+ WM_ENTERSIZEMOVE w=0x0
+  audio_driver_stop
+  -> 0
+ WM_TIMER in sizemove w=0x1
+  -> 0
+ WM_EXITSIZEMOVE w=0x0
+  audio_driver_start
+  -> 0
+ WM_ENTERMENULOOP w=0x0
+  audio_driver_stop
+  -> 0
+ WM_EXITMENULOOP w=0x0
+  audio_driver_start
+  -> 0
+ WM_GETMINMAXINFO w=0x0
+  -> 0
+ WM_COMMAND w=0x3039
+  menu_loop wparam=0x3039
+  -> 0
+ WM_SYSCOMMAND screensave w=0xf140
+  -> 0
+ WM_SYSCOMMAND monitorpower w=0xf170
+  -> 0
+ WM_IME_ENDCOMPOSITION w=0x0
+  -> 0
+ WM_IME_COMPOSITION w=0x0
+  -> 0
+ WM_DISPLAYCHANGE w=0x20
+  window_output_changed
+  -> 0
+ WM_PAINT w=0x0
+  -> 0
+ WM_NULL w=0x0
+  -> 0
+ WM_CLOSE w=0x0
+  window_output_changed
+  -> 0
+ after: quit yes, resized yes
+ destroyed: window gone
+== 20 fullscreen toggles
+ windows made 20, inited 20, gone again 20
+ window objects left behind: no
+== 20 fullscreen toggles on one window
+ same window 20, right style 20, right size 20, resize seen 20
+ a window grown to fit a bigger core: grew yes, driver told its real size yes
+ exclusive fullscreen left to a restart: yes
+ destroyed: window gone

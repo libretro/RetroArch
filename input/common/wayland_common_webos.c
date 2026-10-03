@@ -42,6 +42,8 @@
 
 #ifdef HAVE_USERLAND
 #include <webos-helpers/libhelpers.h>
+
+#include <compat/strl.h>
 #include "formats/rjson.h"
 HContext *g_register_ctx = NULL;
 HContext *g_screensaver_ctx = NULL;
@@ -336,13 +338,12 @@ const struct wl_registry_listener registry_listener_webos = {
    .global_remove = wl_registry_handle_global_remove_webos,
 };
 
-void gfx_ctx_wl_get_video_size_webos(void *data,
-      unsigned *width, unsigned *height)
+void gfx_ctx_wl_get_video_size_webos(void *data, unsigned *dims)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    if (!wl)
       return;
-      
+
    if (!wl->reported_display_size)
    {
       display_output_t *od;
@@ -358,25 +359,24 @@ void gfx_ctx_wl_get_video_size_webos(void *data,
          }
 
       if (oi)
-      {
-         *width  = oi->width;
-         *height = oi->height;
-      }
+         *dims = oi->dims;
       else
-      {
-         *width  = DEFAULT_WINDOW_WIDTH;
-         *height = DEFAULT_WINDOW_HEIGHT;
-      }
+         *dims = VIDEO_SCALE_PACK(DEFAULT_WINDOW_WIDTH,
+               DEFAULT_WINDOW_HEIGHT);
    }
    else
-   {
-      *width  = wl->width  * wl->buffer_scale;
-      *height = wl->height * wl->buffer_scale;
-   }
+      *dims = VIDEO_SCALE_PACK(
+            VIDEO_SCALE_W(wl->dims) * wl->buffer_scale,
+            VIDEO_SCALE_H(wl->dims) * wl->buffer_scale);
 }
 
 void gfx_ctx_wl_destroy_resources_webos(gfx_ctx_wayland_data_t *wl)
 {
+   wl_frame_destroy(&wl->frame);
+
+   if (wl->cursor.theme)
+      wl_cursor_theme_destroy(wl->cursor.theme);
+
 #ifdef HAVE_XKBCOMMON
    free_xkb();
 #endif
@@ -388,11 +388,11 @@ void gfx_ctx_wl_destroy_resources_webos(gfx_ctx_wayland_data_t *wl)
    if (wl->wl_touch)
       wl_touch_destroy(wl->wl_touch);
 
-   if (wl->cursor.theme)
-      wl_cursor_theme_destroy(wl->cursor.theme);
    if (wl->cursor.surface)
       wl_surface_destroy(wl->cursor.surface);
 
+   if (wl->shell_surface)
+      wl_shell_surface_destroy(wl->shell_surface);
    if (wl->webos_shell_surface)
       wl_webos_shell_surface_destroy(wl->webos_shell_surface);
    if (wl->surface)
@@ -461,6 +461,8 @@ void gfx_ctx_wl_destroy_resources_webos(gfx_ctx_wayland_data_t *wl)
    wl->registry                 = NULL;
    wl->compositor               = NULL;
    wl->shm                      = NULL;
+   wl->shell                    = NULL;
+   wl->shell_surface            = NULL;
    wl->webos_shell              = NULL;
    wl->seat                     = NULL;
    wl->surface                  = NULL;
@@ -469,10 +471,8 @@ void gfx_ctx_wl_destroy_resources_webos(gfx_ctx_wayland_data_t *wl)
    wl->wl_pointer               = NULL;
    wl->wl_keyboard              = NULL;
 
-   wl->width         = 0;
-   wl->height        = 0;
-   wl->buffer_width  = 0;
-   wl->buffer_height = 0;
+   wl->dims          = 0;
+   wl->buffer_dims   = 0;
 }
 
 void gfx_ctx_wl_update_title_webos(void *data)
@@ -498,15 +498,21 @@ bool gfx_ctx_wl_init_webos(
    int i;
    gfx_ctx_wayland_data_t *wl;
 
+#ifdef HAVE_USERLAND
+   RegisterApp();
+#endif
+
+   /* webOS hands the screen back to the Home dashboard the moment a
+    * native app destroys its only wl_surface, so a content load takes
+    * back the window the previous context kept. */
+   if ((*wwl = gfx_ctx_wl_take_kept(driver_configure_handler)))
+      return true;
+
    *wwl = calloc(1, sizeof(gfx_ctx_wayland_data_t));
    wl = *wwl;
 
    if (!wl)
       return false;
-
-#ifdef HAVE_USERLAND
-   RegisterApp();
-#endif
 
    wl_list_init(&wl->all_outputs);
    wl_list_init(&wl->current_outputs);
@@ -516,8 +522,8 @@ bool gfx_ctx_wl_init_webos(
 
    wl->input.dpy       = wl_display_connect(NULL);
    wl->buffer_scale    = 1;
-   wl->floating_width  = DEFAULT_WINDOW_WIDTH;
-   wl->floating_height = DEFAULT_WINDOW_HEIGHT;
+   wl->floating_dims   = VIDEO_SCALE_PACK(DEFAULT_WINDOW_WIDTH,
+         DEFAULT_WINDOW_HEIGHT);
 
    if (!wl->input.dpy)
    {
@@ -618,10 +624,7 @@ bool gfx_ctx_wl_init_webos(
    wl->input.mouse.focus    = true;
 
    wl->cursor.surface        = wl_compositor_create_surface(wl->compositor);
-   wl->cursor.theme          = wl_cursor_theme_load(NULL, 16, wl->shm);
-
-   if (wl->cursor.theme)
-      wl->cursor.default_cursor = wl_cursor_theme_get_cursor(wl->cursor.theme, "left_ptr");
+   gfx_ctx_wl_cursor_load(wl);
 
    wl->num_active_touches = 0;
 
@@ -644,10 +647,10 @@ bool gfx_ctx_wl_set_video_mode_common_size_webos(gfx_ctx_wayland_data_t *wl,
    if (!wl)
       return false;
 
-   wl->width         = width  ? width  : DEFAULT_WINDOW_WIDTH;
-   wl->height        = height ? height : DEFAULT_WINDOW_HEIGHT;
-   wl->buffer_width  = wl->width;
-   wl->buffer_height = wl->height;
+   wl->dims          = VIDEO_SCALE_PACK(
+         width  ? width  : DEFAULT_WINDOW_WIDTH,
+         height ? height : DEFAULT_WINDOW_HEIGHT);
+   wl->buffer_dims   = wl->dims;
 
    return true;
 }
@@ -796,19 +799,17 @@ bool gfx_ctx_wl_suppress_screensaver_webos(void *data, bool state)
 }
 
 void gfx_ctx_wl_check_window_webos(gfx_ctx_wayland_data_t *wl,
-      void (*get_video_size)(void*, unsigned*, unsigned*),
-      bool *quit, bool *resize, unsigned *width, unsigned *height)
+      void (*get_video_size)(void*, unsigned*),
+      bool *quit, bool *resize, unsigned *dims)
 {
-   unsigned new_width, new_height;
-
+   unsigned new_dims;
    flush_wayland_fd(&wl->input);
 
-   get_video_size(wl, &new_width, &new_height);
+   get_video_size(wl, &new_dims);
 
-   if (new_width != *width || new_height != *height)
+   if (new_dims != *dims)
    {
-      *width  = new_width;
-      *height = new_height;
+      *dims   = new_dims;
       *resize = true;
    }
 

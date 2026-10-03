@@ -194,7 +194,7 @@ bool database_info_crc_index_size_range(
  * wrong database degrades to the query path instead of answering with
  * another system's records.  Pass NULL to skip the check. */
 database_info_list_t *database_info_list_new_crc(
-      const database_info_crc_index_t *idx, const char *rdb_path,
+      database_info_crc_index_t *idx, const char *rdb_path,
       uint32_t crc, uint32_t archive_crc, unsigned fields);
 
 /* The same treatment for the serial lookup disc content uses.  A
@@ -213,7 +213,7 @@ size_t database_info_serial_index_count(
       const database_info_serial_index_t *idx);
 
 database_info_list_t *database_info_list_new_serial(
-      const database_info_serial_index_t *idx, const char *rdb_path,
+      database_info_serial_index_t *idx, const char *rdb_path,
       const char *serial, unsigned fields);
 
 database_info_list_t *database_info_list_new_filtered(const char *rdb_path,
@@ -225,6 +225,15 @@ database_info_handle_t *database_info_dir_init(const char *dir,
       enum database_type type, char* file_exts,
       bool show_hidden_files, bool recursive, bool include_archive, 
       struct string_list **content_list);
+
+/* As database_info_dir_init(), but over a content list the caller has
+ * already built (e.g. incrementally via dir_list_iter_step() so the
+ * walk could be spread across task gathers).  Applies the same
+ * cue/gdi-prioritising sort the directory variant applies and borrows
+ * @list without taking ownership.  Returns NULL only on allocation
+ * failure. */
+database_info_handle_t *database_info_dir_init_from_list(
+      enum database_type type, struct string_list *list);
 
 database_info_handle_t *database_info_file_init(const char *path,
       enum database_type type, retro_task_t *task, struct string_list **content_list);

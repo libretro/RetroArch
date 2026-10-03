@@ -1,0 +1,206 @@
+#!/bin/sh
+# Syntax-check every C translation unit a Win32 MSYS2 build compiles,
+# with the defines that build actually uses, on a mingw cross compiler.
+#
+# Why this exists: a header edit checked by compiling only the file that
+# was edited will pass while another TU that includes the same header
+# fails. The include order differs per TU, so a typedef visible in one
+# is absent in another (vulkan_win32.h behind an include guard set
+# before VK_USE_PLATFORM_WIN32_KHR was defined, for instance). The only
+# check that catches that is compiling all of them.
+#
+# Usage:
+#   tools/mingw_syntax_check.sh --consumers-of gfx/common/foo.h [...]
+#       compile every .c that directly includes any of the named headers.
+#       THIS is the check to run after editing a header.
+#   tools/mingw_syntax_check.sh file.c [...]
+#       just those files
+#   tools/mingw_syntax_check.sh
+#       every .c under gfx/ audio/ input/ menu/ and the top level
+#
+# Prints one line per failing TU and exits non-zero if any failed.
+
+CC="${CC:-x86_64-w64-mingw32-gcc}"
+command -v "$CC" >/dev/null 2>&1 || { echo "no $CC" >&2; exit 2; }
+
+FLAGS="-fsyntax-only -std=gnu99 -I. -Ilibretro-common/include -Ideps \
+ -Ideps/stb -Igfx/include \
+ -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_CONFIGFILE -DHAVE_MENU \
+ -DHAVE_VULKAN -DHAVE_SLANG -DHAVE_SPIRV_CROSS -DHAVE_D3D11 -DHAVE_D3D12 \
+ -DHAVE_D3DKMT -DHAVE_DINPUT -DHAVE_XINPUT -DHAVE_WASAPI -DHAVE_XAUDIO \
+ -DHAVE_NETWORKING -DHAVE_CHEEVOS -DHAVE_RUNAHEAD -DHAVE_REWIND \
+ -DHAVE_OVERLAY -DHAVE_RGUI -DHAVE_XMB -DHAVE_OZONE -DHAVE_MATERIALUI \
+ -DHAVE_GFX_WIDGETS -DHAVE_SHADERPIPELINE -DHAVE_CG -DHAVE_GLSL \
+ -DHAVE_OPENGL -DHAVE_OPENGL_CORE -DHAVE_DSOUND -DHAVE_AUDIOMIXER \
+ -DHAVE_TRANSLATE -DHAVE_SCREENSHOTS -DHAVE_PATCH -DHAVE_BSV_MOVIE"
+
+if [ "$1" = "--consumers-of" ]; then
+   shift
+   FILES=""
+   for h in "$@"; do
+      base=$(basename "$h")
+      # Linux-only test harnesses under */test/ are not Win32 / C89
+      # consumers (they have their own scripts under tools/).
+      FILES="$FILES $(grep -rl --include='*.c' "#include.*[\"/]$base\"" . \
+         | grep -v '^./deps/' | grep -v '/test/' | sed 's#^\./##')"
+   done
+   FILES=$(echo $FILES | tr ' ' '\n' | sort -u)
+   [ -z "$FILES" ] && { echo "no consumers found for: $*" >&2; exit 2; }
+   echo "checking $(echo "$FILES" | wc -l) consumers of: $*"
+elif [ $# -gt 0 ]; then
+   FILES="$*"
+else
+   FILES=$(find gfx audio input menu -name '*.c' \
+      -not -path '*/deps/*' -not -path '*/include/*' 2>/dev/null; \
+      ls *.c 2>/dev/null)
+fi
+
+# Pass 2: the linux-c89 CI job's flags, verbatim from the Makefile's
+# C89_BUILD block, on the native compiler. -Werror=pedantic and
+# -Werror=declaration-after-statement are what MSVC-era C89 compliance
+# actually means here, and neither is implied by -std=gnu99 above. A
+# file that passes pass 1 and fails this one is exactly what has broken
+# the build before: a statement placed between declarations.
+C89CC="${C89CC:-gcc}"
+C89FLAGS="-fsyntax-only -std=c89 -ansi -pedantic -Werror=pedantic \
+ -Wno-long-long -Werror=declaration-after-statement -Wno-variadic-macros \
+ -D_GNU_SOURCE -I. -Ilibretro-common/include -Ideps -Ideps/stb -Igfx/include \
+ -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_CONFIGFILE -DHAVE_MENU \
+ -DHAVE_NETWORKING -DHAVE_CHEEVOS -DHAVE_RUNAHEAD -DHAVE_REWIND \
+ -DHAVE_AUDIOMIXER -DHAVE_OVERLAY -DHAVE_RGUI -DHAVE_XMB -DHAVE_OZONE \
+ -DHAVE_VULKAN -DHAVE_SCREENSHOTS"
+# A Windows-only translation unit is only ever built with the Win32
+# feature set of pass 1, so pass 2 takes those defines for it too:
+# without them it checks code no build compiles and misses code every
+# Win32 build does (wnd_proc_d3d_common is declared behind HAVE_D3D*).
+# An optional platform header this box lacks turns the compile into a
+# fatal error at the include: the TU is never parsed, and the
+# missing-header filter below then reported it "ok". Every consumer of
+# win32_common.h went unchecked that way (HAVE_D3DKMT pulls in
+# d3dkmthk.h), which is how a broken call reached the MSVC lane. Drop
+# the define when its header is not here, so the file is really checked.
+for probe_def in D3DKMT:d3dkmthk.h; do
+   probe_name=${probe_def%%:*}
+   probe_hdr=${probe_def#*:}
+   if ! echo "#include <$probe_hdr>" | $CC $FLAGS -x c - >/dev/null 2>&1; then
+      FLAGS=$(printf '%s\n' $FLAGS | grep -v "^-DHAVE_$probe_name$" | tr '\n' ' ')
+      echo "note: no $probe_hdr here, checking without HAVE_$probe_name" >&2
+   fi
+done
+
+WIN32DEFS=$(printf '%s\n' $FLAGS | grep '^-D' | tr '\n' ' ')
+
+# A Win32-only translation unit cannot be C89-checked with the host gcc:
+# <windows.h> is not there, the pass dies on the include and the
+# missing-header filter below forgives it - so ui_win32_companion.c was
+# silently never checked, and MSVC 2005 found the C89 violations instead.
+# Use the 32-bit mingw compiler for those when it is installed (the width
+# MSVC 2005 builds, where a shift by 32 is undefined too).
+C89CC_WIN32="${C89CC_WIN32:-i686-w64-mingw32-gcc}"
+command -v "$C89CC_WIN32" >/dev/null 2>&1 || C89CC_WIN32=""
+
+# Pass 0: the declaration a compiler here cannot miss.
+#
+# glibc 2.38 declares strlcpy and strlcat itself, so a .c that uses
+# them without including <compat/strl.h> compiles clean on this box
+# and on both passes below, then fails on MXE, clang and the webOS
+# toolchain, where the only declaration is libretro-common's. That is
+# how it reached master in modeline_edid.c. A grep is the only check
+# that does not depend on what the host's headers happen to provide:
+# a file that uses one of these must include the compat header
+# itself, not lean on whatever a project header dragged in.
+check_compat_include()
+{
+   f="$1"
+   miss=""
+   if grep -qE '\b(strlcpy|strlcat|strlcpy_lit|strlcat_lit)[[:space:]]*\(' "$f" \
+         && ! grep -q 'compat/strl\.h' "$f"; then
+      miss="compat/strl.h"
+   fi
+   if grep -qE '\bstrcasestr[[:space:]]*\(' "$f" \
+         && ! grep -q 'compat/strcasestr\.h' "$f"; then
+      miss="$miss compat/strcasestr.h"
+   fi
+   [ -z "$miss" ] && return 0
+   echo "FAIL [decl]  $f"
+   echo "     uses a libretro-common string helper without including:$miss" \
+      | sed 's/^/     /'
+   return 1
+}
+
+fail=0; n=0; skipped=0
+for f in $FILES; do
+   n=$((n+1))
+   check_compat_include "$f" || fail=1
+   # Only real errors, not warnings. A missing header named without a
+   # path (d3dkmthk.h: an optional platform header this box lacks) is
+   # forgiven; a missing header with a path component (../companion/x.h:
+   # a project header) is not - that once let a stale include of a
+   # deleted header through as "ok".
+   out=$($CC $FLAGS "$f" 2>&1)
+   # A fatal error stops the parse: nothing past the include was looked
+   # at, so this file was NOT checked and must not count as clean.
+   fatal=$(echo "$out" | grep -E ' fatal error: ' | head -1)
+   err=$(echo "$out" | grep -E ' error: ' \
+         | grep -vE 'error: [A-Za-z0-9_.-]+: No such file|error: [A-Za-z0-9_.-]+: file not found' | head -3)
+   if [ -n "$err" ]; then
+      echo "FAIL [win32] $f"; echo "$err" | sed 's/^/     /'; fail=1
+   elif [ -n "$fatal" ]; then
+      # The parse stopped at an include, so nothing in this file was
+      # looked at. That is expected for a driver belonging to another
+      # platform, and it is NOT "ok" - it used to be reported as such,
+      # which is how a broken call in a Win32 file reached MSVC. Count
+      # it and name it, so the summary can never imply it was checked.
+      skipped=$((skipped+1))
+      echo "unchecked   $f"
+      echo "$fatal" | sed 's/^/     /'
+   fi
+   # Windows-only translation units cannot take pass 2 with the host
+   # gcc (<windows.h> is not there, and -ansi breaks those headers
+   # anyway). They still have to satisfy C89 - MSVC 2005 builds them -
+   # so use the 32-bit mingw compiler when it is installed: same width
+   # as that build, so a shift by 32 shows up too. Without it, say so
+   # rather than pass silently, which is how declarations after
+   # statements reached master in ui_win32_companion.c.
+   cc89="$C89CC"
+   c89defs=""
+   # The OpenGL core driver is built only where slang is: configure
+   # turns HAVE_OPENGL_CORE off when slang is off (check_enabled SLANG
+   # OPENGL_CORE in qb/config.libs.sh), so checking it without
+   # HAVE_SLANG checks a configuration no build produces - and it fails,
+   # because the members it names are declared behind that guard. Give
+   # it the pairing the real builds have.
+   case "$f" in
+      *gl3.c|*shader_gl3.c|*slang_process.c|*glslang_util.c)
+         c89defs="-DHAVE_SLANG -DHAVE_SPIRV_CROSS -DHAVE_OPENGL_CORE"
+         ;;
+   esac
+   case "$f" in
+      *win32*|*dinput*|*xinput*|*wasapi*|*xaudio*|*asio*|*dsound*|*d3d*|*dxgi*|*wgl*|*uwp*|*winraw*|*_w.c|*/w_*)
+         if [ -n "$C89CC_WIN32" ]; then
+            cc89="$C89CC_WIN32"
+            c89defs="$WIN32DEFS"
+         else
+            echo "skip [c89]  $f (install gcc-mingw-w64-i686 to check it)"
+            continue
+         fi
+         ;;
+      *)
+         if grep -q '#include <windows\.h>' "$f"; then
+            [ -n "$C89CC_WIN32" ] || { echo "skip [c89]  $f (install gcc-mingw-w64-i686)"; continue; }
+            cc89="$C89CC_WIN32"
+            c89defs="$WIN32DEFS"
+         fi
+         ;;
+   esac
+   err=$($cc89 $C89FLAGS $c89defs -Wno-overlength-strings "$f" 2>&1 | grep -E ' error: ' \
+         | grep -vE 'error: [A-Za-z0-9_.-]+: No such file|error: [A-Za-z0-9_.-]+: file not found' | head -3)
+   if [ -n "$err" ]; then
+      echo "FAIL [c89]   $f"; echo "$err" | sed 's/^/     /'; fail=1
+   fi
+done
+if [ $fail = 0 ]; then
+   echo "ok: $((n - skipped))/$n translation units clean (compat decls + win32 gnu99 + linux c89 pedantic)"
+   [ $skipped -gt 0 ] && echo "    $skipped not checked here (the parse stopped at a header this box lacks)"
+fi
+exit $fail

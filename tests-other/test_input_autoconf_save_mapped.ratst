@@ -1,0 +1,25 @@
+[
+{
+  "comment": "Two devices with no profile, port 1 assigned to the second device. Save Controller Profile for port 1 must write port 1's binds under the second device's identity.",
+  "action": 1,
+  "param_num": 0,
+  "param_str": "(dead:0001) Save first pad",
+  "frame": 0
+},
+{
+  "action": 1,
+  "param_num": 1,
+  "param_str": "(dead:0002) Save second pad",
+  "frame": 30
+},
+{
+  "action": 3,
+  "param_num": 0,
+  "frame": 120
+},
+{
+  "action": 4,
+  "param_num": 0,
+  "frame": 120
+}
+]

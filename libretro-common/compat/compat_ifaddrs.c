@@ -22,6 +22,10 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <sys/socket.h>
+#include <net/if.h>
+#include <linux/if.h>
+
 #include <compat/strl.h>
 #include <compat/ifaddrs.h>
 
@@ -30,12 +34,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stddef.h>
 #include <errno.h>
 #include <unistd.h>
-#include <sys/socket.h>
+#include <sys/ioctl.h>
 #include <netpacket/packet.h>
 #include <net/if_arp.h>
 #include <netinet/in.h>
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
+
+#ifndef SIOCGIFFLAGS
+#include <linux/sockios.h>
+#endif
 
 typedef struct NetlinkList
 {
@@ -55,13 +63,31 @@ static int netlink_socket(void)
    memset(&l_addr, 0, sizeof(l_addr));
    l_addr.nl_family = AF_NETLINK;
 
-   if (bind(l_socket, (struct sockaddr *)&l_addr, sizeof(l_addr)) < 0)
-   {
-      close(l_socket);
-      return -1;
-   }
+   /* Binding is a privileged operation under the SELinux policy Android
+    * applies to applications, and it is not one this socket needs: the
+    * kernel assigns a port ID of its own when the first request goes
+    * out, and netlink_portid() reads back whichever one it picked. Ask
+    * for the binding where it is permitted and carry on where it is
+    * not. */
+   (void)bind(l_socket, (struct sockaddr *)&l_addr, sizeof(l_addr));
 
    return l_socket;
+}
+
+static pid_t netlink_portid(int p_socket)
+{
+   struct sockaddr_nl l_addr;
+   socklen_t l_len = sizeof(l_addr);
+
+   memset(&l_addr, 0, sizeof(l_addr));
+
+   /* The kernel stamps its replies with the port ID it assigned to
+    * this socket, which is only the process ID when nothing else in
+    * the process claimed that number first. */
+   if (getsockname(p_socket, (struct sockaddr*)&l_addr, &l_len) < 0)
+      return (pid_t)getpid();
+
+   return (pid_t)l_addr.nl_pid;
 }
 
 static int netlink_send(int p_socket, int p_request)
@@ -147,7 +173,7 @@ static struct nlmsghdr *ifaddrs_get_netlink_response(int p_socket,
 
       if (l_read >= 0)
       {
-         pid_t l_pid = getpid();
+         pid_t l_pid = netlink_portid(p_socket);
          struct nlmsghdr *l_hdr;
 
          for (l_hdr = (struct nlmsghdr *)l_buffer;
@@ -452,6 +478,10 @@ static int ifaddrs_interpret_addr(struct nlmsghdr *p_hdr,
       }
    }
 
+   /* An unlabelled address takes its name from the interface index. */
+   if (!l_interface)
+      l_nameSize += NLMSG_ALIGN(IF_NAMESIZE + 1);
+
    l_entry = (struct ifaddrs*)malloc(sizeof(struct ifaddrs) + l_nameSize + l_addrSize);
    if (!l_entry)
       return -1;
@@ -517,6 +547,12 @@ static int ifaddrs_interpret_addr(struct nlmsghdr *p_hdr,
       }
    }
 
+   if (!l_interface && !*l_entry->ifa_name)
+   {
+      if (if_indextoname(l_info->ifa_index, l_name))
+         l_entry->ifa_name = l_name;
+   }
+
    if (          l_entry->ifa_addr
           && (   l_entry->ifa_addr->sa_family == AF_INET
           ||     l_entry->ifa_addr->sa_family == AF_INET6))
@@ -548,7 +584,7 @@ static int ifaddrs_interpret_links(int p_socket,
       NetlinkList *p_netlinkList, struct ifaddrs **p_resultList)
 {
    int l_numLinks = 0;
-   pid_t l_pid    = getpid();
+   pid_t l_pid    = netlink_portid(p_socket);
 
    for (; p_netlinkList; p_netlinkList = p_netlinkList->m_next)
    {
@@ -580,7 +616,7 @@ static int ifaddrs_interpret_addrs(int p_socket,
       NetlinkList *p_netlinkList,
       struct ifaddrs **p_resultList, int p_numLinks)
 {
-   pid_t l_pid = getpid();
+   pid_t l_pid = netlink_portid(p_socket);
    for (; p_netlinkList; p_netlinkList = p_netlinkList->m_next)
    {
       struct nlmsghdr *l_hdr = NULL;
@@ -606,13 +642,42 @@ static int ifaddrs_interpret_addrs(int p_socket,
    return 0;
 }
 
+/* Interface flags normally arrive with the link messages; recover
+ * them one interface at a time when those are not available. */
+static void ifaddrs_interpret_flags(struct ifaddrs *p_list)
+{
+   struct ifaddrs *l_cur;
+   int l_socket = socket(AF_INET, SOCK_DGRAM, 0);
+
+   if (l_socket < 0)
+      return;
+
+   for (l_cur = p_list; l_cur; l_cur = l_cur->ifa_next)
+   {
+      struct ifreq l_req;
+
+      if (!l_cur->ifa_name || !*l_cur->ifa_name)
+         continue;
+
+      memset(&l_req, 0, sizeof(l_req));
+      strlcpy(l_req.ifr_name, l_cur->ifa_name, sizeof(l_req.ifr_name));
+
+      if (ioctl(l_socket, SIOCGIFFLAGS, &l_req) >= 0)
+         l_cur->ifa_flags = (unsigned int)(unsigned short)l_req.ifr_flags;
+   }
+
+   close(l_socket);
+}
+
 int getifaddrs(struct ifaddrs **ifap)
 {
-   int l_numLinks;
-   NetlinkList *l_linkResults;
    NetlinkList *l_addrResults;
-   int l_socket   = 0;
-   int l_result   = 0;
+   NetlinkList *l_linkResults;
+   int l_socket    = 0;
+   int l_numLinks  = 0;
+   int l_result    = 0;
+   int l_haveLinks = 0;
+
    if (!ifap)
       return -1;
 
@@ -622,22 +687,23 @@ int getifaddrs(struct ifaddrs **ifap)
    if (l_socket < 0)
       return -1;
 
+   /* Link messages are a privileged request under the SELinux policy
+    * Android applies to applications. Carry on without them; the
+    * addresses alone still describe every interface, and the name and
+    * flags each one is missing can be recovered afterwards. */
    l_linkResults = ifaddrs_get_resultlist(l_socket, RTM_GETLINK);
-   if (!l_linkResults)
-   {
-      close(l_socket);
-      return -1;
-   }
+   l_haveLinks   = (l_linkResults != NULL);
 
    l_addrResults = ifaddrs_get_resultlist(l_socket, RTM_GETADDR);
    if (!l_addrResults)
    {
-      close(l_socket);
       ifaddr_free_result_list(l_linkResults);
+      close(l_socket);
       return -1;
    }
 
-   l_numLinks = ifaddrs_interpret_links(l_socket, l_linkResults, ifap);
+   if (l_haveLinks)
+      l_numLinks = ifaddrs_interpret_links(l_socket, l_linkResults, ifap);
 
    if (     l_numLinks == -1
          || ifaddrs_interpret_addrs(l_socket, l_addrResults, ifap, l_numLinks) == -1)
@@ -646,6 +712,10 @@ int getifaddrs(struct ifaddrs **ifap)
    ifaddr_free_result_list(l_linkResults);
    ifaddr_free_result_list(l_addrResults);
    close(l_socket);
+
+   if (!l_result && !l_haveLinks)
+      ifaddrs_interpret_flags(*ifap);
+
    return l_result;
 }
 

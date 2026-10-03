@@ -14,9 +14,11 @@
  */
 
 #include <TargetConditionals.h>
+#include "../../apple_runtime.h"
 #include <Foundation/Foundation.h>
 #include <AVFoundation/AVFoundation.h>
 #include <libretro.h>
+#include <defines/cocoa_defines.h>
 /* For image scaling and color space DSP */
 #import <Accelerate/Accelerate.h>
 #if TARGET_OS_IOS
@@ -88,7 +90,7 @@
 
     /* AVCaptureDevice authorization gating exists on macOS 10.14+ (and iOS 7+).
      * Earlier macOS had no camera TCC prompt, so access is implicitly granted. */
-    if (@available(macOS 10.14, *)) {
+    if (apple_runtime_available(APPLE_RUNTIME_VER(10, 14, 0), 0, 0)) {
         AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
 
         switch (status) {
@@ -449,7 +451,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     // compile time as well as at runtime. Listed first to prefer an attached
     // external camera when one is present.
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 170000
-    if (@available(iOS 17.0, *))
+    if (apple_runtime_available(0, APPLE_RUNTIME_VER(17, 0, 0), 0))
         [deviceTypes addObject:AVCaptureDeviceTypeExternal];
 #endif
 
@@ -459,7 +461,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
     // Ultra-wide was added in iOS 13; the deployment target may be lower, so
     // it needs a runtime availability guard.
-    if (@available(iOS 13.0, *))
+    if (apple_runtime_available(0, APPLE_RUNTIME_VER(13, 0, 0), 0))
         [deviceTypes addObject:AVCaptureDeviceTypeBuiltInUltraWideCamera];
 
     //  AVCaptureDeviceTypeBuiltInDualCamera,
@@ -528,8 +530,15 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 }
 
 - (bool)setupCameraSession {
-    // Initialize capture session
-    self.session = [[AVCaptureSession alloc] init];
+    /* The property retains what it is handed, so the reference the
+     * allocation carries is released once it is stored - otherwise the
+     * session set up by a previous init is orphaned rather than torn
+     * down when this one replaces it. */
+    {
+        AVCaptureSession *sess = [[AVCaptureSession alloc] init];
+        self.session           = sess;
+        RARCH_RELEASE(sess);
+    }
 
     // Get camera device
     AVCaptureDevice *device = [self selectCameraDevice];
@@ -552,8 +561,12 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         RARCH_LOG("[Camera] Added camera input to session.\n");
     }
 
-    // Create and configure video output
-    self.output = [[AVCaptureVideoDataOutput alloc] init];
+    /* Create and configure video output; owned as the session above. */
+    {
+        AVCaptureVideoDataOutput *out = [[AVCaptureVideoDataOutput alloc] init];
+        self.output                   = out;
+        RARCH_RELEASE(out);
+    }
     self.output.videoSettings = @{
         (NSString*)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_32BGRA)
     };
@@ -598,8 +611,10 @@ static void generateColorBars(uint32_t *buffer, size_t width, size_t height) {
 }
 
 static void *avfoundation_init(const char *device, uint64_t caps,
-                             unsigned width, unsigned height)
+                             unsigned dims)
 {
+    unsigned width      = VIDEO_SCALE_W(dims);
+    unsigned height     = VIDEO_SCALE_H(dims);
     avfoundation_t *avf = (avfoundation_t*)calloc(1, sizeof(avfoundation_t));
     RARCH_LOG("[Camera] Initializing AVFoundation camera %ux%u.\n", width, height);
     if (!avf)
@@ -618,7 +633,7 @@ static void *avfoundation_init(const char *device, uint64_t caps,
     dispatch_semaphore_t sema = dispatch_semaphore_create(0);
     __block BOOL granted = NO;
     RARCH_LOG("[Camera] Requesting camera authorization synchronously.\n");
-    if (@available(macOS 10.14, *)) {
+    if (apple_runtime_available(APPLE_RUNTIME_VER(10, 14, 0), 0, 0)) {
         [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL g) {
             granted = g;
             dispatch_semaphore_signal(sema);

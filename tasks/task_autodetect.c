@@ -24,6 +24,8 @@
 #include <file/file_path.h>
 #include <retro_dirent.h>
 #include <string/stdstring.h>
+#include <lrc_hash.h>
+#include <retro_atomic.h>
 #include <file/config_file.h>
 #include <streams/file_stream.h>
 
@@ -70,6 +72,13 @@ typedef struct
    unsigned       scan_max_affinity;
    unsigned       scan_dir_idx;
    unsigned       port;
+   /* Place of this connect or disconnect in its port's sequence (see
+    * autoconfig_port_seq), and a hash of the name the driver
+    * reported.  Both are fixed before the task is queued, so a finder
+    * can read them while the handler is running: the handler
+    * rewrites device_info.name during the fallback-name scan. */
+   unsigned       seq;
+   uint32_t       name_hash;
    input_device_info_t device_info; /* unsigned alignment */
    uint8_t flags;
    uint8_t scan_done;
@@ -84,6 +93,38 @@ typedef struct
     * every connect of an unrecognised device would be waste. */
    uint8_t index_fresh_no_candidate;
 } autoconfig_handle_t;
+
+/* Every connect and disconnect queued for a port takes the next
+ * number in that port's sequence.  A connect scan takes as many
+ * passes as the profile directory needs, so a disconnect or a second
+ * connect queued behind it on the same port can finish first; only
+ * the operation holding the port's newest number writes the port's
+ * state when it completes, and anything older stands down.  Bumped
+ * from whichever thread the driver reports a hotplug on, read on the
+ * main thread by the callbacks. */
+static retro_atomic_int_t autoconfig_port_seq[MAX_INPUT_DEVICES];
+
+/* What is still pending on one port, as seen by
+ * autoconfigure_port_finder: the newest queued connect or disconnect
+ * and, for a connect, the device it names. */
+typedef struct
+{
+   unsigned port;
+   unsigned seq;
+   unsigned vid;
+   unsigned pid;
+   uint32_t name_hash;
+   uint8_t  found;
+   uint8_t  is_connect;
+} autoconfig_port_pending_t;
+
+/* Whether @handle's operation is still the newest on its port */
+static bool autoconfig_handle_is_current(
+      const autoconfig_handle_t *autoconfig_handle)
+{
+   return autoconfig_handle->seq == (unsigned)retro_atomic_load_acquire_int(
+         &autoconfig_port_seq[autoconfig_handle->port]);
+}
 
 /*********************/
 /* Utility functions */
@@ -244,21 +285,21 @@ static unsigned input_autoconfigure_get_config_file_affinity(
                   "_alt%d",i);
 
       /* Parse config file */
-      _len  = strlcpy(config_key, "input_vendor_id",
+      _len  = strlcpy_lit(config_key, "input_vendor_id",
                sizeof(config_key));
       strlcpy(config_key  + _len, config_key_postfix,
             sizeof(config_key) - _len);
       if (config_get_int(config, config_key, &tmp_int))
          config_vid = (uint16_t)tmp_int;
 
-      _len  = strlcpy(config_key, "input_product_id",
+      _len  = strlcpy_lit(config_key, "input_product_id",
                sizeof(config_key));
       strlcpy(config_key  + _len, config_key_postfix,
                sizeof(config_key) - _len);
       if (config_get_int(config, config_key, &tmp_int))
          config_pid = (uint16_t)tmp_int;
 
-      _len  = strlcpy(config_key, "input_device",
+      _len  = strlcpy_lit(config_key, "input_device",
                sizeof(config_key));
       strlcpy(config_key  + _len, config_key_postfix,
             sizeof(config_key) - _len);
@@ -266,7 +307,7 @@ static unsigned input_autoconfigure_get_config_file_affinity(
             && (entry->value))
          config_device = entry->value;
 
-      _len  = strlcpy(config_key, "input_phys",
+      _len  = strlcpy_lit(config_key, "input_phys",
                sizeof(config_key));
       _len += strlcpy(config_key + _len, config_key_postfix,
                sizeof(config_key) - _len);
@@ -309,7 +350,7 @@ static void input_autoconfigure_set_config_file(
    }
 
    /* Parse config file */
-   _len  = strlcpy(config_key, "input_device_display_name",
+   _len  = strlcpy_lit(config_key, "input_device_display_name",
             sizeof(config_key));
    /* Read device display name */
    if (alternative > 0)
@@ -359,40 +400,94 @@ static void input_autoconfigure_set_config_file(
  * so the scan's extension filter never sees it).  If the directory is
  * not writable the write fails silently and every connect simply
  * performs the full scan, exactly as before this mechanism existed.
- * Freshness is keyed on the directory's *.cfg count (the VFS layer
- * exposes no mtime): additions and removals are caught by the count,
- * a renamed or deleted winner by the failed open, an edited winner by
- * the re-score, and a profile hand-edited to match a previously
- * unmatched device by the no-candidate fallback.  The one blind spot
- * is an in-place edit that would promote a profile that was neither
- * the winner nor previously acceptable; deleting the index file (or
- * any add/remove in the directory) clears it. */
+ * Freshness is keyed on a fingerprint of the directory's *.cfg
+ * entries - their count, their total size and their newest
+ * modification time - taken from the directory walk itself, so it
+ * still costs no per-file opens.  Additions, removals and in-place
+ * edits all change it, which is what the count alone could not do:
+ * the count is blind to an edit, and re-scoring only the winner
+ * cannot see one either, because an entry that a stale index
+ * *understates* never becomes the winner to be re-scored.  That was
+ * a real mis-selection, not a wasted open - a device whose true
+ * profile had been edited to match would be configured from a rival
+ * whose own claim was honest and therefore verified (see
+ * https://github.com/libretro/RetroArch/issues/19540).
+ *
+ * A renamed or deleted winner is still caught by the failed open and
+ * an edited winner by the re-score; both stay as cheap second lines
+ * of defence.  Where the entry metadata is unavailable - a VFS
+ * without dirent stat, or a frontend older than VFS API v5 - no
+ * index is written and none is trusted, so those platforms simply
+ * scan in full as they did before this mechanism existed. */
 
 #define AUTOCONFIG_INDEX_NAME    ".autoconfig_index"
-#define AUTOCONFIG_INDEX_VERSION 1
+/* v1 indices are keyed on the *.cfg count alone and cannot be trusted
+ * (see above); bumping the version discards them on sight. */
+#define AUTOCONFIG_INDEX_VERSION 2
 
-/* Count the *.cfg entries in a directory: two getdents syscalls,
- * no per-file opens.  Must apply the same filter as the scan walk
- * so the count is comparable. */
-static int input_autoconfigure_index_dir_count(const char *dir)
+/* Fingerprint the *.cfg entries in a directory: the same two getdents
+ * syscalls the count took, plus one fstatat per entry (free on
+ * Windows, where the find data already carries both fields).  No
+ * per-file opens.  Must apply the same filter as the scan walk so the
+ * result is comparable.
+ *
+ * Returns the entry count, or -1 if the directory cannot be walked or
+ * any entry's metadata is unavailable - the caller treats -1 as "no
+ * usable fingerprint" and neither writes nor trusts an index. */
+static int input_autoconfigure_index_dir_fingerprint(const char *dir,
+      int64_t *total_size, int64_t *newest_mtime, int64_t *index_mtime)
 {
    struct RDIR *rdir;
-   int count = 0;
+   int     count  = 0;
+   int64_t sum    = 0;
+   int64_t newest = 0;
+   int64_t self   = 0;
 
    if (!(rdir = retro_opendir(dir)))
       return -1;
 
    while (retro_readdir(rdir))
    {
+      int64_t size           = 0;
+      int64_t mtime          = 0;
       const char *entry_name = retro_dirent_get_name(rdir);
-      if (     entry_name
-            && *entry_name
-            && string_is_equal_noncase(
-                  path_get_extension(entry_name), "cfg"))
-         count++;
+
+      if (!entry_name || !*entry_name)
+         continue;
+
+      /* The index lives in the directory it describes, so its own
+       * mtime comes out of this same walk at no extra cost. */
+      if (string_is_equal(entry_name, AUTOCONFIG_INDEX_NAME))
+      {
+         if (retro_dirent_stat(rdir, NULL, &mtime))
+            self = mtime;
+         continue;
+      }
+
+      if (!string_is_equal_noncase(
+               path_get_extension(entry_name), "cfg"))
+         continue;
+
+      if (!retro_dirent_stat(rdir, &size, &mtime))
+      {
+         retro_closedir(rdir);
+         return -1;
+      }
+
+      count++;
+      sum += size;
+      if (mtime > newest)
+         newest = mtime;
    }
 
    retro_closedir(rdir);
+
+   if (total_size)
+      *total_size = sum;
+   if (newest_mtime)
+      *newest_mtime = newest;
+   if (index_mtime)
+      *index_mtime = self;
    return count;
 }
 
@@ -452,21 +547,21 @@ static void input_autoconfigure_index_collect(
          snprintf(config_key_postfix, sizeof(config_key_postfix),
                   "_alt%d", i);
 
-      _len  = strlcpy(config_key, "input_vendor_id",
+      _len  = strlcpy_lit(config_key, "input_vendor_id",
                sizeof(config_key));
       strlcpy(config_key + _len, config_key_postfix,
             sizeof(config_key) - _len);
       if (config_get_int(config, config_key, &tmp_int))
          config_vid = (uint16_t)tmp_int;
 
-      _len  = strlcpy(config_key, "input_product_id",
+      _len  = strlcpy_lit(config_key, "input_product_id",
                sizeof(config_key));
       strlcpy(config_key + _len, config_key_postfix,
             sizeof(config_key) - _len);
       if (config_get_int(config, config_key, &tmp_int))
          config_pid = (uint16_t)tmp_int;
 
-      _len  = strlcpy(config_key, "input_device",
+      _len  = strlcpy_lit(config_key, "input_device",
                sizeof(config_key));
       strlcpy(config_key + _len, config_key_postfix,
             sizeof(config_key) - _len);
@@ -474,7 +569,7 @@ static void input_autoconfigure_index_collect(
             && (entry->value))
          config_device = entry->value;
 
-      _len  = strlcpy(config_key, "input_phys",
+      _len  = strlcpy_lit(config_key, "input_phys",
                sizeof(config_key));
       strlcpy(config_key + _len, config_key_postfix,
             sizeof(config_key) - _len);
@@ -531,9 +626,29 @@ static void input_autoconfigure_index_write(
    char index_path[PATH_MAX_LENGTH];
    char index_val[32];
    config_file_t *index_build = autoconfig_handle->index_build;
+   int64_t total_size         = 0;
+   int64_t newest_mtime       = 0;
+   int     dir_count;
 
    if (!index_build)
       return;
+
+   /* Fingerprint the directory as it stands now, after the walk that
+    * produced these tuples.  Taking it here rather than per file
+    * during the walk keeps the two sides symmetric: the reader
+    * recomputes it the same way, from the same filter, in one pass.
+    * A directory whose metadata cannot be read gets no index at all -
+    * an index that cannot be checked for staleness is worse than
+    * none, because the check is the only thing standing between a
+    * stale entry and a mis-selected profile. */
+   if ((dir_count = input_autoconfigure_index_dir_fingerprint(
+         dir, &total_size, &newest_mtime, NULL)) < 0)
+   {
+      config_file_free(index_build);
+      autoconfig_handle->index_build       = NULL;
+      autoconfig_handle->index_build_count = 0;
+      return;
+   }
 
    snprintf(index_val, sizeof(index_val), "%d",
          AUTOCONFIG_INDEX_VERSION);
@@ -541,11 +656,24 @@ static void input_autoconfigure_index_write(
    snprintf(index_val, sizeof(index_val), "%u",
          autoconfig_handle->index_build_count);
    config_set_string(index_build, "__file_count", index_val);
+   snprintf(index_val, sizeof(index_val), "%d", dir_count);
+   config_set_string(index_build, "__dir_count", index_val);
+   snprintf(index_val, sizeof(index_val), "%lld",
+         (long long)total_size);
+   config_set_string(index_build, "__total_size", index_val);
+   snprintf(index_val, sizeof(index_val), "%lld",
+         (long long)newest_mtime);
+   config_set_string(index_build, "__newest_mtime", index_val);
 
    fill_pathname_join_special(index_path, dir,
          AUTOCONFIG_INDEX_NAME, sizeof(index_path));
    index_build->flags |= CONF_FILE_FLG_MODIFIED;
-   config_file_write(index_build, index_path, false);
+   /* Not fatal - a missing index just means the next connect does
+    * the full directory scan - but silently rebuilding it on every
+    * boot is worth a line in the log. */
+   if (!config_file_write(index_build, index_path, false))
+      RARCH_WARN("[Autoconf] Failed to write controller profile index to \"%s\".\n",
+            index_path);
 
    config_file_free(index_build);
    autoconfig_handle->index_build       = NULL;
@@ -563,7 +691,11 @@ static config_file_t *input_autoconfigure_index_try(
    char index_path[PATH_MAX_LENGTH];
    config_file_t *index_conf = NULL;
    config_file_t *winner     = NULL;
+   struct config_entry_list *fp_entry;
+   int64_t total_size        = 0;
+   int64_t newest_mtime      = 0;
    int file_count            = 0;
+   int dir_count             = 0;
    int version               = 0;
    int best_file             = -1;
    unsigned best_affinity    = 0;
@@ -574,16 +706,72 @@ static config_file_t *input_autoconfigure_index_try(
    if (!(index_conf = config_file_new(index_path)))
       return NULL;
 
-   /* Header and freshness */
+   /* Header */
    if (     !config_get_int(index_conf, "__version", &version)
          || (version != AUTOCONFIG_INDEX_VERSION)
          || !config_get_int(index_conf, "__file_count", &file_count)
          || (file_count <= 0)
-         || (file_count !=
-               input_autoconfigure_index_dir_count(dir)))
+         || !config_get_int(index_conf, "__dir_count", &dir_count))
    {
       config_file_free(index_conf);
       return NULL;
+   }
+
+   /* Freshness: the directory must fingerprint exactly as it did when
+    * the index was written.  The count catches additions and removals,
+    * the total size and the newest modification time catch in-place
+    * edits - including an edit to a profile the index ranks low, which
+    * nothing downstream can catch, because only the winner is ever
+    * re-scored against its real contents. */
+   {
+      int64_t cur_total  = 0;
+      int64_t cur_newest = 0;
+      int64_t self_mtime = 0;
+      int     cur_count  = input_autoconfigure_index_dir_fingerprint(
+            dir, &cur_total, &cur_newest, &self_mtime);
+
+      if (     (cur_count < 0)
+            || (cur_count != dir_count)
+            || (file_count != dir_count))
+      {
+         config_file_free(index_conf);
+         return NULL;
+      }
+
+      /* Modification times are whole seconds, so a size-preserving
+       * edit made in the same second the index was written would
+       * fingerprint identically.  The index is written after the
+       * profiles it describes were read, so in a fresh directory
+       * every profile is strictly older than it; requiring that
+       * closes the sub-second window at the cost of one rescan for a
+       * directory whose profiles happen to share the index's second,
+       * which the rescan itself then resolves by rewriting the index
+       * with a later timestamp. */
+      if ((self_mtime <= 0) || (cur_newest >= self_mtime))
+      {
+         config_file_free(index_conf);
+         return NULL;
+      }
+
+      if (     !(fp_entry = config_get_entry(index_conf,
+                  "__total_size"))
+            || !fp_entry->value
+            || ((total_size = (int64_t)strtoll(fp_entry->value,
+                     NULL, 10)) != cur_total))
+      {
+         config_file_free(index_conf);
+         return NULL;
+      }
+
+      if (     !(fp_entry = config_get_entry(index_conf,
+                  "__newest_mtime"))
+            || !fp_entry->value
+            || ((newest_mtime = (int64_t)strtoll(fp_entry->value,
+                     NULL, 10)) != cur_newest))
+      {
+         config_file_free(index_conf);
+         return NULL;
+      }
    }
 
    /* Rank every recorded tuple with the real affinity function */
@@ -595,6 +783,7 @@ static config_file_t *input_autoconfigure_index_try(
       {
          struct config_entry_list *entry;
          const char *p;
+         const char *tab;
          char *endp;
          char config_device[NAME_MAX_LENGTH];
          unsigned config_vid, config_pid, a;
@@ -616,14 +805,14 @@ static config_file_t *input_autoconfigure_index_try(
          if (*endp != '\t')
             continue;
          p          = endp + 1;
-         if (!(endp = strchr(p, '\t')))
+         if (!(tab = strchr(p, '\t')))
             continue;
-         device_len = (size_t)(endp - p);
+         device_len = (size_t)(tab - p);
          if (device_len >= sizeof(config_device))
             device_len = sizeof(config_device) - 1;
          memcpy(config_device, p, device_len);
          config_device[device_len] = '\0';
-         config_phys = endp + 1;
+         config_phys = tab + 1;
 
          a = input_autoconfigure_tuple_affinity(autoconfig_handle,
                (uint16_t)config_vid, (uint16_t)config_pid,
@@ -1200,6 +1389,11 @@ static void cb_input_autoconfigure_connect(
    if (!(autoconfig_handle = (autoconfig_handle_t*)task->state))
       return;
 
+   /* A newer connect or disconnect was queued for this port while
+    * this one ran; that one owns the port's state */
+   if (!autoconfig_handle_is_current(autoconfig_handle))
+      return;
+
    /* Use local copy of port index for brevity... */
    port = autoconfig_handle->port;
 
@@ -1232,6 +1426,12 @@ static void cb_input_autoconfigure_connect(
             autoconfig_handle->device_info.joypad_driver);
    else
       input_config_clear_device_joypad_driver(port);
+
+   /* > Physical location
+    * Retained so that a later reconnect can offer it to the profile
+    * scan again; drivers that report none clear it. */
+   input_config_set_device_phys(port,
+         autoconfig_handle->device_info.phys);
 
    /* > VID/PID */
    input_config_set_device_vid(port, autoconfig_handle->device_info.vid);
@@ -1279,6 +1479,16 @@ static void cb_input_autoconfigure_connect(
          autoconfig_handle->device_info.pid,
          autoconfig_handle->device_info.name,
          autoconfig_handle->device_info.display_name);
+
+   /* The registry learns of the controller here, where the connect
+    * is applied, so it changes with the device table and on the main
+    * thread. */
+   input_driver_registry_connect(port,
+         autoconfig_handle->device_info.joypad_driver,
+         autoconfig_handle->device_info.name,
+         autoconfig_handle->device_info.phys,
+         autoconfig_handle->device_info.vid,
+         autoconfig_handle->device_info.pid);
 }
 
 static void input_autoconfigure_connect_handler(retro_task_t *task)
@@ -1441,24 +1651,63 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
-static bool autoconfigure_connect_finder(retro_task_t *task, void *user_data)
+static void input_autoconfigure_disconnect_handler(retro_task_t *task);
+
+/* Records the newest connect or disconnect still queued for a port.
+ * Never reports a match, so task_queue_find() walks every task; the
+ * fields it reads are all fixed before the task is queued. */
+static bool autoconfigure_port_finder(retro_task_t *task, void *user_data)
 {
    autoconfig_handle_t *autoconfig_handle = NULL;
-   unsigned *port                         = NULL;
+   autoconfig_port_pending_t *pending     = (autoconfig_port_pending_t*)user_data;
+   bool is_connect;
 
-   if (!task || !user_data)
+   if (!task || !pending)
       return false;
 
-   if (task->handler != input_autoconfigure_connect_handler)
+   is_connect = (task->handler == input_autoconfigure_connect_handler);
+   if (!is_connect && task->handler != input_autoconfigure_disconnect_handler)
       return false;
 
-   autoconfig_handle = (autoconfig_handle_t*)task->state;
-   if (!autoconfig_handle)
+   if (!(autoconfig_handle = (autoconfig_handle_t*)task->state))
       return false;
 
-   port = (unsigned*)user_data;
-   return (*port == autoconfig_handle->port);
+   if (autoconfig_handle->port != pending->port)
+      return false;
+
+   if (pending->found && autoconfig_handle->seq <= pending->seq)
+      return false;
+
+   pending->found      = 1;
+   pending->is_connect = is_connect ? 1 : 0;
+   pending->seq        = autoconfig_handle->seq;
+   pending->vid        = autoconfig_handle->device_info.vid;
+   pending->pid        = autoconfig_handle->device_info.pid;
+   pending->name_hash  = autoconfig_handle->name_hash;
+   return false;
 }
+
+#ifdef HAVE_TEST_DRIVERS
+static bool autoconfigure_any_finder(retro_task_t *task, void *user_data)
+{
+   return task
+      && (   task->handler == input_autoconfigure_connect_handler
+          || task->handler == input_autoconfigure_disconnect_handler);
+}
+
+/* Whether a connect or disconnect on any port has yet to be applied.
+ * task_queue_find() reports a task until its callback has run, so
+ * 'false' means every port's device table is what the driver last
+ * reported.  For the test joypad driver, whose scripted steps run on
+ * a frame count that the task queue does not follow. */
+bool input_autoconfigure_pending(void)
+{
+   task_finder_data_t find_data;
+   find_data.func     = autoconfigure_any_finder;
+   find_data.userdata = NULL;
+   return task_queue_find(&find_data);
+}
+#endif
 
 bool input_autoconfigure_connect(
       const char *name,
@@ -1499,6 +1748,8 @@ bool input_autoconfigure_connect_ex(
       uint8_t flags)
 {
    task_finder_data_t find_data;
+   autoconfig_port_pending_t pending;
+   uint32_t name_hash;
    retro_task_t *task                     = NULL;
    autoconfig_handle_t *autoconfig_handle = NULL;
    bool driver_valid                      = false;
@@ -1515,12 +1766,23 @@ bool input_autoconfigure_connect_ex(
    if (port >= MAX_INPUT_DEVICES)
       return false;
 
-   /* Cannot connect a device that is currently
-    * being connected */
-   find_data.func     = autoconfigure_connect_finder;
-   find_data.userdata = (void*)&port;
+   /* The same device reported again while its connect is still the
+    * newest thing queued for the port changes nothing.  Anything
+    * else is queued behind what is pending - a different device, or
+    * this one again after a disconnect - and wins when it completes,
+    * however long the earlier scan takes. */
+   name_hash          = djb2_calculate((name && *name) ? name : "");
+   memset(&pending, 0, sizeof(pending));
+   pending.port       = port;
+   find_data.func     = autoconfigure_port_finder;
+   find_data.userdata = (void*)&pending;
+   task_queue_find(&find_data);
 
-   if (task_queue_find(&find_data))
+   if (     pending.found
+         && pending.is_connect
+         && pending.vid       == vid
+         && pending.pid       == pid
+         && pending.name_hash == name_hash)
       return false;
 
    /* Configure handle */
@@ -1529,6 +1791,7 @@ bool input_autoconfigure_connect_ex(
       return false;
 
    autoconfig_handle->port                         = port;
+   autoconfig_handle->name_hash                    = name_hash;
    autoconfig_handle->device_info.vid              = vid;
    autoconfig_handle->device_info.pid              = pid;
    autoconfig_handle->device_info.name[0]          = '\0';
@@ -1638,9 +1901,46 @@ bool input_autoconfigure_connect_ex(
    task->cleanup  = input_autoconfigure_free;
    task->flags   &= ~RETRO_TASK_FLG_MUTE;
 
+   autoconfig_handle->seq = (unsigned)retro_atomic_fetch_add_int(
+         &autoconfig_port_seq[port], 1) + 1;
    task_queue_push(task);
 
    return true;
+}
+
+/**
+ * Re-runs autoconfiguration for a port that already holds a device,
+ * using the identity retained for it by the last connect.
+ *
+ * Profiles are consumed at connect time, so this is what makes a
+ * changed profile directory take effect on devices that are already
+ * present, without disturbing any driver.
+ *
+ * The display name is deliberately not carried over: the retained one
+ * may have come from the profile that is being replaced, and the
+ * hotplug path does not supply one either, so the newly matched
+ * profile gets to name the device.
+ *
+ * @param port Input port to reconfigure (0 .. MAX_INPUT_DEVICES-1).
+ *
+ * @return true if an autoconfigure task was queued, false otherwise.
+ * @see input_autoconfigure_connect()
+ */
+bool input_autoconfigure_reconnect(unsigned port)
+{
+   const char *name = input_config_get_device_name(port);
+
+   if (!name || !*name)
+      return false;
+
+   return input_autoconfigure_connect(
+         name,
+         NULL,
+         input_config_get_device_phys(port),
+         input_config_get_device_joypad_driver(port),
+         port,
+         input_config_get_device_vid(port),
+         input_config_get_device_pid(port));
 }
 
 /****************************/
@@ -1660,6 +1960,11 @@ static void cb_input_autoconfigure_disconnect(
    if (!(autoconfig_handle = (autoconfig_handle_t*)task->state))
       return;
 
+   /* A newer connect or disconnect was queued for this port while
+    * this one waited; that one owns the port's state */
+   if (!autoconfig_handle_is_current(autoconfig_handle))
+      return;
+
    /* Use local copy of port index for brevity... */
    port = autoconfig_handle->port;
 
@@ -1669,10 +1974,13 @@ static void cb_input_autoconfigure_disconnect(
    input_config_clear_device_display_name(port);
    input_config_clear_device_config_name(port);
    input_config_clear_device_joypad_driver(port);
+   input_config_set_device_phys(port, NULL);
    input_config_set_device_vid(port, 0);
    input_config_set_device_pid(port, 0);
    input_config_set_device_autoconfigured(port, false);
    input_config_reset_autoconfig_binds(port);
+
+   input_driver_registry_disconnect(port);
 }
 
 static void input_autoconfigure_disconnect_handler(retro_task_t *task)
@@ -1712,24 +2020,6 @@ static void input_autoconfigure_disconnect_handler(retro_task_t *task)
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
-static bool autoconfigure_disconnect_finder(retro_task_t *task, void *user_data)
-{
-   autoconfig_handle_t *autoconfig_handle = NULL;
-   unsigned *port                         = NULL;
-
-   if (!task || !user_data)
-      return false;
-
-   if (task->handler != input_autoconfigure_disconnect_handler)
-      return false;
-
-   if (!(autoconfig_handle = (autoconfig_handle_t*)task->state))
-      return false;
-
-   port = (unsigned*)user_data;
-   return (*port == autoconfig_handle->port);
-}
-
 /* Note: There is no real need for autoconfigure
  * 'disconnect' to be a task - we are merely setting
  * a handful of variables. However:
@@ -1742,6 +2032,7 @@ static bool autoconfigure_disconnect_finder(retro_task_t *task, void *user_data)
 bool input_autoconfigure_disconnect(unsigned port, const char *name)
 {
    task_finder_data_t find_data;
+   autoconfig_port_pending_t pending;
    retro_task_t *task                     = NULL;
    autoconfig_handle_t *autoconfig_handle = NULL;
    settings_t *settings                   = config_get_ptr();
@@ -1754,12 +2045,16 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    if (port >= MAX_INPUT_DEVICES)
       return false;
 
-   /* Cannot disconnect a device that is currently
-    * being disconnected */
-   find_data.func     = autoconfigure_disconnect_finder;
-   find_data.userdata = (void*)&port;
+   /* A disconnect that is already the newest thing queued for the
+    * port changes nothing.  One behind a pending connect is queued,
+    * and wins when it completes. */
+   memset(&pending, 0, sizeof(pending));
+   pending.port       = port;
+   find_data.func     = autoconfigure_port_finder;
+   find_data.userdata = (void*)&pending;
+   task_queue_find(&find_data);
 
-   if (task_queue_find(&find_data))
+   if (pending.found && !pending.is_connect)
       return false;
 
    /* Configure handle */
@@ -1795,6 +2090,8 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    task->callback = cb_input_autoconfigure_disconnect;
    task->cleanup  = input_autoconfigure_free;
 
+   autoconfig_handle->seq = (unsigned)retro_atomic_fetch_add_int(
+         &autoconfig_port_seq[port], 1) + 1;
    task_queue_push(task);
 
    if (pause_on_disconnect && core_is_running)

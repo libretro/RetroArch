@@ -17,6 +17,7 @@
 #define __RARCH_VERBOSITY_H
 
 #include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <boolean.h>
@@ -60,6 +61,25 @@ void logger_shutdown (void);
 void logger_send (const char *__format,...);
 void logger_send_v(const char *__format, va_list args);
 
+/* The va_list spellings format the body first: debugNetPrintf is
+ * printf-style with no va_list variant (handing it (tag, fmt, vp)
+ * makes the tag the format string and passes a raw va_list as a
+ * value), and two logger_send calls interleave under concurrent
+ * writers. Bounded at 512; logger consoles have no heap detour. */
+#ifdef ORBIS
+#define RARCH_LOGGER_V_IMPL(level, tag, fmt, vp) do { \
+   char _rarch_log_line[512]; \
+   vsnprintf(_rarch_log_line, sizeof(_rarch_log_line), fmt, vp); \
+   debugNetPrintf(level, "%s %s", tag, _rarch_log_line); \
+} while (0)
+#else
+#define RARCH_LOGGER_V_IMPL(prefix, tag, fmt, vp) do { \
+   char _rarch_log_line[512]; \
+   vsnprintf(_rarch_log_line, sizeof(_rarch_log_line), fmt, vp); \
+   logger_send("%s%s %s", prefix, tag, _rarch_log_line); \
+} while (0)
+#endif
+
 #ifdef IS_SALAMANDER
 
 #ifdef ORBIS
@@ -71,33 +91,31 @@ void logger_send_v(const char *__format, va_list args);
    debugNetPrintf(DEBUGNET_INFO,"" __VA_ARGS__); \
 } while (0)
 
-#define RARCH_LOG_V(tag, fmt, vp) do { \
-   debugNetPrintf(DEBUGNET_DEBUG,tag,fmt,vp); \
-} while (0)
+#define RARCH_LOG_V(tag, fmt, vp) \
+   RARCH_LOGGER_V_IMPL(DEBUGNET_INFO, tag, fmt, vp)
 
 #define RARCH_ERR(...) do { \
    debugNetPrintf(DEBUGNET_ERROR,"" __VA_ARGS__); \
 } while (0)
 
-#define RARCH_ERR_V(tag, fmt, vp) do { \
-   debugNetPrintf(DEBUGNET_ERROR,tag,fmt,vp); \
-} while (0)
+#define RARCH_ERR_V(tag, fmt, vp) \
+   RARCH_LOGGER_V_IMPL(DEBUGNET_ERROR, tag, fmt, vp)
 
 #define RARCH_WARN(...) do { \
    debugNetPrintf(DEBUGNET_INFO,"" __VA_ARGS__); \
 } while (0)
 
-#define RARCH_WARN_V(tag, fmt, vp) do { \
-   debugNetPrintf(DEBUGNET_DEBUG,tag,fmt,vp); \
-} while (0)
+/* debugnet has no WARN level: INFO on both spellings, matching
+ * RARCH_WARN, instead of one INFO and one DEBUG. */
+#define RARCH_WARN_V(tag, fmt, vp) \
+   RARCH_LOGGER_V_IMPL(DEBUGNET_INFO, tag, fmt, vp)
 
 #define RARCH_LOG_OUTPUT(...) do { \
    debugNetPrintf(DEBUGNET_INFO,"" __VA_ARGS__); \
 } while (0)
 
-#define RARCH_LOG_OUTPUT_V(tag, fmt, vp) do { \
-   debugNetPrintf(DEBUGNET_INFO,tag,fmt,vp); \
-} while (0)
+#define RARCH_LOG_OUTPUT_V(tag, fmt, vp) \
+   RARCH_LOGGER_V_IMPL(DEBUGNET_INFO, tag, fmt, vp)
 
 #else
 #define RARCH_DBG(...) do { \
@@ -108,37 +126,29 @@ void logger_send_v(const char *__format, va_list args);
    logger_send("RetroArch Salamander: " __VA_ARGS__); \
 } while (0)
 
-#define RARCH_LOG_V(tag, fmt, vp) do { \
-   logger_send("RetroArch Salamander: " tag); \
-   logger_send_v(fmt, vp); \
-} while (0)
+#define RARCH_LOG_V(tag, fmt, vp) \
+   RARCH_LOGGER_V_IMPL("RetroArch Salamander: ", tag, fmt, vp)
 
 #define RARCH_LOG_OUTPUT(...) do { \
    logger_send("[OUTPUT] " __VA_ARGS__); \
 } while (0)
 
-#define RARCH_LOG_OUTPUT_V(tag, fmt, vp) do { \
-   logger_send("[OUTPUT] " tag); \
-   logger_send_v(fmt, vp); \
-} while (0)
+#define RARCH_LOG_OUTPUT_V(tag, fmt, vp) \
+   RARCH_LOGGER_V_IMPL("[OUTPUT] ", tag, fmt, vp)
 
 #define RARCH_ERR(...) do { \
    logger_send("[ERROR] " __VA_ARGS__); \
 } while (0)
 
-#define RARCH_ERR_V(tag, fmt, vp) do { \
-   logger_send("[ERROR] " tag); \
-   logger_send_v(fmt, vp); \
-} while (0)
+#define RARCH_ERR_V(tag, fmt, vp) \
+   RARCH_LOGGER_V_IMPL("[ERROR] ", tag, fmt, vp)
 
 #define RARCH_WARN(...) do { \
    logger_send("[WARN] " __VA_ARGS__); \
 } while (0)
 
-#define RARCH_WARN_V(tag, fmt, vp) do { \
-   logger_send("[WARN] " tag); \
-   logger_send_v(fmt, vp); \
-} while (0)
+#define RARCH_WARN_V(tag, fmt, vp) \
+   RARCH_LOGGER_V_IMPL("[WARN] ", tag, fmt, vp)
 #endif
 #else /* IS_SALAMANDER */
 
@@ -151,33 +161,31 @@ void logger_send_v(const char *__format, va_list args);
    debugNetPrintf(DEBUGNET_INFO,"" __VA_ARGS__); \
 } while (0)
 
-#define RARCH_LOG_V(tag, fmt, vp) do { \
-   debugNetPrintf(DEBUGNET_DEBUG,tag,fmt,vp); \
-} while (0)
+#define RARCH_LOG_V(tag, fmt, vp) \
+   RARCH_LOGGER_V_IMPL(DEBUGNET_INFO, tag, fmt, vp)
 
 #define RARCH_ERR(...) do { \
    debugNetPrintf(DEBUGNET_ERROR,"" __VA_ARGS__); \
 } while (0)
 
-#define RARCH_ERR_V(tag, fmt, vp) do { \
-   debugNetPrintf(DEBUGNET_ERROR,tag,fmt,vp); \
-} while (0)
+#define RARCH_ERR_V(tag, fmt, vp) \
+   RARCH_LOGGER_V_IMPL(DEBUGNET_ERROR, tag, fmt, vp)
 
 #define RARCH_WARN(...) do { \
    debugNetPrintf(DEBUGNET_INFO,"" __VA_ARGS__); \
 } while (0)
 
-#define RARCH_WARN_V(tag, fmt, vp) do { \
-   debugNetPrintf(DEBUGNET_DEBUG,tag,fmt,vp); \
-} while (0)
+/* debugnet has no WARN level: INFO on both spellings, matching
+ * RARCH_WARN, instead of one INFO and one DEBUG. */
+#define RARCH_WARN_V(tag, fmt, vp) \
+   RARCH_LOGGER_V_IMPL(DEBUGNET_INFO, tag, fmt, vp)
 
 #define RARCH_LOG_OUTPUT(...) do { \
    debugNetPrintf(DEBUGNET_INFO,"" __VA_ARGS__); \
 } while (0)
 
-#define RARCH_LOG_OUTPUT_V(tag, fmt, vp) do { \
-   debugNetPrintf(DEBUGNET_INFO,tag,fmt,vp); \
-} while (0)
+#define RARCH_LOG_OUTPUT_V(tag, fmt, vp) \
+   RARCH_LOGGER_V_IMPL(DEBUGNET_INFO, tag, fmt, vp)
 
 #else
 #define RARCH_DBG(...) do { \
@@ -188,37 +196,29 @@ void logger_send_v(const char *__format, va_list args);
    logger_send("" __VA_ARGS__); \
 } while (0)
 
-#define RARCH_LOG_V(tag, fmt, vp) do { \
-   logger_send("" tag); \
-   logger_send_v(fmt, vp); \
-} while (0)
+#define RARCH_LOG_V(tag, fmt, vp) \
+   RARCH_LOGGER_V_IMPL("", tag, fmt, vp)
 
 #define RARCH_ERR(...) do { \
    logger_send("[ERROR] " __VA_ARGS__); \
 } while (0)
 
-#define RARCH_ERR_V(tag, fmt, vp) do { \
-   logger_send("[ERROR] " tag); \
-   logger_send_v(fmt, vp); \
-} while (0)
+#define RARCH_ERR_V(tag, fmt, vp) \
+   RARCH_LOGGER_V_IMPL("[ERROR] ", tag, fmt, vp)
 
 #define RARCH_WARN(...) do { \
    logger_send("[WARN] " __VA_ARGS__); \
 } while (0)
 
-#define RARCH_WARN_V(tag, fmt, vp) do { \
-   logger_send("[WARN] :: " tag); \
-   logger_send_v(fmt, vp); \
-} while (0)
+#define RARCH_WARN_V(tag, fmt, vp) \
+   RARCH_LOGGER_V_IMPL("[WARN] ", tag, fmt, vp)
 
 #define RARCH_LOG_OUTPUT(...) do { \
    logger_send("[OUTPUT] " __VA_ARGS__); \
 } while (0)
 
-#define RARCH_LOG_OUTPUT_V(tag, fmt, vp) do { \
-   logger_send("[OUTPUT] " tag); \
-   logger_send_v(fmt, vp); \
-} while (0)
+#define RARCH_LOG_OUTPUT_V(tag, fmt, vp) \
+   RARCH_LOGGER_V_IMPL("[OUTPUT] ", tag, fmt, vp)
 #endif
 #endif
 #define RARCH_LOG_BUFFER(...) do { } while (0)

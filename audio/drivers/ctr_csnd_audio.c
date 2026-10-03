@@ -42,6 +42,10 @@ typedef struct
 #define CTR_CSND_AUDIO_COUNT_MASK  (CTR_CSND_AUDIO_COUNT - 1u)
 #define CTR_CSND_AUDIO_SIZE        (CTR_CSND_AUDIO_COUNT * sizeof(int16_t))
 #define CTR_CSND_AUDIO_SIZE_MASK   (CTR_CSND_AUDIO_SIZE  - 1u)
+/* write_avail() and buffer_size() are in bytes of what write() takes:
+ * int16 stereo, interleaved. The ring holds CTR_CSND_AUDIO_COUNT of
+ * those frames, one int16 per channel buffer each. */
+#define CTR_CSND_AUDIO_FRAME_BYTES (2 * sizeof(int16_t))
 
 #define CTR_CSND_AUDIO_RATE              32730
 #define CTR_CSND_TICKS_PER_SAMPLE   2048
@@ -104,7 +108,6 @@ Result csndPlaySound_custom(int chn, u32 flags, float vol, float pan,
 }
 
 static void *ctr_csnd_audio_init(const char *device, unsigned rate, unsigned latency,
-      unsigned block_frames,
       unsigned *new_rate)
 {
    ctr_csnd_audio_t *ctr = (ctr_csnd_audio_t*)calloc(1, sizeof(ctr_csnd_audio_t));
@@ -162,13 +165,22 @@ static void ctr_csnd_audio_free(void *data)
    free(ctr);
 }
 
+/* How many 1 ms polls a blocking write waits for the play position to
+ * advance before giving up on it. */
+#define CTR_CSND_AUDIO_WAIT_LAPS 2000
+
 static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t len)
 {
    unsigned int i;
-   uint32_t samples_played      = 0;
-   uint64_t current_tick        = 0;
    const uint16_t          *src = buf;
    ctr_csnd_audio_t        *ctr = (ctr_csnd_audio_t*)data;
+
+   /* Half the ring a call at most, in whole frames: the room the waits
+    * below hold out for, where a longer write overwrote its own audio
+    * before it played. */
+   if (len > CTR_CSND_AUDIO_COUNT / 2 * CTR_CSND_AUDIO_FRAME_BYTES)
+      len = CTR_CSND_AUDIO_COUNT / 2 * CTR_CSND_AUDIO_FRAME_BYTES;
+   len &= ~(size_t)3;
 
    ctr_csnd_audio_update_playpos(ctr);
 
@@ -180,11 +192,30 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t len)
          ctr->pos = (ctr->playpos + (CTR_CSND_AUDIO_COUNT >> 1)) & CTR_CSND_AUDIO_COUNT_MASK;
       else
       {
+         /* Poll the play position while CSND plays this out, capped: a
+          * position that has stopped advancing never satisfies the test
+          * below, and the write then returns having written nothing. */
+         int laps = CTR_CSND_AUDIO_WAIT_LAPS;
          do
          {
-            /* todo: compute the correct sleep period */
-            retro_sleep(1);
+            /* Computed, not guessed: how many samples must play
+             * before whichever half of the predicate below is
+             * unsatisfied can flip - the smaller of the two - over
+             * the fixed rate, floored at a millisecond. The cursor
+             * is the hardware's, nothing notifies, so a timed wait
+             * is the honest one, and svcSleepThread underneath is
+             * nanosecond-precise. */
+            uint32_t owed1 = ((CTR_CSND_AUDIO_COUNT >> 1)
+                  - (ctr->playpos - ctr->pos)) & CTR_CSND_AUDIO_COUNT_MASK;
+            uint32_t owed2 = ((CTR_CSND_AUDIO_COUNT >> 4)
+                  - (ctr->pos - ctr->playpos)) & CTR_CSND_AUDIO_COUNT_MASK;
+            uint32_t owed  = owed1 < owed2 ? owed1 : owed2;
+            uint32_t us    = (uint32_t)((uint64_t)owed * 1000000
+                     / CTR_CSND_AUDIO_RATE);
+            retro_sleep_us(us < 1000 ? 1000 : us);
             ctr_csnd_audio_update_playpos(ctr);
+            if (--laps < 0)
+               return 0;
          } while  (((ctr->playpos - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 1)
                || (((ctr->pos - ctr->playpos) & CTR_CSND_AUDIO_COUNT_MASK) < (CTR_CSND_AUDIO_COUNT >> 4)));
       }
@@ -292,12 +323,13 @@ static size_t ctr_csnd_audio_write_avail(void *data)
    ctr_csnd_audio_t* ctr = (ctr_csnd_audio_t*)data;
 
    ctr_csnd_audio_update_playpos(ctr);
-   return (ctr->playpos - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK;
+   return ((ctr->playpos - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK)
+         * CTR_CSND_AUDIO_FRAME_BYTES;
 }
 
 static size_t ctr_csnd_audio_buffer_size(void *data)
 {
-   return CTR_CSND_AUDIO_COUNT;
+   return CTR_CSND_AUDIO_COUNT * CTR_CSND_AUDIO_FRAME_BYTES;
 }
 
 audio_driver_t audio_ctr_csnd = {

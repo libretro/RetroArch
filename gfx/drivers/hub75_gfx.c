@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #include <retro_miscellaneous.h>
+#include <retro_atomic.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -32,6 +33,7 @@
 #endif
 
 #include "../video_driver.h"
+#include <queues/retro_triple_buffer.h>
 #include "../../configuration.h"
 #include "../../driver.h"
 #include "../../frontend/frontend_driver.h"
@@ -96,8 +98,8 @@ typedef struct hub75_rio_regs
 typedef struct hub75_overlay
 {
    uint32_t *pixels;
-   unsigned width;
-   unsigned height;
+   /* In VIDEO_SCALE_PACK's layout. */
+   unsigned dims;
    float tex_x;
    float tex_y;
    float tex_w;
@@ -114,8 +116,10 @@ typedef struct hub75_overlay
 
 typedef struct hub75
 {
+   /* The canvas the video thread draws into: frames' back canvas. */
    hub75_color_t *pixels;
-   hub75_color_t *display_pixels;
+   hub75_color_t *canvas[3];
+   retro_triple_buffer_t frames;
    volatile uint32_t *rp1_map;
    hub75_gpio_ctrl_t *gpio_regs;
    volatile uint32_t *pad_regs;
@@ -123,28 +127,27 @@ typedef struct hub75
    hub75_rio_regs_t *rio_set;
    hub75_rio_regs_t *rio_clr;
    pthread_t refresh_thread;
-   pthread_mutex_t refresh_lock;
+   retro_atomic_int_t refresh_running;
    unsigned char *menu_frame;
    size_t menu_frame_cap;
-   unsigned canvas_width;
-   unsigned canvas_height;
+   /* The panel chain's own size, in VIDEO_SCALE_PACK's layout. */
+   unsigned canvas_dims;
    unsigned panel_rows;
    unsigned pwm_bits;
    unsigned brightness;
    unsigned gpio_slowdown;
    uint32_t used_gpio_mask;
-   unsigned frame_width;
-   unsigned frame_height;
+   /* The core frame's size and the menu frame's, both packed. */
+   unsigned frame_dims;
    unsigned frame_pitch;
-   unsigned menu_width;
-   unsigned menu_height;
+   unsigned menu_dims;
    unsigned menu_pitch;
    unsigned menu_bits;
    unsigned rotation;
-   unsigned viewport_x;
-   unsigned viewport_y;
-   unsigned viewport_width;
-   unsigned viewport_height;
+   /* Where the last frame was drawn on the panel: an origin in
+    * VIDEO_POS_PACK's layout and a size in VIDEO_SCALE_PACK's. */
+   unsigned viewport_pos;
+   unsigned viewport_dims;
    enum hub75_scaling_mode scaling;
 #ifdef HAVE_OVERLAY
    hub75_overlay_t *overlays;
@@ -154,9 +157,7 @@ typedef struct hub75
    bool rgb32;
    bool menu_enabled;
    bool warned_hw_frame;
-   bool refresh_running;
    bool refresh_thread_started;
-   bool refresh_lock_initialized;
 } hub75_t;
 
 #ifdef HAVE_OVERLAY
@@ -336,11 +337,12 @@ static uint32_t hub75_color_bits(const hub75_color_t *upper,
    return result;
 }
 
-static void hub75_refresh_once(hub75_t *hub75)
+static void hub75_refresh_once(hub75_t *hub75,
+      const hub75_color_t *pixels)
 {
-   const hub75_color_t *pixels = hub75->display_pixels;
    unsigned half_rows          = hub75->panel_rows / 2;
    unsigned first_bit          = 8 - hub75->pwm_bits;
+   unsigned canvas_width       = VIDEO_SCALE_W(hub75->canvas_dims);
    unsigned row;
 
    for (row = 0; row < half_rows; row++)
@@ -354,12 +356,12 @@ static void hub75_refresh_once(hub75_t *hub75)
          uint64_t dwell_ns;
 
          hub75->rio_out->out = address | HUB75_OE;
-         for (column = 0; column < hub75->canvas_width; column++)
+         for (column = 0; column < canvas_width; column++)
          {
             const hub75_color_t *upper = &pixels[
-                  (size_t)row * hub75->canvas_width + column];
+                  (size_t)row * canvas_width + column];
             const hub75_color_t *lower = &pixels[
-                  (size_t)(row + half_rows) * hub75->canvas_width + column];
+                  (size_t)(row + half_rows) * canvas_width + column];
             uint32_t value = address | HUB75_OE |
                   hub75_color_bits(upper, lower, bit);
 
@@ -387,17 +389,11 @@ static void *hub75_refresh_main(void *data)
 {
    hub75_t *hub75 = (hub75_t*)data;
 
-   for (;;)
-   {
-      pthread_mutex_lock(&hub75->refresh_lock);
-      if (!hub75->refresh_running)
-      {
-         pthread_mutex_unlock(&hub75->refresh_lock);
-         break;
-      }
-      hub75_refresh_once(hub75);
-      pthread_mutex_unlock(&hub75->refresh_lock);
-   }
+   /* Each scan picks up the newest finished frame; the video thread
+    * never waits for one to end. */
+   while (retro_atomic_load_acquire_int(&hub75->refresh_running))
+      hub75_refresh_once(hub75,
+            (const hub75_color_t*)retro_triple_buffer_front(&hub75->frames));
    return NULL;
 }
 
@@ -462,12 +458,7 @@ static void hub75_free(void *data)
    if (!hub75)
       return;
 
-   if (hub75->refresh_lock_initialized)
-   {
-      pthread_mutex_lock(&hub75->refresh_lock);
-      hub75->refresh_running = false;
-      pthread_mutex_unlock(&hub75->refresh_lock);
-   }
+   retro_atomic_store_release_int(&hub75->refresh_running, 0);
    if (hub75->refresh_thread_started)
       pthread_join(hub75->refresh_thread, NULL);
    if (hub75->rio_out)
@@ -476,15 +467,14 @@ static void hub75_free(void *data)
       hub75->rio_clr->oe = hub75->used_gpio_mask;
    if (hub75->rp1_map)
       munmap((void*)(uintptr_t)hub75->rp1_map, HUB75_RP1_MAP_SIZE);
-   if (hub75->refresh_lock_initialized)
-      pthread_mutex_destroy(&hub75->refresh_lock);
 
 #ifdef HAVE_OVERLAY
    hub75_overlay_free(hub75);
 #endif
    free(hub75->menu_frame);
-   free(hub75->pixels);
-   free(hub75->display_pixels);
+   free(hub75->canvas[0]);
+   free(hub75->canvas[1]);
+   free(hub75->canvas[2]);
    free(hub75);
 }
 
@@ -518,26 +508,30 @@ static void *hub75_init(const video_info_t *video,
    }
 
    hub75->panel_rows    = (unsigned)rows;
-   hub75->canvas_width  = (unsigned)columns * (unsigned)chain;
-   hub75->canvas_height = (unsigned)rows;
-   if ((size_t)hub75->canvas_width > SIZE_MAX / hub75->canvas_height /
-       sizeof(*hub75->pixels))
+   hub75->canvas_dims   = VIDEO_SCALE_PACK(
+         (unsigned)columns * (unsigned)chain, (unsigned)rows);
+   if ((size_t)VIDEO_SCALE_W(hub75->canvas_dims)
+         > SIZE_MAX / VIDEO_SCALE_H(hub75->canvas_dims)
+               / sizeof(*hub75->pixels))
    {
       RARCH_ERR("[HUB75] Matrix geometry is too large.\n");
       hub75_free(hub75);
       return NULL;
    }
 
-   pixel_count = (size_t)hub75->canvas_width * hub75->canvas_height;
-   hub75->pixels = (hub75_color_t*)calloc(pixel_count,
-         sizeof(*hub75->pixels));
-   hub75->display_pixels = (hub75_color_t*)calloc(pixel_count,
-         sizeof(*hub75->display_pixels));
-   if (!hub75->pixels || !hub75->display_pixels)
+   pixel_count = VIDEO_SCALE_AREA(hub75->canvas_dims);
+   for (value = 0; value < 3; value++)
    {
-      hub75_free(hub75);
-      return NULL;
+      if (!(hub75->canvas[value] = (hub75_color_t*)calloc(pixel_count,
+                  sizeof(*hub75->pixels))))
+      {
+         hub75_free(hub75);
+         return NULL;
+      }
    }
+   retro_triple_buffer_init(&hub75->frames,
+         hub75->canvas[0], hub75->canvas[1], hub75->canvas[2]);
+   hub75->pixels = (hub75_color_t*)retro_triple_buffer_back(&hub75->frames);
 
    value = hub75_env_int("HUB75_PWM_BITS", 1, 8);
    hub75->pwm_bits = value ? (unsigned)value : 8;
@@ -545,28 +539,19 @@ static void *hub75_init(const video_info_t *video,
    hub75->brightness = value ? (unsigned)value : 100;
    value = hub75_env_int("HUB75_GPIO_SLOWDOWN", 1, 10);
    hub75->gpio_slowdown = value ? (unsigned)value : 1;
-   hub75->viewport_width  = hub75->canvas_width;
-   hub75->viewport_height = hub75->canvas_height;
-   hub75->frame_width     = video->width;
-   hub75->frame_height    = video->height;
-   hub75->frame_pitch     = video->width * (video->rgb32 ? 4 : 2);
+   hub75->viewport_dims   = hub75->canvas_dims;
+   hub75->frame_dims      = video->dims;
+   hub75->frame_pitch     = VIDEO_SCALE_W(video->dims) * (video->rgb32 ? 4 : 2);
    hub75->rgb32           = video->rgb32;
    hub75->menu_enabled    = true;
    hub75->scaling         = hub75_get_scaling_mode();
 
-   if (pthread_mutex_init(&hub75->refresh_lock, NULL) != 0)
-   {
-      RARCH_ERR("[HUB75] Failed to create refresh mutex.\n");
-      hub75_free(hub75);
-      return NULL;
-   }
-   hub75->refresh_lock_initialized = true;
    if (!hub75_init_rp1(hub75))
    {
       hub75_free(hub75);
       return NULL;
    }
-   hub75->refresh_running = true;
+   retro_atomic_store_release_int(&hub75->refresh_running, 1);
    if (pthread_create(&hub75->refresh_thread, NULL,
             hub75_refresh_main, hub75) != 0)
    {
@@ -581,7 +566,7 @@ static void *hub75_init(const video_info_t *video,
 
    RARCH_LOG("[HUB75] Initialized %ux%u Raspberry Pi 5 RP1 matrix "
          "(scaling: %s, PWM bits: %u).\n",
-         hub75->canvas_width, hub75->canvas_height,
+         VIDEO_SCALE_W(hub75->canvas_dims), VIDEO_SCALE_H(hub75->canvas_dims),
          hub75_scaling_name(hub75->scaling), hub75->pwm_bits);
    return hub75;
 }
@@ -605,21 +590,12 @@ static hub75_color_t hub75_read_pixel(const void *frame, unsigned pitch,
       const uint16_t *row = (const uint16_t*)((const uint8_t*)frame +
             (size_t)y * pitch);
       uint16_t pixel = row[x];
-      if (menu)
-      {
-         color.r = (uint8_t)(((pixel >> 12) & 0xf) * 17);
-         color.g = (uint8_t)(((pixel >> 8) & 0xf) * 17);
-         color.b = (uint8_t)(((pixel >> 4) & 0xf) * 17);
-      }
-      else
-      {
-         unsigned r = (pixel >> 11) & 0x1f;
-         unsigned g = (pixel >> 5) & 0x3f;
-         unsigned b = pixel & 0x1f;
-         color.r = (uint8_t)((r << 3) | (r >> 2));
-         color.g = (uint8_t)((g << 2) | (g >> 4));
-         color.b = (uint8_t)((b << 3) | (b >> 2));
-      }
+      uint32_t rgb   = menu
+            ? pixconv_rgba4444_to_argb8888(pixel)
+            : pixconv_rgb565_to_xrgb8888(pixel);
+      color.r        = (uint8_t)(rgb >> 16);
+      color.g        = (uint8_t)(rgb >>  8);
+      color.b        = (uint8_t)(rgb);
    }
 
    return color;
@@ -628,10 +604,13 @@ static hub75_color_t hub75_read_pixel(const void *frame, unsigned pitch,
 #ifdef HAVE_OVERLAY
 static void hub75_render_overlays(hub75_t *hub75)
 {
+   unsigned canvas_width;
    unsigned i;
 
    if (!hub75 || !hub75->overlays_enabled || !hub75->overlays)
       return;
+
+   canvas_width = VIDEO_SCALE_W(hub75->canvas_dims);
 
    for (i = 0; i < hub75->overlays_size; i++)
    {
@@ -651,24 +630,27 @@ static void hub75_render_overlays(hub75_t *hub75)
       int x;
       int y;
 
-      if (!overlay->pixels || !overlay->width || !overlay->height ||
-          overlay->alpha <= 0.0f || overlay->tex_w <= 0.0f ||
-          overlay->tex_h <= 0.0f)
+      unsigned ol_width  = VIDEO_SCALE_W(overlay->dims);
+      unsigned ol_height = VIDEO_SCALE_H(overlay->dims);
+
+      if (     !overlay->pixels || !ol_width || !ol_height
+            || overlay->alpha <= 0.0f || overlay->tex_w <= 0.0f
+            || overlay->tex_h <= 0.0f)
          continue;
 
       if (overlay->fullscreen)
       {
          base_x      = 0;
          base_y      = 0;
-         base_width  = hub75->canvas_width;
-         base_height = hub75->canvas_height;
+         base_width  = VIDEO_SCALE_W(hub75->canvas_dims);
+         base_height = VIDEO_SCALE_H(hub75->canvas_dims);
       }
       else
       {
-         base_x      = hub75->viewport_x;
-         base_y      = hub75->viewport_y;
-         base_width  = hub75->viewport_width;
-         base_height = hub75->viewport_height;
+         base_x      = VIDEO_POS_X(hub75->viewport_pos);
+         base_y      = VIDEO_POS_Y(hub75->viewport_pos);
+         base_width  = VIDEO_SCALE_W(hub75->viewport_dims);
+         base_height = VIDEO_SCALE_H(hub75->viewport_dims);
       }
 
       dst_x      = (int)base_x + (int)(overlay->vert_x * (float)base_width);
@@ -682,27 +664,27 @@ static void hub75_render_overlays(hub75_t *hub75)
       start_y = dst_y < 0 ? 0 : dst_y;
       end_x   = dst_x + dst_width;
       end_y   = dst_y + dst_height;
-      if (end_x > (int)hub75->canvas_width)
-         end_x = (int)hub75->canvas_width;
-      if (end_y > (int)hub75->canvas_height)
-         end_y = (int)hub75->canvas_height;
+      if (end_x > (int)VIDEO_SCALE_W(hub75->canvas_dims))
+         end_x = (int)VIDEO_SCALE_W(hub75->canvas_dims);
+      if (end_y > (int)VIDEO_SCALE_H(hub75->canvas_dims))
+         end_y = (int)VIDEO_SCALE_H(hub75->canvas_dims);
 
       for (y = start_y; y < end_y; y++)
       {
          float v = overlay->tex_y +
                ((float)(y - dst_y) / (float)dst_height) * overlay->tex_h;
-         int source_y = (int)(v * (float)overlay->height);
+         int source_y = (int)(v * (float)ol_height);
 
          if (source_y < 0)
             source_y = 0;
-         else if (source_y >= (int)overlay->height)
-            source_y = (int)overlay->height - 1;
+         else if (source_y >= (int)ol_height)
+            source_y = (int)ol_height - 1;
 
          for (x = start_x; x < end_x; x++)
          {
             float u = overlay->tex_x +
                   ((float)(x - dst_x) / (float)dst_width) * overlay->tex_w;
-            int source_x = (int)(u * (float)overlay->width);
+            int source_x = (int)(u * (float)ol_width);
             uint32_t pixel;
             unsigned alpha;
             unsigned red;
@@ -712,10 +694,10 @@ static void hub75_render_overlays(hub75_t *hub75)
 
             if (source_x < 0)
                source_x = 0;
-            else if (source_x >= (int)overlay->width)
-               source_x = (int)overlay->width - 1;
+            else if (source_x >= (int)ol_width)
+               source_x = (int)ol_width - 1;
 
-            pixel = overlay->pixels[(size_t)source_y * overlay->width +
+            pixel = overlay->pixels[(size_t)source_y * ol_width +
                   (unsigned)source_x];
             alpha = (unsigned)((float)((pixel >> 24) & 0xff) *
                   overlay->alpha);
@@ -736,7 +718,7 @@ static void hub75_render_overlays(hub75_t *hub75)
                blue = pixel & 0xff;
             }
 
-            destination = &hub75->pixels[(size_t)y * hub75->canvas_width +
+            destination = &hub75->pixels[(size_t)y * canvas_width +
                   (unsigned)x];
             destination->r = (uint8_t)((red * alpha +
                   destination->r * (255 - alpha) + 127) / 255);
@@ -756,8 +738,8 @@ static void hub75_render(hub75_t *hub75, const void *frame,
 {
    unsigned rotated_width  = (hub75->rotation & 1) ? height : width;
    unsigned rotated_height = (hub75->rotation & 1) ? width : height;
-   unsigned output_width   = hub75->canvas_width;
-   unsigned output_height  = hub75->canvas_height;
+   unsigned output_width   = VIDEO_SCALE_W(hub75->canvas_dims);
+   unsigned output_height  = VIDEO_SCALE_H(hub75->canvas_dims);
    unsigned draw_width;
    unsigned draw_height;
    unsigned offset_x;
@@ -851,10 +833,8 @@ static void hub75_render(hub75_t *hub75, const void *frame,
 
    if (!menu)
    {
-      hub75->viewport_x      = offset_x;
-      hub75->viewport_y      = offset_y;
-      hub75->viewport_width  = draw_width;
-      hub75->viewport_height = draw_height;
+      hub75->viewport_pos    = VIDEO_POS_PACK(offset_x, offset_y);
+      hub75->viewport_dims   = VIDEO_SCALE_PACK(draw_width, draw_height);
    }
 
    for (y = 0; y < draw_height; y++)
@@ -902,19 +882,16 @@ static void hub75_render(hub75_t *hub75, const void *frame,
    (void)render_overlays;
 #endif
 
-   pthread_mutex_lock(&hub75->refresh_lock);
-   {
-      hub75_color_t *swap_pixels = hub75->display_pixels;
-      hub75->display_pixels      = hub75->pixels;
-      hub75->pixels              = swap_pixels;
-   }
-   pthread_mutex_unlock(&hub75->refresh_lock);
+   retro_triple_buffer_publish(&hub75->frames);
+   hub75->pixels = (hub75_color_t*)retro_triple_buffer_back(&hub75->frames);
 }
 
 static bool hub75_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    hub75_t *hub75 = (hub75_t*)data;
    const void *source = frame;
    unsigned width;
@@ -947,8 +924,7 @@ static bool hub75_frame(void *data, const void *frame,
 
    if (frame_width > 4 && frame_height > 4)
    {
-      hub75->frame_width  = frame_width;
-      hub75->frame_height = frame_height;
+      hub75->frame_dims   = dims;
       hub75->frame_pitch  = pitch;
    }
 
@@ -956,8 +932,8 @@ static bool hub75_frame(void *data, const void *frame,
    if (hub75->menu_enabled && menu_alive && hub75->menu_frame)
    {
       source = hub75->menu_frame;
-      width  = hub75->menu_width;
-      height = hub75->menu_height;
+      width  = VIDEO_SCALE_W(hub75->menu_dims);
+      height = VIDEO_SCALE_H(hub75->menu_dims);
       pitch  = hub75->menu_pitch;
       bits   = hub75->menu_bits;
       menu   = true;
@@ -969,8 +945,8 @@ static bool hub75_frame(void *data, const void *frame,
    {
       if (frame_width == 4 && frame_height == 4)
          return true;
-      width  = hub75->frame_width;
-      height = hub75->frame_height;
+      width  = VIDEO_SCALE_W(hub75->frame_dims);
+      height = VIDEO_SCALE_H(hub75->frame_dims);
       pitch  = hub75->frame_pitch;
       bits   = hub75->rgb32 ? 32 : 16;
    }
@@ -1003,9 +979,9 @@ static bool hub75_has_windowed(void *data) { (void)data; return false; }
 static bool hub75_set_shader(void *data, enum rarch_shader_type type,
       const char *path)
 { (void)data; (void)type; (void)path; return false; }
-static void hub75_set_viewport(void *data, unsigned width, unsigned height,
+static void hub75_set_viewport(void *data, unsigned dims,
       bool force_full, bool allow_rotate)
-{ (void)data; (void)width; (void)height; (void)force_full; (void)allow_rotate; }
+{ (void)data; (void)dims; (void)force_full; (void)allow_rotate; }
 
 static void hub75_set_rotation(void *data, unsigned rotation)
 {
@@ -1019,12 +995,10 @@ static void hub75_viewport_info(void *data, struct video_viewport *vp)
    hub75_t *hub75 = (hub75_t*)data;
    if (!hub75 || !vp)
       return;
-   vp->x           = (int)hub75->viewport_x;
-   vp->y           = (int)hub75->viewport_y;
-   vp->width       = hub75->viewport_width;
-   vp->height      = hub75->viewport_height;
-   vp->full_width  = hub75->canvas_width;
-   vp->full_height = hub75->canvas_height;
+   vp->pos         = VIDEO_POS_PACK((int)VIDEO_POS_X(hub75->viewport_pos),
+         (int)VIDEO_POS_Y(hub75->viewport_pos));
+   vp->dims        = hub75->viewport_dims;
+   vp->full_dims   = hub75->canvas_dims;
 }
 
 #ifdef HAVE_OVERLAY
@@ -1077,8 +1051,8 @@ static bool hub75_overlay_load(void *data, const void *image_data,
       }
       memcpy(overlay->pixels, images[i].pixels,
             pixel_count * sizeof(uint32_t));
-      overlay->width         = images[i].width;
-      overlay->height        = images[i].height;
+      overlay->dims          = VIDEO_SCALE_PACK(
+            images[i].width, images[i].height);
       overlay->supports_rgba = images[i].supports_rgba;
    }
 
@@ -1148,6 +1122,7 @@ static void hub75_overlay_set_alpha(void *data, unsigned index, float mod)
 static const video_overlay_interface_t hub75_overlay_interface = {
    hub75_overlay_enable,
    hub75_overlay_load,
+   NULL, /* load_textures */
    hub75_overlay_tex_geom,
    hub75_overlay_vertex_geom,
    hub75_overlay_full_screen,
@@ -1164,19 +1139,19 @@ static void hub75_get_overlay_interface(void *data,
 
 #ifdef HAVE_MENU
 static void hub75_set_texture_frame(void *data, const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    hub75_t *hub75 = (hub75_t*)data;
-   unsigned pitch = width * (rgb32 ? 4 : 2);
+   unsigned pitch = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
    size_t required;
    unsigned char *new_frame;
    (void)alpha;
 
-   if (!hub75 || !frame || !width || !height)
+   if (!hub75 || !frame || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
       return;
-   if ((size_t)height > SIZE_MAX / pitch)
+   if ((size_t)VIDEO_SCALE_H(dims) > SIZE_MAX / pitch)
       return;
-   required = (size_t)pitch * height;
+   required = (size_t)pitch * VIDEO_SCALE_H(dims);
    if (required > hub75->menu_frame_cap)
    {
       new_frame = (unsigned char*)realloc(hub75->menu_frame, required);
@@ -1186,8 +1161,7 @@ static void hub75_set_texture_frame(void *data, const void *frame, bool rgb32,
       hub75->menu_frame_cap = required;
    }
    memcpy(hub75->menu_frame, frame, required);
-   hub75->menu_width  = width;
-   hub75->menu_height = height;
+   hub75->menu_dims   = dims;
    hub75->menu_pitch  = pitch;
    hub75->menu_bits   = rgb32 ? 32 : 16;
 }
@@ -1259,7 +1233,6 @@ video_driver_t video_hub75 = {
    hub75_set_rotation,
    hub75_viewport_info,
    NULL, /* read_viewport */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    hub75_get_overlay_interface,
 #endif

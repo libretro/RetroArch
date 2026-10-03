@@ -26,7 +26,7 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 
-#include "../../deps/bearssl-0.6/inc/bearssl.h"
+#include <bearssl.h>
 
 struct ssl_state
 {
@@ -166,24 +166,26 @@ static bool append_cert_x509(void* x509, size_t len)
    return true;
 }
 
+/* Compacts a PEM body in place, dropping every CR and LF, and
+ * NUL-terminates the compacted run so strlen() yields the exact
+ * number of base64 characters.  The input is not needed by the
+ * caller afterwards, so in-place rewriting is fine. */
 static char* delete_linebreaks(char* in)
 {
    char* iter_in;
    char* iter_out;
-   while (*in == '\n')
+   while (*in == '\n' || *in == '\r')
       in++;
 
-   iter_in = in;
-
-   while (*iter_in != '\n' && *iter_in != '\0')
-      iter_in++;
-   iter_out = iter_in;
+   iter_in  = in;
+   iter_out = in;
    while (*iter_in != '\0')
    {
-      while (*iter_in == '\n')
-         iter_in++;
-      *iter_out++ = *iter_in++;
+      if (*iter_in != '\n' && *iter_in != '\r')
+         *iter_out++ = *iter_in;
+      iter_in++;
    }
+   *iter_out = '\0';
 
    return in;
 }
@@ -204,13 +206,22 @@ static void append_certs_pem_x509(char * certs_pem)
          break;
       cert     += STRLEN_CONST("-----BEGIN CERTIFICATE-----");
       cert_end  = strstr(cert, "-----END CERTIFICATE-----");
+      if (!cert_end)
+         break;
 
       *cert_end = '\0';
       cert      = delete_linebreaks(cert);
 
-      cert_bin  = unbase64(cert, cert_end-cert, &cert_bin_len);
-      append_cert_x509(cert_bin, cert_bin_len);
-      free(cert_bin);
+      /* unbase64() requires an exact, 4-aligned length.  The compacted
+       * run is shorter than (cert_end - cert) by the number of line
+       * breaks removed, so measure it rather than reusing the span of
+       * the original wrapped body. */
+      cert_bin  = unbase64(cert, (int)strlen(cert), &cert_bin_len);
+      if (cert_bin)
+      {
+         append_cert_x509(cert_bin, cert_bin_len);
+         free(cert_bin);
+      }
 
       cert_end++; /* skip the NUL we just added */
    }
@@ -227,6 +238,16 @@ static void initialize(void)
    filestream_read_file("/etc/ssl/certs/ca-certificates.crt", &certs_pem, NULL);
    append_certs_pem_x509((char*)certs_pem);
    free(certs_pem);
+}
+
+/* BearSSL's br_ssl_client_init_full (below) always performs full
+ * verification and fails closed on a bad chain, which is the REQUIRED
+ * policy. The OPTIONAL/DISABLED opt-out has no native BearSSL equivalent
+ * (it would need a permissive end_chain X.509 vtable), so this backend
+ * keeps verifying whatever mode is selected. */
+void ssl_socket_set_verify_mode(unsigned mode)
+{
+   (void)mode;
 }
 
 void* ssl_socket_init(int fd, const char *domain)
@@ -291,6 +312,14 @@ static bool process_inner(struct ssl_state *state, bool blocking)
    return true;
 }
 
+int ssl_socket_last_error(void *state_data)
+{
+   struct ssl_state *state = (struct ssl_state*)state_data;
+   if (!state)
+      return 0;
+   return br_ssl_engine_last_error(&state->sc.eng);
+}
+
 int ssl_socket_connect(void *state_data,
       void *data, bool timeout_enable, bool nonblock)
 {
@@ -341,9 +370,14 @@ ssize_t ssl_socket_receive_all_nonblocking(void *state_data,
    bear_data = br_ssl_engine_recvapp_buf(&state->sc.eng, &__len);
    if (__len > len)
       __len = len;
-   memcpy(data_, bear_data, __len);
+   /* recvapp_buf returns NULL when it has nothing; memcpy() declares
+    * its pointers nonnull even for a zero length, so the copy has to
+    * sit under the same guard as the ack. */
    if (__len)
+   {
+      memcpy(data_, bear_data, __len);
       br_ssl_engine_recvapp_ack(&state->sc.eng, __len);
+   }
    return __len;
 }
 
@@ -362,9 +396,13 @@ int ssl_socket_receive_all_blocking(void *state_data,
       bear_data = br_ssl_engine_recvapp_buf(&state->sc.eng, &__len);
       if (__len > len)
          __len = len;
-      memcpy(data, bear_data, __len);
+      /* Same as the nonblocking path: bear_data is NULL when the
+       * engine has no plaintext ready, so only copy under the guard. */
       if (__len)
+      {
+         memcpy(data, bear_data, __len);
          br_ssl_engine_recvapp_ack(&state->sc.eng, __len);
+      }
       data += __len;
       len -= __len;
 
@@ -408,26 +446,62 @@ int ssl_socket_send_all_blocking(void *state_data,
    return 1;
 }
 
+/* Takes what fits in the engine's output buffer now and pushes what the
+ * socket will take.  0 means the engine is full of records the socket
+ * has not taken yet; ssl_socket_flush_nonblocking() moves them on. */
 ssize_t ssl_socket_send_all_nonblocking(void *state_data,
       const void *data_, size_t len, bool no_signal)
 {
    size_t __len;
    uint8_t *bear_data;
    struct ssl_state *state = (struct ssl_state*)state_data;
+   (void)no_signal;
 
+   if (br_ssl_engine_current_state(&state->sc.eng) == BR_SSL_CLOSED)
+      return -1;
    socket_set_block(state->fd, false);
+   /* Make room first: records already sealed go before new ones. */
+   if (!process_inner(state, false))
+      return -1;
    bear_data = br_ssl_engine_sendapp_buf(&state->sc.eng, &__len);
    if (__len > len)
       __len = len;
-   memcpy(bear_data, data_, __len);
+   /* sendapp_buf returns NULL with nothing free; memcpy() declares its
+    * pointers nonnull even for a zero length. */
    if (__len)
    {
+      memcpy(bear_data, data_, __len);
       br_ssl_engine_sendapp_ack(&state->sc.eng, __len);
       br_ssl_engine_flush(&state->sc.eng, false);
+      if (!process_inner(state, false))
+         return -1;
    }
-   if (!process_inner(state, false))
+   return (ssize_t)__len;
+}
+
+int ssl_socket_flush_nonblocking(void *state_data)
+{
+   size_t buflen;
+   struct ssl_state *state = (struct ssl_state*)state_data;
+
+   if (br_ssl_engine_current_state(&state->sc.eng) == BR_SSL_CLOSED)
       return -1;
-   return __len;
+   socket_set_block(state->fd, false);
+   br_ssl_engine_flush(&state->sc.eng, false);
+   /* process_inner() sends at most one batch per call and stops when
+    * the socket does; loop while it makes progress. */
+   for (;;)
+   {
+      size_t before;
+      br_ssl_engine_sendrec_buf(&state->sc.eng, &before);
+      if (!before)
+         return 1;
+      if (!process_inner(state, false))
+         return -1;
+      br_ssl_engine_sendrec_buf(&state->sc.eng, &buflen);
+      if (buflen >= before)
+         return 0;
+   }
 }
 
 void ssl_socket_close(void *state_data)

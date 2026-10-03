@@ -229,6 +229,16 @@
 #define DT_NO_POOL
 #endif
 #endif
+
+/* The console targets have no native TLS: GCC lowers __thread there
+ * through emutls, which is a per-access table lookup plus a gthread
+ * mutex on the control path - on Vita that mutex is the toolchain's
+ * pthread port, the only thing left asking for it.  That costs more
+ * than the pool miss the cache exists to avoid, so the pool is
+ * compiled out and every load takes the fresh-reservation path. */
+#if defined(VITA) || defined(PSP) || defined(_3DS) || defined(GEKKO)
+#define DT_NO_POOL
+#endif
 #endif
 
 #if !defined(DT_NO_POOL)
@@ -344,21 +354,15 @@ bool data_transfer_arena_ensure(data_transfer_arena_t *a, size_t need)
 
    if (need <= a->committed)
       return true;
+   /* Past half the address space no allocator can say yes, and asking
+    * one is a sanitizer report, not a NULL; refused here. Below it the
+    * doubling cannot overflow. */
+   if (need > ((size_t)-1) / 2)
+      return false;
 
    nc = a->cap ? a->cap : (256 * 1024);
    while (nc < need)
-   {
-      size_t nx = nc * 2;
-      /* No power of two at or above 'need' fits in a size_t: ask for
-       * exactly what was wanted and let realloc refuse it.  Left
-       * unchecked the doubling reaches 0 and the loop never ends. */
-      if (nx <= nc)
-      {
-         nc = need;
-         break;
-      }
-      nc = nx;
-   }
+      nc *= 2;
    if (!(nb = (uint8_t*)realloc(a->base, nc)))
       return false;
    a->base      = nb;
@@ -546,7 +550,30 @@ data_transfer_t *data_transfer_open_window(const char *path, size_t keep)
 
 bool data_transfer_reserve_supported(void)
 {
+#if defined(MEMMAP_TEST_NO_RESERVE)
+   /* The test hook that makes memreserve() refuse (see memmap.c) has
+    * to be visible here too: a caller asks this BEFORE opening so it
+    * can refuse a file too large to hold whole - with the answer
+    * still "yes", the gate was skipped and data_transfer_open_window
+    * fell back to malloc(file length) for a 7.8 GB fixture, which the
+    * sanitizers' allocators either refuse (TSan aborts the test) or
+    * grant and then page in. */
+   if (getenv("MEMMAP_NO_RESERVE"))
+      return false;
+#endif
    return mempagesize() != 0;
+}
+
+size_t data_transfer_window_resident(data_transfer_t *dt)
+{
+   size_t head, moving;
+   if (!dt || !dt->window)
+      return 0;
+   if (dt->map_len == 0)     /* settled into a whole-file commit */
+      return dt->len;
+   head   = dt->wfreed < dt->keep ? dt->wfreed : dt->keep;
+   moving = dt->whi > dt->wfreed ? dt->whi - dt->wfreed : 0;
+   return head + moving;
 }
 
 bool data_transfer_window_is_reserved(data_transfer_t *dt)
@@ -741,9 +768,14 @@ void data_transfer_window_punch(data_transfer_t *dt, size_t from,
 #endif
 }
 
-bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
-      size_t lookahead, size_t margin)
+bool data_transfer_window_feed_budget(data_transfer_t *dt, size_t tell,
+      size_t lookahead, size_t margin, size_t budget,
+      size_t *resident_hi)
 {
+   bool ok;
+   size_t hi;
+   if (resident_hi)
+      *resident_hi = 0;
    if (!dt || !dt->window || dt->failed)
       return false;
    if (tell < dt->wtell)
@@ -751,7 +783,31 @@ bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
    dt->wtell = tell;
    if (tell > margin && tell - margin > dt->wlo)
       data_transfer_window_advance(dt, tell - margin);
-   return data_transfer_window_extend(dt, tell + lookahead);
+   hi = tell + lookahead;
+   /* The ceiling applies only while the frontier covers the consumer.
+    * A frontier behind tell means the consumer's next read lands on
+    * unresident pages, and pacing THAT read over ticks is not a
+    * smaller burst, it is a fault: close the gap in one extend, as
+    * the unbudgeted feed always has. */
+   if (budget && dt->whi >= tell)
+   {
+      size_t cap = dt->whi + budget;
+      if (cap < dt->whi)                 /* wrapped: no ceiling */
+         cap = (size_t)-1;
+      if (hi > cap)
+         hi = cap;
+   }
+   ok = data_transfer_window_extend(dt, hi);
+   if (resident_hi)
+      *resident_hi = dt->map_len ? dt->whi : dt->len;
+   return ok;
+}
+
+bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
+      size_t lookahead, size_t margin)
+{
+   return data_transfer_window_feed_budget(dt, tell, lookahead,
+         margin, 0, NULL);
 }
 
 static data_transfer_t *data_transfer_open_prefix_ex(const char *path,

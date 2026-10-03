@@ -1,0 +1,638 @@
+/* WASAPI exclusive-mode pacing, under the reporter's settings.
+ *
+ * The driver's text runs unmodified against a fake device that keeps
+ * real time: exclusive and event-driven, the endpoint buffer is one
+ * period, and every period the device takes the buffer released for
+ * it or counts the period unanswered - a period of silence on real
+ * hardware. The writer is the frontend as the reporter runs it: audio
+ * sync off, so writes do not block; rate control off; the core's
+ * audio arriving one frame at a time, 800 frames every 16.68 ms at
+ * 59.94 fps. Two figures come out: audio the writer offered that the
+ * driver did not take - dropped - and periods the device raised that
+ * nobody answered. Either one is audible. */
+
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+#include <stdlib.h>
+
+#include <math.h>
+#include <formats/rac3.h>
+#include <formats/iec61937.h>
+#include "fake_wasapi.h"
+#include "../../../audio/audio_driver.h"
+#include "../../../configuration.h"
+
+/* Before the pump thread and the drain-first write, the same run gave:
+ *   exclusive 16/32/64 ms: 4% dropped, 2-4% of periods unanswered;
+ *   shared at the setting: 6% dropped, 10% unanswered;
+ *   shared at an 800-frame fifo: 0.3% dropped, none unanswered - the one
+ *   size the reporter found that worked.
+ * And the first attempt at the smaller period without the pump:
+ *   exclusive 16 ms: 74% dropped, 75% unanswered - the crackle reported.
+ * Any wasapi.c can be run against this model: make WASAPI_SRC=<file>. */
+
+extern audio_driver_t audio_wasapi;
+
+static unsigned failures = 0;
+#define CHECK(cond, ...) do { if (!(cond)) { printf("FAIL: "); printf(__VA_ARGS__); printf("\n"); failures++; } } while (0)
+
+typedef struct
+{
+   unsigned latency_ms, seconds;
+   bool     exclusive;
+   unsigned sh_buffer_length;
+   /* IAudioClient3 on the fake: minimum engine period in frames, 0 for
+    * not offered; and a period another stream holds the engine at, 0
+    * for none. */
+   unsigned engine_min_frames, locked_period_frames;
+   const char *name;
+   /* The synchronous audio path: init(), writes, and never start(). */
+   bool     no_start;
+} scenario_t;
+
+typedef struct
+{
+   size_t offered, taken;
+   fake_device_stats_t dev;
+   size_t reported_buffer;
+   size_t frame_bytes;
+} result_t;
+
+static void sleep_until(struct timespec *t, long ns)
+{
+   t->tv_nsec += ns;
+   while (t->tv_nsec >= 1000000000L) { t->tv_sec++; t->tv_nsec -= 1000000000L; }
+   clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, t, NULL);
+}
+
+static bool run(const scenario_t *sc, result_t *r)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned new_rate    = 0;
+   void *ctx;
+   size_t frame_bytes;
+   unsigned frames_per_write = 800;               /* 48000 / 59.94 */
+   long     write_interval   = 16683000L;         /* ns */
+   unsigned writes           = sc->seconds * 60;
+   unsigned i;
+   struct timespec t;
+   void *buf;
+
+   memset(r, 0, sizeof(*r));
+   fake_device_configure_engine(sc->engine_min_frames, sc->locked_period_frames);
+   settings->bools.audio_wasapi_exclusive_mode    = sc->exclusive;
+   settings->uints.audio_wasapi_sh_buffer_length  = sc->sh_buffer_length;
+   settings->uints.audio_output_sample_rate       = 48000;
+
+   ctx = audio_wasapi.init(NULL, 48000, sc->latency_ms, &new_rate);
+   if (!ctx)
+   {
+      printf("   init failed\n");
+      return false;
+   }
+   frame_bytes = audio_wasapi.use_float(ctx) ? 8 : 4;
+   r->frame_bytes = frame_bytes;
+   buf         = calloc(frames_per_write, frame_bytes);
+   audio_wasapi.set_nonblock_state(ctx, true);    /* audio sync off */
+   r->reported_buffer = audio_wasapi.buffer_size(ctx);
+   /* The synchronous audio path never calls start(): audio_driver_init()
+    * leaves it to the runloop, which only issues it around pause, menu
+    * and thread-wait transitions. init() must leave the device fed. */
+   if (!sc->no_start)
+      audio_wasapi.start(ctx, false);
+
+   clock_gettime(CLOCK_MONOTONIC, &t);
+   for (i = 0; i < writes; i++)
+   {
+      ssize_t n = audio_wasapi.write(ctx, buf, frames_per_write * frame_bytes);
+      r->offered += frames_per_write * frame_bytes;
+      if (n > 0)
+         r->taken += (size_t)n;
+      if (getenv("PACING_TRACE") && (i % 60) == 59)
+      {
+         fake_device_stats_t st;
+         fake_device_stats(&st);
+         printf("   t=%us unanswered so far: %u of %u\n", (i + 1) / 60, st.periods_unanswered, st.periods);
+      }
+      sleep_until(&t, write_interval);
+   }
+   fake_device_stats(&r->dev);
+   /* The driver's own count of what the device took, against the
+    * device thread's real-time clock: the sink rate estimate rests on
+    * it, so it must advance at the device's rate. */
+   if (audio_wasapi.frames_consumed)
+   {
+      double sec = (double)writes * write_interval / 1e9;
+      double hz  = (double)audio_wasapi.frames_consumed(ctx) / sec;
+      printf("   frames_consumed: %.0f Hz against wall time (%+.1f%%)\n", hz, (hz / 48000.0 - 1.0) * 100.0);
+      CHECK(hz > 48000.0 * 0.97 && hz < 48000.0 * 1.03,
+            "%s: frames_consumed advances at %.0f Hz, not the device's 48000", sc->name, hz);
+   }
+   audio_wasapi.stop(ctx);
+   audio_wasapi.free(ctx);
+   free(buf);
+   return true;
+}
+
+static void report(const char *name, const scenario_t *sc, const result_t *r)
+{
+   double dropped_ms  = (double)(r->offered - r->taken) / (double)r->frame_bytes * 1000.0 / 48000.0;
+   printf("%-32s setting %2u ms: %s, period %u frames (%.1f ms), reported buffer %u frames; "
+          "dropped %.1f ms of %u s (%.2f%%), %u of %u periods unanswered (%.2f%%)\n",
+         name, sc->latency_ms, r->dev.share_mode ? "exclusive" : "shared",
+         r->dev.period_frames, r->dev.period_frames * 1000.0 / 48000.0,
+         (unsigned)(r->reported_buffer / r->frame_bytes),
+         dropped_ms, sc->seconds,
+         100.0 * (double)(r->offered - r->taken) / (double)r->offered,
+         r->dev.periods_unanswered, r->dev.periods,
+         r->dev.periods ? 100.0 * r->dev.periods_unanswered / r->dev.periods : 0.0);
+}
+
+extern uint32_t stub_requested_layout;
+
+/* A 5.1 request against a device that takes stereo PCM only but
+ * decodes Dolby Digital - a TV on HDMI, which is what the reporter's
+ * LG turned out to be: the driver must open the endpoint as AC-3
+ * over IEC 61937, report the 5.1 layout and take float, feed the
+ * device every period, and what the device receives must be bursts
+ * of AC-3 that decode back to what was written. */
+/* frames_consumed() against a pump that stopped being told. */
+/* The device-clock estimate: the driver fits the position against the
+ * QPC timestamp handed back beside it, and this runs a device at a
+ * known offset from nominal and reads the answer back out of the
+ * driver. The pair the fit needs is the one both clock interfaces
+ * already return, so this exercises the shipping code and not a copy
+ * of its arithmetic. */
+static void device_clock_case(void)
+{
+   settings_t *settings = config_get_ptr();
+   struct { const char *name; double ppm; int want; } cases[] = {
+      { "exact",   0.0,     0 },
+      { "+50 ppm", 50.0,   50 },
+      { "-80 ppm", -80.0, -80 }
+   };
+   unsigned c;
+
+   printf("7. the device clock, fitted against the QPC timestamps\n");
+
+   for (c = 0; c < sizeof(cases) / sizeof(*cases); c++)
+   {
+      int16_t *silence;
+      void    *h;
+      unsigned new_rate = 0;
+      unsigned i;
+      double   ppm   = 0.0;
+      bool     got   = false;
+
+      fake_device_configure(48000, 30000, 100000, false);
+      fake_device_configure_clock(1, 1);
+      fake_device_configure_engine(0, 0);
+      fake_device_configure_drift(cases[c].ppm);
+
+      settings->bools.audio_wasapi_exclusive_mode   = true;
+      settings->uints.audio_wasapi_sh_buffer_length = 0;
+      settings->uints.audio_output_sample_rate      = 48000;
+
+      h = audio_wasapi.init(NULL, 48000, 32, &new_rate);
+      CHECK(h != NULL, "the driver would not open");
+      if (!h)
+         return;
+      silence = (int16_t*)calloc(audio_wasapi.buffer_size(h), 1);
+      if (!silence)
+      {
+         audio_wasapi.free(h);
+         return;
+      }
+      audio_wasapi.set_nonblock_state(h, true);
+      audio_wasapi.start(h, false);
+
+      /* The fit wants a second of window, and frames_consumed() is
+       * what samples the clock - the frontend calls it once a frame,
+       * so it is called here the same way. */
+      for (i = 0; i < 400; i++)
+      {
+         audio_wasapi.write(h, silence, audio_wasapi.buffer_size(h) / 4);
+         audio_wasapi.frames_consumed(h);
+         Sleep(4);
+      }
+
+      if (audio_wasapi.device_clock_ppm)
+         got = audio_wasapi.device_clock_ppm(h, &ppm);
+
+      if (!got)
+         CHECK(false, "the driver fitted no device clock");
+      else if (ppm < cases[c].want - 3 || ppm > cases[c].want + 3)
+      {
+         printf("   device at %+d ppm: driver read %+.0f ppm\n",
+               cases[c].want, ppm);
+         CHECK(false, "the device clock estimate is off");
+      }
+      else
+         printf("   device at %+4d ppm: driver read %+.0f ppm\n",
+               cases[c].want, ppm);
+
+      audio_wasapi.free(h);
+      free(silence);
+   }
+
+   fake_device_configure_drift(0.0);
+}
+
+static void clock_vs_events_case(void)
+{
+   settings_t *settings = config_get_ptr();
+   int16_t *silence;
+   void *h;
+   unsigned new_rate = 0;
+   size_t before_driver, after_driver;
+   unsigned long long before_dev, after_dev;
+   unsigned i;
+
+   printf("6. frames_consumed() follows the device when the events stop arriving\n");
+   fake_device_configure(48000, 30000, 100000, false);
+   fake_device_configure_clock(1, 1);
+   fake_device_configure_engine(0, 0);
+
+   settings->bools.audio_wasapi_exclusive_mode = true;
+   settings->uints.audio_wasapi_sh_buffer_length = 0;
+   settings->uints.audio_output_sample_rate = 48000;
+
+   h = audio_wasapi.init(NULL, 48000, 32, &new_rate);
+   CHECK(h != NULL, "the driver would not open");
+   if (!h)
+      return;
+   silence = (int16_t*)calloc(audio_wasapi.buffer_size(h), 1);
+   if (!silence)
+   {
+      audio_wasapi.free(h);
+      return;
+   }
+   audio_wasapi.set_nonblock_state(h, true);
+   audio_wasapi.start(h, false);
+
+   /* Primed and running, with the pump hearing every period. */
+   for (i = 0; i < 40; i++)
+   {
+      audio_wasapi.write(h, silence, audio_wasapi.buffer_size(h) / 4);
+      Sleep(5);
+   }
+   before_driver = audio_wasapi.frames_consumed(h);
+   before_dev    = fake_device_played();
+   CHECK(before_driver > 0, "nothing consumed while running normally");
+
+   /* The events stop; the engine does not. */
+   fake_device_withhold_events(1);
+   for (i = 0; i < 40; i++)
+   {
+      audio_wasapi.write(h, silence, audio_wasapi.buffer_size(h) / 4);
+      Sleep(5);
+   }
+   after_driver = audio_wasapi.frames_consumed(h);
+   after_dev    = fake_device_played();
+   fake_device_withhold_events(0);
+
+   printf("   with the events withheld: the device played %llu more frames, the driver reports %llu more\n",
+         after_dev - before_dev,
+         (unsigned long long)(after_driver - before_driver));
+   CHECK(after_dev > before_dev, "the engine stopped playing when the events stopped");
+   /* The bound has to be tight enough to fail the thing it is about.
+    * Counting service events, the driver would report no frames at
+    * all across a window where none arrived - so a tolerance of a few
+    * thousand frames would pass that too. An eighth of what the
+    * device played does not: it admits the period or so between the
+    * engine's last step and the clock being read, and nothing like a
+    * window's worth of missed counting. */
+   {
+      unsigned long long played = after_dev - before_dev;
+      long long drift = (long long)(after_driver - before_driver)
+            - (long long)played;
+      if (drift < 0) drift = -drift;
+      CHECK((unsigned long long)drift <= played / 8,
+            "the driver is %lld frames from the device over %llu played: it is counting events, not reading the clock",
+            drift, played);
+   }
+
+   audio_wasapi.stop(h);
+   audio_wasapi.free(h);
+   free(silence);
+}
+
+static void ac3_bitstream_case(void)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned new_rate    = 0;
+   void *ctx;
+   const unsigned frames_per_write = 800, writes = 90;   /* 1.5 s */
+   float *buf;
+   unsigned i, ch;
+   const uint8_t *cap = NULL;
+   size_t cap_len, at = 0, decoded = 0;
+   float *out;
+   rac3_decoder_t *dec;
+   fake_device_stats_t st;
+   size_t frame_bytes;
+
+   printf("AC-3 over IEC 61937 to a stereo-PCM-only device\n");
+   fake_device_configure_engine(0, 0);
+   fake_device_configure_channels(2, true);
+   stub_requested_layout = 0x60Fu;   /* 5.1, surrounds at the sides */
+   settings->bools.audio_wasapi_exclusive_mode   = true;
+   settings->uints.audio_wasapi_sh_buffer_length = 0;
+   settings->uints.audio_output_sample_rate      = 48000;
+
+   ctx = audio_wasapi.init(NULL, 48000, 64, &new_rate);
+   CHECK(ctx != NULL, "init failed");
+   if (!ctx)
+      goto done;
+   CHECK(new_rate == 48000, "rate %u", new_rate);
+   CHECK(audio_wasapi.layout && audio_wasapi.layout(ctx) == 0x60Fu, "layout reported 0x%03x, expected 0x60F",
+         audio_wasapi.layout ? audio_wasapi.layout(ctx) : 0);
+   CHECK(audio_wasapi.use_float(ctx), "the encoder takes float; use_float says otherwise");
+   frame_bytes = 6 * sizeof(float);
+   CHECK(audio_wasapi.buffer_size(ctx) % frame_bytes == 0 && audio_wasapi.buffer_size(ctx) / frame_bytes >= 1536 * 4,
+         "buffer_size %u bytes is not whole 5.1 float frames of at least four bursts", (unsigned)audio_wasapi.buffer_size(ctx));
+   CHECK(audio_wasapi.write_avail(ctx) % frame_bytes == 0, "write_avail %u is not whole frames", (unsigned)audio_wasapi.write_avail(ctx));
+
+   buf = (float*)calloc(frames_per_write * 6, sizeof(float));
+   audio_wasapi.set_nonblock_state(ctx, false);   /* audio sync on: blocking writes */
+   fake_device_capture(true);
+   audio_wasapi.start(ctx, false);
+   for (i = 0; i < writes; i++)
+   {
+      unsigned f;
+      for (f = 0; f < frames_per_write; f++)
+         for (ch = 0; ch < 6; ch++)
+         {
+            double n = (double)(i * frames_per_write + f);
+            double hz = ch == 3 ? 50.0 : 220.0 * (ch + 1);
+            buf[f * 6 + ch] = 0.4f * (float)sin(2.0 * 3.14159265358979 * hz * n / 48000.0);
+         }
+      {
+         ssize_t n;
+         if (getenv("AC3_TRACE"))
+            printf("      write %2u: avail %5u frames before\n", i, (unsigned)(audio_wasapi.write_avail(ctx) / frame_bytes));
+         n = audio_wasapi.write(ctx, buf, frames_per_write * frame_bytes);
+         CHECK(n == (ssize_t)(frames_per_write * frame_bytes), "write %u took %d of %u bytes", i, (int)n, (unsigned)(frames_per_write * frame_bytes));
+      }
+   }
+   /* let the pump drain the last bursts */
+   {
+      struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t); sleep_until(&t, 150000000L);
+   }
+   audio_wasapi.stop(ctx);
+   fake_device_stats(&st);
+   fake_device_capture(false);
+   cap_len = fake_device_captured(&cap);
+   printf("   device took %u periods of 2-channel 16-bit at 48 kHz, %u unanswered; %u bytes captured\n",
+         st.periods, st.periods_unanswered, (unsigned)cap_len);
+   CHECK(st.share_mode == 1, "not exclusive");
+   /* One percent, and one period besides. Over the ninety-odd periods
+    * this case runs, a bare one percent means zero, and zero is a
+    * statement about the machine rather than about the driver: the
+    * pump here is an ordinary thread that a loaded box can hold past
+    * a period, where on Windows it runs time-critical. The same
+    * allowance the pacing scenarios make, for the same reason. */
+   CHECK(st.periods && st.periods_unanswered <= 1 + st.periods / 100,
+         "%u of %u periods unanswered", st.periods_unanswered, st.periods);
+
+   /* the capture: bursts of AC-3, each 6144 bytes, decoding to the tones */
+   dec = rac3_decoder_new();
+   out = (float*)calloc((size_t)writes * frames_per_write * 6 + 1536 * 6, sizeof(float));
+   {
+      unsigned bursts = 0, type; size_t payload;
+      uint8_t frame[RAC3_MAX_FRAME_BYTES];
+      /* The pump fills silence until the first burst is encoded -
+       * 1536 frames after the first write - so the bursts begin a
+       * whole number of periods in, and from there they abut. */
+      while (at + 8 <= cap_len && !(iec61937_probe(cap + at, cap_len - at, &type, &payload) && type == IEC61937_AC3))
+         at += st.period_frames * 4;
+      CHECK(at + 8 <= cap_len, "no AC-3 burst begins on a period boundary in %u captured bytes", (unsigned)cap_len);
+      /* Two writes of 800 frames and an encode, so three periods of
+       * 16 ms natively; under a sanitizer the encode alone can be
+       * longer than a burst, so the bound is loose: within the fifo. */
+      CHECK(at <= (size_t)IEC61937_AC3_BURST_BYTES * 4, "the first burst begins %u frames in", (unsigned)(at / 4));
+      while (at + IEC61937_AC3_BURST_BYTES <= cap_len)
+      {
+         size_t k;
+         rac3_frame_info_t info;
+         if (!iec61937_probe(cap + at, cap_len - at, &type, &payload) || type != IEC61937_AC3 || payload > sizeof(frame))
+         {
+            /* A period of silence between bursts: the writer could not
+             * keep the fifo fed - under ThreadSanitizer the encode is
+             * slower than real time - and the pump filled it. The
+             * bursts themselves are whole and the writer blocked, so
+             * nothing is lost; the next burst is a period boundary on.
+             * Trailing silence after the last write ends the walk. */
+            at += st.period_frames * 4;
+            continue;
+         }
+         for (k = 0; k + 1 < payload; k += 2) { frame[k] = cap[at + 8 + k + 1]; frame[k + 1] = cap[at + 8 + k]; }
+         if (k < payload) frame[k] = cap[at + 8 + k + 1];
+         k = rac3_decode_frame(dec, frame, payload, out + decoded * 6, &info);
+         CHECK(k == 1536, "burst %u: the frame did not decode", bursts);
+         if (!k) break;
+         CHECK(info.layout == 0x60Fu, "burst %u: layout 0x%03x", bursts, info.layout);
+         decoded += k;
+         bursts++;
+         at += IEC61937_AC3_BURST_BYTES;
+      }
+      printf("   %u bursts decoded, %u frames\n", bursts, (unsigned)decoded);
+      if (getenv("AC3_TRACE"))
+      {
+         size_t o; unsigned p = 0;
+         for (o = 0; o + 8 <= cap_len; o += st.period_frames * 4, p++)
+         {
+            unsigned t; size_t pl; bool zero = true; size_t z;
+            for (z = 0; z < st.period_frames * 4 && zero; z++) zero = cap[o + z] == 0;
+            printf("      period %3u: %s\n", p, iec61937_probe(cap + o, cap_len - o, &t, &pl) ? "burst" : zero ? "zero" : "payload/other");
+         }
+      }
+      CHECK(bursts >= writes * frames_per_write / 1536 - 1, "only %u bursts for %u frames written", bursts, writes * frames_per_write);
+   }
+   /* against what was written, 256 frames later (the codec's delay) */
+   for (ch = 0; ch < 6; ch++)
+   {
+      double aa = 0, err = 0, s; size_t f;
+      double hz = ch == 3 ? 50.0 : 220.0 * (ch + 1);
+      for (f = 256; f < decoded; f++)
+      {
+         double x = 0.4 * sin(2.0 * 3.14159265358979 * hz * (double)(f - 256) / 48000.0);
+         double y = out[f * 6 + ch];
+         aa += x * x; err += (x - y) * (x - y);
+      }
+      s = err > 0 ? 10.0 * log10(aa / err) : 200.0;
+      printf("   ch%u: %.1f dB against what was written\n", ch, s);
+      CHECK(s > 30.0, "ch%u decodes at %.1f dB", ch, s);
+   }
+   rac3_decoder_free(dec);
+   free(out);
+   free(buf);
+   audio_wasapi.free(ctx);
+done:
+   stub_requested_layout = 0x3u;
+   fake_device_configure_channels(0, false);
+}
+
+int main(int argc, char **argv)
+{
+   /* A device like the reporter's Topping: 3 ms minimum period, 10 ms
+    * default, exclusive PCM only. */
+   const unsigned seconds = (argc > 1) ? (unsigned)atoi(argv[1]) : 3;
+   scenario_t sc[] = {
+      { 16, seconds, true,  0,   0,   0,   "exclusive, under a frame"     },
+      { 32, seconds, true,  0,   0,   0,   "exclusive"                    },
+      { 64, seconds, true,  0,   0,   0,   "exclusive"                    },
+      { 64, seconds, false, 800, 0,   0,   "shared, 800-frame fifo"       }, /* the reporter's working setup */
+      { 64, seconds, false, 0,   0,   0,   "shared, fifo at the setting"  },
+      { 32, seconds, false, 0,   0,   0,   "shared, fifo at the setting"  },
+      { 24, seconds, false, 0,   0,   0,   "shared, fifo at the setting"  },
+      /* IAudioClient3: the engine offers a 3 ms period; the driver
+       * takes it, the fifo keeps the setting, and the drain-first write
+       * must keep a 432-frame engine buffer fed. */
+      { 64, seconds, false, 0,   144, 0,   "shared, IAudioClient3 at 3 ms" },
+      { 32, seconds, false, 0,   144, 0,   "shared, IAudioClient3 at 3 ms" },
+      /* Another stream holds the engine at 10 ms: the driver must join
+       * that period, not fall to the legacy path. */
+      { 64, seconds, false, 0,   144, 480, "shared, engine locked at 10 ms" },
+      /* The synchronous path never calls start(). The pump was created
+       * only there, so with the threaded pipeline off the fifo filled
+       * and nothing drained: silence. init() brings the pump up. */
+      { 8,  seconds, true,  0,   0,   0,   "exclusive, no start()", true },
+      { 64, seconds, false, 0,   0,   0,   "shared, no start()", true },
+   };
+   unsigned i;
+   fake_device_configure(48000, 30000, 100000, false);
+   /* The endpoint offers both clocks, so frames_consumed() takes the
+    * device's position rather than the events the pump saw - which is
+    * the path a released interface crashed in, when a flag beside the
+    * pointer outlived it. */
+   fake_device_configure_clock(1, 1);
+
+   for (i = 0; i < sizeof(sc) / sizeof(sc[0]); i++)
+   {
+      result_t r;
+      double dropped_pct, unanswered_pct;
+      if (!run(&sc[i], &r))
+      {
+         CHECK(false, "scenario %u: init failed", i);
+         continue;
+      }
+      report(sc[i].name, &sc[i], &r);
+      /* What the driver reports is the setting, within the engine's
+       * rounding, once the setting exceeds the floor the writer's burst
+       * needs. The floor is the driver's rule, restated here so a change
+       * to either side fails this rather than passing by accident. This
+       * writer has audio sync off and does not block, so it gets the
+       * non-blocking floor: a frame at 50 fps plus the 2% rate control
+       * can stretch it plus one frame of slack, never below two periods.
+       * The blocking writer - sync on, frame-synchronous pipeline - gets
+       * a frame plus a period, never below the engine buffer; it is not
+       * exercised here. The period is the one the engine actually runs
+       * at, so an IAudioClient3 stream at 3 ms is floored by the frame,
+       * not by the default period. */
+      if (!sc[i].exclusive && sc[i].sh_buffer_length == 0)
+      {
+         unsigned reported_ms  = (unsigned)(r.reported_buffer / r.frame_bytes * 1000 / 48000);
+         unsigned engine_ms    = r.dev.buffer_frames * 1000 / 48000;
+         unsigned period       = r.dev.period_frames;
+         unsigned floor_frames = 48000 / 50 + 48000 / 2000 + 1;
+         unsigned floor_ms;
+         unsigned expect_ms;
+         if (floor_frames < period * 2)
+            floor_frames = period * 2;
+         floor_ms  = floor_frames * 1000 / 48000 + engine_ms;
+         expect_ms = sc[i].latency_ms > floor_ms ? sc[i].latency_ms : floor_ms;
+         CHECK(reported_ms <= expect_ms + 4,
+               "scenario %u: reports %u ms against a %u ms setting (floor %u)", i, reported_ms, sc[i].latency_ms, expect_ms);
+      }
+      if (sc[i].engine_min_frames)
+      {
+         unsigned want = sc[i].locked_period_frames ? sc[i].locked_period_frames : sc[i].engine_min_frames;
+         CHECK(r.dev.period_frames == want,
+               "scenario %u: engine period %u frames, expected %u (IAudioClient3 path not taken)",
+               i, r.dev.period_frames, want);
+      }
+      dropped_pct    = 100.0 * (double)(r.offered - r.taken) / (double)r.offered;
+      unanswered_pct = r.dev.periods ? 100.0 * r.dev.periods_unanswered / r.dev.periods : 100.0;
+
+      if (sc[i].no_start)
+      {
+         /* The point is that the device is fed at all without start():
+          * every period answered. An 8 ms fifo against 16.7 ms bursts
+          * drops the remainder of each frame by arithmetic, as the
+          * under-a-frame case above; that is not what is tested here. */
+         CHECK(unanswered_pct < 1.0, "scenario %u (no start): %.2f%% of periods unanswered - the pump is not running", i, unanswered_pct);
+         continue;
+      }
+
+      if (sc[i].exclusive && sc[i].latency_ms < 20)
+      {
+         /* A buffer smaller than the writer's frame, with audio sync
+          * off: 16 ms against 16.7. The remainder of each frame is
+          * dropped - 4%, by arithmetic - and for the 0.7 ms of each
+          * frame the fifo stands empty a period that lands there goes
+          * unanswered, an underrun any driver would have. The init
+          * log says to set 20 ms or more. Bounded here, not zero. */
+         CHECK(dropped_pct < 6.0, "scenario %u: %.2f%% dropped", i, dropped_pct);
+         CHECK(unanswered_pct < 3.0, "scenario %u: %.2f%% of periods unanswered", i, unanswered_pct);
+         continue;
+      }
+
+      /* Once the buffer holds a frame: no period goes unanswered - the
+       * pump's job in exclusive mode, the drain-first write's in shared,
+       * and 3-75% before them - and nothing is dropped past a start-up
+       * transient.
+       *
+       * The bound is not zero, for the harness's own sake: on a loaded
+       * sanitizer box the pump thread is an ordinary thread that can
+       * be held past a period, where on Windows it runs at
+       * time-critical priority. Nor is it a flat percentage, which is
+       * what it was: one scheduling hiccup holds the thread for about
+       * a quantum whatever the period, so it costs one period at
+       * 10 ms and four at 3 ms - and a flat percentage therefore
+       * asks a short-period scenario to survive four times the
+       * scheduling noise. The 3 ms scenarios failed on this box for
+       * that reason and not for any property of the driver.
+       *
+       * So the allowance is stated in hiccups: four of them over the
+       * run, each costing however many periods a quantum spans. That
+       * is the same physical tolerance at every period length. */
+      {
+         double period_ms = r.dev.periods
+               ? (double)seconds * 1000.0 / r.dev.periods : 10.0;
+         double per_hiccup = 15.0 / (period_ms > 0.1 ? period_ms : 0.1);
+         double allow_pct  = r.dev.periods
+               ? 100.0 * (4.0 * per_hiccup) / r.dev.periods : 1.0;
+         if (allow_pct < 1.0)
+            allow_pct = 1.0;
+         CHECK(unanswered_pct < allow_pct,
+               "scenario %u: %.2f%% of periods unanswered, against %.2f%% for four scheduling hiccups at a %.1f ms period",
+               i, unanswered_pct, allow_pct, period_ms);
+         CHECK(dropped_pct < allow_pct,
+               "scenario %u: %.2f%% dropped, against %.2f%%",
+               i, dropped_pct, allow_pct);
+      }
+   }
+
+   /* The whole point of reading the device's clock: a pump held past
+    * its periods stops counting the frames the device played, and a
+    * clock does not. The engine keeps playing here while its event
+    * goes unsignalled, and frames_consumed() has to follow the
+    * device rather than the events nobody received. */
+   clock_vs_events_case();
+   device_clock_case();
+
+   ac3_bitstream_case();
+
+   /* Every init took COM up on its thread and every free put it back. */
+   CHECK(fake_com_refs() == 0, "COM references left after free: %d", fake_com_refs());
+
+   if (failures)
+   {
+      printf("%u failure(s)\n", failures);
+      return 1;
+   }
+   printf("wasapi pacing: every period answered, nothing dropped once the buffer holds a frame\n");
+   return 0;
+}

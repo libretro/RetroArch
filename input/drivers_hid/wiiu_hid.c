@@ -16,11 +16,22 @@
 
 #include "../include/wiiu/hid.h"
 #include <wiiu/os/atomic.h>
+#include <wiiu/os/event.h>
+#include <wiiu/os/time.h>
 #include <string/stdstring.h>
 
 /* TODO/FIXME - static globals */
 static wiiu_event_list events;
 static wiiu_adapter_list adapters;
+/* Wakes the polling thread: a read completed, a device attached or
+ * detached, the frontend readied an adapter, or it is time to stop.
+ * Auto-reset, so a signal that lands while the thread is busy is not
+ * lost - its next wait returns at once. The thread used to spin on its
+ * loop with no wait at all. */
+static OSEvent hid_wake;
+
+/* How long shutdown waits for reads still in flight. */
+#define WIIU_HID_DRAIN_US 5000000
 
 /* Forward declarations */
 static void wiiu_hid_attach(wiiu_hid_t *hid, wiiu_attach_event *event);
@@ -29,7 +40,7 @@ static void wiiu_hid_report_hid_error(const char *msg, wiiu_adapter_t *adapter, 
 {
    int16_t hid_err_code = err & 0xffff;
    int16_t err_category = (err >> 16) & 0xffff;
-   const char *device   = (adapter->device_name && *adapter->device_name) ? adapter->device_name : "unknown";
+   const char *device   = *adapter->device_name ? adapter->device_name : "unknown";
 
    switch (hid_err_code)
    {
@@ -86,64 +97,88 @@ static bool wiiu_hid_joypad_query(void *data, unsigned slot)
    return slot < joypad_state.max_slot;
 }
 
+/* The pad in @slot, held until wiiu_hid_put_pad(): the polling thread
+ * tears pads down while these run on the frontend's. NULL, holding
+ * nothing, for none. */
 static joypad_connection_t *wiiu_hid_get_pad(wiiu_hid_t *hid, unsigned slot)
 {
    joypad_connection_t *result;
    if (!wiiu_hid_joypad_query(hid, slot))
       return NULL;
    result = &joypad_state.pads[slot];
-   if (!result->connected || !result->iface || !result->connection)
+   if (!pad_connection_acquire(result))
       return NULL;
+   if (!result->connected || !result->iface || !result->connection)
+   {
+      pad_connection_release(result);
+      return NULL;
+   }
    return result;
+}
+
+static void wiiu_hid_put_pad(joypad_connection_t *pad)
+{
+   pad_connection_release(pad);
 }
 
 static const char *wiiu_hid_joypad_name(void *data, unsigned slot)
 {
+   const char *name         = NULL;
    joypad_connection_t *pad = wiiu_hid_get_pad((wiiu_hid_t *)data, slot);
 
-   if (!pad || !pad->iface->get_name)
+   if (!pad)
       return NULL;
-
-   return pad->iface->get_name(pad->connection);
+   if (pad->iface->get_name)
+      name = pad->iface->get_name(pad->connection);
+   wiiu_hid_put_pad(pad);
+   return name;
 }
 
 static void wiiu_hid_joypad_get_buttons(void *data, unsigned slot, input_bits_t *state)
 {
    joypad_connection_t *pad = wiiu_hid_get_pad((wiiu_hid_t *)data, slot);
 
-   if (pad && pad->iface->get_buttons)
+   if (!pad)
+      return;
+   if (pad->iface->get_buttons)
       pad->iface->get_buttons(pad->connection, state);
+   wiiu_hid_put_pad(pad);
 }
 
 static int16_t wiiu_hid_joypad_button(void *data,
       unsigned slot, uint16_t joykey)
 {
-   joypad_connection_t *pad             = wiiu_hid_get_pad((wiiu_hid_t *)data, slot);
-   if (!pad || !pad->iface->button)
+   int16_t ret              = 0;
+   joypad_connection_t *pad = wiiu_hid_get_pad((wiiu_hid_t *)data, slot);
+   if (!pad)
       return 0;
-   return pad->iface->button(pad->connection, joykey);
+   if (pad->iface->button)
+      ret = pad->iface->button(pad->connection, joykey);
+   wiiu_hid_put_pad(pad);
+   return ret;
 }
 
 static int16_t wiiu_hid_joypad_axis(void *data, unsigned slot, uint32_t joyaxis)
 {
+   int16_t ret              = 0;
    joypad_connection_t *pad = wiiu_hid_get_pad((wiiu_hid_t *)data, slot);
 
-   if (pad)
+   if (!pad)
+      return 0;
+   if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      if (AXIS_NEG_GET(joyaxis) < 4)
-      {
-         int16_t val = pad->iface->get_axis(pad->connection, AXIS_NEG_GET(joyaxis));
-         if (val < 0)
-            return val;
-      }
-      else if (AXIS_POS_GET(joyaxis) < 4)
-      {
-         int16_t val = pad->iface->get_axis(pad->connection, AXIS_POS_GET(joyaxis));
-         if (val > 0)
-            return val;
-      }
+      int16_t val = pad->iface->get_axis(pad->connection, AXIS_NEG_GET(joyaxis));
+      if (val < 0)
+         ret = val;
    }
-   return 0;
+   else if (AXIS_POS_GET(joyaxis) < 4)
+   {
+      int16_t val = pad->iface->get_axis(pad->connection, AXIS_POS_GET(joyaxis));
+      if (val > 0)
+         ret = val;
+   }
+   wiiu_hid_put_pad(pad);
+   return ret;
 }
 
 static int16_t wiiu_hid_joypad_state(void *data,
@@ -176,6 +211,7 @@ static int16_t wiiu_hid_joypad_state(void *data,
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
+   wiiu_hid_put_pad(pad);
 
    return ret;
 }
@@ -185,10 +221,11 @@ static bool wiiu_hid_joypad_rumble(void *data, unsigned slot,
 {
    joypad_connection_t *pad = wiiu_hid_get_pad((wiiu_hid_t *)data, slot);
 
-   if (!pad || !pad->iface->set_rumble)
+   if (!pad)
       return false;
-
-   pad->iface->set_rumble(pad->connection, effect, strength);
+   if (pad->iface->set_rumble)
+      pad->iface->set_rumble(pad->connection, effect, strength);
+   wiiu_hid_put_pad(pad);
    return false;
 }
 
@@ -206,6 +243,7 @@ static void wiiu_hid_init_lists(void)
    OSFastMutex_Init(&(events.lock), "attach_events");
    memset(&adapters, 0, sizeof(adapters));
    OSFastMutex_Init(&(adapters.lock), "adapters");
+   OSInitEvent(&hid_wake, FALSE, OS_EVENT_MODE_AUTO);
 }
 
 static void wiiu_hid_delete_adapter(wiiu_adapter_t *adapter)
@@ -240,7 +278,7 @@ static void wiiu_hid_delete_adapter(wiiu_adapter_t *adapter)
 static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack)
 {
    int incomplete          = 0;
-   int retries             = 0;
+   uint64_t waited_us      = 0;
    wiiu_adapter_t *adapter = NULL;
 
    RARCH_LOG("[HID] Waiting for in-flight reads to finish.\n");
@@ -248,7 +286,7 @@ static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack)
    /* We don't need to protect the adapter list here because nothing else
       will access it during this method (the HID system is shut down, and
       the only other access is the polling thread that just stopped */
-   do
+   for (;;)
    {
       incomplete = 0;
       for (adapter = adapters.list; adapter != NULL; adapter = adapter->next)
@@ -268,17 +306,25 @@ static void wiiu_hid_polling_thread_cleanup(OSThread *thread, void *stack)
             pad_connection_pad_deregister(joypad_state.pads, adapter->pad_driver, adapter->pad_driver_data);
             wiiu_hid_delete_adapter(adapter);
          }
+         return;
       }
 
-      if (incomplete)
-         usleep(5000);
-
-      if (++retries >= 1000)
+      /* Each completing read signals hid_wake, so this wakes as each
+       * one finishes rather than on a 5 ms lap. The waits add up to the
+       * old five seconds at most; past that the adapters are left, as
+       * before, rather than freed under a read still in flight. */
+      if (waited_us >= WIIU_HID_DRAIN_US)
       {
          RARCH_WARN("[HID] Timed out waiting for in-flight read to finish.\n");
-         incomplete = 0;
+         return;
       }
-   } while (incomplete);
+      {
+         OSTime start = OSGetSystemTime();
+         OSWaitEventWithTimeout(&hid_wake,
+               (OSTime)OSMicroseconds(WIIU_HID_DRAIN_US - waited_us));
+         waited_us += ticks_to_us(OSGetSystemTime() - start);
+      }
+   }
 }
 
 static OSThread *wiiu_hid_new_thread(void)
@@ -359,6 +405,10 @@ static void wiiu_hid_read_loop_callback(uint32_t handle, int32_t err,
       if (err == 0)
          adapter->pad_driver->packet_handler(adapter->pad_driver_data, buffer, buffer_size);
    }
+
+   /* The polling thread issues the next read; shutdown also waits on
+    * this to see reads finish. */
+   OSSignalEvent(&hid_wake);
 }
 
 
@@ -401,10 +451,12 @@ static int wiiu_hid_polling_thread(int argc, const char **argv)
 {
    wiiu_hid_t *hid = (wiiu_hid_t *)argv;
 
-   while (!hid->polling_thread_quit)
+   while (!retro_atomic_load_acquire_int(&hid->polling_thread_quit))
    {
       wiiu_handle_attach_events(hid, wiiu_hid_synchronized_get_events_list());
       wiiu_poll_adapters(hid);
+      /* Nothing to do until something signals: see hid_wake. */
+      OSWaitEvent(&hid_wake);
    }
 
    return 0;
@@ -422,6 +474,8 @@ static void wiiu_hid_start_polling_thread(wiiu_hid_t *hid)
 
    if (!thread || !stack)
       goto error;
+
+   retro_atomic_int_init(&hid->polling_thread_quit, 0);
 
    if (!OSCreateThread(thread,
             wiiu_hid_polling_thread,
@@ -464,8 +518,9 @@ static void wiiu_hid_stop_polling_thread(wiiu_hid_t *hid)
      hid->client = NULL;
    }
 
-   /* tell the thread it's time to stop. */
-   hid->polling_thread_quit = true;
+   /* tell the thread it's time to stop, and wake it to see that. */
+   retro_atomic_store_release_int(&hid->polling_thread_quit, 1);
+   OSSignalEvent(&hid_wake);
    /* This returns once the thread runs and the cleanup method completes. */
    OSJoinThread(hid->polling_thread, &thread_result);
    free(hid->polling_thread);
@@ -576,6 +631,7 @@ static int32_t wiiu_attach_callback(HIDClient *client,
 
    event->type = attach;
    wiiu_hid_synchronized_add_event(event);
+   OSSignalEvent(&hid_wake);
 
    return DEVICE_USED;
 }
@@ -676,6 +732,7 @@ static uint8_t wiiu_hid_try_init_driver(wiiu_adapter_t *adapter)
    if (!adapter->pad_driver_data)
    {
       RARCH_LOG("[HID] wiiu_hid_try_init_driver: Pad init failed.\n");
+      pad_connection_release_slot(&joypad_state.pads[slot]);
       return ADAPTER_STATE_DONE;
    }
 
@@ -701,6 +758,9 @@ static void synchronized_process_adapters(wiiu_hid_t *hid)
       {
          case ADAPTER_STATE_NEW:
             adapter->state = wiiu_hid_try_init_driver(adapter);
+            /* READY needs its first read, DONE its retirement; both
+             * are the polling thread's. */
+            OSSignalEvent(&hid_wake);
             break;
          case ADAPTER_STATE_READY:
          case ADAPTER_STATE_READING:

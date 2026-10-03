@@ -24,6 +24,7 @@
 #include <VG/openvg.h>
 #include <bcm_host.h>
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -56,15 +57,16 @@ typedef struct
    bool vsync_callback_set;
    bool resize;
    unsigned res;
-   unsigned fb_width, fb_height;
+   unsigned fb_dims;             /* VIDEO_SCALE_PACK */
 #ifdef HAVE_EGL
    egl_ctx_data_t egl;
 #endif
    EGL_DISPMANX_WINDOW_T native_window;
    DISPMANX_DISPLAY_HANDLE_T dispman_display;
-   /* For vsync wait after eglSwapBuffers when max_swapchain < 3 */
-   scond_t *vsync_condition;
-   slock_t *vsync_condition_mutex;
+   /* For vsync wait after eglSwapBuffers when max_swapchain < 3. The
+    * wait window opens before the swap, so a callback arriving while
+    * the swap is still running is counted rather than missed. */
+   retro_eventcount_t vsync_ec;
    EGLImageKHR eglBuffer[MAX_EGLIMAGE_TEXTURES];
    EGLContext eglimage_ctx;
    EGLSurface pbuff_surf;
@@ -87,14 +89,14 @@ static INLINE bool gfx_ctx_vc_egl_query_extension(vc_ctx_data_t *vc, const char 
 }
 
 static void gfx_ctx_vc_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
    *resize = false;
    *quit   = (bool)frontend_driver_get_signal_handler_state();
 }
 
 static void gfx_ctx_vc_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    vc_ctx_data_t    *vc  = (vc_ctx_data_t*)data;
    settings_t *settings  = config_get_ptr();
@@ -113,20 +115,20 @@ static void gfx_ctx_vc_get_video_size(void *data,
       /*  Calculate source and destination aspect ratios. */
 
       float src_aspect = (float)fullscreen_x / (float)fullscreen_y;
-      float dst_aspect = (float)vc->fb_width / (float)vc->fb_height;
+      float dst_aspect = (float)VIDEO_SCALE_W(vc->fb_dims)
+         / (float)VIDEO_SCALE_H(vc->fb_dims);
 
       /* If source and destination aspect ratios
        * are not equal correct source width. */
       if (src_aspect != dst_aspect)
-         *width = (unsigned)(fullscreen_y * dst_aspect);
+         *dims = VIDEO_SCALE_PACK((unsigned)(fullscreen_y * dst_aspect),
+               fullscreen_y);
       else
-         *width = fullscreen_x;
-      *height   = fullscreen_y;
+         *dims = VIDEO_SCALE_PACK(fullscreen_x, fullscreen_y);
    }
    else
    {
-      *width  = vc->fb_width;
-      *height = vc->fb_height;
+      *dims = vc->fb_dims;
    }
 }
 
@@ -137,9 +139,7 @@ static void dispmanx_vsync_callback(DISPMANX_UPDATE_HANDLE_T u, void *data)
    if (!vc)
       return;
 
-   slock_lock(vc->vsync_condition_mutex);
-   scond_signal(vc->vsync_condition);
-   slock_unlock(vc->vsync_condition_mutex);
+   retro_eventcount_notify(&vc->vsync_ec);
 }
 
 static bool gfx_ctx_vc_bind_api(void *data,
@@ -258,11 +258,12 @@ static void gfx_ctx_vc_destroy(void *data)
    /* Stop generating vsync callbacks if we are doing so.
     * Don't destroy the context while cbs are being generated! */
    if (vc->vsync_callback_set)
+   {
       vc_dispmanx_vsync_callback(vc->dispman_display, NULL, NULL);
+      vc->vsync_callback_set = false;
+   }
 
-   /* Destroy mutexes and conditions. */
-   slock_free(vc->vsync_condition_mutex);
-   scond_free(vc->vsync_condition);
+   retro_eventcount_free(&vc->vsync_ec);
 }
 
 static void *gfx_ctx_vc_init(void *video_driver)
@@ -274,6 +275,7 @@ static void *gfx_ctx_vc_init(void *video_driver)
    DISPMANX_DISPLAY_HANDLE_T dispman_display;
    DISPMANX_UPDATE_HANDLE_T dispman_update;
    DISPMANX_MODEINFO_T dispman_modeinfo;
+   uint32_t fb_width, fb_height;
    EGLint n, major, minor;
    settings_t *settings                      = config_get_ptr();
    unsigned max_swapchain_images             = settings->uints.video_max_swapchain_images;
@@ -328,13 +330,14 @@ static void *gfx_ctx_vc_init(void *video_driver)
 
    /* Create an EGL window surface. */
    if (graphics_get_display_size(0 /* LCD */,
-            &vc->fb_width, &vc->fb_height) < 0)
+            &fb_width, &fb_height) < 0)
       goto error;
+   vc->fb_dims                               = VIDEO_SCALE_PACK(fb_width, fb_height);
 
    dst_rect.x                                = 0;
    dst_rect.y                                = 0;
-   dst_rect.width                            = vc->fb_width;
-   dst_rect.height                           = vc->fb_height;
+   dst_rect.width                            = fb_width;
+   dst_rect.height                           = fb_height;
 
    src_rect.x                                = 0;
    src_rect.y                                = 0;
@@ -349,7 +352,7 @@ static void *gfx_ctx_vc_init(void *video_driver)
 
       /* Calculate source and destination aspect ratios. */
       float src_aspect                       = (float)fullscreen_x / (float)fullscreen_y;
-      float dst_aspect                       = (float)vc->fb_width / (float)vc->fb_height;
+      float dst_aspect                       = (float)fb_width / (float)fb_height;
       /* If source and destination aspect ratios are not equal correct source width. */
       if (src_aspect != dst_aspect)
          src_rect.width                      = (unsigned)(fullscreen_y * dst_aspect) << 16;
@@ -359,8 +362,8 @@ static void *gfx_ctx_vc_init(void *video_driver)
    }
    else
    {
-      src_rect.width                         = vc->fb_width << 16;
-      src_rect.height                        = vc->fb_height << 16;
+      src_rect.width                         = fb_width << 16;
+      src_rect.height                        = fb_height << 16;
    }
 
    dispman_display                           = vc_dispmanx_display_open(0 /* LCD */);
@@ -399,7 +402,7 @@ static void *gfx_ctx_vc_init(void *video_driver)
 
       /* Calculate source and destination aspect ratios. */
       float src_aspect                       = (float)fullscreen_x / (float)fullscreen_y;
-      float dst_aspect                       = (float)vc->fb_width / (float)vc->fb_height;
+      float dst_aspect                       = (float)fb_width / (float)fb_height;
 
       /* If source and destination aspect ratios are not equal correct source width. */
       if (src_aspect != dst_aspect)
@@ -410,8 +413,8 @@ static void *gfx_ctx_vc_init(void *video_driver)
    }
    else
    {
-      vc->native_window.width                = vc->fb_width;
-      vc->native_window.height               = vc->fb_height;
+      vc->native_window.width                = fb_width;
+      vc->native_window.height               = fb_height;
    }
    vc_dispmanx_update_submit_sync(dispman_update);
 
@@ -421,9 +424,10 @@ static void *gfx_ctx_vc_init(void *video_driver)
 #endif
 
    /* For VSync after eglSwapBuffers when max_swapchain < 3 */
-   vc->vsync_condition                       = scond_new();
-   vc->vsync_condition_mutex                 = slock_new();
    vc->vsync_callback_set                    = false;
+
+   if (!retro_eventcount_init(&vc->vsync_ec))
+      goto error;
 
    if (max_swapchain_images <= 2)
    {
@@ -432,6 +436,8 @@ static void *gfx_ctx_vc_init(void *video_driver)
             dispmanx_vsync_callback, (void*)vc);
       vc->vsync_callback_set = true;
    }
+
+   video_driver_display_type_set(RARCH_DISPLAY_VIDEOCORE);
 
    return vc;
 
@@ -450,7 +456,7 @@ static void gfx_ctx_vc_set_swap_interval(void *data, int swap_interval)
 }
 
 static bool gfx_ctx_vc_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
 #ifdef HAVE_EGL
@@ -623,15 +629,17 @@ static void gfx_ctx_vc_swap_buffers(void *data)
    vc_ctx_data_t              *vc = (vc_ctx_data_t*)data;
    settings_t *settings           = config_get_ptr();
    unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
+   int  key                       = 0;
+   bool wait_vsync;
 
    if (!vc)
       return;
 
-   egl_swap_buffers(&vc->egl);
-
    /* Wait for vsync immediately if we don't
     * want egl_swap_buffers to triple-buffer */
-   if (max_swapchain_images <= 2)
+   wait_vsync                     = (max_swapchain_images <= 2);
+
+   if (wait_vsync)
    {
       /* We DON'T wait to wait without callback function ready! */
       if (!vc->vsync_callback_set)
@@ -640,13 +648,22 @@ static void gfx_ctx_vc_swap_buffers(void *data)
                dispmanx_vsync_callback, (void*)vc);
          vc->vsync_callback_set = true;
       }
-      slock_lock(vc->vsync_condition_mutex);
-      scond_wait(vc->vsync_condition, vc->vsync_condition_mutex);
-      slock_unlock(vc->vsync_condition_mutex);
+      /* Opened before the swap: a callback from here on either lands
+       * in this window or makes the commit below return at once, so
+       * the frame never waits out a period it already had. */
+      key = retro_eventcount_prepare_wait(&vc->vsync_ec);
    }
+
+   egl_swap_buffers(&vc->egl);
+
+   if (wait_vsync)
+      retro_eventcount_commit_wait(&vc->vsync_ec, key);
    /* Stop generating vsync callbacks from now on */
    else if (vc->vsync_callback_set)
+   {
       vc_dispmanx_vsync_callback(vc->dispman_display, NULL, NULL);
+      vc->vsync_callback_set = false;
+   }
 #endif
 }
 

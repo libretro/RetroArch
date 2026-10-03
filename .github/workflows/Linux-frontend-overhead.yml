@@ -1,0 +1,92 @@
+name: CI Linux frontend overhead [frame-path harness]
+
+# What one runloop_iterate() costs when the core costs nothing, and
+# whether anything on the frame path allocates. The harness links the
+# shipping release objects with main() replaced, boots on the null
+# drivers, runs a core that pushes one frame, one audio batch and one
+# input read per retro_run, and counts heap calls over the frame path
+# by glibc interposition - which is why this is a release build with
+# no allocator sanitizer in the way. It also prints microseconds per
+# frame under fast-forward and trips on a loose bound, so a blocking
+# call or a sleep that lands on the frame path fails here rather than
+# in a bug report about stutter.
+#
+# Everything a default desktop build compiles in is compiled in, so a
+# product that starts costing the frame while idle is measured, not
+# excluded.
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  linux-frontend-overhead:
+    name: Release build, frame-path heap and cost
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: |
+          pkgs="build-essential libxkbcommon-dev libx11-xcb-dev zlib1g-dev libfreetype6-dev libegl1-mesa-dev libgles2-mesa-dev libgbm-dev libavcodec-dev libsdl2-dev libxml2-dev yasm"
+          if dpkg -s $pkgs >/dev/null 2>&1; then
+            echo "All packages already present on runner image; skipping apt."
+            exit 0
+          fi
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure
+        # Non-Qt, as the harness requires (with Qt, main() lives in
+        # ui_qt.o). Everything else at its default.
+        run: ./configure --disable-qt
+
+      - name: Build (release)
+        run: make -j$(getconf _NPROCESSORS_ONLN)
+
+      - name: Run the frontend-overhead harness
+        shell: bash
+        run: |
+          set -o pipefail
+          SAN=none make -C samples/runloop/frontend_overhead check
+          make -C samples/runloop/frontend_overhead clean

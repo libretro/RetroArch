@@ -84,8 +84,12 @@
 #include <streams/file_stream.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
+#include <retro_assert.h>
 #include <queues/message_queue.h>
 #include <lists/dir_list.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #ifdef __EMSCRIPTEN__
 #include "frontend/drivers/platform_emscripten.h"
@@ -98,6 +102,13 @@
 
 #if defined(ANDROID)
 #include "play_feature_delivery/play_feature_delivery.h"
+#include "frontend/drivers/platform_unix.h"
+#include "input/drivers/android_input.h"
+#endif
+
+#if defined(ANDROID) && defined(HAVE_SAF)
+bool android_get_vfs_authorized_locations(
+      struct retro_vfs_authorized_locations *locations);
 #endif
 
 #ifdef HAVE_PRESENCE
@@ -196,7 +207,7 @@
 #include "gfx/video_thread_wrapper.h"
 #endif
 #include "gfx/video_display_server.h"
-#ifdef HAVE_CRTSWITCHRES
+#ifdef HAVE_MODELINE
 #include "gfx/video_crt_switch.h"
 #endif
 #ifdef HAVE_BLUETOOTH
@@ -307,7 +318,7 @@ struct game_ai_think_ctx
 
 static void runloop_game_ai_think_cb(void *userdata,
       const void *data,
-      unsigned width, unsigned height, size_t pitch)
+      unsigned dims, size_t pitch)
 {
    struct game_ai_think_ctx *ctx = (struct game_ai_think_ctx*)userdata;
    if (!ctx)
@@ -317,7 +328,7 @@ static void runloop_game_ai_think_cb(void *userdata,
          ctx->override_p2,
          ctx->show_debug,
          data,
-         width, height, pitch,
+         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), pitch,
          ctx->pix_fmt);
 }
 #endif
@@ -403,16 +414,74 @@ static void runloop_game_ai_think_cb(void *userdata,
 
 static runloop_state_t runloop_state      = {0};
 
+/* Defined here, before its first user: the SET_MESSAGE_EXT STATUS
+ * path in the environment callback defers through this machinery,
+ * and it sits far above the message-queue code where the rest of
+ * the deferral lives. */
+struct runloop_deferred_msg
+{
+   mpsc_stack_node_t link; /* first: the stack's, from push to drain */
+   char *msg;
+   char *title;
+   size_t len;
+   unsigned prio;
+   unsigned duration;
+   enum message_queue_icon icon;
+   enum message_queue_category category;
+   bool flush;
+   /* A deferred RETRO_MESSAGE_TYPE_STATUS: drained into
+    * core_status_msg under its priority-overwrite rule rather than
+    * pushed onto the message queue. Raised only by a core calling
+    * SET_MESSAGE_EXT off the main thread, which the libretro API
+    * does not allow but rogue cores do. */
+   bool core_status;
+};
+
+#ifdef HAVE_THREADS
+/* True when the caller is not the thread the message queue belongs
+ * to; such a caller hands its message to the deferral stack and the
+ * main thread replays it at the top of the next iterate. */
+static bool runloop_msg_queue_off_main(runloop_state_t *runloop_st)
+{
+   return    runloop_st->msg_queue_main_id
+          && sthread_get_current_thread_id()
+                != runloop_st->msg_queue_main_id;
+}
+#endif
+
+
 /* GLOBAL POINTER GETTERS */
 runloop_state_t *runloop_state_get_ptr(void)
 {
    return &runloop_state;
 }
 
+void runloop_frame_work_set(unsigned bit, bool on)
+{
+   if (on)
+      runloop_state.frame_work |=  bit;
+   else
+      runloop_state.frame_work &= ~bit;
+}
+
+bool runloop_is_content_closing(void)
+{
+   return runloop_state.content_closing;
+}
+
+bool runloop_is_content_switching(void)
+{
+   return runloop_state.content_switching;
+}
+
 bool state_manager_frame_is_reversed(void)
 {
 #ifdef HAVE_REWIND
-   return !!(runloop_state.rewind_st.flags & STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED);
+   /* Acquire on the atomic mirror, not the flags word: callers
+    * include the video thread's FrameDirection reads and the task
+    * worker, while check_rewind writes on main. */
+   return retro_atomic_load_acquire_int(
+         &runloop_state.rewind_st.frame_reversed_atomic) != 0;
 #else
    return false;
 #endif
@@ -1143,9 +1212,16 @@ static void runloop_deinit_core_options(
          core_option_manager_flush(
                core_options,
                conf_tmp);
-         RARCH_LOG("[Core] Saved %s-specific core options to \"%s\".\n",
-               game_options_active ? "game" : "folder", path_core_options);
-         config_file_write(conf_tmp, path_core_options, true);
+         /* Log what happened, not what was attempted: this claimed
+          * a successful save before the write and then discarded
+          * its result, so a failed one told the user their options
+          * were saved. */
+         if (config_file_write(conf_tmp, path_core_options, true))
+            RARCH_LOG("[Core] Saved %s-specific core options to \"%s\".\n",
+                  game_options_active ? "game" : "folder", path_core_options);
+         else
+            RARCH_ERR("[Core] Failed to save %s-specific core options to \"%s\".\n",
+                  game_options_active ? "game" : "folder", path_core_options);
          config_file_free(conf_tmp);
          conf_tmp = NULL;
       }
@@ -1157,8 +1233,11 @@ static void runloop_deinit_core_options(
       core_option_manager_flush(
             core_options,
             core_options->conf);
-      RARCH_LOG("[Core] Saved core options file to \"%s\".\n", path);
-      config_file_write(core_options->conf, path, true);
+      if (config_file_write(core_options->conf, path, true))
+         RARCH_LOG("[Core] Saved core options file to \"%s\".\n", path);
+      else
+         RARCH_ERR("[Core] Failed to save core options file to \"%s\".\n",
+               path);
    }
 
    if (core_options)
@@ -1504,8 +1583,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                return true;
             }
 
-            RARCH_DBG("[Environ] GET_VARIABLE: %s = \"%s\"\n",
-                  var->key, var->value);
+            /* Log initial environment gets here and handle
+             * runtime logging in 'core_option_manager.c' */
+            if (runloop_st->core_options->log)
+               RARCH_DBG("[Environ] GET_VARIABLE: %s = \"%s\"\n",
+                     var->key, var->value);
          }
          break;
 
@@ -1770,10 +1852,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
             if (runloop_st->core_options && core_options_display)
             {
-               RARCH_DBG("[Environ] SET_CORE_OPTIONS_DISPLAY: %s = %s\n",
-                     core_options_display->key,
-                     core_options_display->visible ? "visible" : "hidden");
-               core_option_manager_set_visible(
+               if (runloop_st->core_options->log)
+                  RARCH_DBG("[Environ] SET_CORE_OPTIONS_DISPLAY: %s = %s\n",
+                        core_options_display->key,
+                        core_options_display->visible ? "visible" : "hidden");
+               core_option_manager_set_display(
                      runloop_st->core_options,
                      core_options_display->key,
                      core_options_display->visible);
@@ -1813,9 +1896,15 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          dispgfx_widget_t *p_dispwidget  = dispwidget_get_ptr();
 
          if (p_dispwidget->active)
+         {
+            /* msg->frames counts the core's frames, not 60 Hz ones */
+            double fps = video_state_get_ptr()->av_info.timing.fps;
+            if (fps <= 0.0)
+               fps = 60.0;
             gfx_widget_set_libretro_message(
                   msg->msg,
-                  roundf((float)msg->frames / 60.0f * 1000.0f));
+                  (unsigned)((double)msg->frames * 1000.0 / fps + 0.5));
+         }
          else
 #endif
             runloop_msg_queue_push(msg->msg, strlen(msg->msg), 3, msg->frames,
@@ -1859,16 +1948,36 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                /* Handle 'status' messages */
                case RETRO_MESSAGE_TYPE_STATUS:
 
-                  /* Note: We need to lock a mutex here. Strictly
-                   * speaking, 'core_status_msg' is not part
-                   * of the message queue, but:
-                   * - It may be implemented as a queue in the future
-                   * - It seems unnecessary to create a new slock_t
-                   *   object for this type of message when
-                   *   _runloop_msg_queue_lock is already available
-                   * We therefore just call runloop_msg_queue_lock()/
-                   * runloop_msg_queue_unlock() in this case */
-                  RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
+                  /* core_status_msg belongs to the main thread, like
+                   * the message queue: every writer and reader runs
+                   * there. The libretro API has environment calls
+                   * come from retro_run's thread, but a rogue core
+                   * calling from its own worker is a thing that
+                   * happens, so that case rides the same deferral as
+                   * off-main message pushes and is applied by the
+                   * drain at the top of the next iterate. */
+#ifdef HAVE_THREADS
+                  if (runloop_msg_queue_off_main(runloop_st))
+                  {
+                     struct runloop_deferred_msg *node =
+                           (struct runloop_deferred_msg *)
+                           malloc(sizeof(*node));
+                     if (!node)
+                        break;
+                     node->core_status = true;
+                     node->msg      = msg->msg ? strdup(msg->msg) : NULL;
+                     node->title    = NULL;
+                     node->len      = 0;
+                     node->prio     = msg->priority;
+                     node->duration = msg->duration;
+                     node->icon     = MESSAGE_QUEUE_ICON_DEFAULT;
+                     node->category = MESSAGE_QUEUE_CATEGORY_INFO;
+                     node->flush    = false;
+                     mpsc_stack_push(&runloop_st->msg_queue_deferred,
+                           &node->link);
+                     break;
+                  }
+#endif
 
                   /* If a message is already set, only overwrite
                    * it if the new message has the same or higher
@@ -1881,6 +1990,13 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                         strlcpy(runloop_st->core_status_msg.str, msg->msg,
                               sizeof(runloop_st->core_status_msg.str));
 
+                        /* Stored so the guard above bites: a status
+                         * holds its priority for its lifetime, and
+                         * lower-priority updates - clears included -
+                         * bounce until it expires or a same-or-higher
+                         * write lands. Every clear path zeroes this
+                         * again. */
+                        runloop_st->core_status_msg.priority = msg->priority;
                         runloop_st->core_status_msg.duration = (float)msg->duration;
                         runloop_st->core_status_msg.set      = true;
                      }
@@ -1894,8 +2010,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                         runloop_st->core_status_msg.set      = false;
                      }
                   }
-
-                  RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
                   break;
 
 #if defined(HAVE_GFX_WIDGETS)
@@ -1966,7 +2080,13 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          if (sys_info)
             sys_info->rotation = rotation;
 
-         if (!video_driver_set_rotation(rotation))
+         /* Compose with the user's configured rotation, as the menu
+          * path and retroarch_get_rotation() do - passing the core's
+          * raw value dropped the config offset until the user next
+          * touched the rotation setting, and left the driver's
+          * stored rotation out of step with retroarch_get_rotation. */
+         if (!video_driver_set_rotation(
+                  (rotation + settings->uints.video_rotation) % 4))
             return false;
 
          break;
@@ -2065,13 +2185,13 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
 
       case RETRO_ENVIRONMENT_GET_LANGUAGE:
-#ifdef HAVE_LANGEXTRA
+         /* Builds without HAVE_LANGEXTRA have no language setting and
+          * hold English here, which is what their menus show. */
          {
             unsigned user_lang = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
             *(unsigned *)data  = user_lang;
             RARCH_LOG("[Environ] GET_LANGUAGE: \"%u\".\n", user_lang);
          }
-#endif
          break;
 
       case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT:
@@ -2451,6 +2571,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          }
          else
             memcpy(hwr, cb, sizeof(*cb));
+
+         /* Publish the type for cross-thread
+          * video_driver_is_hw_context() readers, after the copy has
+          * landed; see hw_context_type in video_driver.h. */
+         retro_atomic_store_release_int(
+               &video_st->hw_context_type, (int)cb->context_type);
 #ifdef DEBUG
          RARCH_DBG("[Environ] Reached end of SET_HW_RENDER.\n");
 #endif
@@ -2788,12 +2914,19 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   video_st->frame_delay_target = 0;
             }
 
+            /* CRT switchres derives its mode from the base resolution
+             * and field rate; while those hold, the shortcut below
+             * keeps the switched mode and only the remaining drivers
+             * (audio among them) pick up the new av_info. */
             no_video_reinit                       = (
-                     (crt_switch_resolution     == 0)
-                  && (video_switch_refresh_rate == false)
+                     (video_switch_refresh_rate == false)
                   && data
                   && ((*info)->geometry.max_width  == av_info->geometry.max_width)
-                  && ((*info)->geometry.max_height == av_info->geometry.max_height));
+                  && ((*info)->geometry.max_height == av_info->geometry.max_height)
+                  && (   (crt_switch_resolution == 0)
+                      || (   ((*info)->timing.fps           == av_info->timing.fps)
+                          && ((*info)->geometry.base_width  == av_info->geometry.base_width)
+                          && ((*info)->geometry.base_height == av_info->geometry.base_height))));
 
             /* First set new refresh rate and display rate, then after REINIT do
              * another display rate change to make sure the change stays */
@@ -2811,7 +2944,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             /* no need to reinit camera or microphone here */
             reinit_flags &= ~(DRIVER_CAMERA_MASK | DRIVER_MICROPHONE_MASK);
 
-            RARCH_LOG("[Environ] SET_SYSTEM_AV_INFO: %ux%u, Aspect: %.3f, FPS: %.2f, Sample rate: %.2f Hz.\n",
+            RARCH_LOG("[Environ] SET_SYSTEM_AV_INFO: %ux%u, Aspect: %.4f, FPS: %.4f, Sample rate: %.0f Hz.\n",
                   (*info)->geometry.base_width, (*info)->geometry.base_height,
                   (*info)->geometry.aspect_ratio,
                   (*info)->timing.fps,
@@ -3144,7 +3277,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_VFS_INTERFACE:
       {
-         const uint32_t supported_vfs_version = 4;
+         const uint32_t supported_vfs_version = 5;
          static struct retro_vfs_interface vfs_iface =
          {
             /* VFS API v1 */
@@ -3171,6 +3304,14 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             retro_vfs_closedir_impl,
              /* VFS API v4 */
             retro_vfs_stat_64_impl,
+             /* VFS API v5 */
+            retro_vfs_set_readonly_impl,
+            retro_vfs_get_mtime_impl,
+            retro_vfs_set_mtime_impl,
+            retro_vfs_copy_begin_impl,
+            retro_vfs_copy_step_impl,
+            retro_vfs_copy_close_impl,
+            retro_vfs_dirent_stat_impl
          };
 
          struct retro_vfs_interface_info *vfs_iface_info = (struct retro_vfs_interface_info *) data;
@@ -3193,6 +3334,16 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_VFS_AUTHORIZED_LOCATIONS:
+      {
+#if defined(ANDROID) && defined(HAVE_SAF)
+         return android_get_vfs_authorized_locations(
+               (struct retro_vfs_authorized_locations*)data);
+#else
+         return false;
+#endif
+      }
+
       case RETRO_ENVIRONMENT_GET_LED_INTERFACE:
       {
          struct retro_led_interface *ledintf = (struct retro_led_interface *)data;
@@ -3210,16 +3361,16 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          video_driver_state_t *video_st    = video_state_get_ptr();
          audio_driver_state_t *audio_st    = audio_state_get_ptr();
 
-         if (    !(audio_st->flags & AUDIO_FLAG_SUSPENDED)
-               && (audio_st->flags & AUDIO_FLAG_ACTIVE))
+         if (    !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_SUSPENDED)
+               && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE))
             result |= RETRO_AV_ENABLE_AUDIO;
 
-         if (      (video_st->flags & VIDEO_FLAG_ACTIVE)
+         if (      (video_st->main_flags & VIDEO_FLAG_ACTIVE)
                && !(video_st->current_video->frame == video_null.frame))
             result |= RETRO_AV_ENABLE_VIDEO;
 
 #ifdef HAVE_RUNAHEAD
-         if (audio_st->flags & AUDIO_FLAG_HARD_DISABLE)
+         if (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_HARD_DISABLE)
             result |= RETRO_AV_ENABLE_HARD_DISABLE_AUDIO;
 #endif
 
@@ -3303,6 +3454,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
          if (midi_interface)
          {
+            midi_driver_request();
             midi_interface->input_enabled  = midi_driver_input_enabled;
             midi_interface->output_enabled = midi_driver_output_enabled;
             midi_interface->read           = midi_driver_read;
@@ -3343,8 +3495,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
          bool menu_opened = false;
          bool core_paused = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
-         bool no_audio    = !!(audio_st->flags & AUDIO_FLAG_SUSPENDED)
-                         || !(audio_st->flags & AUDIO_FLAG_ACTIVE);
+         bool no_audio    = !!(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_SUSPENDED)
+                         || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE);
          float core_fps   = (float)video_st->av_info.timing.fps;
 
 #ifdef HAVE_REWIND
@@ -3464,8 +3616,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
           *
           * video_driver_get_refresh_rate() answers a different
           * question: what the display reports it is capable of.  On a
-          * fixed-mode desktop display the two coincide, which is why
-          * asking the display used to be harmless.  They diverge on an
+          * fixed-mode desktop display the two coincide, so asking
+          * the display happens to give the right answer.  They
+          * diverge on an
           * adaptive panel: an iOS ProMotion device reports 120 Hz from
           * [UIScreen maximumFramesPerSecond] while the CADisplayLink -
           * and therefore the runloop - is deliberately being driven at
@@ -3498,6 +3651,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          struct retro_memory_status *memstat = (struct retro_memory_status *)data;
          memstat->free  = mem_stats_free();
          memstat->total = mem_stats_total();
+         /* A core sizing a pool against these will do total - free at
+          * some point; never hand it a pair that makes that negative. */
+         if (memstat->total && memstat->free > memstat->total)
+            memstat->free = memstat->total;
          /* If the active frontend driver cannot report memory, tell the core
           * the call is unsupported so it falls back to its own defaults. */
          if (memstat->free == 0 && memstat->total == 0)
@@ -3670,6 +3827,22 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                iface->interface_version = RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION;
             else
 #endif
+#ifdef HAVE_D3D12
+            /* Version 1 of the D3D12 negotiation: the core names the
+             * highest hardware render interface version it can use
+             * (libretro_d3d12.h). The literal, not the header's macro:
+             * that header is Windows' d3d12.h and this file is not. */
+            if (iface->interface_type == RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_D3D12)
+               iface->interface_version = 1;
+            else
+#endif
+#ifdef HAVE_D3D11
+            /* Version 1 of the D3D11 negotiation, as for D3D12 above
+             * (libretro_d3d11.h). */
+            if (iface->interface_type == RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_D3D11)
+               iface->interface_version = 1;
+            else
+#endif
             {
                iface->interface_version = 0;
             }
@@ -3700,9 +3873,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
           * yet initialised (queried before drivers_init, e.g. a direct CLI
           * load) we cannot read its real format, so fall back to the
           * format-negotiation hint, which is what it will request. */
-         if (audio_state_get_ptr()->flags & AUDIO_FLAG_ACTIVE)
+         if (AUDIO_FLAGS_GET(audio_state_get_ptr()) & AUDIO_FLAG_ACTIVE)
          {
-            if (!(audio_state_get_ptr()->flags & AUDIO_FLAG_USE_FLOAT))
+            if (!(AUDIO_FLAGS_GET(audio_state_get_ptr()) & AUDIO_FLAG_USE_FLOAT))
                return false;
          }
          else if (config_get_ptr()->uints.audio_format_negotiation
@@ -3719,6 +3892,26 @@ bool runloop_environment_cb(unsigned cmd, void *data)
           * swaps the int16 batch callback the float core no longer uses;
           * that path remains int16-only. */
          cb->batch = audio_driver_sample_batch_float;
+         audio_driver_set_core_float(true);
+         break;
+      }
+
+      case RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI:
+      {
+         struct retro_audio_sample_multi_callback *cb =
+               (struct retro_audio_sample_multi_callback*)data;
+         if (!cb)
+            return false;
+         /* The int16 entry always; the float one under the same terms
+          * as RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT - a core
+          * wanting float queries that first, and gets the float entry
+          * here when it was granted. Both fold to the stereo pipeline;
+          * the device's layout is the upmix's affair, as for a stereo
+          * core. */
+         cb->batch_int16 = audio_driver_sample_batch_multi_int16;
+         cb->batch_float = audio_state_get_ptr()->core_float
+               ? audio_driver_sample_batch_multi_float : NULL;
+         audio_driver_set_core_multi(true);
          break;
       }
 
@@ -3838,21 +4031,41 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          /* How bright the display can go.  Together with paper white this
           * gives a core the headroom it has for highlights; without it a core
           * has to guess, and the guess is too dark on a bright panel and clips
-          * on a dim one.  Not queryable from any platform portably, so this is
-          * the user's setting rather than a measurement. */
-         {
-            settings_t *settings = config_get_ptr();
-            *(float*)data = settings->floats.video_hdr_max_nits;
-         }
+          * on a dim one.  The user's setting, or with Use Display Peak the
+          * display's own where its context learned one. */
+         *(float*)data = video_driver_get_hdr_max_nits();
          break;
 
       case RETRO_ENVIRONMENT_GET_SCREEN_10BPC_CAPABLE:
          /* True only when the active video driver presents a 10-bit source
           * surface natively; when false, XRGB2101010 frames are narrowed to
           * 8-bit by video_driver_frame, so a core with an 8-bit path should
-          * prefer it and skip the wasted 10-bit work. */
-         *(bool*)data =
-               video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
+          * prefer it and skip the wasted 10-bit work.
+          *
+          * A live instance answers from its flags.  When none exists the
+          * question still has to be answered: cores issue this query from
+          * retro_load_game while choosing their pixel format, i.e. during
+          * CMD_EVENT_CORE_INIT, which on a cold start into content runs
+          * before any video driver exists for the session being started
+          * (and on an in-process core switch the outgoing instance has been
+          * torn down, which clears ctx->get_flags and video_st->poke).  The
+          * flag test alone then reports "no" on every machine, purely
+          * because of when the core happens to ask, and a core that trusts
+          * the answer commits to an 8-bit format before anything better is
+          * known -- refusal is final, since SET_PIXEL_FORMAT follows
+          * immediately.  Fall back to the configured driver ident, exactly
+          * as SET_PIXEL_FORMAT's HDR10_2101010 gate already does (see
+          * video_driver_supports_10bit_source for why the ident is the only
+          * stable answer in that window). */
+         {
+            gfx_ctx_flags_t flags;
+            flags.flags = 0;
+            if (video_context_driver_get_flags(&flags))
+               *(bool*)data = BIT32_GET(flags.flags,
+                     GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE) ? true : false;
+            else
+               *(bool*)data = video_driver_supports_10bit_source();
+         }
          break;
 
       case RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE:
@@ -3913,7 +4126,6 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                   /* The frontend driver supports power status queries,
                    * but it still gave us bad information for whatever reason. */
                   return false;
-                  break;
             }
          }
          break;
@@ -4221,12 +4433,26 @@ static void uninit_libretro_symbols(
    camera_driver_state_t *camera_st = camera_state_get_ptr();
    location_driver_state_t *loc_st  = location_state_get_ptr();
 #ifdef HAVE_DYNAMIC
-   if (runloop_st->lib_handle)
-      dylib_close(runloop_st->lib_handle);
-   runloop_st->lib_handle = NULL;
+   dylib_t lib_handle_local         = runloop_st->lib_handle;
+
+   runloop_st->lib_handle           = NULL;
 #endif
 
+   /* Clear the callback pointers BEFORE the core library is unmapped.
+    * With the old order (dylib_close first, memset second) there was a
+    * window in which current_core still held function pointers into an
+    * already-unmapped .so. Anything observing runloop_state concurrently
+    * - e.g. a second rarch_main instance spawned by an overlapping
+    * Android activity lifecycle, whose APP_CMD_PAUSE handler flushes
+    * save files via core_get_system_info() - would pass the non-NULL
+    * pointer check and then jump into unmapped memory. Zeroing first
+    * degrades that race to a benign NULL check instead of a SIGSEGV. */
    memset(current_core, 0, sizeof(struct retro_core_t));
+
+#ifdef HAVE_DYNAMIC
+   if (lib_handle_local)
+      dylib_close(lib_handle_local);
+#endif
 
    runloop_st->flags &= ~RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT;
 
@@ -4264,23 +4490,29 @@ static retro_time_t runloop_core_runtime_tick(
       float slowmotion_ratio,
       retro_time_t current_time)
 {
-   uint32_t flags = runloop_st->flags;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   uint32_t flags                 = runloop_st->flags;
+   double fps                     = video_st->av_info.timing.fps;
+   retro_time_t frame_time        = 0;
 
-   /* Account for slow motion — no need to touch video state */
-   if (flags & RUNLOOP_FLAG_SLOWMOTION)
+   /* A core that reports no frame rate - the dummy core, or one that
+    * has not set its timing yet - has no frame time to count, and
+    * neither has a rate so small that one frame outlasts a day.
+    * Any other rate is counted exactly as it always was. */
+   if (fps > 0.0)
    {
-      video_driver_state_t *video_st = video_state_get_ptr();
-      retro_time_t frame_time        =
-         (retro_time_t)((1.0 / video_st->av_info.timing.fps) * 1000000.0);
-      return (retro_time_t)(frame_time * slowmotion_ratio);
+      double frame_usec = (1.0 / fps) * 1000000.0;
+      if (frame_usec < 86400000000.0)
+         frame_time = (retro_time_t)frame_usec;
    }
+
+   /* Account for slow motion */
+   if (flags & RUNLOOP_FLAG_SLOWMOTION)
+      return (retro_time_t)(frame_time * slowmotion_ratio);
 
    /* Account for fast forward */
    if (flags & RUNLOOP_FLAG_FASTMOTION)
    {
-      video_driver_state_t *video_st = video_state_get_ptr();
-      retro_time_t frame_time        =
-         (retro_time_t)((1.0 / video_st->av_info.timing.fps) * 1000000.0);
       retro_time_t potential_frame_time = current_time
          - runloop_st->core_runtime_last;
       runloop_st->core_runtime_last     = current_time;
@@ -4291,10 +4523,7 @@ static retro_time_t runloop_core_runtime_tick(
       return frame_time;
    }
 
-   {
-      video_driver_state_t *video_st = video_state_get_ptr();
-      return (retro_time_t)((1.0 / video_st->av_info.timing.fps) * 1000000.0);
-   }
+   return frame_time;
 }
 
 static bool core_unload_game(void)
@@ -4303,7 +4532,9 @@ static bool core_unload_game(void)
 
    video_driver_free_hw_context();
 
-   video_driver_cached_frame_invalidate();
+   /* The core owns the buffer the cache points at and is about to
+    * close: wait out any reader before it goes. */
+   video_driver_cached_frame_retire();
 
    if ((runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED))
    {
@@ -4354,9 +4585,9 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
          runloop_st->flags &= ~RUNLOOP_FLAG_FASTMOTION;
 
       if (audio_fastforward_mute && (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
-         audio_st->flags |=  AUDIO_FLAG_MUTED;
+         AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_MUTED);
       else
-         audio_st->flags &= ~AUDIO_FLAG_MUTED;
+         AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_MUTED);
 
       if (input_st)
       {
@@ -4384,7 +4615,7 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
 #if defined(HAVE_GFX_WIDGETS)
       if (      p_dispwidget->active
             && !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
-         video_driver_modify_disp_flags(0, VIDEO_FLAG_WIDGETS_FASTMOTION);
+         video_st->main_flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
 #endif
    }
 
@@ -4405,6 +4636,9 @@ void runloop_event_deinit_core(void)
       *video_st                = video_state_get_ptr();
    runloop_state_t *runloop_st = &runloop_state;
    settings_t        *settings = config_get_ptr();
+
+   audio_driver_set_core_float(false);
+   audio_driver_set_core_multi(false);
 
 #ifdef HAVE_THREADS
    /* Defensive: ensure the autosave worker thread is joined
@@ -4449,7 +4683,7 @@ void runloop_event_deinit_core(void)
       input_st->core_gyro_rate       = 0;
    }
 
-   video_driver_cached_frame_invalidate();
+   video_driver_cached_frame_retire();
 
    if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
    {
@@ -4459,6 +4693,11 @@ void runloop_event_deinit_core(void)
       exec_mem_ledger_free_all();
 #endif
    }
+
+   /* A core may turn its LEDs or motors off as it unloads; no frame
+    * follows to write that. */
+   input_driver_flush_rumble();
+   led_driver_flush();
 
    /* retro_deinit() may call
     * RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE
@@ -4488,7 +4727,11 @@ void runloop_event_deinit_core(void)
    if (settings->bools.video_frame_delay_auto)
       video_st->frame_delay_target = 0;
 
-   driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
+   /* A staged content load keeps the drivers up through the close
+    * and the next core's init, so the window keeps presenting; it
+    * frees them itself, right before the new session's drivers_init. */
+   if (!runloop_st->content_switching)
+      driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
 
 #ifdef HAVE_CONFIGFILE
    /* Reload the original config */
@@ -4685,8 +4928,8 @@ static bool event_init_content(
          if (menu_st && menu_st->driver_data)
             playlist_get_index(playlist, menu_st->driver_data->rpl_entry_selection_ptr, &entry);
 
-         if (entry && entry->entry_slot > 0)
-            runloop_st->entry_state_slot = entry->entry_slot;
+         if (entry && PLAYLIST_ENTRY_SLOT(entry) > 0)
+            runloop_st->entry_state_slot = PLAYLIST_ENTRY_SLOT(entry);
 
          entry_state_load = runloop_st->entry_state_slot > -1;
 
@@ -4753,18 +4996,14 @@ static bool event_init_content(
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_RECORDING)
    {
       configuration_set_uint(settings, settings->uints.rewind_granularity, 1);
-#ifndef HAVE_THREADS
-      /* Hack: the regular scheduler doesn't do the right thing here at
-         least in emscripten builds.  I would expect that the check in
-         task_movie.c:343 should defer recording until the movie task
-         is done, but maybe that task isn't enqueued again yet when the
-         movie-record task is checked?  Or the finder call in
-         content_load_state_in_progress is not correct?  Either way,
-         the load happens after the recording starts rather than the
-         right way around.
-      */
-      task_queue_wait(NULL, NULL);
-#endif
+      /* The record task defers itself until any state load has been
+       * applied (task_moviectl_record_handler).  That guard must not
+       * ask a queue finder: the unthreaded gather lifts every
+       * running task off the queue before invoking any handler, so a
+       * sibling load task is invisible to a finder and recording
+       * starts first.  The
+       * guard now reads a main-thread flag instead, so no
+       * whole-queue wait is needed here to force the ordering. */
       movie_start_record(input_st, input_st->bsv_movie_state.movie_start_path);
    }
    else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_START_PLAYBACK)
@@ -4840,17 +5079,93 @@ static void runloop_runtime_log_init(runloop_state_t *runloop_st)
    }
 }
 
+/* The facts the pace decision reads, from this iteration's state, as
+ * one word. Read here, in one place, so every path sees the same
+ * iteration. */
+static unsigned runloop_menu_rate(settings_t *settings,
+      runloop_state_t *runloop_st, bool menu_pause_libretro);
+
+static runloop_pace_facts_t runloop_pace_gather(settings_t *settings,
+      bool menu_pause_libretro)
+{
+   runloop_state_t *runloop_st    = &runloop_state;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   audio_driver_state_t *audio_st = audio_state_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   runloop_pace_facts_t f         = 0;
+   if (settings->bools.video_vsync)                        f |= PACE_FACT_VSYNC;
+   if (input_st->flags & INP_FLAG_NONBLOCKING)             f |= PACE_FACT_NONBLOCKING;
+   if (runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK)    f |= PACE_FACT_FORCE_NONBLOCK;
+   if (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)        f |= PACE_FACT_FASTMOTION;
+   if (runloop_st->flags & RUNLOOP_FLAG_PAUSED)            f |= PACE_FACT_PAUSED;
+   if (runloop_st->flags & RUNLOOP_FLAG_FOCUSED)           f |= PACE_FACT_FOCUSED;
+#ifdef HAVE_MENU
+   if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)   f |= PACE_FACT_MENU_ALIVE;
+#endif
+   f |= runloop_menu_rate(settings, runloop_st, menu_pause_libretro);
+   if (settings->bools.vrr_runloop_enable)                 f |= PACE_FACT_VRR;
+#ifdef HAVE_THREADS
+   if (video_st->thread_wrapper_active)                    f |= PACE_FACT_WRAPPER;
+   if (settings->bools.video_threaded_display_pacing)      f |= PACE_FACT_DISPLAY_PACING;
+#endif
+   if (     (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
+         && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
+         && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_WROTE))  f |= PACE_FACT_AUDIO_HOLDING;
+   if (settings->bools.video_scanline_sync)                f |= PACE_FACT_SCANLINE_SYNC;
+   if (video_st->scanline[SCANLINE_NEXT])                  f |= PACE_FACT_SCANLINE_LOCKED;
+   if (settings->bools.audio_rate_control)                 f |= PACE_FACT_RATE_CONTROL;
+   if (video_context_driver_presentable())                 f |= PACE_FACT_PRESENTABLE;
+   if (runloop_st->frame_limit_minimum_time)               f |= PACE_FACT_FRAME_LIMIT;
+   return f;
+}
+
+size_t runloop_pace_string(char *s, size_t len)
+{
+   runloop_state_t *runloop_st = &runloop_state;
+   unsigned pace               = runloop_st->pace;
+   size_t   _len               = 0;
+   s[0] = '\0';
+   if (pace & RUNLOOP_PACE_VSYNC)
+      _len += strlcpy(s + _len, "VSync", len - _len);
+   if (pace & RUNLOOP_PACE_AUDIO)
+      _len += strlcpy(s + _len, _len ? "+Audio" : "Audio", len - _len);
+   if (pace & RUNLOOP_PACE_SCANLINE)
+      _len += strlcpy(s + _len, _len ? "+Scanline" : "Scanline", len - _len);
+   if (pace & RUNLOOP_PACE_DISPLAY)
+      _len += strlcpy(s + _len, _len ? "+Display" : "Display", len - _len);
+   if (pace & RUNLOOP_PACE_TIMER)
+      _len += strlcpy(s + _len, _len ? "+Timer" : "Timer", len - _len);
+   if (pace & RUNLOOP_PACE_NOWINDOW)
+      _len += strlcpy(s + _len, _len ? "+NoWindow" : "NoWindow", len - _len);
+   if (!_len)
+      _len  = strlcpy(s, "None", len);
+   /* The measured loop rate beside the claim. They agree when the
+    * named source is really holding the loop; a claim next to a rate
+    * well above the content's is a source that is not blocking on
+    * anything, which is the failure this exists to make visible. */
+   if (runloop_st->pace_period_usec > 0 && _len < len)
+      _len += snprintf(s + _len, len - _len, " %.2f fps",
+            1000000.0 / (double)runloop_st->pace_period_usec);
+   return _len;
+}
+
 void runloop_set_frame_limit(
       const struct retro_system_av_info *av_info,
       float fastforward_ratio)
 {
    if (fastforward_ratio < 0.1f)
-      runloop_state.frame_limit_minimum_time = 0;
+   {
+      runloop_state.frame_limit_minimum_time    = 0;
+      runloop_state.frame_limit_minimum_time_ns = 0;
+   }
    else
    {
       float fps = av_info->timing.fps;
       runloop_state.frame_limit_minimum_time = (fps > 0.0f)
          ? (retro_time_t)roundf(1000000.0f / (fps * fastforward_ratio))
+         : 0;
+      runloop_state.frame_limit_minimum_time_ns = (fps > 0.0f)
+         ? (int64_t)(1000000000.0 / ((double)fps * fastforward_ratio))
          : 0;
    }
 }
@@ -4873,14 +5188,12 @@ void runloop_set_video_swap_interval(
    float video_refresh_rate       = settings->floats.video_refresh_rate;
    float audio_max_timing_skew    = settings->floats.audio_max_timing_skew;
    float input_fps                = video_st->av_info.timing.fps;
-   float timing_fps               = (video_st->flags & VIDEO_FLAG_CRT_SWITCHING_ACTIVE)
+   float timing_fps               = retro_atomic_load_acquire_int(&video_st->crt_switching_active)
          ? input_fps : video_refresh_rate;
-   float swap_ratio               = 1;
-   float timing_skew              = 0;
    unsigned swap_interval_config  = settings->uints.video_swap_interval;
    unsigned black_frame_insertion = settings->uints.video_black_frame_insertion;
    unsigned shader_subframes      = settings->uints.video_shader_subframes;
-   unsigned swap_integer          = 1;
+   unsigned ceiling;
    bool vrr_runloop_enable        = settings->bools.vrr_runloop_enable;
 
    /* If automatic swap interval selection is
@@ -4893,43 +5206,27 @@ void runloop_set_video_swap_interval(
 
    /* > If VRR is enabled, swap interval is irrelevant,
     *   just set to 1
-    * > If core fps is higher than display refresh rate,
-    *   set swap interval to 1
-    * > If core fps or display refresh rate are zero,
-    *   set swap interval to 1
     * > If BFI is active set swap interval to 1
     * > If Shader Subframes active, set swap interval to 1 */
    if (   (vrr_runloop_enable)
        || (black_frame_insertion)
        || (shader_subframes > 1)
-       || (input_fps   > timing_fps)
-       || (input_fps  <= 0.0f)
-       || (timing_fps <= 0.0f)
       )
    {
       runloop_st->video_swap_interval_auto = 1;
       return;
    }
 
-   /* Check whether display refresh rate is an integer
-    * multiple of core fps (within timing skew tolerance) */
-   swap_ratio   = timing_fps / input_fps;
-   swap_integer = (unsigned)(swap_ratio + 0.5f);
-
-   /* > Sanity check: swap interval must be in the
-    *   range [1,4] - if we are outside this, then
-    *   bail... */
-   if ((swap_integer < 1) || (swap_integer > 4))
-   {
-      runloop_st->video_swap_interval_auto = 1;
-      return;
-   }
-
-   timing_skew = fabs(1.0f - input_fps / (timing_fps / (float)swap_integer));
+   /* A driver that cannot hold a frame for the full multiple takes the
+    * ceiling down to what it can present, so the interval derived and
+    * the interval presented are the same number. */
+   ceiling = video_display_server_get_swap_interval_cap();
+   if ((ceiling == 0) || (ceiling > MAXIMUM_SWAP_INTERVAL))
+      ceiling = MAXIMUM_SWAP_INTERVAL;
 
    runloop_st->video_swap_interval_auto =
-         (timing_skew <= audio_max_timing_skew) ?
-               swap_integer : 1;
+         runloop_video_swap_interval_for(timing_fps, input_fps,
+               audio_max_timing_skew, ceiling);
 }
 
 unsigned runloop_get_video_swap_interval(
@@ -4978,37 +5275,54 @@ static bool core_verify_api_version(runloop_state_t *runloop_st)
    return true;
 }
 
-static int16_t core_input_state_poll_late(unsigned port,
+/* The poll mode in force: the core's override if it has set one, the
+ * user's setting otherwise. */
+static INLINE enum poll_type core_poll_type_current(void)
+{
+   const enum poll_type_override_t
+      core_poll_type_override  = runloop_state.core_poll_type_override;
+   return (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
+      ? (enum poll_type)(core_poll_type_override - 1)
+      : (enum poll_type)(runloop_state.current_core.poll_type);
+}
+
+/* The core's input_state callback, in every poll mode.
+ *
+ * Under late polling the frame's first query polls. Whether late
+ * polling is in force is read here, at the call, and not when the
+ * callback is given to the core. The callback used to be chosen once,
+ * at load, between this one and a plain one with no poll in it; the
+ * mode, though, can change afterwards - Poll Type Behavior in the menu,
+ * or a core's override. A core loaded with normal or early polling and
+ * switched to late kept the plain callback: nothing polled during the
+ * frame, the only poll left was the fallback after retro_run(), and
+ * the core read input sampled before the previous frame's pacing wait,
+ * up to a frame older than late polling is for.
+ *
+ * RETRO_CORE_FLAG_INPUT_POLLED is set by whichever poll the mode calls
+ * for - before retro_run() (early), in input_poll (normal), or here
+ * (late) - so past the frame's poll a query costs one test in every
+ * mode. */
+static int16_t core_input_state_cb(unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {
-   if (!(runloop_state.current_core.flags & RETRO_CORE_FLAG_INPUT_POLLED))
+   if (     !(runloop_state.current_core.flags & RETRO_CORE_FLAG_INPUT_POLLED)
+         && core_poll_type_current() == POLL_TYPE_LATE)
+   {
       input_driver_poll();
-   runloop_state.current_core.flags |= RETRO_CORE_FLAG_INPUT_POLLED;
+      runloop_state.current_core.flags |= RETRO_CORE_FLAG_INPUT_POLLED;
+   }
 
    return input_driver_state_wrapper(port, device, idx, id);
 }
 
 static void core_input_state_poll_maybe(void)
 {
-   const enum poll_type_override_t
-      core_poll_type_override  = runloop_state.core_poll_type_override;
-   enum poll_type new_poll_type = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
-      ? (enum poll_type)(core_poll_type_override - 1)
-      : (enum poll_type)(runloop_state.current_core.poll_type);
-   if (new_poll_type == POLL_TYPE_NORMAL)
+   if (core_poll_type_current() == POLL_TYPE_NORMAL)
+   {
       input_driver_poll();
-}
-
-static retro_input_state_t core_input_state_poll_return_cb(void)
-{
-   const enum poll_type_override_t
-      core_poll_type_override  = runloop_state.core_poll_type_override;
-   enum poll_type new_poll_type = (core_poll_type_override > POLL_TYPE_OVERRIDE_DONTCARE)
-      ? (enum poll_type)(core_poll_type_override - 1)
-      : (enum poll_type)(runloop_state.current_core.poll_type);
-   if (new_poll_type == POLL_TYPE_LATE)
-      return core_input_state_poll_late;
-   return input_driver_state_wrapper;
+      runloop_state.current_core.flags |= RETRO_CORE_FLAG_INPUT_POLLED;
+   }
 }
 
 
@@ -5022,7 +5336,7 @@ static retro_input_state_t core_input_state_poll_return_cb(void)
 static void core_init_libretro_cbs(runloop_state_t *runloop_st,
       struct retro_callbacks *cbs)
 {
-   retro_input_state_t state_cb = core_input_state_poll_return_cb();
+   retro_input_state_t state_cb = core_input_state_cb;
 
    runloop_st->current_core.retro_set_video_refresh(video_driver_frame);
    runloop_st->current_core.retro_set_audio_sample(audio_driver_sample);
@@ -5053,7 +5367,7 @@ static bool runloop_event_load_core(runloop_state_t *runloop_st,
 
    runloop_st->current_core.retro_get_system_av_info(&video_st->av_info);
 
-   RARCH_LOG("[Core] Geometry: %ux%u, Aspect: %.3f, FPS: %.2f, Sample rate: %.2f Hz.\n",
+   RARCH_LOG("[Core] Geometry: %ux%u, Aspect: %.4f, FPS: %.4f, Sample rate: %.0f Hz.\n",
          video_st->av_info.geometry.base_width, video_st->av_info.geometry.base_height,
          video_st->av_info.geometry.aspect_ratio,
          video_st->av_info.timing.fps,
@@ -5235,7 +5549,8 @@ bool runloop_event_init_core(
       return false;
 
    runloop_set_frame_limit(&video_st->av_info, fastforward_ratio);
-   runloop_st->frame_limit_last_time    = cpu_features_get_time_usec();
+   runloop_st->frame_limit_anchor_ns    = (int64_t)cpu_features_get_time_usec()
+      * 1000;
 
    /* Init runtime log and read current state slot */
    runloop_runtime_log_init(runloop_st);
@@ -5264,9 +5579,9 @@ void runloop_pause_checks(void)
    if (widgets_active)
    {
       if (is_paused)
-         video_driver_modify_disp_flags(VIDEO_FLAG_WIDGETS_PAUSED, 0);
+         video_st->main_flags |=  VIDEO_FLAG_WIDGETS_PAUSED;
       else
-         video_driver_modify_disp_flags(0, VIDEO_FLAG_WIDGETS_PAUSED);
+         video_st->main_flags &= ~VIDEO_FLAG_WIDGETS_PAUSED;
    }
 #endif
 
@@ -5285,6 +5600,9 @@ void runloop_pause_checks(void)
          video_driver_cached_frame();
 
       midi_driver_set_all_sounds_off();
+      /* Same idea as the MIDI silence above, for the audio stream: end it on
+       * a ramp rather than wherever the waveform happened to be. */
+      audio_driver_pause_fade(true);
 
 #ifdef HAVE_PRESENCE
       userdata.status = PRESENCE_GAME_PAUSED;
@@ -5300,6 +5618,10 @@ void runloop_pause_checks(void)
             ((video_st->video_refresh_rate_original)
                ? video_st->video_refresh_rate_original
                : video_refresh_rate));
+      runloop_st->frame_limit_minimum_time_ns = runloop_content_frame_time_ns(
+            (video_st->video_refresh_rate_original)
+               ? video_st->video_refresh_rate_original
+               : video_refresh_rate);
    }
    else
    {
@@ -5309,6 +5631,19 @@ void runloop_pause_checks(void)
 
       /* Restore frame limit. */
       runloop_set_frame_limit(&video_st->av_info, fastforward_ratio);
+
+      /* Ramp back up rather than restarting mid-waveform. Not while the
+       * menu still holds the core: nothing resumes until it closes, and
+       * that close ramps it. */
+#ifdef HAVE_MENU
+      if (!(   (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+            && settings->bools.menu_pause_libretro
+#ifdef HAVE_NETWORKING
+            && netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_PAUSE, NULL)
+#endif
+         ))
+#endif
+         audio_driver_pause_fade(false);
    }
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
@@ -5352,7 +5687,7 @@ void runloop_path_fill_names(void)
       size_t _len = strlcpy(runloop_st->name.ups,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.ups));
-      strlcpy(runloop_st->name.ups       + _len,
+      strlcpy_lit(runloop_st->name.ups       + _len,
             ".ups",
             sizeof(runloop_st->name.ups) - _len);
    }
@@ -5362,7 +5697,7 @@ void runloop_path_fill_names(void)
       size_t _len = strlcpy(runloop_st->name.bps,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.bps));
-      strlcpy(runloop_st->name.bps       + _len,
+      strlcpy_lit(runloop_st->name.bps       + _len,
             ".bps",
             sizeof(runloop_st->name.bps) - _len);
    }
@@ -5372,7 +5707,7 @@ void runloop_path_fill_names(void)
       size_t _len = strlcpy(runloop_st->name.ips,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.ips));
-      strlcpy(runloop_st->name.ips       + _len,
+      strlcpy_lit(runloop_st->name.ips       + _len,
             ".ips",
             sizeof(runloop_st->name.ips) - _len);
    }
@@ -5382,7 +5717,7 @@ void runloop_path_fill_names(void)
       size_t _len = strlcpy(runloop_st->name.xdelta,
             runloop_st->runtime_content_path_basename,
             sizeof(runloop_st->name.xdelta));
-      strlcpy(runloop_st->name.xdelta       + _len,
+      strlcpy_lit(runloop_st->name.xdelta       + _len,
             ".xdelta",
             sizeof(runloop_st->name.xdelta) - _len);
    }
@@ -5708,6 +6043,101 @@ void core_options_reset(const char* label)
    }
 }
 
+/* Writes the current core option values to whichever
+ * options file is active (game-specific, folder-specific,
+ * or the per-core/global 'default' file), without freeing
+ * anything and without user-facing notifications.
+ * Returns false only if a write was attempted and failed.
+ * If @out_path is non-NULL, receives the file path used
+ * (or NULL when there are no core options). */
+static bool runloop_core_options_write(const char **out_path)
+{
+   runloop_state_t *runloop_st     = &runloop_state;
+   core_option_manager_t *coreopts = runloop_st->core_options;
+   const char *path_core_options   = path_get(RARCH_PATH_CORE_OPTIONS);
+   bool ret                        = false;
+
+   if (out_path)
+      *out_path = NULL;
+
+   /* If there are no core options, there
+    * is nothing to do */
+   if (!coreopts || (coreopts->size < 1))
+      return true;
+
+   /* Check whether game/folder-specific options file
+    * is being used */
+   if (path_core_options && *path_core_options)
+   {
+      config_file_t *conf_tmp = NULL;
+
+      /* Attempt to load existing file */
+      if (path_is_valid(path_core_options))
+         conf_tmp = config_file_new_from_path_to_string(path_core_options);
+
+      /* Create new file if required */
+      if (!conf_tmp)
+         conf_tmp = config_file_new_alloc();
+
+      if (conf_tmp)
+      {
+         core_option_manager_flush(coreopts, conf_tmp);
+
+         ret = config_file_write(conf_tmp, path_core_options, true);
+         config_file_free(conf_tmp);
+      }
+   }
+   else
+   {
+      /* We are using the 'default' core options file */
+      path_core_options = coreopts->conf_path;
+
+      if (path_core_options && *path_core_options)
+      {
+         core_option_manager_flush(coreopts, coreopts->conf);
+
+         /* We must *guarantee* that a file gets written
+          * to disk if any options differ from the current
+          * options file contents. Must therefore handle
+          * the case where the 'default' file does not
+          * exist (e.g. if it gets deleted manually while
+          * a core is running) */
+         if (!path_is_valid(path_core_options))
+            coreopts->conf->flags |= CONF_FILE_FLG_MODIFIED;
+
+         ret = config_file_write(coreopts->conf,
+               path_core_options, true);
+      }
+   }
+
+   if (out_path)
+      *out_path = path_core_options;
+
+   return ret;
+}
+
+/* Quietly persists core options to disk.
+ *
+ * The automatic save otherwise only happens in
+ * runloop_deinit_core_options(), at the very end of core
+ * teardown - after the auto save-state, retro_unload_game(),
+ * retro_deinit() and dylib_close(). A crash or process kill
+ * anywhere in that sequence, or before it (Android can reclaim
+ * the process at any point after onPause()), loses every option
+ * change made during the session. Calling this beforehand makes
+ * those changes durable; the late save is kept, and is a no-op
+ * unless the core changed an option during teardown, since
+ * config_file_write() only writes a modified config and clears
+ * the flag once it has. */
+void runloop_core_options_save(void)
+{
+   const char *path = NULL;
+
+   if (!runloop_core_options_write(&path))
+      RARCH_ERR("[Core] Failed to save core options to \"%s\".\n",
+            path ? path : "UNKNOWN");
+}
+
 void core_options_flush(void)
 {
    size_t _len;
@@ -5716,7 +6146,7 @@ void core_options_flush(void)
                                    = MESSAGE_QUEUE_CATEGORY_INFO;
    runloop_state_t *runloop_st     = &runloop_state;
    core_option_manager_t *coreopts = runloop_st->core_options;
-   const char *path_core_options   = path_get(RARCH_PATH_CORE_OPTIONS);
+   const char *path_core_options   = NULL;
    const char *core_options_file   = NULL;
    bool ret                        = false;
 
@@ -5727,53 +6157,7 @@ void core_options_flush(void)
    if (!coreopts || (coreopts->size < 1))
       return;
 
-   /* Check whether game/folder-specific options file
-    * is being used */
-   if (path_core_options && *path_core_options)
-   {
-      config_file_t *conf_tmp = NULL;
-      bool path_valid         = path_is_valid(path_core_options);
-
-      /* Attempt to load existing file */
-      if (path_valid)
-         conf_tmp = config_file_new_from_path_to_string(path_core_options);
-
-      /* Create new file if required */
-      if (!conf_tmp)
-         conf_tmp = config_file_new_alloc();
-
-      if (conf_tmp)
-      {
-         core_option_manager_flush(runloop_st->core_options, conf_tmp);
-
-         ret = config_file_write(conf_tmp, path_core_options, true);
-         config_file_free(conf_tmp);
-      }
-   }
-   else
-   {
-      /* We are using the 'default' core options file */
-      path_core_options = runloop_st->core_options->conf_path;
-
-      if (path_core_options && *path_core_options)
-      {
-         core_option_manager_flush(
-               runloop_st->core_options,
-               runloop_st->core_options->conf);
-
-         /* We must *guarantee* that a file gets written
-          * to disk if any options differ from the current
-          * options file contents. Must therefore handle
-          * the case where the 'default' file does not
-          * exist (e.g. if it gets deleted manually while
-          * a core is running) */
-         if (!path_is_valid(path_core_options))
-            runloop_st->core_options->conf->flags |= CONF_FILE_FLG_MODIFIED;
-
-         ret = config_file_write(runloop_st->core_options->conf,
-               path_core_options, true);
-      }
-   }
+   ret = runloop_core_options_write(&path_core_options);
 
    /* Get options file name for display purposes */
    if (path_core_options && *path_core_options)
@@ -5817,18 +6201,54 @@ void runloop_msg_queue_push(
       enum message_queue_category category)
 {
 #if defined(HAVE_GFX_WIDGETS)
-   dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
-   bool widgets_active            = p_dispwidget->active;
+   dispgfx_widget_t *p_dispwidget;
+   bool widgets_active;
 #endif
 #ifdef HAVE_ACCESSIBILITY
-   settings_t *settings           = config_get_ptr();
-   bool accessibility_enable      = settings->bools.accessibility_enable;
-   unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
-   access_state_t *access_st      = access_state_get_ptr();
+   settings_t *settings;
+   bool accessibility_enable;
+   unsigned accessibility_narrator_speech_speed;
+   access_state_t *access_st;
 #endif
    runloop_state_t *runloop_st    = &runloop_state;
 
-   RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
+#ifdef HAVE_THREADS
+   /* A worker's message crosses to the main thread here, whole,
+    * before anything below reads the settings or touches a widget:
+    * that work belongs to the main thread, and the drain at the top
+    * of the iterate replays the message there, a frame late at most
+    * - the cadence the message queue shows things at anyway. */
+   if (runloop_msg_queue_off_main(runloop_st))
+   {
+      struct runloop_deferred_msg *node = (struct runloop_deferred_msg *)
+            malloc(sizeof(*node));
+      if (!node)
+         return;
+      node->core_status = false;
+      node->msg      = strdup(msg);
+      node->title    = title ? strdup(title) : NULL;
+      node->len      = len;
+      node->prio     = prio;
+      node->duration = duration;
+      node->icon     = icon;
+      node->category = category;
+      node->flush    = flush;
+      mpsc_stack_push(&runloop_st->msg_queue_deferred, &node->link);
+      return;
+   }
+#endif
+
+#if defined(HAVE_GFX_WIDGETS)
+   p_dispwidget   = dispwidget_get_ptr();
+   widgets_active = p_dispwidget->active;
+#endif
+#ifdef HAVE_ACCESSIBILITY
+   settings       = config_get_ptr();
+   accessibility_enable = settings->bools.accessibility_enable;
+   accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
+   access_st      = access_state_get_ptr();
+#endif
+
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(
             accessibility_enable,
@@ -5876,7 +6296,6 @@ void runloop_msg_queue_push(
    ui_companion_driver_msg_queue_push(
          msg, prio, duration, flush);
 
-   RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
 }
 
 #ifdef HAVE_MENU
@@ -5982,6 +6401,116 @@ static INLINE bool runloop_is_libretro_running(runloop_state_t* runloop_st, bool
       &&    runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING);
 }
 
+/* Which Menu Frame Rate holds this iteration, as the pace fact that
+ * names it, or 0 when neither does: the menu is down; netplay is on,
+ * whose sessions keep the core's own pacing; or, at 'Content Rate', the
+ * core is running behind the menu, which then runs at the content's rate
+ * already, or there is no content rate to hold to. */
+static unsigned runloop_menu_rate(settings_t *settings,
+      runloop_state_t *runloop_st, bool menu_pause_libretro)
+{
+#ifdef HAVE_MENU
+   if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
+      return 0;
+#ifdef HAVE_NETWORKING
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+      return 0;
+#endif
+   if (settings->uints.menu_frame_rate != MENU_FRAME_RATE_CONTENT)
+      return PACE_FACT_MENU_DISPLAY_RATE;
+   if (     runloop_is_libretro_running(runloop_st, menu_pause_libretro)
+         || !(video_state_get_ptr()->av_info.timing.fps > 0.0))
+      return 0;
+   return PACE_FACT_MENU_CONTENT_RATE;
+#else
+   return 0;
+#endif
+}
+
+bool runloop_menu_display_rate(void)
+{
+   settings_t *settings = config_get_ptr();
+   return (runloop_menu_rate(settings, &runloop_state,
+            settings->bools.menu_pause_libretro)
+         & PACE_FACT_MENU_DISPLAY_RATE) != 0;
+}
+
+/* The display's rate as the frame limiter paces to it: the configured
+ * one (the original one, under a refresh rate switch) or, with @window,
+ * that of the monitor the window is on, where one is known - which on a
+ * desktop of several is the one that matters. */
+static float runloop_display_hz(video_driver_state_t *video_st,
+      settings_t *settings, bool window)
+{
+   float hz = 0.0f;
+   if (window)
+      hz = video_driver_get_window_refresh_rate();
+   if (!(hz > 0.0f))
+      hz = (video_st->video_refresh_rate_original)
+         ? video_st->video_refresh_rate_original
+         : settings->floats.video_refresh_rate;
+   /* A rate of nothing paces nothing; the frame time helpers take
+    * 60 Hz for it too */
+   return (hz > 0.0f) ? hz : 60.0f;
+}
+
+#ifdef HAVE_MENU
+/* Whether the core running behind the menu at 'Display Rate' is due a
+ * frame. It runs on the content's own clock - a period a frame, from
+ * when it was last due - while the menu runs at the display's, so a
+ * 60 fps core keeps its speed under a 240 Hz menu. A frame due within
+ * half a display period runs now: the next iteration would be half a
+ * period late, and holding to the nearest vblank keeps the cadence even
+ * where the display is a whole multiple of the content. */
+static bool runloop_menu_core_due(runloop_state_t *runloop_st,
+      video_driver_state_t *video_st, settings_t *settings,
+      retro_time_t now_us)
+{
+   float   refresh = runloop_display_hz(video_st, settings, true);
+   int64_t period  = runloop_content_frame_time_ns(
+         (float)video_st->av_info.timing.fps);
+   int64_t now     = (int64_t)now_us * 1000;
+   int64_t half    = (refresh > 0.0f)
+      ? (int64_t)(500000000.0 / (double)refresh) : 0;
+
+   if (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
+      period = (int64_t)((double)period * settings->floats.slowmotion_ratio);
+
+   /* The first frame under the menu, or after a stall of more than a
+    * few frames: due now, and the schedule restarts from here rather
+    * than catching up. */
+   if (     !runloop_st->menu_core_due_ns
+         || now - runloop_st->menu_core_due_ns > 4 * period)
+      runloop_st->menu_core_due_ns = now;
+
+   if (now + half < runloop_st->menu_core_due_ns)
+      return false;
+   runloop_st->menu_core_due_ns += period;
+   return true;
+}
+
+/* The menu's audio writes block only where the menu is held to the
+ * content's rate. At 'Display Rate' they never hold the loop: the
+ * silence it feeds is measured out by the clock and the core behind
+ * it, if running, writes what it makes. Brought back into line every
+ * menu iteration, so a setting changed in the menu, or a core started
+ * or stopped behind it, takes effect at once; leaving the menu restores
+ * the usual state through driver_set_nonblock_state(). */
+static void runloop_menu_audio_nonblock(settings_t *settings,
+      input_driver_state_t *input_st, audio_driver_state_t *audio_st,
+      bool display_rate)
+{
+   bool want = display_rate
+      || !settings->bools.audio_sync
+      || (input_st->flags & INP_FLAG_NONBLOCKING);
+   bool have = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK) != 0;
+   if (     want != have
+         && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
+         && audio_st->context_audio_data)
+      audio_driver_set_nonblock_state(want);
+}
+#endif
+
 static retro_atomic_int_t runloop_inited
    = RETRO_ATOMIC_INT_INITIALIZER(0);
 
@@ -5998,6 +6527,18 @@ void runloop_is_inited_clear(void)
 bool runloop_is_inited(void)
 {
    return retro_atomic_load_acquire_int(&runloop_inited) != 0;
+}
+
+/* The pause / unfocused wait: what it waits for is user input, so
+ * where the windowing system offers a waitable event transport the
+ * display server blocks on it, with ten milliseconds as the bound
+ * rather than the schedule; where it offers none the bound is the
+ * sleep it always was. Readiness only - nothing is dispatched here,
+ * the next input poll consumes as before. */
+static void runloop_idle_wait(void)
+{
+   if (!video_display_server_idle_wait(10))
+      retro_sleep(10);
 }
 
 static enum runloop_state_enum runloop_check_state(
@@ -6023,13 +6564,10 @@ static enum runloop_state_enum runloop_check_state(
    bool is_alive                       = false;
    uint64_t frame_count                = 0;
    bool focused                        = true;
-#if defined(HAVE_MENU) || defined(HAVE_GFX_WIDGETS)
-   /* Snapshot of the output size, fetched under the display lock.
-    * The video thread writes video_st->width/height through
-    * video_driver_set_output_size() while this function runs. */
-   unsigned output_width               = 0;
-   unsigned output_height              = 0;
-#endif
+   /* Snapshot of the output size. The video thread sets it through
+    * video_driver_set_output_dims() while this function runs, so it
+    * is re-read before the menu/widgets pass further down. */
+   unsigned output_dims                = 0;
    bool rarch_is_initialized           = !!runloop_is_inited();
    bool runloop_paused                 = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
    bool pause_nonactive                = settings->bools.pause_nonactive;
@@ -6123,7 +6661,16 @@ static enum runloop_state_enum runloop_check_state(
    }
 #endif
 
-   if (!VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
+   /* Pump this thread's own window queue every iteration, threaded
+    * video included. With threaded video the RetroArch window lives on
+    * the video thread and pumps itself from the driver's alive(), but
+    * the companion windows are created here, and PeekMessage(NULL)
+    * only ever returns the calling thread's messages, so this is the
+    * only pump they have: gated off, they went "Not Responding" the
+    * moment threaded video was on. Under non-threaded video the main
+    * window's messages are on this queue too and win32_check_window()
+    * also pumps them; whichever runs first dispatches, nothing is seen
+    * twice. Cocoa's process_events is a no-op. */
    {
       const ui_application_t *application = uico_st->drv
          ? uico_st->drv->application
@@ -6160,18 +6707,17 @@ static enum runloop_state_enum runloop_check_state(
    else
       runloop_st->flags &= ~RUNLOOP_FLAG_FOCUSED;
 
+   /* One read of the output size, shared by the overlay and
+    * FULL aspect checks below. */
+   output_dims = video_driver_get_output_dims();
+
 #ifdef HAVE_OVERLAY
    if (settings->bools.input_overlay_enable)
    {
-      static unsigned last_width                     = 0;
-      static unsigned last_height                    = 0;
-      unsigned video_driver_width                    = 0;
-      unsigned video_driver_height                   = 0;
+      static unsigned last_dims                      = 0;
       bool check_next_rotation                       = true;
       bool input_overlay_hide_when_gamepad_connected = settings->bools.input_overlay_hide_when_gamepad_connected;
       bool input_overlay_auto_rotate                 = settings->bools.input_overlay_auto_rotate;
-
-      video_driver_get_output_size(&video_driver_width, &video_driver_height);
 
       /* Check whether overlay should be hidden
        * when a gamepad is connected */
@@ -6202,26 +6748,45 @@ static enum runloop_state_enum runloop_check_state(
          last_controller_connected = controller_connected;
       }
 
+#if defined(ANDROID)
+      /* Hide the on-screen overlay while a stylus is in use, and bring
+       * it back once the pen has been idle for a moment (the window is
+       * android_input.c's). The overlay is hidden, not unloaded:
+       * unloading and reloading a pack is file and texture work, and a
+       * pen leaving and returning would trigger it over and over while
+       * a core runs. While hidden it takes no touches and answers no
+       * pointer queries (INPUT_OVERLAY_STYLUS_HIDDEN), so the pen
+       * reaches the core through the input driver whether or not the
+       * overlay is set up as a pointing device.
+       * Level-triggered, like the gamepad soft-hide above: the overlay
+       * can be replaced at any time, so the flag is set on whichever
+       * one is current this frame. */
+      if (input_st->overlay_ptr)
+      {
+         if (     settings->bools.input_stylus_enable
+               && android_input_stylus_recently_active())
+            input_st->overlay_ptr->flags |=  INPUT_OVERLAY_STYLUS_HIDDEN;
+         else
+            input_st->overlay_ptr->flags &= ~INPUT_OVERLAY_STYLUS_HIDDEN;
+      }
+#endif
+
       /* Check next overlay hotkey */
       HOTKEY_CHECK(RARCH_OVERLAY_NEXT, CMD_EVENT_OVERLAY_NEXT, true, &check_next_rotation);
 
       /* Check whether video aspect has changed */
-      if (   (video_driver_width  != last_width)
-          || (video_driver_height != last_height))
+      if (output_dims != last_dims)
       {
          /* Update scaling/offset factors */
          command_event(CMD_EVENT_OVERLAY_SET_SCALE_FACTOR, NULL);
 
          /* Check overlay rotation, if required */
          if (input_overlay_auto_rotate)
-            input_overlay_auto_rotate_(
-                  video_driver_width,
-                  video_driver_height,
+            input_overlay_auto_rotate_(output_dims,
                   settings->bools.input_overlay_enable,
                   input_st->overlay_ptr);
 
-         last_width  = video_driver_width;
-         last_height = video_driver_height;
+         last_dims = output_dims;
       }
 
       /* Check OSK hotkey */
@@ -6230,32 +6795,30 @@ static enum runloop_state_enum runloop_check_state(
 #endif
 
    /*
-   * If the Aspect Ratio is FULL then update the aspect ratio to the
-   * current video driver aspect ratio (The full window)
-   *
-   * TODO/FIXME
-   *      Should possibly be refactored to have last width & driver width & height
-   *      only be done once when we are using an overlay OR using aspect ratio
-   *      full
-   */
+    * If the Aspect Ratio is FULL then update the aspect ratio to the
+    * current output size (the full window).
+    *
+    * This keeps its own last_dims rather than sharing the overlay
+    * block's: the two checks are gated independently, so a shared
+    * value updated by one would hide a size change from the other.
+    *
+    * It is polled here rather than driven from
+    * video_driver_set_output_dims() because that is called from the
+    * video thread under threaded video, while
+    * video_driver_set_aspect_ratio() issues blocking driver pokes
+    * through the thread wrapper.
+    */
    if (settings->uints.video_aspect_ratio_idx == ASPECT_RATIO_FULL)
    {
-      static unsigned last_width                     = 0;
-      static unsigned last_height                    = 0;
-      unsigned video_driver_width                    = 0;
-      unsigned video_driver_height                   = 0;
-
-      video_driver_get_output_size(&video_driver_width, &video_driver_height);
+      static unsigned last_dims                      = 0;
 
       /* Check whether video aspect has changed */
-      if (   (video_driver_width  != last_width)
-          || (video_driver_height != last_height))
+      if (output_dims != last_dims)
       {
          /* Update set aspect ratio so the full matches the current video width & height */
          command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
 
-         last_width  = video_driver_width;
-         last_height = video_driver_height;
+         last_dims = output_dims;
       }
    }
 
@@ -6484,34 +7047,51 @@ static enum runloop_state_enum runloop_check_state(
 #endif
 
 #if defined(HAVE_MENU) || defined(HAVE_GFX_WIDGETS)
-   video_driver_get_output_size(&output_width, &output_height);
+   output_dims = video_driver_get_output_dims();
 
    gfx_animation_update(
          current_time,
          settings->bools.menu_timedate_enable,
          settings->floats.menu_ticker_speed,
-         output_width,
-         output_height);
+         output_dims);
 
 #if defined(HAVE_GFX_WIDGETS)
    if (widgets_active)
    {
-      bool rarch_force_fullscreen = (video_st->flags &
+      bool rarch_force_fullscreen = ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) &
          VIDEO_FLAG_FORCE_FULLSCREEN) ? true : false;
       bool video_is_fullscreen    = settings->bools.video_fullscreen
                                  || rarch_force_fullscreen;
 
-      RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
-      gfx_widgets_iterate(
-            p_disp,
-            settings,
-            output_width,
-            output_height,
-            video_is_fullscreen,
-            settings->paths.directory_assets,
-            settings->paths.path_font,
-            VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st));
-      RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
+#ifdef HAVE_THREADS
+      /* Under the threaded video wrapper the worker animates and
+       * iterates the widgets (gfx_widgets_worker_step()); the layout,
+       * which owns fonts, stays here - and so do the badge loads
+       * the achievement widgets ask for from over there */
+      if (p_dispwidget->worker)
+      {
+#ifdef HAVE_CHEEVOS
+         rcheevos_badge_cache_service();
+#endif
+         gfx_widgets_iterate_layout(
+               p_disp,
+               settings,
+               output_dims,
+               video_is_fullscreen,
+               settings->paths.directory_assets,
+               settings->paths.path_font,
+               true);
+      }
+      else
+#endif
+         gfx_widgets_iterate(
+               p_disp,
+               settings,
+               output_dims,
+               video_is_fullscreen,
+               settings->paths.directory_assets,
+               settings->paths.path_font,
+               VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st));
    }
 #endif
 
@@ -6528,6 +7108,13 @@ static enum runloop_state_enum runloop_check_state(
 
       /* Get current time */
       menu_st->current_time_us      = current_time;
+      /* 'current_bits' was collected from the previous poll. On the
+       * first menu frame that poll was taken outside the menu, so
+       * the current time stands in for it. */
+      if (!menu_was_alive)
+         menu_st->input_poll_time_us = current_time;
+      menu_st->input_time_us        = menu_st->input_poll_time_us;
+      menu_st->input_poll_time_us   = current_time;
 
       cbs->poll_cb();
 
@@ -6553,9 +7140,9 @@ static enum runloop_state_enum runloop_check_state(
 #endif
       {
          if (pause_nonactive)
-            focused = is_focused && (!(uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND));
+            focused = is_focused;
          else
-            focused = (!(uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND));
+            focused = true;
       }
 
       if (action == old_action)
@@ -6619,12 +7206,18 @@ static enum runloop_state_enum runloop_check_state(
        * free and recreate the menu driver), so it must never run from
        * within menu iteration. Exit afterwards to start the next frame
        * with a freshly (re)built menu. */
-      if (menu_st->flags & MENU_ST_FLAG_PENDING_CONFIG_REPLACE)
+      /* A content load in flight owns the session until it is through:
+       * a pending config replace or close starts another load (of the
+       * dummy core) and a pending core reload loads a library into a
+       * session the job is still building, so each waits, flag set,
+       * for the frame after the load. */
+      if (     (menu_st->flags & MENU_ST_FLAG_PENDING_CONFIG_REPLACE)
+            && !runloop_st->content_switching)
       {
          bool config_save_on_exit = settings->bools.config_save_on_exit;
          menu_st->flags          &= ~MENU_ST_FLAG_PENDING_CONFIG_REPLACE;
          config_replace(config_save_on_exit, menu_st->pending_config_path);
-         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+         return RUNLOOP_STATE_POLLED_AND_CONTINUE;
       }
 #endif
 
@@ -6648,7 +7241,7 @@ static enum runloop_state_enum runloop_check_state(
          menu_st->selection_ptr  = 0;
          menu_st->flags         &= ~MENU_ST_FLAG_PENDING_QUICK_MENU;
          menu_st->flags         &= ~MENU_ST_FLAG_PENDING_STARTUP_PAGE;
-         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+         return RUNLOOP_STATE_POLLED_AND_CONTINUE;
       }
       /* Navigate to initial startup page */
       else if (menu_st->flags & MENU_ST_FLAG_PENDING_STARTUP_PAGE)
@@ -6739,10 +7332,11 @@ static enum runloop_state_enum runloop_check_state(
          }
 
          menu_st->flags &= ~MENU_ST_FLAG_PENDING_STARTUP_PAGE;
-         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+         return RUNLOOP_STATE_POLLED_AND_CONTINUE;
       }
-      else if ((menu_st->flags & MENU_ST_FLAG_PENDING_CLOSE_CONTENT)
-            || (menu_st->flags & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH))
+      else if (   ((menu_st->flags & MENU_ST_FLAG_PENDING_CLOSE_CONTENT)
+               || (menu_st->flags & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH))
+               && !runloop_st->content_switching)
       {
          menu_list_t *menu_list    = menu_st->entries.list;
          file_list_t *menu_stack   = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
@@ -6829,7 +7423,7 @@ static enum runloop_state_enum runloop_check_state(
             menu_st->flags |= MENU_ST_FLAG_PENDING_RELOAD_CORE;
             menu_st->flags |= MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH;
          }
-         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+         return RUNLOOP_STATE_POLLED_AND_CONTINUE;
       }
       else if (!menu_driver_iterate(menu_st, p_disp, anim_get_ptr(),
                settings, action, current_time))
@@ -6844,7 +7438,8 @@ static enum runloop_state_enum runloop_check_state(
       }
 
       /* Handle pending core reload separately after menu driver iterate */
-      if (menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE)
+      if (     (menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE)
+            && !runloop_st->content_switching)
       {
 #ifdef HAVE_DYNAMIC
          const char *a = path_get(RARCH_PATH_CORE_LAST);
@@ -6872,18 +7467,49 @@ static enum runloop_state_enum runloop_check_state(
                             |  MENU_ST_FLAG_PREVENT_POPULATE;
          }
 #endif
-         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+         return RUNLOOP_STATE_POLLED_AND_CONTINUE;
       }
 
       if (focused || !(runloop_st->flags & RUNLOOP_FLAG_IDLE))
       {
 #ifdef HAVE_NETWORKING
-         const bool libretro_running = runloop_is_libretro_running(runloop_st,
-               menu_pause_libretro && netplay_allow_pause);
+         const bool menu_pauses_core = menu_pause_libretro && netplay_allow_pause;
 #else
-         const bool libretro_running = runloop_is_libretro_running(runloop_st,
-               menu_pause_libretro);
+         const bool menu_pauses_core = menu_pause_libretro;
 #endif
+         const bool libretro_running = runloop_is_libretro_running(runloop_st,
+               menu_pauses_core);
+         const bool display_rate     = (runloop_menu_rate(settings,
+                  runloop_st, menu_pauses_core)
+               & PACE_FACT_MENU_DISPLAY_RATE) != 0;
+         /* At 'Display Rate' a core running behind the menu keeps its
+          * own clock (see runloop_menu_core_due()); fast-forward still
+          * runs it every iteration, as fast as the menu goes. */
+         bool core_due               = true;
+         runloop_st->menu_core_skipped = false;
+         if (     libretro_running
+               && display_rate
+               && !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
+         {
+            core_due = runloop_menu_core_due(runloop_st, video_st,
+                  settings, current_time);
+            runloop_st->menu_core_skipped = !core_due;
+         }
+         else
+            runloop_st->menu_core_due_ns = 0;
+
+         runloop_menu_audio_nonblock(settings, input_st, audio_st,
+               display_rate);
+
+         /* menu_driver_iterate() above dispatches entry actions, which
+          * can tear down and recreate the menu handle (menu driver
+          * change, any CMD_EVENT_REINIT from an action) - the pointer
+          * cached at the top of this function is stale from here on.
+          * Re-fetch before the render block below reads and writes
+          * through it; the second re-fetch further down covers
+          * core_run() inside display_menu_libretro() invalidating it
+          * again. */
+         menu = menu_st->driver_data;
 
          if (menu)
          {
@@ -6902,12 +7528,6 @@ static enum runloop_state_enum runloop_check_state(
                         menu->userdata,
                         menu->menu_state_msg);
 
-               if (uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND)
-               {
-                  if (     uico_st->drv
-                        && uico_st->drv->render_messagebox)
-                     uico_st->drv->render_messagebox(menu->menu_state_msg);
-               }
             }
 
             if (BIT64_GET(menu->state, MENU_STATE_BLIT))
@@ -6915,38 +7535,42 @@ static enum runloop_state_enum runloop_check_state(
                if (menu->driver_ctx->render)
                   menu->driver_ctx->render(
                         menu->userdata,
-                        output_width,
-                        output_height,
+                        output_dims,
                         (runloop_st->flags & RUNLOOP_FLAG_IDLE) ? true : false);
             }
 
             if (      (menu_st->flags & MENU_ST_FLAG_ALIVE)
                   && !(runloop_st->flags & RUNLOOP_FLAG_IDLE))
+               /* A frame the core is not due presents the last one it
+                * made, with the menu over it */
                if (display_menu_libretro(runloop_st, input_st,
                         settings->floats.slowmotion_ratio,
-                        libretro_running, current_time))
+                        libretro_running && core_due, current_time))
                   video_driver_cached_frame();
 
-            if (menu->driver_ctx->set_texture)
-               menu->driver_ctx->set_texture(menu->userdata);
+            /* Core execution inside display_menu_libretro() can trigger
+             * a driver reinit (e.g. RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
+             * -> CMD_EVENT_REINIT), which frees and recreates the menu
+             * handle - the cached pointer must be re-fetched before it
+             * is dereferenced again */
+            if ((menu = menu_st->driver_data))
+            {
+               if (menu->driver_ctx && menu->driver_ctx->set_texture)
+                  menu->driver_ctx->set_texture(menu->userdata);
 
-            menu->state               = 0;
+               menu->state            = 0;
+            }
          }
 
-         /* Pump the menu audio path when menu sounds are enabled, or when a
-          * mixer stream is active (e.g. animated thumbnail preview audio) --
-          * the mixer is only advanced by audio_driver_flush(), which in the
-          * menu is driven from here.  Without this, thumbnail audio would be
-          * silent whenever menu sounds are disabled. */
-         if (      !libretro_running
-#ifdef HAVE_AUDIOMIXER
-               && (   settings->bools.audio_enable_menu
-                   || audio_driver_mixer_get_streams_playing() > 0)
-#else
-               && settings->bools.audio_enable_menu
-#endif
-            )
-            audio_driver_menu_sample();
+         /* Feed the audio device one frame of silence while the core is
+          * not running behind the menu, so the stream never starves or
+          * stops: the device stays in the same state it is in during
+          * play, rate control keeps its footing, and menu sounds, the
+          * mixer and thumbnail video playback mix into this stream
+          * through audio_driver_flush(), which in the menu is driven only
+          * from here. */
+         if (!libretro_running)
+            audio_driver_menu_sample(display_rate);
       }
 
       /* Note: 'old_input' is recorded earlier, immediately after
@@ -6961,7 +7585,7 @@ static enum runloop_state_enum runloop_check_state(
             command_event(CMD_EVENT_RESUME, NULL);
 
          menu_dialog_confirm_clear(menu_st);
-         return RUNLOOP_STATE_POLLED_AND_SLEEP;
+         return RUNLOOP_STATE_POLLED_AND_CONTINUE;
       }
 
       if (     !focused
@@ -7102,9 +7726,9 @@ static enum runloop_state_enum runloop_check_state(
          if (rewind_pressed != old_rewind_pressed)
          {
             if (settings->bools.audio_rewind_mute && rewind_pressed)
-               audio_st->flags |=  AUDIO_FLAG_MUTED;
+               AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_MUTED);
             else
-               audio_st->flags &= ~AUDIO_FLAG_MUTED;
+               AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_MUTED);
          }
 
          old_rewind_pressed = rewind_pressed;
@@ -7113,9 +7737,9 @@ static enum runloop_state_enum runloop_check_state(
          if (widgets_active)
          {
             if (rewinding && settings->bools.notification_show_fast_forward)
-               video_driver_modify_disp_flags(VIDEO_FLAG_WIDGETS_REWINDING, 0);
+               video_st->main_flags |=  VIDEO_FLAG_WIDGETS_REWINDING;
             else
-               video_driver_modify_disp_flags(0, VIDEO_FLAG_WIDGETS_REWINDING);
+               video_st->main_flags &= ~VIDEO_FLAG_WIDGETS_REWINDING;
          }
          else
 #endif
@@ -7139,6 +7763,7 @@ static enum runloop_state_enum runloop_check_state(
             {
                runloop_st->flags               &= ~RUNLOOP_FLAG_PAUSED;
                runloop_st->run_frames_and_pause = 3;
+               audio_driver_pause_fade(false);
             }
             return RUNLOOP_STATE_ITERATE;
          }
@@ -7404,9 +8029,9 @@ static enum runloop_state_enum runloop_check_state(
          }
 
          if (audio_fastforward_mute && (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
-            audio_st->flags |=  AUDIO_FLAG_MUTED;
+            AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_MUTED);
          else
-            audio_st->flags &= ~AUDIO_FLAG_MUTED;
+            AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_MUTED);
 
          driver_set_nonblock_state();
 
@@ -7433,12 +8058,12 @@ static enum runloop_state_enum runloop_check_state(
          if (settings->bools.notification_show_fast_forward)
          {
             if (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
-               video_driver_modify_disp_flags(VIDEO_FLAG_WIDGETS_FASTMOTION, 0);
+               video_st->main_flags |=  VIDEO_FLAG_WIDGETS_FASTMOTION;
             else
-               video_driver_modify_disp_flags(0, VIDEO_FLAG_WIDGETS_FASTMOTION);
+               video_st->main_flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
          }
          else
-            video_driver_modify_disp_flags(0, VIDEO_FLAG_WIDGETS_FASTMOTION);
+            video_st->main_flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
       }
       else
 #endif
@@ -7456,7 +8081,7 @@ static enum runloop_state_enum runloop_check_state(
    }
 #if defined(HAVE_GFX_WIDGETS)
    else
-      video_driver_modify_disp_flags(0, VIDEO_FLAG_WIDGETS_FASTMOTION);
+      video_st->main_flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -7540,12 +8165,12 @@ static enum runloop_state_enum runloop_check_state(
          if (settings->bools.notification_show_fast_forward)
          {
             if (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
-               video_driver_modify_disp_flags(VIDEO_FLAG_WIDGETS_SLOWMOTION, 0);
+               video_st->main_flags |=  VIDEO_FLAG_WIDGETS_SLOWMOTION;
             else
-               video_driver_modify_disp_flags(0, VIDEO_FLAG_WIDGETS_SLOWMOTION);
+               video_st->main_flags &= ~VIDEO_FLAG_WIDGETS_SLOWMOTION;
          }
          else
-            video_driver_modify_disp_flags(0, VIDEO_FLAG_WIDGETS_SLOWMOTION);
+            video_st->main_flags &= ~VIDEO_FLAG_WIDGETS_SLOWMOTION;
       }
 #endif
    }
@@ -7658,7 +8283,7 @@ static enum runloop_state_enum runloop_check_state(
                   ": %d", settings->ints.replay_slot);
 
          if (cur_replay_slot < 0)
-            _len += strlcpy(msg + _len, " (Auto)", sizeof(msg) - _len);
+            _len += strlcpy_lit(msg + _len, " (Auto)", sizeof(msg) - _len);
 
 #ifdef HAVE_GFX_WIDGETS
          if (dispwidget_get_ptr()->active)
@@ -7830,8 +8455,76 @@ end:
  * button input in order to wake up the loop,
  * -1 if we forcibly quit out of the RetroArch iteration loop.
  **/
+/* Recovery from a lost GPU device, with a bound on how hard it is
+ * tried. A device lost once - a TDR, a driver update, a GPU reset -
+ * comes back on the first rebuild, and that rebuild happens at once.
+ * A device that is lost again straight after being rebuilt is a
+ * driver or hardware that is failing, and rebuilding every frame on
+ * it is a busy loop of full driver reinitialisations, each of which
+ * fails: the retries back off instead, doubling from one second, and
+ * after a run of them the rebuild is abandoned with a message rather
+ * than attempted forever. A loss well clear of the previous one (a
+ * minute or more) is a fresh incident and starts the count again. */
+#define GPU_LOST_RETRY_BASE_USEC   1000000
+#define GPU_LOST_RETRY_MAX_USEC   16000000
+#define GPU_LOST_GIVE_UP_AFTER     6
+#define GPU_LOST_FRESH_AFTER_USEC 60000000
+
+static void runloop_gpu_device_lost(runloop_state_t *runloop_st)
+{
+   retro_time_t now = cpu_features_get_time_usec();
+   int reinit_flags = DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK
+      | DRIVER_MENU_MASK;
+
+   /* Not yet due: leave the flag set and try again on a later frame */
+   if (now < runloop_st->gpu_lost_retry_at)
+      return;
+
+   video_driver_modify_disp_flags(0, VIDEO_FLAG_GPU_DEVICE_LOST);
+
+   if (     runloop_st->gpu_lost_count
+         && now - runloop_st->gpu_lost_last > GPU_LOST_FRESH_AFTER_USEC)
+      runloop_st->gpu_lost_count = 0;
+   runloop_st->gpu_lost_last = now;
+   runloop_st->gpu_lost_count++;
+
+   if (runloop_st->gpu_lost_count > GPU_LOST_GIVE_UP_AFTER)
+   {
+      const char *msg = "The GPU device keeps being lost; giving up on recovering the video driver.";
+      RARCH_ERR("[Video] %s\n", msg);
+      runloop_msg_queue_push(msg, strlen(msg), 1, 240, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
+      /* Look again only after a fresh incident's worth of time */
+      runloop_st->gpu_lost_retry_at = now + GPU_LOST_FRESH_AFTER_USEC;
+      return;
+   }
+
+   if (runloop_st->gpu_lost_count > 1)
+   {
+      retro_time_t delay = (retro_time_t)GPU_LOST_RETRY_BASE_USEC
+         << (runloop_st->gpu_lost_count - 2);
+      if (delay > GPU_LOST_RETRY_MAX_USEC)
+         delay = GPU_LOST_RETRY_MAX_USEC;
+      runloop_st->gpu_lost_retry_at = now + delay;
+      RARCH_ERR("[Video] The GPU device was lost again (%u in a row); "
+            "next rebuild in %u ms.\n",
+            runloop_st->gpu_lost_count, (unsigned)(delay / 1000));
+   }
+   else
+   {
+      runloop_st->gpu_lost_retry_at = 0;
+      RARCH_ERR("[Video] The GPU device was lost; reinitialising the video driver.\n");
+   }
+
+   command_event(CMD_EVENT_REINIT, &reinit_flags);
+}
+
 int runloop_iterate(void)
 {
+   retro_time_t pace_limit_min;
+   retro_time_t pace_now;
+   int64_t      pace_limit_ns;
+   runloop_pace_facts_t  pace_facts;
    input_driver_state_t         *input_st = input_state_get_ptr();
    audio_driver_state_t         *audio_st = audio_state_get_ptr();
    video_driver_state_t         *video_st = video_state_get_ptr();
@@ -7842,6 +8535,7 @@ int runloop_iterate(void)
    runloop_state_t *runloop_st            = &runloop_state;
    bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
    retro_time_t current_time              = cpu_features_get_time_usec();
+
 #ifdef HAVE_NETWORKING
    bool netplay_is_enabled                = netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
    bool netplay_allow_timeskip            = netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_TIMESKIP, NULL);
@@ -7860,31 +8554,41 @@ int runloop_iterate(void)
    bool core_paused                       = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
 #endif
    float slowmotion_ratio                 = settings->floats.slowmotion_ratio;
-#ifdef HAVE_CHEEVOS
-   bool cheevos_enable                    = settings->bools.cheevos_enable;
-#endif
    bool audio_sync                        = settings->bools.audio_sync;
    bool savestate_automatic_enable        = settings->uints.savestate_automatic_interval > 0;
-#ifdef HAVE_DISCORD
-   discord_state_t *discord_st            = discord_state_get_ptr();
 
-   if (discord_st->inited)
-   {
-      Discord_RunCallbacks();
-      Discord_UpdateConnection();
-   }
+   runloop_msg_queue_drain_deferred();
+
+   /* A video driver that lost its GPU device - a TDR on Windows, a GPU
+    * reset elsewhere - sets this from whichever thread saw it, and
+    * nothing it does on that device works from then on: every frame
+    * fails, and the window shows whatever the last good present left.
+    * Rebuilding the video driver here, on the thread that owns
+    * drivers, is the recovery: the context comes back on the
+    * recovered device, and a hardware core gets context_reset. */
+   if ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags)
+         & VIDEO_FLAG_GPU_DEVICE_LOST)
+      runloop_gpu_device_lost(runloop_st);
+
+#ifdef HAVE_DISCORD
+   if (runloop_st->frame_work & RUNLOOP_WORK_DISCORD)
+      discord_poll(current_time);
 #endif
 
 #ifdef HAVE_BSV_MOVIE
-   bsv_movie_dequeue_next(input_st);
+   if (input_st->bsv_movie_state_next_handle)
+      bsv_movie_dequeue_next(input_st);
 #endif
 
-#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
-   /* Perform the parked remainder of a deferred (prefetched) menu
-    * load.  It runs here, not from the prefetch task's callback,
-    * because content_load() reinitializes the task queue - fatal
-    * from inside the queue's own dispatch. */
-   task_content_deferred_load_check();
+#ifdef ANDROID
+   /* Outside the core. APP_CMD_PAUSE is read by the input driver's poll,
+    * which a core enters from within retro_run(), so the save it asks for
+    * is performed here instead of where the command arrives. */
+   android_input_flush_pending_state();
+
+   /* Same poll, same reason: entering Java is only safe on the OS
+    * stack, and a libco core reaches the poll on its own. */
+   android_input_flush_pending_haptics();
 #endif
 
    /* Tick deferred shader compilation (one pass per frame) */
@@ -7927,7 +8631,7 @@ int runloop_iterate(void)
       bool audio_buf_underrun      = false;
 
       if (!(    (runloop_st->flags & RUNLOOP_FLAG_PAUSED)
-            || !(audio_st->flags & AUDIO_FLAG_ACTIVE)
+            || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
             || !(audio_st->output_samples_buf))
             && audio_st->current_audio->write_avail
             && audio_st->context_audio_data
@@ -7958,6 +8662,24 @@ int runloop_iterate(void)
                audio_buf_active, audio_buf_occupancy, audio_buf_underrun);
    }
 
+   /* A driver's request to be reinitialised - a device change or an
+    * unplug - is taken here, once a frame, on the main thread with no
+    * audio lock held: the reinit frees the state lock and joins the
+    * audio thread, so it cannot run from a flush or from that thread. */
+   if (audio_driver_take_reinit_request())
+   {
+      RARCH_LOG("[Audio] Driver reinit requested...\n");
+      command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+#ifdef HAVE_MICROPHONE
+      command_event(CMD_EVENT_MICROPHONE_REINIT, NULL);
+#endif
+   }
+
+#ifdef HAVE_THREADS
+   if (runloop_st->flags & RUNLOOP_FLAG_AUTOSAVE)
+      autosave_check();
+#endif
+
    switch ((enum runloop_state_enum)runloop_check_state(
             input_st, audio_st, video_st,
             uico_st,
@@ -7966,11 +8688,23 @@ int runloop_iterate(void)
             netplay_allow_timeskip))
    {
       case RUNLOOP_STATE_QUIT:
-         runloop_st->frame_limit_last_time = 0.0;
+         runloop_st->frame_limit_anchor_ns = 0;
          runloop_st->flags                &= ~RUNLOOP_FLAG_CORE_RUNNING;
          command_event(CMD_EVENT_QUIT, NULL);
          return -1;
+      case RUNLOOP_STATE_POLLED_AND_CONTINUE:
+         runloop_st->pace = RUNLOOP_PACE_NONE;
+         AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_WROTE);
+         /* Config replaced, startup page pushed, core loaded, dialog
+          * command run, list cache flushed: one-shot work is done and
+          * the next iteration should begin fresh. Nothing to wait for;
+          * the 10 ms below was a visible stall on every one of them. */
+         if (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
+            return -1;
+         return 1;
       case RUNLOOP_STATE_POLLED_AND_SLEEP:
+         runloop_st->pace = RUNLOOP_PACE_NONE;
+         AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_WROTE);
          if (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
             return -1;
 #ifdef HAVE_NETWORKING
@@ -7978,12 +8712,17 @@ int runloop_iterate(void)
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
 #if defined(__EMSCRIPTEN__) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
+         /* A deferred main-loop timeout: the browser's yield, not a
+          * wait of ours. */
          platform_emscripten_deferred_sleep(10);
 #else
-#if defined(HAVE_COCOATOUCH)
-         if (!(uico_st->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
+#if defined(ANDROID)
+         /* When IDLE, android_input_poll() already blocked on the looper
+          * until the OS sent something; a wait on top only delays the
+          * response to it. Unfocused-but-foreground still waits. */
+         if (!(runloop_st->flags & RUNLOOP_FLAG_IDLE))
 #endif
-            retro_sleep(10);
+            runloop_idle_wait();
 #endif
          return 1;
       case RUNLOOP_STATE_PAUSE:
@@ -8000,6 +8739,7 @@ int runloop_iterate(void)
          {
             runloop_st->flags &= ~RUNLOOP_FLAG_PAUSED;
             runloop_st->run_frames_and_pause = 2;
+            audio_driver_pause_fade(false);
          }
 #endif
          video_driver_cached_frame();
@@ -8012,52 +8752,93 @@ int runloop_iterate(void)
 #endif
 
 #ifdef HAVE_CHEEVOS
-         if (cheevos_enable)
+         if (runloop_st->frame_work & RUNLOOP_WORK_CHEEVOS)
          {
             if (runloop_is_libretro_running(runloop_st, menu_pause_libretro))
-               rcheevos_test();
+            {
+               if (!runloop_st->menu_core_skipped)
+                  rcheevos_test();
+            }
             else
                rcheevos_idle();
          }
 #endif
 
 #ifdef HAVE_MENU
-         /* Rely on vsync throttling unless VRR is enabled and menu throttle is disabled. */
-         if (vrr_runloop_enable && !settings->bools.menu_throttle_framerate)
-            return 0;
-         /* When content is actively running behind the menu (menu_pause_libretro
-          * is off), core_run() -> audio_driver_write() already paces the iterate
-          * loop at the audio buffer's drain rate -- i.e. the core's natural fps.
-          * Layering the refresh-rate retro_sleep() throttle below on top of that
-          * is redundant double-pacing, and retro_sleep() resolves to OS Sleep()
-          * whose granularity is ~15 ms on Windows by default -- coarser than
-          * typical audio low-water marks, so the sleep overshoots and stutters
-          * audio.  Defer pacing to the audio backpressure path. */
-         else if (   audio_sync
-                  && runloop_is_libretro_running(runloop_st, menu_pause_libretro))
          {
-            /* Make sure no stale frame_limit_minimum_time from a prior
-             * iteration (e.g. just before menu_pause_libretro was toggled
-             * off) leaks into the sleep block below. */
-            runloop_st->frame_limit_minimum_time = 0;
-            goto end;
-         }
-         else if ((  (settings->bools.video_vsync)
-                  || (settings->bools.video_scanline_sync && video_st->scanline[SCANLINE_NEXT]))
-               && (runloop_st->flags & RUNLOOP_FLAG_FOCUSED))
-            goto end;
+            unsigned menu_rate = runloop_menu_rate(settings, runloop_st,
+                  menu_pause_libretro);
+            /* Menu Frame Rate 'Content Rate', the core paused behind the
+             * menu: the content's period. The silence the menu feeds holds
+             * the loop there when audio blocks; when it does not, the
+             * timer does (see runloop_pace_sources()). */
+            if (menu_rate & PACE_FACT_MENU_CONTENT_RATE)
+            {
+               runloop_set_frame_limit(&video_st->av_info, 1.0f);
+               goto end;
+            }
+            /* When content is actively running behind the menu (menu_pause_libretro
+             * is off), core_run() -> audio_driver_write() already paces the iterate
+             * loop at the audio buffer's drain rate -- i.e. the core's natural fps.
+             * Layering the refresh-rate timer throttle below on top of that is
+             * redundant double-pacing: two clocks holding one loop drift
+             * against each other and the slower one wins, so the sleep lands
+             * after the audio low-water mark and stutters audio.  Defer
+             * pacing to the audio backpressure path. Not at Menu Frame Rate
+             * 'Display Rate': there the core runs on its own clock, its
+             * audio does not block, and the menu takes the display's pace
+             * below. */
+            else if (   audio_sync
+                     && !(menu_rate & PACE_FACT_MENU_DISPLAY_RATE)
+                     && runloop_is_libretro_running(runloop_st, menu_pause_libretro))
+            {
+               /* Make sure no stale frame_limit_minimum_time from a prior
+                * iteration (e.g. just before menu_pause_libretro was toggled
+                * off) leaks into the sleep block below. */
+               runloop_st->frame_limit_minimum_time    = 0;
+               runloop_st->frame_limit_minimum_time_ns = 0;
+               goto end;
+            }
+            else if ((  (settings->bools.video_vsync)
+                     || (settings->bools.video_scanline_sync))
+                  && (runloop_st->flags & RUNLOOP_FLAG_FOCUSED)
+#ifdef HAVE_THREADS
+                  /* Behind the threaded video wrapper vsync holds the
+                   * video thread, not this one: at 'Display Rate' the
+                   * timer below holds the menu instead */
+                  && !(   (menu_rate & PACE_FACT_MENU_DISPLAY_RATE)
+                       && video_st->thread_wrapper_active)
+#endif
+                  )
+               goto end;
 
-         /* Otherwise run menu in video refresh rate speed. */
-         if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
-            runloop_st->frame_limit_minimum_time = (retro_time_t)roundf(1000000.0f /
-                     ((video_st->video_refresh_rate_original)
-                     ? video_st->video_refresh_rate_original
-                     : settings->floats.video_refresh_rate));
-         else
-            runloop_set_frame_limit(&video_st->av_info, settings->floats.fastforward_ratio);
+            /* Otherwise run menu in video refresh rate speed. */
+            if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+            {
+               /* At 'Display Rate', the rate of the monitor the window
+                * is on */
+               float hz = runloop_display_hz(video_st, settings,
+                     (menu_rate & PACE_FACT_MENU_DISPLAY_RATE) != 0);
+               runloop_st->frame_limit_minimum_time = (retro_time_t)
+                  roundf(1000000.0f / hz);
+               runloop_st->frame_limit_minimum_time_ns =
+                  runloop_content_frame_time_ns(hz);
+            }
+            else
+               runloop_set_frame_limit(&video_st->av_info, settings->floats.fastforward_ratio);
+         }
 #endif
          goto end;
       case RUNLOOP_STATE_ITERATE:
+         /* A staged content load has no core to run between its
+          * stages: poll, present what is on screen, and pace as a
+          * paused frame does. */
+         if (runloop_st->content_switching)
+         {
+            input_driver_poll();
+            video_driver_cached_frame();
+            goto end;
+         }
          runloop_st->flags       |= RUNLOOP_FLAG_CORE_RUNNING;
          break;
    }
@@ -8067,11 +8848,10 @@ int runloop_iterate(void)
       autosave_lock();
 #endif
 
-   if (     settings->bools.camera_allow
-         && camera_st->cb.caps
-         && camera_st->driver
-         && camera_st->driver->poll
-         && camera_st->data)
+   /* driver_camera_start() raised the bit only with a pollable
+    * driver and registered caps; stop, teardown and a camera_allow
+    * change drop it. */
+   if (runloop_st->frame_work & RUNLOOP_WORK_CAMERA)
       camera_st->driver->poll(camera_st->data,
             camera_st->cb.frame_raw_framebuffer,
             camera_st->cb.frame_opengl_texture);
@@ -8112,21 +8892,37 @@ int runloop_iterate(void)
          runloop_st, slowmotion_ratio, current_time);
 
 #ifdef HAVE_CHEEVOS
-   if (cheevos_enable)
+   if (runloop_st->frame_work & RUNLOOP_WORK_CHEEVOS)
       rcheevos_test();
 #endif
 #ifdef HAVE_CHEATS
-   cheat_manager_apply_retro_cheats();
+   if (runloop_st->frame_work & RUNLOOP_WORK_CHEATS)
+      cheat_manager_apply_retro_cheats();
 #endif
+
+   /* The core's rumble and LED calls stored what it asked for; write
+    * the frame's last values now that it is off the stack. After the
+    * cheats, which can rumble too. One load and a compare each when
+    * nothing was set. */
+   input_driver_flush_rumble();
+   led_driver_flush();
 #ifdef HAVE_PRESENCE
-   presence_update(PRESENCE_GAME);
+   /* "In a game" does not change at the core rate; the sinks
+    * (Discord at 10 Hz, Steam) are written on the same cadence. */
+   if (runloop_st->frame_work & RUNLOOP_WORK_PRESENCE)
+      presence_poll(PRESENCE_GAME, current_time);
 #endif
 #ifdef HAVE_BSV_MOVIE
-   bsv_movie_next_frame(input_st);
-   if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END)
+   /* The movie handle lives on input_st, which this frame already
+    * has in cache; no bit needed. */
+   if (input_st->bsv_movie_state_handle)
    {
-      movie_stop(input_st);
-      command_event(CMD_EVENT_PAUSE, NULL);
+      bsv_movie_next_frame(input_st);
+      if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END)
+      {
+         movie_stop(input_st);
+         command_event(CMD_EVENT_PAUSE, NULL);
+      }
    }
 #endif
 
@@ -8137,7 +8933,7 @@ int runloop_iterate(void)
 
    /* Check if we should save state automatically */
    if (savestate_automatic_enable)
-      content_save_state_automatic();
+      content_save_state_automatic(current_time);
 
 end:
    if (vrr_runloop_enable)
@@ -8148,12 +8944,9 @@ end:
          if (runloop_st->fastforward_after_frames == 1)
          {
             /* Nonblocking audio */
-            if (    (audio_st->flags & AUDIO_FLAG_ACTIVE)
+            if (    (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
                  && (audio_st->context_audio_data))
-               audio_st->current_audio->set_nonblock_state(
-                     audio_st->context_audio_data, true);
-            audio_st->chunk_size =
-               audio_st->chunk_nonblock_size;
+               audio_driver_set_nonblock_state(true);
          }
 
          runloop_st->fastforward_after_frames++;
@@ -8161,13 +8954,10 @@ end:
          if (runloop_st->fastforward_after_frames == 6)
          {
             /* Blocking audio */
-            if (     (audio_st->flags & AUDIO_FLAG_ACTIVE)
+            if (     (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
                   && (audio_st->context_audio_data))
-               audio_st->current_audio->set_nonblock_state(
-                     audio_st->context_audio_data,
-                     audio_sync ? false : true);
+               audio_driver_set_nonblock_state(audio_sync ? false : true);
 
-            audio_st->chunk_size = audio_st->chunk_block_size;
             runloop_st->fastforward_after_frames = 0;
          }
       }
@@ -8176,59 +8966,164 @@ end:
          runloop_set_frame_limit(&video_st->av_info,
                runloop_get_fastforward_ratio(settings,
                   &runloop_st->fastmotion_override.current));
-      else
+      /* The menu at Menu Frame Rate 'Display Rate' keeps the display's
+       * period the menu path set; the content's is for the content. */
+      else if (!(runloop_menu_rate(settings, runloop_st, menu_pause_libretro)
+               & PACE_FACT_MENU_DISPLAY_RATE))
          runloop_set_frame_limit(&video_st->av_info, 1.0f);
+   }
+
+   /* Record which sources held the pace this iteration. The other three
+    * block inside their own subsystems; only the timer is decided here.
+    * See enum runloop_pace_source.
+    *
+    * Computed at the end of the iteration and read by the overlay during
+    * the next one - one frame stale by design. It must not be reset at
+    * the top of the iteration: the overlay reads it from inside
+    * video_driver_frame(), which runs between the top and here, and a
+    * reset there made it read NONE on every frame. Paths that return
+    * before this block set it themselves, through the same function. */
+   /* How long the last iteration actually took, smoothed. One clock
+    * read on a path that already takes several, and the only way to
+    * tell a source that is holding the loop from one that merely says
+    * it is - headless SDL2 with no vblank sets the vsync bit and
+    * blocks on nothing.
+    *
+    * The reading stands for the whole block below: the pace gather and
+    * the decision between here and the limiter are flag tests, so the
+    * frame's end is this instant and the limiter schedules against it
+    * rather than taking the clock a second time. */
+   pace_now = cpu_features_get_time_usec();
+   if (runloop_st->pace_iter_last)
+   {
+      retro_time_t delta = pace_now - runloop_st->pace_iter_last;
+      /* Samples longer than a quarter second are not pacing, they
+       * are a stall - a state load, a shader rebuild, a menu that
+       * blocked - and one of them dragged an eight-sample average
+       * from 60 fps to 8 in testing, taking several frames to
+       * recover. Nothing that is really holding the loop runs
+       * slower than 4 fps, so they are dropped rather than
+       * smoothed. */
+      if (runloop_pace_sample_usable(delta))
+      {
+         if (runloop_st->pace_period_usec)
+            runloop_st->pace_period_usec +=
+                  (delta - runloop_st->pace_period_usec) / 8;
+         else
+            runloop_st->pace_period_usec = delta;
+      }
+   }
+   runloop_st->pace_iter_last = pace_now;
+   /* What the frame limiter below will pace to. Normally the
+    * fast-forward limit; replaced by the content frame time when
+    * nothing else is pacing at all (see below). */
+   pace_limit_min   = runloop_st->frame_limit_minimum_time;
+   pace_limit_ns    = runloop_st->frame_limit_minimum_time_ns;
+
+   /* One decision from this iteration's facts, gathered once - see
+    * runloop_pace_decide() in runloop.h, and the table in
+    * samples/runloop/pacing that pins it row by row. The audio write
+    * flag is read by the gather and cleared here. */
+   pace_facts       = runloop_pace_gather(settings, menu_pause_libretro);
+   AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_WROTE);
+   runloop_st->pace = runloop_pace_sources(pace_facts);
+
+   /* Nothing to present to - a minimised or zero-sized window, a
+    * surface the compositor has suspended, a swapchain that could not
+    * be created. The frame goes nowhere and nothing display-side can
+    * hold the loop; left alone, it spins. The wait belongs here, with
+    * the rest of the pacing, and only when nothing else holds the
+    * loop - audio still blocks with the window hidden, and fast-forward
+    * is meant to run unthrottled. */
+   if (runloop_pace_no_window(runloop_st->pace, pace_facts))
+      runloop_st->pace |= RUNLOOP_PACE_NOWINDOW;
+
+   if (runloop_st->pace & RUNLOOP_PACE_NOWINDOW)
+   {
+      /* One frame of content time, so a window that comes back is
+       * noticed within a frame and the core keeps its own rate while
+       * hidden. */
+      retro_sleep_us((unsigned)runloop_content_frame_time_us(video_st->core_hz));
+      return 1;
+   }
+
+   /* Nothing at all is holding the loop: vsync off, audio sync off or
+    * not writing, no scanline lock, and no fast-forward limit to fall
+    * back on - frame_limit_minimum_time is zero whenever the ratio is
+    * "unlimited", which is the default, so the timer clause above
+    * cannot engage however slowly the core is running. The timer holds
+    * the loop to the display rate, which audio rate control can follow
+    * and which Scanline Sync is aiming at while it recalibrates. */
+   if (runloop_pace_gap_engages(runloop_st->pace,
+            (pace_facts & PACE_FACT_NONBLOCKING)   != 0,
+            (pace_facts & PACE_FACT_FASTMOTION)    != 0,
+            (pace_facts & PACE_FACT_SCANLINE_SYNC) != 0,
+            (pace_facts & PACE_FACT_RATE_CONTROL)  != 0))
+   {
+      runloop_st->pace         |= RUNLOOP_PACE_TIMER;
+      pace_limit_min            = runloop_content_frame_time_us(
+            (video_st->video_refresh_rate_original)
+               ? video_st->video_refresh_rate_original
+               : settings->floats.video_refresh_rate);
+      pace_limit_ns             = runloop_content_frame_time_ns(
+            (video_st->video_refresh_rate_original)
+               ? video_st->video_refresh_rate_original
+               : settings->floats.video_refresh_rate);
    }
 
    /* if there's a fast forward limit, inject sleeps to keep from going too fast. */
    {
-      retro_time_t frame_limit_min = runloop_st->frame_limit_minimum_time;
-      if (   (frame_limit_min)
-          && (   (vrr_runloop_enable)
-              || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
-#ifdef HAVE_MENU
-              || (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE
-                  && (!(settings->bools.video_vsync)
-                      || !(runloop_st->flags & RUNLOOP_FLAG_FOCUSED)))
-#endif
-              || (runloop_st->flags & RUNLOOP_FLAG_PAUSED)))
+      retro_time_t frame_limit_min = pace_limit_min;
+      if (runloop_st->pace & RUNLOOP_PACE_TIMER)
       {
-         const retro_time_t end_frame_time  = cpu_features_get_time_usec();
-         const retro_time_t to_sleep_us     = (
-               (  runloop_st->frame_limit_last_time
-                + frame_limit_min)
-               - end_frame_time);
-#if defined(__EMSCRIPTEN__) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
-         /* Emscripten paces through a deferred main loop timeout that
-          * is expressed in whole milliseconds, so it cannot act on a
-          * sub-millisecond remainder. Keep the old truncation there. */
-         const retro_time_t to_sleep        = to_sleep_us / 1000;
-#else
-         const retro_time_t to_sleep        = to_sleep_us;
-#endif
+         const retro_time_t end_frame_time = pace_now;
 
-         if (to_sleep > 0)
+         const retro_time_t to_sleep_us = runloop_pace_schedule(
+               &runloop_st->frame_limit_anchor_ns,
+               pace_limit_ns ? pace_limit_ns : (int64_t)frame_limit_min * 1000,
+               end_frame_time);
+         if (to_sleep_us > 0)
          {
-            /* Combat jitter a bit. */
-            runloop_st->frame_limit_last_time += frame_limit_min;
-
 #if defined(__EMSCRIPTEN__) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
-            platform_emscripten_deferred_sleep((int)to_sleep);
+            /* Emscripten paces through a deferred main loop timeout
+             * that is expressed in whole milliseconds, so it cannot
+             * act on a sub-millisecond remainder, nor spin. */
+            platform_emscripten_deferred_sleep((int)(to_sleep_us / 1000));
 #else
-#if defined(HAVE_COCOATOUCH)
-            if (!(uico_state_get_ptr()->flags & UICO_ST_FLAG_IS_ON_FOREGROUND))
+            /* Sleep short of the deadline by the measured margin,
+             * then spin the remainder: the sleep decides how much is
+             * spun, the clock decides where the frame lands. The
+             * sleep is absolute - retro_sleep_until_us re-arms
+             * against the deadline itself - so the time between
+             * reading the clock and entering the kernel, and any
+             * early or interrupted wake, no longer land in the
+             * margin; what the margin measures now is purely the
+             * kernel's own overshoot, which is what it was for. */
+            const retro_time_t deadline = runloop_st->frame_limit_anchor_ns / 1000;
+            retro_time_t now            = end_frame_time;
+            if (to_sleep_us > runloop_st->frame_limit_margin)
+            {
+               const retro_time_t asked_until =
+                     deadline - runloop_st->frame_limit_margin;
+               retro_sleep_until_us(asked_until);
+               now = cpu_features_get_time_usec();
+               runloop_st->frame_limit_margin = runloop_pace_margin_update(
+                     runloop_st->frame_limit_margin,
+                     now - asked_until, frame_limit_min);
+            }
+            while (now < deadline)
+            {
+               retro_cpu_relax();
+               now = cpu_features_get_time_usec();
+            }
 #endif
-               retro_sleep_us((unsigned)to_sleep_us);
-#endif
-
             return 1;
          }
 
-         runloop_st->frame_limit_last_time = end_frame_time;
       }
    }
 
-   /* Frame delay */
+   /* Frame delay. */
    if (     !(input_st->flags & INP_FLAG_NONBLOCKING)
          || (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
       video_frame_delay(video_st, settings);
@@ -8238,7 +9133,10 @@ end:
    {
       runloop_st->run_frames_and_pause--;
       if (!runloop_st->run_frames_and_pause)
+      {
          runloop_st->flags |= RUNLOOP_FLAG_PAUSED;
+         audio_driver_pause_fade(true);
+      }
    }
 
    return 0;
@@ -8247,17 +9145,80 @@ end:
 void runloop_msg_queue_deinit(void)
 {
    runloop_state_t *runloop_st = &runloop_state;
-   RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
+
+#ifdef HAVE_THREADS
+   {
+      mpsc_stack_node_t *link =
+            mpsc_stack_drain(&runloop_st->msg_queue_deferred);
+      while (link)
+      {
+         struct runloop_deferred_msg *node =
+               (struct runloop_deferred_msg *)link;
+         link = link->next;
+         free(node->msg);
+         free(node->title);
+         free(node);
+      }
+   }
+#endif
 
    msg_queue_deinitialize(&runloop_st->msg_queue);
 
-   RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
-#ifdef HAVE_THREADS
-   slock_free(runloop_st->msg_queue_lock);
-   runloop_st->msg_queue_lock = NULL;
-#endif
-
    runloop_st->msg_queue_size = 0;
+}
+
+void runloop_msg_queue_drain_deferred(void)
+{
+#ifdef HAVE_THREADS
+   runloop_state_t *runloop_st = &runloop_state;
+   mpsc_stack_node_t *link     = NULL;
+
+   if (mpsc_stack_empty(&runloop_st->msg_queue_deferred))
+      return;
+
+   /* The stack chains newest-first; replay oldest-first. */
+   link = mpsc_stack_reverse(
+         mpsc_stack_drain(&runloop_st->msg_queue_deferred));
+   while (link)
+   {
+      struct runloop_deferred_msg *node =
+            (struct runloop_deferred_msg *)link;
+      link = link->next;
+      if (node->core_status)
+      {
+         /* The STATUS slot's own rule, applied here on the main
+          * thread: overwrite only at the same or higher priority. */
+         if (   !runloop_st->core_status_msg.set
+             || (runloop_st->core_status_msg.priority <= node->prio))
+         {
+            if (node->msg && *node->msg)
+            {
+               /* The same store the direct path makes, for the same
+                * reason: the guard bites on the held priority. */
+               strlcpy(runloop_st->core_status_msg.str, node->msg,
+                     sizeof(runloop_st->core_status_msg.str));
+               runloop_st->core_status_msg.priority = node->prio;
+               runloop_st->core_status_msg.duration = (float)node->duration;
+               runloop_st->core_status_msg.set      = true;
+            }
+            else
+            {
+               runloop_st->core_status_msg.str[0]   = '\0';
+               runloop_st->core_status_msg.priority = 0;
+               runloop_st->core_status_msg.duration = 0.0f;
+               runloop_st->core_status_msg.set      = false;
+            }
+         }
+      }
+      else if (node->msg)
+         runloop_msg_queue_push(node->msg, node->len, node->prio,
+               node->duration, node->flush, node->title,
+               node->icon, node->category);
+      free(node->msg);
+      free(node->title);
+      free(node);
+   }
+#endif
 }
 
 void runloop_msg_queue_init(void)
@@ -8266,10 +9227,11 @@ void runloop_msg_queue_init(void)
 
    runloop_msg_queue_deinit();
    msg_queue_initialize(&runloop_st->msg_queue, 8);
-
 #ifdef HAVE_THREADS
-   runloop_st->msg_queue_lock   = slock_new();
+   mpsc_stack_init(&runloop_st->msg_queue_deferred);
+   runloop_st->msg_queue_main_id = sthread_get_current_thread_id();
 #endif
+
 }
 
 void runloop_task_msg_queue_push(retro_task_t *task, const char *msg,
@@ -8285,24 +9247,26 @@ void runloop_task_msg_queue_push(retro_task_t *task, const char *msg,
    bool accessibility_enable      = settings->bools.accessibility_enable;
    unsigned accessibility_narrator_speech_speed = settings->uints.accessibility_narrator_speech_speed;
 #endif
-   runloop_state_t *runloop_st    = &runloop_state;
    dispgfx_widget_t *p_dispwidget = dispwidget_get_ptr();
    bool widgets_active            = p_dispwidget->active;
 
-   if (widgets_active && task->title && (!((task->flags & RETRO_TASK_FLG_MUTE) > 0)))
+   /* An empty message only completes an existing widget's task link. */
+   if (widgets_active)
    {
-      RUNLOOP_MSG_QUEUE_LOCK(runloop_st);
-      ui_companion_driver_msg_queue_push(msg,
-            prio, task ? duration : duration * 60 / 1000, flush);
+      if (*msg)
+      {
+         ui_companion_driver_msg_queue_push(msg,
+               prio, task ? duration : duration * 60 / 1000, flush);
 #ifdef HAVE_ACCESSIBILITY
-      if (is_accessibility_enabled(
-            accessibility_enable,
-            access_st->enabled))
-         accessibility_speak_priority(
+         if (is_accessibility_enabled(
                accessibility_enable,
-               accessibility_narrator_speech_speed,
-               (char*)msg, 0);
+               access_st->enabled))
+            accessibility_speak_priority(
+                  accessibility_enable,
+                  accessibility_narrator_speech_speed,
+                  (char*)msg, 0);
 #endif
+      }
       gfx_widgets_msg_queue_push(
             task,
             msg,
@@ -8319,10 +9283,10 @@ void runloop_task_msg_queue_push(retro_task_t *task, const char *msg,
             false
 #endif
             );
-      RUNLOOP_MSG_QUEUE_UNLOCK(runloop_st);
    }
    else
 #endif
+   if (*msg)
       runloop_msg_queue_push(msg, strlen(msg), prio, duration, flush, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
@@ -8413,7 +9377,7 @@ void runloop_set_current_core_type(
 bool core_set_default_callbacks(void *data)
 {
    struct retro_callbacks *cbs  = (struct retro_callbacks*)data;
-   retro_input_state_t state_cb = core_input_state_poll_return_cb();
+   retro_input_state_t state_cb = core_input_state_cb;
 
    cbs->frame_cb                = video_driver_frame;
    cbs->sample_cb               = audio_driver_sample;
@@ -8445,6 +9409,9 @@ bool core_set_netplay_callbacks(void)
       runloop_st->current_core.retro_set_audio_sample(audio_sample_net);
       runloop_st->current_core.retro_set_audio_sample_batch(audio_sample_batch_net);
       runloop_st->current_core.retro_set_input_state(input_state_net);
+      /* The float batch entry the core holds by pointer is gated, not
+       * swapped. */
+      audio_driver_set_float_gate(audio_float_gate_net);
    }
 
    return true;
@@ -8467,6 +9434,7 @@ bool core_unset_netplay_callbacks(void)
    runloop_st->current_core.retro_set_video_refresh(cbs.frame_cb);
    runloop_st->current_core.retro_set_audio_sample(cbs.sample_cb);
    runloop_st->current_core.retro_set_audio_sample_batch(cbs.sample_batch_cb);
+   audio_driver_set_float_gate(NULL);
    runloop_st->current_core.retro_set_input_state(cbs.state_cb);
 
    return true;
@@ -8623,6 +9591,11 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
    else if (content_get_flags() & CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT)
       game_loaded = runloop_st->current_core.retro_load_game(NULL);
 
+   /* Whatever the core set while loading: its first frame may be some
+    * way off, behind the menu or a pause. */
+   input_driver_flush_rumble();
+   led_driver_flush();
+
    if (game_loaded)
    {
       /* If 'game_loaded' is true at this point, then
@@ -8646,7 +9619,7 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
 bool core_get_system_info(struct retro_system_info *sysinfo)
 {
    runloop_state_t *runloop_st  = &runloop_state;
-   if (!sysinfo)
+   if (!sysinfo || !runloop_st->current_core.retro_get_system_info)
       return false;
    runloop_st->current_core.retro_get_system_info(sysinfo);
    return true;
@@ -8744,7 +9717,8 @@ void core_reset(void)
     * cores or on drivers that do not implement the hook. */
    video_driver_invalidate_hw_render_cache();
 
-   video_driver_cached_frame_invalidate();
+   /* retro_reset() may reallocate the core's framebuffer. */
+   video_driver_cached_frame_retire();
    runloop_st->current_core.retro_reset();
 }
 
@@ -8761,7 +9735,34 @@ void core_run(void)
    bool early_polling          = (new_poll_type == POLL_TYPE_EARLY);
    bool late_polling           = (new_poll_type == POLL_TYPE_LATE);
 #ifdef HAVE_NETWORKING
-   bool netplay_preframe       = netplay_driver_ctl(
+   /* Declared with the other locals and assigned below, so the
+    * closing guard can return before netplay's pre-frame call
+    * without putting a declaration after a statement. */
+   bool netplay_preframe;
+#endif
+
+   /* The core is being torn down, or replaced: do not run it.
+    *
+    * retro_run() must not be entered once closing has begun, because
+    * the teardown unloads the library that function lives in.  A
+    * staged content load closes the core and then returns to the
+    * frame loop - while a save state task is still inside the core,
+    * and between its stages - so frames run here with the flags set.
+    *
+    * Poll and present anyway rather than returning bare, so input
+    * keeps being drained and whatever the close has put on screen
+    * keeps being drawn.  Same shape as the netplay-paused case
+    * below, for the same reason: a frame that stops being produced
+    * reads as a hang. */
+   if (runloop_st->content_closing || runloop_st->content_switching)
+   {
+      input_driver_poll();
+      video_driver_cached_frame();
+      return;
+   }
+
+#ifdef HAVE_NETWORKING
+   netplay_preframe            = netplay_driver_ctl(
          RARCH_NETPLAY_CTL_PRE_FRAME, NULL);
 
    if (!netplay_preframe)
@@ -8774,16 +9775,28 @@ void core_run(void)
    }
 #endif
 
+   /* The flag says whether this frame's poll has happened. Early
+    * polling polls here; normal and late start the frame without it,
+    * and input_poll or the first input_state sets it. */
    if (early_polling)
+   {
       input_driver_poll();
-   else if (late_polling)
+      current_core->flags |=  RETRO_CORE_FLAG_INPUT_POLLED;
+   }
+   else
       current_core->flags &= ~RETRO_CORE_FLAG_INPUT_POLLED;
 
    /* Content can be marked CORE_RUNNING after a failed/partial load
     * (e.g. archive member opened with no core).  Never call through
     * a NULL retro_run — that is an immediate SIGSEGV. */
    if (current_core->retro_run)
+   {
+      /* The flags this iteration's checks flipped, fast-forward above
+       * all, reach the frame's own audio rather than the next frame's. */
+      audio_driver_publish_runloop();
       current_core->retro_run();
+      audio_driver_frame_end();
+   }
 
 #ifdef HAVE_GAME_AI
    {

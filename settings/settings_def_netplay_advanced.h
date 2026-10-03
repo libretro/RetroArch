@@ -20,11 +20,16 @@
 /* The configuration row lives under defined(HAVE_NETWORKING); other passes are
  * unaffected. */
 #if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_NETWORKING))
+/* The configuration table registers this row by hand in
+ * configuration.c because it carries no default there; the
+ * generated row is for the other passes. */
+#ifndef SETTINGS_DEF_CONFIG_PASS
 S_BOOL_H(netplay_start_as_spectator, NETPLAY_START_AS_SPECTATOR,
       "netplay_start_as_spectator",
       DEFAULT_NETPLAY_START_AS_SPECTATOR, SD_FLAG_NONE, 0, 0,
       "Netplay Spectator Mode",
       "Start netplay in spectator mode.")
+#endif
 #endif
 #endif
 /* Descriptor and configuration rows are #if defined(HAVE_NETWORKING); the string

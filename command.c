@@ -57,6 +57,8 @@
 #include "autosave.h"
 #include "command.h"
 #include "core_info.h"
+#include "playlist.h"
+#include <queues/task_queue.h>
 #include "cheat_manager.h"
 #include "content.h"
 #include "dynamic.h"
@@ -68,6 +70,10 @@
 #include "version.h"
 #include "version_git.h"
 #include "tasks/task_content.h"
+#include <compat/strl.h>
+#ifdef __MACH__
+#include <TargetConditionals.h>
+#endif
 
 #define CMD_BUF_SIZE 4096
 
@@ -134,8 +140,10 @@ static bool command_get_arg(const char *tok,
          if (*argument != ' ' && *argument != '\0')
             return false;
 
+         /* past the separating space; a bare command gets "", not the
+          * byte after its terminator */
          if (arg)
-            *arg = argument + 1;
+            *arg = *argument ? argument + 1 : argument;
 
          if (index)
             *index = i;
@@ -179,10 +187,15 @@ static void command_parse_msg(command_t *handle, char *buf)
 {
    char     *save  = NULL;
    const char *tok = strtok_r(buf, "\n", &save);
+   unsigned gen    = input_driver_command_generation();
 
    while (tok)
    {
       command_parse_sub_msg(handle, tok);
+      /* The command may have reinitialised the input driver, which
+       * owns and has now freed 'handle'. Nothing further may use it. */
+      if (input_driver_command_generation() != gen)
+         return;
       tok = strtok_r(NULL, "\n", &save);
    }
 }
@@ -207,6 +220,34 @@ static void network_command_reply(command_t *cmd,
       (struct sockaddr*)&netcmd->cmd_source, netcmd->cmd_source_len);
 }
 
+typedef struct
+{
+   struct sockaddr_storage addr;
+   socklen_t addr_len;
+} command_network_dest_t;
+
+static void *network_command_reply_dest(command_t *cmd)
+{
+   command_network_t      *netcmd = (command_network_t*)cmd->userptr;
+   command_network_dest_t *dest   = (command_network_dest_t*)
+      malloc(sizeof(*dest));
+   if (dest)
+   {
+      dest->addr     = netcmd->cmd_source;
+      dest->addr_len = netcmd->cmd_source_len;
+   }
+   return dest;
+}
+
+static void network_command_reply_to(command_t *cmd, void *data,
+   const char *s, size_t len)
+{
+   command_network_t      *netcmd = (command_network_t*)cmd->userptr;
+   command_network_dest_t *dest   = (command_network_dest_t*)data;
+   sendto(netcmd->net_fd, s, len, 0,
+      (struct sockaddr*)&dest->addr, dest->addr_len);
+}
+
 static void network_command_free(command_t *handle)
 {
    command_network_t *netcmd = (command_network_t*)handle->userptr;
@@ -221,6 +262,7 @@ static void network_command_free(command_t *handle)
 static void command_network_poll(command_t *handle)
 {
    ssize_t ret;
+   unsigned gen = input_driver_command_generation();
    char buf[2048];
    command_network_t *netcmd = (command_network_t*)handle->userptr;
 
@@ -239,10 +281,14 @@ static void command_network_poll(command_t *handle)
       buf[ret] = '\0';
 
       command_parse_msg(handle, buf);
+      /* See command_generation: the command may have freed this
+       * object. The remaining datagrams wait for the next poll. */
+      if (input_driver_command_generation() != gen)
+         return;
    }
 }
 
-command_t* command_network_new(uint16_t port)
+command_t* command_network_new(uint16_t port, const char *bind_address)
 {
    struct addrinfo     *res  = NULL;
    command_t            *cmd = NULL;
@@ -263,12 +309,21 @@ command_t* command_network_new(uint16_t port)
    if (!(netcmd = (command_network_t*)calloc(1, sizeof(command_network_t))))
       goto error;
 
-   fd = socket_init((void**)&res, port, NULL,
+   /* An empty bind address means every interface (NULL server ->
+    * AI_PASSIVE -> 0.0.0.0), which is what this interface has always
+    * done. Anyone on that network can then send LOAD_CORE or
+    * WRITE_CORE_RAM, so users who only drive RetroArch from the same
+    * machine can set network_cmd_bind_address = "127.0.0.1". */
+   if (bind_address && !*bind_address)
+      bind_address = NULL;
+
+   fd = socket_init((void**)&res, port, bind_address,
          SOCKET_TYPE_DATAGRAM, AF_INET);
 
-   RARCH_LOG("[NetCMD] %s %hu.\n",
+   RARCH_LOG("[NetCMD] %s %hu (%s).\n",
          msg_hash_to_str(MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT),
-         (unsigned short)port);
+         (unsigned short)port,
+         bind_address ? bind_address : "all interfaces");
 
    if (fd < 0)
       goto error;
@@ -276,8 +331,10 @@ command_t* command_network_new(uint16_t port)
    netcmd->net_fd = fd;
    cmd->userptr   = netcmd;
    cmd->poll      = command_network_poll;
-   cmd->replier   = network_command_reply;
-   cmd->destroy   = network_command_free;
+   cmd->replier    = network_command_reply;
+   cmd->reply_dest = network_command_reply_dest;
+   cmd->reply_to   = network_command_reply_to;
+   cmd->destroy    = network_command_free;
 
    if (!socket_nonblock(netcmd->net_fd))
       goto error;
@@ -362,14 +419,25 @@ static void command_stdin_poll(command_t *handle)
       else
       {
          ptrdiff_t msg_len;
+         size_t    rest;
+         char     *msg;
          *last_newline++ = '\0';
          msg_len         = last_newline - stdincmd->stdin_buf;
+         rest            = stdincmd->stdin_buf_ptr - msg_len;
 
-         command_parse_msg(handle, stdincmd->stdin_buf);
-
-         memmove(stdincmd->stdin_buf, last_newline,
-               stdincmd->stdin_buf_ptr - msg_len);
-         stdincmd->stdin_buf_ptr -= msg_len;
+         /* A command can free this object from under us (see
+          * command_generation): take the message off the buffer, tidy the
+          * buffer, and only then run the message from a private copy,
+          * touching nothing of this object afterwards. */
+         msg = strdup(stdincmd->stdin_buf);
+         memmove(stdincmd->stdin_buf, last_newline, rest);
+         stdincmd->stdin_buf_ptr = rest;
+         if (msg)
+         {
+            command_parse_msg(handle, msg);
+            free(msg);
+         }
+         return;
       }
    }
 }
@@ -514,7 +582,7 @@ bool command_get_config_param(command_t *cmd, const char* arg)
                   (long long)(movie->frame_counter));
       }
       else
-         strlcpy(value_dynamic, "0 0 0", sizeof(value_dynamic));
+         strlcpy_lit(value_dynamic, "0 0 0", sizeof(value_dynamic));
    }
    #endif
 #ifdef HAVE_MENU
@@ -537,7 +605,7 @@ bool command_get_config_param(command_t *cmd, const char* arg)
    }
 #endif
    /* TODO: query any string */
-   _len  = strlcpy(reply, "GET_CONFIG_PARAM ", sizeof(reply));
+   _len  = strlcpy_lit(reply, "GET_CONFIG_PARAM ", sizeof(reply));
    _len += strlcpy(reply + _len, arg, sizeof(reply)  - _len);
    reply[  _len] = ' ';
    reply[++_len] = '\0';
@@ -555,15 +623,54 @@ typedef struct
    int sfd;
    /* Client sockets */
    int userfd[MAX_USER_CONNECTIONS];
+   /* Which connection holds each slot: a closed descriptor's number
+    * is handed out again, so the number alone does not say. */
+   unsigned serial[MAX_USER_CONNECTIONS];
+   unsigned next_serial;
    /* Last received user socket */
    int last_fd;
+   unsigned last_serial;
 } command_uds_t;
+
+typedef struct
+{
+   int fd;
+   unsigned serial;
+} command_uds_dest_t;
 
 static void uds_command_reply(command_t *cmd,
       const char *s, size_t len)
 {
    command_uds_t *subcmd = (command_uds_t*)cmd->userptr;
    write(subcmd->last_fd, s, len);
+}
+
+static void *uds_command_reply_dest(command_t *cmd)
+{
+   command_uds_t      *subcmd = (command_uds_t*)cmd->userptr;
+   command_uds_dest_t *dest   = (command_uds_dest_t*)malloc(sizeof(*dest));
+   if (dest)
+   {
+      dest->fd     = subcmd->last_fd;
+      dest->serial = subcmd->last_serial;
+   }
+   return dest;
+}
+
+/* Only to the connection that asked: gone, the reply is dropped. */
+static void uds_command_reply_to(command_t *cmd, void *data,
+      const char *s, size_t len)
+{
+   int i;
+   command_uds_t      *subcmd = (command_uds_t*)cmd->userptr;
+   command_uds_dest_t *dest   = (command_uds_dest_t*)data;
+   for (i = 0; i < MAX_USER_CONNECTIONS; i++)
+      if (   subcmd->userfd[i] == dest->fd
+          && subcmd->serial[i] == dest->serial)
+      {
+         write(dest->fd, s, len);
+         return;
+      }
 }
 
 static void uds_command_free(command_t *handle)
@@ -582,6 +689,7 @@ static void uds_command_free(command_t *handle)
 
 static void command_uds_poll(command_t *handle)
 {
+   unsigned gen = input_driver_command_generation();
    int i;
    int fd;
    ssize_t ret;
@@ -606,10 +714,14 @@ static void command_uds_poll(command_t *handle)
 
       if (!err)
       {
-         buf[ret]        = '\0';
-         udscmd->last_fd = fd;
+         buf[ret]            = '\0';
+         udscmd->last_fd     = fd;
+         udscmd->last_serial = udscmd->serial[i];
 
          command_parse_msg(handle, buf);
+         /* See command_generation: this object may be gone now. */
+         if (input_driver_command_generation() != gen)
+            return;
       }
       else
       {
@@ -629,6 +741,7 @@ static void command_uds_poll(command_t *handle)
             if (udscmd->userfd[i] < 0)
             {
                udscmd->userfd[i] = fd;
+               udscmd->serial[i] = ++udscmd->next_serial;
                return;
             }
          }
@@ -651,7 +764,7 @@ command_t* command_uds_new(void)
    /* use an abstract socket for simplicity */
    memset(&addr, 0, sizeof(addr));
    addr.sun_family = AF_UNIX;
-   strlcpy(&addr.sun_path[1], "retroarch/cmd", sizeof(addr.sun_path) - 1);
+   strlcpy_lit(&addr.sun_path[1], "retroarch/cmd", sizeof(addr.sun_path) - 1);
    if (   bind(fd, (struct sockaddr*)&addr, addrsz) < 0
        || listen(fd, MAX_USER_CONNECTIONS) < 0
        || !socket_nonblock(fd))
@@ -679,6 +792,8 @@ command_t* command_uds_new(void)
    cmd->userptr         = subcmd;
    cmd->poll            = command_uds_poll;
    cmd->replier         = uds_command_reply;
+   cmd->reply_dest      = uds_command_reply_dest;
+   cmd->reply_to        = uds_command_reply_to;
    cmd->destroy         = uds_command_free;
    return cmd;
 }
@@ -686,6 +801,42 @@ command_t* command_uds_new(void)
 
 
 /* Routines used to invoke retroarch command ... */
+
+/* Runs @name with @arg (NULL or "" for none) as if it had arrived as a
+ * command line on @handle: replies go to @handle's replier, a hotkey
+ * presses on @handle for one frame. For interfaces that receive
+ * commands as structured requests rather than lines.
+ *
+ * Returns: false for an unknown command or one whose handler failed. */
+bool command_run(command_t *handle, const char *name, const char *arg)
+{
+   unsigned i;
+   for (i = 0; i < ARRAY_SIZE(action_map); i++)
+      if (string_is_equal(name, action_map[i].str))
+         return action_map[i].action(handle, arg ? arg : "");
+   for (i = 0; i < ARRAY_SIZE(map); i++)
+      if (string_is_equal(name, map[i].str))
+      {
+         if (map[i].id == RARCH_MENU_TOGGLE)
+            command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+         else
+            handle->state[map[i].id] = true;
+         return true;
+      }
+   return false;
+}
+
+const struct cmd_action_map *command_action_list(size_t *count)
+{
+   *count = ARRAY_SIZE(action_map);
+   return action_map;
+}
+
+const struct cmd_map *command_hotkey_list(size_t *count)
+{
+   *count = ARRAY_SIZE(map);
+   return map;
+}
 
 #ifdef HAVE_NETWORK_CMD
 static bool command_verify(const char *cmd)
@@ -829,7 +980,7 @@ bool command_load_state_slot(command_t *cmd, const char *arg)
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
    bool savestates_enabled      = core_info_current_supports_savestate();
    bool ret                     = false;
-   _len  = strlcpy(reply, "LOAD_STATE_SLOT ", sizeof(reply));
+   _len  = strlcpy_lit(reply, "LOAD_STATE_SLOT ", sizeof(reply));
    _len += snprintf(reply + _len, sizeof(reply) - _len, "%d", slot);
    runloop_get_savestate_path(state_path, sizeof(state_path), slot);
    /* For LOADING, an existing state file outranks metadata and
@@ -859,7 +1010,7 @@ bool command_save_state_slot(command_t* cmd, const char* arg)
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
    bool savestates_enabled      = core_info_current_supports_savestate();
    bool ret = false;
-   _len = strlcpy(reply, "SAVE_STATE_SLOT ", sizeof(reply));
+   _len = strlcpy_lit(reply, "SAVE_STATE_SLOT ", sizeof(reply));
    _len += snprintf(reply + _len, sizeof(reply) - _len, "%d", slot);
    if (savestates_enabled)
    {
@@ -878,42 +1029,78 @@ bool command_save_state_slot(command_t* cmd, const char* arg)
    return ret;
 }
 
+#ifdef HAVE_BSV_MOVIE
+/* The reply owed by a command that returned before it could answer:
+ * PLAY_REPLAY_SLOT's carries the replay handle, which the movie
+ * task's callback installs.  command_owed_reply_poll() sends it once
+ * the task is through.  Dropped, unsent, if the interface that asked
+ * is torn down first (the command generation moves). */
+static struct
+{
+   command_t *cmd;
+   void      *dest;
+   unsigned   gen;
+   bool       owed;
+} command_owed;
+#endif
+
+void command_owed_reply_poll(void)
+{
+#ifdef HAVE_BSV_MOVIE
+   char reply[128];
+
+   if (!command_owed.owed || movie_playback_start_in_progress(NULL))
+      return;
+
+   snprintf(reply, sizeof(reply), "PLAY_REPLAY_SLOT %lld",
+         (long long)movie_playback_start_identifier());
+   command_post_state_loaded();
+
+   if (input_driver_command_generation() == command_owed.gen)
+   {
+      command_t *cmd = command_owed.cmd;
+      if (cmd->reply_to && command_owed.dest)
+         cmd->reply_to(cmd, command_owed.dest, reply, strlen(reply));
+      else
+         cmd->replier(cmd, reply, strlen(reply));
+   }
+   free(command_owed.dest);
+   command_owed.dest = NULL;
+   command_owed.cmd  = NULL;
+   command_owed.owed = false;
+#endif
+}
+
 bool command_play_replay_slot(command_t *cmd, const char *arg)
 {
 #ifdef HAVE_BSV_MOVIE
    char replay_path[16384];
-   char reply[128]              = "";
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
    bool savestates_enabled      = core_info_current_supports_savestate();
    bool ret                     = false;
    replay_path[0]               = '\0';
-   if (savestates_enabled)
+   /* One playback start at a time: the owed reply names its handle. */
+   if (savestates_enabled && !command_owed.owed)
    {
       size_t info_size;
       runloop_get_replay_path(replay_path, sizeof(replay_path), slot);
 
       info_size          = core_serialize_size();
-      savestates_enabled = (info_size > 0);
+      if (info_size > 0)
+         ret = movie_start_playback(input_state_get_ptr(), replay_path);
    }
-   if (savestates_enabled)
+   if (!ret)
    {
-      ret = movie_start_playback(input_state_get_ptr(), replay_path);
-      if (ret)
-      {
-         input_driver_state_t *input_st = input_state_get_ptr();
-         task_queue_wait(NULL, NULL);
-         if (input_st->bsv_movie_state_next_handle)
-            snprintf(reply, sizeof(reply) - 1, "PLAY_REPLAY_SLOT %lld", (long long)(input_st->bsv_movie_state_next_handle->identifier));
-         else
-            snprintf(reply, sizeof(reply) - 1, "PLAY_REPLAY_SLOT 0");
-         command_post_state_loaded();
-      }
+      cmd->replier(cmd, "", 0);
+      return false;
    }
-   else
-      ret = false;
-
-   cmd->replier(cmd, reply, strlen(reply));
-   return ret;
+   /* Answered from the frame loop once the movie task has installed
+    * the handle, rather than holding the frame until it has. */
+   command_owed.cmd  = cmd;
+   command_owed.dest = cmd->reply_dest ? cmd->reply_dest(cmd) : NULL;
+   command_owed.gen  = input_driver_command_generation();
+   command_owed.owed = true;
+   return true;
 #else
    return false;
 #endif
@@ -923,28 +1110,32 @@ bool command_seek_replay(command_t *cmd, const char *arg)
 {
 #ifdef HAVE_BSV_MOVIE
    char reply[32];
-   char *endptr;
+   char *endptr  = NULL;
    size_t _len;
    bool ret      = true;
-   int64_t frame = strtoll(arg, &endptr, 10);
+   int64_t frame = arg ? (int64_t)strtoll(arg, &endptr, 10) : 0;
    input_driver_state_t *input_st = input_state_get_ptr();
-   if (!endptr)
+   /* strtoll always writes a valid pointer, so the end pointer is
+    * never NULL - an empty or non-numeric argument shows up as no
+    * characters consumed. */
+   if (!arg || endptr == arg)
       ret = false;
    if (!(input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_PLAYBACK | BSV_FLAG_MOVIE_RECORDING)))
       ret = false;
 #ifdef HAVE_CHEEVOS
-   ret = !rcheevos_hardcore_active();
+   if (rcheevos_hardcore_active())
+      ret = false;
 #endif
    if (ret)
       ret = movie_seek_to_frame(input_st, frame);
    if (ret)
    {
-      _len = strlcpy(reply, "OK ", sizeof(reply));
+      _len = strlcpy_lit(reply, "OK ", sizeof(reply));
       _len += snprintf(reply+_len, sizeof(reply)-_len,
             "%" PRId64, input_st->bsv_movie_state.seek_target_frame);
    }
    else
-      _len = strlcpy(reply, "NO", sizeof(reply));
+      _len = strlcpy_lit(reply, "NO", sizeof(reply));
    reply[_len] = '\n';
    reply[++_len] = '\0';
    cmd->replier(cmd, reply, _len);
@@ -959,14 +1150,14 @@ bool command_save_savefiles(command_t *cmd, const char* arg)
 {
    char reply[4];
    bool ret;
-   size_t  _len  = strlcpy(reply, "OK", sizeof(reply));
+   size_t  _len  = strlcpy_lit(reply, "OK", sizeof(reply));
    reply[  _len] = '\n';
    reply[++_len] = '\0';
    /* In the future, this should probably send each saved file path
       to the replier. */
    ret = command_event(CMD_EVENT_SAVE_FILES, NULL);
    if (!ret)
-     strlcpy(reply, "NO", sizeof(reply));
+     strlcpy_lit(reply, "NO", sizeof(reply));
    cmd->replier(cmd, reply, _len);
    return ret;
 }
@@ -975,15 +1166,22 @@ bool command_load_savefiles(command_t *cmd, const char* arg)
 {
    char reply[4];
    bool ret;
-   size_t  _len  = strlcpy(reply, "OK", sizeof(reply));
+   size_t  _len  = strlcpy_lit(reply, "OK", sizeof(reply));
    reply[  _len] = '\n';
    reply[++_len] = '\0';
    ret = command_event(CMD_EVENT_LOAD_FILES, NULL);
    if (!ret)
-     strlcpy(reply, "NO", sizeof(reply));
+     strlcpy_lit(reply, "NO", sizeof(reply));
    cmd->replier(cmd, reply, _len);
    return ret;
 }
+
+/* Largest byte count READ_CORE_RAM / READ_CORE_MEMORY will serve. The
+ * reply carries 3 characters per byte and goes out as one UDP datagram,
+ * so anything much bigger could not be delivered anyway; the cap also
+ * keeps `nbytes * 3` far from wrapping in unsigned int, which a request
+ * of ~1431655766 bytes did, allocating a few bytes and writing 4 GiB. */
+#define COMMAND_READ_NBYTES_MAX 16384u
 
 #if defined(HAVE_CHEEVOS)
 bool command_read_ram(command_t *cmd, const char *arg)
@@ -996,14 +1194,22 @@ bool command_read_ram(command_t *cmd, const char *arg)
    if (end && *end == ' ')
       nbytes          = (unsigned int)strtoul(end + 1, NULL, 10);
 
-   if (end && *end == ' ' && nbytes > 0)
+   if (end && *end == ' ' && nbytes > 0 && nbytes <= COMMAND_READ_NBYTES_MAX)
    {
       size_t _len             = 0;
       char *reply_at          = NULL;
-      const uint8_t *data     = NULL;
+      unsigned int avail      = 0;
+      const uint8_t *data     = rcheevos_patch_address_avail(addr, &avail);
+      unsigned int alloc_size;
+      char *reply;
+
+      /* Never read past the end of the region the address lives in. */
+      if (data && nbytes > avail)
+         nbytes = avail;
+
       /* We allocate more than needed, saving 20 bytes is not really relevant */
-      unsigned int alloc_size = 40 + nbytes * 3;
-      char *reply             = (char*)malloc(alloc_size);
+      alloc_size = 40 + nbytes * 3;
+      reply      = (char*)malloc(alloc_size);
       
       if (!reply)
       {
@@ -1015,7 +1221,7 @@ bool command_read_ram(command_t *cmd, const char *arg)
       reply_at                = reply + snprintf(
             reply, alloc_size - 1, "READ_CORE_RAM" " %x", addr);
 
-      if ((data = rcheevos_patch_address(addr)))
+      if (data && nbytes > 0)
       {
          size_t i;
          for (i = 0; i < nbytes; i++)
@@ -1025,7 +1231,7 @@ bool command_read_ram(command_t *cmd, const char *arg)
       }
       else
       {
-         strlcpy(reply_at, " -1\n", sizeof(reply) - strlen(reply));
+         strlcpy_lit(reply_at, " -1\n", alloc_size - (size_t)(reply_at - reply));
          _len = reply_at + STRLEN_CONST(" -1\n") - reply;
       }
       cmd->replier(cmd, reply, _len);
@@ -1037,7 +1243,8 @@ bool command_read_ram(command_t *cmd, const char *arg)
 bool command_write_ram(command_t *cmd, const char *arg)
 {
    unsigned int addr    = (unsigned int)strtoul(arg, (char**)&arg, 16);
-   uint8_t *data        = (uint8_t *)rcheevos_patch_address(addr);
+   unsigned int avail   = 0;
+   uint8_t *data        = (uint8_t *)rcheevos_patch_address_avail(addr, &avail);
 
    if (!data)
       return false;
@@ -1048,14 +1255,348 @@ bool command_write_ram(command_t *cmd, const char *arg)
       rcheevos_pause_hardcore();
    }
 
-   while (*arg)
+   /* Stop at the end of the region: the payload length is whatever the
+    * sender put in the datagram. */
+   while (*arg && avail)
    {
       *data = strtoul(arg, (char**)&arg, 16);
       data++;
+      avail--;
    }
+   if (*arg)
+      RARCH_WARN("[Command] WRITE_CORE_RAM at %x reached the end of the "
+            "memory region; remainder of the payload ignored.\n", addr);
    return true;
 }
 #endif
+
+/* ---- Queries for clients that browse and launch content --------- */
+
+/* A reply larger than one UDP datagram cannot go back over the network
+ * command port; lists stop short of it and say where to go on. */
+#define COMMAND_LIST_REPLY_MAX 60000
+#define COMMAND_PLAYLIST_PAGE  200
+
+/* LIST_CORES
+ *
+ * The installed cores, one per line: display name, a tab, the path
+ * LOAD_CONTENT takes. The list is already in memory. */
+bool command_list_cores(command_t *cmd, const char *arg)
+{
+   core_info_list_t *list = NULL;
+   size_t i, len = 0;
+   char  *reply;
+
+   if (!(reply = (char*)malloc(COMMAND_LIST_REPLY_MAX + 64)))
+      return false;
+   reply[0] = '\0';
+   if (core_info_get_list(&list) && list)
+      for (i = 0; i < list->count; i++)
+      {
+         const core_info_t *ci = &list->list[i];
+         int n;
+         if (!ci->path)
+            continue;
+         n = snprintf(reply + len, COMMAND_LIST_REPLY_MAX - len, "%s\t%s\n",
+               ci->display_name ? ci->display_name : "", ci->path);
+         if (n < 0 || (size_t)n >= COMMAND_LIST_REPLY_MAX - len)
+         {
+            len += (size_t)snprintf(reply + len, 64, "MORE\n");
+            break;
+         }
+         len += (size_t)n;
+      }
+   if (!len)
+      len = strlcpy(reply, "LIST_CORES none\n", COMMAND_LIST_REPLY_MAX);
+   cmd->replier(cmd, reply, len);
+   free(reply);
+   return true;
+}
+
+/* LIST_PLAYLISTS and GET_PLAYLIST read files, which may be slow, so
+ * they answer from a task: the text is made on the task thread and sent
+ * from the callback, where the asking interface's reply_to takes it
+ * (the reply owed to one sender or one MCP request), or its replier
+ * when its replies all go one way. Dropped if the interfaces were
+ * re-created meanwhile. */
+struct command_query
+{
+   command_t *cmd;
+   void      *dest;
+   unsigned   gen;
+   size_t     first;           /* GET_PLAYLIST: first entry */
+   char      *reply;           /* made by the handler */
+   size_t     reply_len;
+   char       dir[PATH_MAX_LENGTH];
+   char       name[NAME_MAX_LENGTH];
+   bool       list_playlists;
+   /* the playlist format settings, taken on the main thread */
+   bool       old_format;
+   bool       compress;
+   bool       fuzzy_archive_match;
+   bool       portable_paths;
+   char       content_dir[DIR_MAX_LENGTH];
+};
+
+static void command_query_append(struct command_query *q, size_t *cap,
+      const char *s)
+{
+   size_t n = strlen(s);
+   if (!q->reply || q->reply_len + n + 1 > *cap)
+      return;
+   memcpy(q->reply + q->reply_len, s, n + 1);
+   q->reply_len += n;
+}
+
+static void command_query_handler(retro_task_t *task)
+{
+   struct command_query *q = (struct command_query*)task->state;
+   size_t cap              = COMMAND_LIST_REPLY_MAX;
+
+   if ((q->reply = (char*)malloc(cap + 1)))
+      q->reply[0] = '\0';
+
+   if (q->list_playlists)
+   {
+      struct string_list *files = dir_list_new(q->dir, "lpl",
+            false, false, false, false);
+      size_t i;
+      for (i = 0; files && i < files->size; i++)
+      {
+         char line[NAME_MAX_LENGTH + 2];
+         const char *base = path_basename(files->elems[i].data);
+         snprintf(line, sizeof(line), "%s\n", base);
+         if (q->reply_len + strlen(line) + 6 > cap)
+         {
+            command_query_append(q, &cap, "MORE\n");
+            break;
+         }
+         command_query_append(q, &cap, line);
+      }
+      if (files)
+         string_list_free(files);
+      if (!q->reply_len)
+         command_query_append(q, &cap, "LIST_PLAYLISTS none\n");
+   }
+   else
+   {
+      char path[PATH_MAX_LENGTH];
+      playlist_config_t config;
+      playlist_t *pl;
+
+      fill_pathname_join_special(path, q->dir, q->name, sizeof(path));
+      if (!string_ends_with_size(path, ".lpl", strlen(path), 4))
+         strlcat(path, ".lpl", sizeof(path));
+      config.capacity            = COLLECTION_SIZE;
+      config.old_format          = q->old_format;
+      config.compress            = q->compress;
+      config.fuzzy_archive_match = q->fuzzy_archive_match;
+      playlist_config_set_path(&config, path);
+      playlist_config_set_base_content_directory(&config,
+            q->portable_paths ? q->content_dir : NULL);
+
+      if (!path_is_valid(path) || !(pl = playlist_init(&config)))
+         command_query_append(q, &cap, "GET_PLAYLIST ERROR no such playlist\n");
+      else
+      {
+         size_t i, n = playlist_size(pl);
+         for (i = q->first; i < n; i++)
+         {
+            const struct playlist_entry *e = NULL;
+            char line[3 * PATH_MAX_LENGTH];
+            if (i - q->first >= COMMAND_PLAYLIST_PAGE)
+            {
+               snprintf(line, sizeof(line), "MORE %u\n", (unsigned)i);
+               command_query_append(q, &cap, line);
+               break;
+            }
+            playlist_get_index(pl, i, &e);
+            if (!e)
+               continue;
+            snprintf(line, sizeof(line), "%u\t%s\t%s\t%s\n", (unsigned)i,
+                  e->label     ? e->label     : "",
+                  e->path      ? e->path      : "",
+                  e->core_path ? e->core_path : "");
+            if (q->reply_len + strlen(line) + 16 > cap)
+            {
+               snprintf(line, sizeof(line), "MORE %u\n", (unsigned)i);
+               command_query_append(q, &cap, line);
+               break;
+            }
+            command_query_append(q, &cap, line);
+         }
+         if (!q->reply_len)
+            command_query_append(q, &cap, "GET_PLAYLIST empty\n");
+         playlist_free(pl);
+      }
+   }
+   task_set_progress(task, 100);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void command_query_callback(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   struct command_query *q = (struct command_query*)task->state;
+   if (!q || !q->reply || input_driver_command_generation() != q->gen)
+      return;
+   if (q->cmd->reply_to && q->dest)
+      q->cmd->reply_to(q->cmd, q->dest, q->reply, q->reply_len);
+   else if (!q->cmd->reply_dest)
+      q->cmd->replier(q->cmd, q->reply, q->reply_len);
+}
+
+static void command_query_cleanup(retro_task_t *task)
+{
+   struct command_query *q = (struct command_query*)task->state;
+   if (!q)
+      return;
+   free(q->reply);
+   free(q->dest);
+   free(q);
+   task->state = NULL;
+}
+
+static bool command_query_push(command_t *cmd, bool list_playlists,
+      const char *arg)
+{
+   settings_t           *settings = config_get_ptr();
+   struct command_query *q;
+   retro_task_t         *task;
+
+   if (!(q = (struct command_query*)calloc(1, sizeof(*q))))
+      return false;
+   q->cmd            = cmd;
+   q->gen            = input_driver_command_generation();
+   q->list_playlists = list_playlists;
+   strlcpy(q->dir, settings->paths.directory_playlist, sizeof(q->dir));
+   q->old_format          = settings->bools.playlist_use_old_format;
+   q->compress            = settings->bools.playlist_compression;
+   q->fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
+   q->portable_paths      = settings->bools.playlist_portable_paths;
+   strlcpy(q->content_dir, settings->paths.directory_menu_content,
+         sizeof(q->content_dir));
+   if (!list_playlists)
+   {
+      /* "<name> [first]": the name may hold spaces; a trailing number
+       * is the first entry wanted */
+      const char *sp;
+      while (*arg == ' ')
+         arg++;
+      strlcpy(q->name, arg, sizeof(q->name));
+      if ((sp = strrchr(q->name, ' ')) && sp[1] >= '0' && sp[1] <= '9')
+      {
+         q->first = (size_t)strtoul(sp + 1, NULL, 10);
+         q->name[sp - q->name] = '\0';
+      }
+      if (!*q->name || strchr(q->name, '/') || strchr(q->name, '\\'))
+      {
+         const char *msg = "GET_PLAYLIST ERROR a playlist name, as LIST_PLAYLISTS gives\n";
+         cmd->replier(cmd, msg, strlen(msg));
+         free(q);
+         return false;
+      }
+   }
+   if (!(task = task_init()))
+   {
+      free(q);
+      return false;
+   }
+   /* where the answer goes, taken now: after this command returns the
+    * interface may be answering someone else */
+   q->dest        = cmd->reply_dest ? cmd->reply_dest(cmd) : NULL;
+   task->state    = q;
+   task->handler  = command_query_handler;
+   task->callback = command_query_callback;
+   task->cleanup  = command_query_cleanup;
+   task->flags   |= RETRO_TASK_FLG_MUTE;
+   task_queue_push(task);
+   return true;
+}
+
+/* LIST_PLAYLISTS: the playlist files, one per line, as GET_PLAYLIST
+ * takes them. */
+bool command_list_playlists(command_t *cmd, const char *arg)
+{
+   return command_query_push(cmd, true, arg);
+}
+
+/* GET_PLAYLIST <playlist> [first]: a playlist's entries, one per line:
+ * index, label, content path, core path, tab separated;
+ * COMMAND_PLAYLIST_PAGE at a time, "MORE <next>" when there are more. */
+bool command_get_playlist(command_t *cmd, const char *arg)
+{
+   return command_query_push(cmd, false, arg);
+}
+
+/* One HELP line: name, argument, description, and what it does to
+ * RetroArch, appended to @s at *@len; false when it would not fit. */
+static bool command_help_line(char *s, size_t size, size_t *len,
+      const char *name, const char *arg_desc, const char *desc,
+      unsigned flags)
+{
+   int n = snprintf(s + *len, size - *len, "%s%s%s\t%s%s\n",
+         name,
+         arg_desc ? " " : "", arg_desc ? arg_desc : "",
+         desc ? desc : "",
+           (flags & CMD_INFO_READ_ONLY)   ? " [read-only]"
+         : (flags & CMD_INFO_DESTRUCTIVE) ? " [destructive]"
+         : "");
+   if (n < 0 || (size_t)n >= size - *len)
+      return false;
+   *len += (size_t)n;
+   return true;
+}
+
+/* HELP [command]
+ *
+ * With no argument, every command, one per line: the name, its
+ * argument, a tab, what it does, and [read-only] or [destructive].
+ * Hotkey commands take no argument and press the hotkey for one
+ * frame. With a command name, that command's line alone. */
+bool command_help(command_t *cmd, const char* arg)
+{
+   size_t   i;
+   size_t   _len  = 0;
+   size_t   size  = 256
+      + (ARRAY_SIZE(map) + ARRAY_SIZE(action_map)) * 160;
+   bool     found = false;
+   char    *reply;
+
+   while (arg && *arg == ' ')
+      arg++;
+   if (!(reply = (char*)malloc(size)))
+      return false;
+   reply[0] = '\0';
+
+   for (i = 0; i < ARRAY_SIZE(action_map); i++)
+   {
+      bool noarg = string_is_equal(action_map[i].arg_desc, "No argument");
+      if (arg && *arg && !string_is_equal(arg, action_map[i].str))
+         continue;
+      found = true;
+      if (!command_help_line(reply, size, &_len, action_map[i].str,
+               noarg ? NULL : action_map[i].arg_desc,
+               action_map[i].desc, action_map[i].flags))
+         break;
+   }
+   for (i = 0; i < ARRAY_SIZE(map); i++)
+   {
+      if (arg && *arg && !string_is_equal(arg, map[i].str))
+         continue;
+      found = true;
+      if (!command_help_line(reply, size, &_len, map[i].str, NULL,
+               map[i].desc, map[i].flags))
+         break;
+   }
+   if (!found)
+      _len = (size_t)snprintf(reply, size, "HELP ERROR unknown command %s\n",
+            arg);
+
+   cmd->replier(cmd, reply, _len);
+   free(reply);
+   return found;
+}
 
 bool command_version(command_t *cmd, const char* arg)
 {
@@ -1081,7 +1622,7 @@ bool command_load_core(command_t *cmd, const char* arg)
    if (!arg || !*arg)
       return false;
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
    {
       char exp[PATH_MAX_LENGTH];
       fill_pathname_expand_special(exp, arg, sizeof(exp));
@@ -1137,7 +1678,7 @@ bool command_load_content(command_t *cmd, const char* arg)
    memcpy(core_path, arg, _len);
    core_path[_len] = '\0';
 
-#ifdef IOS
+#if TARGET_OS_IPHONE
    {
       char exp[PATH_MAX_LENGTH];
       fill_pathname_expand_special(exp, sep + 1, sizeof(exp));
@@ -1295,17 +1836,17 @@ static uint8_t *command_memory_get_pointer(
       int for_write, char *s, size_t len)
 {
    if (!sys_info || sys_info->mmaps.num_descriptors == 0)
-      strlcpy(s, " -1 no memory map defined\n", len);
+      strlcpy_lit(s, " -1 no memory map defined\n", len);
    else
    {
       size_t offset;
       const rarch_memory_descriptor_t* desc = command_memory_get_descriptor(&sys_info->mmaps, address, &offset);
       if (!desc)
-         strlcpy(s, " -1 no descriptor for address\n", len);
+         strlcpy_lit(s, " -1 no descriptor for address\n", len);
       else if (!desc->core.ptr)
-         strlcpy(s, " -1 no data for descriptor\n", len);
+         strlcpy_lit(s, " -1 no data for descriptor\n", len);
       else if (for_write && (desc->core.flags & RETRO_MEMDESC_CONST))
-         strlcpy(s, " -1 descriptor data is readonly\n", len);
+         strlcpy_lit(s, " -1 descriptor data is readonly\n", len);
       else
       {
          *max_bytes = (unsigned int)(desc->core.len - offset);
@@ -1340,7 +1881,7 @@ bool command_get_status(command_t *cmd, const char* arg)
 
       if (!runloop_st)
       {
-         _len = strlcpy(reply, "GET_STATUS ERROR", sizeof(reply));
+         _len = strlcpy_lit(reply, "GET_STATUS ERROR", sizeof(reply));
          cmd->replier(cmd, reply, _len);
          return false;
       }
@@ -1382,7 +1923,7 @@ bool command_get_status(command_t *cmd, const char* arg)
       strlcpy_append(reply, sizeof(reply), &_len, "\n");
    }
    else
-      _len = strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
+      _len = strlcpy_lit(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
 
    cmd->replier(cmd, reply, _len);
    return true;
@@ -1408,7 +1949,7 @@ bool command_read_memory(command_t *cmd, const char *arg)
       if (!(end && *end == ' '))
          return false;
       nbytes          = (unsigned int)strtoul(end + 1, NULL, 10);
-      if (nbytes == 0)
+      if (nbytes == 0 || nbytes > COMMAND_READ_NBYTES_MAX)
          return false;
    }
 
@@ -1498,10 +2039,10 @@ void command_event_set_volume(
    configuration_set_float(settings, settings->floats.audio_volume, new_volume);
    _len             = strlcpy(msg, msg_hash_to_str(MSG_AUDIO_VOLUME),
          sizeof(msg));
-   _len            += strlcpy(msg + _len, ": ", sizeof(msg) - _len);
+   _len            += strlcpy_lit(msg + _len, ": ", sizeof(msg) - _len);
    _len            += snprintf(msg + _len, sizeof(msg) - _len, "%.1f",
          new_volume);
-   _len            += strlcpy(msg + _len, " dB", sizeof(msg) - _len);
+   _len            += strlcpy_lit(msg + _len, " dB", sizeof(msg) - _len);
 
 #if defined(HAVE_GFX_WIDGETS)
    if (widgets_active)
@@ -1536,10 +2077,10 @@ void command_event_set_mixer_volume(
    configuration_set_float(settings, settings->floats.audio_mixer_volume, new_volume);
    _len             = strlcpy(msg, msg_hash_to_str(MSG_AUDIO_VOLUME),
          sizeof(msg));
-   _len            += strlcpy(msg + _len, ": ", sizeof(msg) - _len);
+   _len            += strlcpy_lit(msg + _len, ": ", sizeof(msg) - _len);
    _len            += snprintf(msg + _len, sizeof(msg) - _len, "%.1f",
          new_volume);
-   _len            += strlcpy(msg + _len, " dB", sizeof(msg) - _len);
+   _len            += strlcpy_lit(msg + _len, " dB", sizeof(msg) - _len);
    runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 
@@ -1620,7 +2161,7 @@ static size_t command_event_save_config(const char *config_path,
 #endif
    if (path_exists && config_save_file(config_path))
    {
-#if IOS
+#if TARGET_OS_IPHONE
       char tmp[PATH_MAX_LENGTH] = {0};
       fill_pathname_abbreviate_special(tmp, config_path, sizeof(tmp));
       _len = snprintf(s, len, "%s \"%s\".",
@@ -1717,7 +2258,7 @@ size_t command_event_save_auto_state(void)
       return 0;
    _len = strlcpy(savestate_name_auto, name_savestate,
          sizeof(savestate_name_auto));
-   _len += strlcpy(savestate_name_auto + _len, ".auto",
+   _len += strlcpy_lit(savestate_name_auto + _len, ".auto",
            sizeof(savestate_name_auto) - _len);
    if (content_auto_save_state((const char*)savestate_name_auto))
 	   RARCH_LOG("[State] %s \"%s\" %s.\n",
@@ -1827,7 +2368,7 @@ bool command_event_load_auto_state(void)
 
    _len = strlcpy(savestate_name_auto, name_savestate,
          sizeof(savestate_name_auto));
-   strlcpy(savestate_name_auto + _len, ".auto",
+   strlcpy_lit(savestate_name_auto + _len, ".auto",
          sizeof(savestate_name_auto) - _len);
 
    if (!path_is_valid(savestate_name_auto))
@@ -2120,7 +2661,7 @@ static void command_event_set_savestate_garbage_collect(settings_t *settings)
       /* Construct the save state thumbnail name
        * and delete that one as well. */
       i = strlen(state_to_delete);
-      strlcpy(state_to_delete + i,".png",STRLEN_CONST(".png")+1);
+      strlcpy_lit(state_to_delete + i,".png",STRLEN_CONST(".png")+1);
       filestream_delete(state_to_delete);
       RARCH_DBG("[State] Garbage collect, deleting \"%s\".\n",state_to_delete);
    }
@@ -2350,7 +2891,7 @@ bool command_event_save_core_config(
 
          if (i)
             __len += snprintf(tmp + __len, sizeof(tmp) - __len, "-%u", i);
-         strlcpy(tmp + __len, ".cfg", sizeof(tmp) - __len);
+         strlcpy_lit(tmp + __len, ".cfg", sizeof(tmp) - __len);
 
          if (!path_is_valid(tmp))
          {
@@ -2414,7 +2955,7 @@ void command_event_save_current_config(enum override_type type)
             if (path_is_empty(RARCH_PATH_CONFIG))
             {
                msg_cat = MESSAGE_QUEUE_CATEGORY_ERROR;
-               _len    = strlcpy(msg, "Config directory not set, cannot save configuration.", sizeof(msg));
+               _len    = strlcpy_lit(msg, "Config directory not set, cannot save configuration.", sizeof(msg));
             }
             else
             {
@@ -2707,22 +3248,22 @@ struct command_reinit_snapshot_ctx
 {
    void   **buf_p;       /* static cached_snapshot in the caller */
    size_t  *cap_p;       /* static cached_snapshot_cap in the caller */
-   unsigned w, h;
+   unsigned dims;
    size_t   p, size;
 };
 
 static void command_reinit_snapshot_cb(void *userdata,
       const void *data,
-      unsigned width, unsigned height, size_t pitch)
+      unsigned dims, size_t pitch)
 {
    struct command_reinit_snapshot_ctx *ctx
       = (struct command_reinit_snapshot_ctx*)userdata;
    size_t want;
 
-   if (!ctx || !data || !width || !height || !pitch)
+   if (!ctx || !data || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims) || !pitch)
       return;
 
-   want = pitch * height;
+   want = pitch * VIDEO_SCALE_H(dims);
    if (want > *ctx->cap_p)
    {
       void *tmp = realloc(*ctx->buf_p, want);
@@ -2735,8 +3276,7 @@ static void command_reinit_snapshot_cb(void *userdata,
       return;
 
    memcpy(*ctx->buf_p, data, want);
-   ctx->w    = width;
-   ctx->h    = height;
+   ctx->dims = dims;
    ctx->p    = pitch;
    ctx->size = want;
 }
@@ -2764,6 +3304,7 @@ void command_event_reinit(const int flags)
    const input_device_driver_t
       *sec_joypad                 = NULL;
 #endif
+
    /* Snapshot the last cached core frame before tearing the video
     * driver down.  video_driver_free() invalidates the cache as
     * part of the reinit cycle (the pointer was borrowed from the
@@ -2790,22 +3331,55 @@ void command_event_reinit(const int flags)
     * we don't even allocate. */
    static void  *cached_snapshot      = NULL;
    static size_t cached_snapshot_cap  = 0;
-   unsigned      cached_snapshot_w    = 0;
-   unsigned      cached_snapshot_h    = 0;
+   unsigned      cached_snapshot_dims = 0;
    size_t        cached_snapshot_p    = 0;
    size_t        cached_snapshot_size = 0;
+   /* A reinit while the video driver is down must not create a
+    * driver instance. It happens when content loads over running
+    * content: core deinit tears the drivers down, then unloading
+    * the old content's override fires CMD_EVENT_REINIT (the
+    * override changed video_fullscreen, and CORE_RUNNING is still
+    * set). An instance created here is replaced by
+    * retroarch_main_init's drivers_init without being freed - an
+    * orphaned window and device that widget fonts keep drawing
+    * into - while the next drivers_init applies the restored mode
+    * anyway. Guarded here, in the layer that owns reinit, so every
+    * caller is covered and call sites stay bare command_events.
+    *
+    * Nothing can be ungrabbed with the drivers down, but the grab
+    * flag is bookkeeping the win32 focus pump and the grab toggle
+    * read later, so leave it as the skipped reinit's game-focus
+    * reapply would have: released, unless exclusive fullscreen
+    * (which re-grabs on init), auto-grab or game focus keeps it.
+    * Everything below reuses this function's own locals. */
+   if (!video_st->data)
+   {
+      if (     !settings->bools.video_fullscreen
+            && !(video_driver_get_disp_flags() & VIDEO_FLAG_FORCE_FULLSCREEN)
+            && !settings->bools.input_auto_mouse_grab
+            && !input_st->game_focus_state.enabled)
+         input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
+      return;
+   }
+
+   /* A staged content load ends in a reinit of every driver against
+    * the new core: one asked for before then - the old override
+    * unloading, the new core's SET_SYSTEM_AV_INFO - would rebuild
+    * the drivers the stage is about to rebuild again. */
+   if (runloop_is_content_switching())
+      return;
+
+
 
    {
       struct command_reinit_snapshot_ctx ctx;
       ctx.buf_p = &cached_snapshot;
       ctx.cap_p = &cached_snapshot_cap;
-      ctx.w     = 0;
-      ctx.h     = 0;
+      ctx.dims  = 0;
       ctx.p     = 0;
       ctx.size  = 0;
       video_driver_cached_frame_read(&ctx, command_reinit_snapshot_cb);
-      cached_snapshot_w    = ctx.w;
-      cached_snapshot_h    = ctx.h;
+      cached_snapshot_dims = ctx.dims;
       cached_snapshot_p    = ctx.p;
       cached_snapshot_size = ctx.size;
    }
@@ -2823,10 +3397,10 @@ void command_event_reinit(const int flags)
     * a teardown hook would mean wiring command_event_reinit's
     * statics into retroarch_deinit_drivers; the size cap makes the
     * leak benign in practice, so we leave it. */
-   if (cached_snapshot_p && cached_snapshot_h)
+   if (cached_snapshot_p && VIDEO_SCALE_H(cached_snapshot_dims))
    {
       video_driver_cached_frame_publish(cached_snapshot,
-            cached_snapshot_w, cached_snapshot_h, cached_snapshot_p);
+            cached_snapshot_dims, cached_snapshot_p);
 
 #ifdef HAVE_MENU
       /* If the menu is alive across the reinit, the runloop's
@@ -2865,13 +3439,11 @@ void command_event_reinit(const int flags)
        * premature render). */
       if (menu_st->flags & MENU_ST_FLAG_ALIVE)
       {
+         unsigned output_size = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
          if (     menu_st->driver_ctx
                && menu_st->driver_ctx->render)
             menu_st->driver_ctx->render(
-                  menu_st->userdata,
-                  video_st->width,
-                  video_st->height,
-                  false);
+                  menu_st->userdata, output_size, false);
 
          if (     video_st->poke
                && video_st->poke->set_texture_enable)
@@ -2900,7 +3472,19 @@ void command_event_reinit(const int flags)
             && video_st->poke->show_mouse)
          video_st->poke->show_mouse(video_st->data, false);
    }
+   /* The menu runs with vsync if vsync is on - the rule
+    * menu_driver_toggle() applies when the menu comes up - and only
+    * then. This used to switch it on whenever the menu was up, whatever
+    * the setting: with vsync off, every reinit with the menu up (a
+    * fullscreen toggle, say) started the new driver without vsync, as
+    * configured, and a few frames later turned it on here, which
+    * rebuilds the swapchain that had just been made. The menu ran with
+    * a vsync the user had switched off, unlike at startup, and on at
+    * least one Windows Vulkan setup the first present after that second
+    * swapchain failed or left a dead picture. */
    if (     (menu_st->flags & MENU_ST_FLAG_ALIVE)
+         &&  settings->bools.video_vsync
+         && !settings->bools.video_scanline_sync
          && video_st->current_video->set_nonblock_state)
       video_st->current_video->set_nonblock_state(
             video_st->data, false,

@@ -90,9 +90,29 @@
 #define HID_USAGE_GENERIC_X         0x30
 #endif
 
+#ifndef HID_USAGE_GENERIC_SLIDER
+#define HID_USAGE_GENERIC_SLIDER    0x36
+#endif
+
 #ifndef HID_USAGE_GENERIC_DIAL
 #define HID_USAGE_GENERIC_DIAL      0x37
 #endif
+
+/* Axis slots follow DirectInput's DIJOYSTATE2 layout - lX, lY, lZ,
+ * lRx, lRy, lRz, then rglSlider[0..1] - so a dinput autoconfig
+ * profile binds the same physical axes under this driver. X..Rz take
+ * their fixed slot; Slider and Dial share the two slider slots in
+ * value-cap order. *sliders counts the slider slots handed out so far
+ * and must start at zero for each walk of val_caps[]. Returns -1 for
+ * an axis left without a slot. Only called on axis usages. */
+static INLINE int winraw_joypad_axis_slot(USAGE usage, unsigned *sliders)
+{
+   if (usage < HID_USAGE_GENERIC_SLIDER)
+      return (int)(usage - HID_USAGE_GENERIC_X);
+   if (*sliders < 2)
+      return 6 + (int)(*sliders)++;
+   return -1;
+}
 
 static INLINE bool winraw_joypad_is_axis_usage(const HIDP_VALUE_CAPS *vcap)
 {
@@ -138,6 +158,9 @@ typedef struct winraw_joypad_joypad_data
    uint16_t            vid;
    uint16_t            pid;
    char                name[256];
+   /* The device interface path, which is what tells one controller
+    * from another of the same model. Empty if Windows gave none. */
+   char                path[512];
 } winraw_joypad_joypad_data_t;
 
 /* ------------------------------------------------------------------ */
@@ -149,6 +172,40 @@ static winraw_joypad_joypad_data_t winraw_joypad_pads[MAX_USERS];
 static unsigned winraw_joypad_pad_count          = 0;
 static HWND     winraw_joypad_msg_window         = NULL;
 static bool     winraw_joypad_initialised        = false;
+
+/* Read by the poll (see the note above winraw_joypad_joypad_poll()):
+ * whether it is, the thread the window was then made on, and whether
+ * making it failed. */
+static bool     winraw_joypad_by_poll            = false;
+static DWORD    winraw_joypad_window_tid         = 0;
+static bool     winraw_joypad_window_failed      = false;
+/* Polls since the window's own messages were last looked for. */
+static unsigned winraw_joypad_polls_since_look   = 0;
+
+/* Reports read in bulk and not parsed yet: for each controller, the
+ * newest report of each report ID. See winraw_joypad_take_hid(). */
+#define WINRAW_JOYPAD_HELD_IDS   4
+#define WINRAW_JOYPAD_HELD_BYTES 128
+
+typedef struct
+{
+   uint8_t  count;                              /* report IDs held */
+   uint8_t  order[WINRAW_JOYPAD_HELD_IDS];      /* their slots, the newest last */
+   uint16_t size[WINRAW_JOYPAD_HELD_IDS];
+   BYTE     data[WINRAW_JOYPAD_HELD_IDS][WINRAW_JOYPAD_HELD_BYTES];
+} winraw_joypad_held_t;
+
+static winraw_joypad_held_t winraw_joypad_held[MAX_USERS];
+
+/* Reports handed over by bulk reads, and reports parsed: logged when
+ * the driver is destroyed. */
+static unsigned long winraw_joypad_reports_taken;
+static unsigned long winraw_joypad_reports_parsed;
+
+/* winraw_input.c */
+extern bool winraw_raw_input_polled(void);
+extern void winraw_queue_read(void);
+extern void winraw_queue_claim_thread(bool claim);
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                             */
@@ -267,6 +324,17 @@ static int winraw_joypad_find_free_slot(void)
 /* Device arrival / removal                                            */
 /* ------------------------------------------------------------------ */
 
+/* Whether a raw input handle still names a device. The handle of a
+ * controller that has been unplugged does not. */
+static bool winraw_joypad_handle_alive(HANDLE hDevice)
+{
+   RID_DEVICE_INFO info;
+   UINT size   = sizeof(info);
+   info.cbSize = sizeof(info);
+   return GetRawInputDeviceInfoA(hDevice, RIDI_DEVICEINFO,
+         &info, &size) != (UINT)-1;
+}
+
 static bool winraw_joypad_add_device(HANDLE hDevice)
 {
    int slot;
@@ -299,14 +367,33 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
        && dev_info.hid.usUsage != HID_USAGE_GENERIC_GAMEPAD)
       return false;
 
+   /* The device path, which says which physical controller this is. */
+   device_path[0] = '\0';
+   GetRawInputDeviceInfoA(hDevice, RIDI_DEVICENAME, NULL, &name_size);
+   if (name_size > 0 && name_size < sizeof(device_path))
+   {
+      if (GetRawInputDeviceInfoA(hDevice, RIDI_DEVICENAME,
+               device_path, &name_size) == (UINT)-1)
+         device_path[0] = '\0';
+   }
+
    /* ---- Handle reconnection race condition ----
     * Windows can send GIDC_ARRIVAL for a newly-assigned handle *before*
     * GIDC_REMOVAL for the old handle of the same physical device.
-    * If we find an existing slot with the same VID:PID but a different
-    * (now-stale) handle, evict it first to prevent double-registered
+    * If we find an existing slot holding that same device under its
+    * old, now-stale handle, evict it first to prevent double-registered
     * inputs from two slots reading the same physical controller.
     * We also try to reuse the same slot so that port mapping is
-    * preserved across disconnect/reconnect cycles. */
+    * preserved across disconnect/reconnect cycles.
+    *
+    * "The same device" used to be judged by vendor and product ID
+    * alone, so a second controller of the same model was taken for the
+    * first one reconnecting and evicted it: two identical controllers
+    * could not be used together. A slot with the same IDs is the same
+    * device only if it has the same device path, or if its handle no
+    * longer names a device - it was unplugged, and this is it, or its
+    * replacement, coming back. A slot whose handle is still alive and
+    * whose path is another is another controller, and is left alone. */
    {
       unsigned i;
       int reuse_slot = -1;
@@ -318,6 +405,12 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
              && p->pid == (uint16_t)dev_info.hid.dwProductId
              && p->hDevice != hDevice)
          {
+            bool same_path = device_path[0] && p->path[0]
+               && !lstrcmpiA(p->path, device_path);
+
+            if (!same_path && winraw_joypad_handle_alive(p->hDevice))
+               continue; /* another controller of the same model */
+
             /* Stale entry for the same physical device — clean it up */
             RARCH_LOG("[RawInput Joypad] Evicting stale slot %d "
                   "(handle %p -> %p) for reconnected device "
@@ -335,8 +428,9 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
                free(p->preparsed);
 
             memset(p, 0, sizeof(*p));
+            winraw_joypad_held[i].count = 0;
             reuse_slot = (int)i;
-            break; /* Only one stale entry per VID:PID expected */
+            break; /* Only one stale entry per device expected */
          }
       }
 
@@ -355,14 +449,11 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
    pad->vid     = (uint16_t)dev_info.hid.dwVendorId;
    pad->pid     = (uint16_t)dev_info.hid.dwProductId;
 
-   /* --- Get the device path so we can open it for the 
-    * product string --- */
-   GetRawInputDeviceInfoA(hDevice, RIDI_DEVICENAME, NULL, &name_size);
-   if (name_size > 0 && name_size < sizeof(device_path))
-   {
-      GetRawInputDeviceInfoA(hDevice, RIDI_DEVICENAME,
-         device_path, &name_size);
+   strlcpy(pad->path, device_path, sizeof(pad->path));
 
+   /* --- Open the device path for the product string --- */
+   if (device_path[0])
+   {
       hid_handle = CreateFileA(device_path,
             0, /* No read/write needed, just attributes */
             FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -465,7 +556,8 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
                   pad->preparsed) == HIDP_STATUS_SUCCESS)
          {
             unsigned i;
-            unsigned axis_idx = 0;
+            unsigned num_axes = 0;
+            unsigned sliders  = 0;
             unsigned hat_idx  = 0;
             for (i = 0; i < num_val_caps; i++)
             {
@@ -480,12 +572,13 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
                }
                else if (winraw_joypad_is_axis_usage(&pad->val_caps[i]))
                {
-                  if (axis_idx < RAWINPUT_MAX_AXES)
-                     axis_idx++;
+                  int slot_idx = winraw_joypad_axis_slot(usage, &sliders);
+                  if (slot_idx >= 0 && (unsigned)slot_idx >= num_axes)
+                     num_axes = (unsigned)slot_idx + 1;
                }
                /* else: unknown/vendor value cap — skip */
             }
-            pad->num_axes = (uint16_t)axis_idx;
+            pad->num_axes = (uint16_t)num_axes;
             pad->num_hats = (uint16_t)hat_idx;
          }
       }
@@ -530,6 +623,7 @@ static void winraw_joypad_remove_device(HANDLE hDevice)
 
       memset(pad, 0, sizeof(*pad));
       /* pad->connected is now false from the memset */
+      winraw_joypad_held[slot].count = 0;
    }
 
    /* Recalculate pad_count so it reflects the highest connected slot + 1.
@@ -563,6 +657,7 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
    if (!pad || !pad->preparsed || !raw_data || raw_data_size == 0)
       return;
 
+   winraw_joypad_reports_parsed++;
    num_buttons = pad->num_buttons;
 
    /* --- Buttons --- */
@@ -606,7 +701,7 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
    if (pad->val_caps)
    {
       USHORT num_val_caps = pad->caps.NumberInputValueCaps;
-      unsigned axis_idx   = 0;
+      unsigned sliders    = 0;
       unsigned hat_idx    = 0;
       unsigned max_axes   = pad->num_axes;
       unsigned max_hats   = pad->num_hats;
@@ -619,20 +714,24 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
                      : pad->val_caps[i].NotRange.Usage;
          bool  is_hat  = (usage == HID_USAGE_GENERIC_HATSWITCH);
          bool  is_axis = !is_hat && winraw_joypad_is_axis_usage(&pad->val_caps[i]);
-         unsigned slot_idx;
+         int   slot_idx;
 
-         /* Assign the destination index from the position of this
-          * cap in val_caps[], matching how num_hats/num_axes were
-          * counted at enumeration time. Deriving it from a running
-          * counter that only advances on a successful read would
-          * shift every subsequent value by one whenever a usage is
-          * missing from the current report. */
+         /* Hats take their index from the position of this cap in
+          * val_caps[], axes their DirectInput slot, both matching
+          * how num_hats/num_axes were counted at enumeration time.
+          * Deriving either from a running counter that only advances
+          * on a successful read would shift every subsequent value
+          * by one whenever a usage is missing from the current
+          * report. */
          if (is_hat)
-            slot_idx = hat_idx++;
+            slot_idx = (int)hat_idx++;
          else if (is_axis)
-            slot_idx = axis_idx++;
+            slot_idx = winraw_joypad_axis_slot(usage, &sliders);
          else
             continue; /* unknown/vendor value cap */
+
+         if (slot_idx < 0)
+            continue;
 
          /* HidP_GetUsageValue() returns HIDP_STATUS_INCOMPATIBLE_REPORT_ID
           * when the arriving report does not carry this usage, which is
@@ -647,7 +746,7 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
 
          if (is_hat)
          {
-            if (slot_idx < max_hats)
+            if ((unsigned)slot_idx < max_hats)
                pad->hats[slot_idx] = winraw_joypad_hat_value_to_bitmask(
                      (LONG)value,
                      pad->val_caps[i].LogicalMin,
@@ -655,7 +754,7 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
          }
          else
          {
-            if (slot_idx < max_axes)
+            if ((unsigned)slot_idx < max_axes)
             {
                LONG signed_value = (pad->val_caps[i].LogicalMin < 0)
                   ? winraw_joypad_sign_extend(value, pad->val_caps[i].BitSize)
@@ -668,6 +767,104 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
          }
       }
    }
+}
+
+/* Reports for one of this driver's controllers that were read in bulk
+ * by the keyboard and mouse driver (winraw_input.c, "Read by the
+ * poll"): a bulk read takes every raw input report waiting on its
+ * thread, and this driver's with them.
+ *
+ * They are not parsed here. A controller sends its whole state in
+ * every report, and one that reports a thousand times a second has
+ * eight to seventeen of them waiting at each poll; parsing each is a
+ * dozen calls into the HID parser, to write a state that the next
+ * report overwrites before anything reads it. What the poll leaves
+ * behind is the same whether every report is parsed or only the last,
+ * so only the last is: it is kept here, and
+ * winraw_joypad_parse_held() parses it once the read is done.
+ *
+ * "The last" is per report ID - the report's first byte - because a
+ * device may split its state across several, and an axis that one ID
+ * carries is not rewritten by a report with another. The newest of
+ * each ID is kept, and they are parsed in the order their newest
+ * arrived, which leaves buttons, hats and axes exactly as parsing
+ * every report in turn would. A report too big to keep, or a fifth ID,
+ * is not guessed about: what is held is parsed first, then it.
+ *
+ * @data is @count reports of @report_size bytes each. */
+static void winraw_joypad_parse_held_slot(int slot)
+{
+   unsigned i;
+   winraw_joypad_held_t *held = &winraw_joypad_held[slot];
+
+   for (i = 0; i < held->count; i++)
+   {
+      unsigned k = held->order[i];
+      winraw_joypad_parse_hid_report(&winraw_joypad_pads[slot],
+            held->data[k], held->size[k]);
+   }
+   held->count = 0;
+}
+
+static void winraw_joypad_parse_held(void)
+{
+   unsigned slot;
+   for (slot = 0; slot < MAX_USERS; slot++)
+      if (winraw_joypad_held[slot].count)
+         winraw_joypad_parse_held_slot((int)slot);
+}
+
+static void winraw_joypad_hold_report(int slot, const BYTE *report, DWORD size)
+{
+   unsigned i, k;
+   winraw_joypad_held_t *held = &winraw_joypad_held[slot];
+
+   if (size == 0)
+      return;
+
+   if (size > WINRAW_JOYPAD_HELD_BYTES)
+   {
+      winraw_joypad_parse_held_slot(slot);
+      winraw_joypad_parse_hid_report(&winraw_joypad_pads[slot], report, size);
+      return;
+   }
+
+   for (i = 0; i < held->count; i++)
+      if (held->data[held->order[i]][0] == report[0])
+         break;
+
+   if (i < held->count)
+   {
+      /* this ID again: it takes the older one's place, and is now the
+       * newest of them all */
+      k = held->order[i];
+      for (; i + 1 < held->count; i++)
+         held->order[i] = held->order[i + 1];
+      held->order[held->count - 1] = (uint8_t)k;
+   }
+   else
+   {
+      if (held->count == WINRAW_JOYPAD_HELD_IDS)
+         winraw_joypad_parse_held_slot(slot);
+      /* order[] holds 0..count-1 in some order, so count is free */
+      k                            = held->count;
+      held->order[held->count++]   = (uint8_t)k;
+   }
+
+   memcpy(held->data[k], report, size);
+   held->size[k] = (uint16_t)size;
+}
+
+void winraw_joypad_take_hid(HANDLE device, const BYTE *data,
+      DWORD report_size, DWORD count)
+{
+   DWORD i;
+   int slot = winraw_joypad_find_pad(device);
+   if (slot < 0 || report_size == 0)
+      return;
+   winraw_joypad_reports_taken += count;
+   for (i = 0; i < count; i++)
+      winraw_joypad_hold_report(slot, data + i * report_size, report_size);
 }
 
 /* ------------------------------------------------------------------ */
@@ -714,6 +911,10 @@ static LRESULT CALLBACK winraw_joypad_joypad_wndproc(
          slot = winraw_joypad_find_pad(raw->header.hDevice);
          if (slot < 0)
             break;
+
+         /* older reports still held from a bulk read come first */
+         if (winraw_joypad_held[slot].count)
+            winraw_joypad_parse_held_slot(slot);
 
          winraw_joypad_parse_hid_report(&winraw_joypad_pads[slot],
                raw->data.hid.bRawData,
@@ -840,16 +1041,28 @@ static void *winraw_joypad_joypad_init(void *data)
    unsigned i;
 
    memset(winraw_joypad_pads, 0, sizeof(winraw_joypad_pads));
-   winraw_joypad_pad_count = 0;
+   memset(winraw_joypad_held, 0, sizeof(winraw_joypad_held));
+   winraw_joypad_pad_count      = 0;
+   winraw_joypad_reports_taken  = 0;
+   winraw_joypad_reports_parsed = 0;
 
-   if (!winraw_joypad_create_msg_window())
-      return NULL;
+   /* Read by the poll: the window is made by the first poll, so that
+    * it is the polling thread's. This runs on whichever thread starts
+    * the input driver - the video thread, under threaded video. */
+   winraw_joypad_by_poll       = winraw_raw_input_polled();
+   winraw_joypad_window_failed = false;
 
-   if (!winraw_joypad_register_devices())
+   if (!winraw_joypad_by_poll)
    {
-      DestroyWindow(winraw_joypad_msg_window);
-      winraw_joypad_msg_window = NULL;
-      return NULL;
+      if (!winraw_joypad_create_msg_window())
+         return NULL;
+
+      if (!winraw_joypad_register_devices())
+      {
+         DestroyWindow(winraw_joypad_msg_window);
+         winraw_joypad_msg_window = NULL;
+         return NULL;
+      }
    }
 
    winraw_joypad_enumerate_devices();
@@ -885,16 +1098,32 @@ static void winraw_joypad_joypad_destroy(void)
    }
 
    memset(winraw_joypad_pads, 0, sizeof(winraw_joypad_pads));
+   memset(winraw_joypad_held, 0, sizeof(winraw_joypad_held));
    winraw_joypad_pad_count = 0;
 
    if (winraw_joypad_msg_window)
    {
-      DestroyWindow(winraw_joypad_msg_window);
+      /* A window is destroyed by the thread that made it. Read by the
+       * poll, that is the polling thread - and this can be another:
+       * a controller plugged in restarts the driver from the main
+       * window's thread. The window is then asked to close, and goes
+       * when its own thread next pumps. */
+      if (     winraw_joypad_by_poll
+            && GetCurrentThreadId() != winraw_joypad_window_tid)
+         PostMessageA(winraw_joypad_msg_window, WM_CLOSE, 0, 0);
+      else
+         DestroyWindow(winraw_joypad_msg_window);
+      if (winraw_joypad_by_poll)
+         winraw_queue_claim_thread(false);
       winraw_joypad_msg_window = NULL;
    }
 
    winraw_joypad_initialised = false;
 
+   if (winraw_joypad_by_poll)
+      RARCH_DBG("[RawInput Joypad] Read by the poll: %lu reports read in bulk,"
+            " %lu parsed.\n",
+            winraw_joypad_reports_taken, winraw_joypad_reports_parsed);
    RARCH_LOG("[RawInput Joypad] Destroyed.\n");
 }
 
@@ -1023,12 +1252,12 @@ static int16_t winraw_joypad_joypad_state(
     * axis_threshold is in [0.0 .. 1.0]; scale to [0 .. 0x8000]. */
    int32_t threshold;
 
-   if (port >= MAX_USERS)
-      return 0;
-
-   pad = &winraw_joypad_pads[port];
-   if (!pad->connected)
-      return 0;
+   /* The pad is the one the player's Device Index names, joy_idx, and
+    * only that one: @port is the player. Looking at the slot with the
+    * player's own number first, and giving up if it was empty, left a
+    * player whose Device Index points at another slot with no buttons
+    * whenever that slot of their own held no pad. */
+   (void)port;
 
    joy_idx   = joypad_info->joy_idx;
    threshold = (int32_t)(joypad_info->axis_threshold * 0x8000);
@@ -1036,13 +1265,9 @@ static int16_t winraw_joypad_joypad_state(
    if (joy_idx >= MAX_USERS)
       return 0;
 
-   /* If joy_idx differs from port, we need that pad instead */
-   if (joy_idx != port)
-   {
-      pad = &winraw_joypad_pads[joy_idx];
-      if (!pad->connected)
-         return 0;
-   }
+   pad = &winraw_joypad_pads[joy_idx];
+   if (!pad->connected)
+      return 0;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
@@ -1116,9 +1341,105 @@ static int16_t winraw_joypad_joypad_state(
    return ret;
 }
 
+/* Read by the poll
+ * ----------------
+ * A controller's reports used to be taken wherever this driver's
+ * window happened to be pumped. The window was made by init, on the
+ * thread that starts the input driver; under threaded video that is
+ * the video thread, so the PeekMessage() below, called from the main
+ * thread, found nothing, and the reports were taken by the video
+ * thread's pump: once per video frame, a PeekMessage() and a
+ * GetRawInputData() apiece, and not at all while that thread waited
+ * in a present. The poll then read whatever state that had left - a
+ * stick or a button up to a frame old.
+ *
+ * Now, as for the keyboard and mouse (winraw_input.c, "Read by the
+ * poll"), the window is made by the first poll, on the polling
+ * thread, and the reports waiting are read in bulk when the poll
+ * asks: the state is what the controller had sent at that moment, and
+ * a frame's reports cost one call instead of two each - and one
+ * parse, of the newest, instead of one each
+ * (winraw_joypad_take_hid()). The read is
+ * the keyboard and mouse driver's own - one read takes everything
+ * waiting on the thread, and hands this driver its share through
+ * winraw_joypad_take_hid() - so the two drivers make one read between
+ * them. With another input driver this is the only reader.
+ *
+ * Arrivals and removals stay messages. They come through the raw
+ * input queue, which a range without WM_INPUT in it does not look at,
+ * so the thread's pump - which leaves raw input alone - does not see
+ * them, and they are taken here, every eighth poll. The range also
+ * lets through a report that arrived since the read; the window
+ * procedure takes that as it always did.
+ *
+ * RETROARCH_RAWINPUT_POLL=0 puts both drivers back as they were. */
+static bool winraw_joypad_poll_window_up(void)
+{
+   if (!winraw_joypad_create_msg_window())
+      return false;
+   if (!winraw_joypad_register_devices())
+   {
+      DestroyWindow(winraw_joypad_msg_window);
+      winraw_joypad_msg_window = NULL;
+      return false;
+   }
+   winraw_joypad_window_tid = GetCurrentThreadId();
+   winraw_queue_claim_thread(true);
+   /* the controllers already plugged in are announced to the new
+    * window straight away: look at the first poll */
+   winraw_joypad_polls_since_look = 7;
+   return true;
+}
+
+/* For winraw_input.c's answer to whether the input driver can be left
+ * running across a video driver restart: this driver is kept or
+ * restarted with it, and can stay when it is the joypad driver in use
+ * and read by the poll - its window is then the polling thread's, and
+ * it holds nothing of the video driver's. */
+bool winraw_joypad_survives_video(void)
+{
+   return winraw_joypad_initialised && winraw_joypad_by_poll;
+}
+
 static void winraw_joypad_joypad_poll(void)
 {
    MSG msg;
+
+   if (winraw_joypad_by_poll)
+   {
+      if (     !winraw_joypad_msg_window
+            && !winraw_joypad_window_failed
+            && !winraw_joypad_poll_window_up())
+      {
+         winraw_joypad_window_failed = true;
+         RARCH_ERR("[RawInput Joypad] Could not make the window to read through.\n");
+      }
+
+      winraw_queue_read();
+      /* the newest report of each controller, once */
+      winraw_joypad_parse_held();
+
+      /* Arrivals and removals: looked for every eighth poll, not
+       * every one. A controller plugged in is noticed at most seven
+       * polls later - some 60 ms at 120 polls a second - and seven
+       * polls in eight are a call shorter. The range has to have WM_INPUT in
+       * it for the raw input queue to be looked at at all, so the look
+       * can also hand over a report - and under Wine it hands over the
+       * keyboard's and the mouse's, whichever window is asked for,
+       * which is where their reports "taken as messages" came from
+       * with video not threaded. Either way the window procedures take
+       * what they are given. */
+      if (     winraw_joypad_msg_window
+            && ++winraw_joypad_polls_since_look >= 8)
+      {
+         winraw_joypad_polls_since_look = 0;
+         while (PeekMessageA(&msg, winraw_joypad_msg_window,
+                  WM_INPUT_DEVICE_CHANGE, WM_INPUT, PM_REMOVE))
+            DispatchMessageA(&msg);
+      }
+      return;
+   }
+
    /* Drain all pending messages for our hidden window.
     * TranslateMessage is omitted — we only handle WM_INPUT and
     * WM_INPUT_DEVICE_CHANGE, neither of which needs key translation. */

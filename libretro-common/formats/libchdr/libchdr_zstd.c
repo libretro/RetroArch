@@ -48,7 +48,8 @@
 #include <libchdr/huffman.h>
 #include <libchdr/libchdr_zlib.h>
 #include <libchdr/libchdr_zstd.h>
-#include <zstd.h>
+
+#include <encodings/rzstd.h>
 
 #include <retro_inline.h>
 #include <streams/file_stream.h>
@@ -65,13 +66,9 @@
 
 chd_error zstd_codec_init(void* codec, uint32_t hunkbytes)
 {
-	zstd_codec_data* zstd_codec = (zstd_codec_data*) codec;
-
-	zstd_codec->dstream = ZSTD_createDStream();
-	if (!zstd_codec->dstream) {
-		printf("NO DSTREAM CREATED!\n");
-		return CHDERR_DECOMPRESSION_ERROR;
-	}
+	/* Nothing to construct: rzstd holds no state across calls. */
+	(void)codec;
+	(void)hunkbytes;
 	return CHDERR_NONE;
 }
 
@@ -82,9 +79,7 @@ chd_error zstd_codec_init(void* codec, uint32_t hunkbytes)
 
 void zstd_codec_free(void* codec)
 {
-	zstd_codec_data* zstd_codec = (zstd_codec_data*) codec;
-
-	ZSTD_freeDStream(zstd_codec->dstream);
+	(void)codec;
 }
 
 /*-------------------------------------------------
@@ -94,45 +89,21 @@ void zstd_codec_free(void* codec)
  */
 chd_error zstd_codec_decompress(void* codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
 {
-	ZSTD_inBuffer input;
-	ZSTD_outBuffer output;
+	/* Every caller hands over one whole frame and already knows how
+	 * large it expands to, so this is a single call. complen is the
+	 * exact frame length in both callers - cdzs splits the blob on the
+	 * stored base length - which matters because rzstd treats bytes
+	 * left over after the frame as an error rather than ignoring them. */
+	size_t wrote = 0;
 
-	/* initialize */
-	zstd_codec_data* zstd_codec = (zstd_codec_data*) codec;
+	(void)codec;
 
-	/* reset decompressor */
-	size_t zstd_res = ZSTD_initDStream(zstd_codec->dstream);
-
-	input.src   = src;
-	input.size  = complen;
-	input.pos   = 0;
-
-	output.dst  = dest;
-	output.size = destlen;
-	output.pos  = 0;
-
-	if (ZSTD_isError(zstd_res)) 
-	{
-		printf("INITI DSTREAM FAILED!\n");
+	if (rzstd_decode(dest, destlen, src, complen, &wrote)
+			!= RZSTD_PROCESS_END)
 		return CHDERR_DECOMPRESSION_ERROR;
-	}
-
-	while ((input.pos < input.size) && (output.pos < output.size))
-	{
-		zstd_res = ZSTD_decompressStream(zstd_codec->dstream, &output, &input);
-		if (ZSTD_isError(zstd_res))
-		{
-			printf("DECOMPRESSION ERROR IN LOOP\n");
-			return CHDERR_DECOMPRESSION_ERROR;
-		}
-	}
-	if (output.pos != output.size)
-	{
-		printf("OUTPUT DOESN'T MATCH!\n");
+	if (wrote != destlen)
 		return CHDERR_DECOMPRESSION_ERROR;
-	}
 	return CHDERR_NONE;
-
 }
 
 /* cdzs */
@@ -175,7 +146,9 @@ void cdzs_codec_free(void* codec)
 
 chd_error cdzs_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
 {
+	chd_error ret;
 	uint32_t framenum;
+	uint32_t complen_base;
 	cdzs_codec_data* cdzs = (cdzs_codec_data*)codec;
 
 	/* determine header bytes */
@@ -183,7 +156,6 @@ chd_error cdzs_codec_decompress(void *codec, const uint8_t *src, uint32_t comple
 	uint32_t complen_bytes = (destlen < 65536) ? 2 : 3;
 	uint32_t ecc_bytes = (frames + 7) / 8;
 	uint32_t header_bytes = ecc_bytes + complen_bytes;
-
 
 	/* header_bytes and complen_base are both taken from the hunk, so
 	 * neither can be trusted before it is checked. Without this, a
@@ -196,17 +168,28 @@ chd_error cdzs_codec_decompress(void *codec, const uint8_t *src, uint32_t comple
 	if (complen < header_bytes)
 		return CHDERR_DECOMPRESSION_ERROR;
 	/* extract compressed length of base */
-	uint32_t complen_base = (src[ecc_bytes + 0] << 8) | src[ecc_bytes + 1];
+	complen_base = (src[ecc_bytes + 0] << 8) | src[ecc_bytes + 1];
 	if (complen_bytes > 2)
 		complen_base = (complen_base << 8) | src[ecc_bytes + 2];
 
 	if (complen_base > complen - header_bytes)
 		return CHDERR_DECOMPRESSION_ERROR;
 
+	/* A failed hunk has to be reported, not reassembled. Neither return
+	 * value was read, so a decode that bailed left cdXX->buffer holding
+	 * whatever the previous hunk put there - or, on the first hunk,
+	 * uninitialised heap, the buffer being malloc'd - and the loop below
+	 * copied that into dest and returned CHDERR_NONE. The caller cannot
+	 * tell that apart from a good hunk. cdfl_codec_decompress() already
+	 * checks its subcode decode; this brings the other three into line. */
 	/* reset and decode */
-	zstd_codec_decompress(&cdzs->base_decompressor, &src[header_bytes], complen_base, &cdzs->buffer[0], frames * CD_MAX_SECTOR_DATA);
+	ret = zstd_codec_decompress(&cdzs->base_decompressor, &src[header_bytes], complen_base, &cdzs->buffer[0], frames * CD_MAX_SECTOR_DATA);
+	if (ret != CHDERR_NONE)
+		return ret;
 #ifdef WANT_SUBCODE
-	zstd_codec_decompress(&cdzs->subcode_decompressor, &src[header_bytes + complen_base], complen - complen_base - header_bytes, &cdzs->buffer[frames * CD_MAX_SECTOR_DATA], frames * CD_MAX_SUBCODE_DATA);
+	ret = zstd_codec_decompress(&cdzs->subcode_decompressor, &src[header_bytes + complen_base], complen - complen_base - header_bytes, &cdzs->buffer[frames * CD_MAX_SECTOR_DATA], frames * CD_MAX_SUBCODE_DATA);
+	if (ret != CHDERR_NONE)
+		return ret;
 #endif
 
 	/* reassemble the data */

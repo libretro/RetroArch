@@ -61,12 +61,8 @@ enum rjson_option
  * Should return > 0 and <= len on success, 0 on file end and < 0 on error. */
 typedef int (*rjson_io_t)(void* buf, int len, void *user_data);
 typedef struct rjson rjson_t;
-struct intfstream_internal;
-struct RFILE;
 
 /* Create a new parser instance from various sources */
-rjson_t *rjson_open_stream(struct intfstream_internal *stream);
-rjson_t *rjson_open_rfile(struct RFILE *rfile);
 rjson_t *rjson_open_buffer(const void *buffer, size_t len);
 rjson_t *rjson_open_string(const char *string, size_t len);
 rjson_t *rjson_open_user(rjson_io_t io, void *user_data, int io_block_size);
@@ -183,8 +179,6 @@ typedef int (*rjsonwriter_io_t)(const void* buf, int len, void *user_data);
 typedef struct rjsonwriter rjsonwriter_t;
 
 /* Create a new writer instance to various targets */
-rjsonwriter_t *rjsonwriter_open_stream(struct intfstream_internal *stream);
-rjsonwriter_t *rjsonwriter_open_rfile(struct RFILE *rfile);
 rjsonwriter_t *rjsonwriter_open_memory(void);
 rjsonwriter_t *rjsonwriter_open_user(rjsonwriter_io_t io, void *user_data);
 

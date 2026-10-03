@@ -53,9 +53,20 @@ typedef void (*content_prefetch_deposit_t)(void *ud, const char *path,
       uint8_t *data, size_t size);
 typedef void (*content_prefetch_done_t)(void *ud, bool all_ok);
 
+/* Called on the thread pumping the queue whenever the whole-number
+ * read percentage changes, so a caller can show it.  Optional: NULL
+ * means nobody is watching and nothing is reported. */
+typedef void (*content_prefetch_progress_t)(void *ud, int8_t progress);
+
 bool task_push_content_prefetch(const char **paths, size_t count,
       content_prefetch_deposit_t deposit, content_prefetch_done_t done,
       void *ud);
+
+/* As above, with progress reporting. */
+bool task_push_content_prefetch_progress(const char **paths,
+      size_t count, content_prefetch_deposit_t deposit,
+      content_prefetch_done_t done,
+      content_prefetch_progress_t progress, void *ud);
 
 RETRO_END_DECLS
 

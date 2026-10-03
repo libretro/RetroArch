@@ -34,7 +34,6 @@ typedef struct
    egl_ctx_data_t egl;
 #endif
    EGLNativeWindowType native_window;
-   unsigned width, height;
    bool resize;
 } vivante_ctx_data_t;
 
@@ -59,12 +58,7 @@ static void *gfx_ctx_vivante_init(void *video_driver)
 #ifdef HAVE_EGL
    EGLint n;
    EGLint major, minor;
-   EGLint format;
    static const EGLint attribs[] = {
-#if 0
-      EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-      EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-#endif
       EGL_BLUE_SIZE, 5,
       EGL_GREEN_SIZE, 6,
       EGL_RED_SIZE, 5,
@@ -101,29 +95,28 @@ error:
 }
 
 static void gfx_ctx_vivante_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
 
 #ifdef HAVE_EGL
-   egl_get_video_size(&viv->egl, width, height);
+   egl_get_video_size(&viv->egl, dims);
 #endif
 }
 
 static void gfx_ctx_vivante_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
-   unsigned new_width, new_height;
+   unsigned new_dims;
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
 
 #ifdef HAVE_EGL
-   gfx_ctx_vivante_get_video_size(&viv->egl, &new_width, &new_height);
+   gfx_ctx_vivante_get_video_size(&viv->egl, &new_dims);
 #endif
 
-   if (new_width != *width || new_height != *height)
+   if (new_dims != *dims)
    {
-      *width               = new_width;
-      *height              = new_height;
+      *dims               = new_dims;
       *resize              = true;
    }
 
@@ -131,7 +124,7 @@ static void gfx_ctx_vivante_check_window(void *data, bool *quit,
 }
 
 static bool gfx_ctx_vivante_set_video_mode(void *data,
-      unsigned width, unsigned height,
+      unsigned dims,
       bool fullscreen)
 {
 #ifdef HAVE_EGL
@@ -142,22 +135,13 @@ static bool gfx_ctx_vivante_set_video_mode(void *data,
 #endif
    vivante_ctx_data_t *viv       = (vivante_ctx_data_t*)data;
 
-   /* Pick some arbitrary default. */
-   if (!width || !fullscreen)
-      width                      = 1280;
-   if (!height || !fullscreen)
-      height                     = 1024;
-
-   viv->width                    = width;
-   viv->height                   = height;
-
 #ifdef HAVE_EGL
    if (!egl_create_context(&viv->egl, attribs))
       goto error;
 #endif
    viv->native_window = fbCreateWindow(fbGetDisplayByIndex(0), 0, 0, 0, 0);
 #ifdef HAVE_EGL
-   if (!egl_create_surface(&viv->egl, viv->native_window))
+   if (!egl_create_surface(&viv->egl, (void*)viv->native_window))
       goto error;
 #endif
 
@@ -229,7 +213,7 @@ static bool gfx_ctx_vivante_create_surface(void *data)
 {
 #ifdef HAVE_EGL
    vivante_ctx_data_t *viv = (vivante_ctx_data_t*)data;
-   return egl_create_surface(&viv->egl, viv->native_window);
+   return egl_create_surface(&viv->egl, (void*)viv->native_window);
 #else
    return false;
 #endif

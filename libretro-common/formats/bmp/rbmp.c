@@ -79,6 +79,17 @@ struct rbmp
    int phase;
    int row;                      /* row cursor */
    size_t fixup_k;               /* opaque-fixup cursor */
+   /* Partial-buffer decode (rbmp_set_avail).  s.img_buffer_end is the
+    * cursor's hard stop and is set to the resident frontier rather
+    * than the file's end, so the decoder's existing bounds checks
+    * double as the wall; true_end remembers where the data actually
+    * ends, which is what tells a stall apart from a truncated file.
+    * A caller that never calls set_avail leaves avail_set false and
+    * nothing below changes behaviour. */
+   unsigned char *true_end;
+   size_t         avail_req;    /* frontier asked for, clamped at IDLE */
+   bool           avail_set;
+   bool           need_more;
 };
 
 static INLINE unsigned char rbmp_get8(rbmp_context *s)
@@ -450,7 +461,14 @@ static bool rbmp_begin(rbmp_t *bmp, bool supports_rgba)
     * large pixel data and still loads.  Rows are computed in size_t
     * from values already bounded above, so nothing here can wrap. */
    {
-      size_t total     = (size_t)(s->img_buffer_end - s->img_buffer_original);
+      /* The whole file, not the resident frontier: this rejects a
+       * header whose stated geometry cannot fit the data that exists,
+       * which is a property of the file.  Measuring it against a
+       * partially filled buffer would reject every prefix of a
+       * perfectly good image. */
+      size_t total     = (size_t)((bmp->avail_set ? bmp->true_end
+                                                  : s->img_buffer_end)
+                        - s->img_buffer_original);
       size_t data_off  = (offset > 0) ? (size_t)offset : 0;
       size_t row_bits  = (size_t)s->img_x * (size_t)((bpp > 0) ? bpp : 1);
       size_t row_bytes = ((row_bits + 31) / 32) * 4; /* 4-byte aligned rows */
@@ -587,6 +605,16 @@ static bool rbmp_begin(rbmp_t *bmp, bool supports_rgba)
 }
 
 /* Palette modes (bpp < 16): whole rows. */
+/* Bytes one source row occupies, padding included.  bmp->width is
+ * already the packed row size for the paletted and 16/24bpp cases and
+ * zero for 32bpp, where the row is four bytes per pixel with no pad. */
+static ptrdiff_t rbmp_row_bytes(rbmp_t *bmp)
+{
+   if (bmp->width > 0)
+      return (ptrdiff_t)bmp->width + bmp->pad;
+   return (ptrdiff_t)bmp->s.img_x * 4;
+}
+
 static void rbmp_pal_rows(rbmp_t *bmp, int nrows)
 {
    /* Cursor copied to a local rather than used in place: with 's'
@@ -615,13 +643,26 @@ static void rbmp_pal_rows(rbmp_t *bmp, int nrows)
 
    for (; j < last; ++j)
    {
-         int dst_row = flip_vertically ? (int)(s->img_y - 1 - j) : j;
+         int dst_row;
+         uint32_t *dst;
+         int col;
+
+         /* Stop at the resident frontier rather than decoding the
+          * zeros rbmp_get8 returns past it: for a paletted image zero
+          * is a valid index and for a truecolour one a valid pixel,
+          * so the wall has to be tested, not detected afterwards. */
+         if (     bmp->avail_set
+               && s->img_buffer_end < bmp->true_end
+               && s->img_buffer_end - s->img_buffer < rbmp_row_bytes(bmp))
+            break;
+
          /* Use size_t for the row-stride offset.  dst_row *
           * s->img_x in signed-int could overflow for a legitimate
           * 2 GiB BMP (e.g. 46341 x 46341).  Post-patch the
           * pointer math matches the size_t-based allocation. */
-         uint32_t *dst = output + (size_t)dst_row * (size_t)s->img_x;
-         int col = 0;
+         dst_row = flip_vertically ? (int)(s->img_y - 1 - j) : j;
+         dst     = output + (size_t)dst_row * (size_t)s->img_x;
+         col     = 0;
 
          for (i = 0; i < (int)s->img_x; i += 2)
          {
@@ -684,8 +725,20 @@ static void rbmp_raw_rows(rbmp_t *bmp, int nrows)
 
    for (; j < last; ++j)
    {
-         int dst_row = flip_vertically ? (int)(s->img_y - 1 - j) : j;
-         uint32_t *dst = output + dst_row * s->img_x;
+         int dst_row;
+         uint32_t *dst;
+
+         /* Stop at the resident frontier rather than decoding the
+          * zeros rbmp_get8 returns past it: for a paletted image zero
+          * is a valid index and for a truecolour one a valid pixel,
+          * so the wall has to be tested, not detected afterwards. */
+         if (     bmp->avail_set
+               && s->img_buffer_end < bmp->true_end
+               && s->img_buffer_end - s->img_buffer < rbmp_row_bytes(bmp))
+            break;
+
+         dst_row = flip_vertically ? (int)(s->img_y - 1 - j) : j;
+         dst     = output + dst_row * s->img_x;
 
          if (easy)
          {
@@ -818,6 +871,73 @@ static void rbmp_proc_reset(rbmp_t *rbmp)
    rbmp->phase        = RBMP_PHASE_IDLE;
 }
 
+/* A slice that produced no rows while the file still has bytes to
+ * come is waiting, not finished.  Progress rather than cursor
+ * position is the test: the row loops stop on whole rows, so a stall
+ * usually leaves part of a row's worth of bytes unread below the
+ * wall. */
+static bool rbmp_stalled(rbmp_t *bmp, int before_row, size_t before_fixup)
+{
+   if (     !bmp->avail_set
+         ||  bmp->s.img_buffer_end >= bmp->true_end
+         ||  bmp->row     != before_row
+         ||  bmp->fixup_k != before_fixup)
+   {
+      bmp->need_more = false;
+      return false;
+   }
+   bmp->need_more = true;
+   return true;
+}
+
+bool rbmp_header_ready(const uint8_t *data, size_t len)
+{
+   size_t off;
+   if (!data || len < 14)
+      return false;
+   if (data[0] != 'B' || data[1] != 'M')
+      return false;
+   /* bfOffBits: where the pixel data starts, and everything begin()
+    * reads - the DIB header, any bitfield masks, the palette - lies
+    * below it.  Once that much is resident the decode can start. */
+   off = (size_t)data[10] | ((size_t)data[11] << 8)
+       | ((size_t)data[12] << 16) | ((size_t)data[13] << 24);
+   if (off < 14)
+      return false;
+   return len >= off;
+}
+
+void rbmp_set_avail(rbmp_t *rbmp, size_t avail)
+{
+   if (!rbmp)
+      return;
+   rbmp->avail_set = true;
+   /* Only ever forward.  The request is recorded rather than turned
+    * into a pointer here: a caller may raise the frontier before the
+    * first process() call, when the buffer length - and so the end it
+    * has to be clamped against - is not yet known.  task_image does
+    * exactly that, with (size_t)-1, the moment a small file finishes
+    * reading before any decode has run; computing buff_data + that
+    * wraps the pointer and every later comparison against it is
+    * nonsense. */
+   if (avail > rbmp->avail_req)
+      rbmp->avail_req = avail;
+   if (rbmp->true_end && rbmp->buff_data)
+   {
+      unsigned char *wall = (rbmp->avail_req
+            > (size_t)(rbmp->true_end - rbmp->buff_data))
+                          ? rbmp->true_end
+                          : rbmp->buff_data + rbmp->avail_req;
+      if (wall > rbmp->s.img_buffer_end)
+         rbmp->s.img_buffer_end = wall;
+   }
+}
+
+bool rbmp_need_more(rbmp_t *rbmp)
+{
+   return rbmp && rbmp->need_more;
+}
+
 int rbmp_process_image(rbmp_t *rbmp, void **buf_data,
       size_t size, unsigned *width, unsigned *height,
       bool supports_rgba)
@@ -840,7 +960,45 @@ int rbmp_process_image(rbmp_t *rbmp, void **buf_data,
 
       rbmp->s.img_buffer          = rbmp->buff_data;
       rbmp->s.img_buffer_original = rbmp->buff_data;
-      rbmp->s.img_buffer_end      = rbmp->buff_data + (int)size;
+      rbmp->true_end              = rbmp->buff_data + (int)size;
+      if (!rbmp->avail_set)
+         rbmp->s.img_buffer_end   = rbmp->true_end;
+      else
+         /* Now the length is known, resolve the recorded frontier. */
+         rbmp->s.img_buffer_end   = (rbmp->avail_req >= size)
+                                  ? rbmp->true_end
+                                  : rbmp->buff_data + rbmp->avail_req;
+
+      /* rbmp_begin walks the file header, the DIB header (whose size
+       * the file states), any bitfield masks and the whole palette,
+       * then skips to the pixel offset - all of which the header
+       * itself locates.  Rather than bound each of those reads, wait
+       * until the pixel data starts: bfOffBits at byte 10 is exactly
+       * that point, and it is the smallest prefix from which begin
+       * can run to completion.  A file too short to hold its own
+       * stated offset is malformed and falls through to begin, which
+       * rejects it as it always did. */
+      if (rbmp->avail_set)
+      {
+         ptrdiff_t have = rbmp->s.img_buffer_end - rbmp->buff_data;
+         if (have < 14)
+         {
+            rbmp->need_more = true;
+            return IMAGE_PROCESS_WAIT;
+         }
+         {
+            const unsigned char *p = rbmp->buff_data;
+            ptrdiff_t need = (ptrdiff_t)((uint32_t)p[10]
+                  | ((uint32_t)p[11] << 8)
+                  | ((uint32_t)p[12] << 16)
+                  | ((uint32_t)p[13] << 24));
+            if (have < need && need <= (ptrdiff_t)size)
+            {
+               rbmp->need_more = true;
+               return IMAGE_PROCESS_WAIT;
+            }
+         }
+      }
 
       if (!rbmp_begin(rbmp, supports_rgba))
       {
@@ -862,13 +1020,19 @@ int rbmp_process_image(rbmp_t *rbmp, void **buf_data,
 
    if (rbmp->phase == RBMP_PHASE_PAL)
    {
+      int before = rbmp->row;
       rbmp_pal_rows(rbmp, rows);
+      if (rbmp_stalled(rbmp, before, rbmp->fixup_k))
+         return IMAGE_PROCESS_WAIT;
       if (rbmp->row < (int)rbmp->s.img_y)
          return IMAGE_PROCESS_NEXT;
    }
    else if (rbmp->phase == RBMP_PHASE_RAW)
    {
+      int before = rbmp->row;
       rbmp_raw_rows(rbmp, rows);
+      if (rbmp_stalled(rbmp, before, rbmp->fixup_k))
+         return IMAGE_PROCESS_WAIT;
       if (rbmp->row < (int)rbmp->s.img_y)
          return IMAGE_PROCESS_NEXT;
       if (rbmp_needs_fixup(rbmp))

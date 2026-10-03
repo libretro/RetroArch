@@ -202,6 +202,7 @@ void cdlz_codec_free(void* codec)
 chd_error cdlz_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
 {
 	uint32_t framenum, complen_base;
+	chd_error ret;
 	cdlz_codec_data* cdlz = (cdlz_codec_data*)codec;
 
 	/* determine header bytes */
@@ -229,10 +230,21 @@ chd_error cdlz_codec_decompress(void *codec, const uint8_t *src, uint32_t comple
 	if (complen_base > complen - header_bytes)
 		return CHDERR_DECOMPRESSION_ERROR;
 
+	/* A failed hunk has to be reported, not reassembled. Neither return
+	 * value was read, so a decode that bailed left cdXX->buffer holding
+	 * whatever the previous hunk put there - or, on the first hunk,
+	 * uninitialised heap, the buffer being malloc'd - and the loop below
+	 * copied that into dest and returned CHDERR_NONE. The caller cannot
+	 * tell that apart from a good hunk. cdfl_codec_decompress() already
+	 * checks its subcode decode; this brings the other three into line. */
 	/* reset and decode */
-	lzma_codec_decompress(&cdlz->base_decompressor, &src[header_bytes], complen_base, &cdlz->buffer[0], frames * CD_MAX_SECTOR_DATA);
+	ret = lzma_codec_decompress(&cdlz->base_decompressor, &src[header_bytes], complen_base, &cdlz->buffer[0], frames * CD_MAX_SECTOR_DATA);
+	if (ret != CHDERR_NONE)
+		return ret;
 #ifdef WANT_SUBCODE
-	zlib_codec_decompress(&cdlz->subcode_decompressor, &src[header_bytes + complen_base], complen - complen_base - header_bytes, &cdlz->buffer[frames * CD_MAX_SECTOR_DATA], frames * CD_MAX_SUBCODE_DATA);
+	ret = zlib_codec_decompress(&cdlz->subcode_decompressor, &src[header_bytes + complen_base], complen - complen_base - header_bytes, &cdlz->buffer[frames * CD_MAX_SECTOR_DATA], frames * CD_MAX_SUBCODE_DATA);
+	if (ret != CHDERR_NONE)
+		return ret;
 #endif
 
 	/* reassemble the data */

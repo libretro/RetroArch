@@ -48,10 +48,12 @@ static bool is_long_option(const char *str)
    return str[0] == '-' && str[1] == '-';
 }
 
-static int find_short_index(char * const *argv)
+/* Bounded by count, not by a NULL past the last argument: a real
+ * main() has one, an argv a caller built may not. */
+static int find_short_index(char * const *argv, int count)
 {
    int idx;
-   for (idx = 0; argv[idx]; idx++)
+   for (idx = 0; idx < count && argv[idx]; idx++)
    {
       if (is_short_option(argv[idx]))
          return idx;
@@ -60,10 +62,10 @@ static int find_short_index(char * const *argv)
    return -1;
 }
 
-static int find_long_index(char * const *argv)
+static int find_long_index(char * const *argv, int count)
 {
    int idx;
-   for (idx = 0; argv[idx]; idx++)
+   for (idx = 0; idx < count && argv[idx]; idx++)
    {
       if (is_long_option(argv[idx]))
          return idx;
@@ -72,7 +74,7 @@ static int find_long_index(char * const *argv)
    return -1;
 }
 
-static int parse_short(const char *optstring, char * const *argv)
+static int parse_short(const char *optstring, char * const *argv, int count)
 {
    bool extra_opt, takes_arg, embedded_arg;
    const char *opt = NULL;
@@ -101,7 +103,7 @@ static int parse_short(const char *optstring, char * const *argv)
       }
       else
       {
-         optarg = argv[1];
+         optarg = count > 1 ? argv[1] : NULL;
          optind += 2;
       }
 
@@ -119,7 +121,7 @@ static int parse_short(const char *optstring, char * const *argv)
    return opt[0];
 }
 
-static int parse_long(const struct option *longopts, char * const *argv)
+static int parse_long(const struct option *longopts, char * const *argv, int count)
 {
    const char *arg = &argv[0][2];
    const char *eq  = strchr(arg, '=');
@@ -148,7 +150,7 @@ static int parse_long(const struct option *longopts, char * const *argv)
             optarg = (char *)(eq + 1);
             optind++;
          }
-         else if (argv[1])
+         else if (count > 1 && argv[1])
          {
             optarg = argv[1];
             optind += 2;
@@ -193,8 +195,11 @@ int getopt_long(int argc, char *argv[],
    if (argc < 2)
       return -1;
 
-   short_index = find_short_index(&argv[optind]);
-   long_index  = find_long_index(&argv[optind]);
+   if (optind >= argc)
+      return -1;
+
+   short_index = find_short_index(&argv[optind], argc - optind);
+   long_index  = find_long_index(&argv[optind], argc - optind);
 
    /* We're done here. */
    if (short_index == -1 && long_index == -1)
@@ -215,9 +220,9 @@ int getopt_long(int argc, char *argv[],
    }
 
    if (short_index == 0)
-      return parse_short(optstring, &argv[optind]);
+      return parse_short(optstring, &argv[optind], argc - optind);
    if (long_index == 0)
-      return parse_long(longopts, &argv[optind]);
+      return parse_long(longopts, &argv[optind], argc - optind);
 
    return '?';
 }

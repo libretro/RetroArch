@@ -1,0 +1,1715 @@
+/*  RetroArch - A frontend for libretro.
+ *  Copyright (C) 2026 - The RetroArch team
+ *
+ *  RetroArch is free software: you can redistribute it and/or modify it under the terms
+ *  of the GNU General Public License as published by the Free Software Found-
+ *  ation, either version 3 of the License, or (at your option) any later version.
+ *
+ *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ *  PURPOSE.  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along with RetroArch.
+ *  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <stdlib.h>
+#include <string.h>
+
+#include <boolean.h>
+#include <compat/posix_string.h>
+#include <compat/strl.h>
+#include <string/stdstring.h>
+#include <formats/image.h>
+#include <streams/file_stream.h>
+#include <time.h>          /* struct timespec, for retro_timers.h */
+#include <retro_timers.h>
+
+#include "../../gfx/gfx_anim_preview.h"
+#include <features/features_cpu.h>
+#include <retro_atomic.h>
+#include <retro_miscellaneous.h>
+#include <retro_inline.h>
+
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
+#include <queues/retro_triple_buffer.h>
+#endif
+
+#include "companion_thumbs.h"
+
+/* --- cache entry ------------------------------------------------------- */
+
+struct ct_entry
+{
+   char *path;
+   uint32_t *bits;        /* NULL while queued / decoding */
+   unsigned dims;
+   size_t bytes;
+   /* LRU list of cached entries (bits != NULL); most recent at head. */
+   struct ct_entry *lru_prev, *lru_next;
+   /* hash chain */
+   struct ct_entry *chain;
+   bool queued;           /* in a request queue or being decoded */
+   /* Jobs (queued, decoding, or finished but not yet polled) that point
+    * at this entry. An entry is only ever freed at zero: two records
+    * for one key exist when a key is re-requested while its earlier
+    * decode is still in flight across a cancel(), or when a failed
+    * decode's record is polled with another still pending. */
+   unsigned refs;
+};
+
+/* --- request / result queues ------------------------------------------- */
+
+struct ct_job
+{
+   struct ct_entry *e;
+   uintptr_t tag;
+   uint32_t bg;
+   unsigned epoch;
+};
+
+struct ct_done
+{
+   struct ct_entry *e;
+   uintptr_t tag;
+   uint32_t *bits;        /* NULL: decode failed (or aborted) */
+   unsigned epoch;
+   bool aborted;          /* abandoned: not delivered, entry dropped */
+};
+
+#ifdef HAVE_THREADS
+/* One animation frame, scaled: a slot of the triple buffer the
+ * animation thread hands frames to poll() through. */
+struct ct_anim_frame
+{
+   uint32_t *bits;
+   unsigned dims;
+   unsigned gen;          /* the animation it belongs to */
+   uintptr_t tag;
+   char path[PATH_MAX_LENGTH];
+};
+#endif
+
+/* A ring with both ends usable: urgent jobs are pushed to and popped
+ * from the top (LIFO, most-recent-first); prefetch jobs are pushed to
+ * the bottom and popped from the top only once the urgent ones are
+ * gone, i.e. after them, oldest-first among themselves. */
+struct ct_ring
+{
+   struct ct_job *v;
+   size_t cap, head, len;  /* head = index of the bottom (oldest) */
+};
+
+struct companion_thumbs
+{
+   /* hash table of entries (both cached and queued), UI-thread owned
+    * except that workers read e->path and write e->bits via the done
+    * ring under the lock */
+   struct ct_entry **ht;
+   size_t ht_size, ht_count;
+
+   struct ct_entry *lru_head, *lru_tail;
+   size_t cached_bytes, cached_count, budget;
+
+   struct ct_ring urgent, prefetch;
+   size_t inflight;       /* jobs a worker holds right now */
+   unsigned epoch;        /* bumped by cancel(): an in-flight job from an
+                           * older epoch no longer holds its entry's
+                           * queued flag, so the key can be re-requested;
+                           * a second decode of the same key is deduped
+                           * at delivery */
+
+   struct ct_done *done;
+   size_t done_cap, done_len;
+
+   /* The one animation: what the UI thread last asked for. Written by
+    * companion_thumbs_animate() / _stop() and read by the animation
+    * thread when it takes the request up, both under the lock. gen
+    * changes on every animate() / stop(). */
+   struct
+   {
+      char *path;
+      unsigned dims;
+      uintptr_t tag;
+      uint32_t bg;
+      unsigned gen;           /* the animation that should be playing */
+      bool wanted;            /* an animate() is pending or playing */
+   } anim;
+
+#ifdef HAVE_THREADS
+   /* The job queue: the rings, the done list, the entries' queued and
+    * refs, and the parked session below. Held for a push, a pop or a
+    * scan, never across a decode or a wait. Nothing per frame takes
+    * it, and a poll() with nothing finished does not either. */
+   slock_t *lock;
+   sthread_t *workers[4];
+   unsigned nworkers;
+
+   /* Workers wait here for a job; the animation thread for a request,
+    * a still to land or the end of a frame's hold. */
+   retro_eventcount_t work_ec;
+   retro_eventcount_t anim_ec;
+   bool ecs_inited;
+
+   /* Read without the lock: by a decode's abort check between steps,
+    * by the animation thread every frame, by poll() and by the
+    * pending / animating queries. Each is stored where its locked
+    * counterpart changes. */
+   retro_atomic_int_t quit;
+   retro_atomic_int_t epoch_now;     /* epoch */
+   retro_atomic_int_t jobs_queued;   /* jobs in the rings */
+   retro_atomic_int_t pending_n;     /* queued + inflight + done_len */
+   retro_atomic_int_t done_n;        /* done_len */
+   retro_atomic_int_t anim_gen_now;  /* anim.gen */
+   retro_atomic_int_t anim_wanted;   /* anim.wanted */
+   retro_atomic_int_t anim_asked;    /* an animate() has ever been made */
+
+   sthread_t *anim_thread;
+
+   /* Frames from the animation thread to poll(), newest wins. */
+   struct ct_anim_frame anim_frames[3];
+   retro_triple_buffer_t anim_tb;
+
+   /* The open preview session, while the animation thread plays it:
+    * poll() starts and feeds its audio, animate() and _stop() silence
+    * it. A UI-thread user holds it with ct_sess_acquire(); the
+    * animation thread takes it away with ct_sess_retire(), which waits
+    * out any holder, before it closes it. anim_audio_gen: the
+    * animation whose audio was started (UI thread only). */
+   retro_atomic_ptr_t anim_sess;
+   retro_atomic_int_t anim_sess_gen;
+   retro_atomic_int_t anim_sess_users;
+   unsigned anim_audio_gen;
+
+   /* One hover on a video is a request() for its still and an
+    * animate() for the same path, back to back, on every backend.
+    * The still is the first frame through a preview session; the
+    * animation used to open a second session and decode that same
+    * frame again, concurrently - two windows, two decoders (a 4K
+    * H.264 DPB each), two I-frame decodes for one picture.  Instead
+    * the worker that decoded the still PARKS its session here when
+    * the animation wants that path, and the animation thread takes it
+    * and carries on from the second frame; while the still is queued
+    * or in flight the animation thread waits for it rather than
+    * racing it.  Lock held for every field.  video_inflight: e->path
+    * of a video still each worker is decoding right now (the entry is
+    * held by the job until the result is parked). */
+   struct
+   {
+      gfx_anim_preview_t *sess;
+      char *path;
+   } parked;
+   const char *video_inflight[4];
+   bool anim_opening;      /* the animation thread is between taking a
+                              request and holding a session for it */
+#endif
+};
+
+#ifdef HAVE_THREADS
+#define CT_LOCK(t)   slock_lock((t)->lock)
+#define CT_UNLOCK(t) slock_unlock((t)->lock)
+#else
+#define CT_LOCK(t)   ((void)0)
+#define CT_UNLOCK(t) ((void)0)
+#endif
+
+/* Jobs in the rings. Lock held. */
+static size_t ct_queued(const companion_thumbs_t *t)
+{
+   return t->urgent.len + t->prefetch.len;
+}
+
+#ifdef HAVE_THREADS
+/* The counters read without the lock follow the rings, the in-flight
+ * count and the done list. Lock held, after any of them changes. */
+static void ct_counts_sync(companion_thumbs_t *t)
+{
+   size_t q = ct_queued(t);
+   retro_atomic_store_release_int(&t->jobs_queued, (int)q);
+   retro_atomic_store_release_int(&t->done_n, (int)t->done_len);
+   retro_atomic_store_release_int(&t->pending_n,
+         (int)(q + t->inflight + t->done_len));
+}
+
+static bool ct_quitting(companion_thumbs_t *t)
+{
+   return retro_atomic_load_acquire_int(&t->quit) != 0;
+}
+
+/* The preview session, held for a UI-thread call into it: NULL, held
+ * nothing, when none is playing. */
+static gfx_anim_preview_t *ct_sess_acquire(companion_thumbs_t *t)
+{
+   gfx_anim_preview_t *sess;
+   (void)retro_atomic_fetch_add_seq_cst_int(&t->anim_sess_users, 1);
+   retro_atomic_thread_fence_seq_cst();
+   if (!(sess = (gfx_anim_preview_t*)
+            retro_atomic_load_acquire_ptr(&t->anim_sess)))
+   {
+      if (retro_atomic_fetch_sub_int(&t->anim_sess_users, 1) == 1)
+         retro_eventcount_notify(&t->anim_ec);
+   }
+   return sess;
+}
+
+static void ct_sess_release(companion_thumbs_t *t)
+{
+   if (retro_atomic_fetch_sub_int(&t->anim_sess_users, 1) == 1)
+      retro_eventcount_notify(&t->anim_ec);
+}
+
+/* Animation thread: the session is no longer published; returns once
+ * no UI-thread call is inside it. */
+static void ct_sess_retire(companion_thumbs_t *t)
+{
+   (void)retro_atomic_exchange_ptr(&t->anim_sess, NULL);
+   retro_atomic_thread_fence_seq_cst();
+   for (;;)
+   {
+      int key;
+      if (!retro_atomic_load_seq_cst_int(&t->anim_sess_users))
+         return;
+      key = retro_eventcount_prepare_wait(&t->anim_ec);
+      if (!retro_atomic_load_seq_cst_int(&t->anim_sess_users))
+      {
+         retro_eventcount_cancel_wait(&t->anim_ec);
+         return;
+      }
+      retro_eventcount_commit_wait(&t->anim_ec, key);
+   }
+}
+#else
+#define ct_counts_sync(t) ((void)0)
+#endif
+
+/* --- scaling (pure) ---------------------------------------------------- */
+
+/* R,G,B,A memory order -> ARGB word. */
+#define CT_RGBA_TO_ARGB(p) \
+   (((p) & 0x0000FF00u) | (((p) & 0xFFu) << 16) | (((p) >> 16) & 0xFFu) | ((p) & 0xFF000000u))
+
+/* Composite one source pixel over @bg (opaque result). A @bg with a
+ * zero alpha byte means "keep transparency": the source pixel is
+ * returned as-is, straight alpha and all, and the letterbox is filled
+ * with @bg (transparent), so the backend's own window / cell background
+ * shows through. */
+static INLINE uint32_t ct_over(uint32_t p, uint32_t bg)
+{
+   unsigned a = (p >> 24) & 0xff;
+   if (!(bg & 0xff000000u))
+      return p;
+   if (a == 0xff)
+      return p | 0xff000000u;
+   {
+      unsigned ia = 255 - a;
+      unsigned r  = (((p >> 16) & 0xff) * a + ((bg >> 16) & 0xff) * ia) / 255;
+      unsigned g  = (((p >>  8) & 0xff) * a + ((bg >>  8) & 0xff) * ia) / 255;
+      unsigned b  = (( p        & 0xff) * a + ( bg        & 0xff) * ia) / 255;
+      return 0xff000000u | (r << 16) | (g << 8) | b;
+   }
+}
+
+/* Per-channel blend of two pixels, @f/256 of @b, rounded. */
+static INLINE uint32_t ct_lerp(uint32_t a, uint32_t b, unsigned f)
+{
+   uint32_t rb = (a & 0x00ff00ffu) * (256 - f) + (b & 0x00ff00ffu) * f;
+   uint32_t ag = ((a >> 8) & 0x00ff00ffu) * (256 - f) + ((b >> 8) & 0x00ff00ffu) * f;
+   return (((rb + 0x00800080u) >> 8) & 0x00ff00ffu)
+        | ((ag + 0x00800080u) & 0xff00ff00u);
+}
+
+/* Straight -> premultiplied alpha (alpha is the top byte in both the
+ * ARGB word and the R,G,B,A memory order, so this is order-agnostic). */
+static INLINE uint32_t ct_premul(uint32_t p)
+{
+   unsigned a = p >> 24;
+   if (a == 0xff)
+      return p;
+   if (a == 0)
+      return 0;
+   {
+      unsigned c0 = (((p >> 16) & 0xff) * a + 127) / 255;
+      unsigned c1 = (((p >>  8) & 0xff) * a + 127) / 255;
+      unsigned c2 = (( p        & 0xff) * a + 127) / 255;
+      return (a << 24) | (c0 << 16) | (c1 << 8) | c2;
+   }
+}
+
+/* Premultiplied -> straight alpha. */
+static INLINE uint32_t ct_unpremul(uint32_t p)
+{
+   unsigned a = p >> 24;
+   if (a == 0xff)
+      return p;
+   if (a == 0)
+      return 0;
+   {
+      unsigned c0 = (((p >> 16) & 0xff) * 255 + a / 2) / a;
+      unsigned c1 = (((p >>  8) & 0xff) * 255 + a / 2) / a;
+      unsigned c2 = (( p        & 0xff) * 255 + a / 2) / a;
+      if (c0 > 0xff) c0 = 0xff;
+      if (c1 > 0xff) c1 = 0xff;
+      if (c2 > 0xff) c2 = 0xff;
+      return (a << 24) | (c0 << 16) | (c1 << 8) | c2;
+   }
+}
+
+/* Bilinear blend of four taps with alpha. Blending straight alpha lets
+ * the colour of a transparent pixel (often black) bleed into its opaque
+ * neighbour, a dark halo along every transparent edge; blend
+ * premultiplied instead. Rows known to be fully opaque skip this and
+ * lerp directly. */
+static uint32_t ct_bilerp_alpha(uint32_t p0, uint32_t p1,
+      uint32_t p2, uint32_t p3, unsigned fx, unsigned fy)
+{
+   return ct_unpremul(ct_lerp(
+            ct_lerp(ct_premul(p0), ct_premul(p1), fx),
+            ct_lerp(ct_premul(p2), ct_premul(p3), fx), fy));
+}
+
+/* One output row of the bilinear path: @fw pixels from rows @ra/@rb
+ * with the column taps in @col and row weight @fy. The alpha handling
+ * is picked once per row so the opaque loop stays tight. */
+static void ct_row_bilinear(uint32_t *row, const uint32_t *ra,
+      const uint32_t *rb, const unsigned *col, int fw, unsigned fy,
+      bool opaque, uint32_t bg, bool src_rgba_order)
+{
+   int x;
+   if (opaque)
+   {
+      for (x = 0; x < fw; x++)
+      {
+         const unsigned *c = col + x * 3;
+         uint32_t p = ct_lerp(ct_lerp(ra[c[0]], ra[c[1]], c[2]),
+               ct_lerp(rb[c[0]], rb[c[1]], c[2]), fy);
+         if (src_rgba_order)
+            p = CT_RGBA_TO_ARGB(p);
+         row[x] = ct_over(p, bg);
+      }
+   }
+   else
+   {
+      for (x = 0; x < fw; x++)
+      {
+         const unsigned *c = col + x * 3;
+         uint32_t p = ct_bilerp_alpha(ra[c[0]], ra[c[1]],
+               rb[c[0]], rb[c[1]], c[2], fy);
+         if (src_rgba_order)
+            p = CT_RGBA_TO_ARGB(p);
+         row[x] = ct_over(p, bg);
+      }
+   }
+}
+
+uint32_t *companion_thumbs_scale_ex(const uint32_t *src,
+      unsigned src_dims, unsigned dst_dims, uint32_t bg,
+      bool src_rgba_order)
+{
+   uint32_t *buf;
+   int fw, fh, ox, oy, x, y;
+   bool taps4;
+   bool opaque = false;
+   /* Bilinear column taps (xa, xb, fx per output column), built once:
+    * they depend only on x, and a 64-bit divide per output pixel was
+    * the bulk of the scale time. */
+   unsigned *col = NULL;
+   unsigned sw = VIDEO_SCALE_W(src_dims);
+   unsigned sh = VIDEO_SCALE_H(src_dims);
+   int dw      = (int)VIDEO_SCALE_W(dst_dims);
+   int dh      = (int)VIDEO_SCALE_H(dst_dims);
+
+   if (!src || !sw || !sh || !dw || !dh)
+      return NULL;
+   buf = (uint32_t*)malloc((size_t)dw * dh * sizeof(uint32_t));
+   if (!buf)
+      return NULL;
+
+   /* Fit: the relatively larger dimension fills the box. */
+   if ((uint64_t)sw * (unsigned)dh >= (uint64_t)sh * (unsigned)dw)
+   {
+      fw = dw;
+      fh = (int)((uint64_t)dw * sh / sw);
+   }
+   else
+   {
+      fh = dh;
+      fw = (int)((uint64_t)dh * sw / sh);
+   }
+   if (fw < 1) fw = 1;
+   if (fh < 1) fh = 1;
+   ox = (dw - fw) / 2;
+   oy = (dh - fh) / 2;
+   /* Four taps when every output pixel covers at least a 2 x 2 source
+    * cell; bilinear when enlarging or nearly 1:1. */
+   taps4 = (sw >= 2u * (unsigned)fw) && (sh >= 2u * (unsigned)fh);
+   if (!taps4)
+   {
+      int i;
+      col = (unsigned*)malloc((size_t)fw * 3 * sizeof(unsigned));
+      if (!col)
+      {
+         free(buf);
+         return NULL;
+      }
+      for (i = 0; i < fw; i++)
+      {
+         /* This column's centre in the source, in 1/256 px. */
+         uint64_t px = (uint64_t)(2 * i + 1) * sw * 128 / fw;
+         unsigned xa;
+         px = (px > 128) ? px - 128 : 0;
+         xa = (unsigned)(px >> 8);
+         col[i * 3 + 0] = xa;
+         col[i * 3 + 1] = (xa + 1 < sw) ? xa + 1 : xa;
+         col[i * 3 + 2] = (unsigned)px & 0xff;
+      }
+      /* Whole source opaque (the usual case): one AND-reduce over it
+       * lets the per-pixel blend skip the alpha handling entirely. */
+      {
+         uint32_t all = 0xffffffffu;
+         size_t n = (size_t)sw * sh, k;
+         for (k = 0; k < n; k++)
+            all &= src[k];
+         opaque = (all >> 24) == 0xff;
+      }
+   }
+
+   for (y = 0; y < dh; y++)
+   {
+      uint32_t *row = buf + (size_t)y * dw;
+      if (y < oy || y >= oy + fh)
+      {
+         for (x = 0; x < dw; x++)
+            row[x] = bg;
+         continue;
+      }
+      {
+         int      sy   = y - oy;
+         unsigned y0   = (unsigned)((uint64_t)sy * sh / fh);
+         unsigned y1   = (unsigned)((uint64_t)(sy + 1) * sh / fh);
+         unsigned fy   = 0;
+         const uint32_t *ra, *rb;
+         if (y1 <= y0) y1 = y0 + 1;
+         if (y1 > sh)  y1 = sh;
+         /* Taps at a third in from each edge of the cell: for a 4-px
+          * cell rows 1 and 2, for 2 px rows 0 and 1 - always two
+          * distinct rows of different parity, so a 1-px checkerboard
+          * (the worst case for aliasing) really averages. */
+         ra = src + (size_t)(y0 + (y1 - y0 - 1) / 3) * sw;
+         rb = src + (size_t)(y1 - 1 - (y1 - y0 - 1) / 3) * sw;
+         if (!taps4)
+         {
+            /* Bilinear: this row's centre in the source, in 1/256 px. */
+            uint64_t py = (uint64_t)(2 * sy + 1) * sh * 128 / fh;
+            py = (py > 128) ? py - 128 : 0;
+            y0 = (unsigned)(py >> 8);
+            fy = (unsigned)py & 0xff;
+            ra = src + (size_t)y0 * sw;
+            rb = (y0 + 1 < sh) ? ra + sw : ra;
+            for (x = 0; x < ox; x++)
+               row[x] = bg;
+            ct_row_bilinear(row + ox, ra, rb, col, fw, fy, opaque, bg,
+                  src_rgba_order);
+            for (x = ox + fw; x < dw; x++)
+               row[x] = bg;
+            continue;
+         }
+         for (x = 0; x < dw; x++)
+         {
+            if (x < ox || x >= ox + fw)
+               row[x] = bg;
+            else
+            {
+               {
+                  int      sx = x - ox;
+                  unsigned x0 = (unsigned)((uint64_t)sx * sw / fw);
+                  unsigned x1 = (unsigned)((uint64_t)(sx + 1) * sw / fw);
+                  unsigned xa, xb;
+                  uint32_t p0, p1, p2, p3, r, g, b, al;
+                  if (x1 <= x0) x1 = x0 + 1;
+                  if (x1 > sw)  x1 = sw;
+                  xa = x0 + (x1 - x0 - 1) / 3;
+                  xb = x1 - 1 - (x1 - x0 - 1) / 3;
+                  p0 = ra[xa]; p1 = ra[xb]; p2 = rb[xa]; p3 = rb[xb];
+                  if (src_rgba_order)
+                  {
+                     p0 = CT_RGBA_TO_ARGB(p0); p1 = CT_RGBA_TO_ARGB(p1);
+                     p2 = CT_RGBA_TO_ARGB(p2); p3 = CT_RGBA_TO_ARGB(p3);
+                  }
+                  /* average the four (including alpha), then composite */
+                  r  = (((p0 >> 16) & 0xff) + ((p1 >> 16) & 0xff) + ((p2 >> 16) & 0xff) + ((p3 >> 16) & 0xff)) >> 2;
+                  g  = (((p0 >>  8) & 0xff) + ((p1 >>  8) & 0xff) + ((p2 >>  8) & 0xff) + ((p3 >>  8) & 0xff)) >> 2;
+                  b  = (( p0        & 0xff) + ( p1        & 0xff) + ( p2        & 0xff) + ( p3        & 0xff)) >> 2;
+                  al = (((p0 >> 24) & 0xff) + ((p1 >> 24) & 0xff) + ((p2 >> 24) & 0xff) + ((p3 >> 24) & 0xff)) >> 2;
+                  row[x] = ct_over((al << 24) | (r << 16) | (g << 8) | b, bg);
+               }
+            }
+         }
+      }
+   }
+   free(col);
+   return buf;
+}
+
+uint32_t *companion_thumbs_scale(const uint32_t *src,
+      unsigned src_dims, unsigned dst_dims, uint32_t bg)
+{
+   return companion_thumbs_scale_ex(src, src_dims, dst_dims, bg, false);
+}
+
+#ifdef HAVE_THREADS
+/* Does @path take the anim-first route - its still being the first
+ * frame of a preview session that the animation then continues?  A
+ * video always; a WEBP or PNG when its head says it animates (32
+ * bytes / 4 KiB read); anything else never. Only the decode threads
+ * ask: poll() decodes stills alone. */
+static int ct_anim_first(const char *path)
+{
+   enum image_type_enum type = image_texture_get_type(path);
+   if (type == IMAGE_TYPE_WEBM || type == IMAGE_TYPE_MP4)
+      return 1;
+   if (type == IMAGE_TYPE_WEBP || type == IMAGE_TYPE_PNG)
+      return gfx_anim_preview_probe(path) == 1;
+   return 0;
+}
+#endif
+
+/* A video's still is its first frame, taken through the same windowed
+ * open the menu uses: image_texture_load would read the whole file
+ * (a two-hour recording) to show one frame; this reads the head. */
+static uint32_t *ct_decode_video_still(companion_thumbs_t *t,
+      const char *path, unsigned dims, uint32_t bg)
+{
+   gfx_anim_preview_t *sess = gfx_anim_preview_open(path, -1);
+   const uint32_t *frame;
+   uint32_t *bits = NULL;
+   bool native_argb = false;
+   int dur = 0;
+   if (!sess)
+      return NULL;
+   if (!gfx_anim_preview_feed(sess)
+         || !(frame = gfx_anim_preview_next(sess, &dur, &native_argb))
+         || !sess->dims)
+   {
+      gfx_anim_preview_close(sess);
+      return NULL;
+   }
+   bits = companion_thumbs_scale_ex(frame, sess->dims, dims, bg,
+         !native_argb);
+#ifdef HAVE_THREADS
+   /* The animation for this path continues from this session (its
+    * next frame is the second one) instead of opening its own and
+    * decoding this frame again.  Only when it is wanted: a session
+    * nobody takes would sit on its window until the next park. */
+   if (t && t->lock)
+   {
+      bool parked = false;
+      slock_lock(t->lock);
+      if (   !ct_quitting(t)
+          && t->anim.path && !strcmp(t->anim.path, path)
+          && (t->anim.wanted || t->anim_opening))
+      {
+         if (t->parked.sess)
+            gfx_anim_preview_close(t->parked.sess);
+         free(t->parked.path);
+         t->parked.sess = sess;
+         t->parked.path = strldup(path, strlen(path) + 1);
+         sess           = NULL;
+         parked         = true;
+      }
+      slock_unlock(t->lock);
+      if (parked)
+         retro_eventcount_notify(&t->anim_ec);
+   }
+#else
+   (void)t;
+#endif
+   if (sess)
+      gfx_anim_preview_close(sess);
+   return bits;
+}
+
+/* Decode @path and scale to @dims. Runs on a worker; @should_abort
+ * (may be NULL) is asked between decode steps so a giant image can be
+ * abandoned at shutdown or once nobody wants it. */
+static uint32_t *ct_decode(companion_thumbs_t *t, const char *path,
+      unsigned dims, uint32_t bg, bool (*should_abort)(void *ud), void *ud,
+      int anim_first)
+{
+   struct texture_image img;
+   uint32_t *bits = NULL;
+   /* A video, an animated WEBP or an APNG (anim_first, decided by
+    * ct_anim_first): the still is the first frame through the windowed
+    * session, and the session is then handed to the animation.
+    * image_texture_load would read and parse the whole file for that
+    * one frame - 600 ms and 40 MB for a 40 MB animated WEBP, against
+    * 16 ms through the session.  A still PNG / WEBP decodes as before;
+    * so does an animated one the session would not admit. */
+   if (anim_first)
+   {
+      uint32_t *b = ct_decode_video_still(t, path, dims, bg);
+      if (b)
+         return b;
+   }
+   memset(&img, 0, sizeof(img));
+   if (image_texture_load_ex(&img, path, should_abort, ud))
+   {
+      if (img.pixels && VIDEO_SCALE_FITS(img.width, img.height))
+         bits = companion_thumbs_scale(img.pixels,
+               VIDEO_SCALE_PACK(img.width, img.height), dims, bg);
+      image_texture_free(&img);
+   }
+   return bits;
+}
+
+/* --- hash table ---------------------------------------------------------- */
+
+static size_t ct_hash(const char *path, unsigned dims)
+{
+   size_t k = 2166136261u;
+   while (*path)
+      k = (k ^ (unsigned char)*path++) * 16777619u;
+   k = (k ^ dims) * 16777619u;
+   return k;
+}
+
+static struct ct_entry *ct_find(companion_thumbs_t *t, const char *path,
+      unsigned dims)
+{
+   struct ct_entry *e;
+   if (!t->ht)
+      return NULL;
+   for (e = t->ht[ct_hash(path, dims) & (t->ht_size - 1)]; e; e = e->chain)
+      if (e->dims == dims && string_is_equal(e->path, path))
+         return e;
+   return NULL;
+}
+
+static bool ct_grow(companion_thumbs_t *t)
+{
+   size_t ns = t->ht_size ? t->ht_size * 2 : 1024, i;
+   struct ct_entry **nh = (struct ct_entry**)calloc(ns, sizeof(*nh));
+   if (!nh)
+      return false;
+   for (i = 0; i < t->ht_size; i++)
+   {
+      struct ct_entry *e = t->ht[i];
+      while (e)
+      {
+         struct ct_entry *next = e->chain;
+         size_t k = ct_hash(e->path, e->dims) & (ns - 1);
+         e->chain = nh[k];
+         nh[k]    = e;
+         e        = next;
+      }
+   }
+   free(t->ht);
+   t->ht      = nh;
+   t->ht_size = ns;
+   return true;
+}
+
+static struct ct_entry *ct_insert(companion_thumbs_t *t, const char *path,
+      unsigned dims)
+{
+   struct ct_entry *e;
+   size_t k;
+   if (t->ht_count * 2 >= t->ht_size && !ct_grow(t))
+      return NULL;
+   e = (struct ct_entry*)calloc(1, sizeof(*e));
+   if (!e)
+      return NULL;
+   /* strldup(s, n) copies n - 1 characters (a buffer size, strlcpy
+    * style): pass the length plus one. Declared for any -std, unlike
+    * strdup under -ansi, where the implicit int would truncate the
+    * pointer on 64-bit. */
+   e->path = strldup(path, strlen(path) + 1);
+   if (!e->path)
+   {
+      free(e);
+      return NULL;
+   }
+   e->dims  = dims;
+   k        = ct_hash(path, dims) & (t->ht_size - 1);
+   e->chain = t->ht[k];
+   t->ht[k] = e;
+   t->ht_count++;
+   return e;
+}
+
+static void ct_unlink_ht(companion_thumbs_t *t, struct ct_entry *e)
+{
+   struct ct_entry **pp = &t->ht[ct_hash(e->path, e->dims) & (t->ht_size - 1)];
+   while (*pp && *pp != e)
+      pp = &(*pp)->chain;
+   if (*pp)
+   {
+      *pp = e->chain;
+      t->ht_count--;
+   }
+}
+
+/* --- LRU ------------------------------------------------------------------ */
+
+static void ct_lru_remove(companion_thumbs_t *t, struct ct_entry *e)
+{
+   if (e->lru_prev) e->lru_prev->lru_next = e->lru_next;
+   else             t->lru_head           = e->lru_next;
+   if (e->lru_next) e->lru_next->lru_prev = e->lru_prev;
+   else             t->lru_tail           = e->lru_prev;
+   e->lru_prev = e->lru_next = NULL;
+}
+
+static void ct_lru_push_front(companion_thumbs_t *t, struct ct_entry *e)
+{
+   e->lru_prev = NULL;
+   e->lru_next = t->lru_head;
+   if (t->lru_head)
+      t->lru_head->lru_prev = e;
+   t->lru_head = e;
+   if (!t->lru_tail)
+      t->lru_tail = e;
+}
+
+static void ct_entry_free(companion_thumbs_t *t, struct ct_entry *e)
+{
+   ct_unlink_ht(t, e);
+   free(e->path);
+   free(e->bits);
+   free(e);
+}
+
+/* Drop least-recently-used cached entries until @need more bytes fit. */
+static void ct_evict(companion_thumbs_t *t, size_t need)
+{
+   while (t->lru_tail && t->cached_bytes + need > t->budget)
+   {
+      struct ct_entry *e = t->lru_tail;
+      ct_lru_remove(t, e);
+      t->cached_bytes -= e->bytes;
+      t->cached_count--;
+      ct_entry_free(t, e);
+   }
+}
+
+/* Cache decoded pixels on @e (takes ownership of @bits). */
+static void ct_cache_put(companion_thumbs_t *t, struct ct_entry *e,
+      uint32_t *bits)
+{
+   size_t bytes = (size_t)VIDEO_SCALE_W(e->dims)
+      * VIDEO_SCALE_H(e->dims) * sizeof(uint32_t);
+   ct_evict(t, bytes);
+   e->bits  = bits;
+   e->bytes = bytes;
+   t->cached_bytes += bytes;
+   t->cached_count++;
+   ct_lru_push_front(t, e);
+}
+
+/* --- rings ---------------------------------------------------------------- */
+
+static bool ct_ring_init(struct ct_ring *r, size_t cap)
+{
+   r->v    = (struct ct_job*)calloc(cap, sizeof(*r->v));
+   r->cap  = cap;
+   r->head = r->len = 0;
+   return r->v != NULL;
+}
+
+/* Push on top (newest). A full ring drops its oldest job. */
+static struct ct_job *ct_ring_push_top(struct ct_ring *r)
+{
+   size_t at;
+   if (r->len == r->cap)
+   {
+      r->v[r->head].e->queued = false; /* dropped: may be requested again */
+      if (r->v[r->head].e->refs)
+         r->v[r->head].e->refs--;
+      r->head = (r->head + 1) % r->cap;
+      r->len--;
+   }
+   at = (r->head + r->len) % r->cap;
+   r->len++;
+   return &r->v[at];
+}
+
+/* Push at the bottom (oldest end). A full ring drops the top (newest). */
+static struct ct_job *ct_ring_push_bottom(struct ct_ring *r)
+{
+   if (r->len == r->cap)
+   {
+      size_t top = (r->head + r->len - 1) % r->cap;
+      r->v[top].e->queued = false;
+      if (r->v[top].e->refs)
+         r->v[top].e->refs--;
+      r->len--;
+   }
+   r->head = (r->head + r->cap - 1) % r->cap;
+   r->len++;
+   return &r->v[r->head];
+}
+
+/* Pop from the top (newest). */
+static bool ct_ring_pop_top(struct ct_ring *r, struct ct_job *out)
+{
+   if (!r->len)
+      return false;
+   *out = r->v[(r->head + r->len - 1) % r->cap];
+   r->len--;
+   return true;
+}
+
+/* Pop from the bottom (oldest). */
+static bool ct_ring_pop_bottom(struct ct_ring *r, struct ct_job *out)
+{
+   if (!r->len)
+      return false;
+   *out    = r->v[r->head];
+   r->head = (r->head + 1) % r->cap;
+   r->len--;
+   return true;
+}
+
+/* Next job: urgent (newest first), then prefetch (oldest first). Lock
+ * held. */
+static bool ct_next_job(companion_thumbs_t *t, struct ct_job *out)
+{
+   if (ct_ring_pop_top(&t->urgent, out) || ct_ring_pop_bottom(&t->prefetch, out))
+   {
+      t->inflight++;
+      return true;
+   }
+   return false;
+}
+
+/* Park a result. Lock held. */
+static void ct_push_done(companion_thumbs_t *t, const struct ct_job *j,
+      uint32_t *bits)
+{
+   struct ct_done *d;
+   if (t->inflight)
+      t->inflight--;
+   if (t->done_len == t->done_cap)
+   {
+      /* Full: grow, or as a last resort drop the oldest (its entry is
+       * re-requestable). */
+      size_t nc = t->done_cap * 2;
+      struct ct_done *nd = (struct ct_done*)realloc(t->done, nc * sizeof(*nd));
+      if (!nd)
+      {
+         free(bits);
+         j->e->queued = false;
+         ct_counts_sync(t);
+         return;
+      }
+      t->done     = nd;
+      t->done_cap = nc;
+   }
+   d          = &t->done[t->done_len++];
+   d->e       = j->e;
+   d->tag     = j->tag;
+   d->bits    = bits;
+   d->epoch   = j->epoch;
+   d->aborted = false;
+   ct_counts_sync(t);
+}
+
+/* --- workers -------------------------------------------------------------- */
+
+#ifdef HAVE_THREADS
+/* Abort hook for a worker's decode: stop at shutdown, and once the
+ * job's epoch is stale (a cancel() happened since it was queued - the
+ * view moved on, so its result would be discarded anyway). */
+struct ct_abort_ctx { companion_thumbs_t *t; unsigned epoch; };
+
+static bool ct_should_abort(void *ud)
+{
+   struct ct_abort_ctx *a = (struct ct_abort_ctx*)ud;
+   return ct_quitting(a->t)
+      || (unsigned)retro_atomic_load_acquire_int(&a->t->epoch_now)
+         != a->epoch;
+}
+
+/* Publish that this worker is decoding a video still for @path; -1
+ * when @path is not a video (nothing for the animation to wait on) or
+ * no slot is free (then the animation thread opens its own, as before).
+ * Lock taken here. */
+/* Publish that this worker holds a job for @path, under the lock and
+ * in the same critical section that popped it: the animation thread
+ * decides "still pending or not" from the rings plus these slots, and
+ * a job that has left the ring but not yet reached its slot would
+ * read as absent - the animation then opened its own session and
+ * showed frame 0 twice (seen under TSan, where the gap is wide).
+ * Every job is published, not just the anim-first ones; the animation
+ * thread only ever waits on a path it decided animates. */
+static int ct_inflight_claim_locked(companion_thumbs_t *t, const char *path)
+{
+   int slot = -1, i;
+   for (i = 0; i < (int)(sizeof(t->video_inflight) / sizeof(t->video_inflight[0])); i++)
+      if (!t->video_inflight[i])
+      {
+         t->video_inflight[i] = path;
+         slot = i;
+         break;
+      }
+   return slot;
+}
+
+/* Is a still of @path (a video) queued or being decoded?  Lock held. */
+static bool ct_video_still_pending(companion_thumbs_t *t, const char *path)
+{
+   size_t k;
+   int i;
+   for (i = 0; i < (int)(sizeof(t->video_inflight) / sizeof(t->video_inflight[0])); i++)
+      if (t->video_inflight[i] && !strcmp(t->video_inflight[i], path))
+         return true;
+   for (k = 0; k < t->urgent.len; k++)
+      if (!strcmp(t->urgent.v[(t->urgent.head + k) % t->urgent.cap].e->path, path))
+         return true;
+   for (k = 0; k < t->prefetch.len; k++)
+      if (!strcmp(t->prefetch.v[(t->prefetch.head + k) % t->prefetch.cap].e->path, path))
+         return true;
+   return false;
+}
+
+static void ct_worker(void *ud)
+{
+   companion_thumbs_t *t = (companion_thumbs_t*)ud;
+   for (;;)
+   {
+      struct ct_job job;
+      struct ct_abort_ctx actx;
+      uint32_t *bits;
+      bool aborted, got;
+      int slot = -1, af;
+
+      slock_lock(t->lock);
+      if (ct_quitting(t))
+      {
+         slock_unlock(t->lock);
+         return;
+      }
+      if ((got = ct_next_job(t, &job)))
+      {
+         slot = ct_inflight_claim_locked(t, job.e->path);
+         ct_counts_sync(t);
+      }
+      slock_unlock(t->lock);
+
+      if (!got)
+      {
+         /* nothing queued: wait for a request or for free() */
+         int key = retro_eventcount_prepare_wait(&t->work_ec);
+         if (     ct_quitting(t)
+               || retro_atomic_load_acquire_int(&t->jobs_queued))
+            retro_eventcount_cancel_wait(&t->work_ec);
+         else
+            retro_eventcount_commit_wait(&t->work_ec, key);
+         continue;
+      }
+
+      actx.t     = t;
+      actx.epoch = job.epoch;
+      af         = ct_anim_first(job.e->path);
+      bits       = ct_decode(t, job.e->path, job.e->dims, job.bg,
+            ct_should_abort, &actx, af);
+
+      slock_lock(t->lock);
+      if (slot >= 0)
+         t->video_inflight[slot] = NULL;
+      aborted = !bits && (ct_quitting(t) || t->epoch != job.epoch);
+      ct_push_done(t, &job, bits);
+      if (aborted && t->done_len)
+         t->done[t->done_len - 1].aborted = true;
+      slock_unlock(t->lock);
+      /* A waiting animation thread re-checks: its still landed (parked
+       * or not), or the decode failed and it opens its own. */
+      if (slot >= 0)
+         retro_eventcount_notify(&t->anim_ec);
+   }
+}
+#endif
+
+/* --- animation ------------------------------------------------------------ */
+
+#ifdef HAVE_THREADS
+/* Whether the animation @gen plays on: not once another animate(), a
+ * stop or free() has come. */
+static bool ct_anim_stale(companion_thumbs_t *t, unsigned gen)
+{
+   return ct_quitting(t)
+      || (unsigned)retro_atomic_load_acquire_int(&t->anim_gen_now) != gen;
+}
+
+/* One animation at a time, played exactly the way RetroArch's File
+ * Browser plays its thumbnail: gfx_anim_preview opens the file as a
+ * sliding window (frames start from the first resident bytes; a tail-
+ * moov MP4 opens from a few MiB; memory admission scales with the
+ * heap), feeds the window ahead of the decoder each frame, and hands
+ * back frames on the container's clock. This thread scales each frame
+ * into the triple buffer's back slot, publishes it, and holds it for
+ * its duration - until superseded or quit. The session is published
+ * (t->anim_sess) so the UI thread can start and feed the preview audio
+ * through the mixer on its own ticks. */
+static void ct_anim_thread(void *ud)
+{
+   companion_thumbs_t *t = (companion_thumbs_t*)ud;
+   for (;;)
+   {
+      char path[PATH_MAX_LENGTH];
+      unsigned dims;
+      uintptr_t tag;
+      uint32_t bg;
+      unsigned gen;
+      gfx_anim_preview_t *sess;
+      int loops_left;
+      retro_time_t next_at;
+
+      /* a request */
+      for (;;)
+      {
+         int key;
+         if (ct_quitting(t) || retro_atomic_load_acquire_int(&t->anim_wanted))
+            break;
+         key = retro_eventcount_prepare_wait(&t->anim_ec);
+         if (ct_quitting(t) || retro_atomic_load_acquire_int(&t->anim_wanted))
+         {
+            retro_eventcount_cancel_wait(&t->anim_ec);
+            break;
+         }
+         retro_eventcount_commit_wait(&t->anim_ec, key);
+      }
+      if (ct_quitting(t))
+         return;
+
+      slock_lock(t->lock);
+      strlcpy(path, t->anim.path ? t->anim.path : "", sizeof(path));
+      dims = t->anim.dims;
+      tag  = t->anim.tag;
+      bg   = t->anim.bg;
+      gen  = t->anim.gen;
+      t->anim.wanted = false;
+      retro_atomic_store_release_int(&t->anim_wanted, 0);
+      sess           = NULL;
+      if (path[0])
+      {
+         /* A video's still is on its way through a worker (or already
+          * parked): take that session rather than open a second one
+          * and decode the same first frame in parallel with it.  Wait
+          * only while the still is genuinely queued or in flight; a
+          * failed or aborted decode parks nothing and the wait ends
+          * with the job. */
+         t->anim_opening = true;
+         if (ct_anim_first(path))
+         {
+            for (;;)
+            {
+               int key;
+               if (t->parked.sess && t->parked.path
+                     && !strcmp(t->parked.path, path))
+               {
+                  sess = t->parked.sess;
+                  free(t->parked.path);
+                  t->parked.sess = NULL;
+                  t->parked.path = NULL;
+                  break;
+               }
+               if (ct_quitting(t) || t->anim.gen != gen
+                     || !ct_video_still_pending(t, path))
+                  break;
+               /* the wait opens before the lock goes: a worker that
+                * parks or finishes after this notifies after */
+               key = retro_eventcount_prepare_wait(&t->anim_ec);
+               slock_unlock(t->lock);
+               retro_eventcount_commit_wait_timeout(&t->anim_ec, key, 100000);
+               slock_lock(t->lock);
+            }
+         }
+      }
+      slock_unlock(t->lock);
+
+      if (!path[0])
+      {
+         slock_lock(t->lock);
+         t->anim_opening = false;
+         slock_unlock(t->lock);
+         continue;
+      }
+      /* -1: no still-decode verdict to offer; the module probes the
+       * PNG head itself. NULL: a still, or not admitted. */
+      if (!sess && !(sess = gfx_anim_preview_open(path, -1)))
+      {
+         slock_lock(t->lock);
+         t->anim_opening = false;
+         slock_unlock(t->lock);
+         continue;
+      }
+      loops_left = sess->loop_count; /* 0 = forever */
+      next_at    = cpu_features_get_time_usec();
+
+      slock_lock(t->lock);
+      t->anim_opening = false;
+      slock_unlock(t->lock);
+      if (ct_anim_stale(t, gen))
+      {
+         gfx_anim_preview_close(sess);
+         continue;
+      }
+      /* the UI thread may start the audio */
+      retro_atomic_store_release_int(&t->anim_sess_gen, (int)gen);
+      retro_atomic_store_release_ptr(&t->anim_sess, sess);
+
+      for (;;)
+      {
+         const uint32_t *frame;
+         int duration_ms = 0;
+         bool native_argb = false;
+         uint32_t *bits;
+         struct ct_anim_frame *fr;
+
+         if (ct_anim_stale(t, gen))
+            break;
+
+         /* keep the window straddling the decoder's frontier */
+         if (!gfx_anim_preview_feed(sess))
+            break;
+
+         frame = gfx_anim_preview_next(sess, &duration_ms, &native_argb);
+         if (!frame)
+         {
+            if (loops_left > 0 && --loops_left == 0)
+               break;
+            gfx_anim_preview_rewind(sess);
+            frame = gfx_anim_preview_next(sess, &duration_ms, &native_argb);
+            if (!frame)
+               break;
+         }
+         if (!sess->dims)
+            break;
+         /* The byte order is handled on the sampled pixels only: a
+          * whole-canvas swizzle was 12 ms a frame at 4K. */
+         bits = companion_thumbs_scale_ex(frame, sess->dims, dims, bg,
+               !native_argb);
+         if (!bits)
+            break;
+
+         /* The back slot is this thread's until it is published. */
+         fr = (struct ct_anim_frame*)retro_triple_buffer_back(&t->anim_tb);
+         free(fr->bits);
+         fr->bits = bits;
+         fr->dims = dims;
+         fr->gen  = gen;
+         fr->tag  = tag;
+         strlcpy(fr->path, path, sizeof(fr->path));
+         retro_triple_buffer_publish(&t->anim_tb);
+
+         /* Hold the frame for its duration, on a schedule rather than
+          * a sleep after each push, so decode and scale time does not
+          * stretch every frame. A new animation, a stop and free() all
+          * notify, which ends the hold at once. */
+         {
+            retro_time_t now = cpu_features_get_time_usec();
+            next_at += (retro_time_t)duration_ms * 1000;
+            if (next_at < now)
+               next_at = now;
+            while (now < next_at)
+            {
+               int key = retro_eventcount_prepare_wait(&t->anim_ec);
+               if (ct_anim_stale(t, gen))
+               {
+                  retro_eventcount_cancel_wait(&t->anim_ec);
+                  break;
+               }
+               retro_eventcount_commit_wait_timeout(&t->anim_ec, key,
+                     next_at - now);
+               now = cpu_features_get_time_usec();
+            }
+         }
+      }
+
+      /* Unpublish, and wait out a UI-thread call inside it, before
+       * closing. */
+      ct_sess_retire(t);
+      gfx_anim_preview_close(sess);   /* audio too */
+   }
+}
+
+/* Lock held. */
+static void ct_parked_drop(companion_thumbs_t *t)
+{
+   if (t->parked.sess)
+      gfx_anim_preview_close(t->parked.sess);
+   free(t->parked.path);
+   t->parked.sess = NULL;
+   t->parked.path = NULL;
+}
+
+/* Silence the session playing now, if any. UI thread. */
+static void ct_sess_audio_stop(companion_thumbs_t *t)
+{
+   gfx_anim_preview_t *sess = ct_sess_acquire(t);
+   if (sess)
+   {
+      gfx_anim_preview_audio_stop(sess);
+      ct_sess_release(t);
+   }
+}
+#endif
+
+void companion_thumbs_animate(companion_thumbs_t *t, const char *path,
+      unsigned dims, uintptr_t tag, uint32_t bg)
+{
+   if (     !t || string_is_empty(path)
+         || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
+      return;
+#ifdef HAVE_THREADS
+   if (!t->lock)
+      return;
+   ct_sess_audio_stop(t); /* the previous one, now */
+   slock_lock(t->lock);
+   /* A session parked for the previous path is nobody's now. */
+   if (t->parked.path && strcmp(t->parked.path, path))
+      ct_parked_drop(t);
+   free(t->anim.path);
+   t->anim.path   = strldup(path, strlen(path) + 1);
+   t->anim.dims   = dims;
+   t->anim.tag    = tag;
+   t->anim.bg     = bg;
+   t->anim.gen++;
+   t->anim.wanted = true;
+   retro_atomic_store_release_int(&t->anim_gen_now, (int)t->anim.gen);
+   retro_atomic_store_release_int(&t->anim_wanted, 1);
+   retro_atomic_store_release_int(&t->anim_asked, 1);
+   if (!t->anim_thread)
+      t->anim_thread = sthread_create(ct_anim_thread, t);
+   slock_unlock(t->lock);
+   retro_eventcount_notify(&t->anim_ec);
+#else
+   (void)path; (void)dims; (void)tag; (void)bg;
+#endif
+}
+
+void companion_thumbs_animate_stop(companion_thumbs_t *t)
+{
+   if (!t)
+      return;
+#ifdef HAVE_THREADS
+   if (!t->lock)
+      return;
+   slock_lock(t->lock);
+   t->anim.gen++;
+   t->anim.wanted = false;
+   retro_atomic_store_release_int(&t->anim_gen_now, (int)t->anim.gen);
+   retro_atomic_store_release_int(&t->anim_wanted, 0);
+   ct_parked_drop(t);
+   slock_unlock(t->lock);
+   /* Silence at once: the thread closes the session (and its audio)
+    * at its next frame, but the mixer stream should not play on until
+    * then. */
+   ct_sess_audio_stop(t);
+   /* Out of a frame's hold, or a wait for a still, at once. */
+   retro_eventcount_notify(&t->anim_ec);
+#endif
+}
+
+bool companion_thumbs_animating(companion_thumbs_t *t)
+{
+   if (!t)
+      return false;
+#ifdef HAVE_THREADS
+   if (!t->lock)
+      return false;
+   return retro_atomic_load_acquire_int(&t->anim_wanted)
+      || retro_atomic_load_acquire_ptr(&t->anim_sess) != NULL;
+#else
+   return false;
+#endif
+}
+
+/* --- API ------------------------------------------------------------------ */
+
+companion_thumbs_t *companion_thumbs_new(size_t budget_bytes, unsigned threads)
+{
+   companion_thumbs_t *t = (companion_thumbs_t*)calloc(1, sizeof(*t));
+   if (!t)
+      return NULL;
+   t->budget   = budget_bytes ? budget_bytes : (64u * 1024 * 1024);
+   t->done_cap = 256;
+   t->done     = (struct ct_done*)calloc(t->done_cap, sizeof(*t->done));
+   if (!t->done || !ct_grow(t)
+         || !ct_ring_init(&t->urgent, 1024) || !ct_ring_init(&t->prefetch, 1024))
+   {
+      companion_thumbs_free(t);
+      return NULL;
+   }
+#ifdef HAVE_THREADS
+   {
+      unsigned i, n = threads;
+      if (!n)
+      {
+         n = cpu_features_get_core_amount();
+         n = (n > 1) ? n - 1 : 1;
+      }
+      if (n > 4)
+         n = 4;
+      if (!retro_eventcount_init(&t->work_ec))
+      {
+         companion_thumbs_free(t);
+         return NULL;
+      }
+      if (!retro_eventcount_init(&t->anim_ec))
+      {
+         retro_eventcount_free(&t->work_ec);
+         companion_thumbs_free(t);
+         return NULL;
+      }
+      t->ecs_inited = true;
+      retro_triple_buffer_init(&t->anim_tb, &t->anim_frames[0],
+            &t->anim_frames[1], &t->anim_frames[2]);
+      t->lock = slock_new();
+      if (t->lock)
+         for (i = 0; i < n; i++)
+         {
+            t->workers[i] = sthread_create(ct_worker, t);
+            if (!t->workers[i])
+               break;
+            t->nworkers++;
+         }
+   }
+#else
+   (void)threads;
+#endif
+   return t;
+}
+
+void companion_thumbs_free(companion_thumbs_t *t)
+{
+   size_t i;
+   if (!t)
+      return;
+#ifdef HAVE_THREADS
+   if (t->ecs_inited)
+   {
+      retro_atomic_store_release_int(&t->quit, 1);
+      retro_eventcount_notify(&t->work_ec);
+      retro_eventcount_notify(&t->anim_ec);
+      for (i = 0; i < t->nworkers; i++)
+         sthread_join(t->workers[i]);
+      if (t->anim_thread)
+         sthread_join(t->anim_thread);
+      retro_eventcount_free(&t->anim_ec);
+      retro_eventcount_free(&t->work_ec);
+   }
+   if (t->lock)
+      slock_free(t->lock);
+   if (t->parked.sess)
+      gfx_anim_preview_close(t->parked.sess);
+   free(t->parked.path);
+   for (i = 0; i < 3; i++)
+      free(t->anim_frames[i].bits);
+#endif
+   free(t->anim.path);
+   for (i = 0; i < t->done_len; i++)
+      free(t->done[i].bits);
+   free(t->done);
+   free(t->urgent.v);
+   free(t->prefetch.v);
+   for (i = 0; i < t->ht_size; i++)
+   {
+      struct ct_entry *e = t->ht[i];
+      while (e)
+      {
+         struct ct_entry *next = e->chain;
+         free(e->path);
+         free(e->bits);
+         free(e);
+         e = next;
+      }
+   }
+   free(t->ht);
+   free(t);
+}
+
+const uint32_t *companion_thumbs_get(companion_thumbs_t *t, const char *path,
+      unsigned dims)
+{
+   struct ct_entry *e;
+   if (!t || string_is_empty(path))
+      return NULL;
+   e = ct_find(t, path, dims);
+   if (!e || !e->bits)
+      return NULL;
+   /* touch */
+   ct_lru_remove(t, e);
+   ct_lru_push_front(t, e);
+   return e->bits;
+}
+
+bool companion_thumbs_request(companion_thumbs_t *t, const char *path,
+      unsigned dims, uintptr_t tag, bool urgent, uint32_t bg)
+{
+   struct ct_entry *e;
+   struct ct_job *j;
+   if (     !t || string_is_empty(path)
+         || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
+      return false;
+
+   e = ct_find(t, path, dims);
+   if (e && (e->bits || e->queued))
+      return false;          /* cached or already on its way */
+   if (!e && !(e = ct_insert(t, path, dims)))
+      return false;
+
+   CT_LOCK(t);
+   e->queued = true;
+   e->refs++;
+   j      = urgent ? ct_ring_push_top(&t->urgent) : ct_ring_push_bottom(&t->prefetch);
+   j->e   = e;
+   j->tag = tag;
+   j->bg    = bg;
+   j->epoch = t->epoch;
+   ct_counts_sync(t);
+   CT_UNLOCK(t);
+#ifdef HAVE_THREADS
+   if (t->ecs_inited)
+      retro_eventcount_notify(&t->work_ec);
+#endif
+   return true;
+}
+
+void companion_thumbs_cancel(companion_thumbs_t *t)
+{
+   struct ct_job j;
+   if (!t)
+      return;
+   CT_LOCK(t);
+   while (ct_ring_pop_top(&t->urgent, &j))
+   {
+      j.e->queued = false;
+      if (j.e->refs)
+         j.e->refs--;
+   }
+   while (ct_ring_pop_bottom(&t->prefetch, &j))
+   {
+      j.e->queued = false;
+      if (j.e->refs)
+         j.e->refs--;
+   }
+   /* Jobs a worker already holds: release their entries' queued flag
+    * too (they are from the old epoch), so those keys can be requested
+    * again; when the old result lands it is cached or deduped. */
+   t->epoch++;
+#ifdef HAVE_THREADS
+   retro_atomic_store_release_int(&t->epoch_now, (int)t->epoch);
+#endif
+   ct_counts_sync(t);
+   {
+      size_t i;
+      for (i = 0; i < t->ht_size; i++)
+      {
+         struct ct_entry *e = t->ht[i];
+         for (; e; e = e->chain)
+            e->queued = false;
+      }
+   }
+   CT_UNLOCK(t);
+#ifdef HAVE_THREADS
+   /* The rings just emptied are what ct_video_still_pending() reads: an
+    * animation thread waiting for a still from them re-checks now. */
+   if (t->ecs_inited)
+      retro_eventcount_notify(&t->anim_ec);
+#endif
+}
+
+size_t companion_thumbs_poll(companion_thumbs_t *t,
+      companion_thumbs_done_cb cb, void *ud, size_t max, unsigned budget_us)
+{
+   struct ct_done batch[64];
+   size_t n, i, delivered = 0;
+   if (!t)
+      return 0;
+
+#ifdef HAVE_THREADS
+   if (t->ecs_inited)
+   {
+      struct ct_anim_frame *fr;
+      /* Preview audio lives on the UI thread (the mixer): start it once
+       * the animation thread has published its session, and feed its
+       * window every poll, as gfx_thumbnail_animate does per frame. */
+      gfx_anim_preview_t *sess = ct_sess_acquire(t);
+      if (sess)
+      {
+         unsigned gen = (unsigned)retro_atomic_load_acquire_int(
+               &t->anim_gen_now);
+         if ((unsigned)retro_atomic_load_acquire_int(&t->anim_sess_gen)
+               == gen)
+         {
+            if (t->anim_audio_gen != gen)
+            {
+               t->anim_audio_gen = gen;
+               gfx_anim_preview_audio_begin(sess);
+            }
+            gfx_anim_preview_audio_feed(sess);
+         }
+         ct_sess_release(t);
+      }
+
+      /* The newest animation frame, if it is the current animation's. */
+      if (     (fr = (struct ct_anim_frame*)
+               retro_triple_buffer_take(&t->anim_tb))
+            && fr->bits
+            && fr->gen == (unsigned)retro_atomic_load_acquire_int(
+               &t->anim_gen_now))
+      {
+         if (cb)
+            cb(ud, fr->path, fr->dims, fr->tag, fr->bits);
+         delivered++;
+      }
+
+      /* Nothing finished: no lock to take. */
+      if (!retro_atomic_load_acquire_int(&t->done_n))
+         return delivered;
+   }
+#endif
+
+#ifndef HAVE_THREADS
+   /* No workers: decode here, under the budget. */
+   {
+      retro_time_t end = cpu_features_get_time_usec() + budget_us;
+      struct ct_job job;
+      while (ct_queued(t) && cpu_features_get_time_usec() < end
+            && ct_next_job(t, &job))
+         ct_push_done(t, &job, ct_decode(t, job.e->path,
+               job.e->dims, job.bg, NULL, NULL, 0));
+   }
+#else
+   (void)budget_us;
+#endif
+
+   for (;;)
+   {
+      CT_LOCK(t);
+      n = t->done_len < 64 ? t->done_len : 64;
+      if (max && delivered + n > max)
+         n = max - delivered;
+      memcpy(batch, t->done, n * sizeof(*batch));
+      if (n < t->done_len)
+         memmove(t->done, t->done + n, (t->done_len - n) * sizeof(*t->done));
+      t->done_len -= n;
+      ct_counts_sync(t);
+      CT_UNLOCK(t);
+      if (!n)
+         break;
+
+      for (i = 0; i < n; i++)
+      {
+         struct ct_entry *e = batch[i].e;
+         if (e->refs)
+            e->refs--;             /* this record's reference */
+         if (batch[i].aborted)
+         {
+            /* Abandoned mid-decode: nothing to deliver; forget the
+             * entry unless something still points at it (a newer
+             * request, or another finished record of this key). */
+            if (!e->queued && !e->bits && !e->refs)
+               ct_entry_free(t, e);
+            continue;
+         }
+         if (batch[i].epoch == t->epoch)
+            e->queued = false; /* else a newer request owns the flag */
+         if (batch[i].bits)
+         {
+            /* Cached regardless of generation: the pixels are right for
+             * the key; only the delivery may be stale. */
+            if (e->bits)
+            {
+               free(batch[i].bits); /* decoded twice; keep the first */
+               batch[i].bits = e->bits;
+            }
+            else
+               ct_cache_put(t, e, batch[i].bits);
+         }
+         /* Always delivered: a decode that was in flight across a
+          * cancel() still lands, and the backend checks the tag against
+          * its own view state (its row generation). */
+         if (cb)
+            cb(ud, e->path, e->dims, batch[i].tag, batch[i].bits);
+         delivered++;
+         if (!batch[i].bits)
+         {
+            /* Undecodable: forget the entry so the file can be retried
+             * later (e.g. after a download) without a stale marker -
+             * once nothing else refers to it. */
+            if (!e->bits && !e->queued && !e->refs)
+               ct_entry_free(t, e);
+         }
+      }
+      if (max && delivered >= max)
+         break;
+   }
+   return delivered;
+}
+
+void companion_thumbs_set_budget(companion_thumbs_t *t, size_t budget_bytes)
+{
+   if (!t)
+      return;
+   t->budget = budget_bytes ? budget_bytes : (64u * 1024 * 1024);
+   ct_evict(t, 0);
+}
+
+size_t companion_thumbs_forget(companion_thumbs_t *t, const char *path)
+{
+   size_t i, dropped = 0;
+   if (!t || !t->ht || string_is_empty(path))
+      return 0;
+   for (i = 0; i < t->ht_size; i++)
+   {
+      struct ct_entry *e = t->ht[i];
+      while (e)
+      {
+         struct ct_entry *next = e->chain;
+         if (e->bits && !e->queued && !e->refs && string_is_equal(e->path, path))
+         {
+            ct_lru_remove(t, e);
+            t->cached_bytes -= e->bytes;
+            t->cached_count--;
+            ct_entry_free(t, e);
+            dropped++;
+            /* the chain changed under us: restart this bucket */
+            e = t->ht[i];
+            continue;
+         }
+         e = next;
+      }
+   }
+   return dropped;
+}
+
+size_t companion_thumbs_cached_count(companion_thumbs_t *t) { return t ? t->cached_count : 0; }
+size_t companion_thumbs_cached_bytes(companion_thumbs_t *t) { return t ? t->cached_bytes : 0; }
+size_t companion_thumbs_queued(companion_thumbs_t *t)
+{
+   if (!t)
+      return 0;
+#ifdef HAVE_THREADS
+   if (t->ecs_inited)
+      return (size_t)retro_atomic_load_acquire_int(&t->jobs_queued);
+#endif
+   return ct_queued(t);
+}
+
+size_t companion_thumbs_pending(companion_thumbs_t *t)
+{
+   if (!t)
+      return 0;
+#ifdef HAVE_THREADS
+   if (t->ecs_inited)
+      return (size_t)retro_atomic_load_acquire_int(&t->pending_n)
+         + ((   retro_atomic_load_acquire_int(&t->anim_wanted)
+             || retro_atomic_load_acquire_int(&t->anim_asked)) ? 1 : 0);
+#endif
+   return ct_queued(t) + t->inflight + t->done_len
+      + ((t->anim.wanted || t->anim.path) ? 1 : 0);
+}

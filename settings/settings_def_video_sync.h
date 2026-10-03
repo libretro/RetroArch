@@ -34,7 +34,7 @@ S_BOOL(video_vsync, VIDEO_VSYNC,
       "Synchronize the output video of the graphics card to the refresh rate of the screen. Recommended.")
 S_UINT(video_swap_interval, VIDEO_SWAP_INTERVAL,
       "video_swap_interval",
-      DEFAULT_SWAP_INTERVAL, SD_FLAG_CMD_APPLY_AUTO | SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_REINIT, 0, 4, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_swap_interval,
+      DEFAULT_SWAP_INTERVAL, SD_FLAG_CMD_APPLY_AUTO | SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_REINIT, 0, MAXIMUM_SWAP_INTERVAL, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_swap_interval,
       "VSync Swap Interval",
       "Use a custom swap interval for VSync. Effectively reduces monitor refresh rate by the specified factor. 'Auto' sets factor based on core-reported frame rate, providing improved frame pacing when running e.g. 30 fps content on a 60 Hz display or 60 fps content on a 120 Hz display.")
 S_UINT_H(video_shader_subframes, VIDEO_SHADER_SUBFRAMES,
@@ -57,6 +57,21 @@ S_BOOL(video_waitable_swapchains, VIDEO_WAITABLE_SWAPCHAINS,
       DEFAULT_WAITABLE_SWAPCHAINS, SD_FLAG_CMD_APPLY_AUTO, SDESC_FLG_REFRESH, CMD_EVENT_REINIT,
       "Waitable Swapchains",
       "Hard-synchronize the CPU and GPU. Reduces latency at the cost of performance.")
+S_BOOL(video_threaded_present_repeat, VIDEO_THREADED_PRESENT_REPEAT,
+      "video_threaded_present_repeat",
+      DEFAULT_VIDEO_THREADED_PRESENT_REPEAT, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      "Threaded Video Frame Repeat",
+      "With Threaded Video, keep presenting the last frame at the display's refresh rate while the core falls behind, instead of leaving the previous present on screen. Keeps Black Frame Insertion and refresh-rate shader effects steady through core stutter. Applies where the video driver can repeat a frame; not applied with shader sub-frames.")
+S_BOOL(video_threaded_display_pacing, VIDEO_THREADED_DISPLAY_PACING,
+      "video_threaded_display_pacing",
+      DEFAULT_VIDEO_THREADED_DISPLAY_PACING, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      "Threaded Video Display Pacing",
+      "With Threaded Video, start each core frame as late as the next display refresh allows, from measured core and render times, instead of on a fixed timer. Lowers latency to what Frame Delay reaches on unthreaded video, and a frame that runs long is repeated rather than missed. Off: the timer paces, as before.")
+S_BOOL(video_present_timing_from_display, VIDEO_PRESENT_TIMING_FROM_DISPLAY,
+      "video_present_timing_from_display",
+      DEFAULT_VIDEO_PRESENT_TIMING_FROM_DISPLAY, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      "Pace Repeats From The Display",
+      "Time repeated frames from when the display says a present actually reached it, rather than from the frontend's own clock. Applies where the video driver can report it; the clock is used everywhere else, and wherever the report goes stale. Turn off to always use the clock.")
 S_INT(video_max_frame_latency, VIDEO_MAX_FRAME_LATENCY,
       "video_max_frame_latency",
       DEFAULT_MAX_FRAME_LATENCY, SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX, CMD_EVENT_REINIT, -1, MAXIMUM_MAX_FRAME_LATENCY, 1, -1, setting_action_ok_uint, NULL,

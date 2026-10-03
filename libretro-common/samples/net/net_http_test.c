@@ -89,8 +89,14 @@ int main(void)
    if (!network_init())
       return -1;
 
+   /* Required once before the first transfer in a threaded build: it
+    * creates the DNS cache and connection pool locks.  net_http no
+    * longer creates them lazily, so skipping this runs unlocked. */
+   net_http_init();
+
    http_get_and_print("http://buildbot.libretro.com/nightly/windows/x86_64/latest/mednafen_psx_libretro.dll.zip");
    http_get_and_print("http://www.wikipedia.org/");
 
+   net_http_deinit();
    return 0;
 }

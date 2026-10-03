@@ -11,7 +11,20 @@ HAVE_CHEEVOS := 1
 HAVE_FILE_LOGGER := 1
 HAVE_GFX_WIDGETS := 1
 HAVE_SAF := 1
-HAVE_BUILTINSMBCLIENT := 1
+# The cleanroom network stack, as on the desktop builds: the crypto,
+# the encrypted keychain, the TLS 1.2/1.3 client and the SMB2/3 client
+# with Kerberos. All of it needs nothing
+# but sockets; the NFSv3/v4 client and its nfs:// backend likewise.
+HAVE_CRYPTO   := 1
+HAVE_KEYCHAIN := 1
+HAVE_RETROSSL := 1
+HAVE_RETROSMB := 1
+HAVE_RETRONFS := 1
+# The video modeline engine, as on the desktop builds. Android drives
+# no modelines (its display server does not advertise DISPSERV_CTX_
+# MODELINE, so the CRT SwitchRes menu stays hidden); this is for the
+# EDID reader behind Information > Display Information > EDID.
+HAVE_MODELINE := 1
 
 INCFLAGS    :=
 DEFINES     :=
@@ -19,7 +32,23 @@ DEFINES     :=
 LIBRETRO_COMM_DIR := $(RARCH_DIR)/libretro-common
 DEPS_DIR          := $(RARCH_DIR)/deps
 
-GIT_VERSION := $(shell git rev-parse --short HEAD 2>/dev/null)
+RA_ROOT := $(abspath $(LOCAL_PATH)/$(RARCH_DIR))
+
+# Ask git whether RA_ROOT is itself the repository root. An empty prefix
+# means it is; a non-empty one means we resolved an enclosing repository
+# and must not use its HEAD. Comparing paths is unreliable here because
+# make and git may disagree on path syntax.
+ifeq ($(GIT_VERSION),)
+GIT_PROBE := $(strip $(shell git -C "$(RA_ROOT)" rev-parse --show-prefix 2>/dev/null && echo GIT_OK))
+ifeq ($(GIT_PROBE),GIT_OK)
+   GIT_VERSION := $(shell git -C "$(RA_ROOT)" rev-parse --short HEAD 2>/dev/null)
+else
+ifneq ($(GIT_PROBE),)
+   $(warning RetroArch: $(RA_ROOT) is not a git toplevel, omitting git version)
+endif
+endif
+endif
+
 ifneq ($(GIT_VERSION),)
    DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=$(GIT_VERSION)
 endif
@@ -59,18 +88,18 @@ LOCAL_MODULE := retroarch-activity
 LOCAL_SRC_FILES  +=	$(RARCH_DIR)/griffin/griffin.c \
 							$(RARCH_DIR)/griffin/griffin_cpp.cpp
 
-ifeq ($(HAVE_BUILTINSMBCLIENT),1)
-   DEFINES += -DHAVE_BUILTINSMBCLIENT
-   DEFINES += "-D_U_=__attribute__((unused))"
-   DEFINES += -DHAVE_TIME_H -DHAVE_FCNTL_H -DHAVE_UNISTD_H
-   DEFINES += -DHAVE_STDLIB_H -DSTDC_HEADERS
-   DEFINES += -DHAVE_STRING_H
-   DEFINES += -DHAVE_LINGER
-   DEFINES += -DHAVE_SYS_UIO_H
-   DEFINES += -DHAVE_POLL_H -DHAVE_NETDB_H
-   DEFINES += -DHAVE_NETINET_TCP_H -DHAVE_NETINET_IN_H
-   DEFINES += -DHAVE_SYS_SOCKET_H -DHAVE_ARPA_INET_H
-   DEFINES += -DHAVE_SMBCLIENT
+ifeq ($(HAVE_CRYPTO),1)
+   DEFINES += -DHAVE_CRYPTO
+   ifeq ($(HAVE_KEYCHAIN),1)
+      DEFINES += -DHAVE_KEYCHAIN
+   endif
+   ifeq ($(HAVE_RETROSMB),1)
+      DEFINES += -DHAVE_SMBCLIENT -DHAVE_RETROSMB
+   endif
+endif
+
+ifeq ($(HAVE_MODELINE),1)
+   DEFINES += -DHAVE_MODELINE
 endif
 
 ifeq ($(HAVE_LOGGER), 1)
@@ -159,7 +188,11 @@ DEFINES += -DRARCH_MOBILE \
 	   -DWANT_IFADDRS \
 	   -DHAVE_XDELTA \
 	   -DHAVE_CORE_INFO_CACHE \
-	   -DHAVE_BUILTINMBEDTLS -DHAVE_SSL
+	   -DHAVE_SSL
+
+ifeq ($(HAVE_RETROSSL),1)
+   DEFINES += -DHAVE_RETROSSL
+endif
 
 ifeq ($(HAVE_GFX_WIDGETS),1)
 DEFINES += -DHAVE_GFX_WIDGETS
@@ -187,8 +220,8 @@ ifeq ($(HAVE_SAF),1)
    DEFINES += -DHAVE_SAF
 endif
 
-ifeq ($(HAVE_BUILTINSMBCLIENT),1)
-   DEFINES += -DHAVE_SMBCLIENT
+ifeq ($(HAVE_RETRONFS),1)
+   DEFINES += -DHAVE_NFSCLIENT -DHAVE_RETRONFS
 endif
 
 LOCAL_CFLAGS   += -Wall -std=gnu99 -pthread -Wno-unused-function -fno-stack-protector -funroll-loops $(DEFINES)
@@ -201,23 +234,16 @@ LOCAL_LDLIBS	 := -landroid -lEGL $(GLES_LIB) $(LOGGER_LDLIBS) -ldl
 LOCAL_C_INCLUDES := \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/libretro-common/include \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/deps \
-		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/stb \
-		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/zstd/lib
+		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/stb
 
 INCLUDE_DIRS     := \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/stb/ \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/ \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/zstd/lib/
+		    -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/
 
 ifeq ($(HAVE_CHEEVOS),1)
 INCLUDE_DIRS += -I$(LOCAL_PATH)/$(DEPS_DIR)/rcheevos/include
 endif
 
-ifeq ($(HAVE_BUILTINSMBCLIENT),1)
-   INCLUDE_DIRS += \
-      -I$(LOCAL_PATH)/$(DEPS_DIR)/libsmb2/include \
-      -I$(LOCAL_PATH)/$(DEPS_DIR)/libsmb2/include/smb2
-endif
 
 LOCAL_CFLAGS     += $(INCLUDE_DIRS)
 LOCAL_CPPFLAGS   += $(INCLUDE_DIRS)
@@ -227,11 +253,15 @@ ifeq ($(HAVE_VULKAN),1)
 INCFLAGS         += $(LOCAL_PATH)/$(RARCH_DIR)/gfx/include
 
 LOCAL_C_INCLUDES += $(INCFLAGS)
+# slang_process.c is C and amalgamated into griffin.c; it includes
+# <spirv_cross_c.h>, so the SPIRV-Cross directory must be on the C
+# include path, not just LOCAL_CPPFLAGS.  LOCAL_C_INCLUDES applies to
+# both C and C++ compiles under ndk-build.
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/$(DEPS_DIR)/SPIRV-Cross
 LOCAL_CPPFLAGS   += -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/glslang/Public \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/glslang/MachineIndependent \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/SPIRV \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/SPIRV-Cross
+		    -I$(LOCAL_PATH)/$(DEPS_DIR)/glslang/glslang/SPIRV
 
 LOCAL_CFLAGS    += -Wno-sign-compare -Wno-unused-variable -Wno-parentheses
 LOCAL_SRC_FILES += $(RARCH_DIR)/griffin/griffin_glslang.cpp

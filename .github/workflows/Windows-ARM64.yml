@@ -2,9 +2,22 @@ name: CI Windows ARM64 (MSVC)
 
 on:
   push:
+    branches: [master]
   pull_request:
   repository_dispatch:
     types: [run_build]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release tag to build (empty builds the selected ref)
+        type: string
+        default: ''
+      publish_release:
+        description: Upload the ARM64 package to the existing release
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -12,9 +25,16 @@ permissions:
 env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || inputs.release_tag || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   msvc:
     runs-on: windows-11-arm
+    timeout-minutes: 90
+    outputs:
+      release_tag: ${{ steps.source.outputs.release_tag }}
     strategy:
       matrix:
         version: [2022]
@@ -22,7 +42,30 @@ jobs:
         platform: [ARM64]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.release_tag || github.ref }}
+
+      - name: Record and verify the source revision
+        id: source
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+          PUBLISH_RELEASE: ${{ github.event_name == 'release' || inputs.publish_release == true }}
+        run: |
+          $revision = git rev-parse HEAD
+          if ($LASTEXITCODE) { throw 'Could not resolve the source revision.' }
+          "revision=$revision" >> $env:GITHUB_OUTPUT
+          if ($env:PUBLISH_RELEASE -eq 'true' -and !$env:RELEASE_TAG) {
+            throw 'Publishing requires an existing release tag.'
+          }
+          if ($env:RELEASE_TAG) {
+            $tagRevision = git rev-parse --verify "refs/tags/$($env:RELEASE_TAG)^{commit}"
+            if ($LASTEXITCODE -or $tagRevision -ne $revision) {
+              throw 'The checkout is not the requested release tag.'
+            }
+          }
+          "release_tag=$env:RELEASE_TAG" >> $env:GITHUB_OUTPUT
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1
@@ -34,11 +77,88 @@ jobs:
 
       - name: Get short SHA
         id: slug
-        shell: powershell
-        run: echo "sha8=$('${{ github.sha }}'.Substring(0,8))"  >> $env:GITHUB_OUTPUT
+        shell: pwsh
+        env:
+          SOURCE_REVISION: ${{ steps.source.outputs.revision }}
+        run: echo "sha8=$($env:SOURCE_REVISION.Substring(0,8))" >> $env:GITHUB_OUTPUT
 
       - uses: actions/upload-artifact@v4
         with:
           name: retroarch-${{ matrix.version }}-${{ matrix.configuration }}-${{ matrix.platform }}-${{ steps.slug.outputs.sha8 }}
           path: |
             pkg/msvc/${{ matrix.platform }}/${{ matrix.configuration }}/RetroArch-msvc${{ matrix.version }}.exe
+
+      - name: Checkout packaging tools from the workflow revision
+        if: matrix.configuration == 'Release'
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .arm64-packaging
+          sparse-checkout: pkg/msvc/packaging
+
+      - name: Checkout pinned Ozone assets
+        if: matrix.configuration == 'Release'
+        uses: actions/checkout@v5
+        with:
+          repository: libretro/retroarch-assets
+          ref: 73106363e14e34c08a5854b4cfbc29f184e3b783
+          path: .arm64-assets
+          sparse-checkout: |
+            ozone
+            pkg
+            fonts
+
+      - name: Checkout pinned core information
+        if: matrix.configuration == 'Release'
+        uses: actions/checkout@v5
+        with:
+          repository: libretro/libretro-super
+          ref: 0532bd63ce3072f50ca4f4ada40d42aef565bd3f
+          path: .arm64-info
+          sparse-checkout: dist/info
+
+      - name: Verify and package ARM64 frontend
+        if: matrix.configuration == 'Release'
+        shell: pwsh
+        env:
+          SOURCE_REVISION: ${{ steps.source.outputs.revision }}
+        run: |
+          ./.arm64-packaging/pkg/msvc/packaging/package-arm64.ps1 `
+            -Executable ./pkg/msvc/ARM64/Release/RetroArch-msvc2022.exe `
+            -SourceDirectory . -AssetsDirectory ./.arm64-assets -InfoDirectory ./.arm64-info `
+            -OutputDirectory ./arm64-dist -SourceRevision $env:SOURCE_REVISION `
+            -Repository $env:GITHUB_REPOSITORY `
+            -AssetsRevision 73106363e14e34c08a5854b4cfbc29f184e3b783 `
+            -InfoRevision 0532bd63ce3072f50ca4f4ada40d42aef565bd3f
+
+      - name: Upload ARM64 release package
+        if: matrix.configuration == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: retroarch-windows-arm64-package
+          path: |
+            arm64-dist/RetroArch-WinARM64.zip
+            arm64-dist/RetroArch-WinARM64.zip.sha256
+          if-no-files-found: error
+
+  upload-release:
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.publish_release == true)
+    needs: msvc
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: retroarch-windows-arm64-package
+          path: arm64-dist
+
+      - name: Attach ARM64 package to the existing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.msvc.outputs.release_tag }}
+        run: |
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" > /dev/null
+          gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --clobber \
+            arm64-dist/RetroArch-WinARM64.zip arm64-dist/RetroArch-WinARM64.zip.sha256

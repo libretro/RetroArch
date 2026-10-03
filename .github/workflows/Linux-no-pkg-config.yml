@@ -1,0 +1,107 @@
+name: CI Linux without pkg-config
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  no-pkg-config:
+    name: Configure and build with pkg-config unavailable
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -eu
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends \
+            build-essential zlib1g-dev libfreetype-dev libdrm-dev \
+            libasound2-dev libpulse-dev libpipewire-0.3-dev \
+            libdbus-1-dev libwayland-dev libwayland-bin libxkbcommon-dev \
+            libdecor-0-dev libssl-dev qt6-base-dev qt6-base-dev-tools
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure
+        shell: bash
+        run: |
+          set -eu
+          # PKG_CONF_PATH=none makes configure behave as it does on a
+          # system with no pkg-config binary: every check_val falls
+          # back to a plain link test and takes its cflags from the
+          # include directories it is given. A library that links but
+          # whose headers are not on the include path must end up
+          # disabled, never enabled with empty cflags.
+          PKG_CONF_PATH=none ./configure --enable-dbus
+          grep -q '^HAVE_PIPEWIRE = 1' config.mk
+          grep -q '^HAVE_PIPEWIRE_STABLE = 1' config.mk
+          grep '^PIPEWIRE_CFLAGS = ' config.mk | grep -q -- '-I/usr/include/pipewire-0.3'
+          grep '^PIPEWIRE_CFLAGS = ' config.mk | grep -q -- '-I/usr/include/spa-0.2'
+          # Found without pkg-config: D-Bus by its headers, one of them
+          # under the library directory; Wayland by its libraries and the
+          # scanner's own version; Qt through qmake -query.
+          for have in DBUS WAYLAND WAYLAND_SCANNER LIBDECOR OPENSSL QT QT6; do
+             grep -q "^HAVE_$have = 1" config.mk \
+                || { echo "::error::HAVE_$have not found without pkg-config"; exit 1; }
+          done
+          grep '^DBUS_CFLAGS = ' config.mk | grep -q -- '-I/usr/include/dbus-1.0'
+          grep '^DBUS_CFLAGS = ' config.mk | grep -q -- 'dbus-1.0/include'
+
+      - name: Build
+        shell: bash
+        run: |
+          set -eu
+          make -j"$(nproc)"
+          test -x ./retroarch
+          test -f obj-unix/release/audio/drivers/pipewire.o
+          test -f obj-unix/release/camera/drivers/pipewire.o
+          test -f obj-unix/release/gfx/common/dbus_common.o
+          test -f obj-unix/release/gfx/common/wayland_common.o
+          test -f obj-unix/release/ui/drivers/ui_qt.o
+
+      - name: The run-time libdbus mirror matches libdbus
+        shell: bash
+        run: |
+          set -eu
+          # gfx/common/dbus_runtime.h mirrors libdbus's public structs and
+          # constants so RetroArch can load it without its headers; the
+          # D-Bus CFLAGS configure found above lead to the real ones.
+          make -C samples/frontend/dbus_runtime check \
+             DBUS_CFLAGS="$(sed -n 's/^DBUS_CFLAGS = //p' config.mk)"
+
+      - name: A package forced by name fails when nothing can find it
+        shell: bash
+        run: |
+          set -u
+          # rsound is found only through pkg-config. Asked for by name with
+          # no pkg-config, configure must stop and say so rather than
+          # quietly build without it.
+          if PKG_CONF_PATH=none ./configure --enable-rsound > forced.log 2>&1; then
+             cat forced.log
+             echo "::error::--enable-rsound without pkg-config configured instead of failing"
+             exit 1
+          fi
+          grep -q 'Forced to build with package rsound, but pkg-config was not found' forced.log \
+             || { cat forced.log; echo "::error::configure failed for another reason"; exit 1; }
+          # A forced package with a library check behind it still configures.
+          PKG_CONF_PATH=none ./configure --enable-pulse > forced.log 2>&1 \
+             || { cat forced.log; echo "::error::--enable-pulse failed without pkg-config"; exit 1; }
+          grep -q '^HAVE_PULSE = 1' config.mk

@@ -37,6 +37,8 @@
 #include "SDL.h"
 #include "SDL_syswm.h"
 
+#include <encodings/utf.h>
+
 #include "../font_driver.h"
 
 #include "../../configuration.h"
@@ -103,6 +105,14 @@ static void sdl_init_font(sdl_video_t *vid,
       RARCH_LOG("[SDL] Could not initialize fonts.\n");
       return;
    }
+   /* The atlas may grow when a message needs more glyphs than it holds;
+    * the glyphs are blitted from it in memory, so there is no texture
+    * to make again */
+   {
+      struct font_atlas *grow = vid->font_driver->get_atlas(vid->font);
+      grow->max_width  = 2048;
+      grow->max_height = 2048;
+   }
 
    r = msg_color_r * 255;
    g = msg_color_g * 255;
@@ -144,73 +154,86 @@ static void sdl_render_msg(
    gshift     = fmt->Gshift;
    bshift     = fmt->Bshift;
 
-   for (; *msg; msg++)
    {
-      int glyph_width, glyph_height;
-      int base_x, base_y, max_width, max_height;
-      uint32_t             *out      = NULL;
-      const uint8_t             *src = NULL;
-      const struct font_glyph *glyph = vid->font_driver->get_glyph(vid->font, (uint8_t)*msg);
-      if (!glyph)
-         continue;
+      const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                             = vid->font_driver->get_glyph;
+      void *font_data                        = vid->font;
+      const struct font_glyph *glyph_q       = get_glyph(font_data, '?');
+      struct font_line_metrics *line_metrics = NULL;
+      size_t msg_len                         = strlen(msg);
+      int line_h                             = 0;
+      int line_x                             = msg_base_x;
+      int line_y                             = msg_base_y;
 
-      glyph_width  = glyph->width;
-      glyph_height = glyph->height;
+      vid->font_driver->get_line_metrics(font_data, &line_metrics);
+      if (line_metrics)
+         line_h = (int)line_metrics->height;
 
-      base_x       = msg_base_x + glyph->draw_offset_x;
-      base_y       = msg_base_y + glyph->draw_offset_y;
-      src          = atlas->buffer + glyph->atlas_offset_x
-         + glyph->atlas_offset_y * atlas->width;
-
-      if (base_x < 0)
-      {
-         src         -= base_x;
-         glyph_width += base_x;
-         base_x       = 0;
-      }
-
-      if (base_y < 0)
-      {
-         src          -= base_y * (int)atlas->width;
-         glyph_height += base_y;
-         base_y        = 0;
-      }
-
-      max_width  = width - base_x;
-      max_height = height - base_y;
-
-      if (max_width <= 0 || max_height <= 0)
-         continue;
-
-      if (glyph_width > max_width)
-         glyph_width = max_width;
-      if (glyph_height > max_height)
-         glyph_height = max_height;
-
-      out = (uint32_t*)buffer->pixels + base_y
-         * (buffer->pitch >> 2) + base_x;
-
-      for (y = 0; y < glyph_height; y++, src += atlas->width, out += buffer->pitch >> 2)
-      {
-         for (x = 0; x < glyph_width; x++)
-         {
-            unsigned blend   = src[x];
-            unsigned out_pix = out[x];
-            unsigned       r = (out_pix >> rshift) & 0xff;
-            unsigned       g = (out_pix >> gshift) & 0xff;
-            unsigned       b = (out_pix >> bshift) & 0xff;
-
-            unsigned   out_r = (r * (256 - blend) + vid->font_r * blend) >> 8;
-            unsigned   out_g = (g * (256 - blend) + vid->font_g * blend) >> 8;
-            unsigned   out_b = (b * (256 - blend) + vid->font_b * blend) >> 8;
-            out[x]           = (out_r << rshift) |
-                               (out_g << gshift) |
-                               (out_b << bshift);
-         }
-      }
-
-      msg_base_x += glyph->advance_x;
-      msg_base_y += glyph->advance_y;
+      /* UTF-8, each line one line height below the last */
+#define FONT_LAYOUT_ALIGNED 0
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+      do \
+      { \
+         (void)(line_width); \
+         (void)(count); \
+         (void)(bytes); \
+         line_x = msg_base_x; \
+         line_y = msg_base_y + (line) * line_h; \
+      } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+      do \
+      { \
+         int glyph_width, glyph_height; \
+         int base_x, base_y, max_width, max_height; \
+         uint32_t             *out      = NULL; \
+         const uint8_t             *src = NULL; \
+         glyph_width  = glyph->width; \
+         glyph_height = glyph->height; \
+         base_x       = (line_x + (pen_x)) + glyph->draw_offset_x; \
+         base_y       = (line_y + (pen_y)) + glyph->draw_offset_y; \
+         src          = atlas->buffer + glyph->atlas_offset_x \
+            + glyph->atlas_offset_y * atlas->width; \
+         if (base_x < 0) \
+         { \
+            src         -= base_x; \
+            glyph_width += base_x; \
+            base_x       = 0; \
+         } \
+         if (base_y < 0) \
+         { \
+            src          -= base_y * (int)atlas->width; \
+            glyph_height += base_y; \
+            base_y        = 0; \
+         } \
+         max_width  = width - base_x; \
+         max_height = height - base_y; \
+         if (max_width <= 0 || max_height <= 0) \
+            break; \
+         if (glyph_width > max_width) \
+            glyph_width = max_width; \
+         if (glyph_height > max_height) \
+            glyph_height = max_height; \
+         out = (uint32_t*)buffer->pixels + base_y \
+            * (buffer->pitch >> 2) + base_x; \
+         for (y = 0; y < glyph_height; y++, src += atlas->width, out += buffer->pitch >> 2) \
+         { \
+            for (x = 0; x < glyph_width; x++) \
+            { \
+               unsigned blend   = src[x]; \
+               unsigned out_pix = out[x]; \
+               unsigned       r = (out_pix >> rshift) & 0xff; \
+               unsigned       g = (out_pix >> gshift) & 0xff; \
+               unsigned       b = (out_pix >> bshift) & 0xff; \
+               unsigned   out_r = (r * (256 - blend) + vid->font_r * blend) >> 8; \
+               unsigned   out_g = (g * (256 - blend) + vid->font_g * blend) >> 8; \
+               unsigned   out_b = (b * (256 - blend) + vid->font_b * blend) >> 8; \
+               out[x]           = (out_r << rshift) | \
+                                  (out_g << gshift) | \
+                                  (out_b << bshift); \
+            } \
+         } \
+      } while (0)
+#include "../font_layout.h"
    }
 }
 
@@ -276,9 +299,9 @@ static void *sdl_gfx_init(const video_info_t *video,
    RARCH_LOG("[SDL] Detecting desktop resolution %ux%u.\n", full_x, full_y);
 
    if (!video->fullscreen)
-      RARCH_LOG("[SDL] Creating window @ %ux%u.\n", video->width, video->height);
+      RARCH_LOG("[SDL] Creating window @ %ux%u.\n", VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims));
 
-   vid->screen = SDL_SetVideoMode(video->width, video->height, 32,
+   vid->screen = SDL_SetVideoMode(VIDEO_SCALE_W(video->dims), VIDEO_SCALE_H(video->dims), 32,
          SDL_HWSURFACE | SDL_HWACCEL | SDL_DOUBLEBUF | (video->fullscreen ? SDL_FULLSCREEN : 0));
 
    /* We assume that SDL chooses ARGB8888.
@@ -298,12 +321,12 @@ static void *sdl_gfx_init(const video_info_t *video,
 
    if (input && input_data)
    {
-      void *sdl_input = input_driver_init_wrap(&input_sdl,
+      void *sdl_input = input_driver_init_wrap(&input_sdl1,
             settings->arrays.input_joypad_driver);
 
       if (sdl_input)
       {
-         *input = &input_sdl;
+         *input = &input_sdl1;
          *input_data = sdl_input;
       }
       else
@@ -358,10 +381,12 @@ static void sdl_gfx_check_window(sdl_video_t *vid)
    }
 }
 
-static bool sdl_gfx_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count,
+static bool sdl_gfx_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    char title[128];
    sdl_video_t   *vid = (sdl_video_t*)data;
 #ifdef HAVE_MENU
@@ -435,10 +460,9 @@ static bool sdl_gfx_has_windowed(void *data) { return true; }
 static void sdl_gfx_viewport_info(void *data, struct video_viewport *vp)
 {
    sdl_video_t *vid = (sdl_video_t*)data;
-   vp->x      = 0;
-   vp->y      = 0;
-   vp->width  = vp->full_width  = vid->screen->w;
-   vp->height = vp->full_height = vid->screen->h;
+   vp->pos    = VIDEO_POS_PACK(0, 0);
+   vp->dims   = vp->full_dims   = VIDEO_SCALE_PACK(vid->screen->w,
+         vid->screen->h);
 }
 
 static void sdl_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
@@ -453,7 +477,7 @@ static void sdl_apply_state_changes(void *data)
 }
 
 static void sdl_set_texture_frame(void *data, const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    enum scaler_pix_fmt format = rgb32
       ? SCALER_FMT_ARGB8888 : SCALER_FMT_RGBA4444;
@@ -467,9 +491,9 @@ static void sdl_set_texture_frame(void *data, const void *frame, bool rgb32,
          vid->menu.frame->w,
          vid->menu.frame->h,
          vid->menu.frame->pitch,
-         width,
-         height,
-         width * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t))
+         VIDEO_SCALE_W(dims),
+         VIDEO_SCALE_H(dims),
+         VIDEO_SCALE_W(dims) * (rgb32 ? sizeof(uint32_t) : sizeof(uint16_t))
          );
 
    SDL_SetAlpha(vid->menu.frame, SDL_SRCALPHA, 255.0 * alpha);
@@ -574,7 +598,6 @@ video_driver_t video_sdl = {
    NULL, /* set_rotation */
    sdl_gfx_viewport_info,
    NULL, /* read_viewport  */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL, /* get_overlay_interface */
 #endif

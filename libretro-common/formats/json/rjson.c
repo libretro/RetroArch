@@ -23,7 +23,7 @@
 /* rjson -- streaming JSON parser and writer.
  *
  * What it implements: a pull (SAX-style) parser over strings, buffers,
- * RFILE/intfstream handles or a user I/O callback, delivering the
+ * or a user I/O callback, delivering the
  * element stream through rjson_next with string/double/int accessors
  * and the callback-driven rjson_parse convenience driver; UTF-8
  * validation with
@@ -58,10 +58,12 @@
  * stream in chunks. */
 #define _RJSON_MAX_SIZE ((size_t)256 * 1024 * 1024)
 
+#include <retro_inline.h> /* INLINE - was reached transitively
+                            * through the stream headers before the
+                            * I/O adapters moved out */
 #include <formats/rjson.h>
+#include <string/rstrtod.h>
 #include <compat/posix_string.h>
-#include <streams/interface_stream.h>
-#include <streams/file_stream.h>
 
 struct _rjson_stack { enum rjson_type type; size_t count; };
 
@@ -88,7 +90,6 @@ struct rjson
    int input_len;
 
    char option_flags;
-   char decimal_sep;
    char error_text[80];
    char inline_string[512];
 
@@ -956,16 +957,13 @@ void _rjson_setup(rjson_t *json, rjson_io_t io, void *user_data, int input_len)
    json->source_line         = 1;
    json->source_column_p     = json->input_p;
    json->option_flags        = 0;
-   json->decimal_sep         = 0;
 }
 
 rjson_t *rjson_open_user(rjson_io_t io, void *user_data, int io_block_size)
 {
    rjson_t* json;
-   /* Clamp io_block_size against negative / tiny / oversized values.
-    * The two internal callers (rjson_open_stream / rjson_open_rfile)
-    * already bound this, but this function is public and can be
-    * reached directly. */
+   /* Clamp io_block_size against negative / tiny / oversized values:
+    * this function is public and can be reached with anything. */
    if (io_block_size < 16)
       io_block_size = 16;
    else if ((size_t)io_block_size > _RJSON_MAX_SIZE)
@@ -1002,36 +1000,6 @@ rjson_t *rjson_open_string(const char *string, size_t len)
    return rjson_open_buffer(string, len);
 }
 
-static int _rjson_stream_io(void* buf, int len, void *user)
-{
-   return (int)intfstream_read((intfstream_t*)user, buf, (uint64_t)len);
-}
-
-rjson_t *rjson_open_stream(struct intfstream_internal *stream)
-{
-   /* Allocate an input buffer based on the file size */
-   int64_t size = intfstream_get_size(stream);
-   int io_size  =
-         (size > 1024*1024 ? 4096 :
-         (size >  256*1024 ? 2048 : 1024));
-   return rjson_open_user(_rjson_stream_io, stream, io_size);
-}
-
-static int _rjson_rfile_io(void* buf, int len, void *user)
-{
-   return (int)filestream_read((RFILE*)user, buf, (int64_t)len);
-}
-
-rjson_t *rjson_open_rfile(RFILE *rfile)
-{
-   /* Allocate an input buffer based on the file size */
-   int64_t size = filestream_get_size(rfile);
-   int io_size =
-         (size > 1024*1024 ? 4096 :
-         (size >  256*1024 ? 2048 : 1024));
-   return rjson_open_user(_rjson_rfile_io, rfile, io_size);
-}
-
 void rjson_set_options(rjson_t *json, char rjson_option_flags)
 {
    json->option_flags = rjson_option_flags;
@@ -1056,26 +1024,9 @@ double rjson_get_double(rjson_t *json)
 {
    char* str = (json->string_pass_through ? json->string_pass_through : json->string);
    str[json->string_len] = '\0';
-   if (json->decimal_sep != '.')
-   {
-      /* handle locale that uses a non-standard decimal separator */
-      char *p;
-      if (json->decimal_sep == 0)
-      {
-         char test[4];
-         snprintf(test, sizeof(test), "%.1f", 0.0f);
-         json->decimal_sep = test[1];
-      }
-      if (json->decimal_sep != '.' && (p = (char*)memchr(str, '.', strlen(str) + 1)) != NULL)
-      {
-         double res;
-         *p  = json->decimal_sep;
-         res = atof(str);
-         *p  = '.';
-         return res;
-      }
-   }
-   return atof(str);
+   /* rstrtod reads the '.' the JSON grammar requires in any locale, so
+    * the old sniff-the-separator-and-rewrite-the-buffer dance is gone. */
+   return rstrtod(str, NULL);
 }
 
 int rjson_get_int(rjson_t *json)
@@ -1349,26 +1300,6 @@ rjsonwriter_t *rjsonwriter_open_user(rjsonwriter_io_t io, void *user_data)
    writer->user_data     = user_data;
 
    return writer;
-}
-
-static int _rjsonwriter_stream_io(const void* buf, int len, void *user)
-{
-   return (int)intfstream_write((intfstream_t*)user, buf, (uint64_t)len);
-}
-
-rjsonwriter_t *rjsonwriter_open_stream(struct intfstream_internal *stream)
-{
-   return rjsonwriter_open_user(_rjsonwriter_stream_io, stream);
-}
-
-static int _rjsonwriter_rfile_io(const void* buf, int len, void *user)
-{
-   return (int)filestream_write((RFILE*)user, buf, (int64_t)len);
-}
-
-rjsonwriter_t *rjsonwriter_open_rfile(RFILE *rfile)
-{
-   return rjsonwriter_open_user(_rjsonwriter_rfile_io, rfile);
 }
 
 static int _rjsonwriter_memory_io(const void* buf, int len, void *user)

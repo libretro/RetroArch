@@ -109,7 +109,16 @@ enum driver_lifetime_flags
     * are reinitialized with valid resources
     * before the core notices that anything's wrong.
     */
-   DRIVER_LIFETIME_RESET = 1 << 0
+   DRIVER_LIFETIME_RESET = 1 << 0,
+
+   /**
+    * Passed to \c driver_uninit when the drivers are freed to be
+    * started again at once for another session: content loaded or
+    * closed, one core for another. It is not a reset - what a core's
+    * unloading ends still ends - but a driver that can outlive the
+    * video driver may be left running across it, as across a reset.
+    */
+   DRIVER_LIFETIME_SESSION_SWITCH = 1 << 1
 };
 
 enum driver_ctl_state

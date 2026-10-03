@@ -14,9 +14,9 @@
 #define S_ACTION_EX_H S_ACTION_EX
 #endif
 #endif
-/* Descriptor and configuration rows are #if !defined(IOS) #if !defined(HAVE_LAKKA); the string
+/* Descriptor and configuration rows are #if !TARGET_OS_IPHONE #if !defined(HAVE_LAKKA); the string
  * tables always carry this row via the strings pass. */
-#if !defined(IOS) && !defined(HAVE_LAKKA) || defined(SETTINGS_DEF_STRINGS_PASS)
+#if !TARGET_OS_IPHONE && !defined(HAVE_LAKKA) || defined(SETTINGS_DEF_STRINGS_PASS)
 S_ACTION_EX_H(QUIT_RETROARCH,
       "quit_retroarch",
       SD_FLAG_NONE, NULL, NULL, CMD_EVENT_QUIT,

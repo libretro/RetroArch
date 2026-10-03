@@ -100,7 +100,6 @@ static const struct
    char s_2d9d0a50[265];
    char s_93805cc8_0[500];
    char s_93805cc8_1[99];
-   char s_b495662b[130];
    char s_9953f4e2[266];
    char s_de76d2dc[35];
    char s_929e8e7a[22];
@@ -120,7 +119,6 @@ static const struct
    char s_29398124[35];
    char s_2e5078b2[12];
    char s_12e77e8f[9];
-   char s_af6007a1[20];
    char s_da068369[19];
    char s_daead8a5[7];
    char s_48c208ee[18];
@@ -141,6 +139,7 @@ static const struct
    char s_ad7c73f6[16];
    char s_30acd6fb[16];
    char s_04b30c51[29];
+   char s_e2eedfe1[12];
    char s_e66b1cb9[53];
    char s_1bf49fce[52];
    char s_11e34db0[36];
@@ -255,10 +254,12 @@ static const struct
    char s_b18effee[15];
    char s_15f24ff4[8];
    char s_5d29b870[23];
+   char s_6996339b[7];
    char s_d95824aa[17];
    char s_639f529e[18];
    char s_4927597c[13];
    char s_77b74366[26];
+   char s_ddf679b9[7];
    char s_10342503[16];
    char s_d31f6d88[21];
    char s_f03e9c42[26];
@@ -416,7 +417,6 @@ static const struct
    char s_e22edcd8[7];
    char s_9da5609f[15];
    char s_68d27147[23];
-   char s_f02f73fc[36];
    char s_3a0a3fef[24];
    char s_2696c793[57];
    char s_72898bf0[21];
@@ -425,9 +425,7 @@ static const struct
    char s_7816d5d5[29];
    char s_b00815b8[13];
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    char s_f0db2883[36];
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -518,7 +516,6 @@ static const struct
    char s_7f10fcd2[15];
    char s_7206ddda[15];
    char s_2f169651[16];
-   char s_73674a86[15];
    char s_97379d00[25];
    char s_0f1d488a[11];
    char s_b3cc8a43[23];
@@ -722,6 +719,7 @@ static const struct
    char s_2c296537[25];
    char s_519cd5f8[38];
    char s_43ac80a0[12];
+   char s_aa628249[6];
    char s_ebe994b4[17];
    char s_1c62c301[10];
    char s_a8bb35b6[11];
@@ -928,7 +926,6 @@ static const struct
    char s_c3968f26[88];
    char s_79b8ce4a[72];
    char s_a1a8257e[121];
-   char s_d5231783[91];
    char s_a68d6d11[48];
    char s_74022c02[104];
    char s_8abad013[86];
@@ -988,7 +985,6 @@ static const struct
    char s_193e1462[64];
    char s_6895dfd6[59];
    char s_788364f5[101];
-   char s_dd9ff22a[84];
    char s_db495a9d[49];
    char s_4fe7b3d2[145];
    char s_e6535ec1[228];
@@ -1124,7 +1120,6 @@ static const struct
    char s_23c41f7c[85];
    char s_2e69508b[369];
    char s_7e96b5ce[54];
-   char s_3547866d[142];
    char s_8010a29e[134];
    char s_81120e85[135];
    char s_48696c85[94];
@@ -1537,8 +1532,6 @@ static const struct
    "ncia de fotog",
    "ramas exata do conte\303\272do. Deixar o VRR do sistema ligado \303\251 aceit\303\241vel, mas n"
    "\303\243o esta defini\303\247\303\243o.",
-   "Use um driver de v\303\255deo thread. Usar isto pode melhorar o desempenho a custo de lat\303"
-   "\252ncia poss\303\255vel e mais travamentos de v\303\255deo.",
    "Sincroniza\303\247\303\243o com a frequ\303\252ncia de fotogramas exata do conte\303\272do. Esta"
    " op\303\247\303\243o \303\251 o equivalente a for\303\247ar a velocidade x1, permitindo ainda o "
    "avan\303\247o r\303\241pido. N\303\243o h\303\241 desvio da taxa de atualiza\303\247\303\243o so"
@@ -1561,7 +1554,6 @@ static const struct
    "Adicionar \303\240 lista de reprodu\303\247\303\243o",
    "Servi\303\247o IA",
    "Recursos",
-   "Bloquear fotogramas",
    "Dispositivo de som",
    "\303\201udio",
    "Plugin de som DSP",
@@ -1582,6 +1574,7 @@ static const struct
    "Sincronizar som",
    "Sincronizar som",
    "N\303\255vel de volume de som (dB)",
+   "Autom\303\241tico",
    "Carregar ficheiros de substitui\303\247\303\243o automaticamente",
    "Carregar os ficheiros de mapeamento automaticamente",
    "Carregar os shaders automaticamente",
@@ -1696,10 +1689,12 @@ static const struct
    "Enable Discord",
    "Pausado",
    "Informa\303\247\303\265es do Disco",
+   "\303\201udio",
    "\303\215ndice do disco",
    "Controlo de disco",
    "Ejetar Disco",
    "Adicionar imagem de disco",
+   "Sa\303\255da",
    "Transfer\303\252ncias",
    "Transfira um n\303\272cleo",
    "Transferidor de conte\303\272do",
@@ -1858,7 +1853,6 @@ static const struct
    "M\303\255dia",
    "Menu principal",
    "Ativar 'Modo quiosque'",
-   "Acelerar taxa de fotogramas do menu",
    "Explorador de ficheiros",
    "Introduza a palavra-passe para desativar o modo quiosque",
    "Propor\303\247\303\243o do ecr\303\243",
@@ -1867,9 +1861,7 @@ static const struct
    "Mostrar 'Atualizador online'",
    "Sons do Menu",
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    "Estruturas de bloqueio do microfone",
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -1961,7 +1953,6 @@ static const struct
    "N\303\243o partilhar",
    "N\303\243o partilhar",
    "Usar Modo PAL60",
-   "Diret\303\263rio pai",
    "Contadores de desempenhp",
    "Desempenho",
    "Listas de reprodu\303\247\303\243o",
@@ -2173,6 +2164,7 @@ static const struct
    "Nome da interface visual",
    "Sistema operativo da interface visual",
    "Vers\303\243o Git",
+   "Ritmo",
    "Fonte de energia",
    "Carregada",
    "Carregando",
@@ -2408,8 +2400,6 @@ static const struct
    "Sinais de sa\303\255da nativos e de baixa resolu\303\247\303\243o para uso com telas CRT.",
    "Alterne para o modo de alta resolu\303\247\303\243o para usar com menus de alta resolu\303\247"
    "\303\243o quando nenhum conte\303\272do est\303\241 carregado.",
-   "S\303\263 para telas CRT. Tenta usar a resolu\303\247\303\243o e a taxa de atualiza\303\247\303"
-   "\243o n\303\272cleo/jogo exata.",
    "Alterne entre resolu\303\247\303\265es nativas e ultrawide.",
    "Use uma taxa de atualiza\303\247\303\243o personalizada especificada no ficheiro de configura"
    "\303\247\303\243o, se necess\303\241rio.",
@@ -2492,7 +2482,6 @@ static const struct
    "Controlador de menu a utilizar. (\303\211 necess\303\241rio reiniciar)",
    "Protege o sistema atrav\303\251s da oculta\303\247\303\243o de todas as configura\303\247\303"
    "\265es relacionadas com defini\303\247\303\265es.",
-   "Certifique-se de que a taxa de fotogramas atingida enquanto estiver dentro do menu.",
    "Alterar defini\303\247\303\265es do explorador de ficheiros.",
    "Muda os bot\303\265es para OK/Cancelar. Esta op\303\247\303\243o encontra-se desativada na orien"
    "ta\303\247\303\243o de bot\303\243o em japon\303\252s e ativado na orienta\303\247\303\243o ocid"
@@ -2701,8 +2690,6 @@ static const struct
    "tar, por exemplo, conte\303\272do de 30 fps num ecr\303\243 de 60 Hz ou conte\303\272do de 60 fp"
    "s num ecr\303\243 de 120 Hz.",
    "Alterar configura\303\247\303\265es de sincroniza\303\247\303\243o de v\303\255deo.",
-   "Aumenta performance a custo de lat\303\252ncia e mais stuttering de v\303\255deo. Use apenas se "
-   "velocidade m\303\241xima n\303\243o pode ser obtida de outra maneira.",
    "Personalizar a altura da janela de exibi\303\247\303\243o que \303\251 usada se a op\303\247\303"
    "\243o 'Propor\303\247\303\243o de ecr\303\243' estiver definida como 'Personalizado'.",
    "Personalizar a largura da janela de exibi\303\247\303\243o que \303\251 usada se a op\303\247"
@@ -2992,7 +2979,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_pt_blob_check[
-      (sizeof(msg_hash_pt_pt_blob) == (55020u
+      (sizeof(msg_hash_pt_pt_blob) == (54534u
 #ifdef HAVE_LAKKA
        + 17u
 #endif
@@ -3002,9 +2989,7 @@ typedef char msg_hash_pt_pt_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
        + 36u
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -3179,7 +3164,6 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_MIXER_STREAM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
@@ -3199,7 +3183,6 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
@@ -3220,6 +3203,7 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
@@ -3334,10 +3318,12 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_ALLOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -3495,7 +3481,6 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
@@ -3504,9 +3489,7 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -3597,7 +3580,6 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
@@ -3800,6 +3782,7 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -4006,7 +3989,6 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
@@ -4066,7 +4048,6 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
@@ -4202,7 +4183,6 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,

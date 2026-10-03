@@ -61,6 +61,15 @@ S_BOOL_EX(menu_show_sublabels, MENU_SHOW_SUBLABELS,
 /* The configuration row lives under defined(HAVE_MENU); other passes are
  * unaffected. */
 #if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
+S_BOOL_EX(menu_show_sublabels_current_selection_only, MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
+      "menu_show_sublabels_current_selection_only",
+      DEFAULT_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY, SD_FLAG_NONE, 0, 0, setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0,
+      "Show Menu Sub-Labels only for Current Selection",
+      "Only display a sub-label for the currently highlighted menu entry.")
+#endif
+/* The configuration row lives under defined(HAVE_MENU); other passes are
+ * unaffected. */
+#if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
 S_BOOL(menu_show_confirm, MENU_SHOW_CONFIRM,
       "menu_show_confirm",
       DEFAULT_MENU_SHOW_CONFIRM, SD_FLAG_NONE, 0, 0,

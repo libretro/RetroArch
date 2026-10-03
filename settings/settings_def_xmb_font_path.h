@@ -8,11 +8,14 @@
  * tables always carry this row via the strings pass. */
 #if defined(HAVE_XMB) || defined(SETTINGS_DEF_STRINGS_PASS)
 /* config key "xmb_font" differs from the label string; the
- * configuration.c row stays literal for this setting. */
+ * configuration.c row stays literal for this setting.
+ *
+ * No cmd_trigger: xmb_render() watches this path and rebuilds the menu
+ * fonts in place on the next frame. */
 #ifndef SETTINGS_DEF_CONFIG_PASS
 S_PATH_DS(path_menu_xmb_font, XMB_FONT,
       "xmb_font",
-      directory_assets, SD_FLAG_LAKKA_ADVANCED, CMD_EVENT_REINIT, "ttf", setting_get_string_representation_video_font_path, ST_UI_TYPE_FONT_SELECTOR,
+      directory_assets, SD_FLAG_LAKKA_ADVANCED, 0, "ttf", setting_get_string_representation_video_font_path, ST_UI_TYPE_FONT_SELECTOR,
       "Font",
       "Select a different main font to be used by the menu.")
 #endif

@@ -38,6 +38,8 @@
 #include "../../menu/menu_driver.h"
 #endif
 
+#include <encodings/utf.h>
+
 #include "../font_driver.h"
 
 #include "../../configuration.h"
@@ -196,6 +198,14 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
 
       xv_calculate_yuv(&xv->font_y, &xv->font_u, &xv->font_v,
             r, g, b);
+      /* The atlas may grow when a message needs more glyphs than it holds;
+       * the glyphs are blitted from it in memory, so there is no texture
+       * to make again */
+      {
+         struct font_atlas *grow = xv->font_driver->get_atlas(xv->font);
+         grow->max_width  = 2048;
+         grow->max_height = 2048;
+      }
    }
    else
       RARCH_LOG("[XVideo] Could not initialize fonts.\n");
@@ -274,7 +284,6 @@ static void render32_yuv12(xv_t *xv, const void *input_,
       for (x = 0; x < width; x++)
       {
          uint8_t y0, u, v;
-         unsigned img_width;
          uint32_t p = *input++;
          p = ((p >> 8) & 0xf800) | ((p >> 5) & 0x07e0)
             | ((p >> 3) & 0x1f); /* ARGB -> RGB16 */
@@ -549,8 +558,7 @@ static void xv_calc_out_rect(bool keep_aspect,
       struct video_viewport *vp,
       unsigned vp_width, unsigned vp_height)
 {
-   vp->full_width  = vp_width;
-   vp->full_height = vp_height;
+   vp->full_dims   = VIDEO_SCALE_PACK(vp_width, vp_height);
    video_driver_update_viewport(vp, false, keep_aspect, true);
 }
 
@@ -682,13 +690,13 @@ static void *xv_init(const video_info_t *video,
 
    if (video->fullscreen)
    {
-      width      = (((video->width  == 0) && geom) ? geom->base_width : video->width);
-      height     = (((video->height == 0) && geom) ? geom->base_height : video->height);
+      width      = (((VIDEO_SCALE_W(video->dims)  == 0) && geom) ? geom->base_width : VIDEO_SCALE_W(video->dims));
+      height     = (((VIDEO_SCALE_H(video->dims) == 0) && geom) ? geom->base_height : VIDEO_SCALE_H(video->dims));
    }
    else
    {
-      width      = video->width;
-      height     = video->height;
+      width      = VIDEO_SCALE_W(video->dims);
+      height     = VIDEO_SCALE_H(video->dims);
    }
    g_x11_win  = XCreateWindow(g_x11_dpy, DefaultRootWindow(g_x11_dpy),
          0, 0, width, height,
@@ -799,8 +807,7 @@ static void *xv_init(const video_info_t *video,
 
    XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
    xv_calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
-   xv->vp.full_width = target.width;
-   xv->vp.full_height = target.height;
+   xv->vp.full_dims  = VIDEO_SCALE_PACK(target.width, target.height);
 
    return xv;
 
@@ -864,13 +871,15 @@ static bool xv_check_resize(xv_t *xv, unsigned width, unsigned height)
 /* TODO: Is there some way to render directly like GL?
  * Hacky C code is hacky. */
 static void xv_render_msg(xv_t *xv, const char *msg,
-      unsigned width, unsigned height)
+      unsigned width, unsigned height,
+      const video_frame_info_t *video_info)
 {
    int msg_base_x, msg_base_y;
    const struct font_atlas *atlas = NULL;
-   settings_t           *settings = config_get_ptr();
-   float video_msg_pos_x          = settings->floats.video_msg_pos_x;
-   float video_msg_pos_y          = settings->floats.video_msg_pos_y;
+   /* The frame's snapshot, not the live setting: this runs on the
+    * video thread, where the main thread may be changing it. */
+   float video_msg_pos_x          = video_info->font_msg_pos_x;
+   float video_msg_pos_y          = video_info->font_msg_pos_y;
 
    if (!xv->font)
       return;
@@ -880,63 +889,77 @@ static void xv_render_msg(xv_t *xv, const char *msg,
    msg_base_x     = video_msg_pos_x * width;
    msg_base_y     = height * (1.0f - video_msg_pos_y);
 
-   for (; *msg; msg++)
    {
-      int base_x, base_y, glyph_width, glyph_height, max_width, max_height;
-      const uint8_t *src             = NULL;
-      const struct font_glyph *glyph =
-         xv->font_driver->get_glyph(xv->font, (uint8_t)*msg);
+      const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                             = xv->font_driver->get_glyph;
+      void *font_data                        = xv->font;
+      const struct font_glyph *glyph_q       = get_glyph(font_data, '?');
+      struct font_line_metrics *line_metrics = NULL;
+      size_t msg_len                         = strlen(msg);
+      int line_h                             = 0;
+      int line_x                             = msg_base_x;
+      int line_y                             = msg_base_y;
 
-      if (!glyph)
-         continue;
+      xv->font_driver->get_line_metrics(font_data, &line_metrics);
+      if (line_metrics)
+         line_h = (int)line_metrics->height;
 
-      /* Make sure we always start on the correct boundary
-       * so the indices are correct. */
-      base_x          = (msg_base_x + glyph->draw_offset_x + 1) & ~1;
-      base_y          = msg_base_y + glyph->draw_offset_y;
-
-      glyph_width     = glyph->width;
-      glyph_height    = glyph->height;
-
-      src             = atlas->buffer + glyph->atlas_offset_x +
-                        glyph->atlas_offset_y * atlas->width;
-
-      if (base_x < 0)
-      {
-         src          -= base_x;
-         glyph_width  += base_x;
-         base_x = 0;
-      }
-
-      if (base_y < 0)
-      {
-         src          -= base_y * (int)atlas->width;
-         glyph_height += base_y;
-         base_y = 0;
-      }
-
-      max_width        = width - base_x;
-      max_height       = height - base_y;
-
-      if (max_width <= 0 || max_height <= 0)
-         continue;
-
-      if (glyph_width > max_width)
-         glyph_width   = max_width;
-      if (glyph_height > max_height)
-         glyph_height  = max_height;
-
-      xv->render_glyph(xv, base_x, base_y, src, atlas->width, glyph_width, glyph_height);
-
-      msg_base_x += glyph->advance_x;
-      msg_base_y += glyph->advance_y;
+      /* UTF-8, each line one line height below the last */
+#define FONT_LAYOUT_ALIGNED 0
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+      do \
+      { \
+         (void)(line_width); \
+         (void)(count); \
+         (void)(bytes); \
+         line_x = msg_base_x; \
+         line_y = msg_base_y + (line) * line_h; \
+      } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+      do \
+      { \
+         int base_x, base_y, glyph_width, glyph_height, max_width, max_height; \
+         const uint8_t *src             = NULL; \
+         /* Make sure we always start on the correct boundary \
+          * so the indices are correct. */ \
+         base_x          = ((line_x + (pen_x)) + glyph->draw_offset_x + 1) & ~1; \
+         base_y          = (line_y + (pen_y)) + glyph->draw_offset_y; \
+         glyph_width     = glyph->width; \
+         glyph_height    = glyph->height; \
+         src             = atlas->buffer + glyph->atlas_offset_x + \
+                           glyph->atlas_offset_y * atlas->width; \
+         if (base_x < 0) \
+         { \
+            src          -= base_x; \
+            glyph_width  += base_x; \
+            base_x = 0; \
+         } \
+         if (base_y < 0) \
+         { \
+            src          -= base_y * (int)atlas->width; \
+            glyph_height += base_y; \
+            base_y = 0; \
+         } \
+         max_width        = width - base_x; \
+         max_height       = height - base_y; \
+         if (max_width <= 0 || max_height <= 0) \
+            break; \
+         if (glyph_width > max_width) \
+            glyph_width   = max_width; \
+         if (glyph_height > max_height) \
+            glyph_height  = max_height; \
+         xv->render_glyph(xv, base_x, base_y, src, atlas->width, glyph_width, glyph_height); \
+      } while (0)
+#include "../font_layout.h"
    }
 }
 
-static bool xv_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count,
+static bool xv_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    XWindowAttributes target;
    xv_t *xv                  = (xv_t*)data;
    bool rgb32                = (video_info->video_st_flags & VIDEO_FLAG_USE_RGBA) ? true : false;
@@ -969,15 +992,14 @@ static bool xv_frame(void *data, const void *frame, unsigned width,
       xv->render_func16(xv, frame, width, height, pitch);
 
    xv_calc_out_rect(xv->keep_aspect, &xv->vp, target.width, target.height);
-   xv->vp.full_width  = target.width;
-   xv->vp.full_height = target.height;
+   xv->vp.full_dims   = VIDEO_SCALE_PACK(target.width, target.height);
 
    if (msg)
-      xv_render_msg(xv, msg, width << 1, height << 1);
+      xv_render_msg(xv, msg, width << 1, height << 1, video_info);
 
    XvShmPutImage(g_x11_dpy, xv->port, g_x11_win, xv->gc, xv->image,
          0, 0, width << 1, height << 1,
-         xv->vp.x, xv->vp.y, xv->vp.width, xv->vp.height,
+         VIDEO_POS_X(xv->vp.pos), VIDEO_POS_Y(xv->vp.pos), VIDEO_SCALE_W(xv->vp.dims), VIDEO_SCALE_H(xv->vp.dims),
          true);
    XSync(g_x11_dpy, False);
 
@@ -1028,14 +1050,14 @@ static uint32_t xv_poke_get_flags(void *data)
 
 static void xv_poke_set_texture_frame(void *data,
       const void *frame, bool rgb32,
-      unsigned width, unsigned height, float alpha)
+      unsigned dims, float alpha)
 {
    xv_t *xv  = (xv_t*)data;
    xv->tex_frame = (void*)frame;
    xv->tex_rgb32 = rgb32;
-   xv->tex_width = width;
-   xv->tex_height = height;
-   xv->tex_pitch = width * (rgb32 ? 4 : 2);
+   xv->tex_width = VIDEO_SCALE_W(dims);
+   xv->tex_height = VIDEO_SCALE_H(dims);
+   xv->tex_pitch = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
 }
 
 static video_poke_interface_t xv_video_poke_interface = {
@@ -1103,7 +1125,6 @@ video_driver_t video_xvideo = {
    NULL, /* set_rotation */
    xv_viewport_info,
    NULL, /* read_viewport */
-   NULL, /* read_frame_raw */
 #ifdef HAVE_OVERLAY
    NULL, /* get_overlay_interface */
 #endif

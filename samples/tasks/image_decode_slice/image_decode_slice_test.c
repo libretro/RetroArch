@@ -87,6 +87,7 @@
 #include "../../../configuration.h"
 #include "../../../gfx/video_driver.h"
 #include "../../../gfx/gfx_display.h"
+#include "../../../gfx/gfx_surface.h"
 #include "../../../tasks/tasks_internal.h"
 
 /* ---- deterministic clock ----------------------------------------- */
@@ -129,6 +130,24 @@ bool video_driver_test_all_flags(enum display_flags testflag)
    return false;                 /* no 10-bit path */
 }
 
+/* The image task asks the surface layer what the driver wants before
+ * it decodes; here there is no driver, so the answer is what a
+ * software path takes: ARGB words, 8 bits a channel, no in-place
+ * texture update. */
+bool gfx_surface_query_requirements(unsigned width,
+      gfx_surface_requirements_t *req)
+{
+   if (!req)
+      return false;
+   req->rgba       = false;
+   req->formats    = GFX_SURFACE_PIXFMT_8888;
+   req->preferred  = GFX_SURFACE_PIXFMT_8888;
+   req->can_update = false;
+   req->pitch      = (size_t)width * sizeof(uint32_t);
+   req->align      = 4;
+   return true;
+}
+
 uint32_t video_driver_get_disp_flags(void)
 {
    return 0;                     /* no RGBA reorder */
@@ -141,6 +160,24 @@ bool video_driver_texture_load(void *data,
    (void)filter_type;
    if (id)
       *id = 1;
+   return true;
+}
+
+/* The asynchronous upload, as the contract has it: the handle comes
+ * back through done() and the image is released, both here and at
+ * once, which is what the synchronous case does. The sample does not
+ * run a video thread; what it exercises is the task, and the task
+ * has to hand its image and tag over exactly once either way. */
+bool video_driver_texture_load_async(void *data,
+      enum texture_filter_type filter_type,
+      void (*done)(void *user, uintptr_t handle), void *user,
+      void (*release)(void *img))
+{
+   (void)filter_type;
+   if (done)
+      done(user, (uintptr_t)1);
+   if (release)
+      release(data);
    return true;
 }
 

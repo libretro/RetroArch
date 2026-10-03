@@ -44,7 +44,6 @@
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <streams/file_stream.h>
-#include <lists/string_list.h>
 #include <retro_timers.h>
 #include <retro_miscellaneous.h>
 
@@ -188,64 +187,34 @@ error:
    return NULL;
 }
 
-/* Turn the fetch's response headers into the same string_list of
- * "Name: Value" lines that net_http.c produces, so consumers such as
+/* Turn the fetch's response headers into the same header block of
+ * "Name: Value" lines that net_http.c produces (each NUL-terminated,
+ * an empty line at the end), so consumers such as
  * network/cloud_sync/webdav.c behave identically on both backends.
+ * The lines are compacted in the buffer the browser filled, by
+ * net_http_headers_compact(): one allocation, and the same code the
+ * native-side test exercises.
  *
  * Browsers normalise response header names to lower case, so these
  * arrive as "www-authenticate: Digest ..." where the native path
  * gives "WWW-Authenticate: ...".  Header names are case-insensitive
  * per RFC 9110, so the consumers were what needed fixing. */
-static struct string_list *http_response_headers(emscripten_fetch_t *fetch)
+static char *http_response_headers(emscripten_fetch_t *fetch)
 {
-   union string_list_elem_attr attr;
-   struct string_list *list;
    size_t  len;
    char   *raw;
-   char   *p;
 
    if (!(len = emscripten_fetch_get_response_headers_length(fetch)))
       return NULL;
 
-   if (!(raw = (char*)malloc(len + 1)))
+   /* +2: the browser's terminator and room for the closing empty line */
+   if (!(raw = (char*)malloc(len + 2)))
       return NULL;
 
    emscripten_fetch_get_response_headers(fetch, raw, len + 1);
    raw[len] = '\0';
-
-   if (!(list = string_list_new()))
-   {
-      free(raw);
-      return NULL;
-   }
-
-   attr.i = 0;
-   p      = raw;
-
-   while (*p)
-   {
-      char *eol = strchr(p, '\n');
-      char *end;
-
-      if (!eol)
-         eol = p + strlen(p);
-      end = eol;
-      while (end > p && (end[-1] == '\r' || end[-1] == ' '))
-         end--;
-
-      if (end > p)
-      {
-         char save = *end;
-         *end      = '\0';
-         string_list_append(list, p, attr);
-         *end      = save;
-      }
-
-      p = (*eol) ? eol + 1 : eol;
-   }
-
-   free(raw);
-   return list;
+   net_http_headers_compact(raw);
+   return raw;
 }
 
 /* ------------------------------------------------------------------ */
@@ -292,7 +261,7 @@ task_finished:
    {
       if ((flg & RETRO_TASK_FLG_CANCELLED) > 0)
       {
-         string_list_free(http->response->headers);
+         free(http->response->headers);
          free(http->response->data);
          free(http->response);
          http->response = NULL;
@@ -340,7 +309,7 @@ static void task_http_transfer_cleanup(retro_task_t *task)
 
    if (data)
    {
-      string_list_free(data->headers);
+      free(data->headers);
       if (data->data)
          free(data->data);
       free(data);
@@ -495,10 +464,8 @@ static void *task_push_http_transfer_generic(
    /* Own a copy of the request body.  emscripten_fetch keeps the
     * pointer rather than copying it, so a caller's stack buffer, or
     * one it frees on return, would be read after the fact.  The
-    * length travels explicitly, which is the fix for
-    * task_push_webdav_put(): the old path passed put_data as a
-    * NUL-terminated string, truncating any binary payload at its
-    * first zero byte. */
+    * length travels explicitly so a binary body is sent whole, zero
+    * bytes included. */
    if (data && data_len)
    {
       if (!(http->req_data = (char*)malloc(data_len)))
@@ -595,17 +562,6 @@ void* task_push_webdav_mkdir(const char *url, bool mute,
          headers, mute, NULL, cb, user_data);
 }
 
-void* task_push_webdav_put(const char *url,
-      const void *put_data, size_t len, bool mute,
-      const char *headers, retro_task_callback_t cb, void *user_data)
-{
-   /* No "Expect: 100-continue" here, unlike task_http.c: the browser
-    * owns the request/response dance and rejects the header as a
-    * forbidden name. */
-   return task_push_http_transfer_generic(url, "PUT", put_data, len, NULL,
-         headers, mute, NULL, cb, user_data);
-}
-
 void* task_push_webdav_delete(const char *url, bool mute,
       const char *headers,
       retro_task_callback_t cb, void *user_data)
@@ -614,22 +570,40 @@ void* task_push_webdav_delete(const char *url, bool mute,
          headers, mute, NULL, cb, user_data);
 }
 
-void *task_push_webdav_move(const char *url,
-      const char *dest, bool mute, const char *headers,
+/* MOVE and COPY (RFC 4918 9.8, 9.9): the target in a Destination
+ * header, ahead of any caller headers. */
+static void *task_push_webdav_to_destination(const char *url,
+      const char *method, const char *dest, bool mute, const char *headers,
       retro_task_callback_t cb, void *user_data)
 {
    size_t _len;
    char dest_header[PATH_MAX_LENGTH + 512];
 
-   _len  = strlcpy(dest_header, "Destination: ", sizeof(dest_header));
+   _len  = strlcpy_lit(dest_header, "Destination: ", sizeof(dest_header));
    _len += strlcpy(dest_header + _len, dest,   sizeof(dest_header) - _len);
-   _len += strlcpy(dest_header + _len, "\r\n", sizeof(dest_header) - _len);
+   _len += strlcpy_lit(dest_header + _len, "\r\n", sizeof(dest_header) - _len);
 
    if (headers)
       strlcpy(dest_header + _len, headers, sizeof(dest_header) - _len);
 
-   return task_push_http_transfer_generic(url, "MOVE", NULL, 0, NULL,
+   return task_push_http_transfer_generic(url, method, NULL, 0, NULL,
          dest_header, mute, NULL, cb, user_data);
+}
+
+void *task_push_webdav_move(const char *url,
+      const char *dest, bool mute, const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
+   return task_push_webdav_to_destination(url, "MOVE", dest, mute,
+         headers, cb, user_data);
+}
+
+void *task_push_webdav_copy(const char *url,
+      const char *dest, bool mute, const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
+   return task_push_webdav_to_destination(url, "COPY", dest, mute,
+         headers, cb, user_data);
 }
 
 void* task_push_http_transfer_file(const char* url, bool mute,
@@ -724,9 +698,9 @@ void *task_push_http_transfer_with_content(const char *url,
    hdr[0] = '\0';
    if (content_type && *content_type)
    {
-      _len += strlcpy(hdr + _len, "Content-Type: ", sizeof(hdr) - _len);
+      _len += strlcpy_lit(hdr + _len, "Content-Type: ", sizeof(hdr) - _len);
       _len += strlcpy(hdr + _len, content_type,     sizeof(hdr) - _len);
-      _len += strlcpy(hdr + _len, "\r\n",           sizeof(hdr) - _len);
+      _len += strlcpy_lit(hdr + _len, "\r\n",           sizeof(hdr) - _len);
    }
    if (headers)
       strlcpy(hdr + _len, headers, sizeof(hdr) - _len);

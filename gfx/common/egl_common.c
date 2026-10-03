@@ -18,7 +18,11 @@
 #endif
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
+
+#include <lists/string_list.h>
+#include <compat/strl.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -372,6 +376,13 @@ void egl_bind_hw_render(egl_ctx_data_t *egl, bool enable)
          enable ? egl->hw_ctx : egl->ctx);
 }
 
+void egl_release_current(egl_ctx_data_t *egl)
+{
+   if (!egl || egl->dpy == EGL_NO_DISPLAY)
+      return;
+   _egl_make_current(egl->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+}
+
 void egl_swap_buffers(void *data)
 {
    egl_ctx_data_t *egl = (egl_ctx_data_t*)data;
@@ -402,10 +413,9 @@ void egl_set_swap_interval(egl_ctx_data_t *egl, int interval)
    }
 }
 
-void egl_get_video_size(egl_ctx_data_t *egl, unsigned *width, unsigned *height)
+void egl_get_video_size(egl_ctx_data_t *egl, unsigned *dims)
 {
-   *width  = 0;
-   *height = 0;
+   *dims = VIDEO_SCALE_PACK(0, 0);
 
    if (egl->dpy != EGL_NO_DISPLAY && egl->surf != EGL_NO_SURFACE)
    {
@@ -413,8 +423,7 @@ void egl_get_video_size(egl_ctx_data_t *egl, unsigned *width, unsigned *height)
 
       _egl_query_surface(egl->dpy, egl->surf, EGL_WIDTH, &gl_width);
       _egl_query_surface(egl->dpy, egl->surf, EGL_HEIGHT, &gl_height);
-      *width  = gl_width;
-      *height = gl_height;
+      *dims = VIDEO_SCALE_PACK(gl_width, gl_height);
    }
 }
 
@@ -473,6 +482,25 @@ static bool check_egl_client_extension(const char *name, size_t name_len)
 }
 #endif
 
+#ifndef EGL_DEVICE_EXT
+#define EGL_DEVICE_EXT               0x322C
+#endif
+#ifndef EGL_DRM_DEVICE_FILE_EXT
+#define EGL_DRM_DEVICE_FILE_EXT      0x3233
+#endif
+#ifndef EGL_RENDERER_EXT
+#define EGL_RENDERER_EXT             0x335F
+#endif
+
+/* The EGL device the next display is made on (EGL_EXT_explicit_device),
+ * or NULL for the implementation's own choice. */
+static void *egl_display_device = NULL;
+
+void egl_set_display_device(void *device)
+{
+   egl_display_device = device;
+}
+
 static EGLDisplay get_egl_display(EGLenum platform, void *native)
 {
    if (platform != EGL_NONE)
@@ -493,7 +521,21 @@ static EGLDisplay get_egl_display(EGLenum platform, void *native)
 
          if (ptr_eglGetPlatformDisplay)
          {
-            EGLDisplay dpy = ptr_eglGetPlatformDisplay(platform, native, NULL);
+            EGLDisplay dpy;
+            if (     egl_display_device
+                  && check_egl_client_extension("EGL_EXT_explicit_device",
+                     (sizeof("EGL_EXT_explicit_device")-1)))
+            {
+               EGLAttrib attribs[3];
+               attribs[0] = EGL_DEVICE_EXT;
+               attribs[1] = (EGLAttrib)egl_display_device;
+               attribs[2] = EGL_NONE;
+               if ((dpy = ptr_eglGetPlatformDisplay(platform, native,
+                           attribs)) != EGL_NO_DISPLAY)
+                  return dpy;
+               RARCH_WARN("[EGL] The chosen GPU cannot make this display; using the default.\n");
+            }
+            dpy = ptr_eglGetPlatformDisplay(platform, native, NULL);
             if (dpy != EGL_NO_DISPLAY)
                return dpy;
          }
@@ -687,15 +729,42 @@ bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs)
    return true;
 }
 
+#ifndef EGL_PRESENT_OPAQUE_EXT
+#define EGL_PRESENT_OPAQUE_EXT 0x31DF
+#endif
+
+/* Set by a context whose config has alpha it does not mean as
+ * transparency: the next window surface is presented opaque. */
+static bool egl_surface_opaque = false;
+
+void egl_set_surface_opaque(bool opaque)
+{
+   egl_surface_opaque = opaque;
+}
+
+static bool egl_display_has_extension(EGLDisplay dpy, const char *ext)
+{
+   const char *exts = _egl_query_string(dpy, EGL_EXTENSIONS);
+   return exts && strstr(exts, ext);
+}
+
 bool egl_create_surface(egl_ctx_data_t *egl, void *native_window)
 {
    EGLint window_attribs[] = {
 	   EGL_RENDER_BUFFER, EGL_BACK_BUFFER,
+	   EGL_NONE, EGL_NONE,
 	   EGL_NONE,
    };
 
    if (!egl_destroy_surface(egl))
       return false;
+
+   if (     egl_surface_opaque
+         && egl_display_has_extension(egl->dpy, "EGL_EXT_present_opaque"))
+   {
+      window_attribs[2] = EGL_PRESENT_OPAQUE_EXT;
+      window_attribs[3] = EGL_TRUE;
+   }
 
    egl->surf = _egl_create_window_surface(egl->dpy, egl->config, (NativeWindowType)native_window, window_attribs);
 
@@ -728,4 +797,151 @@ bool egl_destroy_surface(egl_ctx_data_t *egl)
 
    egl->surf = EGL_NO_SURFACE;
    return true;
+}
+
+#ifndef EGL_COLOR_COMPONENT_TYPE_EXT
+#define EGL_COLOR_COMPONENT_TYPE_EXT       0x3339
+#endif
+#ifndef EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT
+#define EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT 0x333B
+#endif
+
+bool egl_choose_scrgb_config(egl_ctx_data_t *egl, bool apply)
+{
+   static const EGLint attribs[] = {
+      EGL_SURFACE_TYPE,             EGL_WINDOW_BIT,
+      EGL_RENDERABLE_TYPE,          EGL_OPENGL_BIT,
+      EGL_COLOR_COMPONENT_TYPE_EXT, EGL_COLOR_COMPONENT_TYPE_FLOAT_EXT,
+      EGL_RED_SIZE,                 16,
+      EGL_GREEN_SIZE,               16,
+      EGL_BLUE_SIZE,                16,
+      EGL_ALPHA_SIZE,               16,
+      EGL_NONE
+   };
+   EGLConfig config;
+   EGLint n         = 0;
+   const char *exts = NULL;
+
+   if (!egl || !egl->dpy)
+      return false;
+   exts = _egl_query_string(egl->dpy, EGL_EXTENSIONS);
+   /* An RGBA16F surface carries alpha a compositor blends by; without a
+    * way to present it opaque, what the frame leaves undrawn shows
+    * whatever is behind the window. */
+   if (     !exts
+         || !strstr(exts, "EGL_EXT_pixel_format_float")
+         || !strstr(exts, "EGL_EXT_present_opaque"))
+      return false;
+   if (     !_egl_choose_config(egl->dpy, attribs, &config, 1, &n)
+         || n < 1)
+      return false;
+   if (apply)
+      egl->config = config;
+   return true;
+}
+
+/* EGL devices, as the GL GPU index lists them: index 0 is the
+ * implementation's own choice, the rest the hardware devices
+ * EGL_EXT_device_enumeration reports - under glvnd, every vendor's. */
+#define EGL_GPU_MAX 16
+static void    *egl_gpu_devices[EGL_GPU_MAX];
+static char     egl_gpu_files[EGL_GPU_MAX][64];
+static unsigned egl_gpu_count;
+
+struct string_list *egl_gpu_list_new(void)
+{
+#if defined(EGL_VERSION_1_5)
+   typedef EGLBoolean (EGLAPIENTRY *pfn_query_devices)(EGLint max,
+         void **devices, EGLint *num);
+   typedef const char *(EGLAPIENTRY *pfn_query_device_string)(
+         void *device, EGLint name);
+   void *found[EGL_GPU_MAX];
+   union string_list_elem_attr attr;
+   EGLint i, n                  = 0;
+   struct string_list *list     = NULL;
+   pfn_query_devices query      = NULL;
+   pfn_query_device_string qstr = NULL;
+
+   egl_gpu_count = 0;
+   attr.i        = 0;
+   if (     !check_egl_client_extension("EGL_EXT_device_enumeration",
+               (sizeof("EGL_EXT_device_enumeration")-1))
+         || !check_egl_client_extension("EGL_EXT_explicit_device",
+               (sizeof("EGL_EXT_explicit_device")-1)))
+      return NULL;
+   query = (pfn_query_devices)_egl_get_proc_address("eglQueryDevicesEXT");
+   qstr  = (pfn_query_device_string)_egl_get_proc_address(
+         "eglQueryDeviceStringEXT");
+   if (     !query || !qstr
+         || !query(EGL_GPU_MAX, found, &n) || n <= 0
+         || !(list = string_list_new()))
+      return NULL;
+
+   egl_gpu_devices[0]  = NULL;
+   egl_gpu_files[0][0] = '\0';
+   egl_gpu_count       = 1;
+   string_list_append(list, "System default", attr);
+
+   for (i = 0; i < n && egl_gpu_count < EGL_GPU_MAX; i++)
+   {
+      char label[256];
+      const char *exts = qstr(found[i], EGL_EXTENSIONS);
+      const char *file = NULL;
+
+      /* A software rasteriser is not a GPU to choose */
+      if (exts && strstr(exts, "EGL_MESA_device_software"))
+         continue;
+
+      label[0] = '\0';
+      if (exts && strstr(exts, "EGL_EXT_device_query_name"))
+      {
+         const char *vendor   = qstr(found[i], EGL_VENDOR);
+         const char *renderer = qstr(found[i], EGL_RENDERER_EXT);
+         /* NVIDIA's renderer string already starts with the vendor */
+         if (     vendor && renderer
+               && !strncmp(renderer, vendor, strlen(vendor)))
+            vendor = NULL;
+         snprintf(label, sizeof(label), "%s%s%s",
+               vendor   ? vendor   : "",
+               vendor && renderer ? " " : "",
+               renderer ? renderer : "");
+      }
+      if (exts && strstr(exts, "EGL_EXT_device_drm"))
+         file = qstr(found[i], EGL_DRM_DEVICE_FILE_EXT);
+      if (file)
+      {
+         size_t _len = strlen(label);
+         snprintf(label + _len, sizeof(label) - _len, "%s(%s)",
+               _len ? " " : "", file);
+      }
+      if (!label[0])
+         snprintf(label, sizeof(label), "EGL device %d", (int)i);
+
+      if (file)
+         strlcpy(egl_gpu_files[egl_gpu_count], file,
+               sizeof(egl_gpu_files[egl_gpu_count]));
+      else
+         egl_gpu_files[egl_gpu_count][0] = '\0';
+      egl_gpu_devices[egl_gpu_count++] = found[i];
+      string_list_append(list, label, attr);
+   }
+   return list;
+#else
+   return NULL;
+#endif
+}
+
+void *egl_gpu_device_at(int index)
+{
+   if (index <= 0 || (unsigned)index >= egl_gpu_count)
+      return NULL;
+   return egl_gpu_devices[index];
+}
+
+const char *egl_gpu_device_file(int index)
+{
+   if (     index <= 0 || (unsigned)index >= egl_gpu_count
+         || !egl_gpu_files[index][0])
+      return NULL;
+   return egl_gpu_files[index];
 }

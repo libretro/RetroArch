@@ -239,8 +239,11 @@ static int ser_dest_calls = 0;
 static void ser_dest_reset(void) { ser_dest_calls = 0; }
 static void ser_dest_note(void *p) { (void)p; ser_dest_calls++; }
 
+static unsigned core_ser_calls;
+
 bool core_serialize(retro_ctx_serialize_info_t *info)
 {
+   core_ser_calls++;
    if (core_ser_fails || !info || info->size < core_len)
       return false;
    ser_dest_note((void*)info->data);
@@ -300,6 +303,8 @@ runloop_state_t *runloop_state_get_ptr(void) { return &stub_runloop; }
 video_driver_state_t *video_state_get_ptr(void) { return &stub_video; }
 bool video_driver_cached_frame_is_hw_render(void) { return false; }
 void *savefile_ptr_get(void) { return NULL; }
+bool audio_driver_jump_fade_begin(void) { return false; }
+void audio_driver_jump_fade_end(bool ramped) { (void)ramped; }
 
 bool runloop_get_savestate_path(char *path, size_t len, int slot)
 {
@@ -513,6 +518,45 @@ static void test_serialize_failure(void)
 }
 
 /* -----------------------------------------------------------------
+ * A background save defers only the core's serialize to the handler
+ * - that deferral is the whole point of the core's
+ * SET_SAVE_STATE_IN_BACKGROUND request - and a foreground save pays
+ * it at push. Where the serialize runs is the contract the thread
+ * audit holds from the other side: the handler's path reads no live
+ * frontend state, so the core call is the only work left in it.
+ * ----------------------------------------------------------------- */
+static void test_background_serialize_timing(void)
+{
+   const char *path = "sst_bg_timing.state";
+   unsigned before;
+
+   frontend_reset();
+   core_fill(128 * 1024);
+   filestream_delete(path);
+
+   set_save_state_in_background(true);
+   before = core_ser_calls;
+   content_save_state(path, true);
+   okf(core_ser_calls == before,
+       "a background push serializes nothing at push");
+   pump(1000);
+   okf(core_ser_calls == before + 1,
+       "the handler serializes the core exactly once");
+   okf(file_size(path) > 0, "and the state landed");
+   set_save_state_in_background(false);
+   filestream_delete(path);
+
+   before = core_ser_calls;
+   content_save_state(path, true);
+   okf(core_ser_calls == before + 1,
+       "a foreground push serializes at push");
+   pump(1000);
+   okf(core_ser_calls == before + 1,
+       "and the handler only writes what the push made");
+   filestream_delete(path);
+}
+
+/* -----------------------------------------------------------------
  * 5. A failed open must terminate the task, not retry forever.  Save
  *    tasks are blocking, so a task that never finishes takes the
  *    whole blocking queue with it.
@@ -711,6 +755,25 @@ static void test_blocking_exclusion(void)
 
    okf(file_size(second) == -1,
        "a second save is refused while one is in flight");
+
+   /* A load refused the same way leaves no load pending: left set, the
+    * flag held a content close and a movie recording waiting forever on
+    * a load that never comes. LeakSan covers what the refusal frees. */
+   {
+      const char *third = "sst_excl_c.state";
+      FILE       *f     = fopen(third, "wb");
+      bool        ok;
+      if (f)
+      {
+         fputs("not a state, never read", f);
+         fclose(f);
+      }
+      ok = content_load_state(third, false, false);
+      okf(!ok, "a load is refused while a save is in flight");
+      okf(!content_load_state_in_progress(NULL),
+          "the refused load is not left pending");
+      filestream_delete(third);
+   }
 
    pump(1000);
 
@@ -988,6 +1051,56 @@ static void test_undo_allocates_nothing(void)
    content_reset_savestate_backups();
 }
 
+/* -----------------------------------------------------------------
+ * Closing content while a save is in flight.
+ *
+ * runloop_event_deinit_core() unloads the core's dylib, and the save
+ * and load handlers call into it - retro_serialize via
+ * content_get_serialized_data, retro_unserialize via
+ * core_unserialize.  A worker still inside one of those when the
+ * library goes away dispatches into freed code.  That is why closing
+ * content calls content_wait_for_save_state_task(), and why that
+ * wait cannot simply be deleted the way the other blocking waits in
+ * this series were.
+ *
+ * What this pins is the property the unload depends on: the wait
+ * does not return until the save has actually finished.  If it ever
+ * returned early - on a budget boundary, say - the unload would land
+ * while a worker was still inside the core.
+ *
+ * The file is checked incomplete before the wait and complete after,
+ * so a wait that silently became a no-op fails here rather than
+ * turning into a crash on a device.
+ * ----------------------------------------------------------------- */
+static void test_close_waits_for_save(void)
+{
+   const char *path = "sst_close_wait.state";
+   size_t sz        = 64 * TEST_SAVE_STATE_CHUNK;   /* 6.25 MB */
+   long   before;
+
+   frontend_reset();
+   core_fill(sz);
+   filestream_delete(path);
+   /* One quantum per tick: the slow-storage case, where a close is
+    * long enough for the user to feel it. */
+   clock_step = TEST_TICK_BUDGET_US;
+
+   content_save_state(path, true);
+
+   before = file_size(path);
+   okf(before != (long)content_get_serialized_size(),
+       "the save is genuinely unfinished when the close begins");
+
+   /* Exactly what closing content does. */
+   content_wait_for_save_state_task();
+
+   okf(file_size(path) == (long)content_get_serialized_size(),
+       "closing content waits for the save to finish before "
+       "the core could be unloaded");
+
+   filestream_delete(path);
+}
+
 static int run_default_lane(void)
 {
    printf("== task_save.c I/O regression oracle ==\n");
@@ -1001,7 +1114,9 @@ static int run_default_lane(void)
    test_roundtrip(0, "round-trip is byte-exact with an unexpired budget");
    test_roundtrip(TEST_TICK_BUDGET_US,
          "round-trip is byte-exact at one quantum per tick");
+   test_close_waits_for_save();
    test_serialize_failure();
+   test_background_serialize_timing();
    test_open_failure();
    test_truncated_state();
    test_short_file();

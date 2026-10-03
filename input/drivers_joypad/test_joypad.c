@@ -30,8 +30,13 @@
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
 #include <formats/rjson.h>
+#include <formats/rjson_stream.h>
+
+#include <compat/strl.h>
 
 #include "../../config.def.h"
+#include "../../command.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../input_driver.h"
 #include "../../tasks/tasks_internal.h"
@@ -45,6 +50,10 @@
 
 #define JOYPAD_TEST_COMMAND_ADD_CONTROLLER          1
 #define JOYPAD_TEST_COMMAND_REMOVE_CONTROLLER       2
+/* Save Controller Profile for the port in param_num, as the menu does */
+#define JOYPAD_TEST_COMMAND_SAVE_PROFILE            3
+/* Quit, once what the steps before it started has been applied */
+#define JOYPAD_TEST_COMMAND_QUIT                    4
 #define JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST     16
 #define JOYPAD_TEST_COMMAND_BUTTON_PRESS_LAST      31
 #define JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST   32
@@ -184,33 +193,35 @@ static bool input_test_file_read(const char* file_path)
 {
    bool success            = false;
    JTifJSONContext context = {0};
-   RFILE *file             = NULL;
+   uint8_t *file_buf       = NULL;
+   int64_t file_len        = 0;
    rjson_t* parser;
 
    /* Sanity check */
-   if (  (!file_path || !*file_path)
-       || !path_is_valid(file_path)
-      )
+   if (!file_path || !*file_path)
    {
       RARCH_DBG("[Test joypad] No test input file supplied.\n");
       return false;
    }
 
-   /* Attempt to open test input file */
-   file = filestream_open(
-         file_path,
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
-   if (!file)
+   /* Read the whole file in one operation: it is tiny and always
+    * parsed in full, so a single open/size/read/close beats a
+    * pre-open stat plus the chunked callback path (which itself
+    * sizes the stream with an extra fstat).  The stat below runs
+    * only to classify a failure. */
+   if (!filestream_read_file(file_path,
+         (void**)&file_buf, &file_len))
    {
-      RARCH_ERR("[Test joypad] Failed to open test input file: \"%s\".\n",
-            file_path);
+      if (!path_is_valid(file_path))
+         RARCH_DBG("[Test joypad] No test input file supplied.\n");
+      else
+         RARCH_ERR("[Test joypad] Failed to open test input file: \"%s\".\n",
+               file_path);
       return false;
    }
 
    /* Initialise JSON parser */
-   if (!(parser = rjson_open_rfile(file)))
+   if (!(parser = rjson_open_buffer(file_buf, (size_t)file_len)))
    {
       RARCH_ERR("[Test joypad] Failed to create JSON parser.\n");
       goto end;
@@ -255,8 +266,8 @@ end:
    if (context.param_str)
       free(context.param_str);
 
-   /* Close log file */
-   filestream_close(file);
+   /* Release file contents */
+   free(file_buf);
 
    if (last_test_step >= MAX_TEST_STEPS)
    {
@@ -280,14 +291,33 @@ end:
 /* Test input file handling end */
 /********************************/
 
+static char test_joypad_name_buf[MAX_USERS][256];
+
 static const char *test_joypad_name(unsigned pad)
 {
+   const char *n;
+   char *at;
    if (pad >= MAX_USERS || (!test_joypads[pad].name
        || !*test_joypads[pad].name))
       return NULL;
    if (strstr(test_joypads[pad].name, ") "))
-      return strstr(test_joypads[pad].name, ") ") + 2;
-   return test_joypads[pad].name;
+      n = strstr(test_joypads[pad].name, ") ") + 2;
+   else
+      n = test_joypads[pad].name;
+   strlcpy(test_joypad_name_buf[pad], n, sizeof(test_joypad_name_buf[pad]));
+   if ((at = strstr(test_joypad_name_buf[pad], "@@")))
+      *at = '\0';
+   return test_joypad_name_buf[pad];
+}
+
+static const char *test_joypad_phys(unsigned pad)
+{
+   const char *at;
+   if (pad >= MAX_USERS || !test_joypads[pad].name)
+      return NULL;
+   if ((at = strstr(test_joypads[pad].name, "@@")))
+      return at + 2;
+   return NULL;
 }
 
 static void test_joypad_autodetect_add(unsigned autoconf_pad)
@@ -309,7 +339,7 @@ static void test_joypad_autodetect_add(unsigned autoconf_pad)
 
    input_autoconfigure_connect(
          test_joypad_name(autoconf_pad),
-         NULL, NULL,
+         NULL, test_joypad_phys(autoconf_pad),
          "test",
          autoconf_pad,
          vid,
@@ -415,8 +445,7 @@ static int16_t test_joypad_state(
 static void test_joypad_poll(void)
 {
 
-   video_driver_state_t *video_st = video_state_get_ptr();
-   uint64_t curr_frame            = video_st->frame_count;
+   uint64_t curr_frame            = video_driver_get_frame_count();
    unsigned i;
 
    for (i=0; i<last_test_step; i++)
@@ -433,6 +462,44 @@ static void test_joypad_poll(void)
          {
             test_joypad_autodetect_remove(input_test_steps[i].param_num);
             input_test_steps[i].handled = true;
+         }
+         else if (input_test_steps[i].action == JOYPAD_TEST_COMMAND_SAVE_PROFILE)
+         {
+#ifdef HAVE_CONFIGFILE
+            unsigned port        = input_test_steps[i].param_num;
+            settings_t *settings = config_get_ptr();
+            /* A controller added by an earlier step is only there
+             * once its autoconfig task has been applied, and frames
+             * do not wait for that.  The menu has no entry to save
+             * until then, so neither does the script: the step stays
+             * due and is taken on the first poll after, and the steps
+             * behind it wait their turn. */
+            if (input_autoconfigure_pending())
+               break;
+            if (port < MAX_USERS)
+            {
+               unsigned dev     = settings->uints.input_joypad_index[port];
+               const char *name = (dev < MAX_USERS)
+                  ? input_config_get_device_name(dev) : NULL;
+               RARCH_LOG("[Test joypad] Save profile for port %u: %s.\n",
+                     port + 1,
+                     (name && *name && config_save_autoconf_profile(name, port))
+                     ? "saved" : "failed");
+            }
+#endif
+            input_test_steps[i].handled = true;
+         }
+         else if (input_test_steps[i].action == JOYPAD_TEST_COMMAND_QUIT)
+         {
+            /* A script that ends here ends the run, instead of the
+             * run idling until something outside kills it.  A connect
+             * or disconnect still in flight is part of the script, so
+             * it is applied - and logged - first. */
+            if (input_autoconfigure_pending())
+               break;
+            input_test_steps[i].handled = true;
+            command_event(CMD_EVENT_QUIT, NULL);
+            break;
          }
          else if (   input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST
                   && input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_PRESS_LAST)

@@ -204,7 +204,6 @@ static const struct
    char s_ae87ea53[264];
    char s_9834febe[433];
    char s_93805cc8[488];
-   char s_b495662b[125];
    char s_9953f4e2[260];
    char s_de76d2dc[21];
    char s_79e212bd[8];
@@ -219,6 +218,7 @@ static const struct
    char s_fc24216f[21];
    char s_728aa9b3[22];
    char s_929e8e7a[23];
+   char s_51edb70d[24];
    char s_9b914f7f[26];
    char s_4ad41e20[25];
    char s_24c106e6[6];
@@ -254,6 +254,7 @@ static const struct
    char s_35a1323d[13];
    char s_f72667c9[16];
    char s_adce4374[15];
+   char s_5984f4f9[6];
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[49];
 #endif
@@ -261,7 +262,6 @@ static const struct
    char s_d9a51d02[17];
    char s_12e77e8f[7];
    char s_98760b94[31];
-   char s_af6007a1[18];
    char s_da068369[11];
    char s_daead8a5[5];
    char s_48c208ee[20];
@@ -270,7 +270,9 @@ static const struct
    char s_f7e668f4[12];
    char s_f4740f16[40];
    char s_d95f1db1[43];
+   char s_3c9950ad[56];
    char s_aafc147d[16];
+   char s_734f5242[45];
    char s_55404857[12];
    char s_792e0069[23];
    char s_a9d2227f[26];
@@ -517,7 +519,7 @@ static const struct
 #ifdef HAVE_GAME_AI
    char s_8dc1bc3e[10];
 #endif
-   char s_881efe76[18];
+   char s_881efe76[20];
    char s_1e4264a1[7];
    char s_58072ab5[25];
    char s_babee9c1[11];
@@ -566,7 +568,7 @@ static const struct
    char s_d1dc5a72[36];
    char s_1d9a045d[32];
    char s_9ada0438[43];
-   char s_eb66d46b[19];
+   char s_eb66d46b[24];
    char s_145f5880[18];
    char s_b1b9fd35[33];
    char s_0cc72b4d[32];
@@ -616,12 +618,38 @@ static const struct
    char s_bf21615a[7];
    char s_15f24ff4[13];
    char s_ec7e8026[7];
-   char s_5d29b870[18];
+   char s_5d29b870[20];
+   char s_bdea22f3[23];
+   char s_54250975[22];
+   char s_558faf3a[12];
+   char s_5fb85af7[12];
+   char s_6996339b[5];
+   char s_bfba8cdb[11];
    char s_08e9410c[22];
    char s_d95824aa[22];
    char s_639f529e[17];
    char s_4927597c[15];
    char s_77b74366[13];
+   char s_5266be65[19];
+   char s_8aeea24b[5];
+   char s_146397b0[10];
+   char s_2821fa51[8];
+   char s_a10cbab5[5];
+   char s_a1381a82[12];
+   char s_f3a18a9f[9];
+   char s_14691293[16];
+   char s_cab4e5d1[13];
+   char s_f3b9b113[14];
+   char s_ab49119c[8];
+   char s_94ab8f8c[20];
+   char s_deed0812[18];
+   char s_dfa3c8c3[10];
+   char s_a3825f18[12];
+   char s_ef2d0a03[22];
+   char s_ad17a194[12];
+   char s_ddf679b9[8];
+   char s_7137e7c2[23];
+   char s_f9fe3b9c[10];
    char s_3b7e9d77[12];
    char s_10342503[12];
    char s_d31f6d88[16];
@@ -744,6 +772,9 @@ static const struct
    char s_700d45a9[25];
    char s_2a30a561[25];
    char s_6ae6f953[23];
+#ifdef ANDROID
+   char s_b573f90c[33];
+#endif
    char s_e28bc72f[27];
    char s_0b2a8528[47];
    char s_ea5757a0[8];
@@ -792,6 +823,7 @@ static const struct
    char s_56e1b336[21];
    char s_313d15c0[11];
    char s_e9f0dd82[37];
+   char s_0bebb490[15];
    char s_72765a06[18];
    char s_72765a07[18];
    char s_72765a08[18];
@@ -926,6 +958,9 @@ static const struct
    char s_d7c1d887[20];
    char s_8c49943c[21];
    char s_d2c6b214[27];
+#ifdef HAVE_SDL3
+   char s_ba511c01[33];
+#endif
 #ifdef ANDROID
    char s_dd65ea83[29];
 #endif
@@ -1064,7 +1099,8 @@ static const struct
 #endif
    char s_136eaaf4[24];
    char s_68d27147[14];
-   char s_f02f73fc[37];
+   char s_e5b971a0[6];
+   char s_17615fcf[6];
    char s_3a0a3fef[18];
    char s_1b6ed818[21];
    char s_89a75c21[22];
@@ -1097,6 +1133,7 @@ static const struct
    char s_d05c8ee3[20];
    char s_13bce77f[15];
    char s_1b2ee6c4[27];
+   char s_81589fd5[21];
    char s_26e9cde7[32];
    char s_b539ec6c[15];
    char s_f89e1cbc[47];
@@ -1122,6 +1159,7 @@ static const struct
    char s_5e519829[27];
 #endif
 #endif
+   char s_a6e5d0ee[22];
    char s_f228c6c5[18];
    char s_11926382[24];
    char s_645ae416[29];
@@ -1144,6 +1182,7 @@ static const struct
    char s_ac60056b[18];
    char s_54d6b95e[14];
    char s_1ad09b45[19];
+   char s_774e2332[29];
    char s_87064238[27];
    char s_2a273dd7[24];
    char s_5e5fc0ee[29];
@@ -1153,6 +1192,7 @@ static const struct
    char s_1193e37b[49];
    char s_729a38da[30];
    char s_4ca32b24[17];
+   char s_b51fb85c[34];
    char s_9b2a97d9[18];
    char s_94ce603f[42];
    char s_0c1e1a65[41];
@@ -1168,9 +1208,7 @@ static const struct
    char s_b201bb70[34];
    char s_b66840e9[33];
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    char s_f0db2883[29];
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -1404,7 +1442,6 @@ static const struct
    char s_012938fb[31];
    char s_a747cdc9[47];
    char s_2f169651[22];
-   char s_73674a86[20];
    char s_705eee28[40];
    char s_62af62ac[39];
    char s_12b25a4b[43];
@@ -1526,7 +1563,6 @@ static const struct
    char s_74b77b4a[19];
    char s_7534cfc9[11];
    char s_36259b63[21];
-   char s_37368130[15];
    char s_d51f54a2[14];
    char s_b35f573c[11];
    char s_1cad7751[11];
@@ -1851,8 +1887,10 @@ static const struct
    char s_b160f7a1[31];
    char s_cd5ff0f5[20];
    char s_8b92e740[22];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_e2415d78[27];
+#endif
 #endif
    char s_aeef8db2[18];
    char s_14d20957[26];
@@ -1880,18 +1918,40 @@ static const struct
    char s_01a73130[35];
    char s_44ebca0d[35];
    char s_608ac5a1[31];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_3839f91d[20];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_86b07599[30];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_8d5f85ee[21];
    char s_9b023eee[27];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_ccae82ba[10];
    char s_ad6e88de[11];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_c7bc8298[21];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_e63b035a[22];
    char s_d21d875b[15];
-   char s_ae86fed0[30];
+   char s_ae86fed0[16];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b12ae22e[19];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_b2d073c7[9];
    char s_1cbc2657[12];
 #endif
@@ -1925,7 +1985,9 @@ static const struct
    char s_52e94a24[22];
    char s_d748f469[36];
    char s_9f006f5c[20];
+   char s_773482e7[14];
    char s_7fec5ca7[12];
+   char s_f05bb3b5[12];
    char s_9374b989[19];
    char s_7943e750[31];
    char s_cec8f66d[25];
@@ -1958,6 +2020,8 @@ static const struct
    char s_519cd5f8[19];
    char s_43ac80a0[11];
    char s_6959ce80[13];
+   char s_886631ec[16];
+   char s_aa628249[7];
    char s_ebe994b4[14];
    char s_1c62c301[8];
    char s_a8bb35b6[11];
@@ -2019,17 +2083,17 @@ static const struct
    char s_91887598[9];
    char s_1b88da11[13];
    char s_a685766d[26];
-   char s_95cbebbd[21];
+   char s_95cbebbd[22];
    char s_6b80a1bc[35];
-   char s_eb0d7f1d[25];
+   char s_eb0d7f1d[26];
    char s_99a77122[22];
-   char s_51cbf8f0[34];
+   char s_51cbf8f0[35];
    char s_4a5b7672[23];
-   char s_8fa79de5[27];
+   char s_8fa79de5[28];
    char s_5eee10e5[34];
    char s_79a4338e[20];
-   char s_eb3c8b7f[35];
-   char s_6ae93e68[28];
+   char s_eb3c8b7f[36];
+   char s_6ae93e68[29];
    char s_e2f9cd07[14];
    char s_7277e127[26];
    char s_8203db0a[6];
@@ -2094,11 +2158,14 @@ static const struct
    char s_44e1c38f[29];
    char s_57047267[11];
    char s_6665b7fc[44];
+   char s_2e6ad26e[11];
+   char s_7fbf0860[11];
    char s_f417f6f1[23];
    char s_020e2bc5[26];
    char s_59f183c8[27];
    char s_59f183c9[27];
    char s_6b395e21[11];
+   char s_00ab7f5e[38];
    char s_b45e4c28[25];
    char s_e92f8e07[25];
    char s_e9bca139[27];
@@ -2107,6 +2174,7 @@ static const struct
    char s_a12ce1bf[8];
    char s_bfa23080[13];
    char s_ec326380[9];
+   char s_8a86d1de[16];
    char s_8fc1e4da[9];
    char s_14ed14d0[4];
    char s_5c87e95b[19];
@@ -2195,6 +2263,7 @@ static const struct
    char s_0050d725[20];
    char s_21d7a1f6[8];
    char s_d2fe3ed2[16];
+   char s_1edf58ee[24];
    char s_541958e5[8];
    char s_45816e1d[23];
    char s_730df420[16];
@@ -2232,10 +2301,12 @@ static const struct
    char s_b9e24170[27];
    char s_30140cb5[13];
    char s_25a21976[72];
+   char s_95a59dc0[18];
    char s_7f2380a0[9];
    char s_e0609921[15];
    char s_b3c7fa93[18];
    char s_f6a0db44[18];
+   char s_4eecff92[39];
    char s_0ca1128d[23];
    char s_65e6ea7c[8];
    char s_7b4dd5b5[10];
@@ -2250,6 +2321,8 @@ static const struct
    char s_de3874f9[14];
    char s_650f496e[13];
    char s_226e4c6c[12];
+   char s_565fbcfe[8];
+   char s_88ddcfc3[10];
    char s_3e3caa7d[26];
    char s_8d5d41b3[15];
    char s_988f5574[18];
@@ -2277,9 +2350,11 @@ static const struct
    char s_f4b6d13e[36];
    char s_25e89959[5];
    char s_a7468d68[19];
+   char s_b1d6fea6[11];
    char s_aa0659db[19];
    char s_49757b91[19];
    char s_660eb9c4[19];
+   char s_b6ca9df2[24];
 #if defined(RARCH_MOBILE)
    char s_b754294b[49];
    char s_b754294c[49];
@@ -2287,6 +2362,7 @@ static const struct
    char s_9ca4bbd7[24];
    char s_9ca4bbd8[24];
    char s_5508c468[55];
+   char s_ed6dfafb[51];
    char s_e59c4ded[33];
    char s_5a8511ce[32];
    char s_579b5e71[46];
@@ -2327,7 +2403,11 @@ static const struct
    char s_daf6d7e2[49];
    char s_042502c4[66];
    char s_90ae9a9f[96];
+   char s_81b79d5b_0[500];
+   char s_81b79d5b_1[126];
    char s_c9235dab[50];
+   char s_330be970_0[500];
+   char s_330be970_1[47];
    char s_98b02857[200];
    char s_6c3c586d[215];
    char s_950e7a66[27];
@@ -2494,7 +2574,7 @@ static const struct
    char s_89c3a7db[30];
    char s_35f2309a[39];
    char s_a607c53c[29];
-   char s_35f24807[239];
+   char s_35f24807[247];
    char s_c8781974[118];
 #ifdef HAVE_MIST
    char s_c9c04b6d[66];
@@ -2518,7 +2598,6 @@ static const struct
    char s_79b8ce4a[71];
    char s_a1a8257e[132];
    char s_282f7955[94];
-   char s_d5231783[100];
    char s_a68d6d11[66];
    char s_74022c02[95];
    char s_8abad013[91];
@@ -2592,6 +2671,9 @@ static const struct
    char s_5c8a1d63[115];
    char s_744c0f80[66];
    char s_2aa39081[42];
+#ifdef ANDROID
+   char s_50f43cfa[268];
+#endif
    char s_e85b309d[95];
    char s_cd94bb16[209];
    char s_a17a67e1[61];
@@ -2663,8 +2745,6 @@ static const struct
    char s_d9153542[44];
    char s_8e48ec69[35];
    char s_cd43c108[80];
-   char s_cd46e260[92];
-   char s_cd482ffe[100];
    char s_49336383[39];
    char s_e92351d4[104];
    char s_8e22cdce[62];
@@ -2814,7 +2894,6 @@ static const struct
    char s_193e1462[55];
    char s_6895dfd6[51];
    char s_788364f5[81];
-   char s_dd9ff22a[57];
    char s_db495a9d[41];
    char s_ddc672a7[54];
    char s_ccea261d[116];
@@ -2841,6 +2920,7 @@ static const struct
    char s_87ac0bd1[73];
    char s_236ddb2d[102];
    char s_d27e63b2[223];
+   char s_2297ba83[264];
    char s_32728f95[103];
    char s_c4eae01a[126];
    char s_bb0852aa[167];
@@ -2863,6 +2943,7 @@ static const struct
    char s_6435c857[52];
 #endif
 #endif
+   char s_acca011c[94];
    char s_01efec73[47];
    char s_d3fc9970[49];
    char s_740bd7c4[54];
@@ -2878,7 +2959,9 @@ static const struct
    char s_aebcb136[132];
    char s_8b636a26[30];
    char s_8f707459[41];
+   char s_5aa622cc[181];
    char s_2b908073[254];
+   char s_64bea160[186];
    char s_97c62766[148];
    char s_6f458a85[100];
    char s_41702fdc[55];
@@ -2886,6 +2969,7 @@ static const struct
    char s_0a583569[89];
    char s_5b821b48[54];
    char s_5c6a50d2[95];
+   char s_c4d0ac0a[53];
    char s_84127a47[70];
    char s_a47f53ed[113];
    char s_cbdab193[345];
@@ -2894,7 +2978,12 @@ static const struct
    char s_70e21550[62];
    char s_f3e3ccc1[57];
    char s_0ca85937[64];
+   char s_23709d35[57];
+   char s_48b0d8fa[52];
    char s_9ce2f939[85];
+   char s_20f7870f[60];
+   char s_ed2240de[51];
+   char s_51e884d7[78];
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
    char s_b40b91b9[106];
@@ -2967,6 +3056,9 @@ static const struct
    char s_a5ffd3d0[36];
 #ifdef _3DS
    char s_0d834bc5[71];
+#endif
+#ifdef HAVE_NFSCLIENT
+   char s_3487ce71[43];
 #endif
    char s_d2ae640b[81];
    char s_8e5bac99[84];
@@ -3226,8 +3318,10 @@ static const struct
    char s_bce9b94f[39];
    char s_d32f5a63[32];
    char s_9177176e[34];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_a1fdf4a6[39];
+#endif
 #endif
    char s_97d77020[31];
    char s_59f05605[38];
@@ -3243,19 +3337,39 @@ static const struct
    char s_4b009af3[46];
    char s_46c57dde[69];
    char s_7eb20ecf[78];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[49];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_69c0e487[59];
-   char s_706ff4dc[190];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_a0d1a85c[71];
-   char s_b5966528[20];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   char s_b5966528[183];
    char s_907ef7cc[43];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b0a46506[53];
-   char s_04624c88[57];
-   char s_91976dbe[36];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   char s_91976dbe[49];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_f6492edc[49];
-   char s_9bb85635[37];
-   char s_22a05685[40];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   char s_9bb85635[211];
+   char s_22a05685[70];
 #endif
    char s_f3bfa8b9[103];
    char s_5fe2cee5[81];
@@ -3370,6 +3484,7 @@ static const struct
    char s_0d96ed73[45];
    char s_9f0fd076[114];
    char s_9f0fd077[114];
+   char s_c315b54c[429];
    char s_7a2050af[42];
    char s_d2859556[69];
    char s_ef13be35[80];
@@ -3377,6 +3492,7 @@ static const struct
    char s_698d5124[97];
    char s_7e43d750[181];
    char s_87ca7bc6[170];
+   char s_cfa51e8c[423];
    char s_b62c2f7e[288];
    char s_456fcbc9[305];
    char s_82fab47a[28];
@@ -3399,7 +3515,6 @@ static const struct
    char s_1eebf4f8[179];
    char s_2f2ca2b6[177];
    char s_2c9be635[121];
-   char s_05ec12e6[156];
    char s_b5a603de[51];
    char s_d9c2db25[53];
 #ifdef HAVE_ODROIDGO2
@@ -3410,7 +3525,6 @@ static const struct
    char s_eec252b5[124];
    char s_f4e4e921[227];
    char s_7968f59d[31];
-   char s_8cee3615[145];
    char s_58c80718[304];
    char s_67d549fd[33];
    char s_afac733c[34];
@@ -3435,13 +3549,12 @@ static const struct
    char s_261210b3[77];
    char s_3a4b246c[106];
    char s_2ceab671[133];
-   char s_977f8e82[108];
    char s_3c679f0a[304];
    char s_5b059407[144];
    char s_36033606[169];
+   char s_d62ed5dc[347];
    char s_2e69508b[316];
    char s_7e96b5ce[40];
-   char s_3547866d[129];
    char s_c2314d30[190];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[162];
@@ -3476,6 +3589,7 @@ static const struct
    char s_6ac06624[148];
    char s_f765b650[52];
    char s_7059a595[55];
+   char s_6d1448c0[51];
    char s_cf0b487b[98];
    char s_840f4569[36];
    char s_c4928773[52];
@@ -4497,9 +4611,6 @@ static const struct
    "\304\217. Nekombinujte so Swap Interval > 1, BFI, Frame Delay alebo Sync to Exact Content Framer"
    "ate. Syst\303\251mov\303\251 VRR m\303\264\305\276ete necha\305\245 zapnut\303\251, len nie toto"
    " nastavenie.",
-   "Pou\305\276i\305\245 vl\303\241knov\303\275 video ovl\303\241da\304\215. Pou\305\276itie m\303"
-   "\264\305\276e zlep\305\241i\305\245 v\303\275kon za mo\305\276n\303\272 cenu latencie a v\303"
-   "\244\304\215\305\241ieho video trhania.",
    "Synchronizova\305\245 s presnou frekvenciou obsahu. T\303\241to mo\305\276nos\305\245 je ekvival"
    "entom vyn\303\272tenia x1 r\303\275chlosti pri zachovan\303\255 mo\305\276nosti r\303\275chleho "
    "prev\303\255jania. \305\275iadna odch\303\275lka od obnovovacej frekvencie po\305\276adovanej co"
@@ -4517,6 +4628,7 @@ static const struct
    "< hodnota vibr\303\241ci\303\255",
    "!= hodnota vibr\303\241ci\303\255",
    "Povoli\305\245 pr\303\255stupnos\305\245",
+   "N\303\241stroj Text-to-Speech",
    "R\303\275chlos\305\245 Text-to-Speech",
    "Zjednodu\305\241enie pr\303\255stupu",
    "Heslo",
@@ -4552,6 +4664,7 @@ static const struct
    "Re\305\276im re\304\215i",
    "Cie\304\276ov\303\275 jazyk",
    "URL slu\305\276by AI",
+   "V\305\276dy",
 #ifndef HAVE_DYNAMIC
    "V\305\276dy znova na\304\215\303\255ta\305\245 core pri spusten\303\255 obsahu",
 #endif
@@ -4559,7 +4672,6 @@ static const struct
    "Ikona aplik\303\241cie",
    "Assety",
    "Otvori\305\245 ovl\303\241dac\303\255 panel ASIO",
-   "Blokova\305\245 sn\303\255mky",
    "Zariadenie",
    "Zvuk",
    "DPS z\303\241suvn\303\275 modul",
@@ -4568,7 +4680,9 @@ static const struct
    "Zmie\305\241ava\304\215",
    "Stlmenie zvuku pri r\303\275chlom prev\303\255jan\303\255",
    "Zr\303\275chlenie zvuku pri r\303\275chlom prev\303\255jan\303\255",
+   "Prevzorkova\305\245 v celo\304\215\303\255selnom form\303\241te (odpor\303\272\304\215anie)",
    "Zvukov\303\251 filtre",
+   "Vyjedn\303\241vanie form\303\241tu zvuku (odpor\303\272\304\215anie)",
    "Pl\303\241vaj\303\272ce",
    "Oneskorenie zvuku (ms)",
    "Maxim\303\241lny \304\215asov\303\275 posun",
@@ -4816,7 +4930,7 @@ static const struct
 #ifdef HAVE_GAME_AI
    "Hern\303\251 AI",
 #endif
-   "Inform\303\241cie Jadra",
+   "Inform\303\241cie o jadre",
    "Autori",
    "Cache info s\303\272borov core",
    "Kateg\303\263rie",
@@ -4868,8 +4982,8 @@ static const struct
    "Z\303\241lohova\305\245 cores pri aktualiz\303\241cii",
    "Ve\304\276kos\305\245 hist\303\263rie z\303\241loh core",
    "Automaticky extrahova\305\245 stiahnut\303\275 arch\303\255v",
-   "URL Buildbot Cores",
-   "Stiahnutie Jadier",
+   "URL jadier na buildbote",
+   "Stiahnutie jadier",
    "Nastavenia aktualiz\303\241tora jadier",
    "Zobrazi\305\245 experiment\303\241lne cores",
    "Architekt\303\272ra CPU",
@@ -4918,16 +5032,42 @@ static const struct
    "V menu",
    "Pozastaven\303\251",
    "Hranie",
-   "Inform\303\241cie disku",
+   "Inform\303\241cie o disku",
+   "D\303\241tum uverejnenia: %s",
+   "S\303\251riov\303\251 \304\215\303\255slo: %s",
+   "Syst\303\251m: %s",
+   "Titulok: %s",
+   "Zvuk",
+   "Verzia: %s",
    "Na\304\215\303\255ta\305\245 nov\303\275 disk",
    "Aktu\303\241lny index disku",
    "Ovl\303\241danie disku",
    "Vysun\303\272\305\245 disk",
    "Vlo\305\276te disk",
+   "Kontroln\303\275 s\303\272\304\215et",
+   "Zl\303\251",
+   "Vyroben\303\251",
+   "Funkcie",
+   "Gama",
+   "Vstup videa",
+   "V\303\275robca",
+   "N\303\241zov monitora",
+   "preferovan\303\251",
+   "K\303\263d produktu",
+   "\304\214ist\303\251",
+   "Ve\304\276kos\305\245 obrazovky",
+   "S\303\251riov\303\251 \304\215\303\255slo",
+   "\304\214\303\255tanie",
+   "Verzia EDID",
+   "Zobrazi\305\245 inform\303\241cie",
+   "Orient\303\241cia",
+   "V\303\275stup",
+   "Obnovovacia frekvencia",
+   "Rie\305\241enie",
    "Predvolen\303\251",
    "S\305\245ahovanie",
    "Stiahnu\305\245 jadro",
-   "Stiahnutie Obsahu",
+   "Stiahnutie obsahu",
    "Stiahnutie jadra syst\303\251mu",
    "Stiahnu\305\245 miniat\303\272ry",
    "Dolu + Select",
@@ -5046,6 +5186,9 @@ static const struct
    "Prav\303\275 anal\303\263g Y- (hore)",
    "Prav\303\275 anal\303\263g Y+ (dolu)",
    "Anal\303\263gov\303\241 citlivos\305\245",
+#ifdef ANDROID
+   "Pou\305\276i\305\245 syst\303\251mov\303\272 kl\303\241vesnicu",
+#endif
    "Automatick\303\241 konfigur\303\241cia",
    "Automaticky povoli\305\245 re\305\276im 'Zameranie na hru'",
    "Zisti\305\245",
@@ -5094,6 +5237,7 @@ static const struct
    "Tla\304\215idlo Y (v\304\276avo)",
    "Kl\303\241ves %s",
    "Typ mapovania ovl\303\241da\304\215a kl\303\241vesnice",
+   "Kl\303\241vesnica %s",
    "Pomocn\303\241 zbra\305\210 A",
    "Pomocn\303\241 zbra\305\210 B",
    "Pomocn\303\241 zbra\305\210 C",
@@ -5228,6 +5372,9 @@ static const struct
    "Priradenia RetroPad",
    "Intenzita vibr\303\241ci\303\255",
    "Ulo\305\276i\305\245 profil kontroleru",
+#ifdef HAVE_SDL3
+   "Pou\305\276i\305\245 syst\303\251mov\303\272 kl\303\241vesnicu",
+#endif
 #ifdef ANDROID
    "Vybra\305\245 fyzick\303\272 kl\303\241vesnicu",
 #endif
@@ -5366,7 +5513,8 @@ static const struct
 #endif
    "Zak\303\241za\305\245 re\305\276im kiosku",
    "Re\305\276im kiosku",
-   "Obmedzi\305\245 sn\303\255mkov\303\272 frekvenciu menu",
+   "V\305\276dy",
+   "Nikdy",
    "Spr\303\241vca s\303\272borov",
    "Farba p\303\255sma: modr\303\241",
    "Farba p\303\255sma: zelen\303\241",
@@ -5399,6 +5547,7 @@ static const struct
    "Vymeni\305\245 miniat\303\272ry",
    "Vymeni\305\245 ikony",
    "Oneskorenie n\303\241h\304\276adu (ms)",
+   "Dithering n\303\241h\304\276adov",
    "Met\303\263da zmen\305\241ovania n\303\241h\304\276adov",
    "Prieh\304\276adnos\305\245",
    "Pokra\304\215ova\305\245 v obsahu po pou\305\276it\303\255 save states",
@@ -5424,6 +5573,7 @@ static const struct
    "Zobrazi\305\245 'Vysun\303\272\305\245 disk'",
 #endif
 #endif
+   "Zobrazi\305\245 cel\303\251 cesty",
    "Zobrazi\305\245 'Pomoc'",
    "Zobrazi\305\245 'Inform\303\241cia'",
    "Zobrazi\305\245 'Na\304\215\303\255ta\305\245 obsah'",
@@ -5446,6 +5596,7 @@ static const struct
    "\303\232vodn\303\241 str\303\241nka",
    "MIP mapovanie",
    "Pozadia n\303\241h\304\276adov",
+   "Zvuk animovan\303\275ch n\303\241h\304\276adov",
    "Prah upscalingu n\303\241h\304\276adov",
    "Plynul\303\275 roluj\303\272ci text",
    "R\303\275chlos\305\245 roluj\303\272ceho textu",
@@ -5455,6 +5606,7 @@ static const struct
    "Pou\305\276i\305\245 preferovan\303\272 syst\303\251mov\303\272 farebn\303\272 t\303\251mu",
    "Vidite\304\276nos\305\245 polo\305\276ky ponuky",
    "Obr\303\241zok pozadia",
+   "Neprieh\304\276adnos\305\245 obr\303\241zka pozadia",
    "Grafick\303\251 widgety",
    "Automaticky \305\241k\303\241lova\305\245 grafick\303\251 widgety",
    "Prepis \305\241k\303\241lovania grafick\303\275ch widgetov",
@@ -5470,9 +5622,7 @@ static const struct
    "Horizont\303\241lny posun okraja n\303\241zvu",
    "Faktor vertik\303\241lneho prel\303\255nania",
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    "Sn\303\255mky mikrof\303\263nnych blokov",
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -5708,7 +5858,6 @@ static const struct
    "Mierka zv\303\244\304\215\305\241enia miniat\303\272ry",
    "Skr\303\241ti\305\245 n\303\241zvy zoznamov (vy\305\276aduje re\305\241tart)",
    "Pou\305\276i\305\245 re\305\276im PAL60",
-   "Nadraden\303\275 adres\303\241r",
    "Pozastavi\305\245 obsah ke\304\217 je menu akt\303\255vne",
    "Pozastavi\305\245 obsah ke\304\217 nie je akt\303\255vne",
    "Pozastavi\305\245 obsah pri odpojen\303\255 kontroleru",
@@ -5764,7 +5913,7 @@ static const struct
    "Pou\305\276i\305\245 n\303\241zvy s\303\272borov pre zhodu n\303\241h\304\276adov",
    "Ulo\305\276i\305\245 zoznamy skladieb v starom form\303\241te",
    "Prehra\305\245 opakovanie",
-   "Aktualiz\303\241cia Zoznamu Miniat\303\272r",
+   "Aktualiz\303\241cia zoznamu miniat\303\272r",
    "Podpora dotyku",
    "Zobrazen\303\275 n\303\241zov zariadenia: %s\nKonfigura\304\215n\303\275 n\303\241zov zariadenia"
    ": %s\nVID/PID zariadenia: %d/%d",
@@ -5832,7 +5981,6 @@ static const struct
    "Odna\304\215\303\255ta\305\245 jadro",
    "&N\303\241poveda",
    "O programe RetroArch",
-   "Prispievatelia",
    "Dokument\303\241cia",
    "Vy\304\215isti\305\245",
    "&N\303\241stroje",
@@ -6167,8 +6315,10 @@ static const struct
    "Zobrazi\305\245 'Spr\303\241va nap\303\241jania'",
    "Zobrazi\305\245 'Z\303\241znam'",
    "Zobrazi\305\245 'Ukladanie'",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Zobrazi\305\245 \342\200\236SMB klient\342\200\234",
+#endif
 #endif
    "Zobrazi\305\245 'Steam'",
    "Zobrazi\305\245 'Pou\305\276\303\255vate\304\276'",
@@ -6196,18 +6346,40 @@ static const struct
    "In\305\241tal\303\241cia alebo obnovenie jadra",
    "In\305\241tal\303\241cia jadra bola \303\272spe\305\241n\303\241",
    "Frekvencia spomalen\303\251ho pohybu",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Re\305\276im overenia SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Preh\304\276ad\303\241va\305\245 SMB zdie\304\276anie",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Povoli\305\245 SMB klienta",
    "Max. po\304\215et pripojen\303\255 SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "SMB heslo",
    "SMB server",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Nastavenia siete SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "N\303\241zov zdie\304\276ania SMB",
    "SMB zdie\304\276anie",
-   "SMB podadres\303\241r (volite\304\276n\303\251)",
+   "SMB podadres\303\241r",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "\304\214asov\303\275 limit SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "SMB meno",
    "SMB skupina",
 #endif
@@ -6242,7 +6414,9 @@ static const struct
    "URL adresa vysielania",
    "Vlastn\303\241 konfigur\303\241cia streamovania",
    "Aktu\303\241lny obsah: %s",
+   "Na\304\215\303\255ta\305\245 %s",
    "Podsyst\303\251my",
+   "Spusti\305\245 %s",
    "Navrhovan\303\251 jadr\303\241",
    "Pozastavi\305\245 \305\241etri\304\215 obrazovky",
    "Re\305\276im trval\303\251ho v\303\275konu",
@@ -6275,6 +6449,8 @@ static const struct
    "Opera\304\215n\303\275 Syst\303\251m",
    "Verzia Git",
    "Verzia Lakka",
+   "Verzia MoltenVK",
+   "Pokrok",
    "Zdroj Energie",
    "Nabit\303\251",
    "Nab\303\255janie",
@@ -6336,17 +6512,17 @@ static const struct
    "Nezn\303\241me",
    "Nezn\303\241ma hra",
    "Nastavenia aktualiz\303\241tora",
-   "Aktualiz\303\241cia Assets",
-   "Aktualiz\303\241cia Profilov Ovl\303\241da\304\215ov",
-   "Aktualiz\303\241cia Cg Shaders",
-   "Aktualiz\303\241cia Cheatov",
-   "Aktualiz\303\241cia Info S\305\257borov Jadra",
-   "Aktualiz\303\241cia Datab\303\241z",
-   "Aktualiz\303\241cia GLSL Shaders",
-   "Aktualiz\303\241cia Stiahnut\303\275ch Jadier",
+   "Aktualiz\303\241cia assetov",
+   "Aktualiz\303\241cia profilov ovl\303\241da\304\215ov",
+   "Aktualiz\303\241cia Cg shaderov",
+   "Aktualiz\303\241cia cheatov",
+   "Aktualiz\303\241cia info s\303\272borov jadier",
+   "Aktualiz\303\241cia datab\303\241z",
+   "Aktualiz\303\241cia GLSL shaderov",
+   "Aktualiz\303\241cia stiahnut\303\275ch jadier",
    "Aktualizova\305\245 Lakka",
-   "Aktualiz\303\241cia Prekr\303\255vacich Prvkov",
-   "Aktualiz\303\241cia Slang Shaders",
+   "Aktualiz\303\241cia prekr\303\275vac\303\255ch prvkov",
+   "Aktualiz\303\241cia Slang shaderov",
    "Pou\305\276\303\255vate\304\276",
    "U\305\276\303\255vate\304\276sk\303\251 rozhranie",
    "Jazyk",
@@ -6414,11 +6590,14 @@ static const struct
    "Automatick\303\251 trvanie sn\303\255mky",
    "efekt\303\255vne",
    "Vzorkova\305\245 frame time len v stabilnom stave",
+   "Vyn\303\272ten\303\251",
+   "Uvo\304\276nen\303\251",
    "Re\305\276im celej obrazovky",
    "Re\305\276im na cel\303\272 obrazovku",
    "\305\240\303\255rka na cel\303\272 obrazovku",
    "V\303\275\305\241ka na cel\303\272 obrazovku",
    "Video gama",
+   "Priama podpora SPIR-V (odpor\303\272\304\215anie)",
    "Pou\305\276i\305\245 GPU nahr\303\241vanie",
    "Screenshot: pou\305\276i\305\245 GPU",
    "Pevn\303\241 synchroniz\303\241cia GPU",
@@ -6427,6 +6606,7 @@ static const struct
    "Presn\303\251",
    "Roz\305\241\303\255ren\303\251",
    "\305\240irok\303\251",
+   "\305\240pi\304\215kov\303\275 jas",
    "Vypn\303\272\305\245",
    "Jas",
    "Vidite\304\276n\303\251 riadky",
@@ -6515,6 +6695,7 @@ static const struct
    "Hranie na Facebooku",
    "Miestne",
    "Kvalita streamu",
+   "Bitov\303\241 h\304\272bka v\303\275stupu",
    "8 bitov",
    "Interval v\303\275meny VSync",
    "Synchroniz\303\241cia",
@@ -6553,10 +6734,12 @@ static const struct
    "\305\240\303\255rka okna",
    "Synchronizova\305\245 na presn\303\272 r\303\275chlos\305\245 sn\303\255kov obsahu (G-Sync, Free"
    "Sync)",
+   "Oneskorenie zvuku",
    "Odpoji\305\245",
    "Povoli\305\245 Wi-Fi",
    "Pripoji\305\245 k sieti",
    "Pripoji\305\245 k sieti",
+   "Faktor neprieh\304\276adnosti farebnej t\303\251my",
    "Aktu\303\241lna ikona ponuky",
    "\305\275iadne",
    "Norm\303\241lne",
@@ -6571,6 +6754,8 @@ static const struct
    "Retro syst\303\251m",
    "Systematicky",
    "Rozlo\305\276enie",
+   "Konzola",
+   "Prenosn\303\251",
    "Povoli\305\245 kartu Nastavenia",
    "Farebn\303\241 t\303\251ma",
    "Jablkov\303\241 zelen\303\241",
@@ -6598,9 +6783,11 @@ static const struct
    "Vertik\303\241lne usporiadanie n\303\241h\304\276adov",
    "\303\201no",
    "YouTube stream key",
+   "Re\305\276im HDR",
    "Predvo\304\276ba shaderu",
    "Predvo\304\276ba shaderu",
    "Predvo\304\276ba shaderu",
+   "Bitov\303\241 h\304\272bka v\303\275stupu",
 #if defined(RARCH_MOBILE)
    "Sklon kotvy viewportu X (orient\303\241cia na v\303\275\305\241ku)",
    "Sklon kotvy viewportu Y (orient\303\241cia na v\303\275\305\241ku)",
@@ -6608,6 +6795,7 @@ static const struct
    "Sklon kotvy viewportu X",
    "Sklon kotvy viewportu Y",
    "Povol\303\255 Text-to-Speech na pomoc pri navig\303\241cii v menu.",
+   "Backend Text-to-Speech pou\305\276it\303\275 pre rozpr\303\241va\304\215a.",
    "R\303\275chlos\305\245 hlasu Text-to-Speech.",
    "Zmeni\305\245 nastavenia moder\303\241tora.",
    "Spravova\305\245 aktu\303\241lne nakonfigurovan\303\251 \303\272\304\215ty.",
@@ -6676,7 +6864,28 @@ static const struct
    "Automatick\303\251 stlmenie zvuku pri pou\305\276it\303\255 r\303\275chleho posunu vpred.",
    "Zr\303\275chli zvuk pri r\303\275chlom prev\303\255jan\303\255 vpred. Predch\303\241dza praskani"
    "u, ale pos\303\272va v\303\275\305\241ku t\303\263nu.",
+   "Pou\305\276i\305\245 celo\304\215\303\255seln\303\275 prevzorkova\304\215 (s pevnou desatinnou "
+   "\304\215iarkou) namiesto pl\303\241vaj\303\272cej, ke\304\217 jadro vyd\303\241va 16-bitov\303"
+   "\275 zvuk. Poskytuje bitovo zhodn\303\275 v\303\275stup na ka\305\276dej platforme, tak\305\276e"
+   " zvuk je reprodukovate\304\276n\303\275 medzi spusteniami aj syst\303\251mami. Sl\303\272\305"
+   "\276i na reprodukovate\304\276nos\305\245, nie na r\303\275chlos\305\245: tam, kde m\303\241 pro"
+   "cesor vektorov\303\272 FPU, je celo\304\215\303\255seln\303\275 prevzorkova\304\215 pomal\305"
+   "\241\303\255, ke\304\217\305\276e vektorizovan\303\275 je len ten s pl\303\241vaj\303\272cou des"
+   "atinnou \304\215iarkou. Nem\303\241 vplyv na jadr\303\241, ktor\303\251 vyd\303\241vaj\303\272 z"
+   "vuk v",
+   " pl\303\241vaj\303\272cej desatinnej \304\215iarke; po\304\215as akt\303\255vneho nekompatibiln"
+   "\303\251ho DSP filtra sa vr\303\241ti k pl\303\241vaj\303\272cej desatinnej \304\215iarke.",
    "Audio DSP filtre s\303\272 ulo\305\276en\303\251 v tomto adres\303\241ri.",
+   "Form\303\241t vzoriek, ktor\303\275 zvukov\303\275 ovl\303\241da\304\215 po\305\276aduje od v"
+   "\303\275stupn\303\251ho zariadenia. 'Float' \305\276iada 32-bitov\303\272 pl\303\241vaj\303\272c"
+   "u desatinn\303\272 \304\215iarku, 'Int16' 16-bitov\303\251 cel\303\251 \304\215\303\255sla. T"
+   "\303\275ka sa len ovl\303\241da\304\215ov, ktor\303\251 vedia form\303\241t vyjedn\303\241va\305"
+   "\245 (WASAPI, DirectSound, XAudio2, ALSA, SDL2); ostatn\303\251 pou\305\276\303\255vaj\303\272 s"
+   "voj pevn\303\275 form\303\241t. Ide len o odpor\303\272\304\215anie: ak zariadenie po\305\276ado"
+   "van\303\275 form\303\241t odmietne, ovl\303\241da\304\215 sa vr\303\241ti k in\303\251mu. 'Int16"
+   "' sa sp\303\241ja s odpor\303\272\304\215an\303\255m 'Prevzorkova\305\245 v celo\304\215\303\255"
+   "selnom form\303\241te', ab",
+   "y cel\303\241 zvukov\303\241 cesta zostala celo\304\215\303\255seln\303\241.",
    "Maxim\303\241lna latencia zvuku v milisekund\303\241ch. Ovl\303\241da\304\215 sa sna\305\276\303"
    "\255 udr\305\276a\305\245 skuto\304\215n\303\272 latenciu na 50 % tejto hodnoty. Nemus\303\255 b"
    "y\305\245 dodr\305\276an\303\251, ak ovl\303\241da\304\215 zvuku nedok\303\241\305\276e poskytn"
@@ -6940,10 +7149,10 @@ static const struct
    "Zmeni\305\245 ovl\303\241da\304\215e pre obsah.",
    "Vyberte jadro, ktor\303\251 chcete pou\305\276i\305\245.",
    "Uvo\304\276ni\305\245 na\304\215\303\255tan\303\251 jadro.",
-   "Zabr\303\241ni\305\245 \303\272prav\303\241m aktu\303\241lne nain\305\241talovan\303\251ho core."
-   " Mo\305\276no pou\305\276i\305\245 na zabr\303\241nenie nechcen\303\275m aktualiz\303\241ci\303"
-   "\241m, ke\304\217 obsah vy\305\276aduje konkr\303\251tnu verziu core (napr. sady Arcade ROM) ale"
-   "bo ke\304\217 sa zmen\303\255 form\303\241t save state samotn\303\251ho core.",
+   "Zabr\303\241ni\305\245 \303\272prav\303\241m aktu\303\241lne nain\305\241talovan\303\251ho jadra"
+   ". Mo\305\276no pou\305\276i\305\245 na zabr\303\241nenie nechcen\303\275m aktualiz\303\241ci\303"
+   "\241m, ke\304\217 obsah vy\305\276aduje konkr\303\251tnu verziu jadra (napr. sady Arcade ROM) al"
+   "ebo ke\304\217 sa zmen\303\255 form\303\241t stavu ulo\305\276enia samotn\303\251ho jadra.",
    "Vykona\305\245 offline \303\272dr\305\276bu na nain\305\241talovan\303\275ch cores (z\303\241loh"
    "a, obnova, mazanie at\304\217.) a zobrazi\305\245 inform\303\241cie o core.",
 #ifdef HAVE_MIST
@@ -6992,8 +7201,6 @@ static const struct
    "an\303\275 \305\276iaden obsah.",
    "Cyklujte cez tieto mo\305\276nosti pre \303\272pravu horizont\303\241lnych nastaven\303\255 a zm"
    "enu ve\304\276kosti obrazu.",
-   "Iba pre CRT displeje. Pok\303\272\305\241a sa pou\305\276i\305\245 presn\303\251 rozl\303\255"
-   "\305\241enie jadra/hry a obnovovaciu frekvenciu.",
    "Prep\303\255nanie medzi nat\303\255vnym a ultra\305\241irok\303\275m super rozl\303\255\305\241e"
    "n\303\255m.",
    "V pr\303\255pade potreby pou\305\276ite vlastn\303\272 obnovovaciu frekvenciu uveden\303\272 v k"
@@ -7115,6 +7322,13 @@ static const struct
    "Ignorova\305\245 pohyby anal\303\263govej p\303\241\304\215ky pod hodnotou m\305\225tvej z\303"
    "\263ny.",
    "Uprav\303\255 citlivos\305\245 anal\303\263gov\303\275ch p\303\241\304\215ok.",
+#ifdef ANDROID
+   "Pou\305\276i\305\245 syst\303\251mov\303\272 kl\303\241vesnicu Androidu na zad\303\241vanie text"
+   "u v menu namiesto vstavanej kl\303\241vesnice na obrazovke. Umo\305\276\305\210uje vkladanie zo "
+   "schr\303\241nky a pou\305\276\303\255vanie spr\303\241vcov hesiel. Vy\305\276aduje dotykov\303"
+   "\272 obrazovku alebo met\303\263du vstupu, ktor\303\272 mo\305\276no ovl\303\241da\305\245 gamep"
+   "adom.",
+#endif
    "Automaticky konfigurova\305\245 hern\303\251 ovl\303\241da\304\215e, pre ktor\303\251 existuje p"
    "rofil, \305\241t\303\275l Plug-and-Play.",
    "Povol\303\255 re\305\276im \"Priorita hry\" pri automatickom spusten\303\255 a obnoven\303\255 o"
@@ -7240,10 +7454,6 @@ static const struct
    "Zachyt\303\255 obraz aktu\303\241lneho obsahu.",
    "Dr\305\276\303\255 aktu\303\241lne vybran\303\275 shader zapnut\303\275/vypnut\303\275 po\304"
    "\215as stl\303\241\304\215ania kl\303\241vesy.",
-   "Na\304\215\303\255ta a aplikuje \304\217al\305\241\303\255 s\303\272bor predvo\304\276by shadero"
-   "v v koreni adres\303\241ra 'Video Shadery'.",
-   "Na\304\215\303\255ta a aplikuje predch\303\241dzaj\303\272ci s\303\272bor predvo\304\276by shade"
-   "rov v koreni adres\303\241ra 'Video Shadery'.",
    "Zapne/vypne aktu\303\241lne vybran\303\275 shader.",
    "Povol\303\255 spomalen\303\275 pohyb po\304\215as dr\305\276ania. Obsah be\305\276\303\255 norm"
    "\303\241lnou r\303\275chlos\305\245ou pri uvo\304\276nen\303\255 kl\303\241vesy.",
@@ -7498,7 +7708,6 @@ static const struct
    "Ak\303\275 ovl\303\241da\304\215 menu pou\305\276i\305\245. (Vy\305\276aduje re\305\241tart)",
    "Chr\303\241ni nastavenie skryt\303\255m v\305\241etk\303\275ch nastaven\303\255 s\303\272visiaci"
    "ch s konfigur\303\241ciou.",
-   "Zaist\303\255, \305\276e sn\303\255mkov\303\241 frekvencia je obmedzen\303\241 v menu.",
    "Zmen\303\255 nastavenia prehliada\304\215a s\303\272borov.",
    "Upravi\305\245 neprieh\304\276adnos\305\245 predvolen\303\251ho pozadia menu.",
    "Jas menu v cd/m2 (nity) pri pou\305\276it\303\255 HDR displeja. Vidite\304\276n\303\251 iba ak j"
@@ -7560,6 +7769,11 @@ static const struct
    "\215\303\255tan\303\255m jej priraden\303\275ch n\303\241h\304\276adov. Nastavenie na hodnotu as"
    "po\305\210 256 ms umo\305\276\305\210uje r\303\275chle pos\303\272vanie bez oneskorenia aj na na"
    "jpomal\305\241\303\255ch zariadeniach.",
+   "Vyhladi\305\245 farebn\303\251 p\303\241sy v n\303\241h\304\276adoch a tapete ich ditheringom do"
+   " obmedzenej palety menu. Pri vysok\303\275ch hodnot\303\241ch 'Mierkov\303\275 faktor' sa vzor d"
+   "itheringu zv\303\244\304\215\305\241uje spolu so v\305\241etk\303\275m ostatn\303\275m a m\303"
+   "\264\305\276e by\305\245 vidite\304\276n\303\275 ako text\303\272ra; v takom pr\303\255pade ho v"
+   "ypnite.",
    "Met\303\263da prevzorkovania pou\305\276it\303\241 pri zmen\305\241ovan\303\255 ve\304\276k\303"
    "\275ch n\303\241h\304\276adov, aby sa zmestili do zobrazenia.",
    "Povoli\305\245 zobrazenie obsahu na pozad\303\255, k\303\275m je akt\303\255vna R\303\275chla po"
@@ -7593,6 +7807,8 @@ static const struct
    "Zobrazi\305\245 vo\304\276bu 'Vysun\303\272\305\245 disk' v hlavnej ponuke.",
 #endif
 #endif
+   "Zobrazova\305\245 pri nastaveniach adres\303\241rov cel\303\251 cesty namiesto iba n\303\241zvu "
+   "vybran\303\251ho adres\303\241ra.",
    "Zobrazi\305\245 vo\304\276bu 'Pomocn\303\255k' v hlavnej ponuke.",
    "Zobrazi\305\245 vo\304\276bu 'Inform\303\241cia' v hlavnej ponuke.",
    "Zobrazi\305\245 vo\304\276bu 'Na\304\215\303\255ta\305\245 obsah' v hlavnej ponuke.",
@@ -7611,11 +7827,17 @@ static const struct
    "ti\305\245'.",
    "Zmen\303\255 nastavenia zvuku menu.",
    "Po\304\215iato\304\215n\303\241 str\303\241nka menu pri \305\241tarte.",
+   "Generova\305\245 mip-mapy pre obr\303\241zky v menu. Ikony, n\303\241h\304\276ady a tapety zosta"
+   "n\303\272 hladk\303\251 aj pri vykreslen\303\255 pod ich nat\303\255vnou ve\304\276kos\305\245ou"
+   ", za cenu mierne vy\305\241\305\241ej spotreby videopam\303\244te.",
    "Povol\303\255 vyplnenie nepou\305\276it\303\251ho priestoru v obr\303\241zkoch n\303\241h\304"
    "\276adov pevn\303\275m pozad\303\255m. Zais\305\245uje jednotn\303\272 ve\304\276kos\305\245 zob"
    "razenia pre v\305\241etky obr\303\241zky, \304\215o zlep\305\241uje vzh\304\276ad menu pri preze"
    "ran\303\255 zmie\305\241an\303\275ch n\303\241h\304\276adov obsahu s r\303\264znymi z\303\241kla"
    "dn\303\275mi rozmermi.",
+   "Prehr\303\241va zvukov\303\272 stopu animovan\303\275ch n\303\241h\304\276adov WebM, k\303\275m "
+   "s\303\272 zobrazen\303\251. Podporovan\303\275 je zvuk Vorbis a Opus. Zvuk sa opakuje spolu s an"
+   "im\303\241ciou a zastav\303\255 sa po zatvoren\303\255 n\303\241h\304\276adu.",
    "Automaticky upscalova\305\245 obr\303\241zky n\303\241h\304\276adov so \305\241\303\255rkou/v"
    "\303\275\305\241kou men\305\241ou ako zadan\303\241 hodnota. Zlep\305\241uje kvalitu obrazu. M"
    "\303\241 mierny vplyv na v\303\275kon.",
@@ -7628,6 +7850,7 @@ static const struct
    "Prep\303\255na\305\245 vidite\304\276nos\305\245 polo\305\276iek menu v RetroArchu.",
    "Vyberte obr\303\241zok ako pozadie menu. Manu\303\241lne a dynamick\303\251 obr\303\241zky prep"
    "\303\255\305\241u 'Farebn\303\272 t\303\251mu'.",
+   "Upravi\305\245 \303\272rove\305\210 neprieh\304\276adnosti obr\303\241zka pozadia.",
    "Pou\305\276i\305\245 dekorovan\303\251 anim\303\241cie, ozn\303\241menia, indik\303\241tory a ov"
    "l\303\241da\304\215e.",
    "Automaticky meni\305\245 ve\304\276kos\305\245 dekorovan\303\275ch ozn\303\241men\303\255, indik"
@@ -7653,8 +7876,14 @@ static const struct
    "Anim\303\241cia, ktor\303\241 sa spust\303\255 pri pohybe hore alebo dole.",
    "Anim\303\241cia, ktor\303\241 sa spust\303\255 pri otv\303\241ran\303\255 ved\304\276aj\305\241e"
    "j ponuky.",
+   "Povoli\305\245 hlavn\303\275 vodorovn\303\275 zoznam kariet na navig\303\241ciu.",
+   "Zobrazi\305\245 aktu\303\241lne umiestnenie v menu v hlavi\304\215ke.",
    "Zn\303\255\305\276i ve\304\276kos\305\245 zobrazenia n\303\241h\304\276adov \305\241k\303\241lov"
    "an\303\255m maxim\303\241lnej povolenej \305\241\303\255rky.",
+   "Upravi\305\245 vzdialenos\305\245 hlavi\304\215ky n\303\241zvu od okraja obrazovky.",
+   "Upravi\305\245 vodorovn\303\272 vzdialenos\305\245 hlavi\304\215ky n\303\241zvu.",
+   "Upravi\305\245 \303\272rove\305\210 prel\303\255nania vidite\304\276n\303\275ch polo\305\276iek "
+   "pri okrajoch obrazovky.",
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
    "Prep\303\255\305\241e predvolen\303\251 vstupn\303\251 zariadenie, ktor\303\251 pou\305\276\303"
@@ -7768,6 +7997,9 @@ static const struct
 #ifdef _3DS
    "Povoli\305\245 r\303\275chlos\305\245 hod\303\255n New3DS (804MHz) a L2 vyrovn\303\241vaciu pam"
    "\303\244\305\245.",
+#endif
+#ifdef HAVE_NFSCLIENT
+   "IP adresa alebo n\303\241zov hostite\304\276a servera.",
 #endif
    "Zobrazi\305\245 spr\303\241vu na obrazovke pri prip\303\241jan\303\255/odp\303\241jan\303\255 vs"
    "tupn\303\275ch zariaden\303\255.",
@@ -8225,8 +8457,10 @@ static const struct
    "Zmeni\305\245 nastavenia spr\303\241vy nap\303\241jania.",
    "Zobrazi\305\245 nastavenia 'Z\303\241znam'.",
    "Zobrazi\305\245 nastavenia 'Ukladanie'.",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Zobrazi\305\245 nastavenia \342\200\236SMB klient\342\200\234.",
+#endif
 #endif
    "Zobrazi\305\245 nastavenia 'Stream'.",
    "Zobrazi\305\245 nastavenia 'Pou\305\276\303\255vate\304\276'.",
@@ -8246,22 +8480,46 @@ static const struct
    "Nain\305\241talujte alebo obnovte jadro z adres\303\241ra \" Stiahnut\303\251 s\303\272bory\".",
    "Frekvencia, akou sa bude obsah prehr\303\241va\305\245 pri pou\305\276it\303\255 spomalen\303"
    "\251ho pohybu.",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Vyberte overenie pou\305\276it\303\251 vo va\305\241om prostred\303\255.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Preh\304\276ad\303\241va\305\245 s\303\272bory na nakonfigurovanom SMB zdie\304\276an\303\255.",
-   "Povoli\305\245 pr\303\255stup k sie\305\245ov\303\251mu zdie\304\276aniu SMB. Ethernet sa d\303"
-   "\264razne odpor\303\272\304\215a pred Wi-Fi pre spo\304\276ahlivej\305\241ie pripojenie. Pozn"
-   "\303\241mka: zmena t\303\275chto nastaven\303\255 vy\305\276aduje re\305\241tart RetroArch.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Vyberte maxim\303\241lny po\304\215et pripojen\303\255 pou\305\276it\303\275ch vo va\305\241om p"
    "rostred\303\255.",
-   "Heslo pre overenie.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   "Heslo na overenie. Je volite\304\276n\303\251, ak je na serveri povolen\303\275 hos\305\245ovsk"
+   "\303\275 pr\303\255stup. Windows 10 a nov\305\241\303\255: hos\305\245ovsk\303\275 pr\303\255stu"
+   "p je predvolene zak\303\241zan\303\275, tak\305\276e heslo je tu potrebn\303\251.",
    "IP adresa alebo n\303\241zov hostite\304\276a servera.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Konfigurova\305\245 nastavenia sie\305\245ov\303\251ho zdie\304\276ania SMB.",
-   "N\303\241zov sie\305\245ov\303\251ho zdie\304\276ania, ku ktor\303\251mu sa pripoji\305\245.",
-   "Cesta k podadres\303\241ru na zdie\304\276an\303\255.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   "Cesta k podadres\303\241ru na zdie\304\276an\303\255. Volite\304\276n\303\251.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Vyberte predvolen\303\275 \304\215asov\303\275 limit v sekund\303\241ch.",
-   "Pou\305\276\303\255vate\304\276sk\303\251 meno pre overenie.",
-   "Pracovn\303\241 skupina alebo n\303\241zov dom\303\251ny.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   "Meno pou\305\276\303\255vate\304\276a na overenie. Je volite\304\276n\303\251, ak je na serveri "
+   "povolen\303\275 hos\305\245ovsk\303\275 pr\303\255stup. Windows 10 a nov\305\241\303\255: hos"
+   "\305\245ovsk\303\275 pr\303\255stup je predvolene zak\303\241zan\303\275, tak\305\276e meno pou"
+   "\305\276\303\255vate\304\276a je tu potrebn\303\251.",
+   "N\303\241zov skupiny alebo dom\303\251ny. V niektor\303\275ch nastaveniach volite\304\276n\303"
+   "\251.",
 #endif
    "Triedi\305\245 s\303\272bory ulo\305\276enia do prie\304\215inkov pomenovan\303\275ch pod\304"
    "\276a adres\303\241ra, v ktorom sa obsah nach\303\241dza.",
@@ -8460,6 +8718,14 @@ static const struct
    "kna. Pr\303\241zdne pou\305\276ije rozl\303\255\305\241enie pracovnej plochy.",
    "Nastavi\305\245 vlastn\303\272 v\303\275\305\241ku pre celoobrazovkov\303\275 re\305\276im bez o"
    "kna. Pr\303\241zdne pou\305\276ije rozl\303\255\305\241enie pracovnej plochy.",
+   "Odovzd\303\241va\305\245 shadery grafick\303\251mu ovl\303\241da\304\215u ako SPIR-V namiesto ic"
+   "h predch\303\241dzaj\303\272cej kr\303\255\305\276ovej kompil\303\241cie do GLSL, \304\215o m"
+   "\303\264\305\276e skr\303\241ti\305\245 \304\215as na\304\215\303\255tavania predvolieb shaderov"
+   ". Je to len odpor\303\272\304\215anie: vy\305\276aduje roz\305\241\303\255renie ovl\303\241da"
+   "\304\215a 'GL_ARB_gl_spirv' a ka\305\276d\303\275 shader alebo ovl\303\241da\304\215, ktor\303"
+   "\275 ho nedok\303\241\305\276e pou\305\276i\305\245, sa potichu vr\303\241ti ku kr\303\255\305"
+   "\276ovej kompil\303\241cii. Prejav\303\255 sa pri nasleduj\303\272com na\304\215\303\255tan\303"
+   "\255 predvo\304\276by shaderov.",
    "Vybra\305\245, ktor\303\272 grafick\303\272 kartu pou\305\276i\305\245.",
    "Zaznamen\303\241va\305\245 v\303\275stup GPU shadovan\303\251ho materi\303\241lu, ak je dostupn"
    "\303\275.",
@@ -8474,6 +8740,13 @@ static const struct
    "Pou\305\276ije pln\303\275 farebn\303\275 rozsah v\303\241\305\241ho displeja na vytvorenie jasn"
    "ej\305\241ieho a saturovanej\305\241ieho obrazu. Pre farby vernej\305\241ie p\303\264vodn\303"
    "\251mu dizajnu hry nastavte na Accurate.",
+   "Najvy\305\241\305\241\303\255 jas, ktor\303\275 displej dok\303\241\305\276e dosiahnu\305\245, v"
+   " nitoch. Ur\304\215uje, ko\304\276ko priestoru nad hodnotou Jas zost\303\241va pre svetl\303\241"
+   ", aby jadr\303\241, ktor\303\251 si HDR vykres\304\276uj\303\272 samy, vedeli, ako \304\217aleko"
+   " m\303\264\305\276u \303\255s\305\245 pred zoslaben\303\255m. Pozrite si \305\241pecifik\303\241"
+   "ciu displeja; ak si nie ste ist\303\255, ponechajte 1000. Nastavenie vy\305\241\305\241ie, ne"
+   "\305\276 displej re\303\241lne zvl\303\241dne, sp\303\264sob\303\255 orezanie jasn\303\275ch det"
+   "ailov namiesto ich plynul\303\251ho zoslabenia.",
    "Nastav\303\255 \303\272rove\305\210 jasu HDR v nitoch. Pou\305\276ite v kombin\303\241cii s nast"
    "aveniami fyzick\303\251ho jasu v\303\241\305\241ho displeja. Ako v\303\275chodiskov\303\275 bod "
    "nastavte na 80 a jas displeja na maximum. Alternat\303\255vne nastavte na max nity v\303\241\305"
@@ -8522,9 +8795,6 @@ static const struct
    "). M\303\264\305\276e sp\303\264sobi\305\245 artefakty \305\241k\303\241lovania.",
    "Zachyt\303\255 obraz po aplik\303\241cii filtrov (ale nie shaderov). Video bude vyzera\305\245 t"
    "ak pekne ako to, \304\215o vid\303\255te na obrazovke.",
-   "Vertik\303\241lna obnovovacia frekvencia obrazovky. Pou\305\276ije sa na v\303\275po\304\215et v"
-   "hodn\303\251ho vzorkovania vstupu audia. Ignorovan\303\251, ak je povolen\303\251 'Vl\303\241kno"
-   "v\303\251 video'.",
    "Odhadovan\303\241 obnovovacia frekvencia obrazovky v Hz.",
    "Obnovovacia frekvencia hl\303\241sen\303\241 ovl\303\241da\304\215om obrazu.",
 #ifdef HAVE_ODROIDGO2
@@ -8544,8 +8814,6 @@ static const struct
    " orezan\303\275, a nakoniec sa vr\303\241ti k nececel\303\251mu \305\241k\303\241lovaniu, ak s"
    "\303\272 pod\305\241k\303\241lovacie okraje pr\303\255li\305\241 ve\304\276k\303\251.",
    "Zmena nastavenia \305\241k\303\241lovania.",
-   "Synchronizuje prezent\303\241ciu videa s polohou skenovacieho riadku. Zni\305\276uje latenciu za"
-   " cenu vy\305\241\305\241ieho rizika tearingu. VSync mus\303\255 by\305\245 vypnut\303\275.",
    "VAROVANIE: R\303\275chle blikanie m\303\264\305\276e na niektor\303\275ch displejoch sp\303\264s"
    "obi\305\245 pretrv\303\241vanie obrazu. Pou\305\276\303\255vate na vlastn\303\251 riziko // Simu"
    "luje z\303\241kladn\303\275 roluj\303\272ci skenovac\303\255 riadok cez viacero pod-sn\303\255mo"
@@ -8594,8 +8862,6 @@ static const struct
    "Ulo\305\276i\305\245 predvo\304\276bu shadera s odkazom na p\303\264vodne na\304\215\303\255tan"
    "\303\272 predvo\304\276bu, ktor\303\241 obsahuje iba zmeny parametrov, ktor\303\251 ste vykonali"
    ".",
-   "Otvori\305\245 prehliada\304\215 s\303\272borov v naposledy pou\305\276itom adres\303\241ri pri "
-   "na\304\215\303\255tan\303\255 predvolieb a passov shaderov.",
    "VAROVANIE: R\303\275chle blikanie m\303\264\305\276e na niektor\303\275ch displejoch sp\303\264s"
    "obi\305\245 pretrv\303\241vanie obrazu. Pou\305\276\303\255vate na vlastn\303\251 riziko // Simu"
    "luje z\303\241kladn\303\275 roluj\303\272ci skenovac\303\255 riadok cez viacero pod-sn\303\255mo"
@@ -8607,15 +8873,18 @@ static const struct
    "Prid\303\241 \304\276ahk\303\251 rozmazanie obrazu pre zjemnenie tvrd\303\275ch okrajov pixelov."
    " T\303\241to mo\305\276nos\305\245 m\303\241 ve\304\276mi mal\303\275 vplyv na v\303\275kon. Pri"
    " pou\305\276it\303\255 shaderov by mala by\305\245 vypnut\303\241.",
+   "Bitov\303\241 h\304\272bka kone\304\215n\303\251ho v\303\275stupn\303\251ho povrchu, ke\304\217 "
+   "je HDR vypnut\303\251. 10-bitov\303\241 odstra\305\210uje farebn\303\251 p\303\241sy, ktor\303"
+   "\251 vn\303\241\305\241aj\303\272 shadery v\303\275razne stmavuj\303\272ce obraz, ako s\303\272 "
+   "profily CRT l\303\272\304\215a a masky aperture grille. Ak ju displej alebo kompozitor nepon\303"
+   "\272ka, pou\305\276ije sa 8-bitov\303\241. Pri zapnutom HDR sa ignoruje, preto\305\276e si vol"
+   "\303\255 vlastn\303\275 form\303\241t.",
    "Pou\305\276i\305\245 vlastn\303\275 interval v\303\275meny pre VSync. Efekt\303\255vne zn\303"
    "\255\305\276i obnovovaciu frekvenciu monitora o zadan\303\275 faktor. 'Auto' nastav\303\255 fakt"
    "or na z\303\241klade sn\303\255mkovej frekvencie hl\303\241senej core, \304\215o poskytuje lep"
    "\305\241ie tempo sn\303\255mok pri spusten\303\255 napr. 30 fps obsahu na 60 Hz displeji alebo 6"
    "0 fps obsahu na 120 Hz displeji.",
    "Zmena nastavenia synchroniz\303\241cie videa.",
-   "Zlep\305\241uje v\303\275kon za cenu oneskorenia a vy\305\241\305\241ieho zasek\303\241vania vid"
-   "ea. Pou\305\276\303\255vajte, iba ak nem\303\264\305\276ete z\303\255ska\305\245 pln\303\272 r"
-   "\303\275chlos\305\245.",
    "Pok\303\272si sa zlep\305\241i\305\245 v\303\275kon pou\305\276it\303\255m Metal argument buffer"
    "ov. Niektor\303\251 cores to m\303\264\305\276u vy\305\276adova\305\245. Toto m\303\264\305\276e"
    " pokazi\305\245 niektor\303\251 shadery, hlavne na starom hardv\303\251ri alebo OS verzi\303\241"
@@ -8679,6 +8948,7 @@ static const struct
    "e pre obrazovky s premenlivou obnovovacou frekvenciou (G-Sync, FreeSync, HDMI 2,1 VRR).",
    "Ak\303\275 ovl\303\241da\304\215 Wi-Fi pou\305\276i\305\245. (Vy\305\276aduje re\305\241tart)",
    "Vyh\304\276ada\305\245 bezdr\303\264tov\303\251 siete a nadviaza\305\245 pripojenie.",
+   "Upravi\305\245 percento neprieh\304\276adnosti farebnej t\303\251my.",
    "Aktu\303\241lna ikona ponuky m\303\264\305\276e by\305\245 skryt\303\241, pod horizont\303\241ln"
    "ou ponukou alebo v nadpise hlavi\304\215ky.",
    "Kresli\305\245 ikony pre polo\305\276ky ponuky.",
@@ -9303,7 +9573,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (175722u
+      (sizeof(msg_hash_sk_blob) == (179055u
 #ifdef ANDROID
        + 389u
 #endif
@@ -9353,11 +9623,17 @@ typedef char msg_hash_sk_blob_check[
        + 14u
        + 18u
 #endif
+#ifdef ANDROID
+       + 33u
+#endif
 #ifdef GEKKO
        + 13u
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
        + 55u
+#endif
+#ifdef HAVE_SDL3
+       + 33u
 #endif
 #ifdef ANDROID
        + 29u
@@ -9387,9 +9663,7 @@ typedef char msg_hash_sk_blob_check[
 #endif
 #endif
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
        + 29u
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -9426,19 +9700,41 @@ typedef char msg_hash_sk_blob_check[
        + 77u
 #endif
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 27u
        + 20u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 30u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 21u
        + 27u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 10u
        + 11u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 21u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 22u
        + 15u
-       + 30u
+       + 16u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 19u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 9u
        + 12u
 #endif
@@ -9543,6 +9839,9 @@ typedef char msg_hash_sk_blob_check[
        + 22u
        + 18u
 #endif
+#ifdef ANDROID
+       + 268u
+#endif
 #ifdef GEKKO
        + 61u
 #endif
@@ -9603,6 +9902,9 @@ typedef char msg_hash_sk_blob_check[
 #ifdef _3DS
        + 71u
 #endif
+#ifdef HAVE_NFSCLIENT
+       + 43u
+#endif
 #ifdef HAVE_GAME_AI
        + 35u
 #endif
@@ -9618,20 +9920,40 @@ typedef char msg_hash_sk_blob_check[
        + 49u
        + 52u
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 39u
        + 49u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 59u
-       + 190u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 71u
-       + 20u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+       + 183u
        + 43u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 53u
-       + 57u
-       + 36u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 49u
-       + 37u
-       + 40u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+       + 49u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+       + 211u
+       + 70u
 #endif
 #ifdef HAVE_LAKKA
        + 61u
@@ -9905,7 +10227,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_MIXER_STREAM,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
@@ -9920,6 +10241,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_LT_VALUE,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_NEQ_VALUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_ENGINE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
@@ -9955,6 +10277,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS,
 #ifndef HAVE_DYNAMIC
    (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
@@ -9962,7 +10285,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
@@ -9971,7 +10293,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION_FLOAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
@@ -10318,11 +10642,37 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_RELEASE_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_SERIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_SYSTEM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_BAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_FEATURES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_GAMMA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_INPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_MANUFACTURER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PREFERRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PRODUCT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SCREEN_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SERIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SOURCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_RESOLUTION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
@@ -10445,6 +10795,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
@@ -10493,6 +10846,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
@@ -10627,6 +10981,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
+#ifdef HAVE_SDL3
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SDL3_SYSTEM_KEYBOARD,
+#endif
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif
@@ -10765,7 +11122,8 @@ static const uint32_t msg_hash_sk_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
@@ -10798,6 +11156,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -10823,6 +11182,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
 #endif
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_FULL_PATHS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
@@ -10845,6 +11205,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
@@ -10854,6 +11215,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
@@ -10869,9 +11231,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
-#ifdef RARCH_MOBILE
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
-#endif
 #endif
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
@@ -11105,7 +11465,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
@@ -11227,7 +11586,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
@@ -11551,8 +11909,10 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
@@ -11580,18 +11940,40 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
 #endif
@@ -11625,7 +12007,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_LOAD_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_START_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
@@ -11658,6 +12042,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
@@ -11794,11 +12180,14 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
@@ -11807,6 +12196,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
@@ -11895,6 +12285,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_FACEBOOK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_8,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
@@ -11932,10 +12323,12 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_AUDIO_LATENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NORMAL,
@@ -11950,6 +12343,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_LAYOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_CONSOLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_HANDHELD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN,
@@ -11977,9 +12372,11 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
@@ -11987,6 +12384,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_ENGINE,
    (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
    (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
@@ -12027,7 +12425,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
@@ -12218,7 +12618,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
@@ -12292,6 +12691,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
@@ -12363,8 +12765,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
@@ -12514,7 +12914,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
@@ -12541,6 +12940,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
@@ -12563,6 +12963,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
 #endif
 #endif
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_FULL_PATHS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
@@ -12578,7 +12979,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
@@ -12586,6 +12989,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
@@ -12594,7 +12998,12 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_HORIZONTAL_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_SHOW_TITLE_HEADER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_VERTICAL_FADE_FACTOR,
 #ifdef HAVE_MICROPHONE
 #if !defined(RARCH_CONSOLE)
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
@@ -12667,6 +13076,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
 #ifdef _3DS
    (uint32_t)MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
+#endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
@@ -12926,8 +13338,10 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -12943,17 +13357,37 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
 #endif
@@ -13070,6 +13504,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GL_DIRECT_SPIRV,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
@@ -13077,6 +13512,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
@@ -13099,7 +13535,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
 #ifdef HAVE_ODROIDGO2
@@ -13110,7 +13545,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
@@ -13135,13 +13569,12 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -13176,6 +13609,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_FONT,

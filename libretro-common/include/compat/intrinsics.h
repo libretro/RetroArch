@@ -114,6 +114,129 @@ static INLINE int compat_ctz(unsigned x)
 #endif
 }
 
+/**
+ * Counts the leading zero bits in a \c uint32_t.
+ *
+ * @param x Value to count leading zeroes in.
+ * @return Number of leading zeroes in \c x, and 32 for zero.
+ */
+static INLINE uint32_t compat_clz_u32(uint32_t x)
+{
+#if defined(__GNUC__) || defined(__clang__)
+   /* Both builtins leave a zero argument undefined, so it never
+    * reaches them. */
+   return x ? (uint32_t)__builtin_clz(x) : 32u;
+#elif defined(_MSC_VER) && _MSC_VER >= 1400 && !defined(_XBOX) && !defined(__WINRT__)
+   {
+      unsigned long idx;
+      if (_BitScanReverse(&idx, (unsigned long)x))
+         return 31u - (uint32_t)idx;
+      return 32u;
+   }
+#else
+   {
+      uint32_t n = 0;
+      if (!x)
+         return 32u;
+      if (!(x & 0xffff0000u)) { n += 16; x <<= 16; }
+      if (!(x & 0xff000000u)) { n +=  8; x <<=  8; }
+      if (!(x & 0xf0000000u)) { n +=  4; x <<=  4; }
+      if (!(x & 0xc0000000u)) { n +=  2; x <<=  2; }
+      if (!(x & 0x80000000u)) { n +=  1; }
+      return n;
+   }
+#endif
+}
+
+/**
+ * Counts the leading zero bits in a \c uint64_t.
+ *
+ * @param x Value to count leading zeroes in.
+ * @return Number of leading zeroes in \c x, and 64 for zero.
+ */
+static INLINE uint32_t compat_clz_u64(uint64_t x)
+{
+#if defined(__GNUC__) || defined(__clang__)
+   return x ? (uint32_t)__builtin_clzll(x) : 64u;
+#elif defined(_MSC_VER) && _MSC_VER >= 1400 && !defined(_XBOX) && !defined(__WINRT__) \
+   && (defined(_M_X64) || defined(_M_ARM64))
+   {
+      unsigned long idx;
+      if (_BitScanReverse64(&idx, x))
+         return 63u - (uint32_t)idx;
+      return 64u;
+   }
+#else
+   /* _BitScanReverse64 is 64-bit only, and the halving form below costs
+    * one extra compare either way, so both remaining cases take the
+    * high half first. */
+   {
+      uint32_t hi = (uint32_t)(x >> 32);
+      if (hi)
+         return compat_clz_u32(hi);
+      return 32u + compat_clz_u32((uint32_t)x);
+   }
+#endif
+}
+
+/**
+ * Counts the trailing zero bits in a \c uint64_t.
+ *
+ * @param x Value to count trailing zeroes in.
+ * @return Number of trailing zeroes in \c x, and 64 for zero.
+ */
+static INLINE uint32_t compat_ctz_u64(uint64_t x)
+{
+#if defined(__GNUC__) || defined(__clang__)
+   return x ? (uint32_t)__builtin_ctzll(x) : 64u;
+#elif defined(_MSC_VER) && _MSC_VER >= 1400 && !defined(_XBOX) && !defined(__WINRT__) \
+   && (defined(_M_X64) || defined(_M_ARM64))
+   {
+      unsigned long idx;
+      if (_BitScanForward64(&idx, x))
+         return (uint32_t)idx;
+      return 64u;
+   }
+#else
+   {
+      uint32_t lo = (uint32_t)x;
+      uint32_t n;
+      if (lo)
+      {
+         n = 0;
+         if (!(lo & 0x0000ffffu)) { n += 16; lo >>= 16; }
+         if (!(lo & 0x000000ffu)) { n +=  8; lo >>=  8; }
+         if (!(lo & 0x0000000fu)) { n +=  4; lo >>=  4; }
+         if (!(lo & 0x00000003u)) { n +=  2; lo >>=  2; }
+         if (!(lo & 0x00000001u)) { n +=  1; }
+         return n;
+      }
+      lo = (uint32_t)(x >> 32);
+      if (!lo)
+         return 64u;
+      n = 32;
+      if (!(lo & 0x0000ffffu)) { n += 16; lo >>= 16; }
+      if (!(lo & 0x000000ffu)) { n +=  8; lo >>=  8; }
+      if (!(lo & 0x0000000fu)) { n +=  4; lo >>=  4; }
+      if (!(lo & 0x00000003u)) { n +=  2; lo >>=  2; }
+      if (!(lo & 0x00000001u)) { n +=  1; }
+      return n;
+   }
+#endif
+}
+
+/**
+ * Index of the highest set bit in a \c uint32_t, the floor of its
+ * base-two logarithm.
+ *
+ * @param x Value to inspect, which must not be zero.
+ * @return Index of the highest set bit, counting from zero.
+ */
+static INLINE uint32_t compat_highbit_u32(uint32_t x)
+{
+   return 31u - compat_clz_u32(x);
+}
+
 RETRO_END_DECLS
 
 #endif

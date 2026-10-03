@@ -28,11 +28,64 @@
 #include <string.h>
 
 #include <boolean.h>
+#include <retro_atomic.h>
 #include <time/rtime.h>
 
-#ifdef HAVE_THREADS
-/* TODO/FIXME - global */
-slock_t *rtime_localtime_lock = NULL;
+/* localtime() fills one static struct: a flag lets one caller at a
+ * time fill and copy it. With no lock object to make, it works before
+ * rtime_init() and after rtime_deinit() alike. */
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_CAS)
+static retro_atomic_int_t rtime_localtime_busy;
+#define RTIME_LOCALTIME_LOCK() \
+   while (!retro_atomic_cas_int(&rtime_localtime_busy, 0, 1)) \
+      sthread_yield()
+#define RTIME_LOCALTIME_UNLOCK() \
+   retro_atomic_store_release_int(&rtime_localtime_busy, 0)
+#elif defined(HAVE_THREADS)
+static slock_t *rtime_localtime_lock = NULL;
+#define RTIME_LOCALTIME_LOCK()   slock_lock(rtime_localtime_lock)
+#define RTIME_LOCALTIME_UNLOCK() slock_unlock(rtime_localtime_lock)
+#else
+#define RTIME_LOCALTIME_LOCK()   do { } while (0)
+#define RTIME_LOCALTIME_UNLOCK() do { } while (0)
+#endif
+
+#if defined(__APPLE__) && defined(__MACH__)
+#include <mach/mach_time.h>
+#include <sched.h>
+#include <stdint.h>
+
+/* Darwin: the sleep is an absolute deadline on the Mach clock, the
+ * same clock cpu_features_get_time_usec() reads there, so the time
+ * spent between reading it and entering the kernel is not added to the
+ * wait as it is by a relative nanosleep(). mach_wait_until() and the
+ * timebase have been in libSystem since 10.0. The kernel may still
+ * hold a normal-priority thread past the deadline by its timer leeway;
+ * what returns is never early, and a caller that needs the deadline
+ * itself sleeps short and spins the rest. */
+static mach_timebase_info_data_t rtime_mach_tb;
+
+void retro_sleep_us(unsigned usec)
+{
+   uint64_t ticks;
+
+   /* A zero duration means "yield the rest of this time slice". */
+   if (!usec)
+   {
+      sched_yield();
+      return;
+   }
+
+   /* The timebase is a constant; a racing first read fills it with
+    * the same values, so no guard is needed. */
+   if (!rtime_mach_tb.denom)
+      mach_timebase_info(&rtime_mach_tb);
+
+   /* Nanoseconds to Mach ticks; the ratio is 1:1 on Intel and
+    * 125:3 on Apple silicon, so the product fits for any usec. */
+   ticks = (uint64_t)usec * 1000 * rtime_mach_tb.denom / rtime_mach_tb.numer;
+   mach_wait_until(mach_absolute_time() + ticks);
+}
 #endif
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
@@ -130,8 +183,10 @@ static CreateWaitableTimerExW_t rtime_create_waitable_timer_ex = NULL;
 static SetWaitableTimer_t rtime_set_waitable_timer             = NULL;
 static NtSetTimerResolution_t rtime_nt_set_timer_resolution    = NULL;
 static ULONG rtime_timer_resolution       = 0;
-static volatile LONG rtime_sleep_state    = RTIME_SLEEP_UNKNOWN;
-static volatile LONG rtime_sleep_init_ran = 0;
+static retro_atomic_int_t rtime_sleep_state =
+   RETRO_ATOMIC_INT_INITIALIZER(RTIME_SLEEP_UNKNOWN);
+static retro_atomic_int_t rtime_sleep_init_ran =
+   RETRO_ATOMIC_INT_INITIALIZER(0);
 static DWORD rtime_sleep_tls              = TLS_OUT_OF_INDEXES;
 
 static bool rtime_timer_resolution_init(void)
@@ -181,7 +236,8 @@ error:
  * refcounted, so it has to be reasserted rather than set once. */
 static void rtime_sleep_fallback(unsigned usec)
 {
-   if (     rtime_sleep_state == RTIME_SLEEP_TIMERES
+   if (     retro_atomic_load_acquire_int(&rtime_sleep_state)
+               == RTIME_SLEEP_TIMERES
          && rtime_nt_set_timer_resolution)
    {
       ULONG res_current = 0;
@@ -234,12 +290,21 @@ static void rtime_sleep_init(void)
    if (state != RTIME_SLEEP_HIGHRES && rtime_timer_resolution_init())
       state = RTIME_SLEEP_TIMERES;
 
-   InterlockedExchange(&rtime_sleep_state, state);
+   /* Release store: rtime_sleep_tls and the resolved entry points are
+    * written above and must be visible to any thread that observes the
+    * published state. */
+   retro_atomic_store_release_int(&rtime_sleep_state, state);
 }
 
 /* The timer object must not be shared between threads: SetWaitableTimer()
  * on a handle that another thread is already waiting on reschedules that
- * thread's wait. One handle per thread, created on first use. */
+ * thread's wait. One handle per thread, created on first use.
+ *
+ * Handles are process objects, so a thread that exits leaves its timer
+ * open until the process does. That is one kernel object per thread
+ * that ever slept, which is nothing for a fixed set of worker threads
+ * and something to be aware of for a thread created per event: sleep
+ * from a persistent thread instead. */
 static HANDLE rtime_sleep_timer_get(void)
 {
    HANDLE timer = (HANDLE)TlsGetValue(rtime_sleep_tls);
@@ -275,12 +340,13 @@ void retro_sleep_us(unsigned usec)
       return;
    }
 
-   if (rtime_sleep_state == RTIME_SLEEP_UNKNOWN)
+   if (retro_atomic_load_acquire_int(&rtime_sleep_state)
+         == RTIME_SLEEP_UNKNOWN)
    {
       /* First caller performs the probe; any thread that races it
        * takes the plain Sleep() path for this one call rather than
        * spinning on the result. */
-      if (InterlockedCompareExchange(&rtime_sleep_init_ran, 1, 0) != 0)
+      if (!retro_atomic_cas_int(&rtime_sleep_init_ran, 0, 1))
       {
          Sleep((usec + 500) / 1000);
          return;
@@ -289,7 +355,8 @@ void retro_sleep_us(unsigned usec)
       rtime_sleep_init();
    }
 
-   if (     rtime_sleep_state != RTIME_SLEEP_HIGHRES
+   if (     retro_atomic_load_acquire_int(&rtime_sleep_state)
+               != RTIME_SLEEP_HIGHRES
          || !(timer = rtime_sleep_timer_get()))
    {
       rtime_sleep_fallback(usec);
@@ -327,8 +394,9 @@ void retro_sleep(unsigned msec)
 
 /* Called from rtime_deinit(), i.e. main thread only, at program or
  * core termination - by which point no other thread may still be
- * calling retro_sleep(). Timer handles belonging to threads that have
- * already exited are reclaimed by the OS. */
+ * calling retro_sleep(). Only the calling thread's own timer can be
+ * closed here: the TLS slot is per thread, so other threads' handles
+ * cannot be reached, and they stay open until the process exits. */
 static void rtime_sleep_deinit(void)
 {
    HANDLE timer;
@@ -344,8 +412,9 @@ static void rtime_sleep_deinit(void)
 
    if (rtime_sleep_tls == TLS_OUT_OF_INDEXES)
    {
-      InterlockedExchange(&rtime_sleep_state, RTIME_SLEEP_UNKNOWN);
-      InterlockedExchange(&rtime_sleep_init_ran, 0);
+      retro_atomic_store_release_int(&rtime_sleep_state,
+            RTIME_SLEEP_UNKNOWN);
+      retro_atomic_store_release_int(&rtime_sleep_init_ran, 0);
       return;
    }
 
@@ -358,8 +427,8 @@ static void rtime_sleep_deinit(void)
    TlsFree(rtime_sleep_tls);
    rtime_sleep_tls = TLS_OUT_OF_INDEXES;
 
-   InterlockedExchange(&rtime_sleep_state, RTIME_SLEEP_UNKNOWN);
-   InterlockedExchange(&rtime_sleep_init_ran, 0);
+   retro_atomic_store_release_int(&rtime_sleep_state, RTIME_SLEEP_UNKNOWN);
+   retro_atomic_store_release_int(&rtime_sleep_init_ran, 0);
 }
 #endif
 
@@ -367,7 +436,7 @@ static void rtime_sleep_deinit(void)
 void rtime_init(void)
 {
    rtime_deinit();
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(RETRO_ATOMIC_HAS_CAS)
    if (!rtime_localtime_lock)
       rtime_localtime_lock = slock_new();
 #endif
@@ -379,7 +448,7 @@ void rtime_deinit(void)
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    rtime_sleep_deinit();
 #endif
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(RETRO_ATOMIC_HAS_CAS)
    if (rtime_localtime_lock)
    {
       slock_free(rtime_localtime_lock);
@@ -393,19 +462,11 @@ struct tm *rtime_localtime(const time_t *timep, struct tm *result)
 {
    struct tm *time_info = NULL;
 
-   /* Lock mutex */
-#ifdef HAVE_THREADS
-   slock_lock(rtime_localtime_lock);
-#endif
-
+   RTIME_LOCALTIME_LOCK();
    time_info = localtime(timep);
    if (time_info)
       memcpy(result, time_info, sizeof(struct tm));
-
-   /* Unlock mutex */
-#ifdef HAVE_THREADS
-   slock_unlock(rtime_localtime_lock);
-#endif
+   RTIME_LOCALTIME_UNLOCK();
 
    return result;
 }

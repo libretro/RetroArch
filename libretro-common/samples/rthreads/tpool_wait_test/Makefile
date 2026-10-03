@@ -2,13 +2,14 @@ TARGET := tpool_wait_test
 
 LIBRETRO_COMM_DIR := ../../..
 
-# tpool.c depends on rthreads.c.  Both are self-contained at the
-# libretro-common layer (rthreads.c is the platform abstraction over
-# pthreads / Win32 / etc.) so we just compile them in directly --
-# no other libretro-common sources are needed.
+# tpool.c depends on rthreads.c and retro_eventcount.c.  All three are
+# self-contained at the libretro-common layer (rthreads.c is the
+# platform abstraction over pthreads / Win32 / etc.) so we just compile
+# them in directly -- no other libretro-common sources are needed.
 SOURCES := \
 	tpool_wait_test.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/tpool.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
 
 OBJS := $(SOURCES:.c=.o)
@@ -18,7 +19,11 @@ LDFLAGS += -lpthread
 
 # rthreads.c uses clock_gettime + CLOCK_REALTIME on Linux glibc; on
 # older glibc those live in -lrt.  Harmless on newer glibc.
+# Only glibc has it; MinGW has no librt and the link fails on it.
+ifeq ($(OS),Windows_NT)
+else
 LDFLAGS += -lrt
+endif
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

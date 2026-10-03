@@ -61,11 +61,49 @@ enum gl2_flags
    GL2_FLAG_MENU_TEXTURE_ENABLE    = (1 << 19),
    GL2_FLAG_MENU_TEXTURE_FULLSCREEN= (1 << 20),
    GL2_FLAG_NONE                   = (1 << 21),
-   GL2_FLAG_FRAME_DUPE_LOCK        = (1 << 22)
+   GL2_FLAG_FRAME_DUPE_LOCK        = (1 << 22),
+   /* The threaded wrapper's hardware ring is driving this driver: the
+    * core's context is current on the main thread, so this thread
+    * never takes it, and the frame reads the ring's slot. */
+   GL2_FLAG_HW_RING                = (1 << 23),
+   /* Latched at init: the wrapper was active and the driver
+    * configuration allowed a hw ring when this context came up.
+    * core_context_is_mains() reads this instead of consulting the
+    * live settings from the frame path (the video thread, with the
+    * main thread running free). */
+   GL2_FLAG_HW_RING_EXPECTED = (1 << 27),
+   /* overlay_tex names belong to the overlay pack (load_textures):
+    * not deleted with the page. */
+   GL2_FLAG_OVERLAY_BORROWED       = (1 << 28),
+   /* GPU recording is on: taken from the frame the frontend hands over,
+    * so this thread never reads the recording state the main thread
+    * writes (video_frame_info_t::gpu_recording). */
+   GL2_FLAG_GPU_RECORDING          = (1 << 24),
+   /* What the last frame said context scaling should be:
+    * set_aspect_ratio() runs on the video thread under the threaded
+    * wrapper, and reading the setting there races the menu writing it. */
+   GL2_FLAG_CTX_SCALING            = (1 << 25),
+   /* What the last frame said the menu filter should be:
+    * set_texture_frame() is applied by the video thread in
+    * thread_update_driver_state(), and reading the setting there races
+    * the menu writing it. */
+   GL2_FLAG_MENU_LINEAR_FILTER     = (1 << 26)
 };
 
 struct gl2
 {
+   /* gfx_display meshes kept on the GPU, by mesh id: vertices, and
+    * indices where the mesh has them. GL retires a deleted buffer once
+    * nothing in flight reads it, so the one drawn longest ago simply
+    * gives way when all are taken. */
+   struct
+   {
+      GLuint vbo;
+      GLuint ibo;
+      uint64_t last_draw;
+      uint32_t id;
+   } meshes[8];
+   uint64_t mesh_draws;
    const shader_backend_t *shader;
    void *shader_data;
    void *renderchain_data;
@@ -90,23 +128,37 @@ struct gl2
    GLuint pbo;
    GLuint *overlay_tex;
    GLuint menu_texture;
+   /* Copy of the last presented backbuffer, taken with
+    * glCopyTexSubImage2D before the swap of a frame() that asked for it
+    * (retain_output), plus the group that frame put on screen for
+    * present_last() to replay. GL 1.1 / GLES2, so every context. */
+   GLuint retained_texture;
+   /* In VIDEO_SCALE_PACK's layout. */
+   unsigned retained_dims;
+   unsigned retained_light;
+   unsigned retained_dark;
    GLuint pbo_readback[4];
    GLuint texture[GFX_MAX_TEXTURES];
    GLuint hw_render_fbo[GFX_MAX_TEXTURES];
+   /* The threaded wrapper's hardware ring: the fence the core's thread
+    * placed after rendering into each slot's texture, for the frame on
+    * this thread to wait before reading it. Sync objects are shared
+    * between the two contexts. */
+   void *hw_ring_sync[3];
 
    uint32_t flags;
 
-   unsigned video_width;
-   unsigned video_height;
+   /* In VIDEO_SCALE_PACK's layout. */
+   unsigned video_dims;
 
    unsigned tex_index; /* For use with PREV. */
    unsigned textures;
    unsigned fbo_feedback_pass;
    unsigned rotation;
-   unsigned out_vp_width;
-   unsigned out_vp_height;
-   unsigned tex_w;
-   unsigned tex_h;
+   /* The viewport the last frame went out at, and the streaming
+    * texture's size, both in VIDEO_SCALE_PACK's layout. */
+   unsigned out_vp_dims;
+   unsigned tex_dims;
    unsigned base_size; /* 2 or 4 */
    unsigned overlays;
    unsigned pbo_readback_index;
@@ -144,8 +196,7 @@ struct gl2
       GLint  loc_tex;
       GLint  loc_nits;
       GLint  loc_expand;
-      unsigned width;
-      unsigned height;
+      unsigned dims;
       /* Separate layer for the SDR UI when the content is PQ: one
        * encode cannot treat some pixels as Rec.2020 PQ and others as
        * gamma. Mirrors the glcore driver's ui_fbo/ui_tex. */
@@ -154,7 +205,15 @@ struct gl2
       GLint    loc_ui_tex;
       GLint    loc_mode;
       GLint    loc_ui_nits;
+      GLint    loc_out_pq;
       bool   active;
+      /* The backbuffer is 10-bit Rec.2020 PQ, not FP16 scRGB */
+      bool   pq_out;
+      /* The HDR settings this frame carried (video_frame_info_t), so the
+       * thread that draws never reads what the menu writes */
+      float    menu_nits;
+      float    paper_white_nits;
+      unsigned expand_gamut;
    } scrgb;
 
 };

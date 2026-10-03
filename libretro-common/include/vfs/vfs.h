@@ -23,6 +23,7 @@
 #ifndef __LIBRETRO_SDK_VFS_H
 #define __LIBRETRO_SDK_VFS_H
 
+#include <stdio.h>
 #include <retro_common_api.h>
 #include <boolean.h>
 #include <stdint.h>
@@ -65,12 +66,63 @@ typedef struct
 #define VFS_HAVE_FILE_MAPPING 1
 #endif
 
+/* Descriptor-backed I/O: open()/read()/close() with no stdio layer in
+ * between.  The code for it is compiled on every target - it is the
+ * path a file mapping falls back to - but until this existed it was
+ * only ever *reached* where VFS_HAVE_FILE_MAPPING was defined, since
+ * that was the sole gate on the hint that selects it.  Everything
+ * else was pinned to stdio no matter what the caller asked for.
+ *
+ * That matters most on the targets that were excluded.  With newlib,
+ * fread() on a buffered stream refills through the stream buffer and
+ * memcpy()s each refill into the caller's buffer (see _fread_r), so a
+ * whole-file read costs one read() per buffer-full plus a second copy
+ * of every byte; glibc's fread() bypasses its buffer once the request
+ * reaches a block, which is why this is invisible on desktop.
+ *
+ * Listed rather than assumed: the descriptor path compiles everywhere
+ * but has only ever run on the mapping targets, so a platform joins
+ * this list once its open()/read()/lseek() have been exercised.  A
+ * target that is not listed keeps the behaviour it has today. */
+#ifndef VFS_HAVE_DESCRIPTOR_IO
+#if defined(VFS_HAVE_FILE_MAPPING) \
+ || defined(VITA) \
+ || defined(_3DS) \
+ || defined(WIIU) \
+ || defined(__SWITCH__) \
+ || defined(GEKKO) \
+ || defined(PSP) \
+ || defined(PS2)
+#define VFS_HAVE_DESCRIPTOR_IO 1
+#endif
+#endif
+
+/* Descriptor-backed I/O for one-shot writers as well: a stream opened
+ * for writing with RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK hands its
+ * bytes straight to the descriptor, so a whole-file write is one open,
+ * one write and one close.  Same listing discipline as above: a
+ * platform joins once its descriptor write path has been exercised.
+ *
+ * On Vita the descriptor path is sceIo* itself rather than newlib's
+ * open()/write(), which sit on top of those calls and add a realpath
+ * allocation, a directory stat, a strdup of the path into the fd
+ * table and a mutex round-trip per call; stdio adds a FILE, a buffer
+ * and an fstat on top of that.  On an SD card every extra stat is a
+ * directory lookup, so a bulk extraction pays for all of it per
+ * member. */
+#ifndef VFS_HAVE_DESCRIPTOR_WRITE
+#if defined(VITA) || defined(GEKKO) || defined(PSP) || defined(PS2)
+#define VFS_HAVE_DESCRIPTOR_WRITE 1
+#endif
+#endif
+
 enum vfs_scheme
 {
    VFS_SCHEME_NONE = 0,
    VFS_SCHEME_CDROM,
    VFS_SCHEME_SAF,
-   VFS_SCHEME_SMB
+   VFS_SCHEME_SMB,
+   VFS_SCHEME_NFS
 };
 
 #if !(defined(__WINRT__) && defined(__cplusplus_winrt))
@@ -112,6 +164,14 @@ struct libretro_vfs_implementation_file
 #ifdef HAVE_SMBCLIENT
    intptr_t smb_fh;
    intptr_t smb_ctx;
+   intptr_t smb_slot;   /* pool slot held from open to close, 0 if private */
+   intptr_t smb_prefetch; /* struct smb_prefetch *, read-only opens with threads */
+   intptr_t smb_reopen;   /* struct smb_reopen *: how to open it again */
+#endif
+#ifdef HAVE_NFSCLIENT
+   intptr_t nfs_fh;
+   intptr_t nfs_ctx;
+   intptr_t nfs_prefetch; /* struct nfs_prefetch *, read-only opens with threads */
 #endif
 #if defined(HAVE_CDROM) && defined(__APPLE__)
    void *iokit_plugin;   /* IOCFPlugInInterface ** */

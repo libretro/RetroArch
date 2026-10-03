@@ -22,8 +22,6 @@
 
 #include <boolean.h>
 #include <retro_miscellaneous.h>
-#include <retro_inline.h>
-#include <string/stdstring.h>
 
 #include <libretro.h>
 
@@ -53,8 +51,8 @@ typedef struct
 typedef struct gx_input
 {
 #ifdef HW_RVL
-   gx_input_mouse_t *mouse;
-   int mouse_max;
+   /* One per port; the joypad driver says which point anywhere. */
+   gx_input_mouse_t mouse[DEFAULT_MAX_PADS];
 #else
    void *empty;
 #endif
@@ -75,7 +73,8 @@ static int16_t rvl_input_state(
 {
    gx_input_t *gx             = (gx_input_t*)data;
 
-   if (port >= DEFAULT_MAX_PADS || !gx)
+   if (     port >= DEFAULT_MAX_PADS || !gx
+         || joypad_info->joy_idx >= DEFAULT_MAX_PADS)
       return 0;
 
    switch (device)
@@ -172,122 +171,28 @@ static int16_t rvl_input_state(
 
 static void gx_input_free_input(void *data)
 {
-   gx_input_t *gx = (gx_input_t*)data;
-
-   if (!gx)
-      return;
-
-#ifdef HW_RVL
-   if (gx->mouse)
-      free(gx->mouse);
-#endif
-   free(gx);
+   free(data);
 }
 
 
 static void *gx_input_init(const char *joypad_driver)
 {
-   gx_input_t *gx = (gx_input_t*)calloc(1, sizeof(*gx));
-   if (!gx)
-      return NULL;
-
-#ifdef HW_RVL
-   /* Allocate at least 1 mouse at startup */
-   gx->mouse_max  = 1;
-   gx->mouse      = (gx_input_mouse_t*)calloc(
-         gx->mouse_max, sizeof(gx_input_mouse_t));
-   /* NULL-check: the RETRO_DEVICE_MOUSE input handler
-    * dereferences gx->mouse[joy_idx].x_abs etc. unconditionally.
-    * On OOM fail the whole driver init rather than leave the
-    * handler to NULL-deref on the first mouse event.  The free
-    * helper at line ~187 is NULL-safe so falling through to
-    * free(gx) would leak nothing - but free(gx) directly is
-    * minimal-diff. */
-   if (!gx->mouse)
-   {
-      free(gx);
-      return NULL;
-   }
-#endif
-
-   return gx;
+   return calloc(1, sizeof(gx_input_t));
 }
 
 #ifdef HW_RVL
-static INLINE int rvl_count_mouse(gx_input_t *gx)
-{
-   unsigned i;
-   int count = 0;
-
-   for (i = 0; i < DEFAULT_MAX_PADS; i++)
-   {
-      const char *joypad_name = joypad_driver_name(i);
-      if (joypad_name && *joypad_name)
-         if (string_is_equal(joypad_name, "Wiimote Controller"))
-            count++;
-   }
-
-   return count;
-}
-
 static void rvl_input_poll(void *data)
 {
+   unsigned i;
    gx_input_t *gx = (gx_input_t*)data;
-   if (gx && gx->mouse)
+   if (!gx)
+      return;
+   for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
-      int count = rvl_count_mouse(gx);
-
-      /* The outer `if (gx && gx->mouse)` already established gx != NULL. */
-      if (count > 0)
-      {
-         unsigned i;
-         if (count != gx->mouse_max)
-         {
-            gx_input_mouse_t *tmp = (gx_input_mouse_t*)realloc(
-                  gx->mouse, count * sizeof(gx_input_mouse_t));
-            if (!tmp)
-            {
-               /* Pre-patch bug: freed gx->mouse but left the
-                * dangling pointer and stale mouse_max in place.
-                * The subsequent 'for (i = 0; i < gx->mouse_max;
-                * i++)' loop would read/write through the freed
-                * pointer - UAF.  Clear both the pointer and the
-                * count so the outer gate 'if (gx && gx->mouse)'
-                * at line ~242 rejects subsequent calls, and the
-                * remaining loop in this call is skipped via the
-                * added 'mouse_max = 0'. */
-               free(gx->mouse);
-               gx->mouse     = NULL;
-               gx->mouse_max = 0;
-            }
-            else
-            {
-               int old_max   = gx->mouse_max;
-               gx->mouse     = tmp;
-               gx->mouse_max = count;
-
-               /* realloc-grow does NOT zero the new tail.
-                * Zero only the freshly-added entries so that the
-                * subsequent x_last = x_abs read does not pick up
-                * uninitialised heap data. Existing entries keep
-                * their last known position across hot-plug. */
-               if (count > old_max)
-                  memset(&gx->mouse[old_max], 0,
-                        (count - old_max) * sizeof(gx_input_mouse_t));
-            }
-         }
-
-         if (gx->mouse)
-         {
-            for (i = 0; i < (unsigned)gx->mouse_max; i++)
-            {
-               gx->mouse[i].x_last = gx->mouse[i].x_abs;
-               gx->mouse[i].y_last = gx->mouse[i].y_abs;
-               gx_joypad_read_mouse(i, &gx->mouse[i].x_abs,
-                     &gx->mouse[i].y_abs, &gx->mouse[i].button);
-            }
-         }
-      }
+      gx->mouse[i].x_last = gx->mouse[i].x_abs;
+      gx->mouse[i].y_last = gx->mouse[i].y_abs;
+      gx_joypad_read_mouse(i, &gx->mouse[i].x_abs, &gx->mouse[i].y_abs,
+            &gx->mouse[i].button);
    }
 }
 

@@ -20,6 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <retro_posix_source.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -71,6 +73,12 @@
 static retro_vfs_stat_t path_stat32_cb = retro_vfs_stat_impl;
 static retro_vfs_stat_64_t path_stat64_cb = retro_vfs_stat_64_impl;
 static retro_vfs_mkdir_t path_mkdir_cb = retro_vfs_mkdir_impl;
+/* VFS API v5.  NULL when a frontend older than v5 is in use, so the
+ * wrappers report failure instead of touching the local file system
+ * behind a foreign frontend's back. */
+static retro_vfs_set_readonly_t path_set_readonly_cb = retro_vfs_set_readonly_impl;
+static retro_vfs_get_mtime_t    path_get_mtime_cb    = retro_vfs_get_mtime_impl;
+static retro_vfs_set_mtime_t    path_set_mtime_cb    = retro_vfs_set_mtime_impl;
 
 void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
 {
@@ -80,6 +88,9 @@ void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
    path_stat32_cb         = retro_vfs_stat_impl;
    path_stat64_cb         = retro_vfs_stat_64_impl;
    path_mkdir_cb          = retro_vfs_mkdir_impl;
+   path_set_readonly_cb   = retro_vfs_set_readonly_impl;
+   path_get_mtime_cb      = retro_vfs_get_mtime_impl;
+   path_set_mtime_cb      = retro_vfs_set_mtime_impl;
 
    if (vfs_info->required_interface_version < PATH_REQUIRED_VFS_VERSION || !vfs_iface)
       return;
@@ -91,6 +102,46 @@ void path_vfs_init(const struct retro_vfs_interface_info* vfs_info)
       path_stat64_cb = vfs_iface->stat_64;
    else
       path_stat64_cb = NULL;
+
+   /* Members a v5 frontend left NULL stay NULL: the wrappers then
+    * report "unavailable" rather than dereferencing them. */
+   path_set_readonly_cb = NULL;
+   path_get_mtime_cb    = NULL;
+   path_set_mtime_cb    = NULL;
+   if (vfs_info->required_interface_version >= METADATA_REQUIRED_VFS_VERSION)
+   {
+      path_set_readonly_cb = vfs_iface->set_readonly;
+      path_get_mtime_cb    = vfs_iface->get_mtime;
+      path_set_mtime_cb    = vfs_iface->set_mtime;
+   }
+}
+
+bool path_is_readonly(const char *path)
+{
+   if (path_stat64_cb)
+      return (path_stat64_cb(path, NULL) & RETRO_VFS_STAT_IS_READONLY) != 0;
+   return (path_stat32_cb(path, NULL) & RETRO_VFS_STAT_IS_READONLY) != 0;
+}
+
+bool path_set_readonly(const char *path, bool readonly)
+{
+   if (!path_set_readonly_cb)
+      return false;
+   return path_set_readonly_cb(path, readonly ? 1 : 0) == 0;
+}
+
+bool path_get_mtime(const char *path, int64_t *mtime)
+{
+   if (!path_get_mtime_cb || !mtime)
+      return false;
+   return path_get_mtime_cb(path, mtime) == 0;
+}
+
+bool path_set_mtime(const char *path, int64_t mtime)
+{
+   if (!path_set_mtime_cb)
+      return false;
+   return path_set_mtime_cb(path, mtime) == 0;
 }
 
 int path_stat(const char *path)
@@ -128,6 +179,11 @@ bool path_is_valid(const char *path)
    return (path_stat32_cb(path, NULL) & RETRO_VFS_STAT_IS_VALID) != 0;
 }
 
+bool path_set_private(const char *path)
+{
+   return retro_vfs_restrict_permissions_impl(path) == 0;
+}
+
 int64_t path_get_size(const char *path)
 {
    int64_t filesize = 0;
@@ -144,6 +200,22 @@ int64_t path_get_size(const char *path)
 }
 
 /**
+ * path_rmdir:
+ * @dir                : directory path.
+ *
+ * Removes the empty directory @dir.  There is no libretro VFS entry
+ * for this, so it always goes through the built-in implementation.
+ *
+ * @return true if the directory was removed, otherwise false -
+ * including a directory that is not empty, and platforms with no
+ * directory removal, where an empty directory is simply left.
+ **/
+bool path_rmdir(const char *dir)
+{
+   return retro_vfs_rmdir_impl(dir) == 0;
+}
+
+/**
  * path_mkdir:
  * @dir                : directory
  *
@@ -153,6 +225,34 @@ int64_t path_get_size(const char *path)
  *
  * @return true if directory could be created, otherwise false.
  **/
+/* True for "dev:name", "dev:/name" and "dev:\name" (a trailing
+ * separator allowed): a directory whose parent is a device root.  The
+ * root cannot be probed everywhere - the PSP firmware refuses a stat of
+ * "ms0:/" - and path_parent_dir() turns it into a relative "./", but a
+ * mounted device's root always exists. */
+static bool path_parent_is_device_root(const char *p)
+{
+   const char *colon = strchr(p, ':');
+   const char *s;
+
+   if (!colon || colon == p)
+      return false;
+   for (s = p; s < colon; s++)
+      if (*s == '/' || *s == '\\')
+         return false;
+
+   s = colon + 1;
+   if (*s == '/' || *s == '\\')
+      s++;
+   if (!*s || *s == '/' || *s == '\\')
+      return false;
+   while (*s && *s != '/' && *s != '\\')
+      s++;
+   if (*s)
+      s++;
+   return *s == '\0';
+}
+
 bool path_mkdir(const char *dir)
 {
    bool norecurse     = false;
@@ -183,24 +283,29 @@ bool path_mkdir(const char *dir)
    if (path_is_directory(dir))
       return true;
 
-   /* Use heap. Real chance of stack 
-    * overflow if we recurse too hard. */
-   if (!(basedir = strdup(dir)))
-      return false;
-
-   path_parent_dir(basedir, strlen(basedir));
-
-   if (!*basedir || !strcmp(basedir, dir))
-   {
-      free(basedir);
-      return false;
-   }
-
-   if (     path_is_directory(basedir)
-         || path_mkdir(basedir))
+   if (path_parent_is_device_root(dir))
       norecurse = true;
+   else
+   {
+      /* Use heap. Real chance of stack
+       * overflow if we recurse too hard. */
+      if (!(basedir = strdup(dir)))
+         return false;
 
-   free(basedir);
+      path_parent_dir(basedir, strlen(basedir));
+
+      if (!*basedir || !strcmp(basedir, dir))
+      {
+         free(basedir);
+         return false;
+      }
+
+      if (     path_is_directory(basedir)
+            || path_mkdir(basedir))
+         norecurse = true;
+
+      free(basedir);
+   }
 
    if (norecurse)
    {

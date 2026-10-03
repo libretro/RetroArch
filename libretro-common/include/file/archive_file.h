@@ -40,6 +40,8 @@
 #if defined(RARCH_INTERNAL) && defined(HAVE_CONFIG_H)
 #include "../../../config.h" /* for HAVE_MMAP */
 #endif
+/* VFS_HAVE_FILE_MAPPING: HAVE_MMAP or Win32, see vfs.h. */
+#include <vfs/vfs.h>
 
 RETRO_BEGIN_DECLS
 
@@ -64,9 +66,16 @@ typedef struct file_archive_transfer
    void *context;
    struct RFILE *archive_file;
    const struct file_archive_file_backend *backend;
-#ifdef HAVE_MMAP
+#ifdef VFS_HAVE_FILE_MAPPING
+   /* The whole archive, mapped: the VFS's mapping of archive_file
+    * (opened with RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS), borrowed
+    * for as long as the file is open, or NULL when there is none - a
+    * file too large to map, a VFS URL scheme, no mapping support.
+    * Read-only; declared non-const only because the decoders hand it
+    * to zlib's next_in.  Was a private mmap() over a second open() of
+    * the path, POSIX only; the VFS maps on Win32 too, so the Windows
+    * build now takes the zero-copy decode paths as well. */
    uint8_t *archive_mmap_data;
-   int archive_mmap_fd;
 #endif
    unsigned step_total;
    unsigned step_current;
@@ -84,6 +93,12 @@ typedef struct file_archive_transfer
     * pending_active is what makes this visible to the iterate loop;
     * everything else is the state that call needs to resume. */
    file_archive_file_handle_t pending_handle;
+   /* The member's output, opened beside pending_path and renamed over
+    * it when the member completes (filestream_open_atomic()).  A
+    * backend that can produce output a piece at a time writes it here
+    * as it goes and leaves pending_handle.data NULL; any other fills
+    * pending_handle.data, which is written here at the end. */
+   struct RFILE *pending_sink;
    char     pending_path[PATH_MAX_LENGTH];
    uint32_t pending_size;
    bool     pending_active;
@@ -107,6 +122,12 @@ typedef struct
    char *valid_ext;
    char *callback_error;
    struct archive_extract_userdata *userdata;
+   /* Directory the previous member was extracted into, already known
+    * to exist.  Archive members are grouped by directory, so this
+    * lets the next member skip the stat that path_mkdir() would do
+    * to find that out again - which on a FAT card is a directory
+    * scan, per file. */
+   char last_dir[PATH_MAX_LENGTH];
 } decompress_state_t;
 
 struct archive_extract_userdata

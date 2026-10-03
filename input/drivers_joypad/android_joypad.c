@@ -64,10 +64,11 @@ static int32_t android_joypad_button_state(
 static int32_t android_joypad_button(unsigned port, uint16_t joykey)
 {
    struct android_app *android_app = (struct android_app*)g_android;
-   uint8_t *buf                    = android_keyboard_state_get(port);
+   uint8_t *buf;
 
    if (port >= DEFAULT_MAX_PADS)
       return 0;
+   buf = android_keyboard_state_get(port);
 
    return android_joypad_button_state(android_app, buf, port, joykey);
 }
@@ -94,6 +95,10 @@ static int16_t android_joypad_axis_state(
 static int16_t android_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    struct android_app *android_app = (struct android_app*)g_android;
+
+   if (port >= DEFAULT_MAX_PADS)
+      return 0;
+
    return android_joypad_axis_state(android_app, port, joyaxis);
 }
 
@@ -105,11 +110,14 @@ static int16_t android_joypad_state(
    int i;
    int16_t ret                          = 0;
    struct android_app *android_app      = (struct android_app*)g_android;
-   uint8_t *buf                         = android_keyboard_state_get(port);
+   uint8_t *buf;
    uint16_t port_idx                    = joypad_info->joy_idx;
 
-   if (port_idx >= DEFAULT_MAX_PADS)
+   /* buf is derived from port, hat/analog lookups use port_idx:
+    * both must be in range before anything is dereferenced. */
+   if (port >= DEFAULT_MAX_PADS || port_idx >= DEFAULT_MAX_PADS)
       return 0;
+   buf = android_keyboard_state_get(port);
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {

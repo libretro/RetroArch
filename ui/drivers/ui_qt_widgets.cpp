@@ -23,7 +23,6 @@
 #include <QResizeEvent>
 #include <QScreen>
 #include <QScrollBar>
-#include <QSettings>
 #include <QStackedLayout>
 #include <QStyle>
 #include <QStyleOption>
@@ -75,48 +74,92 @@ extern "C" {
 #include <file/file_path.h>
 #include <file/archive_file.h>
 #include <lists/string_list.h>
+#include <compat/strl.h>
 
 #ifndef CXX_BUILD
 }
 #endif
 
 /* Replace characters unsafe in URLs / file names with '_' */
-static QString scrub_qstring(QString str)
+
+/* The hidden-playlist list (desktop_menu_hidden_playlists in
+ * retroarch.cfg) is parsed and written by the shared core, in C: Qt's
+ * own split() takes its empty-parts flag from Qt::SkipEmptyParts on
+ * 5.14+ and QString::SkipEmptyParts before that, and string_split()
+ * drops empty parts on every Qt back to 4. The natives use the same
+ * two calls. */
+static bool qt_playlist_hidden(const QString &path)
 {
-   static const char chars[] = "&*/:`\"<>?\\|";
-   QByteArray buf            = str.toUtf8();
-   char *s                   = buf.data();
-   size_t i;
-   for (i = 0; i < sizeof(chars) - 1; i++)
-      string_replace_all_chars(s, chars[i], '_');
-   return QString::fromUtf8(s);
+   return companion_core_playlist_is_hidden(ui_companion_qt_core(),
+         path.toUtf8().constData());
 }
 
+static void qt_set_playlist_hidden(const QString &path, bool hidden)
+{
+   companion_core_playlist_set_hidden(ui_companion_qt_core(),
+         path.toUtf8().constData(), hidden);
+}
 
 #ifdef HAVE_MENU
 static const QRegularExpression decimalsRegex("%.(\\d)f");
 
+/* Qt shows a plain-text tooltip on one line however long it is - a
+ * sublabel paragraph ran the width of a 2560 px desktop. It wraps
+ * rich text to a sane width, so tips go in as escaped rich text. */
+static inline QString wrapped_tooltip(const char *text)
+{
+   return QStringLiteral("<qt>") + QString::fromUtf8(text).toHtmlEscaped()
+        + QStringLiteral("</qt>");
+}
+
 static inline void add_sublabel_and_whats_this(
       QWidget *widget, rarch_setting_t *setting)
 {
-   struct menu_file_list_cbs cbs = {};
    char tmp[512];
    tmp[0] = '\0';
 
-   cbs.enum_idx = (enum msg_hash_enums)setting->enum_idx;
-
-   menu_cbs_init_bind_sublabel(&cbs, NULL, NULL, 0,
-         (unsigned)setting->type, setting->size);
-
-   cbs.action_sublabel(0, 0, 0, 0, 0, tmp, sizeof(tmp));
-
-   widget->setToolTip(tmp);
+   if (menu_cbs_sublabel_for_enum((enum msg_hash_enums)setting->enum_idx,
+            (unsigned)setting->type, setting->size, tmp, sizeof(tmp)))
+      widget->setToolTip(wrapped_tooltip(tmp));
 
    msg_hash_get_help_enum((enum msg_hash_enums)setting->enum_idx,
          tmp, sizeof(tmp));
 
    if (!string_is_equal(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
       widget->setWhatsThis(tmp);
+}
+
+/* A setting's range is stored as float; converting a float outside
+ * int range to int is undefined, and on x86 it produces INT_MIN, which
+ * collapses a spin box's range to a single unreachable value. Bounds are
+ * therefore clamped in double, where every int is exact, and an
+ * unenforced or NaN bound takes the widget's own default. */
+static int qt_setting_bound(const rarch_setting_t *setting,
+      unsigned flag, double value, int fallback)
+{
+   if (!(setting->flags & flag) || value != value)
+      return fallback;
+   if (value >= (double)INT_MAX)
+      return INT_MAX;
+   if (value <= (double)INT_MIN)
+      return INT_MIN;
+   return (int)value;
+}
+
+/* The most choices a radio-button group lays out. */
+#define QT_RADIO_BUTTONS_MAX 256
+
+/* The value a spin box can show for a stored value: the stored value
+ * clamped to the box's range. The paint-time resync compares against
+ * this, so an out-of-range stored value is shown at the nearest bound
+ * once instead of being re-set (and repainted) on every paint. */
+static int qt_spinbox_shown(const QSpinBox *box, double value)
+{
+   if (value >= (double)box->maximum())
+      return box->maximum();
+   if (value <= (double)box->minimum())
+      return box->minimum();
+   return (int)value;
 }
 
 static inline QString sanitize_ampersand(QString input)
@@ -502,7 +545,6 @@ void StringComboBox::paintEvent(QPaintEvent *event)
 UIntComboBox::UIntComboBox(rarch_setting_t *setting, QWidget *parent) :
    QComboBox(parent)
    ,m_setting(setting)
-   ,m_value(setting->value.target.unsigned_integer)
 {
    float min = (setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f;
    float max = (setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : 999.00f;
@@ -517,7 +559,6 @@ UIntComboBox::UIntComboBox(rarch_setting_t *setting, QWidget *parent) :
 UIntComboBox::UIntComboBox(rarch_setting_t *setting, double min, double max, QWidget *parent) :
     QComboBox(parent)
    ,m_setting(setting)
-   ,m_value(setting->value.target.unsigned_integer)
 {
    populate(min, max);
 
@@ -529,7 +570,7 @@ UIntComboBox::UIntComboBox(rarch_setting_t *setting, double min, double max, QWi
 void UIntComboBox::populate(double min, double max)
 {
    float i;
-   unsigned orig_value = *m_setting->value.target.unsigned_integer;
+   unsigned orig_value = setting_uint_get(m_setting);
    float          step = m_setting->step;
    bool  checked_found = false;
    unsigned      count = 0;
@@ -541,7 +582,7 @@ void UIntComboBox::populate(double min, double max)
          char val_s[NAME_MAX_LENGTH];
          unsigned val = (unsigned)i;
 
-         *m_setting->value.target.unsigned_integer = val;
+         setting_uint_set(m_setting, val);
 
          m_setting->actions->repr(m_setting, val_s, sizeof(val_s));
 
@@ -557,7 +598,7 @@ void UIntComboBox::populate(double min, double max)
          count++;
       }
 
-      *m_setting->value.target.unsigned_integer = orig_value;
+      setting_uint_set(m_setting, orig_value);
    }
 }
 
@@ -573,24 +614,24 @@ void UIntComboBox::onCurrentIndexChanged(int index)
 {
    (void)(index);
 
-   *m_value = currentData().toUInt();
+   setting_uint_set(m_setting, currentData().toUInt());
 
    setting_generic_handle_change(m_setting);
 }
 
 void UIntComboBox::paintEvent(QPaintEvent *event)
 {
-   setCurrentText(m_hash.value(*m_value));
+   setCurrentText(m_hash.value(setting_uint_get(m_setting)));
    QComboBox::paintEvent(event);
 }
 
 UIntSpinBox::UIntSpinBox(rarch_setting_t *setting, QWidget *parent) :
    QSpinBox(parent)
    ,m_setting(setting)
-   ,m_value(setting->value.target.unsigned_integer)
 {
-   setMinimum((setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f);
-   setMaximum((setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : INT_MAX);
+   setRange(
+         qt_setting_bound(setting, SD_FLAG_ENFORCE_MINRANGE, setting->min, 0),
+         qt_setting_bound(setting, SD_FLAG_ENFORCE_MAXRANGE, setting->max, INT_MAX));
 
    setSingleStep(setting->step);
 
@@ -604,17 +645,19 @@ UIntSpinBox::UIntSpinBox(msg_hash_enums enum_idx, QWidget *parent) :
 
 void UIntSpinBox::onValueChanged(int value)
 {
-   *m_value = value;
+   setting_uint_set(m_setting, (unsigned)value);
    setting_generic_handle_change(m_setting);
 }
 
 void UIntSpinBox::paintEvent(QPaintEvent *event)
 {
-   if ((unsigned)value() != *m_value)
+   int shown = qt_spinbox_shown(this, (double)setting_uint_get(m_setting));
+
+   if (value() != shown)
    {
       blockSignals(true);
 
-      setValue(*m_value);
+      setValue(shown);
 
       blockSignals(false);
    }
@@ -628,10 +671,11 @@ SizeSpinBox::SizeSpinBox(rarch_setting_t *setting, unsigned scale, QWidget *pare
    ,m_value(setting->value.target.sizet)
    ,m_scale(scale)
 {
-   setMinimum((setting->flags & SD_FLAG_ENFORCE_MINRANGE)
-		   ? setting->min / m_scale : 0.00f);
-   setMaximum((setting->flags & SD_FLAG_ENFORCE_MAXRANGE)
-		   ? setting->max / m_scale : INT_MAX);
+   setRange(
+         qt_setting_bound(setting, SD_FLAG_ENFORCE_MINRANGE,
+            (double)setting->min / m_scale, 0),
+         qt_setting_bound(setting, SD_FLAG_ENFORCE_MAXRANGE,
+            (double)setting->max / m_scale, INT_MAX));
 
    setSingleStep(setting->step / m_scale);
 
@@ -653,11 +697,13 @@ void SizeSpinBox::onValueChanged(int value)
 
 void SizeSpinBox::paintEvent(QPaintEvent *event)
 {
-   if ((value() * m_scale) != *m_value)
+   int shown = qt_spinbox_shown(this, (double)(*m_value / m_scale));
+
+   if (value() != shown)
    {
       blockSignals(true);
 
-      setValue(*m_value / m_scale);
+      setValue(shown);
 
       blockSignals(false);
    }
@@ -668,17 +714,16 @@ void SizeSpinBox::paintEvent(QPaintEvent *event)
 UIntRadioButton::UIntRadioButton(msg_hash_enums enum_idx, unsigned value, QWidget *parent) :
    QRadioButton(parent)
    ,m_setting(menu_setting_find_enum(enum_idx))
-   ,m_target(m_setting->value.target.unsigned_integer)
    ,m_value(value)
 {
    char val_s[NAME_MAX_LENGTH];
-   unsigned orig_value = *m_setting->value.target.unsigned_integer;
+   unsigned orig_value = setting_uint_get(m_setting);
 
-   *m_setting->value.target.unsigned_integer = value;
+   setting_uint_set(m_setting, value);
 
    m_setting->actions->repr(m_setting, val_s, sizeof(val_s));
 
-   *m_setting->value.target.unsigned_integer = orig_value;
+   setting_uint_set(m_setting, orig_value);
 
    setText(val_s);
 
@@ -692,7 +737,6 @@ UIntRadioButton::UIntRadioButton(const QString &text,
 	rarch_setting_t *setting, unsigned value, QWidget *parent) :
    QRadioButton(text, parent)
    ,m_setting(setting)
-   ,m_target(setting->value.target.unsigned_integer)
    ,m_value(value)
 {
    connect(this, SIGNAL(clicked(bool)), this, SLOT(onClicked(bool)));
@@ -700,13 +744,13 @@ UIntRadioButton::UIntRadioButton(const QString &text,
 
 void UIntRadioButton::onClicked(bool)
 {
-   *m_target = m_value;
+   setting_uint_set(m_setting, m_value);
    setting_generic_handle_change(m_setting);
 }
 
 void UIntRadioButton::paintEvent(QPaintEvent *event)
 {
-   if (*m_target == m_value)
+   if (setting_uint_get(m_setting) == m_value)
       setChecked(true);
    else
       setChecked(false);
@@ -717,31 +761,46 @@ void UIntRadioButton::paintEvent(QPaintEvent *event)
 UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
    QGroupBox(setting->short_description, parent)
    ,m_setting(setting)
-   ,m_value(setting->value.target.unsigned_integer)
    ,m_buttonGroup(new QButtonGroup(this))
 {
    QVBoxLayout *layout = new QVBoxLayout(this);
-   /* from menu_displaylist */
-   float i;
-   unsigned orig_value = *setting->value.target.unsigned_integer;
-   float          step = setting->step;
-   float           min = (setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : 0.00f;
-   float           max = (setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : UINT_MAX;
+   /* The choices are enumerated in unsigned integers: a float counter
+    * stops advancing past 2^24, and a missing or non-positive step
+    * would never reach the end. The button id is an int, so the range
+    * is bounded to [0, INT_MAX], and at most QT_RADIO_BUTTONS_MAX
+    * buttons are made, which also bounds a row with no enforced
+    * maximum. */
+   unsigned orig_value = setting_uint_get(setting);
+   unsigned        min = (unsigned)qt_setting_bound(setting,
+         SD_FLAG_ENFORCE_MINRANGE, setting->min < 0.0f ? 0.0 : setting->min, 0);
+   unsigned        max = (unsigned)qt_setting_bound(setting,
+         SD_FLAG_ENFORCE_MAXRANGE, setting->max < 0.0f ? 0.0 : setting->max,
+         INT_MAX);
+   unsigned       step = 1;
    bool  checked_found = false;
 
-   if (setting->actions->repr)
+   if (setting->step >= (float)INT_MAX)
+      step = INT_MAX;
+   else if (setting->step >= 1.0f)
+      step = (unsigned)setting->step;
+
+   if (setting->actions->repr && min <= max)
    {
-      for (i = min; i <= max; i += step)
+      unsigned i     = min;
+      unsigned count = 0;
+
+      for (;;)
       {
          char val_s[NAME_MAX_LENGTH];
+         QRadioButton *button = NULL;
 
-         *setting->value.target.unsigned_integer = i;
+         setting_uint_set(setting, i);
 
          setting->actions->repr(setting, val_s, sizeof(val_s));
 
-         QRadioButton *button = new QRadioButton(QString(val_s), this);
+         button = new QRadioButton(QString(val_s), this);
 
-         m_buttonGroup->addButton(button, i);
+         m_buttonGroup->addButton(button, (int)i);
 
          layout->addWidget(button);
 
@@ -750,9 +809,13 @@ UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
             button->setChecked(true);
             checked_found = true;
          }
+
+         if (++count >= QT_RADIO_BUTTONS_MAX || max - i < step)
+            break;
+         i += step;
       }
 
-      *setting->value.target.unsigned_integer = orig_value;
+      setting_uint_set(setting, orig_value);
    }
    add_sublabel_and_whats_this(this, m_setting);
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -767,7 +830,7 @@ UIntRadioButtons::UIntRadioButtons(msg_hash_enums enum_idx, QWidget *parent) :
 
 void UIntRadioButtons::onButtonClicked(int id)
 {
-   *m_value = id;
+   setting_uint_set(m_setting, (unsigned)id);
 
    setting_generic_handle_change(m_setting);
 }
@@ -775,10 +838,10 @@ void UIntRadioButtons::onButtonClicked(int id)
 IntSpinBox::IntSpinBox(rarch_setting_t *setting, QWidget *parent) :
    QSpinBox(parent)
    ,m_setting(setting)
-   ,m_value(setting->value.target.integer)
 {
-   setMinimum((setting->flags & SD_FLAG_ENFORCE_MINRANGE) ? setting->min : INT_MIN);
-   setMaximum((setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : INT_MAX);
+   setRange(
+         qt_setting_bound(setting, SD_FLAG_ENFORCE_MINRANGE, setting->min, INT_MIN),
+         qt_setting_bound(setting, SD_FLAG_ENFORCE_MAXRANGE, setting->max, INT_MAX));
 
    setSingleStep(setting->step);
 
@@ -789,16 +852,18 @@ IntSpinBox::IntSpinBox(rarch_setting_t *setting, QWidget *parent) :
 
 void IntSpinBox::onValueChanged(int value)
 {
-   *m_value = value;
+   setting_int_set(m_setting, value);
    setting_generic_handle_change(m_setting);
 }
 
 void IntSpinBox::paintEvent(QPaintEvent *event)
 {
-   if (value() != *m_value)
+   int shown = qt_spinbox_shown(this, (double)setting_int_get(m_setting));
+
+   if (value() != shown)
    {
       blockSignals(true);
-      setValue(*m_value);
+      setValue(shown);
       blockSignals(false);
    }
 
@@ -1637,6 +1702,23 @@ void GridView::setGridSize(const int newSize)
    }
 }
 
+/* The item rectangles are cached and only recomputed when the hash is
+ * marked dirty. resizeEvent() does that, but a hidden widget receives
+ * no resize events: the desktop menu is hidden while content runs, and
+ * anything that changes the viewport width in the meantime - window
+ * geometry, dock layout, a scroll bar appearing - leaves the cached
+ * rectangles describing a width the viewport no longer has. They are
+ * then reused on the next paint, and the grid stays misaligned until
+ * something else happens to call refresh().
+ *
+ * Recompute whenever the view becomes visible again, so the layout is
+ * always derived from the viewport it is actually being drawn into. */
+void GridView::showEvent(QShowEvent *event)
+{
+   QAbstractItemView::showEvent(event);
+   refresh();
+}
+
 void GridView::resizeEvent(QResizeEvent*)
 {
    refresh();
@@ -1897,7 +1979,6 @@ static inline bool comp_hash_ui_display_name_key_lower(const QHash<QString,
 PlaylistEntryDialog::PlaylistEntryDialog(MainWindow *mainwindow, QWidget *parent) :
    QDialog(parent)
    ,m_mainwindow(mainwindow)
-   ,m_settings(mainwindow->settings())
    ,m_nameLineEdit(new QLineEdit(this))
    ,m_pathLineEdit(new QLineEdit(this))
    ,m_extensionsLineEdit(new QLineEdit(this))
@@ -2395,7 +2476,13 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow,
 #ifdef HAVE_CHEEVOS
    addCategory(new AchievementsCategory(this));
 #endif
+#ifdef HAVE_NETWORKING
+   /* Netplay and updater settings do not exist in a build without
+    * networking; NetplayPage constructs CheckBoxes straight from the
+    * setting lookups, which are NULL then (crashed the offscreen
+    * companion test's --disable-networking build at startup). */
    addCategory(new NetworkCategory(this));
+#endif
    addCategory(new PlaylistsCategory(this));
    addCategory(new UserCategory(this));
    addCategory(new DirectoryCategory(this));
@@ -2507,8 +2594,50 @@ void ViewOptionsDialog::showDialog()
 #else
    m_viewOptionsWidget->loadViewOptions();
 #endif
+   if (!isVisible())
+      restoreGeometry();
    show();
    activateWindow();
+}
+
+void ViewOptionsDialog::persistGeometry()
+{
+   settings_t *settings = config_get_ptr();
+   QRect g;
+   if (!settings->bools.desktop_menu_save_geometry || !isVisible() || isMinimized())
+      return;
+   g = geometry();
+   if (g.width() <= 0 || g.height() <= 0)
+      return;
+   snprintf(settings->arrays.desktop_menu_options_window,
+         sizeof(settings->arrays.desktop_menu_options_window), "%d,%d,%d,%d",
+         g.x() < 0 ? 0 : g.x(), g.y() < 0 ? 0 : g.y(), g.width(), g.height());
+}
+
+void ViewOptionsDialog::restoreGeometry()
+{
+   settings_t *settings = config_get_ptr();
+   int x = 0, y = 0, w = 0, h = 0;
+   if (!settings->bools.desktop_menu_save_geometry)
+      return;
+   if (sscanf(settings->arrays.desktop_menu_options_window, "%d,%d,%d,%d",
+            &x, &y, &w, &h) != 4)
+      return;
+   if (w <= 0 || h <= 0 || w > 32767 || h > 32767 || x < 0 || y < 0)
+      return;
+   setGeometry(x, y, w, h);
+}
+
+void ViewOptionsDialog::resizeEvent(QResizeEvent *event)
+{
+   QDialog::resizeEvent(event);
+   persistGeometry();
+}
+
+void ViewOptionsDialog::moveEvent(QMoveEvent *event)
+{
+   QDialog::moveEvent(event);
+   persistGeometry();
 }
 
 void ViewOptionsDialog::hideDialog() { reject(); }
@@ -2526,10 +2655,9 @@ void ViewOptionsDialog::onRejected()
 ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
    QWidget(parent)
    ,m_mainwindow(mainwindow)
-   ,m_settings(mainwindow->settings())
    ,m_saveGeometryCheckBox(new QCheckBox(this))
-   ,m_saveDockPositionsCheckBox(new QCheckBox(this))
    ,m_saveLastTabCheckBox(new QCheckBox(this))
+   ,m_saveDockPositionsCheckBox(new QCheckBox(this))
    ,m_showHiddenFilesCheckBox(new QCheckBox(this))
    ,m_themeComboBox(new QComboBox(this))
    ,m_thumbnailCacheSpinBox(new QSpinBox(this))
@@ -2587,6 +2715,34 @@ ViewOptionsWidget::ViewOptionsWidget(MainWindow *mainwindow, QWidget *parent) :
    form->addRow(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME), m_themeComboBox);
    form->addRow(m_highlightColorLabel, m_highlightColorPushButton);
 
+   /* The same one-line help the Win32 and Cocoa companions show for
+    * these rows, on both the label and the control. The text is the
+    * menu's, and so is wrapped_tooltip() - a build without the menu
+    * has neither. */
+#ifdef HAVE_MENU
+   {
+      struct { QWidget *w; enum msg_hash_enums help; } tips[] = {
+         { m_saveGeometryCheckBox,         MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY },
+         { m_saveLastTabCheckBox,          MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB },
+         { m_showHiddenFilesCheckBox,      MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES },
+         { m_suggestLoadedCoreFirstCheckBox, MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST },
+         { m_startupPlaylistComboBox,      MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST },
+         { m_thumbnailCacheSpinBox,        MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT },
+         { m_thumbnailDropSizeSpinBox,     MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT },
+         { m_themeComboBox,                MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THEME },
+         { m_highlightColorPushButton,     MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR },
+         { m_highlightColorLabel,          MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR },
+      };
+      for (size_t i = 0; i < sizeof(tips) / sizeof(tips[0]); i++)
+      {
+         QString tip = wrapped_tooltip(msg_hash_to_str(tips[i].help));
+         tips[i].w->setToolTip(tip);
+         if (QWidget *label = form->labelForField(tips[i].w))
+            label->setToolTip(tip);
+      }
+   }
+#endif
+
    layout->addLayout(form);
 
    layout->addItem(new QSpacerItem(20, 20, QSizePolicy::Minimum, QSizePolicy::Expanding));
@@ -2609,7 +2765,7 @@ void ViewOptionsWidget::onThemeComboBoxIndexChanged(int)
 
       if (filePath.isEmpty())
       {
-         int oldThemeIndex = m_themeComboBox->findData(m_mainwindow->getThemeFromString(m_settings->value("theme", "default").toString()));
+         int oldThemeIndex = m_themeComboBox->findData((int)config_get_ptr()->uints.desktop_menu_theme);
 
          if (m_themeComboBox->count() > oldThemeIndex)
          {
@@ -2635,8 +2791,10 @@ void ViewOptionsWidget::onThemeComboBoxIndexChanged(int)
 void ViewOptionsWidget::onHighlightColorChoose()
 {
    QPixmap highlightPixmap(m_highlightColorPushButton->iconSize());
-   QColor currentHighlightColor = m_settings->value("highlight_color",
-         QApplication::palette().highlight().color()).value<QColor>();
+   QColor currentHighlightColor =
+      string_is_empty(config_get_ptr()->arrays.desktop_menu_highlight_color)
+      ? QApplication::palette().highlight().color()
+      : QColor(QString::fromUtf8(config_get_ptr()->arrays.desktop_menu_highlight_color));
    QColor newHighlightColor     = QColorDialog::getColor(
          currentHighlightColor, this,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SELECT_COLOR));
@@ -2647,7 +2805,9 @@ void ViewOptionsWidget::onHighlightColorChoose()
             m_themeComboBox->currentData(Qt::UserRole).toInt());
 
       m_highlightColor = newHighlightColor;
-      m_settings->setValue("highlight_color", m_highlightColor);
+      strlcpy(config_get_ptr()->arrays.desktop_menu_highlight_color,
+            m_highlightColor.name().toUtf8().constData(),
+            sizeof(config_get_ptr()->arrays.desktop_menu_highlight_color));
       highlightPixmap.fill(m_highlightColor);
       m_highlightColorPushButton->setIcon(highlightPixmap);
       m_mainwindow->setTheme(theme);
@@ -2659,24 +2819,27 @@ void ViewOptionsWidget::loadViewOptions()
    int i;
    int themeIndex    = 0;
    int playlistIndex = 0;
+   settings_t *settings                        = config_get_ptr();
    QColor highlightColor                       =
-      m_settings->value("highlight_color",
-            QApplication::palette().highlight().color()).value<QColor>();
+      string_is_empty(settings->arrays.desktop_menu_highlight_color)
+      ? QApplication::palette().highlight().color()
+      : QColor(QString::fromUtf8(settings->arrays.desktop_menu_highlight_color));
    QPixmap highlightPixmap(m_highlightColorPushButton->iconSize());
    QVector<QPair<QString, QString> > playlists = m_mainwindow->getPlaylists();
-   QString initialPlaylist = m_settings->value("initial_playlist",
-         m_mainwindow->getSpecialPlaylistPath(
-            SPECIAL_PLAYLIST_HISTORY)).toString();
+   QString initialPlaylist =
+      string_is_empty(settings->paths.desktop_menu_initial_playlist)
+      ? QString(ALL_PLAYLISTS_TOKEN)
+      : QString::fromUtf8(settings->paths.desktop_menu_initial_playlist);
 
-   m_saveGeometryCheckBox->setChecked(m_settings->value("save_geometry", false).toBool());
-   m_saveDockPositionsCheckBox->setChecked(m_settings->value("save_dock_positions", false).toBool());
-   m_saveLastTabCheckBox->setChecked(m_settings->value("save_last_tab", false).toBool());
-   m_showHiddenFilesCheckBox->setChecked(m_settings->value("show_hidden_files", true).toBool());
-   m_suggestLoadedCoreFirstCheckBox->setChecked(m_settings->value("suggest_loaded_core_first", false).toBool());
-   m_thumbnailCacheSpinBox->setValue(m_settings->value("thumbnail_cache_limit", 512).toInt());
-   m_thumbnailDropSizeSpinBox->setValue(m_settings->value("thumbnail_max_size", 0).toInt());
+   m_saveGeometryCheckBox->setChecked(settings->bools.desktop_menu_save_geometry);
+   m_saveLastTabCheckBox->setChecked(settings->bools.desktop_menu_save_last_tab);
+   m_saveDockPositionsCheckBox->setChecked(settings->bools.desktop_menu_save_dock_positions);
+   m_showHiddenFilesCheckBox->setChecked(settings->bools.show_hidden_files);
+   m_suggestLoadedCoreFirstCheckBox->setChecked(settings->bools.desktop_menu_suggest_loaded_core_first);
+   m_thumbnailCacheSpinBox->setValue((int)settings->uints.desktop_menu_thumbnail_cache_limit);
+   m_thumbnailDropSizeSpinBox->setValue((int)settings->uints.desktop_menu_thumbnail_max_size);
 
-   themeIndex = m_themeComboBox->findData(m_mainwindow->getThemeFromString(m_settings->value("theme", "default").toString()));
+   themeIndex = m_themeComboBox->findData((int)settings->uints.desktop_menu_theme);
 
    if (m_themeComboBox->count() > themeIndex)
       m_themeComboBox->setCurrentIndex(themeIndex);
@@ -2722,19 +2885,30 @@ void ViewOptionsWidget::showOrHideHighlightColor()
 
 void ViewOptionsWidget::saveViewOptions()
 {
-   m_settings->setValue("save_geometry", m_saveGeometryCheckBox->isChecked());
-   m_settings->setValue("save_dock_positions", m_saveDockPositionsCheckBox->isChecked());
-   m_settings->setValue("save_last_tab", m_saveLastTabCheckBox->isChecked());
-   m_settings->setValue("theme", m_mainwindow->getThemeString(static_cast<MainWindow::Theme>(m_themeComboBox->currentData(Qt::UserRole).toInt())));
-   m_settings->setValue("show_hidden_files", m_showHiddenFilesCheckBox->isChecked());
-   m_settings->setValue("highlight_color", m_highlightColor);
-   m_settings->setValue("suggest_loaded_core_first", m_suggestLoadedCoreFirstCheckBox->isChecked());
-   m_settings->setValue("initial_playlist", m_startupPlaylistComboBox->currentData(Qt::UserRole).toString());
-   m_settings->setValue("thumbnail_cache_limit", m_thumbnailCacheSpinBox->value());
-   m_settings->setValue("thumbnail_max_size", m_thumbnailDropSizeSpinBox->value());
+   /* Into retroarch.cfg's settings_t, shared with the native companions;
+    * RetroArch writes the file on exit. */
+   settings_t *settings = config_get_ptr();
+   QByteArray initial   = m_startupPlaylistComboBox->currentData(Qt::UserRole).toString().toUtf8();
+   QByteArray color     = m_highlightColor.name().toUtf8();
+   QByteArray theme     = m_customThemePath.toUtf8();
+
+   settings->bools.desktop_menu_save_geometry             = m_saveGeometryCheckBox->isChecked();
+   settings->bools.desktop_menu_save_last_tab             = m_saveLastTabCheckBox->isChecked();
+   settings->bools.desktop_menu_save_dock_positions       = m_saveDockPositionsCheckBox->isChecked();
+   settings->uints.desktop_menu_theme                     =
+      (unsigned)m_themeComboBox->currentData(Qt::UserRole).toInt();
+   settings->bools.show_hidden_files                      = m_showHiddenFilesCheckBox->isChecked();
+   strlcpy(settings->arrays.desktop_menu_highlight_color, color.constData(),
+         sizeof(settings->arrays.desktop_menu_highlight_color));
+   settings->bools.desktop_menu_suggest_loaded_core_first = m_suggestLoadedCoreFirstCheckBox->isChecked();
+   strlcpy(settings->paths.desktop_menu_initial_playlist, initial.constData(),
+         sizeof(settings->paths.desktop_menu_initial_playlist));
+   settings->uints.desktop_menu_thumbnail_cache_limit     = (unsigned)m_thumbnailCacheSpinBox->value();
+   settings->uints.desktop_menu_thumbnail_max_size        = (unsigned)m_thumbnailDropSizeSpinBox->value();
 
    if (!m_mainwindow->customThemeString().isEmpty())
-      m_settings->setValue("custom_theme", m_customThemePath);
+      strlcpy(settings->paths.desktop_menu_custom_theme, theme.constData(),
+            sizeof(settings->paths.desktop_menu_custom_theme));
 
    m_mainwindow->setThumbnailCacheLimit(m_thumbnailCacheSpinBox->value());
 }
@@ -2995,8 +3169,11 @@ void CoreOptionsDialog::buildLayout()
 
                word_wrap(new_info, new_info_len, option->info,
                      option_info_len, 50, 100, 0);
-               descLabel->setToolTip(new_info);
-               combo_box->setToolTip(new_info);
+               /* already wrapped to 50 columns: keep the line breaks */
+               descLabel->setToolTip(QStringLiteral("<qt><pre>")
+                     + QString::fromUtf8(new_info).toHtmlEscaped()
+                     + QStringLiteral("</pre></qt>"));
+               combo_box->setToolTip(descLabel->toolTip());
                free(new_info);
             }
 
@@ -3401,6 +3578,35 @@ void ShaderParamsDialog::onScaleComboBoxIndexChanged(int)
    }
 }
 
+/* The pass a parameter belongs to follows from the order the sources
+ * sit in, so a swap is settled by resolving again rather than by
+ * moving indices by hand: a parameter both of the swapped passes
+ * declare belongs to whichever ends up first, which an index shift
+ * cannot work out.  A resolve returns every parameter to its initial
+ * value, so the values in hand are carried across by id. */
+static void shader_reresolve_keeping_values(struct video_shader *shader)
+{
+   QHash<QString, float> values;
+   unsigned i;
+
+   if (!shader)
+      return;
+
+   for (i = 0; i < shader->num_parameters; i++)
+      values.insert(QString(shader->parameters[i].id),
+            shader->parameters[i].current);
+
+   video_shader_resolve_parameters(shader);
+
+   for (i = 0; i < shader->num_parameters; i++)
+   {
+      QHash<QString, float>::const_iterator it =
+            values.constFind(QString(shader->parameters[i].id));
+      if (it != values.constEnd())
+         shader->parameters[i].current = it.value();
+   }
+}
+
 void ShaderParamsDialog::onShaderPassMoveDownClicked()
 {
    QVariant passVariant;
@@ -3428,20 +3634,9 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
    if (video_shader)
    {
       ShaderPass tempPass;
-      int i;
 
       if (pass >= static_cast<int>(video_shader->passes) - 1)
          return;
-
-      for (i = 0; i < static_cast<int>(video_shader->num_parameters); i++)
-      {
-         struct video_shader_parameter *param = &video_shader->parameters[i];
-
-         if (param->pass == pass)
-            param->pass += 1;
-         else if (param->pass == pass + 1)
-            param->pass -= 1;
-      }
 
       tempPass = ShaderPass(&video_shader->pass[pass]);
       memcpy(&video_shader->pass[pass], &video_shader->pass[pass + 1], sizeof(struct video_shader_pass));
@@ -3451,25 +3646,17 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
    if (menu_shader)
    {
       ShaderPass tempPass;
-      int i;
 
       if (pass >= static_cast<int>(menu_shader->passes) - 1)
          return;
-
-      for (i = 0; i < static_cast<int>(menu_shader->num_parameters); i++)
-      {
-         struct video_shader_parameter *param = &menu_shader->parameters[i];
-
-         if (param->pass == pass)
-            param->pass += 1;
-         else if (param->pass == pass + 1)
-            param->pass -= 1;
-      }
 
       tempPass = ShaderPass(&menu_shader->pass[pass]);
       memcpy(&menu_shader->pass[pass], &menu_shader->pass[pass + 1], sizeof(struct video_shader_pass));
       memcpy(&menu_shader->pass[pass + 1], tempPass.pass, sizeof(struct video_shader_pass));
    }
+
+   shader_reresolve_keeping_values(video_shader);
+   shader_reresolve_keeping_values(menu_shader);
 
    if (menu_shader)
       menu_shader->flags |= SHDR_FLAG_MODIFIED;
@@ -3504,20 +3691,9 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
    if (video_shader)
    {
       ShaderPass tempPass;
-      int i;
 
       if (pass > static_cast<int>(video_shader->passes) - 1)
          return;
-
-      for (i = 0; i < static_cast<int>(video_shader->num_parameters); i++)
-      {
-         struct video_shader_parameter *param = &video_shader->parameters[i];
-
-         if (param->pass == pass)
-            param->pass -= 1;
-         else if (param->pass == pass - 1)
-            param->pass += 1;
-      }
 
       tempPass = ShaderPass(&video_shader->pass[pass - 1]);
       memcpy(&video_shader->pass[pass - 1], &video_shader->pass[pass], sizeof(struct video_shader_pass));
@@ -3527,25 +3703,17 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
    if (menu_shader)
    {
       ShaderPass tempPass;
-      int i;
 
       if (pass > static_cast<int>(menu_shader->passes) - 1)
          return;
-
-      for (i = 0; i < static_cast<int>(menu_shader->num_parameters); i++)
-      {
-         struct video_shader_parameter *param = &menu_shader->parameters[i];
-
-         if (param->pass == pass)
-            param->pass -= 1;
-         else if (param->pass == pass - 1)
-            param->pass += 1;
-      }
 
       tempPass = ShaderPass(&menu_shader->pass[pass - 1]);
       memcpy(&menu_shader->pass[pass - 1], &menu_shader->pass[pass], sizeof(struct video_shader_pass));
       memcpy(&menu_shader->pass[pass], tempPass.pass, sizeof(struct video_shader_pass));
    }
+
+   shader_reresolve_keeping_values(video_shader);
+   shader_reresolve_keeping_values(menu_shader);
 
    if (menu_shader)
       menu_shader->flags |= SHDR_FLAG_MODIFIED;
@@ -4544,9 +4712,9 @@ void ShaderParamsDialog::onShaderParamCheckBoxClicked()
 
          if (param)
             param->current = (checkBox->isChecked() ? param->maximum : param->minimum);
-      }
 
-      video_shader->flags   |= SHDR_FLAG_MODIFIED;
+         video_shader->flags   |= SHDR_FLAG_MODIFIED;
+      }
    }
 }
 
@@ -4810,275 +4978,36 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
 #endif
 #endif
 
-
-#undef TEMP_EXTENSION
-#undef USER_AGENT
-#define USER_AGENT "RetroArch-WIMP/" PACKAGE_VERSION
-#define PARTIAL_EXTENSION ".partial"
-#define TEMP_EXTENSION ".tmp"
-#define THUMBNAILPACK_URL_HEADER "http://thumbnailpacks.libretro.com/"
-#define THUMBNAILPACK_EXTENSION ".zip"
-#define THUMBNAIL_URL_HEADER "https://thumbnails.libretro.com/"
-#define THUMBNAIL_IMAGE_EXTENSION ".png"
-
-/* Userdata structs for task callbacks */
-typedef struct qt_download_userdata
-{
-   MainWindow *mainwindow;
-   char system[PATH_MAX_LENGTH];
-   char title[PATH_MAX_LENGTH];
-   char download_type[64];
-   char output_path[PATH_MAX_LENGTH];
-   bool is_playlist_download;
-} qt_download_userdata_t;
-
-
-#ifdef HAVE_NETWORKING
-static void cb_extract_thumbnail_pack(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
-{
-   decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
-   MainWindow *mainwindow      = (MainWindow*)user_data;
-
-   if (err)
-      RARCH_ERR("[Qt] %s", err);
-
-   if (dec)
-   {
-      if (filestream_exists(dec->source_file))
-         filestream_delete(dec->source_file);
-
-      free(dec->source_file);
-      free(dec);
-   }
-
-   mainwindow->onThumbnailPackExtractFinished(!err || !*err);
-}
-
-static void cb_http_thumbnail_pack(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
-{
-   http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
-   qt_download_userdata_t *ud  = (qt_download_userdata_t*)user_data;
-
-   if (!ud)
-      return;
-
-   if (!data || !data->data || data->status != 200 || err)
-   {
-      RARCH_ERR("[Qt] Thumbnail pack download failed (HTTP %d).\n",
-            data ? data->status : 0);
-      if (ud->mainwindow)
-         ud->mainwindow->showErrorMessageDeferred(
-               QString(msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR)));
-      free(ud);
-      return;
-   }
-
-   /* Write downloaded data to .partial file */
-   if (!filestream_write_file(ud->output_path, data->data, data->len))
-   {
-      RARCH_ERR("[Qt] Could not write thumbnail pack to \"%s\".\n",
-            ud->output_path);
-      free(ud);
-      return;
-   }
-
-   /* Rename .partial to final name */
-   {
-      char final_path[PATH_MAX_LENGTH];
-      strlcpy(final_path, ud->output_path, sizeof(final_path));
-
-      /* Strip PARTIAL_EXTENSION from end */
-      {
-         char *ext = strstr(final_path, PARTIAL_EXTENSION);
-         if (ext) *ext = '\0';
-      }
-
-      if (path_is_valid(final_path))
-         filestream_delete(final_path);
-
-      if (filestream_rename(ud->output_path, final_path) == 0)
-      {
-         settings_t *settings = config_get_ptr();
-         if (settings)
-         {
-            RARCH_LOG("[Qt] Thumbnail pack download finished successfully.\n");
-            if (ud->mainwindow)
-               QMetaObject::invokeMethod(ud->mainwindow,
-                     "onExtractArchive",
-                     Q_ARG(QString, QString(final_path)),
-                     Q_ARG(QString, QString(settings->paths.directory_thumbnails)),
-                     Q_ARG(QString, QString(TEMP_EXTENSION)),
-                     Q_ARG(retro_task_callback_t, cb_extract_thumbnail_pack));
-         }
-      }
-      else
-      {
-         RARCH_ERR("[Qt] Thumbnail pack download finished, but file could not be renamed.\n");
-         if (ud->mainwindow)
-            ud->mainwindow->showErrorMessageDeferred(
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE));
-      }
-   }
-
-   free(ud);
-}
-
-static void cb_http_thumbnail(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
-{
-   http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
-   qt_download_userdata_t *ud  = (qt_download_userdata_t*)user_data;
-
-   if (!ud)
-      return;
-
-   if (!data || !data->data || data->status != 200 || err)
-   {
-      if (data && data->status != 200)
-         RARCH_ERR("[Qt] Thumbnail download failed with HTTP status: %d.\n",
-               data->status);
-
-      /* Continue to next type if available */
-      if (ud->mainwindow)
-      {
-         if (ud->is_playlist_download)
-            ud->mainwindow->onPlaylistThumbnailDownloadFinishedInternal(
-                  ud->system, ud->title, NULL, false);
-         else
-            ud->mainwindow->onSingleThumbnailDownloadFinishedInternal(
-                  ud->system, ud->title, NULL, false);
-      }
-      free(ud);
-      return;
-   }
-
-   /* Create output directory */
-   {
-      char output_dir[PATH_MAX_LENGTH];
-      strlcpy(output_dir, ud->output_path, sizeof(output_dir));
-      path_basedir_wrapper(output_dir);
-      path_mkdir(output_dir);
-   }
-
-   /* Write downloaded data to .partial file */
-   if (!filestream_write_file(ud->output_path, data->data, data->len))
-   {
-      RARCH_ERR("[Qt] Could not write thumbnail to \"%s\".\n",
-            ud->output_path);
-      if (ud->mainwindow)
-      {
-         if (ud->is_playlist_download)
-            ud->mainwindow->onPlaylistThumbnailDownloadFinishedInternal(
-                  ud->system, ud->title, NULL, false);
-         else
-            ud->mainwindow->onSingleThumbnailDownloadFinishedInternal(
-                  ud->system, ud->title, NULL, false);
-      }
-      free(ud);
-      return;
-   }
-
-   /* Rename .partial to final name */
-   {
-      char final_path[PATH_MAX_LENGTH];
-      strlcpy(final_path, ud->output_path, sizeof(final_path));
-
-      {
-         char *ext = strstr(final_path, PARTIAL_EXTENSION);
-         if (ext) *ext = '\0';
-      }
-
-      if (path_is_valid(final_path))
-         filestream_delete(final_path);
-
-      if (filestream_rename(ud->output_path, final_path) != 0)
-      {
-         RARCH_ERR("[Qt] Thumbnail download finished, but file could not be renamed.\n");
-      }
-      else
-         RARCH_LOG("[Qt] Thumbnail download finished: \"%s\".\n", final_path);
-
-      if (ud->mainwindow)
-      {
-         if (ud->is_playlist_download)
-            ud->mainwindow->onPlaylistThumbnailDownloadFinishedInternal(
-                  ud->system, ud->title, final_path, true);
-         else
-            ud->mainwindow->onSingleThumbnailDownloadFinishedInternal(
-                  ud->system, ud->title, final_path, true);
-      }
-   }
-
-   free(ud);
-}
-#endif
+/* Thumbnail downloads. URLs, .partial handling, the pack extraction
+ * and the file replacement rules are the companion core's
+ * (companion_core_thumbnail_download / _pack_download); Qt keeps the
+ * queues, counters and progress dialogs. Results arrive through the
+ * driver's callback table as onCoreThumbnailDownloaded /
+ * onCoreThumbnailPackFinished. */
 
 /* ---- Thumbnail Pack Download ---- */
 
 void MainWindow::onThumbnailPackDownloadCanceled()
 {
-   if (m_currentHttpTask)
-   {
-      task_set_flags(m_currentHttpTask,
-            RETRO_TASK_FLG_CANCELLED, true);
-      m_currentHttpTask = NULL;
-   }
+   companion_core_download_cancel(ui_companion_qt_core());
 }
 
 void MainWindow::downloadAllThumbnails(QString system, QUrl url)
 {
-#ifdef HAVE_NETWORKING
-   QString urlString;
-   QByteArray urlArray;
-   QByteArray fileNameArray;
-   settings_t *settings = config_get_ptr();
-   qt_download_userdata_t *ud = NULL;
-   const char *urlData  = NULL;
+   QByteArray systemArray = system.toUtf8();
 
-   if (!settings)
-      return;
+   (void)url; /* the server layout is the core's */
 
-   urlString = QString(THUMBNAILPACK_URL_HEADER)
-      + system
-      + THUMBNAILPACK_EXTENSION;
-
-   if (url.isEmpty())
-      url = urlString;
-
-   urlArray = url.toEncoded();
-   urlData  = urlArray.constData();
-
-   ud = (qt_download_userdata_t*)calloc(1, sizeof(*ud));
-   if (!ud)
-      return;
-
-   ud->mainwindow = this;
-   strlcpy(ud->system, system.toUtf8().constData(), sizeof(ud->system));
-
+   if (!companion_core_thumbnail_pack_download(ui_companion_qt_core(),
+            systemArray.constData()))
    {
-      const char *path_dir_thumbnails = settings->paths.directory_thumbnails;
-      QString fileName = QString(path_dir_thumbnails)
-         + "/" + system + THUMBNAILPACK_EXTENSION + PARTIAL_EXTENSION;
-
-      fileNameArray = fileName.toUtf8();
-
-      /* Ensure directory exists */
-      path_mkdir(path_dir_thumbnails);
-
-      strlcpy(ud->output_path,
-            fileNameArray.constData(),
-            sizeof(ud->output_path));
+      RARCH_ERR("[Qt] Failed to start thumbnail pack download.\n");
+      return;
    }
-
-   RARCH_LOG("[Qt] Starting thumbnail pack download...\n");
-   RARCH_LOG("[Qt] Downloading URL \"%s\"\n", urlData);
 
    m_thumbnailPackDownloadProgressDialog->setWindowModality(Qt::NonModal);
    m_thumbnailPackDownloadProgressDialog->setMinimumDuration(0);
-   m_thumbnailPackDownloadProgressDialog->setRange(0, 100);
+   m_thumbnailPackDownloadProgressDialog->setRange(0, 0);
    m_thumbnailPackDownloadProgressDialog->setAutoClose(true);
    m_thumbnailPackDownloadProgressDialog->setAutoReset(true);
    m_thumbnailPackDownloadProgressDialog->setValue(0);
@@ -5086,56 +5015,49 @@ void MainWindow::downloadAllThumbnails(QString system, QUrl url)
          QString(msg_hash_to_str(MSG_DOWNLOADING)) + "...");
    m_thumbnailPackDownloadProgressDialog->setCancelButtonText(tr("Cancel"));
    m_thumbnailPackDownloadProgressDialog->show();
-
-   m_currentHttpTask = (retro_task_t*)task_push_http_transfer_with_user_agent(
-         urlData, true, NULL, USER_AGENT,
-         cb_http_thumbnail_pack, ud);
-
-   if (!m_currentHttpTask)
-   {
-      free(ud);
-      m_thumbnailPackDownloadProgressDialog->cancel();
-      RARCH_ERR("[Qt] Failed to start HTTP task for thumbnail pack.\n");
-   }
-#else
-   (void)system;
-   (void)url;
-   RARCH_LOG("[Qt] Thumbnail pack download unavailable: built without networking.\n");
-#endif
 }
 
-void MainWindow::onThumbnailPackExtractFinished(bool success)
+void MainWindow::onCoreThumbnailPackFinished(int result)
 {
-   m_updateProgressDialog->cancel();
+   m_thumbnailPackDownloadProgressDialog->cancel();
 
-   if (!success)
+   switch ((enum companion_download_result)result)
    {
-      RARCH_ERR("[Qt] Thumbnail pack extraction failed.\n");
-      emit showErrorMessageDeferred(msg_hash_to_str(MSG_DECOMPRESSION_FAILED));
-      return;
+      case COMPANION_DL_OK:
+         RARCH_LOG("[Qt] Thumbnail pack extracted successfully.\n");
+         emit showInfoMessageDeferred(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY));
+         updateVisibleItems();
+         emit itemChanged(); /* reload thumbnail image */
+         return;
+      case COMPANION_DL_ERR_NETWORK:
+         emit showErrorMessageDeferred(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR));
+         return;
+      case COMPANION_DL_ERR_RENAME:
+         emit showErrorMessageDeferred(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE));
+         return;
+      case COMPANION_DL_ERR_DELETE:
+         emit showErrorMessageDeferred(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE));
+         return;
+      case COMPANION_DL_ERR_ARCHIVE_EMPTY:
+         emit showErrorMessageDeferred("Error: Archive is empty.");
+         return;
+      case COMPANION_DL_ERR_EXTRACT:
+      case COMPANION_DL_ERR_WRITE:
+      default:
+         emit showErrorMessageDeferred(msg_hash_to_str(MSG_DECOMPRESSION_FAILED));
+         return;
    }
-
-   RARCH_LOG("[Qt] Thumbnail pack extracted successfully.\n");
-
-   emit showInfoMessageDeferred(msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY));
-
-   updateVisibleItems();
-
-   /* Reload thumbnail image */
-   emit itemChanged();
 }
 
 /* ---- Single Thumbnail Download ---- */
 
 void MainWindow::onThumbnailDownloadCanceled()
 {
-   if (m_currentHttpTask)
-   {
-      task_set_flags(m_currentHttpTask,
-            RETRO_TASK_FLG_CANCELLED, true);
-      m_currentHttpTask = NULL;
-   }
+   companion_core_download_cancel(ui_companion_qt_core());
    m_pendingThumbnailDownloadTypes.clear();
 }
 
@@ -5144,15 +5066,20 @@ void MainWindow::onDownloadThumbnail(QString system, QString title)
    downloadThumbnail(system, title);
 }
 
-void MainWindow::onSingleThumbnailDownloadFinishedInternal(
-      const char *system, const char *title, const char *final_path, bool success)
+/* companion core: a thumbnail transfer ended. */
+void MainWindow::onCoreThumbnailDownloaded(QString system, QString title,
+      QString path, bool success)
 {
-   QString systemStr(system ? system : "");
-   QString titleStr(title ? title : "");
+   if (m_downloadingPlaylistThumbnails)
+      onPlaylistThumbnailDownloadFinishedInternal(path, success);
+   else
+      onSingleThumbnailDownloadFinishedInternal(system, title, path, success);
+}
 
-   m_currentHttpTask = NULL;
-
-   if (success && final_path)
+void MainWindow::onSingleThumbnailDownloadFinishedInternal(
+      QString system, QString title, QString path, bool success)
+{
+   if (success && !path.isEmpty())
    {
       /* Force reload of current item's thumbnail */
       QModelIndex index = getCurrentContentIndex();
@@ -5170,67 +5097,39 @@ void MainWindow::onSingleThumbnailDownloadFinishedInternal(
       /* Defer next download to let Qt event loop process */
       QMetaObject::invokeMethod(this, "onDownloadThumbnail",
             Qt::QueuedConnection,
-            Q_ARG(QString, systemStr),
-            Q_ARG(QString, titleStr));
+            Q_ARG(QString, system),
+            Q_ARG(QString, title));
    }
    else
-   {
       m_thumbnailDownloadProgressDialog->cancel();
-   }
 }
 
 void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
 {
-#ifdef HAVE_NETWORKING
-   QString urlString;
    QString downloadType;
-   QByteArray urlArray;
-   QByteArray fileNameArray;
-   const char *urlData       = NULL;
-   settings_t *settings      = config_get_ptr();
-   qt_download_userdata_t *ud = NULL;
+   QByteArray systemArray, titleArray, typeArray;
 
-   if (!settings || m_pendingThumbnailDownloadTypes.isEmpty())
+   (void)url;
+
+   if (m_pendingThumbnailDownloadTypes.isEmpty())
       return;
 
-   title        = scrub_qstring(title);
    downloadType = m_pendingThumbnailDownloadTypes.takeFirst();
-   urlString    = QString(THUMBNAIL_URL_HEADER)
-      + system + "/" + downloadType + "/" + title + THUMBNAIL_IMAGE_EXTENSION;
+   systemArray  = system.toUtf8();
+   titleArray   = title.toUtf8();
+   typeArray    = downloadType.toUtf8();
 
-   if (url.isEmpty())
-      url = urlString;
+   m_downloadingPlaylistThumbnails = false;
 
-   urlArray = url.toEncoded();
-   urlData  = urlArray.constData();
-
-   ud = (qt_download_userdata_t*)calloc(1, sizeof(*ud));
-   if (!ud)
-      return;
-
-   ud->mainwindow = this;
-   ud->is_playlist_download = false;
-   strlcpy(ud->system, system.toUtf8().constData(), sizeof(ud->system));
-   strlcpy(ud->title, title.toUtf8().constData(), sizeof(ud->title));
-   strlcpy(ud->download_type, downloadType.toUtf8().constData(),
-         sizeof(ud->download_type));
-
+   if (!companion_core_thumbnail_download(ui_companion_qt_core(),
+            systemArray.constData(), titleArray.constData(),
+            typeArray.constData()))
    {
-      const char *path_dir_thumbnails = settings->paths.directory_thumbnails;
-      QString dirString = QString(path_dir_thumbnails) + "/" + system + "/" + downloadType;
-      QString fileName  = dirString + "/" + title + THUMBNAIL_IMAGE_EXTENSION + PARTIAL_EXTENSION;
-
-      fileNameArray = fileName.toUtf8();
-
-      path_mkdir(dirString.toUtf8().constData());
-
-      strlcpy(ud->output_path,
-            fileNameArray.constData(),
-            sizeof(ud->output_path));
+      RARCH_ERR("[Qt] Failed to start thumbnail download.\n");
+      m_pendingThumbnailDownloadTypes.clear();
+      m_thumbnailDownloadProgressDialog->cancel();
+      return;
    }
-
-   RARCH_LOG("[Qt] Starting thumbnail download...\n");
-   RARCH_LOG("[Qt] Downloading URL %s\n", urlData);
 
    m_thumbnailDownloadProgressDialog->setWindowModality(Qt::NonModal);
    m_thumbnailDownloadProgressDialog->setMinimumDuration(0);
@@ -5242,24 +5141,6 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
          QString(msg_hash_to_str(MSG_DOWNLOADING)) + "...");
    m_thumbnailDownloadProgressDialog->setCancelButtonText(tr("Cancel"));
    m_thumbnailDownloadProgressDialog->show();
-
-   m_currentHttpTask = (retro_task_t*)task_push_http_transfer_with_user_agent(
-         urlData, true, NULL, USER_AGENT,
-         cb_http_thumbnail, ud);
-
-   if (!m_currentHttpTask)
-   {
-      free(ud);
-      m_thumbnailDownloadProgressDialog->cancel();
-      RARCH_ERR("[Qt] Failed to start HTTP task for thumbnail.\n");
-   }
-#else
-   (void)system;
-   (void)title;
-   (void)url;
-   m_pendingThumbnailDownloadTypes.clear();
-   RARCH_LOG("[Qt] Thumbnail download unavailable: built without networking.\n");
-#endif
 }
 
 /* ---- Playlist Thumbnail Download ---- */
@@ -5267,25 +5148,19 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
 void MainWindow::onPlaylistThumbnailDownloadCanceled()
 {
    m_playlistThumbnailDownloadWasCanceled = true;
-   if (m_currentHttpTask)
-   {
-      task_set_flags(m_currentHttpTask,
-            RETRO_TASK_FLG_CANCELLED, true);
-      m_currentHttpTask = NULL;
-   }
+   m_downloadingPlaylistThumbnails        = false;
+   companion_core_download_cancel(ui_companion_qt_core());
    m_pendingPlaylistThumbnails.clear();
 }
 
 void MainWindow::onPlaylistThumbnailDownloadFinishedInternal(
-      const char *system, const char *title, const char *final_path, bool success)
+      QString path, bool success)
 {
-   m_currentHttpTask = NULL;
-
    if (success)
    {
       m_downloadedThumbnails++;
-      if (final_path)
-         m_playlistModel->reloadThumbnailPath(QString(final_path));
+      if (!path.isEmpty())
+         m_playlistModel->reloadThumbnailPath(path);
    }
    else
       m_failedThumbnails++;
@@ -5316,6 +5191,7 @@ void MainWindow::onPlaylistThumbnailDownloadFinishedInternal(
    }
    else
    {
+      m_downloadingPlaylistThumbnails = false;
       m_playlistThumbnailDownloadProgressDialog->cancel();
       /* Force reload of current item's thumbnail */
       QModelIndex index = getCurrentContentIndex();
@@ -5331,105 +5207,42 @@ void MainWindow::onPlaylistThumbnailDownloadFinishedInternal(
 void MainWindow::downloadNextPlaylistThumbnail(
       QString system, QString title, QString type, QUrl url)
 {
-#ifdef HAVE_NETWORKING
-   QString urlString;
-   QByteArray urlArray;
-   QByteArray fileNameArray;
-   const char *urlData       = NULL;
-   settings_t *settings      = config_get_ptr();
-   qt_download_userdata_t *ud = NULL;
+   QByteArray systemArray = system.toUtf8();
+   QByteArray titleArray  = title.toUtf8();
+   QByteArray typeArray   = type.toUtf8();
 
-   if (!settings)
-      return;
-
-   title = scrub_qstring(title);
-
-   urlString = QString(THUMBNAIL_URL_HEADER)
-      + system + "/" + type + "/" + title + THUMBNAIL_IMAGE_EXTENSION;
-
-   if (url.isEmpty())
-      url = urlString;
-
-   urlArray = url.toEncoded();
-   urlData  = urlArray.constData();
-
-   ud = (qt_download_userdata_t*)calloc(1, sizeof(*ud));
-   if (!ud)
-   {
-      m_failedThumbnails++;
-      return;
-   }
-
-   ud->mainwindow = this;
-   ud->is_playlist_download = true;
-   strlcpy(ud->system, system.toUtf8().constData(), sizeof(ud->system));
-   strlcpy(ud->title, title.toUtf8().constData(), sizeof(ud->title));
-   strlcpy(ud->download_type, type.toUtf8().constData(),
-         sizeof(ud->download_type));
-
-   {
-      const char *path_dir_thumbnails = settings->paths.directory_thumbnails;
-      QString dirString = QString(path_dir_thumbnails)
-         + "/" + system + "/" + type;
-
-      QString fileName  = dirString + "/" + title
-         + THUMBNAIL_IMAGE_EXTENSION + PARTIAL_EXTENSION;
-
-      fileNameArray = fileName.toUtf8();
-
-      /* Create all thumbnail type dirs */
-      path_mkdir((QString(path_dir_thumbnails)
-               + "/" + system + "/" + THUMBNAIL_BOXART).toUtf8().constData());
-      path_mkdir((QString(path_dir_thumbnails)
-               + "/" + system + "/" + THUMBNAIL_SCREENSHOT).toUtf8().constData());
-      path_mkdir((QString(path_dir_thumbnails)
-               + "/" + system + "/" + THUMBNAIL_TITLE).toUtf8().constData());
-      path_mkdir((QString(path_dir_thumbnails)
-               + "/" + system + "/" + THUMBNAIL_LOGO).toUtf8().constData());
-
-      strlcpy(ud->output_path,
-            fileNameArray.constData(),
-            sizeof(ud->output_path));
-   }
-
-   m_currentHttpTask = (retro_task_t*)task_push_http_transfer_with_user_agent(
-         urlData, true, NULL, USER_AGENT,
-         cb_http_thumbnail, ud);
-
-   if (!m_currentHttpTask)
-   {
-      free(ud);
-      m_failedThumbnails++;
-
-      if (m_pendingPlaylistThumbnails.count() > 0)
-      {
-         QHash<QString, QString> nextThumbnail = m_pendingPlaylistThumbnails.takeAt(0);
-         downloadNextPlaylistThumbnail(
-               nextThumbnail.value("db_name"),
-               nextThumbnail.value("label_noext"),
-               nextThumbnail.value("type"));
-      }
-      else
-         m_playlistThumbnailDownloadProgressDialog->cancel();
-   }
-#else
-   (void)system;
-   (void)title;
-   (void)type;
    (void)url;
-   m_pendingPlaylistThumbnails.clear();
-   m_playlistThumbnailDownloadProgressDialog->cancel();
-   RARCH_LOG("[Qt] Playlist thumbnail download unavailable: built without networking.\n");
-#endif
+
+   /* Skip transfers that cannot start and move on down the queue; the
+    * core reports every one it does start. */
+   while (!companion_core_thumbnail_download(ui_companion_qt_core(),
+            systemArray.constData(), titleArray.constData(),
+            typeArray.constData()))
+   {
+      m_failedThumbnails++;
+
+      if (m_pendingPlaylistThumbnails.count() == 0)
+      {
+         m_downloadingPlaylistThumbnails = false;
+         m_playlistThumbnailDownloadProgressDialog->cancel();
+         return;
+      }
+
+      {
+         QHash<QString, QString> next = m_pendingPlaylistThumbnails.takeAt(0);
+         systemArray = next.value("db_name").toUtf8();
+         titleArray  = next.value("label_noext").toUtf8();
+         typeArray   = next.value("type").toUtf8();
+      }
+   }
 }
 
 void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
 {
    int i, count;
    QFile playlistFile(playlistPath);
-   settings_t *settings = config_get_ptr();
 
-   if (!settings || !playlistFile.exists())
+   if (!playlistFile.exists())
       return;
 
    m_pendingPlaylistThumbnails.clear();
@@ -5482,6 +5295,7 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
    m_playlistThumbnailDownloadProgressDialog->setCancelButtonText(tr("Cancel"));
    m_playlistThumbnailDownloadProgressDialog->show();
 
+   m_downloadingPlaylistThumbnails = true;
    {
       QHash<QString, QString> firstThumbnail =
          m_pendingPlaylistThumbnails.takeAt(0);
@@ -5808,9 +5622,9 @@ QWidget *UserBindsPage::widget()
          const struct retro_keybind *keyptr =
             &input_config_binds[p][retro_id];
 
-         QString label = msg_hash_to_str(keyptr->enum_idx);
+         QString label = msg_hash_to_str(RETRO_KEYBIND_ENUM_IDX(keyptr));
 
-         form->addRow(QString(msg_hash_to_str(keyptr->enum_idx)),
+         form->addRow(QString(msg_hash_to_str(RETRO_KEYBIND_ENUM_IDX(keyptr))),
                new QPushButton(QString(descriptor)));
       }
 
@@ -6796,7 +6610,9 @@ QWidget *VideoPage::widget()
       for (i = 0; i < size; i++)
       {
          char val_d[NAME_MAX_LENGTH], str[NAME_MAX_LENGTH];
-         snprintf(str, sizeof(str), "%dx%d (%d Hz)", list[i].width, list[i].height, list[i].refreshrate);
+         snprintf(str, sizeof(str), "%dx%d (%d Hz)",
+               VIDEO_SCALE_W(list[i].dims), VIDEO_SCALE_H(list[i].dims),
+               list[i].refreshrate);
          snprintf(val_d, sizeof(val_d), "%d", i);
 
          m_resolutionCombo->addItem(str);
@@ -7211,12 +7027,20 @@ QVector<OptionsPage*> FrameThrottleCategory::pages()
 PlaylistModel::PlaylistModel(QObject *parent)
    : QAbstractListModel(parent)
 {
-   m_fileSanitizerRegex = QRegularExpression("[&*/:`<>?\\|]");
-   m_thumbnailLoader    = new ThumbnailLoader(this);
+   /* The shared companion thumbnail engine: threads sized to the
+    * machine, cache budget from the view options. */
+   m_engine = companion_thumbs_new(0, 0);
    setThumbnailCacheLimit(500);
-   connect(m_thumbnailLoader, SIGNAL(imageLoaded(QImage,QPersistentModelIndex,QString)),
-         this, SLOT(onImageLoaded(QImage,QPersistentModelIndex,QString)));
-   m_thumbnailLoader->start();
+   /* Finished decodes are collected on the UI thread from a timer that
+    * only runs while something is pending. */
+   m_pollTimer.setInterval(16);
+   connect(&m_pollTimer, SIGNAL(timeout()), this, SLOT(pollThumbnails()));
+}
+
+PlaylistModel::~PlaylistModel()
+{
+   if (m_engine)
+      companion_thumbs_free(m_engine); /* joins the decode threads */
 }
 
 int PlaylistModel::rowCount(const QModelIndex & /* parent */) const
@@ -7246,9 +7070,12 @@ QVariant PlaylistModel::data(const QModelIndex &index, int role) const
             return QVariant::fromValue(m_contents.at(index.row()));
          case THUMBNAIL:
             {
-               QPixmap *cachedPreview = m_cache.object(getCurrentTypeThumbnailPath(index));
-               if (cachedPreview)
-                  return *cachedPreview;
+               /* The engine's pixels for this row at the grid's size,
+                * converted to a QPixmap once and kept in m_cache. */
+               QPixmap *pm = pixmapFor(getCurrentTypeThumbnailPath(index),
+                     VIDEO_SCALE_PACK(m_thumbSize, m_thumbSize));
+               if (pm)
+                  return *pm;
             }
             break;
       }
@@ -7298,7 +7125,26 @@ void PlaylistModel::setThumbnailType(const ThumbnailType type)
 
 void PlaylistModel::setThumbnailCacheLimit(int limit)
 {
+   /* The setting is in MB: the engine holds the decoded pixels under
+    * that budget; the QPixmap conversion cache mirrors it in KB. */
+   if (m_engine)
+      companion_thumbs_set_budget(m_engine,
+            (size_t)(limit > 0 ? limit : 64) * 1024 * 1024);
    m_cache.setMaxCost(limit * 1024);
+}
+
+void PlaylistModel::setThumbnailSize(int size)
+{
+   if (size < 16)
+      size = 16;
+   if (size == m_thumbSize)
+      return;
+   m_thumbSize = size;
+   /* Pixmaps at the old size are keyed by it and simply age out; what
+    * was queued at the old size is dropped. */
+   if (m_engine)
+      companion_thumbs_cancel(m_engine);
+   m_pendingRows.clear();
 }
 
 QString PlaylistModel::getThumbnailPath(const QModelIndex &index,
@@ -7307,12 +7153,18 @@ QString PlaylistModel::getThumbnailPath(const QModelIndex &index,
    return getThumbnailPath(m_contents.at(index.row()), type);
 }
 
+/* Thumbnail layout, name sanitising and extension probing live in the
+ * companion core; these are the Qt string wrappers. */
 QString PlaylistModel::getPlaylistThumbnailsDir(
-      const QString playlistName) const
+      const QString playlistName, const QString type) const
 {
-   settings_t *settings            = config_get_ptr();
-   const char *path_dir_thumbnails = settings->paths.directory_thumbnails;
-   return QDir::cleanPath(QString(path_dir_thumbnails)) + "/" + playlistName;
+   char dir[PATH_MAX_LENGTH];
+   QByteArray dbArray   = playlistName.toUtf8();
+   QByteArray typeArray = type.toUtf8();
+
+   companion_core_thumbnail_dir(ui_companion_qt_core(),
+         dbArray.constData(), typeArray.constData(), dir, sizeof(dir));
+   return QString::fromUtf8(dir);
 }
 
 bool PlaylistModel::isSupportedImage(const QString path) const
@@ -7321,37 +7173,32 @@ bool PlaylistModel::isSupportedImage(const QString path) const
    return image_texture_get_type(pathArray.constData()) != IMAGE_TYPE_NONE;
 }
 
-QString PlaylistModel::getSanitizedThumbnailName(QString dir, QString label) const
+QString PlaylistModel::getRepositoryThumbnailPath(const QString playlistName,
+      const QString labelNoExt, const QString type) const
 {
-   QDir tnDir(dir);
+   char path[PATH_MAX_LENGTH];
+   QByteArray dbArray    = playlistName.toUtf8();
+   QByteArray typeArray  = type.toUtf8();
+   QByteArray labelArray = labelNoExt.toUtf8();
 
-   QString tnName = label.replace(m_fileSanitizerRegex, "_");
-   if (tnDir.exists(tnName + ".png"))
-      return dir + tnName + ".png";
-   if (tnDir.exists(tnName + ".jpg"))
-      return dir + tnName + ".jpg";
-   if (tnDir.exists(tnName + ".jpeg"))
-      return dir + tnName + ".jpeg";
-   if (tnDir.exists(tnName + ".bmp"))
-      return dir + tnName + ".bmp";
-   if (tnDir.exists(tnName + ".tga"))
-      return dir + tnName + ".tga";
-   return dir + tnName + ".png";
-
+   companion_core_thumbnail_path(ui_companion_qt_core(),
+         dbArray.constData(), typeArray.constData(), labelArray.constData(),
+         NULL, path, sizeof(path));
+   return QString::fromUtf8(path);
 }
 
 QString PlaylistModel::getThumbnailPath(const PlaylistEntry &entry, QString type) const
 {
-   /* use thumbnail widgets to show regular image files */
-   if (isSupportedImage(entry.path))
-      return entry.path;
+   char path[PATH_MAX_LENGTH];
+   QByteArray dbArray    = entry.dbName.toUtf8();
+   QByteArray typeArray  = type.toUtf8();
+   QByteArray labelArray = entry.labelNoExt.toUtf8();
+   QByteArray pathArray  = entry.path.toUtf8();
 
-   return getSanitizedThumbnailName(
-      getPlaylistThumbnailsDir(entry.dbName)
-      + QString("/")
-      + type
-      + QString("/"),
-      entry.labelNoExt);
+   companion_core_thumbnail_path(ui_companion_qt_core(),
+         dbArray.constData(), typeArray.constData(), labelArray.constData(),
+         pathArray.constData(), path, sizeof(path));
+   return QString::fromUtf8(path);
 }
 
 QString PlaylistModel::getCurrentTypeThumbnailPath(const QModelIndex &index) const
@@ -7390,65 +7237,168 @@ void PlaylistModel::reloadSystemThumbnails(const QString system)
    QString           path          = QDir::cleanPath(QString(path_dir_thumbnails))
 	   + QString("/") + system;
    QList<QString>             keys = m_cache.keys();
-   QList<QString>          pending = m_pendingImages.values();
 
    for (i = 0; i < keys.size(); i++)
    {
       QString key = keys.at(i);
       if (key.startsWith(path))
+      {
          m_cache.remove(key);
-   }
-
-   for (i = 0; i < pending.size(); i++)
-   {
-      QString key = pending.at(i);
-      if (key.startsWith(path))
-         m_pendingImages.remove(key);
+         if (m_engine)
+            companion_thumbs_forget(m_engine,
+                  key.left(key.lastIndexOf(QLatin1Char('@'))).toUtf8().constData());
+      }
    }
 }
 
 void PlaylistModel::reloadThumbnailPath(const QString path)
 {
-   m_cache.remove(path);
-   m_pendingImages.remove(path);
+   QList<QString> keys = m_cache.keys();
+   int i;
+   for (i = 0; i < keys.size(); i++)
+      if (keys.at(i).startsWith(path + QLatin1Char('@')))
+         m_cache.remove(keys.at(i));
+   if (m_engine)
+      companion_thumbs_forget(m_engine, path.toUtf8().constData());
+   m_pendingRows.remove(path);
 }
 
 void PlaylistModel::loadThumbnail(const QModelIndex &index)
 {
    QString path = getCurrentTypeThumbnailPath(index);
-
-   if (!m_pendingImages.contains(path) && !m_cache.contains(path))
-   {
-      m_pendingImages.insert(path);
-      m_thumbnailLoader->request(index, path);
-   }
+   if (!m_engine || path.isEmpty())
+      return;
+   if (companion_thumbs_get(m_engine, path.toUtf8().constData(),
+            VIDEO_SCALE_PACK(m_thumbSize, m_thumbSize)))
+      return;                         /* data() serves it from the cache */
+   if (m_pendingRows.contains(path))
+      return;
+   m_pendingRows.insert(path, QPersistentModelIndex(index));
+   companion_thumbs_request(m_engine, path.toUtf8().constData(),
+         VIDEO_SCALE_PACK(m_thumbSize, m_thumbSize), 0, true, 0x00000000u);
+   if (!m_pollTimer.isActive())
+      m_pollTimer.start();
 }
 
-void PlaylistModel::onImageLoaded(const QImage image,
-		const QPersistentModelIndex &index, const QString &path)
+#define QT_TAG_ANIM_FRAME ((uintptr_t)1 << (sizeof(uintptr_t) * 8 - 1))
+
+void PlaylistModel::onEngineDone(void *ud, const char *path, unsigned dims,
+      uintptr_t tag, const uint32_t *bits)
 {
-   QPixmap *pixmap = new QPixmap(QPixmap::fromImage(image));
-   int        cost = pixmap->width() * pixmap->height() * pixmap->depth() / (8 * 1024);
-   const int maxCost = m_cache.maxCost();
-   /* If a single decoded image would exceed the entire cache budget,
-    * QCache drops it on insert and it then gets re-decoded on every
-    * scroll. Cap the reported cost at the budget (when caching is
-    * enabled) so the pixmap is retained instead. When the cache is
-    * disabled (maxCost 0) the cost is left as-is and QCache does not
-    * retain it, which is the intended behaviour. */
-   if (maxCost > 0 && cost > maxCost)
-      cost = maxCost;
-   m_cache.insert(path, pixmap, cost);
-   /* index is persistent: it tracks the row across insertions/moves and
-    * reports invalid if that row was removed or the model reset while the
-    * decode was in flight, so a stale row is never signalled. */
+   PlaylistModel *self = static_cast<PlaylistModel*>(ud);
+   if (tag & QT_TAG_ANIM_FRAME)
+   {
+      /* An animation frame: not cached, shown at once. fromImage()
+       * copies into the pixmap, so wrap the engine's buffer directly
+       * rather than copying it once more first. */
+      if (bits)
+      {
+         int w = (int)VIDEO_SCALE_W(dims);
+         QImage img((const uchar*)bits, w, (int)VIDEO_SCALE_H(dims), w * 4,
+               QImage::Format_ARGB32);
+         emit self->frameReady(QString::fromUtf8(path), QPixmap::fromImage(img));
+      }
+      return;
+   }
+   self->thumbnailArrived(QString::fromUtf8(path));
+}
+
+void PlaylistModel::animateImage(const QString &path, unsigned dims)
+{
+   if (     !m_engine || path.isEmpty()
+         || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
+      return;
+   companion_thumbs_animate(m_engine, path.toUtf8().constData(), dims,
+         QT_TAG_ANIM_FRAME, 0x00000000u);
+   if (!m_pollTimer.isActive())
+      m_pollTimer.start();
+}
+
+void PlaylistModel::stopAnimation()
+{
+   if (m_engine)
+      companion_thumbs_animate_stop(m_engine);
+}
+
+QPixmap *PlaylistModel::pixmapFor(const QString &path, unsigned dims) const
+{
+   int w       = (int)VIDEO_SCALE_W(dims);
+   int h       = (int)VIDEO_SCALE_H(dims);
+   QString key = path + QLatin1Char('@') + QString::number(w)
+      + QLatin1Char('x') + QString::number(h);
+   QPixmap *pm = m_cache.object(key);
+   const uint32_t *bits;
+   if (pm)
+      return pm;
+   if (!m_engine || path.isEmpty())
+      return NULL;
+   bits = companion_thumbs_get(m_engine, path.toUtf8().constData(), dims);
+   if (!bits)
+      return NULL;
+   {
+      /* copy(): the engine pointer is only valid until its next call */
+      QImage img((const uchar*)bits, w, h, w * 4, QImage::Format_ARGB32);
+      int cost;
+      pm   = new QPixmap(QPixmap::fromImage(img.copy()));
+      cost = pm->width() * pm->height() * pm->depth() / (8 * 1024);
+      if (m_cache.maxCost() > 0 && cost > m_cache.maxCost())
+         cost = m_cache.maxCost();
+      m_cache.insert(key, pm, cost);
+   }
+   return pm;
+}
+
+bool PlaylistModel::imageAt(const QString &path, unsigned dims, QPixmap *out) const
+{
+   QPixmap *pm = pixmapFor(path, dims);
+   if (!pm)
+      return false;
+   if (out)
+      *out = *pm;
+   return true;
+}
+
+void PlaylistModel::abandonPending()
+{
+   if (m_engine)
+      companion_thumbs_cancel(m_engine);
+   m_pendingRows.clear();
+}
+
+void PlaylistModel::requestImage(const QString &path, unsigned dims)
+{
+   if (     !m_engine || path.isEmpty()
+         || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
+      return;
+   companion_thumbs_request(m_engine, path.toUtf8().constData(), dims, 0,
+         true, 0x00000000u);
+   if (!m_pollTimer.isActive())
+      m_pollTimer.start();
+}
+
+void PlaylistModel::thumbnailArrived(const QString &path)
+{
+   QPersistentModelIndex index = m_pendingRows.take(path);
+   emit thumbnailReady(path);
+   /* index is persistent: it tracks the row across insertions / moves
+    * and is invalid if that row was removed or the model reset while
+    * the decode was in flight, so a stale row is never signalled. */
    if (index.isValid())
    {
       const QModelIndex modelIndex(index);
       emit dataChanged(modelIndex, modelIndex, { THUMBNAIL });
    }
-   m_pendingImages.remove(path);
 }
+
+void PlaylistModel::pollThumbnails()
+{
+   if (!m_engine)
+      return;
+   companion_thumbs_poll(m_engine, onEngineDone, this, 0, 4000);
+   if (!companion_thumbs_pending(m_engine) && !companion_thumbs_animating(m_engine))
+      m_pollTimer.stop();
+}
+
 
 static inline bool comp_hash_name_key_lower(const QHash<QString,
 		QString> &lhs, const QHash<QString, QString> &rhs)
@@ -7584,18 +7534,11 @@ void MainWindow::addFilesToPlaylist(QStringList files)
    QString selectedName;
    QString selectedPath;
    QStringList selectedExtensions;
-   playlist_config_t playlist_config;
    QListWidgetItem        *currentItem = m_listWidget->currentItem();
    PlaylistEntryDialog *playlistDialog = playlistEntryDialog();
    const char *currentPlaylistData     = NULL;
    playlist_t *playlist                = NULL;
-   settings_t *settings                = config_get_ptr();
-
-   playlist_config.capacity            = COLLECTION_SIZE;
-   playlist_config.old_format          = settings->bools.playlist_use_old_format;
-   playlist_config.compress            = settings->bools.playlist_compression;
-   playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
-   playlist_config_set_base_content_directory(&playlist_config, settings->bools.playlist_portable_paths ? settings->paths.directory_menu_content : NULL);
+   companion_core_t *core              = ui_companion_qt_core();
 
    /* Assume a blank list means we will manually enter in all fields. */
    if (files.isEmpty())
@@ -7737,8 +7680,14 @@ void MainWindow::addFilesToPlaylist(QStringList files)
             MENU_ENUM_LABEL_VALUE_QT_ADDING_FILES_TO_PLAYLIST));
    dialog->setMaximum(list.count());
 
-   playlist_config_set_path(&playlist_config, currentPlaylistData);
-   playlist = playlist_init(&playlist_config);
+   /* Deliberately a private instance (unlike the other playlist
+    * loads here): this is a bulk add whose cancel path discards
+    * the half-modified playlist by freeing it unwritten, which a
+    * borrowed cached instance cannot offer.  The modal progress
+    * dialog pumps events, so this is not a UI-thread freeze. */
+   playlist = companion_core_playlist_open_private(core, currentPlaylistData);
+   if (!playlist)
+      return;
 
    for (i = 0; i < list.count(); i++)
    {
@@ -7748,6 +7697,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
       QByteArray corePathArray;
       QByteArray coreNameArray;
       QByteArray databaseArray;
+      char contentPath[PATH_MAX_LENGTH];
       QString fileName            = list.at(i);
       const char *pathData        = NULL;
       const char *fileNameNoExten = NULL;
@@ -7760,7 +7710,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
        * to the playlist at all. */
       if (dialog->wasCanceled())
       {
-         playlist_free(playlist);
+         companion_core_playlist_release(core, playlist, true, false);
          return;
       }
 
@@ -7796,12 +7746,7 @@ void MainWindow::addFilesToPlaylist(QStringList files)
 
       pathData             = pathArray.constData();
 
-      if (selectedCore.isEmpty())
-      {
-         corePathData = "DETECT";
-         coreNameData = "DETECT";
-      }
-      else
+      if (!selectedCore.isEmpty())
       {
          corePathArray = QDir::toNativeSeparators(
                selectedCore.value("core_path")).toUtf8();
@@ -7809,67 +7754,30 @@ void MainWindow::addFilesToPlaylist(QStringList files)
          corePathData  = corePathArray.constData();
          coreNameData  = coreNameArray.constData();
       }
+      /* else NULL: the core substitutes "DETECT" */
 
       databaseArray = selectedDatabase.toUtf8();
       databaseData = databaseArray.constData();
 
-      if (path_is_compressed_file(pathData))
-      {
-         struct string_list *list = file_archive_get_file_list(pathData, NULL);
+      /* A single-file archive resolves to "archive#file". */
+      companion_core_resolve_content_path(core, pathData,
+            contentPath, sizeof(contentPath));
 
-         if (list)
-         {
-            if (list->size == 1)
-            {
-               /* Assume archives with one file should have that
-                * file loaded directly.
-                * Don't just extend this to add all files in a zip,
-                * because we might hit
-                * something like MAME/FBA where only the archives
-                * themselves are valid content. */
-               pathArray = QDir::toNativeSeparators(QString(pathData)
-                     + QString("#")
-		     + list->elems[0].data).toUtf8();
-               pathData  = pathArray.constData();
+      /* If the user chose to filter extensions inside archives, and
+       * the resolved file inside the archive doesn't have one of the
+       * chosen extensions, skip it. */
+      if (     strcmp(contentPath, pathData) != 0
+            && !selectedExtensions.isEmpty()
+            &&  playlistDialog->filterInArchive()
+            && !selectedExtensions.contains(
+                  QString::fromUtf8(path_get_extension(contentPath))))
+         continue;
 
-               if (     !selectedExtensions.isEmpty()
-                     &&  playlistDialog->filterInArchive())
-               {
-                  /* If the user chose to filter extensions inside archives,
-                   * and this particular file inside the archive
-                   * doesn't have one of the chosen extensions,
-                   * then we skip it. */
-                  if (!selectedExtensions.contains(
-                           QString::fromUtf8(path_get_extension(pathData))))
-                  {
-                     string_list_free(list);
-                     continue;
-                  }
-               }
-            }
-
-            string_list_free(list);
-         }
-      }
-
-      {
-         struct playlist_entry entry = {0};
-
-         /* the push function reads our entry as const,
-          * so these casts are safe */
-         entry.path      = const_cast<char*>(pathData);
-         entry.label     = const_cast<char*>(fileNameNoExten);
-         entry.core_path = const_cast<char*>(corePathData);
-         entry.core_name = const_cast<char*>(coreNameData);
-         entry.crc32     = const_cast<char*>("00000000|crc");
-         entry.db_name   = const_cast<char*>(databaseData);
-
-         playlist_push(playlist, &entry);
-      }
+      companion_core_playlist_push(core, playlist, contentPath,
+            fileNameNoExten, corePathData, coreNameData, databaseData);
    }
 
-   playlist_write_file(playlist);
-   playlist_free(playlist);
+   companion_core_playlist_release(core, playlist, true, true);
 
    reloadPlaylists();
 }
@@ -7884,7 +7792,7 @@ bool MainWindow::updateCurrentPlaylistEntry(
    QByteArray coreNameArray;
    QByteArray dbNameArray;
    QByteArray crc32Array;
-   playlist_config_t playlist_config;
+   char contentPath[PATH_MAX_LENGTH];
    QString playlistPath         = getCurrentPlaylistPath();
    const char *playlistPathData = NULL;
    const char *pathData         = NULL;
@@ -7893,16 +7801,6 @@ bool MainWindow::updateCurrentPlaylistEntry(
    const char *coreNameData     = NULL;
    const char *dbNameData       = NULL;
    const char *crc32Data        = NULL;
-   playlist_t *playlist         = NULL;
-   settings_t *settings         = config_get_ptr();
-
-   playlist_config.capacity            = COLLECTION_SIZE;
-   playlist_config.old_format          = settings->bools.playlist_use_old_format;
-   playlist_config.compress            = settings->bools.playlist_compression;
-   playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
-   playlist_config_set_base_content_directory(&playlist_config,
-		    settings->bools.playlist_portable_paths
-		  ? settings->paths.directory_menu_content : NULL);
 
    if (    playlistPath.isEmpty()
         || contentEntry.path.isEmpty()
@@ -7935,27 +7833,10 @@ bool MainWindow::updateCurrentPlaylistEntry(
       crc32Data      = crc32Array.constData();
    }
 
-   if (path_is_compressed_file(pathData))
-   {
-      struct string_list *list = file_archive_get_file_list(pathData, NULL);
-
-      if (list)
-      {
-         if (list->size == 1)
-         {
-            /* assume archives with one file should have that file loaded directly */
-            pathArray = QDir::toNativeSeparators(QString(pathData)
-		      + QString("#")
-		      + list->elems[0].data).toUtf8();
-            pathData  = pathArray.constData();
-         }
-
-         string_list_free(list);
-      }
-   }
-
-   playlist_config_set_path(&playlist_config, playlistPathData);
-   playlist = playlist_init(&playlist_config);
+   /* A single-file archive resolves to "archive#file". */
+   companion_core_resolve_content_path(ui_companion_qt_core(), pathData,
+         contentPath, sizeof(contentPath));
+   pathData = contentPath;
 
    {
       struct playlist_entry entry = {0};
@@ -7969,11 +7850,10 @@ bool MainWindow::updateCurrentPlaylistEntry(
       entry.crc32     = const_cast<char*>(crc32Data);
       entry.db_name   = const_cast<char*>(dbNameData);
 
-      playlist_update(playlist, contentEntry.index, &entry);
+      if (!companion_core_playlist_update_entry(ui_companion_qt_core(),
+               playlistPathData, contentEntry.index, &entry))
+         return false;
    }
-
-   playlist_write_file(playlist);
-   playlist_free(playlist);
 
    reloadPlaylists();
 
@@ -7999,7 +7879,6 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    QScopedPointer<QAction> downloadAllThumbnailsEntireSystemAction;
    QScopedPointer<QAction> downloadAllThumbnailsThisPlaylistAction;
    QPointer<QAction> selectedAction;
-   playlist_config_t playlist_config;
    QPoint cursorPos                    = QCursor::pos();
    settings_t *settings                = config_get_ptr();
    const char *path_dir_playlist       = settings->paths.directory_playlist;
@@ -8012,14 +7891,6 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    int j                               = 0;
    bool specialPlaylist                = false;
    bool foundHiddenPlaylist            = false;
-
-   playlist_config.capacity            = COLLECTION_SIZE;
-   playlist_config.old_format          = settings->bools.playlist_use_old_format;
-   playlist_config.compress            = settings->bools.playlist_compression;
-   playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
-   playlist_config_set_base_content_directory(&playlist_config,
-		   settings->bools.playlist_portable_paths
-		 ? settings->paths.directory_menu_content : NULL);
 
    if (selectedItem)
    {
@@ -8179,54 +8050,12 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
 
    if (!specialPlaylist && selectedAction->parent() == associateMenu.data())
    {
-      core_info_t *coreInfo                   = NULL;
-      playlist_t *cachedPlaylist              = playlist_get_cached();
-      playlist_t *playlist                    = NULL;
-      bool loadPlaylist                       = true;
       QByteArray currentPlaylistPathByteArray = currentPlaylistPath.toUtf8();
-      const char *currentPlaylistPathCString  = currentPlaylistPathByteArray.data();
       QByteArray corePathByteArray            = selectedAction->property("core_path").toString().toUtf8();
-      const char *corePath                    = corePathByteArray.data();
 
-      /* Load playlist, if required */
-      if (cachedPlaylist)
-      {
-         if (string_is_equal(currentPlaylistPathCString,
-                  playlist_get_conf_path(cachedPlaylist)))
-         {
-            playlist     = cachedPlaylist;
-            loadPlaylist = false;
-         }
-      }
-
-      if (loadPlaylist)
-      {
-         playlist_config_set_path(&playlist_config, currentPlaylistPathCString);
-         playlist = playlist_init(&playlist_config);
-      }
-
-      if (playlist)
-      {
-         /* Get core info */
-         if (core_info_find(corePath, &coreInfo))
-         {
-            /* Set new core association */
-            playlist_set_default_core_path(playlist, coreInfo->path);
-            playlist_set_default_core_name(playlist, coreInfo->display_name);
-         }
-         else
-         {
-            playlist_set_default_core_path(playlist, "DETECT");
-            playlist_set_default_core_name(playlist, "DETECT");
-         }
-
-         /* Write changes to disk */
-         playlist_write_file(playlist);
-
-         /* Free playlist, if required */
-         if (loadPlaylist)
-            playlist_free(playlist);
-      }
+      companion_core_playlist_set_default_core(ui_companion_qt_core(),
+            currentPlaylistPathByteArray.constData(),
+            corePathByteArray.constData());
    }
    else if (selectedItem && selectedAction == deletePlaylistAction.data())
    {
@@ -8277,14 +8106,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
 
       if (row >= 0)
       {
-         QStringList hiddenPlaylists = m_settings->value("hidden_playlists").toStringList();
-
-         if (!hiddenPlaylists.contains(currentPlaylistFileName))
-         {
-            hiddenPlaylists.append(currentPlaylistFileName);
-            m_settings->setValue("hidden_playlists", hiddenPlaylists);
-         }
-
+         qt_set_playlist_hidden(currentPlaylistFileName, true);
          m_listWidget->setRowHidden(row, true);
       }
    }
@@ -8294,7 +8116,6 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
 
       if (rowVariant.isValid())
       {
-         QStringList hiddenPlaylists = m_settings->value("hidden_playlists").toStringList();
          int row = rowVariant.toInt();
 
          if (row >= 0)
@@ -8303,12 +8124,7 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
             QFileInfo playlistFileInfo(playlistPath);
             QString playlistFileName = playlistFileInfo.fileName();
 
-            if (hiddenPlaylists.contains(playlistFileName))
-            {
-               hiddenPlaylists.removeOne(playlistFileName);
-               m_settings->setValue("hidden_playlists", hiddenPlaylists);
-            }
-
+            qt_set_playlist_hidden(playlistFileName, false);
             m_listWidget->setRowHidden(row, false);
          }
       }
@@ -8345,8 +8161,6 @@ void MainWindow::reloadPlaylists()
    settings_t *settings                    = config_get_ptr();
    const char *path_dir_playlist           = settings->paths.directory_playlist;
    QDir playlistDir(path_dir_playlist);
-   QStringList hiddenPlaylists             = m_settings->value(
-         "hidden_playlists").toStringList();
 
    QListWidgetItem *currentItem            = m_listWidget->currentItem();
 
@@ -8385,17 +8199,17 @@ void MainWindow::reloadPlaylists()
    m_listWidget->addItem(musicPlaylistsItem);
    m_listWidget->addItem(videoPlaylistsItem);
 
-   if (hiddenPlaylists.contains(ALL_PLAYLISTS_TOKEN))
+   if (qt_playlist_hidden(ALL_PLAYLISTS_TOKEN))
       m_listWidget->setRowHidden(m_listWidget->row(allPlaylistsItem), true);
-   if (hiddenPlaylists.contains(QFileInfo(settings->paths.path_content_favorites).fileName()))
+   if (qt_playlist_hidden(QFileInfo(settings->paths.path_content_favorites).fileName()))
       m_listWidget->setRowHidden(m_listWidget->row(favoritesPlaylistsItem), true);
-   if (hiddenPlaylists.contains(QFileInfo(settings->paths.path_content_history).fileName()))
+   if (qt_playlist_hidden(QFileInfo(settings->paths.path_content_history).fileName()))
       m_listWidget->setRowHidden(m_listWidget->row(m_historyPlaylistsItem), true);
-   if (hiddenPlaylists.contains(QFileInfo(settings->paths.path_content_image_history).fileName()))
+   if (qt_playlist_hidden(QFileInfo(settings->paths.path_content_image_history).fileName()))
       m_listWidget->setRowHidden(m_listWidget->row(imagePlaylistsItem), true);
-   if (hiddenPlaylists.contains(QFileInfo(settings->paths.path_content_music_history).fileName()))
+   if (qt_playlist_hidden(QFileInfo(settings->paths.path_content_music_history).fileName()))
       m_listWidget->setRowHidden(m_listWidget->row(musicPlaylistsItem), true);
-   if (hiddenPlaylists.contains(QFileInfo(settings->paths.path_content_video_history).fileName()))
+   if (qt_playlist_hidden(QFileInfo(settings->paths.path_content_video_history).fileName()))
       m_listWidget->setRowHidden(m_listWidget->row(videoPlaylistsItem), true);
 
    for (i = 0; i < m_playlistFiles.count(); i++)
@@ -8434,7 +8248,7 @@ void MainWindow::reloadPlaylists()
 
       m_listWidget->addItem(item);
 
-      if (hiddenPlaylists.contains(fileName))
+      if (qt_playlist_hidden(fileName))
       {
          int row = m_listWidget->row(item);
 
@@ -8451,7 +8265,10 @@ void MainWindow::reloadPlaylists()
       {
          bool            foundCurrent = false;
          bool            foundInitial = false;
-         QString      initialPlaylist = m_settings->value("initial_playlist", m_historyPlaylistsItem->data(Qt::UserRole).toString()).toString();
+         QString      initialPlaylist =
+            string_is_empty(config_get_ptr()->paths.desktop_menu_initial_playlist)
+            ? QString(ALL_PLAYLISTS_TOKEN)
+            : QString::fromUtf8(config_get_ptr()->paths.desktop_menu_initial_playlist);
          QListWidgetItem *initialItem = NULL;
 
          for (i = 0; i < m_listWidget->count(); i++)
@@ -8550,21 +8367,10 @@ bool MainWindow::currentPlaylistIsAll()
 void MainWindow::deleteCurrentPlaylistItem()
 {
    QByteArray playlistArray;
-   playlist_config_t playlist_config;
    QString playlistPath                = getCurrentPlaylistPath();
    PlaylistEntry contentEntry          = getCurrentContentEntry();
-   playlist_t *playlist                = NULL;
    const char *playlistData            = NULL;
    bool isAllPlaylist                  = currentPlaylistIsAll();
-   settings_t *settings                = config_get_ptr();
-
-   playlist_config.capacity            = COLLECTION_SIZE;
-   playlist_config.old_format          = settings->bools.playlist_use_old_format;
-   playlist_config.compress            = settings->bools.playlist_compression;
-   playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
-   playlist_config_set_base_content_directory(&playlist_config,
-		   settings->bools.playlist_portable_paths
-		 ? settings->paths.directory_menu_content : NULL);
 
    if (isAllPlaylist)
       return;
@@ -8581,79 +8387,21 @@ void MainWindow::deleteCurrentPlaylistItem()
    if (!showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM)).arg(contentEntry.label), MainWindow::MSGBOX_TYPE_QUESTION_YESNO, Qt::ApplicationModal, false))
       return;
 
-   playlist_config_set_path(&playlist_config, playlistData);
-   playlist = playlist_init(&playlist_config);
-
-   playlist_delete_index(playlist, contentEntry.index);
-   playlist_write_file(playlist);
-   playlist_free(playlist);
+   companion_core_playlist_delete_entry(ui_companion_qt_core(),
+         playlistData, contentEntry.index);
 
    reloadPlaylists();
 }
 
 QString MainWindow::getPlaylistDefaultCore(QString plName)
 {
-   size_t _len;
-   playlist_config_t playlist_config;
-   char playlist_path[PATH_MAX_LENGTH];
-   QByteArray plNameByteArray          = plName.toUtf8();
-   const char *plNameCString           = plNameByteArray.data();
-   playlist_t *cachedPlaylist          = playlist_get_cached();
-   playlist_t *playlist                = NULL;
-   bool loadPlaylist                   = true;
-   QString corePath                    = QString();
-   settings_t *settings                = config_get_ptr();
+   char core_path[PATH_MAX_LENGTH];
+   QByteArray plNameByteArray = plName.toUtf8();
 
-   playlist_config.capacity            = COLLECTION_SIZE;
-   playlist_config.old_format          = settings->bools.playlist_use_old_format;
-   playlist_config.compress            = settings->bools.playlist_compression;
-   playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
-   playlist_config_set_base_content_directory(&playlist_config,
-		   settings->bools.playlist_portable_paths
-		 ? settings->paths.directory_menu_content : NULL);
-
-   if (!settings || !plNameCString || !*plNameCString)
-      return corePath;
-
-   /* Get playlist path */
-   _len = fill_pathname_join_special(
-         playlist_path,  settings->paths.directory_playlist,
-         plNameCString, sizeof(playlist_path));
-   strlcpy(playlist_path       + _len, ".lpl",
-         sizeof(playlist_path) - _len);
-
-   /* Load playlist, if required */
-   if (cachedPlaylist)
-   {
-      if (string_is_equal(playlist_path,
-               playlist_get_conf_path(cachedPlaylist)))
-      {
-         playlist     = cachedPlaylist;
-         loadPlaylist = false;
-      }
-   }
-
-   if (loadPlaylist)
-   {
-      playlist_config_set_path(&playlist_config, playlist_path);
-      playlist = playlist_init(&playlist_config);
-   }
-
-   if (playlist)
-   {
-      const char *defaultCorePath = playlist_get_default_core_path(playlist);
-
-      /* Get default core path */
-      if (   (defaultCorePath && *defaultCorePath)
-          && !string_is_equal(defaultCorePath, "DETECT"))
-         corePath = QString::fromUtf8(defaultCorePath);
-
-      /* Free playlist, if required */
-      if (loadPlaylist)
-         playlist_free(playlist);
-   }
-
-   return corePath;
+   if (companion_core_playlist_default_core(ui_companion_qt_core(),
+            plNameByteArray.constData(), core_path, sizeof(core_path)))
+      return QString::fromUtf8(core_path);
+   return QString();
 }
 
 void MainWindow::getPlaylistFiles()
@@ -8665,42 +8413,26 @@ void MainWindow::getPlaylistFiles()
          QDir::NoDotAndDotDot | QDir::Readable | QDir::Files, QDir::Name);
 }
 
-void PlaylistModel::getPlaylistItems(QString path)
+/* Copy the companion core's currently loaded playlist into the pending
+ * contents. Everything is deep-copied into QStrings, so nothing here
+ * outlives the core's playlist object. */
+void PlaylistModel::appendEntriesFromCore()
 {
-   QByteArray pathArray;
-   playlist_config_t playlist_config;
-   const char *pathData                = NULL;
-   const char *playlistName            = NULL;
-   playlist_t *playlist                = NULL;
-   unsigned playlistSize               = 0;
-   unsigned            i               = 0;
-   settings_t *settings                = config_get_ptr();
+   companion_core_t *core   = ui_companion_qt_core();
+   const char *path         = companion_core_selected_playlist_path(core);
+   const char *playlistName = NULL;
+   size_t playlistSize      = companion_core_entry_count(core);
+   size_t i;
 
-   playlist_config.capacity            = COLLECTION_SIZE;
-   playlist_config.old_format          = settings->bools.playlist_use_old_format;
-   playlist_config.compress            = settings->bools.playlist_compression;
-   playlist_config.fuzzy_archive_match = settings->bools.playlist_fuzzy_archive_match;
-   playlist_config_set_base_content_directory(&playlist_config,
-		   settings->bools.playlist_portable_paths
-		 ? settings->paths.directory_menu_content : NULL);
-
-   pathArray.append(path.toUtf8());
-   pathData              = pathArray.constData();
-   if (pathData && *pathData)
-      playlistName       = path_basename(pathData);
-
-   playlist_config_set_path(&playlist_config, pathData);
-   playlist              = playlist_init(&playlist_config);
-   playlistSize          = playlist_get_size(playlist);
+   if (path && *path)
+      playlistName = path_basename(path);
 
    for (i = 0; i < playlistSize; i++)
    {
       PlaylistEntry rowEntry;
-      const struct playlist_entry *pl_row = NULL;
+      const struct playlist_entry *pl_row = companion_core_entry(core, i);
 
-      playlist_get_index(playlist, i, &pl_row);
-
-      if (!pl_row->path || !*pl_row->path)
+      if (!pl_row || !pl_row->path || !*pl_row->path)
          continue;
 
       rowEntry.path     = pl_row->path;
@@ -8738,28 +8470,61 @@ void PlaylistModel::getPlaylistItems(QString path)
          rowEntry.plName.remove(".lpl");
       }
 
-      m_contents.append(rowEntry);
+      m_pendingContents.append(rowEntry);
+   }
+}
+
+void PlaylistModel::startNextPendingPlaylist()
+{
+   while (!m_pendingPaths.isEmpty())
+   {
+      QByteArray pathArray = m_pendingPaths.takeFirst().toUtf8();
+
+      /* The parse is driven from the runloop by companion_core_iterate()
+       * under a time budget; onCorePlaylistChanged() fires when it is
+       * done. Nothing blocks here, however large the playlist. */
+      if (companion_core_select_playlist_path(ui_companion_qt_core(),
+               pathArray.constData()))
+         return;
+      /* Unreadable path: skip it and try the next one. */
    }
 
-   playlist_free(playlist);
-   playlist = NULL;
+   /* All done: commit in a single model reset. */
+   beginResetModel();
+   m_contents          = m_pendingContents;
+   m_pendingContents.clear();
+   m_loadingPlaylists  = false;
+   endResetModel();
+
+   emit playlistsLoaded();
+}
+
+void PlaylistModel::onCorePlaylistChanged()
+{
+   if (!m_loadingPlaylists)
+      return;
+   appendEntriesFromCore();
+   startNextPendingPlaylist();
+}
+
+bool PlaylistModel::isLoadingPlaylists() const
+{
+   return m_loadingPlaylists;
 }
 
 void PlaylistModel::addPlaylistItems(const QStringList &paths, bool add)
 {
-   int i;
-
    if (paths.isEmpty())
       return;
 
-   beginResetModel();
+   /* Restarting supersedes any load still in flight: the core aborts
+    * the pending parse when a new playlist is selected, and the
+    * partially collected entries are dropped. */
+   m_pendingPaths     = paths;
+   m_pendingContents.clear();
+   m_loadingPlaylists = true;
 
-   m_contents.clear();
-
-   for (i = 0; i < paths.size(); i++)
-      getPlaylistItems(paths.at(i));
-
-   endResetModel();
+   startNextPendingPlaylist();
 }
 
 void PlaylistModel::addDir(QString path, QFlags<QDir::Filter> showHidden)

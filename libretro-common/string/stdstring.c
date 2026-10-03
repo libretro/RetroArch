@@ -20,6 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <retro_posix_source.h>
+
 #include <stdint.h>
 #include <ctype.h>
 #include <string.h>
@@ -207,6 +209,10 @@ char *string_trim_whitespace(char *const s)
  * regular Latin characters - i.e. it will not wrap
  * correctly any text containing so-called 'wide' Unicode
  * characters (e.g. CJK languages, emojis, etc.).
+ * @s and @src must NOT overlap: the copy is performed
+ * with strlcpy(), which has undefined behaviour for
+ * overlapping buffers (and aborts via __chk_fail_overlap
+ * with fortified libc on macOS).
  **/
 size_t word_wrap(
       char *s,         size_t len,
@@ -317,6 +323,10 @@ size_t word_wrap(
  * if @src string contains 'wide' Unicode characters whose
  * on-screen pixel width deviates greatly from the set
  * @wideglyph_width value.
+ * @s and @src must NOT overlap: the copy is performed
+ * with strlcpy(), which has undefined behaviour for
+ * overlapping buffers (and aborts via __chk_fail_overlap
+ * with fortified libc on macOS).
  **/
 size_t word_wrap_wideglyph(char *s, size_t len,
       const char *src, size_t src_len, int line_width,
@@ -638,6 +648,49 @@ unsigned string_hex_to_unsigned(const char *str)
    }
 
    return (unsigned)strtoul(hex_str, NULL, 16);
+}
+
+static int string_hexval(char c)
+{
+   if (c >= '0' && c <= '9')
+      return c - '0';
+   if (c >= 'a' && c <= 'f')
+      return c - 'a' + 10;
+   if (c >= 'A' && c <= 'F')
+      return c - 'A' + 10;
+   return -1;
+}
+
+/* Both digits are read before anything is written, so s == src
+ * (in place) is safe. */
+int string_percent_decode(char *s, size_t len, const char *src)
+{
+   size_t _len = 0;
+   if (!s || !len || !src)
+      return -1;
+   while (*src)
+   {
+      char c = *src;
+      if (c == '%')
+      {
+         int hi = string_hexval(src[1]);
+         int lo = (hi >= 0) ? string_hexval(src[2]) : -1;
+         if (lo >= 0)
+         {
+            c    = (char)((hi << 4) | lo);
+            src += 2;
+         }
+      }
+      if (_len + 1 >= len)
+      {
+         s[_len] = '\0';
+         return -1;
+      }
+      s[_len++] = c;
+      src++;
+   }
+   s[_len] = '\0';
+   return (int)_len;
 }
 
 /**

@@ -14,7 +14,12 @@
  *      fused parse-time hash against the real rhmap_hash_string
  *      used at lookup time on arbitrary byte sequences, not just
  *      the curated alphabet in the unit test.
- *   3. TAIL VALIDITY: conf->tail is the actual last list node.
+ *   3. TAIL VALIDITY: conf->tail is the actual last list node -
+ *      checked after parsing AND after a config_set_string()
+ *      applied identically to both configs.  The set path keeps its
+ *      own tail tracker and used to leave conf->tail stale, which
+ *      no parse-only check could see.  The two trackers have since
+ *      been collapsed into conf->tail alone.
  *
  * No io interface is registered, so '#include' directives are
  * recorded but never touch the file system - both paths behave
@@ -170,6 +175,28 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
    /* Invariants 2+3 on both */
    check_conf(slurped, data, size);
    check_conf(streamed, data, size);
+
+   /* Same again after a set.  The key is fixed rather than derived
+    * from the input so that both configs take the identical path
+    * whether or not the input already defines it (overwrite and
+    * insert are both worth reaching), and both must still agree. */
+   config_set_string(slurped,  "fuzz_set_key", "v");
+   config_set_string(streamed, "fuzz_set_key", "v");
+   check_conf(slurped, data, size);
+   check_conf(streamed, data, size);
+
+   a = slurped->entries;
+   b = streamed->entries;
+   while (a && b)
+   {
+      if (     !str_eq(a->key, b->key)
+            || !str_eq(a->value, b->value))
+         die("entry mismatch after set", data, size);
+      a = a->next;
+      b = b->next;
+   }
+   if (a || b)
+      die("entry count mismatch after set", data, size);
 
    config_file_free(slurped);
    config_file_free(streamed);

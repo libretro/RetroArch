@@ -23,6 +23,7 @@
 #include <libretro.h>
 #include <retro_miscellaneous.h>
 #include <retro_endianness.h>
+#include <retro_atomic.h>
 #include "../input_driver.h"
 
 /* Gekko (NGC/Wii) has PID/VID already swapped by USB_GetDescriptors from libogc, so skip bigendian byteswap */
@@ -60,12 +61,25 @@
 #define PID_KADE          SWAP_IF_BIG(0x82c0)
 #define PID_DRAGONRISE    SWAP_IF_BIG(0x0006)
 
+/* A slot is set up and torn down on the HID driver's own thread - its
+ * event or hotplug thread - and read on the frontend's every frame.
+ * The pad_connection_* calls that reach into the pad do so only while
+ * the slot is 'live', counted in 'users'; pad_connection_pad_deinit()
+ * takes 'live' away and waits for 'users' to drain before the pad's
+ * deinit frees what they would read. */
 struct joypad_connection
 {
     struct pad_connection_interface *iface;
     input_device_driver_t *input_driver;
     void* data;
     void* connection;
+    retro_atomic_int_t live;
+    retro_atomic_int_t users;
+    /* Taken by pad_connection_find_vacant_pad() for whoever found the
+     * slot, so two threads connecting pads at once - a HID driver's
+     * and the input poll - never get the same one; given back by
+     * pad_connection_release_slot() when the pad is gone. */
+    retro_atomic_int_t claimed;
     bool connected;
 };
 
@@ -144,7 +158,17 @@ int16_t pad_connection_get_axis(joypad_connection_t *joyconn,
 bool pad_connection_has_interface(joypad_connection_t *joyconn,
    unsigned idx);
 
+/* A free slot, claimed for the caller until it is released. */
 int pad_connection_find_vacant_pad(joypad_connection_t *joyconn);
+void pad_connection_release_slot(joypad_connection_t *joyconn);
+/* Makes the entry after the last slot the list's end. */
+void pad_connection_mark_end(joypad_connection_t *joyconn);
+
+/* The slot, held for calls into its pad until pad_connection_release();
+ * false, holding nothing, when it is not live. For a driver that calls
+ * the pad's interface itself rather than through the calls here. */
+bool pad_connection_acquire(joypad_connection_t *joyconn);
+void pad_connection_release(joypad_connection_t *joyconn);
 
 bool pad_connection_rumble(joypad_connection_t *s,
    unsigned pad, enum retro_rumble_effect effect, uint16_t strength);

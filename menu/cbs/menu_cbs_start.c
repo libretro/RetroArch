@@ -283,10 +283,12 @@ static int action_start_shader_action_parameter_generic(
    if (!shader_info.data)
       return 0;
 
+   /* Reset to initial via the owning-thread setter; initial and the
+    * range are stable outside set_shader's blocking window. */
    param          = &shader_info.data->parameters
       [parameter];
-   param->current = param->initial;
-   param->current = MIN(MAX(param->minimum, param->current), param->maximum);
+   video_shader_driver_set_parameter(shader_info.data, parameter,
+         MIN(MAX(param->minimum, param->initial), param->maximum));
 
    return menu_shader_manager_clear_parameter(menu_shader_get(), parameter);
 }
@@ -533,14 +535,11 @@ static int action_start_menu_wallpaper(
       unsigned type, size_t idx, size_t entry_idx)
 {
    settings_t *settings       = config_get_ptr();
-   struct menu_state *menu_st = menu_state_get_ptr();
 
    settings->paths.path_menu_wallpaper[0] = '\0';
 
-   /* Reset wallpaper by menu context reset */
-   if (menu_st->driver_ctx && menu_st->driver_ctx->context_reset)
-      menu_st->driver_ctx->context_reset(menu_st->userdata,
-            video_driver_is_threaded());
+   /* Reset wallpaper by menu context rebuild */
+   menu_driver_context_rebuild();
 
    return 0;
 }
@@ -626,42 +625,46 @@ static int action_start_video_resolution(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-#if defined(GEKKO) || defined(PS2) || !defined(__PSL1GHT__) && !defined(__PS3__)
-   unsigned width = 0, height = 0;
+   unsigned dims = 0;
    char desc[64] = {0};
    global_t *global = global_get_ptr();
 
    /*  Reset the resolution id to zero */
    global->console.screen.resolutions.current.id = 0;
 
-   if (video_driver_get_video_output_size(&width, &height, desc, sizeof(desc)))
+   if (video_driver_get_video_output_size(&dims, desc, sizeof(desc)))
    {
       size_t _len;
       char msg[128];
+#if defined(GEKKO) || defined(PS2) || defined(__PS3__)
+      bool fullscreen = true;
+#else
+      /* The window state the frontend is in, as driver init reads it */
+      bool fullscreen = config_get_ptr()->bools.video_fullscreen
+            || (video_driver_get_disp_flags() & VIDEO_FLAG_FORCE_FULLSCREEN);
+#endif
       msg[0] = '\0';
 
-#if defined(_WIN32) || !defined(__PSL1GHT__) && !defined(__PS3__)
+      /* PS3: the video output is configured at video init */
       generic_action_ok_command(CMD_EVENT_REINIT);
-#endif
-      video_driver_set_video_mode(width, height, true);
+      video_driver_set_video_mode(dims, fullscreen);
 #ifdef GEKKO
-      if (width == 0 || height == 0)
-         _len = strlcpy(msg, "Resetting to: DEFAULT", sizeof(msg));
+      if (!VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
+         _len = strlcpy_lit(msg, "Resetting to: DEFAULT", sizeof(msg));
       else
 #endif
       {
          if (*desc)
             _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_RESETTING_DESC),
-               width, height, desc);
+               VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), desc);
          else
             _len = snprintf(msg, sizeof(msg), msg_hash_to_str(MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC),
-               width, height);
+               VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
       }
 
       runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
-#endif
 
    return 0;
 }

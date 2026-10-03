@@ -33,8 +33,7 @@
 typedef struct
 {
    EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ctx;
-   unsigned fb_width;
-   unsigned fb_height;
+   unsigned fb_dims;
 } emscripten_ctx_data_t;
 
 static void gfx_ctx_emscripten_webgl_swap_interval(void *data, int interval)
@@ -43,30 +42,25 @@ static void gfx_ctx_emscripten_webgl_swap_interval(void *data, int interval)
 }
 
 static void gfx_ctx_emscripten_webgl_check_window(void *data, bool *quit,
-      bool *resize, unsigned *width, unsigned *height)
+      bool *resize, unsigned *dims)
 {
-   int input_width;
-   int input_height;
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
+   unsigned canvas_dims              = platform_emscripten_get_canvas_dims();
 
-   platform_emscripten_get_canvas_size(&input_width, &input_height);
-
-   *resize = (emscripten->fb_width != input_width || emscripten->fb_height != input_height);
-   *width  = emscripten->fb_width  = (unsigned)input_width;
-   *height = emscripten->fb_height = (unsigned)input_height;
-   *quit   = false;
+   *resize          = (emscripten->fb_dims != canvas_dims);
+   *dims            = emscripten->fb_dims = canvas_dims;
+   *quit            = false;
 }
 
 static void gfx_ctx_emscripten_webgl_get_video_size(void *data,
-      unsigned *width, unsigned *height)
+      unsigned *dims)
 {
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
 
    if (!emscripten)
       return;
 
-   *width  = emscripten->fb_width;
-   *height = emscripten->fb_height;
+   *dims = emscripten->fb_dims;
 }
 
 static bool gfx_ctx_emscripten_webgl_get_metrics(void *data,
@@ -136,9 +130,8 @@ static void *gfx_ctx_emscripten_webgl_init(void *video_driver)
    }
    emscripten_webgl_get_drawing_buffer_size(emscripten->ctx, &width, &height);
    emscripten_webgl_make_context_current(emscripten->ctx);
-   emscripten->fb_width = (unsigned)width;
-   emscripten->fb_height = (unsigned)height;
-   RARCH_LOG("[EMSCRIPTEN/WebGL] Dimensions: %ux%u.\n", emscripten->fb_width, emscripten->fb_height);
+   emscripten->fb_dims = VIDEO_SCALE_PACK(width, height);
+   RARCH_LOG("[EMSCRIPTEN/WebGL] Dimensions: %dx%d.\n", width, height);
 
    return emscripten;
 
@@ -148,7 +141,7 @@ error:
 }
 
 static bool gfx_ctx_emscripten_webgl_set_video_mode(void *data,
-      unsigned width, unsigned height, bool fullscreen)
+      unsigned dims, bool fullscreen)
 {
    emscripten_ctx_data_t *emscripten = (emscripten_ctx_data_t*)data;
    if (!emscripten || !emscripten->ctx)
@@ -156,7 +149,7 @@ static bool gfx_ctx_emscripten_webgl_set_video_mode(void *data,
 
    platform_emscripten_set_fullscreen_state(fullscreen);
    if (!fullscreen)
-      platform_emscripten_set_canvas_size(width, height);
+      platform_emscripten_set_canvas_size(dims);
 
    return true;
 }
