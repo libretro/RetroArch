@@ -432,6 +432,27 @@ static int32_t dinput_joypad_button(unsigned port, uint16_t joykey)
    return dinput_joypad_button_state(&g_pads[port], joykey);
 }
 
+/* Every plain button of the pad at once, as dinput_joypad_button()
+ * gives them one by one. Hats are not buttons here: they are read
+ * through dinput_joypad_button() with a hat key. This is what lets the
+ * frontend copy the pad once a poll (the snapshot bridge in
+ * input_driver.c) instead of calling in for each button. */
+static void dinput_joypad_get_buttons(unsigned port, input_bits_t *state)
+{
+   unsigned i;
+   const struct dinput_joypad_data *pad;
+
+   BIT256_CLEAR_ALL_PTR(state);
+   if (port >= MAX_USERS)
+      return;
+   pad = &g_pads[port];
+   if (!pad->joypad)
+      return;
+   for (i = 0; i < ARRAY_SIZE_RGB_BUTTONS; i++)
+      if (pad->joy_state.rgbButtons[i])
+         BIT256_SET_PTR(state, i);
+}
+
 static int16_t dinput_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    if (port >= MAX_USERS)
@@ -823,7 +844,7 @@ input_device_driver_t dinput_joypad = {
    dinput_joypad_destroy,
    dinput_joypad_button,
    dinput_joypad_state,
-   NULL,
+   dinput_joypad_get_buttons,
    dinput_joypad_axis,
    dinput_joypad_poll,
    dinput_joypad_set_rumble,

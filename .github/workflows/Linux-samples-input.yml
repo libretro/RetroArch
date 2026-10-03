@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 20
         run: |
-          pkgs="build-essential libusb-1.0-0-dev libx11-dev libxtst-dev libxi-dev xvfb gcc-mingw-w64-x86-64 wine64"
+          pkgs="build-essential libusb-1.0-0-dev libudev-dev libx11-dev libxtst-dev libxi-dev xvfb gcc-mingw-w64-x86-64 wine64"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -63,6 +63,21 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Build and run joypad_bridge_checked (udev on the host, DirectInput under Wine)
+        shell: bash
+        working-directory: samples/input/joypad_bridge_checked
+        run: |
+          set -eu
+          # Two joypad drivers the snapshot bridge serves, held to what
+          # it assumes of them: over random pads, binds and thresholds,
+          # what the bridge would read - buttons through get_buttons(),
+          # hats and axes through button() and axis(), the RetroPad
+          # mask through the common loop - is what the driver's own
+          # button(), axis() and state() say.
+          make clean all
+          timeout 120 make check
+          make clean
 
       - name: gfx/ does not reach into input state
         shell: bash

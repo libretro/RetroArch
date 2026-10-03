@@ -627,6 +627,20 @@ void input_driver_set_snapshot_bridge(bool on)
  *   out in place, and compares an axis against the threshold as 32-bit
  *   integers, which agrees with the common loop at every threshold.
  *
+ * - udev (udev_joypad.c, Linux). get_buttons() hands over the same
+ *   sixty-four bits button() reads, and its state() is the common
+ *   loop as written. It has more axes than a copy holds; the ones
+ *   past the sixteenth are read from the driver as before.
+ *
+ * - dinput (dinput_joypad.c, the DirectInput-only Windows driver). It
+ *   had no get_buttons(); it has one now, over the same button array
+ *   button() reads. Its state() compares an axis against the
+ *   threshold as 32-bit integers, as winraw_joypad's does.
+ *
+ * samples/input/joypad_bridge_checked holds udev and dinput to that:
+ * for random pads, binds and thresholds, what the bridge would make
+ * of the driver's answers is what the driver's own state() says.
+ *
  * Asked several times a frame, so the answer is kept with the driver
  * it was for. */
 static bool input_snapshot_driver_checked(const input_device_driver_t *drv)
@@ -639,8 +653,9 @@ static bool input_snapshot_driver_checked(const input_device_driver_t *drv)
       asked  = drv;
       answer = drv->ident
          && (   string_is_equal(drv->ident, "xinput")
-             || string_is_equal(drv->ident, "winraw_joypad"));
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+             || string_is_equal(drv->ident, "winraw_joypad")
+             || string_is_equal(drv->ident, "udev")
+             || string_is_equal(drv->ident, "dinput"));
       /* While drivers are being switched over: RETROARCH_INPUT_SNAPSHOT=0
        * in the environment reads the driver directly, so a problem can
        * be tried with and without the bridge on one build. */
@@ -650,7 +665,6 @@ static bool input_snapshot_driver_checked(const input_device_driver_t *drv)
          if (env && env[0] == '0')
             answer = false;
       }
-#endif
       if (answer && drv->get_buttons && drv->button && drv->axis)
          RARCH_LOG("[Input] Controllers of the \"%s\" driver are read"
                " through a snapshot taken once a poll.\n", drv->ident);
