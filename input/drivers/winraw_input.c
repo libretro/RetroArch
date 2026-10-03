@@ -743,9 +743,19 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
  * What it costs when nothing is happening is the poll's one read a
  * frame, which then finds nothing: knowing what the devices have sent
  * at the moment of the poll means asking at the moment of the poll.
- * That is the only read made unasked. The thread's pump is left as it
- * was; if it comes across a report as a message, the callback takes
- * that one and reads the rest in bulk (below).
+ * That is the only read made unasked.
+ *
+ * The thread's pump leaves raw input in the queue for that read
+ * (winraw_poll_owns_thread()): it asks for the messages below WM_INPUT
+ * and the ones above it, which is how Microsoft's own sample of a
+ * buffered read keeps its pump off the reports. Before it did, a
+ * session with the mouse in use had the pump take 1398 of 4578
+ * reports out one message at a time, each with a read of its own and
+ * a bulk read behind it, and the calls saved over the old path came
+ * to a few per cent. Some other pump can still come across a report
+ * as a message - a modal loop Windows runs for a menu or a window
+ * being dragged - and then the callback takes that one and reads the
+ * rest in bulk (below).
  *
  * And the window is no longer the video driver's thread's, which has
  * to be true before the input driver can stop being restarted with
@@ -988,6 +998,15 @@ static void winraw_drain(winraw_input_t *wr)
       if ((size_t)(p - (BYTE*)buf) < sizeof(buf) / 2)
          break;
    }
+}
+
+/* For a thread's pump (ui_application_win32_process_events()): true
+ * on the thread whose raw input the poll reads in bulk. The pump then
+ * leaves raw input where it is - in the queue, for the poll - instead
+ * of taking it out one message at a time. */
+bool winraw_poll_owns_thread(void)
+{
+   return winraw_drain_tid && GetCurrentThreadId() == winraw_drain_tid;
 }
 
 /* Input that came while the application was in the background is not

@@ -512,8 +512,11 @@ jobs:
           # events in order with the modifier held at the time; six
           # reports the pump meets first are one from its message and
           # five in one bulk read, in order; with nothing waiting a
-          # poll makes one read and a pump none; free takes the window
-          # down, twenty restarts each do the same.
+          # poll makes one read and a pump none; a pump that asks for
+          # the messages below WM_INPUT and above it, as the
+          # frontend's does on that thread, dispatches the ordinary
+          # ones and leaves the reports for one bulk read; free takes
+          # the window down, twenty restarts each do the same.
           trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
           make clean all
           WINEDEBUG=-all timeout 300 make check

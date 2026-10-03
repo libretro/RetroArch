@@ -131,12 +131,46 @@ static void ui_application_win32_dispatch(MSG *msg)
    }
 }
 
+#if defined(HAVE_WINRAWINPUT) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
+extern bool winraw_poll_owns_thread(void);
+#define WIN32_RAW_INPUT_IS_POLLED() winraw_poll_owns_thread()
+#else
+#define WIN32_RAW_INPUT_IS_POLLED() false
+#endif
+
 static void ui_application_win32_process_events(void)
 {
    MSG msg;
 
-   while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
-      ui_application_win32_dispatch(&msg);
+   if (WIN32_RAW_INPUT_IS_POLLED())
+   {
+      /* The raw input driver reads this thread's reports in bulk when
+       * it polls (winraw_input.c, "Read by the poll"). Taking them out
+       * here, one WM_INPUT at a time, is the work that read exists to
+       * save, so this asks for everything below WM_INPUT and
+       * everything above it and leaves the reports in the queue. The
+       * two ranges take turns, so that neither waits for the other to
+       * run dry. */
+      for (;;)
+      {
+         bool any = false;
+         if (PeekMessage(&msg, 0, 0, WM_INPUT - 1, PM_REMOVE))
+         {
+            ui_application_win32_dispatch(&msg);
+            any = true;
+         }
+         if (PeekMessage(&msg, 0, WM_INPUT + 1, 0xFFFFFFFF, PM_REMOVE))
+         {
+            ui_application_win32_dispatch(&msg);
+            any = true;
+         }
+         if (!any)
+            break;
+      }
+   }
+   else
+      while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+         ui_application_win32_dispatch(&msg);
 
    /* The video thread pumps through here too (win32_check_window);
     * only the main thread may run the parked commands. */

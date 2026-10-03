@@ -22,6 +22,9 @@
  *   message carries and reads the rest in bulk, in order, and their
  *   key events still wait for the poll;
  * - with nothing waiting, a poll makes one read and a pump makes none;
+ * - a pump that asks for the messages below WM_INPUT and above it, as
+ *   the frontend's does on this thread, leaves the reports in the
+ *   queue, and the next poll reads them all in one;
  * - a controller's report in a bulk read is passed to the controller
  *   driver;
  * - which modifier keys are held is read from the key table, and only
@@ -197,6 +200,29 @@ static void key(WORD scan, bool down)
    SendInput(1, &in, sizeof(in));
 }
 
+/* ui_application_win32_process_events() on a thread whose raw input
+ * the poll reads: everything but WM_INPUT. */
+static void pump_leaving_raw_input(void)
+{
+   MSG msg;
+   for (;;)
+   {
+      bool any = false;
+      if (PeekMessageA(&msg, 0, 0, WM_INPUT - 1, PM_REMOVE))
+      {
+         DispatchMessageA(&msg);
+         any = true;
+      }
+      if (PeekMessageA(&msg, 0, WM_INPUT + 1, 0xFFFFFFFF, PM_REMOVE))
+      {
+         DispatchMessageA(&msg);
+         any = true;
+      }
+      if (!any)
+         break;
+   }
+}
+
 static unsigned wm_input_waiting(void)
 {
    MSG msg;
@@ -370,6 +396,43 @@ int main(void)
                   "a poll with nothing waiting made %lu reads, not one",
                   (wr->drain_empty - empty0) + (wr->drain_reads - reads0));
             printf("   ok   nothing waiting: a poll makes one read, a pump makes none\n");
+         }
+
+         /* ---- the frontend's pump on this thread ----------------- */
+         {
+            unsigned long reads0;
+            CHECK(winraw_poll_owns_thread(), "the polling thread is not known as the one that is polled");
+            wr->drained = wr->by_message = 0;
+            reads0      = wr->drain_reads;
+            key(0x10, true);
+            key(0x10, false);
+            key(0x11, true);
+            key(0x11, false);
+            key(0x12, true);
+            key(0x12, false);
+            /* a message that is not raw input, to see the pump still
+             * dispatches those */
+            PostMessageA(raw_window, WM_APP, 0, 0);
+            Sleep(150);
+            pump_leaving_raw_input();
+            {
+               MSG probe;
+               CHECK(!PeekMessageA(&probe, raw_window, WM_APP, WM_APP, PM_NOREMOVE),
+                     "the pump left an ordinary message behind");
+            }
+            CHECK(wr->by_message == 0 && wr->drained == 0 && !wr->kb_keys[0x12],
+                  "the pump took raw input: %lu as messages, %lu in bulk",
+                  wr->by_message, wr->drained);
+            winraw_poll(wr);
+            CHECK(wr->drained == 6 && wr->by_message == 0
+                  && wr->drain_reads - reads0 == 1,
+                  "after that pump the poll read %lu reports in %lu reads; wanted 6 in 1",
+                  wr->drained, wr->drain_reads - reads0);
+            CHECK(seen_n == 6 && seen[0].code == 0x10 && seen[2].code == 0x11
+                  && seen[4].code == 0x12 && !seen[5].down,
+                  "the six did not come out of the poll in order (%u events)", seen_n);
+            seen_n = 0;
+            printf("   ok   the frontend's pump on this thread: ordinary messages dispatched, six reports left for one bulk read\n");
          }
       }
       else
