@@ -251,7 +251,7 @@ extern const struct rarch_key_map rarch_key_map_apple_hid[];
 extern const struct rarch_key_map rarch_key_map_android[];
 extern const struct rarch_key_map rarch_key_map_qnx[];
 extern const struct rarch_key_map rarch_key_map_dos[];
-extern const struct rarch_key_map rarch_key_map_wiiu[];
+extern const struct rarch_key_map rarch_key_map_hid[];
 extern const struct rarch_key_map rarch_key_map_winraw[];
 #ifdef HAVE_LIBNX
 extern const struct rarch_key_map rarch_key_map_switch[];

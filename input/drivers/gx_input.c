@@ -28,7 +28,13 @@
 #include "../../config.def.h"
 
 #include "../input_driver.h"
+#include "../input_keymaps.h"
 #include "../../gfx/video_driver.h"
+
+#if defined(HW_RVL) && defined(GEKKO_NATIVE)
+#include <gekko/keyboard.h>
+#define GX_KEYBOARD
+#endif
 
 /* TODO/FIXME -
  * fix game focus toggle */
@@ -56,7 +62,113 @@ typedef struct gx_input
 #else
    void *empty;
 #endif
+#ifdef GX_KEYBOARD
+   uint8_t key_down[(RETROK_LAST + 7) / 8];  /* by RETROK_* */
+   uint8_t keys[6];                          /* USB keyboard usages */
+   uint8_t modifiers;
+   bool    caps_lock;
+#endif
 } gx_input_t;
+
+#ifdef GX_KEYBOARD
+/* US layout: usages 0x04 (a) to 0x38 (/), unshifted and shifted. */
+static const char kbd_chars[2][0x39 - 0x04 + 1] = {
+   "abcdefghijklmnopqrstuvwxyz1234567890\n\x1b\b\t -=[]\\#;'`,./",
+   "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()\n\x1b\b\t _+{}|~:\"~<>?"
+};
+
+static uint16_t kbd_mod(const gx_input_t *gx)
+{
+   uint16_t mod = 0;
+   if (gx->modifiers & (GK_KBD_LSHIFT | GK_KBD_RSHIFT))
+      mod |= RETROKMOD_SHIFT;
+   if (gx->modifiers & (GK_KBD_LCTRL | GK_KBD_RCTRL))
+      mod |= RETROKMOD_CTRL;
+   if (gx->modifiers & (GK_KBD_LALT | GK_KBD_RALT))
+      mod |= RETROKMOD_ALT;
+   if (gx->modifiers & (GK_KBD_LSUPER | GK_KBD_RSUPER))
+      mod |= RETROKMOD_META;
+   if (gx->caps_lock)
+      mod |= RETROKMOD_CAPSLOCK;
+   return mod;
+}
+
+static void kbd_key(gx_input_t *gx, uint8_t usage, bool down)
+{
+   uint32_t c    = 0;
+   unsigned code = input_keymaps_translate_keysym_to_rk(usage);
+   if (!code || code >= RETROK_LAST)
+      return;
+   if (down)
+      gx->key_down[code >> 3] |=  (uint8_t)(1 << (code & 7));
+   else
+      gx->key_down[code >> 3] &= ~(uint8_t)(1 << (code & 7));
+   if (down && code == RETROK_CAPSLOCK)
+      gx->caps_lock = !gx->caps_lock;
+   if (down && usage >= 0x04 && usage <= 0x38)
+   {
+      bool shift = (gx->modifiers & (GK_KBD_LSHIFT | GK_KBD_RSHIFT)) != 0;
+      /* Caps Lock shifts the letters only */
+      if (usage <= 0x1d && gx->caps_lock)
+         shift = !shift;
+      c = (uint8_t)kbd_chars[shift ? 1 : 0][usage - 0x04];
+   }
+   else if (down && usage == 0x4c)   /* Delete */
+      c = 0x7f;
+   input_keyboard_event(down, code, c, kbd_mod(gx), RETRO_DEVICE_KEYBOARD);
+}
+
+static bool kbd_pressed(const gx_input_t *gx, unsigned key)
+{
+   return key && key < RETROK_LAST
+      && (gx->key_down[key >> 3] & (1 << (key & 7)));
+}
+
+static bool kbd_held(const uint8_t *keys, uint8_t usage)
+{
+   unsigned i;
+   for (i = 0; i < 6; i++)
+      if (keys[i] == usage)
+         return true;
+   return false;
+}
+
+/* What changed between the keys and modifiers held before and now,
+ * as key events. */
+static void kbd_update(gx_input_t *gx, uint8_t modifiers,
+      const uint8_t *keys)
+{
+   unsigned i;
+   uint8_t changed = gx->modifiers ^ modifiers;
+   for (i = 0; i < 8; i++)
+      if (changed & (1 << i))
+      {
+         gx->modifiers ^= (uint8_t)(1 << i);
+         kbd_key(gx, (uint8_t)(0xe0 + i), (modifiers >> i) & 1);
+      }
+   for (i = 0; i < 6; i++)
+      if (gx->keys[i] && !kbd_held(keys, gx->keys[i]))
+         kbd_key(gx, gx->keys[i], false);
+   for (i = 0; i < 6; i++)
+      if (keys[i] && !kbd_held(gx->keys, keys[i]))
+         kbd_key(gx, keys[i], true);
+   memcpy(gx->keys, keys, sizeof(gx->keys));
+}
+
+static void kbd_poll(gx_input_t *gx)
+{
+   static const uint8_t none[6] = { 0 };
+   gk_kbd_event_t ev;
+   while (gk_kbd_read(&ev))
+   {
+      if (ev.type == GK_KBD_DISCONNECT)
+         kbd_update(gx, 0, none);
+      /* Too many keys at once reads as usage 1 everywhere */
+      else if (ev.type == GK_KBD_KEYS && ev.keys[0] != 0x01)
+         kbd_update(gx, ev.modifiers, ev.keys);
+   }
+}
+#endif
 
 #ifdef HW_RVL
 static int16_t rvl_input_state(
@@ -79,9 +191,37 @@ static int16_t rvl_input_state(
 
    switch (device)
    {
+#ifdef GX_KEYBOARD
+      case RETRO_DEVICE_JOYPAD:
+         /* The keyboard's binds */
+         if (!binds)
+            break;
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         {
+            unsigned i;
+            int16_t ret = 0;
+            if (!keyboard_mapping_blocked)
+               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+                  if (     RETRO_KEYBIND_VALID(&binds[port][i])
+                        && kbd_pressed(gx, RETRO_KEYBIND_KEY(&binds[port][i])))
+                     ret |= (1 << i);
+            return ret;
+         }
+         if (     id < RARCH_BIND_LIST_END
+               && RETRO_KEYBIND_VALID(&binds[port][id])
+               && kbd_pressed(gx, RETRO_KEYBIND_KEY(&binds[port][id]))
+               && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked))
+            return 1;
+         break;
+      case RETRO_DEVICE_ANALOG:
+         break;
+      case RETRO_DEVICE_KEYBOARD:
+         return kbd_pressed(gx, id) ? 1 : 0;
+#else
       case RETRO_DEVICE_JOYPAD:
       case RETRO_DEVICE_ANALOG:
          break;
+#endif
       case RETRO_DEVICE_MOUSE:
          {
             settings_t *settings       = config_get_ptr();
@@ -177,6 +317,9 @@ static void gx_input_free_input(void *data)
 
 static void *gx_input_init(const char *joypad_driver)
 {
+#ifdef GX_KEYBOARD
+   input_keymaps_init_keyboard_lut(rarch_key_map_hid);
+#endif
    return calloc(1, sizeof(gx_input_t));
 }
 
@@ -194,12 +337,18 @@ static void rvl_input_poll(void *data)
       gx_joypad_read_mouse(i, &gx->mouse[i].x_abs, &gx->mouse[i].y_abs,
             &gx->mouse[i].button);
    }
+#ifdef GX_KEYBOARD
+   kbd_poll(gx);
+#endif
 }
 
 static uint64_t rvl_input_get_capabilities(void *data)
 {
    return   (1 << RETRO_DEVICE_JOYPAD)
           | (1 << RETRO_DEVICE_ANALOG)
+#ifdef GX_KEYBOARD
+          | (1 << RETRO_DEVICE_KEYBOARD)
+#endif
           | (1 << RETRO_DEVICE_MOUSE)
           | (1 << RETRO_DEVICE_LIGHTGUN);
 }

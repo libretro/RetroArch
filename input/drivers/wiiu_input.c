@@ -145,7 +145,7 @@ static void* wiiu_input_init(const char *joypad_driver)
          &kb_disconnection_callback,
          &kb_key_callback);
 
-   input_keymaps_init_keyboard_lut(rarch_key_map_wiiu);
+   input_keymaps_init_keyboard_lut(rarch_key_map_hid);
 
    return (void*)-1;
 }
