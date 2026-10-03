@@ -13,6 +13,9 @@
 
 #include <libusb-1.0/libusb.h>
 
+#include <unistd.h>
+#include <retro_atomic.h>
+
 #include "fake_libusb.h"
 
 #define MAX_EVENTS 256
@@ -284,8 +287,27 @@ void LIBUSB_CALL libusb_free_transfer(struct libusb_transfer *t)
    free(t);
 }
 
+static retro_atomic_int_t out_gate;
+
+void fake_hold_out_submits(int hold)
+{
+   retro_atomic_store_release_int(&out_gate, hold);
+}
+
 int LIBUSB_CALL libusb_submit_transfer(struct libusb_transfer *t)
 {
+   if (     !(t->endpoint & LIBUSB_ENDPOINT_IN)
+         && retro_atomic_load_acquire_int(&out_gate))
+   {
+      pthread_mutex_lock(&mtx);
+      fake_stats.gated++;
+      pthread_mutex_unlock(&mtx);
+      while (retro_atomic_load_acquire_int(&out_gate))
+         usleep(200);
+      pthread_mutex_lock(&mtx);
+      fake_stats.gated--;
+      pthread_mutex_unlock(&mtx);
+   }
    pthread_mutex_lock(&mtx);
    if (!t->dev_handle->dev->fd || !t->dev_handle->dev->fd->present)
    {
@@ -299,6 +321,13 @@ int LIBUSB_CALL libusb_submit_transfer(struct libusb_transfer *t)
    {
       int n = fake_stats.nsent < 16 ? fake_stats.nsent++ : 15;
       memcpy(fake_stats.sent[n], t->buffer, t->length < 8 ? t->length : 8);
+      fake_stats.nout++;
+      if (fake_stats.nlog < 16384 && t->length >= 2)
+      {
+         fake_stats.log[fake_stats.nlog][0] = t->buffer[0];
+         fake_stats.log[fake_stats.nlog][1] = t->buffer[1];
+         fake_stats.nlog++;
+      }
       if (nflying > 0)
       {
          int i, outs = 0;

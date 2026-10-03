@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -25,7 +26,8 @@
 #include <rthreads/rthreads.h>
 #include <features/features_cpu.h>
 #include <compat/strl.h>
-#include <queues/fifo_queue.h>
+#include <queues/mpsc_stack.h>
+#include <retro_atomic.h>
 #include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 
@@ -82,7 +84,19 @@ typedef struct libusb_hid
  * retire list. Cancellation, like every completion, is delivered by
  * event handling, and the adapter is freed once both transfers have
  * come back - by the poll thread between event batches, never from a
- * callback. Nothing waits on a transfer. */
+ * callback. Nothing waits on a transfer, and nothing takes a lock. */
+
+/* One queued command; the payload follows. */
+typedef struct libusb_command
+{
+   mpsc_stack_node_t link;   /* first: a node is its command */
+   size_t len;
+   uint8_t data[1];
+} libusb_command_t;
+
+/* Bytes of commands an adapter holds before it drops new ones. */
+#define LIBUSB_SEND_QUEUE_MAX 4096
+
 struct libusb_adapter
 {
    libusb_hid_t *hid;
@@ -104,14 +118,22 @@ struct libusb_adapter
    struct libusb_transfer *in_transfer;
    struct libusb_transfer *out_transfer;
 
-   /* Guards everything below, and the send queue: send_control() is
-    * called from the frontend, the rest from the event-handling
-    * thread. */
-   slock_t *lock;
-   fifo_buffer_t *send_control_buffer;
+   /* Commands come from any thread - the frontend's rumble, a pad
+    * handler on the event-handling thread - and are pushed on
+    * 'pending'. Whichever thread holds 'out_busy' sends them, one at a
+    * time and in order: it alone touches 'queue' (those taken off
+    * 'pending', in send order) and 'send_buf'. */
+   mpsc_stack_t pending;
+   libusb_command_t *queue;
+   retro_atomic_int_t out_busy;
+   retro_atomic_int_t queued_bytes;
+   /* send_control() calls inside the adapter; it is not freed under
+    * one. */
+   retro_atomic_int_t senders;
+   /* Set on the event-handling thread when the pad goes. */
+   retro_atomic_int_t removing;
+   /* The event-handling thread's alone. */
    bool in_busy;
-   bool out_busy;
-   bool removing;
 
    struct libusb_adapter *next;
 };
@@ -121,64 +143,90 @@ static struct libusb_adapter adapters;
  * the event-handling thread touches it. */
 static struct libusb_adapter *retiring = NULL;
 
-/* Takes the next queued command into send_buf and marks the OUT
- * transfer busy. Returns its length, or 0 if there is nothing to send
- * or a send is already in flight. Called with the lock held. */
-static size_t libusb_adapter_take_command(struct libusb_adapter *adapter)
-{
-   size_t _len = 0;
-
-   if (adapter->out_busy || adapter->removing)
-      return 0;
-   if (FIFO_READ_AVAIL(adapter->send_control_buffer) < sizeof(_len))
-      return 0;
-
-   /* The length word and its payload are written together under the
-    * lock, so once the length is there the payload is too. */
-   fifo_read(adapter->send_control_buffer, &_len, sizeof(_len));
-   if (     _len > sizeof(adapter->send_buf)
-         || FIFO_READ_AVAIL(adapter->send_control_buffer) < _len)
-   {
-      fifo_clear(adapter->send_control_buffer);
-      return 0;
-   }
-   fifo_read(adapter->send_control_buffer, adapter->send_buf, _len);
-   adapter->out_busy = true;
-   return _len;
-}
-
 static void LIBUSB_CALL libusb_adapter_out_cb(struct libusb_transfer *transfer);
 
-/* Submits a command taken by libusb_adapter_take_command(). Outside
- * the lock: submitting takes libusb's own locks. */
-static void libusb_adapter_submit_command(struct libusb_adapter *adapter,
-      size_t len)
+/* Has the poll thread come round between event batches, where it frees
+ * removed adapters. Without an interrupt it comes round every 100 ms
+ * anyway. */
+static void libusb_hid_wake(libusb_hid_t *hid)
 {
-   libusb_fill_interrupt_transfer(adapter->out_transfer, adapter->handle,
-         (unsigned char)adapter->endpoint_out, adapter->send_buf, (int)len,
-         libusb_adapter_out_cb, adapter, 1000);
-   if (libusb_submit_transfer(adapter->out_transfer) != LIBUSB_SUCCESS)
+#ifdef LIBUSB_HID_CAN_INTERRUPT
+   libusb_interrupt_event_handler(hid->ctx);
+#else
+   (void)hid;
+#endif
+}
+
+/* The holder of out_busy: the next command in send order, or NULL. */
+static libusb_command_t *libusb_adapter_next_command(
+      struct libusb_adapter *adapter)
+{
+   libusb_command_t *cmd;
+
+   if (!adapter->queue)
    {
-      slock_lock(adapter->lock);
-      adapter->out_busy = false;
-      slock_unlock(adapter->lock);
+      /* Pushed newest first: reversed into send order. */
+      mpsc_stack_node_t *l     = mpsc_stack_drain(&adapter->pending);
+      mpsc_stack_node_t *order = NULL;
+      while (l)
+      {
+         mpsc_stack_node_t *next = l->next;
+         l->next = order;
+         order   = l;
+         l       = next;
+      }
+      adapter->queue = (libusb_command_t*)order;
+   }
+   if ((cmd = adapter->queue))
+      adapter->queue = (libusb_command_t*)cmd->link.next;
+   return cmd;
+}
+
+/* The holder of out_busy: sends the next command, or lets go of the
+ * claim when none is left. A command pushed while it lets go was left
+ * to it by a sender that found the claim held, so it looks again once
+ * it has let go, and takes the claim back for one. Submitting takes
+ * libusb's own locks; nothing of ours is held. */
+static void libusb_adapter_send_next(struct libusb_adapter *adapter)
+{
+   for (;;)
+   {
+      libusb_command_t *cmd;
+
+      while ((cmd = libusb_adapter_next_command(adapter)))
+      {
+         size_t _len = cmd->len;
+         retro_atomic_fetch_sub_int(&adapter->queued_bytes, (int)_len);
+         if (retro_atomic_load_seq_cst_int(&adapter->removing))
+         {
+            free(cmd);
+            continue;
+         }
+         memcpy(adapter->send_buf, cmd->data, _len);
+         free(cmd);
+         libusb_fill_interrupt_transfer(adapter->out_transfer,
+               adapter->handle, (unsigned char)adapter->endpoint_out,
+               adapter->send_buf, (int)_len,
+               libusb_adapter_out_cb, adapter, 1000);
+         /* The callback sends the next one. A command that fails to
+          * go is dropped, as one that fails on the wire is. */
+         if (libusb_submit_transfer(adapter->out_transfer) == LIBUSB_SUCCESS)
+            return;
+      }
+
+      retro_atomic_store_release_int(&adapter->out_busy, 0);
+      retro_atomic_thread_fence_seq_cst();
+      if (     mpsc_stack_empty(&adapter->pending)
+            || retro_atomic_exchange_int(&adapter->out_busy, 1))
+         return;
    }
 }
 
 static void LIBUSB_CALL libusb_adapter_out_cb(struct libusb_transfer *transfer)
 {
-   struct libusb_adapter *adapter = (struct libusb_adapter*)transfer->user_data;
-   size_t _len;
-
    /* Whatever happened to this one, send the next. A command that
     * failed or timed out is dropped, as it was when sent inline. */
-   slock_lock(adapter->lock);
-   adapter->out_busy = false;
-   _len              = libusb_adapter_take_command(adapter);
-   slock_unlock(adapter->lock);
-
-   if (_len)
-      libusb_adapter_submit_command(adapter, _len);
+   libusb_adapter_send_next((struct libusb_adapter*)transfer->user_data);
 }
 
 static void LIBUSB_CALL libusb_adapter_in_cb(struct libusb_transfer *transfer)
@@ -187,12 +235,12 @@ static void LIBUSB_CALL libusb_adapter_in_cb(struct libusb_transfer *transfer)
    libusb_hid_t *hid              = adapter->hid;
    bool resubmit                  = false;
 
-   slock_lock(adapter->lock);
+   /* in_busy and removal are the event-handling thread's, as this
+    * callback is. */
    adapter->in_busy = false;
-   if (!adapter->removing)
+   if (!retro_atomic_load_acquire_int(&adapter->removing))
       resubmit = (   transfer->status == LIBUSB_TRANSFER_COMPLETED
                   || transfer->status == LIBUSB_TRANSFER_TIMED_OUT);
-   slock_unlock(adapter->lock);
 
    /* Removal and this callback both run on the event-handling thread,
     * so a slot that is not being removed is not deinitialised under
@@ -205,8 +253,7 @@ static void LIBUSB_CALL libusb_adapter_in_cb(struct libusb_transfer *transfer)
             adapter->data, transfer->actual_length);
 
    /* Anything else - the device went away, an error, a cancel - ends
-    * the reads. The old loop retried a failing read immediately and
-    * spun until hotplug removed the pad. */
+    * the reads. */
    if (!resubmit)
    {
       if (     transfer->status != LIBUSB_TRANSFER_CANCELLED
@@ -216,38 +263,57 @@ static void LIBUSB_CALL libusb_adapter_in_cb(struct libusb_transfer *transfer)
       return;
    }
 
-   slock_lock(adapter->lock);
    adapter->in_busy = (libusb_submit_transfer(transfer) == LIBUSB_SUCCESS);
-   slock_unlock(adapter->lock);
 }
 
 static void libusb_hid_device_send_control(void *data,
       uint8_t *s, size_t len)
 {
    struct libusb_adapter *adapter = (struct libusb_adapter*)data;
-   size_t _len                    = 0;
+   libusb_command_t *cmd;
 
    if (!adapter || !adapter->endpoint_out)
       return;
 
-   slock_lock(adapter->lock);
-   if (adapter->removing)
-   {
-      slock_unlock(adapter->lock);
-      return;
-   }
-   if (FIFO_WRITE_AVAIL(adapter->send_control_buffer) >= len + sizeof(len))
-   {
-      fifo_write(adapter->send_control_buffer, &len, sizeof(len));
-      fifo_write(adapter->send_control_buffer, s, len);
-   }
-   else
-      RARCH_WARN("[libusb] Adapter write buffer is full, cannot write send control.\n");
-   _len = libusb_adapter_take_command(adapter);
-   slock_unlock(adapter->lock);
+   retro_atomic_fetch_add_seq_cst_int(&adapter->senders, 1);
+   if (retro_atomic_load_seq_cst_int(&adapter->removing))
+      goto done;
 
-   if (_len)
-      libusb_adapter_submit_command(adapter, _len);
+   if (     len > sizeof(adapter->send_buf)
+         || retro_atomic_fetch_add_int(&adapter->queued_bytes, (int)len)
+            + len > LIBUSB_SEND_QUEUE_MAX)
+   {
+      if (len <= sizeof(adapter->send_buf))
+         retro_atomic_fetch_sub_int(&adapter->queued_bytes, (int)len);
+      RARCH_WARN("[libusb] Adapter write buffer is full, cannot write send control.\n");
+      goto done;
+   }
+   if (!(cmd = (libusb_command_t*)malloc(
+               offsetof(libusb_command_t, data) + len)))
+   {
+      retro_atomic_fetch_sub_int(&adapter->queued_bytes, (int)len);
+      goto done;
+   }
+   cmd->len = len;
+   memcpy(cmd->data, s, len);
+   mpsc_stack_push(&adapter->pending, &cmd->link);
+
+   /* Sends it now if no send is in flight; else the holder will. */
+   retro_atomic_thread_fence_seq_cst();
+   if (!retro_atomic_exchange_int(&adapter->out_busy, 1))
+      libusb_adapter_send_next(adapter);
+
+done:
+   {
+      /* The last sender out of a removed adapter has the poll thread
+       * free it: no transfer of its own is left to wake that. Taken
+       * before letting go, after which the adapter may be gone. */
+      libusb_hid_t *hid = adapter->hid;
+      bool removed      = retro_atomic_load_seq_cst_int(&adapter->removing) != 0;
+      if (     retro_atomic_fetch_sub_int(&adapter->senders, 1) == 1
+            && removed && hid)
+         libusb_hid_wake(hid);
+   }
 }
 
 /* Releases everything an adapter owns. Only for an adapter with no
@@ -264,10 +330,12 @@ static void libusb_adapter_destroy(struct libusb_adapter *adapter)
       libusb_release_interface(adapter->handle, adapter->interface_number);
       libusb_close(adapter->handle);
    }
-   if (adapter->lock)
-      slock_free(adapter->lock);
-   if (adapter->send_control_buffer)
-      fifo_free(adapter->send_control_buffer);
+   /* Commands nobody sent. */
+   {
+      libusb_command_t *cmd;
+      while ((cmd = libusb_adapter_next_command(adapter)))
+         free(cmd);
+   }
    free(adapter);
 }
 
@@ -283,9 +351,9 @@ static bool libusb_hid_reap(void)
       struct libusb_adapter *adapter = *link;
       bool idle;
 
-      slock_lock(adapter->lock);
-      idle = !adapter->in_busy && !adapter->out_busy;
-      slock_unlock(adapter->lock);
+      idle =   !adapter->in_busy
+            && !retro_atomic_load_seq_cst_int(&adapter->out_busy)
+            && !retro_atomic_load_seq_cst_int(&adapter->senders);
 
       if (!idle)
       {
@@ -397,6 +465,12 @@ static int add_adapter(void *data, struct libusb_device *dev)
       return -1;
    }
 
+   mpsc_stack_init(&adapter->pending);
+   retro_atomic_int_init(&adapter->out_busy, 0);
+   retro_atomic_int_init(&adapter->queued_bytes, 0);
+   retro_atomic_int_init(&adapter->senders, 0);
+   retro_atomic_int_init(&adapter->removing, 0);
+
    rc = libusb_get_device_descriptor(dev, &desc);
 
    if (rc != LIBUSB_SUCCESS)
@@ -447,21 +521,16 @@ static int add_adapter(void *data, struct libusb_device *dev)
 
    device_name   = (const char*)adapter->name;
 
-   if ((!(const char*)adapter->name || !*(const char*)adapter->name))
+   if (!*(const char*)adapter->name)
       goto error;
 
    adapter->slot                = -1;
-   adapter->lock                = slock_new();
-   adapter->send_control_buffer = fifo_new(4096);
    adapter->in_transfer         = libusb_alloc_transfer(0);
    adapter->out_transfer        = libusb_alloc_transfer(0);
 
-   if (     !adapter->lock
-         || !adapter->send_control_buffer
-         || !adapter->in_transfer
-         || !adapter->out_transfer)
+   if (!adapter->in_transfer || !adapter->out_transfer)
    {
-      RARCH_ERR("[libusb] Error creating send control buffer.\n");
+      RARCH_ERR("[libusb] Error allocating transfers.\n");
       goto error;
    }
 
@@ -542,7 +611,6 @@ static int remove_adapter(void *data, struct libusb_device *dev)
     * was gone, its slot stayed connected, its handle leaked. */
    for (; prev->next; prev = prev->next)
    {
-      bool in_busy, out_busy;
       struct libusb_adapter *adapter = prev->next;
 
       if (adapter->device != dev)
@@ -561,17 +629,14 @@ static int remove_adapter(void *data, struct libusb_device *dev)
        * and the adapter is freed by libusb_hid_reap() once both have.
        * Nothing here waits for them - this can be running inside the
        * hotplug callback, on the very thread that delivers them. */
-      slock_lock(adapter->lock);
-      adapter->removing = true;
-      in_busy           = adapter->in_busy;
-      out_busy          = adapter->out_busy;
-      slock_unlock(adapter->lock);
-      /* A send that raced the flag may be submitted just after this;
-       * it keeps out_busy set and is reaped when it completes, within
-       * its one-second timeout. */
-      if (in_busy)
+      retro_atomic_exchange_int(&adapter->removing, 1);
+      /* A sender that claims the OUT transfer after this sees the
+       * flag and sends nothing; one that claimed it before may still
+       * submit after the cancel, and is reaped when that completes,
+       * within its one-second timeout. */
+      if (adapter->in_busy)
          libusb_cancel_transfer(adapter->in_transfer);
-      if (out_busy)
+      if (retro_atomic_load_seq_cst_int(&adapter->out_busy))
          libusb_cancel_transfer(adapter->out_transfer);
 
       if (hid && hid->slots && adapter->slot >= 0)

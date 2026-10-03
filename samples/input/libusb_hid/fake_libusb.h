@@ -8,6 +8,11 @@ struct fake_stats
    int opens, closes, allocs, frees, freed_in_flight, double_submits, exits;
    int nsent, max_outs_in_flight;
    unsigned char sent[16][8];
+   /* The first two bytes of every OUT submit, in order. */
+   int nlog, nout;
+   unsigned char log[16384][2];
+   /* OUT submits waiting at the gate. */
+   int gated;
 };
 /* Counters, copied out under the fake's lock. */
 struct fake_stats fake_snapshot(void);
@@ -19,5 +24,7 @@ int  fake_report(struct libusb_device *dev, const unsigned char *d, int len);
 int  fake_ack_out(struct libusb_device *dev);
 int  fake_in_flight(struct libusb_device *dev, int in);
 void fake_forget_devices(void);
+/* While held, an OUT submit waits before it reaches the device. */
+void fake_hold_out_submits(int hold);
 
 #endif
