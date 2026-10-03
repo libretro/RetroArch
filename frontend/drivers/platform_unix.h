@@ -46,6 +46,8 @@
 #include <rthreads/rthreads.h>
 #include <retro_atomic.h>
 
+#include "android_lifecycle.h"
+
 /* struct android_app below embeds retro_atomic_int_t, which is
  * atomic_int under C and std::atomic<int> under C++. If this header were
  * ever pulled into a C++ translation unit the struct layout would differ
@@ -78,9 +80,6 @@ struct android_poll_source
     * this source. */
    void (*process)(struct android_app* app, struct android_poll_source* source);
 };
-
-#define PLAT_ANDROID_PERM_RESOLVED (1 << 0)
-#define PLAT_ANDROID_PERM_GRANTED  (1 << 1)
 
 struct android_app
 {
@@ -118,77 +117,45 @@ struct android_app
     * receive user input events. */
    AInputQueue* inputQueue;
 
-   /* When non-NULL, this is the window surface that the app can draw in. */
-   ANativeWindow* window;
+   /* The window, the activity state the app thread has acknowledged,
+    * and every other answer a lifecycle callback on the UI thread
+    * waits for; see android_lifecycle.h. android_app_window() reads the
+    * window. */
+   android_lifecycle_t lc;
 
-   /* Current state of the app's activity.  May be either APP_CMD_START,
-    * APP_CMD_RESUME, APP_CMD_PAUSE, or APP_CMD_STOP; see below. */
-   int activityState;
-
+   /* App thread only. */
    int reinitRequested;
 
    /* This is non-zero when the application's NativeActivity is being
     * destroyed and waiting for the app thread to complete. */
    int destroyRequested;
 
-   /* Below are "private" implementation of the glue code. */
-   slock_t *mutex;
-   scond_t *cond;
-
+   /* The command pipe: struct android_app_msg records, one per
+    * command, each written whole. */
    int msgread;
    int msgwrite;
 
-   /* Startup storage-permission gate.  Written from the Java UI
-    * thread via permissionsResolved() under 'mutex'; read by the
-    * native thread in frontend_unix_init before any filesystem-
-    * dependent startup work runs. */
-   unsigned permission_state;
-
-   /* Completion counters for the lifecycle commands a Java callback
-    * blocks on: APP_CMD_INIT_WINDOW, APP_CMD_TERM_WINDOW and
-    * APP_CMD_INPUT_CHANGED.  The UI thread takes a ticket from
-    * 'cmd_seq' for every such command it posts and waits for
-    * 'done_seq' to reach it; the app thread advances 'done_seq' once
-    * it has finished acting on one.  Both are written only under
-    * 'mutex', and both are compared wrap-safely rather than for
-    * equality, so neither needs to be atomic or reset.
-    *
-    * A waiter must key on these rather than on the window or input
-    * queue handle it asked for: the framework reuses those addresses,
-    * so a handle comparison can already hold when the command is still
-    * queued and lets the callback return while the app thread is about
-    * to tear the surface down behind it. */
-   unsigned cmd_seq;
-   unsigned done_seq;
-
-   /* Set (under 'mutex') by the app thread as it leaves
-    * android_app_entry(). From then on nothing consumes the command
-    * pipe, so no acknowledgement can ever arrive: waiters treat the
-    * flag as a standing acknowledgement of everything instead of
-    * blocking the UI thread forever. A normal quit never sets it -
-    * frontend_android_shutdown() exits the process inside
-    * rarch_main() - so it marks early-failure returns and the
-    * framework-destroy unwind. */
-   int app_thread_exited;
+   /* The app thread's looper, for permissionsResolved() on the UI
+    * thread to wake. */
+   retro_atomic_ptr_t looper_to_wake;
 
    sthread_t *thread;
 
+   /* UI thread only: the window last handed to the app thread, which
+    * a change of window has it give up first. */
+   ANativeWindow *posted_window;
+
    struct android_poll_source cmdPollSource;
    struct android_poll_source inputPollSource;
-
-   int running;
-   int destroyed;
 
    /* Set by android_app_free() before it asks the app thread to shut
     * down, so android_app_destroy() knows the activity is already being
     * torn down by the framework and must not call finish() on it. */
    int destroy_from_framework;
-   AInputQueue* pendingInputQueue;
-   ANativeWindow* pendingWindow;
 
    /*  Below are "private" implementation of RA code. */
    /* Written by the app thread on APP_CMD_GAINED_FOCUS/LOST_FOCUS, read
-    * by the video thread in dispserv_android.c without the mutex. */
+    * by the video thread in dispserv_android.c. */
    retro_atomic_int_t unfocused;
    unsigned accelerometer_event_rate;
    unsigned gyroscope_event_rate;
@@ -526,7 +493,23 @@ void android_input_flush_pending_state(void);
  * is only safe on the OS stack. No-op when nothing is pending. */
 void android_input_flush_pending_haptics(void);
 
+/* One command through the pipe. 'arg' is the window or input queue
+ * that APP_CMD_INIT_WINDOW and APP_CMD_INPUT_CHANGED hand over, NULL
+ * otherwise. Under PIPE_BUF, so a write is never split. */
+struct android_app_msg
+{
+   void *arg;
+   int8_t cmd;
+};
+
 bool android_app_write_cmd(struct android_app *android_app, int8_t cmd);
+bool android_app_write_cmd_arg(struct android_app *android_app,
+      int8_t cmd, void *arg);
+
+/* The window the app thread has, or NULL. A user that needs it to stay
+ * for a while takes it with android_lifecycle_window_acquire(). */
+#define android_app_window(app) \
+   ((ANativeWindow*)android_lifecycle_window(&(app)->lc))
 
 #ifdef HAVE_ANDROID_LIFECYCLE_HOOKS
 /* Runs a named shell script from the app's private data directory, if one

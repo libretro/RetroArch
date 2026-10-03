@@ -245,27 +245,43 @@ bool android_run_events(void *data);
 /* Returns false when the command could not be queued. No
  * acknowledgement for it will ever arrive in that case, so a caller
  * that blocks on one must not take a ticket for it. */
-bool android_app_write_cmd(struct android_app *android_app, int8_t cmd)
+bool android_app_write_cmd_arg(struct android_app *android_app,
+      int8_t cmd, void *arg)
 {
+   struct android_app_msg msg;
    ssize_t ret;
 
    if (!android_app)
       return false;
 
+   memset(&msg, 0, sizeof(msg));
+   msg.cmd = cmd;
+   msg.arg = arg;
+
    /* ART suspends threads with a signal, and the handler is not
-    * guaranteed to carry SA_RESTART, so a one-byte pipe write can come
-    * back short. It cannot come back partial: PIPE_BUF-sized writes are
-    * atomic. */
+    * guaranteed to carry SA_RESTART, so a write can come back short.
+    * It cannot come back partial: PIPE_BUF-sized writes are atomic. */
    do
    {
-      ret = write(android_app->msgwrite, &cmd, sizeof(cmd));
+      ret = write(android_app->msgwrite, &msg, sizeof(msg));
    } while (ret < 0 && errno == EINTR);
 
-   if (ret == (ssize_t)sizeof(cmd))
+   if (ret == (ssize_t)sizeof(msg))
       return true;
 
    RARCH_ERR("[Android] Failed to queue app command %d.\n", (int)cmd);
    return false;
+}
+
+bool android_app_write_cmd(struct android_app *android_app, int8_t cmd)
+{
+   return android_app_write_cmd_arg(android_app, cmd, NULL);
+}
+
+static bool android_app_thread_gone(struct android_app *android_app)
+{
+   return (android_lifecycle_flags(&android_app->lc)
+         & ANDROID_LC_EXITED) != 0;
 }
 
 static void android_app_set_input(struct android_app *android_app,
@@ -276,25 +292,20 @@ static void android_app_set_input(struct android_app *android_app,
    if (!android_app)
       return;
 
-   slock_lock(android_app->mutex);
-   android_app->pendingInputQueue = inputQueue;
-   ticket                         = android_app->cmd_seq;
+   ticket = android_lifecycle_last_ticket(&android_app->lc);
+   if (     !android_app_thread_gone(android_app)
+         && android_app_write_cmd_arg(android_app, APP_CMD_INPUT_CHANGED,
+            inputQueue))
+      ticket = android_lifecycle_ticket(&android_app->lc);
 
-   if (     !android_app->app_thread_exited
-         && android_app_write_cmd(android_app, APP_CMD_INPUT_CHANGED))
-      ticket = ++android_app->cmd_seq;
-
-   while (   !android_app->app_thread_exited
-          && (int)(android_app->done_seq - ticket) < 0)
-      scond_wait(android_app->cond, android_app->mutex);
-
-   slock_unlock(android_app->mutex);
+   android_lifecycle_wait(&android_app->lc, ANDROID_LC_UNTIL_DONE,
+         (int)ticket, true, -1);
 }
 
 /* Replacing a live window posts two commands, so wait on the ticket of
  * the last one: the surface is only safe to hand back to the framework
  * once the app thread has worked through both. Posting neither leaves
- * 'ticket' at the current completion count and the wait falls through. */
+ * 'ticket' at the last one answered and the wait falls through. */
 static void android_app_set_window(struct android_app *android_app,
       ANativeWindow* window)
 {
@@ -303,26 +314,23 @@ static void android_app_set_window(struct android_app *android_app,
    if (!android_app)
       return;
 
-   slock_lock(android_app->mutex);
-   ticket = android_app->cmd_seq;
+   ticket = android_lifecycle_last_ticket(&android_app->lc);
 
-   if (     !android_app->app_thread_exited
-         && android_app->pendingWindow
+   if (     !android_app_thread_gone(android_app)
+         && android_app->posted_window
          && android_app_write_cmd(android_app, APP_CMD_TERM_WINDOW))
-      ticket = ++android_app->cmd_seq;
+      ticket = android_lifecycle_ticket(&android_app->lc);
 
-   android_app->pendingWindow = window;
+   android_app->posted_window = window;
 
-   if (     !android_app->app_thread_exited
+   if (     !android_app_thread_gone(android_app)
          && window
-         && android_app_write_cmd(android_app, APP_CMD_INIT_WINDOW))
-      ticket = ++android_app->cmd_seq;
+         && android_app_write_cmd_arg(android_app, APP_CMD_INIT_WINDOW,
+            window))
+      ticket = android_lifecycle_ticket(&android_app->lc);
 
-   while (   !android_app->app_thread_exited
-          && (int)(android_app->done_seq - ticket) < 0)
-      scond_wait(android_app->cond, android_app->mutex);
-
-   slock_unlock(android_app->mutex);
+   android_lifecycle_wait(&android_app->lc, ANDROID_LC_UNTIL_DONE,
+         (int)ticket, true, -1);
 }
 
 /* Upper bound on how long a lifecycle callback will block waiting for the
@@ -332,8 +340,8 @@ static void android_app_set_window(struct android_app *android_app,
  * is an ANR. */
 #define ANDROID_ACTIVITY_STATE_TIMEOUT_US (3 * 1000 * 1000)
 
-/* START/RESUME/PAUSE/STOP are notifications: activityState is written by
- * the app thread and read by nothing else, so giving up on the
+/* START/RESUME/PAUSE/STOP are notifications: the acknowledged state is
+ * the app thread's and nothing acts on it but the waiter, so giving up on the
  * acknowledgement costs the caller nothing beyond returning before the app
  * thread has caught up. PAUSE and STOP are acknowledged once SRAM, core
  * options and the config have been written (see
@@ -347,19 +355,14 @@ static void android_app_set_window(struct android_app *android_app,
 static void android_app_set_activity_state(
       struct android_app *android_app, int8_t cmd)
 {
-   bool acked = true;
+   bool acked;
 
    if (!android_app)
       return;
 
-   slock_lock(android_app->mutex);
    android_app_write_cmd(android_app, cmd);
-   while (   !android_app->app_thread_exited
-          && android_app->activityState != cmd && acked)
-      acked = scond_wait_timeout(android_app->cond, android_app->mutex,
-            ANDROID_ACTIVITY_STATE_TIMEOUT_US);
-   acked = (android_app->activityState == cmd);
-   slock_unlock(android_app->mutex);
+   acked = android_lifecycle_wait(&android_app->lc, ANDROID_LC_UNTIL_STATE,
+         cmd, true, ANDROID_ACTIVITY_STATE_TIMEOUT_US);
 
    if (!acked)
       RARCH_ERR("[Android] App thread did not acknowledge activity state"
@@ -388,27 +391,14 @@ static void android_app_free(struct android_app* android_app)
    if (!android_app)
       return;
 
-   /* Nothing ever wrote APP_CMD_DESTROY, so destroyRequested was dead
-    * and the app thread was never told to stop - while this function
-    * joined it holding the very mutex the thread needs to finish. If
-    * onDestroy() arrived with the thread still running, the Java UI
-    * thread blocked here until ActivityManager gave up.
-    *
-    * Ask the thread to shut down, then wait on the condvar (which
-    * releases the mutex, so the thread can take it in
-    * android_app_destroy). */
-   slock_lock(android_app->mutex);
-
+   /* Ask the thread to shut down, then wait for android_app_destroy()
+    * to say it has finished. destroy_from_framework reaches the app
+    * thread with the command: the pipe orders the two. */
    android_app->destroy_from_framework = 1;
    android_app_write_cmd(android_app, APP_CMD_DESTROY);
 
-   acked = true;
-   while (!android_app->destroyed && acked)
-      acked = scond_wait_timeout(android_app->cond, android_app->mutex,
-            ANDROID_DESTROY_TIMEOUT_US);
-   acked = (android_app->destroyed != 0);
-
-   slock_unlock(android_app->mutex);
+   acked = android_lifecycle_wait(&android_app->lc, ANDROID_LC_UNTIL_FLAGS,
+         ANDROID_LC_DESTROYED, false, ANDROID_DESTROY_TIMEOUT_US);
 
    /* If the thread did not acknowledge it may still be running and still
     * holding references into this struct. Returning without joining lets
@@ -427,8 +417,7 @@ static void android_app_free(struct android_app* android_app)
 
    close(android_app->msgread);
    close(android_app->msgwrite);
-   scond_free(android_app->cond);
-   slock_free(android_app->mutex);
+   android_lifecycle_free(&android_app->lc);
 
    free(android_app);
 }
@@ -663,18 +652,14 @@ static void android_app_entry(void *data)
     * android_app_free() is already waiting out). This thread is the
     * sole consumer of the command pipe, so from here on no posted
     * command can ever be acknowledged: retire every outstanding
-    * ticket and mark the consumer gone, or the next synchronous
+    * ticket by marking the consumer gone, or the next synchronous
     * lifecycle callback - surfaceDestroyed() into
     * android_app_set_window(NULL) - parks the Java UI thread on the
-    * condvar until ActivityManager declares an ANR. The struct
-    * outlives this thread on every path: android_app_free() joins
-    * before freeing and deliberately leaks it when it orphans the
-    * thread instead. */
-   slock_lock(android_app->mutex);
-   android_app->app_thread_exited = 1;
-   android_app->done_seq          = android_app->cmd_seq;
-   scond_broadcast(android_app->cond);
-   slock_unlock(android_app->mutex);
+    * wait until ActivityManager declares an ANR. The struct outlives
+    * this thread on every path: android_app_free() joins before
+    * freeing and deliberately leaks it when it orphans the thread
+    * instead. */
+   android_lifecycle_set_flags(&android_app->lc, ANDROID_LC_EXITED);
 }
 
 static struct android_app* android_app_create(ANativeActivity* activity,
@@ -711,25 +696,11 @@ static struct android_app* android_app_create(ANativeActivity* activity,
    android_app->activity = activity;
    g_android_early       = android_app;
 
-   android_app->mutex    = slock_new();
-   android_app->cond     = scond_new();
-   /* NULL-check slock_new / scond_new: both can fail on OOM.
-    * Without the guards here, a NULL mutex would silently turn
-    * every slock_lock/unlock below into a no-op (slock_lock
-    * NULL-tolerates by design), giving a race-prone android_app,
-    * and a NULL cond would NULL-deref in scond_wait below
-    * (pthread_cond_wait(&NULL->cond, ...)).  Fail the whole
-    * android_app construction so ANativeActivity_onCreate returns
-    * cleanly without half-initialised state. */
-   if (!android_app->mutex || !android_app->cond)
+   if (!android_lifecycle_init(&android_app->lc))
    {
-      if (android_app->mutex)
-         slock_free(android_app->mutex);
-      if (android_app->cond)
-         scond_free(android_app->cond);
       free(android_app);
       g_android_early = NULL;
-      RARCH_ERR("Failed to allocate android_app locks.\n");
+      RARCH_ERR("Failed to initialize android_app lifecycle state.\n");
       return NULL;
    }
 
@@ -754,8 +725,7 @@ static struct android_app* android_app_create(ANativeActivity* activity,
    {
       if (android_app->savedState)
         free(android_app->savedState);
-      slock_free(android_app->mutex);
-      scond_free(android_app->cond);
+      android_lifecycle_free(&android_app->lc);
       free(android_app);
       g_android_early = NULL;
       return NULL;
@@ -766,8 +736,8 @@ static struct android_app* android_app_create(ANativeActivity* activity,
 
    android_app->thread   = sthread_create(android_app_entry, android_app);
    /* NULL-check sthread_create: on OOM the thread won't be
-    * spawned and nothing will set android_app->running to true,
-    * so the scond_wait loop below would block indefinitely.
+    * spawned and nothing will set ANDROID_LC_RUNNING, so the wait
+    * below would block indefinitely.
     * Tear down the partially-constructed android_app (including
     * the just-created pipe fds) and bail. */
    if (!android_app->thread)
@@ -776,8 +746,7 @@ static struct android_app* android_app_create(ANativeActivity* activity,
       close(msgpipe[1]);
       if (android_app->savedState)
          free(android_app->savedState);
-      slock_free(android_app->mutex);
-      scond_free(android_app->cond);
+      android_lifecycle_free(&android_app->lc);
       free(android_app);
       g_android_early = NULL;
       RARCH_ERR("Failed to spawn android_app thread.\n");
@@ -785,39 +754,33 @@ static struct android_app* android_app_create(ANativeActivity* activity,
    }
 
    /* Wait for the thread to start, or to leave without ever having
-    * started.  'running' is set in frontend_unix_init(), a long way
+    * started.  RUNNING is set in frontend_unix_init(), a long way
     * into rarch_main(); an init failure before that point returns from
-    * android_app_entry() with it still clear, and this wait - the only
-    * one on this condvar with neither a timeout nor an
-    * app_thread_exited test - then parks the Java UI thread inside
-    * ANativeActivity_onCreate() until ActivityManager kills the
-    * process.  The app thread sets the flag and broadcasts on its way
-    * out, so take that as the other way this wait can end.
+    * android_app_entry() with it still clear, so EXITED is the other
+    * way this wait ends.
     *
-    * 'running' is what decides the outcome, not the flag: a thread
-    * that started and then exited quickly can set both before the
-    * wait is even entered, and that is a successful create. */
-   slock_lock(android_app->mutex);
-   while (!android_app->running && !android_app->app_thread_exited)
-      scond_wait(android_app->cond, android_app->mutex);
-   started = (android_app->running != 0);
-   slock_unlock(android_app->mutex);
+    * RUNNING is what decides the outcome: a thread that started and
+    * then exited quickly can set both before the wait is even
+    * entered, and that is a successful create. */
+   android_lifecycle_wait(&android_app->lc, ANDROID_LC_UNTIL_FLAGS,
+         ANDROID_LC_RUNNING | ANDROID_LC_EXITED, false, -1);
+   started = (android_lifecycle_flags(&android_app->lc)
+         & ANDROID_LC_RUNNING) != 0;
 
    if (!started)
    {
       /* Nothing was initialised, so there is no teardown to
        * orchestrate - and no reason to hand the framework an
        * android_app it would keep delivering lifecycle callbacks to.
-       * The thread has released the mutex and touches nothing after
-       * that, so the join completes and the struct is ours to free. */
+       * The thread touches nothing after setting EXITED, so the join
+       * completes and the struct is ours to free. */
       RARCH_ERR("[Android] App thread exited before it started.\n");
       sthread_join(android_app->thread);
       close(android_app->msgread);
       close(android_app->msgwrite);
       if (android_app->savedState)
          free(android_app->savedState);
-      scond_free(android_app->cond);
-      slock_free(android_app->mutex);
+      android_lifecycle_free(&android_app->lc);
       free(android_app);
       g_android_early = NULL;
       return NULL;
@@ -1629,13 +1592,13 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
    if (!android_app)
       return;
 
-   slock_lock(android_app->mutex);
-   android_app->permission_state |= PLAT_ANDROID_PERM_RESOLVED;
-   if (granted)
-      android_app->permission_state |= PLAT_ANDROID_PERM_GRANTED;
-   looper = android_app->looper;
-   scond_broadcast(android_app->cond);
-   slock_unlock(android_app->mutex);
+   android_lifecycle_set_flags(&android_app->lc, ANDROID_LC_PERM_RESOLVED
+         | (granted ? ANDROID_LC_PERM_GRANTED : 0));
+   /* Against the app thread's store of the looper and its re-check of
+    * the flag: one side or the other sees the other's write. */
+   retro_atomic_thread_fence_seq_cst();
+   looper = (ALooper*)retro_atomic_load_acquire_ptr(
+         &android_app->looper_to_wake);
 
    if (looper)
       ALooper_wake(looper);
@@ -3276,16 +3239,12 @@ static void frontend_unix_get_env(int *argc,
 #ifdef ANDROID
 static void free_saved_state(struct android_app* android_app)
 {
-    slock_lock(android_app->mutex);
-
     if (android_app->savedState)
     {
         free(android_app->savedState);
         android_app->savedState     = NULL;
         android_app->savedStateSize = 0;
     }
-
-    slock_unlock(android_app->mutex);
 }
 
 static void android_app_destroy(struct android_app *android_app)
@@ -3297,8 +3256,6 @@ static void android_app_destroy(struct android_app *android_app)
 #endif
 
    free_saved_state(android_app);
-
-   slock_lock(android_app->mutex);
 
    env = jni_thread_getenv();
 
@@ -3322,9 +3279,7 @@ static void android_app_destroy(struct android_app *android_app)
       AInputQueue_detachLooper(android_app->inputQueue);
 
    AConfiguration_delete(android_app->config);
-   android_app->destroyed = 1;
-   scond_broadcast(android_app->cond);
-   slock_unlock(android_app->mutex);
+   android_lifecycle_set_flags(&android_app->lc, ANDROID_LC_DESTROYED);
    /* Can't touch android_app object after this. */
 }
 #endif
@@ -3436,16 +3391,15 @@ static void frontend_unix_init(void *data)
    looper = (ALooper*)ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
    ALooper_addFd(looper, android_app->msgread, LOOPER_ID_MAIN,
          ALOOPER_EVENT_INPUT, NULL, NULL);
-   slock_lock(android_app->mutex);
-   android_app->looper  = looper;
-   android_app->running = 1;
-   scond_broadcast(android_app->cond);
-   slock_unlock(android_app->mutex);
+   android_app->looper = looper;
+   retro_atomic_store_release_ptr(&android_app->looper_to_wake, looper);
+   retro_atomic_thread_fence_seq_cst();
+   android_lifecycle_set_flags(&android_app->lc, ANDROID_LC_RUNNING);
 
    memset(&g_android, 0, sizeof(g_android));
    g_android = (struct android_app*)android_app;
 
-   while (!android_app->window)
+   while (!android_app_window(android_app))
    {
       if (!android_run_events(android_app))
       {
@@ -3467,10 +3421,8 @@ static void frontend_unix_init(void *data)
    {
       bool resolved;
 
-      slock_lock(android_app->mutex);
-      resolved = (android_app->permission_state
-            & PLAT_ANDROID_PERM_RESOLVED) != 0;
-      slock_unlock(android_app->mutex);
+      resolved = (android_lifecycle_flags(&android_app->lc)
+            & ANDROID_LC_PERM_RESOLVED) != 0;
       if (resolved)
          break;
 

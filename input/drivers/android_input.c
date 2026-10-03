@@ -790,10 +790,7 @@ static void android_input_release_state_ack(struct android_app *android_app)
    if (android_state_ack_cmd < 0 || !android_app)
       return;
 
-   slock_lock(android_app->mutex);
-   android_app->activityState = android_state_ack_cmd;
-   scond_broadcast(android_app->cond);
-   slock_unlock(android_app->mutex);
+   android_lifecycle_set_state(&android_app->lc, android_state_ack_cmd);
 
    android_state_ack_cmd = -1;
 }
@@ -903,46 +900,38 @@ static void android_input_poll_main_cmd(void)
 {
    int8_t cmd;
    ssize_t ret;
+   struct android_app_msg msg;
    struct android_app *android_app = (struct android_app*)g_android;
 
    /* A command dropped here is never acknowledged, and a lifecycle
     * callback waiting on it would block the Java UI thread until
-    * ActivityManager gives up. Retry rather than lose the byte. */
+    * ActivityManager gives up. Retry rather than lose it. A record is
+    * written whole, so it is read whole or not at all. */
    do
    {
-      ret = read(android_app->msgread, &cmd, sizeof(cmd));
+      ret = read(android_app->msgread, &msg, sizeof(msg));
    } while (ret < 0 && errno == EINTR);
 
-   if (ret != (ssize_t)sizeof(cmd))
-      cmd = -1;
+   cmd = (ret == (ssize_t)sizeof(msg)) ? msg.cmd : -1;
 
    switch (cmd)
    {
       case APP_CMD_REINIT_DONE:
-         slock_lock(android_app->mutex);
-
          android_app->reinitRequested = 0;
-
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
          break;
 
       case APP_CMD_INPUT_CHANGED:
-         slock_lock(android_app->mutex);
-
          if (android_app->inputQueue)
             AInputQueue_detachLooper(android_app->inputQueue);
 
-         android_app->inputQueue = android_app->pendingInputQueue;
+         android_app->inputQueue = (AInputQueue*)msg.arg;
 
          if (android_app->inputQueue)
             AInputQueue_attachLooper(android_app->inputQueue,
                   android_app->looper, LOOPER_ID_INPUT, NULL,
                   NULL);
 
-         android_app->done_seq++;
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
+         android_lifecycle_done(&android_app->lc);
 
          /* The set of attached input devices has changed, so a cached
           * KeyCharacterMap may now belong to a device that is gone or
@@ -953,12 +942,9 @@ static void android_input_poll_main_cmd(void)
          break;
 
       case APP_CMD_INIT_WINDOW:
-         slock_lock(android_app->mutex);
-         android_app->window = android_app->pendingWindow;
+         android_lifecycle_window_set(&android_app->lc, msg.arg);
          android_app->reinitRequested = 1;
-         android_app->done_seq++;
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
+         android_lifecycle_done(&android_app->lc);
 
          /* A resume brings a NEW window, and the display mode and
           * frame rate chosen for the old one do not come with it.
@@ -978,9 +964,8 @@ static void android_input_poll_main_cmd(void)
          bool hold_ack               = (cmd == APP_CMD_PAUSE)
             && !android_state_flushed;
 
-         slock_lock(android_app->mutex);
          if (!hold_ack)
-            android_app->activityState = cmd;
+            android_lifecycle_set_state(&android_app->lc, cmd);
          /* RESUME/START can arrive before INIT_WINDOW. In that case,
           * wait for INIT_WINDOW rather than falling back to a full
           * video-driver reinitialization without a native window. */
@@ -988,11 +973,9 @@ static void android_input_poll_main_cmd(void)
              && state->current_video_context.ident
              && string_is_equal(state->current_video_context.ident,
                    "vk_android")
-             && android_app->window
+             && android_app_window(android_app)
              && state->current_video_context.create_surface)
             android_app->reinitRequested = 1;
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
 
          if (cmd == APP_CMD_PAUSE)
          {
@@ -1036,12 +1019,7 @@ static void android_input_poll_main_cmd(void)
             android_state_ack_cmd       = APP_CMD_STOP;
          }
          else
-         {
-            slock_lock(android_app->mutex);
-            android_app->activityState = cmd;
-            scond_broadcast(android_app->cond);
-            slock_unlock(android_app->mutex);
-         }
+            android_lifecycle_set_state(&android_app->lc, cmd);
 
          /* Android may retain the same ANativeWindow while the app is
           * backgrounded. Release Vulkan's acquired buffers anyway so BLAST
@@ -1065,14 +1043,10 @@ static void android_input_poll_main_cmd(void)
 
          android_input_destroy_surface(state);
 
-         slock_lock(android_app->mutex);
-
-         /* The window is being hidden or closed, clean it up. */
-         /* terminate display/EGL context here */
-         android_app->window = NULL;
-         android_app->done_seq++;
-         scond_broadcast(android_app->cond);
-         slock_unlock(android_app->mutex);
+         /* The window is being hidden or closed: nobody may hold it by
+          * the time the UI thread hands it back. */
+         android_lifecycle_window_retire(&android_app->lc);
+         android_lifecycle_done(&android_app->lc);
          break;
       }
 
@@ -3673,8 +3647,8 @@ void android_input_flush_pending_haptics(void)
 
    /* Feedback belongs to the current interaction, not a later resume. */
    if (     android_app->destroyRequested
-         || android_app->activityState != APP_CMD_RESUME
-         || !android_app->window
+         || android_lifecycle_state(&android_app->lc) != APP_CMD_RESUME
+         || !android_app_window(android_app)
          || retro_atomic_load_relaxed_int(&android_app->unfocused)
          || !android_app->doHapticFeedback)
       return;

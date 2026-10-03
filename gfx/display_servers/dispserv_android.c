@@ -321,9 +321,9 @@ static bool android_display_server_set_resolution(void *data,
     * API 30.  Older devices simply do not have the call; the mode
     * request alone is all there is there. */
 #if __ANDROID_API__ >= 30
-   if (ok == JNI_TRUE && g_android->window)
+   if (ok == JNI_TRUE && android_app_window(g_android))
    {
-      int fr = ANativeWindow_setFrameRate(g_android->window, hz,
+      int fr = ANativeWindow_setFrameRate(android_app_window(g_android), hz,
             ANATIVEWINDOW_FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
       RARCH_LOG("[Android] Window frame rate set to %.2f Hz (result:"
             " %d).\n", hz, fr);
@@ -404,8 +404,8 @@ void android_display_server_reapply_mode(void)
    }
 
 #if __ANDROID_API__ >= 30
-   if (g_android->window && android_last_mode_hz > 0.0f)
-      ANativeWindow_setFrameRate(g_android->window,
+   if (android_app_window(g_android) && android_last_mode_hz > 0.0f)
+      ANativeWindow_setFrameRate(android_app_window(g_android),
             android_last_mode_hz,
             ANATIVEWINDOW_FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
 #endif

@@ -77,3 +77,4 @@ samples/tasks/bsv_replay_init bsv_replay_init_test
 samples/tasks/image_decode_slice image_decode_slice_test
 samples/tasks/netplay_nat nat_task_serialisation_test
 samples/tasks/progress_push task_progress_push_test
+samples/frontend/android_lifecycle android_lifecycle_test

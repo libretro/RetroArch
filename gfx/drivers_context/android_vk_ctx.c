@@ -54,7 +54,7 @@ static void android_gfx_ctx_vk_destroy(void *data)
    if (!and)
       return;
 
-   vulkan_context_destroy(&and->vk, android_app->window);
+   vulkan_context_destroy(&and->vk, android_app_window(android_app));
 
    if (and->vk.context.queue_lock)
       slock_free(and->vk.context.queue_lock);
@@ -76,15 +76,12 @@ static void *android_gfx_ctx_vk_init(void *video_driver)
       return NULL;
    }
 
-   slock_lock(android_app->mutex);
-   if (!android_app->window)
+   if (!android_app_window(android_app))
    {
-      slock_unlock(android_app->mutex);
       android_gfx_ctx_vk_destroy(and);
       return NULL;
    }
 
-   slock_unlock(android_app->mutex);
    return and;
 }
 
@@ -156,11 +153,11 @@ static bool android_gfx_ctx_vk_set_video_mode(void *data,
 {
    struct android_app *android_app = (struct android_app*)g_android;
    android_ctx_data_vk_t *and      = (android_ctx_data_vk_t*)data;
-   int32_t w                       = ANativeWindow_getWidth(android_app->window);
-   int32_t h                       = ANativeWindow_getHeight(android_app->window);
+   int32_t w                       = ANativeWindow_getWidth(android_app_window(android_app));
+   int32_t h                       = ANativeWindow_getHeight(android_app_window(android_app));
    and->dims                       = VIDEO_SCALE_PACK(w, h);
    if (!vulkan_surface_create(&and->vk, VULKAN_WSI_ANDROID,
-            NULL, android_app->window,
+            NULL, android_app_window(android_app),
             and->dims, and->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to create surface.\n");
@@ -187,15 +184,15 @@ static bool android_gfx_ctx_vk_create_surface(void *data)
       return true;
    }
 
-   if (!android_app || !android_app->window || !and)
+   if (!android_app || !android_app_window(android_app) || !and)
       return false;
 
-   w         = ANativeWindow_getWidth(android_app->window);
-   h         = ANativeWindow_getHeight(android_app->window);
+   w         = ANativeWindow_getWidth(android_app_window(android_app));
+   h         = ANativeWindow_getHeight(android_app_window(android_app));
    and->dims = VIDEO_SCALE_PACK(w, h);
 
    if (!vulkan_surface_create(&and->vk, VULKAN_WSI_ANDROID,
-            NULL, android_app->window,
+            NULL, android_app_window(android_app),
             and->dims, and->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to recreate Android surface.\n");
