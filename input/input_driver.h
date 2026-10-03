@@ -858,6 +858,13 @@ float input_driver_get_sensor(
 
 uint64_t input_driver_get_capabilities(void);
 
+/* For the video driver: see input_driver.c. */
+uint32_t input_driver_get_flags(void);
+input_driver_t *input_driver_get_current(void);
+input_driver_t **input_driver_video_slots(void ***data_slot);
+void input_driver_free_with_video(const void *video_data);
+bool input_driver_grab_mouse_for_video(void);
+
 bool video_driver_init_input(
       input_driver_t *tmp,
       settings_t *settings,

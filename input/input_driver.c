@@ -6519,6 +6519,72 @@ bool input_key_pressed(int key, bool keyboard_pressed)
    return true;
 }
 
+/* What the video driver needs of the input driver, as calls into here.
+ * gfx/ used to take input_state_get_ptr() and work on the fields
+ * itself: free the driver and the joypads from its own teardown, hand
+ * out the addresses of current_driver and current_data, read and set
+ * flags. It still starts the input driver - a video driver's init is
+ * handed the two slots below and may fill them - but through these. */
+
+uint32_t input_driver_get_flags(void)
+{
+   return input_driver_st.flags;
+}
+
+input_driver_t *input_driver_get_current(void)
+{
+   return input_driver_st.current_driver;
+}
+
+/* The slots a video driver's init fills in when it brings its own
+ * input driver. */
+input_driver_t **input_driver_video_slots(void ***data_slot)
+{
+   *data_slot = (void**)&input_driver_st.current_data;
+   return &input_driver_st.current_driver;
+}
+
+/* The video driver is going away. Unless the input driver's data is
+ * the video driver's own (@video_data), the input driver and the
+ * joypad drivers go with it. */
+void input_driver_free_with_video(const void *video_data)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+
+   if (input_st->current_data == video_data)
+      return;
+
+   if (input_st->current_driver)
+      if (input_st->current_driver->free)
+         input_st->current_driver->free(input_st->current_data);
+   if (input_st->primary_joypad)
+   {
+      const input_device_driver_t *tmp   = input_st->primary_joypad;
+      input_st->primary_joypad           = NULL;
+      tmp->destroy();
+   }
+#ifdef HAVE_MFI
+   if (input_st->secondary_joypad)
+   {
+      const input_device_driver_t *tmp   = input_st->secondary_joypad;
+      input_st->secondary_joypad         = NULL;
+      tmp->destroy();
+   }
+#endif
+   input_st->flags       &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+   input_st->current_data = NULL;
+}
+
+/* Grabs the mouse again for a video driver that has just started, and
+ * notes it. False if the driver cannot. */
+bool input_driver_grab_mouse_for_video(void)
+{
+   if (!input_driver_grab_mouse())
+      return false;
+   input_driver_st.flags |= INP_FLAG_GRAB_MOUSE_STATE;
+   return true;
+}
+
 bool video_driver_init_input(
       input_driver_t *tmp,
       settings_t *settings,

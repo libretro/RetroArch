@@ -128,7 +128,7 @@ void sdl3_pump_window_events(bool *quit, bool *resize)
 
     /* Clear out the input queue if we're not using the
      * SDL driver. */
-   if (input_state_get_ptr()->current_driver != &input_sdl3)
+   if (input_driver_get_current() != &input_sdl3)
    {
       SDL_FlushEvents(SDL_EVENT_KEY_DOWN,         SDL_EVENT_MOUSE_REMOVED);
       SDL_FlushEvents(SDL_EVENT_FINGER_DOWN,      SDL_EVENT_FINGER_CANCELED);

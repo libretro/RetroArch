@@ -64,6 +64,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: gfx/ does not reach into input state
+        shell: bash
+        run: |
+          set -eu
+          # The video code used to take input_state_get_ptr() and work
+          # on the input driver's fields itself - freeing the driver
+          # and the joypads, handing out the addresses of its slots,
+          # reading and setting its flags. It goes through calls into
+          # input/ now (input_driver_free_with_video() and the rest).
+          # This keeps it that way: no file under gfx/ may name
+          # input_state_get_ptr.
+          if grep -rn "input_state_get_ptr" --include=*.c --include=*.h \
+                --include=*.m --include=*.cpp gfx/; then
+             echo "FAIL: gfx/ takes the input driver's state directly" >&2
+             exit 1
+          fi
+          echo "[pass] gfx/ does not name input_state_get_ptr"
+
       - name: Restore ccache
         uses: actions/cache@v4
         with:

@@ -2571,7 +2571,6 @@ void video_driver_hw_request_restore(const struct video_hw_request *req)
 
 void video_driver_free_internal(void)
 {
-   input_driver_state_t *input_st = input_state_get_ptr();
    video_driver_state_t *video_st = &video_driver_st;
    const video_driver_t *vid      = video_st->current_video;
    bool had_data                  = (video_st->data != NULL);
@@ -2592,28 +2591,7 @@ void video_driver_free_internal(void)
    if (!((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_CACHE_CONTEXT))
       video_driver_free_hw_context();
 
-   if (!(input_st->current_data == video_st->data))
-   {
-      if (input_st->current_driver)
-         if (input_st->current_driver->free)
-            input_st->current_driver->free(input_st->current_data);
-      if (input_st->primary_joypad)
-      {
-         const input_device_driver_t *tmp   = input_st->primary_joypad;
-         input_st->primary_joypad    = NULL;
-         tmp->destroy();
-      }
-#ifdef HAVE_MFI
-      if (input_st->secondary_joypad)
-      {
-         const input_device_driver_t *tmp   = input_st->secondary_joypad;
-         input_st->secondary_joypad         = NULL;
-         tmp->destroy();
-      }
-#endif
-      input_st->flags &= ~INP_FLAG_KB_MAPPING_BLOCKED;
-      input_st->current_data                = NULL;
-   }
+   input_driver_free_with_video(video_st->data);
 
    /* Cancel any in-progress deferred shader load before
     * freeing the driver — the deferred state holds pointers
@@ -4936,7 +4914,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    runloop_state_t *runloop_st             = runloop_state_get_ptr();
    settings_t *settings                    = config_get_ptr();
    video_driver_state_t *video_st          = &video_driver_st;
-   input_driver_state_t *input_st          = input_state_get_ptr();
+   uint32_t input_flags                    = input_driver_get_flags();
 #ifdef HAVE_MENU
    struct menu_state *menu_st              = menu_state_get_ptr();
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -5250,8 +5228,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
 #endif
 #endif
 
-   video_info->input_driver_nonblock_state   = (input_st->flags & INP_FLAG_NONBLOCKING)      ? true : false;
-   video_info->input_driver_grab_mouse_state = (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE) ? true : false;
+   video_info->input_driver_nonblock_state   = (input_flags & INP_FLAG_NONBLOCKING)      ? true : false;
+   video_info->input_driver_grab_mouse_state = (input_flags & INP_FLAG_GRAB_MOUSE_STATE) ? true : false;
    video_info->disp_userdata                 = disp_get_ptr();
 
 #ifdef HAVE_THREADS
@@ -5917,11 +5895,12 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    unsigned max_dim, scale, width, height;
    video_viewport_settings_t *custom_vp            = NULL;
    input_driver_t *tmp                    = NULL;
+   input_driver_t **input_slot            = NULL;
+   void **input_data_slot                 = NULL;
    static uint16_t dummy_pixels[32]       = {0};
    runloop_state_t *runloop_st            = runloop_state_get_ptr();
    settings_t       *settings             = config_get_ptr();
 
-   input_driver_state_t *input_st         = input_state_get_ptr();
    video_driver_state_t *video_st         = &video_driver_st;
    struct retro_game_geometry *geom       = &video_st->av_info.geometry;
    const enum retro_pixel_format
@@ -6116,7 +6095,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    video_st->frame_count             = 0;
    video_st->frame_drop_count        = 0;
 
-   tmp                               = input_state_get_ptr()->current_driver;
+   tmp                               = input_driver_get_current();
+   input_slot                        = input_driver_video_slots(&input_data_slot);
    /* Need to grab the "real" video driver interface on a reinit. */
    video_driver_find_driver(settings, "video driver", verbosity_enabled);
 
@@ -6150,8 +6130,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       ret = video_init_thread(
             (const video_driver_t**)&video_st->current_video,
             &video_st->data,
-            &input_state_get_ptr()->current_driver,
-            (void**)&input_state_get_ptr()->current_data,
+            input_slot,
+            input_data_slot,
             video_st->current_video,
             video);
       if (!ret)
@@ -6167,8 +6147,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #endif
       video_st->data = video_st->current_video->init(
             &video,
-            &input_state_get_ptr()->current_driver,
-            (void**)&input_state_get_ptr()->current_data);
+            input_slot,
+            input_data_slot);
 
 #ifdef HAVE_WAYLAND
    /* A Wayland window kept across the reinit that this driver did not
@@ -6289,13 +6269,12 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    /* Ensure that we preserve the 'grab mouse'
     * state if it was enabled prior to driver
     * (re-)initialisation */
-   if (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE)
+   if (input_driver_get_flags() & INP_FLAG_GRAB_MOUSE_STATE)
    {
       if (     video_st->poke
             && video_st->poke->show_mouse)
          video_st->poke->show_mouse(video_st->data, false);
-      if (input_driver_grab_mouse())
-         input_st->flags |= INP_FLAG_GRAB_MOUSE_STATE;
+      input_driver_grab_mouse_for_video();
    }
    else if (video.fullscreen)
    {
@@ -6303,8 +6282,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
             && video_st->poke->show_mouse)
          video_st->poke->show_mouse(video_st->data, false);
       if (!settings->bools.video_windowed_fullscreen)
-         if (input_driver_grab_mouse())
-            input_st->flags |= INP_FLAG_GRAB_MOUSE_STATE;
+         input_driver_grab_mouse_for_video();
    }
 
 #ifdef HAVE_OVERLAY

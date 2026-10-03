@@ -1328,7 +1328,7 @@ static LRESULT win32_wnd_proc_route(HWND hwnd,
 
 #ifdef HAVE_CLIP_WINDOW
    if (     (route & (WIN32_ROUTE_CLIP_ON | WIN32_ROUTE_CLIP_OFF))
-         && (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE))
+         && (input_driver_get_flags() & INP_FLAG_GRAB_MOUSE_STATE))
       win32_clip_window((route & WIN32_ROUTE_CLIP_ON) != 0);
 #endif
 

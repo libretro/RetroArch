@@ -58,7 +58,7 @@ static unsigned             stub_language;
 
 settings_t *config_get_ptr(void)                 { return &stub_settings; }
 video_driver_state_t *video_state_get_ptr(void)  { return &stub_video_st; }
-input_driver_state_t *input_state_get_ptr(void)  { return &stub_input_st; }
+uint32_t input_driver_get_flags(void)            { return stub_input_st.flags; }
 struct menu_state *menu_state_get_ptr(void)      { return &stub_menu_st; }
 runloop_state_t *runloop_state_get_ptr(void)     { return &stub_runloop_st; }
 frontend_ctx_driver_t *frontend_get_ptr(void)    { return NULL; }
