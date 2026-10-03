@@ -6320,10 +6320,21 @@ static int setting_action_left_input_mouse_index(
 
    p = &settings->uints.input_mouse_index[setting->index_offset];
 
-   if (*p)
-      (*p)--;
-   else
-      *p = MAX_INPUT_DEVICES - 1;
+   /* to the mouse before: an index Mouse Index does not offer - one
+    * with no mouse, or with something that is not one - is passed
+    * over */
+   {
+      unsigned tries;
+      for (tries = 0; tries < MAX_INPUT_DEVICES; tries++)
+      {
+         if (*p)
+            (*p)--;
+         else
+            *p = MAX_INPUT_DEVICES - 1;
+         if (input_config_mouse_offered(*p))
+            break;
+      }
+   }
 
    settings->flags |= SETTINGS_FLG_MODIFIED;
    return 0;
@@ -9013,10 +9024,19 @@ static int setting_action_right_input_mouse_index(
 
    p = &settings->uints.input_mouse_index[setting->index_offset];
 
-   if (*p < MAX_INPUT_DEVICES - 1)
-      (*p)++;
-   else
-      *p = 0;
+   /* to the next mouse; see setting_action_left_input_mouse_index() */
+   {
+      unsigned tries;
+      for (tries = 0; tries < MAX_INPUT_DEVICES; tries++)
+      {
+         if (*p < MAX_INPUT_DEVICES - 1)
+            (*p)++;
+         else
+            *p = 0;
+         if (input_config_mouse_offered(*p))
+            break;
+      }
+   }
 
    settings->flags |= SETTINGS_FLG_MODIFIED;
    return 0;

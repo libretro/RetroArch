@@ -18014,6 +18014,14 @@ static bool menu_displaylist_ctl_internal(
                                  {
                                     char val_s[NAME_MAX_LENGTH];
                                     int val = i;
+                                    /* Mouse Index: the mice there are,
+                                     * and the one chosen now whatever
+                                     * it is */
+                                    if (     setting->enum_idx >= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX
+                                          && setting->enum_idx <= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX_LAST
+                                          && val != (int)orig_value
+                                          && !input_config_mouse_offered((unsigned)val))
+                                       continue;
                                     setting_uint_set(setting, val);
                                     setting->actions->repr(setting,
                                           val_s, sizeof(val_s));
@@ -18381,6 +18389,13 @@ static bool menu_displaylist_ctl_internal(
                               {
                                  char val_s[NAME_MAX_LENGTH];
                                  int val = i;
+                                 /* Mouse Index: the mice there are, and
+                                  * the one chosen now whatever it is */
+                                 if (     setting->enum_idx >= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX
+                                       && setting->enum_idx <= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX_LAST
+                                       && val != (int)orig_value
+                                       && !input_config_mouse_offered((unsigned)val))
+                                    continue;
                                  setting_uint_set(setting, val);
                                  setting->actions->repr(setting,
                                        val_s, sizeof(val_s));

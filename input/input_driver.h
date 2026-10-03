@@ -1091,6 +1091,13 @@ void input_config_clear_mouse_info(void);
 void input_config_set_mouse_device(unsigned idx, const char *device,
       uint16_t vid, uint16_t pid, bool hidden);
 const char *input_config_get_mouse_device(unsigned idx);
+/* Whether Mouse Index offers this index. Where the input driver
+ * lists its mice, the ones on the desk are offered - not an index
+ * with no mouse, and not one the driver says to leave out (a keyboard
+ * that can send pointer events, a mouse a program made). Under a
+ * driver that names no mice every index is offered, as it always
+ * was. */
+bool input_config_mouse_offered(unsigned idx);
 uint16_t input_config_get_mouse_vid(unsigned idx);
 uint16_t input_config_get_mouse_pid(unsigned idx);
 bool input_config_get_mouse_hidden(unsigned idx);

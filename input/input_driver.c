@@ -7470,6 +7470,21 @@ const char *input_config_get_mouse_device(unsigned idx)
       ? input_driver_st.input_mouse_info[idx].device : "";
 }
 
+bool input_config_mouse_offered(unsigned idx)
+{
+   unsigned i;
+   const input_mouse_info_t *info = input_driver_st.input_mouse_info;
+
+   if (idx >= MAX_INPUT_DEVICES)
+      return false;
+   if (*info[idx].display_name && !info[idx].hidden)
+      return true;
+   for (i = 0; i < MAX_INPUT_DEVICES; i++)
+      if (*info[i].display_name && !info[i].hidden)
+         return false; /* there are mice listed, and this is not one */
+   return true;
+}
+
 uint16_t input_config_get_mouse_vid(unsigned idx)
 {
    return (idx < MAX_INPUT_DEVICES)
