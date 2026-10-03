@@ -15213,6 +15213,23 @@ static bool menu_displaylist_ctl_internal(
                            MENU_SETTING_ACTION, 0, 0, NULL))
                      count++;
 
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                           MENU_ENUM_LABEL_VIDEO_SHADER_SIMULATED_INPUT_RES,
+                           PARSE_ONLY_BOOL, false) == 0)
+                     count++;
+
+                     if (settings->bools.video_shader_simulated_input_resolution)
+                     {
+                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                              MENU_ENUM_LABEL_VIDEO_SHADER_SIMULATED_INPUT_RES_WIDTH,
+                              PARSE_ONLY_UINT, false) == 0)
+                        count++;
+                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                              MENU_ENUM_LABEL_VIDEO_SHADER_SIMULATED_INPUT_RES_HEIGHT,
+                              PARSE_ONLY_UINT, false) == 0)
+                        count++;
+                     }
+
                   if (menu_entries_append(info->list,
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET),
                            MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_STR,

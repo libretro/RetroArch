@@ -159,6 +159,8 @@ typedef struct
     * false when it was derived from preset FBO flags.  Backends must only
     * apply last-pass HDR heuristics to a shader-declared format. */
    bool                explicit_format;
+   /* Custom SourceSize override, shared by all slang backends. */
+   float               source_size[4];
 } pass_semantics_t;
 
 

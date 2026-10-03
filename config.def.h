@@ -612,6 +612,15 @@
 /* Enable use of shaders */
 #define DEFAULT_SHADER_ENABLE true
 
+/* Enable simulated input resolution for shaders */
+#define DEFAULT_VIDEO_SHADER_SIMULATED_INPUT_RESOLUTION false
+#define DEFAULT_VIDEO_SHADER_SIMULATED_INPUT_RESOLUTION_WIDTH 320
+#define DEFAULT_VIDEO_SHADER_SIMULATED_INPUT_RESOLUTION_HEIGHT 240
+#define MIN_VIDEO_SHADER_SIMULATED_INPUT_RESOLUTION_WIDTH 150
+#define MAX_VIDEO_SHADER_SIMULATED_INPUT_RESOLUTION_WIDTH 720
+#define MIN_VIDEO_SHADER_SIMULATED_INPUT_RESOLUTION_HEIGHT 100
+#define MAX_VIDEO_SHADER_SIMULATED_INPUT_RESOLUTION_HEIGHT 600
+
 /* When enabled, shaders compile one pass per frame instead of
  * stalling for the entire preset.  Disable to force the legacy
  * synchronous (blocking) shader load path. */
