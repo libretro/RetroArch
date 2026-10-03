@@ -2655,6 +2655,18 @@ static void d3d9_hlsl_renderchain_render_pass(
       chain->chain.bound_vert->count = 0;
 }
 
+/* A pass's vertex and fragment programs, which hold a reference each
+ * from when they were made */
+static void d3d9_hlsl_release_programs(struct shader_pass *pass)
+{
+   if (pass->vprg)
+      IDirect3DVertexShader9_Release((LPDIRECT3DVERTEXSHADER9)pass->vprg);
+   if (pass->fprg)
+      IDirect3DPixelShader9_Release((LPDIRECT3DPIXELSHADER9)pass->fprg);
+   pass->vprg = NULL;
+   pass->fprg = NULL;
+}
+
 static void d3d9_hlsl_deinit_progs(hlsl_renderchain_t *chain)
 {
    if (chain->chain.passes->count >= 1)
@@ -2684,6 +2696,14 @@ static void d3d9_hlsl_deinit_progs(hlsl_renderchain_t *chain)
    }
    hlsl_pass_data_free(&chain->stock_data);
 
+   /* The passes' programs and the stock one */
+   {
+      size_t i;
+      for (i = 0; i < chain->chain.passes->count; i++)
+         d3d9_hlsl_release_programs(&chain->chain.passes->data[i]);
+      d3d9_hlsl_release_programs(&chain->stock_shader);
+   }
+
    /* The menu effects compiled so far */
    {
       unsigned i;
@@ -2691,14 +2711,7 @@ static void d3d9_hlsl_deinit_progs(hlsl_renderchain_t *chain)
       {
          if (!(chain->pipeline_ready & (1u << i)))
             continue;
-         if (chain->pipeline_shaders[i].vprg)
-            IDirect3DVertexShader9_Release(
-                  (LPDIRECT3DVERTEXSHADER9)chain->pipeline_shaders[i].vprg);
-         if (chain->pipeline_shaders[i].fprg)
-            IDirect3DPixelShader9_Release(
-                  (LPDIRECT3DPIXELSHADER9)chain->pipeline_shaders[i].fprg);
-         chain->pipeline_shaders[i].vprg = NULL;
-         chain->pipeline_shaders[i].fprg = NULL;
+         d3d9_hlsl_release_programs(&chain->pipeline_shaders[i]);
          hlsl_pass_data_free(&chain->pipeline_data[i]);
       }
       chain->pipeline_ready = 0;
