@@ -81,6 +81,9 @@
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
 
 #if defined(HAVE_XKBCOMMON) && defined(HAVE_KMS)
 #define UDEV_XKB_HANDLING
@@ -544,6 +547,10 @@ typedef struct udev_input_device
    udev_input_touch_t touch; /* State tracking for touch-type devices */
 #endif
    enum udev_input_dev_type type; /* Type of this device */
+   /* A keyboard's own keys, beside the one state every keyboard
+    * feeds (udev_input_t.state): what a port given this keyboard
+    * reads. Indexed as that state is. */
+   uint8_t keys[(KEY_MAX + 7) / 8];
    char devnode[NAME_MAX_LENGTH]; /* Device node path */
    char ident[NAME_MAX_LENGTH]; /* Identifier of the device */
 } udev_input_device_t;
@@ -612,6 +619,22 @@ static unsigned input_unify_ev_key_code(unsigned code)
    return code;
 }
 
+/* Whether a keyboard other than @dev holds a key down. */
+static bool udev_key_held_elsewhere(udev_input_t *udev,
+      const udev_input_device_t *dev, unsigned keysym)
+{
+   unsigned i;
+   for (i = 0; i < udev->num_devices; i++)
+   {
+      const udev_input_device_t *other = udev->devices[i];
+      if (     other != dev
+            && other->type == UDEV_INPUT_KEYBOARD
+            && BIT_GET(other->keys, keysym))
+         return true;
+   }
+   return false;
+}
+
 static void udev_handle_keyboard(void *data,
       const struct input_event *event, udev_input_device_t *dev)
 {
@@ -623,9 +646,21 @@ static void udev_handle_keyboard(void *data,
       case EV_KEY:
          keysym = input_unify_ev_key_code(event->code);
          if (event->value && video_driver_has_focus())
+         {
+            BIT_SET(dev->keys, keysym);
             BIT_SET(udev->state, keysym);
+         }
          else
+         {
+            BIT_CLEAR(dev->keys, keysym);
+            /* Let go on this keyboard and still held on another: for
+             * the one state every keyboard feeds the key is still
+             * down, and there is no key-up to tell of. (It used to go
+             * up with the first keyboard to let go.) */
+            if (udev_key_held_elsewhere(udev, dev, keysym))
+               return;
             BIT_CLEAR(udev->state, keysym);
+         }
 
          /* TODO/FIXME: The udev driver is incomplete.
           * When calling input_keyboard_event() the
@@ -3328,6 +3363,26 @@ static void udev_input_remove_device(udev_input_t *udev, const char *devnode)
       if (!string_is_equal(devnode, udev->devices[i]->devnode))
          continue;
 
+      /* A keyboard that goes sends no key-up for what was held on
+       * it: each such key that no other keyboard holds is let go, in
+       * the one key state and for whoever follows key events - or it
+       * would stay down. */
+      if (udev->devices[i]->type == UDEV_INPUT_KEYBOARD)
+      {
+         unsigned keysym;
+         for (keysym = 0; keysym <= KEY_MAX; keysym++)
+         {
+            if (     !BIT_GET(udev->devices[i]->keys, keysym)
+                  || udev_key_held_elsewhere(udev, udev->devices[i], keysym))
+               continue;
+            BIT_CLEAR(udev->state, keysym);
+            if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
+               input_keyboard_event(0,
+                     input_keymaps_translate_keysym_to_rk(keysym),
+                     0, 0, RETRO_DEVICE_KEYBOARD);
+         }
+      }
+
       close(udev->devices[i]->fd);
       free(udev->devices[i]);
       memmove(udev->devices + i, udev->devices + i + 1,
@@ -3676,6 +3731,39 @@ static bool udev_keyboard_pressed(udev_input_t *udev, unsigned key)
    return (key) ? BIT_GET(udev->state, bit) : false;
 }
 
+/* The keyboard a port reads its key binds and its keyboard from: the
+ * one the port's Keyboard Index names, or NULL for all of them as one
+ * - the setting's default, and what a port falls back to while the
+ * keyboard it names is not there. NULL as well while the menu is
+ * open: the menu is worked with the first port's binds and has to
+ * answer to every keyboard. Hotkeys never go through this. */
+static const uint8_t *udev_port_keys(udev_input_t *udev, unsigned port)
+{
+   int dev_index;
+   unsigned idx = config_get_ptr()->uints.input_keyboard_index[port];
+
+   if (!idx || idx > MAX_INPUT_DEVICES)
+      return NULL;
+   dev_index = udev->keyboards[idx - 1];
+   if (dev_index < 0 || dev_index >= (int)udev->num_devices)
+      return NULL;
+#ifdef HAVE_MENU
+   if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+      return NULL;
+#endif
+   return udev->devices[dev_index]->keys;
+}
+
+/* A key as a port sees it: on its own keyboard, or with none on any. */
+static bool udev_port_key_pressed(udev_input_t *udev,
+      const uint8_t *own, unsigned key)
+{
+   int bit = rarch_keysym_lut[key];
+   if (!key)
+      return false;
+   return own ? BIT_GET(own, bit) : BIT_GET(udev->state, bit);
+}
+
 static bool udev_mouse_button_pressed(
       udev_input_t *udev, unsigned port, unsigned key)
 {
@@ -3764,6 +3852,9 @@ static int16_t udev_input_state(
 #ifdef UDEV_TOUCH_SUPPORT
    udev_input_device_t *pointer_dev = udev_get_pointer_port_dev(udev, port);
 #endif
+   /* the one keyboard this port was given, if it was given one */
+   const uint8_t *own               = (port < MAX_USERS)
+      ? udev_port_keys(udev, port) : NULL;
 
    switch (device)
    {
@@ -3789,7 +3880,7 @@ static int16_t udev_input_state(
                   if (RETRO_KEYBIND_VALID(&binds[port][i]))
                   {
                      if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
-                           && udev_keyboard_pressed(udev, RETRO_KEYBIND_KEY(&binds[port][i])))
+                           && udev_port_key_pressed(udev, own, RETRO_KEYBIND_KEY(&binds[port][i])))
                         ret |= (1 << i);
                   }
                }
@@ -3803,7 +3894,10 @@ static int16_t udev_input_state(
             if (RETRO_KEYBIND_VALID(&binds[port][id]))
             {
                if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
-                     && udev_keyboard_pressed(udev, RETRO_KEYBIND_KEY(&binds[port][id]))
+                     /* a hotkey answers to every keyboard */
+                     && ((id >= RARCH_FIRST_META_KEY)
+                        ? udev_keyboard_pressed(udev, RETRO_KEYBIND_KEY(&binds[port][id]))
+                        : udev_port_key_pressed(udev, own, RETRO_KEYBIND_KEY(&binds[port][id])))
                      && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
                   )
                   return 1;
@@ -3832,14 +3926,12 @@ static int16_t udev_input_state(
 
             if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
             {
-               unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
-               if BIT_GET(udev->state, sym)
+               if (udev_port_key_pressed(udev, own, id_plus_key))
                   ret = 0x7fff;
             }
             if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
             {
-               unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
-               if (BIT_GET(udev->state, sym))
+               if (udev_port_key_pressed(udev, own, id_minus_key))
                   ret += -0x7fff;
             }
 
@@ -3847,7 +3939,7 @@ static int16_t udev_input_state(
          }
          break;
       case RETRO_DEVICE_KEYBOARD:
-         return (id && id < RETROK_LAST) && udev_keyboard_pressed(udev, id);
+         return (id && id < RETROK_LAST) && udev_port_key_pressed(udev, own, id);
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
 #ifdef UDEV_TOUCH_SUPPORT
@@ -3921,7 +4013,7 @@ static int16_t udev_input_state(
                         return 1;
                      else if ((RETRO_KEYBIND_KEY(&binds[port][new_id]) && RETRO_KEYBIND_KEY(&binds[port][new_id]) < RETROK_LAST)
                            && !keyboard_mapping_blocked
-                           && udev_keyboard_pressed(udev, RETRO_KEYBIND_KEY(&binds[port][new_id]))
+                           && udev_port_key_pressed(udev, own, RETRO_KEYBIND_KEY(&binds[port][new_id]))
                         )
                         return 1;
                      else if (udev_mouse_button_pressed(udev, port, binds[port][new_id].mbutton))

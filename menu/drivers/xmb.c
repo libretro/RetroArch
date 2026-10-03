@@ -3038,6 +3038,9 @@ static void xmb_set_title(xmb_handle_t *xmb)
          else if (enum_idx >= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX
                && enum_idx <= MENU_ENUM_LABEL_INPUT_MOUSE_INDEX_LAST)
             enum_idx = MENU_ENUM_LABEL_INPUT_MOUSE_INDEX;
+         else if (enum_idx >= MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX
+               && enum_idx <= MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX_LAST)
+            enum_idx = MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX;
          else if (enum_idx >= MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE
                && enum_idx <= MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE_LAST)
             enum_idx = MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE;
@@ -4529,6 +4532,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
       case MENU_ENUM_LABEL_INPUT_MOUSE_INDEX:
          return xmb->textures.list[XMB_TEXTURE_INPUT_MOUSE];
+      case MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX:
+         return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
       case MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE:
          return xmb->textures.list[XMB_TEXTURE_INPUT_ADC];
       case MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS:
@@ -4951,6 +4956,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
             return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
          else if (string_ends_with_size(enum_label, "_mouse_index", enum_label_len, STRLEN_CONST("_mouse_index")))
             return xmb->textures.list[XMB_TEXTURE_INPUT_MOUSE];
+         else if (string_ends_with_size(enum_label, "_keyboard_index", enum_label_len, STRLEN_CONST("_keyboard_index")))
+            return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
          else if (string_ends_with_size(enum_label, "_analog_dpad_mode", enum_label_len, STRLEN_CONST("_analog_dpad_mode")))
             return xmb->textures.list[XMB_TEXTURE_INPUT_ADC];
          else if (string_ends_with_size(enum_label, "_bind_all", enum_label_len, STRLEN_CONST("_bind_all")))

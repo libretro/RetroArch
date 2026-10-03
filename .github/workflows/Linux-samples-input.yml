@@ -601,6 +601,14 @@ jobs:
           # not more than once a second; a keyboard that was unplugged
           # is out of the list at the poll after Windows says devices
           # changed; and all of them still feed the one key state.
+          # And a port can be given one of them (Keyboard Index): two
+          # ports with a keyboard each read the same bound key each
+          # from its own, as a bind, in the bind mask and as the
+          # port's keyboard; hotkeys and the open menu answer to every
+          # keyboard; a port given a keyboard that is not there reads
+          # them all; a key held on two keyboards stays down until
+          # both let go; and a key held on a keyboard when it is
+          # unplugged is let go with a key-up.
           trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
           make clean all
           WINEDEBUG=-all timeout 300 make check

@@ -195,6 +195,39 @@ enum winraw_input_flags
 /* keyboards told apart, at most; more than these are not listed */
 #define WINRAW_KEYBOARDS_MAX MAX_INPUT_DEVICES
 
+/* One keyboard's own keys: a bit a scancode. The scancodes the driver
+ * takes are a make code alone, one with the E0 or the E1 prefix, and
+ * SC_PAUSE; that is three runs of 256 and one more. */
+#define WINRAW_KB_BITS  (3 * 256 + 1)
+#define WINRAW_KB_BYTES ((WINRAW_KB_BITS + 7) / 8)
+
+/* The bit of a scancode, or WINRAW_KB_BITS for one that has none. */
+static INLINE unsigned winraw_kb_bit(unsigned mcode)
+{
+   switch (mcode >> 8)
+   {
+      case 0x00:
+         return mcode;
+      case 0xE0:
+         return 256 + (mcode & 0xFF);
+      case 0xE1:
+         return 512 + (mcode & 0xFF);
+   }
+   return (mcode == SC_PAUSE) ? 768 : WINRAW_KB_BITS;
+}
+
+/* and the scancode of a bit */
+static INLINE unsigned winraw_kb_mcode(unsigned bit)
+{
+   if (bit < 256)
+      return bit;
+   if (bit < 512)
+      return 0xE000 | (bit - 256);
+   if (bit < 768)
+      return 0xE100 | (bit - 512);
+   return SC_PAUSE;
+}
+
 typedef struct
 {
    double view_abs_ratio_x;
@@ -242,6 +275,10 @@ typedef struct
     * are. */
    HANDLE   kbs[WINRAW_KEYBOARDS_MAX];
    unsigned kb_cnt;
+   /* Each listed keyboard's own keys, beside the one key state they
+    * all feed: what a port that was given one keyboard reads
+    * (winraw_port_keys()). */
+   uint8_t  kb_down[WINRAW_KEYBOARDS_MAX][WINRAW_KB_BYTES];
    /* A key came from a keyboard that is not in the list: the list is
     * made again at the end of the poll. */
    bool     kb_unknown_seen;
@@ -298,6 +335,12 @@ static bool winraw_sync_mouse_to_cursor(winraw_input_t *wr)
 }
 
 #define WINRAW_KEYBOARD_PRESSED(wr, key) (wr->kb_keys[rarch_keysym_lut[(enum retro_key)(key)]])
+
+/* A key as a port sees it: on the one keyboard the port was given
+ * (@own, from winraw_port_keys()), or with no such keyboard on any. */
+#define WINRAW_PORT_KEY_PRESSED(wr, own, key) ((own) \
+      ? winraw_kb_own_pressed((own), rarch_keysym_lut[(enum retro_key)(key)]) \
+      : WINRAW_KEYBOARD_PRESSED(wr, key))
 
 static HWND winraw_create_window(WNDPROC wnd_proc)
 {
@@ -555,6 +598,12 @@ error:
    return false;
 }
 
+/* scancode in the low 16 bits, down in bit 16, modifiers above */
+#define WINRAW_KEV_PACK(mcode, down, mod) \
+   ((uint32_t)(mcode) | ((uint32_t)((down) ? 1 : 0) << 16) | ((uint32_t)(mod) << 17))
+
+static uint16_t winraw_held_mods(const winraw_input_t *wr);
+
 /* Set when Windows has said devices came or went (the hotplug timer,
  * on the window's thread); the next poll makes the keyboard list
  * again. That is how a keyboard that was unplugged leaves the list:
@@ -578,6 +627,14 @@ static void winraw_keyboards_list(winraw_input_t *wr)
    unsigned n               = 0, total = 0;
    RAWINPUTDEVICELIST *devs = NULL;
    UINT dev_cnt             = 0;
+   /* the list as it was, for what carries over and what does not */
+   unsigned old_cnt         = wr->kb_cnt;
+   HANDLE   old_kbs[WINRAW_KEYBOARDS_MAX];
+   uint8_t  old_down[WINRAW_KEYBOARDS_MAX][WINRAW_KB_BYTES];
+
+   memcpy(old_kbs,  wr->kbs,     sizeof(old_kbs));
+   memcpy(old_down, wr->kb_down, sizeof(old_down));
+   memset(wr->kb_down, 0, sizeof(wr->kb_down));
 
    wr->kb_cnt = 0;
 
@@ -604,7 +661,80 @@ static void winraw_keyboards_list(winraw_input_t *wr)
 
 done:
    free(devs);
+
+   /* A keyboard that is still there keeps its keys. One that has gone
+    * sent no key-up for what was held on it: each such key that no
+    * keyboard still here holds is let go, in the one key state and
+    * for whoever follows key events - or it would stay down. */
+   {
+      unsigned o, k, bit;
+      for (o = 0; o < old_cnt; o++)
+      {
+         for (k = 0; k < wr->kb_cnt; k++)
+            if (wr->kbs[k] == old_kbs[o])
+               break;
+         if (k < wr->kb_cnt)
+            memcpy(wr->kb_down[k], old_down[o], WINRAW_KB_BYTES);
+      }
+      for (o = 0; o < old_cnt; o++)
+      {
+         for (k = 0; k < wr->kb_cnt; k++)
+            if (wr->kbs[k] == old_kbs[o])
+               break;
+         if (k < wr->kb_cnt)
+            continue;
+         for (bit = 0; bit < WINRAW_KB_BITS; bit++)
+         {
+            unsigned mcode;
+            if (!(old_down[o][bit >> 3] & (1 << (bit & 7))))
+               continue;
+            for (k = 0; k < wr->kb_cnt; k++)
+               if (wr->kb_down[k][bit >> 3] & (1 << (bit & 7)))
+                  break;
+            if (k < wr->kb_cnt)
+               continue;
+            mcode = winraw_kb_mcode(bit);
+            if (!wr->kb_keys[mcode])
+               continue;
+            wr->kb_keys[mcode] = 0;
+            if (wr->poll_drain && wr->kev_n < WINRAW_KEV_SIZE)
+               wr->kev[wr->kev_n++] =
+                  WINRAW_KEV_PACK(mcode, 0, winraw_held_mods(wr));
+            else if (!wr->poll_drain)
+               input_keyboard_event(0,
+                     input_keymaps_translate_keysym_to_rk(mcode),
+                     0, win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
+         }
+      }
+   }
+
    winraw_push_names_task(NULL, wr->kbs, wr->kb_cnt);
+}
+
+/* Whether a key is down on one keyboard's own state. */
+static INLINE bool winraw_kb_own_pressed(const uint8_t *own, unsigned mcode)
+{
+   unsigned bit = winraw_kb_bit(mcode);
+   return bit < WINRAW_KB_BITS && (own[bit >> 3] & (1 << (bit & 7)));
+}
+
+/* The keyboard a port reads its key binds and its keyboard from: the
+ * one the port's Keyboard Index names, or NULL for all of them as one
+ * - the setting's default, and what a port falls back to while the
+ * keyboard it names is not there. NULL as well while the menu is
+ * open: the menu is worked with the first port's binds and has to
+ * answer to every keyboard. Hotkeys never go through this. */
+static const uint8_t *winraw_port_keys(const winraw_input_t *wr,
+      unsigned port)
+{
+   unsigned idx = config_get_ptr()->uints.input_keyboard_index[port];
+   if (!idx || idx > wr->kb_cnt)
+      return NULL;
+#ifdef HAVE_MENU
+   if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+      return NULL;
+#endif
+   return wr->kb_down[idx - 1];
 }
 
 /* A key came from a keyboard the list does not have - one plugged in
@@ -975,10 +1105,6 @@ static unsigned winraw_wow64_shift(void)
 #endif
 }
 
-/* scancode in the low 16 bits, down in bit 16, modifiers above */
-#define WINRAW_KEV_PACK(mcode, down, mod) \
-   ((uint32_t)(mcode) | ((uint32_t)((down) ? 1 : 0) << 16) | ((uint32_t)(mod) << 17))
-
 static uint16_t winraw_held_mods(const winraw_input_t *wr)
 {
    uint16_t mod = win32_get_keyboard_mods()
@@ -1067,14 +1193,38 @@ static bool winraw_take(winraw_input_t *wr, DWORD type, HANDLE device,
             /* From a keyboard the list does not have: one plugged in
              * since the list was made. (No handle at all is a key
              * something injected, not a device.) */
-            if (     wr->poll_drain
-                  && device
-                  && device != wr->kb_not_listed)
+            if (device)
             {
                for (i = 0; i < wr->kb_cnt; i++)
                   if (wr->kbs[i] == device)
                      break;
-               if (i == wr->kb_cnt && wr->kb_cnt < WINRAW_KEYBOARDS_MAX)
+               if (i < wr->kb_cnt)
+               {
+                  /* the keyboard's own keys, beside the one state
+                   * below that every keyboard feeds */
+                  unsigned bit = winraw_kb_bit(mcode);
+                  if (bit < WINRAW_KB_BITS)
+                  {
+                     if (down)
+                        wr->kb_down[i][bit >> 3] |=  (uint8_t)(1 << (bit & 7));
+                     else
+                     {
+                        unsigned k;
+                        wr->kb_down[i][bit >> 3] &= (uint8_t)~(1 << (bit & 7));
+                        /* Let go on this keyboard and still held on
+                         * another: for the one state every keyboard
+                         * feeds, the key is still down, and there is
+                         * no key-up to tell of. (It used to go up
+                         * with the first keyboard to let go.) */
+                        for (k = 0; k < wr->kb_cnt; k++)
+                           if (wr->kb_down[k][bit >> 3] & (1 << (bit & 7)))
+                              return true;
+                     }
+                  }
+               }
+               else if (  wr->poll_drain
+                       && device != wr->kb_not_listed
+                       && wr->kb_cnt < WINRAW_KEYBOARDS_MAX)
                {
                   wr->kb_unknown      = device;
                   wr->kb_unknown_seen = true;
@@ -1667,6 +1817,7 @@ static void winraw_poll(void *data)
                0, 0, RETRO_DEVICE_KEYBOARD);
 
       memset(wr->kb_keys, 0, SC_LAST);
+      memset(wr->kb_down, 0, sizeof(wr->kb_down));
       wr->kb_clear_pending = false;
    }
 
@@ -1789,6 +1940,8 @@ static int16_t winraw_input_state(
    {
       int16_t ret           = 0;
       winraw_input_t *wr    = (winraw_input_t*)data;
+      /* the one keyboard this port was given, if it was given one */
+      const uint8_t *own    = winraw_port_keys(wr, port);
       bool process_mouse    =
          (device == RETRO_DEVICE_JOYPAD)
          || (device == RETRO_DEVICE_MOUSE)
@@ -1839,7 +1992,7 @@ static int16_t winraw_input_state(
                      if (RETRO_KEYBIND_VALID(&binds[port][i]))
                      {
                         if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
-                              && WINRAW_KEYBOARD_PRESSED(wr, RETRO_KEYBIND_KEY(&binds[port][i])))
+                              && WINRAW_PORT_KEY_PRESSED(wr, own, RETRO_KEYBIND_KEY(&binds[port][i])))
                            ret |= (1 << i);
                      }
                   }
@@ -1853,7 +2006,10 @@ static int16_t winraw_input_state(
                if (RETRO_KEYBIND_VALID(&binds[port][id]))
                {
                   if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
-                        && WINRAW_KEYBOARD_PRESSED(wr, RETRO_KEYBIND_KEY(&binds[port][id]))
+                        /* a hotkey answers to every keyboard */
+                        && ((id >= RARCH_FIRST_META_KEY)
+                           ? WINRAW_KEYBOARD_PRESSED(wr, RETRO_KEYBIND_KEY(&binds[port][id]))
+                           : WINRAW_PORT_KEY_PRESSED(wr, own, RETRO_KEYBIND_KEY(&binds[port][id])))
                         && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
                      )
                      return 1;
@@ -1880,18 +2036,18 @@ static int16_t winraw_input_state(
 
                if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
                {
-                  if (WINRAW_KEYBOARD_PRESSED(wr, id_plus_key))
+                  if (WINRAW_PORT_KEY_PRESSED(wr, own, id_plus_key))
                      ret = 0x7fff;
                }
                if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
                {
-                  if (WINRAW_KEYBOARD_PRESSED(wr, id_minus_key))
+                  if (WINRAW_PORT_KEY_PRESSED(wr, own, id_minus_key))
                      ret += -0x7fff;
                }
             }
             return ret;
          case RETRO_DEVICE_KEYBOARD:
-            return (id && id < RETROK_LAST) && WINRAW_KEYBOARD_PRESSED(wr, id);
+            return (id && id < RETROK_LAST) && WINRAW_PORT_KEY_PRESSED(wr, own, id);
          case RETRO_DEVICE_MOUSE:
          case RARCH_DEVICE_MOUSE_SCREEN:
             if (mouse)
@@ -2041,7 +2197,7 @@ static int16_t winraw_input_state(
                            return 1;
                         else if ((RETRO_KEYBIND_KEY(&binds[port][new_id]) && RETRO_KEYBIND_KEY(&binds[port][new_id]) < RETROK_LAST)
                               && !keyboard_mapping_blocked
-                              && WINRAW_KEYBOARD_PRESSED(wr, RETRO_KEYBIND_KEY(&binds[port][new_id]))
+                              && WINRAW_PORT_KEY_PRESSED(wr, own, RETRO_KEYBIND_KEY(&binds[port][new_id]))
                            )
                            return 1;
                         else if (mouse)

@@ -157,6 +157,10 @@ typedef struct settings
       unsigned input_joypad_index[MAX_USERS];
       unsigned input_device[MAX_USERS];
       unsigned input_mouse_index[MAX_USERS];
+      /* The keyboard a port reads, where the input driver can tell
+       * keyboards apart: 0 for all of them as one (the default), N
+       * for the Nth the driver lists. */
+      unsigned input_keyboard_index[MAX_USERS];
 
       unsigned input_libretro_device[MAX_USERS];
       unsigned input_analog_dpad_mode[MAX_USERS];

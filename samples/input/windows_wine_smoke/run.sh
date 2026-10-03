@@ -71,6 +71,12 @@
 # the spot. Either way the joypad driver starts once more than it
 # otherwise would, and the pad still works afterwards.
 #
+# One scenario gives the first port a keyboard of its own (its Keyboard
+# Index names the first keyboard raw input lists, which under Wine is
+# the only one): the port's key bind is then read from that keyboard's
+# own state and must work as before. Telling two keyboards apart is
+# samples/input/winraw_keyboards' to hold.
+#
 # ONLY=<part of a scenario's name> runs just the scenarios that match.
 #
 # And the window. In every scenario above it is left up across both
@@ -146,6 +152,7 @@ write_cfg() {  # $1: video_threaded  $2: input driver  $3: joypad driver
    cat > "$work/retroarch.cfg" <<CFG
 video_driver = "${VIDEO_DRIVER:-gdi}"
 video_vsync = "false"
+${EXTRA_CFG:-}
 input_driver = "$2"
 input_joypad_driver = "$3"
 menu_driver = "rgui"
@@ -320,6 +327,8 @@ RETROARCH_RAWINPUT_POLL=0 scenario "RETROARCH_RAWINPUT_POLL=0" true 0 4 any
 scenario "DirectInput" true 0 4 any dinput dinput
 WANT_WINDOW="0 0 0" RETROARCH_WINDOW_KEEP=0 scenario "RETROARCH_WINDOW_KEEP=0" true 1 2 nomsg
 WANT_WINDOW="2 0 2" RETROARCH_WINDOW_KEEP=2 scenario "window left up and not taken" true 1 2 nomsg
+EXTRA_CFG='input_player1_keyboard_index = "1"' \
+   scenario "the first port given a keyboard" true 1 2 nomsg
 VIDEO_DRIVER=gl VIDEO_STARTED='Found GL context' WANT_VIDEO=2 WANT_WINDOW="1 1 0" \
    scenario "OpenGL" true 1 2 nomsg
 VIDEO_DRIVER=gl VIDEO_STARTED='Found GL context' WANT_VIDEO=3 WANT_WINDOW="2 2 0" \

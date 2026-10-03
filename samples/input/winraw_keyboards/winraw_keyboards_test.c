@@ -1,9 +1,10 @@
-/* winraw: the keyboards are listed.
+/* winraw: the keyboards are listed, and a port can be given one.
  *
- * The raw input driver reads every keyboard as one. It now also keeps
- * the list of them and gives the frontend their names, for
- * Information > Input Information - and, later, so that a port can be
- * given one of them.
+ * The raw input driver reads every keyboard as one. It also keeps the
+ * list of them and gives the frontend their names, for Information >
+ * Input Information, and keeps each one's own keys, so that a port
+ * whose Keyboard Index names a keyboard reads its key binds and its
+ * keyboard from that one alone.
  *
  * The real driver, cross-built with mingw-w64 and run under Wine, with
  * the list of raw input devices it asks Windows for replaced by one
@@ -25,7 +26,17 @@
  *   frontend's names the next time the list is made - and it is made
  *   again at the poll after Windows says devices came or went, which
  *   is how an unplugged keyboard, which sends no last key, leaves it;
- * - all of them still feed the one key state. */
+ * - all of them still feed the one key state;
+ * - two ports given a keyboard each: the same key bound on both is
+ *   pressed for the port whose keyboard it was pressed on and not for
+ *   the other, as a bind, in the bind mask and as the port's
+ *   keyboard; a port with no keyboard of its own reads both;
+ * - a hotkey answers to every keyboard, whatever its port was given;
+ * - with the menu open every port reads every keyboard;
+ * - a port given a keyboard that is not there reads every keyboard;
+ * - a key held on a keyboard when it is unplugged is let go - in the
+ *   one key state and with a key-up event - unless another keyboard
+ *   holds it too. */
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -134,9 +145,15 @@ bool win32_hotplug_due(void) { return true; }
 
 
 
+/* key-up events, by key */
+static unsigned key_ups[RETROK_LAST];
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device)
-{ (void)down; (void)code; (void)character; (void)mod; (void)device; }
+{
+   (void)character; (void)mod; (void)device;
+   if (!down && code < RETROK_LAST)
+      key_ups[code]++;
+}
 enum retro_key input_keymaps_translate_keysym_to_rk(unsigned sym)
 { return (enum retro_key)sym; }
 uint16_t win32_get_keyboard_mods(void) { return 0; }
@@ -179,6 +196,38 @@ static void key(HANDLE kb, unsigned scancode, bool down)
    k.MakeCode = (USHORT)scancode;
    k.Flags    = down ? 0 : RI_KEY_BREAK;
    winraw_take(wr, RIM_TYPEKEYBOARD, kb, &k);
+}
+
+/* scancodes of the two keys the tests bind */
+#define SC_KEY_A 0x1E
+#define SC_KEY_F 0x21
+
+static rarch_joypad_info_t joy_info;
+
+/* what a port's bind on RetroPad B reads */
+static int pad_b(unsigned port)
+{
+   return winraw_input_state(wr, NULL, NULL, &joy_info, input_config_binds,
+         false, port, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B);
+}
+
+static int pad_mask_b(unsigned port)
+{
+   return (winraw_input_state(wr, NULL, NULL, &joy_info, input_config_binds,
+         false, port, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK)
+         >> RETRO_DEVICE_ID_JOYPAD_B) & 1;
+}
+
+static int port_key(unsigned port, unsigned rk)
+{
+   return winraw_input_state(wr, NULL, NULL, &joy_info, input_config_binds,
+         false, port, RETRO_DEVICE_KEYBOARD, 0, rk);
+}
+
+static int hotkey(unsigned port)
+{
+   return winraw_input_state(wr, NULL, NULL, &joy_info, input_config_binds,
+         false, port, RETRO_DEVICE_JOYPAD, 0, RARCH_FAST_FORWARD_KEY);
 }
 
 static unsigned names(void)
@@ -305,6 +354,110 @@ int main(void)
          && names() == 3,
          "after a keyboard was unplugged: %u listed and %u named, want 3", wr->kb_cnt, names());
    printf("   ok   a keyboard unplugged: out of the list at the poll after Windows says devices changed\n");
+
+   /* ---- a port is given a keyboard ------------------------------- */
+   /* three keyboards are listed now: 1, 5 and 6. Both ports bind
+    * RetroPad B to the same key; the first port also has a hotkey. */
+   {
+      unsigned p;
+      rarch_keysym_lut[RETROK_a] = SC_KEY_A;
+      rarch_keysym_lut[RETROK_f] = SC_KEY_F;
+      for (p = 0; p < 3; p++)
+         input_config_binds[p][RETRO_DEVICE_ID_JOYPAD_B].attr =
+            RETRO_KEYBIND_PACK(0, RETROK_a, 1);
+      input_config_binds[0][RARCH_FAST_FORWARD_KEY].attr =
+         RETRO_KEYBIND_PACK(0, RETROK_f, 1);
+      input_config_binds[1][RARCH_FAST_FORWARD_KEY].attr =
+         RETRO_KEYBIND_PACK(0, RETROK_f, 1);
+   }
+   stub_settings.uints.input_keyboard_index[0] = 1; /* K(1) */
+   stub_settings.uints.input_keyboard_index[1] = 2; /* K(5) */
+   stub_settings.uints.input_keyboard_index[2] = 0; /* all  */
+
+   key(K(1), SC_KEY_A, true);
+   winraw_poll(wr);
+   CHECK(pad_b(0) && !pad_b(1) && pad_b(2),
+         "the key on the first keyboard: ports read %d %d %d, want 1 0 1",
+         pad_b(0), pad_b(1), pad_b(2));
+   CHECK(pad_mask_b(0) && !pad_mask_b(1) && pad_mask_b(2),
+         "the same through the bind mask: %d %d %d, want 1 0 1",
+         pad_mask_b(0), pad_mask_b(1), pad_mask_b(2));
+   CHECK(port_key(0, RETROK_a) && !port_key(1, RETROK_a) && port_key(2, RETROK_a),
+         "the same as the ports' keyboards: %d %d %d, want 1 0 1",
+         port_key(0, RETROK_a), port_key(1, RETROK_a), port_key(2, RETROK_a));
+   key(K(1), SC_KEY_A, false);
+   key(K(5), SC_KEY_A, true);
+   winraw_poll(wr);
+   CHECK(!pad_b(0) && pad_b(1) && pad_b(2),
+         "the key on the second keyboard: ports read %d %d %d, want 0 1 1",
+         pad_b(0), pad_b(1), pad_b(2));
+   key(K(1), SC_KEY_A, true);
+   winraw_poll(wr);
+   CHECK(pad_b(0) && pad_b(1), "the key on both keyboards: not down on both ports");
+   key(K(1), SC_KEY_A, false);
+   winraw_poll(wr);
+   CHECK(!pad_b(0) && pad_b(1) && pad_b(2),
+         "let go on the first keyboard and still held on the second: ports read %d %d %d, want 0 1 1",
+         pad_b(0), pad_b(1), pad_b(2));
+   key(K(5), SC_KEY_A, false);
+   winraw_poll(wr);
+   CHECK(!pad_b(0) && !pad_b(1) && !pad_b(2), "the key let go on both: still down somewhere");
+   printf("   ok   two ports with a keyboard each: the same key is each port's own, as a bind, in the mask and as its keyboard; a port with none reads both\n");
+
+   /* a hotkey: every keyboard, whatever the port was given */
+   key(K(5), SC_KEY_F, true);
+   winraw_poll(wr);
+   CHECK(hotkey(0) && hotkey(1),
+         "a hotkey pressed on the second keyboard: the first port (given the first keyboard) read %d", hotkey(0));
+   key(K(5), SC_KEY_F, false);
+   /* an injected key is no keyboard's own: ports with a keyboard do
+    * not read it, the rest do */
+   key(NULL, SC_KEY_A, true);
+   winraw_poll(wr);
+   CHECK(!pad_b(0) && !pad_b(1) && pad_b(2),
+         "an injected key: ports read %d %d %d, want 0 0 1", pad_b(0), pad_b(1), pad_b(2));
+   key(NULL, SC_KEY_A, false);
+   winraw_poll(wr);
+   printf("   ok   a hotkey answers to every keyboard; an injected key is read by the ports that read them all\n");
+
+   /* the menu open: every port reads every keyboard */
+   key(K(5), SC_KEY_A, true);
+   winraw_poll(wr);
+   stub_menu.flags |= MENU_ST_FLAG_ALIVE;
+   CHECK(pad_b(0) && pad_b(1), "with the menu open the first port did not read the second keyboard");
+   stub_menu.flags &= ~MENU_ST_FLAG_ALIVE;
+   CHECK(!pad_b(0) && pad_b(1), "with the menu closed again the first port still read the second keyboard");
+   printf("   ok   with the menu open every port reads every keyboard\n");
+
+   /* a port given a keyboard that is not there reads them all */
+   stub_settings.uints.input_keyboard_index[0] = 9;
+   CHECK(pad_b(0), "a port given a ninth keyboard, with three there, did not fall back to all of them");
+   stub_settings.uints.input_keyboard_index[0] = 1;
+   key(K(5), SC_KEY_A, false);
+   winraw_poll(wr);
+   printf("   ok   a port given a keyboard that is not there reads every keyboard\n");
+
+   /* ---- unplugged with a key held -------------------------------- */
+   key(K(5), SC_KEY_A, true);   /* held on the second keyboard only */
+   key(K(5), SC_KEY_F, true);   /* held on the second ...           */
+   key(K(1), SC_KEY_F, true);   /* ... and on the first             */
+   winraw_poll(wr);
+   memset(key_ups, 0, sizeof(key_ups));
+   devices(3, K(6), M(1), K(1));
+   winraw_handle_message(WM_TIMER, WIN32_HOTPLUG_TIMER_ID, 0);
+   winraw_poll(wr);
+   CHECK(wr->kb_cnt == 2, "the keyboard was not taken off the list");
+   CHECK(!wr->kb_keys[SC_KEY_A] && key_ups[SC_KEY_A] == 1,
+         "the key held on the unplugged keyboard: down %d, key-up events %u, want 0 and 1",
+         wr->kb_keys[SC_KEY_A], key_ups[SC_KEY_A]);
+   CHECK(wr->kb_keys[SC_KEY_F] && key_ups[SC_KEY_F] == 0,
+         "the key another keyboard still holds: down %d, key-up events %u, want 1 and 0",
+         wr->kb_keys[SC_KEY_F], key_ups[SC_KEY_F]);
+   /* the second port's keyboard is now K(6); the first port's is as it was */
+   CHECK(!pad_b(1) && !pad_b(2), "a port still reads the key that went with the keyboard");
+   key(K(1), SC_KEY_F, false);
+   winraw_poll(wr);
+   printf("   ok   a key held on a keyboard when it is unplugged is let go, with a key-up, unless another keyboard holds it\n");
 
    winraw_free(wr);
    if (failures)

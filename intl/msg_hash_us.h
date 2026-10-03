@@ -12440,6 +12440,18 @@ MSG_HASH(
    "The physical mouse as recognized by RetroArch."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX,
+   "Keyboard Index"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_KEYBOARD_INDEX,
+   "The keyboard this port's key binds are read from. 'All' reads every keyboard as one. A single keyboard can be chosen where the input driver can tell keyboards apart. Hotkeys and the menu always answer to every keyboard."
+   )
+MSG_HASH( /* A value of 'Keyboard Index': every keyboard, read as one */
+   MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,
+   "All"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
    "B Button (Down)"
    )

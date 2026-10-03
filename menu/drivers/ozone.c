@@ -2696,6 +2696,8 @@ static uintptr_t ozone_entries_icon_get_texture(
             return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS];
          else if (string_ends_with_size(enum_label, "_mouse_index", enum_label_len, STRLEN_CONST("_mouse_index")))
             return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_MOUSE];
+         else if (string_ends_with_size(enum_label, "_keyboard_index", enum_label_len, STRLEN_CONST("_keyboard_index")))
+            return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS];
          else if (string_ends_with_size(enum_label, "_analog_dpad_mode", enum_label_len, STRLEN_CONST("_analog_dpad_mode")))
             return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_ADC];
          else if (string_ends_with_size(enum_label, "_bind_all", enum_label_len, STRLEN_CONST("_bind_all")))

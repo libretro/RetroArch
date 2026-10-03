@@ -6329,6 +6329,39 @@ static int setting_action_left_input_mouse_index(
    return 0;
 }
 
+/* Keyboard Index: 0 is every keyboard as one, N the Nth keyboard the
+ * input driver lists. Left and right go through the ones there are. */
+static unsigned setting_input_keyboard_count(void)
+{
+   unsigned n = 0;
+   while (n < MAX_INPUT_DEVICES && input_config_get_keyboard_display_name(n))
+      n++;
+   return n;
+}
+
+static int setting_action_left_input_keyboard_index(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   settings_t      *settings = config_get_ptr();
+   unsigned *p               = NULL;
+   unsigned n                = setting_input_keyboard_count();
+
+   if (!setting || !settings)
+      return -1;
+
+   p = &settings->uints.input_keyboard_index[setting->index_offset];
+
+   if (*p > n)
+      *p = n;
+   else if (*p)
+      (*p)--;
+   else
+      *p = n;
+
+   settings->flags |= SETTINGS_FLG_MODIFIED;
+   return 0;
+}
+
 static int setting_uint_action_left_custom_vp_width(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
@@ -8781,6 +8814,18 @@ static int setting_action_start_video_refresh_rate_polled(
    return setting_action_ok_video_refresh_rate_polled(setting, 0, false);
 }
 
+static int setting_action_start_input_keyboard_index(rarch_setting_t *setting)
+{
+   settings_t      *settings = config_get_ptr();
+
+   if (!setting || !settings)
+      return -1;
+
+   configuration_set_uint(settings,
+         settings->uints.input_keyboard_index[setting->index_offset], 0);
+   return 0;
+}
+
 static int setting_action_start_input_mouse_index(rarch_setting_t *setting)
 {
    settings_t      *settings = config_get_ptr();
@@ -8928,6 +8973,27 @@ static int setting_action_right_input_device_reservation_type(
    p = &settings->uints.input_device_reservation_type[setting->index_offset];
 
    if (*p < INPUT_DEVICE_RESERVATION_LAST - 1)
+      (*p)++;
+   else
+      *p = 0;
+
+   settings->flags |= SETTINGS_FLG_MODIFIED;
+   return 0;
+}
+
+static int setting_action_right_input_keyboard_index(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   settings_t      *settings = config_get_ptr();
+   unsigned *p               = NULL;
+   unsigned n                = setting_input_keyboard_count();
+
+   if (!setting || !settings)
+      return -1;
+
+   p = &settings->uints.input_keyboard_index[setting->index_offset];
+
+   if (*p < n)
       (*p)++;
    else
       *p = 0;
@@ -9123,6 +9189,29 @@ static size_t setting_get_string_representation_input_device_reserved_device_nam
        && str[9] == ' ')
       return strlcpy(s, &str[10], len);
    return strlcpy(s, str, len);
+}
+
+static size_t get_string_representation_input_keyboard_index(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned map         = 0;
+
+   if (!setting || !settings)
+      return 0;
+
+   map = settings->uints.input_keyboard_index[setting->index_offset];
+
+   if (map == 0)
+      return strlcpy(s,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL), len);
+   else
+   {
+      /* a keyboard that is not there is read as "All" until it is */
+      const char *name = input_config_get_keyboard_display_name(map - 1);
+      return snprintf(s, len, "#%u: %s", map,
+            name ? name : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+   }
 }
 
 static size_t get_string_representation_input_mouse_index(
@@ -11251,6 +11340,7 @@ static bool setting_append_list_input_player_options(
       char device_reservation_type[64];
       char device_reserved_device[64];
       char mouse_index[64];
+      char keyboard_index[64];
       char bind_all[64];
       char bind_all_save_autoconfig[64];
       char bind_defaults[64];
@@ -11274,6 +11364,9 @@ static bool setting_append_list_input_player_options(
             user + 1);
       snprintf(mouse_index, sizeof(mouse_index),
             MENU_ENUM_LABEL_INPUT_MOUSE_INDEX_STR,
+            user + 1);
+      snprintf(keyboard_index, sizeof(keyboard_index),
+            MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX_STR,
             user + 1);
       snprintf(bind_all, sizeof(bind_all),
             MENU_ENUM_LABEL_INPUT_BIND_ALL_INDEX_STR,
@@ -11354,6 +11447,29 @@ static bool setting_append_list_input_player_options(
       menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES - 1, 1.0, true, true);
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_MOUSE_INDEX + user));
+
+      CONFIG_UINT_ALT(
+            list, list_info,
+            &settings->uints.input_keyboard_index[user],
+            keyboard_index,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX),
+            0,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].index         = user + 1;
+      (*list)[list_info->index - 1].index_offset  = user;
+      SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], &setting_action_start_input_keyboard_index)
+      SETTINGS_ACTION_SET(left, &(*list)[list_info->index - 1], &setting_action_left_input_keyboard_index)
+      SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], &setting_action_right_input_keyboard_index)
+      SETTINGS_ACTION_SET(sel, &(*list)[list_info->index - 1], &setting_action_right_input_keyboard_index)
+      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_right_input_keyboard_index)
+      SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &get_string_representation_input_keyboard_index)
+      menu_settings_list_current_add_range(list, list_info, 0, MAX_INPUT_DEVICES, 1.0, true, true);
+      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX + user));
 
       CONFIG_UINT_ALT(
             list, list_info,
