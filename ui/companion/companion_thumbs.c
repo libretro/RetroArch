@@ -33,6 +33,8 @@
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
+#include <queues/retro_triple_buffer.h>
 #endif
 
 #include "companion_thumbs.h"
@@ -70,17 +72,25 @@ struct ct_job
 
 struct ct_done
 {
-   struct ct_entry *e;    /* NULL for an animation frame */
+   struct ct_entry *e;
    uintptr_t tag;
    uint32_t *bits;        /* NULL: decode failed (or aborted) */
    unsigned epoch;
    bool aborted;          /* abandoned: not delivered, entry dropped */
-   /* animation frame: delivered when anim_gen is current */
-   bool anim;
-   unsigned anim_gen;
-   char *anim_path;
-   unsigned anim_dims;
 };
+
+#ifdef HAVE_THREADS
+/* One animation frame, scaled: a slot of the triple buffer the
+ * animation thread hands frames to poll() through. */
+struct ct_anim_frame
+{
+   uint32_t *bits;
+   unsigned dims;
+   unsigned gen;          /* the animation it belongs to */
+   uintptr_t tag;
+   char path[PATH_MAX_LENGTH];
+};
+#endif
 
 /* A ring with both ends usable: urgent jobs are pushed to and popped
  * from the top (LIFO, most-recent-first); prefetch jobs are pushed to
@@ -104,7 +114,6 @@ struct companion_thumbs
    size_t cached_bytes, cached_count, budget;
 
    struct ct_ring urgent, prefetch;
-   size_t queued;         /* jobs in either ring */
    size_t inflight;       /* jobs a worker holds right now */
    unsigned epoch;        /* bumped by cancel(): an in-flight job from an
                            * older epoch no longer holds its entry's
@@ -115,20 +124,10 @@ struct companion_thumbs
    struct ct_done *done;
    size_t done_cap, done_len;
 
-
-#ifdef HAVE_THREADS
-   slock_t *lock;
-   scond_t *cond;
-   sthread_t *workers[4];
-   unsigned nworkers;
-   bool quit;
-#endif
-
-   /* The one animation: set up by companion_thumbs_animate() under the
-    * lock, played by its own thread, which pushes each frame as a done
-    * record (anim flag) and sleeps the frame's duration. gen changes
-    * on every animate() / stop(): a frame from an older gen is dropped
-    * at poll. */
+   /* The one animation: what the UI thread last asked for. Written by
+    * companion_thumbs_animate() / _stop() and read by the animation
+    * thread when it takes the request up, both under the lock. gen
+    * changes on every animate() / stop(). */
    struct
    {
       char *path;
@@ -138,22 +137,52 @@ struct companion_thumbs
       unsigned gen;           /* the animation that should be playing */
       bool wanted;            /* an animate() is pending or playing */
    } anim;
+
 #ifdef HAVE_THREADS
+   /* The job queue: the rings, the done list, the entries' queued and
+    * refs, and the parked session below. Held for a push, a pop or a
+    * scan, never across a decode or a wait. Nothing per frame takes
+    * it, and a poll() with nothing finished does not either. */
+   slock_t *lock;
+   sthread_t *workers[4];
+   unsigned nworkers;
+
+   /* Workers wait here for a job; the animation thread for a request,
+    * a still to land or the end of a frame's hold. */
+   retro_eventcount_t work_ec;
+   retro_eventcount_t anim_ec;
+   bool ecs_inited;
+
+   /* Read without the lock: by a decode's abort check between steps,
+    * by the animation thread every frame, by poll() and by the
+    * pending / animating queries. Each is stored where its locked
+    * counterpart changes. */
+   retro_atomic_int_t quit;
+   retro_atomic_int_t epoch_now;     /* epoch */
+   retro_atomic_int_t jobs_queued;   /* jobs in the rings */
+   retro_atomic_int_t pending_n;     /* queued + inflight + done_len */
+   retro_atomic_int_t done_n;        /* done_len */
+   retro_atomic_int_t anim_gen_now;  /* anim.gen */
+   retro_atomic_int_t anim_wanted;   /* anim.wanted */
+   retro_atomic_int_t anim_asked;    /* an animate() has ever been made */
+
    sthread_t *anim_thread;
-   scond_t   *anim_cond;
-#endif
-   /* The open preview session, published by the animation thread while
-    * it plays (under the lock): the UI thread starts and feeds the
-    * preview audio through it from poll(). audio_gen: the animation
-    * whose audio was started, so it starts once. */
-   gfx_anim_preview_t *anim_sess;
-   unsigned anim_sess_gen;
+
+   /* Frames from the animation thread to poll(), newest wins. */
+   struct ct_anim_frame anim_frames[3];
+   retro_triple_buffer_t anim_tb;
+
+   /* The open preview session, while the animation thread plays it:
+    * poll() starts and feeds its audio, animate() and _stop() silence
+    * it. A UI-thread user holds it with ct_sess_acquire(); the
+    * animation thread takes it away with ct_sess_retire(), which waits
+    * out any holder, before it closes it. anim_audio_gen: the
+    * animation whose audio was started (UI thread only). */
+   retro_atomic_ptr_t anim_sess;
+   retro_atomic_int_t anim_sess_gen;
+   retro_atomic_int_t anim_sess_users;
    unsigned anim_audio_gen;
-#ifdef HAVE_THREADS
-   /* Whether anim_sess holds a session, for poll() to read without
-    * the lock: with nothing playing it takes none at all. Written
-    * under the lock beside anim_sess itself. */
-   retro_atomic_int_t anim_sess_live;
+
    /* One hover on a video is a request() for its still and an
     * animate() for the same path, back to back, on every backend.
     * The still is the first frame through a preview session; the
@@ -184,6 +213,75 @@ struct companion_thumbs
 #else
 #define CT_LOCK(t)   ((void)0)
 #define CT_UNLOCK(t) ((void)0)
+#endif
+
+/* Jobs in the rings. Lock held. */
+static size_t ct_queued(const companion_thumbs_t *t)
+{
+   return t->urgent.len + t->prefetch.len;
+}
+
+#ifdef HAVE_THREADS
+/* The counters read without the lock follow the rings, the in-flight
+ * count and the done list. Lock held, after any of them changes. */
+static void ct_counts_sync(companion_thumbs_t *t)
+{
+   size_t q = ct_queued(t);
+   retro_atomic_store_release_int(&t->jobs_queued, (int)q);
+   retro_atomic_store_release_int(&t->done_n, (int)t->done_len);
+   retro_atomic_store_release_int(&t->pending_n,
+         (int)(q + t->inflight + t->done_len));
+}
+
+static bool ct_quitting(companion_thumbs_t *t)
+{
+   return retro_atomic_load_acquire_int(&t->quit) != 0;
+}
+
+/* The preview session, held for a UI-thread call into it: NULL, held
+ * nothing, when none is playing. */
+static gfx_anim_preview_t *ct_sess_acquire(companion_thumbs_t *t)
+{
+   gfx_anim_preview_t *sess;
+   (void)retro_atomic_fetch_add_seq_cst_int(&t->anim_sess_users, 1);
+   retro_atomic_thread_fence_seq_cst();
+   if (!(sess = (gfx_anim_preview_t*)
+            retro_atomic_load_acquire_ptr(&t->anim_sess)))
+   {
+      if (retro_atomic_fetch_sub_int(&t->anim_sess_users, 1) == 1)
+         retro_eventcount_notify(&t->anim_ec);
+   }
+   return sess;
+}
+
+static void ct_sess_release(companion_thumbs_t *t)
+{
+   if (retro_atomic_fetch_sub_int(&t->anim_sess_users, 1) == 1)
+      retro_eventcount_notify(&t->anim_ec);
+}
+
+/* Animation thread: the session is no longer published; returns once
+ * no UI-thread call is inside it. */
+static void ct_sess_retire(companion_thumbs_t *t)
+{
+   (void)retro_atomic_exchange_ptr(&t->anim_sess, NULL);
+   retro_atomic_thread_fence_seq_cst();
+   for (;;)
+   {
+      int key;
+      if (!retro_atomic_load_seq_cst_int(&t->anim_sess_users))
+         return;
+      key = retro_eventcount_prepare_wait(&t->anim_ec);
+      if (!retro_atomic_load_seq_cst_int(&t->anim_sess_users))
+      {
+         retro_eventcount_cancel_wait(&t->anim_ec);
+         return;
+      }
+      retro_eventcount_commit_wait(&t->anim_ec, key);
+   }
+}
+#else
+#define ct_counts_sync(t) ((void)0)
 #endif
 
 /* --- scaling (pure) ---------------------------------------------------- */
@@ -506,8 +604,9 @@ static uint32_t *ct_decode_video_still(companion_thumbs_t *t,
     * nobody takes would sit on its window until the next park. */
    if (t && t->lock)
    {
+      bool parked = false;
       slock_lock(t->lock);
-      if (   !t->quit
+      if (   !ct_quitting(t)
           && t->anim.path && !strcmp(t->anim.path, path)
           && (t->anim.wanted || t->anim_opening))
       {
@@ -517,10 +616,11 @@ static uint32_t *ct_decode_video_still(companion_thumbs_t *t,
          t->parked.sess = sess;
          t->parked.path = strldup(path, strlen(path) + 1);
          sess           = NULL;
-         if (t->anim_cond)
-            scond_broadcast(t->anim_cond);
+         parked         = true;
       }
       slock_unlock(t->lock);
+      if (parked)
+         retro_eventcount_notify(&t->anim_ec);
    }
 #else
    (void)t;
@@ -777,7 +877,6 @@ static bool ct_next_job(companion_thumbs_t *t, struct ct_job *out)
 {
    if (ct_ring_pop_top(&t->urgent, out) || ct_ring_pop_bottom(&t->prefetch, out))
    {
-      t->queued--;
       t->inflight++;
       return true;
    }
@@ -801,6 +900,7 @@ static void ct_push_done(companion_thumbs_t *t, const struct ct_job *j,
       {
          free(bits);
          j->e->queued = false;
+         ct_counts_sync(t);
          return;
       }
       t->done     = nd;
@@ -812,10 +912,7 @@ static void ct_push_done(companion_thumbs_t *t, const struct ct_job *j,
    d->bits    = bits;
    d->epoch   = j->epoch;
    d->aborted = false;
-   d->anim    = false;
-   d->anim_gen = 0;
-   d->anim_path = NULL;
-   d->anim_dims = 0;
+   ct_counts_sync(t);
 }
 
 /* --- workers -------------------------------------------------------------- */
@@ -829,11 +926,9 @@ struct ct_abort_ctx { companion_thumbs_t *t; unsigned epoch; };
 static bool ct_should_abort(void *ud)
 {
    struct ct_abort_ctx *a = (struct ct_abort_ctx*)ud;
-   bool stop;
-   slock_lock(a->t->lock);
-   stop = a->t->quit || a->t->epoch != a->epoch;
-   slock_unlock(a->t->lock);
-   return stop;
+   return ct_quitting(a->t)
+      || (unsigned)retro_atomic_load_acquire_int(&a->t->epoch_now)
+         != a->epoch;
 }
 
 /* Publish that this worker is decoding a video still for @path; -1
@@ -886,25 +981,33 @@ static void ct_worker(void *ud)
       struct ct_job job;
       struct ct_abort_ctx actx;
       uint32_t *bits;
-      bool aborted;
-      int slot, af;
+      bool aborted, got;
+      int slot = -1, af;
+
       slock_lock(t->lock);
-      /* Timed wait: a lost wake-up can never keep a worker parked past
-       * quit, so shutdown cannot hang on the join. */
-      while (!t->quit && !t->queued)
-         scond_wait_timeout(t->cond, t->lock, 100000);
-      if (t->quit)
+      if (ct_quitting(t))
       {
          slock_unlock(t->lock);
          return;
       }
-      if (!ct_next_job(t, &job))
+      if ((got = ct_next_job(t, &job)))
       {
-         slock_unlock(t->lock);
+         slot = ct_inflight_claim_locked(t, job.e->path);
+         ct_counts_sync(t);
+      }
+      slock_unlock(t->lock);
+
+      if (!got)
+      {
+         /* nothing queued: wait for a request or for free() */
+         int key = retro_eventcount_prepare_wait(&t->work_ec);
+         if (     ct_quitting(t)
+               || retro_atomic_load_acquire_int(&t->jobs_queued))
+            retro_eventcount_cancel_wait(&t->work_ec);
+         else
+            retro_eventcount_commit_wait(&t->work_ec, key);
          continue;
       }
-      slot = ct_inflight_claim_locked(t, job.e->path);
-      slock_unlock(t->lock);
 
       actx.t     = t;
       actx.epoch = job.epoch;
@@ -915,15 +1018,15 @@ static void ct_worker(void *ud)
       slock_lock(t->lock);
       if (slot >= 0)
          t->video_inflight[slot] = NULL;
-      aborted = !bits && (t->quit || t->epoch != job.epoch);
+      aborted = !bits && (ct_quitting(t) || t->epoch != job.epoch);
       ct_push_done(t, &job, bits);
-      /* A waiting animation thread re-checks: its still landed (parked
-       * or not), or the decode failed and it opens its own. */
-      if (slot >= 0 && t->anim_cond)
-         scond_broadcast(t->anim_cond);
       if (aborted && t->done_len)
          t->done[t->done_len - 1].aborted = true;
       slock_unlock(t->lock);
+      /* A waiting animation thread re-checks: its still landed (parked
+       * or not), or the decode failed and it opens its own. */
+      if (slot >= 0)
+         retro_eventcount_notify(&t->anim_ec);
    }
 }
 #endif
@@ -931,32 +1034,12 @@ static void ct_worker(void *ud)
 /* --- animation ------------------------------------------------------------ */
 
 #ifdef HAVE_THREADS
-/* Push one animation frame (already scaled) for the current
- * animation. Lock held. */
-static void ct_anim_push(companion_thumbs_t *t, uint32_t *bits,
-      unsigned gen, uintptr_t tag, const char *path, unsigned dims)
+/* Whether the animation @gen plays on: not once another animate(), a
+ * stop or free() has come. */
+static bool ct_anim_stale(companion_thumbs_t *t, unsigned gen)
 {
-   struct ct_done *d;
-   if (t->done_len == t->done_cap)
-   {
-      size_t nc = t->done_cap * 2;
-      struct ct_done *nd = (struct ct_done*)realloc(t->done, nc * sizeof(*nd));
-      if (!nd)
-      {
-         free(bits);
-         return;
-      }
-      t->done     = nd;
-      t->done_cap = nc;
-   }
-   d            = &t->done[t->done_len++];
-   memset(d, 0, sizeof(*d));
-   d->tag       = tag;
-   d->bits      = bits;
-   d->anim      = true;
-   d->anim_gen  = gen;
-   d->anim_path = strldup(path, strlen(path) + 1);
-   d->anim_dims = dims;
+   return ct_quitting(t)
+      || (unsigned)retro_atomic_load_acquire_int(&t->anim_gen_now) != gen;
 }
 
 /* One animation at a time, played exactly the way RetroArch's File
@@ -964,10 +1047,11 @@ static void ct_anim_push(companion_thumbs_t *t, uint32_t *bits,
  * sliding window (frames start from the first resident bytes; a tail-
  * moov MP4 opens from a few MiB; memory admission scales with the
  * heap), feeds the window ahead of the decoder each frame, and hands
- * back frames on the container's clock. This thread scales each frame,
- * pushes it, sleeps its duration - until superseded or quit. The
- * session is published (t->anim_sess) so the UI thread can start and
- * feed the preview audio through the mixer on its own ticks. */
+ * back frames on the container's clock. This thread scales each frame
+ * into the triple buffer's back slot, publishes it, and holds it for
+ * its duration - until superseded or quit. The session is published
+ * (t->anim_sess) so the UI thread can start and feed the preview audio
+ * through the mixer on its own ticks. */
 static void ct_anim_thread(void *ud)
 {
    companion_thumbs_t *t = (companion_thumbs_t*)ud;
@@ -982,20 +1066,31 @@ static void ct_anim_thread(void *ud)
       int loops_left;
       retro_time_t next_at;
 
-      slock_lock(t->lock);
-      while (!t->quit && !t->anim.wanted)
-         scond_wait_timeout(t->anim_cond, t->lock, 100000);
-      if (t->quit)
+      /* a request */
+      for (;;)
       {
-         slock_unlock(t->lock);
-         return;
+         int key;
+         if (ct_quitting(t) || retro_atomic_load_acquire_int(&t->anim_wanted))
+            break;
+         key = retro_eventcount_prepare_wait(&t->anim_ec);
+         if (ct_quitting(t) || retro_atomic_load_acquire_int(&t->anim_wanted))
+         {
+            retro_eventcount_cancel_wait(&t->anim_ec);
+            break;
+         }
+         retro_eventcount_commit_wait(&t->anim_ec, key);
       }
+      if (ct_quitting(t))
+         return;
+
+      slock_lock(t->lock);
       strlcpy(path, t->anim.path ? t->anim.path : "", sizeof(path));
       dims = t->anim.dims;
-      tag = t->anim.tag;
-      bg  = t->anim.bg;
-      gen = t->anim.gen;
+      tag  = t->anim.tag;
+      bg   = t->anim.bg;
+      gen  = t->anim.gen;
       t->anim.wanted = false;
+      retro_atomic_store_release_int(&t->anim_wanted, 0);
       sess           = NULL;
       if (path[0])
       {
@@ -1010,6 +1105,7 @@ static void ct_anim_thread(void *ud)
          {
             for (;;)
             {
+               int key;
                if (t->parked.sess && t->parked.path
                      && !strcmp(t->parked.path, path))
                {
@@ -1019,10 +1115,15 @@ static void ct_anim_thread(void *ud)
                   t->parked.path = NULL;
                   break;
                }
-               if (t->quit || t->anim.gen != gen
+               if (ct_quitting(t) || t->anim.gen != gen
                      || !ct_video_still_pending(t, path))
                   break;
-               scond_wait_timeout(t->anim_cond, t->lock, 100000);
+               /* the wait opens before the lock goes: a worker that
+                * parks or finishes after this notifies after */
+               key = retro_eventcount_prepare_wait(&t->anim_ec);
+               slock_unlock(t->lock);
+               retro_eventcount_commit_wait_timeout(&t->anim_ec, key, 100000);
+               slock_lock(t->lock);
             }
          }
       }
@@ -1049,16 +1150,15 @@ static void ct_anim_thread(void *ud)
 
       slock_lock(t->lock);
       t->anim_opening = false;
-      if (t->quit || t->anim.gen != gen)
+      slock_unlock(t->lock);
+      if (ct_anim_stale(t, gen))
       {
-         slock_unlock(t->lock);
          gfx_anim_preview_close(sess);
          continue;
       }
-      t->anim_sess     = sess;          /* the UI thread may start audio */
-      t->anim_sess_gen = gen;
-      retro_atomic_store_release_int(&t->anim_sess_live, 1);
-      slock_unlock(t->lock);
+      /* the UI thread may start the audio */
+      retro_atomic_store_release_int(&t->anim_sess_gen, (int)gen);
+      retro_atomic_store_release_ptr(&t->anim_sess, sess);
 
       for (;;)
       {
@@ -1066,12 +1166,9 @@ static void ct_anim_thread(void *ud)
          int duration_ms = 0;
          bool native_argb = false;
          uint32_t *bits;
-         bool stale;
+         struct ct_anim_frame *fr;
 
-         slock_lock(t->lock);
-         stale = t->quit || t->anim.gen != gen;
-         slock_unlock(t->lock);
-         if (stale)
+         if (ct_anim_stale(t, gen))
             break;
 
          /* keep the window straddling the decoder's frontier */
@@ -1097,47 +1194,47 @@ static void ct_anim_thread(void *ud)
          if (!bits)
             break;
 
-         slock_lock(t->lock);
-         if (t->quit || t->anim.gen != gen)
-            free(bits);
-         else
-            ct_anim_push(t, bits, gen, tag, path, dims);
+         /* The back slot is this thread's until it is published. */
+         fr = (struct ct_anim_frame*)retro_triple_buffer_back(&t->anim_tb);
+         free(fr->bits);
+         fr->bits = bits;
+         fr->dims = dims;
+         fr->gen  = gen;
+         fr->tag  = tag;
+         strlcpy(fr->path, path, sizeof(fr->path));
+         retro_triple_buffer_publish(&t->anim_tb);
 
          /* Hold the frame for its duration, on a schedule rather than
           * a sleep after each push, so decode and scale time does not
-          * stretch every frame. Waiting on anim_cond, which a new
-          * animation, a stop and shutdown all signal, lets any of them
-          * end it at once; it used to sleep the frame out - which for a
-          * GIF can be seconds - before it looked. */
+          * stretch every frame. A new animation, a stop and free() all
+          * notify, which ends the hold at once. */
          {
             retro_time_t now = cpu_features_get_time_usec();
             next_at += (retro_time_t)duration_ms * 1000;
             if (next_at < now)
                next_at = now;
-            while (!t->quit && t->anim.gen == gen && now < next_at)
+            while (now < next_at)
             {
-               scond_wait_timeout(t->anim_cond, t->lock, next_at - now);
+               int key = retro_eventcount_prepare_wait(&t->anim_ec);
+               if (ct_anim_stale(t, gen))
+               {
+                  retro_eventcount_cancel_wait(&t->anim_ec);
+                  break;
+               }
+               retro_eventcount_commit_wait_timeout(&t->anim_ec, key,
+                     next_at - now);
                now = cpu_features_get_time_usec();
             }
          }
-         slock_unlock(t->lock);
       }
 
-      /* Unpublish before closing: the UI thread only touches the
-       * session while it is published, under the lock. */
-      slock_lock(t->lock);
-      if (t->anim_sess == sess)
-      {
-         t->anim_sess = NULL;
-         retro_atomic_store_release_int(&t->anim_sess_live, 0);
-      }
-      slock_unlock(t->lock);
+      /* Unpublish, and wait out a UI-thread call inside it, before
+       * closing. */
+      ct_sess_retire(t);
       gfx_anim_preview_close(sess);   /* audio too */
    }
 }
-#endif
 
-#ifdef HAVE_THREADS
 /* Lock held. */
 static void ct_parked_drop(companion_thumbs_t *t)
 {
@@ -1146,6 +1243,17 @@ static void ct_parked_drop(companion_thumbs_t *t)
    free(t->parked.path);
    t->parked.sess = NULL;
    t->parked.path = NULL;
+}
+
+/* Silence the session playing now, if any. UI thread. */
+static void ct_sess_audio_stop(companion_thumbs_t *t)
+{
+   gfx_anim_preview_t *sess = ct_sess_acquire(t);
+   if (sess)
+   {
+      gfx_anim_preview_audio_stop(sess);
+      ct_sess_release(t);
+   }
 }
 #endif
 
@@ -1158,9 +1266,8 @@ void companion_thumbs_animate(companion_thumbs_t *t, const char *path,
 #ifdef HAVE_THREADS
    if (!t->lock)
       return;
+   ct_sess_audio_stop(t); /* the previous one, now */
    slock_lock(t->lock);
-   if (t->anim_sess)
-      gfx_anim_preview_audio_stop(t->anim_sess); /* the previous one, now */
    /* A session parked for the previous path is nobody's now. */
    if (t->parked.path && strcmp(t->parked.path, path))
       ct_parked_drop(t);
@@ -1171,13 +1278,13 @@ void companion_thumbs_animate(companion_thumbs_t *t, const char *path,
    t->anim.bg     = bg;
    t->anim.gen++;
    t->anim.wanted = true;
-   if (!t->anim_cond)
-      t->anim_cond = scond_new();
-   if (!t->anim_thread && t->anim_cond)
+   retro_atomic_store_release_int(&t->anim_gen_now, (int)t->anim.gen);
+   retro_atomic_store_release_int(&t->anim_wanted, 1);
+   retro_atomic_store_release_int(&t->anim_asked, 1);
+   if (!t->anim_thread)
       t->anim_thread = sthread_create(ct_anim_thread, t);
-   if (t->anim_cond)
-      scond_signal(t->anim_cond);
    slock_unlock(t->lock);
+   retro_eventcount_notify(&t->anim_ec);
 #else
    (void)path; (void)dims; (void)tag; (void)bg;
 #endif
@@ -1193,32 +1300,31 @@ void companion_thumbs_animate_stop(companion_thumbs_t *t)
    slock_lock(t->lock);
    t->anim.gen++;
    t->anim.wanted = false;
+   retro_atomic_store_release_int(&t->anim_gen_now, (int)t->anim.gen);
+   retro_atomic_store_release_int(&t->anim_wanted, 0);
    ct_parked_drop(t);
+   slock_unlock(t->lock);
    /* Silence at once: the thread closes the session (and its audio)
     * at its next frame, but the mixer stream should not play on until
-    * then. Under the lock, so the session is still published. */
-   if (t->anim_sess)
-      gfx_anim_preview_audio_stop(t->anim_sess);
+    * then. */
+   ct_sess_audio_stop(t);
    /* Out of a frame's hold, or a wait for a still, at once. */
-   if (t->anim_cond)
-      scond_broadcast(t->anim_cond);
-   slock_unlock(t->lock);
+   retro_eventcount_notify(&t->anim_ec);
 #endif
 }
 
 bool companion_thumbs_animating(companion_thumbs_t *t)
 {
-   bool on = false;
    if (!t)
       return false;
 #ifdef HAVE_THREADS
    if (!t->lock)
       return false;
-   slock_lock(t->lock);
-   on = t->anim.wanted || t->anim_sess != NULL;
-   slock_unlock(t->lock);
+   return retro_atomic_load_acquire_int(&t->anim_wanted)
+      || retro_atomic_load_acquire_ptr(&t->anim_sess) != NULL;
+#else
+   return false;
 #endif
-   return on;
 }
 
 /* --- API ------------------------------------------------------------------ */
@@ -1247,9 +1353,22 @@ companion_thumbs_t *companion_thumbs_new(size_t budget_bytes, unsigned threads)
       }
       if (n > 4)
          n = 4;
+      if (!retro_eventcount_init(&t->work_ec))
+      {
+         companion_thumbs_free(t);
+         return NULL;
+      }
+      if (!retro_eventcount_init(&t->anim_ec))
+      {
+         retro_eventcount_free(&t->work_ec);
+         companion_thumbs_free(t);
+         return NULL;
+      }
+      t->ecs_inited = true;
+      retro_triple_buffer_init(&t->anim_tb, &t->anim_frames[0],
+            &t->anim_frames[1], &t->anim_frames[2]);
       t->lock = slock_new();
-      t->cond = scond_new();
-      if (t->lock && t->cond)
+      if (t->lock)
          for (i = 0; i < n; i++)
          {
             t->workers[i] = sthread_create(ct_worker, t);
@@ -1270,39 +1389,29 @@ void companion_thumbs_free(companion_thumbs_t *t)
    if (!t)
       return;
 #ifdef HAVE_THREADS
-   if (t->lock)
+   if (t->ecs_inited)
    {
-      slock_lock(t->lock);
-      t->quit = true;
-      if (t->cond)
-         scond_broadcast(t->cond);
-      slock_unlock(t->lock);
+      retro_atomic_store_release_int(&t->quit, 1);
+      retro_eventcount_notify(&t->work_ec);
+      retro_eventcount_notify(&t->anim_ec);
       for (i = 0; i < t->nworkers; i++)
          sthread_join(t->workers[i]);
       if (t->anim_thread)
-      {
-         slock_lock(t->lock);
-         if (t->anim_cond)
-            scond_broadcast(t->anim_cond);
-         slock_unlock(t->lock);
          sthread_join(t->anim_thread);
-      }
-      if (t->anim_cond)
-         scond_free(t->anim_cond);
-      if (t->cond)
-         scond_free(t->cond);
-      slock_free(t->lock);
+      retro_eventcount_free(&t->anim_ec);
+      retro_eventcount_free(&t->work_ec);
    }
+   if (t->lock)
+      slock_free(t->lock);
    if (t->parked.sess)
       gfx_anim_preview_close(t->parked.sess);
    free(t->parked.path);
+   for (i = 0; i < 3; i++)
+      free(t->anim_frames[i].bits);
 #endif
    free(t->anim.path);
    for (i = 0; i < t->done_len; i++)
-   {
       free(t->done[i].bits);
-      free(t->done[i].anim_path);
-   }
    free(t->done);
    free(t->urgent.v);
    free(t->prefetch.v);
@@ -1360,12 +1469,12 @@ bool companion_thumbs_request(companion_thumbs_t *t, const char *path,
    j->tag = tag;
    j->bg    = bg;
    j->epoch = t->epoch;
-   t->queued++;
-#ifdef HAVE_THREADS
-   if (t->cond)
-      scond_signal(t->cond);
-#endif
+   ct_counts_sync(t);
    CT_UNLOCK(t);
+#ifdef HAVE_THREADS
+   if (t->ecs_inited)
+      retro_eventcount_notify(&t->work_ec);
+#endif
    return true;
 }
 
@@ -1387,17 +1496,14 @@ void companion_thumbs_cancel(companion_thumbs_t *t)
       if (j.e->refs)
          j.e->refs--;
    }
-   t->queued = 0;
-#ifdef HAVE_THREADS
-   /* The rings just emptied are what ct_video_still_pending() reads: an
-    * animation thread waiting for a still from them re-checks now. */
-   if (t->anim_cond)
-      scond_broadcast(t->anim_cond);
-#endif
    /* Jobs a worker already holds: release their entries' queued flag
     * too (they are from the old epoch), so those keys can be requested
     * again; when the old result lands it is cached or deduped. */
    t->epoch++;
+#ifdef HAVE_THREADS
+   retro_atomic_store_release_int(&t->epoch_now, (int)t->epoch);
+#endif
+   ct_counts_sync(t);
    {
       size_t i;
       for (i = 0; i < t->ht_size; i++)
@@ -1408,6 +1514,12 @@ void companion_thumbs_cancel(companion_thumbs_t *t)
       }
    }
    CT_UNLOCK(t);
+#ifdef HAVE_THREADS
+   /* The rings just emptied are what ct_video_still_pending() reads: an
+    * animation thread waiting for a still from them re-checks now. */
+   if (t->ecs_inited)
+      retro_eventcount_notify(&t->anim_ec);
+#endif
 }
 
 size_t companion_thumbs_poll(companion_thumbs_t *t,
@@ -1419,27 +1531,45 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
       return 0;
 
 #ifdef HAVE_THREADS
-   /* Preview audio lives on the UI thread (the mixer): start it once
-    * the animation thread has published its session, and feed its
-    * window every poll, as gfx_thumbnail_animate does per frame. */
-   if (t->lock && retro_atomic_load_acquire_int(&t->anim_sess_live))
+   if (t->ecs_inited)
    {
-      gfx_anim_preview_t *sess;
-      bool start = false;
-      slock_lock(t->lock);
-      sess = t->anim_sess;
-      if (sess && t->anim_sess_gen == t->anim.gen && t->anim_audio_gen != t->anim.gen)
+      struct ct_anim_frame *fr;
+      /* Preview audio lives on the UI thread (the mixer): start it once
+       * the animation thread has published its session, and feed its
+       * window every poll, as gfx_thumbnail_animate does per frame. */
+      gfx_anim_preview_t *sess = ct_sess_acquire(t);
+      if (sess)
       {
-         t->anim_audio_gen = t->anim.gen;
-         start = true;
+         unsigned gen = (unsigned)retro_atomic_load_acquire_int(
+               &t->anim_gen_now);
+         if ((unsigned)retro_atomic_load_acquire_int(&t->anim_sess_gen)
+               == gen)
+         {
+            if (t->anim_audio_gen != gen)
+            {
+               t->anim_audio_gen = gen;
+               gfx_anim_preview_audio_begin(sess);
+            }
+            gfx_anim_preview_audio_feed(sess);
+         }
+         ct_sess_release(t);
       }
-      if (sess && t->anim_sess_gen == t->anim.gen)
+
+      /* The newest animation frame, if it is the current animation's. */
+      if (     (fr = (struct ct_anim_frame*)
+               retro_triple_buffer_take(&t->anim_tb))
+            && fr->bits
+            && fr->gen == (unsigned)retro_atomic_load_acquire_int(
+               &t->anim_gen_now))
       {
-         if (start)
-            gfx_anim_preview_audio_begin(sess);
-         gfx_anim_preview_audio_feed(sess);
+         if (cb)
+            cb(ud, fr->path, fr->dims, fr->tag, fr->bits);
+         delivered++;
       }
-      slock_unlock(t->lock);
+
+      /* Nothing finished: no lock to take. */
+      if (!retro_atomic_load_acquire_int(&t->done_n))
+         return delivered;
    }
 #endif
 
@@ -1448,7 +1578,7 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
    {
       retro_time_t end = cpu_features_get_time_usec() + budget_us;
       struct ct_job job;
-      while (t->queued && cpu_features_get_time_usec() < end
+      while (ct_queued(t) && cpu_features_get_time_usec() < end
             && ct_next_job(t, &job))
          ct_push_done(t, &job, ct_decode(t, job.e->path,
                job.e->dims, job.bg, NULL, NULL, 0));
@@ -1467,6 +1597,7 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
       if (n < t->done_len)
          memmove(t->done, t->done + n, (t->done_len - n) * sizeof(*t->done));
       t->done_len -= n;
+      ct_counts_sync(t);
       CT_UNLOCK(t);
       if (!n)
          break;
@@ -1474,21 +1605,6 @@ size_t companion_thumbs_poll(companion_thumbs_t *t,
       for (i = 0; i < n; i++)
       {
          struct ct_entry *e = batch[i].e;
-         if (batch[i].anim)
-         {
-            /* An animation frame: only the current animation's. */
-            bool current;
-            CT_LOCK(t);
-            current = (batch[i].anim_gen == t->anim.gen);
-            CT_UNLOCK(t);
-            if (current && cb && batch[i].bits)
-               cb(ud, batch[i].anim_path, batch[i].anim_dims,
-                     batch[i].tag, batch[i].bits);
-            free(batch[i].bits);
-            free(batch[i].anim_path);
-            delivered++;
-            continue;
-         }
          if (e->refs)
             e->refs--;             /* this record's reference */
          if (batch[i].aborted)
@@ -1575,24 +1691,25 @@ size_t companion_thumbs_cached_count(companion_thumbs_t *t) { return t ? t->cach
 size_t companion_thumbs_cached_bytes(companion_thumbs_t *t) { return t ? t->cached_bytes : 0; }
 size_t companion_thumbs_queued(companion_thumbs_t *t)
 {
-   size_t n;
    if (!t)
       return 0;
-   CT_LOCK(t);
-   n = t->queued;
-   CT_UNLOCK(t);
-   return n;
+#ifdef HAVE_THREADS
+   if (t->ecs_inited)
+      return (size_t)retro_atomic_load_acquire_int(&t->jobs_queued);
+#endif
+   return ct_queued(t);
 }
 
 size_t companion_thumbs_pending(companion_thumbs_t *t)
 {
-   size_t n;
    if (!t)
       return 0;
-   CT_LOCK(t);
-   n = t->queued + t->inflight + t->done_len;
-   if (t->anim.wanted || t->anim.path)
-      n++;
-   CT_UNLOCK(t);
-   return n;
+#ifdef HAVE_THREADS
+   if (t->ecs_inited)
+      return (size_t)retro_atomic_load_acquire_int(&t->pending_n)
+         + ((   retro_atomic_load_acquire_int(&t->anim_wanted)
+             || retro_atomic_load_acquire_int(&t->anim_asked)) ? 1 : 0);
+#endif
+   return ct_queued(t) + t->inflight + t->done_len
+      + ((t->anim.wanted || t->anim.path) ? 1 : 0);
 }
