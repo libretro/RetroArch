@@ -24,9 +24,10 @@ KERNEL := $(GK)/boot/crt0.S $(GK)/cpu/exception.S $(GK)/cpu/cache.S \
           $(GK)/kernel/boot.c $(GK)/kernel/exception.c $(GK)/kernel/irq.c \
           $(GK)/kernel/sched.c $(GK)/kernel/newlib.c $(GK)/kernel/power.c \
           $(GK)/kernel/vi.c $(GK)/kernel/console.c $(GK)/kernel/gx.c \
+          $(GK)/kernel/audio.c $(GK)/kernel/pad.c \
           $(ROOT)/gfx/bitmapfont.c
 
-TESTS := kernel_test vi_test gx_test
+TESTS := kernel_test vi_test gx_test io_test
 ifeq ($(PLATFORM),rvl)
    KERNEL += $(GK)/rvl/ipc.c $(GK)/rvl/stm.c $(GK)/rvl/es.c $(GK)/rvl/conf.c \
              $(GK)/rvl/ave.c

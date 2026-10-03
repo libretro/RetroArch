@@ -11,6 +11,9 @@ MODE=$3
 DOLPHIN=${DOLPHIN:-dolphin-emu-nogui}
 USERDIR=$(mktemp -d)
 LOG="$USERDIR/out.log"
+# A controller on port 1 that counts as plugged in with no input device.
+mkdir -p "$USERDIR/Config"
+printf '[GCPad1]\nOptions/Always Connected = True\n' > "$USERDIR/Config/GCPadNew.ini"
 set -- -u "$USERDIR" -p headless \
    -C Dolphin.Interface.DebugModeEnabled=True \
    -C Logger.Logs.OSREPORT_HLE=True \
