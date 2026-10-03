@@ -112,6 +112,9 @@
 
       FONT_LAYOUT_LINE(fl_line, fl_width, fl_count,
             (size_t)(fl_delim - fl_m));
+      /* a driver's FONT_LAYOUT_LINE need not use either */
+      (void)fl_width;
+      (void)fl_count;
 
       fl_scan = fl_m;
       while (fl_scan < fl_delim)
