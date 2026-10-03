@@ -106,6 +106,18 @@ jobs:
           export WINEDEBUG=-all WINEPREFIX=$RUNNER_TEMP/wineprefix
           # the tools below are run through wine, so it must be there
           command -v wine >/dev/null
+          # One wineserver for the whole step. Ubuntu's wrapper starts
+          # it with -p0: it exits with each tool and the next tool
+          # starts another. A tool that starts while the last server
+          # is still on its way out is cut off by it before main()
+          # ("wine client error:0: recvmsg: Connection reset by peer")
+          # and the lane fails with nothing wrong in the tree. The
+          # first process brings up Wine's services, which keep its
+          # output for as long as they live, so it is given none.
+          mkdir -p "$WINEPREFIX"
+          wineserver -p
+          trap 'wineserver -k || true; sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root wineserver -k || true' EXIT
+          wine cmd /c exit > /dev/null 2>&1 < /dev/null
           make -C libretro-common -f Makefile.test win32-wine-check
           export CC=x86_64-w64-mingw32-gcc RUNNER=wine EXE=.exe
           make -C samples/network/tls_retro clean
@@ -116,7 +128,8 @@ jobs:
           # owned by someone else and creating one inside a directory it
           # does not own ($RUNNER_TEMP belongs to the runner user), so the
           # root run gets a prefix under /tmp with root's own HOME
-          sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root wineboot -u
+          sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root sh -c 'mkdir -p "$WINEPREFIX" && wineserver -p'
+          sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root wineboot -u > /dev/null 2>&1 < /dev/null
           sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root samples/network/smb_retro/local_samba_test.sh
           sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root samples/network/smb_retro/local_ad_dc_test.sh
           sudo make -C samples/network/smb_retro clean
