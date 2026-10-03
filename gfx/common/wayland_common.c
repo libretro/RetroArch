@@ -455,6 +455,10 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
 
    if (wl->wl_keyboard)
       wayland_keyboard_release(wl->wl_keyboard);
+   /* (this was never destroyed; it went with the connection) */
+   if (wl->wl_relative_pointer)
+      zwp_relative_pointer_v1_destroy(wl->wl_relative_pointer);
+   wl->wl_relative_pointer = NULL;
    if (wl->wl_pointer)
       wayland_pointer_release(wl->wl_pointer);
    if (wl->wl_touch)
@@ -569,6 +573,19 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       wl_compositor_destroy(wl->compositor);
    if (wl->registry)
       wl_registry_destroy(wl->registry);
+
+   if (wl->input.events)
+      RARCH_DBG("[Wayland] Input events handled: %u, of them on a thread"
+            " other than the frontend's: %u.\n",
+            wl->input.events, wl->input.events_elsewhere);
+   wl->input.events              = 0;
+   wl->input.events_elsewhere    = 0;
+
+   /* after the seat and its devices, which were on it, and before the
+    * connection */
+   if (wl->input.queue)
+      wl_event_queue_destroy(wl->input.queue);
+   wl->input.queue               = NULL;
 
    if (wl->input.dpy)
    {
@@ -1025,6 +1042,21 @@ bool gfx_ctx_wl_init_common(
    frontend_driver_destroy_signal_handler_state();
 
    wl->input.dpy                    = wl_display_connect(NULL);
+   /* The seat's events get a queue of their own, which only the input
+    * driver's poll dispatches; see wayland_input_dispatch().
+    * RETROARCH_WAYLAND_INPUT_QUEUE=0 in the environment leaves them
+    * on the default queue, as they were. */
+   wl->input.queue                  = NULL;
+   wl->input.events                 = 0;
+   wl->input.events_elsewhere       = 0;
+#ifdef WAYLAND_HAVE_INPUT_QUEUE
+   if (wl->input.dpy)
+   {
+      const char *off = getenv("RETROARCH_WAYLAND_INPUT_QUEUE");
+      if (!off || off[0] != '0')
+         wl->input.queue            = wl_display_create_queue(wl->input.dpy);
+   }
+#endif
    wl->last_buffer_scale            = 1;
    wl->buffer_scale                 = 1;
    wl->pending_buffer_scale         = 1;
@@ -1053,6 +1085,15 @@ bool gfx_ctx_wl_init_common(
    wl_display_roundtrip(wl->input.dpy);
    /* second roundtrip for listeners on bound globals (wl_output, wl_seat) */
    wl_display_roundtrip(wl->input.dpy);
+   /* the seat's are on the input queue: its capabilities, and with
+    * them the keyboard and the pointer, are wanted before the window
+    * is set up, as they were when the roundtrip above brought them.
+    * The input driver is not polling yet, so nothing else dispatches
+    * this queue. */
+#ifdef WAYLAND_HAVE_INPUT_QUEUE
+   if (wl->input.queue)
+      wl_display_roundtrip_queue(wl->input.dpy, wl->input.queue);
+#endif
 
    /* The display's peak luminance, as the compositor describes the
     * output the surface is on or else the first it lists; it arrives

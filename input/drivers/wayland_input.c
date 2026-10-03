@@ -74,7 +74,8 @@ static void input_wl_poll(void *data)
    if (!wl)
       return;
 
-   flush_wayland_fd(wl);
+   /* the input queue's events, here on the frontend's thread */
+   wayland_input_dispatch(wl);
 
    wl->mouse.last_x             = wl->mouse.x;
    wl->mouse.last_y             = wl->mouse.y;

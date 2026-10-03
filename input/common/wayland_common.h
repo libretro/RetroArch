@@ -221,6 +221,17 @@ typedef struct input_ctx_wayland_data
    struct wl_display *dpy;
    const input_device_driver_t *joypad;
    struct gfx_ctx_wayland_data *gfx;
+   /* The event queue of the seat and of what comes from it - the
+    * keyboard, the pointer, touch, relative motion. Only the input
+    * driver's poll dispatches it (wayland_input_dispatch()), so those
+    * events reach their handlers on the frontend's thread, whichever
+    * thread read them off the connection. NULL: the seat is on the
+    * default queue with everything else, as it used to be. */
+   struct wl_event_queue *queue;
+   /* events handled, and how many of them on a thread that is not the
+    * frontend's; logged when the connection is closed */
+   unsigned events;
+   unsigned events_elsewhere;
 
    int fd;
 
@@ -263,6 +274,17 @@ typedef struct data_offer_ctx
  * handlers, between the shared configure processing and the clearing
  * of 'configured'.  EGL uses it to resize/create the wl_egl_window;
  * Vulkan needs no additional action and passes NULL. */
+/* Not on webOS, whose Wayland library is an older one: there the
+ * seat stays on the default queue. */
+#ifndef WEBOS
+#define WAYLAND_HAVE_INPUT_QUEUE 1
+#endif
+
+/* The input driver's poll: dispatch the input queue, reading the
+ * connection if nothing else has. Where there is no input queue it is
+ * flush_wayland_fd(), which dispatches everything. */
+void wayland_input_dispatch(input_ctx_wayland_data_t *wl);
+
 typedef void (*driver_configure_handler_t)(struct gfx_ctx_wayland_data *wl);
 
 typedef struct gfx_ctx_wayland_data

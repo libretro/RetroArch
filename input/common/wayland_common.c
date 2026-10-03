@@ -56,6 +56,17 @@
 
 #define SPLASH_SHM_NAME "retroarch-wayland-splash"
 
+/* Counted for the log: an input event, and whether it reached its
+ * handler on the frontend's thread. */
+static void wl_input_event_seen(gfx_ctx_wayland_data_t *wl)
+{
+   wl->input.events++;
+#ifdef HAVE_THREADS
+   if (!task_is_on_main_thread())
+      wl->input.events_elsewhere++;
+#endif
+}
+
 static void wl_keyboard_handle_keymap(void* data,
       struct wl_keyboard* keyboard,
       uint32_t format,
@@ -107,6 +118,8 @@ static void wl_keyboard_handle_key(void *data,
    int value                  = 1;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    uint32_t keysym            = key;
+
+   wl_input_event_seen(wl);
 
    /* Handle 'duplicate' inputs that correspond
     * to the same RETROK_* key */
@@ -272,6 +285,7 @@ static void wl_pointer_handle_motion(void *data,
       wl_fixed_t sy)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   wl_input_event_seen(wl);
    wl->input.mouse.x          = wl->fractional_scale ?
          (int) FRACTIONAL_SCALE_MULT(wl_fixed_to_int(sx), wl->fractional_scale_num) :
          wl_fixed_to_int((wl_fixed_t)wl->buffer_scale * sx);
@@ -288,6 +302,8 @@ static void wl_pointer_handle_button(void *data,
       uint32_t state)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   wl_input_event_seen(wl);
 
    if (wl->input.mouse.surface != wl->surface)
       return;
@@ -603,6 +619,7 @@ static void handle_relative_motion(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
+   wl_input_event_seen(wl);
    wl->input.mouse.delta_x = wl_fixed_to_int(dx_unaccel);
    wl->input.mouse.delta_y = wl_fixed_to_int(dy_unaccel);
 
@@ -660,9 +677,29 @@ static void wl_seat_handle_capabilities(void *data,
       wl_pointer_add_listener(wl->wl_pointer, &pointer_listener, wl);
       if (wl->relative_pointer_manager)
       {
+         /* A new object takes the queue of the one that makes it, and
+          * the manager is on the default queue. So it is made through
+          * a wrapper of the manager that is on the input queue: the
+          * relative pointer is then on it from its first event. */
+         struct zwp_relative_pointer_manager_v1 *manager =
+            wl->relative_pointer_manager;
+         void *wrapper = NULL;
+#ifdef WAYLAND_HAVE_INPUT_QUEUE
+         if (wl->input.queue)
+            wrapper    = wl_proxy_create_wrapper(manager);
+         if (wrapper)
+         {
+            wl_proxy_set_queue((struct wl_proxy*)wrapper, wl->input.queue);
+            manager = (struct zwp_relative_pointer_manager_v1*)wrapper;
+         }
+#endif
          wl->wl_relative_pointer =
             zwp_relative_pointer_manager_v1_get_relative_pointer(
-               wl->relative_pointer_manager, wl->wl_pointer);
+               manager, wl->wl_pointer);
+#ifdef WAYLAND_HAVE_INPUT_QUEUE
+         if (wrapper)
+            wl_proxy_wrapper_destroy(wrapper);
+#endif
          zwp_relative_pointer_v1_add_listener(wl->wl_relative_pointer,
             &relative_pointer_listener, wl);
       }
@@ -675,6 +712,10 @@ static void wl_seat_handle_capabilities(void *data,
    }
    else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && wl->wl_pointer)
    {
+      /* with its pointer: a pointer that comes back gets a new one */
+      if (wl->wl_relative_pointer)
+         zwp_relative_pointer_v1_destroy(wl->wl_relative_pointer);
+      wl->wl_relative_pointer = NULL;
       wayland_pointer_release(wl->wl_pointer);
       wl->wl_pointer = NULL;
    }
@@ -975,6 +1016,13 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       wl->seat = (struct wl_seat*)wl_registry_bind(reg, id,
             &wl_seat_interface, MIN(version, MIN(WL_SEAT_VERSION_MAX,
                (uint32_t)wl_seat_interface.version)));
+      /* The seat goes on the input queue, and the keyboard, pointer
+       * and touch objects made from it follow it there. Nothing has
+       * been read off the connection since the bind above - this is
+       * the registry's handler - so no event of the seat's is on the
+       * default queue. */
+      if (wl->input.queue)
+         wl_proxy_set_queue((struct wl_proxy*)wl->seat, wl->input.queue);
       wl_seat_add_listener(wl->seat, &seat_listener, wl);
       wl_setup_data_device(wl);
    }
@@ -1455,4 +1503,49 @@ void flush_wayland_fd(void *data)
    }
    else
       wl_display_cancel_read(wl->dpy);
+}
+
+/* The input driver's poll: the input queue's events, on the calling
+ * thread - the frontend's.
+ *
+ * The seat and what comes from it are on a queue of their own
+ * (wl->queue). Whoever reads the connection - this, or the video
+ * side's flush_wayland_fd(), on the video thread when video is
+ * threaded - sorts what it reads into the queues, and each side then
+ * dispatches only its own: flush_wayland_fd() the default queue, with
+ * the surface, the outputs and the frame callbacks, and this the
+ * input queue. So a key or a pointer event reaches its handler here
+ * and nowhere else. Before, both sides dispatched the one queue, and
+ * with threaded video an input event was handled on whichever thread
+ * got to it first. */
+void wayland_input_dispatch(input_ctx_wayland_data_t *wl)
+{
+#ifdef WAYLAND_HAVE_INPUT_QUEUE
+   struct pollfd fd = {0};
+#endif
+
+   if (!wl->queue)
+   {
+      flush_wayland_fd(wl);
+      return;
+   }
+
+#ifdef WAYLAND_HAVE_INPUT_QUEUE
+   fd.fd            = wl->fd;
+   fd.events        = POLLIN | POLLERR | POLLHUP;
+
+   /* what is already sorted into the queue, until a read is allowed */
+   while (wl_display_prepare_read_queue(wl->dpy, wl->queue))
+      wl_display_dispatch_queue_pending(wl->dpy, wl->queue);
+
+   wl_display_flush(wl->dpy);
+
+   if (poll(&fd, 1, 0) > 0 && (fd.revents & POLLIN))
+   {
+      wl_display_read_events(wl->dpy);
+      wl_display_dispatch_queue_pending(wl->dpy, wl->queue);
+   }
+   else
+      wl_display_cancel_read(wl->dpy);
+#endif
 }
