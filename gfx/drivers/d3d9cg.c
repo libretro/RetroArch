@@ -3858,8 +3858,8 @@ static bool d3d9_cg_init_internal(d3d9_video_t *d3d,
    if (!d3d9_cg_initialize(d3d, &d3d->video_info))
       return false;
 
-   d3d_input_driver(settings->arrays.input_joypad_driver,
-      settings->arrays.input_joypad_driver, input, input_data);
+   input_driver_init_windows(settings->arrays.input_joypad_driver,
+         input, input_data);
 
    {
       char version_str[128];

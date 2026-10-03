@@ -58,7 +58,6 @@ typedef struct gfx_ctx_w_vk_data
 
 /* TODO/FIXME - static globals */
 gfx_ctx_vulkan_data_t win32_vk;
-static void      *dinput_vk        = NULL;
 int              win32_vk_interval = 0;
 
 /* FORWARD DECLARATIONS */
@@ -264,30 +263,7 @@ static void gfx_ctx_w_vk_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
-#if _WIN32_WINNT >= 0x0501
-#ifdef HAVE_WINRAWINPUT
-   settings_t *settings     = config_get_ptr();
-   const char *input_driver = settings->arrays.input_driver;
-
-   /* winraw only available since XP */
-   if (string_is_equal(input_driver, "raw"))
-   {
-      *input_data = input_driver_init_wrap(&input_winraw, joypad_name);
-      if (*input_data)
-      {
-         *input        = &input_winraw;
-         dinput_vk     = NULL;
-         return;
-      }
-   }
-#endif
-#endif
-
-#ifdef HAVE_DINPUT
-   dinput_vk      = input_driver_init_wrap(&input_dinput, joypad_name);
-   *input         = dinput_vk ? &input_dinput : NULL;
-   *input_data    = dinput_vk;
-#endif
+   input_driver_init_windows(joypad_name, input, input_data);
 }
 
 static enum gfx_ctx_api gfx_ctx_w_vk_get_api(void *data) { return GFX_CTX_VULKAN_API; }

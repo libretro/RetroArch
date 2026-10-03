@@ -858,6 +858,11 @@ float input_driver_get_sensor(
 
 uint64_t input_driver_get_capabilities(void);
 
+#if defined(_WIN32) || defined(_XBOX) || defined(__WINRT__)
+void input_driver_init_windows(const char *joypad_name,
+      input_driver_t **input, void **input_data);
+#endif
+
 /* For the video driver: see input_driver.c. */
 uint32_t input_driver_get_flags(void);
 input_driver_t *input_driver_get_current(void);

@@ -3584,7 +3584,8 @@ static void *d3d11_gfx_init(const video_info_t* video,
       goto error;
    }
 
-   d3d_input_driver(settings->arrays.input_driver, settings->arrays.input_joypad_driver, input, input_data);
+   input_driver_init_windows(settings->arrays.input_joypad_driver,
+         input, input_data);
 
 #ifdef __WINRT__
    DXGICreateFactory2(&d3d11->factory);

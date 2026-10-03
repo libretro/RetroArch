@@ -6585,6 +6585,69 @@ bool input_driver_grab_mouse_for_video(void)
    return true;
 }
 
+#if defined(_WIN32) || defined(_XBOX) || defined(__WINRT__)
+/* Starts the input driver for a window of the Windows family, from the
+ * input driver setting: raw input if that is what is configured and it
+ * starts, DirectInput otherwise; on UWP plain XInput or the uwp
+ * driver; on Xbox XInput.
+ *
+ * The video code had this four times - the Vulkan and WGL contexts,
+ * the Direct3D drivers' d3d_input_driver(), GDI - each with the
+ * drivers' names in it, and two of them with a wrong argument (see
+ * the callers' history). It is still called from where they were, a
+ * video driver's init, and so on the thread that init runs on: with
+ * threaded video that is the video thread, which is where a raw input
+ * window has to be made for its messages to reach it (see
+ * winraw_input.c). Which thread starts the input driver is not
+ * changed by having this here. */
+void input_driver_init_windows(const char *joypad_name,
+      input_driver_t **input, void **input_data)
+{
+#if defined(__WINRT__)
+   /* Plain xinput is supported on UWP, but it
+    * supports joypad only (uwp driver was added later) */
+   if (string_is_equal(config_get_ptr()->arrays.input_driver, "xinput"))
+   {
+      void *xinput = input_driver_init_wrap(&input_xinput, joypad_name);
+      *input       = xinput ? (input_driver_t*)&input_xinput : NULL;
+      *input_data  = xinput;
+   }
+   else
+   {
+      void *uwp    = input_driver_init_wrap(&input_uwp, joypad_name);
+      *input       = uwp ? (input_driver_t*)&input_uwp : NULL;
+      *input_data  = uwp;
+   }
+#elif defined(_XBOX)
+   void *xinput    = input_driver_init_wrap(&input_xinput, joypad_name);
+   *input          = xinput ? (input_driver_t*)&input_xinput : NULL;
+   *input_data     = xinput;
+#else
+   *input          = NULL;
+   *input_data     = NULL;
+#if _WIN32_WINNT >= 0x0501
+#ifdef HAVE_WINRAWINPUT
+   /* winraw only available since XP */
+   if (string_is_equal(config_get_ptr()->arrays.input_driver, "raw"))
+   {
+      *input_data = input_driver_init_wrap(&input_winraw, joypad_name);
+      if (*input_data)
+      {
+         *input = &input_winraw;
+         return;
+      }
+   }
+#endif
+#endif
+
+#ifdef HAVE_DINPUT
+   *input_data = input_driver_init_wrap(&input_dinput, joypad_name);
+   *input      = *input_data ? &input_dinput : NULL;
+#endif
+#endif
+}
+#endif
+
 bool video_driver_init_input(
       input_driver_t *tmp,
       settings_t *settings,

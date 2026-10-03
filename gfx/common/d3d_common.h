@@ -66,9 +66,6 @@ typedef struct
 
 int32_t d3d_translate_filter(unsigned type);
 
-void d3d_input_driver(const char* input_name,
-   const char* joypad_name, input_driver_t** input, void** input_data);
-
 RETRO_END_DECLS
 
 #endif

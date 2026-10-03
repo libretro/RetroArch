@@ -103,7 +103,6 @@ typedef struct gdi_texture
 
 
 HDC          win32_gdi_hdc;
-static void *dinput_gdi;
 
 /* Forward declarations for static helpers used across the display
  * driver / video driver / font driver sections. */
@@ -2366,36 +2365,6 @@ static bool gfx_ctx_gdi_set_video_mode(
    return true;
 }
 
-static void gfx_ctx_gdi_input_driver(
-      input_driver_t **input, void **input_data)
-{
-   settings_t *settings = config_get_ptr();
-#if _WIN32_WINNT >= 0x0501
-#ifdef HAVE_WINRAWINPUT
-   /* winraw only available since XP */
-   if (string_is_equal(settings->arrays.input_driver, "raw"))
-   {
-      *input_data = input_driver_init_wrap(&input_winraw, settings->arrays.input_driver);
-      if (*input_data)
-      {
-         *input     = &input_winraw;
-         dinput_gdi = NULL;
-         return;
-      }
-   }
-#endif
-#endif
-
-#ifdef HAVE_DINPUT
-   dinput_gdi  = input_driver_init_wrap(&input_dinput, settings->arrays.input_driver);
-   *input      = dinput_gdi ? &input_dinput : NULL;
-#else
-   dinput_gdi  = NULL;
-   *input      = NULL;
-#endif
-   *input_data = dinput_gdi;
-}
-
 static void gdi_create(gdi_t *gdi)
 {
    char os[64] = {0};
@@ -2494,7 +2463,8 @@ static void *gdi_init(const video_info_t *video,
    RARCH_LOG("[GDI] Using resolution %ux%u.\n",
          VIDEO_SCALE_W(temp_dims), VIDEO_SCALE_H(temp_dims));
 
-   gfx_ctx_gdi_input_driver(input, input_data);
+   input_driver_init_windows(
+         config_get_ptr()->arrays.input_joypad_driver, input, input_data);
 
 
    RARCH_LOG("[GDI] Init complete.\n");
