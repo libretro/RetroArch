@@ -5107,6 +5107,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
 #ifdef GEKKO
    video_info->overscan_correction_top      = settings->uints.video_overscan_correction_top;
    video_info->overscan_correction_bottom   = settings->uints.video_overscan_correction_bottom;
+   video_info->video_gamma                  = settings->uints.video_gamma;
+   video_info->video_soft_filter            = settings->bools.video_soft_filter;
 #endif
 
    video_info->libretro_running            = false;

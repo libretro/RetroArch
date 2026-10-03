@@ -516,6 +516,8 @@ typedef struct video_frame_info
 #ifdef GEKKO
    unsigned overscan_correction_top;
    unsigned overscan_correction_bottom;
+   /* The A/V encoder's gamma, set by the driver's resize from frame() */
+   unsigned video_gamma;
 #endif
    unsigned monitor_index;
    unsigned crt_switch_resolution;
@@ -584,6 +586,10 @@ typedef struct video_frame_info
    const char *stat_text;
    size_t stat_text_len;
 
+#ifdef GEKKO
+   /* The A/V encoder's trap filter, set beside video_gamma */
+   bool video_soft_filter;
+#endif
    bool widgets_active;
    bool notifications_hidden;
    bool menu_mouse_enable;

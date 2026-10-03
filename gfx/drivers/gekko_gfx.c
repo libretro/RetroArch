@@ -308,18 +308,18 @@ static void setup_gx(gekko_video_t *gx)
    gk_gx_copy_clear(0x000000ffu, 0xffffff);
 }
 
+/* Called from frame(): the settings it applies come with the frame,
+ * not from config_get_ptr(), which the main thread may be writing. */
 static void viewport_resize(gekko_video_t *gx, unsigned overscan_top,
-      unsigned overscan_bottom)
+      unsigned overscan_bottom, unsigned gamma, bool soft_filter)
 {
-   const settings_t *settings = config_get_ptr();
    unsigned width  = VIDEO_SCALE_W(gx->vp.full_dims);
    unsigned height = VIDEO_SCALE_H(gx->vp.full_dims);
-   unsigned gamma  = settings->uints.video_gamma;
    int x = 0, y = 0;
 
 #ifdef HW_RVL
    /* The A/V encoder: gamma in tenths, 0 standing for 1.0. */
-   gk_vi_set_trap_filter(settings->bools.video_soft_filter);
+   gk_vi_set_trap_filter(soft_filter);
    gk_vi_set_gamma(gamma ? gamma : 10);
 #else
    gk_gx_copy_gamma(MIN(2, gamma));
@@ -590,7 +590,8 @@ static bool gekko_frame(void *data, const void *frame, unsigned dims,
    if (gx->should_resize)
    {
       setup_gx(gx);
-      viewport_resize(gx, gx->overscan_top, gx->overscan_bottom);
+      viewport_resize(gx, gx->overscan_top, gx->overscan_bottom,
+            video_info->video_gamma, video_info->video_soft_filter);
    }
 
    if (gx->vsync || gx->menu_enable)

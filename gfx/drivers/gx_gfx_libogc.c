@@ -799,18 +799,21 @@ static void convert_texture32(const uint32_t *_src, uint32_t *_dst,
    }
 }
 
+/* Called from frame(): the settings it applies come with the frame,
+ * not from config_get_ptr(), which the main thread may be writing. */
 static void gx_resize(gx_video_t *gx,
       bool video_smooth,
       unsigned aspect_ratio_idx,
       unsigned overscan_corr_top,
-      unsigned overscan_corr_bottom)
+      unsigned overscan_corr_bottom,
+      unsigned video_gamma,
+      bool video_soft_filter)
 {
    int gamma;
    unsigned degrees;
    Mtx44 m1, m2;
    float top = 1, bottom = -1, left = -1, right = 1;
    int x = 0, y = 0;
-   const settings_t       *settings = config_get_ptr();
    unsigned width                   = VIDEO_SCALE_W(gx->vp.full_dims);
    unsigned height                  = VIDEO_SCALE_H(gx->vp.full_dims);
 
@@ -818,13 +821,13 @@ static void gx_resize(gx_video_t *gx,
       return;
 
 #ifdef HW_RVL
-   VIDEO_SetTrapFilter(settings->bools.video_soft_filter);
-   gamma = settings->uints.video_gamma;
+   VIDEO_SetTrapFilter(video_soft_filter);
+   gamma = video_gamma;
    if (gamma == 0)
       gamma = 10; /* default 1.0 gamma value */
    VIDEO_SetGamma(gamma);
 #else
-	gamma = settings->uints.video_gamma;
+	gamma = video_gamma;
 	GX_SetDispCopyGamma(MAX(0,MIN(2,gamma)));
 #endif
 
@@ -1421,7 +1424,9 @@ static bool gx_frame(void *data, const void *frame,
             video_smooth,
             video_aspect_ratio_idx,
             overscan_corr_top,
-            overscan_corr_bottom);
+            overscan_corr_bottom,
+            video_info->video_gamma,
+            video_info->video_soft_filter);
       clear_efb = GX_TRUE;
    }
 
