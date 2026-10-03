@@ -543,7 +543,7 @@ static const struct cmd_action_map action_map[] = {
 
    { "LOAD_CORE", command_load_core, "<core path>", "Load the core library at the given path.", CMD_INFO_DESTRUCTIVE },
    { "START_CORE", command_start_core, "No argument", "Start the loaded core without content.", CMD_INFO_DESTRUCTIVE },
-   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>", "Load the content at the given path with the core at the given path.", CMD_INFO_DESTRUCTIVE },
+   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>", "Start loading the content at the given path with the core at the given path; GET_STATUS then reports whether it is playing.", CMD_INFO_DESTRUCTIVE },
    { "CLOSE_CONTENT", command_close_content, "No argument", "Close the running content.", CMD_INFO_DESTRUCTIVE },
    { "UNLOAD_CORE", command_unload_core, "No argument", "Close the content and unload the core.", CMD_INFO_DESTRUCTIVE },
    { "VIDEO_REINIT", command_video_reinit, "No argument", "Restart the video driver.", 0 },

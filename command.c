@@ -70,6 +70,9 @@
 #include "version.h"
 #include "version_git.h"
 #include "tasks/task_content.h"
+#ifdef HAVE_SCREENSHOTS
+#include "tasks/tasks_internal.h"
+#endif
 #include <compat/strl.h>
 #ifdef __MACH__
 #include <TargetConditionals.h>
@@ -802,6 +805,76 @@ command_t* command_uds_new(void)
 
 /* Routines used to invoke retroarch command ... */
 
+/* A reply sent after its command has returned: where it goes is taken
+ * while the command runs, as afterwards the interface may be answering
+ * someone else. */
+typedef struct
+{
+   command_t *cmd;
+   void      *dest;
+   unsigned   gen;
+} command_deferred_t;
+
+static void command_deferred_take(command_deferred_t *d, command_t *cmd)
+{
+   d->cmd  = cmd;
+   d->dest = cmd->reply_dest ? cmd->reply_dest(cmd) : NULL;
+   d->gen  = input_driver_command_generation();
+}
+
+/* Sends @msg (none when NULL) and releases @d.  Dropped, unsent, if the
+ * interface was torn down meanwhile (the command generation moved). */
+static void command_deferred_send(command_deferred_t *d,
+      const char *msg, size_t len)
+{
+   if (msg && input_driver_command_generation() == d->gen)
+   {
+      if (d->cmd->reply_to && d->dest)
+         d->cmd->reply_to(d->cmd, d->dest, msg, len);
+      else if (!d->cmd->reply_dest)
+         d->cmd->replier(d->cmd, msg, len);
+   }
+   free(d->dest);
+   d->dest = NULL;
+}
+
+#ifdef HAVE_SCREENSHOTS
+static void command_screenshot_done(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   command_deferred_t *d = (command_deferred_t*)user_data;
+   char msg[PATH_MAX_LENGTH];
+   if (error)
+      snprintf(msg, sizeof(msg), "SCREENSHOT ERROR %s", error);
+   else
+      strlcpy(msg, (const char*)task_data, sizeof(msg));
+   command_deferred_send(d, msg, strlen(msg));
+   free(d);
+}
+
+/* SCREENSHOT run by command_run(): answered with the file's path once
+ * the screenshot task has written it. */
+static bool command_screenshot(command_t *cmd)
+{
+   settings_t      *settings   = config_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   command_deferred_t *d       = (command_deferred_t*)calloc(1, sizeof(*d));
+   if (!d)
+      return false;
+   if (!take_screenshot_notify(settings->paths.directory_screenshot,
+            runloop_st->runtime_content_path_basename, false,
+            video_driver_cached_frame_is_hw_render(), false, true,
+            command_screenshot_done, d))
+   {
+      free(d);
+      return false;
+   }
+   /* the task's callback, which uses this, runs on a later frame */
+   command_deferred_take(d, cmd);
+   return true;
+}
+#endif
+
 /* Runs @name with @arg (NULL or "" for none) as if it had arrived as a
  * command line on @handle: replies go to @handle's replier, a hotkey
  * presses on @handle for one frame. For interfaces that receive
@@ -819,6 +892,10 @@ bool command_run(command_t *handle, const char *name, const char *arg)
       {
          if (map[i].id == RARCH_MENU_TOGGLE)
             command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+#ifdef HAVE_SCREENSHOTS
+         else if (map[i].id == RARCH_SCREENSHOT)
+            return command_screenshot(handle);
+#endif
          else
             handle->state[map[i].id] = true;
          return true;
@@ -1033,14 +1110,11 @@ bool command_save_state_slot(command_t* cmd, const char* arg)
 /* The reply owed by a command that returned before it could answer:
  * PLAY_REPLAY_SLOT's carries the replay handle, which the movie
  * task's callback installs.  command_owed_reply_poll() sends it once
- * the task is through.  Dropped, unsent, if the interface that asked
- * is torn down first (the command generation moves). */
+ * the task is through. */
 static struct
 {
-   command_t *cmd;
-   void      *dest;
-   unsigned   gen;
-   bool       owed;
+   command_deferred_t reply;
+   bool               owed;
 } command_owed;
 #endif
 
@@ -1056,17 +1130,7 @@ void command_owed_reply_poll(void)
          (long long)movie_playback_start_identifier());
    command_post_state_loaded();
 
-   if (input_driver_command_generation() == command_owed.gen)
-   {
-      command_t *cmd = command_owed.cmd;
-      if (cmd->reply_to && command_owed.dest)
-         cmd->reply_to(cmd, command_owed.dest, reply, strlen(reply));
-      else
-         cmd->replier(cmd, reply, strlen(reply));
-   }
-   free(command_owed.dest);
-   command_owed.dest = NULL;
-   command_owed.cmd  = NULL;
+   command_deferred_send(&command_owed.reply, reply, strlen(reply));
    command_owed.owed = false;
 #endif
 }
@@ -1096,9 +1160,7 @@ bool command_play_replay_slot(command_t *cmd, const char *arg)
    }
    /* Answered from the frame loop once the movie task has installed
     * the handle, rather than holding the frame until it has. */
-   command_owed.cmd  = cmd;
-   command_owed.dest = cmd->reply_dest ? cmd->reply_dest(cmd) : NULL;
-   command_owed.gen  = input_driver_command_generation();
+   command_deferred_take(&command_owed.reply, cmd);
    command_owed.owed = true;
    return true;
 #else
@@ -1315,15 +1377,10 @@ bool command_list_cores(command_t *cmd, const char *arg)
 
 /* LIST_PLAYLISTS and GET_PLAYLIST read files, which may be slow, so
  * they answer from a task: the text is made on the task thread and sent
- * from the callback, where the asking interface's reply_to takes it
- * (the reply owed to one sender or one MCP request), or its replier
- * when its replies all go one way. Dropped if the interfaces were
- * re-created meanwhile. */
+ * from the callback. */
 struct command_query
 {
-   command_t *cmd;
-   void      *dest;
-   unsigned   gen;
+   command_deferred_t deferred;
    size_t     first;           /* GET_PLAYLIST: first entry */
    char      *reply;           /* made by the handler */
    size_t     reply_len;
@@ -1438,12 +1495,8 @@ static void command_query_callback(retro_task_t *task, void *task_data,
       void *user_data, const char *error)
 {
    struct command_query *q = (struct command_query*)task->state;
-   if (!q || !q->reply || input_driver_command_generation() != q->gen)
-      return;
-   if (q->cmd->reply_to && q->dest)
-      q->cmd->reply_to(q->cmd, q->dest, q->reply, q->reply_len);
-   else if (!q->cmd->reply_dest)
-      q->cmd->replier(q->cmd, q->reply, q->reply_len);
+   if (q)
+      command_deferred_send(&q->deferred, q->reply, q->reply_len);
 }
 
 static void command_query_cleanup(retro_task_t *task)
@@ -1452,7 +1505,7 @@ static void command_query_cleanup(retro_task_t *task)
    if (!q)
       return;
    free(q->reply);
-   free(q->dest);
+   free(q->deferred.dest);
    free(q);
    task->state = NULL;
 }
@@ -1466,8 +1519,6 @@ static bool command_query_push(command_t *cmd, bool list_playlists,
 
    if (!(q = (struct command_query*)calloc(1, sizeof(*q))))
       return false;
-   q->cmd            = cmd;
-   q->gen            = input_driver_command_generation();
    q->list_playlists = list_playlists;
    strlcpy(q->dir, settings->paths.directory_playlist, sizeof(q->dir));
    q->old_format          = settings->bools.playlist_use_old_format;
@@ -1502,9 +1553,7 @@ static bool command_query_push(command_t *cmd, bool list_playlists,
       free(q);
       return false;
    }
-   /* where the answer goes, taken now: after this command returns the
-    * interface may be answering someone else */
-   q->dest        = cmd->reply_dest ? cmd->reply_dest(cmd) : NULL;
+   command_deferred_take(&q->deferred, cmd);
    task->state    = q;
    task->handler  = command_query_handler;
    task->callback = command_query_callback;
