@@ -286,6 +286,17 @@ static void test_libc(void)
    free(big);
 }
 
+#ifdef HW_RVL
+/* The L2 runs with the fetch and castout enhancements. */
+static void test_l2(void)
+{
+   uint32_t hid4;
+   __asm__ __volatile__("mfspr %0,1011" : "=r"(hid4));
+   CHECK((hid4 & 0x24300000u) == 0x24300000u,
+         "l2: HID4 has the fetch and castout enhancements");
+}
+#endif
+
 static void test_args(int argc, char **argv)
 {
    if (!argc)
@@ -311,6 +322,9 @@ int main(int argc, char **argv)
    test_fp();
    test_handler_fp();
    test_libc();
+#ifdef HW_RVL
+   test_l2();
+#endif
    test_args(argc, argv);
    gk_debug_printf("%s (%u failure(s))", failures ? "FAILED" : "PASSED",
          failures);

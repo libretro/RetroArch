@@ -169,6 +169,13 @@ void gk_boot(void)
    struct gk_thread *m;
 
    args_take();
+#if GK_RVL
+   {
+      uint32_t mem1_end, mem2_lo, mem2_hi;
+      gk_mem_bounds(&mem1_end, &mem2_lo, &mem2_hi);
+      gk_l2_enhance(mem1_end, mem2_hi);
+   }
+#endif
    if (bus < 100000000u || bus > 300000000u)
       bus = GK_RVL ? 243000000u : 162000000u;
    gk_tb_hz = bus / 4;

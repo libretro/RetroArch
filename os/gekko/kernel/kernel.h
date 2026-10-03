@@ -130,6 +130,10 @@ void gk_shutdown(void);
 void gk_quiesce(void);
 /* The banks as the loader left them, before any arena use. */
 void gk_mem_bounds(uint32_t *mem1_end, uint32_t *mem2_lo, uint32_t *mem2_hi);
+#if GK_RVL
+/* cpu/l2.S: memory up to the two ends is written back first. */
+void gk_l2_enhance(uint32_t mem1_end, uint32_t mem2_end);
+#endif
 
 #endif
 #endif

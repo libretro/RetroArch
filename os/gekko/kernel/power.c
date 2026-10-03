@@ -13,6 +13,9 @@
 /* Loaders that stay resident leave a return stub here. */
 #define LOADER_STUB       0x80001800u
 #define LOADER_STUB_MAGIC 0x80001804u
+/* mtspr 1011 (HID4) from any register, and a nop. */
+#define MTSPR_HID4        0x7c13fba6u
+#define PPC_NOP           0x60000000u
 
 static struct gk_exit_hook *exit_hooks;
 static gk_button_fn on_power_fn;
@@ -115,6 +118,16 @@ static int loader_resident(void)
 static void enter_loader(void)
 {
    void (*stub)(void) = (void (*)(void))LOADER_STUB;
+#if GK_RVL
+   /* The L2 enhancements cannot be turned off without a reset: the
+    * loader's own HID4 write goes. */
+   volatile uint32_t *op;
+   for (op = (volatile uint32_t*)(LOADER_STUB_MAGIC + 8);
+         op < (volatile uint32_t*)0x80003000u; op++)
+      if ((*op & 0xfc1fffffu) == MTSPR_HID4)
+         *op = PPC_NOP;
+   gk_dcache_flush((void*)LOADER_STUB, 0x1800);
+#endif
    gk_quiesce();
    gk_icache_invalidate((void*)LOADER_STUB, 0x1800);
    stub();
