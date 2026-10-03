@@ -2201,6 +2201,8 @@ font_data_t *font_driver_init_first(
          font->lang_default_path = NULL;
          font->is_threaded   = is_threaded;
          font->threading_hint= threading_hint;
+         /* No block is bound until the first one is */
+         font->block_bound   = false;
 
          font_driver_cache_metrics(font);
 
