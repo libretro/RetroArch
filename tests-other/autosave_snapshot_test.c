@@ -87,12 +87,7 @@ static void wait_requested(void)
    unsigned i;
    for (i = 0; i < 5000; i++)
    {
-      bool requested;
-      slock_lock(current->cond_lock);
-      requested = retro_atomic_load_relaxed_int(
-            &current->snapshot_requested) != 0;
-      slock_unlock(current->cond_lock);
-      if (requested)
+      if (retro_atomic_load_acquire_int(&current->snapshot_requested))
          return;
       retro_sleep(1);
    }

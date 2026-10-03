@@ -24,6 +24,9 @@
 #include <streams/file_stream.h>
 #include <streams/rzip_stream.h>
 #include <rthreads/rthreads.h>
+#ifdef HAVE_THREADS
+#include <rthreads/retro_eventcount.h>
+#endif
 #include <retro_atomic.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
@@ -70,36 +73,54 @@ struct autosave
    void *snapshot;
    const void *retro_buffer;
    char *path;
-   slock_t *cond_lock;
-   scond_t *cond;
    sthread_t *thread;
    size_t bufsize;
+   /* What the worker sleeps on: the copy it asked for, the end of its
+    * interval, or quit. */
+   retro_eventcount_t ec;
    unsigned interval;
    /* Only the main thread reads live SRAM. The worker requests a copy
-    * and waits until autosave_unlock() publishes it under cond_lock. */
+    * and waits until autosave_check() has made it and cleared this. */
    retro_atomic_int_t snapshot_requested;
+   retro_atomic_int_t quit;
    bool compress;
-   bool quit;
+   bool ec_inited;
 };
 
 static struct autosave_st autosave_state;
+
+static bool autosave_quitting(autosave_t *save)
+{
+   return retro_atomic_load_acquire_int(&save->quit) != 0;
+}
 
 static void autosave_thread(void *data)
 {
    autosave_t *save = (autosave_t*)data;
    bool retry_write = false;
 
-   slock_lock(save->cond_lock);
-   while (!save->quit)
+   while (!autosave_quitting(save))
    {
+      /* Ask for a copy and wait until the main thread has made it. */
       retro_atomic_store_release_int(&save->snapshot_requested, 1);
-      while (!save->quit &&
-            retro_atomic_load_relaxed_int(&save->snapshot_requested))
-         scond_wait(save->cond, save->cond_lock);
+      for (;;)
+      {
+         int key;
+         if (     autosave_quitting(save)
+               || !retro_atomic_load_acquire_int(&save->snapshot_requested))
+            break;
+         key = retro_eventcount_prepare_wait(&save->ec);
+         if (     autosave_quitting(save)
+               || !retro_atomic_load_acquire_int(&save->snapshot_requested))
+         {
+            retro_eventcount_cancel_wait(&save->ec);
+            break;
+         }
+         retro_eventcount_commit_wait(&save->ec, key);
+      }
 
-      if (save->quit)
+      if (autosave_quitting(save))
          break;
-      slock_unlock(save->cond_lock);
 
       /* The snapshot remains ours until the next request. Keep the
        * last written image unchanged if opening or writing fails. */
@@ -133,17 +154,23 @@ static void autosave_thread(void *data)
          }
       }
 
-      slock_lock(save->cond_lock);
-      if (!save->quit)
-         scond_wait_timeout(save->cond, save->cond_lock,
+      /* Rest an interval. Nothing but quit notifies while no copy is
+       * asked for, so a wake before it runs out is quit's. */
+      if (save->interval)
+      {
+         int key = retro_eventcount_prepare_wait(&save->ec);
+         if (autosave_quitting(save))
+            retro_eventcount_cancel_wait(&save->ec);
+         else
+            retro_eventcount_commit_wait_timeout(&save->ec, key,
 #if defined(_MSC_VER) && _MSC_VER <= 1200
-               save->interval * 1000000
+                  save->interval * 1000000
 #else
-               save->interval * 1000000LL
+                  save->interval * 1000000LL
 #endif
-               );
+                  );
+      }
    }
-   slock_unlock(save->cond_lock);
 }
 
 /**
@@ -168,14 +195,13 @@ static autosave_t *autosave_new(const char *path,
       return NULL;
 
    handle->compress              = compress;
-   handle->quit                  = false;
+   handle->ec_inited             = false;
+   retro_atomic_int_init(&handle->quit, 0);
    retro_atomic_int_init(&handle->snapshot_requested, 0);
    handle->bufsize               = len;
    handle->interval              = interval;
    handle->buffer                = NULL;
    handle->snapshot              = NULL;
-   handle->cond_lock             = NULL;
-   handle->cond                  = NULL;
    handle->thread                = NULL;
 
    handle->retro_buffer          = data;
@@ -204,17 +230,15 @@ static autosave_t *autosave_new(const char *path,
    memcpy(handle->buffer, handle->retro_buffer, handle->bufsize);
 
    handle->snapshot              = malloc(len);
-   handle->cond_lock             = slock_new();
-   handle->cond                  = scond_new();
+   if (handle->snapshot)
+      handle->ec_inited          = retro_eventcount_init(&handle->ec);
 
-   if (!handle->snapshot || !handle->cond_lock || !handle->cond)
+   if (!handle->snapshot || !handle->ec_inited)
    {
       RARCH_ERR("[SRAM] Failed to initialize autosave synchronization primitives.\n");
       free(handle->snapshot);
-      if (handle->cond_lock)
-         slock_free(handle->cond_lock);
-      if (handle->cond)
-         scond_free(handle->cond);
+      if (handle->ec_inited)
+         retro_eventcount_free(&handle->ec);
       free(handle->path);
       free(handle->buffer);
       free(handle);
@@ -227,8 +251,7 @@ static autosave_t *autosave_new(const char *path,
    {
       RARCH_ERR("[SRAM] Failed to create autosave thread.\n");
       free(handle->snapshot);
-      slock_free(handle->cond_lock);
-      scond_free(handle->cond);
+      retro_eventcount_free(&handle->ec);
       free(handle->path);
       free(handle->buffer);
       free(handle);
@@ -246,15 +269,12 @@ static autosave_t *autosave_new(const char *path,
  **/
 static void autosave_free(autosave_t *handle)
 {
-   slock_lock(handle->cond_lock);
-   handle->quit  = true;
-   slock_unlock(handle->cond_lock);
-   scond_signal(handle->cond);
+   retro_atomic_store_release_int(&handle->quit, 1);
+   retro_eventcount_notify(&handle->ec);
    sthread_join(handle->thread);
 
    free(handle->snapshot);
-   slock_free(handle->cond_lock);
-   scond_free(handle->cond);
+   retro_eventcount_free(&handle->ec);
 
    if (handle->buffer)
       free(handle->buffer);
@@ -348,18 +368,13 @@ void autosave_check(void)
       autosave_t *handle = autosave_state.list[i];
       if (!handle)
          continue;
-#ifdef RETRO_ATOMIC_LOCK_FREE
+      /* The worker asked and is waiting: the snapshot is ours to fill
+       * until the flag clears. */
       if (!retro_atomic_load_acquire_int(&handle->snapshot_requested))
          continue;
-#endif
-      slock_lock(handle->cond_lock);
-      if (retro_atomic_load_relaxed_int(&handle->snapshot_requested))
-      {
-         memcpy(handle->snapshot, handle->retro_buffer, handle->bufsize);
-         retro_atomic_store_release_int(&handle->snapshot_requested, 0);
-         scond_signal(handle->cond);
-      }
-      slock_unlock(handle->cond_lock);
+      memcpy(handle->snapshot, handle->retro_buffer, handle->bufsize);
+      retro_atomic_store_release_int(&handle->snapshot_requested, 0);
+      retro_eventcount_notify(&handle->ec);
    }
 }
 
