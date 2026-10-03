@@ -888,6 +888,31 @@ static bool core_updater_list_add_entry(
    if (!core_updater_list_set_crc(&entry, crc_str))
       goto error;
 
+   /* Not an error either: a core that is not installed is left
+    * out - before its paths are built (a URL-encode, a realpath and
+    * four allocations) and before its info file is read.  The walk
+    * of the libretro directory answers that, and gives the metadata
+    * the CRC cache is keyed on.  The line has parsed by now, so it
+    * counts as well-formed either way. */
+   if (installed_only && core_list->installed)
+   {
+      char local_name[PATH_MAX_LENGTH];
+      const core_updater_installed_t *installed;
+
+      strlcpy(local_name, filename_str, sizeof(local_name));
+      if (path_is_compressed_file(local_name))
+         path_remove_extension(local_name);
+      if (!(installed = core_updater_list_find_installed(
+                  core_list, local_name)))
+      {
+         well_formed = true;
+         goto error;
+      }
+      entry.local_size     = installed->size;
+      entry.local_mtime    = installed->mtime;
+      entry.local_metadata = installed->metadata;
+   }
+
    if (!core_updater_list_set_paths(
             &entry,
             path_dir_libretro,
@@ -899,31 +924,11 @@ static bool core_updater_list_add_entry(
 
    well_formed = true;
 
-   /* Not an error either: a core that is not installed is left
-    * out before its info file is read.  The walk of the libretro
-    * directory answers that, and gives the metadata the CRC cache
-    * is keyed on; a directory that could not be walked falls back
-    * to a stat. */
-   if (installed_only)
-   {
-      if (core_list->installed)
-      {
-         char local_name[PATH_MAX_LENGTH];
-         const core_updater_installed_t *installed;
-
-         strlcpy(local_name, filename_str, sizeof(local_name));
-         if (path_is_compressed_file(local_name))
-            path_remove_extension(local_name);
-         if (!(installed = core_updater_list_find_installed(
-                     core_list, local_name)))
-            goto error;
-         entry.local_size     = installed->size;
-         entry.local_mtime    = installed->mtime;
-         entry.local_metadata = installed->metadata;
-      }
-      else if (!path_is_valid(entry.local_core_path))
-         goto error;
-   }
+   /* A libretro directory that could not be walked: a stat each */
+   if (     installed_only
+         && !core_list->installed
+         && !path_is_valid(entry.local_core_path))
+      goto error;
 
    if (!core_updater_list_set_core_info(
          &entry,
