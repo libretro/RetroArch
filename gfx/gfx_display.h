@@ -109,6 +109,7 @@ enum gfx_display_driver_type
 };
 
 typedef struct gfx_display_ctx_draw gfx_display_ctx_draw_t;
+struct gfx_display_mesh;
 
 typedef struct gfx_display gfx_display_t;
 
@@ -148,6 +149,14 @@ typedef struct gfx_display_ctx_driver
    void (*scissor_begin)(void *data, unsigned video_dims,
          int x, int y, unsigned dims);
    void (*scissor_end)(void *data, unsigned video_dims);
+   /* Optional. Draws a mesh with a plain program from a buffer the
+    * driver keeps, returning false to have it transformed and streamed
+    * through draw() instead. @mvp (never NULL) takes the mesh to the
+    * display's 0..1 space, as draw()'s coordinates are; @texture is
+    * never 0; @tint is RGBA. */
+   bool (*mesh_draw)(void *data, unsigned video_dims,
+         const struct gfx_display_mesh *mesh, const float *mvp,
+         uintptr_t texture, const float *tint);
 } gfx_display_ctx_driver_t;
 
 struct gfx_display_ctx_draw
@@ -270,6 +279,14 @@ struct gfx_display
 
    uint8_t flags;
 
+   /* The menu effects' clock, in the step every driver used to keep
+    * for itself: 0.01 an effect drawn, wrapped at 65536. Read by the
+    * driver while it draws an effect, advanced once it has. */
+   float     effect_time;
+   /* The mesh an effect is being drawn over, for the driver's pipeline
+    * code to draw from; NULL outside that draw. */
+   const struct gfx_display_mesh *effect_mesh;
+
    /* What the batch did during the menu frame being drawn, counted
     * where it happens on the drawing thread and published as a whole
     * by gfx_display_stats_latch() once the frame is over. The
@@ -346,6 +363,93 @@ void gfx_display_draw_bg(
  * gone out yet. Anything that draws without going through this file -
  * text, above all - calls this first, or it lands underneath quads
  * that were asked for before it. */
+/* Meshes: geometry a menu driver builds once and draws every frame,
+ * with a program - plain, or one of the menu effects - and a 4x4
+ * transform, so it may be 3D. gfx_display owns them. Drivers that draw
+ * meshes themselves keep them on the GPU; on the others what a plain
+ * program draws is transformed here and streamed through draw(). There
+ * is no depth buffer: meshes draw in the order they are asked for. */
+enum gfx_display_mesh_program
+{
+   GFX_MESH_PROGRAM_TEXTURED = 0,  /* texture times vertex colour */
+   GFX_MESH_PROGRAM_COLORED,       /* vertex colour */
+   GFX_MESH_PROGRAM_BLEND,         /* the driver's stock blend */
+   GFX_MESH_PROGRAM_RIBBON,        /* the effects: the mesh animated */
+   GFX_MESH_PROGRAM_RIBBON_SIMPLE, /* by time in the vertex stage */
+   GFX_MESH_PROGRAM_SNOW_SIMPLE,   /* the effects: shaded per pixel */
+   GFX_MESH_PROGRAM_SNOW,          /* over the full-screen quad */
+   GFX_MESH_PROGRAM_BOKEH,
+   GFX_MESH_PROGRAM_SNOWFLAKE,
+   GFX_MESH_PROGRAM_LAST
+};
+
+enum gfx_display_mesh_topology
+{
+   GFX_MESH_TRIANGLES = 0,
+   GFX_MESH_TRIANGLE_STRIP
+};
+
+enum gfx_display_mesh_flags
+{
+   /* While drivers draw the effects from gfx_display's coordinate
+    * array, a mesh made with this also fills it, as the menu driver
+    * that drew the ribbon used to. */
+   GFX_MESH_FLAG_DISPCA = (1 << 0)
+};
+
+/* 20 bytes: position, texture coordinates in 1/65535ths, colour */
+typedef struct gfx_display_mesh_vertex
+{
+   float    x, y, z;
+   uint16_t u, v;
+   uint8_t  rgba[4];
+} gfx_display_mesh_vertex_t;
+
+typedef struct gfx_display_mesh_desc
+{
+   const gfx_display_mesh_vertex_t *vertices;
+   const uint16_t *indices;        /* NULL: drawn in vertex order */
+   unsigned vertex_count;
+   unsigned index_count;
+   enum gfx_display_mesh_topology topology;
+   unsigned flags;                 /* enum gfx_display_mesh_flags */
+} gfx_display_mesh_desc_t;
+
+/* Read by the drivers that draw meshes themselves. @id names the mesh
+ * for as long as the process runs and is never given to another, so a
+ * driver may keep a buffer for it and let the buffer age out once the
+ * mesh stops being drawn. */
+struct gfx_display_mesh
+{
+   gfx_display_mesh_vertex_t *vertices;
+   uint16_t *indices;
+   unsigned vertex_count;
+   unsigned index_count;
+   enum gfx_display_mesh_topology topology;
+   uint32_t id;
+};
+typedef struct gfx_display_mesh gfx_display_mesh_t;
+
+typedef struct gfx_display_mesh_draw
+{
+   /* Column-major, model to clip space; NULL leaves the mesh in clip
+    * space as it is */
+   const float *mvp;
+   /* Four corners' RGBA, as the quads take it: the tint of the plain
+    * programs (corner 0), and what the effects draw with */
+   float *color;
+   uintptr_t texture;
+   enum gfx_display_mesh_program program;
+} gfx_display_mesh_draw_t;
+
+gfx_display_mesh_t *gfx_display_mesh_create(const gfx_display_mesh_desc_t *desc);
+void gfx_display_mesh_free(gfx_display_mesh_t *mesh);
+/* The quad covering the screen, which the per-pixel effects draw over */
+const gfx_display_mesh_t *gfx_display_mesh_fullscreen(void);
+void gfx_display_mesh_draw(gfx_display_t *p_disp, void *userdata,
+      unsigned video_dims, const gfx_display_mesh_t *mesh,
+      const gfx_display_mesh_draw_t *draw);
+
 void gfx_display_flush_batch(gfx_display_t *p_disp);
 
 /* Publishes the counts of the menu frame just drawn and starts the

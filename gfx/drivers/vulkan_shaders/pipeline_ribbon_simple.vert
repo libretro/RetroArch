@@ -26,9 +26,13 @@ float noise(vec3 x)
               mix(iqhash(n + 170.0), iqhash(n + 171.0), f.x), f.y), f.z);
 }
 
+/* Position is the ribbon mesh's grid as gfx_display stores it. Where
+ * yflip turns clip space over (-1) the grid's depth axis turns with it
+ * and runs 1 - y; where it does not (1) it runs y. */
 void main()
 {
-   vec3 v = vec3(Position.x, 0.0, Position.y);
+   vec3 v = vec3(Position.x, 0.0,
+         0.5 * (1.0 - constants.yflip) + constants.yflip * Position.y);
    vec3 v2 = v;
    v2.x = v2.x + constants.time / 2.0;
    v2.z = v.z * 3.0;

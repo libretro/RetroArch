@@ -1212,6 +1212,23 @@ jobs:
              timeout 300 make check
           make clean
 
+      - name: Build and run gfx_display_mesh_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_display_mesh
+        run: |
+          set -eu
+          # The menu mesh facility in gfx_display.c against a display
+          # driver that records what it is handed: mesh creation and
+          # its refusals, the CPU path a plain program takes on drivers
+          # that do not draw meshes (the transform, the perspective
+          # divide, triangles joined into one strip, triangles behind
+          # the eye dropped, the tint), each effect program reaching the
+          # driver's pipeline under its id, and nothing handed to a
+          # driver that takes no strips.
+          make clean all
+          timeout 120 make check
+          make clean
+
       - name: Build and run font_lifecycle_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/font_lifecycle

@@ -205,7 +205,69 @@ typedef struct glsl_shader_data
     * lifetime; it was malloc'd and freed on every such draw. */
    GLfloat *coord_scratch;
    size_t   coord_scratch_cap;
+   /* gfx_display meshes: made the first time one is drawn, and not
+    * tried again once it could not be */
+   GLuint mesh_prg;
+   GLint  mesh_mvp;
+   GLint  mesh_tint;
+   GLint  mesh_attr[3];
+   bool   mesh_failed;
 } glsl_shader_data_t;
+
+/* A gfx_display mesh vertex: three floats, then texture coordinates and
+ * colour as normalised integers the vertex fetch widens */
+static const char *stock_vertex_mesh_legacy = GLSL(
+   attribute vec3 VertexCoord;
+   attribute vec2 TexCoord;
+   attribute vec4 Color;
+   uniform mat4 MVPMatrix;
+   uniform vec4 Tint;
+   varying vec2 tex_coord;
+   varying vec4 color;
+
+   void main() {
+      gl_Position = MVPMatrix * vec4(VertexCoord, 1.0);
+      tex_coord   = TexCoord;
+      color       = Color * Tint;
+   }
+);
+
+static const char *stock_fragment_mesh_legacy = GLSL(
+   uniform sampler2D Texture;
+   varying vec2 tex_coord;
+   varying vec4 color;
+
+   void main() {
+      gl_FragColor = color * texture2D(Texture, tex_coord);
+   }
+);
+
+static const char *stock_vertex_mesh_core = GLSL(
+   in vec3 VertexCoord;
+   in vec2 TexCoord;
+   in vec4 Color;
+   uniform mat4 MVPMatrix;
+   uniform vec4 Tint;
+   out vec2 tex_coord;
+   out vec4 color;
+
+   void main() {
+      gl_Position = MVPMatrix * vec4(VertexCoord, 1.0);
+      tex_coord   = TexCoord;
+      color       = Color * Tint;
+   }
+);
+
+static const char *stock_fragment_mesh_core = GLSL(
+   uniform sampler2D Texture;
+   in vec2 tex_coord;
+   in vec4 color;
+   out vec4 FragColor;
+
+   void main() {
+      FragColor = color * texture(Texture, tex_coord);
+   }
+);
 
 /* TODO/FIXME - static globals */
 static bool glsl_core;
@@ -853,6 +915,11 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
    glsl->current_idx = 0;
 
    glUseProgram(0);
+
+   if (glsl->mesh_prg)
+      glDeleteProgram(glsl->mesh_prg);
+   glsl->mesh_prg    = 0;
+   glsl->mesh_failed = false;
 
    for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
@@ -1943,6 +2010,84 @@ void gl_glsl_set_context_type(bool core_profile,
    glsl_minor = minor;
 }
 
+
+bool gl_glsl_draw_mesh(void *shader_data, unsigned vbo, unsigned ibo,
+      unsigned count, bool strip, const float *mvp, const float *tint)
+{
+   static const char *attr_names[3] = { "VertexCoord", "TexCoord", "Color" };
+   static const GLint attr_sizes[3] = { 3, 2, 4 };
+   static const GLenum attr_types[3] = { GL_FLOAT, GL_UNSIGNED_SHORT,
+      GL_UNSIGNED_BYTE };
+   static const size_t attr_offsets[3] = { 0, 12, 16 };
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)shader_data;
+   GLenum mode              = strip ? GL_TRIANGLE_STRIP : GL_TRIANGLES;
+   unsigned i;
+
+   if (!glsl || glsl->mesh_failed)
+      return false;
+   if (!glsl->mesh_prg)
+   {
+      struct shader_program_glsl_data program;
+      struct shader_program_info info;
+      memset(&program, 0, sizeof(program));
+      info.data     = NULL;
+      info.vertex   = glsl_core ? stock_vertex_mesh_core   : stock_vertex_mesh_legacy;
+      info.fragment = glsl_core ? stock_fragment_mesh_core : stock_fragment_mesh_legacy;
+      info.combined = NULL;
+      info.idx      = 0;
+      info.is_file  = false;
+      if (!gl_glsl_compile_program(glsl, 0, &program, &info) || !program.id)
+      {
+         glsl->mesh_failed = true;
+         return false;
+      }
+      glsl->mesh_prg  = program.id;
+      glsl->mesh_mvp  = glGetUniformLocation(program.id, "MVPMatrix");
+      glsl->mesh_tint = glGetUniformLocation(program.id, "Tint");
+      for (i = 0; i < 3; i++)
+         glsl->mesh_attr[i] = glGetAttribLocation(program.id, attr_names[i]);
+      if (glsl->mesh_mvp < 0 || glsl->mesh_attr[0] < 0)
+      {
+         glDeleteProgram(glsl->mesh_prg);
+         glsl->mesh_prg    = 0;
+         glsl->mesh_failed = true;
+         return false;
+      }
+   }
+
+   glUseProgram(glsl->mesh_prg);
+   glUniformMatrix4fv(glsl->mesh_mvp, 1, GL_FALSE, mvp);
+   if (glsl->mesh_tint >= 0)
+      glUniform4fv(glsl->mesh_tint, 1, tint);
+
+   /* Read as the mesh stores it, 20 bytes a vertex */
+   glBindBuffer(GL_ARRAY_BUFFER, vbo);
+   for (i = 0; i < 3; i++)
+   {
+      if (glsl->mesh_attr[i] < 0)
+         continue;
+      glEnableVertexAttribArray(glsl->mesh_attr[i]);
+      glVertexAttribPointer(glsl->mesh_attr[i], attr_sizes[i],
+            attr_types[i], i ? GL_TRUE : GL_FALSE, 20,
+            (const GLvoid*)(uintptr_t)attr_offsets[i]);
+   }
+   if (ibo)
+   {
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+      glDrawElements(mode, count, GL_UNSIGNED_SHORT, (const GLvoid*)0);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+   }
+   else
+      glDrawArrays(mode, 0, count);
+   for (i = 0; i < 3; i++)
+      if (glsl->mesh_attr[i] >= 0)
+         glDisableVertexAttribArray(glsl->mesh_attr[i]);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+   /* Whatever the caller draws next draws with its own program */
+   glUseProgram(glsl->prg[glsl->active_idx].id);
+   return true;
+}
 
 const shader_backend_t gl_glsl_backend = {
    gl_glsl_init,

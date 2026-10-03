@@ -702,7 +702,9 @@ static void gfx_display_gl2_draw_pipeline(
 #ifdef HAVE_SHADERPIPELINE
    struct uniform_info uniform_param;
    gl2_t             *gl            = (gl2_t*)data;
-   static float t                   = 0;
+   /* The effects' clock, one step ahead, as this driver has always
+    * drawn them */
+   float t                          = p_disp->effect_time + 0.01f;
    video_coord_array_t *ca          = &p_disp->dispca;
 
    draw->pos                        = VIDEO_POS_PACK(0, 0);
@@ -731,12 +733,6 @@ static void gfx_display_gl2_draw_pipeline(
          gl->shader->use(gl, gl->shader_data, draw->pipeline_id,
                true);
 
-         t += 0.01f;
-         /* Wrap at 65536 to keep fp32 increments precise. 0.01 stays
-          * exactly representable up to t ~ 167772 (where 0.5*ulp first
-          * exceeds 0.01), so 65536 has wide margin and wraps roughly
-          * every 30 h of cumulative menu time, making the discontinuity
-          * effectively unobservable. */
          if (t > 65536.0f)
             t -= 65536.0f;
 
@@ -777,6 +773,122 @@ static void gfx_display_gl2_draw_pipeline(
    }
 #endif
 }
+
+#ifdef HAVE_GLSL
+static void gl2_free_meshes(gl2_t *gl)
+{
+   unsigned i;
+   for (i = 0; i < ARRAY_SIZE(gl->meshes); i++)
+   {
+      if (gl->meshes[i].vbo)
+         glDeleteBuffers(1, &gl->meshes[i].vbo);
+      if (gl->meshes[i].ibo)
+         glDeleteBuffers(1, &gl->meshes[i].ibo);
+      gl->meshes[i].vbo = 0;
+      gl->meshes[i].ibo = 0;
+      gl->meshes[i].id  = 0;
+   }
+}
+
+/* The slot whose buffers hold @mesh, uploaded the first time it is
+ * drawn; -1 when they cannot be had, and the mesh is streamed */
+static int gl2_mesh_slot(gl2_t *gl, const gfx_display_mesh_t *mesh)
+{
+   uint64_t oldest = (uint64_t)-1;
+   int slot        = -1;
+   unsigned i;
+
+   for (i = 0; i < ARRAY_SIZE(gl->meshes); i++)
+   {
+      if (gl->meshes[i].vbo && gl->meshes[i].id == mesh->id)
+         return (int)i;
+      if (!gl->meshes[i].vbo)
+      {
+         if (slot < 0 || gl->meshes[slot].vbo)
+            slot = (int)i;
+      }
+      else if ((slot < 0 || gl->meshes[slot].vbo)
+            && gl->meshes[i].last_draw < oldest)
+      {
+         oldest = gl->meshes[i].last_draw;
+         slot   = (int)i;
+      }
+   }
+   if (slot < 0)
+      return -1;
+   if (gl->meshes[slot].vbo)
+      glDeleteBuffers(1, &gl->meshes[slot].vbo);
+   if (gl->meshes[slot].ibo)
+      glDeleteBuffers(1, &gl->meshes[slot].ibo);
+   gl->meshes[slot].vbo = 0;
+   gl->meshes[slot].ibo = 0;
+   gl->meshes[slot].id  = 0;
+
+   glGenBuffers(1, &gl->meshes[slot].vbo);
+   if (!gl->meshes[slot].vbo)
+      return -1;
+   glBindBuffer(GL_ARRAY_BUFFER, gl->meshes[slot].vbo);
+   glBufferData(GL_ARRAY_BUFFER,
+         (GLsizeiptr)mesh->vertex_count * sizeof(gfx_display_mesh_vertex_t),
+         mesh->vertices, GL_STATIC_DRAW);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   if (mesh->indices)
+   {
+      glGenBuffers(1, &gl->meshes[slot].ibo);
+      if (!gl->meshes[slot].ibo)
+      {
+         glDeleteBuffers(1, &gl->meshes[slot].vbo);
+         gl->meshes[slot].vbo = 0;
+         return -1;
+      }
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl->meshes[slot].ibo);
+      glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+            (GLsizeiptr)mesh->index_count * sizeof(uint16_t),
+            mesh->indices, GL_STATIC_DRAW);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+   }
+   gl->meshes[slot].id = mesh->id;
+   return slot;
+}
+
+static bool gfx_display_gl2_mesh_draw(void *data, unsigned video_dims,
+      const gfx_display_mesh_t *mesh, const float *mvp,
+      uintptr_t texture, const float *tint)
+{
+   math_matrix_4x4 user, out;
+   gl2_t *gl = (gl2_t*)data;
+   GLboolean blend;
+   bool drawn;
+   int slot;
+
+   if (     !gl || !mesh || !gl->shader
+         || gl->shader->type != RARCH_SHADER_GLSL)
+      return false;
+   if ((slot = gl2_mesh_slot(gl, mesh)) < 0)
+      return false;
+   gl->meshes[slot].last_draw = ++gl->mesh_draws;
+
+   memcpy(user.data, mvp, sizeof(user.data));
+   matrix_4x4_multiply(out, gl->mvp_no_rot, user);
+
+   /* The whole display, as draw() sets it for a strip at the origin */
+   glViewport(0, 0, VIDEO_SCALE_W(video_dims), VIDEO_SCALE_H(video_dims));
+   glBindTexture(GL_TEXTURE_2D, (GLuint)texture);
+   /* Meshes are drawn blended, as every driver draws them */
+   blend = glIsEnabled(GL_BLEND);
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+   drawn = gl_glsl_draw_mesh(gl->shader_data,
+         gl->meshes[slot].vbo, gl->meshes[slot].ibo,
+         mesh->indices ? mesh->index_count : mesh->vertex_count,
+         mesh->topology == GFX_MESH_TRIANGLE_STRIP, out.data, tint);
+
+   if (!blend)
+      glDisable(GL_BLEND);
+   return drawn;
+}
+#endif
 
 static void gfx_display_gl2_scissor_begin(void *data, unsigned video_dims,
       int x, int y, unsigned dims)
@@ -4907,6 +5019,9 @@ static void gl2_free(void *data)
 #ifdef HAVE_OVERLAY
    gl2_free_overlay(gl);
 #endif
+#ifdef HAVE_GLSL
+   gl2_free_meshes(gl);
+#endif
 
 #if defined(HAVE_PSGL)
    glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
@@ -6910,5 +7025,10 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl = {
    false,
    true,
    gfx_display_gl2_scissor_begin,
-   gfx_display_gl2_scissor_end
+   gfx_display_gl2_scissor_end,
+#ifdef HAVE_GLSL
+   gfx_display_gl2_mesh_draw
+#else
+   NULL
+#endif
 };

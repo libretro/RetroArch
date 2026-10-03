@@ -165,6 +165,9 @@ typedef struct gl3
 #endif /* HAVE_SHADERPIPELINE */
       GLuint hdr_scrgb;
       struct gl3_buffer_locations hdr_scrgb_loc;
+      /* gfx_display meshes */
+      GLuint mesh;
+      struct gl3_buffer_locations mesh_loc;
    } pipelines;
 #endif /* HAVE_SLANG */
 
@@ -211,19 +214,19 @@ typedef struct gl3
    unsigned hw_render_max_dims;
    unsigned menu_texture_dims;
    GLuint scratch_vbos[GL_CORE_NUM_VBOS];
-   /* Static vertex buffer for the menu ribbon pipelines: their 64x64
-    * grid never changes after the menu driver builds it, yet it went
-    * through the streaming scratch VBOs on every frame, along with two
-    * attribute streams the ribbon shaders do not declare. Keyed on the
-    * source array's address and length plus its first and last floats
-    * so a rebuilt array at the same address is re-uploaded. */
+   /* gfx_display meshes kept on the GPU, by mesh id: vertices, and
+    * indices where the mesh has them. GL retires a deleted buffer once
+    * nothing in flight reads it, so the one drawn longest ago simply
+    * gives way when all are taken. The ribbon pipelines draw from
+    * here too. */
    struct
    {
       GLuint vbo;
-      const float *src;
-      unsigned vertices;
-      float head[4], tail[4];
-   } ribbon;
+      GLuint ibo;
+      uint64_t last_frame;
+      uint32_t id;
+   } meshes[8];
+   uint64_t mesh_frame;
    GLuint hw_render_texture;
    GLuint hw_render_fbo;
    GLuint hw_render_rb_ds;
@@ -676,33 +679,66 @@ uint32_t gl3_get_cross_compiler_target_version(void)
    return 100 * major + 10 * minor;
 }
 
-#if defined(HAVE_SLANG) && defined(HAVE_SHADERPIPELINE)
-/* Bind the ribbon's static VBO, uploading it first if this vertex
- * array has not been seen. Returns false if it cannot be had, in which
- * case the caller streams through the scratch VBOs as before. */
-static bool gl3_bind_ribbon_vbo(gl3_t *gl, const float *vertex,
-      unsigned vertices)
+#ifdef HAVE_SLANG
+/* The slot whose buffers hold @mesh, uploaded the first time it is
+ * drawn; -1 when they cannot be had, and the mesh is streamed */
+static int gl3_mesh_slot(gl3_t *gl, const gfx_display_mesh_t *mesh)
 {
-   size_t len = 2 * sizeof(float) * (size_t)vertices;
-   if (vertices < 4)
-      return false;
-   if (!gl->ribbon.vbo)
-      glGenBuffers(1, &gl->ribbon.vbo);
-   if (!gl->ribbon.vbo)
-      return false;
-   glBindBuffer(GL_ARRAY_BUFFER, gl->ribbon.vbo);
-   if (   gl->ribbon.src == vertex
-       && gl->ribbon.vertices == vertices
-       && !memcmp(gl->ribbon.head, vertex, sizeof(gl->ribbon.head))
-       && !memcmp(gl->ribbon.tail, vertex + 2 * vertices - 4,
-             sizeof(gl->ribbon.tail)))
-      return true;
-   glBufferData(GL_ARRAY_BUFFER, len, vertex, GL_STATIC_DRAW);
-   gl->ribbon.src      = vertex;
-   gl->ribbon.vertices = vertices;
-   memcpy(gl->ribbon.head, vertex, sizeof(gl->ribbon.head));
-   memcpy(gl->ribbon.tail, vertex + 2 * vertices - 4, sizeof(gl->ribbon.tail));
-   return true;
+   uint64_t oldest = (uint64_t)-1;
+   int slot        = -1;
+   unsigned i;
+
+   for (i = 0; i < ARRAY_SIZE(gl->meshes); i++)
+   {
+      if (gl->meshes[i].vbo && gl->meshes[i].id == mesh->id)
+         return (int)i;
+      if (!gl->meshes[i].vbo)
+      {
+         if (slot < 0 || gl->meshes[slot].vbo)
+            slot = (int)i;
+      }
+      else if ((slot < 0 || gl->meshes[slot].vbo)
+            && gl->meshes[i].last_frame < oldest)
+      {
+         oldest = gl->meshes[i].last_frame;
+         slot   = (int)i;
+      }
+   }
+   if (slot < 0)
+      return -1;
+   if (gl->meshes[slot].vbo)
+      glDeleteBuffers(1, &gl->meshes[slot].vbo);
+   if (gl->meshes[slot].ibo)
+      glDeleteBuffers(1, &gl->meshes[slot].ibo);
+   gl->meshes[slot].vbo = 0;
+   gl->meshes[slot].ibo = 0;
+   gl->meshes[slot].id  = 0;
+
+   glGenBuffers(1, &gl->meshes[slot].vbo);
+   if (!gl->meshes[slot].vbo)
+      return -1;
+   glBindBuffer(GL_ARRAY_BUFFER, gl->meshes[slot].vbo);
+   glBufferData(GL_ARRAY_BUFFER,
+         (GLsizeiptr)mesh->vertex_count * sizeof(gfx_display_mesh_vertex_t),
+         mesh->vertices, GL_STATIC_DRAW);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   if (mesh->indices)
+   {
+      glGenBuffers(1, &gl->meshes[slot].ibo);
+      if (!gl->meshes[slot].ibo)
+      {
+         glDeleteBuffers(1, &gl->meshes[slot].vbo);
+         gl->meshes[slot].vbo = 0;
+         return -1;
+      }
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl->meshes[slot].ibo);
+      glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+            (GLsizeiptr)mesh->index_count * sizeof(uint16_t),
+            mesh->indices, GL_STATIC_DRAW);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+   }
+   gl->meshes[slot].id = mesh->id;
+   return slot;
 }
 #endif
 
@@ -749,7 +785,7 @@ static void gfx_display_gl3_draw_pipeline(
    unsigned video_width  = VIDEO_SCALE_W(video_dims);
    unsigned video_height = VIDEO_SCALE_H(video_dims);
 #ifdef HAVE_SHADERPIPELINE
-   static float t                = 0.0f;
+   float t                       = p_disp ? p_disp->effect_time : 0.0f;
    float yflip                   = 0.0f;
    video_coord_array_t *ca       = &p_disp->dispca;
    gl3_t *gl                 = (gl3_t*)data;
@@ -879,14 +915,6 @@ static void gfx_display_gl3_draw_pipeline(
    }
 #endif
 
-   t += 0.01f;
-   /* Wrap at 65536 to keep fp32 increments precise. 0.01 stays
-    * exactly representable up to t ~ 167772 (where 0.5*ulp first
-    * exceeds 0.01), so 65536 has wide margin and wraps roughly
-    * every 30 h of cumulative menu time, making the discontinuity
-    * effectively unobservable. */
-   if (t > 65536.0f)
-      t -= 65536.0f;
 #endif
 }
 
@@ -1009,21 +1037,25 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
       }
 
 #ifdef HAVE_SHADERPIPELINE
-      /* The two ribbon shaders declare only the position attribute, and
-       * the menu driver hands them thousands of vertices with no
-       * texture or colour streams of their own: streaming the
-       * four-vertex default arrays for them read far past their end
-       * every frame. Bind the position from the static ribbon VBO
-       * and leave the other attributes disabled. */
-      if (     (   draw->pipeline_id == VIDEO_SHADER_MENU
-                || draw->pipeline_id == VIDEO_SHADER_MENU_2)
-            && gl3_bind_ribbon_vbo(gl, coords.vertex, coords.vertices))
+      /* The two ribbon shaders declare only the position attribute:
+       * it is bound from the ribbon mesh's own buffer, the others are
+       * left disabled. */
+      if (     draw->pipeline_id == VIDEO_SHADER_MENU
+            || draw->pipeline_id == VIDEO_SHADER_MENU_2)
       {
-         glEnableVertexAttribArray(0);
-         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
-               2 * sizeof(float), (void *)(uintptr_t)0);
-         glDrawArrays(GL_TRIANGLE_STRIP, 0, coords.vertices);
-         glDisableVertexAttribArray(0);
+         /* From the ribbon mesh's own buffer, its position only */
+         const gfx_display_mesh_t *mesh = disp_get_ptr()->effect_mesh;
+         int slot;
+         if (mesh && (slot = gl3_mesh_slot(gl, mesh)) >= 0)
+         {
+            gl->meshes[slot].last_frame = gl->mesh_frame;
+            glBindBuffer(GL_ARRAY_BUFFER, gl->meshes[slot].vbo);
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
+                  sizeof(gfx_display_mesh_vertex_t), (void *)(uintptr_t)0);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, mesh->vertex_count);
+            glDisableVertexAttribArray(0);
+         }
       }
       else
 #endif
@@ -1079,6 +1111,84 @@ static void gfx_display_gl3_blend_end(void *data)
 {
    glDisable(GL_BLEND);
 }
+
+#ifdef HAVE_SLANG
+static bool gfx_display_gl3_mesh_draw(void *data, unsigned video_dims,
+      const gfx_display_mesh_t *mesh, const float *mvp,
+      uintptr_t texture, const float *tint)
+{
+   /* The vertex stage's UBO, flattened: a mat4, then a vec4 */
+   float ubo[20];
+   math_matrix_4x4 user, out;
+   gl3_t *gl = (gl3_t*)data;
+   GLboolean blend;
+   int slot;
+
+   if (!gl || !mesh || !gl->pipelines.mesh
+         || gl->pipelines.mesh_loc.flat_ubo_vertex < 0)
+      return false;
+   if ((slot = gl3_mesh_slot(gl, mesh)) < 0)
+      return false;
+   gl->meshes[slot].last_frame = ++gl->mesh_frame;
+
+   memcpy(user.data, mvp, sizeof(user.data));
+   matrix_4x4_multiply(out, gl->mvp_no_rot, user);
+   memcpy(ubo, out.data, sizeof(out.data));
+   memcpy(ubo + 16, tint, 4 * sizeof(float));
+
+   /* The whole display, as draw() sets it for a strip at the origin */
+   glViewport(0, 0, VIDEO_SCALE_W(video_dims), VIDEO_SCALE_H(video_dims));
+   /* Meshes are drawn blended, as every driver draws them */
+   blend = glIsEnabled(GL_BLEND);
+   glEnable(GL_BLEND);
+   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+   glUseProgram(gl->pipelines.mesh);
+   glUniform4fv(gl->pipelines.mesh_loc.flat_ubo_vertex, 5, ubo);
+   glActiveTexture(GL_TEXTURE1);
+   glBindTexture(GL_TEXTURE_2D, (GLuint)texture);
+
+   /* Read as stored: three floats, two 16-bit and four 8-bit
+    * normalised integers */
+   glBindBuffer(GL_ARRAY_BUFFER, gl->meshes[slot].vbo);
+   glEnableVertexAttribArray(0);
+   glEnableVertexAttribArray(1);
+   glEnableVertexAttribArray(2);
+   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
+         sizeof(gfx_display_mesh_vertex_t), (void *)(uintptr_t)0);
+   glVertexAttribPointer(1, 2, GL_UNSIGNED_SHORT, GL_TRUE,
+         sizeof(gfx_display_mesh_vertex_t), (void *)(uintptr_t)12);
+   glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE,
+         sizeof(gfx_display_mesh_vertex_t), (void *)(uintptr_t)16);
+   if (mesh->indices)
+   {
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl->meshes[slot].ibo);
+      glDrawElements(mesh->topology == GFX_MESH_TRIANGLE_STRIP
+            ? GL_TRIANGLE_STRIP : GL_TRIANGLES,
+            mesh->index_count, GL_UNSIGNED_SHORT, (void *)(uintptr_t)0);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+   }
+   else
+      glDrawArrays(mesh->topology == GFX_MESH_TRIANGLE_STRIP
+            ? GL_TRIANGLE_STRIP : GL_TRIANGLES, 0, mesh->vertex_count);
+   glDisableVertexAttribArray(0);
+   glDisableVertexAttribArray(1);
+   glDisableVertexAttribArray(2);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   glBindTexture(GL_TEXTURE_2D, 0);
+
+   if (!blend)
+      glDisable(GL_BLEND);
+   /* The draws after this one may lean on the program blend_begin
+    * bound */
+   if (gl->chain.active)
+      gl->chain.shader->use(gl, gl->chain.shader_data,
+            VIDEO_SHADER_STOCK_BLEND, true);
+   else
+      glUseProgram(gl->pipelines.alpha_blend);
+   return true;
+}
+#endif
 
 static void gfx_display_gl3_scissor_begin(void *data, unsigned video_dims,
       int x, int y, unsigned dims)
@@ -1724,11 +1834,16 @@ static void gl3_free_scratch_vbos(gl3_t *gl)
    for (i = 0; i < GL_CORE_NUM_VBOS; i++)
       if (gl->scratch_vbos[i])
          glDeleteBuffers(1, &gl->scratch_vbos[i]);
-   if (gl->ribbon.vbo)
-      glDeleteBuffers(1, &gl->ribbon.vbo);
-   gl->ribbon.vbo      = 0;
-   gl->ribbon.src      = NULL;
-   gl->ribbon.vertices = 0;
+   for (i = 0; i < (int)ARRAY_SIZE(gl->meshes); i++)
+   {
+      if (gl->meshes[i].vbo)
+         glDeleteBuffers(1, &gl->meshes[i].vbo);
+      if (gl->meshes[i].ibo)
+         glDeleteBuffers(1, &gl->meshes[i].ibo);
+      gl->meshes[i].vbo = 0;
+      gl->meshes[i].ibo = 0;
+      gl->meshes[i].id  = 0;
+   }
 }
 
 static void gl3_overlay_vertex_geom(void *data,
@@ -1956,6 +2071,11 @@ static void gl3_destroy_resources(gl3_t *gl)
    {
       glDeleteProgram(gl->pipelines.alpha_blend);
       gl->pipelines.alpha_blend = 0;
+   }
+   if (gl->pipelines.mesh)
+   {
+      glDeleteProgram(gl->pipelines.mesh);
+      gl->pipelines.mesh = 0;
    }
    if (gl->pipelines.font)
    {
@@ -2325,6 +2445,10 @@ static bool gl3_init_pipelines(gl3_t *gl)
 #include "vulkan_shaders/alpha_blend.frag.inc"
       ;
 
+   static const uint32_t mesh_vert[] =
+#include "vulkan_shaders/mesh.vert.inc"
+      ;
+
    static const uint32_t font_frag[] =
 #include "vulkan_shaders/font.frag.inc"
       ;
@@ -2377,6 +2501,12 @@ static bool gl3_init_pipelines(gl3_t *gl)
                                                              &gl->pipelines.alpha_blend_loc, true);
    if (!gl->pipelines.alpha_blend)
       return false;
+
+   /* Without it meshes are streamed through the alpha-blend program */
+   if (!gl->pipelines.mesh)
+      gl->pipelines.mesh = gl3_cross_compile_program(mesh_vert, sizeof(mesh_vert),
+                                                      alpha_blend_frag, sizeof(alpha_blend_frag),
+                                                      &gl->pipelines.mesh_loc, true);
 
    if (!gl->pipelines.font)
       gl->pipelines.font = gl3_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
@@ -6287,5 +6417,10 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
    false,
    true,
    gfx_display_gl3_scissor_begin,
-   gfx_display_gl3_scissor_end
+   gfx_display_gl3_scissor_end,
+#ifdef HAVE_SLANG
+   gfx_display_gl3_mesh_draw
+#else
+   NULL
+#endif
 };

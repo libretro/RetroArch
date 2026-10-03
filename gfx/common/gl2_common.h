@@ -92,6 +92,18 @@ enum gl2_flags
 
 struct gl2
 {
+   /* gfx_display meshes kept on the GPU, by mesh id: vertices, and
+    * indices where the mesh has them. GL retires a deleted buffer once
+    * nothing in flight reads it, so the one drawn longest ago simply
+    * gives way when all are taken. */
+   struct
+   {
+      GLuint vbo;
+      GLuint ibo;
+      uint64_t last_draw;
+      uint32_t id;
+   } meshes[8];
+   uint64_t mesh_draws;
    const shader_backend_t *shader;
    void *shader_data;
    void *renderchain_data;

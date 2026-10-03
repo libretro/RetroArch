@@ -410,8 +410,26 @@ typedef struct vk
 #ifdef VULKAN_HDR_SWAPCHAIN
       VkPipeline pipelines_sdr[8]; /* SDR offscreen variants, same layout */
 #endif
+      /* gfx_display meshes: [0] triangle list, [1] strip, blended */
+      VkPipeline mesh_pipelines[2];
+#ifdef VULKAN_HDR_SWAPCHAIN
+      VkPipeline mesh_pipelines_sdr[2];
+#endif
       struct vk_texture blank_texture;
    } display;
+
+   /* gfx_display meshes kept on the GPU, by mesh id: vertices, then
+    * indices at index_offset. An entry not drawn for longer than a
+    * frame can still be in flight is the first to give way. */
+   struct
+   {
+      VkBuffer buffer;
+      VkDeviceMemory memory;
+      VkDeviceSize index_offset;
+      uint64_t last_frame;
+      uint32_t id;
+   } meshes[8];
+   uint64_t mesh_frame;
 
    /* Shared index buffer for quad rendering (fix #8).
     * Contains repeating [0,1,2,2,1,3] patterns so quads
@@ -424,20 +442,19 @@ typedef struct vk
       unsigned num_quads;            /* max quads this IBO can index */
    } quad_ibo;
 
-   /* Static vertex buffer for the menu ribbon pipelines. Their vertex
-    * array (dispca) is a fixed 64x64 grid that never changes after
-    * the menu driver builds it, yet it was re-interleaved into the
-    * per-frame VBO chain on every frame: 8064 vertices, 258 KiB of
-    * write-combined traffic a frame. Baked once here and rebuilt
-    * only when the source array or its size changes. */
+   /* Static vertex buffer for the per-pixel menu effects (snow,
+    * bokeh, snowflake): the quad they shade over, baked once rather
+    * than into the per-frame chain, and rebuilt only when the source
+    * array or its size changes. The ribbons draw from the ribbon
+    * mesh's own buffer (meshes). */
    struct
    {
       VkBuffer buffer;               /* ptr alignment */
       VkDeviceMemory memory;         /* ptr alignment */
-      const float *src;              /* dispca vertex array it was baked from */
+      const float *src;              /* vertex array it was baked from */
       unsigned vertices;
       float head[4], tail[4];        /* first/last floats, to catch a rebuilt array at the same address */
-   } ribbon_vbo;
+   } effect_vbo;
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    struct
@@ -1032,7 +1049,10 @@ static VkDescriptorSet vulkan_descriptor_manager_alloc(
 
 /* The VBO needs to be written to before calling this.
  * Use vulkan_buffer_chain_alloc. */
-static void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
+/* Everything a draw sets up before its vertices: the pipeline, the
+ * dynamic state it invalidates, the UBO and the descriptor set. False
+ * when the UBO or the set could not be had. */
+static bool vulkan_draw_bind(vk_t *vk, const struct vk_draw_triangles *call)
 {
    if (call->texture && call->texture->image)
       vulkan_transition_texture(vk, vk->cmd, call->texture);
@@ -1091,7 +1111,7 @@ static void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call
 
       if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
                call->uniform_size, &range))
-         return;
+         return false;
 
       memcpy(range.data, call->uniform, call->uniform_size);
 
@@ -1099,7 +1119,7 @@ static void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call
             vk->context->device,
             &vk->chain->descriptor_manager);
       if (set == VK_NULL_HANDLE)
-         return;
+         return false;
 
       vulkan_write_quad_descriptors(
             vk->context->device,
@@ -1120,6 +1140,13 @@ static void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call
       memset(vk->tracker.mvp.data, 0, sizeof(vk->tracker.mvp.data));
    }
 
+   return true;
+}
+
+static void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call)
+{
+   if (!vulkan_draw_bind(vk, call))
+      return;
    /* VBO is already uploaded. */
    vkCmdBindVertexBuffers(vk->cmd, 0, 1,
          &call->vbo->buffer, &call->vbo->offset);
@@ -2628,7 +2655,8 @@ static void gfx_display_vk_draw_pipeline(
 {
    static uint8_t ubo_scratch_data[768];
    static struct video_coords blank_coords;
-   static float t                   = 0.0f;
+   static struct video_coords mesh_coords;
+   float t                          = p_disp ? p_disp->effect_time : 0.0f;
    float output_size[2];
    float yflip                      = 1.0f;
    video_coord_array_t *ca          = NULL;
@@ -2656,8 +2684,18 @@ static void gfx_display_vk_draw_pipeline(
              * Vulkan's inverted clip Y.  Negate yflip so
              * gl_Position.y *= yflip corrects for this. */
             float ribbon_yflip            = -yflip;
-            ca                            = &p_disp->dispca;
-            draw->coords                  = (struct video_coords*)&ca->coords;
+            /* Drawn from the mesh's own buffer; the count is all
+             * the draw takes from here */
+            if (p_disp && p_disp->effect_mesh)
+            {
+               mesh_coords.vertices       = p_disp->effect_mesh->vertex_count;
+               draw->coords               = &mesh_coords;
+            }
+            else
+            {
+               ca                         = &p_disp->dispca;
+               draw->coords               = (struct video_coords*)&ca->coords;
+            }
             draw->backend_data            = ubo_scratch_data;
             draw->backend_data_size       = 3 * sizeof(float);
 
@@ -2698,15 +2736,6 @@ static void gfx_display_vk_draw_pipeline(
          blank_coords.vertices = 4;
          break;
    }
-
-   t += 0.01f;
-   /* Wrap at 65536 to keep fp32 increments precise. 0.01 stays
-    * exactly representable up to t ~ 167772 (where 0.5*ulp first
-    * exceeds 0.01), so 65536 has wide margin and wraps roughly
-    * every 30 h of cumulative menu time, making the discontinuity
-    * effectively unobservable. */
-   if (t > 65536.0f)
-      t -= 65536.0f;
 }
 #endif
 
@@ -2746,38 +2775,38 @@ static void gfx_display_vk_bake_vertices(struct vk_vertex *pv,
    }
 }
 
-static void vulkan_deinit_ribbon_vbo(vk_t *vk)
+static void vulkan_deinit_effect_vbo(vk_t *vk)
 {
    VkDevice device = vk->context->device;
-   if (vk->ribbon_vbo.buffer != VK_NULL_HANDLE)
-      vkDestroyBuffer(device, vk->ribbon_vbo.buffer, NULL);
-   if (vk->ribbon_vbo.memory != VK_NULL_HANDLE)
-      vkFreeMemory(device, vk->ribbon_vbo.memory, NULL);
-   vk->ribbon_vbo.buffer   = VK_NULL_HANDLE;
-   vk->ribbon_vbo.memory   = VK_NULL_HANDLE;
-   vk->ribbon_vbo.src      = NULL;
-   vk->ribbon_vbo.vertices = 0;
+   if (vk->effect_vbo.buffer != VK_NULL_HANDLE)
+      vkDestroyBuffer(device, vk->effect_vbo.buffer, NULL);
+   if (vk->effect_vbo.memory != VK_NULL_HANDLE)
+      vkFreeMemory(device, vk->effect_vbo.memory, NULL);
+   vk->effect_vbo.buffer   = VK_NULL_HANDLE;
+   vk->effect_vbo.memory   = VK_NULL_HANDLE;
+   vk->effect_vbo.src      = NULL;
+   vk->effect_vbo.vertices = 0;
 }
 
-/* True when the static ribbon VBO holds this exact vertex array. */
-static bool vulkan_ribbon_vbo_matches(const vk_t *vk,
+/* True when the effects' static VBO holds this exact vertex array. */
+static bool vulkan_effect_vbo_matches(const vk_t *vk,
       const float *vertex, unsigned vertices)
 {
-   if (vk->ribbon_vbo.buffer == VK_NULL_HANDLE
-         || vk->ribbon_vbo.src != vertex
-         || vk->ribbon_vbo.vertices != vertices
+   if (vk->effect_vbo.buffer == VK_NULL_HANDLE
+         || vk->effect_vbo.src != vertex
+         || vk->effect_vbo.vertices != vertices
          || vertices < 4)
       return false;
-   return    !memcmp(vk->ribbon_vbo.head, vertex, sizeof(vk->ribbon_vbo.head))
-          && !memcmp(vk->ribbon_vbo.tail, vertex + 2 * vertices - 4,
-                sizeof(vk->ribbon_vbo.tail));
+   return    !memcmp(vk->effect_vbo.head, vertex, sizeof(vk->effect_vbo.head))
+          && !memcmp(vk->effect_vbo.tail, vertex + 2 * vertices - 4,
+                sizeof(vk->effect_vbo.tail));
 }
 
-/* Bake the ribbon's interleaved vertices into a buffer of their own,
+/* Bake an effect's interleaved vertices into a buffer of their own,
  * host-visible like the quad IBO, so the per-frame draw only binds it.
  * On any failure the buffer is left absent and the draw falls back to
  * the per-frame chain bake. */
-static void vulkan_init_ribbon_vbo(vk_t *vk,
+static void vulkan_init_effect_vbo(vk_t *vk,
       const float *vertex, const float *tex_coord, const float *color,
       unsigned vertices, int use_default_tc, int use_default_color)
 {
@@ -2792,21 +2821,21 @@ static void vulkan_init_ribbon_vbo(vk_t *vk,
    /* A submitted frame may still read the old buffer: it goes on the
     * deferred list, as a buffer-only texture, and retires once the
     * frames that could reference it have. */
-   if (vk->ribbon_vbo.buffer != VK_NULL_HANDLE)
+   if (vk->effect_vbo.buffer != VK_NULL_HANDLE)
    {
       struct vk_texture *old = (struct vk_texture*)calloc(1, sizeof(*old));
       if (old)
       {
-         old->buffer = vk->ribbon_vbo.buffer;
-         old->memory = vk->ribbon_vbo.memory;
+         old->buffer = vk->effect_vbo.buffer;
+         old->memory = vk->effect_vbo.memory;
          old->type   = VULKAN_TEXTURE_STAGING;
-         vk->ribbon_vbo.buffer = VK_NULL_HANDLE;
-         vk->ribbon_vbo.memory = VK_NULL_HANDLE;
+         vk->effect_vbo.buffer = VK_NULL_HANDLE;
+         vk->effect_vbo.memory = VK_NULL_HANDLE;
          vulkan_texture_defer(vk, old);
       }
       else
          vulkan_wait_own_submissions(vk);
-      vulkan_deinit_ribbon_vbo(vk);
+      vulkan_deinit_effect_vbo(vk);
    }
    if (vertices < 4)
       return;
@@ -2820,13 +2849,13 @@ static void vulkan_init_ribbon_vbo(vk_t *vk,
    buffer_info.queueFamilyIndexCount       = 0;
    buffer_info.pQueueFamilyIndices         = NULL;
 
-   res = vkCreateBuffer(device, &buffer_info, NULL, &vk->ribbon_vbo.buffer);
+   res = vkCreateBuffer(device, &buffer_info, NULL, &vk->effect_vbo.buffer);
    if (res != VK_SUCCESS)
    {
-      vk->ribbon_vbo.buffer = VK_NULL_HANDLE;
+      vk->effect_vbo.buffer = VK_NULL_HANDLE;
       return;
    }
-   vkGetBufferMemoryRequirements(device, vk->ribbon_vbo.buffer, &mem_reqs);
+   vkGetBufferMemoryRequirements(device, vk->effect_vbo.buffer, &mem_reqs);
 
    alloc.sType                             = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
    alloc.pNext                             = NULL;
@@ -2838,39 +2867,256 @@ static void vulkan_init_ribbon_vbo(vk_t *vk,
          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
-   res = vkAllocateMemory(device, &alloc, NULL, &vk->ribbon_vbo.memory);
+   res = vkAllocateMemory(device, &alloc, NULL, &vk->effect_vbo.memory);
    if (res != VK_SUCCESS)
    {
-      vkDestroyBuffer(device, vk->ribbon_vbo.buffer, NULL);
-      vk->ribbon_vbo.buffer = VK_NULL_HANDLE;
-      vk->ribbon_vbo.memory = VK_NULL_HANDLE;
+      vkDestroyBuffer(device, vk->effect_vbo.buffer, NULL);
+      vk->effect_vbo.buffer = VK_NULL_HANDLE;
+      vk->effect_vbo.memory = VK_NULL_HANDLE;
       return;
    }
-   vkBindBufferMemory(device, vk->ribbon_vbo.buffer, vk->ribbon_vbo.memory, 0);
+   vkBindBufferMemory(device, vk->effect_vbo.buffer, vk->effect_vbo.memory, 0);
 
-   res = vkMapMemory(device, vk->ribbon_vbo.memory, 0, vbo_size, 0, &mapped);
+   res = vkMapMemory(device, vk->effect_vbo.memory, 0, vbo_size, 0, &mapped);
    if (res != VK_SUCCESS || !mapped)
    {
-      vulkan_deinit_ribbon_vbo(vk);
+      vulkan_deinit_effect_vbo(vk);
       return;
    }
    gfx_display_vk_bake_vertices((struct vk_vertex*)mapped,
          vertex, tex_coord, color, vertices,
          use_default_tc, use_default_color);
-   vkUnmapMemory(device, vk->ribbon_vbo.memory);
+   vkUnmapMemory(device, vk->effect_vbo.memory);
 
-   vk->ribbon_vbo.src      = vertex;
-   vk->ribbon_vbo.vertices = vertices;
-   memcpy(vk->ribbon_vbo.head, vertex, sizeof(vk->ribbon_vbo.head));
-   memcpy(vk->ribbon_vbo.tail, vertex + 2 * vertices - 4,
-         sizeof(vk->ribbon_vbo.tail));
+   vk->effect_vbo.src      = vertex;
+   vk->effect_vbo.vertices = vertices;
+   memcpy(vk->effect_vbo.head, vertex, sizeof(vk->effect_vbo.head));
+   memcpy(vk->effect_vbo.tail, vertex + 2 * vertices - 4,
+         sizeof(vk->effect_vbo.tail));
+}
+
+/* Hands a mesh buffer to the deferred list, which retires it once no
+ * frame that could read it is in flight. False if it cannot be listed;
+ * the buffer then stays where it is. */
+static bool vulkan_mesh_retire(vk_t *vk, unsigned slot)
+{
+   struct vk_texture *old = (struct vk_texture*)calloc(1, sizeof(*old));
+   if (!old)
+      return false;
+   old->buffer = vk->meshes[slot].buffer;
+   old->memory = vk->meshes[slot].memory;
+   old->type   = VULKAN_TEXTURE_STAGING;
+   vulkan_texture_defer(vk, old);
+   vk->meshes[slot].buffer = VK_NULL_HANDLE;
+   vk->meshes[slot].memory = VK_NULL_HANDLE;
+   vk->meshes[slot].id     = 0;
+   return true;
+}
+
+/* At teardown, with the device idle */
+static void vulkan_deinit_meshes(vk_t *vk)
+{
+   unsigned i;
+   for (i = 0; i < ARRAY_SIZE(vk->meshes); i++)
+   {
+      if (vk->meshes[i].buffer != VK_NULL_HANDLE)
+         vkDestroyBuffer(vk->context->device, vk->meshes[i].buffer, NULL);
+      if (vk->meshes[i].memory != VK_NULL_HANDLE)
+         vkFreeMemory(vk->context->device, vk->meshes[i].memory, NULL);
+      vk->meshes[i].buffer = VK_NULL_HANDLE;
+      vk->meshes[i].memory = VK_NULL_HANDLE;
+      vk->meshes[i].id     = 0;
+   }
+}
+
+/* The slot whose buffer holds @mesh, made the first time it is drawn:
+ * a free slot, or the one drawn longest ago once no frame in flight can
+ * still read it. -1 when there is none to be had, and the mesh is
+ * streamed instead. */
+static int vulkan_mesh_slot(vk_t *vk, const gfx_display_mesh_t *mesh)
+{
+   VkResult res;
+   VkBufferCreateInfo buffer_info;
+   VkMemoryRequirements mem_reqs;
+   VkMemoryAllocateInfo alloc;
+   void *mapped                = NULL;
+   VkDevice device             = vk->context->device;
+   VkDeviceSize vbytes         = (VkDeviceSize)mesh->vertex_count
+      * sizeof(gfx_display_mesh_vertex_t);
+   VkDeviceSize ibytes         = (VkDeviceSize)mesh->index_count
+      * sizeof(uint16_t);
+   uint64_t oldest             = (uint64_t)-1;
+   int slot                    = -1;
+   int old                     = -1;
+   unsigned i;
+
+   for (i = 0; i < ARRAY_SIZE(vk->meshes); i++)
+   {
+      if (vk->meshes[i].buffer == VK_NULL_HANDLE)
+      {
+         if (slot < 0)
+            slot = (int)i;
+      }
+      else if (vk->meshes[i].id == mesh->id)
+         return (int)i;
+      else if (vk->meshes[i].last_frame < oldest)
+      {
+         oldest = vk->meshes[i].last_frame;
+         old    = (int)i;
+      }
+   }
+   if (slot < 0)
+   {
+      if (     old < 0
+            || vk->mesh_frame - oldest
+               <= (uint64_t)vk->context->num_swapchain_images + 1
+            || !vulkan_mesh_retire(vk, (unsigned)old))
+         return -1;
+      slot = old;
+   }
+
+   buffer_info.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+   buffer_info.pNext                 = NULL;
+   buffer_info.flags                 = 0;
+   buffer_info.size                  = vbytes + ibytes;
+   buffer_info.usage                 = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
+                                     | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+   buffer_info.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
+   buffer_info.queueFamilyIndexCount = 0;
+   buffer_info.pQueueFamilyIndices   = NULL;
+   if (vkCreateBuffer(device, &buffer_info, NULL,
+            &vk->meshes[slot].buffer) != VK_SUCCESS)
+   {
+      vk->meshes[slot].buffer = VK_NULL_HANDLE;
+      return -1;
+   }
+   vkGetBufferMemoryRequirements(device, vk->meshes[slot].buffer, &mem_reqs);
+   alloc.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+   alloc.pNext           = NULL;
+   alloc.allocationSize  = mem_reqs.size;
+   alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(
+         &vk->context->memory_properties,
+         mem_reqs.memoryTypeBits,
+           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+         | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+   res = vkAllocateMemory(device, &alloc, NULL, &vk->meshes[slot].memory);
+   if (res != VK_SUCCESS)
+   {
+      vkDestroyBuffer(device, vk->meshes[slot].buffer, NULL);
+      vk->meshes[slot].buffer = VK_NULL_HANDLE;
+      vk->meshes[slot].memory = VK_NULL_HANDLE;
+      return -1;
+   }
+   vkBindBufferMemory(device, vk->meshes[slot].buffer,
+         vk->meshes[slot].memory, 0);
+   res = vkMapMemory(device, vk->meshes[slot].memory, 0,
+         vbytes + ibytes, 0, &mapped);
+   if (res != VK_SUCCESS || !mapped)
+   {
+      vkDestroyBuffer(device, vk->meshes[slot].buffer, NULL);
+      vkFreeMemory(device, vk->meshes[slot].memory, NULL);
+      vk->meshes[slot].buffer = VK_NULL_HANDLE;
+      vk->meshes[slot].memory = VK_NULL_HANDLE;
+      return -1;
+   }
+   /* Stored as the mesh holds it: no conversion, no second copy */
+   memcpy(mapped, mesh->vertices, (size_t)vbytes);
+   if (ibytes)
+      memcpy((uint8_t*)mapped + vbytes, mesh->indices, (size_t)ibytes);
+   vkUnmapMemory(device, vk->meshes[slot].memory);
+
+   vk->meshes[slot].id           = mesh->id;
+   vk->meshes[slot].index_offset = vbytes;
+   return slot;
+}
+
+static bool gfx_display_vk_mesh_draw(void *data, unsigned video_dims,
+      const gfx_display_mesh_t *mesh, const float *mvp,
+      uintptr_t texture, const float *tint)
+{
+   /* The vertex stage's UBO, std140: a mat4, then a vec4 */
+   struct
+   {
+      math_matrix_4x4 mvp;
+      float tint[4];
+   } ubo;
+   math_matrix_4x4 user;
+   struct vk_draw_triangles call;
+   VkDeviceSize offset      = 0;
+   vk_t *vk                 = (vk_t*)data;
+   struct vk_texture *tex   = (struct vk_texture*)texture;
+   bool strip;
+   int slot;
+
+   if (!vk || !mesh || !tex)
+      return false;
+   if ((slot = vulkan_mesh_slot(vk, mesh)) < 0)
+      return false;
+   vk->meshes[slot].last_frame = vk->mesh_frame;
+
+   /* The display's 0..1 space is bottom-up, as draw() bakes it: y
+    * becomes w - y, the homogeneous 1 - y, before the display's MVP */
+   memcpy(user.data, mvp, sizeof(user.data));
+   {
+      unsigned c;
+      for (c = 0; c < 4; c++)
+         user.data[c * 4 + 1] = mvp[c * 4 + 3] - mvp[c * 4 + 1];
+   }
+   matrix_4x4_multiply(ubo.mvp, vk->mvp_no_rot, user);
+
+   /* The whole display, as draw() sets it for a strip at the origin;
+    * the viewport a quad before this one left is its own */
+   vk->vk_vp.x        = 0;
+   vk->vk_vp.y        = VIDEO_SCALE_H(vk->context->swapchain_dims)
+      - VIDEO_SCALE_H(video_dims);
+   vk->vk_vp.width    = VIDEO_SCALE_W(video_dims);
+   vk->vk_vp.height   = VIDEO_SCALE_H(video_dims);
+   vk->vk_vp.minDepth = 0.0f;
+   vk->vk_vp.maxDepth = 1.0f;
+   vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
+   memcpy(ubo.tint, tint, sizeof(ubo.tint));
+
+   strip             = (mesh->topology == GFX_MESH_TRIANGLE_STRIP);
+#ifdef VULKAN_HDR_SWAPCHAIN
+   call.pipeline     = (vk->flags & VK_FLAG_SDR_PIPELINE)
+      ? vk->display.mesh_pipelines_sdr[strip]
+      : vk->display.mesh_pipelines[strip];
+#else
+   call.pipeline     = vk->display.mesh_pipelines[strip];
+#endif
+   if (call.pipeline == VK_NULL_HANDLE)
+      return false;
+   call.texture      = tex;
+   call.sampler      = (tex->flags & VK_TEX_FLAG_MIPMAP)
+      ? vk->samplers.mipmap_linear
+      : ((tex->flags & VK_TEX_FLAG_DEFAULT_SMOOTH)
+      ? vk->samplers.linear
+      : vk->samplers.nearest);
+   call.uniform      = &ubo;
+   call.uniform_size = sizeof(ubo);
+   call.vbo          = NULL;
+   call.vertices     = 0;
+   if (!vulkan_draw_bind(vk, &call))
+      return true;
+
+   vkCmdBindVertexBuffers(vk->cmd, 0, 1, &vk->meshes[slot].buffer, &offset);
+   if (mesh->indices)
+   {
+      vkCmdBindIndexBuffer(vk->cmd, vk->meshes[slot].buffer,
+            vk->meshes[slot].index_offset, VK_INDEX_TYPE_UINT16);
+      vkCmdDrawIndexed(vk->cmd, mesh->index_count, 1, 0, 0, 0);
+   }
+   else
+      vkCmdDraw(vk->cmd, mesh->vertex_count, 1, 0, 0);
+   return true;
 }
 
 static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_dims)
 {
    int use_default_tc, use_default_color;
-   bool is_ribbon;
+   bool is_effect;
    struct vk_buffer_range range;
    struct vk_texture *texture    = NULL;
    const float *vertex           = NULL;
@@ -2915,11 +3161,11 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
 
    vk->tracker.dirty             |= VULKAN_DIRTY_DYNAMIC_BIT;
 
-   /* The ribbon pipelines draw one immutable vertex array every
-    * frame; that one lives in a static buffer baked on first sight
-    * (see ribbon_vbo). Everything else is interleaved into this
+   /* The menu effects draw the same vertices every frame: the ribbons
+    * from the ribbon mesh's buffer, the others from a quad baked once
+    * (see effect_vbo). Everything else is interleaved into this
     * frame's chain. */
-   is_ribbon = false;
+   is_effect = false;
 #ifdef HAVE_SHADERPIPELINE
    switch (draw->pipeline_id)
    {
@@ -2929,28 +3175,46 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
-         is_ribbon = true;
+         is_effect = true;
          break;
       default:
          break;
    }
 #endif
-   if (is_ribbon)
+#ifdef HAVE_SHADERPIPELINE
+   /* The ribbon pipelines read the ribbon mesh as it is stored, from
+    * the buffer the mesh keeps; without one there is nothing they can
+    * be given, and no ribbon this frame */
+   if (     draw->pipeline_id == VIDEO_SHADER_MENU
+         || draw->pipeline_id == VIDEO_SHADER_MENU_2)
    {
-      if (!vulkan_ribbon_vbo_matches(vk, vertex, draw->coords->vertices))
-         vulkan_init_ribbon_vbo(vk, vertex, tex_coord, color,
+      const gfx_display_mesh_t *mesh = disp_get_ptr()->effect_mesh;
+      int slot;
+      if (!mesh || (slot = vulkan_mesh_slot(vk, mesh)) < 0)
+         return;
+      vk->meshes[slot].last_frame = vk->mesh_frame;
+      range.buffer = vk->meshes[slot].buffer;
+      range.offset = 0;
+      range.data   = NULL;
+   }
+   else
+#endif
+   if (is_effect)
+   {
+      if (!vulkan_effect_vbo_matches(vk, vertex, draw->coords->vertices))
+         vulkan_init_effect_vbo(vk, vertex, tex_coord, color,
                draw->coords->vertices, use_default_tc, use_default_color);
-      if (vk->ribbon_vbo.buffer != VK_NULL_HANDLE)
+      if (vk->effect_vbo.buffer != VK_NULL_HANDLE)
       {
-         range.buffer = vk->ribbon_vbo.buffer;
+         range.buffer = vk->effect_vbo.buffer;
          range.offset = 0;
          range.data   = NULL;
-         is_ribbon    = true;
+         is_effect    = true;
       }
       else
-         is_ribbon    = false;
+         is_effect    = false;
    }
-   if (!is_ribbon)
+   if (!is_effect)
    {
       /* Bake interleaved VBO. Kinda ugly, we should probably try to move to
        * an interleaved model to begin with ... */
@@ -4392,6 +4656,10 @@ static void vulkan_init_pipelines(vk_t *vk)
 #include "vulkan_shaders/alpha_blend.frag.inc"
       ;
 
+   static const uint32_t mesh_vert[] =
+#include "vulkan_shaders/mesh.vert.inc"
+      ;
+
    static const uint32_t font_frag[] =
 #include "vulkan_shaders/font.frag.inc"
       ;
@@ -4707,6 +4975,11 @@ static void vulkan_init_pipelines(vk_t *vk)
    input_assembly.primitiveRestartEnable = VK_TRUE;
    for (i = 0; i < 6; i++)
    {
+      /* The ribbons draw the ribbon mesh as gfx_display stores it and
+       * read its position only; the others draw the quad */
+      binding.stride = (i < 2)
+         ? sizeof(gfx_display_mesh_vertex_t) : sizeof(struct vk_vertex);
+      vertex_input.vertexAttributeDescriptionCount = (i < 2) ? 1 : 3;
       switch (i)
       {
          case 0:
@@ -4790,6 +5063,8 @@ static void vulkan_init_pipelines(vk_t *vk)
       vkDestroyShaderModule(vk->context->device, shader_stages[0].module, NULL);
       vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
    }
+   binding.stride                               = sizeof(struct vk_vertex);
+   vertex_input.vertexAttributeDescriptionCount = 3;
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* When HDR is supported, the menu is rendered into an SDR
@@ -4866,6 +5141,9 @@ static void vulkan_init_pipelines(vk_t *vk)
       input_assembly.primitiveRestartEnable = VK_TRUE;
       for (i = 0; i < 6; i++)
       {
+         binding.stride = (i < 2)
+            ? sizeof(gfx_display_mesh_vertex_t) : sizeof(struct vk_vertex);
+         vertex_input.vertexAttributeDescriptionCount = (i < 2) ? 1 : 3;
          switch (i)
          {
             case 0:
@@ -4939,8 +5217,63 @@ static void vulkan_init_pipelines(vk_t *vk)
          vkDestroyShaderModule(vk->context->device, shader_stages[0].module, NULL);
          vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
       }
+      binding.stride                               = sizeof(struct vk_vertex);
+      vertex_input.vertexAttributeDescriptionCount = 3;
    }
 #endif /* VULKAN_HDR_SWAPCHAIN */
+
+   /* gfx_display meshes: the alpha-blend fragment stage over a vertex
+    * stage that reads the mesh's 20-byte vertex as it is stored - three
+    * floats, two 16-bit and four 8-bit normalised integers - and
+    * applies an MVP and a tint. Every other pipeline is made by now, so
+    * the vertex input can be changed under them. */
+   attributes[0].format    = VK_FORMAT_R32G32B32_SFLOAT;
+   attributes[0].offset    = 0;
+   attributes[1].format    = VK_FORMAT_R16G16_UNORM;
+   attributes[1].offset    = 12;
+   attributes[2].format    = VK_FORMAT_R8G8B8A8_UNORM;
+   attributes[2].offset    = 16;
+   binding.stride          = sizeof(gfx_display_mesh_vertex_t);
+   blend_attachment.blendEnable         = VK_TRUE;
+   blend_attachment.colorWriteMask      = 0xf;
+   blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+   blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+   blend_attachment.colorBlendOp        = VK_BLEND_OP_ADD;
+   blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+   blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+   blend_attachment.alphaBlendOp        = VK_BLEND_OP_MAX;
+   module_info.codeSize   = sizeof(mesh_vert);
+   module_info.pCode      = mesh_vert;
+   shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+   shader_stages[0].pName = "main";
+   vkCreateShaderModule(vk->context->device,
+         &module_info, NULL, &shader_stages[0].module);
+   module_info.codeSize   = sizeof(alpha_blend_frag);
+   module_info.pCode      = alpha_blend_frag;
+   shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+   shader_stages[1].pName = "main";
+   vkCreateShaderModule(vk->context->device,
+         &module_info, NULL, &shader_stages[1].module);
+   for (i = 0; i < 2; i++)
+   {
+      input_assembly.topology               = i
+         ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP
+         : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+      input_assembly.primitiveRestartEnable = VK_FALSE;
+      pipe.renderPass                       = vk->render_pass;
+      vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
+            1, &pipe, NULL, &vk->display.mesh_pipelines[i]);
+#ifdef VULKAN_HDR_SWAPCHAIN
+      if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
+      {
+         pipe.renderPass = vk->sdr_render_pass;
+         vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
+               1, &pipe, NULL, &vk->display.mesh_pipelines_sdr[i]);
+      }
+#endif
+   }
+   vkDestroyShaderModule(vk->context->device, shader_stages[0].module, NULL);
+   vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
 
    cpipe.layout           = vk->pipelines.layout;
    cpipe.stage.sType      = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -5172,6 +5505,17 @@ if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
    for (i = 0; i < (int)ARRAY_SIZE(vk->display.pipelines); i++)
       vkDestroyPipeline(vk->context->device,
             vk->display.pipelines[i], NULL);
+   for (i = 0; i < (int)ARRAY_SIZE(vk->display.mesh_pipelines); i++)
+   {
+      vkDestroyPipeline(vk->context->device,
+            vk->display.mesh_pipelines[i], NULL);
+      vk->display.mesh_pipelines[i] = VK_NULL_HANDLE;
+#ifdef VULKAN_HDR_SWAPCHAIN
+      vkDestroyPipeline(vk->context->device,
+            vk->display.mesh_pipelines_sdr[i], NULL);
+      vk->display.mesh_pipelines_sdr[i] = VK_NULL_HANDLE;
+#endif
+   }
 }
 
 static void vulkan_deinit_framebuffers(vk_t *vk)
@@ -5756,7 +6100,8 @@ static void vulkan_deinit_static_resources(vk_t *vk)
 
    /* Destroy shared quad index buffer. */
    vulkan_deinit_quad_ibo(vk);
-   vulkan_deinit_ribbon_vbo(vk);
+   vulkan_deinit_effect_vbo(vk);
+   vulkan_deinit_meshes(vk);
 
    vulkan_deferred_fences_free(vk);
    if (vk->sync_fence != VK_NULL_HANDLE)
@@ -8175,6 +8520,7 @@ static bool vulkan_frame(void *data, const void *frame,
    if (vk->context->flags & VK_CTX_FLAG_INVALID_SWAPCHAIN)
       vulkan_check_swapchain(vk);
 
+   vk->mesh_frame++;
    frame_index     = vk->context->current_frame_index;
    swapchain_index = vk->context->current_swapchain_index;
 
@@ -11402,5 +11748,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_vulkan = {
    false,
    true,
    gfx_display_vk_scissor_begin,
-   gfx_display_vk_scissor_end
+   gfx_display_vk_scissor_end,
+   gfx_display_vk_mesh_draw
 };
