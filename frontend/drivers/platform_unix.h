@@ -67,35 +67,9 @@ char internal_storage_app_path[PATH_MAX_LENGTH];
 
 struct android_app;
 
-struct android_poll_source
-{
-   /* The identifier of this source.  May be LOOPER_ID_MAIN or
-    * LOOPER_ID_INPUT. */
-   int32_t id;
-
-   /* The android_app this ident is associated with. */
-   struct android_app* app;
-
-   /* Function to call to perform the standard processing of data from
-    * this source. */
-   void (*process)(struct android_app* app, struct android_poll_source* source);
-};
 
 struct android_app
 {
-   /* The application can place a pointer to its own state object
-    * here if it likes. */
-   void* userData;
-
-   /* Fill this in with the function to process main app commands (APP_CMD_*) */
-   void (*onAppCmd)(struct android_app* app, int32_t cmd);
-
-   /* Fill this in with the function to process input events.  At this point
-    * the event has already been pre-dispatched, and it will be finished upon
-    * return.  Return 1 if you have handled the event, 0 for any default
-    * dispatching. */
-   int32_t (*onInputEvent)(struct android_app* app, AInputEvent* event);
-
    /* The ANativeActivity object instance that this app is running in. */
    ANativeActivity* activity;
 
@@ -144,9 +118,6 @@ struct android_app
    /* UI thread only: the window last handed to the app thread, which
     * a change of window has it give up first. */
    ANativeWindow *posted_window;
-
-   struct android_poll_source cmdPollSource;
-   struct android_poll_source inputPollSource;
 
    /* Set by android_app_free() before it asks the app thread to shut
     * down, so android_app_destroy() knows the activity is already being
