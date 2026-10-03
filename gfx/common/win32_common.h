@@ -180,6 +180,20 @@ bool win32_window_keep(void);
  * once that driver is up, or has failed to come up. */
 void win32_window_release_kept(void);
 
+/* Called after win32_window_proc_setup() by a Direct3D driver whose
+ * window may be left up for the next driver of the same tag, and taken
+ * by it: see win32_window_keep() in win32_common.c for what the driver
+ * undertakes by it. */
+void win32_window_tag(const char *tag);
+
+/* True if the window win32_set_video_mode() gave this driver is one
+ * the last driver left up. */
+bool win32_window_was_taken(void);
+
+/* Destroys the window and makes a new one, for a driver that cannot
+ * use the one it took. */
+bool win32_window_remake(void *data, unsigned dims, bool fullscreen);
+
 uint8_t win32_get_flags(void);
 
 /* Re-read the synchronous keyboard state and publish it as a

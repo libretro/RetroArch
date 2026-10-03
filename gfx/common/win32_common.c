@@ -202,6 +202,12 @@ static HWND  win32_kept_hwnd;
 static DWORD win32_kept_tid;
 static int   win32_kept_family;
 static HWND  win32_retiring_hwnd;
+/* Which driver's window it is, within a family whose drivers cannot
+ * all use each other's (win32_window_tag()), and whether the window in
+ * use was taken from the last driver rather than made. */
+static const char *win32_wnd_tag;
+static const char *win32_kept_tag;
+static bool        win32_wnd_taken;
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
 static HDEVNOTIFY win32_kept_notification;
 #endif
@@ -1648,6 +1654,8 @@ void win32_window_proc_setup(enum win32_window_family family)
    settings_t *settings = config_get_ptr();
 
    win32_wnd_family     = family;
+   /* a driver that has one says so after this */
+   win32_wnd_tag        = NULL;
    win32_wnd_input      = WIN32_INPUT_OTHER;
 #ifdef HAVE_DINPUT
    if (string_is_equal(settings->arrays.input_driver, "dinput"))
@@ -1683,14 +1691,39 @@ void win32_window_proc_setup(enum win32_window_family family)
  * is taken down: win32_window_release_kept(), which the frontend
  * calls once the next driver is up.
  *
- * For the Vulkan and the GDI families, for now - the ones whose
- * window sets up nothing a second driver of the same family cannot
- * set up again on the same window. Never when the program is shutting
- * down. RETROARCH_WINDOW_KEEP=0 in the environment turns it off. */
+ * For the Vulkan and the GDI families - the ones whose window sets up
+ * nothing a second driver of the same family cannot set up again on
+ * the same window. Never when the program is shutting down.
+ * RETROARCH_WINDOW_KEEP=0 in the environment turns it off.
+ *
+ * And for a Direct3D driver that has given its window a tag
+ * (win32_window_tag()), which says two things: that it frees
+ * everything it had on the window before it leaves it, and that it
+ * makes a new window if it cannot have the one it took
+ * (win32_window_remake()). The tag is also what keeps one Direct3D
+ * driver from taking another's window. That only with
+ * RETROARCH_WINDOW_KEEP=1 asked for, until it has been run on
+ * Windows: DXGI has rules of its own about a window that has had a
+ * swap chain, and nothing here can try them. */
 static bool win32_window_family_keeps(void)
 {
-   return win32_wnd_family == WIN32_WINDOW_VULKAN
-       || win32_wnd_family == WIN32_WINDOW_GDI;
+   const char *env = getenv("RETROARCH_WINDOW_KEEP");
+   if (     win32_wnd_family == WIN32_WINDOW_VULKAN
+         || win32_wnd_family == WIN32_WINDOW_GDI)
+      return true;
+   return win32_wnd_family == WIN32_WINDOW_D3D
+       && win32_wnd_tag
+       && env && (env[0] == '1' || env[0] == '2');
+}
+
+void win32_window_tag(const char *tag)
+{
+   win32_wnd_tag = tag;
+}
+
+bool win32_window_was_taken(void)
+{
+   return win32_wnd_taken;
 }
 
 static void win32_window_destroy_kept(HWND hwnd)
@@ -1754,6 +1787,7 @@ bool win32_window_keep(void)
    win32_kept_hwnd    = hwnd;
    win32_kept_tid     = GetCurrentThreadId();
    win32_kept_family  = (int)win32_wnd_family;
+   win32_kept_tag     = win32_wnd_tag;
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
    win32_kept_notification = notification_handler;
    notification_handler    = NULL;
@@ -1808,6 +1842,7 @@ static HWND win32_window_take_kept(void)
       return NULL;
    win32_kept_hwnd = NULL;
    if (     (int)win32_wnd_family != win32_kept_family
+         || win32_wnd_tag != win32_kept_tag
          || win32_window_keep_mode() != 1)
    {
       win32_window_destroy_kept(hwnd);
@@ -1851,6 +1886,7 @@ static bool win32_window_create(void *data, unsigned style,
       user_height                = VIDEO_SCALE_H(g_win32->pos_dims);
    }
 
+   win32_wnd_taken               = false;
    if ((main_window.hwnd = win32_window_take_kept()))
    {
       HWND  hwnd      = main_window.hwnd;
@@ -1861,6 +1897,7 @@ static bool win32_window_create(void *data, unsigned style,
       int  y          = mon_rect->top;
 
       reused          = true;
+      win32_wnd_taken = true;
       free(title_local);
 
       /* win32_set_window() gives a windowed window its menu again */
@@ -2434,6 +2471,34 @@ bool win32_set_video_mode(void *data,
    win32_update_keyboard_mods();
 
    return true;
+}
+
+/* For a driver that took the window the last one left up and finds it
+ * cannot have it - DXGI will not make a swap chain on it: the window
+ * goes and one is made as if none had been kept. The window procedure
+ * and its class are as the driver set them up. */
+bool win32_window_remake(void *data, unsigned dims, bool fullscreen)
+{
+   HWND hwnd = main_window.hwnd;
+
+   if (hwnd)
+   {
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
+      if (notification_handler)
+         UnregisterDeviceNotification(notification_handler);
+      notification_handler = NULL;
+#endif
+      main_window.hwnd     = NULL;
+      video_driver_window_set(0);
+      win32_retiring_hwnd  = hwnd;
+      DestroyWindow(hwnd);
+      win32_retiring_hwnd  = NULL;
+   }
+   win32_wnd_taken         = false;
+   g_win32_flags          &= ~WIN32_CMN_FLAG_INITED;
+   RARCH_WARN("[Win32] The window taken from the last video driver could"
+         " not be used: making a new one.\n");
+   return win32_set_video_mode(data, dims, fullscreen);
 }
 
 /* Takes the window that is already there between windowed and

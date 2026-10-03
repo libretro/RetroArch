@@ -3415,6 +3415,17 @@ static void d3d11_gfx_free(void* data)
    Release(d3d11->scissor_enabled);
    Release(d3d11->scissor_disabled);
    Release(d3d11->swapChain);
+   /* Direct3D 11 puts off destroying what is released until the
+    * context is flushed, and the context can outlive this driver (it
+    * is cached for a hardware-rendered core). A swap chain that is
+    * still there holds on to the window, and DXGI makes no second one
+    * on a window that has one: so it is destroyed now, for the driver
+    * that may take the window. */
+   if (d3d11->context)
+   {
+      d3d11->context->lpVtbl->ClearState(d3d11->context);
+      d3d11->context->lpVtbl->Flush(d3d11->context);
+   }
 
    video_st_flags                  = (uint32_t)retro_atomic_load_relaxed_int(&video_st->flags);
    if (video_st_flags & VIDEO_FLAG_CACHE_CONTEXT)
@@ -3442,12 +3453,18 @@ static void d3d11_gfx_free(void* data)
    video_driver_modify_disp_flags(0, VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT);
 #endif
 
+#if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
+   /* left up for the next D3D11 driver, where it can be */
+   if (!win32_window_keep())
+#endif
+   {
 #ifdef HAVE_MONITOR
-   win32_monitor_from_window();
+      win32_monitor_from_window();
 #endif
 #ifdef HAVE_WINDOW
-   win32_destroy_window();
+      win32_destroy_window();
 #endif
+   }
    free(d3d11);
 }
 
@@ -3678,6 +3695,25 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
                dxgiFactory, (IUnknown*)d3d11->device,
                &desc, (IDXGISwapChain**)&d3d11->swapChain)))
    {
+#if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
+      /* On a window taken from the last driver the likelier reason is
+       * the window, not the swap model: the caller makes a new window
+       * and comes back, rather than this settling for less. */
+      if (win32_window_was_taken())
+      {
+         dxgiFactory->lpVtbl->Release(dxgiFactory);
+         adapter->lpVtbl->Release(adapter);
+         dxgiDevice->lpVtbl->Release(dxgiDevice);
+         /* the device goes back where the second attempt takes it
+          * from, instead of a second one being made */
+         *cached_device               = d3d11->device;
+         *cached_context              = d3d11->context;
+         cached_supportedFeatureLevel = d3d11->supportedFeatureLevel;
+         d3d11->device                = NULL;
+         d3d11->context               = NULL;
+         return false;
+      }
+#endif
       RARCH_WARN("[D3D11] Failed to create swapchain with flip model, try non-flip model.\n");
 
       /* Failed to create swapchain, try non-flip model */
@@ -3801,6 +3837,10 @@ static void *d3d11_gfx_init(const video_info_t* video,
    wndclass.lpfnWndProc = win32_window_proc;
    win32_window_proc_setup(WIN32_WINDOW_D3D);
 #ifdef HAVE_WINDOW
+   /* the window may be left up for the next D3D11 driver, and taken
+    * from the last: d3d11_gfx_free() and the swap chain's creation
+    * below do what that needs */
+   win32_window_tag("d3d11");
    win32_window_init(&wndclass, true, NULL);
 #endif
 
@@ -3821,9 +3861,6 @@ static void *d3d11_gfx_init(const video_info_t* video,
       RARCH_ERR("[D3D11] win32_set_video_mode failed.\n");
       goto error;
    }
-
-   input_driver_init_windows(settings->arrays.input_joypad_driver,
-         input, input_data);
 
 #ifdef __WINRT__
    DXGICreateFactory2(&d3d11->factory);
@@ -3866,8 +3903,29 @@ static void *d3d11_gfx_init(const video_info_t* video,
             &cached_context_d3d11,
             main_window.hwnd
             ))
-      goto error;
+   {
+#if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
+      /* On a window the last driver left up, DXGI may refuse a swap
+       * chain - something of the old one is still alive on it. Then
+       * the window is not worth having: a new one, and once more. */
+      if (     !win32_window_was_taken()
+            || !win32_window_remake(d3d11, d3d11->vp.full_dims,
+                  video->fullscreen)
+            || !d3d11_init_swapchain(d3d11,
+                  VIDEO_SCALE_W(d3d11->vp.full_dims),
+                  VIDEO_SCALE_H(d3d11->vp.full_dims),
+                  &cached_device_d3d11,
+                  &cached_context_d3d11,
+                  main_window.hwnd))
 #endif
+         goto error;
+   }
+#endif
+
+   /* after the swap chain, so that it is started for the window that
+    * stays (an input driver may tie itself to the window) */
+   input_driver_init_windows(settings->arrays.input_joypad_driver,
+         input, input_data);
 
    matrix_4x4_identity(d3d11->identity);
 
