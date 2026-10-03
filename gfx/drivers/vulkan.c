@@ -258,6 +258,24 @@ struct vk_descriptor_batch
    unsigned image_count;
 };
 
+/* The pipeline state a menu effect is made from */
+struct vk_effect_template
+{
+   VkGraphicsPipelineCreateInfo           pipe;
+   VkPipelineInputAssemblyStateCreateInfo input_assembly;
+   VkPipelineVertexInputStateCreateInfo   vertex_input;
+   VkVertexInputAttributeDescription      attributes[3];
+   VkVertexInputBindingDescription        binding;
+   VkPipelineRasterizationStateCreateInfo raster;
+   VkPipelineColorBlendAttachmentState    blend_attachment;
+   VkPipelineColorBlendStateCreateInfo    blend;
+   VkPipelineMultisampleStateCreateInfo   multisample;
+   VkPipelineViewportStateCreateInfo      vp;
+   VkPipelineDepthStencilStateCreateInfo  depth_stencil;
+   VkPipelineDynamicStateCreateInfo       dynamic;
+   bool                                   valid;
+};
+
 typedef struct vk
 {
    vulkan_filter_chain_t *filter_chain;
@@ -410,6 +428,11 @@ typedef struct vk
 #ifdef VULKAN_HDR_SWAPCHAIN
       VkPipeline pipelines_sdr[8]; /* SDR offscreen variants, same layout */
 #endif
+      /* The state the menu effects in slots [2..7] are made with, when
+       * first drawn: [0] for render_pass, [1] for sdr_render_pass; and
+       * which of them have been tried, six bits each */
+      struct vk_effect_template effect_tpl[2];
+      unsigned effects_tried;
       /* gfx_display meshes: [0] triangle list, [1] strip, blended */
       VkPipeline mesh_pipelines[2];
 #ifdef VULKAN_HDR_SWAPCHAIN
@@ -2621,6 +2644,8 @@ static const float *gfx_display_vk_get_default_tex_coords(void)
 }
 
 #ifdef HAVE_SHADERPIPELINE
+static VkPipeline vulkan_effect_pipeline(vk_t *vk, unsigned i, bool sdr);
+
 static unsigned to_menu_pipeline(unsigned pipeline)
 {
    /* The display pipeline array slots [2..7] hold the six menu
@@ -3233,12 +3258,13 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
             unsigned idx = to_menu_pipeline(draw->pipeline_id);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-            call.pipeline     = (vk->flags & VK_FLAG_SDR_PIPELINE)
-               ? vk->display.pipelines_sdr[idx]
-               : vk->display.pipelines[idx];
+            call.pipeline     = vulkan_effect_pipeline(vk, idx - 2,
+                  (vk->flags & VK_FLAG_SDR_PIPELINE) ? true : false);
 #else
-            call.pipeline     = vk->display.pipelines[idx];
+            call.pipeline     = vulkan_effect_pipeline(vk, idx - 2, false);
 #endif
+            if (call.pipeline == VK_NULL_HANDLE)
+               return;
             call.texture      = NULL;
             call.sampler      = VK_NULL_HANDLE;
             call.uniform      = draw->backend_data;
@@ -4630,6 +4656,196 @@ static void vulkan_init_pipeline_layout(
          &layout_info, NULL, &vk->pipelines.layout);
 }
 
+/* The SPIR-V the menu effects are made from, which they are made from
+ * when first drawn rather than at start */
+static const uint32_t alpha_blend_vert[] =
+#include "vulkan_shaders/alpha_blend.vert.inc"
+   ;
+
+static const uint32_t pipeline_ribbon_vert[] =
+#include "vulkan_shaders/pipeline_ribbon.vert.inc"
+   ;
+
+static const uint32_t pipeline_ribbon_frag[] =
+#include "vulkan_shaders/pipeline_ribbon.frag.inc"
+   ;
+
+static const uint32_t pipeline_ribbon_simple_vert[] =
+#include "vulkan_shaders/pipeline_ribbon_simple.vert.inc"
+   ;
+
+static const uint32_t pipeline_ribbon_simple_frag[] =
+#include "vulkan_shaders/pipeline_ribbon_simple.frag.inc"
+   ;
+
+static const uint32_t pipeline_snow_simple_frag[] =
+#include "vulkan_shaders/pipeline_snow_simple.frag.inc"
+   ;
+
+static const uint32_t pipeline_snow_frag[] =
+#include "vulkan_shaders/pipeline_snow.frag.inc"
+   ;
+
+static const uint32_t pipeline_bokeh_frag[] =
+#include "vulkan_shaders/pipeline_bokeh.frag.inc"
+   ;
+
+static const uint32_t pipeline_snowflake_frag[] =
+#include "vulkan_shaders/pipeline_snowflake.frag.inc"
+   ;
+
+/* Copies the pipeline state the menu effects are made with as it stands
+ * here, so each can be made the first time it is drawn */
+static void vulkan_effect_capture(struct vk_effect_template *t,
+      const VkGraphicsPipelineCreateInfo *pipe,
+      const VkPipelineInputAssemblyStateCreateInfo *input_assembly,
+      const VkPipelineVertexInputStateCreateInfo *vertex_input,
+      const VkVertexInputAttributeDescription *attributes,
+      const VkVertexInputBindingDescription *binding,
+      const VkPipelineRasterizationStateCreateInfo *raster,
+      const VkPipelineColorBlendAttachmentState *blend_attachment,
+      const VkPipelineColorBlendStateCreateInfo *blend,
+      const VkPipelineMultisampleStateCreateInfo *multisample,
+      const VkPipelineViewportStateCreateInfo *vp,
+      const VkPipelineDepthStencilStateCreateInfo *depth_stencil,
+      const VkPipelineDynamicStateCreateInfo *dynamic)
+{
+   t->pipe             = *pipe;
+   t->input_assembly   = *input_assembly;
+   t->vertex_input     = *vertex_input;
+   memcpy(t->attributes, attributes, sizeof(t->attributes));
+   t->binding          = *binding;
+   t->raster           = *raster;
+   t->blend_attachment = *blend_attachment;
+   t->blend            = *blend;
+   t->multisample      = *multisample;
+   t->vp               = *vp;
+   t->depth_stencil    = *depth_stencil;
+   t->dynamic          = *dynamic;
+   t->valid            = true;
+}
+
+/* Menu effect @i (0..5: ribbon, simple ribbon, simple snow, snow,
+ * bokeh, snowflake), made from the captured state the first time it is
+ * asked for; VK_NULL_HANDLE when it cannot be had, and is not tried
+ * again until the pipelines are next made */
+static VkPipeline vulkan_effect_pipeline(vk_t *vk, unsigned i, bool sdr)
+{
+   VkShaderModuleCreateInfo module_info = {
+      VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
+   VkPipelineShaderStageCreateInfo stages[2];
+   struct vk_effect_template t;
+   VkPipeline *slot;
+   unsigned bit = 1u << (i + (sdr ? 6 : 0));
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+   slot = sdr ? &vk->display.pipelines_sdr[2 + i] : &vk->display.pipelines[2 + i];
+#else
+   slot = &vk->display.pipelines[2 + i];
+#endif
+   if (*slot != VK_NULL_HANDLE || (vk->display.effects_tried & bit))
+      return *slot;
+   vk->display.effects_tried |= bit;
+   if (i > 5 || !vk->display.effect_tpl[sdr ? 1 : 0].valid)
+      return VK_NULL_HANDLE;
+
+   t = vk->display.effect_tpl[sdr ? 1 : 0];
+   t.vertex_input.pVertexBindingDescriptions   = &t.binding;
+   t.vertex_input.pVertexAttributeDescriptions = t.attributes;
+   t.blend.pAttachments                        = &t.blend_attachment;
+   t.pipe.pVertexInputState                    = &t.vertex_input;
+   t.pipe.pInputAssemblyState                  = &t.input_assembly;
+   t.pipe.pRasterizationState                  = &t.raster;
+   t.pipe.pColorBlendState                     = &t.blend;
+   t.pipe.pMultisampleState                    = &t.multisample;
+   t.pipe.pViewportState                       = &t.vp;
+   t.pipe.pDepthStencilState                   = &t.depth_stencil;
+   t.pipe.pDynamicState                        = &t.dynamic;
+   t.pipe.stageCount                           = 2;
+   t.pipe.pStages                              = stages;
+
+   /* The ribbons draw the ribbon mesh as gfx_display stores it and
+    * read its position only; the others draw the quad */
+   t.binding.stride = (i < 2)
+      ? sizeof(gfx_display_mesh_vertex_t) : sizeof(struct vk_vertex);
+   t.vertex_input.vertexAttributeDescriptionCount = (i < 2) ? 1 : 3;
+   if (i < 2)
+   {
+      t.blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_DST_COLOR;
+      t.blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+   }
+   else
+   {
+      t.blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+      t.blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+   }
+
+   memset(stages, 0, sizeof(stages));
+   stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+   stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+   stages[0].pName = "main";
+   stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+   stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+   stages[1].pName = "main";
+   switch (i)
+   {
+      case 0:
+         module_info.codeSize = sizeof(pipeline_ribbon_vert);
+         module_info.pCode    = pipeline_ribbon_vert;
+         break;
+      case 1:
+         module_info.codeSize = sizeof(pipeline_ribbon_simple_vert);
+         module_info.pCode    = pipeline_ribbon_simple_vert;
+         break;
+      default:
+         module_info.codeSize = sizeof(alpha_blend_vert);
+         module_info.pCode    = alpha_blend_vert;
+         break;
+   }
+   if (vkCreateShaderModule(vk->context->device, &module_info, NULL,
+            &stages[0].module) != VK_SUCCESS)
+      return VK_NULL_HANDLE;
+   switch (i)
+   {
+      case 0:
+         module_info.codeSize = sizeof(pipeline_ribbon_frag);
+         module_info.pCode    = pipeline_ribbon_frag;
+         break;
+      case 1:
+         module_info.codeSize = sizeof(pipeline_ribbon_simple_frag);
+         module_info.pCode    = pipeline_ribbon_simple_frag;
+         break;
+      case 2:
+         module_info.codeSize = sizeof(pipeline_snow_simple_frag);
+         module_info.pCode    = pipeline_snow_simple_frag;
+         break;
+      case 3:
+         module_info.codeSize = sizeof(pipeline_snow_frag);
+         module_info.pCode    = pipeline_snow_frag;
+         break;
+      case 4:
+         module_info.codeSize = sizeof(pipeline_bokeh_frag);
+         module_info.pCode    = pipeline_bokeh_frag;
+         break;
+      default:
+         module_info.codeSize = sizeof(pipeline_snowflake_frag);
+         module_info.pCode    = pipeline_snowflake_frag;
+         break;
+   }
+   if (vkCreateShaderModule(vk->context->device, &module_info, NULL,
+            &stages[1].module) != VK_SUCCESS)
+   {
+      vkDestroyShaderModule(vk->context->device, stages[0].module, NULL);
+      return VK_NULL_HANDLE;
+   }
+   if (vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
+            1, &t.pipe, NULL, slot) != VK_SUCCESS)
+      *slot = VK_NULL_HANDLE;
+   vkDestroyShaderModule(vk->context->device, stages[0].module, NULL);
+   vkDestroyShaderModule(vk->context->device, stages[1].module, NULL);
+   return *slot;
+}
+
 static void vulkan_init_pipelines(vk_t *vk)
 {
 #ifdef VULKAN_HDR_SWAPCHAIN
@@ -4640,10 +4856,6 @@ static void vulkan_init_pipelines(vk_t *vk)
 #include "vulkan_shaders/hdr_tonemap.frag.inc"
       ;
 #endif /* VULKAN_HDR_SWAPCHAIN */
-
-   static const uint32_t alpha_blend_vert[] =
-#include "vulkan_shaders/alpha_blend.vert.inc"
-      ;
 
    static const uint32_t alpha_blend_frag[] =
 #include "vulkan_shaders/alpha_blend.frag.inc"
@@ -4660,38 +4872,6 @@ static void vulkan_init_pipelines(vk_t *vk)
    static const uint32_t rgb565_to_rgba8888_comp[] =
 #include "vulkan_shaders/rgb565_to_rgba8888.comp.inc"
    ;
-
-   static const uint32_t pipeline_ribbon_vert[] =
-#include "vulkan_shaders/pipeline_ribbon.vert.inc"
-      ;
-
-   static const uint32_t pipeline_ribbon_frag[] =
-#include "vulkan_shaders/pipeline_ribbon.frag.inc"
-      ;
-
-   static const uint32_t pipeline_ribbon_simple_vert[] =
-#include "vulkan_shaders/pipeline_ribbon_simple.vert.inc"
-      ;
-
-   static const uint32_t pipeline_ribbon_simple_frag[] =
-#include "vulkan_shaders/pipeline_ribbon_simple.frag.inc"
-      ;
-
-   static const uint32_t pipeline_snow_simple_frag[] =
-#include "vulkan_shaders/pipeline_snow_simple.frag.inc"
-      ;
-
-   static const uint32_t pipeline_snow_frag[] =
-#include "vulkan_shaders/pipeline_snow.frag.inc"
-      ;
-
-   static const uint32_t pipeline_bokeh_frag[] =
-#include "vulkan_shaders/pipeline_bokeh.frag.inc"
-      ;
-
-   static const uint32_t pipeline_snowflake_frag[] =
-#include "vulkan_shaders/pipeline_snowflake.frag.inc"
-      ;
 
    int i;
    VkPipelineMultisampleStateCreateInfo multisample;
@@ -4966,98 +5146,11 @@ static void vulkan_init_pipelines(vk_t *vk)
     * bokeh, snowflake.  See display.pipelines for layout. */
    input_assembly.topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
    input_assembly.primitiveRestartEnable = VK_TRUE;
-   for (i = 0; i < 6; i++)
-   {
-      /* The ribbons draw the ribbon mesh as gfx_display stores it and
-       * read its position only; the others draw the quad */
-      binding.stride = (i < 2)
-         ? sizeof(gfx_display_mesh_vertex_t) : sizeof(struct vk_vertex);
-      vertex_input.vertexAttributeDescriptionCount = (i < 2) ? 1 : 3;
-      switch (i)
-      {
-         case 0:
-            module_info.codeSize   = sizeof(pipeline_ribbon_vert);
-            module_info.pCode      = pipeline_ribbon_vert;
-            break;
-
-         case 1:
-            module_info.codeSize   = sizeof(pipeline_ribbon_simple_vert);
-            module_info.pCode      = pipeline_ribbon_simple_vert;
-            break;
-
-         default:
-            module_info.codeSize   = sizeof(alpha_blend_vert);
-            module_info.pCode      = alpha_blend_vert;
-            break;
-      }
-
-      shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-      shader_stages[0].pName = "main";
-      vkCreateShaderModule(vk->context->device,
-            &module_info, NULL, &shader_stages[0].module);
-
-      switch (i)
-      {
-         case 0:
-            module_info.codeSize   = sizeof(pipeline_ribbon_frag);
-            module_info.pCode      = pipeline_ribbon_frag;
-            break;
-
-         case 1:
-            module_info.codeSize   = sizeof(pipeline_ribbon_simple_frag);
-            module_info.pCode      = pipeline_ribbon_simple_frag;
-            break;
-
-         case 2:
-            module_info.codeSize   = sizeof(pipeline_snow_simple_frag);
-            module_info.pCode      = pipeline_snow_simple_frag;
-            break;
-
-         case 3:
-            module_info.codeSize   = sizeof(pipeline_snow_frag);
-            module_info.pCode      = pipeline_snow_frag;
-            break;
-
-         case 4:
-            module_info.codeSize   = sizeof(pipeline_bokeh_frag);
-            module_info.pCode      = pipeline_bokeh_frag;
-            break;
-
-         case 5:
-            module_info.codeSize   = sizeof(pipeline_snowflake_frag);
-            module_info.pCode      = pipeline_snowflake_frag;
-            break;
-
-         default:
-            break;
-      }
-
-      shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-      shader_stages[1].pName = "main";
-      vkCreateShaderModule(vk->context->device,
-            &module_info, NULL, &shader_stages[1].module);
-
-      switch (i)
-      {
-         case 0:
-         case 1:
-            blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_DST_COLOR;
-            blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
-            break;
-         default:
-            blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-            blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-            break;
-      }
-
-      vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
-            1, &pipe, NULL, &vk->display.pipelines[2 + i]);
-
-      vkDestroyShaderModule(vk->context->device, shader_stages[0].module, NULL);
-      vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
-   }
-   binding.stride                               = sizeof(struct vk_vertex);
-   vertex_input.vertexAttributeDescriptionCount = 3;
+   /* Made when first drawn; see vulkan_effect_pipeline */
+   vulkan_effect_capture(&vk->display.effect_tpl[0], &pipe,
+         &input_assembly, &vertex_input, attributes, &binding, &raster,
+         &blend_attachment, &blend, &multisample, &vp, &depth_stencil,
+         &dynamic);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* When HDR is supported, the menu is rendered into an SDR
@@ -5132,86 +5225,11 @@ static void vulkan_init_pipelines(vk_t *vk)
        * mirror of the main display.pipelines build. */
       input_assembly.topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
       input_assembly.primitiveRestartEnable = VK_TRUE;
-      for (i = 0; i < 6; i++)
-      {
-         binding.stride = (i < 2)
-            ? sizeof(gfx_display_mesh_vertex_t) : sizeof(struct vk_vertex);
-         vertex_input.vertexAttributeDescriptionCount = (i < 2) ? 1 : 3;
-         switch (i)
-         {
-            case 0:
-               module_info.codeSize = sizeof(pipeline_ribbon_vert);
-               module_info.pCode    = pipeline_ribbon_vert;
-               break;
-            case 1:
-               module_info.codeSize = sizeof(pipeline_ribbon_simple_vert);
-               module_info.pCode    = pipeline_ribbon_simple_vert;
-               break;
-            default:
-               module_info.codeSize = sizeof(alpha_blend_vert);
-               module_info.pCode    = alpha_blend_vert;
-               break;
-         }
-         shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-         shader_stages[0].pName = "main";
-         vkCreateShaderModule(vk->context->device,
-               &module_info, NULL, &shader_stages[0].module);
-
-         switch (i)
-         {
-            case 0:
-               module_info.codeSize = sizeof(pipeline_ribbon_frag);
-               module_info.pCode    = pipeline_ribbon_frag;
-               break;
-            case 1:
-               module_info.codeSize = sizeof(pipeline_ribbon_simple_frag);
-               module_info.pCode    = pipeline_ribbon_simple_frag;
-               break;
-            case 2:
-               module_info.codeSize = sizeof(pipeline_snow_simple_frag);
-               module_info.pCode    = pipeline_snow_simple_frag;
-               break;
-            case 3:
-               module_info.codeSize = sizeof(pipeline_snow_frag);
-               module_info.pCode    = pipeline_snow_frag;
-               break;
-            case 4:
-               module_info.codeSize = sizeof(pipeline_bokeh_frag);
-               module_info.pCode    = pipeline_bokeh_frag;
-               break;
-            case 5:
-               module_info.codeSize = sizeof(pipeline_snowflake_frag);
-               module_info.pCode    = pipeline_snowflake_frag;
-               break;
-            default:
-               break;
-         }
-         shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-         shader_stages[1].pName = "main";
-         vkCreateShaderModule(vk->context->device,
-               &module_info, NULL, &shader_stages[1].module);
-
-         switch (i)
-         {
-            case 0:
-            case 1:
-               blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_DST_COLOR;
-               blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
-               break;
-            default:
-               blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-               blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-               break;
-         }
-
-         vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
-               1, &pipe, NULL, &vk->display.pipelines_sdr[2 + i]);
-
-         vkDestroyShaderModule(vk->context->device, shader_stages[0].module, NULL);
-         vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
-      }
-      binding.stride                               = sizeof(struct vk_vertex);
-      vertex_input.vertexAttributeDescriptionCount = 3;
+      /* Made when first drawn; see vulkan_effect_pipeline */
+      vulkan_effect_capture(&vk->display.effect_tpl[1], &pipe,
+            &input_assembly, &vertex_input, attributes, &binding, &raster,
+            &blend_attachment, &blend, &multisample, &vp, &depth_stencil,
+            &dynamic);
    }
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
@@ -5490,14 +5508,23 @@ if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
          vk->pipelines.alpha_blend_sdr, NULL);
 
    for (i = 0; i < (int)ARRAY_SIZE(vk->display.pipelines_sdr); i++)
+   {
       vkDestroyPipeline(vk->context->device,
             vk->display.pipelines_sdr[i], NULL);
+      vk->display.pipelines_sdr[i] = VK_NULL_HANDLE;
+   }
 }
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    for (i = 0; i < (int)ARRAY_SIZE(vk->display.pipelines); i++)
+   {
       vkDestroyPipeline(vk->context->device,
             vk->display.pipelines[i], NULL);
+      vk->display.pipelines[i] = VK_NULL_HANDLE;
+   }
+   vk->display.effect_tpl[0].valid = false;
+   vk->display.effect_tpl[1].valid = false;
+   vk->display.effects_tried       = 0;
    for (i = 0; i < (int)ARRAY_SIZE(vk->display.mesh_pipelines); i++)
    {
       vkDestroyPipeline(vk->context->device,

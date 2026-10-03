@@ -212,6 +212,9 @@ typedef struct glsl_shader_data
    GLint  mesh_tint;
    GLint  mesh_attr[3];
    bool   mesh_failed;
+   /* The menu effects already compiled or tried, one bit each, so one
+    * that will not compile is not tried again every frame */
+   uint8_t menu_shaders_tried;
 } glsl_shader_data_t;
 
 /* A gfx_display mesh vertex: three floats, then texture coordinates and
@@ -937,7 +940,8 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
 
    memset(glsl->prg, 0, sizeof(glsl->prg));
    memset(glsl->uniforms, 0, sizeof(glsl->uniforms));
-   glsl->active_idx = 0;
+   glsl->active_idx         = 0;
+   glsl->menu_shaders_tried = 0;
 
    gl_glsl_deinit_shader(glsl);
 
@@ -970,15 +974,19 @@ static void gl_glsl_deinit(void *data)
    free(glsl);
 }
 
-static void gl_glsl_init_menu_shaders(void *data)
+/* One menu effect's program, made the first time the effect is used
+ * rather than all six at start: at most one is ever on screen */
+static void gl_glsl_compile_menu_shader(glsl_shader_data_t *glsl, unsigned idx)
 {
 #ifdef HAVE_SHADERPIPELINE
    struct shader_program_info shader_prog_info;
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)data;
 
    if (!glsl)
       return;
+   shader_prog_info.is_file = false;
 
+   if (idx == VIDEO_SHADER_MENU)
+   {
 #ifdef HAVE_OPENGLES
 #if defined(VITA)
    shader_prog_info.vertex = stock_vertex_xmb_ribbon_modern;
@@ -1004,7 +1012,6 @@ static void gl_glsl_init_menu_shaders(void *data)
    shader_prog_info.vertex = glsl_core ? stock_vertex_xmb_ribbon_modern : stock_vertex_xmb_ribbon_legacy;
    shader_prog_info.fragment = glsl_core ? core_stock_fragment_xmb : stock_fragment_xmb;
 #endif
-   shader_prog_info.is_file = false;
 
    RARCH_LOG("[GLSL] Compiling ribbon shader...\n");
    gl_glsl_compile_program(
@@ -1014,7 +1021,10 @@ static void gl_glsl_init_menu_shaders(void *data)
          &shader_prog_info);
    gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU].id,
          &glsl->uniforms[VIDEO_SHADER_MENU]);
+   }
 
+   if (idx == VIDEO_SHADER_MENU_2)
+   {
 #if defined(VITA)
    shader_prog_info.vertex = stock_vertex_xmb_simple_modern;
    shader_prog_info.fragment = stock_fragment_xmb_ribbon_simple;
@@ -1031,8 +1041,11 @@ static void gl_glsl_init_menu_shaders(void *data)
          &shader_prog_info);
    gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_2].id,
          &glsl->uniforms[VIDEO_SHADER_MENU_2]);
+   }
 
 #if !defined(VITA)
+   if (idx == VIDEO_SHADER_MENU_3)
+   {
 #if defined(HAVE_OPENGLES)
    shader_prog_info.vertex   = stock_vertex_xmb_snow;
    shader_prog_info.fragment = stock_fragment_xmb_simple_snow;
@@ -1049,7 +1062,10 @@ static void gl_glsl_init_menu_shaders(void *data)
          &shader_prog_info);
    gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_3].id,
          &glsl->uniforms[VIDEO_SHADER_MENU_3]);
+   }
 
+   if (idx == VIDEO_SHADER_MENU_4)
+   {
 #if defined(HAVE_OPENGLES)
    shader_prog_info.vertex   = stock_vertex_xmb_snow;
    shader_prog_info.fragment = stock_fragment_xmb_snow;
@@ -1066,7 +1082,10 @@ static void gl_glsl_init_menu_shaders(void *data)
          &shader_prog_info);
    gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_4].id,
          &glsl->uniforms[VIDEO_SHADER_MENU_4]);
+   }
 
+   if (idx == VIDEO_SHADER_MENU_5)
+   {
 #if defined(HAVE_OPENGLES)
    shader_prog_info.vertex   = stock_vertex_xmb_snow;
    shader_prog_info.fragment = stock_fragment_xmb_bokeh;
@@ -1083,7 +1102,10 @@ static void gl_glsl_init_menu_shaders(void *data)
          &shader_prog_info);
    gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_5].id,
          &glsl->uniforms[VIDEO_SHADER_MENU_5]);
+   }
 
+   if (idx == VIDEO_SHADER_MENU_6)
+   {
 #if defined(HAVE_OPENGLES)
    shader_prog_info.vertex   = stock_vertex_xmb_snow;
    shader_prog_info.fragment = stock_fragment_xmb_snowflake;
@@ -1100,8 +1122,15 @@ static void gl_glsl_init_menu_shaders(void *data)
          &shader_prog_info);
    gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_6].id,
          &glsl->uniforms[VIDEO_SHADER_MENU_6]);
+   }
 #endif
 #endif
+}
+
+static void gl_glsl_init_menu_shaders(void *data)
+{
+   /* The menu effects are compiled when first used */
+   (void)data;
 }
 
 static void *gl_glsl_init(void *data, const char *path)
@@ -1896,6 +1925,27 @@ static bool gl_glsl_set_coords(void *shader_data,
    return true;
 }
 
+static void gl_glsl_compile_menu_shader(glsl_shader_data_t *glsl, unsigned idx);
+
+/* Which bit of menu_shaders_tried a menu effect has; 0 for anything else */
+static uint8_t gl_glsl_menu_shader_bit(unsigned idx)
+{
+#ifdef HAVE_SHADERPIPELINE
+   switch (idx)
+   {
+      case VIDEO_SHADER_MENU:   return 1 << 0;
+      case VIDEO_SHADER_MENU_2: return 1 << 1;
+      case VIDEO_SHADER_MENU_3: return 1 << 2;
+      case VIDEO_SHADER_MENU_4: return 1 << 3;
+      case VIDEO_SHADER_MENU_5: return 1 << 4;
+      case VIDEO_SHADER_MENU_6: return 1 << 5;
+      default:
+         break;
+   }
+#endif
+   return 0;
+}
+
 static void gl_glsl_use(void *data, void *shader_data, unsigned idx, bool set_active)
 {
    GLuint id;
@@ -1906,6 +1956,14 @@ static void gl_glsl_use(void *data, void *shader_data, unsigned idx, bool set_ac
       if (!glsl)
          return;
 
+      {
+         uint8_t bit = gl_glsl_menu_shader_bit(idx);
+         if (bit && !(glsl->menu_shaders_tried & bit))
+         {
+            glsl->menu_shaders_tried |= bit;
+            gl_glsl_compile_menu_shader(glsl, idx);
+         }
+      }
       gl_glsl_reset_attrib(glsl);
       glsl->active_idx        = idx;
       id                      = glsl->prg[idx].id;

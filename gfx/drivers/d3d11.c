@@ -405,6 +405,8 @@ typedef struct
     * and each mesh's own buffers by mesh id. The one drawn longest ago
     * gives way when all are taken; the runtime keeps a released buffer
     * alive for as long as queued work uses it. */
+   /* The menu effects tried so far, one bit each */
+   unsigned              effects_tried;
    d3d11_shader_t        mesh_shader;
    D3D11Buffer           mesh_ubo;
    struct
@@ -854,6 +856,82 @@ static void gfx_display_d3d11_blend_end(void *data)
    d3d11->context->lpVtbl->OMSetBlendState(d3d11->context, d3d11->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 }
 
+/* A menu effect's shaders, compiled the first time the effect is drawn
+ * rather than all six at start: at most one is ever on screen, and the
+ * effects are no longer XMB's alone. False when they cannot be had, and
+ * the effect is not drawn; one that will not compile is not tried again
+ * until the driver is. */
+static bool d3d11_effect_shader(d3d11_video_t *d3d11, unsigned pipeline_id)
+{
+   static const D3D11_INPUT_ELEMENT_DESC ribbon_desc[] = {
+      { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+   };
+   static const D3D11_INPUT_ELEMENT_DESC quad_desc[] = {
+      { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT,
+         0, offsetof(d3d11_vertex_t, position), D3D11_INPUT_PER_VERTEX_DATA, 0 },
+      { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,
+         0, offsetof(d3d11_vertex_t, texcoord), D3D11_INPUT_PER_VERTEX_DATA, 0 },
+   };
+   static const char ribbon[] =
+#include "d3d_shaders/ribbon_sm4.hlsl.h"
+      ;
+   static const char ribbon_simple[] =
+#include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
+      ;
+   static const char simple_snow[] =
+#include "d3d_shaders/simple_snow_sm4.hlsl.h"
+      ;
+   static const char snow[] =
+#include "d3d_shaders/snow_sm4.hlsl.h"
+      ;
+   static const char bokeh[] =
+#include "d3d_shaders/bokeh_sm4.hlsl.h"
+      ;
+   static const char snowflake[] =
+#include "d3d_shaders/snowflake_sm4.hlsl.h"
+      ;
+   const char *src                         = NULL;
+   size_t size                             = 0;
+   const D3D11_INPUT_ELEMENT_DESC *desc    = quad_desc;
+   UINT count                              = countof(quad_desc);
+   unsigned bit;
+
+   switch (pipeline_id)
+   {
+      case VIDEO_SHADER_MENU:
+         src = ribbon;        size = sizeof(ribbon);        bit = 1 << 0;
+         desc = ribbon_desc;  count = countof(ribbon_desc);
+         break;
+      case VIDEO_SHADER_MENU_2:
+         src = ribbon_simple; size = sizeof(ribbon_simple); bit = 1 << 1;
+         desc = ribbon_desc;  count = countof(ribbon_desc);
+         break;
+      case VIDEO_SHADER_MENU_3:
+         src = simple_snow;   size = sizeof(simple_snow);   bit = 1 << 2;
+         break;
+      case VIDEO_SHADER_MENU_4:
+         src = snow;          size = sizeof(snow);          bit = 1 << 3;
+         break;
+      case VIDEO_SHADER_MENU_5:
+         src = bokeh;         size = sizeof(bokeh);         bit = 1 << 4;
+         break;
+      case VIDEO_SHADER_MENU_6:
+         src = snowflake;     size = sizeof(snowflake);     bit = 1 << 5;
+         break;
+      default:
+         return false;
+   }
+   if (d3d11->shaders[pipeline_id].vs)
+      return true;
+   if (d3d11->effects_tried & bit)
+      return false;
+   d3d11->effects_tried |= bit;
+   return d3d11_init_shader(d3d11->device, src, size, NULL,
+            "VSMain", "PSMain", NULL, desc, count,
+            &d3d11->shaders[pipeline_id],
+            D3D11_FEATURE_LEVEL_HINT_DONTCARE);
+}
+
 static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_dims)
 {
@@ -871,6 +949,9 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
+         /* Compiled by the pipeline call before this, or not at all */
+         if (!d3d11->shaders[draw->pipeline_id].vs)
+            return;
          {
             d3d11_shader_t *shader = &d3d11->shaders[draw->pipeline_id];
             d3d11->context->lpVtbl->IASetInputLayout(d3d11->context, shader->layout);
@@ -1175,6 +1256,9 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
    d3d11_video_t *d3d11 = (d3d11_video_t*)data;
 
    if (!d3d11 || !draw)
+      return;
+   /* Before anything is bound for it */
+   if (!d3d11_effect_shader(d3d11, draw->pipeline_id))
       return;
 
    switch (draw->pipeline_id)
@@ -4156,86 +4240,6 @@ static void *d3d11_gfx_init(const video_info_t* video,
 #endif
    }
 
-   if (string_is_equal(settings->arrays.menu_driver, "xmb"))
-   {
-      {
-         D3D11_INPUT_ELEMENT_DESC desc[] = {
-            { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-         };
-
-         static const char ribbon[] =
-#include "d3d_shaders/ribbon_sm4.hlsl.h"
-            ;
-         static const char ribbon_simple[] =
-#include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
-            ;
-
-         if (!d3d11_init_shader(
-                  d3d11->device, ribbon,
-                  sizeof(ribbon), NULL, "VSMain", "PSMain", NULL, desc,
-                  countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU],
-                  D3D11_FEATURE_LEVEL_HINT_DONTCARE))
-            goto error;
-
-         if (!d3d11_init_shader(
-                  d3d11->device, ribbon_simple,
-                  sizeof(ribbon_simple), NULL, "VSMain", "PSMain", NULL,
-                  desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_2],
-                  D3D11_FEATURE_LEVEL_HINT_DONTCARE))
-            goto error;
-      }
-
-      {
-         D3D11_INPUT_ELEMENT_DESC desc[] = {
-            { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT,
-               0, offsetof(d3d11_vertex_t, position),
-               D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,
-               0, offsetof(d3d11_vertex_t, texcoord),
-               D3D11_INPUT_PER_VERTEX_DATA, 0 },
-         };
-
-         static const char simple_snow[] =
-#include "d3d_shaders/simple_snow_sm4.hlsl.h"
-            ;
-         static const char snow[] =
-#include "d3d_shaders/snow_sm4.hlsl.h"
-            ;
-         static const char bokeh[] =
-#include "d3d_shaders/bokeh_sm4.hlsl.h"
-            ;
-         static const char snowflake[] =
-#include "d3d_shaders/snowflake_sm4.hlsl.h"
-            ;
-
-         if (!d3d11_init_shader(
-                  d3d11->device, simple_snow,
-                  sizeof(simple_snow), NULL, "VSMain", "PSMain", NULL,
-                  desc, countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_3],
-                  D3D11_FEATURE_LEVEL_HINT_DONTCARE))
-            goto error;
-         if (!d3d11_init_shader(
-                  d3d11->device, snow,
-                  sizeof(snow), NULL, "VSMain", "PSMain", NULL, desc,
-                  countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_4],
-                  D3D11_FEATURE_LEVEL_HINT_DONTCARE))
-            goto error;
-
-         if (!d3d11_init_shader(
-                  d3d11->device, bokeh,
-                  sizeof(bokeh), NULL, "VSMain", "PSMain", NULL, desc,
-                  countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_5],
-                  D3D11_FEATURE_LEVEL_HINT_DONTCARE))
-            goto error;
-
-         if (!d3d11_init_shader(
-                  d3d11->device, snowflake,
-                  sizeof(snowflake), NULL, "VSMain", "PSMain", NULL, desc,
-                  countof(desc), &d3d11->shaders[VIDEO_SHADER_MENU_6],
-                  D3D11_FEATURE_LEVEL_HINT_DONTCARE))
-            goto error;
-      }
-   }
 
    {
       D3D11_BLEND_DESC blend_desc = { 0 };

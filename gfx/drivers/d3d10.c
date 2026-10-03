@@ -216,6 +216,8 @@ typedef struct
     * and each mesh's own buffers by mesh id. The one drawn longest ago
     * gives way when all are taken; the runtime keeps a released buffer
     * alive for as long as queued work uses it. */
+   /* The menu effects tried so far, one bit each */
+   unsigned              effects_tried;
    d3d10_shader_t        mesh_shader;
    D3D10Buffer           mesh_ubo;
    struct
@@ -612,6 +614,81 @@ static void gfx_display_d3d10_blend_end(void *data)
          NULL, D3D10_DEFAULT_SAMPLE_MASK);
 }
 
+/* A menu effect's shaders, compiled the first time the effect is drawn
+ * rather than all six at start: at most one is ever on screen, and the
+ * effects are no longer XMB's alone. False when they cannot be had, and
+ * the effect is not drawn; one that will not compile is not tried again
+ * until the driver is. */
+static bool d3d10_effect_shader(d3d10_video_t *d3d10, unsigned pipeline_id)
+{
+   static const D3D10_INPUT_ELEMENT_DESC ribbon_desc[] = {
+      { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D10_INPUT_PER_VERTEX_DATA, 0 },
+   };
+   static const D3D10_INPUT_ELEMENT_DESC quad_desc[] = {
+      { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT,
+         0, offsetof(d3d10_vertex_t, position), D3D10_INPUT_PER_VERTEX_DATA, 0 },
+      { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,
+         0, offsetof(d3d10_vertex_t, texcoord), D3D10_INPUT_PER_VERTEX_DATA, 0 },
+   };
+   static const char ribbon[] =
+#include "d3d_shaders/ribbon_sm4.hlsl.h"
+      ;
+   static const char ribbon_simple[] =
+#include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
+      ;
+   static const char simple_snow[] =
+#include "d3d_shaders/simple_snow_sm4.hlsl.h"
+      ;
+   static const char snow[] =
+#include "d3d_shaders/snow_sm4.hlsl.h"
+      ;
+   static const char bokeh[] =
+#include "d3d_shaders/bokeh_sm4.hlsl.h"
+      ;
+   static const char snowflake[] =
+#include "d3d_shaders/snowflake_sm4.hlsl.h"
+      ;
+   const char *src                         = NULL;
+   size_t size                             = 0;
+   const D3D10_INPUT_ELEMENT_DESC *desc    = quad_desc;
+   UINT count                              = countof(quad_desc);
+   unsigned bit;
+
+   switch (pipeline_id)
+   {
+      case VIDEO_SHADER_MENU:
+         src = ribbon;        size = sizeof(ribbon);        bit = 1 << 0;
+         desc = ribbon_desc;  count = countof(ribbon_desc);
+         break;
+      case VIDEO_SHADER_MENU_2:
+         src = ribbon_simple; size = sizeof(ribbon_simple); bit = 1 << 1;
+         desc = ribbon_desc;  count = countof(ribbon_desc);
+         break;
+      case VIDEO_SHADER_MENU_3:
+         src = simple_snow;   size = sizeof(simple_snow);   bit = 1 << 2;
+         break;
+      case VIDEO_SHADER_MENU_4:
+         src = snow;          size = sizeof(snow);          bit = 1 << 3;
+         break;
+      case VIDEO_SHADER_MENU_5:
+         src = bokeh;         size = sizeof(bokeh);         bit = 1 << 4;
+         break;
+      case VIDEO_SHADER_MENU_6:
+         src = snowflake;     size = sizeof(snowflake);     bit = 1 << 5;
+         break;
+      default:
+         return false;
+   }
+   if (d3d10->shaders[pipeline_id].vs)
+      return true;
+   if (d3d10->effects_tried & bit)
+      return false;
+   d3d10->effects_tried |= bit;
+   return d3d10_init_shader(d3d10->device, src, size, NULL,
+            "VSMain", "PSMain", NULL, desc, count,
+            &d3d10->shaders[pipeline_id]);
+}
+
 static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_dims)
 {
@@ -630,6 +707,9 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
+         /* Compiled by the pipeline call before this, or not at all */
+         if (!d3d10->shaders[draw->pipeline_id].vs)
+            return;
          d3d10_set_shader(d3d10->device, &d3d10->shaders[draw->pipeline_id]);
          d3d10->device->lpVtbl->Draw(d3d10->device,
                draw->coords->vertices, 0);
@@ -905,6 +985,9 @@ static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
    d3d10_video_t* d3d10 = (d3d10_video_t*)data;
 
    if (!d3d10 || !draw)
+      return;
+   /* Before anything is bound for it */
+   if (!d3d10_effect_shader(d3d10, draw->pipeline_id))
       return;
 
    switch (draw->pipeline_id)
@@ -2687,72 +2770,6 @@ static void *d3d10_gfx_init(const video_info_t* video,
    }
 
 #ifdef HAVE_XMB
-   if (string_is_equal(settings->arrays.menu_driver, "xmb"))
-   {
-      {
-         D3D10_INPUT_ELEMENT_DESC desc[] = {
-            { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D10_INPUT_PER_VERTEX_DATA, 0 },
-         };
-
-         static const char ribbon[] =
-#include "d3d_shaders/ribbon_sm4.hlsl.h"
-            ;
-         static const char ribbon_simple[] =
-#include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
-            ;
-
-         if (!d3d10_init_shader(
-                  d3d10->device, ribbon, sizeof(ribbon), NULL, "VSMain", "PSMain", NULL, desc,
-                  countof(desc), &d3d10->shaders[VIDEO_SHADER_MENU]))
-            goto error;
-
-         if (!d3d10_init_shader(
-                  d3d10->device, ribbon_simple, sizeof(ribbon_simple), NULL, "VSMain", "PSMain", NULL,
-                  desc, countof(desc), &d3d10->shaders[VIDEO_SHADER_MENU_2]))
-            goto error;
-      }
-
-      {
-         D3D10_INPUT_ELEMENT_DESC desc[] = {
-            { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d10_vertex_t, position),
-               D3D10_INPUT_PER_VERTEX_DATA, 0 },
-            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d10_vertex_t, texcoord),
-               D3D10_INPUT_PER_VERTEX_DATA, 0 },
-         };
-
-         static const char simple_snow[] =
-#include "d3d_shaders/simple_snow_sm4.hlsl.h"
-            ;
-         static const char snow[] =
-#include "d3d_shaders/snow_sm4.hlsl.h"
-            ;
-         static const char bokeh[] =
-#include "d3d_shaders/bokeh_sm4.hlsl.h"
-            ;
-         static const char snowflake[] =
-#include "d3d_shaders/snowflake_sm4.hlsl.h"
-            ;
-
-         if (!d3d10_init_shader(
-                  d3d10->device, simple_snow, sizeof(simple_snow), NULL, "VSMain", "PSMain", NULL,
-                  desc, countof(desc), &d3d10->shaders[VIDEO_SHADER_MENU_3]))
-            goto error;
-         if (!d3d10_init_shader(
-                  d3d10->device, snow, sizeof(snow), NULL, "VSMain", "PSMain", NULL, desc,
-                  countof(desc), &d3d10->shaders[VIDEO_SHADER_MENU_4]))
-            goto error;
-
-         if (!d3d10_init_shader(
-                  d3d10->device, bokeh, sizeof(bokeh), NULL, "VSMain", "PSMain", NULL, desc,
-                  countof(desc), &d3d10->shaders[VIDEO_SHADER_MENU_5]))
-            goto error;
-
-         if (!d3d10_init_shader(
-                  d3d10->device, snowflake, sizeof(snowflake), NULL, "VSMain", "PSMain", NULL, desc,
-                  countof(desc), &d3d10->shaders[VIDEO_SHADER_MENU_6]))
-            goto error;
-      }
-   }
 #endif
 
    {

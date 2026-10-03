@@ -919,6 +919,11 @@ static void gfx_display_gl3_draw_pipeline(
 #endif
 }
 
+#if defined(HAVE_SLANG) && defined(HAVE_SHADERPIPELINE)
+static GLuint gl3_effect_program(gl3_t *gl, unsigned pipeline_id,
+      const struct gl3_buffer_locations **loc);
+#endif
+
 static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_dims)
 {
@@ -980,33 +985,22 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
       {
 #ifdef HAVE_SHADERPIPELINE
          case VIDEO_SHADER_MENU:
-            glUseProgram(gl->pipelines.ribbon);
-            loc = &gl->pipelines.ribbon_loc;
-            break;
 
          case VIDEO_SHADER_MENU_2:
-            glUseProgram(gl->pipelines.ribbon_simple);
-            loc = &gl->pipelines.ribbon_simple_loc;
-            break;
 
          case VIDEO_SHADER_MENU_3:
-            glUseProgram(gl->pipelines.snow_simple);
-            loc = &gl->pipelines.snow_simple_loc;
-            break;
 
          case VIDEO_SHADER_MENU_4:
-            glUseProgram(gl->pipelines.snow);
-            loc = &gl->pipelines.snow_loc;
-            break;
 
          case VIDEO_SHADER_MENU_5:
-            glUseProgram(gl->pipelines.bokeh);
-            loc = &gl->pipelines.bokeh_loc;
-            break;
 
          case VIDEO_SHADER_MENU_6:
-            glUseProgram(gl->pipelines.snowflake);
-            loc = &gl->pipelines.snowflake_loc;
+            {
+               GLuint prog = gl3_effect_program(gl, draw->pipeline_id, &loc);
+               if (!prog)
+                  return;
+               glUseProgram(prog);
+            }
             break;
 #endif /* HAVE_SHADERPIPELINE */
 
@@ -2436,11 +2430,102 @@ static void gl3_set_viewport(gl3_t *gl,
 }
 
 #ifdef HAVE_SLANG
-static bool gl3_init_pipelines(gl3_t *gl)
-{
-   static const uint32_t alpha_blend_vert[] =
+static const uint32_t alpha_blend_vert[] =
 #include "vulkan_shaders/alpha_blend.vert.inc"
       ;
+
+#ifdef HAVE_SHADERPIPELINE
+static const uint32_t pipeline_ribbon_vert[] =
+#include "vulkan_shaders/pipeline_ribbon.vert.inc"
+      ;
+
+static const uint32_t pipeline_ribbon_frag[] =
+#include "vulkan_shaders/pipeline_ribbon.frag.inc"
+      ;
+
+static const uint32_t pipeline_ribbon_simple_vert[] =
+#include "vulkan_shaders/pipeline_ribbon_simple.vert.inc"
+      ;
+
+static const uint32_t pipeline_ribbon_simple_frag[] =
+#include "vulkan_shaders/pipeline_ribbon_simple.frag.inc"
+      ;
+
+static const uint32_t pipeline_snow_simple_frag[] =
+#include "vulkan_shaders/pipeline_snow_simple.frag.inc"
+      ;
+
+static const uint32_t pipeline_snow_frag[] =
+#include "vulkan_shaders/pipeline_snow.frag.inc"
+      ;
+
+static const uint32_t pipeline_bokeh_frag[] =
+#include "vulkan_shaders/pipeline_bokeh.frag.inc"
+      ;
+
+static const uint32_t pipeline_snowflake_frag[] =
+#include "vulkan_shaders/pipeline_snowflake.frag.inc"
+      ;
+#endif /* HAVE_SHADERPIPELINE */
+
+#ifdef HAVE_SHADERPIPELINE
+/* A menu effect's program, compiled the first time the effect is drawn
+ * rather than all six at start: at most one is ever on screen. 0 when
+ * it cannot be had, and the effect is not drawn. */
+static GLuint gl3_effect_program(gl3_t *gl, unsigned pipeline_id,
+      const struct gl3_buffer_locations **loc)
+{
+   const uint32_t *vs, *fs;
+   size_t vs_size, fs_size;
+   struct gl3_buffer_locations *l;
+   GLuint *prog;
+
+   switch (pipeline_id)
+   {
+      case VIDEO_SHADER_MENU:
+         prog = &gl->pipelines.ribbon;      l    = &gl->pipelines.ribbon_loc;
+         vs   = pipeline_ribbon_vert;       vs_size = sizeof(pipeline_ribbon_vert);
+         fs   = pipeline_ribbon_frag;       fs_size = sizeof(pipeline_ribbon_frag);
+         break;
+      case VIDEO_SHADER_MENU_2:
+         prog = &gl->pipelines.ribbon_simple; l    = &gl->pipelines.ribbon_simple_loc;
+         vs   = pipeline_ribbon_simple_vert;  vs_size = sizeof(pipeline_ribbon_simple_vert);
+         fs   = pipeline_ribbon_simple_frag;  fs_size = sizeof(pipeline_ribbon_simple_frag);
+         break;
+      case VIDEO_SHADER_MENU_3:
+         prog = &gl->pipelines.snow_simple; l    = &gl->pipelines.snow_simple_loc;
+         vs   = alpha_blend_vert;           vs_size = sizeof(alpha_blend_vert);
+         fs   = pipeline_snow_simple_frag;  fs_size = sizeof(pipeline_snow_simple_frag);
+         break;
+      case VIDEO_SHADER_MENU_4:
+         prog = &gl->pipelines.snow;        l    = &gl->pipelines.snow_loc;
+         vs   = alpha_blend_vert;           vs_size = sizeof(alpha_blend_vert);
+         fs   = pipeline_snow_frag;         fs_size = sizeof(pipeline_snow_frag);
+         break;
+      case VIDEO_SHADER_MENU_5:
+         prog = &gl->pipelines.bokeh;       l    = &gl->pipelines.bokeh_loc;
+         vs   = alpha_blend_vert;           vs_size = sizeof(alpha_blend_vert);
+         fs   = pipeline_bokeh_frag;        fs_size = sizeof(pipeline_bokeh_frag);
+         break;
+      case VIDEO_SHADER_MENU_6:
+         prog = &gl->pipelines.snowflake;   l    = &gl->pipelines.snowflake_loc;
+         vs   = alpha_blend_vert;           vs_size = sizeof(alpha_blend_vert);
+         fs   = pipeline_snowflake_frag;    fs_size = sizeof(pipeline_snowflake_frag);
+         break;
+      default:
+         return 0;
+   }
+   if (!*prog)
+      *prog = gl3_cross_compile_program(vs, vs_size, fs, fs_size, l, true);
+   *loc = l;
+   return *prog;
+}
+#endif /* HAVE_SHADERPIPELINE */
+#endif /* HAVE_SLANG */
+
+#ifdef HAVE_SLANG
+static bool gl3_init_pipelines(gl3_t *gl)
+{
 
    static const uint32_t alpha_blend_frag[] =
 #include "vulkan_shaders/alpha_blend.frag.inc"
@@ -2462,39 +2547,6 @@ static bool gl3_init_pipelines(gl3_t *gl)
 #include "vulkan_shaders/hdr_scrgb.frag.inc"
       ;
 
-#ifdef HAVE_SHADERPIPELINE
-   static const uint32_t pipeline_ribbon_vert[] =
-#include "vulkan_shaders/pipeline_ribbon.vert.inc"
-      ;
-
-   static const uint32_t pipeline_ribbon_frag[] =
-#include "vulkan_shaders/pipeline_ribbon.frag.inc"
-      ;
-
-   static const uint32_t pipeline_ribbon_simple_vert[] =
-#include "vulkan_shaders/pipeline_ribbon_simple.vert.inc"
-      ;
-
-   static const uint32_t pipeline_ribbon_simple_frag[] =
-#include "vulkan_shaders/pipeline_ribbon_simple.frag.inc"
-      ;
-
-   static const uint32_t pipeline_snow_simple_frag[] =
-#include "vulkan_shaders/pipeline_snow_simple.frag.inc"
-      ;
-
-   static const uint32_t pipeline_snow_frag[] =
-#include "vulkan_shaders/pipeline_snow.frag.inc"
-      ;
-
-   static const uint32_t pipeline_bokeh_frag[] =
-#include "vulkan_shaders/pipeline_bokeh.frag.inc"
-      ;
-
-   static const uint32_t pipeline_snowflake_frag[] =
-#include "vulkan_shaders/pipeline_snowflake.frag.inc"
-      ;
-#endif /* HAVE_SHADERPIPELINE */
 
    if (!gl->pipelines.alpha_blend)
       gl->pipelines.alpha_blend = gl3_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
@@ -2523,49 +2575,6 @@ static bool gl3_init_pipelines(gl3_t *gl)
    if (gl->scrgb.active && !gl->pipelines.hdr_scrgb)
       return false;
 
-#ifdef HAVE_SHADERPIPELINE
-   if (!gl->pipelines.ribbon_simple)
-      gl->pipelines.ribbon_simple = gl3_cross_compile_program(pipeline_ribbon_simple_vert, sizeof(pipeline_ribbon_simple_vert),
-                                                               pipeline_ribbon_simple_frag, sizeof(pipeline_ribbon_simple_frag),
-                                                               &gl->pipelines.ribbon_simple_loc, true);
-   if (!gl->pipelines.ribbon_simple)
-      return false;
-
-   if (!gl->pipelines.ribbon)
-      gl->pipelines.ribbon = gl3_cross_compile_program(pipeline_ribbon_vert, sizeof(pipeline_ribbon_vert),
-                                                        pipeline_ribbon_frag, sizeof(pipeline_ribbon_frag),
-                                                        &gl->pipelines.ribbon_loc, true);
-   if (!gl->pipelines.ribbon)
-      return false;
-
-   if (!gl->pipelines.bokeh)
-      gl->pipelines.bokeh = gl3_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
-                                                       pipeline_bokeh_frag, sizeof(pipeline_bokeh_frag),
-                                                       &gl->pipelines.bokeh_loc, true);
-   if (!gl->pipelines.bokeh)
-      return false;
-
-   if (!gl->pipelines.snowflake)
-      gl->pipelines.snowflake = gl3_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
-                                                           pipeline_snowflake_frag, sizeof(pipeline_snowflake_frag),
-                                                           &gl->pipelines.snowflake_loc, true);
-   if (!gl->pipelines.snowflake)
-      return false;
-
-   if (!gl->pipelines.snow_simple)
-      gl->pipelines.snow_simple = gl3_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
-                                                             pipeline_snow_simple_frag, sizeof(pipeline_snow_simple_frag),
-                                                             &gl->pipelines.snow_simple_loc, true);
-   if (!gl->pipelines.snow_simple)
-      return false;
-
-   if (!gl->pipelines.snow)
-      gl->pipelines.snow = gl3_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
-                                                      pipeline_snow_frag, sizeof(pipeline_snow_frag),
-                                                      &gl->pipelines.snow_loc, true);
-   if (!gl->pipelines.snow)
-      return false;
-#endif /* HAVE_SHADERPIPELINE */
 
    return true;
 }
