@@ -48,17 +48,19 @@
  * - the raw input keyboards that are parts of one device are listed
  *   as one keyboard, and a port given it reads a key from any part,
  *   down until every part has let go;
- * - the terminal server's keyboard is not listed;
+ * - the terminal server's keyboard is not listed, and neither is one
+ *   a program made;
  * - a mouse whose buttons send keys is not listed, and still feeds
  *   the ports that read every keyboard; a keyboard that is also a
  *   mouse is listed, and so is one that is also a mouse where it is
  *   not known what its keyboard part is;
  * - a keyboard with no name of its own goes by what Windows calls
  *   it, and the frontend is given each listed keyboard's ids;
- * - the mice keep their Mouse Index numbers, and the frontend is
- *   told of each which device on the desk it is part of, its ids,
- *   and a name of last resort - so that Input Information can list
- *   one mouse once - and that the terminal server's is not one. */
+ * - the mice on the desk are numbered first, in the order they had;
+ *   after them, and left out of Input Information, come a keyboard's
+ *   pointer part, a mouse a program made and the terminal server's.
+ *   The frontend is told of each which device it is part of, its
+ *   ids, and a name of last resort. */
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -97,14 +99,15 @@ static UINT WINAPI fake_GetRawInputDeviceList(PRAWINPUTDEVICELIST list,
 static struct
 {
    HANDLE h;
-   const char *path, *container, *compat, *desc;
-} dev_says[16];
+   const char *path, *container, *compat, *desc, *parents;
+} dev_says[24];
 static unsigned dev_says_n;
 
 static void fake_device_strings(HANDLE hnd, char *path,
-      char *container, char *compat, char *desc)
+      char *container, char *compat, char *desc, char *parents)
 {
    unsigned i;
+   parents[0] = '\0';
    for (i = 0; i < dev_says_n; i++)
       if (dev_says[i].h == hnd)
       {
@@ -112,6 +115,8 @@ static void fake_device_strings(HANDLE hnd, char *path,
          strcpy(container, dev_says[i].container);
          strcpy(compat,    dev_says[i].compat);
          strcpy(desc,      dev_says[i].desc);
+         if (dev_says[i].parents)
+            strcpy(parents, dev_says[i].parents);
          return;
       }
    /* one USB device of its own, told by its ids */
@@ -553,37 +558,47 @@ int main(void)
       winraw_dev_ident("\\\\?\\HID#VID_0951&PID_16E5&MI_01&Col02#8&2d7f0f1&0&0001#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}",
             "{11111111-2222-3333-4444-555555555555}",
             "USB\\Class_03&SubClass_00&Prot_00;USB\\Class_03&SubClass_00;USB\\Class_03",
-            "USB Input Device", &id);
+            "USB Input Device", "", &id);
       CHECK(id.vid == 0x0951 && id.pid == 0x16E5 && id.boot == 0 && !id.remote
             && !strcmp(id.key, "{11111111-2222-3333-4444-555555555555}"),
             "a USB keyboard's second interface: ids %04x:%04x, boot %d, key \"%s\"",
             id.vid, id.pid, id.boot, id.key);
       winraw_dev_ident("\\\\?\\HID#VID_0951&PID_16E5&MI_00#8&2d7f0f1&0&0000#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}",
             "", "USB\\Class_03&SubClass_01&Prot_01;USB\\Class_03&SubClass_01;USB\\Class_03",
-            "USB Input Device", &id);
+            "USB Input Device", "", &id);
       CHECK(id.boot == 1 && !strcmp(id.key, "0951:16e5"),
             "a boot keyboard with no container: boot %d, key \"%s\"", id.boot, id.key);
       winraw_dev_ident("\\\\?\\HID#{00001124-0000-1000-8000-00805f9b34fb}_VID&0002054c_PID&0df2&Col01#9&1&0&0000#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}",
-            "{AAAAAAAA-0000-0000-0000-000000000001}", "", "", &id);
+            "{AAAAAAAA-0000-0000-0000-000000000001}", "", "", "", &id);
       CHECK(id.vid == 0x054C && id.pid == 0x0DF2 && id.boot == -1,
             "a Bluetooth device: ids %04x:%04x, boot %d", id.vid, id.pid, id.boot);
       winraw_dev_ident("\\\\?\\ACPI#PNP0303#4&1&0#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}",
-            "{00000000-0000-0000-FFFF-FFFFFFFFFFFF}", "", "Standard PS/2 Keyboard", &id);
+            "{00000000-0000-0000-FFFF-FFFFFFFFFFFF}", "", "Standard PS/2 Keyboard",
+            "ACPI\\PNP0A08\\0;ACPI_HAL\\PNP0C08\\0", &id);
       CHECK(!id.key[0] && id.boot == -1 && !id.remote && !strcmp(id.desc, "Standard PS/2 Keyboard"),
             "a built-in keyboard: key \"%s\" (the machine's own container tells nothing apart), boot %d",
             id.key, id.boot);
       winraw_dev_ident("\\\\?\\Root#RDP_KBD#0000#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}",
-            "", "", "Terminal Server Keyboard Driver", &id);
+            "", "", "Terminal Server Keyboard Driver", "", &id);
       CHECK(id.remote, "the terminal server's keyboard was not known for it");
+      winraw_dev_ident("\\\\?\\HID#CorsairVirtualDevice&Col01#2&1&0&0000#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}",
+            "{CCCCCCCC-0000-0000-0000-000000000001}", "", "Corsair composite virtual input device",
+            "ROOT\\SYSTEM\\0001;HTREE\\ROOT\\0", &id);
+      CHECK(id.remote, "a device a program made, hanging off ROOT, was taken for one on the desk");
+      winraw_dev_ident("\\\\?\\HID#VID_1B1C&PID_1B5A&MI_00#8&1&0&0000#{378de44c-56ef-11d1-bc8c-00a0c91405dd}",
+            "", "USB\\Class_03&SubClass_01&Prot_02;USB\\Class_03", "USB Input Device",
+            "USB\\VID_1B1C&PID_1B5A&MI_00\\7&1&0&0000;USB\\VID_1B1C&PID_1B5A\\1234", &id);
+      CHECK(!id.remote && id.boot_mouse == 1 && id.boot == 0,
+            "a USB mouse: made by a program %d, boot mouse %d, boot keyboard %d", id.remote, id.boot_mouse, id.boot);
       printf("   ok   what Windows says of a device: USB and Bluetooth ids, the machine's own container, the boot keyboard, the terminal server's\n");
    }
 
    /* ---- a desk like a real one ----------------------------------- */
-   /* oldest first: the terminal server's keyboard; a keyboard with no
-    * name that is also a mouse and of which Windows does not say what
-    * its keyboard part is (a vendor's virtual device); a mouse whose
-    * buttons send keys; one keyboard that is two raw input keyboards;
-    * a keyboard that is also a mouse, with a boot keyboard part. */
+   /* oldest first: the terminal server's keyboard; a keyboard and
+    * mouse a program made (a vendor's virtual device); a mouse whose
+    * buttons send keys; one keyboard that is two raw input keyboards,
+    * and can send pointer events; a keyboard and a mouse on one
+    * receiver. */
    {
       static const char kb_class[] = "{884b96c3-56ef-11d1-bc8c-00a0c91405dd}";
       static const char boot[]     = "USB\\Class_03&SubClass_01&Prot_01;USB\\Class_03";
@@ -591,38 +606,43 @@ int main(void)
       unsigned n = 0;
       (void)kb_class;
 #define SAYS(hnd, p, c, k, d) do { dev_says[n].h = (hnd); dev_says[n].path = (p); \
-      dev_says[n].container = (c); dev_says[n].compat = (k); dev_says[n].desc = (d); n++; } while (0)
+      dev_says[n].container = (c); dev_says[n].compat = (k); dev_says[n].desc = (d); \
+      dev_says[n].parents = NULL; n++; } while (0)
       SAYS(K(30), "\\\\?\\Root#RDP_KBD#0000#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}", "", "", "Terminal Server Keyboard Driver");
       SAYS(K(31), "\\\\?\\HID#VendorVirtual&Col01#1&2&3#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}", "{VIRT}", "", "Vendor composite virtual input device");
+      dev_says[n - 1].parents = "ROOT\\SYSTEM\\0001;HTREE\\ROOT\\0";
       SAYS(M(31), "\\\\?\\HID#VendorVirtual&Col02#1&2&3#{378de44c-56ef-11d1-bc8c-00a0c91405dd}", "{VIRT}", "", "Vendor composite virtual input device");
+      dev_says[n - 1].parents = "ROOT\\SYSTEM\\0001;HTREE\\ROOT\\0";
       SAYS(M(40), "\\\\?\\HID#VID_1B1C&PID_1B5A&MI_00#1&2&3#{378de44c-56ef-11d1-bc8c-00a0c91405dd}", "{MOUSE}", "USB\\Class_03&SubClass_01&Prot_02;USB\\Class_03", "USB Input Device");
       SAYS(K(40), "\\\\?\\HID#VID_1B1C&PID_1B5A&MI_01&Col01#1&2&3#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}", "{MOUSE}", plain, "USB Input Device");
       SAYS(K(20), "\\\\?\\HID#VID_0951&PID_16E5&MI_00#1&2&3#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}", "{KEYB}", boot, "USB Input Device");
       SAYS(K(21), "\\\\?\\HID#VID_0951&PID_16E5&MI_01&Col02#1&2&3#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}", "{KEYB}", plain, "USB Input Device");
       SAYS(K(50), "\\\\?\\HID#VID_046D&PID_C52B&MI_00#1&2&3#{884b96c3-56ef-11d1-bc8c-00a0c91405dd}", "{COMBO}", boot, "USB Input Device");
-      SAYS(M(50), "\\\\?\\HID#VID_046D&PID_C52B&MI_01&Col01#1&2&3#{378de44c-56ef-11d1-bc8c-00a0c91405dd}", "{COMBO}", plain, "USB Input Device");
+      SAYS(M(50), "\\\\?\\HID#VID_046D&PID_C52B&MI_01&Col01#1&2&3#{378de44c-56ef-11d1-bc8c-00a0c91405dd}", "{COMBO}", "USB\\Class_03&SubClass_01&Prot_02;USB\\Class_03", "USB Input Device");
+      /* the keyboard can send pointer events too */
+      SAYS(M(20), "\\\\?\\HID#VID_0951&PID_16E5&MI_02&Col01#1&2&3#{378de44c-56ef-11d1-bc8c-00a0c91405dd}", "{KEYB}", plain, "USB Input Device");
       dev_says_n = n;
    }
    stub_settings.uints.input_keyboard_index[0] = 0;
    stub_settings.uints.input_keyboard_index[1] = 0;
    stub_settings.uints.input_keyboard_index[2] = 0;
    /* newest first, as Windows lists them */
-   devices(9, M(50), K(50), K(21), K(20), K(40), M(40), M(31), K(31), K(30));
+   devices(10, M(50), K(50), M(20), K(21), K(20), K(40), M(40), M(31), K(31), K(30));
    winraw_handle_message(WM_TIMER, WIN32_HOTPLUG_TIMER_ID, 0);
    winraw_poll(wr);
    CHECK(wr->kb_cnt == 6, "%u raw input keyboards, want 6", wr->kb_cnt);
-   CHECK(wr->kg_cnt == 3 && names() == 3,
-         "%u keyboards listed and %u named, want 3: the virtual one, the keyboard, the keyboard with a mouse",
+   CHECK(wr->kg_cnt == 2 && names() == 2,
+         "%u keyboards listed and %u named, want 2: the keyboard, and the one on the receiver",
          wr->kg_cnt, names());
-   CHECK(!strcmp(kb_names[0], "Vendor composite virtual input device"),
+   CHECK(!strcmp(kb_names[0], "USB Input Device"),
          "the keyboard with no name of its own goes by \"%s\"", kb_names[0]);
-   CHECK(kb_vid[1] == 0x0951 && kb_pid[1] == 0x16E5 && kb_vid[2] == 0x046D && kb_pid[2] == 0xC52B,
-         "the listed keyboards' ids: %04x:%04x and %04x:%04x", kb_vid[1], kb_pid[1], kb_vid[2], kb_pid[2]);
-   printf("   ok   one keyboard that is two raw input keyboards is listed once; the terminal server's and a mouse that sends keys are not listed; a keyboard that is also a mouse is\n");
+   CHECK(kb_vid[0] == 0x0951 && kb_pid[0] == 0x16E5 && kb_vid[1] == 0x046D && kb_pid[1] == 0xC52B,
+         "the listed keyboards' ids: %04x:%04x and %04x:%04x", kb_vid[0], kb_pid[0], kb_vid[1], kb_pid[1]);
+   printf("   ok   one keyboard that is two raw input keyboards is listed once; the terminal server's, one a program made and a mouse that sends keys are not listed; a keyboard sharing a receiver with a mouse is\n");
 
-   /* the second listed keyboard is K(20) and K(21) together */
-   stub_settings.uints.input_keyboard_index[0] = 2;
-   stub_settings.uints.input_keyboard_index[1] = 3;
+   /* the first listed keyboard is K(20) and K(21) together */
+   stub_settings.uints.input_keyboard_index[0] = 1;
+   stub_settings.uints.input_keyboard_index[1] = 2;
    key(K(21), SC_KEY_A, true);
    winraw_poll(wr);
    CHECK(pad_b(0) && !pad_b(1), "a key from the keyboard's second part: ports read %d %d, want 1 0", pad_b(0), pad_b(1));
@@ -653,27 +673,33 @@ int main(void)
       SAYS(M(60), "\\\\?\\Root#RDP_MOU#0000#{378de44c-56ef-11d1-bc8c-00a0c91405dd}", "", "", "Terminal Server Mouse Driver");
       dev_says_n = n;
       Sleep(1100);
-      /* newest first; oldest first they are: the terminal server's,
-       * the virtual device's, the mouse, its second part, the combo's */
-      devices(11, M(50), K(50), K(21), K(20), M(41), K(40), M(40), M(31), K(31), K(30), M(60));
+      /* newest first. Oldest first the mice are: the terminal
+       * server's, the virtual device's, the mouse, its second part,
+       * the keyboard's pointer part, the receiver's mouse */
+      devices(12, M(50), K(50), M(20), K(21), K(20), M(41), K(40), M(40), M(31), K(31), K(30), M(60));
       memset(&m, 0, sizeof(m));
       m.lLastX = 1;
       winraw_take(wr, RIM_TYPEMOUSE, M(41), &m);
       winraw_poll(wr);
    }
-   CHECK(wr->mouse_cnt == 5, "%u mice in the driver's list, want 5", wr->mouse_cnt);
-   CHECK(ms_hidden[0] && !ms_hidden[1] && !ms_hidden[2] && !ms_hidden[3] && !ms_hidden[4],
-         "the terminal server's mouse, and only it, is one to leave out: %d %d %d %d %d",
-         ms_hidden[0], ms_hidden[1], ms_hidden[2], ms_hidden[3], ms_hidden[4]);
-   CHECK(!strcmp(ms_device[2], "{MOUSE}") && !strcmp(ms_device[3], "{MOUSE}")
-         && strcmp(ms_device[1], ms_device[2]) && strcmp(ms_device[4], ms_device[2]),
-         "mice 3 and 4 are one mouse and the others are not: \"%s\" \"%s\" \"%s\" \"%s\"",
-         ms_device[1], ms_device[2], ms_device[3], ms_device[4]);
-   CHECK(ms_vid[2] == 0x1B1C && ms_pid[2] == 0x1B5A && ms_vid[4] == 0x046D,
-         "the mice's ids: %04x:%04x and %04x", ms_vid[2], ms_pid[2], ms_vid[4]);
-   CHECK(!strcmp(ms_names[1], "Vendor composite virtual input device"),
-         "a mouse with no name of its own goes by \"%s\"", ms_names[1]);
-   printf("   ok   the mice keep their numbers; the frontend is told which are one mouse, their ids, a name for the nameless, and that the terminal server's is none\n");
+   CHECK(wr->mouse_cnt == 6, "%u mice in the driver's list, want 6", wr->mouse_cnt);
+   CHECK(g_mice[0].hnd == M(40) && g_mice[1].hnd == M(41) && g_mice[2].hnd == M(50),
+         "the mice on the desk are not the first three, in the order they had");
+   CHECK(g_mice[3].hnd == M(60) && g_mice[4].hnd == M(31) && g_mice[5].hnd == M(20),
+         "the rest do not follow, in the order they had");
+   CHECK(!ms_hidden[0] && !ms_hidden[1] && !ms_hidden[2]
+         && ms_hidden[3] && ms_hidden[4] && ms_hidden[5],
+         "which are left out of the list: %d %d %d %d %d %d, want 0 0 0 1 1 1",
+         ms_hidden[0], ms_hidden[1], ms_hidden[2], ms_hidden[3], ms_hidden[4], ms_hidden[5]);
+   CHECK(!strcmp(ms_device[0], "{MOUSE}") && !strcmp(ms_device[1], "{MOUSE}")
+         && strcmp(ms_device[2], ms_device[0]),
+         "mice 1 and 2 are one mouse and the third is another: \"%s\" \"%s\" \"%s\"",
+         ms_device[0], ms_device[1], ms_device[2]);
+   CHECK(ms_vid[0] == 0x1B1C && ms_pid[0] == 0x1B5A && ms_vid[2] == 0x046D,
+         "the mice's ids: %04x:%04x and %04x", ms_vid[0], ms_pid[0], ms_vid[2]);
+   CHECK(!strcmp(ms_names[4], "Vendor composite virtual input device"),
+         "a mouse with no name of its own goes by \"%s\"", ms_names[4]);
+   printf("   ok   the mice on the desk come first; a keyboard's pointer part, a program's mouse and the terminal server's follow and are left out of the list\n");
 
    winraw_free(wr);
    if (failures)
