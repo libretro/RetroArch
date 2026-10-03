@@ -398,7 +398,7 @@ static void *sdl2_gfx_init(const video_info_t *video,
     *
     * Unlike the d3d8 / d3d9 / d3d11 / d3d12 drivers - which create
     * their main window with a winraw-aware WndProc
-    * (wnd_proc_d3d_winraw, see gfx/common/win32_common.c) - the SDL2
+    * (win32_window_proc, see gfx/common/win32_common.c) - the SDL2
     * window's WndProc is owned by SDL and we cannot replace it.
     *
     * Warn loudly so users hitting silent broken-input understand

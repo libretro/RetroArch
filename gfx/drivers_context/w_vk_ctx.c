@@ -196,18 +196,10 @@ static void *gfx_ctx_w_vk_init(void *video_driver)
    win32_window_reset();
    win32_monitor_init();
 
-   {
-      settings_t *settings     = config_get_ptr();
-      wndclass.lpfnWndProc     = wnd_proc_vk_common;
-#ifdef HAVE_DINPUT
-      if (string_is_equal(settings->arrays.input_driver, "dinput"))
-         wndclass.lpfnWndProc   = wnd_proc_vk_dinput;
-#endif
-#ifdef HAVE_WINRAWINPUT
-      if (string_is_equal(settings->arrays.input_driver, "raw"))
-         wndclass.lpfnWndProc   = wnd_proc_vk_winraw;
-#endif
-   }
+   /* one window procedure for every video and input driver; the
+    * family says what creating the window sets up */
+   wndclass.lpfnWndProc = win32_window_proc;
+   win32_window_proc_setup(WIN32_WINDOW_VULKAN);
    if (!win32_window_init(&wndclass, true, NULL))
       goto error;
 
