@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include <gekko/console.h>
+#include <gekko/usbgecko.h>
 #if GK_RVL
 #include <gekko/ios.h>
 #include <gekko/usb.h>
@@ -153,6 +154,16 @@ void OSReport(const char *fmt, ...)
    __asm__ __volatile__("" ::: "memory");
 }
 
+void gk_debug_line(const char *s)
+{
+   size_t len = strlen(s);
+   OSReport("%s\n", s);
+   gk_console_write(s, len);
+   gk_console_write("\n", 1);
+   gk_usbgecko_write(s, len);
+   gk_usbgecko_write("\r\n", 2);
+}
+
 void gk_debug_printf(const char *fmt, ...)
 {
    static char buf[256];
@@ -161,9 +172,7 @@ void gk_debug_printf(const char *fmt, ...)
    va_start(ap, fmt);
    vsnprintf(buf, sizeof(buf), fmt, ap);
    va_end(ap);
-   OSReport("%s\n", buf);
-   gk_console_write(buf, strlen(buf));
-   gk_console_write("\n", 1);
+   gk_debug_line(buf);
    gk_irq_restore(level);
 }
 
@@ -188,6 +197,7 @@ void gk_boot(void)
    gk_tb_hz = bus / 4;
 
    gk_irq_init();
+   gk_usbgecko_probe();
    gk_arena_init();
    gk_sched_init(__gk_stack_lo);
    m = gk_sched_main();

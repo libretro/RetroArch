@@ -115,6 +115,10 @@ void gk_exit_after_crash(void);
 void gk_irq_block_current(volatile uint32_t *addr);
 void gk_set_wall_clock(uint64_t unix_seconds);
 void gk_rtc_sync(void);
+void gk_usbgecko_probe(void);
+/* A line of output (without its newline) to Dolphin's log, the
+ * console and a USB Gecko, with interrupts off. */
+void gk_debug_line(const char *s);
 
 /* Run when the program leaves, by exit() or gk_exec(), last added
  * first; each hook is added once. */

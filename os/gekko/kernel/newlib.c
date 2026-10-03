@@ -14,7 +14,6 @@
 #include <sys/lock.h>
 #include <sys/time.h>
 
-#include <gekko/console.h>
 #include <gekko/power.h>
 
 #include "kernel.h"
@@ -385,17 +384,13 @@ void __syscall_assert_func(const char *file, int line, const char *func,
 
 /* ---- stdout and stderr: lines to the debug channel ---- */
 
-void OSReport(const char *fmt, ...);
-
 static char     out_line[256];
 static unsigned out_len;
 
 static void out_flush(void)
 {
    out_line[out_len] = '\0';
-   OSReport("%s\n", out_line);
-   gk_console_write(out_line, out_len);
-   gk_console_write("\n", 1);
+   gk_debug_line(out_line);
    out_len = 0;
 }
 

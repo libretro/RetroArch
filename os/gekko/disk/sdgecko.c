@@ -9,6 +9,7 @@
 #include <gekko/disk.h>
 #include <gekko/exi.h>
 #include <gekko/thread.h>
+#include <gekko/usbgecko.h>
 
 #include "sdspi.h"
 
@@ -98,7 +99,8 @@ gk_blockdev_t *gk_sdgecko_open(unsigned ch)
    s = &slots[ch];
    if (s->open)
       return &s->card.dev;
-   if (ch < 2 && !gk_exi_attached(ch))
+   if (ch < 2 && (!gk_exi_attached(ch)
+            || (int)ch == gk_usbgecko_channel()))
       return NULL;
    s->ch              = ch;
    s->bus.priv        = s;

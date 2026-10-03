@@ -17,6 +17,9 @@
 # ("SET MAIN 1 0.5" points right, 0.5 0.5 at the centre); X and Y
 # are a guitar's green fret and strum down, L its whammy bar and C its
 # stick.
+# $GECKO puts a USB Gecko in slot B and also wants the verdict from
+# it, read the way a computer on its other end would (Dolphin serves it
+# on TCP port 55020, or the next one free).
 # $KEEP keeps Dolphin's user directory and log, and prints its path.
 # Exits 0 when the test says PASSED.
 ELF=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
@@ -78,6 +81,9 @@ set -- -u "$USERDIR" -p headless \
    -C Dolphin.Core.CustomRTCValue=1790000000 \
    -C Dolphin.EmulatedUSBDevices.EmulateWiiSpeak=True \
    -C Dolphin.EmulatedUSBDevices.EmulateSkylanderPortal=True
+if [ -n "$GECKO" ]; then
+   set -- "$@" -C Dolphin.Core.SlotB=7
+fi
 if [ -n "$SDIMG" ]; then
    set -- "$@" -C "Dolphin.General.WiiSDCardPath=$(cd "$(dirname "$SDIMG")" && pwd)/$(basename "$SDIMG")" \
       -C Dolphin.Core.WiiSDCard=True -C Dolphin.Core.WiiSDCardAllowWrites=True
@@ -108,6 +114,32 @@ feed() {
    ) &
    FEED="$FEED $!"
 }
+if [ -n "$GECKO" ]; then
+   python3 - "$USERDIR/gecko.log" <<'PY' &
+import socket, sys, time
+out = open(sys.argv[1], 'wb')
+s = None
+for _ in range(600):
+    for port in range(55020, 55040):
+        try:
+            s = socket.create_connection(('127.0.0.1', port))
+            break
+        except OSError:
+            pass
+    if s:
+        break
+    time.sleep(0.1)
+else:
+    sys.exit()
+while True:
+    d = s.recv(4096)
+    if not d:
+        break
+    out.write(d)
+    out.flush()
+PY
+   FEED="$FEED $!"
+fi
 [ -n "$PADS" ] && feed "$PADS" pad
 [ -n "$WMPADS" ] && feed "$WMPADS" wm
 # Stop as soon as the test has reported its verdict.
@@ -125,6 +157,10 @@ wait $PID 2>/dev/null
 sed -n 's/.*OSREPORT_HLE\]: [0-9a-f]*->[0-9a-f]*| //p' "$LOG"
 grep -aq "OSREPORT_HLE.*PASSED (" "$LOG"
 RC=$?
+if [ -n "$GECKO" ] && ! grep -aq "PASSED (" "$USERDIR/gecko.log"; then
+   echo "FAIL USB Gecko: no verdict from it"
+   RC=1
+fi
 if [ -n "$DUMP" ] && [ -d "$USERDIR/Dump/Frames" ]; then
    mkdir -p "$DUMP" && cp "$USERDIR"/Dump/Frames/*.png "$DUMP"/ 2>/dev/null
 fi
