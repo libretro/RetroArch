@@ -19,8 +19,11 @@
 # quit with Escape. What is checked is what the log says happened. In
 # every scenario: RetroArch quit on the Escape pressed after the
 # content was closed; the core saw B pressed and released before the
-# restart and after it; and it was given J's key-down and key-up, in
-# that order, both times. And by scenario:
+# restart and after it; it was given J's key-down and key-up, in that
+# order, both times; and every key event it was given came on the
+# thread it runs on - with threaded video the window's messages are
+# handled on the video thread, and DirectInput's keys used to reach
+# the core's keyboard callback from there. And by scenario:
 #
 #   read by the poll, kept      the default. The input driver starts
 #                               once and is restarted neither by the
@@ -173,7 +176,7 @@ failures=0
 # passes through
 scenario() {
    local name=$1 threaded=$2 want_bulk=$3 want_joy=$4 nomsg=$5
-   local log="$work/$name.log" try rc video bulk joy msg ok b_down b_up j_seq stale win
+   local log="$work/$name.log" try rc video bulk joy msg ok b_down b_up j_seq stale win off
    write_cfg "$threaded" "${6:-raw}" "${7:-winraw_joypad}"
    # key delivery on a virtual display with no window manager is not
    # exact: a scenario gets a second go before it counts as failed
@@ -198,6 +201,8 @@ scenario() {
       [ "$joy" = "$want_joy" ] || ok=no
       [ "$b_down" = 2 ] && [ "$b_up" = 2 ] || ok=no
       [ "$j_seq" = "down up down up " ] || ok=no
+      off=$(count "$log" "not the core's")
+      [ "$off" = 0 ] || ok=no
       [ "$nomsg" != nomsg ] || [ "$msg" = 0 ] || ok=no
       # the old path measures the wait the new one removes; the new
       # one has nothing to measure
@@ -222,7 +227,8 @@ scenario() {
            "joypad driver started $joy (want $want_joy);" \
            "lines on how old the state was at the poll: $stale;" \
            "window left up, taken, not taken: $win (want ${WANT_WINDOW:-2 2 0});" \
-           "the core saw B pressed $b_down and released $b_up (want 2 and 2), J: ${j_seq:-nothing}(want down up down up)" \
+           "the core saw B pressed $b_down and released $b_up (want 2 and 2), J: ${j_seq:-nothing}(want down up down up)," \
+           "key events on a thread that is not the core's: $off (want 0)" \
            "$([ "$nomsg" = nomsg ] && echo ", driver instances with reports taken as messages: $msg (want 0)")"
       sed 's/\x1b\[[0-9;]*m//g' "$log" | tr -d '\r' | grep -av "ALSA lib\|Playlist\]" | tail -25
       failures=$((failures + 1))

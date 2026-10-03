@@ -88,6 +88,8 @@
 #include <boolean.h>
 #include <features/features_cpu.h>
 #include <time/rtime.h>
+#include <rthreads/rthreads.h>
+#include <retro_timers.h>
 #include "../../../runloop.h"
 #include "../../../runahead.h"
 #ifdef HAVE_NETWORKING
@@ -1729,6 +1731,127 @@ static void lane_input_kept(void)
 #endif
 }
 
+/* ---- keyboard events reported from another thread ------------------ */
+
+/* The Windows window procedure and X11's event loop report keys from
+ * where the window's messages are handled, which with threaded video
+ * is the video thread. input_keyboard_event() used to act on them
+ * there - menu, frontend, and the core's keyboard callback, on a
+ * thread the core does not run on. They wait for the poll now. This
+ * reports keys from a second thread and looks at where and in what
+ * order the core's callback gets them. */
+#define KEYLANE_EVENTS 40
+
+static uintptr_t keylane_main_thread;
+static unsigned  keylane_got, keylane_off_thread, keylane_out_of_order;
+
+static void RETRO_CALLCONV keylane_core_cb(bool down, unsigned keycode,
+      uint32_t character, uint16_t mods)
+{
+   (void)mods;
+   if (keycode != RETROK_F14)
+      return;
+   if (sthread_get_current_thread_id() != keylane_main_thread)
+      keylane_off_thread++;
+   /* the sender numbers them, and sends down, up, down, ... */
+   if (     character != keylane_got
+         || down != ((keylane_got & 1) == 0))
+      keylane_out_of_order++;
+   keylane_got++;
+}
+
+static void keylane_sender(void *data)
+{
+   unsigned i, n = *(unsigned*)data;
+   bool pause    = (n == KEYLANE_EVENTS);
+   for (i = 0; i < n; i++)
+   {
+      input_keyboard_event((i & 1) == 0, RETROK_F14, i, 0,
+            RETRO_DEVICE_KEYBOARD);
+      if (pause)
+         retro_sleep(1);
+   }
+}
+
+static void lane_key_events(void)
+{
+   runloop_state_t *runloop_st      = runloop_state_get_ptr();
+   retro_keyboard_event_t saved     = runloop_st->key_event;
+   unsigned had                     = failures;
+   unsigned dropped0, n, i;
+   sthread_t *thr;
+
+   keylane_main_thread              = sthread_get_current_thread_id();
+   runloop_st->key_event            = keylane_core_cb;
+   fast_forward(true);
+   run_frames(5);
+
+   /* 1. Reported on this thread: acted on at once, as ever. */
+   keylane_got = keylane_off_thread = keylane_out_of_order = 0;
+   input_keyboard_event(true,  RETROK_F14, 0, 0, RETRO_DEVICE_KEYBOARD);
+   input_keyboard_event(false, RETROK_F14, 1, 0, RETRO_DEVICE_KEYBOARD);
+   CHECK(keylane_got == 2 && !keylane_out_of_order,
+         "key events: one reported on the frontend's thread was not acted on at once");
+
+   /* 2. Reported on another thread while frames run: the core gets
+    *    every one, in order, and on its own thread. */
+   keylane_got = keylane_off_thread = keylane_out_of_order = 0;
+   dropped0    = input_driver_key_events_dropped();
+   n           = KEYLANE_EVENTS;
+   thr         = sthread_create(keylane_sender, &n);
+   CHECK(thr != NULL, "key events: no second thread to report from");
+   if (thr)
+   {
+      for (i = 0; i < 400 && keylane_got < KEYLANE_EVENTS; i++)
+      {
+         run_frames(1);
+         retro_sleep(1);
+      }
+      sthread_join(thr);
+      run_frames(2);
+   }
+   if (keylane_got != KEYLANE_EVENTS || keylane_off_thread || keylane_out_of_order)
+      fprintf(stderr, "       %u of %u reached the core, %u on another thread, %u out of order\n",
+            keylane_got, KEYLANE_EVENTS, keylane_off_thread, keylane_out_of_order);
+   CHECK(keylane_got == KEYLANE_EVENTS,
+         "key events: reported on another thread, not all reached the core");
+   CHECK(keylane_off_thread == 0,
+         "key events: the core's keyboard callback was called on a thread that is not the core's");
+   CHECK(keylane_out_of_order == 0,
+         "key events: reported on another thread, they reached the core out of order");
+   CHECK(input_driver_key_events_dropped() == dropped0,
+         "key events: some were dropped with a poll every frame");
+
+   /* 3. A hundred with no poll in between: the queue holds
+    *    sixty-four, the rest are dropped and counted, and nothing is
+    *    acted on until the poll. */
+   keylane_got = keylane_off_thread = keylane_out_of_order = 0;
+   n           = 100;
+   thr         = sthread_create(keylane_sender, &n);
+   if (thr)
+   {
+      sthread_join(thr);
+      CHECK(keylane_got == 0,
+            "key events: reported on another thread, acted on before the poll");
+      run_frames(2);
+      if (keylane_got != 64 || input_driver_key_events_dropped() - dropped0 != 36)
+         fprintf(stderr, "       %u reached the core, %u dropped\n", keylane_got,
+               input_driver_key_events_dropped() - dropped0);
+      CHECK(keylane_got == 64 && !keylane_off_thread && !keylane_out_of_order,
+            "key events: a full queue did not give the core its sixty-four, in order");
+      CHECK(input_driver_key_events_dropped() - dropped0 == 36,
+            "key events: those that did not fit were not counted");
+   }
+
+   runloop_st->key_event = saved;
+   fast_forward(false);
+   run_frames(2);
+   if (failures == had)
+      printf("[pass] key events: from the frontend's thread acted on at once;"
+            " from another, the core gets all of them in order on its own thread"
+            " at the next poll; a full queue drops the newest and counts them\n");
+}
+
 static void lane_frame_cost(void)
 {
    unsigned had = failures;
@@ -1931,6 +2054,7 @@ int main(int argc, char *argv[])
       lane_input_poll_sites(load_poll_name[load_poll]);
       lane_output_store();
       lane_core_view();
+      lane_key_events();
       /* last: it restarts the drivers */
       lane_input_kept();
    }

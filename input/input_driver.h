@@ -975,6 +975,11 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver);
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device);
 
+/* Keyboard events reported from another thread wait for the poll in a
+ * queue (see input_keyboard_event() in input_driver.c); this is how
+ * many were dropped because it was full. */
+unsigned input_driver_key_events_dropped(void);
+
 input_driver_state_t *input_state_get_ptr(void);
 
 /*************************************/

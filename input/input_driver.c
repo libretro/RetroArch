@@ -8612,6 +8612,10 @@ void input_driver_read_sensor_snapshot(float *gyro3,
    }
 }
 
+#ifdef HAVE_THREADS
+static void input_key_lane_take(void);
+#endif
+
 void input_driver_poll(void)
 {
    size_t i, j;
@@ -8643,6 +8647,11 @@ void input_driver_poll(void)
       sec_joypad->poll();
    if (input && input->poll)
       input->poll(input_st->current_data);
+
+#ifdef HAVE_THREADS
+   /* the keys another thread has reported since the last poll */
+   input_key_lane_take();
+#endif
 
    /* When the devices were read. The statistics show how old the input
     * a frame was made from is by the time that frame is on screen, and
@@ -10023,7 +10032,133 @@ static const char *accessibility_lut_name(char key)
 }
 #endif
 
+/* Keyboard events from a thread that is not the frontend's.
+ *
+ * input_keyboard_event() reaches into the menu, the on-screen
+ * keyboard, the frontend's own key handling, and calls the core's
+ * keyboard callback. All of that belongs to the thread the frontend
+ * and the core run on. Most drivers report their keys from the poll,
+ * on that thread. Some report them from where the window's messages
+ * are handled, and with threaded video that is the video thread: the
+ * Windows window procedure (every Windows input driver but raw input,
+ * which reads at the poll) and X11's event loop. A key pressed there
+ * used to run all of the above on the video thread, the core's
+ * callback included, while the core ran its frame on the other.
+ *
+ * An event that comes on another thread is put in a queue instead, and
+ * the next input_driver_poll() - on the frontend's thread - takes the
+ * queue in order and does with each what would have been done at once.
+ * The window's thread hands its keys over once a frame as it is, so
+ * the poll that takes them is the first that could have seen them.
+ *
+ * One reader, the poll, which takes no lock. Writers take turns
+ * through a flag; in practice there is one, the video thread. Sixty-
+ * four events between two polls is more than a keyboard sends; past
+ * that the newest are dropped, counted and said. */
+#ifdef HAVE_THREADS
+#define INPUT_KEY_LANE_SIZE 64 /* a power of two */
+
+static struct
+{
+   struct
+   {
+      uint32_t character;
+      unsigned code;
+      unsigned device;
+      uint16_t mod;
+      bool     down;
+   } slot[INPUT_KEY_LANE_SIZE];
+   retro_atomic_int_t head;      /* next to take: the poll's */
+   retro_atomic_int_t tail;      /* next to fill: the writers' */
+   retro_atomic_int_t writing;   /* a writer is in */
+   retro_atomic_int_t dropped;
+   bool warned;
+} input_key_lane;
+
+static void input_key_lane_push(bool down, unsigned code,
+      uint32_t character, uint16_t mod, unsigned device)
+{
+   int head, tail;
+
+   while (retro_atomic_exchange_int(&input_key_lane.writing, 1))
+      ; /* another writer: there is not one in practice */
+
+   head = retro_atomic_load_acquire_int(&input_key_lane.head);
+   tail = retro_atomic_load_relaxed_int(&input_key_lane.tail);
+   if ((unsigned)(tail - head) >= INPUT_KEY_LANE_SIZE)
+      retro_atomic_fetch_add_int(&input_key_lane.dropped, 1);
+   else
+   {
+      unsigned i                       = (unsigned)tail
+         & (INPUT_KEY_LANE_SIZE - 1);
+      input_key_lane.slot[i].down      = down;
+      input_key_lane.slot[i].code      = code;
+      input_key_lane.slot[i].character = character;
+      input_key_lane.slot[i].mod       = mod;
+      input_key_lane.slot[i].device    = device;
+      retro_atomic_store_release_int(&input_key_lane.tail, tail + 1);
+   }
+
+   retro_atomic_store_release_int(&input_key_lane.writing, 0);
+}
+
+static void input_keyboard_event_now(bool down, unsigned code,
+      uint32_t character, uint16_t mod, unsigned device);
+
+/* The poll's: every event that has come since the last one. */
+static void input_key_lane_take(void)
+{
+   int head = retro_atomic_load_relaxed_int(&input_key_lane.head);
+   int tail = retro_atomic_load_acquire_int(&input_key_lane.tail);
+
+   while (head != tail)
+   {
+      unsigned i         = (unsigned)head & (INPUT_KEY_LANE_SIZE - 1);
+      bool down          = input_key_lane.slot[i].down;
+      unsigned code      = input_key_lane.slot[i].code;
+      uint32_t character = input_key_lane.slot[i].character;
+      uint16_t mod       = input_key_lane.slot[i].mod;
+      unsigned device    = input_key_lane.slot[i].device;
+
+      /* the slot is free before the event is acted on */
+      retro_atomic_store_release_int(&input_key_lane.head, ++head);
+      input_keyboard_event_now(down, code, character, mod, device);
+   }
+
+   if (     !input_key_lane.warned
+         && retro_atomic_load_relaxed_int(&input_key_lane.dropped))
+   {
+      input_key_lane.warned = true;
+      RARCH_WARN("[Input] More than %d keyboard events came between two"
+            " polls: the newest were dropped.\n", INPUT_KEY_LANE_SIZE);
+   }
+}
+
+unsigned input_driver_key_events_dropped(void)
+{
+   return (unsigned)retro_atomic_load_relaxed_int(&input_key_lane.dropped);
+}
+#endif
+
 void input_keyboard_event(bool down, unsigned code,
+      uint32_t character, uint16_t mod, unsigned device)
+{
+#ifdef HAVE_THREADS
+   if (!task_is_on_main_thread())
+   {
+      input_key_lane_push(down, code, character, mod, device);
+      return;
+   }
+#endif
+   input_keyboard_event_now(down, code, character, mod, device);
+}
+
+#ifndef HAVE_THREADS
+static void input_keyboard_event_now(bool down, unsigned code,
+      uint32_t character, uint16_t mod, unsigned device);
+#endif
+
+static void input_keyboard_event_now(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();

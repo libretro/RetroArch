@@ -14,6 +14,13 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef _WIN32
+#include <windows.h>
+/* the thread retro_run() is on: a key event that comes on another has
+ * been handed to the core behind its back */
+static DWORD run_thread;
+#endif
+
 #include <libretro.h>
 
 static retro_environment_t   environ_cb;
@@ -43,6 +50,11 @@ static void RETRO_CALLCONV on_key(bool down, unsigned keycode,
    (void)character;
    say("key event: %s keycode %u mods %u", down ? "down" : "up",
          keycode, (unsigned)mods);
+#ifdef _WIN32
+   if (run_thread && GetCurrentThreadId() != run_thread)
+      say("key event on thread %lu, not the core's (%lu)",
+            (unsigned long)GetCurrentThreadId(), (unsigned long)run_thread);
+#endif
 }
 
 void retro_set_environment(retro_environment_t cb)
@@ -93,6 +105,9 @@ void retro_run(void)
 {
    int b, a;
 
+#ifdef _WIN32
+   run_thread = GetCurrentThreadId();
+#endif
    poll_cb();
    b = state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B) ? 1 : 0;
    a = state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A) ? 1 : 0;
