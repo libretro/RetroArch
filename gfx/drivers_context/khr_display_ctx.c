@@ -159,41 +159,7 @@ static void gfx_ctx_khr_display_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
-#ifdef HAVE_X11
-   settings_t *settings = config_get_ptr();
-
-   /* We cannot use the X11 input driver for DRM/KMS */
-   if (string_is_equal(settings->arrays.input_driver, "x"))
-   {
-#ifdef HAVE_UDEV
-      {
-         /* Try to set it to udev instead */
-         void *udev = input_driver_init_wrap(&input_udev, joypad_name);
-         if (udev)
-         {
-            *input       = &input_udev;
-            *input_data  = udev;
-            return;
-         }
-      }
-#endif
-#if defined(__linux__) && !defined(ANDROID)
-      {
-         /* Try to set it to linuxraw instead */
-         void *linuxraw = input_driver_init_wrap(&input_linuxraw, joypad_name);
-         if (linuxraw)
-         {
-            *input       = &input_linuxraw;
-            *input_data  = linuxraw;
-            return;
-         }
-      }
-#endif
-   }
-#endif
-
-   *input      = NULL;
-   *input_data = NULL;
+   input_driver_init_kms(joypad_name, input, input_data);
 }
 
 static enum gfx_ctx_api gfx_ctx_khr_display_get_api(void *data)

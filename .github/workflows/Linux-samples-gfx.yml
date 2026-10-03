@@ -966,6 +966,22 @@ jobs:
           sudo apt-get install -y -qq xvfb > /dev/null
           samples/gfx/win32_window_proc/run.sh
 
+      - name: Build and run window_driver_test for Windows (Wine)
+        shell: bash
+        working-directory: samples/input/window_driver
+        run: |
+          set -eu
+          # Which input driver a Windows window gets
+          # (input_driver_init_windows() in
+          # input/input_driver_choice.c): raw input when it is the
+          # setting and it starts, DirectInput otherwise, including
+          # when raw input fails to start. Built with mingw-w64 and
+          # run under Wine, with stand-in drivers. The X11 and
+          # no-window-system choices run on the host in the input
+          # samples workflow.
+          make clean check-windows
+          make clean
+
       - name: Build and run display_servers_kms_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/display_servers_kms

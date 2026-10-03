@@ -1005,25 +1005,7 @@ static void gfx_ctx_x_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
-   void *x_input            = NULL;
-#ifdef HAVE_UDEV
-   settings_t *settings     = config_get_ptr();
-   const char *input_driver = settings->arrays.input_driver;
-
-   if (string_is_equal(input_driver, "udev"))
-   {
-      *input_data = input_driver_init_wrap(&input_udev, joypad_name);
-      if (*input_data)
-      {
-         *input = &input_udev;
-         return;
-      }
-   }
-#endif
-
-   x_input      = input_driver_init_wrap(&input_x, joypad_name);
-   *input       = x_input ? &input_x : NULL;
-   *input_data  = x_input;
+   input_driver_init_x11(joypad_name, input, input_data);
 }
 
 static gfx_ctx_proc_t gfx_ctx_x_get_proc_address(const char *symbol)

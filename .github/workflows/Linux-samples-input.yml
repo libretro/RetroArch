@@ -329,6 +329,28 @@ jobs:
           make clean
           echo "[pass] output_store_test (ASan, TSan)"
 
+      - name: Build and run window_driver_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/window_driver
+        run: |
+          set -eu
+          # Which input driver a window gets
+          # (input/input_driver_choice.c): the choice the video
+          # contexts used to have written out each for itself, with
+          # the drivers' names in it. Runs every branch of the X11
+          # window choice and the no-window-system choice with
+          # stand-in drivers that start or fail to: which driver comes
+          # out, which were tried and in what order, that the joypad
+          # driver's name is passed through, and that the two results
+          # are both set or both NULL. The Windows choice is the same
+          # test built with mingw and run under Wine, in the gfx
+          # samples workflow.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./window_driver_test
+          make clean
+          echo "[pass] window_driver_test (ASan)"
+
       - name: Build and run device_registry_test (ASan + UBSan)
         shell: bash
         working-directory: samples/input/device_registry
