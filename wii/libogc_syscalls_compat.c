@@ -29,13 +29,18 @@
 #include <reent.h>
 #include <sys/time.h>
 
+/* From the prebuilt libogc; its headers are not C89. */
+unsigned int IRQ_Disable(void);
+void IRQ_Restore(unsigned int level);
+int LWP_MutexTryLock(unsigned int mutex);
+
 /* Slot layout written by the prebuilt SYS_Init.  Offsets are
  * load-bearing; the trailing reserve absorbs whatever the era's
  * iosupport.h declared beyond the slots libogc touches. */
 struct __syscalls_compat
 {
    void *(*sbrk_r)(struct _reent *r, ptrdiff_t incr);   /* +0  */
-   int   (*lock_init)(int *lock);                       /* +4  */
+   int   (*lock_init)(int *lock, int recursive);        /* +4  */
    int   (*lock_close)(int *lock);                      /* +8  */
    int   (*lock_release)(int *lock);                    /* +12 */
    int   (*lock_acquire)(int *lock);                    /* +16 */
@@ -59,29 +64,93 @@ void *_sbrk_r(struct _reent *r, ptrdiff_t incr)
 
 /* Before SYS_Init there is one context and no lwp threads, so a
  * missing lock handler is a safe no-op, exactly as the old dispatch
- * behaved with a zeroed table. */
-void __syscall_lock_init(int *lock)
+ * behaved with a zeroed table.  A lock word holds the lwp mutex libogc
+ * made for it, 0 until then: the r38 libsysbase creates it through
+ * lock_init, later ones zero-initialise locks and never call it, so
+ * the first acquire makes it.  A recursive lock's word is the first
+ * member of its struct. */
+int __syscall_lock_init(int *lock, int recursive)
 {
    if (__syscalls.lock_init)
-      __syscalls.lock_init(lock);
+      return __syscalls.lock_init(lock, recursive);
+   return 0;
 }
 
-void __syscall_lock_close(int *lock)
+static int compat_lock_word(int *lock, int recursive)
 {
-   if (__syscalls.lock_close)
+   if (!*lock && __syscalls.lock_init)
+   {
+      unsigned int level = IRQ_Disable();
+      if (!*lock)
+         __syscalls.lock_init(lock, recursive);
+      IRQ_Restore(level);
+   }
+   return *lock;
+}
+
+static void compat_lock_acquire(int *lock, int recursive)
+{
+   if (compat_lock_word(lock, recursive) && __syscalls.lock_acquire)
+      __syscalls.lock_acquire(lock);
+}
+
+static int compat_lock_try_acquire(int *lock, int recursive)
+{
+   if (!compat_lock_word(lock, recursive))
+      return 0;
+   return LWP_MutexTryLock((unsigned int)*lock) ? 1 : 0;
+}
+
+static void compat_lock_release(int *lock)
+{
+   if (*lock && __syscalls.lock_release)
+      __syscalls.lock_release(lock);
+}
+
+static void compat_lock_close(int *lock)
+{
+   if (*lock && __syscalls.lock_close)
       __syscalls.lock_close(lock);
 }
 
 void __syscall_lock_acquire(int *lock)
 {
-   if (__syscalls.lock_acquire)
-      __syscalls.lock_acquire(lock);
+   compat_lock_acquire(lock, 0);
+}
+
+int __syscall_lock_try_acquire(int *lock)
+{
+   return compat_lock_try_acquire(lock, 0);
 }
 
 void __syscall_lock_release(int *lock)
 {
-   if (__syscalls.lock_release)
-      __syscalls.lock_release(lock);
+   compat_lock_release(lock);
+}
+
+void __syscall_lock_close(int *lock)
+{
+   compat_lock_close(lock);
+}
+
+void __syscall_lock_acquire_recursive(int *lock)
+{
+   compat_lock_acquire(lock, 1);
+}
+
+int __syscall_lock_try_acquire_recursive(int *lock)
+{
+   return compat_lock_try_acquire(lock, 1);
+}
+
+void __syscall_lock_release_recursive(int *lock)
+{
+   compat_lock_release(lock);
+}
+
+void __syscall_lock_close_recursive(int *lock)
+{
+   compat_lock_close(lock);
 }
 
 void __syscall_malloc_lock(struct _reent *r)
