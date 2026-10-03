@@ -5,6 +5,7 @@
  * exactly gk_mutex_t and gk_rmutex_t. */
 
 #include <errno.h>
+#include <malloc.h>
 #include <reent.h>
 #include <stdlib.h>
 #include <string.h>
@@ -66,6 +67,18 @@ void __syscall_malloc_unlock(struct _reent *r)
 {
    (void)r;
    gk_rmutex_unlock(&malloc_lock);
+}
+
+/* newlib declares this but leaves it to the system. */
+int posix_memalign(void **out, size_t align, size_t size)
+{
+   void *p;
+   if (!align || (align & (align - 1)) || (align % sizeof(void*)))
+      return EINVAL;
+   if (!(p = memalign(align, size)) && size)
+      return ENOMEM;
+   *out = p;
+   return 0;
 }
 
 /* ---- per-thread C library state ---- */

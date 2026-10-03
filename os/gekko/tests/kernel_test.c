@@ -1,6 +1,7 @@
 /* Kernel checks, run in Dolphin by os/gekko/tests/run-dolphin.sh:
  * boot, heap, sleep, priorities, round robin, mutex hand-off,
- * condition variables, semaphores, lazy FP and pthreads. */
+ * condition variables, semaphores, lazy FP, pthreads and loader
+ * arguments (run-dolphin.sh with ARGS='sd:/k.dol|sd:/roms|a b.nes'). */
 
 #include <errno.h>
 #include <pthread.h>
@@ -277,12 +278,28 @@ static void test_libc(void)
    CHECK(!big, "heap: no room for 32 MiB on a GameCube");
 #endif
    free(big);
+   big = NULL;
+   CHECK(posix_memalign(&big, 64, 100) == 0 && big
+         && !((uint32_t)big & 63)
+         && posix_memalign(&big, 24, 100) == EINVAL,
+         "libc: posix_memalign");
+   free(big);
+}
+
+static void test_args(int argc, char **argv)
+{
+   if (!argc)
+   {
+      CHECK(!argv || !argv[0], "args: none without a loader");
+      return;
+   }
+   CHECK(argc == 3 && !strcmp(argv[0], "sd:/k.dol")
+         && !strcmp(argv[1], "sd:/roms") && !strcmp(argv[2], "a b.nes")
+         && !argv[3], "args: the loader's command line");
 }
 
 int main(int argc, char **argv)
 {
-   (void)argc;
-   (void)argv;
    gk_debug_printf("kernel test: tb %u Hz, MEM1 %p-%p, MEM2 %p-%p",
          (unsigned)gk_tb_hz, gk_mem1.lo, gk_mem1.hi, gk_mem2.lo, gk_mem2.hi);
    test_priorities();
@@ -294,6 +311,7 @@ int main(int argc, char **argv)
    test_fp();
    test_handler_fp();
    test_libc();
+   test_args(argc, argv);
    gk_debug_printf("%s (%u failure(s))", failures ? "FAILED" : "PASSED",
          failures);
    return 0;

@@ -16,7 +16,6 @@
 
 extern uint8_t  __gk_image_end[];
 extern uint32_t __gk_stack_lo[];
-extern uint32_t gk_loader_argv;   /* crt0: argv block from the loader */
 
 void __crtmain(void);
 
@@ -34,10 +33,62 @@ struct gk_argv
    char **end;
 };
 
+extern struct gk_argv gk_loader_argv;  /* crt0: filled in by the loader */
+
 static struct gk_argv  no_args;
 struct gk_argv        *__system_argv = &no_args;
 
 #define GK_ARGV_MAGIC 0x5f617267
+#define ARGS_LEN      4096
+#define ARGS_MAX      32
+
+static struct gk_argv  args;
+static char            args_line[ARGS_LEN];
+static char           *args_argv[ARGS_MAX + 1];
+
+/* The loader passes NUL-separated strings somewhere the heap will
+ * reuse; keep a copy and split it into argv. */
+static void args_take(void)
+{
+   const struct gk_argv *a = &gk_loader_argv;
+   uint32_t              p = (uint32_t)a->cmdline;
+   int                 len = a->length;
+   int                   i = 0;
+   int                argc = 0;
+
+   if (a->magic != GK_ARGV_MAGIC || len <= 0)
+      return;
+   switch (p >> 28)
+   {
+      case 0x8: case 0x9: case 0xc: case 0xd:
+         break;
+      default:
+         return;
+   }
+   if (len > ARGS_LEN - 1)
+      len = ARGS_LEN - 1;
+   memcpy(args_line, a->cmdline, len);
+   args_line[len] = '\0';
+   while (i < len && argc < ARGS_MAX)
+   {
+      if (args_line[i])
+      {
+         args_argv[argc++] = args_line + i;
+         i += strlen(args_line + i);
+      }
+      i++;
+   }
+   if (!argc)
+      return;
+   args_argv[argc] = NULL;
+   args.magic      = GK_ARGV_MAGIC;
+   args.cmdline    = args_line;
+   args.length     = len;
+   args.argc       = argc;
+   args.argv       = args_argv;
+   args.end        = args_argv + argc;
+   __system_argv   = &args;
+}
 
 void gk_arena_init(void)
 {
@@ -99,18 +150,14 @@ void gk_debug_printf(const char *fmt, ...)
 }
 
 /* crtmain calls this before main(). */
-void SYS_PreMain(void)
-{
-   struct gk_argv *a = (struct gk_argv*)gk_loader_argv;
-   if (a && a->magic == GK_ARGV_MAGIC && a->argc > 0)
-      __system_argv = a;
-}
+void SYS_PreMain(void) { }
 
 void gk_boot(void)
 {
    uint32_t bus = *(volatile uint32_t*)LOMEM_BUS_CLOCK;
    struct gk_thread *m;
 
+   args_take();
    if (bus < 100000000u || bus > 300000000u)
       bus = GK_RVL ? 243000000u : 162000000u;
    gk_tb_hz = bus / 4;

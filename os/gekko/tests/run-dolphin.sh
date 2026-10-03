@@ -7,7 +7,11 @@
 # are copied to $DUMP if it is set.  $SDIMG is the Wii's SD card image.
 # The clock chip reads 1790000000 (2026-09-21 14:13:20) at the start,
 # a Wii has the emulated Wii Speak on USB, and its emulated remote 1 a
-# Nunchuk ($WIIEXT names another extension, e.g. Classic).
+# Nunchuk ($WIIEXT names another extension, e.g. Classic).  $ARGS,
+# arguments separated by '|', is passed the way loaders pass them.
+# $PADS names a file of pipe commands (e.g. "PRESS A", "RELEASE A")
+# fed to the GameCube pad on port 1, one line per $PADSTEP seconds.
+# $KEEP keeps Dolphin's user directory and log, and prints its path.
 # Exits 0 when the test says PASSED.
 ELF=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
 SECS=${2:-60}
@@ -15,9 +19,29 @@ MODE=$3
 DOLPHIN=${DOLPHIN:-dolphin-emu-nogui}
 USERDIR=$(mktemp -d)
 LOG="$USERDIR/out.log"
+if [ -n "$ARGS" ]; then
+   IFS='|'
+   # shellcheck disable=SC2086
+   python3 "$(dirname "$0")/elf-args.py" "$ELF" "$USERDIR/args.elf" $ARGS || exit 1
+   unset IFS
+   ELF="$USERDIR/args.elf"
+fi
 # A controller on port 1 that counts as plugged in with no input device.
 mkdir -p "$USERDIR/Config"
 printf '[GCPad1]\nOptions/Always Connected = True\n' > "$USERDIR/Config/GCPadNew.ini"
+if [ -n "$PADS" ]; then
+   mkdir -p "$USERDIR/Pipes"
+   mkfifo "$USERDIR/Pipes/pad"
+   {
+      printf 'Device = Pipe/0/pad\n'
+      for b in A B X Y Z START; do
+         printf 'Buttons/%s = `Button %s`\n' "$b" "$b"
+      done
+      for d in Up Down Left Right; do
+         printf 'D-Pad/%s = `Button D_%s`\n' "$d" "$(echo "$d" | tr a-z A-Z)"
+      done
+   } >> "$USERDIR/Config/GCPadNew.ini"
+fi
 printf '[Wiimote1]\nSource = 1\nExtension = %s\n' "${WIIEXT:-Nunchuk}" \
    > "$USERDIR/Config/WiimoteNew.ini"
 set -- -u "$USERDIR" -p headless \
@@ -46,6 +70,17 @@ else
 fi
 timeout "$SECS" "$DOLPHIN" "$@" -e "$ELF" > "$LOG" 2>&1 &
 PID=$!
+if [ -n "$PADS" ]; then
+   (
+      exec 3> "$USERDIR/Pipes/pad"
+      while IFS= read -r cmd; do
+         sleep "${PADSTEP:-1}"
+         printf '%s\n' "$cmd" >&3
+      done < "$PADS"
+      sleep "$SECS"
+   ) &
+   FEED=$!
+fi
 # Stop as soon as the test has reported its verdict.
 while kill -0 $PID 2>/dev/null; do
    if grep -aqE "OSREPORT_HLE.*(PASSED|FAILED) \(" "$LOG"; then
@@ -56,11 +91,12 @@ while kill -0 $PID 2>/dev/null; do
    sleep 1
 done
 wait $PID 2>/dev/null
+[ -n "$FEED" ] && kill $FEED 2>/dev/null
 sed -n 's/.*OSREPORT_HLE\]: [0-9a-f]*->[0-9a-f]*| //p' "$LOG"
 grep -aq "OSREPORT_HLE.*PASSED (" "$LOG"
 RC=$?
 if [ -n "$DUMP" ] && [ -d "$USERDIR/Dump/Frames" ]; then
    mkdir -p "$DUMP" && cp "$USERDIR"/Dump/Frames/*.png "$DUMP"/ 2>/dev/null
 fi
-rm -rf "$USERDIR"
+[ -n "$KEEP" ] && echo "$USERDIR" || rm -rf "$USERDIR"
 exit $RC

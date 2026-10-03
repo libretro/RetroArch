@@ -4,6 +4,9 @@
 # and run-dolphin.sh to execute them; sd_test wants an SD image:
 #   ./sd-image.sh make sd.img && SDIMG=sd.img ./run-dolphin.sh sd_test_rvl.elf
 #   ./sd-image.sh check sd.img
+# kernel_test also checks loader arguments when run with
+#   ARGS='sd:/k.dol|sd:/roms|a b.nes' ./run-dolphin.sh kernel_test_rvl.elf
+# content-test.sh runs RetroArch itself with a core and a test ROM.
 # The FAT code also runs on the host: make host (no devkitPPC needed).
 
 PLATFORM ?= rvl

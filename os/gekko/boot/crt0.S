@@ -13,12 +13,13 @@
 	.globl	_start
 _start:
 	b	gk_start
-	/* Loaders that pass arguments look for this tag and store the
-	 * address of their argv block in the word after it. */
+	/* Loaders that pass arguments look for this tag and fill in the
+	 * argument block after it: magic, command line, length, argc,
+	 * argv, end of argv. */
 	.long	0x5f617267
 	.globl	gk_loader_argv
 gk_loader_argv:
-	.long	0
+	.long	0,0,0,0,0,0
 
 gk_start:
 	bl	1f
