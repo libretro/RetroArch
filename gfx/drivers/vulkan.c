@@ -8563,6 +8563,105 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
    vk->hdr.ubo_values.paper_white_nits    = prev_paper_white_nits;
 }
 
+/* A change of size, or of HDR, that is waiting: the swapchain is made
+ * again for it, and what the driver has built on it follows
+ * (vulkan_check_swapchain(), from the caller).
+ *
+ * This ran once a frame, after the frame had been presented. A window
+ * resized between two frames is known of before the second is drawn -
+ * vulkan_alive() has been told - so that frame was drawn at the old
+ * size into a swapchain image the window no longer matched, its
+ * present came back "out of date", the swapchain was thrown away and
+ * made again for that, and only then was it made for the new size.
+ * vulkan_frame() now runs this first as well, before it draws: the
+ * frame after a resize is drawn at the new size, into the new
+ * swapchain, and presented. The run after the present stays, for a
+ * change that comes up while a frame is being drawn.
+ *
+ * RETROARCH_VULKAN_RESIZE_LATE=1 in the environment leaves it to the
+ * end of the frame alone, as it was. */
+static void vulkan_apply_pending_resize(vk_t *vk,
+      const video_frame_info_t *video_info)
+{
+#ifdef VULKAN_HDR_SWAPCHAIN
+   bool video_hdr_enable;
+#endif
+#ifdef VULKAN_HDR_SWAPCHAIN
+   video_hdr_enable = (video_driver_get_disp_flags() & VIDEO_FLAG_HDR_SUPPORT) && (video_info->hdr_mode > 0);
+   if (       (vk->flags & VK_FLAG_SHOULD_RESIZE)
+         || (((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) > 0)
+         != video_hdr_enable))
+#else
+   if (vk->flags & VK_FLAG_SHOULD_RESIZE)
+#endif /* VULKAN_HDR_SWAPCHAIN */
+   {
+#ifdef VULKAN_HDR_SWAPCHAIN
+      /* The off-screen buffers are not thrown away here any more:
+       * vulkan_hdr_buffers_init() below remakes them if the swapchain
+       * that comes out of this has another size, and only then. */
+      if (video_hdr_enable)
+         vk->context->flags |= VK_CTX_FLAG_HDR_ENABLE;
+      else
+         vk->context->flags &= ~VK_CTX_FLAG_HDR_ENABLE;
+
+#endif /* VULKAN_HDR_SWAPCHAIN */
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+      /* Force swapchain recreation if the HDR format mode changed.
+       * Without this, vulkan_create_swapchain's early-return check
+       * (same width/height/interval) would skip the recreation. */
+      {
+         bool need_16bit = (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) != 0;
+         bool have_16bit = vk->context->swapchain_format
+            == VK_FORMAT_R16G16B16A16_SFLOAT;
+         if (need_16bit != have_16bit)
+            vk->context->flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
+      }
+#endif
+
+      /* Same hazard as the HDR case above, for the SDR path: changing
+       * the requested bit depth does not change width/height/interval,
+       * so vulkan_create_swapchain would early-return and keep the old
+       * format.  Force recreation when the depth we want and the depth
+       * we have disagree. */
+      {
+         bool want_10bit        = (video_info->swapchain_bit_depth == 2);
+         bool have_10bit        =
+               (   vk->context->swapchain_format
+                     == VK_FORMAT_A2B10G10R10_UNORM_PACK32
+                || vk->context->swapchain_format
+                     == VK_FORMAT_A2R10G10B10_UNORM_PACK32);
+         bool sdr               =
+#ifdef VULKAN_HDR_SWAPCHAIN
+               !(vk->context->flags & VK_CTX_FLAG_HDR_ENABLE);
+#else
+               true;
+#endif
+         if (sdr && (want_10bit != have_10bit))
+            vk->context->flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
+      }
+
+      if (vk->ctx_driver->set_resize)
+         vk->ctx_driver->set_resize(vk->ctx_data, video_info->dims);
+#ifdef VULKAN_HDR_SWAPCHAIN
+      if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+      {
+         /* Create intermediary buffer to render menu/overlay content to.
+          * In HDR10 mode the game also renders through this buffer;
+          * in HDR16 (scRGB) mode only the menu/overlay uses it so
+          * that the copy pass can linearize sRGB content. */
+         /* At the swapchain's size, which set_resize has just
+          * settled, and not the frontend's: see
+          * vulkan_hdr_buffers_init(). The readback image is made with
+          * it, in bgra8. */
+         vulkan_hdr_buffers_init(vk, video_info->dims);
+      }
+#endif /* VULKAN_HDR_SWAPCHAIN */
+      vk->flags &= ~VK_FLAG_SHOULD_RESIZE;
+   }
+
+}
+
 static bool vulkan_frame(void *data, const void *frame,
       unsigned dims,
       uint64_t frame_count,
@@ -8607,7 +8706,6 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef VULKAN_HDR_SWAPCHAIN
    bool end_pass;
    bool end_main_pass;
-   bool video_hdr_enable;
 #endif
    struct vk_per_frame *chain;
    struct vk_image *backbuffer;
@@ -8617,6 +8715,19 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef VULKAN_HDR_SWAPCHAIN
    bool use_offscreen_buffer                     = false;
 #endif
+
+   /* A resize known of before this frame is drawn is done now, so
+    * that the frame is drawn at the new size. */
+   {
+      static int resize_late = -1;
+      if (resize_late < 0)
+      {
+         const char *env = getenv("RETROARCH_VULKAN_RESIZE_LATE");
+         resize_late     = (env && env[0] == '1') ? 1 : 0;
+      }
+      if (!resize_late)
+         vulkan_apply_pending_resize(vk, video_info);
+   }
 
    /* The context may recreate its swapchain while acquiring the next
     * image. Rebuild driver-owned framebuffers before recording commands
@@ -9594,81 +9705,9 @@ static bool vulkan_frame(void *data, const void *frame,
          vk->ctx_driver->update_window_title(vk->ctx_data);
    }
 
-   /* Handle spurious swapchain invalidations as soon as we can,
-    * i.e. right after swap buffers. */
-#ifdef VULKAN_HDR_SWAPCHAIN
-   video_hdr_enable = (video_driver_get_disp_flags() & VIDEO_FLAG_HDR_SUPPORT) && (video_info->hdr_mode > 0);
-   if (       (vk->flags & VK_FLAG_SHOULD_RESIZE)
-         || (((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) > 0)
-         != video_hdr_enable))
-#else
-   if (vk->flags & VK_FLAG_SHOULD_RESIZE)
-#endif /* VULKAN_HDR_SWAPCHAIN */
-   {
-#ifdef VULKAN_HDR_SWAPCHAIN
-      /* The off-screen buffers are not thrown away here any more:
-       * vulkan_hdr_buffers_init() below remakes them if the swapchain
-       * that comes out of this has another size, and only then. */
-      if (video_hdr_enable)
-         vk->context->flags |= VK_CTX_FLAG_HDR_ENABLE;
-      else
-         vk->context->flags &= ~VK_CTX_FLAG_HDR_ENABLE;
-
-#endif /* VULKAN_HDR_SWAPCHAIN */
-
-#ifdef VULKAN_HDR_SWAPCHAIN
-      /* Force swapchain recreation if the HDR format mode changed.
-       * Without this, vulkan_create_swapchain's early-return check
-       * (same width/height/interval) would skip the recreation. */
-      {
-         bool need_16bit = (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) != 0;
-         bool have_16bit = vk->context->swapchain_format
-            == VK_FORMAT_R16G16B16A16_SFLOAT;
-         if (need_16bit != have_16bit)
-            vk->context->flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
-      }
-#endif
-
-      /* Same hazard as the HDR case above, for the SDR path: changing
-       * the requested bit depth does not change width/height/interval,
-       * so vulkan_create_swapchain would early-return and keep the old
-       * format.  Force recreation when the depth we want and the depth
-       * we have disagree. */
-      {
-         bool want_10bit        = (video_info->swapchain_bit_depth == 2);
-         bool have_10bit        =
-               (   vk->context->swapchain_format
-                     == VK_FORMAT_A2B10G10R10_UNORM_PACK32
-                || vk->context->swapchain_format
-                     == VK_FORMAT_A2R10G10B10_UNORM_PACK32);
-         bool sdr               =
-#ifdef VULKAN_HDR_SWAPCHAIN
-               !(vk->context->flags & VK_CTX_FLAG_HDR_ENABLE);
-#else
-               true;
-#endif
-         if (sdr && (want_10bit != have_10bit))
-            vk->context->flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
-      }
-
-      if (vk->ctx_driver->set_resize)
-         vk->ctx_driver->set_resize(vk->ctx_data, video_info->dims);
-#ifdef VULKAN_HDR_SWAPCHAIN
-      if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
-      {
-         /* Create intermediary buffer to render menu/overlay content to.
-          * In HDR10 mode the game also renders through this buffer;
-          * in HDR16 (scRGB) mode only the menu/overlay uses it so
-          * that the copy pass can linearize sRGB content. */
-         /* At the swapchain's size, which set_resize has just
-          * settled, and not the frontend's: see
-          * vulkan_hdr_buffers_init(). The readback image is made with
-          * it, in bgra8. */
-         vulkan_hdr_buffers_init(vk, video_info->dims);
-      }
-#endif /* VULKAN_HDR_SWAPCHAIN */
-      vk->flags &= ~VK_FLAG_SHOULD_RESIZE;
-   }
+   /* A resize that came up while this frame was drawn; see
+    * vulkan_apply_pending_resize(). */
+   vulkan_apply_pending_resize(vk, video_info);
 
    if (vk->context->flags & VK_CTX_FLAG_INVALID_SWAPCHAIN)
       vulkan_check_swapchain(vk);
