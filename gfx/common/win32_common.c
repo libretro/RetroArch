@@ -405,12 +405,76 @@ static BOOL CALLBACK win32_monitor_enum_proc(HMONITOR hMonitor,
 }
 
 #ifndef _XBOX
+/* The foreground across a driver restart.
+ *
+ * A restart of the video driver - content loaded or closed, a setting
+ * changed - destroys the window and makes another. When the window
+ * goes, Windows hands the foreground to the next window down, which
+ * is some other program's: the terminal RetroArch was started from,
+ * say. The new window then asks for the foreground and is refused,
+ * because Windows only lets the foreground process, or the one that
+ * got the last keyboard or mouse input, take it - and with the content
+ * chosen on a controller, that last input was the Enter typed in the
+ * terminal. So the new window came up behind the terminal.
+ *
+ * If the window being destroyed is the foreground window, that is
+ * noted, and the process gives itself leave to take the foreground
+ * (AllowSetForegroundWindow(), which a process may call for itself
+ * while it still has the foreground). The window made next asks for
+ * the foreground as it always did; if it is still refused - the leave
+ * is withdrawn by any keyboard or mouse input in between - it joins
+ * the input queue of whichever thread has the foreground for the one
+ * call, which is the way the refusal is got round. Only for a window
+ * that replaces one that had the foreground a moment before: a window
+ * that did not have it does not take it. */
+static DWORD win32_had_foreground_at;
+
+static void win32_foreground_note(HWND hwnd)
+{
+   typedef BOOL (WINAPI *allow_t)(DWORD);
+   HMODULE user32;
+   allow_t allow;
+
+   win32_had_foreground_at = 0;
+   if (!hwnd || GetForegroundWindow() != hwnd)
+      return;
+   win32_had_foreground_at = GetTickCount() | 1;
+   /* by name: not in every user32 this is built for */
+   if (     (user32 = GetModuleHandleA("user32.dll"))
+         && (allow = (allow_t)GetProcAddress(user32,
+               "AllowSetForegroundWindow")))
+      allow(GetCurrentProcessId());
+}
+
+static void win32_foreground_take_back(HWND hwnd)
+{
+   HWND  fg;
+   DWORD at = win32_had_foreground_at;
+
+   win32_had_foreground_at = 0;
+   if (!at || !hwnd || GetTickCount() - at > 15000)
+      return;
+   if (SetForegroundWindow(hwnd) || GetForegroundWindow() == hwnd)
+      return;
+   if ((fg = GetForegroundWindow()))
+   {
+      DWORD fg_tid = GetWindowThreadProcessId(fg, NULL);
+      DWORD tid    = GetCurrentThreadId();
+      if (fg_tid && fg_tid != tid && AttachThreadInput(tid, fg_tid, TRUE))
+      {
+         SetForegroundWindow(hwnd);
+         AttachThreadInput(tid, fg_tid, FALSE);
+      }
+   }
+}
+
 void win32_monitor_from_window(void)
 {
    ui_window_t *window       = NULL;
 
    win32_monitor_last        =
       MonitorFromWindow(main_window.hwnd, MONITOR_DEFAULTTONEAREST);
+   win32_foreground_note(main_window.hwnd);
 
    window = (ui_window_t*)ui_companion_driver_get_window_ptr();
 
@@ -2070,6 +2134,9 @@ void win32_set_window(unsigned *width, unsigned *height,
       if (window)
          window->set_focused(&main_window);
    }
+
+   /* the window this one replaces had the foreground */
+   win32_foreground_take_back(main_window.hwnd);
 
    win32_show_cursor(NULL, !fullscreen);
 }
