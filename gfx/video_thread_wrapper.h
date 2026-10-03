@@ -193,7 +193,7 @@ typedef struct thread_packet
 /* A texture upload the main thread does not wait for. Queued nodes
  * are owned by the video thread from post to completion; completed
  * nodes wait in the out list until the main thread delivers them from
- * video_thread_async_poll(). Both lists are guarded by thr->lock. */
+ * video_thread_async_poll(). */
 typedef void (*video_thread_async_done_t)(void *user, uintptr_t handle);
 typedef void (*video_thread_async_release_t)(void *img);
 
@@ -472,35 +472,42 @@ typedef struct thread_video
    retro_atomic_int_t display_pacing_pub;
    retro_atomic_int_t content_period_us;
 
-   /* 'lock' covers the synchronous command channel below - cmd_data,
-    * the reply and poster slots, waiter_call - and the asynchronous
-    * upload lists. Nothing on the frame path takes it. */
-   slock_t *lock;
-   /* cond_reply: the command reply (pkt->type == reply_cmd). One
-    * command is outstanding at a time (cmd_data is a single slot), so
-    * one waiter, woken with scond_signal(). Same-thread nesting is
-    * counted rather than rejected because the cocoa trampoline drained
-    * by video_thread_pump_wait() can re-enter the wrapper on the waiting
-    * thread; a second distinct thread is the case that breaks, and
-    * cond_reply_waiters checks for it in debug builds. cond_user below
-    * is what keeps a second thread out. */
-   scond_t *cond_reply;
-   /* cond_user: the poster slot. User-side commands come from more than
-    * one thread -- the main thread uploads an achievement badge while a
+   /* The synchronous command channel takes no lock. A poster holds
+    * the poster slot from send to reply; the mailbox below is its
+    * alone while it does, and the video thread's once send_cmd says a
+    * command is in it.
+    *
+    * reply_ec: what the poster sleeps on for its reply (reply_cmd
+    * turning to its command) or a waiter call, and what the video
+    * thread sleeps on for that call's done. user_ec: what a thread
+    * waiting for the poster slot sleeps on. On the main thread on
+    * Apple, either wait comes up every millisecond to pump the cocoa
+    * trampoline, so work the video thread marshals back runs.
+    *
+    * The poster slot: user-side commands come from more than one
+    * thread -- the main thread uploads an achievement badge while a
     * task thread takes the screenshot the same unlock asked for -- and
-    * two of them in the single slot at once means one reply satisfies
-    * both waiters, and the video thread then runs a packet whose payload
-    * points into a stack frame that has already returned. So a poster
-    * holds the slot from send to reply; the wait pumps the cocoa
-    * trampoline like the reply wait does, because the holder's command
-    * may be blocked on the main thread. user_owner/user_depth only keep
-    * an owner from deadlocking on its own slot; a nested post is not
-    * serviceable (see video_thread_user_acquire()). The video thread
-    * never takes the slot: a wrapper entry reached from driver->frame()
-    * runs inline via inline_reply before the acquire. */
-   scond_t *cond_user;
-   uintptr_t user_owner;
+    * two of them in the single mailbox at once means one reply
+    * satisfies both waiters, and the video thread then runs a packet
+    * whose payload points into a stack frame that has already
+    * returned. user_busy is taken with a compare-exchange; user_owner
+    * (a thread id) and user_depth only keep an owner from deadlocking
+    * on its own slot, which the cocoa trampoline can re-enter on the
+    * waiting thread; a nested post is not serviceable (see
+    * video_thread_user_acquire()). The video thread never takes the
+    * slot: a wrapper entry reached from driver->frame() runs inline
+    * via inline_reply before the acquire. */
+   retro_eventcount_t reply_ec;
+   retro_eventcount_t user_ec;
+   retro_atomic_size_t user_owner;
+   retro_atomic_int_t user_busy;
+   /* The owner's alone. */
    unsigned user_depth;
+#ifndef RETRO_ATOMIC_HAS_PTR
+   /* Without pointer atomics the asynchronous upload lists are pushed
+    * and taken under this lock. */
+   slock_t *lock;
+#endif
    /* Widget state lock depth user_acquire() released on the owner's
     * behalf, retaken when the slot is released */
    unsigned user_widgets_depth;
@@ -580,7 +587,9 @@ typedef struct thread_video
    unsigned miss_count;
    unsigned alpha_mods;
 
-   struct video_viewport read_vp; /* Last viewport reported to caller. */
+   /* The last viewport reported to a caller, VIDEO_THREAD_VP_* words:
+    * what CMD_READ_VIEWPORT compares the driver's own against. */
+   retro_atomic_int_t read_vp[VIDEO_THREAD_VP_SLOTS];
 
    /* Content scale, published at the end of each frame. The viewport
     * maths that produces it runs on the video thread, so
@@ -625,14 +634,15 @@ typedef struct thread_video
 
    /* Commands that want nothing back: queued here and run by the video
     * thread on its next pass, so the caller does not wait for a round
-    * trip. Under thr->lock, as send_cmd is. A full queue falls back to
-    * the synchronous send, so nothing is ever dropped. */
+    * trip. A full queue falls back to the synchronous send, so nothing
+    * is ever dropped. */
    video_driver_t video_thread;
 
-   /* Set under 'lock' with cmd_data, published with a release store so
-    * the video thread's wait can test it without the lock */
+   /* The poster writes cmd_data, then publishes the command here with
+    * a release store; the video thread answers into cmd_data, stores
+    * the command in reply_cmd and clears this. */
    retro_atomic_int_t send_cmd;
-   enum thread_cmd reply_cmd;
+   retro_atomic_int_t reply_cmd;
 
    retro_atomic_int_t alpha_update;
 
@@ -763,12 +773,12 @@ typedef struct thread_video
     * from whichever thread unloads, drained by the push. */
    mpsc_stack_t tex_retire;
 
-   /* Which thread is currently blocked on cond_reply, and how deep,
-    * both guarded by lock; see the note on cond_reply. Maintained
-    * unconditionally so the struct layout does not depend on the build
-    * type; only asserted on in debug builds. */
-   uintptr_t cond_reply_waiter;
-   unsigned cond_reply_waiters;
+   /* Which thread is waiting for a reply, and how deep: the poster
+    * slot's owner's alone. Maintained unconditionally so the struct
+    * layout does not depend on the build type; only asserted on in
+    * debug builds. */
+   uintptr_t reply_waiter;
+   unsigned reply_waiters;
    /* A call the video thread needs run on the thread that is waiting
     * for its reply - the core's thread, which holds the core's GL
     * context. Posted from the video thread while a synchronous command
@@ -776,15 +786,15 @@ typedef struct thread_video
     * video thread waits for done. See video_thread_call_on_waiter(). */
    struct
    {
+      /* Written by the video thread before it raises pending. */
       void (*fn)(void *data);
       void *data;
-      scond_t *cond;
       /* The number of commands sent and not yet answered, each with a
        * thread that will wait for the reply and can service a call
        * there; without one, the caller runs it itself. */
-      unsigned waiters;
-      bool pending;
-      bool done;
+      retro_atomic_int_t waiters;
+      retro_atomic_int_t pending;
+      retro_atomic_int_t done;
    } waiter_call;
 
    /* Published by the video thread after each frame and read by the
@@ -922,8 +932,8 @@ void video_thread_async_poll(void);
  * that an in-flight frame might reference.  No-op on non-threaded
  * video or when called from the video thread. */
 /* The context's last answer to "have you anything to present to",
- * polled on the video thread after each frame and published under
- * thr->lock. False only when the wrapper is active and the context
+ * polled on the video thread after each frame and published in
+ * win_flags. False only when the wrapper is active and the context
  * said so; true in every other case, including when there is no
  * wrapper, so callers need no threading test of their own. */
 bool video_thread_presentable(void);

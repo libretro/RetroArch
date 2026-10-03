@@ -1148,20 +1148,13 @@ void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata)
    RARCH_RELEASE(job);
 }
 
-/* One condvar-wait iteration for a caller that may be the main thread and
- * must let the worker's cocoa_main_thread_sync() blocks drain.  On the main
- * thread: a bounded timed wait, pumping the private trampoline runloop mode
- * on timeout so those marshaled blocks run (otherwise the worker blocks
- * waiting for the main thread while the main thread blocks on the reply ->
- * deadlock).  Off the main thread: returns false so the caller performs a
- * plain blocking scond_wait().  Pumping ONLY the private mode keeps draw
- * observers, timers and input sources from running reentrantly under the
- * wait.  'lock' is held on entry and on return.  Shares the trampoline mode
- * string with cocoa_main_thread_sync() above -- single source of truth. */
-/* The pump alone, for a caller on the main thread that waits on
- * something other than a condvar - a ring fence - and must let the
- * worker's marshalled blocks run between tries. Off the main thread,
- * nothing. */
+/* For a caller on the main thread that waits for the video thread and
+ * must let the worker's cocoa_main_thread_sync() blocks drain between
+ * tries (otherwise the worker blocks waiting for the main thread while
+ * the main thread blocks on it). Pumping ONLY the private trampoline
+ * mode keeps draw observers, timers and input sources from running
+ * reentrantly under the wait; the mode string is cocoa_main_thread_sync()'s.
+ * Off the main thread, nothing. */
 void cocoa_main_thread_pump(void);
 void cocoa_main_thread_pump(void)
 {
@@ -1170,22 +1163,6 @@ void cocoa_main_thread_pump(void)
    CFRunLoopRunInMode(
          CFSTR("com.libretro.RetroArch.MainThreadTrampoline"),
          0.001, false);
-}
-
-bool cocoa_main_thread_cond_wait_pump(scond_t *cond, slock_t *lock);
-bool cocoa_main_thread_cond_wait_pump(scond_t *cond, slock_t *lock)
-{
-   if (!sthread_is_main_thread())
-      return false;
-   if (!scond_wait_timeout(cond, lock, 1000))
-   {
-      slock_unlock(lock);
-      CFRunLoopRunInMode(
-            CFSTR("com.libretro.RetroArch.MainThreadTrampoline"),
-            0.001, false);
-      slock_lock(lock);
-   }
-   return true;
 }
 
 #if TARGET_OS_OSX
