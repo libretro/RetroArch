@@ -354,6 +354,7 @@ static int task_http_iterate_transfer(retro_task_t *task)
 {
    http_handle_t *http  = (http_handle_t*)task->state;
    size_t pos  = 0, tot = 0;
+   bool update_done     = false;
 
    /* Driven from a task thread there is nothing to pace this loop, so
     * it used to sleep a millisecond a pass whether or not the peer had
@@ -364,7 +365,21 @@ static int task_http_iterate_transfer(retro_task_t *task)
    if (task_queue_is_threaded())
       net_http_wait(http->handle, HTTP_TRANSFER_WAIT_MS);
 
-   if (!net_http_update(http->handle, &pos, &tot))
+   /* The socket is drained a read per work item of the shared I/O
+    * window, so a transfer moves as much a frame as its share of the
+    * window allows, on any link and any cipher speed */
+   {
+      bool done;
+      nbio_budget_t budget;
+
+      task_nbio_slice_open(&budget);
+      done = net_http_update_budget(http->handle, &pos, &tot,
+            task_nbio_slice_within_budget, &budget);
+      task_nbio_slice_close(&budget);
+      update_done = done;
+   }
+
+   if (!update_done)
    {
       /* A resumed attempt reports its own slice; show the whole file. */
       if (http->resumes && http->expected_total)

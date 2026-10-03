@@ -23,6 +23,7 @@ LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 SOURCES := \
 	http_transport_failure_test.c \
 	$(CORE_DIR)/tasks/task_http.c \
+	$(CORE_DIR)/tasks/task_nbio_slice.c \
 	$(LIBRETRO_COMM_DIR)/queues/task_queue.c \
 	$(LIBRETRO_COMM_DIR)/net/net_http.c \
 	$(LIBRETRO_COMM_DIR)/net/net_compat.c \

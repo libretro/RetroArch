@@ -3135,6 +3135,14 @@ bool net_http_wait(struct http_t *state, int timeout_ms)
 
 bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 {
+   return net_http_update_budget(state, progress, total, NULL, NULL);
+}
+
+bool net_http_update_budget(struct http_t *state,
+      size_t* progress, size_t* total,
+      bool (*within_budget)(void *budget, size_t avail, size_t len),
+      void *budget)
+{
    struct response *response;
    ssize_t _len = 0;
 
@@ -3207,7 +3215,14 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
     *     dribbling one byte at a time cannot spin us.
     *
     * Exceeding either bound just returns false and we resume on the
-    * next tick, which is the pre-existing behaviour. */
+    * next tick, which is the pre-existing behaviour.
+    *
+    * With @within_budget, the caller's time window replaces the byte
+    * budget: each read, together with the TLS decryption behind it,
+    * is one work item, the window decides how many a call gets, and
+    * each read is still clamped to NET_HTTP_DRAIN_BUDGET so that no
+    * single item can outgrow a frame.  A clock bounds the stall on
+    * any link and any cipher speed; a byte count could only guess. */
    {
       size_t drained = 0;
       int    iters   = 0;
@@ -3215,6 +3230,9 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
       for (;;)
       {
          size_t window;
+
+         if (within_budget && !within_budget(budget, 0, 0))
+            break;
 
          /* Keep a floor under the receive window.  For the
           * doubling-growth body types (T_CHUNK, T_FULL) the window is
@@ -3283,11 +3301,20 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
           * budget is configured below the floor, which would
           * otherwise break before reading anything and stall the
           * transfer outright. */
-         if (     drained
-               && NET_HTTP_DRAIN_BUDGET - drained < NET_HTTP_MIN_RECV_WINDOW)
-            break;
-         if (window > NET_HTTP_DRAIN_BUDGET - drained)
-            window = NET_HTTP_DRAIN_BUDGET - drained;
+         if (within_budget)
+         {
+            /* One item: a read of at most the byte budget */
+            if (window > NET_HTTP_DRAIN_BUDGET)
+               window = NET_HTTP_DRAIN_BUDGET;
+         }
+         else
+         {
+            if (     drained
+                  && NET_HTTP_DRAIN_BUDGET - drained < NET_HTTP_MIN_RECV_WINDOW)
+               break;
+            if (window > NET_HTTP_DRAIN_BUDGET - drained)
+               window = NET_HTTP_DRAIN_BUDGET - drained;
+         }
 
 #ifdef HAVE_SSL
          if (state->ssl && state->conn->ssl_ctx)
@@ -3353,7 +3380,7 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
          }
 
          drained += (size_t)_len;
-         if (     drained >= NET_HTTP_DRAIN_BUDGET
+         if (     (!within_budget && drained >= NET_HTTP_DRAIN_BUDGET)
                || ++iters >= NET_HTTP_DRAIN_MAX_ITERS)
             break;
       }

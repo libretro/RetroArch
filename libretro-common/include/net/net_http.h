@@ -164,6 +164,21 @@ int net_http_fd(struct http_t *state);
 bool net_http_update(struct http_t *state, size_t* progress, size_t* total);
 
 /**
+ * net_http_update_budget:
+ *
+ * net_http_update(), with the socket drained while
+ * @within_budget(@budget, 0, 0) allows - one read, of at most
+ * 256 KiB, per work item - instead of up to a fixed 256 KiB per
+ * call.  For a caller that paces its I/O with a time window (the
+ * frontend's shared per-frame I/O window).  A NULL @within_budget is
+ * net_http_update().
+ **/
+bool net_http_update_budget(struct http_t *state,
+      size_t* progress, size_t* total,
+      bool (*within_budget)(void *budget, size_t avail, size_t len),
+      void *budget);
+
+/**
  * net_http_wait:
  *
  * Waits until the transfer can make progress again, or until
