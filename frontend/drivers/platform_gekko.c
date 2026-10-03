@@ -18,7 +18,10 @@
  *
  * Wii: the front SD slot is "sd:", the first USB drive "usb:".
  * GameCube: an SD adapter in serial port 2 is "sd:", in the memory
- * card slots "carda:" and "cardb:". */
+ * card slots "carda:" and "cardb:".
+ *
+ * Switching cores runs the other core's program, with the content as
+ * the directory and file name loaders pass. */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -26,6 +29,7 @@
 #include <unistd.h>
 
 #include <gekko/disk.h>
+#include <gekko/exec.h>
 #ifdef HW_RVL
 #include <gekko/usb.h>
 #endif
@@ -36,6 +40,7 @@
 #ifndef IS_SALAMANDER
 #include <lists/file_list.h>
 #endif
+#include <streams/file_stream.h>
 #include <string/stdstring.h>
 
 #include "../frontend_driver.h"
@@ -93,10 +98,48 @@ static void frontend_gekko_init(void *data)
 #endif
 }
 
+#ifndef IS_SALAMANDER
+static enum frontend_fork fork_mode = FRONTEND_FORK_NONE;
+static void              *exec_image;
+static int64_t            exec_len;
+static int                exec_argc;
+static char               exec_argv[3][PATH_MAX_LENGTH];
+
+/* The next program, read while the volumes are still mounted. */
+static void exec_prepare(void)
+{
+   const char *core = path_get(RARCH_PATH_CORE);
+   if (fork_mode == FRONTEND_FORK_NONE || string_is_empty(core))
+      return;
+   if (strchr(core, ':'))
+      strlcpy(exec_argv[0], core, sizeof(exec_argv[0]));
+   else
+      fill_pathname_join(exec_argv[0], g_defaults.dirs[DEFAULT_DIR_CORE],
+            core, sizeof(exec_argv[0]));
+   exec_argc = 1;
+   if (     fork_mode == FRONTEND_FORK_CORE_WITH_ARGS
+         && !path_is_empty(RARCH_PATH_CONTENT))
+   {
+      const char *content = path_get(RARCH_PATH_CONTENT);
+      fill_pathname_basedir(exec_argv[1], content, sizeof(exec_argv[1]));
+      strlcpy(exec_argv[2], path_basename(content), sizeof(exec_argv[2]));
+      exec_argc = 3;
+   }
+   if (!filestream_read_file(exec_argv[0], &exec_image, &exec_len))
+   {
+      RARCH_ERR("[Gekko] Could not read \"%s\".\n", exec_argv[0]);
+      exec_image = NULL;
+   }
+}
+#endif
+
 static void frontend_gekko_deinit(void *data)
 {
    unsigned i;
    (void)data;
+#ifndef IS_SALAMANDER
+   exec_prepare();
+#endif
    for (i = 0; i < VOL_COUNT; i++)
       if (volumes[i].mounted)
       {
@@ -240,6 +283,40 @@ static void frontend_gekko_get_env(int *argc, char *argv[],
 #endif
 }
 
+#ifndef IS_SALAMANDER
+static void frontend_gekko_exitspawn(char *s, size_t len, char *args)
+{
+   const char *argv[3];
+   int i, ret;
+   (void)s;
+   (void)len;
+   (void)args;
+   if (!exec_image)
+      return;
+   for (i = 0; i < exec_argc; i++)
+      argv[i] = exec_argv[i];
+   ret = gk_exec(exec_image, (size_t)exec_len, exec_argc, argv);
+   RARCH_ERR("[Gekko] Could not run \"%s\" (%d).\n", exec_argv[0], ret);
+   free(exec_image);
+   exec_image = NULL;
+}
+
+static bool frontend_gekko_set_fork(enum frontend_fork mode)
+{
+   switch (mode)
+   {
+      case FRONTEND_FORK_CORE:
+      case FRONTEND_FORK_CORE_WITH_ARGS:
+      case FRONTEND_FORK_RESTART:
+         fork_mode = mode;
+         return true;
+      default:
+         break;
+   }
+   return false;
+}
+#endif
+
 static void frontend_gekko_process_args(int *argc, char *argv[])
 {
 #ifndef IS_SALAMANDER
@@ -293,10 +370,18 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gekko_get_env,          /* get_env */
    frontend_gekko_init,             /* init */
    frontend_gekko_deinit,           /* deinit */
+#ifndef IS_SALAMANDER
+   frontend_gekko_exitspawn,        /* exitspawn */
+#else
    NULL,                            /* exitspawn */
+#endif
    frontend_gekko_process_args,     /* process_args */
    NULL,                            /* exec */
+#ifndef IS_SALAMANDER
+   frontend_gekko_set_fork,         /* set_fork */
+#else
    NULL,                            /* set_fork */
+#endif
    frontend_gekko_shutdown,         /* shutdown */
    NULL,                            /* get_name */
    NULL,                            /* get_os */

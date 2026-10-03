@@ -16,6 +16,7 @@
 #include <gekko/thread.h>
 
 #include "fat.h"
+#include "../kernel/kernel.h"
 
 #define MAX_VOLUMES 8
 #define PATH_BUF    1024
@@ -28,6 +29,19 @@ struct volume
 };
 
 static struct volume *volumes[MAX_VOLUMES];
+
+/* Whatever is still mounted reaches the disk before the program
+ * leaves. */
+static void sync_all(void)
+{
+   unsigned i;
+   for (i = 0; i < MAX_VOLUMES; i++)
+      if (volumes[i])
+         fat_sync(volumes[i]->vol);
+}
+
+static struct gk_exit_hook sync_hook = { sync_all, NULL };
+static int                 sync_hooked;
 
 /* ---- what fat.c needs from the platform ---- */
 
@@ -339,6 +353,11 @@ int gk_fat_mount(const char *name, gk_blockdev_t *dev)
    {
       free(v);
       return ret;
+   }
+   if (!sync_hooked)
+   {
+      sync_hooked = 1;
+      gk_exit_hook_add(&sync_hook);
    }
    strcpy(v->name, name);
    v->ops.name          = v->name;

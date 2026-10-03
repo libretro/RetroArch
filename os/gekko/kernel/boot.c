@@ -90,13 +90,14 @@ static void args_take(void)
    __system_argv   = &args;
 }
 
-void gk_arena_init(void)
+void gk_mem_bounds(uint32_t *mem1_end, uint32_t *mem2_lo, uint32_t *mem2_hi)
 {
    uint32_t mem1 = *(volatile uint32_t*)LOMEM_MEM1_SIZE;
    if (mem1 < 0x01800000u || mem1 > 0x04000000u)
       mem1 = 0x01800000u;
-   gk_mem1.lo = (uint8_t*)(((uint32_t)__gk_image_end + 31) & ~31u);
-   gk_mem1.hi = (uint8_t*)(0x80000000u + mem1);
+   *mem1_end = 0x80000000u + mem1;
+   *mem2_lo  = 0;
+   *mem2_hi  = 0;
 #if GK_RVL
    {
       uint32_t lo = *(volatile uint32_t*)LOMEM_MEM2_LO;
@@ -106,10 +107,20 @@ void gk_arena_init(void)
          lo = 0x90000800u;
          hi = 0x933e0000u;
       }
-      gk_mem2.lo = (uint8_t*)((lo + 31) & ~31u);
-      gk_mem2.hi = (uint8_t*)(hi & ~31u);
+      *mem2_lo = (lo + 31) & ~31u;
+      *mem2_hi = hi & ~31u;
    }
 #endif
+}
+
+void gk_arena_init(void)
+{
+   uint32_t mem1_end, mem2_lo, mem2_hi;
+   gk_mem_bounds(&mem1_end, &mem2_lo, &mem2_hi);
+   gk_mem1.lo = (uint8_t*)(((uint32_t)__gk_image_end + 31) & ~31);
+   gk_mem1.hi = (uint8_t*)mem1_end;
+   gk_mem2.lo = (uint8_t*)mem2_lo;
+   gk_mem2.hi = (uint8_t*)mem2_hi;
 }
 
 void *gk_arena_take_top(gk_arena_t *arena, size_t size, size_t align)

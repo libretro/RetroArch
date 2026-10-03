@@ -116,5 +116,20 @@ void gk_irq_block_current(volatile uint32_t *addr);
 void gk_set_wall_clock(uint64_t unix_seconds);
 void gk_rtc_sync(void);
 
+/* Run when the program leaves, by exit() or gk_exec(), last added
+ * first; each hook is added once. */
+struct gk_exit_hook
+{
+   void (*fn)(void);
+   struct gk_exit_hook *next;
+};
+void gk_exit_hook_add(struct gk_exit_hook *h);
+/* The hooks, then the system's own: interrupts still on. */
+void gk_shutdown(void);
+/* Interrupts off, every source masked. */
+void gk_quiesce(void);
+/* The banks as the loader left them, before any arena use. */
+void gk_mem_bounds(uint32_t *mem1_end, uint32_t *mem2_lo, uint32_t *mem2_hi);
+
 #endif
 #endif

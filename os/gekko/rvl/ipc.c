@@ -58,7 +58,8 @@ struct ios_req
    struct ios_req    *next;
    volatile uint32_t  done;
    uint32_t           n_out;
-   uint32_t           pad[3];
+   uint32_t           busy;         /* IOS has it */
+   uint32_t           pad[2];
 };
 
 typedef char assert_req_lines[(sizeof(struct ios_req) & 31) == 0 ? 1 : -1];
@@ -82,6 +83,7 @@ static void submit(struct ios_req *r)
 {
    gk_dcache_flush(r, offsetof(struct ios_req, out));
    r->next = NULL;
+   r->busy = 1;
    if (mailbox_busy)
    {
       if (queue_tail)
@@ -147,8 +149,17 @@ static void ipc_irq(enum gk_irq irq, void *data)
       uint32_t msg = GK_REG32(HW_IPC_ARMMSG);
       GK_REG32(HW_IPC_PPCCTRL) = CTRL_IRQ | CTRL_Y1;
       GK_REG32(HW_PPCIRQFLAG)  = IRQ_IPC;
+      /* Replies to the program before this one are not ours. */
       if (msg)
-         complete((struct ios_req*)GK_CACHED(msg));
+      {
+         uint32_t off = (uint32_t)GK_CACHED(msg) - (uint32_t)pool;
+         uint32_t n   = off / sizeof(pool[0]);
+         if (off < sizeof(pool) && !(off % sizeof(pool[0])) && pool[n].busy)
+         {
+            pool[n].busy = 0;
+            complete(&pool[n]);
+         }
+      }
       GK_REG32(HW_IPC_PPCCTRL) = CTRL_IRQ | CTRL_X2;
    }
    if (!(ctrl & (CTRL_Y1 | CTRL_Y2)))

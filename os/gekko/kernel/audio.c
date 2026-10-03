@@ -4,6 +4,8 @@
 #include <gekko/audio.h>
 #include <gekko/irq.h>
 
+#include "kernel.h"
+
 #define DSP_CSR      0xcc00500au
 #define DMA_START_HI 0xcc005030u
 #define DMA_START_LO 0xcc005032u
@@ -26,6 +28,8 @@
 
 static gk_audio_fn audio_fn;
 static void       *audio_data;
+static struct gk_exit_hook audio_hook = { gk_audio_stop, NULL };
+static int                 audio_hooked;
 
 static void csr_write(uint16_t set, uint16_t clear, uint16_t ack)
 {
@@ -52,6 +56,11 @@ void gk_audio_init(unsigned rate)
    csr_write(CSR_AID_MASK, 0, CSR_AID);
    gk_irq_set(GK_IRQ_DSP, aid_irq, NULL);
    gk_irq_restore(level);
+   if (!audio_hooked)
+   {
+      audio_hooked = 1;
+      gk_exit_hook_add(&audio_hook);
+   }
 }
 
 void gk_audio_set_cb(gk_audio_fn fn, void *data)

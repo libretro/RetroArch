@@ -8,7 +8,9 @@
 # The clock chip reads 1790000000 (2026-09-21 14:13:20) at the start,
 # a Wii has the emulated Wii Speak on USB, and its emulated remote 1 a
 # Nunchuk ($WIIEXT names another extension, e.g. Classic).  $ARGS,
-# arguments separated by '|', is passed the way loaders pass them.
+# arguments separated by '|', is passed the way loaders pass them;
+# $ATTACH names a file loaded with it, whose address and length follow
+# them.
 # $PADS names a file of pipe commands (e.g. "PRESS A", "RELEASE A")
 # fed to the GameCube pad on port 1, one line per $PADSTEP seconds.
 # $KEEP keeps Dolphin's user directory and log, and prints its path.
@@ -20,9 +22,15 @@ DOLPHIN=${DOLPHIN:-dolphin-emu-nogui}
 USERDIR=$(mktemp -d)
 LOG="$USERDIR/out.log"
 if [ -n "$ARGS" ]; then
+   if [ -n "$ATTACH" ]; then
+      set -- --attach "$ATTACH"
+   else
+      set --
+   fi
    IFS='|'
    # shellcheck disable=SC2086
-   python3 "$(dirname "$0")/elf-args.py" "$ELF" "$USERDIR/args.elf" $ARGS || exit 1
+   python3 "$(dirname "$0")/elf-args.py" "$ELF" "$USERDIR/args.elf" "$@" \
+      $ARGS || exit 1
    unset IFS
    ELF="$USERDIR/args.elf"
 fi

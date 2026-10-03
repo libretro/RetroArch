@@ -18,6 +18,7 @@
 
 #include "bt.h"
 #include "rvl.h"
+#include "../kernel/kernel.h"
 
 #define USB_CTRL 0
 #define USB_BULK 1
@@ -127,6 +128,8 @@ static uint8_t          *ctl_par, *ctl_buf, *out_par, *out_buf;
 static volatile int32_t  ev_result, acl_result;
 static volatile uint32_t ev_ready, acl_ready;
 static volatile uint32_t wake_seq;
+static volatile uint32_t ev_out, acl_out;   /* transfers IOS holds */
+static volatile uint32_t stopping;
 
 static struct link       links[BT_MAX_LINKS];
 static struct key        keys[MAX_KEYS];
@@ -152,6 +155,7 @@ static void ev_done(int32_t result, void *data)
 {
    (void)data;
    ev_result = result;
+   ev_out    = 0;
    ev_ready  = 1;
    wake_seq++;
    gk_futex_wake(&wake_seq, 1);
@@ -161,6 +165,7 @@ static void acl_done(int32_t result, void *data)
 {
    (void)data;
    acl_result = result;
+   acl_out    = 0;
    acl_ready  = 1;
    wake_seq++;
    gk_futex_wake(&wake_seq, 1);
@@ -186,14 +191,18 @@ static void arm_event(void)
 {
    gk_ios_vec_t vec[3];
    data_vecs(vec, ev_par, EP_EVENT, ev_buf, EVENT_BUF);
-   gk_ios_ioctlv_async(fd, USB_INTR, 2, 1, vec, ev_done, NULL);
+   ev_out = 1;
+   if (gk_ios_ioctlv_async(fd, USB_INTR, 2, 1, vec, ev_done, NULL))
+      ev_out = 0;
 }
 
 static void arm_acl(void)
 {
    gk_ios_vec_t vec[3];
    data_vecs(vec, acl_par, EP_ACL_IN, acl_buf, ACL_BUF);
-   gk_ios_ioctlv_async(fd, USB_BULK, 2, 1, vec, acl_done, NULL);
+   acl_out = 1;
+   if (gk_ios_ioctlv_async(fd, USB_BULK, 2, 1, vec, acl_done, NULL))
+      acl_out = 0;
 }
 
 /* An HCI command: a class request to the device, the packet as data.
@@ -599,6 +608,7 @@ static void *bt_thread(void *arg)
    static const uint8_t all_keys[7] = { 0, 0, 0, 0, 0, 0, 1 };
    static const uint8_t page_to[2]  = { 0x00, 0x20 };
    static const uint8_t page_scan[1] = { 0x02 };
+   unsigned i;
    (void)arg;
 
    command(HCI_RESET, NULL, 0);
@@ -610,7 +620,7 @@ static void *bt_thread(void *arg)
    arm_event();
    arm_acl();
 
-   for (;;)
+   while (!stopping)
    {
       uint32_t seq = wake_seq;
       if (ev_ready)
@@ -641,8 +651,24 @@ static void *bt_thread(void *arg)
       if (wake_seq == seq)
          gk_futex_wait(&wake_seq, seq, GK_US_TO_TICKS(10000));
    }
+
+   /* IOS answers the transfers it holds when the device closes, or
+    * drops them; give it a moment either way. */
+   gk_ios_close(fd);
+   fd = -1;
+   for (i = 0; i < 10 && (ev_out || acl_out); i++)
+      gk_sleep_us(10000);
    return NULL;
 }
+
+static void bt_stop(void)
+{
+   stopping = 1;
+   bt_wake();
+   gk_thread_join(thread);
+}
+
+static struct gk_exit_hook stop_hook = { bt_stop, NULL };
 
 int bt_start(const bt_hid_ops *hid)
 {
@@ -677,6 +703,8 @@ int bt_start(const bt_hid_ops *hid)
       fd  = -1;
       ret = -ENOMEM;
    }
+   else
+      gk_exit_hook_add(&stop_hook);
 out:
    gk_mutex_unlock(&start_lock);
    return ret;

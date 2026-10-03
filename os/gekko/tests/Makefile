@@ -6,6 +6,10 @@
 #   ./sd-image.sh check sd.img
 # kernel_test also checks loader arguments when run with
 #   ARGS='sd:/k.dol|sd:/roms|a b.nes' ./run-dolphin.sh kernel_test_rvl.elf
+# exec_test runs a copy of itself, attached as an ELF or a DOL:
+#   ARGS='sd:/exec_test.elf|first' ATTACH=exec_test_rvl.elf \
+#      ./run-dolphin.sh exec_test_rvl.elf
+#   ./elf2dol.py exec_test_rvl.elf exec_test.dol (then ATTACH=exec_test.dol)
 # content-test.sh runs RetroArch itself with a core and a test ROM.
 # The FAT code also runs on the host: make host (no devkitPPC needed).
 
@@ -31,7 +35,7 @@ GEKKO_PLATFORM := $(PLATFORM)
 include $(GK)/gekko.mk
 KERNEL := $(GEKKO_SOURCES) $(ROOT)/gfx/bitmapfont.c
 
-TESTS := kernel_test vi_test gx_test io_test exi_test
+TESTS := kernel_test vi_test gx_test io_test exi_test exec_test
 ifeq ($(PLATFORM),rvl)
    TESTS  += ios_test sd_test usb_test wiimote_test
 endif

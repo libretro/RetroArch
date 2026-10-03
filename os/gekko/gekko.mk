@@ -7,6 +7,7 @@ GEKKO_SRC := boot/crt0.S cpu/exception.S cpu/cache.S \
              kernel/boot.c kernel/exception.c kernel/irq.c kernel/sched.c \
              kernel/newlib.c kernel/power.c kernel/vi.c kernel/console.c \
              kernel/gx.c kernel/audio.c kernel/pad.c kernel/exi.c \
+             kernel/exec.c kernel/exec_image.c cpu/exec.S \
              disk/sdspi.c disk/sdgecko.c disk/usbmsc.c \
              fs/fat.c fs/fat_devoptab.c
 

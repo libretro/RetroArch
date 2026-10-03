@@ -14,6 +14,7 @@
 #define LOADER_STUB       0x80001800u
 #define LOADER_STUB_MAGIC 0x80001804u
 
+static struct gk_exit_hook *exit_hooks;
 static gk_button_fn on_power_fn;
 static gk_button_fn on_reset_fn;
 static void        *button_data;
@@ -58,7 +59,29 @@ void gk_power_set_callbacks(gk_button_fn on_power, gk_button_fn on_reset,
 #endif
 }
 
-static void quiesce(void)
+void gk_exit_hook_add(struct gk_exit_hook *h)
+{
+   uint32_t level = gk_irq_disable();
+   h->next    = exit_hooks;
+   exit_hooks = h;
+   gk_irq_restore(level);
+}
+
+void gk_shutdown(void)
+{
+   struct gk_exit_hook *h;
+   uint32_t level = gk_irq_disable();
+   h          = exit_hooks;
+   exit_hooks = NULL;
+   gk_irq_restore(level);
+   for (; h; h = h->next)
+      h->fn();
+#if GK_RVL
+   gk_stm_watch(0);
+#endif
+}
+
+void gk_quiesce(void)
 {
    gk_irq_disable();
    GK_REG32(PI_INTMR) = 0;
@@ -69,7 +92,7 @@ void gk_power_reset(void)
 #if GK_RVL
    gk_stm_reset();
 #endif
-   quiesce();
+   gk_quiesce();
    GK_REG32(PI_RESET) = 0;
    for (;;)
       ;
@@ -92,20 +115,16 @@ static int loader_resident(void)
 static void enter_loader(void)
 {
    void (*stub)(void) = (void (*)(void))LOADER_STUB;
-   quiesce();
+   gk_quiesce();
    gk_icache_invalidate((void*)LOADER_STUB, 0x1800);
    stub();
 }
 
 void gk_exit_to_loader(void)
 {
+   gk_shutdown();
    if (loader_resident())
-   {
-#if GK_RVL
-      gk_stm_watch(0);
-#endif
       enter_loader();
-   }
 #if GK_RVL
    gk_es_launch_system_menu();
 #endif
@@ -117,7 +136,7 @@ void gk_exit_after_crash(void)
 {
    if (loader_resident())
       enter_loader();
-   quiesce();
+   gk_quiesce();
    GK_REG32(PI_RESET) = 0;
    for (;;)
       ;
