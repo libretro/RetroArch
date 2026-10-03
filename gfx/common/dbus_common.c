@@ -19,29 +19,47 @@
 
 #ifdef RARCH_HAVE_DBUS_SCREENSAVER
 
+#include <retro_atomic.h>
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 
 #include "../../verbosity.h"
 
 #define DBUS_SS_NAME   "org.freedesktop.ScreenSaver"
 #define DBUS_SS_PATH   "/org/freedesktop/ScreenSaver"
 
-/* The worker, one for the process, started on first use. The main
- * thread writes the request - open, want and a generation that moves on
- * every open - under the lock, which the worker holds only to read the
- * request or publish an answer, never across a D-Bus call. Opening and
- * closing the connection happen on the worker, one after the other. */
+/* The request, one word: whether a connection is wanted open, whether
+ * the screensaver is wanted inhibited, the connection's generation -
+ * moved on by every open - and a sequence moved on by every change, so
+ * the same open and want asked twice is still two requests. */
+#define DBUS_SS_OPEN       (1u << 0)
+#define DBUS_SS_WANT       (1u << 1)
+#define DBUS_SS_GEN_SHIFT  2
+#define DBUS_SS_GEN_MASK   (0x3ffu << DBUS_SS_GEN_SHIFT)
+#define DBUS_SS_SEQ_SHIFT  12
+#define DBUS_SS_SEQ_ONE    (1u << DBUS_SS_SEQ_SHIFT)
+/* The answer: the request it answers, low two bits replaced by the
+ * state. One the request has since moved past reads as pending. */
+#define DBUS_SS_TAG(req)   ((req) & ~3u)
+
+/* The worker, one for the process, started on first use. Callers store
+ * a new request and wake it; it works through the latest request it
+ * finds, never holding anything across a D-Bus call, and stores the
+ * answer tagged with that request. Opening and closing the connection
+ * happen on the worker, one after the other. */
 typedef struct dbus_ss_ctl
 {
-   slock_t *lock;
-   scond_t *cond;
-   unsigned gen;
-   int      open;
-   int      want;
-   int      state;
+   retro_eventcount_t ec;
+   retro_atomic_int_t req;
+   retro_atomic_int_t answer;
 } dbus_ss_ctl_t;
 
-static dbus_ss_ctl_t *dbus_ss_ctl;
+static retro_atomic_ptr_t dbus_ss_ctl_ptr;
+
+static dbus_ss_ctl_t *dbus_ss_ctl_get(void)
+{
+   return (dbus_ss_ctl_t*)retro_atomic_load_acquire_ptr(&dbus_ss_ctl_ptr);
+}
 
 /* Inhibit, and on success the cookie it returned. */
 static bool dbus_ss_inhibit(const rdbus_t *rd, rdbus_connection_t *conn,
@@ -96,15 +114,10 @@ static void dbus_ss_uninhibit(const rdbus_t *rd, rdbus_connection_t *conn,
    rd->message_unref(msg);
 }
 
-/* Publishes an answer, unless the main thread has asked something new
- * since it was worked out. */
-static void dbus_ss_publish(dbus_ss_ctl_t *ctl, unsigned gen, int want,
-      int state)
+static void dbus_ss_publish(dbus_ss_ctl_t *ctl, unsigned req, int state)
 {
-   slock_lock(ctl->lock);
-   if (ctl->gen == gen && ctl->want == want)
-      ctl->state = state;
-   slock_unlock(ctl->lock);
+   retro_atomic_store_release_int(&ctl->answer,
+         (int)(DBUS_SS_TAG(req) | (unsigned)state));
 }
 
 static void dbus_ss_worker(void *data)
@@ -114,30 +127,38 @@ static void dbus_ss_worker(void *data)
    const rdbus_t *rd        = NULL;
    rdbus_connection_t *conn = NULL;
    uint32_t cookie          = 0;
-   unsigned done_gen        = 0;
-   int done_open            = 0;
-   int done_want            = 0;
+   unsigned done            = 0;
 
    sthread_setname("ra-dbus-ss");
 
    for (;;)
    {
-      unsigned gen;
-      int open;
-      int want;
+      unsigned req;
+      bool open, want, new_gen;
 
-      slock_lock(ctl->lock);
-      while (     ctl->gen  == done_gen
-               && ctl->open == done_open
-               && ctl->want == done_want)
-         scond_wait(ctl->cond, ctl->lock);
-      gen  = ctl->gen;
-      open = ctl->open;
-      want = ctl->want;
-      slock_unlock(ctl->lock);
+      /* the next request */
+      for (;;)
+      {
+         int key;
+         if ((req = (unsigned)retro_atomic_load_acquire_int(&ctl->req))
+               != done)
+            break;
+         key = retro_eventcount_prepare_wait(&ctl->ec);
+         if ((req = (unsigned)retro_atomic_load_acquire_int(&ctl->req))
+               != done)
+         {
+            retro_eventcount_cancel_wait(&ctl->ec);
+            break;
+         }
+         retro_eventcount_commit_wait(&ctl->ec, key);
+      }
+
+      open    = (req & DBUS_SS_OPEN) != 0;
+      want    = (req & DBUS_SS_WANT) != 0;
+      new_gen = (req & DBUS_SS_GEN_MASK) != (done & DBUS_SS_GEN_MASK);
 
       /* A new generation, or closing: let go of the old connection. */
-      if (conn && (!open || gen != done_gen))
+      if (conn && (!open || new_gen))
       {
          if (cookie)
             dbus_ss_uninhibit(rd, conn, cookie);
@@ -147,7 +168,7 @@ static void dbus_ss_worker(void *data)
          conn   = NULL;
       }
 
-      if (open && gen != done_gen)
+      if (open && new_gen)
       {
          if (!rd && !(rd = rdbus_get()))
             RARCH_LOG("[DBus] libdbus is not available; the screensaver is not suspended through D-Bus.\n");
@@ -163,9 +184,7 @@ static void dbus_ss_worker(void *data)
          }
       }
 
-      done_gen  = gen;
-      done_open = open;
-      done_want = want;
+      done = req;
 
       if (!open)
          continue;
@@ -173,16 +192,16 @@ static void dbus_ss_worker(void *data)
       if (want)
       {
          if (!conn)
-            dbus_ss_publish(ctl, gen, want, DBUS_SCREENSAVER_FAILED);
+            dbus_ss_publish(ctl, req, DBUS_SCREENSAVER_FAILED);
          else if (cookie || dbus_ss_inhibit(rd, conn, &cookie))
          {
             RARCH_LOG("[DBus] Suspended screensaver via DBus.\n");
-            dbus_ss_publish(ctl, gen, want, DBUS_SCREENSAVER_INHIBITED);
+            dbus_ss_publish(ctl, req, DBUS_SCREENSAVER_INHIBITED);
          }
          else
          {
             RARCH_LOG("[DBus] The session bus has no screensaver to suspend.\n");
-            dbus_ss_publish(ctl, gen, want, DBUS_SCREENSAVER_FAILED);
+            dbus_ss_publish(ctl, req, DBUS_SCREENSAVER_FAILED);
          }
       }
       else if (cookie)
@@ -193,92 +212,115 @@ static void dbus_ss_worker(void *data)
    }
 }
 
+/* Moves the request on with @update, which returns the request it
+ * makes of the current one, or the current one for no change. Returns
+ * the request in force afterwards. Any thread may ask. */
+static unsigned dbus_ss_request(dbus_ss_ctl_t *ctl,
+      unsigned (*update)(unsigned cur, int arg), int arg)
+{
+   for (;;)
+   {
+      unsigned cur  = (unsigned)retro_atomic_load_acquire_int(&ctl->req);
+      unsigned next = update(cur, arg);
+      if (next == cur)
+         return cur;
+      next = (next & (DBUS_SS_SEQ_ONE - 1)) + (cur & ~(DBUS_SS_SEQ_ONE - 1))
+           + DBUS_SS_SEQ_ONE;
+      if (retro_atomic_cas_int(&ctl->req, (int)cur, (int)next))
+      {
+         retro_eventcount_notify(&ctl->ec);
+         return next;
+      }
+   }
+}
+
+static unsigned dbus_ss_update_open(unsigned cur, int arg)
+{
+   (void)arg;
+   if (cur & DBUS_SS_OPEN)
+      return cur;
+   return DBUS_SS_OPEN
+      | (((cur & DBUS_SS_GEN_MASK) + (1u << DBUS_SS_GEN_SHIFT))
+            & DBUS_SS_GEN_MASK);
+}
+
+static unsigned dbus_ss_update_close(unsigned cur, int arg)
+{
+   (void)arg;
+   if (!(cur & DBUS_SS_OPEN))
+      return cur;
+   return cur & DBUS_SS_GEN_MASK;
+}
+
+static unsigned dbus_ss_update_want(unsigned cur, int want)
+{
+   if (     !(cur & DBUS_SS_OPEN)
+         || ((cur & DBUS_SS_WANT) != 0) == (want != 0))
+      return cur;
+   return (cur & (DBUS_SS_OPEN | DBUS_SS_GEN_MASK))
+      | (want ? DBUS_SS_WANT : 0);
+}
+
 void dbus_ensure_connection(void)
 {
-   dbus_ss_ctl_t *ctl = dbus_ss_ctl;
+   dbus_ss_ctl_t *ctl = dbus_ss_ctl_get();
 
    if (!ctl)
    {
       sthread_t *thread;
       if (!(ctl = (dbus_ss_ctl_t*)calloc(1, sizeof(*ctl))))
          return;
-      ctl->lock = slock_new();
-      ctl->cond = scond_new();
-      if (     !ctl->lock || !ctl->cond
-            || !(thread = sthread_create(dbus_ss_worker, ctl)))
+      if (!retro_eventcount_init(&ctl->ec))
       {
-         if (ctl->cond)
-            scond_free(ctl->cond);
-         if (ctl->lock)
-            slock_free(ctl->lock);
+         free(ctl);
+         return;
+      }
+      if (!(thread = sthread_create(dbus_ss_worker, ctl)))
+      {
+         retro_eventcount_free(&ctl->ec);
          free(ctl);
          return;
       }
       /* Lives as long as the process; the block stays with it. */
       sthread_detach(thread);
-      dbus_ss_ctl = ctl;
+      retro_atomic_store_release_ptr(&dbus_ss_ctl_ptr, ctl);
    }
 
-   slock_lock(ctl->lock);
-   if (!ctl->open)
-   {
-      ctl->gen++;
-      ctl->open  = 1;
-      ctl->want  = 0;
-      ctl->state = DBUS_SCREENSAVER_PENDING;
-      scond_signal(ctl->cond);
-   }
-   slock_unlock(ctl->lock);
+   dbus_ss_request(ctl, dbus_ss_update_open, 0);
 }
 
 void dbus_close_connection(void)
 {
-   dbus_ss_ctl_t *ctl = dbus_ss_ctl;
+   dbus_ss_ctl_t *ctl = dbus_ss_ctl_get();
 
-   if (!ctl)
-      return;
-   slock_lock(ctl->lock);
-   ctl->open = 0;
-   ctl->want = 0;
-   scond_signal(ctl->cond);
-   slock_unlock(ctl->lock);
+   if (ctl)
+      dbus_ss_request(ctl, dbus_ss_update_close, 0);
 }
 
 bool dbus_suspend_screensaver(bool enable)
 {
-   bool asked         = false;
-   dbus_ss_ctl_t *ctl = dbus_ss_ctl;
+   dbus_ss_ctl_t *ctl = dbus_ss_ctl_get();
 
    if (!ctl)
       return false;
-   slock_lock(ctl->lock);
-   if (ctl->open)
-   {
-      asked = true;
-      if (ctl->want != (int)enable)
-      {
-         ctl->want = enable ? 1 : 0;
-         if (enable)
-            ctl->state = DBUS_SCREENSAVER_PENDING;
-         scond_signal(ctl->cond);
-      }
-   }
-   slock_unlock(ctl->lock);
-   return asked;
+   return (dbus_ss_request(ctl, dbus_ss_update_want, enable ? 1 : 0)
+         & DBUS_SS_OPEN) != 0;
 }
 
 enum dbus_screensaver_state dbus_screensaver_state(void)
 {
-   int state          = DBUS_SCREENSAVER_FAILED;
-   dbus_ss_ctl_t *ctl = dbus_ss_ctl;
+   unsigned req, answer;
+   dbus_ss_ctl_t *ctl = dbus_ss_ctl_get();
 
    if (!ctl)
       return DBUS_SCREENSAVER_FAILED;
-   slock_lock(ctl->lock);
-   if (ctl->open)
-      state = ctl->state;
-   slock_unlock(ctl->lock);
-   return (enum dbus_screensaver_state)state;
+   req = (unsigned)retro_atomic_load_acquire_int(&ctl->req);
+   if (!(req & DBUS_SS_OPEN))
+      return DBUS_SCREENSAVER_FAILED;
+   answer = (unsigned)retro_atomic_load_acquire_int(&ctl->answer);
+   if (DBUS_SS_TAG(answer) != DBUS_SS_TAG(req))
+      return DBUS_SCREENSAVER_PENDING;
+   return (enum dbus_screensaver_state)(answer & 3u);
 }
 
 #endif

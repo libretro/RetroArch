@@ -864,6 +864,25 @@ jobs:
                 XORG="sudo Xorg" timeout 300 ./run.sh)
           echo "[pass] mutter_displayconfig_test"
 
+      - name: Build and run dbus_screensaver_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/gfx/dbus_screensaver
+        run: |
+          set -eu
+          # gfx/common/dbus_common.c's screensaver inhibit against a
+          # private session bus and a fake org.freedesktop.ScreenSaver:
+          # each request answered as itself and never with an older
+          # one's answer, three threads toggling leave what the last one
+          # asked, close and reopen release the old inhibit, and no
+          # service answers FAILED.
+          sudo apt-get install -y -qq libdbus-1-dev dbus > /dev/null
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 300 ./run.sh
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./run.sh
+          echo "[pass] dbus_screensaver_test"
+
       - name: D3D11 hardware ring under threaded video (mingw + Wine, headless)
         shell: bash
         run: |
