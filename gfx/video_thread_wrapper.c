@@ -20,6 +20,9 @@
 #include <math.h>
 
 #include <compat/strl.h>
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#include <retro_timers.h>
+#endif
 #include <features/features_cpu.h>
 #include <memalign.h>
 #include <gfx/video_frame.h>
@@ -2771,9 +2774,21 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
          target = now + content * (drained ? 2 : 1);
       while (now < target)
       {
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+         /* A timed wait on the ring is a kernel timeout, which on
+          * Windows ends on the system timer's tick - 15.6 ms unless
+          * something in the process has lowered it, as some GPU
+          * drivers do and others do not. The hold overshot to that
+          * tick: the loop ran at under the display's rate, frames were
+          * dropped and the audio starved. A ring wake only re-reads
+          * the clock, so the hold sleeps on the high resolution timer
+          * instead. */
+         retro_sleep_us((unsigned)(target - now));
+#else
          /* A ring wake in between only re-reads the clock */
          video_thread_ring_sleep(thr, video_thread_ring_load(thr),
                target - now);
+#endif
          now = cpu_features_get_time_usec();
       }
    }
