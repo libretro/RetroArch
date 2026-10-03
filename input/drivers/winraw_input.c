@@ -192,6 +192,9 @@ enum winraw_input_flags
    WRAW_INP_FLG_KB_PAUSE               = (1 << 2)
 };
 
+/* keyboards told apart, at most; more than these are not listed */
+#define WINRAW_KEYBOARDS_MAX MAX_INPUT_DEVICES
+
 typedef struct
 {
    double view_abs_ratio_x;
@@ -233,6 +236,19 @@ typedef struct
    /* a handle that was still not a listed mouse after a refresh */
    HANDLE mouse_not_listed;
    DWORD  mouse_refresh_tick;
+   /* The keyboards, as raw input lists them: their handles, in the
+    * order they are numbered for the menu (winraw_keyboards_list()).
+    * All of them feed the one key state above; this is which there
+    * are. */
+   HANDLE   kbs[WINRAW_KEYBOARDS_MAX];
+   unsigned kb_cnt;
+   /* A key came from a keyboard that is not in the list: the list is
+    * made again at the end of the poll. */
+   bool     kb_unknown_seen;
+   HANDLE   kb_unknown;
+   /* a handle that was still not a listed keyboard after that */
+   HANDLE   kb_not_listed;
+   DWORD    kb_refresh_tick;
    /* Key events of the reports read so far, handed on at the end of
     * the poll. One thread's. */
    unsigned kev_n;
@@ -328,6 +344,7 @@ typedef struct
 {
    winraw_mouse_name_entry_t *entries;
    unsigned count;
+   bool keyboards; /* the names are keyboards', not mice's */
 } winraw_mouse_names_handle_t;
 
 static void winraw_mouse_names_free(retro_task_t *task)
@@ -402,6 +419,19 @@ static void winraw_mouse_names_cb(retro_task_t *task,
 
    /* input_config_set_mouse_display_name() writes global input
     * config state, so it must run here on the main thread. */
+   if (h->keyboards)
+   {
+      /* the list as it is now, whole: a keyboard that has gone is
+       * not left in it */
+      input_config_clear_keyboard_display_names();
+      for (i = 0; i < h->count; ++i)
+      {
+         input_config_set_keyboard_display_name(i, h->entries[i].name);
+         RARCH_LOG("[WinRaw] Found keyboard #%u: \"%s\".\n",
+               i + 1, h->entries[i].name);
+      }
+      return;
+   }
    for (i = 0; i < h->count; ++i)
    {
       input_config_set_mouse_display_name(i, h->entries[i].name);
@@ -410,15 +440,22 @@ static void winraw_mouse_names_cb(retro_task_t *task,
    }
 }
 
-static void winraw_push_mouse_names_task(
-      winraw_mouse_t *mice, unsigned mouse_cnt)
+/* The names of mice (from @mice) or, with @mice NULL, of keyboards
+ * (from @kbs), looked up off the main thread and set on it. */
+static void winraw_push_names_task(
+      winraw_mouse_t *mice, const HANDLE *kbs, unsigned mouse_cnt)
 {
    unsigned i;
    retro_task_t *task             = NULL;
    winraw_mouse_names_handle_t *h = NULL;
 
    if (!mouse_cnt)
+   {
+      /* no keyboards is a list too: what was listed goes */
+      if (!mice)
+         input_config_clear_keyboard_display_names();
       return;
+   }
 
    if (!(h = (winraw_mouse_names_handle_t*)calloc(1, sizeof(*h))))
       return;
@@ -428,9 +465,10 @@ static void winraw_push_mouse_names_task(
       free(h);
       return;
    }
-   h->count = mouse_cnt;
+   h->count     = mouse_cnt;
+   h->keyboards = (mice == NULL);
    for (i = 0; i < mouse_cnt; ++i)
-      h->entries[i].hnd = mice[i].hnd;
+      h->entries[i].hnd = mice ? mice[i].hnd : kbs[i];
 
    if (!(task = task_init()))
    {
@@ -504,7 +542,7 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
 
    *mice      = mice_r;
 
-   winraw_push_mouse_names_task(mice_r, mouse_cnt_r);
+   winraw_push_names_task(mice_r, NULL, mouse_cnt_r);
    free(devs);
 
    return true;
@@ -515,6 +553,82 @@ error:
    *mice      = NULL;
    *mouse_cnt = 0;
    return false;
+}
+
+/* Set when Windows has said devices came or went (the hotplug timer,
+ * on the window's thread); the next poll makes the keyboard list
+ * again. That is how a keyboard that was unplugged leaves the list:
+ * it sends no last key to notice it by. */
+static retro_atomic_int_t winraw_devices_changed;
+
+/* Which keyboards there are: their raw input handles, oldest first as
+ * the mice are, and their names asked for (they reach the menu's
+ * Information > Input Information when the task is done). The driver
+ * reads all of them as one keyboard; this is so that they can be
+ * seen, and told apart later.
+ *
+ * What raw input calls a keyboard is anything that can send keys. One
+ * keyboard on the desk is often two or three of these - its media
+ * keys, its extra-key interface - and a mouse or a headset with
+ * buttons that send keys is one too. They are listed as raw input has
+ * them. */
+static void winraw_keyboards_list(winraw_input_t *wr)
+{
+   UINT i;
+   unsigned n               = 0, total = 0;
+   RAWINPUTDEVICELIST *devs = NULL;
+   UINT dev_cnt             = 0;
+
+   wr->kb_cnt = 0;
+
+   if (GetRawInputDeviceList(NULL, &dev_cnt,
+            sizeof(RAWINPUTDEVICELIST)) == (UINT)-1 || !dev_cnt)
+      goto done;
+   if (!(devs = (RAWINPUTDEVICELIST*)malloc(
+         dev_cnt * sizeof(RAWINPUTDEVICELIST))))
+      goto done;
+   if ((dev_cnt = GetRawInputDeviceList(devs,
+         &dev_cnt, sizeof(RAWINPUTDEVICELIST))) == (UINT)-1)
+      goto done;
+
+   for (i = 0; i < dev_cnt; i++)
+      if (devs[i].dwType == RIM_TYPEKEYBOARD)
+         total++;
+   if (total > WINRAW_KEYBOARDS_MAX)
+      total = WINRAW_KEYBOARDS_MAX;
+   /* the list has the newest first */
+   for (i = 0; i < dev_cnt && n < total; i++)
+      if (devs[i].dwType == RIM_TYPEKEYBOARD)
+         wr->kbs[total - ++n] = devs[i].hDevice;
+   wr->kb_cnt = total;
+
+done:
+   free(devs);
+   winraw_push_names_task(NULL, wr->kbs, wr->kb_cnt);
+}
+
+/* A key came from a keyboard the list does not have - one plugged in
+ * since the list was made: the list is made again, at most once a
+ * second. Called at the end of the poll. */
+static void winraw_keyboards_refresh(winraw_input_t *wr)
+{
+   unsigned i;
+   bool found = false;
+   DWORD now  = GetTickCount();
+
+   wr->kb_unknown_seen = false;
+   if (wr->kb_refresh_tick && now - wr->kb_refresh_tick < 1000)
+      return;
+   wr->kb_refresh_tick = now ? now : 1;
+
+   winraw_keyboards_list(wr);
+   for (i = 0; i < wr->kb_cnt; i++)
+      if (wr->kbs[i] == wr->kb_unknown)
+         found = true;
+   /* not a listed keyboard even now: not asked about again */
+   if (!found)
+      wr->kb_not_listed = wr->kb_unknown;
+   RARCH_LOG("[WinRaw] Keyboard list made again: %u.\n", wr->kb_cnt);
 }
 
 static int16_t winraw_lightgun_aiming_state(winraw_input_t *wr,
@@ -950,6 +1064,23 @@ static bool winraw_take(winraw_input_t *wr, DWORD type, HANDLE device,
 
             mod = win32_get_keyboard_mods();
 
+            /* From a keyboard the list does not have: one plugged in
+             * since the list was made. (No handle at all is a key
+             * something injected, not a device.) */
+            if (     wr->poll_drain
+                  && device
+                  && device != wr->kb_not_listed)
+            {
+               for (i = 0; i < wr->kb_cnt; i++)
+                  if (wr->kbs[i] == device)
+                     break;
+               if (i == wr->kb_cnt && wr->kb_cnt < WINRAW_KEYBOARDS_MAX)
+               {
+                  wr->kb_unknown      = device;
+                  wr->kb_unknown_seen = true;
+               }
+            }
+
             wr->kb_keys[mcode] = down;
             if (wr->poll_drain)
             {
@@ -1339,6 +1470,7 @@ static void *winraw_init(const char *joypad_driver)
       wr->poll_drain = true;
       if (!winraw_init_devices(&g_mice, &wr->mouse_cnt))
          goto error;
+      winraw_keyboards_list(wr);
       if (wr->mouse_cnt)
       {
          if (!(wr->mice = (winraw_mouse_t*)
@@ -1353,6 +1485,7 @@ static void *winraw_init(const char *joypad_driver)
       goto error;
    if (!winraw_init_devices(&g_mice, &wr->mouse_cnt))
       goto error;
+   winraw_keyboards_list(wr);
 
    if (wr->mouse_cnt)
    {
@@ -1611,10 +1744,23 @@ static void winraw_poll(void *data)
       wr->mice[i].flags   = g_mice[i].flags;
    }
 
+   /* devices came or went: the keyboards are listed again */
+   if (     retro_atomic_load_relaxed_int(&winraw_devices_changed)
+         && retro_atomic_exchange_int(&winraw_devices_changed, 0))
+   {
+      winraw_keyboards_list(wr);
+      wr->kb_refresh_tick = GetTickCount();
+      wr->kb_unknown_seen = false;
+      wr->kb_not_listed   = NULL;
+      RARCH_LOG("[WinRaw] Keyboard list made again: %u.\n", wr->kb_cnt);
+   }
+
    if (wr->poll_drain)
    {
       if (wr->mouse_unknown_seen)
          winraw_mice_refresh(wr);
+      if (wr->kb_unknown_seen)
+         winraw_keyboards_refresh(wr);
       if (wr->window)
       {
          bool nowinkey = config_get_ptr()->bools.input_nowinkey_enable;
@@ -1953,6 +2099,9 @@ bool winraw_handle_message(UINT msg,
          if (win32_hotplug_due())
          {
             settings_t *settings = config_get_ptr();
+            /* and the input driver's own list of keyboards, at its
+             * next poll */
+            retro_atomic_store_release_int(&winraw_devices_changed, 1);
             /* Name the joypad driver to reinitialise. Passing NULL
              * here makes input_joypad_init_driver() skip the branch
              * that honours the configured driver - it is guarded by

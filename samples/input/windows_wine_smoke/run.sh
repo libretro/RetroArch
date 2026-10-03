@@ -224,7 +224,7 @@ failures=0
 # passes through
 scenario() {
    local name=$1 threaded=$2 want_bulk=$3 want_joy=$4 nomsg=$5
-   local log="$work/$name.log" try rc video bulk joy msg ok b_down b_up j_seq stale win off byname deferred
+   local log="$work/$name.log" try rc video bulk joy msg ok b_down b_up j_seq stale win off byname deferred kbd
    local want_video=${WANT_VIDEO:-3}
    if [ -n "${ONLY:-}" ]; then
       case "$name" in
@@ -264,6 +264,12 @@ scenario() {
       [ "$byname" = 0 ] || ok=no
       # the joypad restart the plugged-in controller asks for: left to
       # the poll when the window procedure is on another thread
+      # the raw input driver lists its keyboards, by name, for the
+      # menu's Input Information; Wine has one
+      kbd=$(count "$log" 'WinRaw\] Found keyboard #1: "')
+      if [ "${6:-raw}" = raw ]; then
+         [ "$kbd" -ge 1 ] || ok=no
+      fi
       deferred=$(count "$log" 'joypad driver is restarted by the poll')
       if [ "$threaded" = true ]; then
          [ "$deferred" = 1 ] || ok=no
@@ -297,6 +303,7 @@ scenario() {
            "the core saw B pressed $b_down and released $b_up (want 2 and 2), J: ${j_seq:-nothing}(want down up down up)," \
            "key events on a thread that is not the core's: $off (want 0)," \
            "input driver picked by the setting's name: $byname (want 0)," \
+           "keyboards named by the raw input driver: $kbd (want at least 1 with raw input)," \
            "joypad restarts left to the poll: $deferred (want $([ "$threaded" = true ] && echo 1 || echo 0))" \
            "$([ "$nomsg" = nomsg ] && echo ", driver instances with reports taken as messages: $msg (want 0)")"
       sed 's/\x1b\[[0-9;]*m//g' "$log" | tr -d '\r' | grep -av "ALSA lib\|Playlist\]" | tail -25

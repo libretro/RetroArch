@@ -31439,6 +31439,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NO_PROFILE,
    "No Autoconfig Profile"
    )
+MSG_HASH( /* An entry of Information > Input Information: the number of a connected keyboard and its name */
+   MENU_ENUM_LABEL_VALUE_KEYBOARD_DEVICE_NAME,
+   "Keyboard %d: %s"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
    "Cheat Settings"

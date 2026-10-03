@@ -51,6 +51,9 @@ void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
 void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
 void input_config_set_mouse_display_name(unsigned port, const char *name)
 { (void)port; (void)name; }
+void input_config_set_keyboard_display_name(unsigned idx, const char *name)
+{ (void)idx; (void)name; }
+void input_config_clear_keyboard_display_names(void) { }
 unsigned input_driver_lightgun_id_convert(unsigned id) { return id; }
 bool input_driver_pointer_is_offscreen(int16_t x, int16_t y)
 { (void)x; (void)y; return false; }

@@ -5902,6 +5902,9 @@ void *input_driver_init_wrap(input_driver_t *input, const char *name)
    void *ret = NULL;
    if (!input || !input->init)
       return NULL;
+   /* the keyboards listed are the last driver's; the one starting
+    * lists its own, if it can tell them apart */
+   input_config_clear_keyboard_display_names();
    if ((ret = input->init(name)))
    {
       input_driver_init_joypads();
@@ -7439,6 +7442,46 @@ void input_config_set_mouse_display_name(unsigned port, const char *name)
    if (*name_ascii)
       strlcpy(input_st->input_mouse_info[port].display_name, name_ascii,
             sizeof(input_st->input_mouse_info[port].display_name));
+}
+
+void input_config_clear_keyboard_display_names(void)
+{
+   unsigned i;
+   input_driver_state_t *input_st = &input_driver_st;
+   for (i = 0; i < MAX_INPUT_DEVICES; i++)
+      input_st->input_keyboard_info[i].display_name[0] = '\0';
+}
+
+void input_config_set_keyboard_display_name(unsigned idx, const char *name)
+{
+   char name_ascii[NAME_MAX_LENGTH];
+   input_driver_state_t *input_st = &input_driver_st;
+
+   if (idx >= MAX_INPUT_DEVICES)
+      return;
+
+   name_ascii[0] = '\0';
+
+   /* Strip non-ASCII characters, as for mice */
+   if (name && *name)
+   {
+      string_copy_only_ascii(name_ascii, name);
+      string_trim_whitespace(name_ascii);
+   }
+
+   /* a keyboard with no name is still a keyboard */
+   strlcpy(input_st->input_keyboard_info[idx].display_name,
+         *name_ascii ? name_ascii : "N/A",
+         sizeof(input_st->input_keyboard_info[idx].display_name));
+}
+
+const char *input_config_get_keyboard_display_name(unsigned idx)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (     idx >= MAX_INPUT_DEVICES
+         || !*input_st->input_keyboard_info[idx].display_name)
+      return NULL;
+   return input_st->input_keyboard_info[idx].display_name;
 }
 
 void input_keyboard_mapping_bits(unsigned mode, unsigned key)

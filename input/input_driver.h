@@ -369,6 +369,13 @@ typedef struct
    char display_name[NAME_MAX_LENGTH];
 } input_mouse_info_t;
 
+/* A keyboard the input driver can tell from the others: its name, for
+ * the menu. In the order the driver lists them. */
+typedef struct
+{
+   char display_name[NAME_MAX_LENGTH];
+} input_keyboard_info_t;
+
 typedef struct
 {
    int8_t source; /* RETRO_SENSOR_* ID to read from (0-5), -1 = unmapped */
@@ -690,6 +697,7 @@ typedef struct
    input_remap_cache_t remapping_cache;
    input_device_info_t input_device_info[MAX_INPUT_DEVICES]; /* unsigned alignment */
    input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
+   input_keyboard_info_t input_keyboard_info[MAX_INPUT_DEVICES];
    input_sensor_map_t input_sensor_map[MAX_INPUT_DEVICES];
 
    /**
@@ -1059,6 +1067,17 @@ void input_config_set_device_name(unsigned port, const char *name);
  */
 void input_config_set_device_display_name(unsigned port, const char *name);
 void input_config_set_mouse_display_name(unsigned port, const char *name);
+
+/* The keyboards the input driver can tell apart, for the menu
+ * (Information > Input Information). A driver that lists its
+ * keyboards clears the names and sets one for each, in its own order,
+ * when it starts and whenever its list changes; a name that would be
+ * empty is stored as "N/A". Under a driver that cannot tell keyboards
+ * apart there are none. Main thread. */
+void input_config_clear_keyboard_display_names(void);
+void input_config_set_keyboard_display_name(unsigned idx, const char *name);
+/* NULL if there is no keyboard at that index */
+const char *input_config_get_keyboard_display_name(unsigned idx);
 
 /**
  * Set the configuration name for the device in the specified port

@@ -3409,13 +3409,19 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
       udev->pointers[i]  = -1;
       udev->keyboards[i] = -1;
    }
+   input_config_clear_keyboard_display_names();
 
-   /* Add what devices we have now */
+   /* Add what devices we have now. (The two tables hold
+    * MAX_INPUT_DEVICES each, and nothing kept a seventeenth mouse or
+    * keyboard out of them: what udev calls a keyboard includes the
+    * power button and the like, and a machine can have that many.) */
    for (i = 0; i < (int)udev->num_devices; i++)
    {
       if (udev->devices[i]->type != UDEV_INPUT_KEYBOARD)
       {
          /* Pointers */
+         if (mouse >= MAX_INPUT_DEVICES)
+            continue;
          input_config_set_mouse_display_name(mouse, udev->devices[i]->ident);
          udev->pointers[mouse]     = i;
          mouse++;
@@ -3423,6 +3429,10 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
       else
       {
          /* Keyboard */
+         if (keyboard >= MAX_INPUT_DEVICES)
+            continue;
+         input_config_set_keyboard_display_name(keyboard,
+               udev->devices[i]->ident);
          udev->keyboards[keyboard] = i;
          keyboard++;
       }
@@ -4220,8 +4230,11 @@ static void *udev_input_init(const char *joypad_driver)
              udev->devices[i]->mouse.abs ? "ABS" : "REL",
              udev->devices[i]->devnode);
 
-          input_config_set_mouse_display_name(mouse, udev->devices[i]->ident);
-          udev->pointers[mouse] = i;
+          if (mouse < MAX_INPUT_DEVICES)
+          {
+             input_config_set_mouse_display_name(mouse, udev->devices[i]->ident);
+             udev->pointers[mouse] = i;
+          }
           mouse++;
        }
        else
@@ -4230,7 +4243,12 @@ static void *udev_input_init(const char *joypad_driver)
              keyboard,
              udev->devices[i]->ident,
              udev->devices[i]->devnode);
-          udev->keyboards[keyboard] = i;
+          if (keyboard < MAX_INPUT_DEVICES)
+          {
+             input_config_set_keyboard_display_name(keyboard,
+                   udev->devices[i]->ident);
+             udev->keyboards[keyboard] = i;
+          }
           keyboard++;
        }
    }

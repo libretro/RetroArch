@@ -586,6 +586,27 @@ jobs:
           make clean
           echo "[pass] winraw_mouse_hotplug_test (wine)"
 
+      - name: Build and run winraw_keyboards_test (mingw + Wine)
+        shell: bash
+        working-directory: samples/input/winraw_keyboards
+        run: |
+          set -eu
+          # The raw input driver reads every keyboard as one; it also
+          # keeps the list of them and names them for the menu's
+          # Input Information. The real driver under Wine, with the
+          # list of raw input devices it asks for replaced by one the
+          # test controls: the keyboards and only those are listed,
+          # oldest first; a key from one not in the list has the list
+          # made again at the end of that poll, an injected key never,
+          # not more than once a second; a keyboard that was unplugged
+          # is out of the list at the poll after Windows says devices
+          # changed; and all of them still feed the one key state.
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          make clean all
+          WINEDEBUG=-all timeout 300 make check
+          make clean
+          echo "[pass] winraw_keyboards_test (wine)"
+
       - name: Build and run winraw_joypad_poll_test (mingw + Wine)
         shell: bash
         working-directory: samples/input/winraw_joypad_poll
