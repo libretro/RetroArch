@@ -20,7 +20,10 @@ all: $(TARGET)
 $(TARGET): winraw_joypad_poll_test.c \
 		$(REPO_ROOT)/input/drivers_joypad/winraw_joypad.c
 	$(CC) $(CFLAGS) -o $@ winraw_joypad_poll_test.c \
-		$(REPO_ROOT)/libretro-common/compat/compat_strl.c $(LDLIBS)
+		$(REPO_ROOT)/libretro-common/compat/compat_strl.c \
+		$(REPO_ROOT)/libretro-common/encodings/encoding_crc32.c \
+		$(REPO_ROOT)/libretro-common/features/features_cpu.c \
+		$(REPO_ROOT)/libretro-common/time/rtime.c $(LDLIBS)
 
 # wine goes by several names; the first one found is used
 WINE ?= $(shell for w in wine wine64 /usr/lib/wine/wine64; do \

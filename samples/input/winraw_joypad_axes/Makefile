@@ -20,7 +20,10 @@ all: $(TARGET)
 $(TARGET): winraw_joypad_axes_test.c \
 		$(REPO_ROOT)/input/drivers_joypad/winraw_joypad.c
 	$(CC) $(CFLAGS) -o $@ winraw_joypad_axes_test.c \
-		$(REPO_ROOT)/libretro-common/compat/compat_strl.c $(LDLIBS)
+		$(REPO_ROOT)/libretro-common/compat/compat_strl.c \
+		$(REPO_ROOT)/libretro-common/encodings/encoding_crc32.c \
+		$(REPO_ROOT)/libretro-common/features/features_cpu.c \
+		$(REPO_ROOT)/libretro-common/time/rtime.c $(LDLIBS)
 
 check: all
 	WINEDEBUG=-all wine ./$(TARGET)

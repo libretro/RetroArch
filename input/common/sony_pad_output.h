@@ -21,6 +21,7 @@
 
 #include <boolean.h>
 #include <retro_inline.h>
+#include <encodings/crc32.h>
 
 /* The output reports that make a DualShock 4 or a DualSense rumble.
  *
@@ -37,7 +38,8 @@
  * audio stay as they are.
  *
  * No allocation and nothing of any system's, so that
- * samples/input/sony_pad_output can check it on its own. */
+ * samples/input/sony_pad_output can check it on its own; it needs
+ * libretro-common's CRC-32 linked in. */
 
 enum sony_pad_model
 {
@@ -74,25 +76,13 @@ static INLINE bool sony_pad_dualsense_is_edge(uint16_t pid)
    return pid == 0x0DF2;
 }
 
-/* The CRC a Bluetooth report ends with: CRC-32 as in zlib, over one
- * byte that is not sent (0xA2, the transport's header for an output
- * report) and then the report up to the CRC. */
+/* The CRC a Bluetooth report ends with: CRC-32, libretro-common's,
+ * over one byte that is not sent (0xA2, the transport's header for an
+ * output report) and then the report up to the CRC. */
 static INLINE uint32_t sony_pad_crc32(const uint8_t *data, size_t len)
 {
-   size_t i;
-   unsigned bit;
-   uint32_t crc = 0xFFFFFFFFu;
-   uint8_t  b   = 0xA2;
-
-   for (i = 0; i <= len; i++)
-   {
-      crc ^= b;
-      for (bit = 0; bit < 8; bit++)
-         crc = (crc >> 1) ^ (0xEDB88320u & (0u - (crc & 1u)));
-      if (i < len)
-         b = data[i];
-   }
-   return ~crc;
+   static const uint8_t header = 0xA2;
+   return encoding_crc32(encoding_crc32(0, &header, 1), data, len);
 }
 
 /* Builds the report that sets the two motors: @strong the heavy,
