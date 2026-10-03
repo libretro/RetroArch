@@ -159,6 +159,16 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1:suppressions=../ffmpeg_audio_pipe/tsan.supp \
              timeout 900 ./ffmpeg_sweep_test
           echo "[pass] ffmpeg_sweep_test (TSan)"
+          # The standalone core's own makefiles: a link with
+          # --no-undefined is the check their source lists are whole,
+          # and a dry run with GL (no GL headers here) the check that
+          # the GL build's list resolves. The sample's objects share
+          # paths with the core's libretro-common ones: cleaned first.
+          make clean
+          make -n -C ../../../cores/libretro-ffmpeg OPENGL=1 >/dev/null
+          make -C ../../../cores/libretro-ffmpeg -j2 OPENGL=0 HAVE_SSA=0
+          make -C ../../../cores/libretro-ffmpeg clean OPENGL=0 HAVE_SSA=0
+          echo "[pass] standalone ffmpeg core links"
 
       - name: Build and run ffmpeg_finished_wait_test (ASan + UBSan, TSan)
         shell: bash
