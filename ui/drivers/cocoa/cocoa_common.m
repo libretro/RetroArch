@@ -28,6 +28,7 @@
 
 #include <retro_atomic.h>
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #include <compat/apple_compat.h>
 #include <string/stdstring.h>
 #include <defines/cocoa_defines.h>
@@ -1035,50 +1036,80 @@ void *cocoa_screen_get_chosen(void)
  *
  * Written without blocks or GCD: -performSelectorOnMainThread:
  * withObject:waitUntilDone:modes: (Foundation, 10.0) carries the job
- * over in exactly those modes, and the caller waits on an rthreads
- * condition so the stall diagnostic keeps its cadence.  That makes the
- * trampoline buildable by any Objective-C compiler and runnable on
- * any release. */
+ * over in exactly those modes, and the caller waits on the job's
+ * eventcount for its done flag, in bounded waits so the stall
+ * diagnostic keeps its cadence.  That makes the trampoline buildable
+ * by any Objective-C compiler and runnable on any release.
+ *
+ * The eventcount lives in the job, and Foundation holds the job until
+ * -run has returned: the notify after the done flag cannot outlive it,
+ * however soon the caller sees the flag and lets go of its reference. */
 @interface CocoaMainThreadJob : NSObject
 {
+   retro_eventcount_t _ec;
    void (*_func)(void *userdata);
    void  *_userdata;
-   slock_t *_lock;
-   scond_t *_cond;
-   bool _done;
+   retro_atomic_int_t _done;
+   bool _ec_ready;
 }
-- (id)initWithFunc:(void (*)(void *))func userdata:(void *)userdata
-      lock:(slock_t *)lock cond:(scond_t *)cond;
+- (id)initWithFunc:(void (*)(void *))func userdata:(void *)userdata;
 - (void)run;
-- (bool)isDone;
+- (void)wait;
 @end
 
 @implementation CocoaMainThreadJob
 
 - (id)initWithFunc:(void (*)(void *))func userdata:(void *)userdata
-      lock:(slock_t *)lock cond:(scond_t *)cond
 {
    self = [super init];
    if (!self)
       return self;
+   if (!(_ec_ready = retro_eventcount_init(&_ec)))
+   {
+      RARCH_RELEASE(self);
+      return nil;
+   }
    _func     = func;
    _userdata = userdata;
-   _lock     = lock;
-   _cond     = cond;
-   _done     = false;
+   retro_atomic_int_init(&_done, 0);
    return self;
+}
+
+- (void)dealloc
+{
+   if (_ec_ready)
+      retro_eventcount_free(&_ec);
+   RARCH_SUPER_DEALLOC();
 }
 
 - (void)run
 {
    _func(_userdata);
-   slock_lock(_lock);
-   _done = true;
-   scond_signal(_cond);
-   slock_unlock(_lock);
+   retro_atomic_store_release_int(&_done, 1);
+   retro_eventcount_notify(&_ec);
 }
 
-- (bool)isDone { return _done; }
+/* Waiting forever (with periodic diagnostics) is deliberate: running
+ * the function on this thread after a timeout would run it twice once
+ * the main thread drains the job, which is far worse than a loggable
+ * stall. */
+- (void)wait
+{
+   for (;;)
+   {
+      int key;
+      if (retro_atomic_load_acquire_int(&_done))
+         return;
+      key = retro_eventcount_prepare_wait(&_ec);
+      if (retro_atomic_load_acquire_int(&_done))
+      {
+         retro_eventcount_cancel_wait(&_ec);
+         return;
+      }
+      if (!retro_eventcount_commit_wait_timeout(&_ec, key, 5000000))
+         RARCH_ERR("[Cocoa]: Main-thread trampoline stalled; main runloop is not draining scheduled jobs.\n");
+   }
+}
 
 @end
 
@@ -1087,8 +1118,6 @@ void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata)
 {
    CocoaMainThreadJob *job;
    NSArray *modes;
-   slock_t *lock;
-   scond_t *cond;
 
    if (sthread_is_main_thread())
    {
@@ -1096,10 +1125,12 @@ void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata)
       return;
    }
 
-   lock  = slock_new();
-   cond  = scond_new();
-   job   = [[CocoaMainThreadJob alloc] initWithFunc:func userdata:userdata
-         lock:lock cond:cond];
+   if (!(job = [[CocoaMainThreadJob alloc] initWithFunc:func
+               userdata:userdata]))
+   {
+      RARCH_ERR("[Cocoa]: Main-thread trampoline could not be set up.\n");
+      return;
+   }
    /* kCFRunLoopCommonModes is toll-free bridged to the NSString the
     * Foundation call wants, and is the 10.0 spelling of the 10.5
     * NSRunLoopCommonModes. */
@@ -1107,26 +1138,14 @@ void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata)
          (BRIDGE NSString *)kCFRunLoopCommonModes,
          @"com.libretro.RetroArch.MainThreadTrampoline", nil];
 
-   /* Foundation retains the job until it has run, so the reference
-    * below is released as soon as the perform is queued. */
    [job performSelectorOnMainThread:@selector(run) withObject:nil
          waitUntilDone:NO modes:modes];
    CFRunLoopWakeUp(CFRunLoopGetMain());
 
-   /* Wait for completion.  Waiting forever (with periodic diagnostics)
-    * is deliberate: falling back to running func() on this thread after
-    * a timeout would risk double-execution once the main thread finally
-    * drains the job, which is far worse than a loggable stall. */
-   slock_lock(lock);
-   while (![job isDone])
-      if (!scond_wait_timeout(cond, lock, 5000000))
-         RARCH_ERR("[Cocoa]: Main-thread trampoline stalled; main runloop is not draining scheduled jobs.\n");
-   slock_unlock(lock);
+   [job wait];
 
    RARCH_RELEASE(modes);
    RARCH_RELEASE(job);
-   scond_free(cond);
-   slock_free(lock);
 }
 
 /* One condvar-wait iteration for a caller that may be the main thread and
