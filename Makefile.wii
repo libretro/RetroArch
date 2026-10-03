@@ -189,14 +189,13 @@ CFLAGS      += -DHAVE_SOCKET_LEGACY -DHAVE_CHEEVOS
 APP_BOOTER_DIR = wii/app_booter
 PLATOBJS := $(APP_BOOTER_DIR)/app_booter.binobj
 else
-# Not on os/gekko yet: networking, USB HID pads, and starting another
-# program (a core switch needs it).
-HAVE_NETWORKING          := 0
-HAVE_IFINFO              := 0
+# Not on os/gekko yet: USB HID pads.
 HAVE_WIIUSB_HID          := 0
 HAVE_HID                 := 0
 HAVE_RARCH_EXEC          := 0
-HAVE_CHEEVOS             := 0
+HAVE_CHEEVOS             := 1
+
+CFLAGS      += -DHAVE_SOCKET_LEGACY -DHAVE_CHEEVOS
 PLATOBJS :=
 endif
 

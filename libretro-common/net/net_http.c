@@ -314,7 +314,7 @@ static int net_http_socket_error(void)
 #if defined(_WIN32)
    return WSAGetLastError();
 #elif defined(__PS3__) || defined(VITA) || defined(WIIU) \
-      || defined(GEKKO) || defined(_3DS)
+      || (defined(GEKKO) && !defined(GEKKO_NATIVE)) || defined(_3DS)
    return 0;
 #else
    return errno;

@@ -13,7 +13,8 @@ GEKKO_SRC := boot/crt0.S cpu/exception.S cpu/cache.S \
 
 ifeq ($(GEKKO_PLATFORM),rvl)
 GEKKO_SRC += rvl/ipc.c rvl/stm.c rvl/es.c rvl/conf.c rvl/ave.c rvl/sdio.c \
-             rvl/iobuf.c rvl/usb.c rvl/usbstorage.c rvl/bt.c rvl/wiimote.c
+             rvl/iobuf.c rvl/usb.c rvl/usbstorage.c rvl/bt.c rvl/wiimote.c \
+             rvl/net.c
 endif
 
 GEKKO_SOURCES := $(addprefix $(GEKKO_DIR)/,$(GEKKO_SRC))

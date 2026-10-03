@@ -171,7 +171,7 @@ void rc_mutex_unlock(rc_mutex_t* mutex)
 
 #endif
 
-#elif defined(GEKKO)
+#elif defined(GEKKO) && !defined(GEKKO_NATIVE)
 
 /* https://github.com/libretro/RetroArch/pull/16116 */
 

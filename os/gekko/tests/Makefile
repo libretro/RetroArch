@@ -37,7 +37,7 @@ KERNEL := $(GEKKO_SOURCES) $(ROOT)/gfx/bitmapfont.c
 
 TESTS := kernel_test vi_test gx_test io_test exi_test exec_test
 ifeq ($(PLATFORM),rvl)
-   TESTS  += ios_test sd_test usb_test wiimote_test
+   TESTS  += ios_test sd_test usb_test wiimote_test net_test
 endif
 
 all: $(addsuffix _$(PLATFORM).elf,$(TESTS))

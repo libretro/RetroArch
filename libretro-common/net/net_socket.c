@@ -182,7 +182,7 @@ bool socket_set_block(int fd, bool block)
    int i = !block;
 
    return !setsockopt(fd, SOL_SOCKET, SO_NBIO, &i, sizeof(i));
-#elif defined(GEKKO)
+#elif defined(GEKKO) && !defined(GEKKO_NATIVE)
    u32 i = !block;
 
    return !net_ioctl(fd, FIONBIO, &i);
@@ -556,7 +556,7 @@ done:
    return ret;
 #undef TIMEOUT_DIVISOR
 
-#elif defined(GEKKO)
+#elif defined(GEKKO) && !defined(GEKKO_NATIVE)
    return net_poll(fds, nfds, timeout);
 #else
    return poll(fds, nfds, timeout);
@@ -779,7 +779,8 @@ int socket_connect(int fd, void *data)
  * a refused or unreachable peer through SO_ERROR rather than errno, and
  * a timeout through nothing at all, so both are copied over by hand. */
 #if defined(_WIN32) || (!defined(__PS3__) && !defined(VITA) \
-      && !defined(WIIU) && !defined(GEKKO) && !defined(_3DS))
+      && !defined(WIIU) && !(defined(GEKKO) && !defined(GEKKO_NATIVE)) \
+      && !defined(_3DS))
 #define SOCKET_CONNECT_SETS_ERROR
 static void socket_set_last_error(int err)
 {
@@ -855,13 +856,14 @@ bool socket_connect_with_timeout(int fd, void *data, int timeout)
       }
    }
 
-#if defined(GEKKO)
+#if defined(GEKKO) && !defined(GEKKO_NATIVE)
    /* libogc does not have getsockopt implemented */
    res = connect(fd, addr->ai_addr, addr->ai_addrlen);
    if (res < 0 && -res != EISCONN)
       return false;
-#elif defined(_3DS)
-   /* libctru getsockopt does not return expected value */
+#elif defined(_3DS) || defined(GEKKO_NATIVE)
+   /* libctru getsockopt does not return expected value; on the Wii,
+    * connecting again is what works under emulation too */
    if ((connect(fd, addr->ai_addr, addr->ai_addrlen) < 0) && errno != EISCONN)
       return false;
 #elif defined(WIIU)

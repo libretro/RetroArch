@@ -97,7 +97,7 @@ RC_BEGIN_C_DECLS
      CRITICAL_SECTION critical_section;
    #endif
    } rc_mutex_t;
- #elif defined(GEKKO)
+ #elif defined(GEKKO) && !defined(GEKKO_NATIVE)
   #include <ogcsys.h>
   typedef struct rc_mutex_t {
     mutex_t handle;

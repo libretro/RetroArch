@@ -222,7 +222,7 @@ struct pollfd
 #define inet_ntop sceNetInetNtop
 #define inet_pton sceNetInetPton
 
-#elif defined(GEKKO)
+#elif defined(GEKKO) && !defined(GEKKO_NATIVE)
 #include <network.h>
 
 #define NETWORK_HAVE_POLL 1
@@ -290,7 +290,7 @@ struct pollfd
 #endif
 
 #ifdef NETWORK_HAVE_POLL
-#ifdef GEKKO
+#if defined(GEKKO) && !defined(GEKKO_NATIVE)
 #define NET_POLL_FD(sockfd, sockfds)    (sockfds)->socket  = (sockfd)
 #else
 #define NET_POLL_FD(sockfd, sockfds)    (sockfds)->fd      = (sockfd)
@@ -440,7 +440,7 @@ static INLINE bool isagain(int val)
    return (val == SCE_NET_ERROR_EAGAIN) || (val == SCE_NET_ERROR_EWOULDBLOCK);
 #elif defined(WIIU)
    return (val == -1) && (socketlasterr() == SO_SUCCESS || socketlasterr() == SO_EWOULDBLOCK);
-#elif defined(GEKKO)
+#elif defined(GEKKO) && !defined(GEKKO_NATIVE)
    return (-val == EAGAIN);
 #else
    return (val < 0) && (errno == EAGAIN || errno == EWOULDBLOCK);
@@ -457,7 +457,7 @@ static INLINE bool isinprogress(int val)
    return (val == SCE_NET_ERROR_EINPROGRESS);
 #elif defined(WIIU)
    return (val == -1) && (socketlasterr() == SO_EINPROGRESS);
-#elif defined(GEKKO)
+#elif defined(GEKKO) && !defined(GEKKO_NATIVE)
    return (-val == EINPROGRESS);
 #else
    return (val < 0) && (errno == EINPROGRESS);
@@ -480,7 +480,7 @@ uint32_t inet_addr(const char *cp);
 
 struct hostent *gethostbyname(const char *name);
 
-#elif defined(GEKKO)
+#elif defined(GEKKO) && !defined(GEKKO_NATIVE)
 const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
 int inet_pton(int af, const char *src, void *dst);
 
