@@ -188,6 +188,14 @@ static ui_application_t stub_application;
 const ui_window_t *ui_companion_driver_get_window_ptr(void) { return &stub_window; }
 ui_companion_driver_t ui_companion_win32;
 
+/* the core's picture: the window code will not let its window be
+ * smaller */
+void stub_set_geometry(unsigned width, unsigned height)
+{
+   stub_video_st.av_info.geometry.base_width  = width;
+   stub_video_st.av_info.geometry.base_height = height;
+}
+
 void stubs_init(void)
 {
    /* a core's geometry: the window limits its size to twenty times
@@ -207,7 +215,12 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
    return 0;
 }
 void win32_localize_menu(HMENU menu)                        { }
-HMENU win32_resources_create_menu(void)                     { return CreateMenu(); }
+HMENU win32_resources_create_menu(void)
+{
+   HMENU menu = CreateMenu();
+   AppendMenuA(menu, MF_STRING, 1, "File");
+   return menu;
+}
 unsigned short win32_get_langid_from_retro_lang(enum retro_language lang) { return 0x0409; }
 
 bool task_push_load_new_core(const char *core_path, const char *fullpath,

@@ -2234,6 +2234,32 @@ bool win32_window_set_fullscreen(unsigned dims, bool fullscreen)
 
    win32_set_window(&width, &height, fullscreen, true, &rect);
 
+   /* What the video driver is told is the size the window has now.
+    *
+    * The steps above leave g_win32_resize_width/height holding sizes
+    * worked out on the way - a window's outer size, then one with the
+    * menu bar added - and count on the WM_SIZE of the SetWindowPos
+    * that follows to put the client's size there. That message only
+    * comes if the size changes. A window cannot be smaller than the
+    * core's picture (WM_GETMINMAXINFO), so with a core bigger than the
+    * window asked for the window is already at its minimum, the
+    * second SetWindowPos changes nothing, and the worked-out height
+    * stayed: the driver drew for a window shorter than the one on
+    * screen, and the picture sat in the top of it. A window made by a
+    * driver restart is not affected, because that driver takes its
+    * size from the swapchain it has just made. */
+   {
+      RECT client;
+      if (     GetClientRect(hwnd, &client)
+            && client.right  > client.left
+            && client.bottom > client.top)
+      {
+         g_win32_resize_width  = client.right  - client.left;
+         g_win32_resize_height = client.bottom - client.top;
+         g_win32_flags        |= WIN32_CMN_FLAG_RESIZED;
+      }
+   }
+
    return true;
 }
 #endif

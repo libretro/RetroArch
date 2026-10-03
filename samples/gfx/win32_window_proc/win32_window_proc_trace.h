@@ -12,4 +12,5 @@ extern bool   trace_on;
 extern unsigned stub_create_steps;
 void trace(const char *fmt, ...);
 void stubs_init(void);
+void stub_set_geometry(unsigned width, unsigned height);
 #endif

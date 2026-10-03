@@ -2695,5 +2695,6 @@
  window objects left behind: no
 == 20 fullscreen toggles on one window
  same window 20, right style 20, right size 20, resize seen 20
+ a window grown to fit a bigger core: grew yes, driver told its real size yes
  exclusive fullscreen left to a restart: yes
  destroyed: window gone

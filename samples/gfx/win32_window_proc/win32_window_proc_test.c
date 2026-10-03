@@ -303,6 +303,8 @@ int main(int argc, char **argv)
       int cycle, same = 0, styled = 0, sized = 0, resized = 0;
       const int cycles = 20;
       bool refused;
+      bool big_grew = false;
+      bool big_told = false;
 
       strlcpy(settings->arrays.input_driver, "raw",
             sizeof(settings->arrays.input_driver));
@@ -350,6 +352,40 @@ int main(int argc, char **argv)
                resized++;
          }
 
+         /* A core whose picture is bigger than the window asked for,
+          * with the menu bar on. The window code does not let a window
+          * be smaller than the core's picture, so the window that
+          * comes out of the toggle is bigger than the one asked for -
+          * and the size the video driver is then told has to be the
+          * size the window has, not one worked out on the way. */
+         {
+            RECT client;
+            bool quit          = false;
+            bool resize        = false;
+            unsigned told_dims = 0;
+
+            settings->bools.ui_menubar_enable = true;
+            stub_set_geometry(900, 600);
+
+            settings->bools.video_fullscreen = true;
+            win32_window_set_fullscreen(VIDEO_SCALE_PACK(640, 480), true);
+            pump();
+            win32_window_reset();
+            settings->bools.video_fullscreen = false;
+            win32_window_set_fullscreen(VIDEO_SCALE_PACK(640, 480), false);
+            pump();
+
+            win32_check_window(NULL, &quit, &resize, &told_dims);
+            GetClientRect(hwnd, &client);
+            big_grew  = (client.right >= 900 && client.bottom >= 600);
+            big_told  = resize
+               && (LONG)VIDEO_SCALE_W(told_dims) == client.right
+               && (LONG)VIDEO_SCALE_H(told_dims) == client.bottom;
+
+            settings->bools.ui_menubar_enable = false;
+            stub_set_geometry(320, 240);
+         }
+
          /* exclusive fullscreen changes the display mode: not done in
           * place, left to the driver restart */
          settings->bools.video_windowed_fullscreen = false;
@@ -364,6 +400,8 @@ int main(int argc, char **argv)
          trace("== %d fullscreen toggles on one window\n", cycles);
          trace(" same window %d, right style %d, right size %d, resize seen %d\n",
                same, styled, sized, resized);
+         trace(" a window grown to fit a bigger core: grew %s, driver told its real size %s\n",
+               big_grew ? "yes" : "no", big_told ? "yes" : "no");
          trace(" exclusive fullscreen left to a restart: %s\n",
                refused ? "yes" : "no");
          trace(" destroyed: window %s\n", IsWindow(hwnd) ? "still there" : "gone");
