@@ -345,6 +345,10 @@ static void frontend_gekko_get_env(int *argc, char *argv[],
    chdir(g_defaults.dirs[DEFAULT_DIR_CORE]);
 
 #ifndef IS_SALAMANDER
+#ifdef HAVE_LOGGER
+   logger_init();
+#endif
+
    /* Some loaders pass nothing at all; RetroArch's argument parsing
     * wants something to look at. */
    if (*argc <= 0 || !argv)

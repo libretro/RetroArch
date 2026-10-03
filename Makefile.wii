@@ -131,10 +131,6 @@ ifeq ($(USBGECKO), 1)
   LIBS += -ldb
 endif
  
-ifeq ($(HAVE_LOGGER), 1)
-  LIBS += -lbba
-endif
-
 LIBS += -logc
 endif
 
@@ -228,6 +224,11 @@ ifeq ($(HAVE_LIBOGC)$(EXTERNAL_LIBOGC), 10)
    OBJ += wii/libogc/libfat/libfat.o wii/libogc/libfat/fatfile.o wii/libogc/libfat/file_allocation_table.o wii/libogc/libfat/cache.o wii/libogc/libfat/fatdir.o wii/libogc/libfat/partition.o wii/libogc/libfat/directory.o wii/libogc/libfat/filetime.o wii/libogc/libfat/disc.o
 endif
 
+# Logs as UDP datagrams to PC_DEVELOPMENT_IP_ADDRESS:PC_DEVELOPMENT_UDP_PORT.
+ifeq ($(HAVE_LOGGER), 1)
+   HAVE_NETLOGGER = 1
+endif
+
 include Makefile.common
 
 CFLAGS += $(DEFINES) -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" \
@@ -236,11 +237,6 @@ CFLAGS += $(DEFINES) -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\
 
 ifeq ($(WANT_GLSLANG), 1)
 	OBJ += griffin/griffin_glslang.o
-endif
-
-ifeq ($(HAVE_LOGGER), 1)
-   CFLAGS      += -DHAVE_LOGGER
-   CFLAGS      += -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
 endif
 
 ifeq ($(HAVE_KERNEL_PRX), 1)
