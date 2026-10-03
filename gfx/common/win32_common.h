@@ -110,6 +110,13 @@ bool win32_set_video_mode(void *data,
  * the exclusive kind. Call on the thread that owns the window. */
 bool win32_window_set_fullscreen(unsigned dims, bool fullscreen);
 
+/* Whether a borderless fullscreen toggle is to restyle the window in
+ * place (win32_window_set_fullscreen()) rather than restart the
+ * drivers: yes, unless RETROARCH_FULLSCREEN_IN_PLACE=0 is in the
+ * environment. For a driver or context to offer
+ * GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE by. */
+bool win32_fullscreen_in_place(void);
+
 bool win32_suspend_screensaver(void *data, bool enable);
 
 void win32_show_cursor(void *data, bool state);

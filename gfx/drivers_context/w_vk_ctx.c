@@ -297,16 +297,8 @@ static uint32_t gfx_ctx_w_vk_get_flags(void *data)
     * RETROARCH_FULLSCREEN_IN_PLACE=0 in the environment turns it off,
     * so that a toggle restarts the drivers as it used to, should it
     * need telling apart from something else. */
-   {
-      static int in_place = -1;
-      if (in_place < 0)
-      {
-         const char *env = getenv("RETROARCH_FULLSCREEN_IN_PLACE");
-         in_place        = (env && env[0] == '0') ? 0 : 1;
-      }
-      if (in_place)
-         BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
-   }
+   if (win32_fullscreen_in_place())
+      BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);

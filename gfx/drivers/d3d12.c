@@ -2495,6 +2495,12 @@ static uint32_t d3d12_get_flags(void *data)
 {
    uint32_t flags = 0;
 
+#if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
+   /* a borderless fullscreen toggle restyles the window; see
+    * d3d12_set_video_mode() */
+   if (win32_fullscreen_in_place())
+      BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
+#endif
    BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_FRAME_LATENCY);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
@@ -9145,11 +9151,33 @@ static unsigned d3d12_get_swap_interval_cap(void *data)
    return 4;
 }
 
+/* A borderless fullscreen toggle. It used to restart every driver:
+ * this one freed its device, queue, pipelines, shaders, swap chain and
+ * every texture and made them all again, the audio driver stopped and
+ * started, and a hardware-rendered core was told its context was gone
+ * - for a change of the window's style and size. The window is
+ * restyled where it stands instead (win32_window_set_fullscreen());
+ * the size change reaches the driver through check_window like any
+ * resize, and the swap chain's buffers are resized as they are when
+ * the window's edge is dragged. Nothing else is touched.
+ * RETROARCH_FULLSCREEN_IN_PLACE=0 turns it off. */
+#if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
+static void d3d12_set_video_mode(void *data, unsigned dims, bool fullscreen)
+{
+   (void)data;
+   win32_window_set_fullscreen(dims, fullscreen);
+}
+#endif
+
 static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_get_flags,
    d3d12_gfx_load_texture,
    d3d12_gfx_unload_texture,
+#if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
+   d3d12_set_video_mode,
+#else
    NULL, /* set_video_mode */
+#endif
 #ifdef __WINRT__
    /* UWP does not expose this information easily */
    NULL,

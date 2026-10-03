@@ -2527,6 +2527,17 @@ bool win32_window_remake(void *data, unsigned dims, bool fullscreen)
    return win32_set_video_mode(data, dims, fullscreen);
 }
 
+bool win32_fullscreen_in_place(void)
+{
+   static int in_place = -1;
+   if (in_place < 0)
+   {
+      const char *env = getenv("RETROARCH_FULLSCREEN_IN_PLACE");
+      in_place        = (env && env[0] == '0') ? 0 : 1;
+   }
+   return in_place != 0;
+}
+
 /* Takes the window that is already there between windowed and
  * borderless fullscreen: its style, position and size change, and it
  * stays the same window.
