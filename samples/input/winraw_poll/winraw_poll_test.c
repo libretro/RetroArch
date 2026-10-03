@@ -25,6 +25,9 @@
  * - a read made for the controller driver, whose poll comes first, is
  *   not repeated by this driver's poll, which still delivers what it
  *   took;
+ * - a wait on the queue for any input ends at once with a report
+ *   waiting, and a wait that leaves raw input out does not, which is
+ *   the wait the paused loop makes on this thread;
  * - a pump that asks for the messages below WM_INPUT and above it, as
  *   the frontend's does on this thread, leaves the reports in the
  *   queue, and the next poll reads them all in one;
@@ -432,6 +435,37 @@ int main(void)
             CHECK(wr->drain_reads + wr->drain_empty - total0 == 1,
                   "the next poll, on its own, did not make its read");
             printf("   ok   one read for both drivers: made for the controller driver, not repeated by this poll\n");
+         }
+
+         /* ---- the wait on the queue ------------------------------- */
+         /* The paused and unfocused loop waits on this thread's queue
+          * (win32_display_server_idle_wait()). With reports waiting, a
+          * wait for any input ends at once - and a controller sends a
+          * thousand a second - so on this thread the wait leaves raw
+          * input out, and then lasts its bound. */
+         {
+            DWORD t0, any_ms, bound_ms;
+            key(0x22, true);
+            Sleep(100);
+            t0 = GetTickCount();
+            MsgWaitForMultipleObjectsEx(0, NULL, 300, QS_ALLINPUT,
+                  MWMO_INPUTAVAILABLE);
+            any_ms = GetTickCount() - t0;
+            t0 = GetTickCount();
+            MsgWaitForMultipleObjectsEx(0, NULL, 300,
+                  QS_ALLINPUT & ~QS_RAWINPUT, MWMO_INPUTAVAILABLE);
+            bound_ms = GetTickCount() - t0;
+            CHECK(any_ms < 100, "a wait for any input, with a report waiting, took %lu ms",
+                  (unsigned long)any_ms);
+            CHECK(bound_ms >= 250, "a wait that leaves raw input out, with a report"
+                  " waiting, ended after %lu ms of 300", (unsigned long)bound_ms);
+            key(0x22, false);
+            Sleep(100);
+            winraw_poll(wr);
+            seen_n = 0;
+            printf("   ok   the wait on the queue: a report waiting ends a wait for any input (%lu ms),"
+                  " not one that leaves raw input out (%lu ms)\n",
+                  (unsigned long)any_ms, (unsigned long)bound_ms);
          }
 
          /* ---- the frontend's pump on this thread ----------------- */

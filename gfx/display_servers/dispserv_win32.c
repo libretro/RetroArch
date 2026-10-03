@@ -1568,15 +1568,38 @@ static int win32_display_server_get_edid(void *data, uint8_t *out, size_t max)
 #endif
 }
 
+#if defined(HAVE_WINRAWINPUT) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
+extern bool winraw_poll_owns_thread(void);
+#define WIN32_RAW_INPUT_IS_POLLED() winraw_poll_owns_thread()
+#else
+#define WIN32_RAW_INPUT_IS_POLLED() false
+#endif
+
 /* The calling thread's own message queue is where every Win32 input
  * path begins. With no handles the wait is on the queue alone; with
  * QS_ALLINPUT and MWMO_INPUTAVAILABLE it returns for any message,
- * including one already queued, and removes nothing. */
+ * including one already queued, and removes nothing.
+ *
+ * Not for raw input, on a thread whose raw input the poll reads
+ * (winraw_input.c, "Read by the poll"). The reports of the keyboard,
+ * the mouse and the controllers are in this thread's queue then, and
+ * a controller that reports a thousand times a second - whether or
+ * not anything on it moves, and whether or not RetroArch has the
+ * focus - would end this wait within a millisecond every time: the
+ * paused or unfocused loop it paces would turn a thousand times a
+ * second instead of a hundred. Before the poll read them, those
+ * reports were in the video thread's queue and did not wake this one
+ * either; the loop still polls on every turn and sees them within
+ * the bound. */
 static bool win32_display_server_idle_wait(void *data, unsigned ms)
 {
+   DWORD wake = QS_ALLINPUT;
    (void)data;
-   MsgWaitForMultipleObjectsEx(0, NULL, ms, QS_ALLINPUT,
-         MWMO_INPUTAVAILABLE);
+#ifdef QS_RAWINPUT
+   if (WIN32_RAW_INPUT_IS_POLLED())
+      wake &= ~QS_RAWINPUT;
+#endif
+   MsgWaitForMultipleObjectsEx(0, NULL, ms, wake, MWMO_INPUTAVAILABLE);
    return true;
 }
 
