@@ -309,12 +309,25 @@ static uint32_t gfx_ctx_w_vk_get_flags(void *data)
             &win32_vk.context.supports_adaptive_vsync))
       BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
 
-   /* GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE is not set, for now. The window
-    * side of an in-place fullscreen toggle works, but the toggle ends
-    * in a swapchain rebuilt on a live window, and on at least one
-    * NVIDIA setup a rebuild is followed by VK_ERROR_DEVICE_LOST from
-    * the next submit. Until that is understood a toggle restarts the
-    * drivers, which builds the swapchain once and works there. */
+   /* GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE is not set by default yet. The
+    * window side of an in-place fullscreen toggle works, but the
+    * toggle ends in a swapchain rebuilt at another size on a live
+    * window, and with HDR on that was followed by
+    * VK_ERROR_DEVICE_LOST on an NVIDIA setup (the HDR off-screen
+    * buffers kept the old size; see vulkan_hdr_buffers_init()). Until
+    * the fix for that has been seen to hold there, a toggle restarts
+    * the drivers, and RETROARCH_FULLSCREEN_IN_PLACE=1 in the
+    * environment turns the in-place toggle on to try it. */
+   {
+      static int in_place = -1;
+      if (in_place < 0)
+      {
+         const char *env = getenv("RETROARCH_FULLSCREEN_IN_PLACE");
+         in_place        = (env && env[0] == '1') ? 1 : 0;
+      }
+      if (in_place)
+         BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
+   }
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
