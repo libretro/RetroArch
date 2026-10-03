@@ -5983,23 +5983,37 @@ static unsigned d3d12_present_last(void *data)
 /* The display timestamp of the most recent present, from DXGI's frame
  * statistics, on the QPC clock cpu_features_get_time_usec() keeps on
  * Windows. 0 when the swapchain cannot say. */
+/* The vblank the most recent present went out on, for display pacing.
+ * The swapchain's statistics say so only while they describe that
+ * present: a present made with sync interval 0, tearing allowed, is on
+ * no vblank, and leaves them at the last one that was - a time the
+ * presenter would step forward by a rounded period, drifting off the
+ * display's grid the longer it stays. Then, and whenever the statistics
+ * cannot be had, the compositor's own last vblank, as the Vulkan
+ * driver reads it on Windows. */
 static retro_time_t d3d12_get_last_present_time(void *data)
 {
    DXGI_FRAME_STATISTICS stats;
+   UINT last_present    = 0;
    static LARGE_INTEGER freq;
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
 
    if (!d3d12 || !d3d12->chain.handle)
       return 0;
-   if (FAILED(d3d12->chain.handle->lpVtbl->GetFrameStatistics(
-               d3d12->chain.handle, &stats)))
-      return 0;
-   if (!stats.SyncQPCTime.QuadPart)
-      return 0;
-   if (!freq.QuadPart && !QueryPerformanceFrequency(&freq))
-      return 0;
-   return (stats.SyncQPCTime.QuadPart / freq.QuadPart * 1000000)
-        + (stats.SyncQPCTime.QuadPart % freq.QuadPart * 1000000 / freq.QuadPart);
+   if (     SUCCEEDED(d3d12->chain.handle->lpVtbl->GetFrameStatistics(
+               d3d12->chain.handle, &stats))
+         && SUCCEEDED(d3d12->chain.handle->lpVtbl->GetLastPresentCount(
+               d3d12->chain.handle, &last_present))
+         && stats.PresentCount == last_present
+         && stats.SyncQPCTime.QuadPart
+         && (freq.QuadPart || QueryPerformanceFrequency(&freq)))
+      return (stats.SyncQPCTime.QuadPart / freq.QuadPart * 1000000)
+           + (stats.SyncQPCTime.QuadPart % freq.QuadPart * 1000000 / freq.QuadPart);
+#if !defined(__WINRT__) && !defined(_XBOX)
+   return win32_dwm_last_vblank_time();
+#else
+   return 0;
+#endif
 }
 
 static void dx12_inject_black_frame(d3d12_video_t* d3d12)
