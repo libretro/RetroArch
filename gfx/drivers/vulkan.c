@@ -7544,6 +7544,17 @@ static void vulkan_set_video_mode(void *data,
          vk->flags |=  VK_FLAG_FULLSCREEN;
       else
          vk->flags &= ~VK_FLAG_FULLSCREEN;
+
+      /* The window may have just changed size under the driver - a
+       * fullscreen toggle done in place restyles it here and now. The
+       * driver hears of a new size from the window check in
+       * vulkan_alive(), and with threaded video that runs after a
+       * frame, not before one: the frame that follows this call was
+       * drawn before the driver knew, at the old size, and its
+       * present was refused. So the window is looked at now. A new
+       * size is then waiting when that frame starts, and the frame is
+       * drawn to it (vulkan_apply_pending_resize()). */
+      vulkan_alive(vk);
    }
 }
 
