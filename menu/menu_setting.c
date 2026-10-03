@@ -6369,6 +6369,8 @@ static int setting_action_left_input_keyboard_index(
    else
       *p = n;
 
+   /* the port is pinned to the keyboard chosen, not to its number */
+   input_keyboard_pin_from_index(setting->index_offset);
    settings->flags |= SETTINGS_FLG_MODIFIED;
    return 0;
 }
@@ -8834,6 +8836,7 @@ static int setting_action_start_input_keyboard_index(rarch_setting_t *setting)
 
    configuration_set_uint(settings,
          settings->uints.input_keyboard_index[setting->index_offset], 0);
+   input_keyboard_pin_from_index(setting->index_offset);
    return 0;
 }
 
@@ -9009,6 +9012,7 @@ static int setting_action_right_input_keyboard_index(
    else
       *p = 0;
 
+   input_keyboard_pin_from_index(setting->index_offset);
    settings->flags |= SETTINGS_FLG_MODIFIED;
    return 0;
 }
@@ -9221,6 +9225,13 @@ static size_t get_string_representation_input_keyboard_index(
       return 0;
 
    map = settings->uints.input_keyboard_index[setting->index_offset];
+
+   /* pinned to a keyboard that is not plugged in: it is named, not a
+    * number that is some other keyboard's now */
+   if (input_keyboard_pin_absent(setting->index_offset))
+      return snprintf(s, len,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ABSENT),
+            settings->arrays.input_keyboard_device[setting->index_offset]);
 
    if (map == 0)
       return strlcpy(s,

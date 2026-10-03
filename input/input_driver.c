@@ -37,6 +37,7 @@
 #endif
 
 #include "input_driver.h"
+#include "common/input_device_pins.h"
 #ifdef HAVE_OVERLAY
 #include "../led/led_defines.h"
 #endif
@@ -5906,6 +5907,13 @@ void *input_driver_init_wrap(input_driver_t *input, const char *name)
     * starting lists its own, if it can tell them apart */
    input_config_clear_keyboard_display_names();
    input_config_clear_mouse_info();
+   /* and so are the keyboards the ports' pins are looked up among */
+   memset(input_driver_st.keyboard_identity, 0,
+         sizeof(input_driver_st.keyboard_identity));
+   memset(input_driver_st.keyboard_choice, 0,
+         sizeof(input_driver_st.keyboard_choice));
+   input_driver_st.keyboard_identities = 0;
+   input_driver_st.keyboard_absent     = 0;
    if ((ret = input->init(name)))
    {
       input_driver_init_joypads();
@@ -6565,6 +6573,110 @@ bool input_set_rumble_gain(unsigned gain)
 {
    return (input_driver_set_rumble_gain(
             gain, config_get_ptr()->uints.input_max_users));
+}
+
+/* What each port reads is worked out again: after the list of
+ * keyboards was made, and after a port's setting was changed. */
+static void input_keyboard_pins_resolve(void)
+{
+   unsigned port;
+   input_driver_state_t *input_st = &input_driver_st;
+   settings_t *settings           = config_get_ptr();
+   unsigned listed                = input_st->keyboard_identities;
+
+   if (!settings)
+      return;
+
+   /* A number from before pins - or one typed into the configuration
+    * - is taken at its word, and the port pinned to what it names. */
+   for (port = 0; port < MAX_USERS; port++)
+   {
+      unsigned idx = settings->uints.input_keyboard_index[port];
+      if (     !settings->arrays.input_keyboard_device[port][0]
+            && idx >= 1 && idx <= listed
+            && input_st->keyboard_identity[idx - 1][0])
+         strlcpy(settings->arrays.input_keyboard_device[port],
+               input_st->keyboard_identity[idx - 1],
+               sizeof(settings->arrays.input_keyboard_device[port]));
+   }
+
+   input_pins_resolve(input_st->keyboard_choice,
+         (const char (*)[INPUT_PIN_LEN])settings->arrays.input_keyboard_device,
+         settings->uints.input_keyboard_index, MAX_USERS,
+         (const char (*)[INPUT_PIN_LEN])input_st->keyboard_identity, listed);
+
+   input_st->keyboard_absent = 0;
+   for (port = 0; port < MAX_USERS; port++)
+   {
+      int8_t choice = input_st->keyboard_choice[port];
+      if (choice >= 1)
+      {
+         /* the number shown follows the keyboard */
+         if (settings->uints.input_keyboard_index[port] != (unsigned)choice)
+         {
+            RARCH_LOG("[Input] Port %u's keyboard \"%s\" is keyboard %d now.\n",
+                  port + 1, settings->arrays.input_keyboard_device[port], choice);
+            settings->uints.input_keyboard_index[port] = (unsigned)choice;
+         }
+      }
+      else if (settings->arrays.input_keyboard_device[port][0])
+      {
+         if (!(input_st->keyboard_absent & (1 << port)))
+            RARCH_LOG("[Input] Port %u's keyboard \"%s\" is not there: the port"
+                  " reads %s.\n", port + 1,
+                  settings->arrays.input_keyboard_device[port],
+                  choice == INPUT_PIN_NONE
+                  ? "no keyboard, as another port has its own"
+                  : "every keyboard");
+         input_st->keyboard_absent |= (uint16_t)(1 << port);
+      }
+   }
+}
+
+void input_keyboard_pins_set_devices(const char (*base)[64], unsigned n)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+
+   if (n > MAX_INPUT_DEVICES)
+      n = MAX_INPUT_DEVICES;
+   memset(input_st->keyboard_identity, 0, sizeof(input_st->keyboard_identity));
+   if (n)
+      input_pins_identities(input_st->keyboard_identity, base, n);
+   input_st->keyboard_identities = n;
+   input_st->keyboard_absent     = 0;
+   input_keyboard_pins_resolve();
+}
+
+int input_keyboard_port_choice(unsigned port)
+{
+   return (port < MAX_USERS) ? input_driver_st.keyboard_choice[port] : 0;
+}
+
+bool input_keyboard_pin_absent(unsigned port)
+{
+   return port < MAX_USERS
+      && (input_driver_st.keyboard_absent & (1 << port));
+}
+
+void input_keyboard_pin_from_index(unsigned port)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   settings_t *settings           = config_get_ptr();
+   unsigned idx;
+
+   if (!settings || port >= MAX_USERS)
+      return;
+   idx = settings->uints.input_keyboard_index[port];
+   /* every keyboard: no pin. A listed one: that one. A number past the
+    * list, with nothing to name: no pin either, and the number stays
+    * as the setting it always was. */
+   settings->arrays.input_keyboard_device[port][0] = '\0';
+   if (idx >= 1 && idx <= input_st->keyboard_identities)
+      strlcpy(settings->arrays.input_keyboard_device[port],
+            input_st->keyboard_identity[idx - 1],
+            sizeof(settings->arrays.input_keyboard_device[port]));
+   input_st->keyboard_absent &= (uint16_t)~(1 << port);
+   input_keyboard_pins_resolve();
 }
 
 const char *input_driver_get_ident(void)

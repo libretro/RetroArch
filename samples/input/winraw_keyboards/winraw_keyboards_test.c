@@ -139,6 +139,29 @@ const struct rarch_key_map rarch_key_map_winraw[] = { { 0, RETROK_UNKNOWN } };
 static settings_t stub_settings;
 static struct menu_state stub_menu;
 settings_t *config_get_ptr(void) { return &stub_settings; }
+
+/* A port's keyboard, as the frontend works it out from the port's pin
+ * and number: the rule itself (input/common/input_device_pins.h), fed
+ * from the stub settings each time it is asked. */
+#include "input/common/input_device_pins.h"
+static char     stub_pin_ident[MAX_INPUT_DEVICES][INPUT_PIN_LEN];
+static unsigned stub_pin_listed;
+void input_keyboard_pins_set_devices(const char (*base)[64], unsigned n)
+{
+   memset(stub_pin_ident, 0, sizeof(stub_pin_ident));
+   if (n)
+      input_pins_identities(stub_pin_ident, base, n);
+   stub_pin_listed = n;
+}
+int input_keyboard_port_choice(unsigned port)
+{
+   int8_t choice[MAX_USERS];
+   input_pins_resolve(choice,
+         (const char (*)[INPUT_PIN_LEN])stub_settings.arrays.input_keyboard_device,
+         stub_settings.uints.input_keyboard_index, MAX_USERS,
+         (const char (*)[INPUT_PIN_LEN])stub_pin_ident, stub_pin_listed);
+   return choice[port];
+}
 struct menu_state *menu_state_get_ptr(void) { return &stub_menu; }
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
@@ -526,9 +549,37 @@ int main(void)
    stub_settings.uints.input_keyboard_index[0] = 9;
    CHECK(pad_b(0), "a port given a ninth keyboard, with three there, did not fall back to all of them");
    stub_settings.uints.input_keyboard_index[0] = 1;
+   printf("   ok   a port given a keyboard that is not there reads every keyboard\n");
+
+   /* ---- a keyboard kept by what it is ----------------------------- */
+   /* (the key is still held on the second keyboard, K(5), alone)
+    * The ports are pinned the other way round from their numbers: the
+    * pin is what counts. */
+   CHECK(stub_pin_listed >= 2 && stub_pin_ident[0][0] && stub_pin_ident[1][0]
+         && strcmp(stub_pin_ident[0], stub_pin_ident[1]),
+         "the driver did not say what its keyboards are known by: \"%s\" \"%s\"",
+         stub_pin_ident[0], stub_pin_ident[1]);
+   strcpy(stub_settings.arrays.input_keyboard_device[0], stub_pin_ident[1]);
+   strcpy(stub_settings.arrays.input_keyboard_device[1], stub_pin_ident[0]);
+   CHECK(pad_b(0) && !pad_b(1),
+         "ports pinned to the second and the first keyboard, a key held on the second: they read %d %d, want 1 0",
+         pad_b(0), pad_b(1));
+   /* the first port pinned to a keyboard that is not plugged in, while
+    * the second has its own: it reads none - not the second's */
+   strcpy(stub_settings.arrays.input_keyboard_device[0], "dead:beef");
+   strcpy(stub_settings.arrays.input_keyboard_device[1], stub_pin_ident[1]);
+   CHECK(!pad_b(0) && pad_b(1) && !port_key(0, RETROK_a),
+         "a port whose pinned keyboard is away, another port having its own: it read %d (bind) %d (key), want 0 0",
+         pad_b(0), port_key(0, RETROK_a));
+   /* and with no other port having one, it reads every keyboard */
+   stub_settings.arrays.input_keyboard_device[1][0] = '\0';
+   stub_settings.uints.input_keyboard_index[1]      = 0;
+   CHECK(pad_b(0), "a single port whose pinned keyboard is away read no keyboard: the player has no keys");
+   stub_settings.arrays.input_keyboard_device[0][0] = '\0';
+   stub_settings.uints.input_keyboard_index[1]      = 2;
    key(K(5), SC_KEY_A, false);
    winraw_poll(wr);
-   printf("   ok   a port given a keyboard that is not there reads every keyboard\n");
+   printf("   ok   a port reads the keyboard it is pinned to, whatever its number; with that one away it reads none while another port has its own, and every keyboard otherwise\n");
 
    /* ---- unplugged with a key held -------------------------------- */
    key(K(5), SC_KEY_A, true);   /* held on the second keyboard only */

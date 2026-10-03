@@ -1087,8 +1087,11 @@ static void winraw_keyboards_list(winraw_input_t *wr)
    uint8_t  old_down[WINRAW_KB_RAW_MAX][WINRAW_KB_BYTES];
    winraw_dev_ident_t ident[WINRAW_KB_RAW_MAX];
    input_kbdev_t devices[WINRAW_KB_RAW_MAX * 2];
+   char     pins[WINRAW_KEYBOARDS_MAX][64];
    winraw_kb_name_req_t req[WINRAW_KEYBOARDS_MAX];
    char path[256], container[48], compat[256], desc[80], parents[256];
+
+   memset(pins, 0, sizeof(pins));
 
    memcpy(old_kbs,  wr->kbs,     sizeof(old_kbs));
    memcpy(old_down, wr->kb_down, sizeof(old_down));
@@ -1192,11 +1195,20 @@ static void winraw_keyboards_list(winraw_input_t *wr)
          req[g].vid = ident[k].vid;
          req[g].pid = ident[k].pid;
          strlcpy(req[g].fallback, ident[k].desc, sizeof(req[g].fallback));
+         /* and what a port is pinned to it by: its USB ids, or with
+          * none what Windows calls it */
+         if (ident[k].vid || ident[k].pid)
+            snprintf(pins[g], sizeof(pins[g]), "%04x:%04x",
+                  ident[k].vid, ident[k].pid);
+         else
+            strlcpy(pins[g], ident[k].desc, sizeof(pins[g]));
       }
    }
 
 done:
    free(devs);
+   /* the ports' keyboards are looked up in the new list */
+   input_keyboard_pins_set_devices((const char (*)[64])pins, wr->kg_cnt);
 
    /* A raw input keyboard that is still there keeps its keys, and the
     * listed keyboards' keys are made again from their parts'. One
@@ -1264,19 +1276,26 @@ static INLINE bool winraw_kb_own_pressed(const uint8_t *own, unsigned mcode)
 /* The keyboard a port reads its key binds and its keyboard from: the
  * one the port's Keyboard Index names, or NULL for all of them as one
  * - the setting's default, and what a port falls back to while the
- * keyboard it names is not there. NULL as well while the menu is
+ * keyboard it names is not there and no other port has its own (the
+ * frontend says which, from the keyboard each port is pinned to:
+ * input_keyboard_port_choice()). NULL as well while the menu is
  * open: the menu is worked with the first port's binds and has to
  * answer to every keyboard. Hotkeys never go through this. */
 static const uint8_t *winraw_port_keys(const winraw_input_t *wr,
       unsigned port)
 {
-   unsigned idx = config_get_ptr()->uints.input_keyboard_index[port];
-   if (!idx || idx > wr->kg_cnt)
+   /* no key is down on this one: what a port reads whose own keyboard
+    * is away while another port has its own */
+   static const uint8_t none[WINRAW_KB_BYTES];
+   int idx = input_keyboard_port_choice(port);
+   if (!idx)
       return NULL;
 #ifdef HAVE_MENU
    if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
       return NULL;
 #endif
+   if (idx < 0 || (unsigned)idx > wr->kg_cnt)
+      return none;
    return wr->kg_down[idx - 1];
 }
 

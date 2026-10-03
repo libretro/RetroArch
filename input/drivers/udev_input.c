@@ -3369,8 +3369,10 @@ static void udev_input_list_pointers(udev_input_t *udev)
 static void udev_input_list_keyboards(udev_input_t *udev)
 {
    input_kbdev_t devs[64];
+   char pins[MAX_INPUT_DEVICES][64];
    unsigned i, n = udev->num_devices, groups;
 
+   memset(pins, 0, sizeof(pins));
    if (n > ARRAY_SIZE(devs))
       n = ARRAY_SIZE(devs);
    for (i = 0; i < n; i++)
@@ -3397,7 +3399,19 @@ static void udev_input_list_keyboards(udev_input_t *udev)
       RARCH_LOG("[udev] Keyboard #%u: \"%s\" (%04x:%04x).\n", g + 1,
             udev->devices[i]->ident,
             udev->devices[i]->vid, udev->devices[i]->pid);
+      /* what a port is pinned to it by: its ids, or with none its name */
+      if (g < MAX_INPUT_DEVICES)
+      {
+         if (udev->devices[i]->vid || udev->devices[i]->pid)
+            snprintf(pins[g], sizeof(pins[g]), "%04x:%04x",
+                  udev->devices[i]->vid, udev->devices[i]->pid);
+         else
+            strlcpy(pins[g], udev->devices[i]->ident, sizeof(pins[g]));
+      }
    }
+   /* the ports' keyboards are looked up in the new list */
+   input_keyboard_pins_set_devices((const char (*)[64])pins,
+         groups < MAX_INPUT_DEVICES ? groups : MAX_INPUT_DEVICES);
    for (i = 0; i < n; i++)
       if (     udev->devices[i]->type == UDEV_INPUT_KEYBOARD
             && devs[i].group == INPUT_KBDEV_NONE)
@@ -3927,25 +3941,30 @@ static bool udev_keyboard_pressed(udev_input_t *udev, unsigned key)
  * answer to every keyboard. Hotkeys never go through this. */
 static int udev_port_keys(udev_input_t *udev, unsigned port)
 {
-   unsigned idx = config_get_ptr()->uints.input_keyboard_index[port];
+   /* which, the frontend says, from the keyboard each port is pinned
+    * to: 0 every keyboard, a keyboard's number, or -1 none - this
+    * port's is away and another port has its own */
+   int idx = input_keyboard_port_choice(port);
 
-   if (!idx || idx > MAX_INPUT_DEVICES || udev->keyboards[idx - 1] < 0)
+   if (!idx)
       return -1;
 #ifdef HAVE_MENU
    if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
       return -1;
 #endif
-   return (int)(idx - 1);
+   if (idx < 0 || idx > MAX_INPUT_DEVICES || udev->keyboards[idx - 1] < 0)
+      return -2;
+   return idx - 1;
 }
 
 /* A key as a port sees it: on its own keyboard - any part of it - or
- * with none (@own < 0) on any. */
+ * with none on any (@own -1), or on no keyboard at all (@own -2). */
 static bool udev_port_key_pressed(udev_input_t *udev,
       int own, unsigned key)
 {
    unsigned i;
    int bit = rarch_keysym_lut[key];
-   if (!key)
+   if (!key || own == -2)
       return false;
    if (own < 0)
       return BIT_GET(udev->state, bit);

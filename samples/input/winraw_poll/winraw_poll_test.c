@@ -61,6 +61,29 @@ const struct rarch_key_map rarch_key_map_winraw[] = { { 0, RETROK_UNKNOWN } };
 static settings_t stub_settings;
 static struct menu_state stub_menu;
 settings_t *config_get_ptr(void) { return &stub_settings; }
+
+/* A port's keyboard, as the frontend works it out from the port's pin
+ * and number: the rule itself (input/common/input_device_pins.h), fed
+ * from the stub settings each time it is asked. */
+#include "input/common/input_device_pins.h"
+static char     stub_pin_ident[MAX_INPUT_DEVICES][INPUT_PIN_LEN];
+static unsigned stub_pin_listed;
+void input_keyboard_pins_set_devices(const char (*base)[64], unsigned n)
+{
+   memset(stub_pin_ident, 0, sizeof(stub_pin_ident));
+   if (n)
+      input_pins_identities(stub_pin_ident, base, n);
+   stub_pin_listed = n;
+}
+int input_keyboard_port_choice(unsigned port)
+{
+   int8_t choice[MAX_USERS];
+   input_pins_resolve(choice,
+         (const char (*)[INPUT_PIN_LEN])stub_settings.arrays.input_keyboard_device,
+         stub_settings.uints.input_keyboard_index, MAX_USERS,
+         (const char (*)[INPUT_PIN_LEN])stub_pin_ident, stub_pin_listed);
+   return choice[port];
+}
 struct menu_state *menu_state_get_ptr(void) { return &stub_menu; }
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }

@@ -1280,6 +1280,9 @@ typedef struct settings
 
       char crt_switch_timings[NAME_MAX_LENGTH];
       char input_reserved_devices[MAX_USERS][NAME_MAX_LENGTH];
+      /* the keyboard a port is given, by what it is: see
+       * input/common/input_device_pins.h */
+      char input_keyboard_device[MAX_USERS][64];
 
       char youtube_stream_key[PATH_MAX_LENGTH];
       char twitch_stream_key[PATH_MAX_LENGTH];

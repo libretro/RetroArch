@@ -286,6 +286,8 @@ scenario() {
       # the menu bar: built this many times, where it is asked
       menus=$(count "$log" 'Win32\] Menu bar built')
       [ -z "${WANT_MENUS:-}" ] || [ "$menus" = "$WANT_MENUS" ] || ok=no
+      # a line the log has to have, where one is asked for
+      [ -z "${WANT_LOG:-}" ] || [ "$(count "$log" "$WANT_LOG")" -ge 1 ] || ok=no
       deferred=$(count "$log" 'joypad driver is restarted by the poll')
       if [ "$threaded" = true ]; then
          [ "$deferred" = 1 ] || ok=no
@@ -321,6 +323,7 @@ scenario() {
            "input driver picked by the setting's name: $byname (want 0)," \
            "keyboards named by the raw input driver: $kbd (want at least 1 with raw input)," \
            "menu bars built: $menus (want ${WANT_MENUS:-any})," \
+           "log line asked for: ${WANT_LOG:-none}," \
            "joypad restarts left to the poll: $deferred (want $([ "$threaded" = true ] && echo 1 || echo 0))" \
            "$([ "$nomsg" = nomsg ] && echo ", driver instances with reports taken as messages: $msg (want 0)")"
       sed 's/\x1b\[[0-9;]*m//g' "$log" | tr -d '\r' | grep -av "ALSA lib\|Playlist\]" | tail -25
@@ -338,7 +341,16 @@ scenario "DirectInput" true 0 4 any dinput dinput
 WANT_WINDOW="0 0 0" RETROARCH_WINDOW_KEEP=0 scenario "RETROARCH_WINDOW_KEEP=0" true 1 2 nomsg
 WANT_WINDOW="2 0 2" RETROARCH_WINDOW_KEEP=2 scenario "window left up and not taken" true 1 2 nomsg
 EXTRA_CFG='input_player1_keyboard_index = "1"' \
+   WANT_LOG='keyboards named by\|Found keyboard #1' \
    scenario "the first port given a keyboard" true 1 2 nomsg
+# A port's keyboard is kept by what the keyboard is. Here the first
+# port is pinned to one that is not plugged in. No other port has a
+# keyboard of its own, so the port reads every keyboard - the core
+# still sees the keys - and the log says so.
+EXTRA_CFG='input_player1_keyboard_index = "1"
+input_player1_keyboard_device = "dead:beef"' \
+   WANT_LOG="Port 1's keyboard \"dead:beef\" is not there: the port reads every keyboard" \
+   scenario "the first port pinned to a keyboard that is away" true 1 2 nomsg
 VIDEO_DRIVER=gl VIDEO_STARTED='Found GL context' WANT_VIDEO=2 WANT_WINDOW="1 1 0" \
    WANT_MENUS=1 EXTRA_CFG='ui_menubar_enable = "true"' \
    scenario "OpenGL" true 1 2 nomsg

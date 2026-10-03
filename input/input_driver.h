@@ -708,6 +708,11 @@ typedef struct
    input_device_info_t input_device_info[MAX_INPUT_DEVICES]; /* unsigned alignment */
    input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
    input_keyboard_info_t input_keyboard_info[MAX_INPUT_DEVICES];
+   /* the listed keyboards' identities, and what each port reads */
+   char     keyboard_identity[MAX_INPUT_DEVICES][64];
+   unsigned keyboard_identities;
+   int8_t   keyboard_choice[MAX_USERS];
+   uint16_t keyboard_absent;         /* a bit a port: pinned, not there */
    input_sensor_map_t input_sensor_map[MAX_INPUT_DEVICES];
 
    /**
@@ -910,6 +915,22 @@ float input_driver_get_sensor(
          unsigned port, bool sensors_enable, unsigned id);
 
 uint64_t input_driver_get_capabilities(void);
+
+/* A port's keyboard, kept by what the keyboard is
+ * (input/common/input_device_pins.h).
+ *
+ * An input driver that lists keyboards tells what it knows each by -
+ * its USB ids, or its name where it has none - whenever it has made
+ * its list, in the list's order: */
+void input_keyboard_pins_set_devices(const char (*base)[64], unsigned n);
+/* What a port reads now: 0 for every keyboard as one, a keyboard's
+ * number in the list, or -1 for none. Read on the input path. */
+int input_keyboard_port_choice(unsigned port);
+/* The port's Keyboard Index was changed by hand: the port is pinned
+ * to the keyboard that number names, or to none. */
+void input_keyboard_pin_from_index(unsigned port);
+/* The port is pinned to a keyboard that is not there. */
+bool input_keyboard_pin_absent(unsigned port);
 
 /* The running input driver's name ("raw", "udev", "wayland"...), or
  * an empty string when there is none. */

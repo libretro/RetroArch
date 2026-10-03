@@ -1910,6 +1910,18 @@ static struct config_array_setting *populate_settings_array(
          SETTING_ARRAY(reserved_keys[i], settings->arrays.input_reserved_devices[i], false, NULL, true);
       }
    }
+   {
+      /* input_playerN_keyboard_device: the keyboard the port is given,
+       * by its identity; input_playerN_keyboard_index follows from it */
+      static char keyboard_keys[MAX_USERS][40];
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         size_t _len  = strlcpy_lit(keyboard_keys[i], "input_player", sizeof(keyboard_keys[i]));
+         _len += snprintf(keyboard_keys[i] + _len, sizeof(keyboard_keys[i]) - _len, "%u", i + 1);
+         strlcpy_lit(keyboard_keys[i] + _len, "_keyboard_device", sizeof(keyboard_keys[i]) - _len);
+         SETTING_ARRAY(keyboard_keys[i], settings->arrays.input_keyboard_device[i], false, NULL, true);
+      }
+   }
 
 #ifdef HAVE_MENU
    SETTING_ARRAY("menu_driver",                  settings->arrays.menu_driver, false, NULL, true);

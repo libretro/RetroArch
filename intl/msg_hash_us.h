@@ -12445,7 +12445,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_KEYBOARD_INDEX,
-   "The keyboard this port's key binds are read from. 'All' reads every keyboard as one. A single keyboard can be chosen where the input driver can tell keyboards apart. Hotkeys and the menu always answer to every keyboard."
+   "The keyboard this port's key binds are read from. 'All' reads every keyboard as one. A single keyboard can be chosen where the input driver can tell keyboards apart; it is remembered by what it is, and stays this port's when keyboards are plugged in or out. Hotkeys and the menu always answer to every keyboard."
+   )
+MSG_HASH( /* The value of Keyboard Index for a port whose keyboard is not plugged in. %s is what the keyboard is known by, such as its USB ids "046d:c31c" */
+   MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ABSENT,
+   "%s (not connected)"
    )
 MSG_HASH( /* A value of 'Keyboard Index': every keyboard, read as one */
    MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,

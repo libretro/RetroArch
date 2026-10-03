@@ -622,6 +622,24 @@ jobs:
           make clean
           echo "[pass] winraw_joypad_rumble_test (wine)"
 
+      - name: Build and run device_pins_test
+        shell: bash
+        working-directory: samples/input/device_pins
+        run: |
+          set -eu
+          # A port keeps its keyboard by what the keyboard is, not by
+          # its place in a list that changes when keyboards are
+          # plugged in or out (input/common/input_device_pins.h): two
+          # pinned ports each read their own in whatever order the
+          # keyboards are listed; with one unplugged the other is
+          # still its own port's and the port left without reads none;
+          # a single port whose keyboard is away reads every keyboard;
+          # two keyboards of one model are two pins.
+          make clean all
+          timeout 60 make check
+          make clean
+          echo "[pass] device_pins_test"
+
       - name: Build and run keyboard_devices_test
         shell: bash
         working-directory: samples/input/keyboard_devices
