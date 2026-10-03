@@ -14,16 +14,19 @@
 #
 # Each scenario is: press J (bound to nothing) and Z (the default bind
 # for B), toggle fullscreen with F (which, with GDI, restarts the video
-# driver), press J and Z again, quit with Escape. What is checked is
-# what the log says happened. In every scenario: RetroArch quit on the
-# Escape pressed after the restart; the core saw B pressed and released
-# before the restart and after it; and it was given J's key-down and
-# key-up, in that order, both times. And by scenario:
+# driver), press J and Z again, close the content with C (bound to
+# that here; the drivers are freed and started again for the menu),
+# quit with Escape. What is checked is what the log says happened. In
+# every scenario: RetroArch quit on the Escape pressed after the
+# content was closed; the core saw B pressed and released before the
+# restart and after it; and it was given J's key-down and key-up, in
+# that order, both times. And by scenario:
 #
 #   read by the poll, kept      the default. The input driver starts
-#                               once and is not restarted with the
-#                               video driver; the keyboard still works
-#                               after the restart (Escape quits);
+#                               once and is restarted neither by the
+#                               toggle nor by closing the content; the
+#                               keyboard still works after both
+#                               (Escape quits);
 #                               reports were read in bulk, none taken
 #                               by the thread's pump as messages.
 #   RETROARCH_INPUT_KEEP=0      the input driver is restarted with the
@@ -90,6 +93,9 @@ pause_nonactive = "false"
 config_save_on_exit = "false"
 frontend_log_level = "0"
 confirm_quit = "false"
+input_close_content = "c"
+quit_on_close_content = "0"
+confirm_close = "false"
 video_window_save_positions = "false"
 ui_menubar_enable = "false"
 CFG
@@ -130,6 +136,8 @@ play() {
    sleep 4
    hold j
    hold z
+   hold c
+   sleep 4
    hold Escape
    for i in $(seq 1 30); do kill -0 $app 2>/dev/null || break; sleep 0.5; done
    if kill -0 $app 2>/dev/null; then
@@ -170,7 +178,7 @@ scenario() {
             | grep -avc ', 0 as messages')
       ok=yes
       [ "$rc" = 0 ] || ok=no
-      [ "$video" = 2 ] || ok=no
+      [ "$video" = 3 ] || ok=no
       [ "$bulk" = "$want_bulk" ] || ok=no
       [ "$joy" = "$want_joy" ] || ok=no
       [ "$b_down" = 2 ] && [ "$b_up" = 2 ] || ok=no
@@ -183,7 +191,7 @@ scenario() {
            "joypad driver $joy; the core saw B twice and J's down and up twice; quit on Escape"
    else
       echo "[FAIL] $name: quit by itself: $([ "$rc" = 0 ] && echo yes || echo no);" \
-           "video driver started $video (want 2), input driver by the poll $bulk (want $want_bulk)," \
+           "video driver started $video (want 3), input driver by the poll $bulk (want $want_bulk)," \
            "joypad driver started $joy (want $want_joy);" \
            "the core saw B pressed $b_down and released $b_up (want 2 and 2), J: ${j_seq:-nothing}(want down up down up)" \
            "$([ "$nomsg" = nomsg ] && echo ", driver instances with reports taken as messages: $msg (want 0)")"
@@ -193,10 +201,10 @@ scenario() {
 }
 
 scenario "read by the poll, kept" true 1 1 nomsg
-RETROARCH_INPUT_KEEP=0 scenario "RETROARCH_INPUT_KEEP=0" true 2 2 nomsg
+RETROARCH_INPUT_KEEP=0 scenario "RETROARCH_INPUT_KEEP=0" true 3 3 nomsg
 scenario "video not threaded" false 1 1 any
-RETROARCH_RAWINPUT_POLL=0 scenario "RETROARCH_RAWINPUT_POLL=0" true 0 2 any
-scenario "DirectInput" true 0 2 any dinput dinput
+RETROARCH_RAWINPUT_POLL=0 scenario "RETROARCH_RAWINPUT_POLL=0" true 0 3 any
+scenario "DirectInput" true 0 3 any dinput dinput
 
 if [ "$failures" != 0 ]; then
    echo "FAIL windows_wine_smoke: $failures"

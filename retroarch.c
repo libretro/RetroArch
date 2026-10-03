@@ -2017,10 +2017,12 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
        * cached frame can point into (a lent software framebuffer),
        * so retire while that memory is still mapped. */
       video_driver_cached_frame_retire();
-      /* An input driver that can be left running stays, when this is
-       * a restart that brings the video driver back. */
+      /* An input driver that can be left running stays, when the
+       * video driver is coming straight back: a restart, or content
+       * loaded or closed. */
       input_driver_keep_for_video_restart(
-               (lifetime_flags & DRIVER_LIFETIME_RESET)
+               (lifetime_flags & (DRIVER_LIFETIME_RESET
+                                | DRIVER_LIFETIME_SESSION_SWITCH))
             && (flags & DRIVER_VIDEO_MASK),
             video_st->data);
       video_driver_free_internal();
@@ -6567,6 +6569,8 @@ void main_exit(void *args)
 
    runloop_msg_queue_deinit();
    driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
+   /* an input driver kept for drivers that then failed to start */
+   input_driver_drop_kept();
 
    retro_main_log_file_deinit();
 
@@ -9096,7 +9100,9 @@ bool retroarch_main_init_drivers(bool staged,
        * once it is back. */
       struct video_hw_request hw_request;
       video_driver_hw_request_take(&hw_request);
-      driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
+      /* drivers_init() is a few lines down: an input driver that can
+       * outlive the video driver is left running across the two */
+      driver_uninit(DRIVERS_CMD_ALL, DRIVER_LIFETIME_SESSION_SWITCH);
       video_driver_hw_request_restore(&hw_request);
 
       video_state_get_ptr()->main_flags |=  VIDEO_FLAG_ACTIVE;

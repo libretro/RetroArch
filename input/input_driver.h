@@ -631,6 +631,9 @@ typedef struct
    void *kept_data;
    /* The joypad driver setting the joypad driver was started with. */
    char joypad_setting_at_init[32];
+   /* The settings that decide which port a controller gets, as they
+    * were then (input_driver_detect_settings()). */
+   uint32_t detect_settings_at_init;
    /* Something has thrown away what the drivers' start gives - the
     * controllers' configuration - so the next restart is a restart of
     * the input driver too, whatever it says.

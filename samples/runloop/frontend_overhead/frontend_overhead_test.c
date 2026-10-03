@@ -1583,6 +1583,24 @@ static void lane_input_kept(void)
    KEPT_CHECK(rec && rec->handle == handle0 && pad_connected(0),
          "kept input: a controller did not come through the restart as it was");
 
+   /* 1b. Content loaded or closed: the drivers are freed and started
+    *    again at once, which is not a reset. It is kept across that
+    *    too, with its joypads and controllers. */
+   driver_uninit(DRIVERS_CMD_ALL, DRIVER_LIFETIME_SESSION_SWITCH);
+   drivers_init(settings, DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0, false);
+   run_frames(5);
+   KEPT_CHECK(kept_frees == 0 && kept_inits == 0 && kept_joy_destroys == 0,
+         "kept input: across content loaded or closed it was freed %u, started %u, its joypads destroyed %u time(s)",
+         kept_frees, kept_inits, kept_joy_destroys);
+   KEPT_CHECK(   input_st->current_driver == &kept_wrap
+         && input_st->current_data   == data
+         && input_st->primary_joypad == &kept_joy_wrap
+         && !input_st->kept_driver,
+         "kept input: the driver that survives is not the input driver after content loaded or closed");
+   rec = input_registry_at_slot((input_registry_t*)reg, 0);
+   KEPT_CHECK(rec && rec->handle == handle0 && pad_connected(0),
+         "kept input: a controller did not come through content loaded or closed as it was");
+
    /* 2. It says it does not: freed and started again, as always. */
    kept_answer = false;
    command_event(CMD_EVENT_REINIT, NULL);
@@ -1667,11 +1685,45 @@ static void lane_input_kept(void)
          "kept input: the restart after that one did not keep it (freed %u, started %u)",
          kept_frees, kept_inits);
 
+   /* 8. Content loaded or closed (as in 1b), with a port reserved
+    *    for a controller since the joypad driver started - what a
+    *    config override coming or going with the content can do. Which
+    *    port a controller gets is decided when the joypad driver
+    *    reports it, so it restarts; and with the setting as the new
+    *    driver found it, the next is kept again. */
+   kept_wrap_joypad(input_st);
+   {
+      unsigned saved = settings->uints.input_device_reservation_type[1];
+      settings->uints.input_device_reservation_type[1] = saved + 1;
+      driver_uninit(DRIVERS_CMD_ALL, DRIVER_LIFETIME_SESSION_SWITCH);
+      drivers_init(settings, DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0, false);
+      run_frames(5);
+      KEPT_CHECK(kept_frees == 6 && kept_inits == 6 && kept_joy_destroys == 6,
+            "kept input: with a port reservation changed it was freed %u, started %u, joypads destroyed %u time(s) in all",
+            kept_frees, kept_inits, kept_joy_destroys);
+      kept_wrap_joypad(input_st);
+      driver_uninit(DRIVERS_CMD_ALL, DRIVER_LIFETIME_SESSION_SWITCH);
+      drivers_init(settings, DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0, false);
+      run_frames(5);
+      KEPT_CHECK(kept_frees == 6 && kept_inits == 6 && pad_connected(0),
+            "kept input: with the reservation as the new driver found it, it was not kept (freed %u, started %u)",
+            kept_frees, kept_inits);
+      /* back as it was, by the same road */
+      settings->uints.input_device_reservation_type[1] = saved;
+      driver_uninit(DRIVERS_CMD_ALL, DRIVER_LIFETIME_SESSION_SWITCH);
+      drivers_init(settings, DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0, false);
+      run_frames(5);
+      KEPT_CHECK(kept_frees == 7 && kept_inits == 7,
+            "kept input: with the reservation put back it was freed %u, started %u time(s) in all",
+            kept_frees, kept_inits);
+   }
+
    fast_forward(false);
    if (failures == had)
-      printf("[pass] input driver across a driver restart: kept if it says it"
-            " survives, with its joypads and controllers; restarted if it does"
-            " not, if a driver setting changed, or on a shutdown\n");
+      printf("[pass] input driver across a driver restart and across content"
+            " loaded or closed: kept if it says it survives, with its joypads"
+            " and controllers; restarted if it does not, if a driver setting or"
+            " a port reservation changed, or on a shutdown\n");
 #else
    printf("[skip] kept-input lane: needs the test drivers\n");
 #endif

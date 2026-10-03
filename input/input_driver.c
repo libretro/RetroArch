@@ -6012,6 +6012,7 @@ const char *joypad_driver_name(unsigned i)
 }
 
 static void input_rumble_forget(void);
+static uint32_t input_driver_detect_settings(const settings_t *settings);
 
 void joypad_driver_reinit(void *data, const char *joypad_driver_name)
 {
@@ -6040,6 +6041,8 @@ void joypad_driver_reinit(void *data, const char *joypad_driver_name)
       strlcpy(input_driver_st.joypad_setting_at_init,
             joypad_driver_name ? joypad_driver_name : "",
             sizeof(input_driver_st.joypad_setting_at_init));
+      input_driver_st.detect_settings_at_init =
+            input_driver_detect_settings(config_get_ptr());
       input_driver_st.primary_joypad    = input_joypad_init_driver(joypad_driver_name, data);
    }
 }
@@ -6477,6 +6480,33 @@ uint64_t input_driver_get_capabilities(void)
    return input->get_capabilities(input_driver_st.current_data);
 }
 
+/* The settings read when a controller is reported and given a port:
+ * whether controllers are configured at all, where their profiles
+ * are, how many ports there are, and which controller each port is
+ * reserved for. A joypad driver reports its controllers when it
+ * starts, so a change to any of these is applied by starting it
+ * again. One number for the lot, to tell a change by. */
+static uint32_t input_driver_detect_settings(const settings_t *settings)
+{
+   unsigned i;
+   const char *p;
+   uint32_t h = 2166136261u;
+#define DETECT_MIX(v) do { h ^= (uint32_t)(v); h *= 16777619u; } while (0)
+   DETECT_MIX(settings->bools.input_autodetect_enable ? 1 : 0);
+   DETECT_MIX(settings->uints.input_max_users);
+   for (p = settings->paths.directory_autoconfig; *p; p++)
+      DETECT_MIX((unsigned char)*p);
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      DETECT_MIX(settings->uints.input_device_reservation_type[i]);
+      for (p = settings->arrays.input_reserved_devices[i]; *p; p++)
+         DETECT_MIX((unsigned char)*p);
+      DETECT_MIX(0xff);
+   }
+#undef DETECT_MIX
+   return h;
+}
+
 void input_driver_init_joypads(void)
 {
    settings_t                   *settings    = config_get_ptr();
@@ -6488,6 +6518,8 @@ void input_driver_init_joypads(void)
       strlcpy(input_driver_st.joypad_setting_at_init,
             settings->arrays.input_joypad_driver,
             sizeof(input_driver_st.joypad_setting_at_init));
+      input_driver_st.detect_settings_at_init =
+            input_driver_detect_settings(settings);
       input_driver_st.primary_joypad        = input_joypad_init_driver(
          settings->arrays.input_joypad_driver,
          input_driver_st.current_data);
@@ -6584,8 +6616,13 @@ input_driver_t **input_driver_video_slots(void ***data_slot)
  *   drivers_init()             frees it after all if nothing took it
  *                              back (input_driver_drop_kept())
  *
+ * A restart here is any teardown the video driver comes straight back
+ * from: a reinit, and content loaded or closed
+ * (DRIVER_LIFETIME_SESSION_SWITCH).
+ *
  * It is not kept when the drivers are being shut down rather than
- * restarted; when the input or the joypad driver setting has changed
+ * restarted; when the input or the joypad driver setting, or a
+ * setting that decides which port a controller gets, has changed
  * since it started, since a restart is how such a change is applied;
  * when its data is the video driver's own; once, after the
  * controllers' configuration has been reset while running
@@ -6627,6 +6664,18 @@ void input_driver_keep_for_video_restart(bool restart,
          || !string_is_equal(settings->arrays.input_joypad_driver,
                input_st->joypad_setting_at_init))
       return;
+   /* The settings that decide a controller's port are not what they
+    * were when the controllers were given theirs - a config override
+    * came or went with the content, or they were changed in the menu:
+    * the joypad driver starts again and reports them afresh. */
+   if (     input_driver_detect_settings(settings)
+         != input_st->detect_settings_at_init)
+   {
+      RARCH_DBG("[Input] The settings that give controllers their ports"
+            " have changed: the input driver restarts with the video"
+            " driver.\n");
+      return;
+   }
    if (!drv->survives_video(data))
       return;
 
