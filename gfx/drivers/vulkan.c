@@ -6181,6 +6181,40 @@ static void vulkan_init_readback(vk_t *vk, bool video_gpu_record,
 static void vulkan_init_render_target(struct vk_image* image,
       unsigned dims, VkFormat format,
       VkRenderPass render_pass, vulkan_context_t* ctx);
+
+/* (Re)creates the HDR off-screen buffer and the readback image, at the
+ * swapchain's size.
+ *
+ * That size and no other: a frame that goes through the off-screen
+ * buffer begins its render pass on that buffer's framebuffer with the
+ * swapchain's extent as the render area. The two used to be sized from
+ * different things - the swapchain from the window's surface when it
+ * is built, these from the size the frontend last reported, at the end
+ * of a frame that had been told to resize - and nothing rebuilt them
+ * when the swapchain was. A swapchain rebuilt at another size after an
+ * out-of-date present left a frame, or several, drawing a render area
+ * the size of the new swapchain into a framebuffer the size of the old
+ * one. Going from a 960x720 window to a 3840x2160 one that way, an
+ * NVIDIA driver answered the frame's submit with VK_ERROR_DEVICE_LOST;
+ * what did reach the screen was the old-size picture in a corner.
+ *
+ * @fallback_dims is for a swapchain that has no size yet. The caller
+ * has waited for this driver's own submissions. */
+static void vulkan_hdr_buffers_init(vk_t *vk, unsigned fallback_dims)
+{
+   unsigned dims = vk->context->swapchain_dims;
+
+   if (!VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
+      dims       = fallback_dims;
+
+   vulkan_destroy_hdr_buffer(vk->context->device, &vk->offscreen_buffer);
+   vulkan_destroy_hdr_buffer(vk->context->device, &vk->readback_image);
+
+   vulkan_init_render_target(&vk->offscreen_buffer, dims,
+         VK_FORMAT_B8G8R8A8_UNORM, vk->sdr_render_pass, vk->context);
+   vulkan_init_render_target(&vk->readback_image, dims,
+         VK_FORMAT_B8G8R8A8_UNORM, vk->readback_render_pass, vk->context);
+}
 #endif
 
 static void *vulkan_init(const video_info_t *video,
@@ -6470,12 +6504,7 @@ static void *vulkan_init(const video_info_t *video,
     * the SDR render pass (B8G8R8A8), causing a render pass format
     * mismatch. The end-of-frame resize handler will recreate these. */
    if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
-   {
-      vulkan_init_render_target(&vk->offscreen_buffer, vk->video_dims,
-            VK_FORMAT_B8G8R8A8_UNORM, vk->sdr_render_pass, vk->context);
-      vulkan_init_render_target(&vk->readback_image, vk->video_dims,
-            VK_FORMAT_B8G8R8A8_UNORM, vk->readback_render_pass, vk->context);
-   }
+      vulkan_hdr_buffers_init(vk, vk->video_dims);
 #endif
 
    /* Not a frame yet, so the recording state is read here, on the
@@ -6531,6 +6560,12 @@ static void vulkan_check_swapchain(vk_t *vk)
          vulkan_init_hdr_readback_render_pass(vk);
 #endif
       vulkan_init_framebuffers(vk);
+#ifdef VULKAN_HDR_SWAPCHAIN
+      /* The swapchain's images have changed, and may have changed
+       * size: the buffers the HDR frame draws through go with them. */
+      if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+         vulkan_hdr_buffers_init(vk, vk->video_dims);
+#endif
       vulkan_init_pipelines(vk);
       vulkan_init_samplers(vk);
       vulkan_init_textures(vk);
@@ -9161,11 +9196,11 @@ static bool vulkan_frame(void *data, const void *frame,
           * In HDR10 mode the game also renders through this buffer;
           * in HDR16 (scRGB) mode only the menu/overlay uses it so
           * that the copy pass can linearize sRGB content. */
-         vulkan_init_render_target(&vk->offscreen_buffer, video_info->dims,
-               VK_FORMAT_B8G8R8A8_UNORM, vk->sdr_render_pass, vk->context);
-         /* Create image for readback target in bgra8 format */
-         vulkan_init_render_target(&vk->readback_image, video_info->dims,
-               VK_FORMAT_B8G8R8A8_UNORM, vk->readback_render_pass, vk->context);
+         /* At the swapchain's size, which set_resize has just
+          * settled, and not the frontend's: see
+          * vulkan_hdr_buffers_init(). The readback image is made with
+          * it, in bgra8. */
+         vulkan_hdr_buffers_init(vk, video_info->dims);
       }
 #endif /* VULKAN_HDR_SWAPCHAIN */
       vk->flags &= ~VK_FLAG_SHOULD_RESIZE;
