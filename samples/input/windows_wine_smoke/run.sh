@@ -50,6 +50,20 @@
 # In all of them the input driver is started by the frontend for the
 # window, once the video driver is up, and not by the video driver.
 #
+# The scenarios above use the GDI video driver, whose fullscreen toggle
+# restarts it. Two more use OpenGL, on Wine's software rasteriser:
+#
+#   OpenGL                      the toggle restyles the window in
+#                               place and restarts nothing; closing
+#                               the content restarts the driver, and
+#                               the window is left up and taken back
+#                               with the pixel format it had.
+#   OpenGL, toggle by restart   RETROARCH_FULLSCREEN_IN_PLACE=0: the
+#                               toggle restarts the driver as it used
+#                               to, on the kept window.
+#
+# ONLY=<part of a scenario's name> runs just the scenarios that match.
+#
 # And the window. In every scenario above it is left up across both
 # restarts and taken back by the driver that comes next - with
 # threaded video, where the video thread is held for it, and without.
@@ -103,7 +117,8 @@ sleep 1
 
 write_cfg() {  # $1: video_threaded  $2: input driver  $3: joypad driver
    cat > "$work/retroarch.cfg" <<CFG
-video_driver = "gdi"
+video_driver = "${VIDEO_DRIVER:-gdi}"
+video_vsync = "false"
 input_driver = "$2"
 input_joypad_driver = "$3"
 menu_driver = "rgui"
@@ -180,12 +195,19 @@ failures=0
 scenario() {
    local name=$1 threaded=$2 want_bulk=$3 want_joy=$4 nomsg=$5
    local log="$work/$name.log" try rc video bulk joy msg ok b_down b_up j_seq stale win off byname
+   local want_video=${WANT_VIDEO:-3}
+   if [ -n "${ONLY:-}" ]; then
+      case "$name" in
+         *"$ONLY"*) ;;
+         *) return ;;
+      esac
+   fi
    write_cfg "$threaded" "${6:-raw}" "${7:-winraw_joypad}"
    # key delivery on a virtual display with no window manager is not
    # exact: a scenario gets a second go before it counts as failed
    for try in 1 2; do
       play "$log"; rc=$?
-      video=$(count "$log" 'GDI\] Init complete')
+      video=$(count "$log" "${VIDEO_STARTED:-GDI\] Init complete}")
       bulk=$(count "$log" 'read in bulk by the poll')
       joy=$(count "$log" 'Found joypad driver')
       b_down=$(count "$log" 'smoke core\] joypad B pressed')
@@ -199,7 +221,7 @@ scenario() {
             | grep -avc ', 0 as messages')
       ok=yes
       [ "$rc" = 0 ] || ok=no
-      [ "$video" = 3 ] || ok=no
+      [ "$video" = "$want_video" ] || ok=no
       [ "$bulk" = "$want_bulk" ] || ok=no
       [ "$joy" = "$want_joy" ] || ok=no
       [ "$b_down" = 2 ] && [ "$b_up" = 2 ] || ok=no
@@ -230,7 +252,7 @@ scenario() {
          | grep -a "Taken by the window's thread" | sed 's/.*\[WinRaw\] /       /'
    else
       echo "[FAIL] $name: quit by itself: $([ "$rc" = 0 ] && echo yes || echo no);" \
-           "video driver started $video (want 3), input driver by the poll $bulk (want $want_bulk)," \
+           "video driver started $video (want $want_video), input driver by the poll $bulk (want $want_bulk)," \
            "joypad driver started $joy (want $want_joy);" \
            "lines on how old the state was at the poll: $stale;" \
            "window left up, taken, not taken: $win (want ${WANT_WINDOW:-2 2 0});" \
@@ -250,6 +272,10 @@ RETROARCH_RAWINPUT_POLL=0 scenario "RETROARCH_RAWINPUT_POLL=0" true 0 3 any
 scenario "DirectInput" true 0 3 any dinput dinput
 WANT_WINDOW="0 0 0" RETROARCH_WINDOW_KEEP=0 scenario "RETROARCH_WINDOW_KEEP=0" true 1 1 nomsg
 WANT_WINDOW="2 0 2" RETROARCH_WINDOW_KEEP=2 scenario "window left up and not taken" true 1 1 nomsg
+VIDEO_DRIVER=gl VIDEO_STARTED='Found GL context' WANT_VIDEO=2 WANT_WINDOW="1 1 0" \
+   scenario "OpenGL" true 1 1 nomsg
+VIDEO_DRIVER=gl VIDEO_STARTED='Found GL context' WANT_VIDEO=3 WANT_WINDOW="2 2 0" \
+   RETROARCH_FULLSCREEN_IN_PLACE=0 scenario "OpenGL, toggle by restart" true 1 1 nomsg
 
 if [ "$failures" != 0 ]; then
    echo "FAIL windows_wine_smoke: $failures"

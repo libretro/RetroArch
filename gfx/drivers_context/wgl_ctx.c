@@ -593,7 +593,13 @@ static void gfx_ctx_wgl_destroy(void *data)
    }
 
 #ifndef __WINRT__
-   if (window)
+   /* Left up for the next OpenGL driver, where it can be: it is taken
+    * back if the pixel format it has is still the one wanted
+    * (win32_window_keep()). Desktop OpenGL only; an EGL window goes
+    * as it did. */
+   if (     window
+         && !(   win32_api == GFX_CTX_OPENGL_API
+              && win32_window_keep()))
    {
       win32_monitor_from_window();
       win32_destroy_window();
@@ -680,6 +686,17 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
       unsigned dims,
       bool fullscreen)
 {
+#ifndef __WINRT__
+   /* With a window already up this is a fullscreen toggle on it: the
+    * window is restyled where it stands, and the driver sees the new
+    * size through check_window, as for any resize. The context, and
+    * everything made in it, stays. Where that is refused - exclusive
+    * fullscreen - this goes on as it always has. */
+   if (     win32_get_window()
+         && win32_window_set_fullscreen(dims, fullscreen))
+      return true;
+#endif
+
    if (!win32_set_video_mode(NULL, dims, fullscreen))
    {
       RARCH_ERR("[WGL] win32_set_video_mode failed.\n");
@@ -788,6 +805,10 @@ static uint32_t gfx_ctx_wgl_get_flags(void *data)
 #ifndef __WINRT__
          if (win32_backbuffer_is_scrgb())
             BIT32_SET(flags, GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER);
+         /* a borderless fullscreen toggle restyles the window; see
+          * gfx_ctx_wgl_set_video_mode() */
+         if (win32_fullscreen_in_place())
+            BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
 #endif
 
          if (wgl_flags & WGL_FLAG_CORE_HW_CTX_ENABLE)

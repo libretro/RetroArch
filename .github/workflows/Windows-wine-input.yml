@@ -18,6 +18,9 @@ name: CI Windows raw input under Wine
 # In all of those the window is left up across both restarts and
 # taken back; two more destroy it with the driver as before
 # (RETROARCH_WINDOW_KEEP=0) and leave it up without taking it (=2).
+# Those use the GDI video driver. Two more use OpenGL on Wine's
+# software rasteriser: the fullscreen toggle restyling the window in
+# place, and - with that turned off - restarting on the kept window.
 # See samples/input/windows_wine_smoke/run.sh.
 #
 # Wine is not Windows: what this holds is that the frontend, the pump,
@@ -40,6 +43,7 @@ on:
       - 'gfx/common/win32_msg_route.h'
       - 'gfx/display_servers/dispserv_win32.c'
       - 'gfx/drivers/gdi_gfx.c'
+      - 'gfx/drivers_context/wgl_ctx.c'
       - 'gfx/video_driver.c'
       - 'gfx/video_thread_wrapper.*'
       - 'ui/drivers/ui_win32.c'
@@ -87,7 +91,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 20
         run: |
-          pkgs="build-essential ccache gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 wine64 xvfb xdotool"
+          pkgs="build-essential ccache gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 wine64 xvfb xdotool libgl1-mesa-dri"
           for i in 1 2 3; do
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
@@ -134,8 +138,8 @@ jobs:
           ccache -M 500M
           ccache -z
           # What the test runs has to be real: the Win32 window code,
-          # the GDI driver, the raw input drivers, the menu, threads.
-          # Everything else is build time.
+          # the GDI and OpenGL drivers, the raw input drivers, the
+          # menu, threads. Everything else is build time.
           ./configure --host=x86_64-w64-mingw32 \
                       --disable-qt --disable-vulkan --disable-ffmpeg \
                       --disable-networking --disable-cheevos \
@@ -147,7 +151,7 @@ jobs:
                       --disable-accessibility --disable-langextra \
                       --disable-libretrodb --disable-discord \
                       --disable-d3d9 --disable-d3d10 --disable-d3d11 \
-                      --disable-d3d12 --disable-opengl --disable-sdl \
+                      --disable-d3d12 --disable-sdl \
                       --disable-sdl2 --disable-video_filter \
                       --disable-dsp_filter --disable-crtswitchres
           make -j$(nproc) CC="ccache x86_64-w64-mingw32-gcc" \

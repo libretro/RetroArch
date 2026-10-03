@@ -1696,6 +1696,13 @@ void win32_window_proc_setup(enum win32_window_family family)
  * the same window. Never when the program is shutting down.
  * RETROARCH_WINDOW_KEEP=0 in the environment turns it off.
  *
+ * And for the OpenGL family, with one condition. A window's pixel
+ * format is set once and cannot be changed, and the format OpenGL
+ * wants depends on whether HDR is on. So a kept OpenGL window is
+ * taken only if the format it has is the one that would be chosen for
+ * it now (win32_window_pixel_format_fits()); otherwise it goes and a
+ * new one is made.
+ *
  * And for a Direct3D driver that has given its window a tag
  * (win32_window_tag()), which says two things: that it frees
  * everything it had on the window before it leaves it, and that it
@@ -1705,10 +1712,13 @@ void win32_window_proc_setup(enum win32_window_family family)
 static bool win32_window_family_keeps(void)
 {
    if (     win32_wnd_family == WIN32_WINDOW_VULKAN
-         || win32_wnd_family == WIN32_WINDOW_GDI)
+         || win32_wnd_family == WIN32_WINDOW_GDI
+         || win32_wnd_family == WIN32_WINDOW_WGL)
       return true;
    return win32_wnd_family == WIN32_WINDOW_D3D && win32_wnd_tag;
 }
+
+static bool win32_window_pixel_format_fits(HWND hwnd);
 
 void win32_window_tag(const char *tag)
 {
@@ -1837,7 +1847,9 @@ static HWND win32_window_take_kept(void)
    win32_kept_hwnd = NULL;
    if (     (int)win32_wnd_family != win32_kept_family
          || win32_wnd_tag != win32_kept_tag
-         || win32_window_keep_mode() != 1)
+         || win32_window_keep_mode() != 1
+         || (   win32_wnd_family == WIN32_WINDOW_WGL
+             && !win32_window_pixel_format_fits(hwnd)))
    {
       win32_window_destroy_kept(hwnd);
       RARCH_LOG("[Win32] The window left up is not one this driver takes: destroyed.\n");
@@ -2918,7 +2930,10 @@ void win32_setup_pixel_format(HDC hdc, bool supports_gl)
                PIXELFORMATDESCRIPTOR fpfd = {0};
                fpfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
                DescribePixelFormat(hdc, fpf, sizeof(fpfd), &fpfd);
-               if (SetPixelFormat(hdc, fpf, &fpfd))
+               /* (a window taken back from the last driver has it
+                * already; it can be set only once) */
+               if (     GetPixelFormat(hdc) == fpf
+                     || SetPixelFormat(hdc, fpf, &fpfd))
                {
                   win32_scrgb_backbuffer = true;
                   RARCH_LOG("[Win32] Using FP16 scRGB backbuffer for HDR.\n");
@@ -2950,8 +2965,53 @@ void win32_setup_pixel_format(HDC hdc, bool supports_gl)
       pfd.dwFlags  |= PFD_SUPPORT_OPENGL;
 
    pf = ChoosePixelFormat(hdc, &pfd);
-   if (pf == 0 || !SetPixelFormat(hdc, pf, &pfd))
+   if (     pf == 0
+         || (   GetPixelFormat(hdc) != pf
+             && !SetPixelFormat(hdc, pf, &pfd)))
       RARCH_ERR("[Win32] Failed to set pixel format.\n");
+}
+
+/* For a window that already has a pixel format - one left up by the
+ * last OpenGL driver: whether it is the format
+ * win32_setup_pixel_format() would give the window now. It follows
+ * that function's choice step for step: the FP16 format when HDR is
+ * asked for, the display is in HDR mode and the format can be had,
+ * the plain one otherwise. */
+static bool win32_window_pixel_format_fits(HWND hwnd)
+{
+   PIXELFORMATDESCRIPTOR pfd = {0};
+   settings_t *settings      = config_get_ptr();
+   HDC hdc                   = GetDC(hwnd);
+   int cur, want             = 0;
+
+   if (!hdc)
+      return false;
+   cur = GetPixelFormat(hdc);
+   if (cur)
+   {
+#if !defined(_XBOX) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE) || defined(HAVE_OPENGL1))
+      if (     settings
+            && settings->uints.video_hdr_mode > 0
+            && win32_display_hdr_active(hwnd))
+         want          = win32_try_scrgb_pixel_format(hdc);
+#endif
+      if (!want)
+      {
+         pfd.nSize        = sizeof(PIXELFORMATDESCRIPTOR);
+         pfd.nVersion     = 1;
+         pfd.dwFlags      = PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER
+                          | PFD_SUPPORT_OPENGL;
+         pfd.iPixelType   = PFD_TYPE_RGBA;
+         pfd.cColorBits   = 32;
+         pfd.cDepthBits   = 0;
+         pfd.cStencilBits = 0;
+         pfd.iLayerType   = PFD_MAIN_PLANE;
+         want             = ChoosePixelFormat(hdc, &pfd);
+      }
+   }
+   ReleaseDC(hwnd, hdc);
+   /* none set yet: whatever is wanted can be */
+   return !cur || want == cur;
 }
 
 #ifndef __WINRT__
