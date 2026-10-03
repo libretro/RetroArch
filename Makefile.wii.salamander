@@ -65,8 +65,8 @@ APP_BOOTER_DIR = wii/app_booter
 
 OBJ = frontend/frontend_salamander.o \
 		frontend/frontend_driver.o \
-		frontend/drivers/platform_gx.o \
-		frontend/drivers/platform_wii.o \
+		frontend/drivers/platform_gx_libogc.o \
+		frontend/drivers/platform_wii_libogc.o \
 		libretro-common/file/file_path.o \
 		libretro-common/file/file_path_io.o \
 		libretro-common/hash/lrc_hash.o \

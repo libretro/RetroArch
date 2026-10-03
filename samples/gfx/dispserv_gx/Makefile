@@ -1,13 +1,13 @@
 TARGET := dispserv_gx_test
 
-# Links the real display server and its mode rules. dispserv_gx.c
+# Links the real display server and its mode rules. dispserv_gx_libogc.c
 # reaches libogc for four VIDEO_* queries and three SYSCONF ones; the
 # stubs/ headers declare them in libogc's shapes and the test defines
 # them, so it can put the console on any TV standard and cable.
 REPO_ROOT := ../../..
 
 SOURCES := dispserv_gx_test.c \
-           $(REPO_ROOT)/gfx/display_servers/dispserv_gx.c \
+           $(REPO_ROOT)/gfx/display_servers/dispserv_gx_libogc.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_gx_modes.c
 
 CFLAGS  += -Wall -std=gnu99 -g -O0 \

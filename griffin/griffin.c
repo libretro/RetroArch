@@ -630,8 +630,8 @@ VIDEO DRIVER
 
 #if defined(GEKKO)
 #ifdef HW_RVL
-#include "../gfx/drivers/gx_gfx_vi_encoder.c"
-#include "../libretro-common/memory/mem2_manager.c"
+#include "../gfx/drivers/gx_gfx_vi_encoder_libogc.c"
+#include "../libretro-common/memory/mem2_manager_libogc.c"
 #endif
 #endif
 
@@ -705,8 +705,8 @@ VIDEO DRIVER
 #include "../gfx/drivers/rsx_gfx.c"
 #elif defined(GEKKO)
 #include "../gfx/display_servers/dispserv_gx_modes.c"
-#include "../gfx/display_servers/dispserv_gx.c"
-#include "../gfx/drivers/gx_gfx.c"
+#include "../gfx/display_servers/dispserv_gx_libogc.c"
+#include "../gfx/drivers/gx_gfx_libogc.c"
 #elif defined(PSP)
 #include "../gfx/drivers/psp1_gfx.c"
 #elif defined(PS2)
@@ -803,7 +803,7 @@ INPUT
 #include "../input/drivers_joypad/ctr_joypad.c"
 #elif defined(GEKKO)
 #include "../input/drivers/gx_input.c"
-#include "../input/drivers_joypad/gx_joypad.c"
+#include "../input/drivers_joypad/gx_joypad_libogc.c"
 #elif defined(__wiiu__)
 #include "../input/common/hid/hid_device_driver.c"
 #include "../input/common/hid/device_wiiu_gca.c"
@@ -912,7 +912,7 @@ INPUT (HID)
 #endif
 
 #ifdef HAVE_WIIUSB_HID
-#include "../input/drivers_hid/wiiusb_hid.c"
+#include "../input/drivers_hid/wiiusb_hid_libogc.c"
 #endif
 
 #include "../input/connect/joypad_connection.c"
@@ -1041,7 +1041,7 @@ AUDIO
 #elif defined(XENON)
 #include "../audio/drivers/xenon360_audio.c"
 #elif defined(GEKKO)
-#include "../audio/drivers/gx_audio.c"
+#include "../audio/drivers/gx_audio_libogc.c"
 #elif defined(__wiiu__)
 #include "../audio/drivers/wiiu_audio.c"
 #elif defined(HAVE_RWEBAUDIO)
@@ -1361,9 +1361,9 @@ FRONTEND
 #endif
 
 #if defined(GEKKO)
-#include "../frontend/drivers/platform_gx.c"
+#include "../frontend/drivers/platform_gx_libogc.c"
 #ifdef HW_RVL
-#include "../frontend/drivers/platform_wii.c"
+#include "../frontend/drivers/platform_wii_libogc.c"
 #endif
 #elif defined(__wiiu__)
 #include "../frontend/drivers/platform_wiiu.c"

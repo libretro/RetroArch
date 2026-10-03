@@ -1,4 +1,4 @@
-/* Host stand-in for the Wii SYSCONF queries dispserv_gx.c makes. */
+/* Host stand-in for the Wii SYSCONF queries dispserv_gx_libogc.c makes. */
 #ifndef DISPSERV_GX_TEST_OGC_CONF_H
 #define DISPSERV_GX_TEST_OGC_CONF_H
 

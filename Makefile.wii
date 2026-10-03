@@ -179,7 +179,7 @@ INCLUDE += -I./libretro-common/include \
 	   -Ideps/rcheevos/include
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
 
-OBJ =  $(PLATOBJS) audio/drivers/gx_audio.o gfx/drivers/gx_gfx.o gfx/display_servers/dispserv_gx.o gfx/display_servers/dispserv_gx_modes.o input/drivers/gx_input.o frontend/drivers/platform_gx.o input/drivers_joypad/gx_joypad.o libretro-common/memory/mem2_manager.o gfx/drivers/gx_gfx_vi_encoder.o frontend/drivers/platform_wii.o input/drivers_hid/wiiusb_hid.o
+OBJ =  $(PLATOBJS) audio/drivers/gx_audio_libogc.o gfx/drivers/gx_gfx_libogc.o gfx/display_servers/dispserv_gx_libogc.o gfx/display_servers/dispserv_gx_modes.o input/drivers/gx_input.o frontend/drivers/platform_gx_libogc.o input/drivers_joypad/gx_joypad_libogc.o libretro-common/memory/mem2_manager_libogc.o gfx/drivers/gx_gfx_vi_encoder_libogc.o frontend/drivers/platform_wii_libogc.o input/drivers_hid/wiiusb_hid_libogc.o
 
 ifeq ($(EXTERNAL_LIBOGC), 0)
    # Bridge the prebuilt in-tree libogc's __syscalls table onto the

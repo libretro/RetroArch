@@ -26,7 +26,7 @@
 audio/drivers/wiiu_audio.c|memcpy|offsets|offsets
 cheevos/cheevos_rvz.c|memcpy|block_hashes|block_hashes
 ctr/ctr_svchax.c|memcpy|flush_buffer|flush_buffer
-frontend/drivers/platform_gx.c|strlcpy|g_defaults.dirs|g_defaults.dirs
+frontend/drivers/platform_gx_libogc.c|strlcpy|g_defaults.dirs|g_defaults.dirs
 frontend/drivers/platform_ps3.c|strlcpy|g_defaults.dirs|g_defaults.dirs
 gfx/drivers/sdl_rs90_gfx.c|memcpy|target|target
 gfx/video_filters/ntsc_crt.c|memcpy|v->out|v->out

@@ -21,7 +21,7 @@
  */
 
 /* Contract test for the GameCube/Wii display server
- * (gfx/display_servers/dispserv_gx.c + dispserv_gx_modes.c), linked
+ * (gfx/display_servers/dispserv_gx_libogc.c + dispserv_gx_modes.c), linked
  * as they ship against stubbed libogc queries.
  *
  * On every TV standard the console can be set to (NTSC, NTSC with
@@ -197,7 +197,7 @@ static unsigned count_current(const video_display_config_t *l, unsigned n,
 
 static void test_table_ids(void)
 {
-   /* The config's current_resolution_id values, as gx_gfx.c's
+   /* The config's current_resolution_id values, as gx_gfx_libogc.c's
     * GX_RESOLUTIONS_* enum numbered them */
    CHECK(gx_modes_count() == 40, "table has %u ids", gx_modes_count());
    CHECK(gx_modes_dims(0)  == 0, "id 0 is not the default");

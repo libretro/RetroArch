@@ -277,11 +277,11 @@ platform_video "odroidgo2 video" \
    "-DHAVE_ODROIDGO2 -DHAVE_OPENGL -DHAVE_GLSL" "" \
    gfx/drivers/gl2.c ""
 platform_video "gx video" "-DGEKKO -DHW_RVL" "-I$STUBS/gx" \
-   gfx/drivers/gx_gfx.c ""
+   gfx/drivers/gx_gfx_libogc.c ""
 # The GameCube build takes its display offset from SRAM instead of the
 # Wii's configuration; nothing compiled that branch.
 platform_video "gx video (GameCube)" "-DGEKKO -DHW_DOL" "-I$STUBS/gx" \
-   gfx/drivers/gx_gfx.c ""
+   gfx/drivers/gx_gfx_libogc.c ""
 platform_video "switch video" \
    "-DHAVE_LIBNX -DSWITCH -D__SWITCH__" "-I$STUBS/libnx" \
    gfx/drivers/switch_nx_gfx.c ""
@@ -648,7 +648,7 @@ check "console menu+gfx: gekko"   "$HOSTOFF $MG_BASE -Itools/platform_stubs/gekk
 # behind that platform's #ifdef and the desktop makefiles never build
 # it - so a C89 slip or a missing declaration in one sits until the
 # console job runs, which is how a mixed declaration lived in
-# gx_joypad.c. These are the ones the stubs already in the tree can
+# gx_joypad_libogc.c. These are the ones the stubs already in the tree can
 # reach, with one stub added for the pair of PSP input drivers - the
 # 3ds audio drivers want fifteen more symbols whose libctru signatures
 # cannot be checked from here, and a stub that guessed one would let a
@@ -664,10 +664,10 @@ check "console menu+gfx: gekko"   "$HOSTOFF $MG_BASE -Itools/platform_stubs/gekk
 CDECL="-Wdeclaration-after-statement -Werror=declaration-after-statement"
 GEKKO_INC="-Iwii/libogc/include -Itools/platform_stubs/gekko"
 check "gekko: gx_input"        "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" input/drivers/gx_input.c
-check "gekko: gx_joypad"       "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" input/drivers_joypad/gx_joypad.c
-check "gekko: mem2_manager"    "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" libretro-common/memory/mem2_manager.c
-check "gekko: dispserv_gx"     "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" gfx/display_servers/dispserv_gx.c
-check "gamecube: dispserv_gx"  "$HOSTOFF $GEKKO_INC -DGEKKO -DRARCH_CONSOLE $CDECL" gfx/display_servers/dispserv_gx.c
+check "gekko: gx_joypad"       "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" input/drivers_joypad/gx_joypad_libogc.c
+check "gekko: mem2_manager"    "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" libretro-common/memory/mem2_manager_libogc.c
+check "gekko: dispserv_gx"     "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" gfx/display_servers/dispserv_gx_libogc.c
+check "gamecube: dispserv_gx"  "$HOSTOFF $GEKKO_INC -DGEKKO -DRARCH_CONSOLE $CDECL" gfx/display_servers/dispserv_gx_libogc.c
 check "gekko: dispserv_gx_modes" "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" gfx/display_servers/dispserv_gx_modes.c
 check "psl1ght: dispserv_ps3"  "$HOSTOFF -Itools/platform_stubs/ps3 -D__PS3__ -D__PSL1GHT__ -DRARCH_CONSOLE $CDECL" gfx/display_servers/dispserv_ps3.c gfx/display_servers/dispserv_ps3_modes.c
 check "3ds: ctr_input"         "$HOSTOFF -Itools/platform_stubs/ctr -D_3DS -D__3DS__ -DARM11 -DRARCH_CONSOLE $CDECL" input/drivers/ctr_input.c

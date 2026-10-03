@@ -16,7 +16,7 @@
 
 /* The built-in 5x10 glyph set. Defined here rather than in
  * bitmap.h so that the three translation units using it -
- * stb.c, bitmapfont.c and gx_gfx.c - share one copy instead
+ * stb.c, bitmapfont.c and gx_gfx_libogc.c - share one copy instead
  * of emitting 1792 bytes each. The five other includers of
  * that header want only the FONT_* metrics. */
 

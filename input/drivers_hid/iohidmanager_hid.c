@@ -55,7 +55,7 @@ struct iohidmanager_hid_adapter
    /* pad_connection_pad_init() returns int32_t and can return -1 on
     * allocation failure.  Storing the return in uint32_t compiles
     * but makes the `slot == -1` check at the call site a signed/
-    * unsigned comparison GCC warns about.  Matches wiiusb_hid.c's
+    * unsigned comparison GCC warns about.  Matches wiiusb_hid_libogc.c's
     * adapter struct which got this right. */
    int32_t slot;
    IOHIDDeviceRef handle;

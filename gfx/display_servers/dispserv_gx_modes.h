@@ -15,7 +15,7 @@
 /* The GameCube/Wii video mode table and the rules that turn one of
  * its entries into what the VI is actually programmed with. Nothing
  * here touches libogc: the TV standard comes in as a
- * gx_vi_standard_t (dispserv_gx.c fills it from the console), so the
+ * gx_vi_standard_t (dispserv_gx_libogc.c fills it from the console), so the
  * display server's mode list and the video driver's mode switch are
  * worked out by the same code, and a host build can test it. */
 

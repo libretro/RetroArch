@@ -1,4 +1,4 @@
-/* Host stand-in for the libogc surface gfx/display_servers/dispserv_gx.c
+/* Host stand-in for the libogc surface gfx/display_servers/dispserv_gx_libogc.c
  * reaches: the VI constants and the four VIDEO_* queries, in the shapes
  * libogc declares them. The test drives what they return. */
 #ifndef DISPSERV_GX_TEST_GCCORE_H

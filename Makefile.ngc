@@ -170,7 +170,7 @@ INCLUDE += -I./libretro-common/include \
            -Ideps
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
 
-OBJ =  $(PLATOBJS) audio/drivers/gx_audio.o gfx/drivers/gx_gfx.o gfx/display_servers/dispserv_gx.o gfx/display_servers/dispserv_gx_modes.o input/drivers/gx_input.o frontend/drivers/platform_gx.o input/drivers_joypad/gx_joypad.o
+OBJ =  $(PLATOBJS) audio/drivers/gx_audio_libogc.o gfx/drivers/gx_gfx_libogc.o gfx/display_servers/dispserv_gx_libogc.o gfx/display_servers/dispserv_gx_modes.o input/drivers/gx_input.o frontend/drivers/platform_gx_libogc.o input/drivers_joypad/gx_joypad_libogc.o
 
 ifeq ($(EXTERNAL_LIBOGC), 0)
    # Bridge the prebuilt in-tree libogc's __syscalls table onto the
