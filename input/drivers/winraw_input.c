@@ -244,6 +244,11 @@ typedef struct
    unsigned long drain_empty;    /* reads that found nothing waiting */
    unsigned long by_message;     /* reports that came as a message */
    unsigned long kev_dropped;
+   /* Taken by the window's thread: how old, at each poll, what that
+    * thread had taken was (see winraw_pump_done()). */
+   uint64_t      stale_sum;      /* microseconds, summed */
+   uint32_t      stale_max;
+   unsigned long stale_polls;
 } winraw_input_t;
 
 /* TODO/FIXME - static globals */
@@ -1086,6 +1091,42 @@ bool winraw_raw_input_polled(void)
    return !(env && env[0] == '0');
 }
 
+/* Taken by the window's thread - the driver as it was, and as it is
+ * with RETROARCH_RAWINPUT_POLL=0 - a report gets into the state the
+ * poll reads when that thread pumps its messages, which the video
+ * thread does once a frame. So what the poll reads is as old as that
+ * thread's last pump: whatever a device has sent since waits for the
+ * poll after the next one. Read by the poll that wait is not there,
+ * which is the point of reading by the poll; this measures it where it
+ * still exists, so that there is a number for it and not an argument.
+ *
+ * The thread that made the window stamps the clock each time its pump
+ * has run dry; the poll, in winraw_poll(), takes the stamp's age. The
+ * figures are logged when the driver is freed. Nothing here runs when
+ * the poll reads. */
+static DWORD              winraw_legacy_tid;
+static retro_atomic_int_t winraw_legacy_pumped;
+static LARGE_INTEGER      winraw_legacy_freq;
+
+/* microseconds, the low 32 bits: for differences */
+static uint32_t winraw_legacy_now(void)
+{
+   LARGE_INTEGER now;
+   QueryPerformanceCounter(&now);
+   return (uint32_t)(
+           (now.QuadPart / winraw_legacy_freq.QuadPart) * 1000000
+         + (now.QuadPart % winraw_legacy_freq.QuadPart) * 1000000
+               / winraw_legacy_freq.QuadPart);
+}
+
+void winraw_pump_done(void)
+{
+   if (     winraw_legacy_tid
+         && GetCurrentThreadId() == winraw_legacy_tid)
+      retro_atomic_store_release_int(&winraw_legacy_pumped,
+            (int)(winraw_legacy_now() | 1));
+}
+
 /* For a thread's pump (ui_application_win32_process_events()): true
  * on the thread whose raw input the poll reads in bulk. The pump then
  * leaves raw input where it is - in the queue, for the poll - instead
@@ -1341,6 +1382,10 @@ static void *winraw_init(const char *joypad_driver)
       goto error;
 
    SetWindowLongPtr(wr->window, GWLP_USERDATA, (LONG_PTR)wr);
+   retro_atomic_store_release_int(&winraw_legacy_pumped, 0);
+   if (QueryPerformanceFrequency(&winraw_legacy_freq)
+         && winraw_legacy_freq.QuadPart > 0)
+      winraw_legacy_tid = GetCurrentThreadId();
 
 #ifndef _XBOX
    /* wr->window was created on this thread, so WM_INPUT is posted to
@@ -1417,6 +1462,24 @@ static void winraw_poll(void *data)
       if (wr->window && !winraw_queue_was_read)
          winraw_drain(wr);
       winraw_queue_was_read = false;
+   }
+   else
+   {
+      /* how old what the window's thread has taken is, now that it is
+       * read (winraw_pump_done()) */
+      int at = retro_atomic_load_acquire_int(&winraw_legacy_pumped);
+      if (at)
+      {
+         uint32_t age = winraw_legacy_now() - (uint32_t)at;
+         /* a pause, a dragged window: not a frame's wait */
+         if (age < 250000)
+         {
+            wr->stale_sum += age;
+            if (age > wr->stale_max)
+               wr->stale_max = age;
+            wr->stale_polls++;
+         }
+      }
    }
 
    /* Fix coordinates after a resolution change. Runs here rather than
@@ -1974,6 +2037,14 @@ static void winraw_free(void *data)
       DestroyWindow(wr->window);
       UnregisterClassA("winraw-input", NULL);
    }
+   winraw_legacy_tid = 0;
+   if (wr->stale_polls)
+      RARCH_DBG("[WinRaw] Taken by the window's thread: at the poll,"
+            " what that thread had taken was %.2f ms old on average and"
+            " %.2f ms at the most, over %lu polls. Read by the poll,"
+            " which is the default, that wait is not there.\n",
+            (double)wr->stale_sum / (double)wr->stale_polls / 1000.0,
+            (double)wr->stale_max / 1000.0, wr->stale_polls);
    free(g_mice);
    free(wr->mice);
 

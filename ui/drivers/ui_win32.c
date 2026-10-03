@@ -133,9 +133,12 @@ static void ui_application_win32_dispatch(MSG *msg)
 
 #if defined(HAVE_WINRAWINPUT) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
 extern bool winraw_poll_owns_thread(void);
+extern void winraw_pump_done(void);
 #define WIN32_RAW_INPUT_IS_POLLED() winraw_poll_owns_thread()
+#define WIN32_RAW_INPUT_PUMP_DONE() winraw_pump_done()
 #else
 #define WIN32_RAW_INPUT_IS_POLLED() false
+#define WIN32_RAW_INPUT_PUMP_DONE() ((void)0)
 #endif
 
 static void ui_application_win32_process_events(void)
@@ -169,8 +172,13 @@ static void ui_application_win32_process_events(void)
       }
    }
    else
+   {
       while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
          ui_application_win32_dispatch(&msg);
+      /* The raw input driver, where this thread takes its reports:
+       * they are in its state as of now. */
+      WIN32_RAW_INPUT_PUMP_DONE();
+   }
 
    /* The video thread pumps through here too (win32_check_window);
     * only the main thread may run the parked commands. */

@@ -35,7 +35,10 @@
 #                               and the poll all on one thread.
 #   RETROARCH_RAWINPUT_POLL=0   the driver as it was before any of
 #                               this: no bulk reads, restarted with
-#                               the video driver, still works.
+#                               the video driver, still works - and
+#                               says, each time it is freed, how old
+#                               what the poll read was (the wait that
+#                               reading by the poll removes).
 #   DirectInput                 the other input driver a Windows window
 #                               can get, with its joypad driver:
 #                               started by the same code, restarted
@@ -158,7 +161,7 @@ failures=0
 # passes through
 scenario() {
    local name=$1 threaded=$2 want_bulk=$3 want_joy=$4 nomsg=$5
-   local log="$work/$name.log" try rc video bulk joy msg ok b_down b_up j_seq
+   local log="$work/$name.log" try rc video bulk joy msg ok b_down b_up j_seq stale
    write_cfg "$threaded" "${6:-raw}" "${7:-winraw_joypad}"
    # key delivery on a virtual display with no window manager is not
    # exact: a scenario gets a second go before it counts as failed
@@ -184,15 +187,26 @@ scenario() {
       [ "$b_down" = 2 ] && [ "$b_up" = 2 ] || ok=no
       [ "$j_seq" = "down up down up " ] || ok=no
       [ "$nomsg" != nomsg ] || [ "$msg" = 0 ] || ok=no
+      # the old path measures the wait the new one removes; the new
+      # one has nothing to measure
+      stale=$(count "$log" "Taken by the window's thread: at the poll")
+      if [ "$name" = "RETROARCH_RAWINPUT_POLL=0" ]; then
+         [ "$stale" = 3 ] || ok=no
+      else
+         [ "$stale" = 0 ] || ok=no
+      fi
       [ "$ok" = yes ] && break
    done
    if [ "$ok" = yes ]; then
       echo "[pass] $name: video driver started $video times, input driver $bulk by the poll," \
            "joypad driver $joy; the core saw B twice and J's down and up twice; quit on Escape"
+      sed 's/\x1b\[[0-9;]*m//g' "$log" | tr -d '\r' \
+         | grep -a "Taken by the window's thread" | sed 's/.*\[WinRaw\] /       /'
    else
       echo "[FAIL] $name: quit by itself: $([ "$rc" = 0 ] && echo yes || echo no);" \
            "video driver started $video (want 3), input driver by the poll $bulk (want $want_bulk)," \
            "joypad driver started $joy (want $want_joy);" \
+           "lines on how old the state was at the poll: $stale;" \
            "the core saw B pressed $b_down and released $b_up (want 2 and 2), J: ${j_seq:-nothing}(want down up down up)" \
            "$([ "$nomsg" = nomsg ] && echo ", driver instances with reports taken as messages: $msg (want 0)")"
       sed 's/\x1b\[[0-9;]*m//g' "$log" | tr -d '\r' | grep -av "ALSA lib\|Playlist\]" | tail -25
