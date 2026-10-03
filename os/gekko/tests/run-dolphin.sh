@@ -4,7 +4,8 @@
 # DOLPHIN points at dolphin-emu-nogui.  "sw" renders with the software
 # renderer (headless through surfaceless EGL, e.g. Mesa) and writes XFB
 # copies to memory, for tests that read back what the GPU drew; frames
-# are copied to $DUMP if it is set.  Exits 0 when the test says PASSED.
+# are copied to $DUMP if it is set.  $SDIMG is the Wii's SD card image.
+# Exits 0 when the test says PASSED.
 ELF=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
 SECS=${2:-60}
 MODE=$3
@@ -19,6 +20,10 @@ set -- -u "$USERDIR" -p headless \
    -C Logger.Logs.OSREPORT_HLE=True \
    -C Logger.Options.WriteToConsole=True \
    -C Logger.Options.Verbosity=5
+if [ -n "$SDIMG" ]; then
+   set -- "$@" -C "Dolphin.General.WiiSDCardPath=$(cd "$(dirname "$SDIMG")" && pwd)/$(basename "$SDIMG")" \
+      -C Dolphin.Core.WiiSDCard=True -C Dolphin.Core.WiiSDCardAllowWrites=True
+fi
 if [ "$MODE" = sw ]; then
    export EGL_PLATFORM=surfaceless
    set -- "$@" -v "Software Renderer" \
