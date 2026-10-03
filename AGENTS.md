@@ -99,6 +99,13 @@ Historical commits may be used to understand established implementation patterns
 - Do not reproduce obsolete workarounds merely because they appear in an old commit.
 - Inspect surrounding current code before applying a historical pattern.
 
+## Regression tests
+
+Regression tests must build on both Windows and Linux.
+
+- Do not use POSIX-only or Win32-only headers or APIs in test code without a working path for the other platform; prefer libretro-common facilities.
+- Check that the test builds with a Linux toolchain and with mingw-w64 (MSYS2 MINGW64 or a cross-compiler) before submitting.
+
 ## Scope of changes
 
 Keep changes focused.
