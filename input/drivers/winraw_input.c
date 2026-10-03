@@ -2031,6 +2031,25 @@ static void winraw_grab_mouse(void *d, bool state)
    }
 }
 
+/* Left running across a video driver restart
+ * (input_driver_t::survives_video) when it is read by the poll. Its
+ * window is then the polling thread's, not the video driver's
+ * thread's; it looks the main window up afresh at every poll; and the
+ * two things it used to pick up only by being restarted - a mouse
+ * plugged in, the Windows-key setting - it does itself
+ * (winraw_mice_refresh(), winraw_nowinkey_apply()). The joypad driver
+ * is kept with it, so it has to be one that can stay too: winraw_joypad
+ * read by the poll. With any other joypad driver, or with
+ * RETROARCH_RAWINPUT_POLL=0, the driver is restarted with the video
+ * driver as it always was. */
+extern bool winraw_joypad_survives_video(void);
+
+static bool winraw_survives_video(void *data)
+{
+   winraw_input_t *wr = (winraw_input_t*)data;
+   return wr && wr->poll_drain && winraw_joypad_survives_video();
+}
+
 input_driver_t input_winraw = {
    winraw_init,
    winraw_poll,
@@ -2042,5 +2061,6 @@ input_driver_t input_winraw = {
    "raw",
    winraw_grab_mouse,
    NULL,
-   NULL
+   NULL,
+   winraw_survives_video
 };

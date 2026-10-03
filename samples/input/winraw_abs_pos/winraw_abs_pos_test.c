@@ -83,6 +83,7 @@ uint16_t win32_get_keyboard_mods(void) { return 0; }
 void winraw_joypad_take_hid(HANDLE device, const BYTE *data,
       DWORD report_size, DWORD count)
 { (void)device; (void)data; (void)report_size; (void)count; }
+bool winraw_joypad_survives_video(void) { return true; }
 void win32_hotplug_arm(void) { }
 bool win32_hotplug_due(void) { return false; }
 

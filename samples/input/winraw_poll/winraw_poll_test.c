@@ -120,6 +120,10 @@ enum retro_key input_keymaps_translate_keysym_to_rk(unsigned sym)
 static uint16_t published_mods;
 uint16_t win32_get_keyboard_mods(void) { return published_mods; }
 
+/* whether the controller driver can stay across a video restart */
+static bool joypad_can_stay;
+bool winraw_joypad_survives_video(void) { return joypad_can_stay; }
+
 /* the controller driver's entry for reports read in bulk */
 static unsigned hid_taken;
 static DWORD    hid_taken_size;
@@ -266,6 +270,9 @@ int main(void)
    CHECK(wr->window && GetWindowThreadProcessId(wr->window, NULL) == vt_tid,
          "with the switch off the window is not made by init, on init's thread");
    CHECK(winraw_drain_tid == 0, "a bulk-read thread is set with the switch off");
+   joypad_can_stay = true;
+   CHECK(!input_winraw.survives_video(wr),
+         "not read by the poll, the driver says it survives a video restart");
    winraw_poll(wr);
    CHECK(wr->drain_reads == 0, "a bulk read was made with the switch off");
    raw_window = wr->window;
@@ -294,6 +301,18 @@ int main(void)
          (unsigned long)GetWindowThreadProcessId(raw_window, NULL),
          (unsigned long)main_tid, (unsigned long)vt_tid);
    printf("   ok   by default: init makes no window; the first poll does, on the polling thread\n");
+
+   /* ---- left running across a video driver restart ---------------- */
+   /* Read by the poll, with a joypad driver that can stay too: yes.
+    * With one that cannot: no. */
+   joypad_can_stay = true;
+   CHECK(input_winraw.survives_video && input_winraw.survives_video(wr),
+         "read by the poll, the driver does not say it survives a video restart");
+   joypad_can_stay = false;
+   CHECK(!input_winraw.survives_video(wr),
+         "the driver says it survives with a joypad driver that does not");
+   joypad_can_stay = true;
+   printf("   ok   survives a video driver restart: yes read by the poll, no if the joypad driver cannot\n");
 
    /* ---- injected keys, read in bulk by one poll ------------------ */
    if (vt_window)
