@@ -79,6 +79,8 @@ struct remote
    uint8_t      busy;        /* the head is out */
    uint8_t      ext_pending; /* the extension's identifier asked for */
    uint8_t      rumble;
+   uint8_t      whammy_lo;   /* the guitar's whammy bar, as far as */
+   uint8_t      whammy_hi;   /* it has gone either way */
 };
 
 static struct remote     remotes[BT_MAX_LINKS];
@@ -204,8 +206,9 @@ static int8_t clamp8(int v)
    return (int8_t)(v < -128 ? -128 : v > 127 ? 127 : v);
 }
 
-static void decode_ext(gk_wiimote_t *st, const uint8_t *e)
+static void decode_ext(struct remote *r, const uint8_t *e)
 {
+   gk_wiimote_t *st = &r->st;
    if (st->ext == GK_WM_EXT_NUNCHUK)
    {
       st->stick[0][0] = clamp8(e[0] - 128);
@@ -226,6 +229,22 @@ static void decode_ext(gk_wiimote_t *st, const uint8_t *e)
       st->trigger[1]  = (uint8_t)(rt * 255 / 31);
       /* Active low; bit 8 is always set. */
       st->ext_buttons = (uint16_t)(~((e[4] << 8) | e[5]) & 0xfeff);
+   }
+   else if (st->ext == GK_WM_EXT_GUITAR)
+   {
+      /* The Classic Controller's layout: its left stick, and buttons
+       * where the Classic has theirs.  The whammy bar rests somewhere
+       * past 0; its travel is what it has been seen to cover. */
+      int w = e[3] & 0x1f;
+      st->stick[0][0] = clamp8(((e[0] & 0x3f) - 32) * 4);
+      st->stick[0][1] = clamp8(((e[1] & 0x3f) - 32) * 4);
+      if (w < r->whammy_lo)
+         r->whammy_lo = (uint8_t)w;
+      if (w > r->whammy_hi)
+         r->whammy_hi = (uint8_t)w;
+      st->trigger[1]  = (uint8_t)(r->whammy_hi - r->whammy_lo < 4 ? 0
+            : (w - r->whammy_lo) * 255 / (r->whammy_hi - r->whammy_lo));
+      st->ext_buttons = (uint16_t)(~((e[4] << 8) | e[5]) & GK_GH_ALL);
    }
 }
 
@@ -285,6 +304,13 @@ static void bt_input(unsigned link, const uint8_t *d, unsigned len)
                else if (idb[2] == 0xa4 && idb[3] == 0x20 && idb[4] == 1
                      && idb[5] == 1)
                   st->ext = GK_WM_EXT_CLASSIC;
+               else if (idb[0] == 0 && idb[2] == 0xa4 && idb[3] == 0x20
+                     && idb[4] == 1 && idb[5] == 3)
+               {
+                  st->ext      = GK_WM_EXT_GUITAR;
+                  r->whammy_lo = 0x1f;
+                  r->whammy_hi = 0;
+               }
                else
                   st->ext = GK_WM_EXT_OTHER;
                r->ext_pending = 0;
@@ -302,7 +328,7 @@ static void bt_input(unsigned link, const uint8_t *d, unsigned len)
             ir_pointer(&r->ir, p + 5, bar_on_top, &st->ir_x, &st->ir_y,
                   &st->ir_dots, &st->ir_valid);
             if (st->ext != GK_WM_EXT_NONE)
-               decode_ext(st, p + 15);
+               decode_ext(r, p + 15);
          }
          st->reports++;
          break;

@@ -1,4 +1,4 @@
-/* Wii: Wii Remotes and their Nunchuk and Classic Controller
+/* Wii: Wii Remotes and their Nunchuk, Classic Controller and guitar
  * extensions, over Bluetooth.
  *
  * Remotes synced to the console connect when a button is pressed and
@@ -46,11 +46,24 @@
 #define GK_CC_DOWN   0x4000
 #define GK_CC_RIGHT  0x8000
 
+/* The guitar's, in ext_buttons; strumming is up and down. */
+#define GK_GH_GREEN  GK_CC_A
+#define GK_GH_RED    GK_CC_B
+#define GK_GH_YELLOW GK_CC_X
+#define GK_GH_BLUE   GK_CC_Y
+#define GK_GH_ORANGE GK_CC_ZL
+#define GK_GH_UP     GK_CC_UP
+#define GK_GH_DOWN   GK_CC_DOWN
+#define GK_GH_PLUS   GK_CC_PLUS
+#define GK_GH_MINUS  GK_CC_MINUS
+#define GK_GH_ALL    0x54f9
+
 enum gk_wiimote_ext
 {
    GK_WM_EXT_NONE = 0,
    GK_WM_EXT_NUNCHUK,
    GK_WM_EXT_CLASSIC,
+   GK_WM_EXT_GUITAR,
    GK_WM_EXT_OTHER
 };
 
@@ -63,7 +76,7 @@ typedef struct gk_wiimote
    int16_t  ir_x;           /* where it points: -32767..32767 left to */
    int16_t  ir_y;           /* right, top to bottom; held at the edge */
    int8_t   stick[2][2];    /* x, y: -128..127, up positive */
-   uint8_t  trigger[2];     /* Classic L and R, 0..255 */
+   uint8_t  trigger[2];     /* Classic L, R (or whammy), 0..255 */
    uint8_t  connected;
    uint8_t  ext;            /* enum gk_wiimote_ext */
    uint8_t  battery;        /* 0..255 */

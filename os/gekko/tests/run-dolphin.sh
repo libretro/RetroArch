@@ -14,7 +14,9 @@
 # $PADS names a file of pipe commands (e.g. "PRESS A", "RELEASE A")
 # fed to the GameCube pad on port 1, one line per $PADSTEP seconds;
 # $WMPADS one for remote 1, whose pointer follows the MAIN axes
-# ("SET MAIN 1 0.5" points right, 0.5 0.5 at the centre).
+# ("SET MAIN 1 0.5" points right, 0.5 0.5 at the centre); X and Y
+# are a guitar's green fret and strum down, L its whammy bar and C its
+# stick.
 # $KEEP keeps Dolphin's user directory and log, and prints its path.
 # Exits 0 when the test says PASSED.
 ELF=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
@@ -62,6 +64,9 @@ if [ -n "$WMPADS" ]; then
       printf 'Buttons/A = `Button A`\nButtons/B = `Button B`\n'
       printf 'IR/Up = `Axis MAIN Y -`\nIR/Down = `Axis MAIN Y +`\n'
       printf 'IR/Left = `Axis MAIN X -`\nIR/Right = `Axis MAIN X +`\n'
+      printf 'Guitar/Frets/Green = `Button X`\nGuitar/Strum/Down = `Button Y`\n'
+      printf 'Guitar/Whammy/Bar = `Axis L +`\n'
+      printf 'Guitar/Stick/Up = `Axis C Y -`\nGuitar/Stick/Down = `Axis C Y +`\n'
    } >> "$USERDIR/Config/WiimoteNew.ini"
 fi
 set -- -u "$USERDIR" -p headless \

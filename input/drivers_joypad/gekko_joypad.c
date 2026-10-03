@@ -86,7 +86,8 @@ enum pad_kind
    KIND_GAMECUBE,
    KIND_WIIMOTE,
    KIND_NUNCHUK,
-   KIND_CLASSIC
+   KIND_CLASSIC,
+   KIND_GUITAR
 };
 
 #define BIT(n) (UINT64_C(1) << (n))
@@ -164,6 +165,7 @@ static const char *gekko_joypad_name(unsigned pad)
       case KIND_WIIMOTE:  return "Wiimote Controller";
       case KIND_NUNCHUK:  return "Nunchuk Controller";
       case KIND_CLASSIC:  return "Classic Controller";
+      case KIND_GUITAR:   return "Guitar Hero Guitar";
    }
    return NULL;
 }
@@ -302,6 +304,25 @@ static void wiimote_state(unsigned port, const gk_wiimote_t *w)
       return;
    }
 
+   if (w->ext == GK_WM_EXT_GUITAR)
+   {
+      /* On the Classic's numbers; the whammy bar pushes the right
+       * stick right. */
+      if (e & GK_GH_GREEN)  *s |= BIT(GX_CLASSIC_A);
+      if (e & GK_GH_RED)    *s |= BIT(GX_CLASSIC_B);
+      if (e & GK_GH_YELLOW) *s |= BIT(GX_CLASSIC_X);
+      if (e & GK_GH_BLUE)   *s |= BIT(GX_CLASSIC_Y);
+      if (e & GK_GH_ORANGE) *s |= BIT(GX_CLASSIC_ZL_TRIGGER);
+      if (e & GK_GH_UP)     *s |= BIT(GX_CLASSIC_UP);
+      if (e & GK_GH_DOWN)   *s |= BIT(GX_CLASSIC_DOWN);
+      if (e & GK_GH_PLUS)   *s |= BIT(GX_CLASSIC_PLUS);
+      if (e & GK_GH_MINUS)  *s |= BIT(GX_CLASSIC_MINUS);
+      analog_state[port][0][0] = (int16_t)(w->stick[0][0] * 256);
+      analog_state[port][0][1] = (int16_t)(w->stick[0][1] * -256);
+      analog_state[port][1][0] = (int16_t)(w->trigger[1] * 128);
+      return;
+   }
+
    /* Held sideways: the d-pad turns with it. */
    if (b & GK_WM_UP)    *s |= BIT(GX_WIIMOTE_LEFT);
    if (b & GK_WM_DOWN)  *s |= BIT(GX_WIIMOTE_RIGHT);
@@ -387,9 +408,10 @@ static void gekko_joypad_poll(void)
          {
             wiimote_state(port, &w);
             kind = w.ext == GK_WM_EXT_NUNCHUK ? KIND_NUNCHUK
-               : w.ext == GK_WM_EXT_CLASSIC ? KIND_CLASSIC : KIND_WIIMOTE;
-            /* Not with the Classic Controller in hand. */
-            if (kind != KIND_CLASSIC)
+               : w.ext == GK_WM_EXT_CLASSIC ? KIND_CLASSIC
+               : w.ext == GK_WM_EXT_GUITAR  ? KIND_GUITAR : KIND_WIIMOTE;
+            /* Not with the Classic Controller or the guitar in hand. */
+            if (kind != KIND_CLASSIC && kind != KIND_GUITAR)
                pointer_state(port, &w, &vp);
          }
       }

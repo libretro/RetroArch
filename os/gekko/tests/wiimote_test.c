@@ -1,10 +1,12 @@
 /* Wii Remote checks, run in Dolphin by run-dolphin.sh, whose emulated
  * remote 1 has a Nunchuk (or with WIIEXT=Classic a Classic
- * Controller): the remote connects over Bluetooth to slot 0, reports
- * continuously with the accelerometer at rest, the extension is found
- * with its sticks centred, the pointer follows the remote (run with
- * WMPADS=wiimote-ir.pipe, which turns it right and up), and the remote
- * goes when dropped. */
+ * Controller, WIIEXT=Guitar a guitar): the remote connects over
+ * Bluetooth to slot 0, reports continuously with the accelerometer at
+ * rest, the extension is found with its sticks centred, the pointer
+ * follows the remote (run with WMPADS=wiimote-ir.pipe, which turns it
+ * right and up, then holds the guitar's green fret, strums down, pushes
+ * the whammy bar and the stick up), and the remote goes when
+ * dropped. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,8 +58,8 @@ int main(int argc, char **argv)
    WAIT(5000, st.ext != GK_WM_EXT_NONE && st.reports > 10);
    snprintf(what, sizeof(what), "extension found (%u), battery %u",
          st.ext, st.battery);
-   CHECK((st.ext == GK_WM_EXT_NUNCHUK || st.ext == GK_WM_EXT_CLASSIC)
-         && st.battery > 0, what);
+   CHECK((st.ext == GK_WM_EXT_NUNCHUK || st.ext == GK_WM_EXT_CLASSIC
+         || st.ext == GK_WM_EXT_GUITAR) && st.battery > 0, what);
 
    gk_wiimote_read(0, &st);
    r0 = st.reports;
@@ -96,6 +98,18 @@ int main(int argc, char **argv)
    CHECK(st.ir_y < -16000 && abs(st.ir_x) < 4000, what);
    WAIT(10000, abs(st.ir_x) < 2000 && abs(st.ir_y) < 2000);
    CHECK(abs(st.ir_x) < 2000 && abs(st.ir_y) < 2000, "IR: back at the centre");
+
+   if (st.ext == GK_WM_EXT_GUITAR)
+   {
+      WAIT(10000, st.ext_buttons == (GK_GH_GREEN | GK_GH_DOWN)
+            && st.trigger[1] > 240 && st.stick[0][1] > 100);
+      snprintf(what, sizeof(what), "guitar: buttons %x, whammy %u, "
+            "stick %d %d", st.ext_buttons, st.trigger[1], st.stick[0][0],
+            st.stick[0][1]);
+      CHECK(st.ext_buttons == (GK_GH_GREEN | GK_GH_DOWN)
+            && st.trigger[1] > 240 && st.stick[0][1] > 100
+            && abs(st.stick[0][0]) < 16, what);
+   }
 
    gk_wiimote_rumble(0, 1);
    gk_sleep_us(100000);

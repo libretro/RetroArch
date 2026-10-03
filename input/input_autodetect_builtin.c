@@ -604,6 +604,24 @@ DECL_AXIS_EX(r_x_minus,  -2, "R-Stick Left") \
 DECL_AXIS_EX(r_y_plus,  +3, "R-Stick Down") \
 DECL_AXIS_EX(r_y_minus,   -3, "R-Stick Up")
 
+/* Frets as on the guitars with face buttons in their colours. */
+#define GXINPUT_GUITAR_DEFAULT_BINDS \
+DECL_BTN_EX(b, 13, "Green") \
+DECL_BTN_EX(a, 14, "Red") \
+DECL_BTN_EX(x, 15, "Yellow") \
+DECL_BTN_EX(y, 16, "Blue") \
+DECL_BTN_EX(l, 22, "Orange") \
+DECL_BTN_EX(start, 17, "+") \
+DECL_BTN_EX(select, 18, "-") \
+DECL_BTN_EX(menu_toggle, 34, "Home") \
+DECL_BTN_EX(up, 24, "Strum Up") \
+DECL_BTN_EX(down, 25, "Strum Down") \
+DECL_AXIS_EX(l_x_plus,  +0, "Stick Right") \
+DECL_AXIS_EX(l_x_minus, -0, "Stick Left") \
+DECL_AXIS_EX(l_y_plus,  +1, "Stick Down") \
+DECL_AXIS_EX(l_y_minus, -1, "Stick Up") \
+DECL_AXIS_EX(r_x_plus,  +2, "Whammy Bar")
+
 #define PS3INPUT_DEFAULT_BINDS \
 DECL_BTN(a, 8) \
 DECL_BTN(b, 0) \
@@ -819,6 +837,7 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE("Wiimote Controller", "gx", GXINPUT_WIIMOTE_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("Nunchuk Controller", "gx", GXINPUT_NUNCHUK_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("Classic Controller", "gx", GXINPUT_CLASSIC_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("Guitar Hero Guitar", "gx", GXINPUT_GUITAR_DEFAULT_BINDS),
 #endif
 #endif
 #ifdef WIIU
