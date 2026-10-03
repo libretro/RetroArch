@@ -31455,6 +31455,10 @@ MSG_HASH( /* An entry of Information > Input Information: the number of a connec
    MENU_ENUM_LABEL_VALUE_KEYBOARD_DEVICE_NAME,
    "Keyboard %d: %s"
    )
+MSG_HASH( /* Under a keyboard's entry in Information > Input Information: its USB vendor and product ids */
+   MENU_ENUM_LABEL_VALUE_KEYBOARD_DEVICE_INFO,
+   "Device VID/PID: %d/%d"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
    "Cheat Settings"

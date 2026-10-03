@@ -374,6 +374,8 @@ typedef struct
 typedef struct
 {
    char display_name[NAME_MAX_LENGTH];
+   uint16_t vid; /* 0 with pid 0: not known */
+   uint16_t pid;
 } input_keyboard_info_t;
 
 typedef struct
@@ -1078,6 +1080,11 @@ void input_config_clear_keyboard_display_names(void);
 void input_config_set_keyboard_display_name(unsigned idx, const char *name);
 /* NULL if there is no keyboard at that index */
 const char *input_config_get_keyboard_display_name(unsigned idx);
+/* a listed keyboard's USB ids, where the driver knows them; both 0
+ * where it does not */
+void input_config_set_keyboard_ids(unsigned idx, uint16_t vid, uint16_t pid);
+uint16_t input_config_get_keyboard_vid(unsigned idx);
+uint16_t input_config_get_keyboard_pid(unsigned idx);
 
 /**
  * Set the configuration name for the device in the specified port

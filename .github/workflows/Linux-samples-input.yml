@@ -608,7 +608,11 @@ jobs:
           # keyboard; a port given a keyboard that is not there reads
           # them all; a key held on two keyboards stays down until
           # both let go; and a key held on a keyboard when it is
-          # unplugged is let go with a key-up.
+          # unplugged is let go with a key-up. And what is listed is
+          # the keyboards on the desk, not raw input's: the raw
+          # keyboards that are parts of one device are one keyboard,
+          # the terminal server's is left out, and so is a mouse
+          # whose buttons send keys.
           trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
           make clean all
           WINEDEBUG=-all timeout 300 make check

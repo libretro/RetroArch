@@ -7449,7 +7449,31 @@ void input_config_clear_keyboard_display_names(void)
    unsigned i;
    input_driver_state_t *input_st = &input_driver_st;
    for (i = 0; i < MAX_INPUT_DEVICES; i++)
+   {
       input_st->input_keyboard_info[i].display_name[0] = '\0';
+      input_st->input_keyboard_info[i].vid             = 0;
+      input_st->input_keyboard_info[i].pid             = 0;
+   }
+}
+
+void input_config_set_keyboard_ids(unsigned idx, uint16_t vid, uint16_t pid)
+{
+   if (idx >= MAX_INPUT_DEVICES)
+      return;
+   input_driver_st.input_keyboard_info[idx].vid = vid;
+   input_driver_st.input_keyboard_info[idx].pid = pid;
+}
+
+uint16_t input_config_get_keyboard_vid(unsigned idx)
+{
+   return (idx < MAX_INPUT_DEVICES)
+      ? input_driver_st.input_keyboard_info[idx].vid : 0;
+}
+
+uint16_t input_config_get_keyboard_pid(unsigned idx)
+{
+   return (idx < MAX_INPUT_DEVICES)
+      ? input_driver_st.input_keyboard_info[idx].pid : 0;
 }
 
 void input_config_set_keyboard_display_name(unsigned idx, const char *name)

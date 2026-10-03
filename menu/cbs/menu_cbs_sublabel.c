@@ -721,6 +721,29 @@ static int action_bind_sublabel_systeminfo_controller_entry(
    return 0;
 }
 
+/* A keyboard's entry in Input Information: its own ids, where the
+ * input driver knows them, and nothing where it does not. (It used to
+ * be given the controller entry's label, and showed the names and ids
+ * of the controller on the first port.) */
+static int action_bind_sublabel_systeminfo_keyboard_entry(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   unsigned idx;
+   if (!list || i >= list->size)
+      return 0;
+   idx = (unsigned)list->list[i].entry_idx;
+   if (     input_config_get_keyboard_vid(idx)
+         || input_config_get_keyboard_pid(idx))
+      snprintf(s, len,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_KEYBOARD_DEVICE_INFO),
+            input_config_get_keyboard_vid(idx),
+            input_config_get_keyboard_pid(idx));
+   return 0;
+}
+
 static int action_bind_sublabel_core_info_entry(
       file_list_t *list,
       unsigned type, unsigned i,
@@ -2690,6 +2713,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_VIDEO_CTX_SCALING, action_bind_sublabel_video_ctx_scaling },
       { MENU_ENUM_LABEL_CORE_INFO_ENTRY, action_bind_sublabel_core_info_entry },
       { MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY, action_bind_sublabel_systeminfo_controller_entry },
+      { MENU_ENUM_LABEL_SYSTEM_INFO_KEYBOARD_ENTRY, action_bind_sublabel_systeminfo_keyboard_entry },
       { MENU_ENUM_LABEL_PLAYLIST_ENTRY, action_bind_sublabel_playlist_entry },
       { MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_ENTRY, action_bind_sublabel_core_backup_entry },
       { MENU_ENUM_LABEL_CORE_DELETE_BACKUP_ENTRY, action_bind_sublabel_core_backup_entry },

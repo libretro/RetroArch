@@ -2954,8 +2954,8 @@ static unsigned menu_displaylist_parse_input_info(file_list_t *list)
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_KEYBOARD_DEVICE_NAME),
             port + 1, name);
       if (menu_entries_append(list, entry, "",
-            MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
-            MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+            MENU_ENUM_LABEL_SYSTEM_INFO_KEYBOARD_ENTRY,
+            MENU_SETTINGS_CORE_INFO_NONE, 0, port, NULL))
          count++;
    }
 

@@ -24,6 +24,7 @@ extern "C" {
 
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x0500 /* 2K */
 #include <dbt.h>
+#include <cfgmgr32.h>
 #endif
 
 #ifdef CXX_BUILD
@@ -194,6 +195,12 @@ enum winraw_input_flags
 
 /* keyboards told apart, at most; more than these are not listed */
 #define WINRAW_KEYBOARDS_MAX MAX_INPUT_DEVICES
+/* What raw input calls a keyboard is anything that can send keys, and
+ * one keyboard on the desk is often several of those; this many of
+ * them are kept track of. */
+#define WINRAW_KB_RAW_MAX    32
+/* a raw input keyboard that is part of no listed keyboard */
+#define WINRAW_KB_NONE       0xFF
 
 /* One keyboard's own keys: a bit a scancode. The scancodes the driver
  * takes are a make code alone, one with the E0 or the E1 prefix, and
@@ -269,16 +276,22 @@ typedef struct
    /* a handle that was still not a listed mouse after a refresh */
    HANDLE mouse_not_listed;
    DWORD  mouse_refresh_tick;
-   /* The keyboards, as raw input lists them: their handles, in the
-    * order they are numbered for the menu (winraw_keyboards_list()).
-    * All of them feed the one key state above; this is which there
-    * are. */
-   HANDLE   kbs[WINRAW_KEYBOARDS_MAX];
+   /* The keyboards as raw input has them - anything that can send
+    * keys: their handles, oldest first. All of them feed the one key
+    * state above. */
+   HANDLE   kbs[WINRAW_KB_RAW_MAX];
    unsigned kb_cnt;
-   /* Each listed keyboard's own keys, beside the one key state they
-    * all feed: what a port that was given one keyboard reads
-    * (winraw_port_keys()). */
-   uint8_t  kb_down[WINRAW_KEYBOARDS_MAX][WINRAW_KB_BYTES];
+   /* each one's own keys, beside the one key state they all feed */
+   uint8_t  kb_down[WINRAW_KB_RAW_MAX][WINRAW_KB_BYTES];
+   /* The keyboards as they are listed and numbered for the menu: the
+    * raw input keyboards that are one device on the desk are one
+    * keyboard here, and some are part of none (kb_grp[] says which;
+    * see winraw_keyboards_list()). kg_down[] is each listed
+    * keyboard's keys, whichever of its parts they came from: what a
+    * port that was given the keyboard reads (winraw_port_keys()). */
+   uint8_t  kb_grp[WINRAW_KB_RAW_MAX];
+   unsigned kg_cnt;
+   uint8_t  kg_down[WINRAW_KEYBOARDS_MAX][WINRAW_KB_BYTES];
    /* A key came from a keyboard that is not in the list: the list is
     * made again at the end of the poll. */
    bool     kb_unknown_seen;
@@ -381,7 +394,21 @@ typedef struct
 {
    HANDLE hnd;      /* raw input device handle; used for queries only */
    char name[256];
+   /* keyboards: the name to go by if the device gives none, and its
+    * USB ids for the menu */
+   char fallback[80];
+   uint16_t vid;
+   uint16_t pid;
 } winraw_mouse_name_entry_t;
+
+/* a listed keyboard, as the names task is asked about it */
+typedef struct
+{
+   HANDLE hnd;
+   char fallback[80];
+   uint16_t vid;
+   uint16_t pid;
+} winraw_kb_name_req_t;
 
 typedef struct
 {
@@ -436,10 +463,19 @@ static void winraw_mouse_names_handler(retro_task_t *task)
                prod_buf[0] = '\0';
                if (HidD_GetProductString(hhid, prod_buf, sizeof(prod_buf)))
                   wcstombs(name, prod_buf, sizeof(h->entries[i].name));
+               /* a keyboard goes by its product name or by what
+                * Windows calls the device, never by its path */
+               else if (h->keyboards)
+                  name[0] = '\0';
                CloseHandle(hhid);
             }
+            else if (h->keyboards)
+               name[0] = '\0';
          }
 
+         if (!name[0] && h->entries[i].fallback[0])
+            strlcpy(name, h->entries[i].fallback,
+                  sizeof(h->entries[i].name));
          if (!name[0])
             strlcpy_lit(name, "<name not found>",
                   sizeof(h->entries[i].name));
@@ -470,6 +506,8 @@ static void winraw_mouse_names_cb(retro_task_t *task,
       for (i = 0; i < h->count; ++i)
       {
          input_config_set_keyboard_display_name(i, h->entries[i].name);
+         input_config_set_keyboard_ids(i,
+               h->entries[i].vid, h->entries[i].pid);
          RARCH_LOG("[WinRaw] Found keyboard #%u: \"%s\".\n",
                i + 1, h->entries[i].name);
       }
@@ -486,7 +524,8 @@ static void winraw_mouse_names_cb(retro_task_t *task,
 /* The names of mice (from @mice) or, with @mice NULL, of keyboards
  * (from @kbs), looked up off the main thread and set on it. */
 static void winraw_push_names_task(
-      winraw_mouse_t *mice, const HANDLE *kbs, unsigned mouse_cnt)
+      winraw_mouse_t *mice, const winraw_kb_name_req_t *kbs,
+      unsigned mouse_cnt)
 {
    unsigned i;
    retro_task_t *task             = NULL;
@@ -511,7 +550,18 @@ static void winraw_push_names_task(
    h->count     = mouse_cnt;
    h->keyboards = (mice == NULL);
    for (i = 0; i < mouse_cnt; ++i)
-      h->entries[i].hnd = mice ? mice[i].hnd : kbs[i];
+   {
+      if (mice)
+         h->entries[i].hnd = mice[i].hnd;
+      else
+      {
+         h->entries[i].hnd = kbs[i].hnd;
+         h->entries[i].vid = kbs[i].vid;
+         h->entries[i].pid = kbs[i].pid;
+         strlcpy(h->entries[i].fallback, kbs[i].fallback,
+               sizeof(h->entries[i].fallback));
+      }
+   }
 
    if (!(task = task_init()))
    {
@@ -610,33 +660,260 @@ static uint16_t winraw_held_mods(const winraw_input_t *wr);
  * it sends no last key to notice it by. */
 static retro_atomic_int_t winraw_devices_changed;
 
-/* Which keyboards there are: their raw input handles, oldest first as
- * the mice are, and their names asked for (they reach the menu's
- * Information > Input Information when the task is done). The driver
- * reads all of them as one keyboard; this is so that they can be
- * seen, and told apart later.
+/* ---- which device on the desk a raw input device is part of -------- */
+
+/* What is known of one raw input device beyond its handle. */
+typedef struct
+{
+   /* What tells one device on the desk from another: Windows' own id
+    * for the physical device (its "container"), which every part of
+    * a device shares; failing that its USB ids; "" if neither is
+    * known. */
+   char     key[48];
+   char     desc[80];   /* what Windows calls it, as a name of last resort */
+   uint16_t vid;
+   uint16_t pid;
+   /* the terminal server's keyboard or mouse: every Windows has one,
+    * and nothing on the desk is behind it */
+   bool     remote;
+   /* Whether its USB interface says "boot keyboard" - what a keyboard
+    * has so that it works before an operating system is up, and what
+    * the key-sending part of a mouse or a headset has no reason to
+    * have. 1 yes, 0 no, -1 not known (not USB, or not found out). */
+   int8_t   boot;
+} winraw_dev_ident_t;
+
+static const char *winraw_stristr(const char *s, const char *sub)
+{
+   size_t n = strlen(sub);
+   for (; *s; s++)
+   {
+      size_t i;
+      for (i = 0; i < n; i++)
+      {
+         char a = s[i], b = sub[i];
+         if (a >= 'a' && a <= 'z')
+            a -= 'a' - 'A';
+         if (b >= 'a' && b <= 'z')
+            b -= 'a' - 'A';
+         if (a != b)
+            break;
+      }
+      if (i == n)
+         return s;
+   }
+   return NULL;
+}
+
+/* the hex digits at @p, at most @max of them; *@digits says how many */
+static unsigned winraw_hex(const char *p, unsigned max, unsigned *digits)
+{
+   unsigned v = 0, n = 0;
+   for (; n < max; n++, p++)
+   {
+      if (*p >= '0' && *p <= '9')
+         v = (v << 4) | (unsigned)(*p - '0');
+      else if (*p >= 'a' && *p <= 'f')
+         v = (v << 4) | (unsigned)(*p - 'a' + 10);
+      else if (*p >= 'A' && *p <= 'F')
+         v = (v << 4) | (unsigned)(*p - 'A' + 10);
+      else
+         break;
+   }
+   if (digits)
+      *digits = n;
+   return v;
+}
+
+/* From what Windows says of a device - its path, its container id,
+ * the compatible ids of what it hangs off and that parent's
+ * description, any of which may be "" - what the driver goes by. No
+ * Windows call in here: samples/input/winraw_keyboards runs it on
+ * strings of its own. */
+static void winraw_dev_ident(const char *path, const char *container,
+      const char *compat, const char *desc, winraw_dev_ident_t *id)
+{
+   const char *p;
+   unsigned digits = 0;
+
+   memset(id, 0, sizeof(*id));
+   id->boot   = -1;
+   id->remote = winraw_stristr(path, "RDP_KBD") || winraw_stristr(path, "RDP_MOU");
+
+   /* USB: VID_045E&PID_07A5. Bluetooth: VID&0002054c_PID&0df2, the
+    * vendor id after four digits that say whose list it is from. */
+   if ((p = winraw_stristr(path, "VID_")))
+      id->vid = (uint16_t)winraw_hex(p + 4, 4, NULL);
+   else if ((p = winraw_stristr(path, "VID&")))
+   {
+      unsigned v = winraw_hex(p + 4, 8, &digits);
+      id->vid    = (uint16_t)v;
+   }
+   if ((p = winraw_stristr(path, "PID_")))
+      id->pid = (uint16_t)winraw_hex(p + 4, 4, NULL);
+   else if ((p = winraw_stristr(path, "PID&")))
+      id->pid = (uint16_t)winraw_hex(p + 4, 4, NULL);
+
+   /* Everything built into the machine shares one container, the
+    * machine's own; that one tells nothing apart. */
+   if (     container && *container
+         && !winraw_stristr(container, "00000000-0000-0000-FFFF-FFFFFFFFFFFF"))
+      strlcpy(id->key, container, sizeof(id->key));
+   else if (id->vid || id->pid)
+      snprintf(id->key, sizeof(id->key), "%04x:%04x", id->vid, id->pid);
+
+   if (compat && winraw_stristr(compat, "USB\\Class_03"))
+      id->boot = winraw_stristr(compat, "SubClass_01&Prot_01") ? 1 : 0;
+
+   if (desc)
+      strlcpy(id->desc, desc, sizeof(id->desc));
+}
+
+#ifndef WINRAW_DEVICE_STRINGS
+#ifndef CM_DRP_BASE_CONTAINERID
+#define CM_DRP_BASE_CONTAINERID 0x00000025
+#endif
+
+static void winraw_narrow(char *s, size_t len, const WCHAR *w)
+{
+   size_t i;
+   for (i = 0; i + 1 < len && w[i]; i++)
+      s[i] = (w[i] < 0x80) ? (char)w[i] : '?';
+   s[i] = '\0';
+}
+
+/* What Windows says of a raw input device: its path; the container id
+ * of the device on the desk it is part of; the compatible ids of what
+ * it hangs off, joined with ';'; and what Windows calls that parent.
+ * Each is "" where Windows does not say. @path holds 256, @container
+ * 48, @compat 256, @desc 80. */
+static void winraw_device_strings(HANDLE hnd, char *path,
+      char *container, char *compat, char *desc)
+{
+   WCHAR id[256];
+   WCHAR w[256];
+   DEVINST inst, parent;
+   ULONG len;
+   unsigned i, n   = 0;
+   UINT size       = 256;
+   const char *end = NULL;
+   UINT r;
+
+   path[0] = container[0] = compat[0] = desc[0] = '\0';
+
+   r = GetRawInputDeviceInfoA(hnd, RIDI_DEVICENAME, path, &size);
+   if (r == (UINT)-1 || r == 0)
+   {
+      path[0] = '\0';
+      return;
+   }
+   path[255] = '\0';
+
+   /* The path is the device's instance id with '#' for '\', a prefix
+    * before it and an interface class after it:
+    *   \\?\HID#VID_0951&PID_16E5&MI_00#8&2d7f0f1&0&0000#{884b96c3-...} */
+   if (strlen(path) < 5 || !(end = strrchr(path, '#')))
+      return;
+   for (i = 4; path + i < end && n + 1 < ARRAY_SIZE(id); i++)
+      id[n++] = (path[i] == '#') ? L'\\' : (WCHAR)(unsigned char)path[i];
+   id[n] = 0;
+
+   if (CM_Locate_DevNodeW(&inst, id, CM_LOCATE_DEVNODE_NORMAL) != CR_SUCCESS)
+      return;
+
+   len = sizeof(w);
+   memset(w, 0, sizeof(w));
+   if (CM_Get_DevNode_Registry_PropertyW(inst, CM_DRP_BASE_CONTAINERID,
+            NULL, w, &len, 0) == CR_SUCCESS)
+      winraw_narrow(container, 48, w);
+
+   if (CM_Get_Parent(&parent, inst, 0) == CR_SUCCESS)
+   {
+      len = sizeof(w) - 2 * sizeof(WCHAR);
+      memset(w, 0, sizeof(w));
+      if (CM_Get_DevNode_Registry_PropertyW(parent, CM_DRP_COMPATIBLEIDS,
+               NULL, w, &len, 0) == CR_SUCCESS)
+      {
+         /* a list of strings, each ended by a 0, the list by another */
+         for (i = 0; i + 1 < ARRAY_SIZE(w) && (w[i] || w[i + 1]); i++)
+            if (!w[i])
+               w[i] = L';';
+         winraw_narrow(compat, 256, w);
+      }
+      len = sizeof(w);
+      memset(w, 0, sizeof(w));
+      if (CM_Get_DevNode_Registry_PropertyW(parent, CM_DRP_DEVICEDESC,
+               NULL, w, &len, 0) == CR_SUCCESS)
+         winraw_narrow(desc, 80, w);
+   }
+   if (!desc[0])
+   {
+      len = sizeof(w);
+      memset(w, 0, sizeof(w));
+      if (CM_Get_DevNode_Registry_PropertyW(inst, CM_DRP_DEVICEDESC,
+               NULL, w, &len, 0) == CR_SUCCESS)
+         winraw_narrow(desc, 80, w);
+   }
+}
+#define WINRAW_DEVICE_STRINGS winraw_device_strings
+#endif
+
+/* Which keyboards there are.
  *
  * What raw input calls a keyboard is anything that can send keys. One
- * keyboard on the desk is often two or three of these - its media
- * keys, its extra-key interface - and a mouse or a headset with
- * buttons that send keys is one too. They are listed as raw input has
- * them. */
+ * keyboard on the desk is often two or three of those - its media
+ * keys, its extra-key interface - a mouse or a headset with buttons
+ * that send keys is one too, and every Windows has the terminal
+ * server's, with nothing behind it. Listed as raw input has them, a
+ * desk with one keyboard and one mouse showed four keyboards, and a
+ * port given "a keyboard" got one part of one.
+ *
+ * So the raw input keyboards are kept, oldest first as the mice are
+ * (kbs[]), and from them the keyboards that are listed and numbered
+ * for the menu are made:
+ *
+ * - the raw input keyboards that are parts of one device on the desk
+ *   are one keyboard. Windows gives every part of a physical device
+ *   the same container id; where it gives none, the same USB ids are
+ *   taken for the same device;
+ * - the terminal server's keyboard is not listed;
+ * - a device that is also a mouse, and none of whose keyboard parts
+ *   is a USB boot keyboard, is not listed: that is a mouse whose
+ *   buttons can send keys. Where it is not known whether a part is a
+ *   boot keyboard - it is not USB, or Windows did not say - the
+ *   device is listed.
+ *
+ * Every raw input keyboard still feeds the one key state, listed or
+ * not. The listed keyboards' names are asked for here and reach the
+ * menu's Information > Input Information when the task is done; a
+ * device that gives no name goes by what Windows calls it. */
 static void winraw_keyboards_list(winraw_input_t *wr)
 {
    UINT i;
-   unsigned n               = 0, total = 0;
+   unsigned k, o, g, bit;
+   unsigned n               = 0, total = 0, mice = 0, groups = 0;
    RAWINPUTDEVICELIST *devs = NULL;
    UINT dev_cnt             = 0;
    /* the list as it was, for what carries over and what does not */
    unsigned old_cnt         = wr->kb_cnt;
-   HANDLE   old_kbs[WINRAW_KEYBOARDS_MAX];
-   uint8_t  old_down[WINRAW_KEYBOARDS_MAX][WINRAW_KB_BYTES];
+   HANDLE   old_kbs[WINRAW_KB_RAW_MAX];
+   uint8_t  old_down[WINRAW_KB_RAW_MAX][WINRAW_KB_BYTES];
+   winraw_dev_ident_t ident[WINRAW_KB_RAW_MAX];
+   char     mouse_key[WINRAW_KB_RAW_MAX][48];
+   uint8_t  prov[WINRAW_KB_RAW_MAX];    /* group before any is dropped */
+   uint8_t  final_of[WINRAW_KB_RAW_MAX];
+   winraw_kb_name_req_t req[WINRAW_KEYBOARDS_MAX];
+   char path[256], container[48], compat[256], desc[80];
 
    memcpy(old_kbs,  wr->kbs,     sizeof(old_kbs));
    memcpy(old_down, wr->kb_down, sizeof(old_down));
    memset(wr->kb_down, 0, sizeof(wr->kb_down));
+   memset(wr->kg_down, 0, sizeof(wr->kg_down));
+   memset(wr->kb_grp, WINRAW_KB_NONE, sizeof(wr->kb_grp));
+   memset(req, 0, sizeof(req));
 
    wr->kb_cnt = 0;
+   wr->kg_cnt = 0;
 
    if (GetRawInputDeviceList(NULL, &dev_cnt,
             sizeof(RAWINPUTDEVICELIST)) == (UINT)-1 || !dev_cnt)
@@ -651,64 +928,150 @@ static void winraw_keyboards_list(winraw_input_t *wr)
    for (i = 0; i < dev_cnt; i++)
       if (devs[i].dwType == RIM_TYPEKEYBOARD)
          total++;
-   if (total > WINRAW_KEYBOARDS_MAX)
-      total = WINRAW_KEYBOARDS_MAX;
+   if (total > WINRAW_KB_RAW_MAX)
+      total = WINRAW_KB_RAW_MAX;
    /* the list has the newest first */
    for (i = 0; i < dev_cnt && n < total; i++)
       if (devs[i].dwType == RIM_TYPEKEYBOARD)
          wr->kbs[total - ++n] = devs[i].hDevice;
    wr->kb_cnt = total;
 
+   /* which devices on the desk are mice */
+   for (i = 0; i < dev_cnt && mice < WINRAW_KB_RAW_MAX; i++)
+   {
+      winraw_dev_ident_t m;
+      if (devs[i].dwType != RIM_TYPEMOUSE)
+         continue;
+      WINRAW_DEVICE_STRINGS(devs[i].hDevice, path, container, compat, desc);
+      winraw_dev_ident(path, container, compat, desc, &m);
+      if (m.key[0] && !m.remote)
+         strlcpy(mouse_key[mice++], m.key, sizeof(mouse_key[0]));
+   }
+
+   /* the raw input keyboards that are one device are one keyboard */
+   for (k = 0; k < wr->kb_cnt; k++)
+   {
+      WINRAW_DEVICE_STRINGS(wr->kbs[k], path, container, compat, desc);
+      winraw_dev_ident(path, container, compat, desc, &ident[k]);
+      prov[k] = WINRAW_KB_NONE;
+      RARCH_DBG("[WinRaw] Raw keyboard: \"%s\", device \"%s\", ids %04x:%04x,"
+            " boot keyboard: %s, \"%s\".\n",
+            path, ident[k].key, ident[k].vid, ident[k].pid,
+            ident[k].boot > 0 ? "yes" : ident[k].boot == 0 ? "no" : "not known",
+            ident[k].desc);
+      if (ident[k].remote)
+         continue;
+      for (o = 0; o < k; o++)
+         if (     prov[o] != WINRAW_KB_NONE
+               && ident[k].key[0]
+               && string_is_equal(ident[k].key, ident[o].key))
+            break;
+      prov[k] = (o < k) ? prov[o] : (uint8_t)groups++;
+   }
+
+   /* a mouse whose buttons can send keys is not a keyboard */
+   for (g = 0; g < groups; g++)
+   {
+      bool is_mouse  = false;
+      bool none_boot = true;
+      const winraw_dev_ident_t *first = NULL;
+      final_of[g]    = WINRAW_KB_NONE;
+      for (k = 0; k < wr->kb_cnt; k++)
+      {
+         if (prov[k] != g)
+            continue;
+         if (!first)
+            first = &ident[k];
+         if (ident[k].boot != 0)
+            none_boot = false;
+      }
+      if (!first)
+         continue;
+      for (o = 0; o < mice && first->key[0]; o++)
+         if (string_is_equal(mouse_key[o], first->key))
+            is_mouse = true;
+      if (is_mouse && none_boot)
+      {
+         RARCH_LOG("[WinRaw] Not listed as a keyboard: \"%s\" (%04x:%04x),"
+               " a mouse that can send keys.\n",
+               first->desc, first->vid, first->pid);
+         continue;
+      }
+      if (wr->kg_cnt >= WINRAW_KEYBOARDS_MAX)
+         continue;
+      final_of[g] = (uint8_t)wr->kg_cnt;
+      /* its name is asked of the oldest of its parts */
+      for (k = 0; k < wr->kb_cnt; k++)
+         if (prov[k] == g)
+            break;
+      req[wr->kg_cnt].hnd = wr->kbs[k];
+      req[wr->kg_cnt].vid = first->vid;
+      req[wr->kg_cnt].pid = first->pid;
+      strlcpy(req[wr->kg_cnt].fallback, first->desc,
+            sizeof(req[wr->kg_cnt].fallback));
+      wr->kg_cnt++;
+   }
+   for (k = 0; k < wr->kb_cnt; k++)
+      if (prov[k] != WINRAW_KB_NONE)
+         wr->kb_grp[k] = final_of[prov[k]];
+
 done:
    free(devs);
 
-   /* A keyboard that is still there keeps its keys. One that has gone
-    * sent no key-up for what was held on it: each such key that no
-    * keyboard still here holds is let go, in the one key state and
-    * for whoever follows key events - or it would stay down. */
+   /* A raw input keyboard that is still there keeps its keys, and the
+    * listed keyboards' keys are made again from their parts'. One
+    * that has gone sent no key-up for what was held on it: each such
+    * key that no keyboard still here holds is let go, in the one key
+    * state and for whoever follows key events - or it would stay
+    * down. */
+   for (o = 0; o < old_cnt; o++)
    {
-      unsigned o, k, bit;
-      for (o = 0; o < old_cnt; o++)
+      for (k = 0; k < wr->kb_cnt; k++)
+         if (wr->kbs[k] == old_kbs[o])
+            break;
+      if (k < wr->kb_cnt)
+         memcpy(wr->kb_down[k], old_down[o], WINRAW_KB_BYTES);
+   }
+   for (k = 0; k < wr->kb_cnt; k++)
+   {
+      unsigned b;
+      if (wr->kb_grp[k] == WINRAW_KB_NONE)
+         continue;
+      for (b = 0; b < WINRAW_KB_BYTES; b++)
+         wr->kg_down[wr->kb_grp[k]][b] |= wr->kb_down[k][b];
+   }
+   for (o = 0; o < old_cnt; o++)
+   {
+      for (k = 0; k < wr->kb_cnt; k++)
+         if (wr->kbs[k] == old_kbs[o])
+            break;
+      if (k < wr->kb_cnt)
+         continue;
+      for (bit = 0; bit < WINRAW_KB_BITS; bit++)
       {
+         unsigned mcode;
+         if (!(old_down[o][bit >> 3] & (1 << (bit & 7))))
+            continue;
          for (k = 0; k < wr->kb_cnt; k++)
-            if (wr->kbs[k] == old_kbs[o])
-               break;
-         if (k < wr->kb_cnt)
-            memcpy(wr->kb_down[k], old_down[o], WINRAW_KB_BYTES);
-      }
-      for (o = 0; o < old_cnt; o++)
-      {
-         for (k = 0; k < wr->kb_cnt; k++)
-            if (wr->kbs[k] == old_kbs[o])
+            if (wr->kb_down[k][bit >> 3] & (1 << (bit & 7)))
                break;
          if (k < wr->kb_cnt)
             continue;
-         for (bit = 0; bit < WINRAW_KB_BITS; bit++)
-         {
-            unsigned mcode;
-            if (!(old_down[o][bit >> 3] & (1 << (bit & 7))))
-               continue;
-            for (k = 0; k < wr->kb_cnt; k++)
-               if (wr->kb_down[k][bit >> 3] & (1 << (bit & 7)))
-                  break;
-            if (k < wr->kb_cnt)
-               continue;
-            mcode = winraw_kb_mcode(bit);
-            if (!wr->kb_keys[mcode])
-               continue;
-            wr->kb_keys[mcode] = 0;
-            if (wr->poll_drain && wr->kev_n < WINRAW_KEV_SIZE)
-               wr->kev[wr->kev_n++] =
-                  WINRAW_KEV_PACK(mcode, 0, winraw_held_mods(wr));
-            else if (!wr->poll_drain)
-               input_keyboard_event(0,
-                     input_keymaps_translate_keysym_to_rk(mcode),
-                     0, win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
-         }
+         mcode = winraw_kb_mcode(bit);
+         if (!wr->kb_keys[mcode])
+            continue;
+         wr->kb_keys[mcode] = 0;
+         if (wr->poll_drain && wr->kev_n < WINRAW_KEV_SIZE)
+            wr->kev[wr->kev_n++] =
+               WINRAW_KEV_PACK(mcode, 0, winraw_held_mods(wr));
+         else if (!wr->poll_drain)
+            input_keyboard_event(0,
+                  input_keymaps_translate_keysym_to_rk(mcode),
+                  0, win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
       }
    }
 
-   winraw_push_names_task(NULL, wr->kbs, wr->kb_cnt);
+   winraw_push_names_task(NULL, req, wr->kg_cnt);
 }
 
 /* Whether a key is down on one keyboard's own state. */
@@ -728,13 +1091,13 @@ static const uint8_t *winraw_port_keys(const winraw_input_t *wr,
       unsigned port)
 {
    unsigned idx = config_get_ptr()->uints.input_keyboard_index[port];
-   if (!idx || idx > wr->kb_cnt)
+   if (!idx || idx > wr->kg_cnt)
       return NULL;
 #ifdef HAVE_MENU
    if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
       return NULL;
 #endif
-   return wr->kb_down[idx - 1];
+   return wr->kg_down[idx - 1];
 }
 
 /* A key came from a keyboard the list does not have - one plugged in
@@ -758,7 +1121,7 @@ static void winraw_keyboards_refresh(winraw_input_t *wr)
    /* not a listed keyboard even now: not asked about again */
    if (!found)
       wr->kb_not_listed = wr->kb_unknown;
-   RARCH_LOG("[WinRaw] Keyboard list made again: %u.\n", wr->kb_cnt);
+   RARCH_LOG("[WinRaw] Keyboard list made again: %u.\n", wr->kg_cnt);
 }
 
 static int16_t winraw_lightgun_aiming_state(winraw_input_t *wr,
@@ -1205,12 +1568,28 @@ static bool winraw_take(winraw_input_t *wr, DWORD type, HANDLE device,
                   unsigned bit = winraw_kb_bit(mcode);
                   if (bit < WINRAW_KB_BITS)
                   {
+                     unsigned g = wr->kb_grp[i];
                      if (down)
+                     {
                         wr->kb_down[i][bit >> 3] |=  (uint8_t)(1 << (bit & 7));
+                        if (g != WINRAW_KB_NONE)
+                           wr->kg_down[g][bit >> 3] |= (uint8_t)(1 << (bit & 7));
+                     }
                      else
                      {
                         unsigned k;
                         wr->kb_down[i][bit >> 3] &= (uint8_t)~(1 << (bit & 7));
+                        /* the listed keyboard this is part of lets go
+                         * when no part of it holds the key */
+                        if (g != WINRAW_KB_NONE)
+                        {
+                           for (k = 0; k < wr->kb_cnt; k++)
+                              if (     wr->kb_grp[k] == g
+                                    && (wr->kb_down[k][bit >> 3] & (1 << (bit & 7))))
+                                 break;
+                           if (k == wr->kb_cnt)
+                              wr->kg_down[g][bit >> 3] &= (uint8_t)~(1 << (bit & 7));
+                        }
                         /* Let go on this keyboard and still held on
                          * another: for the one state every keyboard
                          * feeds, the key is still down, and there is
@@ -1224,7 +1603,7 @@ static bool winraw_take(winraw_input_t *wr, DWORD type, HANDLE device,
                }
                else if (  wr->poll_drain
                        && device != wr->kb_not_listed
-                       && wr->kb_cnt < WINRAW_KEYBOARDS_MAX)
+                       && wr->kb_cnt < WINRAW_KB_RAW_MAX)
                {
                   wr->kb_unknown      = device;
                   wr->kb_unknown_seen = true;
@@ -1818,6 +2197,7 @@ static void winraw_poll(void *data)
 
       memset(wr->kb_keys, 0, SC_LAST);
       memset(wr->kb_down, 0, sizeof(wr->kb_down));
+      memset(wr->kg_down, 0, sizeof(wr->kg_down));
       wr->kb_clear_pending = false;
    }
 
@@ -1903,7 +2283,7 @@ static void winraw_poll(void *data)
       wr->kb_refresh_tick = GetTickCount();
       wr->kb_unknown_seen = false;
       wr->kb_not_listed   = NULL;
-      RARCH_LOG("[WinRaw] Keyboard list made again: %u.\n", wr->kb_cnt);
+      RARCH_LOG("[WinRaw] Keyboard list made again: %u.\n", wr->kg_cnt);
    }
 
    if (wr->poll_drain)
