@@ -2877,6 +2877,76 @@ static unsigned menu_displaylist_parse_display_edid(file_list_t *list)
 }
 #endif
 
+/* Each port with a device in it: its name, marked when no autoconfig
+ * profile matched it, and on RGUI the display and configuration names
+ * and VID/PID.  Every row carries its port in entry_idx. */
+static unsigned menu_displaylist_parse_input_info(file_list_t *list)
+{
+   char entry[NAME_MAX_LENGTH];
+   unsigned port;
+   unsigned count          = 0;
+   const char *menu_driver = menu_driver_ident();
+
+   for (port = 0; port < MAX_USERS; port++)
+   {
+      const char *name = input_config_get_device_name(port);
+      size_t _len;
+      if (!name)
+         continue;
+
+      /* Port and Device Name */
+      _len = snprintf(entry, sizeof(entry), /* Note: format string below */
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME),
+            port + 1, name);
+      if (!input_config_get_device_autoconfigured(port) && _len < sizeof(entry))
+         snprintf(entry + _len, sizeof(entry) - _len, " (%s)",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NO_PROFILE));
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+            MENU_SETTINGS_CORE_INFO_NONE, 0, port, NULL))
+         count++;
+
+#ifdef HAVE_RGUI
+      if (!strcmp(menu_driver, "rgui"))
+      {
+         /* Device Display Name */
+         snprintf(entry, sizeof(entry), /* TODO/FIXME: localize */
+               "- Device Display Name: %s",
+               input_config_get_device_display_name(port)
+               ? input_config_get_device_display_name(port)
+               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+         if (menu_entries_append(list, entry, "",
+               MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+               MENU_SETTINGS_CORE_INFO_NONE, 0, port, NULL))
+            count++;
+
+         /* Device Config Name */
+         snprintf(entry, sizeof(entry), /* TODO: localize */
+               "- Device Config Name: %s",
+               input_config_get_device_config_name(port)
+               ? input_config_get_device_config_name(port)
+               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+         if (menu_entries_append(list, entry, "",
+               MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+               MENU_SETTINGS_CORE_INFO_NONE, 0, port, NULL))
+            count++;
+
+         /* Device VID/PID */
+         snprintf(entry, sizeof(entry), /* TODO: localize */
+               "- Device VID/PID: %d/%d",
+               input_config_get_device_vid(port),
+               input_config_get_device_pid(port));
+         if (menu_entries_append(list, entry, "",
+               MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+               MENU_SETTINGS_CORE_INFO_NONE, 0, port, NULL))
+            count++;
+      }
+#endif
+   }
+
+   return count;
+}
+
 static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 {
    char entry[NAME_MAX_LENGTH];
@@ -3071,64 +3141,6 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
       }
    }
 #endif
-
-   /* Input devices */
-   {
-      const char *menu_driver = menu_driver_ident();
-      unsigned controller;
-      for (controller = 0; controller < MAX_USERS; controller++)
-      {
-         if (input_config_get_device_autoconfigured(controller))
-         {
-            /* Port and Device Name */
-            snprintf(entry, sizeof(entry), /* Note: format string below */
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME),
-                  controller + 1,
-                  input_config_get_device_name(controller));
-            if (menu_entries_append(list, entry, "",
-                  MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
-                  MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-               count++;
-
-#ifdef HAVE_RGUI
-            if (!strcmp(menu_driver, "rgui"))
-            {
-               /* Device Display Name */
-               snprintf(entry, sizeof(entry), /* TODO/FIXME: localize */
-                     "- Device Display Name: %s",
-                     input_config_get_device_display_name(controller)
-                     ? input_config_get_device_display_name(controller)
-                     : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
-               if (menu_entries_append(list, entry, "",
-                     MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
-                     MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-                  count++;
-
-               /* Device Config Name */
-               snprintf(entry, sizeof(entry), /* TODO: localize */
-                     "- Device Config Name: %s",
-                     input_config_get_device_config_name(controller)
-                     ? input_config_get_device_config_name(controller)
-                     : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
-               if (menu_entries_append(list, entry, "",
-                     MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
-                     MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-                  count++;
-
-               /* Device VID/PID */
-               snprintf(entry, sizeof(entry), /* TODO: localize */
-                     "- Device VID/PID: %d/%d",
-                     input_config_get_device_vid(controller),
-                     input_config_get_device_pid(controller));
-               if (menu_entries_append(list, entry, "",
-                     MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
-                     MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
-                  count++;
-            }
-#endif
-         }
-      }
-   }
 
    {
       const frontend_ctx_driver_t *frontend = frontend_get_ptr();
@@ -5166,6 +5178,13 @@ static unsigned menu_displaylist_parse_information_list(file_list_t *info_list)
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION),
          MENU_ENUM_LABEL_DISPLAY_INFORMATION_STR,
          MENU_ENUM_LABEL_DISPLAY_INFORMATION,
+         MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+   if (menu_entries_append(info_list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_INFORMATION),
+         MENU_ENUM_LABEL_INPUT_INFORMATION_STR,
+         MENU_ENUM_LABEL_INPUT_INFORMATION,
          MENU_SETTING_ACTION, 0, 0, NULL))
       count++;
 
@@ -8397,6 +8416,7 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
             || t == (unsigned)DISPLAYLIST_SYSTEM_INFO
             || t == (unsigned)DISPLAYLIST_DISPLAY_INFO
             || t == (unsigned)DISPLAYLIST_DISPLAY_EDID_INFO
+            || t == (unsigned)DISPLAYLIST_INPUT_INFO
             /* The core-content family reaches for the network and
              * blocks headless; nothing deterministic lives there. */
             || (t >= (unsigned)DISPLAYLIST_CORE_CONTENT
@@ -8434,6 +8454,7 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
             || t == (unsigned)DISPLAYLIST_SYSTEM_INFO
             || t == (unsigned)DISPLAYLIST_DISPLAY_INFO
             || t == (unsigned)DISPLAYLIST_DISPLAY_EDID_INFO
+            || t == (unsigned)DISPLAYLIST_INPUT_INFO
             /* The core-content family reaches for the network and
              * blocks headless; nothing deterministic lives there. */
             || (t >= (unsigned)DISPLAYLIST_CORE_CONTENT
@@ -8472,6 +8493,7 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
             || t == (unsigned)DISPLAYLIST_SYSTEM_INFO
             || t == (unsigned)DISPLAYLIST_DISPLAY_INFO
             || t == (unsigned)DISPLAYLIST_DISPLAY_EDID_INFO
+            || t == (unsigned)DISPLAYLIST_INPUT_INFO
             || (t >= (unsigned)DISPLAYLIST_CORE_CONTENT
                   && t <= (unsigned)DISPLAYLIST_CORE_SYSTEM_FILES))
       {
@@ -9315,6 +9337,9 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_DISPLAY_INFO:
          count              = menu_displaylist_parse_display_info(list);
+         break;
+      case DISPLAYLIST_INPUT_INFO:
+         count              = menu_displaylist_parse_input_info(list);
          break;
       case DISPLAYLIST_DISPLAY_EDID_INFO:
 #ifdef HAVE_MODELINE
@@ -16478,6 +16503,7 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_SYSTEM_INFO:
          case DISPLAYLIST_DISPLAY_INFO:
          case DISPLAYLIST_DISPLAY_EDID_INFO:
+         case DISPLAYLIST_INPUT_INFO:
          case DISPLAYLIST_BLUETOOTH_SETTINGS_LIST:
          case DISPLAYLIST_WIFI_SETTINGS_LIST:
          case DISPLAYLIST_WIFI_NETWORKS_LIST:
@@ -16541,6 +16567,7 @@ static bool menu_displaylist_ctl_internal(
                   case DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX:
                   case DISPLAYLIST_INFORMATION_LIST:
                   case DISPLAYLIST_SCAN_DIRECTORY_LIST:
+                  case DISPLAYLIST_INPUT_INFO:
                      menu_entries_append(info->list,
                            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
                            MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY_STR,

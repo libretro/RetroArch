@@ -154,6 +154,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_ozone_font_path,                DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_disc_information,               DISPLAYLIST_DISC_INFO)
 GENERIC_DEFERRED_PUSH(deferred_push_system_information,             DISPLAYLIST_SYSTEM_INFO)
 GENERIC_DEFERRED_PUSH(deferred_push_display_information,            DISPLAYLIST_DISPLAY_INFO)
+GENERIC_DEFERRED_PUSH(deferred_push_input_information,              DISPLAYLIST_INPUT_INFO)
 GENERIC_DEFERRED_PUSH(deferred_push_display_edid_information,       DISPLAYLIST_DISPLAY_EDID_INFO)
 GENERIC_DEFERRED_PUSH(deferred_push_network_information,            DISPLAYLIST_NETWORK_INFO)
 GENERIC_DEFERRED_PUSH(deferred_push_achievement_submenu_list,       DISPLAYLIST_ACHIEVEMENT_SUBMENU_LIST)
@@ -716,6 +717,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_SYSTEM_INFORMATION, deferred_push_system_information},
       {MENU_ENUM_LABEL_DISPLAY_INFORMATION, deferred_push_display_information},
       {MENU_ENUM_LABEL_DISPLAY_EDID_INFORMATION, deferred_push_display_edid_information},
+      {MENU_ENUM_LABEL_INPUT_INFORMATION, deferred_push_input_information},
       {MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS, deferred_push_rpl_entry_actions},
       {MENU_ENUM_LABEL_DEFERRED_NETPLAY, deferred_push_netplay_sublist},
       {MENU_ENUM_LABEL_DEFERRED_DRIVER_SETTINGS_LIST, deferred_push_driver_settings_list},

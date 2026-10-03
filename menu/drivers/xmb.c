@@ -4502,6 +4502,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_SETTINGS_SHOW_FILE_BROWSER:
          return xmb->textures.list[XMB_TEXTURE_SETTING];
       case MENU_ENUM_LABEL_INPUT_SETTINGS:
+      case MENU_ENUM_LABEL_INPUT_INFORMATION:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_INPUT:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CONTROLS:
       case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES:

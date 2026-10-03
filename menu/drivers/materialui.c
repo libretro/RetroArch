@@ -12600,6 +12600,7 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_MENU_SOUNDS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_INPUT_SETTINGS_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_INPUT_INFORMATION_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_INPUT_MENU_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_INPUT_SENSOR_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS_STR)

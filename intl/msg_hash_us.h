@@ -1330,6 +1330,14 @@ MSG_HASH(
    "View the EDID the display in use reports: identity, capabilities, supported timings and extension blocks."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_INFORMATION,
+   "Input Information"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_INFORMATION,
+   "View the controller in each port and the configuration it uses."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
    "Database Manager"
    )
@@ -31394,6 +31402,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    "Device Display Name: %s\nDevice Config Name: %s\nDevice VID/PID: %d/%d"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NO_PROFILE,
+   "No Autoconfig Profile"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,

@@ -619,6 +619,7 @@
 #define MENU_ENUM_LABEL_DISPLAY_INFORMATION_STR "display_information"
 #define MENU_ENUM_LABEL_DISPLAY_INFO_ENTRY_STR "display_info_entry"
 #define MENU_ENUM_LABEL_DISPLAY_EDID_INFORMATION_STR "display_edid_information"
+#define MENU_ENUM_LABEL_INPUT_INFORMATION_STR "input_information"
 #define MENU_ENUM_LABEL_DISPLAY_EDID_ENTRY_STR "display_edid_entry"
 #define MENU_ENUM_LABEL_TAKE_SCREENSHOT_STR "take_screenshot"
 #define MENU_ENUM_LABEL_THUMBNAILS_STR "thumbnails"

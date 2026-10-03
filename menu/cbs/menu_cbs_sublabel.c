@@ -695,42 +695,28 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_nfs_client_settings,                
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_nfs_client_browse,                           MENU_ENUM_SUBLABEL_NFS_CLIENT_BROWSE)
 #endif
 
+/* The row's port is in its entry_idx. */
 static int action_bind_sublabel_systeminfo_controller_entry(
       file_list_t *list,
       unsigned type, unsigned i,
       const char *label, const char *path,
       char *s, size_t len)
 {
-   char tmp[NAME_MAX_LENGTH];
-   unsigned controller;
-   const char *val_port_dev_name =
-      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME);
-
-   for (controller = 0; controller < MAX_USERS; controller++)
-   {
-      if (input_config_get_device_autoconfigured(controller))
-      {
-            snprintf(tmp, sizeof(tmp),
-               val_port_dev_name,
-               controller + 1,
-               input_config_get_device_name(controller));
-
-            if (string_is_equal(path, tmp))
-               break;
-      }
-   }
-
+   const char *display_name, *config_name;
+   unsigned port;
+   if (!list || i >= list->size || list->list[i].entry_idx >= MAX_USERS)
+      return 0;
+   port         = (unsigned)list->list[i].entry_idx;
+   display_name = input_config_get_device_display_name(port);
+   config_name  = input_config_get_device_config_name(port);
    snprintf(s, len,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO),
-           input_config_get_device_display_name(controller)
-         ? input_config_get_device_display_name(controller)
+         display_name ? display_name
          : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-           input_config_get_device_display_name(controller)
-         ? input_config_get_device_config_name(controller)
+         config_name  ? config_name
          : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
-           input_config_get_device_vid(controller),
-           input_config_get_device_pid(controller));
-
+         input_config_get_device_vid(port),
+         input_config_get_device_pid(port));
    return 0;
 }
 
@@ -2348,6 +2334,7 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_SYSTEM_INFORMATION, MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION },
       { MENU_ENUM_LABEL_DISPLAY_INFORMATION, MENU_ENUM_SUBLABEL_DISPLAY_INFORMATION },
       { MENU_ENUM_LABEL_DISPLAY_EDID_INFORMATION, MENU_ENUM_SUBLABEL_DISPLAY_EDID_INFORMATION },
+      { MENU_ENUM_LABEL_INPUT_INFORMATION, MENU_ENUM_SUBLABEL_INPUT_INFORMATION },
       { MENU_ENUM_LABEL_LOAD_CONTENT_LIST, MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST },
       { MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS, MENU_ENUM_SUBLABEL_SUBSYSTEM_SETTINGS },
       { MENU_ENUM_LABEL_LOAD_CONTENT_SPECIAL, MENU_ENUM_SUBLABEL_LOAD_CONTENT_SPECIAL },
