@@ -70,6 +70,18 @@ void *input_driver_init_wrap(input_driver_t *input, const char *name)
    return (starts & bit_of(input)) ? (void*)input : NULL;
 }
 
+/* a driver left running across a video driver restart, if any */
+static input_driver_t *kept;
+bool input_driver_take_kept(input_driver_t **input, void **input_data)
+{
+   if (!kept)
+      return false;
+   *input      = kept;
+   *input_data = (void*)kept;
+   kept        = NULL;
+   return true;
+}
+
 /* ---- the cases ------------------------------------------------- */
 
 typedef void (*choice_fn)(const char *, input_driver_t **, void **);
@@ -127,6 +139,11 @@ int main(void)
    expect("windows", input_driver_init_windows, "dinput", D_WINRAW | D_DINPUT, "dinput", "dinput");
    expect("windows", input_driver_init_windows, "sdl2",   D_WINRAW | D_DINPUT, "dinput", "dinput");
    expect("windows", input_driver_init_windows, "raw",    0,                   "none",   "raw,dinput");
+   /* a driver left running across a video driver restart is handed
+    * back, and none is started */
+   kept = &input_winraw;
+   expect("windows", input_driver_init_windows, "raw",    D_WINRAW | D_DINPUT, "raw",    "");
+   expect("windows", input_driver_init_windows, "raw",    D_WINRAW | D_DINPUT, "raw",    "raw");
 #else
    /* an X11 window: udev only when it is the setting and it starts */
    expect("x11", input_driver_init_x11, "udev", D_UDEV | D_X, "udev", "udev");

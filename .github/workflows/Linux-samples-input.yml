@@ -366,7 +366,9 @@ jobs:
           # driver's name is passed through, and that the two results
           # are both set or both NULL. The Windows choice is the same
           # test built with mingw and run under Wine, in the gfx
-          # samples workflow.
+          # samples workflow; it also has the case of a driver left
+          # running across a video driver restart, which is handed
+          # back with none started.
           make clean all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./window_driver_test

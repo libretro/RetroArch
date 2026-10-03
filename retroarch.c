@@ -1665,6 +1665,9 @@ void drivers_init(
       if (!video_driver_init_internal(&video_is_threaded,
                verbosity_enabled))
          retroarch_fail(1, "video_driver_init_internal()");
+      /* An input driver kept across the restart has been handed back
+       * by now; if nothing took it, it is not left behind. */
+      input_driver_drop_kept();
 
 #ifdef HAVE_THREADS
       /* An OpenGL core under the threaded wrapper renders on this
@@ -2014,6 +2017,12 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
        * cached frame can point into (a lent software framebuffer),
        * so retire while that memory is still mapped. */
       video_driver_cached_frame_retire();
+      /* An input driver that can be left running stays, when this is
+       * a restart that brings the video driver back. */
+      input_driver_keep_for_video_restart(
+               (lifetime_flags & DRIVER_LIFETIME_RESET)
+            && (flags & DRIVER_VIDEO_MASK),
+            video_st->data);
       video_driver_free_internal();
 #ifdef HAVE_THREADS
 #ifndef RETRO_ATOMIC_HAS_PTR
@@ -2029,7 +2038,9 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
    if (flags & DRIVER_AUDIO_MASK)
       audio_driver_deinit();
 
-   if ((flags & DRIVER_INPUT_MASK))
+   /* (a driver kept across the restart keeps its data) */
+   if (     (flags & DRIVER_INPUT_MASK)
+         && !input_state_get_ptr()->kept_driver)
       input_state_get_ptr()->current_data = NULL;
 
    if ((flags & DRIVER_AUDIO_MASK))
@@ -5234,6 +5245,9 @@ bool command_event(enum event_command cmd, void *data)
 #endif
       case CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG:
          config_set_defaults(global_get_ptr(), config_get_ptr());
+         /* that reset the controllers' configuration, which they get
+          * back when the joypad driver next starts */
+         input_driver_restart_with_next_video_restart();
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
          /* Same as at quit: the companion's live layout first. */

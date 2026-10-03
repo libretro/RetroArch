@@ -548,6 +548,23 @@ struct input_driver
     * set to NULL if haptic feedback / vibration is not supported.
     */
    void (*keypress_vibrate)(void);
+
+   /**
+    * Whether the driver, as it is running now, can be left running while
+    * the video driver is restarted: nothing it holds belongs to the video
+    * driver, its window or its thread, and it needs no restart to notice
+    * anything a restart used to make it notice. The joypad driver in use
+    * is its to answer for as well, since the two are kept or restarted
+    * together. NULL, the last member and so what every driver that does
+    * not name it has, means no: the driver is freed with the video driver
+    * and started again, as it always was. See
+    * input_driver_keep_for_video_restart().
+    *
+    * @param data  The input state struct
+    *
+    * @return True if the driver can stay.
+    */
+   bool (*survives_video)(void *data);
 };
 
 struct rarch_joypad_driver
@@ -607,6 +624,18 @@ typedef struct
    /* When the devices were last read, on cpu_features_get_time_usec()'s
     * clock; 0 while nothing asks for it. See input_driver_poll(). */
    retro_time_t poll_time_us;
+   /* The input driver left running across a video driver restart, from
+    * the video driver's teardown until its start-up hands it back.
+    * input_driver_keep_for_video_restart(). */
+   input_driver_t *kept_driver;
+   void *kept_data;
+   /* The joypad driver setting the joypad driver was started with. */
+   char joypad_setting_at_init[32];
+   /* Something has thrown away what the drivers' start gives - the
+    * controllers' configuration - so the next restart is a restart of
+    * the input driver too, whatever it says.
+    * input_driver_restart_with_next_video_restart(). */
+   bool kept_not_next;
 #ifdef HAVE_COMMAND
    /* Bumped whenever the command interfaces below are torn down. A
     * command that reinitialises the input driver - LOAD_CONTENT,
@@ -872,6 +901,13 @@ void input_driver_init_x11(const char *joypad_name,
 #endif
 void input_driver_init_kms(const char *joypad_name,
       input_driver_t **input, void **input_data);
+
+/* Leaving the input driver running across a video driver restart: see
+ * input_driver.c. */
+void input_driver_keep_for_video_restart(bool restart, const void *video_data);
+bool input_driver_take_kept(input_driver_t **input, void **input_data);
+void input_driver_drop_kept(void);
+void input_driver_restart_with_next_video_restart(void);
 
 /* For the video driver: see input_driver.c. */
 retro_time_t input_driver_get_poll_time(void);

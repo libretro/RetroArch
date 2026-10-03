@@ -46,6 +46,10 @@
 void input_driver_init_windows(const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
+   /* one left running across this video driver restart */
+   if (input_driver_take_kept(input, input_data))
+      return;
+   {
 #if defined(__WINRT__)
    /* Plain xinput is supported on UWP, but it
     * supports joypad only (uwp driver was added later) */
@@ -88,6 +92,7 @@ void input_driver_init_windows(const char *joypad_name,
    *input      = *input_data ? &input_dinput : NULL;
 #endif
 #endif
+   }
 }
 #endif
 

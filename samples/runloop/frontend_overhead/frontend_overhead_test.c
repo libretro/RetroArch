@@ -1459,6 +1459,224 @@ static void lane_core_view(void)
 #endif
 }
 
+/* ---- an input driver left running across a video driver restart --- */
+
+#define KEPT_CHECK(cond, ...) do { \
+   if (!(cond)) \
+   { \
+      fprintf(stderr, "FAIL: "); \
+      fprintf(stderr, __VA_ARGS__); \
+      fprintf(stderr, "\n"); \
+      failures++; \
+   } \
+} while (0)
+
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+static input_driver_t        kept_wrap;
+static input_device_driver_t kept_joy_wrap;
+static void *(*kept_init_real)(const char *);
+static void  (*kept_free_real)(void *);
+static void  (*kept_joy_destroy_real)(void);
+static unsigned kept_inits, kept_frees, kept_joy_destroys, kept_asked;
+static bool     kept_answer;
+
+/* The harness's input and video drivers are the null ones, and both
+ * give the same token for their data - which the frontend reads as an
+ * input driver that is the video driver's own, and does not free. The
+ * wrapper has data of its own, as a real input driver does. */
+static int   kept_token;
+static void *kept_real_data;
+
+static void *kept_wrap_init(const char *joypad)
+{
+   kept_inits++;
+   if (!(kept_real_data = kept_init_real(joypad)))
+      return NULL;
+   return &kept_token;
+}
+
+static void kept_wrap_free(void *data)
+{
+   (void)data;
+   kept_frees++;
+   kept_free_real(kept_real_data);
+}
+
+static bool kept_wrap_survives(void *data)
+{
+   (void)data;
+   kept_asked++;
+   return kept_answer;
+}
+
+static void kept_joy_destroy(void)
+{
+   kept_joy_destroys++;
+   kept_joy_destroy_real();
+}
+
+/* the joypad driver in use, with its destroy counted */
+static void kept_wrap_joypad(input_driver_state_t *input_st)
+{
+   if (input_st->primary_joypad == &kept_joy_wrap)
+      return;
+   kept_joy_wrap            = *input_st->primary_joypad;
+   kept_joy_destroy_real    = kept_joy_wrap.destroy;
+   kept_joy_wrap.destroy    = kept_joy_destroy;
+   input_st->primary_joypad = &kept_joy_wrap;
+}
+#endif
+
+static void lane_input_kept(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   input_driver_state_t *input_st = input_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   const input_registry_t *reg    = input_driver_get_registry();
+   const input_device_record_t *rec;
+   input_device_handle_t handle0;
+   unsigned had = failures;
+   void *data;
+
+   fast_forward(true);
+   run_frames(5);
+
+   if (     !input_st->current_driver
+         || !input_st->current_data
+         || !input_st->primary_joypad
+         || !(rec = input_registry_at_slot((input_registry_t*)reg, 0)))
+   {
+      KEPT_CHECK(false, "kept input: no input driver, joypad driver or pad to try it with");
+      return;
+   }
+   handle0 = rec->handle;
+
+   /* the input driver in use, with its init and free counted and a
+    * say on whether it survives a video driver restart */
+   kept_wrap                = *input_st->current_driver;
+   kept_init_real           = kept_wrap.init;
+   kept_free_real           = kept_wrap.free;
+   kept_wrap.init           = kept_wrap_init;
+   kept_wrap.free           = kept_wrap_free;
+   kept_wrap.survives_video = kept_wrap_survives;
+   kept_real_data           = input_st->current_data;
+   input_st->current_driver = &kept_wrap;
+   input_st->current_data   = &kept_token;
+   kept_wrap_joypad(input_st);
+   data                     = input_st->current_data;
+
+   /* 1. It says it survives: a restart of the drivers leaves it, and
+    *    the joypad driver, and the controllers, as they are. */
+   kept_answer = true;
+   command_event(CMD_EVENT_REINIT, NULL);
+   run_frames(5);
+   KEPT_CHECK(kept_asked >= 1, "kept input: the driver was not asked");
+   KEPT_CHECK(kept_frees == 0 && kept_inits == 0 && kept_joy_destroys == 0,
+         "kept input: a driver that survives was freed %u, started %u, its joypads destroyed %u time(s)",
+         kept_frees, kept_inits, kept_joy_destroys);
+   KEPT_CHECK(   input_st->current_driver == &kept_wrap
+         && input_st->current_data   == data
+         && input_st->primary_joypad == &kept_joy_wrap
+         && !input_st->kept_driver,
+         "kept input: the driver that survives is not the input driver after the restart");
+   rec = input_registry_at_slot((input_registry_t*)reg, 0);
+   KEPT_CHECK(rec && rec->handle == handle0 && pad_connected(0),
+         "kept input: a controller did not come through the restart as it was");
+
+   /* 2. It says it does not: freed and started again, as always. */
+   kept_answer = false;
+   command_event(CMD_EVENT_REINIT, NULL);
+   run_frames(5);
+   KEPT_CHECK(kept_frees == 1 && kept_inits == 1 && kept_joy_destroys == 1,
+         "kept input: a driver that does not survive was freed %u, started %u, its joypads destroyed %u time(s)",
+         kept_frees, kept_inits, kept_joy_destroys);
+   KEPT_CHECK(input_st->current_driver && input_st->current_data && input_st->primary_joypad,
+         "kept input: no input driver after an ordinary restart");
+
+   /* 3. It survives, but the joypad driver setting is not the one the
+    *    joypad driver was started with: a restart is how that change
+    *    is applied, so it restarts. */
+   kept_wrap_joypad(input_st);
+   kept_answer = true;
+   strlcpy(input_st->joypad_setting_at_init, "another",
+         sizeof(input_st->joypad_setting_at_init));
+   command_event(CMD_EVENT_REINIT, NULL);
+   run_frames(5);
+   KEPT_CHECK(kept_frees == 2 && kept_inits == 2 && kept_joy_destroys == 2,
+         "kept input: with the joypad setting changed it was freed %u, started %u, joypads destroyed %u time(s) in all",
+         kept_frees, kept_inits, kept_joy_destroys);
+   KEPT_CHECK(!strcmp(input_st->joypad_setting_at_init,
+            settings->arrays.input_joypad_driver),
+         "kept input: the joypad driver's setting was not noted when it started");
+
+   /* 4. And the input driver setting: the same. */
+   kept_wrap_joypad(input_st);
+   {
+      char saved[sizeof(settings->arrays.input_driver)];
+      strlcpy(saved, settings->arrays.input_driver, sizeof(saved));
+      /* the name a restart would look the driver up by; the wrapper
+       * stays the driver, since it is handed on by pointer */
+      strlcpy(settings->arrays.input_driver, "another",
+            sizeof(settings->arrays.input_driver));
+      command_event(CMD_EVENT_REINIT, NULL);
+      run_frames(5);
+      strlcpy(settings->arrays.input_driver, saved,
+            sizeof(settings->arrays.input_driver));
+   }
+   KEPT_CHECK(kept_frees == 3 && kept_inits == 3,
+         "kept input: with the input driver setting changed it was freed %u, started %u time(s) in all",
+         kept_frees, kept_inits);
+
+   /* 5. It survives and nothing has changed, but the drivers are shut
+    *    down, not restarted: it goes. */
+   kept_wrap_joypad(input_st);
+   kept_answer = true;
+   driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
+   KEPT_CHECK(kept_frees == 4 && kept_joy_destroys == 4 && !input_st->kept_driver,
+         "kept input: shut down, it was freed %u, joypads destroyed %u time(s) in all",
+         kept_frees, kept_joy_destroys);
+   drivers_init(settings, DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0, false);
+   run_frames(5);
+   KEPT_CHECK(input_st->current_driver && input_st->current_data && input_st->primary_joypad
+         && pad_connected(0),
+         "kept input: the drivers did not come back after the shutdown");
+
+   /* 6. Once more as in 1, after all that. */
+   kept_wrap_joypad(input_st);
+   data = input_st->current_data;
+   command_event(CMD_EVENT_REINIT, NULL);
+   run_frames(5);
+   KEPT_CHECK(kept_frees == 4 && kept_inits == 4 && kept_joy_destroys == 4
+         && input_st->current_data == data && pad_connected(0),
+         "kept input: kept again after the others, it was freed %u, started %u time(s) in all",
+         kept_frees, kept_inits);
+
+   /* 7. The controllers' configuration was reset while running: the
+    *    next restart restarts it, once, so that they are configured
+    *    again; the one after keeps it as before. */
+   input_driver_restart_with_next_video_restart();
+   command_event(CMD_EVENT_REINIT, NULL);
+   run_frames(5);
+   KEPT_CHECK(kept_frees == 5 && kept_inits == 5,
+         "kept input: asked to restart with the next restart, it was freed %u, started %u time(s) in all",
+         kept_frees, kept_inits);
+   kept_wrap_joypad(input_st);
+   command_event(CMD_EVENT_REINIT, NULL);
+   run_frames(5);
+   KEPT_CHECK(kept_frees == 5 && kept_inits == 5 && pad_connected(0),
+         "kept input: the restart after that one did not keep it (freed %u, started %u)",
+         kept_frees, kept_inits);
+
+   fast_forward(false);
+   if (failures == had)
+      printf("[pass] input driver across a driver restart: kept if it says it"
+            " survives, with its joypads and controllers; restarted if it does"
+            " not, if a driver setting changed, or on a shutdown\n");
+#else
+   printf("[skip] kept-input lane: needs the test drivers\n");
+#endif
+}
+
 static void lane_frame_cost(void)
 {
    unsigned had = failures;
@@ -1661,6 +1879,8 @@ int main(int argc, char *argv[])
       lane_input_poll_sites(load_poll_name[load_poll]);
       lane_output_store();
       lane_core_view();
+      /* last: it restarts the drivers */
+      lane_input_kept();
    }
 
    if (failures)

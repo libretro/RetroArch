@@ -6034,6 +6034,9 @@ void joypad_driver_reinit(void *data, const char *joypad_driver_name)
    if (!input_driver_st.primary_joypad)
    {
       input_driver_registry_restart();
+      strlcpy(input_driver_st.joypad_setting_at_init,
+            joypad_driver_name ? joypad_driver_name : "",
+            sizeof(input_driver_st.joypad_setting_at_init));
       input_driver_st.primary_joypad    = input_joypad_init_driver(joypad_driver_name, data);
    }
 }
@@ -6478,6 +6481,10 @@ void input_driver_init_joypads(void)
    {
       /* the driver reports its controllers afresh from here */
       input_driver_registry_restart();
+      input_driver_st.kept_not_next = false;
+      strlcpy(input_driver_st.joypad_setting_at_init,
+            settings->arrays.input_joypad_driver,
+            sizeof(input_driver_st.joypad_setting_at_init));
       input_driver_st.primary_joypad        = input_joypad_init_driver(
          settings->arrays.input_joypad_driver,
          input_driver_st.current_data);
@@ -6548,15 +6555,160 @@ input_driver_t **input_driver_video_slots(void ***data_slot)
    return &input_driver_st.current_driver;
 }
 
+/* Leaving the input driver running across a video driver restart
+ * ---------------------------------------------------------------
+ * The input driver has always been freed by the video driver's
+ * teardown and started again by its start-up, joypad drivers and all:
+ * a content load, a fullscreen toggle that restarts, a video setting
+ * changed, and every controller is found, named and configured again.
+ * It was that way because the video driver made the input driver and
+ * some input drivers held the video driver's window or lived on its
+ * thread.
+ *
+ * A driver that holds nothing of the video driver's can say so
+ * (input_driver_t::survives_video), and is then left alone when the
+ * video driver is only being restarted:
+ *
+ *   driver_uninit()            asks here, before the video driver is
+ *                              freed, whether to keep it
+ *   input_driver_free_with_video()
+ *                              frees nothing if it was kept
+ *   the video driver's init    gets the kept driver back wherever it
+ *                              would have started one
+ *                              (input_driver_take_kept(), from the
+ *                              functions in input_driver_choice.c and
+ *                              from video_driver_init_input())
+ *   drivers_init()             frees it after all if nothing took it
+ *                              back (input_driver_drop_kept())
+ *
+ * It is not kept when the drivers are being shut down rather than
+ * restarted; when the input or the joypad driver setting has changed
+ * since it started, since a restart is how such a change is applied;
+ * when its data is the video driver's own; once, after the
+ * controllers' configuration has been reset while running
+ * (input_driver_restart_with_next_video_restart()); or with
+ * RETROARCH_INPUT_KEEP=0 in the environment.
+ *
+ * What the restart did for the driver besides: the mouse grab is let
+ * go here, because it is the old window's, and taken again by the
+ * video driver's start-up as it always is. */
+void input_driver_keep_for_video_restart(bool restart,
+      const void *video_data)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   settings_t *settings           = config_get_ptr();
+   input_driver_t *drv            = input_st->current_driver;
+   void *data                     = input_st->current_data;
+
+   input_st->kept_driver          = NULL;
+   input_st->kept_data            = NULL;
+
+   if (     !restart
+         || !drv
+         || !data
+         || data == video_data
+         || !drv->survives_video
+         || !input_st->primary_joypad)
+      return;
+   if (input_st->kept_not_next)
+      return;
+   /* RETROARCH_INPUT_KEEP=0 in the environment: every restart
+    * restarts the input driver, as it used to, should something need
+    * telling apart from this. */
+   {
+      const char *env = getenv("RETROARCH_INPUT_KEEP");
+      if (env && env[0] == '0')
+         return;
+   }
+   if (     !string_is_equal(settings->arrays.input_driver, drv->ident)
+         || !string_is_equal(settings->arrays.input_joypad_driver,
+               input_st->joypad_setting_at_init))
+      return;
+   if (!drv->survives_video(data))
+      return;
+
+   if (     (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE)
+         && drv->grab_mouse)
+      drv->grab_mouse(data, false);
+
+   input_st->kept_driver          = drv;
+   input_st->kept_data            = data;
+}
+
+/* The controllers are configured when the joypad driver reports them,
+ * which it does when it starts. Whatever throws that configuration
+ * away while the drivers run - the menu's reset of the configuration
+ * to its defaults - used to have it back at the next restart of the
+ * drivers. So that it still does, the next restart is not one the
+ * input driver is kept across. */
+void input_driver_restart_with_next_video_restart(void)
+{
+   input_driver_st.kept_not_next = true;
+}
+
+/* The kept driver, for whoever would otherwise start one. False if
+ * none was kept. */
+bool input_driver_take_kept(input_driver_t **input, void **input_data)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (!input_st->kept_driver)
+      return false;
+   *input                         = input_st->kept_driver;
+   *input_data                    = input_st->kept_data;
+   input_st->kept_driver          = NULL;
+   input_st->kept_data            = NULL;
+   return true;
+}
+
+/* Nothing took the kept driver back: it and the joypad drivers go, as
+ * they would have with the video driver. */
+void input_driver_drop_kept(void)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   input_driver_t *drv            = input_st->kept_driver;
+   void *data                     = input_st->kept_data;
+
+   if (!drv)
+      return;
+   input_st->kept_driver          = NULL;
+   input_st->kept_data            = NULL;
+
+   if (drv->free)
+      drv->free(data);
+   if (input_st->primary_joypad)
+   {
+      const input_device_driver_t *tmp   = input_st->primary_joypad;
+      input_st->primary_joypad           = NULL;
+      tmp->destroy();
+   }
+#ifdef HAVE_MFI
+   if (input_st->secondary_joypad)
+   {
+      const input_device_driver_t *tmp   = input_st->secondary_joypad;
+      input_st->secondary_joypad         = NULL;
+      tmp->destroy();
+   }
+#endif
+   if (input_st->current_data == data)
+      input_st->current_data = NULL;
+}
+
 /* The video driver is going away. Unless the input driver's data is
- * the video driver's own (@video_data), the input driver and the
- * joypad drivers go with it. */
+ * the video driver's own (@video_data), or the driver is being kept
+ * across a restart, the input driver and the joypad drivers go with
+ * it. */
 void input_driver_free_with_video(const void *video_data)
 {
    input_driver_state_t *input_st = &input_driver_st;
 
    if (input_st->current_data == video_data)
       return;
+
+   if (input_st->kept_driver)
+   {
+      input_st->flags &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+      return;
+   }
 
    if (input_st->current_driver)
       if (input_st->current_driver->free)
@@ -6596,6 +6748,32 @@ bool video_driver_init_input(
 {
    void              *new_data = NULL;
    input_driver_t    **input   = &input_driver_st.current_driver;
+
+   /* A driver kept across this restart that the video driver's init
+    * did not take back itself. If the video driver started one of its
+    * own all the same, that is the input driver and the kept one goes;
+    * otherwise the kept one is it. */
+   if (input_driver_st.kept_driver)
+   {
+      if (     *input
+            && input_driver_st.current_data
+            && input_driver_st.current_data != input_driver_st.kept_data)
+      {
+         input_driver_t *kept = input_driver_st.kept_driver;
+         void *kept_data      = input_driver_st.kept_data;
+         input_driver_st.kept_driver = NULL;
+         input_driver_st.kept_data   = NULL;
+         if (kept->free)
+            kept->free(kept_data);
+      }
+      else
+      {
+         input_driver_take_kept(input,
+               (void**)&input_driver_st.current_data);
+         return true;
+      }
+   }
+
    if (*input)
 #if HAVE_TEST_DRIVERS
       /* Test driver not in use, keep selected driver */
