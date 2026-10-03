@@ -1,0 +1,137 @@
+name: CI Linux EGL hardware core
+
+# Runs the gl video driver on the X11 EGL context under Xvfb with an
+# OpenGL hardware core, and checks that the core was given a context
+# and that its frame is what reaches the screen - with threaded video
+# on, where the core's context lives on the main thread and cannot be
+# bound to the window surface the video thread holds, and with it off.
+# Mesa takes the surfaceless path by itself; a preloaded shim hides
+# parts of its EGL so the pbuffer paths run too.
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'gfx/common/egl_common.c'
+      - 'gfx/common/egl_common.h'
+      - 'gfx/drivers_context/xegl_ctx.c'
+      - 'gfx/drivers/gl2.c'
+      - 'gfx/video_driver.c'
+      - 'gfx/video_thread_hw.c'
+      - 'gfx/video_thread_wrapper.c'
+      - 'samples/gfx/egl_hw_core/**'
+      - '.github/workflows/Linux-egl-hw-core.yml'
+  pull_request:
+    paths:
+      - 'gfx/common/egl_common.c'
+      - 'gfx/common/egl_common.h'
+      - 'gfx/drivers_context/xegl_ctx.c'
+      - 'gfx/drivers/gl2.c'
+      - 'gfx/video_driver.c'
+      - 'gfx/video_thread_hw.c'
+      - 'gfx/video_thread_wrapper.c'
+      - 'samples/gfx/egl_hw_core/**'
+      - '.github/workflows/Linux-egl-hw-core.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  egl-hw-core:
+    name: Run a GL hardware core on the EGL context under Xvfb
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: |
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              build-essential zlib1g-dev ccache python3 \
+              xvfb libgl1-mesa-dri \
+              libx11-dev libx11-xcb-dev libxcb1-dev libxext-dev \
+              libxxf86vm-dev libxrandr-dev libxinerama-dev \
+              libgl-dev libegl-dev && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            build-essential zlib1g-dev ccache python3 \
+            xvfb libgl1-mesa-dri \
+            libx11-dev libx11-xcb-dev libxcb1-dev libxext-dev \
+            libxxf86vm-dev libxrandr-dev libxinerama-dev \
+            libgl-dev libegl-dev
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 500M
+          ccache -z
+
+      - name: Build RetroArch (X11 + OpenGL + EGL, the rest off)
+        shell: bash
+        run: |
+          set -eu
+          ./configure --disable-qt --disable-wayland --disable-sdl \
+                      --disable-sdl2 --disable-ffmpeg --disable-vulkan \
+                      --disable-pulse --disable-discord \
+                      --disable-networking --disable-cheevos \
+                      --disable-glslang --disable-slang \
+                      --disable-spirv_cross --disable-xmb \
+                      --disable-materialui --disable-ozone \
+                      --disable-7zip --disable-flac \
+                      --disable-audiomixer --disable-translate \
+                      --disable-accessibility --disable-crtswitchres \
+                      --disable-langextra --disable-libretrodb \
+                      --disable-video_filter --disable-dsp_filter
+          grep -q '^HAVE_OPENGL = 1' config.mk
+          grep -q '^HAVE_EGL = 1' config.mk
+          grep -q '^HAVE_X11 = 1' config.mk
+          make -j$(nproc)
+          ccache -s
+
+      - name: Run egl_hw_core_test
+        shell: bash
+        run: |
+          set -eu
+          make -C samples/gfx/egl_hw_core
+          timeout 600 python3 samples/gfx/egl_hw_core/egl_hw_core_test.py ./retroarch

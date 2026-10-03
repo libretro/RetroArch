@@ -272,6 +272,15 @@ static void android_gfx_ctx_bind_hw_render(void *data, bool enable)
 #endif
 }
 
+static void android_gfx_ctx_release_current(void *data)
+{
+#ifdef HAVE_EGL
+   android_ctx_data_t *and  = (android_ctx_data_t*)data;
+   if (and)
+      egl_release_current(&and->egl);
+#endif
+}
+
 static uint32_t android_gfx_ctx_get_flags(void *data)
 {
    uint32_t flags = 0;
@@ -343,5 +352,8 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    NULL,
    NULL,
    android_gfx_ctx_create_surface,
-   android_gfx_ctx_destroy_surface
+   android_gfx_ctx_destroy_surface,
+   NULL, /* presentable */
+   NULL, /* last_present_time */
+   android_gfx_ctx_release_current
 };

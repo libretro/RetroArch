@@ -56,6 +56,10 @@ typedef struct
    EGLContext ctx;
    EGLContext hw_ctx;
    EGLSurface surf;
+   /* The core's context is current with this, on a thread that does
+    * not hold the window surface, where the display has no surfaceless
+    * contexts; see egl_bind_hw_render(). */
+   EGLSurface hw_surf;
    EGLDisplay dpy;
    EGLConfig config;
    int interval;
