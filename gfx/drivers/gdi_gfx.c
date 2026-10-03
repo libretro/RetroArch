@@ -2464,8 +2464,10 @@ static void *gdi_init(const video_info_t *video,
    RARCH_LOG("[GDI] Using resolution %ux%u.\n",
          VIDEO_SCALE_W(temp_dims), VIDEO_SCALE_H(temp_dims));
 
-   input_driver_init_windows(
-         config_get_ptr()->arrays.input_joypad_driver, input, input_data);
+   /* no input driver of this driver's own: the frontend starts one
+    * for the window (video_driver_init_input()) */
+   *input      = NULL;
+   *input_data = NULL;
 
 
    RARCH_LOG("[GDI] Init complete.\n");

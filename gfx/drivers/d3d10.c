@@ -2533,8 +2533,10 @@ static void *d3d10_gfx_init(const video_info_t* video,
       goto error;
    }
 
-   input_driver_init_windows(settings->arrays.input_joypad_driver,
-         input, input_data);
+   /* no input driver of this driver's own: the frontend starts one
+    * for the window (video_driver_init_input()) */
+   *input      = NULL;
+   *input_data = NULL;
 
    if (!d3d10_init_swapchain(d3d10,
             VIDEO_SCALE_W(d3d10->vp.full_dims),

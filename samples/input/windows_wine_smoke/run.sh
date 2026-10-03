@@ -47,6 +47,9 @@
 #                               started by the same code, restarted
 #                               with the video driver, works.
 #
+# In all of them the input driver is started by the frontend for the
+# window, once the video driver is up, and not by the video driver.
+#
 # And the window. In every scenario above it is left up across both
 # restarts and taken back by the driver that comes next - with
 # threaded video, where the video thread is held for it, and without.
@@ -176,7 +179,7 @@ failures=0
 # passes through
 scenario() {
    local name=$1 threaded=$2 want_bulk=$3 want_joy=$4 nomsg=$5
-   local log="$work/$name.log" try rc video bulk joy msg ok b_down b_up j_seq stale win off
+   local log="$work/$name.log" try rc video bulk joy msg ok b_down b_up j_seq stale win off byname
    write_cfg "$threaded" "${6:-raw}" "${7:-winraw_joypad}"
    # key delivery on a virtual display with no window manager is not
    # exact: a scenario gets a second go before it counts as failed
@@ -203,6 +206,10 @@ scenario() {
       [ "$j_seq" = "down up down up " ] || ok=no
       off=$(count "$log" "not the core's")
       [ "$off" = 0 ] || ok=no
+      # the frontend starts the input driver for the window; it never
+      # has to fall back to picking one by the setting's name
+      byname=$(count "$log" 'did not initialize an input driver')
+      [ "$byname" = 0 ] || ok=no
       [ "$nomsg" != nomsg ] || [ "$msg" = 0 ] || ok=no
       # the old path measures the wait the new one removes; the new
       # one has nothing to measure
@@ -228,7 +235,8 @@ scenario() {
            "lines on how old the state was at the poll: $stale;" \
            "window left up, taken, not taken: $win (want ${WANT_WINDOW:-2 2 0});" \
            "the core saw B pressed $b_down and released $b_up (want 2 and 2), J: ${j_seq:-nothing}(want down up down up)," \
-           "key events on a thread that is not the core's: $off (want 0)" \
+           "key events on a thread that is not the core's: $off (want 0)," \
+           "input driver picked by the setting's name: $byname (want 0)" \
            "$([ "$nomsg" = nomsg ] && echo ", driver instances with reports taken as messages: $msg (want 0)")"
       sed 's/\x1b\[[0-9;]*m//g' "$log" | tr -d '\r' | grep -av "ALSA lib\|Playlist\]" | tail -25
       failures=$((failures + 1))

@@ -7265,8 +7265,10 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
    if (!d3d9_hlsl_initialize(d3d, &d3d->video_info))
       return false;
 
-   input_driver_init_windows(settings->arrays.input_joypad_driver,
-         input, input_data);
+   /* no input driver of this driver's own: the frontend starts one
+    * for the window (video_driver_init_input()) */
+   *input      = NULL;
+   *input_data = NULL;
 
    {
       char version_str[128];

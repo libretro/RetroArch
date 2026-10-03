@@ -6796,7 +6796,8 @@ bool input_driver_grab_mouse_for_video(void)
 bool video_driver_init_input(
       input_driver_t *tmp,
       settings_t *settings,
-      bool verbosity_enabled)
+      bool verbosity_enabled,
+      enum input_window_kind window)
 {
    void              *new_data = NULL;
    input_driver_t    **input   = &input_driver_st.current_driver;
@@ -6842,10 +6843,39 @@ bool video_driver_init_input(
       return true;
 #endif
    else
-      /* Video driver didn't provide an input driver,
-       * so we use configured one. */
+   {
+#if defined(_WIN32) || defined(_XBOX) || defined(__WINRT__)
+      /* A Windows window: the video drivers used to start the input
+       * driver for it themselves, each calling
+       * input_driver_init_windows() from its own start-up - on the
+       * video thread, with threaded video. It is started here now, by
+       * the frontend, on its own thread: raw input if that is the
+       * setting and it starts, DirectInput otherwise. The test driver,
+       * when it is the setting and has a file to play, is left to the
+       * setting below as it was. */
+      if (window == INPUT_WINDOW_WINDOWS
+#if HAVE_TEST_DRIVERS
+            && !(   strcmp(settings->arrays.input_driver, "test") == 0
+                 && *settings->paths.test_input_file_general)
+#endif
+         )
+      {
+         input_driver_t *drv = NULL;
+         void *drv_data      = NULL;
+         input_driver_init_windows(settings->arrays.input_joypad_driver,
+               &drv, &drv_data);
+         if (drv && drv_data)
+         {
+            *input                       = drv;
+            input_driver_st.current_data = drv_data;
+            return true;
+         }
+      }
+#endif
+      /* Nothing for the window, or no such window: the configured one. */
       RARCH_LOG("[Video] Graphics driver did not initialize an input driver."
          " Attempting to pick a suitable driver.\n");
+   }
 
    if (tmp)
       *input = tmp;

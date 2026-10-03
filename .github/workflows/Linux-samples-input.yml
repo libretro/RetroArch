@@ -82,6 +82,22 @@ jobs:
           fi
           echo "[pass] gfx/ does not name input_state_get_ptr"
 
+      - name: Windows video drivers do not start the input driver
+        shell: bash
+        run: |
+          set -eu
+          # Every Windows video driver and context used to call
+          # input_driver_init_windows() from its own start-up. The
+          # frontend starts the input driver for the window once the
+          # video driver is up (video_driver_init_input()), and they
+          # hand back none. No file under gfx/ may call it again.
+          if grep -rn "input_driver_init_windows" --include=*.c --include=*.h \
+                --include=*.m --include=*.cpp gfx/; then
+             echo "FAIL: a video driver starts the input driver for a Windows window itself" >&2
+             exit 1
+          fi
+          echo "[pass] gfx/ does not call input_driver_init_windows"
+
       - name: input/ does not reach into video state
         shell: bash
         run: |

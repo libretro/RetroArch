@@ -3922,10 +3922,10 @@ static void *d3d11_gfx_init(const video_info_t* video,
    }
 #endif
 
-   /* after the swap chain, so that it is started for the window that
-    * stays (an input driver may tie itself to the window) */
-   input_driver_init_windows(settings->arrays.input_joypad_driver,
-         input, input_data);
+   /* no input driver of this driver's own: the frontend starts one
+    * for the window (video_driver_init_input()) */
+   *input      = NULL;
+   *input_data = NULL;
 
    matrix_4x4_identity(d3d11->identity);
 

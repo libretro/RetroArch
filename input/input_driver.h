@@ -920,10 +920,25 @@ input_driver_t **input_driver_video_slots(void ***data_slot);
 void input_driver_free_with_video(const void *video_data);
 bool input_driver_grab_mouse_for_video(void);
 
+/* What kind of window the video driver that has just started put up,
+ * for the input driver that goes with it. */
+enum input_window_kind
+{
+   INPUT_WINDOW_OTHER = 0,
+   /* a Windows window (or UWP, or Xbox): input_driver_init_windows() */
+   INPUT_WINDOW_WINDOWS
+};
+
+/* Called once the video driver is up. If it brought an input driver of
+ * its own, that is the input driver. Otherwise one is started here:
+ * the one kept from before the restart; for a Windows window, the one
+ * input_driver_init_windows() chooses; failing those, the one the
+ * setting names. */
 bool video_driver_init_input(
       input_driver_t *tmp,
       settings_t *settings,
-      bool verbosity_enabled);
+      bool verbosity_enabled,
+      enum input_window_kind window);
 
 bool input_driver_grab_mouse(void);
 

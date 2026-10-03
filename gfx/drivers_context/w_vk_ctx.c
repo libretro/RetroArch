@@ -264,7 +264,10 @@ static void gfx_ctx_w_vk_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
-   input_driver_init_windows(joypad_name, input, input_data);
+   /* no input driver of this driver's own: the frontend starts one
+    * for the window (video_driver_init_input()) */
+   *input      = NULL;
+   *input_data = NULL;
 }
 
 static enum gfx_ctx_api gfx_ctx_w_vk_get_api(void *data) { return GFX_CTX_VULKAN_API; }

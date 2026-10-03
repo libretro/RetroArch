@@ -5260,8 +5260,10 @@ static void *d3d12_gfx_init(const video_info_t* video,
    else
       d3d12->flags &= ~D3D12_ST_FLAG_VSYNC;
 
-   input_driver_init_windows(settings->arrays.input_joypad_driver,
-         input, input_data);
+   /* no input driver of this driver's own: the frontend starts one
+    * for the window (video_driver_init_input()) */
+   *input      = NULL;
+   *input_data = NULL;
 
    d3d12_init_base(d3d12);
 
