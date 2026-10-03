@@ -568,3 +568,24 @@ jobs:
           WINEDEBUG=-all timeout 300 make check
           make clean
           echo "[pass] winraw_joypad_newest_test (wine)"
+
+      - name: Build and run winraw_joypad_same_model_test (mingw + Wine)
+        shell: bash
+        working-directory: samples/input/winraw_joypad_same_model
+        run: |
+          set -eu
+          # winraw_joypad took a second controller of the same model
+          # for the first one reconnecting, and evicted the first. The
+          # driver with its HID calls routed to fake controllers that
+          # share one vendor and product ID: three plugged in at once
+          # are three slots; one reconnecting, on its port or another,
+          # with its new handle announced before the old one is
+          # removed, gets its own slot back and leaves the others
+          # alone; a reconnect whose old handle still answers is known
+          # by its device path; with no path, a live handle is another
+          # controller and a dead one is this one back.
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          make clean all
+          WINEDEBUG=-all timeout 300 make check
+          make clean
+          echo "[pass] winraw_joypad_same_model_test (wine)"

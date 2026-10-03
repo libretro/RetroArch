@@ -158,6 +158,9 @@ typedef struct winraw_joypad_joypad_data
    uint16_t            vid;
    uint16_t            pid;
    char                name[256];
+   /* The device interface path, which is what tells one controller
+    * from another of the same model. Empty if Windows gave none. */
+   char                path[512];
 } winraw_joypad_joypad_data_t;
 
 /* ------------------------------------------------------------------ */
@@ -319,6 +322,17 @@ static int winraw_joypad_find_free_slot(void)
 /* Device arrival / removal                                            */
 /* ------------------------------------------------------------------ */
 
+/* Whether a raw input handle still names a device. The handle of a
+ * controller that has been unplugged does not. */
+static bool winraw_joypad_handle_alive(HANDLE hDevice)
+{
+   RID_DEVICE_INFO info;
+   UINT size   = sizeof(info);
+   info.cbSize = sizeof(info);
+   return GetRawInputDeviceInfoA(hDevice, RIDI_DEVICEINFO,
+         &info, &size) != (UINT)-1;
+}
+
 static bool winraw_joypad_add_device(HANDLE hDevice)
 {
    int slot;
@@ -351,14 +365,33 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
        && dev_info.hid.usUsage != HID_USAGE_GENERIC_GAMEPAD)
       return false;
 
+   /* The device path, which says which physical controller this is. */
+   device_path[0] = '\0';
+   GetRawInputDeviceInfoA(hDevice, RIDI_DEVICENAME, NULL, &name_size);
+   if (name_size > 0 && name_size < sizeof(device_path))
+   {
+      if (GetRawInputDeviceInfoA(hDevice, RIDI_DEVICENAME,
+               device_path, &name_size) == (UINT)-1)
+         device_path[0] = '\0';
+   }
+
    /* ---- Handle reconnection race condition ----
     * Windows can send GIDC_ARRIVAL for a newly-assigned handle *before*
     * GIDC_REMOVAL for the old handle of the same physical device.
-    * If we find an existing slot with the same VID:PID but a different
-    * (now-stale) handle, evict it first to prevent double-registered
+    * If we find an existing slot holding that same device under its
+    * old, now-stale handle, evict it first to prevent double-registered
     * inputs from two slots reading the same physical controller.
     * We also try to reuse the same slot so that port mapping is
-    * preserved across disconnect/reconnect cycles. */
+    * preserved across disconnect/reconnect cycles.
+    *
+    * "The same device" used to be judged by vendor and product ID
+    * alone, so a second controller of the same model was taken for the
+    * first one reconnecting and evicted it: two identical controllers
+    * could not be used together. A slot with the same IDs is the same
+    * device only if it has the same device path, or if its handle no
+    * longer names a device - it was unplugged, and this is it, or its
+    * replacement, coming back. A slot whose handle is still alive and
+    * whose path is another is another controller, and is left alone. */
    {
       unsigned i;
       int reuse_slot = -1;
@@ -370,6 +403,12 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
              && p->pid == (uint16_t)dev_info.hid.dwProductId
              && p->hDevice != hDevice)
          {
+            bool same_path = device_path[0] && p->path[0]
+               && !lstrcmpiA(p->path, device_path);
+
+            if (!same_path && winraw_joypad_handle_alive(p->hDevice))
+               continue; /* another controller of the same model */
+
             /* Stale entry for the same physical device — clean it up */
             RARCH_LOG("[RawInput Joypad] Evicting stale slot %d "
                   "(handle %p -> %p) for reconnected device "
@@ -387,8 +426,9 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
                free(p->preparsed);
 
             memset(p, 0, sizeof(*p));
+            winraw_joypad_held[i].count = 0;
             reuse_slot = (int)i;
-            break; /* Only one stale entry per VID:PID expected */
+            break; /* Only one stale entry per device expected */
          }
       }
 
@@ -407,14 +447,11 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
    pad->vid     = (uint16_t)dev_info.hid.dwVendorId;
    pad->pid     = (uint16_t)dev_info.hid.dwProductId;
 
-   /* --- Get the device path so we can open it for the 
-    * product string --- */
-   GetRawInputDeviceInfoA(hDevice, RIDI_DEVICENAME, NULL, &name_size);
-   if (name_size > 0 && name_size < sizeof(device_path))
-   {
-      GetRawInputDeviceInfoA(hDevice, RIDI_DEVICENAME,
-         device_path, &name_size);
+   strlcpy(pad->path, device_path, sizeof(pad->path));
 
+   /* --- Open the device path for the product string --- */
+   if (device_path[0])
+   {
       hid_handle = CreateFileA(device_path,
             0, /* No read/write needed, just attributes */
             FILE_SHARE_READ | FILE_SHARE_WRITE,
