@@ -1852,6 +1852,113 @@ static void lane_key_events(void)
             " at the next poll; a full queue drops the newest and counts them\n");
 }
 
+/* ---- a joypad driver restart asked for from another thread --------- */
+
+/* On Windows a controller plugged in or pulled reaches the frontend
+ * through the window procedure, which with threaded video runs on the
+ * video thread, and what it asks for is joypad_driver_reinit(): the
+ * joypad driver destroyed and started again. That used to happen then
+ * and there, on that thread, under a frontend that might be polling
+ * the driver. It waits for the poll now. This asks from a second
+ * thread and looks at when, and on which thread, the driver is
+ * destroyed. */
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+static input_device_driver_t jr_wrap;
+static void (*jr_destroy_real)(void);
+static uintptr_t jr_main_thread;
+static unsigned  jr_destroys, jr_off_thread;
+
+static void jr_destroy(void)
+{
+   jr_destroys++;
+   if (sthread_get_current_thread_id() != jr_main_thread)
+      jr_off_thread++;
+   jr_destroy_real();
+}
+
+static void jr_wrap_joypad(input_driver_state_t *input_st)
+{
+   jr_wrap                  = *input_st->primary_joypad;
+   jr_destroy_real          = jr_wrap.destroy;
+   jr_wrap.destroy          = jr_destroy;
+   input_st->primary_joypad = &jr_wrap;
+}
+
+static void jr_sender(void *data)
+{
+   unsigned i, n = *(unsigned*)data;
+   for (i = 0; i < n; i++)
+      joypad_driver_reinit(NULL, config_get_ptr()->arrays.input_joypad_driver);
+}
+#endif
+
+static void lane_joypad_reinit(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   input_driver_state_t *input_st = input_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   unsigned had                   = failures;
+   unsigned n;
+   sthread_t *thr;
+
+   fast_forward(true);
+   run_frames(5);
+   if (!input_st->primary_joypad)
+   {
+      CHECK(false, "joypad restart: no joypad driver to try it with");
+      return;
+   }
+   jr_main_thread = sthread_get_current_thread_id();
+   jr_destroys    = jr_off_thread = 0;
+
+   /* 1. Asked for on another thread: nothing happens there. The next
+    *    poll restarts the driver, on the frontend's thread. */
+   jr_wrap_joypad(input_st);
+   n   = 1;
+   thr = sthread_create(jr_sender, &n);
+   CHECK(thr != NULL, "joypad restart: no second thread to ask from");
+   if (thr)
+   {
+      sthread_join(thr);
+      CHECK(jr_destroys == 0 && input_st->primary_joypad == &jr_wrap,
+            "joypad restart: asked for on another thread, it was done there and then");
+      run_frames(2);
+      CHECK(jr_destroys == 1 && jr_off_thread == 0,
+            "joypad restart: the poll did not do it once, on the frontend's thread");
+      CHECK(input_st->primary_joypad && input_st->primary_joypad != &jr_wrap,
+            "joypad restart: no joypad driver after it");
+   }
+
+   /* 2. Asked for three times before a poll comes: one restart. */
+   jr_wrap_joypad(input_st);
+   n   = 3;
+   thr = sthread_create(jr_sender, &n);
+   if (thr)
+   {
+      sthread_join(thr);
+      run_frames(3);
+      CHECK(jr_destroys == 2 && jr_off_thread == 0,
+            "joypad restart: three requests between two polls were not one restart");
+   }
+
+   /* 3. Asked for on the frontend's own thread: at once, as ever. */
+   jr_wrap_joypad(input_st);
+   joypad_driver_reinit(NULL, settings->arrays.input_joypad_driver);
+   CHECK(jr_destroys == 3 && jr_off_thread == 0
+         && input_st->primary_joypad && input_st->primary_joypad != &jr_wrap,
+         "joypad restart: asked for on the frontend's thread, it was not done at once");
+
+   run_frames(3);
+   fast_forward(false);
+   if (failures == had)
+      printf("[pass] joypad restart: asked for on another thread it waits for the"
+            " poll and is done once on the frontend's thread; on the frontend's"
+            " thread it is done at once\n");
+#else
+   printf("[skip] joypad-restart lane: needs the test drivers\n");
+#endif
+}
+
 static void lane_frame_cost(void)
 {
    unsigned had = failures;
@@ -2055,8 +2162,9 @@ int main(int argc, char *argv[])
       lane_output_store();
       lane_core_view();
       lane_key_events();
-      /* last: it restarts the drivers */
+      /* last: these restart the drivers */
       lane_input_kept();
+      lane_joypad_reinit();
    }
 
    if (failures)

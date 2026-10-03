@@ -6028,7 +6028,66 @@ const char *joypad_driver_name(unsigned i)
 static void input_rumble_forget(void);
 static uint32_t input_driver_detect_settings(const settings_t *settings);
 
+/* The joypad driver, restarted because controllers came or went.
+ *
+ * On Windows that is asked for from the window procedure - a device
+ * notification, then a timer - and with threaded video the window
+ * procedure runs on the video thread. The restart destroys the joypad
+ * driver and its pad tables, starts the registry over and has the
+ * driver report every controller again: on that thread it did all of
+ * that while the frontend's thread could be in the middle of a poll,
+ * reading the tables being freed.
+ *
+ * Asked for on another thread, it is only noted, and the next
+ * input_driver_poll() - the frontend's thread, before it polls
+ * anything - does it. Asked for on the frontend's own thread it is
+ * done at once, as before. */
+#ifdef HAVE_THREADS
+/* 0: none due. 1: due. 2: due, and the driver is given the input
+ * driver's data, as the caller gave it. */
+static retro_atomic_int_t input_joypad_reinit_due;
+#endif
+
+static void joypad_driver_reinit_now(void *data,
+      const char *joypad_driver_name);
+
 void joypad_driver_reinit(void *data, const char *joypad_driver_name)
+{
+#ifdef HAVE_THREADS
+   if (!task_is_on_main_thread())
+   {
+      retro_atomic_store_release_int(&input_joypad_reinit_due,
+            data ? 2 : 1);
+      return;
+   }
+#endif
+   joypad_driver_reinit_now(data, joypad_driver_name);
+}
+
+#ifdef HAVE_THREADS
+/* The poll's: a restart another thread asked for. The driver is the
+ * one the setting names - what the callers pass. True if one was
+ * done, and the joypad drivers are not the ones they were. */
+static bool joypad_driver_reinit_take(void)
+{
+   int due = retro_atomic_load_relaxed_int(&input_joypad_reinit_due);
+
+   if (!due)
+      return false;
+   due = retro_atomic_exchange_int(&input_joypad_reinit_due, 0);
+   if (!due)
+      return false;
+   RARCH_DBG("[Input] Controllers changed: the joypad driver is restarted"
+         " by the poll.\n");
+   joypad_driver_reinit_now(
+         (due == 2) ? input_driver_st.current_data : NULL,
+         config_get_ptr()->arrays.input_joypad_driver);
+   return true;
+}
+#endif
+
+static void joypad_driver_reinit_now(void *data,
+      const char *joypad_driver_name)
 {
    input_rumble_forget();
 
@@ -8718,6 +8777,18 @@ void input_driver_poll(void)
    uint8_t max_users              = (settings->uints.input_max_users
          > MAX_USERS) ? MAX_USERS
          : (uint8_t)settings->uints.input_max_users;
+
+#ifdef HAVE_THREADS
+   /* a restart of the joypad driver that another thread asked for:
+    * before anything of it is polled or read */
+   if (joypad_driver_reinit_take())
+   {
+      joypad                      = input_st->primary_joypad;
+#ifdef HAVE_MFI
+      sec_joypad                  = input_st->secondary_joypad;
+#endif
+   }
+#endif
 
    if (joypad && joypad->poll)
       joypad->poll();

@@ -62,6 +62,15 @@
 #                               toggle restarts the driver as it used
 #                               to, on the kept window.
 #
+# In every scenario a controller is also "plugged in": the window is
+# sent the timer message that follows a device notification, which is
+# what makes the frontend restart its joypad driver. With threaded
+# video the window procedure that gets it is on the video thread, and
+# the restart must be left for the poll on the frontend's thread to
+# do - the log says so - where without threaded video it is done on
+# the spot. Either way the joypad driver starts once more than it
+# otherwise would, and the pad still works afterwards.
+#
 # ONLY=<part of a scenario's name> runs just the scenarios that match.
 #
 # And the window. In every scenario above it is left up across both
@@ -109,6 +118,24 @@ ${MINGW_CC:-x86_64-w64-mingw32-gcc} -shared -O1 -Wall \
    -I"$here/../../../libretro-common/include" \
    -o "$work/smoke_core.dll" "$here/smoke_core.c" \
    || { echo "the core did not build" >&2; exit 1; }
+
+# What a controller being plugged in ends in: the hotplug timer's
+# message at RetroArch's window. The timer's id is the frontend's own.
+timer_id=$(sed -n 's/^#define WIN32_HOTPLUG_TIMER_ID *\(0x[0-9A-Fa-f]*\).*/\1/p' \
+   "$here/../../../gfx/common/win32_common.h")
+[ -n "$timer_id" ] || { echo "no WIN32_HOTPLUG_TIMER_ID in win32_common.h" >&2; exit 1; }
+cat > "$work/plug.c" <<PLUG
+#include <windows.h>
+int main(void)
+{
+   HWND w = FindWindowA("RetroArch", NULL);
+   if (!w)
+      return 1;
+   return PostMessageA(w, WM_TIMER, $timer_id, 0) ? 0 : 2;
+}
+PLUG
+${MINGW_CC:-x86_64-w64-mingw32-gcc} -O1 -o "$work/plug.exe" "$work/plug.c" \
+   || { echo "the plug helper did not build" >&2; exit 1; }
 
 export DISPLAY=:98
 Xvfb :98 -screen 0 1280x720x24 > "$work/xvfb.log" 2>&1 &
@@ -168,6 +195,9 @@ play() {
    sleep 1
    hold j
    hold z
+   # a controller is plugged in
+   ( cd "$work" && WINEDEBUG=-all $WINE ./plug.exe ) >/dev/null 2>&1
+   sleep 1.5
    hold f
    sleep 4
    hold j
@@ -194,7 +224,7 @@ failures=0
 # passes through
 scenario() {
    local name=$1 threaded=$2 want_bulk=$3 want_joy=$4 nomsg=$5
-   local log="$work/$name.log" try rc video bulk joy msg ok b_down b_up j_seq stale win off byname
+   local log="$work/$name.log" try rc video bulk joy msg ok b_down b_up j_seq stale win off byname deferred
    local want_video=${WANT_VIDEO:-3}
    if [ -n "${ONLY:-}" ]; then
       case "$name" in
@@ -232,6 +262,14 @@ scenario() {
       # has to fall back to picking one by the setting's name
       byname=$(count "$log" 'did not initialize an input driver')
       [ "$byname" = 0 ] || ok=no
+      # the joypad restart the plugged-in controller asks for: left to
+      # the poll when the window procedure is on another thread
+      deferred=$(count "$log" 'joypad driver is restarted by the poll')
+      if [ "$threaded" = true ]; then
+         [ "$deferred" = 1 ] || ok=no
+      else
+         [ "$deferred" = 0 ] || ok=no
+      fi
       [ "$nomsg" != nomsg ] || [ "$msg" = 0 ] || ok=no
       # the old path measures the wait the new one removes; the new
       # one has nothing to measure
@@ -258,24 +296,27 @@ scenario() {
            "window left up, taken, not taken: $win (want ${WANT_WINDOW:-2 2 0});" \
            "the core saw B pressed $b_down and released $b_up (want 2 and 2), J: ${j_seq:-nothing}(want down up down up)," \
            "key events on a thread that is not the core's: $off (want 0)," \
-           "input driver picked by the setting's name: $byname (want 0)" \
+           "input driver picked by the setting's name: $byname (want 0)," \
+           "joypad restarts left to the poll: $deferred (want $([ "$threaded" = true ] && echo 1 || echo 0))" \
            "$([ "$nomsg" = nomsg ] && echo ", driver instances with reports taken as messages: $msg (want 0)")"
       sed 's/\x1b\[[0-9;]*m//g' "$log" | tr -d '\r' | grep -av "ALSA lib\|Playlist\]" | tail -25
       failures=$((failures + 1))
    fi
 }
 
-scenario "read by the poll, kept" true 1 1 nomsg
-RETROARCH_INPUT_KEEP=0 scenario "RETROARCH_INPUT_KEEP=0" true 3 3 nomsg
-scenario "video not threaded" false 1 1 any
-RETROARCH_RAWINPUT_POLL=0 scenario "RETROARCH_RAWINPUT_POLL=0" true 0 3 any
-scenario "DirectInput" true 0 3 any dinput dinput
-WANT_WINDOW="0 0 0" RETROARCH_WINDOW_KEEP=0 scenario "RETROARCH_WINDOW_KEEP=0" true 1 1 nomsg
-WANT_WINDOW="2 0 2" RETROARCH_WINDOW_KEEP=2 scenario "window left up and not taken" true 1 1 nomsg
+# (joypad driver starts: what the restarts make, and one for the
+# controller plugged in)
+scenario "read by the poll, kept" true 1 2 nomsg
+RETROARCH_INPUT_KEEP=0 scenario "RETROARCH_INPUT_KEEP=0" true 3 4 nomsg
+scenario "video not threaded" false 1 2 any
+RETROARCH_RAWINPUT_POLL=0 scenario "RETROARCH_RAWINPUT_POLL=0" true 0 4 any
+scenario "DirectInput" true 0 4 any dinput dinput
+WANT_WINDOW="0 0 0" RETROARCH_WINDOW_KEEP=0 scenario "RETROARCH_WINDOW_KEEP=0" true 1 2 nomsg
+WANT_WINDOW="2 0 2" RETROARCH_WINDOW_KEEP=2 scenario "window left up and not taken" true 1 2 nomsg
 VIDEO_DRIVER=gl VIDEO_STARTED='Found GL context' WANT_VIDEO=2 WANT_WINDOW="1 1 0" \
-   scenario "OpenGL" true 1 1 nomsg
+   scenario "OpenGL" true 1 2 nomsg
 VIDEO_DRIVER=gl VIDEO_STARTED='Found GL context' WANT_VIDEO=3 WANT_WINDOW="2 2 0" \
-   RETROARCH_FULLSCREEN_IN_PLACE=0 scenario "OpenGL, toggle by restart" true 1 1 nomsg
+   RETROARCH_FULLSCREEN_IN_PLACE=0 scenario "OpenGL, toggle by restart" true 1 2 nomsg
 
 if [ "$failures" != 0 ]; then
    echo "FAIL windows_wine_smoke: $failures"
