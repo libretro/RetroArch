@@ -35,6 +35,8 @@ typedef struct fat_space
 } fat_space;
 
 int  fat_mount(fat_vol **out, gk_blockdev_t *dev);
+/* The device is not touched again: files and directories still open
+ * fail with -EIO until closed. */
 int  fat_unmount(fat_vol *v);
 int  fat_sync(fat_vol *v);
 

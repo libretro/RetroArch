@@ -69,8 +69,9 @@ int  gk_usb_intr(uint32_t id, uint8_t ep, void *data, uint32_t len);
 int  gk_usb_cancel(uint32_t id, uint8_t ep);
 
 /* Mass storage: the first USB drive's first LUN with a medium, or
- * NULL. */
+ * NULL.  gk_usbstorage_inserted: the drive open is still plugged in. */
 gk_blockdev_t *gk_usbstorage_open(void);
 void           gk_usbstorage_close(void);
+int            gk_usbstorage_inserted(void);
 
 #endif

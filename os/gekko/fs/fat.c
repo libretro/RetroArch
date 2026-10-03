@@ -42,7 +42,8 @@ struct cache_ent
 
 struct fat_vol
 {
-   gk_blockdev_t   *dev;
+   gk_blockdev_t   *dev;            /* NULL once unmounted */
+   uint32_t         handles;        /* open files and directories */
    fat_file        *open;           /* open files, linked by next */
    void            *lock;
    uint8_t         *pool;
@@ -115,11 +116,15 @@ static void wr32(uint8_t *p, uint32_t v)
 
 static int dev_read(fat_vol *v, uint64_t lba, uint32_t n, void *buf)
 {
+   if (!v->dev)
+      return -EIO;
    return v->dev->read(v->dev, lba, n, buf) ? -EIO : 0;
 }
 
 static int dev_write(fat_vol *v, uint64_t lba, uint32_t n, const void *buf)
 {
+   if (!v->dev)
+      return -EIO;
    return v->dev->write(v->dev, lba, n, buf) ? -EIO : 0;
 }
 
@@ -491,12 +496,37 @@ int fat_sync(fat_vol *v)
    return ret;
 }
 
-int fat_unmount(fat_vol *v)
+static void destroy(fat_vol *v)
 {
-   int ret = fat_sync(v);
    fat_lock_destroy(v->lock);
    free(v->pool);
    free(v);
+}
+
+/* Drops a handle; the last one of an unmounted volume frees it. */
+static void put_handle(fat_vol *v)
+{
+   int last;
+   fat_lock_acquire(v->lock);
+   last = !--v->handles && !v->dev;
+   fat_lock_release(v->lock);
+   if (last)
+      destroy(v);
+}
+
+/* Handles still open fail from here on, and the volume goes with the
+ * last of them. */
+int fat_unmount(fat_vol *v)
+{
+   int ret, last;
+   fat_lock_acquire(v->lock);
+   if (!(ret = write_fsinfo(v)))
+      ret = cache_flush(v);
+   v->dev = NULL;
+   last   = !v->handles;
+   fat_lock_release(v->lock);
+   if (last)
+      destroy(v);
    return ret;
 }
 
@@ -1247,6 +1277,7 @@ int fat_open(fat_vol *v, const char *path, int flags, fat_file **out)
    h->v     = v;
    h->next  = v->open;
    v->open  = h;
+   v->handles++;
    h->dir   = dir;
    h->entry = f.index;
    h->flags = flags;
@@ -1257,6 +1288,7 @@ int fat_open(fat_vol *v, const char *path, int flags, fat_file **out)
       if ((ret = free_chain(v, h->first)))
       {
          v->open = h->next;
+         v->handles--;
          free(h);
          fat_lock_release(v->lock);
          return ret;
@@ -1292,7 +1324,7 @@ int fat_fsync(fat_file *h)
 {
    int ret;
    fat_lock_acquire(h->v->lock);
-   ret = update_entry(h);
+   ret = h->v->dev ? update_entry(h) : -EIO;
    if (!ret)
       ret = write_fsinfo(h->v);
    if (!ret)
@@ -1312,12 +1344,13 @@ int fat_close(fat_file *h)
          *p = h->next;
          break;
       }
-   ret = update_entry(h);
-   if (!ret)
-      ret = write_fsinfo(h->v);
-   if (!ret && (h->flags & O_ACCMODE) != O_RDONLY)
+   if (!h->v->dev)
+      ret = h->dirty ? -EIO : 0;
+   else if (!(ret = update_entry(h)) && !(ret = write_fsinfo(h->v))
+         && (h->flags & O_ACCMODE) != O_RDONLY)
       ret = cache_flush(h->v);
    fat_lock_release(h->v->lock);
+   put_handle(h->v);
    free(h);
    return ret;
 }
@@ -1452,7 +1485,9 @@ long fat_read(fat_file *h, void *buf, size_t len)
    if ((h->flags & O_ACCMODE) == O_WRONLY)
       return -EBADF;
    fat_lock_acquire(h->v->lock);
-   if (h->pos >= h->size)
+   if (!h->v->dev)
+      ret = -EIO;
+   else if (h->pos >= h->size)
       ret = 0;
    else
    {
@@ -1490,6 +1525,11 @@ long fat_write(fat_file *h, const void *buf, size_t len)
    if ((h->flags & O_ACCMODE) == O_RDONLY)
       return -EBADF;
    fat_lock_acquire(h->v->lock);
+   if (!h->v->dev)
+   {
+      fat_lock_release(h->v->lock);
+      return -EIO;
+   }
    if (h->flags & O_APPEND)
       h->pos = h->size;
    end = h->pos + len;
@@ -1554,7 +1594,9 @@ int fat_truncate(fat_file *h, uint64_t len)
    if (len > 0xffffffffu)
       return -EFBIG;
    fat_lock_acquire(v->lock);
-   if (len > h->size)
+   if (!v->dev)
+      ret = -EIO;
+   else if (len > h->size)
    {
       uint64_t pos = h->pos;
       h->pos = h->size;
@@ -1941,15 +1983,17 @@ int fat_opendir(fat_vol *v, const char *path, fat_dir **out)
             dir = 0;
       }
    }
+   if (!ret && !(d = (fat_dir*)calloc(1, sizeof(*d))))
+      ret = -ENOMEM;
+   if (!ret)
+   {
+      d->v    = v;
+      d->clus = dir;
+      *out    = d;
+      v->handles++;
+   }
    fat_lock_release(v->lock);
-   if (ret)
-      return ret;
-   if (!(d = (fat_dir*)calloc(1, sizeof(*d))))
-      return -ENOMEM;
-   d->v    = v;
-   d->clus = dir;
-   *out    = d;
-   return 0;
+   return ret;
 }
 
 int fat_readdir(fat_dir *d, char *name, size_t size, fat_stat *st)
@@ -1959,6 +2003,11 @@ int fat_readdir(fat_dir *d, char *name, size_t size, fat_stat *st)
    fat_lock_acquire(d->v->lock);
    for (;;)
    {
+      if (!d->v->dev)
+      {
+         ret = -EIO;
+         break;
+      }
       ret = dir_next(d->v, d->clus, &d->n, &f);
       if (ret != 1)
          break;
@@ -1983,5 +2032,6 @@ void fat_rewinddir(fat_dir *d)
 
 void fat_closedir(fat_dir *d)
 {
+   put_handle(d->v);
    free(d);
 }

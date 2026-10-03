@@ -182,14 +182,28 @@ static int sd_write(gk_blockdev_t *dev, uint64_t lba, uint32_t count,
 
 void gk_sd_close(void)
 {
-   if (!sd.dev.read)
-      return;
-   command(CMD_SELECT, RESP_R1B, 0, NULL, 0);
-   gk_ios_close(sd.fd);
-   sd.dev.read = NULL;
+   gk_mutex_lock(&sd.lock);
+   if (sd.dev.read)
+   {
+      command(CMD_SELECT, RESP_R1B, 0, NULL, 0);
+      gk_ios_close(sd.fd);
+      sd.dev.read = NULL;
+   }
+   gk_mutex_unlock(&sd.lock);
 }
 
-gk_blockdev_t *gk_sd_open(void)
+int gk_sd_inserted(void)
+{
+   int in = 0;
+   gk_mutex_lock(&sd.lock);
+   if (sd.dev.read
+         && gk_ios_ioctl(sd.fd, SDIO_STATUS, NULL, 0, word, 4) >= 0)
+      in = (word[0] & STATUS_INSERTED) != 0;
+   gk_mutex_unlock(&sd.lock);
+   return in;
+}
+
+static gk_blockdev_t *open_card(void)
 {
    uint32_t status, ctl;
 
@@ -232,4 +246,13 @@ gk_blockdev_t *gk_sd_open(void)
 fail:
    gk_ios_close(sd.fd);
    return NULL;
+}
+
+gk_blockdev_t *gk_sd_open(void)
+{
+   gk_blockdev_t *dev;
+   gk_mutex_lock(&sd.lock);
+   dev = open_card();
+   gk_mutex_unlock(&sd.lock);
+   return dev;
 }

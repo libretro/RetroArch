@@ -32,9 +32,11 @@ gk_blockdev_t *gk_sdgecko_open(unsigned ch);
 void           gk_sdgecko_close(unsigned ch);
 
 #ifdef HW_RVL
-/* The front SD slot; NULL without a card. */
+/* The front SD slot; NULL without a card.  gk_sd_inserted: the card
+ * open is still in the slot. */
 gk_blockdev_t *gk_sd_open(void);
 void           gk_sd_close(void);
+int            gk_sd_inserted(void);
 #endif
 
 #endif

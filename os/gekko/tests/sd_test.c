@@ -179,6 +179,31 @@ static void test_write(void)
    free(buf);
 }
 
+/* What is open when the volume goes fails until closed; the same name
+ * mounts again. */
+static void test_unplug(gk_blockdev_t *dev)
+{
+   FILE *f = fopen("sd:/out/final name.txt", "rb");
+   DIR  *d = opendir("sd:/out");
+   char c;
+   CHECK(f && d, "open across an unmount");
+   gk_fat_unmount("sd");
+   CHECK(access("sd:/out", F_OK) != 0, "unmounted");
+   if (f)
+   {
+      CHECK(fread(&c, 1, 1, f) == 0 && ferror(f), "a read after it fails");
+      fclose(f);
+   }
+   if (d)
+   {
+      CHECK(readdir(d) == NULL, "a listing after it fails");
+      closedir(d);
+   }
+   CHECK(gk_sd_inserted(), "the card is still in");
+   CHECK(gk_fat_mount("sd", dev) == 0 && access("sd:/out", F_OK) == 0,
+         "mounted again");
+}
+
 int main(int argc, char **argv)
 {
    gk_blockdev_t *dev;
@@ -198,6 +223,7 @@ int main(int argc, char **argv)
    {
       test_read();
       test_write();
+      test_unplug(dev);
       gk_fat_unmount("sd");
       CHECK(access("sd:/out", F_OK) != 0, "unmounted");
    }

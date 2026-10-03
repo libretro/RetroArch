@@ -16,7 +16,8 @@
  * devices, the directory layout under the one RetroArch started from,
  * and leaving through the loader.
  *
- * Wii: the front SD slot is "sd:", the first USB drive "usb:".
+ * Wii: the front SD slot is "sd:", the first USB drive "usb:"; both
+ * can be taken out and put back while RetroArch runs.
  * GameCube: an SD adapter in serial port 2 is "sd:", in the memory
  * card slots "carda:" and "cardb:".
  *
@@ -31,6 +32,7 @@
 #include <gekko/disk.h>
 #include <gekko/exec.h>
 #ifdef HW_RVL
+#include <gekko/thread.h>
 #include <gekko/usb.h>
 #endif
 
@@ -58,25 +60,38 @@
 struct volume
 {
    const char *name;
+   uint8_t     open;      /* the device */
    uint8_t     mounted;
 };
 
 #ifdef HW_RVL
 enum { VOL_SD = 0, VOL_USB, VOL_COUNT };
-static struct volume volumes[VOL_COUNT] = { { "sd", 0 }, { "usb", 0 } };
+static struct volume volumes[VOL_COUNT] = { { "sd", 0, 0 }, { "usb", 0, 0 } };
+
+static gk_blockdev_t *vol_open(unsigned i)
+{
+   return i == VOL_SD ? gk_sd_open() : gk_usbstorage_open();
+}
 #else
 enum { VOL_SD = 0, VOL_CARDA, VOL_CARDB, VOL_COUNT };
 static struct volume volumes[VOL_COUNT] = {
-   { "sd", 0 }, { "carda", 0 }, { "cardb", 0 } };
+   { "sd", 0, 0 }, { "carda", 0, 0 }, { "cardb", 0, 0 } };
 /* The EXI channel each GameCube volume sits on. */
 static const unsigned volume_channel[VOL_COUNT] = { 2, 0, 1 };
+
+static gk_blockdev_t *vol_open(unsigned i)
+{
+   return gk_sdgecko_open(volume_channel[i]);
+}
 #endif
 
-static void mount(unsigned i, gk_blockdev_t *dev)
+static void attach(unsigned i)
 {
+   gk_blockdev_t *dev = vol_open(i);
    int ret;
    if (!dev)
       return;
+   volumes[i].open = 1;
    if ((ret = gk_fat_mount(volumes[i].name, dev)))
       RARCH_WARN("[Gekko] %s: no FAT volume (%d).\n", volumes[i].name, ret);
    else
@@ -94,18 +109,54 @@ static void unmount_all(void)
       }
 }
 
-static void frontend_gekko_init(void *data)
+#if defined(HW_RVL) && !defined(IS_SALAMANDER)
+static gk_thread_t       *watcher;
+static volatile uint32_t  watch_quit;
+
+/* Once a second: a drive taken out is unmounted, files still open on
+ * it fail; one put in is mounted. */
+static void *watch(void *arg)
 {
-   (void)data;
-#ifdef HW_RVL
-   mount(VOL_SD,  gk_sd_open());
-   mount(VOL_USB, gk_usbstorage_open());
-#else
+   (void)arg;
+   while (!watch_quit)
    {
       unsigned i;
-      for (i = 0; i < VOL_COUNT; i++)
-         mount(i, gk_sdgecko_open(volume_channel[i]));
+      for (i = 0; i < VOL_COUNT && !watch_quit; i++)
+      {
+         if (!volumes[i].open)
+         {
+            attach(i);
+            if (volumes[i].mounted)
+               RARCH_LOG("[Gekko] %s: mounted.\n", volumes[i].name);
+         }
+         else if (!(i == VOL_SD ? gk_sd_inserted() : gk_usbstorage_inserted()))
+         {
+            RARCH_LOG("[Gekko] %s: taken out.\n", volumes[i].name);
+            if (volumes[i].mounted)
+               gk_fat_unmount(volumes[i].name);
+            volumes[i].mounted = 0;
+            if (i == VOL_SD)
+               gk_sd_close();
+            else
+               gk_usbstorage_close();
+            volumes[i].open = 0;
+         }
+      }
+      gk_futex_wait(&watch_quit, 0, GK_US_TO_TICKS(1000000));
    }
+   return NULL;
+}
+#endif
+
+static void frontend_gekko_init(void *data)
+{
+   unsigned i;
+   (void)data;
+   for (i = 0; i < VOL_COUNT; i++)
+      attach(i);
+#if defined(HW_RVL) && !defined(IS_SALAMANDER)
+   watch_quit = 0;
+   watcher    = gk_thread_create(watch, NULL, NULL, 16384, GK_PRIO_DEFAULT);
 #endif
 }
 
@@ -187,6 +238,15 @@ static void frontend_gekko_deinit(void *data)
 {
    (void)data;
 #ifndef IS_SALAMANDER
+#ifdef HW_RVL
+   if (watcher)
+   {
+      watch_quit = 1;
+      gk_futex_wake(&watch_quit, 1);
+      gk_thread_join(watcher);
+      watcher = NULL;
+   }
+#endif
    exec_prepare();
    unmount_all();
 #endif

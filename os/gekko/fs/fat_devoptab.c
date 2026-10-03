@@ -21,23 +21,32 @@
 #define MAX_VOLUMES 8
 #define PATH_BUF    1024
 
+/* A name stays a C library device once mounted: files open on it when
+ * it is unmounted still reach it (and fail), and mounting it again
+ * reuses it. */
 struct volume
 {
    devoptab_t ops;
    char       name[16];
-   fat_vol   *vol;
+   fat_vol   *vol;            /* NULL while unmounted */
+   int        index;          /* in the C library's device table */
 };
 
 static struct volume *volumes[MAX_VOLUMES];
+/* Held from finding a path's volume to done with it, and to mount or
+ * unmount one. */
+static gk_mutex_t     mount_lock = GK_MUTEX_INIT;
 
 /* Whatever is still mounted reaches the disk before the program
  * leaves. */
 static void sync_all(void)
 {
    unsigned i;
+   gk_mutex_lock(&mount_lock);
    for (i = 0; i < MAX_VOLUMES; i++)
-      if (volumes[i])
+      if (volumes[i] && volumes[i]->vol)
          fat_sync(volumes[i]->vol);
+   gk_mutex_unlock(&mount_lock);
 }
 
 static struct gk_exit_hook sync_hook = { sync_all, NULL };
@@ -69,7 +78,7 @@ void fat_lock_release(void *lock)     { gk_rmutex_unlock((gk_rmutex_t*)lock); }
 
 /* The volume a path names (the default device when it has no "dev:")
  * and the path itself, made absolute from the working directory when
- * it is relative. */
+ * it is relative.  Call with mount_lock held. */
 static fat_vol *resolve(const char *path, char *buf, size_t size,
       const char **out)
 {
@@ -90,11 +99,25 @@ static fat_vol *resolve(const char *path, char *buf, size_t size,
    return ((struct volume*)ops->deviceData)->vol;
 }
 
+/* Takes mount_lock; DONE gives it back. */
 #define RESOLVE(r, path, vol, p) \
    char buf_[PATH_BUF]; \
    const char *p; \
-   fat_vol *vol = resolve(path, buf_, sizeof(buf_), &p); \
-   if (!vol) { (r)->_errno = ENODEV; return -1; }
+   fat_vol *vol; \
+   gk_mutex_lock(&mount_lock); \
+   if (!(vol = resolve(path, buf_, sizeof(buf_), &p))) \
+   { \
+      gk_mutex_unlock(&mount_lock); \
+      (r)->_errno = ENODEV; \
+      return -1; \
+   }
+
+#define DONE(r, ret) \
+   do { \
+      int ret_ = (ret); \
+      gk_mutex_unlock(&mount_lock); \
+      return result(r, ret_); \
+   } while (0)
 
 static int result(struct _reent *r, int ret)
 {
@@ -127,10 +150,9 @@ static int dev_open(struct _reent *r, void *fs, const char *path,
    int ret;
    RESOLVE(r, path, vol, p);
    (void)mode;
-   if ((ret = fat_open(vol, p, flags, &f)))
-      return result(r, ret);
-   *(fat_file**)fs = f;
-   return 0;
+   if (!(ret = fat_open(vol, p, flags, &f)))
+      *(fat_file**)fs = f;
+   DONE(r, ret);
 }
 
 static int dev_close(struct _reent *r, void *fd)
@@ -207,13 +229,13 @@ static int dev_stat(struct _reent *r, const char *path, struct stat *st)
    RESOLVE(r, path, vol, p);
    if (!(ret = fat_stat_path(vol, p, &fs)))
       to_stat(&fs, 0, st);
-   return result(r, ret);
+   DONE(r, ret);
 }
 
 static int dev_unlink(struct _reent *r, const char *path)
 {
    RESOLVE(r, path, vol, p);
-   return result(r, fat_unlink(vol, p));
+   DONE(r, fat_unlink(vol, p));
 }
 
 static int dev_chdir(struct _reent *r, const char *path)
@@ -223,7 +245,7 @@ static int dev_chdir(struct _reent *r, const char *path)
    RESOLVE(r, path, vol, p);
    if (!(ret = fat_stat_path(vol, p, &fs)) && !fs.is_dir)
       ret = -ENOTDIR;
-   return result(r, ret);
+   DONE(r, ret);
 }
 
 static int dev_rename(struct _reent *r, const char *from, const char *to)
@@ -232,21 +254,21 @@ static int dev_rename(struct _reent *r, const char *from, const char *to)
    const char *q;
    RESOLVE(r, from, vol, p);
    if (resolve(to, buf2, sizeof(buf2), &q) != vol)
-      return result(r, -EXDEV);
-   return result(r, fat_rename(vol, p, q));
+      DONE(r, -EXDEV);
+   DONE(r, fat_rename(vol, p, q));
 }
 
 static int dev_mkdir(struct _reent *r, const char *path, int mode)
 {
    RESOLVE(r, path, vol, p);
    (void)mode;
-   return result(r, fat_mkdir(vol, p));
+   DONE(r, fat_mkdir(vol, p));
 }
 
 static int dev_rmdir(struct _reent *r, const char *path)
 {
    RESOLVE(r, path, vol, p);
-   return result(r, fat_rmdir(vol, p));
+   DONE(r, fat_rmdir(vol, p));
 }
 
 static int dev_statvfs(struct _reent *r, const char *path,
@@ -256,7 +278,9 @@ static int dev_statvfs(struct _reent *r, const char *path,
    int ret;
    RESOLVE(r, path, vol, p);
    (void)p;
-   if ((ret = fat_statvfs(vol, &sp)))
+   ret = fat_statvfs(vol, &sp);
+   gk_mutex_unlock(&mount_lock);
+   if (ret)
       return result(r, ret);
    memset(buf, 0, sizeof(*buf));
    buf->f_bsize   = sp.cluster_size;
@@ -276,14 +300,13 @@ static DIR_ITER *dev_diropen(struct _reent *r, DIR_ITER *it,
 {
    char buf_[PATH_BUF];
    const char *p;
-   fat_vol *vol = resolve(path, buf_, sizeof(buf_), &p);
-   int ret;
-   if (!vol)
-   {
-      r->_errno = ENODEV;
-      return NULL;
-   }
-   if ((ret = fat_opendir(vol, p, (fat_dir**)it->dirStruct)))
+   fat_vol *vol;
+   int ret = -ENODEV;
+   gk_mutex_lock(&mount_lock);
+   if ((vol = resolve(path, buf_, sizeof(buf_), &p)))
+      ret = fat_opendir(vol, p, (fat_dir**)it->dirStruct);
+   gk_mutex_unlock(&mount_lock);
+   if (ret)
    {
       r->_errno = -ret;
       return NULL;
@@ -332,16 +355,13 @@ static struct volume *find(const char *name)
    return NULL;
 }
 
-int gk_fat_mount(const char *name, gk_blockdev_t *dev)
+static int add(const char *name, struct volume **out)
 {
-   static int have_default;
    struct volume *v;
    unsigned i;
-   int ret, index;
+   int index;
 
-   if (strlen(name) >= sizeof(v->name) || strchr(name, ':'))
-      return -EINVAL;
-   if (find(name) || FindDevice(name) >= 0)
+   if (FindDevice(name) >= 0)
       return -EBUSY;
    for (i = 0; i < MAX_VOLUMES && volumes[i]; i++)
       ;
@@ -349,16 +369,6 @@ int gk_fat_mount(const char *name, gk_blockdev_t *dev)
       return -ENFILE;
    if (!(v = (struct volume*)calloc(1, sizeof(*v))))
       return -ENOMEM;
-   if ((ret = fat_mount(&v->vol, dev)))
-   {
-      free(v);
-      return ret;
-   }
-   if (!sync_hooked)
-   {
-      sync_hooked = 1;
-      gk_exit_hook_add(&sync_hook);
-   }
    strcpy(v->name, name);
    v->ops.name          = v->name;
    v->ops.structSize    = sizeof(fat_file*);
@@ -386,39 +396,67 @@ int gk_fat_mount(const char *name, gk_blockdev_t *dev)
    v->ops.deviceData    = v;
    if ((index = AddDevice(&v->ops)) < 0)
    {
-      fat_unmount(v->vol);
       free(v);
       return -ENFILE;
    }
+   v->index   = index;
    volumes[i] = v;
-   if (!have_default)
+   *out       = v;
+   return 0;
+}
+
+int gk_fat_mount(const char *name, gk_blockdev_t *dev)
+{
+   static int have_default;
+   struct volume *v;
+   int ret = 0;
+
+   if (strlen(name) >= sizeof(v->name) || strchr(name, ':'))
+      return -EINVAL;
+   gk_mutex_lock(&mount_lock);
+   if (!(v = find(name)))
+      ret = add(name, &v);
+   else if (v->vol)
+      ret = -EBUSY;
+   if (!ret)
+      ret = fat_mount(&v->vol, dev);
+   if (!ret && !sync_hooked)
    {
-      /* Paths without a device go to the first volume. */
+      sync_hooked = 1;
+      gk_exit_hook_add(&sync_hook);
+   }
+   gk_mutex_unlock(&mount_lock);
+   if (!ret && !have_default)
+   {
+      /* Paths without a device go to the first volume mounted. */
       char root[24];
-      setDefaultDevice(index);
+      setDefaultDevice(v->index);
       sprintf(root, "%s:/", name);
       chdir(root);
       have_default = 1;
    }
-   return 0;
+   return ret;
 }
 
 int gk_fat_sync(const char *name)
 {
-   struct volume *v = find(name);
-   return v ? fat_sync(v->vol) : -ENODEV;
+   struct volume *v;
+   int ret = -ENODEV;
+   gk_mutex_lock(&mount_lock);
+   if ((v = find(name)) && v->vol)
+      ret = fat_sync(v->vol);
+   gk_mutex_unlock(&mount_lock);
+   return ret;
 }
 
 void gk_fat_unmount(const char *name)
 {
-   unsigned i;
-   for (i = 0; i < MAX_VOLUMES; i++)
-      if (volumes[i] && !strcmp(volumes[i]->name, name))
-      {
-         struct volume *v = volumes[i];
-         RemoveDevice(name);
-         fat_unmount(v->vol);
-         free(v);
-         volumes[i] = NULL;
-      }
+   struct volume *v;
+   gk_mutex_lock(&mount_lock);
+   if ((v = find(name)) && v->vol)
+   {
+      fat_unmount(v->vol);
+      v->vol = NULL;
+   }
+   gk_mutex_unlock(&mount_lock);
 }

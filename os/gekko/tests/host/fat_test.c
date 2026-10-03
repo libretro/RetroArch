@@ -4,6 +4,7 @@
  *   fat_test IMAGE write    make a tree for mtools and fsck to check
  *   fat_test IMAGE stress   random file operations against a model
  *   fat_test IMAGE fill     fill the volume, then empty it
+ *   fat_test IMAGE unplug   unmount under open files and a directory
  *
  * run.sh drives these over FAT12, FAT16 and FAT32 images. */
 
@@ -415,12 +416,44 @@ static void fill(fat_vol *v)
          (unsigned long)before.clusters);
 }
 
+/* What is still open fails without touching the device, and the last
+ * close frees the volume. */
+static void unplug(fat_vol *v)
+{
+   fat_file *r = NULL, *w = NULL;
+   fat_dir *d  = NULL;
+   unsigned long reads, writes;
+   char buf[64];
+   fat_stat st;
+   CHECK(fat_open(v, "/big.bin", O_RDONLY, &r) == 0);
+   CHECK(fat_open(v, "/unplugged", O_WRONLY | O_CREAT, &w) == 0);
+   CHECK(fat_write(w, "x", 1) == 1);
+   CHECK(fat_opendir(v, "/dir", &d) == 0);
+   if (!r || !w || !d)
+      return;
+   CHECK(fat_unmount(v) == 0);
+   reads      = dev_reads;
+   writes     = dev_writes;
+   img.read   = NULL;
+   img.write  = NULL;
+   CHECK(fat_read(r, buf, sizeof(buf)) == -EIO);
+   CHECK(fat_write(w, "y", 1) == -EIO);
+   CHECK(fat_truncate(w, 0) == -EIO);
+   CHECK(fat_fsync(w) == -EIO);
+   CHECK(fat_readdir(d, buf, sizeof(buf), &st) == -EIO);
+   CHECK(fat_close(r) == 0);
+   CHECK(fat_close(w) == -EIO);
+   fat_closedir(d);
+   CHECK(dev_reads == reads && dev_writes == writes);
+}
+
 int main(int argc, char **argv)
 {
    fat_vol *v;
    if (argc != 3)
    {
-      fprintf(stderr, "usage: fat_test IMAGE check|write|stress|fill\n");
+      fprintf(stderr,
+            "usage: fat_test IMAGE check|write|stress|fill|unplug\n");
       return 2;
    }
    if ((img_fd = open(argv[1], O_RDWR)) < 0)
@@ -444,6 +477,11 @@ int main(int argc, char **argv)
    else if (!strcmp(argv[2], "stress"))
    {
       stress(v, 4000);
+      v = NULL;
+   }
+   else if (!strcmp(argv[2], "unplug"))
+   {
+      unplug(v);
       v = NULL;
    }
    if (v)

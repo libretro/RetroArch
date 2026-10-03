@@ -134,4 +134,6 @@ one fat32 "-F 32 -s 1" 128
 one fat32-part "-F 32 -s 8" 600 2048
 one fat16-part "-F 16 -s 4" 64 63
 one fat32-64k "-F 32 -s 64" 4200 0 nofill
+cp "$work/fat16.img" "$work/unplug.img"
+"$work/fat_test" "$work/unplug.img" unplug
 echo "all ok"
