@@ -509,11 +509,11 @@ jobs:
           # thread; six keys injected with SendInput() while nothing
           # pumps are read by one bulk read, none as a message, none
           # left in the queue, and come out of the poll as six key
-          # events in order with the modifier held at the time; a
-          # report the pump dispatches first is still taken; the
-          # pump's hook reads on the window's thread and not on
-          # another; free takes the window down, twenty restarts each
-          # do the same.
+          # events in order with the modifier held at the time; six
+          # reports the pump meets first are one from its message and
+          # five in one bulk read, in order; with nothing waiting a
+          # poll makes one read and a pump none; free takes the window
+          # down, twenty restarts each do the same.
           trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
           make clean all
           WINEDEBUG=-all timeout 300 make check

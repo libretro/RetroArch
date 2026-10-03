@@ -18,10 +18,10 @@
  *   the polling thread, in order, with the modifier held at the time;
  *   they were read in bulk, none as a message, and none is left in the
  *   queue afterwards to be read twice;
- * - a report the pump gets to first is still taken, through the
- *   callback, and its key event still waits for the poll;
- * - the pump's hook reads in bulk on the window's thread and does
- *   nothing on another;
+ * - reports the pump gets to first: the callback takes the one its
+ *   message carries and reads the rest in bulk, in order, and their
+ *   key events still wait for the poll;
+ * - with nothing waiting, a poll makes one read and a pump makes none;
  * - a controller's report in a bulk read is passed to the controller
  *   driver;
  * - which modifier keys are held is read from the key table, and only
@@ -134,7 +134,6 @@ static HWND   vt_window;
 static DWORD  vt_tid;
 static void  *vt_init_result;
 static retro_atomic_int_t vt_do_init;
-static retro_atomic_int_t vt_do_hook;
 
 static LRESULT CALLBACK plain_proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 { return DefWindowProcA(w, m, wp, lp); }
@@ -170,11 +169,6 @@ static DWORD WINAPI video_thread(LPVOID arg)
          vt_init_result = winraw_init("null");
          retro_atomic_store_release_int(&vt_do_init, 2);
       }
-      if (retro_atomic_load_acquire_int(&vt_do_hook) == 1)
-      {
-         winraw_drain_queue();
-         retro_atomic_store_release_int(&vt_do_hook, 2);
-      }
    }
    if (vt_window)
       DestroyWindow(vt_window);
@@ -191,16 +185,6 @@ static void *init_on_video_thread(void)
       Sleep(1);
    retro_atomic_store_release_int(&vt_do_init, 0);
    return vt_init_result;
-}
-
-static void hook_on_video_thread(void)
-{
-   unsigned spins;
-   retro_atomic_store_release_int(&vt_do_hook, 1);
-   for (spins = 0; spins < 2000
-         && retro_atomic_load_acquire_int(&vt_do_hook) != 2; spins++)
-      Sleep(1);
-   retro_atomic_store_release_int(&vt_do_hook, 0);
 }
 
 static void key(WORD scan, bool down)
@@ -337,45 +321,55 @@ int main(void)
          CHECK(seen_n == 0, "a second poll delivered them again");
          printf("   ok   six injected reports: one bulk read, none as a message, six key events from the poll, in order\n");
 
-         /* ---- a report the pump gets to first -------------------- */
+         /* ---- reports the pump gets to first --------------------- */
          {
             MSG msg;
+            unsigned long reads0 = wr->drain_reads;
             wr->drained = wr->by_message = 0;
             key(0x2E, true);
-            Sleep(100);
+            key(0x2E, false);
+            key(0x2F, true);
+            key(0x2F, false);
+            key(0x31, true);
+            key(0x31, false);
+            Sleep(150);
             while (PeekMessageA(&msg, NULL, 0, 0, PM_REMOVE))
                DispatchMessageA(&msg);
-            CHECK(wr->by_message == 1 && wr->kb_keys[0x2E],
-                  "a report dispatched as a message was not taken (%lu)", wr->by_message);
-            CHECK(seen_n == 0, "its key event did not wait for the poll");
+            CHECK(wr->by_message == 1 && wr->drained == 5
+                  && wr->drain_reads - reads0 == 1,
+                  "six reports met by the pump: %lu as messages, %lu in %lu bulk reads;"
+                  " wanted 1, and 5 in 1", wr->by_message, wr->drained,
+                  wr->drain_reads - reads0);
+            CHECK(seen_n == 0, "their key events did not wait for the poll");
             winraw_poll(wr);
-            CHECK(seen_n == 1 && seen[0].down && seen[0].code == 0x2E && seen[0].tid == main_tid,
-                  "its key event did not come out of the poll");
-            key(0x2E, false);
-            Sleep(100);
-            winraw_poll(wr);
+            CHECK(seen_n == 6
+                  &&  seen[0].down && seen[0].code == 0x2E && !seen[1].down && seen[1].code == 0x2E
+                  &&  seen[2].down && seen[2].code == 0x2F && !seen[3].down && seen[3].code == 0x2F
+                  &&  seen[4].down && seen[4].code == 0x31 && !seen[5].down && seen[5].code == 0x31,
+                  "the six did not come out of the poll in order (%u events)", seen_n);
+            for (i = 0; i < seen_n; i++)
+               CHECK(seen[i].tid == main_tid, "event %u was delivered off the polling thread", i);
             seen_n = 0;
-            printf("   ok   a report the pump dispatches first: taken by the callback, its event still from the poll\n");
+            printf("   ok   six reports met by the pump: one from its message, five in one bulk read, in order\n");
          }
 
-         /* ---- the pump's hook ------------------------------------ */
+         /* ---- nothing waiting ------------------------------------ */
          {
-            wr->drained = 0;
-            key(0x20, true);
-            Sleep(100);
-            hook_on_video_thread();
-            CHECK(wr->drained == 0 && !wr->kb_keys[0x20],
-                  "the hook read in bulk on a thread that is not the window's");
-            winraw_drain_queue();
-            CHECK(wr->drained == 1 && wr->kb_keys[0x20],
-                  "the hook did not read in bulk on the window's thread (%lu)", wr->drained);
-            CHECK(seen_n == 0, "the hook delivered a key event itself");
-            key(0x20, false);
-            Sleep(100);
+            MSG msg;
+            unsigned long empty0, reads0;
+            Sleep(50);
             winraw_poll(wr);
-            CHECK(seen_n == 2, "%u events after the hook and a poll", seen_n);
-            seen_n = 0;
-            printf("   ok   the pump's hook: reads in bulk on the window's thread, nothing on another\n");
+            empty0 = wr->drain_empty;
+            reads0 = wr->drain_reads;
+            while (PeekMessageA(&msg, NULL, 0, 0, PM_REMOVE))
+               DispatchMessageA(&msg);
+            CHECK(wr->drain_empty == empty0 && wr->drain_reads == reads0,
+                  "a pump with nothing waiting made a read");
+            winraw_poll(wr);
+            CHECK(wr->drain_empty == empty0 + 1 && wr->drain_reads == reads0,
+                  "a poll with nothing waiting made %lu reads, not one",
+                  (wr->drain_empty - empty0) + (wr->drain_reads - reads0));
+            printf("   ok   nothing waiting: a poll makes one read, a pump makes none\n");
          }
       }
       else
@@ -437,9 +431,8 @@ int main(void)
    /* ---- free ----------------------------------------------------- */
    winraw_free(wr);
    CHECK(!IsWindow(raw_window), "free left the window");
-   CHECK(winraw_drain_tid == 0 && winraw_drain_wr == NULL, "free left the bulk-read thread set");
-   winraw_drain_queue();   /* nothing to read for, and no driver to touch */
-   printf("   ok   free: the window is gone and the pump's hook has nothing to do\n");
+   CHECK(winraw_drain_tid == 0, "free left the bulk-read thread set");
+   printf("   ok   free: the window is gone\n");
 
    /* ---- restarted, as it is with every video driver restart ------ */
    {

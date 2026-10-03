@@ -228,6 +228,7 @@ typedef struct
    /* Counts, logged when the driver is freed. */
    unsigned long drained;        /* reports read in bulk */
    unsigned long drain_reads;    /* in this many reads */
+   unsigned long drain_empty;    /* reads that found nothing waiting */
    unsigned long by_message;     /* reports that came as a message */
    unsigned long kev_dropped;
 } winraw_input_t;
@@ -718,8 +719,7 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
  * With RETROARCH_RAWINPUT_POLL set in the environment, the keyboard
  * and mouse window is made by the first winraw_poll(), on the thread
  * that polls, and the reports waiting for it are read in bulk - one
- * GetRawInputBuffer() for all of them - at the start of every poll
- * and before that thread pumps its messages.
+ * GetRawInputBuffer() for all of them - at the start of every poll.
  *
  * As it is otherwise (the threading note at the top), the window is
  * made on whichever thread runs the video driver's init, and each
@@ -739,6 +739,13 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
  * all of them, and there is no message to dispatch. No thread is
  * added for this and nothing waits or wakes: the reads happen where
  * the frontend already is.
+ *
+ * What it costs when nothing is happening is the poll's one read a
+ * frame, which then finds nothing: knowing what the devices have sent
+ * at the moment of the poll means asking at the moment of the poll.
+ * That is the only read made unasked. The thread's pump is left as it
+ * was; if it comes across a report as a message, the callback takes
+ * that one and reads the rest in bulk (below).
  *
  * And the window is no longer the video driver's thread's, which has
  * to be true before the input driver can stop being restarted with
@@ -766,9 +773,9 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
  *   handler and lost keys and buttons; the report a WM_INPUT message
  *   carries has already left the queue by the time its handler runs,
  *   so a bulk read there never sees it, and a key press is usually
- *   the only report waiting. Nothing here reads from inside a handler.
- *   A report that does arrive as a message - the pump got to it first
- *   - is taken by the callback as before.
+ *   the only report waiting. Here a report that arrives as a message
+ *   - the pump got to it before a poll did - is read from its message
+ *   first, as it always was, and only then is the rest read in bulk.
  *
  * RETROARCH_RAWINPUT_POLL=2 also registers as a sink. Raw input goes
  * to a window only while its application is in the foreground, and
@@ -780,10 +787,9 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
 
 extern void winraw_joypad_take_hid(HANDLE device, const BYTE *data, DWORD size);
 
-/* The thread whose queue is read in bulk, and its driver. Checked by
- * thread id first: the driver is that thread's to free. */
-static DWORD           winraw_drain_tid;
-static winraw_input_t *winraw_drain_wr;
+/* The thread the bulk-read window was made on, and so the only one
+ * that can destroy it. */
+static DWORD winraw_drain_tid;
 
 /* 8 when this is a 32-bit process on 64-bit Windows: a bulk read's
  * records are then laid out for 64 bits, the payload eight bytes
@@ -950,7 +956,10 @@ static void winraw_drain(winraw_input_t *wr)
       /* nothing waiting; or a report bigger than the buffer, which is
        * left to arrive as a message */
       if (n == 0 || n == (UINT)-1)
+      {
+         wr->drain_empty++;
          break;
+      }
       wr->drain_reads++;
 
       for (i = 0; i < n; i++)
@@ -979,16 +988,6 @@ static void winraw_drain(winraw_input_t *wr)
       if ((size_t)(p - (BYTE*)buf) < sizeof(buf) / 2)
          break;
    }
-}
-
-/* For the thread's pump (ui_application_win32_process_events()), so
- * that reports are read in bulk before it rather than dispatched by
- * it one message at a time. Nothing unless this is the thread the
- * window is on. */
-void winraw_drain_queue(void)
-{
-   if (winraw_drain_tid && GetCurrentThreadId() == winraw_drain_tid)
-      winraw_drain(winraw_drain_wr);
 }
 
 /* Input that came while the application was in the background is not
@@ -1023,9 +1022,19 @@ static LRESULT CALLBACK winraw_callback(
        || GetRawInputData((HRAWINPUT)lpar, RID_INPUT,
          data, &size, sizeof(RAWINPUTHEADER)) == (UINT)-1))
    {
+      bool taken;
       wr->by_message++;
-      if (!winraw_take(wr, ri->header.dwType, ri->header.hDevice,
-               &ri->data))
+      taken = winraw_take(wr, ri->header.dwType, ri->header.hDevice,
+            &ri->data);
+      /* The pump came across a report before a poll read it. This one
+       * has left the queue with its message and had to be read on its
+       * own; whatever is waiting behind it is read in bulk now, rather
+       * than dispatched by the pump one message at a time. Nothing is
+       * read here when no report is waiting, so a pump that finds none
+       * costs nothing extra. */
+      if (wr->poll_drain)
+         winraw_drain(wr);
+      if (!taken)
          return 0;
    }
 
@@ -1060,7 +1069,6 @@ static bool winraw_poll_window_up(winraw_input_t *wr)
    if (     RegisterRawInputDevices(&rid[0], 1, sizeof(RAWINPUTDEVICE))
          && RegisterRawInputDevices(&rid[1], 1, sizeof(RAWINPUTDEVICE)))
    {
-      winraw_drain_wr  = wr;
       winraw_drain_tid = GetCurrentThreadId();
       RARCH_LOG("[WinRaw] Keyboard and mouse are read in bulk by the poll"
             " (thread %lu)%s.\n", (unsigned long)winraw_drain_tid,
@@ -1728,14 +1736,12 @@ static void winraw_free(void *data)
          else
             PostMessageA(wr->window, WM_CLOSE, 0, 0);
       }
-      if (winraw_drain_wr == wr)
-      {
-         winraw_drain_tid = 0;
-         winraw_drain_wr  = NULL;
-      }
-      RARCH_LOG("[WinRaw] Read by the poll: %lu reports in %lu bulk reads,"
-            " %lu more as messages (%lu key events dropped).\n",
-            wr->drained, wr->drain_reads, wr->by_message, wr->kev_dropped);
+      winraw_drain_tid = 0;
+      RARCH_LOG("[WinRaw] Read by the poll: %lu reports in %lu bulk reads"
+            " and %lu as messages; %lu reads found nothing waiting"
+            " (%lu key events dropped).\n",
+            wr->drained, wr->drain_reads, wr->by_message, wr->drain_empty,
+            wr->kev_dropped);
       free(g_mice);
       free(wr->mice);
       free(data);

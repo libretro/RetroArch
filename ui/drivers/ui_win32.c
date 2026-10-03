@@ -131,22 +131,9 @@ static void ui_application_win32_dispatch(MSG *msg)
    }
 }
 
-#if defined(HAVE_WINRAWINPUT) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
-extern void winraw_drain_queue(void);
-#define WIN32_RAW_INPUT_DRAIN() winraw_drain_queue()
-#else
-#define WIN32_RAW_INPUT_DRAIN() ((void)0)
-#endif
-
 static void ui_application_win32_process_events(void)
 {
    MSG msg;
-
-   /* Raw input reports waiting on this thread are read in bulk before
-    * the loop below would dispatch them one WM_INPUT at a time. Does
-    * nothing unless the raw input driver was asked to read that way
-    * and its window is this thread's. */
-   WIN32_RAW_INPUT_DRAIN();
 
    while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
       ui_application_win32_dispatch(&msg);
