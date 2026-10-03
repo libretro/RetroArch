@@ -1089,4 +1089,17 @@ else
    echo "skip  font layout: gdi, d3d8/9/10/11/12 (no MinGW headers)"
 fi
 
+echo "== unity build: drivers griffin compiles together =="
+# griffin (the MSVC and Xcode builds) includes every driver in one
+# translation unit, where two drivers' file-scope names are
+# redefinitions; the Makefile build compiles them apart and never sees
+# it. GL, GL core and Vulkan share their effect SPIR-V and stock shaders.
+UNITY_DIR=$(mktemp -d)
+printf '#include "gfx/drivers/gl2.c"\n#include "gfx/drivers/gl3.c"\n#include "gfx/drivers/vulkan.c"\n' \
+   > "$UNITY_DIR/unity_gfx.c"
+check "unity: gl2 + gl3 + vulkan in one translation unit" \
+   "-Igfx/include -DHAVE_OPENGL -DHAVE_OPENGL_CORE -DHAVE_GLSL -DHAVE_VULKAN -DHAVE_SLANG -DHAVE_SHADERPIPELINE -DHAVE_SPIRV_CROSS -DHAVE_GFX_WIDGETS -DHAVE_OVERLAY -DHAVE_X11" \
+   "$UNITY_DIR/unity_gfx.c"
+rm -rf "$UNITY_DIR"
+
 exit $fail
