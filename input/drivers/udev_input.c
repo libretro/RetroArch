@@ -3220,7 +3220,8 @@ static bool udev_input_sysfs_line(const char *file, char *s, size_t len)
  *   Escape to D, which is the test udev itself goes by
  *   (ID_INPUT_KEYBOARD). The power button and a headset's volume
  *   keys have keys and are not keyboards;
- * - whether its USB interface is a boot keyboard's. */
+ * - whether its USB interface is a boot keyboard's or, for a pointer,
+ *   a boot mouse's. */
 static void udev_input_describe_device(udev_input_device_t *device,
       enum udev_input_dev_type type, int fd, const char *devnode)
 {
@@ -3261,16 +3262,18 @@ static void udev_input_describe_device(udev_input_device_t *device,
    else if (uniq[0])
       strlcpy(kb->key, uniq, sizeof(kb->key));
 
-   if (kb->pointer)
-      return;
+   kb->boot_mouse = -1;
 
-   memset(keycaps, 0, sizeof(keycaps));
-   if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keycaps)), keycaps) >= 0)
+   if (!kb->pointer)
    {
-      kb->keyboard = true;
-      for (i = KEY_ESC; i <= KEY_D; i++)
-         if (!test_bit(keycaps, i))
-            kb->keyboard = false;
+      memset(keycaps, 0, sizeof(keycaps));
+      if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keycaps)), keycaps) >= 0)
+      {
+         kb->keyboard = true;
+         for (i = KEY_ESC; i <= KEY_D; i++)
+            if (!test_bit(keycaps, i))
+               kb->keyboard = false;
+      }
    }
 
    /* /sys/class/input/eventN/device is the input device, its
@@ -3286,7 +3289,68 @@ static void udev_input_describe_device(udev_input_device_t *device,
          snprintf(file, sizeof(file),
                "/sys/class/input/%s/device/device/../bInterfaceProtocol", event);
          if (udev_input_sysfs_line(file, line, sizeof(line)))
-            kb->boot = (boot && string_is_equal(line, "01")) ? 1 : 0;
+         {
+            /* protocol 1 is a boot keyboard's, 2 a boot mouse's */
+            if (kb->pointer)
+               kb->boot_mouse = (boot && string_is_equal(line, "02")) ? 1 : 0;
+            else
+               kb->boot       = (boot && string_is_equal(line, "01")) ? 1 : 0;
+         }
+      }
+   }
+}
+
+/* The mice, numbered as a port is given one (Mouse Index): made from
+ * the devices there are now, when the driver starts and whenever a
+ * device comes or goes.
+ *
+ * Every pointer was a mouse here, in the order the devices are in, so
+ * that a keyboard that can send pointer events could be "mouse 1" -
+ * the one the first port reads unless told otherwise.
+ * input_keyboard_devices.h says which pointers are mice on the desk;
+ * those are numbered first, in the order they had, and the rest
+ * after them, where they can still be chosen by number and are left
+ * out of the menu's lists. */
+static void udev_input_list_pointers(udev_input_t *udev)
+{
+   input_kbdev_t devs[64];
+   unsigned i, pass, mouse = 0, n = udev->num_devices;
+
+   if (n > ARRAY_SIZE(devs))
+      n = ARRAY_SIZE(devs);
+   for (i = 0; i < n; i++)
+      devs[i] = udev->devices[i]->kbdev;
+   input_kbdev_mice(devs, n);
+
+   for (i = 0; i < MAX_INPUT_DEVICES; i++)
+   {
+      /* (Mouse Index shows this for an index with no mouse; it is
+       * not a mouse to list) */
+      input_config_set_mouse_display_name(i, "N/A");
+      input_config_set_mouse_device(i, "", 0, 0, true);
+      udev->pointers[i] = -1;
+   }
+
+   /* the mice on the desk, then the rest */
+   for (pass = 0; pass < 2; pass++)
+   {
+      for (i = 0; i < udev->num_devices && mouse < MAX_INPUT_DEVICES; i++)
+      {
+         bool is_mouse = (i < n) ? devs[i].mouse : true;
+         if (     udev->devices[i]->type == UDEV_INPUT_KEYBOARD
+               || is_mouse != (pass == 0))
+            continue;
+         input_config_set_mouse_display_name(mouse, udev->devices[i]->ident);
+         input_config_set_mouse_device(mouse, udev->devices[i]->kbdev.key,
+               udev->devices[i]->vid, udev->devices[i]->pid, !is_mouse);
+         udev->pointers[mouse] = (int32_t)i;
+         RARCH_LOG("[udev] Mouse/Touch #%u: \"%s\" (%s) %s%s.\n",
+               mouse,
+               udev->devices[i]->ident,
+               udev->devices[i]->mouse.abs ? "ABS" : "REL",
+               udev->devices[i]->devnode,
+               is_mouse ? "" : ", not counted among the mice");
+         mouse++;
       }
    }
 }
@@ -3560,9 +3624,7 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    const char *val_touchscreen       = NULL;
    const char *action                = NULL;
    const char *devnode               = NULL;
-   int mouse                         = 0;
    int check                         = 0;
-   int i                             = 0;
    struct udev_device *dev           = udev_monitor_receive_device(
          udev->monitor);
 
@@ -3615,33 +3677,8 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    /* we need to re index the mouse and keyboard indirection
     * structures when a device is hotplugged
     */
-   /* first clear all */
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      /* (Mouse Index shows this for an index with no mouse; it is
-       * not a mouse to list) */
-      input_config_set_mouse_display_name(i, "N/A");
-      input_config_set_mouse_device(i, "", 0, 0, true);
-      udev->pointers[i]  = -1;
-   }
-
-   /* Add what devices we have now. (The table holds
-    * MAX_INPUT_DEVICES, and nothing kept a seventeenth mouse out.) */
-   for (i = 0; i < (int)udev->num_devices; i++)
-   {
-      if (udev->devices[i]->type != UDEV_INPUT_KEYBOARD)
-      {
-         /* Pointers */
-         if (mouse >= MAX_INPUT_DEVICES)
-            continue;
-         input_config_set_mouse_display_name(mouse, udev->devices[i]->ident);
-         input_config_set_mouse_device(mouse, udev->devices[i]->kbdev.key,
-               udev->devices[i]->vid, udev->devices[i]->pid, false);
-         udev->pointers[mouse]     = i;
-         mouse++;
-      }
-   }
-   /* and the keyboards */
+   /* the mice and the keyboards, from what devices there are now */
+   udev_input_list_pointers(udev);
    udev_input_list_keyboards(udev);
 
 end:
@@ -4359,9 +4396,7 @@ static bool open_devices(udev_input_t *udev,
 
 static void *udev_input_init(const char *joypad_driver)
 {
-   int mouse = 0;
    int fd;
-   int i;
    unsigned denied = 0;
 #ifdef UDEV_XKB_HANDLING
    gfx_ctx_ident_t ctx_ident;
@@ -4460,34 +4495,8 @@ static void *udev_input_init(const char *joypad_driver)
    RARCH_WARN("[udev] Fullscreen pointer won't be available.\n");
 #endif
 
-   /* Reset the indirection array */
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      udev->pointers[i] = -1;
-      udev->keyboards[i] = -1;
-   }
-
-   for (i = 0; i < (int)udev->num_devices; ++i)
-   {
-      if (udev->devices[i]->type != UDEV_INPUT_KEYBOARD)
-      {
-          RARCH_LOG("[udev] Mouse/Touch #%u: \"%s\" (%s) %s.\n",
-             mouse,
-             udev->devices[i]->ident,
-             udev->devices[i]->mouse.abs ? "ABS" : "REL",
-             udev->devices[i]->devnode);
-
-          if (mouse < MAX_INPUT_DEVICES)
-          {
-             input_config_set_mouse_display_name(mouse, udev->devices[i]->ident);
-             input_config_set_mouse_device(mouse, udev->devices[i]->kbdev.key,
-                   udev->devices[i]->vid, udev->devices[i]->pid, false);
-             udev->pointers[mouse] = i;
-          }
-          mouse++;
-       }
-   }
-   /* and the keyboards */
+   /* the mice and the keyboards, from what devices there are */
+   udev_input_list_pointers(udev);
    udev_input_list_keyboards(udev);
 
    return udev;

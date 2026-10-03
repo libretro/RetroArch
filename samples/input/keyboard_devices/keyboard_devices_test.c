@@ -1,5 +1,5 @@
-/* Which of the devices a system reports are the keyboards on the desk:
- * input/common/input_keyboard_devices.h, on its own.
+/* Which of the devices a system reports are the keyboards on the desk,
+ * and which the mice: input/common/input_keyboard_devices.h, on its own.
  *
  * A desk as Linux reports one, then the odd cases one at a time. */
 #include <stdio.h>
@@ -18,9 +18,12 @@ static input_kbdev_t dev(const char *key, bool keyboard, bool pointer, int boot)
    input_kbdev_t d;
    memset(&d, 0, sizeof(d));
    strncpy(d.key, key, sizeof(d.key) - 1);
-   d.keyboard = keyboard;
-   d.pointer  = pointer;
-   d.boot     = (int8_t)boot;
+   d.keyboard   = keyboard;
+   d.pointer    = pointer;
+   /* the one number is the part's own: a pointer's is whether it is a
+    * boot mouse, a key-sending part's whether it is a boot keyboard */
+   d.boot       = pointer ? -1 : (int8_t)boot;
+   d.boot_mouse = pointer ? (int8_t)boot : -1;
    return d;
 }
 
@@ -92,6 +95,32 @@ int main(void)
          "a remote keyboard and a list of two: %u listed, groups %u %u %u %u", n,
          d[0].group, d[1].group, d[2].group, d[3].group);
    printf("   ok   a device with nothing behind it is no keyboard; no more are listed than there is room for\n");
+
+   /* ---- the mice ------------------------------------------------- */
+   d[0] = dev("usb-1.3", true,  false,  1); /* a keyboard ...                   */
+   d[1] = dev("usb-1.3", false, true,   0); /* ... that can send pointer events */
+   d[2] = dev("usb-1.4", false, true,   1); /* a mouse ...                      */
+   d[3] = dev("usb-1.4", true,  false,  0); /* ... whose buttons send keys      */
+   d[4] = dev("usb-1.5", true,  false,  1); /* a keyboard and a mouse ...       */
+   d[5] = dev("usb-1.5", false, true,   1); /* ... on one receiver              */
+   d[6] = dev("bt-aa",   true,  false, -1); /* a Bluetooth keyboard ...         */
+   d[7] = dev("bt-aa",   false, true,  -1); /* ... with a trackpoint            */
+   d[8] = dev("",        false, true,  -1); /* the laptop's touchpad            */
+   d[9] = dev("",        false, true,  -1); /* a pointer nothing is behind      */
+   d[9].remote = true;
+   n    = input_kbdev_mice(d, 10);
+   CHECK(n == 4, "%u mice on the desk, want 4", n);
+   CHECK(!d[1].mouse, "a keyboard that can send pointer events is a mouse");
+   CHECK(d[2].mouse && d[5].mouse && d[7].mouse && d[8].mouse,
+         "the mouse, the one on a receiver with a keyboard, the trackpoint or the touchpad is not a mouse: %d %d %d %d",
+         d[2].mouse, d[5].mouse, d[7].mouse, d[8].mouse);
+   CHECK(!d[9].mouse, "a pointer nothing is behind is a mouse");
+   /* and the keyboards of the same desk */
+   n    = input_kbdev_group(d, 10, 16);
+   CHECK(n == 3 && d[0].group == 0 && d[3].group == INPUT_KBDEV_NONE
+         && d[4].group == 1 && d[6].group == 2,
+         "the same desk's keyboards: %u listed, want the keyboard, the receiver's and the Bluetooth one", n);
+   printf("   ok   the mice: a keyboard's pointer part and a pointer with nothing behind it are none; a mouse, a receiver's mouse, a trackpoint and a touchpad are\n");
 
    if (failures)
    {

@@ -22,7 +22,7 @@
 #include <retro_inline.h>
 
 /* Which of the devices an operating system reports are the keyboards
- * on the desk.
+ * on the desk, and which are the mice.
  *
  * What a system calls a keyboard is anything that can send keys. One
  * keyboard is often two or three such devices - its media keys, its
@@ -51,6 +51,22 @@
  * Keys from a device that is part of no keyboard are still keys: the
  * driver goes on feeding them to the one state every keyboard feeds.
  *
+ * The mice are the other side of the same coin: what a system calls a
+ * mouse is anything that can send pointer events, and a keyboard
+ * whose macros can move the pointer is one. input_kbdev_mice() says
+ * of each pointer whether it is a mouse on the desk (.mouse):
+ *
+ * - not if nothing on the desk is behind it (.remote);
+ * - not if it is part of a device that has a USB boot keyboard and no
+ *   part of which is, or may be, a boot mouse: that is a keyboard
+ *   that can send pointer events;
+ * - otherwise it is. A keyboard and a mouse on one receiver are both
+ *   what they are, and so is a keyboard with a pointer built in of
+ *   which it is not known what its parts are.
+ *
+ * A driver numbers the mice on the desk first, so that the first is a
+ * mouse, and leaves the rest out of the menu.
+ *
  * No allocation, and nothing of any driver's or system's in here, so
  * that samples/input/keyboard_devices can run it on its own. */
 
@@ -68,8 +84,12 @@ typedef struct
    bool    remote;   /* nothing on the desk is behind it */
    /* its USB interface says "boot keyboard": 1 yes, 0 no, -1 not known */
    int8_t  boot;
+   /* and "boot mouse", the same way */
+   int8_t  boot_mouse;
    /* out: the keyboard it is part of, or INPUT_KBDEV_NONE */
    uint8_t group;
+   /* out, of a pointer: it is a mouse on the desk */
+   bool    mouse;
 } input_kbdev_t;
 
 /* Groups @devs; returns how many keyboards there are, at most @max. */
@@ -122,6 +142,46 @@ static INLINE unsigned input_kbdev_group(input_kbdev_t *devs, unsigned n,
       devs[i].group = (uint8_t)groups++;
    }
    return groups;
+}
+
+/* Says of each pointer in @devs whether it is a mouse on the desk
+ * (.mouse); returns how many are. */
+static INLINE unsigned input_kbdev_mice(input_kbdev_t *devs, unsigned n)
+{
+   unsigned i, j, mice = 0;
+
+   for (i = 0; i < n; i++)
+   {
+      bool boot_keyboard = false;
+      bool maybe_mouse   = false;
+
+      devs[i].mouse = false;
+      if (!devs[i].pointer || devs[i].remote)
+         continue;
+
+      /* the device it is part of: has it a boot keyboard, and is any
+       * pointer part of it a boot mouse, or not known not to be? */
+      for (j = 0; j < n; j++)
+      {
+         if (devs[j].remote)
+            continue;
+         if (j != i && !(devs[i].key[0] && !strcmp(devs[i].key, devs[j].key)))
+            continue;
+         if (devs[j].pointer)
+         {
+            if (devs[j].boot_mouse != 0)
+               maybe_mouse = true;
+         }
+         else if (devs[j].boot == 1)
+            boot_keyboard = true;
+      }
+
+      if (boot_keyboard && !maybe_mouse)
+         continue;
+      devs[i].mouse = true;
+      mice++;
+   }
+   return mice;
 }
 
 #endif

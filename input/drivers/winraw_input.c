@@ -46,6 +46,7 @@ extern "C" {
 #include <queues/task_queue.h>
 
 #include "../input_keymaps.h"
+#include "../common/input_keyboard_devices.h"
 
 /* Threading model
  * ---------------
@@ -939,35 +940,49 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
                ids[k].boot_mouse > 0 ? "yes"
                : ids[k].boot_mouse == 0 ? "no" : "not known",
                ids[k].remote ? "yes" : "no", ids[k].desc);
-         unlisted[k] = ids[k].remote;
       }
 
-      /* the pointer-sending part of a keyboard */
-      for (i = 0; i < dev_cnt; i++)
+      /* which of them are mice on the desk
+       * (input_keyboard_devices.h): told of the mice, in the order
+       * they are in, and then of the keyboards */
       {
-         if (devs[i].dwType != RIM_TYPEKEYBOARD)
-            continue;
-         WINRAW_DEVICE_STRINGS(devs[i].hDevice, path, container, compat,
-               desc, parents);
-         winraw_dev_ident(path, container, compat, desc, parents, &kb);
-         if (kb.boot != 1 || kb.remote || !kb.key[0])
-            continue;
-         /* a boot keyboard: its device is a mouse too only if a part
-          * of it is, or may be, a boot mouse */
+         unsigned total     = mouse_cnt_r;
+         input_kbdev_t *all = (input_kbdev_t*)calloc(
+               mouse_cnt_r + dev_cnt, sizeof(*all));
+         if (!all)
+            goto error;
          for (k = 0; k < mouse_cnt_r; k++)
-            if (     string_is_equal(ids[k].key, kb.key)
-                  && ids[k].boot_mouse != 0)
-               break;
-         if (k < mouse_cnt_r)
-            continue;
+         {
+            strlcpy(all[k].key, ids[k].key, sizeof(all[k].key));
+            all[k].pointer    = true;
+            all[k].remote     = ids[k].remote;
+            all[k].boot       = -1;
+            all[k].boot_mouse = ids[k].boot_mouse;
+         }
+         for (i = 0; i < dev_cnt; i++)
+         {
+            if (devs[i].dwType != RIM_TYPEKEYBOARD)
+               continue;
+            WINRAW_DEVICE_STRINGS(devs[i].hDevice, path, container, compat,
+                  desc, parents);
+            winraw_dev_ident(path, container, compat, desc, parents, &kb);
+            strlcpy(all[total].key, kb.key, sizeof(all[total].key));
+            all[total].keyboard   = true;
+            all[total].remote     = kb.remote;
+            all[total].boot       = kb.boot;
+            all[total].boot_mouse = -1;
+            total++;
+         }
+         input_kbdev_mice(all, total);
          for (k = 0; k < mouse_cnt_r; k++)
-            if (string_is_equal(ids[k].key, kb.key) && !unlisted[k])
-            {
-               unlisted[k] = true;
+         {
+            unlisted[k] = !all[k].mouse;
+            if (unlisted[k] && !ids[k].remote)
                RARCH_LOG("[WinRaw] Not counted among the mice: \"%s\""
                      " (%04x:%04x), a keyboard that can send pointer"
                      " events.\n", ids[k].desc, ids[k].vid, ids[k].pid);
-            }
+         }
+         free(all);
       }
 
       /* the mice first, each kind in the order it had */
@@ -1038,6 +1053,10 @@ static retro_atomic_int_t winraw_devices_changed;
  * (kbs[]), and from them the keyboards that are listed and numbered
  * for the menu are made:
  *
+ * (which, input/common/input_keyboard_devices.h says, as it does for
+ * the udev driver; this driver tells it what Windows says of each
+ * device)
+ *
  * - the raw input keyboards that are parts of one device on the desk
  *   are one keyboard. Windows gives every part of a physical device
  *   the same container id; where it gives none, the same USB ids are
@@ -1059,7 +1078,7 @@ static void winraw_keyboards_list(winraw_input_t *wr)
 {
    UINT i;
    unsigned k, o, g, bit;
-   unsigned n               = 0, total = 0, mice = 0, groups = 0;
+   unsigned n               = 0, total = 0;
    RAWINPUTDEVICELIST *devs = NULL;
    UINT dev_cnt             = 0;
    /* the list as it was, for what carries over and what does not */
@@ -1067,9 +1086,7 @@ static void winraw_keyboards_list(winraw_input_t *wr)
    HANDLE   old_kbs[WINRAW_KB_RAW_MAX];
    uint8_t  old_down[WINRAW_KB_RAW_MAX][WINRAW_KB_BYTES];
    winraw_dev_ident_t ident[WINRAW_KB_RAW_MAX];
-   char     mouse_key[WINRAW_KB_RAW_MAX][48];
-   uint8_t  prov[WINRAW_KB_RAW_MAX];    /* group before any is dropped */
-   uint8_t  final_of[WINRAW_KB_RAW_MAX];
+   input_kbdev_t devices[WINRAW_KB_RAW_MAX * 2];
    winraw_kb_name_req_t req[WINRAW_KEYBOARDS_MAX];
    char path[256], container[48], compat[256], desc[80], parents[256];
 
@@ -1104,8 +1121,28 @@ static void winraw_keyboards_list(winraw_input_t *wr)
          wr->kbs[total - ++n] = devs[i].hDevice;
    wr->kb_cnt = total;
 
-   /* which devices on the desk are mice */
-   for (i = 0; i < dev_cnt && mice < WINRAW_KB_RAW_MAX; i++)
+   /* What each is, for input_keyboard_devices.h to say which are the
+    * keyboards on the desk: the raw input keyboards first, in the
+    * order they are kept in, then the mice. */
+   for (k = 0; k < wr->kb_cnt; k++)
+   {
+      WINRAW_DEVICE_STRINGS(wr->kbs[k], path, container, compat,
+            desc, parents);
+      winraw_dev_ident(path, container, compat, desc, parents, &ident[k]);
+      RARCH_DBG("[WinRaw] Raw keyboard: \"%s\", device \"%s\", ids %04x:%04x,"
+            " boot keyboard: %s, \"%s\".\n",
+            path, ident[k].key, ident[k].vid, ident[k].pid,
+            ident[k].boot > 0 ? "yes" : ident[k].boot == 0 ? "no" : "not known",
+            ident[k].desc);
+      memset(&devices[k], 0, sizeof(devices[k]));
+      strlcpy(devices[k].key, ident[k].key, sizeof(devices[k].key));
+      devices[k].keyboard   = true;
+      devices[k].remote     = ident[k].remote;
+      devices[k].boot       = ident[k].boot;
+      devices[k].boot_mouse = -1;
+   }
+   n = wr->kb_cnt;
+   for (i = 0; i < dev_cnt && n < ARRAY_SIZE(devices); i++)
    {
       winraw_dev_ident_t m;
       if (devs[i].dwType != RIM_TYPEMOUSE)
@@ -1113,82 +1150,50 @@ static void winraw_keyboards_list(winraw_input_t *wr)
       WINRAW_DEVICE_STRINGS(devs[i].hDevice, path, container, compat,
             desc, parents);
       winraw_dev_ident(path, container, compat, desc, parents, &m);
-      if (m.key[0] && !m.remote)
-         strlcpy(mouse_key[mice++], m.key, sizeof(mouse_key[0]));
+      memset(&devices[n], 0, sizeof(devices[n]));
+      strlcpy(devices[n].key, m.key, sizeof(devices[n].key));
+      devices[n].pointer    = true;
+      devices[n].remote     = m.remote;
+      devices[n].boot       = -1;
+      devices[n].boot_mouse = m.boot_mouse;
+      n++;
    }
 
-   /* the raw input keyboards that are one device are one keyboard */
+   wr->kg_cnt = input_kbdev_group(devices, n, WINRAW_KEYBOARDS_MAX);
+
    for (k = 0; k < wr->kb_cnt; k++)
    {
-      WINRAW_DEVICE_STRINGS(wr->kbs[k], path, container, compat,
-            desc, parents);
-      winraw_dev_ident(path, container, compat, desc, parents, &ident[k]);
-      prov[k] = WINRAW_KB_NONE;
-      RARCH_DBG("[WinRaw] Raw keyboard: \"%s\", device \"%s\", ids %04x:%04x,"
-            " boot keyboard: %s, \"%s\".\n",
-            path, ident[k].key, ident[k].vid, ident[k].pid,
-            ident[k].boot > 0 ? "yes" : ident[k].boot == 0 ? "no" : "not known",
-            ident[k].desc);
-      if (ident[k].remote)
+      g             = devices[k].group;
+      wr->kb_grp[k] = (uint8_t)g;
+      if (g == INPUT_KBDEV_NONE)
       {
-         RARCH_LOG("[WinRaw] Not listed as a keyboard: \"%s\", which"
-               " nothing on the desk is behind.\n",
-               ident[k].desc[0] ? ident[k].desc : path);
-         continue;
-      }
-      for (o = 0; o < k; o++)
-         if (     prov[o] != WINRAW_KB_NONE
-               && ident[k].key[0]
-               && string_is_equal(ident[k].key, ident[o].key))
-            break;
-      prov[k] = (o < k) ? prov[o] : (uint8_t)groups++;
-   }
-
-   /* a mouse whose buttons can send keys is not a keyboard */
-   for (g = 0; g < groups; g++)
-   {
-      bool is_mouse  = false;
-      bool none_boot = true;
-      const winraw_dev_ident_t *first = NULL;
-      final_of[g]    = WINRAW_KB_NONE;
-      for (k = 0; k < wr->kb_cnt; k++)
-      {
-         if (prov[k] != g)
+         /* said once of a device, not of each of its parts */
+         for (o = 0; o < k; o++)
+            if (     devices[o].group == INPUT_KBDEV_NONE
+                  && ident[k].key[0]
+                  && string_is_equal(ident[k].key, ident[o].key))
+               break;
+         if (o < k)
             continue;
-         if (!first)
-            first = &ident[k];
-         if (ident[k].boot != 0)
-            none_boot = false;
-      }
-      if (!first)
+         if (ident[k].remote)
+            RARCH_LOG("[WinRaw] Not listed as a keyboard: \"%s\", which"
+                  " nothing on the desk is behind.\n",
+                  ident[k].desc[0] ? ident[k].desc : "a device");
+         else
+            RARCH_LOG("[WinRaw] Not listed as a keyboard: \"%s\" (%04x:%04x),"
+                  " a mouse that can send keys.\n",
+                  ident[k].desc, ident[k].vid, ident[k].pid);
          continue;
-      for (o = 0; o < mice && first->key[0]; o++)
-         if (string_is_equal(mouse_key[o], first->key))
-            is_mouse = true;
-      if (is_mouse && none_boot)
+      }
+      /* a listed keyboard's name is asked of the oldest of its parts */
+      if (g < WINRAW_KEYBOARDS_MAX && !req[g].hnd)
       {
-         RARCH_LOG("[WinRaw] Not listed as a keyboard: \"%s\" (%04x:%04x),"
-               " a mouse that can send keys.\n",
-               first->desc, first->vid, first->pid);
-         continue;
+         req[g].hnd = wr->kbs[k];
+         req[g].vid = ident[k].vid;
+         req[g].pid = ident[k].pid;
+         strlcpy(req[g].fallback, ident[k].desc, sizeof(req[g].fallback));
       }
-      if (wr->kg_cnt >= WINRAW_KEYBOARDS_MAX)
-         continue;
-      final_of[g] = (uint8_t)wr->kg_cnt;
-      /* its name is asked of the oldest of its parts */
-      for (k = 0; k < wr->kb_cnt; k++)
-         if (prov[k] == g)
-            break;
-      req[wr->kg_cnt].hnd = wr->kbs[k];
-      req[wr->kg_cnt].vid = first->vid;
-      req[wr->kg_cnt].pid = first->pid;
-      strlcpy(req[wr->kg_cnt].fallback, first->desc,
-            sizeof(req[wr->kg_cnt].fallback));
-      wr->kg_cnt++;
    }
-   for (k = 0; k < wr->kb_cnt; k++)
-      if (prov[k] != WINRAW_KB_NONE)
-         wr->kb_grp[k] = final_of[prov[k]];
 
 done:
    free(devs);
