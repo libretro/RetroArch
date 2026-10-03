@@ -133,6 +133,10 @@ jobs:
           # every lazily set up table or CPU check, first used by
           # eight threads at once under TSan
           make -f Makefile.test crypto-tsan-check
+          # the Windows wait tiers - eventcount and condition variable,
+          # high resolution timer and kernel timeout - as Windows
+          # binaries under wine
+          make -f Makefile.test win32-waits-check
 
       - name: Check VFS backend symbol parity
         shell: bash

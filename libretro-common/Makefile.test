@@ -321,7 +321,7 @@ threads-samples:
 threads-samples-tsan:
 	$(MAKE) -f Makefile.test threads-samples CONCURRENCY_SAN=thread
 
-.PHONY: win32-configs vfs-samples threads-samples threads-samples-tsan \
+.PHONY: win32-waits-check win32-configs vfs-samples threads-samples threads-samples-tsan \
 	unit-tests all
 
 # The libcheck suites on their own: bounded work, and what CI's unit
@@ -602,7 +602,48 @@ win32-wine-check:
 	echo "ok:   keychain suite as a Windows binary under Wine"; \
 	rm -f test/crypto/test_crypto_win32.exe test/file/test_keychain_win32.exe
 
-all: unit-tests console-libc-check darwin-floor-check crypto-aarch64-check crypto-arm-check crypto-mips-check win32-wine-check
+# The Windows wait paths under Wine, which no Linux build takes: the
+# eventcount on each of its sleep tiers, then the eventcount's condition
+# variable tier, the asymmetric eventcount and the thread pool on each of
+# the condition variable's tiers - every one with bounded waits on the
+# high resolution timer and with the kernel timeout alone. Skips when
+# MinGW or Wine is not installed.
+WIN32_WAITS_SRC = rthreads/rthreads.c features/features_cpu.c time/rtime.c
+win32-waits-check:
+	@if ! command -v $(MINGW_CC) >/dev/null 2>&1; then echo "skip: $(MINGW_CC) not installed"; exit 0; fi; \
+	if ! command -v $(WINE) >/dev/null 2>&1; then echo "skip: $(WINE) not installed"; exit 0; fi; \
+	export WINEDEBUG=-all; \
+	$(MINGW_CC) -static -O1 -DHAVE_THREADS -Iinclude -Wall \
+	   samples/rthreads/retro_eventcount_test/retro_eventcount_test.c \
+	   rthreads/retro_eventcount.c $(WIN32_WAITS_SRC) \
+	   -o /tmp/lrc_ec_win32.exe || exit 1; \
+	$(MINGW_CC) -static -O1 -DHAVE_THREADS -Iinclude -Wall \
+	   samples/rthreads/retro_asym_eventcount_test/retro_asym_eventcount_test.c \
+	   rthreads/retro_asym_eventcount.c rthreads/retro_procbarrier.c \
+	   rthreads/retro_eventcount.c $(WIN32_WAITS_SRC) \
+	   -o /tmp/lrc_asym_win32.exe || exit 1; \
+	$(MINGW_CC) -static -O1 -DHAVE_THREADS -Iinclude -Wall \
+	   samples/rthreads/tpool_wait_test/tpool_wait_test.c \
+	   rthreads/tpool.c rthreads/retro_eventcount.c $(WIN32_WAITS_SRC) \
+	   -o /tmp/lrc_tpool_win32.exe || exit 1; \
+	for h in 1 0; do \
+	   for t in alert keyed event none; do \
+	      RETRO_EVENTCOUNT_HIRES=$$h RETRO_EVENTCOUNT_WIN32=$$t \
+	         $(WINE) /tmp/lrc_ec_win32.exe >/tmp/lrc_waits.log 2>&1 \
+	         || { echo "FAIL: eventcount, tier $$t, hires $$h"; cat /tmp/lrc_waits.log; exit 1; }; \
+	   done; \
+	   for t in alert keyed event; do \
+	      for exe in lrc_ec_win32 lrc_asym_win32 lrc_tpool_win32; do \
+	         RTHREADS_SCOND_HIRES=$$h RTHREADS_SCOND=$$t RETRO_EVENTCOUNT_WIN32=none \
+	            $(WINE) /tmp/$$exe.exe >/tmp/lrc_waits.log 2>&1 \
+	            || { echo "FAIL: $$exe, scond tier $$t, hires $$h"; cat /tmp/lrc_waits.log; exit 1; }; \
+	      done; \
+	   done; \
+	   echo "ok:   Windows wait tiers under Wine, hires $$h"; \
+	done; \
+	rm -f /tmp/lrc_ec_win32.exe /tmp/lrc_asym_win32.exe /tmp/lrc_tpool_win32.exe /tmp/lrc_waits.log
+
+all: unit-tests console-libc-check darwin-floor-check crypto-aarch64-check crypto-arm-check crypto-mips-check win32-wine-check win32-waits-check
 	# vfs samples: file size, seek and EOF boundaries, mapped and not
 	$(MAKE) -f Makefile.test vfs-samples
 	# concurrency samples: nothing else here compiles retro_spsc.c,
