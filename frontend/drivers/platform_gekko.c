@@ -55,6 +55,12 @@
 #if !defined(IS_SALAMANDER)
 #include "../../paths.h"
 #include "../../menu/menu_entries.h"
+#ifdef HAVE_NETWORKING
+#include "../../network/netplay/netplay.h"
+#endif
+
+/* The core, and up to what netplay passes. */
+#define EXEC_MAX_ARGS 32
 #endif
 
 struct volume
@@ -204,31 +210,62 @@ static enum frontend_fork fork_mode = FRONTEND_FORK_NONE;
 static void              *exec_image;
 static int64_t            exec_len;
 static int                exec_argc;
-static char               exec_argv[3][PATH_MAX_LENGTH];
+static const char        *exec_argv[EXEC_MAX_ARGS];
+static char               exec_core[PATH_MAX_LENGTH];
+/* The rest of the arguments, one after another. */
+static char               exec_args[PATH_MAX_LENGTH * 2];
+
+static void exec_arg(const char *arg, size_t len, size_t *used)
+{
+   if (     exec_argc >= EXEC_MAX_ARGS
+         || *used + len + 1 > sizeof(exec_args))
+      return;
+   memcpy(exec_args + *used, arg, len);
+   exec_args[*used + len] = '\0';
+   exec_argv[exec_argc++] = exec_args + *used;
+   *used                 += len + 1;
+}
 
 /* The next program, read while the volumes are still mounted. */
 static void exec_prepare(void)
 {
    const char *core = path_get(RARCH_PATH_CORE);
+   size_t used      = 0;
    if (fork_mode == FRONTEND_FORK_NONE || string_is_empty(core))
       return;
    if (strchr(core, ':'))
-      strlcpy(exec_argv[0], core, sizeof(exec_argv[0]));
+      strlcpy(exec_core, core, sizeof(exec_core));
    else
-      fill_pathname_join(exec_argv[0], g_defaults.dirs[DEFAULT_DIR_CORE],
-            core, sizeof(exec_argv[0]));
-   exec_argc = 1;
-   if (     fork_mode == FRONTEND_FORK_CORE_WITH_ARGS
-         && !path_is_empty(RARCH_PATH_CONTENT))
+      fill_pathname_join(exec_core, g_defaults.dirs[DEFAULT_DIR_CORE],
+            core, sizeof(exec_core));
+   exec_argv[0] = exec_core;
+   exec_argc    = 1;
+   if (fork_mode == FRONTEND_FORK_CORE_WITH_ARGS)
    {
-      const char *content = path_get(RARCH_PATH_CONTENT);
-      fill_pathname_basedir(exec_argv[1], content, sizeof(exec_argv[1]));
-      strlcpy(exec_argv[2], path_basename(content), sizeof(exec_argv[2]));
-      exec_argc = 3;
+#ifdef HAVE_NETWORKING
+      /* Netplay passes RetroArch's own options. */
+      char *fork_args[NETPLAY_FORK_MAX_ARGS];
+      if (netplay_driver_ctl(RARCH_NETPLAY_CTL_GET_FORK_ARGS, fork_args))
+      {
+         unsigned i;
+         for (i = 0; fork_args[i]; i++)
+            exec_arg(fork_args[i], strlen(fork_args[i]), &used);
+      }
+      else
+#endif
+      if (!path_is_empty(RARCH_PATH_CONTENT))
+      {
+         /* Directory and file name, as loaders pass content. */
+         const char *content = path_get(RARCH_PATH_CONTENT);
+         const char *slash   = strrchr(content, '/');
+         const char *name    = slash ? slash + 1 : content;
+         exec_arg(content, (size_t)(name - content), &used);
+         exec_arg(name, strlen(name), &used);
+      }
    }
-   if (!filestream_read_file(exec_argv[0], &exec_image, &exec_len))
+   if (!filestream_read_file(exec_core, &exec_image, &exec_len))
    {
-      RARCH_ERR("[Gekko] Could not read \"%s\".\n", exec_argv[0]);
+      RARCH_ERR("[Gekko] Could not read \"%s\".\n", exec_core);
       exec_image = NULL;
    }
 }
@@ -305,10 +342,11 @@ static void frontend_gekko_get_env(int *argc, char *argv[],
       }
    }
    else if (*argc > 2 && argv[1] && *argv[1] && argv[2] && *argv[2]
-         && params)
+         && *argv[1] != '-' && params)
    {
       /* Loaders that start content pass its directory and file name
-       * as two arguments. */
+       * as two arguments; options (netplay's) are RetroArch's to
+       * parse. */
       static char path[PATH_MAX_LENGTH];
       fill_pathname_join(path, argv[1], argv[2], sizeof(path));
       params->content_path  = path;
@@ -398,17 +436,14 @@ static void frontend_gekko_get_env(int *argc, char *argv[],
 #ifndef IS_SALAMANDER
 static void frontend_gekko_exitspawn(char *s, size_t len, char *args)
 {
-   const char *argv[3];
-   int i, ret;
+   int ret;
    (void)s;
    (void)len;
    (void)args;
    if (!exec_image)
       return;
-   for (i = 0; i < exec_argc; i++)
-      argv[i] = exec_argv[i];
-   ret = gk_exec(exec_image, (size_t)exec_len, exec_argc, argv);
-   RARCH_ERR("[Gekko] Could not run \"%s\" (%d).\n", exec_argv[0], ret);
+   ret = gk_exec(exec_image, (size_t)exec_len, exec_argc, exec_argv);
+   RARCH_ERR("[Gekko] Could not run \"%s\" (%d).\n", exec_core, ret);
    free(exec_image);
    exec_image = NULL;
 }
