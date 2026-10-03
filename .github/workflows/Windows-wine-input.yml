@@ -7,12 +7,15 @@ name: CI Windows raw input under Wine
 # input driver and the raw input joypad driver, presses keys in its
 # window and reads its log.
 #
-# Four scenarios, each: a key, a fullscreen toggle (which restarts the
-# GDI video driver), a key, quit with Escape. Read by the poll and kept
-# across the restart (the default); restarted with the video driver
-# (RETROARCH_INPUT_KEEP=0); threaded video off; and the driver as it
-# was before any of this (RETROARCH_RAWINPUT_POLL=0). See
-# samples/input/windows_wine_smoke/run.sh.
+# It runs a small core that writes to the log what reaches it. Five
+# scenarios, each: two keys, a fullscreen toggle (which restarts the
+# GDI video driver), the two keys again, quit with Escape - and in each
+# the core must have seen its button and its key events before the
+# restart and after it. Read by the poll and kept across the restart
+# (the default); restarted with the video driver
+# (RETROARCH_INPUT_KEEP=0); threaded video off; the raw driver as it
+# was before any of this (RETROARCH_RAWINPUT_POLL=0); and DirectInput.
+# See samples/input/windows_wine_smoke/run.sh.
 #
 # Wine is not Windows: what this holds is that the frontend, the pump,
 # the two drivers and the driver restart fit together, on every commit

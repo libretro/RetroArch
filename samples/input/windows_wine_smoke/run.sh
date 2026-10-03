@@ -8,9 +8,17 @@
 # and the raw input joypad driver, presses keys in its window, and
 # reads its log.
 #
-# Each scenario is: start in the menu, press a key, toggle fullscreen
-# (which, with GDI, restarts the video driver), press a key, quit with
-# Escape. What is checked is what the log says happened:
+# It runs a core, smoke_core.c, built here as a DLL, which needs no
+# content and writes to the log what reaches it: port 1's B button
+# changing, and every key event its keyboard callback is given.
+#
+# Each scenario is: press J (bound to nothing) and Z (the default bind
+# for B), toggle fullscreen with F (which, with GDI, restarts the video
+# driver), press J and Z again, quit with Escape. What is checked is
+# what the log says happened. In every scenario: RetroArch quit on the
+# Escape pressed after the restart; the core saw B pressed and released
+# before the restart and after it; and it was given J's key-down and
+# key-up, in that order, both times. And by scenario:
 #
 #   read by the poll, kept      the default. The input driver starts
 #                               once and is not restarted with the
@@ -25,13 +33,23 @@
 #   RETROARCH_RAWINPUT_POLL=0   the driver as it was before any of
 #                               this: no bulk reads, restarted with
 #                               the video driver, still works.
+#   DirectInput                 the other input driver a Windows window
+#                               can get, with its joypad driver:
+#                               started by the same code, restarted
+#                               with the video driver, works.
+#
+# (The core is given only the key-up of Z and F, never the key-down:
+# the frontend keeps the key-down of a key that is bound to something
+# from the core's keyboard callback. That is how it was before the poll
+# read anything, and is the same in every scenario here; J is there
+# because it shows both.)
 #
 # Keys are held for a few frames, as a finger holds one: the frontend
 # samples the keyboard's state once a frame, and a press and release
 # inside one frame is a state it never sees.
 #
 # Usage: run.sh [directory with retroarch.exe]   (default: the repo root)
-# Needs: wine, Xvfb, xdotool.
+# Needs: wine, Xvfb, xdotool, and mingw-w64's gcc for the core.
 set -u
 
 here=$(cd "$(dirname "$0")" && pwd)
@@ -49,16 +67,21 @@ for t in Xvfb xdotool; do
 done
 [ -f "$root/retroarch.exe" ] || { echo "no retroarch.exe in $root" >&2; exit 1; }
 
+${MINGW_CC:-x86_64-w64-mingw32-gcc} -shared -O1 -Wall \
+   -I"$here/../../../libretro-common/include" \
+   -o "$work/smoke_core.dll" "$here/smoke_core.c" \
+   || { echo "the core did not build" >&2; exit 1; }
+
 export DISPLAY=:98
 Xvfb :98 -screen 0 1280x720x24 > "$work/xvfb.log" 2>&1 &
 XVFB=$!
 sleep 1
 
-write_cfg() {  # $1: video_threaded
+write_cfg() {  # $1: video_threaded  $2: input driver  $3: joypad driver
    cat > "$work/retroarch.cfg" <<CFG
 video_driver = "gdi"
-input_driver = "raw"
-input_joypad_driver = "winraw_joypad"
+input_driver = "$2"
+input_joypad_driver = "$3"
 menu_driver = "rgui"
 audio_driver = "null"
 video_threaded = "$1"
@@ -85,7 +108,8 @@ hold() {  # a key, held for a few frames, in whichever window is RetroArch's now
 play() {
    local log=$1 wid= app i
    ( cd "$root" && WINEDEBUG=-all exec $WINE ./retroarch.exe --verbose \
-        -c "Z:$(echo "$work/retroarch.cfg" | sed 's|/|\\|g')" ) > "$log" 2>&1 &
+        -c "Z:$(echo "$work/retroarch.cfg" | sed 's|/|\\|g')" \
+        -L "Z:$(echo "$work/smoke_core.dll" | sed 's|/|\\|g')" ) > "$log" 2>&1 &
    app=$!
    for i in $(seq 1 80); do
       wid=$(xdotool search --name "RetroArch" 2>/dev/null | head -1)
@@ -100,10 +124,12 @@ play() {
    xdotool windowfocus "$wid" 2>/dev/null
    xdotool mousemove 300 300 click 1 2>/dev/null
    sleep 1
-   hold Down
+   hold j
+   hold z
    hold f
    sleep 4
-   hold Down
+   hold j
+   hold z
    hold Escape
    for i in $(seq 1 30); do kill -0 $app 2>/dev/null || break; sleep 0.5; done
    if kill -0 $app 2>/dev/null; then
@@ -119,19 +145,26 @@ count() { sed 's/\x1b\[[0-9;]*m//g' "$1" | tr -d '\r' | grep -ac "$2"; }
 
 failures=0
 # $1 name, $2 threaded, $3 want input driver starts by the poll,
-# $4 want joypad driver destroyed, $5 "nomsg" if no report may come as
-# a message; environment for RetroArch passes through
+# $4 want joypad driver starts, $5 "nomsg" if no report may come as a
+# message, $6 input driver, $7 joypad driver; environment for RetroArch
+# passes through
 scenario() {
-   local name=$1 threaded=$2 want_bulk=$3 want_destroyed=$4 nomsg=$5
-   local log="$work/$name.log" try rc video bulk destroyed msg ok
-   write_cfg "$threaded"
+   local name=$1 threaded=$2 want_bulk=$3 want_joy=$4 nomsg=$5
+   local log="$work/$name.log" try rc video bulk joy msg ok b_down b_up j_seq
+   write_cfg "$threaded" "${6:-raw}" "${7:-winraw_joypad}"
    # key delivery on a virtual display with no window manager is not
    # exact: a scenario gets a second go before it counts as failed
    for try in 1 2; do
       play "$log"; rc=$?
       video=$(count "$log" 'GDI\] Init complete')
       bulk=$(count "$log" 'read in bulk by the poll')
-      destroyed=$(count "$log" 'RawInput Joypad\] Destroyed')
+      joy=$(count "$log" 'Found joypad driver')
+      b_down=$(count "$log" 'smoke core\] joypad B pressed')
+      b_up=$(count "$log" 'smoke core\] joypad B released')
+      # J's events, in the order the core was given them
+      j_seq=$(sed 's/\x1b\[[0-9;]*m//g' "$log" | tr -d '\r' \
+            | grep -ao 'smoke core\] key event: [a-z]* keycode 106' \
+            | awk '{printf "%s ", $5}')
       msg=$(sed 's/\x1b\[[0-9;]*m//g' "$log" | tr -d '\r' \
             | grep -a 'Read by the poll: [0-9]* keyboard' \
             | grep -avc ', 0 as messages')
@@ -139,17 +172,20 @@ scenario() {
       [ "$rc" = 0 ] || ok=no
       [ "$video" = 2 ] || ok=no
       [ "$bulk" = "$want_bulk" ] || ok=no
-      [ "$destroyed" = "$want_destroyed" ] || ok=no
+      [ "$joy" = "$want_joy" ] || ok=no
+      [ "$b_down" = 2 ] && [ "$b_up" = 2 ] || ok=no
+      [ "$j_seq" = "down up down up " ] || ok=no
       [ "$nomsg" != nomsg ] || [ "$msg" = 0 ] || ok=no
       [ "$ok" = yes ] && break
    done
    if [ "$ok" = yes ]; then
       echo "[pass] $name: video driver started $video times, input driver $bulk by the poll," \
-           "joypad driver destroyed $destroyed, quit on Escape after the restart"
+           "joypad driver $joy; the core saw B twice and J's down and up twice; quit on Escape"
    else
       echo "[FAIL] $name: quit by itself: $([ "$rc" = 0 ] && echo yes || echo no);" \
            "video driver started $video (want 2), input driver by the poll $bulk (want $want_bulk)," \
-           "joypad driver destroyed $destroyed (want $want_destroyed)" \
+           "joypad driver started $joy (want $want_joy);" \
+           "the core saw B pressed $b_down and released $b_up (want 2 and 2), J: ${j_seq:-nothing}(want down up down up)" \
            "$([ "$nomsg" = nomsg ] && echo ", driver instances with reports taken as messages: $msg (want 0)")"
       sed 's/\x1b\[[0-9;]*m//g' "$log" | tr -d '\r' | grep -av "ALSA lib\|Playlist\]" | tail -25
       failures=$((failures + 1))
@@ -160,6 +196,7 @@ scenario "read by the poll, kept" true 1 1 nomsg
 RETROARCH_INPUT_KEEP=0 scenario "RETROARCH_INPUT_KEEP=0" true 2 2 nomsg
 scenario "video not threaded" false 1 1 any
 RETROARCH_RAWINPUT_POLL=0 scenario "RETROARCH_RAWINPUT_POLL=0" true 0 2 any
+scenario "DirectInput" true 0 2 any dinput dinput
 
 if [ "$failures" != 0 ]; then
    echo "FAIL windows_wine_smoke: $failures"
