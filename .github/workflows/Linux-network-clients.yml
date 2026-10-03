@@ -94,6 +94,23 @@ jobs:
           sudo samples/network/smb_retro/local_ad_dc_test.sh
           sudo make -C samples/network/smb_retro clean
 
+      - name: Embedded MCP server over the loopback
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # network/mcp_server.c as it ships, in front of a stub command
+          # table: the handshake, the tool list and its hints, answers now
+          # and later, the JSON-RPC errors, the HTTP gate (method, path,
+          # Origin, the bearer token it will not start without), an
+          # oversized body, a request in pieces, and teardown with a
+          # request waiting
+          make -C samples/network/mcp_server clean
+          make -C samples/network/mcp_server SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 \
+            make -C samples/network/mcp_server check
+          make -C samples/network/mcp_server clean
+
 
       - name: Windows builds under Wine
         shell: bash
@@ -119,6 +136,11 @@ jobs:
           trap 'wineserver -k || true; sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root wineserver -k || true' EXIT
           wine cmd /c exit > /dev/null 2>&1 < /dev/null
           make -C libretro-common -f Makefile.test win32-wine-check
+          # the MCP server on Winsock
+          make -C samples/network/mcp_server clean
+          make -C samples/network/mcp_server compiler=x86_64-w64-mingw32-gcc
+          (cd samples/network/mcp_server && wine ./mcp_server_test.exe)
+          make -C samples/network/mcp_server clean
           export CC=x86_64-w64-mingw32-gcc RUNNER=wine EXE=.exe
           make -C samples/network/tls_retro clean
           samples/network/tls_retro/local_server_test.sh
