@@ -130,7 +130,6 @@ static void base_dir(int argc, char *argv[], char *s, size_t len)
 static void frontend_gekko_get_env(int *argc, char *argv[],
       void *args, void *params_data)
 {
-   char *slash;
 #ifndef IS_SALAMANDER
    struct rarch_main_wrap *params = (struct rarch_main_wrap*)params_data;
 #endif
@@ -177,14 +176,14 @@ static void frontend_gekko_get_env(int *argc, char *argv[],
 
    /* The port directory: retroarch at the root of the volume the
     * program is on. */
-   strlcpy(g_defaults.dirs[DEFAULT_DIR_PORT],
-         g_defaults.dirs[DEFAULT_DIR_CORE],
-         sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
-   if ((slash = strchr(g_defaults.dirs[DEFAULT_DIR_PORT], '/')))
-      *slash = '\0';
-   fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PORT],
-         g_defaults.dirs[DEFAULT_DIR_PORT], "retroarch",
-         sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
+   {
+      char volume[16];
+      size_t _len = strcspn(g_defaults.dirs[DEFAULT_DIR_CORE], "/") + 1;
+      strlcpy(volume, g_defaults.dirs[DEFAULT_DIR_CORE],
+            _len < sizeof(volume) ? _len : sizeof(volume));
+      fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PORT], volume,
+            "retroarch", sizeof(g_defaults.dirs[DEFAULT_DIR_PORT]));
+   }
 
    fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
          g_defaults.dirs[DEFAULT_DIR_CORE], "info",
