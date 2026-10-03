@@ -911,6 +911,10 @@ float input_driver_get_sensor(
 
 uint64_t input_driver_get_capabilities(void);
 
+/* The running input driver's name ("raw", "udev", "wayland"...), or
+ * an empty string when there is none. */
+const char *input_driver_get_ident(void);
+
 /* Which input driver a window gets: input_driver_choice.c. */
 #if defined(_WIN32) || defined(_XBOX) || defined(__WINRT__)
 void input_driver_init_windows(const char *joypad_name,

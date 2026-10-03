@@ -735,7 +735,12 @@ static int action_bind_sublabel_systeminfo_keyboard_entry(
    if (!list || i >= list->size)
       return 0;
    idx = (unsigned)list->list[i].entry_idx;
-   if (     input_config_get_keyboard_vid(idx)
+   /* the entry for all keyboards as one, where the driver names none */
+   if (idx >= MAX_INPUT_DEVICES)
+      snprintf(s, len,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SYSTEM_DEVICE_INFO),
+            input_driver_get_ident());
+   else if (input_config_get_keyboard_vid(idx)
          || input_config_get_keyboard_pid(idx))
       snprintf(s, len,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_KEYBOARD_DEVICE_INFO),
@@ -756,7 +761,11 @@ static int action_bind_sublabel_systeminfo_mouse_entry(
    if (!list || i >= list->size)
       return 0;
    idx = (unsigned)list->list[i].entry_idx;
-   if (     input_config_get_mouse_vid(idx)
+   if (idx >= MAX_INPUT_DEVICES)
+      snprintf(s, len,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_SYSTEM_DEVICE_INFO),
+            input_driver_get_ident());
+   else if (input_config_get_mouse_vid(idx)
          || input_config_get_mouse_pid(idx))
       snprintf(s, len,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_KEYBOARD_DEVICE_INFO),

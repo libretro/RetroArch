@@ -6567,6 +6567,12 @@ bool input_set_rumble_gain(unsigned gain)
             gain, config_get_ptr()->uints.input_max_users));
 }
 
+const char *input_driver_get_ident(void)
+{
+   const input_driver_t *input = input_driver_st.current_driver;
+   return (input && input->ident) ? input->ident : "";
+}
+
 uint64_t input_driver_get_capabilities(void)
 {
    const input_driver_t *input = input_driver_st.current_driver;

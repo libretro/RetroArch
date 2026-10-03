@@ -2885,6 +2885,8 @@ static unsigned menu_displaylist_parse_input_info(file_list_t *list)
    char entry[NAME_MAX_LENGTH];
    unsigned port;
    unsigned count          = 0;
+   unsigned keyboards      = 0;
+   unsigned mice           = 0;
    const char *menu_driver = menu_driver_ident();
 
    for (port = 0; port < MAX_USERS; port++)
@@ -2956,6 +2958,26 @@ static unsigned menu_displaylist_parse_input_info(file_list_t *list)
       if (menu_entries_append(list, entry, "",
             MENU_ENUM_LABEL_SYSTEM_INFO_KEYBOARD_ENTRY,
             MENU_SETTINGS_CORE_INFO_NONE, 0, port, NULL))
+      {
+         count++;
+         keyboards++;
+      }
+   }
+   /* Where it cannot - most input drivers are handed keys by a window
+    * system that has merged every keyboard into one - there is still
+    * a keyboard, and a list with nothing in it says there is none. It
+    * is listed as what it is: all of them, through that driver. (The
+    * entry's index is past the last keyboard's; its sublabel goes by
+    * that.) */
+   if (     !keyboards
+         && (input_driver_get_capabilities() & (1 << RETRO_DEVICE_KEYBOARD)))
+   {
+      snprintf(entry, sizeof(entry),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_KEYBOARD_SYSTEM_NAME),
+            input_driver_get_ident());
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_SYSTEM_INFO_KEYBOARD_ENTRY,
+            MENU_SETTINGS_CORE_INFO_NONE, 0, MAX_INPUT_DEVICES, NULL))
          count++;
    }
 
@@ -2999,6 +3021,21 @@ static unsigned menu_displaylist_parse_input_info(file_list_t *list)
       if (menu_entries_append(list, entry, "",
             MENU_ENUM_LABEL_SYSTEM_INFO_MOUSE_ENTRY,
             MENU_SETTINGS_CORE_INFO_NONE, 0, port, NULL))
+      {
+         count++;
+         mice++;
+      }
+   }
+   /* and the same for the mice */
+   if (     !mice
+         && (input_driver_get_capabilities() & (1 << RETRO_DEVICE_MOUSE)))
+   {
+      snprintf(entry, sizeof(entry),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MOUSE_SYSTEM_NAME),
+            input_driver_get_ident());
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_SYSTEM_INFO_MOUSE_ENTRY,
+            MENU_SETTINGS_CORE_INFO_NONE, 0, MAX_INPUT_DEVICES, NULL))
          count++;
    }
 

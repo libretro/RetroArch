@@ -31463,6 +31463,18 @@ MSG_HASH( /* An entry of Information > Input Information: a connected mouse. The
    MENU_ENUM_LABEL_VALUE_MOUSE_DEVICE_NAME,
    "Mouse %s: %s"
    )
+MSG_HASH( /* An entry of Information > Input Information, where the input driver cannot tell one keyboard from another. %s is the input driver's name, such as "wayland" or "x" */
+   MENU_ENUM_LABEL_VALUE_KEYBOARD_SYSTEM_NAME,
+   "Keyboard: All Keyboards (%s)"
+   )
+MSG_HASH( /* The same for mice */
+   MENU_ENUM_LABEL_VALUE_MOUSE_SYSTEM_NAME,
+   "Mouse: All Mice (%s)"
+   )
+MSG_HASH( /* Under either of those two entries. %s is the input driver's name */
+   MENU_ENUM_LABEL_VALUE_INPUT_SYSTEM_DEVICE_INFO,
+   "The \"%s\" input driver reads these as one device and cannot tell them apart."
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
    "Cheat Settings"
