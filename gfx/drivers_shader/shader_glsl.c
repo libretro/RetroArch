@@ -294,78 +294,42 @@ static void gl_glsl_print_linker_log(GLuint obj)
 }
 
 #if defined(ORBIS)
-void glPigletGetShaderBinarySCE(GLuint program, GLsizei bufSize, GLsizei* length, GLenum* binaryFormat, void* binary);
-
-static const XXH64_hash_t gl_glsl_hash_shader(
+static XXH64_hash_t gl_glsl_hash_shader(
       const char **source, const int source_length)
 {
    int n;
-   XXH64_state_t* const state = XXH64_createState();
+   XXH64_hash_t hash;
+   XXH64_state_t *state = XXH64_createState();
 
    XXH64_reset(state, 0xAABBCCDDu);
-   for(n = 0; n < source_length; n++)
-   {
+   for (n = 0; n < source_length; n++)
       XXH64_update(state, source[n], strlen(source[n]));
-   }
-
-   XXH64_hash_t const hash = XXH64_digest(state);
-
+   hash = XXH64_digest(state);
    XXH64_freeState(state);
 
    return hash;
 }
 
-static bool gl_glsl_load_binary_shader(GLuint shader, char *save_path)
+/* The shader binary stored under @hash, if there is one */
+static bool gl_glsl_load_binary_shader(GLuint shader, XXH64_hash_t hash)
 {
-   GLsizei shader_size;
    GLint status;
-   FILE *shader_binary = fopen(save_path, "rb" );
+   char key[32];
+   video_shader_cache_view_t view;
 
-   if (shader_binary)
+   snprintf(key, sizeof(key), "%lx", (unsigned long)hash);
+   if (!video_shader_cache_map(VIDEO_SHADER_CACHE_ORBIS_BINARY, key, &view))
+      return false;
+   if (view.len > 0x7fffffff)
    {
-      char *shader_data = NULL;
-
-      fseek(shader_binary, 0, SEEK_END);
-      shader_size=ftell (shader_binary);
-      fseek(shader_binary, 0, SEEK_SET);
-
-      shader_data = (char*)malloc(shader_size);
-      fread(shader_data, shader_size, 1, shader_binary);
-      fclose(shader_binary);
-
-      glShaderBinary(1, &shader, 2, shader_data, shader_size);
-      free(shader_data);
-      glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-      return status == GL_TRUE;
+      video_shader_cache_unmap(&view);
+      return false;
    }
-
-   return false;
+   glShaderBinary(1, &shader, 2, view.data, (GLsizei)view.len);
+   video_shader_cache_unmap(&view);
+   glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+   return status == GL_TRUE;
 }
-
-#if 0
-static void gl_glsl_dump_shader(GLuint shader, char *save_path)
-{
-   FILE * fShader;
-   GLint length;
-   GLenum format;
-   GLsizei shader_size;
-   GLsizei bufferSize;
-   void *shaderBinary = NULL;
-
-   glGetShaderiv(shader, 0x8b89, &length);
-
-   bufferSize   = length;
-   shaderBinary = (void*)malloc(bufferSize);
-
-   memset(shaderBinary, 0, bufferSize);
-
-   glPigletGetShaderBinarySCE(shader, bufferSize, &shader_size, &format, shaderBinary);
-
-   fShader = fopen(save_path, "wb");
-   fwrite(shaderBinary, shader_size, 1, fShader);
-   fclose(fShader);
-}
-#endif
 #endif
 
 static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
@@ -459,15 +423,9 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
    source[3] = program;
 
 #if defined(ORBIS)
-   {
-      char save_path[250];
-      XXH64_hash_t const hash =
-         gl_glsl_hash_shader(source, ARRAY_SIZE(source));
-      snprintf(save_path, sizeof(save_path),
-            "/data/retroarch/temp/%lx.sb", hash);
-      if (gl_glsl_load_binary_shader(shader, save_path))
-         return true;
-   }
+   if (gl_glsl_load_binary_shader(shader,
+            gl_glsl_hash_shader(source, ARRAY_SIZE(source))))
+      return true;
 #endif
 
    glShaderSource(shader, ARRAY_SIZE(source), source, NULL);

@@ -33,6 +33,7 @@
 #include <lrc_hash.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
+#include <vfs/vfs.h>
 #include <lists/dir_list.h>
 #include <lists/string_list.h>
 
@@ -1059,6 +1060,139 @@ bool video_shader_source_ident_is_slang(const char *ident)
    if (!ident || !*ident)
       return false;
    return string_is_equal(path_get_extension(ident), "slang");
+}
+
+/* Where entry @key of cache @kind lives. A key is letters and digits,
+ * so it is only ever a file name in that directory. @dir receives the
+ * directory, for a writer to create. */
+static bool video_shader_cache_path(enum video_shader_cache_kind kind,
+      const char *key, char *dir, size_t dir_len, char *s, size_t len)
+{
+   char        name[96];
+   const char *k;
+   const char *suffix;
+
+   if (!key || !*key)
+      return false;
+   for (k = key; *k; k++)
+      if (!(   (*k >= '0' && *k <= '9')
+            || (*k >= 'a' && *k <= 'z')
+            || (*k >= 'A' && *k <= 'Z')))
+         return false;
+
+   switch (kind)
+   {
+      case VIDEO_SHADER_CACHE_SPIRV:
+         {
+            settings_t *settings = config_get_ptr();
+            if (!settings || !*settings->paths.directory_cache)
+               return false;
+            fill_pathname_join_special(dir,
+                  settings->paths.directory_cache, "spirv", dir_len);
+            suffix = ".spirv";
+         }
+         break;
+      case VIDEO_SHADER_CACHE_ORBIS_BINARY:
+         strlcpy(dir, "/data/retroarch/temp", dir_len);
+         suffix = ".sb";
+         break;
+      default:
+         return false;
+   }
+
+   if ((size_t)snprintf(name, sizeof(name), "%s%s", key, suffix)
+         >= sizeof(name))
+      return false;
+   fill_pathname_join_special(s, dir, name, len);
+   return true;
+}
+
+bool video_shader_cache_map(enum video_shader_cache_kind kind,
+      const char *key, video_shader_cache_view_t *view)
+{
+   char    dir[DIR_MAX_LENGTH];
+   char    path[PATH_MAX_LENGTH];
+   void   *data = NULL;
+   int64_t len  = 0;
+
+   if (!view)
+      return false;
+   view->data   = NULL;
+   view->len    = 0;
+   view->mapped = NULL;
+   view->heap   = NULL;
+
+   if (!video_shader_cache_path(kind, key, dir, sizeof(dir),
+            path, sizeof(path)))
+      return false;
+
+#if defined(VFS_HAVE_FILE_MAPPING) && defined(HAVE_MMAP)
+   /* Mapped where there is mmap(): the entry is parsed where it lies,
+    * with no copy of the file made first. Entries are only ever
+    * replaced by a rename, never rewritten, so a mapping is not cut
+    * short under the reader. */
+   {
+      RFILE *f = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
+      if (f)
+      {
+         int64_t        map_len = 0;
+         int64_t        size    = filestream_get_size(f);
+         const uint8_t *map     = filestream_get_mapped_ptr(f, &map_len);
+         if (map && size > 0 && map_len == size)
+         {
+            view->mapped = f;
+            view->data   = map;
+            view->len    = size;
+            return true;
+         }
+         filestream_close(f);
+      }
+   }
+#endif
+
+   if (!path_is_valid(path))
+      return false;
+   if (!filestream_read_file(path, &data, &len) || len <= 0)
+   {
+      if (data)
+         free(data);
+      return false;
+   }
+   view->heap = data;
+   view->data = (const uint8_t*)data;
+   view->len  = len;
+   return true;
+}
+
+void video_shader_cache_unmap(video_shader_cache_view_t *view)
+{
+   if (!view)
+      return;
+   if (view->mapped)
+      filestream_close((RFILE*)view->mapped);
+   if (view->heap)
+      free(view->heap);
+   view->data   = NULL;
+   view->len    = 0;
+   view->mapped = NULL;
+   view->heap   = NULL;
+}
+
+bool video_shader_cache_write(enum video_shader_cache_kind kind,
+      const char *key, const void *data, size_t len)
+{
+   char dir[DIR_MAX_LENGTH];
+   char path[PATH_MAX_LENGTH];
+
+   if (!data || !len || len > (size_t)-1 / 2)
+      return false;
+   if (!video_shader_cache_path(kind, key, dir, sizeof(dir),
+            path, sizeof(path)))
+      return false;
+   if (!path_is_directory(dir) && !path_mkdir(dir))
+      return false;
+   return filestream_write_file_atomic(path, data, (int64_t)len);
 }
 
 bool video_shader_source_read(const char *ident, char **buf, int64_t *len)

@@ -17,6 +17,8 @@
 #ifndef __VIDEO_SHADER_PARSE_H
 #define __VIDEO_SHADER_PARSE_H
 
+#include <stdint.h>
+#include <stddef.h>
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
@@ -376,6 +378,55 @@ const char *video_shader_source_ident_name(const char *ident);
  * #version line of.
  **/
 bool video_shader_source_ident_is_slang(const char *ident);
+
+/* What a shader driver keeps between runs, by key: the SPIR-V the
+ * slang compiler produced, or a console's precompiled shader binary.
+ * Where it lives is decided here, not by the driver. */
+enum video_shader_cache_kind
+{
+   VIDEO_SHADER_CACHE_SPIRV = 0,
+   VIDEO_SHADER_CACHE_ORBIS_BINARY
+};
+
+/* A cache entry's bytes, read-only, until video_shader_cache_unmap() */
+typedef struct video_shader_cache_view
+{
+   const uint8_t *data;
+   int64_t        len;
+   void          *mapped;   /* the file, while its pages are mapped */
+   void          *heap;     /* the copy, where they are read instead */
+} video_shader_cache_view_t;
+
+/**
+ * video_shader_cache_map:
+ * @kind : which cache
+ * @key  : the entry, letters and digits only
+ * @view : receives the bytes
+ *
+ * Hands a shader driver an entry it stored before, mapped where the
+ * platform maps files and read in one go where it does not.
+ *
+ * Returns: true when there is such an entry; then release @view with
+ * video_shader_cache_unmap().
+ **/
+bool video_shader_cache_map(enum video_shader_cache_kind kind,
+      const char *key, video_shader_cache_view_t *view);
+
+void video_shader_cache_unmap(video_shader_cache_view_t *view);
+
+/**
+ * video_shader_cache_write:
+ * @kind : which cache
+ * @key  : the entry, letters and digits only
+ * @data : the bytes, @len of them
+ *
+ * Stores an entry whole, replacing the one there: it is written beside
+ * it and renamed into place, so a reader never sees part of one.
+ *
+ * Returns: true when it was stored.
+ **/
+bool video_shader_cache_write(enum video_shader_cache_kind kind,
+      const char *key, const void *data, size_t len);
 
 RETRO_END_DECLS
 
