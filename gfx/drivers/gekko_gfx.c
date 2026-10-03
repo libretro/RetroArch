@@ -317,7 +317,13 @@ static void viewport_resize(gekko_video_t *gx, unsigned overscan_top,
    unsigned gamma  = settings->uints.video_gamma;
    int x = 0, y = 0;
 
+#ifdef HW_RVL
+   /* The A/V encoder: gamma in tenths, 0 standing for 1.0. */
+   gk_vi_set_trap_filter(settings->bools.video_soft_filter);
+   gk_vi_set_gamma(gamma ? gamma : 10);
+#else
    gk_gx_copy_gamma(MIN(2, gamma));
+#endif
 
    /* Below 192 lines is a custom mode: as it is. */
    if (gx->efb_lines >= 192)

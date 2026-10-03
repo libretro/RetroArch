@@ -1,7 +1,8 @@
 #!/bin/sh
 # fs/fat.c against images made and checked by dosfstools and mtools,
 # and disk/sdspi.c and disk/usbmsc.c against a model SD card and USB
-# drive, kernel/exec_image.c's program layouts and rvl/ir.c's pointer.
+# drive, kernel/exec_image.c's program layouts, rvl/ir.c's pointer and
+# rvl/ave_gamma.c's curves.
 # Needs a C compiler, mkfs.fat, fsck.fat, mtools and python3.
 set -e
 cd "$(dirname "$0")"
@@ -22,10 +23,13 @@ ${CC:-cc} -O1 -g -Wall -Wextra -fsanitize=address,undefined \
    ../../kernel/exec_image.c
 ${CC:-cc} -O1 -g -Wall -Wextra -fsanitize=address,undefined \
    -o "$work/ir_test" ir_test.c ../../rvl/ir.c -lm
+${CC:-cc} -O1 -g -Wall -Wextra -fsanitize=address,undefined \
+   -o "$work/ave_gamma_test" ave_gamma_test.c ../../rvl/ave_gamma.c -lm
 "$work/sdspi_test"
 "$work/usbmsc_test"
 "$work/exec_image_test"
 "$work/ir_test"
+"$work/ave_gamma_test"
 
 pattern() { # seed size file
    python3 -c "import sys

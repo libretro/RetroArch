@@ -73,4 +73,12 @@ int      gk_vi_field(void);
 typedef void (*gk_vi_fn)(uint32_t retrace, void *data);
 void gk_vi_set_retrace_cb(gk_vi_fn fn, void *data);
 
+#if GK_RVL
+/* The A/V encoder: the composite video trap filter (better luma and
+ * chroma separation, a softer picture), and the output gamma in
+ * tenths, 10 being 1.0, from 1 to 30.  Both stay across modes. */
+void gk_vi_set_trap_filter(int on);
+void gk_vi_set_gamma(unsigned tenths);
+#endif
+
 #endif

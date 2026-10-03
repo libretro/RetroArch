@@ -2,7 +2,10 @@
  * lines the processor owns.  Register map and bus timing from
  * WiiBrew's Hardware/AV Encoder page. */
 
+#include <gekko/thread.h>
 #include <gekko/video.h>
+
+#include "ave_gamma.h"
 
 #define GPIOB_OUT 0xcd8000c0u
 #define GPIOB_DIR 0xcd8000c4u
@@ -13,7 +16,12 @@
 #define AVE_ADDR  0xe0
 
 #define AVE_OUTPUT_CONFIG 0x01   /* colour encoding, YUV (component) */
+#define AVE_TRAP_FILTER   0x03
+#define AVE_GAMMA         0x10   /* AVE_GAMMA_LEN bytes */
 #define AVE_RGB_FILTER    0x6e   /* on for EURGB60 */
+
+static gk_mutex_t lock;
+static uint8_t    gamma_tenths;   /* 0: as the encoder was found */
 
 static void udelay(unsigned us)
 {
@@ -105,6 +113,30 @@ void gk_ave_set(unsigned std, int component)
          enc = 0;
          break;
    }
+   gk_mutex_lock(&lock);
    write8(AVE_OUTPUT_CONFIG, (uint8_t)(enc | (component ? 0x20 : 0)));
    write8(AVE_RGB_FILTER, std == GK_VI_EURGB60 ? 1 : 0);
+   gk_mutex_unlock(&lock);
+}
+
+
+void gk_vi_set_trap_filter(int on)
+{
+   gk_mutex_lock(&lock);
+   write8(AVE_TRAP_FILTER, on ? 1 : 0);
+   gk_mutex_unlock(&lock);
+}
+
+void gk_vi_set_gamma(unsigned tenths)
+{
+   uint8_t t[AVE_GAMMA_LEN];
+   tenths = tenths < 1 ? 1 : tenths > 30 ? 30 : tenths;
+   gk_mutex_lock(&lock);
+   if (tenths != gamma_tenths)
+   {
+      gamma_tenths = (uint8_t)tenths;
+      ave_gamma_table(tenths, t);
+      write_reg(AVE_GAMMA, t, sizeof(t));
+   }
+   gk_mutex_unlock(&lock);
 }
