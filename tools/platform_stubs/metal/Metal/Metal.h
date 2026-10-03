@@ -92,8 +92,14 @@ typedef NS_ENUM(NSUInteger, MTLStorageMode) {
 typedef NS_ENUM(NSUInteger, MTLVertexFormat) {
    MTLVertexFormatFloat2,
    MTLVertexFormatFloat3,
+   MTLVertexFormatUShort2Normalized,
+   MTLVertexFormatUChar4Normalized,
    MTLVertexFormatFloat4,
    MTLVertexFormatUShort4Normalized
+};
+typedef NS_ENUM(NSUInteger, MTLIndexType) {
+   MTLIndexTypeUInt16,
+   MTLIndexTypeUInt32
 };
 typedef NS_ENUM(NSUInteger, MTLVertexStepFunction) {
    MTLVertexStepFunctionPerVertex
@@ -191,6 +197,7 @@ static inline MTLRegion MTLRegionMake2D(NSUInteger x, NSUInteger y, NSUInteger w
 - (void)setViewport:(MTLViewport)v;
 - (void)setScissorRect:(MTLScissorRect)r;
 - (void)drawPrimitives:(MTLPrimitiveType)t vertexStart:(NSUInteger)s vertexCount:(NSUInteger)c;
+- (void)drawIndexedPrimitives:(MTLPrimitiveType)t indexCount:(NSUInteger)c indexType:(MTLIndexType)it indexBuffer:(id<MTLBuffer>)b indexBufferOffset:(NSUInteger)o;
 @end
 @protocol MTLBlitCommandEncoder <MTLCommandEncoder>
 - (void)synchronizeResource:(id<MTLResource>)r;

@@ -175,6 +175,11 @@ typedef ID3D12DeviceRemovedExtendedDataSettings*  D3D12DeviceRemovedExtendedData
 #endif
 typedef ID3D12InfoQueue*                          D3D12InfoQueue;
 
+/* Constant slots for plain mesh draws: 256 bytes each, the alignment a
+ * constant buffer view needs */
+#define D3D12_MESH_CB_SIZE  256
+#define D3D12_MESH_CB_SLOTS 256
+
 typedef struct
 {
    D3D12DescriptorHeap         handle; /* descriptor pool */
@@ -567,9 +572,19 @@ typedef struct
    {
       D3D12Resource            vbo;
       D3D12_VERTEX_BUFFER_VIEW view;
+      D3D12_INDEX_BUFFER_VIEW  ibo_view;
       uint64_t                 last_draw;
       uint32_t                 id;
    } meshes[4];
+   /* Plain meshes: their pipeline, and a ring of constant slots in an
+    * upload buffer kept mapped, each tagged with the fence value of the
+    * frame that last used it */
+   D3D12PipelineState              mesh_pipe;
+   D3D12Resource                   mesh_cb;
+   uint8_t                        *mesh_cb_mapped;
+   D3D12_GPU_VIRTUAL_ADDRESS       mesh_cb_va;
+   UINT64                          mesh_cb_fence[D3D12_MESH_CB_SLOTS];
+   unsigned                        mesh_cb_next;
    struct
    {
       D3D12Resource vbo;
@@ -1488,12 +1503,20 @@ static int d3d12_mesh_slot(d3d12_video_t *d3d12,
       d3d12->meshes[slot].id  = 0;
    }
 
+   /* Vertices, then any indices, in the one upload buffer */
    d3d12->meshes[slot].view.StrideInBytes  = sizeof(gfx_display_mesh_vertex_t);
    d3d12->meshes[slot].view.SizeInBytes    = mesh->vertex_count
       * sizeof(gfx_display_mesh_vertex_t);
+   d3d12->meshes[slot].ibo_view.SizeInBytes = mesh->index_count
+      * sizeof(uint16_t);
+   d3d12->meshes[slot].ibo_view.Format      = DXGI_FORMAT_R16_UINT;
    d3d12->meshes[slot].view.BufferLocation = d3d12_create_buffer(
-         d3d12->device, d3d12->meshes[slot].view.SizeInBytes,
+         d3d12->device, d3d12->meshes[slot].view.SizeInBytes
+         + d3d12->meshes[slot].ibo_view.SizeInBytes,
          &d3d12->meshes[slot].vbo);
+   d3d12->meshes[slot].ibo_view.BufferLocation =
+      d3d12->meshes[slot].view.BufferLocation
+      + d3d12->meshes[slot].view.SizeInBytes;
    if (!d3d12->meshes[slot].vbo)
       return -1;
    read_range.Begin = 0;
@@ -1505,9 +1528,102 @@ static int d3d12_mesh_slot(d3d12_video_t *d3d12,
       return -1;
    }
    memcpy(mapped, mesh->vertices, d3d12->meshes[slot].view.SizeInBytes);
+   if (mesh->indices)
+      memcpy((uint8_t*)mapped + d3d12->meshes[slot].view.SizeInBytes,
+            mesh->indices, d3d12->meshes[slot].ibo_view.SizeInBytes);
    D3D12Unmap(d3d12->meshes[slot].vbo, 0, NULL);
    d3d12->meshes[slot].id = mesh->id;
    return slot;
+}
+
+/* The next of the mesh constant slots, unless the GPU may still read it:
+ * each is tagged with the fence value of the frame that used it, and
+ * the ring is not waited on - a draw that finds the next slot busy is
+ * streamed instead */
+static bool d3d12_mesh_cb_slot(d3d12_video_t *d3d12, unsigned *slot)
+{
+   UINT64 done = d3d12->queue.fence->lpVtbl->GetCompletedValue(
+         d3d12->queue.fence);
+   unsigned s  = d3d12->mesh_cb_next;
+   if (d3d12->mesh_cb_fence[s] > done)
+      return false;
+   d3d12->mesh_cb_fence[s] = d3d12->queue.fenceValue + 1;
+   d3d12->mesh_cb_next     = (s + 1) % D3D12_MESH_CB_SLOTS;
+   *slot                   = s;
+   return true;
+}
+
+static bool gfx_display_d3d12_mesh_draw(void *data, unsigned video_dims,
+      const gfx_display_mesh_t *mesh, const float *mvp,
+      uintptr_t texture, const float *tint)
+{
+   /* The vertex stage's constant buffer: a float4x4, then a float4 */
+   struct
+   {
+      math_matrix_4x4 mvp;
+      float tint[4];
+   } ubo;
+   math_matrix_4x4 user;
+   D3D12GraphicsCommandList cmd;
+   d3d12_video_t *d3d12  = (d3d12_video_t*)data;
+   d3d12_texture_t *tex  = (d3d12_texture_t*)texture;
+   unsigned cb;
+   int slot;
+
+   (void)video_dims;
+   if (     !d3d12 || !mesh || !tex || !d3d12->mesh_pipe
+         || !d3d12->mesh_cb_mapped)
+      return false;
+#ifdef HAVE_DXGI_HDR
+   /* Built for the swapchain's own format: an HDR target streams */
+   if (     (d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM)
+         || (d3d12->chain.current_rt_format == DXGI_FORMAT_R16G16B16A16_FLOAT))
+      return false;
+#endif
+   if ((slot = d3d12_mesh_slot(d3d12, mesh)) < 0)
+      return false;
+   if (!d3d12_mesh_cb_slot(d3d12, &cb))
+      return false;
+   d3d12->meshes[slot].last_draw = ++d3d12->mesh_draws;
+   cmd = d3d12->queue.cmd;
+
+   /* Through the same MVP the quads go through, so the display's 0..1
+    * space lands where theirs does */
+   memcpy(user.data, mvp, sizeof(user.data));
+   matrix_4x4_multiply(ubo.mvp, d3d12->ubo_values.mvp, user);
+   memcpy(ubo.tint, tint, sizeof(ubo.tint));
+   memcpy(d3d12->mesh_cb_mapped + (size_t)cb * D3D12_MESH_CB_SIZE,
+         &ubo, sizeof(ubo));
+
+   if (tex->dirty)
+      d3d12_upload_texture(cmd, tex, d3d12);
+   cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->mesh_pipe);
+   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_UBO,
+         d3d12->mesh_cb_va + (D3D12_GPU_VIRTUAL_ADDRESS)cb * D3D12_MESH_CB_SIZE);
+   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
+         tex->gpu_descriptor[0]);
+   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
+         tex->sampler);
+   cmd->lpVtbl->IASetPrimitiveTopology(cmd,
+         mesh->topology == GFX_MESH_TRIANGLE_STRIP
+         ? D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP
+         : D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+   cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->meshes[slot].view);
+   if (mesh->indices)
+   {
+      cmd->lpVtbl->IASetIndexBuffer(cmd, &d3d12->meshes[slot].ibo_view);
+      cmd->lpVtbl->DrawIndexedInstanced(cmd, mesh->index_count, 1, 0, 0, 0);
+   }
+   else
+      cmd->lpVtbl->DrawInstanced(cmd, mesh->vertex_count, 1, 0, 0);
+
+   /* Back to what the quads after this one draw with */
+   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_UBO,
+         d3d12->ubo_view.BufferLocation);
+   cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
+   cmd->lpVtbl->IASetPrimitiveTopology(cmd, D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+   cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->sprites.vbo_view);
+   return true;
 }
 
 static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
@@ -3925,6 +4041,49 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       vs_code = NULL;
       ps_code = NULL;
    }
+   /* gfx_display meshes, read as stored: three floats, then two 16-bit
+    * and four 8-bit normalised integers. Without the pipeline or its
+    * constant ring meshes are streamed through draw() instead. */
+   {
+      static const char shader[] =
+#include "d3d_shaders/mesh_sm4.hlsl.h"
+         ;
+      static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
+         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,
+            D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "TEXCOORD", 0, DXGI_FORMAT_R16G16_UNORM, 0, 12,
+            D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+         { "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 16,
+            D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+      };
+      if (     d3d_compile(shader, sizeof(shader), NULL, "VSMain", "vs_5_0", &vs_code)
+            && d3d_compile(shader, sizeof(shader), NULL, "PSMain", "ps_5_0", &ps_code))
+      {
+         desc.BlendState.RenderTarget[0]     = d3d12_blend_enable_desc;
+         desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+         desc.InputLayout.pInputElementDescs = inputElementDesc;
+         desc.InputLayout.NumElements        = countof(inputElementDesc);
+         d3d12_init_pipeline(
+               d3d12->device, vs_code, ps_code, NULL, &desc,
+               &d3d12->mesh_pipe);
+      }
+      Release(vs_code);
+      Release(ps_code);
+      vs_code = NULL;
+      ps_code = NULL;
+      if (d3d12->mesh_pipe)
+      {
+         D3D12_RANGE read_range;
+         void *mapped = NULL;
+         d3d12->mesh_cb_va = d3d12_create_buffer(d3d12->device,
+               D3D12_MESH_CB_SIZE * D3D12_MESH_CB_SLOTS, &d3d12->mesh_cb);
+         read_range.Begin  = 0;
+         read_range.End    = 0;
+         if (     d3d12->mesh_cb
+               && SUCCEEDED(D3D12Map(d3d12->mesh_cb, 0, &read_range, &mapped)))
+            d3d12->mesh_cb_mapped = (uint8_t*)mapped;
+      }
+   }
    {
       static const char shader[] =
 #include "d3d_shaders/sprite_sm4.hlsl.h"
@@ -4179,6 +4338,9 @@ static void d3d12_gfx_free(void* data)
    d3d12_free_shader_preset(d3d12);
 
    Release(d3d12->sprites.vbo);
+   Release(d3d12->mesh_pipe);
+   Release(d3d12->mesh_cb);
+   d3d12->mesh_cb_mapped = NULL;
    {
       unsigned m;
       for (m = 0; m < ARRAY_SIZE(d3d12->meshes); m++)
@@ -9055,5 +9217,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d12 = {
    true,
    true,
    gfx_display_d3d12_scissor_begin,
-   gfx_display_d3d12_scissor_end
+   gfx_display_d3d12_scissor_end,
+   gfx_display_d3d12_mesh_draw
 };

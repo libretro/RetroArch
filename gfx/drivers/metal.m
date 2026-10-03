@@ -332,6 +332,8 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
 - (instancetype)initWithContext:(Context *)context;
 - (void)drawPipeline:(gfx_display_ctx_draw_t *)draw;
 - (void)draw:(gfx_display_ctx_draw_t *)draw;
+- (BOOL)drawMesh:(const gfx_display_mesh_t *)mesh mvp:(const float *)mvp
+      texture:(uintptr_t)texture tint:(const float *)tint dims:(unsigned)video_dims;
 - (void)setScissorRect:(MTLScissorRect)rect;
 - (void)clearScissorRect;
 
@@ -3132,6 +3134,14 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    BOOL _useScissorRect;
    Uniforms _uniforms;
    bool _clearNextRender;
+   /* gfx_display meshes: the pipeline, and each mesh's buffers by id */
+   id<MTLRenderPipelineState> _meshState;
+   BOOL _meshStateFailed;
+   id<MTLBuffer> _meshVbo[4];
+   id<MTLBuffer> _meshIbo[4];
+   uint32_t _meshId[4];
+   uint64_t _meshLast[4];
+   uint64_t _meshDraws;
 }
 
 - (instancetype)initWithContext:(Context *)context
@@ -3149,6 +3159,13 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
 #if !__has_feature(objc_arc)
 - (void)dealloc
 {
+   unsigned i;
+   for (i = 0; i < 4; i++)
+   {
+      [_meshVbo[i] release];
+      [_meshIbo[i] release];
+   }
+   [_meshState release];
    [_context release];
    [super dealloc];
 }
@@ -3247,6 +3264,219 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    _uniforms.time = disp_get_ptr()->effect_time + 0.01f;
    if (_uniforms.time > 65536.0f)
       _uniforms.time -= 65536.0f;
+}
+
+/* gfx_display meshes. The shader is compiled here from its source
+ * rather than taken from the library the others come from, so a device
+ * or OS that cannot compile it draws its meshes streamed instead. */
+- (BOOL)_initMeshState
+{
+   NSError *err                     = nil;
+   id<MTLDevice> device             = _context.device;
+   id<MTLLibrary> lib;
+   MTLVertexDescriptor *vd;
+   MTLRenderPipelineDescriptor *psd;
+   MTLRenderPipelineColorAttachmentDescriptor *ca;
+   NSString *src = [NSString stringWithFormat:@
+      "#include <metal_stdlib>\n"
+      "using namespace metal;\n"
+      "struct MeshIn  { float3 position [[attribute(0)]];"
+      " float2 texCoord [[attribute(1)]]; float4 color [[attribute(2)]]; };\n"
+      "struct MeshUniforms { float4x4 mvp; float4 tint; };\n"
+      "struct MeshOut { float4 position [[position]]; float2 texCoord; float4 color; };\n"
+      "vertex MeshOut mesh_vertex(MeshIn in [[stage_in]],"
+      " constant MeshUniforms &u [[buffer(%d)]])\n"
+      "{ MeshOut out; out.position = u.mvp * float4(in.position, 1.0);"
+      " out.texCoord = in.texCoord; out.color = in.color * u.tint; return out; }\n"
+      "fragment float4 mesh_fragment(MeshOut in [[stage_in]],"
+      " texture2d<float> tex [[texture(%d)]], sampler samp [[sampler(%d)]])\n"
+      "{ return in.color * tex.sample(samp, in.texCoord); }\n",
+      (int)BufferIndexUniforms, (int)TextureIndexColor, (int)SamplerIndexDraw];
+
+   _meshStateFailed = YES;
+   if (!device)
+      return NO;
+   lib = RARCH_AUTORELEASE_R([device newLibraryWithSource:src options:nil error:&err]);
+   if (!lib)
+   {
+      RARCH_WARN("[Metal] Mesh shader unavailable, meshes are streamed: %s.\n",
+            err ? err.localizedDescription.UTF8String : "");
+      return NO;
+   }
+
+   /* Read as stored: three floats, then two 16-bit and four 8-bit
+    * normalised integers */
+   vd                                      = RARCH_AUTORELEASE_R([MTLVertexDescriptor new]);
+   vd.attributes[0].offset                 = 0;
+   vd.attributes[0].format                 = MTLVertexFormatFloat3;
+   vd.attributes[0].bufferIndex            = BufferIndexPositions;
+   vd.attributes[1].offset                 = 12;
+   vd.attributes[1].format                 = MTLVertexFormatUShort2Normalized;
+   vd.attributes[1].bufferIndex            = BufferIndexPositions;
+   vd.attributes[2].offset                 = 16;
+   vd.attributes[2].format                 = MTLVertexFormatUChar4Normalized;
+   vd.attributes[2].bufferIndex            = BufferIndexPositions;
+   vd.layouts[BufferIndexPositions].stride = sizeof(gfx_display_mesh_vertex_t);
+
+   psd                            = RARCH_AUTORELEASE_R([MTLRenderPipelineDescriptor new]);
+   psd.label                      = @"mesh";
+   ca                             = psd.colorAttachments[0];
+   ca.pixelFormat                 = MTLPixelFormatBGRA8Unorm;
+   ca.blendingEnabled             = YES;
+   ca.sourceRGBBlendFactor        = MTLBlendFactorSourceAlpha;
+   ca.destinationRGBBlendFactor   = MTLBlendFactorOneMinusSourceAlpha;
+   ca.sourceAlphaBlendFactor      = MTLBlendFactorSourceAlpha;
+   ca.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+   psd.sampleCount                = 1;
+   psd.vertexDescriptor           = vd;
+   psd.vertexFunction             = RARCH_AUTORELEASE_R([lib newFunctionWithName:@"mesh_vertex"]);
+   psd.fragmentFunction           = RARCH_AUTORELEASE_R([lib newFunctionWithName:@"mesh_fragment"]);
+   if (!psd.vertexFunction || !psd.fragmentFunction)
+      return NO;
+   _meshState = [device newRenderPipelineStateWithDescriptor:psd error:&err];
+   if (!_meshState)
+   {
+      RARCH_WARN("[Metal] Mesh pipeline unavailable, meshes are streamed: %s.\n",
+            err ? err.localizedDescription.UTF8String : "");
+      return NO;
+   }
+   _meshStateFailed = NO;
+   return YES;
+}
+
+/* The slot whose buffers hold @mesh, made the first time it is drawn;
+ * the one drawn longest ago gives way when all are taken. A command
+ * buffer keeps what it draws from alive, so letting go of a buffer here
+ * is safe while a frame still reads it. -1 when none can be had. */
+- (int)_meshSlot:(const gfx_display_mesh_t *)mesh
+{
+   id<MTLDevice> device = _context.device;
+   uint64_t oldest      = (uint64_t)-1;
+   int slot             = -1;
+   unsigned i;
+
+   for (i = 0; i < 4; i++)
+   {
+      if (_meshVbo[i] && _meshId[i] == mesh->id)
+         return (int)i;
+      if (!_meshVbo[i])
+      {
+         if (slot < 0 || _meshVbo[slot])
+            slot = (int)i;
+      }
+      else if ((slot < 0 || _meshVbo[slot]) && _meshLast[i] < oldest)
+      {
+         oldest = _meshLast[i];
+         slot   = (int)i;
+      }
+   }
+   if (slot < 0 || !device)
+      return -1;
+   RARCH_RELEASE(_meshVbo[slot]);
+   _meshVbo[slot] = nil;
+   RARCH_RELEASE(_meshIbo[slot]);
+   _meshIbo[slot] = nil;
+   _meshId[slot]  = 0;
+
+   _meshVbo[slot] = [device newBufferWithBytes:mesh->vertices
+      length:mesh->vertex_count * sizeof(gfx_display_mesh_vertex_t)
+      options:MTLResourceStorageModeShared];
+   if (!_meshVbo[slot])
+      return -1;
+   if (mesh->indices)
+   {
+      _meshIbo[slot] = [device newBufferWithBytes:mesh->indices
+         length:mesh->index_count * sizeof(uint16_t)
+         options:MTLResourceStorageModeShared];
+      if (!_meshIbo[slot])
+      {
+         RARCH_RELEASE(_meshVbo[slot]);
+         _meshVbo[slot] = nil;
+         return -1;
+      }
+   }
+   _meshId[slot] = mesh->id;
+   return slot;
+}
+
+- (BOOL)drawMesh:(const gfx_display_mesh_t *)mesh mvp:(const float *)mvp
+      texture:(uintptr_t)texture tint:(const float *)tint dims:(unsigned)video_dims
+{
+   /* The vertex stage's constants: a float4x4, then a float4 */
+   struct
+   {
+      matrix_float4x4 mvp;
+      vector_float4   tint;
+   } u;
+   float flipped[16];
+   unsigned c;
+   int slot;
+   MTLPrimitiveType prim;
+   Texture *tex                    = (__bridge Texture *)(void *)texture;
+   id<MTLRenderCommandEncoder> rce = _context.rce;
+
+   if (!mesh || tex == nil || !rce)
+      return NO;
+   if (!_meshState && !_meshStateFailed)
+      [self _initMeshState];
+   if (!_meshState)
+      return NO;
+   if ((slot = [self _meshSlot:mesh]) < 0)
+      return NO;
+   _meshLast[slot] = ++_meshDraws;
+
+   /* The display's 0..1 space is bottom-up, as draw: bakes it: y
+    * becomes w - y, the homogeneous 1 - y, before the projection */
+   memcpy(flipped, mvp, sizeof(flipped));
+   for (c = 0; c < 4; c++)
+      flipped[c * 4 + 1] = mvp[c * 4 + 3] - mvp[c * 4 + 1];
+   u.mvp  = simd_mul(_uniforms.projectionMatrix, make_matrix_float4x4(flipped));
+   u.tint = simd_make_float4(tint[0], tint[1], tint[2], tint[3]);
+
+   if (_clearNextRender)
+   {
+      [_context resetRenderViewport:kFullscreenViewport];
+      [_context drawQuadX:0
+                        y:0
+                        w:1
+                        h:1
+                        r:(float)_clearColor.red
+                        g:(float)_clearColor.green
+                        b:(float)_clearColor.blue
+                        a:(float)_clearColor.alpha
+      ];
+      _clearNextRender = NO;
+   }
+   {
+      /* The whole display, as draw: sets it for a strip at the origin */
+      MTLViewport vp = {
+         .originX = 0,
+         .originY = VIDEO_SCALE_H(_context.viewport->full_dims)
+                  - VIDEO_SCALE_H(video_dims),
+         .width   = VIDEO_SCALE_W(video_dims),
+         .height  = VIDEO_SCALE_H(video_dims),
+         .znear   = 0,
+         .zfar    = 1,
+      };
+      [rce setViewport:vp];
+   }
+   if (_useScissorRect)
+      [rce setScissorRect:_scissorRect];
+
+   prim = (mesh->topology == GFX_MESH_TRIANGLE_STRIP)
+      ? MTLPrimitiveTypeTriangleStrip : MTLPrimitiveTypeTriangle;
+   [rce setRenderPipelineState:_meshState];
+   [rce setVertexBytes:&u length:sizeof(u) atIndex:BufferIndexUniforms];
+   [rce setVertexBuffer:_meshVbo[slot] offset:0 atIndex:BufferIndexPositions];
+   [rce setFragmentTexture:tex.texture atIndex:TextureIndexColor];
+   [rce setFragmentSamplerState:tex.sampler atIndex:SamplerIndexDraw];
+   if (mesh->indices)
+      [rce drawIndexedPrimitives:prim indexCount:mesh->index_count
+         indexType:MTLIndexTypeUInt16 indexBuffer:_meshIbo[slot]
+         indexBufferOffset:0];
+   else
+      [rce drawPrimitives:prim vertexStart:0 vertexCount:mesh->vertex_count];
+   return YES;
 }
 
 - (void)draw:(gfx_display_ctx_draw_t *)draw
@@ -3572,6 +3802,17 @@ static void gfx_display_metal_draw(gfx_display_ctx_draw_t *draw,
    MetalDriver *md = (__bridge MetalDriver *)data;
    if (md && draw)
       [md.display draw:draw];
+}
+
+static bool gfx_display_metal_mesh_draw(void *data, unsigned video_dims,
+      const gfx_display_mesh_t *mesh, const float *mvp,
+      uintptr_t texture, const float *tint)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (!md || !md.display)
+      return false;
+   return [md.display drawMesh:mesh mvp:mvp texture:texture tint:tint
+      dims:video_dims] ? true : false;
 }
 
 static void gfx_display_metal_draw_pipeline(
@@ -7640,5 +7881,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
     * compiler had been saying so for a while. */
    true,
    gfx_display_metal_scissor_begin,
-   gfx_display_metal_scissor_end
+   gfx_display_metal_scissor_end,
+   gfx_display_metal_mesh_draw
 };
