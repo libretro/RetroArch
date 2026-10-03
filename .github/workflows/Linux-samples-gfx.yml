@@ -615,6 +615,29 @@ jobs:
           make clean all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./gfx_widgets_task_gate_test
           echo "[pass] gfx_widgets_task_gate_test (TSan)"
+      - name: Build and run win32_msg_route_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/win32_msg_route
+        run: |
+          set -eu
+          # What the Win32 window procedure does with a message.
+          # gfx/common/win32_common.c had twelve window procedures, one
+          # for each video family times each kind of input driver,
+          # built on three copies of one long switch. They are one
+          # procedure now, which asks win32_msg_route() what to do with
+          # a message. The three switches are written out in the test
+          # as they stood, and for every message - with and without the
+          # hotplug timer's id, on the desktop and on the Xbox, with
+          # and without threads - the route must be the steps the
+          # switch for that kind of input driver took. Raw input's
+          # keys made into keyboard events a second time, which is
+          # what routing them like another driver's would do, is put
+          # back and asserted to be caught.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 120 ./win32_msg_route_test
+          make clean
+          echo "[pass] win32_msg_route_test (ASan)"
       - name: Build and run display_servers_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/display_servers
