@@ -474,21 +474,48 @@ static int32_t xinput_joypad_button(unsigned port, uint16_t joykey)
 {
    int xuser                  = pad_index_to_xuser_index(port);
    uint16_t btn_word          = 0;
-   xinput_joypad_state *state = &g_xinput_states[xuser];
+   xinput_joypad_state *state;
+   /* a port with no controller on it: there is no state to index
+    * (this used to read the entry before the first) */
+   if (xuser < 0)
+      return 0;
+   state                      = &g_xinput_states[xuser];
    if (!state->connected)
       return 0;
    btn_word                   = state->xstate.Gamepad.wButtons;
    return xinput_joypad_button_state(xuser, btn_word, port, joykey);
 }
 
+/* Every plain button of the pad at once, as xinput_joypad_button()
+ * gives them one by one; the d-pad is a hat and is read through
+ * xinput_joypad_button() with a hat key. This is what lets the
+ * frontend copy the pad once a poll (the snapshot bridge in
+ * input_driver.c) instead of calling in for each button. */
+static void xinput_joypad_get_buttons(unsigned port, input_bits_t *state)
+{
+   unsigned i;
+   uint16_t btn_word;
+   int xuser = pad_index_to_xuser_index(port);
+
+   BIT256_CLEAR_ALL_PTR(state);
+   if (xuser < 0)
+      return;
+   btn_word = g_xinput_states[xuser].xstate.Gamepad.wButtons;
+   for (i = 0; i < g_xinput_num_buttons; i++)
+      if (btn_word & button_index_to_bitmap_code[i])
+         BIT256_SET_PTR(state, i);
+}
+
 static int16_t xinput_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    int xuser                  = pad_index_to_xuser_index(port);
-   xinput_joypad_state *state = &g_xinput_states[xuser];
-   XINPUT_GAMEPAD *pad        = &(state->xstate.Gamepad);
+   xinput_joypad_state *state;
+   if (xuser < 0)
+      return 0;
+   state                      = &g_xinput_states[xuser];
    if (!state->connected)
       return 0;
-   return xinput_joypad_axis_state(pad, port, joyaxis);
+   return xinput_joypad_axis_state(&state->xstate.Gamepad, port, joyaxis);
 }
 
 static int16_t xinput_joypad_state_func(
@@ -501,8 +528,12 @@ static int16_t xinput_joypad_state_func(
    int16_t ret                = 0;
    uint16_t port_idx          = joypad_info->joy_idx;
    int xuser                  = pad_index_to_xuser_index(port_idx);
-   xinput_joypad_state *state = &g_xinput_states[xuser];
-   XINPUT_GAMEPAD *pad        = &state->xstate.Gamepad;
+   xinput_joypad_state *state;
+   XINPUT_GAMEPAD *pad;
+   if (xuser < 0)
+      return 0;
+   state                      = &g_xinput_states[xuser];
+   pad                        = &state->xstate.Gamepad;
    if (!state->connected)
       return 0;
    btn_word                   = state->xstate.Gamepad.wButtons;
@@ -667,7 +698,7 @@ input_device_driver_t xinput_joypad = {
    xinput_joypad_destroy,
    xinput_joypad_button,
    xinput_joypad_state_func,
-   NULL,
+   xinput_joypad_get_buttons,
    xinput_joypad_axis,
    xinput_joypad_poll,
    xinput_joypad_rumble,
