@@ -10526,6 +10526,8 @@ static void xmb_free(void *data)
 
    if (xmb)
    {
+      /* Theme textures still uploading land nowhere */
+      gfx_display_texture_loads_cancel(xmb, sizeof(*xmb));
       /* Invalidate any in-flight async icon loads before freeing
        * the nodes they would write into */
       xmb_icon_load_gen++;
@@ -10560,6 +10562,8 @@ static void xmb_context_bg_destroy(xmb_handle_t *xmb)
    if (!xmb)
       return;
 
+   gfx_display_texture_loads_cancel(&xmb->textures.bg,
+         sizeof(xmb->textures.bg));
    video_driver_texture_unload(&xmb->textures.bg);
    gfx_display_deinit_white_texture();
 }
@@ -10576,7 +10580,7 @@ static bool xmb_load_image(void *userdata, void *data,
    {
       case MENU_IMAGE_WALLPAPER:
          xmb_context_bg_destroy(xmb);
-         video_driver_texture_load(data,
+         gfx_display_texture_load((struct texture_image*)data,
                gfx_display_texture_filter(),
                &xmb->textures.bg);
          gfx_display_init_white_texture();
@@ -10849,6 +10853,9 @@ static void xmb_context_destroy(void *data)
 
    if (!xmb)
       return;
+
+   /* Theme textures still uploading land nowhere */
+   gfx_display_texture_loads_cancel(xmb, sizeof(*xmb));
 
    /* Signal the render path to stop using textures/fonts.
     * Under threaded video, xmb_frame() may be mid-render on

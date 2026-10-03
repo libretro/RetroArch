@@ -109,6 +109,7 @@ static void gfx_widget_screenshot_dispose(void *userdata)
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
 
    state->loaded  = false;
+   gfx_display_texture_loads_cancel(&state->texture, sizeof(state->texture));
    video_driver_texture_unload(&state->texture);
    state->texture = 0;
 }
@@ -409,6 +410,7 @@ static void gfx_widget_screenshot_iterate(
       video_driver_state_t *video_st = video_state_get_ptr();
       gfx_timer_ctx_entry_t timer;
 
+      gfx_display_texture_loads_cancel(&state->texture, sizeof(state->texture));
       video_driver_texture_unload(&state->texture);
 
       state->texture = 0;

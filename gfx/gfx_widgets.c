@@ -2644,6 +2644,9 @@ static void gfx_widgets_context_destroy(dispgfx_widget_t *p_dispwidget)
 {
    size_t i;
 
+   /* Icons still uploading land nowhere */
+   gfx_display_texture_loads_cancel(p_dispwidget, sizeof(*p_dispwidget));
+
    for (i = 0; i < ARRAY_SIZE(widgets); i++)
    {
       const gfx_widget_t* widget = widgets[i];
@@ -2791,6 +2794,7 @@ void gfx_widgets_ai_service_overlay_unload(void)
    dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
    if (gfx_widgets_ai_service_overlay_get_state() == 1)
    {
+      gfx_display_texture_loads_cancel(&p_dispwidget->ai_service_overlay_texture, sizeof(p_dispwidget->ai_service_overlay_texture));
       video_driver_texture_unload(&p_dispwidget->ai_service_overlay_texture);
       p_dispwidget->ai_service_overlay_texture = 0;
       gfx_widgets_ai_service_overlay_set_state(0);

@@ -32,6 +32,9 @@
 
 #include "../input/input_osk.h"
 #include "gfx_surface.h"
+#ifdef HAVE_THREADS
+#include <queues/task_queue.h>
+#endif
 
 /* Standard reference DPI value, used when determining
  * DPI-aware scaling factors */
@@ -1607,6 +1610,128 @@ void gfx_display_draw_keyboard(
    }
 }
 
+/* ---- Still images through a surface, for callers that own the handle
+ *
+ * Under threaded video a plain texture load is a round trip: the main
+ * thread posts it and waits for the video thread's reply, and a theme's
+ * icons are dozens of them. On the main thread with the wrapper running
+ * the load is a surface submit instead, queued, and the handle is
+ * written into the caller's slot when the upload completes - the caller
+ * owns the texture as before. A slot reset or freed while its load is
+ * in flight is cancelled first (gfx_display_texture_loads_cancel), and
+ * the completion then unloads the texture rather than write it. Without
+ * the wrapper, off the main thread, and for an image the plain load
+ * treats specially (compressed, 10-bit), nothing changes. */
+#ifdef HAVE_THREADS
+typedef struct gfx_display_tex_load
+{
+   struct gfx_display_tex_load *next;
+   uintptr_t                   *item;
+   /* The pixels, until the upload has read them */
+   struct texture_image         img;
+   /* img.pixels are freed at the completion; false for a borrowed
+    * buffer that outlives the load */
+   bool                         owned;
+   bool                         cancelled;
+} gfx_display_tex_load_t;
+
+/* Main thread only, as surface submits and their completions are */
+static gfx_display_tex_load_t *gfx_display_tex_loads;
+
+static void gfx_display_tex_load_release(void *user, gfx_surface_t *s,
+      unsigned slot)
+{
+   gfx_display_tex_load_t  *e = (gfx_display_tex_load_t*)user;
+   gfx_display_tex_load_t **p = &gfx_display_tex_loads;
+   (void)slot;
+
+   while (*p && *p != e)
+      p = &(*p)->next;
+   if (*p)
+      *p = e->next;
+
+   /* A handle of 0 is a load the driver refused or a teardown */
+   if (!e->cancelled && s->handle)
+   {
+      *e->item  = s->handle;
+      s->handle = 0;
+   }
+   gfx_surface_free(s);
+   if (e->owned)
+      image_texture_free(&e->img);
+   free(e);
+}
+#endif
+
+void gfx_display_texture_loads_cancel(const void *base, size_t len)
+{
+#ifdef HAVE_THREADS
+   const char             *lo = (const char*)base;
+   const char             *hi = lo + len;
+   gfx_display_tex_load_t *e;
+   for (e = gfx_display_tex_loads; e; e = e->next)
+      if ((const char*)e->item >= lo && (const char*)e->item < hi)
+         e->cancelled = true;
+#else
+   (void)base;
+   (void)len;
+#endif
+}
+
+static bool gfx_display_texture_load_ex(struct texture_image *ti,
+      enum texture_filter_type filter, uintptr_t *item, bool owned)
+{
+#ifdef HAVE_THREADS
+   if (     ti && item && ti->pixels && !ti->compressed && !ti->pix10
+         && VIDEO_SCALE_FITS(ti->width, ti->height)
+         && video_driver_thread_wrapper_active()
+         && task_is_on_main_thread())
+   {
+      gfx_surface_t          *s = gfx_surface_new_static(
+            VIDEO_SCALE_PACK(ti->width, ti->height), filter);
+      gfx_display_tex_load_t *e = s
+         ? (gfx_display_tex_load_t*)calloc(1, sizeof(*e)) : NULL;
+      if (e)
+      {
+         enum gfx_surface_submit_result r;
+         /* A newer load for the same slot replaces one in flight */
+         gfx_display_texture_loads_cancel(item, sizeof(*item));
+         e->item  = item;
+         e->img   = *ti;
+         e->owned = owned;
+         r        = gfx_surface_submit_external(s, ti->pixels,
+               ti->supports_rgba, gfx_display_tex_load_release, e);
+         if (r == GFX_SURFACE_SUBMIT_QUEUED)
+         {
+            e->next               = gfx_display_tex_loads;
+            gfx_display_tex_loads = e;
+            /* The load frees them now; the caller's free skips them */
+            if (owned)
+               ti->pixels         = NULL;
+            return true;
+         }
+         if (r == GFX_SURFACE_SUBMIT_DONE)
+         {
+            *item     = s->handle;
+            s->handle = 0;
+            gfx_surface_free(s);
+            free(e);
+            return true;
+         }
+      }
+      free(e);
+      gfx_surface_free(s);
+   }
+#endif
+   return video_driver_texture_load(ti, filter, item);
+}
+
+bool gfx_display_texture_load(struct texture_image *ti,
+      enum texture_filter_type filter, uintptr_t *item)
+{
+   return gfx_display_texture_load_ex(ti, filter, item, true);
+}
+
 /* NOTE: Reads image from memory buffer */
 bool gfx_display_reset_textures_list_buffer(
         uintptr_t *item, enum texture_filter_type filter_type,
@@ -1628,7 +1753,7 @@ bool gfx_display_reset_textures_list_buffer(
 
       /* If the poke interface doesn't support 
          texture load then free and return false */
-      if (!video_driver_texture_load(&ti, filter_type, item))
+      if (!gfx_display_texture_load(&ti, filter_type, item))
       {
          image_texture_free(&ti);
          return false;
@@ -1667,7 +1792,7 @@ bool gfx_display_reset_textures_list(
    if (dims)
       *dims = VIDEO_SCALE_PACK(ti.width, ti.height);
 
-   if (!video_driver_texture_load(&ti,
+   if (!gfx_display_texture_load(&ti,
          filter_type, item))
    {
       image_texture_free(&ti);
@@ -1696,7 +1821,7 @@ bool gfx_display_reset_icon_texture(
    if (!image_texture_load(&ti, texture_path))
       return false;
 
-   if (!video_driver_texture_load(&ti, filter_type, item))
+   if (!gfx_display_texture_load(&ti, filter_type, item))
    {
       image_texture_free(&ti);
       return false;
@@ -1778,6 +1903,8 @@ bool gfx_display_load_icon(
 
 void gfx_display_deinit_white_texture(void)
 {
+   gfx_display_texture_loads_cancel(&gfx_white_texture,
+         sizeof(gfx_white_texture));
    if (gfx_white_texture)
       video_driver_texture_unload(&gfx_white_texture);
    gfx_white_texture = 0;
@@ -1798,8 +1925,9 @@ void gfx_display_init_white_texture(void)
     * beforehand, so an unset one is whatever the stack held. */
    ti.supports_rgba = gfx_surface_wants_rgba();
 
-   video_driver_texture_load(&ti,
-         TEXTURE_FILTER_NEAREST, &gfx_white_texture);
+   /* The pixel is static: lent to the load, never freed by it */
+   gfx_display_texture_load_ex(&ti,
+         TEXTURE_FILTER_NEAREST, &gfx_white_texture, false);
 }
 
 void gfx_display_free(void)

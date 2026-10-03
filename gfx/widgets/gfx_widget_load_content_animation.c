@@ -212,6 +212,7 @@ static void gfx_widget_load_content_animation_reset(void)
    /* Unload any icon texture */
    if (state->icon_texture)
    {
+      gfx_display_texture_loads_cancel(&state->icon_texture, sizeof(state->icon_texture));
       video_driver_texture_unload(&state->icon_texture);
       state->icon_texture = 0;
    }
@@ -224,6 +225,7 @@ static void gfx_widget_load_content_animation_load_icon(void)
    /* In all cases, unload any existing icon texture */
    if (state->icon_texture)
    {
+      gfx_display_texture_loads_cancel(&state->icon_texture, sizeof(state->icon_texture));
       video_driver_texture_unload(&state->icon_texture);
       state->icon_texture = 0;
    }
@@ -1116,6 +1118,7 @@ static void gfx_widget_load_content_animation_context_destroy(void)
    /* Unload any icon texture */
    if (state->icon_texture)
    {
+      gfx_display_texture_loads_cancel(&state->icon_texture, sizeof(state->icon_texture));
       video_driver_texture_unload(&state->icon_texture);
       state->icon_texture = 0;
    }

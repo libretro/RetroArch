@@ -4734,6 +4734,9 @@ static void ozone_free_node(ozone_node_t *node)
    if (!node)
       return;
 
+   /* Sidebar icons still uploading into it land nowhere */
+   gfx_display_texture_loads_cancel(node, sizeof(*node));
+
    if (node->console_name)
       free(node->console_name);
 
@@ -5296,6 +5299,7 @@ static void ozone_context_destroy_horizontal_list(ozone_handle_t *ozone)
 
       if (string_ends_with_size(path, ".lpl", strlen(path), STRLEN_CONST(".lpl")))
       {
+         gfx_display_texture_loads_cancel(node, sizeof(*node));
          video_driver_texture_unload(&node->icon);
          video_driver_texture_unload(&node->content_icon);
       }
@@ -9986,6 +9990,8 @@ static void ozone_free(void *data)
 
    if (ozone)
    {
+      /* Theme textures still uploading land nowhere */
+      gfx_display_texture_loads_cancel(ozone, sizeof(*ozone));
       /* Invalidate any in-flight async icon loads before freeing
        * the nodes they would write into */
       ozone_icon_load_gen++;
@@ -10632,6 +10638,9 @@ static void ozone_context_destroy(void *data)
 
    if (!ozone)
       return;
+
+   /* Theme textures still uploading land nowhere */
+   gfx_display_texture_loads_cancel(ozone, sizeof(*ozone));
 
    /* Signal the render path to stop using textures/fonts.
     * Under threaded video, ozone_frame() may be mid-render on

@@ -223,6 +223,9 @@ float gfx_display_get_dpi_scale(gfx_display_t *p_disp, void *settings_data,
 { (void)p_disp; (void)settings_data; (void)dims;
   (void)fullscreen; (void)is_widget; return 1.0f; }
 
+void gfx_display_texture_loads_cancel(const void *base, size_t len)
+{ (void)base; (void)len; }
+
 bool gfx_display_reset_textures_list_buffer(uintptr_t *item,
       enum texture_filter_type filter_type, void *buffer,
       unsigned buffer_len, enum image_type_enum image_type,

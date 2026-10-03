@@ -9754,6 +9754,8 @@ static void materialui_free(void *data)
    if (!mui)
       return;
 
+   /* Theme textures still uploading land nowhere */
+   gfx_display_texture_loads_cancel(mui, sizeof(*mui));
    /* Invalidate in-flight async icon loads */
    mui_icon_load_gen++;
 
@@ -9775,6 +9777,8 @@ static void materialui_context_bg_destroy(materialui_handle_t *mui)
    if (!mui)
       return;
 
+   gfx_display_texture_loads_cancel(&mui->textures.bg,
+         sizeof(mui->textures.bg));
    video_driver_texture_unload(&mui->textures.bg);
    gfx_display_deinit_white_texture();
 }
@@ -9811,6 +9815,9 @@ static void materialui_context_destroy(void *data)
 
    if (!mui)
       return;
+
+   /* Theme textures still uploading land nowhere */
+   gfx_display_texture_loads_cancel(mui, sizeof(*mui));
 
    /* Signal the render path to stop using textures/fonts.
     * Under threaded video, materialui_frame() may be mid-render
@@ -9861,7 +9868,7 @@ static bool materialui_load_image(void *userdata,
    if (type == MENU_IMAGE_WALLPAPER)
    {
       materialui_context_bg_destroy(mui);
-      video_driver_texture_load(data,
+      gfx_display_texture_load((struct texture_image*)data,
             gfx_display_texture_filter(), &mui->textures.bg);
       gfx_display_deinit_white_texture();
       gfx_display_init_white_texture();

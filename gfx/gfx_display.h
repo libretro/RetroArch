@@ -524,6 +524,20 @@ enum texture_filter_type gfx_display_texture_filter(void);
  * thread; see gfx_display.c. */
 enum texture_filter_type gfx_display_texture_filter_latched(void);
 
+/* Load @ti into the texture the caller owns at @item. Under threaded
+ * video, on the main thread, the upload is queued rather than waited
+ * for, and @item is written when it completes - a frame later, 0 until
+ * then - with the pixels taken from @ti (left NULL, so the caller's
+ * image_texture_free() skips them). Otherwise as
+ * video_driver_texture_load(). */
+bool gfx_display_texture_load(struct texture_image *ti,
+      enum texture_filter_type filter, uintptr_t *item);
+
+/* Before a texture slot in [@base, @base + @len) is reset or freed:
+ * a load still in flight into it unloads its texture on completion
+ * instead of writing the slot. */
+void gfx_display_texture_loads_cancel(const void *base, size_t len);
+
 bool gfx_display_reset_icon_texture(
       const char *texture_path,
       uintptr_t *item, enum texture_filter_type filter_type);
