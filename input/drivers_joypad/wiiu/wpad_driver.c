@@ -62,6 +62,7 @@ static void wpad_deregister(unsigned channel)
 
    input_autoconfigure_disconnect(slot, wpad_driver.ident);
    joypad_state.pads[slot].connected           = false;
+   pad_connection_release_slot(&joypad_state.pads[slot]);
    joypad_state.wpad.channel_slot_map[channel] = WPAD_INVALID_CHANNEL;
 }
 

@@ -75,6 +75,11 @@ struct joypad_connection
     void* connection;
     retro_atomic_int_t live;
     retro_atomic_int_t users;
+    /* Taken by pad_connection_find_vacant_pad() for whoever found the
+     * slot, so two threads connecting pads at once - a HID driver's
+     * and the input poll - never get the same one; given back by
+     * pad_connection_release_slot() when the pad is gone. */
+    retro_atomic_int_t claimed;
     bool connected;
 };
 
@@ -153,7 +158,11 @@ int16_t pad_connection_get_axis(joypad_connection_t *joyconn,
 bool pad_connection_has_interface(joypad_connection_t *joyconn,
    unsigned idx);
 
+/* A free slot, claimed for the caller until it is released. */
 int pad_connection_find_vacant_pad(joypad_connection_t *joyconn);
+void pad_connection_release_slot(joypad_connection_t *joyconn);
+/* Makes the entry after the last slot the list's end. */
+void pad_connection_mark_end(joypad_connection_t *joyconn);
 
 /* The slot, held for calls into its pad until pad_connection_release();
  * false, holding nothing, when it is not live. For a driver that calls

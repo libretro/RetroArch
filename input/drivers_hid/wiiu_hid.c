@@ -40,7 +40,7 @@ static void wiiu_hid_report_hid_error(const char *msg, wiiu_adapter_t *adapter, 
 {
    int16_t hid_err_code = err & 0xffff;
    int16_t err_category = (err >> 16) & 0xffff;
-   const char *device   = (adapter->device_name && *adapter->device_name) ? adapter->device_name : "unknown";
+   const char *device   = *adapter->device_name ? adapter->device_name : "unknown";
 
    switch (hid_err_code)
    {
@@ -732,6 +732,7 @@ static uint8_t wiiu_hid_try_init_driver(wiiu_adapter_t *adapter)
    if (!adapter->pad_driver_data)
    {
       RARCH_LOG("[HID] wiiu_hid_try_init_driver: Pad init failed.\n");
+      pad_connection_release_slot(&joypad_state.pads[slot]);
       return ADAPTER_STATE_DONE;
    }
 

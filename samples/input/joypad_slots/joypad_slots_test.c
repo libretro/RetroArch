@@ -11,6 +11,10 @@
  * the pad once it is deregistered, and for a driver that calls the
  * pad's interface itself under pad_connection_acquire().
  *
+ * And two threads looking for a vacant slot at once - a HID driver's
+ * thread and the input poll, on the Wii U - must never be given the
+ * same one.
+ *
  * The fake pad poisons its data in deinit before freeing it, and every
  * call checks it: a call into a pad already torn down counts, and
  * under ASan is a use-after-free. Its calls linger a little, to give
@@ -142,6 +146,38 @@ static void watchdog(int sig)
 
 #define CYCLES 3000
 
+/* ---- two threads connecting pads at once ---- */
+
+#define CLAIMS 20000
+
+static retro_atomic_int_t holders[4];
+static retro_atomic_int_t double_claims;
+
+static void claimer(void *unused)
+{
+   unsigned i;
+   (void)unused;
+   for (i = 0; i < CLAIMS; i++)
+   {
+      int slot = pad_connection_find_vacant_pad(slots);
+      if (slot < 0)
+         continue;
+      /* as the Wii U input drivers do: claim, mark, use, give back */
+      if (retro_atomic_fetch_add_int(&holders[slot], 1) != 0)
+         retro_atomic_fetch_add_int(&double_claims, 1);
+      slots[slot].connected = true;
+      {
+         /* hold it a moment, as a pad being set up is */
+         unsigned k;
+         for (k = 0; k < 64; k++)
+            retro_atomic_load_acquire_int(&holders[slot]);
+      }
+      retro_atomic_fetch_sub_int(&holders[slot], 1);
+      slots[slot].connected = false;
+      pad_connection_release_slot(&slots[slot]);
+   }
+}
+
 int main(void)
 {
    sthread_t *r[2];
@@ -186,6 +222,19 @@ int main(void)
    retro_atomic_store_release_int(&reading, 0);
    sthread_join(r[0]);
    sthread_join(r[1]);
+
+   /* Two threads find vacant slots at once: never the same one. */
+   r[0] = sthread_create(claimer, NULL);
+   r[1] = sthread_create(claimer, NULL);
+   sthread_join(r[0]);
+   sthread_join(r[1]);
+   if (retro_atomic_load_acquire_int(&double_claims))
+   {
+      printf("FAIL: a slot was handed to two threads at once %d time(s)\n",
+            retro_atomic_load_acquire_int(&double_claims));
+      failures++;
+   }
+
    pad_connection_destroy(slots);
    alarm(0);
 

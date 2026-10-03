@@ -217,6 +217,7 @@ static void kpad_deregister(unsigned channel)
       input_autoconfigure_disconnect(slot, kpad_driver.name(slot));
       joypad_state.kpad.wiimotes[channel].type = WIIMOTE_TYPE_NONE;
       joypad_state.pads[slot].connected = false;
+      pad_connection_release_slot(&joypad_state.pads[slot]);
 
       joypad_state.kpad.channel_slot_map[channel] = -1;
    }
