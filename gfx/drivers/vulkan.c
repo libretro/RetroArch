@@ -324,6 +324,13 @@ typedef struct vk
    unsigned hdr_subpixel_latched;
    unsigned num_swapchain_images;
    unsigned last_valid_index;
+   /* What everything that does not depend on the swapchain's size was
+    * last built for: its format, and the context's HDR flags. With
+    * num_swapchain_images above, that is all those resources are made
+    * from; see vulkan_check_swapchain(). */
+   VkFormat built_format;
+   uint32_t built_hdr_flags;
+   bool     built;
 
    video_info_t video;
 
@@ -5538,7 +5545,9 @@ if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
    }
 }
 
-static void vulkan_deinit_framebuffers(vk_t *vk)
+/* What is made of the swapchain's images themselves: a view of each
+ * and the framebuffer on it. */
+static void vulkan_deinit_backbuffers(vk_t *vk)
 {
    int i;
    for (i = 0; i < (int) vk->num_swapchain_images; i++)
@@ -5550,7 +5559,15 @@ static void vulkan_deinit_framebuffers(vk_t *vk)
       if (vk->backbuffers[i].view)
          vkDestroyImageView(vk->context->device,
                vk->backbuffers[i].view, NULL);
+
+      vk->backbuffers[i].framebuffer = VK_NULL_HANDLE;
+      vk->backbuffers[i].view        = VK_NULL_HANDLE;
    }
+}
+
+static void vulkan_deinit_framebuffers(vk_t *vk)
+{
+   vulkan_deinit_backbuffers(vk);
 
    vkDestroyRenderPass(vk->context->device, vk->render_pass, NULL);
    vkDestroyRenderPass(vk->context->device, vk->keep_render_pass, NULL);
@@ -6599,6 +6616,18 @@ static void vulkan_hdr_buffers_init(vk_t *vk, unsigned fallback_dims)
 }
 #endif
 
+/* The context's flags that the driver's resources are built by */
+#define VULKAN_BUILT_HDR_FLAGS (VK_CTX_FLAG_HDR_SUPPORT \
+      | VK_CTX_FLAG_HDR_ENABLE | VK_CTX_FLAG_HDR_SCRGB)
+
+/* Noted when everything has been built: what it was built for. */
+static void vulkan_note_built(vk_t *vk)
+{
+   vk->built_format    = vk->context->swapchain_format;
+   vk->built_hdr_flags = vk->context->flags & VULKAN_BUILT_HDR_FLAGS;
+   vk->built           = true;
+}
+
 static void *vulkan_init(const video_info_t *video,
       input_driver_t **input,
       void **input_data)
@@ -6896,6 +6925,7 @@ static void *vulkan_init(const video_info_t *video,
 
    /* Driver resources now match the context's current swapchain. */
    vk->context->flags &= ~VK_CTX_FLAG_INVALID_SWAPCHAIN;
+   vulkan_note_built(vk);
    return vk;
 
 error:
@@ -6903,9 +6933,38 @@ error:
    return NULL;
 }
 
+/* The driver's resources brought in line with the context's
+ * swapchain, which has changed.
+ *
+ * Nearly everything the driver builds is made from three things about
+ * the swapchain: its format (the render passes, and with them every
+ * pipeline), how many images it has (the command pools, descriptor
+ * pools and vertex and uniform buffers, one of each an image) and
+ * whether HDR is in play. The samplers, the default texture and the
+ * textures the core's frames are uploaded into are made from none of
+ * it. Only the views of the swapchain's images and the framebuffers
+ * on them are made from its size.
+ *
+ * A swapchain is replaced far more often for its size than for any of
+ * the rest: every resize of the window, every fullscreen toggle, and
+ * once at every start of the driver. All of the above used to be
+ * destroyed and built again each time. When the format, the image
+ * count and the HDR flags are what they were, only the views and
+ * framebuffers are; the rest is rebuilt when one of those changes, as
+ * before.
+ *
+ * RETROARCH_VULKAN_REBUILD_ALL=1 in the environment rebuilds
+ * everything every time, as it used to be. */
 static void vulkan_check_swapchain(vk_t *vk)
 {
    struct vulkan_filter_chain_swapchain_info filter_info;
+   static int rebuild_all = -1;
+
+   if (rebuild_all < 0)
+   {
+      const char *env = getenv("RETROARCH_VULKAN_REBUILD_ALL");
+      rebuild_all     = (env && env[0] == '1') ? 1 : 0;
+   }
 
    memset(vk->readback.record, 0, sizeof(vk->readback.record));
    vulkan_wait_own_submissions(vk);
@@ -6914,6 +6973,29 @@ static void vulkan_check_swapchain(vk_t *vk)
     * list. */
    vulkan_deferred_textures_flush(vk);
    vulkan_deferred_cmds_flush(vk);
+
+   if (     vk->context
+         && vk->built
+         && !rebuild_all
+         && vk->built_format    == vk->context->swapchain_format
+         && vk->built_hdr_flags == (vk->context->flags & VULKAN_BUILT_HDR_FLAGS)
+         && vk->num_swapchain_images == vk->context->num_swapchain_images)
+   {
+      /* Another size, and nothing else: what is made of the
+       * swapchain's images, and no more. */
+      vulkan_deinit_backbuffers(vk);
+      vulkan_init_framebuffers(vk);
+#ifdef VULKAN_HDR_SWAPCHAIN
+      if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+         vulkan_hdr_buffers_init(vk, vk->video_dims);
+#endif
+      RARCH_DBG("[Vulkan] Swapchain changed in size only: its framebuffers"
+            " are made again, everything else is kept.\n");
+      goto built;
+   }
+
+   RARCH_DBG("[Vulkan] Swapchain changed: everything built on it is made"
+         " again.\n");
    /* Retired in the same order as vulkan_free(). */
    vulkan_deinit_command_buffers(vk);
    vulkan_deinit_descriptor_pool(vk);
@@ -6992,7 +7074,9 @@ static void vulkan_check_swapchain(vk_t *vk)
          vkAllocateCommandBuffers(vk->context->device,
                &info, &vk->swapchain[i].cmd);
       }
+      vulkan_note_built(vk);
    }
+built:
    vk->context->flags              &= ~VK_CTX_FLAG_INVALID_SWAPCHAIN;
 
    filter_info.vp                   = vk->video_vp;
