@@ -271,6 +271,7 @@ typedef struct settings
       unsigned video_hard_sync_frames;
       unsigned video_frame_delay;
       unsigned video_viwidth;
+      unsigned video_ps2_mode;
       unsigned video_gamma;
       unsigned video_flicker_filter;
       unsigned video_aspect_ratio_idx;
@@ -1607,7 +1608,7 @@ bool config_overlay_enable_default(void);
 bool config_metal_arg_buffers_default(void);
 #endif
 
-void config_set_defaults(void *data, settings_t *target);
+void config_set_defaults(settings_t *target);
 
 void config_load(void *data);
 

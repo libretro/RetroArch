@@ -3638,6 +3638,11 @@ static struct config_uint_setting *populate_settings_uint(
 #if defined(GEKKO) || defined(_XBOX360)
    SETTING_UINT("gamma_correction",                 &settings->uints.video_gamma, true, DEFAULT_GAMMA, false);
 #endif
+#ifdef PS2
+   /* An entry of the PS2 driver's mode table: its modes are told apart
+    * by more than their size. */
+   SETTING_UINT("current_resolution_id",            &settings->uints.video_ps2_mode, true, 0, false);
+#endif
 #ifdef _XBOX1
    SETTING_UINT("flicker_filter_index",             &settings->uints.video_flicker_filter, true, DEFAULT_FLICKER_FILTER, false);
 #endif
@@ -5592,14 +5597,6 @@ static struct config_int_setting *populate_settings_int(
    return tmp;
 }
 
-static void video_driver_default_settings(global_t *global)
-{
-   if (!global)
-      return;
-
-   global->console.screen.resolutions.current.id = 0;
-}
-
 /* Moves built-in playlists from legacy location to 'playlists/builtin' */
 #define CONFIG_PLAYLIST_MIGRATION(playlist_path, playlist_tag) \
 { \
@@ -5635,13 +5632,12 @@ static void video_driver_default_settings(global_t *global)
  *
  * Set 'default' configuration values.
  **/
-void config_set_defaults(void *data, settings_t *target)
+void config_set_defaults(settings_t *target)
 {
    size_t i;
 #ifdef HAVE_MENU
    static bool first_initialized   = true;
 #endif
-   global_t *global                 = (global_t*)data;
    settings_t *settings             = target;
    recording_state_t *recording_st  = recording_state_get_ptr();
    int bool_settings_size           = SETTINGS_BOOL_COUNT_MAX;
@@ -6030,8 +6026,6 @@ void config_set_defaults(void *data, settings_t *target)
 
    *settings->paths.log_dir = '\0';
 
-   video_driver_default_settings(global);
-
    if (*g_defaults.dirs[DEFAULT_DIR_WALLPAPERS])
       configuration_set_string(settings,
             settings->paths.directory_dynamic_wallpapers,
@@ -6333,7 +6327,7 @@ void config_set_defaults(void *data, settings_t *target)
 void config_load(void *data)
 {
    global_t *global = (global_t*)data;
-   config_set_defaults(global, config_st);
+   config_set_defaults(config_st);
 #ifdef HAVE_CONFIGFILE
    config_parse_file(global);
 #endif
@@ -6576,16 +6570,6 @@ static config_file_t *open_default_config_file(void)
    path_set(RARCH_PATH_CONFIG, conf_path);
    return conf;
 }
-
-#ifdef RARCH_CONSOLE
-static void video_driver_load_settings(global_t *global,
-      config_file_t *conf)
-{
-   CONFIG_GET_INT_BASE(conf, global,
-         console.screen.resolutions.current.id,
-         "current_resolution_id");
-}
-#endif
 
 static void check_verbosity_settings(config_file_t *conf,
       settings_t *settings)
@@ -7044,11 +7028,6 @@ static bool config_load_file(global_t *global,
    if (config_get_path(conf, "libretro_directory", tmp_str, sizeof(tmp_str)))
       configuration_set_string(settings,
             settings->paths.directory_libretro, tmp_str);
-#endif
-
-#ifdef RARCH_CONSOLE
-   if (conf)
-      video_driver_load_settings(global, conf);
 #endif
 
    /* Post-settings load */
@@ -7996,7 +7975,7 @@ bool config_unload_override(void)
    {
       input_autoconf_backup_t bkp;
       bool have_bkp = input_autoconf_state_save(&bkp);
-      config_set_defaults(global_get_ptr(), config_st);
+      config_set_defaults(config_st);
       if (have_bkp)
          input_autoconf_state_restore(&bkp);
    }
@@ -8194,23 +8173,6 @@ static void config_parse_file(global_t *global)
    {
       RARCH_ERR("[Config] Config not found at: \"%s\".\n",
             config_path);
-   }
-}
-
-static void video_driver_save_settings(global_t *global, config_file_t *conf,
-      bool minimal, global_t *defaults_global)
-{
-   /* current_resolution_id */
-   if (   !minimal
-       || global->console.screen.resolutions.current.id !=
-          (defaults_global ? defaults_global->console.screen.resolutions.current.id : 0))
-   {
-      config_set_int(conf, "current_resolution_id",
-            global->console.screen.resolutions.current.id);
-   }
-   else
-   {
-      config_unset(conf, "current_resolution_id");
    }
 }
 
@@ -9062,7 +9024,6 @@ bool config_save_file(const char *path)
    uint32_t flags                                    = runloop_get_flags();
    config_file_t                              *conf  = config_file_new_from_path_to_string(path);
    settings_t                              *settings = config_st;
-   global_t *global                                  = global_get_ptr();
    int bool_settings_size                            = SETTINGS_BOOL_COUNT_MAX;
    int float_settings_size                           = SETTINGS_FLOAT_COUNT_MAX;
    int int_settings_size                             = SETTINGS_INT_COUNT_MAX;
@@ -9147,7 +9108,7 @@ bool config_save_file(const char *path)
             /* Populate the local defaults struct directly: config_st
              * stays what every other thread's config_get_ptr() returns.
              * input_config_reset() inside sets the default keybinds. */
-            config_set_defaults(global, defaults);
+            config_set_defaults(defaults);
 
             /* Capture default keybinds (set by input_config_reset() in config_set_defaults) */
             memcpy(defaults_binds, input_config_binds, MAX_USERS * sizeof(retro_keybind_set));
@@ -9638,9 +9599,6 @@ bool config_save_file(const char *path)
          config_unset(conf, "video_message_color");
       }
    }
-
-   if (conf)
-      video_driver_save_settings(global, conf, minimal, NULL);
 
 #ifdef HAVE_LAKKA
    if (settings->bools.ssh_enable)

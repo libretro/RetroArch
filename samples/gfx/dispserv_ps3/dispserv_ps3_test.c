@@ -33,7 +33,7 @@
  *  - each entry, taken through the menu's own round trip - the label
  *    menu_displaylist.c prints, parsed back the way
  *    action_cb_push_dropdown_item_resolution does - selects exactly
- *    that mode: current_resolution_id becomes its resolution id, the
+ *    that mode: the fullscreen size becomes its size, the
  *    video driver is reinitialised once (not at all when the mode is
  *    already the one in use), and the refresh rate and output size
  *    reported are the ones listed;
@@ -43,8 +43,9 @@
  *    before this the RSX driver ignored the setting entirely;
  *  - a set_resolution with no dims (the refresh rate autoswitch) and
  *    one naming a mode the display does not take both fail without
- *    touching the stored id or reinitialising anything;
- *  - the ids the config stores keep meaning the modes they did. */
+ *    touching the stored size or reinitialising anything;
+ *  - a stored size the display does not take, or no mode has, gives
+ *    the system menu's mode. */
 
 #include <math.h>
 #include <stdarg.h>
@@ -56,6 +57,7 @@
 
 #include "gfx/display_servers/dispserv_ps3.h"
 #include "command.h"
+#include "configuration.h"
 #include "retroarch.h"
 
 static int failures;
@@ -93,10 +95,24 @@ int32_t videoGetResolutionAvailability(uint32_t videoOut, uint32_t resolutionId,
 
 /* ---- stubbed RetroArch ---- */
 
-static global_t g_global;
-static unsigned reinits;
+static global_t   g_global;
+static settings_t g_settings;
+static unsigned   reinits;
 
-global_t *global_get_ptr(void) { return &g_global; }
+global_t   *global_get_ptr(void) { return &g_global; }
+settings_t *config_get_ptr(void) { return &g_settings; }
+
+static void store(unsigned dims)
+{
+   g_settings.uints.video_fullscreen_x = VIDEO_SCALE_W(dims);
+   g_settings.uints.video_fullscreen_y = VIDEO_SCALE_H(dims);
+}
+
+static unsigned stored(void)
+{
+   return VIDEO_SCALE_PACK(g_settings.uints.video_fullscreen_x,
+         g_settings.uints.video_fullscreen_y);
+}
 
 bool command_event(enum event_command action, void *data)
 {
@@ -192,7 +208,7 @@ static void test_display(void *data, const display_t *d)
       if (!(d->mask & BIT(all_ids[s])))
          continue;
       system_id = all_ids[s];
-      g_global.console.screen.resolutions.current.id = 0;
+      store(0);
 
       CHECK(ps3_display_server_resolution(system_id) == system_id,
             "%s: no choice does not give the system mode", d->name);
@@ -227,10 +243,9 @@ static void test_display(void *data, const display_t *d)
          reinits = 0;
          CHECK(dispserv_ps3.set_resolution(data, dims, (int)floor(hz), hz,
                   0, 0, 0, 0), "%s: '%s' refused", d->name, label);
-         CHECK(g_global.console.screen.resolutions.current.id
-               == list[i].idx, "%s: '%s' stored %u, want %u", d->name,
-               label, g_global.console.screen.resolutions.current.id,
-               list[i].idx);
+         CHECK(stored() == list[i].dims, "%s: '%s' stored %ux%u",
+               d->name, label, VIDEO_SCALE_W(stored()),
+               VIDEO_SCALE_H(stored()));
          CHECK(reinits == (in_use ? 0u : 1u),
                "%s: '%s' reinitialised %u times", d->name, label, reinits);
          CHECK(ps3_display_server_resolution(system_id) == list[i].idx,
@@ -268,23 +283,23 @@ static void test_fallbacks(void *data)
    system_id      = 2;
 
    /* A stored choice the display does not take (moved to another TV) */
-   g_global.console.screen.resolutions.current.id = 1;
+   store(VIDEO_SCALE_PACK(1920, 1080));
    CHECK(ps3_display_server_resolution(system_id) == 2,
          "unavailable choice not replaced by the system mode");
    dispserv_ps3.get_video_output_size(data, &dims, NULL, 0);
    CHECK(dims == VIDEO_SCALE_PACK(1280, 720), "reports the lost choice");
 
-   /* A stored id that names no mode */
-   g_global.console.screen.resolutions.current.id = 0x81;
-   CHECK(ps3_display_server_resolution(system_id) == 2, "id 0x81 used");
+   /* A stored size no mode has */
+   store(VIDEO_SCALE_PACK(800, 600));
+   CHECK(ps3_display_server_resolution(system_id) == 2, "800x600 used");
 
    /* Output state unreadable: the list still marks nothing wrongly */
-   g_global.console.screen.resolutions.current.id = 0;
+   store(0);
    state_fails = 1;
    CHECK(ps3_display_server_resolution(0) == 0, "invented a mode");
    state_fails = 0;
 
-   g_global.console.screen.resolutions.current.id = 4;
+   store(VIDEO_SCALE_PACK(720, 480));
    reinits = 0;
    CHECK(!dispserv_ps3.set_resolution(data, 0, 50, 50.0f, 0, 0, 0, 0),
          "refresh-rate-only switch accepted");
@@ -293,8 +308,8 @@ static void test_fallbacks(void *data)
    CHECK(!dispserv_ps3.set_resolution(data, VIDEO_SCALE_PACK(640, 480),
             59, 59.94f, 0, 0, 0, 0), "640x480 accepted");
    CHECK(reinits == 0, "a refused switch reinitialised");
-   CHECK(g_global.console.screen.resolutions.current.id == 4,
-         "a refused switch changed the stored id");
+   CHECK(stored() == VIDEO_SCALE_PACK(720, 480),
+         "a refused switch changed the stored size");
 }
 
 int main(void)

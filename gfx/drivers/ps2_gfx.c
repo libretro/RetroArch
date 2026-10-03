@@ -489,10 +489,12 @@ static void gsKit_flip(GSGLOBAL *gsGlobal)
 static void rmSetMode(ps2_video_t *ps2, int force)
 {
    struct rm_mode *mode;
-   global_t *global = global_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    /* we don't want to set the vmode without a reason... */
-   if (ps2->vmode == global->console.screen.resolutions.current.id && force == 0)
+   if (     ps2->vmode >= 0
+         && (unsigned)ps2->vmode == settings->uints.video_ps2_mode
+         && force == 0)
       return;
 
    /* Cleanup previous gsKit instance */
@@ -501,11 +503,11 @@ static void rmSetMode(ps2_video_t *ps2, int force)
       if (ps2->gsGlobal)
          rmEnd(ps2);
       /* Set new mode */
-      global->console.screen.resolutions.current.id = ps2->vmode;
+      settings->uints.video_ps2_mode = (unsigned)ps2->vmode;
    }
-   else
-      /* first driver init */
-      ps2->vmode                  = global->console.screen.resolutions.current.id;
+   else /* first driver init */
+      ps2->vmode = settings->uints.video_ps2_mode < NUM_RM_VMODES
+         ? (int8_t)settings->uints.video_ps2_mode : 0;
 
    mode                           = &rm_mode_table[ps2->vmode];
 

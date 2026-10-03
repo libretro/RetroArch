@@ -507,9 +507,7 @@ static void *gekko_init(const video_info_t *video, input_driver_t **input,
 {
    void *gxinput;
    settings_t *settings = config_get_ptr();
-   global_t *global     = global_get_ptr();
    gekko_video_t *gx    = (gekko_video_t*)calloc(1, sizeof(*gx));
-   unsigned id;
 
    if (!gx)
       return NULL;
@@ -553,9 +551,8 @@ static void *gekko_init(const video_info_t *video, input_driver_t **input,
       return NULL;
    }
 
-   id = gx_modes_clamp_id(global->console.screen.resolutions.current.id);
-   global->console.screen.resolutions.current.id = id;
-   gekko_set_video_mode(gx, gx_modes_dims(id), true);
+   gekko_set_video_mode(gx,
+         gx_modes_dims(gx_display_server_current_id()), true);
    setup_gx(gx);
    return gx;
 }

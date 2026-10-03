@@ -17,9 +17,9 @@
  * use, and switches between them. The output itself is configured by
  * whoever owns the frame buffers - the RSX driver on PSL1GHT, the PSGL
  * context on the Cell SDK - at init, from
- * ps3_display_server_resolution(); so a switch stores the choice in
- * current_resolution_id and reinitialises the video driver, which
- * comes back up in it.
+ * ps3_display_server_resolution(); so a switch stores the choice as
+ * the fullscreen size and reinitialises the video driver, which comes
+ * back up in it.
  *
  * Only whole modes can be switched: a set_resolution without dims
  * (the refresh rate autoswitch) fails. */
@@ -43,6 +43,7 @@ typedef CellVideoOutState ps3_video_state_t;
 
 #include "dispserv_ps3.h"
 #include "../../command.h"
+#include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
@@ -63,11 +64,20 @@ static unsigned ps3_display_server_system_id(void)
    return state.displayMode.resolution;
 }
 
+/* The mode the configured fullscreen size names, 0 for none */
+static unsigned ps3_display_server_stored(void)
+{
+   const settings_t *settings = config_get_ptr();
+   int id = ps3_modes_find(ps3_display_server_available, NULL,
+         VIDEO_SCALE_PACK(settings->uints.video_fullscreen_x,
+            settings->uints.video_fullscreen_y));
+   return id > 0 ? (unsigned)id : PS3_MODE_ID_SYSTEM;
+}
+
 unsigned ps3_display_server_resolution(unsigned system_id)
 {
-   global_t *global = global_get_ptr();
    return ps3_modes_effective(ps3_display_server_available, NULL,
-         global->console.screen.resolutions.current.id, system_id);
+         ps3_display_server_stored(), system_id);
 }
 
 static unsigned ps3_display_server_in_use(void)
@@ -87,8 +97,7 @@ static void *ps3_display_server_get_resolution_list(void *data,
 {
    unsigned count;
    video_display_config_t *list;
-   global_t *global = global_get_ptr();
-   unsigned current = global->console.screen.resolutions.current.id;
+   unsigned current = ps3_display_server_stored();
    unsigned system  = ps3_display_server_system_id();
 
    count = ps3_modes_list(ps3_display_server_available, NULL,
@@ -110,7 +119,9 @@ static bool ps3_display_server_set_resolution(void *data,
       int monitor_index, int xoffset, int padjust)
 {
    int id;
-   global_t *global = global_get_ptr();
+   bool in_use;
+   settings_t *settings = config_get_ptr();
+   global_t *global     = global_get_ptr();
 
    /* No dims is a refresh rate change on its own, which the video
     * output cannot make without changing the mode */
@@ -124,15 +135,14 @@ static bool ps3_display_server_set_resolution(void *data,
       return false;
    }
 
-   if ((unsigned)id == ps3_display_server_in_use())
-   {
-      /* Already there; store it so the choice outlives a change to
-       * the system menu's mode */
-      global->console.screen.resolutions.current.id = (unsigned)id;
+   in_use = (unsigned)id == ps3_display_server_in_use();
+   /* Stored even when already there, so the choice outlives a
+    * change to the system menu's mode */
+   settings->uints.video_fullscreen_x = VIDEO_SCALE_W(dims);
+   settings->uints.video_fullscreen_y = VIDEO_SCALE_H(dims);
+   if (in_use)
       return true;
-   }
 
-   global->console.screen.resolutions.current.id = (unsigned)id;
    /* PAL60 temporal conversion only applies to 576 (PSGL) */
    if (dims != VIDEO_SCALE_PACK(720, 576))
    {

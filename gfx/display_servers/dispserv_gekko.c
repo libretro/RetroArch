@@ -16,7 +16,7 @@
  * VI offers are dispserv_gx_modes.c's, shared with the libogc build;
  * the standard the console is set to comes from the VI and (Wii) the
  * system settings.  The video driver programs the VI: set_resolution
- * records the choice in current_resolution_id and hands the mode to
+ * records the choice as the fullscreen size and hands the mode to
  * it.  Only whole modes switch, so a refresh rate change alone fails. */
 
 #include <stdlib.h>
@@ -25,7 +25,7 @@
 
 #include "dispserv_gx.h"
 #include "../video_driver.h"
-#include "../../retroarch.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 /* Nothing to keep; any non-NULL pointer marks the server as up */
@@ -47,15 +47,14 @@ void gx_display_server_query(gx_vi_standard_t *std, unsigned *tvmode)
       *tvmode = pref.std;
 }
 
-static unsigned gx_display_server_current_id(void)
+unsigned gx_display_server_current_id(void)
 {
-   global_t *global = global_get_ptr();
-   unsigned id      = gx_modes_clamp_id(
-         global->console.screen.resolutions.current.id);
-   /* A config naming a mode that does not exist starts over at
-    * the default, as the driver would run it */
-   global->console.screen.resolutions.current.id = id;
-   return id;
+   gx_vi_standard_t std;
+   const settings_t *settings = config_get_ptr();
+   gx_display_server_query(&std, NULL);
+   return gx_modes_id(&std, VIDEO_SCALE_PACK(
+         settings->uints.video_fullscreen_x,
+         settings->uints.video_fullscreen_y));
 }
 
 static void *gx_display_server_init(void)
@@ -93,7 +92,7 @@ static bool gx_display_server_set_resolution(void *data,
 {
    gx_vi_standard_t std;
    int id;
-   global_t *global = global_get_ptr();
+   settings_t *settings = config_get_ptr();
 
    /* No dims is a refresh rate change on its own, which the VI
     * cannot make without changing the mode */
@@ -109,7 +108,8 @@ static bool gx_display_server_set_resolution(void *data,
       return false;
    }
 
-   global->console.screen.resolutions.current.id = (unsigned)id;
+   settings->uints.video_fullscreen_x = VIDEO_SCALE_W(dims);
+   settings->uints.video_fullscreen_y = VIDEO_SCALE_H(dims);
    return video_driver_set_video_mode(gx_modes_dims((unsigned)id), true);
 }
 

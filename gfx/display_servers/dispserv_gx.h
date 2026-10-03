@@ -26,6 +26,9 @@ RETRO_BEGIN_DECLS
  * mode list and gx_set_video_mode, so both see the same console. */
 void gx_display_server_query(gx_vi_standard_t *std, unsigned *tvmode);
 
+/* The mode the configured fullscreen size selects on that standard. */
+unsigned gx_display_server_current_id(void);
+
 RETRO_END_DECLS
 
 #endif

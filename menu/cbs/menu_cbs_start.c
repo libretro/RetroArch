@@ -627,10 +627,15 @@ static int action_start_video_resolution(
 {
    unsigned dims = 0;
    char desc[64] = {0};
-   global_t *global = global_get_ptr();
+#if defined(PS2)
+   config_get_ptr()->uints.video_ps2_mode = 0;
+#else
+   settings_t *settings = config_get_ptr();
 
-   /*  Reset the resolution id to zero */
-   global->console.screen.resolutions.current.id = 0;
+   /* The display's own mode */
+   settings->uints.video_fullscreen_x = 0;
+   settings->uints.video_fullscreen_y = 0;
+#endif
 
    if (video_driver_get_video_output_size(&dims, desc, sizeof(desc)))
    {

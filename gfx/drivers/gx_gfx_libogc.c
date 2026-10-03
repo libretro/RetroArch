@@ -483,10 +483,6 @@ static void gx_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 
 static void setup_video_mode(gx_video_t *gx)
 {
-   global_t *global = global_get_ptr();
-   unsigned id      = gx_modes_clamp_id(
-         global->console.screen.resolutions.current.id);
-
    /* The two XFBs are sized for the largest mode and live for the
     * whole process: they are allocated once and handed to every
     * gx_video_t after a free/init cycle (content load, mode change).
@@ -504,8 +500,8 @@ static void setup_video_mode(gx_video_t *gx)
    gx->orientation = ORIENTATION_NORMAL;
    OSInitThreadQueue(&g_video_cond);
 
-   global->console.screen.resolutions.current.id = id;
-   gx_set_video_mode(gx, gx_modes_dims(id), true);
+   gx_set_video_mode(gx,
+         gx_modes_dims(gx_display_server_current_id()), true);
 }
 
 static void init_texture(gx_video_t *gx, unsigned width, unsigned height,

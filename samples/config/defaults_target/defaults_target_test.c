@@ -8,7 +8,6 @@
 #include <stdio.h>
 
 struct defaults g_defaults;
-static global_t test_global;
 
 bool *audio_get_bool_ptr(enum audio_action action)
 {
@@ -71,7 +70,7 @@ int main(void)
    live->bools.audio_enable        = false;
    live->floats.slowmotion_ratio   = 7.0f;
 
-   config_set_defaults(&test_global, target);
+   config_set_defaults(target);
 
    if (config_get_ptr() != live)
    { printf("FAIL: defaults moved config_get_ptr()\n"); return 1; }

@@ -22,7 +22,7 @@
 RETRO_BEGIN_DECLS
 
 /* The video output resolution id to configure: the one chosen in the
- * menu (current_resolution_id) when the display takes it, otherwise
+ * menu (the fullscreen size) when the display takes it, otherwise
  * system_id - the mode the system menu has the output in, which the
  * caller reads from the output state (0 when it has none). Shared by
  * the RSX driver and the PSGL context, which configure the output. */

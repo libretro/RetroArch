@@ -16,8 +16,7 @@
 
 #include "dispserv_gx_modes.h"
 
-/* Width, lines. Index = id; index 0 is the default and stays 0x0.
- * Order is the config's current_resolution_id - append only. */
+/* Width, lines. Index = id; index 0 is the default and stays 0x0. */
 static const unsigned short gx_mode_table[][2] = {
    {   0,   0 },
    { 512, 192 }, { 598, 200 }, { 640, 200 },
@@ -46,11 +45,6 @@ unsigned gx_modes_dims(unsigned id)
    if (id >= GX_MODE_TABLE_COUNT)
       return 0;
    return VIDEO_SCALE_PACK(gx_mode_table[id][0], gx_mode_table[id][1]);
-}
-
-unsigned gx_modes_clamp_id(unsigned id)
-{
-   return (id < GX_MODE_TABLE_COUNT) ? id : GX_MODE_ID_DEFAULT;
 }
 
 void gx_modes_resolve(const gx_vi_standard_t *std, unsigned dims,
@@ -112,6 +106,12 @@ int gx_modes_find(const gx_vi_standard_t *std, unsigned dims)
    return -1;
 }
 
+unsigned gx_modes_id(const gx_vi_standard_t *std, unsigned dims)
+{
+   int id = gx_modes_find(std, dims);
+   return id > 0 ? (unsigned)id : GX_MODE_ID_DEFAULT;
+}
+
 static void gx_modes_fill(video_display_config_t *cfg,
       const gx_vi_mode_t *mode, unsigned id, unsigned current_dims)
 {
@@ -133,10 +133,9 @@ unsigned gx_modes_list(const gx_vi_standard_t *std, unsigned current_id,
    unsigned count = 0;
    gx_vi_mode_t mode;
 
-   /* Whatever the stored id ends up running is the current entry,
-    * the default included */
-   gx_modes_resolve(std, gx_modes_dims(gx_modes_clamp_id(current_id)),
-         &mode);
+   /* Whatever current_id ends up running is the current entry, the
+    * default included */
+   gx_modes_resolve(std, gx_modes_dims(current_id), &mode);
    current_dims = VIDEO_SCALE_PACK(mode.width, mode.lines);
 
    gx_modes_resolve(std, 0, &mode);

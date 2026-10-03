@@ -33,17 +33,17 @@
  *  - each entry, taken through the menu's own round trip - the label
  *    menu_displaylist.c prints for the dropdown, parsed back the way
  *    action_cb_push_dropdown_item_resolution does - selects exactly
- *    that entry: current_resolution_id becomes its id, the driver is
+ *    that entry: the fullscreen size becomes its size, the driver is
  *    handed the table mode for it, and the refresh rate reported is
  *    the one listed. 240/288-line modes are double strike at the
  *    non-interlaced field rate (59.8261/50.0801 Hz), taller ones
  *    interlaced unless progressive;
  *  - a set_resolution with no dims (the refresh rate autoswitch) and
  *    one naming a mode the standard lacks both fail without touching
- *    the mode or the stored id;
- *  - a stored id past the table's end reads back as the default;
- *  - the ids the config stores (current_resolution_id) keep meaning
- *    the modes they meant before the table moved here. */
+ *    the mode or the stored size;
+ *  - a stored size no mode of the standard has reads back as the
+ *    default;
+ *  - the table's ids keep meaning the modes they did. */
 
 #include <math.h>
 #include <stdarg.h>
@@ -56,6 +56,7 @@
 
 #include "gfx/display_servers/dispserv_gx.h"
 #include "gfx/video_driver.h"
+#include "configuration.h"
 #include "retroarch.h"
 
 static int failures;
@@ -94,11 +95,23 @@ GXRModeObj *VIDEO_GetPreferredMode(GXRModeObj *mode)
 
 /* ---- stubbed RetroArch ---- */
 
-static global_t g_global;
-static unsigned set_mode_calls;
-static unsigned set_mode_dims;
+static settings_t g_settings;
+static unsigned   set_mode_calls;
+static unsigned   set_mode_dims;
 
-global_t *global_get_ptr(void) { return &g_global; }
+settings_t *config_get_ptr(void) { return &g_settings; }
+
+static void store(unsigned dims)
+{
+   g_settings.uints.video_fullscreen_x = VIDEO_SCALE_W(dims);
+   g_settings.uints.video_fullscreen_y = VIDEO_SCALE_H(dims);
+}
+
+static unsigned stored(void)
+{
+   return VIDEO_SCALE_PACK(g_settings.uints.video_fullscreen_x,
+         g_settings.uints.video_fullscreen_y);
+}
 
 bool video_driver_set_video_mode(unsigned dims, bool fullscreen)
 {
@@ -197,8 +210,8 @@ static unsigned count_current(const video_display_config_t *l, unsigned n,
 
 static void test_table_ids(void)
 {
-   /* The config's current_resolution_id values, as gx_gfx_libogc.c's
-    * GX_RESOLUTIONS_* enum numbered them */
+   /* The ids as gx_gfx_libogc.c's GX_RESOLUTIONS_* enum numbered
+    * them */
    CHECK(gx_modes_count() == 40, "table has %u ids", gx_modes_count());
    CHECK(gx_modes_dims(0)  == 0, "id 0 is not the default");
    CHECK(gx_modes_dims(1)  == VIDEO_SCALE_PACK(512, 192), "id 1");
@@ -207,8 +220,17 @@ static void test_table_ids(void)
    CHECK(gx_modes_dims(30) == VIDEO_SCALE_PACK(640, 448), "id 30");
    CHECK(gx_modes_dims(39) == VIDEO_SCALE_PACK(640, 480), "id 39");
    CHECK(gx_modes_dims(40) == 0, "id past the end is not 0");
-   CHECK(gx_modes_clamp_id(40) == 0 && gx_modes_clamp_id(39) == 39,
-         "clamp");
+   set_standard(&standards[0]);
+   {
+      gx_vi_standard_t std;
+      gx_display_server_query(&std, NULL);
+      CHECK(gx_modes_id(&std, 0) == GX_MODE_ID_DEFAULT
+            && gx_modes_id(&std, VIDEO_SCALE_PACK(640, 480)) == 39
+            && gx_modes_id(&std, VIDEO_SCALE_PACK(800, 600))
+               == GX_MODE_ID_DEFAULT
+            && gx_modes_id(&std, VIDEO_SCALE_PACK(640, 576))
+               == GX_MODE_ID_DEFAULT, "ids of sizes");
+   }
 }
 
 static void test_standard(void *data, const standard_t *st)
@@ -217,7 +239,7 @@ static void test_standard(void *data, const standard_t *st)
    video_display_config_t *list;
 
    set_standard(st);
-   g_global.console.screen.resolutions.current.id = 0;
+   store(0);
 
    list = get_list(data, &n);
    CHECK(list != NULL, "%s: no list", st->name);
@@ -263,9 +285,11 @@ static void test_standard(void *data, const standard_t *st)
             "%s: '%s' refused", st->name, label);
       CHECK(set_mode_calls == 1, "%s: '%s' set the mode %u times",
             st->name, label, set_mode_calls);
-      CHECK(g_global.console.screen.resolutions.current.id == list[i].idx,
-            "%s: '%s' stored id %u, want %u", st->name, label,
-            g_global.console.screen.resolutions.current.id, list[i].idx);
+      CHECK(stored() == dims && gx_display_server_current_id()
+               == list[i].idx,
+            "%s: '%s' stored %ux%u, id %u, want %u", st->name, label,
+            VIDEO_SCALE_W(stored()), VIDEO_SCALE_H(stored()),
+            gx_display_server_current_id(), list[i].idx);
       CHECK(set_mode_dims == gx_modes_dims(list[i].idx),
             "%s: '%s' handed the driver %ux%u", st->name, label,
             VIDEO_SCALE_W(set_mode_dims), VIDEO_SCALE_H(set_mode_dims));
@@ -291,7 +315,7 @@ static void test_refusals(void *data)
 {
    unsigned dims = 0;
    set_standard(&standards[0]);
-   g_global.console.screen.resolutions.current.id = 20;
+   store(VIDEO_SCALE_PACK(640, 240));
 
    set_mode_calls = 0;
    /* video_display_server_set_refresh_rate() passes no dims */
@@ -303,20 +327,20 @@ static void test_refusals(void *data)
    CHECK(!dispserv_gx.set_resolution(data, VIDEO_SCALE_PACK(640, 574),
             50, 50.0f, 0, 0, 0, 0), "640x574 accepted on NTSC");
    CHECK(set_mode_calls == 0, "a refused switch touched the mode");
-   CHECK(g_global.console.screen.resolutions.current.id == 20,
-         "a refused switch changed the stored id");
+   CHECK(stored() == VIDEO_SCALE_PACK(640, 240),
+         "a refused switch changed the stored size");
 
    /* The mode from issue 19380 */
    CHECK(dispserv_gx.set_resolution(data, VIDEO_SCALE_PACK(640, 240),
             59, 59.826f, 0, 0, 0, 0)
-         && g_global.console.screen.resolutions.current.id == 20
+         && gx_display_server_current_id() == 20
          && set_mode_dims == VIDEO_SCALE_PACK(640, 240),
          "640x240 does not select id 20");
 
-   g_global.console.screen.resolutions.current.id = 250;
+   store(VIDEO_SCALE_PACK(800, 600));
    dispserv_gx.get_video_output_size(data, &dims, NULL, 0);
-   CHECK(dims == 0 && g_global.console.screen.resolutions.current.id == 0,
-         "stored id 250 does not read back as the default");
+   CHECK(dims == 0 && gx_display_server_current_id() == 0,
+         "stored 800x600 does not read back as the default");
 }
 
 int main(void)

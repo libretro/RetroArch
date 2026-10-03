@@ -21,8 +21,8 @@
  * A mode is named by its video output resolution id, the value both
  * SDKs use (CELL_VIDEO_OUT_RESOLUTION_* / VIDEO_RESOLUTION_*: 1080 is
  * 1, 720 is 2, 480 is 4, 576 is 5, 1600x1080 to 960x1080 are 10 to
- * 13). That id is what current_resolution_id stores in the config;
- * 0 there means "whatever the system menu is set to". */
+ * 13). The configuration holds a mode as the fullscreen size; 0x0
+ * there, id 0 here, means "whatever the system menu is set to". */
 
 #ifndef __DISPSERV_PS3_MODES_H
 #define __DISPSERV_PS3_MODES_H

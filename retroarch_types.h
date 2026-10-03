@@ -277,13 +277,6 @@ typedef struct global
    {
       struct
       {
-         struct
-         {
-            struct
-            {
-               unsigned id; /* current_resolution_id */
-            } current;
-         } resolutions;
          bool pal_enable;
          bool pal60_enable;
       } screen;
