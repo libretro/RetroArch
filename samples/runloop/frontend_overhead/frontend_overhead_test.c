@@ -602,10 +602,31 @@ static void counting_joypad_poll(void)
    joypad_poll_real();
 }
 
+/* The poll's timestamp (input_driver_get_poll_time(), which the
+ * statistics' input age is measured from): at which sites it moved,
+ * and whether a new stamp ever lay outside the stretch of time it
+ * was taken in. */
+static unsigned long stamp_moves[SITE_COUNT];
+static unsigned long stamp_outside;
+static retro_time_t  stamp_last;
+static retro_time_t  stamp_site_start;
+
 static void site_take(unsigned site)
 {
+   retro_time_t now   = cpu_features_get_time_usec();
+   retro_time_t stamp = input_driver_get_poll_time();
+
    site_polls[site] += poll_calls - site_mark;
    site_mark         = poll_calls;
+
+   if (stamp != stamp_last)
+   {
+      stamp_moves[site]++;
+      if (stamp < stamp_site_start || stamp > now)
+         stamp_outside++;
+      stamp_last = stamp;
+   }
+   stamp_site_start = now;
 }
 
 /* Called by the harness core from inside retro_run(). */
@@ -668,6 +689,12 @@ static void lane_input_poll_sites(const char *loaded_with)
    measure(16, 1);
    set_probe(poll_probe);
 
+   /* Polls are stamped only while the statistics are shown. */
+   run_sited_frames(4);
+   CHECK(input_driver_get_poll_time() == 0,
+         "poll stamp: taken with the statistics off");
+   config_get_ptr()->bools.video_statistics_show = true;
+
    for (m = 0; m < 3; m++)
    {
       bool ok = true;
@@ -676,8 +703,37 @@ static void lane_input_poll_sites(const char *loaded_with)
       /* let the switch settle, then count */
       run_sited_frames(50);
       memset(site_polls, 0, sizeof(site_polls));
+      memset(stamp_moves, 0, sizeof(stamp_moves));
+      stamp_outside    = 0;
+      stamp_last       = input_driver_get_poll_time();
+      stamp_site_start = cpu_features_get_time_usec();
       site_runs = 0;
       run_sited_frames(300);
+
+      /* The stamp is the poll's: it moves where this mode polls, once
+       * a frame, and nowhere else - also after the mode was switched
+       * while running - and each new one lies inside the stretch it
+       * was taken in. (Two polls a frame apart can land on the same
+       * microsecond when frames are this short, so "once a frame" is
+       * held to within a few.) */
+      {
+         bool stamp_ok = (stamp_outside == 0)
+            && stamp_moves[home[m]] <= site_runs
+            && stamp_moves[home[m]] >= site_runs - site_runs / 20;
+         for (s = 0; s < SITE_COUNT; s++)
+            if (s != home[m] && stamp_moves[s])
+               stamp_ok = false;
+         if (!stamp_ok)
+         {
+            fprintf(stderr, "       %s polling: over %lu frames the poll stamp moved",
+                  name[m], site_runs);
+            for (s = 0; s < SITE_COUNT; s++)
+               if (stamp_moves[s])
+                  fprintf(stderr, " %lu time(s) %s;", stamp_moves[s], site_name[s]);
+            fprintf(stderr, " %lu outside its stretch\n", stamp_outside);
+         }
+         CHECK(stamp_ok, "poll stamp: not taken where the poll is");
+      }
 
       for (s = 0; s < SITE_COUNT; s++)
          if (site_polls[s] != (s == home[m] ? site_runs : 0))
@@ -698,6 +754,7 @@ static void lane_input_poll_sites(const char *loaded_with)
       CHECK(ok, "poll sites: a poll mode does not poll where it should");
    }
 
+   config_get_ptr()->bools.video_statistics_show = false;
    set_probe(NULL);
    measure(0, 1);
    core_set_poll_type(POLL_TYPE_LATE);
@@ -705,7 +762,8 @@ static void lane_input_poll_sites(const char *loaded_with)
    input_st->primary_joypad = joypad_real;
    if (failures == had)
       printf("[pass] loaded with %s polling: early polls before retro_run,"
-            " normal in input_poll, late in the first input_state\n",
+            " normal in input_poll, late in the first input_state;"
+            " the poll stamp is taken there\n",
             loaded_with);
 #else
    (void)loaded_with;

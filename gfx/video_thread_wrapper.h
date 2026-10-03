@@ -290,6 +290,10 @@ enum video_thread_stat_slot
    VIDEO_THREAD_STAT_PERIOD_HI,
    VIDEO_THREAD_STAT_NEXT_LO,
    VIDEO_THREAD_STAT_NEXT_HI,
+   VIDEO_THREAD_STAT_INPUT_AVG_LO,
+   VIDEO_THREAD_STAT_INPUT_AVG_HI,
+   VIDEO_THREAD_STAT_INPUT_MAX_LO,
+   VIDEO_THREAD_STAT_INPUT_MAX_HI,
    VIDEO_THREAD_STAT_SLOTS
 };
 
@@ -401,6 +405,10 @@ typedef struct thread_video
    retro_time_t latency_avg;
    retro_time_t latency_max;
    retro_time_t latency_max_at;
+   /* The same two for the input's age: poll to present. */
+   retro_time_t input_age_avg;
+   retro_time_t input_age_max;
+   retro_time_t input_age_max_at;
    bool         latency_from_display;
 
    /* Display pacing. render_time is the video thread's moving average
@@ -659,6 +667,10 @@ typedef struct thread_video
          /* When the core handed this frame over, on the main thread's
           * clock; the latency readout measures from here. */
          retro_time_t pushed_at;
+         /* When the input this frame was made from was read, on the
+          * same clock; 0 if the poll was not stamped. The input-age
+          * readout measures from here. */
+         retro_time_t input_at;
          /* Hardware-rendered frame: the HW ring slot it lives in, -1
           * for a software frame. See hw_ring below. */
          int hw_slot;
@@ -928,6 +940,12 @@ bool video_thread_pacing_stats(bool *display_pacing,
 /* Latency from the core's handover to the present, for the overlay:
  * the moving average and the session's worst, and whether the present
  * end came from the display. False with no wrapper. */
+/* How old the input was that a presented frame was made from: from
+ * the poll that read the devices to the frame's present. False while
+ * polls are not being stamped (the statistics are not shown) or
+ * nothing has been presented. */
+bool video_thread_input_age_stats(retro_time_t *avg, retro_time_t *worst);
+
 bool video_thread_latency_stats(retro_time_t *avg, retro_time_t *worst,
       bool *from_display);
 

@@ -5270,6 +5270,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
    video_info->input_driver_nonblock_state   = (input_flags & INP_FLAG_NONBLOCKING)      ? true : false;
    video_info->input_driver_grab_mouse_state = (input_flags & INP_FLAG_GRAB_MOUSE_STATE) ? true : false;
+   video_info->input_poll_time               = input_driver_get_poll_time();
    video_info->disp_userdata                 = disp_get_ptr();
 
 #ifdef HAVE_THREADS
@@ -6770,6 +6771,19 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
                   lat_avg / 1000.0f,
                   lat_display ? "" : " (est.)",
                   lat_max / 1000.0f);
+      }
+      {
+         /* How old the input is that the frame on screen was made
+          * from: from the poll that read the devices to that frame's
+          * present. The line above starts at the core's handover; this
+          * one starts earlier by however long the core ran after it
+          * polled, which is what the poll mode changes. */
+         retro_time_t in_avg, in_max;
+         if (video_thread_input_age_stats(&in_avg, &in_max))
+            __len = video_driver_stat_appendf(video_st->stat_text, __len,
+                  " Input age:  %.2f ms poll to vblank (worst %.2f ms, last 2 s)\n",
+                  in_avg / 1000.0f,
+                  in_max / 1000.0f);
       }
 #endif
 

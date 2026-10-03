@@ -1090,6 +1090,8 @@ typedef struct
    uint64_t     swaps;
    retro_time_t latency_avg;
    retro_time_t latency_max;
+   retro_time_t input_age_avg;
+   retro_time_t input_age_max;
    retro_time_t core_time;
    retro_time_t render_time;
    retro_time_t present_period;
@@ -1142,6 +1144,10 @@ static void video_thread_publish_stats(thread_video_t *thr)
          (uint64_t)thr->latency_avg);
    video_thread_stat_put64(s, VIDEO_THREAD_STAT_LAT_MAX_LO,
          (uint64_t)thr->latency_max);
+   video_thread_stat_put64(s, VIDEO_THREAD_STAT_INPUT_AVG_LO,
+         (uint64_t)thr->input_age_avg);
+   video_thread_stat_put64(s, VIDEO_THREAD_STAT_INPUT_MAX_LO,
+         (uint64_t)thr->input_age_max);
    video_thread_stat_put64(s, VIDEO_THREAD_STAT_CORE_LO,
          (uint64_t)(unsigned)retro_atomic_load_relaxed_int(&thr->core_time_us));
    video_thread_stat_put64(s, VIDEO_THREAD_STAT_RENDER_LO,
@@ -1186,6 +1192,10 @@ static void video_thread_read_stats(thread_video_t *thr,
             VIDEO_THREAD_STAT_LAT_AVG_LO);
       out->latency_max = (retro_time_t)video_thread_stat_get64(s,
             VIDEO_THREAD_STAT_LAT_MAX_LO);
+      out->input_age_avg = (retro_time_t)video_thread_stat_get64(s,
+            VIDEO_THREAD_STAT_INPUT_AVG_LO);
+      out->input_age_max = (retro_time_t)video_thread_stat_get64(s,
+            VIDEO_THREAD_STAT_INPUT_MAX_LO);
       out->core_time   = (retro_time_t)video_thread_stat_get64(s,
             VIDEO_THREAD_STAT_CORE_LO);
       out->render_time = (retro_time_t)video_thread_stat_get64(s,
@@ -2280,6 +2290,32 @@ static void video_thread_loop(void *data)
                   thr->latency_max_at = thr->last_present_end;
                }
                thr->latency_from_display = thr->phase_from_display;
+
+               /* The input's age: the same present, measured from the
+                * poll that read the devices for this frame rather than
+                * from the handover. A frame with no stamp - the
+                * statistics are off, so polls are not stamped - clears
+                * the figure. A stamp from long before the handover is
+                * not this frame's input (the core did not poll: a menu
+                * frame, a pause) and is left out. */
+               {
+                  retro_time_t in_at = thr->frame.slot[slot].input_at;
+                  retro_time_t at    = thr->frame.slot[slot].pushed_at;
+                  if (in_at <= 0)
+                     thr->input_age_avg = thr->input_age_max = 0;
+                  else if (in_at <= at && at - in_at < 1000000)
+                  {
+                     retro_time_t age   = thr->last_present_end - in_at;
+                     thr->input_age_avg = thr->input_age_avg
+                        ? (thr->input_age_avg * 7 + age) / 8 : age;
+                     if (     age > thr->input_age_max
+                           || thr->last_present_end - thr->input_age_max_at > 2000000)
+                     {
+                        thr->input_age_max    = age;
+                        thr->input_age_max_at = thr->last_present_end;
+                     }
+                  }
+               }
             }
             /* Moving average, weighted to the recent, of the render
              * with its swap; a swap that only waited for a queued
@@ -2956,6 +2992,7 @@ static bool video_thread_frame(void *data, const void *frame_,
       thr->frame.slot[slot].offset = zero_copy ? lent_off : 0;
       thr->frame.slot[slot].count  = frame_count;
       thr->frame.slot[slot].pushed_at = now;
+      thr->frame.slot[slot].input_at  = video_info ? video_info->input_poll_time : 0;
       thr->frame.slot[slot].hw_slot = hw_slot;
       /* Nothing was put in the slot: not a lent slot the core filled,
        * not a copy, not a hardware frame. What the buffer holds is the
@@ -4405,6 +4442,22 @@ bool video_thread_presenter_stats(uint64_t *repeats, bool *display_phase)
    *repeats       = snap.repeats;
    *display_phase = (snap.flags & VIDEO_THREAD_STAT_F_PHASE_DISPLAY) != 0;
    return (snap.flags & VIDEO_THREAD_STAT_F_PRESENT_REPEAT) != 0;
+}
+
+bool video_thread_input_age_stats(retro_time_t *avg, retro_time_t *worst)
+{
+   video_thread_stat_snap_t snap;
+   thread_video_t *thr;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   *avg = *worst = 0;
+   if (!video_st->thread_wrapper_active)
+      return false;
+   if (!(thr = (thread_video_t*)video_st->data) || !thr->thread)
+      return false;
+   video_thread_read_stats(thr, &snap);
+   *avg   = snap.input_age_avg;
+   *worst = snap.input_age_max;
+   return *avg > 0;
 }
 
 bool video_thread_latency_stats(retro_time_t *avg, retro_time_t *worst,

@@ -2105,6 +2105,37 @@ static void lane_pacing_queue_drain(void)
    CHECK(render < vslane_period / 2,
          "pacing-drain lane: render reserve grew to %.1f ms of a %.1f ms period",
          render / 1000.0, vslane_period / 1000.0);
+   /* The input's age: how old the input a presented frame was made
+    * from is, poll to present. Polls are stamped only while the
+    * statistics are shown, so there is no figure before that, there
+    * is one while they are, and it goes again after. It starts at the
+    * poll, which is before the handover the latency starts at, and the
+    * worst is no better than the average. */
+   {
+      retro_time_t in_avg = 0, in_max = 0;
+      bool before, during, after;
+
+      before = video_thread_input_age_stats(&in_avg, &in_max);
+      settings->bools.video_statistics_show = true;
+      run_frames(40);
+      video_thread_wait_idle();
+      during = video_thread_input_age_stats(&in_avg, &in_max);
+      video_thread_latency_stats(&avg, &worst, &from_display);
+      CHECK(!before, "input-age lane: a figure with the statistics off");
+      CHECK(during && in_avg > 0 && in_avg < 1000000 && in_max >= in_avg,
+            "input-age lane: with the statistics on: %s, %.2f ms, worst %.2f ms",
+            during ? "a figure" : "no figure", in_avg / 1000.0, in_max / 1000.0);
+      CHECK(!during || in_avg + avg / 4 >= avg,
+            "input-age lane: %.2f ms from the poll, yet %.2f ms from the handover",
+            in_avg / 1000.0, avg / 1000.0);
+      fprintf(stderr, "   input age: %.2f ms poll to present (worst %.2f), latency %.2f ms\n",
+            in_avg / 1000.0, in_max / 1000.0, avg / 1000.0);
+      settings->bools.video_statistics_show = false;
+      run_frames(4);
+      video_thread_wait_idle();
+      after = video_thread_input_age_stats(&in_avg, &in_max);
+      CHECK(!after, "input-age lane: a figure left after the statistics went off");
+   }
    fprintf(stderr, "   pacing drain: latency %.1f ms, render reserve %.1f ms, %u/%u settled, %u presents, %u replaced\n",
          avg / 1000.0, render / 1000.0, settled, settled + latched, presents, misses);
 

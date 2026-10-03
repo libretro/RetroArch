@@ -590,6 +590,9 @@ typedef struct video_frame_info
    bool input_menu_swap_ok_cancel_buttons;
    bool input_driver_nonblock_state;
    bool input_driver_grab_mouse_state;
+   /* When the input this frame was made from was read; 0 if not
+    * stamped. input_driver_get_poll_time(). */
+   retro_time_t input_poll_time;
    bool hard_sync;
    bool scanline_sync;
    bool runahead;

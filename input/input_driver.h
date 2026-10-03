@@ -604,6 +604,9 @@ typedef struct
    const input_device_driver_t   *primary_joypad;        /* ptr alignment */
    const input_device_driver_t   *secondary_joypad;      /* ptr alignment */
    const retro_keybind_set *libretro_input_binds[MAX_USERS];
+   /* When the devices were last read, on cpu_features_get_time_usec()'s
+    * clock; 0 while nothing asks for it. See input_driver_poll(). */
+   retro_time_t poll_time_us;
 #ifdef HAVE_COMMAND
    /* Bumped whenever the command interfaces below are torn down. A
     * command that reinitialises the input driver - LOAD_CONTENT,
@@ -871,6 +874,7 @@ void input_driver_init_kms(const char *joypad_name,
       input_driver_t **input, void **input_data);
 
 /* For the video driver: see input_driver.c. */
+retro_time_t input_driver_get_poll_time(void);
 uint32_t input_driver_get_flags(void);
 input_driver_t *input_driver_get_current(void);
 input_driver_t **input_driver_video_slots(void ***data_slot);

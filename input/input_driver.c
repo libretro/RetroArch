@@ -6525,6 +6525,11 @@ bool input_key_pressed(int key, bool keyboard_pressed)
  * flags. It still starts the input driver - a video driver's init is
  * handed the two slots below and may fill them - but through these. */
 
+retro_time_t input_driver_get_poll_time(void)
+{
+   return input_driver_st.poll_time_us;
+}
+
 uint32_t input_driver_get_flags(void)
 {
    return input_driver_st.flags;
@@ -8408,6 +8413,15 @@ void input_driver_poll(void)
       sec_joypad->poll();
    if (input && input->poll)
       input->poll(input_st->current_data);
+
+   /* When the devices were read. The statistics show how old the input
+    * a frame was made from is by the time that frame is on screen, and
+    * measure from here - wherever the poll mode puts this call: before
+    * retro_run, in the core's input_poll, or in its first input_state.
+    * Only while the statistics are shown: nothing else reads it, and
+    * it is a clock read a frame. */
+   input_st->poll_time_us         = settings->bools.video_statistics_show
+      ? cpu_features_get_time_usec() : 0;
 
    /* The real drivers are polled regardless, so their state stays
     * current and nothing is replayed on refocus; everything read
