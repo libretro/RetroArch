@@ -104,7 +104,4 @@ void gk_debug_printf(const char *fmt, ...);
 /* Stop with a message and the register state of the caller. */
 void gk_panic(const char *fmt, ...);
 
-/* Leave the program: back to the loader, or power off on request. */
-void gk_exit_to_loader(void);
-
 #endif

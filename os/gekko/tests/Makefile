@@ -22,13 +22,17 @@ LDFLAGS := $(MACHDEP) -T $(GK)/boot/$(PLATFORM).ld -L$(GK)/boot -Wl,--gc-section
 
 KERNEL := $(GK)/boot/crt0.S $(GK)/cpu/exception.S $(GK)/cpu/cache.S \
           $(GK)/kernel/boot.c $(GK)/kernel/exception.c $(GK)/kernel/irq.c \
-          $(GK)/kernel/sched.c $(GK)/kernel/newlib.c
+          $(GK)/kernel/sched.c $(GK)/kernel/newlib.c $(GK)/kernel/power.c
 
 TESTS := kernel_test
+ifeq ($(PLATFORM),rvl)
+   KERNEL += $(GK)/rvl/ipc.c $(GK)/rvl/stm.c $(GK)/rvl/es.c $(GK)/rvl/conf.c
+   TESTS  += ios_test
+endif
 
 all: $(addsuffix _$(PLATFORM).elf,$(TESTS))
 
-%_$(PLATFORM).elf: %.c $(KERNEL) $(wildcard $(GK)/include/gekko/*.h $(GK)/kernel/*.h)
+%_$(PLATFORM).elf: %.c $(KERNEL) $(wildcard $(GK)/include/gekko/*.h $(GK)/kernel/*.h) Makefile
 	$(CC) $(CFLAGS) $(LDFLAGS) $< $(KERNEL) -o $@
 
 clean:

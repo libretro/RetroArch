@@ -94,29 +94,6 @@ void gk_debug_printf(const char *fmt, ...)
    gk_irq_restore(level);
 }
 
-/* Loaders that stay resident leave a return stub here. */
-#define LOADER_STUB       0x80001800u
-#define LOADER_STUB_MAGIC 0x80001804u
-
-void gk_exit_to_loader(void)
-{
-   gk_irq_disable();
-   GK_REG32(0xcc003004u) = 0;
-   if (     *(volatile uint32_t*)LOADER_STUB_MAGIC       == 0x53545542u
-         && *(volatile uint32_t*)(LOADER_STUB_MAGIC + 4) == 0x48415858u)
-   {
-      void (*stub)(void) = (void (*)(void))LOADER_STUB;
-      gk_icache_invalidate((void*)LOADER_STUB, 0x1800);
-      stub();
-   }
-#if !GK_RVL
-   GK_REG32(0xcc003024u) = 0;   /* processor-interface reset */
-#endif
-   gk_debug_printf("exit: no loader to return to");
-   for (;;)
-      ;
-}
-
 /* crtmain calls this before main(). */
 void SYS_PreMain(void)
 {

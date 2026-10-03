@@ -13,6 +13,8 @@
 #include <sys/lock.h>
 #include <sys/time.h>
 
+#include <gekko/power.h>
+
 #include "kernel.h"
 
 typedef char assert_lock_size[sizeof(_LOCK_T) == sizeof(gk_mutex_t) ? 1 : -1];
