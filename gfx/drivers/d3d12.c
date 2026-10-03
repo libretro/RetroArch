@@ -886,6 +886,14 @@ static void d3d12_queue_drain(d3d12_video_t *d3d12)
 {
    D3D12Fence fence = d3d12->queue.fence;
 
+   /* A driver whose start-up failed before it had a queue is freed
+    * through d3d12_gfx_free() like any other, which begins by
+    * draining: with no device there is no queue and no fence, and
+    * this used to call through both. Nothing was queued; nothing to
+    * wait for. */
+   if (!d3d12->queue.handle || !fence)
+      return;
+
    d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence,
          ++d3d12->queue.fenceValue);
 
