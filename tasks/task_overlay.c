@@ -785,9 +785,10 @@ static bool task_overlay_load_desc(
       case OVERLAY_TYPE_ANALOG_RIGHT:
       case OVERLAY_TYPE_ANALOG_L2:
       case OVERLAY_TYPE_ANALOG_R2:
-         if (desc->hitbox != OVERLAY_HITBOX_RADIAL)
+         if (desc->hitbox != OVERLAY_HITBOX_RADIAL
+             && desc->hitbox != OVERLAY_HITBOX_RECT)
          {
-            RARCH_ERR("[Overlay] Analog hitbox type must be \"radial\".\n");
+            RARCH_ERR("[Overlay] Analog hitbox type must be \"radial\" or \"rect\".\n");
             return false;
          }
 

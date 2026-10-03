@@ -3009,6 +3009,9 @@ static void input_overlay_apply_analog_axis_lock(
       const struct overlay_desc *desc,
       float *x_dist, float *y_dist)
 {
+   if (desc->analog_flags & OVERLAY_ANALOG_FLAG_INVERT)
+      return;
+
    switch (desc->analog_axis)
    {
       case OVERLAY_ANALOG_AXIS_HORIZONTAL:
