@@ -177,21 +177,32 @@ uint16_t win32_update_keyboard_mods(void);
  * Safe from any thread. */
 uint16_t win32_get_keyboard_mods(void);
 
-/* The video family a window belongs to: what creating it sets up. */
-enum win32_window_family
-{
-   WIN32_WINDOW_D3D = 0,
-   WIN32_WINDOW_WGL,
-   WIN32_WINDOW_VULKAN,
-   WIN32_WINDOW_GDI
-};
-
-/* The window procedure, for every video driver. A driver registers it
- * for its window class and says which family the window is before
- * creating it. */
-LRESULT CALLBACK win32_window_proc(HWND hwnd, UINT message,
+#if defined(HAVE_D3D8) || defined(HAVE_D3D9) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
+LRESULT CALLBACK wnd_proc_d3d_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
-void win32_window_proc_setup(enum win32_window_family family);
+LRESULT CALLBACK wnd_proc_d3d_winraw(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam);
+LRESULT CALLBACK wnd_proc_d3d_common(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam);
+#endif
+
+#if defined(HAVE_VULKAN)
+LRESULT CALLBACK wnd_proc_vk_dinput(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam);
+LRESULT CALLBACK wnd_proc_vk_winraw(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam);
+LRESULT CALLBACK wnd_proc_vk_common(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam);
+#endif
+
+#if defined(HAVE_GDI)
+LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam);
+LRESULT CALLBACK wnd_proc_gdi_winraw(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam);
+LRESULT CALLBACK wnd_proc_gdi_common(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam);
+#endif
 
 #ifdef _XBOX
 BOOL IsIconic(HWND hwnd);

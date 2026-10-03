@@ -119,7 +119,6 @@ typedef char win32_dwm_timing_info_size_check[
 #endif
 
 #include "win32_common.h"
-#include "win32_msg_route.h"
 
 
 #ifdef HAVE_GDI
@@ -1107,91 +1106,13 @@ static LRESULT CALLBACK wnd_proc_common(
    return 0;
 }
 
-/* The kind of input driver the window's messages are routed for, and
- * the video family the window belongs to. Both are set by
- * win32_window_proc_setup() before the window is created. */
-static enum win32_input_kind   win32_wnd_input  = WIN32_INPUT_OTHER;
-static enum win32_window_family win32_wnd_family = WIN32_WINDOW_D3D;
-
-/* win32_msg_route.h spells out Windows' message numbers so that it can
- * be built without the SDK. They are the SDK's. */
-typedef char win32_msg_route_numbers_check[
-   (     WIN32_MSG_DESTROY            == WM_DESTROY
-      && WIN32_MSG_MOVE               == WM_MOVE
-      && WIN32_MSG_SIZE               == WM_SIZE
-      && WIN32_MSG_SETFOCUS           == WM_SETFOCUS
-      && WIN32_MSG_KILLFOCUS          == WM_KILLFOCUS
-      && WIN32_MSG_CLOSE              == WM_CLOSE
-      && WIN32_MSG_QUIT               == WM_QUIT
-      && WIN32_MSG_GETMINMAXINFO      == WM_GETMINMAXINFO
-      && WIN32_MSG_DISPLAYCHANGE      == WM_DISPLAYCHANGE
-      && WIN32_MSG_NCLBUTTONDBLCLK    == WM_NCLBUTTONDBLCLK
-      && WIN32_MSG_KEYDOWN            == WM_KEYDOWN
-      && WIN32_MSG_KEYUP              == WM_KEYUP
-      && WIN32_MSG_CHAR               == WM_CHAR
-      && WIN32_MSG_SYSKEYDOWN         == WM_SYSKEYDOWN
-      && WIN32_MSG_SYSKEYUP           == WM_SYSKEYUP
-      && WIN32_MSG_IME_ENDCOMPOSITION == WM_IME_ENDCOMPOSITION
-      && WIN32_MSG_IME_COMPOSITION    == WM_IME_COMPOSITION
-      && WIN32_MSG_COMMAND            == WM_COMMAND
-      && WIN32_MSG_SYSCOMMAND         == WM_SYSCOMMAND
-      && WIN32_MSG_TIMER              == WM_TIMER
-      && WIN32_MSG_MOUSEMOVE          == WM_MOUSEMOVE
-      && WIN32_MSG_MOUSEWHEEL         == WM_MOUSEWHEEL
-      && WIN32_MSG_MOUSEHWHEEL        == WM_MOUSEHWHEEL
-      && WIN32_MSG_ENTERMENULOOP      == WM_ENTERMENULOOP
-      && WIN32_MSG_EXITMENULOOP       == WM_EXITMENULOOP
-      && WIN32_MSG_POWERBROADCAST     == WM_POWERBROADCAST
-      && WIN32_MSG_DEVICECHANGE       == WM_DEVICECHANGE
-      && WIN32_MSG_ENTERSIZEMOVE      == WM_ENTERSIZEMOVE
-      && WIN32_MSG_EXITSIZEMOVE       == WM_EXITSIZEMOVE
-      && WIN32_MSG_DROPFILES          == WM_DROPFILES
-      && WIN32_MSG_POINTERUPDATE      == WM_POINTERUPDATE
-      && WIN32_MSG_POINTERDOWN        == WM_POINTERDOWN
-      && WIN32_MSG_POINTERUP          == WM_POINTERUP
-#ifdef HAVE_THREADS
-      && WIN32_MSG_BROWSER_OPEN_RESULT == WM_BROWSER_OPEN_RESULT
-      && WIN32_MSG_BROWSER_CANCELLED   == WM_BROWSER_CANCELLED
-#endif
-      && WIN32_MSG_HOTPLUG_TIMER_ID   == WIN32_HOTPLUG_TIMER_ID) ? 1 : -1];
-
-#if defined(_MSC_VER) && !defined(_XBOX)
-#pragma comment(lib, "Imm32")
-#endif
-
-/* Offer a message to the input driver. True if the driver took it. */
-static bool win32_wnd_input_message(UINT message,
-      WPARAM wparam, LPARAM lparam)
-{
-   switch (win32_wnd_input)
-   {
-#ifdef HAVE_DINPUT
-      case WIN32_INPUT_DINPUT:
-         {
-            void *input_data = (void*)(LONG_PTR)GetWindowLongPtr(
-                  main_window.hwnd, GWLP_USERDATA);
-            return input_data && dinput_handle_message(input_data,
-                  message, wparam, lparam);
-         }
-#endif
-#if defined(HAVE_WINRAWINPUT) && !defined(_XBOX)
-      case WIN32_INPUT_WINRAW:
-         return winraw_handle_message(message, wparam, lparam);
-#endif
-      default:
-         break;
-   }
-   return false;
-}
-
-/* The window procedure, past the window's creation. What it does with
- * a message is win32_msg_route()'s answer for the kind of input driver
- * in use; the steps are taken here, in order. */
-static LRESULT win32_wnd_proc_route(HWND hwnd,
+static LRESULT CALLBACK wnd_proc_common_internal(HWND hwnd,
       UINT message, WPARAM wparam, LPARAM lparam)
 {
+   LRESULT ret;
+   bool keydown                  = true;
+   bool quit                     = false;
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
-   unsigned route;
 
 #ifdef HAVE_TASKBAR
    if (   !(g_win32_flags & WIN32_CMN_FLAG_TASKBAR_CREATED)
@@ -1200,161 +1121,511 @@ static LRESULT win32_wnd_proc_route(HWND hwnd,
       g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
 #endif
 
-   route = win32_msg_route(win32_wnd_input,
-#if defined(_XBOX)
-         false,
-#else
-         true,
-#endif
-#ifdef HAVE_THREADS
-         true,
-#else
-         false,
-#endif
-         (unsigned)message, wparam == WIN32_HOTPLUG_TIMER_ID);
-
-   if (!route)
-      return DefWindowProc(hwnd, message, wparam, lparam);
-
-#ifdef HAVE_DINPUT
-   if (route & WIN32_ROUTE_IME_END)
-      input_keyboard_event(true, 1, 0x80000000, 0, RETRO_DEVICE_KEYBOARD);
-
-   if (route & WIN32_ROUTE_IME_TEXT)
+   switch (message)
    {
-      HIMC    hIMC = ImmGetContext(hwnd);
-      /* Process composition and result strings separately;
-       * ImmGetCompositionStringW expects a single flag per call. */
-      unsigned gcs_flags[2] = { GCS_RESULTSTR, GCS_COMPSTR };
-      int f;
-      for (f = 0; f < 2; f++)
-      {
-         unsigned gcs_flag = gcs_flags[f];
-         if (!(lparam & gcs_flag))
-            continue;
+      case WM_KEYUP:                /* Key released */
+      case WM_SYSKEYUP:             /* Key released */
+         keydown                  = false;
+         /* fall-through */
+      case WM_KEYDOWN:              /* Key pressed  */
+      case WM_SYSKEYDOWN:           /* Key pressed  */
+         quit                     = true;
          {
-            int i;
-            /* Request up to 2 wide chars (4 bytes). Return value is in bytes. */
-            wchar_t wstr[3] = {0, 0, 0};
-            LONG byte_len   = ImmGetCompositionStringW(
-                  hIMC, gcs_flag, wstr, 2 * sizeof(wchar_t));
-            int char_count;
+            uint16_t mod          = 0;
+            unsigned keycode      = 0;
+            unsigned keysym       = (lparam >> 16) & 0xff;
+            bool extended         = (lparam >> 24) & 0x1;
 
-            if (byte_len <= 0 || byte_len > (LONG)(2 * sizeof(wchar_t)))
-               continue;
+            /* NumLock vs Pause correction */
+            if (keysym == 0x45 && (wparam == VK_NUMLOCK || wparam == VK_PAUSE))
+               extended = !extended;
 
-            char_count = byte_len / (int)sizeof(wchar_t);
+            /* extended keys will map to dinput if the high bit is set */
+            if (extended)
+               keysym |= 0x80;
 
-            for (i = 0; i < char_count; i++)
-            {
-               wchar_t single[2];
-               char *utf8;
-               size_t utf8_len;
-               uint32_t packed = 0;
+            keycode = input_keymaps_translate_keysym_to_rk(keysym);
 
-               single[0] = wstr[i];
-               single[1] = 0;
-
-               utf8 = utf16_to_utf8_string_alloc(single);
-               if (!utf8)
-                  continue;
-
-               utf8_len = strlen(utf8);
-
-               /* Pack up to 3 UTF-8 bytes into the low 24 bits and
-                * the composition/result flag into the high byte.
-                * This matches what the receiver expects as a uint32. */
-               if (utf8_len >= 1 && utf8_len <= 3)
-               {
-                  memcpy(&packed, utf8, utf8_len);
-                  if (utf8_len >= 2)
-                     ((unsigned char*)&packed)[3] =
-                        (unsigned char)((gcs_flag) | (gcs_flag >> 4));
-                  input_keyboard_event(true, 1, (uint32_t)packed, 0,
-                        RETRO_DEVICE_KEYBOARD);
-               }
-               free(utf8);
-            }
-         }
-      }
-      ImmReleaseContext(hwnd, hIMC);
-      return 0;
-   }
-#endif
-
-   if (route & WIN32_ROUTE_KEY)
-   {
-      if (route & (WIN32_ROUTE_KEY_MODS | WIN32_ROUTE_KEY_EVENT))
-      {
-         bool keydown     = !(message == WM_KEYUP || message == WM_SYSKEYUP);
-         unsigned keysym  = (lparam >> 16) & 0xff;
-         bool extended    = (lparam >> 24) & 0x1;
-
-         /* NumLock vs Pause correction */
-         if (keysym == 0x45 && (wparam == VK_NUMLOCK || wparam == VK_PAUSE))
-            extended = !extended;
-
-         /* extended keys will map to dinput if the high bit is set */
-         if (extended)
-            keysym |= 0x80;
-
-         /* tell the driver about shift and alt key events */
-         if (     (route & WIN32_ROUTE_KEY_MODS)
-               && (     keysym == 0x2A/*DIK_LSHIFT*/
-                     || keysym == 0x36/*DIK_RSHIFT*/
-                     || keysym == 0x38/*DIK_LMENU*/
-                     || keysym == 0xB8/*DIK_RMENU*/)
-               && win32_wnd_input_message(message, wparam, lparam))
-            return 0; /* key up already handled by the driver */
-
-         if (route & WIN32_ROUTE_KEY_EVENT)
-         {
-            unsigned keycode = input_keymaps_translate_keysym_to_rk(keysym);
-            uint16_t mod     = win32_update_keyboard_mods();
+            mod = win32_update_keyboard_mods();
 
             input_keyboard_event(keydown, keycode,
                   0, mod, RETRO_DEVICE_KEYBOARD);
+
+            if (message != WM_SYSKEYDOWN)
+               return 0;
+
+            if (
+                     wparam == VK_F10
+                  || wparam == VK_MENU
+                  || wparam == VK_RSHIFT
+               )
+               return 0;
          }
-      }
-
-      if (message != WM_SYSKEYDOWN)
-         return 0;
-
-      if (     wparam == VK_F10
-            || wparam == VK_MENU
-            || wparam == VK_RSHIFT)
-         return 0;
-   }
-
-#ifdef HAVE_CLIP_WINDOW
-   if (     (route & (WIN32_ROUTE_CLIP_ON | WIN32_ROUTE_CLIP_OFF))
-         && (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE))
-      win32_clip_window((route & WIN32_ROUTE_CLIP_ON) != 0);
+         break;
+      case WM_MOUSEMOVE:
+      case WM_POINTERDOWN:
+      case WM_POINTERUP:
+      case WM_POINTERUPDATE:
+      case WM_DEVICECHANGE:
+      case WM_MOUSEWHEEL:
+      case WM_MOUSEHWHEEL:
+      case WM_NCLBUTTONDBLCLK:
+         break;
+      case WM_DROPFILES:
+      case WM_SYSCOMMAND:
+      case WM_CHAR:
+      case WM_CLOSE:
+      case WM_DESTROY:
+      case WM_QUIT:
+      case WM_MOVE:
+      case WM_SIZE:
+#if !defined(_XBOX)
+      case WM_ENTERSIZEMOVE:
+      case WM_EXITSIZEMOVE:
+      case WM_ENTERMENULOOP:
+      case WM_EXITMENULOOP:
+      case WM_TIMER:
+      case WM_POWERBROADCAST:
 #endif
-
-   if (     (route & WIN32_ROUTE_INPUT)
-         && win32_wnd_input_message(message, wparam, lparam))
-      return 0;
-
-   if (route & WIN32_ROUTE_COMMON)
-   {
-      bool quit   = false;
-      LRESULT ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
-      if (quit)
-         return ret;
-   }
-
-   if (route & WIN32_ROUTE_DISPLAY)
-   {
-      /* Fix size after display mode switch when using SR */
-      HMONITOR mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-      if (mon)
-         win32_resize_after_display_change(hwnd, mon);
-      video_driver_window_output_changed();
+      case WM_GETMINMAXINFO:
+      case WM_COMMAND:
+#ifdef HAVE_THREADS
+      case WM_BROWSER_OPEN_RESULT:
+      case WM_BROWSER_CANCELLED:
+#endif
+         ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
+         if (quit)
+            return ret;
+         break;
+      case WM_SETFOCUS:
+#ifdef HAVE_CLIP_WINDOW
+         if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
+            win32_clip_window(true);
+#endif
+         break;
+      case WM_KILLFOCUS:
+#ifdef HAVE_CLIP_WINDOW
+         if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
+            win32_clip_window(false);
+#endif
+         break;
+      case WM_DISPLAYCHANGE:  /* Fix size after display mode switch when using SR */
+         {
+            HMONITOR mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+            if (mon)
+               win32_resize_after_display_change(hwnd, mon);
+         }
+         video_driver_window_output_changed();
+         break;
    }
 
    return DefWindowProc(hwnd, message, wparam, lparam);
 }
+
+#ifdef HAVE_WINRAWINPUT
+static LRESULT CALLBACK wnd_proc_winraw_common_internal(HWND hwnd,
+      UINT message, WPARAM wparam, LPARAM lparam)
+{
+   LRESULT ret;
+   bool quit                     = false;
+   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+
+#ifdef HAVE_TASKBAR
+   if (   !(g_win32_flags & WIN32_CMN_FLAG_TASKBAR_CREATED)
+       && g_win32->taskbar_message
+       && message == g_win32->taskbar_message)
+      g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
+#endif
+
+   switch (message)
+   {
+      case WM_KEYUP:                /* Key released */
+      case WM_SYSKEYUP:             /* Key released */
+         /* fall-through */
+      case WM_KEYDOWN:              /* Key pressed  */
+      case WM_SYSKEYDOWN:           /* Key pressed  */
+         quit                     = true;
+         if (message != WM_SYSKEYDOWN)
+            return 0;
+
+         /* keyboard_event in winraw_callback */
+
+         if (
+                  wparam == VK_F10
+               || wparam == VK_MENU
+               || wparam == VK_RSHIFT
+            )
+            return 0;
+         break;
+      case WM_MOUSEMOVE:
+      case WM_POINTERDOWN:
+      case WM_POINTERUP:
+      case WM_POINTERUPDATE:
+      case WM_MOUSEWHEEL:
+      case WM_MOUSEHWHEEL:
+      case WM_NCLBUTTONDBLCLK:
+         break;
+      case WM_DROPFILES:
+      case WM_SYSCOMMAND:
+      case WM_CHAR:
+      case WM_CLOSE:
+      case WM_DESTROY:
+      case WM_QUIT:
+      case WM_MOVE:
+      case WM_SIZE:
+#if !defined(_XBOX)
+      case WM_TIMER:
+         if (   wparam == WIN32_HOTPLUG_TIMER_ID
+             && winraw_handle_message(message, wparam, lparam))
+            return 0;
+         ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
+         if (quit)
+            return ret;
+         break;
+#endif
+#if !defined(_XBOX)
+      case WM_ENTERSIZEMOVE:
+      case WM_EXITSIZEMOVE:
+      case WM_ENTERMENULOOP:
+      case WM_EXITMENULOOP:
+      case WM_POWERBROADCAST:
+#endif
+      case WM_GETMINMAXINFO:
+      case WM_COMMAND:
+#ifdef HAVE_THREADS
+      case WM_BROWSER_OPEN_RESULT:
+      case WM_BROWSER_CANCELLED:
+#endif
+         ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
+         if (quit)
+            return ret;
+         break;
+      case WM_SETFOCUS:
+#ifdef HAVE_CLIP_WINDOW
+         if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
+            win32_clip_window(true);
+#endif
+#if !defined(_XBOX)
+         if (winraw_handle_message(message, wparam, lparam))
+            return 0;
+#endif
+         break;
+      case WM_KILLFOCUS:
+#ifdef HAVE_CLIP_WINDOW
+         if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
+            win32_clip_window(false);
+#endif
+#if !defined(_XBOX)
+         if (winraw_handle_message(message, wparam, lparam))
+            return 0;
+#endif
+         break;
+      case WM_DISPLAYCHANGE:  /* Fix size after display mode switch when using SR */
+         {
+            HMONITOR mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+            if (mon)
+               win32_resize_after_display_change(hwnd, mon);
+         }
+         video_driver_window_output_changed();
+         break;
+      case WM_DEVICECHANGE:
+#if !defined(_XBOX)
+         if (winraw_handle_message(message, wparam, lparam))
+            return 0;
+#endif
+         break;
+   }
+
+   return DefWindowProc(hwnd, message, wparam, lparam);
+}
+#endif
+
+#if defined(_MSC_VER) && !defined(_XBOX)
+#pragma comment(lib, "Imm32")
+#endif
+
+#ifdef HAVE_DINPUT
+static LRESULT CALLBACK wnd_proc_common_dinput_internal(HWND hwnd,
+      UINT message, WPARAM wparam, LPARAM lparam)
+{
+   LRESULT ret;
+   bool keydown                  = true;
+   bool quit                     = false;
+   win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+
+#ifdef HAVE_TASKBAR
+   if (   !(g_win32_flags & WIN32_CMN_FLAG_TASKBAR_CREATED)
+       && g_win32->taskbar_message
+       && message == g_win32->taskbar_message)
+      g_win32_flags |= WIN32_CMN_FLAG_TASKBAR_CREATED;
+#endif
+
+   switch (message)
+   {
+      case WM_IME_ENDCOMPOSITION:
+         input_keyboard_event(true, 1, 0x80000000, 0, RETRO_DEVICE_KEYBOARD);
+         break;
+      case WM_IME_COMPOSITION:
+         {
+            HIMC    hIMC = ImmGetContext(hwnd);
+            /* Process composition and result strings separately;
+             * ImmGetCompositionStringW expects a single flag per call. */
+            unsigned gcs_flags[2] = { GCS_RESULTSTR, GCS_COMPSTR };
+            int f;
+            for (f = 0; f < 2; f++)
+            {
+               unsigned gcs_flag = gcs_flags[f];
+               if (!(lparam & gcs_flag))
+                  continue;
+               {
+                  int i;
+                  /* Request up to 2 wide chars (4 bytes). Return value is in bytes. */
+                  wchar_t wstr[3] = {0, 0, 0};
+                  LONG byte_len   = ImmGetCompositionStringW(
+                        hIMC, gcs_flag, wstr, 2 * sizeof(wchar_t));
+                  int char_count;
+
+                  if (byte_len <= 0 || byte_len > (LONG)(2 * sizeof(wchar_t)))
+                     continue;
+
+                  char_count = byte_len / (int)sizeof(wchar_t);
+
+                  for (i = 0; i < char_count; i++)
+                  {
+                     wchar_t single[2];
+                     char *utf8;
+                     size_t utf8_len;
+                     uint32_t packed = 0;
+
+                     single[0] = wstr[i];
+                     single[1] = 0;
+
+                     utf8 = utf16_to_utf8_string_alloc(single);
+                     if (!utf8)
+                        continue;
+
+                     utf8_len = strlen(utf8);
+
+                     /* Pack up to 3 UTF-8 bytes into the low 24 bits and
+                      * the composition/result flag into the high byte.
+                      * This matches what the receiver expects as a uint32. */
+                     if (utf8_len >= 1 && utf8_len <= 3)
+                     {
+                        memcpy(&packed, utf8, utf8_len);
+                        if (utf8_len >= 2)
+                           ((unsigned char*)&packed)[3] =
+                              (unsigned char)((gcs_flag) | (gcs_flag >> 4));
+                        input_keyboard_event(true, 1, (uint32_t)packed, 0,
+                              RETRO_DEVICE_KEYBOARD);
+                     }
+                     free(utf8);
+                  }
+               }
+            }
+            ImmReleaseContext(hwnd, hIMC);
+            return 0;
+         }
+         break;
+      case WM_KEYUP:                /* Key released */
+      case WM_SYSKEYUP:             /* Key released */
+         keydown                  = false;
+         /* fall-through */
+      case WM_KEYDOWN:              /* Key pressed  */
+      case WM_SYSKEYDOWN:           /* Key pressed  */
+         quit                     = true;
+         {
+            uint16_t mod          = 0;
+            unsigned keycode      = 0;
+            unsigned keysym       = (lparam >> 16) & 0xff;
+            bool extended         = (lparam >> 24) & 0x1;
+
+            /* NumLock vs Pause correction */
+            if (keysym == 0x45 && (wparam == VK_NUMLOCK || wparam == VK_PAUSE))
+               extended = !extended;
+
+            /* extended keys will map to dinput if the high bit is set */
+            if (extended)
+               keysym |= 0x80;
+
+            /* tell the driver about shift and alt key events */
+            if (        keysym == 0x2A/*DIK_LSHIFT*/
+                     || keysym == 0x36/*DIK_RSHIFT*/
+                     || keysym == 0x38/*DIK_LMENU*/
+                     || keysym == 0xB8/*DIK_RMENU*/)
+            {
+               void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
+               if (input_data && dinput_handle_message(input_data,
+                        message, wparam, lparam))
+                  return 0; /* key up already handled by the driver */
+            }
+
+            keycode = input_keymaps_translate_keysym_to_rk(keysym);
+
+            mod = win32_update_keyboard_mods();
+
+            input_keyboard_event(keydown, keycode,
+                  0, mod, RETRO_DEVICE_KEYBOARD);
+
+            if (message != WM_SYSKEYDOWN)
+               return 0;
+
+            if (
+                     wparam == VK_F10
+                  || wparam == VK_MENU
+                  || wparam == VK_RSHIFT
+               )
+               return 0;
+         }
+         break;
+      case WM_MOUSEMOVE:
+      case WM_POINTERDOWN:
+      case WM_POINTERUP:
+      case WM_POINTERUPDATE:
+      case WM_DEVICECHANGE:
+      case WM_MOUSEWHEEL:
+      case WM_MOUSEHWHEEL:
+      case WM_NCLBUTTONDBLCLK:
+#if !defined(_XBOX)
+         {
+            void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
+            if (input_data && dinput_handle_message(input_data,
+                     message, wparam, lparam))
+               return 0;
+         }
+#endif
+         break;
+      case WM_DROPFILES:
+      case WM_SYSCOMMAND:
+      case WM_CHAR:
+      case WM_CLOSE:
+      case WM_DESTROY:
+      case WM_QUIT:
+      case WM_MOVE:
+      case WM_SIZE:
+#if !defined(_XBOX)
+      case WM_TIMER:
+         if (wparam == WIN32_HOTPLUG_TIMER_ID)
+         {
+            void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
+            if (input_data && dinput_handle_message(input_data,
+                     message, wparam, lparam))
+               return 0;
+         }
+         ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
+         if (quit)
+            return ret;
+         break;
+#endif
+#if !defined(_XBOX)
+      case WM_ENTERSIZEMOVE:
+      case WM_EXITSIZEMOVE:
+      case WM_ENTERMENULOOP:
+      case WM_EXITMENULOOP:
+      case WM_POWERBROADCAST:
+#endif
+      case WM_GETMINMAXINFO:
+      case WM_COMMAND:
+#ifdef HAVE_THREADS
+      case WM_BROWSER_OPEN_RESULT:
+      case WM_BROWSER_CANCELLED:
+#endif
+         ret = wnd_proc_common(&quit, hwnd, message, wparam, lparam);
+         if (quit)
+            return ret;
+         break;
+      case WM_SETFOCUS:
+#ifdef HAVE_CLIP_WINDOW
+         if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
+            win32_clip_window(true);
+#endif
+#if !defined(_XBOX)
+         {
+            void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
+            if (input_data && dinput_handle_message(input_data,
+                     message, wparam, lparam))
+               return 0;
+         }
+#endif
+         break;
+      case WM_KILLFOCUS:
+#ifdef HAVE_CLIP_WINDOW
+         if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
+            win32_clip_window(false);
+#endif
+#if !defined(_XBOX)
+         {
+            void* input_data = (void*)(LONG_PTR)GetWindowLongPtr(main_window.hwnd, GWLP_USERDATA);
+            if (input_data && dinput_handle_message(input_data,
+                     message, wparam, lparam))
+               return 0;
+         }
+#endif
+         break;
+      case WM_DISPLAYCHANGE:  /* Fix size after display mode switch when using SR */
+         {
+            HMONITOR mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+            if (mon)
+               win32_resize_after_display_change(hwnd, mon);
+         }
+         video_driver_window_output_changed();
+         break;
+   }
+
+   return DefWindowProc(hwnd, message, wparam, lparam);
+}
+#endif
+
+#if defined(HAVE_D3D) || defined(HAVE_D3D8) || defined(HAVE_D3D9) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
+LRESULT CALLBACK wnd_proc_d3d_common(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   if (message == WM_CREATE)
+   {
+      if (DragAcceptFiles_func)
+         DragAcceptFiles_func(hwnd, true);
+
+      g_win32_flags |= WIN32_CMN_FLAG_INITED;
+      return 0;
+   }
+
+   return wnd_proc_common_internal(hwnd, message, wparam, lparam);
+}
+
+#ifdef HAVE_WINRAWINPUT
+LRESULT CALLBACK wnd_proc_d3d_winraw(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   if (message == WM_CREATE)
+   {
+      if (DragAcceptFiles_func)
+         DragAcceptFiles_func(hwnd, true);
+
+      g_win32_flags |= WIN32_CMN_FLAG_INITED;
+      return 0;
+   }
+
+   return wnd_proc_winraw_common_internal(hwnd, message, wparam, lparam);
+}
+#endif
+
+#ifdef HAVE_DINPUT
+LRESULT CALLBACK wnd_proc_d3d_dinput(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   if (message == WM_CREATE)
+   {
+      if (DragAcceptFiles_func)
+         DragAcceptFiles_func(hwnd, true);
+
+      g_win32_flags |= WIN32_CMN_FLAG_INITED;
+      return 0;
+   }
+
+   return wnd_proc_common_dinput_internal(hwnd, message, wparam, lparam);
+}
+#endif
+
+#endif
 
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
 extern void create_gl_context(HWND hwnd, bool *quit);
@@ -1390,6 +1661,33 @@ static LRESULT wnd_proc_wgl_wm_create(HWND hwnd)
    return 0;
 }
 
+#ifdef HAVE_DINPUT
+LRESULT CALLBACK wnd_proc_wgl_dinput(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   if (message == WM_CREATE)
+      return wnd_proc_wgl_wm_create(hwnd);
+   return wnd_proc_common_dinput_internal(hwnd, message, wparam, lparam);
+}
+#endif
+
+#ifdef HAVE_WINRAWINPUT
+LRESULT CALLBACK wnd_proc_wgl_winraw(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   if (message == WM_CREATE)
+      return wnd_proc_wgl_wm_create(hwnd);
+   return wnd_proc_winraw_common_internal(hwnd, message, wparam, lparam);
+}
+#endif
+
+LRESULT CALLBACK wnd_proc_wgl_common(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   if (message == WM_CREATE)
+      return wnd_proc_wgl_wm_create(hwnd);
+   return wnd_proc_common_internal(hwnd, message, wparam, lparam);
+}
 #endif
 
 #ifdef HAVE_VULKAN
@@ -1420,6 +1718,33 @@ static LRESULT wnd_proc_wm_vk_create(HWND hwnd)
    return 0;
 }
 
+#ifdef HAVE_DINPUT
+LRESULT CALLBACK wnd_proc_vk_dinput(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   if (message == WM_CREATE)
+      return wnd_proc_wm_vk_create(hwnd);
+   return wnd_proc_common_dinput_internal(hwnd, message, wparam, lparam);
+}
+#endif
+
+#ifdef HAVE_WINRAWINPUT
+LRESULT CALLBACK wnd_proc_vk_winraw(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   if (message == WM_CREATE)
+      return wnd_proc_wm_vk_create(hwnd);
+   return wnd_proc_winraw_common_internal(hwnd, message, wparam, lparam);
+}
+#endif
+
+LRESULT CALLBACK wnd_proc_vk_common(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   if (message == WM_CREATE)
+      return wnd_proc_wm_vk_create(hwnd);
+   return wnd_proc_common_internal(hwnd, message, wparam, lparam);
+}
 #endif
 
 #ifdef HAVE_GDI
@@ -1434,7 +1759,8 @@ static LRESULT wnd_proc_wm_gdi_create(HWND hwnd)
    return 0;
 }
 
-/* The WM_PAINT body for a GDI window.  Presents gdi->bmp scaled into the
+/* Shared WM_PAINT body for all three GDI window procs (dinput,
+ * winraw, common).  Presents gdi->bmp scaled into the
  * aspect-ratio-aware viewport rect (gdi->vp), filling the area
  * outside the rect with black to produce letterbox / pillarbox
  * bars.  Reads bmp_dims for the source rect (the DDB's actual
@@ -1503,79 +1829,55 @@ static void wnd_proc_gdi_paint(gdi_t *gdi)
    SelectObject(gdi->memDC, gdi->bmp_old);
 }
 
-#endif
-
-/* The window procedure: one, for every video driver and every input
- * driver.
- *
- * A video family differs from another in what creating the window
- * sets up - a GL context, a Vulkan surface, a device context - and GDI
- * also paints from here. Everything else is win32_wnd_proc_route(). */
-LRESULT CALLBACK win32_window_proc(HWND hwnd, UINT message,
+#ifdef HAVE_DINPUT
+LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
    if (message == WM_CREATE)
-   {
-      switch (win32_wnd_family)
-      {
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)
-         case WIN32_WINDOW_WGL:
-            return wnd_proc_wgl_wm_create(hwnd);
-#endif
-#ifdef HAVE_VULKAN
-         case WIN32_WINDOW_VULKAN:
-            return wnd_proc_wm_vk_create(hwnd);
-#endif
-#ifdef HAVE_GDI
-         case WIN32_WINDOW_GDI:
-            return wnd_proc_wm_gdi_create(hwnd);
-#endif
-         case WIN32_WINDOW_D3D:
-         default:
-            break;
-      }
-
-      if (DragAcceptFiles_func)
-         DragAcceptFiles_func(hwnd, true);
-
-      g_win32_flags |= WIN32_CMN_FLAG_INITED;
-      return 0;
-   }
-
-#ifdef HAVE_GDI
-   if (message == WM_PAINT && win32_wnd_family == WIN32_WINDOW_GDI)
+      return wnd_proc_wm_gdi_create(hwnd);
+   else if (message == WM_PAINT)
    {
       gdi_t *gdi = (gdi_t*)video_driver_get_ptr();
       if (gdi && gdi->memDC)
          wnd_proc_gdi_paint(gdi);
    }
-#endif
 
-   return win32_wnd_proc_route(hwnd, message, wparam, lparam);
+   return wnd_proc_common_dinput_internal(hwnd, message, wparam, lparam);
 }
-
-/* Called by a video driver before it creates its window: which family
- * the window is, so that its creation sets up the right thing.
- *
- * The kind of input driver is read from the setting here, once, the
- * way each video driver used to read it to choose among its three
- * procedures. */
-void win32_window_proc_setup(enum win32_window_family family)
-{
-   settings_t *settings = config_get_ptr();
-
-   win32_wnd_family     = family;
-   win32_wnd_input      = WIN32_INPUT_OTHER;
-#ifdef HAVE_DINPUT
-   if (string_is_equal(settings->arrays.input_driver, "dinput"))
-      win32_wnd_input   = WIN32_INPUT_DINPUT;
 #endif
+
 #ifdef HAVE_WINRAWINPUT
-   if (string_is_equal(settings->arrays.input_driver, "raw"))
-      win32_wnd_input   = WIN32_INPUT_WINRAW;
-#endif
-   (void)settings;
+LRESULT CALLBACK wnd_proc_gdi_winraw(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   if (message == WM_CREATE)
+      return wnd_proc_wm_gdi_create(hwnd);
+   else if (message == WM_PAINT)
+   {
+      gdi_t *gdi = (gdi_t*)video_driver_get_ptr();
+      if (gdi && gdi->memDC)
+         wnd_proc_gdi_paint(gdi);
+   }
+
+   return wnd_proc_winraw_common_internal(hwnd, message, wparam, lparam);
 }
+#endif
+
+LRESULT CALLBACK wnd_proc_gdi_common(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   if (message == WM_CREATE)
+      return wnd_proc_wm_gdi_create(hwnd);
+   else if (message == WM_PAINT)
+   {
+      gdi_t *gdi = (gdi_t*)video_driver_get_ptr();
+      if (gdi && gdi->memDC)
+         wnd_proc_gdi_paint(gdi);
+   }
+
+   return wnd_proc_common_internal(hwnd, message, wparam, lparam);
+}
+#endif
 
 static bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,

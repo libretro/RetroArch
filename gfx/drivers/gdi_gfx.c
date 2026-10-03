@@ -2319,10 +2319,15 @@ static bool gfx_ctx_gdi_init(void)
    win32_window_reset();
    win32_monitor_init();
 
-   /* one window procedure for every video and input driver; the
-    * family says what creating the window sets up */
-   wndclass.lpfnWndProc = win32_window_proc;
-   win32_window_proc_setup(WIN32_WINDOW_GDI);
+   wndclass.lpfnWndProc   = wnd_proc_gdi_common;
+#ifdef HAVE_DINPUT
+   if (string_is_equal(settings->arrays.input_driver, "dinput"))
+      wndclass.lpfnWndProc   = wnd_proc_gdi_dinput;
+#endif
+#ifdef HAVE_WINRAWINPUT
+   if (string_is_equal(settings->arrays.input_driver, "raw"))
+      wndclass.lpfnWndProc   = wnd_proc_gdi_winraw;
+#endif
    if (!win32_window_init(&wndclass, true, NULL))
       return false;
    return true;

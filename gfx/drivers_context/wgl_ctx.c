@@ -135,6 +135,14 @@ WINGDIAPI BOOL WINAPI wglSwapBuffers(HDC);
 #endif
 #endif
 
+/* Forward declarations */
+LRESULT CALLBACK wnd_proc_wgl_common(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam);
+LRESULT CALLBACK wnd_proc_wgl_dinput(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam);
+LRESULT CALLBACK wnd_proc_wgl_winraw(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam);
+
 static BOOL (APIENTRY *p_swap_interval)(int);
 
 enum wgl_flags
@@ -654,10 +662,15 @@ static void *gfx_ctx_wgl_init(void *video_driver)
    win32_monitor_init();
 
 
-   /* one window procedure for every video and input driver; the
-    * family says what creating the window sets up */
-   wndclass.lpfnWndProc = win32_window_proc;
-   win32_window_proc_setup(WIN32_WINDOW_WGL);
+   wndclass.lpfnWndProc    = wnd_proc_wgl_common;
+#ifdef HAVE_DINPUT
+   if (string_is_equal(settings->arrays.input_driver, "dinput"))
+	   wndclass.lpfnWndProc = wnd_proc_wgl_dinput;
+#endif
+#ifdef HAVE_WINRAWINPUT
+   if (string_is_equal(settings->arrays.input_driver, "raw"))
+	   wndclass.lpfnWndProc = wnd_proc_wgl_winraw;
+#endif
 
    if (!win32_window_init(&wndclass, true, NULL))
    {

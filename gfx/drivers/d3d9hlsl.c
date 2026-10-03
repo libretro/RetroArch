@@ -7140,10 +7140,15 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
 
 #ifdef HAVE_WINDOW
    memset(&d3d->windowClass, 0, sizeof(d3d->windowClass));
-   /* one window procedure for every video and input driver; the
-    * family says what creating the window sets up */
-   d3d->windowClass.lpfnWndProc = win32_window_proc;
-   win32_window_proc_setup(WIN32_WINDOW_D3D);
+   d3d->windowClass.lpfnWndProc = wnd_proc_d3d_common;
+#ifdef HAVE_DINPUT
+   if (string_is_equal(settings->arrays.input_driver, "dinput"))
+      d3d->windowClass.lpfnWndProc = wnd_proc_d3d_dinput;
+#endif
+#ifdef HAVE_WINRAWINPUT
+   if (string_is_equal(settings->arrays.input_driver, "raw"))
+      d3d->windowClass.lpfnWndProc = wnd_proc_d3d_winraw;
+#endif
    win32_window_init(&d3d->windowClass, true, NULL);
 #endif
 
