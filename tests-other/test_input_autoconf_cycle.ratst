@@ -27,5 +27,10 @@
   "action": 2,
   "param_num": 1,
   "frame": 210
+},
+{
+  "action": 4,
+  "param_num": 0,
+  "frame": 210
 }
 ]

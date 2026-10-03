@@ -6,7 +6,8 @@
 # Usage: tests-other/test_autoconf.sh [path-to-retroarch]
 #
 # Requires a build with HAVE_TEST_DRIVERS (the default).  Runs
-# headless under timeout(1).
+# headless; each .ratst ends in a quit step, so a run lasts as long
+# as its script and timeout(1) only bounds one that hangs.
 #
 # Assertions match on device+port *fragments* rather than whole log
 # lines on purpose: autoconfig runs as asynchronous tasks and the
@@ -78,6 +79,11 @@ run() {
    HOME="$HOME_DIR" timeout 25 "$RETROARCH" \
       --config "$HOME_DIR/.config/retroarch/retroarch.cfg" \
       --verbose > "$LOG" 2>&1
+   # Every script ends in a quit step, so a run is over as soon as
+   # its last connect or disconnect has been applied.  timeout(1) is
+   # only there for a run that hangs; one that needs it has cost the
+   # suite 25 seconds and is a failure, not a slow pass.
+   [ $? -ne 124 ] || fail "run did not end on its own (killed by timeout)"
    assert_clean
    # Guard against a silent no-op: if the run produced no autoconfig
    # activity at all, every content assertion below would fail with

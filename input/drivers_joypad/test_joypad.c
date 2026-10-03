@@ -35,6 +35,7 @@
 #include <compat/strl.h>
 
 #include "../../config.def.h"
+#include "../../command.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../input_driver.h"
@@ -51,6 +52,8 @@
 #define JOYPAD_TEST_COMMAND_REMOVE_CONTROLLER       2
 /* Save Controller Profile for the port in param_num, as the menu does */
 #define JOYPAD_TEST_COMMAND_SAVE_PROFILE            3
+/* Quit, once what the steps before it started has been applied */
+#define JOYPAD_TEST_COMMAND_QUIT                    4
 #define JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST     16
 #define JOYPAD_TEST_COMMAND_BUTTON_PRESS_LAST      31
 #define JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST   32
@@ -486,6 +489,18 @@ static void test_joypad_poll(void)
             }
 #endif
             input_test_steps[i].handled = true;
+         }
+         else if (input_test_steps[i].action == JOYPAD_TEST_COMMAND_QUIT)
+         {
+            /* A script that ends here ends the run, instead of the
+             * run idling until something outside kills it.  A connect
+             * or disconnect still in flight is part of the script, so
+             * it is applied - and logged - first. */
+            if (input_autoconfigure_pending())
+               break;
+            input_test_steps[i].handled = true;
+            command_event(CMD_EVENT_QUIT, NULL);
+            break;
          }
          else if (   input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST
                   && input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_PRESS_LAST)
