@@ -2959,6 +2959,49 @@ static unsigned menu_displaylist_parse_input_info(file_list_t *list)
          count++;
    }
 
+   /* The mice. Each is numbered by its Mouse Index, the number a port
+    * is given it by. One mouse on the desk is often more than one of
+    * the input driver's mice: where the driver says which belong
+    * together they are one line, with all of their numbers. */
+   for (port = 0; port < MAX_INPUT_DEVICES; port++)
+   {
+      char numbers[64];
+      unsigned other;
+      size_t _len;
+      const char *name   = input_config_get_mouse_display_name(port);
+      const char *device = input_config_get_mouse_device(port);
+
+      if (!name || input_config_get_mouse_hidden(port))
+         continue;
+      /* a part of a mouse that is listed already */
+      for (other = 0; other < port; other++)
+         if (     *device
+               && input_config_get_mouse_display_name(other)
+               && !input_config_get_mouse_hidden(other)
+               && string_is_equal(device, input_config_get_mouse_device(other)))
+            break;
+      if (other < port)
+         continue;
+
+      _len = snprintf(numbers, sizeof(numbers), "%u", port + 1);
+      for (other = port + 1; other < MAX_INPUT_DEVICES; other++)
+         if (     *device
+               && _len < sizeof(numbers)
+               && input_config_get_mouse_display_name(other)
+               && !input_config_get_mouse_hidden(other)
+               && string_is_equal(device, input_config_get_mouse_device(other)))
+            _len += snprintf(numbers + _len, sizeof(numbers) - _len,
+                  ", %u", other + 1);
+
+      snprintf(entry, sizeof(entry),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MOUSE_DEVICE_NAME),
+            numbers, name);
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_SYSTEM_INFO_MOUSE_ENTRY,
+            MENU_SETTINGS_CORE_INFO_NONE, 0, port, NULL))
+         count++;
+   }
+
    return count;
 }
 

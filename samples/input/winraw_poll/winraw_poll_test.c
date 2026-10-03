@@ -70,6 +70,10 @@ void input_config_set_mouse_display_name(unsigned port, const char *name)
 void input_config_set_keyboard_display_name(unsigned idx, const char *name)
 { (void)idx; (void)name; }
 void input_config_clear_keyboard_display_names(void) { }
+void input_config_clear_mouse_info(void) { }
+void input_config_set_mouse_device(unsigned idx, const char *device,
+      uint16_t vid, uint16_t pid, bool hidden)
+{ (void)idx; (void)device; (void)vid; (void)pid; (void)hidden; }
 void input_config_set_keyboard_ids(unsigned idx, uint16_t vid, uint16_t pid)
 { (void)idx; (void)vid; (void)pid; }
 unsigned input_driver_lightgun_id_convert(unsigned id) { return id; }

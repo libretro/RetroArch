@@ -54,7 +54,11 @@
  *   mouse is listed, and so is one that is also a mouse where it is
  *   not known what its keyboard part is;
  * - a keyboard with no name of its own goes by what Windows calls
- *   it, and the frontend is given each listed keyboard's ids. */
+ *   it, and the frontend is given each listed keyboard's ids;
+ * - the mice keep their Mouse Index numbers, and the frontend is
+ *   told of each which device on the desk it is part of, its ids,
+ *   and a name of last resort - so that Input Information can list
+ *   one mouse once - and that the terminal server's is not one. */
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -134,8 +138,35 @@ struct menu_state *menu_state_get_ptr(void) { return &stub_menu; }
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
 void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
+/* the frontend's list of mice, as the driver sets it */
+static char     ms_names[16][64];
+static char     ms_device[16][64];
+static unsigned ms_vid[16], ms_pid[16];
+static bool     ms_hidden[16];
 void input_config_set_mouse_display_name(unsigned port, const char *name)
-{ (void)port; (void)name; }
+{
+   if (port < 16)
+      strlcpy(ms_names[port], name, sizeof(ms_names[port]));
+}
+void input_config_clear_mouse_info(void)
+{
+   memset(ms_names,  0, sizeof(ms_names));
+   memset(ms_device, 0, sizeof(ms_device));
+   memset(ms_vid,    0, sizeof(ms_vid));
+   memset(ms_pid,    0, sizeof(ms_pid));
+   memset(ms_hidden, 0, sizeof(ms_hidden));
+}
+void input_config_set_mouse_device(unsigned idx, const char *device,
+      uint16_t vid, uint16_t pid, bool hidden)
+{
+   if (idx < 16)
+   {
+      strlcpy(ms_device[idx], device, sizeof(ms_device[idx]));
+      ms_vid[idx]    = vid;
+      ms_pid[idx]    = pid;
+      ms_hidden[idx] = hidden;
+   }
+}
 /* the frontend's list of keyboard names, as the driver sets it */
 static char     kb_names[16][64];
 static unsigned kb_clears;
@@ -610,6 +641,39 @@ int main(void)
    key(K(40), SC_KEY_A, false);
    winraw_poll(wr);
    printf("   ok   a port given a keyboard reads a key from any of its parts, down until every part lets go; a key a mouse sends is read by the ports that read every keyboard\n");
+
+   /* ---- the mice ------------------------------------------------- */
+   /* the same desk, with a second part of the mouse and the terminal
+    * server's mouse. A report from a mouse not in the driver's list
+    * has the list made again. */
+   {
+      unsigned n = dev_says_n;
+      RAWMOUSE m;
+      SAYS(M(41), "\\\\?\\HID#VID_1B1C&PID_1B5A&MI_01&Col03#1&2&3#{378de44c-56ef-11d1-bc8c-00a0c91405dd}", "{MOUSE}", "", "USB Input Device");
+      SAYS(M(60), "\\\\?\\Root#RDP_MOU#0000#{378de44c-56ef-11d1-bc8c-00a0c91405dd}", "", "", "Terminal Server Mouse Driver");
+      dev_says_n = n;
+      Sleep(1100);
+      /* newest first; oldest first they are: the terminal server's,
+       * the virtual device's, the mouse, its second part, the combo's */
+      devices(11, M(50), K(50), K(21), K(20), M(41), K(40), M(40), M(31), K(31), K(30), M(60));
+      memset(&m, 0, sizeof(m));
+      m.lLastX = 1;
+      winraw_take(wr, RIM_TYPEMOUSE, M(41), &m);
+      winraw_poll(wr);
+   }
+   CHECK(wr->mouse_cnt == 5, "%u mice in the driver's list, want 5", wr->mouse_cnt);
+   CHECK(ms_hidden[0] && !ms_hidden[1] && !ms_hidden[2] && !ms_hidden[3] && !ms_hidden[4],
+         "the terminal server's mouse, and only it, is one to leave out: %d %d %d %d %d",
+         ms_hidden[0], ms_hidden[1], ms_hidden[2], ms_hidden[3], ms_hidden[4]);
+   CHECK(!strcmp(ms_device[2], "{MOUSE}") && !strcmp(ms_device[3], "{MOUSE}")
+         && strcmp(ms_device[1], ms_device[2]) && strcmp(ms_device[4], ms_device[2]),
+         "mice 3 and 4 are one mouse and the others are not: \"%s\" \"%s\" \"%s\" \"%s\"",
+         ms_device[1], ms_device[2], ms_device[3], ms_device[4]);
+   CHECK(ms_vid[2] == 0x1B1C && ms_pid[2] == 0x1B5A && ms_vid[4] == 0x046D,
+         "the mice's ids: %04x:%04x and %04x", ms_vid[2], ms_pid[2], ms_vid[4]);
+   CHECK(!strcmp(ms_names[1], "Vendor composite virtual input device"),
+         "a mouse with no name of its own goes by \"%s\"", ms_names[1]);
+   printf("   ok   the mice keep their numbers; the frontend is told which are one mouse, their ids, a name for the nameless, and that the terminal server's is none\n");
 
    winraw_free(wr);
    if (failures)

@@ -5902,9 +5902,10 @@ void *input_driver_init_wrap(input_driver_t *input, const char *name)
    void *ret = NULL;
    if (!input || !input->init)
       return NULL;
-   /* the keyboards listed are the last driver's; the one starting
-    * lists its own, if it can tell them apart */
+   /* the keyboards and mice listed are the last driver's; the one
+    * starting lists its own, if it can tell them apart */
    input_config_clear_keyboard_display_names();
+   input_config_clear_mouse_info();
    if ((ret = input->init(name)))
    {
       input_driver_init_joypads();
@@ -7442,6 +7443,49 @@ void input_config_set_mouse_display_name(unsigned port, const char *name)
    if (*name_ascii)
       strlcpy(input_st->input_mouse_info[port].display_name, name_ascii,
             sizeof(input_st->input_mouse_info[port].display_name));
+}
+
+void input_config_clear_mouse_info(void)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   memset(input_st->input_mouse_info, 0, sizeof(input_st->input_mouse_info));
+}
+
+void input_config_set_mouse_device(unsigned idx, const char *device,
+      uint16_t vid, uint16_t pid, bool hidden)
+{
+   input_mouse_info_t *info;
+   if (idx >= MAX_INPUT_DEVICES)
+      return;
+   info         = &input_driver_st.input_mouse_info[idx];
+   strlcpy(info->device, device ? device : "", sizeof(info->device));
+   info->vid    = vid;
+   info->pid    = pid;
+   info->hidden = hidden;
+}
+
+const char *input_config_get_mouse_device(unsigned idx)
+{
+   return (idx < MAX_INPUT_DEVICES)
+      ? input_driver_st.input_mouse_info[idx].device : "";
+}
+
+uint16_t input_config_get_mouse_vid(unsigned idx)
+{
+   return (idx < MAX_INPUT_DEVICES)
+      ? input_driver_st.input_mouse_info[idx].vid : 0;
+}
+
+uint16_t input_config_get_mouse_pid(unsigned idx)
+{
+   return (idx < MAX_INPUT_DEVICES)
+      ? input_driver_st.input_mouse_info[idx].pid : 0;
+}
+
+bool input_config_get_mouse_hidden(unsigned idx)
+{
+   return (idx < MAX_INPUT_DEVICES)
+      && input_driver_st.input_mouse_info[idx].hidden;
 }
 
 void input_config_clear_keyboard_display_names(void)

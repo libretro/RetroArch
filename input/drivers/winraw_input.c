@@ -390,276 +390,6 @@ static HWND winraw_create_window(WNDPROC wnd_proc)
  * which runs on the main thread (same split as the joypad
  * autoconfig task). */
 
-typedef struct
-{
-   HANDLE hnd;      /* raw input device handle; used for queries only */
-   char name[256];
-   /* keyboards: the name to go by if the device gives none, and its
-    * USB ids for the menu */
-   char fallback[80];
-   uint16_t vid;
-   uint16_t pid;
-} winraw_mouse_name_entry_t;
-
-/* a listed keyboard, as the names task is asked about it */
-typedef struct
-{
-   HANDLE hnd;
-   char fallback[80];
-   uint16_t vid;
-   uint16_t pid;
-} winraw_kb_name_req_t;
-
-typedef struct
-{
-   winraw_mouse_name_entry_t *entries;
-   unsigned count;
-   bool keyboards; /* the names are keyboards', not mice's */
-} winraw_mouse_names_handle_t;
-
-static void winraw_mouse_names_free(retro_task_t *task)
-{
-   winraw_mouse_names_handle_t *h = NULL;
-   if (!task)
-      return;
-   if ((h = (winraw_mouse_names_handle_t*)task->state))
-   {
-      free(h->entries);
-      free(h);
-   }
-   task->state = NULL;
-}
-
-static void winraw_mouse_names_handler(retro_task_t *task)
-{
-   unsigned i;
-   winraw_mouse_names_handle_t *h = NULL;
-
-   if (!task)
-      return;
-
-   if ((h = (winraw_mouse_names_handle_t*)task->state))
-   {
-      for (i = 0; i < h->count; ++i)
-      {
-         char *name     = h->entries[i].name;
-         /* Reset the in/out size argument every iteration -
-          * GetRawInputDeviceInfoA() may modify it. */
-         UINT name_size = sizeof(h->entries[i].name);
-         UINT r         = GetRawInputDeviceInfoA(h->entries[i].hnd,
-               RIDI_DEVICENAME, name, &name_size);
-         if (r == (UINT)-1 || r == 0)
-            name[0] = '\0';
-
-         if (name[0])
-         {
-            HANDLE hhid = CreateFile(name,
-                  0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
-                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
-            if (hhid != INVALID_HANDLE_VALUE)
-            {
-               wchar_t prod_buf[128];
-               prod_buf[0] = '\0';
-               if (HidD_GetProductString(hhid, prod_buf, sizeof(prod_buf)))
-                  wcstombs(name, prod_buf, sizeof(h->entries[i].name));
-               /* a keyboard goes by its product name or by what
-                * Windows calls the device, never by its path */
-               else if (h->keyboards)
-                  name[0] = '\0';
-               CloseHandle(hhid);
-            }
-            else if (h->keyboards)
-               name[0] = '\0';
-         }
-
-         if (!name[0] && h->entries[i].fallback[0])
-            strlcpy(name, h->entries[i].fallback,
-                  sizeof(h->entries[i].name));
-         if (!name[0])
-            strlcpy_lit(name, "<name not found>",
-                  sizeof(h->entries[i].name));
-      }
-   }
-
-   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
-}
-
-static void winraw_mouse_names_cb(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
-{
-   unsigned i;
-   winraw_mouse_names_handle_t *h = NULL;
-
-   if (!task)
-      return;
-   if (!(h = (winraw_mouse_names_handle_t*)task->state))
-      return;
-
-   /* input_config_set_mouse_display_name() writes global input
-    * config state, so it must run here on the main thread. */
-   if (h->keyboards)
-   {
-      /* the list as it is now, whole: a keyboard that has gone is
-       * not left in it */
-      input_config_clear_keyboard_display_names();
-      for (i = 0; i < h->count; ++i)
-      {
-         input_config_set_keyboard_display_name(i, h->entries[i].name);
-         input_config_set_keyboard_ids(i,
-               h->entries[i].vid, h->entries[i].pid);
-         RARCH_LOG("[WinRaw] Found keyboard #%u: \"%s\".\n",
-               i + 1, h->entries[i].name);
-      }
-      return;
-   }
-   for (i = 0; i < h->count; ++i)
-   {
-      input_config_set_mouse_display_name(i, h->entries[i].name);
-      RARCH_LOG("[WinRaw] Found mouse #%u: \"%s\".\n",
-            i + 1, h->entries[i].name);
-   }
-}
-
-/* The names of mice (from @mice) or, with @mice NULL, of keyboards
- * (from @kbs), looked up off the main thread and set on it. */
-static void winraw_push_names_task(
-      winraw_mouse_t *mice, const winraw_kb_name_req_t *kbs,
-      unsigned mouse_cnt)
-{
-   unsigned i;
-   retro_task_t *task             = NULL;
-   winraw_mouse_names_handle_t *h = NULL;
-
-   if (!mouse_cnt)
-   {
-      /* no keyboards is a list too: what was listed goes */
-      if (!mice)
-         input_config_clear_keyboard_display_names();
-      return;
-   }
-
-   if (!(h = (winraw_mouse_names_handle_t*)calloc(1, sizeof(*h))))
-      return;
-   if (!(h->entries = (winraw_mouse_name_entry_t*)calloc(
-         mouse_cnt, sizeof(*h->entries))))
-   {
-      free(h);
-      return;
-   }
-   h->count     = mouse_cnt;
-   h->keyboards = (mice == NULL);
-   for (i = 0; i < mouse_cnt; ++i)
-   {
-      if (mice)
-         h->entries[i].hnd = mice[i].hnd;
-      else
-      {
-         h->entries[i].hnd = kbs[i].hnd;
-         h->entries[i].vid = kbs[i].vid;
-         h->entries[i].pid = kbs[i].pid;
-         strlcpy(h->entries[i].fallback, kbs[i].fallback,
-               sizeof(h->entries[i].fallback));
-      }
-   }
-
-   if (!(task = task_init()))
-   {
-      free(h->entries);
-      free(h);
-      return;
-   }
-
-   task->handler  = winraw_mouse_names_handler;
-   task->state    = h;
-   task->title    = NULL;
-   task->callback = winraw_mouse_names_cb;
-   task->cleanup  = winraw_mouse_names_free;
-   task->flags   |= RETRO_TASK_FLG_MUTE;
-
-   task_queue_push(task);
-}
-
-static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
-{
-   UINT i;
-   POINT crs_pos;
-   winraw_mouse_t *mice_r   = NULL;
-   unsigned mouse_cnt_r     = 0;
-   RAWINPUTDEVICELIST *devs = NULL;
-   UINT dev_cnt             = 0;
-   UINT r                   = GetRawInputDeviceList(
-         NULL, &dev_cnt, sizeof(RAWINPUTDEVICELIST));
-
-   if (r == (UINT)-1)
-      goto error;
-
-   if (!(devs = (RAWINPUTDEVICELIST*)malloc(
-         dev_cnt * sizeof(RAWINPUTDEVICELIST))))
-      goto error;
-
-   if ((dev_cnt = GetRawInputDeviceList(devs,
-         &dev_cnt, sizeof(RAWINPUTDEVICELIST))) == (UINT)-1)
-      goto error;
-
-   for (i = 0; i < dev_cnt; ++i)
-      mouse_cnt_r += devs[i].dwType == RIM_TYPEMOUSE ? 1 : 0;
-
-   if (mouse_cnt_r)
-   {
-      if (!(mice_r = (winraw_mouse_t*)calloc(
-            1, mouse_cnt_r * sizeof(winraw_mouse_t))))
-         goto error;
-
-      if (!GetCursorPos(&crs_pos))
-         goto error;
-
-      for (i = 0; i < mouse_cnt_r; ++i)
-      {
-         mice_r[i].x = crs_pos.x;
-         mice_r[i].y = crs_pos.y;
-      }
-   }
-
-   *mouse_cnt = mouse_cnt_r;
-
-   /* count is already checked, so this is safe */
-   for (i = mouse_cnt_r = 0; i < dev_cnt; ++i)
-   {
-      if (devs[i].dwType == RIM_TYPEMOUSE)
-      {
-         mouse_cnt_r++;
-         mice_r[*mouse_cnt - mouse_cnt_r].hnd = devs[i].hDevice;
-      }
-   }
-
-   *mice      = mice_r;
-
-   winraw_push_names_task(mice_r, NULL, mouse_cnt_r);
-   free(devs);
-
-   return true;
-
-error:
-   free(devs);
-   free(mice_r);
-   *mice      = NULL;
-   *mouse_cnt = 0;
-   return false;
-}
-
-/* scancode in the low 16 bits, down in bit 16, modifiers above */
-#define WINRAW_KEV_PACK(mcode, down, mod) \
-   ((uint32_t)(mcode) | ((uint32_t)((down) ? 1 : 0) << 16) | ((uint32_t)(mod) << 17))
-
-static uint16_t winraw_held_mods(const winraw_input_t *wr);
-
-/* Set when Windows has said devices came or went (the hotplug timer,
- * on the window's thread); the next poll makes the keyboard list
- * again. That is how a keyboard that was unplugged leaves the list:
- * it sends no last key to notice it by. */
-static retro_atomic_int_t winraw_devices_changed;
-
 /* ---- which device on the desk a raw input device is part of -------- */
 
 /* What is known of one raw input device beyond its handle. */
@@ -857,6 +587,303 @@ static void winraw_device_strings(HANDLE hnd, char *path,
 }
 #define WINRAW_DEVICE_STRINGS winraw_device_strings
 #endif
+
+typedef struct
+{
+   HANDLE hnd;      /* raw input device handle; used for queries only */
+   char name[256];
+   /* the name to go by if the device gives none, and its USB ids for
+    * the menu */
+   char fallback[80];
+   uint16_t vid;
+   uint16_t pid;
+   /* mice: which device on the desk it is part of, and whether
+    * nothing on the desk is behind it */
+   char device[48];
+   bool remote;
+} winraw_mouse_name_entry_t;
+
+/* a listed keyboard, as the names task is asked about it */
+typedef struct
+{
+   HANDLE hnd;
+   char fallback[80];
+   uint16_t vid;
+   uint16_t pid;
+} winraw_kb_name_req_t;
+
+typedef struct
+{
+   winraw_mouse_name_entry_t *entries;
+   unsigned count;
+   bool keyboards; /* the names are keyboards', not mice's */
+} winraw_mouse_names_handle_t;
+
+static void winraw_mouse_names_free(retro_task_t *task)
+{
+   winraw_mouse_names_handle_t *h = NULL;
+   if (!task)
+      return;
+   if ((h = (winraw_mouse_names_handle_t*)task->state))
+   {
+      free(h->entries);
+      free(h);
+   }
+   task->state = NULL;
+}
+
+static void winraw_mouse_names_handler(retro_task_t *task)
+{
+   unsigned i;
+   winraw_mouse_names_handle_t *h = NULL;
+
+   if (!task)
+      return;
+
+   if ((h = (winraw_mouse_names_handle_t*)task->state))
+   {
+      for (i = 0; i < h->count; ++i)
+      {
+         char *name     = h->entries[i].name;
+         /* Reset the in/out size argument every iteration -
+          * GetRawInputDeviceInfoA() may modify it. */
+         UINT name_size = sizeof(h->entries[i].name);
+         UINT r         = GetRawInputDeviceInfoA(h->entries[i].hnd,
+               RIDI_DEVICENAME, name, &name_size);
+         if (r == (UINT)-1 || r == 0)
+            name[0] = '\0';
+
+         if (name[0])
+         {
+            HANDLE hhid = CreateFile(name,
+                  0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+            if (hhid != INVALID_HANDLE_VALUE)
+            {
+               wchar_t prod_buf[128];
+               prod_buf[0] = '\0';
+               if (HidD_GetProductString(hhid, prod_buf, sizeof(prod_buf)))
+                  wcstombs(name, prod_buf, sizeof(h->entries[i].name));
+               /* a device goes by its product name or by what
+                * Windows calls it, not by its path */
+               else if (h->entries[i].fallback[0])
+                  name[0] = '\0';
+               CloseHandle(hhid);
+            }
+            else if (h->entries[i].fallback[0])
+               name[0] = '\0';
+         }
+
+         if (!name[0] && h->entries[i].fallback[0])
+            strlcpy(name, h->entries[i].fallback,
+                  sizeof(h->entries[i].name));
+         if (!name[0])
+            strlcpy_lit(name, "<name not found>",
+                  sizeof(h->entries[i].name));
+      }
+   }
+
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void winraw_mouse_names_cb(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   unsigned i;
+   winraw_mouse_names_handle_t *h = NULL;
+
+   if (!task)
+      return;
+   if (!(h = (winraw_mouse_names_handle_t*)task->state))
+      return;
+
+   /* input_config_set_mouse_display_name() writes global input
+    * config state, so it must run here on the main thread. */
+   if (h->keyboards)
+   {
+      /* the list as it is now, whole: a keyboard that has gone is
+       * not left in it */
+      input_config_clear_keyboard_display_names();
+      for (i = 0; i < h->count; ++i)
+      {
+         input_config_set_keyboard_display_name(i, h->entries[i].name);
+         input_config_set_keyboard_ids(i,
+               h->entries[i].vid, h->entries[i].pid);
+         RARCH_LOG("[WinRaw] Found keyboard #%u: \"%s\".\n",
+               i + 1, h->entries[i].name);
+      }
+      return;
+   }
+   /* the list as it is now, whole: a mouse that has gone is not left
+    * in it */
+   input_config_clear_mouse_info();
+   for (i = 0; i < h->count; ++i)
+   {
+      input_config_set_mouse_display_name(i, h->entries[i].name);
+      /* for Input Information: which of these are one mouse on the
+       * desk, and which has nothing behind it */
+      input_config_set_mouse_device(i, h->entries[i].device,
+            h->entries[i].vid, h->entries[i].pid, h->entries[i].remote);
+      RARCH_LOG("[WinRaw] Found mouse #%u: \"%s\".\n",
+            i + 1, h->entries[i].name);
+   }
+}
+
+/* The names of mice (from @mice) or, with @mice NULL, of keyboards
+ * (from @kbs), looked up off the main thread and set on it. */
+static void winraw_push_names_task(
+      winraw_mouse_t *mice, const winraw_kb_name_req_t *kbs,
+      unsigned mouse_cnt)
+{
+   unsigned i;
+   retro_task_t *task             = NULL;
+   winraw_mouse_names_handle_t *h = NULL;
+
+   if (!mouse_cnt)
+   {
+      /* none is a list too: what was listed goes */
+      if (!mice)
+         input_config_clear_keyboard_display_names();
+      else
+         input_config_clear_mouse_info();
+      return;
+   }
+
+   if (!(h = (winraw_mouse_names_handle_t*)calloc(1, sizeof(*h))))
+      return;
+   if (!(h->entries = (winraw_mouse_name_entry_t*)calloc(
+         mouse_cnt, sizeof(*h->entries))))
+   {
+      free(h);
+      return;
+   }
+   h->count     = mouse_cnt;
+   h->keyboards = (mice == NULL);
+   for (i = 0; i < mouse_cnt; ++i)
+   {
+      if (mice)
+      {
+         /* what Windows says of it, for its name of last resort and
+          * for telling which mice are one mouse on the desk */
+         winraw_dev_ident_t id;
+         char path[256], container[48], compat[256], desc[80];
+         h->entries[i].hnd = mice[i].hnd;
+         WINRAW_DEVICE_STRINGS(mice[i].hnd, path, container, compat, desc);
+         winraw_dev_ident(path, container, compat, desc, &id);
+         h->entries[i].vid    = id.vid;
+         h->entries[i].pid    = id.pid;
+         h->entries[i].remote = id.remote;
+         strlcpy(h->entries[i].device, id.key, sizeof(h->entries[i].device));
+         strlcpy(h->entries[i].fallback, id.desc,
+               sizeof(h->entries[i].fallback));
+      }
+      else
+      {
+         h->entries[i].hnd = kbs[i].hnd;
+         h->entries[i].vid = kbs[i].vid;
+         h->entries[i].pid = kbs[i].pid;
+         strlcpy(h->entries[i].fallback, kbs[i].fallback,
+               sizeof(h->entries[i].fallback));
+      }
+   }
+
+   if (!(task = task_init()))
+   {
+      free(h->entries);
+      free(h);
+      return;
+   }
+
+   task->handler  = winraw_mouse_names_handler;
+   task->state    = h;
+   task->title    = NULL;
+   task->callback = winraw_mouse_names_cb;
+   task->cleanup  = winraw_mouse_names_free;
+   task->flags   |= RETRO_TASK_FLG_MUTE;
+
+   task_queue_push(task);
+}
+
+static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
+{
+   UINT i;
+   POINT crs_pos;
+   winraw_mouse_t *mice_r   = NULL;
+   unsigned mouse_cnt_r     = 0;
+   RAWINPUTDEVICELIST *devs = NULL;
+   UINT dev_cnt             = 0;
+   UINT r                   = GetRawInputDeviceList(
+         NULL, &dev_cnt, sizeof(RAWINPUTDEVICELIST));
+
+   if (r == (UINT)-1)
+      goto error;
+
+   if (!(devs = (RAWINPUTDEVICELIST*)malloc(
+         dev_cnt * sizeof(RAWINPUTDEVICELIST))))
+      goto error;
+
+   if ((dev_cnt = GetRawInputDeviceList(devs,
+         &dev_cnt, sizeof(RAWINPUTDEVICELIST))) == (UINT)-1)
+      goto error;
+
+   for (i = 0; i < dev_cnt; ++i)
+      mouse_cnt_r += devs[i].dwType == RIM_TYPEMOUSE ? 1 : 0;
+
+   if (mouse_cnt_r)
+   {
+      if (!(mice_r = (winraw_mouse_t*)calloc(
+            1, mouse_cnt_r * sizeof(winraw_mouse_t))))
+         goto error;
+
+      if (!GetCursorPos(&crs_pos))
+         goto error;
+
+      for (i = 0; i < mouse_cnt_r; ++i)
+      {
+         mice_r[i].x = crs_pos.x;
+         mice_r[i].y = crs_pos.y;
+      }
+   }
+
+   *mouse_cnt = mouse_cnt_r;
+
+   /* count is already checked, so this is safe */
+   for (i = mouse_cnt_r = 0; i < dev_cnt; ++i)
+   {
+      if (devs[i].dwType == RIM_TYPEMOUSE)
+      {
+         mouse_cnt_r++;
+         mice_r[*mouse_cnt - mouse_cnt_r].hnd = devs[i].hDevice;
+      }
+   }
+
+   *mice      = mice_r;
+
+   winraw_push_names_task(mice_r, NULL, mouse_cnt_r);
+   free(devs);
+
+   return true;
+
+error:
+   free(devs);
+   free(mice_r);
+   *mice      = NULL;
+   *mouse_cnt = 0;
+   return false;
+}
+
+/* scancode in the low 16 bits, down in bit 16, modifiers above */
+#define WINRAW_KEV_PACK(mcode, down, mod) \
+   ((uint32_t)(mcode) | ((uint32_t)((down) ? 1 : 0) << 16) | ((uint32_t)(mod) << 17))
+
+static uint16_t winraw_held_mods(const winraw_input_t *wr);
+
+/* Set when Windows has said devices came or went (the hotplug timer,
+ * on the window's thread); the next poll makes the keyboard list
+ * again. That is how a keyboard that was unplugged leaves the list:
+ * it sends no last key to notice it by. */
+static retro_atomic_int_t winraw_devices_changed;
 
 /* Which keyboards there are.
  *

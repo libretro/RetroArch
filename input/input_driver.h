@@ -367,6 +367,14 @@ struct remote_message
 typedef struct
 {
    char display_name[NAME_MAX_LENGTH];
+   /* For the menu's Input Information, where the driver says: which
+    * device on the desk this mouse is part of ("" if not known), its
+    * USB ids (both 0 if not known), and whether it is one to leave
+    * out - an index with no mouse behind it. */
+   char device[64];
+   uint16_t vid;
+   uint16_t pid;
+   bool hidden;
 } input_mouse_info_t;
 
 /* A keyboard the input driver can tell from the others: its name, for
@@ -1069,6 +1077,23 @@ void input_config_set_device_name(unsigned port, const char *name);
  */
 void input_config_set_device_display_name(unsigned port, const char *name);
 void input_config_set_mouse_display_name(unsigned port, const char *name);
+
+/* The mice, for the menu (Information > Input Information). A mouse is
+ * numbered by its Mouse Index, which is the input driver's own index
+ * and is not changed by any of this. A driver that knows more says it
+ * here: @device is what tells one device on the desk from another,
+ * the same for every part of it ("" if not known) - one mouse is
+ * often two or three of the system's mice, and they are listed on
+ * one line; @hidden is an index nothing on the desk is behind.
+ * Cleared, names included, whenever an input driver starts. Main
+ * thread. */
+void input_config_clear_mouse_info(void);
+void input_config_set_mouse_device(unsigned idx, const char *device,
+      uint16_t vid, uint16_t pid, bool hidden);
+const char *input_config_get_mouse_device(unsigned idx);
+uint16_t input_config_get_mouse_vid(unsigned idx);
+uint16_t input_config_get_mouse_pid(unsigned idx);
+bool input_config_get_mouse_hidden(unsigned idx);
 
 /* The keyboards the input driver can tell apart, for the menu
  * (Information > Input Information). A driver that lists its

@@ -31459,6 +31459,10 @@ MSG_HASH( /* Under a keyboard's entry in Information > Input Information: its US
    MENU_ENUM_LABEL_VALUE_KEYBOARD_DEVICE_INFO,
    "Device VID/PID: %d/%d"
    )
+MSG_HASH( /* An entry of Information > Input Information: a connected mouse. The first %s is its Mouse Index number, or several ("2, 3") when one mouse has more than one; the second is its name */
+   MENU_ENUM_LABEL_VALUE_MOUSE_DEVICE_NAME,
+   "Mouse %s: %s"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
    "Cheat Settings"

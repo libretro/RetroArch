@@ -3618,7 +3618,10 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    /* first clear all */
    for (i = 0; i < MAX_USERS; i++)
    {
+      /* (Mouse Index shows this for an index with no mouse; it is
+       * not a mouse to list) */
       input_config_set_mouse_display_name(i, "N/A");
+      input_config_set_mouse_device(i, "", 0, 0, true);
       udev->pointers[i]  = -1;
    }
 
@@ -3632,6 +3635,8 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
          if (mouse >= MAX_INPUT_DEVICES)
             continue;
          input_config_set_mouse_display_name(mouse, udev->devices[i]->ident);
+         input_config_set_mouse_device(mouse, udev->devices[i]->kbdev.key,
+               udev->devices[i]->vid, udev->devices[i]->pid, false);
          udev->pointers[mouse]     = i;
          mouse++;
       }
@@ -4475,6 +4480,8 @@ static void *udev_input_init(const char *joypad_driver)
           if (mouse < MAX_INPUT_DEVICES)
           {
              input_config_set_mouse_display_name(mouse, udev->devices[i]->ident);
+             input_config_set_mouse_device(mouse, udev->devices[i]->kbdev.key,
+                   udev->devices[i]->vid, udev->devices[i]->pid, false);
              udev->pointers[mouse] = i;
           }
           mouse++;
