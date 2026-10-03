@@ -82,6 +82,28 @@ jobs:
           fi
           echo "[pass] gfx/ does not name input_state_get_ptr"
 
+      - name: input/ does not reach into video state
+        shell: bash
+        run: |
+          set -eu
+          # The other direction of the step above. The input code used
+          # to take video_state_get_ptr() and work on the video
+          # driver's fields - the frame count, the core's geometry, the
+          # mouse cursor through the poke interface, the overlay
+          # interface and the driver's data. It goes through calls
+          # into gfx/ now (video_driver_show_mouse() and the rest).
+          # The Android input driver is the one file still to do: it
+          # creates and destroys the window surface on the app's
+          # lifecycle events, and is allowed here by name until that
+          # is moved.
+          if grep -rn "video_state_get_ptr" --include=*.c --include=*.h \
+                --include=*.m --include=*.cpp input/ \
+                | grep -v "^input/drivers/android_input.c:"; then
+             echo "FAIL: input/ takes the video driver's state directly" >&2
+             exit 1
+          fi
+          echo "[pass] input/ does not name video_state_get_ptr (android_input.c excepted)"
+
       - name: Restore ccache
         uses: actions/cache@v4
         with:

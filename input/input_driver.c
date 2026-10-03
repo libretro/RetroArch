@@ -4438,13 +4438,12 @@ static void input_overlay_get_mouse_scale(settings_t *settings,
       float *scale_x, float *scale_y,
       int *swipe_thres_x, int *swipe_thres_y)
 {
-   video_driver_state_t *video_st   = video_state_get_ptr();
-   struct retro_game_geometry *geom = &video_st->av_info.geometry;
+   const struct retro_game_geometry *geom = video_driver_get_core_geometry();
 
    if (geom->base_height)
    {
       float adj_x, adj_y;
-      unsigned output_size = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
+      unsigned output_size = video_driver_get_output_dims();
       float speed          = settings->floats.input_overlay_mouse_speed;
       float swipe_thres    =
             655.35f * settings->floats.input_overlay_mouse_swipe_threshold;
@@ -7250,20 +7249,9 @@ void input_game_focus_free(void)
 }
 
 #ifdef HAVE_OVERLAY
-static bool video_driver_overlay_interface(
-      const video_overlay_interface_t **iface)
-{
-   video_driver_state_t *video_st = video_state_get_ptr();
-   if (!video_st->current_video || !video_st->current_video->overlay_interface)
-      return false;
-   video_st->current_video->overlay_interface(video_st->data, iface);
-   return true;
-}
-
 static void input_overlay_enable_(bool enable)
 {
    settings_t *settings           = config_get_ptr();
-   video_driver_state_t *video_st = video_state_get_ptr();
    input_driver_state_t *input_st = &input_driver_st;
    input_overlay_t *ol            = input_st->overlay_ptr;
    float opacity                  = (ol && (ol->flags & INPUT_OVERLAY_IS_OSK))
@@ -7279,8 +7267,8 @@ static void input_overlay_enable_(bool enable)
    if (enable)
    {
       /* Set video interface */
-      ol->iface_data = video_st->data;
-      if (!video_driver_overlay_interface(&ol->iface) || !ol->iface)
+      if (     !video_driver_get_overlay_interface(&ol->iface, &ol->iface_data)
+            || !ol->iface)
       {
          RARCH_ERR("[Input] Overlay interface is not present in video driver.\n");
          ol->flags &= ~INPUT_OVERLAY_ALIVE;
@@ -7297,7 +7285,7 @@ static void input_overlay_enable_(bool enable)
       if (auto_rotate)
       {
          input_overlay_auto_rotate_(
-               VIDEO_DRIVER_OUTPUT_DIMS(video_st), true, ol);
+               video_driver_get_output_dims(), true, ol);
       }
 
       /* Enable */
@@ -7306,10 +7294,8 @@ static void input_overlay_enable_(bool enable)
 
       ol->flags |= (INPUT_OVERLAY_ENABLE | INPUT_OVERLAY_BLOCKED);
 
-      if (     hide_mouse_cursor
-            && video_st->poke
-            && video_st->poke->show_mouse)
-         video_st->poke->show_mouse(video_st->data, false);
+      if (hide_mouse_cursor)
+         video_driver_show_mouse(false);
    }
    else
    {
@@ -7467,17 +7453,14 @@ static bool input_overlay_want_hidden(void)
 void input_overlay_check_mouse_cursor(void)
 {
    input_driver_state_t *input_st = &input_driver_st;
-   video_driver_state_t *video_st = video_state_get_ptr();
    input_overlay_t *ol            = input_st->overlay_ptr;
 
-   if (     ol && (ol->flags & INPUT_OVERLAY_ENABLE)
-         && video_st->poke
-         && video_st->poke->show_mouse)
+   if (ol && (ol->flags & INPUT_OVERLAY_ENABLE))
    {
       if (config_get_ptr()->bools.input_overlay_show_mouse_cursor)
-         video_st->poke->show_mouse(video_st->data, true);
+         video_driver_show_mouse(true);
       else if (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE)
-         video_st->poke->show_mouse(video_st->data, false);
+         video_driver_show_mouse(false);
    }
 }
 

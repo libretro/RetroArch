@@ -1000,6 +1000,46 @@ static unsigned video_thread_get_scale(video_driver_state_t *video_st)
  *
  * Returns: video driver's userdata.
  **/
+/* What the input code needs of the video driver, as calls into here.
+ * input/ used to take video_state_get_ptr() and work on the fields
+ * itself: the frame count, the core's geometry, the mouse cursor
+ * through the poke interface, the overlay interface and the driver's
+ * data. (The output's size already had video_driver_get_output_dims().) */
+
+uint64_t video_driver_get_frame_count(void)
+{
+   return video_driver_st.frame_count;
+}
+
+/* The core's picture, as it last reported it. */
+const struct retro_game_geometry *video_driver_get_core_geometry(void)
+{
+   return &video_driver_st.av_info.geometry;
+}
+
+/* Shows or hides the mouse cursor, if the driver can. */
+void video_driver_show_mouse(bool state)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   if (video_st->poke && video_st->poke->show_mouse)
+      video_st->poke->show_mouse(video_st->data, state);
+}
+
+#ifdef HAVE_OVERLAY
+/* The driver's overlay interface, and the data to call it with.
+ * False if the driver has none. */
+bool video_driver_get_overlay_interface(
+      const video_overlay_interface_t **iface, void **iface_data)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   *iface_data                    = video_st->data;
+   if (!video_st->current_video || !video_st->current_video->overlay_interface)
+      return false;
+   video_st->current_video->overlay_interface(video_st->data, iface);
+   return true;
+}
+#endif
+
 void *video_driver_get_ptr(void)
 {
    video_driver_state_t *video_st         = &video_driver_st;

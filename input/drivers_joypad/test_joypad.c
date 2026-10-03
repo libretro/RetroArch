@@ -445,8 +445,7 @@ static int16_t test_joypad_state(
 static void test_joypad_poll(void)
 {
 
-   video_driver_state_t *video_st = video_state_get_ptr();
-   uint64_t curr_frame            = video_st->frame_count;
+   uint64_t curr_frame            = video_driver_get_frame_count();
    unsigned i;
 
    for (i=0; i<last_test_step; i++)
