@@ -121,15 +121,13 @@ private_lane :ra_update_versions do |options|
     UI.message("Bumping to version: #{next_version_number}")
   end
 
-  # can't use update_build_number/agvtool to update this as it
-  # doesn't deal with multiple projects in the same folder
-  update_info_plist(
-    plist_path: options[:plist_path],
-    block: proc do |plist|
-      plist["CFBundleVersion"] = (next_build_number + 1).to_s
-      plist["CFBundleShortVersionString"] = next_version_number
-    end
-  )
+  # passed to xcodebuild as build settings so the app and its
+  # extensions all stamp the same CFBundleVersion and
+  # CFBundleShortVersionString
+  {
+    build_number: (next_build_number + 1).to_s,
+    version_number: next_version_number
+  }
 end
 
 private_lane :ra_update_signing do |options|
@@ -162,6 +160,8 @@ private_lane :ra_build_app do |options|
     workspace: "RetroArch.xcworkspace",
     scheme: options[:scheme],
     xcconfig: options[:xcconfig],
+    xcargs: "CURRENT_PROJECT_VERSION=#{options[:versions][:build_number]} " \
+            "MARKETING_VERSION=#{options[:versions][:version_number]}",
     xcodebuild_formatter: 'xcbeautify --renderer github-actions',
     buildlog_path: "buildlog",
     derived_data_path: "build/DerivedData",
@@ -235,16 +235,15 @@ end
 platform :mac do
   desc doc
   lane :build do |options|
-    options[:plist_path] = "OSX/Info_AppStore.plist"
-
     ra_appstore_login
 
     ra_reset_git_repo(options)
 
-    ra_update_versions(options)
+    versions = ra_update_versions(options)
 
     ra_build_app(
       scheme: "RetroArch AppStore",
+      versions: versions,
       provisioningProfiles: {
         "com.libretro.dist.RetroArch" => "macOS App Store"
       }
@@ -257,13 +256,11 @@ end
 platform :ios do
   desc doc
   lane :build do |options|
-    options[:plist_path] = "iOS/Info.plist"
-
     ra_appstore_login
 
     ra_reset_git_repo(options)
 
-    ra_update_versions(options)
+    versions = ra_update_versions(options)
 
     ra_update_signing(
       app_target: "RetroArchiOS",
@@ -275,6 +272,7 @@ platform :ios do
 
     ra_build_app(
       scheme: "RetroArch iOS Release",
+      versions: versions,
       xcconfig: "iOS/AppStore.xcconfig",
       provisioningProfiles: {
         "com.libretro.dist.RetroArch" => "App Store Distribution",
@@ -289,13 +287,11 @@ end
 platform :appletvos do
   desc doc
   lane :build do |options|
-    options[:plist_path] = "tvOS/Info.plist"
-
     ra_appstore_login
 
     ra_reset_git_repo(options)
 
-    ra_update_versions(options)
+    versions = ra_update_versions(options)
 
     ra_update_signing(
       app_target: "RetroArchTV",
@@ -307,6 +303,7 @@ platform :appletvos do
 
     ra_build_app(
       scheme: "RetroArch tvOS Release",
+      versions: versions,
       xcconfig: "iOS/AppStore.xcconfig",
       provisioningProfiles: {
         "com.libretro.dist.RetroArch" => "tvOS App Store",
