@@ -603,6 +603,15 @@ typedef LONG (NTAPI *scond_nt_keyed_t)(HANDLE h, void *key, BOOLEAN alertable,
 typedef LONG (NTAPI *scond_nt_create_keyed_t)(HANDLE *h, ULONG access,
       void *attr, ULONG flags);
 
+typedef HANDLE (WINAPI *scond_create_timer_ex_t)(LPSECURITY_ATTRIBUTES,
+      LPCWSTR, DWORD, DWORD);
+/* The APC routine and its argument are always NULL here, so they are
+ * typed as LPVOID rather than depending on PTIMERAPCROUTINE */
+typedef BOOL (WINAPI *scond_set_timer_t)(HANDLE, const LARGE_INTEGER*, LONG,
+      LPVOID, LPVOID, BOOL);
+#define SCOND_TIMER_HIGH_RESOLUTION 0x00000002 /* CREATE_WAITABLE_TIMER_HIGH_RESOLUTION */
+#define SCOND_TIMER_ALL_ACCESS      0x001F0003 /* TIMER_ALL_ACCESS */
+
 static struct
 {
    scond_nt_wait_alert_t wait_alert;
@@ -616,6 +625,16 @@ static struct
    unsigned spin_cycles;       /* TSC bound for the hardware waits */
    unsigned spin_iters;        /* iteration bound for the pause loop */
    DWORD tls_event;
+   /* Bounded waits: a kernel timeout ends on the system timer's tick,
+    * 15.6 ms unless something in the process has lowered it, so a
+    * bounded wait also sleeps on a high resolution waitable timer, one
+    * per thread, together with the thread's event. Unset where the
+    * timer cannot be had (before Windows 10 1803): the kernel timeout
+    * then bounds the wait, as before. */
+   scond_create_timer_ex_t create_timer_ex;
+   scond_set_timer_t       set_timer;
+   DWORD                   tls_timer;
+   bool                    hires;
 } scond_g;
 
 static void scond_global_init(void);
@@ -2694,6 +2713,43 @@ static void scond_global_resolve(void)
    if (scond_g.sleep == SCOND_SLEEP_EVENT)
       scond_g.tls_event = TlsAlloc();
 
+   /* The high resolution timer for bounded waits, on every tier. It
+    * needs the thread's event to wait on beside it, so that slot is
+    * taken here on the tiers that do not otherwise use one. Probed
+    * rather than version-checked: the flag is refused before Windows 10
+    * 1803. RTHREADS_SCOND_HIRES=0 keeps the kernel timeout alone, for
+    * measuring against it. */
+   scond_g.hires     = false;
+   scond_g.tls_timer = TLS_OUT_OF_INDEXES;
+#if !defined(_XBOX) && !defined(__WINRT__) && !(defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+   env = getenv("RTHREADS_SCOND_HIRES");
+   if (!(env && !strcmp(env, "0")))
+   {
+      HMODULE k32 = GetModuleHandleA("kernel32.dll");
+      if (k32)
+      {
+         scond_g.create_timer_ex = (scond_create_timer_ex_t)(void (*)(void))
+            GetProcAddress(k32, "CreateWaitableTimerExW");
+         scond_g.set_timer       = (scond_set_timer_t)(void (*)(void))
+            GetProcAddress(k32, "SetWaitableTimer");
+      }
+      if (scond_g.create_timer_ex && scond_g.set_timer)
+      {
+         HANDLE probe = scond_g.create_timer_ex(NULL, NULL,
+               SCOND_TIMER_HIGH_RESOLUTION, SCOND_TIMER_ALL_ACCESS);
+         if (probe)
+         {
+            CloseHandle(probe);
+            if (scond_g.sleep != SCOND_SLEEP_EVENT)
+               scond_g.tls_event = TlsAlloc();
+            scond_g.tls_timer = TlsAlloc();
+            scond_g.hires     = scond_g.tls_event != TLS_OUT_OF_INDEXES
+                             && scond_g.tls_timer != TLS_OUT_OF_INDEXES;
+         }
+      }
+   }
+#endif
+
 #if defined(_XBOX)
    /* the 360 has six hardware threads, the original Xbox one core */
 #if defined(_M_PPC) || defined(_XENON)
@@ -2792,6 +2848,77 @@ static bool scond_sleep(struct scond_waiter *w, LARGE_INTEGER *timeout)
    }
 }
 
+/* This thread's event and high resolution timer, made on first use and
+ * kept for the thread's life, as the event tier keeps its event. NULL
+ * when either cannot be had, and the wait falls back to the kernel
+ * timeout. */
+static HANDLE scond_thread_event(void)
+{
+   HANDLE event = (HANDLE)TlsGetValue(scond_g.tls_event);
+   if (!event)
+   {
+      if (!(event = CreateEvent(NULL, FALSE, FALSE, NULL)))
+         return NULL;
+      if (!TlsSetValue(scond_g.tls_event, event))
+      {
+         CloseHandle(event);
+         return NULL;
+      }
+   }
+   return event;
+}
+
+static HANDLE scond_thread_timer(void)
+{
+   HANDLE timer = (HANDLE)TlsGetValue(scond_g.tls_timer);
+   if (!timer)
+   {
+      if (!(timer = scond_g.create_timer_ex(NULL, NULL,
+                  SCOND_TIMER_HIGH_RESOLUTION, SCOND_TIMER_ALL_ACCESS)))
+         return NULL;
+      if (!TlsSetValue(scond_g.tls_timer, timer))
+      {
+         CloseHandle(timer);
+         return NULL;
+      }
+   }
+   return timer;
+}
+
+/* A bounded sleep on the waiter's event and the high resolution timer:
+ * false when the timer fired first. Setting the timer clears whatever
+ * an earlier wait left signalled on it. */
+static bool scond_sleep_hires(struct scond_waiter *w, HANDLE timer,
+      int64_t timeout_us)
+{
+   HANDLE        handles[2];
+   LARGE_INTEGER due;
+   DWORD         rc;
+
+   due.QuadPart = -(LONGLONG)timeout_us * 10;
+   if (!scond_g.set_timer(timer, &due, 0, NULL, NULL, FALSE))
+   {
+      LONGLONG ms = (timeout_us + 999) / 1000;
+      rc = WaitForSingleObject(w->event,
+            ms >= (LONGLONG)INFINITE ? INFINITE - 1 : (DWORD)ms);
+      return rc != WAIT_TIMEOUT;
+   }
+   handles[0] = w->event;
+   handles[1] = timer;
+   /* The timer is set and will fire; the bound is only there so a
+    * timer that somehow does not cannot make this wait forever */
+   rc = WaitForMultipleObjects(2, handles, FALSE,
+         (DWORD)(timeout_us / 1000) + 100);
+   if (rc == WAIT_OBJECT_0)
+      return true;
+   if (rc == WAIT_OBJECT_0 + 1 || rc == WAIT_TIMEOUT)
+      return false;
+   /* An unusable handle: a wake after a millisecond, the caller
+    * re-checks its own predicate */
+   Sleep(1);
+   return true;
+}
+
 static void scond_wake_one(struct scond_waiter *w)
 {
    /* copies taken first: the waiter may leave as soon as it sees WOKEN */
@@ -2800,6 +2927,13 @@ static void scond_wake_one(struct scond_waiter *w)
    int prev     = retro_atomic_fetch_or_int(&w->flags, SCOND_W_WOKEN);
    if (!(prev & SCOND_W_ASLEEP))
       return;   /* still spinning: it sees the flag, no syscall */
+   /* A waiter that sleeps on its event - every waiter on the event
+    * tier, and bounded ones on the others - is woken through it */
+   if (event)
+   {
+      SetEvent(event);
+      return;
+   }
    switch (scond_g.sleep)
    {
       case SCOND_SLEEP_ALERT:
@@ -2873,19 +3007,30 @@ static bool scond_unlink(scond_t *cond, struct scond_waiter *w)
    }
 }
 
-/* Block on the caller's own flag word until signalled or dwMilliseconds
- * have passed. Returns false only on timeout. */
-static bool scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds)
+/* Block on the caller's own flag word until signalled or timeout_us
+ * have passed, -1 for never. Returns false only on timeout. */
+static bool scond_wait_win32(scond_t *cond, slock_t *lock, int64_t timeout_us)
 {
    struct scond_waiter w;
    LARGE_INTEGER timeout;
    uintptr_t old;
+   HANDLE timer = NULL;
    bool woken = true;
 
    w.event = NULL;
    w.tid   = GetCurrentThreadId();
    retro_atomic_int_init(&w.flags, 0);
-   if (scond_g.sleep == SCOND_SLEEP_EVENT)
+   /* A bounded wait sleeps on the thread's event and its high
+    * resolution timer, whatever the tier, so it ends when it should
+    * rather than on the system timer's tick. Decided before the block
+    * is listed: the waker reads w.event to know how to wake it. */
+   if (     timeout_us > 0 && scond_g.hires
+         && (timer = scond_thread_timer()))
+   {
+      if (!(w.event = scond_thread_event()))
+         timer = NULL;
+   }
+   if (!w.event && scond_g.sleep == SCOND_SLEEP_EVENT)
    {
       w.event = (HANDLE)TlsGetValue(scond_g.tls_event);
       if (!w.event)
@@ -2972,17 +3117,27 @@ static bool scond_wait_win32(scond_t *cond, slock_t *lock, DWORD dwMilliseconds)
    if (retro_atomic_fetch_or_int(&w.flags, SCOND_W_ASLEEP) & SCOND_W_WOKEN)
       goto done;
 
-   if (dwMilliseconds != INFINITE)
-      timeout.QuadPart = -(LONGLONG)dwMilliseconds * 10000;
-   if (!scond_sleep(&w, dwMilliseconds != INFINITE ? &timeout : NULL))
+   /* Without the timer the bound is in whole milliseconds, as it
+    * always was: under one is one, and over it rounds down */
+   if (timeout_us >= 0 && !timer)
+      timeout.QuadPart = -(LONGLONG)(timeout_us < 1000
+            ? 1 : timeout_us / 1000) * 10000;
+   if (timer ? !scond_sleep_hires(&w, timer, timeout_us)
+             : !scond_sleep(&w, timeout_us >= 0 ? &timeout : NULL))
    {
       /* timed out: unless a waker has already taken the block, in which
-       * case its wake is on the way and has to be consumed */
+       * case its wake is on the way and has to be consumed - on the
+       * event, where the block slept on one */
       scond_lock(cond);
       woken = !scond_unlink(cond, &w);
       scond_unlock(cond);
       if (woken)
-         scond_sleep(&w, NULL);
+      {
+         if (timer)
+            WaitForSingleObject(w.event, INFINITE);
+         else
+            scond_sleep(&w, NULL);
+      }
    }
 
 done:
@@ -2994,7 +3149,7 @@ done:
 void scond_wait(scond_t *cond, slock_t *lock)
 {
 #if defined(USE_WIN32_THREADS)
-   scond_wait_win32(cond, lock, INFINITE);
+   scond_wait_win32(cond, lock, -1);
 #elif defined(USE_GX_THREADS)
    LWP_CondWait(cond->cond, lock->lock);
 #elif defined(USE_CTR_THREADS)
@@ -3253,11 +3408,13 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
     */
    if (timeout_us == 0)
       return false;
-   else if (timeout_us < 1000)
-      return scond_wait_win32(cond, lock, 1);
-   /* Someone asking for 1000 or 1001 timeout shouldn't
-    * accidentally get 2ms. */
-   return scond_wait_win32(cond, lock, timeout_us / 1000);
+   /* A deadline already past waits the shortest bound it always did,
+    * and is never taken for the unbounded wait */
+   if (timeout_us < 0)
+      timeout_us = 1000;
+   /* In microseconds: the wait rounds to whole milliseconds itself
+    * where it has no high resolution timer, as this did */
+   return scond_wait_win32(cond, lock, timeout_us);
 #elif defined(USE_GX_THREADS)
 #ifdef INTERNAL_LIBOGC
    /* The in-tree libogc takes an absolute deadline and compares it
