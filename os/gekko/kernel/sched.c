@@ -214,6 +214,18 @@ static void maybe_preempt(void)
       gk_timer_program(gk_ticks());
 }
 
+/* Exception context: the interrupted thread sleeps on addr until a
+ * wake, the next thread runs when the handler returns. */
+void gk_irq_block_current(volatile uint32_t *addr)
+{
+   struct gk_thread *t = gk_cur;
+   if (!gk_in_exception || t->state != GK_T_RUNNING || t->prio == GK_PRIO_IDLE)
+      return;
+   t->state       = GK_T_BLOCKED;
+   t->wait_result = GK_OK;
+   fq_insert(t, addr);
+}
+
 /* ---- the switch ---- */
 
 void gk_timer_tick(uint64_t now)

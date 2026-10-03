@@ -112,6 +112,7 @@ void gk_arena_init(void);
 void gk_tls_run_dtors(struct gk_thread *t);
 void gk_console_show_now(void);
 void gk_exit_after_crash(void);
+void gk_irq_block_current(volatile uint32_t *addr);
 
 #endif
 #endif
