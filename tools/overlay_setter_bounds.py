@@ -51,15 +51,16 @@ DIR  = os.path.join(ROOT, "gfx", "drivers")
 
 DRIVERS = [
     "ctr_gfx.c", "d3d8.c", "d3d9cg.c", "d3d9hlsl.c", "d3d10.c", "d3d11.c",
-    "d3d12.c", "gdi_gfx.c", "gl1.c", "gl2.c", "gl3.c", "gx_gfx_libogc.c",
-    "gx2_gfx.c", "gxm_gfx.c", "hub75_gfx.c", "rsx_gfx.c", "sdl2_gfx.c",
-    "sdl3_gfx.c", "switch_nx_gfx.c", "vulkan.c",
+    "d3d12.c", "gdi_gfx.c", "gekko_gfx.c", "gl1.c", "gl2.c", "gl3.c",
+    "gx_gfx_libogc.c", "gx2_gfx.c", "gxm_gfx.c", "hub75_gfx.c", "rsx_gfx.c",
+    "sdl2_gfx.c", "sdl3_gfx.c", "switch_nx_gfx.c", "vulkan.c",
 ]
 
 SETTER = r"\b(\w+_overlay_(?:set_alpha|vertex_geom|tex_geom))\s*\("
 # "index >= count", "image >= gl->overlays", "index < d3d->overlays_size"
 BOUND  = r"\b(?:index|image)\b\s*(?:>=|<)\s*[\w>.\-]+"
-HELPER = r"\b(\w+_overlay_sprite(?:_map)?)\s*\("
+# d3d1x_overlay_sprite(), d3d12_overlay_sprite_map(), gekko's overlay_at()
+HELPER = r"\b(\w+_overlay_sprite(?:_map)?|(?:\w+_)?overlay_at)\s*\("
 
 
 def strip_comments(src):
