@@ -586,6 +586,22 @@ jobs:
           make clean
           echo "[pass] winraw_mouse_hotplug_test (wine)"
 
+      - name: Build and run keyboard_devices_test
+        shell: bash
+        working-directory: samples/input/keyboard_devices
+        run: |
+          set -eu
+          # Which of the devices a system reports are the keyboards on
+          # the desk (input/common/input_keyboard_devices.h, which the
+          # udev input driver lists its keyboards by): a keyboard in
+          # three parts is one keyboard; the power button, a headset
+          # and a mouse whose buttons send keys are none; two of one
+          # model are two; a keyboard with a pointer built in is one.
+          make clean all
+          timeout 60 make check
+          make clean
+          echo "[pass] keyboard_devices_test"
+
       - name: Build and run winraw_keyboards_test (mingw + Wine)
         shell: bash
         working-directory: samples/input/winraw_keyboards

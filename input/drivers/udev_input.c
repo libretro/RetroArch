@@ -84,6 +84,7 @@
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
+#include "../common/input_keyboard_devices.h"
 
 #if defined(HAVE_XKBCOMMON) && defined(HAVE_KMS)
 #define UDEV_XKB_HANDLING
@@ -551,6 +552,12 @@ typedef struct udev_input_device
     * feeds (udev_input_t.state): what a port given this keyboard
     * reads. Indexed as that state is. */
    uint8_t keys[(KEY_MAX + 7) / 8];
+   /* Which device on the desk this is part of, and what kind of part
+    * (see input_keyboard_devices.h); kbdev.group is the listed
+    * keyboard it belongs to, set by udev_input_list_keyboards(). */
+   input_kbdev_t kbdev;
+   uint16_t vid;
+   uint16_t pid;
    char devnode[NAME_MAX_LENGTH]; /* Device node path */
    char ident[NAME_MAX_LENGTH]; /* Identifier of the device */
 } udev_input_device_t;
@@ -3185,6 +3192,156 @@ static int16_t udev_input_touch_state(
 
 #define test_bit(array, bit)    (array[bit/8] & (1<<(bit%8)))
 
+/* One line of a sysfs file, without its newline; false if there is
+ * no such file. */
+static bool udev_input_sysfs_line(const char *file, char *s, size_t len)
+{
+   size_t n;
+   FILE *f = fopen(file, "r");
+   if (!f)
+      return false;
+   if (!fgets(s, (int)len, f))
+      s[0] = '\0';
+   fclose(f);
+   n = strlen(s);
+   while (n && (s[n - 1] == '\n' || s[n - 1] == ' '))
+      s[--n] = '\0';
+   return true;
+}
+
+/* What input_keyboard_devices.h wants to know of a device, for
+ * telling which of them are the keyboards on the desk:
+ *
+ * - which device it is part of. Every event node of one USB device
+ *   has the same physical path but for a last "/inputN"; over
+ *   Bluetooth that path is the adapter's, the same for every device
+ *   on it, and it is the device's own address that tells them apart;
+ * - whether it is a keyboard in its own right: it has every key from
+ *   Escape to D, which is the test udev itself goes by
+ *   (ID_INPUT_KEYBOARD). The power button and a headset's volume
+ *   keys have keys and are not keyboards;
+ * - whether its USB interface is a boot keyboard's. */
+static void udev_input_describe_device(udev_input_device_t *device,
+      enum udev_input_dev_type type, int fd, const char *devnode)
+{
+   char phys[64];
+   char uniq[64];
+   char file[128];
+   char line[16];
+   unsigned char keycaps[(KEY_MAX / 8) + 1];
+   struct input_id id;
+   const char *event = strrchr(devnode, '/');
+   input_kbdev_t *kb = &device->kbdev;
+   unsigned i;
+
+   memset(kb, 0, sizeof(*kb));
+   kb->boot    = -1;
+   kb->group   = INPUT_KBDEV_NONE;
+   kb->pointer = (type != UDEV_INPUT_KEYBOARD);
+   phys[0]     = uniq[0] = '\0';
+
+   if (ioctl(fd, EVIOCGID, &id) >= 0)
+   {
+      device->vid = id.vendor;
+      device->pid = id.product;
+   }
+
+   if (ioctl(fd, EVIOCGPHYS(sizeof(phys)), phys) < 0)
+      phys[0] = '\0';
+   if (ioctl(fd, EVIOCGUNIQ(sizeof(uniq)), uniq) < 0)
+      uniq[0] = '\0';
+   phys[sizeof(phys) - 1] = uniq[sizeof(uniq) - 1] = '\0';
+   if (!strncmp(phys, "usb-", 4))
+   {
+      char *part = strrchr(phys, '/');
+      if (part && !strncmp(part, "/input", 6))
+         *part   = '\0';
+      strlcpy(kb->key, phys, sizeof(kb->key));
+   }
+   else if (uniq[0])
+      strlcpy(kb->key, uniq, sizeof(kb->key));
+
+   if (kb->pointer)
+      return;
+
+   memset(keycaps, 0, sizeof(keycaps));
+   if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keycaps)), keycaps) >= 0)
+   {
+      kb->keyboard = true;
+      for (i = KEY_ESC; i <= KEY_D; i++)
+         if (!test_bit(keycaps, i))
+            kb->keyboard = false;
+   }
+
+   /* /sys/class/input/eventN/device is the input device, its
+    * "device" the HID device, and that one's parent the USB
+    * interface */
+   if (event && *++event)
+   {
+      snprintf(file, sizeof(file),
+            "/sys/class/input/%s/device/device/../bInterfaceSubClass", event);
+      if (udev_input_sysfs_line(file, line, sizeof(line)))
+      {
+         bool boot = string_is_equal(line, "01");
+         snprintf(file, sizeof(file),
+               "/sys/class/input/%s/device/device/../bInterfaceProtocol", event);
+         if (udev_input_sysfs_line(file, line, sizeof(line)))
+            kb->boot = (boot && string_is_equal(line, "01")) ? 1 : 0;
+      }
+   }
+}
+
+/* The keyboards that are listed and numbered for the menu, and that a
+ * port can be given: made from the devices there are now, when the
+ * driver starts and whenever a device comes or goes.
+ *
+ * Every device that has a key was a keyboard here - the power button,
+ * the video bus, a headset, a mouse with keys of its own - and one
+ * keyboard was as many as it has event nodes.
+ * input_keyboard_devices.h says which are the keyboards on the desk;
+ * each is listed once, under the name of the first of its parts that
+ * is a keyboard in its own right, and udev->keyboards[] is that
+ * part. Every device with keys goes on feeding the one key state. */
+static void udev_input_list_keyboards(udev_input_t *udev)
+{
+   input_kbdev_t devs[64];
+   unsigned i, n = udev->num_devices, groups;
+
+   if (n > ARRAY_SIZE(devs))
+      n = ARRAY_SIZE(devs);
+   for (i = 0; i < n; i++)
+      devs[i] = udev->devices[i]->kbdev;
+   groups = input_kbdev_group(devs, n, MAX_INPUT_DEVICES);
+
+   for (i = 0; i < MAX_INPUT_DEVICES; i++)
+      udev->keyboards[i] = -1;
+   for (i = 0; i < udev->num_devices; i++)
+      udev->devices[i]->kbdev.group = (i < n) ? devs[i].group : INPUT_KBDEV_NONE;
+
+   input_config_clear_keyboard_display_names();
+   for (i = 0; i < n; i++)
+   {
+      unsigned g = devs[i].group;
+      if (     g == INPUT_KBDEV_NONE
+            || !devs[i].keyboard
+            || udev->keyboards[g] >= 0)
+         continue;
+      udev->keyboards[g] = (int32_t)i;
+      input_config_set_keyboard_display_name(g, udev->devices[i]->ident);
+      input_config_set_keyboard_ids(g,
+            udev->devices[i]->vid, udev->devices[i]->pid);
+      RARCH_LOG("[udev] Keyboard #%u: \"%s\" (%04x:%04x).\n", g + 1,
+            udev->devices[i]->ident,
+            udev->devices[i]->vid, udev->devices[i]->pid);
+   }
+   for (i = 0; i < n; i++)
+      if (     udev->devices[i]->type == UDEV_INPUT_KEYBOARD
+            && devs[i].group == INPUT_KBDEV_NONE)
+         RARCH_DBG("[udev] Has keys, and is not listed as a keyboard: \"%s\" (%s).\n",
+               udev->devices[i]->ident, udev->devices[i]->devnode);
+   (void)groups;
+}
+
 static int udev_input_add_device(udev_input_t *udev,
       enum udev_input_dev_type type, const char *devnode, device_handle_cb cb)
 {
@@ -3225,6 +3382,8 @@ static int udev_input_add_device(udev_input_t *udev,
 
    if (ioctl(fd, EVIOCGNAME(sizeof(device->ident)), device->ident) < 0)
       device->ident[0] = '\0';
+
+   udev_input_describe_device(device, type, fd, devnode);
 
    /* UDEV_INPUT_MOUSE may report in absolute coords too */
    if (type == UDEV_INPUT_MOUSE || type == UDEV_INPUT_TOUCHPAD || type == UDEV_INPUT_TOUCHSCREEN )
@@ -3402,7 +3561,6 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    const char *action                = NULL;
    const char *devnode               = NULL;
    int mouse                         = 0;
-   int keyboard                      = 0;
    int check                         = 0;
    int i                             = 0;
    struct udev_device *dev           = udev_monitor_receive_device(
@@ -3462,14 +3620,10 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    {
       input_config_set_mouse_display_name(i, "N/A");
       udev->pointers[i]  = -1;
-      udev->keyboards[i] = -1;
    }
-   input_config_clear_keyboard_display_names();
 
-   /* Add what devices we have now. (The two tables hold
-    * MAX_INPUT_DEVICES each, and nothing kept a seventeenth mouse or
-    * keyboard out of them: what udev calls a keyboard includes the
-    * power button and the like, and a machine can have that many.) */
+   /* Add what devices we have now. (The table holds
+    * MAX_INPUT_DEVICES, and nothing kept a seventeenth mouse out.) */
    for (i = 0; i < (int)udev->num_devices; i++)
    {
       if (udev->devices[i]->type != UDEV_INPUT_KEYBOARD)
@@ -3481,17 +3635,9 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
          udev->pointers[mouse]     = i;
          mouse++;
       }
-      else
-      {
-         /* Keyboard */
-         if (keyboard >= MAX_INPUT_DEVICES)
-            continue;
-         input_config_set_keyboard_display_name(keyboard,
-               udev->devices[i]->ident);
-         udev->keyboards[keyboard] = i;
-         keyboard++;
-      }
    }
+   /* and the keyboards */
+   udev_input_list_keyboards(udev);
 
 end:
    udev_device_unref(dev);
@@ -3737,31 +3883,36 @@ static bool udev_keyboard_pressed(udev_input_t *udev, unsigned key)
  * keyboard it names is not there. NULL as well while the menu is
  * open: the menu is worked with the first port's binds and has to
  * answer to every keyboard. Hotkeys never go through this. */
-static const uint8_t *udev_port_keys(udev_input_t *udev, unsigned port)
+static int udev_port_keys(udev_input_t *udev, unsigned port)
 {
-   int dev_index;
    unsigned idx = config_get_ptr()->uints.input_keyboard_index[port];
 
-   if (!idx || idx > MAX_INPUT_DEVICES)
-      return NULL;
-   dev_index = udev->keyboards[idx - 1];
-   if (dev_index < 0 || dev_index >= (int)udev->num_devices)
-      return NULL;
+   if (!idx || idx > MAX_INPUT_DEVICES || udev->keyboards[idx - 1] < 0)
+      return -1;
 #ifdef HAVE_MENU
    if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
-      return NULL;
+      return -1;
 #endif
-   return udev->devices[dev_index]->keys;
+   return (int)(idx - 1);
 }
 
-/* A key as a port sees it: on its own keyboard, or with none on any. */
+/* A key as a port sees it: on its own keyboard - any part of it - or
+ * with none (@own < 0) on any. */
 static bool udev_port_key_pressed(udev_input_t *udev,
-      const uint8_t *own, unsigned key)
+      int own, unsigned key)
 {
+   unsigned i;
    int bit = rarch_keysym_lut[key];
    if (!key)
       return false;
-   return own ? BIT_GET(own, bit) : BIT_GET(udev->state, bit);
+   if (own < 0)
+      return BIT_GET(udev->state, bit);
+   for (i = 0; i < udev->num_devices; i++)
+      if (     udev->devices[i]->kbdev.group == (uint8_t)own
+            && udev->devices[i]->type == UDEV_INPUT_KEYBOARD
+            && BIT_GET(udev->devices[i]->keys, bit))
+         return true;
+   return false;
 }
 
 static bool udev_mouse_button_pressed(
@@ -3853,8 +4004,8 @@ static int16_t udev_input_state(
    udev_input_device_t *pointer_dev = udev_get_pointer_port_dev(udev, port);
 #endif
    /* the one keyboard this port was given, if it was given one */
-   const uint8_t *own               = (port < MAX_USERS)
-      ? udev_port_keys(udev, port) : NULL;
+   int own                          = (port < MAX_USERS)
+      ? udev_port_keys(udev, port) : -1;
 
    switch (device)
    {
@@ -4204,7 +4355,6 @@ static bool open_devices(udev_input_t *udev,
 static void *udev_input_init(const char *joypad_driver)
 {
    int mouse = 0;
-   int keyboard=0;
    int fd;
    int i;
    unsigned denied = 0;
@@ -4329,21 +4479,9 @@ static void *udev_input_init(const char *joypad_driver)
           }
           mouse++;
        }
-       else
-       {
-          RARCH_LOG("[udev] Keyboard #%u: \"%s\" (%s).\n",
-             keyboard,
-             udev->devices[i]->ident,
-             udev->devices[i]->devnode);
-          if (keyboard < MAX_INPUT_DEVICES)
-          {
-             input_config_set_keyboard_display_name(keyboard,
-                   udev->devices[i]->ident);
-             udev->keyboards[keyboard] = i;
-          }
-          keyboard++;
-       }
    }
+   /* and the keyboards */
+   udev_input_list_keyboards(udev);
 
    return udev;
 
