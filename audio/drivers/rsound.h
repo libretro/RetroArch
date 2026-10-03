@@ -19,6 +19,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <rthreads/rthreads.h>
+#include <retro_atomic.h>
 #include <sys/time.h>
 #include <time.h>
 #include <stdint.h>
@@ -145,7 +146,9 @@ typedef struct rsound
    volatile int buffer_pointer; /* Obsolete, but kept for backwards header compatibility. */
    size_t buffer_size;
 
-   volatile int thread_active;
+   /* The frontend starts and stops the playback thread; the thread
+    * reads this to know when to go. */
+   retro_atomic_int_t thread_active;
 
    int64_t total_written;
    int64_t start_time;
@@ -167,10 +170,11 @@ typedef struct rsound
    uint16_t format;
    int samplesize;
 
+   /* The frontend's: a playback thread to join, running or ended on
+    * an error. */
    struct
    {
       sthread_t *thread;
-      slock_t *mutex;
    } thread;
 
    char identity[256];

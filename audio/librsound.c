@@ -165,7 +165,6 @@ static int rsnd_reset(rsound_t *rd);
 
 /* Protocol functions */
 static int rsnd_send_identity_info(rsound_t *rd);
-static int rsnd_close_ctl(rsound_t *rd);
 static int rsnd_send_info_query(rsound_t *rd);
 static int rsnd_update_server_info(rsound_t *rd);
 
@@ -768,45 +767,44 @@ static void rsnd_drain(rsound_t *rd)
       delta         /= 1000000;
       /* Calculates the amount of data we have in our virtual buffer.
        * Only used to calculate delay. */
-      slock_lock(rd->thread.mutex);
       rd->bytes_in_buffer = (int)((int64_t)rd->total_written - delta);
-      slock_unlock(rd->thread.mutex);
    }
    else
-   {
-      slock_lock(rd->thread.mutex);
       rd->bytes_in_buffer = 0;
-      slock_unlock(rd->thread.mutex);
-   }
 }
 
+/* The frontend's. Joins a playback thread that ended on an error
+ * before starting the next. */
 static int rsnd_start_thread(rsound_t *rd)
 {
-   if (!rd->thread_active)
+   if (rd->thread.thread)
    {
-      rd->thread_active = 1;
-      rd->thread.thread = (sthread_t*)sthread_create(rsnd_cb_thread, rd);
+      if (retro_atomic_load_acquire_int(&rd->thread_active))
+         return 0;
+      sthread_join(rd->thread.thread);
+      rd->thread.thread = NULL;
+   }
 
-      if (!rd->thread.thread)
-      {
-         rd->thread_active = 0;
-         RSD_ERR("[RSound] Failed to create thread.");
-         return -1;
-      }
+   retro_atomic_store_release_int(&rd->thread_active, 1);
+   if (!(rd->thread.thread = sthread_create(rsnd_cb_thread, rd)))
+   {
+      retro_atomic_store_release_int(&rd->thread_active, 0);
+      RSD_ERR("[RSound] Failed to create thread.");
+      return -1;
    }
    return 0;
 }
 
-/* Makes sure that the playback thread has been correctly shut down */
+/* The frontend's: the playback thread is told to stop, if it has not
+ * on its own, and joined. */
 static int rsnd_stop_thread(rsound_t *rd)
 {
-   if (rd->thread_active)
+   if (rd->thread.thread)
    {
       RSD_DEBUG("[RSound] Shutting down thread.\n");
-
-      rd->thread_active = 0;
-
+      retro_atomic_store_release_int(&rd->thread_active, 0);
       sthread_join(rd->thread.thread);
+      rd->thread.thread = NULL;
       RSD_DEBUG("[RSound] Thread joined successfully.\n");
    }
    else
@@ -824,10 +822,8 @@ static size_t rsnd_get_delay(rsound_t *rd)
    ptr = rd->bytes_in_buffer;
    /* Adds the backend latency to the calculated latency. */
    ptr += (int)rd->backend_info.latency;
-   slock_lock(rd->thread.mutex);
    ptr += rd->delay_offset;
    RSD_DEBUG("Offset: %d.\n", rd->delay_offset);
-   slock_unlock(rd->thread.mutex);
    if (ptr < 0)
       return (size_t)0;
    return (size_t)ptr;
@@ -863,74 +859,6 @@ static int rsnd_send_identity_info(rsound_t *rd)
          != (ssize_t)send_len)
       return -1;
 
-   return 0;
-}
-
-static int rsnd_close_ctl(rsound_t *rd)
-{
-   struct pollfd fd;
-   int index = 0;
-   char buf[RSD_PROTO_MAXSIZE*2] = {0};
-
-   if (!(rd->conn_type & RSD_CONN_PROTO))
-      return -1;
-
-   pollfd_fd(fd) = rd->conn.ctl_socket;
-   fd.events     = POLLOUT;
-
-   if (rsnd_poll(&fd, 1, 0) < 0)
-      return -1;
-
-   if (fd.revents & POLLOUT)
-   {
-      const char *sendbuf = "RSD    9 CLOSECTL";
-      if (net_send(rd->conn.ctl_socket, sendbuf, strlen(sendbuf), 0) < 0)
-         return -1;
-   }
-   else if (fd.revents & POLLHUP)
-      return 0;
-
-   /* Let's wait for reply (or POLLHUP) */
-
-   fd.events = POLLIN;
-
-   for (;;)
-   {
-      if (rsnd_poll(&fd, 1, 2000) < 0)
-         return -1;
-
-      if (fd.revents & POLLHUP)
-         break;
-
-      if (fd.revents & POLLIN)
-      {
-         const char *subchar;
-         /* We just read everything in large chunks until we find
-          * what we're looking for */
-         int rc = net_recv(rd->conn.ctl_socket, buf + index, RSD_PROTO_MAXSIZE*2 - 1 - index, 0);
-
-         if (rc  <= 0)
-            return -1;
-
-         /* Can we find it directly? */
-         if (strstr(buf, "RSD   12 CLOSECTL OK") != NULL)
-            break;
-         else if (strstr(buf, "RSD   15 CLOSECTL ERROR") != NULL)
-            return -1;
-
-         if (!(subchar = strrchr(buf, 'R')))
-            index = 0;
-         else
-         {
-            memmove(buf, subchar, strlen(subchar) + 1);
-            index = strlen(buf);
-         }
-      }
-      else
-         return -1;
-   }
-
-   net_socketclose(rd->conn.ctl_socket);
    return 0;
 }
 
@@ -1028,14 +956,20 @@ static int rsnd_update_server_info(rsound_t *rd)
          else if (offset_delta > max_offset)
             offset_delta = max_offset;
 
-         slock_lock(rd->thread.mutex);
          rd->delay_offset += offset_delta;
-         slock_unlock(rd->thread.mutex);
          RSD_DEBUG("[RSound] Changed offset-delta: %d.\n", offset_delta);
       }
    }
 
    return 0;
+}
+
+/* The playback thread can not go on. It reports it and ends; the
+ * frontend's rsd_stop() joins it and tears the connection down. */
+static void rsnd_cb_thread_fail(rsound_t *rd)
+{
+   retro_atomic_store_release_int(&rd->thread_active, 0);
+   rd->error_callback(rd->cb_data);
 }
 
 /* Callback thread */
@@ -1051,15 +985,11 @@ static void rsnd_cb_thread(void *thread_data)
 
    if (!(buffer = (uint8_t *)malloc(chunk_size)))
    {
-      /* Allocation failed at thread start — match the existing
-       * unrecoverable-error pattern below. */
-      rsnd_reset(rd);
-      sthread_detach(rd->thread.thread);
-      rd->error_callback(rd->cb_data);
+      rsnd_cb_thread_fail(rd);
       return;
    }
 
-   while (rd->thread_active)
+   while (retro_atomic_load_acquire_int(&rd->thread_active))
    {
       size_t  has_read = 0;
       ssize_t sent;
@@ -1075,9 +1005,7 @@ static void rsnd_cb_thread(void *thread_data)
          if (cb_ret < 0)
          {
             free(buffer);
-            rsnd_reset(rd);
-            sthread_detach(rd->thread.thread);
-            rd->error_callback(rd->cb_data);
+            rsnd_cb_thread_fail(rd);
             return;
          }
 
@@ -1109,9 +1037,7 @@ static void rsnd_cb_thread(void *thread_data)
       if (sent != (ssize_t)chunk_size)
       {
          free(buffer);
-         rsnd_reset(rd);
-         sthread_detach(rd->thread.thread);
-         rd->error_callback(rd->cb_data);
+         rsnd_cb_thread_fail(rd);
          return;
       }
 
@@ -1143,20 +1069,17 @@ static int rsnd_reset(rsound_t *rd)
    if (rd->conn.socket != -1)
       net_socketclose(rd->conn.socket);
 
-   if (rd->conn.socket != 1)
+   if (rd->conn.ctl_socket != -1)
       net_socketclose(rd->conn.ctl_socket);
 
-   /* Pristine stuff, baby! */
-   slock_lock(rd->thread.mutex);
+   /* Pristine stuff, baby! The playback thread is joined. */
    rd->conn.socket     = -1;
    rd->conn.ctl_socket = -1;
    rd->total_written   = 0;
    rd->ready_for_data  = 0;
    rd->has_written     = 0;
    rd->bytes_in_buffer = 0;
-   rd->thread_active   = 0;
    rd->delay_offset    = 0;
-   slock_unlock(rd->thread.mutex);
 
    return 0;
 }
@@ -1301,7 +1224,7 @@ int rsd_init(rsound_t** rsound)
    (*rsound)->conn.socket       = -1;
    (*rsound)->conn.ctl_socket   = -1;
 
-   (*rsound)->thread.mutex      = slock_new();
+   retro_atomic_int_init(&(*rsound)->thread_active, 0);
 
    /* Assumes default of S16_LE samples. */
    rsd_set_param(*rsound, RSD_FORMAT, &format);
@@ -1337,7 +1260,7 @@ int rsd_free(rsound_t *rsound)
    if (rsound->port)
       free(rsound->port);
 
-   slock_free(rsound->thread.mutex);
+   rsnd_stop_thread(rsound);
 
    free(rsound);
 
