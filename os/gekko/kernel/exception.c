@@ -49,6 +49,20 @@ void gk_vectors_install(void)
    __asm__ __volatile__("mtspr 274,%0" : : "r"(GK_PHYS(gk_scratch)));
 }
 
+#define RELOAD_SECONDS 10
+
+/* Leave the report up, then go back to the loader. */
+static void halt(void)
+{
+   uint64_t end;
+   gk_console_show_now();
+   gk_debug_printf("returning to the loader in %d seconds", RELOAD_SECONDS);
+   end = gk_ticks() + (uint64_t)gk_tb_hz * RELOAD_SECONDS;
+   while (gk_ticks() < end)
+      ;
+   gk_exit_after_crash();
+}
+
 static const char *vector_name(unsigned v)
 {
    switch (v)
@@ -87,13 +101,12 @@ static void crash(unsigned vector, struct gk_thread *t)
    /* Return addresses from the stack's back chain. */
    sp = (uint32_t*)t->ctx.gpr[1];
    for (i = 0; i < 12 && sp && ((uint32_t)sp >> 28) >= 8
-         && !((uint32_t)sp & 3); i++)
+         && !((uint32_t)sp & 3) && sp[1]; i++)
    {
       gk_debug_printf("  called from %08x", (unsigned)sp[1]);
       sp = (uint32_t*)sp[0];
    }
-   for (;;)
-      ;
+   halt();
 }
 
 void gk_panic(const char *fmt, ...)
@@ -107,8 +120,7 @@ void gk_panic(const char *fmt, ...)
    va_end(ap);
    __asm__ __volatile__("mflr %0" : "=r"(lr));
    gk_debug_printf("*** panic: %s (from %08x)", msg, (unsigned)lr);
-   for (;;)
-      ;
+   halt();
 }
 
 struct gk_thread *gk_exception_dispatch(unsigned vector,

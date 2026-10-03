@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <gekko/console.h>
+
 #include "kernel.h"
 
 /* Low-memory globals the loader and the system leave behind. */
@@ -91,6 +93,8 @@ void gk_debug_printf(const char *fmt, ...)
    vsnprintf(buf, sizeof(buf), fmt, ap);
    va_end(ap);
    OSReport("%s\n", buf);
+   gk_console_write(buf, strlen(buf));
+   gk_console_write("\n", 1);
    gk_irq_restore(level);
 }
 

@@ -22,11 +22,13 @@ LDFLAGS := $(MACHDEP) -T $(GK)/boot/$(PLATFORM).ld -L$(GK)/boot -Wl,--gc-section
 
 KERNEL := $(GK)/boot/crt0.S $(GK)/cpu/exception.S $(GK)/cpu/cache.S \
           $(GK)/kernel/boot.c $(GK)/kernel/exception.c $(GK)/kernel/irq.c \
-          $(GK)/kernel/sched.c $(GK)/kernel/newlib.c $(GK)/kernel/power.c
+          $(GK)/kernel/sched.c $(GK)/kernel/newlib.c $(GK)/kernel/power.c \
+          $(GK)/kernel/vi.c $(GK)/kernel/console.c $(ROOT)/gfx/bitmapfont.c
 
-TESTS := kernel_test
+TESTS := kernel_test vi_test
 ifeq ($(PLATFORM),rvl)
-   KERNEL += $(GK)/rvl/ipc.c $(GK)/rvl/stm.c $(GK)/rvl/es.c $(GK)/rvl/conf.c
+   KERNEL += $(GK)/rvl/ipc.c $(GK)/rvl/stm.c $(GK)/rvl/es.c $(GK)/rvl/conf.c \
+             $(GK)/rvl/ave.c
    TESTS  += ios_test
 endif
 

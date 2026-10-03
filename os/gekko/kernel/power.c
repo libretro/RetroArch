@@ -83,21 +83,42 @@ void gk_power_off(void)
    gk_power_reset();
 }
 
+static int loader_resident(void)
+{
+   return *(volatile uint32_t*)LOADER_STUB_MAGIC       == 0x53545542u
+       && *(volatile uint32_t*)(LOADER_STUB_MAGIC + 4) == 0x48415858u;
+}
+
+static void enter_loader(void)
+{
+   void (*stub)(void) = (void (*)(void))LOADER_STUB;
+   quiesce();
+   gk_icache_invalidate((void*)LOADER_STUB, 0x1800);
+   stub();
+}
+
 void gk_exit_to_loader(void)
 {
-   if (     *(volatile uint32_t*)LOADER_STUB_MAGIC       == 0x53545542u
-         && *(volatile uint32_t*)(LOADER_STUB_MAGIC + 4) == 0x48415858u)
+   if (loader_resident())
    {
-      void (*stub)(void) = (void (*)(void))LOADER_STUB;
 #if GK_RVL
       gk_stm_watch(0);
 #endif
-      quiesce();
-      gk_icache_invalidate((void*)LOADER_STUB, 0x1800);
-      stub();
+      enter_loader();
    }
 #if GK_RVL
    gk_es_launch_system_menu();
 #endif
    gk_power_reset();
+}
+
+/* After a crash: nothing that needs interrupts or IOS. */
+void gk_exit_after_crash(void)
+{
+   if (loader_resident())
+      enter_loader();
+   quiesce();
+   GK_REG32(PI_RESET) = 0;
+   for (;;)
+      ;
 }

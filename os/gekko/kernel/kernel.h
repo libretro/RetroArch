@@ -110,6 +110,8 @@ void gk_irq_dispatch(void);
 void gk_newlib_init(void);
 void gk_arena_init(void);
 void gk_tls_run_dtors(struct gk_thread *t);
+void gk_console_show_now(void);
+void gk_exit_after_crash(void);
 
 #endif
 #endif
