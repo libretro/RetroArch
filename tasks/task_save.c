@@ -1348,7 +1348,7 @@ static bool content_load_rastate1(unsigned char* input, size_t len)
 #ifdef HAVE_CHEEVOS
       else if (memcmp(marker, RASTATE_CHEEVOS_BLOCK, 4) == 0)
       {
-         if (rcheevos_set_serialized_data((void*)input))
+         if (rcheevos_set_serialized_data(input, block_size))
             seen_cheevos = true;
       }
 #endif
@@ -1378,7 +1378,7 @@ static bool content_load_rastate1(unsigned char* input, size_t len)
 
 #ifdef HAVE_CHEEVOS
    if (!seen_cheevos)
-      rcheevos_set_serialized_data(NULL);
+      rcheevos_set_serialized_data(NULL, 0);
 #endif
 #ifdef HAVE_BSV_MOVIE
    {
@@ -1413,7 +1413,7 @@ bool content_deserialize_state(const void *s, size_t len)
       if (!core_unserialize(&serial_info))
          return false;
 #ifdef HAVE_CHEEVOS
-      rcheevos_set_serialized_data(NULL);
+      rcheevos_set_serialized_data(NULL, 0);
 #endif
 #ifdef HAVE_BSV_MOVIE
       {
