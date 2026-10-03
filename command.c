@@ -861,6 +861,11 @@ static bool command_screenshot(command_t *cmd)
    command_deferred_t *d       = (command_deferred_t*)calloc(1, sizeof(*d));
    if (!d)
       return false;
+   /* Threaded (use_thread true), so the callback, which reads @d, runs
+    * from the task queue on a later frame, after it is taken below.
+    * Unthreaded, the callback would run inside this call and free @d
+    * before it was taken. It is taken only once the screenshot is
+    * queued, as taking it marks the asking MCP request as waiting. */
    if (!take_screenshot_notify(settings->paths.directory_screenshot,
             runloop_st->runtime_content_path_basename, false,
             video_driver_cached_frame_is_hw_render(), false, true,

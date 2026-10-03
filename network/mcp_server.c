@@ -415,6 +415,24 @@ static void *mcp_reply_dest(command_t *cmd)
    return o;
 }
 
+/* An error reply opens with its command's name and then ERROR
+ * ("GET_PLAYLIST ERROR no such playlist", "SCREENSHOT ERROR ...").  A
+ * reply that is a path, as SCREENSHOT's is, can hold " ERROR" anywhere
+ * else - a game named so - and opens with no command name, so only the
+ * first word is looked at. */
+static bool mcp_reply_is_error(const char *data, size_t len)
+{
+   size_t i;
+   if (len >= 2 && data[0] == '-' && data[1] == '1')
+      return true;
+   for (i = 0; i < len && data[i] != ' '; i++)
+      if (!(   (data[i] >= 'A' && data[i] <= 'Z')
+            || (data[i] >= '0' && data[i] <= '9')
+            ||  data[i] == '_'))
+         return false;
+   return i > 0 && len - i >= 6 && !strncmp(data + i, " ERROR", 6);
+}
+
 static void mcp_reply_to(command_t *cmd, void *dest, const char *data,
       size_t len)
 {
@@ -428,7 +446,7 @@ static void mcp_reply_to(command_t *cmd, void *dest, const char *data,
    if (c->state != MCP_CONN_WAITING || c->serial != o->serial)
       return;
    mcp_tool_result(c, c->id, c->modern, data, len,
-         strstr(data, " ERROR") != NULL || strncmp(data, "-1", 2) == 0);
+         mcp_reply_is_error(data, len));
 }
 
 /* ------------------------------------------------------------------ */
