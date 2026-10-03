@@ -3472,7 +3472,19 @@ void command_event_reinit(const int flags)
             && video_st->poke->show_mouse)
          video_st->poke->show_mouse(video_st->data, false);
    }
+   /* The menu runs with vsync if vsync is on - the rule
+    * menu_driver_toggle() applies when the menu comes up - and only
+    * then. This used to switch it on whenever the menu was up, whatever
+    * the setting: with vsync off, every reinit with the menu up (a
+    * fullscreen toggle, say) started the new driver without vsync, as
+    * configured, and a few frames later turned it on here, which
+    * rebuilds the swapchain that had just been made. The menu ran with
+    * a vsync the user had switched off, unlike at startup, and on at
+    * least one Windows Vulkan setup the first present after that second
+    * swapchain failed or left a dead picture. */
    if (     (menu_st->flags & MENU_ST_FLAG_ALIVE)
+         &&  settings->bools.video_vsync
+         && !settings->bools.video_scanline_sync
          && video_st->current_video->set_nonblock_state)
       video_st->current_video->set_nonblock_state(
             video_st->data, false,
