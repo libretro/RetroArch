@@ -651,8 +651,19 @@ typedef struct hlsl_renderchain
    /* XMB pipeline shaders */
    struct shader_pass pipeline_shaders[6]; /* MENU..MENU_6 */
    hlsl_pass_data_t  pipeline_data[6];
-   bool              pipeline_inited;
+   /* Which menu effects' programs are compiled, and which have been
+    * tried; one bit each, MENU at bit 0 */
+   uint8_t           pipeline_ready;
+   uint8_t           pipeline_tried;
 } hlsl_renderchain_t;
+
+static bool hlsl_d3d9_pipeline_ready(hlsl_renderchain_t *chain,
+      LPDIRECT3DDEVICE9 dev, unsigned idx);
+static bool d3d9_hlsl_load_program_ex(
+      LPDIRECT3DDEVICE9 dev,
+      struct shader_pass *pass,
+      const char *prog,
+      hlsl_pass_data_t *pd);
 
 /* Pipeline vertex buffer for menu shader effects (VIDEO_SHADER_MENU, etc.).
  * Stored as a file-static since the d3d9 menu_display struct
@@ -787,7 +798,9 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
       {
          hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
 
-         if (_chain && _chain->pipeline_inited)
+         /* Compiled by the pipeline call before this, or not at all */
+         if (_chain && (_chain->pipeline_ready
+                  & (1u << (VIDEO_SHADER_MENU - draw->pipeline_id))))
          {
             unsigned idx = VIDEO_SHADER_MENU - draw->pipeline_id;
             struct shader_pass *shader = &_chain->pipeline_shaders[idx];
@@ -1274,9 +1287,11 @@ static void gfx_display_d3d9_hlsl_draw_pipeline(
 
    {
       hlsl_renderchain_t *_chain = (hlsl_renderchain_t*)d3d->renderchain_data;
-      if (_chain && _chain->pipeline_inited
+      if (_chain
             && draw->pipeline_id <= VIDEO_SHADER_MENU
-            && draw->pipeline_id >= VIDEO_SHADER_MENU_6)
+            && draw->pipeline_id >= VIDEO_SHADER_MENU_6
+            && hlsl_d3d9_pipeline_ready(_chain, d3d->dev,
+               VIDEO_SHADER_MENU - draw->pipeline_id))
       {
          unsigned idx = VIDEO_SHADER_MENU - draw->pipeline_id;
          hlsl_pass_data_t *pd = &_chain->pipeline_data[idx];
@@ -2668,6 +2683,68 @@ static void d3d9_hlsl_deinit_progs(hlsl_renderchain_t *chain)
       chain->pass_data_count = 0;
    }
    hlsl_pass_data_free(&chain->stock_data);
+
+   /* The menu effects compiled so far */
+   {
+      unsigned i;
+      for (i = 0; i < 6; i++)
+      {
+         if (!(chain->pipeline_ready & (1u << i)))
+            continue;
+         if (chain->pipeline_shaders[i].vprg)
+            IDirect3DVertexShader9_Release(
+                  (LPDIRECT3DVERTEXSHADER9)chain->pipeline_shaders[i].vprg);
+         if (chain->pipeline_shaders[i].fprg)
+            IDirect3DPixelShader9_Release(
+                  (LPDIRECT3DPIXELSHADER9)chain->pipeline_shaders[i].fprg);
+         chain->pipeline_shaders[i].vprg = NULL;
+         chain->pipeline_shaders[i].fprg = NULL;
+         hlsl_pass_data_free(&chain->pipeline_data[i]);
+      }
+      chain->pipeline_ready = 0;
+      chain->pipeline_tried = 0;
+   }
+}
+
+/* Menu effect @idx's program (0..5: ribbon, simple ribbon, simple snow,
+ * snow, bokeh, snowflake), compiled the first time the effect is drawn
+ * rather than all six when the chain is made: at most one is ever on
+ * screen. False when it cannot be had, and the effect is not drawn; one
+ * that will not compile is not tried again until the chain is remade. */
+static bool hlsl_d3d9_pipeline_ready(hlsl_renderchain_t *chain,
+      LPDIRECT3DDEVICE9 dev, unsigned idx)
+{
+   const char *src;
+   uint8_t bit;
+   if (idx > 5)
+      return false;
+   bit = (uint8_t)(1u << idx);
+   if (chain->pipeline_ready & bit)
+      return true;
+   if (chain->pipeline_tried & bit)
+      return false;
+   chain->pipeline_tried |= bit;
+   switch (idx)
+   {
+      case 0:  src = hlsl_ribbon_program;        break;
+      case 1:  src = hlsl_ribbon_simple_program; break;
+      case 2:  src = hlsl_simple_snow_program;   break;
+      case 3:  src = hlsl_snow_program;          break;
+      case 4:  src = hlsl_bokeh_program;         break;
+      default: src = hlsl_snowflake_program;     break;
+   }
+   hlsl_uniform_map_init(&chain->pipeline_data[idx].vs_map);
+   hlsl_uniform_map_init(&chain->pipeline_data[idx].ps_map);
+   chain->pipeline_data[idx].vs_bytecode = NULL;
+   chain->pipeline_data[idx].ps_bytecode = NULL;
+   if (!d3d9_hlsl_load_program_ex(dev, &chain->pipeline_shaders[idx], src,
+            &chain->pipeline_data[idx]))
+   {
+      RARCH_WARN("[D3D9 HLSL] Could not compile menu effect %u, it is not drawn.\n", idx);
+      return false;
+   }
+   chain->pipeline_ready |= bit;
+   return true;
 }
 
 static void hlsl_d3d9_renderchain_free(void *data)
@@ -2747,34 +2824,10 @@ static bool hlsl_d3d9_renderchain_init(
    IDirect3DDevice9_SetVertexShader(dev, (LPDIRECT3DVERTEXSHADER9)(&chain->stock_shader)->vprg);
    IDirect3DDevice9_SetPixelShader(dev, (LPDIRECT3DPIXELSHADER9)(&chain->stock_shader)->fprg);
 
-   /* Compile XMB pipeline shaders */
-   {
-      const char *pipeline_sources[6];
-      unsigned i;
-      pipeline_sources[0] = hlsl_ribbon_program;
-      pipeline_sources[1] = hlsl_ribbon_simple_program;
-      pipeline_sources[2] = hlsl_simple_snow_program;
-      pipeline_sources[3] = hlsl_snow_program;
-      pipeline_sources[4] = hlsl_bokeh_program;
-      pipeline_sources[5] = hlsl_snowflake_program;
-      chain->pipeline_inited = true;
-      for (i = 0; i < 6; i++)
-      {
-         hlsl_uniform_map_init(&chain->pipeline_data[i].vs_map);
-         hlsl_uniform_map_init(&chain->pipeline_data[i].ps_map);
-         chain->pipeline_data[i].vs_bytecode = NULL;
-         chain->pipeline_data[i].ps_bytecode = NULL;
-         if (!d3d9_hlsl_load_program_ex(dev,
-                  &chain->pipeline_shaders[i],
-                  pipeline_sources[i],
-                  &chain->pipeline_data[i]))
-         {
-            RARCH_WARN("[D3D9 HLSL] Could not compile XMB pipeline shader %u, effects disabled.\n", i);
-            chain->pipeline_inited = false;
-            break;
-         }
-      }
-   }
+   /* The menu effects' programs are compiled when first drawn; see
+    * hlsl_d3d9_pipeline_ready */
+   chain->pipeline_ready = 0;
+   chain->pipeline_tried = 0;
 
    return true;
 }

@@ -580,6 +580,11 @@ typedef struct
     * upload buffer kept mapped, each tagged with the fence value of the
     * frame that last used it */
    D3D12PipelineState              mesh_pipe;
+   /* The pipeline state the menu effects are made from when first
+    * drawn, and which of them have been tried, one bit each */
+   D3D12_GRAPHICS_PIPELINE_STATE_DESC effect_desc;
+   bool                            effect_desc_valid;
+   unsigned                        effects_tried;
    D3D12Resource                   mesh_cb;
    uint8_t                        *mesh_cb_mapped;
    D3D12_GPU_VIRTUAL_ADDRESS       mesh_cb_va;
@@ -1288,6 +1293,119 @@ static void gfx_display_d3d12_blend_end(void *data)
    cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
 }
 
+static void d3d12_init_pipeline(
+      D3D12Device                         device,
+      D3DBlob                             vs_code,
+      D3DBlob                             ps_code,
+      D3DBlob                             gs_code,
+      D3D12_GRAPHICS_PIPELINE_STATE_DESC* desc,
+      D3D12PipelineState*                 out);
+
+/* A menu effect's pipeline, made the first time the effect is drawn
+ * rather than all six at start: at most one is ever on screen, and the
+ * effects are no longer XMB's alone. False when it cannot be had, and
+ * the effect is not drawn; one that will not compile is not tried again
+ * until the driver is. */
+static bool d3d12_effect_pipe(d3d12_video_t *d3d12, unsigned pipeline_id)
+{
+   static const D3D12_INPUT_ELEMENT_DESC ribbon_desc[] = {
+      { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0,
+         D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+   };
+   static const D3D12_INPUT_ELEMENT_DESC quad_desc[] = {
+      { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, position),
+         D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+      { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
+         D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+   };
+   static const char ribbon[] =
+#include "d3d_shaders/ribbon_sm4.hlsl.h"
+      ;
+   static const char ribbon_simple[] =
+#include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
+      ;
+   static const char simple_snow[] =
+#include "d3d_shaders/simple_snow_sm4.hlsl.h"
+      ;
+   static const char snow[] =
+#include "d3d_shaders/snow_sm4.hlsl.h"
+      ;
+   static const char bokeh[] =
+#include "d3d_shaders/bokeh_sm4.hlsl.h"
+      ;
+   static const char snowflake[] =
+#include "d3d_shaders/snowflake_sm4.hlsl.h"
+      ;
+   D3D12_GRAPHICS_PIPELINE_STATE_DESC desc;
+   D3DBlob vs_code  = NULL;
+   D3DBlob ps_code  = NULL;
+   const char *src  = NULL;
+   size_t size      = 0;
+   bool ribbons     = false;
+   unsigned bit;
+
+   switch (pipeline_id)
+   {
+      case VIDEO_SHADER_MENU:
+         src = ribbon;        size = sizeof(ribbon);        bit = 1 << 0; ribbons = true;
+         break;
+      case VIDEO_SHADER_MENU_2:
+         src = ribbon_simple; size = sizeof(ribbon_simple); bit = 1 << 1; ribbons = true;
+         break;
+      case VIDEO_SHADER_MENU_3:
+         src = simple_snow;   size = sizeof(simple_snow);   bit = 1 << 2;
+         break;
+      case VIDEO_SHADER_MENU_4:
+         src = snow;          size = sizeof(snow);          bit = 1 << 3;
+         break;
+      case VIDEO_SHADER_MENU_5:
+         src = bokeh;         size = sizeof(bokeh);         bit = 1 << 4;
+         break;
+      case VIDEO_SHADER_MENU_6:
+         src = snowflake;     size = sizeof(snowflake);     bit = 1 << 5;
+         break;
+      default:
+         return false;
+   }
+   if (d3d12->pipes[pipeline_id])
+      return true;
+   if ((d3d12->effects_tried & bit) || !d3d12->effect_desc_valid)
+      return false;
+   d3d12->effects_tried |= bit;
+
+   desc                       = d3d12->effect_desc;
+   desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+   if (ribbons)
+   {
+      /* The ribbons multiply what is under them */
+      desc.BlendState.RenderTarget[0].SrcBlend  = D3D12_BLEND_DEST_COLOR;
+      desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
+      desc.InputLayout.pInputElementDescs       = ribbon_desc;
+      desc.InputLayout.NumElements              = countof(ribbon_desc);
+   }
+   else
+   {
+      /* Standard alpha blending for snow, bokeh and snowflake: the
+       * ribbons' multiplicative blend would make white snowflakes
+       * vanish against coloured backgrounds */
+      desc.BlendState.RenderTarget[0].SrcBlend       = D3D12_BLEND_SRC_ALPHA;
+      desc.BlendState.RenderTarget[0].DestBlend      = D3D12_BLEND_INV_SRC_ALPHA;
+      desc.BlendState.RenderTarget[0].BlendOp        = D3D12_BLEND_OP_ADD;
+      desc.BlendState.RenderTarget[0].SrcBlendAlpha  = D3D12_BLEND_SRC_ALPHA;
+      desc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
+      desc.BlendState.RenderTarget[0].BlendOpAlpha   = D3D12_BLEND_OP_ADD;
+      desc.InputLayout.pInputElementDescs            = quad_desc;
+      desc.InputLayout.NumElements                   = countof(quad_desc);
+   }
+   if (     d3d_compile(src, size, NULL, "VSMain", "vs_5_0", &vs_code)
+         && d3d_compile(src, size, NULL, "PSMain", "ps_5_0", &ps_code))
+      d3d12_init_pipeline(d3d12->device, vs_code, ps_code, NULL, &desc,
+            &d3d12->pipes[pipeline_id]);
+   Release(vs_code);
+   Release(ps_code);
+   return d3d12->pipes[pipeline_id] != NULL;
+}
+
 static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_dims)
 {
@@ -1308,6 +1426,9 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
       case VIDEO_SHADER_MENU_4:
       case VIDEO_SHADER_MENU_5:
       case VIDEO_SHADER_MENU_6:
+         /* Made by the pipeline call before this, or not at all */
+         if (!d3d12->pipes[draw->pipeline_id])
+            return;
          cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->pipes[draw->pipeline_id]);
          cmd->lpVtbl->DrawInstanced(cmd, draw->coords->vertices, 1, 0, 0);
          cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->sprites.pipe);
@@ -1636,6 +1757,9 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
    if (!d3d12 || !draw)
       return;
 
+   /* Before anything is bound for it */
+   if (!d3d12_effect_pipe(d3d12, draw->pipeline_id))
+      return;
    cmd                  = d3d12->queue.cmd;
 
    switch (draw->pipeline_id)
@@ -4144,144 +4268,11 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       gs_code = NULL;
    }
 
-   if (string_is_equal(settings->arrays.menu_driver, "xmb"))
-   {
-      {
-         static const char ribbon[] =
-#include "d3d_shaders/ribbon_sm4.hlsl.h"
-            ;
-         static const char ribbon_simple[] =
-#include "d3d_shaders/ribbon_simple_sm4.hlsl.h"
-            ;
-
-         D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
-            { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0,
-               D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-         };
-
-         desc.BlendState.RenderTarget[0].SrcBlend  = D3D12_BLEND_DEST_COLOR;
-         desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ONE;
-         desc.PrimitiveTopologyType                = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-         desc.InputLayout.pInputElementDescs       = inputElementDesc;
-         desc.InputLayout.NumElements              = countof(inputElementDesc);
-
-         if (!d3d_compile(ribbon, sizeof(ribbon), NULL, "VSMain", "vs_5_0", &vs_code))
-            goto error;
-         if (!d3d_compile(ribbon, sizeof(ribbon), NULL, "PSMain", "ps_5_0", &ps_code))
-            goto error;
-
-         d3d12_init_pipeline(
-               d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU]);
-
-         Release(vs_code);
-         Release(ps_code);
-         vs_code = NULL;
-         ps_code = NULL;
-
-         if (!d3d_compile(ribbon_simple, sizeof(ribbon_simple), NULL, "VSMain", "vs_5_0", &vs_code))
-            goto error;
-         if (!d3d_compile(ribbon_simple, sizeof(ribbon_simple), NULL, "PSMain", "ps_5_0", &ps_code))
-            goto error;
-
-         d3d12_init_pipeline(
-               d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_2]);
-
-         Release(vs_code);
-         Release(ps_code);
-         vs_code = NULL;
-         ps_code = NULL;
-      }
-
-      {
-         static const char simple_snow[] =
-#include "d3d_shaders/simple_snow_sm4.hlsl.h"
-            ;
-         static const char snow[] =
-#include "d3d_shaders/snow_sm4.hlsl.h"
-            ;
-         static const char bokeh[] =
-#include "d3d_shaders/bokeh_sm4.hlsl.h"
-            ;
-         static const char snowflake[] =
-#include "d3d_shaders/snowflake_sm4.hlsl.h"
-            ;
-
-         D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
-            { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, position),
-               D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(d3d12_vertex_t, texcoord),
-               D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-         };
-
-         desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-         desc.InputLayout.pInputElementDescs = inputElementDesc;
-         desc.InputLayout.NumElements        = countof(inputElementDesc);
-
-         /* Reset blend state to standard alpha blending for snow/bokeh/snowflake
-          * pipelines.  The ribbon shaders above set SrcBlend = DEST_COLOR /
-          * DestBlend = ONE which is a multiplicative blend unsuitable for
-          * additive particle effects — white snowflakes become invisible
-          * against coloured backgrounds. */
-         desc.BlendState.RenderTarget[0].SrcBlend       = D3D12_BLEND_SRC_ALPHA;
-         desc.BlendState.RenderTarget[0].DestBlend      = D3D12_BLEND_INV_SRC_ALPHA;
-         desc.BlendState.RenderTarget[0].BlendOp        = D3D12_BLEND_OP_ADD;
-         desc.BlendState.RenderTarget[0].SrcBlendAlpha  = D3D12_BLEND_SRC_ALPHA;
-         desc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
-         desc.BlendState.RenderTarget[0].BlendOpAlpha   = D3D12_BLEND_OP_ADD;
-
-         if (!d3d_compile(simple_snow, sizeof(simple_snow), NULL, "VSMain", "vs_5_0", &vs_code))
-            goto error;
-         if (!d3d_compile(simple_snow, sizeof(simple_snow), NULL, "PSMain", "ps_5_0", &ps_code))
-            goto error;
-
-         d3d12_init_pipeline(
-               d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_3]);
-
-         Release(vs_code);
-         Release(ps_code);
-         vs_code = NULL;
-         ps_code = NULL;
-
-         if (!d3d_compile(snow, sizeof(snow), NULL, "VSMain", "vs_5_0", &vs_code))
-            goto error;
-         if (!d3d_compile(snow, sizeof(snow), NULL, "PSMain", "ps_5_0", &ps_code))
-            goto error;
-
-         d3d12_init_pipeline(
-               d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_4]);
-
-         Release(vs_code);
-         Release(ps_code);
-         vs_code = NULL;
-         ps_code = NULL;
-
-         if (!d3d_compile(bokeh, sizeof(bokeh), NULL, "VSMain", "vs_5_0", &vs_code))
-            goto error;
-         if (!d3d_compile(bokeh, sizeof(bokeh), NULL, "PSMain", "ps_5_0", &ps_code))
-            goto error;
-
-         d3d12_init_pipeline(
-               d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_5]);
-
-         Release(vs_code);
-         Release(ps_code);
-         vs_code = NULL;
-         ps_code = NULL;
-
-         if (!d3d_compile(snowflake, sizeof(snowflake), NULL, "VSMain", "vs_5_0", &vs_code))
-            goto error;
-         if (!d3d_compile(snowflake, sizeof(snowflake), NULL, "PSMain", "ps_5_0", &ps_code))
-            goto error;
-
-         d3d12_init_pipeline(
-               d3d12->device, vs_code, ps_code, NULL, &desc, &d3d12->pipes[VIDEO_SHADER_MENU_6]);
-
-         Release(vs_code);
-         Release(ps_code);
-         vs_code = NULL;
-         ps_code = NULL;
-      }
-   }
+   /* The menu effects are made from this when first drawn; see
+    * d3d12_effect_pipe */
+   d3d12->effect_desc       = desc;
+   d3d12->effect_desc_valid = true;
+   d3d12->effects_tried     = 0;
 
    {
       static const char shader[] =
