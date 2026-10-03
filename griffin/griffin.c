@@ -924,6 +924,10 @@ INPUT (HID)
 #include "../input/drivers_hid/wiiusb_hid_libogc.c"
 #endif
 
+#ifdef HAVE_GEKKO_HID
+#include "../input/drivers_hid/gekko_hid.c"
+#endif
+
 #include "../input/connect/joypad_connection.c"
 #include "../input/connect/connect_ps3.c"
 #include "../input/connect/connect_ps4.c"

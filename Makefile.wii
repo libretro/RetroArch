@@ -189,9 +189,8 @@ CFLAGS      += -DHAVE_SOCKET_LEGACY -DHAVE_CHEEVOS
 APP_BOOTER_DIR = wii/app_booter
 PLATOBJS := $(APP_BOOTER_DIR)/app_booter.binobj
 else
-# Not on os/gekko yet: USB HID pads.
 HAVE_WIIUSB_HID          := 0
-HAVE_HID                 := 0
+HAVE_HID                 := 1
 HAVE_RARCH_EXEC          := 0
 HAVE_CHEEVOS             := 1
 
@@ -215,6 +214,10 @@ GEKKO_DIR      := os/gekko
 GEKKO_PLATFORM := rvl
 include os/gekko/gekko.mk
 OBJ =  audio/drivers/gekko_audio.o gfx/drivers/gekko_gfx.o gfx/display_servers/dispserv_gekko.o gfx/display_servers/dispserv_gx_modes.o input/drivers/gx_input.o frontend/drivers/platform_gekko.o input/drivers_joypad/gekko_joypad.o $(addsuffix .o,$(basename $(GEKKO_SOURCES)))
+ifeq ($(HAVE_HID), 1)
+OBJ += input/drivers_hid/gekko_hid.o
+CFLAGS += -DHAVE_GEKKO_HID
+endif
 endif
 
 ifeq ($(HAVE_LIBOGC)$(EXTERNAL_LIBOGC), 10)

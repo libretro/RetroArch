@@ -1,8 +1,10 @@
-/* Wii: USB devices through IOS's /dev/usb/ven (IOS 57 and later).
+/* Wii: USB devices through IOS 57 and later: HID-class interfaces
+ * through /dev/usb/hid, the rest through /dev/usb/ven.
  *
  * IOS lists each interface of a device as a device of its own, by an
- * id.  Transfers block until they finish; their data can be anywhere
- * (it is copied through memory IOS can reach), at most 65535 bytes. */
+ * id; the calls below take ids from either list.  Transfers block
+ * until they finish; their data can be anywhere (it is copied through
+ * memory IOS can reach), at most 65535 bytes. */
 
 #ifndef GEKKO_USB_H
 #define GEKKO_USB_H
@@ -47,6 +49,10 @@ typedef struct gk_usb_info
 
 /* The devices plugged in now; how many were written. */
 int  gk_usb_list(gk_usb_dev_t *out, int max);
+/* The HID-class ones: their description has the interrupt IN and OUT
+ * endpoints only, and only control and interrupt transfers reach them
+ * (no alternate settings). */
+int  gk_usb_hid_list(gk_usb_dev_t *out, int max);
 /* Wake a device and describe the interface; 0 or a negative errno. */
 int  gk_usb_open(uint32_t id, gk_usb_info_t *info);
 void gk_usb_close(uint32_t id);

@@ -536,8 +536,11 @@ hid_driver_t *hid_drivers[] = {
 #if defined(HAVE_LIBUSB) && defined(HAVE_THREADS)
    &libusb_hid,
 #endif
-#ifdef HW_RVL
+#ifdef HAVE_WIIUSB_HID
    &wiiusb_hid,
+#endif
+#ifdef HAVE_GEKKO_HID
+   &gekko_hid,
 #endif
 #if defined(WIIU)
    &wiiu_hid,

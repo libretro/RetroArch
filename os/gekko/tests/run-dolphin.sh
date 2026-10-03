@@ -6,7 +6,7 @@
 # copies to memory, for tests that read back what the GPU drew; frames
 # are copied to $DUMP if it is set.  $SDIMG is the Wii's SD card image.
 # The clock chip reads 1790000000 (2026-09-21 14:13:20) at the start,
-# a Wii has the emulated Wii Speak on USB, and its emulated remote 1 a
+# a Wii has the emulated Wii Speak and Skylander portal on USB, and its emulated remote 1 a
 # Nunchuk ($WIIEXT names another extension, e.g. Classic).  $ARGS,
 # arguments separated by '|', is passed the way loaders pass them;
 # $ATTACH names a file loaded with it, whose address and length follow
@@ -59,7 +59,8 @@ set -- -u "$USERDIR" -p headless \
    -C Logger.Options.Verbosity=5 \
    -C Dolphin.Core.EnableCustomRTC=True \
    -C Dolphin.Core.CustomRTCValue=1790000000 \
-   -C Dolphin.EmulatedUSBDevices.EmulateWiiSpeak=True
+   -C Dolphin.EmulatedUSBDevices.EmulateWiiSpeak=True \
+   -C Dolphin.EmulatedUSBDevices.EmulateSkylanderPortal=True
 if [ -n "$SDIMG" ]; then
    set -- "$@" -C "Dolphin.General.WiiSDCardPath=$(cd "$(dirname "$SDIMG")" && pwd)/$(basename "$SDIMG")" \
       -C Dolphin.Core.WiiSDCard=True -C Dolphin.Core.WiiSDCardAllowWrites=True
