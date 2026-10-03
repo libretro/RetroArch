@@ -35,6 +35,11 @@
 #define REPLAY_HEADER_LEN                10
 #define REPLAY_HEADER_LEN_BYTES          (REPLAY_HEADER_LEN*4)
 
+/* Largest block (bytes) and superblock (blocks) a replay header may
+ * name.  The recorder writes 128 or 16384 and 16. */
+#define REPLAY_MAX_BLOCK_SIZE            (1 << 20)
+#define REPLAY_MAX_SUPERBLOCK_SIZE       (1 << 12)
+
 #define REPLAY_HEADER_V0V1_LEN           6
 #define REPLAY_HEADER_V0V1_LEN_BYTES     (REPLAY_HEADER_V0V1_LEN*4)
 
