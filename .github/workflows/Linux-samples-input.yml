@@ -586,6 +586,42 @@ jobs:
           make clean
           echo "[pass] winraw_mouse_hotplug_test (wine)"
 
+      - name: Build and run sony_pad_output_test
+        shell: bash
+        working-directory: samples/input/sony_pad_output
+        run: |
+          set -eu
+          # The rumble reports of the DualShock 4 and the DualSense
+          # (input/common/sony_pad_output.h, which the raw input joypad
+          # driver writes to those pads): each has the id, length and
+          # layout its pad expects, sets no flag but the rumble ones,
+          # and over Bluetooth ends in the CRC the pad checks.
+          make clean all
+          timeout 60 make check
+          make clean
+          echo "[pass] sony_pad_output_test"
+
+      - name: Build and run winraw_joypad_rumble_test (mingw + Wine)
+        shell: bash
+        working-directory: samples/input/winraw_joypad_rumble
+        run: |
+          set -eu
+          # The raw input joypad driver had no rumble. For a DualShock
+          # 4 or a DualSense it opens the controller for writing and
+          # writes the rumble report from a thread of its own. The
+          # real driver under Wine, with files standing in for the
+          # controllers: the two Sony pads are opened and another
+          # make is not; set_rumble() writes nothing itself and the
+          # thread writes the pad's own report, at the length Windows
+          # wants; a run of changes ends with the last written;
+          # unplugging a rumbling pad, or stopping the driver, stills
+          # it first.
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          make clean all
+          WINEDEBUG=-all timeout 300 make check
+          make clean
+          echo "[pass] winraw_joypad_rumble_test (wine)"
+
       - name: Build and run keyboard_devices_test
         shell: bash
         working-directory: samples/input/keyboard_devices

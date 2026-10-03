@@ -52,6 +52,7 @@
 #include "../../config.def.h"
 #include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
+#include "../common/sony_pad_output.h"
 #include "../../verbosity.h"
 
 /* ------------------------------------------------------------------ */
@@ -296,6 +297,281 @@ static int16_t winraw_joypad_scale_axis(LONG value, LONG logical_min,
 }
 
 /* Look up a pad slot by HANDLE.  Returns index or -1. */
+/* ------------------------------------------------------------------ */
+/* Rumble                                                              */
+/* ------------------------------------------------------------------ */
+
+/* Raw input reads a controller; it has no way to write to one, and
+ * this driver had no rumble at all. A DualShock 4 or a DualSense
+ * rumbles on an output report in its own format
+ * (input/common/sony_pad_output.h), and Windows lets a controller's
+ * HID device be opened for writing. So for those pads the device is
+ * opened when the pad arrives and the report written when the
+ * strength changes.
+ *
+ * Not from the frontend's thread: a write to a controller is a
+ * transfer on its link, which takes about a millisecond over USB and
+ * can take many over Bluetooth, and the frame is not to wait for it.
+ * set_rumble() notes the strength wanted and wakes a thread of the
+ * driver's own, which writes what is wanted now - not everything
+ * that was wanted on the way to it. The thread is started when the
+ * first such pad arrives and stopped with the driver, which stills
+ * the motors before it closes the devices.
+ *
+ * Other controllers have no rumble here still. */
+typedef struct
+{
+   HANDLE   handle;     /* the device, open for writing; NULL: none   */
+   uint8_t  model;      /* enum sony_pad_model                        */
+   bool     bluetooth;
+   bool     v2;         /* DualSense: the newer way of the motors     */
+   USHORT   report_len; /* the length Windows wants of a write        */
+   /* wanted: the strong motor in the low sixteen bits, the weak in
+    * the high. Written by set_rumble(), read by the thread. */
+   volatile LONG want;
+   LONG     sent;       /* the thread's: what it last wrote           */
+   bool     failed;     /* a write failed, and it has been said       */
+} winraw_joypad_out_t;
+
+static winraw_joypad_out_t winraw_joypad_out[MAX_USERS];
+/* guards .handle against the thread: taken to open and to close */
+static CRITICAL_SECTION    winraw_joypad_out_lock;
+static bool                winraw_joypad_out_lock_made;
+static HANDLE              winraw_joypad_out_thread;
+static HANDLE              winraw_joypad_out_wake;
+static volatile LONG       winraw_joypad_out_quit;
+/* counted for the log */
+static unsigned long       winraw_joypad_out_writes;
+
+/* how long a write may take before it is given up */
+#define WINRAW_JOYPAD_OUT_TIMEOUT_MS 250
+
+static bool winraw_joypad_out_write(winraw_joypad_out_t *out, LONG want)
+{
+   uint8_t buf[1024];
+   OVERLAPPED ov;
+   DWORD written = 0;
+   bool ok       = false;
+   size_t report = sony_pad_rumble_report(buf, sizeof(buf),
+         (enum sony_pad_model)out->model, out->bluetooth, out->v2,
+         (uint8_t)((want & 0xFFFF) >> 8),
+         (uint8_t)(((want >> 16) & 0xFFFF) >> 8));
+   size_t len    = report;
+
+   if (!report)
+      return false;
+   /* Windows takes a write of the length the device's descriptor
+    * gives its longest output report, no shorter; the rest is zeros */
+   if (out->report_len > len && out->report_len <= sizeof(buf))
+      len = out->report_len;
+
+   /* The device is opened for overlapped writes so that one to a pad
+    * that has gone quiet - out of range, its battery flat - is given
+    * up after a while and not waited on for as long as Windows
+    * would: this is done with the lock held that unplugging the pad
+    * needs. */
+   memset(&ov, 0, sizeof(ov));
+   ov.hEvent = CreateEventA(NULL, TRUE, FALSE, NULL);
+   if (ov.hEvent)
+   {
+      if (WriteFile(out->handle, buf, (DWORD)len, &written, &ov))
+         ok = true;
+      else if (GetLastError() == ERROR_IO_PENDING)
+      {
+         if (WaitForSingleObject(ov.hEvent, WINRAW_JOYPAD_OUT_TIMEOUT_MS)
+               != WAIT_OBJECT_0)
+            CancelIo(out->handle);
+         ok = GetOverlappedResult(out->handle, &ov, &written, TRUE) != 0;
+      }
+      CloseHandle(ov.hEvent);
+   }
+   if (ok)
+      return true;
+   /* some links take an output report only as a control request, and
+    * that one at the report's own length */
+   return HidD_SetOutputReport(out->handle, buf, (ULONG)report) != 0;
+}
+
+static DWORD WINAPI winraw_joypad_out_run(LPVOID unused)
+{
+   (void)unused;
+   for (;;)
+   {
+      unsigned i;
+      WaitForSingleObject(winraw_joypad_out_wake, INFINITE);
+      if (InterlockedCompareExchange(&winraw_joypad_out_quit, 0, 0))
+         break;
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         winraw_joypad_out_t *out = &winraw_joypad_out[i];
+         LONG want = InterlockedCompareExchange(&out->want, 0, 0);
+         if (want == out->sent)
+            continue;
+         EnterCriticalSection(&winraw_joypad_out_lock);
+         if (out->handle)
+         {
+            if (winraw_joypad_out_write(out, want))
+               winraw_joypad_out_writes++;
+            else if (!out->failed)
+            {
+               out->failed = true;
+               RARCH_WARN("[RawInput Joypad] Rumble: the write to the"
+                     " controller in slot %u failed (error %lu).\n",
+                     i, (unsigned long)GetLastError());
+            }
+         }
+         out->sent = want;
+         LeaveCriticalSection(&winraw_joypad_out_lock);
+      }
+   }
+   return 0;
+}
+
+/* A pad has arrived: if it is one there is a rumble report for, its
+ * device is opened for writing. */
+static void winraw_joypad_out_open(unsigned slot,
+      uint16_t vid, uint16_t pid, const char *path, USHORT report_len)
+{
+   HANDLE handle;
+   winraw_joypad_out_t *out  = &winraw_joypad_out[slot];
+   enum sony_pad_model model = sony_pad_model(vid, pid);
+   bool v2                   = false;
+
+   if (model == SONY_PAD_NONE || !path || !*path)
+      return;
+
+   handle = CreateFileA(path, GENERIC_READ | GENERIC_WRITE,
+         FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+         FILE_FLAG_OVERLAPPED, NULL);
+   if (handle == INVALID_HANDLE_VALUE || !handle)
+   {
+      RARCH_LOG("[RawInput Joypad] Rumble: the controller in slot %u could"
+            " not be opened for writing (error %lu); it will not rumble.\n",
+            slot, (unsigned long)GetLastError());
+      return;
+   }
+
+   if (model == SONY_PAD_DUALSENSE)
+   {
+      /* the newer way of the motors: the Edge has it; a DualSense
+       * from firmware 2.21, which its feature report 0x20 tells */
+      v2 = sony_pad_dualsense_is_edge(pid);
+      if (!v2)
+      {
+         uint8_t feature[128];
+         memset(feature, 0, sizeof(feature));
+         feature[0] = 0x20;
+         if (HidD_GetFeature(handle, feature, 64))
+            v2 = (unsigned)(feature[44] | (feature[45] << 8)) > 0x0215;
+      }
+   }
+
+   if (!winraw_joypad_out_lock_made)
+   {
+      InitializeCriticalSection(&winraw_joypad_out_lock);
+      winraw_joypad_out_lock_made = true;
+   }
+   if (!winraw_joypad_out_thread)
+   {
+      InterlockedExchange(&winraw_joypad_out_quit, 0);
+      winraw_joypad_out_wake   = CreateEventA(NULL, FALSE, FALSE, NULL);
+      winraw_joypad_out_thread = winraw_joypad_out_wake
+         ? CreateThread(NULL, 0, winraw_joypad_out_run, NULL, 0, NULL)
+         : NULL;
+      if (!winraw_joypad_out_thread)
+      {
+         if (winraw_joypad_out_wake)
+            CloseHandle(winraw_joypad_out_wake);
+         winraw_joypad_out_wake = NULL;
+         CloseHandle(handle);
+         return;
+      }
+   }
+
+   EnterCriticalSection(&winraw_joypad_out_lock);
+   out->handle     = handle;
+   out->model      = (uint8_t)model;
+   out->bluetooth  = path
+      && strstr(path, "00001124-0000-1000-8000-00805f9b34fb") != NULL;
+   if (!out->bluetooth && path)
+      out->bluetooth = strstr(path, "00001124-0000-1000-8000-00805F9B34FB") != NULL;
+   out->v2         = v2;
+   out->report_len = report_len;
+   out->sent       = 0;
+   out->failed     = false;
+   InterlockedExchange(&out->want, 0);
+   LeaveCriticalSection(&winraw_joypad_out_lock);
+
+   RARCH_LOG("[RawInput Joypad] Rumble: the controller in slot %u is a %s"
+         " over %s; it is written to from the driver's own thread.\n", slot,
+         model == SONY_PAD_DS4 ? "DualShock 4"
+         : (v2 ? "DualSense (newer motor control)" : "DualSense"),
+         out->bluetooth ? "Bluetooth" : "USB");
+}
+
+/* A pad has gone, or the driver is going: the motors are stilled if
+ * they were running and the device closed. */
+static void winraw_joypad_out_close(unsigned slot)
+{
+   winraw_joypad_out_t *out = &winraw_joypad_out[slot];
+
+   if (!winraw_joypad_out_lock_made || !out->handle)
+      return;
+   EnterCriticalSection(&winraw_joypad_out_lock);
+   if (out->sent || InterlockedCompareExchange(&out->want, 0, 0))
+      winraw_joypad_out_write(out, 0);
+   CloseHandle(out->handle);
+   memset(out, 0, sizeof(*out));
+   LeaveCriticalSection(&winraw_joypad_out_lock);
+}
+
+/* The driver is going: the thread is stopped, then every device
+ * stilled and closed. */
+static void winraw_joypad_out_stop(void)
+{
+   unsigned i;
+
+   if (winraw_joypad_out_thread)
+   {
+      InterlockedExchange(&winraw_joypad_out_quit, 1);
+      SetEvent(winraw_joypad_out_wake);
+      WaitForSingleObject(winraw_joypad_out_thread, INFINITE);
+      CloseHandle(winraw_joypad_out_thread);
+      CloseHandle(winraw_joypad_out_wake);
+      winraw_joypad_out_thread = NULL;
+      winraw_joypad_out_wake   = NULL;
+   }
+   for (i = 0; i < MAX_USERS; i++)
+      winraw_joypad_out_close(i);
+   if (winraw_joypad_out_writes)
+      RARCH_DBG("[RawInput Joypad] Rumble: %lu report(s) written.\n",
+            winraw_joypad_out_writes);
+   winraw_joypad_out_writes = 0;
+}
+
+static bool winraw_joypad_joypad_set_rumble(unsigned port,
+      enum retro_rumble_effect effect, uint16_t strength)
+{
+   LONG want;
+   winraw_joypad_out_t *out;
+
+   if (port >= MAX_USERS)
+      return false;
+   out = &winraw_joypad_out[port];
+   if (!out->handle || !winraw_joypad_out_wake)
+      return false;
+
+   /* one writer - the frontend's thread - so read, change, write */
+   want = InterlockedCompareExchange(&out->want, 0, 0);
+   if (effect == RETRO_RUMBLE_STRONG)
+      want = (want & (LONG)0xFFFF0000) | (LONG)strength;
+   else
+      want = (want & 0xFFFF) | (LONG)((ULONG)strength << 16);
+   InterlockedExchange(&out->want, want);
+   SetEvent(winraw_joypad_out_wake);
+   return true;
+}
+
 static int winraw_joypad_find_pad(HANDLE hDevice)
 {
    unsigned i;
@@ -597,6 +873,11 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
    input_autoconfigure_connect(pad->name, NULL, NULL, "winraw",
          (unsigned)slot, pad->vid, pad->pid);
 
+   /* a pad there is a rumble report for is opened for writing */
+   winraw_joypad_out_close((unsigned)slot);
+   winraw_joypad_out_open((unsigned)slot, pad->vid, pad->pid, pad->path,
+         pad->caps.OutputReportByteLength);
+
    return true;
 }
 
@@ -613,6 +894,7 @@ static void winraw_joypad_remove_device(HANDLE hDevice)
             slot, pad->name);
 
       input_autoconfigure_disconnect((unsigned)slot, pad->name);
+      winraw_joypad_out_close((unsigned)slot);
 
       if (pad->btn_caps)
          free(pad->btn_caps);
@@ -1083,6 +1365,8 @@ static void winraw_joypad_joypad_destroy(void)
 {
    unsigned i;
 
+   winraw_joypad_out_stop();
+
    for (i = 0; i < MAX_USERS; i++)
    {
       winraw_joypad_joypad_data_t *pad = &winraw_joypad_pads[i];
@@ -1467,7 +1751,7 @@ input_device_driver_t winraw_joypad = {
    winraw_joypad_joypad_get_buttons,
    winraw_joypad_joypad_axis,
    winraw_joypad_joypad_poll,
-   NULL,                         /* set_rumble   (not supported via RawInput) */
+   winraw_joypad_joypad_set_rumble, /* DualShock 4 and DualSense; see "Rumble" */
    NULL,                         /* rumble_gain  */
    NULL,                         /* set_sensor_state */
    NULL,                         /* get_sensor_input */
