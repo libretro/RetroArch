@@ -2796,6 +2796,25 @@ check_grow:
    return true;
 }
 
+/* Remove the credential headers from a request's pre-formatted header
+ * lines, in place.  Each line is "Name: value" ended by "\n" or
+ * "\r\n"; the names compare without case. */
+static void net_http_headers_drop_credentials(char *headers)
+{
+   char *line = headers;
+   while (*line)
+   {
+      char  *nl  = strchr(line, '\n');
+      size_t len = nl ? (size_t)(nl + 1 - line) : strlen(line);
+      if (     !strncasecmp(line, "Authorization:",
+                  sizeof("Authorization:") - 1)
+            || !strncasecmp(line, "Cookie:", sizeof("Cookie:") - 1))
+         memmove(line, line + len, strlen(line + len) + 1);
+      else
+         line += len;
+   }
+}
+
 static bool net_http_redirect(struct http_t *state, const char *location)
 {
    /* This reinitializes state based on the new location.  Every
@@ -2855,6 +2874,13 @@ static bool net_http_redirect(struct http_t *state, const char *location)
       goto fail;
 
    ssl      = (url[4] == 's' || url[4] == 'S');
+   /* Never follow a redirect out of TLS: an https request that lands
+    * on http would carry on unauthenticated without the caller knowing. */
+   if (state->ssl && !ssl)
+   {
+      net_http_log_transport_state(state, "redirect_tls_downgrade", -1);
+      goto fail;
+   }
    host     = url + (ssl ? sizeof("https://") : sizeof("http://")) - 1;
    auth_end = host + strcspn(host, "/?#");
    /* The fragment is the client's, never part of the request. */
@@ -2906,6 +2932,20 @@ static bool net_http_redirect(struct http_t *state, const char *location)
    memcpy(new_domain, host, host_len);
    new_domain[host_len] = '\0';
    free(base);
+
+   /* Credentials go only where the caller sent them: another host or
+    * port gets the request without Authorization or Cookie.  Moving
+    * the same host from http onto https keeps them. */
+   if (state->request.headers)
+   {
+      bool same_host = strlen(state->request.domain) == host_len
+            && !strncasecmp(new_domain, state->request.domain, host_len);
+      bool same_port = port == state->request.port
+            || (!state->ssl && ssl
+                  && state->request.port == 80 && port == 443);
+      if (!same_host || !same_port)
+         net_http_headers_drop_credentials(state->request.headers);
+   }
 
    free(state->request.domain);
    free(state->request.path);

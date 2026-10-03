@@ -314,12 +314,115 @@ static void test_ipv6_literals(void)
    net_http_deinit();
 }
 
+static struct http_t *https_state(void)
+{
+   struct http_t *h;
+   struct http_connection_t *conn =
+      net_http_connection_new("https://example.invalid/a", "GET", NULL);
+   net_http_connection_iterate(conn);
+   net_http_connection_done(conn);
+   h = net_http_new(conn);
+   net_http_connection_free(conn);
+   return h;
+}
+
+/* A redirect may not leave TLS: the scheme rule alone, since the same
+ * request with an https Location is followed. */
+static void test_redirect_scheme(void)
+{
+   struct http_t *h;
+
+   net_http_init();
+   h = https_state();
+   check(h && h->ssl && net_http_redirect(h, "http://example.invalid/b")
+         && h->err,
+         "https request redirected to http:// ends in error");
+   net_http_delete(h);
+
+   h = https_state();
+   check(h && net_http_redirect(h, "HTTP://example.invalid/b") && h->err,
+         "the scheme test is case-insensitive");
+   net_http_delete(h);
+
+   h = https_state();
+   check(h && !net_http_redirect(h, "https://other.invalid/c")
+         && !h->err && h->ssl
+         && !strcmp(h->request.domain, "other.invalid")
+         && !strcmp(h->request.path, "c"),
+         "https request redirected to another https host is followed");
+   net_http_delete(h);
+
+   h = https_state();
+   check(h && !net_http_redirect(h, "/d") && !h->err && h->ssl,
+         "a relative Location keeps https");
+   net_http_delete(h);
+   net_http_deinit();
+}
+
+#define CRED_HEADERS "Authorization: Basic dTpw\r\n" \
+                     "X-Keep: 1\r\n" \
+                     "cookie: s=1\r\n"
+
+static struct http_t *cred_state(const char *url)
+{
+   struct http_t *h;
+   struct http_connection_t *conn =
+      net_http_connection_new(url, "GET", NULL);
+   net_http_connection_set_headers(conn, CRED_HEADERS);
+   net_http_connection_iterate(conn);
+   net_http_connection_done(conn);
+   h = net_http_new(conn);
+   net_http_connection_free(conn);
+   return h;
+}
+
+/* Authorization and Cookie stay with the host and port they were sent
+ * to; other headers follow every redirect. */
+static void test_redirect_credentials(void)
+{
+   struct http_t *h;
+
+   net_http_init();
+   h = cred_state("https://example.invalid/a");
+   check(h && !net_http_redirect(h, "/b")
+         && !strcmp(h->request.headers, CRED_HEADERS),
+         "a redirect on the same host keeps the credentials");
+   net_http_delete(h);
+
+   h = cred_state("https://example.invalid/a");
+   check(h && !net_http_redirect(h, "https://EXAMPLE.invalid/b")
+         && !strcmp(h->request.headers, CRED_HEADERS),
+         "the host compares without case");
+   net_http_delete(h);
+
+   h = cred_state("https://example.invalid/a");
+   check(h && !net_http_redirect(h, "https://other.invalid/b")
+         && !strcmp(h->request.headers, "X-Keep: 1\r\n"),
+         "another host gets neither Authorization nor Cookie");
+   net_http_delete(h);
+
+   h = cred_state("https://example.invalid/a");
+   check(h && !net_http_redirect(h, "https://example.invalid:8443/b")
+         && !strcmp(h->request.headers, "X-Keep: 1\r\n"),
+         "another port gets neither Authorization nor Cookie");
+   net_http_delete(h);
+
+   h = cred_state("http://example.invalid/a");
+   check(h && !net_http_redirect(h, "https://example.invalid/b")
+         && h->ssl && !strcmp(h->request.headers, CRED_HEADERS),
+         "the same host moving onto https keeps the credentials");
+   net_http_delete(h);
+   net_http_deinit();
+}
+
 int main(void)
 {
    test_dns_cap();
    test_pool_limits();
    test_family_fallback();
    test_ipv6_literals();
+   test_redirect_scheme();
+   test_redirect_credentials();
    if (failures)
    {
       printf("%d check(s) failed\n", failures);
