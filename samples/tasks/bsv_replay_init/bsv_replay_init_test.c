@@ -125,6 +125,25 @@
 #include "../../../input/bsv/uint32s_index.h"
 #endif
 
+/* The checkpoint lane asks for more memory than exists and expects
+ * malloc to return NULL.  ThreadSanitizer aborts on that size unless
+ * told otherwise; TSAN_OPTIONS from the environment still applies on
+ * top of this. */
+#if defined(__SANITIZE_THREAD__)
+#define BSV_TEST_TSAN 1
+#elif defined(__has_feature)
+#if __has_feature(thread_sanitizer)
+#define BSV_TEST_TSAN 1
+#endif
+#endif
+#ifdef BSV_TEST_TSAN
+const char *__tsan_default_options(void);
+const char *__tsan_default_options(void)
+{
+   return "allocator_may_return_null=1";
+}
+#endif
+
 /* ---- stub frontend ------------------------------------------------ */
 
 #define STATE_SIZE (48 * 1024)   /* NES-sized */
