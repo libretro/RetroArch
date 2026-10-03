@@ -1701,19 +1701,13 @@ void win32_window_proc_setup(enum win32_window_family family)
  * everything it had on the window before it leaves it, and that it
  * makes a new window if it cannot have the one it took
  * (win32_window_remake()). The tag is also what keeps one Direct3D
- * driver from taking another's window. That only with
- * RETROARCH_WINDOW_KEEP=1 asked for, until it has been run on
- * Windows: DXGI has rules of its own about a window that has had a
- * swap chain, and nothing here can try them. */
+ * driver from taking another's window. */
 static bool win32_window_family_keeps(void)
 {
-   const char *env = getenv("RETROARCH_WINDOW_KEEP");
    if (     win32_wnd_family == WIN32_WINDOW_VULKAN
          || win32_wnd_family == WIN32_WINDOW_GDI)
       return true;
-   return win32_wnd_family == WIN32_WINDOW_D3D
-       && win32_wnd_tag
-       && env && (env[0] == '1' || env[0] == '2');
+   return win32_wnd_family == WIN32_WINDOW_D3D && win32_wnd_tag;
 }
 
 void win32_window_tag(const char *tag)
@@ -2408,6 +2402,33 @@ void win32_set_window(unsigned *width, unsigned *height,
    win32_show_cursor(NULL, !fullscreen);
 }
 
+/* What the video driver is told is the size the window has now.
+ *
+ * Setting a window up leaves g_win32_resize_width/height holding sizes
+ * worked out on the way - a window's outer size, then one with the
+ * menu bar added - and counts on a WM_SIZE that follows to put the
+ * client's size there. That message only comes if the size changes,
+ * or when a window is first shown. For a window that is already on
+ * screen and ends up the size it had, or the size Windows holds it to,
+ * none comes and the worked-out size stays: the driver draws for a
+ * window of another size than the one on screen, and the picture sits
+ * in a part of it. So for a window that was already there - restyled
+ * by the fullscreen toggle, or taken back from the last driver - the
+ * client's size is put there by hand. */
+static void win32_window_tell_client_size(HWND hwnd)
+{
+   RECT client;
+   if (     hwnd
+         && GetClientRect(hwnd, &client)
+         && client.right  > client.left
+         && client.bottom > client.top)
+   {
+      g_win32_resize_width  = client.right  - client.left;
+      g_win32_resize_height = client.bottom - client.top;
+      g_win32_flags        |= WIN32_CMN_FLAG_RESIZED;
+   }
+}
+
 bool win32_set_video_mode(void *data,
       unsigned dims,
       bool fullscreen)
@@ -2446,6 +2467,11 @@ bool win32_set_video_mode(void *data,
 
    win32_set_window(&width, &height,
          fullscreen, windowed_full, &rect);
+
+   /* A window taken back from the last driver was on screen all
+    * along: no WM_SIZE need have come of any of the above. */
+   if (win32_wnd_taken)
+      win32_window_tell_client_size(main_window.hwnd);
 
    /* Wait until context is created (or failed to do so ...).
     * Please don't remove the (res = ) as GetMessage can return -1. */
@@ -2596,31 +2622,8 @@ bool win32_window_set_fullscreen(unsigned dims, bool fullscreen)
 
    win32_set_window(&width, &height, fullscreen, true, &rect);
 
-   /* What the video driver is told is the size the window has now.
-    *
-    * The steps above leave g_win32_resize_width/height holding sizes
-    * worked out on the way - a window's outer size, then one with the
-    * menu bar added - and count on the WM_SIZE of the SetWindowPos
-    * that follows to put the client's size there. That message only
-    * comes if the size changes. A window cannot be smaller than the
-    * core's picture (WM_GETMINMAXINFO), so with a core bigger than the
-    * window asked for the window is already at its minimum, the
-    * second SetWindowPos changes nothing, and the worked-out height
-    * stayed: the driver drew for a window shorter than the one on
-    * screen, and the picture sat in the top of it. A window made by a
-    * driver restart is not affected, because that driver takes its
-    * size from the swapchain it has just made. */
-   {
-      RECT client;
-      if (     GetClientRect(hwnd, &client)
-            && client.right  > client.left
-            && client.bottom > client.top)
-      {
-         g_win32_resize_width  = client.right  - client.left;
-         g_win32_resize_height = client.bottom - client.top;
-         g_win32_flags        |= WIN32_CMN_FLAG_RESIZED;
-      }
-   }
+   /* what the video driver is told is the size the window has now */
+   win32_window_tell_client_size(hwnd);
 
    return true;
 }
