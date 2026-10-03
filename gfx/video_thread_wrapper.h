@@ -866,6 +866,25 @@ typedef struct thread_video
  */
 void video_thread_set_prefer_fast_cores(bool prefer);
 
+/**
+ * video_thread_host_hold:
+ * @on_exit : run on the thread before it ends, if it ends without
+ *            another driver having run on it.
+ *
+ * Called on the video thread while its driver is being freed: keeps
+ * the thread for the threaded driver that comes next, instead of
+ * ending it with this one. For what cannot outlive its thread - on
+ * Windows, a window. False, and nothing held, if the caller is not
+ * the video thread.
+ */
+bool video_thread_host_hold(void (*on_exit)(void));
+
+/* True while the thread is held and waiting for its next driver. */
+bool video_thread_host_is_held(void);
+
+/* Ends a held thread: no threaded driver is coming for it. */
+void video_thread_host_stop(void);
+
 bool video_init_thread(
       const video_driver_t **out_driver, void **out_data,
       input_driver_t **input, void **input_data,

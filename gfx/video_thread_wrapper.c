@@ -2361,6 +2361,152 @@ static void video_thread_loop(void *data)
    }
 }
 
+/* The thread a wrapper's loop runs on.
+ *
+ * It used to be made for one wrapper and joined when that wrapper was
+ * freed: a restart of the video driver ended one video thread and
+ * started another. That is still what happens - unless something on
+ * the thread asks for it to be held (video_thread_host_hold()), which
+ * the Windows window code does when it leaves its window up for the
+ * driver that comes next. A window belongs to the thread that made it
+ * and is destroyed when that thread ends, so a window can only be
+ * reused across a restart if the thread is.
+ *
+ * Held, the thread waits here between two wrappers; the next wrapper's
+ * loop runs on it. If no wrapper comes - the next driver is not
+ * threaded, or there is none - whoever holds it lets it go
+ * (video_thread_host_stop()), and the hook given with the hold runs on
+ * the thread before it ends, to take down what was left on it. */
+static struct
+{
+   sthread_t *thread;
+   slock_t *lock;
+   scond_t *cond;
+   thread_video_t *job;     /* a wrapper whose loop is to be run */
+   void (*on_exit)(void);   /* run on the thread before it ends */
+   bool busy;               /* a wrapper's loop is running */
+   bool hold;               /* do not end when the loop returns */
+   bool quit;
+} video_thread_host;
+
+static void video_thread_host_loop(void *data)
+{
+   (void)data;
+   for (;;)
+   {
+      thread_video_t *thr;
+
+      slock_lock(video_thread_host.lock);
+      while (!video_thread_host.job && !video_thread_host.quit)
+         scond_wait(video_thread_host.cond, video_thread_host.lock);
+      if (!(thr = video_thread_host.job))
+      {
+         void (*on_exit)(void)     = video_thread_host.on_exit;
+         video_thread_host.on_exit = NULL;
+         slock_unlock(video_thread_host.lock);
+         if (on_exit)
+            on_exit();
+         return;
+      }
+      video_thread_host.job  = NULL;
+      slock_unlock(video_thread_host.lock);
+
+      video_thread_loop(thr);
+
+      slock_lock(video_thread_host.lock);
+      video_thread_host.busy = false;
+      scond_broadcast(video_thread_host.cond);
+      slock_unlock(video_thread_host.lock);
+   }
+}
+
+/* Runs a wrapper's loop on the host thread, starting the thread if
+ * there is none. Returns the thread, or NULL. */
+static sthread_t *video_thread_host_run(thread_video_t *thr)
+{
+   if (!video_thread_host.lock)
+   {
+      video_thread_host.lock = slock_new();
+      video_thread_host.cond = scond_new();
+      if (!video_thread_host.lock || !video_thread_host.cond)
+         return NULL;
+   }
+
+   slock_lock(video_thread_host.lock);
+   video_thread_host.job  = thr;
+   video_thread_host.busy = true;
+   video_thread_host.hold = false;
+   video_thread_host.quit = false;
+   scond_broadcast(video_thread_host.cond);
+   slock_unlock(video_thread_host.lock);
+
+   if (     !video_thread_host.thread
+         && !(video_thread_host.thread =
+               sthread_create(video_thread_host_loop, NULL)))
+   {
+      video_thread_host.job  = NULL;
+      video_thread_host.busy = false;
+      return NULL;
+   }
+   return video_thread_host.thread;
+}
+
+void video_thread_host_stop(void)
+{
+   sthread_t *thread = video_thread_host.thread;
+
+   if (!thread)
+      return;
+   slock_lock(video_thread_host.lock);
+   video_thread_host.quit = true;
+   video_thread_host.hold = false;
+   scond_broadcast(video_thread_host.cond);
+   slock_unlock(video_thread_host.lock);
+   sthread_join(thread);
+   video_thread_host.thread  = NULL;
+   video_thread_host.on_exit = NULL;
+}
+
+/* A wrapper's loop has returned (CMD_FREE): waits for the thread to be
+ * back in its own loop, then ends it unless it is held. */
+static void video_thread_host_done(void)
+{
+   bool hold;
+
+   slock_lock(video_thread_host.lock);
+   while (video_thread_host.busy)
+      scond_wait(video_thread_host.cond, video_thread_host.lock);
+   hold = video_thread_host.hold;
+   slock_unlock(video_thread_host.lock);
+
+   if (!hold)
+      video_thread_host_stop();
+}
+
+bool video_thread_host_hold(void (*on_exit)(void))
+{
+   bool ret = false;
+
+   if (     !video_thread_host.thread
+         || sthread_get_thread_id(video_thread_host.thread)
+            != sthread_get_current_thread_id())
+      return false;
+   slock_lock(video_thread_host.lock);
+   if (!video_thread_host.quit)
+   {
+      video_thread_host.hold    = true;
+      video_thread_host.on_exit = on_exit;
+      ret                       = true;
+   }
+   slock_unlock(video_thread_host.lock);
+   return ret;
+}
+
+bool video_thread_host_is_held(void)
+{
+   return video_thread_host.thread && video_thread_host.hold;
+}
+
 static bool video_thread_alive(void *data)
 {
    uint32_t runloop_flags;
@@ -3215,7 +3361,7 @@ static bool video_thread_init(thread_video_t *thr,
    retro_atomic_int_init(&thr->content_period_us, 0);
    thr->last_time            = cpu_features_get_time_usec();
 
-   if (!(thr->thread = sthread_create(video_thread_loop, thr)))
+   if (!(thr->thread = video_thread_host_run(thr)))
       return false;
 
    pkt.type                  = CMD_INIT;
@@ -3347,7 +3493,10 @@ static void video_thread_free(void *data)
          video_thread_send_and_wait_user_to_thread(thr, &pkt);
          video_thread_thr_freeing = NULL;
 
-         sthread_join(thr->thread);
+         /* the thread ends here, as it always did, unless something on
+          * it asked for it to be held for the next driver */
+         video_thread_host_done();
+         thr->thread = NULL;
       }
       else
       {
