@@ -545,7 +545,9 @@ static void *font_cache_fallback_face(font_cache_t *c, int id,
  * it, so it is not handed to another codepoint until the frame is over:
  * reusing it would draw the new glyph in the earlier one's place. 0
  * until the first frame, which leaves plain LRU in place for a cache
- * used outside the video loop. */
+ * used outside the video loop.  It is only ever compared, never used
+ * to publish anything, so it is read relaxed: a plain load on every
+ * backend, where the glyph lookup reads it once a glyph. */
 static retro_atomic_int_t font_frame_epoch;
 
 void font_driver_frame_begin(void)
@@ -558,7 +560,7 @@ void font_driver_frame_begin(void)
 static font_cache_slot_t *font_cache_take_slot(font_cache_t *c)
 {
    unsigned i;
-   unsigned frame      = (unsigned)retro_atomic_load_acquire_int(
+   unsigned frame      = (unsigned)retro_atomic_load_relaxed_int(
          &font_frame_epoch);
    unsigned oldest_age = 0;
    font_cache_slot_t **link;
@@ -720,7 +722,7 @@ static const struct font_glyph *font_cache_get_glyph(void *data,
       if (slot->charcode == code)
       {
          slot->last_used  = c->usage_counter++;
-         slot->last_frame = (unsigned)retro_atomic_load_acquire_int(
+         slot->last_frame = (unsigned)retro_atomic_load_relaxed_int(
                &font_frame_epoch);
          return &slot->glyph;
       }
@@ -806,7 +808,7 @@ static struct font_atlas *font_cache_get_atlas(void *data)
    font_cache_t *c = (font_cache_t*)data;
    if (!c)
       return NULL;
-   if (c->grow_wanted && (unsigned)retro_atomic_load_acquire_int(
+   if (c->grow_wanted && (unsigned)retro_atomic_load_relaxed_int(
             &font_frame_epoch) != c->grow_frame)
    {
       c->grow_wanted = false;

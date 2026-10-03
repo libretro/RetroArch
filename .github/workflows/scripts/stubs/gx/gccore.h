@@ -125,7 +125,19 @@ typedef enum { CONF_VIDEO_NTSC = 0, CONF_VIDEO_PAL, CONF_VIDEO_MPAL } CONFVideoM
 #ifndef VI_XFBMODE_SF
 #define VI_XFBMODE_SF 0
 #endif
-typedef struct { u32 dummy[8]; } syssram;
+/* libogc's layout: the GameCube build reads display_offsetH */
+typedef struct
+{
+   u16 checksum;
+   u16 checksum_inv;
+   u32 ead0;
+   u32 ead1;
+   u32 counter_bias;
+   s8  display_offsetH;
+   u8  ntd;
+   u8  lang;
+   u8  flags;
+} syssram;
 
 /* Drawing primitives libogc gives as inline functions */
 static inline void GX_Position3f32(f32 x, f32 y, f32 z) { (void)x; (void)y; (void)z; }

@@ -23,6 +23,7 @@
 
 #include <libretro.h>
 #include <verbosity.h>
+#include <encodings/utf.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -662,13 +663,17 @@ static void *gx_init(const video_info_t *video,
    gx->system_xOrigin = 0;
 
 #ifdef HW_RVL
-   int8_t offset;
-   if (CONF_GetDisplayOffsetH(&offset) == 0)
-      gx->system_xOrigin = offset;
+   {
+      int8_t offset;
+      if (CONF_GetDisplayOffsetH(&offset) == 0)
+         gx->system_xOrigin = offset;
+   }
 #else
-   syssram      *sram = __SYS_LockSram();
-   gx->system_xOrigin = sram->display_offsetH;
-   __SYS_UnlockSram(0);
+   {
+      syssram *sram      = __SYS_LockSram();
+      gx->system_xOrigin = sram->display_offsetH;
+      __SYS_UnlockSram(0);
+   }
 #endif
    return gx;
 }
@@ -960,6 +965,17 @@ static void gx_blit_line(gx_video_t *gx,
    while (*message)
    {
       unsigned i, j;
+      /* The bitmap font holds the 256 codepoints of extended ASCII; the
+       * message is UTF-8, so one is decoded per glyph, the 'oe'
+       * ligatures moved to where the font has them and anything past
+       * it drawn as '?' */
+      uint32_t code = utf8_walk(&message);
+      if (code == 339)      /* Latin small ligature oe */
+         code = 156;
+      else if (code == 338) /* Latin capital ligature oe */
+         code = 140;
+      else if (code > 255)
+         code = '?';
       for (j = 0; j < FONT_HEIGHT; j++)
       {
          for (i = 0; i < FONT_WIDTH; i++)
@@ -967,7 +983,7 @@ static void gx_blit_line(gx_video_t *gx,
             uint8_t     rem = 1 << ((i + j * FONT_WIDTH) & 7);
             unsigned offset = (i + j * FONT_WIDTH) >> 3;
             bool        col =
-               (bitmap_bin[FONT_OFFSET((unsigned char)*message) + offset]
+               (bitmap_bin[FONT_OFFSET(code) + offset]
                 & rem);
             GXColor       c = b;
 
@@ -1001,7 +1017,6 @@ static void gx_blit_line(gx_video_t *gx,
       }
 
       x += FONT_WIDTH_STRIDE * width;
-      message++;
    }
    }
 }

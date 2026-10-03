@@ -1158,6 +1158,10 @@ jobs:
           # The fallback tests read DejaVu in place of the assets'
           # fallback fonts: Sans for fallback-font.ttf, and Sans Mono
           # and Sans as a general and a second face for the chain test.
+          # vg and sdl2 draw on-screen messages through the shipping
+          # OpenVG and SDL2 drivers - OpenVG onto a software OpenVG in
+          # the test, SDL2 through its own software renderer - and check
+          # every glyph texel lands where it should.
           sudo apt-get install -y -qq fonts-dejavu-core fonts-dejavu-mono \
              > /dev/null 2>&1 || sudo apt-get install -y -qq fonts-dejavu-core > /dev/null
           make clean all SANITIZER=address,undefined

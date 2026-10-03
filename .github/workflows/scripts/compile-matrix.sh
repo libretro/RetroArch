@@ -278,6 +278,10 @@ platform_video "odroidgo2 video" \
    gfx/drivers/gl2.c ""
 platform_video "gx video" "-DGEKKO -DHW_RVL" "-I$STUBS/gx" \
    gfx/drivers/gx_gfx.c ""
+# The GameCube build takes its display offset from SRAM instead of the
+# Wii's configuration; nothing compiled that branch.
+platform_video "gx video (GameCube)" "-DGEKKO -DHW_DOL" "-I$STUBS/gx" \
+   gfx/drivers/gx_gfx.c ""
 platform_video "switch video" \
    "-DHAVE_LIBNX -DSWITCH -D__SWITCH__" "-I$STUBS/libnx" \
    gfx/drivers/switch_nx_gfx.c ""
