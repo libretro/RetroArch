@@ -7359,7 +7359,13 @@ static void retroarch_print_help(const char *arg0)
          "                                 "
          "  config selected in -c (or default). Multiple configs are\n"
          "                                 "
-         "  delimited by '|'.\n");
+         "  delimited by '|'. Their settings are written to the main\n"
+         "                                 "
+         "  config whenever it is saved, on exit included. To keep\n"
+         "                                 "
+         "  them out of it, put config_save_on_exit = \"false\" in\n"
+         "                                 "
+         "  the appended file.\n");
 #endif
 
    fputs(buf, stdout);

@@ -109,8 +109,11 @@ A default config file will also be created in the same manner as Unix.
 .TP
 \fB--appendconfig PATH\fR
 Appends a different set of config files to the config file loaded in -c (or default).
-Multiple config files are delimited by ','.
+Multiple config files are delimited by '|'.
 Every config file will be appended in order where the key-value pairs of the next config file takes priority over the old ones.
+
+The appended settings are not kept apart once loaded. Whenever the main config file is saved - on exit, if config_save_on_exit is set, or from the menu - they are written to it with everything else, and are there the next time RetroArch starts without --appendconfig.
+To use an appended config for one session only, put config_save_on_exit = "false" in the appended file.
 
 .TP
 \fB--subsystem SUBSYSTEM\fR
