@@ -69,9 +69,19 @@ argument for the next page, as in `Nintendo - SNES 200`), and loads an
 entry with `LOAD_CONTENT <core path>|<content path>`. `LIST_CORES` gives
 the installed cores and their paths.
 
+`LOAD_CONTENT` answers once the load has started, not once it is through:
+the load runs over the next frames, and while it does the server restarts
+with the rest of RetroArch's command interfaces, so a request sent then
+may find no server. `GET_STATUS` reports `PLAYING` with the system and
+the content's name once the game runs, and `CONTENTLESS` if the load
+failed. A request still waiting for its answer when the server restarts
+is answered with an error rather than left without one.
+
 Hotkey tools (`PAUSE_TOGGLE`, `FAST_FORWARD`, `MENU_UP`) press the hotkey
 for one frame. Tools marked as holds (`FAST_FORWARD_HOLD`, `REWIND`) last
-that one frame too.
+that one frame too. `SCREENSHOT` is the exception: it takes the
+screenshot at once and answers with the file's path when it has been
+written, or `SCREENSHOT ERROR` and the reason if it could not be.
 
 Every tool carries hints for the client:
 

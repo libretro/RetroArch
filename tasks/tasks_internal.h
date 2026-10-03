@@ -371,6 +371,15 @@ bool take_screenshot(
       const char *path, bool silence,
       bool has_valid_framebuffer, bool fullpath, bool use_thread);
 
+/* @cb, when it returns true, is told once the screenshot is written:
+ * task_data is its path, and error is set if it could not be. Without
+ * @use_thread that is before this returns, with no task. */
+bool take_screenshot_notify(
+      const char *screenshot_dir,
+      const char *path, bool silence,
+      bool has_valid_framebuffer, bool fullpath, bool use_thread,
+      retro_task_callback_t cb, void *user_data);
+
 bool event_load_save_files(bool is_sram_load_disabled);
 
 bool content_savefile_is_live(const char *path);

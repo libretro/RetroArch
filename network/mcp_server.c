@@ -978,8 +978,21 @@ static void mcp_destroy(command_t *cmd)
    if (mcp)
    {
       for (i = 0; i < MCP_MAX_CONNS; i++)
-         if (mcp->conns[i].state != MCP_CONN_FREE)
-            mcp_conn_close(&mcp->conns[i]);
+      {
+         static const char gone[] =
+               "RetroArch restarted its command interfaces before the "
+               "command answered.";
+         struct mcp_conn *c = &mcp->conns[i];
+         if (c->state == MCP_CONN_WAITING)
+            mcp_tool_result(c, c->id, c->modern, gone, sizeof(gone) - 1, true);
+         /* a content load tears this down in the frame of the request
+          * that started it, before the next poll would send the answer */
+         if (c->state == MCP_CONN_WRITING && c->sent < c->len)
+            socket_send_all_nonblocking(c->fd, c->buf + c->sent,
+                  c->len - c->sent, true);
+         if (c->state != MCP_CONN_FREE)
+            mcp_conn_close(c);
+      }
       if (mcp->listen_fd >= 0)
          socket_close(mcp->listen_fd);
       mcp_wipe(mcp->token, sizeof(mcp->token));

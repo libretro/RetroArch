@@ -66,7 +66,8 @@ enum screenshot_task_flags
    SS_TASK_FLAG_IS_PAUSED           = (1 << 3),
    SS_TASK_FLAG_HISTORY_LIST_ENABLE = (1 << 4),
    SS_TASK_FLAG_WIDGETS_READY       = (1 << 5),
-   SS_TASK_FLAG_HDR                 = (1 << 6)
+   SS_TASK_FLAG_HDR                 = (1 << 6),
+   SS_TASK_FLAG_WRITTEN             = (1 << 7)
 };
 
 typedef struct screenshot_task_state screenshot_task_state_t;
@@ -85,6 +86,7 @@ struct screenshot_task_state
 
    uint8_t flags;
 
+   retro_task_callback_t cb;
    char filename[PATH_MAX_LENGTH];
    char shotname[NAME_MAX_LENGTH];
    /* Colour-space metadata for an HDR screenshot (SS_TASK_FLAG_HDR). The
@@ -371,6 +373,9 @@ static void task_screenshot_handler(retro_task_t *task)
 
    task_set_progress(task, 100);
 
+   if (ret)
+      state->flags |= SS_TASK_FLAG_WRITTEN;
+
    /* Report any errors */
    if (!ret)
    {
@@ -407,12 +412,8 @@ task_finished:
    if (state && state->userbuf)
       free(state->userbuf);
 
-#if defined(HAVE_GFX_WIDGETS)
-   /* If display widgets are enabled, state is freed
-      in the callback after the notification
-      is displayed */
-   if (state && !(state->flags & SS_TASK_FLAG_WIDGETS_READY))
-#endif
+   /* With a callback, state is freed there */
+   if (state && !task->callback)
    {
       free(state);
       /* Must explicitly set task->state to NULL here,
@@ -422,7 +423,6 @@ task_finished:
    }
 }
 
-#if defined(HAVE_GFX_WIDGETS)
 static void task_screenshot_callback(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
@@ -435,10 +435,17 @@ static void task_screenshot_callback(retro_task_t *task,
    if (!(state = (screenshot_task_state_t*)task->state))
       return;
 
+#if defined(HAVE_GFX_WIDGETS)
    if (    !(state->flags & SS_TASK_FLAG_SILENCE)
          && (state->flags & SS_TASK_FLAG_WIDGETS_READY))
       gfx_widget_screenshot_taken(dispwidget_get_ptr(),
             state->shotname, state->filename);
+#endif
+
+   if (state->cb)
+      state->cb(task, state->filename, user_data,
+            (state->flags & SS_TASK_FLAG_WRITTEN)
+            ? NULL : msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT));
 
    free(state);
    /* Must explicitly set task->state to NULL here,
@@ -446,7 +453,6 @@ static void task_screenshot_callback(retro_task_t *task,
    state       = NULL;
    task->state = NULL;
 }
-#endif
 
 /**
  * screenshot_rotate:
@@ -533,7 +539,8 @@ static bool screenshot_dump(
       bool fullpath,
       bool use_thread,
       unsigned pixel_format_type,
-      const struct rpng_hdr_metadata *hdr)
+      const struct rpng_hdr_metadata *hdr,
+      retro_task_callback_t cb, void *user_data)
 {
    settings_t *settings           = config_get_ptr();
    bool history_list_enable       = settings->bools.history_list_enable;
@@ -564,6 +571,7 @@ static bool screenshot_dump(
    state->pitch                  = pitch;
    state->frame                  = frame;
    state->userbuf                = userbuf;
+   state->cb                     = cb;
 #if defined(HAVE_GFX_WIDGETS)
    if (gfx_widgets_ready())
       state->flags              |= SS_TASK_FLAG_WIDGETS_READY;
@@ -727,12 +735,15 @@ static bool screenshot_dump(
          task->flags    |=  RETRO_TASK_FLG_MUTE;
       else
          task->flags    &= ~RETRO_TASK_FLG_MUTE;
+      task->user_data    = user_data;
+      if (     state->cb
 #if defined(HAVE_GFX_WIDGETS)
-      /* This callback is only required when
-       * widgets are enabled */
-      if (state->flags & SS_TASK_FLAG_WIDGETS_READY)
+            || (state->flags & SS_TASK_FLAG_WIDGETS_READY)
+#endif
+         )
          task->callback  = task_screenshot_callback;
 
+#if defined(HAVE_GFX_WIDGETS)
       if ((state->flags & SS_TASK_FLAG_WIDGETS_READY) && !savestate)
          task_free_title(task);
       else
@@ -766,6 +777,8 @@ static bool screenshot_dump(
       bool ret = screenshot_dump_direct(state);
       if (ret && state->userbuf)
          free(state->userbuf);
+      if (ret && state->cb)
+         state->cb(NULL, state->filename, user_data, NULL);
       free(state);
       return ret;
    }
@@ -778,7 +791,8 @@ static bool take_screenshot_viewport(
       uint32_t runloop_flags,
       bool fullpath,
       bool use_thread,
-      unsigned pixel_format_type)
+      unsigned pixel_format_type,
+      retro_task_callback_t cb, void *user_data)
 {
    struct video_viewport vp;
    unsigned output_size;
@@ -824,7 +838,7 @@ static bool take_screenshot_viewport(
                      hdr_buffer, vp.dims,
                      VIDEO_SCALE_W(vp.dims) * 6, false, hdr_buffer,
                      savestate, runloop_flags, fullpath, use_thread,
-                     pixel_format_type, &hdr))
+                     pixel_format_type, &hdr, cb, user_data))
                return true;
          }
          free(hdr_buffer);
@@ -851,7 +865,7 @@ static bool take_screenshot_viewport(
                buffer, vp.dims,
                VIDEO_SCALE_W(vp.dims) * 3, true, buffer,
                savestate, runloop_flags, fullpath, use_thread,
-               pixel_format_type, NULL))
+               pixel_format_type, NULL, cb, user_data))
          return true;
    }
 
@@ -898,7 +912,8 @@ static bool take_screenshot_raw(
       const char *name_base,
       bool savestate, uint32_t runloop_flags,
       bool fullpath, bool use_thread,
-      unsigned pixel_format_type)
+      unsigned pixel_format_type,
+      retro_task_callback_t cb, void *user_data)
 {
    /* Pull a heap-owned copy of the cached frame's pixels via the
     * lifetime-safe callback API.  The screenshot task is deferred
@@ -954,7 +969,8 @@ static bool take_screenshot_raw(
             fullpath,
             use_thread,
             pixel_format_type,
-            NULL))
+            NULL,
+            cb, user_data))
       return true;
 
    /* screenshot_dump only takes ownership on success; on failure
@@ -973,7 +989,8 @@ static bool take_screenshot_choice(
       bool fullpath,
       bool use_thread,
       bool supports_vp_read,
-      unsigned pixel_format_type
+      unsigned pixel_format_type,
+      retro_task_callback_t cb, void *user_data
       )
 {
    if (supports_vp_read)
@@ -986,13 +1003,13 @@ static bool take_screenshot_choice(
          video_driver_cached_frame();
       return take_screenshot_viewport(screenshot_dir,
             name_base, savestate, runloop_flags, fullpath, use_thread,
-            pixel_format_type);
+            pixel_format_type, cb, user_data);
    }
 
    if (!has_valid_framebuffer)
       return take_screenshot_raw(video_st, screenshot_dir,
             name_base, savestate, runloop_flags, fullpath, use_thread,
-            pixel_format_type);
+            pixel_format_type, cb, user_data);
 
    return false;
 }
@@ -1002,6 +1019,17 @@ bool take_screenshot(
       const char *name_base,
       bool savestate, bool has_valid_framebuffer,
       bool fullpath, bool use_thread)
+{
+   return take_screenshot_notify(screenshot_dir, name_base, savestate,
+         has_valid_framebuffer, fullpath, use_thread, NULL, NULL);
+}
+
+bool take_screenshot_notify(
+      const char *screenshot_dir,
+      const char *name_base,
+      bool savestate, bool has_valid_framebuffer,
+      bool fullpath, bool use_thread,
+      retro_task_callback_t cb, void *user_data)
 {
    bool ret                       = false;
    uint32_t runloop_flags         = runloop_get_flags();
@@ -1034,7 +1062,9 @@ bool take_screenshot(
          fullpath,
          use_thread,
          prefer_vp_read,
-         video_st->pix_fmt
+         video_st->pix_fmt,
+         cb,
+         user_data
          );
    if (       (runloop_flags & RUNLOOP_FLAG_PAUSED)
          && (!(runloop_flags & RUNLOOP_FLAG_IDLE)))
