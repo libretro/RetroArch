@@ -182,14 +182,44 @@ def still_webp(dst, w, h):
         '-compression_level', '0', dst])
 
 
-def apng(dst, secs, w, h, fps):
-    """APNG: the same shape as the WebP - large lossless frames, many of
-    them, well past the window the feeder may keep."""
-    subprocess.check_call([
-        'ffmpeg', '-v', 'error', '-y',
-        '-f', 'lavfi', '-i', 'testsrc2=s=%dx%d:r=%d' % (w, h, fps),
-        '-t', str(secs), '-c:v', 'apng', '-pred', 'none', '-plays', '0',
-        '-f', 'apng', dst])
+def apng(dst, w, h, frames, fps):
+    """APNG: the same shape as the WebP - large lossless frames, past the
+    window the feeder may keep. Written here rather than by ffmpeg, whose
+    APNG encoder (6.1) keeps only the rectangles that change between
+    frames: from 30 s of testsrc2 it made 33 frames and 3.4 MiB, inside
+    the window, and the windowed test had nothing to window. The frames
+    are seeded noise, which no encoder shrinks, so the size is the frame
+    count times the frame and the same on every host."""
+    import random
+    import zlib
+
+    def chunk(t, body):
+        return (struct.pack('>I', len(body)) + t + body
+                + struct.pack('>I', zlib.crc32(t + body) & 0xffffffff))
+
+    rng   = random.Random(0x5eed)
+    row   = w * 3
+    delay = struct.pack('>HH', 1, fps)
+    seq   = 0
+    out   = [b'\x89PNG\r\n\x1a\n',
+             chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0)),
+             chunk(b'acTL', struct.pack('>II', frames, 0))]
+    for f in range(frames):
+        noise = rng.getrandbits(8 * row * h).to_bytes(row * h, 'little')
+        raw   = b''.join(b'\x00' + noise[y * row:(y + 1) * row]
+                         for y in range(h))
+        data  = zlib.compress(raw, 1)
+        out.append(chunk(b'fcTL', struct.pack('>IIIII', seq, w, h, 0, 0)
+                         + delay + b'\x00\x00'))
+        seq += 1
+        if f == 0:
+            out.append(chunk(b'IDAT', data))
+        else:
+            out.append(chunk(b'fdAT', struct.pack('>I', seq) + data))
+            seq += 1
+    out.append(chunk(b'IEND', b''))
+    with open(dst, 'wb') as fp:
+        fp.write(b''.join(out))
 
 
 def apng_dispose_previous(dst):
@@ -275,7 +305,7 @@ def main():
                         j('anim_lossless.webp'), 12 * 1024 * 1024)
     os.unlink(j('anim_lossless_base.webp'))
     still_webp(j('still_lossless.webp'), 1920, 1080)
-    apng(j('anim_lossless.png'), 30, 1280, 720, 10)
+    apng(j('anim_lossless.png'), 1280, 720, 14, 10)
     apng_dispose_previous(j('anim_dispose_prev.png'))
 
     # A video longer than the feeder's fixed window span (4+8+8 MiB),

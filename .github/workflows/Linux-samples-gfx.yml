@@ -1448,7 +1448,7 @@ jobs:
           #
           # The windowed-animation harness below decodes its two
           # lossless fixtures three times each; they are sized just past
-          # what the feeder may keep resident (~40 MB and ~30 MB), and
+          # what the feeder may keep resident (~43 MB and ~39 MB), and
           # mkfixtures.py reuses an existing set, so the second
           # "make fixtures" (TSan pass) costs nothing.  ~55 s under
           # ASan on one core.
