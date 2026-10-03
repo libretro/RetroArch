@@ -78,6 +78,12 @@ sweep:
 	   $(SWEEP_ASAN) ./$(TARGET)
 	$(MAKE) clean && $(MAKE) STATESTREAM=1 SANITIZER=address,undefined && \
 	   $(SWEEP_ASAN) ./$(TARGET)
+	@# The short-header probe in lane_checkpoint is an uninitialised
+	@# read, which no sanitizer above reports; valgrind does.
+	@if command -v valgrind >/dev/null 2>&1; then \
+	   $(MAKE) clean && $(MAKE) && \
+	   valgrind -q --error-exitcode=1 ./$(TARGET); \
+	else echo "valgrind not installed: uninitialised-read probe not run"; fi
 	@echo "sweep clean"
 
 clean:

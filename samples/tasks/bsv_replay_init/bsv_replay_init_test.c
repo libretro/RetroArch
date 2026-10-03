@@ -341,8 +341,20 @@ static void lane_roundtrip(const char *path, bool compress)
    /* The recorded frame 0 input... we do not replay input here; what
     * the checkpoint restore gives us is the state at record start with
     * frame 0 applied on top by stub_core_run(0) - same as the recorder. */
+   {
+      static uint8_t want[STATE_SIZE];
+      memcpy(want, core_state, STATE_SIZE);
+      memcpy(core_state, start, STATE_SIZE);
+      stub_core_run(0);
+      CHECK(memcmp(want, core_state, STATE_SIZE) == 0,
+            "checkpoint restore did not bring back the recorded state");
+      memcpy(core_state, want, STATE_SIZE);
+   }
    for (i = 1; i <= frames + 2 && !paused(); i++)
       frame(i);
+   /* The movie ends on the frame after its last recorded one: frame
+    * frames-1 pauses, so the loop stops with i == frames. */
+   CHECK(i == frames, "playback ended with i == %u, want %u", i, frames);
    CHECK(paused(), "playback did not end");
    CHECK(n_pause == 1, "paused %u times, want 1", n_pause);
    CHECK(msgs_ended == 1, "playback-ended messages: %u", msgs_ended);
@@ -550,7 +562,8 @@ static void lane_checkpoint(void)
    bsv_movie_free(h);
 
    /* Cut short inside its size words: no size was read, so none may be
-    * recorded.  Run under valgrind to see the uninitialised read. */
+    * recorded.  `make sweep` runs this under valgrind, which reports the
+    * uninitialised read. */
    input_st.bsv_movie_state.flags = 0;
    h   = checkpoint_handle(buf, 8, 8, 8, 0);
    intfstream_close(h->file);
@@ -716,7 +729,255 @@ static void lane_index_gc(void)
    uint32s_index_free(idx);
    lane_done("index_gc", NULL);
 }
+
+/* A commit interval of 1 comes from the file's config word.  Commit
+ * must not read the addition one past the end of its log. */
+static void lane_index_interval1(void)
+{
+   uint32s_index_t *idx = uint32s_index_new(1, 1, 2);
+   uint64_t frame;
+   uint32_t obj;
+
+   reset_counters();
+   for (frame = 1; frame < 1000; frame++)
+   {
+      obj = (uint32_t)frame;
+      uint32s_index_insert(idx, &obj, frame);
+      uint32s_index_commit(idx);
+      if (RBUF_LEN(idx->additions) == RBUF_CAP(idx->additions))
+         break;
+   }
+   CHECK(uint32s_index_get(idx, 1) != NULL, "interval 1 collected block 1");
+   uint32s_index_free(idx);
+   lane_done("index_interval1", NULL);
+}
+
+/* Rewinding pops objects off the index; each popped object is freed
+ * (LeakSanitizer reports it otherwise). */
+static void lane_index_pop(void)
+{
+   uint32s_index_t *idx = uint32s_index_new(1, 4, 2);
+   uint64_t frame;
+   uint32_t obj;
+
+   reset_counters();
+   for (frame = 1; frame <= 10; frame++)
+   {
+      obj = (uint32_t)frame;
+      uint32s_index_insert(idx, &obj, frame);
+   }
+   uint32s_index_remove_after(idx, 0);
+   CHECK(uint32s_index_count(idx) == 1, "pop left %u objects",
+         (unsigned)uint32s_index_count(idx));
+   uint32s_index_free(idx);
+   lane_done("index_pop", NULL);
+}
+
+/* Block and superblock sizes come from the replay header.  A size the
+ * index cannot use is refused before any index is built. */
+static void lane_header_sizes(void)
+{
+   static uint8_t buf[REPLAY_HEADER_LEN_BYTES + 2];
+   uint32_t words[REPLAY_HEADER_LEN];
+   bsv_movie_t *h = (bsv_movie_t*)calloc(1, sizeof(*h));
+
+   reset_counters();
+   memset(words, 0, sizeof(words));
+   words[REPLAY_HEADER_BLOCK_SIZE_INDEX]        = swap_if_big32(2);
+   words[REPLAY_HEADER_SUPERBLOCK_SIZE_INDEX]   = swap_if_big32(0);
+   words[REPLAY_HEADER_CHECKPOINT_CONFIG_INDEX] = (4u << 24) | (2u << 16);
+   memcpy(buf, words, sizeof(words));
+   h->version = 2;
+   h->file    = intfstream_open_memory(buf, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE, sizeof(buf));
+   CHECK(!bsv_movie_reset_playback(h), "bad sizes loaded");
+   CHECK(!h->blocks && !h->superblocks, "index built from bad sizes");
+   bsv_movie_free(h);
+   lane_done("header_sizes", NULL);
+}
+
+/* A version-1 header builds no block index; a statestream checkpoint
+ * in that replay must fail, not read through the missing index. */
+static void lane_no_index(void)
+{
+   static const uint8_t seq[] = { 0x00, 0x00, 0x03, 0x91, 0x00 };
+   static uint8_t buf[12 + 64];
+   bsv_movie_t *h;
+
+   reset_counters();
+   input_st.bsv_movie_state.flags = 0;
+   h = statestream_handle(NULL, buf, seq, sizeof(seq), sizeof(seq));
+   uint32s_index_free(h->blocks);
+   uint32s_index_free(h->superblocks);
+   h->blocks      = NULL;
+   h->superblocks = NULL;
+   CHECK(!load_statestream(h), "statestream decoded with no index");
+   bsv_movie_free(h);
+   lane_done("no_index", NULL);
+}
+
+/* A statestream checkpoint that fails to decode ends playback rather
+ * than playing on against indexes that no longer line up. */
+static void lane_decode_fail_ends(void)
+{
+   /* Superblock 5 was never defined. */
+   static const uint8_t bad[] = { 0x00, 0x00, 0x03, 0x91, 0x05 };
+   static uint8_t buf[4 + 1 + 2 + 1 + 2 + 12 + sizeof(bad)];
+   uint32_t words[3];
+   uint8_t *p = buf;
+   bsv_movie_t *h = (bsv_movie_t*)calloc(1, sizeof(*h));
+
+   reset_counters();
+   memset(buf, 0, sizeof(buf));
+   p += 4 + 1 + 2;                /* backref, no keys, no inputs */
+   *p++ = REPLAY_TOKEN_CHECKPOINT2_FRAME;
+   *p++ = REPLAY_CHECKPOINT2_COMPRESSION_NONE;
+   *p++ = REPLAY_CHECKPOINT2_ENCODING_STATESTREAM;
+   words[0] = swap_if_big32(64);
+   words[1] = swap_if_big32((uint32_t)sizeof(bad));
+   words[2] = swap_if_big32((uint32_t)sizeof(bad));
+   memcpy(p, words, sizeof(words));
+   memcpy(p + sizeof(words), bad, sizeof(bad));
+   h->version     = 2;
+   h->blocks      = uint32s_index_new(4, 4, 2);
+   h->superblocks = uint32s_index_new(2, 4, 2);
+   h->file        = intfstream_open_memory(buf, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE, sizeof(buf));
+   input_st.bsv_movie_state.flags = 0;
+   bsv_movie_read_next_events(h, REPLAY_CPBEHAVIOR_DESERIALIZE, true);
+   CHECK(input_st.bsv_movie_state.flags & BSV_FLAG_MOVIE_END,
+         "failed checkpoint did not end the movie");
+   input_st.bsv_movie_state.flags = 0;
+   bsv_movie_free(h);
+   lane_done("decode_fail_ends", NULL);
+}
 #endif
+
+/* Defined in bsvmovie.c; no header declares it. */
+bool replay_check_same_timeline(bsv_movie_t *movie,
+      uint8_t *other_movie, int64_t other_len);
+
+/* A handle over an in-memory replay, positioned at its start. */
+static bsv_movie_t *mem_handle(uint8_t *buf, size_t len, uint32_t version)
+{
+   bsv_movie_t *h  = (bsv_movie_t*)calloc(1, sizeof(*h));
+   h->version      = version;
+   h->min_file_pos = REPLAY_HEADER_LEN_BYTES;
+   h->frame_mask   = 3;          /* the ring every real handle carries */
+   h->frame_pos    = (size_t*)calloc(4, sizeof(size_t));
+   h->file         = intfstream_open_memory(buf,
+         RETRO_VFS_FILE_ACCESS_READ_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE,
+         len);
+   return h;
+}
+
+/* Comparing timelines reads each frame's inputs into a fixed buffer;
+ * a frame claiming more inputs than a frame can hold is refused. */
+static void lane_timeline_inputs(void)
+{
+   const size_t len = REPLAY_HEADER_LEN_BYTES + 4 + 1 + 2
+      + 60000 * sizeof(bsv_input_data_t) + 1;
+   uint8_t *buf = (uint8_t*)calloc(1, len);
+   bsv_movie_t *h = mem_handle(buf, len, 2);
+
+   reset_counters();
+   buf[REPLAY_HEADER_LEN_BYTES + 5] = 60000 & 0xff;
+   buf[REPLAY_HEADER_LEN_BYTES + 6] = 60000 >> 8;
+   intfstream_seek(h->file, (int64_t)len, SEEK_SET);
+   CHECK(!replay_check_same_timeline(h, buf, len),
+         "60000-input frame compared as the same timeline");
+   bsv_movie_free(h);
+   free(buf);
+   lane_done("timeline_inputs", NULL);
+}
+
+/* A savestate's replay block declares its own length; it may not
+ * claim more bytes than the block holds. */
+static void lane_state_replay_len(void)
+{
+   static uint8_t file[1 << 16];
+   const int64_t ident = 0x1234;
+   uint8_t *block = (uint8_t*)calloc(1, 4 + REPLAY_HEADER_LEN_BYTES);
+   int32_t loaded_len = swap_if_big32(1 << 15);
+   int64_t ident_le   = swap_if_big64(ident);
+   bsv_movie_t *h = mem_handle(file, sizeof(file), 2);
+
+   reset_counters();
+   memcpy(block, &loaded_len, 4);
+   memcpy(block + 4 + REPLAY_HEADER_IDENTIFIER_INDEX * 4, &ident_le, 8);
+   h->identifier = ident;
+   input_st.bsv_movie_state_handle = h;
+   input_st.bsv_movie_state.flags  = BSV_FLAG_MOVIE_RECORDING;
+   CHECK(!replay_set_serialized_data(block, 4 + REPLAY_HEADER_LEN_BYTES),
+         "replay block longer than its savestate block accepted");
+   input_st.bsv_movie_state_handle = NULL;
+   input_st.bsv_movie_state.flags  = 0;
+   bsv_movie_free(h);
+   free(block);
+   lane_done("state_replay_len", NULL);
+}
+
+/* Recording stages events in fixed arrays; a core that polls more
+ * than they hold must not write past them. */
+static void lane_event_capacity(void)
+{
+   unsigned i;
+   bsv_movie_t *h = (bsv_movie_t*)calloc(1, sizeof(*h));
+
+   reset_counters();
+   for (i = 0; i < 600; i++)
+      bsv_movie_push_input_event(h, 0, 1, 0, (uint16_t)i, 1);
+   for (i = 0; i < 200; i++)
+      bsv_movie_push_key_event(h, 1, 0, i, i);
+   CHECK(h->input_event_count == ARRAY_SIZE(h->input_events),
+         "input events staged: %u", (unsigned)h->input_event_count);
+   CHECK(h->key_event_count == ARRAY_SIZE(h->key_events),
+         "key events staged: %u", (unsigned)h->key_event_count);
+   free(h);
+   lane_done("event_capacity", NULL);
+}
+
+/* Seeking to a frame in a replay with no checkpoint before it has
+ * nowhere to go, and says so. */
+static void lane_seek_no_checkpoint(void)
+{
+   static uint8_t buf[REPLAY_HEADER_LEN_BYTES];
+   bsv_movie_t *h = mem_handle(buf, sizeof(buf), 2);
+
+   reset_counters();
+   input_st.bsv_movie_state_handle = h;
+   input_st.bsv_movie_state.flags  = 0;
+   CHECK(!movie_seek_to_frame(&input_st, 5),
+         "seek succeeded with no checkpoint");
+   input_st.bsv_movie_state_handle = NULL;
+   input_st.bsv_movie_state.flags  = 0;
+   bsv_movie_free(h);
+   lane_done("seek_no_checkpoint", NULL);
+}
+
+/* A checkpoint size from the file is unsigned; one too large to be
+ * real must not seek backwards. */
+static void lane_checkpoint_seek(void)
+{
+   static uint8_t buf[1 + 2 + 1 + 8 + 16];
+   bsv_movie_t *h = mem_handle(buf, sizeof(buf), 1);
+   bool ret;
+   int i;
+
+   reset_counters();
+   buf[3] = REPLAY_TOKEN_CHECKPOINT_FRAME;
+   buf[4] = 0xf8;                    /* 2^64 - 8, little-endian */
+   for (i = 5; i < 12; i++)
+      buf[i] = 0xff;
+   intfstream_seek(h->file, 0, SEEK_SET);
+   input_st.bsv_movie_state.flags = 0;
+   ret = bsv_movie_read_next_events(h, REPLAY_CPBEHAVIOR_UPDATE, false);
+   CHECK(!(ret && intfstream_tell(h->file) < 12),
+         "checkpoint size seeked backwards to %d",
+         (int)intfstream_tell(h->file));
+   bsv_movie_free(h);
+   lane_done("checkpoint_seek", NULL);
+}
 
 int main(int argc, char **argv)
 {
@@ -736,7 +997,17 @@ int main(int argc, char **argv)
 #ifdef HAVE_STATESTREAM
    lane_statestream();
    lane_index_gc();
+   lane_index_interval1();
+   lane_index_pop();
+   lane_header_sizes();
+   lane_no_index();
+   lane_decode_fail_ends();
 #endif
+   lane_timeline_inputs();
+   lane_state_replay_len();
+   lane_event_capacity();
+   lane_seek_no_checkpoint();
+   lane_checkpoint_seek();
 
    filestream_delete(path);
    task_queue_deinit();

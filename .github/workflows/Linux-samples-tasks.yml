@@ -306,6 +306,12 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 UBSAN_OPTIONS=print_stacktrace=1 \
              timeout 120 ./bsv_replay_init_test
           echo "[pass] bsv_replay_init_test (ASan + UBSan)"
+          # STATESTREAM=1: the deduplicating checkpoint encoding desktop
+          # builds use, and the lanes that exercise it.
+          make clean all STATESTREAM=1 SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 120 ./bsv_replay_init_test
+          echo "[pass] bsv_replay_init_test (STATESTREAM, ASan + UBSan)"
 
       - name: Build and run bps_patch_bounds_test (ASan)
         shell: bash

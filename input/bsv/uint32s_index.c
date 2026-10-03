@@ -33,6 +33,12 @@ uint32s_index_t *uint32s_index_new(size_t object_size,
 {
    uint32_t *zeros         = (uint32_t*)calloc(object_size, sizeof(uint32_t));
    uint32s_index_t *index  = (uint32s_index_t *)malloc(sizeof(uint32s_index_t));
+   if (!zeros || !index)
+   {
+      free(zeros);
+      free(index);
+      return NULL;
+   }
    index->object_size      = object_size;
    index->index            = NULL;
    RHMAP_FIT(index->index, HASHMAP_CAP);
@@ -235,11 +241,16 @@ void uint32s_index_commit(uint32s_index_t *index)
    uint32_t i, interval=index->commit_interval,threshold=index->commit_threshold;
    struct uint32s_frame_addition prev,cur;
    uint32_t additions_len = RBUF_LEN(index->additions), limit;
-   if (additions_len < interval || interval == 0)
+   /* The interval comes from the replay header.  Below 2 there is no
+    * addition after the one being collected, so cur would be read one
+    * past the end of the log; collect nothing instead. */
+   if (additions_len < interval || interval < 2)
       return;
    prev  = index->additions[additions_len-interval];
    cur   = index->additions[additions_len-(interval-1)];
    limit = cur.first_index;
+   if (limit > RBUF_LEN(index->objects))
+      limit = (uint32_t)RBUF_LEN(index->objects);
    for (i = prev.first_index; i < limit; i++)
    {
       struct uint32s_bucket *bucket;
@@ -247,6 +258,9 @@ void uint32s_index_commit(uint32s_index_t *index)
          continue;
       free(index->objects[i]);
       index->objects[i] = NULL;
+      /* RHMAP_PTR adds on a miss; see uint32s_index_pop. */
+      if (!RHMAP_HAS(index->index, index->hashes[i]))
+         continue;
       bucket = RHMAP_PTR(index->index, index->hashes[i]);
       uint32s_bucket_remove(bucket, i);
       if (bucket->len == 0)
@@ -324,6 +338,8 @@ void uint32s_index_pop(uint32s_index_t *index)
       }
    }
    /* else: already garbage collected, just adjust counts */
+   /* The resize below drops the last reference to the object. */
+   free(index->objects[idx]);
    RBUF_RESIZE(index->objects, idx);
    RBUF_RESIZE(index->counts, idx);
    RBUF_RESIZE(index->hashes, idx);

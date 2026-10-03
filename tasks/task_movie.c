@@ -193,6 +193,8 @@ static bool bsv_movie_init_record(
 #ifdef HAVE_STATESTREAM
    handle->superblocks      = uint32s_index_new(superblock_size, handle->commit_interval, handle->commit_threshold);
    handle->blocks           = uint32s_index_new(block_size/4, handle->commit_interval, handle->commit_threshold);
+   if (!handle->superblocks || !handle->blocks)
+      return false;
 #endif
    if (state_size)
       return bsv_movie_reset_recording(handle);

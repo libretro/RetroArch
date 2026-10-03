@@ -1319,7 +1319,7 @@ bool movie_stop(input_driver_state_t *input_st);
 
 size_t replay_get_serialize_size(void);
 bool replay_get_serialized_data(void* buffer);
-bool replay_set_serialized_data(void* buffer);
+bool replay_set_serialized_data(void *buffer, size_t len);
 #endif
 
 /**
