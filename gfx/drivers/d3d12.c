@@ -562,6 +562,23 @@ typedef struct
    struct video_viewport           vp;
    D3D12Resource                   menu_pipeline_vbo;
    D3D12_VERTEX_BUFFER_VIEW        menu_pipeline_vbo_view;
+   /* gfx_display meshes the effects draw from, by mesh id, in upload
+    * buffers of their own. One that gives way is retired until the
+    * frame that last drew it has, as the font atlas's are. */
+   struct
+   {
+      D3D12Resource            vbo;
+      D3D12_VERTEX_BUFFER_VIEW view;
+      uint64_t                 last_draw;
+      uint32_t                 id;
+   } meshes[4];
+   struct
+   {
+      D3D12Resource vbo;
+      UINT64        fence;
+   } meshes_retired[4];
+   unsigned                        meshes_retired_count;
+   uint64_t                        mesh_draws;
 
 #if defined(DEBUG) && !defined(__MINGW32__) && !defined(__MINGW64__)
    D3D12Debug debugController;
@@ -1416,6 +1433,85 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
    }
 }
 
+/* The slot whose buffer holds @mesh's vertices, made the first time it
+ * is drawn. A slot that gives way to it is retired until the GPU has
+ * finished the frame being recorded; -1 when there is no slot to be had
+ * this frame, and the effect is not drawn. */
+static int d3d12_mesh_slot(d3d12_video_t *d3d12,
+      const gfx_display_mesh_t *mesh)
+{
+   D3D12_RANGE read_range;
+   void *mapped    = NULL;
+   uint64_t oldest = (uint64_t)-1;
+   UINT64 done     = d3d12->queue.fence->lpVtbl->GetCompletedValue(
+         d3d12->queue.fence);
+   int slot        = -1;
+   unsigned i, kept;
+
+   for (i = 0, kept = 0; i < d3d12->meshes_retired_count; i++)
+   {
+      if (done >= d3d12->meshes_retired[i].fence)
+         Release(d3d12->meshes_retired[i].vbo);
+      else
+         d3d12->meshes_retired[kept++] = d3d12->meshes_retired[i];
+   }
+   d3d12->meshes_retired_count = kept;
+
+   for (i = 0; i < ARRAY_SIZE(d3d12->meshes); i++)
+   {
+      if (d3d12->meshes[i].vbo && d3d12->meshes[i].id == mesh->id)
+         return (int)i;
+      if (!d3d12->meshes[i].vbo)
+      {
+         if (slot < 0 || d3d12->meshes[slot].vbo)
+            slot = (int)i;
+      }
+      else if ((slot < 0 || d3d12->meshes[slot].vbo)
+            && d3d12->meshes[i].last_draw < oldest)
+      {
+         oldest = d3d12->meshes[i].last_draw;
+         slot   = (int)i;
+      }
+   }
+   if (slot < 0)
+      return -1;
+   if (d3d12->meshes[slot].vbo)
+   {
+      if (d3d12->meshes_retired_count >= ARRAY_SIZE(d3d12->meshes_retired))
+         return -1;
+      /* This frame's command list may already name it; it signals the
+       * next fence value when it is done */
+      d3d12->meshes_retired[d3d12->meshes_retired_count].vbo   =
+         d3d12->meshes[slot].vbo;
+      d3d12->meshes_retired[d3d12->meshes_retired_count].fence =
+         d3d12->queue.fenceValue + 1;
+      d3d12->meshes_retired_count++;
+      d3d12->meshes[slot].vbo = NULL;
+      d3d12->meshes[slot].id  = 0;
+   }
+
+   d3d12->meshes[slot].view.StrideInBytes  = sizeof(gfx_display_mesh_vertex_t);
+   d3d12->meshes[slot].view.SizeInBytes    = mesh->vertex_count
+      * sizeof(gfx_display_mesh_vertex_t);
+   d3d12->meshes[slot].view.BufferLocation = d3d12_create_buffer(
+         d3d12->device, d3d12->meshes[slot].view.SizeInBytes,
+         &d3d12->meshes[slot].vbo);
+   if (!d3d12->meshes[slot].vbo)
+      return -1;
+   read_range.Begin = 0;
+   read_range.End   = 0;
+   if (FAILED(D3D12Map(d3d12->meshes[slot].vbo, 0, &read_range, &mapped))
+         || !mapped)
+   {
+      Release(d3d12->meshes[slot].vbo);
+      return -1;
+   }
+   memcpy(mapped, mesh->vertices, d3d12->meshes[slot].view.SizeInBytes);
+   D3D12Unmap(d3d12->meshes[slot].vbo, 0, NULL);
+   d3d12->meshes[slot].id = mesh->id;
+   return slot;
+}
+
 static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp,
       void *data, unsigned video_dims)
@@ -1432,6 +1528,20 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
+         if (p_disp->effect_mesh)
+         {
+            /* From the ribbon mesh's own buffer, its position only */
+            const gfx_display_mesh_t *mesh = p_disp->effect_mesh;
+            int slot = d3d12_mesh_slot(d3d12, mesh);
+            if (slot < 0)
+               return;
+            d3d12->meshes[slot].last_draw = ++d3d12->mesh_draws;
+            cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1,
+                  &d3d12->meshes[slot].view);
+            draw->coords->vertices = mesh->vertex_count;
+            break;
+         }
+         else
          {
             video_coord_array_t* ca   = &p_disp->dispca;
 
@@ -1474,12 +1584,9 @@ static void gfx_display_d3d12_draw_pipeline(gfx_display_ctx_draw_t *draw,
    cmd->lpVtbl->IASetPrimitiveTopology(cmd,
          D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-   d3d12->ubo_values.time  += 0.01f;
-   /* Wrap at 65536 to keep fp32 increments precise. 0.01 stays
-    * exactly representable up to t ~ 167772 (where 0.5*ulp first
-    * exceeds 0.01), so 65536 has wide margin and wraps roughly
-    * every 30 h of cumulative menu time, making the discontinuity
-    * effectively unobservable. */
+   /* The effects' clock, one step ahead, as this driver has always
+    * drawn them */
+   d3d12->ubo_values.time   = p_disp->effect_time + 0.01f;
    if (d3d12->ubo_values.time > 65536.0f)
       d3d12->ubo_values.time -= 65536.0f;
    d3d12->ubo_values.alpha  = draw->color ? draw->color[3] : 1.0f;
@@ -4102,6 +4209,17 @@ static void d3d12_gfx_free(void* data)
 
    Release(d3d12->sprites.vbo);
    Release(d3d12->menu_pipeline_vbo);
+   {
+      unsigned m;
+      for (m = 0; m < ARRAY_SIZE(d3d12->meshes); m++)
+      {
+         Release(d3d12->meshes[m].vbo);
+         d3d12->meshes[m].id = 0;
+      }
+      for (m = 0; m < d3d12->meshes_retired_count; m++)
+         Release(d3d12->meshes_retired[m].vbo);
+      d3d12->meshes_retired_count = 0;
+   }
 
    /* Cached SW framebuffer upload buffer (lazily allocated by
     * d3d12_sw_fb_ensure on first GET_CURRENT_SOFTWARE_FRAMEBUFFER

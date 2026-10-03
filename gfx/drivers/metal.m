@@ -3243,12 +3243,9 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
       }
    }
 
-   _uniforms.time += 0.01;
-   /* Wrap at 65536 to keep fp32 increments precise. 0.01 stays
-    * exactly representable up to t ~ 167772 (where 0.5*ulp first
-    * exceeds 0.01), so 65536 has wide margin and wraps roughly
-    * every 30 h of cumulative menu time, making the discontinuity
-    * effectively unobservable. */
+   /* The effects' clock, one step ahead, as this driver has always
+    * drawn them */
+   _uniforms.time = disp_get_ptr()->effect_time + 0.01f;
    if (_uniforms.time > 65536.0f)
       _uniforms.time -= 65536.0f;
 }

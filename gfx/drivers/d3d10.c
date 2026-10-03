@@ -213,6 +213,20 @@ typedef struct
    D3D10BlendState       blend_disable;
    D3D10BlendState       blend_pipeline;
    D3D10Buffer           menu_pipeline_vbo;
+   /* gfx_display meshes: the shader and constant buffer they draw with,
+    * and each mesh's own buffers by mesh id. The one drawn longest ago
+    * gives way when all are taken; the runtime keeps a released buffer
+    * alive for as long as queued work uses it. */
+   d3d10_shader_t        mesh_shader;
+   D3D10Buffer           mesh_ubo;
+   struct
+   {
+      D3D10Buffer vbo;
+      D3D10Buffer ibo;
+      uint64_t    last_draw;
+      uint32_t    id;
+   } meshes[8];
+   uint64_t              mesh_draws;
    math_matrix_4x4       mvp, mvp_no_rot;
    struct video_viewport vp;
    D3D10_VIEWPORT        viewport;
@@ -743,6 +757,147 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
    }
 }
 
+/* The slot whose buffers hold @mesh, made the first time it is drawn;
+ * -1 when they cannot be had, and the mesh is streamed */
+static int d3d10_mesh_slot(d3d10_video_t *d3d10,
+      const gfx_display_mesh_t *mesh)
+{
+   D3D10_BUFFER_DESC desc;
+   D3D10_SUBRESOURCE_DATA data;
+   uint64_t oldest = (uint64_t)-1;
+   int slot        = -1;
+   unsigned i;
+
+   for (i = 0; i < ARRAY_SIZE(d3d10->meshes); i++)
+   {
+      if (d3d10->meshes[i].vbo && d3d10->meshes[i].id == mesh->id)
+         return (int)i;
+      if (!d3d10->meshes[i].vbo)
+      {
+         if (slot < 0 || d3d10->meshes[slot].vbo)
+            slot = (int)i;
+      }
+      else if ((slot < 0 || d3d10->meshes[slot].vbo)
+            && d3d10->meshes[i].last_draw < oldest)
+      {
+         oldest = d3d10->meshes[i].last_draw;
+         slot   = (int)i;
+      }
+   }
+   if (slot < 0)
+      return -1;
+   Release(d3d10->meshes[slot].vbo);
+   Release(d3d10->meshes[slot].ibo);
+   d3d10->meshes[slot].id = 0;
+
+   desc.Usage            = D3D10_USAGE_IMMUTABLE;
+   desc.ByteWidth        = mesh->vertex_count * sizeof(gfx_display_mesh_vertex_t);
+   desc.BindFlags        = D3D10_BIND_VERTEX_BUFFER;
+   desc.CPUAccessFlags   = 0;
+   desc.MiscFlags        = 0;
+   data.pSysMem          = mesh->vertices;
+   data.SysMemPitch      = 0;
+   data.SysMemSlicePitch = 0;
+   if (FAILED(d3d10->device->lpVtbl->CreateBuffer(d3d10->device, &desc, &data,
+               &d3d10->meshes[slot].vbo)))
+   {
+      d3d10->meshes[slot].vbo = NULL;
+      return -1;
+   }
+   if (mesh->indices)
+   {
+      desc.ByteWidth = mesh->index_count * sizeof(uint16_t);
+      desc.BindFlags = D3D10_BIND_INDEX_BUFFER;
+      data.pSysMem   = mesh->indices;
+      if (FAILED(d3d10->device->lpVtbl->CreateBuffer(d3d10->device, &desc, &data,
+                  &d3d10->meshes[slot].ibo)))
+      {
+         d3d10->meshes[slot].ibo = NULL;
+         Release(d3d10->meshes[slot].vbo);
+         return -1;
+      }
+   }
+   d3d10->meshes[slot].id = mesh->id;
+   return slot;
+}
+
+static bool gfx_display_d3d10_mesh_draw(void *data, unsigned video_dims,
+      const gfx_display_mesh_t *mesh, const float *mvp,
+      uintptr_t texture, const float *tint)
+{
+   /* The vertex stage's constant buffer: a float4x4, then a float4 */
+   struct
+   {
+      math_matrix_4x4 mvp;
+      float tint[4];
+   } ubo;
+   math_matrix_4x4 user;
+   void *mapped             = NULL;
+   D3D10BlendState blend    = NULL;
+   FLOAT blend_factor[4];
+   UINT sample_mask         = 0;
+   UINT stride              = sizeof(gfx_display_mesh_vertex_t);
+   UINT offset              = 0;
+   d3d10_video_t *d3d10     = (d3d10_video_t*)data;
+   d3d10_texture_t *tex     = (d3d10_texture_t*)texture;
+   D3D10Device dev;
+   int slot;
+
+   (void)video_dims;
+   if (     !d3d10 || !mesh || !tex || !d3d10->mesh_ubo
+         || !d3d10->mesh_shader.vs || !d3d10->mesh_shader.ps)
+      return false;
+   if ((slot = d3d10_mesh_slot(d3d10, mesh)) < 0)
+      return false;
+   d3d10->meshes[slot].last_draw = ++d3d10->mesh_draws;
+   dev = d3d10->device;
+
+   /* Through the same MVP the quads go through, so the display's 0..1
+    * space lands where theirs does */
+   memcpy(user.data, mvp, sizeof(user.data));
+   matrix_4x4_multiply(ubo.mvp, d3d10->ubo_values.mvp, user);
+   memcpy(ubo.tint, tint, sizeof(ubo.tint));
+   if (FAILED(d3d10->mesh_ubo->lpVtbl->Map(d3d10->mesh_ubo,
+               D3D10_MAP_WRITE_DISCARD, 0, &mapped)) || !mapped)
+      return false;
+   memcpy(mapped, &ubo, sizeof(ubo));
+   d3d10->mesh_ubo->lpVtbl->Unmap(d3d10->mesh_ubo);
+
+   /* Meshes are drawn blended, as every driver draws them */
+   dev->lpVtbl->OMGetBlendState(dev, &blend, blend_factor, &sample_mask);
+   dev->lpVtbl->OMSetBlendState(dev, d3d10->blend_enable, NULL,
+         D3D10_DEFAULT_SAMPLE_MASK);
+
+   d3d10_set_shader(dev, &d3d10->mesh_shader);
+   dev->lpVtbl->VSSetConstantBuffers(dev, 0, 1, &d3d10->mesh_ubo);
+   d3d10_set_texture_and_sampler(dev, 0, tex);
+   dev->lpVtbl->IASetVertexBuffers(dev, 0, 1,
+         (D3D10Buffer* const)&d3d10->meshes[slot].vbo, &stride, &offset);
+   dev->lpVtbl->IASetPrimitiveTopology(dev,
+         mesh->topology == GFX_MESH_TRIANGLE_STRIP
+         ? D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP
+         : D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+   if (mesh->indices)
+   {
+      dev->lpVtbl->IASetIndexBuffer(dev, d3d10->meshes[slot].ibo,
+            DXGI_FORMAT_R16_UINT, 0);
+      dev->lpVtbl->DrawIndexed(dev, mesh->index_count, 0, 0);
+   }
+   else
+      dev->lpVtbl->Draw(dev, mesh->vertex_count, 0);
+
+   /* Back to what the quads after this one draw with */
+   dev->lpVtbl->OMSetBlendState(dev, blend, blend_factor, sample_mask);
+   Release(blend);
+   dev->lpVtbl->VSSetConstantBuffers(dev, 0, 1, &d3d10->ubo);
+   d3d10_set_shader(dev, &d3d10->sprites.shader);
+   stride = sizeof(d3d10_sprite_t);
+   dev->lpVtbl->IASetVertexBuffers(dev, 0, 1,
+         (D3D10Buffer* const)&d3d10->sprites.vbo, &stride, &offset);
+   dev->lpVtbl->IASetPrimitiveTopology(dev, D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
+   return true;
+}
+
 static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
       gfx_display_t *p_disp,
       void *data, unsigned video_dims)
@@ -757,6 +912,26 @@ static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
+      if (p_disp->effect_mesh)
+      {
+         /* From the ribbon mesh's own buffer, its position only */
+         const gfx_display_mesh_t *mesh = p_disp->effect_mesh;
+         int slot = d3d10_mesh_slot(d3d10, mesh);
+         if (slot < 0)
+            return;
+         d3d10->meshes[slot].last_draw = ++d3d10->mesh_draws;
+         stride = sizeof(gfx_display_mesh_vertex_t);
+         d3d10->device->lpVtbl->IASetVertexBuffers(
+               d3d10->device, 0, 1,
+               (D3D10Buffer* const)&d3d10->meshes[slot].vbo,
+               &stride, &offset);
+         draw->coords->vertices = mesh->vertex_count;
+         d3d10->device->lpVtbl->OMSetBlendState(d3d10->device,
+               d3d10->blend_pipeline,
+               NULL, D3D10_DEFAULT_SAMPLE_MASK);
+         break;
+      }
+      else
       {
          video_coord_array_t* ca   = &p_disp->dispca;
 
@@ -806,12 +981,9 @@ static void gfx_display_d3d10_draw_pipeline(gfx_display_ctx_draw_t* draw,
    d3d10->device->lpVtbl->IASetPrimitiveTopology(d3d10->device,
          D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-   d3d10->ubo_values.time += 0.01f;
-   /* Wrap at 65536 to keep fp32 increments precise. 0.01 stays
-    * exactly representable up to t ~ 167772 (where 0.5*ulp first
-    * exceeds 0.01), so 65536 has wide margin and wraps roughly
-    * every 30 h of cumulative menu time, making the discontinuity
-    * effectively unobservable. */
+   /* The effects' clock, one step ahead, as this driver has always
+    * drawn them */
+   d3d10->ubo_values.time = p_disp->effect_time + 0.01f;
    if (d3d10->ubo_values.time > 65536.0f)
       d3d10->ubo_values.time -= 65536.0f;
 
@@ -2162,6 +2334,17 @@ static void d3d10_gfx_free(void* data)
       d3d10_release_shader(&d3d10->shaders[i]);
 
    Release(d3d10->menu_pipeline_vbo);
+   d3d10_release_shader(&d3d10->mesh_shader);
+   Release(d3d10->mesh_ubo);
+   {
+      unsigned m;
+      for (m = 0; m < ARRAY_SIZE(d3d10->meshes); m++)
+      {
+         Release(d3d10->meshes[m].vbo);
+         Release(d3d10->meshes[m].ibo);
+         d3d10->meshes[m].id = 0;
+      }
+   }
    Release(d3d10->blend_pipeline);
 
    Release(d3d10->ubo);
@@ -2470,6 +2653,37 @@ static void *d3d10_gfx_init(const video_info_t* video,
                d3d10->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", NULL, desc,
                countof(desc), &d3d10->shaders[VIDEO_SHADER_STOCK_BLEND]))
          goto error;
+   }
+
+   /* gfx_display meshes, read as stored: three floats, then two 16-bit
+    * and four 8-bit normalised integers. Without them meshes are
+    * streamed through draw() instead. */
+   {
+      D3D10_BUFFER_DESC buf_desc;
+      D3D10_INPUT_ELEMENT_DESC desc[] = {
+         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,
+            D3D10_INPUT_PER_VERTEX_DATA, 0 },
+         { "TEXCOORD", 0, DXGI_FORMAT_R16G16_UNORM, 0, 12,
+            D3D10_INPUT_PER_VERTEX_DATA, 0 },
+         { "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 16,
+            D3D10_INPUT_PER_VERTEX_DATA, 0 },
+      };
+      static const char shader[] =
+#include "d3d_shaders/mesh_sm4.hlsl.h"
+         ;
+      if (!d3d10_init_shader(
+               d3d10->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", NULL, desc,
+               countof(desc), &d3d10->mesh_shader))
+         d3d10_release_shader(&d3d10->mesh_shader);
+
+      buf_desc.ByteWidth      = sizeof(math_matrix_4x4) + 4 * sizeof(float);
+      buf_desc.Usage          = D3D10_USAGE_DYNAMIC;
+      buf_desc.BindFlags      = D3D10_BIND_CONSTANT_BUFFER;
+      buf_desc.CPUAccessFlags = D3D10_CPU_ACCESS_WRITE;
+      buf_desc.MiscFlags      = 0;
+      if (FAILED(d3d10->device->lpVtbl->CreateBuffer(
+               d3d10->device, &buf_desc, NULL, &d3d10->mesh_ubo)))
+         d3d10->mesh_ubo = NULL;
    }
 
    {
@@ -4001,5 +4215,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d10 = {
    true,
    true,
    gfx_display_d3d10_scissor_begin,
-   gfx_display_d3d10_scissor_end
+   gfx_display_d3d10_scissor_end,
+   gfx_display_d3d10_mesh_draw
 };

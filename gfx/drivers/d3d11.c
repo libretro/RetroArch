@@ -402,6 +402,20 @@ typedef struct
    D3D11BlendState       blend_disable;
    D3D11BlendState       blend_pipeline;
    D3D11Buffer           menu_pipeline_vbo;
+   /* gfx_display meshes: the shader and constant buffer they draw with,
+    * and each mesh's own buffers by mesh id. The one drawn longest ago
+    * gives way when all are taken; the runtime keeps a released buffer
+    * alive for as long as queued work uses it. */
+   d3d11_shader_t        mesh_shader;
+   D3D11Buffer           mesh_ubo;
+   struct
+   {
+      D3D11Buffer vbo;
+      D3D11Buffer ibo;
+      uint64_t    last_draw;
+      uint32_t    id;
+   } meshes[8];
+   uint64_t              mesh_draws;
    math_matrix_4x4       mvp, mvp_last_pass, mvp_no_rot, identity;
    struct video_viewport vp;
    D3D11_VIEWPORT        viewport;
@@ -1003,6 +1017,158 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
    }
 }
 
+/* The slot whose buffers hold @mesh, made the first time it is drawn;
+ * -1 when they cannot be had, and the mesh is streamed */
+static int d3d11_mesh_slot(d3d11_video_t *d3d11,
+      const gfx_display_mesh_t *mesh)
+{
+   D3D11_BUFFER_DESC desc;
+   D3D11_SUBRESOURCE_DATA data;
+   uint64_t oldest = (uint64_t)-1;
+   int slot        = -1;
+   unsigned i;
+
+   for (i = 0; i < ARRAY_SIZE(d3d11->meshes); i++)
+   {
+      if (d3d11->meshes[i].vbo && d3d11->meshes[i].id == mesh->id)
+         return (int)i;
+      if (!d3d11->meshes[i].vbo)
+      {
+         if (slot < 0 || d3d11->meshes[slot].vbo)
+            slot = (int)i;
+      }
+      else if ((slot < 0 || d3d11->meshes[slot].vbo)
+            && d3d11->meshes[i].last_draw < oldest)
+      {
+         oldest = d3d11->meshes[i].last_draw;
+         slot   = (int)i;
+      }
+   }
+   if (slot < 0)
+      return -1;
+   Release(d3d11->meshes[slot].vbo);
+   Release(d3d11->meshes[slot].ibo);
+   d3d11->meshes[slot].id = 0;
+
+   desc.Usage               = D3D11_USAGE_IMMUTABLE;
+   desc.ByteWidth           = mesh->vertex_count * sizeof(gfx_display_mesh_vertex_t);
+   desc.BindFlags           = D3D11_BIND_VERTEX_BUFFER;
+   desc.CPUAccessFlags      = 0;
+   desc.MiscFlags           = 0;
+   desc.StructureByteStride = 0;
+   data.pSysMem             = mesh->vertices;
+   data.SysMemPitch         = 0;
+   data.SysMemSlicePitch    = 0;
+   if (FAILED(d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &desc, &data,
+               &d3d11->meshes[slot].vbo)))
+   {
+      d3d11->meshes[slot].vbo = NULL;
+      return -1;
+   }
+   if (mesh->indices)
+   {
+      desc.ByteWidth = mesh->index_count * sizeof(uint16_t);
+      desc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+      data.pSysMem   = mesh->indices;
+      if (FAILED(d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &desc, &data,
+                  &d3d11->meshes[slot].ibo)))
+      {
+         d3d11->meshes[slot].ibo = NULL;
+         Release(d3d11->meshes[slot].vbo);
+         return -1;
+      }
+   }
+   d3d11->meshes[slot].id = mesh->id;
+   return slot;
+}
+
+static bool gfx_display_d3d11_mesh_draw(void *data, unsigned video_dims,
+      const gfx_display_mesh_t *mesh, const float *mvp,
+      uintptr_t texture, const float *tint)
+{
+   /* The vertex stage's constant buffer: a float4x4, then a float4 */
+   struct
+   {
+      math_matrix_4x4 mvp;
+      float tint[4];
+   } ubo;
+   math_matrix_4x4 user;
+   D3D11_MAPPED_SUBRESOURCE mapped;
+   D3D11BlendState blend    = NULL;
+   FLOAT blend_factor[4];
+   UINT sample_mask         = 0;
+   UINT stride              = sizeof(gfx_display_mesh_vertex_t);
+   UINT offset              = 0;
+   d3d11_video_t *d3d11     = (d3d11_video_t*)data;
+   d3d11_texture_t *tex     = (d3d11_texture_t*)texture;
+   D3D11DeviceContext ctx;
+   int slot;
+
+   (void)video_dims;
+   if (     !d3d11 || !mesh || !tex || !d3d11->mesh_ubo
+         || !d3d11->mesh_shader.vs || !d3d11->mesh_shader.ps)
+      return false;
+   if ((slot = d3d11_mesh_slot(d3d11, mesh)) < 0)
+      return false;
+   d3d11->meshes[slot].last_draw = ++d3d11->mesh_draws;
+   ctx = d3d11->context;
+
+   /* Through the same MVP the quads go through, so the display's 0..1
+    * space lands where theirs does */
+   memcpy(user.data, mvp, sizeof(user.data));
+   matrix_4x4_multiply(ubo.mvp, d3d11->ubo_values.mvp, user);
+   memcpy(ubo.tint, tint, sizeof(ubo.tint));
+   if (FAILED(ctx->lpVtbl->Map(ctx, (D3D11Resource)d3d11->mesh_ubo, 0,
+               D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+      return false;
+   memcpy(mapped.pData, &ubo, sizeof(ubo));
+   ctx->lpVtbl->Unmap(ctx, (D3D11Resource)d3d11->mesh_ubo, 0);
+
+   /* Meshes are drawn blended, as every driver draws them */
+   ctx->lpVtbl->OMGetBlendState(ctx, &blend, blend_factor, &sample_mask);
+   ctx->lpVtbl->OMSetBlendState(ctx, d3d11->blend_enable, NULL,
+         D3D11_DEFAULT_SAMPLE_MASK);
+
+   ctx->lpVtbl->IASetInputLayout(ctx, d3d11->mesh_shader.layout);
+   ctx->lpVtbl->VSSetShader(ctx, d3d11->mesh_shader.vs, NULL, 0);
+   ctx->lpVtbl->PSSetShader(ctx, d3d11->mesh_shader.ps, NULL, 0);
+   ctx->lpVtbl->GSSetShader(ctx, NULL, NULL, 0);
+   ctx->lpVtbl->VSSetConstantBuffers(ctx, 0, 1, &d3d11->mesh_ubo);
+   ctx->lpVtbl->PSSetShaderResources(ctx, 0, 1, &tex->view);
+   ctx->lpVtbl->PSSetSamplers(ctx, 0, 1, (D3D11SamplerState*)&tex->sampler);
+   ctx->lpVtbl->IASetVertexBuffers(ctx, 0, 1, &d3d11->meshes[slot].vbo,
+         &stride, &offset);
+   ctx->lpVtbl->IASetPrimitiveTopology(ctx,
+         mesh->topology == GFX_MESH_TRIANGLE_STRIP
+         ? D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP
+         : D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+   if (mesh->indices)
+   {
+      ctx->lpVtbl->IASetIndexBuffer(ctx, d3d11->meshes[slot].ibo,
+            DXGI_FORMAT_R16_UINT, 0);
+      ctx->lpVtbl->DrawIndexed(ctx, mesh->index_count, 0, 0);
+   }
+   else
+      ctx->lpVtbl->Draw(ctx, mesh->vertex_count, 0);
+
+   /* Back to what the quads after this one draw with */
+   ctx->lpVtbl->OMSetBlendState(ctx, blend, blend_factor, sample_mask);
+   Release(blend);
+   ctx->lpVtbl->VSSetConstantBuffers(ctx, 0, 1, &d3d11->ubo);
+   {
+      d3d11_shader_t *shader = d3d11_sprite_shader(d3d11);
+      UINT sprite_stride     = sizeof(d3d11_sprite_t);
+      ctx->lpVtbl->IASetInputLayout(ctx, shader->layout);
+      ctx->lpVtbl->VSSetShader(ctx, shader->vs, NULL, 0);
+      ctx->lpVtbl->PSSetShader(ctx, shader->ps, NULL, 0);
+      ctx->lpVtbl->GSSetShader(ctx, shader->gs, NULL, 0);
+      ctx->lpVtbl->IASetVertexBuffers(ctx, 0, 1, &d3d11->sprites.vbo,
+            &sprite_stride, &offset);
+   }
+   ctx->lpVtbl->IASetPrimitiveTopology(ctx, D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+   return true;
+}
+
 static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
       gfx_display_t *p_disp,
       void *data, unsigned video_dims)
@@ -1016,6 +1182,26 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
+      if (p_disp->effect_mesh)
+      {
+         /* From the ribbon mesh's own buffer, its position only */
+         const gfx_display_mesh_t *mesh = p_disp->effect_mesh;
+         int slot = d3d11_mesh_slot(d3d11, mesh);
+         UINT stride = sizeof(gfx_display_mesh_vertex_t);
+         UINT offset = 0;
+         if (slot < 0)
+            return;
+         d3d11->meshes[slot].last_draw = ++d3d11->mesh_draws;
+         d3d11->context->lpVtbl->IASetVertexBuffers(
+               d3d11->context, 0, 1,
+               &d3d11->meshes[slot].vbo, &stride, &offset);
+         draw->coords->vertices = mesh->vertex_count;
+         d3d11->context->lpVtbl->OMSetBlendState(
+               d3d11->context, d3d11->blend_pipeline,
+               NULL, D3D11_DEFAULT_SAMPLE_MASK);
+         break;
+      }
+      else
       {
          video_coord_array_t* ca   = &p_disp->dispca;
 
@@ -1073,12 +1259,9 @@ static void gfx_display_d3d11_draw_pipeline(gfx_display_ctx_draw_t *draw,
    d3d11->context->lpVtbl->IASetPrimitiveTopology(
          d3d11->context, D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-   d3d11->ubo_values.time += 0.01f;
-   /* Wrap at 65536 to keep fp32 increments precise. 0.01 stays
-    * exactly representable up to t ~ 167772 (where 0.5*ulp first
-    * exceeds 0.01), so 65536 has wide margin and wraps roughly
-    * every 30 h of cumulative menu time, making the discontinuity
-    * effectively unobservable. */
+   /* The effects' clock, one step ahead, as this driver has always
+    * drawn them */
+   d3d11->ubo_values.time = p_disp->effect_time + 0.01f;
    if (d3d11->ubo_values.time > 65536.0f)
       d3d11->ubo_values.time -= 65536.0f;
 
@@ -3157,6 +3340,14 @@ static void d3d11_gfx_free(void* data)
       d3d11_release_shader(&d3d11->shaders[i]);
 
    Release(d3d11->menu_pipeline_vbo);
+   d3d11_release_shader(&d3d11->mesh_shader);
+   Release(d3d11->mesh_ubo);
+   for (i = 0; i < (int)ARRAY_SIZE(d3d11->meshes); i++)
+   {
+      Release(d3d11->meshes[i].vbo);
+      Release(d3d11->meshes[i].ibo);
+      d3d11->meshes[i].id = 0;
+   }
    Release(d3d11->blend_pipeline);
 
    Release(d3d11->ubo);
@@ -3899,6 +4090,39 @@ static void *d3d11_gfx_init(const video_info_t* video,
                D3D11_FEATURE_LEVEL_HINT_DONTCARE
                ))
          goto error;
+   }
+
+   /* gfx_display meshes, read as stored: three floats, then two 16-bit
+    * and four 8-bit normalised integers. Without them meshes are
+    * streamed through draw() instead. */
+   {
+      D3D11_BUFFER_DESC buf_desc;
+      D3D11_INPUT_ELEMENT_DESC desc[] = {
+         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
+         { "TEXCOORD", 0, DXGI_FORMAT_R16G16_UNORM, 0, 12,
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
+         { "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 16,
+            D3D11_INPUT_PER_VERTEX_DATA, 0 },
+      };
+      static const char shader[] =
+#include "d3d_shaders/mesh_sm4.hlsl.h"
+         ;
+      if (!d3d11_init_shader(
+               d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", NULL, desc,
+               countof(desc), &d3d11->mesh_shader,
+               D3D11_FEATURE_LEVEL_HINT_DONTCARE))
+         d3d11_release_shader(&d3d11->mesh_shader);
+
+      buf_desc.ByteWidth           = sizeof(math_matrix_4x4) + 4 * sizeof(float);
+      buf_desc.Usage               = D3D11_USAGE_DYNAMIC;
+      buf_desc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+      buf_desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+      buf_desc.MiscFlags           = 0;
+      buf_desc.StructureByteStride = 0;
+      if (FAILED(d3d11->device->lpVtbl->CreateBuffer(
+               d3d11->device, &buf_desc, NULL, &d3d11->mesh_ubo)))
+         d3d11->mesh_ubo = NULL;
    }
 
    {
@@ -7109,5 +7333,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d11 = {
    true,
    true,
    gfx_display_d3d11_scissor_begin,
-   gfx_display_d3d11_scissor_end
+   gfx_display_d3d11_scissor_end,
+   gfx_display_d3d11_mesh_draw
 };
