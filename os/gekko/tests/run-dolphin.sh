@@ -6,7 +6,8 @@
 # copies to memory, for tests that read back what the GPU drew; frames
 # are copied to $DUMP if it is set.  $SDIMG is the Wii's SD card image.
 # The clock chip reads 1790000000 (2026-09-21 14:13:20) at the start,
-# and a Wii has the emulated Wii Speak on USB.
+# a Wii has the emulated Wii Speak on USB, and its emulated remote 1 a
+# Nunchuk ($WIIEXT names another extension, e.g. Classic).
 # Exits 0 when the test says PASSED.
 ELF=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
 SECS=${2:-60}
@@ -17,6 +18,8 @@ LOG="$USERDIR/out.log"
 # A controller on port 1 that counts as plugged in with no input device.
 mkdir -p "$USERDIR/Config"
 printf '[GCPad1]\nOptions/Always Connected = True\n' > "$USERDIR/Config/GCPadNew.ini"
+printf '[Wiimote1]\nSource = 1\nExtension = %s\n' "${WIIEXT:-Nunchuk}" \
+   > "$USERDIR/Config/WiimoteNew.ini"
 set -- -u "$USERDIR" -p headless \
    -C Dolphin.Interface.DebugModeEnabled=True \
    -C Logger.Logs.OSREPORT_HLE=True \

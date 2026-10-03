@@ -1,7 +1,7 @@
 /* Wii: USB through /dev/usb/ven, the USBv5 interface of IOS 57 on.
  *
- * Every buffer IOS sees comes from a pool in MEM2, which is where it
- * wants them, 32-byte aligned.  A device-change request stays queued
+ * Every buffer IOS sees comes from the I/O buffers in MEM2, which is
+ * where it wants them.  A device-change request stays queued
  * with IOS; its completion refreshes the device list, and the next
  * caller acknowledges it (AttachFinish) and queues the next one. */
 
@@ -11,6 +11,8 @@
 #include <gekko/ios.h>
 #include <gekko/thread.h>
 #include <gekko/usb.h>
+
+#include "rvl.h"
 
 #define VEN_GET_VERSION    0x00
 #define VEN_DEVICE_CHANGE  0x01
@@ -28,59 +30,6 @@
 #define CHANGE_SIZE        0x180
 #define PARAMS_SIZE        0xc0
 #define MSG_SIZE           64
-
-#define POOL_SIZE          (256 * 1024)
-#define POOL_UNIT          64
-#define POOL_UNITS         (POOL_SIZE / POOL_UNIT)
-
-/* ---- buffers in MEM2 ---- */
-
-static uint8_t   *pool;
-static uint8_t    pool_busy[POOL_UNITS / 8];
-static gk_mutex_t pool_lock = GK_MUTEX_INIT;
-static gk_cond_t  pool_freed = GK_COND_INIT;
-
-/* A zeroed buffer; waits while the pool is full. */
-static void *pool_get(uint32_t size)
-{
-   uint32_t n = (size + POOL_UNIT - 1) / POOL_UNIT, i, run = 0;
-   void *p = NULL;
-   if (!n || n > POOL_UNITS)
-      return NULL;
-   gk_mutex_lock(&pool_lock);
-   while (!p)
-   {
-      for (i = 0, run = 0; i < POOL_UNITS; i++)
-      {
-         run = (pool_busy[i / 8] & (1u << (i % 8))) ? 0 : run + 1;
-         if (run == n)
-            break;
-      }
-      if (run == n)
-      {
-         uint32_t start = i + 1 - n, k;
-         for (k = start; k <= i; k++)
-            pool_busy[k / 8] |= (uint8_t)(1u << (k % 8));
-         p = pool + (size_t)start * POOL_UNIT;
-      }
-      else
-         gk_cond_wait(&pool_freed, &pool_lock, GK_WAIT_FOREVER);
-   }
-   gk_mutex_unlock(&pool_lock);
-   memset(p, 0, size);
-   return p;
-}
-
-static void pool_put(void *p, uint32_t size)
-{
-   uint32_t start = (uint32_t)((uint8_t*)p - pool) / POOL_UNIT, k;
-   uint32_t n = (size + POOL_UNIT - 1) / POOL_UNIT;
-   gk_mutex_lock(&pool_lock);
-   for (k = start; k < start + n; k++)
-      pool_busy[k / 8] &= (uint8_t)~(1u << (k % 8));
-   gk_cond_broadcast(&pool_freed);
-   gk_mutex_unlock(&pool_lock);
-}
 
 /* ---- the device list ---- */
 
@@ -127,13 +76,7 @@ static int init(void)
    gk_mutex_lock(&init_lock);
    if (fd >= 0)
       goto out;
-   if (!pool && !(pool = (uint8_t*)gk_arena_take_top(&gk_mem2, POOL_SIZE,
-               32)))
-   {
-      ret = -ENOMEM;
-      goto out;
-   }
-   if (!change_buf && !(change_buf = (uint8_t*)pool_get(CHANGE_SIZE)))
+   if (!change_buf && !(change_buf = (uint8_t*)gk_iobuf_get(CHANGE_SIZE)))
    {
       ret = -ENOMEM;
       goto out;
@@ -143,7 +86,7 @@ static int init(void)
       ret = -ENODEV;
       goto out;
    }
-   ver = (uint32_t*)pool_get(32);
+   ver = (uint32_t*)gk_iobuf_get(32);
    if (gk_ios_ioctl(fd, VEN_GET_VERSION, NULL, 0, ver, 32) < 0
          || ver[0] != VEN_VERSION || arm_change())
    {
@@ -151,7 +94,7 @@ static int init(void)
       fd  = -1;
       ret = -ENODEV;
    }
-   pool_put(ver, 32);
+   gk_iobuf_put(ver, 32);
 out:
    gk_mutex_unlock(&init_lock);
    return ret;
@@ -192,18 +135,18 @@ int gk_usb_list(gk_usb_dev_t *out, int max)
 static int dev_ioctl(uint32_t id, uint32_t cmd, uint32_t arg, void *out,
       uint32_t out_len)
 {
-   uint32_t *in = (uint32_t*)pool_get(32);
+   uint32_t *in = (uint32_t*)gk_iobuf_get(32);
    int32_t ret;
    in[0] = id;
    in[2] = arg;
    ret = gk_ios_ioctl(fd, cmd, in, 32, out, out_len);
-   pool_put(in, 32);
+   gk_iobuf_put(in, 32);
    return ret < 0 ? -EIO : 0;
 }
 
 static int get_params(uint32_t id, uint8_t alt, gk_usb_info_t *info)
 {
-   uint8_t *p = (uint8_t*)pool_get(PARAMS_SIZE);
+   uint8_t *p = (uint8_t*)gk_iobuf_get(PARAMS_SIZE);
    unsigned i;
    int ret;
    if (!(ret = dev_ioctl(id, VEN_GET_PARAMS, (uint32_t)alt << 24, p,
@@ -231,7 +174,7 @@ static int get_params(uint32_t id, uint8_t alt, gk_usb_info_t *info)
          info->ep[i].interval   = e[6];
       }
    }
-   pool_put(p, PARAMS_SIZE);
+   gk_iobuf_put(p, PARAMS_SIZE);
    return ret;
 }
 
@@ -278,7 +221,7 @@ static int transfer(uint32_t cmd, uint8_t *msg, unsigned ptr_at, void *data,
    int32_t ret;
    if (len)
    {
-      if (!(buf = (uint8_t*)pool_get(len)))
+      if (!(buf = (uint8_t*)gk_iobuf_get(len)))
          return -ENOMEM;
       if (!to_host)
          memcpy(buf, data, len);
@@ -297,14 +240,14 @@ static int transfer(uint32_t cmd, uint8_t *msg, unsigned ptr_at, void *data,
    if (to_host && ret >= 0)
       memcpy(data, buf, ret && (uint32_t)ret < len ? (uint32_t)ret : len);
    if (buf)
-      pool_put(buf, len);
-   pool_put(msg, MSG_SIZE);
+      gk_iobuf_put(buf, len);
+   gk_iobuf_put(msg, MSG_SIZE);
    return ret < 0 ? -EPIPE : (int)ret;
 }
 
 static uint8_t *message(uint32_t id)
 {
-   uint8_t *m = (uint8_t*)pool_get(MSG_SIZE);
+   uint8_t *m = (uint8_t*)gk_iobuf_get(MSG_SIZE);
    m[0] = (uint8_t)(id >> 24);
    m[1] = (uint8_t)(id >> 16);
    m[2] = (uint8_t)(id >> 8);
