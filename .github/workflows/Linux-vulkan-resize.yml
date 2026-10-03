@@ -64,7 +64,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 20
         run: |
-          pkgs="build-essential ccache xvfb xdotool x11-apps python3 libx11-dev libx11-xcb-dev libxcb1-dev libxext-dev libxxf86vm-dev libxinerama-dev libxrandr-dev libxv-dev libudev-dev zlib1g-dev mesa-vulkan-drivers vulkan-validationlayers"
+          pkgs="build-essential ccache xvfb xdotool x11-apps python3 libx11-dev libx11-xcb-dev libxcb1-dev libxext-dev libxxf86vm-dev libxinerama-dev libxrandr-dev libxv-dev libudev-dev zlib1g-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers"
           for i in 1 2 3; do
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
@@ -110,6 +110,8 @@ jobs:
           export CCACHE_DIR="$HOME/.ccache"
           ccache -M 1G
           ccache -z
+          # (--enable-vulkan makes configure look for the Vulkan
+          # loader to link against: libvulkan-dev above)
           ./configure --disable-qt --enable-vulkan --enable-x11 \
                       --disable-wayland --disable-sdl2 --disable-pulse \
                       --disable-alsa --disable-ffmpeg --disable-discord
