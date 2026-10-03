@@ -4313,6 +4313,7 @@ static void d3d12_hw_ring_free(d3d12_video_t *d3d12);
 static void d3d12_gfx_free(void* data)
 {
    unsigned       i;
+   bool window_kept     = false;
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
 
    if (!d3d12)
@@ -4426,6 +4427,29 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->chain.renderTargets[0]);
    Release(d3d12->chain.renderTargets[1]);
 
+#if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
+   /* The window is left up for the next D3D12 driver, where it can be
+    * (win32_window_keep()). DXGI makes no second flip-model swap chain
+    * on a window that still has one, so then this one has to go - and
+    * it never did: the Release() further down has been compiled out
+    * for years with a note that it crashes eventually. It is done
+    * here instead, in the order that should be safe: the queue was
+    * drained at the top, the back buffers were let go of just above,
+    * the swap chain is told it is windowed (it always is; releasing
+    * one that is not is an error), and it is released while the
+    * queue it was made on is still there. Only when the window is
+    * kept: with RETROARCH_WINDOW_KEEP=0, or on the way out of the
+    * program, nothing here runs and the driver frees as it did. */
+   window_kept = win32_window_keep();
+   if (window_kept && d3d12->chain.handle)
+   {
+      d3d12->chain.handle->lpVtbl->SetFullscreenState(
+            d3d12->chain.handle, FALSE, NULL);
+      Release(d3d12->chain.handle);
+      d3d12->chain.handle = NULL;
+   }
+#endif
+
    Release(d3d12->queue.fence);
    Release(d3d12->queue.cmd);
    Release(d3d12->queue.allocator);
@@ -4435,7 +4459,9 @@ static void d3d12_gfx_free(void* data)
       CloseHandle(d3d12->queue.fenceEvent);
 
 #if 0
-   /* Releasing this will crash eventually (?!) */
+   /* Releasing this will crash eventually (?!)
+    * (It is released above, before the queue, when the window is
+    * kept for the next driver - which needs it gone.) */
    Release(d3d12->chain.handle);
 #endif
 
@@ -4460,12 +4486,15 @@ static void d3d12_gfx_free(void* data)
    video_driver_modify_disp_flags(0, VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_HDR10_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT);
 #endif
 
+   if (!window_kept)
+   {
 #ifdef HAVE_MONITOR
-   win32_monitor_from_window();
+      win32_monitor_from_window();
 #endif
 #ifdef HAVE_WINDOW
-   win32_destroy_window();
+      win32_destroy_window();
 #endif
+   }
 
    free(d3d12);
 }
@@ -5226,6 +5255,10 @@ static void *d3d12_gfx_init(const video_info_t* video,
    wndclass.lpfnWndProc = win32_window_proc;
    win32_window_proc_setup(WIN32_WINDOW_D3D);
 #ifdef HAVE_WINDOW
+   /* the window may be left up for the next D3D12 driver, and taken
+    * from the last: d3d12_gfx_free() and the swap chain's creation
+    * below do what that needs */
+   win32_window_tag("d3d12");
    win32_window_init(&wndclass, true, NULL);
 #endif
 
@@ -5289,7 +5322,21 @@ static void *d3d12_gfx_init(const video_info_t* video,
       goto error;
 #else
    if (!d3d12_init_swapchain(d3d12, VIDEO_SCALE_W(d3d12->vp.full_dims), VIDEO_SCALE_H(d3d12->vp.full_dims), main_window.hwnd))
-      goto error;
+   {
+#if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
+      /* On a window the last driver left up, DXGI may refuse a swap
+       * chain - something of the old one is still alive on it. Then
+       * the window is not worth having: a new one, and once more. */
+      if (     !win32_window_was_taken()
+            || !win32_window_remake(d3d12, d3d12->vp.full_dims,
+                  video->fullscreen)
+            || !d3d12_init_swapchain(d3d12,
+                  VIDEO_SCALE_W(d3d12->vp.full_dims),
+                  VIDEO_SCALE_H(d3d12->vp.full_dims),
+                  main_window.hwnd))
+#endif
+         goto error;
+   }
 #endif
 
 #ifdef HAVE_DXGI_HDR

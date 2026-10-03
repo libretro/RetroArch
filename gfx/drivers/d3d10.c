@@ -2442,12 +2442,20 @@ static void d3d10_gfx_free(void* data)
       }
    }
 
+   /* Left up for the next D3D10 driver, where it can be. The swap
+    * chain went with the device above, and it is of the kind (not the
+    * flip model) that a window can have another of in any case. */
+#if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
+   if (!win32_window_keep())
+#endif
+   {
 #ifdef HAVE_MONITOR
-   win32_monitor_from_window();
+      win32_monitor_from_window();
 #endif
 #ifdef HAVE_WINDOW
-   win32_destroy_window();
+      win32_destroy_window();
 #endif
+   }
    free(d3d10);
 }
 
@@ -2509,6 +2517,9 @@ static void *d3d10_gfx_init(const video_info_t* video,
    wndclass.lpfnWndProc = win32_window_proc;
    win32_window_proc_setup(WIN32_WINDOW_D3D);
 #ifdef HAVE_WINDOW
+   /* the window may be left up for the next D3D10 driver, and taken
+    * from the last (win32_window_keep()) */
+   win32_window_tag("d3d10");
    win32_window_init(&wndclass, true, NULL);
 #endif
 
@@ -2546,7 +2557,20 @@ static void *d3d10_gfx_init(const video_info_t* video,
             NULL
 #endif
             ))
-      goto error;
+   {
+#if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
+      /* On a window the last driver left up: if a device and swap
+       * chain cannot be made on it, a new window, and once more. */
+      if (     !win32_window_was_taken()
+            || !win32_window_remake(d3d10, d3d10->vp.full_dims,
+                  video->fullscreen)
+            || !d3d10_init_swapchain(d3d10,
+                  VIDEO_SCALE_W(d3d10->vp.full_dims),
+                  VIDEO_SCALE_H(d3d10->vp.full_dims),
+                  main_window.hwnd))
+#endif
+         goto error;
+   }
 
    {
       D3D10Texture2D backBuffer;
