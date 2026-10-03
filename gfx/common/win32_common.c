@@ -132,6 +132,10 @@ typedef char win32_dwm_timing_info_size_check[
 #include "../../paths.h"
 #include "../../retroarch.h"
 #include "../video_driver.h"
+#ifdef HAVE_THREADS
+#include "../video_thread_wrapper.h"
+#endif
+#include "../../runloop.h"
 #include "../../audio/audio_driver.h"
 #include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
@@ -189,6 +193,17 @@ typedef char win32_dwm_timing_info_size_check[
 const GUID GUID_DEVINTERFACE_HID = { 0x4d1e55b2, 0xf16f, 0x11Cf, { 0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30 } };
 #if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
 static HDEVNOTIFY notification_handler;
+#endif
+
+/* A window left up across a driver restart (see win32_window_keep()),
+ * and one of those on its way out: destroying it is not the program
+ * being closed. */
+static HWND  win32_kept_hwnd;
+static DWORD win32_kept_tid;
+static int   win32_kept_family;
+static HWND  win32_retiring_hwnd;
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
+static HDEVNOTIFY win32_kept_notification;
 #endif
 
 #ifdef HAVE_DINPUT
@@ -976,6 +991,10 @@ static LRESULT CALLBACK wnd_proc_common(
       case WM_CLOSE:
       case WM_DESTROY:
       case WM_QUIT:
+         /* a window that was left up for a driver that did not take
+          * it, being taken down */
+         if (hwnd && hwnd == win32_retiring_hwnd)
+            break;
 #if !defined(_XBOX)
          win32_sizemove_abort();
 #endif
@@ -1641,6 +1660,168 @@ void win32_window_proc_setup(enum win32_window_family family)
    (void)settings;
 }
 
+/* The window across a driver restart.
+ *
+ * A restart of the video driver - content loaded or closed, a setting
+ * changed - used to destroy the window and make another: the window
+ * vanished and came back, lost its place in front of other windows,
+ * and anything tied to it went with it. The driver that comes back is
+ * nearly always the one that left, and has no need of a new window.
+ *
+ * So the context being freed may leave its window up
+ * (win32_window_keep()), and win32_window_create() takes it instead of
+ * making one: the style, place and size it would have been created
+ * with are applied to it, and what creating a window sets up for the
+ * video family - for Vulkan, the surface - is done for it.
+ *
+ * A window belongs to the thread that made it: only that thread can
+ * take it back, or destroy it, and it goes when the thread ends. With
+ * threaded video that thread is the video thread, which used to end
+ * with the driver; it is held for the next one
+ * (video_thread_host_hold()). If the driver that comes next runs on
+ * another thread, or is of another kind, or does not come, the window
+ * is taken down: win32_window_release_kept(), which the frontend
+ * calls once the next driver is up.
+ *
+ * For the Vulkan and the GDI families, for now - the ones whose
+ * window sets up nothing a second driver of the same family cannot
+ * set up again on the same window - and only with
+ * RETROARCH_WINDOW_KEEP=1 in the environment until it has been run on
+ * Windows. Never when the program is shutting down. */
+static bool win32_window_family_keeps(void)
+{
+   return win32_wnd_family == WIN32_WINDOW_VULKAN
+       || win32_wnd_family == WIN32_WINDOW_GDI;
+}
+
+static void win32_window_destroy_kept(HWND hwnd)
+{
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
+   if (win32_kept_notification)
+      UnregisterDeviceNotification(win32_kept_notification);
+   win32_kept_notification = NULL;
+#endif
+   win32_retiring_hwnd = hwnd;
+   DestroyWindow(hwnd);
+   win32_retiring_hwnd = NULL;
+}
+
+/* RETROARCH_WINDOW_KEEP: 1 leaves the window up and takes it back; 2
+ * leaves it up and then does not take it, so that the way out for a
+ * window nothing takes can be run (the tests do); anything else, or
+ * nothing, destroys it with the driver as before. */
+static int win32_window_keep_mode(void)
+{
+   const char *env = getenv("RETROARCH_WINDOW_KEEP");
+   if (env && (env[0] == '1' || env[0] == '2'))
+      return env[0] - '0';
+   return 0;
+}
+
+/* the hook of video_thread_host_hold(): the video thread is ending
+ * with the kept window still on it */
+static void win32_window_kept_thread_ends(void)
+{
+   HWND hwnd = win32_kept_hwnd;
+   if (hwnd && win32_kept_tid == GetCurrentThreadId())
+   {
+      win32_kept_hwnd = NULL;
+      win32_window_destroy_kept(hwnd);
+   }
+}
+
+bool win32_window_keep(void)
+{
+   HWND hwnd       = main_window.hwnd;
+
+   if (     !hwnd
+         || win32_kept_hwnd
+         || !win32_window_keep_mode()
+         || !win32_window_family_keeps()
+         /* the display's mode was changed for it: put back as ever */
+         || (g_win32_flags & WIN32_CMN_FLAG_RESTORE_DESKTOP)
+         || (runloop_get_flags() & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
+      return false;
+   /* it lasts only as long as its thread does */
+   if (!task_is_on_main_thread())
+   {
+#ifdef HAVE_THREADS
+      if (!video_thread_host_hold(win32_window_kept_thread_ends))
+#endif
+         return false;
+   }
+
+   win32_monitor_last = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+   win32_kept_hwnd    = hwnd;
+   win32_kept_tid     = GetCurrentThreadId();
+   win32_kept_family  = (int)win32_wnd_family;
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
+   win32_kept_notification = notification_handler;
+   notification_handler    = NULL;
+#endif
+   main_window.hwnd   = NULL;
+   video_driver_window_set(0);
+   RARCH_LOG("[Win32] The window is left up for the next video driver.\n");
+   return true;
+}
+
+void win32_window_release_kept(void)
+{
+   HWND hwnd = win32_kept_hwnd;
+
+   if (!hwnd)
+      return;
+   if (!IsWindow(hwnd))
+      win32_kept_hwnd = NULL;
+   else if (win32_kept_tid == GetCurrentThreadId())
+   {
+      win32_kept_hwnd = NULL;
+      win32_window_destroy_kept(hwnd);
+   }
+#ifdef HAVE_THREADS
+   else if (video_thread_host_is_held())
+      /* its thread takes it down as it ends */
+      video_thread_host_stop();
+#endif
+   else
+      return; /* its own thread's to let go of */
+
+   RARCH_LOG("[Win32] The window left up was not taken: destroyed.\n");
+   if (!main_window.hwnd)
+      UnregisterClass("RetroArch", GetModuleHandle(NULL));
+}
+
+/* The kept window, if this thread can have it and the family is the
+ * one it was kept by. One this thread cannot use but can destroy
+ * goes here. */
+static HWND win32_window_take_kept(void)
+{
+   HWND hwnd = win32_kept_hwnd;
+
+   if (!hwnd)
+      return NULL;
+   if (!IsWindow(hwnd))
+   {
+      win32_kept_hwnd = NULL;
+      return NULL;
+   }
+   if (win32_kept_tid != GetCurrentThreadId())
+      return NULL;
+   win32_kept_hwnd = NULL;
+   if (     (int)win32_wnd_family != win32_kept_family
+         || win32_window_keep_mode() != 1)
+   {
+      win32_window_destroy_kept(hwnd);
+      RARCH_LOG("[Win32] The window left up is not one this driver takes: destroyed.\n");
+      return NULL;
+   }
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x501
+   notification_handler    = win32_kept_notification;
+   win32_kept_notification = NULL;
+#endif
+   return hwnd;
+}
+
 static bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,
       unsigned height, bool fullscreen)
@@ -1663,11 +1844,58 @@ static bool win32_window_create(void *data, unsigned style,
    wchar_t *title_local          = utf8_to_utf16_string_alloc(new_label);
 #endif
 
+   bool        reused            = false;
+
    if (window_save_positions && !fullscreen)
    {
       user_width                 = VIDEO_SCALE_W(g_win32->pos_dims);
       user_height                = VIDEO_SCALE_H(g_win32->pos_dims);
    }
+
+   if ((main_window.hwnd = win32_window_take_kept()))
+   {
+      HWND  hwnd      = main_window.hwnd;
+      HMENU menu      = GetMenu(hwnd);
+      bool was_popup  = (GetWindowLongPtr(hwnd, GWL_STYLE) & WS_POPUP) != 0;
+      UINT swp        = SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED;
+      int  x          = mon_rect->left;
+      int  y          = mon_rect->top;
+
+      reused          = true;
+      free(title_local);
+
+      /* win32_set_window() gives a windowed window its menu again */
+      if (menu)
+      {
+         SetMenu(hwnd, NULL);
+         DestroyMenu(menu);
+      }
+      /* The style, place and size it would have been created with. A
+       * windowed window stays where it is - unless it was fullscreen,
+       * and is put where a new one would have been as far as that can
+       * be said: at its saved position, or over the monitor's corner. */
+      if (!fullscreen)
+      {
+         if (!was_popup)
+            swp      |= SWP_NOMOVE;
+         else if (g_win32->pos_set)
+         {
+            x         = VIDEO_POS_X(g_win32->pos);
+            y         = VIDEO_POS_Y(g_win32->pos);
+         }
+      }
+      SetWindowLongPtr(hwnd, GWL_STYLE,
+            (LONG_PTR)style
+            | (IsWindowVisible(hwnd) ? WS_VISIBLE : 0));
+      SetWindowPos(hwnd, NULL, x, y, user_width, user_height, swp);
+
+      /* what creating it sets up for the video family */
+      g_win32_flags &= ~WIN32_CMN_FLAG_INITED;
+      win32_window_proc(hwnd, WM_CREATE, 0, 0);
+      RARCH_LOG("[Win32] Took the window left up by the last video driver.\n");
+   }
+   else
+   {
 #ifdef LEGACY_WIN32
    main_window.hwnd              = CreateWindowEx(0,
          "RetroArch", title_local,
@@ -1686,6 +1914,7 @@ static bool win32_window_create(void *data, unsigned style,
          user_height,
          NULL, NULL, NULL, data);
    free(title_local);
+   }
    if (!main_window.hwnd)
       return false;
 
@@ -1699,8 +1928,10 @@ static bool win32_window_create(void *data, unsigned style,
    notification_filter.dbcc_size       = sizeof(DEV_BROADCAST_DEVICEINTERFACE);
    notification_filter.dbcc_devicetype = DBT_DEVTYP_DEVICEINTERFACE;
    notification_filter.dbcc_classguid  = GUID_DEVINTERFACE_HID;
-   notification_handler                = RegisterDeviceNotification(
-      main_window.hwnd, &notification_filter, DEVICE_NOTIFY_WINDOW_HANDLE);
+   /* a window taken back is still registered */
+   if (!reused)
+      notification_handler             = RegisterDeviceNotification(
+         main_window.hwnd, &notification_filter, DEVICE_NOTIFY_WINDOW_HANDLE);
 
    if (!notification_handler)
       RARCH_ERR("[Win32] Error registering for notifications.\n");
@@ -2682,6 +2913,16 @@ bool win32_window_init(WNDCLASSEX *wndclass,
 #ifdef HAVE_D3DKMT
    d3dkmt_init();
 #endif
+
+   /* still registered, for a window left up across the restart
+    * (win32_window_keep()): one procedure serves every family, so
+    * the class is the same one */
+   {
+      WNDCLASSEX has;
+      has.cbSize = sizeof(has);
+      if (GetClassInfoEx(wndclass->hInstance, wndclass->lpszClassName, &has))
+         return true;
+   }
 
    return RegisterClassEx(wndclass);
 }

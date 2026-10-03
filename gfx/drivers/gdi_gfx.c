@@ -2337,7 +2337,8 @@ static void gfx_ctx_gdi_destroy(void)
       win32_gdi_hdc = NULL;
    }
 
-   if (window)
+   /* left up for the driver that comes next, where it can be */
+   if (window && !win32_window_keep())
    {
       win32_monitor_from_window();
       win32_destroy_window();

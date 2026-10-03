@@ -78,6 +78,10 @@
 /* gfx/common/wayland_common.c */
 void gfx_ctx_wl_release_kept(void);
 #endif
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(WINAPI_FAMILY)
+/* gfx/common/win32_common.c */
+void win32_window_release_kept(void);
+#endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../menu/menu_shader.h"
@@ -2337,6 +2341,10 @@ static void content_load_step(struct content_load_job *job,
              * reinit: hand it back, and webOS returns to its
              * dashboard rather than a window nothing draws into. */
             gfx_ctx_wl_release_kept();
+#endif
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(WINAPI_FAMILY)
+            /* nor for a Windows one */
+            win32_window_release_kept();
 #endif
             content_load_finish(job, p_content);
             break;

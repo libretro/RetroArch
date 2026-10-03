@@ -171,6 +171,15 @@ void win32_window_reset(void);
 
 void win32_destroy_window(void);
 
+/* Leaves the window up for the video driver that comes next instead of
+ * destroying it; win32_set_video_mode() then takes it rather than make
+ * one. False if it cannot be left - the caller destroys it as before. */
+bool win32_window_keep(void);
+
+/* A window left up that the next driver did not take goes. Called
+ * once that driver is up, or has failed to come up. */
+void win32_window_release_kept(void);
+
 uint8_t win32_get_flags(void);
 
 /* Re-read the synchronous keyboard state and publish it as a

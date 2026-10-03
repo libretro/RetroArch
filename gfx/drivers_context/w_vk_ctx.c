@@ -162,7 +162,8 @@ static void gfx_ctx_w_vk_destroy(void *data)
       slock_free(win32_vk.context.queue_lock);
    memset(&win32_vk, 0, sizeof(win32_vk));
 
-   if (window)
+   /* left up for the driver that comes next, where it can be */
+   if (window && !win32_window_keep())
    {
       win32_monitor_from_window();
       win32_destroy_window();

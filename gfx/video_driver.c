@@ -170,6 +170,14 @@ static void video_driver_read_vp_params(struct video_vp_param_snap *ps);
 void gfx_ctx_wl_release_kept(void);
 #endif
 
+/* A window the last driver left up for this one
+ * (gfx/common/win32_common.c): it goes if this one did not take it. */
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(WINAPI_FAMILY)
+#define VIDEO_WIN32_RELEASE_KEPT_WINDOW() win32_window_release_kept()
+#else
+#define VIDEO_WIN32_RELEASE_KEPT_WINDOW() ((void)0)
+#endif
+
 /* Forward declarations */
 VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state_t *video_st, uint16_t frame_time_target, uint16_t core_run_time);
 VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_t *video_st, uint16_t frame_time_target, uint16_t core_run_time);
@@ -6180,6 +6188,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #ifdef HAVE_WAYLAND
          gfx_ctx_wl_release_kept();
 #endif
+         VIDEO_WIN32_RELEASE_KEPT_WINDOW();
          RARCH_ERR("[Video] Cannot open threaded video driver. Exiting...\n");
          return false;
       }
@@ -6196,6 +6205,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
     * take back goes now that the new one is up. */
    gfx_ctx_wl_release_kept();
 #endif
+   /* and so does a Windows one */
+   VIDEO_WIN32_RELEASE_KEPT_WINDOW();
 
    if (!video_st->data)
    {
