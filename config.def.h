@@ -758,11 +758,7 @@
 #define DEFAULT_OVERLAY_AUTO_ROTATE false
 #endif
 
-#if defined(RARCH_MOBILE)
 #define DEFAULT_INPUT_OVERLAY_AUTO_SCALE true
-#else
-#define DEFAULT_INPUT_OVERLAY_AUTO_SCALE false
-#endif
 
 #if defined(RARCH_MOBILE)
 #define DEFAULT_INPUT_OVERLAY_POINTER_ENABLE true
