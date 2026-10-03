@@ -659,15 +659,24 @@ check "console menu+gfx: gekko"   "$HOSTOFF $MG_BASE -Itools/platform_stubs/gekk
 #
 # Same warnings as the driver lanes above, C89 declarations included,
 # because that is the rule these files are furthest from anyone
-# checking. GEKKO takes the vendored libogc headers before its stub:
-# the stub carries only what libogc does not.
+# checking. GEKKO takes libogc's headers before its stub, which
+# carries only what libogc does not: devkitPro's libogc at a fixed
+# release, fetched once (LIBOGC_DIR names a checkout to use instead).
 CDECL="-Wdeclaration-after-statement -Werror=declaration-after-statement"
-GEKKO_INC="-Iwii/libogc/include -Itools/platform_stubs/gekko"
+LIBOGC_TAG=v3.1.0
+LIBOGC_DIR=${LIBOGC_DIR:-${TMPDIR:-/tmp}/libogc-$LIBOGC_TAG}
+if [ ! -f "$LIBOGC_DIR/gc/gccore.h" ]; then
+   rm -rf "$LIBOGC_DIR"
+   git -c advice.detachedHead=false clone -q --depth 1 \
+      --branch "$LIBOGC_TAG" https://github.com/devkitPro/libogc \
+      "$LIBOGC_DIR" || { echo "FAIL  libogc $LIBOGC_TAG could not be fetched"; fail=1; }
+fi
+GEKKO_INC="-I$LIBOGC_DIR/gc -Itools/platform_stubs/gekko -DEXTERNAL_LIBOGC"
 check "gekko: gx_input"        "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" input/drivers/gx_input.c
 check "gekko: gx_joypad"       "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" input/drivers_joypad/gx_joypad_libogc.c
 check "gekko: mem2_manager"    "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" libretro-common/memory/mem2_manager_libogc.c
 check "gekko: dispserv_gx"     "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" gfx/display_servers/dispserv_gx_libogc.c
-check "gamecube: dispserv_gx"  "$HOSTOFF $GEKKO_INC -DGEKKO -DRARCH_CONSOLE $CDECL" gfx/display_servers/dispserv_gx_libogc.c
+check "gamecube: dispserv_gx"  "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_DOL -DRARCH_CONSOLE $CDECL" gfx/display_servers/dispserv_gx_libogc.c
 check "gekko: dispserv_gx_modes" "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" gfx/display_servers/dispserv_gx_modes.c
 check "psl1ght: dispserv_ps3"  "$HOSTOFF -Itools/platform_stubs/ps3 -D__PS3__ -D__PSL1GHT__ -DRARCH_CONSOLE $CDECL" gfx/display_servers/dispserv_ps3.c gfx/display_servers/dispserv_ps3_modes.c
 check "3ds: ctr_input"         "$HOSTOFF -Itools/platform_stubs/ctr -D_3DS -D__3DS__ -DARM11 -DRARCH_CONSOLE $CDECL" input/drivers/ctr_input.c
