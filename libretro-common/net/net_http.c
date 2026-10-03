@@ -2855,6 +2855,13 @@ static bool net_http_redirect(struct http_t *state, const char *location)
       goto fail;
 
    ssl      = (url[4] == 's' || url[4] == 'S');
+   /* Never follow a redirect out of TLS: an https request that lands
+    * on http would carry on unauthenticated without the caller knowing. */
+   if (state->ssl && !ssl)
+   {
+      net_http_log_transport_state(state, "redirect_tls_downgrade", -1);
+      goto fail;
+   }
    host     = url + (ssl ? sizeof("https://") : sizeof("http://")) - 1;
    auth_end = host + strcspn(host, "/?#");
    /* The fragment is the client's, never part of the request. */
