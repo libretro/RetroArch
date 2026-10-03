@@ -114,6 +114,14 @@ void video_driver_display_userdata_set(uintptr_t idx)        { }
 void video_driver_window_set(uintptr_t idx)                  { }
 void video_driver_window_output_changed(void)                { trace("  window_output_changed\n"); }
 bool video_driver_is_threaded(void)                          { return false; }
+/* A window kept for the next video driver (win32_window_keep): this
+ * test drives the window procedure on the one thread that made the
+ * window, so there is no video thread to hold or to stop. */
+uint32_t runloop_get_flags(void)                             { return stub_runloop_st.flags; }
+bool task_is_on_main_thread(void)                            { return true; }
+bool video_thread_host_hold(void (*on_exit)(void))           { return false; }
+bool video_thread_host_is_held(void)                         { return false; }
+void video_thread_host_stop(void)                            { }
 void *video_driver_get_ptr(void)                             { return NULL; }
 bool dxgi_display_hdr_active(HWND hwnd)                      { return false; }
 
