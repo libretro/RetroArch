@@ -4,7 +4,7 @@
  *
  * The protocol: onPause()/onStop() write APP_CMD_PAUSE/APP_CMD_STOP to
  * the command pipe and wait (bounded) for the app thread to store the
- * command in activityState. The app thread reads the command from the
+ * command as the acknowledged state. The app thread reads it from the
  * input poll, which a core reaches from inside retro_run(), so the save
  * of SRAM, core options and config runs at the top of the next runloop
  * iteration instead - and the acknowledgement is held back until that
@@ -28,8 +28,10 @@
  * asserted to be caught: acknowledging before the save (the previous
  * behaviour) and holding the acknowledgement in the startup pump.
  *
- * Self-contained: the protocol under test is reproduced here rather
- * than linked, because the driver only builds against the NDK. */
+ * The acknowledgement and its wait are the driver's own, from
+ * frontend/drivers/android_lifecycle.h; the command handling around
+ * them is reproduced here, because the driver only builds against the
+ * NDK. */
 
 #include <errno.h>
 #include <poll.h>
@@ -39,6 +41,8 @@
 #include <unistd.h>
 
 #include <boolean.h>
+
+#include "../../../frontend/drivers/android_lifecycle.h"
 
 /* APP_CMD_*, as far as the handshake cares. */
 enum
@@ -60,9 +64,9 @@ static int sab_hold_in_pump     = 0;
 /* struct android_app, as far as the handshake cares. Everything the two
  * threads share sits behind mtx. */
 static pthread_mutex_t mtx  = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  cond = PTHREAD_COND_INITIALIZER;
-static int  activity_state;
-static int  app_thread_exited;
+/* The acknowledged activity state and the exit flag: the driver's own
+ * frontend/drivers/android_lifecycle.h. */
+static android_lifecycle_t lc;
 static int  msgread, msgwrite;
 
 /* Test controls and observations, also behind mtx. */
@@ -94,10 +98,7 @@ static void release_state_ack(void)
 {
    if (state_ack_cmd < 0)
       return;
-   pthread_mutex_lock(&mtx);
-   activity_state = state_ack_cmd;
-   pthread_cond_broadcast(&cond);
-   pthread_mutex_unlock(&mtx);
+   android_lifecycle_set_state(&lc, state_ack_cmd);
    state_ack_cmd = -1;
 }
 
@@ -146,11 +147,8 @@ static void poll_main_cmd(int cmd)
          bool hold_ack = (cmd == CMD_PAUSE) && !state_flushed
             && !sab_ack_before_flush;
 
-         pthread_mutex_lock(&mtx);
          if (!hold_ack)
-            activity_state = cmd;
-         pthread_cond_broadcast(&cond);
-         pthread_mutex_unlock(&mtx);
+            android_lifecycle_set_state(&lc, cmd);
 
          if (cmd == CMD_PAUSE)
          {
@@ -173,12 +171,7 @@ static void poll_main_cmd(int cmd)
             state_ack_cmd       = CMD_STOP;
          }
          else
-         {
-            pthread_mutex_lock(&mtx);
-            activity_state = cmd;
-            pthread_cond_broadcast(&cond);
-            pthread_mutex_unlock(&mtx);
-         }
+            android_lifecycle_set_state(&lc, cmd);
          break;
       default:
          break;
@@ -235,10 +228,7 @@ static void *app_thread(void *arg)
       }
    }
 
-   pthread_mutex_lock(&mtx);
-   app_thread_exited = 1;
-   pthread_cond_broadcast(&cond);
-   pthread_mutex_unlock(&mtx);
+   android_lifecycle_set_flags(&lc, ANDROID_LC_EXITED);
    return NULL;
 }
 
@@ -246,30 +236,10 @@ static void *app_thread(void *arg)
 static bool set_activity_state(int cmd, int timeout_ms)
 {
    char c = (char)cmd;
-   struct timespec deadline;
-   bool acked;
-
-   clock_gettime(CLOCK_REALTIME, &deadline);
-   deadline.tv_sec  += timeout_ms / 1000;
-   deadline.tv_nsec += (long)(timeout_ms % 1000) * 1000000L;
-   if (deadline.tv_nsec >= 1000000000L)
-   {
-      deadline.tv_sec++;
-      deadline.tv_nsec -= 1000000000L;
-   }
-
-   pthread_mutex_lock(&mtx);
    if (write(msgwrite, &c, 1) != 1)
-   {
-      pthread_mutex_unlock(&mtx);
       return false;
-   }
-   while (!app_thread_exited && activity_state != cmd)
-      if (pthread_cond_timedwait(&cond, &mtx, &deadline) == ETIMEDOUT)
-         break;
-   acked = (activity_state == cmd);
-   pthread_mutex_unlock(&mtx);
-   return acked;
+   return android_lifecycle_wait(&lc, ANDROID_LC_UNTIL_STATE, cmd, true,
+         (int64_t)timeout_ms * 1000);
 }
 
 static int read_locked(const int *v)
@@ -305,8 +275,8 @@ static int start_app(pthread_t *t, int pump)
       return 0;
    msgread             = fds[0];
    msgwrite            = fds[1];
-   activity_state      = -1;
-   app_thread_exited   = 0;
+   if (!android_lifecycle_init(&lc))
+      return 0;
    settings_gen        = 0;
    disk_gen            = 0;
    flushes             = 0;
@@ -324,6 +294,7 @@ static void stop_app(pthread_t t)
    if (write(msgwrite, &c, 1) != 1)
       failures++;
    pthread_join(t, NULL);
+   android_lifecycle_free(&lc);
    close(msgread);
    close(msgwrite);
 }
@@ -418,7 +389,7 @@ static int lane_supersede(void)
          set_activity_state(CMD_PAUSE, 100), 0);
    expect("resume acked", set_activity_state(CMD_RESUME, ACK_TIMEOUT_MS), 1);
    sleep_ms(FLUSH_MS * 4);
-   expect("state stays resumed", read_locked(&activity_state), CMD_RESUME);
+   expect("state stays resumed", android_lifecycle_state(&lc), CMD_RESUME);
 
    stop_app(t);
    return failures - before;
