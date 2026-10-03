@@ -2430,40 +2430,40 @@ static void gl3_set_viewport(gl3_t *gl,
 }
 
 #ifdef HAVE_SLANG
-static const uint32_t alpha_blend_vert[] =
+static const uint32_t gl3_alpha_blend_vert[] =
 #include "vulkan_shaders/alpha_blend.vert.inc"
       ;
 
 #ifdef HAVE_SHADERPIPELINE
-static const uint32_t pipeline_ribbon_vert[] =
+static const uint32_t gl3_pipeline_ribbon_vert[] =
 #include "vulkan_shaders/pipeline_ribbon.vert.inc"
       ;
 
-static const uint32_t pipeline_ribbon_frag[] =
+static const uint32_t gl3_pipeline_ribbon_frag[] =
 #include "vulkan_shaders/pipeline_ribbon.frag.inc"
       ;
 
-static const uint32_t pipeline_ribbon_simple_vert[] =
+static const uint32_t gl3_pipeline_ribbon_simple_vert[] =
 #include "vulkan_shaders/pipeline_ribbon_simple.vert.inc"
       ;
 
-static const uint32_t pipeline_ribbon_simple_frag[] =
+static const uint32_t gl3_pipeline_ribbon_simple_frag[] =
 #include "vulkan_shaders/pipeline_ribbon_simple.frag.inc"
       ;
 
-static const uint32_t pipeline_snow_simple_frag[] =
+static const uint32_t gl3_pipeline_snow_simple_frag[] =
 #include "vulkan_shaders/pipeline_snow_simple.frag.inc"
       ;
 
-static const uint32_t pipeline_snow_frag[] =
+static const uint32_t gl3_pipeline_snow_frag[] =
 #include "vulkan_shaders/pipeline_snow.frag.inc"
       ;
 
-static const uint32_t pipeline_bokeh_frag[] =
+static const uint32_t gl3_pipeline_bokeh_frag[] =
 #include "vulkan_shaders/pipeline_bokeh.frag.inc"
       ;
 
-static const uint32_t pipeline_snowflake_frag[] =
+static const uint32_t gl3_pipeline_snowflake_frag[] =
 #include "vulkan_shaders/pipeline_snowflake.frag.inc"
       ;
 #endif /* HAVE_SHADERPIPELINE */
@@ -2484,33 +2484,33 @@ static GLuint gl3_effect_program(gl3_t *gl, unsigned pipeline_id,
    {
       case VIDEO_SHADER_MENU:
          prog = &gl->pipelines.ribbon;      l    = &gl->pipelines.ribbon_loc;
-         vs   = pipeline_ribbon_vert;       vs_size = sizeof(pipeline_ribbon_vert);
-         fs   = pipeline_ribbon_frag;       fs_size = sizeof(pipeline_ribbon_frag);
+         vs   = gl3_pipeline_ribbon_vert;       vs_size = sizeof(gl3_pipeline_ribbon_vert);
+         fs   = gl3_pipeline_ribbon_frag;       fs_size = sizeof(gl3_pipeline_ribbon_frag);
          break;
       case VIDEO_SHADER_MENU_2:
          prog = &gl->pipelines.ribbon_simple; l    = &gl->pipelines.ribbon_simple_loc;
-         vs   = pipeline_ribbon_simple_vert;  vs_size = sizeof(pipeline_ribbon_simple_vert);
-         fs   = pipeline_ribbon_simple_frag;  fs_size = sizeof(pipeline_ribbon_simple_frag);
+         vs   = gl3_pipeline_ribbon_simple_vert;  vs_size = sizeof(gl3_pipeline_ribbon_simple_vert);
+         fs   = gl3_pipeline_ribbon_simple_frag;  fs_size = sizeof(gl3_pipeline_ribbon_simple_frag);
          break;
       case VIDEO_SHADER_MENU_3:
          prog = &gl->pipelines.snow_simple; l    = &gl->pipelines.snow_simple_loc;
-         vs   = alpha_blend_vert;           vs_size = sizeof(alpha_blend_vert);
-         fs   = pipeline_snow_simple_frag;  fs_size = sizeof(pipeline_snow_simple_frag);
+         vs   = gl3_alpha_blend_vert;           vs_size = sizeof(gl3_alpha_blend_vert);
+         fs   = gl3_pipeline_snow_simple_frag;  fs_size = sizeof(gl3_pipeline_snow_simple_frag);
          break;
       case VIDEO_SHADER_MENU_4:
          prog = &gl->pipelines.snow;        l    = &gl->pipelines.snow_loc;
-         vs   = alpha_blend_vert;           vs_size = sizeof(alpha_blend_vert);
-         fs   = pipeline_snow_frag;         fs_size = sizeof(pipeline_snow_frag);
+         vs   = gl3_alpha_blend_vert;           vs_size = sizeof(gl3_alpha_blend_vert);
+         fs   = gl3_pipeline_snow_frag;         fs_size = sizeof(gl3_pipeline_snow_frag);
          break;
       case VIDEO_SHADER_MENU_5:
          prog = &gl->pipelines.bokeh;       l    = &gl->pipelines.bokeh_loc;
-         vs   = alpha_blend_vert;           vs_size = sizeof(alpha_blend_vert);
-         fs   = pipeline_bokeh_frag;        fs_size = sizeof(pipeline_bokeh_frag);
+         vs   = gl3_alpha_blend_vert;           vs_size = sizeof(gl3_alpha_blend_vert);
+         fs   = gl3_pipeline_bokeh_frag;        fs_size = sizeof(gl3_pipeline_bokeh_frag);
          break;
       case VIDEO_SHADER_MENU_6:
          prog = &gl->pipelines.snowflake;   l    = &gl->pipelines.snowflake_loc;
-         vs   = alpha_blend_vert;           vs_size = sizeof(alpha_blend_vert);
-         fs   = pipeline_snowflake_frag;    fs_size = sizeof(pipeline_snowflake_frag);
+         vs   = gl3_alpha_blend_vert;           vs_size = sizeof(gl3_alpha_blend_vert);
+         fs   = gl3_pipeline_snowflake_frag;    fs_size = sizeof(gl3_pipeline_snowflake_frag);
          break;
       default:
          return 0;
@@ -2549,7 +2549,7 @@ static bool gl3_init_pipelines(gl3_t *gl)
 
 
    if (!gl->pipelines.alpha_blend)
-      gl->pipelines.alpha_blend = gl3_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
+      gl->pipelines.alpha_blend = gl3_cross_compile_program(gl3_alpha_blend_vert, sizeof(gl3_alpha_blend_vert),
                                                              alpha_blend_frag, sizeof(alpha_blend_frag),
                                                              &gl->pipelines.alpha_blend_loc, true);
    if (!gl->pipelines.alpha_blend)
@@ -2562,7 +2562,7 @@ static bool gl3_init_pipelines(gl3_t *gl)
                                                       &gl->pipelines.mesh_loc, true);
 
    if (!gl->pipelines.font)
-      gl->pipelines.font = gl3_cross_compile_program(alpha_blend_vert, sizeof(alpha_blend_vert),
+      gl->pipelines.font = gl3_cross_compile_program(gl3_alpha_blend_vert, sizeof(gl3_alpha_blend_vert),
                                                       font_frag, sizeof(font_frag),
                                                       &gl->pipelines.font_loc, true);
    if (!gl->pipelines.font)

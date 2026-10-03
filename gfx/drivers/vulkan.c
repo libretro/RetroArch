@@ -4658,39 +4658,39 @@ static void vulkan_init_pipeline_layout(
 
 /* The SPIR-V the menu effects are made from, which they are made from
  * when first drawn rather than at start */
-static const uint32_t alpha_blend_vert[] =
+static const uint32_t vk_alpha_blend_vert[] =
 #include "vulkan_shaders/alpha_blend.vert.inc"
    ;
 
-static const uint32_t pipeline_ribbon_vert[] =
+static const uint32_t vk_pipeline_ribbon_vert[] =
 #include "vulkan_shaders/pipeline_ribbon.vert.inc"
    ;
 
-static const uint32_t pipeline_ribbon_frag[] =
+static const uint32_t vk_pipeline_ribbon_frag[] =
 #include "vulkan_shaders/pipeline_ribbon.frag.inc"
    ;
 
-static const uint32_t pipeline_ribbon_simple_vert[] =
+static const uint32_t vk_pipeline_ribbon_simple_vert[] =
 #include "vulkan_shaders/pipeline_ribbon_simple.vert.inc"
    ;
 
-static const uint32_t pipeline_ribbon_simple_frag[] =
+static const uint32_t vk_pipeline_ribbon_simple_frag[] =
 #include "vulkan_shaders/pipeline_ribbon_simple.frag.inc"
    ;
 
-static const uint32_t pipeline_snow_simple_frag[] =
+static const uint32_t vk_pipeline_snow_simple_frag[] =
 #include "vulkan_shaders/pipeline_snow_simple.frag.inc"
    ;
 
-static const uint32_t pipeline_snow_frag[] =
+static const uint32_t vk_pipeline_snow_frag[] =
 #include "vulkan_shaders/pipeline_snow.frag.inc"
    ;
 
-static const uint32_t pipeline_bokeh_frag[] =
+static const uint32_t vk_pipeline_bokeh_frag[] =
 #include "vulkan_shaders/pipeline_bokeh.frag.inc"
    ;
 
-static const uint32_t pipeline_snowflake_frag[] =
+static const uint32_t vk_pipeline_snowflake_frag[] =
 #include "vulkan_shaders/pipeline_snowflake.frag.inc"
    ;
 
@@ -4790,16 +4790,16 @@ static VkPipeline vulkan_effect_pipeline(vk_t *vk, unsigned i, bool sdr)
    switch (i)
    {
       case 0:
-         module_info.codeSize = sizeof(pipeline_ribbon_vert);
-         module_info.pCode    = pipeline_ribbon_vert;
+         module_info.codeSize = sizeof(vk_pipeline_ribbon_vert);
+         module_info.pCode    = vk_pipeline_ribbon_vert;
          break;
       case 1:
-         module_info.codeSize = sizeof(pipeline_ribbon_simple_vert);
-         module_info.pCode    = pipeline_ribbon_simple_vert;
+         module_info.codeSize = sizeof(vk_pipeline_ribbon_simple_vert);
+         module_info.pCode    = vk_pipeline_ribbon_simple_vert;
          break;
       default:
-         module_info.codeSize = sizeof(alpha_blend_vert);
-         module_info.pCode    = alpha_blend_vert;
+         module_info.codeSize = sizeof(vk_alpha_blend_vert);
+         module_info.pCode    = vk_alpha_blend_vert;
          break;
    }
    if (vkCreateShaderModule(vk->context->device, &module_info, NULL,
@@ -4808,28 +4808,28 @@ static VkPipeline vulkan_effect_pipeline(vk_t *vk, unsigned i, bool sdr)
    switch (i)
    {
       case 0:
-         module_info.codeSize = sizeof(pipeline_ribbon_frag);
-         module_info.pCode    = pipeline_ribbon_frag;
+         module_info.codeSize = sizeof(vk_pipeline_ribbon_frag);
+         module_info.pCode    = vk_pipeline_ribbon_frag;
          break;
       case 1:
-         module_info.codeSize = sizeof(pipeline_ribbon_simple_frag);
-         module_info.pCode    = pipeline_ribbon_simple_frag;
+         module_info.codeSize = sizeof(vk_pipeline_ribbon_simple_frag);
+         module_info.pCode    = vk_pipeline_ribbon_simple_frag;
          break;
       case 2:
-         module_info.codeSize = sizeof(pipeline_snow_simple_frag);
-         module_info.pCode    = pipeline_snow_simple_frag;
+         module_info.codeSize = sizeof(vk_pipeline_snow_simple_frag);
+         module_info.pCode    = vk_pipeline_snow_simple_frag;
          break;
       case 3:
-         module_info.codeSize = sizeof(pipeline_snow_frag);
-         module_info.pCode    = pipeline_snow_frag;
+         module_info.codeSize = sizeof(vk_pipeline_snow_frag);
+         module_info.pCode    = vk_pipeline_snow_frag;
          break;
       case 4:
-         module_info.codeSize = sizeof(pipeline_bokeh_frag);
-         module_info.pCode    = pipeline_bokeh_frag;
+         module_info.codeSize = sizeof(vk_pipeline_bokeh_frag);
+         module_info.pCode    = vk_pipeline_bokeh_frag;
          break;
       default:
-         module_info.codeSize = sizeof(pipeline_snowflake_frag);
-         module_info.pCode    = pipeline_snowflake_frag;
+         module_info.codeSize = sizeof(vk_pipeline_snowflake_frag);
+         module_info.pCode    = vk_pipeline_snowflake_frag;
          break;
    }
    if (vkCreateShaderModule(vk->context->device, &module_info, NULL,
@@ -5026,8 +5026,8 @@ static void vulkan_init_pipelines(vk_t *vk)
    pipe.renderPass                      = vk->render_pass;
    pipe.layout                          = vk->pipelines.layout;
 
-   module_info.codeSize                 = sizeof(alpha_blend_vert);
-   module_info.pCode                    = alpha_blend_vert;
+   module_info.codeSize                 = sizeof(vk_alpha_blend_vert);
+   module_info.pCode                    = vk_alpha_blend_vert;
    shader_stages[0].stage               = VK_SHADER_STAGE_VERTEX_BIT;
    shader_stages[0].pName               = "main";
    vkCreateShaderModule(vk->context->device,
@@ -5170,8 +5170,8 @@ static void vulkan_init_pipelines(vk_t *vk)
       input_assembly.primitiveRestartEnable = VK_FALSE;
 
       /* SDR font pipeline */
-      module_info.codeSize   = sizeof(alpha_blend_vert);
-      module_info.pCode      = alpha_blend_vert;
+      module_info.codeSize   = sizeof(vk_alpha_blend_vert);
+      module_info.pCode      = vk_alpha_blend_vert;
       shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
       shader_stages[0].pName = "main";
       vkCreateShaderModule(vk->context->device,
