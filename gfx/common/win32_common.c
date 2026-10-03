@@ -1862,6 +1862,56 @@ static HWND win32_window_take_kept(void)
    return hwnd;
 }
 
+/* The menu bar while the window has none.
+ *
+ * The menu bar belongs to the windowed state. It was destroyed
+ * whenever the window went fullscreen, or was taken back from the
+ * last driver, and a new one built - made from its template and
+ * every item put into the user's language - each time the window was
+ * windowed again: once for every return from fullscreen and every
+ * driver restart. It is the same menu each time.
+ *
+ * It is now taken off the window and kept, and put back when the
+ * window is windowed again. A new one is built only when there is
+ * none kept, and the kept one is dropped when the language changes
+ * (win32_menu_kept_drop(), from win32_menubar_rebuild()). A menu that
+ * is on no window belongs to no window: it outlives the window it
+ * was taken from and goes onto the next. */
+static HMENU win32_menu_kept;
+
+void win32_menu_kept_drop(void)
+{
+   if (win32_menu_kept)
+      DestroyMenu(win32_menu_kept);
+   win32_menu_kept = NULL;
+}
+
+/* The window's menu bar, if it has one, taken off it and kept. */
+static void win32_menu_put_away(HWND hwnd)
+{
+   HMENU menu = GetMenu(hwnd);
+   if (!menu)
+      return;
+   SetMenu(hwnd, NULL);
+   if (win32_menu_kept && win32_menu_kept != menu)
+      DestroyMenu(win32_menu_kept);
+   win32_menu_kept = menu;
+}
+
+/* A menu bar for a windowed window: the kept one, or a new one. */
+static HMENU win32_menu_take(void)
+{
+   HMENU menu      = win32_menu_kept;
+   win32_menu_kept = NULL;
+   if (!menu)
+   {
+      menu         = win32_resources_create_menu();
+      win32_localize_menu(menu);
+      RARCH_DBG("[Win32] Menu bar built.\n");
+   }
+   return menu;
+}
+
 static bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,
       unsigned height, bool fullscreen)
@@ -1906,12 +1956,10 @@ static bool win32_window_create(void *data, unsigned style,
       win32_wnd_taken = true;
       free(title_local);
 
-      /* win32_set_window() gives a windowed window its menu again */
+      /* win32_set_window() gives a windowed window its menu again:
+       * the same one, which is kept in the meantime */
       if (menu)
-      {
-         SetMenu(hwnd, NULL);
-         DestroyMenu(menu);
-      }
+         win32_menu_put_away(hwnd);
       /* The style, place and size it would have been created with. A
        * windowed window stays where it is - unless it was fullscreen,
        * and is put where a new one would have been as far as that can
@@ -2390,9 +2438,12 @@ void win32_set_window(unsigned *width, unsigned *height,
          rc_temp.right  = (LONG)*height;
          rc_temp.bottom = 0x7FFF;
 
-         menuItem = win32_resources_create_menu();
-         win32_localize_menu(menuItem);
-         SetMenu(main_window.hwnd, menuItem);
+         /* (a window that has one keeps it) */
+         if (!(menuItem = GetMenu(main_window.hwnd)))
+         {
+            menuItem = win32_menu_take();
+            SetMenu(main_window.hwnd, menuItem);
+         }
 
          SendMessage(main_window.hwnd, WM_NCCALCSIZE, FALSE, (LPARAM)&rc_temp);
          g_win32_resize_height = *height += rc_temp.top + rect->top;
@@ -2608,13 +2659,8 @@ bool win32_window_set_fullscreen(unsigned dims, bool fullscreen)
 
    if (fullscreen)
    {
-      /* the menu bar belongs to the windowed state */
-      HMENU menu = GetMenu(hwnd);
-      if (menu)
-      {
-         SetMenu(hwnd, NULL);
-         DestroyMenu(menu);
-      }
+      /* the menu bar belongs to the windowed state: kept until then */
+      win32_menu_put_away(hwnd);
       x = mon_rect.left;
       y = mon_rect.top;
    }

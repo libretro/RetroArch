@@ -77,6 +77,12 @@
 # own state and must work as before. Telling two keyboards apart is
 # samples/input/winraw_keyboards' to hold.
 #
+# The OpenGL scenarios also count how often the window's menu bar was
+# built. It is taken off the window while it is fullscreen and put
+# back when it is windowed again, and goes with a kept window through
+# a driver restart: built once, where it used to be built again each
+# time.
+#
 # ONLY=<part of a scenario's name> runs just the scenarios that match.
 #
 # And the window. In every scenario above it is left up across both
@@ -231,7 +237,7 @@ failures=0
 # passes through
 scenario() {
    local name=$1 threaded=$2 want_bulk=$3 want_joy=$4 nomsg=$5
-   local log="$work/$name.log" try rc video bulk joy msg ok b_down b_up j_seq stale win off byname deferred kbd
+   local log="$work/$name.log" try rc video bulk joy msg ok b_down b_up j_seq stale win off byname deferred kbd menus
    local want_video=${WANT_VIDEO:-3}
    if [ -n "${ONLY:-}" ]; then
       case "$name" in
@@ -277,6 +283,9 @@ scenario() {
       if [ "${6:-raw}" = raw ]; then
          [ "$kbd" -ge 1 ] || ok=no
       fi
+      # the menu bar: built this many times, where it is asked
+      menus=$(count "$log" 'Win32\] Menu bar built')
+      [ -z "${WANT_MENUS:-}" ] || [ "$menus" = "$WANT_MENUS" ] || ok=no
       deferred=$(count "$log" 'joypad driver is restarted by the poll')
       if [ "$threaded" = true ]; then
          [ "$deferred" = 1 ] || ok=no
@@ -311,6 +320,7 @@ scenario() {
            "key events on a thread that is not the core's: $off (want 0)," \
            "input driver picked by the setting's name: $byname (want 0)," \
            "keyboards named by the raw input driver: $kbd (want at least 1 with raw input)," \
+           "menu bars built: $menus (want ${WANT_MENUS:-any})," \
            "joypad restarts left to the poll: $deferred (want $([ "$threaded" = true ] && echo 1 || echo 0))" \
            "$([ "$nomsg" = nomsg ] && echo ", driver instances with reports taken as messages: $msg (want 0)")"
       sed 's/\x1b\[[0-9;]*m//g' "$log" | tr -d '\r' | grep -av "ALSA lib\|Playlist\]" | tail -25
@@ -330,8 +340,10 @@ WANT_WINDOW="2 0 2" RETROARCH_WINDOW_KEEP=2 scenario "window left up and not tak
 EXTRA_CFG='input_player1_keyboard_index = "1"' \
    scenario "the first port given a keyboard" true 1 2 nomsg
 VIDEO_DRIVER=gl VIDEO_STARTED='Found GL context' WANT_VIDEO=2 WANT_WINDOW="1 1 0" \
+   WANT_MENUS=1 EXTRA_CFG='ui_menubar_enable = "true"' \
    scenario "OpenGL" true 1 2 nomsg
 VIDEO_DRIVER=gl VIDEO_STARTED='Found GL context' WANT_VIDEO=3 WANT_WINDOW="2 2 0" \
+   WANT_MENUS=1 EXTRA_CFG='ui_menubar_enable = "true"' \
    RETROARCH_FULLSCREEN_IN_PLACE=0 scenario "OpenGL, toggle by restart" true 1 2 nomsg
 
 if [ "$failures" != 0 ]; then

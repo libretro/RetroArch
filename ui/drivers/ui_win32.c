@@ -1607,6 +1607,10 @@ void win32_menubar_rebuild(void)
    if (!hwnd)
       return;
 
+   /* one kept for a window that has none now (fullscreen) is in the
+    * old language too */
+   win32_menu_kept_drop();
+
    old_menu = GetMenu(hwnd);
    /* No menubar is currently attached (e.g. fullscreen, or menubar
     * disabled via ui_menubar_enable). Nothing to rebuild. */

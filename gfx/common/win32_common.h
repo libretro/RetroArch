@@ -171,6 +171,11 @@ void win32_check_window(void *data,
       bool *quit,
       bool *resize, unsigned *dims);
 
+/* The menu bar kept while the window has none is dropped, so that the
+ * next windowed window gets one built anew: for when what is in it
+ * has changed (the language). */
+void win32_menu_kept_drop(void);
+
 void win32_set_window(unsigned *width, unsigned *height,
       bool fullscreen, bool windowed_full, void *rect_data);
 
