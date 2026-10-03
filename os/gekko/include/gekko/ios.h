@@ -46,4 +46,9 @@ int32_t gk_ios_ioctlv_async(int32_t fd, uint32_t cmd, uint32_t n_in,
 /* The running IOS: number in the high half, revision in the low. */
 uint32_t gk_ios_version(void);
 
+/* Start IOS major (installed) in place of the running one, before
+ * anything has been opened: every descriptor and request of the old
+ * one is gone.  0 once the new one takes requests. */
+int gk_ios_reload(uint32_t major);
+
 #endif

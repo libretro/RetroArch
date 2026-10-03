@@ -70,6 +70,7 @@ static gk_sem_t        free_count;
 static struct ios_req *queue_head, *queue_tail;
 static uint32_t        mailbox_busy;
 static uint32_t        started;
+static volatile uint32_t acks;      /* acknowledgements seen */
 
 static void post(struct ios_req *r)
 {
@@ -136,6 +137,7 @@ static void ipc_irq(enum gk_irq irq, void *data)
       GK_REG32(HW_IPC_PPCCTRL) = CTRL_IRQ | CTRL_Y2;
       GK_REG32(HW_PPCIRQFLAG)  = IRQ_IPC;
       mailbox_busy = 0;
+      acks++;
       if (queue_head)
       {
          struct ios_req *r = queue_head;
@@ -366,4 +368,73 @@ int32_t gk_ios_ioctlv_async(int32_t fd, uint32_t cmd, uint32_t n_in,
 uint32_t gk_ios_version(void)
 {
    return *(volatile uint32_t*)LOMEM_IOS_VERSION;
+}
+
+/* A launch that works is never answered: an answer is a refusal. */
+static volatile int32_t launch_refused;
+
+static void launch_done(int32_t result, void *data)
+{
+   (void)data;
+   launch_refused = result < 0 ? result : -1;
+}
+
+/* An ES launch of an IOS (es.c, vec as ES_LaunchTitle takes it): the
+ * request is acknowledged but never answered.  IOS writes the new
+ * version to low memory as it goes, and the new one acknowledges once
+ * it takes requests; then everything of the old one's is forgotten. */
+int gk_ipc_launch_ios(int32_t es_fd, const gk_ios_vec_t *vec,
+      uint32_t major)
+{
+   uint64_t end;
+   uint32_t level, seen, i;
+   volatile uint32_t *version = (volatile uint32_t*)LOMEM_IOS_VERSION;
+   uint32_t old               = *version;
+   *version = 0;
+   gk_dcache_flush((void*)LOMEM_IOS_VERSION, 4);
+   launch_refused = 0;
+   seen           = acks;
+   if (gk_ios_ioctlv_async(es_fd, 0x08, 2, 0, vec, launch_done, NULL) < 0)
+      return -1;
+   end = gk_ticks() + GK_US_TO_TICKS(10000000);
+   for (;;)
+   {
+      gk_dcache_invalidate((void*)LOMEM_IOS_VERSION, 4);
+      if ((*version >> 16) == major)
+         break;
+      if (launch_refused || gk_ticks() > end)
+      {
+         /* Still the old IOS */
+         *version = old;
+         gk_dcache_flush((void*)LOMEM_IOS_VERSION, 4);
+         return -1;
+      }
+      gk_sleep_us(1000);
+   }
+   /* Two acknowledgements: the old IOS's for the request, the new
+    * one's as it comes up; the new one starts with the mailbox's
+    * interrupts off. */
+   end = gk_ticks() + GK_US_TO_TICKS(2000000);
+   while (acks - seen < 2 && gk_ticks() < end)
+   {
+      level = gk_irq_disable();
+      GK_REG32(HW_PPCIRQMASK)  = IRQ_IPC;
+      GK_REG32(HW_IPC_PPCCTRL)  = CTRL_IRQ;
+      gk_irq_restore(level);
+      gk_sleep_us(1000);
+   }
+   level = gk_irq_disable();
+   for (i = 0; i < POOL; i++)
+      if (pool[i].busy)
+      {
+         pool[i].busy = 0;
+         pool[i].next = free_list;
+         free_list    = &pool[i];
+         gk_sem_post(&free_count);
+      }
+   queue_head   = NULL;
+   queue_tail   = NULL;
+   mailbox_busy = 0;
+   gk_irq_restore(level);
+   return 0;
 }

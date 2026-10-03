@@ -175,6 +175,19 @@ static int list(struct bus *bus, gk_usb_dev_t *out, int max)
    return n;
 }
 
+int gk_usb_supported(void)
+{
+   uint32_t *ver = (uint32_t*)gk_iobuf_get(32);
+   int32_t   fd  = gk_ios_open(hid.path, 0);
+   int       ok  = fd >= 0
+      && gk_ios_ioctl(fd, USB_GET_VERSION, NULL, 0, ver, 32) >= 0
+      && ver[0] == USB_VERSION;
+   if (fd >= 0)
+      gk_ios_close(fd);
+   gk_iobuf_put(ver, 32);
+   return ok;
+}
+
 int gk_usb_list(gk_usb_dev_t *out, int max)
 {
    return list(&ven, out, max);

@@ -5,6 +5,13 @@
 #include <string.h>
 
 #include <gekko/console.h>
+#if GK_RVL
+#include <gekko/ios.h>
+#include <gekko/usb.h>
+
+/* The IOS loaded when the one running has no USBv5. */
+#define BOOT_IOS 58
+#endif
 
 #include "kernel.h"
 
@@ -190,6 +197,18 @@ void gk_boot(void)
 
    __asm__ __volatile__("mtdec %0" : : "r"(0x7fffffff));
    gk_msr_set(gk_msr_get() | GK_MSR_EE);
+
+#if GK_RVL
+   /* USB here wants IOS 57 on; loaders can start another.  The new
+    * one may keep more of MEM2. */
+   if (!gk_usb_supported() && !gk_ios_reload(BOOT_IOS))
+   {
+      uint32_t mem1_end, mem2_lo, mem2_hi;
+      gk_mem_bounds(&mem1_end, &mem2_lo, &mem2_hi);
+      if (mem2_hi < (uint32_t)gk_mem2.hi)
+         gk_mem2.hi = (uint8_t*)mem2_hi;
+   }
+#endif
 
    __crtmain();
 }

@@ -2,6 +2,8 @@
 
 #include <gekko/ios.h>
 
+#include "rvl.h"
+
 #define ES_LAUNCH_TITLE  0x08
 #define ES_GET_VIEWCNT   0x12
 #define ES_GET_VIEWS     0x13
@@ -18,9 +20,10 @@ static struct
    uint8_t  view[(TICKET_VIEW_SIZE + 31) & ~31];
 } es __attribute__((aligned(32)));
 
-int gk_es_launch_title(uint64_t title)
+/* /dev/es open with title's first ticket view in v[0] (id) and v[1]
+ * (the view), as ES_LaunchTitle takes them; the fd, or negative. */
+static int32_t ticket_view(uint64_t title, gk_ios_vec_t *v)
 {
-   gk_ios_vec_t v[3];
    int32_t fd = gk_ios_open("/dev/es", 0);
    if (fd < 0)
       return fd;
@@ -45,8 +48,32 @@ int gk_es_launch_title(uint64_t title)
    }
    v[1].data = es.view;
    v[1].len  = TICKET_VIEW_SIZE;
+   return fd;
+}
+
+int gk_es_launch_title(uint64_t title)
+{
+   gk_ios_vec_t v[3];
+   int32_t fd = ticket_view(title, v);
+   if (fd < 0)
+      return fd;
    /* Does not return on success: the system reloads. */
    return gk_ios_ioctlv(fd, ES_LAUNCH_TITLE, 2, 0, v);
+}
+
+int gk_ios_reload(uint32_t major)
+{
+   gk_ios_vec_t v[3];
+   int32_t fd = ticket_view(0x0000000100000000ull | major, v);
+   if (fd < 0)
+      return fd;
+   if (gk_ipc_launch_ios(fd, v, major))
+   {
+      gk_ios_close(fd);
+      return -1;
+   }
+   /* The descriptor went with the old IOS. */
+   return 0;
 }
 
 int gk_es_launch_system_menu(void)

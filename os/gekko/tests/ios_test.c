@@ -7,6 +7,7 @@
 
 #include <gekko/conf.h>
 #include <gekko/ios.h>
+#include <gekko/usb.h>
 #include <gekko/power.h>
 #include <gekko/thread.h>
 
@@ -87,6 +88,22 @@ static void test_conf(void)
    CHECK(dh >= -32 && dh <= 32, "conf: display offset in range");
 }
 
+/* A fresh IOS of the same number, where it is installed (an emulator
+ * without the title refuses); the tests after it run on whichever. */
+static void test_reload(void)
+{
+   uint32_t major = gk_ios_version() >> 16;
+   uint64_t t0;
+   int ret;
+   t0  = gk_ticks();
+   ret = gk_ios_reload(major);
+   gk_debug_printf("     reload %s after %u ms", ret ? "refused" : "done",
+         (unsigned)(gk_ticks_to_us(gk_ticks() - t0) / 1000));
+   CHECK((gk_ios_version() >> 16) == major,
+         "reload: the same IOS, started over or still running");
+   CHECK(gk_usb_supported(), "reload: requests go through after it");
+}
+
 static void test_lomem(void)
 {
    CHECK(gk_ios_version() >> 16,
@@ -100,6 +117,7 @@ int main(int argc, char **argv)
    gk_debug_printf("ios test: IOS %u.%u", (unsigned)(gk_ios_version() >> 16),
          (unsigned)(gk_ios_version() & 0xffff));
    test_lomem();
+   test_reload();
    test_mailbox();
    test_conf();
    test_hook();

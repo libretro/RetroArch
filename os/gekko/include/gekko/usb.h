@@ -47,6 +47,9 @@ typedef struct gk_usb_info
    uint8_t     num_ep;
 } gk_usb_info_t;
 
+/* Whether the running IOS has the USB interfaces these calls use. */
+int  gk_usb_supported(void);
+
 /* The devices plugged in now; how many were written. */
 int  gk_usb_list(gk_usb_dev_t *out, int max);
 /* The HID-class ones: their description has the interrupt IN and OUT
