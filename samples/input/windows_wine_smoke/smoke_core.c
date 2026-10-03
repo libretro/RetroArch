@@ -14,12 +14,20 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef _WIN32
-#include <windows.h>
 /* the thread retro_run() is on: a key event that comes on another has
  * been handed to the core behind its back */
+#ifdef _WIN32
+#include <windows.h>
 static DWORD run_thread;
+#define THREAD_NOW()      GetCurrentThreadId()
+#define THREAD_SAME(a, b) ((a) == (b))
+#else
+#include <pthread.h>
+static pthread_t run_thread;
+#define THREAD_NOW()      pthread_self()
+#define THREAD_SAME(a, b) pthread_equal((a), (b))
 #endif
+static int run_thread_known;
 
 #include <libretro.h>
 
@@ -50,11 +58,8 @@ static void RETRO_CALLCONV on_key(bool down, unsigned keycode,
    (void)character;
    say("key event: %s keycode %u mods %u", down ? "down" : "up",
          keycode, (unsigned)mods);
-#ifdef _WIN32
-   if (run_thread && GetCurrentThreadId() != run_thread)
-      say("key event on thread %lu, not the core's (%lu)",
-            (unsigned long)GetCurrentThreadId(), (unsigned long)run_thread);
-#endif
+   if (run_thread_known && !THREAD_SAME(THREAD_NOW(), run_thread))
+      say("key event on a thread that is not the core's");
 }
 
 void retro_set_environment(retro_environment_t cb)
@@ -105,9 +110,8 @@ void retro_run(void)
 {
    int b, a;
 
-#ifdef _WIN32
-   run_thread = GetCurrentThreadId();
-#endif
+   run_thread       = THREAD_NOW();
+   run_thread_known = 1;
    poll_cb();
    b = state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B) ? 1 : 0;
    a = state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A) ? 1 : 0;

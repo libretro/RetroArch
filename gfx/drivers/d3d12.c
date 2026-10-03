@@ -5260,10 +5260,9 @@ static void *d3d12_gfx_init(const video_info_t* video,
    else
       d3d12->flags &= ~D3D12_ST_FLAG_VSYNC;
 
-   /* no input driver of this driver's own: the frontend starts one
-    * for the window (video_driver_init_input()) */
-   *input      = NULL;
-   *input_data = NULL;
+   /* no input driver of this driver's own: the frontend starts the
+    * one that goes with a Windows window */
+   input_driver_left_to_frontend(INPUT_WINDOW_WINDOWS, input, input_data);
 
    d3d12_init_base(d3d12);
 

@@ -2533,10 +2533,9 @@ static void *d3d10_gfx_init(const video_info_t* video,
       goto error;
    }
 
-   /* no input driver of this driver's own: the frontend starts one
-    * for the window (video_driver_init_input()) */
-   *input      = NULL;
-   *input_data = NULL;
+   /* no input driver of this driver's own: the frontend starts the
+    * one that goes with a Windows window */
+   input_driver_left_to_frontend(INPUT_WINDOW_WINDOWS, input, input_data);
 
    if (!d3d10_init_swapchain(d3d10,
             VIDEO_SCALE_W(d3d10->vp.full_dims),

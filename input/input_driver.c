@@ -6582,12 +6582,28 @@ input_driver_t *input_driver_get_current(void)
    return input_driver_st.current_driver;
 }
 
+/* The kind of window the video driver being started says it put up
+ * (input_driver_left_to_frontend()), for video_driver_init_input(). */
+static enum input_window_kind input_window_for_video = INPUT_WINDOW_OTHER;
+
 /* The slots a video driver's init fills in when it brings its own
  * input driver. */
 input_driver_t **input_driver_video_slots(void ***data_slot)
 {
+   /* the driver about to start has said nothing yet */
+   input_window_for_video = INPUT_WINDOW_OTHER;
    *data_slot = (void**)&input_driver_st.current_data;
    return &input_driver_st.current_driver;
+}
+
+void input_driver_left_to_frontend(enum input_window_kind window,
+      input_driver_t **input, void **input_data)
+{
+   input_window_for_video = window;
+   if (input)
+      *input              = NULL;
+   if (input_data)
+      *input_data         = NULL;
 }
 
 /* Leaving the input driver running across a video driver restart
@@ -6796,9 +6812,9 @@ bool input_driver_grab_mouse_for_video(void)
 bool video_driver_init_input(
       input_driver_t *tmp,
       settings_t *settings,
-      bool verbosity_enabled,
-      enum input_window_kind window)
+      bool verbosity_enabled)
 {
+   enum input_window_kind window = input_window_for_video;
    void              *new_data = NULL;
    input_driver_t    **input   = &input_driver_st.current_driver;
 
@@ -6844,16 +6860,15 @@ bool video_driver_init_input(
 #endif
    else
    {
-#if defined(_WIN32) || defined(_XBOX) || defined(__WINRT__)
-      /* A Windows window: the video drivers used to start the input
-       * driver for it themselves, each calling
-       * input_driver_init_windows() from its own start-up - on the
-       * video thread, with threaded video. It is started here now, by
-       * the frontend, on its own thread: raw input if that is the
-       * setting and it starts, DirectInput otherwise. The test driver,
-       * when it is the setting and has a file to play, is left to the
-       * setting below as it was. */
-      if (window == INPUT_WINDOW_WINDOWS
+      /* The video drivers and contexts of the window systems used to
+       * start the input driver for their window themselves, each from
+       * its own start-up - on the video thread, with threaded video.
+       * They say what kind of window it is
+       * (input_driver_left_to_frontend()) and it is started here, by
+       * the frontend, on its own thread. The test driver, when it is
+       * the setting and has a file to play, is left to the setting
+       * below as it was. */
+      if (window != INPUT_WINDOW_OTHER
 #if HAVE_TEST_DRIVERS
             && !(   strcmp(settings->arrays.input_driver, "test") == 0
                  && *settings->paths.test_input_file_general)
@@ -6862,8 +6877,28 @@ bool video_driver_init_input(
       {
          input_driver_t *drv = NULL;
          void *drv_data      = NULL;
-         input_driver_init_windows(settings->arrays.input_joypad_driver,
-               &drv, &drv_data);
+         const char *joypad  = settings->arrays.input_joypad_driver;
+
+         switch (window)
+         {
+#if defined(_WIN32) || defined(_XBOX) || defined(__WINRT__)
+            case INPUT_WINDOW_WINDOWS:
+               input_driver_init_windows(joypad, &drv, &drv_data);
+               break;
+#endif
+#ifdef HAVE_X11
+            case INPUT_WINDOW_X11:
+               input_driver_init_x11(joypad, &drv, &drv_data);
+               break;
+#endif
+            case INPUT_WINDOW_KMS:
+               /* starts one only when the setting is "x" or "udev";
+                * any other is the setting's to name, below */
+               input_driver_init_kms(joypad, &drv, &drv_data);
+               break;
+            default:
+               break;
+         }
          if (drv && drv_data)
          {
             *input                       = drv;
@@ -6871,7 +6906,6 @@ bool video_driver_init_input(
             return true;
          }
       }
-#endif
       /* Nothing for the window, or no such window: the configured one. */
       RARCH_LOG("[Video] Graphics driver did not initialize an input driver."
          " Attempting to pick a suitable driver.\n");

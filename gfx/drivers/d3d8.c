@@ -2477,10 +2477,9 @@ static bool d3d8_init_internal(d3d8_video_t *d3d,
    if (!d3d8_initialize(d3d, &d3d->video_info))
       return false;
 
-   /* no input driver of this driver's own: the frontend starts one
-    * for the window (video_driver_init_input()) */
-   *input      = NULL;
-   *input_data = NULL;
+   /* no input driver of this driver's own: the frontend starts the
+    * one that goes with a Windows window */
+   input_driver_left_to_frontend(INPUT_WINDOW_WINDOWS, input, input_data);
 
    return true;
 }

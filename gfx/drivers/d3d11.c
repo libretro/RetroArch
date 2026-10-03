@@ -3922,10 +3922,9 @@ static void *d3d11_gfx_init(const video_info_t* video,
    }
 #endif
 
-   /* no input driver of this driver's own: the frontend starts one
-    * for the window (video_driver_init_input()) */
-   *input      = NULL;
-   *input_data = NULL;
+   /* no input driver of this driver's own: the frontend starts the
+    * one that goes with a Windows window */
+   input_driver_left_to_frontend(INPUT_WINDOW_WINDOWS, input, input_data);
 
    matrix_4x4_identity(d3d11->identity);
 

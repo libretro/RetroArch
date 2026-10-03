@@ -30,6 +30,11 @@ on:
       - 'menu/menu_driver.c'
       - 'input/drivers/x11_input.c'
       - 'samples/input/overlay_on_screen/**'
+      - 'input/input_driver_choice.c'
+      - 'gfx/drivers_context/x_ctx.c'
+      - 'gfx/common/x11_common.c'
+      - 'samples/input/x11_smoke/**'
+      - 'samples/input/windows_wine_smoke/smoke_core.c'
       - '.github/workflows/Linux-overlay-on-screen.yml'
   pull_request:
     paths:
@@ -44,6 +49,11 @@ on:
       - 'menu/menu_driver.c'
       - 'input/drivers/x11_input.c'
       - 'samples/input/overlay_on_screen/**'
+      - 'input/input_driver_choice.c'
+      - 'gfx/drivers_context/x_ctx.c'
+      - 'gfx/common/x11_common.c'
+      - 'samples/input/x11_smoke/**'
+      - 'samples/input/windows_wine_smoke/smoke_core.c'
       - '.github/workflows/Linux-overlay-on-screen.yml'
   workflow_dispatch:
 
@@ -80,7 +90,7 @@ jobs:
             sudo timeout 240 apt-get install -y --download-only \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
               build-essential zlib1g-dev ccache python3 \
-              xvfb x11-apps libgl1-mesa-dri \
+              xvfb x11-apps xdotool libgl1-mesa-dri \
               libx11-dev libx11-xcb-dev libxcb1-dev libxext-dev libxtst6 \
               libxxf86vm-dev libxrandr-dev libxinerama-dev \
               libgl-dev libegl-dev && break
@@ -97,7 +107,7 @@ jobs:
           sudo apt-get install -y \
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
             build-essential zlib1g-dev ccache python3 \
-            xvfb x11-apps libgl1-mesa-dri \
+            xvfb x11-apps xdotool libgl1-mesa-dri \
             libx11-dev libx11-xcb-dev libxcb1-dev libxext-dev libxtst6 \
             libxxf86vm-dev libxrandr-dev libxinerama-dev \
             libgl-dev libegl-dev
@@ -176,3 +186,14 @@ jobs:
           # as does one named with _led, and a pack that names its LEDs
           # is not mapped.
           timeout 300 python3 samples/input/overlay_on_screen/overlay_led_hidden_test.py ./retroarch
+
+      - name: Run the X11 input scenarios (keys pressed in the window)
+        shell: bash
+        run: |
+          set -eu
+          # The same build, on a virtual display of its own, with the
+          # X11 input driver: keys are pressed in the window and a small
+          # core says in the log what reached it - before and after a
+          # fullscreen toggle restarts the video driver, with threaded
+          # video and without. See samples/input/x11_smoke/run.sh.
+          timeout 600 samples/input/x11_smoke/run.sh

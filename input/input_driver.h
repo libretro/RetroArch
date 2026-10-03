@@ -920,25 +920,38 @@ input_driver_t **input_driver_video_slots(void ***data_slot);
 void input_driver_free_with_video(const void *video_data);
 bool input_driver_grab_mouse_for_video(void);
 
-/* What kind of window the video driver that has just started put up,
- * for the input driver that goes with it. */
+/* What kind of window a video driver put up, for the input driver that
+ * goes with it. */
 enum input_window_kind
 {
    INPUT_WINDOW_OTHER = 0,
    /* a Windows window (or UWP, or Xbox): input_driver_init_windows() */
-   INPUT_WINDOW_WINDOWS
+   INPUT_WINDOW_WINDOWS,
+   /* an X11 window: input_driver_init_x11() */
+   INPUT_WINDOW_X11,
+   /* no window system - KMS/DRM, a Vulkan display:
+    * input_driver_init_kms() */
+   INPUT_WINDOW_KMS
 };
+
+/* For a video driver's or a context's start-up, in place of starting
+ * an input driver itself: it brings none, and the frontend is to
+ * start the one that goes with a window of this kind. Clears the two
+ * slots. A driver that says nothing here and fills in no slots gets
+ * the input driver the setting names, as ever. */
+void input_driver_left_to_frontend(enum input_window_kind window,
+      input_driver_t **input, void **input_data);
 
 /* Called once the video driver is up. If it brought an input driver of
  * its own, that is the input driver. Otherwise one is started here:
- * the one kept from before the restart; for a Windows window, the one
- * input_driver_init_windows() chooses; failing those, the one the
+ * the one kept from before the restart; the one that goes with the
+ * kind of window the video driver named
+ * (input_driver_left_to_frontend()); failing those, the one the
  * setting names. */
 bool video_driver_init_input(
       input_driver_t *tmp,
       settings_t *settings,
-      bool verbosity_enabled,
-      enum input_window_kind window);
+      bool verbosity_enabled);
 
 bool input_driver_grab_mouse(void);
 

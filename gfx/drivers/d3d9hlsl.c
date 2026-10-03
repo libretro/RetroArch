@@ -7265,10 +7265,9 @@ static bool d3d9_hlsl_init_internal(d3d9_video_t *d3d,
    if (!d3d9_hlsl_initialize(d3d, &d3d->video_info))
       return false;
 
-   /* no input driver of this driver's own: the frontend starts one
-    * for the window (video_driver_init_input()) */
-   *input      = NULL;
-   *input_data = NULL;
+   /* no input driver of this driver's own: the frontend starts the
+    * one that goes with a Windows window */
+   input_driver_left_to_frontend(INPUT_WINDOW_WINDOWS, input, input_data);
 
    {
       char version_str[128];

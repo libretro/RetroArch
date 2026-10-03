@@ -6285,17 +6285,9 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    video_st->current_video->suppress_screensaver(video_st->data,
          settings->bools.ui_suspend_screensaver_enable);
 
-   /* The input driver is the frontend's to start, for the window this
-    * driver put up. On UWP and Xbox every video driver's is a window
-    * of the Windows family. */
-   if (!video_driver_init_input(tmp, settings, verbosity_enabled,
-#if defined(__WINRT__) || defined(_XBOX)
-            INPUT_WINDOW_WINDOWS
-#else
-            (video_st->display_type == RARCH_DISPLAY_WIN32)
-            ? INPUT_WINDOW_WINDOWS : INPUT_WINDOW_OTHER
-#endif
-            ))
+   /* The input driver is the frontend's to start, for the kind of
+    * window this driver said it put up. */
+   if (!video_driver_init_input(tmp, settings, verbosity_enabled))
          return false;
 
 #ifdef HAVE_OVERLAY
