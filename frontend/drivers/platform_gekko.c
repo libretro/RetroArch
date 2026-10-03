@@ -83,6 +83,17 @@ static void mount(unsigned i, gk_blockdev_t *dev)
       volumes[i].mounted = 1;
 }
 
+static void unmount_all(void)
+{
+   unsigned i;
+   for (i = 0; i < VOL_COUNT; i++)
+      if (volumes[i].mounted)
+      {
+         gk_fat_unmount(volumes[i].name);
+         volumes[i].mounted = 0;
+      }
+}
+
 static void frontend_gekko_init(void *data)
 {
    (void)data;
@@ -98,7 +109,46 @@ static void frontend_gekko_init(void *data)
 #endif
 }
 
-#ifndef IS_SALAMANDER
+#ifdef IS_SALAMANDER
+static char content_dir[PATH_MAX_LENGTH];
+static char content_file[PATH_MAX_LENGTH];
+
+/* The core the configuration names, with the loader's content. */
+static void frontend_gekko_exitspawn(char *s, size_t len, char *args)
+{
+   char core[PATH_MAX_LENGTH];
+   const char *argv[3];
+   void *image  = NULL;
+   int64_t size = 0;
+   int argc     = 1;
+   int ret;
+   (void)len;
+   (void)args;
+   if (string_is_empty(s))
+      return;
+   if (strchr(s, ':'))
+      strlcpy(core, s, sizeof(core));
+   else
+      fill_pathname_join(core, g_defaults.dirs[DEFAULT_DIR_CORE], s,
+            sizeof(core));
+   argv[0] = core;
+   if (*content_file)
+   {
+      argv[1] = content_dir;
+      argv[2] = content_file;
+      argc    = 3;
+   }
+   if (!filestream_read_file(core, &image, &size))
+   {
+      RARCH_ERR("[Gekko] Could not read \"%s\".\n", core);
+      return;
+   }
+   unmount_all();
+   ret = gk_exec(image, (size_t)size, argc, argv);
+   RARCH_ERR("[Gekko] Could not run \"%s\" (%d).\n", core, ret);
+   free(image);
+}
+#else
 static enum frontend_fork fork_mode = FRONTEND_FORK_NONE;
 static void              *exec_image;
 static int64_t            exec_len;
@@ -135,17 +185,12 @@ static void exec_prepare(void)
 
 static void frontend_gekko_deinit(void *data)
 {
-   unsigned i;
    (void)data;
 #ifndef IS_SALAMANDER
    exec_prepare();
+   unmount_all();
 #endif
-   for (i = 0; i < VOL_COUNT; i++)
-      if (volumes[i].mounted)
-      {
-         gk_fat_unmount(volumes[i].name);
-         volumes[i].mounted = 0;
-      }
+   /* Salamander still reads the core it runs. */
 }
 
 /* Where RetroArch lives: the directory of the program the loader
@@ -278,7 +323,14 @@ static void frontend_gekko_get_env(int *argc, char *argv[],
          g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], "remaps",
          sizeof(g_defaults.dirs[DEFAULT_DIR_REMAP]));
 
-#ifndef IS_SALAMANDER
+#ifdef IS_SALAMANDER
+   /* Content a loader passed goes on to the core. */
+   if (*argc > 2 && argv && argv[1] && *argv[1] && argv[2] && *argv[2])
+   {
+      strlcpy(content_dir,  argv[1], sizeof(content_dir));
+      strlcpy(content_file, argv[2], sizeof(content_file));
+   }
+#else
    dir_check_defaults("custom.ini");
 #endif
 }
@@ -370,11 +422,7 @@ frontend_ctx_driver_t frontend_ctx_gx = {
    frontend_gekko_get_env,          /* get_env */
    frontend_gekko_init,             /* init */
    frontend_gekko_deinit,           /* deinit */
-#ifndef IS_SALAMANDER
    frontend_gekko_exitspawn,        /* exitspawn */
-#else
-   NULL,                            /* exitspawn */
-#endif
    frontend_gekko_process_args,     /* process_args */
    NULL,                            /* exec */
 #ifndef IS_SALAMANDER

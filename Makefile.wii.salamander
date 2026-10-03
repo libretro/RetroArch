@@ -6,6 +6,8 @@
 DEBUG              = 0
 HAVE_LOGGER        = 0
 HAVE_FILE_LOGGER   = 0
+# HAVE_LIBOGC=0 builds on os/gekko, as Makefile.wii does.
+HAVE_LIBOGC       ?= 1
 EXTERNAL_LIBOGC   ?= 0
 GX_PTHREAD_LEGACY ?= 1
 
@@ -38,7 +40,11 @@ DOL_TARGET := retroarch-salamander_wii.dol
 ELF_TARGET := retroarch-salamander_wii.elf
 
 INCLUDE := -I. -Ilibretro-common/include
-ifeq ($(EXTERNAL_LIBOGC), 1)
+ifeq ($(HAVE_LIBOGC), 0)
+CFLAGS  += -DGEKKO_NATIVE
+INCLUDE += -Ios/gekko/include
+LIBDIRS := -Los/gekko/boot -L.
+else ifeq ($(EXTERNAL_LIBOGC), 1)
 INCLUDE += -I$(DEVKITPRO)/libogc/include
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
 else
@@ -46,7 +52,7 @@ INCLUDE += -Iwii/libogc/include
 LIBDIRS := -Lwii/libogc/libs/wii -L.
 endif
 
-ifeq ($(GX_PTHREAD_LEGACY), 1)
+ifeq ($(HAVE_LIBOGC)$(GX_PTHREAD_LEGACY), 11)
    CFLAGS   += -DGX_PTHREAD_LEGACY
    CXXFLAGS += -DGX_PTHREAD_LEGACY
 endif
@@ -55,18 +61,30 @@ MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP) -Wl,-Map,$(notdir $(ELF_TARGET)).map
 
+APP_BOOTER_DIR = wii/app_booter
+
+ifeq ($(HAVE_LIBOGC), 0)
+LDFLAGS += -T os/gekko/boot/rvl.ld
+
+GEKKO_DIR      := os/gekko
+GEKKO_PLATFORM := rvl
+include os/gekko/gekko.mk
+OBJ := frontend/drivers/platform_gekko.o gfx/bitmapfont.o \
+		$(addsuffix .o,$(basename $(GEKKO_SOURCES)))
+else
 ifeq ($(EXTERNAL_LIBOGC), 1)
 LIBS := -lfat
 endif
 
 LIBS += -lwiiuse -logc -lbte
 
-APP_BOOTER_DIR = wii/app_booter
-
-OBJ = frontend/frontend_salamander.o \
-		frontend/frontend_driver.o \
-		frontend/drivers/platform_gx_libogc.o \
+OBJ := frontend/drivers/platform_gx_libogc.o \
 		frontend/drivers/platform_wii_libogc.o \
+		$(APP_BOOTER_DIR)/app_booter.binobj
+endif
+
+OBJ += frontend/frontend_salamander.o \
+		frontend/frontend_driver.o \
 		libretro-common/file/file_path.o \
 		libretro-common/file/file_path_io.o \
 		libretro-common/hash/lrc_hash.o \
@@ -85,11 +103,9 @@ OBJ = frontend/frontend_salamander.o \
 		libretro-common/file/config_file.o \
 		libretro-common/file/config_file_io.o \
 		libretro-common/time/rtime.o \
-		verbosity.o \
-		$(APP_BOOTER_DIR)/app_booter.binobj
+		verbosity.o
 
-ifeq ($(EXTERNAL_LIBOGC), 1)
-else
+ifeq ($(HAVE_LIBOGC)$(EXTERNAL_LIBOGC), 10)
 OBJ += wii/libogc/libfat/cache.o \
 		wii/libogc/libfat/directory.o \
 		wii/libogc/libfat/disc.o \
@@ -138,6 +154,9 @@ $(ELF_TARGET): $(OBJ)
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+%.o: %.S
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 %.binobj: %.bin
 	$(LD) -r -b binary -o $@ $<
 
@@ -152,6 +171,8 @@ clean:
 	rm -f $(DOL_TARGET)
 	rm -f $(ELF_TARGET)
 	rm -f $(OBJ)
+ifeq ($(HAVE_LIBOGC), 1)
 	$(MAKE) -C $(APP_BOOTER_DIR) clean
+endif
 
 .PHONY: clean

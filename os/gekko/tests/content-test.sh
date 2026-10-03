@@ -5,6 +5,9 @@
 #   cp fceumm_libretro_wii.a libretro_wii.a
 #   make -f Makefile.wii HAVE_LIBOGC=0
 #   os/gekko/tests/content-test.sh retroarch_wii.elf
+# With salamander as the second argument (make -f Makefile.wii.salamander
+# HAVE_LIBOGC=0), the loader starts salamander instead, which finds the
+# core on SD and hands it the content.
 # The test ROM (nes-rom.py) is red, and green while A is held.
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -17,6 +20,13 @@ truncate -s 64M "$tmp/sd.img"
 mkfs.fat -F 32 "$tmp/sd.img" > /dev/null
 mmd -i "$tmp/sd.img" ::/roms
 mcopy -i "$tmp/sd.img" "$tmp/test.nes" "::/roms/a test.nes"
+if [ -n "$2" ]; then
+   mmd -i "$tmp/sd.img" ::/apps ::/apps/retroarch
+   python3 "$HERE/elf2dol.py" "$ELF" "$tmp/core.dol"
+   mcopy -i "$tmp/sd.img" "$tmp/core.dol" \
+      ::/apps/retroarch/fceumm_libretro_wii.dol
+   ELF=$(cd "$(dirname "$2")" && pwd)/$(basename "$2")
+fi
 # A held from 25 s to 30 s.
 printf '\n\n\n\nPRESS A\nRELEASE A\n' > "$tmp/pads"
 PADS="$tmp/pads" PADSTEP=5 SDIMG="$tmp/sd.img" DUMP="$tmp/frames" \
