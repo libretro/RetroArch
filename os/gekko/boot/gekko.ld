@@ -6,11 +6,19 @@ ENTRY(_start)
 
 PROVIDE(__gk_stack_size = 0x40000);
 
+/* Only the sections load: the ELF headers in front of them would land
+ * on the low-memory globals. */
+PHDRS
+{
+	text PT_LOAD FLAGS(5);
+	data PT_LOAD FLAGS(6);
+}
+
 SECTIONS
 {
 	. = __gk_load;
 
-	.crt0 : { KEEP(*(.crt0)) }
+	.crt0 : { KEEP(*(.crt0)) } :text
 
 	.init : { KEEP(*(SORT_NONE(.init))) }
 	.text : {
@@ -46,7 +54,7 @@ SECTIONS
 		KEEP(*(EXCLUDE_FILE(*crtend.o) .ctors))
 		KEEP(*(SORT(.ctors.*)))
 		KEEP(*(.ctors))
-	}
+	} :data
 	.dtors : {
 		KEEP(*crtbegin.o(.dtors))
 		KEEP(*(EXCLUDE_FILE(*crtend.o) .dtors))
@@ -88,14 +96,14 @@ SECTIONS
 
 	. = ALIGN(32);
 	__gk_bss_start = .;
-	.sbss (NOLOAD) : {
+	.sbss : {
 		PROVIDE(__sbss_start = .);
 		*(.sbss .sbss.* .gnu.linkonce.sb.*)
 		*(.scommon)
 		PROVIDE(__sbss_end = .);
 		PROVIDE(__SBSS_END__ = .);
 	}
-	.bss (NOLOAD) : {
+	.bss : {
 		PROVIDE(__bss_start = .);
 		*(.bss .bss.* .gnu.linkonce.b.*)
 		*(COMMON)
@@ -104,7 +112,7 @@ SECTIONS
 	}
 	__gk_bss_end = .;
 
-	.gk_stack (NOLOAD) : {
+	.gk_stack : {
 		__gk_stack_lo = .;
 		. += __gk_stack_size;
 		__gk_stack_top = .;

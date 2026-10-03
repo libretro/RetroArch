@@ -87,12 +87,19 @@ static void test_conf(void)
    CHECK(dh >= -32 && dh <= 32, "conf: display offset in range");
 }
 
+static void test_lomem(void)
+{
+   CHECK(gk_ios_version() >> 16,
+         "lomem: the loader's globals outlive the load");
+}
+
 int main(int argc, char **argv)
 {
    (void)argc;
    (void)argv;
    gk_debug_printf("ios test: IOS %u.%u", (unsigned)(gk_ios_version() >> 16),
          (unsigned)(gk_ios_version() & 0xffff));
+   test_lomem();
    test_mailbox();
    test_conf();
    test_hook();
