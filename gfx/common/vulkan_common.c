@@ -3695,8 +3695,25 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
       }
       /* A lost device does not come back with a new swapchain: the
        * whole driver has to, and the runloop does that when it sees
-       * the flag (after a TDR, a GPU reset). */
-      if (err == VK_ERROR_DEVICE_LOST || result == VK_ERROR_DEVICE_LOST)
+       * the flag (after a TDR, a GPU reset).
+       *
+       * One VK_ERROR_DEVICE_LOST from a present is not taken as that.
+       * NVIDIA's driver has been seen to answer the first present
+       * after the swapchain is rebuilt for a new swap interval with
+       * it - a moment after the driver starts, as on every fullscreen
+       * toggle with the menu up - on a device that goes on to build
+       * the next swapchain without complaint. Taking it at its word
+       * rebuilt the whole video driver, window included; the new
+       * device answered the same way, and the run loop's retries, each
+       * later than the last, ended in giving up with a dead picture.
+       *
+       * So a present that fails this way costs a swapchain, as any
+       * failed present does. The device is given up on when presents
+       * have failed on swapchain after swapchain, or when the frame's
+       * own submit says it is lost (vulkan_check_device_lost), which a
+       * device that is really gone does on the next frame. */
+      if (     (err == VK_ERROR_DEVICE_LOST || result == VK_ERROR_DEVICE_LOST)
+            && vk->context.swapchain_never_presented >= 8)
          video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
       vulkan_destroy_swapchain(vk);
    }
