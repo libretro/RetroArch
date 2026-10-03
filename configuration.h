@@ -438,6 +438,7 @@ typedef struct settings
       unsigned steam_rich_presence_format;
 #endif
 
+      unsigned cheevos_screenshot_delay;
       unsigned cheevos_appearance_anchor;
       unsigned cheevos_visibility_summary;
 

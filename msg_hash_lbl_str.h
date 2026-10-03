@@ -1028,6 +1028,7 @@
 #define MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS_STR "cheat_search_settings"
 #define MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS_STR "cheevos_appearance_settings"
 #define MENU_ENUM_LABEL_CHEEVOS_AUTO_SCREENSHOT_STR "cheevos_auto_screenshot"
+#define MENU_ENUM_LABEL_CHEEVOS_SCREENSHOT_DELAY_STR "cheevos_screenshot_delay"
 #define MENU_ENUM_LABEL_CHEEVOS_BADGES_ENABLE_STR "cheevos_badges_enable"
 #define MENU_ENUM_LABEL_CHEEVOS_CHALLENGE_INDICATORS_STR "cheevos_challenge_indicators"
 #define MENU_ENUM_LABEL_CHEEVOS_RICHPRESENCE_ENABLE_STR "cheevos_richpresence_enable"
