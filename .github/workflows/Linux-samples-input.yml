@@ -493,3 +493,29 @@ jobs:
           WINEDEBUG=-all timeout 300 make check
           make clean
           echo "[pass] winraw_abs_pos_test (wine)"
+
+      - name: Build and run winraw_poll_test (mingw + Wine)
+        shell: bash
+        working-directory: samples/input/winraw_poll
+        run: |
+          set -eu
+          # input/drivers/winraw_input.c with its keyboard and mouse
+          # read in bulk by the poll (RETROARCH_RAWINPUT_POLL). The real
+          # driver under Wine on a virtual display, with the focused
+          # window made and pumped by a second thread as the video
+          # thread does, and the driver started from that thread. With
+          # the switch off the driver is as it was. With it on: init
+          # makes no window and the first poll does, on the polling
+          # thread; six keys injected with SendInput() while nothing
+          # pumps are read by one bulk read, none as a message, none
+          # left in the queue, and come out of the poll as six key
+          # events in order with the modifier held at the time; a
+          # report the pump dispatches first is still taken; the
+          # pump's hook reads on the window's thread and not on
+          # another; free takes the window down, twenty restarts each
+          # do the same.
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          make clean all
+          WINEDEBUG=-all timeout 300 make check
+          make clean
+          echo "[pass] winraw_poll_test (wine)"

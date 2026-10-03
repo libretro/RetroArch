@@ -696,6 +696,19 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
    }
 }
 
+/* A report for one of this driver's controllers that was read in bulk
+ * by the keyboard and mouse driver (winraw_input.c, "Read by the
+ * poll"): a bulk read takes every raw input report waiting on its
+ * thread, and when this driver's window is on that thread, its
+ * reports with them. Same as the WM_INPUT case below from here on. */
+void winraw_joypad_take_hid(HANDLE device, const BYTE *data, DWORD size)
+{
+   int slot = winraw_joypad_find_pad(device);
+   if (slot >= 0)
+      winraw_joypad_parse_hid_report(&winraw_joypad_pads[slot],
+            data, size);
+}
+
 /* ------------------------------------------------------------------ */
 /* Message-only window for receiving WM_INPUT / WM_INPUT_DEVICE_CHANGE */
 /* ------------------------------------------------------------------ */

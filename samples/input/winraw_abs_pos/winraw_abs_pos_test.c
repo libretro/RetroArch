@@ -80,6 +80,8 @@ bool video_driver_translate_coord_viewport(struct video_viewport *vp,
 uintptr_t video_driver_window_get(void) { return 0; }
 void win32_clip_window(bool grab) { (void)grab; }
 uint16_t win32_get_keyboard_mods(void) { return 0; }
+void winraw_joypad_take_hid(HANDLE device, const BYTE *data, DWORD size)
+{ (void)device; (void)data; (void)size; }
 void win32_hotplug_arm(void) { }
 bool win32_hotplug_due(void) { return false; }
 
