@@ -1,5 +1,6 @@
-# The ffmpeg core's wait for a finished video slot against the decode
-# thread ending under it. Includes the core for its statics.
+# The ffmpeg core's waits between its decode thread and the main
+# thread: frames, audio, seeks, the end. Includes the core for its
+# statics.
 
 CORE_DIR          := ../../..
 LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
