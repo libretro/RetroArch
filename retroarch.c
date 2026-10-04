@@ -7810,6 +7810,14 @@ static bool retroarch_parse_input_and_config(
       runloop_set_current_core_type(CORE_TYPE_DUMMY, false);
 
    path_clear(RARCH_PATH_SUBSYSTEM);
+   /* A load names its saves after its own content, or after the core
+    * when it has none: the content argument parsed below sets them
+    * again, and -s / -S override them after that. */
+   path_clear(RARCH_PATH_BASENAME);
+   *runloop_st->name.savefile      = '\0';
+   *runloop_st->name.savestate     = '\0';
+   *runloop_st->name.replay        = '\0';
+   *runloop_st->name.cheatfile     = '\0';
 
    retroarch_override_setting_free_state();
 

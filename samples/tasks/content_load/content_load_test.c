@@ -459,6 +459,57 @@ static void lane_prefetch_follows_new_core(void)
 #endif
 #endif
 
+#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
+/* A load without content names its saves after the core, not after
+ * the content loaded before it. */
+static void lane_contentless_names(void)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   content_ctx_info_t info;
+   char nohw[600];
+   char game[600];
+   FILE *f;
+   unsigned had = failures;
+
+   harness_sibling(nohw, sizeof(nohw), "harness_core_nohw.so");
+   snprintf(game, sizeof(game), "%s/names.bin", harness_dir);
+   if ((f = fopen(game, "wb")))
+   {
+      fputs("harness content", f);
+      fclose(f);
+   }
+   memset(&info, 0, sizeof(info));
+   open_menu();
+
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the contentless load was not started");
+   pump(LOAD_FRAMES);
+   CHECK(task_push_load_content_with_new_core_from_menu(nohw, game,
+            &info, CORE_TYPE_PLAIN, NULL, NULL),
+         "the content load was not started");
+   pump(LOAD_FRAMES * 4);
+   CHECK(core_is_up() && strstr(path_get(RARCH_PATH_BASENAME), "names"),
+         "the content load did not name its saves after the content (\"%s\")",
+         path_get(RARCH_PATH_BASENAME));
+
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the second contentless load was not started");
+   pump(LOAD_FRAMES);
+   CHECK(core_is_up(), "the second contentless load did not go through");
+   CHECK(path_is_empty(RARCH_PATH_BASENAME),
+         "the contentless load kept the content's name \"%s\"",
+         path_get(RARCH_PATH_BASENAME));
+   CHECK(    !strstr(runloop_st->name.savestate, "names")
+         &&  strstr(runloop_st->name.savestate, "content_load_harness"),
+         "the contentless load saves states to \"%s\"",
+         runloop_st->name.savestate);
+
+   remove(game);
+   if (failures == had)
+      fprintf(stderr, "[pass] contentless-names lane\n");
+}
+#endif
+
 static void lane_one_at_a_time(void)
 {
    struct load_frame log[LOAD_FRAMES];
@@ -1951,6 +2002,10 @@ int main(int argc, char *argv[])
       fprintf(cfg, "threaded_data_runloop_enable = \"false\"\n");
       /* The records of the cores asked live next to the info cache */
       fprintf(cfg, "libretro_info_path = \"%s\"\n", dir);
+      /* Where a contentless core's states go, named after the core:
+       * the close-waits-for-save lane needs a save that can be
+       * written, on every load */
+      fprintf(cfg, "savestate_directory = \"%s\"\n", dir);
       fclose(cfg);
    }
 
@@ -1984,11 +2039,7 @@ int main(int argc, char *argv[])
    }
    rarch_argv[rarch_argc++] = (char*)"-L";
    rarch_argv[rarch_argc++] = core_path;
-   /* A state path of its own: a contentless core derives none, and
-    * the close-waits-for-save lane needs a save that can be written. */
    snprintf(state_path, sizeof(state_path), "%s/harness.state", dir);
-   rarch_argv[rarch_argc++] = (char*)"-S";
-   rarch_argv[rarch_argc++] = state_path;
    if (getenv("HARNESS_VERBOSE"))
       rarch_argv[rarch_argc++] = (char*)"-v";
 
@@ -2037,6 +2088,7 @@ int main(int argc, char *argv[])
    /* Last: a content load leaves its save state name behind for the
     * contentless loads after it */
    lane_prefetch_follows_new_core();
+   lane_contentless_names();
 #endif
 
    main_exit(NULL);
@@ -2050,6 +2102,19 @@ int main(int argc, char *argv[])
       snprintf(leftover, sizeof(leftover), "%s/core_info.cache", dir);
       remove(leftover);
       snprintf(leftover, sizeof(leftover), "%s.png", state_path);
+      remove(leftover);
+      /* the contentless core's states, flat or in its own folder */
+      snprintf(leftover, sizeof(leftover),
+            "%s/content_load_harness.state", dir);
+      remove(leftover);
+      snprintf(leftover, sizeof(leftover),
+            "%s/content_load_harness.state.png", dir);
+      remove(leftover);
+      snprintf(leftover, sizeof(leftover),
+            "%s/content_load_harness/content_load_harness.state", dir);
+      remove(leftover);
+      snprintf(leftover, sizeof(leftover),
+            "%s/content_load_harness/content_load_harness.state.png", dir);
       remove(leftover);
       /* the per-core save folder a content load makes */
       snprintf(leftover, sizeof(leftover), "%s/content_load_harness", dir);
