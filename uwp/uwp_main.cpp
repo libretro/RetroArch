@@ -877,6 +877,16 @@ extern "C" {
       return true;
    }
 
+   /* The UWP side of win32_window_client_dims(): the desktop one in
+    * win32_common.c is compiled out under __WINRT__. The swap chain
+    * is made on the CoreWindow, and TryResizeView() settles the view
+    * later, reporting it with the resize event SetWindowResized()
+    * sends; the size asked for stands until then, as before. */
+   unsigned win32_window_client_dims(unsigned dims)
+   {
+      return dims;
+   }
+
    /* The UWP side of win32_check_window(): the desktop one in
     * win32_common.c is compiled out under __WINRT__. Its size goes
     * back as one word in VIDEO_SCALE_PACK's layout, the same as the
