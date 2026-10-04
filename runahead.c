@@ -812,11 +812,57 @@ static enum runahead_copy_status runahead_copy_poll(
 }
 /* ===== END runahead core-copy fragment ===== */
 
+/* What run-ahead's second instance may not register.  The frontend
+ * holds one of each, keeps a pointer into the instance that declared
+ * it - a callback, a table or string in its image, its RAM - and the
+ * second instance is a copy of the running core, which has declared
+ * all of them already: taking the copy's would hand the running core's
+ * callbacks and memory to the copy, and leave them dangling once the
+ * copy is closed.
+ *
+ * Returns 1 to answer the declaration as accepted without storing it,
+ * 0 to refuse it (a hardware context is the running core's alone, so
+ * a hardware core has no second instance), -1 to pass it on. */
+#define RUNAHEAD_ENV_BASE(cmd) ((cmd) & ~RETRO_ENVIRONMENT_EXPERIMENTAL)
+static int runahead_secondary_env_filter(unsigned cmd)
+{
+   switch (RUNAHEAD_ENV_BASE(cmd))
+   {
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_HW_RENDER):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT):
+         return 0;
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_MEMORY_MAPS):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE):
+         return 1;
+      default:
+         break;
+   }
+   return -1;
+}
+#undef RUNAHEAD_ENV_BASE
+
 static bool runloop_environment_secondary_core_hook(
       unsigned cmd, void *data)
 {
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
-   bool result                    = runloop_environment_cb(cmd, data);
+   int filtered                   = runahead_secondary_env_filter(cmd);
+   bool result;
+
+   if (filtered >= 0)
+      return filtered != 0;
+
+   result                         = runloop_environment_cb(cmd, data);
 
    if (runloop_st->flags & RUNLOOP_FLAG_HAS_VARIABLE_UPDATE)
    {

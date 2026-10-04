@@ -29,6 +29,20 @@ RETRO_API unsigned harness_core_hw_destroys(void) { return hw_destroys; }
 static void hw_context_reset(void)   { hw_resets++; }
 static void hw_context_destroy(void) { hw_destroys++; }
 
+/* Declared to the frontend, which keeps pointers to these rather than
+ * copies: the harness checks whose it ends up holding. */
+static const struct retro_controller_description port_types[] = {
+   { "Harness pad", RETRO_DEVICE_JOYPAD }
+};
+static const struct retro_controller_info ports[] = {
+   { port_types, 1 },
+   { NULL, 0 }
+};
+RETRO_API retro_hw_context_reset_t harness_core_hw_destroy_fn(void)
+{ return hw_context_destroy; }
+RETRO_API const struct retro_controller_description *harness_core_port_types(void)
+{ return port_types; }
+
 void retro_set_environment(retro_environment_t cb)
 {
    bool no_content = true;
@@ -37,6 +51,7 @@ void retro_set_environment(retro_environment_t cb)
    environ_cb = cb;
    cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt);
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
+   cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
 }
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
 void retro_set_audio_sample(retro_audio_sample_t cb) { (void)cb; }

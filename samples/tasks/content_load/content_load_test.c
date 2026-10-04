@@ -1477,8 +1477,7 @@ static void probe_main_handler(retro_task_t *task)
  * the core and opens the copy on the worker, and the main thread
  * takes the open handle.  The instance is the copy's own - its
  * statics are not the running core's - and comes up once.  A software
- * core: a second instance's hardware-render request replaces the
- * running core's callbacks, which is a matter of its own. */
+ * core, so the second instance is a whole one. */
 static void lane_secondary_threaded(void)
 {
    settings_t *settings        = config_get_ptr();
@@ -1529,6 +1528,72 @@ static void lane_secondary_threaded(void)
 
    if (failures == had)
       fprintf(stderr, "[pass] secondary-threaded lane (%u polls)\n", n);
+}
+#endif
+
+#if defined(HAVE_RUNAHEAD) && defined(HAVE_DYNAMIC) && defined(HAVE_THREADS)
+/* A second instance of a hardware core: what the frontend holds a
+ * pointer to - the hardware context's callbacks, the controller
+ * description - stays the running core's, and closing the second
+ * instance leaves nothing the next close of the running core would
+ * call into. */
+static void lane_secondary_keeps_callbacks(void)
+{
+   typedef retro_hw_context_reset_t (*hw_fn_t)(void);
+   typedef const struct retro_controller_description *(*types_fn_t)(void);
+   settings_t *settings          = config_get_ptr();
+   runloop_state_t *runloop_st   = runloop_state_get_ptr();
+   enum runahead_copy_status st  = RUNAHEAD_COPY_PENDING;
+   struct retro_hw_render_callback *hwr;
+   hw_fn_t    primary_hw    = NULL;
+   types_fn_t primary_types = NULL;
+   unsigned had = failures, n;
+
+   configuration_set_bool(settings, settings->bools.threaded_data_runloop_enable, true);
+   task_queue_set_threaded();
+   open_menu();
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the load was not started");
+   pump(LOAD_FRAMES);
+   CHECK(core_is_up(), "the core did not come up");
+   if (runloop_st->lib_handle)
+   {
+      primary_hw    = (hw_fn_t)dylib_proc(runloop_st->lib_handle,
+            "harness_core_hw_destroy_fn");
+      primary_types = (types_fn_t)dylib_proc(runloop_st->lib_handle,
+            "harness_core_port_types");
+   }
+   CHECK(primary_hw && primary_types, "the harness core exports are missing");
+
+   for (n = 0; n < LOAD_FRAMES * 4 && st == RUNAHEAD_COPY_PENDING; n++)
+   {
+      st = secondary_core_ensure_exists(runloop_st, settings);
+      task_queue_check();
+      retro_sleep(1);
+   }
+   CHECK(st == RUNAHEAD_COPY_READY, "the second instance was not created (%d)",
+         (int)st);
+
+   hwr = video_driver_get_hw_context();
+   CHECK(primary_hw && hwr && hwr->context_destroy == primary_hw(),
+         "the hardware context's callbacks are the second instance's");
+   CHECK(primary_types
+         && runloop_st->system.ports.size > 0
+         && runloop_st->system.ports.data[0].types == primary_types(),
+         "the controller description is the second instance's");
+
+   runahead_secondary_core_destroy(runloop_st);
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the reload after the second instance was not started");
+   pump(LOAD_FRAMES);
+   CHECK(core_is_up(), "the reload after the second instance did not go through");
+
+   configuration_set_bool(settings, settings->bools.threaded_data_runloop_enable, false);
+   task_queue_unset_threaded();
+   pump(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] secondary-keeps-callbacks lane\n");
 }
 #endif
 
@@ -1824,6 +1889,7 @@ int main(int argc, char *argv[])
    lane_fallback_threaded();
 #if defined(HAVE_RUNAHEAD) && defined(HAVE_DYNAMIC) && defined(HAVE_THREADS)
    lane_secondary_threaded();
+   lane_secondary_keeps_callbacks();
 #endif
    lane_not_a_core();
    lane_hw_request();
