@@ -155,6 +155,10 @@ struct input_remote
 #else
    int net_fd[MAX_USERS];
 #endif
+   /* "First Sender Only": the address each user listens to, once a
+    * first message has come */
+   uint32_t sender[MAX_USERS];
+   bool     sender_known[MAX_USERS];
 #endif
    bool state[RARCH_BIND_LIST_END];
 };
@@ -2502,6 +2506,7 @@ static void input_remote_poll(input_driver_state_t *input_st,
       settings_t *settings, unsigned max_users)
 {
    unsigned user, n;
+   bool first_sender = settings->bools.network_remote_first_sender;
 
    for (user = 0; user < max_users; user++)
    {
@@ -2520,13 +2525,35 @@ static void input_remote_poll(input_driver_state_t *input_st,
       for (n = 0; n < INPUT_REMOTE_DRAIN_MAX; n++)
       {
          struct remote_message msg;
-         bool err    = false;
-         ssize_t ret = socket_receive_all_nonblocking(fd, &err,
-               &msg, sizeof(msg));
+         struct sockaddr_in from;
+         socklen_t from_len = sizeof(from);
+         ssize_t ret        = recvfrom(fd, (char*)&msg, sizeof(msg), 0,
+               (struct sockaddr*)&from, &from_len);
 
          if (ret == (ssize_t)sizeof(msg))
+         {
+            if (first_sender)
+            {
+               input_remote_t *remote = input_st->remote;
+               uint32_t addr          = from.sin_addr.s_addr;
+               if (!remote->sender_known[user])
+               {
+                  uint32_t a                 = ntohl(addr);
+                  remote->sender[user]       = addr;
+                  remote->sender_known[user] = true;
+                  RARCH_LOG("[Network] User %u's Network RetroPad listens"
+                        " to %u.%u.%u.%u only.\n", user + 1,
+                        (unsigned)(a >> 24), (unsigned)((a >> 16) & 0xff),
+                        (unsigned)((a >> 8) & 0xff), (unsigned)(a & 0xff));
+               }
+               else if (remote->sender[user] != addr)
+                  continue;
+            }
             input_remote_parse_packet(&input_st->remote_st_ptr, &msg, user);
-         else if (err)
+         }
+         else if (ret < 0 && isagain((int)ret))
+            break; /* nothing more queued */
+         else if (ret < 0)
          {
             /* the socket failed: nothing stays held */
             input_remote_state_t *st = &input_st->remote_st_ptr;
@@ -2537,8 +2564,6 @@ static void input_remote_poll(input_driver_state_t *input_st,
             st->analog[3][user]      = 0;
             break;
          }
-         else if (ret == 0)
-            break; /* nothing more queued */
          /* a message of any other size is not one of ours */
       }
    }

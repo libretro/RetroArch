@@ -1075,6 +1075,7 @@ typedef struct settings
       bool keymapper_enable;
       bool network_remote_enable;
       bool network_remote_enable_user[MAX_USERS];
+      bool network_remote_first_sender;
       bool load_dummy_on_core_shutdown;
       bool core_option_category_enable;
       bool core_info_cache_enable;

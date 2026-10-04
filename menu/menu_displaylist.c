@@ -11119,6 +11119,12 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_NETWORK_REMOTE_PORT,
                      PARSE_ONLY_UINT, false) == 0)
                   count++;
+#ifdef HAVE_NETWORKGAMEPAD
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_NETWORK_REMOTE_FIRST_SENDER,
+                     PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+#endif
 
                for (user = 0; user < settings->uints.input_max_users; user++)
                {

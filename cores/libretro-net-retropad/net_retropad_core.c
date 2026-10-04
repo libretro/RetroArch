@@ -82,7 +82,16 @@ struct descriptor
    int id_min;
    int id_max;
    uint16_t *value;
+   /* frames since each value last changed, up to REPEAT_SETTLED */
+   uint8_t  *age;
 };
+
+/* A change is sent by UDP, which may lose it, and nothing else would
+ * correct the receiver until the control changes again. So it is sent
+ * again this many frames after the change, three times. */
+#define REPEAT_1       5
+#define REPEAT_2       15
+#define REPEAT_SETTLED 30
 
 struct remote_joypad_message
 {
@@ -613,6 +622,9 @@ void NETRETROPAD_CORE_PREFIX(retro_init)(void)
       struct descriptor *desc = descriptors[i];
       int                size = DESC_NUM_PORTS(desc) * DESC_NUM_INDICES(desc) * DESC_NUM_IDS(desc);
       descriptors[i]->value   = (uint16_t*)calloc(size, sizeof(uint16_t));
+      descriptors[i]->age     = (uint8_t*)malloc(size);
+      if (descriptors[i]->age)
+         memset(descriptors[i]->age, REPEAT_SETTLED, size);
    }
 
    NETRETROPAD_CORE_PREFIX(log_cb)(RETRO_LOG_INFO, "Initialising sockets...\n");
@@ -636,6 +648,8 @@ void NETRETROPAD_CORE_PREFIX(retro_deinit)(void)
    {
       free(descriptors[i]->value);
       descriptors[i]->value = NULL;
+      free(descriptors[i]->age);
+      descriptors[i]->age   = NULL;
    }
 
    sensors_disable();
@@ -781,12 +795,25 @@ static void retropad_update_input(void)
                      index,
                      id);
 
-               /* Continue if state is unchanged */
                if (state == old)
-                  continue;
-
-               /* Update state */
-               desc->value[offset] = state;
+               {
+                  /* unchanged: nothing to do, unless a change is due
+                   * to be sent again (only what is sent at all) */
+                  uint8_t *age = desc->age ? &desc->age[offset] : NULL;
+                  if (i > 1 || !age || *age >= REPEAT_SETTLED)
+                     continue;
+                  (*age)++;
+                  if (     *age != REPEAT_1 && *age != REPEAT_2
+                        && *age != REPEAT_SETTLED)
+                     continue;
+               }
+               else
+               {
+                  /* Update state */
+                  desc->value[offset] = state;
+                  if (desc->age)
+                     desc->age[offset] = 0;
+               }
 
                if (i > 2)
                {

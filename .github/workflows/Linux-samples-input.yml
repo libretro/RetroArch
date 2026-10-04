@@ -667,6 +667,26 @@ jobs:
           make clean
           echo "[pass] winraw_joypad_motion_test (wine)"
 
+      - name: Build and run net_retropad_repeat_test (Linux and Windows)
+        shell: bash
+        working-directory: samples/input/net_retropad_repeat
+        run: |
+          set -eu
+          # The Remote RetroPad core sends a control's state when it
+          # changes, by UDP. The real core is driven by a frontend of
+          # a few callbacks and its messages read back over loopback:
+          # a change is sent again 5, 15 and 30 frames on, and then no
+          # more; nothing is sent while nothing changes.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 120 ./net_retropad_repeat_test
+          make clean
+          make CC=x86_64-w64-mingw32-gcc
+          WINE=$(command -v wine64 || command -v wine || echo /usr/lib/wine/wine64)
+          WINEDEBUG=-all timeout 180 "$WINE" ./net_retropad_repeat_test.exe
+          make clean
+          echo "[pass] net_retropad_repeat_test (ASan, and mingw-w64 under Wine)"
+
       - name: Build and run udev_devices_test (ASan + UBSan)
         shell: bash
         working-directory: samples/input/udev_devices

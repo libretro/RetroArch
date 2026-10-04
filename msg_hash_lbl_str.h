@@ -1412,6 +1412,7 @@
 #define MENU_ENUM_LABEL_NETWORK_CMD_ENABLE_STR "network_cmd_enable"
 #define MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS_STR "network_on_demand_thumbnails"
 #define MENU_ENUM_LABEL_NETWORK_REMOTE_ENABLE_STR "network_remote_enable"
+#define MENU_ENUM_LABEL_NETWORK_REMOTE_FIRST_SENDER_STR "network_remote_first_sender"
 #define MENU_ENUM_LABEL_NETWORK_SETTINGS_STR "network_settings"
 #define MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS_STR "nfs_client_settings"
 #define MENU_ENUM_LABEL_NOTIFICATION_SHOW_AUTOCONFIG_STR "notification_show_autoconfig"

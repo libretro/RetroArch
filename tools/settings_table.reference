@@ -231,6 +231,7 @@ bool	video_window_custom_size_enable	1	0
 bool	input_overlay_auto_scale	1	1
 bool	video_font_enable	1	1
 bool	smb_client_enable	1	0
+bool	network_remote_first_sender	1	0
 bool	audio_headphone_virtual_surround	1	0
 bool	network_cmd_enable	1	0
 bool	menu_use_preferred_system_color_theme	1	0
@@ -909,6 +910,7 @@ bool	video_window_custom_size_enable	1	0
 bool	input_overlay_auto_scale	1	0
 bool	video_font_enable	1	1
 bool	smb_client_enable	1	0
+bool	network_remote_first_sender	1	0
 bool	audio_headphone_virtual_surround	1	0
 bool	network_cmd_enable	1	0
 bool	menu_use_preferred_system_color_theme	1	0
@@ -1588,6 +1590,7 @@ bool	video_window_custom_size_enable	1	0
 bool	input_overlay_auto_scale	1	0
 bool	video_font_enable	1	1
 bool	smb_client_enable	1	0
+bool	network_remote_first_sender	1	0
 bool	audio_headphone_virtual_surround	1	0
 bool	network_cmd_enable	1	0
 bool	menu_use_preferred_system_color_theme	1	0

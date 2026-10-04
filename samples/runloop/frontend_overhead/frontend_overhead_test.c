@@ -2090,6 +2090,46 @@ static void lane_network_retropad(void)
    CHECK(!(seen & (A | B)) && !axes[0],
          "network pad: after a burst the state is not what was sent last");
 
+   /* "First Sender Only": a second device, at another address */
+   {
+      struct sockaddr_in src2;
+      int fd2 = socket(AF_INET, SOCK_DGRAM, 0);
+      memset(&src2, 0, sizeof(src2));
+      src2.sin_family      = AF_INET;
+      src2.sin_addr.s_addr = htonl(0x7f000002);
+      if (fd2 >= 0 && !bind(fd2, (const struct sockaddr*)&src2, sizeof(src2)))
+      {
+         /* off: whoever sends is taken */
+         np_send(fd2, &to, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B, 1);
+         run_loop_frames(2);
+         trace_last(&seen, axes);
+         CHECK(seen & B, "network pad: a second device is not taken with First Sender Only off");
+         np_send(fd2, &to, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B, 0);
+         run_loop_frames(2);
+
+         /* on, and nobody known yet: the first to send is the one */
+         settings->bools.network_remote_first_sender = true;
+         input_remote_free(input_st->remote, max_users);
+         input_st->remote = input_driver_init_remote(settings, max_users);
+         np_send(fd, &to, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A, 1);
+         run_loop_frames(2);
+         np_send(fd2, &to, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B, 1);
+         run_loop_frames(2);
+         trace_last(&seen, axes);
+         CHECK((seen & (A | B)) == A,
+               "network pad: First Sender Only took a second device's message, or lost the first's");
+         np_send(fd, &to, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A, 0);
+         run_loop_frames(2);
+         trace_last(&seen, axes);
+         CHECK(!(seen & (A | B)), "network pad: the first sender is no longer heard");
+         settings->bools.network_remote_first_sender = false;
+      }
+      else
+         printf("[skip] network pad: no second loopback address for First Sender Only\n");
+      if (fd2 >= 0)
+         close(fd2);
+   }
+
    /* with ports assigned on first press, a button of the network pad
     * is a press of its user's */
    settings->bools.input_assign_ports_on_button_press = true;
@@ -2123,8 +2163,8 @@ done:
    if (failures == had)
       printf("[pass] network pad: messages sent together arrive together;"
             " what is held stays held; a stray message changes nothing;"
-            " a burst ends where it ended; a button of it counts as a first"
-            " press\n");
+            " a burst ends where it ended; First Sender Only keeps to the"
+            " first device; a button of it counts as a first press\n");
 #else
    printf("[skip] network pad: needs the test drivers and the network gamepad\n");
 #endif
