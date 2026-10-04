@@ -257,6 +257,17 @@ threads-samples:
 	$(MAKE) -C samples/rthreads/tpool_wait_test SANITIZER=$(CONCURRENCY_SAN)
 	cd samples/rthreads/tpool_wait_test && ./tpool_wait_test
 	$(MAKE) -C samples/rthreads/tpool_wait_test clean
+	# again as the pool that backends without lock-free atomics get,
+	# which nothing else here builds. Not under TSan, which rightly
+	# objects to a volatile int standing in for an atomic.
+	@if [ "$(CONCURRENCY_SAN)" != "thread" ]; then \
+	   CFLAGS="-DRETRO_ATOMIC_FORCE_VOLATILE -DRETRO_ATOMIC_SUPPRESS_WARNING" \
+	      $(MAKE) -C samples/rthreads/tpool_wait_test SANITIZER=$(CONCURRENCY_SAN) || exit 1; \
+	   (cd samples/rthreads/tpool_wait_test && ./tpool_wait_test) || exit 1; \
+	   $(MAKE) -C samples/rthreads/tpool_wait_test clean; \
+	else \
+	   echo "skipping the fallback pool under TSan"; \
+	fi
 	# runs its own second pass against the condition-variable backend,
 	# which is what macOS, the BSDs and the console ports get
 	$(MAKE) -C samples/rthreads/retro_eventcount_test clean
