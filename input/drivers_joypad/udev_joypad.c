@@ -94,6 +94,7 @@ struct udev_joypad
    bool neg_trigger[NUM_AXES];
 
    struct input_absinfo absinfo[NUM_AXES]; /* TODO/FIXME - unsure of alignment */
+   bool axis_reported[NUM_AXES];
    dev_t device;  /* TODO/FIXME - unsure of alignment */
 
    char *path;
@@ -802,8 +803,9 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
                The actual work is done in udev_joypad_axis.
                All bets are off if you're sitting on it. Reinitialise it by unpluging
                and plugging back in. */
-            if (udev_compute_axis(abs, abs->value) < -1300)
-              pad->neg_trigger[i] = true;
+            if (     (i == ABS_Z || i == ABS_RZ)
+                  && udev_compute_axis(abs, abs->value) < -1300)
+              pad->neg_trigger[axes] = true;
             pad->axes_bind[i] = axes++;
          }
       }
@@ -1161,6 +1163,14 @@ static void udev_joypad_poll(void)
                            unsigned axis   = pad->axes_bind[code];
                            pad->axes[axis] = udev_compute_axis(
                                  &pad->absinfo[axis], value);
+                           /* A pad opened before its first report reads
+                            * every axis at minimum; a centred first
+                            * report means a stick, not a trigger. */
+                           if (     pad->neg_trigger[axis]
+                                 && !pad->axis_reported[axis]
+                                 && abs(pad->axes[axis]) < 0x2000)
+                              pad->neg_trigger[axis] = false;
+                           pad->axis_reported[axis] = true;
                            break;
                         }
                   }
@@ -1355,10 +1365,7 @@ static int16_t udev_joypad_axis_state(
    {
       int16_t val = pad->axes[AXIS_NEG_GET(joyaxis)];
       /* Deal with analog triggers that report -32767 to 32767 */
-      if ((
-               (AXIS_NEG_GET(joyaxis) == ABS_Z) ||
-               (AXIS_NEG_GET(joyaxis) == ABS_RZ))
-            && (pad->neg_trigger[AXIS_NEG_GET(joyaxis)]))
+      if (pad->neg_trigger[AXIS_NEG_GET(joyaxis)])
          val = (val + 0x7fff) / 2;
       if (val < 0)
          return val;
@@ -1367,10 +1374,7 @@ static int16_t udev_joypad_axis_state(
    {
       int16_t val = pad->axes[AXIS_POS_GET(joyaxis)];
       /* Deal with analog triggers that report -32767 to 32767 */
-      if ((
-               (AXIS_POS_GET(joyaxis) == ABS_Z) ||
-               (AXIS_POS_GET(joyaxis) == ABS_RZ))
-            && (pad->neg_trigger[AXIS_POS_GET(joyaxis)]))
+      if (pad->neg_trigger[AXIS_POS_GET(joyaxis)])
          val = (val + 0x7fff) / 2;
       if (val > 0)
          return val;
