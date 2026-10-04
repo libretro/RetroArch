@@ -1,11 +1,16 @@
 /* The C library's system interface: heap, locks, threads, time.
  *
- * newlib's locks are the kernel's mutexes outright: _LOCK_T is one
- * zero-initialised word and _LOCK_RECURSIVE_T a word and a depth,
- * exactly gk_mutex_t and gk_rmutex_t. */
+ * devkitPPC's newlib has had three sets of system hooks, all served
+ * here.  From r49 (sys/lock.h defines __COND_INITIALIZER) the locks are
+ * the kernel's mutexes outright: _LOCK_T is one zero-initialised word
+ * and _LOCK_RECURSIVE_T a word and a depth, exactly gk_mutex_t and
+ * gk_rmutex_t, and conditions and threads are hooks too.  From newlib
+ * 4.3 there are separate hooks for plain and recursive locks, both one
+ * int; before it one set of hooks takes the kind at init. */
 
 #include <errno.h>
 #include <malloc.h>
+#include <newlib.h>
 #include <reent.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,14 +23,19 @@
 
 #include "kernel.h"
 
-/* newlib's lock, condition and thread hooks came with devkitPPC r49. */
-#ifndef __COND_INITIALIZER
-#error "os/gekko needs devkitPPC r49 or later"
+#if defined(__COND_INITIALIZER)
+#define GK_NEWLIB_HOOKS 3
+#elif __NEWLIB__ > 4 || (__NEWLIB__ == 4 && __NEWLIB_MINOR__ >= 3)
+#define GK_NEWLIB_HOOKS 2
+#else
+#define GK_NEWLIB_HOOKS 1
 #endif
 
 typedef char assert_lock_size[sizeof(_LOCK_T) == sizeof(gk_mutex_t) ? 1 : -1];
+#if GK_NEWLIB_HOOKS >= 3
 typedef char assert_rlock_size[
    sizeof(_LOCK_RECURSIVE_T) == sizeof(gk_rmutex_t) ? 1 : -1];
+#endif
 typedef char assert_ctx_size[sizeof(struct gk_ctx) == CTX_SIZE ? 1 : -1];
 typedef char assert_fp_off[
    offsetof(struct gk_thread, fp) == THR_FP ? 1 : -1];
@@ -87,7 +97,7 @@ int posix_memalign(void **out, size_t align, size_t size)
 
 /* ---- per-thread C library state ---- */
 
-struct _reent *__syscall_getreent(void)
+static struct _reent *cur_reent(void)
 {
    struct gk_thread *t = gk_cur;
    if (!t || t == gk_sched_main())
@@ -95,8 +105,15 @@ struct _reent *__syscall_getreent(void)
    return &t->reent;
 }
 
+#if GK_NEWLIB_HOOKS >= 2
+struct _reent *__syscall_getreent(void) { return cur_reent(); }
+#else
+struct _reent *__getreent(void)         { return cur_reent(); }
+#endif
+
 /* ---- locks ---- */
 
+#if GK_NEWLIB_HOOKS >= 3
 void __syscall_lock_init(_LOCK_T *lock)            { *lock = 0; }
 void __syscall_lock_acquire(_LOCK_T *lock)
 {
@@ -132,6 +149,133 @@ void __syscall_lock_close_recursive(_LOCK_RECURSIVE_T *lock)
 {
    (void)lock;
 }
+#else
+/* A plain int lock is a gk_mutex_t word.  A recursive one holds 1 + its
+ * slot in rlocks, which no thread pointer is small enough to equal.
+ * newlib initialises a lock it finds zero just before taking it, so init
+ * never clears a word another thread may have taken in between. */
+#define GK_RLOCKS 128
+
+static gk_rmutex_t rlocks[GK_RLOCKS];
+static int        *rlock_owner[GK_RLOCKS];
+
+static gk_rmutex_t *rlock_get(int *lock)
+{
+   uint32_t i = (uint32_t)*lock - 1u;
+   return (i < GK_RLOCKS && rlock_owner[i] == lock) ? &rlocks[i] : NULL;
+}
+
+static gk_rmutex_t *rlock_init(int *lock)
+{
+   gk_rmutex_t *m;
+   uint32_t     i;
+   uint32_t level = gk_irq_disable();
+   if (!(m = rlock_get(lock)))
+   {
+      for (i = 0; i < GK_RLOCKS && rlock_owner[i]; i++);
+      if (i == GK_RLOCKS)
+         gk_panic("out of C library locks");
+      rlock_owner[i]  = lock;
+      rlocks[i].m.word = 0;
+      rlocks[i].depth  = 0;
+      *lock           = (int)(i + 1u);
+      m               = &rlocks[i];
+   }
+   gk_irq_restore(level);
+   return m;
+}
+
+static void rlock_close(int *lock)
+{
+   uint32_t level = gk_irq_disable();
+   gk_rmutex_t *m = rlock_get(lock);
+   if (m)
+   {
+      rlock_owner[m - rlocks] = NULL;
+      *lock                   = 0;
+   }
+   gk_irq_restore(level);
+}
+
+static void rlock_release(int *lock)
+{
+   gk_rmutex_t *m = rlock_get(lock);
+   if (m)
+      gk_rmutex_unlock(m);
+}
+
+#if GK_NEWLIB_HOOKS == 2
+void __syscall_lock_init(_LOCK_T *lock)            { (void)lock; }
+void __syscall_lock_acquire(_LOCK_T *lock)
+{
+   gk_mutex_lock((gk_mutex_t*)lock);
+}
+int __syscall_lock_try_acquire(_LOCK_T *lock)
+{
+   return gk_mutex_trylock((gk_mutex_t*)lock);
+}
+void __syscall_lock_release(_LOCK_T *lock)
+{
+   gk_mutex_unlock((gk_mutex_t*)lock);
+}
+void __syscall_lock_close(_LOCK_T *lock)           { (void)lock; }
+
+void __syscall_lock_init_recursive(_LOCK_RECURSIVE_T *lock)
+{
+   rlock_init(lock);
+}
+void __syscall_lock_acquire_recursive(_LOCK_RECURSIVE_T *lock)
+{
+   gk_rmutex_lock(rlock_init(lock));
+}
+int __syscall_lock_try_acquire_recursive(_LOCK_RECURSIVE_T *lock)
+{
+   return gk_rmutex_trylock(rlock_init(lock));
+}
+void __syscall_lock_release_recursive(_LOCK_RECURSIVE_T *lock)
+{
+   rlock_release(lock);
+}
+void __syscall_lock_close_recursive(_LOCK_RECURSIVE_T *lock)
+{
+   rlock_close(lock);
+}
+#else
+static int rlock_is_handle(const int *lock)
+{
+   return (uint32_t)*lock - 1u < GK_RLOCKS;
+}
+
+int __syscall_lock_init(int *lock, int recursive)
+{
+   if (recursive)
+      rlock_init(lock);
+   return 0;
+}
+int __syscall_lock_acquire(int *lock)
+{
+   if (rlock_is_handle(lock))
+      gk_rmutex_lock(rlock_init(lock));
+   else
+      gk_mutex_lock((gk_mutex_t*)lock);
+   return 0;
+}
+int __syscall_lock_release(int *lock)
+{
+   if (rlock_is_handle(lock))
+      rlock_release(lock);
+   else
+      gk_mutex_unlock((gk_mutex_t*)lock);
+   return 0;
+}
+int __syscall_lock_close(int *lock)
+{
+   if (rlock_is_handle(lock))
+      rlock_close(lock);
+   return 0;
+}
+#endif
+#endif
 
 static uint64_t ns_to_ticks(uint64_t ns)
 {
@@ -140,6 +284,7 @@ static uint64_t ns_to_ticks(uint64_t ns)
    return ns / 1000u * gk_tb_hz / 1000000u;
 }
 
+#if GK_NEWLIB_HOOKS >= 3
 int __syscall_cond_signal(_COND_T *cond)
 {
    gk_cond_signal((gk_cond_t*)cond);
@@ -221,6 +366,7 @@ int __syscall_tls_delete(uint32_t key)
    gk_tls_delete(key);
    return 0;
 }
+#endif
 
 /* ---- thread-local slots ---- */
 
@@ -375,6 +521,7 @@ void __syscall_exit(int rc)
    gk_exit_to_loader();
 }
 
+#if GK_NEWLIB_HOOKS >= 2
 void __syscall_abort(void)
 {
    gk_panic("abort()");
@@ -386,6 +533,7 @@ void __syscall_assert_func(const char *file, int line, const char *func,
    gk_panic("assertion \"%s\" failed: %s:%d (%s)", expr, file, line,
          func ? func : "");
 }
+#endif
 
 /* ---- stdout and stderr: lines to the debug channel ---- */
 

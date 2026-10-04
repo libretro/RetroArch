@@ -63,6 +63,113 @@
 #include <ogc/mutex.h>
 #include <ogc/cond.h>
 #define STACKSIZE (8 * 1024)
+#elif defined(GEKKO_NATIVE)
+/* os/gekko's own threads under the pthread names used below, so this
+ * builds on every devkitPPC: newlib's pthreads only came with r49. */
+#define USE_GEKKO_THREADS
+#include <errno.h>
+#include <gekko/gekko.h>
+#include <gekko/thread.h>
+#include <retro_inline.h>
+
+typedef gk_thread_t *rthreads_gk_thread_t;
+typedef struct
+{
+   size_t stack_size;
+} rthreads_gk_attr_t;
+
+static INLINE int rthreads_gk_attr_init(rthreads_gk_attr_t *attr)
+{
+   attr->stack_size = 0;
+   return 0;
+}
+
+static INLINE int rthreads_gk_attr_setstacksize(rthreads_gk_attr_t *attr,
+      size_t stack_size)
+{
+   attr->stack_size = stack_size;
+   return 0;
+}
+
+static INLINE int rthreads_gk_create(gk_thread_t **t,
+      const rthreads_gk_attr_t *attr, void *(*fn)(void*), void *arg)
+{
+   *t = gk_thread_create(fn, arg, NULL,
+         (attr && attr->stack_size) ? attr->stack_size : 64 * 1024,
+         GK_PRIO_DEFAULT);
+   return *t ? 0 : EAGAIN;
+}
+
+static INLINE int rthreads_gk_join(gk_thread_t *t)
+{
+   gk_thread_join(t);
+   return 0;
+}
+
+static INLINE int rthreads_gk_detach(gk_thread_t *t)
+{
+   gk_thread_detach(t);
+   return 0;
+}
+
+static INLINE int rthreads_gk_mutex_init(gk_mutex_t *m)
+{
+   m->word = 0;
+   return 0;
+}
+
+static INLINE int rthreads_gk_mutex_lock(gk_mutex_t *m)
+{
+   gk_mutex_lock(m);
+   return 0;
+}
+
+static INLINE int rthreads_gk_mutex_unlock(gk_mutex_t *m)
+{
+   gk_mutex_unlock(m);
+   return 0;
+}
+
+static INLINE int rthreads_gk_cond_init(gk_cond_t *c)
+{
+   c->seq = 0;
+   return 0;
+}
+
+static INLINE int rthreads_gk_cond_signal(gk_cond_t *c)
+{
+   gk_cond_signal(c);
+   return 0;
+}
+
+static INLINE int rthreads_gk_cond_broadcast(gk_cond_t *c)
+{
+   gk_cond_broadcast(c);
+   return 0;
+}
+
+#define pthread_t                       rthreads_gk_thread_t
+#define pthread_attr_t                  rthreads_gk_attr_t
+#define pthread_mutex_t                 gk_mutex_t
+#define pthread_cond_t                  gk_cond_t
+#define pthread_attr_init(a)            rthreads_gk_attr_init(a)
+#define pthread_attr_destroy(a)         ((void)(a))
+#define pthread_attr_setstacksize(a, n) rthreads_gk_attr_setstacksize(a, n)
+#define pthread_create(t, a, fn, arg)   rthreads_gk_create(t, a, fn, arg)
+#define pthread_join(t, r)              rthreads_gk_join(t)
+#define pthread_detach(t)               rthreads_gk_detach(t)
+#define pthread_self()                  gk_thread_self()
+#define pthread_equal(a, b)             ((a) == (b))
+#define pthread_mutex_init(m, a)        rthreads_gk_mutex_init(m)
+#define pthread_mutex_destroy(m)        ((void)(m))
+#define pthread_mutex_lock(m)           rthreads_gk_mutex_lock(m)
+#define pthread_mutex_trylock(m)        gk_mutex_trylock(m)
+#define pthread_mutex_unlock(m)         rthreads_gk_mutex_unlock(m)
+#define pthread_cond_init(c, a)         rthreads_gk_cond_init(c)
+#define pthread_cond_destroy(c)         ((void)(c))
+#define pthread_cond_wait(c, m)         gk_cond_wait(c, m, GK_WAIT_FOREVER)
+#define pthread_cond_signal(c)          rthreads_gk_cond_signal(c)
+#define pthread_cond_broadcast(c)       rthreads_gk_cond_broadcast(c)
 #elif defined(_3DS)
 #define USE_CTR_THREADS
 #include <3ds/thread.h>
@@ -1293,7 +1400,7 @@ static sthread_t *sthread_create_ex(void (*thread_func)(void*),
 #ifdef HAVE_THREAD_ATTR
    pthread_attr_init(&thread_attr);
 
-   /* devkitPPC's pthreads have no scheduling policy to set. */
+   /* os/gekko's threads take no scheduling policy. */
 #ifndef GEKKO_NATIVE
    if ((thread_priority >= 1) && (thread_priority <= 100))
    {
@@ -2190,6 +2297,8 @@ void sthread_yield(void)
    RotateThreadReadyQueue(0);
 #elif defined(USE_PS3_THREADS)
    rthreads_ps3_thread_yield();
+#elif defined(USE_GEKKO_THREADS)
+   gk_thread_yield();
 #else
    sched_yield();
 #endif
@@ -3572,6 +3681,11 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    }
    slock_lock(lock);
    return woken;
+#elif defined(USE_GEKKO_THREADS)
+   if (timeout_us <= 0)
+      return false;
+   return gk_cond_wait(&cond->cond, &lock->lock,
+         GK_US_TO_TICKS(timeout_us)) != GK_ETIMEDOUT;
 #elif defined(RTHREADS_FUTEX_SCOND)
    /* FUTEX_WAIT_BITSET takes an absolute CLOCK_MONOTONIC deadline, so
     * a spurious wake never shortens or stretches the wait. */
@@ -3751,7 +3865,8 @@ bool sthread_is_main_thread(void)
       && !defined(USE_CTR_THREADS) && !defined(USE_PSP_THREADS) \
       && !defined(USE_VITA_THREADS) && !defined(USE_WIIU_THREADS) \
       && !defined(USE_SWITCH_THREADS) && !defined(USE_PS2_THREADS) \
-      && !defined(USE_PS3_THREADS) && !defined(__ANDROID__)
+      && !defined(USE_PS3_THREADS) && !defined(USE_GEKKO_THREADS) \
+      && !defined(__ANDROID__)
 #define RTHREADS_HAVE_CANCEL 1
 #endif
 
