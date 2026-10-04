@@ -836,6 +836,9 @@ typedef struct
    retro_atomic_int_t sensor_snap_seq;
    retro_atomic_int_t sensor_snap_bits[9];
    bool frontend_sensors_enabled;
+   /* The snapshot shaders read holds noughts and no shader reads
+    * sensors: the poll has nothing to publish. The poll's own. */
+   bool sensor_snap_quiet;
    unsigned core_accel_rate; /* >0 means core wants accel at this rate */
    unsigned core_gyro_rate;  /* >0 means core wants gyro at this rate */
    /* First-press port assignment, see input_first_press_apply():

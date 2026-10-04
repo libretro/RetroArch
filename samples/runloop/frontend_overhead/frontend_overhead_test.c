@@ -2517,6 +2517,48 @@ static void lane_aim_stick(void)
 #endif
 }
 
+/* The sensor snapshot is made for a shader that reads sensors, and
+ * for nobody else: with no such shader the poll publishes nothing. */
+static void lane_sensor_snapshot_idle(void)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   unsigned had                   = failures;
+   float gyro[3], accel[3], rest[3];
+   int seq0, seq1, seq2, seq3, seq4;
+
+   input_driver_set_shader_uses_sensors(false);
+   run_loop_frames(3);
+   seq0 = retro_atomic_load_acquire_int(&input_st->sensor_snap_seq);
+   run_loop_frames(20);
+   seq1 = retro_atomic_load_acquire_int(&input_st->sensor_snap_seq);
+   CHECK(seq1 == seq0,
+         "sensor snapshot: with no shader reading sensors the poll still publishes one");
+
+   input_driver_set_shader_uses_sensors(true);
+   run_loop_frames(10);
+   seq2 = retro_atomic_load_acquire_int(&input_st->sensor_snap_seq);
+   CHECK(seq2 >= seq1 + 2 * 10,
+         "sensor snapshot: with a shader reading sensors it is not published every poll");
+
+   input_driver_set_shader_uses_sensors(false);
+   run_loop_frames(3);
+   seq3 = retro_atomic_load_acquire_int(&input_st->sensor_snap_seq);
+   run_loop_frames(20);
+   seq4 = retro_atomic_load_acquire_int(&input_st->sensor_snap_seq);
+   CHECK(seq3 == seq2 + 2 && seq4 == seq3,
+         "sensor snapshot: after the shader went, noughts were not published once and then nothing");
+   gyro[0] = accel[0] = 1.0f;
+   input_driver_read_sensor_snapshot(gyro, accel, rest);
+   CHECK(   gyro[0]  == 0.0f && gyro[1]  == 0.0f && gyro[2]  == 0.0f
+         && accel[0] == 0.0f && accel[1] == 0.0f && accel[2] == 0.0f,
+         "sensor snapshot: what is left published is not noughts");
+
+   if (failures == had)
+      printf("[pass] sensor snapshot: published every poll while a shader"
+            " reads sensors, once with noughts when it stops, and not at"
+            " all otherwise\n");
+}
+
 /* A driver restart under a core that renders with the GPU (the report
  * was a core option that changes the internal resolution). The core's
  * request is put back after the drivers are torn down, and the
@@ -3603,6 +3645,7 @@ int main(int argc, char *argv[])
       lane_joypad_reinit();
    }
 
+   lane_sensor_snapshot_idle();
    lane_hw_context_restart();
 
    /* last: it closes the content the other lanes run on */

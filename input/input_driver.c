@@ -9592,93 +9592,101 @@ void input_driver_poll(void)
    /* Invalidate joypad state bitmask cache for the new frame */
    memset(&input_st->frame_valid, 0, sizeof(input_st->frame_valid));
 
-   /* Enable/disable sensors at the driver level based on demand
-    * from shaders and/or core. Setting gates everything. */
-   if (settings->bools.input_sensors_enable)
-   {
-      bool want = retro_atomic_load_acquire_int(
-               &input_st->shader_uses_sensors)
-         || input_st->core_accel_rate
-         || input_st->core_gyro_rate;
-
-      if (want && !input_st->frontend_sensors_enabled)
-      {
-         input_set_sensor_state(0, RETRO_SENSOR_ACCELEROMETER_ENABLE,
-               input_st->core_accel_rate ? input_st->core_accel_rate : 60);
-         input_set_sensor_state(0, RETRO_SENSOR_GYROSCOPE_ENABLE,
-               input_st->core_gyro_rate ? input_st->core_gyro_rate : 60);
-         input_st->frontend_sensors_enabled = true;
-         input_sensor_start_rest_capture();
-      }
-      else if (!want && input_st->frontend_sensors_enabled)
-      {
-         input_set_sensor_state(0, RETRO_SENSOR_ACCELEROMETER_DISABLE, 0);
-         input_set_sensor_state(0, RETRO_SENSOR_GYROSCOPE_DISABLE, 0);
-         input_st->frontend_sensors_enabled = false;
-      }
-   }
-   else if (input_st->frontend_sensors_enabled)
-   {
-      input_set_sensor_state(0, RETRO_SENSOR_ACCELEROMETER_DISABLE, 0);
-      input_set_sensor_state(0, RETRO_SENSOR_GYROSCOPE_DISABLE, 0);
-      input_st->frontend_sensors_enabled = false;
-   }
-
-   /* Update accelerometer rest position capture (runs for ~30 frames
-    * after focus gain, then stops) */
-   input_sensor_update_rest_capture(settings);
-
-   /* Cache sensor values so shader backends on the video thread
-    * read a consistent per-frame snapshot instead of calling into
-    * the input subsystem directly.
-    * Uses the internal variant to avoid 6 redundant config_get_ptr() calls.
+   /* Sensors. Three things can need doing here, and on most polls none
+    * does: nothing has asked for sensors, and the poll then pays for
+    * one setting, one flag and two rates.
     *
-    * When the master input_sensors_enable toggle is off (the common
-    * default), input_get_sensor_state_internal would return 0.0 for
-    * every call after two settings reads and a couple of branches per
-    * call. Short-circuit that to a single memset since the result is
-    * the same. */
-   if (!settings->bools.input_sensors_enable)
+    * - Sensors are turned on or off at the driver when what is wanted
+    *   of them changes: a shader that reads them, or a core that asked
+    *   for them. The setting gates both.
+    * - The accelerometer's rest position is averaged over the frames
+    *   after they come on.
+    * - A shader that reads sensors is handed a snapshot each poll. It
+    *   is the only reader of one, so with no such shader there is none
+    *   to make: the six reads and the publish used to run every poll
+    *   with the setting on, which is its default. When the shader goes,
+    *   noughts are published once and that is the end of it. */
    {
-      memset(input_st->sensor_gyroscope_cache,     0,
-            sizeof(input_st->sensor_gyroscope_cache));
-      memset(input_st->sensor_accelerometer_cache, 0,
-            sizeof(input_st->sensor_accelerometer_cache));
-   }
-   else
-   {
-      input_st->sensor_gyroscope_cache[0]     = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_GYROSCOPE_X);
-      input_st->sensor_gyroscope_cache[1]     = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_GYROSCOPE_Y);
-      input_st->sensor_gyroscope_cache[2]     = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_GYROSCOPE_Z);
-      input_st->sensor_accelerometer_cache[0] = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_ACCELEROMETER_X);
-      input_st->sensor_accelerometer_cache[1] = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_ACCELEROMETER_Y);
-      input_st->sensor_accelerometer_cache[2] = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_ACCELEROMETER_Z);
-   }
+      bool sensors_on  = settings->bools.input_sensors_enable;
+      bool shader_uses = sensors_on && retro_atomic_load_acquire_int(
+               &input_st->shader_uses_sensors);
+      bool want        = shader_uses
+         || (sensors_on && (   input_st->core_accel_rate
+                            || input_st->core_gyro_rate));
 
-   /* Publish the three vec3s as one coherent snapshot: the shader
-    * backends read them from the video thread per frame, and plain
-    * float stores could hand them a vector mixing two polls (and
-    * carried no happens-before at all). Same seq discipline as the
-    * video viewport snapshots. */
-   {
-      int seq = retro_atomic_load_relaxed_int(&input_st->sensor_snap_seq);
-      float *src[3];
-      int i, j;
-      src[0] = input_st->sensor_gyroscope_cache;
-      src[1] = input_st->sensor_accelerometer_cache;
-      src[2] = input_st->sensor_accelerometer_rest;
-      retro_atomic_store_relaxed_int(&input_st->sensor_snap_seq, seq + 1);
-      retro_atomic_thread_fence_release();
-      for (i = 0; i < 3; i++)
-         for (j = 0; j < 3; j++)
+      if (want != input_st->frontend_sensors_enabled)
+      {
+         if (want)
          {
-            int b;
-            memcpy(&b, &src[i][j], sizeof(b));
-            retro_atomic_store_relaxed_int(
-                  &input_st->sensor_snap_bits[i * 3 + j], b);
+            input_set_sensor_state(0, RETRO_SENSOR_ACCELEROMETER_ENABLE,
+                  input_st->core_accel_rate ? input_st->core_accel_rate : 60);
+            input_set_sensor_state(0, RETRO_SENSOR_GYROSCOPE_ENABLE,
+                  input_st->core_gyro_rate ? input_st->core_gyro_rate : 60);
+            input_st->frontend_sensors_enabled = true;
+            input_sensor_start_rest_capture();
          }
-      retro_atomic_thread_fence_release();
-      retro_atomic_store_release_int(&input_st->sensor_snap_seq, seq + 2);
+         else
+         {
+            input_set_sensor_state(0, RETRO_SENSOR_ACCELEROMETER_DISABLE, 0);
+            input_set_sensor_state(0, RETRO_SENSOR_GYROSCOPE_DISABLE, 0);
+            input_st->frontend_sensors_enabled = false;
+         }
+      }
+
+      /* Update accelerometer rest position capture (runs for ~30 frames
+       * after the sensors come on, then stops) */
+      if (input_st->rest_capturing)
+         input_sensor_update_rest_capture(settings);
+
+      if (shader_uses || !input_st->sensor_snap_quiet)
+      {
+         if (shader_uses)
+         {
+            /* Cache sensor values so shader backends on the video thread
+             * read a consistent per-frame snapshot instead of calling
+             * into the input subsystem directly. */
+            input_st->sensor_gyroscope_cache[0]     = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_GYROSCOPE_X);
+            input_st->sensor_gyroscope_cache[1]     = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_GYROSCOPE_Y);
+            input_st->sensor_gyroscope_cache[2]     = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_GYROSCOPE_Z);
+            input_st->sensor_accelerometer_cache[0] = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_ACCELEROMETER_X);
+            input_st->sensor_accelerometer_cache[1] = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_ACCELEROMETER_Y);
+            input_st->sensor_accelerometer_cache[2] = input_get_sensor_state_internal(settings, 0, RETRO_SENSOR_ACCELEROMETER_Z);
+         }
+         else
+         {
+            memset(input_st->sensor_gyroscope_cache,     0,
+                  sizeof(input_st->sensor_gyroscope_cache));
+            memset(input_st->sensor_accelerometer_cache, 0,
+                  sizeof(input_st->sensor_accelerometer_cache));
+         }
+         input_st->sensor_snap_quiet = !shader_uses;
+
+         /* Publish the three vec3s as one coherent snapshot: the shader
+          * backends read them from the video thread per frame, and plain
+          * float stores could hand them a vector mixing two polls (and
+          * carried no happens-before at all). Same seq discipline as the
+          * video viewport snapshots. */
+         {
+            int seq = retro_atomic_load_relaxed_int(&input_st->sensor_snap_seq);
+            float *src[3];
+            int i, j;
+            src[0] = input_st->sensor_gyroscope_cache;
+            src[1] = input_st->sensor_accelerometer_cache;
+            src[2] = input_st->sensor_accelerometer_rest;
+            retro_atomic_store_relaxed_int(&input_st->sensor_snap_seq, seq + 1);
+            retro_atomic_thread_fence_release();
+            for (i = 0; i < 3; i++)
+               for (j = 0; j < 3; j++)
+               {
+                  int b;
+                  memcpy(&b, &src[i][j], sizeof(b));
+                  retro_atomic_store_relaxed_int(
+                        &input_st->sensor_snap_bits[i * 3 + j], b);
+               }
+            retro_atomic_thread_fence_release();
+            retro_atomic_store_release_int(&input_st->sensor_snap_seq, seq + 2);
+         }
+      }
    }
 
 #ifdef HAVE_OVERLAY
