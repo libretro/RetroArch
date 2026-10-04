@@ -687,6 +687,25 @@ jobs:
           make clean
           echo "[pass] net_retropad_repeat_test (ASan, and mingw-w64 under Wine)"
 
+      - name: Build and run udev_rumble_test (ASan + UBSan, then TSan)
+        shell: bash
+        working-directory: samples/input/udev_rumble
+        run: |
+          set -eu
+          # The udev joypad driver writes rumble from a thread of its
+          # own. The real driver is given a pad whose descriptor is a
+          # pipe and an upload that takes 60 ms: the call returns at
+          # once, the latest strength is the one written, a pad that
+          # goes is let go of, and stopping the driver ends the
+          # writer. Built with threads and without.
+          make clean all SANITIZER=address,undefined
+          timeout 120 ./udev_rumble_test
+          timeout 120 ./udev_rumble_test_nothreads
+          make clean all SANITIZER=thread
+          timeout 120 ./udev_rumble_test
+          make clean
+          echo "[pass] udev_rumble_test"
+
       - name: Build and run udev_devices_test (ASan + UBSan)
         shell: bash
         working-directory: samples/input/udev_devices
