@@ -613,9 +613,12 @@ jobs:
           # controllers: the two Sony pads are opened and another
           # make is not; set_rumble() writes nothing itself and the
           # thread writes the pad's own report, at the length Windows
-          # wants; a run of changes ends with the last written;
-          # unplugging a rumbling pad, or stopping the driver, stills
-          # it first.
+          # wants; a run of changes ends with the last written; an
+          # unplugged pad is stilled and closed by the thread without
+          # the driver waiting, fifty quick plug-ins leave no device
+          # open, and stopping the driver stills the rest. Nothing is
+          # under a lock: strengths and devices pass through
+          # retro_atomic.
           trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
           make clean all
           WINEDEBUG=-all timeout 300 make check

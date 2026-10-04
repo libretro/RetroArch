@@ -43,6 +43,7 @@
 #include <boolean.h>
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
+#include <retro_atomic.h>
 #include <compat/strl.h>
 
 #ifdef HAVE_CONFIG_H
@@ -312,76 +313,108 @@ static int16_t winraw_joypad_scale_axis(LONG value, LONG logical_min,
  * Not from the frontend's thread: a write to a controller is a
  * transfer on its link, which takes about a millisecond over USB and
  * can take many over Bluetooth, and the frame is not to wait for it.
- * set_rumble() notes the strength wanted and wakes a thread of the
- * driver's own, which writes what is wanted now - not everything
- * that was wanted on the way to it. The thread is started when the
- * first such pad arrives and stopped with the driver, which stills
- * the motors before it closes the devices.
+ * The writes are made by a thread of the driver's own, started when
+ * the first such pad arrives and stopped with the driver.
+ *
+ * Nothing is shared between the two under a lock; what passes
+ * between them passes through retro_atomic:
+ *
+ * - the strength wanted, one word a pad (.want). set_rumble() stores
+ *   it and wakes the thread, which writes what is wanted now - not
+ *   every step on the way to it;
+ *
+ * - the device itself. An open device belongs to one side at a time.
+ *   The driver opens it and hands it over through the pad's inbox
+ *   (.inbox, a pointer swapped in); from then on it is the thread's,
+ *   which writes to it and is the one to close it. A pad that goes
+ *   is told the same way: "close" is swapped into the inbox, and the
+ *   thread stills the motors and closes the device when it gets to
+ *   it. So unplugging a pad never waits on a write, and no handle is
+ *   closed under a write in progress. A device that was handed over
+ *   and never taken - the pad went again first - comes back out of
+ *   the swap and is closed by the driver.
+ *
+ * Stopping the driver stops the thread, which stills and closes what
+ * it holds before it ends.
  *
  * Other controllers have no rumble here still. */
+
+/* a device open for writing, and what its reports are to look like */
 typedef struct
 {
-   HANDLE   handle;     /* the device, open for writing; NULL: none   */
+   HANDLE   handle;
    uint8_t  model;      /* enum sony_pad_model                        */
    bool     bluetooth;
    bool     v2;         /* DualSense: the newer way of the motors     */
    USHORT   report_len; /* the length Windows wants of a write        */
+} winraw_joypad_out_dev_t;
+
+/* "close what you hold", in a pad's inbox */
+#define WINRAW_JOYPAD_OUT_CLOSE ((void*)(uintptr_t)1)
+
+typedef struct
+{
+   /* from the driver to the thread: a device to take over
+    * (winraw_joypad_out_dev_t*), WINRAW_JOYPAD_OUT_CLOSE, or NULL */
+   retro_atomic_ptr_t inbox;
    /* wanted: the strong motor in the low sixteen bits, the weak in
-    * the high. Written by set_rumble(), read by the thread. */
-   volatile LONG want;
-   LONG     sent;       /* the thread's: what it last wrote           */
-   bool     failed;     /* a write failed, and it has been said       */
+    * the high. Stored by set_rumble(), loaded by the thread. */
+   retro_atomic_int_t want;
+   /* the driver's own: a device was handed over for this pad */
+   bool present;
+   /* the thread's own */
+   winraw_joypad_out_dev_t *dev;
+   int  sent;           /* what it last wrote                         */
+   bool failed;         /* a write failed, and it has been said       */
 } winraw_joypad_out_t;
 
 static winraw_joypad_out_t winraw_joypad_out[MAX_USERS];
-/* guards .handle against the thread: taken to open and to close */
-static CRITICAL_SECTION    winraw_joypad_out_lock;
-static bool                winraw_joypad_out_lock_made;
 static HANDLE              winraw_joypad_out_thread;
 static HANDLE              winraw_joypad_out_wake;
-static volatile LONG       winraw_joypad_out_quit;
-/* counted for the log */
+static retro_atomic_int_t  winraw_joypad_out_quit;
+/* counted for the log; the thread's while it runs */
 static unsigned long       winraw_joypad_out_writes;
 
 /* how long a write may take before it is given up */
 #define WINRAW_JOYPAD_OUT_TIMEOUT_MS 250
 
-static bool winraw_joypad_out_write(winraw_joypad_out_t *out, LONG want)
+static bool winraw_joypad_out_write(const winraw_joypad_out_dev_t *dev,
+      int want)
 {
    uint8_t buf[1024];
    OVERLAPPED ov;
    DWORD written = 0;
    bool ok       = false;
    size_t report = sony_pad_rumble_report(buf, sizeof(buf),
-         (enum sony_pad_model)out->model, out->bluetooth, out->v2,
-         (uint8_t)((want & 0xFFFF) >> 8),
-         (uint8_t)(((want >> 16) & 0xFFFF) >> 8));
+         (enum sony_pad_model)dev->model, dev->bluetooth, dev->v2,
+         (uint8_t)(((unsigned)want & 0xFFFF) >> 8),
+         (uint8_t)((((unsigned)want >> 16) & 0xFFFF) >> 8));
    size_t len    = report;
 
    if (!report)
       return false;
    /* Windows takes a write of the length the device's descriptor
     * gives its longest output report, no shorter; the rest is zeros */
-   if (out->report_len > len && out->report_len <= sizeof(buf))
-      len = out->report_len;
+   if (dev->report_len > len && dev->report_len <= sizeof(buf))
+      len = dev->report_len;
 
    /* The device is opened for overlapped writes so that one to a pad
     * that has gone quiet - out of range, its battery flat - is given
     * up after a while and not waited on for as long as Windows
-    * would: this is done with the lock held that unplugging the pad
-    * needs. */
+    * would: the other pads' writes, and the driver stopping, wait
+    * behind it. */
    memset(&ov, 0, sizeof(ov));
    ov.hEvent = CreateEventA(NULL, TRUE, FALSE, NULL);
    if (ov.hEvent)
    {
-      if (WriteFile(out->handle, buf, (DWORD)len, &written, &ov))
+      if (WriteFile(dev->handle, buf, (DWORD)len, &written, &ov))
          ok = true;
       else if (GetLastError() == ERROR_IO_PENDING)
       {
          if (WaitForSingleObject(ov.hEvent, WINRAW_JOYPAD_OUT_TIMEOUT_MS)
                != WAIT_OBJECT_0)
-            CancelIo(out->handle);
-         ok = GetOverlappedResult(out->handle, &ov, &written, TRUE) != 0;
+            CancelIo(dev->handle);
+         ok = GetOverlappedResult(dev->handle, &ov, &written, TRUE) != 0;
       }
       CloseHandle(ov.hEvent);
    }
@@ -389,7 +422,32 @@ static bool winraw_joypad_out_write(winraw_joypad_out_t *out, LONG want)
       return true;
    /* some links take an output report only as a control request, and
     * that one at the report's own length */
-   return HidD_SetOutputReport(out->handle, buf, (ULONG)report) != 0;
+   return HidD_SetOutputReport(dev->handle, buf, (ULONG)report) != 0;
+}
+
+/* A device that is no longer to be written to is closed, by whichever
+ * side holds it. */
+static void winraw_joypad_out_dev_free(winraw_joypad_out_dev_t *dev)
+{
+   if (!dev)
+      return;
+   CloseHandle(dev->handle);
+   free(dev);
+}
+
+/* The thread's: the device it holds for a pad is stilled, if it was
+ * running, and closed. */
+static void winraw_joypad_out_drop(winraw_joypad_out_t *out)
+{
+   if (out->dev)
+   {
+      if (out->sent)
+         winraw_joypad_out_write(out->dev, 0);
+      winraw_joypad_out_dev_free(out->dev);
+   }
+   out->dev    = NULL;
+   out->sent   = 0;
+   out->failed = false;
 }
 
 static DWORD WINAPI winraw_joypad_out_run(LPVOID unused)
@@ -398,82 +456,120 @@ static DWORD WINAPI winraw_joypad_out_run(LPVOID unused)
    for (;;)
    {
       unsigned i;
+      bool quit;
+
       WaitForSingleObject(winraw_joypad_out_wake, INFINITE);
-      if (InterlockedCompareExchange(&winraw_joypad_out_quit, 0, 0))
-         break;
+      quit = retro_atomic_load_acquire_int(&winraw_joypad_out_quit) != 0;
+
       for (i = 0; i < MAX_USERS; i++)
       {
          winraw_joypad_out_t *out = &winraw_joypad_out[i];
-         LONG want = InterlockedCompareExchange(&out->want, 0, 0);
-         if (want == out->sent)
-            continue;
-         EnterCriticalSection(&winraw_joypad_out_lock);
-         if (out->handle)
+         void *msg = retro_atomic_exchange_ptr(&out->inbox, NULL);
+
+         /* a device to take over, or word that the pad has gone:
+          * either way the one held is done with */
+         if (msg)
          {
-            if (winraw_joypad_out_write(out, want))
-               winraw_joypad_out_writes++;
-            else if (!out->failed)
+            winraw_joypad_out_drop(out);
+            if (msg != WINRAW_JOYPAD_OUT_CLOSE)
+               out->dev = (winraw_joypad_out_dev_t*)msg;
+         }
+
+         if (out->dev && !quit)
+         {
+            int want = retro_atomic_load_acquire_int(&out->want);
+            if (want != out->sent)
             {
-               out->failed = true;
-               RARCH_WARN("[RawInput Joypad] Rumble: the write to the"
-                     " controller in slot %u failed (error %lu).\n",
-                     i, (unsigned long)GetLastError());
+               if (winraw_joypad_out_write(out->dev, want))
+                  winraw_joypad_out_writes++;
+               else if (!out->failed)
+               {
+                  out->failed = true;
+                  RARCH_WARN("[RawInput Joypad] Rumble: the write to the"
+                        " controller in slot %u failed (error %lu).\n",
+                        i, (unsigned long)GetLastError());
+               }
+               out->sent = want;
             }
          }
-         out->sent = want;
-         LeaveCriticalSection(&winraw_joypad_out_lock);
+         if (quit)
+            winraw_joypad_out_drop(out);
       }
+      if (quit)
+         break;
    }
    return 0;
 }
 
+/* A pad has gone, or its slot is to hold another: the thread is told
+ * to close what it holds for it. Nothing is waited for. */
+static void winraw_joypad_out_close(unsigned slot)
+{
+   void *old;
+   winraw_joypad_out_t *out = &winraw_joypad_out[slot];
+
+   if (!out->present)
+      return;
+   out->present = false;
+   old = retro_atomic_exchange_ptr(&out->inbox, WINRAW_JOYPAD_OUT_CLOSE);
+   /* a device handed over and never taken is still the driver's */
+   if (old && old != WINRAW_JOYPAD_OUT_CLOSE)
+      winraw_joypad_out_dev_free((winraw_joypad_out_dev_t*)old);
+   retro_atomic_store_release_int(&out->want, 0);
+   if (winraw_joypad_out_wake)
+      SetEvent(winraw_joypad_out_wake);
+}
+
 /* A pad has arrived: if it is one there is a rumble report for, its
- * device is opened for writing. */
+ * device is opened for writing and handed to the thread. */
 static void winraw_joypad_out_open(unsigned slot,
       uint16_t vid, uint16_t pid, const char *path, USHORT report_len)
 {
-   HANDLE handle;
+   void *old;
+   winraw_joypad_out_dev_t *dev;
    winraw_joypad_out_t *out  = &winraw_joypad_out[slot];
    enum sony_pad_model model = sony_pad_model(vid, pid);
-   bool v2                   = false;
 
    if (model == SONY_PAD_NONE || !path || !*path)
       return;
+   if (!(dev = (winraw_joypad_out_dev_t*)calloc(1, sizeof(*dev))))
+      return;
 
-   handle = CreateFileA(path, GENERIC_READ | GENERIC_WRITE,
+   dev->handle = CreateFileA(path, GENERIC_READ | GENERIC_WRITE,
          FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
          FILE_FLAG_OVERLAPPED, NULL);
-   if (handle == INVALID_HANDLE_VALUE || !handle)
+   if (dev->handle == INVALID_HANDLE_VALUE || !dev->handle)
    {
       RARCH_LOG("[RawInput Joypad] Rumble: the controller in slot %u could"
             " not be opened for writing (error %lu); it will not rumble.\n",
             slot, (unsigned long)GetLastError());
+      free(dev);
       return;
    }
+   dev->model      = (uint8_t)model;
+   dev->report_len = report_len;
+   dev->bluetooth  =
+         strstr(path, "00001124-0000-1000-8000-00805f9b34fb") != NULL
+      || strstr(path, "00001124-0000-1000-8000-00805F9B34FB") != NULL;
 
    if (model == SONY_PAD_DUALSENSE)
    {
       /* the newer way of the motors: the Edge has it; a DualSense
        * from firmware 2.21, which its feature report 0x20 tells */
-      v2 = sony_pad_dualsense_is_edge(pid);
-      if (!v2)
+      dev->v2 = sony_pad_dualsense_is_edge(pid);
+      if (!dev->v2)
       {
          uint8_t feature[128];
          memset(feature, 0, sizeof(feature));
          feature[0] = 0x20;
-         if (HidD_GetFeature(handle, feature, 64))
-            v2 = (unsigned)(feature[44] | (feature[45] << 8)) > 0x0215;
+         if (HidD_GetFeature(dev->handle, feature, 64))
+            dev->v2 = (unsigned)(feature[44] | (feature[45] << 8)) > 0x0215;
       }
    }
 
-   if (!winraw_joypad_out_lock_made)
-   {
-      InitializeCriticalSection(&winraw_joypad_out_lock);
-      winraw_joypad_out_lock_made = true;
-   }
    if (!winraw_joypad_out_thread)
    {
-      InterlockedExchange(&winraw_joypad_out_quit, 0);
+      retro_atomic_store_release_int(&winraw_joypad_out_quit, 0);
       winraw_joypad_out_wake   = CreateEventA(NULL, FALSE, FALSE, NULL);
       winraw_joypad_out_thread = winraw_joypad_out_wake
          ? CreateThread(NULL, 0, winraw_joypad_out_run, NULL, 0, NULL)
@@ -483,57 +579,37 @@ static void winraw_joypad_out_open(unsigned slot,
          if (winraw_joypad_out_wake)
             CloseHandle(winraw_joypad_out_wake);
          winraw_joypad_out_wake = NULL;
-         CloseHandle(handle);
+         winraw_joypad_out_dev_free(dev);
          return;
       }
    }
 
-   EnterCriticalSection(&winraw_joypad_out_lock);
-   out->handle     = handle;
-   out->model      = (uint8_t)model;
-   out->bluetooth  = path
-      && strstr(path, "00001124-0000-1000-8000-00805f9b34fb") != NULL;
-   if (!out->bluetooth && path)
-      out->bluetooth = strstr(path, "00001124-0000-1000-8000-00805F9B34FB") != NULL;
-   out->v2         = v2;
-   out->report_len = report_len;
-   out->sent       = 0;
-   out->failed     = false;
-   InterlockedExchange(&out->want, 0);
-   LeaveCriticalSection(&winraw_joypad_out_lock);
-
    RARCH_LOG("[RawInput Joypad] Rumble: the controller in slot %u is a %s"
          " over %s; it is written to from the driver's own thread.\n", slot,
          model == SONY_PAD_DS4 ? "DualShock 4"
-         : (v2 ? "DualSense (newer motor control)" : "DualSense"),
-         out->bluetooth ? "Bluetooth" : "USB");
+         : (dev->v2 ? "DualSense (newer motor control)" : "DualSense"),
+         dev->bluetooth ? "Bluetooth" : "USB");
+
+   /* handed over: the thread closes whatever it held for this slot
+    * and takes this one. One handed over before and not yet taken is
+    * still the driver's to close. */
+   retro_atomic_store_release_int(&out->want, 0);
+   old = retro_atomic_exchange_ptr(&out->inbox, dev);
+   if (old && old != WINRAW_JOYPAD_OUT_CLOSE)
+      winraw_joypad_out_dev_free((winraw_joypad_out_dev_t*)old);
+   out->present = true;
+   SetEvent(winraw_joypad_out_wake);
 }
 
-/* A pad has gone, or the driver is going: the motors are stilled if
- * they were running and the device closed. */
-static void winraw_joypad_out_close(unsigned slot)
-{
-   winraw_joypad_out_t *out = &winraw_joypad_out[slot];
-
-   if (!winraw_joypad_out_lock_made || !out->handle)
-      return;
-   EnterCriticalSection(&winraw_joypad_out_lock);
-   if (out->sent || InterlockedCompareExchange(&out->want, 0, 0))
-      winraw_joypad_out_write(out, 0);
-   CloseHandle(out->handle);
-   memset(out, 0, sizeof(*out));
-   LeaveCriticalSection(&winraw_joypad_out_lock);
-}
-
-/* The driver is going: the thread is stopped, then every device
- * stilled and closed. */
+/* The driver is going: the thread is stopped, which stills and closes
+ * every device it holds; one it never took is closed here. */
 static void winraw_joypad_out_stop(void)
 {
    unsigned i;
 
    if (winraw_joypad_out_thread)
    {
-      InterlockedExchange(&winraw_joypad_out_quit, 1);
+      retro_atomic_store_release_int(&winraw_joypad_out_quit, 1);
       SetEvent(winraw_joypad_out_wake);
       WaitForSingleObject(winraw_joypad_out_thread, INFINITE);
       CloseHandle(winraw_joypad_out_thread);
@@ -542,7 +618,14 @@ static void winraw_joypad_out_stop(void)
       winraw_joypad_out_wake   = NULL;
    }
    for (i = 0; i < MAX_USERS; i++)
-      winraw_joypad_out_close(i);
+   {
+      winraw_joypad_out_t *out = &winraw_joypad_out[i];
+      void *old = retro_atomic_exchange_ptr(&out->inbox, NULL);
+      if (old && old != WINRAW_JOYPAD_OUT_CLOSE)
+         winraw_joypad_out_dev_free((winraw_joypad_out_dev_t*)old);
+      out->present = false;
+      retro_atomic_store_release_int(&out->want, 0);
+   }
    if (winraw_joypad_out_writes)
       RARCH_DBG("[RawInput Joypad] Rumble: %lu report(s) written.\n",
             winraw_joypad_out_writes);
@@ -552,22 +635,22 @@ static void winraw_joypad_out_stop(void)
 static bool winraw_joypad_joypad_set_rumble(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   LONG want;
+   int want;
    winraw_joypad_out_t *out;
 
    if (port >= MAX_USERS)
       return false;
    out = &winraw_joypad_out[port];
-   if (!out->handle || !winraw_joypad_out_wake)
+   if (!out->present || !winraw_joypad_out_wake)
       return false;
 
-   /* one writer - the frontend's thread - so read, change, write */
-   want = InterlockedCompareExchange(&out->want, 0, 0);
+   /* one writer - the frontend's thread - so load, change, store */
+   want = retro_atomic_load_relaxed_int(&out->want);
    if (effect == RETRO_RUMBLE_STRONG)
-      want = (want & (LONG)0xFFFF0000) | (LONG)strength;
+      want = (int)(((unsigned)want & 0xFFFF0000u) | (unsigned)strength);
    else
-      want = (want & 0xFFFF) | (LONG)((ULONG)strength << 16);
-   InterlockedExchange(&out->want, want);
+      want = (int)(((unsigned)want & 0xFFFFu) | ((unsigned)strength << 16));
+   retro_atomic_store_release_int(&out->want, want);
    SetEvent(winraw_joypad_out_wake);
    return true;
 }

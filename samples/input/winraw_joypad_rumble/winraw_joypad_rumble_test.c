@@ -6,7 +6,9 @@
  * controller's HID device for writing when the pad arrives, and
  * writes the report from a thread of its own when the strength
  * wanted changes: set_rumble() only notes the strength and wakes the
- * thread.
+ * thread. Nothing is under a lock: the strength, and the open device
+ * itself, pass from the driver to the thread through retro_atomic,
+ * and the thread alone writes to a device and closes it.
  *
  * The driver is included whole, with its raw input and HID calls
  * routed to fake controllers. A controller here is a file: the driver
@@ -25,8 +27,11 @@
  *   for, strong and weak each where it belongs, padded to the length
  *   Windows wants of a write;
  * - a run of changes ends with the last one written;
- * - unplugging a pad that is rumbling stills it first, and so does
- *   stopping the driver;
+ * - unplugging a pad that is rumbling does not wait: the thread
+ *   stills it and closes it, shortly after. Stopping the driver
+ *   stills the rest before it returns;
+ * - a pad that comes and goes before the thread has taken its device
+ *   leaves no device open;
  * - set_rumble() for a pad that is not there, or cannot rumble, says
  *   so. */
 #include <stdio.h>
@@ -222,12 +227,9 @@ int main(void)
    winraw_joypad_add_device(H(3));
    CHECK(winraw_joypad_pads[0].connected && winraw_joypad_pads[1].connected
          && winraw_joypad_pads[2].connected, "the three controllers did not connect");
-   CHECK(opened_for_writing == 2 && winraw_joypad_out[0].handle
-         && winraw_joypad_out[1].handle && !winraw_joypad_out[2].handle,
+   CHECK(opened_for_writing == 2 && winraw_joypad_out[0].present
+         && winraw_joypad_out[1].present && !winraw_joypad_out[2].present,
          "opened for writing: %u, want the two Sony pads and not the third", opened_for_writing);
-   CHECK(winraw_joypad_out[0].model == SONY_PAD_DUALSENSE && winraw_joypad_out[0].v2
-         && winraw_joypad_out[1].model == SONY_PAD_DS4,
-         "the pads were not taken for what they are");
    CHECK(written_to(edge, buf, sizeof(buf)) == 0, "something was written before any rumble was asked for");
    printf("   ok   a DualSense Edge and a DualShock 4 are opened for writing when they arrive; another make of pad is not\n");
 
@@ -270,20 +272,68 @@ int main(void)
 
    /* ---- unplugged while rumbling ---------------------------------- */
    winraw_joypad_remove_device(H(1));
-   len = written_to(edge, buf, sizeof(buf));
-   CHECK(len && buf[3] == 0 && buf[4] == 0 && buf[1] == 0x02,
-         "unplugged while rumbling: the motors were left at %u and %u", buf[3], buf[4]);
-   CHECK(!winraw_joypad_out[0].handle, "the unplugged pad's device was left open");
+   CHECK(!winraw_joypad_out[0].present, "the unplugged pad is still taken to be there");
    CHECK(!winraw_joypad_joypad_set_rumble(0, RETRO_RUMBLE_STRONG, 0xFFFF),
          "set_rumble() for the unplugged pad did not say it cannot");
+   /* the thread stills it and closes it, in its own time */
+   CHECK(wait_for(edge, 3, 0, 0), "unplugged while rumbling: the motors were not stilled within a second");
+   len = written_to(edge, buf, sizeof(buf));
+   CHECK(len && buf[1] == 0x02, "the report that stilled it is not a rumble report: flags %02x", buf[1]);
+   {
+      /* closed: the file can be opened with nothing shared */
+      unsigned tries;
+      HANDLE f = INVALID_HANDLE_VALUE;
+      for (tries = 0; tries < 200 && f == INVALID_HANDLE_VALUE; tries++)
+      {
+         f = CreateFileA(edge, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+         if (f == INVALID_HANDLE_VALUE)
+            Sleep(5);
+      }
+      CHECK(f != INVALID_HANDLE_VALUE, "the unplugged pad's device was left open");
+      if (f != INVALID_HANDLE_VALUE)
+         CloseHandle(f);
+   }
+
+   /* ---- a pad that comes and goes at once -------------------------- */
+   /* Plugged in and out again and again, faster than the thread takes
+    * each device over: every device opened is closed by one side or
+    * the other, and at the end none is left open. */
+   {
+      unsigned n, tries;
+      HANDLE f = INVALID_HANDLE_VALUE;
+      for (n = 0; n < 50; n++)
+      {
+         fake[0].alive = true;
+         winraw_joypad_add_device(H(1));
+         winraw_joypad_joypad_set_rumble(0, RETRO_RUMBLE_STRONG, 0xFFFF);
+         winraw_joypad_remove_device(H(1));
+      }
+      for (tries = 0; tries < 200 && f == INVALID_HANDLE_VALUE; tries++)
+      {
+         f = CreateFileA(edge, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+         if (f == INVALID_HANDLE_VALUE)
+            Sleep(5);
+      }
+      CHECK(f != INVALID_HANDLE_VALUE, "after fifty quick plug-ins a device is still open");
+      if (f != INVALID_HANDLE_VALUE)
+         CloseHandle(f);
+      CHECK(!winraw_joypad_out[0].present, "after fifty quick plug-ins the pad is taken to be there");
+   }
 
    /* ---- the driver stops ------------------------------------------ */
    winraw_joypad_joypad_destroy();
    len = written_to(ds4, buf, sizeof(buf));
    CHECK(len && buf[4] == 0 && buf[5] == 0, "the driver stopped with the DualShock 4 rumbling at %u and %u", buf[4], buf[5]);
-   CHECK(!winraw_joypad_out_thread && !winraw_joypad_out[1].handle,
+   CHECK(!winraw_joypad_out_thread && !winraw_joypad_out[1].present
+         && !winraw_joypad_out[1].dev,
          "the driver stopped and left its thread or a device behind");
-   printf("   ok   unplugging a rumbling pad stills it and closes it; stopping the driver stills the rest and ends the thread\n");
+   {
+      HANDLE f = CreateFileA(ds4, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+      CHECK(f != INVALID_HANDLE_VALUE, "the driver stopped and left the DualShock 4's device open");
+      if (f != INVALID_HANDLE_VALUE)
+         CloseHandle(f);
+   }
+   printf("   ok   an unplugged pad is stilled and closed by the thread, without the driver waiting; fifty quick plug-ins leave no device open; stopping the driver stills the rest and ends the thread\n");
 
    DeleteFileA(edge); DeleteFileA(ds4); DeleteFileA(other);
    if (failures)
