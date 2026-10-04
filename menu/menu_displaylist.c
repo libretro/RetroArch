@@ -9968,6 +9968,8 @@ unsigned menu_displaylist_build_list(
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
                {MENU_ENUM_LABEL_INPUT_NOWINKEY_ENABLE,                 PARSE_ONLY_BOOL,  true},
+#endif
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
                {MENU_ENUM_LABEL_INPUT_WINRAW_XINPUT_ENABLE,            PARSE_ONLY_BOOL,  true},
 #endif
 #ifdef ANDROID

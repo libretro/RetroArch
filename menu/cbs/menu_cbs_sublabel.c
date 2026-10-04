@@ -505,6 +505,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_cheat_file_save_as,            MENU_
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_nowinkey_enable,         MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE)
+#endif
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_winraw_xinput_enable,    MENU_ENUM_SUBLABEL_INPUT_WINRAW_XINPUT_ENABLE)
 #endif
 #ifdef ANDROID
@@ -3204,6 +3206,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_INPUT_NOWINKEY_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_nowinkey_enable);
             break;
+#endif
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
          case MENU_ENUM_LABEL_INPUT_WINRAW_XINPUT_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_winraw_xinput_enable);
             break;

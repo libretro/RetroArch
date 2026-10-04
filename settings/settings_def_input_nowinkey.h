@@ -10,6 +10,8 @@ S_BOOL(input_nowinkey_enable, INPUT_NOWINKEY_ENABLE,
       false, SD_FLAG_NONE, 0, 0,
       "Disable Windows Hotkeys (Restart required)",
       "Keep Win-key combinations inside the application.")
+#endif
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
 S_BOOL(input_winraw_xinput_enable, INPUT_WINRAW_XINPUT_ENABLE,
       "input_winraw_xinput_enable",
       false, SD_FLAG_NONE, 0, 0,
