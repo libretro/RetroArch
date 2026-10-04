@@ -10,6 +10,9 @@
 
 #include "bridge_view.h"
 
+/* No video thread here: the driver pumps the queue itself. */
+void sdl3_pump_input_events(void) { SDL_PumpEvents(); }
+
 static void randomise(sdl3_joypad_t *pad)
 {
    static const Uint8 hats[] = {
