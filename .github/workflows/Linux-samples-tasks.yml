@@ -175,6 +175,27 @@ jobs:
           timeout 60 ./cloudsync_path_safety_test
           echo "[pass] cloudsync_path_safety_test"
 
+      - name: Build and run cloudsync_manifest_adds_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/cloudsync
+        run: |
+          set -eu
+          # tasks/task_cloudsync.c's updated manifests, added to from
+          # four threads and the task's own at once with no lock: each
+          # entry is pushed on a list the task thread folds in. Every
+          # entry must be there once, with its own hash; TSan is what
+          # sees the threads share anything without ordering, ASan an
+          # entry freed twice or not at all.
+          make clean cloudsync_manifest_adds_test
+          timeout 60 ./cloudsync_manifest_adds_test
+          make clean cloudsync_manifest_adds_test SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            timeout 120 ./cloudsync_manifest_adds_test
+          make clean cloudsync_manifest_adds_test SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./cloudsync_manifest_adds_test
+          make clean >/dev/null
+          echo "[pass] cloudsync_manifest_adds_test"
+
       - name: Build and run natt_desc_parse_test
         shell: bash
         working-directory: samples/tasks/natt_desc

@@ -90,6 +90,11 @@ typedef struct
    file_list_t *updated_server_manifest;
    /* local manifest is sometimes different due to conflicts */
    file_list_t *updated_local_manifest;
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+   /* Entries on their way into the two lists above; see
+    * tcs_manifest_add_t. */
+   retro_atomic_ptr_t manifest_adds;
+#endif
    bool need_manifest_uploaded;
    bool failures;
    bool conflicts;
@@ -110,19 +115,28 @@ typedef struct
    struct string_list *dirlist;
 } task_cloud_sync_state_t;
 
-/* Serialises appends to updated_server_manifest /
- * updated_local_manifest: fetch/upload/delete completion callbacks
- * can append concurrently with each other and with the task thread's
- * dispatch-failure paths.  The lists are only *read* once `waiting`
- * has drained to zero, so the lock is not needed on the read side.
+/* An entry for updated_server_manifest or updated_local_manifest, on
+ * its way there.  Fetch/upload/delete completion callbacks can add
+ * entries concurrently with each other and with the task thread's
+ * dispatch-failure paths, so each pushes a record on a lock-free list
+ * and the two manifests stay the task thread's alone: it folds the
+ * records in once `waiting` has drained to zero, which is the first
+ * time the manifests are read.  A manifest is sorted before it is
+ * written, so the order the records arrive in does not matter.
  *
- * This lock used to guard `waiting` as well, but only on the
- * callback (decrement) side - every increment and dispatch-side
- * store ran unlocked, which was a data race whenever a driver
- * invoked its completion callback from another thread.  `waiting`
- * is now a retro_atomic counter instead; see below. */
+ * A backend with no pointer atomics appends under a lock instead. */
 #ifdef HAVE_THREADS
+#ifdef RETRO_ATOMIC_HAS_PTR
+typedef struct tcs_manifest_add
+{
+   struct tcs_manifest_add *next;
+   char *key;     /* a copy, until the manifest has its own */
+   char *hash;    /* as given: the manifest's from here on */
+   bool server;
+} tcs_manifest_add_t;
+#else
 static slock_t *tcs_manifest_lock = NULL;
+#endif
 #endif
 
 /* Ordering contract for `waiting`: a completion callback publishes
@@ -715,6 +729,60 @@ static void task_cloud_sync_update_progress(retro_task_t *task)
 	   task_set_progress(task, 100);
 }
 
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+static void task_cloud_sync_add_to_updated_manifest(task_cloud_sync_state_t *sync_state, const char *key, char *hash, bool server)
+{
+   void *head;
+   tcs_manifest_add_t *add = (tcs_manifest_add_t*)malloc(sizeof(*add));
+
+   if (add && !(add->key = key ? strdup(key) : NULL) && key)
+   {
+      free(add);
+      add = NULL;
+   }
+   if (!add)
+   {
+      /* The entry is lost: the manifests no longer say what was done */
+      sync_state->failures = true;
+      return;
+   }
+   add->hash   = hash;
+   add->server = server;
+   do
+   {
+      head      = retro_atomic_load_acquire_ptr(&sync_state->manifest_adds);
+      add->next = (tcs_manifest_add_t*)head;
+   } while (!retro_atomic_cas_ptr(&sync_state->manifest_adds, head, add));
+}
+
+/* Fold the entries added so far into the manifests.  The task thread,
+ * with `waiting` at zero, or the last holder of the state. */
+static void task_cloud_sync_fold_manifest_adds(task_cloud_sync_state_t *sync_state)
+{
+   tcs_manifest_add_t *add = (tcs_manifest_add_t*)
+      retro_atomic_exchange_ptr(&sync_state->manifest_adds, NULL);
+
+   while (add)
+   {
+      tcs_manifest_add_t *next = add->next;
+      file_list_t *list        = add->server
+         ? sync_state->updated_server_manifest
+         : sync_state->updated_local_manifest;
+
+      if (list && file_list_append(list, NULL, NULL, 0, 0, 0))
+      {
+         size_t idx = list->size - 1;
+         file_list_set_alt_at_offset(list, idx, add->key);
+         list->list[idx].userdata = add->hash;
+      }
+      else
+         sync_state->failures = true;
+      free(add->key);
+      free(add);
+      add = next;
+   }
+}
+#else
 static void task_cloud_sync_add_to_updated_manifest(task_cloud_sync_state_t *sync_state, const char *key, char *hash, bool server)
 {
    file_list_t *list;
@@ -731,6 +799,9 @@ static void task_cloud_sync_add_to_updated_manifest(task_cloud_sync_state_t *syn
    slock_unlock(tcs_manifest_lock);
 #endif
 }
+
+#define task_cloud_sync_fold_manifest_adds(sync_state) ((void)0)
+#endif
 
 static INLINE int task_cloud_sync_key_cmp(struct item_file *left, struct item_file *right)
 {
@@ -1680,6 +1751,10 @@ static void task_cloud_sync_update_manifests(task_cloud_sync_state_t *sync_state
    char   manifest_path[PATH_MAX_LENGTH];
    RFILE *file   = NULL;
 
+   /* The diff is over and nothing is in flight: the manifests are
+    * read from here on, so they take what was added to them. */
+   task_cloud_sync_fold_manifest_adds(sync_state);
+
    if (sync_state->need_manifest_uploaded)
    {
       RARCH_LOG(CSPFX "Uploading updated manifest to server...\n");
@@ -1844,6 +1919,10 @@ static void task_cloud_sync_cb(retro_task_t *task, void *task_data,
    if (!sync_state)
       return;
 
+   /* A sync that ended before its manifests were read: what was added
+    * goes into them all the same, to be freed with them. */
+   task_cloud_sync_fold_manifest_adds(sync_state);
+
    if (sync_state->server_manifest)
       file_list_free(sync_state->server_manifest);
    if (sync_state->local_manifest)
@@ -1882,7 +1961,7 @@ static void task_push_cloud_sync_with_mode(int conflict_resolution)
    if (!cloud_sync_enable)
       return;
 
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(RETRO_ATOMIC_HAS_PTR)
    if (!tcs_manifest_lock)
       tcs_manifest_lock = slock_new();
 #endif
