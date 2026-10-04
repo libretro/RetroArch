@@ -1989,6 +1989,173 @@ static void lane_triggers(void)
 #endif
 }
 
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+/* Remapped pressure lane: the scripted pad's @buttons held and axes 2
+ * and 3 at @a2 and @a3 for a frame; what the core saw of A and B as
+ * buttons, and A's and B's analog values. */
+static unsigned pressure_frame(uint32_t buttons, int a2, int a3,
+      void (*trace_last)(unsigned*, int*), int *a, int *b)
+{
+   unsigned seen;
+   int axes[4];
+   syn_buttons = buttons;
+   syn_axes[2] = (int16_t)a2;
+   syn_axes[3] = (int16_t)a3;
+   run_loop_frames(1);
+   trace_last(&seen, axes);
+   *a = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG,
+         RETRO_DEVICE_INDEX_ANALOG_BUTTON, RETRO_DEVICE_ID_JOYPAD_A);
+   *b = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG,
+         RETRO_DEVICE_INDEX_ANALOG_BUTTON, RETRO_DEVICE_ID_JOYPAD_B);
+   return seen & (  (1u << RETRO_DEVICE_ID_JOYPAD_A)
+                  | (1u << RETRO_DEVICE_ID_JOYPAD_B));
+}
+#endif
+
+/* A button remapped onto another carries its pressure with it. */
+static void lane_remap_pressure(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   const unsigned A = 1u << RETRO_DEVICE_ID_JOYPAD_A;
+   const unsigned B = 1u << RETRO_DEVICE_ID_JOYPAD_B;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   unsigned *remap                = settings->uints.input_remap_ids[0];
+   struct retro_keybind *a_bind   = &input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_A];
+   struct retro_keybind *b_bind   = &input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_B];
+   struct retro_keybind saved_a   = *a_bind;
+   struct retro_keybind saved_b   = *b_bind;
+   bool analog_requested          = input_st->analog_requested[0];
+   const input_device_driver_t *joypad_real;
+   void (*trace)(int, int);
+   void (*trace_last)(unsigned*, int*);
+   void    *core;
+   unsigned had = failures;
+   unsigned seen;
+   uint32_t a_btn, b_btn;
+   int16_t  stick;
+   int      a, b, x;
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(trace = (void (*)(int, int))dlsym(core, "harness_core_trace"))
+       || !(trace_last = (void (*)(unsigned*, int*))dlsym(core, "harness_core_trace_last"))
+       || !input_st->primary_joypad
+       || a_bind->joykey >= 32 || b_bind->joykey >= 32)
+   {
+      CHECK(false, "remapped pressure: the harness core's trace entry points,"
+            " the joypad driver or A's and B's buttons");
+      return;
+   }
+   joypad_real              = input_st->primary_joypad;
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   input_driver_set_snapshot_bridge(true);
+   syn_hat     = 0;
+   syn_buttons = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   fast_forward(true);
+   trace(2, 0);
+
+   a_btn           = 1u << a_bind->joykey;
+   b_btn           = 1u << b_bind->joykey;
+   a_bind->joyaxis = AXIS_POS(2);
+   b_bind->joyaxis = AXIS_POS(3);
+
+   /* not remapped: as before */
+   pressure_frame(0, 0, 0, trace_last, &a, &b);
+   seen = pressure_frame(a_btn, 20000, 0, trace_last, &a, &b);
+   CHECK(seen == A && a == 20000 && !b,
+         "remapped pressure: not remapped, A's pressure is not A's");
+   seen = pressure_frame(a_btn, 0, 0, trace_last, &a, &b);
+   CHECK(seen == A && a == 0x7fff,
+         "remapped pressure: not remapped, a press without pressure is not a full press");
+
+   /* A onto B */
+   remap[RETRO_DEVICE_ID_JOYPAD_A] = RETRO_DEVICE_ID_JOYPAD_B;
+   pressure_frame(0, 0, 0, trace_last, &a, &b);
+   seen = pressure_frame(a_btn, 20000, 0, trace_last, &a, &b);
+   CHECK(seen == B && b == 20000 && !a,
+         "remapped pressure: A onto B, B's pressure is not A's");
+   seen = pressure_frame(0, 0, 0, trace_last, &a, &b);
+   CHECK(!seen && !a && !b,
+         "remapped pressure: A onto B, released, a press is left behind");
+
+   /* A and B both onto B: the harder press */
+   seen = pressure_frame(a_btn | b_btn, 20000, 10000, trace_last, &a, &b);
+   CHECK(seen == B && b == 20000 && !a,
+         "remapped pressure: A and B onto B, A pressed harder, B is not A's");
+   seen = pressure_frame(a_btn | b_btn, 5000, 10000, trace_last, &a, &b);
+   CHECK(seen == B && b == 10000 && !a,
+         "remapped pressure: A and B onto B, B pressed harder, B is not B's");
+
+   /* swapped */
+   remap[RETRO_DEVICE_ID_JOYPAD_B] = RETRO_DEVICE_ID_JOYPAD_A;
+   seen = pressure_frame(a_btn | b_btn, 20000, 10000, trace_last, &a, &b);
+   CHECK(seen == (A | B) && b == 20000 && a == 10000,
+         "remapped pressure: A and B swapped, the pressures are not swapped");
+
+   /* a button without a pressure axis gives a full press */
+   a_bind->joyaxis = AXIS_NONE;
+   seen = pressure_frame(a_btn, 0, 0, trace_last, &a, &b);
+   CHECK(seen == B && b == 0x7fff && !a,
+         "remapped pressure: A onto B without an axis, not a full press");
+   a_bind->joyaxis = AXIS_POS(2);
+
+   /* A and B both onto X: the harder press */
+   remap[RETRO_DEVICE_ID_JOYPAD_A] = RETRO_DEVICE_ID_JOYPAD_X;
+   remap[RETRO_DEVICE_ID_JOYPAD_B] = RETRO_DEVICE_ID_JOYPAD_X;
+   seen = pressure_frame(a_btn | b_btn, 20000, 10000, trace_last, &a, &b);
+   x    = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG,
+         RETRO_DEVICE_INDEX_ANALOG_BUTTON, RETRO_DEVICE_ID_JOYPAD_X);
+   CHECK(!seen && !a && !b && x == 20000,
+         "remapped pressure: A and B onto X, A pressed harder, X is not A's");
+   seen = pressure_frame(a_btn | b_btn, 5000, 10000, trace_last, &a, &b);
+   x    = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG,
+         RETRO_DEVICE_INDEX_ANALOG_BUTTON, RETRO_DEVICE_ID_JOYPAD_X);
+   CHECK(!seen && !a && !b && x == 10000,
+         "remapped pressure: A and B onto X, B pressed harder, X is not B's");
+
+   /* unmapped: nothing */
+   remap[RETRO_DEVICE_ID_JOYPAD_A] = RARCH_UNMAPPED;
+   remap[RETRO_DEVICE_ID_JOYPAD_B] = RETRO_DEVICE_ID_JOYPAD_B;
+   seen = pressure_frame(a_btn, 20000, 0, trace_last, &a, &b);
+   CHECK(!seen && !a && !b,
+         "remapped pressure: A unmapped, it still reaches the core");
+
+   /* onto a stick, as before */
+   remap[RETRO_DEVICE_ID_JOYPAD_A] = RARCH_ANALOG_LEFT_X_PLUS;
+   pressure_frame(a_btn, 20000, 0, trace_last, &a, &b);
+   stick = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG,
+         RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
+   CHECK(stick == 20000 && !a,
+         "remapped pressure: A onto the left stick, the stick is not A's pressure");
+
+   remap[RETRO_DEVICE_ID_JOYPAD_A] = RETRO_DEVICE_ID_JOYPAD_A;
+   remap[RETRO_DEVICE_ID_JOYPAD_B] = RETRO_DEVICE_ID_JOYPAD_B;
+   *a_bind = saved_a;
+   *b_bind = saved_b;
+   syn_buttons = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   trace(0, 0);
+   fast_forward(false);
+   run_loop_frames(5);
+   input_driver_set_snapshot_bridge(false);
+   input_st->primary_joypad      = joypad_real;
+   input_st->analog_requested[0] = analog_requested;
+   dlclose(core);
+   if (failures == had)
+      printf("[pass] remapped pressure: a button remapped onto another"
+            " takes its pressure along, the harder of two presses wins,"
+            " and a button without pressure is a full press\n");
+#else
+   printf("[skip] remapped pressure: needs the test drivers\n");
+#endif
+}
+
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32) \
    && defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
 #include <sys/socket.h>
@@ -3541,6 +3708,7 @@ int main(int argc, char *argv[])
       lane_socd();
       lane_input_rotation();
       lane_triggers();
+      lane_remap_pressure();
       lane_network_retropad();
       lane_pointer_capture();
       lane_menu_combo_gate();

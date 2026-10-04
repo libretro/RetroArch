@@ -82,10 +82,31 @@ static uint8_t sdl3_joypad_get_hat(sdl3_joypad_t *pad, unsigned hat)
 static int16_t sdl3_joypad_get_axis(sdl3_joypad_t *pad, unsigned axis)
 {
    if (pad->gamepad)
+   {
+      /* SDL's HIDAPI driver for PS3 controllers exposes additional axes
+       * past the Gamepad API's six, representing pressure sensitive
+       * buttons. */
+      if (axis >= SDL_GAMEPAD_AXIS_COUNT)
+      {
+         /* Ensure pressure sensitive buttons rest at 0, like triggers do. */
+         int32_t pressure = SDL_GetJoystickAxis(pad->joypad, (int)axis);
+         return (int16_t)((pressure + 32768) / 2);
+      }
       return SDL_GetGamepadAxis(pad->gamepad, (SDL_GamepadAxis)axis);
+   }
    else if (pad->joypad)
       return SDL_GetJoystickAxis(pad->joypad, (int)axis);
    return 0;
+}
+
+static bool sdl3_joypad_has_pressure_axes(SDL_Joystick *joypad,
+      int32_t vendor, int32_t product)
+{
+   /* 0x054c/0x0268 is a PS3 controller. */
+   return vendor  == 0x054c
+       && product == 0x0268
+       && SDL_GetHintBoolean(SDL_HINT_JOYSTICK_HIDAPI_PS3, false)
+       && SDL_GetNumJoystickAxes(joypad) > SDL_GAMEPAD_AXIS_COUNT;
 }
 
 static bool sdl3_joypad_set_rumble_gain(unsigned pad, unsigned gain)
@@ -255,6 +276,12 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
       pad->num_axes    = SDL_GAMEPAD_AXIS_COUNT;
       pad->num_buttons = SDL_GAMEPAD_BUTTON_COUNT;
       pad->num_hats    = 0;
+      if (sdl3_joypad_has_pressure_axes(joypad, vendor, product))
+      {
+         pad->num_axes = (unsigned)SDL_GetNumJoystickAxes(joypad);
+         RARCH_LOG("[SDL3] Pad #%d: reading %u pressure-sensitive button axes.\n",
+               slot, pad->num_axes - SDL_GAMEPAD_AXIS_COUNT);
+      }
    }
    else
    {

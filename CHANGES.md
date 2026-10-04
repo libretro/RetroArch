@@ -39,7 +39,10 @@
 - INPUT/MFI: Controller disconnection fix
 - INPUT/SDL: Fix controller vid/pid detection on Windows
 - INPUT/SDL: Add wiimote sensor capabilities
+- INPUT: Remapped pressure sensitive buttons keep their pressure
+- INPUT/SDL: Enable pressure sensitive buttons for PS3 controllers when SDL_JOYSTICK_HIDAPI_PS3=1
 - INPUT/SDL3: Add SDL3 input driver
+- INPUT/SDL3: Enable pressure sensitive buttons for PS3 controllers when SDL_JOYSTICK_HIDAPI_PS3=1
 - INPUT/UDEV: Fix multi-touch detection
 - INPUT/UDEV: Gyroscope and accelerometer sensor support
 - INPUT/UDEV: Add wiimote sensor capabilities
