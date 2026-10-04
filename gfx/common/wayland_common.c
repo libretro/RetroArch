@@ -1392,6 +1392,30 @@ bool gfx_ctx_wl_init_common(
    return true;
 }
 
+static void gfx_ctx_wl_wait_for_fullscreen(gfx_ctx_wayland_data_t *wl,
+      bool fullscreen);
+
+/* A window kept across a reinit is still fullscreen when a windowed
+ * mode is asked for. Leaving fullscreen has to come before the
+ * windowed size is put on the surface: while the compositor still
+ * holds the window fullscreen, a size larger than the screen in either
+ * direction is a protocol error (xdg_wm_base's invalid_surface_state),
+ * and the compositor closes the connection - RetroArch quit when
+ * fullscreen was turned off with a window taller or wider than the
+ * screen. Waits for the compositor to say the window has left. */
+static void gfx_ctx_wl_leave_fullscreen(gfx_ctx_wayland_data_t *wl)
+{
+   if (!wl->fullscreen)
+      return;
+#ifdef HAVE_LIBDECOR_H
+   if (wl->libdecor)
+      wl->libdecor_frame_unset_fullscreen(wl->libdecor_frame);
+   else
+#endif
+      xdg_toplevel_unset_fullscreen(wl->xdg_toplevel);
+   gfx_ctx_wl_wait_for_fullscreen(wl, false);
+}
+
 bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
       unsigned width, unsigned height, bool fullscreen)
 {
@@ -1418,6 +1442,9 @@ bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
          wl->fractional_scale
             ? FRACTIONAL_SCALE_MULT(bh, wl->fractional_scale_num)
             : bh * wl->buffer_scale);
+
+      /* out of fullscreen first, then the windowed size below */
+      gfx_ctx_wl_leave_fullscreen(wl);
    }
    if (wl->viewport)
    {
@@ -1554,17 +1581,12 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
        * scripts place the window as a normal one first. */
       gfx_ctx_wl_wait_for_fullscreen(wl, true);
    }
-   else if (wl->fullscreen)
-   {
-      /* A window kept across the reinit is still fullscreen */
-#ifdef HAVE_LIBDECOR_H
-      if (wl->libdecor)
-         wl->libdecor_frame_unset_fullscreen(wl->libdecor_frame);
-      else
-#endif
-         xdg_toplevel_unset_fullscreen(wl->xdg_toplevel);
-      gfx_ctx_wl_wait_for_fullscreen(wl, false);
-   }
+   else
+      /* A window kept across the reinit that is still fullscreen:
+       * gfx_ctx_wl_set_video_mode_common_size() took it out already,
+       * before sizing it; this is for a caller that did not go
+       * through there. */
+      gfx_ctx_wl_leave_fullscreen(wl);
 
    flush_wayland_fd(&wl->input);
 
