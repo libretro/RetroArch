@@ -205,22 +205,9 @@ static void gfx_ctx_uwp_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
-   settings_t *settings = config_get_ptr();
-
-   /* Plain xinput is supported on UWP, but it
-    * supports joypad only (uwp driver was added later) */
-   if (string_is_equal(settings->arrays.input_driver, "xinput"))
-   {
-      void* xinput = input_driver_init_wrap(&input_xinput, joypad_name);
-      *input       = xinput ? (input_driver_t*)&input_xinput : NULL;
-      *input_data  = xinput;
-   }
-   else
-   {
-      void* uwp   = input_driver_init_wrap(&input_uwp, joypad_name);
-      *input      = uwp ? (input_driver_t*)&input_uwp : NULL;
-      *input_data = uwp;
-   }
+   /* no input driver of this context's own: the frontend starts the
+    * platform's */
+   input_driver_left_to_frontend(INPUT_WINDOW_PLATFORM, input, input_data);
 }
 
 static enum gfx_ctx_api gfx_ctx_uwp_get_api(void *data)

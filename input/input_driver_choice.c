@@ -211,8 +211,9 @@ void input_driver_init_sdl3(const char *joypad_name,
 }
 #endif
 
-/* The one input driver a platform has, where it has one of its own.
- * The conditions are those input_drivers[] lists each driver under. */
+/* The one input driver a platform has, where it has one of its own:
+ * a console's, Android's, QNX's, the web's, UWP's. The conditions are
+ * those input_drivers[] lists each driver under. */
 static input_driver_t *input_driver_of_platform(void)
 {
 #if defined(__PSL1GHT__) || defined(__PS3__)
@@ -229,13 +230,26 @@ static input_driver_t *input_driver_of_platform(void)
    return &input_gx;
 #elif defined(WIIU)
    return &input_wiiu;
+#elif defined(ANDROID)
+   return &input_android;
+#elif defined(__QNX__)
+   return &input_qnx;
+#elif defined(__EMSCRIPTEN__)
+   return &input_rwebinput;
+#elif defined(__WINRT__)
+   /* Plain xinput is supported on UWP, but it supports joypads only
+    * (the uwp driver was added later): it is started when it is what
+    * the setting says, and the uwp driver otherwise. */
+   if (string_is_equal(config_get_ptr()->arrays.input_driver, "xinput"))
+      return &input_xinput;
+   return &input_uwp;
 #else
    return NULL;
 #endif
 }
 
 /* A platform with one input driver of its own: that driver, whatever
- * the setting says. */
+ * the setting says (UWP's two aside, see above). */
 void input_driver_init_platform(const char *joypad_name,
       input_driver_t **input, void **input_data)
 {

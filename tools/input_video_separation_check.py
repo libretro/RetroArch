@@ -39,15 +39,11 @@ VIDEO_STATE_IN_INPUT = {
     "input/drivers/android_input.c": 7,
 }
 
-# gfx/ files that still name an input or a joypad driver (3).
+# gfx/ files that still name an input or a joypad driver (3): none.
+# Every video driver and context leaves the input driver to the
+# frontend (input_driver_left_to_frontend()), and nothing goes back in
+# here.
 INPUT_DRIVERS_IN_GFX = {
-    # ---- still start their own input driver
-    "gfx/drivers_context/android_ctx.c": 2,
-    "gfx/drivers_context/android_vk_ctx.c": 2,
-    "gfx/drivers_context/emscriptenegl_ctx.c": 2,
-    "gfx/drivers_context/emscriptenwebgl_ctx.c": 2,
-    "gfx/drivers_context/qnx_ctx.c": 2,
-    "gfx/drivers_context/uwp_egl_ctx.c": 4,
 }
 
 
