@@ -360,18 +360,9 @@ static void *oga_init(const video_info_t *video,
 
    frontend_driver_install_signal_handler();
 
-   if (input && input_data)
-   {
-      void* udev = input_driver_init_wrap(
-            &input_udev, settings->arrays.input_joypad_driver);
-      if (udev)
-      {
-         *input       = &input_udev;
-         *input_data  = udev;
-      }
-      else
-         *input = NULL;
-   }
+   /* no input driver of this driver's own: there is no window system
+    * here, and the frontend starts the one that goes with that */
+   input_driver_left_to_frontend(INPUT_WINDOW_KMS, input, input_data);
 
    vid = (oga_video_t*)calloc(1, sizeof(*vid));
    if (!vid)

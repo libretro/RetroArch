@@ -98,18 +98,9 @@ static void gfx_ctx_go2_drm_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
-#ifdef HAVE_UDEV
-   /* Try to set it to udev instead */
-   void *udev      = input_driver_init_wrap(&input_udev, joypad_name);
-   if (udev)
-   {
-      *input       = &input_udev;
-      *input_data  = udev;
-      return;
-   }
-#endif
-   *input          = NULL;
-   *input_data     = NULL;
+   /* no input driver of this driver's own: there is no window system
+    * here, and the frontend starts the one that goes with that */
+   input_driver_left_to_frontend(INPUT_WINDOW_KMS, input, input_data);
 }
 
 static void *gfx_ctx_go2_drm_init(void *video_driver)

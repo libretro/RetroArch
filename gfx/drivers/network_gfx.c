@@ -82,17 +82,10 @@ static void gfx_ctx_network_input_driver(
       const char *joypad_driver,
       input_driver_t **input, void **input_data)
 {
-#ifdef HAVE_UDEV
-   *input_data = input_driver_init_wrap(&input_udev, joypad_driver);
-
-   if (*input_data)
-   {
-      *input = &input_udev;
-      return;
-   }
-#endif
-   *input      = NULL;
-   *input_data = NULL;
+   (void)joypad_driver;
+   /* no input driver of this driver's own: there is no window system
+    * here, and the frontend starts the one that goes with that */
+   input_driver_left_to_frontend(INPUT_WINDOW_KMS, input, input_data);
 }
 
 static void *network_gfx_init(const video_info_t *video,
