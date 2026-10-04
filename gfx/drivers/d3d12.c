@@ -251,6 +251,18 @@ typedef struct
     * nothing was ever copied. An in-place update writes the buffer
     * only past that value. */
    UINT64                             upload_fence;
+   /* Lending (d3d12_texture_lend, direct video only): upload memory a
+    * producer writes itself. Slot 0 is upload_buffer, slot 1 a second
+    * buffer of the same layout made on its first lend; once lent, each
+    * stays mapped and is guarded by the fence of the frame that last
+    * copied from it. pending is the buffer the next draw-time copy
+    * reads, lent the slots handed out, a bit each. With nothing lent
+    * neither is ever set and the texture uploads as it always has. */
+   D3D12Resource                      upload_buffer2;
+   uint8_t                           *lend_mapped[2];
+   UINT64                             lend_fence[2];
+   uint8_t                            pending;
+   uint8_t                            lent;
 } d3d12_texture_t;
 
 typedef struct ALIGN(16)
@@ -935,6 +947,11 @@ static void d3d12_release_texture(d3d12_texture_t* texture)
 
    Release(texture->handle);
    Release(texture->upload_buffer);
+   Release(texture->upload_buffer2);
+   texture->lend_mapped[0] = NULL;
+   texture->lend_mapped[1] = NULL;
+   texture->lent           = 0;
+   texture->pending        = 0;
 }
 
 static DXGI_FORMAT d3d12_get_closest_match(D3D12Device device, D3D12_FEATURE_DATA_FORMAT_SUPPORT* desired)
@@ -1218,21 +1235,24 @@ static void d3d12_upload_texture_from(D3D12GraphicsCommandList cmd,
 static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
       d3d12_texture_t* texture, void *userdata)
 {
+   unsigned k = texture->pending;
    d3d12_upload_texture_from(cmd, texture, userdata,
-         texture->upload_buffer, &texture->layout, NULL);
+         k ? texture->upload_buffer2 : texture->upload_buffer,
+         &texture->layout, NULL);
+   texture->lend_fence[k] = texture->upload_fence;
 }
 
-static void d3d12_update_texture(
+static void d3d12_update_texture_into(
       int              width,
       int              height,
       int              pitch,
       DXGI_FORMAT      format,
       const void*      data,
-      d3d12_texture_t* texture)
+      d3d12_texture_t* texture,
+      ID3D12Resource  *resource)
 {
    uint8_t *dst;
    D3D12_RANGE read_range;
-   ID3D12Resource *resource = (ID3D12Resource*)texture->upload_buffer;
 
    if (!data || !resource)
       return;
@@ -1268,6 +1288,18 @@ static void d3d12_update_texture(
          texture->layout.Footprint.RowPitch, dst + texture->layout.Offset);
    resource->lpVtbl->Unmap(resource, 0, NULL);
    texture->dirty           = true;
+}
+
+static void d3d12_update_texture(
+      int              width,
+      int              height,
+      int              pitch,
+      DXGI_FORMAT      format,
+      const void*      data,
+      d3d12_texture_t* texture)
+{
+   d3d12_update_texture_into(width, height, pitch, format, data, texture,
+         (ID3D12Resource*)texture->upload_buffer);
 }
 
 /*
@@ -8389,26 +8421,98 @@ static uintptr_t d3d12_gfx_load_texture(
  * the menu texture streams through. The queue is drained at the top
  * of every frame, so the buffer is not being read when this writes
  * it between frames. */
+/* The second upload buffer lending uses, the layout of the first,
+ * made once. False when it cannot be had. */
+static bool d3d12_texture_upload_buffer2(d3d12_video_t *d3d12,
+      d3d12_texture_t *texture)
+{
+   D3D12_HEAP_PROPERTIES heap_props;
+   D3D12_RESOURCE_DESC   buffer_desc;
+   if (texture->upload_buffer2)
+      return true;
+   memset(&heap_props, 0, sizeof(heap_props));
+   memset(&buffer_desc, 0, sizeof(buffer_desc));
+   heap_props.Type                 = D3D12_HEAP_TYPE_UPLOAD;
+   heap_props.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+   heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+   heap_props.CreationNodeMask     = 1;
+   heap_props.VisibleNodeMask      = 1;
+   buffer_desc.Dimension           = D3D12_RESOURCE_DIMENSION_BUFFER;
+   buffer_desc.Alignment           = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+   buffer_desc.Width               = texture->total_bytes;
+   buffer_desc.Height              = 1;
+   buffer_desc.DepthOrArraySize    = 1;
+   buffer_desc.MipLevels           = 1;
+   buffer_desc.Format              = DXGI_FORMAT_UNKNOWN;
+   buffer_desc.SampleDesc.Count    = 1;
+   buffer_desc.Layout              = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+   if (FAILED(d3d12->device->lpVtbl->CreateCommittedResource(
+               d3d12->device, &heap_props, D3D12_HEAP_FLAG_NONE,
+               &buffer_desc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL,
+               uuidof(ID3D12Resource), (void**)&texture->upload_buffer2)))
+   {
+      texture->upload_buffer2 = NULL;
+      return false;
+   }
+   return true;
+}
+
 static bool d3d12_gfx_update_texture_internal(d3d12_video_t *d3d12,
       uintptr_t handle, const struct texture_image *image)
 {
    d3d12_texture_t *texture = (d3d12_texture_t*)handle;
+   UINT64 done;
+   unsigned k;
    if (     !texture || !texture->upload_buffer
          || texture->desc.Width  != image->width
          || texture->desc.Height != image->height
          || texture->desc.MipLevels > 1)
       return false;
-   /* A copy from the upload buffer recorded by a frame that has not
-    * finished is still the GPU's to read: this frame is dropped and
-    * the texture keeps what it shows. A texture still marked dirty
-    * has had no copy recorded since its last write, so its buffer is
-    * free to write again. */
-   if (     !texture->dirty && texture->upload_fence && d3d12
-         && d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence)
-            < texture->upload_fence)
+   if (!texture->lent)
+   {
+      /* A copy from the upload buffer recorded by a frame that has not
+       * finished is still the GPU's to read: this frame is dropped and
+       * the texture keeps what it shows. A texture still marked dirty
+       * has had no copy recorded since its last write, so its buffer is
+       * free to write again. */
+      if (     !texture->dirty && texture->upload_fence && d3d12
+            && d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence)
+               < texture->upload_fence)
+         return true;
+      d3d12_update_texture(image->width, image->height, 0,
+            texture->desc.Format, image->pixels, texture);
       return true;
-   d3d12_update_texture(image->width, image->height, 0,
-         texture->desc.Format, image->pixels, texture);
+   }
+   if (!d3d12)
+      return false;
+   done = d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence);
+   /* A lent slot holding the frame already: the producer wrote it where
+    * the draw-time copy reads from, once the slot was ready. */
+   for (k = 0; k < 2; k++)
+      if (     (texture->lent & (1u << k))
+            && (const uint8_t*)image->pixels == texture->lend_mapped[k])
+      {
+         if (done < texture->lend_fence[k])
+            return true; /* written early: keep the last frame */
+         texture->pending = (uint8_t)k;
+         texture->dirty   = true;
+         return true;
+      }
+   /* Otherwise copied into the buffer nobody else writes, made on
+    * first use. */
+   k = (texture->lent & 1u) ? 1 : 0;
+   if (texture->lent & (1u << k))
+      return true; /* every buffer lent: keep the last frame */
+   if (k == 1 && !d3d12_texture_upload_buffer2(d3d12, texture))
+      return true;
+   if (     done < texture->lend_fence[k]
+         && !(texture->dirty && texture->pending == k))
+      return true;
+   d3d12_update_texture_into(image->width, image->height, 0,
+         texture->desc.Format, image->pixels, texture,
+         (ID3D12Resource*)(k ? texture->upload_buffer2
+                             : texture->upload_buffer));
+   texture->pending = (uint8_t)k;
    return true;
 }
 
@@ -9179,6 +9283,51 @@ static void d3d12_set_video_mode(void *data, unsigned dims, bool fullscreen)
 }
 #endif
 
+/* Direct video only (see texture_lend in video_driver.h): the queue
+ * fence and the draw-time copy are both the caller's thread's. */
+static void *d3d12_texture_lend(void *data, uintptr_t id, unsigned slot,
+      size_t pitch)
+{
+   d3d12_video_t   *d3d12   = (d3d12_video_t*)data;
+   d3d12_texture_t *texture = (d3d12_texture_t*)id;
+   D3D12Resource   *buf;
+   D3D12_RANGE      none;
+   void            *mapped  = NULL;
+
+   if (     !d3d12 || !texture || slot > 1 || !texture->upload_buffer
+         || texture->desc.MipLevels > 1
+         || (size_t)texture->layout.Footprint.RowPitch != pitch)
+      return NULL;
+   if (texture->lent & (1u << slot))
+      return texture->lend_mapped[slot];
+   buf = slot ? &texture->upload_buffer2 : &texture->upload_buffer;
+   if (slot && !d3d12_texture_upload_buffer2(d3d12, texture))
+      return NULL;
+   none.Begin = 0;
+   none.End   = 0;
+   if (     FAILED((*buf)->lpVtbl->Map(*buf, 0, &none, &mapped))
+         || !mapped)
+      return NULL;
+   texture->lend_mapped[slot] = (uint8_t*)mapped + texture->layout.Offset;
+   texture->lent             |= 1u << slot;
+   return texture->lend_mapped[slot];
+}
+
+/* A lent slot is the GPU's while a frame that copied from it runs, and
+ * while a copy from it is still to be recorded. */
+static bool d3d12_texture_lend_ready(void *data, uintptr_t id,
+      unsigned slot)
+{
+   d3d12_video_t   *d3d12   = (d3d12_video_t*)data;
+   d3d12_texture_t *texture = (d3d12_texture_t*)id;
+   if (!d3d12 || !texture || slot > 1 || !(texture->lent & (1u << slot)))
+      return true;
+   if (texture->dirty && texture->pending == slot)
+      return false;
+   return d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence)
+      >= texture->lend_fence[slot];
+}
+
 static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_get_flags,
    d3d12_gfx_load_texture,
@@ -9244,7 +9393,9 @@ static const video_poke_interface_t d3d12_poke_interface = {
    NULL, /* hw_ring_context_free */
    NULL, /* hw_ring_framebuffer */
    d3d12_gfx_update_texture,
-   d3d12_get_swap_interval_cap
+   d3d12_get_swap_interval_cap,
+   d3d12_texture_lend,
+   d3d12_texture_lend_ready
 };
 
 static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)

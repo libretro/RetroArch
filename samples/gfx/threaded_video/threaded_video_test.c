@@ -4378,8 +4378,8 @@ static void lane_surface_lend(void)
    {
       /* The drivers that lend: there the direct half must have. */
       const char *drv = getenv("HARNESS_VIDEO_DRIVER");
-      if (drv && !strcmp(drv, "vulkan"))
-         CHECK(lent_any, "surface lend lane: vulkan lent no slot");
+      if (drv && (!strcmp(drv, "vulkan") || !strcmp(drv, "d3d12")))
+         CHECK(lent_any, "surface lend lane: %s lent no slot", drv);
    }
    if (failures == had)
       fprintf(stderr, "[pass] surface lend lane (direct %s, threaded "
