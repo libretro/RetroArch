@@ -159,6 +159,10 @@ struct input_remote
     * first message has come */
    uint32_t sender[MAX_USERS];
    bool     sender_known[MAX_USERS];
+   /* the device last heard, and the port listened on, for the menu */
+   uint32_t last[MAX_USERS];
+   bool     heard[MAX_USERS];
+   uint16_t port[MAX_USERS];
 #endif
    bool state[RARCH_BIND_LIST_END];
 };
@@ -2415,6 +2419,7 @@ static bool input_remote_init_network(input_remote_t *handle,
    if ((fd = socket_init((void**)&res, port, NULL, SOCKET_TYPE_DATAGRAM, AF_INET)) >= 0)
    {
       handle->net_fd[user] = fd;
+      handle->port[user]   = port;
 
       if (socket_nonblock(handle->net_fd[user]))
       {
@@ -2496,6 +2501,19 @@ input_remote_t *input_driver_init_remote(
          num_active_users);
 }
 
+bool input_remote_info(unsigned user, unsigned *port,
+      uint32_t *address, bool *heard)
+{
+   input_remote_t *remote = input_driver_st.remote;
+
+   if (!remote || user >= MAX_USERS || !remote->port[user])
+      return false;
+   *port    = remote->port[user];
+   *address = ntohl(remote->last[user]);
+   *heard   = remote->heard[user];
+   return true;
+}
+
 /* A sender sends one message for each control that changed. All that
  * is queued is taken, so a frame's changes arrive together and none
  * waits a poll for each one before it; the count is bounded, so a
@@ -2549,6 +2567,8 @@ static void input_remote_poll(input_driver_state_t *input_st,
                else if (remote->sender[user] != addr)
                   continue;
             }
+            input_st->remote->last[user]  = from.sin_addr.s_addr;
+            input_st->remote->heard[user] = true;
             input_remote_parse_packet(&input_st->remote_st_ptr, &msg, user);
          }
          else if (ret < 0 && isagain((int)ret))

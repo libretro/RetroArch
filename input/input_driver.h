@@ -1442,6 +1442,12 @@ input_remote_t *input_driver_init_remote(
       unsigned num_active_users);
 
 void input_remote_free(input_remote_t *handle, unsigned max_users);
+
+/* For Information > Input Information: whether @user has a Network
+ * RetroPad listening, the port it listens on, and the address of the
+ * device last heard from it (@heard false while there has been none). */
+bool input_remote_info(unsigned user, unsigned *port,
+      uint32_t *address, bool *heard);
 #endif
 
 void input_game_focus_free(void);

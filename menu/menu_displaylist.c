@@ -3039,6 +3039,31 @@ static unsigned menu_displaylist_parse_input_info(file_list_t *list)
          count++;
    }
 
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+   /* The users' Network RetroPads: a controller, though no driver's */
+   for (port = 0; port < MAX_USERS; port++)
+   {
+      unsigned udp;
+      uint32_t a;
+      bool heard;
+      if (!input_remote_info(port, &udp, &a, &heard))
+         continue;
+      if (heard)
+         snprintf(entry, sizeof(entry),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_INFO_HEARD),
+               port + 1, udp, (unsigned)(a >> 24), (unsigned)((a >> 16) & 0xff),
+               (unsigned)((a >> 8) & 0xff), (unsigned)(a & 0xff));
+      else
+         snprintf(entry, sizeof(entry),
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_INFO_WAITING),
+               port + 1, udp);
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
+            MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+         count++;
+   }
+#endif
+
    return count;
 }
 

@@ -31495,6 +31495,14 @@ MSG_HASH( /* An entry of Information > Input Information: the number of a connec
    MENU_ENUM_LABEL_VALUE_KEYBOARD_DEVICE_NAME,
    "Keyboard %d: %s"
    )
+MSG_HASH( /* Information > Input Information: a user's Network RetroPad, with nothing received yet */
+   MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_INFO_WAITING,
+   "Network RetroPad %u: port %u, no device yet"
+   )
+MSG_HASH( /* The same, with the address of the device last heard from */
+   MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_INFO_HEARD,
+   "Network RetroPad %u: port %u, from %u.%u.%u.%u"
+   )
 MSG_HASH( /* Under a keyboard's entry in Information > Input Information: its USB vendor and product ids */
    MENU_ENUM_LABEL_VALUE_KEYBOARD_DEVICE_INFO,
    "Device VID/PID: %d/%d"
