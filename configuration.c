@@ -10450,6 +10450,10 @@ bool input_remapping_load_file(void *data, const char *path)
       _len = strlcpy_lit(s1, "input_remap_port_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_remap_ports[i], s1);
+      /* The mapped port indexes per-port arrays (libretro device,
+       * input descriptors, analog requests). */
+      if (settings->uints.input_remap_ports[i] >= MAX_USERS)
+         settings->uints.input_remap_ports[i] = i;
    }
 
    /* Turbo fire settings */
