@@ -239,6 +239,21 @@ struct audio_mixer_voice
     * volume holds the float's bits, gain the Q16.16 value. */
    retro_atomic_int_t volume;
    retro_atomic_int_t gain;
+   /* What a windowed source's feeder exchanges with the mix, without
+    * the lock. tell is the decoder's byte position as of the last mix
+    * and lap counts the stream's start and its rewinds; avail_req is
+    * the resident bound the feeder wants, applied before the next
+    * decode. A bound carries the lap its position was read in and is
+    * dropped once the decoder has rewound: the bytes it promised may
+    * be gone. Lap 0 is a bound not derived from a position, -1 none. */
+   retro_atomic_size_t tell;
+   retro_atomic_int_t  lap;
+   retro_atomic_size_t avail_req;
+   retro_atomic_int_t  avail_lap;
+   retro_atomic_int_t  feeder_lap;   /* the lap the feeder last read */
+   size_t   avail_done;              /* the mix's: the bound it applied */
+   int      avail_done_lap;
+   bool     avail_done_valid;
    bool     repeat;
    bool     is_s16;
 #ifdef HAVE_THREADS
@@ -1408,83 +1423,12 @@ void audio_mixer_sound_set_end_granule(audio_mixer_sound_t *sound,
 }
 #endif
 
-/* Compressed-byte read position of a stream voice's decoder within
- * its source buffer - the windowed-source feeder's input.  Returns
- * 0 for anything that is not a live buffer-mode stream voice.  Takes
- * the voice lock: safe against the mixing thread. */
-/* Raise a live stream voice's resident prefix - the windowed feeder's
- * output, the mirror of audio_mixer_voice_buffer_tell's input.  Only
- * the WebM container arms act on it; a no-op for every other type and
- * for anything that is not a live buffer-mode stream voice.  Takes the
- * voice lock: safe against the mixing thread. */
-void audio_mixer_voice_set_avail(audio_mixer_voice_t *voice, size_t avail)
-{
-#if (defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))) \
- || defined(HAVE_RAAC) || defined(HAVE_RFLAC) || defined(HAVE_RAC3)
-   if (!voice)
-      return;
-#ifdef AUDIO_MIXER_HAS_STREAM
-   AUDIO_MIXER_LOCK(voice);
-   switch (retro_atomic_load_relaxed_int(&voice->type))
-   {
-#ifdef HAVE_RAC3
-      case AUDIO_MIXER_TYPE_AC3:
-         audio_transfer_set_avail(voice->types.stream.stream,
-               AUDIO_TYPE_AC3, avail);
-         break;
-#endif
-#ifdef HAVE_RLPCM
-      case AUDIO_MIXER_TYPE_LPCM:
-         audio_transfer_set_avail(voice->types.stream.stream,
-               AUDIO_TYPE_LPCM, avail);
-         break;
-#endif
-#ifdef HAVE_RVORBIS
-      case AUDIO_MIXER_TYPE_OGG:
-         audio_transfer_set_avail(voice->types.stream.stream,
-               AUDIO_TYPE_VORBIS, avail);
-         break;
-#endif
-#ifdef HAVE_ROPUS
-      case AUDIO_MIXER_TYPE_OPUS:
-         audio_transfer_set_avail(voice->types.stream.stream,
-               AUDIO_TYPE_OPUS, avail);
-         break;
-#endif
-#ifdef HAVE_RAAC
-      /* The arm a windowed M4A actually lands on.  Its absence meant
-       * every feeder raise was accepted and dropped: the decoder kept
-       * the bound it was given at add_stream, hit it a second or so
-       * in, reported end of stream, and a looping voice restarted -
-       * the same second of audio over and over. */
-      case AUDIO_MIXER_TYPE_M4A:
-         audio_transfer_set_avail(voice->types.stream.stream,
-               AUDIO_TYPE_AAC, avail);
-         break;
-#endif
-#ifdef HAVE_RFLAC
-      case AUDIO_MIXER_TYPE_FLAC:
-         audio_transfer_set_avail(voice->types.stream.stream,
-               AUDIO_TYPE_FLAC, avail);
-         break;
-#endif
-      default:
-         break;
-   }
-   AUDIO_MIXER_UNLOCK(voice);
-#endif
-#else
-   (void)voice; (void)avail;
-#endif
-}
-
-size_t audio_mixer_voice_buffer_tell(audio_mixer_voice_t *voice)
+/* The decoder's compressed-byte position within its source buffer.
+ * The decoder is the mix's: call with the voice lock held. */
+static size_t audio_mixer_voice_tell_owned(audio_mixer_voice_t *voice)
 {
    size_t r = 0;
-   if (!voice)
-      return 0;
 #ifdef AUDIO_MIXER_HAS_STREAM
-   AUDIO_MIXER_LOCK(voice);
    switch (retro_atomic_load_relaxed_int(&voice->type))
    {
 #ifdef HAVE_RWAV
@@ -1532,9 +1476,153 @@ size_t audio_mixer_voice_buffer_tell(audio_mixer_voice_t *voice)
       default:
          break;
    }
-   AUDIO_MIXER_UNLOCK(voice);
+#else
+   (void)voice;
 #endif
    return r;
+}
+
+/* Hand the decoder its resident bound.  Only the windowed arms act on
+ * it.  Call with the voice lock held. */
+static void audio_mixer_voice_avail_owned(audio_mixer_voice_t *voice,
+      size_t avail)
+{
+#if defined(AUDIO_MIXER_HAS_STREAM) \
+ && ((defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))) \
+ || defined(HAVE_RAAC) || defined(HAVE_RFLAC) || defined(HAVE_RAC3))
+   switch (retro_atomic_load_relaxed_int(&voice->type))
+   {
+#ifdef HAVE_RAC3
+      case AUDIO_MIXER_TYPE_AC3:
+         audio_transfer_set_avail(voice->types.stream.stream,
+               AUDIO_TYPE_AC3, avail);
+         break;
+#endif
+#ifdef HAVE_RLPCM
+      case AUDIO_MIXER_TYPE_LPCM:
+         audio_transfer_set_avail(voice->types.stream.stream,
+               AUDIO_TYPE_LPCM, avail);
+         break;
+#endif
+#ifdef HAVE_RVORBIS
+      case AUDIO_MIXER_TYPE_OGG:
+         audio_transfer_set_avail(voice->types.stream.stream,
+               AUDIO_TYPE_VORBIS, avail);
+         break;
+#endif
+#ifdef HAVE_ROPUS
+      case AUDIO_MIXER_TYPE_OPUS:
+         audio_transfer_set_avail(voice->types.stream.stream,
+               AUDIO_TYPE_OPUS, avail);
+         break;
+#endif
+#ifdef HAVE_RAAC
+      /* The arm a windowed M4A actually lands on.  Its absence meant
+       * every feeder raise was accepted and dropped: the decoder kept
+       * the bound it was given at add_stream, hit it a second or so
+       * in, reported end of stream, and a looping voice restarted -
+       * the same second of audio over and over. */
+      case AUDIO_MIXER_TYPE_M4A:
+         audio_transfer_set_avail(voice->types.stream.stream,
+               AUDIO_TYPE_AAC, avail);
+         break;
+#endif
+#ifdef HAVE_RFLAC
+      case AUDIO_MIXER_TYPE_FLAC:
+         audio_transfer_set_avail(voice->types.stream.stream,
+               AUDIO_TYPE_FLAC, avail);
+         break;
+#endif
+      default:
+         break;
+   }
+#else
+   (void)voice; (void)avail;
+#endif
+}
+
+static int audio_mixer_lap_next(int lap)
+{
+   return (lap > 0 && lap < 0x7fffffff) ? lap + 1 : 1;
+}
+
+/* A voice being claimed: no bound asked for, a lap of its own.  Before
+ * the store that publishes the voice's type. */
+static void audio_mixer_feed_reset(audio_mixer_voice_t *voice)
+{
+   retro_atomic_store_release_int(&voice->avail_lap, -1);
+   retro_atomic_store_relaxed_int(&voice->feeder_lap, 0);
+   retro_atomic_store_release_size(&voice->tell, 0);
+   retro_atomic_store_release_int(&voice->lap, audio_mixer_lap_next(
+            retro_atomic_load_relaxed_int(&voice->lap)));
+   voice->avail_done_valid = false;
+}
+
+/* Before a decode: take the bound the feeder asked for, if it is new
+ * and its lap is still the decoder's.  The feeder writes the lap, the
+ * bound, the lap; a lap that changed across the read is a write in
+ * progress, left for the next mix. */
+static void audio_mixer_feed_apply(audio_mixer_voice_t *voice)
+{
+   size_t avail;
+   int lap = retro_atomic_load_acquire_int(&voice->avail_lap);
+   if (lap < 0)
+      return;
+   avail = retro_atomic_load_acquire_size(&voice->avail_req);
+   if (     retro_atomic_load_acquire_int(&voice->avail_lap) != lap
+         || (lap && lap != retro_atomic_load_relaxed_int(&voice->lap)))
+      return;
+   if (     voice->avail_done_valid
+         && voice->avail_done     == avail
+         && voice->avail_done_lap == lap)
+      return;
+   audio_mixer_voice_avail_owned(voice, avail);
+   voice->avail_done       = avail;
+   voice->avail_done_lap   = lap;
+   voice->avail_done_valid = true;
+}
+
+/* After a decode: where the decoder stands now. */
+static void audio_mixer_feed_publish(audio_mixer_voice_t *voice)
+{
+   retro_atomic_store_release_size(&voice->tell,
+         audio_mixer_voice_tell_owned(voice));
+}
+
+/* The decoder went back to the top.  Position before lap: the feeder
+ * reads them the other way round, so it never pairs the old lap's
+ * position with the new lap.  A bound that is no position's stands
+ * across the rewind and is handed over again. */
+static void audio_mixer_feed_rewound(audio_mixer_voice_t *voice)
+{
+   audio_mixer_feed_publish(voice);
+   retro_atomic_store_release_int(&voice->lap, audio_mixer_lap_next(
+            retro_atomic_load_relaxed_int(&voice->lap)));
+   voice->avail_done_valid = false;
+   audio_mixer_feed_apply(voice);
+}
+
+void audio_mixer_voice_set_avail(audio_mixer_voice_t *voice, size_t avail)
+{
+   if (     !voice
+         || retro_atomic_load_acquire_int(&voice->type)
+            == AUDIO_MIXER_TYPE_NONE)
+      return;
+   retro_atomic_store_release_int(&voice->avail_lap, -1);
+   retro_atomic_store_release_size(&voice->avail_req, avail);
+   retro_atomic_store_release_int(&voice->avail_lap,
+         retro_atomic_load_relaxed_int(&voice->feeder_lap));
+}
+
+size_t audio_mixer_voice_buffer_tell(audio_mixer_voice_t *voice)
+{
+   if (     !voice
+         || retro_atomic_load_acquire_int(&voice->type)
+            == AUDIO_MIXER_TYPE_NONE)
+      return 0;
+   retro_atomic_store_relaxed_int(&voice->feeder_lap,
+         retro_atomic_load_acquire_int(&voice->lap));
+   return retro_atomic_load_acquire_size(&voice->tell);
 }
 
 void audio_mixer_destroy(audio_mixer_sound_t* sound)
@@ -2069,6 +2157,7 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
       }
 
       /* claim the voice, also helps with cleanup on error */
+      audio_mixer_feed_reset(voice);
       retro_atomic_store_release_int(&voice->type, sound->type);
 
       switch (sound->type)
@@ -2149,6 +2238,7 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
             audio_mixer_float_bits(volume));
       voice->sound    = sound;
       voice->stop_cb  = stop_cb;
+      audio_mixer_feed_publish(voice);
       AUDIO_MIXER_UNLOCK(voice);
    }
    else
@@ -2196,6 +2286,7 @@ audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
        * unlocked voice counts read the flag only once type says the
        * voice is claimed, so it has to be set by then. */
       voice->is_s16 = true;
+      audio_mixer_feed_reset(voice);
       retro_atomic_store_release_int(&voice->type, sound->type);
 
       switch (sound->type)
@@ -2275,6 +2366,7 @@ audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
       retro_atomic_store_relaxed_int(&voice->gain, (int)gain);
       voice->sound    = sound;
       voice->stop_cb  = stop_cb;
+      audio_mixer_feed_publish(voice);
       AUDIO_MIXER_UNLOCK(voice);
    }
    else
@@ -2553,6 +2645,7 @@ again:
                && audio_transfer_seek(voice->types.stream.stream, type, 0))
          {
             rewound = 1;
+            audio_mixer_feed_rewound(voice);
 
             if (voice->stop_cb)
                voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
@@ -2691,6 +2784,7 @@ again:
                && audio_transfer_seek(voice->types.stream.stream, type, 0))
          {
             rewound = 1;
+            audio_mixer_feed_rewound(voice);
             if (voice->stop_cb)
                voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
             goto again;
@@ -2786,6 +2880,8 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
          : audio_mixer_bits_float(
                retro_atomic_load_relaxed_int(&voice->volume));
 
+      audio_mixer_feed_apply(voice);
+
       switch (retro_atomic_load_relaxed_int(&voice->type))
       {
          case AUDIO_MIXER_TYPE_WAV:
@@ -2841,6 +2937,7 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
             break;
       }
 
+      audio_mixer_feed_publish(voice);
       AUDIO_MIXER_UNLOCK(voice);
    }
 
@@ -2882,6 +2979,8 @@ void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
        * thread, in the pipeline that exists to avoid float. */
       gain_q16 = (override) ? gain_override
          : (int32_t)retro_atomic_load_relaxed_int(&voice->gain);
+
+      audio_mixer_feed_apply(voice);
 
       switch (retro_atomic_load_relaxed_int(&voice->type))
       {
@@ -2938,6 +3037,7 @@ void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
             break;
       }
 
+      audio_mixer_feed_publish(voice);
       AUDIO_MIXER_UNLOCK(voice);
    }
    /* No final clamp: audio_mixer_mix_*_s16 saturate as they accumulate. */

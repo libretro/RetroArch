@@ -20,7 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* A voice's volume and gain, set by a control thread and read by a
+/* A stream voice's position read and its bound set by a feeder thread,
+ * with no lock, while the audio thread mixes and loops the voice: every
+ * position read must lie inside the stream.
+ *
+ * A voice's volume and gain, set by a control thread and read by a
  * second while the audio thread mixes the voice. Built under
  * ThreadSanitizer: a field two threads touch without ordering is a
  * reported race. Every read must give back one of the values set, and
@@ -113,6 +117,25 @@ static void *reader_thread(void *arg)
    return NULL;
 }
 
+static audio_mixer_voice_t *stream_voice;
+static size_t               stream_size;
+static unsigned             odd_tells;
+static unsigned             tells;
+
+static void *feeder_thread(void *arg)
+{
+   (void)arg;
+   while (retro_atomic_load_acquire_int(&mixing))
+   {
+      size_t at = audio_mixer_voice_buffer_tell(stream_voice);
+      if (at > stream_size)
+         odd_tells++;
+      audio_mixer_voice_set_avail(stream_voice, at + 4096);
+      tells++;
+   }
+   return NULL;
+}
+
 static void *audio_thread(void *arg)
 {
    float buf[BLOCK * 2];
@@ -136,10 +159,10 @@ static void *audio_thread(void *arg)
 
 int main(void)
 {
-   pthread_t      t, r;
+   pthread_t      t, r, f;
    size_t         wav_size;
-   unsigned char *wav;
-   audio_mixer_sound_t *snd;
+   unsigned char *wav, *wav2;
+   audio_mixer_sound_t *snd, *snd2;
    unsigned       i, bad = 0;
 
    audio_mixer_init(MIX_RATE);
@@ -153,9 +176,21 @@ int main(void)
       return 1;
    }
 
+   /* the same triangle as a silent stream voice, short enough to loop
+    * many times under the feeder */
+   if (     !(wav2 = make_wav(MIX_RATE / 100, MIX_RATE, &stream_size))
+         || !(snd2 = audio_mixer_load_wav_stream(wav2, stream_size))
+         || !(stream_voice = audio_mixer_play(snd2, true, 0.0f, "nearest",
+               RESAMPLER_QUALITY_DONTCARE, NULL)))
+   {
+      printf("FAIL  could not set up a repeating stream voice\n");
+      return 1;
+   }
+
    retro_atomic_store_release_int(&mixing, 1);
    pthread_create(&t, NULL, audio_thread, NULL);
    pthread_create(&r, NULL, reader_thread, NULL);
+   pthread_create(&f, NULL, feeder_thread, NULL);
    for (i = 0; i < ROUNDS; i++)
    {
       float   v = (i & 1) ? 1.0f : 0.0f;
@@ -171,12 +206,21 @@ int main(void)
    retro_atomic_store_release_int(&mixing, 0);
    pthread_join(t, NULL);
    pthread_join(r, NULL);
+   pthread_join(f, NULL);
 
    audio_mixer_stop(voice);
    audio_mixer_destroy(snd);
+   audio_mixer_stop(stream_voice);
+   audio_mixer_destroy(snd2);
    audio_mixer_done();
    free(wav);
 
+   if (odd_tells)
+   {
+      printf("FAIL  %u of %u positions read lay outside the stream\n",
+            odd_tells, tells);
+      return 1;
+   }
    if (bad || odd_reads || odd_blocks)
    {
       printf("FAIL  %u reads gave back another volume, %u values never set were read, "
