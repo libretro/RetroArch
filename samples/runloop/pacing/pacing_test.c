@@ -629,8 +629,9 @@ static void test_menu_table(void)
          "content rate: VSync+Audio+VRR -> VSync+Audio+Timer, as in play");
    MENU_ROW(AT_CONTENT, 0, 1, 1, 0, 0, RUNLOOP_PACE_AUDIO | RUNLOOP_PACE_DISPLAY,
          "content rate: Display+Audio -> Audio+Display");
-   MENU_ROW(AT_CONTENT, 0, 0, 1, 0, 0, RUNLOOP_PACE_DISPLAY | RUNLOOP_PACE_TIMER,
-         "content rate: Display -> Display+Timer (the content's period)");
+   MENU_ROW(AT_CONTENT, 0, 0, 1, 0, 0, RUNLOOP_PACE_DISPLAY,
+         "content rate: Display -> Display (the hold keeps the content's "
+         "period; a timer as well would beat against it)");
 }
 
 int main(void)

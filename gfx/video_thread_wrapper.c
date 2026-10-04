@@ -2730,7 +2730,10 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
        * run at the display's rate. A core running under the menu keeps
        * the content's period: the display's ran it at the display's
        * rate, twice its speed on a 120 Hz panel. */
-      if (!thr->core_running)
+      /* ...unless the menu is held at the content's rate, Menu Frame
+       * Rate 'Content Rate': then this hold is what holds it there,
+       * with the timer standing aside for it (runloop_pace_sources). */
+      if (!thr->core_running && !thr->menu_content_rate)
          content = period;
       thr->content_period = content;
       /* For the video thread, which judges a queued frame by it */
@@ -2961,6 +2964,7 @@ static bool video_thread_frame(void *data, const void *frame_,
       thr->display_pacing = video_info->threaded_display_pacing;
       thr->fast_forward   = video_info->input_driver_nonblock_state;
       thr->core_running   = video_info->core_running;
+      thr->menu_content_rate = video_info->menu_content_rate;
       retro_atomic_store_relaxed_int(&thr->display_pacing_pub,
             thr->display_pacing ? 1 : 0);
    }

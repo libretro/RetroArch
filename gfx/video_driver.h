@@ -641,6 +641,10 @@ typedef struct video_frame_info
     * pacing holds to the content's period while it runs and to the
     * display's while it does not. */
    bool core_running;
+   /* The menu is up at Menu Frame Rate 'Content Rate': the hold keeps
+    * the content's period over the stopped core, as nothing else then
+    * holds the menu to it. */
+   bool menu_content_rate;
    bool xmb_shadows_enable;
    bool battery_level_enable;
    bool timedate_enable;

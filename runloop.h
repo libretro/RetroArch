@@ -709,8 +709,10 @@ static INLINE unsigned runloop_pace_sources(runloop_pace_facts_t f)
    {
       bool display_paces = (pace & RUNLOOP_PACE_DISPLAY) != 0;
       /* The menu at the content's rate is held there by audio when
-       * audio blocks, and by the timer at the content's period when it
-       * does not; never by both, which would be two clocks. At the
+       * audio blocks, by the display pacing hold - which then keeps the
+       * content's period - when that holds, and by the timer at the
+       * content's period when neither does; never by two of them, which
+       * would be two clocks beating. At the
        * display's rate behind the threaded video wrapper, vsync blocks
        * the video thread and not this one, so without the display
        * pacing hold the timer holds the menu to the display's period. */
@@ -719,7 +721,8 @@ static INLINE unsigned runloop_pace_sources(runloop_pace_facts_t f)
             && (   ((f & PACE_FACT_VRR)
                      && !(f & PACE_FACT_MENU_DISPLAY_RATE))
                 || (f & PACE_FACT_FASTMOTION)
-                || (menu_content && !(pace & RUNLOOP_PACE_AUDIO))
+                || (menu_content && !(pace & RUNLOOP_PACE_AUDIO)
+                    && !display_paces)
                 || (!display_paces && !menu_content
                     && (f & PACE_FACT_MENU_ALIVE)
                     && (   !(f & PACE_FACT_VSYNC) || !(f & PACE_FACT_FOCUSED)
@@ -877,6 +880,10 @@ void runloop_set_frame_limit(
  * core running behind it keeps its own clock rather than setting the
  * menu's. */
 bool runloop_menu_display_rate(void);
+
+/* Whether the menu is up at Menu Frame Rate 'Content Rate', held to the
+ * content's period over a stopped core. */
+bool runloop_menu_content_rate(void);
 
 float runloop_get_fastforward_ratio(
       settings_t *settings,

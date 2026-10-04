@@ -1956,6 +1956,19 @@ static void lane_display_pacing(void)
                "frames at 120 Hz, not ~63", ran);
       }
 
+      /* The menu over a paused core: at 'Content Rate' the hold is
+       * the one clock holding it to the content's period - the frame
+       * limiter's timer stands aside for it, as two clocks at nearly
+       * the same period beat - and at 'Display Rate' it runs at the
+       * display's. */
+      settings->bools.menu_pause_libretro = true;
+      settings->uints.menu_frame_rate     = MENU_FRAME_RATE_CONTENT;
+      display_pacing_measure(120.0f, 60, 60.0f,
+            "menu at content rate, core paused");
+      settings->uints.menu_frame_rate     = MENU_FRAME_RATE_DISPLAY;
+      display_pacing_measure(120.0f, 120, 120.0f,
+            "menu at display rate, core paused");
+
       settings->uints.menu_frame_rate     = saved_rate;
       settings->bools.menu_pause_libretro = saved_pause;
    }

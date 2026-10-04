@@ -430,6 +430,10 @@ typedef struct thread_video
    /* Whether the core ran this iteration, from the frame info at the
     * push: the hold's period is the content's only while it does. */
    bool core_running;
+   /* The menu is up at Menu Frame Rate 'Content Rate', from the frame
+    * info at the push: the hold keeps the content's period over the
+    * stopped core */
+   bool menu_content_rate;
    /* Display pacing's schedule: when the next content frame is due,
     * accumulated in the content's own period. Main thread. The
     * period itself is published for the video thread in

@@ -5252,7 +5252,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->runloop_is_paused           = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
    video_info->gpu_recording               = recording_state_get_ptr()->enable;
    video_info->core_running                = !(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
+   video_info->menu_content_rate           = false;
 #ifdef HAVE_MENU
+   video_info->menu_content_rate           = runloop_menu_content_rate();
    /* At Menu Frame Rate 'Display Rate' a core running behind the menu
     * is on a clock of its own and the presents are the menu's, so the
     * display-pacing hold paces them as the menu's too. */

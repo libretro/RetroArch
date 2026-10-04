@@ -6435,6 +6435,14 @@ bool runloop_menu_display_rate(void)
          & PACE_FACT_MENU_DISPLAY_RATE) != 0;
 }
 
+bool runloop_menu_content_rate(void)
+{
+   settings_t *settings = config_get_ptr();
+   return (runloop_menu_rate(settings, &runloop_state,
+            settings->bools.menu_pause_libretro)
+         & PACE_FACT_MENU_CONTENT_RATE) != 0;
+}
+
 /* The display's rate as the frame limiter paces to it: the configured
  * one (the original one, under a refresh rate switch) or, with @window,
  * that of the monitor the window is on, where one is known - which on a
