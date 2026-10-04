@@ -754,6 +754,7 @@ typedef struct settings
       bool input_keyboard_gamepad_enable;
       bool input_auto_mouse_grab;
       bool input_joypad_background;
+      bool input_keyboard_background;
       bool input_turbo_enable;
       bool input_turbo_allow_dpad;
       bool input_hotkey_device_merge;

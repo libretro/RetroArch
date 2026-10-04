@@ -1184,6 +1184,7 @@
 #define MENU_ENUM_LABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1_STR "input_hotkey_follows_player1"
 #define MENU_ENUM_LABEL_INPUT_ICADE_ENABLE_STR "input_icade_enable"
 #define MENU_ENUM_LABEL_INPUT_JOYPAD_BACKGROUND_STR "input_joypad_background"
+#define MENU_ENUM_LABEL_INPUT_KEYBOARD_BACKGROUND_STR "input_keyboard_background"
 #define MENU_ENUM_LABEL_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE_STR "keyboard_gamepad_mapping_type"
 #define MENU_ENUM_LABEL_INPUT_MAX_USERS_STR "input_max_users"
 #define MENU_ENUM_LABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO_STR "input_menu_toggle_gamepad_combo"

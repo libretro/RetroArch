@@ -804,6 +804,64 @@ int main(void)
    stub_settings.arrays.input_mouse_device[1][0] = '\0';
    printf("   ok   the driver says what each mouse is known by, in the order of their numbers; a pinned port reads its mouse, and none when it is away and another port has its own\n");
 
+   /* ---- keys while another window is the active one ---------------- */
+   {
+      unsigned p;
+      for (p = 0; p < MAX_USERS; p++)
+      {
+         stub_settings.uints.input_keyboard_index[p]     = 0;
+         stub_settings.arrays.input_keyboard_device[p][0] = '\0';
+      }
+      key(K(5), SC_KEY_A, false);
+      key(K(5), SC_KEY_F, false);
+      winraw_poll(wr);
+
+      /* off, as it always was: the keys held when the window stops
+       * being the active one are let go */
+      stub_settings.bools.input_keyboard_background = false;
+      key(K(5), SC_KEY_A, true);
+      winraw_poll(wr);
+      CHECK(pad_b(0), "the first port does not read its key with the window active");
+      winraw_focus = false;
+      winraw_poll(wr);
+      CHECK(!pad_b(0) && !pad_mask_b(0) && !port_key(0, RETROK_a),
+            "with the setting off a key is read while another window is active");
+      winraw_focus = true;
+      winraw_poll(wr);
+
+      /* on: content reads the keys; hotkeys do not, and nothing does
+       * while the menu is up */
+      stub_settings.bools.input_keyboard_background = true;
+      winraw_poll(wr);
+      CHECK(wr->kb_background, "the driver did not take the setting");
+      key(K(5), SC_KEY_A, true);
+      key(K(5), SC_KEY_F, true);
+      winraw_focus = false;
+      winraw_poll(wr);
+      CHECK(pad_b(0) && pad_mask_b(0) && port_key(0, RETROK_a),
+            "with the setting on content does not read a key while another window is active");
+      CHECK(!hotkey(0), "a hotkey answered to a key pressed while another window was active");
+      stub_menu.flags |= MENU_ST_FLAG_ALIVE;
+      CHECK(!pad_b(0) && !pad_mask_b(0) && !port_key(0, RETROK_a),
+            "the open menu read a key pressed while another window was active");
+      stub_menu.flags &= ~MENU_ST_FLAG_ALIVE;
+      /* the window active again: everything answers */
+      winraw_focus = true;
+      winraw_poll(wr);
+      CHECK(pad_b(0) && hotkey(0), "with the window active again a key or a hotkey is not read");
+      /* turned off while another window is active: the keys are let go */
+      winraw_focus = false;
+      winraw_poll(wr);
+      stub_settings.bools.input_keyboard_background = false;
+      winraw_poll(wr); /* the setting is taken at the end of a poll */
+      winraw_poll(wr);
+      CHECK(!wr->kb_keys[SC_KEY_A],
+            "turning the setting off with another window active left a key held");
+      winraw_focus = true;
+      winraw_poll(wr);
+      printf("   ok   with Background Keyboard Input on, content reads keys while another window is active; hotkeys and the menu do not; off, nothing does\n");
+   }
+
    winraw_free(wr);
    if (failures)
    {

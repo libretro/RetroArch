@@ -373,6 +373,10 @@ input_socd_vertical = "4"' \
 # Input rotation on: buttons that are not directions are unchanged.
 EXTRA_CFG='input_rotation = "1"' \
    scenario "input rotation on" true 1 2 nomsg
+# Background Keyboard Input on: the keyboard is registered as a sink;
+# with the window active the keys work as before.
+EXTRA_CFG='input_keyboard_background = "true"' \
+   scenario "background keyboard input on" true 1 2 nomsg
 VIDEO_DRIVER=gl VIDEO_STARTED='Found GL context' WANT_VIDEO=2 WANT_WINDOW="1 1 0" \
    WANT_MENUS=1 EXTRA_CFG='ui_menubar_enable = "true"' \
    scenario "OpenGL" true 1 2 nomsg

@@ -257,6 +257,11 @@ typedef struct
    uint8_t flags;
    bool last_focus;
    bool kb_clear_pending;
+   /* "Background Keyboard Input": key reports are taken while the
+    * window is not the active one too (as a sink only); kb_taking is
+    * whether they were at the last poll. */
+   bool kb_background;
+   bool kb_taking;
 
    /* Read in bulk by the poll: see "Read by the poll" below. All of
     * this is unused, and zero, unless that is switched on. */
@@ -1715,6 +1720,15 @@ static void winraw_kev_deliver(winraw_input_t *wr)
 
    if (!n)
       return;
+#ifdef HAVE_MENU
+   /* keys typed elsewhere are not typed into the menu */
+   if (     !winraw_focus
+         && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
+   {
+      wr->kev_n = 0;
+      return;
+   }
+#endif
    memcpy(ev, wr->kev, n * sizeof(ev[0]));
    wr->kev_n = 0;
 
@@ -1921,7 +1935,9 @@ static void winraw_drain(winraw_input_t *wr)
          {
             wr->drained++;
             /* as a sink, background input arrives as well */
-            if (!wr->sink || winraw_focus)
+            if (     !wr->sink || winraw_focus
+                  || (   wr->kb_background
+                      && ri->header.dwType == RIM_TYPEKEYBOARD))
                winraw_take(wr, ri->header.dwType, ri->header.hDevice,
                      payload);
          }
@@ -2088,6 +2104,11 @@ static bool winraw_poll_window_up(winraw_input_t *wr)
    wr->nowinkey       = config_get_ptr()->bools.input_nowinkey_enable;
    if (wr->nowinkey)
       rid[0].dwFlags |= RIDEV_NOHOTKEYS; /* Disable win keys while focused */
+   /* Background Keyboard Input: Windows sends the keys while another
+    * application is active only to a sink */
+   wr->kb_background  = config_get_ptr()->bools.input_keyboard_background;
+   if (wr->kb_background)
+      rid[0].dwFlags |= RIDEV_INPUTSINK;
 
    rid[1].dwFlags     = base;
    rid[1].hwndTarget  = wr->window;
@@ -2188,16 +2209,20 @@ static void winraw_mice_refresh(winraw_input_t *wr)
  * registered. It took effect at the driver's next start; now the
  * keyboard is registered again when the setting is seen to have
  * changed. */
-static void winraw_nowinkey_apply(winraw_input_t *wr, bool enable)
+static void winraw_nowinkey_apply(winraw_input_t *wr, bool enable,
+      bool background)
 {
    RAWINPUTDEVICE rid;
-   rid.dwFlags     = (wr->sink ? RIDEV_INPUTSINK : 0)
+   rid.dwFlags     = ((wr->sink || background) ? RIDEV_INPUTSINK : 0)
                    | (enable   ? RIDEV_NOHOTKEYS : 0);
    rid.hwndTarget  = wr->window;
    rid.usUsagePage = 0x01; /* Generic desktop */
    rid.usUsage     = 0x06; /* Keyboard */
    if (RegisterRawInputDevices(&rid, 1, sizeof(RAWINPUTDEVICE)))
-      wr->nowinkey = enable;
+   {
+      wr->nowinkey      = enable;
+      wr->kb_background = background;
+   }
 }
 
 static void *winraw_init(const char *joypad_driver)
@@ -2402,8 +2427,12 @@ static void winraw_poll(void *data)
     * testing the focus-loss edge directly, otherwise the edge is
     * missed on exactly the Alt-Tab case that needs it and the
     * keys stay latched until focus returns. */
-   if (!winraw_focus && wr->last_focus)
-      wr->kb_clear_pending = true;
+   {
+      bool taking       = winraw_focus || wr->kb_background;
+      if (!taking && wr->kb_taking)
+         wr->kb_clear_pending = true;
+      wr->kb_taking     = taking;
+   }
 
    if (wr->kb_clear_pending && !(GetKeyState(VK_MENU) & 0x8000))
    {
@@ -2514,9 +2543,11 @@ static void winraw_poll(void *data)
          winraw_keyboards_refresh(wr);
       if (wr->window)
       {
-         bool nowinkey = config_get_ptr()->bools.input_nowinkey_enable;
-         if (nowinkey != wr->nowinkey)
-            winraw_nowinkey_apply(wr, nowinkey);
+         settings_t *settings = config_get_ptr();
+         bool nowinkey   = settings->bools.input_nowinkey_enable;
+         bool background = settings->bools.input_keyboard_background;
+         if (nowinkey != wr->nowinkey || background != wr->kb_background)
+            winraw_nowinkey_apply(wr, nowinkey, background);
       }
       winraw_kev_deliver(wr);
    }
@@ -2542,6 +2573,10 @@ static int16_t winraw_input_state(
       winraw_input_t *wr    = (winraw_input_t*)data;
       /* the one keyboard this port was given, if it was given one */
       const uint8_t *own    = winraw_port_keys(wr, port);
+      /* In the background, keys play the game only: they work no
+       * hotkey, and nothing while the menu is up. */
+      bool keys_ok          = winraw_focus;
+      bool meta_ok          = winraw_focus;
       bool process_mouse    =
          (device == RETRO_DEVICE_JOYPAD)
          || (device == RETRO_DEVICE_MOUSE)
@@ -2566,6 +2601,14 @@ static int16_t winraw_input_state(
          }
       }
 
+#ifdef HAVE_MENU
+      if (!keys_ok && wr->kb_background)
+         keys_ok = !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE);
+#else
+      if (wr->kb_background)
+         keys_ok = true;
+#endif
+
       switch (device)
       {
          case RETRO_DEVICE_JOYPAD:
@@ -2585,7 +2628,7 @@ static int16_t winraw_input_state(
                   }
                }
 
-               if (!keyboard_mapping_blocked)
+               if (!keyboard_mapping_blocked && keys_ok)
                {
                   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                   {
@@ -2611,6 +2654,7 @@ static int16_t winraw_input_state(
                            ? WINRAW_KEYBOARD_PRESSED(wr, RETRO_KEYBIND_KEY(&binds[port][id]))
                            : WINRAW_PORT_KEY_PRESSED(wr, own, RETRO_KEYBIND_KEY(&binds[port][id])))
                         && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
+                        && ((id >= RARCH_FIRST_META_KEY) ? meta_ok : keys_ok)
                      )
                      return 1;
                   else if (mouse && winraw_mouse_button_pressed(wr, mouse, port, binds[port][id].mbutton))
@@ -2634,12 +2678,12 @@ static int16_t winraw_input_state(
                id_minus_key          = RETRO_KEYBIND_KEY(&binds[port][id_minus]);
                id_plus_key           = RETRO_KEYBIND_KEY(&binds[port][id_plus]);
 
-               if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
+               if (keys_ok && id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
                {
                   if (WINRAW_PORT_KEY_PRESSED(wr, own, id_plus_key))
                      ret = 0x7fff;
                }
-               if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
+               if (keys_ok && id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
                {
                   if (WINRAW_PORT_KEY_PRESSED(wr, own, id_minus_key))
                      ret += -0x7fff;
@@ -2647,7 +2691,7 @@ static int16_t winraw_input_state(
             }
             return ret;
          case RETRO_DEVICE_KEYBOARD:
-            return (id && id < RETROK_LAST) && WINRAW_PORT_KEY_PRESSED(wr, own, id);
+            return keys_ok && (id && id < RETROK_LAST) && WINRAW_PORT_KEY_PRESSED(wr, own, id);
          case RETRO_DEVICE_MOUSE:
          case RARCH_DEVICE_MOUSE_SCREEN:
             if (mouse)
