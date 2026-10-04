@@ -6478,6 +6478,7 @@ bool runloop_menu_content_rate(void)
          & PACE_FACT_MENU_CONTENT_RATE) != 0;
 }
 
+#ifdef HAVE_MENU
 /* The display's rate as the frame limiter paces to it: the configured
  * one (the original one, under a refresh rate switch) or, with @window,
  * that of the monitor the window is on, where one is known - which on a
@@ -6497,7 +6498,6 @@ static float runloop_display_hz(video_driver_state_t *video_st,
    return (hz > 0.0f) ? hz : 60.0f;
 }
 
-#ifdef HAVE_MENU
 /* Whether the core running behind the menu at 'Display Rate' is due a
  * frame. It runs on the content's own clock - a period a frame, from
  * when it was last due - while the menu runs at the display's, so a
