@@ -45,6 +45,14 @@
  *    not crash and does not corrupt the heap.  tpool_destroy is
  *    documented to discard outstanding queued work, so we do NOT
  *    assert on the counter -- we only verify clean teardown.
+ * 5. No worker thread is still running when tpool_destroy returns.
+ *    The pool used to detach its threads and return once each had
+ *    counted itself out, which a thread does before it has ended:
+ *    the caller went on - to free what the jobs used, or to leave
+ *    the process - with pool threads still on their way out.  Each
+ *    worker is marked with a thread-specific value whose destructor
+ *    runs as the thread ends; every destructor must have run by the
+ *    time tpool_destroy is back.  POSIX threads only.
  *
  * What this test does NOT assert
  * ------------------------------
@@ -75,11 +83,18 @@
 #include <rthreads/rthreads.h>
 #include <rthreads/tpool.h>
 
+#if !defined(_WIN32)
+#include <pthread.h>
+#include <retro_atomic.h>
+#define HAVE_EXIT_PROBE 1
+#endif
+
 #define POOL_THREADS         4
 #define WORK_JOBS         1000
 #define ROUNDTRIP_ITERS   2000
 #define STRESS_CYCLES      200
 #define STRESS_JOBS         32
+#define EXIT_CYCLES        300
 
 struct work_ctx
 {
@@ -292,6 +307,73 @@ static int test_stress_destroy_with_pending(void)
    return 0;
 }
 
+/* -----------------------------------------------------------------
+ * Test 5: no worker outlives tpool_destroy.
+ * ----------------------------------------------------------------- */
+#ifdef HAVE_EXIT_PROBE
+static pthread_key_t      exit_key;
+static retro_atomic_int_t exit_marked; /* workers holding a marking job */
+static retro_atomic_int_t exit_ended;  /* marked workers that have ended */
+
+static void exit_probe_dtor(void *p)
+{
+   (void)p;
+   retro_atomic_fetch_add_int(&exit_ended, 1);
+}
+
+/* One per worker: marks the thread, then holds it until every worker
+ * has one, so that no worker takes two. */
+static void exit_mark_job(void *arg)
+{
+   pthread_setspecific(exit_key, arg);
+   retro_atomic_fetch_add_int(&exit_marked, 1);
+   while (retro_atomic_load_acquire_int(&exit_marked) < POOL_THREADS)
+      sthread_yield();
+}
+
+static int test_no_worker_outlives_destroy(void)
+{
+   int i, j;
+
+   if (pthread_key_create(&exit_key, exit_probe_dtor))
+   {
+      printf("[FAIL] test_no_worker_outlives_destroy: pthread_key_create\n");
+      return 1;
+   }
+
+   for (i = 0; i < EXIT_CYCLES; i++)
+   {
+      int ended;
+      tpool_t *tp = tpool_create(POOL_THREADS);
+      if (!tp)
+      {
+         printf("[FAIL] test_no_worker_outlives_destroy: tpool_create returned NULL at i=%d\n", i);
+         return 1;
+      }
+      retro_atomic_int_init(&exit_marked, 0);
+      retro_atomic_int_init(&exit_ended, 0);
+      for (j = 0; j < POOL_THREADS; j++)
+         tpool_add_work(tp, exit_mark_job, &exit_key);
+      tpool_wait(tp);
+      tpool_destroy(tp);
+
+      ended = retro_atomic_load_acquire_int(&exit_ended);
+      if (ended != POOL_THREADS)
+      {
+         printf("[FAIL] test_no_worker_outlives_destroy: cycle %d, %d of %d"
+               " workers had ended when tpool_destroy returned\n",
+               i, ended, POOL_THREADS);
+         return 1;
+      }
+   }
+
+   pthread_key_delete(exit_key);
+   printf("[PASS] test_no_worker_outlives_destroy (%d cycles x %d threads)\n",
+         EXIT_CYCLES, POOL_THREADS);
+   return 0;
+}
+#endif
+
 int main(void)
 {
    int failures = 0;
@@ -300,6 +382,9 @@ int main(void)
    failures += test_zero_threads_default();
    failures += test_create_destroy_no_work();
    failures += test_stress_destroy_with_pending();
+#ifdef HAVE_EXIT_PROBE
+   failures += test_no_worker_outlives_destroy();
+#endif
 
    if (failures)
    {

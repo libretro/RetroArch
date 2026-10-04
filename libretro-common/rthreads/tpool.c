@@ -85,6 +85,7 @@ typedef struct tpool_slot
 typedef struct tpool_thread
 {
    struct tpool      *tp;
+   sthread_t         *thread;  /* Joined by tpool_destroy(). */
    retro_eventcount_t wake;    /* Where this thread parks. */
    retro_atomic_int_t parked;  /* 1 from saying so until woken or back. */
    bool               wake_ok;
@@ -93,12 +94,10 @@ typedef struct tpool_thread
 struct tpool
 {
    retro_atomic_int_t enq;        /* Next position to fill. */
-   slock_t           *work_mutex; /* thread_cnt and the exit; the overflow. */
+   slock_t           *work_mutex; /* The overflow. */
    tpool_work_t      *over_first; /* Jobs posted with the ring full, */
    tpool_work_t      *over_last;  /* under work_mutex. */
    retro_atomic_int_t over;       /* How many: read without the mutex. */
-   scond_t           *exit_cond;  /* Signalled when the last thread leaves. */
-   size_t             thread_cnt; /* Threads still running. */
    size_t             thread_num; /* Entries in threads. */
    tpool_thread_t    *threads;
    /* tpool_wait() sleeps here until outstanding reaches zero. */
@@ -284,13 +283,8 @@ static void tpool_worker(void *arg)
       (void)retro_atomic_cas_int(&self->parked, 1, 0);
    }
 
-   /* Unlocking is this thread's last touch of tp: tpool_destroy()
-    * frees it once thread_cnt reads zero under the same lock. */
-   slock_lock(tp->work_mutex);
-   tp->thread_cnt--;
-   if (tp->thread_cnt == 0)
-      scond_signal(tp->exit_cond);
-   slock_unlock(tp->work_mutex);
+   /* Nothing to say on the way out: tpool_destroy() joins this thread,
+    * so tp outlives it without it having to count itself out. */
 }
 
 static void tpool_free(tpool_t *tp)
@@ -301,8 +295,6 @@ static void tpool_free(tpool_t *tp)
          retro_eventcount_free(&tp->threads[i].wake);
    if (tp->work_mutex)
       slock_free(tp->work_mutex);
-   if (tp->exit_cond)
-      scond_free(tp->exit_cond);
    retro_eventcount_free(&tp->idle);
    free(tp->threads);
    free(tp);
@@ -312,6 +304,7 @@ tpool_t *tpool_create_with_stack_size(size_t num, size_t stack_size)
 {
    tpool_t *tp;
    size_t   i;
+   size_t   made = 0;
 
    if (num == 0)
       num = 2;
@@ -321,9 +314,8 @@ tpool_t *tpool_create_with_stack_size(size_t num, size_t stack_size)
 
    tp->threads    = (tpool_thread_t*)calloc(num, sizeof(*tp->threads));
    tp->work_mutex = slock_new();
-   tp->exit_cond  = scond_new();
 
-   if (     !tp->threads || !tp->work_mutex || !tp->exit_cond
+   if (     !tp->threads || !tp->work_mutex
          || !retro_eventcount_init(&tp->idle))
    {
       tpool_free(tp);
@@ -334,30 +326,25 @@ tpool_t *tpool_create_with_stack_size(size_t num, size_t stack_size)
    for (i = 0; i < TPOOL_QUEUE_SIZE; i++)
       retro_atomic_int_init(&tp->slots[i].seq, (int)i);
 
-   /* Create the requested number of threads and detach them. The
-    * count is theirs to lower under the mutex from here on. */
-   slock_lock(tp->work_mutex);
+   /* Create the requested number of threads. They are kept, not
+    * detached: tpool_destroy() joins each one, so none of them is
+    * still running when it returns. */
    for (i = 0; i < num; i++)
    {
-      sthread_t      *thread;
       tpool_thread_t *t = &tp->threads[i];
 
       t->tp = tp;
       if (!(t->wake_ok = retro_eventcount_init(&t->wake)))
          continue;
-      thread = stack_size
+      t->thread = stack_size
             ? sthread_create_with_stack_size(tpool_worker, t, stack_size)
             : sthread_create(tpool_worker, t);
-      if (!thread)
-         continue;
-      tp->thread_cnt++;
-      sthread_detach(thread);
+      if (t->thread)
+         made++;
    }
-   i = tp->thread_cnt;
-   slock_unlock(tp->work_mutex);
 
    /* If no threads were created, clean up and fail. */
-   if (i == 0)
+   if (made == 0)
    {
       tpool_free(tp);
       return NULL;
@@ -395,8 +382,13 @@ void tpool_destroy(tpool_t *tp)
    /* The queue just emptied without passing through tpool_retire(). */
    retro_eventcount_notify(&tp->idle);
 
-   /* Wait for all threads to stop. */
-   tpool_wait(tp);
+   /* Wait for every thread to end - the thread itself, not a count it
+    * lowers on its way out, which left it running past this point and
+    * into whatever the caller did next, the end of the process
+    * included. */
+   for (i = 0; i < tp->thread_num; i++)
+      if (tp->threads[i].thread)
+         sthread_join(tp->threads[i].thread);
 
    tpool_free(tp);
 }
@@ -442,16 +434,9 @@ void tpool_wait(tpool_t *tp)
    if (!tp)
       return;
 
-   /* Teardown: wait for every thread to leave. Under the lock - see
-    * the end of tpool_worker(). */
+   /* Teardown is tpool_destroy()'s to wait out: it joins the threads. */
    if (retro_atomic_load_acquire_int(&tp->stop))
-   {
-      slock_lock(tp->work_mutex);
-      while (tp->thread_cnt != 0)
-         scond_wait(tp->exit_cond, tp->work_mutex);
-      slock_unlock(tp->work_mutex);
       return;
-   }
 
    /* Nothing queued and nothing in progress. outstanding counts both,
     * from the moment tpool_add_work() returns until the item's

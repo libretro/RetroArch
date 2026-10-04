@@ -30,15 +30,15 @@ audio_thread_loop                0
 # here) takes the lock only when such a task is due, and settling it
 # reads the task's flags, which are atomic.
 retro_task_threaded_gather       6
-# A job is handed over through a ring of slots and takes no lock; the
-# one a worker takes here is at its exit, at teardown. Jobs posted
-# past the ring's size wait on a list under the lock (tpool_take, a
-# call of its own). Finishing an item retires it on the outstanding
-# count and wakes tpool_wait() through an eventcount, without the lock.
-tpool_worker                     1
+# A job is handed over through a ring of slots and takes no lock, and
+# a worker takes none at its exit either: tpool_destroy() joins it.
+# Jobs posted past the ring's size wait on a list under the lock
+# (tpool_take, a call of its own). Finishing an item retires it on the
+# outstanding count and wakes tpool_wait() through an eventcount,
+# without the lock.
+tpool_worker                     0
 tpool_help                       0
-# Only at teardown, waiting for the threads to leave.
-tpool_wait                       1
+tpool_wait                       0
 # The recorder's pushes and its encoder hand frames over through
 # retro_spsc rings and sleep on eventcounts; nothing here.
 ffmpeg_push_video                0
