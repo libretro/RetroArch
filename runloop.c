@@ -4278,12 +4278,14 @@ bool runloop_init_libretro_symbols(
             {
                /* for a secondary core, we already have a
                 * primary library loaded, so we can skip
-                * some checks and just load the library */
-               lib_handle_local = dylib_load(lib_path);
-
-               if (!lib_handle_local)
-                  return false;
-               *lib_handle_p = lib_handle_local;
+                * some checks and just load the library -
+                * unless the caller has opened it already */
+               if (!(lib_handle_local = *lib_handle_p))
+               {
+                  if (!(lib_handle_local = dylib_load(lib_path)))
+                     return false;
+                  *lib_handle_p = lib_handle_local;
+               }
             }
 #endif
 #endif

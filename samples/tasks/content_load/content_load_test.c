@@ -67,6 +67,7 @@
 #include "../../../paths.h"
 #include "../../../content.h"
 #include "../../../input/input_driver.h"
+#include "../../../runahead.h"
 #ifdef HAVE_NETWORKING
 #include "../../../network/netplay/netplay.h"
 #endif
@@ -1471,6 +1472,66 @@ static void probe_main_handler(retro_task_t *task)
  * on, the stage runs from inside the check: a wait there would gather
  * the queue again from within it, running the main-thread tasks a
  * second time in the same check. */
+#if defined(HAVE_RUNAHEAD) && defined(HAVE_DYNAMIC) && defined(HAVE_THREADS)
+/* Run-ahead's second instance on the threaded queue: the task copies
+ * the core and opens the copy on the worker, and the main thread
+ * takes the open handle.  The instance is the copy's own - its
+ * statics are not the running core's - and comes up once.  A software
+ * core: a second instance's hardware-render request replaces the
+ * running core's callbacks, which is a matter of its own. */
+static void lane_secondary_threaded(void)
+{
+   settings_t *settings        = config_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   enum runahead_copy_status st = RUNAHEAD_COPY_PENDING;
+   unsigned (*sec_inits)(void)  = NULL;
+   const char *slash            = strrchr(core_path, '/');
+   char nohw[600];
+   unsigned primary_inits;
+   unsigned had = failures, n;
+
+   snprintf(nohw, sizeof(nohw), "%.*s/harness_core_nohw.so",
+         slash ? (int)(slash - core_path) : 1, slash ? core_path : ".");
+   CHECK(path_is_valid(nohw), "no %s: build.sh builds it", nohw);
+   configuration_set_bool(settings, settings->bools.threaded_data_runloop_enable, true);
+   task_queue_set_threaded();
+   open_menu();
+   CHECK(task_push_load_contentless_core_from_menu(nohw),
+         "the load was not started");
+   pump(LOAD_FRAMES);
+   CHECK(core_is_up(), "the core did not come up");
+   primary_inits = core_inits();
+
+   for (n = 0; n < LOAD_FRAMES * 4 && st == RUNAHEAD_COPY_PENDING; n++)
+   {
+      st = secondary_core_ensure_exists(runloop_st, settings);
+      task_queue_check();
+      retro_sleep(1);
+   }
+   CHECK(st == RUNAHEAD_COPY_READY, "the second instance was not created (%d)",
+         (int)st);
+   CHECK(runloop_st->secondary_lib_handle != NULL,
+         "no handle for the second instance");
+   if (runloop_st->secondary_lib_handle)
+      sec_inits = (unsigned (*)(void))dylib_proc(
+            runloop_st->secondary_lib_handle, "harness_core_inits");
+   CHECK(sec_inits && sec_inits() == 1,
+         "the second instance came up %u times", sec_inits ? sec_inits() : 0);
+   CHECK(core_inits() == primary_inits,
+         "bringing up the second instance re-ran the running core's init");
+   CHECK(runloop_st->secondary_lib_handle != runloop_st->lib_handle,
+         "the second instance shares the running core's handle");
+
+   runahead_secondary_core_destroy(runloop_st);
+   configuration_set_bool(settings, settings->bools.threaded_data_runloop_enable, false);
+   task_queue_unset_threaded();
+   pump(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] secondary-threaded lane (%u polls)\n", n);
+}
+#endif
+
 static void lane_fallback_threaded(void)
 {
    settings_t *settings = config_get_ptr();
@@ -1761,6 +1822,9 @@ int main(int argc, char *argv[])
    lane_reinit_deferred();
    lane_fallback();
    lane_fallback_threaded();
+#if defined(HAVE_RUNAHEAD) && defined(HAVE_DYNAMIC) && defined(HAVE_THREADS)
+   lane_secondary_threaded();
+#endif
    lane_not_a_core();
    lane_hw_request();
    lane_queue_survives();

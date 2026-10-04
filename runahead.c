@@ -347,7 +347,11 @@ static char *get_tmpdir_alloc(const char *override_dir)
  * Duplicating the core binary for the secondary instance is pure
  * file IO sized by the core (MAME and friends run hundreds of
  * megabytes), so it must not run synchronously on the thread that
- * drives frames. The copy runs as a task; while it is in flight,
+ * drives frames. Neither should opening the copy: mapping the image,
+ * resolving its imports and running its constructors are the
+ * system loader's work, sized by the core again, and the copy's
+ * path is its own, so no other handle can share the instance. The
+ * copy and the open run as a task; while it is in flight,
  * secondary_core_create() reports 'pending' and run-ahead falls
  * back to the single-instance savestate method for those frames -
  * identical output, no stall - then upgrades to the secondary
@@ -365,6 +369,7 @@ static char *get_tmpdir_alloc(const char *override_dir)
 /* Result slot, published by the task callback (main thread) */
 static char *runahead_copy_slot_path     = NULL;
 static char *runahead_copy_slot_src      = NULL; /* identity of the copy */
+static dylib_t runahead_copy_slot_lib    = NULL; /* the copy, opened      */
 static bool  runahead_copy_slot_done     = false;
 static bool  runahead_copy_slot_failed   = false;
 /* Bumped by runahead_copy_reset(); a task publishes its result only
@@ -396,6 +401,8 @@ typedef struct runahead_copy_handle
     * copy has been closed. */
    struct retro_vfs_copy_handle *copy;
    char *copy_dst;   /* destination the open copy is writing to */
+   dylib_t lib;      /* out_path opened by the task; NULL if it
+                      * could not be, and the caller opens it */
    bool  started;    /* the open was attempted (once, on pass one) */
    bool  failed;
    unsigned generation;
@@ -609,6 +616,11 @@ static void runahead_copy_task_handler(retro_task_t *task)
       h->out_path = h->copy_dst;
       h->copy_dst = NULL;
       h->failed   = false;
+      /* On the worker under the threaded queue: the frame loop goes
+       * on while the loader maps the copy. A copy that will not
+       * open is still published; the main thread's own open of it
+       * then reports why. */
+      h->lib      = dylib_load(h->out_path);
    }
    else
    {
@@ -639,7 +651,13 @@ static void runahead_copy_task_cb(retro_task_t *task,
    if (h->generation != runahead_copy_generation)
    {
       /* Teardown happened while this copy was running (or after it
-       * finished but before this callback ran): discard. */
+       * finished but before this callback ran): discard.  Closed
+       * first: a library still open cannot be deleted on Windows. */
+      if (h->lib)
+      {
+         dylib_close(h->lib);
+         h->lib = NULL;
+      }
       if (h->out_path)
          filestream_delete(h->out_path);
       return;
@@ -647,6 +665,8 @@ static void runahead_copy_task_cb(retro_task_t *task,
 
    runahead_copy_slot_path   = h->out_path;
    h->out_path               = NULL;
+   runahead_copy_slot_lib    = h->lib;
+   h->lib                    = NULL;
    runahead_copy_slot_src    = h->src_path;
    h->src_path               = NULL;
    runahead_copy_slot_failed = h->failed;
@@ -664,6 +684,8 @@ static void runahead_copy_task_free(retro_task_t *task)
        * unfinished copy removes the partial destination. */
       if (h->copy)
          filestream_copy_close(h->copy);
+      if (h->lib)
+         dylib_close(h->lib);
       if (h->copy_dst)
          free(h->copy_dst);
       if (h->src_path)
@@ -687,6 +709,11 @@ static bool runahead_copy_in_flight(void)
  * an already-published (but unconsumed) temp file. */
 static void runahead_copy_reset(bool delete_file)
 {
+   if (runahead_copy_slot_lib)
+   {
+      dylib_close(runahead_copy_slot_lib);
+      runahead_copy_slot_lib = NULL;
+   }
    if (runahead_copy_slot_path)
    {
       if (delete_file)
@@ -716,10 +743,12 @@ static void runahead_copy_reset(bool delete_file)
  * - finished with failure -> UNAVAILABLE (slot reset, so a later
  *                            attempt starts a fresh copy)
  * - finished ok           -> READY; ownership of the temp path is
- *                            transferred to *out_path */
+ *                            transferred to *out_path, and of its
+ *                            open handle (NULL if the task could not
+ *                            open it) to *out_lib */
 static enum runahead_copy_status runahead_copy_poll(
       const char *core_path, const char *dir_libretro,
-      char **out_path)
+      char **out_path, dylib_t *out_lib)
 {
    /* A published result for a different core binary is stale
     * (e.g. core switched without an intervening teardown, or any
@@ -773,6 +802,8 @@ static enum runahead_copy_status runahead_copy_poll(
 
    *out_path               = runahead_copy_slot_path;
    runahead_copy_slot_path = NULL;
+   *out_lib                = runahead_copy_slot_lib;
+   runahead_copy_slot_lib  = NULL;
    runahead_copy_reset(false);
    return RUNAHEAD_COPY_READY;
    /* note: the generation bump in the reset above also invalidates
@@ -816,6 +847,7 @@ static enum runahead_copy_status secondary_core_create(
 {
    enum runahead_copy_status copy_status;
    char *copied_path             = NULL;
+   dylib_t copied_lib            = NULL;
    const enum rarch_core_type
       last_core_type             = runloop_st->last_core_type;
    rarch_system_info_t *sys_info = &runloop_st->system;
@@ -831,13 +863,16 @@ static enum runahead_copy_status secondary_core_create(
     * single-instance fallback for the frame - no stall. */
    copy_status = runahead_copy_poll(
          path_get(RARCH_PATH_CORE), path_directory_libretro,
-         &copied_path);
+         &copied_path, &copied_lib);
    if (copy_status != RUNAHEAD_COPY_READY)
       return copy_status;
 
    if (runloop_st->secondary_library_path)
       free(runloop_st->secondary_library_path);
    runloop_st->secondary_library_path = copied_path;
+   /* Opened by the task; runloop_init_libretro_symbols takes it as
+    * it is and opens the path itself only when this is NULL. */
+   runloop_st->secondary_lib_handle   = copied_lib;
 
    /* Load Core */
    if (!runloop_init_libretro_symbols(runloop_st,

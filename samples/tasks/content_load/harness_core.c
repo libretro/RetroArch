@@ -102,13 +102,17 @@ bool retro_load_game(const struct retro_game_info *game)
     * never reset.  RETRO_HW_CONTEXT_NONE keeps the request off any
     * real driver so the lanes run under the null driver; the
     * callbacks are what the frontend holds and calls. */
+   /* HARNESS_CORE_NO_HW builds a software core that makes no such
+    * request. */
+#ifndef HARNESS_CORE_NO_HW
    struct retro_hw_render_callback hw;
-   (void)game;
    memset(&hw, 0, sizeof(hw));
    hw.context_type    = RETRO_HW_CONTEXT_NONE;
    hw.context_reset   = hw_context_reset;
    hw.context_destroy = hw_context_destroy;
    environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw);
+#endif
+   (void)game;
    return true;
 }
 bool retro_load_game_special(unsigned type, const struct retro_game_info *info, size_t num) { (void)type; (void)info; (void)num; return false; }
