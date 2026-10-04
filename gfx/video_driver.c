@@ -5478,6 +5478,92 @@ bool video_context_driver_get_refresh_rate(float *refresh_rate)
    return true;
 }
 
+bool video_context_driver_is(const char *ident)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   return   ident
+         && video_st->current_video_context.ident
+         && string_is_equal(video_st->current_video_context.ident, ident);
+}
+
+#ifdef HAVE_THREADS
+/* EGL bindings are per-thread. Under threaded video the context is made
+ * current on the video thread, so an eglMakeCurrent() issued from the
+ * frontend's releases that thread's (empty) binding and leaves the
+ * surface current on the worker - and a later create_surface() would
+ * bind the same context a second time, on a second thread. Both entry
+ * points therefore run where the context lives. */
+static uintptr_t video_context_surface_create_cb(void *data)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+
+   if (!video_st->current_video_context.create_surface)
+      return 0;
+
+   return video_st->current_video_context.create_surface(data) ? 1 : 0;
+}
+
+static uintptr_t video_context_surface_destroy_cb(void *data)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+
+   if (video_st->current_video_context.destroy_surface)
+      video_st->current_video_context.destroy_surface(data);
+
+   return 0;
+}
+#endif
+
+bool video_context_surface_can_create(void)
+{
+   return video_driver_st.current_video_context.create_surface != NULL;
+}
+
+bool video_context_surface_create(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+#ifdef HAVE_THREADS
+   /* The callback null-checks the hook and reports failure, and the
+    * dispatch reports failure when the worker is gone. It goes to the
+    * video thread, or straight through when the wrapper is inactive or
+    * this already is the video thread. */
+   return video_thread_texture_handle(video_st->context_data,
+         video_context_surface_create_cb) != 0;
+#else
+   if (!video_st->current_video_context.create_surface)
+      return false;
+   return video_st->current_video_context.create_surface(
+         video_st->context_data);
+#endif
+}
+
+void video_context_surface_destroy(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+
+   if (!video_st->current_video_context.destroy_surface)
+      return;
+
+#ifdef HAVE_THREADS
+   /* The video worker may still be recording a frame that references the
+    * surface. Drain it before the context driver frees the surface. */
+   video_thread_wait_idle();
+
+   /* Dispatches to the video thread, or calls straight through when the
+    * wrapper is inactive or this already is the video thread. */
+   video_thread_texture_handle(video_st->context_data,
+         video_context_surface_destroy_cb);
+#else
+   video_st->current_video_context.destroy_surface(video_st->context_data);
+#endif
+}
+
+const char *video_driver_get_configured_ident(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   return video_st->cached_driver_id[0] ? video_st->cached_driver_id : NULL;
+}
+
 bool video_context_driver_get_ident(gfx_ctx_ident_t *ident)
 {
    video_driver_state_t *video_st  = &video_driver_st;

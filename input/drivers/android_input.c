@@ -714,53 +714,6 @@ bool android_input_can_be_keyboard(void *data, int port)
     return android_input_can_be_keyboard_jni(device->id);
 }
 
-#ifdef HAVE_THREADS
-/* EGL bindings are per-thread. Under threaded video the context is made
- * current on the video thread, so an eglMakeCurrent() issued from here
- * releases this thread's (empty) binding and leaves the surface current
- * on the worker - and a later create_surface() would bind the same
- * context a second time, on a second thread. Both entry points therefore
- * run where the context lives. */
-static uintptr_t android_ctx_create_surface_cb(void *data)
-{
-   video_driver_state_t *state = video_state_get_ptr();
-
-   if (!state->current_video_context.create_surface)
-      return 0;
-
-   return state->current_video_context.create_surface(data) ? 1 : 0;
-}
-
-static uintptr_t android_ctx_destroy_surface_cb(void *data)
-{
-   video_driver_state_t *state = video_state_get_ptr();
-
-   if (state->current_video_context.destroy_surface)
-      state->current_video_context.destroy_surface(data);
-
-   return 0;
-}
-#endif
-
-static void android_input_destroy_surface(video_driver_state_t *state)
-{
-   if (!state || !state->current_video_context.destroy_surface)
-      return;
-
-#ifdef HAVE_THREADS
-   /* The video worker may still be recording a frame that references the
-    * surface. Drain it before the context driver frees the surface. */
-   video_thread_wait_idle();
-
-   /* Dispatches to the video thread, or calls straight through when the
-    * wrapper is inactive or this already is the video thread. */
-   video_thread_texture_handle(state->context_data,
-         android_ctx_destroy_surface_cb);
-#else
-   state->current_video_context.destroy_surface(state->context_data);
-#endif
-}
-
 /* Set once the background flush has been performed, cleared again on
  * start or resume. A pause -> resume -> pause cycle therefore flushes
  * twice, but a duplicate APP_CMD_PAUSE, or the APP_CMD_STOP that follows
@@ -830,7 +783,7 @@ static void android_input_flush_state(void)
 
    if (settings->bools.config_save_on_exit)
    {
-      video_driver_state_t *video_st = video_state_get_ptr();
+      const char *configured_driver = video_driver_get_configured_ident();
       char live_driver[32];
 
       live_driver[0] = '\0';
@@ -846,13 +799,13 @@ static void android_input_flush_state(void)
        * Unlike main_exit(), swap the live value back afterwards: the
        * activity may be resumed, and the renderer actually in use does
        * not change just because the app went to the background. */
-      if (video_st->cached_driver_id[0])
+      if (configured_driver)
       {
          strlcpy(live_driver, settings->arrays.video_driver,
                sizeof(live_driver));
          configuration_set_string(settings,
                settings->arrays.video_driver,
-               video_st->cached_driver_id);
+               configured_driver);
       }
 
       command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
@@ -958,7 +911,6 @@ static void android_input_poll_main_cmd(void)
       case APP_CMD_START:
       case APP_CMD_PAUSE:
       {
-         video_driver_state_t *state = video_state_get_ptr();
          /* Acknowledged by the flush, see
           * android_input_flush_pending_state(). */
          bool hold_ack               = (cmd == APP_CMD_PAUSE)
@@ -970,11 +922,9 @@ static void android_input_poll_main_cmd(void)
           * wait for INIT_WINDOW rather than falling back to a full
           * video-driver reinitialization without a native window. */
          if (  (cmd == APP_CMD_RESUME || cmd == APP_CMD_START)
-             && state->current_video_context.ident
-             && string_is_equal(state->current_video_context.ident,
-                   "vk_android")
+             && video_context_driver_is("vk_android")
              && android_app_window(android_app)
-             && state->current_video_context.create_surface)
+             && video_context_surface_can_create())
             android_app->reinitRequested = 1;
 
          if (cmd == APP_CMD_PAUSE)
@@ -1004,8 +954,6 @@ static void android_input_poll_main_cmd(void)
 
       case APP_CMD_STOP:
       {
-         video_driver_state_t *state = video_state_get_ptr();
-
          android_keypress_vibrate_pending = false;
 
          /* Normally flushed on the preceding APP_CMD_PAUSE already. When
@@ -1024,10 +972,8 @@ static void android_input_poll_main_cmd(void)
          /* Android may retain the same ANativeWindow while the app is
           * backgrounded. Release Vulkan's acquired buffers anyway so BLAST
           * cannot wedge before APP_CMD_TERM_WINDOW is delivered. */
-         if (     state->current_video_context.ident
-               && string_is_equal(state->current_video_context.ident,
-                     "vk_android"))
-            android_input_destroy_surface(state);
+         if (video_context_driver_is("vk_android"))
+            video_context_surface_destroy();
          break;
       }
 
@@ -1037,11 +983,9 @@ static void android_input_poll_main_cmd(void)
          break;
       case APP_CMD_TERM_WINDOW:
       {
-         video_driver_state_t *state = video_state_get_ptr();
-
          android_keypress_vibrate_pending = false;
 
-         android_input_destroy_surface(state);
+         video_context_surface_destroy();
 
          /* The window is being hidden or closed: nobody may hold it by
           * the time the UI thread hands it back. */
@@ -2966,20 +2910,10 @@ static void android_input_reinit(void)
        * destroy the presentation surface while retaining the OpenGL context or
        * Vulkan device. Recreate only the surface when supported before falling
        * back to a full video driver reinitialization. */
-      video_driver_state_t *state = video_state_get_ptr();
-      bool recreated              = false;
-
-#ifdef HAVE_THREADS
-      /* The callback null-checks the hook and reports failure, and the
-       * dispatch reports failure when the worker is gone, so either one
-       * falls through to the full reinitialization below. */
-      recreated = (video_thread_texture_handle(state->context_data,
-               android_ctx_create_surface_cb) != 0);
-#else
-      if (state->current_video_context.create_surface)
-         recreated = state->current_video_context.create_surface(
-               state->context_data);
-#endif
+      /* false when the context cannot be given a surface, when giving
+       * it one failed, or when the video thread is gone: each falls
+       * through to the full reinitialization below. */
+      bool recreated = video_context_surface_create();
 
       if (!recreated)
          command_event(CMD_EVENT_REINIT, NULL);

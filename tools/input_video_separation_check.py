@@ -16,10 +16,9 @@ every platform's files:
    dinput_joypad, ...), as declared in input/input_driver.h.
                                                 Must be none.
 
-What is still to be moved is listed below, file by file, with how many
-times it happens there. The lists only shrink: a file not listed, or a
-count above its listing, fails; so does a count below it, so that the
-listing is brought down with the code and cannot be used again.
+All three are at none. The two lists below are what was left to move
+while that was being done, file by file with a count, and they are
+empty now: a file that is not listed fails, so nothing goes back in.
 
 Usage:
    tools/input_video_separation_check.py [--root DIR] [--selftest]
@@ -33,10 +32,11 @@ import sys
 
 SOURCE_EXT = (".c", ".h", ".m", ".mm", ".cpp")
 
-# input/ files that still take the video state (2).
+# input/ files that still take the video state (2): none. The last
+# was the Android input driver, which handles the app's lifecycle
+# commands; it asks the video driver by name for what it needs
+# (video_context_surface_create() and its neighbours).
 VIDEO_STATE_IN_INPUT = {
-    # the Android app's lifecycle commands arrive in the input driver
-    "input/drivers/android_input.c": 7,
 }
 
 # gfx/ files that still name an input or a joypad driver (3): none.
@@ -207,9 +207,13 @@ def main(argv):
         return 1
     left = (sum(VIDEO_STATE_IN_INPUT.values()),
             len(INPUT_DRIVERS_IN_GFX))
-    print("PASS input_video_separation_check (still listed: %d call(s) into"
-          " the video state from input/, %d gfx/ file(s) naming an input"
-          " driver)" % left)
+    if left == (0, 0):
+        print("PASS input_video_separation_check (gfx/ and input/ stay out"
+              " of each other's state, and gfx/ names no input driver)")
+    else:
+        print("PASS input_video_separation_check (still listed: %d call(s)"
+              " into the video state from input/, %d gfx/ file(s) naming an"
+              " input driver)" % left)
     return 0
 
 
