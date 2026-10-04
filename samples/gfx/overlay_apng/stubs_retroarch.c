@@ -53,3 +53,16 @@ enum texture_filter_type gfx_display_texture_filter(void)
 {
    return TEXTURE_FILTER_LINEAR;
 }
+
+/* No driver lends upload memory here: every slot stays the surface's. */
+void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch)
+{
+   (void)id; (void)slot; (void)pitch;
+   return NULL;
+}
+
+bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot)
+{
+   (void)id; (void)slot;
+   return true;
+}

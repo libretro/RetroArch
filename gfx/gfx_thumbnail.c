@@ -1012,6 +1012,26 @@ static void gfx_thumbnail_anim_jobs_free(gfx_thumb_anim_job_t *j0,
 void gfx_thumbnail_anim_worker_deinit(void) { }
 #endif
 
+#ifdef HAVE_THREADS
+/* Hand a job its slot - job one slot 0, job two slot 1 - and queue
+ * it. The slot is read afresh: a submit may have lent it the driver's
+ * upload memory, which the job then decodes into directly. A lent
+ * slot the GPU still reads from is not handed out; the job stays IDLE
+ * and a later poll starts it. */
+static bool gfx_thumbnail_anim_job_start(gfx_thumbnail_t *thumbnail,
+      gfx_thumb_anim_job_t *job)
+{
+   gfx_surface_t *s = (gfx_surface_t*)thumbnail->anim_surface;
+   unsigned slot    = (job == (gfx_thumb_anim_job_t*)thumbnail->anim_job2)
+      ? 1 : 0;
+   if (!s || !gfx_surface_slot_writable(s, slot))
+      return false;
+   job->frame = s->slots[slot];
+   gfx_thumbnail_anim_job_enqueue(job);
+   return true;
+}
+#endif
+
 static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
 {
 #ifdef HAVE_THREADS
@@ -1662,8 +1682,6 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
             }
             j0        = (gfx_thumb_anim_job_t*)block;
             j1        = (gfx_thumb_anim_job_t*)(block + GFX_THUMB_ANIM_JOB_STRIDE);
-            j0->frame = s->slots[0];
-            j1->frame = s->slots[1];
          }
          j0->stream     = thumbnail->anim;
          j1->stream     = thumbnail->anim;
@@ -1680,7 +1698,7 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
          thumbnail->anim_job        = j0;
          thumbnail->anim_job2       = j1;
          thumbnail->anim_job_upload = 0;
-         gfx_thumbnail_anim_job_enqueue(j0);
+         gfx_thumbnail_anim_job_start(thumbnail, j0);
          return;
       }
 
@@ -1700,7 +1718,7 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
          thumbnail->anim_loops_left = ju->loops_left;
          jo->loops_left             = ju->loops_left;
          jo->use_rgba               = gfx_thumbnail_use_rgba();
-         gfx_thumbnail_anim_job_enqueue(jo);
+         gfx_thumbnail_anim_job_start(thumbnail, jo);
       }
 
       if ((thumbnail->anim_next_us != 0) && (now < thumbnail->anim_next_us))
@@ -1754,7 +1772,7 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
          thumbnail->anim_loops_left = jo->loops_left;
          ju->loops_left             = jo->loops_left;
          ju->use_rgba               = gfx_thumbnail_use_rgba();
-         gfx_thumbnail_anim_job_enqueue(ju);
+         gfx_thumbnail_anim_job_start(thumbnail, ju);
       }
       return;
    }

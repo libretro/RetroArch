@@ -1005,6 +1005,27 @@ typedef struct video_poke_interface
     * while the audio rate was scaled for the full multiple. Drivers
     * that hold a frame for as long as they are asked leave it NULL. */
    unsigned (*get_swap_interval_cap)(void *data);
+
+   /* Lending a streamed texture's upload memory, so a producer writes
+    * a frame where update_texture copies it to the GPU from and the
+    * copy into it goes away. Direct video only: the thread wrapper
+    * leaves both NULL, since the lent memory's readiness is the
+    * video thread's to know.
+    *
+    * texture_lend hands out slot @slot of texture @id's upload memory,
+    * mapped and writable, when its rows lie the @pitch bytes apart the
+    * caller writes them at; NULL, with nothing lent, otherwise. The
+    * memory is the texture's until it is unloaded. update_texture given a texture_image whose pixels
+    * are a lent slot uploads from there; with any slot lent, an update
+    * from other memory only ever goes through the slots not lent.
+    *
+    * texture_lend_ready answers whether lent slot @slot may be written:
+    * false while the GPU may still read the last upload from it. Never
+    * waits. */
+   void *(*texture_lend)(void *video_data, uintptr_t id, unsigned slot,
+         size_t pitch);
+   bool (*texture_lend_ready)(void *video_data, uintptr_t id,
+         unsigned slot);
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a
@@ -1898,6 +1919,13 @@ bool video_driver_texture_update(uintptr_t id, void *data);
  * Callers that stream (gfx_surface) decide between an update and a
  * replacement load on this, once per surface rather than per frame. */
 bool video_driver_texture_can_update(void);
+
+/* texture_lend / texture_lend_ready of the active driver; NULL and
+ * true under the thread wrapper or with a driver that lends nothing,
+ * where no slot is ever lent. Main thread. */
+void *video_driver_texture_lend(uintptr_t id, unsigned slot,
+      size_t pitch);
+bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot);
 
 /* Whether the active driver can sample @fmt: a compressed texture, or
  * for TEXTURE_GPU_FORMAT_RGB10A2 a pix10 image as 10-bit. False with

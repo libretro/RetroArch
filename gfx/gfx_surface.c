@@ -55,7 +55,10 @@ gfx_surface_t *gfx_surface_new(unsigned dims,
    base = (uint8_t*)(((uintptr_t)base + GFX_SURFACE_SLOT_ALIGN - 1)
          & ~(uintptr_t)(GFX_SURFACE_SLOT_ALIGN - 1));
    for (i = 0; i < num_slots; i++)
-      s->slots[i] = (uint32_t*)(base + i * frame_len);
+   {
+      s->slots[i]     = (uint32_t*)(base + i * frame_len);
+      s->own_slots[i] = s->slots[i];
+   }
 
    s->release    = release;
    s->user       = user;
@@ -198,6 +201,43 @@ static bool gfx_surface_prepare(gfx_surface_t *s, const void *pixels,
  * else an update. Direct video runs the driver here; under the wrapper
  * this is the fallback when the post was refused, and the driver
  * marshals each call itself. */
+/* Every slot back on the surface's own memory, before the texture
+ * that owns the lent memory is replaced or unloaded. */
+static void gfx_surface_unlend(gfx_surface_t *s)
+{
+   unsigned i;
+   for (i = 0; s->lent; i++)
+      if (s->lent & (1u << i))
+      {
+         s->slots[i] = s->own_slots[i];
+         s->lent    &= ~(1u << i);
+      }
+}
+
+/* After a direct submit of @slot: the texture streams, so the next
+ * frame for the slot can be written where the driver uploads it from,
+ * and the copy into that memory goes away. Rows as tightly packed as
+ * the slot's own; the driver lends only memory laid out so. Only a
+ * surface of two slots or more lends: its producer alternates them, so
+ * one is written while the other's copy runs. A single slot lent would
+ * have its next frame wait on the copy, where the driver's own two
+ * upload buffers behind it never make it wait. */
+static void gfx_surface_lend(gfx_surface_t *s, unsigned slot)
+{
+   void *mem;
+   if (     s->num_slots < 2
+         || slot >= s->num_slots || (s->lent & (1u << slot))
+         || !s->handle || !s->can_update)
+      return;
+   if ((mem = video_driver_texture_lend(s->handle, slot,
+         (size_t)VIDEO_SCALE_W(s->dims)
+         * GFX_SURFACE_PIXFMT_BPP(s->pixfmt))))
+   {
+      s->slots[slot] = (uint32_t*)mem;
+      s->lent       |= 1u << slot;
+   }
+}
+
 static enum gfx_surface_submit_result gfx_surface_upload_sync(
       gfx_surface_t *s, uint8_t fmt)
 {
@@ -213,6 +253,9 @@ static enum gfx_surface_submit_result gfx_surface_upload_sync(
    if (!video_driver_texture_load(&s->img, s->filter, &new_handle)
          || !new_handle)
       return GFX_SURFACE_SUBMIT_FAILED;
+   /* The new texture has read the frame, wherever it lay; the memory
+    * lent from the old one goes with it. */
+   gfx_surface_unlend(s);
    if (s->handle)
       video_driver_texture_unload(&s->handle);
    s->handle = new_handle;
@@ -329,6 +372,10 @@ enum gfx_surface_submit_result gfx_surface_submit(gfx_surface_t *s,
    r = gfx_surface_prepare(s, s->slots[slot], s->pixfmt, rgba, true, &fmt)
       ? gfx_surface_submit_img(s, slot, fmt)
       : GFX_SURFACE_SUBMIT_FAILED;
+   /* Taken in place (direct video): the slot's next frame can go
+    * where the driver uploads from. */
+   if (r == GFX_SURFACE_SUBMIT_DONE)
+      gfx_surface_lend(s, slot);
    gfx_surface_count(r);
    return r;
 }
@@ -354,12 +401,20 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
     * thread's purposes, and is not the surface's to narrow; a slot is
     * both. One copy, the size of a frame, against a wait of up to a
     * present. */
+   /* With a slot lent, the driver's copy path may have no slot of its
+    * own left, so the frame goes through slot 0 like the rest. */
    if (     gfx_surface_must_narrow(s->pixfmt)
+         || s->lent
 #ifdef HAVE_THREADS
          || video_driver_thread_wrapper_active()
 #endif
       )
    {
+      if (!gfx_surface_slot_writable(s, 0))
+      {
+         GFX_INSTR_INC(GFX_INSTR_SUBMIT_BUSY);
+         return GFX_SURFACE_SUBMIT_BUSY;
+      }
       GFX_INSTR_INC(GFX_INSTR_SUBMIT_COPY);
       memcpy(s->slots[0], pixels,
             VIDEO_SCALE_AREA(s->dims) * GFX_SURFACE_PIXFMT_BPP(s->pixfmt));
@@ -425,9 +480,17 @@ void gfx_surface_free(gfx_surface_t *s)
       s->dying = 1;
       return;
    }
+   gfx_surface_unlend(s);
    if (s->handle)
       video_driver_texture_unload(&s->handle);
    free(s);
+}
+
+bool gfx_surface_slot_writable(const gfx_surface_t *s, unsigned slot)
+{
+   if (!s || slot >= s->num_slots || !(s->lent & (1u << slot)))
+      return true;
+   return video_driver_texture_lend_ready(s->handle, slot);
 }
 
 bool gfx_surface_free_adopt(gfx_surface_t *s, void *pixels)

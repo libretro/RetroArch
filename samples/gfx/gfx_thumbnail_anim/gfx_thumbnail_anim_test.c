@@ -91,6 +91,9 @@ int      gt_uploads;
 unsigned gt_last_crc;
 extern int gt_async_mode, gt_async_posted, gt_async_pending;
 extern int gt_can_update, gt_updates;
+extern int gt_lend_mode, gt_lends, gt_lend_violations, gt_lent_uploads,
+       gt_lend_stale;
+extern void gt_lend_reset(void);
 void gt_async_flush(void);
 
 /* Whether the thumbnail's animation surface has a frame on its way to
@@ -435,6 +438,38 @@ int main(void)
       }
       gfx_thumbnail_reset(&th);
    }
+   /* 7. direct video lends the job pipeline's slots the driver's
+    *    upload memory: jobs decode straight into it, are handed a slot
+    *    only once the GPU is done with it, and every upload from it
+    *    carries a frame a job wrote there. */
+   reset_thumb(&th);
+   gt_async_mode = 0;
+   gt_can_update = 1;
+   gt_lend_mode  = 1;
+   gt_lends = gt_lend_violations = gt_lent_uploads = gt_lend_stale = 0;
+   gt_uploads    = 0;
+   gt_last_crc   = 0;
+   gfx_thumbnail_anim_open(&th, path);
+   for (i = 0; i < 480 && gt_lent_uploads < 6; i++)
+   {
+      gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
+      usleep(16666);
+   }
+   if (     th.anim && gt_lends >= 2 && gt_lent_uploads >= 6
+         && !gt_lend_violations && !gt_lend_stale)
+      printf("[ok]   lent slots: %d lends, %d uploads from lent memory, "
+             "none written early or stale\n", gt_lends, gt_lent_uploads);
+   else
+   {
+      printf("[FAIL] lent slots: %d lends, %d lent uploads, %d written "
+             "while on the GPU, %d stale\n", gt_lends, gt_lent_uploads,
+             gt_lend_violations, gt_lend_stale);
+      bad = 1;
+   }
+   gfx_thumbnail_reset(&th);
+   gt_lend_mode = 0;
+   gt_lend_reset();
+
    gfx_thumbnail_anim_worker_deinit();
 
    remove(path);

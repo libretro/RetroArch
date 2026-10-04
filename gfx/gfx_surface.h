@@ -93,6 +93,12 @@ struct gfx_surface
    /* Each slot is a frame of @pixfmt: VIDEO_SCALE_AREA(dims) times
     * GFX_SURFACE_PIXFMT_BPP(pixfmt) bytes. */
    uint32_t *slots[GFX_SURFACE_MAX_SLOTS];
+   /* The surface's own slot memory. Under direct video a slot of a
+    * surface of two slots or more, whose texture the driver can
+    * stream, may instead be lent upload memory (texture_lend): slots[i]
+    * then points there, and own_slots[i] is where it points again once
+    * the texture is replaced or freed. */
+   uint32_t *own_slots[GFX_SURFACE_MAX_SLOTS];
    /* The texture, 0 until a submit has completed. A replacement load
     * in flight leaves the previous texture here, drawable, until the
     * new one arrives. */
@@ -111,6 +117,7 @@ struct gfx_surface
     * update only ever writes the layout the texture was made with.
     * 0xff = none. */
    uint8_t fmt;
+   uint8_t lent;       /* slots lent driver memory, a bit each */
    uint8_t can_update; /* driver updates in place */
 };
 
@@ -280,6 +287,14 @@ enum gfx_surface_submit_result gfx_surface_submit(gfx_surface_t *s,
  * sample the surface's format and the surface knows how. */
 enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
       const void *pixels, bool rgba);
+
+/* Whether slot @slot may be written now. A slot lent the driver's upload
+ * memory is the GPU's until the copy of its last frame has run; the
+ * answer never waits, and a producer that gets false keeps the slot
+ * for a later frame. Producers read slots[@slot] afresh each time they
+ * hand it to a writer: a successful submit of a slot may lend it. Main
+ * thread. */
+bool gfx_surface_slot_writable(const gfx_surface_t *s, unsigned slot);
 
 /* Unload the texture and free the surface. A submit in flight keeps
  * the slots alive until it completes, without a release() call; its

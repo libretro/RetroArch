@@ -4327,6 +4327,33 @@ bool video_driver_texture_can_update(void)
    return poke && poke->update_texture;
 }
 
+void *video_driver_texture_lend(uintptr_t id, unsigned slot,
+      size_t pitch)
+{
+   video_driver_state_t *video_st     = &video_driver_st;
+   const video_poke_interface_t *poke = video_st->poke;
+#ifdef HAVE_THREADS
+   if (video_driver_thread_wrapper_active())
+      return NULL;
+#endif
+   if (!id || !poke || !poke->texture_lend || !video_st->data)
+      return NULL;
+   return poke->texture_lend(video_st->data, id, slot, pitch);
+}
+
+bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot)
+{
+   video_driver_state_t *video_st     = &video_driver_st;
+   const video_poke_interface_t *poke = video_st->poke;
+#ifdef HAVE_THREADS
+   if (video_driver_thread_wrapper_active())
+      return true;
+#endif
+   if (!id || !poke || !poke->texture_lend_ready || !video_st->data)
+      return true;
+   return poke->texture_lend_ready(video_st->data, id, slot);
+}
+
 bool video_driver_texture_unload(uintptr_t *id)
 {
    video_driver_state_t *video_st     = &video_driver_st;

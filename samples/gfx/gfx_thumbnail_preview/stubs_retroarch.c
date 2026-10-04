@@ -323,3 +323,16 @@ bool video_driver_test_all_flags(int flags)
 { (void)flags; return false; }
 bool video_driver_supports_texture_format(int fmt)
 { (void)fmt; return false; }
+
+/* No driver lends upload memory here: every slot stays the surface's. */
+void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch)
+{
+   (void)id; (void)slot; (void)pitch;
+   return NULL;
+}
+
+bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot)
+{
+   (void)id; (void)slot;
+   return true;
+}

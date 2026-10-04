@@ -1367,6 +1367,9 @@ struct vk_stream_state
    VkCommandBuffer cmd[VK_STREAM_SLOTS];
    VkFence fence[VK_STREAM_SLOTS];
    unsigned next_slot;
+   /* Slots whose staging memory a producer writes itself
+    * (vulkan_texture_lend): an update from elsewhere never uses them. */
+   unsigned lent;
 };
 
 /* Signalled fences go back here for the next upload. */
@@ -10222,43 +10225,30 @@ static void vulkan_unload_texture(void *data,
  * the frame recorded next. Neither slot free means the GPU is more
  * than two updates behind: the frame is dropped and the texture keeps
  * what it shows. Frame-recording thread only. */
-static bool vulkan_update_texture_internal(vk_t *vk, uintptr_t handle,
-      const struct texture_image *image)
+/* The in-place update state of @texture, made on first use. NULL when
+ * the texture cannot be updated in place or its state failed to build;
+ * a half-built state stays on the list for the texture's retirement. */
+static struct vk_stream_state *vulkan_stream_state_get(vk_t *vk,
+      struct vk_texture *texture)
 {
-   struct vk_texture *texture = (struct vk_texture*)handle;
    struct vk_stream_state *st = vk->stream_states;
-   struct vk_texture *staging;
-   VkCommandBuffer cmd;
-   VkCommandBufferBeginInfo begin_info;
-   VkBufferImageCopy region;
-   VkSubmitInfo submit_info;
    VkDevice device;
-   const uint8_t *src;
-   uint8_t *dst;
-   size_t row_bytes;
-   unsigned slot, y, i;
+   unsigned i;
 
-   if (     !vk || !vk->context || !texture || !image || !image->pixels
+   if (     !vk->context || !texture
          || texture->image == VK_NULL_HANDLE
-         || VIDEO_SCALE_W(texture->dims) != image->width
-         || VIDEO_SCALE_H(texture->dims) != image->height
          || texture->layout != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
          || vulkan_format_to_bpp(texture->format) != 4)
-      return false;
+      return NULL;
 
    device = vk->context->device;
 
    while (st && st->texture != texture)
       st = st->next;
-   /* A state whose staging, fences or command buffers failed to build
-    * stays on the list for the texture's retirement to clean up and
-    * takes no updates: the caller loads replacements instead. */
-   if (     st
-         && (   st->fence[VK_STREAM_SLOTS - 1] == VK_NULL_HANDLE
-             || !st->staging[VK_STREAM_SLOTS - 1].mapped
-             || st->cmd[0] == VK_NULL_HANDLE))
-      return false;
-   if (!st)
+   if (st)
+      return (   st->fence[VK_STREAM_SLOTS - 1] == VK_NULL_HANDLE
+              || !st->staging[VK_STREAM_SLOTS - 1].mapped
+              || st->cmd[0] == VK_NULL_HANDLE) ? NULL : st;
    {
       VkFenceCreateInfo fence_info;
       VkCommandBufferAllocateInfo cmd_info;
@@ -10266,19 +10256,19 @@ static bool vulkan_update_texture_internal(vk_t *vk, uintptr_t handle,
       fence_info.pNext = NULL;
       fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
       if (!(st = (struct vk_stream_state*)calloc(1, sizeof(*st))))
-         return false;
+         return NULL;
       st->texture = texture;
       cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
       cmd_info.pNext              = NULL;
       cmd_info.commandPool        = vk->staging_pool;
       cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
       cmd_info.commandBufferCount = VK_STREAM_SLOTS;
+      st->next          = vk->stream_states;
+      vk->stream_states = st;
       if (vkAllocateCommandBuffers(device, &cmd_info, st->cmd) != VK_SUCCESS)
       {
-         st->cmd[0]        = VK_NULL_HANDLE;
-         st->next          = vk->stream_states;
-         vk->stream_states = st;
-         return false;
+         st->cmd[0] = VK_NULL_HANDLE;
+         return NULL;
       }
       for (i = 0; i < VK_STREAM_SLOTS; i++)
       {
@@ -10292,35 +10282,77 @@ static bool vulkan_update_texture_internal(vk_t *vk, uintptr_t handle,
                || vkMapMemory(device, st->staging[i].memory,
                      st->staging[i].offset, st->staging[i].size, 0,
                      &st->staging[i].mapped) != VK_SUCCESS)
-         {
-            st->next          = vk->stream_states;
-            vk->stream_states = st;
-            /* Half-built state is torn down with the texture. */
-            return false;
-         }
+            return NULL;
       }
-      st->next          = vk->stream_states;
-      vk->stream_states = st;
    }
+   return st;
+}
 
-   slot = st->next_slot;
-   if (vkGetFenceStatus(device, st->fence[slot]) != VK_SUCCESS)
+static bool vulkan_update_texture_internal(vk_t *vk, uintptr_t handle,
+      const struct texture_image *image)
+{
+   struct vk_texture *texture = (struct vk_texture*)handle;
+   struct vk_stream_state *st;
+   struct vk_texture *staging;
+   VkCommandBuffer cmd;
+   VkCommandBufferBeginInfo begin_info;
+   VkBufferImageCopy region;
+   VkSubmitInfo submit_info;
+   VkDevice device;
+   const uint8_t *src;
+   uint8_t *dst;
+   size_t row_bytes;
+   unsigned slot, y, k;
+   bool lent_src = false;
+
+   if (     !vk || !vk->context || !texture || !image || !image->pixels
+         || VIDEO_SCALE_W(texture->dims) != image->width
+         || VIDEO_SCALE_H(texture->dims) != image->height
+         || !(st = vulkan_stream_state_get(vk, texture)))
+      return false;
+
+   device = vk->context->device;
+
+   /* A lent slot holding the frame already: the producer wrote it
+    * where the copy reads from, once the slot's fence had signalled. */
+   slot = VK_STREAM_SLOTS;
+   for (k = 0; k < VK_STREAM_SLOTS; k++)
+      if (     (st->lent & (1u << k))
+            && image->pixels == st->staging[k].mapped)
+         slot = k;
+   if (slot < VK_STREAM_SLOTS)
    {
-      slot ^= 1;
       if (vkGetFenceStatus(device, st->fence[slot]) != VK_SUCCESS)
-         return true; /* both copies in flight: keep the last frame */
+         return true; /* written early: keep the last frame */
+      lent_src = true;
    }
-   staging       = &st->staging[slot];
-   st->next_slot = slot ^ 1;
-
-   row_bytes = (size_t)image->width * 4;
-   src       = (const uint8_t*)image->pixels;
-   dst       = (uint8_t*)staging->mapped;
-   if (staging->stride == row_bytes)
-      memcpy(dst, src, row_bytes * image->height);
    else
-      for (y = 0; y < image->height; y++, dst += staging->stride, src += row_bytes)
-         memcpy(dst, src, row_bytes);
+   {
+      /* Otherwise copied into a slot nobody writes but this path. */
+      slot = st->next_slot;
+      if (     (st->lent & (1u << slot))
+            || vkGetFenceStatus(device, st->fence[slot]) != VK_SUCCESS)
+      {
+         slot ^= 1;
+         if (     (st->lent & (1u << slot))
+               || vkGetFenceStatus(device, st->fence[slot]) != VK_SUCCESS)
+            return true; /* none free: keep the last frame */
+      }
+      st->next_slot = slot ^ 1;
+   }
+   staging = &st->staging[slot];
+
+   if (!lent_src)
+   {
+      row_bytes = (size_t)image->width * 4;
+      src       = (const uint8_t*)image->pixels;
+      dst       = (uint8_t*)staging->mapped;
+      if (staging->stride == row_bytes)
+         memcpy(dst, src, row_bytes * image->height);
+      else
+         for (y = 0; y < image->height; y++, dst += staging->stride, src += row_bytes)
+            memcpy(dst, src, row_bytes);
+   }
 
    if (staging->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
    {
@@ -10752,6 +10784,34 @@ static uintptr_t vulkan_load_texture_compressed(void *video_data,
    return vulkan_load_texture_compressed_internal(vk, tc, filter_type);
 }
 
+/* Direct video only (see texture_lend in video_driver.h): the lent
+ * slot's fence is read on the thread that submits its copies. */
+static void *vulkan_texture_lend(void *data, uintptr_t id, unsigned slot,
+      size_t pitch)
+{
+   vk_t                   *vk = (vk_t*)data;
+   struct vk_stream_state *st;
+   if (     !vk || slot >= VK_STREAM_SLOTS
+         || !(st = vulkan_stream_state_get(vk, (struct vk_texture*)id))
+         || (size_t)st->staging[slot].stride != pitch)
+      return NULL;
+   st->lent |= 1u << slot;
+   return st->staging[slot].mapped;
+}
+
+static bool vulkan_texture_lend_ready(void *data, uintptr_t id,
+      unsigned slot)
+{
+   vk_t                   *vk = (vk_t*)data;
+   struct vk_stream_state *st = vk ? vk->stream_states : NULL;
+   while (st && st->texture != (struct vk_texture*)id)
+      st = st->next;
+   if (!st || slot >= VK_STREAM_SLOTS || !(st->lent & (1u << slot)))
+      return true;
+   return vkGetFenceStatus(vk->context->device, st->fence[slot])
+      == VK_SUCCESS;
+}
+
 static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_get_flags,
    vulkan_load_texture,
@@ -10801,7 +10861,10 @@ static const video_poke_interface_t vulkan_poke_interface = {
    NULL, /* hw_ring_context_new */
    NULL, /* hw_ring_context_free */
    NULL, /* hw_ring_framebuffer */
-   vulkan_update_texture
+   vulkan_update_texture,
+   NULL, /* get_swap_interval_cap */
+   vulkan_texture_lend,
+   vulkan_texture_lend_ready
 };
 
 static void vulkan_get_poke_interface(void *data,

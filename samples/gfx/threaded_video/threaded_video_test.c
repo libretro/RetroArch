@@ -4302,6 +4302,90 @@ static void lane_surface_external(void)
             "freed, unsampled formats refused)\n");
 }
 
+/* Direct video lends a streaming surface's slots the driver's upload
+ * memory: after a slot's first submit it points there, a frame written
+ * into it updates the same texture with no copy into that memory, and
+ * the surface's own memory is back before the texture goes. Threaded
+ * video never lends. Only a driver with upload memory to lend
+ * (texture_lend) is held to the direct half. */
+static void lane_surface_lend(void)
+{
+   unsigned had = failures;
+   bool rgba    = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA) != 0;
+   size_t n     = (size_t)64 * 48;
+   gfx_surface_t *s;
+   unsigned pass, k, tries;
+   bool lent_any = false;
+
+   if (!real_driver())
+   {
+      fprintf(stderr, "[skip] surface lend lane (no real driver)\n");
+      return;
+   }
+
+   for (pass = 0; pass < 2; pass++)
+   {
+      bool threaded = pass == 1;
+      uintptr_t first = 0;
+      set_threaded_via_setting(threaded);
+      run_frames(3);
+      expect_wrapper(threaded, "surface lend lane");
+      s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 2,
+            GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, NULL, NULL);
+      CHECK(s != NULL, "surface lend lane: no surface");
+      if (!s)
+         continue;
+      for (k = 0; k < 8; k++)
+      {
+         unsigned slot = k & 1;
+         size_t i;
+         enum gfx_surface_submit_result r;
+         for (tries = 0; tries < 16
+               && (s->inflight || !gfx_surface_slot_writable(s, slot));
+               tries++)
+            run_frames(1);
+         CHECK(!s->inflight && gfx_surface_slot_writable(s, slot),
+               "surface lend lane: slot %u never came back", slot);
+         for (i = 0; i < n; i++)
+            s->slots[slot][i] = 0xff000000u | (uint32_t)(i * 2654435761u
+                  >> 8) | k;
+         r = gfx_surface_submit(s, slot, rgba);
+         CHECK(r == GFX_SURFACE_SUBMIT_DONE || r == GFX_SURFACE_SUBMIT_QUEUED,
+               "surface lend lane: submit %u returned %d", k, r);
+         for (tries = 0; tries < 16 && s->inflight; tries++)
+            run_frames(1);
+         if (k == 0)
+            first = s->handle;
+         else if (s->can_update)
+            CHECK(s->handle == first, "surface lend lane: frame %u "
+                  "replaced the texture", k);
+      }
+      if (threaded)
+         CHECK(s->lent == 0, "threaded video lent a slot");
+      else
+      {
+         lent_any = s->lent != 0;
+         if (lent_any)
+            CHECK(     s->slots[0] != s->own_slots[0]
+                    && s->slots[1] != s->own_slots[1],
+                  "surface lend lane: lent bits without lent slots");
+      }
+      gfx_surface_free(s);
+      run_frames(2);
+   }
+   set_threaded_via_setting(false);
+   run_frames(2);
+   {
+      /* The drivers that lend: there the direct half must have. */
+      const char *drv = getenv("HARNESS_VIDEO_DRIVER");
+      if (drv && !strcmp(drv, "vulkan"))
+         CHECK(lent_any, "surface lend lane: vulkan lent no slot");
+   }
+   if (failures == had)
+      fprintf(stderr, "[pass] surface lend lane (direct %s, threaded "
+            "none)\n", lent_any ? "lent both slots" : "lent nothing");
+}
+
 static void lane_surface_update(void)
 {
    unsigned had = failures;
@@ -5823,6 +5907,7 @@ int main(int argc, char *argv[])
    lane_pacing_flag_follows_wrapper();
    lane_surface_update();
    lane_surface_external();
+   lane_surface_lend();
    if (real_driver())
       lane_surface_4k();
    lane_overlay_textures();

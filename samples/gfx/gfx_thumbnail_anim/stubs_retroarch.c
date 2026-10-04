@@ -45,13 +45,17 @@ bool video_driver_texture_unload(uintptr_t *id) { *id = 0; return true; }
  * per frame, so both are exercised. */
 int gt_can_update = 1;
 int gt_updates;
+static void gt_lend_uploaded(const void *px, unsigned w, unsigned h);
 bool video_driver_texture_update(uintptr_t id, void *data)
 {
    uintptr_t same = id;
+   struct { void *px; unsigned w, h; } *img = data;
    if (!id)
       return false;
    gt_updates++;
    video_driver_texture_load(data, 0, &same);
+   if (img)
+      gt_lend_uploaded(img->px, img->w, img->h);
    return true;
 }
 bool video_driver_texture_can_update(void) { return gt_can_update != 0; }
@@ -239,3 +243,88 @@ bool video_driver_test_all_flags(int flags)
 { (void)flags; return false; }
 bool video_driver_supports_texture_format(int fmt)
 { (void)fmt; return false; }
+
+/* --- lending ---
+ * gt_lend_mode makes the driver lend each slot its own buffer, and
+ * after every upload from a lent slot keep that slot "on the GPU" for
+ * GT_LEND_BUSY readiness polls: the buffer is filled with a sentinel,
+ * and a producer writing before the slot is ready again shows up as a
+ * disturbed sentinel when it is. */
+#define GT_LEND_SLOTS 2
+#define GT_LEND_BUSY  3
+#define GT_LEND_BYTES (4096u * 1024u)
+#define GT_SENTINEL   0x5EA1ED00u
+int gt_lend_mode;
+int gt_lends;
+int gt_lend_violations;
+int gt_lent_uploads;
+int gt_lend_stale;  /* uploads from lent memory nobody wrote */
+static uint32_t *gt_lend_buf[GT_LEND_SLOTS];
+static int       gt_lend_busy[GT_LEND_SLOTS];
+static size_t    gt_lend_words[GT_LEND_SLOTS];
+
+void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch)
+{
+   (void)id;
+   if (!gt_lend_mode || slot >= GT_LEND_SLOTS || !pitch)
+      return NULL;
+   if (!gt_lend_buf[slot])
+      gt_lend_buf[slot] = (uint32_t*)calloc(1, GT_LEND_BYTES);
+   gt_lend_busy[slot]  = 0;
+   gt_lend_words[slot] = 0;
+   gt_lends++;
+   return gt_lend_buf[slot];
+}
+
+bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot)
+{
+   size_t i;
+   (void)id;
+   if (!gt_lend_mode || slot >= GT_LEND_SLOTS || !gt_lend_busy[slot])
+      return true;
+   if (--gt_lend_busy[slot])
+      return false;
+   for (i = 0; i < gt_lend_words[slot]; i++)
+      if (gt_lend_buf[slot][i] != GT_SENTINEL)
+      {
+         gt_lend_violations++;
+         break;
+      }
+   return true;
+}
+
+/* Called by the update oracle: an upload from a lent slot puts it on
+ * the GPU. */
+static void gt_lend_uploaded(const void *px, unsigned w, unsigned h)
+{
+   unsigned k;
+   size_t i;
+   for (k = 0; k < GT_LEND_SLOTS; k++)
+      if (gt_lend_buf[k] && px == gt_lend_buf[k])
+      {
+         gt_lent_uploads++;
+         /* Still on the GPU: written and submitted without the slot
+          * ever having been ready. */
+         if (gt_lend_busy[k])
+            gt_lend_violations++;
+         if (gt_lend_words[k] && gt_lend_buf[k][0] == GT_SENTINEL
+               && gt_lend_buf[k][gt_lend_words[k] - 1] == GT_SENTINEL)
+            gt_lend_stale++;
+         gt_lend_words[k] = (size_t)w * h;
+         for (i = 0; i < gt_lend_words[k]; i++)
+            gt_lend_buf[k][i] = GT_SENTINEL;
+         gt_lend_busy[k] = GT_LEND_BUSY;
+      }
+}
+
+void gt_lend_reset(void)
+{
+   unsigned k;
+   for (k = 0; k < GT_LEND_SLOTS; k++)
+   {
+      free(gt_lend_buf[k]);
+      gt_lend_buf[k]   = NULL;
+      gt_lend_busy[k]  = 0;
+      gt_lend_words[k] = 0;
+   }
+}
