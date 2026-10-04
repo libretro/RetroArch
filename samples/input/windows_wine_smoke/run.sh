@@ -364,7 +364,7 @@ EXTRA_CFG='input_winraw_xinput_enable = "true"' \
 # "Assign Ports on First Button Press" on: the first key gives the
 # first user its core port, and the core still sees both presses.
 EXTRA_CFG='input_assign_ports_on_button_press = "true"' \
-   WANT_LOG='assigned to core port 1' \
+   WANT_LOG='Keyboard assigned to core port 1' \
    scenario "ports assigned on first press" true 1 2 nomsg
 VIDEO_DRIVER=gl VIDEO_STARTED='Found GL context' WANT_VIDEO=2 WANT_WINDOW="1 1 0" \
    WANT_MENUS=1 EXTRA_CFG='ui_menubar_enable = "true"' \

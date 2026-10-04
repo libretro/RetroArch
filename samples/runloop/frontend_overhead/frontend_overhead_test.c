@@ -1548,6 +1548,31 @@ static void kept_wrap_joypad(input_driver_state_t *input_st)
 }
 #endif
 
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+/* The first user's keys, as the input driver reports them: a RetroPad
+ * mask the lane sets, standing in for a keyboard. */
+static uint32_t       fp_keys;
+static input_driver_t fp_input;
+static bool           fp_pad_there;
+
+static bool fp_query_pad(unsigned pad) { return fp_pad_there && pad == 0; }
+
+static int16_t fp_input_state(void *data,
+      const input_device_driver_t *joypad_data,
+      const input_device_driver_t *sec_joypad_data,
+      rarch_joypad_info_t *joypad_info,
+      const retro_keybind_set *retro_keybinds,
+      bool keyboard_mapping_blocked,
+      unsigned port, unsigned device, unsigned index, unsigned id)
+{
+   if (port != 0 || device != RETRO_DEVICE_JOYPAD)
+      return 0;
+   if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+      return (int16_t)fp_keys;
+   return (id < 16) ? (int16_t)((fp_keys >> id) & 1) : 0;
+}
+#endif
+
 /* First-press port assignment: with the setting on no user has a core
  * port until a button is pressed on its controller. */
 static void lane_first_press(void)
@@ -1638,6 +1663,63 @@ static void lane_first_press(void)
    CHECK(!in_run, "first press: the core was told a port's controller from inside its run");
    CHECK(!input_st->first_press_live || settings->uints.input_max_users > 1,
          "first press: the poll still looks for a press with every user mapped");
+
+   /* it was the controller that was pressed, and the notification
+    * will have named it */
+   CHECK(!(input_st->first_press_by_keys & 1),
+         "first press: a controller's button was taken for a key");
+
+   /* a key bound for the user gives it its port as well - the
+    * keyboard and the first controller are both the first user's -
+    * and is known to have been a key */
+   {
+      input_driver_t *input_real = input_st->current_driver;
+      fp_input                   = *input_real;
+      fp_input.input_state       = fp_input_state;
+      input_st->current_driver   = &fp_input;
+      syn_buttons                = 0;
+      fp_keys                    = 0;
+      input_remapping_set_defaults(false);
+      run_loop_frames(3);
+      fp_keys = 1u << RETRO_DEVICE_ID_JOYPAD_START;
+      run_loop_frames(2);
+      CHECK(settings->uints.input_remap_ports[0] == 0,
+            "first press: a key did not give the user its core port");
+      CHECK(input_st->first_press_by_keys & 1,
+            "first press: a key was taken for a button of the controller");
+      fp_keys                    = 0;
+
+      /* "Waits for its Controller": the key assigns nothing while the
+       * port's controller is there; the controller's button does */
+      settings->uints.input_assign_ports_keyboard = 1;
+      syn_joypad.query_pad       = fp_query_pad;
+      fp_pad_there               = true;
+      input_remapping_set_defaults(false);
+      run_loop_frames(3);
+      fp_keys = 1u << RETRO_DEVICE_ID_JOYPAD_START;
+      run_loop_frames(3);
+      CHECK(settings->uints.input_remap_ports[0] == MAX_USERS,
+            "first press: a key assigned its port though the keyboard waits for the controller");
+      fp_keys                    = 0;
+      syn_buttons                = a_btn;
+      run_loop_frames(2);
+      CHECK(settings->uints.input_remap_ports[0] == 0,
+            "first press: the controller's button did not assign while the keyboard waits");
+      /* with no controller on the port, the key is all there is */
+      syn_buttons                = 0;
+      fp_pad_there               = false;
+      input_remapping_set_defaults(false);
+      run_loop_frames(3);
+      fp_keys = 1u << RETRO_DEVICE_ID_JOYPAD_START;
+      run_loop_frames(2);
+      CHECK(settings->uints.input_remap_ports[0] == 0,
+            "first press: with no controller on the port a key did not assign it");
+      fp_keys                    = 0;
+      syn_joypad.query_pad       = joypad_real->query_pad;
+      settings->uints.input_assign_ports_keyboard = 0;
+      input_st->current_driver   = input_real;
+      run_loop_frames(2);
+   }
 
    /* the lowest free core port: with the second user on core port 1,
     * a press on the first gives it core port 2 */
@@ -1748,7 +1830,9 @@ static void lane_first_press(void)
       printf("[pass] first press: no user has a core port until a button"
             " is pressed on it; a button held from the start and the d-pad"
             " are no press; the port is given between frames, the lowest"
-            " free one; a saved remap file leaves it out; the setting"
+            " free one; a key and a controller's button are told apart,"
+            " and a key can be made to wait for the controller;"
+            " a saved remap file leaves it out; the setting"
             " counts from content start; a replay turns it off\n");
 #else
    printf("[skip] first press: needs the test drivers\n");

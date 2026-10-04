@@ -89,6 +89,11 @@ S_BOOL(input_assign_ports_on_button_press, INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
       false, SD_FLAG_ADVANCED, 0, 0,
       "Assign Ports on First Button Press",
       "When content starts, no controller is mapped to a core port; each is given the next free core port when a button is first pressed on it. Applies from the next content start.")
+S_UINT_EX(input_assign_ports_keyboard, INPUT_ASSIGN_PORTS_KEYBOARD,
+      "input_assign_ports_keyboard",
+      0, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_assign_ports_keyboard, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "Keyboard on First Button Press",
+      "With 'Assign Ports on First Button Press': what a key bound to a port's controls does. 'Assigns its Port' gives the port its core port, as a button of its controller would. 'Waits for its Controller' leaves that to the controller's buttons, unless the port has no controller connected.")
 S_BOOL(input_autodetect_enable, INPUT_AUTODETECT_ENABLE,
       "input_autodetect_enable",
       DEFAULT_INPUT_AUTODETECT_ENABLE, SD_FLAG_ADVANCED, 0, 0,

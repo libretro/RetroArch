@@ -825,6 +825,8 @@ typedef struct
    uint32_t first_press_pending;
    /* users whose core port a press gave them, not the user */
    uint32_t first_press_assigned;
+   /* users whose press was a key, not a button of their controller */
+   uint32_t first_press_by_keys;
    /* the policy, as it stood when the remap defaults were last set */
    bool     first_press_on;
    bool     first_press_live;

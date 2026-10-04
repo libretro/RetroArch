@@ -9475,8 +9475,31 @@ void input_driver_poll(void)
                   (unsigned)i, RETRO_DEVICE_JOYPAD,
                   0, RETRO_DEVICE_ID_JOYPAD_MASK)
                & INPUT_FIRST_PRESS_BUTTONS;
-            if (held & input_st->first_press_released[i])
-               input_st->first_press_pending |= (1U << i);
+            uint32_t edge = held & input_st->first_press_released[i];
+            if (edge)
+            {
+               /* the user's controller, or its keys: both are this
+                * user's, and the notification says which it was */
+               uint32_t pad = (uint32_t)joypad->state(&joypad_info[i],
+                     (*input_st->libretro_input_binds)[i], (unsigned)i);
+               if (sec_joypad)
+                  pad |= (uint32_t)sec_joypad->state(&joypad_info[i],
+                        (*input_st->libretro_input_binds)[i], (unsigned)i);
+               if (edge & pad)
+               {
+                  input_st->first_press_by_keys &= ~(1U << i);
+                  input_st->first_press_pending |=  (1U << i);
+               }
+               /* a key: not while the port's controller is there to
+                * be pressed, if the keyboard is to wait for it */
+               else if (  !settings->uints.input_assign_ports_keyboard
+                       || !joypad->query_pad
+                       || !joypad->query_pad(joypad_info[i].joy_idx))
+               {
+                  input_st->first_press_by_keys |=  (1U << i);
+                  input_st->first_press_pending |=  (1U << i);
+               }
+            }
             input_st->first_press_released[i] |=
                ~held & INPUT_FIRST_PRESS_BUTTONS;
          }
@@ -10180,6 +10203,7 @@ void input_first_press_apply(void)
       char msg[128];
       const char *name;
       size_t _len;
+      unsigned joy_idx;
 
       if (     !(pending & (1U << user))
             || settings->uints.input_remap_ports[user] < MAX_USERS)
@@ -10196,10 +10220,16 @@ void input_first_press_apply(void)
       input_remapping_update_port_map();
       mapped = true;
 
-      name = input_config_get_device_display_name(user);
+      /* a key was pressed, or a button of the controller the user reads */
+      joy_idx = settings->uints.input_joypad_index[user];
+      name    = input_config_get_device_display_name(joy_idx);
       if (!name || !*name)
-         name = input_config_get_device_name(user);
-      if (name && *name)
+         name = input_config_get_device_name(joy_idx);
+      if (input_st->first_press_by_keys & (1U << user))
+         _len = snprintf(msg, sizeof(msg),
+               msg_hash_to_str(MSG_KEYBOARD_ASSIGNED_TO_CORE_PORT_NR),
+               port + 1);
+      else if (name && *name)
          _len = snprintf(msg, sizeof(msg),
                msg_hash_to_str(MSG_DEVICE_ASSIGNED_TO_CORE_PORT_NR),
                name, port + 1);
@@ -10332,6 +10362,7 @@ void input_remapping_set_defaults(bool clear_cache)
          sizeof(input_st->first_press_released));
    input_st->first_press_pending  = 0;
    input_st->first_press_assigned = 0;
+   input_st->first_press_by_keys  = 0;
    input_st->first_press_on       = first_press;
 
    /* Need to call 'input_remapping_update_port_map()'

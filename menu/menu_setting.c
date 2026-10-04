@@ -7793,6 +7793,17 @@ static size_t setting_get_string_representation_retropad_bind(
    return 0;
 }
 
+static size_t setting_get_string_representation_assign_ports_keyboard(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (!setting)
+      return 0;
+   return strlcpy(s, msg_hash_to_str(
+            *setting->value.target.unsigned_integer
+            ? MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_KEYBOARD_WAITS
+            : MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_KEYBOARD_ASSIGNS), len);
+}
+
 static size_t setting_get_string_representation_poll_type_behavior(
       rarch_setting_t *setting, char *s, size_t len)
 {
