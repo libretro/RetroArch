@@ -821,6 +821,10 @@ size_t menu_update_fullscreen_thumbnail_label(
 
 bool menu_is_running_quick_menu(void);
 
+/* "Find a Button by Pressing It": waits for a button of @port's
+ * controller and puts the selection on its entry. */
+void menu_input_remap_find_begin(unsigned port);
+
 bool menu_input_key_bind_set_mode(
       enum menu_input_binds_ctl_state state, void *data);
 

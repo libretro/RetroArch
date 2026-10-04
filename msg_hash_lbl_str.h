@@ -552,6 +552,7 @@
 #define MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE_STR "remap_file_remove_core"
 #define MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME_STR "remap_file_remove_game"
 #define MENU_ENUM_LABEL_REMAP_FILE_RESET_STR "remap_file_reset"
+#define MENU_ENUM_LABEL_INPUT_REMAP_FIND_STR "input_remap_find"
 #define MENU_ENUM_LABEL_REMAP_FILE_FLUSH_STR "remap_file_flush"
 #define MENU_ENUM_LABEL_RESTART_CONTENT_STR "restart_content"
 #define MENU_ENUM_LABEL_RESUME_CONTENT_STR "resume_content"

@@ -1010,6 +1010,11 @@ void input_driver_init_wayland(const char *joypad_name, void *window_data,
 void input_driver_init_sdl1(const char *joypad_name,
       input_driver_t **input, void **input_data);
 #endif
+/* The RetroPad buttons a user's controller and keys hold right now, as
+ * bound and before remaps. Reads the devices; for the menu while it
+ * waits for a press. */
+uint32_t input_driver_user_buttons_bound(unsigned user);
+
 void input_driver_init_platform(const char *joypad_name,
       input_driver_t **input, void **input_data);
 #ifdef HAVE_SDL3

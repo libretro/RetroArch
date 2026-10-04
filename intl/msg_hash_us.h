@@ -24853,6 +24853,14 @@ MSG_HASH(
    "Set all input remapping options to default values."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_FIND,
+   "Find a Button by Pressing It"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_REMAP_FIND,
+   "Press a button on this port's controller, or a key bound to one, and the list below jumps to it."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
    "Update Input Remap File"
    )
@@ -32761,6 +32769,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_REMAP_FILE_RESET,
    "All input remapping options reset to default."
+   )
+MSG_HASH(
+   MSG_INPUT_REMAP_FIND_PRESS,
+   "Press a button on the controller of Port %u\n(Timeout %u seconds)"
    )
 MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,

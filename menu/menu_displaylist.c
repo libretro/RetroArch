@@ -14619,6 +14619,14 @@ static bool menu_displaylist_ctl_internal(
                         || device == RETRO_DEVICE_KEYBOARD)
                   {
                      const char *val_port = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT);
+
+                     /* press a button, land on its entry below */
+                     if (menu_entries_append(list,
+                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_REMAP_FIND),
+                           MENU_ENUM_LABEL_INPUT_REMAP_FIND_STR,
+                           MENU_ENUM_LABEL_INPUT_REMAP_FIND,
+                           MENU_SETTING_ACTION, 0, port, NULL))
+                        count++;
                      for (j = 0; j < RARCH_ANALOG_BIND_LIST_END; j++)
                      {
                         char descriptor[300];

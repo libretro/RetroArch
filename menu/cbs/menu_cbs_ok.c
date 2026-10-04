@@ -4324,6 +4324,14 @@ static int action_ok_remap_file_reset(const char *path,
    return 0;
 }
 
+static int action_ok_input_remap_find(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   /* the entry carries its port */
+   menu_input_remap_find_begin((unsigned)entry_idx);
+   return 0;
+}
+
 static int action_ok_remap_file_flush(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -9861,6 +9869,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CONTENT_DIR,       action_ok_remap_file_remove_content_dir},
          {MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,              action_ok_remap_file_remove_game},
          {MENU_ENUM_LABEL_REMAP_FILE_RESET,                    action_ok_remap_file_reset},
+         {MENU_ENUM_LABEL_INPUT_REMAP_FIND,                    action_ok_input_remap_find},
          {MENU_ENUM_LABEL_REMAP_FILE_FLUSH,                    action_ok_remap_file_flush},
          {MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD,                  action_ok_override_file},
          {MENU_ENUM_LABEL_OVERRIDE_FILE_SAVE_AS,               action_ok_override_file_save_as},

@@ -3549,6 +3549,86 @@ bool menu_shader_manager_save_auto_preset(
 }
 #endif
 
+/* "Find a Button by Pressing It", in a port's controls: the menu waits
+ * for a button of that port's controller and puts the selection on the
+ * button's entry. The devices are read for it here, while the screen
+ * is up, and nowhere else. */
+#define MENU_REMAP_FIND_SCREEN       "input_remap_find_listen"
+#define MENU_REMAP_FIND_TIMEOUT_US   5000000
+
+static struct
+{
+   retro_time_t deadline;
+   unsigned port;
+   int      found;        /* the RetroPad button pressed, or -1 */
+   bool     released;     /* every button has been seen let go */
+} menu_remap_find;
+
+void menu_input_remap_find_begin(unsigned port)
+{
+   menu_displaylist_info_t info;
+   struct menu_state *menu_st = &menu_driver_state;
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *menu_stack    = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
+
+   if (!menu_stack)
+      return;
+
+   menu_remap_find.port       = port;
+   menu_remap_find.found      = -1;
+   menu_remap_find.released   = false;
+   menu_remap_find.deadline   = cpu_features_get_time_usec()
+      + MENU_REMAP_FIND_TIMEOUT_US;
+
+   menu_displaylist_info_init(&info);
+   info.list                  = menu_stack;
+   info.type                  = MENU_SETTING_ACTION;
+   info.directory_ptr         = menu_st->selection_ptr;
+   info.enum_idx              = MENU_ENUM_LABEL_INPUT_REMAP_FIND;
+   info.label                 = strdup(MENU_REMAP_FIND_SCREEN);
+   if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info, config_get_ptr()))
+      menu_displaylist_process(&info);
+   menu_displaylist_info_free(&info);
+}
+
+/* One pass while the screen is up. Returns true when it is over: a
+ * button was pressed and let go again, or the time ran out. The first
+ * press counts only once everything has been seen released - the
+ * button that opened this screen is still down when it comes up - and
+ * the screen stays until the button found is let go, so that it does
+ * not act on the list it lands on. */
+static bool menu_input_remap_find_iterate(char *s, size_t len,
+      retro_time_t current_time)
+{
+   uint32_t held = input_driver_user_buttons_bound(menu_remap_find.port);
+
+   if (menu_remap_find.found >= 0)
+      return held == 0;
+
+   if (!menu_remap_find.released)
+   {
+      if (!held)
+         menu_remap_find.released = true;
+   }
+   else if (held)
+   {
+      unsigned id;
+      for (id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
+         if (held & (1U << id))
+            break;
+      menu_remap_find.found = (int)id;
+      return false;
+   }
+
+   if (current_time >= menu_remap_find.deadline)
+      return true;
+
+   snprintf(s, len, msg_hash_to_str(MSG_INPUT_REMAP_FIND_PRESS),
+         menu_remap_find.port + 1,
+         (unsigned)((menu_remap_find.deadline - current_time) / 1000000) + 1);
+   return false;
+}
+
 static enum action_iterate_type action_iterate_type(const char *label, struct menu_state *menu_st)
 {
    if (menu_st->dialog_st.confirm_msg && menu_st->dialog_st.confirm_cmd)
@@ -3565,6 +3645,8 @@ static enum action_iterate_type action_iterate_type(const char *label, struct me
           || !strcmp(label, "custom_bind_all")
           || !strcmp(label, "custom_bind_defaults"))
          return ITERATE_TYPE_BIND;
+   if (!strcmp(label, MENU_REMAP_FIND_SCREEN))
+      return ITERATE_TYPE_REMAP_FIND;
    return ITERATE_TYPE_DEFAULT;
 }
 
@@ -7920,6 +8002,43 @@ static int generic_menu_iterate(
             else
                BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          }
+         break;
+      case ITERATE_TYPE_REMAP_FIND:
+         /* the menu's own controls are left alone meanwhile */
+         menu_st->flags |= MENU_ST_FLAG_IS_BINDING;
+
+         if (menu_input_remap_find_iterate(menu->menu_state_msg,
+                  sizeof(menu->menu_state_msg), current_time))
+         {
+            size_t selection         = menu_st->selection_ptr;
+            menu_list_t *menu_list   = menu_st->entries.list;
+            file_list_t *entries;
+
+            menu_entries_pop_stack(&selection, 0, 0);
+            menu_st->selection_ptr   = selection;
+
+            /* onto the entry of the button that was pressed: the same
+             * list, with the pad's entries or the keyboard's */
+            entries = menu_list
+               ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
+            if (entries && menu_remap_find.found >= 0)
+            {
+               size_t   k;
+               unsigned at   = (menu_remap_find.port * RARCH_ANALOG_BIND_LIST_END)
+                  + (unsigned)menu_remap_find.found;
+               for (k = 0; k < entries->size; k++)
+                  if (     entries->list[k].type
+                           == MENU_SETTINGS_INPUT_DESC_BEGIN + at
+                        || entries->list[k].type
+                           == MENU_SETTINGS_INPUT_DESC_KBD_BEGIN + at)
+                  {
+                     menu_st->selection_ptr = k;
+                     break;
+                  }
+            }
+         }
+         else
+            BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          break;
       case ITERATE_TYPE_INFO:
          {

@@ -77,7 +77,8 @@ enum action_iterate_type
    ITERATE_TYPE_HELP,
    ITERATE_TYPE_INFO,
    ITERATE_TYPE_CONFIRM,
-   ITERATE_TYPE_BIND
+   ITERATE_TYPE_BIND,
+   ITERATE_TYPE_REMAP_FIND
 };
 
 enum menu_startup_page_type
