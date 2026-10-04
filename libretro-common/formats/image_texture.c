@@ -355,6 +355,65 @@ void image_texture_narrow_10bit(struct texture_image *img)
    img->pix10 = false;
 }
 
+/* See image.h. The scratch is four source rows, not the image: the rows a tile
+ * band overwrites are copied out before it is written, which is what
+ * makes it safe to source from the destination. The source pitch is
+ * taken from the unmasked width and the tile width from the masked
+ * one, so where the width is not a multiple of four the writes trail
+ * the reads rather than running ahead of them. False, with @img
+ * untouched, when the scratch cannot be had. */
+bool image_texture_tile_gx(struct texture_image *img)
+{
+   unsigned src_pitch, width2, i;
+   size_t   bandsz;
+   uint16_t *band;
+   uint16_t *dst;
+
+   if (!img || !img->pixels || !img->width || !img->height)
+      return false;
+
+   src_pitch = (unsigned)(((size_t)img->width * sizeof(uint32_t)) >> 1);
+   bandsz    = (size_t)src_pitch * 4 * sizeof(uint16_t);
+   if (!(band = (uint16_t*)malloc(bandsz)))
+      return false;
+
+   img->width  &= ~3u;
+   img->height &= ~3u;
+   width2       = img->width << 1;
+   dst          = (uint16_t*)img->pixels;
+
+   for (i = 0; i < img->height; i += 4, dst += 4 * width2)
+   {
+      const uint16_t *src = band;
+      unsigned row;
+
+      memcpy(band, (const uint16_t*)img->pixels + (size_t)i * src_pitch,
+            bandsz);
+
+      for (row = 0; row < 4; row++, src += src_pitch)
+      {
+         unsigned x;
+         unsigned off           = row * 4;
+         const uint16_t *s      = src;
+         uint16_t       *d      = dst;
+         for (x = 0; x < width2 >> 3; x++, s += 8, d += 32)
+         {
+            d[ 0 + off] = s[0];
+            d[16 + off] = s[1];
+            d[ 1 + off] = s[2];
+            d[17 + off] = s[3];
+            d[ 2 + off] = s[4];
+            d[18 + off] = s[5];
+            d[ 3 + off] = s[6];
+            d[19 + off] = s[7];
+         }
+      }
+   }
+
+   free(band);
+   return true;
+}
+
 bool image_texture_load_buffer(struct texture_image *out_img,
    enum image_type_enum type, void *buffer, size_t buffer_len)
 {

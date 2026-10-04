@@ -173,6 +173,16 @@ bool image_texture_realize_rgba(struct texture_image *img);
  * No-op unless ->pix10 is set. */
 void image_texture_narrow_10bit(struct texture_image *img);
 
+/* Rewrite ->pixels, linear 32-bit texels, in place as GX RGBA8 tiles:
+ * the layout the GameCube/Wii GPU samples straight from memory, 4x4
+ * tiles of 64 bytes holding the AR halves of a tile's sixteen texels
+ * and then their GB halves. ->width and ->height are rounded down to
+ * multiples of 4, which the layout requires. Decoders always emit
+ * linear images; only a consumer that hands the pixels to the GX
+ * itself asks for this. False, with @img untouched, when the four-row
+ * scratch cannot be allocated. */
+bool image_texture_tile_gx(struct texture_image *img);
+
 /* Image transfer */
 
 void image_transfer_free(void *data, enum image_type_enum type);

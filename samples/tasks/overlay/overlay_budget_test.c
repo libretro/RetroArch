@@ -116,6 +116,14 @@ void image_texture_free(struct texture_image *img)
       img->pixels = NULL;
 }
 
+/* The loader tiles only for a driver whose requirements ask for GX
+ * tiles, which this build (no RARCH_INTERNAL, no driver) never does. */
+bool image_texture_tile_gx(struct texture_image *img)
+{
+   (void)img;
+   return true;
+}
+
 static void release_tracked_images(void)
 {
    unsigned i;

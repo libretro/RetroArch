@@ -360,6 +360,13 @@ static bool task_overlay_load_image_texture(
       if (!image_texture_load(image, full_path))
          return false;
 
+      if (     (loader->flags & OVERLAY_LOADER_GX_TILE)
+            && !image_texture_tile_gx(image))
+      {
+         image_texture_free(image);
+         return false;
+      }
+
       attr.p = (void*)image;
       string_list_append(loader->image_list, rel_path, attr);
       if (pack_idx)
@@ -377,7 +384,8 @@ static bool task_overlay_load_image_texture(
          void *buf               = NULL;
 
          aattr.i = 0;
-         if (     !path_get_archive_delim(full_path)
+         if (     !(loader->flags & OVERLAY_LOADER_GX_TILE)
+               && !path_get_archive_delim(full_path)
                && filestream_read_file(full_path, &buf, &len)
                && buf && len > 0
                && rpng_is_apng((const uint8_t*)buf, (size_t)len)
@@ -1641,6 +1649,8 @@ bool task_push_overlay_load_default(
             loader->flags  |= OVERLAY_LOADER_RGBA_SUPPORT;
          if (req.formats & GFX_SURFACE_PIXFMT_2101010)
             loader->flags  |= OVERLAY_LOADER_10BIT;
+         if (req.preferred == GFX_SURFACE_PIXFMT_GX_RGBA8)
+            loader->flags  |= OVERLAY_LOADER_GX_TILE;
       }
    }
 #endif

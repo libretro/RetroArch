@@ -222,3 +222,20 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
              timeout 120 ./image_avail_test
           echo "[pass] image_avail_test"
+
+      - name: Build and run image_tile_gx_test (ASan + UBSan + LSan)
+        shell: bash
+        working-directory: samples/formats/image_tile_gx
+        run: |
+          set -eu
+          # The GameCube/Wii GX RGBA8 tiling the gx driver's overlays
+          # are sampled in, which runs nowhere but on the console. It
+          # is checked against the layout's definition and against
+          # the band conversion it replaced, over every size up to
+          # 70x44 so widths and heights off a multiple of four - where
+          # the source pitch and the tile width part ways - are all
+          # covered.
+          make clean all SANITIZER=address,undefined
+          test -x image_tile_gx_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 120 ./image_tile_gx_test
