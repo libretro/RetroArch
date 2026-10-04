@@ -337,11 +337,52 @@ static int16_t winraw_joypad_scale_axis(LONG value, LONG logical_min,
  * Stopping the driver stops the thread, which stills and closes what
  * it holds before it ends.
  *
- * Other controllers have no rumble here still. */
+ * An Xbox pad - any pad Windows drives through XInput - is the other
+ * kind of device the thread writes to. Raw input reads it as a plain
+ * HID device, with no way to rumble it; XInput has the way
+ * (XInputSetState) and its own numbering of the pads, one to four,
+ * with nothing that says which raw input device is which of its
+ * pads. The thread works that out, when a pad is first to rumble:
+ *
+ * - with one such pad here and one pad XInput has that is not yet
+ *   taken, they are the same pad;
+ * - with more, the pad is the one of XInput's whose buttons are held
+ *   as this pad's are (the driver publishes each such pad's buttons
+ *   as it parses them, .buttons). With no button held there is
+ *   nothing to tell them by, and the pad is not rumbled until there
+ *   is: better none than another player's.
+ *
+ * XInput itself is loaded by the thread, when it first has such a
+ * pad, and asked only about pads that are there.
+ *
+ * Controllers that are neither have no rumble here still. */
 
-/* a device open for writing, and what its reports are to look like */
+/* XInput, by its own layout and not its header, which not every
+ * toolchain has: loaded when needed, called through these. */
 typedef struct
 {
+   DWORD packet;
+   WORD  buttons;
+   BYTE  left_trigger, right_trigger;
+   SHORT lx, ly, rx, ry;
+} winraw_xinput_state_t;
+
+typedef struct
+{
+   WORD left_motor, right_motor;
+} winraw_xinput_vibration_t;
+
+typedef DWORD (WINAPI *winraw_xinput_get_state_t)(DWORD, winraw_xinput_state_t*);
+typedef DWORD (WINAPI *winraw_xinput_set_state_t)(DWORD, winraw_xinput_vibration_t*);
+
+#define WINRAW_XINPUT_PADS 4
+
+/* a device to write to: a Sony pad open for writing, with what its
+ * reports are to look like, or one of XInput's pads */
+typedef struct
+{
+   bool     xinput;     /* an XInput pad; the rest is a Sony pad's    */
+   int      xuser;      /* which of XInput's, or -1: not known yet    */
    HANDLE   handle;
    uint8_t  model;      /* enum sony_pad_model                        */
    bool     bluetooth;
@@ -360,8 +401,15 @@ typedef struct
    /* wanted: the strong motor in the low sixteen bits, the weak in
     * the high. Stored by set_rumble(), loaded by the thread. */
    retro_atomic_int_t want;
-   /* the driver's own: a device was handed over for this pad */
+   /* an XInput pad's buttons as raw input reports them, one bit each
+    * in XInput's own order. Stored by the driver as it parses a
+    * report, loaded by the thread to tell which of XInput's pads this
+    * is. */
+   retro_atomic_int_t buttons;
+   /* the driver's own: a device was handed over for this pad; and it
+    * is an XInput pad, whose buttons are to be published */
    bool present;
+   bool xinput;
    /* the thread's own */
    winraw_joypad_out_dev_t *dev;
    int  sent;           /* what it last wrote                         */
@@ -369,6 +417,13 @@ typedef struct
 } winraw_joypad_out_t;
 
 static winraw_joypad_out_t winraw_joypad_out[MAX_USERS];
+/* the thread's own: XInput, once loaded, and which pad of this
+ * driver's each of XInput's pads is (a slot, or -1) */
+static HMODULE                   winraw_xinput_dll;
+static bool                      winraw_xinput_tried;
+static winraw_xinput_get_state_t winraw_xinput_get_state;
+static winraw_xinput_set_state_t winraw_xinput_set_state;
+static int                       winraw_xinput_taken[WINRAW_XINPUT_PADS];
 static HANDLE              winraw_joypad_out_thread;
 static HANDLE              winraw_joypad_out_wake;
 static retro_atomic_int_t  winraw_joypad_out_quit;
@@ -377,6 +432,115 @@ static unsigned long       winraw_joypad_out_writes;
 
 /* how long a write may take before it is given up */
 #define WINRAW_JOYPAD_OUT_TIMEOUT_MS 250
+
+/* The thread's: XInput is loaded, the newest there is. */
+static bool winraw_xinput_load(void)
+{
+   static const char *names[] = {
+      "xinput1_4.dll", "xinput1_3.dll", "xinput9_1_0.dll" };
+   unsigned i;
+
+   if (winraw_xinput_tried)
+      return winraw_xinput_set_state != NULL;
+   winraw_xinput_tried = true;
+   for (i = 0; i < WINRAW_XINPUT_PADS; i++)
+      winraw_xinput_taken[i] = -1;
+   for (i = 0; i < ARRAY_SIZE(names) && !winraw_xinput_dll; i++)
+      winraw_xinput_dll = LoadLibraryA(names[i]);
+   if (winraw_xinput_dll)
+   {
+      winraw_xinput_get_state = (winraw_xinput_get_state_t)
+         GetProcAddress(winraw_xinput_dll, "XInputGetState");
+      winraw_xinput_set_state = (winraw_xinput_set_state_t)
+         GetProcAddress(winraw_xinput_dll, "XInputSetState");
+   }
+   if (!winraw_xinput_get_state || !winraw_xinput_set_state)
+   {
+      winraw_xinput_get_state = NULL;
+      winraw_xinput_set_state = NULL;
+      RARCH_LOG("[RawInput Joypad] Rumble: XInput could not be loaded;"
+            " Xbox pads will not rumble.\n");
+      return false;
+   }
+   return true;
+}
+
+/* XInput's buttons, in the order raw input numbers an Xbox pad's:
+ * A B X Y, the shoulders, Back and Start, the sticks. */
+static int winraw_xinput_buttons(WORD b)
+{
+   return  ((b & 0x1000) ? 0x001 : 0) | ((b & 0x2000) ? 0x002 : 0)
+         | ((b & 0x4000) ? 0x004 : 0) | ((b & 0x8000) ? 0x008 : 0)
+         | ((b & 0x0100) ? 0x010 : 0) | ((b & 0x0200) ? 0x020 : 0)
+         | ((b & 0x0020) ? 0x040 : 0) | ((b & 0x0010) ? 0x080 : 0)
+         | ((b & 0x0040) ? 0x100 : 0) | ((b & 0x0080) ? 0x200 : 0);
+}
+
+/* The thread's: which of XInput's pads the pad in @slot is, worked
+ * out as far as it can be now. True if it is known. */
+static bool winraw_xinput_find(unsigned slot, winraw_joypad_out_dev_t *dev)
+{
+   unsigned i, free_pads = 0, unknown = 0;
+   int only   = -1, match = -1, matches = 0;
+   int mine   = retro_atomic_load_acquire_int(&winraw_joypad_out[slot].buttons);
+
+   if (dev->xuser >= 0)
+      return true;
+
+   /* how many of this driver's XInput pads are not yet told apart */
+   for (i = 0; i < MAX_USERS; i++)
+      if (     winraw_joypad_out[i].dev
+            && winraw_joypad_out[i].dev->xinput
+            && winraw_joypad_out[i].dev->xuser < 0)
+         unknown++;
+
+   for (i = 0; i < WINRAW_XINPUT_PADS; i++)
+   {
+      winraw_xinput_state_t st;
+      if (winraw_xinput_taken[i] >= 0)
+         continue;
+      memset(&st, 0, sizeof(st));
+      if (winraw_xinput_get_state(i, &st) != ERROR_SUCCESS)
+         continue;
+      free_pads++;
+      only = (int)i;
+      if (mine && winraw_xinput_buttons(st.buttons) == mine)
+      {
+         match = (int)i;
+         matches++;
+      }
+   }
+
+   if (free_pads == 1 && unknown == 1)
+      dev->xuser = only;
+   else if (matches == 1)
+      dev->xuser = match;
+   if (dev->xuser < 0)
+      return false;
+   winraw_xinput_taken[dev->xuser] = (int)slot;
+   RARCH_LOG("[RawInput Joypad] Rumble: the controller in slot %u is"
+         " XInput's pad %d.\n", slot, dev->xuser + 1);
+   return true;
+}
+
+/* The thread's: an XInput pad's motors are set. False if it could not
+ * be done - the pad is not known yet, or has gone. */
+static bool winraw_xinput_write(unsigned slot, winraw_joypad_out_dev_t *dev,
+      int want)
+{
+   winraw_xinput_vibration_t v;
+
+   if (!winraw_xinput_load() || !winraw_xinput_find(slot, dev))
+      return false;
+   v.left_motor  = (WORD)((unsigned)want & 0xFFFF);
+   v.right_motor = (WORD)(((unsigned)want >> 16) & 0xFFFF);
+   if (winraw_xinput_set_state((DWORD)dev->xuser, &v) == ERROR_SUCCESS)
+      return true;
+   /* XInput no longer has that pad: it is looked for again */
+   winraw_xinput_taken[dev->xuser] = -1;
+   dev->xuser                      = -1;
+   return false;
+}
 
 static bool winraw_joypad_out_write(const winraw_joypad_out_dev_t *dev,
       int want)
@@ -431,7 +595,8 @@ static void winraw_joypad_out_dev_free(winraw_joypad_out_dev_t *dev)
 {
    if (!dev)
       return;
-   CloseHandle(dev->handle);
+   if (!dev->xinput)
+      CloseHandle(dev->handle);
    free(dev);
 }
 
@@ -441,7 +606,19 @@ static void winraw_joypad_out_drop(winraw_joypad_out_t *out)
 {
    if (out->dev)
    {
-      if (out->sent)
+      if (out->dev->xinput)
+      {
+         if (out->dev->xuser >= 0)
+         {
+            if (out->sent)
+               winraw_xinput_write((unsigned)(out - winraw_joypad_out),
+                     out->dev, 0);
+            /* (a write that failed has let the pad go already) */
+            if (out->dev->xuser >= 0)
+               winraw_xinput_taken[out->dev->xuser] = -1;
+         }
+      }
+      else if (out->sent)
          winraw_joypad_out_write(out->dev, 0);
       winraw_joypad_out_dev_free(out->dev);
    }
@@ -480,16 +657,30 @@ static DWORD WINAPI winraw_joypad_out_run(LPVOID unused)
             int want = retro_atomic_load_acquire_int(&out->want);
             if (want != out->sent)
             {
-               if (winraw_joypad_out_write(out->dev, want))
-                  winraw_joypad_out_writes++;
-               else if (!out->failed)
+               if (out->dev->xinput)
                {
-                  out->failed = true;
-                  RARCH_WARN("[RawInput Joypad] Rumble: the write to the"
-                        " controller in slot %u failed (error %lu).\n",
-                        i, (unsigned long)GetLastError());
+                  /* Not written while it is not known which of
+                   * XInput's pads this is: what is wanted stays
+                   * wanted, and is tried again at the next change. */
+                  if (winraw_xinput_write(i, out->dev, want))
+                  {
+                     winraw_joypad_out_writes++;
+                     out->sent = want;
+                  }
                }
-               out->sent = want;
+               else
+               {
+                  if (winraw_joypad_out_write(out->dev, want))
+                     winraw_joypad_out_writes++;
+                  else if (!out->failed)
+                  {
+                     out->failed = true;
+                     RARCH_WARN("[RawInput Joypad] Rumble: the write to the"
+                           " controller in slot %u failed (error %lu).\n",
+                           i, (unsigned long)GetLastError());
+                  }
+                  out->sent = want;
+               }
             }
          }
          if (quit)
@@ -511,6 +702,7 @@ static void winraw_joypad_out_close(unsigned slot)
    if (!out->present)
       return;
    out->present = false;
+   out->xinput  = false;
    old = retro_atomic_exchange_ptr(&out->inbox, WINRAW_JOYPAD_OUT_CLOSE);
    /* a device handed over and never taken is still the driver's */
    if (old && old != WINRAW_JOYPAD_OUT_CLOSE)
@@ -529,30 +721,43 @@ static void winraw_joypad_out_open(unsigned slot,
    winraw_joypad_out_dev_t *dev;
    winraw_joypad_out_t *out  = &winraw_joypad_out[slot];
    enum sony_pad_model model = sony_pad_model(vid, pid);
+   /* Windows marks the HID device of a pad it drives through XInput
+    * with "IG_" in its path */
+   bool xinput               = path
+      && (strstr(path, "IG_") || strstr(path, "ig_"));
 
-   if (model == SONY_PAD_NONE || !path || !*path)
+   if ((model == SONY_PAD_NONE && !xinput) || !path || !*path)
       return;
    if (!(dev = (winraw_joypad_out_dev_t*)calloc(1, sizeof(*dev))))
       return;
 
-   dev->handle = CreateFileA(path, GENERIC_READ | GENERIC_WRITE,
-         FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
-         FILE_FLAG_OVERLAPPED, NULL);
-   if (dev->handle == INVALID_HANDLE_VALUE || !dev->handle)
+   if (xinput)
    {
-      RARCH_LOG("[RawInput Joypad] Rumble: the controller in slot %u could"
-            " not be opened for writing (error %lu); it will not rumble.\n",
-            slot, (unsigned long)GetLastError());
-      free(dev);
-      return;
+      /* nothing to open: the thread finds which of XInput's it is */
+      dev->xinput = true;
+      dev->xuser  = -1;
    }
-   dev->model      = (uint8_t)model;
-   dev->report_len = report_len;
-   dev->bluetooth  =
-         strstr(path, "00001124-0000-1000-8000-00805f9b34fb") != NULL
-      || strstr(path, "00001124-0000-1000-8000-00805F9B34FB") != NULL;
+   else
+   {
+      dev->handle = CreateFileA(path, GENERIC_READ | GENERIC_WRITE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+            FILE_FLAG_OVERLAPPED, NULL);
+      if (dev->handle == INVALID_HANDLE_VALUE || !dev->handle)
+      {
+         RARCH_LOG("[RawInput Joypad] Rumble: the controller in slot %u could"
+               " not be opened for writing (error %lu); it will not rumble.\n",
+               slot, (unsigned long)GetLastError());
+         free(dev);
+         return;
+      }
+      dev->model      = (uint8_t)model;
+      dev->report_len = report_len;
+      dev->bluetooth  =
+            strstr(path, "00001124-0000-1000-8000-00805f9b34fb") != NULL
+         || strstr(path, "00001124-0000-1000-8000-00805F9B34FB") != NULL;
+   }
 
-   if (model == SONY_PAD_DUALSENSE)
+   if (!xinput && model == SONY_PAD_DUALSENSE)
    {
       /* the newer way of the motors: the Edge has it; a DualSense
        * from firmware 2.21, which its feature report 0x20 tells */
@@ -584,20 +789,27 @@ static void winraw_joypad_out_open(unsigned slot,
       }
    }
 
-   RARCH_LOG("[RawInput Joypad] Rumble: the controller in slot %u is a %s"
-         " over %s; it is written to from the driver's own thread.\n", slot,
-         model == SONY_PAD_DS4 ? "DualShock 4"
-         : (dev->v2 ? "DualSense (newer motor control)" : "DualSense"),
-         dev->bluetooth ? "Bluetooth" : "USB");
+   if (xinput)
+      RARCH_LOG("[RawInput Joypad] Rumble: the controller in slot %u is an"
+            " XInput pad; it is rumbled through XInput, from the driver's"
+            " own thread.\n", slot);
+   else
+      RARCH_LOG("[RawInput Joypad] Rumble: the controller in slot %u is a %s"
+            " over %s; it is written to from the driver's own thread.\n", slot,
+            model == SONY_PAD_DS4 ? "DualShock 4"
+            : (dev->v2 ? "DualSense (newer motor control)" : "DualSense"),
+            dev->bluetooth ? "Bluetooth" : "USB");
 
    /* handed over: the thread closes whatever it held for this slot
     * and takes this one. One handed over before and not yet taken is
     * still the driver's to close. */
    retro_atomic_store_release_int(&out->want, 0);
+   retro_atomic_store_release_int(&out->buttons, 0);
    old = retro_atomic_exchange_ptr(&out->inbox, dev);
    if (old && old != WINRAW_JOYPAD_OUT_CLOSE)
       winraw_joypad_out_dev_free((winraw_joypad_out_dev_t*)old);
    out->present = true;
+   out->xinput  = xinput;
    SetEvent(winraw_joypad_out_wake);
 }
 
@@ -624,8 +836,16 @@ static void winraw_joypad_out_stop(void)
       if (old && old != WINRAW_JOYPAD_OUT_CLOSE)
          winraw_joypad_out_dev_free((winraw_joypad_out_dev_t*)old);
       out->present = false;
+      out->xinput  = false;
       retro_atomic_store_release_int(&out->want, 0);
    }
+   /* the thread has ended: what was its own is put away */
+   if (winraw_xinput_dll)
+      FreeLibrary(winraw_xinput_dll);
+   winraw_xinput_dll       = NULL;
+   winraw_xinput_get_state = NULL;
+   winraw_xinput_set_state = NULL;
+   winraw_xinput_tried     = false;
    if (winraw_joypad_out_writes)
       RARCH_DBG("[RawInput Joypad] Rumble: %lu report(s) written.\n",
             winraw_joypad_out_writes);
@@ -1011,6 +1231,24 @@ static void winraw_joypad_remove_device(HANDLE hDevice)
 /* Raw-input report parsing                                            */
 /* ------------------------------------------------------------------ */
 
+/* An XInput pad's buttons are published for the rumble thread, which
+ * tells by them which of XInput's pads this one is: the first ten,
+ * which are XInput's ten. */
+static void winraw_joypad_out_publish_buttons(
+      const winraw_joypad_joypad_data_t *pad)
+{
+   unsigned b;
+   int mask      = 0;
+   unsigned slot = (unsigned)(pad - winraw_joypad_pads);
+
+   if (slot >= MAX_USERS || !winraw_joypad_out[slot].xinput)
+      return;
+   for (b = 0; b < 10 && b < pad->num_buttons; b++)
+      if (pad->buttons[b])
+         mask |= 1 << b;
+   retro_atomic_store_release_int(&winraw_joypad_out[slot].buttons, mask);
+}
+
 static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
       const BYTE *raw_data, DWORD raw_data_size)
 {
@@ -1132,6 +1370,7 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
          }
       }
    }
+   winraw_joypad_out_publish_buttons(pad);
 }
 
 /* Reports for one of this driver's controllers that were read in bulk

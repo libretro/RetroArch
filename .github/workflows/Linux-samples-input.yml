@@ -618,7 +618,11 @@ jobs:
           # the driver waiting, fifty quick plug-ins leave no device
           # open, and stopping the driver stills the rest. Nothing is
           # under a lock: strengths and devices pass through
-          # retro_atomic.
+          # retro_atomic. An Xbox pad is rumbled through XInput, which
+          # is faked here: one such pad and one pad of XInput's are
+          # the same pad; of two, none is rumbled while nothing tells
+          # them apart, one is as soon as a button is held on it, and
+          # the other is then the one left.
           trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
           make clean all
           WINEDEBUG=-all timeout 300 make check

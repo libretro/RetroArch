@@ -33,7 +33,16 @@
  * - a pad that comes and goes before the thread has taken its device
  *   leaves no device open;
  * - set_rumble() for a pad that is not there, or cannot rumble, says
- *   so. */
+ *   so;
+ * - an Xbox pad is rumbled through XInput, which is loaded only when
+ *   one first rumbles. With one such pad and one pad of XInput's,
+ *   they are the same pad, whichever number XInput gave it;
+ * - with two, a pad is not rumbled while there is nothing to tell
+ *   which of XInput's it is - not another player's - and is as soon
+ *   as a button is held on it; the last one left is then known by
+ *   there being no other;
+ * - unplugging an Xbox pad that is rumbling stills it, and so does
+ *   stopping the driver. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -135,9 +144,58 @@ static HANDLE WINAPI fake_CreateFileA(LPCSTR name, DWORD access, DWORD share,
          FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, flags, NULL);
 }
 
+/* XInput: four pads, each there or not, with buttons held and the
+ * motors as they were last set */
+static struct
+{
+   bool connected;
+   WORD buttons, left, right;
+   unsigned sets;
+} xpad[4];
+static unsigned xinput_loads;
+struct fake_xstate { DWORD packet; WORD buttons; BYTE lt, rt; SHORT lx, ly, rx, ry; };
+struct fake_xvib   { WORD left, right; };
+
+static DWORD WINAPI fake_XInputGetState(DWORD i, struct fake_xstate *st)
+{
+   if (i >= 4 || !xpad[i].connected)
+      return ERROR_DEVICE_NOT_CONNECTED;
+   memset(st, 0, sizeof(*st));
+   st->buttons = xpad[i].buttons;
+   return ERROR_SUCCESS;
+}
+static DWORD WINAPI fake_XInputSetState(DWORD i, struct fake_xvib *v)
+{
+   if (i >= 4 || !xpad[i].connected)
+      return ERROR_DEVICE_NOT_CONNECTED;
+   xpad[i].left  = v->left;
+   xpad[i].right = v->right;
+   xpad[i].sets++;
+   return ERROR_SUCCESS;
+}
+static HMODULE WINAPI fake_LoadLibraryA(LPCSTR name)
+{
+   (void)name;
+   xinput_loads++;
+   return (HMODULE)(uintptr_t)0x5150;
+}
+static FARPROC WINAPI fake_GetProcAddress(HMODULE mod, LPCSTR name)
+{
+   (void)mod;
+   if (!strcmp(name, "XInputGetState"))
+      return (FARPROC)fake_XInputGetState;
+   if (!strcmp(name, "XInputSetState"))
+      return (FARPROC)fake_XInputSetState;
+   return NULL;
+}
+static BOOL WINAPI fake_FreeLibrary(HMODULE mod) { (void)mod; return TRUE; }
+
 #define GetRawInputDeviceInfoA fake_GetRawInputDeviceInfoA
 #define HidP_GetCaps           fake_HidP_GetCaps
 #define CreateFileA            fake_CreateFileA
+#define LoadLibraryA           fake_LoadLibraryA
+#define GetProcAddress         fake_GetProcAddress
+#define FreeLibrary            fake_FreeLibrary
 
 #include "input/drivers_joypad/winraw_joypad.c"
 
@@ -185,6 +243,20 @@ static DWORD written_to(const char *path, uint8_t *buf, DWORD cap)
    ReadFile(f, buf, cap, &got, NULL);
    CloseHandle(f);
    return got;
+}
+
+/* waits until XInput's pad @i has its motors at @left and @right;
+ * false if it has not within a second */
+static bool xwait(unsigned i, unsigned left, unsigned right)
+{
+   unsigned tries;
+   for (tries = 0; tries < 200; tries++)
+   {
+      if (xpad[i].left == left && xpad[i].right == right)
+         return true;
+      Sleep(5);
+   }
+   return false;
 }
 
 /* waits until the bytes at @at and @at + 1 of what was written are
@@ -334,6 +406,69 @@ int main(void)
          CloseHandle(f);
    }
    printf("   ok   an unplugged pad is stilled and closed by the thread, without the driver waiting; fifty quick plug-ins leave no device open; stopping the driver stills the rest and ends the thread\n");
+
+   /* ================= Xbox pads, through XInput ================== */
+   fake_n = 0;
+   memset(winraw_joypad_pads, 0, sizeof(winraw_joypad_pads));
+   winraw_joypad_pad_count   = 0;
+   winraw_joypad_initialised = true;
+   fake_plug(H(11), 0x045E, 0x028E, "\\\\?\\HID#VID_045E&PID_028E&IG_00#a");
+   fake_plug(H(12), 0x045E, 0x028E, "\\\\?\\HID#VID_045E&PID_028E&IG_00#b");
+
+   /* ---- one pad, one of XInput's ---------------------------------- */
+   xpad[2].connected = true;           /* XInput calls it its third */
+   winraw_joypad_add_device(H(11));
+   CHECK(winraw_joypad_out[0].present && winraw_joypad_out[0].xinput,
+         "the Xbox pad was not taken for one XInput rumbles");
+   CHECK(xinput_loads == 0, "XInput was loaded before any pad was to rumble");
+   ok = winraw_joypad_joypad_set_rumble(0, RETRO_RUMBLE_STRONG, 0xFFFF);
+   winraw_joypad_joypad_set_rumble(0, RETRO_RUMBLE_WEAK, 0x8000);
+   CHECK(ok && xwait(2, 0xFFFF, 0x8000),
+         "one Xbox pad, one of XInput's: its motors are at %u %u, want 65535 32768",
+         xpad[2].left, xpad[2].right);
+   CHECK(xinput_loads == 1, "XInput was loaded %u times, want once", xinput_loads);
+   printf("   ok   one Xbox pad and one pad of XInput's are the same pad, whichever number XInput gave it; XInput is loaded when it first rumbles\n");
+
+   /* unplugged while rumbling: stilled, and XInput's pad let go */
+   winraw_joypad_remove_device(H(11));
+   CHECK(xwait(2, 0, 0), "an Xbox pad unplugged while rumbling was left at %u %u", xpad[2].left, xpad[2].right);
+   xpad[2].connected = false;
+
+   /* ---- two pads, two of XInput's --------------------------------- */
+   xpad[0].connected = xpad[1].connected = true;
+   xpad[0].sets = xpad[1].sets = 0;
+   fake[0].alive = true;
+   winraw_joypad_add_device(H(11));    /* slot 0 */
+   winraw_joypad_add_device(H(12));    /* slot 1 */
+   CHECK(winraw_joypad_out[0].xinput && winraw_joypad_out[1].xinput, "the two Xbox pads are not both there");
+   /* nothing held on either: nothing says which is which */
+   winraw_joypad_joypad_set_rumble(0, RETRO_RUMBLE_STRONG, 0x4000);
+   Sleep(150);
+   CHECK(!xpad[0].sets && !xpad[1].sets,
+         "with nothing to tell two pads apart one was rumbled: XInput's were set %u and %u times",
+         xpad[0].sets, xpad[1].sets);
+   /* A held on the pad in slot 0, which XInput has as its second */
+   winraw_joypad_pads[0].num_buttons = 10;
+   winraw_joypad_pads[0].buttons[0]  = true;
+   winraw_joypad_out_publish_buttons(&winraw_joypad_pads[0]);
+   xpad[1].buttons = 0x1000;
+   winraw_joypad_joypad_set_rumble(0, RETRO_RUMBLE_STRONG, 0x5000);
+   CHECK(xwait(1, 0x5000, 0), "the pad with A held was not rumbled as XInput's second: its motors are at %u %u",
+         xpad[1].left, xpad[1].right);
+   CHECK(!xpad[0].sets, "the other player's pad was rumbled");
+   /* the other pad: the only one left */
+   winraw_joypad_joypad_set_rumble(1, RETRO_RUMBLE_WEAK, 0x3000);
+   CHECK(xwait(0, 0, 0x3000), "the last pad left was not rumbled as XInput's first: its motors are at %u %u",
+         xpad[0].left, xpad[0].right);
+   printf("   ok   of two Xbox pads none is rumbled while nothing tells them apart; one is as soon as a button is held on it, and the other is then the one left\n");
+
+   /* ---- the driver stops ------------------------------------------ */
+   winraw_joypad_joypad_destroy();
+   CHECK(xpad[0].left == 0 && xpad[0].right == 0 && xpad[1].left == 0 && xpad[1].right == 0,
+         "the driver stopped with Xbox pads rumbling at %u %u and %u %u",
+         xpad[0].left, xpad[0].right, xpad[1].left, xpad[1].right);
+   CHECK(!winraw_joypad_out_thread && !winraw_xinput_dll, "the driver stopped and left its thread or XInput behind");
+   printf("   ok   an unplugged Xbox pad is stilled and XInput's pad let go; stopping the driver stills the rest\n");
 
    DeleteFileA(edge); DeleteFileA(ds4); DeleteFileA(other);
    if (failures)
