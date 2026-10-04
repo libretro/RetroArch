@@ -24,6 +24,7 @@ SOURCES := mutter_displayconfig_test.c \
            $(REPO_ROOT)/gfx/common/xinerama_common.c \
            $(REPO_ROOT)/gfx/common/dbus_runtime.c \
            $(LRC)/rthreads/rthreads.c \
+           $(LRC)/rthreads/retro_eventcount.c \
            $(LRC)/dynamic/dylib.c \
            $(REPO_ROOT)/gfx/common/wayland_kwin_output.c \
            $(REPO_ROOT)/gfx/common/video_mode_select.c \

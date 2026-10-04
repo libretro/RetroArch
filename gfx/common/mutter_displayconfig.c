@@ -27,7 +27,11 @@
 #include <poll.h>
 
 #include <compat/strl.h>
+#include <retro_atomic.h>
 #include <rthreads/rthreads.h>
+#ifdef RETRO_ATOMIC_HAS_PTR
+#include <rthreads/retro_eventcount.h>
+#endif
 
 #include "video_mode_select.h"
 
@@ -962,6 +966,7 @@ enum mdc_status
 
 typedef struct mdc_request
 {
+   struct mdc_request *next;
    mutter_dc_target_t target;
    char               connector[64];
    unsigned           dims;
@@ -969,14 +974,27 @@ typedef struct mdc_request
    float              hz;
 } mdc_request_t;
 
+/* What the worker and its callers share. With pointer atomics nothing
+ * here takes a lock: the worker publishes a snapshot by swapping the
+ * pointer, a caller reading one counts itself in and out, and the
+ * worker frees the snapshot it replaced once nobody is counted in.
+ * Requests are pushed on a list the worker takes whole. Other backends
+ * keep the snapshot and a fixed queue under a lock. */
 typedef struct mdc_ctl
 {
+#ifdef RETRO_ATOMIC_HAS_PTR
+   retro_atomic_ptr_t state;   /* mdc_state_t, NULL until Mutter answers */
+   retro_atomic_int_t users;   /* callers looking at a snapshot */
+   retro_eventcount_t idle;    /* notified as the last one leaves */
+   retro_atomic_ptr_t reqs;    /* mdc_request_t, newest first */
+#else
    slock_t      *lock;
    mdc_state_t  *state;
-   int           wake[2];
    int           status;
    unsigned      nreq;
    mdc_request_t req[MDC_MAX_REQUESTS];
+#endif
+   int           wake[2];
 } mdc_ctl_t;
 
 static mdc_ctl_t *mdc_ctl;
@@ -1027,6 +1045,109 @@ static enum mutter_dc_result mdc_check(const mdc_state_t *st,
    return MUTTER_DC_OK;
 }
 
+#ifdef RETRO_ATOMIC_HAS_PTR
+/* The snapshot, for the caller to read until mdc_state_put(); NULL
+ * until Mutter has answered. Counted in before the pointer is read, so
+ * the worker either sees the count or has already swapped. */
+static const mdc_state_t *mdc_state_get(mdc_ctl_t *ctl)
+{
+   (void)retro_atomic_fetch_add_seq_cst_int(&ctl->users, 1);
+   retro_atomic_thread_fence_seq_cst();
+   return (const mdc_state_t*)retro_atomic_load_acquire_ptr(&ctl->state);
+}
+
+static void mdc_state_put(mdc_ctl_t *ctl)
+{
+   if (retro_atomic_fetch_sub_int(&ctl->users, 1) == 1)
+      retro_eventcount_notify(&ctl->idle);
+}
+
+static bool mdc_present(mdc_ctl_t *ctl)
+{
+   return retro_atomic_load_acquire_ptr(&ctl->state) != NULL;
+}
+
+/* The worker: the new snapshot is what callers find from here on; the
+ * one it replaces is freed once no caller is still inside it. */
+static void mdc_publish(mdc_ctl_t *ctl, mdc_state_t *st, int status)
+{
+   mdc_state_t *old = (mdc_state_t*)
+      retro_atomic_exchange_ptr(&ctl->state, st);
+   (void)status;
+   if (!old)
+      return;
+   retro_atomic_thread_fence_seq_cst();
+   for (;;)
+   {
+      int key;
+      if (!retro_atomic_load_seq_cst_int(&ctl->users))
+         break;
+      key = retro_eventcount_prepare_wait(&ctl->idle);
+      if (!retro_atomic_load_seq_cst_int(&ctl->users))
+      {
+         retro_eventcount_cancel_wait(&ctl->idle);
+         break;
+      }
+      retro_eventcount_commit_wait(&ctl->idle, key);
+   }
+   mdc_state_free(old);
+}
+
+static bool mdc_request_push(mdc_ctl_t *ctl, const mdc_request_t *r)
+{
+   void *head;
+   mdc_request_t *req = (mdc_request_t*)malloc(sizeof(*req));
+   if (!req)
+      return false;
+   *req = *r;
+   do
+   {
+      head      = retro_atomic_load_acquire_ptr(&ctl->reqs);
+      req->next = (mdc_request_t*)head;
+   } while (!retro_atomic_cas_ptr(&ctl->reqs, head, req));
+   return true;
+}
+
+/* The requests made since the last call, oldest first; with more than
+ * fit, the newest are the ones kept. */
+static unsigned mdc_requests_take(mdc_ctl_t *ctl, mdc_request_t *out)
+{
+   unsigned i, n      = 0;
+   mdc_request_t *r;
+   mdc_request_t *req = (mdc_request_t*)
+      retro_atomic_exchange_ptr(&ctl->reqs, NULL);
+
+   for (r = req; r && n < MDC_MAX_REQUESTS; r = r->next)
+      n++;
+   /* Newest first on the list: the first n are the ones kept. */
+   for (i = n; req; req = r)
+   {
+      r = req->next;
+      if (i)
+         out[--i] = *req;
+      free(req);
+   }
+   return n;
+}
+#else
+static const mdc_state_t *mdc_state_get(mdc_ctl_t *ctl)
+{
+   slock_lock(ctl->lock);
+   return ctl->status == MDC_STATUS_PRESENT ? ctl->state : NULL;
+}
+
+static void mdc_state_put(mdc_ctl_t *ctl)
+{
+   slock_unlock(ctl->lock);
+}
+
+static bool mdc_present(mdc_ctl_t *ctl)
+{
+   bool ret = mdc_state_get(ctl) != NULL;
+   mdc_state_put(ctl);
+   return ret;
+}
+
 static void mdc_publish(mdc_ctl_t *ctl, mdc_state_t *st, int status)
 {
    mdc_state_t *old;
@@ -1037,6 +1158,28 @@ static void mdc_publish(mdc_ctl_t *ctl, mdc_state_t *st, int status)
    slock_unlock(ctl->lock);
    mdc_state_free(old);
 }
+
+static bool mdc_request_push(mdc_ctl_t *ctl, const mdc_request_t *r)
+{
+   slock_lock(ctl->lock);
+   /* A full queue keeps its newest slot for the newest request. */
+   ctl->req[ctl->nreq < MDC_MAX_REQUESTS
+      ? ctl->nreq++ : MDC_MAX_REQUESTS - 1] = *r;
+   slock_unlock(ctl->lock);
+   return true;
+}
+
+static unsigned mdc_requests_take(mdc_ctl_t *ctl, mdc_request_t *out)
+{
+   unsigned n;
+   slock_lock(ctl->lock);
+   n = ctl->nreq;
+   memcpy(out, ctl->req, n * sizeof(out[0]));
+   ctl->nreq = 0;
+   slock_unlock(ctl->lock);
+   return n;
+}
+#endif
 
 static void mdc_worker(void *data)
 {
@@ -1092,11 +1235,7 @@ static void mdc_worker(void *data)
             mdc_publish(ctl, st, MDC_STATUS_PRESENT);
       }
 
-      slock_lock(ctl->lock);
-      n = ctl->nreq;
-      memcpy(req, ctl->req, n * sizeof(req[0]));
-      ctl->nreq = 0;
-      slock_unlock(ctl->lock);
+      n = mdc_requests_take(ctl, req);
 
       for (i = 0; i < n; i++)
       {
@@ -1143,7 +1282,12 @@ static mdc_ctl_t *mdc_start(void)
    if (!(ctl = (mdc_ctl_t*)calloc(1, sizeof(*ctl))))
       return NULL;
    ctl->wake[0] = ctl->wake[1] = -1;
-   if (     !(ctl->lock = slock_new())
+   if (
+#ifdef RETRO_ATOMIC_HAS_PTR
+            !retro_eventcount_init(&ctl->idle)
+#else
+            !(ctl->lock = slock_new())
+#endif
          || pipe(ctl->wake) != 0
          || fcntl(ctl->wake[0], F_SETFL, O_NONBLOCK) != 0
          || fcntl(ctl->wake[1], F_SETFL, O_NONBLOCK) != 0
@@ -1153,8 +1297,12 @@ static mdc_ctl_t *mdc_start(void)
          close(ctl->wake[0]);
       if (ctl->wake[1] >= 0)
          close(ctl->wake[1]);
+#ifdef RETRO_ATOMIC_HAS_PTR
+      retro_eventcount_free(&ctl->idle);
+#else
       if (ctl->lock)
          slock_free(ctl->lock);
+#endif
       free(ctl);
       return NULL;
    }
@@ -1166,20 +1314,15 @@ static mdc_ctl_t *mdc_start(void)
 
 bool mutter_displayconfig_available(void)
 {
-   bool ret;
    mdc_ctl_t *ctl = mdc_start();
-   if (!ctl)
-      return false;
-   slock_lock(ctl->lock);
-   ret = ctl->status == MDC_STATUS_PRESENT && ctl->state;
-   slock_unlock(ctl->lock);
-   return ret;
+   return ctl && mdc_present(ctl);
 }
 
 enum mutter_dc_result mutter_displayconfig_get_resolution_list(
       const mutter_dc_target_t *target,
       video_display_config_t **list, unsigned *len)
 {
+   const mdc_state_t *st;
    enum mutter_dc_result ret = MUTTER_DC_UNAVAILABLE;
    mdc_ctl_t *ctl            = mdc_start();
 
@@ -1187,10 +1330,9 @@ enum mutter_dc_result mutter_displayconfig_get_resolution_list(
    *len  = 0;
    if (!ctl)
       return MUTTER_DC_UNAVAILABLE;
-   slock_lock(ctl->lock);
-   if (ctl->status == MDC_STATUS_PRESENT && ctl->state)
-      ret = mdc_list_from(ctl->state, target, list, len);
-   slock_unlock(ctl->lock);
+   if ((st = mdc_state_get(ctl)))
+      ret = mdc_list_from(st, target, list, len);
+   mdc_state_put(ctl);
    return ret;
 }
 
@@ -1198,6 +1340,7 @@ enum mutter_dc_result mutter_displayconfig_set_resolution(
       const mutter_dc_target_t *target,
       unsigned dims, int int_hz, float hz)
 {
+   const mdc_state_t *st;
    bool noop                 = false;
    bool wake                 = false;
    enum mutter_dc_result ret = MUTTER_DC_UNAVAILABLE;
@@ -1205,29 +1348,25 @@ enum mutter_dc_result mutter_displayconfig_set_resolution(
 
    if (!ctl)
       return MUTTER_DC_UNAVAILABLE;
-   slock_lock(ctl->lock);
-   if (     ctl->status == MDC_STATUS_PRESENT && ctl->state
-         && (ret = mdc_check(ctl->state, target, dims, int_hz, hz,
-               &noop)) == MUTTER_DC_OK
-         && !noop)
+   if ((st = mdc_state_get(ctl)))
+      ret = mdc_check(st, target, dims, int_hz, hz, &noop);
+   mdc_state_put(ctl);
+   if (ret == MUTTER_DC_OK && !noop)
    {
-      /* A full queue keeps its newest slot for the newest request. */
-      mdc_request_t *r = &ctl->req[ctl->nreq < MDC_MAX_REQUESTS
-         ? ctl->nreq++ : MDC_MAX_REQUESTS - 1];
-      memset(r, 0, sizeof(*r));
+      mdc_request_t r;
+      memset(&r, 0, sizeof(r));
       if (target)
       {
-         r->target           = *target;
-         r->target.connector = NULL;
+         r.target           = *target;
+         r.target.connector = NULL;
          if (target->connector)
-            strlcpy(r->connector, target->connector, sizeof(r->connector));
+            strlcpy(r.connector, target->connector, sizeof(r.connector));
       }
-      r->dims   = dims;
-      r->int_hz = int_hz;
-      r->hz     = hz;
-      wake      = true;
+      r.dims   = dims;
+      r.int_hz = int_hz;
+      r.hz     = hz;
+      wake     = mdc_request_push(ctl, &r);
    }
-   slock_unlock(ctl->lock);
    if (wake)
    {
       char c = 1;

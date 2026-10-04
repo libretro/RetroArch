@@ -3,7 +3,8 @@
 # it needs.  Needs dbus-daemon, python3-dbus + python3-gi, Xorg with the
 # dummy driver, weston, Xwayland and mutter.  Run from this directory after
 # make; exits non-zero on the first failure.  XORG="sudo Xorg" where
-# Xorg cannot run as the user (the GitHub runners).
+# Xorg cannot run as the user (the GitHub runners).  BUS_ONLY=1 runs
+# only the cases that need the session bus and the mock.
 set -eu
 HERE=$(pwd)
 T=$HERE/mutter_displayconfig_test
@@ -52,6 +53,18 @@ PIDS="$PIDS $(cat "$WORK/bus.pid")"
 start_mock
 "$T" mutter
 stop_mock
+
+# Readers against the worker replacing the state it publishes
+start_mock
+"$T" threads
+stop_mock
+
+# BUS_ONLY=1 stops here: the cases above need the bus and the mock
+# alone, which is all a second sanitizer's pass is after.
+if [ -n "${BUS_ONLY:-}" ]; then
+   echo "ALL OK (bus cases)"
+   exit 0
+fi
 
 # A real X server with Mutter on the bus: Mutter must not be asked
 ${XORG:-Xorg} :91 -config "$HERE/../display_servers_x11_live/xorg-dummy.conf" \

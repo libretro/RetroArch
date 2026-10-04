@@ -40,6 +40,11 @@
  *   mutter         the list, switches (rate, size with the neighbour
  *                  moved, rate only, whole hertz, another head by
  *                  connector), refusals, and what went on the wire
+ *   threads        four threads read the list while the rate is
+ *                  switched back and forth: the worker replaces the
+ *                  state it publishes under them, with no lock, and
+ *                  frees the old one only once no reader is inside it
+ *                  (run under ASan and TSan)
  *   x11-xorg       dispserv_x11 on a real X server with Mutter on the
  *                  bus: the XRandR list, and Mutter never asked
  *   x11-xwayland   dispserv_x11 on XWayland with Mutter: Mutter's list
@@ -62,6 +67,8 @@
 
 #include <dbus/dbus.h>
 #include <retro_miscellaneous.h>
+#include <retro_atomic.h>
+#include <rthreads/rthreads.h>
 
 #include "../../../gfx/video_display_server.h"
 #include "../../../gfx/common/mutter_displayconfig.h"
@@ -553,6 +560,83 @@ static int case_wl(bool mutter)
 }
 #endif
 
+/* Readers against the worker's republishing. Every switch makes the
+ * worker ask Mutter again and publish a new state in place of the one
+ * the readers are looking at. A list must always be whole: some modes,
+ * exactly one of them current. */
+#define THR_READERS  4
+#define THR_SWITCHES 60
+
+static retro_atomic_int_t thr_stop;
+static retro_atomic_int_t thr_bad;
+static retro_atomic_int_t thr_lists;
+
+static void thr_reader(void *data)
+{
+   (void)data;
+   while (!retro_atomic_load_acquire_int(&thr_stop))
+   {
+      unsigned k, n = 0, cur = 0;
+      video_display_config_t *l = NULL;
+      if (mutter_displayconfig_get_resolution_list(NULL, &l, &n)
+            == MUTTER_DC_OK)
+      {
+         for (k = 0; k < n; k++)
+            if (l[k].current)
+               cur++;
+         if (!n || cur != 1)
+            retro_atomic_fetch_add_int(&thr_bad, 1);
+         retro_atomic_fetch_add_int(&thr_lists, 1);
+      }
+      else
+         retro_atomic_fetch_add_int(&thr_bad, 1);
+      free(l);
+      if (!mutter_displayconfig_available())
+         retro_atomic_fetch_add_int(&thr_bad, 1);
+   }
+}
+
+static int case_threads(void)
+{
+   int i;
+   sthread_t *thr[THR_READERS];
+
+   if (wait_mutter())
+      FAIL("mock Mutter not seen on the bus");
+   retro_atomic_int_init(&thr_stop, 0);
+   retro_atomic_int_init(&thr_bad, 0);
+   retro_atomic_int_init(&thr_lists, 0);
+   for (i = 0; i < THR_READERS; i++)
+      if (!(thr[i] = sthread_create(thr_reader, NULL)))
+         FAIL("reader thread");
+
+   for (i = 0; i < THR_SWITCHES; i++)
+   {
+      float hz = (i & 1) ? 119.877f : 59.951f;
+      if (mutter_displayconfig_set_resolution(NULL, 0, (int)hz, hz)
+            != MUTTER_DC_OK)
+      {
+         retro_atomic_store_release_int(&thr_stop, 1);
+         FAIL("switch %d refused", i);
+      }
+      wait_current(NULL, 2560, 1440, hz);
+   }
+
+   retro_atomic_store_release_int(&thr_stop, 1);
+   for (i = 0; i < THR_READERS; i++)
+      sthread_join(thr[i]);
+
+   if (retro_atomic_load_acquire_int(&thr_bad))
+      FAIL("%d bad reads while the state was replaced",
+            retro_atomic_load_acquire_int(&thr_bad));
+   if (!retro_atomic_load_acquire_int(&thr_lists))
+      FAIL("the readers read nothing");
+   printf("[pass] %d switches under %d readers: %d lists, every one whole\n",
+         THR_SWITCHES, THR_READERS,
+         retro_atomic_load_acquire_int(&thr_lists));
+   return 0;
+}
+
 int main(int argc, char **argv)
 {
    const char *c = argc > 1 ? argv[1] : "";
@@ -564,6 +648,8 @@ int main(int argc, char **argv)
       return case_unavailable("session bus without Mutter");
    if (!strcmp(c, "mutter"))
       return case_mutter();
+   if (!strcmp(c, "threads"))
+      return case_threads();
 #ifdef TEST_X11
    if (!strcmp(c, "x11-xorg"))
       return case_x11_xorg();

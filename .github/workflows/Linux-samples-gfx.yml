@@ -857,7 +857,7 @@ jobs:
           pkill openbox || true
           sudo kill "$XORG_PID" || true
 
-      - name: Screen Resolution through Mutter's DisplayConfig (ASan + UBSan)
+      - name: Screen Resolution through Mutter's DisplayConfig (ASan + UBSan, TSan)
         shell: bash
         run: |
           set -eu
@@ -885,6 +885,16 @@ jobs:
              && ASAN_OPTIONS=detect_leaks=1 \
                 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
                 XORG="sudo Xorg" timeout 300 ./run.sh)
+          # The worker publishes its state by swapping a pointer and
+          # frees the one it replaced once no reader is inside it, with
+          # no lock.  The threads case reads the list from four threads
+          # while the rate is switched back and forth; freeing the old
+          # state without waiting for the readers is a TSan data race.
+          # The bus cases alone: they need no display server.
+          (cd samples/gfx/mutter_displayconfig \
+             && make clean all SANITIZER=thread \
+             && TSAN_OPTIONS=halt_on_error=1 BUS_ONLY=1 \
+                setarch "$(uname -m)" -R timeout 120 ./run.sh)
           echo "[pass] mutter_displayconfig_test"
 
       - name: Build and run dbus_screensaver_test (ASan + UBSan, TSan)
