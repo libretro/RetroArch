@@ -95,6 +95,10 @@ void sdl3_set_handles(SDL_Window *window);
  * for the SDL input driver to handle itself. */
 void sdl3_pump_window_events(bool *quit, bool *resize);
 
+/* Pumps the SDL event queue for the input drivers, unless the video
+ * thread owns the window and pumps it already. */
+void sdl3_pump_input_events(void);
+
 /* Creates or resizes the window, or toggles fullscreen. */
 bool sdl3_window_set_video_mode(SDL_Window **win,
       unsigned dims, bool fullscreen,

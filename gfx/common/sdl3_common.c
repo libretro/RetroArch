@@ -94,6 +94,15 @@ static void sdl3_window_save_position(SDL_Window *win)
    settings->uints.window_position_dims = VIDEO_SCALE_PACK(w, h);
 }
 
+void sdl3_pump_input_events(void)
+{
+   /* Two threads pumping at once deadlock in the X11 backend. */
+   if (     video_driver_thread_wrapper_active()
+         && SDL_WasInit(SDL_INIT_VIDEO))
+      return;
+   SDL_PumpEvents();
+}
+
 void sdl3_pump_window_events(bool *quit, bool *resize)
 {
    SDL_Event event;

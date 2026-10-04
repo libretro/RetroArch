@@ -1108,7 +1108,7 @@ static void sdl3_input_poll(void *data)
     * the input focus. Without an SDL3 video driver to create and pump
     * that window, this queue drains nothing and key/wheel state below
     * never updates. */
-   SDL_PumpEvents();
+   sdl3_pump_input_events();
 
    /* Find the SDL window, so that window coordinates can be calculated
     * properly. */

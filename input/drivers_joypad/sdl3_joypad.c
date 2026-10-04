@@ -28,6 +28,7 @@
 
 #include "../input_driver.h"
 #include "../../configuration.h"
+#include "../../gfx/common/sdl3_common.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 
@@ -552,7 +553,7 @@ static void sdl3_joypad_poll(void)
 {
    SDL_Event event;
 
-   SDL_PumpEvents();
+   sdl3_pump_input_events();
 
    while (SDL_PeepEvents(&event, 1, SDL_GETEVENT,
             SDL_EVENT_JOYSTICK_ADDED, SDL_EVENT_JOYSTICK_REMOVED) > 0)
