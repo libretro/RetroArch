@@ -4270,7 +4270,17 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 #ifdef HAVE_DYNAMIC
             path_clear(RARCH_PATH_CORE);
-            runloop_system_info_free();
+            /* A staged load closes the old core a frame from now, and
+             * that core's deinit may still save its remap file - it
+             * does when unloading an override above loaded the file
+             * again. The save keeps a disabled button only if the
+             * core described it, and those descriptions are system
+             * information: freed here, they were gone by then and
+             * every disabled button was dropped from the file. The
+             * core's deinit frees the system information itself,
+             * after it has saved. */
+            if (!runloop_st->content_switching)
+               runloop_system_info_free();
 #endif
             {
                audio_driver_state_t

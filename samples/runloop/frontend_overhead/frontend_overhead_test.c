@@ -76,6 +76,7 @@
  *
  * Nothing is stubbed. */
 #include <stdio.h>
+#include <sys/stat.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -98,11 +99,14 @@
 #include "../../../retroarch.h"
 #include "../../../configuration.h"
 #include "../../../command.h"
+#include "../../../content.h"
+#include "../../../tasks/task_content.h"
 #include "../../../verbosity.h"
 #include "../../../frontend/frontend_driver.h"
 #include "../../../gfx/video_driver.h"
 #include "../../../input/input_driver.h"
 #include "../../../input/input_registry.h"
+#include "../../../input/input_remapping.h"
 #include "../../../tasks/tasks_internal.h"
 #include "../../../menu/menu_driver.h"
 
@@ -2513,6 +2517,115 @@ static void lane_aim_stick(void)
 #endif
 }
 
+/* A remap file with a disabled button, content closed from the menu,
+ * the core started again from the menu, and closed again
+ * (issue #19698). */
+#if !defined(_WIN32) && defined(HAVE_MENU)
+static bool remap_has(const char *path, const char *want)
+{
+   char line[256];
+   bool found = false;
+   FILE *f    = fopen(path, "r");
+   if (!f)
+      return false;
+   while (fgets(line, sizeof(line), f))
+      if (strstr(line, want))
+         found = true;
+   fclose(f);
+   return found;
+}
+#endif
+
+static void lane_remap_close(void)
+{
+#if !defined(_WIN32) && defined(HAVE_MENU)
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   settings_t *settings        = config_get_ptr();
+   content_ctx_info_t info     = {0};
+   const char *core_name       = runloop_st->system.info.library_name;
+   char dir[256], path[768], cmd[900];
+   unsigned had = failures;
+   unsigned i;
+
+   if (!core_name || !*core_name)
+   {
+      CHECK(false, "remap close: the core has no name");
+      return;
+   }
+   snprintf(dir, sizeof(dir), "/tmp/harness_remaps_%d", (int)getpid());
+   snprintf(path, sizeof(path), "%s/%s/%s.rmp", dir, core_name, core_name);
+   strlcpy(settings->paths.directory_input_remapping, dir,
+         sizeof(settings->paths.directory_input_remapping));
+
+   CHECK(runloop_st->system.input_desc_btn[0][RETRO_DEVICE_ID_JOYPAD_L] != NULL,
+         "remap close: the core's buttons are not described");
+
+   /* L is disabled and B is given to A, and the remap is saved as a
+    * core remap, as the menu saves it */
+   settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_L] = RARCH_UNMAPPED;
+   settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_B] = RETRO_DEVICE_ID_JOYPAD_A;
+   CHECK(input_remapping_save_file(path), "remap close: the remap file was not saved");
+   if (runloop_st->name.remapfile)
+      free(runloop_st->name.remapfile);
+   runloop_st->name.remapfile  = strdup(path);
+   runloop_st->flags          |= RUNLOOP_FLAG_REMAPS_CORE_ACTIVE;
+   CHECK(remap_has(path, "input_player1_btn_l = \"-1\""),
+         "remap close: the disabled button is not in the file as saved");
+
+   /* content closed from the menu */
+   command_event(CMD_EVENT_CLOSE_CONTENT, NULL);
+   for (i = 0; i < 40; i++)
+      run_loop_frames(1);
+   CHECK(remap_has(path, "input_player1_btn_l = \"-1\""),
+         "remap close: closing content dropped the disabled button from the remap file");
+
+   /* the core started again from the menu: the remap file is loaded */
+   task_push_load_new_core(core_path_g, NULL, &info, CORE_TYPE_PLAIN, NULL, NULL);
+   task_push_start_current_core(&info);
+   for (i = 0; i < 60; i++)
+      run_loop_frames(1);
+   CHECK(   (content_get_flags() & CONTENT_ST_FLAG_IS_INITED)
+         && runloop_st->name.remapfile
+         && settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_L] == RARCH_UNMAPPED
+         && runloop_st->system.input_desc_btn[0][RETRO_DEVICE_ID_JOYPAD_L],
+         "remap close: started again from the menu, the core is not up with its remap and its descriptions");
+
+   /* and closed again, this time with a configuration override in
+    * use. Unloading the override loads the remap file once more, so
+    * the remap is saved a second time when the core itself closes -
+    * a frame later, as a staged load does it. */
+   {
+      char cfg[600];
+      FILE *f;
+      snprintf(cfg, sizeof(cfg), "%s/harness.cfg", harness_dir_g);
+      if ((f = fopen(cfg, "ab")))
+      {
+         fprintf(f, "input_remapping_directory = \"%s\"\n", dir);
+         fclose(f);
+      }
+   }
+   runloop_st->flags |= RUNLOOP_FLAG_OVERRIDES_ACTIVE;
+   command_event(CMD_EVENT_CLOSE_CONTENT, NULL);
+   for (i = 0; i < 40; i++)
+      run_loop_frames(1);
+   CHECK(remap_has(path, "input_player1_btn_l = \"-1\""),
+         "remap close: closing content with an override in use dropped the disabled button from the remap file");
+   CHECK(remap_has(path, "input_player1_btn_b = \"8\""),
+         "remap close: closing content dropped a remapped button from the remap file");
+   /* the old core's descriptions do go, once it has closed */
+   CHECK(!runloop_st->system.input_desc_btn[0][RETRO_DEVICE_ID_JOYPAD_L],
+         "remap close: the closed core's button descriptions were kept");
+   snprintf(cmd, sizeof(cmd), "rm -rf '%s'", dir);
+   if (system(cmd)) { }
+   if (failures == had)
+      printf("[pass] remap close: a disabled button stays in the remap file"
+            " through Close Content, with and without a configuration"
+            " override in use\n");
+#else
+   printf("[skip] remap close: needs the menu\n");
+#endif
+}
+
 /* First-press port assignment: with the setting on no user has a core
  * port until a button is pressed on its controller. */
 static void lane_first_press(void)
@@ -3438,6 +3551,9 @@ int main(int argc, char *argv[])
       lane_input_kept();
       lane_joypad_reinit();
    }
+
+   /* last: it closes the content the other lanes run on */
+   lane_remap_close();
 
    if (failures)
    {

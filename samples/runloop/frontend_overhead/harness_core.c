@@ -170,6 +170,21 @@ void retro_init(void)
       environ_cb(RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE, &rumble);
 }
 void retro_deinit(void) { }
+
+/* For the lane that closes content with a remap in use: the first
+ * port's buttons are described, as a core describes them. */
+void harness_core_describe(void)
+{
+   static const struct retro_input_descriptor desc[] = {
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B,  "Jump" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A,  "Fire" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L,  "Strafe Left" },
+      { 0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2, "Previous Weapon" },
+      { 0, 0, 0, 0, NULL }
+   };
+   if (environ_cb)
+      environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, (void*)desc);
+}
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }
 void retro_get_system_info(struct retro_system_info *info)
 {
@@ -317,7 +332,9 @@ void retro_run(void)
    in_run = 0;
 }
 
-bool   retro_load_game(const struct retro_game_info *game) { (void)game; return true; }
+void   harness_core_describe(void);
+/* the buttons are described at load, as a core describes them */
+bool   retro_load_game(const struct retro_game_info *game) { (void)game; harness_core_describe(); return true; }
 void   retro_unload_game(void) { }
 unsigned retro_get_region(void) { return RETRO_REGION_NTSC; }
 bool   retro_load_game_special(unsigned t, const struct retro_game_info *i, size_t n) { (void)t; (void)i; (void)n; return false; }
