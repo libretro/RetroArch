@@ -1000,6 +1000,13 @@ void input_driver_init_kms(const char *joypad_name,
 void input_driver_init_wayland(const char *joypad_name, void *window_data,
       input_driver_t **input, void **input_data);
 #endif
+#ifdef HAVE_SDL3
+void input_driver_init_sdl3(const char *joypad_name,
+      input_driver_t **input, void **input_data);
+/* Whether the input driver in use is the SDL 3 one, which reads the
+ * SDL window's event queue. For the code that pumps that queue. */
+bool input_driver_is_sdl3(void);
+#endif
 
 /* Leaving the input driver running across a video driver restart: see
  * input_driver.c. */
@@ -1080,7 +1087,9 @@ enum input_window_kind
    /* a Wayland surface, whose seat's state the video context holds
     * and hands over (input_driver_left_to_frontend_with()):
     * input_driver_init_wayland() */
-   INPUT_WINDOW_WAYLAND
+   INPUT_WINDOW_WAYLAND,
+   /* an SDL 3 window: input_driver_init_sdl3() */
+   INPUT_WINDOW_SDL3
 };
 
 /* For a video driver's or a context's start-up, in place of starting

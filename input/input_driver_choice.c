@@ -143,6 +143,62 @@ void input_driver_init_wayland(const char *joypad_name, void *window_data,
 }
 #endif
 
+#ifdef HAVE_SDL3
+/* The configured input driver, if it works alongside an SDL 3 window:
+ * udev, linuxraw, raw and dinput read input devices themselves, so
+ * they do. One tied to a window system - x, wayland, cocoa - does not,
+ * and NULL is returned for it. */
+static input_driver_t *input_driver_beside_sdl3(const char *ident)
+{
+#ifdef HAVE_UDEV
+   if (string_is_equal(ident, "udev"))
+      return &input_udev;
+#endif
+#if defined(__linux__) && !defined(ANDROID)
+   if (string_is_equal(ident, "linuxraw"))
+      return &input_linuxraw;
+#endif
+#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
+#ifdef HAVE_WINRAWINPUT
+   if (string_is_equal(ident, "raw"))
+      return &input_winraw;
+#endif
+#endif
+#ifdef HAVE_DINPUT
+   if (string_is_equal(ident, "dinput"))
+      return &input_dinput;
+#endif
+   return NULL;
+}
+
+/* An SDL 3 window: the configured driver if it is one that reads
+ * devices itself and it starts; the SDL 3 input driver, which reads
+ * the window's event queue, otherwise. */
+void input_driver_init_sdl3(const char *joypad_name,
+      input_driver_t **input, void **input_data)
+{
+   input_driver_t *beside = input_driver_beside_sdl3(
+         config_get_ptr()->arrays.input_driver);
+
+   *input      = NULL;
+   *input_data = NULL;
+
+   if (beside)
+   {
+      *input_data = input_driver_init_wrap(beside, joypad_name);
+      if (*input_data)
+      {
+         *input = beside;
+         return;
+      }
+      /* it did not start: the SDL 3 one, then */
+   }
+
+   *input_data = input_driver_init_wrap(&input_sdl3, joypad_name);
+   *input      = *input_data ? &input_sdl3 : NULL;
+}
+#endif
+
 /* A display with no window system - KMS/DRM, a Vulkan display. The
  * X11 driver cannot work there and udev may not be allowed, so when
  * the setting is either of those: udev if it starts, linuxraw if that

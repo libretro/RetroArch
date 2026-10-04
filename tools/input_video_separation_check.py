@@ -42,7 +42,6 @@ VIDEO_STATE_IN_INPUT = {
 # gfx/ files that still name an input or a joypad driver (3).
 INPUT_DRIVERS_IN_GFX = {
     # ---- still start their own input driver
-    "gfx/common/sdl3_common.c": 7,
     "gfx/drivers/ctr_gfx.c": 2,
     "gfx/drivers/gekko_gfx.c": 2,
     "gfx/drivers/gx2_gfx.c": 2,

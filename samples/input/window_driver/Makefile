@@ -21,14 +21,14 @@ MINGW_CC ?= x86_64-w64-mingw32-gcc
 
 all: $(TARGET)
 
-# host: the X11 window and the no-window-system choices
+# host: the X11, SDL 3 and Wayland windows and the no-window-system choices
 $(TARGET): $(SOURCES)
-	$(CC) $(CFLAGS) -DHAVE_X11 -DHAVE_UDEV -o $@ $(SOURCES) $(LDFLAGS)
+	$(CC) $(CFLAGS) -DHAVE_X11 -DHAVE_UDEV -DHAVE_SDL3 -DHAVE_WAYLAND -o $@ $(SOURCES) $(LDFLAGS)
 
-# Windows, run under Wine: the Windows window choice
+# Windows, run under Wine: the Windows and SDL 3 window choices
 $(TARGET).exe: $(SOURCES)
 	$(MINGW_CC) -Wall -std=gnu99 -O1 $(INCLUDES) $(DEFINES) \
-	   -D_WIN32_WINNT=0x0601 -DHAVE_WINRAWINPUT -DHAVE_DINPUT \
+	   -D_WIN32_WINNT=0x0601 -DHAVE_WINRAWINPUT -DHAVE_DINPUT -DHAVE_SDL3 \
 	   -o $@ $(SOURCES)
 
 check: all

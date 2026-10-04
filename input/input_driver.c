@@ -7171,6 +7171,13 @@ void input_driver_left_to_frontend(enum input_window_kind window,
       *input_data              = NULL;
 }
 
+#ifdef HAVE_SDL3
+bool input_driver_is_sdl3(void)
+{
+   return input_driver_st.current_driver == &input_sdl3;
+}
+#endif
+
 void input_driver_left_to_frontend_with(enum input_window_kind window,
       void *window_data,
       input_driver_t **input, void **input_data)
@@ -7539,6 +7546,11 @@ bool video_driver_init_input(
             case INPUT_WINDOW_WAYLAND:
                input_driver_init_wayland(joypad,
                      input_window_data_for_video, &drv, &drv_data);
+               break;
+#endif
+#ifdef HAVE_SDL3
+            case INPUT_WINDOW_SDL3:
+               input_driver_init_sdl3(joypad, &drv, &drv_data);
                break;
 #endif
             default:

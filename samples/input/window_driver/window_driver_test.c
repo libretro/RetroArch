@@ -25,6 +25,8 @@ input_driver_t input_x;
 input_driver_t input_linuxraw;
 input_driver_t input_winraw;
 input_driver_t input_dinput;
+input_driver_t input_sdl3;
+input_driver_t input_wayland;
 
 static settings_t *test_settings;
 settings_t *config_get_ptr(void) { return test_settings; }
@@ -34,6 +36,7 @@ settings_t *config_get_ptr(void) { return test_settings; }
 #define D_LINUXRAW 4
 #define D_WINRAW   8
 #define D_DINPUT   16
+#define D_SDL3     32
 
 static unsigned starts;          /* which drivers start */
 static char tried[64];           /* the attempts, in order */
@@ -45,6 +48,8 @@ static const char *name_of(const input_driver_t *d)
    if (d == &input_linuxraw) return "linuxraw";
    if (d == &input_winraw)   return "raw";
    if (d == &input_dinput)   return "dinput";
+   if (d == &input_sdl3)     return "sdl3";
+   if (d == &input_wayland)  return "wayland";
    return d ? "?" : "none";
 }
 
@@ -55,6 +60,7 @@ static unsigned bit_of(const input_driver_t *d)
    if (d == &input_linuxraw) return D_LINUXRAW;
    if (d == &input_winraw)   return D_WINRAW;
    if (d == &input_dinput)   return D_DINPUT;
+   if (d == &input_sdl3)     return D_SDL3;
    return 0;
 }
 
@@ -81,6 +87,16 @@ bool input_driver_take_kept(input_driver_t **input, void **input_data)
    kept        = NULL;
    return true;
 }
+
+/* the Wayland input driver's start, and the joypad drivers' */
+static bool wl_starts;
+static unsigned joypads_started;
+bool input_wl_init(void *data, const char *joypad_name)
+{
+   joypad_seen = joypad_name;
+   return data && wl_starts;
+}
+void input_driver_init_joypads(void) { joypads_started++; }
 
 /* ---- the cases ------------------------------------------------- */
 
@@ -144,6 +160,14 @@ int main(void)
    kept = &input_winraw;
    expect("windows", input_driver_init_windows, "raw",    D_WINRAW | D_DINPUT, "raw",    "");
    expect("windows", input_driver_init_windows, "raw",    D_WINRAW | D_DINPUT, "raw",    "raw");
+
+   /* an SDL 3 window: raw input or DirectInput when one is the
+    * setting and starts; the SDL 3 driver otherwise */
+   expect("sdl3", input_driver_init_sdl3, "raw",    D_WINRAW | D_DINPUT | D_SDL3, "raw",    "raw");
+   expect("sdl3", input_driver_init_sdl3, "dinput", D_WINRAW | D_DINPUT | D_SDL3, "dinput", "dinput");
+   expect("sdl3", input_driver_init_sdl3, "raw",    D_SDL3,                       "sdl3",   "raw,sdl3");
+   expect("sdl3", input_driver_init_sdl3, "sdl3",   D_WINRAW | D_DINPUT | D_SDL3, "sdl3",   "sdl3");
+   expect("sdl3", input_driver_init_sdl3, "raw",    0,                            "none",   "raw,sdl3");
 #else
    /* an X11 window: udev only when it is the setting and it starts */
    expect("x11", input_driver_init_x11, "udev", D_UDEV | D_X, "udev", "udev");
@@ -160,6 +184,55 @@ int main(void)
    expect("kms", input_driver_init_kms, "x",        0,                   "none",     "udev,linuxraw");
    expect("kms", input_driver_init_kms, "linuxraw", D_UDEV | D_LINUXRAW, "none",     "");
    expect("kms", input_driver_init_kms, "sdl2",     D_UDEV | D_LINUXRAW, "none",     "");
+
+   /* an SDL 3 window: udev or linuxraw when one is the setting and
+    * starts; the SDL 3 driver for any other setting, a window
+    * system's included, and when the one named does not start */
+   expect("sdl3", input_driver_init_sdl3, "udev",     D_UDEV | D_LINUXRAW | D_SDL3, "udev",     "udev");
+   expect("sdl3", input_driver_init_sdl3, "linuxraw", D_UDEV | D_LINUXRAW | D_SDL3, "linuxraw", "linuxraw");
+   expect("sdl3", input_driver_init_sdl3, "udev",     D_SDL3,                       "sdl3",     "udev,sdl3");
+   expect("sdl3", input_driver_init_sdl3, "x",        D_UDEV | D_X | D_SDL3,        "sdl3",     "sdl3");
+   expect("sdl3", input_driver_init_sdl3, "sdl3",     D_UDEV | D_SDL3,              "sdl3",     "sdl3");
+   expect("sdl3", input_driver_init_sdl3, "udev",     0,                            "none",     "udev,sdl3");
+
+   /* a Wayland surface: the Wayland driver, on the seat's state the
+    * video context handed over, and the joypad drivers started once;
+    * nothing without that state, or if it does not start */
+   {
+      int seat                = 0;
+      input_driver_t *input   = (input_driver_t*)0x1;
+      void *input_data        = (void*)0x1;
+      int ok;
+
+      wl_starts       = true;
+      joypads_started = 0;
+      joypad_seen     = NULL;
+      input_driver_init_wayland("the-joypad-driver", &seat, &input, &input_data);
+      ok =     input == &input_wayland && input_data == (void*)&seat
+            && joypads_started == 1
+            && joypad_seen && !strcmp(joypad_seen, "the-joypad-driver");
+      printf("%s wayland  with the seat's state -> %s, joypad drivers started %u time(s)\n",
+            ok ? "[ok]  " : "[FAIL]", name_of(input), joypads_started);
+      if (!ok)
+         failures++;
+
+      input = (input_driver_t*)0x1; input_data = (void*)0x1; joypads_started = 0;
+      input_driver_init_wayland("the-joypad-driver", NULL, &input, &input_data);
+      ok = !input && !input_data && joypads_started == 0;
+      printf("%s wayland  with no state handed over -> %s\n",
+            ok ? "[ok]  " : "[FAIL]", name_of(input));
+      if (!ok)
+         failures++;
+
+      wl_starts = false;
+      input = (input_driver_t*)0x1; input_data = (void*)0x1;
+      input_driver_init_wayland("the-joypad-driver", &seat, &input, &input_data);
+      ok = !input && !input_data && joypads_started == 0;
+      printf("%s wayland  that does not start -> %s\n",
+            ok ? "[ok]  " : "[FAIL]", name_of(input));
+      if (!ok)
+         failures++;
+   }
 #endif
 
    free(test_settings);
