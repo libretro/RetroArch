@@ -1821,7 +1821,8 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
             || !(sync_surface = gfx_thumbnail_anim_surface(thumbnail,
                   VIDEO_SCALE_PACK(anim_w, anim_h), 1)))
          return;
-      if (sync_surface->inflight)
+      if (     sync_surface->inflight
+            || !gfx_surface_slot_writable(sync_surface, 0))
          return;
       sync_direct = image_transfer_anim_stream_set_output(thumbnail->anim,
             type, sync_surface->slots[0]);

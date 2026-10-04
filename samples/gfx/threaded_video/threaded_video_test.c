@@ -4315,7 +4315,7 @@ static void lane_surface_lend(void)
    size_t n     = (size_t)64 * 48;
    gfx_surface_t *s;
    unsigned pass, k, tries;
-   bool lent_any = false;
+   bool lent_any = false, lent_single = false, flipped = false;
 
    if (!real_driver())
    {
@@ -4323,21 +4323,25 @@ static void lane_surface_lend(void)
       return;
    }
 
-   for (pass = 0; pass < 2; pass++)
+   /* Passes: direct and threaded with two slots, then direct with one,
+    * which borrows both driver slots and alternates them itself. */
+   for (pass = 0; pass < 3; pass++)
    {
-      bool threaded = pass == 1;
+      bool threaded   = pass == 1;
+      unsigned nslots = pass == 2 ? 1 : 2;
       uintptr_t first = 0;
+      uint32_t *seen  = NULL;
       set_threaded_via_setting(threaded);
       run_frames(3);
       expect_wrapper(threaded, "surface lend lane");
-      s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 2,
+      s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), nslots,
             GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, NULL, NULL);
       CHECK(s != NULL, "surface lend lane: no surface");
       if (!s)
          continue;
       for (k = 0; k < 8; k++)
       {
-         unsigned slot = k & 1;
+         unsigned slot = (k & 1) % nslots;
          size_t i;
          enum gfx_surface_submit_result r;
          for (tries = 0; tries < 16
@@ -4346,6 +4350,12 @@ static void lane_surface_lend(void)
             run_frames(1);
          CHECK(!s->inflight && gfx_surface_slot_writable(s, slot),
                "surface lend lane: slot %u never came back", slot);
+         if (nslots == 1 && s->lent)
+         {
+            if (seen && s->slots[0] != seen)
+               flipped = true;
+            seen = s->slots[0];
+         }
          for (i = 0; i < n; i++)
             s->slots[slot][i] = 0xff000000u | (uint32_t)(i * 2654435761u
                   >> 8) | k;
@@ -4362,6 +4372,15 @@ static void lane_surface_lend(void)
       }
       if (threaded)
          CHECK(s->lent == 0, "threaded video lent a slot");
+      else if (nslots == 1)
+      {
+         lent_single = s->lent == 3;
+         if (s->lent)
+            CHECK(     s->lent == 3 && s->lent_spare
+                    && s->slots[0] != s->own_slots[0],
+                  "surface lend lane: one slot borrowed %u, not both",
+                  (unsigned)s->lent);
+      }
       else
       {
          lent_any = s->lent != 0;
@@ -4379,11 +4398,17 @@ static void lane_surface_lend(void)
       /* The drivers that lend: there the direct half must have. */
       const char *drv = getenv("HARNESS_VIDEO_DRIVER");
       if (drv && (!strcmp(drv, "vulkan") || !strcmp(drv, "d3d12")))
+      {
          CHECK(lent_any, "surface lend lane: %s lent no slot", drv);
+         CHECK(lent_single, "surface lend lane: %s lent a one-slot "
+               "surface nothing", drv);
+      }
    }
    if (failures == had)
-      fprintf(stderr, "[pass] surface lend lane (direct %s, threaded "
-            "none)\n", lent_any ? "lent both slots" : "lent nothing");
+      fprintf(stderr, "[pass] surface lend lane (direct %s, one slot %s, "
+            "threaded none)\n", lent_any ? "lent both slots" : "lent nothing",
+            lent_single ? (flipped ? "double buffered" : "borrowed two")
+                        : "lent nothing");
 }
 
 static void lane_surface_update(void)

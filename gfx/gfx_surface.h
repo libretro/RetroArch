@@ -93,12 +93,16 @@ struct gfx_surface
    /* Each slot is a frame of @pixfmt: VIDEO_SCALE_AREA(dims) times
     * GFX_SURFACE_PIXFMT_BPP(pixfmt) bytes. */
    uint32_t *slots[GFX_SURFACE_MAX_SLOTS];
-   /* The surface's own slot memory. Under direct video a slot of a
-    * surface of two slots or more, whose texture the driver can
-    * stream, may instead be lent upload memory (texture_lend): slots[i]
-    * then points there, and own_slots[i] is where it points again once
-    * the texture is replaced or freed. */
+   /* The surface's own slot memory. Under direct video a slot whose
+    * texture the driver can stream may instead be lent upload memory
+    * (texture_lend): slots[i] then points there, and own_slots[i] is
+    * where it points again once the texture is replaced or freed. A
+    * surface of one slot borrows two of the driver's, so it is double
+    * buffered as the driver's own copy path is: slots[0] is the one to
+    * write next and lent_spare the other, and the writability check
+    * turns to the spare while the GPU still reads the current one. */
    uint32_t *own_slots[GFX_SURFACE_MAX_SLOTS];
+   uint32_t *lent_spare;
    /* The texture, 0 until a submit has completed. A replacement load
     * in flight leaves the previous texture here, drawable, until the
     * new one arrives. */
@@ -117,7 +121,8 @@ struct gfx_surface
     * update only ever writes the layout the texture was made with.
     * 0xff = none. */
    uint8_t fmt;
-   uint8_t lent;       /* slots lent driver memory, a bit each */
+   uint8_t lent;       /* driver slots borrowed, a bit each */
+   uint8_t lent_cur;   /* one slot: the driver slot slots[0] is */
    uint8_t can_update; /* driver updates in place */
 };
 
@@ -291,10 +296,11 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
 /* Whether slot @slot may be written now. A slot lent the driver's upload
  * memory is the GPU's until the copy of its last frame has run; the
  * answer never waits, and a producer that gets false keeps the slot
- * for a later frame. Producers read slots[@slot] afresh each time they
- * hand it to a writer: a successful submit of a slot may lend it. Main
- * thread. */
-bool gfx_surface_slot_writable(const gfx_surface_t *s, unsigned slot);
+ * for a later frame. A single-slot surface answers for either of its
+ * two borrowed buffers and points slots[0] at the free one. Producers
+ * read slots[@slot] afresh after asking, each time they hand it to a
+ * writer: a successful submit of a slot may lend it. Main thread. */
+bool gfx_surface_slot_writable(gfx_surface_t *s, unsigned slot);
 
 /* Unload the texture and free the surface. A submit in flight keeps
  * the slots alive until it completes, without a release() call; its

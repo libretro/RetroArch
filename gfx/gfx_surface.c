@@ -206,35 +206,48 @@ static bool gfx_surface_prepare(gfx_surface_t *s, const void *pixels,
 static void gfx_surface_unlend(gfx_surface_t *s)
 {
    unsigned i;
-   for (i = 0; s->lent; i++)
-      if (s->lent & (1u << i))
-      {
-         s->slots[i] = s->own_slots[i];
-         s->lent    &= ~(1u << i);
-      }
+   if (!s->lent)
+      return;
+   for (i = 0; i < s->num_slots; i++)
+      s->slots[i] = s->own_slots[i];
+   s->lent_spare = NULL;
+   s->lent       = 0;
+   s->lent_cur   = 0;
 }
 
 /* After a direct submit of @slot: the texture streams, so the next
  * frame for the slot can be written where the driver uploads it from,
  * and the copy into that memory goes away. Rows as tightly packed as
- * the slot's own; the driver lends only memory laid out so. Only a
- * surface of two slots or more lends: its producer alternates them, so
- * one is written while the other's copy runs. A single slot lent would
- * have its next frame wait on the copy, where the driver's own two
- * upload buffers behind it never make it wait. */
+ * the slot's own; the driver lends only memory laid out so. A surface
+ * of two slots or more borrows the driver slot of the same number: its
+ * producer alternates them, so one is written while the other's copy
+ * runs. A surface of one slot borrows both driver slots at once, and
+ * the writability check alternates them for it; a single buffer would
+ * have each frame wait on the last one's copy. */
 static void gfx_surface_lend(gfx_surface_t *s, unsigned slot)
 {
-   void *mem;
-   if (     s->num_slots < 2
-         || slot >= s->num_slots || (s->lent & (1u << slot))
+   size_t pitch;
+   void *mem, *spare;
+   if (     slot >= s->num_slots || (s->lent & (1u << slot))
          || !s->handle || !s->can_update)
       return;
-   if ((mem = video_driver_texture_lend(s->handle, slot,
-         (size_t)VIDEO_SCALE_W(s->dims)
-         * GFX_SURFACE_PIXFMT_BPP(s->pixfmt))))
+   pitch = (size_t)VIDEO_SCALE_W(s->dims) * GFX_SURFACE_PIXFMT_BPP(s->pixfmt);
+   if (s->num_slots >= 2)
    {
-      s->slots[slot] = (uint32_t*)mem;
-      s->lent       |= 1u << slot;
+      if ((mem = video_driver_texture_lend(s->handle, slot, pitch)))
+      {
+         s->slots[slot] = (uint32_t*)mem;
+         s->lent       |= 1u << slot;
+      }
+      return;
+   }
+   if (     (mem   = video_driver_texture_lend(s->handle, 0, pitch))
+         && (spare = video_driver_texture_lend(s->handle, 1, pitch)))
+   {
+      s->slots[0]   = (uint32_t*)mem;
+      s->lent_spare = (uint32_t*)spare;
+      s->lent       = 3;
+      s->lent_cur   = 0;
    }
 }
 
@@ -486,11 +499,23 @@ void gfx_surface_free(gfx_surface_t *s)
    free(s);
 }
 
-bool gfx_surface_slot_writable(const gfx_surface_t *s, unsigned slot)
+bool gfx_surface_slot_writable(gfx_surface_t *s, unsigned slot)
 {
+   uint32_t *other;
    if (!s || slot >= s->num_slots || !(s->lent & (1u << slot)))
       return true;
-   return video_driver_texture_lend_ready(s->handle, slot);
+   if (s->num_slots >= 2)
+      return video_driver_texture_lend_ready(s->handle, slot);
+   if (video_driver_texture_lend_ready(s->handle, s->lent_cur))
+      return true;
+   if (!video_driver_texture_lend_ready(s->handle, s->lent_cur ^ 1u))
+      return false;
+   /* The other borrowed buffer is free: write that one next. */
+   other         = s->lent_spare;
+   s->lent_spare = s->slots[0];
+   s->slots[0]   = other;
+   s->lent_cur  ^= 1u;
+   return true;
 }
 
 bool gfx_surface_free_adopt(gfx_surface_t *s, void *pixels)

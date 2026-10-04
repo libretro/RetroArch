@@ -3940,7 +3940,8 @@ static bool input_overlay_update_apng_frame(input_overlay_t *ol,
    const uint32_t *pix = ol->anim_2frame_pix[i];
    size_t frame_len;
 
-   if (!pix || !s || !s->num_slots || s->inflight)
+   if (     !pix || !s || !s->num_slots || s->inflight
+         || !gfx_surface_slot_writable(s, 0))
       return false;
 
    frame_len = VIDEO_SCALE_AREA(s->dims);
@@ -4004,10 +4005,10 @@ void input_overlay_animate(input_overlay_t *ol, retro_time_t now)
          continue;
       if (ol->anim_next_us[i] && now < ol->anim_next_us[i])
          continue;
-      /* The last frame is still the video thread's: this one is
-       * dropped rather than waited for, and the next poll tries
+      /* The last frame is still the video thread's, or the GPU's: this
+       * one is dropped rather than waited for, and the next poll tries
        * again. */
-      if (s->inflight)
+      if (s->inflight || !gfx_surface_slot_writable(s, 0))
          continue;
 
       if (!(frame = rpng_apng_stream_next(st, &duration_ms)))
