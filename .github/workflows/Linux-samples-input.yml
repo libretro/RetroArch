@@ -412,6 +412,23 @@ jobs:
           make clean
           echo "[pass] window_driver_test (ASan)"
 
+      - name: Build and run bind_trigger_axis_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/bind_trigger_axis
+        run: |
+          set -eu
+          # Binding L2 or R2 by pressing it: a trigger that is a button
+          # and an axis at once is bound to its axis, which is analog.
+          # Which axis that is, is told from where each axis rests and
+          # whether it has left it (menu/menu_bind_trigger.h): the
+          # trigger's own, not a stick held over, not noise, not the
+          # other trigger.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./bind_trigger_axis_test
+          make clean
+          echo "[pass] bind_trigger_axis_test (ASan)"
+
       - name: Build and run device_registry_test (ASan + UBSan)
         shell: bash
         working-directory: samples/input/device_registry

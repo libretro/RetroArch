@@ -166,6 +166,11 @@ struct menu_bind_axis_state
    /* Locked axis state. If we configured an axis,
     * avoid having the same axis state trigger something again right away. */
    int16_t locked_axes[MENU_MAX_AXES];
+   /* Axes bound as a trigger at the start of their pull (see
+    * menu_bind_trigger.h), one bit each: the rest of the pull is not
+    * a second press, so they are passed over until they are back at
+    * rest. */
+   uint32_t trigger_pulled;
 };
 
 struct menu_bind_state

@@ -49,6 +49,7 @@
 #include "../audio/audio_driver.h"
 
 #include "menu_driver.h"
+#include "menu_bind_trigger.h"
 #include "menu_dirwalk.h"
 #include "menu_cbs.h"
 #include "../driver.h"
@@ -1694,6 +1695,13 @@ static int menu_input_key_bind_set_mode_common(struct menu_state *menu_st,
    return 0;
 }
 
+/* Whether the control being bound is L2 or R2. */
+static bool menu_bind_is_trigger(const struct menu_bind_state *state)
+{
+   unsigned id = state->begin - MENU_SETTINGS_BIND_BEGIN;
+   return id == RETRO_DEVICE_ID_JOYPAD_L2 || id == RETRO_DEVICE_ID_JOYPAD_R2;
+}
+
 static bool menu_input_key_bind_poll_find_hold_pad(
       struct menu_bind_state *new_state,
       struct retro_keybind *output,
@@ -1744,6 +1752,20 @@ static bool menu_input_key_bind_poll_find_hold_pad(
 
       if (!found)
          continue;
+
+      /* L2 and R2: a trigger that is a button and an axis is bound
+       * to its axis, which is analog */
+      if (menu_bind_is_trigger(new_state))
+      {
+         uint32_t joyaxis = menu_bind_trigger_axis(n->axes,
+               new_state->axis_state[p].rested_axes, MENU_MAX_AXES);
+         if (joyaxis != AXIS_NONE)
+         {
+            output->joyaxis = joyaxis;
+            output->joykey  = NO_BTN;
+            return true;
+         }
+      }
 
       output->joykey = b;
       output->joyaxis = AXIS_NONE;
@@ -1861,6 +1883,24 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
       if (!found)
          continue;
 
+      /* L2 and R2: a trigger that is a button and an axis is bound
+       * to its axis, which is analog */
+      if (menu_bind_is_trigger(state))
+      {
+         uint32_t joyaxis = menu_bind_trigger_axis(n->axes,
+               new_state->axis_state[p].rested_axes, MENU_MAX_AXES);
+         if (joyaxis != AXIS_NONE)
+         {
+            unsigned axis   = (AXIS_NEG_GET(joyaxis) < MENU_MAX_AXES)
+               ? AXIS_NEG_GET(joyaxis) : AXIS_POS_GET(joyaxis);
+            output->joyaxis = joyaxis;
+            output->joykey  = NO_BTN;
+            /* the rest of this pull is not the next bind's press */
+            new_state->axis_state[p].trigger_pulled |= (1U << axis);
+            return true;
+         }
+      }
+
       output->joykey = b;
       output->joyaxis = AXIS_NONE;
       return true;
@@ -1873,6 +1913,15 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
             new_state->axis_state[p].locked_axes[a]);
       int rested_distance = abs(n->axes[a] -
             new_state->axis_state[p].rested_axes[a]);
+
+      /* a trigger bound at the start of its pull: nothing more of
+       * that pull, until it is back at rest */
+      if (new_state->axis_state[p].trigger_pulled & (1U << a))
+      {
+         if (rested_distance < MENU_BIND_TRIGGER_MOVED)
+            new_state->axis_state[p].trigger_pulled &= ~(1U << a);
+         continue;
+      }
 
       if (     (abs(n->axes[a]) >= 20000)
             && (locked_distance >= 20000)
