@@ -8917,6 +8917,10 @@ int runloop_iterate(void)
     * nothing was set. */
    input_driver_flush_rumble();
    led_driver_flush();
+   /* a first press seen by this frame's poll: the user gets its core
+    * port now, with the core off the stack */
+   if (input_st->first_press_pending)
+      input_first_press_apply();
 #ifdef HAVE_PRESENCE
    /* "In a game" does not change at the core rate; the sinks
     * (Discord at 10 Hz, Steam) are written on the same cadence. */

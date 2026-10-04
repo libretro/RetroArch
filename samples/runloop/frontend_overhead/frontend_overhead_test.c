@@ -1548,6 +1548,136 @@ static void kept_wrap_joypad(input_driver_state_t *input_st)
 }
 #endif
 
+/* First-press port assignment: with the setting on no user has a core
+ * port until a button is pressed on its controller. */
+static void lane_first_press(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   input_driver_state_t *input_st = input_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   const input_device_driver_t *joypad_real;
+   void (*trace)(int, int);
+   void (*trace_last)(unsigned*, int*);
+   void (*port_device)(unsigned, unsigned*, long*, long*);
+   void    *core;
+   unsigned had = failures;
+   unsigned seen, device, i;
+   int      axes[4];
+   long     calls, calls0, in_run;
+   uint32_t a_btn, b_btn;
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(trace = (void (*)(int, int))dlsym(core, "harness_core_trace"))
+       || !(trace_last = (void (*)(unsigned*, int*))dlsym(core, "harness_core_trace_last"))
+       || !(port_device = (void (*)(unsigned, unsigned*, long*, long*))
+             dlsym(core, "harness_core_port_device"))
+       || !input_st->primary_joypad)
+   {
+      CHECK(false, "first press: the harness core's entry points or the joypad driver");
+      return;
+   }
+   joypad_real              = input_st->primary_joypad;
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   a_btn = 1u << (input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_A].joykey & 31);
+   b_btn = 1u << (input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_B].joykey & 31);
+   syn_hat = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+
+   fast_forward(true);
+   trace(2, 0);
+
+   /* B is held as content starts: every user is without a core port,
+    * and a button never seen released is no press */
+   syn_buttons = b_btn;
+   settings->bools.input_assign_ports_on_button_press = true;
+   input_remapping_set_defaults(false);
+   for (i = 0; i < MAX_USERS; i++)
+      if (settings->uints.input_remap_ports[i] != MAX_USERS)
+         break;
+   CHECK(i == MAX_USERS && input_st->first_press_live,
+         "first press: with the setting on a user has a core port from the start");
+   run_loop_frames(5);
+   trace_last(&seen, axes);
+   CHECK(settings->uints.input_remap_ports[0] == MAX_USERS && !seen,
+         "first press: a button held from the start was taken for a press");
+
+   /* the d-pad is no press either */
+   syn_buttons = 0;
+   run_loop_frames(3);
+   syn_hat = HAT_UP_MASK;
+   if (!GET_HAT_DIR(input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_UP].joykey))
+      syn_buttons = 1u << (input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_UP].joykey & 31);
+   run_loop_frames(5);
+   CHECK(settings->uints.input_remap_ports[0] == MAX_USERS,
+         "first press: the d-pad was taken for a press");
+   syn_hat     = 0;
+   syn_buttons = 0;
+   run_loop_frames(3);
+
+   /* A: the user has core port 1 once that frame is over, and the
+    * core sees the button from the next */
+   port_device(0, &device, &calls0, &in_run);
+   syn_buttons = a_btn;
+   run_loop_frames(1);
+   trace_last(&seen, axes);
+   CHECK(settings->uints.input_remap_ports[0] == 0,
+         "first press: a press did not give the user the first core port");
+   CHECK(!seen, "first press: the core saw the press in the frame it was made in");
+   run_loop_frames(1);
+   trace_last(&seen, axes);
+   CHECK(seen & (1u << RETRO_DEVICE_ID_JOYPAD_A),
+         "first press: the core does not see the user once it has a port");
+   port_device(0, &device, &calls, &in_run);
+   CHECK(calls > calls0 && device == RETRO_DEVICE_JOYPAD,
+         "first press: the core was not told the port's controller");
+   CHECK(!in_run, "first press: the core was told a port's controller from inside its run");
+   CHECK(!input_st->first_press_live || settings->uints.input_max_users > 1,
+         "first press: the poll still looks for a press with every user mapped");
+
+   /* the lowest free core port: with the second user on core port 1,
+    * a press on the first gives it core port 2 */
+   syn_buttons = 0;
+   input_remapping_set_defaults(false);
+   settings->uints.input_remap_ports[1] = 0;
+   input_remapping_update_port_map();
+   run_loop_frames(3);
+   syn_buttons = a_btn;
+   run_loop_frames(2);
+   CHECK(settings->uints.input_max_users < 2
+         || settings->uints.input_remap_ports[0] == 1,
+         "first press: the user was not given the lowest free core port");
+
+   /* off: every user has its own port again */
+   syn_buttons = 0;
+   settings->bools.input_assign_ports_on_button_press = false;
+   input_remapping_set_defaults(false);
+   for (i = 0; i < MAX_USERS; i++)
+      if (settings->uints.input_remap_ports[i] != i)
+         break;
+   CHECK(i == MAX_USERS && !input_st->first_press_live,
+         "first press: with the setting off a user is not on its own port");
+   command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+
+   trace(0, 0);
+   fast_forward(false);
+   run_loop_frames(5);
+   input_st->primary_joypad = joypad_real;
+   dlclose(core);
+   if (failures == had)
+      printf("[pass] first press: no user has a core port until a button"
+            " is pressed on it; a button held from the start and the d-pad"
+            " are no press; the port is given between frames, the lowest"
+            " free one\n");
+#else
+   printf("[skip] first press: needs the test drivers\n");
+#endif
+}
+
 static void lane_input_kept(void)
 {
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
@@ -2179,6 +2309,9 @@ int main(int argc, char *argv[])
       lane_device_registry();
       lane_input_poll_sites(load_poll_name[load_poll]);
       lane_output_store();
+      /* before the core-view lane, whose netplay check leaves the
+       * loop paused */
+      lane_first_press();
       lane_core_view();
       lane_key_events();
       /* last: these restart the drivers */

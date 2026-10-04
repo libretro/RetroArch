@@ -144,11 +144,20 @@ void harness_core_input_stats(unsigned long *frames,
 
 void retro_set_environment(retro_environment_t cb)
 {
+   /* two controller ports, so the frontend tells the core what is
+    * plugged into each */
+   static const struct retro_controller_description pads[] = {
+      { "RetroPad", RETRO_DEVICE_JOYPAD }
+   };
+   static const struct retro_controller_info ports[] = {
+      { pads, 1 }, { pads, 1 }, { NULL, 0 }
+   };
    bool no_content = true;
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
    environ_cb = cb;
    cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt);
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
+   cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
 }
 void retro_set_video_refresh(retro_video_refresh_t cb)      { video_cb = cb; }
 void retro_set_audio_sample(retro_audio_sample_t cb)        { (void)cb; }
@@ -180,7 +189,28 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->geometry.max_height   = H;
    info->geometry.aspect_ratio = 4.0f / 3.0f;
 }
-void retro_set_controller_port_device(unsigned port, unsigned device) { (void)port; (void)device; }
+/* The device the frontend last gave each port, how often it has given
+ * one, and how often it did so from inside retro_run(). */
+static unsigned port_device[8];
+static long     port_device_calls, port_device_calls_in_run;
+static int      in_run;
+
+void retro_set_controller_port_device(unsigned port, unsigned device)
+{
+   if (port < 8)
+      port_device[port] = device;
+   port_device_calls++;
+   if (in_run)
+      port_device_calls_in_run++;
+}
+
+void harness_core_port_device(unsigned port, unsigned *device,
+      long *calls, long *calls_in_run)
+{
+   *device       = (port < 8) ? port_device[port] : 0;
+   *calls        = port_device_calls;
+   *calls_in_run = port_device_calls_in_run;
+}
 void retro_reset(void) { }
 
 void retro_run(void)
@@ -189,6 +219,7 @@ void retro_run(void)
     * frame as a duplicate. */
    frame[runs % (W * H)] ^= 0xffff;
    runs++;
+   in_run = 1;
    if (trace_mode)
    {
       unsigned i;
@@ -283,6 +314,7 @@ void retro_run(void)
    }
    video_cb(frame, W, H, W * 2);
    audio_cb(audio, AUDIO_FRAMES);
+   in_run = 0;
 }
 
 bool   retro_load_game(const struct retro_game_info *game) { (void)game; return true; }

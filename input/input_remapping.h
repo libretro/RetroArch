@@ -74,6 +74,13 @@ void input_remapping_restore_global_config(bool clear_cache, bool restore_analog
  */
 void input_remapping_update_port_map(void);
 
+/* First-press port assignment ("Assign Ports on First Button Press").
+ * Whether the policy applies now: the setting, and not in netplay. */
+bool input_first_press_enabled(void);
+/* Maps the users a press was seen on to the next free core ports.
+ * Called between frames, with the core off the stack. */
+void input_first_press_apply(void);
+
 /**
  * Frees runloop_st->name.remapfile and sets these runloop_state flags to false:
  * remaps_core_active, remaps_content_dir_active, and remaps_game_active.

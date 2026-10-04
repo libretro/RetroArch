@@ -84,6 +84,11 @@ S_BOOL(input_remap_sort_by_controller_enable, INPUT_REMAP_SORT_BY_CONTROLLER_ENA
       false, SD_FLAG_ADVANCED, 0, 0,
       "Sort Remaps By Gamepad",
       "Remaps will only apply to the active gamepad in which they were saved.")
+S_BOOL(input_assign_ports_on_button_press, INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
+      "input_assign_ports_on_button_press",
+      false, SD_FLAG_ADVANCED, 0, 0,
+      "Assign Ports on First Button Press",
+      "When content starts, no controller is mapped to a core port; each is given the next free core port when a button is first pressed on it. Applies from the next content start.")
 S_BOOL(input_autodetect_enable, INPUT_AUTODETECT_ENABLE,
       "input_autodetect_enable",
       DEFAULT_INPUT_AUTODETECT_ENABLE, SD_FLAG_ADVANCED, 0, 0,

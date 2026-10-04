@@ -32991,6 +32991,10 @@ MSG_HASH(
    "%s configured in port %u"
    )
 MSG_HASH(
+   MSG_DEVICE_ASSIGNED_TO_CORE_PORT_NR,
+   "%s assigned to core port %u"
+   )
+MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
    "%s disconnected from port %u"
    )

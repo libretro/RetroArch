@@ -818,6 +818,12 @@ typedef struct
    bool frontend_sensors_enabled;
    unsigned core_accel_rate; /* >0 means core wants accel at this rate */
    unsigned core_gyro_rate;  /* >0 means core wants gyro at this rate */
+   /* First-press port assignment, see input_first_press_apply():
+    * buttons seen released on a user with no core port, the users to
+    * map at the next frame boundary, and whether any of it is live. */
+   uint32_t first_press_released[MAX_USERS];
+   uint32_t first_press_pending;
+   bool     first_press_live;
 } input_driver_state_t;
 
 

@@ -74,6 +74,10 @@
 #include <net/net_socket.h>
 #endif
 
+#ifdef HAVE_NETWORKING
+#include "../network/netplay/netplay.h"
+#endif
+
 #ifdef HAVE_MENU
 #include "../menu/menu_driver.h"
 #endif
@@ -9133,6 +9137,14 @@ void input_driver_read_sensor_snapshot(float *gyro3,
 static void input_key_lane_take(void);
 #endif
 
+/* RetroPad buttons a first press is looked for on: all but the d-pad. */
+#define INPUT_FIRST_PRESS_BUTTONS ( \
+        ((1U << RARCH_FIRST_CUSTOM_BIND) - 1) \
+      & ~(  (1U << RETRO_DEVICE_ID_JOYPAD_UP) \
+          | (1U << RETRO_DEVICE_ID_JOYPAD_DOWN) \
+          | (1U << RETRO_DEVICE_ID_JOYPAD_LEFT) \
+          | (1U << RETRO_DEVICE_ID_JOYPAD_RIGHT)))
+
 void input_driver_poll(void)
 {
    size_t i, j;
@@ -9371,11 +9383,12 @@ void input_driver_poll(void)
       uint16_t turbo_btn_id          = RARCH_TURBO_ENABLE;
       bool kb_blocked                = !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
 #ifdef HAVE_MENU
-      bool do_remap                  = input_remap_binds_enable
-         && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE);
+      bool menu_alive                =
+         (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) != 0;
 #else
-      bool do_remap                  = input_remap_binds_enable;
+      bool menu_alive                = false;
 #endif
+      bool do_remap                  = input_remap_binds_enable && !menu_alive;
 #ifdef HAVE_OVERLAY
       input_overlay_t *overlay_pointer = (input_overlay_t*)input_st->overlay_ptr;
       bool poll_overlay              = (overlay_pointer &&
@@ -9436,6 +9449,30 @@ void input_driver_poll(void)
                && BIT256_GET(overlay_pointer->overlay_state.buttons, RARCH_HOLD_ENABLE))
             input_st->hold_btns.frame_enable[i] = true;
 #endif
+
+         /* --- First press on a user with no core port --- */
+         if (     input_st->first_press_live
+               && !menu_alive
+               && settings->uints.input_remap_ports[i] >= MAX_USERS
+               && joypad)
+         {
+            /* The d-pad does not count: idle axes of some receivers
+             * read as a direction. A button counts once it has been
+             * seen released, so one that is stuck never does. */
+            uint32_t held = (uint32_t)input_state_wrap(
+                  input_st->current_driver,
+                  input_st->current_data,
+                  joypad, sec_joypad, &joypad_info[i],
+                  (*input_st->libretro_input_binds),
+                  kb_blocked,
+                  (unsigned)i, RETRO_DEVICE_JOYPAD,
+                  0, RETRO_DEVICE_ID_JOYPAD_MASK)
+               & INPUT_FIRST_PRESS_BUTTONS;
+            if (held & input_st->first_press_released[i])
+               input_st->first_press_pending |= (1U << i);
+            input_st->first_press_released[i] |=
+               ~held & INPUT_FIRST_PRESS_BUTTONS;
+         }
 
          /* --- Remap work (conditional) --- */
          if (do_remap)
@@ -10068,11 +10105,86 @@ end:
       input_st->flags &= ~INP_FLAG_REMAPPING_CACHE_ACTIVE;
 }
 
+bool input_first_press_enabled(void)
+{
+   settings_t *settings = config_get_ptr();
+   if (!settings->bools.input_assign_ports_on_button_press)
+      return false;
+#ifdef HAVE_NETWORKING
+   /* netplay's ports are the session's */
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+      return false;
+#endif
+   return true;
+}
+
+void input_first_press_apply(void)
+{
+   unsigned user, port;
+   input_driver_state_t *input_st = &input_driver_st;
+   settings_t *settings           = config_get_ptr();
+   uint32_t pending               = input_st->first_press_pending;
+   unsigned max_users             = settings->uints.input_max_users;
+   bool mapped                    = false;
+
+   input_st->first_press_pending  = 0;
+   if (max_users > MAX_USERS)
+      max_users                   = MAX_USERS;
+
+   for (user = 0; user < max_users; user++)
+   {
+      char msg[128];
+      const char *name;
+      size_t _len;
+
+      if (     !(pending & (1U << user))
+            || settings->uints.input_remap_ports[user] < MAX_USERS)
+         continue;
+      /* the lowest core port no user feeds */
+      for (port = 0; port < max_users; port++)
+         if (settings->uints.input_remap_port_map[port][0] >= MAX_USERS)
+            break;
+      if (port >= max_users)
+         break;
+
+      settings->uints.input_remap_ports[user] = port;
+      input_remapping_update_port_map();
+      mapped = true;
+
+      name = input_config_get_device_display_name(user);
+      if (!name || !*name)
+         name = input_config_get_device_name(user);
+      if (name && *name)
+         _len = snprintf(msg, sizeof(msg),
+               msg_hash_to_str(MSG_DEVICE_ASSIGNED_TO_CORE_PORT_NR),
+               name, port + 1);
+      else
+      {
+         char who[32];
+         snprintf(who, sizeof(who), "%s %u",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), user + 1);
+         _len = snprintf(msg, sizeof(msg),
+               msg_hash_to_str(MSG_DEVICE_ASSIGNED_TO_CORE_PORT_NR),
+               who, port + 1);
+      }
+      RARCH_LOG("[Input] %s.\n", msg);
+      if (settings->bools.notification_show_autoconfig)
+         runloop_msg_queue_push(msg, _len, 1, 100, false, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
+
+   /* the core is told the port's device, which the setting keeps */
+   if (mapped)
+      command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+}
+
 void input_remapping_update_port_map(void)
 {
    unsigned i, j;
    settings_t *settings               = config_get_ptr();
    unsigned port_map_index[MAX_USERS] = {0};
+   input_driver_state_t *input_st     = &input_driver_st;
+   bool unmapped                      = false;
 
    /* First pass: 'reset' port map */
    for (i = 0; i < MAX_USERS; i++)
@@ -10109,8 +10221,15 @@ void input_remapping_update_port_map(void)
          settings->uints.input_remap_port_map[remap_port]
                [port_map_index[remap_port]] = i;
          port_map_index[remap_port]++;
+         input_st->first_press_released[i] = 0;
       }
+      else
+         unmapped = true;
    }
+
+   /* the poll looks for a first press only while there is a user
+    * with no core port */
+   input_st->first_press_live = unmapped && input_first_press_enabled();
 }
 
 void input_remapping_deinit(bool save_remap)
@@ -10132,7 +10251,8 @@ void input_remapping_deinit(bool save_remap)
 void input_remapping_set_defaults(bool clear_cache)
 {
    unsigned i, j;
-   settings_t *settings        = config_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = &input_driver_st;
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -10154,10 +10274,16 @@ void input_remapping_set_defaults(bool clear_cache)
          configuration_set_uint(settings,
                settings->uints.input_remap_ids[i][j], j);
 
-      /* Controller port remaps */
+      /* Controller port remaps: none under first-press assignment */
       configuration_set_uint(settings,
-            settings->uints.input_remap_ports[i], i);
+            settings->uints.input_remap_ports[i],
+            input_first_press_enabled() ? MAX_USERS : i);
    }
+
+   /* first-press assignment starts over */
+   memset(input_st->first_press_released, 0,
+         sizeof(input_st->first_press_released));
+   input_st->first_press_pending = 0;
 
    /* Need to call 'input_remapping_update_port_map()'
     * whenever 'settings->uints.input_remap_ports'

@@ -175,6 +175,7 @@ bool	menu_singleclick_playlists	1	0
 bool	menu_allow_tabs_back	1	1
 bool	input_remap_binds_enable	1	1
 bool	input_remap_sort_by_controller_enable	1	0
+bool	input_assign_ports_on_button_press	1	0
 bool	input_autodetect_enable	1	1
 bool	confirm_quit	1	1
 bool	confirm_close	1	1
@@ -847,6 +848,7 @@ bool	menu_singleclick_playlists	1	0
 bool	menu_allow_tabs_back	1	1
 bool	input_remap_binds_enable	1	1
 bool	input_remap_sort_by_controller_enable	1	0
+bool	input_assign_ports_on_button_press	1	0
 bool	input_autodetect_enable	1	1
 bool	confirm_quit	1	1
 bool	confirm_close	1	1
@@ -1520,6 +1522,7 @@ bool	menu_singleclick_playlists	1	0
 bool	menu_allow_tabs_back	1	1
 bool	input_remap_binds_enable	1	1
 bool	input_remap_sort_by_controller_enable	1	0
+bool	input_assign_ports_on_button_press	1	0
 bool	input_autodetect_enable	1	1
 bool	confirm_quit	1	1
 bool	confirm_close	1	1
