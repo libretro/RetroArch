@@ -15,7 +15,11 @@
  * - a port with no pin reads every keyboard; one with a number and no
  *   pin (a setting from before pins) reads that number's keyboard, or
  *   every keyboard when the number is past the list;
- * - two keyboards of one model are two pins. */
+ * - two keyboards of one model are two pins;
+ * - mice: a port with no pin reads the mouse its number names, as it
+ *   always did; a pinned port reads its mouse wherever it is listed;
+ *   with that mouse away it reads none while another port has its
+ *   own, and the mouse its number names otherwise. */
 #include <stdio.h>
 #include <string.h>
 
@@ -117,6 +121,42 @@ int main(void)
          (const char (*)[INPUT_PIN_LEN])ident, 2);
    CHECK(choice[0] == 2 && choice[1] == 1, "two keyboards of one model: %d %d, want 2 1", choice[0], choice[1]);
    printf("   ok   two keyboards of one model are two pins\n");
+
+   /* ---- mice ------------------------------------------------------ */
+   {
+      int16_t mouse[PORTS];
+      memset(base, 0, sizeof(base)); memset(pin, 0, sizeof(pin));
+      strcpy(base[0], "1b1c:1b5a"); strcpy(base[1], "046d:c08b"); strcpy(base[2], "03f0:098f");
+      input_pins_identities(ident, (const char (*)[INPUT_PIN_LEN])base, 3);
+      /* every port has its own number from the start, and no pin */
+      index[0] = 0; index[1] = 1; index[2] = 2; index[3] = 3;
+      input_pins_resolve_mice(mouse, (const char (*)[INPUT_PIN_LEN])pin, index, PORTS,
+            (const char (*)[INPUT_PIN_LEN])ident, 3);
+      CHECK(mouse[0] == 0 && mouse[1] == 1 && mouse[2] == 2 && mouse[3] == 3,
+            "no pins: ports read mice %d %d %d %d, want their numbers", mouse[0], mouse[1], mouse[2], mouse[3]);
+      /* two ports pinned, the other way round from their numbers */
+      strcpy(pin[0], "046d:c08b"); strcpy(pin[1], "1b1c:1b5a");
+      input_pins_resolve_mice(mouse, (const char (*)[INPUT_PIN_LEN])pin, index, PORTS,
+            (const char (*)[INPUT_PIN_LEN])ident, 3);
+      CHECK(mouse[0] == 1 && mouse[1] == 0 && mouse[2] == 2,
+            "two pinned ports: %d %d, and an unpinned one %d; want 1 0 2", mouse[0], mouse[1], mouse[2]);
+      /* the first port's mouse unplugged: the list is one shorter */
+      memset(base, 0, sizeof(base));
+      strcpy(base[0], "1b1c:1b5a"); strcpy(base[1], "03f0:098f");
+      input_pins_identities(ident, (const char (*)[INPUT_PIN_LEN])base, 2);
+      input_pins_resolve_mice(mouse, (const char (*)[INPUT_PIN_LEN])pin, index, PORTS,
+            (const char (*)[INPUT_PIN_LEN])ident, 2);
+      CHECK(mouse[1] == 0, "the second port's mouse is read as %d, want 0", mouse[1]);
+      CHECK(mouse[0] == INPUT_PIN_NO_MOUSE,
+            "the first port, its mouse away, reads %d: it must not read the other port's", mouse[0]);
+      /* a single pinned port, its mouse away: the mouse its number names */
+      memset(pin, 0, sizeof(pin));
+      strcpy(pin[0], "046d:c08b");
+      input_pins_resolve_mice(mouse, (const char (*)[INPUT_PIN_LEN])pin, index, PORTS,
+            (const char (*)[INPUT_PIN_LEN])ident, 2);
+      CHECK(mouse[0] == 0, "a single pinned port whose mouse is away reads %d, want the mouse its number names (0)", mouse[0]);
+      printf("   ok   mice: no pin reads by number; a pinned port reads its mouse wherever it is listed; with it away, none while another port has its own, and by number otherwise\n");
+   }
 
    if (failures)
    {

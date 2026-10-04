@@ -637,7 +637,10 @@ jobs:
           # keyboards are listed; with one unplugged the other is
           # still its own port's and the port left without reads none;
           # a single port whose keyboard is away reads every keyboard;
-          # two keyboards of one model are two pins.
+          # two keyboards of one model are two pins. And the same for
+          # mice, which have no "every mouse": a pinned port whose
+          # mouse is away reads none while another port has its own,
+          # and the mouse its number names otherwise.
           make clean all
           timeout 60 make check
           make clean

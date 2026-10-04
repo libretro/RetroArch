@@ -5914,6 +5914,11 @@ void *input_driver_init_wrap(input_driver_t *input, const char *name)
          sizeof(input_driver_st.keyboard_choice));
    input_driver_st.keyboard_identities = 0;
    input_driver_st.keyboard_absent     = 0;
+   memset(input_driver_st.mouse_identity, 0,
+         sizeof(input_driver_st.mouse_identity));
+   input_driver_st.mouse_identities    = 0;
+   input_driver_st.mouse_pinned        = 0;
+   input_driver_st.mouse_absent        = 0;
    if ((ret = input->init(name)))
    {
       input_driver_init_joypads();
@@ -6677,6 +6682,119 @@ void input_keyboard_pin_from_index(unsigned port)
             sizeof(settings->arrays.input_keyboard_device[port]));
    input_st->keyboard_absent &= (uint16_t)~(1 << port);
    input_keyboard_pins_resolve();
+}
+
+/* Which mouse each pinned port reads is worked out again: after the
+ * list of mice was made, and after a port's setting was changed. */
+static void input_mouse_pins_resolve(void)
+{
+   unsigned port;
+   int16_t choice[MAX_USERS];
+   input_driver_state_t *input_st = &input_driver_st;
+   settings_t *settings           = config_get_ptr();
+   uint16_t was_absent            = input_st->mouse_absent;
+
+   if (!settings)
+      return;
+
+   input_pins_resolve_mice(choice,
+         (const char (*)[INPUT_PIN_LEN])settings->arrays.input_mouse_device,
+         settings->uints.input_mouse_index, MAX_USERS,
+         (const char (*)[INPUT_PIN_LEN])input_st->mouse_identity,
+         input_st->mouse_identities);
+
+   input_st->mouse_pinned = 0;
+   input_st->mouse_absent = 0;
+   for (port = 0; port < MAX_USERS; port++)
+   {
+      const char *pin = settings->arrays.input_mouse_device[port];
+      unsigned k;
+
+      input_st->mouse_choice[port] = choice[port];
+      if (!pin[0])
+         continue;
+      input_st->mouse_pinned |= (uint16_t)(1 << port);
+
+      for (k = 0; k < input_st->mouse_identities; k++)
+         if (     input_st->mouse_identity[k][0]
+               && string_is_equal(input_st->mouse_identity[k], pin))
+            break;
+      if (k < input_st->mouse_identities)
+      {
+         /* the number shown follows the mouse */
+         if (settings->uints.input_mouse_index[port] != k)
+         {
+            RARCH_LOG("[Input] Port %u's mouse \"%s\" is mouse %u now.\n",
+                  port + 1, pin, k + 1);
+            settings->uints.input_mouse_index[port] = k;
+         }
+      }
+      else
+      {
+         if (!(was_absent & (1 << port)))
+            RARCH_LOG("[Input] Port %u's mouse \"%s\" is not there: the port"
+                  " reads %s.\n", port + 1, pin,
+                  choice[port] == INPUT_PIN_NO_MOUSE
+                  ? "no mouse, as another port has its own"
+                  : "the mouse its Mouse Index names");
+         input_st->mouse_absent |= (uint16_t)(1 << port);
+      }
+   }
+}
+
+void input_mouse_pins_set_devices(const char (*base)[64], unsigned n)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+
+   if (n > MAX_INPUT_DEVICES)
+      n = MAX_INPUT_DEVICES;
+   memset(input_st->mouse_identity, 0, sizeof(input_st->mouse_identity));
+   if (n)
+      input_pins_identities(input_st->mouse_identity, base, n);
+   input_st->mouse_identities = n;
+   input_st->mouse_absent     = 0;
+   input_mouse_pins_resolve();
+}
+
+unsigned input_mouse_port_index(unsigned port)
+{
+   const input_driver_state_t *input_st = &input_driver_st;
+   if (port >= MAX_USERS)
+      return MAX_INPUT_DEVICES;
+   /* a port with no pin reads by its setting, as it always did - and
+    * so does every port under a driver that does not say what its
+    * mice are */
+   if (!(input_st->mouse_pinned & (1 << port)))
+      return config_get_ptr()->uints.input_mouse_index[port];
+   if (input_st->mouse_choice[port] < 0)
+      return MAX_INPUT_DEVICES;
+   return (unsigned)input_st->mouse_choice[port];
+}
+
+bool input_mouse_pin_absent(unsigned port)
+{
+   return port < MAX_USERS
+      && (input_driver_st.mouse_absent & (1 << port));
+}
+
+void input_mouse_pin_from_index(unsigned port, bool pin)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   settings_t *settings           = config_get_ptr();
+   unsigned idx;
+
+   if (!settings || port >= MAX_USERS)
+      return;
+   idx = settings->uints.input_mouse_index[port];
+   settings->arrays.input_mouse_device[port][0] = '\0';
+   if (     pin
+         && idx < input_st->mouse_identities
+         && input_st->mouse_identity[idx][0])
+      strlcpy(settings->arrays.input_mouse_device[port],
+            input_st->mouse_identity[idx],
+            sizeof(settings->arrays.input_mouse_device[port]));
+   input_st->mouse_absent &= (uint16_t)~(1 << port);
+   input_mouse_pins_resolve();
 }
 
 const char *input_driver_get_ident(void)

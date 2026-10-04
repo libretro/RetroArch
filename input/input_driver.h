@@ -713,6 +713,12 @@ typedef struct
    unsigned keyboard_identities;
    int8_t   keyboard_choice[MAX_USERS];
    uint16_t keyboard_absent;         /* a bit a port: pinned, not there */
+   /* the same for the mice */
+   char     mouse_identity[MAX_INPUT_DEVICES][64];
+   unsigned mouse_identities;
+   int16_t  mouse_choice[MAX_USERS];
+   uint16_t mouse_pinned;            /* a bit a port: mouse_choice holds */
+   uint16_t mouse_absent;
    input_sensor_map_t input_sensor_map[MAX_INPUT_DEVICES];
 
    /**
@@ -931,6 +937,19 @@ int input_keyboard_port_choice(unsigned port);
 void input_keyboard_pin_from_index(unsigned port);
 /* The port is pinned to a keyboard that is not there. */
 bool input_keyboard_pin_absent(unsigned port);
+
+/* The same for a port's mouse. An input driver that lists mice tells
+ * what it knows each by, in the order of their Mouse Index: */
+void input_mouse_pins_set_devices(const char (*base)[64], unsigned n);
+/* The mouse a port reads now, as a Mouse Index: the port's own
+ * setting, the place its pinned mouse has in the list, or
+ * MAX_INPUT_DEVICES for none. Read on the input path, in place of
+ * the setting. */
+unsigned input_mouse_port_index(unsigned port);
+/* The port's Mouse Index was changed by hand: the port is pinned to
+ * the mouse that number names. @pin false removes the pin. */
+void input_mouse_pin_from_index(unsigned port, bool pin);
+bool input_mouse_pin_absent(unsigned port);
 
 /* The running input driver's name ("raw", "udev", "wayland"...), or
  * an empty string when there is none. */

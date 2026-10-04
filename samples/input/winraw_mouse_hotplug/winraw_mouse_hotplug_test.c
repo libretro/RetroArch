@@ -89,6 +89,28 @@ int input_keyboard_port_choice(unsigned port)
          (const char (*)[INPUT_PIN_LEN])stub_pin_ident, stub_pin_listed);
    return choice[port];
 }
+
+/* and its mouse, the same way */
+static char     stub_mouse_ident[MAX_INPUT_DEVICES][INPUT_PIN_LEN];
+static unsigned stub_mouse_listed;
+void input_mouse_pins_set_devices(const char (*base)[64], unsigned n)
+{
+   memset(stub_mouse_ident, 0, sizeof(stub_mouse_ident));
+   if (n > MAX_INPUT_DEVICES)
+      n = MAX_INPUT_DEVICES;
+   if (n)
+      input_pins_identities(stub_mouse_ident, base, n);
+   stub_mouse_listed = n;
+}
+unsigned input_mouse_port_index(unsigned port)
+{
+   int16_t choice[MAX_USERS];
+   input_pins_resolve_mice(choice,
+         (const char (*)[INPUT_PIN_LEN])stub_settings.arrays.input_mouse_device,
+         stub_settings.uints.input_mouse_index, MAX_USERS,
+         (const char (*)[INPUT_PIN_LEN])stub_mouse_ident, stub_mouse_listed);
+   return choice[port] < 0 ? MAX_INPUT_DEVICES : (unsigned)choice[port];
+}
 struct menu_state *menu_state_get_ptr(void) { return &stub_menu; }
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }

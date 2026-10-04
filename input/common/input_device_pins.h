@@ -23,8 +23,8 @@
 #include <boolean.h>
 #include <retro_inline.h>
 
-/* A port's keyboard, kept by what the keyboard is and not by where it
- * stands in a list.
+/* A port's keyboard - and its mouse - kept by what the device is and
+ * not by where it stands in a list.
  *
  * A port is given a keyboard by its number in the list of keyboards
  * (Keyboard Index). The number is a place in a list that changes:
@@ -54,6 +54,15 @@
  * - a port with a number and no pin - a setting from before pins -
  *   reads that number's keyboard, and is pinned to it by the caller.
  *
+ * A mouse is kept the same way (input_pins_resolve_mice()), with two
+ * differences that come from what Mouse Index is. Every port has a
+ * number from the start - its own, so that the first port reads the
+ * first mouse - and there is no "every mouse as one". So a port is
+ * pinned only when its mouse is chosen by hand, never from a number
+ * it merely has; and a port whose pinned mouse is not there falls
+ * back to the mouse its number names, unless another port has its
+ * own mouse, when it reads none.
+ *
  * No allocation and nothing of any system's:
  * samples/input/device_pins runs it on its own. */
 
@@ -81,13 +90,11 @@ static INLINE void input_pins_identities(char (*out)[INPUT_PIN_LEN],
       {
          /* room is kept for the number, so that the second of a pair
           * with a long name is not the first */
-         char cut[INPUT_PIN_LEN];
          size_t len = strlen(base[i]);
          if (len > INPUT_PIN_LEN - 12)
             len = INPUT_PIN_LEN - 12;
-         memcpy(cut, base[i], len);
-         cut[len] = '\0';
-         snprintf(out[i], INPUT_PIN_LEN, "%s#%u", cut, nth);
+         memcpy(out[i], base[i], len);
+         snprintf(out[i] + len, INPUT_PIN_LEN - len, "#%u", nth);
       }
       else
       {
@@ -130,6 +137,44 @@ static INLINE void input_pins_resolve(int8_t *choice,
    for (p = 0; p < ports; p++)
       if (choice[p] == -2)
          choice[p] = one_has_its_own ? INPUT_PIN_NONE : INPUT_PIN_ALL;
+}
+
+/* what a port reads, of the mice */
+#define INPUT_PIN_NO_MOUSE (-1)
+/* 0 and up: that mouse in the list */
+
+/* Says which mouse each of @ports ports reads (@choice): the one its
+ * pin names; with that one away, none while another port has its own
+ * and the one its number (@index) names otherwise; with no pin, the
+ * one its number names. */
+static INLINE void input_pins_resolve_mice(int16_t *choice,
+      const char (*pin)[INPUT_PIN_LEN], const unsigned *index,
+      unsigned ports,
+      const char (*ident)[INPUT_PIN_LEN], unsigned listed)
+{
+   unsigned p, k;
+   bool one_has_its_own = false;
+
+   for (p = 0; p < ports; p++)
+   {
+      choice[p] = (int16_t)(index[p] < 0x7FFF ? index[p] : 0x7FFF);
+      if (!pin[p][0])
+         continue;
+      /* -2: pinned, and not there; settled below */
+      choice[p] = -2;
+      for (k = 0; k < listed && k < 0x7FFF; k++)
+         if (ident[k][0] && !strcmp(ident[k], pin[p]))
+         {
+            choice[p]       = (int16_t)k;
+            one_has_its_own = true;
+            break;
+         }
+   }
+   for (p = 0; p < ports; p++)
+      if (choice[p] == -2)
+         choice[p] = one_has_its_own
+            ? INPUT_PIN_NO_MOUSE
+            : (int16_t)(index[p] < 0x7FFF ? index[p] : 0x7FFF);
 }
 
 #endif

@@ -1922,6 +1922,18 @@ static struct config_array_setting *populate_settings_array(
          SETTING_ARRAY(keyboard_keys[i], settings->arrays.input_keyboard_device[i], false, NULL, true);
       }
    }
+   {
+      /* input_playerN_mouse_device: the same for the port's mouse,
+       * set when a mouse is chosen for the port by hand */
+      static char mouse_keys[MAX_USERS][40];
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         size_t _len  = strlcpy_lit(mouse_keys[i], "input_player", sizeof(mouse_keys[i]));
+         _len += snprintf(mouse_keys[i] + _len, sizeof(mouse_keys[i]) - _len, "%u", i + 1);
+         strlcpy_lit(mouse_keys[i] + _len, "_mouse_device", sizeof(mouse_keys[i]) - _len);
+         SETTING_ARRAY(mouse_keys[i], settings->arrays.input_mouse_device[i], false, NULL, true);
+      }
+   }
 
 #ifdef HAVE_MENU
    SETTING_ARRAY("menu_driver",                  settings->arrays.menu_driver, false, NULL, true);

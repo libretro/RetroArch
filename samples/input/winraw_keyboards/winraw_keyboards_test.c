@@ -162,6 +162,28 @@ int input_keyboard_port_choice(unsigned port)
          (const char (*)[INPUT_PIN_LEN])stub_pin_ident, stub_pin_listed);
    return choice[port];
 }
+
+/* and its mouse, the same way */
+static char     stub_mouse_ident[MAX_INPUT_DEVICES][INPUT_PIN_LEN];
+static unsigned stub_mouse_listed;
+void input_mouse_pins_set_devices(const char (*base)[64], unsigned n)
+{
+   memset(stub_mouse_ident, 0, sizeof(stub_mouse_ident));
+   if (n > MAX_INPUT_DEVICES)
+      n = MAX_INPUT_DEVICES;
+   if (n)
+      input_pins_identities(stub_mouse_ident, base, n);
+   stub_mouse_listed = n;
+}
+unsigned input_mouse_port_index(unsigned port)
+{
+   int16_t choice[MAX_USERS];
+   input_pins_resolve_mice(choice,
+         (const char (*)[INPUT_PIN_LEN])stub_settings.arrays.input_mouse_device,
+         stub_settings.uints.input_mouse_index, MAX_USERS,
+         (const char (*)[INPUT_PIN_LEN])stub_mouse_ident, stub_mouse_listed);
+   return choice[port] < 0 ? MAX_INPUT_DEVICES : (unsigned)choice[port];
+}
 struct menu_state *menu_state_get_ptr(void) { return &stub_menu; }
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
@@ -751,6 +773,36 @@ int main(void)
    CHECK(!strcmp(ms_names[4], "Vendor composite virtual input device"),
          "a mouse with no name of its own goes by \"%s\"", ms_names[4]);
    printf("   ok   the mice on the desk come first; a keyboard's pointer part, a program's mouse and the terminal server's follow and are left out of the list\n");
+
+   /* ---- a mouse kept by what it is ------------------------------- */
+   /* The driver says what each mouse is known by, in the order of
+    * their numbers: the mouse's two parts are one model, told apart
+    * as the first and "#2"; the receiver's mouse is another. */
+   CHECK(stub_mouse_listed == 6
+         && !strcmp(stub_mouse_ident[0], "1b1c:1b5a")
+         && !strcmp(stub_mouse_ident[1], "1b1c:1b5a#2")
+         && !strncmp(stub_mouse_ident[2], "046d:", 5),
+         "what the mice are known by: %u listed, \"%s\" \"%s\" \"%s\"",
+         stub_mouse_listed, stub_mouse_ident[0], stub_mouse_ident[1], stub_mouse_ident[2]);
+   /* a port with no pin reads by its number, as it always did */
+   stub_settings.uints.input_mouse_index[0] = 0;
+   stub_settings.uints.input_mouse_index[1] = 1;
+   CHECK(input_mouse_port_index(0) == 0 && input_mouse_port_index(1) == 1,
+         "ports with no pin read mice %u %u, want their numbers",
+         input_mouse_port_index(0), input_mouse_port_index(1));
+   /* the second port pinned to the receiver's mouse: it reads that
+    * one, whatever its number says */
+   strcpy(stub_settings.arrays.input_mouse_device[1], stub_mouse_ident[2]);
+   CHECK(input_mouse_port_index(1) == 2, "a port pinned to the third mouse reads mouse %u", input_mouse_port_index(1));
+   /* the first port pinned to a mouse that is not plugged in, while
+    * the second has its own: it reads none */
+   strcpy(stub_settings.arrays.input_mouse_device[0], "dead:beef");
+   CHECK(input_mouse_port_index(0) == MAX_INPUT_DEVICES,
+         "a port whose pinned mouse is away, another port having its own, reads mouse %u: want none",
+         input_mouse_port_index(0));
+   stub_settings.arrays.input_mouse_device[0][0] = '\0';
+   stub_settings.arrays.input_mouse_device[1][0] = '\0';
+   printf("   ok   the driver says what each mouse is known by, in the order of their numbers; a pinned port reads its mouse, and none when it is away and another port has its own\n");
 
    winraw_free(wr);
    if (failures)

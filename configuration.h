@@ -1283,6 +1283,8 @@ typedef struct settings
       /* the keyboard a port is given, by what it is: see
        * input/common/input_device_pins.h */
       char input_keyboard_device[MAX_USERS][64];
+      /* and the mouse */
+      char input_mouse_device[MAX_USERS][64];
 
       char youtube_stream_key[PATH_MAX_LENGTH];
       char twitch_stream_key[PATH_MAX_LENGTH];

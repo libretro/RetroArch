@@ -351,6 +351,12 @@ EXTRA_CFG='input_player1_keyboard_index = "1"
 input_player1_keyboard_device = "dead:beef"' \
    WANT_LOG="Port 1's keyboard \"dead:beef\" is not there: the port reads every keyboard" \
    scenario "the first port pinned to a keyboard that is away" true 1 2 nomsg
+# The same for the port's mouse: pinned to one that is not plugged in,
+# with no other port having a mouse of its own, the port reads the
+# mouse its Mouse Index names, and the log says so.
+EXTRA_CFG='input_player1_mouse_device = "dead:beef"' \
+   WANT_LOG="Port 1's mouse \"dead:beef\" is not there: the port reads the mouse its Mouse Index names" \
+   scenario "the first port pinned to a mouse that is away" true 1 2 nomsg
 VIDEO_DRIVER=gl VIDEO_STARTED='Found GL context' WANT_VIDEO=2 WANT_WINDOW="1 1 0" \
    WANT_MENUS=1 EXTRA_CFG='ui_menubar_enable = "true"' \
    scenario "OpenGL" true 1 2 nomsg

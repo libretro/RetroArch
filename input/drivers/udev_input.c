@@ -729,13 +729,12 @@ static udev_input_mouse_t *udev_get_mouse(
    unsigned i;
    unsigned mouse_index      = 0;
    int dev_index             = -1;
-   settings_t *settings      = config_get_ptr();
-   udev_input_mouse_t *mouse = NULL;
 
    if (port >= MAX_USERS || !video_driver_has_focus())
       return NULL;
 
-   mouse_index = settings->uints.input_mouse_index[port];
+   /* the port's Mouse Index, or where its pinned mouse is */
+   mouse_index = input_mouse_port_index(port);
    if (mouse_index < MAX_INPUT_DEVICES)
        dev_index = udev->pointers[mouse_index];
    if (dev_index < 0)
@@ -1166,7 +1165,7 @@ static udev_input_device_t *udev_get_pointer_port_dev(
    if (port >= MAX_USERS || !video_driver_has_focus())
       return NULL;
 
-   pointer_index = settings->uints.input_mouse_index[port];
+   pointer_index = input_mouse_port_index(port);
    if (pointer_index < MAX_INPUT_DEVICES)
        dev_index = udev->pointers[pointer_index];
    if (dev_index < 0)
@@ -3314,7 +3313,10 @@ static void udev_input_describe_device(udev_input_device_t *device,
 static void udev_input_list_pointers(udev_input_t *udev)
 {
    input_kbdev_t devs[64];
+   char pins[MAX_INPUT_DEVICES][64];
    unsigned i, pass, mouse = 0, n = udev->num_devices;
+
+   memset(pins, 0, sizeof(pins));
 
    if (n > ARRAY_SIZE(devs))
       n = ARRAY_SIZE(devs);
@@ -3344,6 +3346,13 @@ static void udev_input_list_pointers(udev_input_t *udev)
          input_config_set_mouse_device(mouse, udev->devices[i]->kbdev.key,
                udev->devices[i]->vid, udev->devices[i]->pid, !is_mouse);
          udev->pointers[mouse] = (int32_t)i;
+         /* what a port is pinned to it by: its ids, or with none its
+          * name */
+         if (udev->devices[i]->vid || udev->devices[i]->pid)
+            snprintf(pins[mouse], sizeof(pins[mouse]), "%04x:%04x",
+                  udev->devices[i]->vid, udev->devices[i]->pid);
+         else
+            strlcpy(pins[mouse], udev->devices[i]->ident, sizeof(pins[mouse]));
          RARCH_LOG("[udev] Mouse/Touch #%u: \"%s\" (%s) %s%s.\n",
                mouse,
                udev->devices[i]->ident,
@@ -3353,6 +3362,8 @@ static void udev_input_list_pointers(udev_input_t *udev)
          mouse++;
       }
    }
+   /* the ports' mice are looked up in the new list */
+   input_mouse_pins_set_devices((const char (*)[64])pins, mouse);
 }
 
 /* The keyboards that are listed and numbered for the menu, and that a

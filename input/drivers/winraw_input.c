@@ -1010,6 +1010,27 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
 
    *mice      = mice_r;
 
+   /* what a port is pinned to each by, in the order they are in now:
+    * its USB ids, or with none what Windows calls it */
+   {
+      char (*pins)[64] = (char (*)[64])calloc(
+            mouse_cnt_r ? mouse_cnt_r : 1, sizeof(*pins));
+      if (pins)
+      {
+         unsigned k;
+         for (k = 0; k < mouse_cnt_r && ids; k++)
+         {
+            if (ids[k].vid || ids[k].pid)
+               snprintf(pins[k], sizeof(pins[k]), "%04x:%04x",
+                     ids[k].vid, ids[k].pid);
+            else
+               strlcpy(pins[k], ids[k].desc, sizeof(pins[k]));
+         }
+         input_mouse_pins_set_devices((const char (*)[64])pins, mouse_cnt_r);
+         free(pins);
+      }
+   }
+
    winraw_push_names_task(mice_r, ids, unlisted, NULL, mouse_cnt_r);
    free(ids);
    free(unlisted);
@@ -2532,10 +2553,10 @@ static int16_t winraw_input_state(
       if (process_mouse)
       {
          unsigned i;
-         settings_t *settings = config_get_ptr();
          for (i = 0; i < wr->mouse_cnt; ++i)
          {
-            if (i == settings->uints.input_mouse_index[port])
+            /* (the port's Mouse Index, or where its pinned mouse is) */
+            if (i == input_mouse_port_index(port))
             {
                mouse = &wr->mice[i];
                if (mouse && device > RETRO_DEVICE_JOYPAD)
