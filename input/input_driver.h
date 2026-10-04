@@ -686,6 +686,9 @@ typedef struct
     * rather than sitting past the input_device_info string tables
     * (~17 KB of cold data) as it used to. */
    unsigned input_hotkey_block_counter;
+   /* the users the poll's remap work ran for last time, one bit each:
+    * what it left in the mapper is cleared when it stops running */
+   uint32_t remap_worked;
 #ifdef HAVE_ACCESSIBILITY
    unsigned gamepad_input_override;
 #endif

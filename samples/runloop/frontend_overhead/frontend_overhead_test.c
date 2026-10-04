@@ -1714,6 +1714,109 @@ static void lane_socd(void)
 #endif
 }
 
+/* A user whose controls are all mapped to themselves costs the poll
+ * no remap work, and the core sees exactly what it did: a control
+ * mapped to another still arrives as the other, one switched off does
+ * not arrive, and taking the mapping away again leaves nothing of it
+ * behind. */
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+static unsigned remap_frame(unsigned id, void (*trace_last)(unsigned*, int*))
+{
+   unsigned seen;
+   int axes[4];
+   syn_buttons = 1u << (input_autoconf_binds[0][id].joykey & 31);
+   run_loop_frames(1);
+   trace_last(&seen, axes);
+   syn_buttons = 0;
+   return seen;
+}
+#endif
+
+static void lane_remap_idle(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   const unsigned B = RETRO_DEVICE_ID_JOYPAD_B;
+   const unsigned A = RETRO_DEVICE_ID_JOYPAD_A;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   const input_device_driver_t *joypad_real;
+   void (*trace)(int, int);
+   void (*trace_last)(unsigned*, int*);
+   void    *core;
+   unsigned had = failures;
+   unsigned reading, was;
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(trace = (void (*)(int, int))dlsym(core, "harness_core_trace"))
+       || !(trace_last = (void (*)(unsigned*, int*))dlsym(core, "harness_core_trace_last"))
+       || !input_st->primary_joypad)
+   {
+      CHECK(false, "remap idle: the harness core's trace entry points or the joypad driver");
+      return;
+   }
+   joypad_real              = input_st->primary_joypad;
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   fast_forward(true);
+   was = settings->uints.input_remap_ids[0][B];
+
+   for (reading = 2; reading >= 1; reading--)
+   {
+      trace((int)reading, 0);
+
+      /* nothing mapped: B is B, and the poll did no remap work */
+      settings->uints.input_remap_ids[0][B] = B;
+      run_loop_frames(2);
+      CHECK(remap_frame(B, trace_last) == (1u << B),
+            "remap idle: with nothing mapped, B does not reach the core as B");
+      CHECK(!(input_st->remap_worked & 1u),
+            "remap idle: with nothing mapped the poll still did the first user's remap work");
+
+      /* B given to A */
+      settings->uints.input_remap_ids[0][B] = A;
+      CHECK(remap_frame(B, trace_last) == (1u << A),
+            "remap idle: B mapped to A does not reach the core as A alone");
+      CHECK(input_st->remap_worked & 1u,
+            "remap idle: with B mapped to A the poll did no remap work");
+
+      /* B switched off */
+      settings->uints.input_remap_ids[0][B] = RARCH_UNMAPPED;
+      CHECK(remap_frame(B, trace_last) == 0,
+            "remap idle: B switched off still reaches the core");
+
+      /* and back: nothing of the mapping is left */
+      settings->uints.input_remap_ids[0][B] = A;
+      syn_buttons = 1u << (input_autoconf_binds[0][B].joykey & 31);
+      run_loop_frames(1);
+      settings->uints.input_remap_ids[0][B] = B;
+      CHECK(remap_frame(B, trace_last) == (1u << B),
+            "remap idle: after the mapping was taken away, B is not B again, or A is still held");
+      CHECK(!(input_st->remap_worked & 1u),
+            "remap idle: after the mapping was taken away the poll kept doing remap work");
+   }
+
+   settings->uints.input_remap_ids[0][B] = was;
+   syn_buttons = 0;
+   trace(0, 0);
+   fast_forward(false);
+   run_loop_frames(5);
+   input_st->primary_joypad = joypad_real;
+   dlclose(core);
+   if (failures == had)
+      printf("[pass] remap idle: a user with nothing mapped costs the poll no"
+            " remap work; mapped, switched off and mapped back, the core sees"
+            " what it should, whichever way it reads\n");
+#else
+   printf("[skip] remap idle: needs the test drivers\n");
+#endif
+}
+
 /* Input rotation: the D-Pad and the sticks a core sees, turned by
  * quarter turns. */
 static void lane_input_rotation(void)
@@ -3632,6 +3735,7 @@ int main(int argc, char *argv[])
        * loop paused */
       lane_first_press();
       lane_socd();
+   lane_remap_idle();
       lane_input_rotation();
       lane_triggers();
       lane_network_retropad();

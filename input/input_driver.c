@@ -9524,6 +9524,58 @@ static void input_key_lane_take(void);
 #define INPUT_FIRST_PRESS_GIVE_UP (1U << 31)
 static bool input_first_press_blocked(void);
 
+/* Whether a user's mapping gives the remap work in the poll anything
+ * to do.
+ *
+ * That work reads the whole pad - every button, the analog buttons,
+ * both sticks - and then looks for controls that are mapped to another
+ * one. With every control left where it is there are none, the result
+ * is always "nothing mapped", and the reads were nine tenths of what a
+ * poll cost: for every user, every poll, whether or not anyone had
+ * remapped anything. What a core reads of an unmapped control does not
+ * come from here; it is read on demand.
+ *
+ * So: a pad or analog device has work when a button or an axis is
+ * mapped away from itself, and a keyboard device when a control has a
+ * key. A row that differs only in controls that are switched off is
+ * counted as having work, which costs what it always did. */
+static bool input_remap_user_has_work(const settings_t *settings,
+      const input_driver_state_t *input_st, unsigned user, unsigned device)
+{
+   unsigned j;
+
+   switch (device)
+   {
+      case RETRO_DEVICE_JOYPAD:
+      case RETRO_DEVICE_ANALOG:
+         {
+            const unsigned *ids = settings->uints.input_remap_ids[user];
+#ifdef HAVE_ACCESSIBILITY
+            /* buttons the frontend presses for the user go out
+             * through the mapper */
+            if (user == 0 && input_st->gamepad_input_override)
+               return true;
+#endif
+            for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 8; j++)
+               if (ids[j] != j)
+                  return true;
+         }
+         return false;
+      case RETRO_DEVICE_KEYBOARD:
+         {
+            const unsigned *keys = settings->uints.input_keymapper_ids[user];
+            for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
+               if (keys[j] != RETROK_UNKNOWN)
+                  return true;
+         }
+         return false;
+      default:
+         break;
+   }
+   /* no other device is remapped here */
+   return false;
+}
+
 void input_driver_poll(void)
 {
    size_t i, j;
@@ -9903,6 +9955,24 @@ void input_driver_poll(void)
             : RETRO_DEVICE_NONE;
          input_bits_t *p_new_state       = (input_bits_t*)&current_inputs;
          unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[i];
+
+         /* Nothing of this user's is mapped to anything else: there
+          * is nothing to work out, and the pad is not read for it.
+          * What the last poll that did have work left behind is
+          * cleared, once. */
+         if (!input_remap_user_has_work(settings, input_st,
+                  (unsigned)i, device))
+         {
+            if (input_st->remap_worked & (1U << i))
+            {
+               BIT256_CLEAR_ALL(handle->buttons[i]);
+               for (j = 0; j < 8; j++)
+                  handle->analog_value[i][j] = 0;
+               input_st->remap_worked &= ~(1U << i);
+            }
+            continue;
+         }
+         input_st->remap_worked |= (1U << i);
 
          /* Clear the whole state up front. The 'mapper' switch below
           * only reads p_new_state for the same device cases that the
