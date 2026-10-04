@@ -999,10 +999,6 @@ void runloop_core_preload_cancel(void)
 {
    core_preload_reset();
 }
-#else
-bool runloop_core_preload_begin(void)  { return false; }
-bool runloop_core_preload_ready(void)  { return true; }
-void runloop_core_preload_cancel(void) { }
 #endif
 
 static dylib_t load_dynamic_core(const char *path, char *s,
@@ -1072,6 +1068,14 @@ static dylib_t libretro_get_system_info_lib(const char *path,
 
    return lib;
 }
+#endif
+
+#if !(defined(HAVE_DYNAMIC) && defined(HAVE_THREADS))
+/* No worker to open the library on: the core stage loads it
+ * (or links it statically), so the preload stage has nothing to do. */
+bool runloop_core_preload_begin(void)  { return false; }
+bool runloop_core_preload_ready(void)  { return true; }
+void runloop_core_preload_cancel(void) { }
 #endif
 
 static void runloop_update_runtime_log(
