@@ -85,6 +85,10 @@
  * input/input_types.h (int16_t analog_value[MAX_USERS][8]). */
 #define ANALOG_VALUE_PER_USER 8
 
+/* Mirror: array size of input_bits_t's analog_buttons from
+ * input/input_types.h (uint16_t analog_buttons[16]). */
+#define ANALOG_BUTTONS_PER_USER 16
+
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #endif
@@ -168,6 +172,24 @@ static int do_analog_to_analog_write(mock_mapper_t *handle,
       return 1;
    }
    return 0;
+}
+/* === end verbatim copy === */
+
+/* === verbatim copy of the button -> button pressure write from
+ *     input/input_driver.c::input_driver_poll().  @source_pressure
+ *     is p_new_state->analog_buttons[j]. === */
+static void do_button_to_button_pressure(uint16_t *analog_buttons,
+      unsigned remap_button, uint16_t source_pressure)
+{
+   if (remap_button < RARCH_FIRST_CUSTOM_BIND)
+   {
+      uint16_t pressure = source_pressure
+         ? source_pressure
+         : 0x7fff;
+
+      if (pressure > analog_buttons[remap_button])
+         analog_buttons[remap_button] = pressure;
+   }
 }
 /* === end verbatim copy === */
 
@@ -388,6 +410,48 @@ static void test_remap_port_in_range_kept_out_of_range_reset(void)
          MAX_USERS - 1);
 }
 
+static void test_button_to_button_pressure_values(void)
+{
+   uint16_t slots[ANALOG_BUTTONS_PER_USER];
+   memset(slots, 0, sizeof(slots));
+
+   /* no pressure axis: a full press */
+   do_button_to_button_pressure(slots, 0, 0);
+   if (slots[0] != 0x7fff)
+   {
+      printf("[ERROR] a press without pressure gave %u, expected 32767\n",
+            (unsigned)slots[0]);
+      failures++;
+      return;
+   }
+
+   /* two sources on one target: the harder press */
+   memset(slots, 0, sizeof(slots));
+   do_button_to_button_pressure(slots, 8, 20000);
+   do_button_to_button_pressure(slots, 8, 10000);
+   if (slots[8] != 20000)
+   {
+      printf("[ERROR] a softer press replaced a harder one (%u)\n",
+            (unsigned)slots[8]);
+      failures++;
+      return;
+   }
+   do_button_to_button_pressure(slots, 8, 30000);
+   if (slots[8] != 30000)
+   {
+      printf("[ERROR] a harder press did not replace a softer one (%u)\n",
+            (unsigned)slots[8]);
+      failures++;
+      return;
+   }
+
+   /* a stick or unmapped target is not a button slot: under ASan a
+    * write to slot 16 or 1024 is a stack-buffer-overflow */
+   do_button_to_button_pressure(slots, RARCH_FIRST_CUSTOM_BIND, 20000);
+   do_button_to_button_pressure(slots, RARCH_UNMAPPED, 20000);
+   printf("[SUCCESS] button -> button pressure: full press, harder press wins\n");
+}
+
 int main(void)
 {
    test_validate_accepts_legitimate_button_indices();
@@ -398,6 +462,7 @@ int main(void)
    test_button_to_analog_out_of_range_no_oob();
    test_analog_to_analog_sizeof_vs_array_size_bug();
    test_remap_port_in_range_kept_out_of_range_reset();
+   test_button_to_button_pressure_values();
 
    if (failures)
    {
