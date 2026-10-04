@@ -9144,6 +9144,9 @@ static void input_key_lane_take(void);
           | (1U << RETRO_DEVICE_ID_JOYPAD_DOWN) \
           | (1U << RETRO_DEVICE_ID_JOYPAD_LEFT) \
           | (1U << RETRO_DEVICE_ID_JOYPAD_RIGHT)))
+/* in first_press_pending: no press, every unmapped user gets its own port */
+#define INPUT_FIRST_PRESS_GIVE_UP (1U << 31)
+static bool input_first_press_blocked(void);
 
 void input_driver_poll(void)
 {
@@ -9389,6 +9392,8 @@ void input_driver_poll(void)
       bool menu_alive                = false;
 #endif
       bool do_remap                  = input_remap_binds_enable && !menu_alive;
+      bool first_press_blocked       = input_st->first_press_live
+         && input_first_press_blocked();
 #ifdef HAVE_OVERLAY
       input_overlay_t *overlay_pointer = (input_overlay_t*)input_st->overlay_ptr;
       bool poll_overlay              = (overlay_pointer &&
@@ -9451,7 +9456,9 @@ void input_driver_poll(void)
 #endif
 
          /* --- First press on a user with no core port --- */
-         if (     input_st->first_press_live
+         if (first_press_blocked)
+            input_st->first_press_pending = INPUT_FIRST_PRESS_GIVE_UP;
+         else if (  input_st->first_press_live
                && !menu_alive
                && settings->uints.input_remap_ports[i] >= MAX_USERS
                && joypad)
@@ -10105,17 +10112,41 @@ end:
       input_st->flags &= ~INP_FLAG_REMAPPING_CACHE_ACTIVE;
 }
 
+/* Netplay's ports are the session's, and a replay has to see the
+ * ports it was recorded with. */
+static bool input_first_press_blocked(void)
+{
+#ifdef HAVE_BSV_MOVIE
+   if (input_driver_st.bsv_movie_state.flags & (
+              BSV_FLAG_MOVIE_START_RECORDING
+            | BSV_FLAG_MOVIE_START_PLAYBACK
+            | BSV_FLAG_MOVIE_RECORDING
+            | BSV_FLAG_MOVIE_PLAYBACK))
+      return true;
+#endif
+#ifdef HAVE_NETWORKING
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+      return true;
+#endif
+   return false;
+}
+
 bool input_first_press_enabled(void)
 {
-   settings_t *settings = config_get_ptr();
-   if (!settings->bools.input_assign_ports_on_button_press)
-      return false;
-#ifdef HAVE_NETWORKING
-   /* netplay's ports are the session's */
-   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
-      return false;
-#endif
-   return true;
+   return config_get_ptr()->bools.input_assign_ports_on_button_press
+      && !input_first_press_blocked();
+}
+
+bool input_first_press_assigned(unsigned user)
+{
+   return user < MAX_USERS
+      && (input_driver_st.first_press_assigned & (1U << user)) != 0;
+}
+
+void input_first_press_set_by_hand(unsigned user)
+{
+   if (user < MAX_USERS)
+      input_driver_st.first_press_assigned &= ~(1U << user);
 }
 
 void input_first_press_apply(void)
@@ -10130,6 +10161,19 @@ void input_first_press_apply(void)
    input_st->first_press_pending  = 0;
    if (max_users > MAX_USERS)
       max_users                   = MAX_USERS;
+
+   /* netplay or a replay began with users still unmapped: each gets
+    * its own port, and the policy is off until content starts again */
+   if (pending & INPUT_FIRST_PRESS_GIVE_UP)
+   {
+      for (user = 0; user < MAX_USERS; user++)
+         if (settings->uints.input_remap_ports[user] >= MAX_USERS)
+            settings->uints.input_remap_ports[user] = user;
+      input_st->first_press_on = false;
+      input_remapping_update_port_map();
+      command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+      return;
+   }
 
    for (user = 0; user < max_users; user++)
    {
@@ -10148,6 +10192,7 @@ void input_first_press_apply(void)
          break;
 
       settings->uints.input_remap_ports[user] = port;
+      input_st->first_press_assigned         |= (1U << user);
       input_remapping_update_port_map();
       mapped = true;
 
@@ -10229,7 +10274,7 @@ void input_remapping_update_port_map(void)
 
    /* the poll looks for a first press only while there is a user
     * with no core port */
-   input_st->first_press_live = unmapped && input_first_press_enabled();
+   input_st->first_press_live = unmapped && input_st->first_press_on;
 }
 
 void input_remapping_deinit(bool save_remap)
@@ -10253,6 +10298,7 @@ void input_remapping_set_defaults(bool clear_cache)
    unsigned i, j;
    settings_t *settings           = config_get_ptr();
    input_driver_state_t *input_st = &input_driver_st;
+   bool first_press               = input_first_press_enabled();
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -10277,13 +10323,16 @@ void input_remapping_set_defaults(bool clear_cache)
       /* Controller port remaps: none under first-press assignment */
       configuration_set_uint(settings,
             settings->uints.input_remap_ports[i],
-            input_first_press_enabled() ? MAX_USERS : i);
+            first_press ? MAX_USERS : i);
    }
 
-   /* first-press assignment starts over */
+   /* first-press assignment starts over; the setting is looked at
+    * here, so changing it applies from the next content start */
    memset(input_st->first_press_released, 0,
          sizeof(input_st->first_press_released));
-   input_st->first_press_pending = 0;
+   input_st->first_press_pending  = 0;
+   input_st->first_press_assigned = 0;
+   input_st->first_press_on       = first_press;
 
    /* Need to call 'input_remapping_update_port_map()'
     * whenever 'settings->uints.input_remap_ports'

@@ -6199,6 +6199,7 @@ static int setting_action_left_input_remap_port(
       settings->uints.input_remap_ports[port] = MAX_USERS;
    setting_input_remap_port_follow(menu_st, was,
          settings->uints.input_remap_ports[port]);
+   input_first_press_set_by_hand(port);
 
    /* Must be called whenever settings->uints.input_remap_ports
     * is modified */
@@ -8823,6 +8824,7 @@ static int setting_action_start_input_remap_port(rarch_setting_t *setting)
    setting_input_remap_port_follow(menu_st,
          settings->uints.input_remap_ports[port], port);
    settings->uints.input_remap_ports[port] = port;
+   input_first_press_set_by_hand(port);
 
    /* Must be called whenever settings->uints.input_remap_ports
     * is modified */
@@ -8962,6 +8964,7 @@ static int setting_action_right_input_remap_port(
       settings->uints.input_remap_ports[port] = 0;
    setting_input_remap_port_follow(menu_st, was,
          settings->uints.input_remap_ports[port]);
+   input_first_press_set_by_hand(port);
 
    /* Must be called whenever settings->uints.input_remap_ports
     * is modified */
@@ -10427,6 +10430,7 @@ static void general_write_handler(rarch_setting_t *setting)
          if (   (setting->enum_idx >= MENU_ENUM_LABEL_INPUT_REMAP_PORT)
              && (setting->enum_idx <= MENU_ENUM_LABEL_INPUT_REMAP_PORT_LAST))
          {
+            input_first_press_set_by_hand(setting->index_offset);
             /* Must be called whenever settings->uints.input_remap_ports
              * is modified */
             input_remapping_update_port_map();

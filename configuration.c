@@ -10654,9 +10654,14 @@ bool input_remapping_save_file(const char *path)
       strlcpy_lit(s1 + _len, "_analog_dpad_mode", sizeof(s1) - _len);
       config_set_int(conf, s1, settings->uints.input_analog_dpad_mode[i]);
 
-      _len = strlcpy_lit(s1, "input_remap_port_p", sizeof(s1));
-      strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
-      config_set_int(conf, s1, settings->uints.input_remap_ports[i]);
+      /* a port a first press gave is not the user's choice: left
+       * out, so the next press decides again */
+      if (!input_first_press_assigned(i))
+      {
+         _len = strlcpy_lit(s1, "input_remap_port_p", sizeof(s1));
+         strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
+         config_set_int(conf, s1, settings->uints.input_remap_ports[i]);
+      }
    }
 
    /* Turbo fire settings */

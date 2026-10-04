@@ -1652,6 +1652,82 @@ static void lane_first_press(void)
          || settings->uints.input_remap_ports[0] == 1,
          "first press: the user was not given the lowest free core port");
 
+   /* a remap file saved now leaves out the port the press gave, and
+    * has one the user set in the menu */
+   {
+      static const char *rmp = "/tmp/frontend_overhead_first_press.rmp";
+      runloop_state_t *runloop_st = runloop_state_get_ptr();
+      char *was_file = runloop_st->name.remapfile;
+      char text[8192];
+      FILE *f;
+      size_t n;
+      bool by_press, by_hand;
+
+      runloop_st->name.remapfile = NULL;
+      input_remapping_save_file(rmp);
+      n = (f = fopen(rmp, "r")) ? fread(text, 1, sizeof(text) - 1, f) : 0;
+      if (f)
+         fclose(f);
+      text[n]  = '\0';
+      by_press = strstr(text, "input_remap_port_p1 ") != NULL;
+
+      input_first_press_set_by_hand(0);
+      input_remapping_save_file(rmp);
+      n = (f = fopen(rmp, "r")) ? fread(text, 1, sizeof(text) - 1, f) : 0;
+      if (f)
+         fclose(f);
+      text[n]  = '\0';
+      by_hand  = strstr(text, "input_remap_port_p1 ") != NULL;
+      remove(rmp);
+      free(runloop_st->name.remapfile);
+      runloop_st->name.remapfile = was_file;
+      CHECK(n > 0 && !by_press,
+            "first press: a saved remap file has the port a press gave");
+      CHECK(n > 0 && by_hand,
+            "first press: a saved remap file leaves out a port set by hand");
+   }
+
+   /* the setting is looked at when content starts: turned off now,
+    * a user without a port still gets one by pressing */
+   syn_buttons = 0;
+   input_remapping_set_defaults(false);
+   settings->bools.input_assign_ports_on_button_press = false;
+   run_loop_frames(3);
+   syn_buttons = a_btn;
+   run_loop_frames(2);
+   CHECK(settings->uints.input_remap_ports[0] == 0,
+         "first press: turning the setting off took effect before content started again");
+   settings->bools.input_assign_ports_on_button_press = true;
+
+#ifdef HAVE_BSV_MOVIE
+   /* a replay about to start: every user is on its own port */
+   syn_buttons = 0;
+   input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_START_PLAYBACK;
+   input_remapping_set_defaults(false);
+   input_st->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_START_PLAYBACK;
+   for (i = 0; i < MAX_USERS; i++)
+      if (settings->uints.input_remap_ports[i] != i)
+         break;
+   CHECK(i == MAX_USERS && !input_st->first_press_live,
+         "first press: the policy is on with a replay about to start");
+
+   /* one that begins with users still unmapped: the next poll gives
+    * up, and each gets its own port */
+   input_remapping_set_defaults(false);
+   CHECK(settings->uints.input_remap_ports[0] == MAX_USERS,
+         "first press: not back on after the replay");
+   input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_START_PLAYBACK;
+   input_driver_poll();
+   input_st->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_START_PLAYBACK;
+   if (input_st->first_press_pending)
+      input_first_press_apply();
+   for (i = 0; i < MAX_USERS; i++)
+      if (settings->uints.input_remap_ports[i] != i)
+         break;
+   CHECK(i == MAX_USERS && !input_st->first_press_live,
+         "first press: a replay that began with users unmapped did not put each on its own port");
+#endif
+
    /* off: every user has its own port again */
    syn_buttons = 0;
    settings->bools.input_assign_ports_on_button_press = false;
@@ -1672,7 +1748,8 @@ static void lane_first_press(void)
       printf("[pass] first press: no user has a core port until a button"
             " is pressed on it; a button held from the start and the d-pad"
             " are no press; the port is given between frames, the lowest"
-            " free one\n");
+            " free one; a saved remap file leaves it out; the setting"
+            " counts from content start; a replay turns it off\n");
 #else
    printf("[skip] first press: needs the test drivers\n");
 #endif

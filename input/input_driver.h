@@ -823,6 +823,10 @@ typedef struct
     * map at the next frame boundary, and whether any of it is live. */
    uint32_t first_press_released[MAX_USERS];
    uint32_t first_press_pending;
+   /* users whose core port a press gave them, not the user */
+   uint32_t first_press_assigned;
+   /* the policy, as it stood when the remap defaults were last set */
+   bool     first_press_on;
    bool     first_press_live;
 } input_driver_state_t;
 

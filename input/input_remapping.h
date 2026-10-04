@@ -80,6 +80,11 @@ bool input_first_press_enabled(void);
 /* Maps the users a press was seen on to the next free core ports.
  * Called between frames, with the core off the stack. */
 void input_first_press_apply(void);
+/* Whether @user's core port was given by a press: a remap file does
+ * not store such a port. */
+bool input_first_press_assigned(unsigned user);
+/* @user's mapped port was set in the menu: it is the user's choice. */
+void input_first_press_set_by_hand(unsigned user);
 
 /**
  * Frees runloop_st->name.remapfile and sets these runloop_state flags to false:
