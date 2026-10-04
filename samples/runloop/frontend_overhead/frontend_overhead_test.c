@@ -1847,6 +1847,144 @@ static void lane_input_rotation(void)
 #endif
 }
 
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+/* Trigger lane: axes 2 and 3 of the scripted pad at @a2 and @a3 for a
+ * frame; what the core saw of L2 and R2 as buttons, and L2's and R2's
+ * analog values. */
+static unsigned trig_frame(int a2, int a3, void (*trace_last)(unsigned*, int*),
+      int *l2, int *r2)
+{
+   unsigned seen;
+   int axes[4];
+   syn_axes[2] = (int16_t)a2;
+   syn_axes[3] = (int16_t)a3;
+   run_loop_frames(1);
+   trace_last(&seen, axes);
+   *l2 = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG,
+         RETRO_DEVICE_INDEX_ANALOG_BUTTON, RETRO_DEVICE_ID_JOYPAD_L2);
+   *r2 = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG,
+         RETRO_DEVICE_INDEX_ANALOG_BUTTON, RETRO_DEVICE_ID_JOYPAD_R2);
+   return seen & (  (1u << RETRO_DEVICE_ID_JOYPAD_L2)
+                  | (1u << RETRO_DEVICE_ID_JOYPAD_R2));
+}
+#endif
+
+/* Full-range triggers: L2 and R2 on axes that rest at one end. */
+static void lane_triggers(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   const unsigned L2 = 1u << RETRO_DEVICE_ID_JOYPAD_L2;
+   const unsigned R2 = 1u << RETRO_DEVICE_ID_JOYPAD_R2;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   const input_device_driver_t *joypad_real;
+   struct retro_keybind saved_l2, saved_r2, *bl2, *br2;
+   void (*trace)(int, int);
+   void (*trace_last)(unsigned*, int*);
+   void    *core;
+   unsigned had = failures;
+   unsigned seen;
+   int      l2, r2;
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(trace = (void (*)(int, int))dlsym(core, "harness_core_trace"))
+       || !(trace_last = (void (*)(unsigned*, int*))dlsym(core, "harness_core_trace_last"))
+       || !input_st->primary_joypad)
+   {
+      CHECK(false, "triggers: the harness core's trace entry points or the joypad driver");
+      return;
+   }
+   joypad_real              = input_st->primary_joypad;
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   input_driver_set_snapshot_bridge(true);
+   syn_hat     = 0;
+   syn_buttons = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   bl2      = &input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_L2];
+   br2      = &input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_R2];
+   saved_l2 = *bl2;
+   saved_r2 = *br2;
+   fast_forward(true);
+   trace(2, 0);
+
+   /* L2 on an axis that rests at the bottom of its range, R2 on one
+    * that rests in the middle */
+   bl2->joykey = NO_BTN;  bl2->joyaxis = AXIS_POS(2);
+   br2->joykey = NO_BTN;  br2->joyaxis = AXIS_POS(3);
+
+   /* off, as before: only the second half of the pull counts */
+   settings->bools.input_trigger_full_range = false;
+   trig_frame(-32767, 0, trace_last, &l2, &r2);
+   seen = trig_frame(-32767, 0, trace_last, &l2, &r2);
+   CHECK(!seen && !l2, "triggers: off, a trigger at rest is pressed");
+   seen = trig_frame(0, 0, trace_last, &l2, &r2);
+   CHECK(!seen && !l2, "triggers: off, half a pull is counted");
+   seen = trig_frame(20000, 0, trace_last, &l2, &r2);
+   CHECK(seen == L2 && l2 == 20000, "triggers: off, the second half of the pull is not as it was");
+   CHECK(!input_st->trigger_rest[0], "triggers: off, something was learned");
+
+   /* on: the pull is counted from where the trigger rests */
+   settings->bools.input_trigger_full_range = true;
+   trig_frame(-32767, 0, trace_last, &l2, &r2);
+   seen = trig_frame(-32767, 0, trace_last, &l2, &r2);
+   CHECK(!seen && !l2, "triggers: on, a trigger at rest is pressed");
+   seen = trig_frame(0, 0, trace_last, &l2, &r2);
+   CHECK(!seen && l2 == 16383, "triggers: on, half a pull is not half the analog range");
+   seen = trig_frame(4000, 16384, trace_last, &l2, &r2);
+   CHECK(seen == L2 && l2 == 18383, "triggers: on, just past half a pull does not press the button");
+   CHECK(r2 == 16384, "triggers: on, a trigger that rests in the middle is changed");
+   seen = trig_frame(32767, 32767, trace_last, &l2, &r2);
+   CHECK(seen == (L2 | R2) && l2 == 32767 && r2 == 32767,
+         "triggers: on, a full pull is not the full range");
+
+   /* one axis with a trigger on each direction is left as it is */
+   input_st->trigger_rest[0]    = 0;
+   input_st->trigger_two_way[0] = 0;
+   br2->joyaxis = AXIS_NEG(2);
+   trig_frame(-32767, 0, trace_last, &l2, &r2);
+   seen = trig_frame(-32767, 0, trace_last, &l2, &r2);
+   CHECK(seen == R2 && r2 == 32767 && !l2, "triggers: a combined axis, R2 fully pulled");
+   seen = trig_frame(0, 0, trace_last, &l2, &r2);
+   CHECK(!seen && !l2 && !r2, "triggers: a combined axis at rest reads as a pull");
+
+   /* a trigger bound the other way round, resting at the top */
+   input_st->trigger_rest[0]    = 0;
+   input_st->trigger_two_way[0] = 0;
+   bl2->joyaxis = AXIS_NEG(2);
+   br2->joyaxis = AXIS_POS(3);
+   trig_frame(32767, 0, trace_last, &l2, &r2);
+   seen = trig_frame(32767, 0, trace_last, &l2, &r2);
+   CHECK(!seen && !l2, "triggers: one resting at the top is pressed at rest");
+   seen = trig_frame(-32767, 0, trace_last, &l2, &r2);
+   CHECK(seen == L2 && l2 == 32767, "triggers: one resting at the top, fully pulled");
+
+   settings->bools.input_trigger_full_range = false;
+   input_st->trigger_rest[0]    = 0;
+   input_st->trigger_two_way[0] = 0;
+   *bl2 = saved_l2;
+   *br2 = saved_r2;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   trace(0, 0);
+   fast_forward(false);
+   run_loop_frames(5);
+   input_driver_set_snapshot_bridge(false);
+   input_st->primary_joypad = joypad_real;
+   dlclose(core);
+   if (failures == had)
+      printf("[pass] triggers: off, only the second half of a pull counts,"
+            " as before; on, a trigger that rests at one end is counted"
+            " from there, one that rests in the middle and a combined"
+            " axis are left alone\n");
+#else
+   printf("[skip] triggers: needs the test drivers\n");
+#endif
+}
+
 /* First-press port assignment: with the setting on no user has a core
  * port until a button is pressed on its controller. */
 static void lane_first_press(void)
@@ -2761,6 +2899,7 @@ int main(int argc, char *argv[])
       lane_first_press();
       lane_socd();
       lane_input_rotation();
+      lane_triggers();
       lane_core_view();
       lane_key_events();
       /* last: these restart the drivers */

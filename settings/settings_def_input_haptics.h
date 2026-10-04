@@ -94,6 +94,11 @@ S_UINT_EX(input_assign_ports_keyboard, INPUT_ASSIGN_PORTS_KEYBOARD,
       0, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_assign_ports_keyboard, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
       "Keyboard on First Button Press",
       "With 'Assign Ports on First Button Press': what a key bound to a port's controls does. 'Assigns its Port' gives the port its core port, as a button of its controller would. 'Waits for its Controller' leaves that to the controller's buttons, unless the port has no controller connected.")
+S_BOOL(input_trigger_full_range, INPUT_TRIGGER_FULL_RANGE,
+      "input_trigger_full_range",
+      false, SD_FLAG_ADVANCED, 0, 0,
+      "Full-Range Analog Triggers",
+      "For L2 and R2 on an axis that rests at one end of its range: count the pull from where the trigger rests. A full pull then gives the whole analog range and half a pull presses the button. When off only the second half of the pull counts, as before.")
 S_UINT_EX(input_rotation, INPUT_ROTATION,
       "input_rotation",
       0, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, 4, 1, 0, setting_action_ok_uint, setting_get_string_representation_input_rotation, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,

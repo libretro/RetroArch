@@ -819,6 +819,59 @@ static int16_t input_snapshot_axis(unsigned b, unsigned pad, uint32_t joyaxis)
    return (value > 0) ? value : 0;
 }
 
+/* Whether @joyaxis, bound to a trigger of controller @pad, is known to
+ * rest at the far end from its bind. */
+static bool input_trigger_rests_far(unsigned pad, uint32_t joyaxis)
+{
+   unsigned a = (AXIS_NEG_GET(joyaxis) < 16)
+      ? AXIS_NEG_GET(joyaxis) : AXIS_POS_GET(joyaxis);
+   return pad < MAX_USERS && a < 16
+      && (input_driver_st.trigger_rest[pad] & (1 << a)) != 0;
+}
+
+/* The pull of such a trigger, 0 to 0x7fff, counted from its rest. */
+static int16_t input_trigger_pull(const input_device_driver_t *drv,
+      unsigned pad, uint32_t joyaxis)
+{
+   bool negative = AXIS_NEG_GET(joyaxis) < 16;
+   unsigned a    = negative ? AXIS_NEG_GET(joyaxis) : AXIS_POS_GET(joyaxis);
+   int raw       = drv->axis(pad, AXIS_POS(a)) + drv->axis(pad, AXIS_NEG(a));
+   if (negative)
+      raw        = -raw;
+   raw           = (raw + 0x7fff) / 2;
+   return (int16_t)((raw < 0) ? 0 : (raw > 0x7fff) ? 0x7fff : raw);
+}
+
+/* Learns it: the axis is at the far end, and its other direction is
+ * bound to nothing (a combined axis has a trigger on each). */
+static void input_trigger_learn(const input_device_driver_t *drv,
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds, unsigned pad, uint32_t joyaxis)
+{
+   unsigned i;
+   input_driver_state_t *input_st = &input_driver_st;
+   bool negative = AXIS_NEG_GET(joyaxis) < 16;
+   unsigned a    = negative ? AXIS_NEG_GET(joyaxis) : AXIS_POS_GET(joyaxis);
+   uint32_t other  = negative ? AXIS_POS(a) : AXIS_NEG(a);
+   int there;
+
+   if (a >= 16 || ((input_st->trigger_rest[pad]
+               | input_st->trigger_two_way[pad]) & (1 << a)))
+      return;
+   there = drv->axis(pad, other);
+   if (there > -0x7000 && there < 0x7000)
+      return;
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+      if (     binds[i].joyaxis == other
+            || (   binds[i].joyaxis == AXIS_NONE
+                && joypad_info->auto_binds[i].joyaxis == other))
+      {
+         input_st->trigger_two_way[pad] |= (1 << a);
+         return;
+      }
+   input_st->trigger_rest[pad] |= (1 << a);
+}
+
 /* The RetroPad mask from the binds: the loop every joypad driver's
  * state() is, against the copy. */
 static int16_t input_snapshot_state(unsigned b,
@@ -828,6 +881,7 @@ static int16_t input_snapshot_state(unsigned b,
    unsigned i;
    int16_t  ret = 0;
    uint16_t pad = joypad_info->joy_idx;
+   bool full_range = config_get_ptr()->bools.input_trigger_full_range;
 
    if (pad >= MAX_USERS)
       return 0;
@@ -842,10 +896,25 @@ static int16_t input_snapshot_state(unsigned b,
       if (     (uint16_t)joykey != NO_BTN
             && input_snapshot_button(b, pad, (uint16_t)joykey))
          ret |= (1 << i);
-      else if (joyaxis != AXIS_NONE
-            && ((float)abs(input_snapshot_axis(b, pad, joyaxis))
-               / 0x8000) > joypad_info->axis_threshold)
-         ret |= (1 << i);
+      else if (joyaxis != AXIS_NONE)
+      {
+         int value;
+         /* "Full-Range Analog Triggers" */
+         if (     full_range
+               && (   i == RETRO_DEVICE_ID_JOYPAD_L2
+                   || i == RETRO_DEVICE_ID_JOYPAD_R2))
+         {
+            const input_device_driver_t *drv = &input_snapshot_bridge[b].adapter;
+            input_trigger_learn(drv, joypad_info, binds, pad, joyaxis);
+            value = input_trigger_rests_far(pad, joyaxis)
+               ? input_trigger_pull(drv, pad, joyaxis)
+               : abs(input_snapshot_axis(b, pad, joyaxis));
+         }
+         else
+            value = abs(input_snapshot_axis(b, pad, joyaxis));
+         if (((float)value / 0x8000) > joypad_info->axis_threshold)
+            ret |= (1 << i);
+      }
    }
    return ret;
 }
@@ -1617,6 +1686,12 @@ static int16_t input_joypad_analog_button(
          return 0x7fff;
       return 0;
    }
+
+   /* a trigger learned to rest at the far end: its pull, from there */
+   if (     (ident == RETRO_DEVICE_ID_JOYPAD_L2 || ident == RETRO_DEVICE_ID_JOYPAD_R2)
+         && input_trigger_rests_far(joy_idx, axis)
+         && config_get_ptr()->bools.input_trigger_full_range)
+      return input_trigger_pull(drv, joy_idx, axis);
 
    /* Analog button - call drv->axis at most once */
    if (input_analog_deadzone)
@@ -7571,6 +7646,12 @@ void input_config_set_device_name(unsigned port, const char *name)
 
    strlcpy(input_st->input_device_info[port].name, name,
          sizeof(input_st->input_device_info[port].name));
+   /* another controller: what its triggers rest at is learned anew */
+   if (port < MAX_USERS)
+   {
+      input_st->trigger_rest[port]    = 0;
+      input_st->trigger_two_way[port] = 0;
+   }
 
    input_config_reindex_device_names(input_st);
 }

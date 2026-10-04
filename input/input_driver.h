@@ -770,6 +770,12 @@ typedef struct
     * input_driver_poll(), and when the core's first analog request
     * changes analog-to-d-pad for the port. */
    int16_t frame_view_joypad[MAX_USERS];
+   /* Full-range triggers, per controller, as bits by axis: axes bound
+    * to L2 or R2 that were seen resting at the far end from their
+    * bind (the pull is counted from there), and axes not to be looked
+    * at again because both their directions are bound. */
+   uint16_t trigger_rest[MAX_USERS];
+   uint16_t trigger_two_way[MAX_USERS];
    /* SOCD cleaning, per core port: the D-Pad as it was held when the
     * port's view was last compiled, and for each axis the direction
     * (as its RetroPad button bit) that has the say while both are held. */
