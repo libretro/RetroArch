@@ -1348,16 +1348,15 @@ struct vk_deferred_cmd
    VkFence fence;
    struct vk_deferred_cmd *next;
    VkCommandBuffer cmd;
-   /* The fence belongs to the submitter, who reads its status to know
-    * when its own staging is free again: not recycled on release. */
-   bool fence_external;
 };
 
 /* In-place update state for one texture, see vulkan_update_texture.
- * Two mapped staging buffers, each guarded by the fence of the copy
- * that last read it; an update goes to a slot whose fence has
- * signalled, and when neither has, the frame is dropped rather than
- * waited for. Created on the first update, destroyed with the
+ * Two slots, each a mapped staging buffer and the command buffer that
+ * copies it into the texture, both guarded by the fence that copy
+ * signals; an update goes to a slot whose fence has signalled, and
+ * when neither has, the frame is dropped rather than waited for. A
+ * slot is re-recorded and resubmitted in place, so a streamed frame
+ * allocates nothing. Created on the first update, destroyed with the
  * texture. */
 #define VK_STREAM_SLOTS 2
 struct vk_stream_state
@@ -1365,6 +1364,7 @@ struct vk_stream_state
    struct vk_texture staging[VK_STREAM_SLOTS];
    struct vk_stream_state *next;
    struct vk_texture *texture;
+   VkCommandBuffer cmd[VK_STREAM_SLOTS];
    VkFence fence[VK_STREAM_SLOTS];
    unsigned next_slot;
 };
@@ -1425,8 +1425,7 @@ static void vulkan_deferred_cmd_release(vk_t *vk,
       vkDestroyBuffer(device, node->staging_buffer, NULL);
    if (node->staging_memory != VK_NULL_HANDLE)
       vkFreeMemory(device, node->staging_memory, NULL);
-   if (!node->fence_external)
-      vulkan_deferred_fence_recycle(vk, node->fence);
+   vulkan_deferred_fence_recycle(vk, node->fence);
    free(node);
 }
 
@@ -1439,18 +1438,17 @@ static void vulkan_deferred_cmd_release(vk_t *vk,
  * used to be vkQueueWaitIdle under queue_lock: it drained whatever a
  * hardware core had on the queue as well, and kept the core out of
  * lock_queue for as long as that took. */
-static void vulkan_submit_deferred_cmd_fenced(vk_t *vk,
+static void vulkan_submit_deferred_cmd(vk_t *vk,
       VkCommandBuffer cmd,
       struct vk_texture *staging_tex,
-      VkBuffer staging_buffer, VkDeviceMemory staging_memory,
-      VkFence ext_fence)
+      VkBuffer staging_buffer, VkDeviceMemory staging_memory)
 {
    VkSubmitInfo submit_info;
-   VkFence fence               = ext_fence;
+   VkFence fence               = VK_NULL_HANDLE;
    struct vk_deferred_cmd *node =
       (struct vk_deferred_cmd*)malloc(sizeof(*node));
 
-   if (node && fence == VK_NULL_HANDLE)
+   if (node)
    {
       if ((fence = vulkan_deferred_fence_acquire(vk)) == VK_NULL_HANDLE)
       {
@@ -1470,7 +1468,7 @@ static void vulkan_submit_deferred_cmd_fenced(vk_t *vk,
    submit_info.pSignalSemaphores    = NULL;
 
    /* Nothing to defer it with: the upload is waited on below, on the
-    * caller's fence if it gave one, else on the driver's. */
+    * driver's fence. */
    if (!node && fence == VK_NULL_HANDLE && vk->sync_fence != VK_NULL_HANDLE)
    {
       fence = vk->sync_fence;
@@ -1511,39 +1509,9 @@ static void vulkan_submit_deferred_cmd_fenced(vk_t *vk,
    node->staging_buffer = staging_buffer;
    node->staging_memory = staging_memory;
    node->fence          = fence;
-   node->fence_external = ext_fence != VK_NULL_HANDLE;
    node->cmd            = cmd;
    node->next           = vk->deferred_cmds;
    vk->deferred_cmds    = node;
-}
-
-static void vulkan_submit_deferred_cmd(vk_t *vk, VkCommandBuffer cmd,
-      struct vk_texture *staging_tex,
-      VkBuffer staging_buffer, VkDeviceMemory staging_memory)
-{
-   vulkan_submit_deferred_cmd_fenced(vk, cmd, staging_tex,
-         staging_buffer, staging_memory, VK_NULL_HANDLE);
-}
-
-/* Release the deferred command buffers submitted against @fence, for
- * a submitter about to destroy it. Their work is done by then (the
- * texture's deferral window has passed) so the wait is a formality. */
-static void vulkan_deferred_cmds_release_fence(vk_t *vk, VkFence fence)
-{
-   struct vk_deferred_cmd **cur = &vk->deferred_cmds;
-   while (*cur)
-   {
-      struct vk_deferred_cmd *node = *cur;
-      if (node->fence == fence)
-      {
-         vkWaitForFences(vk->context->device, 1, &fence, VK_TRUE,
-               UINT64_MAX);
-         *cur = node->next;
-         vulkan_deferred_cmd_release(vk, node);
-      }
-      else
-         cur = &node->next;
-   }
 }
 
 /* Driver teardown, after the queue is idle: stream state of textures
@@ -1557,6 +1525,9 @@ static void vulkan_stream_states_flush(vk_t *vk)
    {
       struct vk_stream_state *next = st->next;
       unsigned i;
+      if (st->cmd[0] != VK_NULL_HANDLE)
+         vkFreeCommandBuffers(vk->context->device, vk->staging_pool,
+               VK_STREAM_SLOTS, st->cmd);
       for (i = 0; i < VK_STREAM_SLOTS; i++)
       {
          if (st->fence[i] != VK_NULL_HANDLE)
@@ -1581,13 +1552,15 @@ static void vulkan_texture_retire(vk_t *vk, struct vk_texture *texture)
       {
          unsigned i;
          *cur = st->next;
+         /* The deferral window has closed on the texture, so the last
+          * copies its slots recorded have run. */
+         if (st->cmd[0] != VK_NULL_HANDLE)
+            vkFreeCommandBuffers(vk->context->device, vk->staging_pool,
+                  VK_STREAM_SLOTS, st->cmd);
          for (i = 0; i < VK_STREAM_SLOTS; i++)
          {
             if (st->fence[i] != VK_NULL_HANDLE)
-            {
-               vulkan_deferred_cmds_release_fence(vk, st->fence[i]);
                vkDestroyFence(vk->context->device, st->fence[i], NULL);
-            }
             if (st->staging[i].memory != VK_NULL_HANDLE)
                vulkan_destroy_texture(vk->context->device, &st->staging[i]);
          }
@@ -10257,8 +10230,8 @@ static bool vulkan_update_texture_internal(vk_t *vk, uintptr_t handle,
    struct vk_texture *staging;
    VkCommandBuffer cmd;
    VkCommandBufferBeginInfo begin_info;
-   VkCommandBufferAllocateInfo cmd_info;
    VkBufferImageCopy region;
+   VkSubmitInfo submit_info;
    VkDevice device;
    const uint8_t *src;
    uint8_t *dst;
@@ -10277,22 +10250,36 @@ static bool vulkan_update_texture_internal(vk_t *vk, uintptr_t handle,
 
    while (st && st->texture != texture)
       st = st->next;
-   /* A state whose staging or fences failed to build stays on the
-    * list for the texture's retirement to clean up and takes no
-    * updates: the caller loads replacements instead. */
+   /* A state whose staging, fences or command buffers failed to build
+    * stays on the list for the texture's retirement to clean up and
+    * takes no updates: the caller loads replacements instead. */
    if (     st
          && (   st->fence[VK_STREAM_SLOTS - 1] == VK_NULL_HANDLE
-             || !st->staging[VK_STREAM_SLOTS - 1].mapped))
+             || !st->staging[VK_STREAM_SLOTS - 1].mapped
+             || st->cmd[0] == VK_NULL_HANDLE))
       return false;
    if (!st)
    {
       VkFenceCreateInfo fence_info;
+      VkCommandBufferAllocateInfo cmd_info;
       fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
       fence_info.pNext = NULL;
       fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
       if (!(st = (struct vk_stream_state*)calloc(1, sizeof(*st))))
          return false;
       st->texture = texture;
+      cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+      cmd_info.pNext              = NULL;
+      cmd_info.commandPool        = vk->staging_pool;
+      cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+      cmd_info.commandBufferCount = VK_STREAM_SLOTS;
+      if (vkAllocateCommandBuffers(device, &cmd_info, st->cmd) != VK_SUCCESS)
+      {
+         st->cmd[0]        = VK_NULL_HANDLE;
+         st->next          = vk->stream_states;
+         vk->stream_states = st;
+         return false;
+      }
       for (i = 0; i < VK_STREAM_SLOTS; i++)
       {
          st->staging[i] = vulkan_create_texture(vk, NULL,
@@ -10346,14 +10333,10 @@ static bool vulkan_update_texture_internal(vk_t *vk, uintptr_t handle,
       vkFlushMappedMemoryRanges(device, 1, &range);
    }
 
-   cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-   cmd_info.pNext              = NULL;
-   cmd_info.commandPool        = vk->staging_pool;
-   cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-   cmd_info.commandBufferCount = 1;
-   if (vkAllocateCommandBuffers(device, &cmd_info, &cmd) != VK_SUCCESS)
-      return true;
-
+   /* The slot's fence has signalled, so its last copy has run and the
+    * command buffer is the slot's to record again. */
+   cmd = st->cmd[slot];
+   vkResetCommandBuffer(cmd, 0);
    begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
    begin_info.pNext            = NULL;
    begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -10387,9 +10370,24 @@ static bool vulkan_update_texture_internal(vk_t *vk, uintptr_t handle,
 
    vkEndCommandBuffer(cmd);
 
+   submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit_info.pNext                = NULL;
+   submit_info.waitSemaphoreCount   = 0;
+   submit_info.pWaitSemaphores      = NULL;
+   submit_info.pWaitDstStageMask    = NULL;
+   submit_info.commandBufferCount   = 1;
+   submit_info.pCommandBuffers      = &cmd;
+   submit_info.signalSemaphoreCount = 0;
+   submit_info.pSignalSemaphores    = NULL;
+
    vkResetFences(device, 1, &st->fence[slot]);
-   vulkan_submit_deferred_cmd_fenced(vk, cmd, NULL,
-         VK_NULL_HANDLE, VK_NULL_HANDLE, st->fence[slot]);
+#ifdef HAVE_THREADS
+   slock_lock(vk->context->queue_lock);
+#endif
+   vkQueueSubmit(vk->context->queue, 1, &submit_info, st->fence[slot]);
+#ifdef HAVE_THREADS
+   slock_unlock(vk->context->queue_lock);
+#endif
    return true;
 }
 
