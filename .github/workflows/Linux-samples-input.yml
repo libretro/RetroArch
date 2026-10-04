@@ -665,6 +665,28 @@ jobs:
           make clean
           echo "[pass] winraw_joypad_motion_test (wine)"
 
+      - name: Build and run udev_devices_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/udev_devices
+        run: |
+          set -eu
+          # The udev input driver's listing of keyboards and mice, its
+          # numbering of them and what a port reads went in compiled
+          # only: it needs devices under /dev/input, which a runner
+          # has none of. What the driver knows of a device is a
+          # structure in memory, so the real driver is handed a desk
+          # of them: a keyboard that is three event devices, a mouse
+          # that is two, a power button and a second keyboard. Two
+          # keyboards are listed; the mouse is mouse 1 and the
+          # keyboard's pointer part is not a mouse; each is told to
+          # the frontend by its ids; a port reads its own keyboard's
+          # keys and not the other's, and the mouse it is told to.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 60 ./udev_devices_test
+          make clean
+          echo "[pass] udev_devices_test (ASan)"
+
       - name: Build and run device_pins_test
         shell: bash
         working-directory: samples/input/device_pins
