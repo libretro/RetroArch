@@ -38,12 +38,10 @@
 #include <retro_atomic.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
-#ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
-#endif
 
 #include "../input_driver.h"
 #include "../common/linux_not_joystick.h"
+#include "../common/output_writer.h"
 
 #include "../../configuration.h"
 #include "../../config.def.h"
@@ -168,7 +166,7 @@ static void udev_pad_set_fd(unsigned p, int fd)
  * the one to close it. A pad that goes has its slot emptied and then
  * its generation raised; the writer, seeing the generation change,
  * closes the descriptor it holds and takes what the slot has. The
- * writer is woken through a pipe.
+ * thread is the shared one of ../common/output_writer.h.
  *
  * Without threads, or if the thread cannot be started, the same code
  * runs where it always did. */
@@ -188,11 +186,7 @@ static retro_atomic_int_t udev_rumble_want[MAX_USERS][2];
 static retro_atomic_int_t udev_rumble_want_gain[MAX_USERS];
 static retro_atomic_int_t udev_rumble_slot[MAX_USERS];
 static retro_atomic_int_t udev_rumble_gen[MAX_USERS];
-static int udev_rumble_pipe[2]         = { -1, -1 };
-#ifdef HAVE_THREADS
-static retro_atomic_int_t udev_rumble_quit;
-static sthread_t *udev_rumble_thread   = NULL;
-#endif
+static input_output_writer_t *udev_rumble_writer = NULL;
 /* how many effect uploads and plays the writer has made: for the test */
 static retro_atomic_int_t udev_rumble_writes;
 
@@ -301,23 +295,18 @@ static void udev_rumble_write(unsigned p)
    }
 }
 
-#ifdef HAVE_THREADS
-static void udev_rumble_thread_fn(void *data)
+/* On the writer's thread, after each wake; at the last, what it wrote
+ * to is its own to close. */
+static void udev_rumble_writer_cb(void *userdata, bool last)
 {
    unsigned p;
 
-   for (;;)
+   if (!last)
    {
-      char buf[64];
-      ssize_t n = read(udev_rumble_pipe[0], buf, sizeof(buf));
-      if (n < 0 && errno != EINTR)
-         break;
-      if (retro_atomic_load_acquire_int(&udev_rumble_quit))
-         break;
       for (p = 0; p < MAX_USERS; p++)
          udev_rumble_write(p);
+      return;
    }
-   /* what it wrote to is its own to close */
    for (p = 0; p < MAX_USERS; p++)
    {
       if (udev_rumble_out[p].fd >= 0)
@@ -325,22 +314,15 @@ static void udev_rumble_thread_fn(void *data)
       udev_rumble_out[p].fd = -1;
    }
 }
-#endif
 
 /* There is something for the writer to look at. Where there is no
  * writer it is looked at here. */
 static void udev_rumble_wake(unsigned p)
 {
-#ifdef HAVE_THREADS
-   if (udev_rumble_thread)
-   {
-      char c = 1;
-      /* a full pipe has wakes enough in it already */
-      if (write(udev_rumble_pipe[1], &c, 1) < 0) { }
-      return;
-   }
-#endif
-   udev_rumble_write(p);
+   if (udev_rumble_writer)
+      input_output_writer_wake(udev_rumble_writer);
+   else
+      udev_rumble_write(p);
 }
 
 /* A pad that can rumble has arrived in slot @p: a descriptor of its
@@ -385,39 +367,14 @@ static void udev_rumble_start(void)
       retro_atomic_store_release_int(&udev_rumble_want[p][0], 0);
       retro_atomic_store_release_int(&udev_rumble_want[p][1], 0);
    }
-#ifdef HAVE_THREADS
-   retro_atomic_store_release_int(&udev_rumble_quit, 0);
-   if (pipe(udev_rumble_pipe) == 0)
-   {
-      fcntl(udev_rumble_pipe[1], F_SETFL,
-            fcntl(udev_rumble_pipe[1], F_GETFL) | O_NONBLOCK);
-      udev_rumble_thread = sthread_create(udev_rumble_thread_fn, NULL);
-      if (!udev_rumble_thread)
-      {
-         close(udev_rumble_pipe[0]);
-         close(udev_rumble_pipe[1]);
-         udev_rumble_pipe[0] = udev_rumble_pipe[1] = -1;
-      }
-   }
-#endif
+   udev_rumble_writer = input_output_writer_new(udev_rumble_writer_cb, NULL);
 }
 
 static void udev_rumble_stop(void)
 {
    unsigned p;
-#ifdef HAVE_THREADS
-   if (udev_rumble_thread)
-   {
-      char c = 1;
-      retro_atomic_store_release_int(&udev_rumble_quit, 1);
-      if (write(udev_rumble_pipe[1], &c, 1) < 0) { }
-      sthread_join(udev_rumble_thread);
-      udev_rumble_thread = NULL;
-      close(udev_rumble_pipe[0]);
-      close(udev_rumble_pipe[1]);
-      udev_rumble_pipe[0] = udev_rumble_pipe[1] = -1;
-   }
-#endif
+   input_output_writer_free(udev_rumble_writer);
+   udev_rumble_writer = NULL;
    for (p = 0; p < MAX_USERS; p++)
    {
       int old = retro_atomic_exchange_int(&udev_rumble_slot[p], -1);

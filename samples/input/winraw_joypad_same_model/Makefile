@@ -9,7 +9,7 @@ REPO_ROOT := ../../..
 CC        := x86_64-w64-mingw32-gcc
 
 CFLAGS  += -Wall -std=gnu89 -Wdeclaration-after-statement -g -O1 \
-           -DRARCH_INTERNAL \
+           -DRARCH_INTERNAL -DHAVE_THREADS \
            -I$(REPO_ROOT) -I$(REPO_ROOT)/input/include \
            -I$(REPO_ROOT)/libretro-common/include -I$(REPO_ROOT)/deps
 
@@ -21,6 +21,8 @@ $(TARGET): winraw_joypad_same_model_test.c \
 		$(REPO_ROOT)/input/drivers_joypad/winraw_joypad.c
 	$(CC) $(CFLAGS) -o $@ winraw_joypad_same_model_test.c \
 		$(REPO_ROOT)/libretro-common/compat/compat_strl.c \
+		$(REPO_ROOT)/input/common/output_writer.c \
+		$(REPO_ROOT)/libretro-common/rthreads/rthreads.c \
 		$(REPO_ROOT)/libretro-common/encodings/encoding_crc32.c \
 		$(REPO_ROOT)/libretro-common/features/features_cpu.c \
 		$(REPO_ROOT)/libretro-common/time/rtime.c $(LDLIBS)

@@ -54,6 +54,7 @@
 #include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
 #include "../common/sony_pad_output.h"
+#include "../common/output_writer.h"
 #include "../common/sony_pad_motion.h"
 #include "../../verbosity.h"
 
@@ -441,9 +442,8 @@ static bool                      winraw_xinput_tried;
 static winraw_xinput_get_state_t winraw_xinput_get_state;
 static winraw_xinput_set_state_t winraw_xinput_set_state;
 static int                       winraw_xinput_taken[WINRAW_XINPUT_PADS];
-static HANDLE              winraw_joypad_out_thread;
-static HANDLE              winraw_joypad_out_wake;
-static retro_atomic_int_t  winraw_joypad_out_quit;
+/* the thread: input/common/output_writer.h's */
+static input_output_writer_t *winraw_joypad_out_writer;
 /* counted for the log; the thread's while it runs */
 static unsigned long       winraw_joypad_out_writes;
 
@@ -644,69 +644,60 @@ static void winraw_joypad_out_drop(winraw_joypad_out_t *out)
    out->failed = false;
 }
 
-static DWORD WINAPI winraw_joypad_out_run(LPVOID unused)
+/* On the writer's thread, after each wake; @quit for the last call. */
+static void winraw_joypad_out_run(void *unused, bool quit)
 {
+   unsigned i;
+
    (void)unused;
-   for (;;)
+   for (i = 0; i < MAX_USERS; i++)
    {
-      unsigned i;
-      bool quit;
+      winraw_joypad_out_t *out = &winraw_joypad_out[i];
+      void *msg = retro_atomic_exchange_ptr(&out->inbox, NULL);
 
-      WaitForSingleObject(winraw_joypad_out_wake, INFINITE);
-      quit = retro_atomic_load_acquire_int(&winraw_joypad_out_quit) != 0;
-
-      for (i = 0; i < MAX_USERS; i++)
+      /* a device to take over, or word that the pad has gone:
+       * either way the one held is done with */
+      if (msg)
       {
-         winraw_joypad_out_t *out = &winraw_joypad_out[i];
-         void *msg = retro_atomic_exchange_ptr(&out->inbox, NULL);
+         winraw_joypad_out_drop(out);
+         if (msg != WINRAW_JOYPAD_OUT_CLOSE)
+            out->dev = (winraw_joypad_out_dev_t*)msg;
+      }
 
-         /* a device to take over, or word that the pad has gone:
-          * either way the one held is done with */
-         if (msg)
+      if (out->dev && !quit)
+      {
+         int want = retro_atomic_load_acquire_int(&out->want);
+         if (want != out->sent)
          {
-            winraw_joypad_out_drop(out);
-            if (msg != WINRAW_JOYPAD_OUT_CLOSE)
-               out->dev = (winraw_joypad_out_dev_t*)msg;
-         }
-
-         if (out->dev && !quit)
-         {
-            int want = retro_atomic_load_acquire_int(&out->want);
-            if (want != out->sent)
+            if (out->dev->xinput)
             {
-               if (out->dev->xinput)
+               /* Not written while it is not known which of
+                * XInput's pads this is: what is wanted stays
+                * wanted, and is tried again at the next change. */
+               if (winraw_xinput_write(i, out->dev, want))
                {
-                  /* Not written while it is not known which of
-                   * XInput's pads this is: what is wanted stays
-                   * wanted, and is tried again at the next change. */
-                  if (winraw_xinput_write(i, out->dev, want))
-                  {
-                     winraw_joypad_out_writes++;
-                     out->sent = want;
-                  }
-               }
-               else
-               {
-                  if (winraw_joypad_out_write(out->dev, want))
-                     winraw_joypad_out_writes++;
-                  else if (!out->failed)
-                  {
-                     out->failed = true;
-                     RARCH_WARN("[RawInput Joypad] Rumble: the write to the"
-                           " controller in slot %u failed (error %lu).\n",
-                           i, (unsigned long)GetLastError());
-                  }
+                  winraw_joypad_out_writes++;
                   out->sent = want;
                }
             }
+            else
+            {
+               if (winraw_joypad_out_write(out->dev, want))
+                  winraw_joypad_out_writes++;
+               else if (!out->failed)
+               {
+                  out->failed = true;
+                  RARCH_WARN("[RawInput Joypad] Rumble: the write to the"
+                        " controller in slot %u failed (error %lu).\n",
+                        i, (unsigned long)GetLastError());
+               }
+               out->sent = want;
+            }
          }
-         if (quit)
-            winraw_joypad_out_drop(out);
       }
       if (quit)
-         break;
+         winraw_joypad_out_drop(out);
    }
-   return 0;
 }
 
 /* A pad has gone, or its slot is to hold another: the thread is told
@@ -725,26 +716,16 @@ static void winraw_joypad_out_close(unsigned slot)
    if (old && old != WINRAW_JOYPAD_OUT_CLOSE)
       winraw_joypad_out_dev_free((winraw_joypad_out_dev_t*)old);
    retro_atomic_store_release_int(&out->want, 0);
-   if (winraw_joypad_out_wake)
-      SetEvent(winraw_joypad_out_wake);
+   input_output_writer_wake(winraw_joypad_out_writer);
 }
 
 /* The thread is started, if it is not running. */
 static bool winraw_joypad_out_start(void)
 {
-   if (winraw_joypad_out_thread)
-      return true;
-   retro_atomic_store_release_int(&winraw_joypad_out_quit, 0);
-   winraw_joypad_out_wake   = CreateEventA(NULL, FALSE, FALSE, NULL);
-   winraw_joypad_out_thread = winraw_joypad_out_wake
-      ? CreateThread(NULL, 0, winraw_joypad_out_run, NULL, 0, NULL)
-      : NULL;
-   if (winraw_joypad_out_thread)
-      return true;
-   if (winraw_joypad_out_wake)
-      CloseHandle(winraw_joypad_out_wake);
-   winraw_joypad_out_wake = NULL;
-   return false;
+   if (!winraw_joypad_out_writer)
+      winraw_joypad_out_writer = input_output_writer_new(
+            winraw_joypad_out_run, NULL);
+   return winraw_joypad_out_writer != NULL;
 }
 
 /* A pad has arrived: if it is one there is a rumble report for, its
@@ -834,7 +815,7 @@ static void winraw_joypad_out_open(unsigned slot,
       winraw_joypad_out_dev_free((winraw_joypad_out_dev_t*)old);
    out->present = true;
    out->xinput  = xinput;
-   SetEvent(winraw_joypad_out_wake);
+   input_output_writer_wake(winraw_joypad_out_writer);
 }
 
 /* A pad read through XInput: which of XInput's it is is known. */
@@ -858,7 +839,7 @@ static void winraw_joypad_out_open_xinput(unsigned slot, int xuser)
       winraw_joypad_out_dev_free((winraw_joypad_out_dev_t*)old);
    out->present = true;
    out->xinput  = false; /* nothing to tell apart: no buttons published */
-   SetEvent(winraw_joypad_out_wake);
+   input_output_writer_wake(winraw_joypad_out_writer);
 }
 
 /* The driver is going: the thread is stopped, which stills and closes
@@ -867,16 +848,8 @@ static void winraw_joypad_out_stop(void)
 {
    unsigned i;
 
-   if (winraw_joypad_out_thread)
-   {
-      retro_atomic_store_release_int(&winraw_joypad_out_quit, 1);
-      SetEvent(winraw_joypad_out_wake);
-      WaitForSingleObject(winraw_joypad_out_thread, INFINITE);
-      CloseHandle(winraw_joypad_out_thread);
-      CloseHandle(winraw_joypad_out_wake);
-      winraw_joypad_out_thread = NULL;
-      winraw_joypad_out_wake   = NULL;
-   }
+   input_output_writer_free(winraw_joypad_out_writer);
+   winraw_joypad_out_writer = NULL;
    for (i = 0; i < MAX_USERS; i++)
    {
       winraw_joypad_out_t *out = &winraw_joypad_out[i];
@@ -909,7 +882,7 @@ static bool winraw_joypad_joypad_set_rumble(unsigned port,
    if (port >= MAX_USERS)
       return false;
    out = &winraw_joypad_out[port];
-   if (!out->present || !winraw_joypad_out_wake)
+   if (!out->present || !winraw_joypad_out_writer)
       return false;
 
    /* one writer - the frontend's thread - so load, change, store */
@@ -919,7 +892,7 @@ static bool winraw_joypad_joypad_set_rumble(unsigned port,
    else
       want = (int)(((unsigned)want & 0xFFFFu) | ((unsigned)strength << 16));
    retro_atomic_store_release_int(&out->want, want);
-   SetEvent(winraw_joypad_out_wake);
+   input_output_writer_wake(winraw_joypad_out_writer);
    return true;
 }
 

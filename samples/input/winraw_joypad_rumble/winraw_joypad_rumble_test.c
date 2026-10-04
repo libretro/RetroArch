@@ -412,7 +412,7 @@ int main(void)
    winraw_joypad_joypad_destroy();
    len = written_to(ds4, buf, sizeof(buf));
    CHECK(len && buf[4] == 0 && buf[5] == 0, "the driver stopped with the DualShock 4 rumbling at %u and %u", buf[4], buf[5]);
-   CHECK(!winraw_joypad_out_thread && !winraw_joypad_out[1].present
+   CHECK(!winraw_joypad_out_writer && !winraw_joypad_out[1].present
          && !winraw_joypad_out[1].dev,
          "the driver stopped and left its thread or a device behind");
    {
@@ -483,7 +483,7 @@ int main(void)
    CHECK(xpad[0].left == 0 && xpad[0].right == 0 && xpad[1].left == 0 && xpad[1].right == 0,
          "the driver stopped with Xbox pads rumbling at %u %u and %u %u",
          xpad[0].left, xpad[0].right, xpad[1].left, xpad[1].right);
-   CHECK(!winraw_joypad_out_thread && !winraw_xinput_dll, "the driver stopped and left its thread or XInput behind");
+   CHECK(!winraw_joypad_out_writer && !winraw_xinput_dll, "the driver stopped and left its thread or XInput behind");
    printf("   ok   an unplugged Xbox pad is stilled and XInput's pad let go; stopping the driver stills the rest\n");
 
    /* ============ Xbox pads read through XInput ================== */

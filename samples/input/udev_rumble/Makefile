@@ -18,7 +18,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 
-COMMON := $(LRC)/compat/compat_strl.c
+COMMON := $(LRC)/compat/compat_strl.c $(REPO_ROOT)/input/common/output_writer.c
 
 # udev is Linux's: elsewhere there is no driver to test, and the
 # targets say so and succeed.

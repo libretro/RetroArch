@@ -29,43 +29,38 @@
  * now notes both motors' strengths in one atomic a controller and a
  * thread of the driver's own makes the call. Nothing is queued: the
  * writer reads what is wanted when it gets to it, so a controller slow
- * to answer is given the latest and not each strength in turn. There
- * is no lock; the writer is woken by an event. */
+ * to answer is given the latest and not each strength in turn. The
+ * thread is the shared one of input/common/output_writer.h. */
 #define XINPUT_RUMBLE_THREAD
 #include <retro_atomic.h>
-#include <rthreads/rthreads.h>
+
+#include "../common/output_writer.h"
 
 static retro_atomic_int_t xinput_rumble_want[4]; /* left << 16 | right */
-static retro_atomic_int_t xinput_rumble_quit;
-static HANDLE     xinput_rumble_wake   = NULL;
-static sthread_t *xinput_rumble_thread = NULL;
+static input_output_writer_t *xinput_rumble_writer = NULL;
 /* what each controller was last told: set before the writer starts,
  * and the writer's own from then on */
 static uint32_t   xinput_rumble_written[4];
 
-static void xinput_rumble_thread_fn(void *data)
+/* On the writer's thread, after each wake. */
+static void xinput_rumble_write(void *userdata, bool last)
 {
    unsigned i;
-   uint32_t *written = xinput_rumble_written;
 
-   for (;;)
+   if (last)
+      return;
+   for (i = 0; i < 4; i++)
    {
-      WaitForSingleObject(xinput_rumble_wake, INFINITE);
-      if (retro_atomic_load_acquire_int(&xinput_rumble_quit))
-         break;
-      for (i = 0; i < 4; i++)
-      {
-         XINPUT_VIBRATION v;
-         uint32_t want = (uint32_t)retro_atomic_load_acquire_int(
-               &xinput_rumble_want[i]);
-         if (want == written[i])
-            continue;
-         v.wLeftMotorSpeed  = (uint16_t)(want >> 16);
-         v.wRightMotorSpeed = (uint16_t)(want & 0xffff);
-         if (g_XInputSetState)
-            g_XInputSetState(i, &v);
-         written[i] = want;
-      }
+      XINPUT_VIBRATION v;
+      uint32_t want = (uint32_t)retro_atomic_load_acquire_int(
+            &xinput_rumble_want[i]);
+      if (want == xinput_rumble_written[i])
+         continue;
+      v.wLeftMotorSpeed  = (uint16_t)(want >> 16);
+      v.wRightMotorSpeed = (uint16_t)(want & 0xffff);
+      if (g_XInputSetState)
+         g_XInputSetState(i, &v);
+      xinput_rumble_written[i] = want;
    }
 }
 
@@ -83,26 +78,13 @@ static void xinput_rumble_start(void)
       retro_atomic_store_release_int(&xinput_rumble_want[i],
             (int)xinput_rumble_written[i]);
    }
-   retro_atomic_store_release_int(&xinput_rumble_quit, 0);
-   if (!(xinput_rumble_wake = CreateEventA(NULL, FALSE, FALSE, NULL)))
-      return;
-   if (!(xinput_rumble_thread = sthread_create(xinput_rumble_thread_fn, NULL)))
-   {
-      CloseHandle(xinput_rumble_wake);
-      xinput_rumble_wake = NULL;
-   }
+   xinput_rumble_writer = input_output_writer_new(xinput_rumble_write, NULL);
 }
 
 static void xinput_rumble_stop(void)
 {
-   if (!xinput_rumble_thread)
-      return;
-   retro_atomic_store_release_int(&xinput_rumble_quit, 1);
-   SetEvent(xinput_rumble_wake);
-   sthread_join(xinput_rumble_thread);
-   xinput_rumble_thread = NULL;
-   CloseHandle(xinput_rumble_wake);
-   xinput_rumble_wake   = NULL;
+   input_output_writer_free(xinput_rumble_writer);
+   xinput_rumble_writer = NULL;
 }
 #endif
 

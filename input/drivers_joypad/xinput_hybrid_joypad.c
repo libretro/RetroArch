@@ -1369,12 +1369,12 @@ static bool xinput_joypad_rumble(unsigned pad,
 
 #ifdef XINPUT_RUMBLE_THREAD
    /* noted here, written by the rumble writer */
-   if (xinput_rumble_thread)
+   if (xinput_rumble_writer)
    {
       retro_atomic_store_release_int(&xinput_rumble_want[xuser],
             (int)(((uint32_t)state->wLeftMotorSpeed << 16)
                | state->wRightMotorSpeed));
-      SetEvent(xinput_rumble_wake);
+      input_output_writer_wake(xinput_rumble_writer);
       return g_XInputSetState != NULL;
    }
 #endif

@@ -45,12 +45,14 @@ xinput_checked_test.exe: xinput_checked_test.c bridge_view.h stubs.c $(REPO_ROOT
 	   -DHAVE_DYLIB -DHAVE_MENU -DHAVE_THREADS -D_WIN32_WINNT=0x0601 $(INCS) \
 	   -o $@ xinput_checked_test.c stubs.c \
 	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c \
+	   $(REPO_ROOT)/input/common/output_writer.c \
 	   $(REPO_ROOT)/libretro-common/rthreads/rthreads.c
 
 udev_checked_test: udev_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/udev_joypad.c
 	$(CC) -O1 -Wall -Wno-unused -DRARCH_INTERNAL -DHAVE_UDEV $(INCS) \
 	   -o $@ udev_checked_test.c stubs.c \
-	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c -ludev
+	   $(REPO_ROOT)/libretro-common/compat/compat_strl.c \
+	   $(REPO_ROOT)/input/common/output_writer.c -ludev
 
 dinput_checked_test.exe: dinput_checked_test.c bridge_view.h stubs.c $(REPO_ROOT)/input/drivers_joypad/dinput_joypad.c
 	$(MINGW_CC) -std=gnu99 -O1 -Wall -Wno-unused -DRARCH_INTERNAL -DHAVE_DINPUT \

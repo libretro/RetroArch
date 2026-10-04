@@ -132,7 +132,7 @@ int main(void)
 
    udev_rumble_start();
 #ifdef HAVE_THREADS
-   CHECK(udev_rumble_thread != NULL, "the rumble writer did not start");
+   CHECK(udev_rumble_writer != NULL, "the rumble writer did not start");
 #endif
    pad_plug();
 

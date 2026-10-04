@@ -21,6 +21,7 @@ all: $(TARGET)
 $(TARGET): xinput_rumble_test.c $(REPO_ROOT)/input/drivers_joypad/xinput_joypad.c \
 		$(REPO_ROOT)/input/drivers_joypad/xinput_rumble_writer.h
 	$(CC) $(CFLAGS) -o $@ xinput_rumble_test.c \
+		$(REPO_ROOT)/input/common/output_writer.c \
 		$(LRC)/compat/compat_strl.c $(LRC)/rthreads/rthreads.c
 
 # wine goes by several names; the first one found is used

@@ -81,7 +81,7 @@ int main(void)
    g_XInputSetState             = fake_set_state;
    g_xinput_states[1].connected = true;
    xinput_rumble_start();
-   CHECK(xinput_rumble_thread != NULL, "the rumble writer did not start");
+   CHECK(xinput_rumble_writer != NULL, "the rumble writer did not start");
 
    /* a controller slow to answer: the call returns at once, and the
     * strength still arrives */
@@ -139,7 +139,7 @@ int main(void)
 
    /* the writer stopped: the call is made by the caller, as before */
    xinput_rumble_stop();
-   CHECK(xinput_rumble_thread == NULL, "the writer did not stop");
+   CHECK(xinput_rumble_writer == NULL, "the writer did not stop");
    slow_ms = 30;
    before  = N(calls);
    t0      = now_ms();

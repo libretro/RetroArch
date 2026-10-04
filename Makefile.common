@@ -1276,6 +1276,7 @@ endif
 
 ifeq ($(HAVE_XINPUT), 1)
    DEFINES += -DHAVE_XINPUT
+   HAVE_INPUT_OUTPUT_WRITER = 1
    ifeq ($(HAVE_DINPUT), 1)
       OBJ += input/drivers_joypad/xinput_hybrid_joypad.o
    else
@@ -1343,6 +1344,7 @@ ifeq ($(HAVE_UDEV), 1)
    LIBS += $(UDEV_LIBS)
    OBJ += input/drivers/udev_input.o \
           input/drivers_joypad/udev_joypad.o
+   HAVE_INPUT_OUTPUT_WRITER = 1
 endif
 
 ifeq ($(HAVE_LIBUSB), 1)
@@ -1387,7 +1389,14 @@ ifeq ($(HAVE_WINRAWINPUT), 1)
    DEFINES += -DHAVE_WINRAWINPUT
    OBJ     += input/drivers/winraw_input.o
    OBJ     += input/drivers_joypad/winraw_joypad.o
+   HAVE_INPUT_OUTPUT_WRITER = 1
 endif
+endif
+
+# The thread the joypad drivers write to their controllers from (udev,
+# XInput, Windows raw input): one object, whichever of them is built.
+ifeq ($(HAVE_INPUT_OUTPUT_WRITER), 1)
+   OBJ += input/common/output_writer.o
 endif
 
 ifeq ($(HAVE_LIBSHAKE), 1)
