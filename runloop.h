@@ -306,6 +306,9 @@ struct runloop
 
    retro_keyboard_event_t key_event;             /* ptr alignment */
    retro_keyboard_event_t frontend_key_event;    /* ptr alignment */
+   /* Run-ahead's second instance's keyboard callback: an event bound
+    * for the core goes to both instances */
+   retro_keyboard_event_t secondary_key_event;   /* ptr alignment */
 
    rarch_system_info_t system;                   /* ptr alignment */
    struct retro_frame_time_callback frame_time;  /* ptr alignment */

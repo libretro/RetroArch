@@ -17,6 +17,15 @@ static unsigned inits;
 RETRO_API unsigned harness_core_runs(void) { return runs; }
 static unsigned env_sets;
 RETRO_API unsigned harness_core_env_sets(void) { return env_sets; }
+static unsigned key_events;
+RETRO_API unsigned harness_core_key_events(void) { return key_events; }
+
+static void harness_key_event(bool down, unsigned keycode,
+      uint32_t character, uint16_t key_modifiers)
+{
+   (void)down; (void)keycode; (void)character; (void)key_modifiers;
+   key_events++;
+}
 static unsigned hw_resets;
 static unsigned hw_destroys;
 
@@ -61,6 +70,11 @@ void retro_set_environment(retro_environment_t cb)
    cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt);
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
    cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
+   {
+      struct retro_keyboard_callback kb;
+      kb.callback = harness_key_event;
+      cb(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, &kb);
+   }
 #ifndef HARNESS_CORE_NO_HW
    cb(RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE, (void*)overrides);
 #endif

@@ -1705,6 +1705,8 @@ static void lane_secondary_threaded(void)
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    enum runahead_copy_status st = RUNAHEAD_COPY_PENDING;
    unsigned (*sec_inits)(void)  = NULL;
+   unsigned (*sec_keys)(void)   = NULL;
+   unsigned primary_keys_before, sec_keys_before;
    const char *slash            = strrchr(core_path, '/');
    char nohw[600];
    unsigned primary_inits;
@@ -1742,7 +1744,23 @@ static void lane_secondary_threaded(void)
    CHECK(runloop_st->secondary_lib_handle != runloop_st->lib_handle,
          "the second instance shares the running core's handle");
 
+   /* A key event bound for the core reaches both instances */
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   if (runloop_st->secondary_lib_handle)
+      sec_keys = (unsigned (*)(void))dylib_proc(
+            runloop_st->secondary_lib_handle, "harness_core_key_events");
+   primary_keys_before = core_export("harness_core_key_events");
+   sec_keys_before     = sec_keys ? sec_keys() : 0;
+   input_keyboard_event(true, RETROK_KP7, 0, 0, RETRO_DEVICE_KEYBOARD);
+   CHECK(core_export("harness_core_key_events") == primary_keys_before + 1,
+         "the running core did not get the key event");
+   CHECK(sec_keys && sec_keys() == sec_keys_before + 1,
+         "the second instance did not get the key event");
+
    runahead_secondary_core_destroy(runloop_st);
+   CHECK(!runloop_st->secondary_key_event,
+         "the closed second instance's keyboard callback is still held");
    configuration_set_bool(settings, settings->bools.threaded_data_runloop_enable, false);
    task_queue_unset_threaded();
    pump(2);

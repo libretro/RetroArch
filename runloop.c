@@ -4810,6 +4810,7 @@ void runloop_system_info_free(void)
 
    runloop_st->key_event                              = NULL;
    runloop_st->frontend_key_event                     = NULL;
+   runloop_st->secondary_key_event                    = NULL;
 
    memset(&runloop_st->system, 0, sizeof(rarch_system_info_t));
 }

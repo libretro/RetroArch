@@ -254,6 +254,9 @@ void runahead_secondary_core_destroy(void *data)
 {
    runloop_state_t *runloop_st      = (runloop_state_t*)data;
 
+   /* Nothing calls into the copy once it is closed */
+   runloop_st->secondary_key_event  = NULL;
+
    /* Drop any unconsumed async copy result (deleting its temp
     * file) and tell an in-flight copy task to discard its result;
     * this runs regardless of whether a secondary instance was
@@ -832,7 +835,6 @@ static int runahead_secondary_env_filter(unsigned cmd)
       case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE):
       case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT):
          return 0;
-      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK):
       case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE):
       case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE):
       case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK):
@@ -861,6 +863,17 @@ static bool runloop_environment_secondary_core_hook(
 
    if (filtered >= 0)
       return filtered != 0;
+
+   /* The running core keeps its keyboard callback; the copy's has a
+    * slot of its own, emptied when the copy is closed */
+   if (     (cmd & ~RETRO_ENVIRONMENT_EXPERIMENTAL)
+         == RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK)
+   {
+      const struct retro_keyboard_callback *info =
+         (const struct retro_keyboard_callback*)data;
+      runloop_st->secondary_key_event = info ? info->callback : NULL;
+      return true;
+   }
 
    result                         = runloop_environment_cb(cmd, data);
 

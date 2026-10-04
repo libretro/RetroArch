@@ -11619,6 +11619,11 @@ static void input_keyboard_event_now(bool down, unsigned code,
 #endif
          }
          (*key_event)(down, code, character, mod);
+         /* Run-ahead's second instance polls on frames the running
+          * core does not; it sees the event when it arrives there */
+         if (     *key_event == runloop_st->frontend_key_event
+               && runloop_st->secondary_key_event)
+            runloop_st->secondary_key_event(down, code, character, mod);
       }
    }
 }
