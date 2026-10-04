@@ -4236,12 +4236,14 @@ bool video_driver_texture_load(void *data,
    if (ti && ti->compressed && !ti->pixels)
       image_texture_realize_rgba(ti);
 
-   /* A 10-bit (XRGB2101010) texture is only kept for drivers that advertise
-    * native 10-bit source support; otherwise narrow to 8-bit ARGB8888 before
-    * upload so the driver's ordinary 8-bit path stays correct. */
+   /* A 10-bit (XRGB2101010) texture is only kept for drivers whose
+    * texture path samples it; otherwise it is narrowed to 8 bits before
+    * upload so the driver's ordinary path stays correct. That is the
+    * texture path's own answer, not GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE,
+    * which says whether a context presents 10-bit core frames. */
    if (     ti
          && ti->pix10
-         && !video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE))
+         && !video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGB10A2))
       image_texture_narrow_10bit(ti);
 
    GFX_INSTR_INC(GFX_INSTR_TEX_LOAD);
@@ -4270,7 +4272,8 @@ bool video_driver_texture_load_async(void *data,
    if (!ti->compressed && video_driver_thread_wrapper_active())
    {
       if (     ti->pix10
-            && !video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE))
+            && !video_driver_supports_texture_format(
+               TEXTURE_GPU_FORMAT_RGB10A2))
          image_texture_narrow_10bit(ti);
       GFX_INSTR_INC(GFX_INSTR_TEX_LOAD_ASYNC);
       if (video_thread_texture_load_async(ti, filter_type,

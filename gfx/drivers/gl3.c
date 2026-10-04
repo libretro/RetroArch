@@ -3605,7 +3605,11 @@ static void video_texture_load_gl3(
    if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR || filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
       levels = gl3_num_miplevels(ti->width, ti->height);
 
-   glTexStorage2D(GL_TEXTURE_2D, levels, GL_RGBA8, ti->width, ti->height);
+   /* A pix10 image is XRGB2101010, the core frames' layout: RGB10_A2
+    * storage, and the R<->B swizzle below serves both, since
+    * GL_RGBA/UNSIGNED_INT_2_10_10_10_REV reads R from bits 9:0. */
+   glTexStorage2D(GL_TEXTURE_2D, levels,
+         ti->pix10 ? GL_RGB10_A2 : GL_RGBA8, ti->width, ti->height);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -3638,7 +3642,10 @@ static void video_texture_load_gl3(
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
-                   ti->width, ti->height, GL_RGBA, GL_UNSIGNED_BYTE, ti->pixels);
+                   ti->width, ti->height, GL_RGBA,
+                   ti->pix10 ? GL_UNSIGNED_INT_2_10_10_10_REV
+                             : GL_UNSIGNED_BYTE,
+                   ti->pixels);
 
    if (levels > 1)
       glGenerateMipmap(GL_TEXTURE_2D);
@@ -5774,7 +5781,9 @@ static void gl3_update_texture_internal(uintptr_t id,
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, ti->width, ti->height,
-         GL_RGBA, GL_UNSIGNED_BYTE, ti->pixels);
+         GL_RGBA,
+         ti->pix10 ? GL_UNSIGNED_INT_2_10_10_10_REV : GL_UNSIGNED_BYTE,
+         ti->pixels);
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -6165,6 +6174,10 @@ static bool gl3_supports_texture_format(void *data,
    (void)data;
    switch (fmt)
    {
+      /* RGB10_A2 with UNSIGNED_INT_2_10_10_10_REV is core in GL 3.0
+       * and GLES 3.0, and load and update both take it. */
+      case TEXTURE_GPU_FORMAT_RGB10A2:
+         return true;
       case TEXTURE_GPU_FORMAT_BC1:
       case TEXTURE_GPU_FORMAT_BC2:
       case TEXTURE_GPU_FORMAT_BC3:

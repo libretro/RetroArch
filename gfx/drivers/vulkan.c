@@ -1846,11 +1846,27 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
    switch (type)
    {
       case VULKAN_TEXTURE_STATIC:
-         /* For simplicity, always build mipmaps for
-          * static textures, samplers can be used to enable it dynamically.
-          */
-         info.mipLevels     = vulkan_num_miplevels(width, height);
-         tex.flags         |= VK_TEX_FLAG_MIPMAP;
+         /* Static textures get a full mip chain, so a sampler can
+          * enable mipmapping on its own - where the format can be
+          * blitted with linear filtering, which is how the chain is
+          * built. Packed 10-bit formats often cannot; those get one
+          * level, and samplers follow VK_TEX_FLAG_MIPMAP. */
+         {
+            VkFormatProperties fp;
+            const VkFormatFeatureFlags blit =
+                 VK_FORMAT_FEATURE_BLIT_SRC_BIT
+               | VK_FORMAT_FEATURE_BLIT_DST_BIT
+               | VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
+            vkGetPhysicalDeviceFormatProperties(vk->context->gpu,
+                  format, &fp);
+            if ((fp.optimalTilingFeatures & blit) == blit)
+            {
+               info.mipLevels = vulkan_num_miplevels(width, height);
+               tex.flags     |= VK_TEX_FLAG_MIPMAP;
+            }
+            else
+               info.mipLevels = 1;
+         }
          retro_assert(initial && "Static textures must have initial data.\n");
          info.tiling        = VK_IMAGE_TILING_OPTIMAL;
          info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT
@@ -10125,6 +10141,7 @@ static uintptr_t vulkan_load_texture_internal(vk_t *vk, void *data,
       VkFormat        tex_fmt = VK_FORMAT_B8G8R8A8_UNORM;
       VkComponentMapping swz;
       const VkComponentMapping *pswz = NULL;
+      bool has_mips;
       if (image->pix10)
       {
          /* Same portability handling as the source frame: prefer the ARGB
@@ -10136,18 +10153,20 @@ static uintptr_t vulkan_load_texture_internal(vk_t *vk, void *data,
             image->width, image->height,
             tex_fmt,
             image->pixels, pswz, VULKAN_TEXTURE_STATIC);
-      /* vulkan_create_texture always builds the full mip chain for
-       * static textures and returns VK_TEX_FLAG_MIPMAP set; sampler
-       * selection is expected to gate its use.  Mask the inherited
-       * sampler flags off first so the requested filter_type is
-       * actually honored -- otherwise TEXTURE_FILTER_LINEAR still
-       * samples through the mipmap sampler. */
+      /* vulkan_create_texture builds the full mip chain for a static
+       * texture where the format allows and says so with
+       * VK_TEX_FLAG_MIPMAP; sampler selection gates its use. The
+       * inherited sampler flags come off so the requested filter_type
+       * is honoured - otherwise TEXTURE_FILTER_LINEAR still samples
+       * through the mipmap sampler - and the mipmap one goes back on
+       * only where there is a chain to sample. */
+      has_mips        = (texture->flags & VK_TEX_FLAG_MIPMAP) != 0;
       texture->flags &= ~(VK_TEX_FLAG_DEFAULT_SMOOTH
                         | VK_TEX_FLAG_MIPMAP);
       if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR || filter_type ==
             TEXTURE_FILTER_LINEAR)
          texture->flags |= VK_TEX_FLAG_DEFAULT_SMOOTH;
-      if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR)
+      if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR && has_mips)
          texture->flags |= VK_TEX_FLAG_MIPMAP;
    }
 
@@ -10478,6 +10497,11 @@ static bool vulkan_supports_texture_format(void *data,
    vk_t                *vk = (vk_t*)data;
    VkFormat             vkfmt;
    VkFormatProperties   props;
+   /* A pix10 image loads through vulkan_pick_10bit_sampled_format,
+    * whose fallback (A2B10G10R10 plus a swizzle) every device samples,
+    * and updates as raw 32-bit words into that same format. */
+   if (fmt == TEXTURE_GPU_FORMAT_RGB10A2)
+      return vk && vk->context;
    if (!vk || !vk->context || !vulkan_gpu_format_to_vk(fmt, &vkfmt))
       return false;
    vkGetPhysicalDeviceFormatProperties(vk->context->gpu, vkfmt, &props);

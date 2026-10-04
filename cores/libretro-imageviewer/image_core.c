@@ -244,6 +244,10 @@ static bool imageviewer_load(const char *path, int image_index)
          image_texture.supports_rgba = req.rgba;
    }
 #endif
+   /* An ask, answered by the load: this core hands the frontend
+    * XRGB8888, so it never asks for 10-bit, whatever the last image
+    * answered. */
+   image_texture.pix10 = false;
    if (!image_texture_load(&image_texture, path))
       return false;
    image_buffer = (uint32_t*)image_texture.pixels;

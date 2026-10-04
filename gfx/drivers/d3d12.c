@@ -3901,9 +3901,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
    for (i = 0; i < d3d12->shader_preset->luts; i++)
    {
       struct texture_image image;
-      image.pixels               = NULL;
-      image.width                = 0;
-      image.height               = 0;
+      memset(&image, 0, sizeof(image));
       image.supports_rgba        = true;
 
       if (!image_texture_load(&image, d3d12->shader_preset->lut[i].path))
@@ -8966,6 +8964,10 @@ static bool d3d12_gfx_supports_texture_format(void* data,
    d3d12_video_t*                    d3d12 = (d3d12_video_t*)data;
    D3D12_FEATURE_DATA_FORMAT_SUPPORT fs;
    DXGI_FORMAT                       dxgi  = d3d12_dxgi_from_gpu_format(fmt);
+   /* R10G10B10A2_UNORM is what load and update make of a pix10 image,
+    * and every feature level samples it. */
+   if (fmt == TEXTURE_GPU_FORMAT_RGB10A2)
+      return d3d12 && d3d12->device;
    if (!d3d12 || !d3d12->device || dxgi == DXGI_FORMAT_UNKNOWN)
       return false;
    memset(&fs, 0, sizeof(fs));

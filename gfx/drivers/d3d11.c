@@ -3299,9 +3299,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
    for (i = 0; i < d3d11->shader_preset->luts; i++)
    {
       struct texture_image image;
-      image.pixels               = NULL;
-      image.width                = 0;
-      image.height               = 0;
+      memset(&image, 0, sizeof(image));
       image.supports_rgba        = true;
 
       if (!image_texture_load(&image, d3d11->shader_preset->lut[i].path))
@@ -7154,6 +7152,10 @@ static bool d3d11_gfx_supports_texture_format(void* data,
    UINT        support = 0;
    d3d11_video_t* v = (d3d11_video_t*)data;
    DXGI_FORMAT dxgi    = d3d11_dxgi_from_gpu_format(fmt);
+   /* R10G10B10A2_UNORM is what load and update make of a pix10 image,
+    * and every feature level samples it. */
+   if (fmt == TEXTURE_GPU_FORMAT_RGB10A2)
+      return v && v->device;
    if (!v || !v->device || dxgi == DXGI_FORMAT_UNKNOWN)
       return false;
    if (FAILED(v->device->lpVtbl->CheckFormatSupport(

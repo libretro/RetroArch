@@ -6608,9 +6608,7 @@ typedef struct MTLALIGN(16)
       for (i = 0; i < shader->luts; i++)
       {
          struct texture_image image;
-         image.pixels               = NULL;
-         image.width                = 0;
-         image.height               = 0;
+         memset(&image, 0, sizeof(image));
          image.supports_rgba        = true;
 
          if (!image_texture_load(&image, shader->lut[i].path))
@@ -7636,6 +7634,10 @@ static retro_time_t metal_get_last_present_time(void *data)
 static bool metal_supports_texture_format(void *video_data,
       enum texture_gpu_format fmt)
 {
+   /* A pix10 image loads as BGR10A2Unorm and updates as raw 32-bit
+    * words into it, on every Apple target. */
+   if (fmt == TEXTURE_GPU_FORMAT_RGB10A2)
+      return video_data != NULL;
 #if TARGET_OS_OSX
    MetalDriver  *md = (__bridge MetalDriver *)video_data;
    id<MTLDevice> dev;

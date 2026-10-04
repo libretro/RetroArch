@@ -96,7 +96,10 @@ bool gfx_surface_query_requirements(unsigned width,
     * such a texture as linear; the slots, pitches and update keys
     * here already size from the format. */
    req->formats    = GFX_SURFACE_PIXFMT_8888;
-   if (video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE))
+   /* The texture path's own answer, not whether the context presents
+    * 10-bit core frames (GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE): the two
+    * are set by different code and need not agree. */
+   if (video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGB10A2))
       req->formats |= GFX_SURFACE_PIXFMT_2101010;
    if (req->formats & GFX_SURFACE_PIXFMT_FP16)
       req->preferred = GFX_SURFACE_PIXFMT_FP16;
@@ -151,7 +154,7 @@ gfx_surface_t *gfx_surface_new_static(unsigned dims,
 static bool gfx_surface_must_narrow(uint32_t pixfmt)
 {
    return pixfmt == GFX_SURFACE_PIXFMT_2101010
-      && !video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
+      && !video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGB10A2);
 }
 
 /* s->img for an upload of @pixels in @pixfmt, and the texture key it

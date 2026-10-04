@@ -3497,9 +3497,7 @@ static bool gl3_filter_chain_load_lut(
    unsigned levels;
    GLuint tex                      = 0;
 
-   image.width                     = 0;
-   image.height                    = 0;
-   image.pixels                    = NULL;
+   memset(&image, 0, sizeof(image));
    image.supports_rgba             = true;
 
    if (!image_texture_load(&image, shader->path))

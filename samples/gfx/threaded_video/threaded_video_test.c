@@ -4072,6 +4072,19 @@ static void surftex_remove(void)
  * driver in a layout it was not told about. */
 static unsigned surf_payload_frees;
 
+static bool surf_rgb10_yes(void *data, enum texture_gpu_format fmt)
+{
+   (void)data;
+   return fmt == TEXTURE_GPU_FORMAT_RGB10A2;
+}
+
+static bool surf_rgb10_no(void *data, enum texture_gpu_format fmt)
+{
+   (void)data;
+   (void)fmt;
+   return false;
+}
+
 static void surf_payload_free(void *payload)
 {
    free(payload);
@@ -4094,6 +4107,25 @@ static void lane_surface_external(void)
    expect_wrapper(true, "external surface lane");
    if (!real_driver())
       CHECK(surftex_install(), "external surface lane: no texture back end");
+
+   /* 10-bit is offered to producers when the texture path takes it,
+    * whatever the context says about core frames: a GL context takes
+    * 10-bit frames and uploads textures as 8-bit. */
+   if (surftex_mode)
+   {
+      bool (*saved)(void*, enum texture_gpu_format) =
+            surftex_poke.supports_texture_format;
+      gfx_surface_requirements_t req;
+      surftex_poke.supports_texture_format = surf_rgb10_yes;
+      gfx_surface_query_requirements(0, &req);
+      CHECK(req.formats & GFX_SURFACE_PIXFMT_2101010,
+            "2101010 not offered by a texture path that takes it");
+      surftex_poke.supports_texture_format = surf_rgb10_no;
+      gfx_surface_query_requirements(0, &req);
+      CHECK(!(req.formats & GFX_SURFACE_PIXFMT_2101010),
+            "2101010 offered by a texture path that reads it as 8-bit");
+      surftex_poke.supports_texture_format = saved;
+   }
 
    /* Freed with its upload in flight: release() must not run, the
     * payload must still be freed - once. */
@@ -4180,6 +4212,71 @@ static void lane_surface_external(void)
    free(px);
    gfx_surface_free(s);
    run_frames(2);
+
+   /* A driver that takes 2101010 gets it: loaded, updated in place,
+    * and reloaded when the layout under the texture changes. Only a
+    * real driver has a texture path for it; under a validating Vulkan
+    * a copy into a texture of the other layout is an error. */
+   {
+      gfx_surface_requirements_t req;
+      memset(&req, 0, sizeof(req));
+      gfx_surface_query_requirements(0, &req);
+      if (real_driver() && (req.formats & GFX_SURFACE_PIXFMT_2101010))
+      {
+         uint32_t *p10 = (uint32_t*)malloc(n * sizeof(uint32_t));
+         uint32_t *p8  = (uint32_t*)malloc(n * sizeof(uint32_t));
+         uintptr_t first = 0;
+         unsigned  k, tries;
+         s = gfx_surface_new_static(VIDEO_SCALE_PACK(64, 48),
+               TEXTURE_FILTER_LINEAR);
+         CHECK(s && p10 && p8, "10-bit lane: allocation failed");
+         if (s && p10 && p8)
+         {
+            for (i = 0; i < n; i++)
+            {
+               p10[i] = 0xC0000000u | ((uint32_t)(i & 1023) << 20)
+                      | ((uint32_t)((i * 7) & 1023) << 10)
+                      | (uint32_t)((i * 13) & 1023);
+               p8[i]  = 0xff000000u | (uint32_t)(i * 2654435761u >> 8);
+            }
+            src.payload      = NULL;
+            src.payload_free = NULL;
+            src.rgba         = rgba;
+            for (k = 0; k < 3; k++)
+            {
+               src.pixels = (k < 2) ? (const void*)p10 : (const void*)p8;
+               src.pixfmt = (k < 2) ? GFX_SURFACE_PIXFMT_2101010
+                                    : GFX_SURFACE_PIXFMT_8888;
+               for (tries = 0; tries < 8; tries++)
+               {
+                  r = gfx_surface_submit_external(s, &src, NULL, NULL);
+                  if (r != GFX_SURFACE_SUBMIT_BUSY)
+                     break;
+                  run_frames(1);
+               }
+               CHECK(r == GFX_SURFACE_SUBMIT_QUEUED
+                     || r == GFX_SURFACE_SUBMIT_DONE,
+                     "10-bit lane: submit %u returned %d", k, r);
+               for (tries = 0; tries < 8 && s->inflight; tries++)
+                  run_frames(1);
+               CHECK(s->handle != 0, "10-bit lane: submit %u left no "
+                     "texture", k);
+               if (k == 0)
+                  first = s->handle;
+               else if (k == 1 && video_driver_texture_can_update())
+                  CHECK(s->handle == first, "10-bit lane: a second 10-bit "
+                        "frame replaced the texture instead of updating it");
+            }
+         }
+         free(p10);
+         free(p8);
+         gfx_surface_free(s);
+         run_frames(2);
+         if (failures == had)
+            fprintf(stderr, "[pass] 10-bit surface lane (load, update, "
+                  "reload as 8888)\n");
+      }
+   }
 
    /* One slot surface per format bit: sized from the format. */
    s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 1, GFX_SURFACE_PIXFMT_FP16,

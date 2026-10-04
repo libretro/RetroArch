@@ -56,8 +56,8 @@ struct texture_image
    bool supports_rgba;
    /* When true, ->pixels holds packed XRGB2101010 (10-bit per channel,
     * bits [29:20]=R [19:10]=G [9:0]=B) rather than 8-bit RGBA/BGRA. Only
-    * honoured by drivers that advertise GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE;
-    * others fall back to an 8-bit copy via image_texture_narrow_10bit(). */
+    * uploaded as such by drivers that answer TEXTURE_GPU_FORMAT_RGB10A2;
+    * others get an 8-bit copy via image_texture_narrow_10bit(). */
    bool pix10;
    /* Optional GPU-native compressed payload (BCn).  When non-NULL a
     * capable driver may upload it directly and leave ->pixels NULL;
@@ -103,7 +103,13 @@ enum texture_gpu_format
    TEXTURE_GPU_FORMAT_BC5,       /* RGTC2 (2 channel)  */
    TEXTURE_GPU_FORMAT_BC6H_UF,   /* BPTC unsigned HDR  */
    TEXTURE_GPU_FORMAT_BC6H_SF,   /* BPTC signed HDR    */
-   TEXTURE_GPU_FORMAT_BC7        /* BPTC LDR           */
+   TEXTURE_GPU_FORMAT_BC7,       /* BPTC LDR           */
+   /* Not a compressed payload and never on a texture_compressed:
+    * packed XRGB2101010 in ->pixels, flagged by ->pix10. Asked of
+    * supports_texture_format to learn whether the driver's load and
+    * in-place update sample it as 10-bit rather than reading its words
+    * as 8-bit texels. */
+   TEXTURE_GPU_FORMAT_RGB10A2
 };
 
 /* Numeric mip layout reported by a loader without decoding.  Offsets are

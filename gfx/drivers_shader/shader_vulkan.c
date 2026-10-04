@@ -1198,9 +1198,7 @@ static bool vulkan_filter_chain_load_lut(
    VkImageView view                = VK_NULL_HANDLE;
    void *ptr                       = NULL;
 
-   image.width                     = 0;
-   image.height                    = 0;
-   image.pixels                    = NULL;
+   memset(&image, 0, sizeof(image));
    image.supports_rgba             = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
 
    if (!image_texture_load(&image, shader->path))

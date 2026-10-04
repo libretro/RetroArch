@@ -211,9 +211,7 @@ static INLINE bool d3d9_hlsl_renderchain_add_lut(d3d9_hlsl_renderchain_t *chain,
    struct texture_image image;
    LPDIRECT3DTEXTURE9 lut    = NULL;
 
-   image.pixels              = NULL;
-   image.width               = 0;
-   image.height              = 0;
+   memset(&image, 0, sizeof(image));
    image.supports_rgba       = true;
 
    if (!image_texture_load(&image, path))

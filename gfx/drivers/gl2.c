@@ -2867,7 +2867,7 @@ static void gl_load_texture_data(
       enum texture_filter_type filter_type,
       unsigned alignment,
       unsigned width, unsigned height,
-      const void *frame, unsigned base_size)
+      const void *frame, unsigned base_size, bool pix10)
 {
    GLint mag_filter, min_filter;
    bool want_mipmap = false;
@@ -2918,6 +2918,14 @@ static void gl_load_texture_data(
    GL2_BIND_TEXTURE(id, wrap, mag_filter, min_filter);
 
    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   /* XRGB2101010, the core frames' layout and upload: GL_BGRA reads
+    * A from 31:30 and R from 29:20, so no swizzle. */
+   if (pix10)
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB10_A2, width, height, 0,
+            GL_BGRA, GL_UNSIGNED_INT_2_10_10_10_REV, frame);
+   else
+#endif
    glTexImage2D(GL_TEXTURE_2D,
          0,
          (use_rgba || !rgb32)
@@ -2946,9 +2954,7 @@ static bool gl2_add_lut(
    struct texture_image img;
    enum texture_filter_type filter_type = TEXTURE_FILTER_LINEAR;
 
-   img.width         = 0;
-   img.height        = 0;
-   img.pixels        = NULL;
+   memset(&img, 0, sizeof(img));
    img.supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
 
    if (!image_texture_load(&img, lut_path))
@@ -2977,7 +2983,7 @@ static bool gl2_add_lut(
          lut_wrap_type,
          filter_type, 4,
          img.width, img.height,
-         img.pixels, sizeof(uint32_t));
+         img.pixels, sizeof(uint32_t), false);
    image_texture_free(&img);
 
    return true;
@@ -3736,7 +3742,7 @@ static void gl2_set_texture_frame(void *data,
          RARCH_WRAP_EDGE, menu_filter,
          gl2_get_alignment(VIDEO_SCALE_W(dims) * base_size),
          VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), frame,
-         base_size);
+         base_size, false);
 
    gl->menu_texture_alpha = alpha;
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
@@ -6310,7 +6316,7 @@ static bool gl2_overlay_load(void *data,
                RARCH_WRAP_EDGE, TEXTURE_FILTER_LINEAR,
                alignment,
                images[i].width, images[i].height, images[i].pixels,
-               sizeof(uint32_t));
+               sizeof(uint32_t), images[i].pix10);
       }
    }
 
@@ -6448,8 +6454,8 @@ static void video_texture_load_gl2(
          RARCH_WRAP_EDGE, filter_type,
          4 /* TODO/FIXME - dehardcode */,
          width, height, pixels,
-         sizeof(uint32_t) /* TODO/FIXME - dehardcode */
-         );
+         sizeof(uint32_t) /* TODO/FIXME - dehardcode */,
+         ti ? ti->pix10 : false);
 }
 
 #ifdef HAVE_THREADS
@@ -6574,6 +6580,12 @@ static void gl2_update_texture_internal(uintptr_t id,
    bool use_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
    glBindTexture(GL_TEXTURE_2D, (GLuint)id);
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   if (ti->pix10)
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, ti->width, ti->height,
+            GL_BGRA, GL_UNSIGNED_INT_2_10_10_10_REV, ti->pixels);
+   else
+#endif
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, ti->width, ti->height,
          use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
          RARCH_GL_FORMAT32, ti->pixels);
@@ -6674,6 +6686,15 @@ static bool gl2_supports_texture_format(void *data,
    (void)data;
    switch (fmt)
    {
+      /* Desktop GL takes RGB10_A2 from BGRA 2_10_10_10_REV words in
+       * gl_load_texture_data and gl2_update_texture_internal; GLES2
+       * has neither, and gets the image narrowed. */
+      case TEXTURE_GPU_FORMAT_RGB10A2:
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+         return true;
+#else
+         return false;
+#endif
       case TEXTURE_GPU_FORMAT_BC1:
       case TEXTURE_GPU_FORMAT_BC2:
       case TEXTURE_GPU_FORMAT_BC3:
