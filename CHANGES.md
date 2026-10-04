@@ -40,7 +40,6 @@
 - INPUT/SDL: Fix controller vid/pid detection on Windows
 - INPUT/SDL: Add wiimote sensor capabilities
 - INPUT/SDL3: Add SDL3 input driver
-- INPUT/SDL3: Fix stall on window focus with threaded video
 - INPUT/UDEV: Fix multi-touch detection
 - INPUT/UDEV: Gyroscope and accelerometer sensor support
 - INPUT/UDEV: Add wiimote sensor capabilities
