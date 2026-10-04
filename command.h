@@ -339,6 +339,11 @@ typedef void (*command_destructor_t)(struct command_handler *cmd);
 typedef void *(*command_reply_dest_t)(struct command_handler *cmd);
 typedef void (*command_reply_to_t)(struct command_handler *cmd,
       void *dest, const char *data, size_t len);
+/* As reply_to, with an image alongside the text: @image is base64 of
+ * @mime */
+typedef void (*command_reply_image_to_t)(struct command_handler *cmd,
+      void *dest, const char *text, size_t len, const char *mime,
+      const char *image, size_t image_len);
 
 struct command_handler
 {
@@ -352,6 +357,9 @@ struct command_handler
    command_reply_dest_t reply_dest;
    /* Sends to a destination reply_dest returned. */
    command_reply_to_t reply_to;
+   /* Sends a reply carrying an image, where the interface can; NULL on
+    * the others, which are sent the text alone */
+   command_reply_image_to_t reply_image_to;
    /* Interface to delete the underlying command */
    command_destructor_t destroy;
    /* Underlying command storage */

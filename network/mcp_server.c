@@ -449,6 +449,38 @@ static void mcp_reply_to(command_t *cmd, void *dest, const char *data,
          mcp_reply_is_error(data, len));
 }
 
+/* A reply carrying an image, SCREENSHOT's: the picture, then the text
+ * (its path) - an MCP client can see what is on the screen without
+ * reaching the file. */
+static void mcp_reply_image_to(command_t *cmd, void *dest, const char *text,
+      size_t len, const char *mime, const char *image, size_t image_len)
+{
+   mcp_server_t    *mcp = (mcp_server_t*)cmd->userptr;
+   struct mcp_owed *o   = (struct mcp_owed*)dest;
+   struct mcp_conn *c;
+   rjsonwriter_t   *w;
+   if (!o || o->conn < 0 || o->conn >= MCP_MAX_CONNS)
+      return;
+   c = &mcp->conns[o->conn];
+   /* the connection timed out or was reused meanwhile */
+   if (c->state != MCP_CONN_WAITING || c->serial != o->serial)
+      return;
+   if (!(w = mcp_envelope(c->id)))
+   {
+      mcp_conn_close(c);
+      return;
+   }
+   MCP_RAW(w, "\"result\":{\"content\":[{\"type\":\"image\",\"data\":");
+   rjsonwriter_add_string_len(w, image, (int)image_len);
+   MCP_RAW(w, ",\"mimeType\":");
+   rjsonwriter_add_string(w, mime);
+   MCP_RAW(w, "},{\"type\":\"text\",\"text\":");
+   rjsonwriter_add_string_len(w, text, (int)len);
+   MCP_RAW(w, "}],\"isError\":false");
+   mcp_result_end(w, c->modern);
+   mcp_respond_writer(c, w);
+}
+
 /* ------------------------------------------------------------------ */
 /* Requests                                                            */
 
@@ -1069,6 +1101,7 @@ command_t *command_mcp_new(uint16_t port, const char *bind_address,
    cmd->replier    = mcp_reply;
    cmd->reply_dest = mcp_reply_dest;
    cmd->reply_to   = mcp_reply_to;
+   cmd->reply_image_to = mcp_reply_image_to;
    cmd->destroy    = mcp_destroy;
    RARCH_LOG("[MCP] Listening on http://%s:%hu/mcp.\n",
          bind_address, (unsigned short)port);

@@ -6,7 +6,7 @@
  * thread: each request is sent, then the server polled until it has
  * answered and closed.  Covered: the protocol handshake, the tool list
  * and its hints, tool calls answered at once and later, the JSON-RPC
- * errors, the HTTP gate (method, path, Origin, the bearer token the
+ * errors, a later answer carrying an image (SCREENSHOT's), the HTTP gate (method, path, Origin, the bearer token the
  * server will not start without), a body
  * larger than the server takes, a request arriving in pieces, and a
  * waiting request answered when the server is torn down.
@@ -128,8 +128,15 @@ static int collect(command_t *cmd, int fd, char *out, size_t cap,
       cmd->poll(cmd);
       if (++polls == 3 && deferred_reply && later_dest)
       {
-         later_cmd->reply_to(later_cmd, later_dest, deferred_reply,
-               strlen(deferred_reply));
+         /* "IMAGE:<path>" answers with a picture and the path, as a
+          * screenshot does */
+         if (!strncmp(deferred_reply, "IMAGE:", 6))
+            later_cmd->reply_image_to(later_cmd, later_dest,
+                  deferred_reply + 6, strlen(deferred_reply + 6),
+                  "image/png", "iVBORw0KGgo=", 12);
+         else
+            later_cmd->reply_to(later_cmd, later_dest, deferred_reply,
+                  strlen(deferred_reply));
          free(later_dest);
          later_dest = NULL;
       }
@@ -286,6 +293,16 @@ int main(void)
          "LATER ERROR could not");
    check("a later error answer is an error",
          st == 200 && strstr(out, "\"isError\":true"));
+
+   check("the server takes a reply with an image", cmd->reply_image_to != NULL);
+   st = post(cmd, PORT_OPEN, NULL, call("LATER", NULL), out, sizeof(out),
+         "IMAGE:/home/me/screenshots/Game-251004.png");
+   check("a later answer with an image is image content, then the path",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "{\"type\":\"image\",\"data\":\"iVBORw0KGgo=\"")
+         && strstr(out, "\"mimeType\":\"image/png\"")
+         && strstr(out, "Game-251004.png")
+         && strstr(out, "\"isError\":false"));
 
    printf("JSON-RPC errors\n");
    st = post(cmd, PORT_OPEN, NULL, call("NO_SUCH_TOOL", NULL), out, sizeof(out), NULL);

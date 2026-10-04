@@ -371,9 +371,24 @@ bool take_screenshot(
       const char *path, bool silence,
       bool has_valid_framebuffer, bool fullpath, bool use_thread);
 
+/* What take_screenshot_notify()'s callback is told, as its task_data */
+struct screenshot_result
+{
+   const char *path;
+   /* The PNG, base64, read back on the task's thread once written; NULL
+    * past SCREENSHOT_IMAGE_MAX, for another format, or written without a
+    * task */
+   const char *png_base64;
+   size_t      png_base64_len;
+};
+
+/* The largest PNG handed back to the callback */
+#define SCREENSHOT_IMAGE_MAX (4 * 1024 * 1024)
+
 /* @cb, when it returns true, is told once the screenshot is written:
- * task_data is its path, and error is set if it could not be. Without
- * @use_thread that is before this returns, with no task. */
+ * task_data is a struct screenshot_result, and error is set if it could
+ * not be. Without @use_thread that is before this returns, with no task
+ * and no image. */
 bool take_screenshot_notify(
       const char *screenshot_dir,
       const char *path, bool silence,

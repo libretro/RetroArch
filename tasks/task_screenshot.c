@@ -30,6 +30,8 @@
 #include <compat/strl.h>
 #include <gfx/video_frame.h>
 #include <streams/file_stream.h>
+#include <encodings/base64.h>
+#include <string/stdstring.h>
 #include <streams/interface_stream.h>
 
 #ifdef HAVE_RBMP
@@ -67,7 +69,9 @@ enum screenshot_task_flags
    SS_TASK_FLAG_HISTORY_LIST_ENABLE = (1 << 4),
    SS_TASK_FLAG_WIDGETS_READY       = (1 << 5),
    SS_TASK_FLAG_HDR                 = (1 << 6),
-   SS_TASK_FLAG_WRITTEN             = (1 << 7)
+   SS_TASK_FLAG_WRITTEN             = (1 << 7),
+   /* the written PNG is read back for the callback */
+   SS_TASK_FLAG_WANT_IMAGE          = (1 << 8)
 };
 
 typedef struct screenshot_task_state screenshot_task_state_t;
@@ -84,9 +88,12 @@ struct screenshot_task_state
    unsigned out_dims;
    unsigned pixel_format_type;
 
-   uint8_t flags;
+   uint16_t flags;
 
    retro_task_callback_t cb;
+   /* the PNG as written, base64 (SS_TASK_FLAG_WANT_IMAGE) */
+   char *image_b64;
+   int   image_b64_len;
    char filename[PATH_MAX_LENGTH];
    char shotname[NAME_MAX_LENGTH];
    /* Colour-space metadata for an HDR screenshot (SS_TASK_FLAG_HDR). The
@@ -376,6 +383,21 @@ static void task_screenshot_handler(retro_task_t *task)
    if (ret)
       state->flags |= SS_TASK_FLAG_WRITTEN;
 
+   /* The PNG for the callback, read back here on the task's thread
+    * rather than on the main one: the encoder streams it into the
+    * file and keeps no copy, and the file has just been written */
+   if (     ret
+         && (state->flags & SS_TASK_FLAG_WANT_IMAGE)
+         && string_is_equal_noncase(path_get_extension(state->filename), "png"))
+   {
+      void    *png = NULL;
+      int64_t  len = 0;
+      if (     filestream_read_file(state->filename, &png, &len)
+            && len > 0 && len <= SCREENSHOT_IMAGE_MAX)
+         state->image_b64 = base64(png, (int)len, &state->image_b64_len);
+      free(png);
+   }
+
    /* Report any errors */
    if (!ret)
    {
@@ -443,10 +465,17 @@ static void task_screenshot_callback(retro_task_t *task,
 #endif
 
    if (state->cb)
-      state->cb(task, state->filename, user_data,
+   {
+      struct screenshot_result r;
+      r.path           = state->filename;
+      r.png_base64     = state->image_b64;
+      r.png_base64_len = state->image_b64 ? (size_t)state->image_b64_len : 0;
+      state->cb(task, &r, user_data,
             (state->flags & SS_TASK_FLAG_WRITTEN)
             ? NULL : msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT));
+   }
 
+   free(state->image_b64);
    free(state);
    /* Must explicitly set task->state to NULL here,
     * to avoid potential heap-use-after-free errors */
@@ -572,6 +601,8 @@ static bool screenshot_dump(
    state->frame                  = frame;
    state->userbuf                = userbuf;
    state->cb                     = cb;
+   if (cb)
+      state->flags              |= SS_TASK_FLAG_WANT_IMAGE;
 #if defined(HAVE_GFX_WIDGETS)
    if (gfx_widgets_ready())
       state->flags              |= SS_TASK_FLAG_WIDGETS_READY;
@@ -778,7 +809,13 @@ static bool screenshot_dump(
       if (ret && state->userbuf)
          free(state->userbuf);
       if (ret && state->cb)
-         state->cb(NULL, state->filename, user_data, NULL);
+      {
+         struct screenshot_result r;
+         r.path           = state->filename;
+         r.png_base64     = NULL;
+         r.png_base64_len = 0;
+         state->cb(NULL, &r, user_data, NULL);
+      }
       free(state);
       return ret;
    }

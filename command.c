@@ -842,13 +842,28 @@ static void command_deferred_send(command_deferred_t *d,
 static void command_screenshot_done(retro_task_t *task, void *task_data,
       void *user_data, const char *error)
 {
-   command_deferred_t *d = (command_deferred_t*)user_data;
+   command_deferred_t             *d = (command_deferred_t*)user_data;
+   const struct screenshot_result *r = (const struct screenshot_result*)task_data;
    char msg[PATH_MAX_LENGTH];
-   if (error)
-      snprintf(msg, sizeof(msg), "SCREENSHOT ERROR %s", error);
+   if (error || !r)
+   {
+      snprintf(msg, sizeof(msg), "SCREENSHOT ERROR %s",
+            error ? error : "no result");
+      command_deferred_send(d, msg, strlen(msg));
+   }
+   else if (r->png_base64 && d->cmd->reply_image_to && d->dest
+         && input_driver_command_generation() == d->gen)
+   {
+      /* the picture itself, with its path, where the interface takes one */
+      d->cmd->reply_image_to(d->cmd, d->dest, r->path, strlen(r->path),
+            "image/png", r->png_base64, r->png_base64_len);
+      command_deferred_send(d, NULL, 0);
+   }
    else
-      strlcpy(msg, (const char*)task_data, sizeof(msg));
-   command_deferred_send(d, msg, strlen(msg));
+   {
+      strlcpy(msg, r->path, sizeof(msg));
+      command_deferred_send(d, msg, strlen(msg));
+   }
    free(d);
 }
 

@@ -80,8 +80,10 @@ is answered with an error rather than left without one.
 Hotkey tools (`PAUSE_TOGGLE`, `FAST_FORWARD`, `MENU_UP`) press the hotkey
 for one frame. Tools marked as holds (`FAST_FORWARD_HOLD`, `REWIND`) last
 that one frame too. `SCREENSHOT` is the exception: it takes the
-screenshot at once and answers with the file's path when it has been
-written, or `SCREENSHOT ERROR` and the reason if it could not be.
+screenshot at once and answers when it has been written - with the
+picture itself as image content (PNG, up to 4 MiB) and the file's path as
+text, so a client can see the screen without reaching the file - or with
+`SCREENSHOT ERROR` and the reason if it could not be.
 
 Every tool carries hints for the client:
 
