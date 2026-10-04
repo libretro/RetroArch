@@ -1216,6 +1216,7 @@
 #define MENU_ENUM_LABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE_STR "input_remap_sort_by_controller_enable"
 #define MENU_ENUM_LABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS_STR "input_assign_ports_on_button_press"
 #define MENU_ENUM_LABEL_INPUT_ASSIGN_PORTS_KEYBOARD_STR "input_assign_ports_keyboard"
+#define MENU_ENUM_LABEL_INPUT_ROTATION_STR "input_rotation"
 #define MENU_ENUM_LABEL_INPUT_SOCD_HORIZONTAL_STR "input_socd_horizontal"
 #define MENU_ENUM_LABEL_INPUT_SOCD_VERTICAL_STR "input_socd_vertical"
 #define MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS_STR "input_retropad_binds"

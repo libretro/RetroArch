@@ -26824,6 +26824,10 @@ MSG_HASH(
    "Waits for its Controller"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_ROTATION_AUTO,
+   "Auto (Video Rotation)"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_SOCD_NEUTRAL,
    "Neutral"
    )

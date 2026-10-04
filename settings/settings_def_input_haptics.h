@@ -94,6 +94,11 @@ S_UINT_EX(input_assign_ports_keyboard, INPUT_ASSIGN_PORTS_KEYBOARD,
       0, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_assign_ports_keyboard, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
       "Keyboard on First Button Press",
       "With 'Assign Ports on First Button Press': what a key bound to a port's controls does. 'Assigns its Port' gives the port its core port, as a button of its controller would. 'Waits for its Controller' leaves that to the controller's buttons, unless the port has no controller connected.")
+S_UINT_EX(input_rotation, INPUT_ROTATION,
+      "input_rotation",
+      0, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, 4, 1, 0, setting_action_ok_uint, setting_get_string_representation_input_rotation, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "Input Rotation",
+      "Turns the D-Pad and the analog sticks a core sees, for content shown rotated. The angle is the one Video Rotation would be set to: at 90 degrees, left on the controller is up in the game. 'Auto' follows the Video Rotation setting.")
 S_UINT_EX(input_socd_horizontal, INPUT_SOCD_HORIZONTAL,
       "input_socd_horizontal",
       0, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, 3, 1, 0, setting_action_ok_uint, setting_get_string_representation_socd, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,

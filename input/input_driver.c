@@ -9887,6 +9887,59 @@ void input_driver_poll(void)
 #endif
 }
 
+/* The quarter turns to turn a core's directions by: the setting, or
+ * with 'Auto' what Video Rotation is set to. */
+static unsigned input_rotation_turns(settings_t *settings)
+{
+   unsigned turns = settings->uints.input_rotation;
+   if (turns == INPUT_ROTATION_AUTO)
+      turns = settings->uints.video_rotation;
+   return turns & 3;
+}
+
+/* The D-Pad of @view turned: with the picture a quarter turn round,
+ * left on the controller is up in the game, up is right, and so on. */
+static int16_t input_rotation_dpad(unsigned turns, int16_t view)
+{
+   /* clockwise from up, as the controller has them */
+   static const uint8_t id[4] = {
+      RETRO_DEVICE_ID_JOYPAD_UP,   RETRO_DEVICE_ID_JOYPAD_RIGHT,
+      RETRO_DEVICE_ID_JOYPAD_DOWN, RETRO_DEVICE_ID_JOYPAD_LEFT };
+   unsigned i;
+   unsigned in  = (uint16_t)view;
+   unsigned out = in & ~(  (1u << RETRO_DEVICE_ID_JOYPAD_UP)
+                         | (1u << RETRO_DEVICE_ID_JOYPAD_DOWN)
+                         | (1u << RETRO_DEVICE_ID_JOYPAD_LEFT)
+                         | (1u << RETRO_DEVICE_ID_JOYPAD_RIGHT));
+   for (i = 0; i < 4; i++)
+      if (in & (1u << id[i]))
+         out |= 1u << id[(i + turns) & 3];
+   return (int16_t)out;
+}
+
+/* One axis of a stick turned the same way: @value is the axis asked
+ * for, @other the stick's other axis. */
+static int16_t input_rotation_axis(unsigned turns, unsigned id,
+      int16_t value, int16_t other)
+{
+   int v;
+   switch (turns)
+   {
+      case 1:
+         v = (id == RETRO_DEVICE_ID_ANALOG_X) ? -other : other;
+         break;
+      case 2:
+         v = -value;
+         break;
+      case 3:
+         v = (id == RETRO_DEVICE_ID_ANALOG_X) ? other : -other;
+         break;
+      default:
+         return value;
+   }
+   return (int16_t)((v > 32767) ? 32767 : v);
+}
+
 /* One axis of the D-Pad: @a and @b are its two buttons' bits. Returns
  * the bits to take out of @held. */
 static unsigned input_socd_axis(unsigned mode, unsigned held,
@@ -9983,15 +10036,22 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
        * the view is compiled on the frame's first button too */
       unsigned socd_h         = settings->uints.input_socd_horizontal;
       unsigned socd_v         = settings->uints.input_socd_vertical;
+      /* and turning the D-Pad needs all four */
+      unsigned turns          = settings->uints.input_rotation
+         ? input_rotation_turns(settings) : 0;
 
       if (     !(input_st->frame_valid.view & port_bit)
             && (   id == RETRO_DEVICE_ID_JOYPAD_MASK
                 || (input_st->frame_valid.asked & port_bit)
-                || socd_h || socd_v))
+                || socd_h || socd_v || turns))
       {
          input_st->frame_view_joypad[port] = input_state_internal(
                input_st, settings, port, RETRO_DEVICE_JOYPAD, 0,
                RETRO_DEVICE_ID_JOYPAD_MASK);
+         /* turned first, cleaned after */
+         if (turns)
+            input_st->frame_view_joypad[port] = input_rotation_dpad(
+                  turns, input_st->frame_view_joypad[port]);
          if (socd_h || socd_v)
             input_st->frame_view_joypad[port] = input_socd_clean(
                   input_st, socd_h, socd_v, port,
@@ -10012,7 +10072,26 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
          result = ((uint16_t)input_st->frame_view_joypad[port] >> id) & 1;
    }
    else
+   {
       result = input_state_internal(input_st, settings, port, device, idx, id);
+      /* a stick, turned as the D-Pad is: it takes the other axis too */
+      if (     settings->uints.input_rotation
+            && (device & RETRO_DEVICE_MASK) == RETRO_DEVICE_ANALOG
+            && (   idx == RETRO_DEVICE_INDEX_ANALOG_LEFT
+                || idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+            && (   id  == RETRO_DEVICE_ID_ANALOG_X
+                || id  == RETRO_DEVICE_ID_ANALOG_Y))
+      {
+         unsigned turns = input_rotation_turns(settings);
+         if (turns & 1)
+            result = input_rotation_axis(turns, id, result,
+                  input_state_internal(input_st, settings, port, device, idx,
+                     (id == RETRO_DEVICE_ID_ANALOG_X)
+                     ? RETRO_DEVICE_ID_ANALOG_Y : RETRO_DEVICE_ID_ANALOG_X));
+         else if (turns)
+            result = input_rotation_axis(turns, id, result, 0);
+      }
+   }
 
    /* Register any analog stick input requests for
     * this 'virtual' (core) port.  The first one switches

@@ -370,6 +370,9 @@ EXTRA_CFG='input_assign_ports_on_button_press = "true"' \
 EXTRA_CFG='input_socd_horizontal = "2"
 input_socd_vertical = "4"' \
    scenario "SOCD cleaning on" true 1 2 nomsg
+# Input rotation on: buttons that are not directions are unchanged.
+EXTRA_CFG='input_rotation = "1"' \
+   scenario "input rotation on" true 1 2 nomsg
 VIDEO_DRIVER=gl VIDEO_STARTED='Found GL context' WANT_VIDEO=2 WANT_WINDOW="1 1 0" \
    WANT_MENUS=1 EXTRA_CFG='ui_menubar_enable = "true"' \
    scenario "OpenGL" true 1 2 nomsg

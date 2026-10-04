@@ -7793,6 +7793,30 @@ static size_t setting_get_string_representation_retropad_bind(
    return 0;
 }
 
+static size_t setting_get_string_representation_input_rotation(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   enum msg_hash_enums e = MENU_ENUM_LABEL_VALUE_OFF;
+   if (!setting)
+      return 0;
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case 1:
+         e = MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_90_DEG;
+         break;
+      case 2:
+         e = MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_180_DEG;
+         break;
+      case 3:
+         e = MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_270_DEG;
+         break;
+      case INPUT_ROTATION_AUTO:
+         e = MENU_ENUM_LABEL_VALUE_INPUT_ROTATION_AUTO;
+         break;
+   }
+   return strlcpy(s, msg_hash_to_str(e), len);
+}
+
 static size_t setting_get_string_representation_socd(
       rarch_setting_t *setting, char *s, size_t len)
 {

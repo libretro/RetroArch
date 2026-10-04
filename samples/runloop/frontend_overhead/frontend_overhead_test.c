@@ -1710,6 +1710,143 @@ static void lane_socd(void)
 #endif
 }
 
+/* Input rotation: the D-Pad and the sticks a core sees, turned by
+ * quarter turns. */
+static void lane_input_rotation(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   const unsigned U = 1u << RETRO_DEVICE_ID_JOYPAD_UP;
+   const unsigned D = 1u << RETRO_DEVICE_ID_JOYPAD_DOWN;
+   const unsigned L = 1u << RETRO_DEVICE_ID_JOYPAD_LEFT;
+   const unsigned R = 1u << RETRO_DEVICE_ID_JOYPAD_RIGHT;
+   /* what up, right, down and left on the controller give, by turns */
+   const unsigned want[4][4] = {
+      { U, R, D, L }, { R, D, L, U }, { D, L, U, R }, { L, U, R, D } };
+   input_driver_state_t *input_st = input_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   const input_device_driver_t *joypad_real;
+   struct retro_keybind saved_auto[8];
+   void (*trace)(int, int);
+   void (*trace_last)(unsigned*, int*);
+   void    *core;
+   unsigned had = failures;
+   unsigned turns, reading, seen, i;
+   int      axes[4];
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(trace = (void (*)(int, int))dlsym(core, "harness_core_trace"))
+       || !(trace_last = (void (*)(unsigned*, int*))dlsym(core, "harness_core_trace_last"))
+       || !input_st->primary_joypad)
+   {
+      CHECK(false, "rotation: the harness core's trace entry points or the joypad driver");
+      return;
+   }
+   joypad_real              = input_st->primary_joypad;
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   /* the sticks on axes 0-3 */
+   memcpy(saved_auto, &input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS],
+         sizeof(saved_auto));
+   for (i = 0; i < 4; i++)
+   {
+      input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + 2 * i].joyaxis     = AXIS_POS(i);
+      input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + 2 * i + 1].joyaxis = AXIS_NEG(i);
+   }
+   fast_forward(true);
+   /* a core's first analog read switches analog-to-d-pad off */
+   trace(1, 1);
+   run_loop_frames(3);
+
+   for (reading = 2; reading >= 1; reading--)
+   {
+      trace((int)reading, 1);
+      for (turns = 0; turns < 4; turns++)
+      {
+         settings->uints.input_rotation = turns;
+         CHECK(   socd_frame(U, trace_last) == want[turns][0]
+               && socd_frame(R, trace_last) == want[turns][1]
+               && socd_frame(D, trace_last) == want[turns][2]
+               && socd_frame(L, trace_last) == want[turns][3],
+               "rotation: a D-Pad direction is not turned as the setting says");
+         CHECK(socd_frame(U | R, trace_last) == (want[turns][0] | want[turns][1]),
+               "rotation: a diagonal is not turned as the setting says");
+
+         /* the left stick pushed right and a little up, the right
+          * stick pushed down: both turn as the D-Pad does */
+         syn_buttons = 0;
+         syn_axes[0] = 20000;
+         syn_axes[1] = -5000;
+         syn_axes[2] = 0;
+         syn_axes[3] = 12000;
+         run_loop_frames(1);
+         trace_last(&seen, axes);
+         memset(syn_axes, 0, sizeof(syn_axes));
+         switch (turns)
+         {
+            case 0:
+               CHECK(axes[0] == 20000 && axes[1] == -5000 && axes[2] == 0 && axes[3] == 12000,
+                     "rotation: off, a stick is changed");
+               break;
+            case 1:
+               CHECK(axes[0] == 5000 && axes[1] == 20000 && axes[2] == -12000 && axes[3] == 0,
+                     "rotation: a quarter turn of the sticks");
+               break;
+            case 2:
+               CHECK(axes[0] == -20000 && axes[1] == 5000 && axes[2] == 0 && axes[3] == -12000,
+                     "rotation: a half turn of the sticks");
+               break;
+            case 3:
+               CHECK(axes[0] == -5000 && axes[1] == -20000 && axes[2] == 12000 && axes[3] == 0,
+                     "rotation: three quarter turns of the sticks");
+               break;
+         }
+         run_loop_frames(1);
+      }
+
+      /* 'Auto' is what Video Rotation is set to */
+      settings->uints.input_rotation = INPUT_ROTATION_AUTO;
+      settings->uints.video_rotation = 3;
+      CHECK(socd_frame(U, trace_last) == want[3][0],
+            "rotation: 'Auto' does not follow Video Rotation");
+      settings->uints.video_rotation = 0;
+      CHECK(socd_frame(U, trace_last) == U,
+            "rotation: 'Auto' turns with Video Rotation at none");
+
+      /* turned first, cleaned after: up and down on the controller
+       * are left and right in the game */
+      settings->uints.input_rotation        = 1;
+      settings->uints.input_socd_horizontal = INPUT_SOCD_NEUTRAL;
+      socd_frame(0, trace_last);
+      CHECK(socd_frame(U | D, trace_last) == 0
+            && socd_frame(L | R, trace_last) == (U | D),
+            "rotation: SOCD cleaning is not done on the turned D-Pad");
+      settings->uints.input_socd_horizontal = INPUT_SOCD_OFF;
+      settings->uints.input_rotation        = 0;
+   }
+
+   syn_buttons = 0;
+   trace(0, 0);
+   fast_forward(false);
+   run_loop_frames(5);
+   memcpy(&input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS], saved_auto,
+         sizeof(saved_auto));
+   input_st->primary_joypad = joypad_real;
+   dlclose(core);
+   if (failures == had)
+      printf("[pass] input rotation: the D-Pad and both sticks turn by"
+            " quarter turns as set; 'Auto' follows Video Rotation; SOCD"
+            " cleaning is done on the turned D-Pad\n");
+#else
+   printf("[skip] input rotation: needs the test drivers\n");
+#endif
+}
+
 /* First-press port assignment: with the setting on no user has a core
  * port until a button is pressed on its controller. */
 static void lane_first_press(void)
@@ -2623,6 +2760,7 @@ int main(int argc, char *argv[])
        * loop paused */
       lane_first_press();
       lane_socd();
+      lane_input_rotation();
       lane_core_view();
       lane_key_events();
       /* last: these restart the drivers */
