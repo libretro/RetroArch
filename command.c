@@ -958,7 +958,7 @@ static void command_reply_done(retro_task_t *task, void *task_data,
 static void command_reply_handler(retro_task_t *task)
 {
    struct command_reply *r = (struct command_reply*)task->state;
-   command_event_notify_t notify;
+   task_notify_t notify;
    task->state      = NULL;
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
    notify.cb        = command_reply_done;
@@ -1026,7 +1026,8 @@ static bool command_content_reply(command_t *cmd, const char *name,
          || !(r = command_reply_new(name)))
       return true;
    r->want_core = want_core;
-   task_content_load_notify(command_reply_done, r);
+   task_notify_set(&content_state_get_ptr()->load_notify,
+         command_reply_done, r);
    command_deferred_take(&r->deferred, cmd);
    return true;
 }
@@ -1355,7 +1356,7 @@ bool command_seek_replay(command_t *cmd, const char *arg)
       /* answered once the seek has run, on a later frame */
       snprintf(r->ok, sizeof(r->ok), "OK %" PRId64,
             input_st->bsv_movie_state.seek_target_frame);
-      movie_op_notify(input_st, command_reply_done, r);
+      task_notify_set(&input_st->bsv_movie_op, command_reply_done, r);
       command_deferred_take(&r->deferred, cmd);
       return true;
    }

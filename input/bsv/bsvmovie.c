@@ -1063,22 +1063,6 @@ void bsv_movie_scan_from_start(bsv_movie_t *movie, int32_t len)
    bsv_movie_scan_to(movie, len);
 }
 
-void movie_op_finish(input_driver_state_t *input_st, const char *error)
-{
-   retro_task_callback_t cb  = input_st->bsv_movie_op_cb;
-   input_st->bsv_movie_op_cb = NULL;
-   if (cb)
-      cb(NULL, NULL, input_st->bsv_movie_op_user_data, error);
-}
-
-void movie_op_notify(input_driver_state_t *input_st,
-      retro_task_callback_t cb, void *user_data)
-{
-   movie_op_finish(input_st, "Superseded by another replay operation.");
-   input_st->bsv_movie_op_cb        = cb;
-   input_st->bsv_movie_op_user_data = user_data;
-}
-
 void bsv_movie_next_frame(input_driver_state_t *input_st)
 {
    unsigned checkpoint_interval;
@@ -1155,10 +1139,10 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
             RARCH_ERR("[Replay] failed to write checkpoint, exiting record\n");
             input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
             if (forced)
-               movie_op_finish(input_st, "Failed to write the checkpoint.");
+               task_notify_fire(&input_st->bsv_movie_op, NULL, "Failed to write the checkpoint.");
          }
          else if (forced)
-            movie_op_finish(input_st, NULL);
+            task_notify_fire(&input_st->bsv_movie_op, NULL, NULL);
       }
       else
       {
@@ -1188,14 +1172,14 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
          runloop_msg_queue_push(_msg, strlen(_msg), 10, 15, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
          input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_SEEKING;
-         movie_op_finish(input_st, NULL);
+         task_notify_fire(&input_st->bsv_movie_op, NULL, NULL);
       }
       else
       {
          const char *_msg = msg_hash_to_str(MSG_REPLAY_SEEK_TO_FRAME_FAILED);
          runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-         movie_op_finish(input_st, _msg);
+         task_notify_fire(&input_st->bsv_movie_op, NULL, _msg);
       }
       input_st->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_SEEK_TO_FRAME;
    }
@@ -1207,14 +1191,14 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
          runloop_msg_queue_push(_msg, strlen(_msg), 10, 15, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
          input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_SEEKING;
-         movie_op_finish(input_st, NULL);
+         task_notify_fire(&input_st->bsv_movie_op, NULL, NULL);
       }
       else
       {
          const char *_msg = msg_hash_to_str(MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT_FAILED);
          runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-         movie_op_finish(input_st, _msg);
+         task_notify_fire(&input_st->bsv_movie_op, NULL, _msg);
       }
       input_st->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_PREV_CHECKPOINT;
    }
@@ -1226,14 +1210,14 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
          runloop_msg_queue_push(_msg, strlen(_msg), 10, 15, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
          input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_SEEKING;
-         movie_op_finish(input_st, NULL);
+         task_notify_fire(&input_st->bsv_movie_op, NULL, NULL);
       }
       else
       {
          const char *_msg = msg_hash_to_str(MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT_FAILED);
          runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-         movie_op_finish(input_st, _msg);
+         task_notify_fire(&input_st->bsv_movie_op, NULL, _msg);
       }
       input_st->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_NEXT_CHECKPOINT;
    }

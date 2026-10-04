@@ -855,23 +855,12 @@ video_driver_state_t *video_state_get_ptr(void)
  * load is in progress, compiles one pass per frame and
  * handles completion or failure.
  **/
-void video_shader_deferred_finish(const char *error)
-{
-   shader_load_deferred_t *d = &video_driver_st.shader_deferred;
-   retro_task_callback_t cb  = d->done_cb;
-   d->done_cb                = NULL;
-   if (cb)
-      cb(NULL, d->preset_path, d->done_user_data, error);
-}
-
 bool video_shader_deferred_notify(retro_task_callback_t cb, void *user_data)
 {
    shader_load_deferred_t *d = &video_driver_st.shader_deferred;
    if (d->state != SHADER_LOAD_COMPILING)
       return false;
-   video_shader_deferred_finish("Superseded by another request.");
-   d->done_cb        = cb;
-   d->done_user_data = user_data;
+   task_notify_set(&d->done, cb, user_data);
    return true;
 }
 
@@ -893,7 +882,7 @@ void video_driver_shader_deferred_tick(void)
       || !video_st->data)
    {
       d->state = SHADER_LOAD_FAILED;
-      video_shader_deferred_finish("The video driver went away.");
+      task_notify_fire(&d->done, d->preset_path, "The video driver went away.");
       return;
    }
 
@@ -962,7 +951,7 @@ void video_driver_shader_deferred_tick(void)
          RARCH_LOG("[Shaders] Deferred load complete: \"%s\".\n",
                d->preset_path);
          command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
-         video_shader_deferred_finish(NULL);
+         task_notify_fire(&d->done, d->preset_path, NULL);
       }
       else /* SHADER_LOAD_FAILED */
       {
@@ -979,7 +968,7 @@ void video_driver_shader_deferred_tick(void)
                   MESSAGE_QUEUE_ICON_DEFAULT,
                   MESSAGE_QUEUE_CATEGORY_ERROR);
          command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
-         video_shader_deferred_finish("Shader preset failed to load.");
+         task_notify_fire(&d->done, d->preset_path, "Shader preset failed to load.");
       }
 
       /* Reset to idle regardless */
@@ -2679,7 +2668,7 @@ void video_driver_free_internal(void)
          }
          d->state       = SHADER_LOAD_IDLE;
          d->driver_data = NULL;
-         video_shader_deferred_finish("The video driver went away.");
+         task_notify_fire(&d->done, d->preset_path, "The video driver went away.");
       }
    }
 

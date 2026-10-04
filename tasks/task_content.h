@@ -79,12 +79,9 @@ bool task_push_start_dummy_core(content_ctx_info_t *content_info);
  * for a state task is not one: it only polls. */
 bool task_content_is_load_stage(const retro_task_t *task);
 
-/* @cb is told once the content load in progress, or else the next one,
- * is through: task_data is the content's path, NULL if there is none,
- * and error is set if it failed. A caller still waiting is told it was
- * superseded. */
-void task_content_load_notify(retro_task_callback_t cb, void *user_data);
-/* Tells the caller waiting on a content load, if any. */
+/* Tells the caller waiting on content_state_t's load_notify, once the
+ * content load in progress, or else the next one, is through: task_data
+ * is the content's path, NULL if there is none. */
 void task_content_load_notify_finish(const char *error);
 /* Whether a content load is in progress. */
 bool task_content_load_pending(void);

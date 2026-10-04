@@ -5,7 +5,7 @@
 #include <retro_inline.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
-#include <queues/task_queue.h>
+#include "tasks/task_notify.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -309,8 +309,7 @@ typedef struct content_state
    size_t prefetch_count;
 
    /* told once the content load in progress, or the next, is through */
-   retro_task_callback_t load_notify_cb;
-   void *load_notify_user_data;
+   task_notify_t load_notify;
 
    char companion_ui_crc32[32];
    char pending_subsystem_ident[NAME_MAX_LENGTH];

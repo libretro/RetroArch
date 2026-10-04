@@ -9954,7 +9954,7 @@ void input_driver_poll(void)
    /* The interfaces outlive a content load, but the core they would
     * reach does not: what arrives meanwhile waits for it. */
    for (i = 0; i < ARRAY_SIZE(input_st->command)
-         && !runloop_is_content_switching(); i++)
+         && !command_interfaces_held(); i++)
    {
       if (input_st->command[i])
       {

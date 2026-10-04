@@ -29,7 +29,7 @@
 #include <libretro.h>
 #include <retro_miscellaneous.h>
 #include <streams/interface_stream.h>
-#include <queues/task_queue.h>
+#include "../tasks/task_notify.h"
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif /* HAVE_CONFIG_H */
@@ -673,8 +673,7 @@ typedef struct
    bsv_movie_t     *bsv_movie_state_handle;              /* ptr alignment */
    bsv_movie_t     *bsv_movie_state_next_handle;         /* ptr alignment */
    /* told once the checkpoint or seek asked for has run */
-   retro_task_callback_t bsv_movie_op_cb;
-   void            *bsv_movie_op_user_data;
+   task_notify_t    bsv_movie_op;
 #endif
 #ifdef HAVE_OVERLAY
    input_overlay_t *overlay_ptr;
@@ -1585,13 +1584,6 @@ bool movie_commit_checkpoint(input_driver_state_t *input_st);
 bool movie_skip_to_prev_checkpoint(input_driver_state_t *input_st);
 bool movie_skip_to_next_checkpoint(input_driver_state_t *input_st);
 bool movie_seek_to_frame(input_driver_state_t *input_st, int64_t frame);
-/* @cb is told once the checkpoint or seek just asked for has run, with
- * error set if it failed; a caller still waiting is told it was
- * superseded. */
-void movie_op_notify(input_driver_state_t *input_st,
-      retro_task_callback_t cb, void *user_data);
-/* Tells the caller waiting on a checkpoint or seek, if any. */
-void movie_op_finish(input_driver_state_t *input_st, const char *error);
 bool movie_start_playback(input_driver_state_t *input_st, char *path);
 /* @cb, when this returns true, is told once playback has started:
  * task_data is the replay's identifier, as text, and error is set if it

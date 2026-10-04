@@ -4105,7 +4105,8 @@ bool video_shader_apply_shader(
          }
          d->state       = SHADER_LOAD_IDLE;
          d->driver_data = NULL;
-         video_shader_deferred_finish("Replaced by another shader load.");
+         task_notify_fire(&d->done, d->preset_path,
+               "Replaced by another shader load.");
       }
 
       d->type         = (unsigned)type;

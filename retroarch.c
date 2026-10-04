@@ -4069,7 +4069,7 @@ bool command_event(enum event_command cmd, void *data)
             res = false;
          if (res)
          {
-            const command_event_notify_t *n = (const command_event_notify_t*)data;
+            const task_notify_t *n = (const task_notify_t*)data;
             res = movie_start_record_notify(input_st, replay_path,
                   n ? n->cb : NULL, n ? n->user_data : NULL);
          }
@@ -4134,7 +4134,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NEXT_REPLAY_CHECKPOINT:
 #ifdef HAVE_BSV_MOVIE
          {
-            const command_event_notify_t *n = (const command_event_notify_t*)data;
+            const task_notify_t *n = (const task_notify_t*)data;
             input_driver_state_t *input_st  = input_state_get_ptr();
             bool res;
             if (cmd == CMD_EVENT_SAVE_REPLAY_CHECKPOINT)
@@ -4146,7 +4146,7 @@ bool command_event(enum event_command cmd, void *data)
             if (!res)
                return false;
             if (n)
-               movie_op_notify(input_st, n->cb, n->user_data);
+               task_notify_set(&input_st->bsv_movie_op, n->cb, n->user_data);
          }
 #endif
          break;

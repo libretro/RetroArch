@@ -2240,21 +2240,9 @@ static void task_push_to_history_list(content_state_t *p_content,
 
 void task_content_load_notify_finish(const char *error)
 {
-   content_state_t *p_content = content_state_get_ptr();
-   retro_task_callback_t cb   = p_content->load_notify_cb;
-   const char *path           = path_get(RARCH_PATH_CONTENT);
-   p_content->load_notify_cb  = NULL;
-   if (cb)
-      cb(NULL, (path && *path) ? (void*)path : NULL,
-            p_content->load_notify_user_data, error);
-}
-
-void task_content_load_notify(retro_task_callback_t cb, void *user_data)
-{
-   content_state_t *p_content = content_state_get_ptr();
-   task_content_load_notify_finish("Superseded by another request.");
-   p_content->load_notify_cb        = cb;
-   p_content->load_notify_user_data = user_data;
+   const char *path = path_get(RARCH_PATH_CONTENT);
+   task_notify_fire(&content_state_get_ptr()->load_notify,
+         (path && *path) ? (void*)path : NULL, error);
 }
 
 bool task_content_load_pending(void)

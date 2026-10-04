@@ -28,7 +28,7 @@
 #endif
 
 #include <streams/interface_stream.h>
-#include <queues/task_queue.h>
+#include "tasks/task_notify.h"
 
 #include "retroarch_types.h"
 #include "input/input_defines.h"
@@ -67,7 +67,7 @@ enum event_command
    CMD_EVENT_SAVE_STATE_DECREMENT,
    CMD_EVENT_SAVE_STATE_INCREMENT,
    /* Replay hotkeys. RECORD_REPLAY and the checkpoint events take a
-    * command_event_notify_t, or NULL. */
+    * task_notify_t, told when their work is through, or NULL. */
    CMD_EVENT_PLAY_REPLAY,
    CMD_EVENT_RECORD_REPLAY,
    CMD_EVENT_HALT_REPLAY,
@@ -303,15 +303,6 @@ enum event_command
    /* Add a playlist entry to another playlist. */
    CMD_EVENT_ADD_TO_PLAYLIST
 };
-
-/* The data of an event that says when the work it starts is through:
- * @cb is told as a task callback is, once, and only if the event
- * returned true. */
-typedef struct command_event_notify
-{
-   retro_task_callback_t cb;
-   void *user_data;
-} command_event_notify_t;
 
 enum cmd_source_t
 {
