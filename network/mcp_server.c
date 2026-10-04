@@ -988,7 +988,12 @@ static void mcp_poll(command_t *cmd)
                if ((want = mcp_want(c)) == -2)
                   mcp_respond(c, 413, "Payload Too Large", NULL, NULL, 0);
                else if (want >= 0)
+               {
                   mcp_request(mcp, cmd, i);
+                  /* the other requests wait out the content load */
+                  if (command_interfaces_held())
+                     return;
+               }
             }
             break;
          case MCP_CONN_WRITING:

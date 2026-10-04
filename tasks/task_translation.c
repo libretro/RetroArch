@@ -846,6 +846,29 @@ static const char *ai_service_get_str(enum translation_lang id)
    return "";
 }
 
+/* A caller of run_translation_service_notify(), told after the usual
+ * handling. */
+typedef struct
+{
+   retro_task_callback_t cb;
+   void *user_data;
+} translation_notify_t;
+
+static void translation_notify(void *userdata, const char *text,
+      const char *error)
+{
+   translation_notify_t *n = (translation_notify_t*)userdata;
+   n->cb(NULL, (void*)text, n->user_data, error);
+   free(n);
+}
+
+static void handle_translation_response_notify(
+      translation_response_t *response, void *userdata)
+{
+   handle_translation_response(response, NULL);
+   translation_notify(userdata, response->text, response->error);
+}
+
 /* Read-side callback used by run_translation_service for the SW
  * core path: convert the cached frame's pixels to BGR24 in-place
  * into a pre-allocated heap buffer.  The callback runs inside
@@ -883,6 +906,13 @@ static void translation_sw_convert_cb(void *userdata,
 
 bool run_translation_service(settings_t *settings, bool paused)
 {
+   return run_translation_service_notify(settings, paused, NULL, NULL);
+}
+
+bool run_translation_service_notify(settings_t *settings, bool paused,
+      retro_task_callback_t cb, void *user_data)
+{
+   translation_notify_t *notify      = NULL;
    struct video_viewport vp;
    size_t pitch;
    unsigned dims                     = 0;
@@ -1058,12 +1088,21 @@ bool run_translation_service(settings_t *settings, bool paused)
             target_lang = ai_service_get_str(
                   (enum translation_lang)ai_service_target_lang);
 
-         success = driver->translate(
+         if (cb && (notify = (translation_notify_t*)malloc(sizeof(*notify))))
+         {
+            notify->cb        = cb;
+            notify->user_data = user_data;
+         }
+         if (cb && !notify)
+            success = false;
+         else if (!(success = driver->translate(
                bit24_image, dims,
                source_lang, target_lang,
                ai_service_mode,
                sys_lbl, paused,
-               handle_translation_response, NULL);
+               notify ? handle_translation_response_notify
+                      : handle_translation_response, notify)))
+            free(notify);
       }
    }
 
@@ -1119,11 +1158,15 @@ static void handle_translation_cb(
    {
       if (error)
          RARCH_ERR("[Translation] HTTP error: %s\n", error);
-      goto finish;
+      err_str = strdup(error ? error : "The AI service did not answer.");
+      goto failed;
    }
 
    if (!(json = rjson_open_buffer(data->data, data->len)))
-      goto finish;
+   {
+      err_str = strdup("Invalid JSON body.");
+      goto failed;
+   }
 
    /* Parse JSON body for the image and sound data */
    for (;;)
@@ -1207,12 +1250,21 @@ static void handle_translation_cb(
        && access_st->ai_service_auto != 2)
    {
       RARCH_ERR("[Translation] Invalid JSON body.\n");
-      goto finish;
+      if (!err_str)
+         err_str = strdup("Invalid JSON body.");
+      goto failed;
    }
 
    /* Hand off to caller's response handler */
    if (ctx && ctx->callback)
       ctx->callback(&response, ctx->userdata);
+   goto finish;
+
+failed:
+   /* Only a notified caller hears of a request that came to nothing;
+    * the usual handling never did. */
+   if (ctx && ctx->callback == handle_translation_response_notify)
+      translation_notify(ctx->userdata, NULL, err_str);
 
 finish:
    if (ctx)

@@ -7967,6 +7967,32 @@ void config_read_keybinds_conf(void *data)
 }
 
 #ifdef HAVE_COMMAND
+static void input_driver_command_config(settings_t *settings,
+      char *s, size_t len)
+{
+   snprintf(s, len, "%d|%d|%u|%s|%d|%u|%s|%s",
+         settings->bools.stdin_cmd_enable,
+         settings->bools.network_cmd_enable,
+         settings->uints.network_cmd_port,
+         settings->arrays.network_cmd_bind_address,
+         settings->bools.mcp_server_enable,
+         settings->uints.mcp_server_port,
+         settings->arrays.mcp_server_bind_address,
+         settings->arrays.mcp_server_token);
+}
+
+void input_driver_refresh_command(input_driver_state_t *input_st,
+      settings_t *settings)
+{
+   char config[sizeof(input_st->command_config)];
+   input_driver_command_config(settings, config, sizeof(config));
+   if (*input_st->command_config
+         && string_is_equal(config, input_st->command_config))
+      return;
+   input_driver_deinit_command(input_st);
+   input_driver_init_command(input_st, settings);
+}
+
 void input_driver_init_command(input_driver_state_t *input_st,
       settings_t *settings)
 {
@@ -8048,6 +8074,10 @@ void input_driver_init_command(input_driver_state_t *input_st,
       RARCH_ERR("Failed to initialize the emscripten command interface.\n");
 #endif
 
+   /* after the MCP token is made, if it was */
+   input_driver_command_config(settings, input_st->command_config,
+         sizeof(input_st->command_config));
+
 }
 
 unsigned input_driver_command_generation(void)
@@ -8067,6 +8097,7 @@ void input_driver_deinit_command(input_driver_state_t *input_st)
 
       input_st->command[i] = NULL;
     }
+   input_st->command_config[0] = '\0';
 }
 #endif
 
@@ -9902,7 +9933,10 @@ void input_driver_poll(void)
    }
 
 #ifdef HAVE_COMMAND
-   for (i = 0; i < ARRAY_SIZE(input_st->command); i++)
+   /* The interfaces outlive a content load, but the core they would
+    * reach does not: what arrives meanwhile waits for it. */
+   for (i = 0; i < ARRAY_SIZE(input_st->command)
+         && !runloop_is_content_switching(); i++)
    {
       if (input_st->command[i])
       {
@@ -9913,7 +9947,6 @@ void input_driver_poll(void)
             input_st->command[i]);
       }
    }
-   command_owed_reply_poll();
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD

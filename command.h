@@ -28,6 +28,7 @@
 #endif
 
 #include <streams/interface_stream.h>
+#include <queues/task_queue.h>
 
 #include "retroarch_types.h"
 #include "input/input_defines.h"
@@ -65,7 +66,8 @@ enum event_command
    CMD_EVENT_SAVE_STATE,
    CMD_EVENT_SAVE_STATE_DECREMENT,
    CMD_EVENT_SAVE_STATE_INCREMENT,
-   /* Replay hotkeys. */
+   /* Replay hotkeys. RECORD_REPLAY and the checkpoint events take a
+    * command_event_notify_t, or NULL. */
    CMD_EVENT_PLAY_REPLAY,
    CMD_EVENT_RECORD_REPLAY,
    CMD_EVENT_HALT_REPLAY,
@@ -302,6 +304,15 @@ enum event_command
    CMD_EVENT_ADD_TO_PLAYLIST
 };
 
+/* The data of an event that says when the work it starts is through:
+ * @cb is told as a task callback is, once, and only if the event
+ * returned true. */
+typedef struct command_event_notify
+{
+   retro_task_callback_t cb;
+   void *user_data;
+} command_event_notify_t;
+
 enum cmd_source_t
 {
    CMD_NONE = 0,
@@ -487,6 +498,11 @@ bool command_get_playlist(command_t *cmd, const char* arg);
 /* Runs one command by name; see command.c. */
 bool command_run(command_t *handle, const char *name, const char *arg);
 
+/* True once a command has started a content load: requests an
+ * interface has yet to take wait for the next poll, which comes once
+ * the load is through. */
+bool command_interfaces_held(void);
+
 /* Every command, for interfaces that describe them to a client. */
 const struct cmd_action_map *command_action_list(size_t *count);
 const struct cmd_map *command_hotkey_list(size_t *count);
@@ -498,10 +514,6 @@ bool command_show_osd_msg(command_t *cmd, const char* arg);
 bool command_load_state_slot(command_t *cmd, const char* arg);
 bool command_save_state_slot(command_t* cmd, const char* arg);
 bool command_play_replay_slot(command_t *cmd, const char* arg);
-/* Sends a reply owed by a command that returned before it could
- * answer (PLAY_REPLAY_SLOT waits for the movie task), once it can.
- * Called once per input poll, after the command interfaces. */
-void command_owed_reply_poll(void);
 bool command_seek_replay(command_t *cmd, const char *arg);
 bool command_save_savefiles(command_t *cmd, const char* arg);
 bool command_load_savefiles(command_t *cmd, const char* arg);
@@ -551,7 +563,7 @@ static const struct cmd_action_map action_map[] = {
 
    { "LOAD_CORE", command_load_core, "<core path>", "Load the core library at the given path.", CMD_INFO_DESTRUCTIVE },
    { "START_CORE", command_start_core, "No argument", "Start the loaded core without content.", CMD_INFO_DESTRUCTIVE },
-   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>", "Start loading the content at the given path with the core at the given path; GET_STATUS then reports whether it is playing.", CMD_INFO_DESTRUCTIVE },
+   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>", "Load the content at the given path with the core at the given path.", CMD_INFO_DESTRUCTIVE },
    { "CLOSE_CONTENT", command_close_content, "No argument", "Close the running content.", CMD_INFO_DESTRUCTIVE },
    { "UNLOAD_CORE", command_unload_core, "No argument", "Close the content and unload the core.", CMD_INFO_DESTRUCTIVE },
    { "VIDEO_REINIT", command_video_reinit, "No argument", "Restart the video driver.", 0 },

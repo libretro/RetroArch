@@ -2238,6 +2238,31 @@ static void task_push_to_history_list(content_state_t *p_content,
       bool launched_from_menu, bool launched_from_cli,
       bool launched_from_companion_ui);
 
+static retro_task_callback_t content_load_notify_cb;
+static void                 *content_load_notify_user_data;
+
+void task_content_load_notify_finish(const char *error)
+{
+   retro_task_callback_t cb = content_load_notify_cb;
+   const char *path         = path_get(RARCH_PATH_CONTENT);
+   content_load_notify_cb   = NULL;
+   if (cb)
+      cb(NULL, (path && *path) ? (void*)path : NULL,
+            content_load_notify_user_data, error);
+}
+
+void task_content_load_notify(retro_task_callback_t cb, void *user_data)
+{
+   task_content_load_notify_finish("Superseded by another request.");
+   content_load_notify_cb        = cb;
+   content_load_notify_user_data = user_data;
+}
+
+bool task_content_load_pending(void)
+{
+   return content_load_job.stage != CONTENT_LOAD_STAGE_NONE;
+}
+
 /* The entry point's after-load work, and the job's end. */
 static void content_load_finish(struct content_load_job *job,
       content_state_t *p_content)
@@ -2297,6 +2322,8 @@ static void content_load_finish(struct content_load_job *job,
 #endif
    content_load_job_result = ok;
    content_load_job_free(job);
+   task_content_load_notify_finish(ok ? NULL
+         : msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT));
 }
 
 /* Runs the job's current stage and moves it on. */
@@ -3060,6 +3087,8 @@ bool task_push_load_new_core(
       retro_task_callback_t cb,
       void *user_data)
 {
+   bool ret;
+
    /* Set core path */
    path_set(RARCH_PATH_CORE, core_path);
 
@@ -3068,7 +3097,7 @@ bool task_push_load_new_core(
       path_set(RARCH_PATH_CORE_LAST, core_path);
 
    /* Load core */
-   command_event(CMD_EVENT_LOAD_CORE, NULL);
+   ret = command_event(CMD_EVENT_LOAD_CORE, NULL);
 
 #ifndef HAVE_DYNAMIC
    /* Fork core? */
@@ -3080,7 +3109,7 @@ bool task_push_load_new_core(
     * load the actual content. Can differ per mode. */
    runloop_set_current_core_type(type, true);
 
-   return true;
+   return ret;
 }
 
 #ifdef HAVE_MENU

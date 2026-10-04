@@ -36,6 +36,7 @@
 #include <gfx/scaler/scaler.h>
 #include <formats/image.h>
 #include <formats/rpng.h>
+#include <queues/task_queue.h>
 
 #include "../configuration.h"
 #include "../input/input_driver.h"
@@ -1700,6 +1701,14 @@ video_driver_state_t *video_state_get_ptr(void);
  * is in progress, compiles one pass and checks for completion.
  **/
 void video_driver_shader_deferred_tick(void);
+
+/* @cb is told once the deferred shader load in progress ends: task_data
+ * is the preset's path, and error is set if it did not load. False
+ * when no load is in progress. A caller still waiting is told it was
+ * superseded. */
+bool video_shader_deferred_notify(retro_task_callback_t cb, void *user_data);
+/* Tells the caller waiting on the deferred load, if any. */
+void video_shader_deferred_finish(const char *error);
 
 bool video_driver_set_rotation(unsigned rotation);
 

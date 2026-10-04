@@ -160,6 +160,7 @@ typedef struct
     * getter. The read stays a single benign per-tick poll of a
     * monotonic counter. */
    const uint64_t *frame_count;
+   retro_task_callback_t done_cb; /* the caller's */
    char path[PATH_MAX_LENGTH];
 } save_task_state_t;
 
@@ -1505,6 +1506,8 @@ static void content_load_state_cb(retro_task_t *task,
       undo_save_buf.capacity = (size_t)_len;
       strlcpy(undo_save_buf.path, load_data->path, sizeof(undo_save_buf.path));
 
+      if (load_data->done_cb)
+         load_data->done_cb(task, load_data->path, user_data, NULL);
       free(load_data);
       return;
    }
@@ -1596,6 +1599,8 @@ static void content_load_state_cb(retro_task_t *task,
    if (!ret)
       goto error;
 
+   if (load_data->done_cb)
+      load_data->done_cb(task, load_data->path, user_data, NULL);
    free(buf);
    free(load_data);
 
@@ -1605,6 +1610,14 @@ error:
    RARCH_ERR("[State] %s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
          load_data->path);
+   if (load_data->done_cb)
+   {
+      char msg[PATH_MAX_LENGTH + 64];
+      snprintf(msg, sizeof(msg), "%s \"%s\".",
+            msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE), load_data->path);
+      load_data->done_cb(task, load_data->path, user_data,
+            error ? error : msg);
+   }
    if (buf)
       free(buf);
    free(load_data);
@@ -1629,6 +1642,8 @@ static void save_state_cb(retro_task_t *task,
     * no-op but we can't read state->path / state->flags. */
    if (!state)
       return;
+   if (state->done_cb)
+      state->done_cb(task, state->path, user_data, error);
 #ifdef HAVE_SCREENSHOTS
    {
       char               *path   = strdup(state->path);
@@ -1702,7 +1717,8 @@ static void content_capture_frontend_blocks(save_task_state_t *state)
  *
  * Create a new task to save the content state.
  **/
-static void task_push_save_state(const char *path, void *data, size_t len, bool autosave)
+static bool task_push_save_state(const char *path, void *data, size_t len,
+      bool autosave, retro_task_callback_t cb, void *user_data)
 {
    settings_t     *settings        = config_get_ptr();
    retro_task_t       *task        = task_init();
@@ -1747,6 +1763,8 @@ static void task_push_save_state(const char *path, void *data, size_t len, bool 
    task->state                   = state;
    task->handler                 = task_save_handler;
    task->callback                = save_state_cb;
+   task->user_data               = user_data;
+   state->done_cb                = cb;
    task->title                   = strdup(msg_hash_to_str(MSG_SAVING_STATE));
 
    if (state->flags & SAVE_TASK_FLAG_MUTE)
@@ -1755,7 +1773,10 @@ static void task_push_save_state(const char *path, void *data, size_t len, bool 
       task->flags               &= ~RETRO_TASK_FLG_MUTE;
 
    if (task_queue_push(task))
+   {
       save_state_task_pending = true;
+      return true;
+   }
    else
    {
       /* Another blocking task is already active. */
@@ -1767,7 +1788,7 @@ static void task_push_save_state(const char *path, void *data, size_t len, bool 
       free(state);
    }
 
-   return;
+   return false;
 
 error:
    if (data)
@@ -1780,6 +1801,7 @@ error:
          task_free_title(task);
       free(task);
    }
+   return false;
 }
 
 /**
@@ -1797,6 +1819,7 @@ static void content_load_and_save_state_cb(retro_task_t *task,
    void                  *data;
    size_t                 size;
    bool               autosave;
+   retro_task_callback_t done_cb;
 
    /* NULL-check load_data: task_load_handler_finished may have
     * failed to allocate the task_data copy on OOM.  Delegate the
@@ -1813,10 +1836,20 @@ static void content_load_and_save_state_cb(retro_task_t *task,
    data     = load_data->undo_data;
    size     = load_data->undo_size;
    autosave = (load_data->flags & SAVE_TASK_FLAG_AUTOSAVE) ? true : false;
+   /* the caller asked about the save, not this backup load */
+   done_cb  = load_data->done_cb;
+   load_data->done_cb = NULL;
 
    content_load_state_cb(task, task_data, user_data, error);
 
-   task_push_save_state(path, data, size, autosave);
+   if (     !task_push_save_state(path, data, size, autosave, done_cb, user_data)
+         && done_cb)
+   {
+      char msg[PATH_MAX_LENGTH + 64];
+      snprintf(msg, sizeof(msg), "%s \"%s\".",
+            msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO), path);
+      done_cb(NULL, path, user_data, msg);
+   }
 
    free(path);
 }
@@ -1831,8 +1864,9 @@ static void content_load_and_save_state_cb(retro_task_t *task,
  * Create a new task to load current state first into a backup buffer (for undo)
  * and then save the content state.
  **/
-static void task_push_load_and_save_state(const char *path, void *data,
-      size_t len, bool load_to_backup_buffer, bool autosave)
+static bool task_push_load_and_save_state(const char *path, void *data,
+      size_t len, bool load_to_backup_buffer, bool autosave,
+      retro_task_callback_t cb, void *user_data)
 {
    retro_task_t      *task        = NULL;
    settings_t        *settings    = config_get_ptr();
@@ -1840,12 +1874,12 @@ static void task_push_load_and_save_state(const char *path, void *data,
       calloc(1, sizeof(*state));
 
    if (!state)
-      return;
+      return false;
 
    if (!(task = task_init()))
    {
       free(state);
-      return;
+      return false;
    }
 
 
@@ -1875,6 +1909,8 @@ static void task_push_load_and_save_state(const char *path, void *data,
    task->type                   = TASK_TYPE_BLOCKING;
    task->handler                = task_load_handler;
    task->callback               = content_load_and_save_state_cb;
+   task->user_data              = user_data;
+   state->done_cb               = cb;
    task->title                  = strdup(msg_hash_to_str(MSG_LOADING_STATE));
 
    load_state_task_pending      = true;
@@ -1895,7 +1931,9 @@ static void task_push_load_and_save_state(const char *path, void *data,
          task_free_title(task);
       free(task);
       free(state);
+      return false;
    }
+   return true;
 }
 
 /**
@@ -1977,6 +2015,12 @@ bool content_auto_save_state(const char *path)
  * Returns: true if successful, false otherwise.
  **/
 bool content_save_state(const char *path, bool save_to_disk)
+{
+   return content_save_state_notify(path, save_to_disk, NULL, NULL);
+}
+
+bool content_save_state_notify(const char *path, bool save_to_disk,
+      retro_task_callback_t cb, void *user_data)
 {
    size_t _len;
    void *data  = NULL;
@@ -2067,12 +2111,10 @@ bool content_save_state(const char *path, bool save_to_disk)
       /* TODO/FIXME - Use msg_hash_to_str here */
       RARCH_LOG("[State] %s...\n",
             msg_hash_to_str(MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER));
-      task_push_load_and_save_state(path, data, _len, true, false);
+      return task_push_load_and_save_state(path, data, _len, true, false,
+            cb, user_data);
    }
-   else
-      task_push_save_state(path, data, _len, false);
-
-   return true;
+   return task_push_save_state(path, data, _len, false, cb, user_data);
 }
 
 /**
@@ -2147,6 +2189,14 @@ void content_wait_for_load_state_task(void)
 bool content_load_state(const char *path,
       bool load_to_backup_buffer, bool autoload)
 {
+   return content_load_state_notify(path, load_to_backup_buffer, autoload,
+         NULL, NULL);
+}
+
+bool content_load_state_notify(const char *path,
+      bool load_to_backup_buffer, bool autoload,
+      retro_task_callback_t cb, void *user_data)
+{
    retro_task_t       *task        = NULL;
    save_task_state_t *state        = NULL;
    settings_t *settings            = config_get_ptr();
@@ -2193,6 +2243,8 @@ bool content_load_state(const char *path,
    task->state                  = state;
    task->handler                = task_load_handler;
    task->callback               = content_load_state_cb;
+   task->user_data              = user_data;
+   state->done_cb               = cb;
    task->title                  = strdup(msg_hash_to_str(MSG_LOADING_STATE));
 
    load_state_task_pending      = true;

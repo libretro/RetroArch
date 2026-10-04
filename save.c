@@ -603,14 +603,16 @@ bool event_save_files(bool is_sram_used, bool compress_files,
       const char *path_cheat_database)
 {
    unsigned i;
+   bool ret = true;
 #ifdef HAVE_CHEATS
    cheat_manager_save_game_specific_cheats(path_cheat_database);
 #endif
    if (!task_save_files || !is_sram_used)
       return false;
    for (i = 0; i < task_save_files->size; i++)
-      content_save_ram_file(i, compress_files);
-   return true;
+      if (!content_save_ram_file(i, compress_files))
+         ret = false;
+   return ret;
 }
 
 bool event_load_save_files(bool is_sram_load_disabled)

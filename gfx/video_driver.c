@@ -855,6 +855,28 @@ video_driver_state_t *video_state_get_ptr(void)
  * load is in progress, compiles one pass per frame and
  * handles completion or failure.
  **/
+static retro_task_callback_t shader_deferred_cb;
+static void                 *shader_deferred_user_data;
+
+void video_shader_deferred_finish(const char *error)
+{
+   retro_task_callback_t cb = shader_deferred_cb;
+   shader_deferred_cb       = NULL;
+   if (cb)
+      cb(NULL, video_driver_st.shader_deferred.preset_path,
+            shader_deferred_user_data, error);
+}
+
+bool video_shader_deferred_notify(retro_task_callback_t cb, void *user_data)
+{
+   if (video_driver_st.shader_deferred.state != SHADER_LOAD_COMPILING)
+      return false;
+   video_shader_deferred_finish("Superseded by another request.");
+   shader_deferred_cb        = cb;
+   shader_deferred_user_data = user_data;
+   return true;
+}
+
 void video_driver_shader_deferred_tick(void)
 {
    video_driver_state_t *video_st  = &video_driver_st;
@@ -873,6 +895,7 @@ void video_driver_shader_deferred_tick(void)
       || !video_st->data)
    {
       d->state = SHADER_LOAD_FAILED;
+      video_shader_deferred_finish("The video driver went away.");
       return;
    }
 
@@ -941,6 +964,7 @@ void video_driver_shader_deferred_tick(void)
          RARCH_LOG("[Shaders] Deferred load complete: \"%s\".\n",
                d->preset_path);
          command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
+         video_shader_deferred_finish(NULL);
       }
       else /* SHADER_LOAD_FAILED */
       {
@@ -957,6 +981,7 @@ void video_driver_shader_deferred_tick(void)
                   MESSAGE_QUEUE_ICON_DEFAULT,
                   MESSAGE_QUEUE_CATEGORY_ERROR);
          command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
+         video_shader_deferred_finish("Shader preset failed to load.");
       }
 
       /* Reset to idle regardless */
@@ -2656,6 +2681,7 @@ void video_driver_free_internal(void)
          }
          d->state       = SHADER_LOAD_IDLE;
          d->driver_data = NULL;
+         video_shader_deferred_finish("The video driver went away.");
       }
    }
 
