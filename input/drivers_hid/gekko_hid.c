@@ -283,9 +283,9 @@ static void pad_add(gekko_hid_t *hid, const gk_usb_dev_t *dev)
          pad_connection_pad_deinit(&hid->connections[slot], slot);
       RARCH_LOG("[GekkoHID] %04x:%04x is not a pad RetroArch knows.\n",
             info.vid, info.pid);
-      /* A keyboard stays awake for the keyboard reader */
+      /* A keyboard or mouse stays awake for its reader */
       if (!(info.if_class == 3 && info.if_subclass == 1
-               && info.if_protocol == 1))
+               && (info.if_protocol == 1 || info.if_protocol == 2)))
          gk_usb_close(dev->id);
       free(pad);
       ignore(hid, dev->id);

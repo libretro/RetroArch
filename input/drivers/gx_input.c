@@ -33,7 +33,9 @@
 
 #if defined(HW_RVL) && defined(GEKKO_NATIVE)
 #include <gekko/keyboard.h>
+#include <gekko/mouse.h>
 #define GX_KEYBOARD
+#define GX_USB_MOUSE
 #endif
 
 /* TODO/FIXME -
@@ -61,6 +63,9 @@ typedef struct gx_input
    gx_input_mouse_t mouse[DEFAULT_MAX_PADS];
 #else
    void *empty;
+#endif
+#ifdef GX_USB_MOUSE
+   gk_mouse_t usb_mouse;                     /* since the last poll */
 #endif
 #ifdef GX_KEYBOARD
    uint8_t key_down[(RETROK_LAST + 7) / 8];  /* by RETROK_* */
@@ -223,6 +228,38 @@ static int16_t rvl_input_state(
          break;
 #endif
       case RETRO_DEVICE_MOUSE:
+#ifdef GX_USB_MOUSE
+         /* USB mice, all as one, are mouse 0 while there are any. */
+         if (     gx->usb_mouse.count
+               && config_get_ptr()->uints.input_mouse_index[port] == 0)
+         {
+            const gk_mouse_t *m = &gx->usb_mouse;
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_MOUSE_X:
+                  return (int16_t)m->dx;
+               case RETRO_DEVICE_ID_MOUSE_Y:
+                  return (int16_t)m->dy;
+               case RETRO_DEVICE_ID_MOUSE_LEFT:
+                  return (m->buttons & GK_MOUSE_LEFT) ? 1 : 0;
+               case RETRO_DEVICE_ID_MOUSE_RIGHT:
+                  return (m->buttons & GK_MOUSE_RIGHT) ? 1 : 0;
+               case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+                  return (m->buttons & GK_MOUSE_MIDDLE) ? 1 : 0;
+               case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+                  return (m->buttons & GK_MOUSE_4) ? 1 : 0;
+               case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+                  return (m->buttons & GK_MOUSE_5) ? 1 : 0;
+               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+                  return m->wheel > 0 ? 1 : 0;
+               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+                  return m->wheel < 0 ? 1 : 0;
+               default:
+                  break;
+            }
+            break;
+         }
+#endif
          {
             settings_t *settings       = config_get_ptr();
             uint16_t joy_idx           = joypad_info->joy_idx;
@@ -339,6 +376,9 @@ static void rvl_input_poll(void *data)
    }
 #ifdef GX_KEYBOARD
    kbd_poll(gx);
+#endif
+#ifdef GX_USB_MOUSE
+   gk_mouse_read(&gx->usb_mouse);
 #endif
 }
 
