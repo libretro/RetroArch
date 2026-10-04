@@ -25,6 +25,10 @@ static unsigned hw_destroys;
 RETRO_API unsigned harness_core_inits(void)       { return inits; }
 RETRO_API unsigned harness_core_hw_resets(void)   { return hw_resets; }
 RETRO_API unsigned harness_core_hw_destroys(void) { return hw_destroys; }
+/* Calls into the core's state functions, which a command must leave to
+ * a task: it can arrive from the core's own input poll. */
+static unsigned state_calls;
+RETRO_API unsigned harness_core_state_calls(void) { return state_calls; }
 
 static void hw_context_reset(void)   { hw_resets++; }
 static void hw_context_destroy(void) { hw_destroys++; }
@@ -98,15 +102,21 @@ void retro_run(void)
  * checks (task_save writes one chunk per tick at least, and a chunk
  * is 16 MiB on desktop), so a close can find the save in flight. */
 #define STATE_SIZE (64u * 1024 * 1024)
-size_t retro_serialize_size(void) { return STATE_SIZE; }
+size_t retro_serialize_size(void) { state_calls++; return STATE_SIZE; }
 bool retro_serialize(void *data, size_t size)
 {
+   state_calls++;
    if (size < STATE_SIZE)
       return false;
    memset(data, 0x5a, STATE_SIZE);
    return true;
 }
-bool retro_unserialize(const void *data, size_t size) { (void)data; return size >= STATE_SIZE; }
+bool retro_unserialize(const void *data, size_t size)
+{
+   (void)data;
+   state_calls++;
+   return size >= STATE_SIZE;
+}
 void retro_cheat_reset(void) { }
 void retro_cheat_set(unsigned index, bool enabled, const char *code) { (void)index; (void)enabled; (void)code; }
 bool retro_load_game(const struct retro_game_info *game)
