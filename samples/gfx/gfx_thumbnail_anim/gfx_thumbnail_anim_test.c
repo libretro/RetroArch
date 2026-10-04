@@ -393,6 +393,50 @@ int main(void)
       gt_can_update = 1;
    }
 
+   /* 6. thumbnails closed while their jobs still wait for the worker.
+    *    A waiting job cannot be pulled out from under the worker, so
+    *    it is cancelled and its block kept until the worker has let it
+    *    go: freed any sooner, the worker walks into freed memory. The
+    *    worker must pass every one of them over and still serve the
+    *    thumbnail that comes after. */
+   {
+      static gfx_thumbnail_t many[24];
+      int r, k, opened = 0;
+      for (r = 0; r < 20; r++)
+      {
+         for (k = 0; k < 24; k++)
+         {
+            reset_thumb(&many[k]);
+            gfx_thumbnail_anim_open(&many[k], path);
+            if (many[k].anim)
+               opened++;
+            gfx_thumbnail_animate(&many[k], cpu_features_get_time_usec());
+         }
+         for (k = 0; k < 24; k++)
+            gfx_thumbnail_reset(&many[k]);
+      }
+      reset_thumb(&th);
+      gt_uploads  = 0;
+      gt_last_crc = 0;
+      gfx_thumbnail_anim_open(&th, path);
+      for (i = 0; i < 240 && gt_uploads < 3; i++)
+      {
+         gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
+         usleep(16666);
+      }
+      if (opened && gt_uploads >= 2)
+         printf("[ok]   %d animations closed with a job waiting; the "
+                "next one still animates\n", opened);
+      else
+      {
+         printf("[FAIL] after %d animations closed with a job waiting, "
+                "the next uploaded %d frames\n", opened, gt_uploads);
+         bad = 1;
+      }
+      gfx_thumbnail_reset(&th);
+   }
+   gfx_thumbnail_anim_worker_deinit();
+
    remove(path);
    printf("%s\n", bad ? "FAILED" : "PASS");
    return bad;

@@ -58,6 +58,7 @@
 
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #include <rthreads/tpool.h>
 #endif
 
@@ -392,11 +393,14 @@ enum gfx_thumb_anim_job_status
    GFX_THUMB_JOB_HELD,         /* frame handed to the video thread;
                                   its slot is not the worker's until
                                   the surface releases it            */
-   GFX_THUMB_JOB_IDLE          /* not owned by the worker, no pending
+   GFX_THUMB_JOB_IDLE,         /* not owned by the worker, no pending
                                   frame (fresh, or consumed).  QUEUED
                                   stays 0 so the calloc'd preview-audio
                                   job, which is enqueued immediately,
                                   keeps its meaning. */
+   GFX_THUMB_JOB_CANCELLED,    /* released while queued: the worker
+                                  still holds its place in the queue  */
+   GFX_THUMB_JOB_DROPPED       /* the worker came to it and let it go  */
 };
 
 /* The two jobs of an animation and their frame buffers come out of one
@@ -409,6 +413,8 @@ enum gfx_thumb_anim_job_status
 typedef struct gfx_thumb_anim_job
 {
    struct gfx_thumb_anim_job *next;  /* FIFO link (owned by the queue) */
+   struct gfx_thumb_anim_job *retired; /* job A only: the next block
+                                        waiting on a cancelled job    */
    void     *stream;                 /* borrowed from the thumbnail    */
    void     *sess;                   /* borrowed gfx_anim_preview_t,
                                         NULL when not windowed        */
@@ -424,10 +430,10 @@ typedef struct gfx_thumb_anim_job
     * acquire that sees READY sees the decode's results whole. Every
     * other field of a job is owned by whichever side the status
     * says may touch it: the worker between RUNNING and its release
-    * store, the main thread everywhere else. Queue membership and
-    * the release()'s wait-out-RUNNING rendezvous stay under
-    * gfx_thumb_worker_lock; status writes made there are atomic
-    * stores like the rest. */
+    * store, the main thread everywhere else. The queue link is the
+    * worker's from the post until the job leaves QUEUED, RUNNING or
+    * CANCELLED, which is what keeps a released job's block alive
+    * until then. */
    retro_atomic_int_t status;
    uint8_t   type;                   /* enum image_type_enum           */
    bool      use_rgba;               /* output word format             */
@@ -436,6 +442,23 @@ typedef struct gfx_thumb_anim_job
 #ifdef HAVE_THREADS
 /* ---- Animated-thumbnail decode worker ---- */
 
+#ifdef RETRO_ATOMIC_HAS_PTR
+/* The queue takes no lock. The main thread posts a job by pushing it
+ * on the inbox; the worker takes the inbox whole and works through it
+ * oldest first. A job released while it waits cannot be unlinked from
+ * under the worker, so it is marked cancelled and its block kept until
+ * the worker has come to it and let it go. */
+static sthread_t             *gfx_thumb_worker_thread = NULL;
+static retro_atomic_ptr_t     gfx_thumb_worker_inbox;  /* newest first */
+static gfx_thumb_anim_job_t  *gfx_thumb_worker_local  = NULL; /* the worker's,
+                                                                 oldest first */
+static retro_eventcount_t     gfx_thumb_worker_wake;   /* worker */
+static retro_eventcount_t     gfx_thumb_worker_done;   /* main   */
+static retro_atomic_int_t     gfx_thumb_worker_die;
+/* The main thread's: blocks whose cancelled job the worker has yet to
+ * let go, linked through job A. */
+static gfx_thumb_anim_job_t  *gfx_thumb_retired       = NULL;
+#else
 static slock_t               *gfx_thumb_worker_lock   = NULL;
 static scond_t               *gfx_thumb_worker_wake   = NULL; /* worker */
 static scond_t               *gfx_thumb_worker_done   = NULL; /* main   */
@@ -443,6 +466,7 @@ static sthread_t             *gfx_thumb_worker_thread = NULL;
 static gfx_thumb_anim_job_t  *gfx_thumb_worker_head   = NULL;
 static gfx_thumb_anim_job_t  *gfx_thumb_worker_tail   = NULL;
 static bool                   gfx_thumb_worker_die    = false;
+#endif
 /* The colour-conversion pool the video streams band their blits
  * over (Animated Thumbnail Threads). The worker alone creates, uses
  * and destroys it; the poll only publishes how many bands are wanted
@@ -566,6 +590,94 @@ static bool gfx_thumbnail_anim_job_step(gfx_thumb_anim_job_t *job)
    return true;
 }
 
+#ifdef RETRO_ATOMIC_HAS_PTR
+static void gfx_thumbnail_anim_worker(void *unused)
+{
+   (void)unused;
+   for (;;)
+   {
+      bool alive;
+      gfx_thumb_anim_job_t *job = gfx_thumb_worker_local;
+
+      if (!job)
+      {
+         int key;
+         job = (gfx_thumb_anim_job_t*)retro_atomic_exchange_ptr(
+               &gfx_thumb_worker_inbox, NULL);
+         /* Posted newest first: turned round, oldest first. */
+         while (job)
+         {
+            gfx_thumb_anim_job_t *next = job->next;
+            job->next                  = gfx_thumb_worker_local;
+            gfx_thumb_worker_local     = job;
+            job                        = next;
+         }
+         if (gfx_thumb_worker_local)
+            continue;
+         if (retro_atomic_load_acquire_int(&gfx_thumb_worker_die))
+            break;
+         key = retro_eventcount_prepare_wait(&gfx_thumb_worker_wake);
+         if (     retro_atomic_load_acquire_ptr(&gfx_thumb_worker_inbox)
+               || retro_atomic_load_acquire_int(&gfx_thumb_worker_die))
+            retro_eventcount_cancel_wait(&gfx_thumb_worker_wake);
+         else
+            retro_eventcount_commit_wait(&gfx_thumb_worker_wake, key);
+         continue;
+      }
+      if (retro_atomic_load_acquire_int(&gfx_thumb_worker_die))
+         break;
+
+      gfx_thumb_worker_local = job->next;
+
+      /* Released while it waited: let go unrun. After either store
+       * below the job may be freed, and is not touched again here. */
+      if (!retro_atomic_cas_int(&job->status,
+               GFX_THUMB_JOB_QUEUED, GFX_THUMB_JOB_RUNNING))
+      {
+         retro_atomic_store_release_int(&job->status,
+               GFX_THUMB_JOB_DROPPED);
+         continue;
+      }
+
+      alive = gfx_thumbnail_anim_job_step(job);
+
+      /* Release: publishes frame, duration_ms and loops_left to the
+       * poll's acquire load, and wakes a release() waiting the decode
+       * out. */
+      retro_atomic_store_release_int(&job->status,
+            alive ? GFX_THUMB_JOB_READY : GFX_THUMB_JOB_FINISHED);
+      retro_eventcount_notify(&gfx_thumb_worker_done);
+   }
+}
+
+/* Lazily creates the worker. Returns false if thread primitives could
+ * not be allocated; callers then use the synchronous path. */
+static bool gfx_thumbnail_anim_worker_init(void)
+{
+   if (gfx_thumb_worker_thread)
+      return true;
+   if (!retro_eventcount_init(&gfx_thumb_worker_wake))
+   {
+      retro_eventcount_free(&gfx_thumb_worker_wake);
+      return false;
+   }
+   if (!retro_eventcount_init(&gfx_thumb_worker_done))
+   {
+      retro_eventcount_free(&gfx_thumb_worker_done);
+      retro_eventcount_free(&gfx_thumb_worker_wake);
+      return false;
+   }
+   retro_atomic_store_release_int(&gfx_thumb_worker_die, 0);
+   if (!(gfx_thumb_worker_thread = sthread_create(
+         gfx_thumbnail_anim_worker, NULL)))
+   {
+      retro_eventcount_free(&gfx_thumb_worker_done);
+      retro_eventcount_free(&gfx_thumb_worker_wake);
+      return false;
+   }
+   return true;
+}
+#else
 static void gfx_thumbnail_anim_worker(void *unused)
 {
    (void)unused;
@@ -632,6 +744,8 @@ fail:
    return false;
 }
 
+#endif
+
 /* The threads the preview may use now: the setting, unless a core is
  * running under the menu - content loaded and not paused - in which
  * case one, so that a 4K preview does not take the cores the game is
@@ -647,6 +761,162 @@ static int gfx_thumbnail_anim_threads_wanted(void)
    return wanted;
 }
 
+#ifdef RETRO_ATOMIC_HAS_PTR
+static void gfx_thumbnail_anim_retired_reap(void);
+
+static void gfx_thumbnail_anim_job_enqueue(gfx_thumb_anim_job_t *job)
+{
+   void *head;
+   if (gfx_thumb_retired)
+      gfx_thumbnail_anim_retired_reap();
+   retro_atomic_store_relaxed_int(&gfx_thumb_blit_wanted,
+         gfx_thumbnail_anim_threads_wanted());
+   retro_atomic_store_relaxed_int(&job->status, GFX_THUMB_JOB_QUEUED);
+   do
+   {
+      head      = retro_atomic_load_acquire_ptr(&gfx_thumb_worker_inbox);
+      job->next = (gfx_thumb_anim_job_t*)head;
+   } while (!retro_atomic_cas_ptr(&gfx_thumb_worker_inbox, head, job));
+   retro_eventcount_notify(&gfx_thumb_worker_wake);
+}
+
+static bool gfx_thumbnail_anim_job_settled(const gfx_thumb_anim_job_t *job)
+{
+   switch (retro_atomic_load_acquire_int(
+            (retro_atomic_int_t*)&job->status))
+   {
+      case GFX_THUMB_JOB_QUEUED:
+      case GFX_THUMB_JOB_RUNNING:
+      case GFX_THUMB_JOB_CANCELLED:
+         return false;
+      default:
+         break;
+   }
+   return true;
+}
+
+/* Detach a job from the worker: cancel it if still queued, wait out
+ * the decode if running. Returns false when the worker still holds its
+ * place in the queue - the job is not to be freed until the worker has
+ * let it go. */
+static bool gfx_thumbnail_anim_job_release(gfx_thumb_anim_job_t *job)
+{
+   for (;;)
+   {
+      int key;
+      int status = retro_atomic_load_acquire_int(&job->status);
+
+      if (status == GFX_THUMB_JOB_QUEUED)
+      {
+         /* fails when the worker has just started on it */
+         if (retro_atomic_cas_int(&job->status,
+                  GFX_THUMB_JOB_QUEUED, GFX_THUMB_JOB_CANCELLED))
+            return false;
+         continue;
+      }
+      if (status == GFX_THUMB_JOB_CANCELLED)
+         return false;
+      if (status != GFX_THUMB_JOB_RUNNING)
+         return true;
+
+      key = retro_eventcount_prepare_wait(&gfx_thumb_worker_done);
+      if (retro_atomic_load_acquire_int(&job->status)
+            == GFX_THUMB_JOB_RUNNING)
+         retro_eventcount_commit_wait(&gfx_thumb_worker_done, key);
+      else
+         retro_eventcount_cancel_wait(&gfx_thumb_worker_done);
+   }
+}
+
+/* Free the retired blocks the worker has let go of. */
+static void gfx_thumbnail_anim_retired_reap(void)
+{
+   gfx_thumb_anim_job_t **pp = &gfx_thumb_retired;
+   while (*pp)
+   {
+      gfx_thumb_anim_job_t *j0 = *pp;
+      gfx_thumb_anim_job_t *j1 = (gfx_thumb_anim_job_t*)
+            ((uint8_t*)j0 + GFX_THUMB_ANIM_JOB_STRIDE);
+      if (     gfx_thumbnail_anim_job_settled(j0)
+            && gfx_thumbnail_anim_job_settled(j1))
+      {
+         *pp = j0->retired;
+         free(j0);
+      }
+      else
+         pp  = &j0->retired;
+   }
+}
+
+/* Release both jobs of an animation and free their block, now or once
+ * the worker has let go of a cancelled one. */
+static void gfx_thumbnail_anim_jobs_free(gfx_thumb_anim_job_t *j0,
+      gfx_thumb_anim_job_t *j1)
+{
+   bool free_now = true;
+   if (j1 && !gfx_thumbnail_anim_job_release(j1))
+      free_now = false;
+   if (j0)
+   {
+      if (!gfx_thumbnail_anim_job_release(j0))
+         free_now = false;
+      if (free_now)
+         free(j0);
+      else
+      {
+         j0->retired       = gfx_thumb_retired;
+         gfx_thumb_retired = j0;
+      }
+   }
+   gfx_thumbnail_anim_retired_reap();
+}
+
+void gfx_thumbnail_anim_worker_deinit(void)
+{
+   gfx_thumb_anim_job_t *job;
+   if (!gfx_thumb_worker_thread)
+      return;
+   retro_atomic_store_release_int(&gfx_thumb_worker_die, 1);
+   retro_eventcount_notify(&gfx_thumb_worker_wake);
+   sthread_join(gfx_thumb_worker_thread);
+   gfx_thumb_worker_thread = NULL;
+
+   /* Joined: the queue is nobody's but ours now. Anything still in it
+    * goes back to its thumbnail and simply never advances - normal
+    * shutdown order resets thumbnails first, so it is expected to be
+    * empty here - and a cancelled job is let go as the worker would
+    * have. */
+   job = (gfx_thumb_anim_job_t*)retro_atomic_exchange_ptr(
+         &gfx_thumb_worker_inbox, NULL);
+   for (;;)
+   {
+      gfx_thumb_anim_job_t *next;
+      if (!job)
+      {
+         if (!(job = gfx_thumb_worker_local))
+            break;
+         gfx_thumb_worker_local = NULL;
+      }
+      next = job->next;
+      retro_atomic_store_release_int(&job->status,
+            retro_atomic_load_acquire_int(&job->status)
+               == GFX_THUMB_JOB_CANCELLED
+            ? GFX_THUMB_JOB_DROPPED : GFX_THUMB_JOB_IDLE);
+      job  = next;
+   }
+   gfx_thumbnail_anim_retired_reap();
+
+   /* The pool is nobody's but ours now. */
+   if (gfx_thumb_blit_pool)
+   {
+      tpool_destroy(gfx_thumb_blit_pool);
+      gfx_thumb_blit_pool = NULL;
+   }
+   gfx_thumb_blit_bands = 1;
+   retro_eventcount_free(&gfx_thumb_worker_done);
+   retro_eventcount_free(&gfx_thumb_worker_wake);
+}
+#else
 static void gfx_thumbnail_anim_job_enqueue(gfx_thumb_anim_job_t *job)
 {
    retro_atomic_store_relaxed_int(&gfx_thumb_blit_wanted,
@@ -724,6 +994,20 @@ void gfx_thumbnail_anim_worker_deinit(void)
    gfx_thumb_worker_wake = NULL;
    gfx_thumb_worker_lock = NULL;
 }
+
+/* The locked queue unlinks a released job, so its block is free at once. */
+static void gfx_thumbnail_anim_jobs_free(gfx_thumb_anim_job_t *j0,
+      gfx_thumb_anim_job_t *j1)
+{
+   if (j1)
+      gfx_thumbnail_anim_job_release(j1);
+   if (j0)
+   {
+      gfx_thumbnail_anim_job_release(j0);
+      free(j0);
+   }
+}
+#endif
 #else
 void gfx_thumbnail_anim_worker_deinit(void) { }
 #endif
@@ -735,15 +1019,9 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
     * off the queue, then free once. Their frames are the surface's
     * slots, which stay with the thumbnail: a slot the video thread
     * is still reading outlives the job that filled it. */
-   if (thumbnail->anim_job2)
-      gfx_thumbnail_anim_job_release(
-            (gfx_thumb_anim_job_t*)thumbnail->anim_job2);
-   if (thumbnail->anim_job)
-   {
-      gfx_thumbnail_anim_job_release(
-            (gfx_thumb_anim_job_t*)thumbnail->anim_job);
-      free(thumbnail->anim_job);
-   }
+   gfx_thumbnail_anim_jobs_free(
+         (gfx_thumb_anim_job_t*)thumbnail->anim_job,
+         (gfx_thumb_anim_job_t*)thumbnail->anim_job2);
    thumbnail->anim_job  = NULL;
    thumbnail->anim_job2 = NULL;
    thumbnail->anim_job_upload = 0;
