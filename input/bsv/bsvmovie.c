@@ -1063,22 +1063,20 @@ void bsv_movie_scan_from_start(bsv_movie_t *movie, int32_t len)
    bsv_movie_scan_to(movie, len);
 }
 
-static retro_task_callback_t movie_op_cb;
-static void                 *movie_op_user_data;
-
-void movie_op_finish(const char *error)
+void movie_op_finish(input_driver_state_t *input_st, const char *error)
 {
-   retro_task_callback_t cb = movie_op_cb;
-   movie_op_cb              = NULL;
+   retro_task_callback_t cb  = input_st->bsv_movie_op_cb;
+   input_st->bsv_movie_op_cb = NULL;
    if (cb)
-      cb(NULL, NULL, movie_op_user_data, error);
+      cb(NULL, NULL, input_st->bsv_movie_op_user_data, error);
 }
 
-void movie_op_notify(retro_task_callback_t cb, void *user_data)
+void movie_op_notify(input_driver_state_t *input_st,
+      retro_task_callback_t cb, void *user_data)
 {
-   movie_op_finish("Superseded by another replay operation.");
-   movie_op_cb        = cb;
-   movie_op_user_data = user_data;
+   movie_op_finish(input_st, "Superseded by another replay operation.");
+   input_st->bsv_movie_op_cb        = cb;
+   input_st->bsv_movie_op_user_data = user_data;
 }
 
 void bsv_movie_next_frame(input_driver_state_t *input_st)
@@ -1157,10 +1155,10 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
             RARCH_ERR("[Replay] failed to write checkpoint, exiting record\n");
             input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
             if (forced)
-               movie_op_finish("Failed to write the checkpoint.");
+               movie_op_finish(input_st, "Failed to write the checkpoint.");
          }
          else if (forced)
-            movie_op_finish(NULL);
+            movie_op_finish(input_st, NULL);
       }
       else
       {
@@ -1190,14 +1188,14 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
          runloop_msg_queue_push(_msg, strlen(_msg), 10, 15, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
          input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_SEEKING;
-         movie_op_finish(NULL);
+         movie_op_finish(input_st, NULL);
       }
       else
       {
          const char *_msg = msg_hash_to_str(MSG_REPLAY_SEEK_TO_FRAME_FAILED);
          runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-         movie_op_finish(_msg);
+         movie_op_finish(input_st, _msg);
       }
       input_st->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_SEEK_TO_FRAME;
    }
@@ -1209,14 +1207,14 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
          runloop_msg_queue_push(_msg, strlen(_msg), 10, 15, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
          input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_SEEKING;
-         movie_op_finish(NULL);
+         movie_op_finish(input_st, NULL);
       }
       else
       {
          const char *_msg = msg_hash_to_str(MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT_FAILED);
          runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-         movie_op_finish(_msg);
+         movie_op_finish(input_st, _msg);
       }
       input_st->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_PREV_CHECKPOINT;
    }
@@ -1228,14 +1226,14 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
          runloop_msg_queue_push(_msg, strlen(_msg), 10, 15, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_SUCCESS);
          input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_SEEKING;
-         movie_op_finish(NULL);
+         movie_op_finish(input_st, NULL);
       }
       else
       {
          const char *_msg = msg_hash_to_str(MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT_FAILED);
          runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_ERROR);
-         movie_op_finish(_msg);
+         movie_op_finish(input_st, _msg);
       }
       input_st->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_NEXT_CHECKPOINT;
    }

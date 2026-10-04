@@ -672,6 +672,9 @@ typedef struct
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_t     *bsv_movie_state_handle;              /* ptr alignment */
    bsv_movie_t     *bsv_movie_state_next_handle;         /* ptr alignment */
+   /* told once the checkpoint or seek asked for has run */
+   retro_task_callback_t bsv_movie_op_cb;
+   void            *bsv_movie_op_user_data;
 #endif
 #ifdef HAVE_OVERLAY
    input_overlay_t *overlay_ptr;
@@ -1585,9 +1588,10 @@ bool movie_seek_to_frame(input_driver_state_t *input_st, int64_t frame);
 /* @cb is told once the checkpoint or seek just asked for has run, with
  * error set if it failed; a caller still waiting is told it was
  * superseded. */
-void movie_op_notify(retro_task_callback_t cb, void *user_data);
+void movie_op_notify(input_driver_state_t *input_st,
+      retro_task_callback_t cb, void *user_data);
 /* Tells the caller waiting on a checkpoint or seek, if any. */
-void movie_op_finish(const char *error);
+void movie_op_finish(input_driver_state_t *input_st, const char *error);
 bool movie_start_playback(input_driver_state_t *input_st, char *path);
 /* @cb, when this returns true, is told once playback has started:
  * task_data is the replay's identifier, as text, and error is set if it

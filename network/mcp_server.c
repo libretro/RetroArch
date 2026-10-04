@@ -1108,6 +1108,7 @@ command_t *command_mcp_new(uint16_t port, const char *bind_address,
    cmd->reply_to   = mcp_reply_to;
    cmd->reply_image_to = mcp_reply_image_to;
    cmd->destroy    = mcp_destroy;
+   cmd->structured = true;
    RARCH_LOG("[MCP] Listening on http://%s:%hu/mcp.\n",
          bind_address, (unsigned short)port);
    return cmd;

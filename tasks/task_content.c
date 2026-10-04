@@ -2238,24 +2238,23 @@ static void task_push_to_history_list(content_state_t *p_content,
       bool launched_from_menu, bool launched_from_cli,
       bool launched_from_companion_ui);
 
-static retro_task_callback_t content_load_notify_cb;
-static void                 *content_load_notify_user_data;
-
 void task_content_load_notify_finish(const char *error)
 {
-   retro_task_callback_t cb = content_load_notify_cb;
-   const char *path         = path_get(RARCH_PATH_CONTENT);
-   content_load_notify_cb   = NULL;
+   content_state_t *p_content = content_state_get_ptr();
+   retro_task_callback_t cb   = p_content->load_notify_cb;
+   const char *path           = path_get(RARCH_PATH_CONTENT);
+   p_content->load_notify_cb  = NULL;
    if (cb)
       cb(NULL, (path && *path) ? (void*)path : NULL,
-            content_load_notify_user_data, error);
+            p_content->load_notify_user_data, error);
 }
 
 void task_content_load_notify(retro_task_callback_t cb, void *user_data)
 {
+   content_state_t *p_content = content_state_get_ptr();
    task_content_load_notify_finish("Superseded by another request.");
-   content_load_notify_cb        = cb;
-   content_load_notify_user_data = user_data;
+   p_content->load_notify_cb        = cb;
+   p_content->load_notify_user_data = user_data;
 }
 
 bool task_content_load_pending(void)

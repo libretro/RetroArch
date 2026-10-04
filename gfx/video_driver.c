@@ -855,25 +855,23 @@ video_driver_state_t *video_state_get_ptr(void)
  * load is in progress, compiles one pass per frame and
  * handles completion or failure.
  **/
-static retro_task_callback_t shader_deferred_cb;
-static void                 *shader_deferred_user_data;
-
 void video_shader_deferred_finish(const char *error)
 {
-   retro_task_callback_t cb = shader_deferred_cb;
-   shader_deferred_cb       = NULL;
+   shader_load_deferred_t *d = &video_driver_st.shader_deferred;
+   retro_task_callback_t cb  = d->done_cb;
+   d->done_cb                = NULL;
    if (cb)
-      cb(NULL, video_driver_st.shader_deferred.preset_path,
-            shader_deferred_user_data, error);
+      cb(NULL, d->preset_path, d->done_user_data, error);
 }
 
 bool video_shader_deferred_notify(retro_task_callback_t cb, void *user_data)
 {
-   if (video_driver_st.shader_deferred.state != SHADER_LOAD_COMPILING)
+   shader_load_deferred_t *d = &video_driver_st.shader_deferred;
+   if (d->state != SHADER_LOAD_COMPILING)
       return false;
    video_shader_deferred_finish("Superseded by another request.");
-   shader_deferred_cb        = cb;
-   shader_deferred_user_data = user_data;
+   d->done_cb        = cb;
+   d->done_user_data = user_data;
    return true;
 }
 

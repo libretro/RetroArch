@@ -4146,7 +4146,7 @@ bool command_event(enum event_command cmd, void *data)
             if (!res)
                return false;
             if (n)
-               movie_op_notify(n->cb, n->user_data);
+               movie_op_notify(input_st, n->cb, n->user_data);
          }
 #endif
          break;

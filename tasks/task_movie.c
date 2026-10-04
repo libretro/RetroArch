@@ -499,7 +499,7 @@ bool movie_stop_record(input_driver_state_t *input_st)
 
 bool movie_stop(input_driver_state_t *input_st)
 {
-   movie_op_finish("The replay stopped.");
+   movie_op_finish(input_st, "The replay stopped.");
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
       return movie_stop_playback(input_st);
    else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)

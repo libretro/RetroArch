@@ -377,6 +377,9 @@ struct command_handler
    void *userptr;
    /* State received */
    bool state[RARCH_BIND_LIST_END];
+   /* Requests are structured (MCP), not lines: given the replies a
+    * line-based client never had */
+   bool structured;
 };
 
 typedef struct command_handler command_t;

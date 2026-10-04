@@ -1015,17 +1015,13 @@ static bool command_ai_service_start(struct command_reply *r)
 }
 #endif
 
-/* True while command_run() runs a handler: replies a line-based client
- * never had are given to structured requests only. */
-static bool command_structured;
-
 /* Answers @cmd once the content load in progress, or with @next the
  * one the command leads to, is through. */
 static bool command_content_reply(command_t *cmd, const char *name,
       bool next, bool want_core)
 {
    struct command_reply *r;
-   if (     !command_structured
+   if (     !cmd->structured
          || (!next && !task_content_load_pending())
          || !(r = command_reply_new(name)))
       return true;
@@ -1046,13 +1042,7 @@ bool command_run(command_t *handle, const char *name, const char *arg)
    unsigned i;
    for (i = 0; i < ARRAY_SIZE(action_map); i++)
       if (string_is_equal(name, action_map[i].str))
-      {
-         bool ret;
-         command_structured = true;
-         ret                = action_map[i].action(handle, arg ? arg : "");
-         command_structured = false;
-         return ret;
-      }
+         return action_map[i].action(handle, arg ? arg : "");
    for (i = 0; i < ARRAY_SIZE(map); i++)
       if (string_is_equal(name, map[i].str))
       {
@@ -1365,7 +1355,7 @@ bool command_seek_replay(command_t *cmd, const char *arg)
       /* answered once the seek has run, on a later frame */
       snprintf(r->ok, sizeof(r->ok), "OK %" PRId64,
             input_st->bsv_movie_state.seek_target_frame);
-      movie_op_notify(command_reply_done, r);
+      movie_op_notify(input_st, command_reply_done, r);
       command_deferred_take(&r->deferred, cmd);
       return true;
    }
@@ -3077,7 +3067,7 @@ bool command_set_shader(command_t *cmd, const char *arg)
 
    /* A deferred load compiles over the next frames: answered once it
     * is through. */
-   if (cmd && command_structured && (r = command_reply_new("SET_SHADER")))
+   if (cmd && cmd->structured && (r = command_reply_new("SET_SHADER")))
    {
       if (video_shader_deferred_notify(command_reply_done, r))
       {

@@ -1029,6 +1029,8 @@ typedef struct shader_load_deferred
    unsigned               current_pass; /* next pass to compile          */
    unsigned               total_passes;
    void                  *driver_data;  /* driver-specific work state    */
+   retro_task_callback_t  done_cb;      /* told once the load ends       */
+   void                  *done_user_data;
 } shader_load_deferred_t;
 
 typedef struct video_driver
