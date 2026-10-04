@@ -14538,7 +14538,9 @@ static bool menu_displaylist_ctl_internal(
                   char name[NAME_MAX_LENGTH];
                   size_t _len      = 0;
                   unsigned j;
-                  unsigned device  = settings->uints.input_libretro_device[mapped_port];
+                  unsigned device  = (mapped_port < MAX_USERS)
+                     ? settings->uints.input_libretro_device[mapped_port]
+                     : RETRO_DEVICE_NONE;
                   device          &= RETRO_DEVICE_MASK;
 
                   if (     device == RETRO_DEVICE_JOYPAD
@@ -14619,7 +14621,14 @@ static bool menu_displaylist_ctl_internal(
                info->flags       |= MD_FLAG_NEED_REFRESH
                                   | MD_FLAG_NEED_PUSH;
                if (selection >= count)
-                  info->flags    |= MD_FLAG_NEED_CLEAR;
+               {
+                  /* 'None' shortens the list: stay on Mapped Port,
+                   * its last entry */
+                  if (mapped_port >= MAX_USERS && count)
+                     menu_st->selection_ptr = count - 1;
+                  else
+                     info->flags |= MD_FLAG_NEED_CLEAR;
+               }
             }
             break;
 #ifdef HAVE_CDROM

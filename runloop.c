@@ -2369,6 +2369,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
                      RARCH_DBG("%s %u:\n", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), p + 1);
 
+                     if (mapped_port >= MAX_USERS)
+                        continue;
+
                      for (retro_id = 0; retro_id < RARCH_FIRST_CUSTOM_BIND; retro_id++)
                      {
                         enum msg_hash_enums _enum;

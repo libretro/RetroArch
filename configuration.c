@@ -10451,8 +10451,9 @@ bool input_remapping_load_file(void *data, const char *path)
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_remap_ports[i], s1);
       /* The mapped port indexes per-port arrays (libretro device,
-       * input descriptors, analog requests). */
-      if (settings->uints.input_remap_ports[i] >= MAX_USERS)
+       * input descriptors, analog requests). MAX_USERS is 'None':
+       * the user feeds no core port, and no array is indexed. */
+      if (settings->uints.input_remap_ports[i] > MAX_USERS)
          settings->uints.input_remap_ports[i] = i;
    }
 

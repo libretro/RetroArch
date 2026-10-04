@@ -58,7 +58,8 @@
  * stored as read, and is used to index per-port arrays of MAX_USERS
  * entries (the port's libretro device, its input descriptors, its
  * analog requests).  The load now puts a port outside
- * [0, MAX_USERS) back to the user's own.
+ * [0, MAX_USERS] back to the user's own; MAX_USERS itself is 'None',
+ * which the use sites skip.
  *
  * IMPORTANT: this test keeps verbatim copies of the post-fix
  * predicates from configuration.c and input/input_driver.c.
@@ -117,7 +118,7 @@ static int validate_loaded_remap(int _remap)
  *     what CONFIG_GET_INT_BASE stored there. === */
 static unsigned validate_loaded_remap_port(unsigned port, unsigned i)
 {
-   if (port >= MAX_USERS)
+   if (port > MAX_USERS)
       port = i;
    return port;
 }
@@ -350,9 +351,10 @@ static void test_analog_to_analog_sizeof_vs_array_size_bug(void)
 }
 
 /* A mapped port from a remap file: one a port array has is kept, and
- * anything else is the user's own port.  The array read below is the
- * shape of the use sites; under ASan a port that got through would
- * be reported there. */
+ * so is MAX_USERS ('None': the user feeds no core port); anything
+ * else is the user's own port.  The array read below is the shape of
+ * the use sites, which skip 'None'; under ASan a port that got
+ * through would be reported there. */
 static void test_remap_port_in_range_kept_out_of_range_reset(void)
 {
    static const int raw[] = { 0, 1, 15, 16, 17, 99, 1024, -1, -99 };
@@ -367,7 +369,7 @@ static void test_remap_port_in_range_kept_out_of_range_reset(void)
          /* CONFIG_GET_INT_BASE stores the int into an unsigned */
          unsigned stored = (unsigned)raw[k];
          unsigned port   = validate_loaded_remap_port(stored, user);
-         unsigned want   = (raw[k] >= 0 && raw[k] < MAX_USERS)
+         unsigned want   = (raw[k] >= 0 && raw[k] <= MAX_USERS)
             ? (unsigned)raw[k] : user;
 
          if (port != want)
@@ -377,11 +379,12 @@ static void test_remap_port_in_range_kept_out_of_range_reset(void)
             failures++;
             continue;
          }
-         per_port[port]++;
+         if (port < MAX_USERS)
+            per_port[port]++;
       }
    }
    free(per_port);
-   printf("[SUCCESS] mapped port: 0..%d kept, anything else is the user's own\n",
+   printf("[SUCCESS] mapped port: 0..%d and 'None' kept, anything else is the user's own\n",
          MAX_USERS - 1);
 }
 

@@ -899,7 +899,7 @@ static void lane_output_store(void)
 /* What a core sees of pad 1, frame by frame, from a synthetic pad. */
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
 #define VIEW_FRAMES 1200
-#define VIEW_SCENARIOS 10
+#define VIEW_SCENARIOS 11
 #define VIEW_REPLAY_SLACK 64
 /* Playback and netplay do not fast-forward: those two checks run at
  * the core's frame rate, so they use a shorter stretch of the pattern. */
@@ -1076,7 +1076,9 @@ static void lane_core_view(void)
       /* run-ahead replays the frame's input to the run it shows: the
        * core must see what it sees without it */
       { "run-ahead, one frame",     0x9c5fa001u },
-      { "d-pad on a hat",           0xaaea8cb1u }
+      { "d-pad on a hat",           0xaaea8cb1u },
+      /* Mapped Port 'None': the user's pad reaches no core port */
+      { "mapped to no port",        0xa6cc3885u }
    };
    static struct view_frame one_by_one[VIEW_FRAMES], as_mask[VIEW_FRAMES];
    input_driver_state_t *input_st = input_state_get_ptr();
@@ -1187,6 +1189,10 @@ static void lane_core_view(void)
             input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  = HAT_MAP(0, HAT_LEFT_MASK);
             input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey = HAT_MAP(0, HAT_RIGHT_MASK);
             break;
+         case 10:
+            settings->uints.input_remap_ports[0] = MAX_USERS;
+            input_remapping_update_port_map();
+            break;
          case 8:
             /* the program's own main() makes run-ahead available at
              * start-up; this harness replaces main() */
@@ -1231,6 +1237,14 @@ static void lane_core_view(void)
       digest = view_digest(one_by_one);
       if (sc == 0)
          digest_default = digest;
+      if (sc == 10)
+      {
+         unsigned held = 0;
+         for (i = 0; i < VIEW_FRAMES; i++)
+            if (one_by_one[i].buttons)
+               held++;
+         CHECK(!held, "core view: a user mapped to no port reached the core");
+      }
 
       frames_run += 2 * VIEW_FRAMES;
       if (!bridged)
@@ -1256,6 +1270,11 @@ static void lane_core_view(void)
       settings->bools.input_turbo_enable        = false;
       settings->uints.input_turbo_mode          = INPUT_TURBO_MODE_CLASSIC;
       settings->bools.run_ahead_enabled         = false;
+      if (settings->uints.input_remap_ports[0] != 0)
+      {
+         settings->uints.input_remap_ports[0]   = 0;
+         input_remapping_update_port_map();
+      }
       memcpy(&input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_UP], saved_dpad,
             sizeof(saved_dpad));
       input_config_binds[0][RARCH_TURBO_ENABLE] = saved_turbo;

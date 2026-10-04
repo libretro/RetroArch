@@ -6164,22 +6164,41 @@ static int setting_action_left_libretro_device_type(
    return 0;
 }
 
+/* Port Controls has no Device Type entry while the port is mapped to
+ * 'None', so Mapped Port is one entry higher: the cursor follows it. */
+static void setting_input_remap_port_follow(struct menu_state *menu_st,
+      unsigned was, unsigned now)
+{
+   if (now >= MAX_USERS && was < MAX_USERS)
+   {
+      if (menu_st->selection_ptr)
+         menu_st->selection_ptr--;
+   }
+   else if (was >= MAX_USERS && now < MAX_USERS)
+      menu_st->selection_ptr++;
+}
+
 static int setting_action_left_input_remap_port(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
    unsigned port              = 0;
+   unsigned was;
    settings_t *settings       = config_get_ptr();
 
    if (!setting)
       return -1;
 
    port = setting->index_offset;
+   was  = settings->uints.input_remap_ports[port];
 
+   /* MAX_USERS is 'None', between the last port and the first */
    if (settings->uints.input_remap_ports[port] > 0)
       settings->uints.input_remap_ports[port]--;
    else
-      settings->uints.input_remap_ports[port] = MAX_USERS - 1;
+      settings->uints.input_remap_ports[port] = MAX_USERS;
+   setting_input_remap_port_follow(menu_st, was,
+         settings->uints.input_remap_ports[port]);
 
    /* Must be called whenever settings->uints.input_remap_ports
     * is modified */
@@ -7564,10 +7583,12 @@ static size_t setting_get_string_representation_uint_analog_dpad_mode(
 static size_t setting_get_string_representation_uint_input_remap_port(
       rarch_setting_t *setting, char *s, size_t len)
 {
-   if (setting)
-      return snprintf(s, len, "%u",
-            *setting->value.target.unsigned_integer + 1);
-   return 0;
+   if (!setting)
+      return 0;
+   if (*setting->value.target.unsigned_integer >= MAX_USERS)
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
+   return snprintf(s, len, "%u",
+         *setting->value.target.unsigned_integer + 1);
 }
 
 #ifdef HAVE_THREADS
@@ -8799,6 +8820,8 @@ static int setting_action_start_input_remap_port(rarch_setting_t *setting)
       return -1;
 
    port                                    = setting->index_offset;
+   setting_input_remap_port_follow(menu_st,
+         settings->uints.input_remap_ports[port], port);
    settings->uints.input_remap_ports[port] = port;
 
    /* Must be called whenever settings->uints.input_remap_ports
@@ -8923,6 +8946,7 @@ static int setting_action_right_input_remap_port(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    unsigned port              = 0;
+   unsigned was;
    struct menu_state *menu_st = menu_state_get_ptr();
    settings_t *settings       = config_get_ptr();
 
@@ -8930,11 +8954,14 @@ static int setting_action_right_input_remap_port(
       return -1;
 
    port = setting->index_offset;
+   was  = settings->uints.input_remap_ports[port];
 
-   if (settings->uints.input_remap_ports[port] < MAX_USERS - 1)
+   if (settings->uints.input_remap_ports[port] < MAX_USERS)
       settings->uints.input_remap_ports[port]++;
    else
       settings->uints.input_remap_ports[port] = 0;
+   setting_input_remap_port_follow(menu_st, was,
+         settings->uints.input_remap_ports[port]);
 
    /* Must be called whenever settings->uints.input_remap_ports
     * is modified */
@@ -11840,7 +11867,7 @@ static bool setting_append_list_input_remap_port_options(
       SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], &setting_action_start_input_remap_port)
       SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
       SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_uint_input_remap_port)
-      menu_settings_list_current_add_range(list, list_info, 0, MAX_USERS-1, 1.0, true, true);
+      menu_settings_list_current_add_range(list, list_info, 0, MAX_USERS, 1.0, true, true);
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_REMAP_PORT + user));
    }

@@ -778,8 +778,9 @@ static size_t menu_action_setting_disp_set_label_input_desc(
          RARCH_UNMAPPED)
    {
       unsigned mapped_port   = settings->uints.input_remap_ports[user_idx];
-      const char *descriptor = runloop_state_get_ptr()->
-         system.input_desc_btn[mapped_port][remap_idx];
+      const char *descriptor = (mapped_port < MAX_USERS)
+         ? runloop_state_get_ptr()->system.input_desc_btn[mapped_port][remap_idx]
+         : NULL;
       if (descriptor && *descriptor)
       {
          size_t _len = strlcpy(s, descriptor, len);

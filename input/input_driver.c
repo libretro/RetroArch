@@ -9307,7 +9307,8 @@ void input_driver_poll(void)
          case ANALOG_DPAD_TWINSTICK:
             {
                unsigned mapped_port      = settings->uints.input_remap_ports[0];
-               if (input_st->analog_requested[mapped_port])
+               if (     mapped_port < MAX_USERS
+                     && input_st->analog_requested[mapped_port])
                   input_analog_dpad_mode = ANALOG_DPAD_NONE;
             }
             break;
@@ -9441,8 +9442,10 @@ void input_driver_poll(void)
          {
          input_bits_t current_inputs;
          unsigned mapped_port            = settings->uints.input_remap_ports[i];
-         unsigned device                 = settings->uints.input_libretro_device[mapped_port]
-                                           & RETRO_DEVICE_MASK;
+         /* mapped to no core port: nothing to remap */
+         unsigned device                 = (mapped_port < MAX_USERS)
+            ? (settings->uints.input_libretro_device[mapped_port] & RETRO_DEVICE_MASK)
+            : RETRO_DEVICE_NONE;
          input_bits_t *p_new_state       = (input_bits_t*)&current_inputs;
          unsigned input_analog_dpad_mode = settings->uints.input_analog_dpad_mode[i];
 
@@ -9465,7 +9468,8 @@ void input_driver_poll(void)
             case ANALOG_DPAD_RSTICK:
             case ANALOG_DPAD_LRSTICK:
             case ANALOG_DPAD_TWINSTICK:
-               if (input_st->analog_requested[mapped_port])
+               if (     mapped_port < MAX_USERS
+                     && input_st->analog_requested[mapped_port])
                   input_analog_dpad_mode = ANALOG_DPAD_NONE;
                break;
             case ANALOG_DPAD_LSTICK_FORCED:
