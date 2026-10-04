@@ -1664,10 +1664,17 @@ static void lane_first_press(void)
    CHECK(!input_st->first_press_live || settings->uints.input_max_users > 1,
          "first press: the poll still looks for a press with every user mapped");
 
-   /* it was the controller that was pressed, and the notification
-    * will have named it */
-   CHECK(!(input_st->first_press_by_keys & 1),
-         "first press: a controller's button was taken for a key");
+   /* the notification names what the user has: its controller and,
+    * as the first user has keys bound, the keyboard with it */
+   {
+      char text[256];
+      input_first_press_describe(0, 0, text, sizeof(text));
+      CHECK(strstr(text, " and keyboard assigned to core port 1"),
+            "first press: the notification does not name the controller and the keyboard");
+      input_first_press_describe(1, 1, text, sizeof(text));
+      CHECK(!strstr(text, "eyboard"),
+            "first press: the notification names a keyboard for a user with no keys bound");
+   }
 
    /* a key bound for the user gives it its port as well - the
     * keyboard and the first controller are both the first user's -
@@ -1685,8 +1692,6 @@ static void lane_first_press(void)
       run_loop_frames(2);
       CHECK(settings->uints.input_remap_ports[0] == 0,
             "first press: a key did not give the user its core port");
-      CHECK(input_st->first_press_by_keys & 1,
-            "first press: a key was taken for a button of the controller");
       fp_keys                    = 0;
 
       /* "Waits for its Controller": the key assigns nothing while the
@@ -1714,6 +1719,12 @@ static void lane_first_press(void)
       run_loop_frames(2);
       CHECK(settings->uints.input_remap_ports[0] == 0,
             "first press: with no controller on the port a key did not assign it");
+      {
+         char text[256];
+         input_first_press_describe(0, 0, text, sizeof(text));
+         CHECK(!strncmp(text, "Keyboard assigned to core port 1", 32),
+               "first press: with no controller the notification does not name the keyboard alone");
+      }
       fp_keys                    = 0;
       syn_joypad.query_pad       = joypad_real->query_pad;
       settings->uints.input_assign_ports_keyboard = 0;
@@ -1830,8 +1841,9 @@ static void lane_first_press(void)
       printf("[pass] first press: no user has a core port until a button"
             " is pressed on it; a button held from the start and the d-pad"
             " are no press; the port is given between frames, the lowest"
-            " free one; a key and a controller's button are told apart,"
-            " and a key can be made to wait for the controller;"
+            " free one; the notification names the controller and the"
+            " keyboard that go with it; a key can be made to wait for the"
+            " controller;"
             " a saved remap file leaves it out; the setting"
             " counts from content start; a replay turns it off\n");
 #else

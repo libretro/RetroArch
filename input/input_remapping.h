@@ -80,6 +80,10 @@ bool input_first_press_enabled(void);
 /* Maps the users a press was seen on to the next free core ports.
  * Called between frames, with the core off the stack. */
 void input_first_press_apply(void);
+/* The notification for @user having been given core port @port: it
+ * names everything the user has, its controller and its keys. */
+size_t input_first_press_describe(unsigned user, unsigned port,
+      char *s, size_t len);
 /* Whether @user's core port was given by a press: a remap file does
  * not store such a port. */
 bool input_first_press_assigned(unsigned user);

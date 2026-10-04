@@ -33007,6 +33007,10 @@ MSG_HASH(
    "Keyboard assigned to core port %u"
    )
 MSG_HASH(
+   MSG_DEVICE_AND_KEYBOARD_ASSIGNED_TO_CORE_PORT_NR,
+   "%s and keyboard assigned to core port %u"
+   )
+MSG_HASH(
    MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
    "%s disconnected from port %u"
    )

@@ -9485,20 +9485,13 @@ void input_driver_poll(void)
                if (sec_joypad)
                   pad |= (uint32_t)sec_joypad->state(&joypad_info[i],
                         (*input_st->libretro_input_binds)[i], (unsigned)i);
-               if (edge & pad)
-               {
-                  input_st->first_press_by_keys &= ~(1U << i);
-                  input_st->first_press_pending |=  (1U << i);
-               }
                /* a key: not while the port's controller is there to
                 * be pressed, if the keyboard is to wait for it */
-               else if (  !settings->uints.input_assign_ports_keyboard
-                       || !joypad->query_pad
-                       || !joypad->query_pad(joypad_info[i].joy_idx))
-               {
-                  input_st->first_press_by_keys |=  (1U << i);
-                  input_st->first_press_pending |=  (1U << i);
-               }
+               if (     (edge & pad)
+                     || !settings->uints.input_assign_ports_keyboard
+                     || !joypad->query_pad
+                     || !joypad->query_pad(joypad_info[i].joy_idx))
+                  input_st->first_press_pending |= (1U << i);
             }
             input_st->first_press_released[i] |=
                ~held & INPUT_FIRST_PRESS_BUTTONS;
@@ -10172,6 +10165,46 @@ void input_first_press_set_by_hand(unsigned user)
       input_driver_st.first_press_assigned &= ~(1U << user);
 }
 
+/* Whichever was pressed, the user's controller and its keys go to
+ * the core port together, so the notification names both. */
+size_t input_first_press_describe(unsigned user, unsigned port,
+      char *s, size_t len)
+{
+   unsigned k;
+   settings_t *settings = config_get_ptr();
+   const input_device_driver_t *joypad = input_driver_st.primary_joypad;
+   unsigned joy_idx     = settings->uints.input_joypad_index[user];
+   const char *name     = NULL;
+   bool keys            = false;
+
+   if (joypad && joypad->query_pad && joypad->query_pad(joy_idx))
+   {
+      name = input_config_get_device_display_name(joy_idx);
+      if (!name || !*name)
+         name = input_config_get_device_name(joy_idx);
+   }
+   for (k = 0; k < RARCH_FIRST_CUSTOM_BIND && !keys; k++)
+      keys = RETRO_KEYBIND_KEY(&input_config_binds[user][k]) != RETROK_UNKNOWN;
+
+   if (name && *name)
+      return snprintf(s, len, msg_hash_to_str(keys
+               ? MSG_DEVICE_AND_KEYBOARD_ASSIGNED_TO_CORE_PORT_NR
+               : MSG_DEVICE_ASSIGNED_TO_CORE_PORT_NR),
+            name, port + 1);
+   if (keys)
+      return snprintf(s, len,
+            msg_hash_to_str(MSG_KEYBOARD_ASSIGNED_TO_CORE_PORT_NR),
+            port + 1);
+   {
+      char who[32];
+      snprintf(who, sizeof(who), "%s %u",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), user + 1);
+      return snprintf(s, len,
+            msg_hash_to_str(MSG_DEVICE_ASSIGNED_TO_CORE_PORT_NR),
+            who, port + 1);
+   }
+}
+
 void input_first_press_apply(void)
 {
    unsigned user, port;
@@ -10200,10 +10233,8 @@ void input_first_press_apply(void)
 
    for (user = 0; user < max_users; user++)
    {
-      char msg[128];
-      const char *name;
+      char msg[256];
       size_t _len;
-      unsigned joy_idx;
 
       if (     !(pending & (1U << user))
             || settings->uints.input_remap_ports[user] < MAX_USERS)
@@ -10220,28 +10251,7 @@ void input_first_press_apply(void)
       input_remapping_update_port_map();
       mapped = true;
 
-      /* a key was pressed, or a button of the controller the user reads */
-      joy_idx = settings->uints.input_joypad_index[user];
-      name    = input_config_get_device_display_name(joy_idx);
-      if (!name || !*name)
-         name = input_config_get_device_name(joy_idx);
-      if (input_st->first_press_by_keys & (1U << user))
-         _len = snprintf(msg, sizeof(msg),
-               msg_hash_to_str(MSG_KEYBOARD_ASSIGNED_TO_CORE_PORT_NR),
-               port + 1);
-      else if (name && *name)
-         _len = snprintf(msg, sizeof(msg),
-               msg_hash_to_str(MSG_DEVICE_ASSIGNED_TO_CORE_PORT_NR),
-               name, port + 1);
-      else
-      {
-         char who[32];
-         snprintf(who, sizeof(who), "%s %u",
-               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT), user + 1);
-         _len = snprintf(msg, sizeof(msg),
-               msg_hash_to_str(MSG_DEVICE_ASSIGNED_TO_CORE_PORT_NR),
-               who, port + 1);
-      }
+      _len = input_first_press_describe(user, port, msg, sizeof(msg));
       RARCH_LOG("[Input] %s.\n", msg);
       if (settings->bools.notification_show_autoconfig)
          runloop_msg_queue_push(msg, _len, 1, 100, false, NULL,
@@ -10362,7 +10372,6 @@ void input_remapping_set_defaults(bool clear_cache)
          sizeof(input_st->first_press_released));
    input_st->first_press_pending  = 0;
    input_st->first_press_assigned = 0;
-   input_st->first_press_by_keys  = 0;
    input_st->first_press_on       = first_press;
 
    /* Need to call 'input_remapping_update_port_map()'
