@@ -137,7 +137,7 @@ static void linux_terminal_restore_signal(int sig)
 
 bool linux_terminal_disable_input(void)
 {
-   struct sigaction sa = {0};
+   struct sigaction sa;
 
    /* Avoid accidentally typing stuff. */
    if (!isatty(0))
@@ -152,6 +152,7 @@ bool linux_terminal_disable_input(void)
       return false;
    }
 
+   memset(&sa, 0, sizeof(sa));
    sa.sa_handler = linux_terminal_restore_signal;
    sa.sa_flags   = SA_RESTART | SA_RESETHAND;
    sigemptyset(&sa.sa_mask);

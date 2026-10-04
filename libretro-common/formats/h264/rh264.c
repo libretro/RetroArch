@@ -9450,9 +9450,8 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
 /* Remove list position j from the reference set. */
 static void rh264_dpb_unmark_at(rh264_video *v, int j)
 {
-   int m;
-   for (m = j; m < v->dpb_len - 1; m++)
-      v->dpb_slot[m] = v->dpb_slot[m + 1];
+   memmove(&v->dpb_slot[j], &v->dpb_slot[j + 1],
+         (size_t)(v->dpb_len - 1 - j) * sizeof(v->dpb_slot[0]));
    v->dpb_len--;
 }
 

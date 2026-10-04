@@ -77,7 +77,7 @@ typedef struct
    bool dav_verified;
 } webdav_state_t;
 
-static webdav_state_t webdav_driver_st = {0};
+static webdav_state_t webdav_driver_st;
 
 webdav_state_t *webdav_state_get_ptr(void)
 {

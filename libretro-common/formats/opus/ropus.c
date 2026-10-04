@@ -9144,6 +9144,9 @@ static void ropus_silk_nlsf2a(int16_t *a_Q12, const int16_t *NLSF, int d)
    int32_t Ptmp, Qtmp, f_int, f_frac, cos_val, delta;
    int32_t a32_QA1[ROPUS_SILK_MAX_LPC_ORDER];
 
+   /* d is 10 or 16; the clamp gives the compiler the bound of P/Q */
+   if (d > ROPUS_SILK_MAX_LPC_ORDER)
+      d = ROPUS_SILK_MAX_LPC_ORDER;
    ordering = d == 16 ? ordering16 : ordering10;
    for (k = 0; k < d; k++)
    {

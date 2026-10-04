@@ -62,11 +62,6 @@
 
 static void sdl2_gfx_free(void *data);
 
-/* Keeps the geometry a display draw needs, without asking the stack for
- * however much the caller wants to draw. Returns false when it cannot
- * be had, and the draw is skipped rather than the stack overrun. */
-static bool sdl2_display_geometry_reserve(sdl2_video_t *vid,
-      size_t verts, size_t indices);
 #ifdef HAVE_OVERLAY
 static void sdl2_overlay_free(sdl2_video_t *vid);
 static void sdl2_overlays_render(sdl2_video_t *vid);

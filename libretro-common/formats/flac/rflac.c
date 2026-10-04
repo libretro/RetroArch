@@ -4118,8 +4118,8 @@ static uint32_t rflac__init_private__native(rflac_init_info* pInit,
    /* Pre Condition: The bit stream should be sitting just past the 4-byte id
     * header. */
 
-   uint8_t isLastBlock;
-   uint8_t blockType;
+   uint8_t isLastBlock = 0;
+   uint8_t blockType   = 0;
    uint32_t blockSize;
    rflac_streaminfo streaminfo;
 

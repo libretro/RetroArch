@@ -226,7 +226,7 @@ const mitm_server_t netplay_mitm_server_list[NETPLAY_MITM_SERVERS] = {
  * would close descriptor 0 - stdin.  Fixed up in
  * netplay_discovery_state_init() below, which runs before either
  * descriptor can be reached. */
-static net_driver_state_t networking_driver_st = {0};
+static net_driver_state_t networking_driver_st;
 
 net_driver_state_t *networking_state_get_ptr(void)
 {
@@ -1099,7 +1099,7 @@ static void handshake_password(void *userdata, const char *line)
 static bool netplay_handshake_nick(netplay_t *netplay,
       struct netplay_connection *connection)
 {
-   struct nick_buf_s nick_buf = {0};
+   struct nick_buf_s nick_buf = {{0}};
 
    /* Send our nick */
    nick_buf.cmd[0] = htonl(NETPLAY_CMD_NICK);
@@ -1439,7 +1439,7 @@ static void netplay_handshake_ready(netplay_t *netplay,
 static bool netplay_handshake_info(netplay_t *netplay,
       struct netplay_connection *connection)
 {
-   struct info_buf_s info_buf       = {0};
+   struct info_buf_s info_buf       = {{0}};
    struct retro_system_info *system = &runloop_state_get_ptr()->system.info;
 
    info_buf.cmd[0] = htonl(NETPLAY_CMD_INFO);
@@ -4021,7 +4021,7 @@ static bool netplay_sync_pre_frame(netplay_t *netplay)
    if ((netplay->flags & NETPLAY_FLAG_IS_SERVER))
    {
       int               new_fd   = -1;
-      netplay_address_t new_addr = {0};
+      netplay_address_t new_addr = {{0}};
       bool server_err            = false;
 
       if (netplay->mitm_handler)

@@ -2483,8 +2483,8 @@ static void command_scan_states(
    unsigned loa_idx                   = 0;
    unsigned gap_idx                   = UINT_MAX;
    unsigned del_idx                   = UINT_MAX;
-   retro_bits_512_t slot_mapping_low  = {0};
-   retro_bits_512_t slot_mapping_high = {0};
+   retro_bits_512_t slot_mapping_low  = {{0}};
+   retro_bits_512_t slot_mapping_high = {{0}};
 
    struct string_list *dir_list       = NULL;
    const char *savefile_root          = NULL;

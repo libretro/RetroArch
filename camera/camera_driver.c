@@ -78,7 +78,7 @@ const camera_driver_t *camera_drivers[] = {
    NULL,
 };
 
-static camera_driver_state_t camera_driver_st     = {0};
+static camera_driver_state_t camera_driver_st;
 
 camera_driver_state_t *camera_state_get_ptr(void)
 {

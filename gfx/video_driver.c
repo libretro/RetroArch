@@ -722,7 +722,7 @@ const video_driver_t *video_drivers[] = {
    NULL,
 };
 
-static video_driver_state_t video_driver_st = { 0 };
+static video_driver_state_t video_driver_st;
 static const video_display_server_t *current_display_server =
 &dispserv_null;
 

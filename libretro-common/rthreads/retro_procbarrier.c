@@ -712,13 +712,13 @@ static void pb_task_path(char *path, pid_t tid, const char *leaf)
 {
    char    *q;
    char     digits[16];
-   int      nd = 0;
+   char    *d  = digits + sizeof(digits);
    unsigned v  = (unsigned)tid;
    strcpy(path, "/proc/self/task/");
    q = path + strlen(path);
-   do { digits[nd++] = (char)('0' + v % 10u); v /= 10u; } while (v);
-   while (nd)
-      *q++ = digits[--nd];
+   do { *--d = (char)('0' + v % 10u); v /= 10u; } while (v);
+   while (d < digits + sizeof(digits))
+      *q++ = *d++;
    strcpy(q, leaf);
 }
 

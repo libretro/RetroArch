@@ -153,7 +153,7 @@ typedef struct
 
 /* ========== State ========== */
 
-static gdrive_state_t gdrive_st = {0};
+static gdrive_state_t gdrive_st;
 
 /* ========== Completion Helpers ========== */
 

@@ -385,7 +385,7 @@ struct rarch_state
 void libnx_apply_overclock(void);
 #endif
 
-static struct rarch_state rarch_st        = {0};
+static struct rarch_state rarch_st;
 
 static access_state_t access_state_st     = {0};
 

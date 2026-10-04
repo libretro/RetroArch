@@ -232,7 +232,7 @@ static void test_button_to_analog_in_range(void)
 {
    /* Valid remap_button values are RARCH_FIRST_CUSTOM_BIND ..
     * RARCH_ANALOG_BIND_LIST_END - 1, i.e. 16..23. */
-   mock_mapper_t handle = {0};
+   mock_mapper_t handle = {{{0}}};
    unsigned k;
    for (k = RARCH_FIRST_CUSTOM_BIND; k < RARCH_ANALOG_BIND_LIST_END; k++)
    {

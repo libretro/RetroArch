@@ -957,11 +957,11 @@ void task_queue_set_prefer_fast_cores(bool prefer)
  * property_lock, so it is read there too. */
 static bool task_is_main_thread_task(retro_task_t *task)
 {
-   bool main;
+   bool is_main;
    slock_lock(property_lock);
-   main = (task->flags & RETRO_TASK_FLG_MAIN_THREAD) != 0;
+   is_main = (task->flags & RETRO_TASK_FLG_MAIN_THREAD) != 0;
    slock_unlock(property_lock);
-   return main;
+   return is_main;
 }
 
 /* After a handler returned: a finished task moves to the finished

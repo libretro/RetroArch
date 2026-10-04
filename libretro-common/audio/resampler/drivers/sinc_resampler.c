@@ -1036,5 +1036,15 @@ retro_resampler_t sinc_resampler = {
 };
 
 #if defined(__GNUC__) && defined(__OPTIMIZE__) && !defined(__clang__)
+#if __GNUC__ == 4 && __GNUC_MINOR__ >= 6
+/* GCC 4.x pops restore the target options too, which backends without
+ * target pragmas (MIPS) answer with a warning; the optimize options are
+ * restored all the same. Diagnostic push/pop exist from 4.6. */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC pop_options
+#pragma GCC diagnostic pop
+#else
+#pragma GCC pop_options
+#endif
 #endif
