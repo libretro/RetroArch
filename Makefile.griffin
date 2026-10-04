@@ -112,9 +112,8 @@ else ifeq ($(platform), ps3-cobra)
    MEDIA_SHADER_DIR := ps3/iso/PS3_GAME/USRDIR/cores/shaders
    RARCH_CONSOLE          = 1
 
-# NGC/Wii - libogc
+# NGC/Wii - devkitPro's libogc
 else ifeq ($(libogc_platform), 1)
-   EXTERNAL_LIBOGC   ?= 0
    HAVE_OGG_OGC      ?= 0
    CC = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
    CXX = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
@@ -130,28 +129,14 @@ else ifeq ($(libogc_platform), 1)
 
    INCLUDE += -I.
 
-   ifeq ($(EXTERNAL_LIBOGC), 1)
-      CFLAGS   += -DEXTERNAL_LIBOGC
-      CXXFLAGS += -DEXTERNAL_LIBOGC
-      INCLUDE += -I$(DEVKITPRO)/libogc/include
+   CFLAGS   += -DHAVE_LIBOGC
+   CXXFLAGS += -DHAVE_LIBOGC
+   INCLUDE += -I$(DEVKITPRO)/libogc/include
 
-      ifeq ($(platform), ngc)
-         LIBDIRS += -L$(DEVKITPRO)/libogc/lib/cube
-      else ifeq ($(platform), wii)
-         LIBDIRS += -L$(DEVKITPRO)/libogc/lib/wii
-      endif
-
-   else
-      CFLAGS   += -DINTERNAL_LIBOGC
-      CXXFLAGS += -DINTERNAL_LIBOGC
-      INCLUDE += -Iwii/libogc/include
-
-      ifeq ($(platform), ngc)
-         LIBDIRS += -Lwii/libogc/libs/cube
-      else ifeq ($(platform), wii)
-         LIBDIRS += -Lwii/libogc/libs/wii
-      endif
-
+   ifeq ($(platform), ngc)
+      LIBDIRS += -L$(DEVKITPRO)/libogc/lib/cube
+   else ifeq ($(platform), wii)
+      LIBDIRS += -L$(DEVKITPRO)/libogc/lib/wii
    endif
 
 
@@ -182,9 +167,7 @@ else ifeq ($(libogc_platform), 1)
       LIBS += -L$(DEVKITPRO)/portlibs/ppc/lib -lvorbisfile -lvorbis -logg
    endif
 
-   ifeq ($(EXTERNAL_LIBOGC), 1)
-      LIBS += -lfat
-   endif
+   LIBS += -lfat
 
    ifeq ($(platform), wii)
       LIBS += -lwiiuse -lbte

@@ -113,26 +113,6 @@ COMPATIBILITY
 #include "../libretro-common/memmap/memmap.c"
 
 /*============================================================
-CONSOLE EXTENSIONS
-============================================================ */
-#ifdef RARCH_CONSOLE
-
-#ifdef INTERNAL_LIBOGC
-#include "../wii/libogc/libfat/cache.c"
-#include "../wii/libogc/libfat/directory.c"
-#include "../wii/libogc/libfat/disc.c"
-#include "../wii/libogc/libfat/fatdir.c"
-#include "../wii/libogc/libfat/fatfile.c"
-#include "../wii/libogc/libfat/file_allocation_table.c"
-#include "../wii/libogc/libfat/filetime.c"
-#include "../wii/libogc/libfat/libfat.c"
-#include "../wii/libogc/libfat/lock.c"
-#include "../wii/libogc/libfat/partition.c"
-#endif
-
-#endif
-
-/*============================================================
 ALGORITHMS
 ============================================================ */
 

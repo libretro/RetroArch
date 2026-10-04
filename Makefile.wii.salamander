@@ -6,10 +6,9 @@
 DEBUG              = 0
 HAVE_LOGGER        = 0
 HAVE_FILE_LOGGER   = 0
-# HAVE_LIBOGC=0 builds on os/gekko, as Makefile.wii does.
-HAVE_LIBOGC       ?= 1
-EXTERNAL_LIBOGC   ?= 0
-GX_PTHREAD_LEGACY ?= 1
+# os/gekko, as Makefile.wii; HAVE_LIBOGC=1 builds on devkitPro's
+# libogc instead.
+HAVE_LIBOGC       ?= 0
 
 # system platform
 system_platform = unix
@@ -44,17 +43,9 @@ ifeq ($(HAVE_LIBOGC), 0)
 CFLAGS  += -DGEKKO_NATIVE
 INCLUDE += -Ios/gekko/include
 LIBDIRS := -Los/gekko/boot -L.
-else ifeq ($(EXTERNAL_LIBOGC), 1)
+else
 INCLUDE += -I$(DEVKITPRO)/libogc/include
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.
-else
-INCLUDE += -Iwii/libogc/include
-LIBDIRS := -Lwii/libogc/libs/wii -L.
-endif
-
-ifeq ($(HAVE_LIBOGC)$(GX_PTHREAD_LEGACY), 11)
-   CFLAGS   += -DGX_PTHREAD_LEGACY
-   CXXFLAGS += -DGX_PTHREAD_LEGACY
 endif
 
 MACHDEP := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float
@@ -72,11 +63,7 @@ include os/gekko/gekko.mk
 OBJ := frontend/drivers/platform_gekko.o gfx/bitmapfont.o \
 		$(addsuffix .o,$(basename $(GEKKO_SOURCES)))
 else
-ifeq ($(EXTERNAL_LIBOGC), 1)
-LIBS := -lfat
-endif
-
-LIBS += -lwiiuse -logc -lbte
+LIBS := -lfat -lwiiuse -logc -lbte
 
 OBJ := frontend/drivers/platform_gx_libogc.o \
 		frontend/drivers/platform_wii_libogc.o \
@@ -105,18 +92,6 @@ OBJ += frontend/frontend_salamander.o \
 		libretro-common/time/rtime.o \
 		verbosity.o
 
-ifeq ($(HAVE_LIBOGC)$(EXTERNAL_LIBOGC), 10)
-OBJ += wii/libogc/libfat/cache.o \
-		wii/libogc/libfat/directory.o \
-		wii/libogc/libfat/disc.o \
-		wii/libogc/libfat/fatdir.o \
-		wii/libogc/libfat/fatfile.o \
-		wii/libogc/libfat/file_allocation_table.o \
-		wii/libogc/libfat/filetime.o \
-		wii/libogc/libfat/libfat.o \
-		wii/libogc/libfat/lock.o \
-		wii/libogc/libfat/partition.o
-endif
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
@@ -161,7 +136,6 @@ $(ELF_TARGET): $(OBJ)
 	$(LD) -r -b binary -o $@ $<
 
 $(APP_BOOTER_DIR)/app_booter.bin:
-	export EXTERNAL_LIBOGC
 	$(MAKE) -C $(APP_BOOTER_DIR)
 
 pkg: all

@@ -34,7 +34,6 @@ jobs:
         mv * /tmp/$PKGNAME
         mv /tmp/$PKGNAME .
         rm -rf $PKGNAME/pkg || true
-        rm -rf $PKGNAME/wii/libogc || true
         rm -rf $PKGNAME/deps/glslang/glslang/Test || true
         rm -rf $PKGNAME/deps/SPIRV-Cross/reference || true
         rm -rf $PKGNAME/gfx/include/userland || true

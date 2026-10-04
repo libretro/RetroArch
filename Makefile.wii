@@ -58,11 +58,9 @@ endif
 
 LIBS               := $(WHOLE_START) $(LIB_CORE) $(WHOLE_END)
 
-# HAVE_LIBOGC=1 builds on libogc (EXTERNAL_LIBOGC=1: devkitPro's, else
-# the copy in wii/libogc); HAVE_LIBOGC=0 on RetroArch's own system layer,
-# os/gekko.
-HAVE_LIBOGC       ?= 1
-EXTERNAL_LIBOGC   ?= 0
+# RetroArch's own system layer, os/gekko; HAVE_LIBOGC=1 builds on
+# devkitPro's libogc instead.
+HAVE_LIBOGC       ?= 0
 ifeq ($(HAVE_LIBOGC), 1)
 libogc_platform    := 1
 endif
@@ -86,16 +84,11 @@ ifeq ($(HAVE_LIBOGC), 0)
    CFLAGS   += -DGEKKO_NATIVE
    CXXFLAGS += -DGEKKO_NATIVE
    INCLUDE  += -Ios/gekko/include
-else ifeq ($(EXTERNAL_LIBOGC), 1)
-   CFLAGS   += -DHAVE_LIBOGC -DEXTERNAL_LIBOGC
-   CXXFLAGS += -DHAVE_LIBOGC -DEXTERNAL_LIBOGC
+else
+   CFLAGS   += -DHAVE_LIBOGC
+   CXXFLAGS += -DHAVE_LIBOGC
    LIBDIRS += -L$(DEVKITPRO)/libogc/lib/wii
    INCLUDE +=  -I$(DEVKITPRO)/libogc/include
-else
-   CFLAGS   += -DHAVE_LIBOGC -DINTERNAL_LIBOGC
-   CXXFLAGS += -DHAVE_LIBOGC -DINTERNAL_LIBOGC
-   LIBDIRS += -Lwii/libogc/libs/wii
-   INCLUDE += -Iwii/libogc/include
 endif
 
 
@@ -121,11 +114,7 @@ ifeq ($(HAVE_OGG_OGC), 1)
 endif
 
 ifeq ($(HAVE_LIBOGC), 1)
-ifeq ($(EXTERNAL_LIBOGC), 1)
-   LIBS += -lfat
-endif
-
-LIBS += -lwiiuse -lbte
+LIBS += -lfat -lwiiuse -lbte
 
 ifeq ($(USBGECKO), 1)
   LIBS += -ldb
@@ -214,14 +203,6 @@ ifeq ($(HAVE_HID), 1)
 OBJ += input/drivers_hid/gekko_hid.o
 CFLAGS += -DHAVE_GEKKO_HID
 endif
-endif
-
-ifeq ($(HAVE_LIBOGC)$(EXTERNAL_LIBOGC), 10)
-   # Bridge the prebuilt in-tree libogc's __syscalls table onto the
-   # per-symbol __syscall_* hooks modern devkitPPC libsysbase dispatches
-   # through (see wii/libogc_syscalls_compat.c).
-   OBJ += wii/libogc_syscalls_compat.o
-   OBJ += wii/libogc/libfat/libfat.o wii/libogc/libfat/fatfile.o wii/libogc/libfat/file_allocation_table.o wii/libogc/libfat/cache.o wii/libogc/libfat/fatdir.o wii/libogc/libfat/partition.o wii/libogc/libfat/directory.o wii/libogc/libfat/filetime.o wii/libogc/libfat/disc.o
 endif
 
 # Logs as UDP datagrams to PC_DEVELOPMENT_IP_ADDRESS:PC_DEVELOPMENT_UDP_PORT.
@@ -347,7 +328,6 @@ $(EXT_INTER_TARGET): $(OBJ)
 	$(LD) -r -b binary $(OBJOUT)$@ $<
 
 $(APP_BOOTER_DIR)/app_booter.bin:
-	export EXTERNAL_LIBOGC
 	$(MAKE) -C $(APP_BOOTER_DIR)
 
 clean:

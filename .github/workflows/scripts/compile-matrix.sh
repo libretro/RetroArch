@@ -698,7 +698,7 @@ if [ ! -f "$LIBOGC_DIR/gc/gccore.h" ]; then
       --branch "$LIBOGC_TAG" https://github.com/devkitPro/libogc \
       "$LIBOGC_DIR" || { echo "FAIL  libogc $LIBOGC_TAG could not be fetched"; fail=1; }
 fi
-GEKKO_INC="-I$LIBOGC_DIR/gc -Itools/platform_stubs/gekko -DEXTERNAL_LIBOGC"
+GEKKO_INC="-I$LIBOGC_DIR/gc -Itools/platform_stubs/gekko -DHAVE_LIBOGC"
 check "gekko: gx_input"        "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" input/drivers/gx_input.c
 check "gekko: gx_joypad"       "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" input/drivers_joypad/gx_joypad_libogc.c
 check "gekko: mem2_manager"    "$HOSTOFF $GEKKO_INC -DGEKKO -DHW_RVL -DRARCH_CONSOLE $CDECL" libretro-common/memory/mem2_manager_libogc.c

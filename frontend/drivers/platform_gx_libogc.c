@@ -559,11 +559,9 @@ static int frontend_gx_parse_drive_list(void *data, bool load_content)
          msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),
          enum_idx,
          FILE_TYPE_DIRECTORY, 0, 0, NULL);
-#elif defined(EXTERNAL_LIBOGC)
-   /* Modern libfat mounts a Serial Port 2 SD adapter
-    * (SD2SP2 and similar devices) as "sd" on GameCube.
-    * The internal (vendored) libogc has no SP2 driver,
-    * hence the EXTERNAL_LIBOGC guard. */
+#else
+   /* libfat mounts a Serial Port 2 SD adapter (SD2SP2 and
+    * similar devices) as "sd" on GameCube. */
    menu_entries_append(list,
          "sd:/",
          msg_hash_to_str(MSG_EXTERNAL_APPLICATION_DIR),

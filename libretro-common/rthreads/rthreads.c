@@ -3416,39 +3416,14 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
     * where it has no high resolution timer, as this did */
    return scond_wait_win32(cond, lock, timeout_us);
 #elif defined(USE_GX_THREADS)
-#ifdef INTERNAL_LIBOGC
-   /* The in-tree libogc takes an absolute deadline and compares it
-    * against its RTC-based single-argument clock_gettime, so the
-    * deadline has to come from that same clock. Its prototype clashes
-    * with newlib's POSIX clock_gettime, hence the asm binding. A zero
-    * timeout is treated as always timing out, as on Win32. */
-   struct timespec dl;
-   if (timeout_us <= 0)
-      return false;
-   {
-      extern int ogc_rtc_gettime(struct timespec *tp)
-            __asm__("clock_gettime");
-      if (ogc_rtc_gettime(&dl) != 0)
-         return false;
-   }
-   dl.tv_sec  += (time_t)(timeout_us / INT64_C(1000000));
-   dl.tv_nsec += (long)(timeout_us % INT64_C(1000000)) * 1000L;
-   if (dl.tv_nsec >= 1000000000L)
-   {
-      dl.tv_sec  += 1;
-      dl.tv_nsec -= 1000000000L;
-   }
-   return LWP_CondTimedWait(cond->cond, lock->lock, &dl) == 0;
-#else
-   /* Upstream libogc takes the timeout as a relative timespec; a zero
-    * timeout is treated as always timing out, as on Win32. */
+   /* libogc takes the timeout as a relative timespec; a zero timeout
+    * is treated as always timing out, as on Win32. */
    struct timespec rel;
    if (timeout_us <= 0)
       return false;
    rel.tv_sec  = (time_t)(timeout_us / INT64_C(1000000));
    rel.tv_nsec = (long)(timeout_us % INT64_C(1000000)) * 1000L;
    return LWP_CondTimedWait(cond->cond, lock->lock, &rel) == 0;
-#endif
 #elif defined(USE_CTR_THREADS)
    if (timeout_us <= 0)
       return false;
