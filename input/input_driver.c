@@ -7558,6 +7558,9 @@ bool video_driver_init_input(
                input_driver_init_sdl1(joypad, &drv, &drv_data);
                break;
 #endif
+            case INPUT_WINDOW_PLATFORM:
+               input_driver_init_platform(joypad, &drv, &drv_data);
+               break;
             default:
                break;
          }

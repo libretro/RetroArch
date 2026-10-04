@@ -344,7 +344,6 @@ static void *psp_init(const video_info_t *video,
 
    int pixel_format, lut_pixel_format, lut_block_count;
    unsigned int red_shift, color_mask;
-   void *pspinput           = NULL;
    void *displayBuffer      = NULL;
    void *LUT_r              = NULL;
    void *LUT_b              = NULL;
@@ -548,14 +547,9 @@ static void *psp_init(const video_info_t *video,
 
    sceGuFinish();
 
-   if (input && input_data)
-   {
-      settings_t *settings = config_get_ptr();
-      pspinput             = input_driver_init_wrap(&input_psp,
-            settings->arrays.input_joypad_driver);
-      *input               = pspinput ? &input_psp : NULL;
-      *input_data          = pspinput;
-   }
+   /* no input driver of this driver's own: the frontend starts the
+    * platform's */
+   input_driver_left_to_frontend(INPUT_WINDOW_PLATFORM, input, input_data);
 
    psp->vblank_not_reached = true;
    sceKernelRegisterSubIntrHandler(PSP_VBLANK_INT, 0,

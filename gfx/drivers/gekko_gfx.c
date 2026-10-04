@@ -505,17 +505,15 @@ static void blit_line(gekko_video_t *gx, unsigned x, unsigned y,
 static void *gekko_init(const video_info_t *video, input_driver_t **input,
       void **input_data)
 {
-   void *gxinput;
    settings_t *settings = config_get_ptr();
    gekko_video_t *gx    = (gekko_video_t*)calloc(1, sizeof(*gx));
 
    if (!gx)
       return NULL;
 
-   gxinput     = input_driver_init_wrap(&input_gx,
-         settings->arrays.input_joypad_driver);
-   *input      = gxinput ? &input_gx : NULL;
-   *input_data = gxinput;
+   /* no input driver of this driver's own: the frontend starts the
+    * platform's */
+   input_driver_left_to_frontend(INPUT_WINDOW_PLATFORM, input, input_data);
 
    if (!g_xfb[0])
    {

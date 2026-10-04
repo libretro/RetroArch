@@ -1970,14 +1970,9 @@ static void *gxm_gfx_init(const video_info_t *video,
    video_driver_set_output_dims(VIDEO_SCALE_PACK(temp_width, temp_height));
    gxm_set_viewport_wrapper(vita, VIDEO_SCALE_PACK(temp_width, temp_height), false, true);
 
-   if (input && input_data)
-   {
-      settings_t *settings = config_get_ptr();
-      void *pspinput       = input_driver_init_wrap(&input_psp,
-            settings->arrays.input_joypad_driver);
-      *input               = pspinput ? &input_psp : NULL;
-      *input_data          = pspinput;
-   }
+   /* no input driver of this driver's own: the frontend starts the
+    * platform's */
+   input_driver_left_to_frontend(INPUT_WINDOW_PLATFORM, input, input_data);
 
    vita->keep_aspect        = true;
    vita->should_resize      = true;

@@ -42,20 +42,10 @@ VIDEO_STATE_IN_INPUT = {
 # gfx/ files that still name an input or a joypad driver (3).
 INPUT_DRIVERS_IN_GFX = {
     # ---- still start their own input driver
-    "gfx/drivers/ctr_gfx.c": 2,
-    "gfx/drivers/gekko_gfx.c": 2,
-    "gfx/drivers/gx2_gfx.c": 2,
-    "gfx/drivers/gx_gfx_libogc.c": 2,
-    "gfx/drivers/gxm_gfx.c": 2,
-    "gfx/drivers/ps2_gfx.c": 2,
-    "gfx/drivers/psp1_gfx.c": 2,
-    "gfx/drivers/rsx_gfx.c": 3,
-    "gfx/drivers/switch_nx_gfx.c": 2,
     "gfx/drivers_context/android_ctx.c": 2,
     "gfx/drivers_context/android_vk_ctx.c": 2,
     "gfx/drivers_context/emscriptenegl_ctx.c": 2,
     "gfx/drivers_context/emscriptenwebgl_ctx.c": 2,
-    "gfx/drivers_context/ps3_ctx.c": 2,
     "gfx/drivers_context/qnx_ctx.c": 2,
     "gfx/drivers_context/uwp_egl_ctx.c": 4,
 }

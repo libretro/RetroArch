@@ -631,17 +631,15 @@ static void build_disp_list(void)
 static void *gx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-   void *gxinput                   = NULL;
    settings_t *settings            = config_get_ptr();
    gx_video_t *gx                  = (gx_video_t*)calloc(1, sizeof(gx_video_t));
    bool video_smooth               = settings->bools.video_smooth;
-   const char *input_joypad_driver = settings->arrays.input_joypad_driver;
    if (!gx)
       return NULL;
 
-   gxinput                         = input_driver_init_wrap(&input_gx, input_joypad_driver);
-   *input                          = gxinput ? &input_gx : NULL;
-   *input_data                     = gxinput;
+   /* no input driver of this driver's own: the frontend starts the
+    * platform's */
+   input_driver_left_to_frontend(INPUT_WINDOW_PLATFORM, input, input_data);
 
    VIDEO_Init();
    GX_Init(gx_fifo, sizeof(gx_fifo));

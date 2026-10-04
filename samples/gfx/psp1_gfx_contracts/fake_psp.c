@@ -558,12 +558,16 @@ settings_t *config_get_ptr(void)
    return &settings;
 }
 
-input_driver_t input_psp;
-
-void *input_driver_init_wrap(input_driver_t *input, const char *name)
+/* the driver starts no input driver itself: it leaves that to the
+ * frontend, and says what kind of platform this is */
+void input_driver_left_to_frontend(enum input_window_kind window,
+      input_driver_t **input, void **input_data)
 {
-   (void)input; (void)name;
-   return NULL;
+   (void)window;
+   if (input)
+      *input      = NULL;
+   if (input_data)
+      *input_data = NULL;
 }
 
 void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info)

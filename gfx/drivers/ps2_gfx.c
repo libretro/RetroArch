@@ -750,7 +750,6 @@ static void setupScalingMode(ps2_video_t *ps2, int iWidth, int iHeight, float fD
 static void *ps2_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
-   void *ps2input   = NULL;
    ps2_video_t *ps2 = (ps2_video_t *)calloc(1, sizeof(ps2_video_t));
 
    *input_data      = NULL;
@@ -765,14 +764,9 @@ static void *ps2_init(const video_info_t *video,
    ps2->force_aspect = video->force_aspect;
    ps2->vsync        = video->vsync;
 
-   if (input && input_data)
-   {
-      settings_t *settings = config_get_ptr();
-      ps2input = input_driver_init_wrap(&input_ps2,
-                                        settings->arrays.input_joypad_driver);
-      *input = ps2input ? &input_ps2 : NULL;
-      *input_data = ps2input;
-   }
+   /* no input driver of this driver's own: the frontend starts the
+    * platform's */
+   input_driver_left_to_frontend(INPUT_WINDOW_PLATFORM, input, input_data);
 
    return ps2;
 }

@@ -1637,7 +1637,6 @@ static void* ctr_init(const video_info_t* video,
    ctr_scale_vector_t *vec         = NULL;
    ctr_scale_vector_t *menu_vec    = NULL;
    u8 device_model                 = 0xFF;
-   void* ctrinput                  = NULL;
    settings_t *settings            = config_get_ptr();
    bool lcd_bottom                 = settings->bools.video_3ds_lcd_bottom;
    bool speedup_enable             = settings->bools.new3ds_speedup_enable;
@@ -1790,12 +1789,9 @@ static void* ctr_init(const video_info_t* video,
    ctr->p3d_event_pending = true;
    ctr->ppf_event_pending = false;
 
-   if (input && input_data)
-   {
-      ctrinput             = input_driver_init_wrap(&input_ctr, settings->arrays.input_joypad_driver);
-      *input               = ctrinput ? &input_ctr : NULL;
-      *input_data          = ctrinput;
-   }
+   /* no input driver of this driver's own: the frontend starts the
+    * platform's */
+   input_driver_left_to_frontend(INPUT_WINDOW_PLATFORM, input, input_data);
 
    ctr->keep_aspect           = true;
    ctr->should_resize         = true;

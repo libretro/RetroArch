@@ -248,6 +248,10 @@ int main(void)
    }
 #endif
 
+   /* a platform with an input driver of its own: this host is not
+    * one, so nothing is started and the frontend's default follows */
+   expect("platform", input_driver_init_platform, "udev", ~0, "none", "");
+
    free(test_settings);
    if (failures)
    {

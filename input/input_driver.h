@@ -1004,6 +1004,8 @@ void input_driver_init_wayland(const char *joypad_name, void *window_data,
 void input_driver_init_sdl1(const char *joypad_name,
       input_driver_t **input, void **input_data);
 #endif
+void input_driver_init_platform(const char *joypad_name,
+      input_driver_t **input, void **input_data);
 #ifdef HAVE_SDL3
 void input_driver_init_sdl3(const char *joypad_name,
       input_driver_t **input, void **input_data);
@@ -1095,7 +1097,10 @@ enum input_window_kind
    /* an SDL 3 window: input_driver_init_sdl3() */
    INPUT_WINDOW_SDL3,
    /* an SDL 1.2 window: input_driver_init_sdl1() */
-   INPUT_WINDOW_SDL1
+   INPUT_WINDOW_SDL1,
+   /* a platform with one input driver of its own - a console,
+    * Android, the web: input_driver_init_platform() */
+   INPUT_WINDOW_PLATFORM
 };
 
 /* For a video driver's or a context's start-up, in place of starting

@@ -1525,12 +1525,9 @@ static void* rsx_init(const video_info_t* video,
    video_driver_set_output_dims(rsx->vp.dims);
    rsx_set_viewport(rsx, rsx->vp.dims, false, true);
 
-   if (input && input_data)
-   {
-      void *ps3input         = input_driver_init_wrap(&input_ps3, ps3_joypad.ident);
-      *input                 = ps3input ? &input_ps3 : NULL;
-      *input_data            = ps3input;
-   }
+   /* no input driver of this driver's own: the frontend starts the
+    * platform's */
+   input_driver_left_to_frontend(INPUT_WINDOW_PLATFORM, input, input_data);
 
    rsx_context_bind_hw_render(rsx, true);
 
