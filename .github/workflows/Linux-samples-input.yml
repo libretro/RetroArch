@@ -765,6 +765,22 @@ jobs:
           make clean
           echo "[pass] keyboard_devices_test"
 
+      - name: Build and run xinput_rumble_test (mingw + Wine)
+        shell: bash
+        working-directory: samples/input/xinput_rumble
+        run: |
+          set -eu
+          # The XInput joypad driver writes rumble from a thread of its
+          # own. The real driver is given an XInputSetState that takes
+          # 60 ms: the call returns at once, the latest strength is the
+          # one written, and with the writer stopped the caller writes
+          # as it used to.
+          make clean all
+          WINE=$(command -v wine64 || command -v wine || echo /usr/lib/wine/wine64)
+          WINEDEBUG=-all timeout 180 "$WINE" ./xinput_rumble_test.exe
+          make clean
+          echo "[pass] xinput_rumble_test (wine)"
+
       - name: Build and run winraw_keyboards_test (mingw + Wine)
         shell: bash
         working-directory: samples/input/winraw_keyboards

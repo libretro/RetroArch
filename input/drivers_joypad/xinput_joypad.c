@@ -136,6 +136,9 @@ static XINPUT_VIBRATION    g_xinput_rumble_states[4];
 static xinput_joypad_state g_xinput_states[4];
 static bool xinput_active_port[4] = {0};
 
+/* the rumble writer, shared with the hybrid driver */
+#include "xinput_rumble_writer.h"
+
 static unsigned xinput_hotplug_index = 0;
 static unsigned xinput_poll_counter  = 0;
 
@@ -427,6 +430,10 @@ succeeded:
    /* non-hat button. */
    g_xinput_num_buttons = g_xinput_guide_button_supported ? 11 : 10;
 
+#ifdef XINPUT_RUMBLE_THREAD
+   xinput_rumble_start();
+#endif
+
    return (void*)-1;
 
 error:
@@ -447,6 +454,11 @@ static bool xinput_joypad_query_pad(unsigned pad)
 static void xinput_joypad_destroy(void)
 {
    int i;
+
+#ifdef XINPUT_RUMBLE_THREAD
+   /* before the function it calls is let go of */
+   xinput_rumble_stop();
+#endif
 
    for (i = 0; i < 4; ++i)
    {
@@ -688,6 +700,18 @@ static bool xinput_joypad_rumble(unsigned pad,
    if (   (state->wLeftMotorSpeed  == prev.wLeftMotorSpeed)
        && (state->wRightMotorSpeed == prev.wRightMotorSpeed))
       return true;
+
+#ifdef XINPUT_RUMBLE_THREAD
+   /* noted here, written by the rumble writer */
+   if (xinput_rumble_thread)
+   {
+      retro_atomic_store_release_int(&xinput_rumble_want[xuser],
+            (int)(((uint32_t)state->wLeftMotorSpeed << 16)
+               | state->wRightMotorSpeed));
+      SetEvent(xinput_rumble_wake);
+      return g_XInputSetState != NULL;
+   }
+#endif
 
    return g_XInputSetState && (g_XInputSetState(xuser, state) == ERROR_SUCCESS);
 }
