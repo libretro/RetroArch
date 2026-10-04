@@ -163,6 +163,19 @@ jobs:
           # added without a description reaches all of those blank.
           python3 tools/command_table_check.py
 
+      - name: Check video and input code stay out of each other's state
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The frontend starts the input driver; a video driver says
+          # only what kind of window it put up. What is still to be
+          # moved is listed in the check, file by file, and the lists
+          # only shrink: a video file that starts naming an input
+          # driver, or either side taking the other's state, fails.
+          python3 tools/input_video_separation_check.py --selftest
+          python3 tools/input_video_separation_check.py
+
       - name: Check no video driver deletes overlay textures it was lent
         shell: bash
         run: |

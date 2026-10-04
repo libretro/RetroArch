@@ -114,19 +114,9 @@ static void *xshm_init(const video_info_t *video,
    if (!x11_input_ctx_new(true))
       goto error;
 
-   if (input && input_data)
-   {
-      settings_t *settings                   = config_get_ptr();
-      void *xinput                           = input_driver_init_wrap(&input_x,
-            settings->arrays.input_joypad_driver);
-      if (xinput)
-      {
-         *input = &input_x;
-         *input_data = xinput;
-      }
-      else
-         *input = NULL;
-   }
+   /* no input driver of this driver's own: the frontend starts the
+    * one that goes with an X11 window */
+   input_driver_left_to_frontend(INPUT_WINDOW_X11, input, input_data);
 
    return xshm;
  error:
