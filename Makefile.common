@@ -2485,6 +2485,9 @@ ifeq ($(HAVE_NETWORKING), 1)
       ifneq (,$(filter 1,$(HAVE_SMBCLIENT) $(HAVE_RETROSMB)))
          OBJ += network/cloud_sync/smb.o
       endif
+      ifneq (,$(filter 1,$(HAVE_NFSCLIENT) $(HAVE_RETRONFS)))
+         OBJ += network/cloud_sync/nfs.o
+      endif
    endif
 
    ifeq ($(HAVE_RETROSSL), 1)
