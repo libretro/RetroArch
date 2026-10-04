@@ -7553,6 +7553,11 @@ bool video_driver_init_input(
                input_driver_init_sdl3(joypad, &drv, &drv_data);
                break;
 #endif
+#if defined(HAVE_SDL) && !defined(HAVE_SDL2) && !defined(HAVE_SDL3)
+            case INPUT_WINDOW_SDL1:
+               input_driver_init_sdl1(joypad, &drv, &drv_data);
+               break;
+#endif
             default:
                break;
          }

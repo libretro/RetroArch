@@ -319,22 +319,9 @@ static void *sdl_gfx_init(const video_info_t *video,
 
    sdl_gfx_set_handles();
 
-   if (input && input_data)
-   {
-      void *sdl_input = input_driver_init_wrap(&input_sdl1,
-            settings->arrays.input_joypad_driver);
-
-      if (sdl_input)
-      {
-         *input = &input_sdl1;
-         *input_data = sdl_input;
-      }
-      else
-      {
-         *input = NULL;
-         *input_data = NULL;
-      }
-   }
+   /* no input driver of this driver's own: the frontend starts the
+    * one that goes with an SDL 1.2 window */
+   input_driver_left_to_frontend(INPUT_WINDOW_SDL1, input, input_data);
 
    sdl_init_font(vid,
          video_font_enable,

@@ -143,6 +143,18 @@ void input_driver_init_wayland(const char *joypad_name, void *window_data,
 }
 #endif
 
+#if defined(HAVE_SDL) && !defined(HAVE_SDL2) && !defined(HAVE_SDL3)
+/* An SDL 1.2 window: the SDL 1.2 input driver, whatever the setting
+ * says. The window's keyboard and mouse come through SDL's event
+ * queue and nowhere else. */
+void input_driver_init_sdl1(const char *joypad_name,
+      input_driver_t **input, void **input_data)
+{
+   *input_data = input_driver_init_wrap(&input_sdl1, joypad_name);
+   *input      = *input_data ? &input_sdl1 : NULL;
+}
+#endif
+
 #ifdef HAVE_SDL3
 /* The configured input driver, if it works alongside an SDL 3 window:
  * udev, linuxraw, raw and dinput read input devices themselves, so

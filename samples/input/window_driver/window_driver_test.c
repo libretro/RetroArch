@@ -26,6 +26,7 @@ input_driver_t input_linuxraw;
 input_driver_t input_winraw;
 input_driver_t input_dinput;
 input_driver_t input_sdl3;
+input_driver_t input_sdl1;
 input_driver_t input_wayland;
 
 static settings_t *test_settings;
@@ -37,6 +38,7 @@ settings_t *config_get_ptr(void) { return test_settings; }
 #define D_WINRAW   8
 #define D_DINPUT   16
 #define D_SDL3     32
+#define D_SDL1     64
 
 static unsigned starts;          /* which drivers start */
 static char tried[64];           /* the attempts, in order */
@@ -49,6 +51,7 @@ static const char *name_of(const input_driver_t *d)
    if (d == &input_winraw)   return "raw";
    if (d == &input_dinput)   return "dinput";
    if (d == &input_sdl3)     return "sdl3";
+   if (d == &input_sdl1)     return "sdl";
    if (d == &input_wayland)  return "wayland";
    return d ? "?" : "none";
 }
@@ -61,6 +64,7 @@ static unsigned bit_of(const input_driver_t *d)
    if (d == &input_winraw)   return D_WINRAW;
    if (d == &input_dinput)   return D_DINPUT;
    if (d == &input_sdl3)     return D_SDL3;
+   if (d == &input_sdl1)     return D_SDL1;
    return 0;
 }
 
@@ -188,12 +192,21 @@ int main(void)
    /* an SDL 3 window: udev or linuxraw when one is the setting and
     * starts; the SDL 3 driver for any other setting, a window
     * system's included, and when the one named does not start */
+#ifdef HAVE_SDL3
    expect("sdl3", input_driver_init_sdl3, "udev",     D_UDEV | D_LINUXRAW | D_SDL3, "udev",     "udev");
    expect("sdl3", input_driver_init_sdl3, "linuxraw", D_UDEV | D_LINUXRAW | D_SDL3, "linuxraw", "linuxraw");
    expect("sdl3", input_driver_init_sdl3, "udev",     D_SDL3,                       "sdl3",     "udev,sdl3");
    expect("sdl3", input_driver_init_sdl3, "x",        D_UDEV | D_X | D_SDL3,        "sdl3",     "sdl3");
    expect("sdl3", input_driver_init_sdl3, "sdl3",     D_UDEV | D_SDL3,              "sdl3",     "sdl3");
    expect("sdl3", input_driver_init_sdl3, "udev",     0,                            "none",     "udev,sdl3");
+#endif
+
+#if defined(HAVE_SDL) && !defined(HAVE_SDL2) && !defined(HAVE_SDL3)
+   /* an SDL 1.2 window: the SDL 1.2 driver, whatever the setting */
+   expect("sdl1", input_driver_init_sdl1, "udev", D_UDEV | D_X | D_SDL1, "sdl",  "sdl");
+   expect("sdl1", input_driver_init_sdl1, "sdl",  D_SDL1,                "sdl",  "sdl");
+   expect("sdl1", input_driver_init_sdl1, "x",    D_UDEV | D_X,          "none", "sdl");
+#endif
 
    /* a Wayland surface: the Wayland driver, on the seat's state the
     * video context handed over, and the joypad drivers started once;

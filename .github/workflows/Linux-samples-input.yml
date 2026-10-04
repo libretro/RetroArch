@@ -405,6 +405,10 @@ jobs:
           make clean all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 60 ./window_driver_test
+          # the same built with SDL 1.2 in SDL 3's place, for the SDL
+          # 1.2 window's choice: a build has one or the other
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./window_driver_test_sdl1
           make clean
           echo "[pass] window_driver_test (ASan)"
 

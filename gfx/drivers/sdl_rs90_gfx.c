@@ -721,78 +721,6 @@ static void sdl_rs90_gfx_free(void *data)
    free(vid);
 }
 
-static void sdl_rs90_input_driver_init(
-      const char *input_drv_name, const char *joypad_drv_name,
-      input_driver_t **input, void **input_data)
-{
-   /* Sanity check */
-   if (!input || !input_data)
-      return;
-
-   *input      = NULL;
-   *input_data = NULL;
-
-   /* If input driver name is empty, cannot
-    * initialise anything... */
-   if (!input_drv_name || !*input_drv_name)
-      return;
-
-   if (string_is_equal(input_drv_name, "sdl_dingux"))
-   {
-      *input_data = input_driver_init_wrap(&input_sdl_dingux,
-            joypad_drv_name);
-
-      if (*input_data)
-         *input = &input_sdl_dingux;
-
-      return;
-   }
-
-#if defined(HAVE_SDL) || defined(HAVE_SDL2)
-   if (string_is_equal(input_drv_name, "sdl"))
-   {
-#ifdef HAVE_SDL2
-      input_driver_t *sdl_drv = &input_sdl2;
-#else
-      input_driver_t *sdl_drv = &input_sdl1;
-#endif
-      *input_data = input_driver_init_wrap(sdl_drv,
-            joypad_drv_name);
-
-      if (*input_data)
-         *input = sdl_drv;
-
-      return;
-   }
-#endif
-
-#if defined(HAVE_UDEV)
-   if (string_is_equal(input_drv_name, "udev"))
-   {
-      *input_data = input_driver_init_wrap(&input_udev,
-            joypad_drv_name);
-
-      if (*input_data)
-         *input = &input_udev;
-
-      return;
-   }
-#endif
-
-#if defined(__linux__)
-   if (string_is_equal(input_drv_name, "linuxraw"))
-   {
-      *input_data = input_driver_init_wrap(&input_linuxraw,
-            joypad_drv_name);
-
-      if (*input_data)
-         *input = &input_linuxraw;
-
-      return;
-   }
-#endif
-}
-
 static void *sdl_rs90_gfx_init(const video_info_t *video,
       input_driver_t **input, void **input_data)
 {
@@ -806,8 +734,6 @@ static void *sdl_rs90_gfx_init(const video_info_t *video,
    bool refresh_rate_valid                       = false;
    float hw_refresh_rate                         = 0.0f;
 #endif
-   const char *input_drv_name                    = settings->arrays.input_driver;
-   const char *joypad_drv_name                   = settings->arrays.input_joypad_driver;
    uint32_t surface_flags                        = (video->vsync) ?
          SDL_RS90_SURFACE_FLAGS_VSYNC_ON :
          SDL_RS90_SURFACE_FLAGS_VSYNC_OFF;
@@ -902,8 +828,10 @@ static void *sdl_rs90_gfx_init(const video_info_t *video,
 
    SDL_ShowCursor(SDL_DISABLE);
 
-   sdl_rs90_input_driver_init(input_drv_name,
-         joypad_drv_name, input, input_data);
+   /* No input driver of this driver's own: the frontend starts the
+    * one the setting names - which is what was done here, for the
+    * four it can be on these devices. */
+   input_driver_left_to_frontend(INPUT_WINDOW_OTHER, input, input_data);
 
    /* Initialise OSD font */
    sdl_rs90_init_font_color(vid);

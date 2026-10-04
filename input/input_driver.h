@@ -1000,6 +1000,10 @@ void input_driver_init_kms(const char *joypad_name,
 void input_driver_init_wayland(const char *joypad_name, void *window_data,
       input_driver_t **input, void **input_data);
 #endif
+#if defined(HAVE_SDL) && !defined(HAVE_SDL2) && !defined(HAVE_SDL3)
+void input_driver_init_sdl1(const char *joypad_name,
+      input_driver_t **input, void **input_data);
+#endif
 #ifdef HAVE_SDL3
 void input_driver_init_sdl3(const char *joypad_name,
       input_driver_t **input, void **input_data);
@@ -1089,7 +1093,9 @@ enum input_window_kind
     * input_driver_init_wayland() */
    INPUT_WINDOW_WAYLAND,
    /* an SDL 3 window: input_driver_init_sdl3() */
-   INPUT_WINDOW_SDL3
+   INPUT_WINDOW_SDL3,
+   /* an SDL 1.2 window: input_driver_init_sdl1() */
+   INPUT_WINDOW_SDL1
 };
 
 /* For a video driver's or a context's start-up, in place of starting
