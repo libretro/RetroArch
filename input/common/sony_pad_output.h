@@ -36,8 +36,9 @@
  * to act on. The motors are always asked for. The pad's lights are
  * asked for only when a player number is given: the player lights of
  * a DualSense, the light bar's colour of a DualShock 4, as the
- * consoles show which player a pad is. Otherwise the lights, and
- * always the triggers and the audio, stay as they are.
+ * consoles show which player a pad is. They can be put out again, the
+ * same way. Otherwise the lights, and always the triggers and the
+ * audio, stay as they are.
  *
  * No allocation and nothing of any system's, so that
  * samples/input/sony_pad_output can check it on its own; it needs
@@ -90,15 +91,15 @@ static INLINE uint32_t sony_pad_crc32(const uint8_t *data, size_t len)
 /* Builds the report that sets the two motors: @strong the heavy,
  * low-frequency one (in the left grip) and @weak the light one, 0 to
  * 255 each. @vibration_v2 is for a DualSense alone; see above.
- * @player is the player the pad's lights are to show, from 1, or 0 to
- * leave the lights alone.
+ * @player is the player the pad's lights are to show, from 1; 0 to
+ * leave the lights alone; less than 0 to put them out.
  * Returns the report's length - 32 or 48 over USB, 78 over Bluetooth
  * - or 0 for a pad it has no report for or a buffer too small. A
  * driver whose system wants output reports of a fixed length pads
  * with zeros. */
 static INLINE size_t sony_pad_output_report(uint8_t *buf, size_t cap,
       enum sony_pad_model model, bool bluetooth, bool vibration_v2,
-      uint8_t strong, uint8_t weak, unsigned player)
+      uint8_t strong, uint8_t weak, int player)
 {
    /* a DualSense's five player lights, as the console lights them */
    static const uint8_t ds_player[5] = { 0x04, 0x0A, 0x15, 0x1B, 0x1F };
@@ -135,11 +136,15 @@ static INLINE size_t sony_pad_output_report(uint8_t *buf, size_t cap,
          buf[at + 1]   = strong; /* left motor */
          if (player)
          {
-            const uint8_t *rgb = ds4_player[(player - 1) % 4];
             buf[at - 3]  |= 0x02; /* act on: the light bar too */
-            buf[at + 2]   = rgb[0];
-            buf[at + 3]   = rgb[1];
-            buf[at + 4]   = rgb[2];
+            /* (put out: its three colours stay nought) */
+            if (player > 0)
+            {
+               const uint8_t *rgb = ds4_player[(player - 1) % 4];
+               buf[at + 2]   = rgb[0];
+               buf[at + 3]   = rgb[1];
+               buf[at + 4]   = rgb[2];
+            }
          }
          break;
       case SONY_PAD_DUALSENSE:
@@ -169,9 +174,11 @@ static INLINE size_t sony_pad_output_report(uint8_t *buf, size_t cap,
          buf[at + 3]   = strong; /* left motor */
          if (player)
          {
-            /* the second flag byte: act on the player lights */
+            /* the second flag byte: act on the player lights
+             * (put out: none of the five is lit) */
             buf[at + 1]  |= 0x10;
-            buf[at + 43]  = ds_player[(player - 1) % 5];
+            if (player > 0)
+               buf[at + 43] = ds_player[(player - 1) % 5];
          }
          break;
       default:

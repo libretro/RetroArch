@@ -160,7 +160,17 @@ int main(void)
    CHECK(r[6] == 0x20 && r[7] == 0 && r[8] == 0x20, "DualShock 4, player 4 is not pink");
    len = sony_pad_output_report(r, sizeof(r), SONY_PAD_DUALSENSE, false, true, 200, 100, 0);
    CHECK(!(r[2] & 0x10) && r[44] == 0, "with no player given the lights are asked for");
-   printf("   ok   a player given: the DualSense's player lights and the DualShock 4's light bar, beside the motors; none given, the lights are left alone\n");
+   /* put out: asked for, with nothing lit; the motors still beside */
+   len = sony_pad_output_report(r, sizeof(r), SONY_PAD_DUALSENSE, false, true, 200, 100, -1);
+   CHECK((r[2] & 0x10) && r[44] == 0 && r[3] == 100 && r[4] == 200,
+         "DualSense, lights put out: flags %02x lights %02x", r[2], r[44]);
+   len = sony_pad_output_report(r, sizeof(r), SONY_PAD_DUALSENSE, true, true, 0, 0, -1);
+   CHECK((r[3] & 0x10) && r[45] == 0, "DualSense, Bluetooth, lights put out");
+   len = sony_pad_output_report(r, sizeof(r), SONY_PAD_DS4, false, false, 0, 0, -1);
+   CHECK(r[1] == 0x03 && !r[6] && !r[7] && !r[8], "DualShock 4, light bar put out");
+   len = sony_pad_output_report(r, sizeof(r), SONY_PAD_DS4, true, false, 0, 0, -1);
+   CHECK(r[3] == 0x03 && !r[8] && !r[9] && !r[10], "DualShock 4, Bluetooth, light bar put out");
+   printf("   ok   a player given: the DualSense's player lights and the DualShock 4's light bar, beside the motors; none given, the lights are left alone; less than none, they are put out\n");
 
    CHECK(sony_pad_rumble_report(r, sizeof(r), SONY_PAD_NONE, false, false, 1, 1) == 0,
          "a report was built for no pad");

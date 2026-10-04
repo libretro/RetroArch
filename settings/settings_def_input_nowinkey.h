@@ -23,5 +23,5 @@ S_BOOL(input_winraw_player_lights, INPUT_WINRAW_PLAYER_LIGHTS,
       "input_winraw_player_lights",
       false, SD_FLAG_NONE, 0, 0,
       "Controller Player Lights",
-      "With the 'raw' controller driver, show each controller's port on its own lights: the player lights of a DualSense, the light bar's colour of a DualShock 4 (blue, red, green, pink). They follow the controller when its port changes.")
+      "With the 'raw' controller driver, show each controller's port on its own lights: the player lights of a DualSense, the light bar's colour of a DualShock 4 (blue, red, green, pink). They follow the controller when its port changes, and go out when this is turned off.")
 #endif

@@ -419,8 +419,9 @@ typedef struct
    /* wanted: the strong motor in the low sixteen bits, the weak in
     * the high. Stored by set_rumble(), loaded by the thread. */
    retro_atomic_int_t want;
-   /* the player its lights are to show, from 1, or 0 to leave them
-    * alone. Stored by the driver's poll, loaded by the thread. */
+   /* the player its lights are to show, from 1; 0 to leave them
+    * alone; -1 to put them out. Stored by the driver's poll, loaded
+    * by the thread. */
    retro_atomic_int_t player;
    /* an XInput pad's buttons as raw input reports them, one bit each
     * in XInput's own order. Stored by the driver as it parses a
@@ -575,7 +576,7 @@ static bool winraw_joypad_out_write(const winraw_joypad_out_dev_t *dev,
          (enum sony_pad_model)dev->model, dev->bluetooth, dev->v2,
          (uint8_t)(((unsigned)want & 0xFFFF) >> 8),
          (uint8_t)((((unsigned)want >> 16) & 0xFFFF) >> 8),
-         (unsigned)player);
+         player);
    size_t len    = report;
 
    if (!report)
@@ -2224,7 +2225,8 @@ bool winraw_joypad_survives_video(void)
 
 /* "Controller Player Lights": each pad's lights show the port it is
  * on. Which port that is is looked at now and then, not every poll;
- * the thread writes it when it changes. */
+ * the thread writes it when it changes. Turned off, the lights that
+ * were lit are put out. */
 static void winraw_joypad_player_lights(void)
 {
 /* (the setting exists where the driver is built into RetroArch) */
@@ -2250,6 +2252,11 @@ static void winraw_joypad_player_lights(void)
                player = (int)u + 1;
                break;
             }
+      /* lights this driver lit are put out when they are no longer
+       * wanted - the setting turned off, or the pad on no port. Ones
+       * it never lit are left alone. */
+      if (!player && out->player_asked)
+         player = -1;
       if (player != out->player_asked)
       {
          out->player_asked = player;

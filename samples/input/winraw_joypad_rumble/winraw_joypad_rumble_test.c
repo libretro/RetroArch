@@ -383,12 +383,22 @@ int main(void)
          winraw_joypad_player_lights();
       CHECK(wait_for(edge, 44, 0x0A, 0x00), "the DualSense moved to the second port does not show player 2");
       CHECK(wait_for(ds4, 7, 0x00, 0x40), "the DualShock 4 moved to the first port is not blue");
+      /* turned off again: the lights that were lit are put out, with
+       * the motors kept as they were */
       stub_settings.bools.input_winraw_player_lights = false;
       stub_settings.uints.input_joypad_index[0]      = 0;
       stub_settings.uints.input_joypad_index[1]      = 1;
       for (i = 0; i < 40; i++)
          winraw_joypad_player_lights();
-      printf("   ok   Controller Player Lights: off, the lights are left alone; on, each pad shows its port, and follows it when the port changes\n");
+      CHECK(wait_for(edge, 44, 0x00, 0x00), "turned off, the DualSense's player lights stayed lit");
+      len = written_to(edge, buf, sizeof(buf));
+      CHECK((buf[2] & 0x10) && buf[3] == 0x80 && buf[4] == 200,
+            "turned off, the lights were not asked to go out, or the motors were not kept");
+      CHECK(wait_for(ds4, 7, 0x00, 0x00), "turned off, the DualShock 4's light bar stayed lit");
+      len = written_to(ds4, buf, sizeof(buf));
+      CHECK(buf[1] == 0x03 && !buf[6] && !buf[8],
+            "turned off, the DualShock 4's light bar was not asked to go out");
+      printf("   ok   Controller Player Lights: off from the start, the lights are left alone; on, each pad shows its port and follows it; turned off again, they go out\n");
    }
 
    /* ---- what cannot rumble ---------------------------------------- */
