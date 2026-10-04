@@ -3866,6 +3866,9 @@ static void *d3d11_gfx_init(const video_info_t* video,
       goto error;
    }
 
+   /* the swap chain is made the size the window really is */
+   d3d11->vp.full_dims = win32_window_client_dims(d3d11->vp.full_dims);
+
 #ifdef __WINRT__
    DXGICreateFactory2(&d3d11->factory);
 #else

@@ -188,6 +188,11 @@ void win32_destroy_window(void);
  * one. False if it cannot be left - the caller destroys it as before. */
 bool win32_window_keep(void);
 
+/* The size the window's client area really is, which is not always
+ * the size win32_set_video_mode() was asked for; @dims with no window.
+ * For the swap chain a driver makes on it. */
+unsigned win32_window_client_dims(unsigned dims);
+
 /* A window left up that the next driver did not take goes. Called
  * once that driver is up, or has failed to come up. */
 void win32_window_release_kept(void);

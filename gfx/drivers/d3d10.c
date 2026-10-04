@@ -2542,6 +2542,9 @@ static void *d3d10_gfx_init(const video_info_t* video,
       goto error;
    }
 
+   /* the swap chain is made the size the window really is */
+   d3d10->vp.full_dims = win32_window_client_dims(d3d10->vp.full_dims);
+
    /* no input driver of this driver's own: the frontend starts the
     * one that goes with a Windows window */
    input_driver_left_to_frontend(INPUT_WINDOW_WINDOWS, input, input_data);

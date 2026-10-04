@@ -5289,6 +5289,9 @@ static void *d3d12_gfx_init(const video_info_t* video,
       goto error;
    }
 
+   /* the swap chain is made the size the window really is */
+   d3d12->vp.full_dims = win32_window_client_dims(d3d12->vp.full_dims);
+
 #ifdef HAVE_DXGI_HDR
    if (settings->uints.video_hdr_mode > 0)
       d3d12->flags                       |=  D3D12_ST_FLAG_HDR_ENABLE;

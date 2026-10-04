@@ -2492,6 +2492,30 @@ static void win32_window_tell_client_size(HWND hwnd)
    }
 }
 
+/* The size the window's client area really is, packed as the drivers
+ * keep sizes; @dims if there is no window to ask.
+ *
+ * It is not always the size that was asked for: Windows does not let
+ * a window grow past the screen, and a menu bar takes its share. A
+ * swap chain made the size asked for is then stretched over the
+ * window until the first resize notice has been acted on, a frame or
+ * two later - and with a window kept across a restart those frames
+ * are on screen. A driver that makes its swap chain this size has
+ * nothing to put right. */
+unsigned win32_window_client_dims(unsigned dims)
+{
+   RECT client;
+   HWND hwnd = main_window.hwnd;
+   if (     hwnd
+         && GetClientRect(hwnd, &client)
+         && client.right  > client.left
+         && client.bottom > client.top)
+      return VIDEO_SCALE_PACK(
+            (unsigned)(client.right  - client.left),
+            (unsigned)(client.bottom - client.top));
+   return dims;
+}
+
 bool win32_set_video_mode(void *data,
       unsigned dims,
       bool fullscreen)
