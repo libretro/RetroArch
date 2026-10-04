@@ -7145,13 +7145,17 @@ input_driver_t *input_driver_get_current(void)
 /* The kind of window the video driver being started says it put up
  * (input_driver_left_to_frontend()), for video_driver_init_input(). */
 static enum input_window_kind input_window_for_video = INPUT_WINDOW_OTHER;
+/* and the input state it holds for that window, if it holds any
+ * (input_driver_left_to_frontend_with()) */
+static void *input_window_data_for_video             = NULL;
 
 /* The slots a video driver's init fills in when it brings its own
  * input driver. */
 input_driver_t **input_driver_video_slots(void ***data_slot)
 {
    /* the driver about to start has said nothing yet */
-   input_window_for_video = INPUT_WINDOW_OTHER;
+   input_window_for_video      = INPUT_WINDOW_OTHER;
+   input_window_data_for_video = NULL;
    *data_slot = (void**)&input_driver_st.current_data;
    return &input_driver_st.current_driver;
 }
@@ -7159,11 +7163,20 @@ input_driver_t **input_driver_video_slots(void ***data_slot)
 void input_driver_left_to_frontend(enum input_window_kind window,
       input_driver_t **input, void **input_data)
 {
-   input_window_for_video = window;
+   input_window_for_video      = window;
+   input_window_data_for_video = NULL;
    if (input)
-      *input              = NULL;
+      *input                   = NULL;
    if (input_data)
-      *input_data         = NULL;
+      *input_data              = NULL;
+}
+
+void input_driver_left_to_frontend_with(enum input_window_kind window,
+      void *window_data,
+      input_driver_t **input, void **input_data)
+{
+   input_driver_left_to_frontend(window, input, input_data);
+   input_window_data_for_video = window_data;
 }
 
 /* Leaving the input driver running across a video driver restart
@@ -7522,6 +7535,12 @@ bool video_driver_init_input(
                 * any other is the setting's to name, below */
                input_driver_init_kms(joypad, &drv, &drv_data);
                break;
+#ifdef HAVE_WAYLAND
+            case INPUT_WINDOW_WAYLAND:
+               input_driver_init_wayland(joypad,
+                     input_window_data_for_video, &drv, &drv_data);
+               break;
+#endif
             default:
                break;
          }

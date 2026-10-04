@@ -122,6 +122,27 @@ void input_driver_init_x11(const char *joypad_name,
 }
 #endif
 
+#ifdef HAVE_WAYLAND
+bool input_wl_init(void *data, const char *joypad_name);
+
+/* A Wayland surface. The seat's state - its keyboard, pointer and
+ * touch - lives with the surface, in the video context, which hands
+ * it over as @window_data; the Wayland input driver runs on that. */
+void input_driver_init_wayland(const char *joypad_name, void *window_data,
+      input_driver_t **input, void **input_data)
+{
+   *input      = NULL;
+   *input_data = NULL;
+
+   if (!window_data || !input_wl_init(window_data, joypad_name))
+      return;
+
+   *input      = &input_wayland;
+   *input_data = window_data;
+   input_driver_init_joypads();
+}
+#endif
+
 /* A display with no window system - KMS/DRM, a Vulkan display. The
  * X11 driver cannot work there and udev may not be allowed, so when
  * the setting is either of those: udev if it starts, linuxraw if that

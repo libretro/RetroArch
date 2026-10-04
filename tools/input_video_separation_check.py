@@ -62,8 +62,6 @@ INPUT_DRIVERS_IN_GFX = {
     "gfx/drivers_context/ps3_ctx.c": 2,
     "gfx/drivers_context/qnx_ctx.c": 2,
     "gfx/drivers_context/uwp_egl_ctx.c": 4,
-    "gfx/drivers_context/wayland_ctx.c": 1,
-    "gfx/drivers_context/wayland_vk_ctx.c": 1,
 }
 
 

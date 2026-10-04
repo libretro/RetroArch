@@ -996,6 +996,10 @@ void input_driver_init_x11(const char *joypad_name,
 #endif
 void input_driver_init_kms(const char *joypad_name,
       input_driver_t **input, void **input_data);
+#ifdef HAVE_WAYLAND
+void input_driver_init_wayland(const char *joypad_name, void *window_data,
+      input_driver_t **input, void **input_data);
+#endif
 
 /* Leaving the input driver running across a video driver restart: see
  * input_driver.c. */
@@ -1072,7 +1076,11 @@ enum input_window_kind
    INPUT_WINDOW_X11,
    /* no window system - KMS/DRM, a Vulkan display:
     * input_driver_init_kms() */
-   INPUT_WINDOW_KMS
+   INPUT_WINDOW_KMS,
+   /* a Wayland surface, whose seat's state the video context holds
+    * and hands over (input_driver_left_to_frontend_with()):
+    * input_driver_init_wayland() */
+   INPUT_WINDOW_WAYLAND
 };
 
 /* For a video driver's or a context's start-up, in place of starting
@@ -1081,6 +1089,13 @@ enum input_window_kind
  * slots. A driver that says nothing here and fills in no slots gets
  * the input driver the setting names, as ever. */
 void input_driver_left_to_frontend(enum input_window_kind window,
+      input_driver_t **input, void **input_data);
+
+/* The same, for a window system whose input state lives with the
+ * window, in the video driver's own data: @window_data is that state,
+ * and is what the input driver the frontend starts is given. */
+void input_driver_left_to_frontend_with(enum input_window_kind window,
+      void *window_data,
       input_driver_t **input, void **input_data);
 
 /* Called once the video driver is up. If it brought an input driver of

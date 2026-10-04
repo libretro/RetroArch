@@ -537,28 +537,16 @@ error:
    return false;
 }
 
-bool input_wl_init(void *data, const char *joypad_name);
-
 static void gfx_ctx_wl_input_driver(void *data,
       const char *joypad_name,
       input_driver_t **input, void **input_data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   /* Input is heavily tied to the window stuff
-    * on Wayland, so just implement the input driver here. */
-   if (!input_wl_init(&wl->input, joypad_name))
-   {
-      wl->input.gfx = NULL;
-      *input        = NULL;
-      *input_data   = NULL;
-   }
-   else
-   {
-      wl->input.gfx = wl;
-      *input        = &input_wayland;
-      *input_data   = &wl->input;
-      input_driver_init_joypads();
-   }
+   /* On Wayland the seat's state lives with the surface, here. The
+    * frontend starts the input driver; it is handed that state. */
+   wl->input.gfx = wl;
+   input_driver_left_to_frontend_with(INPUT_WINDOW_WAYLAND, &wl->input,
+         input, input_data);
 }
 
 static enum gfx_ctx_api gfx_ctx_wl_get_api(void *data)
