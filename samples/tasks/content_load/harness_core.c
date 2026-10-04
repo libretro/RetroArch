@@ -5,6 +5,31 @@
 #include <string.h>
 #include <stdint.h>
 #include <libretro.h>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <pthread.h>
+#endif
+
+/* The thread the library was opened on (constructor) and the one
+ * retro_init ran on: the harness checks the open happened on a worker,
+ * not the frame-loop thread. */
+static unsigned long harness_load_tid;
+static unsigned long harness_init_tid;
+static unsigned long harness_self_tid(void)
+{
+#ifdef _WIN32
+   return (unsigned long)GetCurrentThreadId();
+#else
+   return (unsigned long)(uintptr_t)pthread_self();
+#endif
+}
+RETRO_API unsigned long harness_core_load_tid(void) { return harness_load_tid; }
+RETRO_API unsigned long harness_core_init_tid(void) { return harness_init_tid; }
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((constructor))
+static void harness_on_load(void) { harness_load_tid = harness_self_tid(); }
+#endif
 
 #define W 320
 #define H 240
@@ -88,7 +113,7 @@ void retro_set_input_state(retro_input_state_t cb) { (void)cb; }
  * rest of the API but not retro_init: not a core, found out only once
  * the load has committed. */
 #ifndef HARNESS_CORE_NO_INIT
-void retro_init(void) { inits++; }
+void retro_init(void) { inits++; harness_init_tid = harness_self_tid(); }
 #endif
 void retro_deinit(void) { }
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }

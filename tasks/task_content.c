@@ -2021,6 +2021,9 @@ enum content_load_stage
    /* A save or load state task is still inside the old core: the
     * close waits for it, presenting, and finishes when it is out. */
    CONTENT_LOAD_STAGE_CLOSE_WAIT,
+   /* The new core's library is opened on the task worker, presenting,
+    * now that the old one is closed. */
+   CONTENT_LOAD_STAGE_CORE_PRELOAD,
    /* The new core comes up behind those drivers: configuration,
     * task queue, dlopen, retro_init, the content read, retro_load_game. */
    CONTENT_LOAD_STAGE_CORE,
@@ -2142,6 +2145,8 @@ static void content_load_job_fall_back(struct content_load_job *job)
    path_clear(RARCH_PATH_CONTENT);
    runloop_set_current_core_type(CORE_TYPE_DUMMY, true);
    content_load_job_args(job);
+   /* An opened library the failed core stage did not take */
+   runloop_core_preload_cancel();
 }
 
 /* The close of the old session.  Staged, the drivers stay up
@@ -2247,6 +2252,8 @@ static void content_load_finish(struct content_load_job *job,
    bool ok                     = job->ok;
 
    runloop_st->content_switching = false;
+   /* A library opened for a core stage that never took it */
+   runloop_core_preload_cancel();
 
    if (ok)
       content_load_tail(job, p_content);
@@ -2308,7 +2315,9 @@ static void content_load_step(struct content_load_job *job,
       case CONTENT_LOAD_STAGE_DEINIT:
          if (!content_load_stage_deinit(job))
          {
-            job->stage = CONTENT_LOAD_STAGE_CORE;
+            job->stage = (job->staged && runloop_core_preload_begin())
+               ? CONTENT_LOAD_STAGE_CORE_PRELOAD
+               : CONTENT_LOAD_STAGE_CORE;
             break;
          }
          job->stage = CONTENT_LOAD_STAGE_CLOSE_WAIT;
@@ -2317,6 +2326,14 @@ static void content_load_step(struct content_load_job *job,
          if (retroarch_main_deinit_pending())
             break;
          retroarch_main_deinit_finish();
+         /* The old core is closed now: its library open may start */
+         job->stage = (job->staged && runloop_core_preload_begin())
+            ? CONTENT_LOAD_STAGE_CORE_PRELOAD
+            : CONTENT_LOAD_STAGE_CORE;
+         break;
+      case CONTENT_LOAD_STAGE_CORE_PRELOAD:
+         if (!runloop_core_preload_ready())
+            break;
          job->stage = CONTENT_LOAD_STAGE_CORE;
          break;
       case CONTENT_LOAD_STAGE_CORE:
@@ -2415,7 +2432,7 @@ static bool content_load_push_stage(struct content_load_job *job)
 {
    static const char *titles[] = {
       NULL, "Closing content", "Closing content",
-      "Loading core", "Starting drivers" };
+      "Loading core", "Loading core", "Starting drivers" };
    retro_task_t *task = task_init();
    if (!task)
       return false;

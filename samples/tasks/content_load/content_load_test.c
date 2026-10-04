@@ -158,6 +158,14 @@ static unsigned core_inits(void)
    return core_export("harness_core_inits");
 }
 
+static unsigned long core_export_ul(const char *name)
+{
+   dylib_t lib = runloop_state_get_ptr()->lib_handle;
+   unsigned long (*fn)(void) = lib
+      ? (unsigned long (*)(void))dylib_proc(lib, name) : NULL;
+   return fn ? fn() : 0;
+}
+
 /* What one frame of the load looked like. */
 struct load_frame
 {
@@ -556,6 +564,54 @@ static void lane_rewind_after_load(void)
          rewind_enable);
    if (failures == had)
       fprintf(stderr, "[pass] rewind-after-load lane\n");
+}
+#endif
+
+#if defined(HAVE_DYNAMIC) && defined(HAVE_THREADS)
+/* A staged load opens the core's library on the task worker, off the
+ * frame-loop thread, and the core stage takes that handle; a same-core
+ * reload still comes up on fresh statics, because the open waits for
+ * the old handle to be released. */
+static void lane_core_preloaded(void)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned long load_tid, init_tid;
+   unsigned had = failures;
+
+   configuration_set_bool(settings, settings->bools.threaded_data_runloop_enable, true);
+   task_queue_set_threaded();
+   open_menu();
+
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the load was not started");
+   pump(LOAD_FRAMES);
+   CHECK(core_is_up(), "the core did not come up");
+   CHECK(core_inits() == 1, "the core came up %u times", core_inits());
+
+   load_tid = core_export_ul("harness_core_load_tid");
+   init_tid = core_export_ul("harness_core_init_tid");
+   CHECK(load_tid != 0 && init_tid != 0, "the core did not record its threads");
+   CHECK(load_tid != init_tid,
+         "the library was opened on the frame-loop thread, not a worker");
+
+   /* Same core again: the old handle is released before the open, so
+    * the reloaded instance's statics are its own */
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the reload was not started");
+   pump(LOAD_FRAMES);
+   CHECK(core_is_up(), "the reload did not go through");
+   CHECK(core_inits() == 1,
+         "the reload came up on the previous instance's statics (inits %u)",
+         core_inits());
+   CHECK(core_export_ul("harness_core_load_tid") != core_export_ul("harness_core_init_tid"),
+         "the reload's library open was not on a worker");
+
+   configuration_set_bool(settings, settings->bools.threaded_data_runloop_enable, false);
+   task_queue_unset_threaded();
+   pump(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] core-preloaded lane\n");
 }
 #endif
 
@@ -2129,6 +2185,9 @@ int main(int argc, char *argv[])
    lane_probe_cached();
 #endif
    lane_one_at_a_time();
+#if defined(HAVE_DYNAMIC) && defined(HAVE_THREADS)
+   lane_core_preloaded();
+#endif
 #ifdef HAVE_REWIND
    lane_rewind_after_load();
 #endif

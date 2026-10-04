@@ -846,6 +846,15 @@ bool libretro_get_system_info(
       struct retro_system_info *info,
       bool *load_no_content);
 
+/* A staged load opens the core's library on the task worker once the
+ * previous core is closed; the core stage then takes the handle.
+ * begin returns false when there is no worker to open it on (the core
+ * stage opens it itself), ready is true once no open is in flight,
+ * cancel drops an untaken handle. */
+bool runloop_core_preload_begin(void);
+bool runloop_core_preload_ready(void);
+void runloop_core_preload_cancel(void);
+
 #ifdef HAVE_DYNAMIC
 /* Frees the records libretro_get_system_info() keeps of the cores it
  * has asked; the next question reads them back from disk. */
