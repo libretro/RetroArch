@@ -593,6 +593,67 @@ static uintptr_t d3d9_cg_video_texture_unload_wrap_d3d(void *data)
 }
 #endif
 
+/* Same-size contents into a texture d3d9_cg_load_texture made. The
+ * texture is in the managed pool, so locking it writes the runtime's
+ * system copy without waiting on the GPU and the runtime uploads it at
+ * the next use: a streaming surface keeps one texture instead of
+ * creating and releasing one a frame. */
+static bool d3d9_cg_update_texture_internal(uintptr_t id,
+      const struct texture_image *ti)
+{
+   D3DLOCKED_RECT     d3dlr;
+   D3DSURFACE_DESC    desc;
+   LPDIRECT3DTEXTURE9 tex = (LPDIRECT3DTEXTURE9)id;
+   unsigned i, pitch;
+   uint32_t       *dst;
+   const uint32_t *src;
+
+   if (     !tex || !ti || !ti->pixels || ti->pix10
+         || FAILED(IDirect3DTexture9_GetLevelDesc(tex, 0, &desc))
+         || desc.Width != ti->width || desc.Height != ti->height
+         || FAILED(IDirect3DTexture9_LockRect(tex, 0, &d3dlr, NULL,
+               D3DLOCK_NOSYSLOCK)))
+      return false;
+   dst   = (uint32_t*)d3dlr.pBits;
+   src   = ti->pixels;
+   pitch = d3dlr.Pitch >> 2;
+   for (i = 0; i < ti->height; i++, dst += pitch, src += ti->width)
+      memcpy(dst, src, ti->width << 2);
+   IDirect3DTexture9_UnlockRect(tex, 0);
+   return true;
+}
+
+#ifdef HAVE_THREADS
+struct d3d9_cg_update_cmd
+{
+   const struct texture_image *ti;
+   uintptr_t                   id;
+};
+
+static uintptr_t d3d9_cg_update_texture_wrap(void *data)
+{
+   struct d3d9_cg_update_cmd *cmd = (struct d3d9_cg_update_cmd*)data;
+   return d3d9_cg_update_texture_internal(cmd->id, cmd->ti) ? cmd->id : 0;
+}
+#endif
+
+static bool d3d9_cg_update_texture(void *video_data, uintptr_t id,
+      const struct texture_image *ti, bool threaded)
+{
+   (void)video_data;
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      struct d3d9_cg_update_cmd cmd;
+      cmd.ti = ti;
+      cmd.id = id;
+      return video_thread_texture_handle(&cmd,
+            d3d9_cg_update_texture_wrap) != 0;
+   }
+#endif
+   return d3d9_cg_update_texture_internal(id, ti);
+}
+
 static void d3d9_cg_unload_texture(void *data,
       bool threaded, uintptr_t id)
 {
@@ -4701,7 +4762,7 @@ static const video_poke_interface_t d3d9_cg_poke_interface = {
    NULL, /* hw_ring_context_new */
    NULL, /* hw_ring_context_free */
    NULL, /* hw_ring_framebuffer */
-   NULL, /* update_texture */
+   d3d9_cg_update_texture,
    d3d9_cg_get_swap_interval_cap
 };
 

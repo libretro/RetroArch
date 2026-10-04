@@ -3060,6 +3060,7 @@ static void d3d8_video_texture_load_d3d(
    *id = (uintptr_t)tex;
 }
 
+#ifdef HAVE_THREADS
 static uintptr_t d3d8_video_texture_load_wrap_d3d(void *data)
 {
    uintptr_t id = 0;
@@ -3068,6 +3069,68 @@ static uintptr_t d3d8_video_texture_load_wrap_d3d(void *data)
       return 0;
    d3d8_video_texture_load_d3d(info, &id);
    return id;
+}
+#endif
+
+/* Same-size contents into a texture d3d8_load_texture made. The
+ * texture is in the managed pool, so locking it writes the runtime's
+ * system copy without waiting on the GPU and the runtime uploads it at
+ * the next use: a streaming surface keeps one texture instead of
+ * creating and releasing one a frame. */
+static bool d3d8_update_texture_internal(uintptr_t id,
+      const struct texture_image *ti)
+{
+   D3DLOCKED_RECT     d3dlr;
+   D3DSURFACE_DESC    desc;
+   LPDIRECT3DTEXTURE8 tex = (LPDIRECT3DTEXTURE8)id;
+   unsigned i, pitch;
+   uint32_t       *dst;
+   const uint32_t *src;
+
+   if (     !tex || !ti || !ti->pixels || ti->pix10
+         || FAILED(IDirect3DTexture8_GetLevelDesc(tex, 0, &desc))
+         || desc.Width != ti->width || desc.Height != ti->height
+         || FAILED(IDirect3DTexture8_LockRect(tex, 0, &d3dlr, NULL,
+               D3DLOCK_NOSYSLOCK)))
+      return false;
+   dst   = (uint32_t*)d3dlr.pBits;
+   src   = ti->pixels;
+   pitch = d3dlr.Pitch >> 2;
+   for (i = 0; i < ti->height; i++, dst += pitch, src += ti->width)
+      memcpy(dst, src, ti->width << 2);
+   IDirect3DTexture8_UnlockRect(tex, 0);
+   return true;
+}
+
+#ifdef HAVE_THREADS
+struct d3d8_update_cmd
+{
+   const struct texture_image *ti;
+   uintptr_t                   id;
+};
+
+static uintptr_t d3d8_update_texture_wrap(void *data)
+{
+   struct d3d8_update_cmd *cmd = (struct d3d8_update_cmd*)data;
+   return d3d8_update_texture_internal(cmd->id, cmd->ti) ? cmd->id : 0;
+}
+#endif
+
+static bool d3d8_update_texture(void *video_data, uintptr_t id,
+      const struct texture_image *ti, bool threaded)
+{
+   (void)video_data;
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      struct d3d8_update_cmd cmd;
+      cmd.ti = ti;
+      cmd.id = id;
+      return video_thread_texture_handle(&cmd,
+            d3d8_update_texture_wrap) != 0;
+   }
+#endif
+   return d3d8_update_texture_internal(id, ti);
 }
 
 static uintptr_t d3d8_load_texture(void *video_data, void *data,
@@ -3080,14 +3143,17 @@ static uintptr_t d3d8_load_texture(void *video_data, void *data,
    info.data     = data;
    info.type     = filter_type;
 
+#ifdef HAVE_THREADS
    if (threaded)
       return video_thread_texture_handle(&info,
             d3d8_video_texture_load_wrap_d3d);
+#endif
 
    d3d8_video_texture_load_d3d(&info, &id);
    return id;
 }
 
+#ifdef HAVE_THREADS
 static uintptr_t d3d8_video_texture_unload_wrap_d3d(void *data)
 {
    uintptr_t id = (uintptr_t)data;
@@ -3098,6 +3164,7 @@ static uintptr_t d3d8_video_texture_unload_wrap_d3d(void *data)
    }
    return 0;
 }
+#endif
 
 static void d3d8_unload_texture(void *data, bool threaded,
       uintptr_t id)
@@ -3111,12 +3178,14 @@ static void d3d8_unload_texture(void *data, bool threaded,
     * that may still reference this texture.  Matches the
     * threading pattern already used by d3d8_load_texture
     * above. */
+#ifdef HAVE_THREADS
    if (threaded)
    {
       video_thread_texture_handle((void*)id,
             d3d8_video_texture_unload_wrap_d3d);
       return;
    }
+#endif
 
    texid = (LPDIRECT3DTEXTURE8)id;
    IDirect3DTexture8_Release(texid);
@@ -3270,7 +3339,7 @@ static const video_poke_interface_t d3d_poke_interface = {
    NULL, /* hw_ring_context_new */
    NULL, /* hw_ring_context_free */
    NULL, /* hw_ring_framebuffer */
-   NULL, /* update_texture */
+   d3d8_update_texture,
    d3d8_get_swap_interval_cap
 };
 

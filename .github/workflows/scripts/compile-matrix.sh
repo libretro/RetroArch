@@ -403,6 +403,22 @@ d3d_video "d3d11 video"   "$D3DDEFS -DHAVE_D3D11" gfx/drivers/d3d11.c
 d3d_video "d3d12 video"   "$D3DDEFS -DHAVE_D3D12" gfx/drivers/d3d12.c
 d3d_video "gdi video"     "-DHAVE_RGUI -DHAVE_OVERLAY -DHAVE_GDI" \
    gfx/drivers/gdi_gfx.c
+# The same drivers without threads, as a --disable-threads build has
+# them: a call into the video thread wrapper outside HAVE_THREADS has no
+# definition there, so it compiles as an implicit declaration and the
+# link fails. BASE defines HAVE_THREADS; the -U after it wins.
+d3d_video "d3d8 video, no threads"   "$D3DDEFS -DHAVE_D3D8 -UHAVE_THREADS" \
+   gfx/drivers/d3d8.c
+d3d_video "d3d9 video, Cg, no threads"   "$D3DDEFS -DHAVE_D3D9 -UHAVE_THREADS" \
+   gfx/drivers/d3d9cg.c
+d3d_video "d3d9 video, HLSL, no threads" "$D3DDEFS -DHAVE_D3D9 -UHAVE_THREADS" \
+   gfx/drivers/d3d9hlsl.c
+d3d_video "d3d10 video, no threads"  "$D3DDEFS -DHAVE_D3D10 -UHAVE_THREADS" \
+   gfx/drivers/d3d10.c
+d3d_video "d3d11 video, no threads"  "$D3DDEFS -DHAVE_D3D11 -UHAVE_THREADS" \
+   gfx/drivers/d3d11.c
+d3d_video "d3d12 video, no threads"  "$D3DDEFS -DHAVE_D3D12 -UHAVE_THREADS" \
+   gfx/drivers/d3d12.c
 
 # The context drivers, which no job here compiles either. Each answers
 # the frontend's window and size questions, so a change to what those
