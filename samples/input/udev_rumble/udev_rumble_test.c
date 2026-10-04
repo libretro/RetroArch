@@ -26,8 +26,11 @@
 /* the upload, stood in for: it can take a while, as a virtual pad's
  * can, and notes what it was given */
 static int      slow_ms;
-static int      uploads;            /* written by the writer's thread */
-static int      upload_strong, upload_weak, upload_id_in, next_id = 1;
+/* written on the writer's thread, read on the test's: only through
+ * atomic stores and N() below */
+static int      uploads;
+static int      upload_strong, upload_weak, upload_id_in;
+static int      next_id = 1;        /* the writer's thread's alone */
 
 static int test_ioctl(int fd, unsigned long req, void *arg)
 {
@@ -119,7 +122,7 @@ static bool pad_event(struct input_event *ev, int timeout_ms)
 static void settle(int want_uploads)
 {
    int i;
-   for (i = 0; i < 400 && __sync_fetch_and_add(&uploads, 0) < want_uploads; i++)
+   for (i = 0; i < 400 && __atomic_load_n(&uploads, __ATOMIC_SEQ_CST) < want_uploads; i++)
       usleep(5000);
    usleep(20000);
 }
@@ -166,9 +169,9 @@ int main(void)
    took   = now_ms() - t0;
    settle(before + 1);
    usleep(200000);
-   CHECK(upload_strong == 0x1000 + 20, "the last strength written is 0x%x, want 0x%x",
+   CHECK(N(upload_strong) == 0x1000 + 20, "the last strength written is 0x%x, want 0x%x",
          N(upload_strong), 0x1000 + 20);
-   CHECK(upload_id_in == strong_id, "a strength was uploaded as a new effect, not as the one playing");
+   CHECK(N(upload_id_in) == strong_id, "a strength was uploaded as a new effect, not as the one playing");
 #ifdef HAVE_THREADS
    CHECK(N(uploads) - before < 20, "all %d strengths were written one by one", N(uploads) - before);
    CHECK(took < 20.0, "twenty calls took %.1f ms", took);
@@ -185,7 +188,7 @@ int main(void)
    CHECK(pad_event(&ev, 500) && ev.type == EV_FF && ev.code == strong_id && ev.value == 0,
          "the effect was not stopped");
    CHECK(N(uploads) == before, "stopping uploaded an effect");
-   printf("   ok   a strength of nought stops the effect and N(uploads) nothing\n");
+   printf("   ok   a strength of nought stops the effect and uploads nothing\n");
 
    /* the other motor is another effect */
    udev_set_rumble(0, RETRO_RUMBLE_WEAK, 0x4000);
@@ -219,7 +222,7 @@ int main(void)
       pad_plug();
       udev_set_rumble(0, RETRO_RUMBLE_STRONG, 0x2000);
       CHECK(pad_event(&ev, 500) && ev.value == 1, "the new pad in the slot is not written to");
-      CHECK(upload_id_in == -1 && N(upload_strong) == 0x2000,
+      CHECK(N(upload_id_in) == -1 && N(upload_strong) == 0x2000,
             "the new pad was given the old one's effect");
       printf("   ok   a pad that goes is let go of, and the next one in its slot is written to afresh\n");
    }
