@@ -18,6 +18,11 @@
 
 #include "kernel.h"
 
+/* newlib's lock, condition and thread hooks came with devkitPPC r49. */
+#ifndef __COND_INITIALIZER
+#error "os/gekko needs devkitPPC r49 or later"
+#endif
+
 typedef char assert_lock_size[sizeof(_LOCK_T) == sizeof(gk_mutex_t) ? 1 : -1];
 typedef char assert_rlock_size[
    sizeof(_LOCK_RECURSIVE_T) == sizeof(gk_rmutex_t) ? 1 : -1];
