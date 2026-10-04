@@ -3041,7 +3041,9 @@ bool command_set_shader(command_t *cmd, const char *arg)
    settings_t  *settings        = config_get_ptr();
    bool apply_new_shader        = arg && *arg;
    char abs_arg[PATH_MAX_LENGTH];
+#ifdef HAVE_COMMAND
    struct command_reply *r;
+#endif
 
    configuration_set_bool(settings, settings->bools.video_shader_enable, apply_new_shader);
    if (apply_new_shader)
@@ -3069,6 +3071,7 @@ bool command_set_shader(command_t *cmd, const char *arg)
    if (!video_shader_apply_shader(settings, type, arg, true))
       return false;
 
+#ifdef HAVE_COMMAND
    /* A deferred load compiles over the next frames: answered once it
     * is through. */
    if (cmd && cmd->structured && (r = command_reply_new("SET_SHADER")))
@@ -3080,6 +3083,7 @@ bool command_set_shader(command_t *cmd, const char *arg)
       }
       free(r);
    }
+#endif
    return true;
 }
 #endif
