@@ -7695,6 +7695,15 @@ static void video_driver_reinit_context(settings_t *settings, int flags)
 
    memcpy(hwr, &hwr_copy, sizeof(*hwr));
    video_st->hw_render_context_negotiation = iface;
+   /* And the published type with it. The uninit clears both the
+    * struct and its mirror (video_driver_free_hw_context()), and
+    * video_driver_is_hw_context() reads only the mirror: put back
+    * without it, every restart under a core that renders with the
+    * GPU - a fullscreen toggle, a core option that changes the
+    * resolution - left the frontend believing it had a software core,
+    * drivers_init() below included. */
+   retro_atomic_store_release_int(&video_st->hw_context_type,
+         (int)hwr_copy.context_type);
 
    drivers_init(settings, flags, DRIVER_LIFETIME_RESET, verbosity_is_enabled());
 }

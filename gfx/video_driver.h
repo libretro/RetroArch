@@ -1227,10 +1227,12 @@ typedef struct
 #endif
 
    /* hw_render.context_type, published for cross-thread readers:
-    * both writers run on the main thread and store-release this
-    * mirror after their edit lands - SET_HW_RENDER after copying
+    * every writer runs on the main thread and store-releases this
+    * mirror after its edit lands - SET_HW_RENDER after copying
     * the callback in, video_driver_free_hw_context() after
-    * context_destroy() and the memset - so an acquire load reading
+    * context_destroy() and the memset, and whoever puts a saved
+    * request back (video_driver_hw_request_restore(), a driver
+    * restart) after the copy - so an acquire load reading
     * RETRO_HW_CONTEXT_NONE is guaranteed the teardown completed.
     * video_driver_is_hw_context() reads only this; the hw_render
     * struct itself stays main-thread state. */

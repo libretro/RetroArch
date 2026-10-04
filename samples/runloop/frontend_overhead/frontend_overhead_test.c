@@ -2517,6 +2517,57 @@ static void lane_aim_stick(void)
 #endif
 }
 
+/* A driver restart under a core that renders with the GPU (the report
+ * was a core option that changes the internal resolution). The core's
+ * request is put back after the drivers are torn down, and the
+ * frontend has to still know it has one. */
+static unsigned hw_lane_resets, hw_lane_destroys;
+static void hw_lane_context_reset(void)   { hw_lane_resets++; }
+static void hw_lane_context_destroy(void) { hw_lane_destroys++; }
+
+static void lane_hw_context_restart(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   unsigned had                   = failures;
+   bool before, after;
+
+   /* what RETRO_ENVIRONMENT_SET_HW_RENDER leaves behind */
+   memset(&video_st->hw_render, 0, sizeof(video_st->hw_render));
+   video_st->hw_render.context_type    = RETRO_HW_CONTEXT_OPENGL;
+   video_st->hw_render.context_reset   = hw_lane_context_reset;
+   video_st->hw_render.context_destroy = hw_lane_context_destroy;
+   retro_atomic_store_release_int(&video_st->hw_context_type,
+         (int)RETRO_HW_CONTEXT_OPENGL);
+   hw_lane_resets = hw_lane_destroys   = 0;
+
+   before = video_driver_is_hw_context();
+   command_event(CMD_EVENT_REINIT, NULL);
+   run_loop_frames(2);
+   after  = video_driver_is_hw_context();
+
+   CHECK(before, "hw restart: the core's request was not in place before the restart");
+   CHECK(video_st->hw_render.context_type == RETRO_HW_CONTEXT_OPENGL
+         && video_st->hw_render.context_reset == hw_lane_context_reset,
+         "hw restart: the core's request did not come back after the restart");
+   CHECK(after,
+         "hw restart: after a driver restart the frontend no longer knows the core renders with the GPU");
+   CHECK(hw_lane_destroys == 1,
+         "hw restart: the core's context was not destroyed exactly once");
+
+   /* as the lanes after this found it */
+   memset(&video_st->hw_render, 0, sizeof(video_st->hw_render));
+   retro_atomic_store_release_int(&video_st->hw_context_type,
+         (int)RETRO_HW_CONTEXT_NONE);
+   command_event(CMD_EVENT_REINIT, NULL);
+   run_loop_frames(2);
+
+   if (failures == had)
+      printf("[pass] hw restart: across a driver restart a GPU-rendering"
+            " core's request comes back, its context is destroyed once"
+            " (reset %u time(s)), and the frontend still knows it has one\n",
+            hw_lane_resets);
+}
+
 /* A remap file with a disabled button, content closed from the menu,
  * the core started again from the menu, and closed again
  * (issue #19698). */
@@ -3551,6 +3602,8 @@ int main(int argc, char *argv[])
       lane_input_kept();
       lane_joypad_reinit();
    }
+
+   lane_hw_context_restart();
 
    /* last: it closes the content the other lanes run on */
    lane_remap_close();
