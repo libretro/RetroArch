@@ -1497,6 +1497,31 @@ void flush_wayland_fd(void *data)
 
       if (fd.revents & (POLLERR | POLLHUP))
       {
+         /* The compositor has closed the connection - which is what
+          * it does on a protocol error - and RetroArch is about to
+          * quit as if it had been asked to. Say why: libwayland
+          * prints the error on stderr and nowhere else, so a log
+          * file showed a RetroArch that just exited. */
+         int err = wl_display_get_error(wl->dpy);
+
+         if (err == EPROTO)
+         {
+            const struct wl_interface *iface = NULL;
+            uint32_t id   = 0;
+            uint32_t code = wl_display_get_protocol_error(wl->dpy,
+                  &iface, &id);
+            RARCH_ERR("[Wayland] The compositor closed the connection:"
+                  " protocol error %u on %s@%u. Quitting.\n",
+                  (unsigned)code, iface ? iface->name : "an object",
+                  (unsigned)id);
+         }
+         else if (err)
+            RARCH_ERR("[Wayland] The connection to the compositor"
+                  " was lost: %s. Quitting.\n", strerror(err));
+         else
+            RARCH_ERR("[Wayland] The connection to the compositor"
+                  " was lost. Quitting.\n");
+
          close(wl->fd);
          frontend_driver_set_signal_handler_state(1);
       }
