@@ -240,6 +240,9 @@ jobs:
             iec61937_test
             # The AC-3 arm of audio_transfer against ffmpeg's decode.
             audio_transfer_ac3_test
+            # The FLAC arm, sample-exact in every input mode, a grown
+            # demuxed packet set and a raised WebM wall both resuming.
+            audio_transfer_flac_test
           )
 
           # Targets that are built but deliberately not executed, each
