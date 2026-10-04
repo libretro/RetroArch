@@ -22,6 +22,7 @@
 - CHEEVOS: Download badges on demand only
 - CHEEVOS: Fix for PS2/PSP CHD hashing with RetroAchievements
 - CLOUDSYNC: Google Drive cloud sync driver
+- CLOUDSYNC: NFS cloud sync driver
 - CONFIG: Fix saving main configuration after load configuration
 - DOS: RetroArch for DOS can now start up and handle keyboard correctly
 - CLOUDSYNC: Conflict resolution options
