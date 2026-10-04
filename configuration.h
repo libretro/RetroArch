@@ -755,6 +755,7 @@ typedef struct settings
       bool input_hotkey_follows_player1;
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
       bool input_nowinkey_enable;
+      bool input_winraw_xinput_enable;
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
       bool input_touch_vmouse_pointer;

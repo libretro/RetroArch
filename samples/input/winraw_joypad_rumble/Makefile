@@ -9,7 +9,7 @@ REPO_ROOT := ../../..
 CC        := x86_64-w64-mingw32-gcc
 
 CFLAGS  += -Wall -std=gnu89 -Wdeclaration-after-statement -g -O1 \
-           -DRARCH_INTERNAL \
+           -DRARCH_INTERNAL -DHAVE_WINRAWINPUT \
            -I$(REPO_ROOT) -I$(REPO_ROOT)/input/include \
            -I$(REPO_ROOT)/libretro-common/include -I$(REPO_ROOT)/deps
 

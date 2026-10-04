@@ -1188,6 +1188,7 @@
 #define MENU_ENUM_LABEL_INPUT_MENU_SETTINGS_STR "input_menu_settings"
 #define MENU_ENUM_LABEL_INPUT_MOUSE_SCALE_STR "input_mouse_scale"
 #define MENU_ENUM_LABEL_INPUT_NOWINKEY_ENABLE_STR "input_nowinkey_enable"
+#define MENU_ENUM_LABEL_INPUT_WINRAW_XINPUT_ENABLE_STR "input_winraw_xinput_enable"
 #define MENU_ENUM_LABEL_INPUT_OVERLAY_AUTO_SCALE_STR "input_overlay_auto_scale"
 #define MENU_ENUM_LABEL_INPUT_OVERLAY_BEHIND_MENU_STR "overlay_behind_menu"
 #define MENU_ENUM_LABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN_STR "input_overlay_lightgun_allow_offscreen"

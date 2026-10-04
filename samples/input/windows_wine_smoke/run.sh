@@ -357,6 +357,10 @@ input_player1_keyboard_device = "dead:beef"' \
 EXTRA_CFG='input_player1_mouse_device = "dead:beef"' \
    WANT_LOG="Port 1's mouse \"dead:beef\" is not there: the port reads the mouse its Mouse Index names" \
    scenario "the first port pinned to a mouse that is away" true 1 2 nomsg
+# "XInput for Xbox Controllers" on: XInput is loaded and asked for its
+# pads when the joypad driver starts. With none there, nothing changes.
+EXTRA_CFG='input_winraw_xinput_enable = "true"' \
+   scenario "XInput for Xbox controllers on" true 1 2 nomsg
 VIDEO_DRIVER=gl VIDEO_STARTED='Found GL context' WANT_VIDEO=2 WANT_WINDOW="1 1 0" \
    WANT_MENUS=1 EXTRA_CFG='ui_menubar_enable = "true"' \
    scenario "OpenGL" true 1 2 nomsg

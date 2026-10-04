@@ -42,7 +42,14 @@
  *   as a button is held on it; the last one left is then known by
  *   there being no other;
  * - unplugging an Xbox pad that is rumbling stills it, and so does
- *   stopping the driver. */
+ *   stopping the driver;
+ * - with "XInput for Xbox Controllers" on, an Xbox pad is not taken
+ *   from raw input: XInput's pad is listed, named and laid out as the
+ *   XInput driver has it - ten buttons, the D-pad as a hat, two
+ *   sticks and the two triggers each on its own axis - and is read
+ *   once a poll; another make of pad is raw input's as before; the
+ *   pad rumbles, and one that goes is noticed and its slot given up.
+ *   With the setting off none of that happens. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -151,6 +158,8 @@ static struct
    bool connected;
    WORD buttons, left, right;
    unsigned sets;
+   BYTE lt, rt;
+   SHORT lx, ly;
 } xpad[4];
 static unsigned xinput_loads;
 struct fake_xstate { DWORD packet; WORD buttons; BYTE lt, rt; SHORT lx, ly, rx, ry; };
@@ -162,6 +171,10 @@ static DWORD WINAPI fake_XInputGetState(DWORD i, struct fake_xstate *st)
       return ERROR_DEVICE_NOT_CONNECTED;
    memset(st, 0, sizeof(*st));
    st->buttons = xpad[i].buttons;
+   st->lt      = xpad[i].lt;
+   st->rt      = xpad[i].rt;
+   st->lx      = xpad[i].lx;
+   st->ly      = xpad[i].ly;
    return ERROR_SUCCESS;
 }
 static DWORD WINAPI fake_XInputSetState(DWORD i, struct fake_xvib *v)
@@ -217,6 +230,9 @@ bool input_autoconfigure_connect(const char *name, const char *display_name,
 }
 bool input_autoconfigure_disconnect(unsigned port, const char *name)
 { (void)port; (void)name; return true; }
+/* the driver reads one setting: whether Xbox pads are XInput's */
+static settings_t stub_settings;
+settings_t *config_get_ptr(void) { return &stub_settings; }
 bool winraw_raw_input_polled(void) { return true; }
 void winraw_queue_read(void) { }
 void winraw_queue_claim_thread(bool claim) { (void)claim; }
@@ -469,6 +485,78 @@ int main(void)
          xpad[0].left, xpad[0].right, xpad[1].left, xpad[1].right);
    CHECK(!winraw_joypad_out_thread && !winraw_xinput_dll, "the driver stopped and left its thread or XInput behind");
    printf("   ok   an unplugged Xbox pad is stilled and XInput's pad let go; stopping the driver stills the rest\n");
+
+   /* ============ Xbox pads read through XInput ================== */
+   memset(xpad, 0, sizeof(xpad));
+   fake_n = 0;
+   fake_plug(H(21), 0x045E, 0x028E, "\\\\?\\HID#VID_045E&PID_028E&IG_00#c"); /* an Xbox pad      */
+   fake_plug(H(22), 0x046D, 0xC216, other);                                    /* another make     */
+   xpad[1].connected = true;                 /* XInput has it as its second */
+   xpad[1].buttons   = 0x1000 | 0x0001;      /* A, and up on the D-pad      */
+   xpad[1].lt        = 255;
+   xpad[1].rt        = 128;
+   xpad[1].lx        = -32768;
+   xpad[1].ly        = 1234;
+
+   /* ---- the setting off: the Xbox pad is raw input's -------------- */
+   stub_settings.bools.input_winraw_xinput_enable = false;
+   winraw_joypad_joypad_init(NULL);
+   winraw_joypad_add_device(H(21));
+   CHECK(winraw_joypad_pads[0].connected && winraw_joypad_pads[0].xuser < 0
+         && winraw_joypad_pads[0].hDevice == H(21),
+         "with the setting off the Xbox pad is not raw input's");
+   winraw_joypad_joypad_destroy();
+
+   /* ---- the setting on -------------------------------------------- */
+   stub_settings.bools.input_winraw_xinput_enable = true;
+   winraw_joypad_joypad_init(NULL);
+   CHECK(winraw_joypad_pads[0].connected && winraw_joypad_pads[0].xuser == 1
+         && !strcmp(winraw_joypad_pads[0].name, "XInput Controller"),
+         "XInput's pad is not listed as the XInput driver names it: \"%s\", XInput's %d",
+         winraw_joypad_pads[0].name, winraw_joypad_pads[0].xuser + 1);
+   winraw_joypad_add_device(H(21));
+   winraw_joypad_add_device(H(22));
+   CHECK(winraw_joypad_pads[1].connected && winraw_joypad_pads[1].hDevice == H(22)
+         && !winraw_joypad_pads[2].connected,
+         "the Xbox pad was taken from raw input as well, or the other pad was not: slots 1 and 2 are %d %d",
+         winraw_joypad_pads[1].connected, winraw_joypad_pads[2].connected);
+
+   winraw_joypad_joypad_poll();
+   CHECK(winraw_joypad_joypad_button(0, 0) && !winraw_joypad_joypad_button(0, 1),
+         "A is held and B is not: the pad reads %d %d",
+         (int)winraw_joypad_joypad_button(0, 0), (int)winraw_joypad_joypad_button(0, 1));
+   CHECK(winraw_joypad_joypad_button(0, HAT_MAP(0, HAT_UP_MASK))
+         && !winraw_joypad_joypad_button(0, HAT_MAP(0, HAT_DOWN_MASK)),
+         "up on the D-pad is not up on the hat");
+   CHECK(winraw_joypad_joypad_axis(0, AXIS_POS(4)) == 32767
+         && winraw_joypad_joypad_axis(0, AXIS_POS(5)) == 128 * 32767 / 255,
+         "the triggers, each on its own axis: %d and %d, want 32767 and %d",
+         winraw_joypad_joypad_axis(0, AXIS_POS(4)), winraw_joypad_joypad_axis(0, AXIS_POS(5)), 128 * 32767 / 255);
+   CHECK(winraw_joypad_joypad_axis(0, AXIS_NEG(0)) == -32767
+         && winraw_joypad_joypad_axis(0, AXIS_POS(1)) == 1234,
+         "the left stick: %d %d, want -32767 1234",
+         winraw_joypad_joypad_axis(0, AXIS_NEG(0)), winraw_joypad_joypad_axis(0, AXIS_POS(1)));
+   printf("   ok   with the setting on, XInput's pad is listed and read in the XInput driver's layout, triggers apart; another make is raw input's; with it off the Xbox pad is raw input's\n");
+
+   /* it rumbles, as the pad XInput says it is */
+   ok = winraw_joypad_joypad_set_rumble(0, RETRO_RUMBLE_STRONG, 0x6000);
+   CHECK(ok && xwait(1, 0x6000, 0), "the XInput pad's motors are at %u %u, want 24576 0", xpad[1].left, xpad[1].right);
+
+   /* it goes: noticed at the next poll, stilled, its slot given up */
+   xpad[1].connected = false;
+   winraw_joypad_joypad_poll();
+   CHECK(!winraw_joypad_pads[0].connected && winraw_joypad_pads[1].connected,
+         "an XInput pad that went is still listed, or took the other pad with it");
+   CHECK(!winraw_joypad_joypad_set_rumble(0, RETRO_RUMBLE_STRONG, 0xFFFF), "a pad that went can still be rumbled");
+   /* and comes back, when raw input says a device has come */
+   xpad[1].connected = true;
+   xpad[1].buttons   = 0;
+   winraw_joypad_add_device(H(21));
+   CHECK(winraw_joypad_pads[0].connected && winraw_joypad_pads[0].xuser == 1,
+         "the XInput pad did not come back to its slot");
+   winraw_joypad_joypad_destroy();
+   stub_settings.bools.input_winraw_xinput_enable = false;
+   printf("   ok   an XInput pad rumbles; one that goes is noticed at the next poll and gives its slot up, and comes back to it\n");
 
    DeleteFileA(edge); DeleteFileA(ds4); DeleteFileA(other);
    if (failures)

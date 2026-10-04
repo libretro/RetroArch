@@ -170,6 +170,9 @@ typedef struct winraw_joypad_joypad_data
     * outside what the report's HID description covers
     * (input/common/sony_pad_motion.h). They are read out of a report
     * only while a core has asked for them: motion_on. */
+   /* Which of XInput's pads this is, or -1 for one read from raw
+    * input. See winraw_joypad_xinput_rescan(). */
+   int8_t              xuser;
    uint8_t             motion_model; /* enum sony_pad_model, or none    */
    uint8_t             motion_on;    /* bit 0 accelerometer, 1 gyroscope */
    bool                motion_seen;  /* a report has had them            */
@@ -726,6 +729,24 @@ static void winraw_joypad_out_close(unsigned slot)
       SetEvent(winraw_joypad_out_wake);
 }
 
+/* The thread is started, if it is not running. */
+static bool winraw_joypad_out_start(void)
+{
+   if (winraw_joypad_out_thread)
+      return true;
+   retro_atomic_store_release_int(&winraw_joypad_out_quit, 0);
+   winraw_joypad_out_wake   = CreateEventA(NULL, FALSE, FALSE, NULL);
+   winraw_joypad_out_thread = winraw_joypad_out_wake
+      ? CreateThread(NULL, 0, winraw_joypad_out_run, NULL, 0, NULL)
+      : NULL;
+   if (winraw_joypad_out_thread)
+      return true;
+   if (winraw_joypad_out_wake)
+      CloseHandle(winraw_joypad_out_wake);
+   winraw_joypad_out_wake = NULL;
+   return false;
+}
+
 /* A pad has arrived: if it is one there is a rumble report for, its
  * device is opened for writing and handed to the thread. */
 static void winraw_joypad_out_open(unsigned slot,
@@ -786,21 +807,10 @@ static void winraw_joypad_out_open(unsigned slot,
       }
    }
 
-   if (!winraw_joypad_out_thread)
+   if (!winraw_joypad_out_start())
    {
-      retro_atomic_store_release_int(&winraw_joypad_out_quit, 0);
-      winraw_joypad_out_wake   = CreateEventA(NULL, FALSE, FALSE, NULL);
-      winraw_joypad_out_thread = winraw_joypad_out_wake
-         ? CreateThread(NULL, 0, winraw_joypad_out_run, NULL, 0, NULL)
-         : NULL;
-      if (!winraw_joypad_out_thread)
-      {
-         if (winraw_joypad_out_wake)
-            CloseHandle(winraw_joypad_out_wake);
-         winraw_joypad_out_wake = NULL;
-         winraw_joypad_out_dev_free(dev);
-         return;
-      }
+      winraw_joypad_out_dev_free(dev);
+      return;
    }
 
    if (xinput)
@@ -824,6 +834,30 @@ static void winraw_joypad_out_open(unsigned slot,
       winraw_joypad_out_dev_free((winraw_joypad_out_dev_t*)old);
    out->present = true;
    out->xinput  = xinput;
+   SetEvent(winraw_joypad_out_wake);
+}
+
+/* A pad read through XInput: which of XInput's it is is known. */
+static void winraw_joypad_out_open_xinput(unsigned slot, int xuser)
+{
+   void *old;
+   winraw_joypad_out_t *out = &winraw_joypad_out[slot];
+   winraw_joypad_out_dev_t *dev = (winraw_joypad_out_dev_t*)
+      calloc(1, sizeof(*dev));
+
+   if (!dev || !winraw_joypad_out_start())
+   {
+      free(dev);
+      return;
+   }
+   dev->xinput = true;
+   dev->xuser  = xuser;
+   retro_atomic_store_release_int(&out->want, 0);
+   old = retro_atomic_exchange_ptr(&out->inbox, dev);
+   if (old && old != WINRAW_JOYPAD_OUT_CLOSE)
+      winraw_joypad_out_dev_free((winraw_joypad_out_dev_t*)old);
+   out->present = true;
+   out->xinput  = false; /* nothing to tell apart: no buttons published */
    SetEvent(winraw_joypad_out_wake);
 }
 
@@ -914,6 +948,158 @@ static int winraw_joypad_find_free_slot(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Xbox pads read through XInput                                       */
+/* ------------------------------------------------------------------ */
+
+/* With "XInput for Xbox Controllers" on, a pad Windows drives through
+ * XInput is not taken from raw input, where its triggers are one
+ * axis; XInput's pads are listed instead, with the XInput driver's
+ * buttons, axes and name, so its autoconfig profiles apply. */
+static bool                      winraw_joypad_xinput_own;
+static HMODULE                   winraw_joypad_xi_dll;
+static winraw_xinput_get_state_t winraw_joypad_xi_get_state;
+
+static bool winraw_joypad_path_is_xinput(const char *path)
+{
+   return path && (strstr(path, "IG_") || strstr(path, "ig_"));
+}
+
+/* pad_count is the highest connected slot + 1: left to grow, stale
+ * slots would look in use to autoconfig during a reconnect. */
+static void winraw_joypad_recount(void)
+{
+   unsigned i;
+   unsigned new_count = 0;
+   for (i = 0; i < MAX_USERS; i++)
+      if (winraw_joypad_pads[i].connected)
+         new_count = i + 1;
+   winraw_joypad_pad_count = new_count;
+}
+
+static void winraw_joypad_xinput_load(void)
+{
+   static const char *names[] = {
+      "xinput1_4.dll", "xinput1_3.dll", "xinput9_1_0.dll" };
+   unsigned i;
+
+   for (i = 0; i < ARRAY_SIZE(names) && !winraw_joypad_xi_dll; i++)
+      winraw_joypad_xi_dll = LoadLibraryA(names[i]);
+   if (winraw_joypad_xi_dll)
+      winraw_joypad_xi_get_state = (winraw_xinput_get_state_t)
+         GetProcAddress(winraw_joypad_xi_dll, "XInputGetState");
+   if (!winraw_joypad_xi_get_state)
+   {
+      RARCH_WARN("[RawInput Joypad] XInput could not be loaded; Xbox"
+            " controllers are read through raw input.\n");
+      winraw_joypad_xinput_own = false;
+   }
+}
+
+static void winraw_joypad_xinput_fill(winraw_joypad_joypad_data_t *pad,
+      const winraw_xinput_state_t *st)
+{
+   /* the XInput driver's order: A B X Y LB RB Start Back L3 R3 */
+   static const WORD bits[10] = { 0x1000, 0x2000, 0x4000, 0x8000,
+      0x0100, 0x0200, 0x0010, 0x0020, 0x0040, 0x0080 };
+   unsigned i;
+
+   for (i = 0; i < 10; i++)
+      pad->buttons[i] = (st->buttons & bits[i]) != 0;
+   pad->hats[0] = (uint8_t)(
+           ((st->buttons & 0x0001) ? (1 << 0) : 0)
+         | ((st->buttons & 0x0002) ? (1 << 1) : 0)
+         | ((st->buttons & 0x0004) ? (1 << 2) : 0)
+         | ((st->buttons & 0x0008) ? (1 << 3) : 0));
+   pad->axes[0] = st->lx == -32768 ? -32767 : st->lx;
+   pad->axes[1] = st->ly == -32768 ? -32767 : st->ly;
+   pad->axes[2] = st->rx == -32768 ? -32767 : st->rx;
+   pad->axes[3] = st->ry == -32768 ? -32767 : st->ry;
+   pad->axes[4] = (int16_t)(st->left_trigger  * 32767 / 255);
+   pad->axes[5] = (int16_t)(st->right_trigger * 32767 / 255);
+}
+
+/* XInput's four pads are looked at: one that has come is given a
+ * slot, one that has gone gives its slot up. Called when the driver
+ * starts and when raw input reports a device coming or going - asking
+ * XInput about a pad that is not there is slow, and is not done on
+ * every poll. */
+static void winraw_joypad_xinput_rescan(void)
+{
+   unsigned u, i;
+
+   if (!winraw_joypad_xinput_own)
+      return;
+   for (u = 0; u < WINRAW_XINPUT_PADS; u++)
+   {
+      winraw_xinput_state_t st;
+      winraw_joypad_joypad_data_t *pad = NULL;
+      bool there;
+
+      memset(&st, 0, sizeof(st));
+      there = winraw_joypad_xi_get_state(u, &st) == ERROR_SUCCESS;
+      for (i = 0; i < MAX_USERS; i++)
+         if (     winraw_joypad_pads[i].connected
+               && winraw_joypad_pads[i].xuser == (int8_t)u)
+            pad = &winraw_joypad_pads[i];
+
+      if (there && !pad)
+      {
+         int slot = winraw_joypad_find_free_slot();
+         if (slot < 0)
+            continue;
+         pad = &winraw_joypad_pads[slot];
+         memset(pad, 0, sizeof(*pad));
+         pad->xuser       = (int8_t)u;
+         pad->num_buttons = 10;
+         pad->num_axes    = 6;
+         pad->num_hats    = 1;
+         strlcpy(pad->name, "XInput Controller", sizeof(pad->name));
+         winraw_joypad_xinput_fill(pad, &st);
+         pad->connected   = true;
+         winraw_joypad_recount();
+         RARCH_LOG("[RawInput Joypad] XInput pad %u connected in slot %d.\n",
+               u + 1, slot);
+         input_autoconfigure_connect(pad->name, NULL, NULL, "xinput",
+               (unsigned)slot, 0, 0);
+         winraw_joypad_out_open_xinput((unsigned)slot, (int)u);
+      }
+      else if (!there && pad)
+      {
+         unsigned slot = (unsigned)(pad - winraw_joypad_pads);
+         RARCH_LOG("[RawInput Joypad] XInput pad %u removed from slot %u.\n",
+               u + 1, slot);
+         input_autoconfigure_disconnect(slot, pad->name);
+         winraw_joypad_out_close(slot);
+         memset(pad, 0, sizeof(*pad));
+         winraw_joypad_recount();
+      }
+   }
+}
+
+/* Once a poll: the state of each XInput pad that is there. */
+static void winraw_joypad_xinput_poll(void)
+{
+   unsigned i;
+   bool gone = false;
+
+   if (!winraw_joypad_xinput_own)
+      return;
+   for (i = 0; i < winraw_joypad_pad_count; i++)
+   {
+      winraw_xinput_state_t st;
+      winraw_joypad_joypad_data_t *pad = &winraw_joypad_pads[i];
+      if (!pad->connected || pad->xuser < 0)
+         continue;
+      if (winraw_joypad_xi_get_state((DWORD)pad->xuser, &st) == ERROR_SUCCESS)
+         winraw_joypad_xinput_fill(pad, &st);
+      else
+         gone = true;
+   }
+   if (gone)
+      winraw_joypad_xinput_rescan();
+}
+
+/* ------------------------------------------------------------------ */
 /* Device arrival / removal                                            */
 /* ------------------------------------------------------------------ */
 
@@ -968,6 +1154,15 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
       if (GetRawInputDeviceInfoA(hDevice, RIDI_DEVICENAME,
                device_path, &name_size) == (UINT)-1)
          device_path[0] = '\0';
+   }
+
+   /* XInput's to read, not raw input's: XInput's pads are looked at
+    * again, this one among them. */
+   if (     winraw_joypad_xinput_own
+         && winraw_joypad_path_is_xinput(device_path))
+   {
+      winraw_joypad_xinput_rescan();
+      return false;
    }
 
    /* ---- Handle reconnection race condition ----
@@ -1043,6 +1238,7 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
    pad->pid     = (uint16_t)dev_info.hid.dwProductId;
 
    strlcpy(pad->path, device_path, sizeof(pad->path));
+   pad->xuser = -1;
 
    /* --- Open the device path for the product string --- */
    if (device_path[0])
@@ -1210,7 +1406,11 @@ static void winraw_joypad_remove_device(HANDLE hDevice)
 {
    int slot = winraw_joypad_find_pad(hDevice);
    if (slot < 0)
+   {
+      /* not one of raw input's pads: it may have been XInput's */
+      winraw_joypad_xinput_rescan();
       return;
+   }
 
    {
       winraw_joypad_joypad_data_t *pad = &winraw_joypad_pads[slot];
@@ -1233,20 +1433,7 @@ static void winraw_joypad_remove_device(HANDLE hDevice)
       winraw_joypad_held[slot].count = 0;
    }
 
-   /* Recalculate pad_count so it reflects the highest connected slot + 1.
-    * Without this, pad_count only ever grows, which is benign for
-    * find_pad / find_free_slot scanning, but can cause autoconfig
-    * to keep seeing stale slots as "in use" during reconnect. */
-   {
-      unsigned i;
-      unsigned new_count = 0;
-      for (i = 0; i < MAX_USERS; i++)
-      {
-         if (winraw_joypad_pads[i].connected)
-            new_count = i + 1;
-      }
-      winraw_joypad_pad_count = new_count;
-   }
+   winraw_joypad_recount();
 }
 
 /* ------------------------------------------------------------------ */
@@ -1698,7 +1885,14 @@ static void *winraw_joypad_joypad_init(void *data)
       }
    }
 
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   winraw_joypad_xinput_own = config_get_ptr()->bools.input_winraw_xinput_enable;
+#endif
+   if (winraw_joypad_xinput_own)
+      winraw_joypad_xinput_load();
+
    winraw_joypad_enumerate_devices();
+   winraw_joypad_xinput_rescan();
    winraw_joypad_initialised = true;
 
    RARCH_LOG("[RawInput Joypad] Initialised, %u device(s) found.\n",
@@ -1735,6 +1929,12 @@ static void winraw_joypad_joypad_destroy(void)
    memset(winraw_joypad_pads, 0, sizeof(winraw_joypad_pads));
    memset(winraw_joypad_held, 0, sizeof(winraw_joypad_held));
    winraw_joypad_pad_count = 0;
+
+   if (winraw_joypad_xi_dll)
+      FreeLibrary(winraw_joypad_xi_dll);
+   winraw_joypad_xi_dll       = NULL;
+   winraw_joypad_xi_get_state = NULL;
+   winraw_joypad_xinput_own   = false;
 
    if (winraw_joypad_msg_window)
    {
@@ -2039,6 +2239,8 @@ bool winraw_joypad_survives_video(void)
 static void winraw_joypad_joypad_poll(void)
 {
    MSG msg;
+
+   winraw_joypad_xinput_poll();
 
    if (winraw_joypad_by_poll)
    {

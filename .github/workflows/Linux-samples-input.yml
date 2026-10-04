@@ -622,7 +622,9 @@ jobs:
           # is faked here: one such pad and one pad of XInput's are
           # the same pad; of two, none is rumbled while nothing tells
           # them apart, one is as soon as a button is held on it, and
-          # the other is then the one left.
+          # the other is then the one left. With "XInput for Xbox
+          # Controllers" on, XInput's pad is listed and read in the
+          # XInput driver's layout, triggers on separate axes.
           trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
           make clean all
           WINEDEBUG=-all timeout 300 make check

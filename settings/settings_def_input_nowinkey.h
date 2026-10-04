@@ -10,4 +10,9 @@ S_BOOL(input_nowinkey_enable, INPUT_NOWINKEY_ENABLE,
       false, SD_FLAG_NONE, 0, 0,
       "Disable Windows Hotkeys (Restart required)",
       "Keep Win-key combinations inside the application.")
+S_BOOL(input_winraw_xinput_enable, INPUT_WINRAW_XINPUT_ENABLE,
+      "input_winraw_xinput_enable",
+      false, SD_FLAG_NONE, 0, 0,
+      "XInput for Xbox Controllers (Restart required)",
+      "With the 'raw' controller driver, read Xbox-compatible controllers through XInput: separate triggers and the XInput button layout. Other controllers are still read by raw input.")
 #endif
