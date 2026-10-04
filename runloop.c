@@ -549,6 +549,117 @@ static void runloop_perf_log(void)
          runloop_state.perf_ptr_libretro);
 }
 
+/* ---- what a core reports of itself before it is loaded ----
+ *
+ * libretro_get_system_info() answers for a core that is not running
+ * - its name, extensions, whether it takes a path, whether it runs
+ * without content, which extensions it overrides - by opening the
+ * library, asking, and closing it again: the system loader's whole
+ * work, for a handful of values.  The answers are the binary's own,
+ * so they are kept, keyed by the core file's size and modification
+ * time, and a core is opened only when its file is new or has
+ * changed.  The record persists next to the core info cache.
+ *
+ * A core that declares subsystems is always opened: its declaration
+ * is a table of its own, which the probe copies out in full. */
+
+/* Extension lists sized like the system info strings */
+#define CORE_PROBE_EXTS_SIZE 256
+
+enum core_probe_flags
+{
+   CORE_PROBE_FLAG_NEED_FULLPATH  = (1 << 0),
+   CORE_PROBE_FLAG_BLOCK_EXTRACT  = (1 << 1),
+   CORE_PROBE_FLAG_NO_GAME        = (1 << 2),
+   /* Declared subsystems: never answered from the record */
+   CORE_PROBE_FLAG_SUBSYSTEMS     = (1 << 3),
+   /* The override lists overflowed, so they are not known */
+   CORE_PROBE_FLAG_OVERRIDES_CUT  = (1 << 4),
+   /* size and mtime were read: the record may be served and kept */
+   CORE_PROBE_FLAG_STAMPED        = (1 << 5)
+};
+
+typedef struct core_probe
+{
+   int64_t size;
+   int64_t mtime;
+   char   *path;
+   char    library_name[NAME_MAX_LENGTH];
+   char    library_version[64];
+   char    valid_extensions[CORE_PROBE_EXTS_SIZE];
+   /* Extensions the core's content info overrides declare to take a
+    * path, and those declared to be read into memory, '|' separated;
+    * an extension in neither follows need_fullpath */
+   char    fullpath_exts[CORE_PROBE_EXTS_SIZE];
+   char    memory_exts[CORE_PROBE_EXTS_SIZE];
+   uint8_t flags;
+} core_probe_t;
+
+/* Filled by runloop_environ_cb_get_system_info() while a probe runs */
+static core_probe_t *core_probe_capture = NULL;
+
+static bool core_probe_ext_listed(const char *list, const char *ext,
+      size_t ext_len)
+{
+   const char *p = list;
+   while (*p)
+   {
+      const char *end = p;
+      while (*end && *end != '|')
+         end++;
+      if ((size_t)(end - p) == ext_len)
+      {
+         size_t i;
+         for (i = 0; i < ext_len; i++)
+            if (tolower((unsigned char)p[i]) != tolower((unsigned char)ext[i]))
+               break;
+         if (i == ext_len)
+            return true;
+      }
+      p = *end ? end + 1 : end;
+   }
+   return false;
+}
+
+/* Records a content info override declaration the way
+ * content_file_override_set() reads it: an extension's first
+ * declaration is the one that counts. */
+static void core_probe_capture_overrides(core_probe_t *probe,
+      const struct retro_system_content_info_override *overrides)
+{
+   size_t i;
+   for (i = 0; overrides[i].extensions; i++)
+   {
+      const char *ptr = overrides[i].extensions;
+      char *dst       = overrides[i].need_fullpath
+         ? probe->fullpath_exts : probe->memory_exts;
+      while (*ptr)
+      {
+         const char *delim = ptr;
+         size_t _len, dst_len;
+         while (*delim && *delim != '|')
+            delim++;
+         _len = (size_t)(delim - ptr);
+         if (     _len
+               && !core_probe_ext_listed(probe->fullpath_exts, ptr, _len)
+               && !core_probe_ext_listed(probe->memory_exts, ptr, _len))
+         {
+            dst_len = strlen(dst);
+            if (dst_len + (dst_len ? 1 : 0) + _len >= CORE_PROBE_EXTS_SIZE)
+               probe->flags |= CORE_PROBE_FLAG_OVERRIDES_CUT;
+            else
+            {
+               if (dst_len)
+                  dst[dst_len++] = '|';
+               memcpy(dst + dst_len, ptr, _len);
+               dst[dst_len + _len] = '\0';
+            }
+         }
+         ptr = *delim ? delim + 1 : delim;
+      }
+   }
+}
+
 static bool runloop_environ_cb_get_system_info(unsigned cmd, void *data)
 {
    runloop_state_t *runloop_st    = &runloop_state;
@@ -568,6 +679,8 @@ static bool runloop_environ_cb_get_system_info(unsigned cmd, void *data)
          bool do_debug_log       = (log_level == RETRO_LOG_DEBUG);
 
          runloop_st->subsystem_current_count = 0;
+         if (core_probe_capture)
+            core_probe_capture->flags |= CORE_PROBE_FLAG_SUBSYSTEMS;
 
          RARCH_LOG("[Environ] SET_SUBSYSTEM_INFO.\n");
 
@@ -654,6 +767,11 @@ static bool runloop_environ_cb_get_system_info(unsigned cmd, void *data)
          }
          break;
       }
+      case RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE:
+         if (core_probe_capture && data)
+            core_probe_capture_overrides(core_probe_capture,
+                  (const struct retro_system_content_info_override*)data);
+         break;
       default:
          return false;
    }
@@ -4141,6 +4259,284 @@ bool runloop_environment_cb(unsigned cmd, void *data)
    return true;
 }
 
+#ifdef HAVE_DYNAMIC
+/* The records, one per core file probed; touched only on the main
+ * thread (libretro_get_system_info and the load's own lookups). */
+static core_probe_t *core_probes       = NULL;
+static size_t        core_probes_count = 0;
+static size_t        core_probes_cap   = 0;
+static bool          core_probes_read  = false;
+
+#define CORE_PROBE_FILE_HEADER "core_probe 1\n"
+
+static bool core_probe_file_path(char *s, size_t len)
+{
+   settings_t *settings = config_get_ptr();
+   const char *dir      = settings ? settings->paths.path_libretro_info : NULL;
+   if (!dir || !*dir)
+      return false;
+   fill_pathname_join_special(s, dir, FILE_PATH_CORE_PROBE_CACHE, len);
+   return true;
+}
+
+static bool core_probe_stamp(const char *path, int64_t *size, int64_t *mtime)
+{
+   *size = path_get_size(path);
+   return *size > 0 && path_get_mtime(path, mtime);
+}
+
+static core_probe_t *core_probe_find(const char *path)
+{
+   size_t i;
+   for (i = 0; i < core_probes_count; i++)
+      if (string_is_equal(core_probes[i].path, path))
+         return &core_probes[i];
+   return NULL;
+}
+
+/* Copies @src in, replacing the record of the same path */
+static core_probe_t *core_probe_put(const core_probe_t *src)
+{
+   core_probe_t *dst = core_probe_find(src->path);
+   char *path;
+
+   if (!dst)
+   {
+      if (core_probes_count == core_probes_cap)
+      {
+         size_t cap        = core_probes_cap ? core_probes_cap * 2 : 8;
+         core_probe_t *tmp = (core_probe_t*)realloc(core_probes,
+               cap * sizeof(*tmp));
+         if (!tmp)
+            return NULL;
+         core_probes       = tmp;
+         core_probes_cap   = cap;
+      }
+      if (!(path = strdup(src->path)))
+         return NULL;
+      dst = &core_probes[core_probes_count++];
+   }
+   else
+      path = dst->path;
+
+   *dst      = *src;
+   dst->path = path;
+   return dst;
+}
+
+/* Splits the next tab-separated field off *line, in place */
+static char *core_probe_field(char **line)
+{
+   char *start = *line;
+   char *end;
+   if (!start)
+      return NULL;
+   for (end = start; *end && *end != '\t'; end++) { }
+   if (*end)
+   {
+      *end  = '\0';
+      *line = end + 1;
+   }
+   else
+      *line = NULL;
+   return start;
+}
+
+static bool core_probe_parse_int64(const char *s, int64_t *out)
+{
+   int64_t v = 0;
+   bool neg  = (*s == '-');
+   if (neg)
+      s++;
+   if (!*s)
+      return false;
+   for (; *s; s++)
+   {
+      if (*s < '0' || *s > '9')
+         return false;
+      v = v * 10 + (*s - '0');
+   }
+   *out = neg ? -v : v;
+   return true;
+}
+
+/* Reads the persisted records once, the first time one is asked for.
+ * A line that does not parse is skipped: the core it names is opened
+ * the next time, as if never seen. */
+static void core_probe_read_file(void)
+{
+   /* Off the stack: libretro_get_system_info() holds a record there */
+   char *file_path = (char*)malloc(PATH_MAX_LENGTH);
+   void *buf       = NULL;
+   int64_t len     = 0;
+   char *line, *next;
+
+   core_probes_read = true;
+   if (     file_path
+         && core_probe_file_path(file_path, PATH_MAX_LENGTH)
+         && path_is_valid(file_path))
+      filestream_read_file(file_path, &buf, &len);
+   free(file_path);
+   if (!buf)
+      return;
+
+   line = (char*)buf;
+   if (strncmp(line, CORE_PROBE_FILE_HEADER,
+            STRLEN_CONST(CORE_PROBE_FILE_HEADER)))
+   {
+      free(buf);
+      return;
+   }
+   line += STRLEN_CONST(CORE_PROBE_FILE_HEADER);
+
+   for (; line && *line; line = next)
+   {
+      core_probe_t rec;
+      char *fields[9];
+      char *cur = line;
+      unsigned n;
+      int64_t flags;
+
+      if ((next = strchr(line, '\n')))
+         *next++ = '\0';
+
+      for (n = 0; n < 9 && cur; n++)
+         fields[n] = core_probe_field(&cur);
+      if (     n != 9 || cur
+            || !core_probe_parse_int64(fields[0], &rec.size)
+            || !core_probe_parse_int64(fields[1], &rec.mtime)
+            || !core_probe_parse_int64(fields[2], &flags)
+            || !*fields[3])
+         continue;
+
+      rec.flags = (uint8_t)flags;
+      rec.path  = fields[3];
+      strlcpy(rec.library_name,     fields[4], sizeof(rec.library_name));
+      strlcpy(rec.library_version,  fields[5], sizeof(rec.library_version));
+      strlcpy(rec.valid_extensions, fields[6], sizeof(rec.valid_extensions));
+      strlcpy(rec.fullpath_exts,    fields[7], sizeof(rec.fullpath_exts));
+      strlcpy(rec.memory_exts,      fields[8], sizeof(rec.memory_exts));
+      if (     (rec.flags & CORE_PROBE_FLAG_STAMPED)
+            && !(rec.flags & CORE_PROBE_FLAG_SUBSYSTEMS)
+            && !core_probe_find(rec.path))
+         core_probe_put(&rec);
+   }
+
+   free(buf);
+}
+
+static bool core_probe_field_ok(const char *s)
+{
+   return !strchr(s, '\t') && !strchr(s, '\n') && !strchr(s, '\r');
+}
+
+/* Writes every record that can be served, atomically.  Called when a
+ * record changes - a core file seen for the first time or changed -
+ * which has just cost a full open of the core. */
+static void core_probe_write_file(void)
+{
+   char *file_path;
+   char *buf;
+   size_t i, cap, len;
+
+   cap = STRLEN_CONST(CORE_PROBE_FILE_HEADER) + 1;
+   for (i = 0; i < core_probes_count; i++)
+      cap += 3 * 24 + 6 + strlen(core_probes[i].path)
+           + sizeof(core_probes[i].library_name)
+           + sizeof(core_probes[i].library_version)
+           + 3 * CORE_PROBE_EXTS_SIZE;
+   /* The path rides behind the records, off the stack */
+   if (!(buf = (char*)malloc(cap + PATH_MAX_LENGTH)))
+      return;
+   file_path = buf + cap;
+   if (!core_probe_file_path(file_path, PATH_MAX_LENGTH))
+   {
+      free(buf);
+      return;
+   }
+
+   len = strlcpy(buf, CORE_PROBE_FILE_HEADER, cap);
+   for (i = 0; i < core_probes_count; i++)
+   {
+      const core_probe_t *rec = &core_probes[i];
+      int n;
+      if (     !(rec->flags & CORE_PROBE_FLAG_STAMPED)
+            ||  (rec->flags & CORE_PROBE_FLAG_SUBSYSTEMS)
+            || !core_probe_field_ok(rec->path)
+            || !core_probe_field_ok(rec->library_name)
+            || !core_probe_field_ok(rec->library_version)
+            || !core_probe_field_ok(rec->valid_extensions)
+            || !core_probe_field_ok(rec->fullpath_exts)
+            || !core_probe_field_ok(rec->memory_exts))
+         continue;
+      n = snprintf(buf + len, cap - len,
+            "%" PRId64 "\t%" PRId64 "\t%u\t%s\t%s\t%s\t%s\t%s\t%s\n",
+            rec->size, rec->mtime, (unsigned)rec->flags, rec->path,
+            rec->library_name, rec->library_version,
+            rec->valid_extensions, rec->fullpath_exts, rec->memory_exts);
+      if (n < 0 || (size_t)n >= cap - len)
+         break;
+      len += (size_t)n;
+   }
+
+   if (!filestream_write_file_atomic(file_path, buf, (int64_t)len))
+      RARCH_WARN("[Core] Could not write \"%s\".\n", file_path);
+   free(buf);
+}
+
+/* The record for @path if it still describes the file there */
+static const core_probe_t *core_probe_lookup(const char *path)
+{
+   int64_t size, mtime;
+   const core_probe_t *rec;
+
+   if (!core_probes_read)
+      core_probe_read_file();
+   if (     !(rec = core_probe_find(path))
+         || !(rec->flags & CORE_PROBE_FLAG_STAMPED)
+         ||  (rec->flags & CORE_PROBE_FLAG_SUBSYSTEMS)
+         || !core_probe_stamp(path, &size, &mtime)
+         ||  size  != rec->size
+         ||  mtime != rec->mtime)
+      return NULL;
+   return rec;
+}
+
+void runloop_core_probe_cache_free(void)
+{
+   size_t i;
+   for (i = 0; i < core_probes_count; i++)
+      free(core_probes[i].path);
+   free(core_probes);
+   core_probes       = NULL;
+   core_probes_count = 0;
+   core_probes_cap   = 0;
+   core_probes_read  = false;
+}
+
+bool runloop_core_probe_need_fullpath(const char *core_path,
+      const char *ext, bool *need_fullpath)
+{
+   const core_probe_t *rec;
+   size_t ext_len;
+
+   if (     !core_path || !*core_path
+         || !(rec = core_probe_find(core_path))
+         ||  (rec->flags & CORE_PROBE_FLAG_OVERRIDES_CUT))
+      return false;
+
+   *need_fullpath = (rec->flags & CORE_PROBE_FLAG_NEED_FULLPATH) != 0;
+   if (ext && (ext_len = strlen(ext)))
+   {
+      if (core_probe_ext_listed(rec->fullpath_exts, ext, ext_len))
+         *need_fullpath = true;
+      else if (core_probe_ext_listed(rec->memory_exts, ext, ext_len))
+         *need_fullpath = false;
+   }
+   return true;
+}
+#endif
+
 bool libretro_get_system_info(
       const char *path,
       struct retro_system_info *sysinfo,
@@ -4148,6 +4544,8 @@ bool libretro_get_system_info(
 {
    struct retro_system_info dummy_info;
 #ifdef HAVE_DYNAMIC
+   core_probe_t probe;
+   const core_probe_t *cached = NULL;
    dylib_t lib;
 #endif
    runloop_state_t *runloop_st  = &runloop_state;
@@ -4163,14 +4561,60 @@ bool libretro_get_system_info(
    dummy_info.block_extract     = false;
 
 #ifdef HAVE_DYNAMIC
-   if (!(lib = libretro_get_system_info_lib(
-         path, &dummy_info, load_no_content)))
+   if ((cached = core_probe_lookup(path)))
    {
-      RARCH_ERR("[Core] %s: \"%s\"\n",
-            msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
-            path);
-      RARCH_ERR("[Core] Error(s): %s\n", dylib_error());
-      return false;
+      dummy_info.library_name     = cached->library_name;
+      dummy_info.library_version  = cached->library_version;
+      dummy_info.valid_extensions = cached->valid_extensions;
+      dummy_info.need_fullpath    =
+         (cached->flags & CORE_PROBE_FLAG_NEED_FULLPATH) != 0;
+      dummy_info.block_extract    =
+         (cached->flags & CORE_PROBE_FLAG_BLOCK_EXTRACT) != 0;
+      if (load_no_content)
+         *load_no_content = (cached->flags & CORE_PROBE_FLAG_NO_GAME) != 0;
+      lib = NULL;
+   }
+   else
+   {
+      bool no_game = false;
+      memset(&probe, 0, sizeof(probe));
+      core_probe_capture = &probe;
+      lib = libretro_get_system_info_lib(path, &dummy_info, &no_game);
+      core_probe_capture = NULL;
+      if (!lib)
+      {
+         RARCH_ERR("[Core] %s: \"%s\"\n",
+               msg_hash_to_str(MSG_FAILED_TO_OPEN_LIBRETRO_CORE),
+               path);
+         RARCH_ERR("[Core] Error(s): %s\n", dylib_error());
+         return false;
+      }
+      if (load_no_content)
+         *load_no_content = no_game;
+
+      /* Kept for the session, and on disk once its file is stamped */
+      probe.path = (char*)path;
+      if (dummy_info.library_name)
+         strlcpy(probe.library_name, dummy_info.library_name,
+               sizeof(probe.library_name));
+      if (dummy_info.library_version)
+         strlcpy(probe.library_version, dummy_info.library_version,
+               sizeof(probe.library_version));
+      if (dummy_info.valid_extensions)
+         strlcpy(probe.valid_extensions, dummy_info.valid_extensions,
+               sizeof(probe.valid_extensions));
+      if (dummy_info.need_fullpath)
+         probe.flags |= CORE_PROBE_FLAG_NEED_FULLPATH;
+      if (dummy_info.block_extract)
+         probe.flags |= CORE_PROBE_FLAG_BLOCK_EXTRACT;
+      if (no_game)
+         probe.flags |= CORE_PROBE_FLAG_NO_GAME;
+      if (core_probe_stamp(path, &probe.size, &probe.mtime))
+         probe.flags |= CORE_PROBE_FLAG_STAMPED;
+      if (!core_probes_read)
+         core_probe_read_file();
+      if (core_probe_put(&probe) && (probe.flags & CORE_PROBE_FLAG_STAMPED))
+         core_probe_write_file();
    }
 #else
    if (load_no_content)
@@ -4219,7 +4663,8 @@ bool libretro_get_system_info(
    sysinfo->valid_extensions = runloop_st->current_valid_extensions;
 
 #ifdef HAVE_DYNAMIC
-   dylib_close(lib);
+   if (lib)
+      dylib_close(lib);
 #endif
    return true;
 }

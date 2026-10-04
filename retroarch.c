@@ -6571,6 +6571,9 @@ void main_exit(void *args)
 #endif
 
    runloop_msg_queue_deinit();
+#ifdef HAVE_DYNAMIC
+   runloop_core_probe_cache_free();
+#endif
    driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
    /* an input driver kept for drivers that then failed to start */
    input_driver_drop_kept();

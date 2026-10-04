@@ -92,6 +92,8 @@ static unsigned failures = 0;
 #define LOAD_FRAMES 10
 
 static char core_path[512];
+/* The harness's own temporary directory */
+static char harness_dir[400];
 
 /* ------------------------------------------------------------------ */
 /* The presented-frame hook                                            */
@@ -337,6 +339,125 @@ static void lane_core_opened_once(void)
    if (failures == had)
       fprintf(stderr, "[pass] core opened once lane\n");
 }
+
+#if defined(HAVE_DYNAMIC)
+static void harness_sibling(char *s, size_t len, const char *name)
+{
+   const char *slash = strrchr(core_path, '/');
+   snprintf(s, len, "%.*s/%s",
+         slash ? (int)(slash - core_path) : 1, slash ? core_path : ".", name);
+}
+
+/* What LOAD_CORE asks of a core before loading it is kept, keyed by
+ * its file's size and modification time: a core already asked is not
+ * opened again at push - the core running here would see its
+ * retro_set_environment called if it were - a changed file is, and the
+ * record outlives the session. */
+static void lane_probe_cached(void)
+{
+   char cache_file[600];
+   int64_t mtime = 0;
+   unsigned before;
+   unsigned had = failures;
+
+   snprintf(cache_file, sizeof(cache_file), "%s/core_probe.cache", harness_dir);
+   open_menu();
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the load was not started");
+   pump(LOAD_FRAMES);
+   CHECK(core_is_up(), "the core did not come up");
+
+   before = core_export("harness_core_env_sets");
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the reload was not started");
+   CHECK(core_export("harness_core_env_sets") == before,
+         "the push opened a core it had asked before (%u calls on the "
+         "running core, not %u)", core_export("harness_core_env_sets"),
+         before);
+   pump(LOAD_FRAMES);
+   CHECK(core_is_up(), "the reload did not go through");
+   CHECK(path_is_valid(cache_file), "no %s was written", cache_file);
+
+   /* A changed file is asked again */
+   CHECK(path_get_mtime(core_path, &mtime), "no mtime for the core");
+   CHECK(path_set_mtime(core_path, mtime + 10), "could not touch the core");
+   before = core_export("harness_core_env_sets");
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the load of the changed core was not started");
+   CHECK(core_export("harness_core_env_sets") == before + 2,
+         "the changed core was not asked again (%u calls, expected %u)",
+         core_export("harness_core_env_sets"), before + 2);
+   pump(LOAD_FRAMES);
+   CHECK(core_is_up(), "the load of the changed core did not go through");
+
+   /* The record of the changed file comes back from disk */
+   runloop_core_probe_cache_free();
+   before = core_export("harness_core_env_sets");
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the load after the records were dropped was not started");
+   CHECK(core_export("harness_core_env_sets") == before,
+         "the record was not read back from %s", cache_file);
+   pump(LOAD_FRAMES);
+   CHECK(core_is_up(), "the load after the records were dropped did not "
+         "go through");
+
+   path_set_mtime(core_path, mtime);
+   if (failures == had)
+      fprintf(stderr, "[pass] probe-cached lane\n");
+}
+
+#if defined(HAVE_MENU)
+/* The menu's read-ahead of content follows the core being loaded: its
+ * need_fullpath and its own content info overrides, not those of the
+ * core still running when the load is pushed. */
+static void lane_prefetch_follows_new_core(void)
+{
+   content_ctx_info_t info;
+   char nohw[600];
+   char game[600];
+   FILE *f;
+   unsigned had = failures;
+
+   harness_sibling(nohw, sizeof(nohw), "harness_core_nohw.so");
+   snprintf(game, sizeof(game), "%s/game.fpath", harness_dir);
+   if ((f = fopen(game, "wb")))
+   {
+      fputs("harness content", f);
+      fclose(f);
+   }
+   memset(&info, 0, sizeof(info));
+   open_menu();
+
+   /* Running: the core with no overrides.  Loading: the one that takes
+    * .fpath as a path - nothing to read ahead. */
+   CHECK(task_push_load_contentless_core_from_menu(nohw),
+         "the software core's load was not started");
+   pump(LOAD_FRAMES);
+   CHECK(task_push_load_content_with_new_core_from_menu(core_path, game,
+            &info, CORE_TYPE_PLAIN, NULL, NULL),
+         "the load of .fpath content was not started");
+   CHECK(!(content_state_get_ptr()->flags & CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING),
+         "content the new core takes as a path was read ahead");
+   pump(LOAD_FRAMES * 4);
+   CHECK(core_is_up(), "the load of .fpath content did not go through");
+
+   /* Running: the core that overrides .fpath.  Loading: one that reads
+    * it into memory - read ahead. */
+   memset(&info, 0, sizeof(info));
+   CHECK(task_push_load_content_with_new_core_from_menu(nohw, game,
+            &info, CORE_TYPE_PLAIN, NULL, NULL),
+         "the second load of .fpath content was not started");
+   CHECK(content_state_get_ptr()->flags & CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING,
+         "content the new core reads into memory was not read ahead");
+   pump(LOAD_FRAMES * 4);
+   CHECK(core_is_up(), "the second load of .fpath content did not go through");
+
+   remove(game);
+   if (failures == had)
+      fprintf(stderr, "[pass] prefetch-follows-new-core lane\n");
+}
+#endif
+#endif
 
 static void lane_one_at_a_time(void)
 {
@@ -1811,6 +1932,7 @@ int main(int argc, char *argv[])
    }
    if (!path_mkdir(dir))
       return 1;
+   strlcpy(harness_dir, dir, sizeof(harness_dir));
 
    snprintf(cfg_path, sizeof(cfg_path), "%s/harness.cfg", dir);
    if ((cfg = fopen(cfg_path, "wb")))
@@ -1827,6 +1949,8 @@ int main(int argc, char *argv[])
       fprintf(cfg, "savestate_auto_save = \"false\"\n");
       fprintf(cfg, "menu_show_load_content_animation = \"false\"\n");
       fprintf(cfg, "threaded_data_runloop_enable = \"false\"\n");
+      /* The records of the cores asked live next to the info cache */
+      fprintf(cfg, "libretro_info_path = \"%s\"\n", dir);
       fclose(cfg);
    }
 
@@ -1883,6 +2007,9 @@ int main(int argc, char *argv[])
 
    lane_staged();
    lane_core_opened_once();
+#if defined(HAVE_DYNAMIC)
+   lane_probe_cached();
+#endif
    lane_one_at_a_time();
    lane_reinit_deferred();
    lane_fallback();
@@ -1906,11 +2033,28 @@ int main(int argc, char *argv[])
 #if defined(HAVE_SCREENSHOTS) && defined(HAVE_RPNG)
    lane_screenshot_steps(dir);
 #endif
+#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
+   /* Last: a content load leaves its save state name behind for the
+    * contentless loads after it */
+   lane_prefetch_follows_new_core();
+#endif
 
    main_exit(NULL);
 
    remove(cfg_path);
    remove(state_path);
+   {
+      char leftover[600];
+      snprintf(leftover, sizeof(leftover), "%s/core_probe.cache", dir);
+      remove(leftover);
+      snprintf(leftover, sizeof(leftover), "%s/core_info.cache", dir);
+      remove(leftover);
+      snprintf(leftover, sizeof(leftover), "%s.png", state_path);
+      remove(leftover);
+      /* the per-core save folder a content load makes */
+      snprintf(leftover, sizeof(leftover), "%s/content_load_harness", dir);
+      rmdir(leftover);
+   }
    rmdir(dir);
 
    if (failures)

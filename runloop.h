@@ -843,6 +843,19 @@ bool libretro_get_system_info(
       struct retro_system_info *info,
       bool *load_no_content);
 
+#ifdef HAVE_DYNAMIC
+/* Frees the records libretro_get_system_info() keeps of the cores it
+ * has asked; the next question reads them back from disk. */
+void runloop_core_probe_cache_free(void);
+
+/* Whether the core at @core_path takes content of extension @ext as a
+ * path, by its own declaration when last asked - need_fullpath, and
+ * the content info overrides it made then.  False if that core has not
+ * been asked this session, or its overrides are not known. */
+bool runloop_core_probe_need_fullpath(const char *core_path,
+      const char *ext, bool *need_fullpath);
+#endif
+
 void runloop_performance_counter_register(
       struct retro_perf_counter *perf);
 

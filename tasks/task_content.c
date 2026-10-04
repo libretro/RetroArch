@@ -3300,16 +3300,17 @@ static bool task_content_defer_menu_load(content_state_t *p_content,
     * reached only for a file the load reads into memory.  A
     * need_fullpath core is handed the path instead, so a prefetch
     * would fill an allocation nothing takes.  Mirror the load's own
-    * BLCK_NEED_FULLPATH decision from the live system info and the
-    * per-extension override - both current here, LOAD_CORE has run.
-    * (The caller's content_ctx is built before LOAD_CORE and without
-    * sys info; it cannot answer this.) */
+    * BLCK_NEED_FULLPATH decision for the core being loaded: its
+    * need_fullpath and its own per-extension overrides, as it
+    * declared them when LOAD_CORE asked it.  The override list held
+    * here is still the running core's.  (The caller's content_ctx is
+    * built before LOAD_CORE and without sys info; it cannot answer
+    * this.) */
    {
-      const content_file_override_t *override = NULL;
       bool need_fullpath = runloop_st->system.info.need_fullpath;
-      if (content_file_override_get_ext(p_content,
-            path_get_extension(fullpath), &override))
-         need_fullpath = override->need_fullpath;
+      if (!runloop_core_probe_need_fullpath(path_get(RARCH_PATH_CORE),
+               path_get_extension(fullpath), &need_fullpath))
+         return false;             /* its overrides are not known   */
       if (need_fullpath)
          return false;             /* the load hands the core a path */
    }

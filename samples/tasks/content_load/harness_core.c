@@ -43,6 +43,15 @@ RETRO_API retro_hw_context_reset_t harness_core_hw_destroy_fn(void)
 RETRO_API const struct retro_controller_description *harness_core_port_types(void)
 { return port_types; }
 
+/* Content of extension "fpath" is taken as a path.  The software
+ * build declares no override, so the two cores answer differently. */
+#ifndef HARNESS_CORE_NO_HW
+static const struct retro_system_content_info_override overrides[] = {
+   { "fpath", true, false },
+   { NULL, false, false }
+};
+#endif
+
 void retro_set_environment(retro_environment_t cb)
 {
    bool no_content = true;
@@ -52,6 +61,9 @@ void retro_set_environment(retro_environment_t cb)
    cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt);
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);
    cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
+#ifndef HARNESS_CORE_NO_HW
+   cb(RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE, (void*)overrides);
+#endif
 }
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
 void retro_set_audio_sample(retro_audio_sample_t cb) { (void)cb; }
