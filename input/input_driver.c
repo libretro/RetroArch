@@ -2491,6 +2491,58 @@ input_remote_t *input_driver_init_remote(
          settings->uints.network_remote_base_port,
          num_active_users);
 }
+
+/* A sender sends one message for each control that changed. All that
+ * is queued is taken, so a frame's changes arrive together and none
+ * waits a poll for each one before it; the count is bounded, so a
+ * flood cannot hold the poll. */
+#define INPUT_REMOTE_DRAIN_MAX 64
+
+static void input_remote_poll(input_driver_state_t *input_st,
+      settings_t *settings, unsigned max_users)
+{
+   unsigned user, n;
+
+   for (user = 0; user < max_users; user++)
+   {
+      int fd;
+
+      if (!settings->bools.network_remote_enable_user[user])
+         continue;
+#if defined(_WIN32)
+      if (input_st->remote->net_fd[user] == INVALID_SOCKET)
+#else
+      if (input_st->remote->net_fd[user] < 0)
+#endif
+         continue;
+      fd = (int)input_st->remote->net_fd[user];
+
+      for (n = 0; n < INPUT_REMOTE_DRAIN_MAX; n++)
+      {
+         struct remote_message msg;
+         bool err    = false;
+         ssize_t ret = socket_receive_all_nonblocking(fd, &err,
+               &msg, sizeof(msg));
+
+         if (ret == (ssize_t)sizeof(msg))
+            input_remote_parse_packet(&input_st->remote_st_ptr, &msg, user);
+         else if (err)
+         {
+            /* the socket failed: nothing stays held */
+            input_remote_state_t *st = &input_st->remote_st_ptr;
+            st->buttons[user]        = 0;
+            st->analog[0][user]      = 0;
+            st->analog[1][user]      = 0;
+            st->analog[2][user]      = 0;
+            st->analog[3][user]      = 0;
+            break;
+         }
+         else if (ret == 0)
+            break; /* nothing more queued */
+         /* a message of any other size is not one of ours */
+      }
+   }
+}
 #endif
 
 static int16_t input_state_device(
@@ -9556,7 +9608,15 @@ void input_driver_poll(void)
                   (unsigned)i, RETRO_DEVICE_JOYPAD,
                   0, RETRO_DEVICE_ID_JOYPAD_MASK)
                & INPUT_FIRST_PRESS_BUTTONS;
-            uint32_t edge = held & input_st->first_press_released[i];
+            uint32_t edge;
+#ifdef HAVE_NETWORKGAMEPAD
+            /* a Network RetroPad is the user's controller too */
+            uint32_t net  = input_st->remote
+               ? ((uint32_t)input_st->remote_st_ptr.buttons[i]
+                     & INPUT_FIRST_PRESS_BUTTONS) : 0;
+            held         |= net;
+#endif
+            edge          = held & input_st->first_press_released[i];
             if (edge)
             {
                /* the user's controller, or its keys: both are this
@@ -9568,6 +9628,9 @@ void input_driver_poll(void)
                         (*input_st->libretro_input_binds)[i], (unsigned)i);
                /* a key: not while the port's controller is there to
                 * be pressed, if the keyboard is to wait for it */
+#ifdef HAVE_NETWORKGAMEPAD
+               pad |= net;
+#endif
                if (     (edge & pad)
                      || !settings->uints.input_assign_ports_keyboard
                      || !joypad->query_pad
@@ -9916,51 +9979,9 @@ void input_driver_poll(void)
    command_owed_reply_poll();
 #endif
 
-#ifdef HAVE_NETWORKGAMEPAD
-   /* Poll remote */
-   if (input_st->remote)
-   {
-      unsigned user;
-
-      for (user = 0; user < max_users; user++)
-      {
-         if (settings->bools.network_remote_enable_user[user])
-         {
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
-            fd_set fds;
-            ssize_t ret;
-            struct remote_message msg;
-
-
-#if defined(_WIN32)
-            if (input_st->remote->net_fd[user] == INVALID_SOCKET)
-#else
-            if (input_st->remote->net_fd[user] < 0)
-#endif
-               return;
-
-            FD_ZERO(&fds);
-            FD_SET(input_st->remote->net_fd[user], &fds);
-
-            ret = recvfrom(input_st->remote->net_fd[user],
-                  (char*)&msg,
-                  sizeof(msg), 0, NULL, NULL);
-
-            if (ret == sizeof(msg))
-               input_remote_parse_packet(&input_st->remote_st_ptr, &msg, user);
-            else if ((ret != -1) || ((errno != EAGAIN) && (errno != ENOENT)))
-#endif
-            {
-               input_remote_state_t *input_state  = &input_st->remote_st_ptr;
-               input_state->buttons[user]         = 0;
-               input_state->analog[0][user]       = 0;
-               input_state->analog[1][user]       = 0;
-               input_state->analog[2][user]       = 0;
-               input_state->analog[3][user]       = 0;
-            }
-         }
-      }
-   }
+   if (input_st->remote)
+      input_remote_poll(input_st, settings, max_users);
 #endif
 #ifdef HAVE_BSV_MOVIE
    if (BSV_MOVIE_IS_PLAYBACK_ON())

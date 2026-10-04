@@ -1985,6 +1985,151 @@ static void lane_triggers(void)
 #endif
 }
 
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32) \
+   && defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+/* Network RetroPad lane: one message to the first user's port. */
+static void np_send(int fd, const struct sockaddr_in *to,
+      int device, int index, int id, int state)
+{
+   struct remote_message m;
+   memset(&m, 0, sizeof(m));
+   m.device = device;
+   m.index  = index;
+   m.id     = id;
+   m.state  = (uint16_t)state;
+   sendto(fd, (const char*)&m, sizeof(m), 0,
+         (const struct sockaddr*)to, sizeof(*to));
+}
+#endif
+
+/* Network RetroPad: a controller sent over UDP by another RetroArch. */
+static void lane_network_retropad(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32) \
+   && defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
+   const unsigned A = 1u << RETRO_DEVICE_ID_JOYPAD_A;
+   const unsigned B = 1u << RETRO_DEVICE_ID_JOYPAD_B;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   unsigned max_users             = settings->uints.input_max_users;
+   unsigned saved_port            = settings->uints.network_remote_base_port;
+   bool     saved_user            = settings->bools.network_remote_enable_user[0];
+   input_remote_t *saved_remote   = input_st->remote;
+   struct sockaddr_in to;
+   void (*trace)(int, int);
+   void (*trace_last)(unsigned*, int*);
+   void    *core;
+   unsigned had = failures;
+   unsigned seen, i;
+   int      axes[4], fd;
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(trace = (void (*)(int, int))dlsym(core, "harness_core_trace"))
+       || !(trace_last = (void (*)(unsigned*, int*))dlsym(core, "harness_core_trace_last")))
+   {
+      CHECK(false, "network pad: the harness core's trace entry points");
+      return;
+   }
+
+   /* a port of this run's own, and the first user listening on it */
+   settings->uints.network_remote_base_port       = 56000 + (unsigned)(getpid() % 4000);
+   settings->bools.network_remote_enable_user[0]  = true;
+   input_st->remote = input_driver_init_remote(settings, max_users);
+   fd               = socket(AF_INET, SOCK_DGRAM, 0);
+   memset(&to, 0, sizeof(to));
+   to.sin_family      = AF_INET;
+   to.sin_port        = htons((uint16_t)settings->uints.network_remote_base_port);
+   to.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+   if (!input_st->remote || fd < 0)
+   {
+      CHECK(false, "network pad: could not open the sockets");
+      goto done;
+   }
+
+   fast_forward(true);
+   trace(1, 1);
+   run_loop_frames(3);
+   trace(2, 1);
+
+   /* three controls change in one frame of the sender: all three are
+    * there at the next poll, not one a poll */
+   np_send(fd, &to, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A, 1);
+   np_send(fd, &to, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B, 1);
+   np_send(fd, &to, RETRO_DEVICE_ANALOG, 0, RETRO_DEVICE_ID_ANALOG_X, 12345);
+   run_loop_frames(2);
+   trace_last(&seen, axes);
+   CHECK((seen & (A | B)) == (A | B) && axes[0] == 12345,
+         "network pad: messages sent together did not all arrive by the next frame");
+
+   /* nothing sent: what is held stays held */
+   run_loop_frames(5);
+   trace_last(&seen, axes);
+   CHECK((seen & (A | B)) == (A | B) && axes[0] == 12345,
+         "network pad: a held control was let go with nothing sent");
+
+   /* a release, and a message that is not one of ours */
+   np_send(fd, &to, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A, 0);
+   sendto(fd, "xyz", 3, 0, (const struct sockaddr*)&to, sizeof(to));
+   run_loop_frames(2);
+   trace_last(&seen, axes);
+   CHECK((seen & (A | B)) == B,
+         "network pad: a release did not arrive, or a stray message let a control go");
+
+   /* a burst longer than one poll takes (but not than the socket
+    * holds): it ends up where it ended */
+   for (i = 0; i < 100; i++)
+      np_send(fd, &to, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B, (int)(i & 1));
+   np_send(fd, &to, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B, 0);
+   np_send(fd, &to, RETRO_DEVICE_ANALOG, 0, RETRO_DEVICE_ID_ANALOG_X, 0);
+   run_loop_frames(8);
+   trace_last(&seen, axes);
+   CHECK(!(seen & (A | B)) && !axes[0],
+         "network pad: after a burst the state is not what was sent last");
+
+   /* with ports assigned on first press, a button of the network pad
+    * is a press of its user's */
+   settings->bools.input_assign_ports_on_button_press = true;
+   input_remapping_set_defaults(false);
+   run_loop_frames(3);
+   CHECK(settings->uints.input_remap_ports[0] == MAX_USERS,
+         "network pad: the user has a core port before any press");
+   np_send(fd, &to, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A, 1);
+   run_loop_frames(3);
+   CHECK(settings->uints.input_remap_ports[0] == 0,
+         "network pad: a button of the network pad did not give its user a core port");
+   np_send(fd, &to, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A, 0);
+   run_loop_frames(2);
+   settings->bools.input_assign_ports_on_button_press = false;
+   input_remapping_set_defaults(false);
+   command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+
+   trace(0, 0);
+   fast_forward(false);
+   run_loop_frames(3);
+done:
+   if (fd >= 0)
+      close(fd);
+   if (input_st->remote)
+      input_remote_free(input_st->remote, max_users);
+   input_st->remote = saved_remote;
+   memset(&input_st->remote_st_ptr, 0, sizeof(input_st->remote_st_ptr));
+   settings->uints.network_remote_base_port      = saved_port;
+   settings->bools.network_remote_enable_user[0] = saved_user;
+   dlclose(core);
+   if (failures == had)
+      printf("[pass] network pad: messages sent together arrive together;"
+            " what is held stays held; a stray message changes nothing;"
+            " a burst ends where it ended; a button of it counts as a first"
+            " press\n");
+#else
+   printf("[skip] network pad: needs the test drivers and the network gamepad\n");
+#endif
+}
+
 /* First-press port assignment: with the setting on no user has a core
  * port until a button is pressed on its controller. */
 static void lane_first_press(void)
@@ -2900,6 +3045,7 @@ int main(int argc, char *argv[])
       lane_socd();
       lane_input_rotation();
       lane_triggers();
+      lane_network_retropad();
       lane_core_view();
       lane_key_events();
       /* last: these restart the drivers */
