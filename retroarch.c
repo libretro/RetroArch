@@ -1876,13 +1876,15 @@ void drivers_init(
        || !(flags & DRIVER_MENU_MASK))
    {
       command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-      command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+      if (!(runloop_st->current_core.flags & RETRO_CORE_FLAG_SYMBOLS_INITED))
+         command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
    }
 
 #else
    /* Qt uses core info, even if the menu is disabled */
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+   if (!(runloop_st->current_core.flags & RETRO_CORE_FLAG_SYMBOLS_INITED))
+      command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
 #endif
 
    /* Keep non-throttled state as good as possible. */

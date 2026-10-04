@@ -4969,7 +4969,12 @@ bool menu_driver_init(bool video_is_threaded)
    struct menu_state       *menu_st  = &menu_driver_state;
 
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+   /* With a core up, its system info came from its own handle at
+    * init; the probe would only reopen it and replay its
+    * retro_set_environment. */
+   if (!(runloop_state_get_ptr()->current_core.flags
+            & RETRO_CORE_FLAG_SYMBOLS_INITED))
+      command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
 
    if (     menu_st->driver_data
          || menu_driver_init_internal(

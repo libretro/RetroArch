@@ -2591,6 +2591,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          bool state = *(const bool*)data;
          RARCH_LOG("[Environ] SET_SUPPORT_NO_GAME: %s.\n", state ? "yes" : "no");
 
+         runloop_st->system.load_no_content = state;
          if (state)
             content_set_does_not_need_content();
          else
@@ -5403,7 +5404,18 @@ bool runloop_event_init_core(
 
    /* Init core info files */
    command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-   command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+   {
+      /* What CMD_EVENT_LOAD_CORE_PERSIST provides, without its open
+       * and close of the core: the system info, library strings and
+       * no-game support come from the handle opened below. */
+      const char *core_path = path_get(RARCH_PATH_CORE);
+#ifdef HAVE_DYNAMIC
+      if (     core_path && *core_path
+            && !string_ends_with_size(core_path, "builtin",
+               strlen(core_path), STRLEN_CONST("builtin")))
+#endif
+         core_info_load(core_path);
+   }
 
    /* Load symbols */
    if (!runloop_init_libretro_symbols(runloop_st,
@@ -5418,6 +5430,22 @@ bool runloop_event_init_core(
       runloop_st->current_core.retro_run   = retro_run_null;
    runloop_st->current_core.flags         |= RETRO_CORE_FLAG_SYMBOLS_INITED;
    runloop_st->current_core.retro_get_system_info(&sys_info->info);
+
+   runloop_st->current_library_name[0]     = '\0';
+   runloop_st->current_library_version[0]  = '\0';
+   runloop_st->current_valid_extensions[0] = '\0';
+   if (sys_info->info.library_name)
+      strlcpy(runloop_st->current_library_name,
+            sys_info->info.library_name,
+            sizeof(runloop_st->current_library_name));
+   if (sys_info->info.library_version)
+      strlcpy(runloop_st->current_library_version,
+            sys_info->info.library_version,
+            sizeof(runloop_st->current_library_version));
+   if (sys_info->info.valid_extensions)
+      strlcpy(runloop_st->current_valid_extensions,
+            sys_info->info.valid_extensions,
+            sizeof(runloop_st->current_valid_extensions));
 
    if (!sys_info->info.library_name)
       sys_info->info.library_name = msg_hash_to_str(MSG_UNKNOWN);
@@ -5486,7 +5514,9 @@ bool runloop_event_init_core(
    /* Set save redirection paths */
    runloop_path_set_redirect(settings, old_savefile_dir, old_savestate_dir);
 
-   /* Set core environment */
+   /* Set core environment.  A core declares no-game support from
+    * retro_set_environment, so the flag starts clear for this one. */
+   sys_info->load_no_content = false;
    runloop_st->current_core.retro_set_environment(runloop_environment_cb);
 
    /* Load any input remap files

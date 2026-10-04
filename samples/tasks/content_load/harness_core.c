@@ -15,6 +15,8 @@ static uint16_t frame[W * H];
 static unsigned runs;
 static unsigned inits;
 RETRO_API unsigned harness_core_runs(void) { return runs; }
+static unsigned env_sets;
+RETRO_API unsigned harness_core_env_sets(void) { return env_sets; }
 static unsigned hw_resets;
 static unsigned hw_destroys;
 
@@ -31,6 +33,7 @@ void retro_set_environment(retro_environment_t cb)
 {
    bool no_content = true;
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_RGB565;
+   env_sets++;
    environ_cb = cb;
    cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt);
    cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_content);

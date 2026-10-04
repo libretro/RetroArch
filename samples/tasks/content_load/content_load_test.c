@@ -303,6 +303,40 @@ static void lane_staged(void)
 /* Lane: one at a time                                                 */
 /* ------------------------------------------------------------------ */
 
+/* The running core is opened once per load: nothing after its init
+ * reopens it to re-read its system info, so its retro_set_environment
+ * runs exactly once on the live instance, and what the menu shows -
+ * library name and version, no-game support - comes from that open. */
+static void lane_core_opened_once(void)
+{
+   struct load_frame log[LOAD_FRAMES];
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   unsigned n;
+   unsigned had = failures;
+
+   open_menu();
+
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the load was not started");
+   n = run_load(log, LOAD_FRAMES);
+   CHECK(n < LOAD_FRAMES && core_is_up(),
+         "the load did not bring the core up within %u frames", LOAD_FRAMES);
+   CHECK(core_export("harness_core_env_sets") == 1,
+         "retro_set_environment ran %u times on the running core, "
+         "not once", core_export("harness_core_env_sets"));
+   CHECK(string_is_equal(runloop_st->current_library_name,
+            "content_load_harness")
+         && string_is_equal(runloop_st->current_library_version, "1"),
+         "the library strings are \"%s\" \"%s\"",
+         runloop_st->current_library_name,
+         runloop_st->current_library_version);
+   CHECK(runloop_st->system.load_no_content,
+         "the core's no-game support was not recorded");
+
+   if (failures == had)
+      fprintf(stderr, "[pass] core opened once lane\n");
+}
+
 static void lane_one_at_a_time(void)
 {
    struct load_frame log[LOAD_FRAMES];
@@ -1722,6 +1756,7 @@ int main(int argc, char *argv[])
          "harness core did not start (dummy core running)");
 
    lane_staged();
+   lane_core_opened_once();
    lane_one_at_a_time();
    lane_reinit_deferred();
    lane_fallback();
