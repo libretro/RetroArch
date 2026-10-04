@@ -25,6 +25,7 @@ SOURCES := display_servers_win32_live_test.c \
            $(REPO_ROOT)/gfx/modeline/modeline_ini.c \
            $(REPO_ROOT)/libretro-common/compat/compat_strl.c \
            $(REPO_ROOT)/libretro-common/rthreads/rthreads.c \
+           $(REPO_ROOT)/libretro-common/rthreads/retro_eventcount.c \
            $(REPO_ROOT)/libretro-common/features/features_cpu.c \
            $(REPO_ROOT)/libretro-common/time/rtime.c
 
@@ -47,7 +48,7 @@ VPATH := $(sort $(dir $(SOURCES)))
 # the test defines.
 NO_MACROS := $(filter-out -include live_log.h -DMODELINE_STANDALONE,$(CFLAGS))
 obj/dispserv_win32.o obj/win32_modeline_adl.o obj/win32_modeline_ati.o obj/win32_modeline_pstrip.o obj/win32_modeline_resync.o: CFLAGS := $(NO_MACROS)
-obj/compat_strl.o obj/rthreads.o obj/features_cpu.o obj/rtime.o: CFLAGS := $(NO_MACROS)
+obj/compat_strl.o obj/rthreads.o obj/retro_eventcount.o obj/features_cpu.o obj/rtime.o: CFLAGS := $(NO_MACROS)
 obj/display_servers_win32_live_test.o: CFLAGS := $(NO_MACROS)
 
 all: $(TARGET)
