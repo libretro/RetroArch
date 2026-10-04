@@ -14383,6 +14383,12 @@ bool menu_displaylist_has_subsystems(void)
    return (subsystem && runloop_st->subsystem_current_count > 0);
 }
 
+static bool menu_displaylist_keyboard_index(const rarch_setting_t *setting)
+{
+   return setting->enum_idx >= MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX
+       && setting->enum_idx <= MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX_LAST;
+}
+
 static bool menu_displaylist_ctl_internal(
       enum menu_displaylist_ctl_state type,
       menu_displaylist_info_t *info,
@@ -18093,9 +18099,22 @@ static bool menu_displaylist_ctl_internal(
                                           && val != (int)orig_value
                                           && !input_config_mouse_offered((unsigned)val))
                                        continue;
+                                    /* Keyboard Index: "All" and the
+                                     * keyboards there are */
+                                    if (menu_displaylist_keyboard_index(setting))
+                                    {
+                                       if (     val > 0 && val != (int)orig_value
+                                             && !input_config_get_keyboard_display_name(val - 1))
+                                          continue;
+                                       if (val != (int)orig_value)
+                                          menu_setting_keyboard_index_name(val,
+                                                val_s, sizeof(val_s));
+                                    }
                                     setting_uint_set(setting, val);
-                                    setting->actions->repr(setting,
-                                          val_s, sizeof(val_s));
+                                    if (     val == (int)orig_value
+                                          || !menu_displaylist_keyboard_index(setting))
+                                       setting->actions->repr(setting,
+                                             val_s, sizeof(val_s));
                                     if (menu_entries_append(info->list,
                                              val_s,
                                              val_d,
@@ -18467,9 +18486,22 @@ static bool menu_displaylist_ctl_internal(
                                        && val != (int)orig_value
                                        && !input_config_mouse_offered((unsigned)val))
                                     continue;
+                                 /* Keyboard Index: "All" and the
+                                  * keyboards there are */
+                                 if (menu_displaylist_keyboard_index(setting))
+                                 {
+                                    if (     val > 0 && val != (int)orig_value
+                                          && !input_config_get_keyboard_display_name(val - 1))
+                                       continue;
+                                    if (val != (int)orig_value)
+                                       menu_setting_keyboard_index_name(val,
+                                             val_s, sizeof(val_s));
+                                 }
                                  setting_uint_set(setting, val);
-                                 setting->actions->repr(setting,
-                                       val_s, sizeof(val_s));
+                                 if (     val == (int)orig_value
+                                       || !menu_displaylist_keyboard_index(setting))
+                                    setting->actions->repr(setting,
+                                          val_s, sizeof(val_s));
                                  if (menu_entries_append(info->list,
                                           val_s,
                                           val_d,

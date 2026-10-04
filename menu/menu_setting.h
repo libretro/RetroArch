@@ -103,6 +103,10 @@ rarch_setting_t *menu_setting_new(void);
 
 void menu_setting_free(rarch_setting_t *setting);
 
+/* What Keyboard Index shows for @idx: "All" for 0, else the number and
+ * name of the keyboard listed there. */
+size_t menu_setting_keyboard_index_name(unsigned idx, char *s, size_t len);
+
 RETRO_END_DECLS
 
 #endif
