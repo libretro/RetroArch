@@ -380,13 +380,15 @@ static void moviectl_start_playback_cb(retro_task_t *task,
   moviectl_task_state_t *state   = (moviectl_task_state_t *)task_data;
   input_driver_state_t *input_st = input_state_get_ptr();
   int64_t id                     = 0;
+  char id_str[24];
   movie_playback_start_pending   = false;
   input_st->bsv_movie_state      = state->bsv;
   if (   bsv_movie_start_playback(input_st, state->bsv.movie_start_path)
       && input_st->bsv_movie_state_next_handle)
      id = input_st->bsv_movie_state_next_handle->identifier;
+  snprintf(id_str, sizeof(id_str), "%lld", (long long)id);
   if (state->cb)
-     state->cb(task, &id, user_data, error ? error
+     state->cb(task, id_str, user_data, error ? error
            : id ? NULL : msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE));
   free(state);
 }

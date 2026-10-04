@@ -1590,7 +1590,7 @@ void movie_op_notify(retro_task_callback_t cb, void *user_data);
 void movie_op_finish(const char *error);
 bool movie_start_playback(input_driver_state_t *input_st, char *path);
 /* @cb, when this returns true, is told once playback has started:
- * task_data is the replay's int64_t identifier, and error is set if it
+ * task_data is the replay's identifier, as text, and error is set if it
  * did not start. */
 bool movie_start_playback_notify(input_driver_state_t *input_st, char *path,
       retro_task_callback_t cb, void *user_data);

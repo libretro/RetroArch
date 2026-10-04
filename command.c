@@ -900,24 +900,36 @@ static bool command_screenshot(command_t *cmd)
 }
 #endif
 
-/* A command answered once the work it starts is through: by @name and
- * the task's result (or @ok, when it has none), or by @name and ERROR. */
-struct command_event_reply
+/* A command answered once the work it starts is through: by @ok, else
+ * by @name and the task's result, or by @name, ERROR and the reason. */
+struct command_reply
 {
    command_deferred_t   deferred;
    enum event_command   event;
-   /* run instead of the event, when set */
-   bool               (*start)(const command_event_notify_t *notify);
+   /* Run instead of the event, when set; false has the failure
+    * reported for it. */
+   bool               (*start)(struct command_reply *r);
    const char          *name;
    char                 ok[64];
+   char                 path[PATH_MAX_LENGTH];
    /* a load that ends on the dummy core failed */
    bool                 want_core;
+   /* what succeeded loaded a state */
+   bool                 state_loaded;
 };
 
-static void command_event_reply_done(retro_task_t *task, void *task_data,
+static struct command_reply *command_reply_new(const char *name)
+{
+   struct command_reply *r = (struct command_reply*)calloc(1, sizeof(*r));
+   if (r)
+      r->name = name;
+   return r;
+}
+
+static void command_reply_done(retro_task_t *task, void *task_data,
       void *user_data, const char *error)
 {
-   struct command_event_reply *r = (struct command_event_reply*)user_data;
+   struct command_reply *r = (struct command_reply*)user_data;
    char msg[PATH_MAX_LENGTH + 128];
    /* a core that fails to start is replaced by the dummy core, and the
     * load goes on to succeed */
@@ -926,34 +938,39 @@ static void command_event_reply_done(retro_task_t *task, void *task_data,
       error = msg_hash_to_str(MSG_FAILED_TO_LOAD_CONTENT);
    if (error)
       snprintf(msg, sizeof(msg), "%s ERROR %s", r->name, error);
-   else if (task_data)
-      snprintf(msg, sizeof(msg), "%s %s", r->name, (const char*)task_data);
    else
-      strlcpy(msg, *r->ok ? r->ok : r->name, sizeof(msg));
+   {
+      if (*r->ok)
+         strlcpy(msg, r->ok, sizeof(msg));
+      else if (task_data)
+         snprintf(msg, sizeof(msg), "%s %s", r->name, (const char*)task_data);
+      else
+         strlcpy(msg, r->name, sizeof(msg));
+      if (r->state_loaded)
+         command_post_state_loaded();
+   }
    command_deferred_send(&r->deferred, msg, strlen(msg));
    free(r);
 }
 
-/* Runs the event from a main-thread task, outside the core's run: a
+/* Runs the work from a main-thread task, outside the core's run: a
  * command can arrive from the core's own input poll. */
-static void command_event_reply_handler(retro_task_t *task)
+static void command_reply_handler(retro_task_t *task)
 {
-   struct command_event_reply *r = (struct command_event_reply*)task->state;
+   struct command_reply *r = (struct command_reply*)task->state;
    command_event_notify_t notify;
-   task->state     = NULL;
+   task->state      = NULL;
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
-   notify.cb        = command_event_reply_done;
+   notify.cb        = command_reply_done;
    notify.user_data = r;
-   if (!(r->start ? r->start(&notify) : command_event(r->event, &notify)))
-      command_event_reply_done(NULL, NULL, r, "The command failed.");
+   if (!(r->start ? r->start(r) : command_event(r->event, &notify)))
+      command_reply_done(NULL, NULL, r, "The command failed.");
 }
 
-static bool command_event_reply_push(command_t *cmd, enum event_command event,
-      bool (*start)(const command_event_notify_t *notify), const char *name)
+/* Takes @r, NULL included. */
+static bool command_reply_push(command_t *cmd, struct command_reply *r)
 {
    retro_task_t *task;
-   struct command_event_reply *r = (struct command_event_reply*)
-      calloc(1, sizeof(*r));
    if (!r)
       return false;
    if (!(task = task_init()))
@@ -961,10 +978,7 @@ static bool command_event_reply_push(command_t *cmd, enum event_command event,
       free(r);
       return false;
    }
-   r->event      = event;
-   r->start      = start;
-   r->name       = name;
-   task->handler = command_event_reply_handler;
+   task->handler = command_reply_handler;
    task->state   = r;
    task->flags  |= RETRO_TASK_FLG_MAIN_THREAD | RETRO_TASK_FLG_MUTE;
    if (!task_queue_push(task))
@@ -977,17 +991,27 @@ static bool command_event_reply_push(command_t *cmd, enum event_command event,
    return true;
 }
 
+/* Pushes @event as the work of command @name. */
+static bool command_reply_event(command_t *cmd, enum event_command event,
+      const char *name)
+{
+   struct command_reply *r = command_reply_new(name);
+   if (r)
+      r->event = event;
+   return command_reply_push(cmd, r);
+}
+
 #ifdef HAVE_TRANSLATE
 /* AI_SERVICE run by command_run(): one translation of the screen,
  * answered with the service's text. */
-static bool command_ai_service_start(const command_event_notify_t *notify)
+static bool command_ai_service_start(struct command_reply *r)
 {
    settings_t *settings = config_get_ptr();
    if (!settings->bools.ai_service_enable)
       return false;
    return run_translation_service_notify(settings,
          (runloop_get_flags() & RUNLOOP_FLAG_PAUSED) != 0,
-         notify->cb, notify->user_data);
+         command_reply_done, r);
 }
 #endif
 
@@ -1000,14 +1024,13 @@ static bool command_structured;
 static bool command_content_reply(command_t *cmd, const char *name,
       bool next, bool want_core)
 {
-   struct command_event_reply *r;
+   struct command_reply *r;
    if (     !command_structured
          || (!next && !task_content_load_pending())
-         || !(r = (struct command_event_reply*)calloc(1, sizeof(*r))))
+         || !(r = command_reply_new(name)))
       return true;
-   r->name      = name;
    r->want_core = want_core;
-   task_content_load_notify(command_event_reply_done, r);
+   task_content_load_notify(command_reply_done, r);
    command_deferred_take(&r->deferred, cmd);
    return true;
 }
@@ -1041,23 +1064,26 @@ bool command_run(command_t *handle, const char *name, const char *arg)
 #endif
 #ifdef HAVE_BSV_MOVIE
          else if (map[i].id == RARCH_RECORD_REPLAY_KEY)
-            return command_event_reply_push(handle,
-                  CMD_EVENT_RECORD_REPLAY, NULL, map[i].str);
+            return command_reply_event(handle,
+                  CMD_EVENT_RECORD_REPLAY, map[i].str);
          else if (map[i].id == RARCH_SAVE_REPLAY_CHECKPOINT_KEY)
-            return command_event_reply_push(handle,
-                  CMD_EVENT_SAVE_REPLAY_CHECKPOINT, NULL, map[i].str);
+            return command_reply_event(handle,
+                  CMD_EVENT_SAVE_REPLAY_CHECKPOINT, map[i].str);
          else if (map[i].id == RARCH_PREV_REPLAY_CHECKPOINT_KEY)
-            return command_event_reply_push(handle,
-                  CMD_EVENT_PREV_REPLAY_CHECKPOINT, NULL, map[i].str);
+            return command_reply_event(handle,
+                  CMD_EVENT_PREV_REPLAY_CHECKPOINT, map[i].str);
          else if (map[i].id == RARCH_NEXT_REPLAY_CHECKPOINT_KEY)
-            return command_event_reply_push(handle,
-                  CMD_EVENT_NEXT_REPLAY_CHECKPOINT, NULL, map[i].str);
+            return command_reply_event(handle,
+                  CMD_EVENT_NEXT_REPLAY_CHECKPOINT, map[i].str);
 #endif
 #ifdef HAVE_TRANSLATE
          else if (map[i].id == RARCH_AI_SERVICE)
-            return command_event_reply_push(handle,
-                  CMD_EVENT_AI_SERVICE_CALL, command_ai_service_start,
-                  map[i].str);
+         {
+            struct command_reply *r = command_reply_new(map[i].str);
+            if (r)
+               r->start = command_ai_service_start;
+            return command_reply_push(handle, r);
+         }
 #endif
          else
             handle->state[map[i].id] = true;
@@ -1217,102 +1243,54 @@ bool command_show_osd_msg(command_t *cmd, const char* arg)
 }
 
 
-/* LOAD_STATE_SLOT and SAVE_STATE_SLOT, answered once their task is
- * through. */
-struct command_state_reply
+static bool command_load_state_start(struct command_reply *r)
 {
-   command_deferred_t deferred;
-   const char        *name;
-   unsigned           slot;
-   bool               load;
-   char               path[PATH_MAX_LENGTH];
-};
-
-static void command_state_slot_done(retro_task_t *task, void *task_data,
-      void *user_data, const char *error)
-{
-   struct command_state_reply *r = (struct command_state_reply*)user_data;
-   char msg[PATH_MAX_LENGTH + 128];
-   if (error)
-      snprintf(msg, sizeof(msg), "%s ERROR %s", r->name, error);
-   else
-   {
-      snprintf(msg, sizeof(msg), "%s %u", r->name, r->slot);
-      if (r->load)
-         command_post_state_loaded();
-   }
-   command_deferred_send(&r->deferred, msg, strlen(msg));
-   free(r);
+   return content_load_state_notify(r->path, false, false,
+         command_reply_done, r);
 }
 
-/* A command can arrive from the core's own input poll, inside
- * retro_run(), where serializing would re-enter the core: the save
- * runs from a main-thread task instead. */
-static void command_save_state_handler(retro_task_t *task)
+/* Serializing re-enters the core, so this must not run from a command's
+ * own poll. */
+static bool command_save_state_start(struct command_reply *r)
 {
-   struct command_state_reply *r = (struct command_state_reply*)task->state;
-   task->state = NULL;
-   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
-   if (!content_save_state_notify(r->path, true, command_state_slot_done, r))
+   if (!content_save_state_notify(r->path, true, command_reply_done, r))
    {
       char msg[PATH_MAX_LENGTH + 64];
       snprintf(msg, sizeof(msg), "%s \"%s\".",
             msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO), r->path);
-      command_state_slot_done(NULL, r->path, r, msg);
+      command_reply_done(NULL, NULL, r, msg);
    }
+   return true;
 }
 
-static bool command_save_state_push(struct command_state_reply *r)
-{
-   retro_task_t *task = task_init();
-   if (!task)
-      return false;
-   task->handler = command_save_state_handler;
-   task->state   = r;
-   task->flags  |= RETRO_TASK_FLG_MAIN_THREAD | RETRO_TASK_FLG_MUTE;
-   if (task_queue_push(task))
-      return true;
-   free(task);
-   return false;
-}
-
+/* LOAD_STATE_SLOT and SAVE_STATE_SLOT, answered once their task is
+ * through. */
 static bool command_state_slot(command_t *cmd, const char *arg, bool load)
 {
-   char state_path[PATH_MAX_LENGTH];
    char reply[128];
    size_t _len;
    const char *name             = load ? "LOAD_STATE_SLOT" : "SAVE_STATE_SLOT";
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
    bool savestates_enabled      = core_info_current_supports_savestate();
-   struct command_state_reply *r;
+   struct command_reply *r      = command_reply_new(name);
 
-   runloop_get_savestate_path(state_path, sizeof(state_path), slot);
-   /* For LOADING, an existing state file outranks metadata and
-    * save-capability probes: core_serialize_size() measures whether the
-    * core can SAVE right now (0 at e.g. a game's own main menu), which
-    * says nothing about whether it can restore. Let the load task and
-    * retro_unserialize() arbitrate. */
-   if (load && !savestates_enabled)
-      savestates_enabled = path_is_valid(state_path);
-
-   if (savestates_enabled
-         && (r = (struct command_state_reply*)calloc(1, sizeof(*r))))
+   if (r)
    {
-      bool queued;
-      r->name = name;
-      r->slot = slot;
-      r->load = load;
-      strlcpy(r->path, state_path, sizeof(r->path));
-      /* answered from the task's callback, on a later frame */
-      if (load)
-         queued = content_load_state_notify(state_path, false, false,
-               command_state_slot_done, r);
-      else
-         queued = command_save_state_push(r);
-      if (queued)
+      runloop_get_savestate_path(r->path, sizeof(r->path), slot);
+      /* For LOADING, an existing state file outranks metadata and
+       * save-capability probes: core_serialize_size() measures whether
+       * the core can SAVE right now (0 at e.g. a game's own main menu),
+       * which says nothing about whether it can restore. Let the load
+       * task and retro_unserialize() arbitrate. */
+      if (load && !savestates_enabled)
+         savestates_enabled = path_is_valid(r->path);
+      if (savestates_enabled)
       {
-         command_deferred_take(&r->deferred, cmd);
-         return true;
+         snprintf(r->ok, sizeof(r->ok), "%s %u", name, slot);
+         r->state_loaded = load;
+         r->start        = load ? command_load_state_start
+                                : command_save_state_start;
+         return command_reply_push(cmd, r);
       }
       free(r);
    }
@@ -1332,45 +1310,25 @@ bool command_save_state_slot(command_t *cmd, const char *arg)
    return command_state_slot(cmd, arg, false);
 }
 
-#ifdef HAVE_BSV_MOVIE
-static void command_play_replay_done(retro_task_t *task, void *task_data,
-      void *user_data, const char *error)
-{
-   command_deferred_t *d = (command_deferred_t*)user_data;
-   char msg[256];
-   if (error)
-      snprintf(msg, sizeof(msg), "PLAY_REPLAY_SLOT ERROR %s", error);
-   else
-   {
-      snprintf(msg, sizeof(msg), "PLAY_REPLAY_SLOT %lld",
-            (long long)*(const int64_t*)task_data);
-      command_post_state_loaded();
-   }
-   command_deferred_send(d, msg, strlen(msg));
-   free(d);
-}
-#endif
-
 bool command_play_replay_slot(command_t *cmd, const char *arg)
 {
 #ifdef HAVE_BSV_MOVIE
    char replay_path[16384];
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
-   bool savestates_enabled      = core_info_current_supports_savestate();
-   command_deferred_t *d        = NULL;
-   replay_path[0]               = '\0';
-   if (     savestates_enabled
-         && (d = (command_deferred_t*)calloc(1, sizeof(*d))))
+   struct command_reply *r      = NULL;
+   if (     core_info_current_supports_savestate()
+         && (r = command_reply_new("PLAY_REPLAY_SLOT")))
    {
       runloop_get_replay_path(replay_path, sizeof(replay_path), slot);
+      r->state_loaded = true;
       /* answered from the movie task's callback, on a later frame */
       if (movie_start_playback_notify(input_state_get_ptr(), replay_path,
-               command_play_replay_done, d))
+               command_reply_done, r))
       {
-         command_deferred_take(d, cmd);
+         command_deferred_take(&r->deferred, cmd);
          return true;
       }
-      free(d);
+      free(r);
    }
    cmd->replier(cmd, "", 0);
    return false;
@@ -1388,6 +1346,7 @@ bool command_seek_replay(command_t *cmd, const char *arg)
    bool ret      = true;
    int64_t frame = arg ? (int64_t)strtoll(arg, &endptr, 10) : 0;
    input_driver_state_t *input_st = input_state_get_ptr();
+   struct command_reply *r;
    /* strtoll always writes a valid pointer, so the end pointer is
     * never NULL - an empty or non-numeric argument shows up as no
     * characters consumed. */
@@ -1401,30 +1360,20 @@ bool command_seek_replay(command_t *cmd, const char *arg)
 #endif
    if (ret)
       ret = movie_seek_to_frame(input_st, frame);
-   if (ret)
+   if (ret && (r = command_reply_new("SEEK_REPLAY")))
    {
-      struct command_event_reply *r = (struct command_event_reply*)
-         calloc(1, sizeof(*r));
-      if (r)
-      {
-         /* answered once the seek has run, on a later frame */
-         r->name = "SEEK_REPLAY";
-         snprintf(r->ok, sizeof(r->ok), "OK %" PRId64,
-               input_st->bsv_movie_state.seek_target_frame);
-         movie_op_notify(command_event_reply_done, r);
-         command_deferred_take(&r->deferred, cmd);
-         return true;
-      }
-      _len = strlcpy_lit(reply, "OK ", sizeof(reply));
-      _len += snprintf(reply+_len, sizeof(reply)-_len,
-            "%" PRId64, input_st->bsv_movie_state.seek_target_frame);
+      /* answered once the seek has run, on a later frame */
+      snprintf(r->ok, sizeof(r->ok), "OK %" PRId64,
+            input_st->bsv_movie_state.seek_target_frame);
+      movie_op_notify(command_reply_done, r);
+      command_deferred_take(&r->deferred, cmd);
+      return true;
    }
-   else
-      _len = strlcpy_lit(reply, "NO", sizeof(reply));
+   _len = strlcpy_lit(reply, "NO", sizeof(reply));
    reply[_len] = '\n';
    reply[++_len] = '\0';
    cmd->replier(cmd, reply, _len);
-   return ret;
+   return false;
 #else
    cmd->replier(cmd, "NO\n", 4);
    return false;
@@ -3098,7 +3047,7 @@ bool command_set_shader(command_t *cmd, const char *arg)
    settings_t  *settings        = config_get_ptr();
    bool apply_new_shader        = arg && *arg;
    char abs_arg[PATH_MAX_LENGTH];
-   struct command_event_reply *r;
+   struct command_reply *r;
 
    configuration_set_bool(settings, settings->bools.video_shader_enable, apply_new_shader);
    if (apply_new_shader)
@@ -3128,11 +3077,9 @@ bool command_set_shader(command_t *cmd, const char *arg)
 
    /* A deferred load compiles over the next frames: answered once it
     * is through. */
-   if (     cmd && command_structured
-         && (r = (struct command_event_reply*)calloc(1, sizeof(*r))))
+   if (cmd && command_structured && (r = command_reply_new("SET_SHADER")))
    {
-      r->name = "SET_SHADER";
-      if (video_shader_deferred_notify(command_event_reply_done, r))
+      if (video_shader_deferred_notify(command_reply_done, r))
       {
          command_deferred_take(&r->deferred, cmd);
          return true;

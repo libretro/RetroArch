@@ -1088,14 +1088,14 @@ bool run_translation_service_notify(settings_t *settings, bool paused,
             target_lang = ai_service_get_str(
                   (enum translation_lang)ai_service_target_lang);
 
-         if (cb && (notify = (translation_notify_t*)malloc(sizeof(*notify))))
+         if (cb)
          {
+            if (!(notify = (translation_notify_t*)malloc(sizeof(*notify))))
+               goto finish;
             notify->cb        = cb;
             notify->user_data = user_data;
          }
-         if (cb && !notify)
-            success = false;
-         else if (!(success = driver->translate(
+         if (!(success = driver->translate(
                bit24_image, dims,
                source_lang, target_lang,
                ai_service_mode,
