@@ -629,6 +629,42 @@ jobs:
           make clean
           echo "[pass] winraw_joypad_rumble_test (wine)"
 
+      - name: Build and run sony_pad_motion_test
+        shell: bash
+        working-directory: samples/input/sony_pad_motion
+        run: |
+          set -eu
+          # The motion sensors of a DualShock 4 or a DualSense, read
+          # out of the pad's input report where its HID description
+          # says nothing (input/common/sony_pad_motion.h): the six
+          # values come from where each pad's report has them; a short
+          # Bluetooth report and another report id are refused; flat
+          # and still is one g on libretro's Z, and a turn is radians
+          # a second on the axes the SDL driver gives.
+          make clean all
+          timeout 60 make check
+          make clean
+          echo "[pass] sony_pad_motion_test"
+
+      - name: Build and run winraw_joypad_motion_test (mingw + Wine)
+        shell: bash
+        working-directory: samples/input/winraw_joypad_motion
+        run: |
+          set -eu
+          # The raw input joypad driver gives a core those sensors.
+          # The real driver under Wine, with reports handed to its
+          # parser: a request is taken for a Sony pad and refused for
+          # another make and for an empty port; nothing is given
+          # before a report has had the sensors, and only the sensor
+          # asked for; a pad nothing was asked of has none read; a pad
+          # unplugged and plugged in again goes on giving what was
+          # asked.
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          make clean all
+          WINEDEBUG=-all timeout 300 make check
+          make clean
+          echo "[pass] winraw_joypad_motion_test (wine)"
+
       - name: Build and run device_pins_test
         shell: bash
         working-directory: samples/input/device_pins

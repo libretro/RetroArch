@@ -54,6 +54,7 @@
 #include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
 #include "../common/sony_pad_output.h"
+#include "../common/sony_pad_motion.h"
 #include "../../verbosity.h"
 
 /* ------------------------------------------------------------------ */
@@ -163,6 +164,16 @@ typedef struct winraw_joypad_joypad_data
    /* The device interface path, which is what tells one controller
     * from another of the same model. Empty if Windows gave none. */
    char                path[512];
+
+   /* --- Motion sensors (a DualShock 4 or a DualSense) -------------- */
+   /* The pad's gyroscope and accelerometer are in its input report,
+    * outside what the report's HID description covers
+    * (input/common/sony_pad_motion.h). They are read out of a report
+    * only while a core has asked for them: motion_on. */
+   uint8_t             motion_model; /* enum sony_pad_model, or none    */
+   uint8_t             motion_on;    /* bit 0 accelerometer, 1 gyroscope */
+   bool                motion_seen;  /* a report has had them            */
+   sony_pad_motion_t   motion;
 } winraw_joypad_joypad_data_t;
 
 /* ------------------------------------------------------------------ */
@@ -171,6 +182,9 @@ typedef struct winraw_joypad_joypad_data
 
 /* TODO/FIXME - static globals */
 static winraw_joypad_joypad_data_t winraw_joypad_pads[MAX_USERS];
+/* the motion sensors a core has asked of each port (bit 0 the
+ * accelerometer, 1 the gyroscope): kept while pads come and go */
+static uint8_t winraw_joypad_motion_want[MAX_USERS];
 static unsigned winraw_joypad_pad_count          = 0;
 static HWND     winraw_joypad_msg_window         = NULL;
 static bool     winraw_joypad_initialised        = false;
@@ -1176,6 +1190,14 @@ static bool winraw_joypad_add_device(HANDLE hDevice)
    input_autoconfigure_connect(pad->name, NULL, NULL, "winraw",
          (unsigned)slot, pad->vid, pad->pid);
 
+   /* a pad whose motion sensors can be read out of its reports; what
+    * a core asked of this port before - the pad may be one coming
+    * back - still holds */
+   pad->motion_model = (uint8_t)sony_pad_model(pad->vid, pad->pid);
+   pad->motion_on    = (pad->motion_model != SONY_PAD_NONE)
+      ? winraw_joypad_motion_want[slot] : 0;
+   pad->motion_seen  = false;
+
    /* a pad there is a rumble report for is opened for writing */
    winraw_joypad_out_close((unsigned)slot);
    winraw_joypad_out_open((unsigned)slot, pad->vid, pad->pid, pad->path,
@@ -1371,6 +1393,13 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
       }
    }
    winraw_joypad_out_publish_buttons(pad);
+
+   /* the motion sensors, while a core wants them */
+   if (     pad->motion_on
+         && sony_pad_motion_parse(&pad->motion,
+               (enum sony_pad_model)pad->motion_model,
+               (const uint8_t*)raw_data, (size_t)raw_data_size))
+      pad->motion_seen = true;
 }
 
 /* Reports for one of this driver's controllers that were read in bulk
@@ -2064,6 +2093,78 @@ static const char *winraw_joypad_joypad_name(unsigned port)
 /* Driver table                                                        */
 /* ------------------------------------------------------------------ */
 
+/* A core asks for a pad's accelerometer or gyroscope, or says it is
+ * done with it. Only a pad whose sensors can be read has them; and
+ * they are read out of its reports only from here on.
+ *
+ * What was asked is the port's, and kept (winraw_joypad_motion_want):
+ * a pad unplugged and plugged in again, or the driver restarted
+ * because another was, goes on giving the core what it asked for. */
+static bool winraw_joypad_joypad_set_sensor_state(unsigned port,
+      enum retro_sensor_action action, unsigned rate)
+{
+   bool has;
+   winraw_joypad_joypad_data_t *pad;
+
+   (void)rate;
+   if (port >= MAX_USERS)
+      return false;
+   pad = &winraw_joypad_pads[port];
+   has = pad->connected && pad->motion_model != SONY_PAD_NONE;
+
+   switch (action)
+   {
+      case RETRO_SENSOR_ACCELEROMETER_ENABLE:
+         winraw_joypad_motion_want[port] |= 1;
+         break;
+      case RETRO_SENSOR_GYROSCOPE_ENABLE:
+         winraw_joypad_motion_want[port] |= 2;
+         break;
+      case RETRO_SENSOR_ACCELEROMETER_DISABLE:
+         winraw_joypad_motion_want[port] &= (uint8_t)~1;
+         break;
+      case RETRO_SENSOR_GYROSCOPE_DISABLE:
+         winraw_joypad_motion_want[port] &= (uint8_t)~2;
+         break;
+      case RETRO_SENSOR_ILLUMINANCE_DISABLE:
+         /* done with a sensor there never was: that is not a failure */
+         return true;
+      default:
+         return false;
+   }
+
+   pad->motion_on = has ? winraw_joypad_motion_want[port] : 0;
+   if (!pad->motion_on)
+      pad->motion_seen = false;
+   /* an enable is taken only where there is a sensor to give; being
+    * done with one is never a failure */
+   return has
+      || action == RETRO_SENSOR_ACCELEROMETER_DISABLE
+      || action == RETRO_SENSOR_GYROSCOPE_DISABLE;
+}
+
+static bool winraw_joypad_joypad_get_sensor_input(unsigned port,
+      unsigned id, float *value)
+{
+   const winraw_joypad_joypad_data_t *pad;
+
+   if (port >= MAX_USERS || !value)
+      return false;
+   pad = &winraw_joypad_pads[port];
+   /* nothing until a report has had the sensors in it: over Bluetooth
+    * none does */
+   if (!pad->connected || !pad->motion_seen)
+      return false;
+   if (id >= RETRO_SENSOR_ACCELEROMETER_X && id <= RETRO_SENSOR_ACCELEROMETER_Z)
+   {
+      if (!(pad->motion_on & 1))
+         return false;
+   }
+   else if (!(pad->motion_on & 2))
+      return false;
+   return sony_pad_motion_value(&pad->motion, id, value);
+}
+
 input_device_driver_t winraw_joypad = {
    winraw_joypad_joypad_init,
    winraw_joypad_joypad_query_pad,
@@ -2075,8 +2176,8 @@ input_device_driver_t winraw_joypad = {
    winraw_joypad_joypad_poll,
    winraw_joypad_joypad_set_rumble, /* DualShock 4 and DualSense; see "Rumble" */
    NULL,                         /* rumble_gain  */
-   NULL,                         /* set_sensor_state */
-   NULL,                         /* get_sensor_input */
+   winraw_joypad_joypad_set_sensor_state, /* a DualShock 4 or DualSense over USB */
+   winraw_joypad_joypad_get_sensor_input,
    winraw_joypad_joypad_name,
    "winraw_joypad",
 };
