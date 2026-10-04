@@ -2303,6 +2303,118 @@ static void lane_pointer_capture(void)
 #endif
 }
 
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32) && defined(HAVE_OVERLAY)
+/* Menu combination lane: whether L3 + R3 opens the menu, with the
+ * scripted pad holding @pad and the overlay holding @overlay. */
+static bool combo_opens(unsigned pad, unsigned overlay)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   input_bits_t bits;
+   unsigned i;
+
+   syn_buttons = 0;
+   for (i = 0; i < 16; i++)
+      if (pad & (1u << i))
+         syn_buttons |= 1u << (input_autoconf_binds[0][i].joykey & 31);
+   BIT256_CLEAR_ALL(input_st->overlay_ptr->overlay_state.buttons);
+   for (i = 0; i < 16; i++)
+      if (overlay & (1u << i))
+         BIT256_SET(input_st->overlay_ptr->overlay_state.buttons, i);
+   /* a poll for the pad, then the system's input as the run loop
+    * collects it, and the gate as the run loop applies it */
+   input_driver_poll();
+   BIT256_CLEAR_ALL(bits);
+   input_driver_collect_system_input(input_st, config_get_ptr(), &bits);
+   input_driver_menu_combo_source_gate(&bits);
+   return input_driver_button_combo(INPUT_COMBO_L3_R3, 0, &bits);
+}
+#endif
+
+/* The menu combination and the overlay: buttons held on the overlay
+ * alone do not add up to it when the overlay has a menu button. */
+static void lane_menu_combo_gate(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32) && defined(HAVE_OVERLAY)
+   const unsigned L3 = 1u << RETRO_DEVICE_ID_JOYPAD_L3;
+   const unsigned R3 = 1u << RETRO_DEVICE_ID_JOYPAD_R3;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   input_overlay_t *saved = input_st->overlay_ptr;
+   input_overlay_t  ol;
+   struct overlay   layout;
+   struct overlay_desc descs[2];
+   unsigned had = failures;
+
+   if (!joypad_real)
+   {
+      CHECK(false, "menu combination: no joypad driver");
+      return;
+   }
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+
+   /* an overlay of two buttons, shown but not drawn: a stick click,
+    * and a menu button */
+   memset(&ol, 0, sizeof(ol));
+   memset(&layout, 0, sizeof(layout));
+   memset(descs, 0, sizeof(descs));
+   BIT256_SET(descs[0].button_mask, RETRO_DEVICE_ID_JOYPAD_L3);
+   BIT256_SET(descs[1].button_mask, RARCH_MENU_TOGGLE);
+   layout.descs = descs;
+   layout.size  = 2;
+   ol.active    = &layout;
+   input_st->overlay_ptr = &ol;
+
+   CHECK(!combo_opens(0, L3 | R3),
+         "menu combination: two overlay buttons opened the menu on an overlay with a menu button");
+   CHECK(combo_opens(L3 | R3, 0),
+         "menu combination: the controller's own L3 + R3 no longer opens the menu");
+   CHECK(combo_opens(L3 | R3, L3 | R3),
+         "menu combination: buttons held on both the controller and the overlay did not count");
+   CHECK(!combo_opens(L3, R3),
+         "menu combination: one overlay button completed the controller's combination");
+
+   /* and in the run loop itself: frames with the two overlay buttons
+    * held and the combination set leave the menu shut */
+   {
+      settings_t *settings = config_get_ptr();
+      unsigned saved_combo = settings->uints.input_menu_toggle_gamepad_combo;
+      settings->uints.input_menu_toggle_gamepad_combo = INPUT_COMBO_L3_R3;
+      syn_buttons = 0;
+      BIT256_SET(ol.overlay_state.buttons, RETRO_DEVICE_ID_JOYPAD_L3);
+      BIT256_SET(ol.overlay_state.buttons, RETRO_DEVICE_ID_JOYPAD_R3);
+      run_loop_frames(3);
+      CHECK(!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE),
+            "menu combination: the run loop opened the menu for two overlay buttons");
+      BIT256_CLEAR_ALL(ol.overlay_state.buttons);
+      run_loop_frames(2);
+      settings->uints.input_menu_toggle_gamepad_combo = saved_combo;
+   }
+
+   /* an overlay with no menu button: the combination is its way in */
+   layout.size = 1;
+   CHECK(combo_opens(0, L3 | R3),
+         "menu combination: an overlay with no menu button can no longer open the menu");
+
+   syn_buttons              = 0;
+   input_st->overlay_ptr    = saved;
+   input_st->primary_joypad = joypad_real;
+   input_driver_poll();
+   if (failures == had)
+      printf("[pass] menu combination: overlay buttons alone do not add up"
+            " to it on an overlay with a menu button; the controller's"
+            " do, and so do an overlay's with no menu button\n");
+#else
+   printf("[skip] menu combination: needs the test drivers and overlays\n");
+#endif
+}
+
 /* First-press port assignment: with the setting on no user has a core
  * port until a button is pressed on its controller. */
 static void lane_first_press(void)
@@ -3220,6 +3332,7 @@ int main(int argc, char *argv[])
       lane_triggers();
       lane_network_retropad();
       lane_pointer_capture();
+      lane_menu_combo_gate();
       lane_core_view();
       lane_key_events();
       /* last: these restart the drivers */

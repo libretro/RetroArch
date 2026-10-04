@@ -778,6 +778,11 @@ typedef struct
    /* Pointer capture: the reasons held (enum input_capture_reason),
     * and whether the cursor was last hidden for them. */
    uint8_t  capture_reasons;
+   /* The RetroPad buttons something other than the overlay held when
+    * the system's input was last collected: a controller, a key, a
+    * command, a network pad. What is pressed and not in here came from
+    * the overlay alone. */
+   uint16_t system_buttons_not_overlay;
    bool     capture_cursor_hidden;
    uint16_t trigger_two_way[MAX_USERS];
    /* SOCD cleaning, per core port: the D-Pad as it was held when the
@@ -1047,6 +1052,14 @@ void input_pointer_capture_apply(bool force);
 
 /* The reasons held, for the tests. */
 unsigned input_pointer_capture_reasons(void);
+
+/* For a combination of RetroPad buttons that opens the menu: buttons
+ * held on the overlay alone are taken out of @bits when the overlay
+ * shown has a menu button of its own. A thumb resting on two overlay
+ * buttons otherwise opens the menu by accident, on an overlay that
+ * has a button for that anyway (issue #19472). An overlay with no
+ * menu button is left alone: the combination is its only way in. */
+void input_driver_menu_combo_source_gate(input_bits_t *bits);
 
 /* What kind of window a video driver put up, for the input driver that
  * goes with it. */

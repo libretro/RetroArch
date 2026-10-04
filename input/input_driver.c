@@ -8450,6 +8450,35 @@ static bool input_overlay_want_hidden(void)
    return hide;
 }
 
+void input_driver_menu_combo_source_gate(input_bits_t *bits)
+{
+   unsigned i;
+   size_t d;
+   input_driver_state_t *input_st = &input_driver_st;
+   input_overlay_t *ol            = input_st->overlay_ptr;
+   uint16_t only                  = 0;
+
+   if (!ol || !ol->active)
+      return;
+   /* the buttons the overlay alone holds */
+   for (i = 0; i < 16; i++)
+      if (     BIT256_GET_PTR(bits, i)
+            && BIT256_GET(ol->overlay_state.buttons, i)
+            && !(input_st->system_buttons_not_overlay & (1u << i)))
+         only |= (uint16_t)(1u << i);
+   if (!only)
+      return;
+   /* (looked for only now, with such a button held) */
+   for (d = 0; d < ol->active->size; d++)
+      if (BIT256_GET(ol->active->descs[d].button_mask, RARCH_MENU_TOGGLE))
+         break;
+   if (d == ol->active->size)
+      return;
+   for (i = 0; i < 16; i++)
+      if (only & (1u << i))
+         BIT256_CLEAR_PTR(bits, i);
+}
+
 void input_overlay_check_mouse_cursor(void)
 {
    input_driver_state_t *input_st = &input_driver_st;
@@ -8881,13 +8910,11 @@ static bool input_keys_pressed_other_sources(
    for (j = 0; j < (int)ARRAY_SIZE(input_st->command); j++)
       if ((i < RARCH_BIND_LIST_END) && input_st->command[j]
          && input_st->command[j]->state[i])
+      {
+         if (i < 16)
+            input_st->system_buttons_not_overlay |= (uint16_t)(1u << i);
          return true;
-#endif
-
-#ifdef HAVE_OVERLAY
-   if (               input_st->overlay_ptr &&
-         ((BIT256_GET(input_st->overlay_ptr->overlay_state.buttons, i))))
-      return true;
+      }
 #endif
 
 #ifdef HAVE_NETWORKGAMEPAD
@@ -8895,6 +8922,16 @@ static bool input_keys_pressed_other_sources(
    if (i < RARCH_CUSTOM_BIND_LIST_END
          && input_st->remote
          && INPUT_REMOTE_KEY_PRESSED(input_st, i, 0))
+   {
+      if (i < 16)
+         input_st->system_buttons_not_overlay |= (uint16_t)(1u << i);
+      return true;
+   }
+#endif
+
+#ifdef HAVE_OVERLAY
+   if (               input_st->overlay_ptr &&
+         ((BIT256_GET(input_st->overlay_ptr->overlay_state.buttons, i))))
       return true;
 #endif
 
@@ -9021,6 +9058,9 @@ static void input_keys_pressed(
             kb_blocked,
             port, RETRO_DEVICE_JOYPAD, 0,
             RETRO_DEVICE_ID_JOYPAD_MASK);
+
+   /* what a controller or a key holds is not the overlay's alone */
+   input_st->system_buttons_not_overlay |= (uint16_t)ret;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
@@ -10763,6 +10803,8 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
    bool menu_input_active              = menu_is_alive &&
          !(settings->bools.menu_unified_controls && !display_kb);
 #endif
+
+   input_st->system_buttons_not_overlay = 0;
 
    /* Hotkeys and menu navigation read the controllers through the
     * stand-in while they are gated, the same as the core does. */

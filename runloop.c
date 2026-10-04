@@ -7109,6 +7109,12 @@ static enum runloop_state_enum runloop_check_state(
 
 #ifdef HAVE_MENU
    last_input                       = current_bits;
+#ifdef HAVE_OVERLAY
+   /* buttons held on an overlay that has its own menu button do not
+    * add up to the combination */
+   if (menu_toggle_gamepad_combo != INPUT_COMBO_NONE)
+      input_driver_menu_combo_source_gate(&last_input);
+#endif
    if (     menu_toggle_gamepad_combo != INPUT_COMBO_NONE
          && input_driver_button_combo(
                menu_toggle_gamepad_combo,
