@@ -971,6 +971,32 @@ static size_t menu_action_setting_disp_set_label_menu_more(
    return _len;
 }
 
+#ifdef HAVE_NETWORKING
+/* The player slots asked for, as "1, 3", or "None". */
+static size_t menu_action_setting_disp_set_label_netplay_request_devices(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   unsigned user;
+   size_t _len          = 0;
+   settings_t *settings = config_get_ptr();
+
+   for (user = 0; user < MAX_USERS; user++)
+      if (settings->bools.netplay_request_devices[user] && _len < len)
+         _len += snprintf(s + _len, len - _len, _len ? ", %u" : "%u", user + 1);
+   if (!_len)
+      _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
+   *w = 19;
+   if (path && *path)
+      strlcpy(s2, path, len2);
+   return _len;
+}
+#endif
+
 static size_t menu_action_setting_disp_set_label_db_entry(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1983,6 +2009,12 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_remap_file_info);
             break;
+#ifdef HAVE_NETWORKING
+         case MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICES:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_netplay_request_devices);
+            break;
+#endif
          case MENU_ENUM_LABEL_OVERRIDE_FILE_INFO:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_override_file_info);

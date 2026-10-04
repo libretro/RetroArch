@@ -21439,6 +21439,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
    "Request to play with the given input device."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICES,
+   "Request Devices"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICES,
+   "The player slots to ask the host for when joining a netplay session. With none chosen, the host gives the first free one."
+   )
 /* GENERATED REGION: netplay NAT traversal setting (see settings_def_netplay_nat.h). */
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \

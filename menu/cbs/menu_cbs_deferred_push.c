@@ -237,6 +237,9 @@ GENERIC_DEFERRED_PUSH(deferred_push_input_menu_settings_list,            DISPLAY
 GENERIC_DEFERRED_PUSH(deferred_push_input_turbo_fire_settings_list,      DISPLAYLIST_INPUT_TURBO_FIRE_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_input_haptic_feedback_settings_list, DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_input_sensor_settings_list,         DISPLAYLIST_INPUT_SENSOR_SETTINGS_LIST)
+#ifdef HAVE_NETWORKING
+GENERIC_DEFERRED_PUSH(deferred_push_netplay_request_devices_list,       DISPLAYLIST_NETPLAY_REQUEST_DEVICES_LIST)
+#endif
 GENERIC_DEFERRED_PUSH(deferred_push_ai_service_settings_list,            DISPLAYLIST_AI_SERVICE_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_accessibility_settings_list,         DISPLAYLIST_ACCESSIBILITY_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_latency_settings_list,          DISPLAYLIST_LATENCY_SETTINGS_LIST)
@@ -711,6 +714,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_INPUT_TURBO_FIRE_SETTINGS_LIST, deferred_push_input_turbo_fire_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST, deferred_push_input_haptic_feedback_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_INPUT_SENSOR_SETTINGS_LIST, deferred_push_input_sensor_settings_list},
+#ifdef HAVE_NETWORKING
+      {MENU_ENUM_LABEL_DEFERRED_NETPLAY_REQUEST_DEVICES_LIST, deferred_push_netplay_request_devices_list},
+#endif
       {MENU_ENUM_LABEL_DEFERRED_AI_SERVICE_SETTINGS_LIST, deferred_push_ai_service_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_ACCESSIBILITY_SETTINGS_LIST, deferred_push_accessibility_settings_list},
       {MENU_ENUM_LABEL_DISC_INFORMATION, deferred_push_disc_information},

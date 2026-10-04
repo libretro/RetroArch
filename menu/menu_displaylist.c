@@ -9066,6 +9066,19 @@ unsigned menu_displaylist_build_list(
                count++;
          }
          break;
+#ifdef HAVE_NETWORKING
+      case DISPLAYLIST_NETPLAY_REQUEST_DEVICES_LIST:
+         {
+            unsigned user;
+            for (user = 0; user < MAX_USERS; user++)
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICE_1 + user),
+                     PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+         }
+         break;
+#endif
       case DISPLAYLIST_INPUT_SENSOR_SETTINGS_LIST:
          {
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -11049,14 +11062,13 @@ unsigned menu_displaylist_build_list(
                   count++;
             }
 
-            for (user = 0; user < MAX_USERS; user++)
-            {
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     (enum msg_hash_enums)
-                        (MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICE_1 + user),
-                     PARSE_ONLY_BOOL, false) == 0)
-                  count++;
-            }
+            /* one entry for the sixteen Request Device switches */
+            if (menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICES),
+                  MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICES_STR,
+                  MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICES,
+                  MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_NETWORK_CMD_ENABLE,
@@ -16626,6 +16638,7 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_INPUT_TURBO_FIRE_SETTINGS_LIST:
          case DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:
          case DISPLAYLIST_INPUT_SENSOR_SETTINGS_LIST:
+         case DISPLAYLIST_NETPLAY_REQUEST_DEVICES_LIST:
          case DISPLAYLIST_PLAYLIST_SETTINGS_LIST:
          case DISPLAYLIST_SUBSYSTEM_SETTINGS_LIST:
 #ifdef HAVE_MIST
