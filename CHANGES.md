@@ -89,6 +89,7 @@
 - MENU/XMB: Left thumbnail and handheld mode fixes
 - MENU/XMB: Tab change possible by gestures
 - MENU/XMB: Horizontal menu is now optional
+- MENU/XMB: Add Intro animation option
 - NETWORK: New network commands SAVE_STATE_SLOT N and GET_CONFIG_PARAM
 - NETWORK: HELP network command lists every command with what it does
 - NETWORK: LIST_CORES, LIST_PLAYLISTS and GET_PLAYLIST network commands, to find content and the core to load it with
