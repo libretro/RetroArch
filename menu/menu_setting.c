@@ -7793,6 +7793,24 @@ static size_t setting_get_string_representation_retropad_bind(
    return 0;
 }
 
+static size_t setting_get_string_representation_input_aim_stick(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   enum msg_hash_enums e = MENU_ENUM_LABEL_VALUE_OFF;
+   if (!setting)
+      return 0;
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case INPUT_AIM_STICK_LEFT:
+         e = MENU_ENUM_LABEL_VALUE_LEFT_ANALOG;
+         break;
+      case INPUT_AIM_STICK_RIGHT:
+         e = MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG;
+         break;
+   }
+   return strlcpy(s, msg_hash_to_str(e), len);
+}
+
 static size_t setting_get_string_representation_input_rotation(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -11495,6 +11513,7 @@ static bool setting_append_list_input_player_options(
       char device_reserved_device[64];
       char mouse_index[64];
       char keyboard_index[64];
+      char aim_stick[64];
       char bind_all[64];
       char bind_all_save_autoconfig[64];
       char bind_defaults[64];
@@ -11521,6 +11540,9 @@ static bool setting_append_list_input_player_options(
             user + 1);
       snprintf(keyboard_index, sizeof(keyboard_index),
             MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX_STR,
+            user + 1);
+      snprintf(aim_stick, sizeof(aim_stick),
+            MENU_ENUM_LABEL_INPUT_AIM_STICK_STR,
             user + 1);
       snprintf(bind_all, sizeof(bind_all),
             MENU_ENUM_LABEL_INPUT_BIND_ALL_INDEX_STR,
@@ -11646,6 +11668,25 @@ static bool setting_append_list_input_player_options(
       menu_settings_list_current_add_range(list, list_info, 0, ANALOG_DPAD_LAST-1, 1.0, true, true);
       MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
             (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE + user));
+
+      CONFIG_UINT_ALT(
+            list, list_info,
+            &settings->uints.input_aim_stick[user],
+            aim_stick,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_AIM_STICK),
+            INPUT_AIM_STICK_NONE,
+            &group_info,
+            &subgroup_info,
+            parent_group,
+            general_write_handler,
+            general_read_handler);
+      (*list)[list_info->index - 1].index         = user + 1;
+      (*list)[list_info->index - 1].index_offset  = user;
+      SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
+      SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_input_aim_stick)
+      menu_settings_list_current_add_range(list, list_info, 0, INPUT_AIM_STICK_LAST - 1, 1.0, true, true);
+      MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+            (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_AIM_STICK + user));
 
       CONFIG_UINT_ALT(
             list, list_info,

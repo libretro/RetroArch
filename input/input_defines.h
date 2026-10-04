@@ -231,6 +231,16 @@ enum input_combo_type
    INPUT_COMBO_LAST
 };
 
+/* input_playerN_aim_stick: the stick that aims a port's lightgun or
+ * pointer, if one does. */
+enum input_aim_stick
+{
+   INPUT_AIM_STICK_NONE = 0,
+   INPUT_AIM_STICK_LEFT,
+   INPUT_AIM_STICK_RIGHT,
+   INPUT_AIM_STICK_LAST
+};
+
 /* input_rotation: 0 to 3 are quarter turns, as Video Rotation counts
  * them; this one follows that setting. */
 #define INPUT_ROTATION_AUTO 4

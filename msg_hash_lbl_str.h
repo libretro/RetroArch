@@ -366,6 +366,7 @@
 #define MENU_ENUM_LABEL_INPUT_DEVICE_RESERVATION_TYPE_STR "input_device_reservation_type_p%u"
 #define MENU_ENUM_LABEL_INPUT_MOUSE_INDEX_STR "input_player%u_mouse_index"
 #define MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX_STR "input_player%u_keyboard_index"
+#define MENU_ENUM_LABEL_INPUT_AIM_STICK_STR "input_player%u_aim_stick"
 #define MENU_ENUM_LABEL_INPUT_JOYPAD_INDEX_STR "input_player%u_joypad_index"
 #define MENU_ENUM_LABEL_INPUT_BIND_ALL_INDEX_STR "input_player%u_bind_all"
 #define MENU_ENUM_LABEL_INPUT_SAVE_AUTOCONFIG_INDEX_STR "input_player%u_bind_all_save_autoconfig"

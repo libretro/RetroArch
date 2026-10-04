@@ -161,6 +161,8 @@ typedef struct settings
        * keyboards apart: 0 for all of them as one (the default), N
        * for the Nth the driver lists. */
       unsigned input_keyboard_index[MAX_USERS];
+      /* 0 off, 1 the left stick, 2 the right: enum input_aim_stick */
+      unsigned input_aim_stick[MAX_USERS];
 
       unsigned input_libretro_device[MAX_USERS];
       unsigned input_analog_dpad_mode[MAX_USERS];

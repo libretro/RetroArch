@@ -12440,6 +12440,14 @@ MSG_HASH(
    "The physical mouse as recognized by RetroArch. Where the input driver can tell mice apart, a mouse chosen here is remembered by what it is, and stays this port's when mice are plugged in or out."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_AIM_STICK,
+   "Aim From Analog Stick"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_AIM_STICK,
+   "Lets an analog stick aim this port's lightgun or pointer: where the stick is held is where it points on the screen, with the centre of the stick at the centre. Several players can then each aim without a mouse each. The gun's buttons are bound below as usual."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX,
    "Keyboard Index"
    )

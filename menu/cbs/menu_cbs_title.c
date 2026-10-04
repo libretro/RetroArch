@@ -628,6 +628,9 @@ static int action_get_title_dropdown_item(
                else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX) &&
                      (enum_idx <= MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX_LAST))
                   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX;
+               else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_AIM_STICK) &&
+                     (enum_idx <= MENU_ENUM_LABEL_INPUT_AIM_STICK_LAST))
+                  enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_AIM_STICK;
                else if ((enum_idx >= MENU_ENUM_LABEL_INPUT_REMAP_PORT) &&
                      (enum_idx <= MENU_ENUM_LABEL_INPUT_REMAP_PORT_LAST))
                   enum_idx = MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT;

@@ -3130,6 +3130,59 @@ static int16_t input_state_internal(
             kb_mapping_blocked,
             mapped_port, device, idx, id);
 
+      /* "Aim From Analog Stick": where the port's stick is held is
+       * where its lightgun or pointer points, the stick's centre
+       * being the screen's. The stick is read as it comes: a deadzone
+       * would make the centre of the screen a place it snaps to. */
+      if (     settings->uints.input_aim_stick[mapped_port]
+            && (   device == RETRO_DEVICE_LIGHTGUN
+                || (device == RETRO_DEVICE_POINTER && idx == 0))
+            && input_st->libretro_input_binds[mapped_port])
+      {
+         int axis = -1;
+         if (device == RETRO_DEVICE_LIGHTGUN)
+         {
+            if (id == RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X)
+               axis = RETRO_DEVICE_ID_ANALOG_X;
+            else if (id == RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y)
+               axis = RETRO_DEVICE_ID_ANALOG_Y;
+            else if (id == RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN)
+               ret  = 0; /* a stick is never off the screen */
+         }
+         else if (id == RETRO_DEVICE_ID_POINTER_X)
+            axis = RETRO_DEVICE_ID_ANALOG_X;
+         else if (id == RETRO_DEVICE_ID_POINTER_Y)
+            axis = RETRO_DEVICE_ID_ANALOG_Y;
+         else if (id == RETRO_DEVICE_ID_POINTER_PRESSED && !ret)
+            /* the gun's trigger is the pointer's press */
+            ret = input_state_wrap(
+                  input_st->current_driver,
+                  input_st->current_data,
+                  joypad,
+                  sec_joypad,
+                  &joypad_info,
+                  (*input_st->libretro_input_binds),
+                  kb_mapping_blocked,
+                  mapped_port, RETRO_DEVICE_LIGHTGUN, 0,
+                  RETRO_DEVICE_ID_LIGHTGUN_TRIGGER);
+
+         if (axis >= 0)
+         {
+            unsigned stick =
+               (settings->uints.input_aim_stick[mapped_port] == INPUT_AIM_STICK_RIGHT)
+               ? RETRO_DEVICE_INDEX_ANALOG_RIGHT : RETRO_DEVICE_INDEX_ANALOG_LEFT;
+            ret = 0;
+            if (sec_joypad)
+               ret = input_joypad_analog_axis(ANALOG_DPAD_NONE, 0.0f, 1.0f,
+                     sec_joypad, &joypad_info, stick, (unsigned)axis,
+                     (*input_st->libretro_input_binds[mapped_port]));
+            if (joypad && !ret)
+               ret = input_joypad_analog_axis(ANALOG_DPAD_NONE, 0.0f, 1.0f,
+                     joypad, &joypad_info, stick, (unsigned)axis,
+                     (*input_st->libretro_input_binds[mapped_port]));
+         }
+      }
+
       /* Ignore analog sticks when using Analog to Digital */
       if (     (device == RETRO_DEVICE_ANALOG)
             && (input_analog_dpad_mode != ANALOG_DPAD_NONE))

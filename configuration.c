@@ -6013,6 +6013,7 @@ void config_set_defaults(settings_t *target)
       input_config_set_device((unsigned)i, RETRO_DEVICE_JOYPAD);
       settings->uints.input_mouse_index[i] = (unsigned)i;
       settings->uints.input_keyboard_index[i] = 0;
+      settings->uints.input_aim_stick[i]      = INPUT_AIM_STICK_NONE;
    }
 
    custom_vp->dims   = 0;
@@ -7017,6 +7018,11 @@ static bool config_load_file(const char *path, settings_t *settings)
 
          strlcpy_lit(prefix + _len, "_keyboard_index", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_keyboard_index[i], prefix);
+
+         strlcpy_lit(prefix + _len, "_aim_stick", sizeof(prefix) - _len);
+         CONFIG_GET_INT_BASE(conf, settings, uints.input_aim_stick[i], prefix);
+         if (settings->uints.input_aim_stick[i] >= INPUT_AIM_STICK_LAST)
+            settings->uints.input_aim_stick[i] = INPUT_AIM_STICK_NONE;
 
          strlcpy_lit(prefix + _len, "_joypad_index", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_joypad_index[i], prefix);
@@ -9522,6 +9528,13 @@ bool config_save_file(const char *path)
       else
          config_unset(conf, cfg);
 
+      strlcpy_lit(cfg + _len, "_aim_stick",         sizeof(cfg) - _len);
+      if (   !minimal
+          || settings->uints.input_aim_stick[i] != defaults->uints.input_aim_stick[i])
+         config_set_int(conf, cfg, settings->uints.input_aim_stick[i]);
+      else
+         config_unset(conf, cfg);
+
       /* What the user configured, which is not what the setting holds
        * while a driver restart has put controllers back on their
        * ports. */
@@ -10124,6 +10137,14 @@ int8_t config_save_overrides(enum override_type type,
             strlcpy_lit(cfg + _len, "_keyboard_index", sizeof(cfg) - _len);
             config_set_int(conf, cfg, overrides->uints.input_keyboard_index[i]);
             RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_keyboard_index[i]);
+         }
+
+         if (settings->uints.input_aim_stick[i]
+               != overrides->uints.input_aim_stick[i])
+         {
+            strlcpy_lit(cfg + _len, "_aim_stick", sizeof(cfg) - _len);
+            config_set_int(conf, cfg, overrides->uints.input_aim_stick[i]);
+            RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_aim_stick[i]);
          }
 
          /* The live value is what the user configured, not a port a

@@ -2415,6 +2415,104 @@ static void lane_menu_combo_gate(void)
 #endif
 }
 
+/* Aim From Analog Stick: a port's stick is where its lightgun or
+ * pointer points. */
+static void lane_aim_stick(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   input_driver_state_t *input_st = input_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   struct retro_keybind saved_auto[8];
+   unsigned had = failures;
+   unsigned i;
+   int gx, gy, off, px, py, lx;
+#define AIM_READ() do { \
+      run_loop_frames(1); \
+      gx  = input_driver_state_wrapper(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X); \
+      gy  = input_driver_state_wrapper(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y); \
+      off = input_driver_state_wrapper(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN); \
+      px  = input_driver_state_wrapper(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X); \
+      py  = input_driver_state_wrapper(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y); \
+      lx  = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X); \
+   } while (0)
+
+   if (!joypad_real)
+   {
+      CHECK(false, "aim stick: no joypad driver");
+      return;
+   }
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat     = 0;
+   syn_buttons = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   /* the sticks on axes 0-3 */
+   memcpy(saved_auto, &input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS],
+         sizeof(saved_auto));
+   for (i = 0; i < 4; i++)
+   {
+      input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + 2 * i].joyaxis     = AXIS_POS(i);
+      input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + 2 * i + 1].joyaxis = AXIS_NEG(i);
+   }
+   fast_forward(true);
+   /* the left stick up and left, the right stick right and down */
+   syn_axes[0] = -30000;
+   syn_axes[1] = -12000;
+   syn_axes[2] = 10000;
+   syn_axes[3] = 20000;
+
+   /* off, as before: the stick is not the gun */
+   settings->uints.input_aim_stick[0] = INPUT_AIM_STICK_NONE;
+   AIM_READ();
+   CHECK(gx != 10000 && px != 10000 && lx == 10000,
+         "aim stick: off, the stick shows up as the lightgun or the pointer");
+
+   /* the right stick aims */
+   settings->uints.input_aim_stick[0] = INPUT_AIM_STICK_RIGHT;
+   AIM_READ();
+   if (gx != 10000 || gy != 20000 || off || px != 10000 || py != 20000)
+      printf("[info] aim stick: gun %d %d offscreen %d, pointer %d %d\n",
+            gx, gy, off, px, py);
+   CHECK(gx == 10000 && gy == 20000 && !off,
+         "aim stick: the lightgun is not where the right stick is held");
+   CHECK(px == 10000 && py == 20000,
+         "aim stick: the pointer is not where the right stick is held");
+   CHECK(lx == 10000, "aim stick: the stick itself is no longer read as a stick");
+
+   /* the left stick aims */
+   settings->uints.input_aim_stick[0] = INPUT_AIM_STICK_LEFT;
+   AIM_READ();
+   CHECK(gx == -30000 && gy == -12000 && px == -30000 && py == -12000,
+         "aim stick: the lightgun or pointer is not where the left stick is held");
+
+   /* another port's setting is its own */
+   settings->uints.input_aim_stick[0] = INPUT_AIM_STICK_NONE;
+   settings->uints.input_aim_stick[1] = INPUT_AIM_STICK_RIGHT;
+   AIM_READ();
+   CHECK(gx != 10000, "aim stick: the second port's setting aimed the first port's gun");
+   settings->uints.input_aim_stick[1] = INPUT_AIM_STICK_NONE;
+
+   memset(syn_axes, 0, sizeof(syn_axes));
+   fast_forward(false);
+   run_loop_frames(3);
+   memcpy(&input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS], saved_auto,
+         sizeof(saved_auto));
+   input_st->primary_joypad = joypad_real;
+#undef AIM_READ
+   if (failures == had)
+      printf("[pass] aim stick: off, the stick is only a stick; on, the"
+            " chosen stick is where the port's lightgun and pointer"
+            " point, and is still read as a stick\n");
+#else
+   printf("[skip] aim stick: needs the test drivers\n");
+#endif
+}
+
 /* First-press port assignment: with the setting on no user has a core
  * port until a button is pressed on its controller. */
 static void lane_first_press(void)
@@ -3333,6 +3431,7 @@ int main(int argc, char *argv[])
       lane_network_retropad();
       lane_pointer_capture();
       lane_menu_combo_gate();
+      lane_aim_stick();
       lane_core_view();
       lane_key_events();
       /* last: these restart the drivers */
