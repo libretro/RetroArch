@@ -1066,25 +1066,24 @@ static void gfx_thumbnail_anim_shown(gfx_thumbnail_t *thumbnail,
 
 /* A still's upload, through the same surface ownership the animation
  * frames use: the image the load task decoded is handed to a surface
- * that holds the texture, and the surface releases the image when the
- * upload has been taken. The thumbnail owns the surface, so a reset
- * while an upload is in flight frees it through the completion rather
- * than through a ticket of its own. Returns false when nothing was
- * uploaded. */
+ * that holds the texture as its payload, and the surface frees the
+ * image when the upload has been taken - also when the thumbnail
+ * reset or replaced the surface meanwhile, which is when release()
+ * never runs. */
+static void gfx_thumbnail_still_free(void *payload)
+{
+   struct texture_image *img = (struct texture_image*)payload;
+   image_texture_free(img);
+   free(img);
+}
+
 static void gfx_thumbnail_still_release(void *user, gfx_surface_t *s,
       unsigned slot)
 {
    gfx_thumbnail_t *thumbnail         = (gfx_thumbnail_t*)user;
    gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
-   struct texture_image *img          = (struct texture_image*)s->user_img;
 
    (void)slot;
-   if (img)
-   {
-      image_texture_free(img);
-      free(img);
-      s->user_img = NULL;
-   }
    if (!s->handle)
    {
       if (GFX_THUMB_STATUS_LOAD(&thumbnail->status)
@@ -1144,7 +1143,8 @@ static gfx_surface_t *gfx_thumbnail_anim_surface(gfx_thumbnail_t *thumbnail,
        * a surface with no storage of its own: a still, whose pixels
        * the load task owns until the upload has taken them. */
       s = num_slots
-         ? gfx_surface_new(dims, num_slots, TEXTURE_FILTER_LINEAR,
+         ? gfx_surface_new(dims, num_slots, GFX_SURFACE_PIXFMT_8888,
+               TEXTURE_FILTER_LINEAR,
                gfx_thumbnail_anim_slot_release, thumbnail)
          : gfx_surface_new_static(dims,
                gfx_display_texture_filter());
@@ -1661,22 +1661,34 @@ static void gfx_thumbnail_handle_upload(
 
       if (s)
       {
-         s->user_img = img;
-         r = gfx_surface_submit_external(s, img->pixels,
-               img->supports_rgba, gfx_thumbnail_still_release,
-               thumbnail_tag->thumbnail);
+         gfx_surface_src_t src;
+         gfx_surface_requirements_t req;
+         /* A 10-bit decode for a driver that has since stopped
+          * sampling 10-bit (a reinit between decode and upload) is
+          * narrowed here, where the image is ours to rewrite. */
+         if (     img->pix10
+               && gfx_surface_query_requirements(0, &req)
+               && !(req.formats & GFX_SURFACE_PIXFMT_2101010))
+            image_texture_narrow_10bit(img);
+         src.pixels       = img->pixels;
+         src.payload      = img;
+         src.payload_free = gfx_thumbnail_still_free;
+         src.pixfmt       = img->pix10
+            ? GFX_SURFACE_PIXFMT_2101010 : GFX_SURFACE_PIXFMT_8888;
+         src.rgba         = img->supports_rgba;
+         r = gfx_surface_submit_external(s, &src,
+               gfx_thumbnail_still_release, thumbnail_tag->thumbnail);
       }
       if (r == GFX_SURFACE_SUBMIT_QUEUED)
       {
          /* Dimensions now, so layout does not wait for the handle. */
          thumbnail_tag->thumbnail->dims   = VIDEO_SCALE_PACK(
                img->width, img->height);
-         img = NULL;    /* the surface frees it from its release */
+         img = NULL;    /* the surface's payload now */
          goto open_anim;
       }
       if (r == GFX_SURFACE_SUBMIT_DONE)
       {
-         s->user_img = NULL;
          fade_enabled = true;
          gfx_thumbnail_anim_shown(thumbnail_tag->thumbnail, s);
          goto open_anim;
@@ -1684,8 +1696,6 @@ static void gfx_thumbnail_handle_upload(
       /* No surface, or the driver refused the upload: the thumbnail
        * has nothing to show, and the fade below reports that. The
        * image is still the task's and is freed at the end. */
-      if (s)
-         s->user_img = NULL;
       GFX_THUMB_STATUS_STORE(&thumbnail_tag->thumbnail->status,
             GFX_THUMBNAIL_STATUS_MISSING);
       fade_enabled = true;

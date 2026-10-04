@@ -1694,13 +1694,21 @@ static bool gfx_display_texture_load_ex(struct texture_image *ti,
       if (e)
       {
          enum gfx_surface_submit_result r;
+         gfx_surface_src_t src;
          /* A newer load for the same slot replaces one in flight */
          gfx_display_texture_loads_cancel(item, sizeof(*item));
-         e->item  = item;
-         e->img   = *ti;
-         e->owned = owned;
-         r        = gfx_surface_submit_external(s, ti->pixels,
-               ti->supports_rgba, gfx_display_tex_load_release, e);
+         e->item          = item;
+         e->img           = *ti;
+         e->owned         = owned;
+         /* The entry frees the pixels from its release, which always
+          * runs: a display load's surface is only freed there. */
+         src.pixels       = ti->pixels;
+         src.payload      = NULL;
+         src.payload_free = NULL;
+         src.pixfmt       = GFX_SURFACE_PIXFMT_8888;
+         src.rgba         = ti->supports_rgba;
+         r                = gfx_surface_submit_external(s, &src,
+               gfx_display_tex_load_release, e);
          if (r == GFX_SURFACE_SUBMIT_QUEUED)
          {
             e->next               = gfx_display_tex_loads;

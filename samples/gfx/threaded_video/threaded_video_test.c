@@ -4066,6 +4066,145 @@ static void surftex_remove(void)
    surftex_inner = NULL;
 }
 
+/* External (static) submits: what the surface was handed with a
+ * QUEUED upload is freed at the completion even when the owner freed
+ * the surface first and release() never runs, and nothing reaches the
+ * driver in a layout it was not told about. */
+static unsigned surf_payload_frees;
+
+static void surf_payload_free(void *payload)
+{
+   free(payload);
+   surf_payload_frees++;
+}
+
+static void lane_surface_external(void)
+{
+   unsigned had = failures;
+   gfx_surface_t *s;
+   gfx_surface_src_t src;
+   enum gfx_surface_submit_result r;
+   bool rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA) != 0;
+   size_t n  = (size_t)64 * 48;
+   uint32_t *px;
+   size_t i;
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "external surface lane");
+   if (!real_driver())
+      CHECK(surftex_install(), "external surface lane: no texture back end");
+
+   /* Freed with its upload in flight: release() must not run, the
+    * payload must still be freed - once. */
+   s  = gfx_surface_new_static(VIDEO_SCALE_PACK(64, 48),
+         TEXTURE_FILTER_LINEAR);
+   px = (uint32_t*)malloc(n * sizeof(uint32_t));
+   CHECK(s && px, "external surface lane: allocation failed");
+   if (!s || !px)
+   {
+      free(px);
+      gfx_surface_free(s);
+      surftex_remove();
+      return;
+   }
+   for (i = 0; i < n; i++)
+      px[i] = 0xff000000u | (uint32_t)(i * 13u);
+   surf_releases      = 0;
+   surf_payload_frees = 0;
+   src.pixels         = px;
+   src.payload        = px;
+   src.payload_free   = surf_payload_free;
+   src.pixfmt         = GFX_SURFACE_PIXFMT_8888;
+   src.rgba           = rgba;
+   r = gfx_surface_submit_external(s, &src, surf_release_cb, NULL);
+   CHECK(r == GFX_SURFACE_SUBMIT_QUEUED,
+         "threaded external submit returned %d, not QUEUED", r);
+   if (r != GFX_SURFACE_SUBMIT_QUEUED)
+      free(px);
+   gfx_surface_free(s);
+   run_frames(3);
+   CHECK(surf_releases == 0,
+         "release() ran %u times for a surface freed in flight",
+         surf_releases);
+   CHECK(surf_payload_frees == (r == GFX_SURFACE_SUBMIT_QUEUED ? 1u : 0u),
+         "payload of an upload cancelled in flight freed %u times",
+         surf_payload_frees);
+
+   /* Formats the driver does not sample are refused, and the payload
+    * stays the caller's. FP16 has no texture encoding yet; 2101010
+    * only reaches a driver that takes it. A slotless surface has no
+    * slot for submit_pixels to copy into. */
+   s  = gfx_surface_new_static(VIDEO_SCALE_PACK(64, 48),
+         TEXTURE_FILTER_LINEAR);
+   px = (uint32_t*)calloc(n * 2, sizeof(uint32_t));
+   CHECK(s && px, "external surface lane: second allocation failed");
+   if (s && px)
+   {
+      gfx_surface_requirements_t req;
+      surf_payload_frees = 0;
+      src.pixels       = px;
+      src.payload      = px;
+      src.payload_free = surf_payload_free;
+      src.pixfmt       = GFX_SURFACE_PIXFMT_FP16;
+      r = gfx_surface_submit_external(s, &src, surf_release_cb, NULL);
+      CHECK(r == GFX_SURFACE_SUBMIT_FAILED,
+            "FP16 external submit returned %d, not FAILED", r);
+      CHECK(!s->payload_free && !s->inflight,
+            "refused submit kept a payload or went in flight");
+      src.pixfmt       = GFX_SURFACE_PIXFMT_GX_RGBA8;
+      r = gfx_surface_submit_external(s, &src, surf_release_cb, NULL);
+#ifdef GEKKO
+      (void)r;
+#else
+      CHECK(r == GFX_SURFACE_SUBMIT_FAILED,
+            "GX-tiled external submit returned %d, not FAILED", r);
+#endif
+      memset(&req, 0, sizeof(req));
+      gfx_surface_query_requirements(0, &req);
+      if (!(req.formats & GFX_SURFACE_PIXFMT_2101010))
+      {
+         src.pixfmt    = GFX_SURFACE_PIXFMT_2101010;
+         r = gfx_surface_submit_external(s, &src, surf_release_cb, NULL);
+         CHECK(r == GFX_SURFACE_SUBMIT_FAILED,
+               "2101010 submit to a driver without 10-bit returned %d", r);
+      }
+      CHECK(!(req.formats & GFX_SURFACE_PIXFMT_FP16),
+            "FP16 advertised with no texture path for it");
+      r = gfx_surface_submit_pixels(s, px, rgba);
+      CHECK(r == GFX_SURFACE_SUBMIT_FAILED,
+            "submit_pixels on a slotless surface returned %d", r);
+      CHECK(surf_payload_frees == 0,
+            "a refused submit freed the caller's payload");
+   }
+   free(px);
+   gfx_surface_free(s);
+   run_frames(2);
+
+   /* One slot surface per format bit: sized from the format. */
+   s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 1, GFX_SURFACE_PIXFMT_FP16,
+         TEXTURE_FILTER_LINEAR, NULL, NULL);
+   CHECK(s != NULL, "FP16 slot surface not made");
+   if (s)
+   {
+      memset(s->slots[0], 0, n * GFX_SURFACE_PIXFMT_BPP(s->pixfmt));
+      CHECK(gfx_surface_submit(s, 0, rgba) == GFX_SURFACE_SUBMIT_FAILED,
+            "FP16 slot submit reached a driver with no FP16 path");
+      gfx_surface_free(s);
+   }
+   CHECK(gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 1,
+         GFX_SURFACE_PIXFMT_8888 | GFX_SURFACE_PIXFMT_2101010,
+         TEXTURE_FILTER_LINEAR, NULL, NULL) == NULL,
+         "a surface of two formats at once was made");
+
+   surftex_remove();
+   set_threaded_via_setting(false);
+   run_frames(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] external surface lane (cancelled payload "
+            "freed, unsampled formats refused)\n");
+}
+
 static void lane_surface_update(void)
 {
    unsigned had = failures;
@@ -4091,7 +4230,7 @@ static void lane_surface_update(void)
 #ifdef HAVE_GFX_INSTRUMENT
    gfx_instrument_reset();
 #endif
-   s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 2, TEXTURE_FILTER_LINEAR, surf_release_cb, NULL);
+   s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 2, GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, surf_release_cb, NULL);
    CHECK(s != NULL, "surface allocation failed");
    if (!s)
    {
@@ -4215,7 +4354,7 @@ static void lane_surface_update(void)
    if (!real_driver())
       CHECK(surftex_install(),
             "surface lane, direct: no texture back end installed");
-   s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 1, TEXTURE_FILTER_LINEAR, surf_release_cb, NULL);
+   s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 1, GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, surf_release_cb, NULL);
    CHECK(s != NULL, "direct surface allocation failed");
    if (!s)
    {
@@ -4787,7 +4926,7 @@ static void lane_surface_4k(void)
    run_frames(3);
    expect_wrapper(true, "4k surface lane");
 
-   s = gfx_surface_new(VIDEO_SCALE_PACK(3840, 2160), 2, TEXTURE_FILTER_LINEAR,
+   s = gfx_surface_new(VIDEO_SCALE_PACK(3840, 2160), 2, GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR,
          surf_release_cb, NULL);
    CHECK(s != NULL, "4K surface allocation failed");
    if (!s)
@@ -5586,6 +5725,7 @@ int main(int argc, char *argv[])
       lane_lent_window_paused();
    lane_pacing_flag_follows_wrapper();
    lane_surface_update();
+   lane_surface_external();
    if (real_driver())
       lane_surface_4k();
    lane_overlay_textures();

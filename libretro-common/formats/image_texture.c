@@ -327,20 +327,31 @@ void image_texture_narrow_10bit(struct texture_image *img)
       return;
    px = img->pixels;
    n  = (size_t)img->width * img->height;
-   /* Narrow packed XRGB2101010 (R[29:20] G[19:10] B[9:0]) to 8-bit ARGB8888
-    * (0xAARRGGBB, opaque) in place, for drivers without native 10-bit
-    * texture support. Matches the >> 2 narrowing used elsewhere. */
-   for (i = 0; i < n; i++)
+   /* Narrow packed XRGB2101010 (R[29:20] G[19:10] B[9:0]) to opaque 8-bit
+    * in place, in the order supports_rgba names - so the descriptor is
+    * right as it stands and no caller swizzles after. Matches the >> 2
+    * narrowing used elsewhere. */
+   if (img->supports_rgba)
    {
-      uint32_t p = px[i];
-      uint32_t r = (p >> 20) & 0x3ff;
-      uint32_t g = (p >> 10) & 0x3ff;
-      uint32_t b =  p        & 0x3ff;
-      px[i] = 0xff000000u
-            | ((r >> 2) << 16)
-            | ((g >> 2) <<  8)
-            |  (b >> 2);
+      uint8_t *d = (uint8_t*)px;
+      for (i = 0; i < n; i++, d += 4)
+      {
+         uint32_t p = px[i];
+         d[0] = (uint8_t)(p >> 22);
+         d[1] = (uint8_t)(p >> 12);
+         d[2] = (uint8_t)(p >>  2);
+         d[3] = 0xff;
+      }
    }
+   else
+      for (i = 0; i < n; i++)
+      {
+         uint32_t p = px[i];
+         px[i] = 0xff000000u
+               | ((p >>  6) & 0xff0000u)
+               | ((p >>  4) & 0x00ff00u)
+               | ((p >>  2) & 0x0000ffu);
+      }
    img->pix10 = false;
 }
 

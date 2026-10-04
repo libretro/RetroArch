@@ -167,8 +167,10 @@ void image_texture_free(struct texture_image *img);
 bool image_texture_realize_rgba(struct texture_image *img);
 
 /* Narrow a texture_image whose ->pixels hold packed XRGB2101010 down to
- * 8-bit ARGB8888 in place (and clear ->pix10), for drivers that cannot sample
- * a 10-bit texture. No-op unless ->pix10 is set. */
+ * 8 bits a channel in place (and clear ->pix10), for drivers that cannot
+ * sample a 10-bit texture: ARGB8888 words, or memory-order R,G,B,A when
+ * ->supports_rgba is set, so ->supports_rgba stays true of the result.
+ * No-op unless ->pix10 is set. */
 void image_texture_narrow_10bit(struct texture_image *img);
 
 /* Image transfer */
