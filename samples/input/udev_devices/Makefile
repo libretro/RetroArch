@@ -18,6 +18,9 @@ ifneq ($(SANITIZER),)
    LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 
+# udev is Linux's: elsewhere there is no driver to test, and the
+# targets say so and succeed.
+ifeq ($(shell uname -s 2>/dev/null),Linux)
 all: $(TARGET)
 
 $(TARGET): udev_devices_test.c $(REPO_ROOT)/input/drivers/udev_input.c
@@ -26,6 +29,10 @@ $(TARGET): udev_devices_test.c $(REPO_ROOT)/input/drivers/udev_input.c
 
 check: all
 	./$(TARGET)
+else
+all check:
+	@echo "SKIP udev_devices_test: the udev input driver is Linux only"
+endif
 
 clean:
 	rm -f $(TARGET)
