@@ -31,10 +31,10 @@ static void draw_and_free(int8_t progress, bool alternative,
    widget.task_progress    = progress;
    widget.alternative_look = alternative;
    widget.flags            = flags | DISPWIDG_FLAG_TASK | DISPWIDG_FLAG_SMALL;
-   widget.task_ptr         = &task;
+   widget.task_key         = 1;
 
-   /* Model memory no longer belonging to the retired task. Cleanup
-    * must not write through task_ptr after the finished publication. */
+   /* A widget holds a key, never the task: cleanup leaves the task
+    * alone, retired or not. */
    task.frontend_userdata  = &task;
    dispwidget_st.msg_queue_height = 32;
    dispwidget_st.gfx_widget_fonts.msg_queue.glyph_width = 10;
@@ -45,8 +45,8 @@ static void draw_and_free(int8_t progress, bool alternative,
          "renderer changed task lifetime state");
    CHECK(widget.task_progress == progress, "renderer changed progress");
    gfx_widgets_msg_queue_free(&dispwidget_st, &widget);
-   CHECK(task.frontend_userdata == (finished ? (void*)&task : NULL),
-         "cleanup accessed a retired task or failed to unlink a live task");
+   CHECK(task.frontend_userdata == (void*)&task,
+         "cleanup wrote to the task");
 }
 
 int main(void)

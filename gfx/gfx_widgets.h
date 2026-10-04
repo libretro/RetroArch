@@ -128,8 +128,8 @@ enum disp_widget_flags_enum
    /* Size */
    DISPWIDG_FLAG_SMALL                     = (1 << 11),
    /* Was this widget spawned by a task? Sticky for the lifetime of
-    * the widget; unlike task_ptr, which is a liveness link that may
-    * legitimately be cleared while the widget is still on screen. */
+    * the widget; unlike task_key, which is cleared when the widget is
+    * cut loose from its task while still on screen. */
    DISPWIDG_FLAG_TASK                      = (1 << 12)
 };
 
@@ -174,9 +174,12 @@ typedef struct disp_widget_msg
 {
    char *msg;
    char *msg_new;
-   retro_task_t *task_ptr;
+   /* What a task's updates find this widget by: the value the task
+    * carries in frontend_userdata. Never a pointer to the task. */
+   uintptr_t task_key;
 
    uint32_t task_ident;
+   uint32_t seq;   /* arrival order, across plain and task messages */
    size_t   msg_len;
    unsigned duration;
    unsigned text_height;
@@ -238,6 +241,21 @@ typedef struct dispgfx_widget
    disp_widget_msg_t* msg_queue[MSG_QUEUE_PENDING_MAX];
    retro_atomic_int_t msg_queue_head;
    retro_atomic_int_t msg_queue_tail;
+   /* Task updates on their way to the widgets' owner: the main thread
+    * pushes, the owner takes the lot once a frame. */
+#ifdef RETRO_ATOMIC_HAS_PTR
+   retro_atomic_ptr_t task_cmds;
+#else
+   void *task_cmds;
+#endif
+   retro_atomic_int_t task_cmds_count;
+   /* The owner's: task widgets waiting for room on screen. */
+   disp_widget_msg_t* task_pending[MSG_QUEUE_PENDING_MAX];
+   unsigned task_pending_size;
+   /* The main thread's: stamps messages in the order they are pushed,
+    * and the last key handed to a task. */
+   uint32_t msg_seq;
+   uintptr_t task_key_last;
    disp_widget_msg_t* current_msgs[MSG_QUEUE_ONSCREEN_MAX];
    gfx_widget_fonts_t gfx_widget_fonts; /* ptr alignment */
 
