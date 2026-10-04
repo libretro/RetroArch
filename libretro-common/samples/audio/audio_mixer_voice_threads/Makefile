@@ -2,12 +2,12 @@ TARGET := audio_mixer_voice_threads_test
 
 LIBRETRO_COMM_DIR := ../../..
 
-# A WAV voice is all it needs; the voice locks are what is under test.
+# A WAV voice is all it needs; who owns a voice is what is under test.
+# The test includes audio_mixer.c, to hold a voice the way a caller does.
 DEFINES := -DHAVE_RWAV -DHAVE_THREADS
 
 COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/audio/audio_mix.c \
-	$(LIBRETRO_COMM_DIR)/audio/audio_mixer.c \
 	$(LIBRETRO_COMM_DIR)/audio/conversion/float_to_s16.c \
 	$(LIBRETRO_COMM_DIR)/audio/conversion/s16_to_float.c \
 	$(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.c \
@@ -28,6 +28,7 @@ COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/formats/audio_transfer.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(LIBRETRO_COMM_DIR)/formats/wav/rwav.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
 	$(LIBRETRO_COMM_DIR)/memmap/memalign.c \
