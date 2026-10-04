@@ -23,10 +23,11 @@ S_BOOL(netplay_nat_traversal, NETPLAY_NAT_TRAVERSAL,
 /* The configuration row lives under defined(HAVE_NETWORKING); other passes are
  * unaffected. */
 #if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_NETWORKING))
-S_UINT_EX_NS(netplay_share_digital, NETPLAY_SHARE_DIGITAL,
+S_UINT_EX(netplay_share_digital, NETPLAY_SHARE_DIGITAL,
       "netplay_share_digital",
       DEFAULT_NETPLAY_SHARE_DIGITAL, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, RARCH_NETPLAY_SHARE_DIGITAL_LAST-1, 1, 0, setting_action_ok_uint, setting_get_string_representation_netplay_share_digital, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
-      "Digital Input Sharing")
+      "Digital Input Sharing",
+      "For a player slot shared with other netplay clients: how their buttons combine. 'Share': pressed when anyone presses it. 'Grapple': pressed when an odd number of players press it. 'Vote': pressed when most do. With this and Analog Input Sharing at 'None', a slot of your own is asked for.")
 #endif
 #endif
 /* Descriptor and configuration rows are #if defined(HAVE_NETWORKING); the string
@@ -35,10 +36,11 @@ S_UINT_EX_NS(netplay_share_digital, NETPLAY_SHARE_DIGITAL,
 /* The configuration row lives under defined(HAVE_NETWORKING); other passes are
  * unaffected. */
 #if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_NETWORKING))
-S_UINT_EX_NS(netplay_share_analog, NETPLAY_SHARE_ANALOG,
+S_UINT_EX(netplay_share_analog, NETPLAY_SHARE_ANALOG,
       "netplay_share_analog",
       DEFAULT_NETPLAY_SHARE_ANALOG, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, RARCH_NETPLAY_SHARE_ANALOG_LAST-1, 1, 0, setting_action_ok_uint, setting_get_string_representation_netplay_share_analog, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
-      "Analog Input Sharing")
+      "Analog Input Sharing",
+      "For a player slot shared with other netplay clients: how their analog sticks combine. 'Max': the strongest push wins. 'Average': the mean of them all. With this and Digital Input Sharing at 'None', a slot of your own is asked for.")
 #endif
 #endif
 /* TLS certificate-verification policy for outbound HTTPS.
