@@ -3599,8 +3599,8 @@ bool menu_shader_manager_save_auto_preset(
 #endif
 
 /* "Find a Button by Pressing It", in a port's controls: the menu waits
- * for a button of that port's controller and puts the selection on the
- * button's entry. The devices are read for it here, while the screen
+ * for a button or a stick of that port's controller and puts the
+ * selection on its entry. The devices are read for it here, while the screen
  * is up, and nowhere else. */
 #define MENU_REMAP_FIND_SCREEN       "input_remap_find_listen"
 #define MENU_REMAP_FIND_TIMEOUT_US   5000000
@@ -3609,8 +3609,9 @@ static struct
 {
    retro_time_t deadline;
    unsigned port;
-   int      found;        /* the RetroPad button pressed, or -1 */
-   bool     released;     /* every button has been seen let go */
+   int      found;        /* the button pressed or the stick's
+                           * direction pushed, or -1 */
+   bool     released;     /* every one has been seen let go */
 } menu_remap_find;
 
 void menu_input_remap_find_begin(unsigned port)
@@ -3649,7 +3650,7 @@ void menu_input_remap_find_begin(unsigned port)
 static bool menu_input_remap_find_iterate(char *s, size_t len,
       retro_time_t current_time)
 {
-   uint32_t held = input_driver_user_buttons_bound(menu_remap_find.port);
+   uint32_t held = input_driver_user_controls_bound(menu_remap_find.port);
 
    if (menu_remap_find.found >= 0)
       return held == 0;
@@ -3662,7 +3663,8 @@ static bool menu_input_remap_find_iterate(char *s, size_t len,
    else if (held)
    {
       unsigned id;
-      for (id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
+      /* a button before a stick, when both answer */
+      for (id = 0; id < RARCH_ANALOG_BIND_LIST_END; id++)
          if (held & (1U << id))
             break;
       menu_remap_find.found = (int)id;
@@ -8082,6 +8084,12 @@ static int generic_menu_iterate(
                            == MENU_SETTINGS_INPUT_DESC_KBD_BEGIN + at)
                   {
                      menu_st->selection_ptr = k;
+                     /* and the list scrolled to it: a stick's entry
+                      * is past the first screen of them */
+                     if (     menu_st->driver_ctx
+                           && menu_st->driver_ctx->navigation_set)
+                        menu_st->driver_ctx->navigation_set(
+                              menu_st->userdata, true);
                      break;
                   }
             }

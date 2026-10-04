@@ -9525,12 +9525,17 @@ static void input_key_lane_take(void);
 #define INPUT_FIRST_PRESS_GIVE_UP (1U << 31)
 static bool input_first_press_blocked(void);
 
-/* The RetroPad buttons a user's controller and keys hold right now, as
- * they are bound: before remaps, turbo and the rest. For the menu,
- * which asks while it is waiting for a press and at no other time;
- * the poll does none of this. */
-uint32_t input_driver_user_buttons_bound(unsigned user)
+/* The RetroPad controls a user's controller and keys hold right now, as
+ * they are bound: before remaps, turbo and the rest. One bit each, by
+ * the control's number: the sixteen buttons, then the sticks'
+ * directions (RARCH_ANALOG_LEFT_X_PLUS on), a direction counting once
+ * the stick is pushed half way. For the menu, which asks while it is
+ * waiting for a press and at no other time; the poll does none of
+ * this. */
+uint32_t input_driver_user_controls_bound(unsigned user)
 {
+   unsigned idx;
+   uint32_t held;
    rarch_joypad_info_t joypad_info;
    input_driver_state_t *input_st          = &input_driver_st;
    settings_t *settings                    = config_get_ptr();
@@ -9552,12 +9557,52 @@ uint32_t input_driver_user_buttons_bound(unsigned user)
       joypad_info.joy_idx     = 0;
    joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
 
-   return (uint32_t)input_state_wrap(input_st->current_driver,
+   held = (uint32_t)input_state_wrap(input_st->current_driver,
          input_st->current_data,
          joypad, sec_joypad, &joypad_info,
          (*input_st->libretro_input_binds),
          false, user, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_MASK) & 0xFFFF;
+
+   /* the sticks: the controller's, or keys bound to their directions */
+   for (idx = 0; idx < 2; idx++)
+   {
+      unsigned first = RARCH_ANALOG_LEFT_X_PLUS + (idx * 4);
+      int16_t x      = 0;
+      int16_t y      = 0;
+
+      if (joypad)
+         input_joypad_analog_stick(ANALOG_DPAD_NONE,
+               settings->floats.input_analog_deadzone,
+               settings->floats.input_analog_sensitivity,
+               joypad, &joypad_info, idx,
+               (*input_st->libretro_input_binds[user]), &x, &y);
+      if (!x)
+         x = (int16_t)input_state_wrap(input_st->current_driver,
+               input_st->current_data,
+               joypad, sec_joypad, &joypad_info,
+               (*input_st->libretro_input_binds),
+               false, user, RETRO_DEVICE_ANALOG, idx,
+               RETRO_DEVICE_ID_ANALOG_X);
+      if (!y)
+         y = (int16_t)input_state_wrap(input_st->current_driver,
+               input_st->current_data,
+               joypad, sec_joypad, &joypad_info,
+               (*input_st->libretro_input_binds),
+               false, user, RETRO_DEVICE_ANALOG, idx,
+               RETRO_DEVICE_ID_ANALOG_Y);
+
+      if (x >  0x4000)
+         held |= (1U << first);
+      else if (x < -0x4000)
+         held |= (1U << (first + 1));
+      if (y >  0x4000)
+         held |= (1U << (first + 2));
+      else if (y < -0x4000)
+         held |= (1U << (first + 3));
+   }
+
+   return held;
 }
 
 /* Whether a user's mapping gives the remap work in the poll anything

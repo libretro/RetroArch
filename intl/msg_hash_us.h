@@ -24858,7 +24858,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_FIND,
-   "Press a button on this port's controller, or a key bound to one, and the list below jumps to it."
+   "Press a button or push a stick on this port's controller, or a key bound to one, and the list below jumps to it."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
@@ -32772,7 +32772,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INPUT_REMAP_FIND_PRESS,
-   "Press a button on the controller of Port %u\n(Timeout %u seconds)"
+   "Press a button or push a stick on the controller of Port %u\n(Timeout %u seconds)"
    )
 MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,
