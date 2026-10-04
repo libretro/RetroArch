@@ -1933,6 +1933,9 @@ bool command_load_content(command_t *cmd, const char* arg)
 bool command_close_content(command_t *cmd, const char* arg)
 {
 #ifdef HAVE_MENU
+   /* this quits instead, and there is no unload to wait for */
+   if (should_quit_on_close())
+      return command_event(CMD_EVENT_CLOSE_CONTENT, NULL);
    /* the menu unloads the core on a later frame */
    if (!command_event(CMD_EVENT_CLOSE_CONTENT, NULL))
       return false;

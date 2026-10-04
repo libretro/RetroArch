@@ -1573,8 +1573,14 @@ static void handle_apple_translation_cb(
          apple_translate_free_data(sound_data);
    }
    else
+   {
       RARCH_ERR("[Translation] Apple translation failed: %s\n",
             error ? error : "unknown error");
+      /* as for the HTTP backend: only a notified caller hears of it */
+      if (apple_translate_ctx.callback == handle_translation_response_notify)
+         translation_notify(apple_translate_ctx.userdata, NULL,
+               error ? error : "Apple translation failed.");
+   }
 }
 
 static bool apple_translate(

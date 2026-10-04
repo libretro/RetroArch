@@ -7996,6 +7996,7 @@ void input_driver_refresh_command(input_driver_state_t *input_st,
 void input_driver_init_command(input_driver_state_t *input_st,
       settings_t *settings)
 {
+   bool started                      = true;
 #ifdef HAVE_STDIN_CMD
    bool input_stdin_cmd_enable       = settings->bools.stdin_cmd_enable;
 
@@ -8016,7 +8017,10 @@ void input_driver_init_command(input_driver_state_t *input_st,
       {
          input_st->command[0] = command_stdin_new();
          if (!input_st->command[0])
+         {
             RARCH_ERR("Failed to initialize the stdin command interface.\n");
+            started = false;
+         }
       }
    }
 #endif
@@ -8030,7 +8034,10 @@ void input_driver_init_command(input_driver_state_t *input_st,
          unsigned network_cmd_port  = settings->uints.network_cmd_port;
          if (!(input_st->command[1] = command_network_new(network_cmd_port,
                      settings->arrays.network_cmd_bind_address)))
+         {
             RARCH_ERR("Failed to initialize the network command interface.\n");
+            started = false;
+         }
       }
    }
 #endif
@@ -8062,21 +8069,32 @@ void input_driver_init_command(input_driver_state_t *input_st,
       else if (!(input_st->command[3] = command_mcp_new(
                   (uint16_t)settings->uints.mcp_server_port,
                   settings->arrays.mcp_server_bind_address, token)))
+      {
          RARCH_ERR("[MCP] Failed to start the MCP server.\n");
+         started = false;
+      }
    }
 #endif
 
 #if defined(HAVE_LAKKA)
    if (!(input_st->command[2] = command_uds_new()))
+   {
       RARCH_ERR("Failed to initialize the UDS command interface.\n");
+      started = false;
+   }
 #elif defined(__EMSCRIPTEN__)
    if (!(input_st->command[2] = command_emscripten_new()))
+   {
       RARCH_ERR("Failed to initialize the emscripten command interface.\n");
+      started = false;
+   }
 #endif
 
-   /* after the MCP token is made, if it was */
-   input_driver_command_config(settings, input_st->command_config,
-         sizeof(input_st->command_config));
+   /* after the MCP token is made, if it was; an interface that failed
+    * (its port taken, say) is tried again at the next content load */
+   if (started)
+      input_driver_command_config(settings, input_st->command_config,
+            sizeof(input_st->command_config));
 
 }
 
