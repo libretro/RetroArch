@@ -463,6 +463,27 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./switch_audio_test
           echo "[pass] switch_audio_test (ASan)"
 
+      - name: Build and run wiiu_ax_test (the Wii U AX driver's callback against its writer)
+        shell: bash
+        working-directory: samples/audio/wiiu_ax
+        run: |
+          set -eu
+          # audio/drivers/wiiu_audio.c against the tree's own Wii U
+          # headers, with stand-in AX and OS functions behind them: the
+          # frame callback on one thread and the writer on another keep
+          # the count of buffered frames in one atomic word, and every
+          # frame accepted must be buffered or counted played. TSan is
+          # what sees a field the two share without ordering.
+          make clean && make -j$(nproc) all
+          ./wiiu_ax_test
+          make clean && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./wiiu_ax_test
+          echo "[pass] wiiu_ax_test (ASan)"
+          make clean && make -j$(nproc) all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./wiiu_ax_test
+          echo "[pass] wiiu_ax_test (TSan)"
+          make clean
+
       - name: Build and run xenon360_test (the libxenon driver against a scripted sound queue)
         shell: bash
         working-directory: samples/audio/xenon360
