@@ -143,6 +143,31 @@ static bool property_lock_pinned            = false;
 static unsigned gcd_queue_count             = 0;
 #endif
 
+/* task->flags and task->progress are atomics and take no lock. Only
+ * a backend whose read-modify-write is not atomic keeps the flag
+ * updates under property_lock. */
+#if defined(HAVE_THREADS) && !defined(RETRO_ATOMIC_LOCK_FREE)
+#define TASK_FLAGS_RMW_LOCK()   slock_lock(property_lock)
+#define TASK_FLAGS_RMW_UNLOCK() slock_unlock(property_lock)
+#else
+#define TASK_FLAGS_RMW_LOCK()   ((void)0)
+#define TASK_FLAGS_RMW_UNLOCK() ((void)0)
+#endif
+
+static void task_flags_set(retro_task_t *task, int flags)
+{
+   TASK_FLAGS_RMW_LOCK();
+   retro_atomic_fetch_or_int(&task->flags, flags);
+   TASK_FLAGS_RMW_UNLOCK();
+}
+
+static void task_flags_clear(retro_task_t *task, int flags)
+{
+   TASK_FLAGS_RMW_LOCK();
+   retro_atomic_fetch_and_int(&task->flags, ~flags);
+   TASK_FLAGS_RMW_UNLOCK();
+}
+
 static void task_queue_msg_format(char *s, size_t len, const char *fmt, ...)
 {
    va_list ap;
@@ -153,7 +178,9 @@ static void task_queue_msg_format(char *s, size_t len, const char *fmt, ...)
 }
 
 /* Builds this frame's message from the task's properties and hands it to
- * the frontend.  The message is formatted under property_lock, because a
+ * the frontend.  The flags are read first, so a finished task is seen
+ * with the error it set before finishing.  The message is formatted
+ * under property_lock, because a
  * worker replacing the title frees the old buffer as it goes
  * (task_free_title() then task_set_title()), and then pushed with the
  * lock released: msg_push() reaches the frontend's
@@ -161,14 +188,16 @@ static void task_queue_msg_format(char *s, size_t len, const char *fmt, ...)
  * accessibility enabled, forks to speak - none of which a worker's
  * task_set_progress() should be parked behind.  The push therefore
  * carries the formatted string and nothing the lock guards, so
- * msg_push() must not read the task's title, progress or flags; see
+ * msg_push() must not read the task's title or error; see
  * runloop_task_msg_queue_push(). */
 static void task_queue_push_progress(retro_task_t *task)
 {
    char buf[1024];
    bool have_msg = false;
-   bool finished;
    bool flush    = false;
+   int flg       = retro_atomic_load_acquire_int(&task->flags);
+   bool finished = (flg & RETRO_TASK_FLG_FINISHED) != 0;
+   bool mute     = (flg & RETRO_TASK_FLG_MUTE) != 0;
 
    buf[0] = '\0';
 
@@ -176,13 +205,11 @@ static void task_queue_push_progress(retro_task_t *task)
    slock_lock(property_lock);
 #endif
 
-   finished = (task->flags & RETRO_TASK_FLG_FINISHED) != 0;
-
-   if (task->title && (!((task->flags & RETRO_TASK_FLG_MUTE) > 0)))
+   if (task->title && !mute)
    {
       have_msg = true;
 
-      if ((task->flags & RETRO_TASK_FLG_FINISHED) > 0)
+      if (finished)
       {
          if (task->error)
          {
@@ -195,11 +222,12 @@ static void task_queue_push_progress(retro_task_t *task)
       }
       else
       {
-         if (task->progress >= 0 && task->progress <= 100)
+         int progress = retro_atomic_load_acquire_int(&task->progress);
+         if (progress >= 0 && progress <= 100)
          {
             flush = true;
             task_queue_msg_format(buf, sizeof(buf), "%i%%: %s",
-                  task->progress, task->title);
+                  progress, task->title);
          }
          else
             task_queue_msg_format(buf, sizeof(buf), "%s...", task->title);
@@ -207,11 +235,10 @@ static void task_queue_push_progress(retro_task_t *task)
    }
 
    /* Messages are gated on the title above; the callback is for
-    * code, so it needs only the mute opt-out. It stays under the lock:
-    * it reads the task's progress and finished flag, and it pokes the
-    * display server rather than going through the message path. */
-   if (     task->progress_cb
-         && (!((task->flags & RETRO_TASK_FLG_MUTE) > 0)))
+    * code, so it needs only the mute opt-out. It stays under the lock,
+    * so it may read the title, and it pokes the display server rather
+    * than going through the message path. */
+   if (task->progress_cb && !mute)
       task->progress_cb(task);
 
 #ifdef HAVE_THREADS
@@ -372,8 +399,7 @@ static void retro_task_regular_push_running(retro_task_t *task)
 
 static void retro_task_regular_cancel(void *task)
 {
-   retro_task_t *t = (retro_task_t*)task;
-   t->flags       |= RETRO_TASK_FLG_CANCELLED;
+   task_flags_set((retro_task_t*)task, RETRO_TASK_FLG_CANCELLED);
 }
 
 /* Slow-handler watchdog.  Both are read and written on the thread
@@ -455,7 +481,7 @@ static void retro_task_regular_gather(void)
 
       /* This runner is already on the pumping thread. Retirement
        * publishes finished tasks; publish running tasks here. */
-      if ((task->flags & RETRO_TASK_FLG_FINISHED) > 0)
+      if (retro_atomic_load_acquire_int(&task->flags) & RETRO_TASK_FLG_FINISHED)
          task_queue_put(&tasks_finished, task);
       else
       {
@@ -490,7 +516,7 @@ static void retro_task_regular_reset(void)
    retro_task_t *task = tasks_running.front;
 
    for (; task; task = task->next)
-      task->flags |= RETRO_TASK_FLG_CANCELLED;
+      task_flags_set(task, RETRO_TASK_FLG_CANCELLED);
 }
 
 static bool retro_task_regular_init(void) { return true; }
@@ -637,16 +663,7 @@ static void retro_task_threaded_cancel(void *task)
    {
       if (t == task)
       {
-        /* Same rule as retro_task_threaded_reset below: task->flags
-         * is guarded by property_lock - the worker's handler reads
-         * it through task_get_flags mid-task - and |= is a
-         * read-modify-write, so setting it under running_lock alone
-         * both races the read and can lose a concurrent
-         * task_set_flags update.  The nesting argument there covers
-         * this site too. */
-        slock_lock(property_lock);
-        t->flags |= RETRO_TASK_FLG_CANCELLED;
-        slock_unlock(property_lock);
+        task_flags_set(t, RETRO_TASK_FLG_CANCELLED);
         break;
       }
    }
@@ -848,19 +865,8 @@ static void retro_task_threaded_reset(void)
    retro_task_t *task = NULL;
 
    slock_lock(running_lock);
-   /* task->flags is guarded by property_lock, not running_lock: the
-    * worker reads it there to decide whether a task has finished.
-    * Setting it under running_lock alone left the two using
-    * different locks for the same field, which is a data race - one
-    * TSan reports when a reset lands while the worker is mid-task.
-    *
-    * Nesting is safe here: property_lock is never held while any
-    * other lock is taken anywhere in this file, so it can only ever
-    * be an inner lock and no cycle is possible. */
-   slock_lock(property_lock);
    for (task = tasks_running.front; task; task = task->next)
-      task->flags |= RETRO_TASK_FLG_CANCELLED;
-   slock_unlock(property_lock);
+      task_flags_set(task, RETRO_TASK_FLG_CANCELLED);
    slock_unlock(running_lock);
 }
 
@@ -952,16 +958,11 @@ void task_queue_set_prefer_fast_cores(bool prefer)
 }
 
 /* Main-thread tasks are run by retro_task_threaded_gather(), never by
- * the worker.  The bit is set before the push and never changes, but
- * it shares its byte with the bits task_set_flags() writes under
- * property_lock, so it is read there too. */
+ * the worker.  The bit is set before the push and never changes. */
 static bool task_is_main_thread_task(retro_task_t *task)
 {
-   bool is_main;
-   slock_lock(property_lock);
-   is_main = (task->flags & RETRO_TASK_FLG_MAIN_THREAD) != 0;
-   slock_unlock(property_lock);
-   return is_main;
+   return (retro_atomic_load_acquire_int(&task->flags)
+         & RETRO_TASK_FLG_MAIN_THREAD) != 0;
 }
 
 /* After a handler returned: a finished task moves to the finished
@@ -972,9 +973,8 @@ static void retro_task_threaded_settle(retro_task_t *task)
 {
    bool finished;
 
-   slock_lock(property_lock);
-   finished = ((task->flags & RETRO_TASK_FLG_FINISHED) > 0) ? true : false;
-   slock_unlock(property_lock);
+   finished = (retro_atomic_load_acquire_int(&task->flags)
+         & RETRO_TASK_FLG_FINISHED) != 0;
 
    if (!finished)
    {
@@ -1335,9 +1335,8 @@ static void retro_task_threaded_deinit(void)
          retro_task_t *task = worker_self->task;
          bool detachable;
 
-         slock_lock(property_lock);
-         detachable = (task->flags & RETRO_TASK_FLG_DETACHABLE) != 0;
-         slock_unlock(property_lock);
+         detachable = (retro_atomic_load_acquire_int(&task->flags)
+               & RETRO_TASK_FLG_DETACHABLE) != 0;
 
          if (detachable && retro_atomic_cas_int(&worker_self->state,
                   TASK_WORKER_IN_HANDLER, TASK_WORKER_ORPHANED))
@@ -1417,9 +1416,8 @@ static void gcd_worker(retro_task_t *task)
 
    task->handler(task);
 
-   slock_lock(property_lock);
-   finished = ((task->flags & RETRO_TASK_FLG_FINISHED) > 0) ? true : false;
-   slock_unlock(property_lock);
+   finished = (retro_atomic_load_acquire_int(&task->flags)
+         & RETRO_TASK_FLG_FINISHED) != 0;
 
    if (!finished)
       dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
@@ -1782,13 +1780,16 @@ bool task_get_progress_snapshot(const retro_task_t *task,
    bool success = true;
    size_t len;
 
-   snapshot->title = NULL;
-   snapshot->error = NULL;
+   retro_task_t *t = (retro_task_t*)task;
+
+   snapshot->title    = NULL;
+   snapshot->error    = NULL;
+   /* before the strings: see the header */
+   snapshot->flags    = (uint8_t)retro_atomic_load_acquire_int(&t->flags);
+   snapshot->progress = (int8_t)retro_atomic_load_acquire_int(&t->progress);
 #ifdef HAVE_THREADS
    slock_lock(property_lock);
 #endif
-   snapshot->flags    = task->flags;
-   snapshot->progress = task->progress;
    if (task->title)
    {
       len = strlen(task->title) + 1;
@@ -1831,13 +1832,7 @@ void task_set_error(retro_task_t *task, char *err)
 
 void task_set_progress(retro_task_t *task, int8_t progress)
 {
-#ifdef HAVE_THREADS
-   slock_lock(property_lock);
-#endif
-   task->progress = progress;
-#ifdef HAVE_THREADS
-   slock_unlock(property_lock);
-#endif
+   retro_atomic_store_release_int(&task->progress, progress);
 }
 
 void task_set_title(retro_task_t *task, char *title)
@@ -1905,29 +1900,15 @@ void* task_get_data(retro_task_t *task)
 
 void task_set_flags(retro_task_t *task, uint8_t flags, bool set)
 {
-#ifdef HAVE_THREADS
-   slock_lock(property_lock);
-#endif
    if (set)
-      task->flags |=  (flags);
+      task_flags_set(task, flags);
    else
-      task->flags &= ~(flags);
-#ifdef HAVE_THREADS
-   slock_unlock(property_lock);
-#endif
+      task_flags_clear(task, flags);
 }
 
 uint8_t task_get_flags(retro_task_t *task)
 {
-   uint8_t _flags = 0;
-#ifdef HAVE_THREADS
-   slock_lock(property_lock);
-#endif
-   _flags = task->flags;
-#ifdef HAVE_THREADS
-   slock_unlock(property_lock);
-#endif
-   return _flags;
+   return (uint8_t)retro_atomic_load_acquire_int(&task->flags);
 }
 
 char* task_get_error(retro_task_t *task)
@@ -1945,17 +1926,7 @@ char* task_get_error(retro_task_t *task)
 
 int8_t task_get_progress(retro_task_t *task)
 {
-   int8_t progress = 0;
-
-#ifdef HAVE_THREADS
-   slock_lock(property_lock);
-#endif
-   progress = task->progress;
-#ifdef HAVE_THREADS
-   slock_unlock(property_lock);
-#endif
-
-   return progress;
+   return (int8_t)retro_atomic_load_acquire_int(&task->progress);
 }
 
 char* task_get_title(retro_task_t *task)
@@ -1998,12 +1969,12 @@ retro_task_t *task_init(void)
    task->handler           = NULL;
    task->callback          = NULL;
    task->cleanup           = NULL;
-   task->flags             = 0;
+   retro_atomic_int_init(&task->flags, 0);
    task->task_data         = NULL;
    task->user_data         = NULL;
    task->state             = NULL;
    task->error             = NULL;
-   task->progress          = 0;
+   retro_atomic_int_init(&task->progress, 0);
    task->progress_cb       = NULL;
    task->title             = NULL;
    task->type              = TASK_TYPE_NONE;

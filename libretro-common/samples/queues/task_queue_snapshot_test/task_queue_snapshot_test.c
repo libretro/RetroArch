@@ -297,6 +297,83 @@ static void test_report_many(void)
    task_queue_deinit();
 }
 
+/* Flags and progress take no lock: threads flipping their own bit
+ * must not lose each other's update, and a snapshot that shows a task
+ * finished must show the error it set first. */
+#define FLAG_ROUNDS 20000
+#define DONE_TASKS  2000
+static retro_task_t flag_task;
+static retro_task_t done_tasks[DONE_TASKS];
+
+static void flip_flag(void *bit)
+{
+   unsigned i;
+   uint8_t flag = *(const uint8_t*)bit;
+   for (i = 0; i < FLAG_ROUNDS; i++)
+   {
+      task_set_flags(&flag_task, flag, false);
+      task_set_flags(&flag_task, flag, true);
+   }
+}
+
+static void finish_with_error(void *unused)
+{
+   unsigned i;
+   (void)unused;
+   for (i = 0; i < DONE_TASKS; i++)
+   {
+      task_set_error(&done_tasks[i], copy_string("failed"));
+      task_set_flags(&done_tasks[i], RETRO_TASK_FLG_FINISHED, true);
+   }
+}
+
+static void test_scalar_publication(void)
+{
+   static uint8_t bit_a = RETRO_TASK_FLG_MUTE;
+   static uint8_t bit_b = RETRO_TASK_FLG_ALTERNATIVE_LOOK;
+   task_progress_snapshot_t snapshot;
+   sthread_t *a, *b;
+   unsigned i;
+
+   task_queue_init(true, NULL);
+   task_set_flags(&flag_task, RETRO_TASK_FLG_CANCELLED, true);
+   a = sthread_create(flip_flag, &bit_a);
+   b = sthread_create(flip_flag, &bit_b);
+   assert(a && b);
+   for (i = 0; i < FLAG_ROUNDS; i++)
+      assert(task_get_flags(&flag_task) & RETRO_TASK_FLG_CANCELLED);
+   sthread_join(a);
+   sthread_join(b);
+   if (task_get_flags(&flag_task) != (RETRO_TASK_FLG_CANCELLED
+            | RETRO_TASK_FLG_MUTE | RETRO_TASK_FLG_ALTERNATIVE_LOOK))
+   {
+      printf("FAIL: a concurrent flag update was lost (0x%x)\n",
+            (unsigned)task_get_flags(&flag_task));
+      exit(1);
+   }
+
+   a = sthread_create(finish_with_error, NULL);
+   assert(a);
+   for (i = 0; i < DONE_TASKS; )
+   {
+      assert(task_get_progress_snapshot(&done_tasks[i], &snapshot));
+      if (snapshot.flags & RETRO_TASK_FLG_FINISHED)
+      {
+         if (!snapshot.error)
+         {
+            printf("FAIL: a finished task was seen without its error\n");
+            exit(1);
+         }
+         i++;
+      }
+      free_snapshot(&snapshot);
+   }
+   sthread_join(a);
+   for (i = 0; i < DONE_TASKS; i++)
+      task_free_error(&done_tasks[i]);
+   task_queue_deinit();
+}
+
 int main(void)
 {
    task_progress_snapshot_t snapshot;
@@ -379,6 +456,7 @@ int main(void)
    test_suppressed_completion(true);
    test_report_outside_running_lock();
    test_report_many();
+   test_scalar_publication();
    puts("task progress snapshot tests passed");
    return 0;
 }

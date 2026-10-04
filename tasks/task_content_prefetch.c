@@ -121,13 +121,14 @@ static void content_prefetch_task_progress(retro_task_t *task)
 {
    struct content_prefetch_state *st =
          (struct content_prefetch_state*)task->state;
-   if (     st && st->progress_cb && task->progress >= 0
-         && task->progress != st->reported)
+   int progress = task_get_progress(task);
+   if (     st && st->progress_cb && progress >= 0
+         && progress != st->reported)
    {
       /* The queue pushes every pump; the contract is per change.
        * 'reported' is only touched on the pumping thread. */
-      st->reported = task->progress;
-      st->progress_cb(st->ud, task->progress);
+      st->reported = progress;
+      st->progress_cb(st->ud, progress);
    }
 }
 

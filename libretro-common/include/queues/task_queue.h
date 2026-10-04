@@ -29,6 +29,7 @@
 
 #include <retro_common.h>
 #include <retro_common_api.h>
+#include <retro_atomic.h>
 
 #include <libretro.h>
 
@@ -318,11 +319,12 @@ struct retro_task
     * -1 means the task is indefinite or not measured,
     * 0-100 is a percentage of the task's completion.
     *
-    * Set by the caller.
+    * Set by the caller. Atomic: once the task is pushed, use
+    * task_set_progress / task_get_progress.
     *
     * @see progress_cb
     */
-   int8_t progress;
+   retro_atomic_int_t progress;
 
    /**
     * A unique identifier assigned to a task when it's created.
@@ -337,7 +339,11 @@ struct retro_task
    enum task_type type;
    enum task_style style;
 
-   uint8_t flags;
+   /**
+    * \c retro_task_flags. Atomic: once the task is pushed, use
+    * task_set_flags / task_get_flags.
+    */
+   retro_atomic_int_t flags;
 };
 
 /**
@@ -477,7 +483,9 @@ typedef struct task_progress_snapshot
    int8_t progress;
 } task_progress_snapshot_t;
 
-/* Copies display properties under their lock. The caller must keep the
+/* Copies display properties, the strings under their lock. The flags
+ * are read first, so a snapshot that shows a finished task has the
+ * error that task set before finishing. The caller must keep the
  * task alive during this call and free the snapshot's title and error.
  * On allocation failure returns false with both strings set to NULL;
  * flags and progress remain valid. */

@@ -270,7 +270,7 @@ task_finished:
       }
       else
       {
-         bool mute      = ((task->flags & RETRO_TASK_FLG_MUTE) > 0);
+         bool mute      = ((task_get_flags(task) & RETRO_TASK_FLG_MUTE) > 0);
          int  status    = http->response->status;
          task_set_data(task, http->response);
          http->response = NULL;

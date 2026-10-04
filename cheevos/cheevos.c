@@ -399,12 +399,15 @@ static void rcheevos_retry_achievement_popup(retro_task_t* task)
 {
    struct rcheevos_retry_achievement_info_t* info = (struct rcheevos_retry_achievement_info_t*)task->user_data;
 
-   if (task->progress <= 4 && !path_is_valid(info->badge_fullpath))
+   int retry = task_get_progress(task);
+
+   if (retry <= 4 && !path_is_valid(info->badge_fullpath))
    {
       /* second retry in 200ms, third is 400ms, fourth in 800ms. if not available after 1500ms
        * (100+200+400+800), then the callback shows the placeholder. */
-      task->progress <<= 1;
-      task->when = cpu_features_get_time_usec() + 100000 * task->progress; /* first retry in 100ms */
+      retry <<= 1;
+      task_set_progress(task, (int8_t)retry);
+      task->when = cpu_features_get_time_usec() + 100000 * retry; /* first retry in 100ms */
       return;
    }
 
@@ -1625,7 +1628,8 @@ void rcheevos_download_next_badge(retro_task_t* task)
     *           1 = locked images for achievements player hasn't earned
     *           2 = unlocked images for achievements player has earned
     */
-   const int bucket = (task->progress == 2) ? RC_CLIENT_ACHIEVEMENT_BUCKET_UNLOCKED : RC_CLIENT_ACHIEVEMENT_BUCKET_LOCKED;
+   const int pass   = task_get_progress(task);
+   const int bucket = (pass == 2) ? RC_CLIENT_ACHIEVEMENT_BUCKET_UNLOCKED : RC_CLIENT_ACHIEVEMENT_BUCKET_LOCKED;
    const rc_client_achievement_t* first_locked_achievement =
       rc_client_get_next_achievement_info(rcheevos_locals.client,
       (const rc_client_achievement_t*)task->user_data, bucket);
@@ -1634,7 +1638,7 @@ void rcheevos_download_next_badge(retro_task_t* task)
    {
       bool result;
 
-      if (task->progress == 1)
+      if (pass == 1)
       {
          char locked_name[24];
          snprintf(locked_name, sizeof(locked_name), "%s_lock", first_locked_achievement->badge_name);
@@ -1654,7 +1658,7 @@ void rcheevos_download_next_badge(retro_task_t* task)
 
    if (!first_locked_achievement)
    {
-      if (task->progress == 2 || !rcheevos_is_game_loaded())
+      if (pass == 2 || !rcheevos_is_game_loaded())
       {
          /* mark task as complete so it will get cleaned up */
          task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
@@ -1662,7 +1666,7 @@ void rcheevos_download_next_badge(retro_task_t* task)
       }
 
       task->user_data = NULL; /* restart list */
-      task->progress++;
+      task_set_progress(task, (int8_t)(pass + 1));
    }
 
    /* wait 10 seconds, then download the next badge */

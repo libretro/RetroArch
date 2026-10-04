@@ -1785,7 +1785,7 @@ static void task_cloud_sync_task_handler(retro_task_t *task)
       return;
    }
 
-   if (task->flags & RETRO_TASK_FLG_FINISHED)
+   if (task_get_flags(task) & RETRO_TASK_FLG_FINISHED)
        goto task_finished;
 
    switch (task_cloud_sync_phase_get(sync_state))

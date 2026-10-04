@@ -43,8 +43,8 @@ void task_window_progress_cb(retro_task_t *task)
 {
 #ifdef RARCH_INTERNAL
    if (task)
-      video_display_server_set_window_progress(task->progress,
-            ((task->flags & RETRO_TASK_FLG_FINISHED) > 0));
+      video_display_server_set_window_progress(task_get_progress(task),
+            ((task_get_flags(task) & RETRO_TASK_FLG_FINISHED) > 0));
 #endif
 }
 

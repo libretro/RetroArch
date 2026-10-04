@@ -26,9 +26,10 @@ video_thread_loop                2
 audio_thread_loop                0
 # Taken once it has something to retire; returns on two atomic loads
 # before any of them on a frame with nothing in flight.  The progress
-# walk also counts the due main-thread tasks; picking and settling one
-# (inlined here) takes the lock only when such a task is due.
-retro_task_threaded_gather       8
+# walk also counts the due main-thread tasks; picking one (inlined
+# here) takes the lock only when such a task is due, and settling it
+# reads the task's flags, which are atomic.
+retro_task_threaded_gather       6
 # The pool lock guards the queue only: one take per item to dequeue it.
 # Finishing an item retires it on the outstanding count and wakes
 # tpool_wait() through an eventcount, without the lock.
