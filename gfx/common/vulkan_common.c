@@ -26,6 +26,7 @@
 #endif
 
 #include "vulkan_common.h"
+#include "vulkan_memory_type.h"
 #include "../include/vulkan/vulkan.h"
 #include "vksym.h"
 #include <libretro_vulkan.h>
@@ -934,6 +935,19 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          &vk->context.gpu_properties);
    vkGetPhysicalDeviceMemoryProperties(vk->context.gpu,
          &vk->context.memory_properties);
+
+   {
+      /* Said once, so a log shows where the per-frame buffers live. */
+      uint32_t types[2];
+      const VkPhysicalDeviceMemoryProperties *mp = &vk->context.memory_properties;
+      if (vulkan_cpu_write_memory_types(mp, ~0u,
+               vulkan_find_memory_type(mp, ~0u,
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                  | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), types) == 2)
+         RARCH_LOG("[Vulkan] CPU-written buffers in device-local host-visible memory (type %u, %u MB heap).\n",
+               (unsigned)types[0],
+               (unsigned)(mp->memoryHeaps[mp->memoryTypes[types[0]].heapIndex].size >> 20));
+   }
 
 #ifdef VULKAN_EMULATE_MAILBOX
 #if defined(_WIN32)
@@ -2125,6 +2139,30 @@ uint32_t vulkan_find_memory_type(
 
    RARCH_ERR("[Vulkan] Failed to find valid memory type. This should never happen.");
    abort();
+}
+
+VkResult vulkan_allocate_cpu_write_memory(VkDevice device,
+      const VkPhysicalDeviceMemoryProperties *mem_props,
+      uint32_t type_bits, const VkMemoryAllocateInfo *alloc,
+      VkDeviceMemory *memory)
+{
+   uint32_t types[2];
+   unsigned i;
+   VkResult res = VK_ERROR_OUT_OF_DEVICE_MEMORY;
+   VkMemoryAllocateInfo info = *alloc;
+   const unsigned n = vulkan_cpu_write_memory_types(mem_props, type_bits,
+         alloc->memoryTypeIndex, types);
+
+   /* The device-local type first where it is the whole of video memory;
+    * a refusal there falls through to the caller's own choice. */
+   for (i = 0; i < n; i++)
+   {
+      info.memoryTypeIndex = types[i];
+      if ((res = vkAllocateMemory(device, &info, NULL, memory)) == VK_SUCCESS)
+         return res;
+   }
+   *memory = VK_NULL_HANDLE;
+   return res;
 }
 
 uint32_t vulkan_find_memory_type_fallback(

@@ -716,7 +716,9 @@ static struct vk_buffer vulkan_create_buffer(
          mem_reqs.memoryTypeBits,
            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-   res = vkAllocateMemory(context->device, &alloc, NULL, &buffer.memory);
+   res = vulkan_allocate_cpu_write_memory(context->device,
+         &context->memory_properties, mem_reqs.memoryTypeBits,
+         &alloc, &buffer.memory);
    if (res != VK_SUCCESS)
    {
       RARCH_ERR("[Vulkan] Failed to allocate buffer memory (VkResult: %d).\n", res);
@@ -2884,7 +2886,9 @@ static void vulkan_init_effect_vbo(vk_t *vk,
          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
-   res = vkAllocateMemory(device, &alloc, NULL, &vk->effect_vbo.memory);
+   res = vulkan_allocate_cpu_write_memory(device,
+         &vk->context->memory_properties, mem_reqs.memoryTypeBits,
+         &alloc, &vk->effect_vbo.memory);
    if (res != VK_SUCCESS)
    {
       vkDestroyBuffer(device, vk->effect_vbo.buffer, NULL);
@@ -3017,7 +3021,9 @@ static int vulkan_mesh_slot(vk_t *vk, const gfx_display_mesh_t *mesh)
            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-   res = vkAllocateMemory(device, &alloc, NULL, &vk->meshes[slot].memory);
+   res = vulkan_allocate_cpu_write_memory(device,
+         &vk->context->memory_properties, mem_reqs.memoryTypeBits,
+         &alloc, &vk->meshes[slot].memory);
    if (res != VK_SUCCESS)
    {
       vkDestroyBuffer(device, vk->meshes[slot].buffer, NULL);
@@ -6013,7 +6019,9 @@ static void vulkan_init_quad_ibo(vk_t *vk, unsigned max_quads)
          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
-   res = vkAllocateMemory(device, &alloc, NULL, &vk->quad_ibo.memory);
+   res = vulkan_allocate_cpu_write_memory(device,
+         &vk->context->memory_properties, mem_reqs.memoryTypeBits,
+         &alloc, &vk->quad_ibo.memory);
    if (res != VK_SUCCESS)
    {
       RARCH_ERR("[Vulkan] Failed to allocate quad IBO memory (VkResult: %d).\n", res);

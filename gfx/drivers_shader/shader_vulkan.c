@@ -2802,7 +2802,8 @@ static bool slang_buffer_init(struct slang_buffer *buf,
          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
          | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-   if (vkAllocateMemory(device, &alloc, NULL, &buf->memory) != VK_SUCCESS)
+   if (vulkan_allocate_cpu_write_memory(device, mem_props,
+            mem_reqs.memoryTypeBits, &alloc, &buf->memory) != VK_SUCCESS)
    {
       buf->memory = VK_NULL_HANDLE;
       return false;
