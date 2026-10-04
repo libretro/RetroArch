@@ -68,6 +68,7 @@
 #include "../../../content.h"
 #include "../../../input/input_driver.h"
 #include "../../../runahead.h"
+#include "../../../state_manager.h"
 #ifdef HAVE_NETWORKING
 #include "../../../network/netplay/netplay.h"
 #endif
@@ -507,6 +508,54 @@ static void lane_contentless_names(void)
    remove(game);
    if (failures == had)
       fprintf(stderr, "[pass] contentless-names lane\n");
+}
+#endif
+
+#ifdef HAVE_REWIND
+/* The rewind buffer is one full serialize of the core: a load leaves
+ * it for the frame after, which takes it before the core runs. */
+static void lane_rewind_after_load(void)
+{
+   struct load_frame log[LOAD_FRAMES];
+   settings_t *settings        = config_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   bool rewind_enable          = settings->bools.rewind_enable;
+   unsigned n, i;
+   unsigned had = failures;
+
+   configuration_set_bool(settings, settings->bools.rewind_enable, true);
+   open_menu();
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the load was not started");
+   for (n = 0; n < LOAD_FRAMES && runloop_is_content_switching(); n++)
+   {
+      runloop_iterate();
+      task_queue_check();
+      CHECK(!(runloop_st->rewind_st.flags
+               & STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED),
+            "frame %u of the load set up the rewind buffer", n);
+   }
+   CHECK(!runloop_is_content_switching() && core_is_up(),
+         "the load did not finish");
+   CHECK(runloop_st->rewind_st.flags & STATE_MGR_REWIND_ST_FLAG_INIT_PENDING,
+         "the load did not leave the rewind buffer for the frame after");
+   for (i = 0; i < 2 && !(runloop_st->rewind_st.flags
+            & STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED); i++)
+   {
+      runloop_iterate();
+      task_queue_check();
+   }
+   CHECK(i == 1,
+         "the rewind buffer was set up %u frames after the load, not on "
+         "the first", i);
+   CHECK(!(runloop_st->rewind_st.flags & STATE_MGR_REWIND_ST_FLAG_INIT_PENDING),
+         "the rewind buffer is still pending after it was set up");
+
+   command_event(CMD_EVENT_REWIND_DEINIT, NULL);
+   configuration_set_bool(settings, settings->bools.rewind_enable,
+         rewind_enable);
+   if (failures == had)
+      fprintf(stderr, "[pass] rewind-after-load lane\n");
 }
 #endif
 
@@ -2062,6 +2111,9 @@ int main(int argc, char *argv[])
    lane_probe_cached();
 #endif
    lane_one_at_a_time();
+#ifdef HAVE_REWIND
+   lane_rewind_after_load();
+#endif
    lane_reinit_deferred();
    lane_fallback();
    lane_fallback_threaded();

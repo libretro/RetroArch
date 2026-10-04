@@ -9074,7 +9074,9 @@ bool retroarch_main_init_drivers(bool staged,
    command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
 
 #ifdef HAVE_REWIND
-   command_event(CMD_EVENT_REWIND_INIT, NULL);
+   /* Set up on the frame after the load, before the core runs: the
+    * buffer is one full serialize of the core */
+   runloop_st->rewind_st.flags |= STATE_MGR_REWIND_ST_FLAG_INIT_PENDING;
 #endif
 
    if (*rec_st->path)

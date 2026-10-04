@@ -767,9 +767,11 @@ void state_manager_event_init(
    core_info_t *core_info = NULL;
    void *state            = NULL;
 
-   if (  !rewind_st
-       || (rewind_st->flags & STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED)
-       || rewind_st->state)
+   if (!rewind_st)
+      return;
+   rewind_st->flags &= ~STATE_MGR_REWIND_ST_FLAG_INIT_PENDING;
+   if (     (rewind_st->flags & STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED)
+         || rewind_st->state)
       return;
 
    rewind_st->size               = 0;
@@ -862,6 +864,7 @@ void state_manager_event_deinit(
                         | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED
                         | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED
                         | STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED
+                        | STATE_MGR_REWIND_ST_FLAG_INIT_PENDING
                         );
 
    /* Restore regular (non-rewind) core audio

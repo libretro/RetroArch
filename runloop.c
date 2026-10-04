@@ -7029,6 +7029,17 @@ static void runloop_idle_wait(void)
       retro_sleep(10);
 }
 
+#ifdef HAVE_REWIND
+/* The rewind buffer a load asked for: one full serialize of the core,
+ * taken on the frame after the load, before the core runs. */
+static VIDEO_NOINLINE void runloop_rewind_init_pending(
+      runloop_state_t *runloop_st)
+{
+   runloop_st->rewind_st.flags &= ~STATE_MGR_REWIND_ST_FLAG_INIT_PENDING;
+   command_event(CMD_EVENT_REWIND_INIT, NULL);
+}
+#endif
+
 static enum runloop_state_enum runloop_check_state(
       input_driver_state_t *input_st,
       audio_driver_state_t *audio_st,
@@ -8202,6 +8213,9 @@ static enum runloop_state_enum runloop_check_state(
             cbs->poll_cb();
             return RUNLOOP_STATE_PAUSE;
          }
+
+         if (runloop_st->rewind_st.flags & STATE_MGR_REWIND_ST_FLAG_INIT_PENDING)
+            runloop_rewind_init_pending(runloop_st);
 
          rewinding           = state_manager_check_rewind(
                &runloop_st->rewind_st,
