@@ -82,6 +82,22 @@ jobs:
           ccache -M 500M
           ccache -z
 
+      - name: Settings lists have room for what they are given
+        shell: bash
+        run: |
+          set -eu
+          # configuration.c builds each list of settings into an array
+          # of a fixed size. One setting too many for its list wrote
+          # past the end of the array, and RetroArch died of heap
+          # corruption at startup: two per-port string settings did it
+          # to the string list. The lists now refuse what they have no
+          # room for; this counts, in the preprocessed source and for
+          # each build profile, what every list is given against the
+          # size it is allocated with, so that the next one is found
+          # here.
+          timeout 300 python3 tools/settings_capacity_check.py
+          echo "[pass] settings_capacity_check"
+
       - name: Build and run pipeline_migration_test (ASan + UBSan)
         shell: bash
         working-directory: samples/settings/pipeline_migration

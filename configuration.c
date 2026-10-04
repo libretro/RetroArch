@@ -116,7 +116,9 @@ void android_app_set_window_settings(bool notch_write_over,
 #define SETTINGS_UINT_COUNT_MAX   320
 #define SETTINGS_FLOAT_COUNT_MAX  128
 #define SETTINGS_SIZE_COUNT_MAX     8
-#define SETTINGS_ARRAY_COUNT_MAX  (96 + MAX_USERS)
+/* (three a user: the reserved device, and the keyboard and the mouse
+ * a port is pinned to) */
+#define SETTINGS_ARRAY_COUNT_MAX  (96 + 3 * MAX_USERS)
 #define SETTINGS_PATH_COUNT_MAX   128
 
 enum video_driver_enum
@@ -951,18 +953,41 @@ struct config_path_setting
    uint8_t flags;
 };
 
+static void config_settings_list_full(const char *key, unsigned cap)
+{
+   RARCH_ERR("[Config] No room for the setting \"%s\": its list holds %u."
+         " It is neither loaded nor saved. Raise the list's"
+         " SETTINGS_*_COUNT_MAX in configuration.c.\n", key, cap);
+}
+
+/* A setting is added to the list being made, which holds @cap of
+ * them (the SETTINGS_*_COUNT_MAX the list was allocated with).
+ *
+ * The lists are of a fixed size, and adding a setting used to write
+ * to the next place whether there was one or not: one setting too
+ * many for its list wrote past the end of the allocation, and the
+ * process died of heap corruption at the next allocation - at
+ * startup, on every run. A setting there is no room for is now left
+ * out and said so, loudly; tools/settings_capacity_check.py, in CI,
+ * counts what each list is given against what it holds, so that it
+ * is found before anything is run. */
 #define GENERAL_SETTING(key, configval, default_enable, default_setting, type, handle_setting) \
 { \
-   tmp[count].ident      = key; \
-   tmp[count].ptr        = configval; \
-   if (default_enable) \
+   if (count < cap) \
    { \
-      tmp[count].flags |= CFG_BOOL_FLG_DEF_ENABLE; \
-      tmp[count].def    = default_setting; \
+      tmp[count].ident      = key; \
+      tmp[count].ptr        = configval; \
+      if (default_enable) \
+      { \
+         tmp[count].flags |= CFG_BOOL_FLG_DEF_ENABLE; \
+         tmp[count].def    = default_setting; \
+      } \
+      if (handle_setting) \
+         tmp[count].flags |= CFG_BOOL_FLG_HANDLE; \
+      count++; \
    } \
-   if (handle_setting) \
-      tmp[count].flags |= CFG_BOOL_FLG_HANDLE; \
-   count++; \
+   else \
+      config_settings_list_full(key, cap); \
 }
 
 #define SETTING_BOOL(key, configval, default_enable, default_setting, handle_setting) \
@@ -1854,6 +1879,7 @@ static struct config_array_setting *populate_settings_array(
 {
    unsigned i                           = 0;
    unsigned count                       = 0;
+   unsigned cap                         = SETTINGS_ARRAY_COUNT_MAX;
    struct config_array_setting  *tmp    = (struct config_array_setting*)calloc(SETTINGS_ARRAY_COUNT_MAX, sizeof(struct config_array_setting));
 
    if (!tmp)
@@ -2022,6 +2048,7 @@ static struct config_path_setting *populate_settings_path(
 {
    unsigned count = 0;
    recording_state_t *recording_st     = recording_state_get_ptr();
+   unsigned cap                         = SETTINGS_PATH_COUNT_MAX;
    struct config_path_setting  *tmp    = (struct config_path_setting*)calloc(SETTINGS_PATH_COUNT_MAX, sizeof(struct config_path_setting));
 
    if (!tmp)
@@ -2147,6 +2174,7 @@ bool config_metal_arg_buffers_default(void)
 static struct config_bool_setting *populate_settings_bool(
       settings_t *settings, int *size)
 {
+   unsigned cap                         = SETTINGS_BOOL_COUNT_MAX;
    struct config_bool_setting  *tmp    = (struct config_bool_setting*)calloc(SETTINGS_BOOL_COUNT_MAX, sizeof(struct config_bool_setting));
    unsigned count                      = 0;
 
@@ -2968,6 +2996,7 @@ static struct config_float_setting *populate_settings_float(
       settings_t *settings, int *size)
 {
    unsigned count = 0;
+   unsigned cap                         = SETTINGS_FLOAT_COUNT_MAX;
    struct config_float_setting  *tmp      = (struct config_float_setting*)calloc(SETTINGS_FLOAT_COUNT_MAX, sizeof(struct config_float_setting));
 
    if (!tmp)
@@ -3601,6 +3630,7 @@ static struct config_uint_setting *populate_settings_uint(
       settings_t *settings, int *size)
 {
    unsigned count                     = 0;
+   unsigned cap                         = SETTINGS_UINT_COUNT_MAX;
    struct config_uint_setting  *tmp   = (struct config_uint_setting*)calloc(SETTINGS_UINT_COUNT_MAX, sizeof(struct config_uint_setting));
 
    if (!tmp)
@@ -4356,6 +4386,7 @@ static struct config_size_setting *populate_settings_size(
       settings_t *settings, int *size)
 {
    unsigned count                     = 0;
+   unsigned cap                         = SETTINGS_SIZE_COUNT_MAX;
    struct config_size_setting  *tmp   = (struct config_size_setting*)calloc(SETTINGS_SIZE_COUNT_MAX, sizeof(struct config_size_setting));
 
    if (!tmp)
@@ -4372,6 +4403,7 @@ static struct config_int_setting *populate_settings_int(
       settings_t *settings, int *size)
 {
    unsigned count                     = 0;
+   unsigned cap                         = SETTINGS_INT_COUNT_MAX;
    struct config_int_setting  *tmp    = (struct config_int_setting*)calloc(SETTINGS_INT_COUNT_MAX, sizeof(struct config_int_setting));
 
    if (!tmp)
