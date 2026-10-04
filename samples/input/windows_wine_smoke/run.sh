@@ -373,6 +373,11 @@ input_socd_vertical = "4"' \
 # Input rotation on: buttons that are not directions are unchanged.
 EXTRA_CFG='input_rotation = "1"' \
    scenario "input rotation on" true 1 2 nomsg
+# Automatic Mouse Grab: the pointer is captured, for that reason, when
+# the window gains focus; everything else as before.
+EXTRA_CFG='input_auto_mouse_grab = "true"
+frontend_log_level = "0"' WANT_LOG='Grab mouse state => ON (reasons 0x02)' \
+   scenario "automatic mouse grab" true 1 2 nomsg
 # Background Keyboard Input on: the keyboard is registered as a sink;
 # with the window active the keys work as before.
 EXTRA_CFG='input_keyboard_background = "true"' \

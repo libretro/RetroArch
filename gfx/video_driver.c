@@ -6324,24 +6324,12 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    if ((enum rotation)settings->uints.screen_orientation != ORIENTATION_NORMAL)
       video_display_server_set_screen_orientation((enum rotation)settings->uints.screen_orientation);
 
-   /* Ensure that we preserve the 'grab mouse'
-    * state if it was enabled prior to driver
-    * (re-)initialisation */
-   if (input_driver_get_flags() & INP_FLAG_GRAB_MOUSE_STATE)
-   {
-      if (     video_st->poke
-            && video_st->poke->show_mouse)
-         video_st->poke->show_mouse(video_st->data, false);
-      input_driver_grab_mouse_for_video();
-   }
-   else if (video.fullscreen)
-   {
-      if (     video_st->poke
-            && video_st->poke->show_mouse)
-         video_st->poke->show_mouse(video_st->data, false);
-      if (!settings->bools.video_windowed_fullscreen)
-         input_driver_grab_mouse_for_video();
-   }
+   /* The reasons the pointer is captured for are kept above the
+    * drivers. What fullscreen adds is worked out for this video mode,
+    * and all of it is applied to the driver that has just started. */
+   input_pointer_capture_set_fullscreen(video.fullscreen,
+         !settings->bools.video_windowed_fullscreen);
+   input_pointer_capture_apply(true);
 
 #ifdef HAVE_OVERLAY
    input_overlay_check_mouse_cursor();

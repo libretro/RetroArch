@@ -2170,6 +2170,139 @@ done:
 #endif
 }
 
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+/* Pointer capture lane: an input driver that notes what it is told. */
+static bool     cap_grabbed;
+static unsigned cap_calls;
+
+static void cap_grab_mouse(void *data, bool state)
+{
+   (void)data;
+   cap_grabbed = state;
+   cap_calls++;
+}
+#endif
+
+/* Pointer capture: held for named reasons, by whoever wants it. */
+static void lane_pointer_capture(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   input_driver_state_t *input_st = input_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   runloop_state_t *runloop_st    = runloop_state_get_ptr();
+   input_driver_t *real           = input_st->current_driver;
+   input_driver_t fake;
+   unsigned had         = failures;
+   unsigned calls;
+   uint8_t  saved       = input_st->capture_reasons;
+   bool     saved_auto  = settings->bools.input_auto_mouse_grab;
+#define CAPTURED() ((input_st->flags & INP_FLAG_GRAB_MOUSE_STATE) != 0)
+
+   if (!real)
+   {
+      CHECK(false, "pointer capture: no input driver");
+      return;
+   }
+   fake                     = *real;
+   fake.grab_mouse          = cap_grab_mouse;
+   input_st->current_driver = &fake;
+   input_st->capture_reasons = 0;
+   input_pointer_capture_apply(false);
+   cap_grabbed = false;
+
+   /* the user's toggle, on and off */
+   command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
+   CHECK(CAPTURED() && cap_grabbed
+         && input_pointer_capture_reasons() == INPUT_CAPTURE_USER,
+         "pointer capture: the toggle did not capture for the user");
+   command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
+   CHECK(!CAPTURED() && !cap_grabbed && !input_pointer_capture_reasons(),
+         "pointer capture: the toggle did not let go");
+
+   /* game focus holds it; into exclusive fullscreen and out again
+    * lets go of fullscreen's reason only (the grab used to be dropped
+    * with game focus still on) */
+   command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, NULL);
+   CHECK(CAPTURED() && cap_grabbed, "pointer capture: game focus did not capture");
+   input_pointer_capture_set_fullscreen(true, true);
+   input_pointer_capture_apply(false);
+   input_pointer_capture_set_fullscreen(false, false);
+   input_pointer_capture_apply(false);
+   CHECK(CAPTURED() && cap_grabbed,
+         "pointer capture: leaving fullscreen let go of game focus's capture");
+   command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, NULL);
+   CHECK(!CAPTURED() && !cap_grabbed, "pointer capture: game focus off did not let go");
+
+   /* the user's capture outlasts game focus going on and off (it
+    * used to be dropped in a window) */
+   command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
+   command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, NULL);
+   command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, NULL);
+   CHECK(CAPTURED() && cap_grabbed,
+         "pointer capture: game focus going off let go of the user's capture");
+
+   /* a driver that has just started is told again, and one nothing
+    * is wanted of is told nothing */
+   calls = cap_calls;
+   cap_grabbed = false;
+   input_pointer_capture_apply(true);
+   CHECK(cap_calls == calls + 1 && cap_grabbed && CAPTURED(),
+         "pointer capture: a restarted driver was not given the capture again");
+   command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
+   calls = cap_calls;
+   input_pointer_capture_apply(true);
+   CHECK(cap_calls == calls && !CAPTURED(),
+         "pointer capture: a restarted driver was told to grab or let go with nothing held");
+
+   /* borderless fullscreen hides the cursor and grabs nothing; the
+    * toggle then captures, and its second press lets go of all */
+   input_pointer_capture_set_fullscreen(true, false);
+   input_pointer_capture_apply(false);
+   CHECK(!CAPTURED() && input_st->capture_cursor_hidden,
+         "pointer capture: borderless fullscreen grabbed, or left the cursor shown");
+   command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
+   CHECK(CAPTURED(), "pointer capture: the toggle did not capture in borderless fullscreen");
+   command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
+   CHECK(!CAPTURED() && !input_st->capture_cursor_hidden,
+         "pointer capture: the toggle's second press did not let go of everything");
+
+   /* "Automatic Mouse Grab": taken when the window gains focus */
+   settings->bools.input_auto_mouse_grab = true;
+   runloop_st->flags &= ~RUNLOOP_FLAG_FOCUSED;
+   run_loop_frames(2);
+   if (runloop_st->flags & RUNLOOP_FLAG_FOCUSED)
+   {
+      CHECK(CAPTURED() && (input_pointer_capture_reasons() & INPUT_CAPTURE_AUTO_FOCUS),
+            "pointer capture: gaining focus did not capture with Automatic Mouse Grab on");
+      command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
+      CHECK(!CAPTURED(), "pointer capture: the toggle did not let go of the automatic capture");
+   }
+   else
+      printf("[info] pointer capture: the window has no focus here, automatic grab not run\n");
+   settings->bools.input_auto_mouse_grab = saved_auto;
+
+   /* a driver that cannot grab: the toggle says so and holds nothing */
+   input_st->capture_reasons = 0;
+   input_pointer_capture_apply(false);
+   fake.grab_mouse           = NULL;
+   CHECK(!command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL)
+         && !input_pointer_capture_reasons(),
+         "pointer capture: the toggle held a reason with a driver that cannot grab");
+
+   input_st->current_driver  = real;
+   input_st->capture_reasons = saved;
+   input_st->flags          &= ~INP_FLAG_GRAB_MOUSE_STATE;
+   input_pointer_capture_apply(false);
+#undef CAPTURED
+   if (failures == had)
+      printf("[pass] pointer capture: held for named reasons; leaving"
+            " fullscreen or game focus lets go of its own only; a"
+            " restarted driver is told again; the toggle lets go of all\n");
+#else
+   printf("[skip] pointer capture: needs the test drivers\n");
+#endif
+}
+
 /* First-press port assignment: with the setting on no user has a core
  * port until a button is pressed on its controller. */
 static void lane_first_press(void)
@@ -3086,6 +3219,7 @@ int main(int argc, char *argv[])
       lane_input_rotation();
       lane_triggers();
       lane_network_retropad();
+      lane_pointer_capture();
       lane_core_view();
       lane_key_events();
       /* last: these restart the drivers */

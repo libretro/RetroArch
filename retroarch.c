@@ -4180,7 +4180,6 @@ bool command_event(enum event_command cmd, void *data)
          {
             bool load_dummy_core            = data ? *(bool*)data : true;
             content_ctx_info_t content_info = {0};
-            video_driver_state_t *video_st  = video_state_get_ptr();
             rarch_system_info_t *sys_info   = &runloop_st->system;
             uint8_t flags                   = content_get_flags();
 
@@ -4228,15 +4227,10 @@ bool command_event(enum event_command cmd, void *data)
                /* Reload the original config */
                config_unload_override();
 
+               /* an override that had asked for fullscreen is gone */
                if (!settings->bools.video_fullscreen)
-               {
-                  input_driver_state_t *input_st = input_state_get_ptr();
-                  if (     video_st->poke
-                        && video_st->poke->show_mouse)
-                     video_st->poke->show_mouse(video_st->data, true);
-                  if (input_driver_ungrab_mouse())
-                     input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
-               }
+                  input_pointer_capture_release(INPUT_CAPTURE_FULLSCREEN
+                        | INPUT_CAPTURE_FULLSCREEN_CURSOR);
             }
 #endif
 
@@ -5692,8 +5686,6 @@ bool command_event(enum event_command cmd, void *data)
          {
             audio_driver_state_t
                *audio_st              = audio_state_get_ptr();
-            input_driver_state_t
-               *input_st              = input_state_get_ptr();
             bool *userdata            = (bool*)data;
             bool video_fullscreen     = settings->bools.video_fullscreen;
             bool ra_is_forced_fs      = ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) &
@@ -5732,24 +5724,11 @@ bool command_event(enum event_command cmd, void *data)
                         video_driver_window_dims(new_fullscreen_state),
                         new_fullscreen_state))
                command_event(CMD_EVENT_REINIT, NULL);
-            if (video_fullscreen)
-            {
-               if (     video_st->poke
-                     && video_st->poke->show_mouse)
-                  video_st->poke->show_mouse(video_st->data, false);
-               if (!settings->bools.video_windowed_fullscreen)
-                  if (input_driver_grab_mouse())
-                     input_st->flags |= INP_FLAG_GRAB_MOUSE_STATE;
-            }
-            else
-            {
-               if (     video_st->poke
-                     && video_st->poke->show_mouse)
-                  video_st->poke->show_mouse(video_st->data, true);
-               if (!settings->bools.video_windowed_fullscreen)
-                  if (input_driver_ungrab_mouse())
-                     input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
-            }
+            /* fullscreen hides the cursor, and exclusive fullscreen
+             * grabs; leaving it lets go of that and of nothing else */
+            input_pointer_capture_set_fullscreen(video_fullscreen,
+                  !settings->bools.video_windowed_fullscreen);
+            input_pointer_capture_apply(false);
 #ifdef HAVE_OVERLAY
             input_overlay_check_mouse_cursor();
 #endif
@@ -5901,44 +5880,8 @@ bool command_event(enum event_command cmd, void *data)
                settings->bools.input_turbo_enable, !settings->bools.input_turbo_enable);
          break;
       case CMD_EVENT_GRAB_MOUSE_TOGGLE:
-         {
-            bool ret              = false;
-            input_driver_state_t
-               *input_st          = input_state_get_ptr();
-            bool grab_mouse_state = !(input_st->flags &
-                  INP_FLAG_GRAB_MOUSE_STATE);
-
-            if (grab_mouse_state)
-            {
-               if ((ret = input_driver_grab_mouse()))
-                  input_st->flags |= INP_FLAG_GRAB_MOUSE_STATE;
-            }
-            else
-            {
-               if ((ret = input_driver_ungrab_mouse()))
-                  input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
-            }
-
-            if (!ret)
-               return false;
-
-            RARCH_DBG("[Input] %s => %s\n",
-                  msg_hash_to_str(MSG_GRAB_MOUSE_STATE),
-                  grab_mouse_state ? "ON" : "OFF");
-
-            if (grab_mouse_state)
-            {
-               if (     video_st->poke
-                     && video_st->poke->show_mouse)
-                  video_st->poke->show_mouse(video_st->data, false);
-            }
-            else
-            {
-               if (     video_st->poke
-                     && video_st->poke->show_mouse)
-                  video_st->poke->show_mouse(video_st->data, true);
-            }
-         }
+         if (!input_pointer_capture_toggle())
+            return false;
          break;
       case CMD_EVENT_UI_COMPANION_TOGGLE:
          {
@@ -5955,9 +5898,6 @@ bool command_event(enum event_command cmd, void *data)
          break;
       case CMD_EVENT_GAME_FOCUS_TOGGLE:
          {
-            bool video_fullscreen                         =
-                  settings->bools.video_fullscreen
-               || ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_FORCE_FULLSCREEN);
             enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_TOGGLE;
             input_driver_state_t
                *input_st                                  = input_state_get_ptr();
@@ -6017,24 +5957,12 @@ bool command_event(enum event_command cmd, void *data)
                input_driver_state_t
                   *input_st          = input_state_get_ptr();
 
+               /* game focus holds the pointer while it is on; off, the
+                * pointer stays captured for whatever else wants it */
                if (input_st->game_focus_state.enabled)
-               {
-                  if (input_driver_grab_mouse())
-                     input_st->flags |= INP_FLAG_GRAB_MOUSE_STATE;
-                  if (     video_st->poke
-                        && video_st->poke->show_mouse)
-                     video_st->poke->show_mouse(video_st->data, false);
-               }
-               /* Ungrab only if windowed and auto mouse grab is disabled */
-               else if (!video_fullscreen
-                     && !settings->bools.input_auto_mouse_grab)
-               {
-                  if (input_driver_ungrab_mouse())
-                     input_st->flags &= ~INP_FLAG_GRAB_MOUSE_STATE;
-                  if (     video_st->poke
-                        && video_st->poke->show_mouse)
-                     video_st->poke->show_mouse(video_st->data, true);
-               }
+                  input_pointer_capture_hold(INPUT_CAPTURE_GAME_FOCUS);
+               else
+                  input_pointer_capture_release(INPUT_CAPTURE_GAME_FOCUS);
 
                if (input_st->game_focus_state.enabled)
                   input_st->flags |=  INP_FLAG_BLOCK_HOTKEY

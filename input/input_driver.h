@@ -775,6 +775,10 @@ typedef struct
     * bind (the pull is counted from there), and axes not to be looked
     * at again because both their directions are bound. */
    uint16_t trigger_rest[MAX_USERS];
+   /* Pointer capture: the reasons held (enum input_capture_reason),
+    * and whether the cursor was last hidden for them. */
+   uint8_t  capture_reasons;
+   bool     capture_cursor_hidden;
    uint16_t trigger_two_way[MAX_USERS];
    /* SOCD cleaning, per core port: the D-Pad as it was held when the
     * port's view was last compiled, and for each axis the direction
@@ -1001,7 +1005,48 @@ uint32_t input_driver_get_flags(void);
 input_driver_t *input_driver_get_current(void);
 input_driver_t **input_driver_video_slots(void ***data_slot);
 void input_driver_free_with_video(const void *video_data);
-bool input_driver_grab_mouse_for_video(void);
+/* Why the pointer is captured. It used to be one flag that about ten
+ * places toggled or rewrote, each after looking at it, so what it
+ * ended up as went by the order they ran in: leaving fullscreen let
+ * go of a grab game focus still wanted, and game focus going off let
+ * go of one the user had asked for.
+ *
+ * Now each of them holds or releases its own reason, and the pointer
+ * is captured while any is held. INP_FLAG_GRAB_MOUSE_STATE is what
+ * that comes to, and is only written by input_pointer_capture_apply().
+ * The reasons are kept above the drivers, so a driver that restarts
+ * has them applied to it again. */
+enum input_capture_reason
+{
+   /* the hotkey, or a menu's entry */
+   INPUT_CAPTURE_USER              = (1 << 0),
+   /* "Automatic Mouse Grab", taken when the window gains focus */
+   INPUT_CAPTURE_AUTO_FOCUS        = (1 << 1),
+   INPUT_CAPTURE_GAME_FOCUS        = (1 << 2),
+   /* exclusive fullscreen */
+   INPUT_CAPTURE_FULLSCREEN        = (1 << 3),
+   /* any fullscreen: this one hides the cursor and grabs nothing */
+   INPUT_CAPTURE_FULLSCREEN_CURSOR = (1 << 4)
+};
+
+void input_pointer_capture_hold(unsigned reasons);
+void input_pointer_capture_release(unsigned reasons);
+
+/* What exclusive fullscreen adds, for the video mode there is now.
+ * Nothing is applied: input_pointer_capture_apply() follows. */
+void input_pointer_capture_set_fullscreen(bool fullscreen, bool exclusive);
+
+/* The user's toggle: captured, every reason is let go; not captured,
+ * the user's is held. False, and nothing changed, if the input driver
+ * cannot grab. */
+bool input_pointer_capture_toggle(void);
+
+/* Makes the grab and the cursor what the reasons come to. @force is
+ * for a driver that has just started and has been told nothing yet. */
+void input_pointer_capture_apply(bool force);
+
+/* The reasons held, for the tests. */
+unsigned input_pointer_capture_reasons(void);
 
 /* What kind of window a video driver put up, for the input driver that
  * goes with it. */

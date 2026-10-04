@@ -7186,9 +7186,8 @@ static enum runloop_state_enum runloop_check_state(
    /* Automatic mouse grab on focus */
    if (     settings->bools.input_auto_mouse_grab
          && (is_focused)
-         && (is_focused != (((runloop_st->flags & RUNLOOP_FLAG_FOCUSED)) > 0))
-         && !(input_st->flags & INP_FLAG_GRAB_MOUSE_STATE))
-      command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
+         && (is_focused != (((runloop_st->flags & RUNLOOP_FLAG_FOCUSED)) > 0)))
+      input_pointer_capture_hold(INPUT_CAPTURE_AUTO_FOCUS);
 
    if (is_focused)
       runloop_st->flags |=  RUNLOOP_FLAG_FOCUSED;
