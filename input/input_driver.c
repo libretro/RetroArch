@@ -9887,6 +9887,58 @@ void input_driver_poll(void)
 #endif
 }
 
+/* One axis of the D-Pad: @a and @b are its two buttons' bits. Returns
+ * the bits to take out of @held. */
+static unsigned input_socd_axis(unsigned mode, unsigned held,
+      unsigned before, unsigned a, unsigned b, uint8_t *winner)
+{
+   if ((held & (a | b)) != (a | b))
+   {
+      *winner = 0;
+      return 0;
+   }
+   switch (mode)
+   {
+      case INPUT_SOCD_NEUTRAL:
+         return a | b;
+      case INPUT_SOCD_UP:
+         return b;
+      case INPUT_SOCD_LAST:
+      case INPUT_SOCD_FIRST:
+         /* decided when the second one comes down; two that come down
+          * together are neutral for as long as both stay held */
+         if ((before & (a | b)) == a)
+            *winner = (uint8_t)((mode == INPUT_SOCD_LAST) ? b : a);
+         else if ((before & (a | b)) == b)
+            *winner = (uint8_t)((mode == INPUT_SOCD_LAST) ? a : b);
+         return (a | b) & ~(unsigned)*winner;
+   }
+   return 0;
+}
+
+/* The port's buttons as compiled for this frame, with opposite D-Pad
+ * directions resolved as the SOCD settings say. */
+static int16_t input_socd_clean(input_driver_state_t *input_st,
+      unsigned horizontal, unsigned vertical, unsigned port, int16_t view)
+{
+   const unsigned up     = 1 << RETRO_DEVICE_ID_JOYPAD_UP;
+   const unsigned down   = 1 << RETRO_DEVICE_ID_JOYPAD_DOWN;
+   const unsigned left   = 1 << RETRO_DEVICE_ID_JOYPAD_LEFT;
+   const unsigned right  = 1 << RETRO_DEVICE_ID_JOYPAD_RIGHT;
+   unsigned held         = (uint16_t)view & (up | down | left | right);
+   unsigned before       = input_st->socd_held[port];
+   unsigned drop         = 0;
+
+   if (horizontal)
+      drop |= input_socd_axis(horizontal, held, before, left, right,
+            &input_st->socd_winner[port][0]);
+   if (vertical)
+      drop |= input_socd_axis(vertical, held, before, up, down,
+            &input_st->socd_winner[port][1]);
+   input_st->socd_held[port] = (uint8_t)held;
+   return (int16_t)((uint16_t)view & ~drop);
+}
+
 int16_t input_driver_state_wrapper(unsigned port, unsigned device,
       unsigned idx, unsigned id)
 {
@@ -9927,14 +9979,23 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
              || id == RETRO_DEVICE_ID_JOYPAD_MASK))
    {
       const uint16_t port_bit = (uint16_t)(1 << port);
+      /* SOCD cleaning needs both directions of an axis, so with it on
+       * the view is compiled on the frame's first button too */
+      unsigned socd_h         = settings->uints.input_socd_horizontal;
+      unsigned socd_v         = settings->uints.input_socd_vertical;
 
       if (     !(input_st->frame_valid.view & port_bit)
             && (   id == RETRO_DEVICE_ID_JOYPAD_MASK
-                || (input_st->frame_valid.asked & port_bit)))
+                || (input_st->frame_valid.asked & port_bit)
+                || socd_h || socd_v))
       {
          input_st->frame_view_joypad[port] = input_state_internal(
                input_st, settings, port, RETRO_DEVICE_JOYPAD, 0,
                RETRO_DEVICE_ID_JOYPAD_MASK);
+         if (socd_h || socd_v)
+            input_st->frame_view_joypad[port] = input_socd_clean(
+                  input_st, socd_h, socd_v, port,
+                  input_st->frame_view_joypad[port]);
          input_st->frame_valid.view       |= port_bit;
       }
 

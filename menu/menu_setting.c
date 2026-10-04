@@ -7793,6 +7793,30 @@ static size_t setting_get_string_representation_retropad_bind(
    return 0;
 }
 
+static size_t setting_get_string_representation_socd(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   enum msg_hash_enums e = MENU_ENUM_LABEL_VALUE_OFF;
+   if (!setting)
+      return 0;
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case INPUT_SOCD_NEUTRAL:
+         e = MENU_ENUM_LABEL_VALUE_INPUT_SOCD_NEUTRAL;
+         break;
+      case INPUT_SOCD_LAST:
+         e = MENU_ENUM_LABEL_VALUE_INPUT_SOCD_LAST;
+         break;
+      case INPUT_SOCD_FIRST:
+         e = MENU_ENUM_LABEL_VALUE_INPUT_SOCD_FIRST;
+         break;
+      case INPUT_SOCD_UP:
+         e = MENU_ENUM_LABEL_VALUE_INPUT_SOCD_UP;
+         break;
+   }
+   return strlcpy(s, msg_hash_to_str(e), len);
+}
+
 static size_t setting_get_string_representation_assign_ports_keyboard(
       rarch_setting_t *setting, char *s, size_t len)
 {

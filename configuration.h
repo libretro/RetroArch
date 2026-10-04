@@ -227,6 +227,8 @@ typedef struct settings
       unsigned input_keyboard_gamepad_mapping_type;
       unsigned input_poll_type_behavior;
       unsigned input_assign_ports_keyboard;
+      unsigned input_socd_horizontal;
+      unsigned input_socd_vertical;
       unsigned input_rumble_gain;
       unsigned input_auto_game_focus;
       unsigned input_max_users;

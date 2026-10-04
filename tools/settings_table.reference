@@ -523,6 +523,8 @@ uint	input_menu_toggle_gamepad_combo	1	INPUT_COMBO_NONE
 uint	input_quit_gamepad_combo	1	INPUT_COMBO_NONE
 uint	input_hotkey_block_delay	1	5
 uint	input_assign_ports_keyboard	1	0
+uint	input_socd_horizontal	1	0
+uint	input_socd_vertical	1	0
 uint	input_max_users	1	8
 uint	input_rumble_gain	1	100
 uint	input_poll_type_behavior	1	2
@@ -1192,6 +1194,8 @@ uint	input_menu_toggle_gamepad_combo	1	INPUT_COMBO_NONE
 uint	input_quit_gamepad_combo	1	INPUT_COMBO_NONE
 uint	input_hotkey_block_delay	1	5
 uint	input_assign_ports_keyboard	1	0
+uint	input_socd_horizontal	1	0
+uint	input_socd_vertical	1	0
 uint	input_max_users	1	8
 uint	input_rumble_gain	1	100
 uint	input_poll_type_behavior	1	2
@@ -1883,6 +1887,8 @@ uint	input_menu_toggle_gamepad_combo	1	INPUT_COMBO_NONE
 uint	input_quit_gamepad_combo	1	INPUT_COMBO_NONE
 uint	input_hotkey_block_delay	1	5
 uint	input_assign_ports_keyboard	1	0
+uint	input_socd_horizontal	1	0
+uint	input_socd_vertical	1	0
 uint	input_max_users	1	8
 uint	input_rumble_gain	1	100
 uint	input_poll_type_behavior	1	2

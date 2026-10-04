@@ -94,6 +94,16 @@ S_UINT_EX(input_assign_ports_keyboard, INPUT_ASSIGN_PORTS_KEYBOARD,
       0, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_assign_ports_keyboard, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
       "Keyboard on First Button Press",
       "With 'Assign Ports on First Button Press': what a key bound to a port's controls does. 'Assigns its Port' gives the port its core port, as a button of its controller would. 'Waits for its Controller' leaves that to the controller's buttons, unless the port has no controller connected.")
+S_UINT_EX(input_socd_horizontal, INPUT_SOCD_HORIZONTAL,
+      "input_socd_horizontal",
+      0, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, 3, 1, 0, setting_action_ok_uint, setting_get_string_representation_socd, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "SOCD Cleaning (Left + Right)",
+      "What a core sees of the D-Pad when left and right are held together. 'OFF' passes both on. 'Neutral' gives neither, 'Last Input Priority' the one pressed later, 'First Input Priority' the one pressed first.")
+S_UINT_EX(input_socd_vertical, INPUT_SOCD_VERTICAL,
+      "input_socd_vertical",
+      0, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, 4, 1, 0, setting_action_ok_uint, setting_get_string_representation_socd, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "SOCD Cleaning (Up + Down)",
+      "What a core sees of the D-Pad when up and down are held together. 'OFF' passes both on. 'Neutral' gives neither, 'Last Input Priority' the one pressed later, 'First Input Priority' the one pressed first, 'Up Priority' always up.")
 S_BOOL(input_autodetect_enable, INPUT_AUTODETECT_ENABLE,
       "input_autodetect_enable",
       DEFAULT_INPUT_AUTODETECT_ENABLE, SD_FLAG_ADVANCED, 0, 0,

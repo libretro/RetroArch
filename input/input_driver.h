@@ -770,6 +770,11 @@ typedef struct
     * input_driver_poll(), and when the core's first analog request
     * changes analog-to-d-pad for the port. */
    int16_t frame_view_joypad[MAX_USERS];
+   /* SOCD cleaning, per core port: the D-Pad as it was held when the
+    * port's view was last compiled, and for each axis the direction
+    * (as its RetroPad button bit) that has the say while both are held. */
+   uint8_t socd_held[MAX_USERS];
+   uint8_t socd_winner[MAX_USERS][2];
 
    /* What input_driver_poll() invalidates, a bit per port in each
     * word, kept together so that invalidating all of it is one store:

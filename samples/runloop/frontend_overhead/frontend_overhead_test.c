@@ -1573,6 +1573,143 @@ static int16_t fp_input_state(void *data,
 }
 #endif
 
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+/* SOCD lane: holds the D-Pad directions in @dirs (RetroPad button
+ * bits) on the scripted pad for a frame; returns what the core saw of
+ * the D-Pad. */
+static unsigned socd_frame(unsigned dirs, void (*trace_last)(unsigned*, int*))
+{
+   static const unsigned id[4] = {
+      RETRO_DEVICE_ID_JOYPAD_UP, RETRO_DEVICE_ID_JOYPAD_DOWN,
+      RETRO_DEVICE_ID_JOYPAD_LEFT, RETRO_DEVICE_ID_JOYPAD_RIGHT };
+   unsigned seen, i;
+   int axes[4];
+
+   syn_buttons = 0;
+   for (i = 0; i < 4; i++)
+      if (dirs & (1u << id[i]))
+         syn_buttons |= 1u << (input_autoconf_binds[0][id[i]].joykey & 31);
+   run_loop_frames(1);
+   trace_last(&seen, axes);
+   return seen & 0xf0;
+}
+#endif
+
+/* SOCD cleaning: what a core sees of opposite D-Pad directions held
+ * together, per axis and per mode. */
+static void lane_socd(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   const unsigned U = 1u << RETRO_DEVICE_ID_JOYPAD_UP;
+   const unsigned D = 1u << RETRO_DEVICE_ID_JOYPAD_DOWN;
+   const unsigned L = 1u << RETRO_DEVICE_ID_JOYPAD_LEFT;
+   const unsigned R = 1u << RETRO_DEVICE_ID_JOYPAD_RIGHT;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   const input_device_driver_t *joypad_real;
+   void (*trace)(int, int);
+   void (*trace_last)(unsigned*, int*);
+   void    *core;
+   unsigned had = failures;
+   unsigned mode, reading;
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(trace = (void (*)(int, int))dlsym(core, "harness_core_trace"))
+       || !(trace_last = (void (*)(unsigned*, int*))dlsym(core, "harness_core_trace_last"))
+       || !input_st->primary_joypad)
+   {
+      CHECK(false, "SOCD: the harness core's trace entry points or the joypad driver");
+      return;
+   }
+   joypad_real              = input_st->primary_joypad;
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   fast_forward(true);
+
+   /* a core that asks for the mask, and one that reads button by
+    * button, see the same */
+   for (reading = 2; reading >= 1; reading--)
+   {
+      trace((int)reading, 0);
+
+      /* off: both, as before */
+      settings->uints.input_socd_horizontal = INPUT_SOCD_OFF;
+      settings->uints.input_socd_vertical   = INPUT_SOCD_OFF;
+      socd_frame(0, trace_last);
+      CHECK(socd_frame(L | R, trace_last) == (L | R)
+            && socd_frame(U | D, trace_last) == (U | D),
+            "SOCD: off, opposite directions do not both reach the core");
+
+      for (mode = INPUT_SOCD_NEUTRAL; mode <= INPUT_SOCD_FIRST; mode++)
+      {
+         /* left, then right as well; left let go; left again */
+         unsigned both1 = (mode == INPUT_SOCD_NEUTRAL) ? 0
+                        : (mode == INPUT_SOCD_LAST)    ? R : L;
+         unsigned both2 = (mode == INPUT_SOCD_NEUTRAL) ? 0
+                        : (mode == INPUT_SOCD_LAST)    ? L : R;
+         settings->uints.input_socd_horizontal = mode;
+         settings->uints.input_socd_vertical   = INPUT_SOCD_OFF;
+         socd_frame(0, trace_last);
+         CHECK(socd_frame(L, trace_last) == L, "SOCD: one direction alone is changed");
+         CHECK(socd_frame(L | R, trace_last) == both1,
+               "SOCD: left, then right as well, is not what the mode says");
+         CHECK(socd_frame(L | R, trace_last) == both1,
+               "SOCD: the answer changed while both stayed held");
+         CHECK(socd_frame(R, trace_last) == R, "SOCD: right alone after both");
+         CHECK(socd_frame(L | R, trace_last) == both2,
+               "SOCD: right, then left as well, is not what the mode says");
+         /* both at once: neutral in every mode */
+         socd_frame(0, trace_last);
+         CHECK(socd_frame(L | R, trace_last) == 0,
+               "SOCD: both directions pressed in the same frame are not neutral");
+         /* the other axis is left alone */
+         socd_frame(0, trace_last);
+         CHECK(socd_frame(U | D | L | R, trace_last) == (U | D),
+               "SOCD: cleaning left and right touched up and down");
+      }
+
+      /* up and down: its own setting, and up priority */
+      settings->uints.input_socd_horizontal = INPUT_SOCD_OFF;
+      settings->uints.input_socd_vertical   = INPUT_SOCD_UP;
+      socd_frame(0, trace_last);
+      CHECK(socd_frame(D, trace_last) == D
+            && socd_frame(U | D, trace_last) == U,
+            "SOCD: up priority, down then up as well is not up");
+      socd_frame(0, trace_last);
+      CHECK(socd_frame(U, trace_last) == U
+            && socd_frame(U | D, trace_last) == U
+            && socd_frame(U | D | L | R, trace_last) == (U | L | R),
+            "SOCD: up priority, up then down as well is not up, or left and right were touched");
+      settings->uints.input_socd_vertical   = INPUT_SOCD_LAST;
+      socd_frame(0, trace_last);
+      socd_frame(U, trace_last);
+      CHECK(socd_frame(U | D, trace_last) == D,
+            "SOCD: last input priority on up and down");
+   }
+
+   settings->uints.input_socd_horizontal = INPUT_SOCD_OFF;
+   settings->uints.input_socd_vertical   = INPUT_SOCD_OFF;
+   syn_buttons = 0;
+   trace(0, 0);
+   fast_forward(false);
+   run_loop_frames(5);
+   input_st->primary_joypad = joypad_real;
+   dlclose(core);
+   if (failures == had)
+      printf("[pass] SOCD: off, opposite directions both reach the core;"
+            " neutral, last and first input priority, and up priority do"
+            " what they say, per axis, whichever way the core reads\n");
+#else
+   printf("[skip] SOCD: needs the test drivers\n");
+#endif
+}
+
 /* First-press port assignment: with the setting on no user has a core
  * port until a button is pressed on its controller. */
 static void lane_first_press(void)
@@ -2485,6 +2622,7 @@ int main(int argc, char *argv[])
       /* before the core-view lane, whose netplay check leaves the
        * loop paused */
       lane_first_press();
+      lane_socd();
       lane_core_view();
       lane_key_events();
       /* last: these restart the drivers */

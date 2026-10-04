@@ -366,6 +366,10 @@ EXTRA_CFG='input_winraw_xinput_enable = "true"' \
 EXTRA_CFG='input_assign_ports_on_button_press = "true"' \
    WANT_LOG='Keyboard assigned to core port 1' \
    scenario "ports assigned on first press" true 1 2 nomsg
+# SOCD cleaning on: a single key at a time goes through unchanged.
+EXTRA_CFG='input_socd_horizontal = "2"
+input_socd_vertical = "4"' \
+   scenario "SOCD cleaning on" true 1 2 nomsg
 VIDEO_DRIVER=gl VIDEO_STARTED='Found GL context' WANT_VIDEO=2 WANT_WINDOW="1 1 0" \
    WANT_MENUS=1 EXTRA_CFG='ui_menubar_enable = "true"' \
    scenario "OpenGL" true 1 2 nomsg

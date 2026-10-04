@@ -26824,6 +26824,22 @@ MSG_HASH(
    "Waits for its Controller"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SOCD_NEUTRAL,
+   "Neutral"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SOCD_LAST,
+   "Last Input Priority"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SOCD_FIRST,
+   "First Input Priority"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_SOCD_UP,
+   "Up Priority"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS,
    "YYYY-MM-DD HH:MM:SS"
    )
