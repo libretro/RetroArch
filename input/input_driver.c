@@ -9542,25 +9542,26 @@ static bool input_first_press_blocked(void);
 static bool input_remap_user_has_work(const settings_t *settings,
       const input_driver_state_t *input_st, unsigned user, unsigned device)
 {
+   /* every button and axis mapped to itself; one compare of the row
+    * against this is cheaper than a walk that stops at the first
+    * difference, since on most polls there is none to stop at */
+   static const unsigned unmapped_row[RARCH_FIRST_CUSTOM_BIND + 8] = {
+       0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11,
+      12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23 };
    unsigned j;
 
    switch (device)
    {
       case RETRO_DEVICE_JOYPAD:
       case RETRO_DEVICE_ANALOG:
-         {
-            const unsigned *ids = settings->uints.input_remap_ids[user];
 #ifdef HAVE_ACCESSIBILITY
-            /* buttons the frontend presses for the user go out
-             * through the mapper */
-            if (user == 0 && input_st->gamepad_input_override)
-               return true;
+         /* buttons the frontend presses for the user go out
+          * through the mapper */
+         if (user == 0 && input_st->gamepad_input_override)
+            return true;
 #endif
-            for (j = 0; j < RARCH_FIRST_CUSTOM_BIND + 8; j++)
-               if (ids[j] != j)
-                  return true;
-         }
-         return false;
+         return memcmp(settings->uints.input_remap_ids[user],
+               unmapped_row, sizeof(unmapped_row)) != 0;
       case RETRO_DEVICE_KEYBOARD:
          {
             const unsigned *keys = settings->uints.input_keymapper_ids[user];
@@ -10455,31 +10456,37 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
              || id == RETRO_DEVICE_ID_JOYPAD_MASK))
    {
       const uint16_t port_bit = (uint16_t)(1 << port);
-      /* SOCD cleaning needs both directions of an axis, so with it on
-       * the view is compiled on the frame's first button too */
-      unsigned socd_h         = settings->uints.input_socd_horizontal;
-      unsigned socd_v         = settings->uints.input_socd_vertical;
-      /* and turning the D-Pad needs all four */
-      unsigned turns          = settings->uints.input_rotation
-         ? input_rotation_turns(settings) : 0;
 
-      if (     !(input_st->frame_valid.view & port_bit)
-            && (   id == RETRO_DEVICE_ID_JOYPAD_MASK
-                || (input_st->frame_valid.asked & port_bit)
-                || socd_h || socd_v || turns))
+      /* Once the view is compiled a query is the read at the bottom:
+       * the settings that decide when to compile it are not looked at
+       * again for the rest of the frame. */
+      if (!(input_st->frame_valid.view & port_bit))
       {
-         input_st->frame_view_joypad[port] = input_state_internal(
-               input_st, settings, port, RETRO_DEVICE_JOYPAD, 0,
-               RETRO_DEVICE_ID_JOYPAD_MASK);
-         /* turned first, cleaned after */
-         if (turns)
-            input_st->frame_view_joypad[port] = input_rotation_dpad(
-                  turns, input_st->frame_view_joypad[port]);
-         if (socd_h || socd_v)
-            input_st->frame_view_joypad[port] = input_socd_clean(
-                  input_st, socd_h, socd_v, port,
-                  input_st->frame_view_joypad[port]);
-         input_st->frame_valid.view       |= port_bit;
+         /* SOCD cleaning needs both directions of an axis, so with it
+          * on the view is compiled on the frame's first button too */
+         unsigned socd_h      = settings->uints.input_socd_horizontal;
+         unsigned socd_v      = settings->uints.input_socd_vertical;
+         /* and turning the D-Pad needs all four */
+         unsigned turns       = settings->uints.input_rotation
+            ? input_rotation_turns(settings) : 0;
+
+         if (     id == RETRO_DEVICE_ID_JOYPAD_MASK
+               || (input_st->frame_valid.asked & port_bit)
+               || socd_h || socd_v || turns)
+         {
+            input_st->frame_view_joypad[port] = input_state_internal(
+                  input_st, settings, port, RETRO_DEVICE_JOYPAD, 0,
+                  RETRO_DEVICE_ID_JOYPAD_MASK);
+            /* turned first, cleaned after */
+            if (turns)
+               input_st->frame_view_joypad[port] = input_rotation_dpad(
+                     turns, input_st->frame_view_joypad[port]);
+            if (socd_h || socd_v)
+               input_st->frame_view_joypad[port] = input_socd_clean(
+                     input_st, socd_h, socd_v, port,
+                     input_st->frame_view_joypad[port]);
+            input_st->frame_valid.view       |= port_bit;
+         }
       }
 
       if (!(input_st->frame_valid.view & port_bit))
