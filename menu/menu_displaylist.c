@@ -10028,6 +10028,7 @@ unsigned menu_displaylist_build_list(
 #endif
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
                {MENU_ENUM_LABEL_INPUT_WINRAW_XINPUT_ENABLE,            PARSE_ONLY_BOOL,  true},
+               {MENU_ENUM_LABEL_INPUT_WINRAW_PLAYER_LIGHTS,            PARSE_ONLY_BOOL,  true},
 #endif
 #ifdef ANDROID
                {MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,   PARSE_ONLY_BOOL,  true},

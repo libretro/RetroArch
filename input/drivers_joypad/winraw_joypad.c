@@ -419,6 +419,9 @@ typedef struct
    /* wanted: the strong motor in the low sixteen bits, the weak in
     * the high. Stored by set_rumble(), loaded by the thread. */
    retro_atomic_int_t want;
+   /* the player its lights are to show, from 1, or 0 to leave them
+    * alone. Stored by the driver's poll, loaded by the thread. */
+   retro_atomic_int_t player;
    /* an XInput pad's buttons as raw input reports them, one bit each
     * in XInput's own order. Stored by the driver as it parses a
     * report, loaded by the thread to tell which of XInput's pads this
@@ -428,9 +431,11 @@ typedef struct
     * is an XInput pad, whose buttons are to be published */
    bool present;
    bool xinput;
+   int  player_asked;   /* the player last stored for the thread     */
    /* the thread's own */
    winraw_joypad_out_dev_t *dev;
    int  sent;           /* what it last wrote                         */
+   int  sent_player;    /* and the player its lights were last given  */
    bool failed;         /* a write failed, and it has been said       */
 } winraw_joypad_out_t;
 
@@ -560,16 +565,17 @@ static bool winraw_xinput_write(unsigned slot, winraw_joypad_out_dev_t *dev,
 }
 
 static bool winraw_joypad_out_write(const winraw_joypad_out_dev_t *dev,
-      int want)
+      int want, int player)
 {
    uint8_t buf[1024];
    OVERLAPPED ov;
    DWORD written = 0;
    bool ok       = false;
-   size_t report = sony_pad_rumble_report(buf, sizeof(buf),
+   size_t report = sony_pad_output_report(buf, sizeof(buf),
          (enum sony_pad_model)dev->model, dev->bluetooth, dev->v2,
          (uint8_t)(((unsigned)want & 0xFFFF) >> 8),
-         (uint8_t)((((unsigned)want >> 16) & 0xFFFF) >> 8));
+         (uint8_t)((((unsigned)want >> 16) & 0xFFFF) >> 8),
+         (unsigned)player);
    size_t len    = report;
 
    if (!report)
@@ -636,12 +642,13 @@ static void winraw_joypad_out_drop(winraw_joypad_out_t *out)
          }
       }
       else if (out->sent)
-         winraw_joypad_out_write(out->dev, 0);
+         winraw_joypad_out_write(out->dev, 0, out->sent_player);
       winraw_joypad_out_dev_free(out->dev);
    }
-   out->dev    = NULL;
-   out->sent   = 0;
-   out->failed = false;
+   out->dev         = NULL;
+   out->sent        = 0;
+   out->sent_player = 0;
+   out->failed      = false;
 }
 
 /* On the writer's thread, after each wake; @quit for the last call. */
@@ -666,8 +673,11 @@ static void winraw_joypad_out_run(void *unused, bool quit)
 
       if (out->dev && !quit)
       {
-         int want = retro_atomic_load_acquire_int(&out->want);
-         if (want != out->sent)
+         int want   = retro_atomic_load_acquire_int(&out->want);
+         int player = retro_atomic_load_acquire_int(&out->player);
+         /* (an XInput pad's lights are XInput's) */
+         if (     want != out->sent
+               || (player != out->sent_player && !out->dev->xinput))
          {
             if (out->dev->xinput)
             {
@@ -682,7 +692,7 @@ static void winraw_joypad_out_run(void *unused, bool quit)
             }
             else
             {
-               if (winraw_joypad_out_write(out->dev, want))
+               if (winraw_joypad_out_write(out->dev, want, player))
                   winraw_joypad_out_writes++;
                else if (!out->failed)
                {
@@ -691,7 +701,8 @@ static void winraw_joypad_out_run(void *unused, bool quit)
                         " controller in slot %u failed (error %lu).\n",
                         i, (unsigned long)GetLastError());
                }
-               out->sent = want;
+               out->sent        = want;
+               out->sent_player = player;
             }
          }
       }
@@ -716,6 +727,8 @@ static void winraw_joypad_out_close(unsigned slot)
    if (old && old != WINRAW_JOYPAD_OUT_CLOSE)
       winraw_joypad_out_dev_free((winraw_joypad_out_dev_t*)old);
    retro_atomic_store_release_int(&out->want, 0);
+   retro_atomic_store_release_int(&out->player, 0);
+   out->player_asked = 0;
    input_output_writer_wake(winraw_joypad_out_writer);
 }
 
@@ -2209,11 +2222,50 @@ bool winraw_joypad_survives_video(void)
    return winraw_joypad_initialised && winraw_joypad_by_poll;
 }
 
+/* "Controller Player Lights": each pad's lights show the port it is
+ * on. Which port that is is looked at now and then, not every poll;
+ * the thread writes it when it changes. */
+static void winraw_joypad_player_lights(void)
+{
+/* (the setting exists where the driver is built into RetroArch) */
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   static unsigned tick;
+   unsigned slot, u;
+   settings_t *settings;
+
+   if ((tick++ & 31) || !winraw_joypad_out_writer)
+      return;
+   settings = config_get_ptr();
+   for (slot = 0; slot < MAX_USERS; slot++)
+   {
+      winraw_joypad_out_t *out = &winraw_joypad_out[slot];
+      int player               = 0;
+
+      if (!out->present || out->xinput)
+         continue;
+      if (settings->bools.input_winraw_player_lights)
+         for (u = 0; u < MAX_USERS; u++)
+            if (settings->uints.input_joypad_index[u] == slot)
+            {
+               player = (int)u + 1;
+               break;
+            }
+      if (player != out->player_asked)
+      {
+         out->player_asked = player;
+         retro_atomic_store_release_int(&out->player, player);
+         input_output_writer_wake(winraw_joypad_out_writer);
+      }
+   }
+#endif
+}
+
 static void winraw_joypad_joypad_poll(void)
 {
    MSG msg;
 
    winraw_joypad_xinput_poll();
+   winraw_joypad_player_lights();
 
    if (winraw_joypad_by_poll)
    {

@@ -509,6 +509,7 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_nowinkey_enable,         MENU_
 #endif
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_winraw_xinput_enable,    MENU_ENUM_SUBLABEL_INPUT_WINRAW_XINPUT_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_winraw_player_lights,    MENU_ENUM_SUBLABEL_INPUT_WINRAW_PLAYER_LIGHTS)
 #endif
 #ifdef ANDROID
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_select_physical_keyboard,   MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD)
@@ -3228,6 +3229,9 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
          case MENU_ENUM_LABEL_INPUT_WINRAW_XINPUT_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_winraw_xinput_enable);
+            break;
+         case MENU_ENUM_LABEL_INPUT_WINRAW_PLAYER_LIGHTS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_winraw_player_lights);
             break;
 #endif
 #ifdef ANDROID

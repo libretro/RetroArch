@@ -135,6 +135,33 @@ int main(void)
    printf("   ok   DualShock 4: USB and Bluetooth; only the motors are asked for\n");
 
    /* ---- what there is no report for ------------------------------- */
+   /* the lights, when a player is given: beside the motors, and only
+    * then */
+   len = sony_pad_output_report(r, sizeof(r), SONY_PAD_DUALSENSE, false, true, 200, 100, 1);
+   CHECK(len == 48 && (r[2] & 0x10) && r[44] == 0x04 && r[3] == 100 && r[4] == 200,
+         "DualSense, USB, player 1: flags %02x lights %02x", r[2], r[44]);
+   len = sony_pad_output_report(r, sizeof(r), SONY_PAD_DUALSENSE, false, true, 0, 0, 3);
+   CHECK(r[44] == 0x15, "DualSense, USB, player 3: lights %02x, want 15", r[44]);
+   len = sony_pad_output_report(r, sizeof(r), SONY_PAD_DUALSENSE, false, true, 0, 0, 5);
+   CHECK(r[44] == 0x1F, "DualSense, USB, player 5: lights %02x, want 1f", r[44]);
+   len = sony_pad_output_report(r, sizeof(r), SONY_PAD_DUALSENSE, true, true, 0, 0, 2);
+   {
+      uint32_t crc = sony_pad_crc32(r, 74);
+      CHECK(len == 78 && (r[3] & 0x10) && r[45] == 0x0A && r[74] == (crc & 0xFF) && r[77] == (crc >> 24),
+            "DualSense, Bluetooth, player 2: flags %02x lights %02x, or the CRC", r[3], r[45]);
+   }
+   len = sony_pad_output_report(r, sizeof(r), SONY_PAD_DS4, false, false, 200, 100, 2);
+   CHECK(len == 32 && r[1] == 0x03 && r[6] == 0x40 && r[7] == 0 && r[8] == 0 && r[4] == 100 && r[5] == 200,
+         "DualShock 4, USB, player 2: flags %02x colour %02x %02x %02x", r[1], r[6], r[7], r[8]);
+   len = sony_pad_output_report(r, sizeof(r), SONY_PAD_DS4, true, false, 0, 0, 1);
+   CHECK(len == 78 && r[3] == 0x03 && r[8] == 0 && r[9] == 0 && r[10] == 0x40,
+         "DualShock 4, Bluetooth, player 1: flags %02x colour %02x %02x %02x", r[3], r[8], r[9], r[10]);
+   len = sony_pad_output_report(r, sizeof(r), SONY_PAD_DS4, false, false, 0, 0, 4);
+   CHECK(r[6] == 0x20 && r[7] == 0 && r[8] == 0x20, "DualShock 4, player 4 is not pink");
+   len = sony_pad_output_report(r, sizeof(r), SONY_PAD_DUALSENSE, false, true, 200, 100, 0);
+   CHECK(!(r[2] & 0x10) && r[44] == 0, "with no player given the lights are asked for");
+   printf("   ok   a player given: the DualSense's player lights and the DualShock 4's light bar, beside the motors; none given, the lights are left alone\n");
+
    CHECK(sony_pad_rumble_report(r, sizeof(r), SONY_PAD_NONE, false, false, 1, 1) == 0,
          "a report was built for no pad");
    CHECK(sony_pad_rumble_report(r, 40, SONY_PAD_DUALSENSE, false, true, 1, 1) == 0,

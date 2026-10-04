@@ -350,6 +350,47 @@ int main(void)
    CHECK(wait_for(edge, 3, 0x80, 200), "after a run of changes the last was not what was written");
    printf("   ok   a run of changes ends with the last one written\n");
 
+   /* Controller Player Lights. Off, as it has been so far: nothing
+    * above asked for the lights */
+   len = written_to(edge, buf, sizeof(buf));
+   CHECK(len > 44 && !(buf[2] & 0x10) && buf[44] == 0,
+         "with the setting off the DualSense's player lights were asked for");
+   len = written_to(ds4, buf, sizeof(buf));
+   CHECK(len > 8 && buf[1] == 0x01 && !buf[6] && !buf[7] && !buf[8],
+         "with the setting off the DualShock 4's light bar was asked for");
+   /* on: the DualSense is on the first port, the DualShock 4 on the
+    * second, and their lights say so; the motors stay as they were */
+   {
+      unsigned i;
+      stub_settings.bools.input_winraw_player_lights = true;
+      stub_settings.uints.input_joypad_index[0]      = 0;
+      stub_settings.uints.input_joypad_index[1]      = 1;
+      for (i = 2; i < MAX_USERS; i++)
+         stub_settings.uints.input_joypad_index[i]   = i;
+      for (i = 0; i < 40; i++)
+         winraw_joypad_player_lights();
+      CHECK(wait_for(edge, 44, 0x04, 0x00), "the DualSense on the first port does not show player 1");
+      len = written_to(edge, buf, sizeof(buf));
+      CHECK((buf[2] & 0x10) && buf[3] == 0x80 && buf[4] == 200,
+            "the player lights were not asked for, or the motors were not kept beside them");
+      CHECK(wait_for(ds4, 6, 0x40, 0x00), "the DualShock 4 on the second port is not red");
+      len = written_to(ds4, buf, sizeof(buf));
+      CHECK(buf[1] == 0x03 && buf[8] == 0x00, "the DualShock 4's light bar was not asked for");
+      /* the two swap ports: the lights follow */
+      stub_settings.uints.input_joypad_index[0]      = 1;
+      stub_settings.uints.input_joypad_index[1]      = 0;
+      for (i = 0; i < 40; i++)
+         winraw_joypad_player_lights();
+      CHECK(wait_for(edge, 44, 0x0A, 0x00), "the DualSense moved to the second port does not show player 2");
+      CHECK(wait_for(ds4, 7, 0x00, 0x40), "the DualShock 4 moved to the first port is not blue");
+      stub_settings.bools.input_winraw_player_lights = false;
+      stub_settings.uints.input_joypad_index[0]      = 0;
+      stub_settings.uints.input_joypad_index[1]      = 1;
+      for (i = 0; i < 40; i++)
+         winraw_joypad_player_lights();
+      printf("   ok   Controller Player Lights: off, the lights are left alone; on, each pad shows its port, and follows it when the port changes\n");
+   }
+
    /* ---- what cannot rumble ---------------------------------------- */
    CHECK(!winraw_joypad_joypad_set_rumble(2, RETRO_RUMBLE_STRONG, 0xFFFF),
          "set_rumble() said a pad there is no report for can rumble");
