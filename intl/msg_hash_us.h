@@ -21447,6 +21447,14 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICES,
    "The player slots to ask the host for when joining a netplay session. With none chosen, the host gives the first free one."
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_USERS,
+   "Network RetroPad Users"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETWORK_REMOTE_USERS,
+   "The users another device may play as over the network. Each one chosen listens on its own port, counted up from the base port."
+   )
 /* GENERATED REGION: netplay NAT traversal setting (see settings_def_netplay_nat.h). */
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \

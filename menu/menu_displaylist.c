@@ -9092,6 +9092,17 @@ unsigned menu_displaylist_build_list(
          }
          break;
 #ifdef HAVE_NETWORKING
+      case DISPLAYLIST_NETWORK_REMOTE_USERS_LIST:
+         {
+            unsigned user;
+            for (user = 0; user < settings->uints.input_max_users; user++)
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     (enum msg_hash_enums)
+                        (MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user),
+                     PARSE_ONLY_BOOL, false) == 0)
+                  count++;
+         }
+         break;
       case DISPLAYLIST_NETPLAY_REQUEST_DEVICES_LIST:
          {
             unsigned user;
@@ -11151,14 +11162,13 @@ unsigned menu_displaylist_build_list(
                   count++;
 #endif
 
-               for (user = 0; user < settings->uints.input_max_users; user++)
-               {
-                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        (enum msg_hash_enums)
-                           (MENU_ENUM_LABEL_NETWORK_REMOTE_USER_1_ENABLE + user),
-                        PARSE_ONLY_BOOL, false) == 0)
-                     count++;
-               }
+               /* one entry for the users' switches */
+               if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_USERS),
+                     MENU_ENUM_LABEL_NETWORK_REMOTE_USERS_STR,
+                     MENU_ENUM_LABEL_NETWORK_REMOTE_USERS,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+                  count++;
             }
 
             if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
@@ -16683,6 +16693,7 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:
          case DISPLAYLIST_INPUT_SENSOR_SETTINGS_LIST:
          case DISPLAYLIST_NETPLAY_REQUEST_DEVICES_LIST:
+         case DISPLAYLIST_NETWORK_REMOTE_USERS_LIST:
          case DISPLAYLIST_PLAYLIST_SETTINGS_LIST:
          case DISPLAYLIST_SUBSYSTEM_SETTINGS_LIST:
 #ifdef HAVE_MIST

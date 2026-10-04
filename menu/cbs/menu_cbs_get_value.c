@@ -995,6 +995,30 @@ static size_t menu_action_setting_disp_set_label_netplay_request_devices(
       strlcpy(s2, path, len2);
    return _len;
 }
+
+/* The users with a Network RetroPad, as "1, 2", or "None". */
+static size_t menu_action_setting_disp_set_label_network_remote_users(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   unsigned user;
+   size_t _len          = 0;
+   settings_t *settings = config_get_ptr();
+
+   for (user = 0; user < MAX_USERS; user++)
+      if (settings->bools.network_remote_enable_user[user] && _len < len)
+         _len += snprintf(s + _len, len - _len, _len ? ", %u" : "%u", user + 1);
+   if (!_len)
+      _len = strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
+   *w = 19;
+   if (path && *path)
+      strlcpy(s2, path, len2);
+   return _len;
+}
 #endif
 
 static size_t menu_action_setting_disp_set_label_db_entry(
@@ -2013,6 +2037,10 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
          case MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICES:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_netplay_request_devices);
+            break;
+         case MENU_ENUM_LABEL_NETWORK_REMOTE_USERS:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_set_label_network_remote_users);
             break;
 #endif
          case MENU_ENUM_LABEL_OVERRIDE_FILE_INFO:
