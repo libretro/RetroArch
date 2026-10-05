@@ -21,6 +21,10 @@
  *    progress (the floor) and the diff finishes;
  *  - the result is the same as before: every file found unchanged,
  *    nothing transferred;
+ *  - a 9 MiB download, reported from another thread, is hashed by the
+ *    task thread over many runs within the grant, and its hash goes
+ *    into both updated manifests (the fetch callback used to hash the
+ *    whole file itself, on the thread it ran on);
  *  - pushed on the task queue and run to its end, the sync releases
  *    everything it held (LeakSanitizer): the state used to be left
  *    behind by every sync, because it was freed from a callback that
@@ -34,6 +38,7 @@
 #include <unistd.h>
 
 #include <rthreads/rthreads.h>
+#include <retro_timers.h>
 
 #include "../../../tasks/task_cloudsync.c"
 
@@ -59,9 +64,57 @@ bool cloud_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
 { (void)cb; (void)user_data; return false; }
 bool cloud_sync_end(cloud_sync_complete_handler_t cb, void *user_data)
 { (void)cb; (void)user_data; return false; }
+/* A fetch writes @fetch_size bytes to the local file and reports it from
+ * another thread, as a WebDAV or S3 transfer reports from the main
+ * thread while the task runs on the queue's worker. Unset, a fetch is
+ * an unexpected transfer. */
+static size_t fetch_size;
+static retro_atomic_int_t fetches_reported;
+
+typedef struct
+{
+   cloud_sync_complete_handler_t cb;
+   void *ud;
+   char  key[64];
+   char  file[128];
+} fetch_job_t;
+
+static void write_file(const char *path, size_t size, unsigned seed);
+
+static void fetch_thread(void *data)
+{
+   fetch_job_t job = *(fetch_job_t*)data;
+   RFILE      *f;
+   free(data);
+   write_file(job.file, fetch_size, 9);
+   f = filestream_open(job.file, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   job.cb(job.ud, job.key, f != NULL, f);
+   retro_atomic_inc_int(&fetches_reported);
+}
+
 bool cloud_sync_read(const char *path, const char *file,
       cloud_sync_complete_handler_t cb, void *user_data)
-{ (void)path; (void)file; (void)cb; (void)user_data; transfers++; return false; }
+{
+   fetch_job_t *job;
+   sthread_t   *t;
+   if (!fetch_size || !(job = (fetch_job_t*)calloc(1, sizeof(*job))))
+   {
+      transfers++;
+      return false;
+   }
+   job->cb = cb;
+   job->ud = user_data;
+   strlcpy(job->key,  path, sizeof(job->key));
+   strlcpy(job->file, file, sizeof(job->file));
+   if (!(t = sthread_create(fetch_thread, job)))
+   {
+      free(job);
+      return false;
+   }
+   sthread_detach(t);
+   return true;
+}
 bool cloud_sync_update(const char *path, RFILE *file,
       cloud_sync_complete_handler_t cb, void *user_data)
 { (void)path; (void)file; (void)cb; (void)user_data; transfers++; return false; }
@@ -218,6 +271,82 @@ static unsigned run_diff(unsigned n, size_t size, unsigned grant_units,
    return runs;
 }
 
+/* One file on the server only: fetched, then hashed by the task. */
+static void fetch_lane(void)
+{
+   task_cloud_sync_state_t *st   = (task_cloud_sync_state_t*)calloc(1, sizeof(*st));
+   retro_task_t            *task = task_init();
+   struct string_list      *dl   = string_list_new();
+   union string_list_elem_attr attr;
+   char     path[128];
+   char    *want;
+   unsigned i;
+   int      ok_server = 0, ok_local = 0;
+
+   attr.i = 0;
+   string_list_append(dl, "saves", attr);
+   dl->elems[0].userdata = strdup(dir);
+   st->dirlist                 = dl;
+   st->server_manifest         = (file_list_t*)calloc(1, sizeof(file_list_t));
+   st->local_manifest          = (file_list_t*)calloc(1, sizeof(file_list_t));
+   st->current_manifest        = (file_list_t*)calloc(1, sizeof(file_list_t));
+   st->updated_server_manifest = (file_list_t*)calloc(1, sizeof(file_list_t));
+   st->updated_local_manifest  = (file_list_t*)calloc(1, sizeof(file_list_t));
+   st->destructive             = true;
+   strlcpy(st->dir_core_assets, dir, sizeof(st->dir_core_assets));
+   retro_atomic_int_init(&st->waiting, 0);
+   retro_atomic_int_init(&st->phase, (int)CLOUD_SYNC_PHASE_DIFF);
+   retro_atomic_int_init(&fetches_reported, 0);
+
+   /* what the download will hold, hashed beforehand */
+   snprintf(path, sizeof(path), "%s/dl.srm", dir);
+   fetch_size = 9 * 1024 * 1024;
+   write_file(path, fetch_size, 9);
+   want = hash_of(path);
+   unlink(path);
+   list_add(st->server_manifest, "saves/dl.srm", NULL, strdup(want));
+
+   task_cloud_sync_task_setup(task, st, "Cloud Sync in progress");
+   grant = 3; runs = 0; max_granted = 0; transfers = 0;
+   /* start the fetch and wait for its report */
+   for (i = 0; i < 5000 && !retro_atomic_load_acquire_int(&fetches_reported); i++)
+   {
+      task_cloud_sync_task_handler(task);
+      retro_sleep(1);
+   }
+   /* the callback has returned: the file is not hashed yet, and one run
+    * of the handler hashes only what its grant allows */
+   task_cloud_sync_task_handler(task);
+   check("download: not hashed by the callback nor in one run",
+         task_cloud_sync_waiting_get(st) == 1 && st->downloads == 0);
+   for (i = 0; i < 200000 && (task_cloud_sync_phase_get(st) == CLOUD_SYNC_PHASE_DIFF
+            || task_cloud_sync_waiting_get(st) > 0); i++)
+      task_cloud_sync_task_handler(task);
+   check("download: fetched and hashed, nothing in flight",
+         task_cloud_sync_waiting_get(st) == 0 && st->downloads == 1);
+   check("download: hashed over many runs", runs >= 36 / 4);
+   check("download: no run past its grant", max_granted <= 4);
+   task_cloud_sync_fold_manifest_adds(st);
+   for (i = 0; i < st->updated_server_manifest->size; i++)
+      if (!strcmp(st->updated_server_manifest->list[i].alt, "saves/dl.srm"))
+         ok_server = st->updated_server_manifest->list[i].userdata
+            && !strcmp((const char*)st->updated_server_manifest->list[i].userdata, want);
+   for (i = 0; i < st->updated_local_manifest->size; i++)
+      if (!strcmp(st->updated_local_manifest->list[i].alt, "saves/dl.srm"))
+         ok_local = st->updated_local_manifest->list[i].userdata
+            && !strcmp((const char*)st->updated_local_manifest->list[i].userdata, want);
+   check("download: its hash in both updated manifests", ok_server && ok_local);
+   check("download: matches the server, no manifest upload needed",
+         !st->need_manifest_uploaded);
+
+   fetch_size = 0;
+   free(want);
+   unlink(path);
+   task_cloud_sync_cleanup(task);
+   free(task->title);
+   free(task);
+}
+
 /* A whole sync's tail through the real task queue: the diff, the local
  * manifest and the end, then retirement. Run under LeakSanitizer in CI. */
 static void queue_lane(void)
@@ -294,6 +423,7 @@ int main(void)
    check("spent window: every run progresses, the diff ends", ok && r < 100000);
    check("spent window: one unit per run", max_granted == 1);
 
+   fetch_lane();
    queue_lane();
 
    rmdir(dir);
