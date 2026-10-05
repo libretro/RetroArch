@@ -2298,14 +2298,13 @@ static void task_cloud_sync_task_handler(retro_task_t *task)
       return;
    }
 
-   /* Results of calls a blocking driver finished on its worker: their
+   /* One window per run, shared by the results of calls a blocking
+    * driver finished on its worker, the downloads being hashed and the
+    * diff; every run makes at least one unit of progress. The results'
     * handlers run here, on this thread, before the in-flight count is
     * read. */
-   cloud_sync_poll();
-
-   /* One window per run, shared by the downloads being hashed and the
-    * diff; every run makes at least one unit of progress. */
    task_nbio_slice_open(&b);
+   cloud_sync_poll(task_nbio_slice_within_budget, &b);
    task_cloud_sync_fetched_run(sync_state, &b);
    task_cloud_sync_task_step(task, sync_state, &b);
    task_nbio_slice_close(&b);

@@ -141,6 +141,7 @@ typedef struct cloud_sync_op
    char                         *path;  /* NULL for BEGIN and END */
    char                         *local; /* READ's local file */
    unsigned                      flags;
+   unsigned                      gen;   /* cloud_sync_async.gen when made */
    int                           type;
 } cloud_sync_op_t;
 
@@ -152,6 +153,9 @@ static struct
    cloud_sync_op_t *queue_tail;
    cloud_sync_op_t *done;       /* for cloud_sync_poll, oldest first */
    cloud_sync_op_t *done_tail;
+   /* Moved on by cloud_sync_deinit(): a call from before it that is
+    * still running is the worker's to dispose of. */
+   unsigned         gen;
    bool             worker;     /* a worker thread is running */
    bool             ended;      /* the sync it serves is over */
 } cloud_sync_async;
@@ -227,6 +231,15 @@ static void cloud_sync_worker(void *data)
       cloud_sync_op_run(op);
 
       slock_lock(cloud_sync_async.lock);
+      if (op->gen != cloud_sync_async.gen)
+      {
+         /* Outlived the exit wait: nobody polls for it. */
+         slock_unlock(cloud_sync_async.lock);
+         if (op->file)
+            filestream_close(op->file);
+         free(op);
+         continue;
+      }
       if (cloud_sync_async.done_tail)
          cloud_sync_async.done_tail->next = op;
       else
@@ -280,6 +293,7 @@ static bool cloud_sync_op_push(const cloud_sync_driver_t *driver,
       memcpy(op->local, local, llen);
 
    slock_lock(cloud_sync_async.lock);
+   op->gen = cloud_sync_async.gen;
    if (type == CLOUD_SYNC_OP_BEGIN)
       cloud_sync_async.ended = false;
    if (cloud_sync_async.queue_tail)
@@ -312,27 +326,34 @@ static bool cloud_sync_op_push(const cloud_sync_driver_t *driver,
    return true;
 }
 
-void cloud_sync_poll(void)
+void cloud_sync_poll(cloud_sync_poll_budget_t within, void *budget)
 {
-   cloud_sync_op_t *op;
-
    /* the lock is made on this thread, before any worker exists */
    if (!cloud_sync_async.lock)
       return;
-   slock_lock(cloud_sync_async.lock);
-   op                         = cloud_sync_async.done;
-   cloud_sync_async.done      = NULL;
-   cloud_sync_async.done_tail = NULL;
-   slock_unlock(cloud_sync_async.lock);
 
-   while (op)
+   /* The oldest result always runs; more only while @within allows. */
+   for (;;)
    {
-      cloud_sync_op_t *next = op->next;
+      cloud_sync_op_t *op;
+
+      slock_lock(cloud_sync_async.lock);
+      if ((op = cloud_sync_async.done))
+      {
+         if (!(cloud_sync_async.done = op->next))
+            cloud_sync_async.done_tail = NULL;
+      }
+      slock_unlock(cloud_sync_async.lock);
+      if (!op)
+         return;
+
       op->cb(op->user_data,
             (op->flags & CLOUD_SYNC_OP_FLG_PATH) ? op->path : NULL,
             (op->flags & CLOUD_SYNC_OP_FLG_SUCCESS) != 0, op->file);
       free(op);
-      op = next;
+
+      if (within && !within(budget, 0, 0))
+         return;
    }
 }
 
@@ -358,7 +379,9 @@ void cloud_sync_deinit(unsigned timeout_ms)
    deadline = cpu_features_get_time_usec() + (retro_time_t)timeout_ms * 1000;
 
    slock_lock(cloud_sync_async.lock);
-   /* calls not started are dropped; the worker leaves after its own */
+   /* calls not started are dropped; the worker leaves after its own,
+    * which it disposes of itself if it finishes past the wait */
+   cloud_sync_async.gen++;
    dropped                     = cloud_sync_async.queue;
    cloud_sync_async.queue      = NULL;
    cloud_sync_async.queue_tail = NULL;
@@ -387,7 +410,11 @@ void cloud_sync_deinit(unsigned timeout_ms)
 #define CLOUD_SYNC_BLOCKING(driver) \
    ((driver)->flags & CLOUD_SYNC_DRIVER_FLG_BLOCKING)
 #else
-void cloud_sync_poll(void) { }
+void cloud_sync_poll(cloud_sync_poll_budget_t within, void *budget)
+{
+   (void)within;
+   (void)budget;
+}
 void cloud_sync_deinit(unsigned timeout_ms) { (void)timeout_ms; }
 #endif
 

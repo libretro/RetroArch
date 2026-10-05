@@ -71,7 +71,7 @@ bool cloud_sync_update(const char *path, RFILE *file,
 bool cloud_sync_free(const char *path, cloud_sync_complete_handler_t cb,
       void *user_data)
 { (void)path; (void)cb; (void)user_data; return false; }
-void cloud_sync_poll(void) { }
+void cloud_sync_poll(cloud_sync_poll_budget_t within, void *budget) { (void)within; (void)budget; }
 void task_nbio_slice_open(nbio_budget_t *b) { b->floor = 1; }
 void task_nbio_slice_close(nbio_budget_t *b) { (void)b; }
 bool task_nbio_slice_within_budget(void *ud, size_t avail, size_t len)

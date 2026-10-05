@@ -137,7 +137,7 @@ bool cloud_sync_update(const char *path, RFILE *file,
 bool cloud_sync_free(const char *path, cloud_sync_complete_handler_t cb,
       void *user_data)
 { (void)path; (void)cb; (void)user_data; transfers++; return false; }
-void cloud_sync_poll(void) { }
+void cloud_sync_poll(cloud_sync_poll_budget_t within, void *budget) { (void)within; (void)budget; }
 
 /* --- the I/O window: @grant units per run on top of the floor ------- */
 
