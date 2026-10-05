@@ -61,6 +61,10 @@ bool cloud_sync_free(const char *path, cloud_sync_complete_handler_t cb,
       void *user_data)
 { (void)path; (void)cb; (void)user_data; return false; }
 void cloud_sync_poll(void) { }
+void task_nbio_slice_open(nbio_budget_t *b) { b->floor = 1; }
+void task_nbio_slice_close(nbio_budget_t *b) { (void)b; }
+bool task_nbio_slice_within_budget(void *ud, size_t avail, size_t len)
+{ (void)ud; (void)avail; (void)len; return true; }
 
 /* --- the test ----------------------------------------------------------- */
 
@@ -88,10 +92,10 @@ static void add_entries(unsigned k)
       snprintf(key,  sizeof(key),  "saves/t%u/file%05u.srm", k, i);
       snprintf(hash, sizeof(hash), "hash-of-t%u-%05u", k, i);
       task_cloud_sync_add_to_updated_manifest(state, key,
-            strdup(hash), (i & 1) != 0);
+            hash, (i & 1) != 0);
       if (!(i & 3))
          task_cloud_sync_add_to_updated_manifest(state, key,
-               strdup(hash), (i & 1) == 0);
+               hash, (i & 1) == 0);
    }
 }
 

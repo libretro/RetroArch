@@ -196,6 +196,29 @@ jobs:
           make clean >/dev/null
           echo "[pass] cloudsync_manifest_adds_test"
 
+      - name: Build and run cloudsync_pacing_test (ASan + UBSan + LSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/cloudsync
+        run: |
+          set -eu
+          # tasks/task_cloudsync.c's diff runs as many steps as the shared
+          # per-frame I/O window grants and hashes the current file 256 KiB
+          # at a time, carrying a large file over to the next run instead
+          # of reading it whole in one (the frame loop, with Threaded Tasks
+          # off). Against a stub window: a 9 MiB file spread over runs with
+          # its MD5 unchanged, small files several to a run, the floor
+          # alone finishing the diff. Pushed on the real task queue and run
+          # to its end, the sync must release everything (LeakSanitizer).
+          make clean cloudsync_pacing_test
+          timeout 120 ./cloudsync_pacing_test
+          make clean cloudsync_pacing_test SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            timeout 300 ./cloudsync_pacing_test
+          make clean cloudsync_pacing_test SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./cloudsync_pacing_test
+          make clean >/dev/null
+          echo "[pass] cloudsync_pacing_test"
+
       - name: Build and run cloudsync_async_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/cloudsync

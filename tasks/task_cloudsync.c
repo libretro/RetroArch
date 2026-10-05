@@ -95,6 +95,16 @@ typedef struct
     * tcs_manifest_add_t. */
    retro_atomic_ptr_t manifest_adds;
 #endif
+   /* The current file's hash, taken a chunk at a time between diff
+    * steps (task_cloud_sync_hash_current); hash_buf is the read buffer,
+    * allocated once per sync. */
+   MD5_CTX hash_md5;
+   int64_t hash_map_len;
+   int64_t hash_pos;
+   RFILE *hash_file;
+   const uint8_t *hash_map;
+   uint8_t *hash_buf;
+   bool hash_busy;
    bool need_manifest_uploaded;
    bool failures;
    bool conflicts;
@@ -131,7 +141,7 @@ typedef struct tcs_manifest_add
 {
    struct tcs_manifest_add *next;
    char *key;     /* a copy, until the manifest has its own */
-   char *hash;    /* as given: the manifest's from here on */
+   char *hash;    /* a copy: the manifest's from here on */
    bool server;
 } tcs_manifest_add_t;
 #else
@@ -735,15 +745,22 @@ static void task_cloud_sync_update_progress(retro_task_t *task)
 }
 
 #if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
-static void task_cloud_sync_add_to_updated_manifest(task_cloud_sync_state_t *sync_state, const char *key, char *hash, bool server)
+static void task_cloud_sync_add_to_updated_manifest(task_cloud_sync_state_t *sync_state, const char *key, const char *hash, bool server)
 {
    void *head;
    tcs_manifest_add_t *add = (tcs_manifest_add_t*)malloc(sizeof(*add));
 
-   if (add && !(add->key = key ? strdup(key) : NULL) && key)
+   if (add)
    {
-      free(add);
-      add = NULL;
+      add->key  = key  ? strdup(key)  : NULL;
+      add->hash = hash ? strdup(hash) : NULL;
+      if ((key && !add->key) || (hash && !add->hash))
+      {
+         free(add->key);
+         free(add->hash);
+         free(add);
+         add = NULL;
+      }
    }
    if (!add)
    {
@@ -751,7 +768,6 @@ static void task_cloud_sync_add_to_updated_manifest(task_cloud_sync_state_t *syn
       sync_state->failures = true;
       return;
    }
-   add->hash   = hash;
    add->server = server;
    do
    {
@@ -788,7 +804,7 @@ static void task_cloud_sync_fold_manifest_adds(task_cloud_sync_state_t *sync_sta
    }
 }
 #else
-static void task_cloud_sync_add_to_updated_manifest(task_cloud_sync_state_t *sync_state, const char *key, char *hash, bool server)
+static void task_cloud_sync_add_to_updated_manifest(task_cloud_sync_state_t *sync_state, const char *key, const char *hash, bool server)
 {
    file_list_t *list;
    size_t       idx;
@@ -799,7 +815,7 @@ static void task_cloud_sync_add_to_updated_manifest(task_cloud_sync_state_t *syn
    idx = list->size;
    file_list_append(list, NULL, NULL, 0, 0, 0);
    file_list_set_alt_at_offset(list, idx, key);
-   list->list[idx].userdata = hash;
+   list->list[idx].userdata = hash ? strdup(hash) : NULL;
 #ifdef HAVE_THREADS
    slock_unlock(tcs_manifest_lock);
 #endif
@@ -823,10 +839,24 @@ static INLINE int task_cloud_sync_key_cmp(struct item_file *left, struct item_fi
       return strcasecmp(left_key, right_key);
 }
 
+/* @md5's digest as 32 hex digits into @hash (33 bytes). */
+static void task_cloud_sync_md5_hex(char *hash, MD5_CTX *md5)
+{
+   static const char hex[] = "0123456789abcdef";
+   unsigned char     digest[16];
+   unsigned          i;
+   MD5_Final(digest, md5);
+   for (i = 0; i < 16; i++)
+   {
+      hash[i * 2]     = hex[digest[i] >> 4];
+      hash[i * 2 + 1] = hex[digest[i] & 15];
+   }
+   hash[32] = '\0';
+}
+
 static char *task_cloud_sync_md5_rfile(RFILE *file)
 {
    MD5_CTX md5;
-   unsigned char  digest[16];
    const uint8_t *map     = NULL;
    int64_t        map_len = 0;
    char          *hash    = (char*)malloc(33);
@@ -888,14 +918,84 @@ static char *task_cloud_sync_md5_rfile(RFILE *file)
       free(buf);
    }
 
-   MD5_Final(digest, &md5);
-
-   snprintf(hash, 33, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
-            digest[0], digest[1], digest[2], digest[3], digest[4], digest[5], digest[6], digest[7],
-            digest[8], digest[9], digest[10], digest[11], digest[12], digest[13], digest[14], digest[15]
-      );
-
+   task_cloud_sync_md5_hex(hash, &md5);
    return hash;
+}
+
+/* Reads per chunk of the current file's hash. */
+#define CS_HASH_CHUNK (256 * 1024)
+
+/* Hashes the diff's current file a chunk at a time inside @b, so a large
+ * file is spread over several runs of the handler instead of holding up
+ * one - the frame loop's, with Threaded Tasks off. True once the diff
+ * step can run: the hash is in ->userdata, or there is no current file,
+ * or it could not be opened and the step that needs it will find that
+ * out itself. False when the budget ran out first; the next run carries
+ * on from there. Reads and hashes the same bytes as
+ * task_cloud_sync_md5_rfile(). */
+static bool task_cloud_sync_hash_current(task_cloud_sync_state_t *sync_state,
+      nbio_budget_t *b)
+{
+   struct item_file *item;
+   char             *hash;
+
+   if (     !sync_state->current_manifest
+         || sync_state->current_idx >= sync_state->current_manifest->size)
+      return true;
+   item = &sync_state->current_manifest->list[sync_state->current_idx];
+   if (item->userdata)
+      return true;
+
+   if (!sync_state->hash_busy)
+   {
+      if (     !sync_state->hash_buf
+            && !(sync_state->hash_buf = (uint8_t*)malloc(CS_HASH_CHUNK)))
+         return true;
+      if (!(sync_state->hash_file = filestream_open(item->path,
+                  RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)))
+         return true;
+      MD5_Init(&sync_state->hash_md5);
+      sync_state->hash_map_len = 0;
+      sync_state->hash_map     = filestream_get_mapped_ptr(
+            sync_state->hash_file, &sync_state->hash_map_len);
+      if (sync_state->hash_map_len <= 0)
+         sync_state->hash_map  = NULL;
+      sync_state->hash_pos     = 0;
+      sync_state->hash_busy    = true;
+   }
+
+   for (;;)
+   {
+      int64_t n;
+      if (!task_nbio_slice_within_budget(b, 0, 0))
+         return false;
+      if (sync_state->hash_map)
+      {
+         n = sync_state->hash_map_len - sync_state->hash_pos;
+         if (n > CS_HASH_CHUNK)
+            n = CS_HASH_CHUNK;
+         if (n > 0)
+            MD5_Update(&sync_state->hash_md5,
+                  sync_state->hash_map + sync_state->hash_pos, (size_t)n);
+      }
+      else if ((n = filestream_read(sync_state->hash_file,
+                  sync_state->hash_buf, CS_HASH_CHUNK)) > 0)
+         MD5_Update(&sync_state->hash_md5, sync_state->hash_buf, (size_t)n);
+      if (n <= 0)
+         break;
+      sync_state->hash_pos += n;
+   }
+
+   filestream_close(sync_state->hash_file);
+   sync_state->hash_file = NULL;
+   sync_state->hash_busy = false;
+   if ((hash = (char*)malloc(33)))
+   {
+      task_cloud_sync_md5_hex(hash, &sync_state->hash_md5);
+      item->userdata = hash;
+   }
+   return true;
 }
 
 /* don't pass a server/local item_file to this, only current has ->path set */
@@ -958,7 +1058,7 @@ static bool task_cloud_sync_backup_file(struct item_file *file,
 static void task_cloud_sync_carry_manifests_forward(
       task_cloud_sync_state_t *sync_state,
       const char *key,
-      char *server_hash)
+      const char *server_hash)
 {
    size_t idx;
 
@@ -1030,6 +1130,7 @@ static void task_cloud_sync_fetch_cb(void *user_data, const char *path, bool suc
       /* if the file fetched from the server does not match its own hash, the manifest needs to be updated */
       if (!string_is_equal(hash, CS_FILE_HASH(server_file)))
          sync_state->need_manifest_uploaded = true;
+      free(hash);
       sync_state->downloads++;
    }
    else if (success)
@@ -1255,7 +1356,8 @@ static void task_cloud_sync_upload_current_file(task_cloud_sync_state_t *sync_st
 
    RARCH_LOG(CSPFX "Uploading \"%s\".\n", path);
 
-   item->userdata = task_cloud_sync_md5_rfile(file);
+   if (!item->userdata)
+      item->userdata = task_cloud_sync_md5_rfile(file);
 
    filestream_seek(file, 0, SEEK_SET);
    task_cloud_sync_waiting_inc(sync_state);
@@ -1319,13 +1421,16 @@ static void task_cloud_sync_check_server_current(task_cloud_sync_state_t *sync_s
       return;
    }
 
-   file = filestream_open(filename,
-         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
-   if (!file)
-      return;
-
-   current_file->userdata = task_cloud_sync_md5_rfile(file);
-   filestream_close(file);
+   /* normally hashed already, a chunk at a time, before this step */
+   if (!current_file->userdata)
+   {
+      file = filestream_open(filename,
+            RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
+      if (!file)
+         return;
+      current_file->userdata = task_cloud_sync_md5_rfile(file);
+      filestream_close(file);
+   }
 
    if (string_is_equal(CS_FILE_HASH(server_file), CS_FILE_HASH(current_file)))
    {
@@ -1895,10 +2000,27 @@ static void task_cloud_sync_task_handler(retro_task_t *task)
          task_cloud_sync_build_current_manifest(sync_state);
          break;
       case CLOUD_SYNC_PHASE_DIFF:
-         /* After the step, not before: the step that finishes the diff
+         {
+            /* As many steps as the shared I/O window allows, at least
+             * one chunk of work per run; a step waits until its file is
+             * hashed, and no more than four transfers are in flight. */
+            nbio_budget_t b;
+            bool          first = true;
+            task_nbio_slice_open(&b);
+            while (     task_cloud_sync_phase_get(sync_state) == CLOUD_SYNC_PHASE_DIFF
+                     && task_cloud_sync_waiting_get(sync_state) <= 4
+                     && (first || task_nbio_slice_within_budget(&b, 0, 0)))
+            {
+               first = false;
+               if (!task_cloud_sync_hash_current(sync_state, &b))
+                  break;
+               task_cloud_sync_diff_next(sync_state);
+            }
+            task_nbio_slice_close(&b);
+         }
+         /* After the steps, not before: the step that finishes the diff
           * moves on to UPDATE_MANIFESTS, and a figure taken ahead of it
           * would be the last one the bar ever shows. */
-         task_cloud_sync_diff_next(sync_state);
          task_cloud_sync_update_progress(task);
          break;
       case CLOUD_SYNC_PHASE_UPDATE_MANIFESTS:
@@ -1921,13 +2043,16 @@ task_finished:
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
-static void task_cloud_sync_cb(retro_task_t *task, void *task_data,
-      void *user_data, const char *error)
+/* Releases the sync's state when the task retires. Every manifest owns
+ * its entries' hashes: an entry added to the updated manifests is a
+ * copy of the hash it was given. */
+static void task_cloud_sync_cleanup(retro_task_t *task)
 {
-   task_cloud_sync_state_t *sync_state = (task_cloud_sync_state_t *)task_data;
+   task_cloud_sync_state_t *sync_state = (task_cloud_sync_state_t *)task->state;
 
    if (!sync_state)
       return;
+   task->state = NULL;
 
    /* A sync that ended before its manifests were read: what was added
     * goes into them all the same, to be freed with them. */
@@ -1947,8 +2072,22 @@ static void task_cloud_sync_cb(retro_task_t *task, void *task_data,
     * elems[i].data, so the strdup'd directories go with it. */
    if (sync_state->dirlist)
       string_list_free(sync_state->dirlist);
+   if (sync_state->hash_file)
+      filestream_close(sync_state->hash_file);
+   free(sync_state->hash_buf);
 
    free(sync_state);
+}
+
+/* What a sync task runs and releases: the one place that says so. */
+static void task_cloud_sync_task_setup(retro_task_t *task,
+      task_cloud_sync_state_t *sync_state, const char *title)
+{
+   task->state       = sync_state;
+   task->title       = strdup(title);
+   task->handler     = task_cloud_sync_task_handler;
+   task->cleanup     = task_cloud_sync_cleanup;
+   task->progress_cb = task_window_progress_cb;
 }
 
 static bool task_cloud_sync_task_finder(retro_task_t *task, void *user_data)
@@ -2022,11 +2161,7 @@ static void task_push_cloud_sync_with_mode(int conflict_resolution)
 
    strlcpy_lit(task_title, "Cloud Sync in progress", sizeof(task_title));
 
-   task->state    = sync_state;
-   task->title    = strdup(task_title);
-   task->handler  = task_cloud_sync_task_handler;
-   task->callback = task_cloud_sync_cb;
-   task->progress_cb = task_window_progress_cb;
+   task_cloud_sync_task_setup(task, sync_state, task_title);
 
    task_queue_push(task);
 }
