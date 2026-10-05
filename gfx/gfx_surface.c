@@ -356,9 +356,10 @@ static void gfx_surface_done(void *user, uintptr_t handle)
       free(s);
       return;
    }
+   /* The last touch: a release may free the surface (gfx_display's
+    * texture loads do). dropped is cleared on the next completion. */
    if (s->release)
       s->release(s->user, s, slot);
-   s->dropped = 0;
 }
 #endif
 
