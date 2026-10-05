@@ -149,6 +149,39 @@ PLUG
 ${MINGW_CC:-x86_64-w64-mingw32-gcc} -O1 -o "$work/plug.exe" "$work/plug.c" \
    || { echo "the plug helper did not build" >&2; exit 1; }
 
+# Another window to give the focus to.
+cat > "$work/other.c" <<'OTHER'
+#include <windows.h>
+int main(void)
+{
+   MSG m;
+   HWND w = CreateWindowA("STATIC", "Other window",
+         WS_OVERLAPPEDWINDOW | WS_VISIBLE, 600, 300, 300, 200,
+         NULL, NULL, GetModuleHandleA(NULL), NULL);
+   if (!w)
+      return 1;
+   while (GetMessageA(&m, NULL, 0, 0) > 0)
+   {
+      TranslateMessage(&m);
+      DispatchMessageA(&m);
+   }
+   return 0;
+}
+OTHER
+${MINGW_CC:-x86_64-w64-mingw32-gcc} -O1 -mwindows -o "$work/other.exe" "$work/other.c" \
+   || { echo "the other-window helper did not build" >&2; exit 1; }
+# And a way to close RetroArch's window from outside it.
+cat > "$work/close.c" <<'CLOSE'
+#include <windows.h>
+int main(void)
+{
+   HWND w = FindWindowA("RetroArch", NULL);
+   return w && PostMessageA(w, WM_CLOSE, 0, 0) ? 0 : 1;
+}
+CLOSE
+${MINGW_CC:-x86_64-w64-mingw32-gcc} -O1 -o "$work/close.exe" "$work/close.c" \
+   || { echo "the close helper did not build" >&2; exit 1; }
+
 export DISPLAY=:98
 Xvfb :98 -screen 0 1280x720x24 > "$work/xvfb.log" 2>&1 &
 XVFB=$!
@@ -388,6 +421,71 @@ VIDEO_DRIVER=gl VIDEO_STARTED='Found GL context' WANT_VIDEO=2 WANT_WINDOW="1 1 0
 VIDEO_DRIVER=gl VIDEO_STARTED='Found GL context' WANT_VIDEO=3 WANT_WINDOW="2 2 0" \
    WANT_MENUS=1 EXTRA_CFG='ui_menubar_enable = "true"' \
    RETROARCH_FULLSCREEN_IN_PLACE=0 scenario "OpenGL, toggle by restart" true 1 2 nomsg
+
+# A key held when the window loses the focus: the core sees it let go
+# then. The key is released only after RetroArch has been closed from
+# outside, so nothing but the focus change can have let it go - no
+# button is left held by switching windows. $1 name, $2 input driver.
+
+# Gives @1 the focus: there is no window manager, so by a click in it,
+# as the scenarios above do for RetroArch's window.
+focus_on() {
+   xdotool mousemove --window "$1" 40 40 click 1 2>/dev/null
+   xdotool windowfocus "$1" 2>/dev/null
+   sleep 0.5
+   [ "$(xdotool getwindowfocus 2>/dev/null)" = "$1" ]
+}
+focus_lost() {
+   local name=$1 log="$work/focus $1.log" app wid other i b_down b_up
+   if [ -n "${ONLY:-}" ]; then
+      case "focus lost: $name" in *"$ONLY"*) ;; *) return ;; esac
+   fi
+   write_cfg true "$2" "$2"
+   ( cd "$root" && WINEDEBUG=-all exec $WINE ./retroarch.exe --verbose \
+        -c "Z:$(echo "$work/retroarch.cfg" | sed 's|/|\\|g')" \
+        -L "Z:$(echo "$work/smoke_core.dll" | sed 's|/|\\|g')" ) > "$log" 2>&1 &
+   app=$!
+   for i in $(seq 1 80); do
+      wid=$(xdotool search --name "RetroArch" 2>/dev/null | head -1)
+      [ -n "$wid" ] && break
+      sleep 0.5
+   done
+   ( cd "$work" && WINEDEBUG=-all exec $WINE ./other.exe ) >/dev/null 2>&1 &
+   for i in $(seq 1 40); do
+      other=$(xdotool search --name "Other window" 2>/dev/null | head -1)
+      [ -n "$other" ] && break
+      sleep 0.5
+   done
+   if [ -z "$wid" ] || [ -z "$other" ]; then
+      echo "[FAIL] focus lost: $name: windows up: RetroArch ${wid:-no}, other ${other:-no}"
+      kill $app 2>/dev/null; timeout 10 wineserver -k 2>/dev/null
+      failures=$((failures + 1))
+      return
+   fi
+   sleep 2
+   focus_on "$wid" || echo "       (RetroArch's window would not take the focus)"
+   sleep 1
+   xdotool keydown z; sleep 1.5
+   focus_on "$other" || echo "       (the other window would not take the focus)"
+   sleep 1.5
+   ( cd "$work" && WINEDEBUG=-all $WINE ./close.exe ) >/dev/null 2>&1
+   for i in $(seq 1 30); do kill -0 $app 2>/dev/null || break; sleep 0.5; done
+   xdotool keyup z
+   kill $app 2>/dev/null
+   timeout 10 wineserver -k 2>/dev/null
+   b_down=$(count "$log" 'smoke core\] joypad B pressed')
+   b_up=$(count "$log" 'smoke core\] joypad B released')
+   if [ "$b_down" = 1 ] && [ "$b_up" = 1 ]; then
+      echo "[pass] focus lost: $name: a key held as the window lost the focus was let go for the core"
+   else
+      echo "[FAIL] focus lost: $name: the core saw B pressed $b_down and released $b_up (want 1 and 1)"
+      sed 's/\x1b\[[0-9;]*m//g' "$log" | tr -d '\r' | grep -av "ALSA lib\|Playlist\]" | tail -15
+      failures=$((failures + 1))
+   fi
+}
+
+focus_lost "raw input" raw
+focus_lost "DirectInput" dinput
 
 if [ "$failures" != 0 ]; then
    echo "FAIL windows_wine_smoke: $failures"
