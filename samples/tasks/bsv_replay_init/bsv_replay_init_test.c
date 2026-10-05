@@ -805,6 +805,37 @@ static void lane_header_sizes(void)
    lane_done("header_sizes", NULL);
 }
 
+/* A recorder built without statestream writes both block sizes as 0
+ * and RAW checkpoints.  Such a replay plays on a statestream build,
+ * with no index built for it. */
+static void lane_header_no_layout(void)
+{
+   static uint8_t buf[REPLAY_HEADER_LEN_BYTES + 2 + 12 + STATE_SIZE];
+   uint32_t words[REPLAY_HEADER_LEN];
+   uint32_t sizes[3];
+   uint8_t *p = buf;
+   bsv_movie_t *h = (bsv_movie_t*)calloc(1, sizeof(*h));
+
+   reset_counters();
+   memset(buf, 0, sizeof(buf));
+   memset(words, 0, sizeof(words));
+   memcpy(p, words, sizeof(words));
+   p       += sizeof(words);
+   *p++     = REPLAY_CHECKPOINT2_COMPRESSION_NONE;
+   *p++     = REPLAY_CHECKPOINT2_ENCODING_RAW;
+   sizes[0] = swap_if_big32(STATE_SIZE);
+   sizes[1] = sizes[0];
+   sizes[2] = sizes[0];
+   memcpy(p, sizes, sizeof(sizes));
+   h->version = 2;
+   h->file    = intfstream_open_memory(buf, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE, sizeof(buf));
+   CHECK(bsv_movie_reset_playback(h), "replay without a block layout refused");
+   CHECK(!h->blocks && !h->superblocks, "index built without a block layout");
+   bsv_movie_free(h);
+   lane_done("header_no_layout", NULL);
+}
+
 /* A version-1 header builds no block index; a statestream checkpoint
  * in that replay must fail, not read through the missing index. */
 static void lane_no_index(void)
@@ -1009,6 +1040,7 @@ int main(int argc, char **argv)
    lane_index_interval1();
    lane_index_pop();
    lane_header_sizes();
+   lane_header_no_layout();
    lane_no_index();
    lane_decode_fail_ends();
 #endif

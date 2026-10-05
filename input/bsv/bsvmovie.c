@@ -338,22 +338,28 @@ bool bsv_movie_reset_playback(bsv_movie_t *handle)
          uint32s_index_free(handle->blocks);
       handle->superblocks = NULL;
       handle->blocks      = NULL;
-      /* Both sizes come from the file.  The recorder writes 16 blocks of
-       * 128 or 16384 bytes; refuse a size the index cannot hold rather
-       * than allocating whatever the header asks for. */
-      if (     block_size < 4 || block_size % 4 != 0
-            || block_size > REPLAY_MAX_BLOCK_SIZE
-            || superblock_size == 0
-            || superblock_size > REPLAY_MAX_SUPERBLOCK_SIZE)
+      /* A recorder built without statestream writes both sizes as 0:
+       * its checkpoints are RAW and it has no block layout, so no index
+       * is built.  Otherwise both sizes come from the file.  The
+       * recorder writes 16 blocks of 128 or 16384 bytes; refuse a size
+       * the index cannot hold rather than allocating whatever the
+       * header asks for. */
+      if (block_size || superblock_size)
       {
-         RARCH_ERR("[Replay] Bad block sizes in header: %u, %u\n",
-               (unsigned)block_size, (unsigned)superblock_size);
-         return false;
+         if (     block_size < 4 || block_size % 4 != 0
+               || block_size > REPLAY_MAX_BLOCK_SIZE
+               || superblock_size == 0
+               || superblock_size > REPLAY_MAX_SUPERBLOCK_SIZE)
+         {
+            RARCH_ERR("[Replay] Bad block sizes in header: %u, %u\n",
+                  (unsigned)block_size, (unsigned)superblock_size);
+            return false;
+         }
+         handle->superblocks = uint32s_index_new(superblock_size,handle->commit_interval,handle->commit_threshold);
+         handle->blocks = uint32s_index_new(block_size/4,handle->commit_interval,handle->commit_threshold);
+         if (!handle->superblocks || !handle->blocks)
+            return false;
       }
-      handle->superblocks = uint32s_index_new(superblock_size,handle->commit_interval,handle->commit_threshold);
-      handle->blocks = uint32s_index_new(block_size/4,handle->commit_interval,handle->commit_threshold);
-      if (!handle->superblocks || !handle->blocks)
-         return false;
 #endif
       if (     intfstream_read(handle->file, &(compression), sizeof(uint8_t)) != sizeof(uint8_t)
             || intfstream_read(handle->file, &(encoding), sizeof(uint8_t)) != sizeof(uint8_t))
