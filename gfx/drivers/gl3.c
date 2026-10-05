@@ -247,6 +247,7 @@ typedef struct gl3
    GLuint hw_ring_texture[3];
    GLuint hw_ring_fbo[3];
    void  *hw_ring_sync[3];
+   void  *hw_ring_done_sync; /* taken ahead of the swap */
 
    float menu_texture_alpha;
    math_matrix_4x4 mvp;                /* float alignment */
@@ -5011,6 +5012,18 @@ static void gl3_encode_pq_to_sdr(gl3_t *gl, unsigned width, unsigned height)
 #endif
 }
 
+/* The ring's fence for this frame, taken ahead of the swap: a driver
+ * that queues swaps completes a fence behind one only once the swap is
+ * released, at the display's rate. */
+static void gl3_hw_ring_drawn(gl3_t *gl)
+{
+   if (!gl3_core_context_is_mains(gl))
+      return;
+   if (gl->hw_ring_done_sync)
+      glDeleteSync((GLsync)gl->hw_ring_done_sync);
+   gl->hw_ring_done_sync = (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+}
+
 static bool gl3_frame(void *data, const void *frame,
       unsigned dims,
       uint64_t frame_count,
@@ -5050,6 +5063,13 @@ static bool gl3_frame(void *data, const void *frame,
 
    if (!gl)
       return false;
+
+   /* One a frame without the ring's hand-over left behind */
+   if (gl->hw_ring_done_sync)
+   {
+      glDeleteSync((GLsync)gl->hw_ring_done_sync);
+      gl->hw_ring_done_sync = NULL;
+   }
 
    /* Travels with the frame, for set_texture_frame() to read rather
     * than the setting the menu writes */
@@ -5652,6 +5672,7 @@ static bool gl3_frame(void *data, const void *frame,
       }
    }
 
+   gl3_hw_ring_drawn(gl);
    if (gl->ctx_driver->swap_buffers)
       gl->ctx_driver->swap_buffers(gl->ctx_data);
 
@@ -6239,13 +6260,19 @@ static void gl3_hw_ring_fence_free(void *data, void *fence)
 
 static void gl3_hw_ring_fence_signal(void *data, void *fence)
 {
+   gl3_t *gl           = (gl3_t*)data;
    gl3_ring_fence_t *f = (gl3_ring_fence_t*)fence;
-   (void)data;
    if (!f)
       return;
    if (f->sync)
       glDeleteSync((GLsync)f->sync);
-   f->sync = (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+   if (gl && gl->hw_ring_done_sync)
+   {
+      f->sync               = gl->hw_ring_done_sync;
+      gl->hw_ring_done_sync = NULL;
+   }
+   else
+      f->sync = (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
    glFlush();
 }
 

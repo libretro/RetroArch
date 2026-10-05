@@ -189,6 +189,17 @@ jobs:
           python3 tools/input_state_grab_check.py --selftest
           python3 tools/input_state_grab_check.py
 
+      - name: Check the GL drivers take the hardware ring's fence ahead of the swap
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # Taken after the swap, the fence completes only when a driver
+          # that queues swaps releases it, and a hardware rendered core
+          # fast-forwards at the display's rate.
+          python3 tools/gl_ring_fence_check.py --selftest
+          python3 tools/gl_ring_fence_check.py
+
       - name: Check a setting's label exists wherever its translations name it
         shell: bash
         working-directory: ${{ github.workspace }}

@@ -3441,6 +3441,23 @@ static bool gl2_hw_ring_present_slot(void *data, unsigned slot)
  * again. */
 typedef struct { void *sync; } gl2_ring_fence_t;
 
+/* The ring's fence for this frame, taken ahead of the swap: a driver
+ * that queues swaps completes a fence behind one only once the swap is
+ * released, at the display's rate. */
+static void gl2_hw_ring_drawn(gl2_t *gl)
+{
+#ifdef GL2_HW_RING_SYNC
+   if (     !gl2_core_context_is_mains(gl)
+         || !(gl->flags & GL2_FLAG_HAVE_SYNC))
+      return;
+   if (gl->hw_ring_done_sync)
+      glDeleteSync((GLsync)gl->hw_ring_done_sync);
+   gl->hw_ring_done_sync = (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+#else
+   (void)gl;
+#endif
+}
+
 static bool gl2_hw_ring_fence_new(void *data, void **fence)
 {
    gl2_ring_fence_t *f;
@@ -3475,7 +3492,13 @@ static void gl2_hw_ring_fence_signal(void *data, void *fence)
    {
       if (f->sync)
          glDeleteSync((GLsync)f->sync);
-      f->sync = (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+      if (gl->hw_ring_done_sync)
+      {
+         f->sync               = gl->hw_ring_done_sync;
+         gl->hw_ring_done_sync = NULL;
+      }
+      else
+         f->sync = (void*)glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
       glFlush();
       return;
    }
@@ -4398,6 +4421,15 @@ static bool gl2_frame(void *data, const void *frame,
    if (!gl)
       return false;
 
+#ifdef GL2_HW_RING_SYNC
+   /* One a frame without the ring's hand-over left behind */
+   if (gl->hw_ring_done_sync)
+   {
+      glDeleteSync((GLsync)gl->hw_ring_done_sync);
+      gl->hw_ring_done_sync = NULL;
+   }
+#endif
+
    /* These travel with the frame, so this thread does not read what the
     * main thread writes: the scRGB encode below and gl2_encode_pq_to_sdr()
     * read the latched copies. */
@@ -4848,6 +4880,7 @@ static bool gl2_frame(void *data, const void *frame,
       gl->retained_dark  = 0;
    }
 
+    gl2_hw_ring_drawn(gl);
     if (gl->ctx_driver->swap_buffers)
         gl->ctx_driver->swap_buffers(gl->ctx_data);
 

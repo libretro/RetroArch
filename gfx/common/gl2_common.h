@@ -145,6 +145,7 @@ struct gl2
     * this thread to wait before reading it. Sync objects are shared
     * between the two contexts. */
    void *hw_ring_sync[3];
+   void *hw_ring_done_sync; /* taken ahead of the swap */
 
    uint32_t flags;
 
