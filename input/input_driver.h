@@ -766,6 +766,8 @@ typedef struct
     * One bit per RetroPad button, per port; core_hold_armed while any
     * is set. */
    uint16_t core_hold_mask[MAX_USERS];
+   /* and the keyboard's keys, one bit per RETROK_ code */
+   uint32_t core_hold_keys[(RETROK_LAST + 31) / 32];
    bool core_hold_armed;
 
    /* The frame's view of each port's RetroPad buttons, as a core is

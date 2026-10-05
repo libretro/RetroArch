@@ -10047,6 +10047,8 @@ void input_driver_hold_core_input(void)
 {
    memset(input_driver_st.core_hold_mask, 0xff,
          sizeof(input_driver_st.core_hold_mask));
+   memset(input_driver_st.core_hold_keys, 0xff,
+         sizeof(input_driver_st.core_hold_keys));
    input_driver_st.core_hold_armed = true;
 }
 
@@ -11177,6 +11179,30 @@ void input_driver_poll(void)
       }
       for (; port < MAX_USERS; port++)
          input_st->core_hold_mask[port] = 0;
+      /* the keys: each one still held back is read, a word of them
+       * skipped at a time once it is clear */
+      {
+         unsigned w;
+         for (w = 0; w < ARRAY_SIZE(input_st->core_hold_keys); w++)
+         {
+            uint32_t word = input_st->core_hold_keys[w];
+            unsigned b;
+            if (!word)
+               continue;
+            for (b = 0; b < 32; b++)
+            {
+               unsigned key = w * 32 + b;
+               if (!(word & (1u << b)))
+                  continue;
+               if (     key >= RETROK_LAST
+                     || !input_state_internal(input_st, settings, 0,
+                           RETRO_DEVICE_KEYBOARD, 0, key))
+                  word &= ~(1u << b);
+            }
+            input_st->core_hold_keys[w] = word;
+            any |= (word != 0);
+         }
+      }
       input_core_hold_reading = false;
       if (!any)
          input_st->core_hold_armed = false;
@@ -11395,15 +11421,21 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
       }
    }
 
-   /* buttons held back since the menu closed, until let go */
-   if (     input_st->core_hold_armed
-         && (device & RETRO_DEVICE_MASK) == RETRO_DEVICE_JOYPAD
-         && idx == 0)
+   /* buttons and keys held back since the menu closed, until let go */
+   if (input_st->core_hold_armed)
    {
-      uint16_t held_back = input_st->core_hold_mask[port];
-      if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         result = (int16_t)((uint16_t)result & ~held_back);
-      else if (id < RARCH_FIRST_CUSTOM_BIND && (held_back & (1u << id)))
+      if (     (device & RETRO_DEVICE_MASK) == RETRO_DEVICE_JOYPAD
+            && idx == 0)
+      {
+         uint16_t held_back = input_st->core_hold_mask[port];
+         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+            result = (int16_t)((uint16_t)result & ~held_back);
+         else if (id < RARCH_FIRST_CUSTOM_BIND && (held_back & (1u << id)))
+            result = 0;
+      }
+      else if (     (device & RETRO_DEVICE_MASK) == RETRO_DEVICE_KEYBOARD
+               && id < RETROK_LAST
+               && (input_st->core_hold_keys[id >> 5] & (1u << (id & 31))))
          result = 0;
    }
 
