@@ -746,10 +746,11 @@ bool win32_load_content_from_gui(const char *szFilename)
    return false;
 }
 
-#ifdef LEGACY_WIN32
-bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
+/* Windows 9x hands over ANSI paths, and DragQueryFileA has been in
+ * shell32 since Windows 95. */
+static bool win32_drag_query_file_ansi(HWND hwnd, WPARAM wparam)
 {
-   UINT count = DragQueryFile((HDROP)wparam, 0xFFFFFFFF, NULL, 0);
+   UINT count = DragQueryFileA((HDROP)wparam, 0xFFFFFFFF, NULL, 0);
    if (count)
    {
       char szFilename[1024];
@@ -763,7 +764,7 @@ bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
       for (i = 0; files && i < count; i++)
       {
          szFilename[0] = '\0';
-         DragQueryFile((HDROP)wparam, i, szFilename, sizeof(szFilename));
+         DragQueryFileA((HDROP)wparam, i, szFilename, sizeof(szFilename));
          if (     local_to_utf8_string(szFilename, utf8, sizeof(utf8))
                && !string_list_append(files, utf8, attr))
          {
@@ -775,16 +776,40 @@ bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
          return true;
 #endif
       szFilename[0]    = '\0';
-      DragQueryFile((HDROP)wparam, 0, szFilename, sizeof(szFilename));
+      DragQueryFileA((HDROP)wparam, 0, szFilename, sizeof(szFilename));
       return win32_load_content_from_gui(szFilename);
    }
    return false;
 }
+
+#ifdef LEGACY_WIN32
+bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
+{
+   return win32_drag_query_file_ansi(hwnd, wparam);
+}
 #else
 bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
 {
-   UINT count = DragQueryFileW((HDROP)wparam, 0xFFFFFFFF, NULL, 0);
-   if (count)
+   typedef UINT (WINAPI *DragQueryFileW_t)(HDROP, UINT, LPWSTR, UINT);
+   static DragQueryFileW_t query_w = NULL;
+   static bool probed              = false;
+   UINT count                      = 0;
+
+   /* Resolved rather than imported, so the binary still loads on a
+    * shell32 without it; a drop it cannot read goes the ANSI way. */
+   if (!probed)
+   {
+      HMODULE shell32 = GetModuleHandleA("shell32.dll");
+      if (shell32)
+         query_w = (DragQueryFileW_t)GetProcAddress(shell32,
+               "DragQueryFileW");
+      probed = true;
+   }
+   if (query_w)
+      count = query_w((HDROP)wparam, 0xFFFFFFFF, NULL, 0);
+   if (!count)
+      return win32_drag_query_file_ansi(hwnd, wparam);
+
    {
       wchar_t wszFilename[4096];
       bool ret        = false;
@@ -798,7 +823,7 @@ bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
       for (i = 0; files && i < count; i++)
       {
          wszFilename[0] = L'\0';
-         DragQueryFileW((HDROP)wparam, i, wszFilename,
+         query_w((HDROP)wparam, i, wszFilename,
                sizeof(wszFilename) / sizeof(wszFilename[0]));
          if ((szFilename = utf16_to_utf8_string_alloc(wszFilename)))
          {
@@ -816,7 +841,7 @@ bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
 #endif
       wszFilename[0]   = L'\0';
 
-      DragQueryFileW((HDROP)wparam, 0, wszFilename,
+      query_w((HDROP)wparam, 0, wszFilename,
             sizeof(wszFilename) / sizeof(wszFilename[0]));
       szFilename = utf16_to_utf8_string_alloc(wszFilename);
       ret        = win32_load_content_from_gui(szFilename);

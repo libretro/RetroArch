@@ -668,6 +668,25 @@ jobs:
              make SANITIZER=address,undefined check
           make clean
           echo "[pass] win32_screensaver_test (ASan)"
+      - name: Build and run win32_drag_drop_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/win32_drag_drop
+        run: |
+          set -eu
+          # Drag and drop from Windows 95 to current releases, through
+          # the setup in frontend/drivers/platform_win32.c and the drop
+          # handler in ui/drivers/ui_win32.c, compiled from the
+          # shipping text against a fake shell32, user32 and dwmapi.
+          # Drops must be switched on with or without dwmapi, DWM setup
+          # must run once, an elevated window must let the drop
+          # messages through where Windows filters them, and the files
+          # must arrive through DragQueryFileW or, where that is
+          # missing or reads nothing, DragQueryFileA.
+          make clean
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             make SANITIZER=address,undefined check
+          make clean
+          echo "[pass] win32_drag_drop_test (ASan)"
       - name: Build and run display_servers_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/display_servers

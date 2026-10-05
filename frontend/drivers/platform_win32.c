@@ -107,7 +107,6 @@ static char win32_cpu_model_name[64] = {0};
  * it early seems to cause issues on some systems.
  */
 static dylib_t dwm_lib;
-static dylib_t shell32_lib;
 static dylib_t nvda_lib;
 #endif
 
@@ -205,55 +204,97 @@ static void gfx_dwm_shutdown(void)
 #ifdef HAVE_DYLIB
    if (dwm_lib)
       dylib_close(dwm_lib);
-   if (shell32_lib)
-      dylib_close(shell32_lib);
    dwm_lib     = NULL;
-   shell32_lib = NULL;
 #endif
 }
 
+static VOID (WINAPI *win32_shell_drag_accept_files)(HWND, BOOL);
+static BOOL (WINAPI *win32_msg_filter_ex)(HWND, UINT, DWORD, void*);
+static BOOL (WINAPI *win32_msg_filter)(UINT, DWORD);
+
+/* An elevated process gets no drops from Explorer unless WM_DROPFILES,
+ * WM_COPYDATA and WM_COPYGLOBALDATA are let through to the window:
+ * per window from Windows 7, per process on Vista. */
+static VOID WINAPI win32_drag_accept_files(HWND hwnd, BOOL accept)
+{
+   if (accept)
+   {
+      static const UINT msgs[3] = { 0x0233, 0x004A, 0x0049 };
+      size_t i;
+      for (i = 0; i < ARRAY_SIZE(msgs); i++)
+      {
+         if (win32_msg_filter_ex)
+            win32_msg_filter_ex(hwnd, msgs[i], 1 /* MSGFLT_ALLOW */, NULL);
+         else if (win32_msg_filter)
+            win32_msg_filter(msgs[i], 1 /* MSGFLT_ADD */);
+      }
+   }
+   win32_shell_drag_accept_files(hwnd, accept);
+}
+
+/* shell32 has had drag and drop since Windows 95 and is always linked,
+ * so this does not depend on dwmapi or on HAVE_DYLIB. */
+static void win32_drag_drop_init(void)
+{
+   HMODULE shell32 = GetModuleHandleA("shell32.dll");
+   HMODULE user32  = GetModuleHandleA("user32.dll");
+
+   if (shell32)
+      win32_shell_drag_accept_files = (VOID (WINAPI*)(HWND, BOOL))
+         GetProcAddress(shell32, "DragAcceptFiles");
+   if (user32)
+   {
+      win32_msg_filter_ex = (BOOL (WINAPI*)(HWND, UINT, DWORD, void*))
+         GetProcAddress(user32, "ChangeWindowMessageFilterEx");
+      win32_msg_filter    = (BOOL (WINAPI*)(UINT, DWORD))
+         GetProcAddress(user32, "ChangeWindowMessageFilter");
+   }
+
+   DragAcceptFiles_func = win32_shell_drag_accept_files
+      ? win32_drag_accept_files
+      : NULL;
+}
+
+/* Returns whether DWM is available; dwmapi exists from Vista on. */
 static bool gfx_init_dwm(void)
 {
-   HRESULT (WINAPI *mmcss)(BOOL);
+#ifdef HAVE_DYLIB
+   HRESULT (WINAPI *mmcss)(BOOL) = NULL;
+#endif
    static bool inited = false;
 
    if (inited)
-      return true;
+#ifdef HAVE_DYLIB
+      return dwm_lib != NULL;
+#else
+      return false;
+#endif
+   inited = true;
 
    atexit(gfx_dwm_shutdown);
+   win32_drag_drop_init();
 
 #ifdef HAVE_DYLIB
-   if (!(shell32_lib = dylib_load("shell32.dll")))
-   {
-      RARCH_WARN("Did not find shell32.dll.\n");
-   }
-
    if (!(dwm_lib = dylib_load("dwmapi.dll")))
    {
       RARCH_WARN("Did not find dwmapi.dll.\n");
       return false;
    }
 
-   DragAcceptFiles_func =
-      (VOID (WINAPI*)(HWND, BOOL))dylib_proc(shell32_lib, "DragAcceptFiles");
-
    mmcss =
       (HRESULT(WINAPI*)(BOOL))dylib_proc(dwm_lib, "DwmEnableMMCSS");
-#else
-   DragAcceptFiles_func = DragAcceptFiles;
-#endif
-
    if (mmcss)
       mmcss(TRUE);
-
-   inited = true;
    return true;
+#else
+   return false;
+#endif
 }
 
 static void gfx_set_dwm(void)
 {
    HRESULT ret;
-   HRESULT (WINAPI *composition_enable)(UINT);
+   HRESULT (WINAPI *composition_enable)(UINT) = NULL;
    settings_t *settings     = config_get_ptr();
    bool disable_composition = settings->bools.video_disable_composition;
 
