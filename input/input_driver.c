@@ -9880,6 +9880,145 @@ void input_driver_keyboard_line_append(const char *utf8, size_t len)
       input_keyboard_line_append(&input_driver_st.keyboard_line, utf8, len);
 }
 
+/* A line of text is opened for @cb, after any line that was open is let
+ * go. Returns where the line's buffer pointer is kept, which the menu
+ * reads its text through. The keys go to the line, not to the binds,
+ * from here until it is closed. */
+const char **input_driver_text_entry_open(void *userdata,
+      input_keyboard_line_complete_t cb)
+{
+   const char **buffer;
+   input_keyboard_line_free(&input_driver_st);
+   buffer = input_keyboard_start_line(userdata,
+         &input_driver_st.keyboard_line, cb);
+   input_driver_st.flags |= INP_FLAG_KB_MAPPING_BLOCKED;
+   return buffer;
+}
+
+/* Where the line's length and cursor are kept, for a platform's own
+ * keyboard (Android, iOS), which edits the line in place. */
+void input_driver_keyboard_line_fields(size_t **size, size_t **cursor)
+{
+   if (size)
+      *size   = &input_driver_st.keyboard_line.size;
+   if (cursor)
+      *cursor = &input_driver_st.keyboard_line.ptr;
+}
+
+/* The line of text is emptied; it stays open. */
+void input_driver_keyboard_line_clear(void)
+{
+   input_keyboard_line_clear(&input_driver_st);
+}
+
+/* How long the line of text is, in bytes. */
+size_t input_driver_keyboard_line_length(void)
+{
+   return input_driver_st.keyboard_line.size;
+}
+
+/* A key of the on-screen keyboard is pressed: @word goes to the line,
+ * or the key changes the page (@osk_idx). */
+void input_driver_osk_press(enum osk_type *osk_idx, int ptr,
+      bool show_symbol_pages, const char *word, size_t len)
+{
+   input_event_osk_append(&input_driver_st.keyboard_line, osk_idx,
+         &input_driver_st.osk_last_codepoint,
+         &input_driver_st.osk_last_codepoint_len,
+         ptr, show_symbol_pages, word, len);
+}
+
+/* A character typed by a platform's touch keyboard: to the line, and
+ * remembered as the last one typed, as the on-screen keyboard's are. */
+void input_driver_keyboard_line_type(const char *word, size_t len)
+{
+   input_keyboard_line_append(&input_driver_st.keyboard_line, word, len);
+   osk_update_last_codepoint(&input_driver_st.osk_last_codepoint,
+         &input_driver_st.osk_last_codepoint_len, word);
+}
+
+void input_driver_set_keyboard_textbox_focus(bool focus)
+{
+   input_driver_st.osk_textbox_focus = focus;
+}
+
+/* The keys go to text, or to a capture, and not to the binds and the
+ * hotkeys. */
+void input_driver_set_keyboard_mapping_blocked(bool blocked)
+{
+   if (blocked)
+      input_driver_st.flags |=  INP_FLAG_KB_MAPPING_BLOCKED;
+   else
+      input_driver_st.flags &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+}
+
+/* Every key and button is to be let go before input counts again. */
+void input_driver_set_wait_input_release(bool wait)
+{
+   if (wait)
+      input_driver_st.flags |=  INP_FLAG_WAIT_INPUT_RELEASE;
+   else
+      input_driver_st.flags &= ~INP_FLAG_WAIT_INPUT_RELEASE;
+}
+
+bool input_driver_waiting_input_release(void)
+{
+   return (input_driver_st.flags & INP_FLAG_WAIT_INPUT_RELEASE) != 0;
+}
+
+/* Each key pressed goes to @cb first, for the capture of a bind; NULL
+ * stops it. */
+void input_driver_set_keyboard_press_cb(input_keyboard_press_t cb,
+      void *data)
+{
+   input_driver_st.keyboard_press_cb   = cb;
+   input_driver_st.keyboard_press_data = data;
+}
+
+/* The core's input is blocked, or the hotkeys are not: for the menu,
+ * which gives way to the hotkey-enable delay. */
+bool input_driver_libretro_input_blocked(void)
+{
+   return (input_driver_st.flags & INP_FLAG_BLOCK_LIBRETRO_INPUT) != 0;
+}
+
+bool input_driver_hotkey_blocked(void)
+{
+   return (input_driver_st.flags & INP_FLAG_BLOCK_HOTKEY) != 0;
+}
+
+/* The core asked for game focus when it was loaded. */
+bool input_driver_game_focus_core_requested(void)
+{
+   return input_driver_st.game_focus_state.core_requested;
+}
+
+#ifdef HAVE_OVERLAY
+/* An overlay is up. */
+bool input_driver_overlay_alive(void)
+{
+   const input_overlay_t *ol = input_driver_st.overlay_ptr;
+   return ol && (ol->flags & INPUT_OVERLAY_ALIVE);
+}
+
+/* An overlay is up and has a page showing. */
+bool input_driver_overlay_active_page(void)
+{
+   const input_overlay_t *ol = input_driver_st.overlay_ptr;
+   return ol && (ol->flags & INPUT_OVERLAY_ALIVE) && ol->active;
+}
+
+/* An overlay is up whose page takes input. */
+bool input_driver_overlay_takes_input(void)
+{
+   const input_overlay_t *ol = input_driver_st.overlay_ptr;
+   return     ol
+           && (ol->flags & INPUT_OVERLAY_ALIVE)
+           && ol->active
+           && (ol->active->flags & OVERLAY_TAKES_INPUT);
+}
+#endif
+
 /* The platform's keyboard hands over the whole line as it stands. */
 void input_driver_keyboard_line_set(const char *utf8, size_t len)
 {

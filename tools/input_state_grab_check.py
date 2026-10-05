@@ -139,12 +139,11 @@ def driver_calls(root):
 # file. A file may not have more than its number, one that is not
 # listed may have none, and a file below its number has it lowered.
 #
-# menu/menu_driver.c: text entry, the overlay and a few flags.
+# Nothing under menu/ takes it any more.
 # The Apple UI files: they put touches, keys and the mouse into the
 # Cocoa input driver's own data; that goes with the platform pump.
 OUTSIDE_DIRS = ('menu', 'ui')
 OUTSIDE_ALLOWED = {
-    'menu/menu_driver.c':                9,
     'ui/companion/companion_core.c':     1,
     'ui/drivers/cocoa/cocoa_common.m':   1,
     'ui/drivers/ui_cocoa.m':             3,

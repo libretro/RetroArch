@@ -1063,6 +1063,31 @@ bool input_driver_native_keyboard_shown(void);
 bool input_driver_keyboard_mapping_blocked(void);
 bool input_driver_keyboard_line_enabled(void);
 void input_driver_keyboard_line_set(const char *utf8, size_t len);
+/* Text entry, for the menu: a line is opened for a callback and the
+ * keys go to it until it is closed; the platform keyboards edit it in
+ * place; the on-screen keyboard and the touch keyboards type into it. */
+const char **input_driver_text_entry_open(void *userdata,
+      input_keyboard_line_complete_t cb);
+void input_driver_keyboard_line_fields(size_t **size, size_t **cursor);
+size_t input_driver_keyboard_line_length(void);
+void input_driver_keyboard_line_clear(void);
+void input_driver_osk_press(enum osk_type *osk_idx, int ptr,
+      bool show_symbol_pages, const char *word, size_t len);
+void input_driver_keyboard_line_type(const char *word, size_t len);
+void input_driver_set_keyboard_textbox_focus(bool focus);
+/* The capture of a bind and text entry: keys kept from the binds, a
+ * wait for everything to be let go, a callback for each key. */
+void input_driver_set_keyboard_mapping_blocked(bool blocked);
+void input_driver_set_wait_input_release(bool wait);
+bool input_driver_waiting_input_release(void);
+void input_driver_set_keyboard_press_cb(input_keyboard_press_t cb,
+      void *data);
+bool input_driver_libretro_input_blocked(void);
+bool input_driver_hotkey_blocked(void);
+bool input_driver_game_focus_core_requested(void);
+bool input_driver_overlay_alive(void);
+bool input_driver_overlay_takes_input(void);
+bool input_driver_overlay_active_page(void);
 void input_driver_keyboard_line_append(const char *utf8, size_t len);
 /* The line of text being typed, for whoever draws it: its bytes or
  * NULL, and where the cursor stands in them. And whether the text box

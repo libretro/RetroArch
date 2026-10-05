@@ -5056,7 +5056,6 @@ bool menu_input_key_bind_set_mode(
    uint64_t current_usec;
    unsigned index_offset;
    rarch_setting_t  *setting           = (rarch_setting_t*)data;
-   input_driver_state_t *input_st      = input_state_get_ptr();
    struct menu_state *menu_st          = &menu_driver_state;
    menu_handle_t       *menu           = menu_st->driver_data;
    menu_input_t *menu_input            = &menu_st->input_state;
@@ -5094,15 +5093,14 @@ bool menu_input_key_bind_set_mode(
    binds->timer_timeout.timeout_end    = current_usec + input_bind_timeout_us;
 
 #ifdef USE_CUSTOM_BIND_KEYBOARD_CB
-   input_st->keyboard_press_cb         = menu_input_key_bind_custom_bind_keyboard_cb;
-   input_st->keyboard_press_data       = menu;
+   input_driver_set_keyboard_press_cb(menu_input_key_bind_custom_bind_keyboard_cb, menu);
 #endif
 
    /* While waiting for input, we have to block all hotkeys. */
-   input_st->flags                    |= INP_FLAG_KB_MAPPING_BLOCKED;
+   input_driver_set_keyboard_mapping_blocked(true);
 
    /* Wait until keys are released before starting bind timeout. */
-   input_st->flags                    |= INP_FLAG_WAIT_INPUT_RELEASE;
+   input_driver_set_wait_input_release(true);
 
    /* Upon triggering an input bind operation,
     * pointer input must be inhibited - otherwise
@@ -5120,7 +5118,6 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
       retro_time_t current_time)
 {
    bool               timed_out   = false;
-   input_driver_state_t *input_st = input_state_get_ptr();
    struct menu_state *menu_st     = &menu_driver_state;
    struct menu_bind_state *_binds = &menu_st->input_binds;
    menu_input_t *menu_input       = &menu_st->input_state;
@@ -5144,7 +5141,7 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
 
    if (_binds->timer_timeout.timeout_us <= 0)
    {
-      input_st->flags                   &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+      input_driver_set_keyboard_mapping_blocked(false);
       /* Give up on first timeout */
       return true;
    }
@@ -5161,9 +5158,8 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
       /* We won't be getting any key events, so just cancel early. */
       if (timed_out)
       {
-         input_st->keyboard_press_cb        = NULL;
-         input_st->keyboard_press_data      = NULL;
-         input_st->flags                   &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+         input_driver_set_keyboard_press_cb(NULL, NULL);
+         input_driver_set_keyboard_mapping_blocked(false);
       }
 
       return true;
@@ -5176,31 +5172,31 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
       const struct retro_keybind *old_binds = &input_config_binds[new_binds.port][bind_index];
       unsigned old_key                      = RETRO_KEYBIND_KEY(old_binds);
 
-      input_st->flags                      &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+      input_driver_set_keyboard_mapping_blocked(false);
 
       menu_input_key_bind_poll_bind_state(
             settings->uints.input_joypad_index[new_binds.port],
             &new_binds, timed_out);
 
       /* Wait until keys and buttons are released */
-      if (input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
+      if (input_driver_waiting_input_release())
       {
          if (input_bind_hold_us)
          {
             if (!menu_input_key_bind_poll_find_hold(
                   settings->uints.input_max_users,
                   &new_binds, &(new_binds.buffer)))
-               input_st->flags &= ~INP_FLAG_WAIT_INPUT_RELEASE;
+               input_driver_set_wait_input_release(false);
          }
          else
          {
             if (!menu_input_key_bind_poll_find_trigger(
                   settings->uints.input_max_users,
                   _binds, &new_binds, &(new_binds.buffer)))
-               input_st->flags &= ~INP_FLAG_WAIT_INPUT_RELEASE;
+               input_driver_set_wait_input_release(false);
          }
 
-         if (!(input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE))
+         if (!input_driver_waiting_input_release())
          {
             /* Reset timeout */
             new_binds.timer_timeout.timeout_us  = input_bind_timeout_us;
@@ -5300,14 +5296,13 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
          if (     new_binds.order > ARRAY_SIZE(input_config_bind_order) - 1
                || stop_binding)
          {
-            input_st->keyboard_press_cb      = NULL;
-            input_st->keyboard_press_data    = NULL;
-            input_st->flags                 &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+            input_driver_set_keyboard_press_cb(NULL, NULL);
+            input_driver_set_keyboard_mapping_blocked(false);
             return true;
          }
 
-         input_st->flags                    &= ~INP_FLAG_KB_MAPPING_BLOCKED;
-         input_st->flags                    |= INP_FLAG_WAIT_INPUT_RELEASE;
+         input_driver_set_keyboard_mapping_blocked(false);
+         input_driver_set_wait_input_release(true);
 
          /* Next bind */
          new_binds.output                    =
@@ -5343,7 +5338,7 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
 /* input_osk_native_active() is true when a platform-native text-entry
  * panel currently owns the keyboard line.  The built-in on-screen
  * keyboard must not append in that case: both paths write into
- * input_st->keyboard_line, and input_event_osk_append() calls
+ * the frontend's line of text, and input_driver_osk_press() calls
  * input_keyboard_line_append(), which can realloc the buffer out from
  * under state the native path is holding.  Every backend answers
  * through that one function; see input/input_osk.h. */
@@ -5357,7 +5352,6 @@ bool menu_input_dialog_get_display_kb(void)
 {
    struct menu_state *menu_st     = &menu_driver_state;
 #ifdef HAVE_LIBNX
-   input_driver_state_t *input_st = input_state_get_ptr();
    SwkbdConfig kbd;
    Result rc;
    /* Indicates that we are "typing" from the swkbd
@@ -5412,13 +5406,7 @@ bool menu_input_dialog_get_display_kb(void)
             char oldchar     = buf[i+1];
             buf[i+1]         = '\0';
 
-            input_keyboard_line_append(&input_st->keyboard_line,
-                  word, strlen(word));
-
-            osk_update_last_codepoint(
-                  &input_st->osk_last_codepoint,
-                  &input_st->osk_last_codepoint_len,
-                  word);
+            input_driver_keyboard_line_type(word, strlen(word));
             buf[i+1]     = oldchar;
          }
       }
@@ -5498,7 +5486,6 @@ unsigned menu_event(
    unsigned new_scroll_accel                       = 0;
    struct menu_state *menu_st                      = &menu_driver_state;
    menu_input_t *menu_input                        = &menu_st->input_state;
-   input_driver_state_t *input_st                  = input_state_get_ptr();
    gfx_display_t *p_disp                           = disp_get_ptr();
    menu_input_pointer_hw_state_t *pointer_hw_state = &menu_st->input_pointer_hw_state;
    menu_handle_t *menu                             = menu_st->driver_data;
@@ -5517,11 +5504,9 @@ unsigned menu_event(
     * pointer (mouse/lightgun) mode is on. A page of "nul" buttons (an
     * LED or decoration overlay) leaves the mouse to the menu. */
    bool overlay_active                             = input_overlay_enable
-         && (input_st->overlay_ptr)
-         && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE)
-         && (input_st->overlay_ptr->active)
-         && (   (input_st->overlay_ptr->active->flags & OVERLAY_TAKES_INPUT)
-             || settings->bools.input_overlay_pointer_enable);
+         && (   input_driver_overlay_takes_input()
+             || (   input_driver_overlay_active_page()
+                 && settings->bools.input_overlay_pointer_enable));
 #else
    bool input_overlay_enable                       = false;
    bool overlay_active                             = false;
@@ -5861,11 +5846,8 @@ unsigned menu_event(
       if (BIT256_GET_PTR(p_trigger_input, menu_ok_btn))
       {
          if (menu_st->osk_ptr >= 0)
-            input_event_osk_append(
-                  &input_st->keyboard_line,
+            input_driver_osk_press(
                   &menu_st->osk_idx,
-                  &input_st->osk_last_codepoint,
-                  &input_st->osk_last_codepoint_len,
                   menu_st->osk_ptr,
                   show_osk_symbols,
                   menu_st->osk_grid[menu_st->osk_ptr],
@@ -5875,7 +5857,7 @@ unsigned menu_event(
       /* Cancel: Send backspace if buffer is not empty, otherwise close window */
       if (BIT256_GET_PTR(p_trigger_input, menu_cancel_btn))
       {
-         if (input_st->keyboard_line.size)
+         if (input_driver_keyboard_line_length())
             input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
          else
             input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
@@ -5883,7 +5865,7 @@ unsigned menu_event(
 
       /* Scan: Clear the keyboard input window */
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_Y))
-         input_keyboard_line_clear(input_st);
+         input_driver_keyboard_line_clear();
 
       }
       /* Cancel closes outright under a native panel: the panel owns
@@ -5903,7 +5885,7 @@ unsigned menu_event(
       /* Select: Clear and close the keyboard input window */
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
       {
-         input_keyboard_line_clear(input_st);
+         input_driver_keyboard_line_clear();
          input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
       }
 
@@ -6128,8 +6110,8 @@ unsigned menu_event(
       /* Prevent simultaneous hotkey actions according to hotkey block delay */
       if (input_config_binds[0][RARCH_ENABLE_HOTKEY].joykey != NO_BTN)
       {
-         if (      (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)
-               || !(input_st->flags & INP_FLAG_BLOCK_HOTKEY))
+         if (      input_driver_libretro_input_blocked()
+               || !input_driver_hotkey_blocked())
             ret = MENU_ACTION_NOOP;
       }
 
@@ -6199,7 +6181,6 @@ MENU_NOINLINE static int menu_input_post_iterate(
    menu_input_t *menu_input                        = &menu_st->input_state;
    menu_handle_t *menu                             = menu_st->driver_data;
    video_driver_state_t *video_st                  = video_state_get_ptr();
-   input_driver_state_t *input_st                  = input_state_get_ptr();
    menu_list_t *menu_list                          = menu_st->entries.list;
    file_list_t *selection_buf                      = menu_list ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
    size_t selection                                = menu_st->selection_ptr;
@@ -6537,23 +6518,20 @@ MENU_NOINLINE static int menu_input_post_iterate(
                      && menu_st->driver_ctx->osk_pointer_over_textbox
                      && menu_st->driver_ctx->osk_pointer_over_textbox(
                         menu_st->userdata, x, y, output_size))
-                  input_st->osk_textbox_focus = true;
+                  input_driver_set_keyboard_textbox_focus(true);
                else
                {
                   menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
                   if (point.retcode > -1)
                   {
-                     bool textbox_focus    = input_st->osk_textbox_focus;
+                     bool textbox_focus    = input_driver_keyboard_textbox_focus();
                      menu_st->osk_ptr     = point.retcode;
-                     input_st->osk_textbox_focus = false;
+                     input_driver_set_keyboard_textbox_focus(false);
                      if (!textbox_focus)
                      {
                         bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
-                        input_event_osk_append(
-                              &input_st->keyboard_line,
+                        input_driver_osk_press(
                               &menu_st->osk_idx,
-                              &input_st->osk_last_codepoint,
-                              &input_st->osk_last_codepoint_len,
                               point.retcode,
                               show_osk_symbols,
                               menu_st->osk_grid[menu_st->osk_ptr],
@@ -6999,7 +6977,6 @@ void retroarch_menu_running(void)
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
    video_driver_state_t *video_st  = video_state_get_ptr();
    settings_t *settings            = config_get_ptr();
-   input_driver_state_t *input_st  = input_state_get_ptr();
 #ifdef HAVE_OVERLAY
    bool input_overlay_hide_in_menu = settings->bools.input_overlay_hide_in_menu;
 #endif
@@ -7039,8 +7016,7 @@ void retroarch_menu_running(void)
             settings,
             (menu_st->flags & MENU_ST_FLAG_ALIVE) ? true : false,
 #ifdef HAVE_OVERLAY
-                input_st->overlay_ptr
-            && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE),
+            input_driver_overlay_alive(),
 #else
             false,
 #endif
@@ -7061,7 +7037,7 @@ void retroarch_menu_running(void)
     * running the menu (note: it is not currently
     * possible for game focus to be enabled at this
     * point, but must safeguard against future changes) */
-   if (input_st->game_focus_state.enabled)
+   if (input_driver_game_focus_enabled())
    {
       enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_OFF;
       command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
@@ -7089,7 +7065,6 @@ void retroarch_menu_running_finished(bool quit)
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
    video_driver_state_t*video_st   = video_state_get_ptr();
    settings_t *settings            = config_get_ptr();
-   input_driver_state_t *input_st  = input_state_get_ptr();
    struct menu_state *menu_st      = &menu_driver_state;
    menu_handle_t *menu             = menu_st->driver_data;
    menu_input_t *menu_input        = &menu_st->input_state;
@@ -7119,8 +7094,7 @@ void retroarch_menu_running_finished(bool quit)
             settings,
             menu_st->flags & MENU_ST_FLAG_ALIVE,
 #ifdef HAVE_OVERLAY
-                input_st->overlay_ptr
-            && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE),
+            input_driver_overlay_alive(),
 #else
             false,
 #endif
@@ -7152,7 +7126,7 @@ void retroarch_menu_running_finished(bool quit)
 
          if (      (auto_game_focus_type == AUTO_GAME_FOCUS_ON)
                || ((auto_game_focus_type == AUTO_GAME_FOCUS_DETECT)
-               && input_st->game_focus_state.core_requested))
+               && input_driver_game_focus_core_requested()))
          {
             enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_ON;
             command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
@@ -8729,7 +8703,10 @@ bool menu_driver_iterate(
 
 bool menu_input_dialog_start_search(void)
 {
-   input_driver_state_t *input_st          = input_state_get_ptr();
+#if defined(HAVE_COCOATOUCH) || defined(ANDROID)
+   size_t *line_size                       = NULL;
+   size_t *line_cursor                     = NULL;
+#endif
    settings_t *settings                    = config_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
    bool accessibility_enable               = settings->bools.accessibility_enable;
@@ -8751,7 +8728,6 @@ bool menu_input_dialog_start_search(void)
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
          sizeof(menu_st->input_dialog_kb_label));
 
-   input_keyboard_line_free(input_st);
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(
@@ -8764,16 +8740,18 @@ bool menu_input_dialog_start_search(void)
 #endif
 
    menu_st->input_dialog_keyboard_buffer   =
-      input_keyboard_start_line(menu,
-            &input_st->keyboard_line,
+      input_driver_text_entry_open(menu,
             menu_input_search_cb);
+#if defined(HAVE_COCOATOUCH) || defined(ANDROID)
+   /* the platform's own keyboard edits the line in place */
+   input_driver_keyboard_line_fields(&line_size, &line_cursor);
+#endif
 
 #ifdef HAVE_COCOATOUCH
    /* Use iOS/tvOS native keyboard instead of custom on-screen keyboard */
    ios_keyboard_start(
          (char **)menu_st->input_dialog_keyboard_buffer,
-         &input_st->keyboard_line.size,
-         &input_st->keyboard_line.ptr,
+         line_size, line_cursor,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
          menu_input_search_cb,
          menu);
@@ -8783,22 +8761,21 @@ bool menu_input_dialog_start_search(void)
    if (config_get_ptr()->bools.input_android_system_keyboard)
       android_keyboard_start(
             (char **)menu_st->input_dialog_keyboard_buffer,
-            &input_st->keyboard_line.size,
-            &input_st->keyboard_line.ptr,
+            line_size, line_cursor,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
             menu_input_search_cb,
             menu);
 #endif
-
-   /* While reading keyboard line input, we have to block all hotkeys. */
-   input_st->flags                        |= INP_FLAG_KB_MAPPING_BLOCKED;
 
    return true;
 }
 
 bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 {
-   input_driver_state_t *input_st   = input_state_get_ptr();
+#if defined(HAVE_COCOATOUCH) || defined(ANDROID)
+   size_t *line_size                       = NULL;
+   size_t *line_cursor                     = NULL;
+#endif
 #ifdef HAVE_ACCESSIBILITY
    settings_t *settings             = config_get_ptr();
    bool accessibility_enable        = settings->bools.accessibility_enable;
@@ -8840,7 +8817,6 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    menu_st->input_dialog_kb_idx       = line->idx;
    menu_st->input_dialog_kb_text_type = line->text_type;
 
-   input_keyboard_line_free(input_st);
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(
@@ -8853,16 +8829,18 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 #endif
 
    menu_st->input_dialog_keyboard_buffer =
-      input_keyboard_start_line(menu,
-            &input_st->keyboard_line,
+      input_driver_text_entry_open(menu,
             line->cb);
+#if defined(HAVE_COCOATOUCH) || defined(ANDROID)
+   /* the platform's own keyboard edits the line in place */
+   input_driver_keyboard_line_fields(&line_size, &line_cursor);
+#endif
 
 #ifdef HAVE_COCOATOUCH
    /* Use iOS/tvOS native keyboard instead of custom on-screen keyboard */
    ios_keyboard_start(
          (char **)menu_st->input_dialog_keyboard_buffer,
-         &input_st->keyboard_line.size,
-         &input_st->keyboard_line.ptr,
+         line_size, line_cursor,
          line->label,
          line->cb,
          menu);
@@ -8872,15 +8850,11 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
    if (config_get_ptr()->bools.input_android_system_keyboard)
       android_keyboard_start(
             (char **)menu_st->input_dialog_keyboard_buffer,
-            &input_st->keyboard_line.size,
-            &input_st->keyboard_line.ptr,
+            line_size, line_cursor,
             line->label,
             line->cb,
             menu);
 #endif
-
-   /* While reading keyboard line input, we have to block all hotkeys. */
-   input_st->flags |= INP_FLAG_KB_MAPPING_BLOCKED;
 
    return true;
 }
