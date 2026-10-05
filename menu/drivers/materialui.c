@@ -8606,8 +8606,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
                video_info->dims,
                tex_list[MUI_TEXTURE_KEY_HOVER],
                mui->font_data.list.font,
-               input_st->osk_grid,
-               input_st->osk_textbox_focus ? 44 : input_st->osk_ptr,
+               menu_st->osk_grid,
+               input_st->osk_textbox_focus ? 44 : menu_st->osk_ptr,
                0xFFFFFFFF);
       }
 

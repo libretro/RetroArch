@@ -5804,44 +5804,44 @@ unsigned menu_event(
       {
       bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
 
-      input_event_osk_iterate(input_st->osk_grid, input_st->osk_idx);
+      input_event_osk_iterate(menu_st->osk_grid, menu_st->osk_idx);
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_DOWN))
       {
          menu_st->input_last_time_us = menu_st->current_time_us;
-         if (input_st->osk_ptr < 33)
-            input_st->osk_ptr += OSK_CHARS_PER_LINE;
+         if (menu_st->osk_ptr < 33)
+            menu_st->osk_ptr += OSK_CHARS_PER_LINE;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_UP))
       {
          menu_st->input_last_time_us = menu_st->current_time_us;
-         if (input_st->osk_ptr >= OSK_CHARS_PER_LINE)
-            input_st->osk_ptr -= OSK_CHARS_PER_LINE;
+         if (menu_st->osk_ptr >= OSK_CHARS_PER_LINE)
+            menu_st->osk_ptr -= OSK_CHARS_PER_LINE;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_RIGHT))
       {
          menu_st->input_last_time_us = menu_st->current_time_us;
-         if (input_st->osk_ptr < 43)
-            input_st->osk_ptr += 1;
+         if (menu_st->osk_ptr < 43)
+            menu_st->osk_ptr += 1;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_LEFT))
       {
          menu_st->input_last_time_us = menu_st->current_time_us;
-         if (input_st->osk_ptr >= 1)
-            input_st->osk_ptr -= 1;
+         if (menu_st->osk_ptr >= 1)
+            menu_st->osk_ptr -= 1;
       }
 
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_L))
       {
          menu_st->input_last_time_us = menu_st->current_time_us;
-         if (input_st->osk_idx > OSK_TYPE_UNKNOWN + 1)
-            input_st->osk_idx = ((enum osk_type)
-                  (input_st->osk_idx - 1));
+         if (menu_st->osk_idx > OSK_TYPE_UNKNOWN + 1)
+            menu_st->osk_idx = ((enum osk_type)
+                  (menu_st->osk_idx - 1));
          else
-            input_st->osk_idx = ((enum osk_type)(show_osk_symbols
+            menu_st->osk_idx = ((enum osk_type)(show_osk_symbols
                      ? OSK_TYPE_LAST - 1
                      : OSK_SYMBOLS_PAGE1));
       }
@@ -5849,27 +5849,27 @@ unsigned menu_event(
       if (BIT256_GET_PTR(p_trigger_input, RETRO_DEVICE_ID_JOYPAD_R))
       {
          menu_st->input_last_time_us = menu_st->current_time_us;
-         if (input_st->osk_idx < (show_osk_symbols
+         if (menu_st->osk_idx < (show_osk_symbols
                   ? OSK_TYPE_LAST - 1
                   : OSK_SYMBOLS_PAGE1))
-            input_st->osk_idx = ((enum osk_type)(
-                     input_st->osk_idx + 1));
+            menu_st->osk_idx = ((enum osk_type)(
+                     menu_st->osk_idx + 1));
          else
-            input_st->osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
+            menu_st->osk_idx = ((enum osk_type)(OSK_TYPE_UNKNOWN + 1));
       }
 
       if (BIT256_GET_PTR(p_trigger_input, menu_ok_btn))
       {
-         if (input_st->osk_ptr >= 0)
+         if (menu_st->osk_ptr >= 0)
             input_event_osk_append(
                   &input_st->keyboard_line,
-                  &input_st->osk_idx,
+                  &menu_st->osk_idx,
                   &input_st->osk_last_codepoint,
                   &input_st->osk_last_codepoint_len,
-                  input_st->osk_ptr,
+                  menu_st->osk_ptr,
                   show_osk_symbols,
-                  input_st->osk_grid[input_st->osk_ptr],
-                  strlen(input_st->osk_grid[input_st->osk_ptr]));
+                  menu_st->osk_grid[menu_st->osk_ptr],
+                  strlen(menu_st->osk_grid[menu_st->osk_ptr]));
       }
 
       /* Cancel: Send backspace if buffer is not empty, otherwise close window */
@@ -6242,7 +6242,7 @@ MENU_NOINLINE static int menu_input_post_iterate(
 
       menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
       if (point.retcode > -1)
-         input_st->osk_ptr = point.retcode;
+         menu_st->osk_ptr = point.retcode;
    }
 
    /* Select + X/Y position */
@@ -6544,20 +6544,20 @@ MENU_NOINLINE static int menu_input_post_iterate(
                   if (point.retcode > -1)
                   {
                      bool textbox_focus    = input_st->osk_textbox_focus;
-                     input_st->osk_ptr     = point.retcode;
+                     menu_st->osk_ptr     = point.retcode;
                      input_st->osk_textbox_focus = false;
                      if (!textbox_focus)
                      {
                         bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
                         input_event_osk_append(
                               &input_st->keyboard_line,
-                              &input_st->osk_idx,
+                              &menu_st->osk_idx,
                               &input_st->osk_last_codepoint,
                               &input_st->osk_last_codepoint_len,
                               point.retcode,
                               show_osk_symbols,
-                              input_st->osk_grid[input_st->osk_ptr],
-                              strlen(input_st->osk_grid[input_st->osk_ptr]));
+                              menu_st->osk_grid[menu_st->osk_ptr],
+                              strlen(menu_st->osk_grid[menu_st->osk_ptr]));
                      }
                   }
                }

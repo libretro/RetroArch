@@ -7388,6 +7388,7 @@ OZONE_NOINLINE static void ozone_draw_osk(
    char message[2048];
    gfx_display_t *p_disp          = (gfx_display_t*)disp_userdata;
    input_driver_state_t *input_st = input_state_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
    const char *text               = str;
    unsigned text_color            = 0xffffffff;
    float ozone_osk_backdrop[16] = {
@@ -7644,8 +7645,8 @@ OZONE_NOINLINE static void ozone_draw_osk(
                   ? ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR_STATIC]
                   : ozone->textures[OZONE_TEXTURE_CURSOR_BORDER],
             ozone->fonts.entries_label.font,
-            input_st->osk_grid,
-            input_st->osk_textbox_focus ? 44 : input_st->osk_ptr,
+            menu_st->osk_grid,
+            input_st->osk_textbox_focus ? 44 : menu_st->osk_ptr,
             ozone->theme->text_rgba);
    }
 }

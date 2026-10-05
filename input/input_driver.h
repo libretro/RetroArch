@@ -695,13 +695,11 @@ typedef struct
 #ifdef HAVE_NETWORKGAMEPAD
    input_remote_t *remote;
 #endif
-   char    *osk_grid[45];                                /* ptr alignment */
 #if defined(HAVE_TRANSLATE)
 #if defined(HAVE_ACCESSIBILITY)
    int ai_gamepad_state[MAX_USERS];
 #endif
 #endif
-   int osk_ptr;
    bool osk_textbox_focus;
    turbo_buttons_t turbo_btns; /* int32_t alignment */
    hold_buttons_t hold_btns;   /* int32_t alignment */
@@ -737,7 +735,6 @@ typedef struct
    unsigned osk_last_codepoint;
    unsigned osk_last_codepoint_len;
 
-   enum osk_type osk_idx;
 
 #ifdef HAVE_BSV_MOVIE
    struct bsv_state bsv_movie_state;            /* char alignment */

@@ -578,6 +578,14 @@ struct menu_state
 #ifdef HAVE_MENU
    char input_dialog_kb_label_setting[256];
    char input_dialog_kb_label[256];
+
+   /* The on-screen keyboard, which is the menu's widget: what its keys
+    * show, where its cursor is, and which page of keys is up. What it
+    * types goes to the frontend's line of text, as a hardware key's
+    * does. */
+   char *osk_grid[45];
+   int osk_ptr;
+   enum osk_type osk_idx;
 #endif
    unsigned char kb_key_state[RETROK_LAST];
 

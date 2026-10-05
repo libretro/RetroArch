@@ -8753,7 +8753,9 @@ bool retroarch_main_init_core(int argc, char *argv[],
 
    core_info_set_savestate_probe(retroarch_core_info_savestate_probe);
 
-   input_st->osk_idx             = OSK_LOWERCASE_LATIN;
+#ifdef HAVE_MENU
+   menu_st->osk_idx              = OSK_LOWERCASE_LATIN;
+#endif
    /* The active bits answer the core's GET_AV_ENABLE during its init.
     * Staged, the previous session's drivers are still up and present
     * between stages, so the bits keep saying what those drivers can
