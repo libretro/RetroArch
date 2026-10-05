@@ -435,6 +435,9 @@ typedef struct vk
       VkPipeline pipelines[8];
 #ifdef VULKAN_HDR_SWAPCHAIN
       VkPipeline pipelines_sdr[8]; /* SDR offscreen variants, same layout */
+      /* The HDR UI layer's blended strip for an RGBA16F texture, linear
+       * scRGB: alpha_blend_linear.frag, under sdr_render_pass */
+      VkPipeline pipeline_linear_sdr;
 #endif
       /* The state the menu effects in slots [2..7] are made with, when
        * first drawn: [0] for render_pass, [1] for sdr_render_pass; and
@@ -3346,6 +3349,31 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
             call.uniform_size = sizeof(math_matrix_4x4);
             call.vbo          = &range;
             call.vertices     = draw->coords->vertices;
+#ifdef VULKAN_HDR_SWAPCHAIN
+            /* A half-float texture is linear scRGB: into the HDR UI layer
+             * through the inverse of the composite's encode, which takes
+             * the menu nits and the composite's gamut after the MVP. */
+            if (     (vk->flags & VK_FLAG_SDR_PIPELINE)
+                  && texture->format == VK_FORMAT_R16G16B16A16_SFLOAT
+                  && vk->display.pipeline_linear_sdr != VK_NULL_HANDLE)
+            {
+               struct
+               {
+                  math_matrix_4x4 mvp;
+                  float params[4];
+               } lin_ubo;
+               memcpy(&lin_ubo.mvp, call.uniform, sizeof(lin_ubo.mvp));
+               lin_ubo.params[0] = vk->hdr.menu_nits;
+               lin_ubo.params[1] = (float)vk->hdr.ubo_values.expand_gamut;
+               lin_ubo.params[2] = 0.0f;
+               lin_ubo.params[3] = 0.0f;
+               call.pipeline     = vk->display.pipeline_linear_sdr;
+               call.uniform      = &lin_ubo;
+               call.uniform_size = sizeof(lin_ubo);
+               vulkan_draw_triangles(vk, &call);
+               break;
+            }
+#endif
 
             vulkan_draw_triangles(vk, &call);
          }
@@ -4518,7 +4546,12 @@ static void vulkan_init_render_pass(
    vkCreateRenderPass(vk->context->device,
          &rp_info, NULL, &vk->keep_render_pass);
 
-   attachment.format            = VK_FORMAT_B8G8R8A8_UNORM;
+   /* The HDR offscreen layer the menu, and a shader's SDR output, are
+    * drawn into before the composite: FP16, so the menu's alpha and a
+    * 10-bit or linear texture keep their precision, and a linear value
+    * above menu white survives to the composite. Only the HDR path
+    * renders under it. */
+   attachment.format            = VK_FORMAT_R16G16B16A16_SFLOAT;
    attachment.loadOp            = VK_ATTACHMENT_LOAD_OP_CLEAR;
    attachment.storeOp           = VK_ATTACHMENT_STORE_OP_STORE;
    attachment.initialLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -4903,6 +4936,11 @@ static void vulkan_init_pipelines(vk_t *vk)
    static const uint32_t alpha_blend_frag[] =
 #include "vulkan_shaders/alpha_blend.frag.inc"
       ;
+#ifdef VULKAN_HDR_SWAPCHAIN
+   static const uint32_t alpha_blend_linear_frag[] =
+#include "vulkan_shaders/alpha_blend_linear.frag.inc"
+      ;
+#endif
 
    static const uint32_t mesh_vert[] =
 #include "vulkan_shaders/mesh.vert.inc"
@@ -5260,6 +5298,17 @@ static void vulkan_init_pipelines(vk_t *vk)
                1, &pipe, NULL, &vk->display.pipelines_sdr[i]);
       }
 
+      /* The blended strip again for a linear scRGB texture: the same
+       * vertex shader, alpha_blend_linear.frag */
+      vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
+      module_info.codeSize   = sizeof(alpha_blend_linear_frag);
+      module_info.pCode      = alpha_blend_linear_frag;
+      vkCreateShaderModule(vk->context->device,
+            &module_info, NULL, &shader_stages[1].module);
+      blend_attachment.blendEnable = VK_TRUE;
+      vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
+            1, &pipe, NULL, &vk->display.pipeline_linear_sdr);
+
       /* Done with the alpha_blend shader modules. */
       vkDestroyShaderModule(vk->context->device, shader_stages[0].module, NULL);
       vkDestroyShaderModule(vk->context->device, shader_stages[1].module, NULL);
@@ -5556,6 +5605,9 @@ if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
             vk->display.pipelines_sdr[i], NULL);
       vk->display.pipelines_sdr[i] = VK_NULL_HANDLE;
    }
+   vkDestroyPipeline(vk->context->device,
+         vk->display.pipeline_linear_sdr, NULL);
+   vk->display.pipeline_linear_sdr = VK_NULL_HANDLE;
 }
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
@@ -6647,7 +6699,7 @@ static void vulkan_hdr_buffers_init(vk_t *vk, unsigned fallback_dims)
    vulkan_retained_free(vk);
 
    vulkan_init_render_target(&vk->offscreen_buffer, dims,
-         VK_FORMAT_B8G8R8A8_UNORM, vk->sdr_render_pass, vk->context);
+         VK_FORMAT_R16G16B16A16_SFLOAT, vk->sdr_render_pass, vk->context);
    vulkan_init_render_target(&vk->readback_image, dims,
          VK_FORMAT_B8G8R8A8_UNORM, vk->readback_render_pass, vk->context);
    vk->hdr_buffers_dims = dims;
@@ -10592,6 +10644,14 @@ static bool vulkan_supports_texture_format(void *data,
     * and blits. */
    if (fmt == TEXTURE_GPU_FORMAT_RGBA16F)
       return vk && vk->context;
+#ifdef VULKAN_HDR_SWAPCHAIN
+   /* alpha_blend_linear.frag shows such a texture as linear scRGB in the
+    * HDR UI layer; in SDR there is no linear light to show it in. */
+   if (fmt == TEXTURE_GPU_FORMAT_SCRGB)
+      return vk && vk->context
+         && (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+         && vk->display.pipeline_linear_sdr != VK_NULL_HANDLE;
+#endif
    if (!vk || !vk->context || !vulkan_gpu_format_to_vk(fmt, &vkfmt))
       return false;
    vkGetPhysicalDeviceFormatProperties(vk->context->gpu, vkfmt, &props);
