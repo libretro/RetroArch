@@ -5491,6 +5491,8 @@ unsigned menu_event(
       bool display_kb)
 {
    int i;
+   /* the mouse or the touchscreen is in use this frame */
+   bool pointer_active                             = false;
    /* Used for key repeat */
    static retro_time_t last_time_us                = 0;
    static float delay_timer                        = 0.0f;
@@ -5663,7 +5665,11 @@ unsigned menu_event(
       if (pointer_hw_state->flags & MENU_INP_PTR_FLG_ACTIVE)
       {
          menu_st->input_last_time_us = menu_st->current_time_us;
-         /* Prevent double trigger when OK/Cancel has mouse binds */
+         /* Prevent double trigger when OK/Cancel has mouse binds: the
+          * pointer acts through the pointer path this frame, not as a
+          * button too, and a button it is bound to stays held back
+          * until let go */
+         pointer_active              = true;
          input_driver_hold_held_input();
       }
    }
@@ -6152,8 +6158,13 @@ unsigned menu_event(
    }
 
    /* Menu must be alive. What was held as it opened is held back by the
-    * run loop, button by button, and does not reach here. */
-   if (!(menu_st->flags & MENU_ST_FLAG_ALIVE))
+    * run loop, button by button, and does not reach here. While the
+    * pointer is in use it is the pointer that acts, not a button: the
+    * flag that held input back used to make this frame's action
+    * nothing, and the mouse's press, wheel and long press are built on
+    * that. */
+   if (     !(menu_st->flags & MENU_ST_FLAG_ALIVE)
+         || pointer_active)
       ret = MENU_ACTION_NOOP;
 
    return ret;
