@@ -1600,11 +1600,89 @@ static void wnd_proc_gdi_paint(gdi_t *gdi)
  * A video family differs from another in what creating the window
  * sets up - a GL context, a Vulkan surface, a device context - and GDI
  * also paints from here. Everything else is win32_wnd_proc_route(). */
+/* Text entry and the IME.
+ *
+ * A window has an input context by default, and while it has one every
+ * key that comes off its queue is first offered to the IME: on
+ * Windows 8 and later that is the text services framework, for every
+ * keyboard layout and not only the East Asian ones. RetroArch has a
+ * use for what the IME produces in one place, a line of text being
+ * typed in the menu. Everywhere else the offer is wasted work on the
+ * thread that pumps the window, on each key down and up and each
+ * repeat, and an IME left switched on puts its composition in front
+ * of a game.
+ *
+ * So the window is without its input context except while a line of
+ * text is open. The frontend says when one opens and closes
+ * (win32_text_entry()); what it last said is kept here, and applied to
+ * the window on the thread that owns it - when the window is made, and
+ * on a posted message after that. Nothing waits for the message.
+ *
+ * Text from a layout that needs no IME is not touched by this: it
+ * comes from TranslateMessage(). The other windows of the process -
+ * the desktop menu, file dialogs - have input contexts of their own.
+ *
+ * ImmAssociateContextEx() is looked up when first wanted, as Windows
+ * NT 4 and 95 do not have it; without it nothing changes. */
+#define WIN32_WM_TEXT_ENTRY   (WM_APP + 0x7e)
+#define WIN32_IACE_DEFAULT    0x0010
+
+static retro_atomic_int_t win32_text_entry_on;
+
+/* On the thread that owns @hwnd. */
+static void win32_ime_apply(HWND hwnd, bool attach)
+{
+   typedef BOOL (WINAPI *imm_associate_ex_t)(HWND, HANDLE, DWORD);
+   static imm_associate_ex_t associate_ex;
+   static bool looked_up;
+
+   if (!looked_up)
+   {
+      HMODULE imm = GetModuleHandleA("imm32.dll");
+      if (!imm)
+         imm       = LoadLibraryA("imm32.dll");
+      if (imm)
+         associate_ex = (imm_associate_ex_t)
+            GetProcAddress(imm, "ImmAssociateContextEx");
+      looked_up    = true;
+   }
+
+   if (associate_ex)
+      associate_ex(hwnd, NULL, attach ? WIN32_IACE_DEFAULT : 0);
+}
+
+/* A line of text has been opened, or closed. From the frontend's
+ * thread; the window's own thread does the work. */
+void win32_text_entry(bool active)
+{
+   int now = active ? 1 : 0;
+
+   if (retro_atomic_load_relaxed_int(&win32_text_entry_on) == now)
+      return;
+   retro_atomic_store_release_int(&win32_text_entry_on, now);
+   if (main_window.hwnd)
+      PostMessage(main_window.hwnd, WIN32_WM_TEXT_ENTRY, 0, 0);
+}
+
 LRESULT CALLBACK win32_window_proc(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam)
 {
+   if (message == WIN32_WM_TEXT_ENTRY)
+   {
+      /* what the frontend says now, which is what the last of these
+       * messages stands for */
+      win32_ime_apply(hwnd,
+            retro_atomic_load_acquire_int(&win32_text_entry_on) != 0);
+      return 0;
+   }
+
    if (message == WM_CREATE)
    {
+      /* a new window comes with an input context: it keeps it only if
+       * a line of text is open already */
+      win32_ime_apply(hwnd,
+            retro_atomic_load_acquire_int(&win32_text_entry_on) != 0);
+
       switch (win32_wnd_family)
       {
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)

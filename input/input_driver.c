@@ -87,6 +87,9 @@
 #include "../config.def.keybinds.h"
 #include "../configuration.h"
 #include "../config.def.h"
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#include "../gfx/common/win32_common.h"
+#endif
 #include "../core_info.h"
 #include "../driver.h"
 #include "../frontend/frontend_driver.h"
@@ -2232,6 +2235,22 @@ void input_keyboard_line_clear(input_driver_state_t *input_st)
    input_st->keyboard_line.capacity     = 0;
 }
 
+/* A line of text has been opened, or closed. This is the one place the
+ * platform is told, whoever opened it and whatever types into it.
+ *
+ * Windows takes the IME away from its window except while a line is
+ * open (win32_text_entry()). The other platforms still find out their
+ * own ways - Android and iOS are called from the menu, SDL3 and the
+ * Vita look every poll - and are to be told from here as well. */
+static void input_text_entry_changed(bool active)
+{
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   win32_text_entry(active);
+#else
+   (void)active;
+#endif
+}
+
 void input_keyboard_line_free(input_driver_state_t *input_st)
 {
    input_keyboard_line_t *kb_line = (input_keyboard_line_t*)&input_st->keyboard_line;
@@ -2245,6 +2264,7 @@ void input_keyboard_line_free(input_driver_state_t *input_st)
    kb_line->userdata           = NULL;
    kb_line->enabled            = false;
    input_st->osk_textbox_focus = false;
+   input_text_entry_changed(false);
 }
 
 const char **input_keyboard_start_line(
@@ -2260,6 +2280,7 @@ const char **input_keyboard_start_line(
    kb_line->userdata                 = userdata;
    kb_line->enabled                  = true;
    input_driver_st.osk_textbox_focus = false;
+   input_text_entry_changed(true);
 
    return (const char**)&kb_line->buffer;
 }

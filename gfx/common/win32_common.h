@@ -82,6 +82,10 @@ extern float g_win32_refresh_rate;
 extern ui_window_win32_t main_window;
 extern HACCEL window_accelerators;
 
+/* A line of text has been opened in the frontend, or closed: the main
+ * window has its IME input context only while one is open. */
+void win32_text_entry(bool active);
+
 void win32_monitor_get_info(void);
 
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id);
