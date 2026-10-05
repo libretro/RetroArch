@@ -8403,6 +8403,15 @@ static void rgui_populate_entries(
          menu_st->selection_ptr = rgui->settings_selection_ptr;
    }
 
+   /* a selection remembered from a longer list lands on its last entry */
+   {
+      menu_list_t *menu_list = menu_st->entries.list;
+      if (menu_list)
+         menu_st->selection_ptr = menu_entries_restorable_selection(
+               MENU_LIST_GET_SELECTION(menu_list, 0),
+               menu_st->selection_ptr);
+   }
+
    rgui_navigation_set(data, true);
 
    /* Determine whether to show entry index */

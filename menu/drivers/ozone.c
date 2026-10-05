@@ -4677,12 +4677,12 @@ static void ozone_tab_set_selection(void *data)
       {
          struct menu_state *menu_st = menu_state_get_ptr();
          file_list_t *selection_buf = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
-         /* The tab's list may be shorter than when its selection was
-          * saved: the last entry is the nearest one still there. */
+         /* a selection remembered from a longer list lands on its last
+          * entry, but not on a placeholder the finished read replaces */
          if (!selection_buf || !selection_buf->size)
             return;
-         if (tab_selection >= selection_buf->size)
-            tab_selection = selection_buf->size - 1;
+         tab_selection              = menu_entries_restorable_selection(
+               selection_buf, tab_selection);
          menu_st->selection_ptr     = tab_selection;
          ozone_selection_changed(ozone, false);
       }

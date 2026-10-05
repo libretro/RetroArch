@@ -473,6 +473,124 @@ static void lane_many_playlists_keep_history(void)
       fprintf(stderr, "[pass] many-playlists-keep-history lane\n");
 }
 
+/* What the back button does, and the frame that rebuilds the list. */
+static void press_back(void)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   size_t sel                 = menu_st->selection_ptr;
+   menu_entry_t entry;
+   MENU_ENTRY_INITIALIZE(entry);
+   entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED | MENU_ENTRY_FLAG_LABEL_ENABLED;
+   menu_entry_get(&entry, 0, sel, NULL, true);
+   menu_entry_action(&entry, sel, MENU_ACTION_CANCEL);
+   run_frame();
+}
+
+/* The row of @leaf in the list on screen. */
+static size_t row_of(const char *leaf)
+{
+   file_list_t *buf = selection_buf();
+   size_t i;
+   for (i = 0; buf && i < buf->size; i++)
+      if (buf->list[i].path && strstr(buf->list[i].path, leaf))
+         return i;
+   return (size_t)-1;
+}
+
+/* Opens @leaf from the Playlists screen on screen, as a tap does. */
+static bool open_from_playlists(const char *leaf)
+{
+   size_t row = row_of(leaf);
+   if (row == (size_t)-1)
+      return false;
+   set_selection(row);
+   return press_ok_on_match(leaf, false);
+}
+
+/* RGUI restores a playlist's selection from its row's slot. When the
+ * row now holds a shorter playlist, the selection lands on its last
+ * entry instead of past the end. */
+static void lane_restored_selection_clamped(void)
+{
+   unsigned had               = failures;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   char big[700], small[700];
+   size_t row;
+
+   config_get_ptr()->uints.menu_remember_selection = MENU_REMEMBER_SELECTION_ALWAYS;
+   snprintf(big,   sizeof(big),   "%s/aa_big.lpl",   fixture_dir);
+   snprintf(small, sizeof(small), "%s/ab_small.lpl", fixture_dir);
+   if (!write_playlist(big, "/games/big", 1500)
+         || !write_playlist(small, "/games/small", 10))
+      return;
+
+   open_playlists_screen();
+   row = row_of("aa_big.lpl");
+   CHECK(open_from_playlists("aa_big.lpl"), "could not open aa_big");
+   run_until_loaded();
+   CHECK(selection_buf() && selection_buf()->size > 1200, "aa_big did not load");
+   set_selection(1200);
+   press_back();
+
+   /* the big playlist goes; the small one moves up into its row */
+   unlink(big);
+   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   run_frame();
+   CHECK(row_of("ab_small.lpl") == row, "ab_small.lpl is in row %u, not %u",
+         (unsigned)row_of("ab_small.lpl"), (unsigned)row);
+   CHECK(open_from_playlists("ab_small.lpl"), "could not open ab_small");
+   run_until_loaded();
+   CHECK(selection_buf() && selection_buf()->size == 10, "ab_small did not load");
+   CHECK(menu_st->selection_ptr == 9,
+         "the 10-entry playlist opened on entry %lu",
+         (unsigned long)menu_st->selection_ptr);
+   press_back();
+
+   unlink(small);
+   if (failures == had)
+      fprintf(stderr, "[pass] restored-selection-clamped lane\n");
+}
+
+/* A selection restored while the playlist is still being read - the
+ * list a "Loading" placeholder - is kept for the full list. */
+static void lane_restored_selection_kept_through_load(void)
+{
+   unsigned had               = failures;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   char keep[700];
+
+   config_get_ptr()->uints.menu_remember_selection = MENU_REMEMBER_SELECTION_ALWAYS;
+   snprintf(keep, sizeof(keep), "%s/ac_keep.lpl", fixture_dir);
+   if (!write_playlist(keep, "/games/keep", 1500))
+      return;
+
+   open_playlists_screen();
+   CHECK(open_from_playlists("ac_keep.lpl"), "could not open ac_keep");
+   run_until_loaded();
+   set_selection(700);
+   press_back();
+
+   /* another playlist in between, so the next open reads again */
+   CHECK(open_from_playlists("n64.lpl"), "could not open n64");
+   run_until_loaded();
+   press_back();
+
+   CHECK(open_from_playlists("ac_keep.lpl"), "could not reopen ac_keep");
+   CHECK(playlist_init_cached_pending(),
+         "the reopen did not read in the background, so this lane does "
+         "not reach the placeholder it exists for");
+   run_until_loaded();
+   CHECK(selection_buf() && selection_buf()->size > 700, "ac_keep did not load");
+   CHECK(menu_st->selection_ptr == 700,
+         "ac_keep reopened on entry %lu, not 700",
+         (unsigned long)menu_st->selection_ptr);
+   press_back();
+
+   unlink(keep);
+   if (failures == had)
+      fprintf(stderr, "[pass] restored-selection-kept-through-load lane\n");
+}
+
 /* Report 3: a read that yields must finish on frames alone, with no
  * input at all. */
 static void lane_frames_alone_finish_the_read(void)
@@ -768,6 +886,8 @@ int main(int argc, char *argv[])
    lane_based_playlist_loads_once();
    lane_saved_view_opens_explore();
    lane_many_playlists_keep_history();
+   lane_restored_selection_clamped();
+   lane_restored_selection_kept_through_load();
 
    CHECK(saf_read_calls > 0,
          "the short-read VFS was never used - this run did not "

@@ -481,6 +481,26 @@ static void menu_file_browser_format_display_name(const char *path,
    strlcpy(s + _len, ")", len - _len);
 }
 
+size_t menu_entries_restorable_selection(const file_list_t *list,
+      size_t selection)
+{
+   size_t      i;
+   const char *loading;
+
+   if (!list || selection < list->size)
+      return selection;
+   loading = msg_hash_to_str(MSG_LOADING);
+   for (i = 0; i < list->size; i++)
+   {
+      if (     (     list->list[i].type == MENU_SETTING_NO_ITEM
+                  && string_is_equal(list->list[i].path, loading))
+            || string_is_equal(list->list[i].label,
+                  MENU_ENUM_LABEL_EXPLORE_INITIALISING_LIST_STR))
+         return selection;
+   }
+   return list->size ? list->size - 1 : 0;
+}
+
 void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       size_t i, void *userdata, bool use_representation)
 {

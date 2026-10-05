@@ -3333,6 +3333,12 @@ static void xmb_tab_set_selection(void *data)
       if (tab_selection)
       {
          struct menu_state *menu_st = menu_state_get_ptr();
+         menu_list_t *menu_list     = menu_st->entries.list;
+         /* a selection remembered from a longer list lands on its last
+          * entry */
+         if (menu_list)
+            tab_selection = menu_entries_restorable_selection(
+                  MENU_LIST_GET_SELECTION(menu_list, 0), tab_selection);
          menu_st->selection_ptr     = tab_selection;
          xmb_selection_pointer_changed(xmb, false);
       }

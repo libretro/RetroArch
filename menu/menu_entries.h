@@ -237,6 +237,13 @@ bool menu_entries_list_search(const char *needle, size_t *idx);
  * Its only interaction back to the UI is to arrange for
  * notify_list_loaded on the UI companion.
  */
+/* A remembered @selection for @list: @selection while it is inside the
+ * list, or while the list is a placeholder ("Loading", Explore
+ * initialising) that a finished background read replaces, since it
+ * belongs to the full list; otherwise the list's last entry. */
+size_t menu_entries_restorable_selection(const file_list_t *list,
+      size_t selection);
+
 void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
       size_t i, void *userdata, bool use_representation);
 
