@@ -13100,6 +13100,14 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CLOUD_SYNC_ACCESS_KEY_ID,      PARSE_ONLY_STRING,         false},
                {MENU_ENUM_LABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,  PARSE_ONLY_STRING,         false},
 #endif
+               /* The SMB and NFS drivers use the network share settings:
+                * the entry that opens them, under the driver using them. */
+#ifdef HAVE_SMBCLIENT
+               {MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,           PARSE_ACTION,              false},
+#endif
+#ifdef HAVE_NFSCLIENT
+               {MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS,           PARSE_ACTION,              false},
+#endif
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -13117,6 +13125,18 @@ unsigned menu_displaylist_build_list(
                      build_list[i].checked =
                            string_is_equal(settings->arrays.cloud_sync_driver, "s3");
                      break;
+#ifdef HAVE_SMBCLIENT
+                  case MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS:
+                     build_list[i].checked =
+                           string_is_equal(settings->arrays.cloud_sync_driver, "smb");
+                     break;
+#endif
+#ifdef HAVE_NFSCLIENT
+                  case MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS:
+                     build_list[i].checked =
+                           string_is_equal(settings->arrays.cloud_sync_driver, "nfs");
+                     break;
+#endif
                   default:
                      break;
                   }

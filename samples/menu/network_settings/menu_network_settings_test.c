@@ -8,7 +8,10 @@
  * to a real identifier (a label missing from msg_hash_lbl.h resolves
  * to "null", and the push then finds no list: the screen came up as
  * an empty "null" browser, which is the field report), and opening
- * each screen yields its rows. */
+ * each screen yields its rows. With Cloud Sync on the SMB or NFS
+ * driver, the entry that opens the share settings it uses is in the
+ * Cloud Sync screen too, under that driver only, and does what the
+ * Network one does. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -82,6 +85,28 @@ static bool list_has_label(const char *label)
          return true;
    return false;
 }
+
+static menu_file_list_cbs_t *entry_cbs(const char *label)
+{
+   file_list_t *buf = selection_buf();
+   size_t i;
+   for (i = 0; buf && i < buf->size; i++)
+      if (string_is_equal(buf->list[i].label, label))
+         return (menu_file_list_cbs_t*)buf->list[i].actiondata;
+   return NULL;
+}
+
+#ifdef HAVE_CLOUDSYNC
+/* Opens Settings > Cloud Sync with @driver as the Cloud Sync driver. */
+static size_t open_cloud_sync(const char *driver)
+{
+   strlcpy(config_get_ptr()->arrays.cloud_sync_driver, driver,
+         sizeof(config_get_ptr()->arrays.cloud_sync_driver));
+   return open_list(DISPLAYLIST_CLOUD_SYNC_SETTINGS_LIST,
+         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CLOUD_SYNC_SETTINGS_LIST),
+         MENU_ENUM_LABEL_DEFERRED_CLOUD_SYNC_SETTINGS_LIST);
+}
+#endif
 
 /* Opens @e's dropdown, the list a click on the setting shows, and runs
  * the OK action of the row reading @want, as picking it does. Returns
@@ -198,6 +223,65 @@ int main(int argc, char *argv[])
 #ifdef HAVE_NFSCLIENT
    CHECK(list_has_label(MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS_STR), "NFS Network Settings is under Settings > Network");
 #endif
+
+   /* the OK action each Network entry runs, to compare with the
+    * Cloud Sync screen's */
+   {
+#if defined(HAVE_CLOUDSYNC) && (defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT))
+      menu_file_list_cbs_t *cbs;
+#endif
+#if defined(HAVE_CLOUDSYNC) && defined(HAVE_SMBCLIENT)
+      int (*smb_ok)(const char*, const char*, unsigned, size_t, size_t) = NULL;
+#endif
+#if defined(HAVE_CLOUDSYNC) && defined(HAVE_NFSCLIENT)
+      int (*nfs_ok)(const char*, const char*, unsigned, size_t, size_t) = NULL;
+#endif
+#if defined(HAVE_CLOUDSYNC) && defined(HAVE_SMBCLIENT)
+      if ((cbs = entry_cbs(MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS_STR)))
+         smb_ok = cbs->action_ok;
+#endif
+#if defined(HAVE_CLOUDSYNC) && defined(HAVE_NFSCLIENT)
+      if ((cbs = entry_cbs(MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS_STR)))
+         nfs_ok = cbs->action_ok;
+#endif
+#ifdef HAVE_CLOUDSYNC
+#ifdef HAVE_NFSCLIENT
+      n = open_cloud_sync("nfs");
+      CHECK(n > 0 && list_has_label(MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS_STR),
+            "Cloud Sync on NFS shows NFS Network Settings");
+      CHECK(nfs_ok && (cbs = entry_cbs(MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS_STR))
+            && cbs->action_ok == nfs_ok,
+            "... and it opens what the Network entry opens");
+#ifdef HAVE_SMBCLIENT
+      CHECK(!list_has_label(MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS_STR),
+            "Cloud Sync on NFS does not show SMB Network Settings");
+#endif
+#endif
+#ifdef HAVE_SMBCLIENT
+      n = open_cloud_sync("smb");
+      CHECK(n > 0 && list_has_label(MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS_STR),
+            "Cloud Sync on SMB shows SMB Network Settings");
+      CHECK(smb_ok && (cbs = entry_cbs(MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS_STR))
+            && cbs->action_ok == smb_ok,
+            "... and it opens what the Network entry opens");
+#ifdef HAVE_NFSCLIENT
+      CHECK(!list_has_label(MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS_STR),
+            "Cloud Sync on SMB does not show NFS Network Settings");
+#endif
+#endif
+      n = open_cloud_sync("webdav");
+      CHECK(n > 0 && list_has_label(MENU_ENUM_LABEL_CLOUD_SYNC_URL_STR),
+            "Cloud Sync on WebDAV still shows its URL");
+#ifdef HAVE_SMBCLIENT
+      CHECK(!list_has_label(MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS_STR),
+            "Cloud Sync on WebDAV shows no SMB Network Settings");
+#endif
+#ifdef HAVE_NFSCLIENT
+      CHECK(!list_has_label(MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS_STR),
+            "Cloud Sync on WebDAV shows no NFS Network Settings");
+#endif
+#endif
+   }
 
    /* each screen opens with its rows */
 #ifdef HAVE_SMBCLIENT
