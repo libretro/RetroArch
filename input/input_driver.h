@@ -761,6 +761,12 @@ typedef struct
     * armed outside input_keys_pressed() starts from the previous
     * frame's held set. */
    uint16_t wait_release_mask[MAX_USERS];
+   /* The core's buttons held back after the menu closes: those that
+    * were down, each until it is let go (input_driver_hold_core_input()).
+    * One bit per RetroPad button, per port; core_hold_armed while any
+    * is set. */
+   uint16_t core_hold_mask[MAX_USERS];
+   bool core_hold_armed;
 
    /* The frame's view of each port's RetroPad buttons, as a core is
     * given them: after port mapping, remaps, turbo, hold, overlays and
@@ -1100,6 +1106,10 @@ bool input_driver_game_focus_core_requested(void);
 bool input_driver_overlay_alive(void);
 bool input_driver_overlay_takes_input(void);
 bool input_driver_overlay_active_page(void);
+/* The buttons the core's ports have down now are kept from the core
+ * until each is let go: for the menu as it closes, so that the press
+ * that closed it does nothing in the content. */
+void input_driver_hold_core_input(void);
 void input_driver_keyboard_line_append(const char *utf8, size_t len);
 /* The line of text being typed, for whoever draws it: its bytes or
  * NULL, and where the cursor stands in them. And whether the text box

@@ -2689,6 +2689,170 @@ static void lane_menu_combo_gate(void)
 #endif
 }
 
+/* The menu, pause and the press that closes the menu. A user opens the
+ * menu, closes it with B still held, lets B go and presses it again;
+ * pauses with the pause hotkey and goes in and out of the menu - with
+ * "Pause Content When Menu Is Active" on and off. What the core sees
+ * and whether it runs are held to what they should be:
+ *
+ * - the menu pauses the core when the setting is on and not otherwise;
+ * - leaving the menu lets the core run again, unless the pause hotkey
+ *   paused it first;
+ * - the B that closed the menu does not reach the core while it is
+ *   held; let go and pressed again, it does. */
+static void (*pm_trace)(int, int);
+static void (*pm_trace_last)(unsigned*, int*);
+static long (*pm_runs)(void);
+
+/* frames run one at a time; whether the core saw B in any of them */
+static bool pm_frames_saw_b(unsigned n)
+{
+   bool saw = false;
+   unsigned i, buttons;
+   int axes[4];
+   for (i = 0; i < n; i++)
+   {
+      long before = pm_runs();
+      run_loop_frames(1);
+      if (pm_runs() != before)
+      {
+         pm_trace_last(&buttons, axes);
+         if (buttons & (1u << RETRO_DEVICE_ID_JOYPAD_B))
+            saw = true;
+      }
+   }
+   return saw;
+}
+
+static void pm_set_menu(bool up)
+{
+   if (menu_is_up() != up)
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+}
+
+static void lane_menu_pause(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   input_driver_state_t *input_st = input_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   struct retro_keybind saved_pause = input_config_binds[0][RARCH_PAUSE_TOGGLE];
+   bool saved_setting             = settings->bools.menu_pause_libretro;
+   uint32_t b_bit, pause_bit      = 1u << 20;
+   void *core;
+   unsigned had = failures;
+   unsigned s;
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(pm_trace = (void (*)(int, int))dlsym(core, "harness_core_trace"))
+       || !(pm_trace_last = (void (*)(unsigned*, int*))dlsym(core, "harness_core_trace_last"))
+       || !(pm_runs = (long (*)(void))dlsym(core, "harness_core_runs"))
+       || !joypad_real)
+   {
+      CHECK(false, "menu pause: the harness core's entry points or the joypad driver");
+      return;
+   }
+
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat                  = 0;
+   syn_buttons              = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   b_bit = 1u << (input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_B].joykey & 31);
+   /* the pause hotkey on a button of its own */
+   input_config_binds[0][RARCH_PAUSE_TOGGLE].joykey = 20;
+   pm_trace(2, 0);
+
+   for (s = 0; s < 2; s++)
+   {
+      bool pause_in_menu = (s == 0);
+      const char *with   = pause_in_menu ? "with Pause Content in the menu on"
+                                         : "with Pause Content in the menu off";
+      char msg[256];
+      long r0, r1;
+
+      settings->bools.menu_pause_libretro = pause_in_menu;
+      pm_set_menu(false);
+      syn_buttons = 0;
+      run_loop_frames(10);
+
+      /* in the menu: paused or not, as the setting says */
+      pm_set_menu(true);
+      run_loop_frames(2);
+      r0 = pm_runs();
+      run_loop_frames(10);
+      r1 = pm_runs();
+      snprintf(msg, sizeof(msg), "menu pause, %s: the core %s in the menu",
+            with, pause_in_menu ? "ran" : "did not run");
+      CHECK(pause_in_menu ? (r1 == r0) : (r1 > r0), msg);
+
+      /* closed with B held: the core runs, and does not see that B */
+      syn_buttons = b_bit;
+      run_loop_frames(3);
+      pm_set_menu(false);
+      r0 = pm_runs();
+      snprintf(msg, sizeof(msg), "menu pause, %s: the core saw the B that closed the menu, while it was held", with);
+      CHECK(!pm_frames_saw_b(15), msg);
+      snprintf(msg, sizeof(msg), "menu pause, %s: the core did not run again after the menu closed", with);
+      CHECK(pm_runs() > r0, msg);
+      syn_buttons = 0;
+      snprintf(msg, sizeof(msg), "menu pause, %s: the core saw B after it was let go", with);
+      CHECK(!pm_frames_saw_b(5), msg);
+      syn_buttons = b_bit;
+      snprintf(msg, sizeof(msg), "menu pause, %s: the core did not see B pressed again after the menu", with);
+      CHECK(pm_frames_saw_b(5), msg);
+      syn_buttons = 0;
+      run_loop_frames(3);
+
+      /* paused with the hotkey, then into the menu and out: still
+       * paused, until the hotkey again */
+      syn_buttons = pause_bit;
+      run_loop_frames(2);
+      syn_buttons = 0;
+      run_loop_frames(3);
+      r0 = pm_runs();
+      run_loop_frames(5);
+      snprintf(msg, sizeof(msg), "menu pause, %s: the pause hotkey did not pause the core", with);
+      CHECK(pm_runs() == r0, msg);
+      pm_set_menu(true);
+      run_loop_frames(5);
+      pm_set_menu(false);
+      run_loop_frames(5);
+      r0 = pm_runs();
+      run_loop_frames(10);
+      snprintf(msg, sizeof(msg), "menu pause, %s: leaving the menu ran a core the pause hotkey had paused", with);
+      CHECK(pm_runs() == r0, msg);
+      syn_buttons = pause_bit;
+      run_loop_frames(2);
+      syn_buttons = 0;
+      run_loop_frames(3);
+      r0 = pm_runs();
+      run_loop_frames(5);
+      snprintf(msg, sizeof(msg), "menu pause, %s: the pause hotkey did not unpause the core after the menu", with);
+      CHECK(pm_runs() > r0, msg);
+   }
+
+   pm_trace(0, 0);
+   pm_set_menu(false);
+   syn_buttons                                = 0;
+   settings->bools.menu_pause_libretro        = saved_setting;
+   input_config_binds[0][RARCH_PAUSE_TOGGLE]  = saved_pause;
+   input_st->primary_joypad                   = joypad_real;
+   run_loop_frames(3);
+   if (failures == had)
+      printf("[pass] menu pause: the menu pauses the core when set to and"
+            " not otherwise; leaving it runs the core unless the pause hotkey"
+            " paused it; the B that closed the menu does not reach the core"
+            " until let go and pressed again - with the setting on and off\n");
+#else
+   printf("[skip] menu pause: needs the test drivers\n");
+#endif
+}
+
 /* Aim From Analog Stick: a port's stick is where its lightgun or
  * pointer points. */
 static void lane_aim_stick(void)
@@ -3909,6 +4073,7 @@ int main(int argc, char *argv[])
       lane_network_retropad();
       lane_pointer_capture();
       lane_menu_combo_gate();
+      lane_menu_pause();
       lane_aim_stick();
       lane_core_view();
       lane_key_events();

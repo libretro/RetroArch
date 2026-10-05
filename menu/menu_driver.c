@@ -7099,6 +7099,9 @@ void retroarch_menu_running_finished(bool quit)
 
    /* Prevent stray input */
    menu_st->input_driver_flushing_input = 1;
+   /* and the core's buttons held as the menu closes stay out of the
+    * content until each is let go */
+   input_driver_hold_core_input();
 
    if (!quit)
    {

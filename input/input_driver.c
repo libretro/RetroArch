@@ -3049,6 +3049,10 @@ static int16_t input_state_device(
 }
 
 
+/* Set while the poll reads what the core's ports have down for the core
+ * hold: that read is not to be held back itself. */
+static bool input_core_hold_reading;
+
 static int16_t input_state_internal(
       input_driver_state_t *input_st,
       settings_t *settings,
@@ -3076,7 +3080,8 @@ static int16_t input_state_internal(
    int16_t result                          = 0;
 #ifdef HAVE_MENU
    struct menu_state *menu_st              = menu_state_get_ptr();
-   bool input_blocked                      =    (menu_st->input_driver_flushing_input > 0)
+   bool input_blocked                      =    (   (menu_st->input_driver_flushing_input > 0)
+                                                 && !input_core_hold_reading)
                                              || (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT);
 #else
    bool input_blocked                      = (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT) ? true : false;
@@ -10034,6 +10039,17 @@ bool input_driver_overlay_alive(void)
    return ol && (ol->flags & INPUT_OVERLAY_ALIVE);
 }
 
+/* The buttons the core's ports have down now are kept from the core
+ * until each is let go. They are found at the next poll: until then
+ * every button is held back, which is at most the frame the menu
+ * closed in. */
+void input_driver_hold_core_input(void)
+{
+   memset(input_driver_st.core_hold_mask, 0xff,
+         sizeof(input_driver_st.core_hold_mask));
+   input_driver_st.core_hold_armed = true;
+}
+
 /* An overlay is up and has a page showing. */
 bool input_driver_overlay_active_page(void)
 {
@@ -11142,6 +11158,29 @@ void input_driver_poll(void)
    if (BSV_MOVIE_IS_PLAYBACK_ON())
       bsv_movie_poll(input_st);
 #endif
+
+   /* The core hold: each button stays held back until it is let go.
+    * Only while one is; the read is the core's own view of the port. */
+   if (input_st->core_hold_armed)
+   {
+      unsigned port;
+      uint16_t any = 0;
+      input_core_hold_reading = true;
+      for (port = 0; port < max_users; port++)
+      {
+         if (!input_st->core_hold_mask[port])
+            continue;
+         input_st->core_hold_mask[port] &= (uint16_t)input_state_internal(
+               input_st, settings, port, RETRO_DEVICE_JOYPAD, 0,
+               RETRO_DEVICE_ID_JOYPAD_MASK);
+         any |= input_st->core_hold_mask[port];
+      }
+      for (; port < MAX_USERS; port++)
+         input_st->core_hold_mask[port] = 0;
+      input_core_hold_reading = false;
+      if (!any)
+         input_st->core_hold_armed = false;
+   }
 }
 
 /* The quarter turns to turn a core's directions by: the setting, or
@@ -11354,6 +11393,18 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
          else if (turns)
             result = input_rotation_axis(turns, id, result, 0);
       }
+   }
+
+   /* buttons held back since the menu closed, until let go */
+   if (     input_st->core_hold_armed
+         && (device & RETRO_DEVICE_MASK) == RETRO_DEVICE_JOYPAD
+         && idx == 0)
+   {
+      uint16_t held_back = input_st->core_hold_mask[port];
+      if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+         result = (int16_t)((uint16_t)result & ~held_back);
+      else if (id < RARCH_FIRST_CUSTOM_BIND && (held_back & (1u << id)))
+         result = 0;
    }
 
    /* Register any analog stick input requests for
