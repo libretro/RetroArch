@@ -2911,7 +2911,7 @@ static void udev_input_touch_state_gest(
             /* Add one scroll step. TODO - Add multiple? */
             /* TODO - Note the -sign, the vertical scroll seems inverted. */
             /* Add if oriented the same or simply set to one. */
-            if (VIDEO_POS_Y(touch->gest_scroll) * VIDEO_POS_X(touch->mouse_wheel) > 0)
+            if (VIDEO_POS_Y(touch->gest_scroll) * VIDEO_POS_Y(touch->mouse_wheel) > 0)
                VIDEO_POS_ADD(touch->mouse_wheel, 0, 1 * -udev_touch_sign(VIDEO_POS_Y(touch->gest_scroll)));
             else
                VIDEO_POS_PUT_Y(touch->mouse_wheel, 1 * -udev_touch_sign(VIDEO_POS_Y(touch->gest_scroll)));
