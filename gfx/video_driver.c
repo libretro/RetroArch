@@ -741,6 +741,10 @@ static const video_display_server_t *current_display_server =
  * 1 only when the native server cannot switch modes at all, 2 always
  * (custom timings are then unavailable, SDL cannot create them). */
 static void *sdl_display_server_data = NULL;
+/* video_sdl_display_server as the main thread last published it, with
+ * each frame and when the display server is set up: the refresh-rate
+ * query that consults it also runs on the thread that draws. */
+static retro_atomic_int_t video_sdl_display_server_mode;
 
 bool video_display_server_sdl_available(void)
 {
@@ -759,8 +763,8 @@ bool video_display_server_sdl_available(void)
 
 static bool video_display_server_sdl_selected(void)
 {
-   settings_t *settings = config_get_ptr();
-   unsigned mode        = settings ? settings->uints.video_sdl_display_server : 0;
+   unsigned mode = (unsigned)retro_atomic_load_acquire_int(
+         &video_sdl_display_server_mode);
    if (!mode || !video_display_server_sdl_available())
       return false;
    if (mode == 1 && current_display_server
@@ -1848,6 +1852,11 @@ const char *video_display_server_get_ident(void)
 void* video_display_server_init(enum rarch_display_type type)
 {
    video_driver_state_t *video_st = &video_driver_st;
+#if defined(HAVE_SDL2) || defined(HAVE_SDL3)
+   settings_t *settings           = config_get_ptr();
+   retro_atomic_store_release_int(&video_sdl_display_server_mode,
+         settings ? (int)settings->uints.video_sdl_display_server : 0);
+#endif
 
    /* Reuse when already and still running */
    if (current_display_server && runloop_is_inited())
@@ -5152,6 +5161,10 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->hdr_paper_white_nits         = settings->floats.video_hdr_paper_white_nits;
    video_info->hdr_expand_gamut             = settings->uints.video_hdr_expand_gamut;
    video_info->hdr_display_peak             = (float)video_driver_display_peak_in_use();
+#if defined(HAVE_SDL2) || defined(HAVE_SDL3)
+   retro_atomic_store_release_int(&video_sdl_display_server_mode,
+         (int)settings->uints.video_sdl_display_server);
+#endif
    video_info->menu_linear_filter           = settings->bools.menu_linear_filter;
    video_info->ctx_scaling                  = settings->bools.video_ctx_scaling;
    video_info->menu_ticker_speed            = settings->floats.menu_ticker_speed;

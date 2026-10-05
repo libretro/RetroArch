@@ -390,6 +390,9 @@ typedef struct gfx_ctx_wayland_data
    unsigned dims;
    unsigned buffer_dims;
    unsigned floating_dims;
+   /* Taken when the context is made, which a change of the setting
+    * redoes: swap_buffers runs on the thread that draws */
+   unsigned max_swapchain_images;
    unsigned last_buffer_scale;
    unsigned pending_buffer_scale;
    unsigned buffer_scale;

@@ -301,6 +301,7 @@ static void *gfx_ctx_wl_init(void *data)
 #endif
          &wl))
       goto error;
+   wl->max_swapchain_images = config_get_ptr()->uints.video_max_swapchain_images;
 #ifdef HAVE_EGL
    if (!gfx_ctx_wl_egl_init_context(wl))
       goto error;
@@ -609,8 +610,7 @@ static void gfx_ctx_wl_swap_buffers(void *data)
 {
 #ifdef HAVE_EGL
    gfx_ctx_wayland_data_t *wl     = (gfx_ctx_wayland_data_t*)data;
-   settings_t *settings           = config_get_ptr();
-   unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
+   unsigned max_swapchain_images  = wl->max_swapchain_images;
    /* Only throttle to the compositor frame callback when actually
     * vsync-pacing. A swap interval of 0 (fast-forward, or vsync
     * disabled) means we explicitly do not want to wait for the

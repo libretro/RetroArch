@@ -83,6 +83,9 @@ typedef struct gfx_ctx_drm_data
    int interval;
    unsigned fb_width;
    unsigned fb_height;
+   /* Taken when the context is made, which a change of the setting
+    * redoes: swap_buffers runs on the thread that draws */
+   unsigned max_swapchain_images;
    bool core_hw_context_enable;
    bool waiting_for_flip;
    bool leased;
@@ -689,8 +692,7 @@ static bool gfx_ctx_drm_queue_flip(gfx_ctx_drm_data_t *drm)
 static void gfx_ctx_drm_swap_buffers(void *data)
 {
    gfx_ctx_drm_data_t        *drm = (gfx_ctx_drm_data_t*)data;
-   settings_t *settings           = config_get_ptr();
-   unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
+   unsigned max_swapchain_images  = drm->max_swapchain_images;
 
    /* Recreate the surface */
    if (switch_mode)
@@ -999,7 +1001,8 @@ static void *gfx_ctx_drm_init(void *video_driver)
 
    if (!drm)
       return NULL;
-   drm->fd = -1;
+   drm->fd                   = -1;
+   drm->max_swapchain_images = settings->uints.video_max_swapchain_images;
 
    gpu_descriptors = dir_list_new("/dev/dri", NULL, false, true, false, false);
 
