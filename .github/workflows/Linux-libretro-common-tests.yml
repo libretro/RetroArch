@@ -176,6 +176,22 @@ jobs:
           python3 tools/input_video_separation_check.py --selftest
           python3 tools/input_video_separation_check.py
 
+      - name: Check a setting's label exists wherever its translations name it
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The translation files name a label for every string they
+          # have, in every build. intl/json2h.py copies a row's feature
+          # guard into them, unless the guard line mentions a
+          # SETTINGS_DEF pass: that line it drops. A line that mentions
+          # a pass and still depends on a feature leaves the
+          # translations naming a label the build does not have, and
+          # nothing fails until the first translation arrives from
+          # Crowdin - then every build without the feature does.
+          python3 tools/settings_def_guard_check.py --selftest
+          python3 tools/settings_def_guard_check.py
+
       - name: Check no video driver deletes overlay textures it was lent
         shell: bash
         run: |
