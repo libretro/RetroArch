@@ -3943,6 +3943,55 @@ static void RETRO_CALLCONV keylane_core_cb(bool down, unsigned keycode,
    keylane_got++;
 }
 
+/* Two senders at once, each with its own key: per key, every event
+ * arrives and in the order sent. And a release that does not fit. */
+static unsigned keylane2_got[2], keylane2_bad[2], keylane_f15_down, keylane_f15_up;
+
+static void RETRO_CALLCONV keylane2_core_cb(bool down, unsigned keycode,
+      uint32_t character, uint16_t mods)
+{
+   unsigned k = (keycode == RETROK_F13) ? 0 : (keycode == RETROK_F12) ? 1 : 2;
+   (void)mods;
+   if (keycode == RETROK_F15)
+   {
+      if (down)
+         keylane_f15_down++;
+      else
+         keylane_f15_up++;
+      return;
+   }
+   if (k > 1)
+      return;
+   if (     character != keylane2_got[k]
+         || down != ((keylane2_got[k] & 1) == 0))
+      keylane2_bad[k]++;
+   keylane2_got[k]++;
+}
+
+static void keylane2_sender(void *data)
+{
+   unsigned key = *(unsigned*)data;
+   unsigned i;
+   for (i = 0; i < KEYLANE_EVENTS; i++)
+   {
+      input_keyboard_event((i & 1) == 0, key, i, 0, RETRO_DEVICE_KEYBOARD);
+      if ((i & 7) == 7)
+         retro_sleep(1);
+   }
+}
+
+/* F15 down, sixty-three more to fill the queue, then F15 up */
+static void keylane_fill_sender(void *data)
+{
+   unsigned i;
+   (void)data;
+   input_keyboard_event(true, RETROK_F15, 0, 0, RETRO_DEVICE_KEYBOARD);
+   for (i = 0; i < 63; i++)
+      input_keyboard_event((i & 1) == 0, RETROK_F14, i, 0,
+            RETRO_DEVICE_KEYBOARD);
+   input_keyboard_event(false, RETROK_F15, 0, 0, RETRO_DEVICE_KEYBOARD);
+}
+
 static void keylane_sender(void *data)
 {
    unsigned i, n = *(unsigned*)data;
@@ -4026,13 +4075,60 @@ static void lane_key_events(void)
             "key events: those that did not fit were not counted");
    }
 
+   /* 4. A release that does not fit is not lost: the key does not
+    *    stay held. */
+   runloop_st->key_event = keylane2_core_cb;
+   keylane_f15_down = keylane_f15_up = 0;
+   thr = sthread_create(keylane_fill_sender, NULL);
+   if (thr)
+   {
+      sthread_join(thr);
+      run_frames(2);
+      CHECK(keylane_f15_down == 1 && keylane_f15_up == 1,
+            "key events: a release that did not fit in the queue was lost, and the key stayed held");
+   }
+
+   /* 5. Two senders at once, with no lock between them: per key,
+    *    every event arrives, in order, on the core's thread. */
+   {
+      unsigned key0 = RETROK_F13, key1 = RETROK_F12;
+      sthread_t *t0, *t1;
+      keylane2_got[0] = keylane2_got[1] = keylane2_bad[0] = keylane2_bad[1] = 0;
+      dropped0 = input_driver_key_events_dropped();
+      t0 = sthread_create(keylane2_sender, &key0);
+      t1 = sthread_create(keylane2_sender, &key1);
+      if (t0 && t1)
+      {
+         for (i = 0; i < 800 && (keylane2_got[0] < KEYLANE_EVENTS || keylane2_got[1] < KEYLANE_EVENTS); i++)
+         {
+            run_frames(1);
+            retro_sleep(1);
+         }
+         sthread_join(t0);
+         sthread_join(t1);
+         run_frames(2);
+         if (keylane2_got[0] != KEYLANE_EVENTS || keylane2_got[1] != KEYLANE_EVENTS || keylane2_bad[0] || keylane2_bad[1])
+            fprintf(stderr, "       F13 %u/%u (%u out of order), F12 %u/%u (%u out of order), %u dropped\n",
+                  keylane2_got[0], KEYLANE_EVENTS, keylane2_bad[0],
+                  keylane2_got[1], KEYLANE_EVENTS, keylane2_bad[1],
+                  input_driver_key_events_dropped() - dropped0);
+         CHECK(keylane2_got[0] == KEYLANE_EVENTS && keylane2_got[1] == KEYLANE_EVENTS,
+               "key events: from two threads at once, not all reached the core");
+         CHECK(!keylane2_bad[0] && !keylane2_bad[1],
+               "key events: from two threads at once, one thread's reached the core out of order");
+      }
+      else
+         CHECK(false, "key events: no two threads to report from");
+   }
+
    runloop_st->key_event = saved;
    fast_forward(false);
    run_frames(2);
    if (failures == had)
       printf("[pass] key events: from the frontend's thread acted on at once;"
             " from another, the core gets all of them in order on its own thread"
-            " at the next poll; a full queue drops the newest and counts them\n");
+            " at the next poll; a full queue drops presses, counts them, and"
+            " keeps releases; two threads at once, no lock, each in order\n");
 }
 
 /* ---- a joypad driver restart asked for from another thread --------- */

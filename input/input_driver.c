@@ -12469,78 +12469,138 @@ static const char *accessibility_lut_name(char key)
  * The window's thread hands its keys over once a frame as it is, so
  * the poll that takes them is the first that could have seen them.
  *
- * One reader, the poll, which takes no lock. Writers take turns
- * through a flag; in practice there is one, the video thread. Sixty-
- * four events between two polls is more than a keyboard sends; past
- * that the newest are dropped, counted and said. */
+ * One reader, the poll, and any number of writers - in practice the
+ * video thread - with no lock between them (see input_key_lane below).
+ * Sixty-four events between two polls is more than a keyboard sends;
+ * past that a press is dropped and counted, and a release is kept. */
 static void input_keyboard_event_now(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device);
 
 #ifdef HAVE_THREADS
 #define INPUT_KEY_LANE_SIZE 64 /* a power of two */
+#define INPUT_KEY_WORDS     ((RETROK_LAST + 31) / 32)
 
+/* A bounded queue of many writers and one reader, without a lock: each
+ * slot has a sequence number that says whose turn it is. A writer
+ * claims the next slot by moving the tail with a compare-and-swap,
+ * fills it, and hands it to the reader through its sequence; the
+ * reader hands it back the same way. Writers never wait on each other
+ * - one that loses the race for a slot takes the next - and the reader
+ * never waits on a writer: a slot not yet filled is simply not there
+ * yet. Each writer's events stay in the order it sent them.
+ *
+ * A slot's sequence is kept less its index, so that the zeroed queue
+ * the program starts with is the queue's first state.
+ *
+ * When it is full, a key down is dropped and counted; a key up is not
+ * lost: it is noted in a bitmap the poll turns back into the release,
+ * once the queue is drained, for a key it last saw go down. A full
+ * queue cannot leave a key held. */
 static struct
 {
    struct
    {
+      retro_atomic_int_t seq;    /* less the slot's index */
       uint32_t character;
       unsigned code;
       unsigned device;
       uint16_t mod;
       bool     down;
    } slot[INPUT_KEY_LANE_SIZE];
-   retro_atomic_int_t head;      /* next to take: the poll's */
-   retro_atomic_int_t tail;      /* next to fill: the writers' */
-   retro_atomic_int_t writing;   /* a writer is in */
+   retro_atomic_int_t tail;      /* next to claim: the writers' */
+   int                head;      /* next to take: the poll's alone */
    retro_atomic_int_t dropped;
+   retro_atomic_int_t released[INPUT_KEY_WORDS]; /* ups that did not fit */
    bool warned;
 } input_key_lane;
+
+/* Keys the frontend last saw go down, for the ups above: the main
+ * thread's alone. */
+static uint32_t input_keys_down[INPUT_KEY_WORDS];
 
 static void input_key_lane_push(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
 {
-   int head, tail;
+   int pos = retro_atomic_load_relaxed_int(&input_key_lane.tail);
 
-   while (retro_atomic_exchange_int(&input_key_lane.writing, 1))
-      ; /* another writer: there is not one in practice */
-
-   head = retro_atomic_load_acquire_int(&input_key_lane.head);
-   tail = retro_atomic_load_relaxed_int(&input_key_lane.tail);
-   if ((unsigned)(tail - head) >= INPUT_KEY_LANE_SIZE)
-      retro_atomic_fetch_add_int(&input_key_lane.dropped, 1);
-   else
+   for (;;)
    {
-      unsigned i                       = (unsigned)tail
-         & (INPUT_KEY_LANE_SIZE - 1);
-      input_key_lane.slot[i].down      = down;
-      input_key_lane.slot[i].code      = code;
-      input_key_lane.slot[i].character = character;
-      input_key_lane.slot[i].mod       = mod;
-      input_key_lane.slot[i].device    = device;
-      retro_atomic_store_release_int(&input_key_lane.tail, tail + 1);
+      unsigned i = (unsigned)pos & (INPUT_KEY_LANE_SIZE - 1);
+      int seq    = retro_atomic_load_acquire_int(
+            &input_key_lane.slot[i].seq) + (int)i;
+      int dif    = seq - pos;
+
+      if (dif == 0)
+      {
+         if (retro_atomic_cas_int(&input_key_lane.tail, pos, pos + 1))
+         {
+            input_key_lane.slot[i].down      = down;
+            input_key_lane.slot[i].code      = code;
+            input_key_lane.slot[i].character = character;
+            input_key_lane.slot[i].mod       = mod;
+            input_key_lane.slot[i].device    = device;
+            retro_atomic_store_release_int(&input_key_lane.slot[i].seq,
+                  pos + 1 - (int)i);
+            return;
+         }
+         pos = retro_atomic_load_relaxed_int(&input_key_lane.tail);
+      }
+      else if (dif < 0)
+         break;                  /* full */
+      else
+         pos = retro_atomic_load_relaxed_int(&input_key_lane.tail);
    }
 
-   retro_atomic_store_release_int(&input_key_lane.writing, 0);
+   retro_atomic_fetch_add_int(&input_key_lane.dropped, 1);
+   if (!down && code < RETROK_LAST)
+      retro_atomic_fetch_or_int(&input_key_lane.released[code >> 5],
+            (int)(1u << (code & 31)));
 }
 
-/* The poll's: every event that has come since the last one. */
+/* The poll's: every event that has come since the last one, then the
+ * releases that did not fit. */
 static void input_key_lane_take(void)
 {
-   int head = retro_atomic_load_relaxed_int(&input_key_lane.head);
-   int tail = retro_atomic_load_acquire_int(&input_key_lane.tail);
+   unsigned w;
 
-   while (head != tail)
+   for (;;)
    {
-      unsigned i         = (unsigned)head & (INPUT_KEY_LANE_SIZE - 1);
-      bool down          = input_key_lane.slot[i].down;
-      unsigned code      = input_key_lane.slot[i].code;
-      uint32_t character = input_key_lane.slot[i].character;
-      uint16_t mod       = input_key_lane.slot[i].mod;
-      unsigned device    = input_key_lane.slot[i].device;
+      int pos    = input_key_lane.head;
+      unsigned i = (unsigned)pos & (INPUT_KEY_LANE_SIZE - 1);
+      int seq    = retro_atomic_load_acquire_int(
+            &input_key_lane.slot[i].seq) + (int)i;
+      bool down;
+      unsigned code, device;
+      uint32_t character;
+      uint16_t mod;
 
+      if (seq != pos + 1)
+         break;                  /* nothing more, or not filled yet */
+
+      down      = input_key_lane.slot[i].down;
+      code      = input_key_lane.slot[i].code;
+      character = input_key_lane.slot[i].character;
+      mod       = input_key_lane.slot[i].mod;
+      device    = input_key_lane.slot[i].device;
       /* the slot is free before the event is acted on */
-      retro_atomic_store_release_int(&input_key_lane.head, ++head);
+      retro_atomic_store_release_int(&input_key_lane.slot[i].seq,
+            pos + INPUT_KEY_LANE_SIZE - (int)i);
+      input_key_lane.head = pos + 1;
       input_keyboard_event_now(down, code, character, mod, device);
+   }
+
+   for (w = 0; w < INPUT_KEY_WORDS; w++)
+   {
+      uint32_t ups;
+      unsigned b;
+      if (!retro_atomic_load_relaxed_int(&input_key_lane.released[w]))
+         continue;
+      ups = (uint32_t)retro_atomic_exchange_int(
+            &input_key_lane.released[w], 0);
+      for (b = 0; b < 32; b++)
+         if ((ups & (1u << b)) && (input_keys_down[w] & (1u << b)))
+            input_keyboard_event_now(false, w * 32 + b, 0, 0,
+                  RETRO_DEVICE_KEYBOARD);
    }
 
    if (     !input_key_lane.warned
@@ -12548,7 +12608,8 @@ static void input_key_lane_take(void)
    {
       input_key_lane.warned = true;
       RARCH_WARN("[Input] More than %d keyboard events came between two"
-            " polls: the newest were dropped.\n", INPUT_KEY_LANE_SIZE);
+            " polls: key presses past that were dropped, releases"
+            " kept.\n", INPUT_KEY_LANE_SIZE);
    }
 }
 
@@ -12571,7 +12632,27 @@ void input_keyboard_event(bool down, unsigned code,
    input_keyboard_event_now(down, code, character, mod, device);
 }
 
+static void input_keyboard_event_now_act(bool down, unsigned code,
+      uint32_t character, uint16_t mod, unsigned device);
+
+/* Every key event is acted on here, on the frontend's thread; the keys
+ * it last saw go down are kept for the key lane's releases. */
 static void input_keyboard_event_now(bool down, unsigned code,
+      uint32_t character, uint16_t mod, unsigned device)
+{
+#ifdef HAVE_THREADS
+   if (code < RETROK_LAST)
+   {
+      if (down)
+         input_keys_down[code >> 5] |=  (1u << (code & 31));
+      else
+         input_keys_down[code >> 5] &= ~(1u << (code & 31));
+   }
+#endif
+   input_keyboard_event_now_act(down, code, character, mod, device);
+}
+
+static void input_keyboard_event_now_act(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
 {
    runloop_state_t *runloop_st = runloop_state_get_ptr();
