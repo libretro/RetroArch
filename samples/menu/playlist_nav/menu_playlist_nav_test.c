@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include <boolean.h>
 #include <lists/file_list.h>
@@ -74,6 +75,7 @@ static char path_n64[640];
 static char path_nes[640];
 static char path_based[640];
 static char path_lvw[640];
+static char path_hist[640];
 
 /* ------------------------------------------------------------------ */
 /* SAF stand-in: short reads, so a playlist read yields               */
@@ -366,6 +368,111 @@ static void lane_entry_past_end(void)
       fprintf(stderr, "[pass] entry-past-end lane\n");
 }
 
+/* Builds @type under @label the way opening that screen does, the
+ * label pushed on the stack as the entry that opened it. */
+static size_t open_screen(enum menu_displaylist_ctl_state type,
+      const char *label, enum msg_hash_enums enum_idx, const char *path)
+{
+   menu_displaylist_info_t info;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   file_list_t *buf           = selection_buf();
+   file_list_t *menu_stack    = MENU_LIST_GET(menu_st->entries.list, 0);
+
+   if (!buf || !menu_stack)
+      return 0;
+   menu_entries_clear(buf);
+   menu_entries_append(menu_stack, path, label, enum_idx,
+         MENU_SETTING_ACTION, 0, 0, NULL);
+   menu_displaylist_info_init(&info);
+   info.list          = buf;
+   info.path          = strdup(path);
+   info.label         = strdup(label);
+   info.enum_idx      = enum_idx;
+   info.type          = MENU_SETTING_ACTION;
+   info.directory_ptr = 0;
+   menu_displaylist_ctl(type, &info, config_get_ptr());
+   menu_displaylist_process(&info);
+   menu_displaylist_info_free(&info);
+   return buf->size;
+}
+
+/* What a selection change does: the menu driver records it. */
+static void set_selection(size_t i)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_st->selection_ptr     = i;
+   if (menu_st->driver_ctx && menu_st->driver_ctx->navigation_set)
+      menu_st->driver_ctx->navigation_set(menu_st->userdata, true);
+}
+
+/* RGUI remembers a selection per playlist, by the playlist's row in the
+ * Playlists screen, in an array of NAME_MAX_LENGTH slots that the
+ * History selection follows. A playlist in a row past the last slot is
+ * not remembered: it used to write its selection over History's, so
+ * picking an entry in it moved where History reopens. */
+static void lane_many_playlists_keep_history(void)
+{
+   unsigned had               = failures;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings       = config_get_ptr();
+   char path[700];
+   size_t i, n, row = 0;
+
+   for (i = 0; i < NAME_MAX_LENGTH + 8; i++)
+   {
+      snprintf(path, sizeof(path), "%s/pl%04u.lpl", fixture_dir, (unsigned)i);
+      if (!write_playlist(path, "/games/many", 3))
+         return;
+   }
+   settings->uints.menu_remember_selection = MENU_REMEMBER_SELECTION_ALWAYS;
+
+   /* History, remembered on its second entry; the history file is read
+    * in the background like any playlist */
+   open_screen(DISPLAYLIST_HISTORY,
+         MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR,
+         MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY, path_hist);
+   run_until_loaded();
+   CHECK(selection_buf() && selection_buf()->size >= 3,
+         "History did not list the fixture's entries");
+   set_selection(1);
+
+   /* the playlist in the first row past the last slot: an entry in it */
+   n = open_playlists_screen();
+   if (n > NAME_MAX_LENGTH)
+      row = NAME_MAX_LENGTH;
+   CHECK(row && selection_buf()->list[row].path
+         && strstr(selection_buf()->list[row].path, ".lpl"),
+         "row %u of %u is not a playlist", (unsigned)NAME_MAX_LENGTH,
+         (unsigned)n);
+   if (!row)
+      return;
+   set_selection(row);
+   CHECK(press_ok_on_match(selection_buf()->list[row].path, false),
+         "could not open the playlist at row %u", (unsigned)row);
+   run_until_loaded();
+   CHECK(selection_buf() && selection_buf()->size >= 3,
+         "the playlist at row %u did not open", (unsigned)row);
+   set_selection(2);
+
+   /* History reopens where it was */
+   open_screen(DISPLAYLIST_HISTORY,
+         MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR,
+         MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY, path_hist);
+   run_until_loaded();
+   CHECK(menu_st->selection_ptr == 1,
+         "History reopened on entry %u, not 1: the playlist at row %u "
+         "wrote its selection over History's",
+         (unsigned)menu_st->selection_ptr, (unsigned)row);
+
+   for (i = 0; i < NAME_MAX_LENGTH + 8; i++)
+   {
+      snprintf(path, sizeof(path), "%s/pl%04u.lpl", fixture_dir, (unsigned)i);
+      unlink(path);
+   }
+   if (failures == had)
+      fprintf(stderr, "[pass] many-playlists-keep-history lane\n");
+}
+
 /* Report 3: a read that yields must finish on frames alone, with no
  * input at all. */
 static void lane_frames_alone_finish_the_read(void)
@@ -587,10 +694,17 @@ int main(int argc, char *argv[])
    snprintf(path_nes, sizeof(path_nes), "%s/nes.lpl", fixture_dir);
    snprintf(path_based, sizeof(path_based), "%s/based.lpl", fixture_dir);
    snprintf(path_lvw, sizeof(path_lvw), "%s/Metroidvania.lvw", fixture_dir);
+   /* where the frontend keeps the history under this playlist
+    * directory: read once at startup */
+   snprintf(path_hist, sizeof(path_hist), "%s/builtin", fixture_dir);
+   mkdir(path_hist, 0755);
+   snprintf(path_hist, sizeof(path_hist), "%s/builtin/content_history.lpl",
+         fixture_dir);
    if (   !write_playlist(path_n64, "/games/n64", 1500)
        || !write_playlist(path_nes, "/games/nes", 1500)
        || !write_playlist_with_base(path_based, "/games/based", 1500)
-       || !write_view(path_lvw))
+       || !write_view(path_lvw)
+       || !write_playlist(path_hist, "/games/hist", 5))
       return 1;
 
 
@@ -653,6 +767,7 @@ int main(int argc, char *argv[])
    lane_switch_shows_requested();
    lane_based_playlist_loads_once();
    lane_saved_view_opens_explore();
+   lane_many_playlists_keep_history();
 
    CHECK(saf_read_calls > 0,
          "the short-read VFS was never used - this run did not "
