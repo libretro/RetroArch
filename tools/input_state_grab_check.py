@@ -139,15 +139,11 @@ def driver_calls(root):
 # file. A file may not have more than its number, one that is not
 # listed may have none, and a file below its number has it lowered.
 #
-# Nothing under menu/ takes it any more.
-# The Apple UI files: they put touches, keys and the mouse into the
-# Cocoa input driver's own data; that goes with the platform pump.
+# Nothing under menu/ or ui/ takes it any more: the Apple UI hands its
+# mouse, pointer and touch events to the Cocoa input driver's own calls
+# (input/drivers/cocoa_input.h), and does not write the driver's data.
 OUTSIDE_DIRS = ('menu', 'ui')
 OUTSIDE_ALLOWED = {
-    'ui/companion/companion_core.c':     1,
-    'ui/drivers/cocoa/cocoa_common.m':   1,
-    'ui/drivers/ui_cocoa.m':             3,
-    'ui/drivers/ui_cocoatouch.m':        9,
 }
 INPUT_STATE = re.compile(r'\binput_state_get_ptr\s*\(\s*\)')
 

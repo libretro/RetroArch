@@ -574,29 +574,8 @@ static ui_application_t ui_application_cocoa = {
             CGFloat delta_x             = [event deltaX];
             CGFloat delta_y             = [event deltaY];
             NSPoint pos                 = CONVERT_POINT();
-            cocoa_input_data_t
-               *apple                   = (cocoa_input_data_t*)
-               input_state_get_ptr()->current_data;
-            if (!apple)
-               return;
-            /* Relative */
-            apple->mouse_rel_x         += (int16_t)delta_x;
-            apple->mouse_rel_y         += (int16_t)delta_y;
-
-            /* Absolute */
-            apple->touches[0].screen_x  = (int16_t)pos.x;
-            apple->touches[0].screen_y  = (int16_t)pos.y;
-
-            if (apple->mouse_grabbed)
-            {
-               apple->window_pos_x      += (int16_t)delta_x;
-               apple->window_pos_y      += (int16_t)delta_y;
-            }
-            else
-            {
-               apple->window_pos_x       = (int16_t)pos.x;
-               apple->window_pos_y       = (int16_t)pos.y;
-            }
+            cocoa_input_mouse_moved((int16_t)delta_x, (int16_t)delta_y,
+                  (int16_t)pos.x, (int16_t)pos.y);
          }
          break;
       case NSEventTypeScrollWheel:
@@ -608,13 +587,9 @@ static ui_application_t ui_application_cocoa = {
        {
            NSInteger number      = [event buttonNumber];
            NSPoint pos           = CONVERT_POINT();
-           cocoa_input_data_t
-              *apple             = (cocoa_input_data_t*)
-              input_state_get_ptr()->current_data;
-           if (!apple || pos.y < 0)
+           if (pos.y < 0)
                return;
-           apple->mouse_buttons |= (1 << number);
-           apple->touch_count    = 1;
+           cocoa_input_mouse_button((unsigned)number, true, true);
        }
            break;
       case NSEventTypeLeftMouseUp:
@@ -623,13 +598,9 @@ static ui_application_t ui_application_cocoa = {
          {
             NSInteger number      = [event buttonNumber];
             NSPoint pos           = CONVERT_POINT();
-            cocoa_input_data_t
-              *apple              = (cocoa_input_data_t*)
-              input_state_get_ptr()->current_data;
-            if (!apple || pos.y < 0)
+            if (pos.y < 0)
                return;
-            apple->mouse_buttons &= ~(1 << number);
-            apple->touch_count    = 0;
+            cocoa_input_mouse_button((unsigned)number, false, true);
          }
          break;
       default:

@@ -58,6 +58,7 @@ char stub_last_scan_dir[PATH_MAX_LENGTH];
 settings_t *config_get_ptr(void) { return &test_settings; }
 runloop_state_t *runloop_state_get_ptr(void) { return &test_runloop; }
 input_driver_state_t *input_state_get_ptr(void) { return &test_input; }
+bool input_driver_mouse_grabbed(void) { return (test_input.flags & INP_FLAG_GRAB_MOUSE_STATE) != 0; }
 video_driver_state_t *video_state_get_ptr(void) { return &test_video; }
 struct menu_state *menu_state_get_ptr(void) { return &test_menu; }
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data) { (void)state; (void)data; return true; }

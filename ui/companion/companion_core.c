@@ -3155,7 +3155,7 @@ void companion_core_prepare_show_window(companion_core_t *core)
    if (!core)
       return;
 
-   if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
+   if (input_driver_mouse_grabbed())
       command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
    if (video_st && video_st->poke && video_st->poke->show_mouse)
       video_st->poke->show_mouse(video_st->data, true);

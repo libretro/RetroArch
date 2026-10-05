@@ -236,24 +236,18 @@ static void handle_touch_event(NSArray* touches)
 {
 #if !TARGET_OS_TV
    unsigned i;
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)
-      input_state_get_ptr()->current_data;
    float scale               = cocoa_screen_get_native_scale();
 
-   if (!apple)
-      return;
+   cocoa_input_touches_begin();
 
-   apple->touch_count = 0;
-
-   for (i = 0; i < touches.count && (apple->touch_count < MAX_TOUCHES); i++)
+   for (i = 0; i < touches.count; i++)
    {
       UITouch      *touch = [touches objectAtIndex:i];
       CGPoint       coord = [touch locationInView:[touch view]];
       if (touch.phase != UITouchPhaseEnded && touch.phase != UITouchPhaseCancelled)
-      {
-         apple->touches[apple->touch_count   ].screen_x = coord.x * scale;
-         apple->touches[apple->touch_count ++].screen_y = coord.y * scale;
-      }
+         if (!cocoa_input_touch_add((int16_t)(coord.x * scale),
+                  (int16_t)(coord.y * scale)))
+            break;
    }
 #endif
 }
@@ -1177,31 +1171,15 @@ bool cocoa_audio_session_begin_record(unsigned preferred_rate,
          GCMouse *mouse = note.object;
          mouse.mouseInput.mouseMovedHandler = ^(GCMouseInput * _Nonnull mouse, float delta_x, float delta_y)
          {
-            cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-            if (!apple)
-               return;
-            apple->window_pos_x      += (int16_t)delta_x;
-            apple->window_pos_y      -= (int16_t)delta_y;
+            cocoa_input_mouse_moved_by((int16_t)delta_x, -(int16_t)delta_y);
          };
          mouse.mouseInput.leftButton.pressedChangedHandler = ^(GCControllerButtonInput * _Nonnull button, float value, BOOL pressed)
          {
-            cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-            if (!apple)
-               return;
-            if (pressed)
-                apple->mouse_buttons |= (1 << 0);
-            else
-                apple->mouse_buttons &= ~(1 << 0);
+            cocoa_input_mouse_button(0, pressed, false);
          };
          mouse.mouseInput.rightButton.pressedChangedHandler = ^(GCControllerButtonInput * _Nonnull button, float value, BOOL pressed)
          {
-            cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-            if (!apple)
-               return;
-            if (pressed)
-                apple->mouse_buttons |= (1 << 1);
-            else
-                apple->mouse_buttons &= ~(1 << 1);
+            cocoa_input_mouse_button(1, pressed, false);
          };
       }];
    }
@@ -1242,12 +1220,7 @@ bool cocoa_audio_session_begin_record(unsigned preferred_rate,
 #endif
 
    /* Clear any stuck or stale touches when backgrounding */
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)input_state_get_ptr()->current_data;
-   if (apple)
-   {
-      apple->touch_count = 0;
-      memset(apple->touches, 0, sizeof(apple->touches));
-   }
+   cocoa_input_touches_reset();
 }
 
 - (void)applicationDidReceiveMemoryWarning:(UIApplication *)application
@@ -1268,12 +1241,7 @@ bool cocoa_audio_session_begin_record(unsigned preferred_rate,
    rarch_stop_draw_observer();
 
    /* Clear any stuck or stale touches when losing focus */
-   cocoa_input_data_t *apple = (cocoa_input_data_t*)input_state_get_ptr()->current_data;
-   if (apple)
-   {
-      apple->touch_count = 0;
-      memset(apple->touches, 0, sizeof(apple->touches));
-   }
+   cocoa_input_touches_reset();
 
    /* Hardware keyboard keys held while losing focus never get their
     * release event; drop them like the macOS port does (ui_cocoa.m). */
@@ -1531,10 +1499,7 @@ bool cocoa_audio_session_begin_record(unsigned preferred_rate,
 
 - (UIPointerStyle *)pointerInteraction:(UIPointerInteraction *)interaction styleForRegion:(UIPointerRegion *)region API_AVAILABLE(ios(13.4))
 {
-   cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-   if (!apple)
-      return nil;
-   if (apple->mouse_grabbed)
+   if (cocoa_input_mouse_grabbed())
       return [UIPointerStyle hiddenPointerStyle];
    return nil;
 }
@@ -1543,14 +1508,13 @@ bool cocoa_audio_session_begin_record(unsigned preferred_rate,
                        regionForRequest:(UIPointerRegionRequest *)request
                           defaultRegion:(UIPointerRegion *)defaultRegion API_AVAILABLE(ios(13.4))
 {
-   cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-   if (!apple || apple->mouse_grabbed)
+   CGPoint location;
+   if (cocoa_input_mouse_grabbed())
       return nil;
-   CGPoint location = [apple_platform.renderView convertPoint:[request location] fromView:nil];
-   apple->touches[0].screen_x = (int16_t)(location.x * [[UIScreen mainScreen] scale]);
-   apple->touches[0].screen_y = (int16_t)(location.y * [[UIScreen mainScreen] scale]);
-   apple->window_pos_x = (int16_t)(location.x * [[UIScreen mainScreen] scale]);
-   apple->window_pos_y = (int16_t)(location.y * [[UIScreen mainScreen] scale]);
+   location = [apple_platform.renderView convertPoint:[request location] fromView:nil];
+   cocoa_input_pointer_at(
+         (int16_t)(location.x * [[UIScreen mainScreen] scale]),
+         (int16_t)(location.y * [[UIScreen mainScreen] scale]));
    return [UIPointerRegion regionWithRect:[apple_platform.renderView bounds] identifier:@"game view"];
 }
 #endif
@@ -1742,18 +1706,12 @@ bool ios_keyboard_start(char **buffer_ptr, size_t *size_ptr, size_t *ptr_ptr,
 
    /* Store the completion callback */
    app.keyboardCompletionCallback = ^(const char *text) {
-      input_driver_state_t *input_st = input_state_get_ptr();
-
       if (callback)
          callback(userdata, text);
 
       /* Clean up RetroArch's keyboard state, mirroring what the built-in keyboard does */
-      if (input_st)
-      {
-         RARCH_LOG("[iOS KB] cleaning up input state\n");
-         input_keyboard_line_free(input_st);
-         input_st->flags &= ~INP_FLAG_KB_MAPPING_BLOCKED;
-      }
+      RARCH_LOG("[iOS KB] cleaning up input state\n");
+      input_driver_keyboard_line_end();
    };
 
    /* Show the keyboard */

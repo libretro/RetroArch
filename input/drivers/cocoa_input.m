@@ -17,6 +17,7 @@
 #include <stdint.h>
 #include "../../apple_runtime.h"
 #include <unistd.h>
+#include <string.h>
 
 #include <retro_miscellaneous.h>
 
@@ -1139,3 +1140,117 @@ input_driver_t input_cocoa = {
    NULL                          /* vibrate */
 #endif
 };
+
+/* What the Apple UI hands the Cocoa input driver.
+ *
+ * The UI gets the platform's mouse, pointer and touch events and used
+ * to write them into this driver's data itself, which it took out of
+ * the input state. It calls these instead: the data is the driver's,
+ * and only the driver writes it. Each does what the UI's code did.
+ * All of them are on the main thread, where the UI's events arrive,
+ * and do nothing while the Cocoa driver is not the one in use. */
+static cocoa_input_data_t *cocoa_input_current(void)
+{
+   return (cocoa_input_data_t*)input_driver_current_data();
+}
+
+/* The mouse moved by @dx, @dy and is now at @x, @y in the window. */
+void cocoa_input_mouse_moved(int16_t dx, int16_t dy, int16_t x, int16_t y)
+{
+   cocoa_input_data_t *apple = cocoa_input_current();
+   if (!apple)
+      return;
+   /* Relative */
+   apple->mouse_rel_x        += dx;
+   apple->mouse_rel_y        += dy;
+   /* Absolute */
+   apple->touches[0].screen_x = x;
+   apple->touches[0].screen_y = y;
+   if (apple->mouse_grabbed)
+   {
+      apple->window_pos_x    += dx;
+      apple->window_pos_y    += dy;
+   }
+   else
+   {
+      apple->window_pos_x     = x;
+      apple->window_pos_y     = y;
+   }
+}
+
+/* A mouse with no position of its own moved the pointer by @dx, @dy
+ * (iOS, GCMouse). */
+void cocoa_input_mouse_moved_by(int16_t dx, int16_t dy)
+{
+   cocoa_input_data_t *apple = cocoa_input_current();
+   if (!apple)
+      return;
+   apple->window_pos_x += dx;
+   apple->window_pos_y += dy;
+}
+
+/* Mouse button @number went down or up. With @as_touch it is the one
+ * touch of a pointer too, as a click is on macOS. */
+void cocoa_input_mouse_button(unsigned number, bool down, bool as_touch)
+{
+   cocoa_input_data_t *apple = cocoa_input_current();
+   if (!apple || number >= 32)
+      return;
+   if (down)
+      apple->mouse_buttons |=  (1U << number);
+   else
+      apple->mouse_buttons &= ~(1U << number);
+   if (as_touch)
+      apple->touch_count     = down ? 1 : 0;
+}
+
+/* The pointer hovers at @x, @y, with nothing pressed (iOS, a trackpad
+ * or a mouse over the view). */
+void cocoa_input_pointer_at(int16_t x, int16_t y)
+{
+   cocoa_input_data_t *apple = cocoa_input_current();
+   if (!apple)
+      return;
+   apple->touches[0].screen_x = x;
+   apple->touches[0].screen_y = y;
+   apple->window_pos_x        = x;
+   apple->window_pos_y        = y;
+}
+
+/* The touches on screen are given anew: none, then one call of
+ * cocoa_input_touch_add() for each, which says false once there is no
+ * room for more. */
+void cocoa_input_touches_begin(void)
+{
+   cocoa_input_data_t *apple = cocoa_input_current();
+   if (apple)
+      apple->touch_count = 0;
+}
+
+bool cocoa_input_touch_add(int16_t x, int16_t y)
+{
+   cocoa_input_data_t *apple = cocoa_input_current();
+   if (!apple || apple->touch_count >= MAX_TOUCHES)
+      return false;
+   apple->touches[apple->touch_count  ].screen_x = x;
+   apple->touches[apple->touch_count++].screen_y = y;
+   return true;
+}
+
+/* Every touch is let go and forgotten: the application lost the
+ * screen and will not see them end. */
+void cocoa_input_touches_reset(void)
+{
+   cocoa_input_data_t *apple = cocoa_input_current();
+   if (!apple)
+      return;
+   apple->touch_count = 0;
+   memset(apple->touches, 0, sizeof(apple->touches));
+}
+
+/* Whether the mouse is held in the window. */
+bool cocoa_input_mouse_grabbed(void)
+{
+   cocoa_input_data_t *apple = cocoa_input_current();
+   return apple && apple->mouse_grabbed;
+}

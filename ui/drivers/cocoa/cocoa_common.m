@@ -840,10 +840,7 @@ void rarch_stop_draw_observer(void)
 
 -(BOOL) prefersPointerLocked API_AVAILABLE(ios(14.0))
 {
-   cocoa_input_data_t *apple = (cocoa_input_data_t*) input_state_get_ptr()->current_data;
-   if (!apple)
-      return NO;
-   return apple->mouse_grabbed;
+   return cocoa_input_mouse_grabbed() ? YES : NO;
 }
 
 #pragma mark - UIViewController Lifecycle

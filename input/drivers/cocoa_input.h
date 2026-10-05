@@ -56,4 +56,17 @@ typedef struct
    bool mouse_grabbed;
 } cocoa_input_data_t;
 
+/* What the Apple UI hands this driver: its mouse, pointer and touch
+ * events. The UI calls these and does not write the driver's data
+ * itself. On the main thread; nothing happens while the Cocoa driver
+ * is not the one in use. */
+void cocoa_input_mouse_moved(int16_t dx, int16_t dy, int16_t x, int16_t y);
+void cocoa_input_mouse_moved_by(int16_t dx, int16_t dy);
+void cocoa_input_mouse_button(unsigned number, bool down, bool as_touch);
+void cocoa_input_pointer_at(int16_t x, int16_t y);
+void cocoa_input_touches_begin(void);
+bool cocoa_input_touch_add(int16_t x, int16_t y);
+void cocoa_input_touches_reset(void);
+bool cocoa_input_mouse_grabbed(void);
+
 #endif
