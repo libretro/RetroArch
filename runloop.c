@@ -7811,8 +7811,8 @@ static enum runloop_state_enum runloop_check_state(
    {
       enum menu_action action;
       static input_bits_t old_input = {{0}};
-      static enum menu_action
-         old_action                 = MENU_ACTION_CANCEL;
+      /* the time of the poll whose bits arrive next frame */
+      static retro_time_t input_poll_time_us;
       bool focused                  = false;
       input_bits_t trigger_input    = current_bits;
       unsigned screensaver_timeout  = settings->uints.menu_screensaver_timeout;
@@ -7823,9 +7823,9 @@ static enum runloop_state_enum runloop_check_state(
        * first menu frame that poll was taken outside the menu, so
        * the current time stands in for it. */
       if (!menu_was_alive)
-         menu_st->input_poll_time_us = current_time;
-      menu_st->input_time_us        = menu_st->input_poll_time_us;
-      menu_st->input_poll_time_us   = current_time;
+         input_poll_time_us         = current_time;
+      menu_st->input_time_us        = input_poll_time_us;
+      input_poll_time_us            = current_time;
 
       cbs->poll_cb();
 
@@ -7856,43 +7856,7 @@ static enum runloop_state_enum runloop_check_state(
             focused = true;
       }
 
-      if (action == old_action)
-      {
-         retro_time_t press_time          = current_time;
-
-         if (action == MENU_ACTION_NOOP)
-            menu_st->noop_press_time      = press_time - menu_st->noop_start_time;
-         else
-            menu_st->action_press_time    = press_time - menu_st->action_start_time;
-      }
-      else
-      {
-         if (action == MENU_ACTION_NOOP)
-         {
-            menu_st->noop_start_time      = current_time;
-            menu_st->noop_press_time      = 0;
-
-            if (menu_st->prev_action == old_action)
-               menu_st->action_start_time = menu_st->prev_start_time;
-            else
-               menu_st->action_start_time = current_time;
-         }
-         else
-         {
-            if (     menu_st->prev_action == action
-                  && menu_st->noop_press_time < 200000) /* 250ms */
-            {
-               menu_st->action_start_time = menu_st->prev_start_time;
-               menu_st->action_press_time = current_time - menu_st->action_start_time;
-            }
-            else
-            {
-               menu_st->prev_start_time   = current_time;
-               menu_st->prev_action       = action;
-               menu_st->action_press_time = 0;
-            }
-         }
-      }
+      menu_driver_note_action(action, current_time);
 
       /* Check whether menu screensaver should be enabled */
       if (     (screensaver_timeout > 0)
@@ -8286,7 +8250,6 @@ static enum runloop_state_enum runloop_check_state(
 
       /* Note: 'old_input' is recorded earlier, immediately after
        * 'trigger_input' is derived */
-      old_action                = action;
 
       /* Handle dialog confirmed event */
       if (menu_st->dialog_st.pending_cmd != CMD_EVENT_NONE)

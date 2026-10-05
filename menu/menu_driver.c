@@ -811,6 +811,30 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
    return match_found;
 }
 
+/* How long the same action has been going. The menu sends a held
+ * direction as one action, a pause (the scroll delay, 256 ms by
+ * default), then one every 33 ms; a pause of under 200 ms between two
+ * of the same action keeps it going, so the first auto-repeat starts the
+ * count and the ones after add to it. A frame with no action changes
+ * nothing. */
+#define MENU_ACTION_BRIDGE_US 200000
+
+void menu_driver_note_action(enum menu_action action, retro_time_t now)
+{
+   struct menu_state *menu_st = &menu_driver_state;
+
+   if (action == MENU_ACTION_NOOP)
+      return;
+   if (     action != menu_st->prev_action
+         || now - menu_st->last_action_time >= MENU_ACTION_BRIDGE_US)
+   {
+      menu_st->action_start_time = now;
+      menu_st->prev_action       = action;
+   }
+   menu_st->last_action_time  = now;
+   menu_st->action_press_time = now - menu_st->action_start_time;
+}
+
 /* Display the date and time - time_mode will influence how
  * the time representation will look like.
  * */
@@ -820,19 +844,20 @@ size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime,
    /* Storage container for current menu datetime
     * representation string */
    static char datetime_cache[NAME_MAX_LENGTH];
+   static retro_time_t datetime_last_time_us;
    struct menu_state *menu_st  = &menu_driver_state;
 
    /* Trigger an update, if required */
-   if (   menu_st->current_time_us - menu_st->datetime_last_time_us >=
+   if (   menu_st->current_time_us - datetime_last_time_us >=
           DATETIME_CHECK_INTERVAL
-       || menu_st->datetime_last_time_us == 0)
+       || datetime_last_time_us == 0)
    {
       time_t time_;
       struct tm tm_;
       bool has_am_pm         = false;
       const char *format_str = "";
 
-      menu_st->datetime_last_time_us = menu_st->current_time_us;
+      datetime_last_time_us = menu_st->current_time_us;
 
       /* Get current time */
       time(&time_);
@@ -1193,16 +1218,17 @@ size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime,
 size_t menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate,
       char *s, size_t len)
 {
+   static retro_time_t powerstate_last_time_us;
    int percent                    = 0;
    struct menu_state    *menu_st  = &menu_driver_state;
    enum frontend_powerstate state = FRONTEND_POWERSTATE_NONE;
 
    /* Trigger an update, if required */
-   if (   menu_st->current_time_us - menu_st->powerstate_last_time_us >=
+   if (   menu_st->current_time_us - powerstate_last_time_us >=
           POWERSTATE_CHECK_INTERVAL
-       || menu_st->powerstate_last_time_us == 0)
+       || powerstate_last_time_us == 0)
    {
-      menu_st->powerstate_last_time_us = menu_st->current_time_us;
+      powerstate_last_time_us = menu_st->current_time_us;
       task_push_get_powerstate();
    }
 

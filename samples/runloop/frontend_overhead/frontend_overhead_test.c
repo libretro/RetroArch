@@ -3134,6 +3134,70 @@ static void lane_ai_presses(void)
 #endif
 }
 
+/* How long the menu's same action has been going, which speeds up a
+ * held Left/Right on a number: a held direction as the menu sends it -
+ * once, the scroll delay, then every 33 ms, with frames of no action
+ * between - counts from the first auto-repeat; a let-go, a pause of
+ * 200 ms or more, or another action starts it again. Driven with times
+ * of its own, so it takes no real seconds. */
+static void lane_menu_press_time(void)
+{
+#ifdef HAVE_MENU
+   struct menu_state *menu_st = menu_state_get_ptr();
+   enum menu_action saved_prev = menu_st->prev_action;
+   retro_time_t t, run_start, last = 0;
+   unsigned had = failures;
+   bool rising  = true;
+
+   /* held Right for 22 s: one action at 0, none until the scroll delay,
+    * then one every 33 ms; frames every 16 ms in between */
+   menu_driver_note_action(MENU_ACTION_RIGHT, 1000000);
+   CHECK(menu_st->action_press_time == 0, "menu press time: a new action did not start at 0");
+   for (t = 1000000 + 16000; t < 1000000 + 256000; t += 16000)
+      menu_driver_note_action(MENU_ACTION_NOOP, t);
+   run_start = 1000000 + 256000;
+   for (t = run_start; t < run_start + 22000000; t += 33000)
+   {
+      retro_time_t f;
+      menu_driver_note_action(MENU_ACTION_RIGHT, t);
+      if (menu_st->action_press_time < last)
+         rising = false;
+      last = menu_st->action_press_time;
+      for (f = t + 16000; f < t + 33000; f += 16000)
+         menu_driver_note_action(MENU_ACTION_NOOP, f);
+   }
+   CHECK(rising, "menu press time: it went down while the direction was held");
+   CHECK(menu_st->action_press_time > 21000000,
+         "menu press time: 22 s of a held direction did not reach the last speed-up (over 21 s)");
+   CHECK(menu_st->action_press_time < 22000000,
+         "menu press time: it counted from before the first auto-repeat");
+
+   /* let go a second, then Left: from 0 */
+   t += 1000000;
+   menu_driver_note_action(MENU_ACTION_LEFT, t);
+   CHECK(menu_st->action_press_time == 0, "menu press time: another action after a let-go did not start at 0");
+
+   /* the same action after a pause of 300 ms: from 0 */
+   menu_driver_note_action(MENU_ACTION_LEFT, t + 33000);
+   CHECK(menu_st->action_press_time == 33000, "menu press time: an auto-repeat 33 ms on was not added");
+   menu_driver_note_action(MENU_ACTION_LEFT, t + 33000 + 300000);
+   CHECK(menu_st->action_press_time == 0, "menu press time: a pause of 300 ms did not start it again");
+
+   /* another action within 200 ms: from 0 */
+   menu_driver_note_action(MENU_ACTION_RIGHT, t + 33000 + 350000);
+   CHECK(menu_st->action_press_time == 0, "menu press time: another action within 200 ms did not start it again");
+
+   menu_st->prev_action       = saved_prev;
+   menu_st->action_press_time = 0;
+   if (failures == had)
+      printf("[pass] menu press time: a held direction counts from its first"
+            " auto-repeat and reaches the last speed-up after 21 s; a let-go,"
+            " a pause of 200 ms or more, or another action starts it again\n");
+#else
+   printf("[skip] menu press time: needs the menu\n");
+#endif
+}
+
 /* Aim From Analog Stick: a port's stick is where its lightgun or
  * pointer points. */
 static void lane_aim_stick(void)
@@ -4452,6 +4516,7 @@ int main(int argc, char *argv[])
       lane_menu_combo_gate();
       lane_menu_pause();
       lane_ai_presses();
+      lane_menu_press_time();
       lane_aim_stick();
       lane_core_view();
       lane_key_events();

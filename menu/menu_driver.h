@@ -502,17 +502,16 @@ struct menu_state
     * polls so that a stall after the last poll is not counted as
     * time the button was held. */
    retro_time_t input_time_us;
-   retro_time_t input_poll_time_us;
-   retro_time_t powerstate_last_time_us;
-   retro_time_t datetime_last_time_us;
    retro_time_t input_last_time_us;
    menu_input_t input_state;               /* retro_time_t alignment */
 
-   retro_time_t prev_start_time;
-   retro_time_t noop_press_time;
-   retro_time_t noop_start_time;
+   /* How long the same action has been going: since action_start_time,
+    * with the pauses between its auto-repeats bridged, last seen at
+    * last_action_time. Held Left/Right on a number speeds up by it.
+    * See menu_driver_note_action(). */
    retro_time_t action_start_time;
    retro_time_t action_press_time;
+   retro_time_t last_action_time;
 
    struct menu_bind_state input_binds;     /* uint64_t alignment */
 
@@ -811,6 +810,10 @@ void menu_driver_toggle(
       bool on);
 
 /* Iterate the menu driver for one frame. */
+/* The menu's action this frame, for how long the same action has been
+ * going (action_press_time). */
+void menu_driver_note_action(enum menu_action action, retro_time_t now);
+
 bool menu_driver_iterate(
       struct menu_state *menu_st,
       gfx_display_t *p_disp,
