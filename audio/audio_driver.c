@@ -5515,6 +5515,9 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
       bool is_slowmotion, bool is_fastforward, bool from_core,
       unsigned canon_width)
 {
+   retro_time_t runahead_guard = from_core && !audio_st->callback.callback
+         && runloop_state_get_ptr()->runahead_start_usec
+         ? cpu_features_get_time_usec() : 0;
 #ifdef HAVE_THREADS
    if (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_PIPELINE_THREADED)
    {
@@ -5721,6 +5724,9 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
        * that batches per scanline wake it hundreds of times a frame,
        * and a consumer that outranks the main thread would then run a
        * scanline-sized pass each time. */
+      if (runahead_guard)
+         runloop_state_get_ptr()->runahead_start_usec +=
+            cpu_features_get_time_usec() - runahead_guard;
       return;
    }
 #endif
@@ -5733,6 +5739,9 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
       audio_driver_flush(audio_st, slowmotion_ratio, data, samples, is_float,
             is_slowmotion, is_fastforward);
    audio_driver_state_unlock();
+   if (runahead_guard)
+      runloop_state_get_ptr()->runahead_start_usec +=
+         cpu_features_get_time_usec() - runahead_guard;
 }
 
 #ifdef HAVE_THREADS
@@ -7014,6 +7023,7 @@ static bool audio_driver_inline_multi(audio_driver_state_t *audio_st,
    uint32_t flags;
    size_t done = 0, frame = channels * (floating ? sizeof(float) : sizeof(int16_t));
    float ratio = audio_driver_snapshot_slowmotion(audio_st);
+   retro_time_t runahead_guard;
    if (audio_st->pipe_threaded || !t || t->channels <= 2 || floating != t->floating
          || (layout & AUDIO_LAYOUT_STEREO) != AUDIO_LAYOUT_STEREO)
       return false;
@@ -7026,6 +7036,9 @@ static bool audio_driver_inline_multi(audio_driver_state_t *audio_st,
    if ((flags & AUDIO_SNAP_PAUSED) || audio_driver_core_silenced()
          || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
          || !audio_st->output_samples_buf) return true;
+   runahead_guard = !audio_st->callback.callback
+         && runloop_state_get_ptr()->runahead_start_usec
+         ? cpu_features_get_time_usec() : 0;
    audio_driver_state_lock();
    audio_driver_arm_resume(audio_st);
    while (done < frames)
@@ -7040,6 +7053,9 @@ static bool audio_driver_inline_multi(audio_driver_state_t *audio_st,
       done += n;
    }
    audio_driver_state_unlock();
+   if (runahead_guard)
+      runloop_state_get_ptr()->runahead_start_usec +=
+         cpu_features_get_time_usec() - runahead_guard;
    return true;
 }
 
@@ -7317,6 +7333,9 @@ size_t audio_driver_sample_batch_float(const float *data, size_t frames)
 
       if (flush_audio)
       {
+         retro_time_t runahead_guard = !audio_st->callback.callback
+               && runloop_state_get_ptr()->runahead_start_usec
+               ? cpu_features_get_time_usec() : 0;
          audio_driver_state_lock();
          audio_driver_arm_resume(audio_st);
          if (!audio_st->inline_transport
@@ -7329,6 +7348,9 @@ size_t audio_driver_sample_batch_float(const float *data, size_t frames)
                (runloop_flags & AUDIO_SNAP_SLOWMOTION) ? true : false,
                (runloop_flags & AUDIO_SNAP_FASTMOTION) ? true : false);
          audio_driver_state_unlock();
+         if (runahead_guard)
+            runloop_state_get_ptr()->runahead_start_usec +=
+               cpu_features_get_time_usec() - runahead_guard;
       }
 
       frames_remaining -= frames_to_write;

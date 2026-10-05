@@ -12614,6 +12614,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_RUN_AHEAD_FRAMES,                      PARSE_ONLY_UINT, false },
                {MENU_ENUM_LABEL_PREEMPT_FRAMES,                        PARSE_ONLY_UINT, false },
                {MENU_ENUM_LABEL_RUN_AHEAD_HIDE_WARNINGS,               PARSE_ONLY_BOOL, false },
+               {MENU_ENUM_LABEL_RUN_AHEAD_PERFORMANCE_GUARD,           PARSE_ONLY_BOOL, true },
 #endif
                {MENU_ENUM_LABEL_AUDIO_LATENCY,                         PARSE_ONLY_UINT, true },
                {MENU_ENUM_LABEL_AUDIO_LATENCY_FLOOR,                   PARSE_ONLY_UINT, false },

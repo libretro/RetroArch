@@ -7009,6 +7009,8 @@ void video_driver_frame(const void *data, unsigned width,
    bool widgets_active            = p_dispwidget->active;
 #endif
    recording_state_t *recording_st= recording_state_get_ptr();
+   retro_time_t runahead_guard     = video_driver_active
+         && runloop_st->runahead_start_usec ? cpu_features_get_time_usec() : 0;
 
    /* Per-frame catch-all publish of the viewport-parameter snapshot
     * (main thread; plain settings toggles land within a frame, the
@@ -7823,6 +7825,9 @@ if (!VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
    if (video_info.scanline_sync && !video_info.input_driver_nonblock_state)
       video_driver_scanline_after_frame(video_st,
             video_info.frame_time_target, runloop_st->core_run_time);
+   if (runahead_guard)
+      runloop_st->runahead_start_usec +=
+         cpu_features_get_time_usec() - runahead_guard;
 }
 
 static void video_driver_reinit_context(settings_t *settings, int flags)

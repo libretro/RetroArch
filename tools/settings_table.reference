@@ -261,6 +261,7 @@ bool	menu_show_full_paths	1	1
 bool	menu_rgui_transparency	1	1
 bool	menu_dynamic_wallpaper_enable	1	1
 bool	run_ahead_hide_warnings	1	0
+bool	run_ahead_performance_guard	1	0
 bool	input_auto_mouse_grab	1	1
 bool	input_joypad_background	1	1
 bool	microphone_enable	1	1
@@ -942,6 +943,7 @@ bool	menu_show_full_paths	1	1
 bool	menu_rgui_transparency	1	1
 bool	menu_dynamic_wallpaper_enable	1	1
 bool	run_ahead_hide_warnings	1	0
+bool	run_ahead_performance_guard	1	0
 bool	input_auto_mouse_grab	1	0
 bool	input_joypad_background	1	1
 bool	microphone_enable	1	1
@@ -1625,6 +1627,7 @@ bool	menu_show_full_paths	1	1
 bool	menu_rgui_transparency	1	1
 bool	menu_dynamic_wallpaper_enable	1	1
 bool	run_ahead_hide_warnings	1	0
+bool	run_ahead_performance_guard	1	0
 bool	input_auto_mouse_grab	1	0
 bool	input_joypad_background	1	1
 bool	microphone_enable	1	1

@@ -186,6 +186,7 @@ struct runloop
    retro_time_t core_runtime_last;
    retro_time_t core_runtime_usec;
    retro_time_t core_run_time;
+   retro_time_t runahead_start_usec;
    /* GPU device-loss recovery: when the driver may next be rebuilt,
     * and how many losses have come in quick succession. A loss long
     * after the previous one starts the count over. */

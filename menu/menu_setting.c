@@ -12800,6 +12800,7 @@ static const setting_desc_t frame_throttli_desc_1[] = {
 static const setting_desc_t frame_throttli_desc_2[] = {
 /* GENERATED: rows come from settings_def_runahead_warnings.h in order. */
 #include "../settings/settings_def_runahead_warnings.h"
+#include "../settings/settings_def_runahead_performance_guard.h"
 };
 #endif
 

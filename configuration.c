@@ -2714,6 +2714,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_menu_wallpaper.h"
 #endif
 #include "settings/settings_def_runahead_warnings.h"
+#include "settings/settings_def_runahead_performance_guard.h"
 #include "settings/settings_def_input_auto_mouse_grab.h"
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #include "settings/settings_def_input_nowinkey.h"
@@ -3437,6 +3438,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_menu_wallpaper.h"
 #endif
 #include "settings/settings_def_runahead_warnings.h"
+#include "settings/settings_def_runahead_performance_guard.h"
 #include "settings/settings_def_input_auto_mouse_grab.h"
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #include "settings/settings_def_input_nowinkey.h"
@@ -4136,6 +4138,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_menu_wallpaper.h"
 #endif
 #include "settings/settings_def_runahead_warnings.h"
+#include "settings/settings_def_runahead_performance_guard.h"
 #include "settings/settings_def_input_auto_mouse_grab.h"
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #include "settings/settings_def_input_nowinkey.h"
@@ -4870,6 +4873,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_menu_wallpaper.h"
 #endif
 #include "settings/settings_def_runahead_warnings.h"
+#include "settings/settings_def_runahead_performance_guard.h"
 #include "settings/settings_def_input_auto_mouse_grab.h"
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #include "settings/settings_def_input_nowinkey.h"
@@ -5466,6 +5470,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_menu_wallpaper.h"
 #endif
 #include "settings/settings_def_runahead_warnings.h"
+#include "settings/settings_def_runahead_performance_guard.h"
 #include "settings/settings_def_input_auto_mouse_grab.h"
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #include "settings/settings_def_input_nowinkey.h"
