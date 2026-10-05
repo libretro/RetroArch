@@ -452,10 +452,11 @@ static void cocoa_input_poll(void *data)
 
    {
       uint32_t pos        = apple->window_pos;
-      apple->mouse_rel_x  = COCOA_POS_X(pos) - apple->mouse_x_last;
-      apple->mouse_x_last = COCOA_POS_X(pos);
-      apple->mouse_rel_y  = COCOA_POS_Y(pos) - apple->mouse_y_last;
-      apple->mouse_y_last = COCOA_POS_Y(pos);
+      uint32_t last       = apple->mouse_last;
+      apple->mouse_rel    = COCOA_POS_PACK(
+            COCOA_POS_X(pos) - COCOA_POS_X(last),
+            COCOA_POS_Y(pos) - COCOA_POS_Y(last));
+      apple->mouse_last   = pos;
    }
 
    for (i = 0; i < apple->touch_count || i == 0; i++)
@@ -646,7 +647,7 @@ static int16_t cocoa_input_state(
                return COCOA_POS_X(apple->window_pos) * cocoa_screen_get_backing_scale_factor();
 #endif
             }
-            return apple->mouse_rel_x;
+            return COCOA_POS_X(apple->mouse_rel);
          case RETRO_DEVICE_ID_MOUSE_Y:
             if (device == RARCH_DEVICE_MOUSE_SCREEN)
             {
@@ -656,7 +657,7 @@ static int16_t cocoa_input_state(
                return COCOA_POS_Y(apple->window_pos) * cocoa_screen_get_backing_scale_factor();
 #endif
             }
-            return apple->mouse_rel_y;
+            return COCOA_POS_Y(apple->mouse_rel);
          case RETRO_DEVICE_ID_MOUSE_LEFT:
             return apple->mouse_buttons & 1;
          case RETRO_DEVICE_ID_MOUSE_RIGHT:
@@ -1168,8 +1169,9 @@ void cocoa_input_mouse_moved(int16_t dx, int16_t dy, int16_t x, int16_t y)
    if (!apple)
       return;
    /* Relative */
-   apple->mouse_rel_x        += dx;
-   apple->mouse_rel_y        += dy;
+   apple->mouse_rel           = COCOA_POS_PACK(
+         COCOA_POS_X(apple->mouse_rel) + dx,
+         COCOA_POS_Y(apple->mouse_rel) + dy);
    /* Absolute */
    apple->touches[0].screen_pos = COCOA_POS_PACK(x, y);
    if (apple->mouse_grabbed)
