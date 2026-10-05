@@ -28,6 +28,17 @@
 
 #include "../../../tasks/task_cloudsync.c"
 
+/* The locked hand-over (TASK_CLOUDSYNC_FORCE_LOCK, or a backend with no
+ * pointer atomics) appends under the lock task_push_cloud_sync() makes;
+ * these tests make it themselves. */
+static void tcs_test_lock(void)
+{
+#if defined(HAVE_THREADS) && !defined(TCS_LOCK_FREE)
+   if (!tcs_manifest_lock)
+      tcs_manifest_lock = slock_new();
+#endif
+}
+
 #define THREADS 4
 #define ADDS    4000
 
@@ -138,6 +149,7 @@ int main(void)
    size_t     local  = (size_t)(THREADS + 1) * (ADDS / 2);
    size_t     server = local + (size_t)(THREADS + 1) * (ADDS / 4);
 
+   tcs_test_lock();
    state = (task_cloud_sync_state_t*)calloc(1, sizeof(*state));
    if (!state)
       return 1;
@@ -154,9 +166,11 @@ int main(void)
    for (k = 0; k < THREADS; k++)
       sthread_join(threads[k]);
 
+#ifdef TCS_LOCK_FREE
    check("nothing is in the manifests until they are folded",
             state->updated_server_manifest->size == 0
          && state->updated_local_manifest->size == 0);
+#endif
    task_cloud_sync_fold_manifest_adds(state);
    check("every entry added reached the server manifest",
          state->updated_server_manifest->size == server);

@@ -224,6 +224,31 @@ jobs:
           make clean >/dev/null
           echo "[pass] cloudsync_pacing_test"
 
+      - name: Build and run the cloudsync hand-over tests, locked path (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/cloudsync
+        run: |
+          set -eu
+          # Completion callbacks hand manifest entries and downloads to
+          # the task thread on lock-free lists where the atomics backend
+          # has pointer operations, and under tcs_manifest_lock where it
+          # does not. Every backend this runner has, has them, so
+          # FORCE_LOCK=1 builds tasks/task_cloudsync.c with
+          # TASK_CLOUDSYNC_FORCE_LOCK: the locked path on the host's own
+          # backend, where TSan sees an append or hand-over the lock
+          # does not cover. Same tests, same checks, other path.
+          for t in cloudsync_manifest_adds_test cloudsync_pacing_test; do
+             make clean $t FORCE_LOCK=1
+             timeout 120 ./$t
+             make clean $t FORCE_LOCK=1 SANITIZER=address,undefined
+             ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+               timeout 300 ./$t
+             make clean $t FORCE_LOCK=1 SANITIZER=thread
+             TSAN_OPTIONS=halt_on_error=1 timeout 300 ./$t
+          done
+          make clean >/dev/null
+          echo "[pass] cloudsync hand-over, locked path"
+
       - name: Build and run cloudsync_async_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/tasks/cloudsync

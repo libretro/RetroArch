@@ -47,6 +47,17 @@
 
 #include "../../../tasks/task_cloudsync.c"
 
+/* The locked hand-over (TASK_CLOUDSYNC_FORCE_LOCK, or a backend with no
+ * pointer atomics) appends under the lock task_push_cloud_sync() makes;
+ * these tests make it themselves. */
+static void tcs_test_lock(void)
+{
+#if defined(HAVE_THREADS) && !defined(TCS_LOCK_FREE)
+   if (!tcs_manifest_lock)
+      tcs_manifest_lock = slock_new();
+#endif
+}
+
 static unsigned transfers;
 
 /* --- what the task links against and this test never reaches ---------- */
@@ -555,6 +566,7 @@ int main(void)
    unsigned r;
    int      ok;
 
+   tcs_test_lock();
    strcpy(dir, "/tmp/cs_pacing_XXXXXX");
    if (!mkdtemp(dir))
       return 2;

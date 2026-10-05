@@ -80,6 +80,11 @@ ASYNC_DEFS    := -DHAVE_THREADS -DRARCH_INTERNAL -DHAVE_CLOUDSYNC \
 
 ADDS_DEFS    := -DHAVE_THREADS -DRARCH_INTERNAL -DHAVE_CLOUDSYNC \
 	-DHAVE_NETWORKING -I$(CORE_DIR)/deps
+# FORCE_LOCK=1: the hand-over under tcs_manifest_lock, as a backend with
+# no pointer atomics builds it, on this host's backend
+ifneq ($(FORCE_LOCK),)
+   ADDS_DEFS += -DTASK_CLOUDSYNC_FORCE_LOCK
+endif
 
 CFLAGS += -Wall -pedantic -std=gnu99 -g -O1 -fno-omit-frame-pointer \
           -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR)

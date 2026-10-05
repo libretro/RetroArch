@@ -39,6 +39,15 @@
 
 #include "task_cloudsync_path.h"
 
+/* Completion callbacks hand manifest entries and downloads to the task
+ * thread on lock-free lists where the atomics backend has pointer
+ * operations, and under tcs_manifest_lock where it does not.
+ * TASK_CLOUDSYNC_FORCE_LOCK takes the locked path on any backend, for
+ * the tests that cover it on hosts whose backends all have them. */
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR) && !defined(TASK_CLOUDSYNC_FORCE_LOCK)
+#define TCS_LOCK_FREE 1
+#endif
+
 #define CSPFX "[CloudSync] "
 
 #define MANIFEST_FILENAME_LOCAL  "manifest.local"
@@ -104,7 +113,7 @@ typedef struct
    file_list_t *updated_server_manifest;
    /* local manifest is sometimes different due to conflicts */
    file_list_t *updated_local_manifest;
-#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+#if defined(TCS_LOCK_FREE)
    /* Entries on their way into the two lists above; see
     * tcs_manifest_add_t. */
    retro_atomic_ptr_t manifest_adds;
@@ -119,7 +128,7 @@ typedef struct
    /* Downloads waiting to be hashed: handed over by the fetch callback,
     * on whatever thread it runs (fetched_in), and taken by the task
     * thread, which works through them in order (fetched). */
-#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+#if defined(TCS_LOCK_FREE)
    retro_atomic_ptr_t fetched_in;
 #else
    struct tcs_fetched *fetched_in;
@@ -166,7 +175,7 @@ typedef struct
  *
  * A backend with no pointer atomics appends under a lock instead. */
 #ifdef HAVE_THREADS
-#ifdef RETRO_ATOMIC_HAS_PTR
+#ifdef TCS_LOCK_FREE
 typedef struct tcs_manifest_add
 {
    struct tcs_manifest_add *next;
@@ -844,7 +853,7 @@ static void task_cloud_sync_update_progress(retro_task_t *task)
 	   task_set_progress(task, 100);
 }
 
-#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+#if defined(TCS_LOCK_FREE)
 static void task_cloud_sync_add_to_updated_manifest(task_cloud_sync_state_t *sync_state, const char *key, const char *hash, bool server)
 {
    void *head;
@@ -1250,7 +1259,7 @@ static bool task_cloud_sync_fetched_push(
    task_cloud_sync_state_t *sync_state = fetch_state->sync_state;
    size_t                   len        = strlen(path) + 1;
    tcs_fetched_t           *rec        = (tcs_fetched_t*)malloc(sizeof(*rec) + len);
-#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+#if defined(TCS_LOCK_FREE)
    void                    *head;
 #endif
 
@@ -1260,7 +1269,7 @@ static bool task_cloud_sync_fetched_push(
    rec->file        = file;
    rec->path        = (char*)(rec + 1);
    memcpy(rec->path, path, len);
-#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+#if defined(TCS_LOCK_FREE)
    do
    {
       head      = retro_atomic_load_acquire_ptr(&sync_state->fetched_in);
@@ -1284,7 +1293,7 @@ static bool task_cloud_sync_fetched_push(
 static void task_cloud_sync_fetched_take(task_cloud_sync_state_t *sync_state)
 {
    tcs_fetched_t *in, *rev = NULL, **tail;
-#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+#if defined(TCS_LOCK_FREE)
    in = (tcs_fetched_t*)retro_atomic_exchange_ptr(&sync_state->fetched_in, NULL);
 #else
 #ifdef HAVE_THREADS
@@ -2379,7 +2388,7 @@ static void task_push_cloud_sync_with_mode(int conflict_resolution)
    if (!cloud_sync_enable)
       return;
 
-#if defined(HAVE_THREADS) && !defined(RETRO_ATOMIC_HAS_PTR)
+#if defined(HAVE_THREADS) && !defined(TCS_LOCK_FREE)
    if (!tcs_manifest_lock)
       tcs_manifest_lock = slock_new();
 #endif
