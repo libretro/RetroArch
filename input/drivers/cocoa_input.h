@@ -29,12 +29,20 @@
 /* Input responder */
 #define MAX_TOUCHES  16
 
+/* A position in the window - the pointer's, a touch's - x and y packed
+ * in one word: written in one store, so the two always go together.
+ * Each is a signed 16-bit value. */
+#define COCOA_POS_PACK(x, y) \
+   (((uint32_t)(uint16_t)(int16_t)(x) << 16) | (uint32_t)(uint16_t)(int16_t)(y))
+#define COCOA_POS_X(p)       ((int16_t)(uint16_t)((uint32_t)(p) >> 16))
+#define COCOA_POS_Y(p)       ((int16_t)(uint16_t)((uint32_t)(p) & 0xffffu))
+
 typedef struct
 {
-   int16_t screen_x, screen_y;
-   int16_t fixed_x, fixed_y;
-   int16_t full_x, full_y;
-   int16_t confined_x, confined_y;
+   uint32_t screen_pos;      /* COCOA_POS_PACK(x, y) */
+   uint32_t fixed_pos;       /* in the viewport, -0x8000 outside */
+   uint32_t full_pos;        /* on the whole screen */
+   uint32_t confined_pos;    /* in the viewport, held to its edges */
 } cocoa_touch_data_t;
 
 typedef struct
@@ -45,8 +53,7 @@ typedef struct
    cocoa_touch_data_t touches[MAX_TOUCHES]; /* int16_t alignment */
    int16_t mouse_x_last;
    int16_t mouse_y_last;
-   int16_t window_pos_x;
-   int16_t window_pos_y;
+   uint32_t window_pos;      /* COCOA_POS_PACK(x, y) */
    int16_t mouse_rel_x;
    int16_t mouse_rel_y;
    int16_t mouse_wu;

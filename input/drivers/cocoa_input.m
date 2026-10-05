@@ -450,35 +450,42 @@ static void cocoa_input_poll(void *data)
    if (!apple)
       return;
 
-   apple->mouse_rel_x = apple->window_pos_x - apple->mouse_x_last;
-   apple->mouse_x_last = apple->window_pos_x;
-
-   apple->mouse_rel_y = apple->window_pos_y - apple->mouse_y_last;
-   apple->mouse_y_last = apple->window_pos_y;
+   {
+      uint32_t pos        = apple->window_pos;
+      apple->mouse_rel_x  = COCOA_POS_X(pos) - apple->mouse_x_last;
+      apple->mouse_x_last = COCOA_POS_X(pos);
+      apple->mouse_rel_y  = COCOA_POS_Y(pos) - apple->mouse_y_last;
+      apple->mouse_y_last = COCOA_POS_Y(pos);
+   }
 
    for (i = 0; i < apple->touch_count || i == 0; i++)
    {
       struct video_viewport vp;
+      cocoa_touch_data_t *touch = &apple->touches[i];
+      int screen_x              = COCOA_POS_X(touch->screen_pos) * backing_scale_factor;
+      int screen_y              = COCOA_POS_Y(touch->screen_pos) * backing_scale_factor;
+      int16_t confined_x        = COCOA_POS_X(touch->confined_pos);
+      int16_t confined_y        = COCOA_POS_Y(touch->confined_pos);
+      int16_t fixed_x           = COCOA_POS_X(touch->fixed_pos);
+      int16_t fixed_y           = COCOA_POS_Y(touch->fixed_pos);
+      int16_t full_x            = COCOA_POS_X(touch->full_pos);
+      int16_t full_y            = COCOA_POS_Y(touch->full_pos);
 
       memset(&vp, 0, sizeof(vp));
 
+      /* each pair is written whole, as it was read: a translation that
+       * fails leaves it as it was */
       video_driver_translate_coord_viewport_confined_wrap(
-            &vp,
-            apple->touches[i].screen_x * backing_scale_factor,
-            apple->touches[i].screen_y * backing_scale_factor,
-            &apple->touches[i].confined_x,
-            &apple->touches[i].confined_y,
-            &apple->touches[i].full_x,
-            &apple->touches[i].full_y);
+            &vp, screen_x, screen_y,
+            &confined_x, &confined_y, &full_x, &full_y);
 
       video_driver_translate_coord_viewport_wrap(
-            &vp,
-            apple->touches[i].screen_x * backing_scale_factor,
-            apple->touches[i].screen_y * backing_scale_factor,
-            &apple->touches[i].fixed_x,
-            &apple->touches[i].fixed_y,
-            &apple->touches[i].full_x,
-            &apple->touches[i].full_y);
+            &vp, screen_x, screen_y,
+            &fixed_x, &fixed_y, &full_x, &full_y);
+
+      touch->confined_pos = COCOA_POS_PACK(confined_x, confined_y);
+      touch->fixed_pos    = COCOA_POS_PACK(fixed_x, fixed_y);
+      touch->full_pos     = COCOA_POS_PACK(full_x, full_y);
    }
 }
 
@@ -491,8 +498,8 @@ static int16_t cocoa_lightgun_aiming_state(
    int16_t res_screen_x        = 0;
    int16_t res_screen_y        = 0;
 
-   int16_t x = apple->window_pos_x;
-   int16_t y = apple->window_pos_y;
+   int16_t x = COCOA_POS_X(apple->window_pos);
+   int16_t y = COCOA_POS_Y(apple->window_pos);
 
 #if !TARGET_OS_IPHONE
    x *= cocoa_screen_get_backing_scale_factor();
@@ -634,9 +641,9 @@ static int16_t cocoa_input_state(
             if (device == RARCH_DEVICE_MOUSE_SCREEN)
             {
 #if TARGET_OS_IPHONE
-               return apple->window_pos_x;
+               return COCOA_POS_X(apple->window_pos);
 #else
-               return apple->window_pos_x * cocoa_screen_get_backing_scale_factor();
+               return COCOA_POS_X(apple->window_pos) * cocoa_screen_get_backing_scale_factor();
 #endif
             }
             return apple->mouse_rel_x;
@@ -644,9 +651,9 @@ static int16_t cocoa_input_state(
             if (device == RARCH_DEVICE_MOUSE_SCREEN)
             {
 #if TARGET_OS_IPHONE
-               return apple->window_pos_y;
+               return COCOA_POS_Y(apple->window_pos);
 #else
-               return apple->window_pos_y * cocoa_screen_get_backing_scale_factor();
+               return COCOA_POS_Y(apple->window_pos) * cocoa_screen_get_backing_scale_factor();
 #endif
             }
             return apple->mouse_rel_y;
@@ -682,16 +689,16 @@ static int16_t cocoa_input_state(
                         if (!apple->touch_count)
                            return 0;
                         if (device == RARCH_DEVICE_POINTER_SCREEN)
-                           return (touch->full_x  != -0x8000) && (touch->full_y  != -0x8000); /* Inside? */
-                        return    (touch->fixed_x != -0x8000) && (touch->fixed_y != -0x8000); /* Inside? */
+                           return (COCOA_POS_X(touch->full_pos)  != -0x8000) && (COCOA_POS_Y(touch->full_pos)  != -0x8000); /* Inside? */
+                        return    (COCOA_POS_X(touch->fixed_pos) != -0x8000) && (COCOA_POS_Y(touch->fixed_pos) != -0x8000); /* Inside? */
                      case RETRO_DEVICE_ID_POINTER_X:
-                        return (device == RARCH_DEVICE_POINTER_SCREEN) ? touch->full_x : touch->confined_x;
+                        return (device == RARCH_DEVICE_POINTER_SCREEN) ? COCOA_POS_X(touch->full_pos) : COCOA_POS_X(touch->confined_pos);
                      case RETRO_DEVICE_ID_POINTER_Y:
-                        return (device == RARCH_DEVICE_POINTER_SCREEN) ? touch->full_y : touch->confined_y;
+                        return (device == RARCH_DEVICE_POINTER_SCREEN) ? COCOA_POS_Y(touch->full_pos) : COCOA_POS_Y(touch->confined_pos);
                      case RETRO_DEVICE_ID_POINTER_COUNT:
                         return apple->touch_count;
                      case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                        return input_driver_pointer_is_offscreen(touch->fixed_x, touch->fixed_y);
+                        return input_driver_pointer_is_offscreen(COCOA_POS_X(touch->fixed_pos), COCOA_POS_Y(touch->fixed_pos));
                   }
                }
             }
@@ -1164,18 +1171,13 @@ void cocoa_input_mouse_moved(int16_t dx, int16_t dy, int16_t x, int16_t y)
    apple->mouse_rel_x        += dx;
    apple->mouse_rel_y        += dy;
    /* Absolute */
-   apple->touches[0].screen_x = x;
-   apple->touches[0].screen_y = y;
+   apple->touches[0].screen_pos = COCOA_POS_PACK(x, y);
    if (apple->mouse_grabbed)
-   {
-      apple->window_pos_x    += dx;
-      apple->window_pos_y    += dy;
-   }
+      apple->window_pos       = COCOA_POS_PACK(
+            COCOA_POS_X(apple->window_pos) + dx,
+            COCOA_POS_Y(apple->window_pos) + dy);
    else
-   {
-      apple->window_pos_x     = x;
-      apple->window_pos_y     = y;
-   }
+      apple->window_pos       = COCOA_POS_PACK(x, y);
 }
 
 /* A mouse with no position of its own moved the pointer by @dx, @dy
@@ -1185,8 +1187,9 @@ void cocoa_input_mouse_moved_by(int16_t dx, int16_t dy)
    cocoa_input_data_t *apple = cocoa_input_current();
    if (!apple)
       return;
-   apple->window_pos_x += dx;
-   apple->window_pos_y += dy;
+   apple->window_pos = COCOA_POS_PACK(
+         COCOA_POS_X(apple->window_pos) + dx,
+         COCOA_POS_Y(apple->window_pos) + dy);
 }
 
 /* Mouse button @number went down or up. With @as_touch it is the one
@@ -1211,10 +1214,8 @@ void cocoa_input_pointer_at(int16_t x, int16_t y)
    cocoa_input_data_t *apple = cocoa_input_current();
    if (!apple)
       return;
-   apple->touches[0].screen_x = x;
-   apple->touches[0].screen_y = y;
-   apple->window_pos_x        = x;
-   apple->window_pos_y        = y;
+   apple->touches[0].screen_pos = COCOA_POS_PACK(x, y);
+   apple->window_pos          = COCOA_POS_PACK(x, y);
 }
 
 /* The touches on screen are given anew: none, then one call of
@@ -1232,8 +1233,7 @@ bool cocoa_input_touch_add(int16_t x, int16_t y)
    cocoa_input_data_t *apple = cocoa_input_current();
    if (!apple || apple->touch_count >= MAX_TOUCHES)
       return false;
-   apple->touches[apple->touch_count  ].screen_x = x;
-   apple->touches[apple->touch_count++].screen_y = y;
+   apple->touches[apple->touch_count++].screen_pos = COCOA_POS_PACK(x, y);
    return true;
 }
 
