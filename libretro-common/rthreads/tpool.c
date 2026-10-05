@@ -57,6 +57,19 @@ typedef struct tpool_work tpool_work_t;
  * go on a list under the mutex until the ring has been emptied. */
 #define TPOOL_QUEUE_SIZE 256
 
+/* Overflow nodes kept for reuse once taken; past this many, freed. */
+#define TPOOL_OVER_SPARE (TPOOL_QUEUE_SIZE * 4)
+
+/* enq (producers), deq (workers) and the two counts (both) each on
+ * lines of their own; two 64-byte lines, for CPUs that fetch pairs. */
+#define TPOOL_LINE 128
+
+typedef union tpool_line_int
+{
+   retro_atomic_int_t v;
+   char               pad[TPOOL_LINE];
+} tpool_line_int_t;
+
 /* Test builds yield at the points where the order of two threads'
  * steps matters, to visit the orders a quiet machine never does. */
 #ifdef TPOOL_FUZZ_SCHEDULE
@@ -93,26 +106,37 @@ typedef struct tpool_thread
 
 struct tpool
 {
-   retro_atomic_int_t enq;        /* Next position to fill. */
+   tpool_line_int_t   enq;        /* Next position to fill. */
+   tpool_line_int_t   deq;        /* Next position to empty. */
+   /* queued: jobs posted and not yet taken. outstanding: queued plus
+    * in progress. */
+   union
+   {
+      struct
+      {
+         retro_atomic_int_t queued;
+         retro_atomic_int_t outstanding;
+      } n;
+      char pad[TPOOL_LINE];
+   } count;
    slock_t           *work_mutex; /* The overflow. */
    tpool_work_t      *over_first; /* Jobs posted with the ring full, */
    tpool_work_t      *over_last;  /* under work_mutex. */
+   tpool_work_t      *over_free;  /* Taken nodes kept for reuse, */
+   size_t             over_spare; /* how many, under work_mutex. */
    retro_atomic_int_t over;       /* How many: read without the mutex. */
    size_t             thread_num; /* Entries in threads. */
    tpool_thread_t    *threads;
    /* tpool_wait() sleeps here until outstanding reaches zero. */
    retro_eventcount_t idle;
-   retro_atomic_int_t queued;     /* Jobs posted and not yet taken. */
-   retro_atomic_int_t outstanding;/* Queued plus in progress. */
    retro_atomic_int_t stop;       /* Tells the threads to exit. */
-   retro_atomic_int_t deq;        /* Next position to empty. */
    tpool_slot_t       slots[TPOOL_QUEUE_SIZE];
 };
 
 static bool tpool_queue_put(tpool_t *tp, thread_func_t func, void *arg)
 {
    tpool_slot_t *slot;
-   unsigned pos = (unsigned)retro_atomic_load_relaxed_int(&tp->enq);
+   unsigned pos = (unsigned)retro_atomic_load_relaxed_int(&tp->enq.v);
 
    for (;;)
    {
@@ -122,9 +146,9 @@ static bool tpool_queue_put(tpool_t *tp, thread_func_t func, void *arg)
       if (dif < 0)
          return false;
       if (     dif == 0
-            && retro_atomic_cas_int(&tp->enq, (int)pos, (int)(pos + 1)))
+            && retro_atomic_cas_int(&tp->enq.v, (int)pos, (int)(pos + 1)))
          break;
-      pos  = (unsigned)retro_atomic_load_relaxed_int(&tp->enq);
+      pos  = (unsigned)retro_atomic_load_relaxed_int(&tp->enq.v);
    }
    TPOOL_FUZZ();
    slot->func = func;
@@ -136,7 +160,7 @@ static bool tpool_queue_put(tpool_t *tp, thread_func_t func, void *arg)
 static bool tpool_queue_take(tpool_t *tp, thread_func_t *func, void **arg)
 {
    tpool_slot_t *slot;
-   unsigned pos = (unsigned)retro_atomic_load_relaxed_int(&tp->deq);
+   unsigned pos = (unsigned)retro_atomic_load_relaxed_int(&tp->deq.v);
 
    for (;;)
    {
@@ -147,9 +171,9 @@ static bool tpool_queue_take(tpool_t *tp, thread_func_t *func, void **arg)
       if (dif < 0)
          return false;
       if (     dif == 0
-            && retro_atomic_cas_int(&tp->deq, (int)pos, (int)(pos + 1)))
+            && retro_atomic_cas_int(&tp->deq.v, (int)pos, (int)(pos + 1)))
          break;
-      pos  = (unsigned)retro_atomic_load_relaxed_int(&tp->deq);
+      pos  = (unsigned)retro_atomic_load_relaxed_int(&tp->deq.v);
    }
    TPOOL_FUZZ();
    *func = slot->func;
@@ -168,13 +192,22 @@ static bool tpool_post(tpool_t *tp, thread_func_t func, void *arg)
          && tpool_queue_put(tp, func, arg))
       return true;
 
-   if (!(work = (tpool_work_t*)malloc(sizeof(*work))))
-      return false;
+   slock_lock(tp->work_mutex);
+   if ((work = tp->over_free))
+   {
+      tp->over_free = work->next;
+      tp->over_spare--;
+   }
+   else
+   {
+      slock_unlock(tp->work_mutex);
+      if (!(work = (tpool_work_t*)malloc(sizeof(*work))))
+         return false;
+      slock_lock(tp->work_mutex);
+   }
    work->func = func;
    work->arg  = arg;
    work->next = NULL;
-
-   slock_lock(tp->work_mutex);
    if (tp->over_last)
       tp->over_last->next = work;
    else
@@ -200,21 +233,28 @@ static bool tpool_take(tpool_t *tp, thread_func_t *func, void **arg)
       if (!(tp->over_first = work->next))
          tp->over_last = NULL;
       retro_atomic_fetch_sub_int(&tp->over, 1);
+      *func = work->func;
+      *arg  = work->arg;
+      if (tp->over_spare < TPOOL_OVER_SPARE)
+      {
+         work->next    = tp->over_free;
+         tp->over_free = work;
+         tp->over_spare++;
+         work          = NULL;
+      }
+      slock_unlock(tp->work_mutex);
+      free(work);
+      return true;
    }
    slock_unlock(tp->work_mutex);
-   if (!work)
-      return false;
-   *func = work->func;
-   *arg  = work->arg;
-   free(work);
-   return true;
+   return false;
 }
 
 /* One item done: the thread that retires the last outstanding one
  * wakes tpool_wait(). */
 static void tpool_retire(tpool_t *tp)
 {
-   if (retro_atomic_fetch_sub_int(&tp->outstanding, 1) == 1)
+   if (retro_atomic_fetch_sub_int(&tp->count.n.outstanding, 1) == 1)
       retro_eventcount_notify(&tp->idle);
 }
 
@@ -250,7 +290,7 @@ static void tpool_worker(void *arg)
 
       if (tpool_take(tp, &func, &work_arg))
       {
-         retro_atomic_fetch_sub_int(&tp->queued, 1);
+         retro_atomic_fetch_sub_int(&tp->count.n.queued, 1);
          func(work_arg);
          tpool_retire(tp);
          continue;
@@ -267,7 +307,7 @@ static void tpool_worker(void *arg)
       retro_atomic_fetch_add_seq_cst_int(&self->parked, 1);
       TPOOL_FUZZ();
       key = retro_eventcount_prepare_wait(&self->wake);
-      if (     retro_atomic_load_seq_cst_int(&tp->queued) > 0
+      if (     retro_atomic_load_seq_cst_int(&tp->count.n.queued) > 0
             || !retro_atomic_load_seq_cst_int(&self->parked)
             || retro_atomic_load_acquire_int(&tp->stop))
       {
@@ -295,6 +335,12 @@ static void tpool_free(tpool_t *tp)
          retro_eventcount_free(&tp->threads[i].wake);
    if (tp->work_mutex)
       slock_free(tp->work_mutex);
+   while (tp->over_free)
+   {
+      tpool_work_t *next = tp->over_free->next;
+      free(tp->over_free);
+      tp->over_free = next;
+   }
    retro_eventcount_free(&tp->idle);
    free(tp->threads);
    free(tp);
@@ -370,8 +416,8 @@ void tpool_destroy(tpool_t *tp)
    /* Take all work out of the queue and drop it. */
    while (tpool_take(tp, &func, &arg))
    {
-      retro_atomic_fetch_sub_int(&tp->queued, 1);
-      retro_atomic_fetch_sub_int(&tp->outstanding, 1);
+      retro_atomic_fetch_sub_int(&tp->count.n.queued, 1);
+      retro_atomic_fetch_sub_int(&tp->count.n.outstanding, 1);
    }
 
    /* Tell the worker threads to stop. */
@@ -399,14 +445,14 @@ bool tpool_add_work(tpool_t *tp, thread_func_t func, void *arg)
       return false;
 
    /* Counted before it can be taken, so it is never retired first. */
-   retro_atomic_fetch_add_int(&tp->outstanding, 1);
+   retro_atomic_fetch_add_int(&tp->count.n.outstanding, 1);
    if (!tpool_post(tp, func, arg))
    {
       tpool_retire(tp);
       return false;
    }
    TPOOL_FUZZ();
-   retro_atomic_fetch_add_seq_cst_int(&tp->queued, 1);
+   retro_atomic_fetch_add_seq_cst_int(&tp->count.n.queued, 1);
    TPOOL_FUZZ();
    tpool_wake_one(tp);
    return true;
@@ -419,11 +465,11 @@ bool tpool_help(tpool_t *tp)
 
    /* An empty queue has nothing to hand over. */
    if (     !tp
-         || !retro_atomic_load_acquire_int(&tp->queued)
+         || !retro_atomic_load_acquire_int(&tp->count.n.queued)
          || retro_atomic_load_acquire_int(&tp->stop)
          || !tpool_take(tp, &func, &arg))
       return false;
-   retro_atomic_fetch_sub_int(&tp->queued, 1);
+   retro_atomic_fetch_sub_int(&tp->count.n.queued, 1);
    func(arg);
    tpool_retire(tp);
    return true;
@@ -444,10 +490,10 @@ void tpool_wait(tpool_t *tp)
    for (;;)
    {
       int key;
-      if (!retro_atomic_load_acquire_int(&tp->outstanding))
+      if (!retro_atomic_load_acquire_int(&tp->count.n.outstanding))
          return;
       key = retro_eventcount_prepare_wait(&tp->idle);
-      if (!retro_atomic_load_acquire_int(&tp->outstanding))
+      if (!retro_atomic_load_acquire_int(&tp->count.n.outstanding))
       {
          retro_eventcount_cancel_wait(&tp->idle);
          return;

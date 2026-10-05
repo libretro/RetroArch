@@ -17,6 +17,10 @@
  *   3  One producer, one worker: the jobs run in the order posted,
  *      through the ring filling up and emptying again.
  *   4  A pool destroyed with jobs waiting frees them.
+ *   5  Every worker stalled while a backlog four times the ring builds
+ *      up, several rounds: each job runs exactly once, and a round the
+ *      size of one before it allocates no overflow node - it reuses
+ *      the ones the earlier round left.
  */
 
 #include <stdio.h>
@@ -199,12 +203,110 @@ static void test_destroy_pending(void)
    check("a pool destroyed with jobs waiting comes apart", 1);
 }
 
+/* 5 */
+#define SAT_WORKERS 2
+#define SAT_JOBS    (TPOOL_QUEUE_SIZE * 4)
+#define SAT_ROUNDS  4
+
+static retro_atomic_int_t sat_gate;
+static retro_atomic_int_t sat_parked;
+static retro_atomic_int_t sat_ran[SAT_JOBS];
+
+static void sat_stall(void *arg)
+{
+   (void)arg;
+   retro_atomic_fetch_add_int(&sat_parked, 1);
+   while (!retro_atomic_load_acquire_int(&sat_gate))
+      sthread_yield();
+}
+
+static void sat_job(void *arg)
+{
+   retro_atomic_fetch_add_int((retro_atomic_int_t*)arg, 1);
+}
+
+/* The spare nodes, as a set to compare between rounds. */
+static size_t sat_spares(tpool_t *tp, tpool_work_t **out, size_t max)
+{
+   size_t        n = 0;
+   tpool_work_t *w;
+   slock_lock(tp->work_mutex);
+   for (w = tp->over_free; w && n < max; w = w->next)
+      out[n++] = w;
+   slock_unlock(tp->work_mutex);
+   return n;
+}
+
+static int sat_cmp(const void *a, const void *b)
+{
+   uintptr_t x = (uintptr_t)*(tpool_work_t* const*)a;
+   uintptr_t y = (uintptr_t)*(tpool_work_t* const*)b;
+   return (x > y) - (x < y);
+}
+
+static void test_saturation(void)
+{
+   static tpool_work_t *before[TPOOL_OVER_SPARE];
+   static tpool_work_t *after[TPOOL_OVER_SPARE];
+   size_t   nb = 0, na, k;
+   unsigned r, i, wrong = 0, overflowed = 1, reused = 1;
+   tpool_t *tp = tpool_create(SAT_WORKERS);
+   if (!tp)
+   {
+      check("pool created", 0);
+      return;
+   }
+   for (r = 0; r < SAT_ROUNDS; r++)
+   {
+      retro_time_t t0 = cpu_features_get_time_usec();
+      retro_atomic_store_release_int(&sat_gate, 0);
+      retro_atomic_store_release_int(&sat_parked, 0);
+      for (i = 0; i < SAT_WORKERS; i++)
+         tpool_add_work(tp, sat_stall, NULL);
+      while (retro_atomic_load_acquire_int(&sat_parked) < SAT_WORKERS
+            && cpu_features_get_time_usec() - t0 < DEADLINE_US)
+         sthread_yield();
+      for (i = 0; i < SAT_JOBS; i++)
+      {
+         retro_atomic_store_release_int(&sat_ran[i], 0);
+         if (!tpool_add_work(tp, sat_job, &sat_ran[i]))
+            wrong++;
+      }
+      if (!retro_atomic_load_acquire_int(&tp->over))
+         overflowed = 0;
+      retro_atomic_store_release_int(&sat_gate, 1);
+      tpool_wait(tp);
+      for (i = 0; i < SAT_JOBS; i++)
+         if (retro_atomic_load_acquire_int(&sat_ran[i]) != 1)
+            wrong++;
+      na = sat_spares(tp, after, TPOOL_OVER_SPARE);
+      qsort(after, na, sizeof(after[0]), sat_cmp);
+      if (r > 0)
+      {
+         /* nothing new: every spare now was a spare before */
+         if (na != nb)
+            reused = 0;
+         for (k = 0; k < na && reused; k++)
+            if (after[k] != before[k])
+               reused = 0;
+      }
+      memcpy(before, after, na * sizeof(after[0]));
+      nb = na;
+   }
+   check("a backlog past the ring builds with every worker stalled",
+         overflowed);
+   check("every job of a stalled backlog ran exactly once", !wrong);
+   check("a repeat backlog reuses the overflow nodes it left", reused && nb);
+   tpool_destroy(tp);
+}
+
 int main(void)
 {
    test_no_lost_wakeup();
    test_exactly_once();
    test_in_order();
    test_destroy_pending();
+   test_saturation();
    if (fails)
    {
       printf("tpool_handoff_test: FAIL (%d)\n", fails);
