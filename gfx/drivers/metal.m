@@ -200,6 +200,16 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
 - (id<MTLTexture>)newTexture:(struct texture_image)image mipmapped:(bool)mipmapped;
 - (void)convertFormat:(RPixelFormat)fmt from:(id<MTLTexture>)src to:(id<MTLTexture>)dst;
 - (id<MTLRenderPipelineState>)getStockShader:(int)index blend:(bool)blend;
+/* The overlay pipeline for an RGBA16Float (linear scRGB) texture while
+ * HDR is on; nil otherwise. Takes the menu nits and the composite's
+ * ExpandGamut as a float4 at fragment buffer 0. */
+- (id<MTLRenderPipelineState>)linearShader;
+/* What the menu composite pass shows the UI at: the menu nits and the
+ * gamut expansion, for stock_fragment_linear's inverse */
+- (float)hdrMenuNits;
+- (unsigned)hdrExpandGamut;
+/* The pipeline format of whatever UI draws now target */
+- (id<MTLRenderPipelineState>)twinF16:(MTLRenderPipelineDescriptor *)psd;
 
 /*! @brief resets the viewport for the main render encoder to \a mode */
 - (void)resetRenderViewport:(ViewportResetMode)mode;
@@ -895,6 +905,13 @@ static void buffer_chain_discard(buffer_chain_t *chain);
 
    id<MTLRenderPipelineState> _states[GFX_MAX_SHADERS][2];
    id<MTLRenderPipelineState> _clearState;
+   /* The same for the HDR UI overlay, which is RGBA16Float: every UI
+    * draw goes there while HDR is on (see rce), and a pipeline's colour
+    * format must be its target's. getStockShader picks by hdrEnabled. */
+   id<MTLRenderPipelineState> _statesF16[GFX_MAX_SHADERS][2];
+   id<MTLRenderPipelineState> _clearStateF16;
+   /* An RGBA16Float texture, linear scRGB, into the overlay */
+   id<MTLRenderPipelineState> _linearStateF16;
 
    bool _captureEnabled;
    id<MTLTexture> _backBuffer;
@@ -1060,9 +1077,14 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
       for (j = 0; j < 2; j++)
+      {
          [(id)_states[i][j] release];
+         [(id)_statesF16[i][j] release];
+      }
    }
    [(id)_clearState release];
+   [(id)_clearStateF16 release];
+   [(id)_linearStateF16 release];
    [(id)_commandQueue release];
    [(id)_layer release];
    [(id)_device release];
@@ -1303,7 +1325,37 @@ static void buffer_chain_discard(buffer_chain_t *chain);
          break;
    }
 
-   return _states[index][blend ? 1 : 0];
+   return _hdrEnabled && _statesF16[index][blend ? 1 : 0]
+      ? _statesF16[index][blend ? 1 : 0]
+      : _states[index][blend ? 1 : 0];
+}
+
+- (id<MTLRenderPipelineState>)linearShader
+{
+   return _hdrEnabled ? _linearStateF16 : nil;
+}
+
+- (float)hdrMenuNits
+{
+   return _hdrUniforms.PaperWhiteNits;
+}
+
+- (unsigned)hdrExpandGamut
+{
+   return (unsigned)_hdrUniforms.ExpandGamut;
+}
+
+/* @psd as made for BGRA8, made again for the RGBA16Float HDR overlay;
+ * @psd is left as it was. */
+- (id<MTLRenderPipelineState>)twinF16:(MTLRenderPipelineDescriptor *)psd
+{
+   NSError *err = nil;
+   id<MTLRenderPipelineState> st;
+   MTLPixelFormat was = psd.colorAttachments[0].pixelFormat;
+   psd.colorAttachments[0].pixelFormat = MTLPixelFormatRGBA16Float;
+   st = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+   psd.colorAttachments[0].pixelFormat = was;
+   return st;
 }
 
 - (MTLVertexDescriptor *)_spriteVertexDescriptor
@@ -1342,6 +1394,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    }
 
    _clearState = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+   _clearStateF16 = [self twinF16:psd];
    if (err != nil)
    {
       RARCH_ERR("[Metal] Error creating clear pipeline state %s.\n", err.localizedDescription.UTF8String);
@@ -1381,6 +1434,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    }
 
    _states[VIDEO_SHADER_STOCK_BLEND][0] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+   _statesF16[VIDEO_SHADER_STOCK_BLEND][0] = [self twinF16:psd];
    if (err != nil)
    {
       RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
@@ -1390,6 +1444,17 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    psd.label                            = @"stock_blend";
    ca.blendingEnabled                   = YES;
    _states[VIDEO_SHADER_STOCK_BLEND][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+   _statesF16[VIDEO_SHADER_STOCK_BLEND][1] = [self twinF16:psd];
+   {
+      /* The blended stock pipeline with stock_fragment_linear, for the
+       * HDR overlay only */
+      id<MTLFunction> stockFrag = psd.fragmentFunction;
+      psd.fragmentFunction = RARCH_AUTORELEASE_R([_library
+            newFunctionWithName:@"stock_fragment_linear"]);
+      if (psd.fragmentFunction)
+         _linearStateF16 = [self twinF16:psd];
+      psd.fragmentFunction = stockFrag;
+   }
    if (err != nil)
    {
       RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
@@ -1413,6 +1478,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    }
    psd.fragmentFunction = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"snow_fragment" constantValues:vals error:&err]);
    _states[VIDEO_SHADER_MENU_3][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+   _statesF16[VIDEO_SHADER_MENU_3][1] = [self twinF16:psd];
    if (err != nil)
    {
       RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
@@ -1434,6 +1500,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    }
    psd.fragmentFunction = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"snow_fragment" constantValues:vals error:&err]);
    _states[VIDEO_SHADER_MENU_4][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+   _statesF16[VIDEO_SHADER_MENU_4][1] = [self twinF16:psd];
    if (err != nil)
    {
       RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
@@ -1444,6 +1511,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    ca.blendingEnabled              = YES;
    psd.fragmentFunction            = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"bokeh_fragment"]);
    _states[VIDEO_SHADER_MENU_5][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+   _statesF16[VIDEO_SHADER_MENU_5][1] = [self twinF16:psd];
    if (err != nil)
    {
       RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
@@ -1454,6 +1522,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    ca.blendingEnabled              = YES;
    psd.fragmentFunction            = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"snowflake_fragment"]);
    _states[VIDEO_SHADER_MENU_6][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+   _statesF16[VIDEO_SHADER_MENU_6][1] = [self twinF16:psd];
    if (err != nil)
    {
       RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
@@ -1465,6 +1534,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    psd.vertexFunction              = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"ribbon_vertex"]);
    psd.fragmentFunction            = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"ribbon_fragment"]);
    _states[VIDEO_SHADER_MENU][0]   = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+   _statesF16[VIDEO_SHADER_MENU][0] = [self twinF16:psd];
    if (err != nil)
    {
       RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
@@ -1476,6 +1546,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    ca.sourceRGBBlendFactor         = MTLBlendFactorOne;
    ca.destinationRGBBlendFactor    = MTLBlendFactorOne;
    _states[VIDEO_SHADER_MENU][1]   = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+   _statesF16[VIDEO_SHADER_MENU][1] = [self twinF16:psd];
    if (err != nil)
    {
       RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
@@ -1487,6 +1558,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    psd.vertexFunction              = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"ribbon_simple_vertex"]);
    psd.fragmentFunction            = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"ribbon_simple_fragment"]);
    _states[VIDEO_SHADER_MENU_2][0] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+   _statesF16[VIDEO_SHADER_MENU_2][0] = [self twinF16:psd];
    if (err != nil)
    {
       RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
@@ -1498,6 +1570,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    ca.sourceRGBBlendFactor         = MTLBlendFactorOne;
    ca.destinationRGBBlendFactor    = MTLBlendFactorOne;
    _states[VIDEO_SHADER_MENU_2][1] = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+   _statesF16[VIDEO_SHADER_MENU_2][1] = [self twinF16:psd];
    if (err != nil)
    {
       RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
@@ -1698,10 +1771,13 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    _sdrOverlayH = h;
    {
       MTLTextureDescriptor *td = [MTLTextureDescriptor
-                                   texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+                                   texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA16Float
                                                                 width:w
                                                                height:h
                                                             mipmapped:NO];
+      /* RGBA16Float: the UI's alpha keeps every step, and a linear
+       * texture's values above menu white reach the composite. The UI
+       * pipelines draw here through their F16 twins (getStockShader). */
       td.storageMode = MTLStorageModePrivate;
       td.usage       = MTLTextureUsageShaderRead | MTLTextureUsageRenderTarget;
       id<MTLTexture> sdr = RARCH_AUTORELEASE_R([_device newTextureWithDescriptor:td]);
@@ -2086,7 +2162,11 @@ static void buffer_chain_discard(buffer_chain_t *chain);
     * (R in the high 10 bits, B in the low) matches the ABI with no swizzle,
     * exactly as in the Metal source-frame path; otherwise BGRA8. Both are 4
     * bytes/pixel so the row stride is unchanged. */
-   MTLPixelFormat        pf = image.pix10
+   /* RGBA half floats (fp16) are RGBA16Float, 8 bytes a pixel in the
+    * same R,G,B,A order. */
+   MTLPixelFormat        pf = image.fp16
+         ? MTLPixelFormatRGBA16Float
+         : image.pix10
          ? MTLPixelFormatBGR10A2Unorm
          : MTLPixelFormatBGRA8Unorm;
    MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:pf
@@ -2098,7 +2178,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    [t replaceRegion:MTLRegionMake2D(0, 0, image.width, image.height)
         mipmapLevel:0
         withBytes:image.pixels
-        bytesPerRow:4 * image.width];
+        bytesPerRow:(image.fp16 ? 8 : 4) * image.width];
 
    if (mipmapped)
    {
@@ -2728,7 +2808,8 @@ static float metal_hdr_pq_to_nits(float pq)
    v[3].color = color;
 
    id<MTLRenderCommandEncoder> rce = self.rce;
-   [rce setRenderPipelineState:_clearState];
+   [rce setRenderPipelineState:(_hdrEnabled && _clearStateF16)
+      ? _clearStateF16 : _clearState];
    [rce setVertexBytes:&v length:sizeof(v) atIndex:BufferIndexPositions];
    [rce setVertexBytes:&_uniforms length:sizeof(_uniforms) atIndex:BufferIndexUniforms];
    [rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
@@ -3136,6 +3217,7 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    bool _clearNextRender;
    /* gfx_display meshes: the pipeline, and each mesh's buffers by id */
    id<MTLRenderPipelineState> _meshState;
+   id<MTLRenderPipelineState> _meshStateF16; /* the HDR UI overlay's */
    BOOL _meshStateFailed;
    id<MTLBuffer> _meshVbo[4];
    id<MTLBuffer> _meshIbo[4];
@@ -3166,6 +3248,7 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
       [_meshIbo[i] release];
    }
    [_meshState release];
+   [_meshStateF16 release];
    [_context release];
    [super dealloc];
 }
@@ -3334,6 +3417,7 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    if (!psd.vertexFunction || !psd.fragmentFunction)
       return NO;
    _meshState = [device newRenderPipelineStateWithDescriptor:psd error:&err];
+   _meshStateF16 = [_context twinF16:psd];
    if (!_meshState)
    {
       RARCH_WARN("[Metal] Mesh pipeline unavailable, meshes are streamed: %s.\n",
@@ -3465,7 +3549,8 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
 
    prim = (mesh->topology == GFX_MESH_TRIANGLE_STRIP)
       ? MTLPrimitiveTypeTriangleStrip : MTLPrimitiveTypeTriangle;
-   [rce setRenderPipelineState:_meshState];
+   [rce setRenderPipelineState:(_context.hdrEnabled && _meshStateF16)
+      ? _meshStateF16 : _meshState];
    [rce setVertexBytes:&u length:sizeof(u) atIndex:BufferIndexUniforms];
    [rce setVertexBuffer:_meshVbo[slot] offset:0 atIndex:BufferIndexPositions];
    [rce setFragmentTexture:tex.texture atIndex:TextureIndexColor];
@@ -3562,7 +3647,19 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    if (tex == nil)
       return;
 
-   [rce setRenderPipelineState:[_context getStockShader:VIDEO_SHADER_STOCK_BLEND blend:_blend]];
+   /* A half-float texture is linear scRGB: into the HDR overlay through
+    * the inverse of the menu composite's encode */
+   if (     tex.texture.pixelFormat == MTLPixelFormatRGBA16Float
+         && [_context linearShader] != nil)
+   {
+      simd_float4 linParams = simd_make_float4(
+            [_context hdrMenuNits], (float)[_context hdrExpandGamut],
+            0.0f, 0.0f);
+      [rce setRenderPipelineState:[_context linearShader]];
+      [rce setFragmentBytes:&linParams length:sizeof(linParams) atIndex:0];
+   }
+   else
+      [rce setRenderPipelineState:[_context getStockShader:VIDEO_SHADER_STOCK_BLEND blend:_blend]];
 
    Uniforms uniforms = {
       .projectionMatrix = draw->matrix_data ? make_matrix_float4x4((const float *)draw->matrix_data)
@@ -3868,6 +3965,7 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
    id<MTLTexture> _texture;
 
    id<MTLRenderPipelineState> _state;
+   id<MTLRenderPipelineState> _stateF16; /* the HDR UI overlay's */
    id<MTLSamplerState> _sampler;
 
    Context *_context;
@@ -3908,6 +4006,7 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
    [(id)_buffer release];
    [(id)_texture release];
    [(id)_state release];
+   [(id)_stateF16 release];
    [(id)_sampler release];
    RARCH_SUPER_DEALLOC();
 #endif
@@ -4064,6 +4163,7 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
          return NO;
 
       _state                         = [_context.device newRenderPipelineStateWithDescriptor:psd error:&err];
+      _stateF16                      = [_context twinF16:psd];
       if (err != nil)
          return NO;
    }
@@ -4194,7 +4294,8 @@ static INLINE void write_quad6(SpriteVertex *pv,
    [rce pushDebugGroup:@"render fonts"];
 
    [_context resetRenderViewport:kFullscreenViewport];
-   [rce setRenderPipelineState:_state];
+   [rce setRenderPipelineState:(_context.hdrEnabled && _stateF16)
+      ? _stateF16 : _state];
    [rce setVertexBytes:&_uniforms length:sizeof(Uniforms) atIndex:BufferIndexUniforms];
    [rce setVertexBuffer:_range.buffer offset:_range.offset atIndex:BufferIndexPositions];
    [rce setFragmentTexture:_texture atIndex:TextureIndexColor];
@@ -4525,6 +4626,9 @@ static void metal_pull_cached_frame_cb(void *userdata,
    /* Render target layer state */
    id<MTLRenderPipelineState> _t_pipelineState;
    id<MTLRenderPipelineState> _t_pipelineStateNoAlpha;
+   /* The HDR UI overlay's */
+   id<MTLRenderPipelineState> _t_pipelineStateF16;
+   id<MTLRenderPipelineState> _t_pipelineStateNoAlphaF16;
 
    id<MTLSamplerState> _samplerStateLinear;
    id<MTLSamplerState> _samplerStateNearest;
@@ -4852,6 +4956,8 @@ static void metal_pull_cached_frame_cb(void *userdata,
    [_context release];
    [(id)_t_pipelineState release];
    [(id)_t_pipelineStateNoAlpha release];
+   [(id)_t_pipelineStateF16 release];
+   [(id)_t_pipelineStateNoAlphaF16 release];
    [(id)_samplerStateLinear release];
    [(id)_samplerStateNearest release];
    [(id)_layer release];
@@ -4931,6 +5037,7 @@ static void metal_pull_cached_frame_cb(void *userdata,
       }
 
       _t_pipelineState = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+      _t_pipelineStateF16 = [_context twinF16:psd];
       if (err != nil)
       {
          RARCH_ERR("[Metal] Error creating pipeline state %s.\n", err.localizedDescription.UTF8String);
@@ -4940,6 +5047,7 @@ static void metal_pull_cached_frame_cb(void *userdata,
       psd.label               = @"Pipeline+No Alpha";
       ca.blendingEnabled      = NO;
       _t_pipelineStateNoAlpha = [_device newRenderPipelineStateWithDescriptor:psd error:&err];
+      _t_pipelineStateNoAlphaF16 = [_context twinF16:psd];
       if (err != nil)
       {
          RARCH_ERR("[Metal] Error creating pipeline state (no alpha) %s.\n", err.localizedDescription.UTF8String);
@@ -5075,7 +5183,9 @@ static void metal_pull_cached_frame_cb(void *userdata,
        * overlay. */
       if (!hdrOn && (_frameView.drawState & ViewDrawStateEncoder) != 0)
       {
-         [rce setRenderPipelineState:_t_pipelineStateNoAlpha];
+         [rce setRenderPipelineState:(_context.hdrEnabled
+               && _t_pipelineStateNoAlphaF16)
+            ? _t_pipelineStateNoAlphaF16 : _t_pipelineStateNoAlpha];
          if (_frameView.filter == RTextureFilterNearest)
             [rce setFragmentSamplerState:_samplerStateNearest atIndex:SamplerIndexDraw];
          else
@@ -5090,7 +5200,9 @@ static void metal_pull_cached_frame_cb(void *userdata,
          if (_menu.hasFrame)
          {
             [_menu.view drawWithContext:_context];
-            [rce setRenderPipelineState:_t_pipelineState];
+            [rce setRenderPipelineState:(_context.hdrEnabled
+                  && _t_pipelineStateF16)
+               ? _t_pipelineStateF16 : _t_pipelineState];
             if (_menu.view.filter == RTextureFilterNearest)
                [rce setFragmentSamplerState:_samplerStateNearest atIndex:SamplerIndexDraw];
             else
@@ -7333,7 +7445,10 @@ static bool metal_update_texture_internal(void *video_data,
             || tex.height != ti->height)
          return false;
       {
-         NSUInteger len = (NSUInteger)ti->width * ti->height * 4;
+         /* The texture's own texel size: RGBA16Float half floats are 8 */
+         NSUInteger bpp = (tex.pixelFormat == MTLPixelFormatRGBA16Float)
+            ? 8 : 4;
+         NSUInteger len = (NSUInteger)ti->width * ti->height * bpp;
          unsigned slot  = t->_stagingNext;
          NSUInteger off = (NSUInteger)slot * len;
          id<MTLCommandBuffer> cb;
@@ -7364,7 +7479,7 @@ static bool metal_update_texture_internal(void *video_data,
          bce = [cb blitCommandEncoder];
          [bce copyFromBuffer:t.staging
                 sourceOffset:off
-           sourceBytesPerRow:4 * ti->width
+           sourceBytesPerRow:bpp * ti->width
          sourceBytesPerImage:len
                   sourceSize:MTLSizeMake(ti->width, ti->height, 1)
                    toTexture:tex
@@ -7638,6 +7753,18 @@ static bool metal_supports_texture_format(void *video_data,
     * words into it, on every Apple target. */
    if (fmt == TEXTURE_GPU_FORMAT_RGB10A2)
       return video_data != NULL;
+   /* RGBA16Float from half floats loads and updates on every Apple
+    * target */
+   if (fmt == TEXTURE_GPU_FORMAT_RGBA16F)
+      return video_data != NULL;
+   /* stock_fragment_linear shows such a texture as linear scRGB in the
+    * RGBA16Float HDR overlay; in SDR there is no linear light */
+   if (fmt == TEXTURE_GPU_FORMAT_SCRGB)
+   {
+      MetalDriver *mdl = (__bridge MetalDriver *)video_data;
+      return mdl && mdl.context.hdrEnabled
+         && [mdl.context linearShader] != nil;
+   }
 #if TARGET_OS_OSX
    MetalDriver  *md = (__bridge MetalDriver *)video_data;
    id<MTLDevice> dev;

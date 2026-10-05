@@ -809,6 +809,43 @@ inline float4 hdr_sample_sdr_linear(texture2d<float> src,
    return float4(sdr_linear, sdr.a);
 }
 
+
+/* An RGBA16Float texture is linear scRGB: 1.0 is 80 nits, the 709
+ * primaries. Drawn into the HDR UI overlay, which the menu composite
+ * pass shows as To2020(v^2.4) at PaperWhiteNits (the menu nits), scRGB
+ * and HDR10 alike: this writes the exact inverse of that, so the
+ * composite shows the texture at the luminance it was graded at; above
+ * menu white v is above 1.0, which the RGBA16Float overlay keeps. The
+ * composite's To2020 clamps at zero, so a colour outside the chosen
+ * gamut is clamped to it. params.x is the menu nits, params.y the
+ * composite's ExpandGamut. The inverse matrices are those of To2020,
+ * stored as columns as hdr:: stores its own. */
+fragment float4 stock_fragment_linear(FontFragmentIn  in     [[ stage_in ]],
+                                      texture2d<float> tex   [[ texture(TextureIndexColor) ]],
+                                      sampler samp           [[ sampler(SamplerIndexDraw) ]],
+                                      constant float4 &params [[ buffer(0) ]])
+{
+   const float3x3 kExpanded2020to709 = float3x3(
+      float3( 1.635346f,  -0.0794803f,  0.0034352f),
+      float3(-0.5705700f,  1.0898049f, -0.0202070f),
+      float3(-0.0647755f, -0.0103244f,  1.0167713f));
+   const float3x3 k2020toP3 = float3x3(
+      float3( 1.3435784f, -0.0652977f,  0.0028213f),
+      float3(-0.2821792f,  1.0757882f, -0.0195987f),
+      float3(-0.0613991f, -0.0104905f,  1.0167763f));
+   float4 smp   = tex.sample(samp, in.texCoord.xy);
+   float3 lin   = in.color.rgb * smp.rgb;
+   float  a     = in.color.a * smp.a;
+   float3 c2020 = hdr::k709to2020
+      * (lin * (hdr::kscRGBWhiteNits / max(params.x, 1.0f)));
+   uint   g     = (uint)params.y;
+   float3 x     = (g == 0u) ? hdr::k2020to709 * c2020
+                : (g == 1u) ? kExpanded2020to709 * c2020
+                : (g == 2u) ? k2020toP3 * c2020
+                : c2020;
+   return float4(pow(max(x, float3(0.0f)), float3(1.0f / 2.4f)), a);
+}
+
 /* Forward HDR composite.
  *
  * Covers the FULL drawable with a quad.  Inside the core-video viewport
