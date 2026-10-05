@@ -62,7 +62,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#include <retro_timers.h>
 #include <boolean.h>
 #include "gfx/gfx_thumbnail.h"
 #include "gfx/gfx_surface.h"
@@ -198,7 +198,7 @@ int main(void)
       for (i = 0; i < 240 && gt_uploads < 3; i++)
       {
          gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
-         usleep(16666);
+         retro_sleep(17);
       }
       if (gt_uploads >= 2)
          printf("[ok]   real path: %d distinct frames uploaded in %d "
@@ -234,13 +234,13 @@ int main(void)
       for (i = 0; i < 120 && gt_async_posted < 1; i++)
       {
          gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
-         usleep(16666);
+         retro_sleep(17);
       }
       /* keep animating without delivering: nothing more may be posted */
       for (i = 0; i < 20; i++)
       {
          gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
-         usleep(16666);
+         retro_sleep(17);
       }
       posted_before_flush = gt_async_posted;
       if (posted_before_flush != 1 || gt_uploads != 0 || !anim_inflight(&th))
@@ -262,7 +262,7 @@ int main(void)
       for (i = 0; i < 120 && gt_async_posted < 2; i++)
       {
          gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
-         usleep(16666);
+         retro_sleep(17);
       }
       if (gt_async_posted != 2)
       {
@@ -305,7 +305,7 @@ int main(void)
       {
          gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
          gt_async_flush();
-         usleep(16666);
+         retro_sleep(17);
       }
       frames  = gfx_instrument_get(GFX_INSTR_ANIM_FRAME);
       direct  = gfx_instrument_get(GFX_INSTR_ANIM_DIRECT);
@@ -390,7 +390,7 @@ int main(void)
          {
             gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
             gt_async_flush();
-            usleep(16666);
+            retro_sleep(17);
          }
          if (gt_uploads < 3 || th.texture != 2
                || (route == 0 && gt_updates < 2)
@@ -441,7 +441,7 @@ int main(void)
       for (i = 0; i < 240 && gt_uploads < 3; i++)
       {
          gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
-         usleep(16666);
+         retro_sleep(17);
       }
       if (opened && gt_uploads >= 2)
          printf("[ok]   %d animations closed with a job waiting; the "
@@ -469,7 +469,7 @@ int main(void)
    for (i = 0; i < 480 && gt_lent_uploads < 6; i++)
    {
       gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
-      usleep(16666);
+      retro_sleep(17);
    }
    if (     th.anim && gt_lends >= 2 && gt_lent_uploads >= 6
          && !gt_lend_violations && !gt_lend_stale)
@@ -626,7 +626,7 @@ int main(void)
          for (i = 0; i < 6 + (round % 6); i++)
          {
             gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
-            usleep(4000);
+            retro_sleep(4);
          }
          if (th.anim)
             closes++;
@@ -668,12 +668,12 @@ int main(void)
          gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
          if (gt_async_pending)
             gt_async_flush();
-         usleep(16666);
+         retro_sleep(17);
       }
       for (i = 0; i < 240 && !gt_async_pending; i++)
       {
          gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
-         usleep(16666);
+         retro_sleep(17);
       }
       posted          = gt_async_posted;
       updates         = gt_updates;

@@ -1394,6 +1394,17 @@ jobs:
              ./gfx_thumbnail_anim_test
           echo "[pass] gfx_thumbnail_anim_test (TSan)"
 
+      - name: Build gfx_thumbnail_anim_test with mingw-w64
+        shell: bash
+        working-directory: samples/gfx/gfx_thumbnail_anim
+        run: |
+          set -eu
+          # Regression tests build for Windows too.
+          make clean
+          make CC=x86_64-w64-mingw32-gcc TARGET=gfx_thumbnail_anim_test.exe
+          test -f gfx_thumbnail_anim_test.exe
+          make clean TARGET=gfx_thumbnail_anim_test.exe
+
       - name: Build and run badge_cache_test (ASan + UBSan)
         shell: bash
         working-directory: samples/cheevos/badge_cache

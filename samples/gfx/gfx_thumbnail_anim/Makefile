@@ -57,15 +57,20 @@ SOURCES := gfx_thumbnail_anim_test.c \
 # HAVE_GFX_INSTRUMENT has none of them, which is the point of the
 # define, so the sample names it for itself.
 CFLAGS  += -Wall -std=gnu99 -g -O1 \
-           -DHAVE_RWEBP -DHAVE_THREADS -DHAVE_MMAP -D_GNU_SOURCE \
+           -DHAVE_RWEBP -DHAVE_THREADS -D_GNU_SOURCE \
            -DHAVE_GFX_INSTRUMENT \
            -I$(REPO_ROOT) \
            -I$(LIBRETRO_COMM_DIR)/include
 
+ifeq ($(findstring mingw,$(CC)),)
+   CFLAGS  += -DHAVE_MMAP
+   LDFLAGS += -lpthread
+endif
+
 UUT_CFLAGS := $(CFLAGS) -O0 -fno-inline -DHAVE_MENU -DRARCH_INTERNAL \
               -I$(REPO_ROOT)/deps -I$(REPO_ROOT)/deps/stb
 
-LDFLAGS += -lpthread -lm
+LDFLAGS += -lm
 
 # Extra flags for the caller; CFLAGS= on the command line would replace
 # everything set above instead of adding to it.
