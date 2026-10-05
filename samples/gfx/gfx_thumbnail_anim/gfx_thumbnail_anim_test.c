@@ -90,7 +90,7 @@ static const unsigned char anim_webp[] = {
 int      gt_uploads;
 unsigned gt_last_crc;
 extern int gt_async_mode, gt_async_posted, gt_async_pending;
-extern int gt_can_update, gt_updates;
+extern int gt_can_update, gt_updates, gt_drop_updates, gt_drop_retried;
 extern int gt_lend_mode, gt_lends, gt_lend_violations, gt_lent_uploads,
        gt_lend_stale;
 extern void gt_lend_reset(void);
@@ -637,9 +637,60 @@ int main(void)
       gt_lend_reset();
    }
 
+   /* 11. threaded video, an update the video thread's driver drops:
+    *     the frame comes back to the slot's release, which sends the
+    *     same frame again rather than leaving the texture behind. */
+   reset_thumb(&th);
+   gt_async_mode   = 1;
+   gt_can_update   = 1;
+   gt_async_posted = gt_async_pending = 0;
+   gt_drop_retried = 0;
+   gfx_thumbnail_anim_open(&th, path);
+   {
+      int posted, updates;
+      /* the first frame loads, the second goes in place */
+      for (i = 0; i < 240 && gt_async_posted < 2; i++)
+      {
+         gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
+         if (gt_async_pending)
+            gt_async_flush();
+         usleep(16666);
+      }
+      for (i = 0; i < 240 && !gt_async_pending; i++)
+      {
+         gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
+         usleep(16666);
+      }
+      posted          = gt_async_posted;
+      updates         = gt_updates;
+      gt_drop_updates = 1;
+      gt_async_flush();               /* dropped: sent again from release */
+      if (     gt_async_posted != posted + 1 || !anim_inflight(&th)
+            || gt_drop_updates != 0)
+      {
+         printf("[FAIL] threaded drop: %d posted after the drop (want %d), "
+                "inflight=%d\n", gt_async_posted, posted + 1,
+                anim_inflight(&th));
+         bad = 1;
+      }
+      gt_async_flush();               /* and lands */
+      if (gt_drop_retried == 1 && gt_updates == updates + 1)
+         printf("[ok]   threaded drop: the dropped frame was sent again "
+                "and landed\n");
+      else
+      {
+         printf("[FAIL] threaded drop: retried %d, %d updates landed\n",
+               gt_drop_retried, gt_updates - updates);
+         bad = 1;
+      }
+   }
+   gfx_thumbnail_reset(&th);
+   gt_async_flush();
+   gt_async_mode = 0;
+
    gfx_thumbnail_anim_worker_deinit();
 
-   /* 11. the surface's direct-video outcomes, slot by slot */
+   /* 12. the surface's direct-video outcomes, slot by slot */
    gt_lend_mode = 0;
    if (gt_surface_outcome_test())
       bad = 1;

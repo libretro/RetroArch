@@ -1436,6 +1436,14 @@ static void gfx_thumbnail_anim_slot_release(void *user, gfx_surface_t *s,
 #ifdef HAVE_THREADS
    gfx_thumb_anim_job_t *job  = (gfx_thumb_anim_job_t*)
          (slot ? thumbnail->anim_job2 : thumbnail->anim_job);
+   /* A frame the driver dropped is still in its slot: sent again, so
+    * the texture is not left a frame behind - the last frame of a
+    * finished animation included. The slot stays the surface's. */
+   if (     s->dropped
+         && gfx_surface_submit(s, slot,
+               job ? job->use_rgba : gfx_thumbnail_use_rgba())
+            == GFX_SURFACE_SUBMIT_QUEUED)
+      return;
    if (     job
          && retro_atomic_load_relaxed_int(&job->status) == GFX_THUMB_JOB_HELD)
       retro_atomic_store_relaxed_int(&job->status, GFX_THUMB_JOB_IDLE);

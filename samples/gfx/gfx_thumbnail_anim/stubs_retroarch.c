@@ -70,8 +70,20 @@ int gt_can_update = 1;
 int gt_updates;
 static void gt_lend_uploaded(const void *px, unsigned w, unsigned h);
 /* Returns enum video_texture_update's values: 0 refused, 1 done, 2
- * dropped. gt_drop_updates makes that many updates drop. */
+ * dropped. gt_drop_updates makes that many updates drop; gt_drop_retried
+ * counts updates that then carried the dropped frame's pixels. */
 int gt_drop_updates;
+int gt_drop_retried;
+static unsigned gt_drop_crc;
+static int      gt_drop_armed;
+static unsigned gt_crc(const void *px, unsigned w, unsigned h)
+{
+   unsigned c = 0, n = w * h, i;
+   const uint32_t *q = (const uint32_t*)px;
+   for (i = 0; q && i < n; i += 97)
+      c = c * 33 + q[i];
+   return c;
+}
 int video_driver_texture_update(uintptr_t id, void *data)
 {
    uintptr_t same = id;
@@ -86,7 +98,18 @@ int video_driver_texture_update(uintptr_t id, void *data)
    if (gt_drop_updates > 0)
    {
       gt_drop_updates--;
+      if (img)
+      {
+         gt_drop_crc   = gt_crc(img->px, img->w, img->h);
+         gt_drop_armed = 1;
+      }
       return 2;
+   }
+   if (gt_drop_armed && img)
+   {
+      gt_drop_armed = 0;
+      if (gt_crc(img->px, img->w, img->h) == gt_drop_crc)
+         gt_drop_retried++;
    }
    gt_updates++;
    video_driver_texture_load(data, 0, &same);
@@ -121,7 +144,7 @@ bool video_thread_texture_can_update(void)
 /* Caller-owned nodes (the surface's) are parked the same way and run
  * on flush by kind; they are never freed here. Layout of the node as
  * the wrapper declares it: next, img, user, done, release, handle,
- * filter, kind, caller_owned. */
+ * filter, kind, dropped, caller_owned. */
 typedef struct gt_post_node
 {
    struct gt_post_node *next;
@@ -132,6 +155,7 @@ typedef struct gt_post_node
    uintptr_t handle;
    int filter;
    uint8_t kind;
+   uint8_t dropped;
    uint8_t caller_owned;
 } gt_post_node_t;
 static gt_post_node_t *gt_post_head, *gt_post_tail;
@@ -196,7 +220,11 @@ void gt_async_flush(void)
       gt_post_node_t *next = p->next;
       uintptr_t id = 0;
       if (p->kind == 1)
-         id = video_driver_texture_update(p->handle, p->img) ? p->handle : 0;
+      {
+         int r      = video_driver_texture_update(p->handle, p->img);
+         id         = r ? p->handle : 0;
+         p->dropped = (r == 2);
+      }
       else
          video_driver_texture_load(p->img, 0, &id);
       gt_async_pending--;
