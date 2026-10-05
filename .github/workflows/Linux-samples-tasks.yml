@@ -196,6 +196,30 @@ jobs:
           make clean >/dev/null
           echo "[pass] cloudsync_manifest_adds_test"
 
+      - name: Build and run cloudsync_async_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/cloudsync
+        run: |
+          set -eu
+          # network/cloud_sync_driver.c runs a blocking driver's calls
+          # (SMB, NFS) on a worker and hands results back through
+          # cloud_sync_poll(), so a slow server never stalls the thread
+          # driving the sync - the frame loop with Threaded Tasks off.
+          # Against a driver that blocks until released: every call
+          # returns at once, handlers run on the polling thread in call
+          # order, one driver call at a time, names copied, refused calls
+          # failing, and a new worker for the sync after one that ended
+          # or failed to begin. On the old direct calls the test hangs.
+          make clean cloudsync_async_test
+          timeout 60 ./cloudsync_async_test
+          make clean cloudsync_async_test SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            timeout 120 ./cloudsync_async_test
+          make clean cloudsync_async_test SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./cloudsync_async_test
+          make clean >/dev/null
+          echo "[pass] cloudsync_async_test"
+
       - name: Build and run natt_desc_parse_test
         shell: bash
         working-directory: samples/tasks/natt_desc

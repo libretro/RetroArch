@@ -44,7 +44,13 @@ typedef struct cloud_sync_driver
    bool (*cloud_sync_free)(const char *path, cloud_sync_complete_handler_t cb, void *user_data);
 
    const char *ident;
+   unsigned flags;
 } cloud_sync_driver_t;
+
+/* The driver's calls block on the network until they are done and
+ * call back before returning (SMB, NFS). With threads they are run on
+ * a worker, and their results are handed back by cloud_sync_poll(). */
+#define CLOUD_SYNC_DRIVER_FLG_BLOCKING (1 << 0)
 
 typedef struct
 {
@@ -93,6 +99,28 @@ bool cloud_sync_end(cloud_sync_complete_handler_t cb, void *user_data);
 bool cloud_sync_read(const char *path, const char *file, cloud_sync_complete_handler_t cb, void *user_data);
 bool cloud_sync_update(const char *path, RFILE *file, cloud_sync_complete_handler_t cb, void *user_data);
 bool cloud_sync_free(const char *path, cloud_sync_complete_handler_t cb, void *user_data);
+
+/**
+ * cloud_sync_poll:
+ *
+ * Runs the completion handlers of calls a blocking driver finished on
+ * its worker, on the calling thread, in the order the calls were made.
+ * The caller of cloud_sync_begin() and friends calls this each time it
+ * runs; it returns at once when nothing has finished.
+ **/
+void cloud_sync_poll(void);
+
+/**
+ * cloud_sync_deinit:
+ * @timeout_ms : longest wait for a call already running on the worker
+ *
+ * On exit, once the task queue is drained: drops the calls a blocking
+ * driver has not started, without running their handlers, and waits
+ * up to @timeout_ms for the one under way so no driver code runs while
+ * the frontend is torn down. A call still blocked past the bound is
+ * left to finish on its own.
+ **/
+void cloud_sync_deinit(unsigned timeout_ms);
 
 RETRO_END_DECLS
 

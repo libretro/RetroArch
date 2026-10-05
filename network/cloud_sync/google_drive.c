@@ -1857,5 +1857,6 @@ cloud_sync_driver_t cloud_sync_google_drive = {
    gdrive_read,
    gdrive_update,
    gdrive_delete,
-   "google_drive"
+   "google_drive",
+   0
 };

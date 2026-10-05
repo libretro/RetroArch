@@ -1497,5 +1497,6 @@ cloud_sync_driver_t cloud_sync_webdav = {
    webdav_read,
    webdav_update,
    webdav_delete,
-   "webdav" /* ident */
+   "webdav", /* ident */
+   0 /* flags */
 };

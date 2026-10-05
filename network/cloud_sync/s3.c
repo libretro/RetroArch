@@ -2230,5 +2230,6 @@ cloud_sync_driver_t cloud_sync_s3 = {
    s3_read,
    s3_update,
    s3_free,
-   "s3"
+   "s3",
+   0
 };

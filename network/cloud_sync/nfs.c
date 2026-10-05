@@ -472,5 +472,6 @@ cloud_sync_driver_t cloud_sync_nfs = {
    nfs_read,
    nfs_update,
    nfs_free,
-   "nfs"
+   "nfs",
+   CLOUD_SYNC_DRIVER_FLG_BLOCKING
 };

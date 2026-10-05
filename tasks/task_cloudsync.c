@@ -1854,6 +1854,11 @@ static void task_cloud_sync_task_handler(retro_task_t *task)
    if (!(sync_state = (task_cloud_sync_state_t *)task->state))
       goto task_finished;
 
+   /* Results of calls a blocking driver finished on its worker: their
+    * handlers run here, on this thread, before the in-flight count is
+    * read. */
+   cloud_sync_poll();
+
    /* We can transfer more than one file at a time.  Both loads are
     * acquire: completion callbacks may transition `phase` and drop
     * `waiting` concurrently with this poll, and everything they

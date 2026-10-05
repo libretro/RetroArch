@@ -60,6 +60,7 @@ bool cloud_sync_update(const char *path, RFILE *file,
 bool cloud_sync_free(const char *path, cloud_sync_complete_handler_t cb,
       void *user_data)
 { (void)path; (void)cb; (void)user_data; return false; }
+void cloud_sync_poll(void) { }
 
 /* --- the test ----------------------------------------------------------- */
 

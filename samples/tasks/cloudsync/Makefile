@@ -7,6 +7,9 @@
 #  - cloudsync_manifest_adds_test: entries added to the updated
 #    manifests from several threads at once, with no lock
 #    (tasks/task_cloudsync.c, #included by the test).
+#  - cloudsync_async_test: a blocking driver's calls run on a worker
+#    and complete through cloud_sync_poll() on the caller's thread
+#    (network/cloud_sync_driver.c).
 #
 #   make check
 #   make check SANITIZER=address
@@ -51,6 +54,25 @@ ADDS_SOURCES := cloudsync_manifest_adds_test.c \
 	$(LIBRETRO_COMM_DIR)/queues/task_queue.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
+ASYNC_TARGET  := cloudsync_async_test
+ASYNC_SOURCES := cloudsync_async_test.c \
+	$(CORE_DIR)/network/cloud_sync_driver.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
+	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
+	$(LIBRETRO_COMM_DIR)/file/file_path.c \
+	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
+	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
+	$(LIBRETRO_COMM_DIR)/time/rtime.c \
+	$(LIBRETRO_COMM_DIR)/string/rstrtod.c
+ASYNC_DEFS    := -DHAVE_THREADS -DRARCH_INTERNAL -DHAVE_CLOUDSYNC \
+	-DHAVE_NETWORKING
+
 ADDS_DEFS    := -DHAVE_THREADS -DRARCH_INTERNAL -DHAVE_CLOUDSYNC \
 	-DHAVE_NETWORKING -I$(CORE_DIR)/deps
 
@@ -62,7 +84,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET) $(PATH_TARGET) $(ADDS_TARGET)
+all: $(TARGET) $(PATH_TARGET) $(ADDS_TARGET) $(ASYNC_TARGET)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -76,12 +98,16 @@ $(PATH_TARGET): $(PATH_OBJS)
 $(ADDS_TARGET): $(ADDS_SOURCES) $(CORE_DIR)/tasks/task_cloudsync.c
 	$(CC) -o $@ $(ADDS_SOURCES) $(filter-out -pedantic,$(CFLAGS)) $(ADDS_DEFS) $(LDFLAGS) -lpthread
 
-check: $(TARGET) $(PATH_TARGET) $(ADDS_TARGET)
+$(ASYNC_TARGET): $(ASYNC_SOURCES) $(CORE_DIR)/network/cloud_sync_driver.h
+	$(CC) -o $@ $(ASYNC_SOURCES) $(filter-out -pedantic,$(CFLAGS)) $(ASYNC_DEFS) $(LDFLAGS) -lpthread
+
+check: $(TARGET) $(PATH_TARGET) $(ADDS_TARGET) $(ASYNC_TARGET)
 	./$(TARGET)
 	./$(PATH_TARGET)
 	./$(ADDS_TARGET)
+	./$(ASYNC_TARGET)
 
 clean:
-	rm -f $(TARGET) $(OBJS) $(PATH_TARGET) $(PATH_OBJS) $(ADDS_TARGET)
+	rm -f $(TARGET) $(OBJS) $(PATH_TARGET) $(PATH_OBJS) $(ADDS_TARGET) $(ASYNC_TARGET)
 
 .PHONY: all check clean

@@ -568,5 +568,6 @@ cloud_sync_driver_t cloud_sync_smb = {
    smb_read,
    smb_update,
    smb_free,
-   "smb"
+   "smb",
+   CLOUD_SYNC_DRIVER_FLG_BLOCKING
 };

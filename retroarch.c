@@ -6522,6 +6522,11 @@ void main_exit(void *args)
    settings_t     *settings     = config_get_ptr();
 
    retroarch_drain_tasks_for_exit();
+#ifdef HAVE_CLOUDSYNC
+   /* A blocking cloud sync driver's worker: one bounded wait on the
+    * way out, so no driver call runs into the teardown below. */
+   cloud_sync_deinit(1000);
+#endif
 
    video_driver_restore_cached(settings);
 

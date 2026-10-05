@@ -275,6 +275,8 @@ while the menu is up or a core runs, each commented where it is:
   * the save/load state waits on exit, at startup and when an init
     fails (content_wait_for_save_state_task() and
     content_wait_for_load_state_task());
+  * the cloud sync worker on exit, bounded, so no blocking driver
+    call runs into the teardown (cloud_sync_deinit());
   * the Wii U main loop's vsync wait (platform_wiiu.c).
 Win32 file dialogs are modal by nature and stay so.
 
