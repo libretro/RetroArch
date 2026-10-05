@@ -72,6 +72,7 @@
 #include <libretro.h>
 #include <libretro_d3d12.h>
 #include "../common/d3d12_hw_interface.h"
+#include "../common/d3d12_upload_heap.h"
 #include "../common/d3dcompiler_common.h"
 /* slang_process.h is self-contained - it only defines types and
  * constants used by pass state.  The actual slang_process() call
@@ -597,6 +598,10 @@ typedef struct
    D3D12_GRAPHICS_PIPELINE_STATE_DESC effect_desc;
    bool                            effect_desc_valid;
    unsigned                        effects_tried;
+   /* Where buffers the CPU only writes go: the GPU upload heap where
+    * the device maps all of its memory (resizable BAR), else the
+    * upload heap. Set as soon as there is a device. */
+   D3D12_HEAP_TYPE                 cpu_write_heap;
    D3D12Resource                   mesh_cb;
    uint8_t                        *mesh_cb_mapped;
    D3D12_GPU_VIRTUAL_ADDRESS       mesh_cb_va;
@@ -806,34 +811,15 @@ static INLINE D3D12_GPU_VIRTUAL_ADDRESS D3D12GetGPUVirtualAddress(void* resource
    return ((ID3D12Resource*)resource)->lpVtbl->GetGPUVirtualAddress((ID3D12Resource*)resource);
 }
 
+/* A buffer the CPU writes and the GPU reads, in a heap of @type: the
+ * device's cpu_write_heap, or the upload heap for one the CPU also
+ * reads back. */
    static D3D12_GPU_VIRTUAL_ADDRESS
-d3d12_create_buffer(D3D12Device device, UINT size_in_bytes, D3D12Resource* buffer)
+d3d12_create_buffer(D3D12Device device, D3D12_HEAP_TYPE type,
+      UINT size_in_bytes, D3D12Resource* buffer)
 {
-   D3D12_RESOURCE_DESC   resource_desc;
-   D3D12_HEAP_PROPERTIES heap_props;
-   HRESULT               hr;
-
-   heap_props.Type                     = D3D12_HEAP_TYPE_UPLOAD;
-   heap_props.CPUPageProperty          = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-   heap_props.MemoryPoolPreference     = D3D12_MEMORY_POOL_UNKNOWN;
-   heap_props.CreationNodeMask         = 1;
-   heap_props.VisibleNodeMask          = 1;
-
-   resource_desc.Dimension             = D3D12_RESOURCE_DIMENSION_BUFFER;
-   resource_desc.Alignment             = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-   resource_desc.Width                 = size_in_bytes;
-   resource_desc.Height                = 1;
-   resource_desc.DepthOrArraySize      = 1;
-   resource_desc.MipLevels             = 1;
-   resource_desc.Format                = DXGI_FORMAT_UNKNOWN;
-   resource_desc.SampleDesc.Count      = 1;
-   resource_desc.SampleDesc.Quality    = 0;
-   resource_desc.Layout                = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-   resource_desc.Flags                 = D3D12_RESOURCE_FLAG_NONE;
-
-   hr = device->lpVtbl->CreateCommittedResource(
-         device, (D3D12_HEAP_PROPERTIES*)&heap_props, D3D12_HEAP_FLAG_NONE, &resource_desc,
-         D3D12_RESOURCE_STATE_GENERIC_READ, NULL, uuidof(ID3D12Resource), (void**)buffer);
+   HRESULT hr = d3d12_create_cpu_write_buffer(device, type,
+         size_in_bytes, buffer);
 
    if (FAILED(hr) || !*buffer)
    {
@@ -1672,7 +1658,8 @@ static int d3d12_mesh_slot(d3d12_video_t *d3d12,
       * sizeof(uint16_t);
    d3d12->meshes[slot].ibo_view.Format      = DXGI_FORMAT_R16_UINT;
    d3d12->meshes[slot].view.BufferLocation = d3d12_create_buffer(
-         d3d12->device, d3d12->meshes[slot].view.SizeInBytes
+         d3d12->device, d3d12->cpu_write_heap,
+         d3d12->meshes[slot].view.SizeInBytes
          + d3d12->meshes[slot].ibo_view.SizeInBytes,
          &d3d12->meshes[slot].vbo);
    d3d12->meshes[slot].ibo_view.BufferLocation =
@@ -2608,7 +2595,8 @@ static bool d3d12_overlay_sprites_begin(d3d12_video_t *d3d12,
       d3d12->overlays.vbo_view.SizeInBytes    = sizeof(d3d12_sprite_t) * num;
       d3d12->overlays.vbo_view.StrideInBytes  = sizeof(d3d12_sprite_t);
       d3d12->overlays.vbo_view.BufferLocation = d3d12_create_buffer(
-            d3d12->device, d3d12->overlays.vbo_view.SizeInBytes,
+            d3d12->device, d3d12->cpu_write_heap,
+            d3d12->overlays.vbo_view.SizeInBytes,
             &d3d12->overlays.vbo);
       if (!d3d12->overlays.vbo)
          return false;
@@ -3485,7 +3473,7 @@ static bool d3d12_shader_load_step(void *data,
             ds->passes[i].buffer_view[j].SizeInBytes =
                ds->passes[i].semantics.cbuffers[j].size;
             ds->passes[i].buffer_view[j].BufferLocation =
-               d3d12_create_buffer(d3d12->device,
+               d3d12_create_buffer(d3d12->device, d3d12->cpu_write_heap,
                      ds->passes[i].buffer_view[j].SizeInBytes,
                      &ds->passes[i].buffers[j]);
          }
@@ -3845,7 +3833,8 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
 
          d3d12->pass[i].buffer_view[j].SizeInBytes    = d3d12->pass[i].semantics.cbuffers[j].size;
          d3d12->pass[i].buffer_view[j].BufferLocation = d3d12_create_buffer(
-               d3d12->device, d3d12->pass[i].buffer_view[j].SizeInBytes,
+               d3d12->device, d3d12->cpu_write_heap,
+               d3d12->pass[i].buffer_view[j].SizeInBytes,
                &d3d12->pass[i].buffers[j]);
       }
    }
@@ -4243,7 +4232,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       {
          D3D12_RANGE read_range;
          void *mapped = NULL;
-         d3d12->mesh_cb_va = d3d12_create_buffer(d3d12->device,
+         d3d12->mesh_cb_va = d3d12_create_buffer(d3d12->device, d3d12->cpu_write_heap,
                D3D12_MESH_CB_SIZE * D3D12_MESH_CB_SLOTS, &d3d12->mesh_cb);
          read_range.Begin  = 0;
          read_range.End    = 0;
@@ -5104,8 +5093,8 @@ static void d3d12_init_queue(d3d12_video_t* d3d12)
    d3d12->queue.fenceEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 }
 
-static void d3d12_create_fullscreen_quad_vbo(
-      D3D12Device device, D3D12_VERTEX_BUFFER_VIEW* view, D3D12Resource* vbo)
+static void d3d12_create_fullscreen_quad_vbo(D3D12Device device,
+      D3D12_HEAP_TYPE type, D3D12_VERTEX_BUFFER_VIEW* view, D3D12Resource* vbo)
 {
    D3D12_RANGE read_range;
    void *vertex_data_begin                = NULL;
@@ -5123,7 +5112,7 @@ static void d3d12_create_fullscreen_quad_vbo(
 
    view->SizeInBytes    = sizeof(vertices);
    view->StrideInBytes  = sizeof(*vertices);
-   view->BufferLocation = d3d12_create_buffer(device, view->SizeInBytes, vbo);
+   view->BufferLocation = d3d12_create_buffer(device, type, view->SizeInBytes, vbo);
 
    read_range.Begin     = 0;
    read_range.End       = 0;
@@ -5354,6 +5343,10 @@ static void *d3d12_gfx_init(const video_info_t* video,
    if (!d3d12->device)
       goto error;
 
+   d3d12->cpu_write_heap = d3d12_cpu_write_heap_type(d3d12->device);
+   if (d3d12->cpu_write_heap != D3D12_HEAP_TYPE_UPLOAD)
+      RARCH_LOG("[D3D12] Buffers the CPU writes go to video memory (GPU upload heap).\n");
+
    d3d12_init_descriptors(d3d12);
 
    if (!d3d12_gfx_init_pipelines(d3d12))
@@ -5396,22 +5389,26 @@ static void *d3d12_gfx_init(const video_info_t* video,
    d3d12_init_samplers(d3d12);
    d3d12_set_filtering(d3d12, 0, video->smooth, video->ctx_scaling);
 
-   d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->frame.vbo_view, &d3d12->frame.vbo);
-   d3d12_create_fullscreen_quad_vbo(d3d12->device, &d3d12->menu.vbo_view, &d3d12->menu.vbo);
+   d3d12_create_fullscreen_quad_vbo(d3d12->device, d3d12->cpu_write_heap, &d3d12->frame.vbo_view, &d3d12->frame.vbo);
+   d3d12_create_fullscreen_quad_vbo(d3d12->device, d3d12->cpu_write_heap, &d3d12->menu.vbo_view, &d3d12->menu.vbo);
 
    d3d12->sprites.capacity                = 16 * 1024;
    d3d12->sprites.vbo_view.SizeInBytes    = sizeof(d3d12_sprite_t) * d3d12->sprites.capacity;
    d3d12->sprites.vbo_view.StrideInBytes  = sizeof(d3d12_sprite_t);
+   /* In the upload heap whatever the device offers: the font lays a
+    * right-aligned or centred line out in place and shifts it, which
+    * reads the sprites back, and reads from video memory crawl. */
    d3d12->sprites.vbo_view.BufferLocation = d3d12_create_buffer(
-         d3d12->device, d3d12->sprites.vbo_view.SizeInBytes, &d3d12->sprites.vbo);
+         d3d12->device, D3D12_HEAP_TYPE_UPLOAD,
+         d3d12->sprites.vbo_view.SizeInBytes, &d3d12->sprites.vbo);
 
    d3d12->ubo_view.SizeInBytes = sizeof(d3d12_uniform_t);
    d3d12->ubo_view.BufferLocation =
-      d3d12_create_buffer(d3d12->device, d3d12->ubo_view.SizeInBytes, &d3d12->ubo);
+      d3d12_create_buffer(d3d12->device, d3d12->cpu_write_heap, d3d12->ubo_view.SizeInBytes, &d3d12->ubo);
 
    d3d12->frame.ubo_view.SizeInBytes = sizeof(d3d12_uniform_t);
    d3d12->frame.ubo_view.BufferLocation =
-      d3d12_create_buffer(d3d12->device, d3d12->frame.ubo_view.SizeInBytes, &d3d12->frame.ubo);
+      d3d12_create_buffer(d3d12->device, d3d12->cpu_write_heap, d3d12->frame.ubo_view.SizeInBytes, &d3d12->frame.ubo);
 
    matrix_4x4_ortho(d3d12->mvp_no_rot, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
 
@@ -5433,13 +5430,13 @@ static void *d3d12_gfx_init(const video_info_t* video,
 #ifdef HAVE_DXGI_HDR
    d3d12->hdr.ubo_view.SizeInBytes           = sizeof(dxgi_hdr_uniform_t);
    d3d12->hdr.ubo_view.BufferLocation        =
-      d3d12_create_buffer(d3d12->device, d3d12->hdr.ubo_view.SizeInBytes, &d3d12->hdr.ubo);
+      d3d12_create_buffer(d3d12->device, d3d12->cpu_write_heap, d3d12->hdr.ubo_view.SizeInBytes, &d3d12->hdr.ubo);
    d3d12->hdr.ubo_post_view.SizeInBytes      = sizeof(dxgi_hdr_uniform_t);
    d3d12->hdr.ubo_post_view.BufferLocation   =
-      d3d12_create_buffer(d3d12->device, d3d12->hdr.ubo_post_view.SizeInBytes, &d3d12->hdr.ubo_post);
+      d3d12_create_buffer(d3d12->device, d3d12->cpu_write_heap, d3d12->hdr.ubo_post_view.SizeInBytes, &d3d12->hdr.ubo_post);
    d3d12->hdr.ubo_sprites_view.SizeInBytes   = 256;
    d3d12->hdr.ubo_sprites_view.BufferLocation =
-      d3d12_create_buffer(d3d12->device, d3d12->hdr.ubo_sprites_view.SizeInBytes, &d3d12->hdr.ubo_sprites);
+      d3d12_create_buffer(d3d12->device, d3d12->cpu_write_heap, d3d12->hdr.ubo_sprites_view.SizeInBytes, &d3d12->hdr.ubo_sprites);
 
    d3d12->hdr.ubo_values.mvp                 = d3d12->mvp_no_rot;
    d3d12->hdr.menu_nits           = settings->floats.video_hdr_menu_nits;
