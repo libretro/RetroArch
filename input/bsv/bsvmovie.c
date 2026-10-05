@@ -408,9 +408,8 @@ void bsv_movie_deinit_full(input_driver_state_t *input_st)
    input_st->bsv_movie_state_next_handle = NULL;
 }
 
-void bsv_movie_frame_rewind(void)
+void bsv_movie_frame_rewind(input_driver_state_t *input_st)
 {
-   input_driver_state_t *input_st = input_state_get_ptr();
    bsv_movie_t          *handle   = input_st->bsv_movie_state_handle;
    bool recording = (input_st->bsv_movie_state.flags
          & BSV_FLAG_MOVIE_RECORDING) ? true : false;
@@ -474,7 +473,7 @@ void bsv_movie_frame_rewind(void)
       else
       {
          if (!bsv_movie_reset_recording(handle))
-            input_state_get_ptr()->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+            input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
          intfstream_truncate(handle->file, intfstream_tell(handle->file));
       }
    }
@@ -537,7 +536,6 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
       uint8_t encoding,replay_checkpoint_behavior checkpoint_behavior)
 {
    uint32_t compressed_encoded_size, encoded_size, size;
-   input_driver_state_t *input_st = input_state_get_ptr();
    uint8_t *compressed_data = NULL, *encoded_data = NULL;
    bool ret = true;
    if (intfstream_read(handle->file, &(size),
@@ -574,7 +572,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
          && encoded_size != size))
    {
       RARCH_ERR("[Replay] Checkpoint sizes do not agree, terminating movie\n");
-      input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+      bsv_movie_set_end();
       ret = false;
       goto exit;
    }
@@ -606,7 +604,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
    if (!handle->cur_save || !compressed_data)
    {
       RARCH_ERR("[Replay] Out of memory for checkpoint, terminating movie\n");
-      input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+      bsv_movie_set_end();
       ret = false;
       goto exit;
    }
@@ -614,7 +612,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
        compressed_encoded_size) != (int64_t)compressed_encoded_size)
    {
       RARCH_ERR("[Replay] Truncated checkpoint, terminating movie\n");
-      input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+      bsv_movie_set_end();
       ret = false;
       goto exit;
    }
@@ -857,7 +855,6 @@ exit:
 bool bsv_movie_read_next_events(bsv_movie_t *handle,
       replay_checkpoint_behavior checkpoint_behavior, bool end_movie)
 {
-   input_driver_state_t *input_st  = input_state_get_ptr();
    if (handle->checkpoint_ready)
    {
       retro_ctx_serialize_info_t serial_info;
@@ -868,7 +865,7 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
       {
          RARCH_ERR("[Replay] Failed to deserialize checkpoint\n");
          if (end_movie)
-            input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+            bsv_movie_set_end();
          return false;
       }
    }
@@ -895,7 +892,7 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
                (unsigned)handle->key_event_count,
                (unsigned)ARRAY_SIZE(handle->key_events));
          if (end_movie)
-            input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+            bsv_movie_set_end();
          return false;
       }
       for (i = 0; i < handle->key_event_count; i++)
@@ -906,7 +903,7 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
             /* Unnatural EOF */
             RARCH_ERR("[Replay] Keyboard replay ran out of keyboard inputs too early\n");
             if (end_movie)
-               input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+               bsv_movie_set_end();
             return false;
          }
       }
@@ -916,7 +913,7 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
       RARCH_LOG("[Replay] EOF after buttons\n");
       /* Natural(?) EOF */
       if (end_movie)
-         input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+         bsv_movie_set_end();
       return false;
    }
    if (handle->version > 0)
@@ -943,7 +940,7 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
                   (unsigned)handle->input_event_count,
                   (unsigned)ARRAY_SIZE(handle->input_events));
             if (end_movie)
-               input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+               bsv_movie_set_end();
             return false;
          }
          for (i = 0; i < handle->input_event_count; i++)
@@ -954,7 +951,7 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
                /* Unnatural EOF */
                RARCH_ERR("[Replay] Input replay ran out of inputs too early\n");
                if (end_movie)
-                  input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+                  bsv_movie_set_end();
                return false;
             }
          }
@@ -964,7 +961,7 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
          RARCH_LOG("[Replay] EOF after inputs\n");
          /* Natural(?) EOF */
          if (end_movie)
-            input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+            bsv_movie_set_end();
          return false;
       }
    }
@@ -977,7 +974,7 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
          /* Unnatural EOF */
          RARCH_ERR("[Replay] Replay ran out of frames\n");
          if (end_movie)
-            input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+            bsv_movie_set_end();
          return false;
       }
       else if (next_frame_type == REPLAY_TOKEN_CHECKPOINT_FRAME)
@@ -987,7 +984,7 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
          {
             RARCH_ERR("[Replay] Replay ran out of frames\n");
             if (end_movie)
-               input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+               bsv_movie_set_end();
             return false;
          }
          size = swap_if_big64(size);
@@ -1006,7 +1003,7 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
             {
                RARCH_ERR("[Replay] Replay checkpoint truncated\n");
                if (end_movie)
-                  input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+                  bsv_movie_set_end();
                free(handle->cur_save);
                handle->cur_save = NULL;
                return false;
@@ -1024,7 +1021,7 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
             /* Unexpected EOF */
             RARCH_ERR("[Replay] Replay checkpoint truncated.\n");
             if (end_movie)
-               input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+               bsv_movie_set_end();
             return false;
          }
          if (!bsv_movie_load_checkpoint(handle, compression, encoding, checkpoint_behavior))
@@ -1034,7 +1031,7 @@ bool bsv_movie_read_next_events(bsv_movie_t *handle,
       {
          RARCH_ERR("[Replay] Invalid replay token 0x%x\n", next_frame_type);
          if (end_movie)
-            input_st->bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+            bsv_movie_set_end();
       }
    }
    return true;
@@ -1207,17 +1204,15 @@ void bsv_movie_next_frame(input_driver_state_t *input_st,
    }
 }
 
-size_t replay_get_serialize_size(void)
+size_t replay_get_serialize_size(input_driver_state_t *input_st)
 {
-   input_driver_state_t *input_st = input_state_get_ptr();
    if (input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
       return sizeof(int32_t)+intfstream_tell(input_st->bsv_movie_state_handle->file);
    return 0;
 }
 
-bool replay_get_serialized_data(void* buffer)
+bool replay_get_serialized_data(input_driver_state_t *input_st, void* buffer)
 {
-   input_driver_state_t *input_st = input_state_get_ptr();
    bsv_movie_t *handle            = input_st->bsv_movie_state_handle;
 
    if (input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
@@ -1416,10 +1411,9 @@ bool replay_check_same_timeline(bsv_movie_t *movie,
    return ret;
 }
 
-bool replay_set_serialized_data(void *buf)
+bool replay_set_serialized_data(input_driver_state_t *input_st, void *buf)
 {
    uint8_t *buffer                = (uint8_t*)buf;
-   input_driver_state_t *input_st = input_state_get_ptr();
    bsv_movie_t *handle            = input_st->bsv_movie_state_handle;
    bool playback                  = (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)  ? true : false;
    bool recording                 = (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING) ? true : false;

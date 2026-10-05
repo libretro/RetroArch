@@ -341,15 +341,14 @@ static bool apple_input_handle_icade_event(unsigned kb_type_idx, unsigned *code,
 void apple_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device)
 {
-   settings_t *settings         = config_get_ptr();
-   bool keyboard_gamepad_enable = settings->bools.input_keyboard_gamepad_enable;
-   bool small_keyboard_enable   = settings->bools.input_small_keyboard_enable;
+   bool keyboard_gamepad_enable = input_config_get_keyboard_gamepad_enable();
+   bool small_keyboard_enable   = input_config_get_small_keyboard_enable();
    unsigned original_code       = code;
 
    if (keyboard_gamepad_enable)
    {
       if (apple_input_handle_icade_event(
-               settings->uints.input_keyboard_gamepad_mapping_type,
+               input_config_get_keyboard_gamepad_mapping_type(),
                &code, &down))
          character = 0;
       else
@@ -743,8 +742,7 @@ static int16_t cocoa_input_state(
                         return 1;
                      else
                      {
-                        settings_t *settings = config_get_ptr();
-                        if (settings->uints.input_mouse_index[port] == 0)
+                        if (input_config_get_mouse_index(port) == 0)
                         {
                            if (cocoa_mouse_button_pressed(apple, port, binds[port][new_id].mbutton))
                               return 1;
@@ -1004,8 +1002,7 @@ static void cocoa_input_keypress_vibrate(void)
       if (!keypressHapticEngine)
          cocoa_input_init_haptic_engine();
 
-      settings_t *settings = config_get_ptr();
-      if (!settings || !keypressHapticEngine)
+      if (!keypressHapticEngine)
          return;
 
       /* Ensure engine is started (may have been stopped by backgrounding) */
@@ -1020,7 +1017,7 @@ static void cocoa_input_keypress_vibrate(void)
          if (!keypressHapticEngine)
             return;
       }
-      unsigned rumble_gain = settings->uints.input_rumble_gain;
+      unsigned rumble_gain = input_config_get_rumble_gain();
       float intensity = (float)rumble_gain / 100.0f;
 
       /* Create player on first use */

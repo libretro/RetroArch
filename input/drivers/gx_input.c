@@ -231,7 +231,7 @@ static int16_t rvl_input_state(
 #ifdef GX_USB_MOUSE
          /* USB mice, all as one, are mouse 0 while there are any. */
          if (     gx->usb_mouse.count
-               && config_get_ptr()->uints.input_mouse_index[port] == 0)
+               && input_config_get_mouse_index(port) == 0)
          {
             const gk_mouse_t *m = &gx->usb_mouse;
             switch (id)
@@ -261,9 +261,8 @@ static int16_t rvl_input_state(
          }
 #endif
          {
-            settings_t *settings       = config_get_ptr();
             uint16_t joy_idx           = joypad_info->joy_idx;
-            unsigned input_mouse_scale = settings->uints.input_mouse_scale;
+            unsigned input_mouse_scale = input_config_get_mouse_scale();
             int x_scale                = input_mouse_scale;
             int y_scale                = input_mouse_scale;
             int x                      = (gx->mouse[joy_idx].x_abs

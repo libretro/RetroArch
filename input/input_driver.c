@@ -9525,6 +9525,15 @@ static void input_key_lane_take(void);
 #define INPUT_FIRST_PRESS_GIVE_UP (1U << 31)
 static bool input_first_press_blocked(void);
 
+#ifdef HAVE_BSV_MOVIE
+/* The replay is over: said by the code that reads it, which is handed
+ * the replay and not the input state. */
+void bsv_movie_set_end(void)
+{
+   input_driver_st.bsv_movie_state.flags |= BSV_FLAG_MOVIE_END;
+}
+#endif
+
 /* The settings a driver reads, by name. A driver does not take the
  * settings (config_get_ptr()) and pick a field out: what drivers
  * depend on is this list, and the layout of the settings is the
@@ -9642,6 +9651,95 @@ const char *input_config_get_android_physical_keyboard(void)
    return settings ? settings->arrays.input_android_physical_keyboard : "";
 }
 #endif
+
+unsigned input_config_get_split_joycon(unsigned port)
+{
+   settings_t *settings = config_get_ptr();
+   return (settings && port < MAX_USERS)
+      ? settings->uints.input_split_joycon[port] : 0;
+}
+
+bool input_config_get_backtouch_enable(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings && settings->bools.input_backtouch_enable;
+}
+
+bool input_config_get_backtouch_toggle(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings && settings->bools.input_backtouch_toggle;
+}
+
+bool input_config_get_keyboard_gamepad_enable(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings && settings->bools.input_keyboard_gamepad_enable;
+}
+
+bool input_config_get_small_keyboard_enable(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings && settings->bools.input_small_keyboard_enable;
+}
+
+unsigned input_config_get_keyboard_gamepad_mapping_type(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings ? settings->uints.input_keyboard_gamepad_mapping_type : 0;
+}
+
+/* The screensaver is to be kept away. */
+bool input_config_get_suspend_screensaver_enable(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings && settings->bools.ui_suspend_screensaver_enable;
+}
+
+#ifdef GEKKO
+unsigned input_config_get_mouse_scale(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings ? settings->uints.input_mouse_scale : 1;
+}
+#endif
+
+#ifdef UDEV_TOUCH_SUPPORT
+bool input_config_get_touch_vmouse_pointer(void)
+{ settings_t *s = config_get_ptr(); return s && s->bools.input_touch_vmouse_pointer; }
+bool input_config_get_touch_vmouse_mouse(void)
+{ settings_t *s = config_get_ptr(); return s && s->bools.input_touch_vmouse_mouse; }
+bool input_config_get_touch_vmouse_touchpad(void)
+{ settings_t *s = config_get_ptr(); return s && s->bools.input_touch_vmouse_touchpad; }
+bool input_config_get_touch_vmouse_trackball(void)
+{ settings_t *s = config_get_ptr(); return s && s->bools.input_touch_vmouse_trackball; }
+bool input_config_get_touch_vmouse_gesture(void)
+{ settings_t *s = config_get_ptr(); return s && s->bools.input_touch_vmouse_gesture; }
+#endif
+
+/* A joypad driver puts a port back on a controller: on the Wii and
+ * GameCube, port 1 on the first pad when only one is left. */
+void input_config_set_joypad_index(unsigned port, unsigned idx)
+{
+   settings_t *settings = config_get_ptr();
+   if (settings && port < MAX_USERS)
+      settings->uints.input_joypad_index[port] = idx;
+}
+
+/* An input driver that found no device at all, on the very first
+ * start, before there is a configuration file: the configured input
+ * driver becomes @ident, so that the next start does not come up with
+ * the same driver and nothing to control it with. Returns whether this
+ * is such a start and it was done. */
+bool input_driver_first_start_fallback(const char *ident)
+{
+   settings_t *settings = config_get_ptr();
+   if (!settings || !settings->bools.menu_show_start_screen || !ident)
+      return false;
+   strlcpy(settings->arrays.input_driver, ident,
+         sizeof(settings->arrays.input_driver));
+   return true;
+}
 
 /* An overlay is switched on and one is chosen. */
 bool input_config_overlay_configured(void)

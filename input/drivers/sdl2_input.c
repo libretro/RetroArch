@@ -489,15 +489,8 @@ static float sdl2_get_sensor_input(void *data, unsigned port, unsigned id)
 
 static void sdl2_input_grab_mouse(void *data, bool state)
 {
-   sdl2_video_t *video_ptr = NULL;
-
-   if (string_is_not_equal(video_driver_get_ident(), "sdl2"))
-      return;
-
-   video_ptr = (sdl2_video_t*)video_driver_get_ptr();
-
-   if (video_ptr)
-      SDL_SetWindowGrab(video_ptr->window, state ? SDL_TRUE : SDL_FALSE);
+   /* the window is the video driver's */
+   sdl2_video_grab_window(state);
 }
 
 static void sdl2_poll_mouse(sdl2_input_t *sdl)

@@ -25,15 +25,9 @@ input/input_driver_choice.c):
     runloop_state_get_ptr()  menu_state_get_ptr()
     video_driver_get_ptr()   video_state_get_ptr()
 
-One file is the frontend's for one of them: the replay code in
-input/bsv keeps its state in the input state, so it takes that and
-nothing else (OWN_STATE).
-
-ALLOWED below is what is still to be converted, file by file. A file
-may not have more than its number, and a file that is not listed may
-have none. When a file gets below its number the check fails too, and
-says so: the number is lowered in the same change, so it cannot creep
-back up. The aim is an empty list.
+ALLOWED below was what was still to be converted, file by file with a
+count, and it is empty now: a file that is not listed may have none,
+so nothing goes back in.
 
 Usage:
    tools/input_state_grab_check.py [--root DIR] [--selftest]
@@ -53,27 +47,13 @@ GRAB = re.compile(r'\b(config_get_ptr|input_state_get_ptr|runloop_state_get_ptr'
 FRONTEND = ('input/input_driver.c', 'input/input_driver.h',
             'input/input_driver_choice.c')
 
-# a file whose own state is kept in one of these: it may take that one
+# a file whose own state is kept in one of these could take that one;
+# there is none: the replay code in input/bsv, whose state is in the
+# input state, is handed it by its callers
 OWN_STATE = {
-    'input/bsv/bsvmovie.c': 'input_state_get_ptr',
 }
 
 ALLOWED = {
-    # settings read by a driver on a platform not converted yet
-    'input/common/wayland_common_webos.c':               1,
-    # saving the configuration when Android takes the application away:
-    # frontend work that sits in the input driver, to be moved out of it
-    'input/drivers/android_input.c':                     1,
-    'input/drivers/cocoa_input.m':                       3,
-    'input/drivers/gx_input.c':                          2,
-    # the SDL2 video driver's window, for the grab
-    'input/drivers/sdl2_input.c':                        1,
-    # the touch options, and a driver that rewrites the settings
-    'input/drivers/udev_input.c':                        4,
-    'input/drivers_joypad/gx_joypad_libogc.c':           1,
-    'input/drivers_joypad/mfi_joypad.m':                 1,
-    'input/drivers_joypad/psp_joypad.c':                 1,
-    'input/drivers_joypad/switch_joypad.c':              1,
 }
 
 
@@ -139,8 +119,6 @@ def selftest():
         put('input_driver.c', 'settings_t *s = config_get_ptr();\n')
         put('drivers/a_input.c', 'if (menu_driver_alive()) x();\n/* config_get_ptr() in a comment */\n')
         put('drivers/b_input.c', 'x = config_get_ptr ( )->uints.y;\ninput_state_get_ptr()->flags |= 1;\n')
-        os.makedirs(os.path.join(root, 'input', 'bsv'))
-        put('bsv/bsvmovie.c', 'input_driver_state_t *st = input_state_get_ptr();\n')
         cases = [({'input/drivers/b_input.c': 2}, 0, 'the listed count'),
                  ({'input/drivers/b_input.c': 1}, 1, 'one more than listed'),
                  ({}, 1, 'a file that is not listed'),

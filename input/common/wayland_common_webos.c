@@ -690,7 +690,6 @@ static bool screenSaverCallback(LSHandle* sh, LSMessage* reply, void* context)
    enum rjson_type t;
    HContext response_ctx;
    bool suspend_screensaver;
-   settings_t *settings;
    rjsonwriter_t *w = NULL;
    rjson_t *json    = NULL;
    const char *key  = NULL, *val = NULL;
@@ -728,8 +727,7 @@ static bool screenSaverCallback(LSHandle* sh, LSMessage* reply, void* context)
    if (strcmp(state, "Active") != 0)
       return true;
 
-   settings            = config_get_ptr();
-   suspend_screensaver = settings->bools.ui_suspend_screensaver_enable;
+   suspend_screensaver = input_config_get_suspend_screensaver_enable();
 
    w                   = rjsonwriter_open_memory();
    rjsonwriter_raw(w, "{", 1);

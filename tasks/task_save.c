@@ -508,7 +508,7 @@ static size_t content_get_rastate_size(rastate_size_info_t* size, bool rewind)
    /* 8-byte block header + content */
    if (!rewind)
    {
-      size->replay_size = replay_get_serialize_size();
+      size->replay_size = replay_get_serialize_size(input_state_get_ptr());
       if (size->replay_size > 0)
          size->total_size += 8 + CONTENT_ALIGN_SIZE(size->replay_size);
    }
@@ -592,7 +592,7 @@ static bool content_write_serialized_state(void* buffer,
        {
           content_write_block_header(output,
              RASTATE_REPLAY_BLOCK, size->replay_size);
-          if (replay_get_serialized_data(output + 8))
+          if (replay_get_serialized_data(input_st, output + 8))
           {
             CONTENT_ZERO_PADDING(output + 8, size->replay_size);
             output += CONTENT_ALIGN_SIZE(size->replay_size) + 8;
@@ -1360,7 +1360,7 @@ static bool content_load_rastate1(unsigned char* input, size_t len)
 #else
          bool frame_is_reversed         = false;
 #endif
-         if (frame_is_reversed || replay_set_serialized_data((void*)input))
+         if (frame_is_reversed || replay_set_serialized_data(input_state_get_ptr(), (void*)input))
             seen_replay = true;
          else
             return false;
@@ -1388,7 +1388,7 @@ static bool content_load_rastate1(unsigned char* input, size_t len)
       bool frame_is_reversed = false;
 #endif
       if (!seen_replay && !frame_is_reversed)
-         replay_set_serialized_data(NULL);
+         replay_set_serialized_data(input_state_get_ptr(), NULL);
    }
 #endif
 
@@ -1423,7 +1423,7 @@ bool content_deserialize_state(const void *s, size_t len)
          bool frame_is_reversed = false;
 #endif
          if (!frame_is_reversed)
-            replay_set_serialized_data(NULL);
+            replay_set_serialized_data(input_state_get_ptr(), NULL);
       }
 #endif
    }
@@ -1662,10 +1662,10 @@ static void content_capture_frontend_blocks(save_task_state_t *state)
                & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
           && !frame_is_reversed)
       {
-         size_t _len = replay_get_serialize_size();
+         size_t _len = replay_get_serialize_size(input_st);
          if (_len > 0 && (state->fe_replay = malloc(_len)))
          {
-            if (replay_get_serialized_data(state->fe_replay))
+            if (replay_get_serialized_data(input_st, state->fe_replay))
                state->fe_replay_size = _len;
             else
             {

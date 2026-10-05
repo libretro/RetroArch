@@ -151,15 +151,15 @@
 /* Conversion factor from microseconds to nanoseconds */
 #define UDEV_INPUT_TOUCH_US_TO_NS 1000
 /* Default state of pointer simulation. */
-#define UDEV_INPUT_TOUCH_POINTER_EN settings->bools.input_touch_vmouse_pointer
+#define UDEV_INPUT_TOUCH_POINTER_EN input_config_get_touch_vmouse_pointer()
 /* Default state of mouse simulation. */
-#define UDEV_INPUT_TOUCH_MOUSE_EN settings->bools.input_touch_vmouse_mouse
+#define UDEV_INPUT_TOUCH_MOUSE_EN input_config_get_touch_vmouse_mouse()
 /* Default state of touchpad simulation. */
-#define UDEV_INPUT_TOUCH_TOUCHPAD_EN settings->bools.input_touch_vmouse_touchpad
+#define UDEV_INPUT_TOUCH_TOUCHPAD_EN input_config_get_touch_vmouse_touchpad()
 /* Default state of trackball simulation. */
-#define UDEV_INPUT_TOUCH_TRACKBALL_EN settings->bools.input_touch_vmouse_trackball
+#define UDEV_INPUT_TOUCH_TRACKBALL_EN input_config_get_touch_vmouse_trackball()
 /* Default state of gesture simulation. */
-#define UDEV_INPUT_TOUCH_GEST_EN settings->bools.input_touch_vmouse_gesture
+#define UDEV_INPUT_TOUCH_GEST_EN input_config_get_touch_vmouse_gesture()
 /* Default value of tap time in us. */
 #define UDEV_INPUT_TOUCH_MAX_TAP_TIME 250000
 /* Default value of tap distance - squared distance in 0x7fff space. */
@@ -1159,7 +1159,6 @@ static udev_input_device_t *udev_get_pointer_port_dev(
    uint16_t i;
    uint16_t pointer_index    = 0;
    int16_t dev_index         = -1;
-   settings_t *settings      = config_get_ptr();
    udev_input_mouse_t *mouse = NULL;
 
    if (port >= MAX_USERS || !video_driver_has_focus())
@@ -1465,7 +1464,6 @@ static void udev_update_touch_dev_options(udev_input_device_t *dev, bool force)
    bool touchpad_en_new;
    bool trackball_en_new;
    bool gest_en_new;
-   settings_t *settings = config_get_ptr();
    bool pointer_en_new  = UDEV_INPUT_TOUCH_POINTER_EN;
    if (force || pointer_en_new != pointer_en)
    {
@@ -1513,7 +1511,6 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    struct input_absinfo abs_info;
    unsigned long xreq, yreq;
    udev_input_touch_t *touch = &dev->touch;
-   settings_t *settings      = config_get_ptr();
 
    RARCH_DBG("[udev] Initializing touch device \"%s\"\n", dev->ident);
 
@@ -4489,7 +4486,6 @@ static void *udev_input_init(const char *joypad_driver)
     * we could lock ourselves out completely. */
    if (!udev->num_devices)
    {
-      settings_t *settings = config_get_ptr();
       RARCH_WARN("[udev] Couldn't open any keyboard, mouse or touchpad. Are permissions set correctly for /dev/input/event* and /run/udev/?\n");
       if (denied)
          RARCH_WARN("[udev] %u node(s) refused the open with EACCES. Keyboards and mice are not covered by the seat ACLs on most distributions, so the user needs read access to them by other means, typically membership of the \"input\" group.\n",
@@ -4498,7 +4494,7 @@ static void *udev_input_init(const char *joypad_driver)
        * on first startup without config file, so it should be good to catch
        * initial boots without udev devices available. */
 #if defined(__linux__) && !defined(ANDROID)
-      if (settings->bools.menu_show_start_screen)
+      if (input_driver_first_start_fallback("linuxraw"))
       {
          /* Force fallback to linuxraw. Driver reselection would happen even
           * without overwriting input_driver setting, but that would not be saved
@@ -4506,8 +4502,6 @@ static void *udev_input_init(const char *joypad_driver)
           * video context driver), and on next boot user would be stuck with a
           * possibly nonworking configuration.
           */
-         strlcpy_lit(settings->arrays.input_driver, "linuxraw",
-                 sizeof(settings->arrays.input_driver));
          RARCH_WARN("[udev] First boot and without input devices, forcing fallback to linuxraw.\n");
          goto error;
       }

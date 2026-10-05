@@ -742,73 +742,6 @@ static void android_input_release_state_ack(struct android_app *android_app)
    android_state_ack_cmd = -1;
 }
 
-/* Everything that would otherwise only be written by retroarch_main_quit():
- * SRAM, core options and the main config. */
-static void android_input_flush_state(void)
-{
-   settings_t *settings        = config_get_ptr();
-
-   /* Config subsystem is not up yet - nothing to persist. */
-   if (!settings)
-      return;
-
-   /* SRAM first: it is the more expensive of the two, and the more
-    * painful to lose. Non-SRAM cores make this a no-op.
-    *
-    * Only flush while content is actually loaded. APP_CMD_PAUSE can be
-    * delivered while frontend_unix_init() is still pumping events
-    * waiting for the window (activity created, then immediately
-    * backgrounded / screen locked), long before any core exists - and,
-    * worse, while a previous activity instance in the same process may
-    * still be mid-teardown, leaving runloop_state.current_core in a
-    * transient state. There is nothing to save in either case:
-    * CMD_EVENT_SAVE_FILES exists to persist SRAM and game-specific
-    * cheats, both of which require loaded content. */
-   if (runloop_content_loaded())
-      command_event(CMD_EVENT_SAVE_FILES, NULL);
-
-   /* Core options: written unconditionally on core unload, so not
-    * gated on config_save_on_exit here either. Without this, option
-    * changes are lost whenever the process is killed in the
-    * background, e.g. swiped away from Recents. No-op when no core
-    * with options is loaded. */
-   runloop_core_options_save();
-
-   if (settings->bools.config_save_on_exit)
-   {
-      const char *configured_driver = video_driver_get_configured_ident();
-      char live_driver[32];
-
-      live_driver[0] = '\0';
-
-      /* A core that forces its own renderer overwrites video_driver
-       * with the forced name and parks the configured one in
-       * cached_driver_id. Writing the config in that state persists the
-       * core's choice as the user's, so a driver picked from the menu
-       * is silently replaced by whatever the last loaded core wanted.
-       * main_exit() restores the cached name before it saves; do the
-       * same here.
-       *
-       * Unlike main_exit(), swap the live value back afterwards: the
-       * activity may be resumed, and the renderer actually in use does
-       * not change just because the app went to the background. */
-      if (configured_driver)
-      {
-         strlcpy(live_driver, settings->arrays.video_driver,
-               sizeof(live_driver));
-         configuration_set_string(settings,
-               settings->arrays.video_driver,
-               configured_driver);
-      }
-
-      command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
-
-      if (live_driver[0])
-         configuration_set_string(settings,
-               settings->arrays.video_driver, live_driver);
-   }
-}
-
 /* Swiping the task away from Recents and the low-memory killer end the
  * process with SIGKILL, and a QUITFOCUS launch exits from the Java side's
  * onStop(); onDestroy() is not delivered first in any of them, so
@@ -836,7 +769,7 @@ void android_input_flush_pending_state(void)
    if (!android_state_flushed)
    {
       android_state_flushed = true;
-      android_input_flush_state();
+      retroarch_save_for_suspend();
    }
 
    android_input_release_state_ack(g_android);

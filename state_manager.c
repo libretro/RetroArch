@@ -963,7 +963,7 @@ bool state_manager_check_rewind(
          content_deserialize_state(buf, rewind_st->size);
 
 #ifdef HAVE_BSV_MOVIE
-         bsv_movie_frame_rewind();
+         bsv_movie_frame_rewind(input_state_get_ptr());
 #endif
       }
       else
@@ -976,7 +976,7 @@ bool state_manager_check_rewind(
             retro_atomic_store_release_int(
                   &rewind_st->frame_reversed_atomic, 1);
             rewind_st->flags |= STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED;
-            bsv_movie_frame_rewind();
+            bsv_movie_frame_rewind(input_state_get_ptr());
          }
          else
 #endif

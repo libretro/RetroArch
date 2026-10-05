@@ -1079,8 +1079,7 @@ static bool apple_gamecontroller_joypad_set_rumble(unsigned pad,
       enum retro_rumble_effect type, uint16_t strength)
 {
 #if TARGET_OS_IOS
-    settings_t *settings            = config_get_ptr();
-    bool enable_device_vibration    = settings->bools.enable_device_vibration;
+    bool enable_device_vibration    = input_config_get_device_vibration();
 
     if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
     {

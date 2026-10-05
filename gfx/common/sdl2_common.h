@@ -114,6 +114,10 @@ typedef struct _sdl2_video
    size_t  display_indices_cap;
 } sdl2_video_t;
 
+/* Keeps the pointer in the SDL2 video driver's window, or lets it go.
+ * Nothing happens when that is not the video driver in use. */
+void sdl2_video_grab_window(bool state);
+
 void sdl2_set_handles(void *data, enum rarch_display_type 
       display_type);
 

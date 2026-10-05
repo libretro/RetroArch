@@ -52,6 +52,8 @@ void RARCH_DBG(const char *fmt, ...)  { (void)fmt; }
 
 static settings_t stub_settings;
 settings_t *config_get_ptr(void) { return &stub_settings; }
+/* the settings a driver asks for by name, read from the ones above */
+#include "../input_config_stubs.h"
 
 struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
 struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];

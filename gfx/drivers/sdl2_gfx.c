@@ -2206,6 +2206,20 @@ static void sdl2_get_overlay_interface(void *data,
 }
 #endif /* HAVE_OVERLAY */
 
+/* Keeps the pointer in this driver's window, or lets it go: for the SDL2
+ * input driver, which has no window of its own. Nothing happens when
+ * this is not the video driver in use. */
+void sdl2_video_grab_window(bool state)
+{
+   sdl2_video_t *vid;
+
+   if (string_is_not_equal(video_driver_get_ident(), "sdl2"))
+      return;
+
+   if ((vid = (sdl2_video_t*)video_driver_get_ptr()))
+      SDL_SetWindowGrab(vid->window, state ? SDL_TRUE : SDL_FALSE);
+}
+
 video_driver_t video_sdl2 = {
    sdl2_gfx_init,
    sdl2_gfx_frame,

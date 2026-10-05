@@ -50,4 +50,28 @@ const char *input_config_get_joypad_driver(void)
 const char *input_config_get_keyboard_layout(void)
 { return ((settings_t*)config_get_ptr())->arrays.input_keyboard_layout; }
 
+#ifdef UDEV_TOUCH_SUPPORT
+bool input_config_get_touch_vmouse_pointer(void)
+{ return ((settings_t*)config_get_ptr())->bools.input_touch_vmouse_pointer; }
+bool input_config_get_touch_vmouse_mouse(void)
+{ return ((settings_t*)config_get_ptr())->bools.input_touch_vmouse_mouse; }
+bool input_config_get_touch_vmouse_touchpad(void)
+{ return ((settings_t*)config_get_ptr())->bools.input_touch_vmouse_touchpad; }
+bool input_config_get_touch_vmouse_trackball(void)
+{ return ((settings_t*)config_get_ptr())->bools.input_touch_vmouse_trackball; }
+bool input_config_get_touch_vmouse_gesture(void)
+{ return ((settings_t*)config_get_ptr())->bools.input_touch_vmouse_gesture; }
+#endif
+
+/* and the one thing the udev input driver changes in them */
+bool input_driver_first_start_fallback(const char *ident)
+{
+   settings_t *settings = (settings_t*)config_get_ptr();
+   if (!settings->bools.menu_show_start_screen || !ident)
+      return false;
+   strlcpy(settings->arrays.input_driver, ident,
+         sizeof(settings->arrays.input_driver));
+   return true;
+}
+
 #endif

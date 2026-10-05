@@ -104,6 +104,8 @@ uint32_t runloop_get_flags(void) { return runloop_st.flags; }
 bool runloop_key_event_is_frontend(void)
 { return runloop_st.key_event && runloop_st.key_event == runloop_st.frontend_key_event; }
 input_driver_state_t *input_state_get_ptr(void) { return &input_st; }
+/* the replay is over: the frontend's call for it, on the state above */
+void bsv_movie_set_end(void) { input_st.bsv_movie_state.flags |= BSV_FLAG_MOVIE_END; }
 bool content_load_state_in_progress(void *data) { (void)data; return false; }
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device) { (void)down; (void)code; (void)character; (void)mod; (void)device; }

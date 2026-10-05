@@ -233,9 +233,8 @@ static void psp_joypad_poll(void)
    unsigned player;
    unsigned players_count      = DEFAULT_MAX_PADS;
 #if defined(VITA)
-   settings_t *settings        = config_get_ptr();
-   bool input_backtouch_enable = settings->bools.input_backtouch_enable;
-   bool input_backtouch_toggle = settings->bools.input_backtouch_toggle;
+   bool input_backtouch_enable = input_config_get_backtouch_enable();
+   bool input_backtouch_toggle = input_config_get_backtouch_toggle();
 #endif
 
 #ifdef PSP

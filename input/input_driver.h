@@ -1024,6 +1024,22 @@ bool input_config_get_winraw_xinput_enable(void);
 bool input_config_get_winraw_player_lights(void);
 bool input_config_get_sdl3_system_keyboard(void);
 bool input_config_overlay_configured(void);
+unsigned input_config_get_split_joycon(unsigned port);
+bool input_config_get_backtouch_enable(void);
+bool input_config_get_backtouch_toggle(void);
+bool input_config_get_keyboard_gamepad_enable(void);
+bool input_config_get_small_keyboard_enable(void);
+unsigned input_config_get_keyboard_gamepad_mapping_type(void);
+bool input_config_get_suspend_screensaver_enable(void);
+unsigned input_config_get_mouse_scale(void);
+bool input_config_get_touch_vmouse_pointer(void);
+bool input_config_get_touch_vmouse_mouse(void);
+bool input_config_get_touch_vmouse_touchpad(void);
+bool input_config_get_touch_vmouse_trackball(void);
+bool input_config_get_touch_vmouse_gesture(void);
+/* The two things a driver changes in the settings, each by name. */
+void input_config_set_joypad_index(unsigned port, unsigned idx);
+bool input_driver_first_start_fallback(const char *ident);
 bool input_config_get_sensors_enable(void);
 unsigned input_config_get_block_timeout(void);
 bool input_config_get_device_vibration(void);
@@ -1717,7 +1733,11 @@ void input_overlay_check_mouse_cursor(void);
 #endif
 
 #ifdef HAVE_BSV_MOVIE
-void bsv_movie_frame_rewind(void);
+void bsv_movie_frame_rewind(input_driver_state_t *input_st);
+
+/* The replay is over: said by the code that reads it, which is handed
+ * the replay and not the input state. */
+void bsv_movie_set_end(void);
 /* @checkpoint_interval and @checkpoint_deserialize are the two replay
  * settings, handed over by the run loop, which has them. */
 void bsv_movie_next_frame(input_driver_state_t *input_st,
@@ -1750,9 +1770,9 @@ bool movie_stop_playback(input_driver_state_t *input_st);
 bool movie_stop_record(input_driver_state_t *input_st);
 bool movie_stop(input_driver_state_t *input_st);
 
-size_t replay_get_serialize_size(void);
-bool replay_get_serialized_data(void* buffer);
-bool replay_set_serialized_data(void* buffer);
+size_t replay_get_serialize_size(input_driver_state_t *input_st);
+bool replay_get_serialized_data(input_driver_state_t *input_st, void* buffer);
+bool replay_set_serialized_data(input_driver_state_t *input_st, void* buffer);
 #endif
 
 /**
