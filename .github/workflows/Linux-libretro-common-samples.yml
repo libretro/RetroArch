@@ -243,6 +243,9 @@ jobs:
             # The FLAC arm, sample-exact in every input mode, a grown
             # demuxed packet set and a raised WebM wall both resuming.
             audio_transfer_flac_test
+            # The HDR video blits: PQ and HLG to linear scRGB against
+            # double-precision references, and HLG tone-mapped as HDR.
+            image_hdr_blit_test
           )
 
           # Targets that are built but deliberately not executed, each

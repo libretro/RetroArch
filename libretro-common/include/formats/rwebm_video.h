@@ -71,6 +71,17 @@ void rwebm_video_blit_i420_10bit(uint32_t *dst, unsigned dst_stride,
       unsigned matrix, unsigned transfer, unsigned range,
       unsigned max_cll);
 
+/* HDR variant: a PQ (transfer 16) or HLG (transfer 18) source as linear
+ * scRGB - 80 nits is 1.0, the 709 primaries, components outside 709
+ * kept negative - in RGBA half floats, 8 bytes a pixel, memory order
+ * R,G,B,A with A 1.0. No tone map: for a display that shows HDR. dst_stride
+ * is in pixels. Returns 0, writing nothing, for any other transfer, which
+ * is not HDR and takes the 8-bit or 10-bit paths above. */
+int rwebm_video_blit_i420_fp16(uint16_t *dst, unsigned dst_stride,
+      unsigned w, unsigned h, const uint16_t *y, int ys,
+      const uint16_t *u, const uint16_t *v, int uvs,
+      unsigned matrix, unsigned transfer, unsigned range);
+
 bool rwebm_video_set_buf_ptr(rwebm_video_t *webm, void *data, size_t len);
 
 /* Request packed XRGB2101010 (10-bit) output for 10-bit HDR sources; 8-bit
