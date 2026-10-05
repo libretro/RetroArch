@@ -8460,7 +8460,9 @@ static void xmb_render(void *data,
    else if (xmb->thumbnails.icon.status == GFX_THUMBNAIL_STATUS_UNKNOWN
          && xmb->thumbnails.pending == XMB_PENDING_THUMBNAIL_NONE)
    {
-      xmb_node_t *node = (xmb_node_t*)selection_buf->list[selection].userdata;
+      xmb_node_t *node = (selection < selection_buf->size)
+         ? (xmb_node_t*)selection_buf->list[selection].userdata
+         : NULL;
 
       if (node)
       {
