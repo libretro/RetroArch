@@ -3399,7 +3399,8 @@ static void lane_lent_window_paused(void)
    dylib_t lib = runloop_state_get_ptr()->lib_handle;
    void (*use_fb)(int) = lib ? (void (*)(int))dylib_proc(lib, "harness_core_use_framebuffer") : NULL;
    unsigned (*granted)(void) = lib ? (unsigned (*)(void))dylib_proc(lib, "harness_core_fb_granted") : NULL;
-   unsigned g0, g1;
+   unsigned (*uncached)(void) = lib ? (unsigned (*)(void))dylib_proc(lib, "harness_core_fb_uncached") : NULL;
+   unsigned g0, g1, u0 = 0;
    uint64_t f0, f1;
 
    CHECK(use_fb && granted, "harness core lacks the framebuffer exports");
@@ -3420,10 +3421,18 @@ static void lane_lent_window_paused(void)
    gfx_instrument_reset();
 #endif
    g0 = granted();
+   if (uncached)
+      u0 = uncached();
    f0 = core_frames();
    run_frames(60);
    g1 = granted();
    f1 = core_frames();
+   /* Uncached loans are a device's own choice where it has no cached
+    * host memory, so this is reported, not judged; check-vulkan-rebar
+    * holds it to zero on a device that has both. */
+   if (uncached && g1 != g0)
+      fprintf(stderr, "[info] lent-window lane: %u of %u grants in uncached memory\n",
+            uncached() - u0, g1 - g0);
    /* A driver that has no framebuffer to lend (d3d11), or declines
     * this one (d3d12 lends only a row pitch on a 256-byte boundary,
     * which RGB565 at 320 wide is not), has no loan to push a window

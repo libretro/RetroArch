@@ -455,6 +455,9 @@ void retro_reset(void) { }
 #define CROP_Y 4
 static int      harness_use_fb;
 static unsigned harness_fb_granted;
+/* Grants of memory the frontend did not report cached: slow to read
+ * back on a device that maps its video memory (resizable BAR). */
+static unsigned harness_fb_uncached;
 
 /* RETRO_API, like the core's own entry points: a Windows DLL exports
  * only what is marked, and the harness looks these two up by name. */
@@ -487,6 +490,7 @@ RETRO_API void harness_core_set_run_us(unsigned us)
    }
 }
 RETRO_API unsigned harness_core_fb_granted(void)   { return harness_fb_granted; }
+RETRO_API unsigned harness_core_fb_uncached(void)  { return harness_fb_uncached; }
 
 void retro_run(void)
 {
@@ -536,6 +540,8 @@ void retro_run(void)
          dst   = (uint8_t*)fb.data;
          pitch = fb.pitch;
          harness_fb_granted++;
+         if (!(fb.memory_flags & RETRO_MEMORY_TYPE_CACHED))
+            harness_fb_uncached++;
       }
    }
 

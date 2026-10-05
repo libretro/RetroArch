@@ -50,6 +50,7 @@
 #endif
 
 #include "../common/vulkan_common.h"
+#include "../common/vulkan_memory_type.h"
 #include "../common/rgba16_pack.h"
 
 #include "../../configuration.h"
@@ -1942,6 +1943,37 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
                | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
+         /* Where that type is not device local and the device maps all
+          * of its memory host visible (resizable BAR), a streamed
+          * texture the frontend copies frames into lives in video
+          * memory instead: the frame is written there and sampled where
+          * it was written, with no staging buffer and no GPU copy.
+          * Taken here, so that a refusal still leaves the copy path
+          * below. Unified-memory devices, whose host-visible type is
+          * already device local, keep it, and so does a texture made to
+          * lend the core. */
+         if (      type == VULKAN_TEXTURE_STREAMED
+               && !(vk->flags & VK_FLAG_TEXTURE_FOR_LEND)
+               && (vk->context->memory_properties.memoryTypes[
+                     alloc.memoryTypeIndex].propertyFlags
+                   & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) == 0)
+         {
+            uint32_t types[2];
+            if (vulkan_cpu_write_memory_types(&vk->context->memory_properties,
+                     mem_reqs.memoryTypeBits, alloc.memoryTypeIndex, types) == 2)
+            {
+               VkMemoryAllocateInfo bar = alloc;
+               bar.memoryTypeIndex      = types[0];
+               if (vkAllocateMemory(device, &bar, NULL, &tex.memory) == VK_SUCCESS)
+               {
+                  alloc.memoryTypeIndex = types[0];
+                  tex.flags            |= VK_TEX_FLAG_BAR_MAPPED;
+               }
+               else
+                  tex.memory            = VK_NULL_HANDLE;
+            }
+         }
+
          if ((vk->context->memory_properties.memoryTypes
                   [ alloc.memoryTypeIndex].propertyFlags
                   & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
@@ -1997,8 +2029,14 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
       old = NULL;
    }
 
+   if (tex.flags & VK_TEX_FLAG_BAR_MAPPED)
+   {
+      vulkan_debug_mark_memory(device, tex.memory);
+      tex.memory_size = alloc.allocationSize;
+      tex.memory_type = alloc.memoryTypeIndex;
+   }
    /* We can pilfer the old memory and move it over to the new texture. */
-   if (     old
+   else if (old
          && old->memory_size >= mem_reqs.size
          && old->memory_type == alloc.memoryTypeIndex)
    {
@@ -9881,8 +9919,13 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
    if (!framebuffer->width || !framebuffer->height)
       return false;
 
-   if (VIDEO_SCALE_W(chain->texture.dims) != framebuffer->width ||
-         VIDEO_SCALE_H(chain->texture.dims) != framebuffer->height)
+   /* A frame texture in video memory is remade in cached system memory
+    * before it is lent: the core may read what it draws, and the frontend
+    * reads a lent frame back to redraw it while paused, and reads from
+    * write-combined video memory crawl. */
+   if (     VIDEO_SCALE_W(chain->texture.dims) != framebuffer->width
+         || VIDEO_SCALE_H(chain->texture.dims) != framebuffer->height
+         || (chain->texture.flags & VK_TEX_FLAG_BAR_MAPPED))
    {
       /* vulkan_create_texture() parks the old texture and its mapping
        * on the deferred list. If the core rendered the previous frame
@@ -9890,9 +9933,11 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
        * mapping: retire it first so a later cached re-render cannot
        * pick up a pointer into memory that is about to go. */
       video_driver_cached_frame_retire();
+      vk->flags       |=  VK_FLAG_TEXTURE_FOR_LEND;
       chain->texture   = vulkan_create_texture(vk, &chain->texture,
             framebuffer->width, framebuffer->height, chain->texture.format,
             NULL, NULL, VULKAN_TEXTURE_STREAMED);
+      vk->flags       &= ~VK_FLAG_TEXTURE_FOR_LEND;
       {
          struct vk_texture *texture = &chain->texture;
          vkMapMemory(vk->context->device, texture->memory, texture->offset, texture->size, 0, &texture->mapped);

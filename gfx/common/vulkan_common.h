@@ -127,7 +127,11 @@ enum vk_flags
    VK_FLAG_GPU_RECORDING       = (1 << 19),
    /* VK_ERROR_DEVICE_LOST was seen and reported to the runloop once;
     * the frames until the reinit fail quietly. */
-   VK_FLAG_DEVICE_LOST_REPORTED = (1 << 20)
+   VK_FLAG_DEVICE_LOST_REPORTED = (1 << 20),
+   /* Held across creating a frame texture to lend the core: it stays in
+    * cached system memory, never video memory, because the core and the
+    * frontend may read a lent frame back. */
+   VK_FLAG_TEXTURE_FOR_LEND     = (1 << 21)
 };
 
 enum vk_texture_type
@@ -199,7 +203,10 @@ enum vk_texture_flags
 {
    VK_TEX_FLAG_DEFAULT_SMOOTH               = (1 << 0),
    VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT = (1 << 1),
-   VK_TEX_FLAG_MIPMAP                       = (1 << 2)
+   VK_TEX_FLAG_MIPMAP                       = (1 << 2),
+   /* Streamed texture in device-local host-visible memory: written by
+    * the CPU, never read by it. */
+   VK_TEX_FLAG_BAR_MAPPED                   = (1 << 3)
 };
 
 typedef struct vulkan_context
