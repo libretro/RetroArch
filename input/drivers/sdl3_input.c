@@ -51,9 +51,8 @@ typedef struct sdl3_input
    const bool *kb_state;
    int kb_num_keys;
    SDL_Scancode key_scancode_lut[RETROK_LAST];
-   /* Whole-pixel relative motion. */
-   int16_t mouse_x;
-   int16_t mouse_y;
+   /* Whole-pixel relative motion, x and y: VIDEO_POS_PACK. */
+   uint32_t mouse_delta;
    /* Sub-pixel remainder carried into the next frame. */
    float mouse_rel_x;
    float mouse_rel_y;
@@ -410,10 +409,10 @@ static int16_t sdl3_input_state(
                   /* MOUSE_SCREEN must be absolute (menu/OSK hit-test);
                    * RETRO_DEVICE_MOUSE stays relative for cores. */
                   return (device == RARCH_DEVICE_MOUSE_SCREEN)
-                        ? sdl->mouse_abs_x : sdl->mouse_x;
+                        ? sdl->mouse_abs_x : VIDEO_POS_X(sdl->mouse_delta);
                case RETRO_DEVICE_ID_MOUSE_Y:
                   return (device == RARCH_DEVICE_MOUSE_SCREEN)
-                        ? sdl->mouse_abs_y : sdl->mouse_y;
+                        ? sdl->mouse_abs_y : VIDEO_POS_Y(sdl->mouse_delta);
 #else
                case RETRO_DEVICE_ID_MOUSE_WHEELUP:
                   return sdl->mouse_wu;
@@ -422,11 +421,11 @@ static int16_t sdl3_input_state(
                case RETRO_DEVICE_ID_MOUSE_X:
                   if (device == RARCH_DEVICE_MOUSE_SCREEN)
                      return (int16_t)sdl->mouse_abs_x;
-                  return sdl->mouse_x;
+                  return VIDEO_POS_X(sdl->mouse_delta);
                case RETRO_DEVICE_ID_MOUSE_Y:
                   if (device == RARCH_DEVICE_MOUSE_SCREEN)
                      return (int16_t)sdl->mouse_abs_y;
-                  return sdl->mouse_y;
+                  return VIDEO_POS_Y(sdl->mouse_delta);
 #endif
                case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
                   return sdl->mouse_wr;
@@ -611,9 +610,9 @@ static int16_t sdl3_input_state(
                break;
             /* Deprecated relative aiming */
             case RETRO_DEVICE_ID_LIGHTGUN_X:
-               return sdl->mouse_x;
+               return VIDEO_POS_X(sdl->mouse_delta);
             case RETRO_DEVICE_ID_LIGHTGUN_Y:
-               return sdl->mouse_y;
+               return VIDEO_POS_Y(sdl->mouse_delta);
          }
          break;
    }
@@ -792,11 +791,11 @@ static void sdl3_poll_mouse(sdl3_input_t *sdl)
    sdl->mouse_rel_x = MIN(MAX(sdl->mouse_rel_x, -32767.0f), 32767.0f);
    sdl->mouse_rel_y = MIN(MAX(sdl->mouse_rel_y, -32767.0f), 32767.0f);
 
-   sdl->mouse_x = (int16_t)sdl->mouse_rel_x;
-   sdl->mouse_y = (int16_t)sdl->mouse_rel_y;
+   sdl->mouse_delta = VIDEO_POS_PACK((int16_t)sdl->mouse_rel_x,
+         (int16_t)sdl->mouse_rel_y);
 
-   sdl->mouse_rel_x -= (float)sdl->mouse_x;
-   sdl->mouse_rel_y -= (float)sdl->mouse_y;
+   sdl->mouse_rel_x -= (float)VIDEO_POS_X(sdl->mouse_delta);
+   sdl->mouse_rel_y -= (float)VIDEO_POS_Y(sdl->mouse_delta);
 
    density = sdl3_window_pixel_density(sdl);
    sdl->mouse_abs_x *= density;

@@ -167,11 +167,13 @@ typedef struct
    float z;
 } sensor_t;
 
+/* A touch's position three ways, each x, y as VIDEO_POS_PACK: in the
+ * viewport, confined to it, and in the whole screen. */
 struct input_pointer
 {
-   int16_t x, y;
-   int16_t confined_x, confined_y;
-   int16_t full_x, full_y;
+   uint32_t pos;
+   uint32_t confined_pos;
+   uint32_t full_pos;
 };
 
 static int pad_id1 = -1;
@@ -203,8 +205,8 @@ typedef struct android_input
    android_stylus_state_t stylus;      /* What the pen is holding (android_stylus_map.h) */
    state_device_t pad_states[MAX_USERS];        /* int alignment */
    int mouse_x, mouse_y;
-   int16_t mouse_x_viewport_screen, mouse_y_viewport_screen;
-   int16_t mouse_x_viewport, mouse_y_viewport;
+   uint32_t mouse_viewport_screen_pos;   /* VIDEO_POS_PACK */
+   uint32_t mouse_viewport_pos;          /* VIDEO_POS_PACK */
    int mouse_x_delta, mouse_y_delta;
    int mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd;
    bool mouse_activated;
@@ -1318,10 +1320,15 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    if (!x) x = android->mouse_x + android->mouse_x_delta;
    if (!y) y = android->mouse_y + android->mouse_y_delta;
 
-   video_driver_translate_coord_viewport_confined_wrap(&vp,
-            (int) x, (int) y,
-            &android->mouse_x_viewport, &android->mouse_y_viewport,
-            &android->mouse_x_viewport_screen, &android->mouse_y_viewport_screen);
+   {
+      int16_t vx = 0, vy = 0, sx = 0, sy = 0;
+      if (video_driver_translate_coord_viewport_confined_wrap(&vp,
+               (int) x, (int) y, &vx, &vy, &sx, &sy))
+      {
+         android->mouse_viewport_pos        = VIDEO_POS_PACK(vx, vy);
+         android->mouse_viewport_screen_pos = VIDEO_POS_PACK(sx, sy);
+      }
+   }
 
    /* x and y are used for the screen mouse, so we want
     * to avoid values outside of the viewport resolution */
@@ -1334,28 +1341,34 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    android->mouse_y = y;
 }
 
+/* Touch @i at screen @x, @y: the confined variant for the pointer
+ * query, the plain one for the true offscreen value Android needs. */
+static void android_pointer_set(android_input_t *android, unsigned i,
+      struct video_viewport *vp, float x, float y)
+{
+   int16_t px = 0, py = 0, cx = 0, cy = 0, fx = 0, fy = 0;
+
+   /* a translation that fails (no viewport) leaves what was there */
+   if (video_driver_translate_coord_viewport_confined_wrap(vp, x, y,
+            &cx, &cy, &fx, &fy))
+   {
+      android->pointer[i].confined_pos = VIDEO_POS_PACK(cx, cy);
+      android->pointer[i].full_pos     = VIDEO_POS_PACK(fx, fy);
+   }
+   if (video_driver_translate_coord_viewport_wrap(vp, x, y,
+            &px, &py, &fx, &fy))
+   {
+      android->pointer[i].pos          = VIDEO_POS_PACK(px, py);
+      android->pointer[i].full_pos     = VIDEO_POS_PACK(fx, fy);
+   }
+}
+
 /* The pen's position, written to pointer 0. */
 static void android_stylus_set_position(android_input_t *android,
       float x, float y)
 {
    struct video_viewport vp = {0};
-
-   /* The same pair of calls the touchscreen path makes: the confined
-    * variant for the pointer query, the plain one for the true
-    * offscreen value. */
-   video_driver_translate_coord_viewport_confined_wrap(
-         &vp, x, y,
-         &android->pointer[0].confined_x,
-         &android->pointer[0].confined_y,
-         &android->pointer[0].full_x,
-         &android->pointer[0].full_y);
-
-   video_driver_translate_coord_viewport_wrap(
-         &vp, x, y,
-         &android->pointer[0].x,
-         &android->pointer[0].y,
-         &android->pointer[0].full_x,
-         &android->pointer[0].full_y);
+   android_pointer_set(android, 0, &vp, x, y);
 }
 
 /* One pen event: the decision is android_stylus_map.h's, and this
@@ -1651,24 +1664,7 @@ static INLINE void android_input_poll_event_type_motion(
          float x = AMotionEvent_getX(event, motion_ptr);
          float y = AMotionEvent_getY(event, motion_ptr);
 
-         /* On other platforms, pointer query uses the confined wrap function, *
-          * but some extra functionality is added to Android which needs the   *
-          * true offscreen value -0x8000, so both variants are called. */
-         video_driver_translate_coord_viewport_confined_wrap(
-               &vp,
-               x, y,
-               &android->pointer[motion_ptr].confined_x,
-               &android->pointer[motion_ptr].confined_y,
-               &android->pointer[motion_ptr].full_x,
-               &android->pointer[motion_ptr].full_y);
-
-         video_driver_translate_coord_viewport_wrap(
-               &vp,
-               x, y,
-               &android->pointer[motion_ptr].x,
-               &android->pointer[motion_ptr].y,
-               &android->pointer[motion_ptr].full_x,
-               &android->pointer[motion_ptr].full_y);
+         android_pointer_set(android, motion_ptr, &vp, x, y);
 
          android->pointer_count = MAX(
                android->pointer_count,
@@ -3104,7 +3100,7 @@ static int16_t android_input_state(
                   return android->mouse_m;
                case RETRO_DEVICE_ID_MOUSE_X:
                   if (device == RARCH_DEVICE_MOUSE_SCREEN)
-                     return android->mouse_x_viewport_screen;
+                     return VIDEO_POS_X(android->mouse_viewport_screen_pos);
 
                   val = android->mouse_x_delta;
                   android->mouse_x_delta = 0;
@@ -3112,7 +3108,7 @@ static int16_t android_input_state(
                   return val;
                case RETRO_DEVICE_ID_MOUSE_Y:
                   if (device == RARCH_DEVICE_MOUSE_SCREEN)
-                     return android->mouse_y_viewport_screen;
+                     return VIDEO_POS_Y(android->mouse_viewport_screen_pos);
 
                   val = android->mouse_y_delta;
                   android->mouse_y_delta = 0;
@@ -3138,15 +3134,15 @@ static int16_t android_input_state(
                /* Favor mouse for lightgun control. */
                case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
                   if (android->mouse_activated)
-                     return android->mouse_x_viewport_screen;
+                     return VIDEO_POS_X(android->mouse_viewport_screen_pos);
                   else if (idx < MAX_TOUCH)
-                     return android->pointer[idx].x;
+                     return VIDEO_POS_X(android->pointer[idx].pos);
                   return 0;
                case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
                   if (android->mouse_activated)
-                     return android->mouse_y_viewport_screen;
+                     return VIDEO_POS_Y(android->mouse_viewport_screen_pos);
                   else if (idx < MAX_TOUCH)
-                     return android->pointer[idx].y;
+                     return VIDEO_POS_Y(android->pointer[idx].pos);
                   return 0;
                /* Deprecated relative lightgun. */
                case RETRO_DEVICE_ID_LIGHTGUN_X:
@@ -3190,7 +3186,7 @@ static int16_t android_input_state(
                case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
                   if (idx >= MAX_TOUCH)
                      return 0;
-                  return input_driver_pointer_is_offscreen(android->pointer[idx].x, android->pointer[idx].y);
+                  return input_driver_pointer_is_offscreen(VIDEO_POS_X(android->pointer[idx].pos), VIDEO_POS_Y(android->pointer[idx].pos));
             }
          }
          break;
@@ -3206,33 +3202,33 @@ static int16_t android_input_state(
                if (idx >= MAX_TOUCH)
                   return 0;
                if (device == RARCH_DEVICE_POINTER_SCREEN)
-                  return android->pointer[idx].full_x;
-               return android->pointer[idx].confined_x;
+                  return VIDEO_POS_X(android->pointer[idx].full_pos);
+               return VIDEO_POS_X(android->pointer[idx].confined_pos);
             case RETRO_DEVICE_ID_POINTER_Y:
                if (idx >= MAX_TOUCH)
                   return 0;
                if (device == RARCH_DEVICE_POINTER_SCREEN)
-                  return android->pointer[idx].full_y;
-               return android->pointer[idx].confined_y;
+                  return VIDEO_POS_Y(android->pointer[idx].full_pos);
+               return VIDEO_POS_Y(android->pointer[idx].confined_pos);
             case RETRO_DEVICE_ID_POINTER_PRESSED:
 #ifdef DEBUG_ANDROID_INPUT
                RARCH_LOG("[PtrQuery] count=%d x0=%d y0=%d\n",
                          android->pointer_count,
-                         android->pointer_count > 0 ? android->pointer[0].confined_x : 0,
-                         android->pointer_count > 0 ? android->pointer[0].confined_y : 0);
+                         android->pointer_count > 0 ? VIDEO_POS_X(android->pointer[0].confined_pos) : 0,
+                         android->pointer_count > 0 ? VIDEO_POS_Y(android->pointer[0].confined_pos) : 0);
 #endif
                /* On mobile platforms, touches outside screen / core viewport are not reported. */
                if (device == RARCH_DEVICE_POINTER_SCREEN)
                   return (idx < android->pointer_count) &&
-                     (android->pointer[idx].full_x != -0x8000) &&
-                     (android->pointer[idx].full_y != -0x8000);
+                     (VIDEO_POS_X(android->pointer[idx].full_pos) != -0x8000) &&
+                     (VIDEO_POS_Y(android->pointer[idx].full_pos) != -0x8000);
                return (idx < android->pointer_count) &&
-                  (android->pointer[idx].x != -0x8000) &&
-                  (android->pointer[idx].y != -0x8000);
+                  (VIDEO_POS_X(android->pointer[idx].pos) != -0x8000) &&
+                  (VIDEO_POS_Y(android->pointer[idx].pos) != -0x8000);
             case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
                if (idx >= MAX_TOUCH)
                   return 0;
-               return input_driver_pointer_is_offscreen(android->pointer[idx].x, android->pointer[idx].y);
+               return input_driver_pointer_is_offscreen(VIDEO_POS_X(android->pointer[idx].pos), VIDEO_POS_Y(android->pointer[idx].pos));
             case RETRO_DEVICE_ID_POINTER_COUNT:
                return android->pointer_count;
             case RARCH_DEVICE_ID_POINTER_BACK:
