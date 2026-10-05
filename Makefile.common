@@ -770,7 +770,11 @@ endif
 
 ifeq ($(HAVE_JACK),1)
    OBJ += audio/drivers/jack.o
-   LIBS += $(JACK_LIBS)
+   # With dynamic loading the driver opens libjack itself when asked
+   # for, so the binary runs where JACK is not installed.
+   ifneq ($(HAVE_DYLIB),1)
+      LIBS += $(JACK_LIBS)
+   endif
    DEF_FLAGS += $(JACK_CFLAGS)
 endif
 
