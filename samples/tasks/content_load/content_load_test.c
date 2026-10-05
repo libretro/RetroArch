@@ -2082,6 +2082,51 @@ static void lane_close_content(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: dummy session describes the selected core                    */
+/* ------------------------------------------------------------------ */
+
+/* How a static build boots: the dummy session carries the selected
+ * core's system info, or the menu offers no Start Core. */
+static void lane_dummy_selected_core(void)
+{
+   struct load_frame log[LOAD_FRAMES];
+   content_ctx_info_t content_info = {0};
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   unsigned n;
+   unsigned had = failures;
+
+   open_menu();
+   path_set(RARCH_PATH_CORE, core_path);
+
+   CHECK(task_push_start_dummy_core(&content_info),
+         "the dummy session was not started");
+   n = run_load(log, LOAD_FRAMES);
+   CHECK(n < LOAD_FRAMES && !runloop_is_content_switching(),
+         "the dummy session did not come up within %u frames",
+         LOAD_FRAMES);
+   CHECK(runloop_st->current_core_type == CORE_TYPE_DUMMY,
+         "the dummy core is not running");
+   CHECK(runloop_st->system.load_no_content,
+         "the selected core's no-game support is missing (no Start Core)");
+   CHECK(string_is_equal(runloop_st->system.info.library_name,
+            "content_load_harness"),
+         "the session names \"%s\", not the selected core",
+         runloop_st->system.info.library_name);
+
+   /* Start Core, to leave a core running */
+   CHECK(task_push_start_current_core(&content_info),
+         "Start Core was not started");
+   n = run_load(log, LOAD_FRAMES);
+   CHECK(n < LOAD_FRAMES && core_is_up()
+         && runloop_st->current_core_type != CORE_TYPE_DUMMY,
+         "Start Core did not go through");
+   runloop_iterate();
+
+   if (failures == had)
+      fprintf(stderr, "[pass] dummy selected-core lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 
 int main(int argc, char *argv[])
 {
@@ -2202,6 +2247,7 @@ int main(int argc, char *argv[])
    lane_hw_request();
    lane_queue_survives();
    lane_close_content();
+   lane_dummy_selected_core();
    lane_close_waits_for_save();
 #ifdef HAVE_NETWORKING
    lane_host_setup_deferred();

@@ -6178,6 +6178,11 @@ bool runloop_event_init_core(
    sys_info->load_no_content = false;
    runloop_st->current_core.retro_set_environment(runloop_environment_cb);
 
+   /* The dummy stands in for the selected core, which the menu
+    * describes - on static builds, the linked core. */
+   if (type == CORE_TYPE_DUMMY)
+      command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+
    /* Load any input remap files
     * > Note that we always cache the current global
     *   input settings when initialising a core
