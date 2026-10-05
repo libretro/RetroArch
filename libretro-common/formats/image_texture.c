@@ -172,6 +172,9 @@ static bool image_texture_load_internal(
    }
 
    out_img->pix10 = image_transfer_is_10bit(img, type);
+   /* No decoder emits half floats: an answer, never an ask, and the
+    * caller's struct may hold anything there. */
+   out_img->fp16  = false;
 
    /* GPU-native fast path: if the loader can hand back BCn blocks for
     * direct upload, copy the source (so the mip pointers survive the
@@ -473,6 +476,7 @@ bool image_texture_load_ex(struct texture_image *out_img,
    out_img->height        = 0;
    out_img->compressed    = NULL;
    out_img->pix10         = false;
+   out_img->fp16          = false;
 
    return false;
 }

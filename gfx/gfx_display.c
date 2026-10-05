@@ -1753,6 +1753,7 @@ bool gfx_display_reset_textures_list_buffer(
    ti.pixels        = NULL;
    ti.supports_rgba = gfx_surface_wants_rgba();
    ti.pix10         = false;
+   ti.fp16          = false;
 
    if (image_texture_load_buffer(&ti, image_type, buffer, buffer_len))
    {
@@ -1787,6 +1788,7 @@ bool gfx_display_reset_textures_list(
    ti.pixels                     = NULL;
    ti.supports_rgba              = gfx_surface_wants_rgba();
    ti.pix10                      = false;
+   ti.fp16                       = false;
 
    if (!texture_path || !*texture_path)
       return false;
@@ -1823,6 +1825,7 @@ bool gfx_display_reset_icon_texture(
    ti.pixels                     = NULL;
    ti.supports_rgba              = gfx_surface_wants_rgba();
    ti.pix10                      = false;
+   ti.fp16                       = false;
 
    if (!texture_path || !*texture_path)
       return false;
@@ -1928,6 +1931,7 @@ void gfx_display_init_white_texture(void)
    ti.pixels        = (uint32_t*)&white_data;
    ti.compressed    = NULL; /* raw pixels, not a loaded compressed texture */
    ti.pix10         = false; /* 8-bit white; must not be read as 10-bit */
+   ti.fp16          = false;
    /* Four 0xff bytes read either way, but the drivers read this field
     * and it is the caller's to set: nothing here fills the struct
     * beforehand, so an unset one is whatever the stack held. */

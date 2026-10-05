@@ -938,6 +938,7 @@ bool task_image_load_handler(retro_task_t *task)
          img->pixels        = image->ti.pixels;
          img->supports_rgba = image->ti.supports_rgba;
          img->pix10         = image->ti.pix10;
+         img->fp16          = image->ti.fp16;
 
          /* Transfer pixel ownership to the output image so
           * cleanup does not double-free */
@@ -1102,6 +1103,7 @@ bool task_push_image_load(const char *fullpath,
    image->ti.pixels                  = NULL;
    image->ti.compressed              = NULL;
    image->ti.pix10                   = false;
+   image->ti.fp16                    = false;
    /* NOTE: Come back to this if this causes problems */
    image->ti.supports_rgba           = supports_rgba;
 
