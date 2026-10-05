@@ -424,22 +424,14 @@ typedef struct
    int16_t pointer_ma_rel_x;
    int16_t pointer_ma_rel_y;
    /* Pointer position mapped onto the primary screen (-0x7fff - 0x7fff). */
-   int16_t pointer_scr_pos_x;
-   int16_t pointer_scr_pos_y;
+   uint32_t pointer_scr_pos;   /* VIDEO_POS_PACK */
    /* Pointer position within the window, -0x7fff - 0x7fff -> inside. */
-   int16_t pointer_vp_pos_x;
-   int16_t pointer_vp_pos_y;
+   uint32_t pointer_vp_pos;    /* VIDEO_POS_PACK */
 
    /* Simulated mouse */
    /* Mouse position in the original pixel coordinates. */
    int16_t mouse_pos_x;
    int16_t mouse_pos_y;
-   /* Mouse position mapped onto the primary screen (-0x7fff - 0x7fff). */
-   int16_t mouse_scr_pos_x;
-   int16_t mouse_scr_pos_y;
-   /* Mouse position within the window, -0x7fff - 0x7fff -> inside. */
-   int16_t mouse_vp_pos_x;
-   int16_t mouse_vp_pos_y;
    /* Mouse position delta in screen pixels. */
    int16_t mouse_rel_x;
    int16_t mouse_rel_y;
@@ -1650,18 +1642,12 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    touch->pointer_ma_pos_y  = 0;
    touch->pointer_ma_rel_x  = 0;
    touch->pointer_ma_rel_y  = 0;
-   touch->pointer_scr_pos_x = 0;
-   touch->pointer_scr_pos_y = 0;
-   touch->pointer_vp_pos_x  = 0;
-   touch->pointer_vp_pos_y  = 0;
+   touch->pointer_scr_pos   = 0;
+   touch->pointer_vp_pos    = 0;
 
    /* Initialize mouse simulation */
    touch->mouse_enabled = UDEV_INPUT_TOUCH_MOUSE_EN;
    touch->mouse_freeze_cursor = false;
-   touch->mouse_scr_pos_x = 0;
-   touch->mouse_scr_pos_y = 0;
-   touch->mouse_vp_pos_x = 0;
-   touch->mouse_vp_pos_y = 0;
    touch->mouse_rel_x = 0;
    touch->mouse_rel_y = 0;
    touch->mouse_wheel_x = 0;
@@ -1876,9 +1862,9 @@ static void udev_sync_touch(udev_input_device_t *dev)
  *   The resulting delta is added to this output!
  * @param pointer_ma_rel_y Output y-coordinate change on the target panel.
  *   The resulting delta is added to this output!
- * @param pointer_scr_pos_x Output x-coordinate on the target screen.
+ * @param pointer_scr_pos Output position on the target screen, packed.
  *   Uses the scaled coordinates -0x7fff - 0x7fff.
- * @param pointer_vp_pos_x Output x-coordinate on the target window.
+ * @param pointer_vp_pos Output position on the target window, packed.
  *   Uses the scaled coordinates -0x7fff - 0x7fff and -0x8000 when OOB.
  * @return Returns true on success.
  */
@@ -1888,9 +1874,9 @@ static bool udev_translate_touch_pos(
         int32_t pointer_pos_x, int32_t pointer_pos_y,
         int32_t *pointer_ma_pos_x, int32_t *pointer_ma_pos_y,
         int16_t *pointer_ma_rel_x, int16_t *pointer_ma_rel_y,
-        int16_t *pointer_scr_pos_x, int16_t *pointer_scr_pos_y,
-        int16_t *pointer_vp_pos_x, int16_t *pointer_vp_pos_y)
+        uint32_t *pointer_scr_pos, uint32_t *pointer_vp_pos)
 {
+   int16_t vp_x = 0, vp_y = 0, scr_x = 0, scr_y = 0;
    /* Touch panel -> Main panel */
    /*
     * TODO - This keeps the precision, but might result in +-1 pixel difference
@@ -1908,16 +1894,14 @@ static bool udev_translate_touch_pos(
    *pointer_ma_pos_x  = ma_pos_x;
    *pointer_ma_pos_y  = ma_pos_y;
 
-   /* Main panel -> Screen and Viewport */
-   return video_driver_translate_coord_viewport_wrap(
-      target_vp,
-      *pointer_ma_pos_x,
-      *pointer_ma_pos_y,
-      pointer_vp_pos_x,
-      pointer_vp_pos_y,
-      pointer_scr_pos_x,
-      pointer_scr_pos_y
-   );
+   /* Main panel -> Screen and Viewport; on failure both are left */
+   if (!video_driver_translate_coord_viewport_wrap(target_vp,
+            *pointer_ma_pos_x, *pointer_ma_pos_y,
+            &vp_x, &vp_y, &scr_x, &scr_y))
+      return false;
+   *pointer_vp_pos  = VIDEO_POS_PACK(vp_x, vp_y);
+   *pointer_scr_pos = VIDEO_POS_PACK(scr_x, scr_y);
+   return true;
 }
 
 /**
@@ -2371,8 +2355,7 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                   touch->pointer_pos_x, touch->pointer_pos_y,
                   &touch->pointer_ma_pos_x, &touch->pointer_ma_pos_y,
                   &touch->pointer_ma_rel_x, &touch->pointer_ma_rel_y,
-                  &touch->pointer_scr_pos_x, &touch->pointer_scr_pos_y,
-                  &touch->pointer_vp_pos_x, &touch->pointer_vp_pos_y
+                  &touch->pointer_scr_pos, &touch->pointer_vp_pos
                );
 
                /* Reset deltas after, since first touchdown has no delta. */
@@ -2539,8 +2522,7 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                   touch->pointer_pos_x, touch->pointer_pos_y,
                   &touch->pointer_ma_pos_x, &touch->pointer_ma_pos_y,
                   &touch->pointer_ma_rel_x, &touch->pointer_ma_rel_y,
-                  &touch->pointer_scr_pos_x, &touch->pointer_scr_pos_y,
-                  &touch->pointer_vp_pos_x, &touch->pointer_vp_pos_y
+                  &touch->pointer_scr_pos, &touch->pointer_vp_pos
                );
             }
 
@@ -2579,13 +2561,6 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                   touch->mouse_pos_x = (int32_t) touch->touchpad_pos_x;
                   touch->mouse_pos_y = (int32_t) touch->touchpad_pos_y;
 
-                  /* Translate the panel coordinates into normalized coordinates. */
-                  video_driver_translate_coord_viewport_wrap(
-                     &vp, touch->mouse_pos_x, touch->mouse_pos_y,
-                     &touch->mouse_vp_pos_x, &touch->mouse_vp_pos_y,
-                     &touch->mouse_scr_pos_x, &touch->mouse_scr_pos_y
-                  );
-
                   /* Calculate cursor delta in screen space. */
                   touch->mouse_rel_x += touch->mouse_pos_x - last_mouse_pos_x;
                   touch->mouse_rel_y += touch->mouse_pos_y - last_mouse_pos_y;
@@ -2600,10 +2575,6 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                   touch->mouse_rel_y    += touch->pointer_ma_pos_y - touch->mouse_pos_y;
                   touch->mouse_pos_x     = touch->pointer_ma_pos_x;
                   touch->mouse_pos_y     = touch->pointer_ma_pos_y;
-                  touch->mouse_scr_pos_x = touch->pointer_scr_pos_x;
-                  touch->mouse_scr_pos_y = touch->pointer_scr_pos_y;
-                  touch->mouse_vp_pos_x  = touch->pointer_vp_pos_x;
-                  touch->mouse_vp_pos_y  = touch->pointer_vp_pos_y;
                }
 
                /* Trackball mode */
@@ -2854,7 +2825,6 @@ static void udev_input_touch_state_trackball(
         udev_input_touch_t *touch,
         const udev_touch_ts_t *now)
 {
-   video_viewport_t vp;
    float delta_x;
    float delta_y;
    float delta_t;
@@ -2880,15 +2850,6 @@ static void udev_input_touch_state_trackball(
          /* Update the real mouse position */
          touch->mouse_pos_x = (int16_t) touch->trackball_pos_x;
          touch->mouse_pos_y = (int16_t) touch->trackball_pos_y;
-
-         /* Get current viewport information */
-         video_driver_get_viewport_info(&vp);
-         /* Translate the raw coordinates into normalized coordinates. */
-         video_driver_translate_coord_viewport_wrap(
-            &vp, touch->mouse_pos_x, touch->mouse_pos_y,
-            &touch->mouse_vp_pos_x, &touch->mouse_vp_pos_y,
-            &touch->mouse_scr_pos_x, &touch->mouse_scr_pos_y
-         );
 
          /* Add the movement to mouse delta */
          touch->mouse_rel_x += delta_x;
@@ -3131,16 +3092,12 @@ static int16_t udev_input_touch_state(
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
-               if (screen)
-                  ret = touch->pointer_scr_pos_x;
-               else
-                  ret = touch->pointer_vp_pos_x;
+               ret = VIDEO_POS_X(screen
+                     ? touch->pointer_scr_pos : touch->pointer_vp_pos);
                break;
             case RETRO_DEVICE_ID_POINTER_Y:
-               if (screen)
-                  ret = touch->pointer_scr_pos_y;
-               else
-                  ret = touch->pointer_vp_pos_y;
+               ret = VIDEO_POS_Y(screen
+                     ? touch->pointer_scr_pos : touch->pointer_vp_pos);
                break;
             case RETRO_DEVICE_ID_POINTER_PRESSED:
                ret = touch->pointer_btn_pp;
