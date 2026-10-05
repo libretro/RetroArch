@@ -258,9 +258,6 @@ static bool ctr_bottom_screen_enabled  = true;
  * FORWARD DECLARATIONS
  */
 
-/* TODO/FIXME - global referenced outside */
-extern uint64_t lifecycle_state;
-
 #ifdef HAVE_OVERLAY
 static void ctr_render_overlay(ctr_video_t *ctr);
 #endif
@@ -1070,7 +1067,7 @@ static void ctr_bottom_menu_control(void* data,
       ctr->init_bottom_menu = true;
    }
 
-   BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
+   input_driver_set_platform_menu_button(false);
 
    if (!(flags & RUNLOOP_FLAG_CORE_RUNNING))
    {
@@ -1096,13 +1093,13 @@ static void ctr_bottom_menu_control(void* data,
    if (state_tmp & KEY_TOUCH)
    {
 #ifdef CONSOLE_LOG
-      BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+      input_driver_set_platform_menu_button(true);
       return;
 #endif
 
       if (!lcd_bottom)
       {
-         BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+         input_driver_set_platform_menu_button(true);
          return;
       }
 
@@ -1118,7 +1115,7 @@ static void ctr_bottom_menu_control(void* data,
 
       if (ctr->bottom_menu == CTR_BOTTOM_MENU_NOT_AVAILABLE)
       {
-         BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+         input_driver_set_platform_menu_button(true);
          ctr->refresh_bottom_menu = true;
          return;
       }
@@ -1128,7 +1125,7 @@ static void ctr_bottom_menu_control(void* data,
          case CTR_BOTTOM_MENU_NOT_AVAILABLE:
             return;
          case CTR_BOTTOM_MENU_DEFAULT:
-            BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+            input_driver_set_platform_menu_button(true);
             break;
          case CTR_BOTTOM_MENU_SELECT:
             if (     (state_tmp_touch.px > 8)
@@ -1136,7 +1133,7 @@ static void ctr_bottom_menu_control(void* data,
                   && (state_tmp_touch.py > 9)
                   && (state_tmp_touch.py < 86))
             {
-               BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+               input_driver_set_platform_menu_button(true);
             }
             else if ((state_tmp_touch.px > 8)
                   && (state_tmp_touch.px < 164)
@@ -1198,7 +1195,7 @@ static void ctr_bottom_menu_control(void* data,
                         true);
                }
 
-               BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+               input_driver_set_platform_menu_button(true);
             }
             else if (
                      (state_tmp_touch.px > 176)
@@ -1209,7 +1206,7 @@ static void ctr_bottom_menu_control(void* data,
             {
                if (!command_event(CMD_EVENT_LOAD_STATE_FROM_RAM, NULL))
                   command_event(CMD_EVENT_LOAD_STATE, NULL);
-               BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+               input_driver_set_platform_menu_button(true);
             }
             break;
       }

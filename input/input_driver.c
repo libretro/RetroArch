@@ -224,7 +224,6 @@ retro_keybind_set input_config_binds[MAX_USERS];
 retro_keybind_set input_autoconf_binds[MAX_USERS];
 input_bind_label_set input_config_bind_labels[MAX_USERS];
 input_bind_label_set input_autoconf_bind_labels[MAX_USERS];
-uint64_t lifecycle_state                                        = 0;
 
 static void *input_null_init(const char *joypad_driver) { return (void*)-1; }
 static void input_null_poll(void *data) { }
@@ -9217,7 +9216,7 @@ static void input_keys_pressed(
                      port, RETRO_DEVICE_JOYPAD, 0, i);
 
          if (     bit_pressed
-               || BIT64_GET(lifecycle_state, i)
+               || (i == RARCH_MENU_TOGGLE && input_st->platform_menu_button)
                || input_keys_pressed_other_sources(input_st, i, p_new_state))
          {
             if (!(input_st->flags & INP_FLAG_MENU_PRESS_PENDING))
@@ -9409,7 +9408,7 @@ static void input_keys_pressed(
 
       if (     bit_pressed
             || other_pressed
-            || BIT64_GET(lifecycle_state, i))
+            || (i == RARCH_MENU_TOGGLE && input_st->platform_menu_button))
       {
          any_pressed = true;
          if (input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
@@ -9524,6 +9523,17 @@ static void input_key_lane_take(void);
 /* in first_press_pending: no press, every unmapped user gets its own port */
 #define INPUT_FIRST_PRESS_GIVE_UP (1U << 31)
 static bool input_first_press_blocked(void);
+
+/* The platform's own menu button is held, or is not: the Home button
+ * of a Wii Remote, the console's reset button on a GameCube, a tap on
+ * a 3DS's bottom screen, the menu key of a handheld. It is not one of
+ * a controller's buttons and has no bind; held, it counts as the Menu
+ * Toggle hotkey held. Called by the driver that reads the button, on
+ * the frontend's thread. */
+void input_driver_set_platform_menu_button(bool held)
+{
+   input_driver_st.platform_menu_button = held;
+}
 
 /* The RetroPad controls a user's controller and keys hold right now, as
  * they are bound: before remaps, turbo and the rest. One bit each, by

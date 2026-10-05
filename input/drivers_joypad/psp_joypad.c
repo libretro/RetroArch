@@ -67,9 +67,6 @@ static SceCtrlActuator actuators[DEFAULT_MAX_PADS] = {0};
 static uint64_t pad_state[DEFAULT_MAX_PADS];
 static int16_t analog_state[DEFAULT_MAX_PADS][3][2];
 
-/* TODO/FIXME - global referenced outside */
-extern uint64_t lifecycle_state;
-
 static const char *psp_joypad_name(unsigned pad)
 {
 #ifdef VITA
@@ -279,8 +276,6 @@ static void psp_joypad_poll(void)
 #endif
 
    CtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
-
-   BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
 
    for (player = 0; player < players_count; player++)
    {

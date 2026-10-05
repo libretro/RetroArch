@@ -842,6 +842,9 @@ typedef struct
    /* The snapshot shaders read holds noughts and no shader reads
     * sensors: the poll has nothing to publish. The poll's own. */
    bool sensor_snap_quiet;
+   /* the platform's own menu button is held
+    * (input_driver_set_platform_menu_button()) */
+   bool platform_menu_button;
    unsigned core_accel_rate; /* >0 means core wants accel at this rate */
    unsigned core_gyro_rate;  /* >0 means core wants gyro at this rate */
    /* First-press port assignment, see input_first_press_apply():
@@ -1010,6 +1013,12 @@ void input_driver_init_wayland(const char *joypad_name, void *window_data,
 void input_driver_init_sdl1(const char *joypad_name,
       input_driver_t **input, void **input_data);
 #endif
+/* The platform's own menu button - one that is not a controller's and
+ * has no bind - is held, or is not. Held, it counts as the Menu Toggle
+ * hotkey held. For the driver that reads the button, on the frontend's
+ * thread. */
+void input_driver_set_platform_menu_button(bool held);
+
 /* The RetroPad controls a user's controller and keys hold right now, as
  * bound and before remaps: a bit each for the sixteen buttons, then
  * for the sticks' eight directions (RARCH_ANALOG_LEFT_X_PLUS on).

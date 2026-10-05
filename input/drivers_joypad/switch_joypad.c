@@ -19,9 +19,6 @@
 /* TODO/FIXME - weird header include */
 #include "string.h"
 
-/* TODO/FIXME - global referenced outside */
-extern uint64_t lifecycle_state;
-
 /* TODO/FIXME - static globals */
 static uint16_t button_state[DEFAULT_MAX_PADS];
 static int16_t analog_state[DEFAULT_MAX_PADS][2][2];

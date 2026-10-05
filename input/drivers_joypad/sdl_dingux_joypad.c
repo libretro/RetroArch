@@ -167,11 +167,6 @@ typedef struct
 #endif
 } dingux_joypad_t;
 
-#if defined(SDL_DINGUX_HAS_MENU_TOGGLE)
-/* TODO/FIXME - global referenced outside */
-extern uint64_t lifecycle_state;
-#endif
-
 static dingux_joypad_t dingux_joypad;
 
 #if defined(HAVE_LIBSHAKE)
@@ -433,7 +428,7 @@ static void sdl_dingux_joypad_destroy(void)
 #endif
 
 #if defined(SDL_DINGUX_HAS_MENU_TOGGLE)
-   BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
+   input_driver_set_platform_menu_button(false);
 #endif
 }
 
@@ -444,7 +439,7 @@ static void *sdl_dingux_joypad_init(void *data)
 
    memset(joypad, 0, sizeof(dingux_joypad_t));
 #if defined(SDL_DINGUX_HAS_MENU_TOGGLE)
-   BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
+   input_driver_set_platform_menu_button(false);
 #endif
 
 #if defined(SDL_DINGUX_HAS_ANALOG)
@@ -610,7 +605,7 @@ static void sdl_dingux_joypad_poll(void)
     * to wait until the *next* frame to release it */
    if (joypad->menu_toggle)
    {
-      BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
+      input_driver_set_platform_menu_button(false);
       joypad->menu_toggle = false;
    }
 #endif
@@ -673,7 +668,7 @@ static void sdl_dingux_joypad_poll(void)
                   break;
 #if defined(SDL_DINGUX_HAS_MENU_TOGGLE)
                case SDL_DINGUX_SDLK_MENU:
-                  BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+                  input_driver_set_platform_menu_button(true);
                   joypad->menu_toggle = true;
                   break;
 #endif

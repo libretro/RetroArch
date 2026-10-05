@@ -92,9 +92,6 @@ enum pad_kind
 
 #define BIT(n) (UINT64_C(1) << (n))
 
-/* TODO/FIXME - global referenced outside */
-extern uint64_t lifecycle_state;
-
 static uint64_t          pad_state[DEFAULT_MAX_PADS];
 static int16_t           analog_state[DEFAULT_MAX_PADS][2][2];
 static uint8_t           pad_kind[DEFAULT_MAX_PADS];
@@ -437,9 +434,9 @@ static void gekko_joypad_poll(void)
 #ifdef HW_RVL
    menu_keys |= BIT(GX_WIIMOTE_HOME) | BIT(GX_CLASSIC_HOME);
 #endif
-   BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
+   input_driver_set_platform_menu_button(false);
    if (pad_state[0] & menu_keys)
-      BIT64_SET(lifecycle_state, RARCH_MENU_TOGGLE);
+      input_driver_set_platform_menu_button(true);
 }
 
 static bool gekko_joypad_set_rumble(unsigned pad,
