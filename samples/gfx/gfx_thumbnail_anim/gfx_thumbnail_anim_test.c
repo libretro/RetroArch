@@ -118,6 +118,20 @@ static void reset_thumb(gfx_thumbnail_t *t)
    t->texture = 1;
 }
 
+/* Lane 13: a release that frees its surface, as gfx_display's texture
+ * loads do; after it the completion may not touch the surface. */
+static int gt_free_next, gt_freed_in_release;
+static void gt_release_frees(void *user, gfx_surface_t *s, unsigned slot)
+{
+   (void)user;
+   (void)slot;
+   if (!gt_free_next)
+      return;
+   gt_free_next = 0;
+   gt_freed_in_release++;
+   gfx_surface_free(s);
+}
+
 int main(void)
 {
    gfx_thumbnail_t th;
@@ -694,6 +708,56 @@ int main(void)
    gt_lend_mode = 0;
    if (gt_surface_outcome_test())
       bad = 1;
+
+   /* 13. threaded video, a release that frees its surface - a load's
+    *     completion, then a dropped update's, whose release reads
+    *     dropped: the completion's last touch is the release, so
+    *     AddressSanitizer sees nothing write the surface after it. */
+   {
+      unsigned w, n13 = 64u * 48u;
+      int ok13 = 1, round;
+      gt_async_mode = 1;
+      gt_can_update = 1;
+      gt_lend_mode  = 0;
+      gt_freed_in_release = 0;
+      for (round = 0; round < 2; round++)
+      {
+         gfx_surface_t *s13 = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 1,
+               GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR,
+               gt_release_frees, NULL);
+         if (!s13)
+         {
+            ok13 = 0;
+            break;
+         }
+         for (w = 0; w < n13; w++)
+            s13->slots[0][w] = 0xff000000u | (w * 2654435761u >> 8);
+         if (round == 1)
+         {
+            /* the load first, kept; then an update that drops */
+            gfx_surface_submit(s13, 0, false);
+            gt_async_flush();
+            for (w = 0; w < n13; w++)
+               s13->slots[0][w] ^= 0x00ffffffu;
+            gt_drop_updates = 1;
+         }
+         gt_free_next = 1;
+         if (gfx_surface_submit(s13, 0, false) != GFX_SURFACE_SUBMIT_QUEUED)
+            ok13 = 0;
+         gt_async_flush();             /* done -> release frees */
+         gt_drop_updates = 0;
+      }
+      if (ok13 && gt_freed_in_release == 2)
+         printf("[ok]   threaded completions whose release freed the "
+                "surface: a load's and a dropped update's\n");
+      else
+      {
+         printf("[FAIL] release-frees lane: %d freed in release (want 2)\n",
+               gt_freed_in_release);
+         bad = 1;
+      }
+      gt_async_mode = 0;
+   }
 
    remove(path);
    printf("%s\n", bad ? "FAILED" : "PASS");
