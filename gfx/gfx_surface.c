@@ -274,11 +274,22 @@ static enum gfx_surface_submit_result gfx_surface_upload_sync(
       s->can_update = 0;
    }
 
+   /* A producer still writing lent memory of the texture about to be
+    * replaced keeps that texture alive (see gfx_surface_slot_begin); a
+    * second replacement before it comes back is refused rather than
+    * tracked, and this frame goes. */
+   if (s->lent && s->writing && s->retired_handle)
+      return GFX_SURFACE_SUBMIT_FAILED;
    if (!video_driver_texture_load(&s->img, s->filter, &new_handle)
          || !new_handle)
       return GFX_SURFACE_SUBMIT_FAILED;
    /* The new texture has read the frame, wherever it lay; the memory
-    * lent from the old one goes with it. */
+    * lent from the old one goes with it - once nothing writes it. */
+   if (s->lent && s->writing && s->handle)
+   {
+      s->retired_handle = s->handle;
+      s->handle         = 0;
+   }
    gfx_surface_unlend(s);
    if (s->handle)
       video_driver_texture_unload(&s->handle);
@@ -507,7 +518,27 @@ void gfx_surface_free(gfx_surface_t *s)
    gfx_surface_unlend(s);
    if (s->handle)
       video_driver_texture_unload(&s->handle);
+   /* Its producers are gone by now: a retired texture goes too */
+   if (s->retired_handle)
+      video_driver_texture_unload(&s->retired_handle);
    free(s);
+}
+
+uint32_t *gfx_surface_slot_begin(gfx_surface_t *s, unsigned slot)
+{
+   if (!s || slot >= s->num_slots)
+      return NULL;
+   s->writing |= (uint8_t)(1u << slot);
+   return s->slots[slot];
+}
+
+void gfx_surface_slot_end(gfx_surface_t *s, unsigned slot)
+{
+   if (!s || slot >= s->num_slots)
+      return;
+   s->writing &= (uint8_t)~(1u << slot);
+   if (!s->writing && s->retired_handle)
+      video_driver_texture_unload(&s->retired_handle);
 }
 
 bool gfx_surface_slot_writable(gfx_surface_t *s, unsigned slot)

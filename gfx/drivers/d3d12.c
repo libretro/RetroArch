@@ -8634,7 +8634,7 @@ static bool d3d12_gfx_update_texture_internal(d3d12_video_t *d3d12,
       if (     !texture->dirty && texture->upload_fence && d3d12
             && d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence)
                < texture->upload_fence)
-         return true;
+         { GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE_DROPPED); return true; }
       d3d12_update_texture(image->width, image->height, 0,
             texture->desc.Format, image->pixels, texture);
       return true;
@@ -8649,7 +8649,7 @@ static bool d3d12_gfx_update_texture_internal(d3d12_video_t *d3d12,
             && (const uint8_t*)image->pixels == texture->lend_mapped[k])
       {
          if (done < texture->lend_fence[k])
-            return true; /* written early: keep the last frame */
+            { GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE_DROPPED); return true; } /* written early: keep the last frame */
          texture->pending = (uint8_t)k;
          texture->dirty   = true;
          return true;
@@ -8658,12 +8658,12 @@ static bool d3d12_gfx_update_texture_internal(d3d12_video_t *d3d12,
     * first use. */
    k = (texture->lent & 1u) ? 1 : 0;
    if (texture->lent & (1u << k))
-      return true; /* every buffer lent: keep the last frame */
+      { GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE_DROPPED); return true; } /* every buffer lent: keep the last frame */
    if (k == 1 && !d3d12_texture_upload_buffer2(d3d12, texture))
-      return true;
+      { GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE_DROPPED); return true; }
    if (     done < texture->lend_fence[k]
          && !(texture->dirty && texture->pending == k))
-      return true;
+      { GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE_DROPPED); return true; }
    d3d12_update_texture_into(image->width, image->height, 0,
          texture->desc.Format, image->pixels, texture,
          (ID3D12Resource*)(k ? texture->upload_buffer2

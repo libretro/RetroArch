@@ -47,6 +47,7 @@
 #include "../../state_manager.h"
 #endif
 
+#include "../gfx_instrument.h"
 #include "../font_driver.h"
 #include "../common/d3d_common.h"
 #include "../common/win32_common.h"
@@ -3934,7 +3935,7 @@ static bool d3d10_gfx_update_texture_internal(d3d10_video_t *d3d10,
    hr = texture->staging->lpVtbl->Map(texture->staging, 0,
          D3D10_MAP_WRITE, D3D10_MAP_FLAG_DO_NOT_WAIT, &mapped);
    if (hr == DXGI_ERROR_WAS_STILL_DRAWING)
-      return true;
+      { GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE_DROPPED); return true; }
    if (FAILED(hr))
       return false;
 

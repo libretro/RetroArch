@@ -123,6 +123,13 @@ struct gfx_surface
    uint8_t fmt;
    uint8_t lent;       /* driver slots borrowed, a bit each */
    uint8_t lent_cur;   /* one slot: the driver slot slots[0] is */
+   /* Slots a producer is writing on another thread, a bit each
+    * (gfx_surface_slot_begin / _end). A texture replaced while one is
+    * may still own the memory that producer writes - lent upload
+    * memory - so it is kept as retired_handle, not unloaded, until the
+    * last such slot comes back. */
+   uint8_t writing;
+   uintptr_t retired_handle;
    uint8_t can_update; /* driver updates in place */
 };
 
@@ -301,6 +308,16 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
  * read slots[@slot] afresh after asking, each time they hand it to a
  * writer: a successful submit of a slot may lend it. Main thread. */
 bool gfx_surface_slot_writable(gfx_surface_t *s, unsigned slot);
+
+/* A producer that writes slot @slot off the main thread takes it with
+ * _begin, which returns the memory to write - slots[@slot] as it is
+ * now - and gives it back with _end once nothing writes it any longer
+ * (its job settled, or released). Between the two the memory stays
+ * valid even if the texture behind it is replaced: a replacement then
+ * keeps the old texture, and the last _end unloads it. Main thread;
+ * _end of a slot not taken is a no-op. */
+uint32_t *gfx_surface_slot_begin(gfx_surface_t *s, unsigned slot);
+void gfx_surface_slot_end(gfx_surface_t *s, unsigned slot);
 
 /* Unload the texture and free the surface. A submit in flight keeps
  * the slots alive until it completes, without a release() call; its

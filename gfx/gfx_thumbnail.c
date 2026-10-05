@@ -610,6 +610,23 @@ static bool gfx_thumbnail_anim_job_step(gfx_thumb_anim_job_t *job)
    return true;
 }
 
+/* Whether a job has let go of its frame: neither queued, decoding nor
+ * still holding its place as cancelled. Both worker variants below. */
+static bool gfx_thumbnail_anim_job_settled(const gfx_thumb_anim_job_t *job)
+{
+   switch (retro_atomic_load_acquire_int(
+            (retro_atomic_int_t*)&job->status))
+   {
+      case GFX_THUMB_JOB_QUEUED:
+      case GFX_THUMB_JOB_RUNNING:
+      case GFX_THUMB_JOB_CANCELLED:
+         return false;
+      default:
+         break;
+   }
+   return true;
+}
+
 #ifdef RETRO_ATOMIC_HAS_PTR
 static void gfx_thumbnail_anim_worker(void *unused)
 {
@@ -800,20 +817,6 @@ static void gfx_thumbnail_anim_job_enqueue(gfx_thumb_anim_job_t *job)
    retro_eventcount_notify(&gfx_thumb_worker_wake);
 }
 
-static bool gfx_thumbnail_anim_job_settled(const gfx_thumb_anim_job_t *job)
-{
-   switch (retro_atomic_load_acquire_int(
-            (retro_atomic_int_t*)&job->status))
-   {
-      case GFX_THUMB_JOB_QUEUED:
-      case GFX_THUMB_JOB_RUNNING:
-      case GFX_THUMB_JOB_CANCELLED:
-         return false;
-      default:
-         break;
-   }
-   return true;
-}
 
 /* Detach a job from the worker: cancel it if still queued, wait out
  * the decode if running. Returns false when the worker still holds its
@@ -1046,7 +1049,10 @@ static bool gfx_thumbnail_anim_job_start(gfx_thumbnail_t *thumbnail,
       ? 1 : 0;
    if (!s || !gfx_surface_slot_writable(s, slot))
       return false;
-   job->frame = s->slots[slot];
+   /* Taken until the job settles: the memory stays valid until then
+    * even if the texture behind it is replaced (gfx_surface_slot_end
+    * in the poll and on close). */
+   job->frame = gfx_surface_slot_begin(s, slot);
    gfx_thumbnail_anim_job_enqueue(job);
    return true;
 }
@@ -1062,6 +1068,13 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
    gfx_thumbnail_anim_jobs_free(
          (gfx_thumb_anim_job_t*)thumbnail->anim_job,
          (gfx_thumb_anim_job_t*)thumbnail->anim_job2);
+   /* Released: a running decode was waited out, a queued one will not
+    * run, so neither slot is written any more */
+   if (thumbnail->anim_surface)
+   {
+      gfx_surface_slot_end((gfx_surface_t*)thumbnail->anim_surface, 0);
+      gfx_surface_slot_end((gfx_surface_t*)thumbnail->anim_surface, 1);
+   }
    thumbnail->anim_job  = NULL;
    thumbnail->anim_job2 = NULL;
    thumbnail->anim_job_upload = 0;
@@ -1754,6 +1767,18 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
        * READY is done - the pair needs no joint snapshot. */
       su = retro_atomic_load_acquire_int(&ju->status);
       so = retro_atomic_load_acquire_int(&jo->status);
+      /* A job no longer queued or decoding writes its slot no more:
+       * the surface may let go of what it kept for it. */
+      if (thumbnail->anim_surface)
+      {
+         gfx_surface_t *ws = (gfx_surface_t*)thumbnail->anim_surface;
+         if (gfx_thumbnail_anim_job_settled(ju))
+            gfx_surface_slot_end(ws,
+                  ju == (gfx_thumb_anim_job_t*)thumbnail->anim_job2 ? 1 : 0);
+         if (gfx_thumbnail_anim_job_settled(jo))
+            gfx_surface_slot_end(ws,
+                  jo == (gfx_thumb_anim_job_t*)thumbnail->anim_job2 ? 1 : 0);
+      }
 
       /* Decode-ahead: the due-side job holds its frame, its sibling is
        * consumed - start the sibling on the following frame now, ahead

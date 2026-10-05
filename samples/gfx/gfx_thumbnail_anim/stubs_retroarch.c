@@ -18,6 +18,18 @@
 extern int      gt_uploads;
 extern unsigned gt_last_crc;
 
+/* Lane 8: textures own their lent memory. Each load is a new texture,
+ * a lend buffer belongs to the texture it was lent from, and unloading
+ * a texture frees exactly its own buffers - so a producer writing lent
+ * memory of a texture already unloaded writes freed memory, which
+ * AddressSanitizer reports. gt_update_fail makes that many in-place
+ * updates refuse, forcing a replacement. */
+int gt_lend_owned;
+int gt_update_fail;
+int gt_lend_freed;
+static uintptr_t gt_tex_next = 2;
+static void gt_lend_unload(uintptr_t id);
+
 /* --- the oracle --- */
 bool video_driver_texture_load(void *data, unsigned filter, uintptr_t *id)
 {
@@ -35,10 +47,19 @@ bool video_driver_texture_load(void *data, unsigned filter, uintptr_t *id)
          gt_last_crc = c;
       }
    }
-   *id = 2;
+   if (!gt_lend_owned)
+      *id = 2;
+   else if (!*id)
+      *id = ++gt_tex_next; /* a load; an update passes its own id */
    return true;
 }
-bool video_driver_texture_unload(uintptr_t *id) { *id = 0; return true; }
+bool video_driver_texture_unload(uintptr_t *id)
+{
+   if (gt_lend_owned && *id)
+      gt_lend_unload(*id);
+   *id = 0;
+   return true;
+}
 
 /* In-place update: the same oracle, on the same handle. gt_can_update
  * decides whether the surface takes this path or loads a replacement
@@ -52,6 +73,11 @@ bool video_driver_texture_update(uintptr_t id, void *data)
    struct { void *px; unsigned w, h; } *img = data;
    if (!id)
       return false;
+   if (gt_update_fail > 0)
+   {
+      gt_update_fail--;
+      return false;
+   }
    gt_updates++;
    video_driver_texture_load(data, 0, &same);
    if (img)
@@ -266,13 +292,55 @@ static uint32_t *gt_lend_buf[GT_LEND_SLOTS];
 static int       gt_lend_busy[GT_LEND_SLOTS];
 static size_t    gt_lend_words[GT_LEND_SLOTS];
 
+#define GT_GRAVE 8
+static uintptr_t gt_lend_owner[GT_LEND_SLOTS];
+static uint32_t *gt_grave_buf[GT_GRAVE];
+static uintptr_t gt_grave_owner[GT_GRAVE];
+
+/* A texture's unload: its buffers - current or parked - are freed. */
+static void gt_lend_unload(uintptr_t id)
+{
+   unsigned k;
+   for (k = 0; k < GT_GRAVE; k++)
+      if (gt_grave_buf[k] && gt_grave_owner[k] == id)
+      {
+         free(gt_grave_buf[k]);
+         gt_grave_buf[k] = NULL;
+         gt_lend_freed++;
+      }
+   for (k = 0; k < GT_LEND_SLOTS; k++)
+      if (gt_lend_buf[k] && gt_lend_owner[k] == id)
+      {
+         free(gt_lend_buf[k]);
+         gt_lend_buf[k]  = NULL;
+         gt_lend_busy[k] = 0;
+         gt_lend_freed++;
+      }
+}
+
 void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch)
 {
-   (void)id;
    if (!gt_lend_mode || slot >= GT_LEND_SLOTS || !pitch)
       return NULL;
+   /* Lent by another texture still alive: that one keeps it, parked
+    * until it is unloaded, and this texture gets memory of its own */
+   if (gt_lend_owned && gt_lend_buf[slot] && gt_lend_owner[slot] != id)
+   {
+      unsigned k;
+      for (k = 0; k < GT_GRAVE; k++)
+         if (!gt_grave_buf[k])
+         {
+            gt_grave_buf[k]   = gt_lend_buf[slot];
+            gt_grave_owner[k] = gt_lend_owner[slot];
+            break;
+         }
+      if (k == GT_GRAVE)
+         free(gt_lend_buf[slot]);
+      gt_lend_buf[slot] = NULL;
+   }
    if (!gt_lend_buf[slot])
       gt_lend_buf[slot] = (uint32_t*)calloc(1, GT_LEND_BYTES);
+   gt_lend_owner[slot] = id;
    gt_lend_busy[slot]  = 0;
    gt_lend_words[slot] = 0;
    gt_lends++;
@@ -283,6 +351,10 @@ bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot)
 {
    size_t i;
    (void)id;
+   /* Lane 8: the GPU is never behind, so a job is handed its lent slot
+    * the moment it asks - before the next submit, not after */
+   if (gt_lend_owned)
+      return true;
    if (!gt_lend_mode || slot >= GT_LEND_SLOTS || !gt_lend_busy[slot])
       return true;
    if (--gt_lend_busy[slot])
@@ -306,6 +378,9 @@ static void gt_lend_uploaded(const void *px, unsigned w, unsigned h)
       if (gt_lend_buf[k] && px == gt_lend_buf[k])
       {
          gt_lent_uploads++;
+         /* Lane 8's GPU is never behind: no busy model to keep */
+         if (gt_lend_owned)
+            continue;
          /* Still on the GPU: written and submitted without the slot
           * ever having been ready. */
          if (gt_lend_busy[k])
@@ -329,5 +404,11 @@ void gt_lend_reset(void)
       gt_lend_buf[k]   = NULL;
       gt_lend_busy[k]  = 0;
       gt_lend_words[k] = 0;
+      gt_lend_owner[k] = 0;
+   }
+   for (k = 0; k < GT_GRAVE; k++)
+   {
+      free(gt_grave_buf[k]);
+      gt_grave_buf[k] = NULL;
    }
 }

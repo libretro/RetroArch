@@ -10431,7 +10431,7 @@ static bool vulkan_update_texture_internal(vk_t *vk, uintptr_t handle,
    if (slot < VK_STREAM_SLOTS)
    {
       if (vkGetFenceStatus(device, st->fence[slot]) != VK_SUCCESS)
-         return true; /* written early: keep the last frame */
+         { GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE_DROPPED); return true; } /* written early: keep the last frame */
       lent_src = true;
    }
    else
@@ -10444,7 +10444,7 @@ static bool vulkan_update_texture_internal(vk_t *vk, uintptr_t handle,
          slot ^= 1;
          if (     (st->lent & (1u << slot))
                || vkGetFenceStatus(device, st->fence[slot]) != VK_SUCCESS)
-            return true; /* none free: keep the last frame */
+            { GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE_DROPPED); return true; } /* none free: keep the last frame */
       }
       st->next_slot = slot ^ 1;
    }

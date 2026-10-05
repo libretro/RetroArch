@@ -94,6 +94,7 @@ extern int gt_can_update, gt_updates;
 extern int gt_lend_mode, gt_lends, gt_lend_violations, gt_lent_uploads,
        gt_lend_stale;
 extern void gt_lend_reset(void);
+extern int  gt_lend_owned, gt_update_fail, gt_lend_freed;
 void gt_async_flush(void);
 
 /* Whether the thumbnail's animation surface has a frame on its way to
@@ -469,6 +470,70 @@ int main(void)
    gfx_thumbnail_reset(&th);
    gt_lend_mode = 0;
    gt_lend_reset();
+
+   /* 8. a texture owns the memory it lends, and a producer holding a
+    *    slot keeps it valid: with both slots lent, slot 0 is taken as a
+    *    job takes it, an in-place update is refused so the texture is
+    *    replaced, and the taken memory is written after - the old
+    *    texture must survive until the slot comes back, then go.
+    *    Unloading it at the replacement would free memory still being
+    *    written, which AddressSanitizer reports. */
+   {
+      gfx_surface_t *s8;
+      uint32_t      *held;
+      unsigned       k, n8 = 64u * 48u;
+      int            freed_at_replace;
+      gt_async_mode  = 0;
+      gt_can_update  = 1;
+      gt_lend_mode   = 1;
+      gt_lend_owned  = 1;
+      gt_lend_freed  = 0;
+      gt_update_fail = 0;
+      s8 = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 2,
+            GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, NULL, NULL);
+      if (!s8)
+      {
+         printf("[FAIL] lane 8: no surface\n");
+         bad = 1;
+      }
+      else
+      {
+         for (k = 0; k < 4; k++) /* load, update, then each slot lent */
+         {
+            unsigned slot = k & 1, w;
+            for (w = 0; w < n8; w++)
+               s8->slots[slot][w] = 0xff000000u | (k * 0x10101u + w);
+            gfx_surface_submit(s8, slot, false);
+         }
+         held = gfx_surface_slot_begin(s8, 0);
+         gt_update_fail = 1;
+         gfx_surface_submit(s8, 1, false);
+         freed_at_replace = gt_lend_freed;
+         for (k = 0; k < n8; k++)
+            held[k] = 0xff123456u; /* the job, still writing */
+         gfx_surface_slot_end(s8, 0);
+         if (     s8->lent == 0 && gt_update_fail == 0
+               && freed_at_replace == 0 && gt_lend_freed >= 1
+               && !s8->retired_handle)
+            printf("[ok]   a texture replaced while a slot it lent was "
+                   "taken kept that memory until the slot came back "
+                   "(%d buffers freed then)\n", gt_lend_freed);
+         else
+         {
+            printf("[FAIL] replacement under a taken lent slot: lent %u, "
+                   "refusal %s, %d buffers freed at the replacement, %d "
+                   "after, retired %s\n", (unsigned)s8->lent,
+                   gt_update_fail ? "never reached" : "taken",
+                   freed_at_replace, gt_lend_freed,
+                   s8->retired_handle ? "still held" : "gone");
+            bad = 1;
+         }
+         gfx_surface_free(s8);
+      }
+      gt_lend_mode  = 0;
+      gt_lend_owned = 0;
+      gt_lend_reset();
+   }
 
    gfx_thumbnail_anim_worker_deinit();
 

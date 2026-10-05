@@ -28,6 +28,7 @@ static const char *gfx_instrument_names[GFX_INSTR_COUNT] = {
    "tex_load_async",
    "tex_update",
    "tex_update_refused",
+   "tex_update_dropped",
    "tex_unload",
    "async_post",
    "async_post_alloc",

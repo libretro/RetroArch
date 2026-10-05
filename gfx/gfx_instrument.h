@@ -54,6 +54,10 @@ enum gfx_instrument_counter
    GFX_INSTR_TEX_LOAD_ASYNC,    /* ..._load_async, posted           */
    GFX_INSTR_TEX_UPDATE,        /* ..._texture_update, in place     */
    GFX_INSTR_TEX_UPDATE_REFUSED,/* driver declined an update        */
+   GFX_INSTR_TEX_UPDATE_DROPPED,/* ..took it, kept the last contents:
+                                   no upload memory free - an update
+                                   counted as done that uploaded no
+                                   new pixels                       */
    GFX_INSTR_TEX_UNLOAD,        /* ..._texture_unload               */
 
    /* The threaded wrapper's texture edge */
