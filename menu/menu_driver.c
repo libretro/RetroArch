@@ -4766,10 +4766,8 @@ void menu_input_dialog_end(void)
    menu_st->input_dialog_kb_label_setting[0]  = '\0';
 
    /* Avoid triggering states on pressing return. */
-   /* Inhibits input for 2 frames
-    * > Required, since input is ignored for 1 frame
-    *   after certain events - e.g. closing the OSK */
-   menu_st->input_driver_flushing_input       = 2;
+   /* Held back until everything held now is let go. */
+   menu_st->input_driver_flushing_input       = 1;
 
 #ifdef HAVE_COCOATOUCH
    /* Dismiss iOS/tvOS native keyboard if it's currently open */
@@ -5150,10 +5148,8 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
    if (_binds->begin > _binds->last)
    {
       /* Avoid new binds triggering things right away. */
-      /* Inhibits input for 2 frames
-       * > Required, since input is ignored for 1 frame
-       *   after certain events - e.g. closing the OSK */
-      menu_st->input_driver_flushing_input  = 2;
+      /* Held back until everything held now is let go. */
+      menu_st->input_driver_flushing_input  = 1;
 
       /* We won't be getting any key events, so just cancel early. */
       if (timed_out)
@@ -5284,10 +5280,8 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
          }
 
          /* Avoid new binds triggering things right away. */
-         /* Inhibits input for 2 frames
-          * > Required, since input is ignored for 1 frame
-          *   after certain events - e.g. closing the OSK */
-         menu_st->input_driver_flushing_input = 2;
+         /* Held back until everything held now is let go. */
+         menu_st->input_driver_flushing_input = 1;
 
          /* Use human readable order instead */
          new_binds.order++;
@@ -7026,7 +7020,7 @@ void retroarch_menu_running(void)
    }
 
    /* Prevent stray input */
-   menu_st->input_driver_flushing_input = 2;
+   menu_st->input_driver_flushing_input = 1;
 
 #ifdef HAVE_AUDIOMIXER
    if (audio_enable_menu && audio_enable_menu_bgm)
@@ -7104,7 +7098,7 @@ void retroarch_menu_running_finished(bool quit)
    }
 
    /* Prevent stray input */
-   menu_st->input_driver_flushing_input = 2;
+   menu_st->input_driver_flushing_input = 1;
 
    if (!quit)
    {

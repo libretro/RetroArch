@@ -543,6 +543,11 @@ struct menu_state
 
    /* unsigned alignment */
    unsigned input_dialog_kb_idx;
+   /* Nonzero: the input held now is held back - from the menu, the
+    * hotkeys and the core - until it is all let go, which clears it.
+    * Set when the menu opens or closes, a bind or a text entry ends,
+    * and the mouse clicks, so that the press that did it does nothing
+    * more. It is a wait for release and not a count of frames. */
    unsigned input_driver_flushing_input;
    menu_dialog_t dialog_st;
    enum menu_action prev_action;
