@@ -141,6 +141,7 @@ static void begin(const char *subdir)
    strlcpy(settings->arrays.nfs_server, "server", sizeof(settings->arrays.nfs_server));
    strlcpy(settings->arrays.nfs_export, "/export", sizeof(settings->arrays.nfs_export));
    strlcpy(settings->arrays.nfs_subdir, subdir, sizeof(settings->arrays.nfs_subdir));
+   nfs_sync_capture();
    memset(&d, 0, sizeof(d));
    nfs_sync_begin(on_done, &d);
    CHECK(d.calls == 1 && d.success, "begin");
@@ -165,6 +166,7 @@ static void upload(const char *path, const char *text, bool destructive,
    /* left where a caller might leave it: at its end */
    filestream_seek(rfile, 0, SEEK_END);
    config_get_ptr()->bools.cloud_sync_destructive = destructive;
+   nfs_sync_capture();
    memset(done, 0, sizeof(*done));
    nfs_update(path, rfile, on_done, done);
    filestream_close(rfile);
@@ -179,6 +181,7 @@ static void download(const char *path, done_t *done)
 static void delete_remote(const char *path, bool destructive, done_t *done)
 {
    config_get_ptr()->bools.cloud_sync_destructive = destructive;
+   nfs_sync_capture();
    memset(done, 0, sizeof(*done));
    nfs_free(path, on_done, done);
 }

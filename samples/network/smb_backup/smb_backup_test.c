@@ -101,6 +101,7 @@ static void upload(const char *path, const char *text, bool destructive,
    filestream_seek(rfile, 0, SEEK_END);
 
    config_get_ptr()->bools.cloud_sync_destructive = destructive;
+   smb_sync_capture();
    memset(done, 0, sizeof(*done));
    smb_update(path, rfile, on_done, done);
    filestream_close(rfile);
