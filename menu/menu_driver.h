@@ -543,14 +543,6 @@ struct menu_state
 
    /* unsigned alignment */
    unsigned input_dialog_kb_idx;
-   /* The menu's hold. Set to 1 when the menu opens or closes, a bind or
-    * a text entry ends, or the mouse clicks: the run loop then takes
-    * what is down and holds it back from the menu and the hotkeys, each
-    * button until it is let go (2), and clears this when nothing of it
-    * is down. The core's buttons and keys have a hold of their own
-    * (input_driver_hold_core_input()); while this is set the core's
-    * other input - pointer, mouse, sticks - is kept from it as well. */
-   unsigned input_driver_flushing_input;
    menu_dialog_t dialog_st;
    enum menu_action prev_action;
    enum menu_input_dialog_kb_text_type input_dialog_kb_text_type;

@@ -764,13 +764,23 @@ typedef struct
     * frame's held set. */
    uint16_t wait_release_mask[MAX_USERS];
    /* The core's buttons held back after the menu closes: those that
-    * were down, each until it is let go (input_driver_hold_core_input()).
+    * were down, each until it is let go (input_driver_hold_held_input()).
     * One bit per RetroPad button, per port; core_hold_armed while any
     * is set. */
    uint16_t core_hold_mask[MAX_USERS];
    /* and the keyboard's keys, one bit per RETROK_ code */
    uint32_t core_hold_keys[(RETROK_LAST + 31) / 32];
+   /* and per port, the mouse's buttons and the lightgun's, one bit per
+    * RETRO_DEVICE_ID_, and the pointer being pressed (bit 0) */
+   uint16_t core_hold_mouse[MAX_USERS];
+   uint32_t core_hold_gun[MAX_USERS];
+   uint8_t  core_hold_pointer[MAX_USERS];
    bool core_hold_armed;
+   /* The same for what the run loop and the menu see - the RetroPad
+    * bits and the hotkeys: 1 takes what is down at the next frame, 2
+    * holds it back, 0 is no hold. */
+   input_bits_t held_bits;
+   uint8_t held_bits_phase;
 
    /* The frame's view of each port's RetroPad buttons, as a core is
     * given them: after port mapping, remaps, turbo, hold, overlays and
@@ -1110,10 +1120,18 @@ bool input_driver_game_focus_core_requested(void);
 bool input_driver_overlay_alive(void);
 bool input_driver_overlay_takes_input(void);
 bool input_driver_overlay_active_page(void);
-/* The buttons the core's ports have down now are kept from the core
- * until each is let go: for the menu as it closes, so that the press
- * that closed it does nothing in the content. */
-void input_driver_hold_core_input(void);
+/* Whatever is down now is held back, control by control, until each is
+ * let go: from the core (its buttons, keys, mouse and lightgun buttons
+ * and the pointer press) and from what the run loop and the menu see
+ * (the RetroPad bits and the hotkeys). Everything else gets through at
+ * once. For the menu as it opens and closes, a bind or a text entry
+ * ends, or the mouse clicks: the press that did it does nothing more. */
+void input_driver_hold_held_input(void);
+/* Nothing is held back any more: for the menu going away. */
+void input_driver_hold_clear(void);
+/* The run loop's bits for the frame: what the hold holds back is taken
+ * out. True while it is holding something back. */
+bool input_driver_hold_bits(input_bits_t *bits);
 void input_driver_set_nonblocking(bool on);
 void input_driver_set_remapping_cache_active(void);
 void input_driver_device_info_save(input_device_info_t *dst);

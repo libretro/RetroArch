@@ -3049,9 +3049,25 @@ static int16_t input_state_device(
 }
 
 
-/* Set while the poll reads what the core's ports have down for the core
- * hold: that read is not to be held back itself. */
-static bool input_core_hold_reading;
+/* What the core hold holds back of a mouse and a lightgun: their
+ * buttons, not their positions and not a wheel's notches, which are
+ * over as they come. */
+#define CORE_HOLD_MOUSE_IDS ( (1u << RETRO_DEVICE_ID_MOUSE_LEFT) \
+                            | (1u << RETRO_DEVICE_ID_MOUSE_RIGHT) \
+                            | (1u << RETRO_DEVICE_ID_MOUSE_MIDDLE) \
+                            | (1u << RETRO_DEVICE_ID_MOUSE_BUTTON_4) \
+                            | (1u << RETRO_DEVICE_ID_MOUSE_BUTTON_5))
+#define CORE_HOLD_GUN_IDS   ( (1u << RETRO_DEVICE_ID_LIGHTGUN_TRIGGER) \
+                            | (1u << RETRO_DEVICE_ID_LIGHTGUN_AUX_A) \
+                            | (1u << RETRO_DEVICE_ID_LIGHTGUN_AUX_B) \
+                            | (1u << RETRO_DEVICE_ID_LIGHTGUN_START) \
+                            | (1u << RETRO_DEVICE_ID_LIGHTGUN_SELECT) \
+                            | (1u << RETRO_DEVICE_ID_LIGHTGUN_AUX_C) \
+                            | (1u << RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP) \
+                            | (1u << RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN) \
+                            | (1u << RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT) \
+                            | (1u << RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT) \
+                            | (1u << RETRO_DEVICE_ID_LIGHTGUN_RELOAD))
 
 static int16_t input_state_internal(
       input_driver_state_t *input_st,
@@ -3078,14 +3094,9 @@ static int16_t input_state_internal(
 #endif
    uint8_t mapped_port                     = 0;
    int16_t result                          = 0;
-#ifdef HAVE_MENU
-   struct menu_state *menu_st              = menu_state_get_ptr();
-   bool input_blocked                      =    (   (menu_st->input_driver_flushing_input > 0)
-                                                 && !input_core_hold_reading)
-                                             || (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT);
-#else
+   /* What the menu leaves held as it closes is the core hold's to keep
+    * back, control by control; the core's input is not blocked for it. */
    bool input_blocked                      = (input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT) ? true : false;
-#endif
    bool input_driver_analog_requested      = input_st->analog_requested[port];
    bool bitmask_enabled                    = false;
 
@@ -9167,7 +9178,7 @@ static void input_keys_pressed(
 #ifdef HAVE_MENU
    /* Prevent triggering menu actions after binding */
    if (     !(input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
-         && menu_state_get_ptr()->input_driver_flushing_input)
+         && input_st->held_bits_phase)
       input_st->flags |= INP_FLAG_WAIT_INPUT_RELEASE;
 #endif
 
@@ -10035,13 +10046,73 @@ bool input_driver_game_focus_core_requested(void)
  * until each is let go. They are found at the next poll: until then
  * every button is held back, which is at most the frame the menu
  * closed in. */
-void input_driver_hold_core_input(void)
+static void input_driver_hold_core_input(void)
 {
    memset(input_driver_st.core_hold_mask, 0xff,
          sizeof(input_driver_st.core_hold_mask));
    memset(input_driver_st.core_hold_keys, 0xff,
          sizeof(input_driver_st.core_hold_keys));
+   {
+      unsigned port;
+      for (port = 0; port < MAX_USERS; port++)
+      {
+         input_driver_st.core_hold_mouse[port]   = CORE_HOLD_MOUSE_IDS;
+         input_driver_st.core_hold_gun[port]     = CORE_HOLD_GUN_IDS;
+         input_driver_st.core_hold_pointer[port] = 1;
+      }
+   }
    input_driver_st.core_hold_armed = true;
+}
+
+void input_driver_hold_held_input(void)
+{
+   input_driver_hold_core_input();
+   input_driver_st.held_bits_phase = 1;
+}
+
+void input_driver_hold_clear(void)
+{
+   memset(input_driver_st.core_hold_mask, 0,
+         sizeof(input_driver_st.core_hold_mask));
+   memset(input_driver_st.core_hold_keys, 0,
+         sizeof(input_driver_st.core_hold_keys));
+   memset(input_driver_st.core_hold_mouse, 0,
+         sizeof(input_driver_st.core_hold_mouse));
+   memset(input_driver_st.core_hold_gun, 0,
+         sizeof(input_driver_st.core_hold_gun));
+   memset(input_driver_st.core_hold_pointer, 0,
+         sizeof(input_driver_st.core_hold_pointer));
+   input_driver_st.core_hold_armed = false;
+   input_driver_st.held_bits_phase = 0;
+}
+
+/* The first frame takes what is down; after that each bit drops out of
+ * the hold as it is let go. The hotkey-enable button is never held
+ * back: holding it is how other hotkeys are reached. */
+bool input_driver_hold_bits(input_bits_t *bits)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   bool held                      = false;
+   unsigned w;
+
+   if (!input_st->held_bits_phase)
+      return false;
+   if (input_st->held_bits_phase == 1)
+   {
+      input_st->held_bits = *bits;
+      BIT256_CLEAR(input_st->held_bits, RARCH_ENABLE_HOTKEY);
+      input_st->held_bits_phase = 2;
+   }
+   for (w = 0; w < ARRAY_SIZE(bits->data); w++)
+   {
+      input_st->held_bits.data[w] &= bits->data[w];
+      bits->data[w]               &= ~input_st->held_bits.data[w];
+      if (input_st->held_bits.data[w])
+         held = true;
+   }
+   if (!held)
+      input_st->held_bits_phase = 0;
+   return held;
 }
 
 /* Input polled without blocking, for netplay catching up. */
@@ -11239,9 +11310,29 @@ void input_driver_poll(void)
    {
       unsigned port;
       uint16_t any = 0;
-      input_core_hold_reading = true;
       for (port = 0; port < max_users; port++)
       {
+         unsigned id;
+         /* the mouse's buttons, the lightgun's, the pointer pressed */
+         for (id = 0; id < 32 && input_st->core_hold_mouse[port]; id++)
+            if (     (input_st->core_hold_mouse[port] & (1u << id))
+                  && !input_state_internal(input_st, settings, port,
+                        RETRO_DEVICE_MOUSE, 0, id))
+               input_st->core_hold_mouse[port] &= (uint16_t)~(1u << id);
+         for (id = 0; id < 32 && input_st->core_hold_gun[port]; id++)
+            if (     (input_st->core_hold_gun[port] & (1u << id))
+                  && !input_state_internal(input_st, settings, port,
+                        RETRO_DEVICE_LIGHTGUN, 0, id))
+               input_st->core_hold_gun[port] &= ~(1u << id);
+         if (     input_st->core_hold_pointer[port]
+               && !input_state_internal(input_st, settings, port,
+                     RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED))
+            input_st->core_hold_pointer[port] = 0;
+         if (     input_st->core_hold_mouse[port]
+               || input_st->core_hold_gun[port]
+               || input_st->core_hold_pointer[port])
+            any |= 1;
+
          if (!input_st->core_hold_mask[port])
             continue;
          input_st->core_hold_mask[port] &= (uint16_t)input_state_internal(
@@ -11250,7 +11341,12 @@ void input_driver_poll(void)
          any |= input_st->core_hold_mask[port];
       }
       for (; port < MAX_USERS; port++)
-         input_st->core_hold_mask[port] = 0;
+      {
+         input_st->core_hold_mask[port]    = 0;
+         input_st->core_hold_mouse[port]   = 0;
+         input_st->core_hold_gun[port]     = 0;
+         input_st->core_hold_pointer[port] = 0;
+      }
       /* the keys: each one still held back is read, a word of them
        * skipped at a time once it is clear */
       {
@@ -11275,7 +11371,6 @@ void input_driver_poll(void)
             any |= (word != 0);
          }
       }
-      input_core_hold_reading = false;
       if (!any)
          input_st->core_hold_armed = false;
    }
@@ -11509,6 +11604,27 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
                && id < RETROK_LAST
                && (input_st->core_hold_keys[id >> 5] & (1u << (id & 31))))
          result = 0;
+      else if (port < MAX_USERS)
+      {
+         switch (device & RETRO_DEVICE_MASK)
+         {
+            case RETRO_DEVICE_MOUSE:
+               if (id < 16 && (input_st->core_hold_mouse[port] & (1u << id)))
+                  result = 0;
+               break;
+            case RETRO_DEVICE_LIGHTGUN:
+               if (id < 32 && (input_st->core_hold_gun[port] & (1u << id)))
+                  result = 0;
+               break;
+            case RETRO_DEVICE_POINTER:
+               if (     id == RETRO_DEVICE_ID_POINTER_PRESSED
+                     && input_st->core_hold_pointer[port])
+                  result = 0;
+               break;
+            default:
+               break;
+         }
+      }
    }
 
    /* Register any analog stick input requests for

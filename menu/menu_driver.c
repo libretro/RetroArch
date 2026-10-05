@@ -4698,7 +4698,7 @@ void menu_driver_destroy(
                      | MENU_ST_FLAG_ALIVE);
    menu_st->driver_ctx                  = NULL;
    menu_st->userdata                    = NULL;
-   menu_st->input_driver_flushing_input = 0;
+   input_driver_hold_clear();
 }
 
 void menu_input_get_pointer_state(menu_input_pointer_t *copy_target)
@@ -4769,7 +4769,7 @@ void menu_input_dialog_end(void)
 
    /* Avoid triggering states on pressing return. */
    /* Held back until everything held now is let go. */
-   menu_st->input_driver_flushing_input       = 1;
+   input_driver_hold_held_input();
 
 #ifdef HAVE_COCOATOUCH
    /* Dismiss iOS/tvOS native keyboard if it's currently open */
@@ -5151,7 +5151,7 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
    {
       /* Avoid new binds triggering things right away. */
       /* Held back until everything held now is let go. */
-      menu_st->input_driver_flushing_input  = 1;
+      input_driver_hold_held_input();
 
       /* We won't be getting any key events, so just cancel early. */
       if (timed_out)
@@ -5283,7 +5283,7 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
 
          /* Avoid new binds triggering things right away. */
          /* Held back until everything held now is let go. */
-         menu_st->input_driver_flushing_input = 1;
+         input_driver_hold_held_input();
 
          /* Use human readable order instead */
          new_binds.order++;
@@ -5644,7 +5644,7 @@ unsigned menu_event(
       {
          menu_st->input_last_time_us = menu_st->current_time_us;
          /* Prevent double trigger when OK/Cancel has mouse binds */
-         menu_st->input_driver_flushing_input = 1;
+         input_driver_hold_held_input();
       }
    }
 
@@ -7040,7 +7040,7 @@ void retroarch_menu_running(void)
    }
 
    /* Prevent stray input */
-   menu_st->input_driver_flushing_input = 1;
+   input_driver_hold_held_input();
 
 #ifdef HAVE_AUDIOMIXER
    if (audio_enable_menu && audio_enable_menu_bgm)
@@ -7117,11 +7117,9 @@ void retroarch_menu_running_finished(bool quit)
             false);
    }
 
-   /* Prevent stray input */
-   menu_st->input_driver_flushing_input = 1;
-   /* and the core's buttons held as the menu closes stay out of the
-    * content until each is let go */
-   input_driver_hold_core_input();
+   /* What is held as the menu closes does nothing more, in the menu or
+    * in the content, until it is let go */
+   input_driver_hold_held_input();
 
    if (!quit)
    {

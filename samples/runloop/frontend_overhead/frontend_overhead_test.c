@@ -2746,9 +2746,12 @@ static bool pm_menu_settled(void)
    return false;
 }
 
-/* an input driver that has one key down, RETROK_RETURN, when told to */
+/* an input driver that has one key down, RETROK_RETURN, the mouse's
+ * left button down, or the pointer pressed, when told to */
 static input_driver_t pm_input;
 static bool           pm_return_down;
+static bool           pm_click_down;
+static bool           pm_touch_down;
 static int16_t pm_input_state(void *data,
       const input_device_driver_t *joypad,
       const input_device_driver_t *sec_joypad,
@@ -2758,9 +2761,37 @@ static int16_t pm_input_state(void *data,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
    (void)data; (void)joypad; (void)sec_joypad; (void)joypad_info;
-   (void)binds; (void)keyboard_mapping_blocked; (void)idx;
-   return (   pm_return_down && port == 0
-           && device == RETRO_DEVICE_KEYBOARD && id == RETROK_RETURN) ? 1 : 0;
+   (void)binds; (void)keyboard_mapping_blocked;
+   if (port != 0)
+      return 0;
+   switch (device & RETRO_DEVICE_MASK)
+   {
+      case RETRO_DEVICE_KEYBOARD:
+         return (pm_return_down && id == RETROK_RETURN) ? 1 : 0;
+      case RETRO_DEVICE_MOUSE:
+         return (pm_click_down && id == RETRO_DEVICE_ID_MOUSE_LEFT) ? 1 : 0;
+      case RETRO_DEVICE_POINTER:
+         return (pm_touch_down && idx == 0
+               && id == RETRO_DEVICE_ID_POINTER_PRESSED) ? 1 : 0;
+      default:
+         break;
+   }
+   return 0;
+}
+
+/* frames run one at a time; whether a control reached the core's view
+ * in any of them, read as the core reads it */
+static bool pm_frames_saw(unsigned n, unsigned device, unsigned id)
+{
+   bool saw = false;
+   unsigned i;
+   for (i = 0; i < n; i++)
+   {
+      run_loop_frames(1);
+      if (input_driver_state_wrapper(0, device, 0, id))
+         saw = true;
+   }
+   return saw;
 }
 
 /* frames run one at a time; whether Return reached the core's view in
@@ -2866,6 +2897,34 @@ static void lane_menu_pause(void)
       CHECK(pm_frames_saw_return(5), msg);
       pm_return_down = false;
       run_loop_frames(3);
+
+      /* closed with the mouse's left button held, and with the pointer
+       * pressed: the same, for a click and a touch */
+      {
+         static const struct { const char *what; unsigned device, id; bool *flag; } c[2] = {
+            { "the left click", RETRO_DEVICE_MOUSE,   RETRO_DEVICE_ID_MOUSE_LEFT,      &pm_click_down },
+            { "the touch",      RETRO_DEVICE_POINTER, RETRO_DEVICE_ID_POINTER_PRESSED, &pm_touch_down }
+         };
+         unsigned k;
+         for (k = 0; k < 2; k++)
+         {
+            snprintf(msg, sizeof(msg), "menu pause, %s: the menu would not stay open", with);
+            CHECK(pm_menu_settled(), msg);
+            *c[k].flag = true;
+            run_loop_frames(2);
+            pm_set_menu(false);
+            snprintf(msg, sizeof(msg), "menu pause, %s: the core saw %s that closed the menu, while it was held", with, c[k].what);
+            CHECK(!pm_frames_saw(10, c[k].device, c[k].id), msg);
+            *c[k].flag = false;
+            snprintf(msg, sizeof(msg), "menu pause, %s: the core saw %s after it was let go", with, c[k].what);
+            CHECK(!pm_frames_saw(4, c[k].device, c[k].id), msg);
+            *c[k].flag = true;
+            snprintf(msg, sizeof(msg), "menu pause, %s: the core did not see %s made again after the menu", with, c[k].what);
+            CHECK(pm_frames_saw(4, c[k].device, c[k].id), msg);
+            *c[k].flag = false;
+            run_loop_frames(3);
+         }
+      }
 
       snprintf(msg, sizeof(msg), "menu pause, %s: the menu would not stay open", with);
       CHECK(pm_menu_settled(), msg);
@@ -2989,6 +3048,8 @@ static void lane_menu_pause(void)
    input_config_binds[0][RARCH_MENU_TOGGLE]   = saved_toggle;
    input_st->current_driver                   = saved_input;
    pm_return_down                             = false;
+   pm_click_down                              = false;
+   pm_touch_down                              = false;
    input_st->primary_joypad                   = joypad_real;
    run_loop_frames(3);
    if (failures == had)

@@ -7350,51 +7350,25 @@ static enum runloop_state_enum runloop_check_state(
                &last_input))
       BIT256_SET(current_bits, RARCH_MENU_TOGGLE);
 
-   /* The menu's hold: what was down when the menu opened or closed, a
-    * bind or a text entry ended or the mouse clicked is held back, each
-    * button and hotkey until it is let go; everything else gets through
-    * at once. 1 asks for what is down to be taken this frame; 2 is the
-    * hold, which ends when nothing of it is down. The hotkey-enable
-    * button is never held back: holding it is how other hotkeys are
-    * reached. */
-   if (menu_st->input_driver_flushing_input > 0)
+   /* What was down when the menu opened or closed, a bind or a text
+    * entry ended or the mouse clicked is held back, each control until
+    * it is let go (input_driver_hold_held_input()). While it is, the
+    * pause is kept as it was. */
+   if (input_driver_hold_bits(&current_bits))
    {
-      static input_bits_t held_back;
-      unsigned w;
-      bool input_active = false;
-
-      if (menu_st->input_driver_flushing_input == 1)
+      if (      runloop_paused
+            && !runloop_st->paused_hotkey
+            &&  menu_pause_libretro)
+         BIT256_SET(current_bits, RARCH_PAUSE_TOGGLE);
+      else if (runloop_st->paused_hotkey)
       {
-         held_back = current_bits;
-         BIT256_CLEAR(held_back, RARCH_ENABLE_HOTKEY);
-         menu_st->input_driver_flushing_input = 2;
-      }
-      for (w = 0; w < ARRAY_SIZE(current_bits.data); w++)
-      {
-         held_back.data[w]    &= current_bits.data[w];
-         current_bits.data[w] &= ~held_back.data[w];
-         if (held_back.data[w])
-            input_active = true;
-      }
-
-      if (!input_active)
-         menu_st->input_driver_flushing_input = 0;
-      else
-      {
-         if (      runloop_paused
-               && !runloop_st->paused_hotkey
-               &&  menu_pause_libretro)
-            BIT256_SET(current_bits, RARCH_PAUSE_TOGGLE);
-         else if (runloop_st->paused_hotkey)
-         {
-            /* Restore pause if pause is triggered with both hotkey and menu,
-             * and restore cached video frame to continue properly to
-             * paused state from non-paused menu */
-            if (menu_pause_libretro)
-               command_event(CMD_EVENT_PAUSE, NULL);
-            else
-               video_driver_cached_frame();
-         }
+         /* Restore pause if pause is triggered with both hotkey and menu,
+          * and restore cached video frame to continue properly to
+          * paused state from non-paused menu */
+         if (menu_pause_libretro)
+            command_event(CMD_EVENT_PAUSE, NULL);
+         else
+            video_driver_cached_frame();
       }
    }
 #endif
