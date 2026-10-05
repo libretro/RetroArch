@@ -1490,6 +1490,22 @@ jobs:
           AUDIO_BYTES_PER_TICK=65536 FRAMES=120 timeout 300 \
              ./gfx_thumbnail_preview_test fixtures/*.mp4 fixtures/anim_lossless.webp
           echo "[pass] gfx_thumbnail_preview_test (ASan)"
+          # HDR previews: with HDR_OUTPUT the stub driver keeps half
+          # floats and shows them as linear scRGB, and the PQ-tagged
+          # fixture must animate as them on the PQ EOTF of its grey; its
+          # SDR twin, and the HDR one without HDR output, must not upload
+          # a single half-float frame. Both decode paths: the poll's own
+          # here, the worker's jobs in the threaded build below.
+          HDRFX=../../formats/video_hdr_fp16/fixtures
+          for bin in gfx_thumbnail_preview_test gfx_thumbnail_preview_test_threaded; do
+             ASAN_OPTIONS=detect_leaks=1 NOAUDIO=1 THREADS=4 FRAMES=60 \
+             HDR_OUTPUT=1 HDR_EXPECT=1 timeout 120 ./$bin $HDRFX/hdr_hevc.mp4
+             ASAN_OPTIONS=detect_leaks=1 NOAUDIO=1 THREADS=4 FRAMES=60 \
+             HDR_OUTPUT=1 timeout 120 ./$bin $HDRFX/sdr_hevc.mp4
+             ASAN_OPTIONS=detect_leaks=1 NOAUDIO=1 THREADS=4 FRAMES=60 \
+             timeout 120 ./$bin $HDRFX/hdr_hevc.mp4
+          done
+          echo "[pass] gfx_thumbnail_preview HDR lanes"
           # The same session with HAVE_THREADS: the thumbnail decodes on
           # its worker and the pool, the app's own path, paced at a
           # display's rate with a bound on the longest stall.

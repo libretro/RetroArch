@@ -437,6 +437,8 @@ typedef struct gfx_thumb_anim_job
    retro_atomic_int_t status;
    uint8_t   type;                   /* enum image_type_enum           */
    bool      use_rgba;               /* output word format             */
+   bool      fp16;                   /* half floats: linear scRGB of an
+                                        HDR source, 8 bytes a pixel    */
 } gfx_thumb_anim_job_t;
 
 #ifdef HAVE_THREADS
@@ -560,6 +562,18 @@ static bool gfx_thumbnail_anim_job_step(gfx_thumb_anim_job_t *job)
 
    n = (size_t)VIDEO_SCALE_W(job->dims) * VIDEO_SCALE_H(job->dims);
    GFX_INSTR_INC(GFX_INSTR_ANIM_FRAME);
+   /* Half floats come only from a decode into the slot itself; a frame
+    * that came out any other way is 32-bit, and a surface of half
+    * floats cannot show it: the animation ends on the last good one. */
+   if (job->fp16)
+   {
+      if (     !direct || frame != job->frame
+            || !image_transfer_anim_stream_is_fp16(job->stream, type))
+         return false;
+      GFX_INSTR_INC(GFX_INSTR_ANIM_DIRECT);
+      job->duration_ms = duration_ms;
+      return true;
+   }
    if (direct && frame == job->frame)
    {
       /* Decoded in place; every video stream honours the order request
@@ -1415,14 +1429,33 @@ static void gfx_thumbnail_anim_slot_release(void *user, gfx_surface_t *s,
  * shape - a different animation on a thumbnail that was not reset -
  * is replaced; its texture goes with it, so the caller only asks for
  * one when a frame is about to be shown. */
+/* An animation's frames are linear scRGB half floats where its source
+ * is HDR (PQ or HLG) and the driver shows such a texture as linear,
+ * which it offers as GFX_SURFACE_PIXFMT_FP16 only while the output is
+ * HDR; 8888 everywhere else, as they always were. */
+static uint32_t gfx_thumbnail_anim_pixfmt(const gfx_thumbnail_t *thumbnail)
+{
+   gfx_surface_requirements_t req;
+   if (     thumbnail->anim
+         && image_transfer_anim_stream_is_hdr(thumbnail->anim,
+               (enum image_type_enum)thumbnail->anim_type)
+         && gfx_surface_query_requirements(0, &req)
+         && (req.formats & GFX_SURFACE_PIXFMT_FP16))
+      return GFX_SURFACE_PIXFMT_FP16;
+   return GFX_SURFACE_PIXFMT_8888;
+}
+
 static gfx_surface_t *gfx_thumbnail_anim_surface(gfx_thumbnail_t *thumbnail,
       unsigned dims, unsigned num_slots)
 {
    gfx_surface_t *s = (gfx_surface_t*)thumbnail->anim_surface;
+   uint32_t pixfmt  = num_slots
+      ? gfx_thumbnail_anim_pixfmt(thumbnail) : 0;
    if (     s
          && (s->dims != dims
             || s->num_slots < num_slots
-            || (!num_slots && s->num_slots)))
+            || (!num_slots && s->num_slots)
+            || (num_slots && s->pixfmt != pixfmt)))
    {
       if (thumbnail->flags & GFX_THUMB_FLAG_TEX_SURFACE)
       {
@@ -1441,7 +1474,7 @@ static gfx_surface_t *gfx_thumbnail_anim_surface(gfx_thumbnail_t *thumbnail,
        * a surface with no storage of its own: a still, whose pixels
        * the load task owns until the upload has taken them. */
       s = num_slots
-         ? gfx_surface_new(dims, num_slots, GFX_SURFACE_PIXFMT_8888,
+         ? gfx_surface_new(dims, num_slots, pixfmt,
                TEXTURE_FILTER_LINEAR,
                gfx_thumbnail_anim_slot_release, thumbnail)
          : gfx_surface_new_static(dims,
@@ -1693,6 +1726,13 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
          j1->dims       = j0->dims;
          j0->loops_left = thumbnail->anim_loops_left;
          j0->use_rgba   = gfx_thumbnail_use_rgba();
+         /* The surface chose the format; no job runs yet, so the
+          * stream is told here, once, before the first one does. */
+         j0->fp16       = ((gfx_surface_t*)thumbnail->anim_surface)->pixfmt
+            == GFX_SURFACE_PIXFMT_FP16;
+         j1->fp16       = j0->fp16;
+         image_transfer_anim_stream_set_want_fp16(thumbnail->anim,
+               (enum image_type_enum)thumbnail->anim_type, j0->fp16);
          retro_atomic_store_relaxed_int(&j1->status,
                GFX_THUMB_JOB_IDLE);
          thumbnail->anim_job        = j0;
@@ -1826,6 +1866,8 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
          return;
       sync_direct = image_transfer_anim_stream_set_output(thumbnail->anim,
             type, sync_surface->slots[0]);
+      image_transfer_anim_stream_set_want_fp16(thumbnail->anim, type,
+            sync_surface->pixfmt == GFX_SURFACE_PIXFMT_FP16);
    }
 
    /* Keep the window straddling the decoder (see the worker's step
@@ -1874,6 +1916,17 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
       enum gfx_surface_submit_result res;
 
       GFX_INSTR_INC(GFX_INSTR_ANIM_FRAME);
+      /* A surface of half floats takes only a frame decoded into its
+       * slot as half floats; the animation ends on the last good one
+       * otherwise. */
+      if (     s->pixfmt == GFX_SURFACE_PIXFMT_FP16
+            && !(     sync_direct && frame == s->slots[0]
+                   && image_transfer_anim_stream_is_fp16(thumbnail->anim,
+                         type)))
+      {
+         gfx_thumbnail_anim_close(thumbnail);
+         return;
+      }
       if (sync_direct && frame == s->slots[0])
       {
          GFX_INSTR_INC(GFX_INSTR_ANIM_DIRECT);

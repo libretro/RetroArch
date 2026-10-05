@@ -31,6 +31,12 @@ bool video_driver_texture_load(void *data, unsigned filter_type,
    *id = 0x1000 + hp.texture_uploads;
    hp.last_tex_w = img->width;
    hp.last_tex_h = img->height;
+   if (img->fp16 && img->pixels)
+   {
+      size_t c = ((size_t)img->height / 2 * img->width + img->width / 2) * 4;
+      hp.fp16_uploads++;
+      hp.fp16_r = ((const unsigned short*)img->pixels)[c];
+   }
    return true;
 }
 bool video_driver_texture_unload(uintptr_t *id)
@@ -321,8 +327,14 @@ int  config_userdata_get_string(void *u, const char *k, char **v,
  * sampling. */
 bool video_driver_test_all_flags(int flags)
 { (void)flags; return false; }
+/* With HDR_OUTPUT set the run looks like a driver on HDR output: it
+ * keeps half floats and shows them as linear scRGB, so gfx_surface
+ * offers FP16 to an HDR source. Nothing else is supported either way. */
 bool video_driver_supports_texture_format(int fmt)
-{ (void)fmt; return false; }
+{
+   return hp.hdr_output
+      && (fmt == TEXTURE_GPU_FORMAT_RGBA16F || fmt == TEXTURE_GPU_FORMAT_SCRGB);
+}
 
 /* No driver lends upload memory here: every slot stays the surface's. */
 void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch)

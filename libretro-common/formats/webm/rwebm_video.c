@@ -75,6 +75,9 @@ struct rwebm_video_stream
    unsigned     height;
    int          want10;     /* caller requested 10-bit output         */
    int          is10;       /* last decoded frame written as 10-bit    */
+   int          want_fp16;  /* caller takes linear scRGB half floats
+                               for an HDR source, into 'out'         */
+   int          is_fp16;    /* last decoded frame written so          */
    int          emit_argb;  /* emit ARGB words instead of the default
                                R,G,B,A memory order (8-bit paths)     */
 };
@@ -664,6 +667,25 @@ void rwebm_video_stream_set_output(rwebm_video_stream_t *s, uint32_t *out)
       s->out = out;
 }
 
+void rwebm_video_stream_set_want_fp16(rwebm_video_stream_t *s, int want)
+{
+   if (s)
+      s->want_fp16 = want ? 1 : 0;
+}
+
+int rwebm_video_stream_is_fp16(const rwebm_video_stream_t *s)
+{
+   return s && s->is_fp16;
+}
+
+int rwebm_video_stream_is_hdr(const rwebm_video_stream_t *s)
+{
+   const rwebm_track *t = (s && s->demux)
+      ? rwebm_get_track(s->demux, s->track) : NULL;
+   return t && (     t->transfer_characteristics == 16
+                  || t->transfer_characteristics == 18);
+}
+
 void rwebm_video_stream_set_blit_pool(rwebm_video_stream_t *s,
       void *pool, unsigned bands)
 {
@@ -690,7 +712,9 @@ typedef struct
    int ys, uvs;
    unsigned matrix, transfer, range, max_cll;
    int argb;
-   int kind;                /* 0: 8-bit, 1: hbd to 8-bit, 2: 10-bit */
+   int kind;                /* 0: 8-bit, 1: hbd to 8-bit, 2: 10-bit,
+                               3: HDR to scRGB half floats, whose
+                               rows are dst_stride 8-byte pixels */
 } rwebm_blit_ctx_t;
 
 static void rwebm_video_blit_rows(void *arg, unsigned row0, unsigned rows)
@@ -713,12 +737,21 @@ static void rwebm_video_blit_rows(void *arg, unsigned row0, unsigned rows)
                (const uint16_t*)c->v + (size_t)(row0 >> 1) * c->uvs, c->uvs,
                c->matrix, c->transfer, c->range, c->max_cll, c->argb);
          break;
-      default:
+      case 2:
          rwebm_video_blit_i420_10bit(dst, c->dst_stride, c->w, rows,
                (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
                (const uint16_t*)c->u + (size_t)(row0 >> 1) * c->uvs,
                (const uint16_t*)c->v + (size_t)(row0 >> 1) * c->uvs, c->uvs,
                c->matrix, c->transfer, c->range, c->max_cll);
+         break;
+      default:
+         rwebm_video_blit_i420_fp16(
+               (uint16_t*)c->dst + (size_t)row0 * c->dst_stride * 4,
+               c->dst_stride, c->w, rows,
+               (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
+               (const uint16_t*)c->u + (size_t)(row0 >> 1) * c->uvs,
+               (const uint16_t*)c->v + (size_t)(row0 >> 1) * c->uvs, c->uvs,
+               c->matrix, c->transfer, c->range);
          break;
    }
 }
@@ -829,6 +862,7 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
       const rwebm_packet *pkt)
 {
    uint32_t *dst = s->out ? s->out : s->frame;
+   s->is_fp16    = 0;
    /* A decoder can be absent if the re-open in rewind hit OOM. */
    if (!s->vp8
 #ifdef HAVE_RVP9
@@ -875,7 +909,16 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
             c.max_cll    = ct ? ct->max_cll : 0;
             if (s->vp9->hd.bit_depth == 10)
             {
-               if (s->want10)
+               /* An HDR source, for a caller that takes linear light
+                * into its own frame: no tone map. */
+               if (     s->want_fp16 && s->out
+                     && (c.transfer == 16 || c.transfer == 18))
+               {
+                  c.kind     = 3;
+                  c.argb     = 0;
+                  s->is_fp16 = 1;
+               }
+               else if (s->want10)
                {
                   /* Native 10-bit thumbnail: packed XRGB2101010,
                    * SDR-encoded at 10-bit precision (same colour as

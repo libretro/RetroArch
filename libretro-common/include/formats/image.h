@@ -366,6 +366,19 @@ void *image_transfer_anim_stream_h265(void *stream, enum image_type_enum type);
 void image_transfer_anim_stream_set_catchup(void *stream,
       enum image_type_enum type, int behind);
 
+/* HDR video sources: whether the stream's source is PQ or HLG; asking
+ * for linear scRGB half floats for it, which the video streams honour
+ * when they decode into the caller's frame
+ * (image_transfer_anim_stream_set_output) - 8 bytes a pixel then; and
+ * whether the last frame came out so. False and a no-op for every type
+ * without such a source. */
+bool image_transfer_anim_stream_is_hdr(const void *stream,
+      enum image_type_enum type);
+void image_transfer_anim_stream_set_want_fp16(void *stream,
+      enum image_type_enum type, bool want);
+bool image_transfer_anim_stream_is_fp16(const void *stream,
+      enum image_type_enum type);
+
 bool image_transfer_anim_stream_set_output(void *stream,
       enum image_type_enum type, uint32_t *out);
 

@@ -223,6 +223,21 @@ jobs:
              timeout 120 ./image_avail_test
           echo "[pass] image_avail_test"
 
+      - name: Build and run video_hdr_fp16_test (ASan + UBSan + LSan)
+        shell: bash
+        working-directory: samples/formats/video_hdr_fp16
+        run: |
+          set -eu
+          # HDR10 video to linear scRGB half floats: HEVC Main10 in MP4
+          # and VP9 profile 2 in WebM, tagged PQ, decode flat grey onto
+          # the PQ EOTF when asked into the caller's frame; their
+          # SDR-tagged twins, and any stream decoding into its own
+          # canvas, keep the 32-bit paths. Fixtures made with ffmpeg
+          # (libx265, libvpx-vp9) from known 10-bit grey.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 120 ./video_hdr_fp16_test
+
       - name: Build and run image_tile_gx_test (ASan + UBSan + LSan)
         shell: bash
         working-directory: samples/formats/image_tile_gx

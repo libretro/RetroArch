@@ -18,6 +18,7 @@
 #include <features/features_cpu.h>
 #include <retro_timers.h>
 #include <stdio.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -82,6 +83,7 @@ static void run(const char *path, const char *label, int expect_video)
 
    memset(&th, 0, sizeof(th));
    memset(&hp, 0, sizeof(hp));
+   hp.hdr_output = getenv("HDR_OUTPUT") ? 1 : 0;
    hp.force_preview_audio = getenv("NOAUDIO") ? 0 : 1;
    gfx_thumbnail_reset(&th);
 
@@ -173,6 +175,31 @@ static void run(const char *path, const char *label, int expect_video)
          (int)th.status, th.alpha, (unsigned long)th.texture,
          hp.texture_uploads, hp.fade_pushes, hp.still_loads,
          hp.last_tex_w, hp.last_tex_h);
+
+   /* HDR: with HDR_OUTPUT the stub driver offers half floats, and an
+    * HDR source (HDR_EXPECT: the PQ-tagged flat-grey fixture) must have
+    * its animation uploaded as them, on the PQ EOTF of its 10-bit grey
+    * (luma 600, over 80 nits). Without both, not one frame may be. */
+   if (hp.hdr_output && getenv("HDR_EXPECT"))
+   {
+      unsigned short h = hp.fp16_r;
+      int    e   = (h >> 10) & 0x1f;
+      double r   = (e ? ldexp(1.0 + (h & 0x3ff) / 1024.0, e - 15)
+                      : ldexp((h & 0x3ff) / 1024.0, -14)) * ((h & 0x8000) ? -1 : 1);
+      double ep  = pow(((298 * (600 - 64) + 128) >> 8) / 1023.0, 1.0 / 78.84375);
+      double num = ep - 0.8359375 > 0.0 ? ep - 0.8359375 : 0.0;
+      double ref = 10000.0 * pow(num / (18.8515625 - 18.6875 * ep),
+            1.0 / 0.1593017578125) / 80.0;
+      check(label, "H1 an HDR source animates in half floats",
+            hp.fp16_uploads >= 1);
+      check(label, "H2 its half floats lie on the PQ EOTF",
+            fabs(r - ref) / ref < 0.04);
+      printf("      [hdr] %d half-float frames, centre red %.4f "
+             "(PQ grey %.4f)\n", hp.fp16_uploads, r, ref);
+   }
+   else
+      check(label, "H0 no half floats without an HDR source and output",
+            hp.fp16_uploads == 0);
 
    if (expect_video == 2)
    {

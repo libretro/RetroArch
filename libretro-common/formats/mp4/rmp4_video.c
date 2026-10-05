@@ -100,6 +100,9 @@ struct rmp4_video_stream
    unsigned     height;
    int          want10;     /* caller requested 10-bit output         */
    int          is10;       /* last decoded frame written as 10-bit    */
+   int          want_fp16;  /* caller takes linear scRGB half floats
+                               for an HDR source, into 'out'         */
+   int          is_fp16;    /* last decoded frame written so          */
    int          emit_argb;  /* emit ARGB words instead of the default
                                R,G,B,A memory order (8-bit paths)     */
 };
@@ -1026,6 +1029,22 @@ void rmp4_video_stream_set_output(rmp4_video_stream_t *s, uint32_t *out)
       s->out = out;
 }
 
+void rmp4_video_stream_set_want_fp16(rmp4_video_stream_t *s, int want)
+{
+   if (s)
+      s->want_fp16 = want ? 1 : 0;
+}
+
+int rmp4_video_stream_is_fp16(const rmp4_video_stream_t *s)
+{
+   return s && s->is_fp16;
+}
+
+int rmp4_video_stream_is_hdr(const rmp4_video_stream_t *s)
+{
+   return s && (s->transfer == 16 || s->transfer == 18);
+}
+
 void *rmp4_video_stream_h264(rmp4_video_stream_t *s)
 {
    return s ? (void*)s->h264 : NULL;
@@ -1083,7 +1102,8 @@ typedef struct
    unsigned matrix, transfer, range;
    int argb;
    int kind;  /* 0: 8-bit yuv (cvsh), 1: 8-bit 4:4:4, 2: hbd to 8-bit,
-                 3: webm hbd to 8-bit, 4: webm 10-bit */
+                 3: webm hbd to 8-bit, 4: webm 10-bit, 5: HDR to scRGB
+                 half floats, rows of dst_stride 8-byte pixels */
 } rmp4_blit_ctx_t;
 
 static void rmp4_video_blit_rows(void *arg, unsigned row0, unsigned rows)
@@ -1121,14 +1141,31 @@ static void rmp4_video_blit_rows(void *arg, unsigned row0, unsigned rows)
                (const uint16_t*)c->v + crow * c->uvs, c->uvs,
                c->matrix, c->transfer, c->range, 0, c->argb);
          break;
-      default:
+      case 4:
          rwebm_video_blit_i420_10bit(dst, c->dst_stride, c->w, rows,
                (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
                (const uint16_t*)c->u + crow * c->uvs,
                (const uint16_t*)c->v + crow * c->uvs, c->uvs,
                c->matrix, c->transfer, c->range, 0);
          break;
+      default:
+         rwebm_video_blit_i420_fp16(
+               (uint16_t*)c->dst + (size_t)row0 * c->dst_stride * 4,
+               c->dst_stride, c->w, rows,
+               (const uint16_t*)c->y + (size_t)row0 * c->ys, c->ys,
+               (const uint16_t*)c->u + crow * c->uvs,
+               (const uint16_t*)c->v + crow * c->uvs, c->uvs,
+               c->matrix, c->transfer, c->range);
+         break;
    }
+}
+
+/* An HDR source, for a caller that takes linear light into its own
+ * frame: the 10-bit arms blit it as scRGB half floats, no tone map. */
+static int rmp4_video_wants_fp16(const rmp4_video_stream_t *s)
+{
+   return s->want_fp16 && s->out
+      && (s->transfer == 16 || s->transfer == 18);
 }
 
 /* Run the frame's blit, in bands on the stream's pool when it has
@@ -1195,7 +1232,8 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
    uint32_t *dst;
    if (!s)
       return NULL;
-   dst = s->out ? s->out : s->frame;
+   dst        = s->out ? s->out : s->frame;
+   s->is_fp16 = 0;
    switch (s->rndr_kind)
    {
       case 1:  /* VP8: planes valid until the next decode call */
@@ -1233,7 +1271,13 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
              * branch the 10-bit (uint16) planes were handed to the 8-bit
              * blit and mis-decoded. */
             rmp4_blit_ctx_t c;
-            if (s->want10)
+            if (rmp4_video_wants_fp16(s))
+            {
+               RMP4_BLIT_CTX(c, s, dst, w, fb->y, fb->u, fb->v,
+                     s->vp9->ys, s->vp9->uvs, 5, 0);
+               s->is_fp16 = 1;
+            }
+            else if (s->want10)
             {
                RMP4_BLIT_CTX(c, s, dst, w, fb->y, fb->u, fb->v,
                      s->vp9->ys, s->vp9->uvs, 4, 0);
@@ -1277,7 +1321,12 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
             rmp4_blit_ctx_t c;
             if (bd == 10 && cw < w && ch < h)
             {
-               if (s->want10)
+               if (rmp4_video_wants_fp16(s))
+               {
+                  RMP4_BLIT_CTX(c, s, dst, w, y, u, v, ys, uvs, 5, 0);
+                  s->is_fp16 = 1;
+               }
+               else if (s->want10)
                {
                   RMP4_BLIT_CTX(c, s, dst, w, y, u, v, ys, uvs, 4, 0);
                   s->is10 = 1;
@@ -1332,7 +1381,12 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
              * with the stride in samples; hand them to the shared
              * high-bit-depth blits exactly as the VP9 arm does. */
             rmp4_blit_ctx_t c;
-            if (s->want10)
+            if (rmp4_video_wants_fp16(s))
+            {
+               RMP4_BLIT_CTX(c, s, dst, w, y, u, v, ys, uvs, 5, 0);
+               s->is_fp16 = 1;
+            }
+            else if (s->want10)
             {
                RMP4_BLIT_CTX(c, s, dst, w, y, u, v, ys, uvs, 4, 0);
                s->is10 = 1;

@@ -174,6 +174,17 @@ void rwebm_video_stream_set_argb(rwebm_video_stream_t *stream, int argb);
 void rwebm_video_stream_set_output(rwebm_video_stream_t *stream,
       uint32_t *out);
 
+/* Linear scRGB half floats for an HDR source: a 10-bit PQ or HLG frame
+ * decoded into the caller's frame (rwebm_video_stream_set_output),
+ * which then holds 8 bytes a pixel, through rwebm_video_blit_i420_fp16
+ * - no tone map. Every other frame, and every frame without a caller's
+ * output, takes the paths it always did. is_fp16 answers for the last
+ * frame decoded; is_hdr for the source, from its track's transfer. */
+void rwebm_video_stream_set_want_fp16(rwebm_video_stream_t *stream,
+      int want);
+int rwebm_video_stream_is_fp16(const rwebm_video_stream_t *stream);
+int rwebm_video_stream_is_hdr(const rwebm_video_stream_t *stream);
+
 /* Convert decoded frames in @bands row bands on @pool (an rthreads
  * tpool_t of at least bands - 1 threads; the calling thread takes one
  * band and joins the rest), and decode a VP9 frame's tile columns on

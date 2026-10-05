@@ -973,6 +973,80 @@ bool image_transfer_anim_stream_set_output(void *stream,
    return false;
 }
 
+/* The video streams give an HDR source as linear scRGB half floats
+ * into the caller's frame; nothing else has a source that is HDR. */
+void image_transfer_anim_stream_set_want_fp16(void *stream,
+      enum image_type_enum type, bool want)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         rwebm_video_stream_set_want_fp16((rwebm_video_stream_t*)stream,
+               want);
+#endif
+         break;
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         rmp4_video_stream_set_want_fp16((rmp4_video_stream_t*)stream,
+               want);
+#endif
+         break;
+      default:
+         break;
+   }
+}
+
+bool image_transfer_anim_stream_is_fp16(const void *stream,
+      enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_stream_is_fp16(
+               (const rwebm_video_stream_t*)stream) != 0;
+#else
+         break;
+#endif
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         return rmp4_video_stream_is_fp16(
+               (const rmp4_video_stream_t*)stream) != 0;
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return false;
+}
+
+bool image_transfer_anim_stream_is_hdr(const void *stream,
+      enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_stream_is_hdr(
+               (const rwebm_video_stream_t*)stream) != 0;
+#else
+         break;
+#endif
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         return rmp4_video_stream_is_hdr(
+               (const rmp4_video_stream_t*)stream) != 0;
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return false;
+}
+
 bool image_transfer_anim_stream_set_blit_pool(void *stream,
       enum image_type_enum type, void *pool, unsigned bands)
 {
