@@ -2887,6 +2887,39 @@ static void lane_menu_pause(void)
       syn_buttons = 0;
       run_loop_frames(3);
 
+      /* the menu opened with B held: B is held back in the menu and
+       * does nothing there, but Down pressed while B is still down moves
+       * the selection at once - the hold is on what was down, not on
+       * all */
+      {
+         uint32_t down_bit = 1u << (input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey & 31);
+         uint32_t up_bit   = 1u << (input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_UP].joykey & 31);
+         size_t   before;
+         pm_set_menu(false);
+         run_loop_frames(3);
+         syn_buttons = b_bit;
+         run_loop_frames(3);
+         pm_set_menu(true);
+         run_loop_frames(3);
+         before      = menu_state_get_ptr()->selection_ptr;
+         syn_buttons = b_bit | down_bit;
+         run_loop_frames(2);
+         syn_buttons = b_bit;
+         run_loop_frames(3);
+         snprintf(msg, sizeof(msg), "menu pause, %s: the menu shut by itself after opening with B held", with);
+         CHECK(menu_is_up(), msg);
+         snprintf(msg, sizeof(msg), "menu pause, %s: Down, pressed while the B held as the menu opened was still down, did not move the selection", with);
+         CHECK(menu_state_get_ptr()->selection_ptr != before, msg);
+         syn_buttons = 0;
+         run_loop_frames(3);
+         syn_buttons = up_bit;
+         run_loop_frames(2);
+         syn_buttons = 0;
+         run_loop_frames(3);
+         pm_set_menu(false);
+         run_loop_frames(5);
+      }
+
       /* paused with the hotkey, into the menu with its own hotkey and
        * out again with that hotkey held for a while: still paused */
       syn_buttons = pause_bit;

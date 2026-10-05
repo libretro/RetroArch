@@ -5457,6 +5457,13 @@ static unsigned input_combo_type_onkeyup_lut[INPUT_COMBO_LAST] =
 } \
 
 
+/* Set as the menu opens: menu_event() starts its own button memory
+ * afresh. Without it, an OK still down when the menu last closed (by
+ * its hotkey, say) is remembered as down, and the menu opening later
+ * sees it let go - and an entry that acts on release, Resume first of
+ * all, acts on the menu's first frame and shuts it again. */
+static bool menu_event_starts_afresh;
+
 unsigned menu_event(
       settings_t *settings,
       input_bits_t *p_input,
@@ -5533,6 +5540,15 @@ unsigned menu_event(
       RETRO_DEVICE_ID_JOYPAD_X,
       RETRO_DEVICE_ID_JOYPAD_Y
    };
+
+   if (menu_event_starts_afresh)
+   {
+      menu_event_starts_afresh = false;
+      ok_old                   = ok_current;
+      ok_trigger               = 0;
+      ok_trigger_release       = 0;
+      ok_enum_idx              = 0;
+   }
 
    /* Check if all menu input is blocked
     * > 'ok_old' must be updated before returning, otherwise the
@@ -6115,9 +6131,9 @@ unsigned menu_event(
          menu_st->input_last_time_us = menu_st->current_time_us;
    }
 
-   /* Menu must be alive, and input must be released after menu toggle. */
-   if (     !(menu_st->flags & MENU_ST_FLAG_ALIVE)
-         || menu_st->input_driver_flushing_input > 0)
+   /* Menu must be alive. What was held as it opened is held back by the
+    * run loop, button by button, and does not reach here. */
+   if (!(menu_st->flags & MENU_ST_FLAG_ALIVE))
       ret = MENU_ACTION_NOOP;
 
    return ret;
@@ -6983,6 +6999,8 @@ void retroarch_menu_running(void)
    struct menu_state *menu_st      = &menu_driver_state;
    menu_handle_t *menu             = menu_st->driver_data;
    menu_input_t *menu_input        = &menu_st->input_state;
+
+   menu_event_starts_afresh = true;
 
    if (menu)
    {
